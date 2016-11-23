@@ -70,8 +70,8 @@ GTEST_TEST(RigidBodyPlantTest, TestLoadURDFWorld) {
 // Unit tests the generalized velocities to generalized coordinates time
 // derivatives for a free body with a quaternion base.
 GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
-  const double kTol = 2e-13;     // Test succeeds at one order of magnitude
-                                 // greater tolerance on my machine.
+  const double kTol = 5e-13;     // Minimum tolerance that all tests succeed
+                                 // on my machine.
   const int kNumPositions = 7;   // One quaternion + 3d position.
   const int kNumVelocities = 6;  // Angular velocity + linear velocity.
   const int kNumStates = kNumPositions + kNumVelocities;
@@ -122,10 +122,38 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
   ASSERT_EQ(positions_derivatives.size(), kNumPositions);
   ASSERT_EQ(generalized_velocities.size(), kNumVelocities);
 
-  // Transform the generalized velocities to time derivative of generalized
-  // coordinates.
+  // Test using example computed from Octave + RPI Matlab simulator.
+
+  // Update the orientation.
+  Quaterniond q(-0.863191, 0.462544, -0.197933, 0.042159);
+
+  // Verify normalization.
+  DRAKE_ASSERT(std::abs(q.norm() - 1.0) < 1e-5);
+
+  // Get the mutable state and set the quaternion orientation
+  VectorBase<double>* xc = context->get_mutable_state()
+                            ->get_mutable_continuous_state()
+                            ->get_mutable_generalized_position();
+  xc->SetAtIndex(3, q.w());
+  xc->SetAtIndex(4, q.x());
+  xc->SetAtIndex(5, q.y());
+  xc->SetAtIndex(6, q.z());
+
+  // Transform the generalized velocities to time derivative of
+  // generalized coordinates.
   plant.MapVelocityToQDot(*context, generalized_velocities,
                           &positions_derivatives);
+
+  Quaterniond qdot(positions_derivatives.GetAtIndex(3),
+                   positions_derivatives.GetAtIndex(4),
+                   positions_derivatives.GetAtIndex(5),
+                   positions_derivatives.GetAtIndex(6));
+
+  EXPECT_NEAR(qdot.w(), 1.5464, 1e-4);
+  EXPECT_NEAR(qdot.x(), 1.2380, 1e-4);
+  EXPECT_NEAR(qdot.y(), -3.4613, 1e-4);
+  EXPECT_NEAR(qdot.z(), 1.8291, 1e-4);
+  DRAKE_ASSERT(std::abs(q.dot(qdot)) < 1e-6);
 
   // Loop over roll-pitch-yaw values: this will run approximately 1,000 tests.
   const double kAngleInc = 10.0 * M_PI / 180.0;  // 10 degree increments
@@ -155,18 +183,18 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
                                 &positions_derivatives);
 
         // Test q * qdot near zero
-        Quaterniond qdot(xc->GetAtIndex(3), xc->GetAtIndex(4),
-                         xc->GetAtIndex(5), xc->GetAtIndex(6));
-
-        // TODO(edrumwri): Uncomment this test when quaternion derivative
-        // code is correct.
-        //        DRAKE_ASSERT(std::abs(q.dot(qdot)) < 1e-14);
+        Quaterniond qdot(positions_derivatives.GetAtIndex(3),
+                         positions_derivatives.GetAtIndex(4),
+                         positions_derivatives.GetAtIndex(5),
+                         positions_derivatives.GetAtIndex(6));
+        DRAKE_ASSERT(std::abs(q.dot(qdot)) < 1e-14);
 
         // Map time derivative of generalized configuration back to generalized
         // velocity.
         plant.MapQDotToVelocity(*context, positions_derivatives,
                                 &generalized_velocities);
 
+        // Ordering is angular velocities first, linear velocities second.
         EXPECT_NEAR(w0[0], generalized_velocities.GetAtIndex(0), kTol);
         EXPECT_NEAR(w0[1], generalized_velocities.GetAtIndex(1), kTol);
         EXPECT_NEAR(w0[2], generalized_velocities.GetAtIndex(2), kTol);

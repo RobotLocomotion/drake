@@ -293,10 +293,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   prog.Solve();
 
   VectorX<T> xdot(get_num_states());
-  xdot << kinsol.transformQDotMappingToVelocityMapping(
-              MatrixX<T>::Identity(nq, nq)) *
-              v,
-      vdot.value();
+  xdot << kinsol.transformVelocityToQDot(v), vdot.value();
 
   derivatives->SetFromVector(xdot);
 }
@@ -304,7 +301,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 template <typename T>
 void RigidBodyPlant<T>::DoMapQDotToVelocity(
     const Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& configuration_dot,
+    const Eigen::Ref<const VectorX<T>>& qdot,
     VectorBase<T>* generalized_velocity) const {
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
@@ -316,7 +313,7 @@ void RigidBodyPlant<T>::DoMapQDotToVelocity(
   const int nv = get_num_velocities();
   const int nstates = get_num_states();
 
-  DRAKE_ASSERT(configuration_dot.size() == nq);
+  DRAKE_ASSERT(qdot.size() == nq);
   DRAKE_ASSERT(generalized_velocity->size() == nv);
   DRAKE_ASSERT(x.size() == nstates);
 
@@ -329,9 +326,7 @@ void RigidBodyPlant<T>::DoMapQDotToVelocity(
   // reused.
   auto kinsol = tree_->doKinematics(q);
 
-  generalized_velocity->SetFromVector(
-      kinsol.transformQDotMappingToVelocityMapping(
-          configuration_dot.transpose()));
+  generalized_velocity->SetFromVector(kinsol.transformQDotToVelocity(qdot));
 }
 
 template <typename T>
@@ -363,8 +358,7 @@ void RigidBodyPlant<T>::DoMapVelocityToQDot(
   // reused.
   auto kinsol = tree_->doKinematics(q, v);
 
-  configuration_dot->SetFromVector(
-      kinsol.transformVelocityMappingToQDotMapping(v.transpose()));
+  configuration_dot->SetFromVector(kinsol.transformVelocityToQDot(v));
 }
 
 template <typename T>

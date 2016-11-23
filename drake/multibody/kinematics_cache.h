@@ -176,6 +176,69 @@ class KinematicsCache {
   }
 
   /**
+   * Converts a vector of generalized velocities (v) to the time
+   * derivative of generalized coordinates (qdot). 
+   * @param v, a `nv` dimensional vector, where `nv` is the dimension of the
+   *      generalized velocities.
+   * @retval qdot a `nq` dimensional vector, where `nq` is the dimension of the
+   *      generalized coordinates.
+   * @sa transformQDotToVelocity()
+   */
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, 1>
+  transformVelocityToQDot(
+      const Eigen::MatrixBase<Derived>& v) const {
+    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, 1>
+        qdot(get_num_positions());
+    int qdot_start = 0;
+    int v_start = 0;
+    for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+      const RigidBody<double>& body = **it;
+      if (body.has_parent_body()) {
+        const DrakeJoint& joint = body.getJoint();
+        const auto& element = getElement(body);
+        qdot.segment(qdot_start, joint.get_num_positions()).noalias() =
+            element.v_to_qdot * v.segment(v_start, joint.get_num_velocities());
+        qdot_start += joint.get_num_positions();
+        v_start += joint.get_num_velocities();
+      }
+    }
+    return qdot;
+  }
+
+   /**
+   * Converts a vector of the time derivative of generalized coordinates (qdot)
+   * to generalized velocity (v). 
+   * @param qdot a `nq` dimensional vector, where `nq` is the dimension of the
+   *      generalized coordinates.
+   * @retval, a `nv` dimensional vector, where `nv` is the dimension of the
+   *      generalized velocities.
+   * @sa transformVelocityToQDot()
+   */
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, 1>
+  transformQDotToVelocity(
+      const Eigen::MatrixBase<Derived>& qdot) const {
+    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, 1>
+        v(get_num_velocities());
+    int qdot_start = 0;
+    int v_start = 0;
+    for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+      const RigidBody<double>& body = **it;
+      if (body.has_parent_body()) {
+        const DrakeJoint& joint = body.getJoint();
+        const auto& element = getElement(body);
+        v.segment(v_start, joint.get_num_velocities()).noalias() =
+            element.qdot_to_v * qdot.segment(qdot_start,
+             joint.get_num_positions());
+        qdot_start += joint.get_num_positions();
+        v_start += joint.get_num_velocities();
+      }
+    }
+    return v;
+  }
+
+  /**
    * Converts a matrix B, which transforms generalized velocities (v) to an
    * output space X, to a matrix A, which transforms the time
    * derivative of generalized coordinates (qdot) to the same output X. For
