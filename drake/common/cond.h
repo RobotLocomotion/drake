@@ -3,8 +3,6 @@
 #include <functional>
 #include <type_traits>
 
-#include "drake/common/double_overloads.h"
-
 namespace drake {
 /** @name cond
   Constructs conditional expression (similar to Lisp's cond).

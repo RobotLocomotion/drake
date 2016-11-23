@@ -11,12 +11,26 @@ if(gurobi_FOUND)
     REQUIRES gurobi)
 endif()
 
+set(private_headers
+  dreal_solver.h
+  gurobi_solver.h
+  ipopt_solver.h
+  linear_system_solver.h
+  moby_lcp_solver.h
+  mosek_solver.h
+  nlopt_solver.h
+  snopt_solver.h
+  )
 set(optimization_files)
 set(optimization_requires)
 list(APPEND optimization_files
-  mathematical_program.cc moby_lcp_solver.cc
-  system_identification.cc linear_system_solver.cc
-  equality_constrained_qp_solver.cc)
+  ${private_headers}
+  equality_constrained_qp_solver.cc
+  linear_system_solver.cc
+  mathematical_program.cc
+  moby_lcp_solver.cc
+  system_identification.cc
+  )
 pods_find_pkg_config(ipopt)
 if (ipopt_FOUND)
  list(APPEND optimization_files ipopt_solver.cc)

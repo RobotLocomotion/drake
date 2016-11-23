@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/math/quaternion.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/systems/framework/diagram_builder.h"

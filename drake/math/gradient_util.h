@@ -1,22 +1,16 @@
-/// @file
-/// THIS FILE IS DEPRECATED.
-/// Its contents are moving into drake/math.
-
 #pragma once
 
 #include <array>
-
-#include <cmath>
-#include <stdexcept>
 #include <vector>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include <unsupported/Eigen/AutoDiff>
-
-#include "drake/math/gradient.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/math/gradient.h"
+
+namespace drake {
+namespace math {
 
 template <std::size_t Size>
 std::array<int, Size> intRange(int start) {
@@ -235,6 +229,7 @@ getSubMatrixGradient(
 }
 
 template <typename DerivedA, typename DerivedB>
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM,
                           const Eigen::MatrixBase<DerivedB>& dM_submatrix,
                           const std::vector<int>& rows,
@@ -259,6 +254,7 @@ void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM,
 template <int QSubvectorSize, typename DerivedA, typename DerivedB,
           std::size_t NRows, std::size_t NCols>
 void setSubMatrixGradient(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::MatrixBase<DerivedA>& dM,
     const Eigen::MatrixBase<DerivedB>& dM_submatrix,
     const std::array<int, NRows>& rows, const std::array<int, NCols>& cols,
@@ -281,6 +277,7 @@ void setSubMatrixGradient(
 
 template <int QSubvectorSize, typename DerivedDM, typename DerivedDMSub>
 void setSubMatrixGradient(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::MatrixBase<DerivedDM>& dM,
     const Eigen::MatrixBase<DerivedDMSub>& dM_submatrix, int row, int col,
     typename DerivedDM::Index M_rows, typename DerivedDM::Index q_start = 0,
@@ -292,17 +289,5 @@ void setSubMatrixGradient(
                                        q_subvector_size) = dM_submatrix;
 }
 
-template <typename DerivedGradient, typename DerivedAutoDiff>
-void gradientMatrixToAutoDiff(
-    const Eigen::MatrixBase<DerivedGradient>& gradient,
-    Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix) {
-  typedef typename Eigen::MatrixBase<DerivedGradient>::Index Index;
-  auto nx = gradient.cols();
-  for (Index row = 0; row < auto_diff_matrix.rows(); row++) {
-    for (Index col = 0; col < auto_diff_matrix.cols(); col++) {
-      auto_diff_matrix(row, col).derivatives().resize(nx, 1);
-      auto_diff_matrix(row, col).derivatives() =
-          gradient.row(row + col * auto_diff_matrix.rows()).transpose();
-    }
-  }
-}
+}  // namespace math
+}  // namespace drake

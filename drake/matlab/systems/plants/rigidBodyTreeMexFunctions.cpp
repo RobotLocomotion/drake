@@ -10,6 +10,7 @@
 #include "drake/matlab/util/makeFunction.h"
 #include "drake/matlab/util/standardMexConversions.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/util/drakeGeometryUtil.h"
 
 using namespace std;
 using namespace Eigen;

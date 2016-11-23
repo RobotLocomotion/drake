@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/joints/drake_joints.h"
@@ -109,12 +108,10 @@ void AddMaterialToMaterialMap(const string& material_name,
   auto material_iter = materials->find(material_name);
   if (material_iter != materials->end()) {
     // The material is already in the map. Checks whether the old material is
-    // the same as the new material. Note that since the range of values in the
-    // RGBA vectors is [0, 1], absolute and relative tolerance comparisons are
-    // identical.
-    auto& existing_color = material_iter->second;
-    if (!drake::CompareMatrices(color_rgba, existing_color, 1e-10,
-                                drake::MatrixCompareType::absolute)) {
+    // the same as the new material.  The range of values in the RGBA vectors
+    // is [0, 1].
+    const auto& existing_color = material_iter->second;
+    if ((color_rgba - existing_color).lpNorm<Eigen::Infinity>() > 1e-10) {
       // The materials map already has the material_name key but the color
       // associated with it is different.
       stringstream error_buff;
