@@ -149,7 +149,7 @@ using VariableListRef = std::list<Eigen::Ref<const DecisionVariableMatrixX>>;
 
 class VariableList {
  public:
-  VariableList(const VariableListRef& variable_list);
+  explicit VariableList(const VariableListRef& variable_list);
 
   /**
    * Return all the stored DecisionVariableMatrix.
