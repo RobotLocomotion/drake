@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "drake/util/drakeGeometryUtil.h"
+
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {

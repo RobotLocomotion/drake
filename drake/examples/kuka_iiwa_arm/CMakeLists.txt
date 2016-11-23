@@ -4,7 +4,7 @@ if(lcm_FOUND)
       iiwa_common.cc)
   target_link_libraries(drakeKukaIiwaArmCommon
       drakeRBM)
-  pods_install_libraries(drakeKukaIiwaArmCommon)
+  drake_install_libraries(drakeKukaIiwaArmCommon)
   drake_install_headers(
       iiwa_common.h)
   drake_install_pkg_config_file(drake-kuka-iiwa-arm-common
@@ -22,7 +22,7 @@ if(lcm_FOUND)
       drakeCommon
       drakeLCMSystem
       drakeLCMTypes)
-  pods_install_libraries(drakeKukaIiwaArm)
+  drake_install_libraries(drakeKukaIiwaArm)
   drake_install_headers(
       iiwa_simulation.h)
   drake_install_pkg_config_file(drake-kuka-iiwa-arm

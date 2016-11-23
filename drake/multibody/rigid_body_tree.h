@@ -25,7 +25,6 @@
 #include "drake/multibody/rigid_body_actuator.h"
 #include "drake/multibody/rigid_body_loop.h"
 #include "drake/multibody/shapes/drake_shapes.h"
-#include "drake/util/drakeGeometryUtil.h"
 
 #define BASIS_VECTOR_HALF_COUNT \
   2  // number of basis vectors over 2 (i.e. 4 basis vectors in this case)

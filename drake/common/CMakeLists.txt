@@ -10,6 +10,7 @@ configure_file(drake_path.cc.in ${drake_path_cc})
 
 # List all source files used to build libdrakeCommon.
 set(sources
+  double_overloads.cc
   drake_assert.cc
   ${drake_path_cc}
   drake_throw.cc
@@ -30,11 +31,13 @@ set(sources
 # are available elsewhere via #include "drake/common/xxx.h".
 set(installed_headers
   autodiff_overloads.h
+  cond.h
   constants.h
+  double_overloads.h
   drake_assert.h
+  drake_compat.h
   drake_deprecated.h
   drake_export.h
-  drake_gcc48.h
   drake_path.h
   drake_throw.h
   eigen_autodiff_types.h
@@ -42,6 +45,7 @@ set(installed_headers
   eigen_stl_types.h
   eigen_types.h
   functional_form.h
+  hash.h
   nice_type_name.h
   number_traits.h
   polynomial.h
@@ -77,7 +81,7 @@ endif()
 drake_install_headers(${installed_headers})
 
 # Install the library and note Drake's dependency on it.
-pods_install_libraries(drakeCommon)
+drake_install_libraries(drakeCommon)
 drake_install_pkg_config_file(drake-common
   TARGET drakeCommon
   LIBS
@@ -89,3 +93,5 @@ drake_install_pkg_config_file(drake-common
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
+
+add_subdirectory(trajectories)

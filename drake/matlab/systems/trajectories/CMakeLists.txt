@@ -9,15 +9,20 @@ if(Bullet_FOUND AND Matlab_FOUND)
     target_include_directories(replanFunnels_mex PRIVATE ${BULLET_INCLUDE_DIRS})
     target_link_libraries(replanFunnels_mex drakeMexUtil snopt_c
       ${BLAS_LIBRARIES} ${BULLET_LIBRARIES})
-    set_property(TARGET replanFunnels_mex APPEND_STRING PROPERTY
-      LINK_FLAGS "${BLAS_LINKER_FLAGS}")
 
     drake_add_mex(shiftFunnel_snopt_mex shiftFunnel_snopt_mex.cpp)
     target_include_directories(shiftFunnel_snopt_mex PRIVATE ${BULLET_INCLUDE_DIRS})
     target_link_libraries(shiftFunnel_snopt_mex drakeMexUtil snopt_c
       ${BLAS_LIBRARIES} ${BULLET_LIBRARIES})
-    set_property(TARGET shiftFunnel_snopt_mex APPEND_STRING PROPERTY
-      LINK_FLAGS "${BLAS_LINKER_FLAGS}")
+
+    # Some platforms require extra link flags. On those that do not, the
+    # BLAS_LINKER_FLAGS variable is undefined.
+    if(DEFINED BLAS_LINKER_FLAGS)
+      set_property(TARGET replanFunnels_mex APPEND_STRING PROPERTY
+        LINK_FLAGS "${BLAS_LINKER_FLAGS}")
+      set_property(TARGET shiftFunnel_snopt_mex APPEND_STRING PROPERTY
+        LINK_FLAGS "${BLAS_LINKER_FLAGS}")
+    endif()
 
     # These warnings are not worth fixing.
     target_compile_options(replanFunnels_mex PRIVATE ${CXX_FLAGS_NO_ERROR_SHADOW})

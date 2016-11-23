@@ -2,7 +2,7 @@
 
 # Generates the source files for the PendulumStateVector.
 
-me=$(readlink -f "$0")
+me=$(python -c 'import os; print(os.path.realpath("'"$0"'"))')
 mydir=$(dirname "$me")
 examples=$(dirname "$mydir")
 drake=$(dirname "$examples")

@@ -10,6 +10,12 @@ catkin_package(
   #DEPENDS
 )
 
+## Specifies additional locations of header files.
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
+
 if (CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
   include_directories(${CMAKE_INSTALL_PREFIX}/include)

@@ -9,6 +9,7 @@
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/constants.h"
+#include "drake/common/trajectories/qp_spline/spline_generation.h"
 #include "drake/examples/Atlas/atlasUtil.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -16,11 +17,10 @@
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/solvers/qpSpline/splineGeneration.h"
+#include "drake/util/convexHull.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 #include "drake/util/lcmUtil.h"
-#include "drake/util/convexHull.h"
 
 // TODO(tkoolen): discuss possibility of chatter in knee control
 // TODO(tkoolen): make body_motions a map from RigidBody* to BodyMotionData,

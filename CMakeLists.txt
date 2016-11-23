@@ -20,14 +20,14 @@ drake_setup_options()
 # External projects in order of dependencies; 'trivial' ones first
 drake_add_external(eigen PUBLIC CMAKE)
 drake_add_external(meshconverters PUBLIC CMAKE)
-drake_add_external(mosek PUBLIC)
+drake_add_external(mosek PUBLIC MATLAB)
 drake_add_external(spdlog PUBLIC CMAKE)
-drake_add_external(swigmake PUBLIC CMAKE)
-drake_add_external(yalmip PUBLIC CMAKE)
+drake_add_external(swigmake PUBLIC CMAKE MATLAB PYTHON)
+drake_add_external(yalmip PUBLIC CMAKE MATLAB)
 
 # avl
 # The Ninja generator does not support Fortran.
-drake_add_external(avl PUBLIC CMAKE GENERATOR "Unix Makefiles")
+drake_add_external(avl PUBLIC CMAKE FORTRAN)
 
 # bullet
 if(WIN32)
@@ -59,8 +59,11 @@ drake_add_external(ccd PUBLIC CMAKE
     -DENABLE_DOUBLE_PRECISION=ON)
 
 # dreal
-drake_add_external(dreal PUBLIC CMAKE
-  CMAKE_ARGS -DUSE_NLOPT=OFF -DBUILD_TESTING=OFF -DSUPPORT_ODE=OFF
+drake_add_external(dreal PUBLIC CMAKE PYTHON
+  CMAKE_ARGS
+    -DBUILD_TESTING=OFF
+    -DSUPPORT_ODE=OFF
+    -DUSE_NLOPT=OFF
   SOURCE_SUBDIR src)
 
 # gflags
@@ -78,25 +81,16 @@ drake_add_external(googletest PUBLIC CMAKE
     -DCMAKE_INSTALL_NAME_DIR=${CMAKE_INSTALL_PREFIX}/lib)
 
 # google_styleguide
-drake_add_external(google_styleguide PUBLIC
+drake_add_external(google_styleguide PUBLIC PYTHON
   BUILD_COMMAND :)
 
 # gurobi
-if(Matlab_FOUND)
-  set(GUROBI_EXTRA_CMAKE_ARGS
-    -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR}
-    -DWITH_MATLAB=ON)
-else()
-  set(GUROBI_EXTRA_CMAKE_ARGS
-    -DWITH_MATLAB=OFF)
-endif()
-
-drake_add_external(gurobi CMAKE
+drake_add_external(gurobi CMAKE MATLAB
   CMAKE_ARGS
     -DBUILD_TESTING=OFF
     -DWITH_CPP=ON
-    -DWITH_PYTHON=OFF
-    ${GUROBI_EXTRA_CMAKE_ARGS})
+    -DWITH_MATLAB=${Matlab_FOUND}
+    -DWITH_PYTHON=OFF)
 
 # ipopt
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -108,7 +102,7 @@ else()
   set(IPOPT_CXX_COMPILER "${CMAKE_CXX_COMPILER}")
 endif()
 
-drake_add_external(ipopt PUBLIC AUTOTOOLS
+drake_add_external(ipopt PUBLIC AUTOTOOLS FORTRAN
   AUTOTOOLS_ENV
     CC=${IPOPT_C_COMPILER}
     CXX=${IPOPT_CXX_COMPILER}
@@ -131,29 +125,18 @@ drake_add_external(nlopt PUBLIC CMAKE
     -DUSE_SWIG=OFF)
 
 # sedumi
-drake_add_external(sedumi PUBLIC CMAKE
-  CMAKE_ARGS -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR})
+drake_add_external(sedumi PUBLIC CMAKE MATLAB)
 
 # snopt
-if(Matlab_FOUND)
-  set(SNOPT_EXTRA_CMAKE_ARGS
-    -DBUILD_SNOPT_C_MEX=ON
-    -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR})
-else()
-  set(SNOPT_EXTRA_CMAKE_ARGS
-    -DBUILD_SNOPT_C_MEX=OFF)
-endif()
-
-drake_add_external(snopt CMAKE
+drake_add_external(snopt CMAKE MATLAB
   CMAKE_ARGS
     -DBUILD_SNOPT_CPP=OFF
     -DBUILD_SHARED_LIBS=ON
     -DBUILD_TESTING=OFF
-    ${SNOPT_EXTRA_CMAKE_ARGS})
+    -DBUILD_SNOPT_C_MEX=${Matlab_FOUND})
 
 # spotless
-drake_add_external(spotless PUBLIC CMAKE
-  CMAKE_ARGS -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR})
+drake_add_external(spotless PUBLIC CMAKE MATLAB)
 
 # octomap
 drake_add_external(octomap PUBLIC CMAKE
@@ -169,18 +152,9 @@ drake_add_external(swig_matlab PUBLIC AUTOTOOLS
     --without-alllang)
 
 # textbook
-if(Matlab_FOUND)
-  set(TEXTBOOK_CMAKE_ARGS
-    -DBUILD_TESTING=ON
-    -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR})
-else()
-  set(TEXTBOOK_CMAKE_ARGS -DBUILD_TESTING=OFF)
-endif()
-
-drake_add_external(textbook PUBLIC CMAKE
-  CMAKE_ARGS ${TEXTBOOK_CMAKE_ARGS}
+drake_add_external(textbook PUBLIC CMAKE MATLAB PYTHON
+  CMAKE_ARGS -DBUILD_TESTING=${Matlab_FOUND}
   INSTALL_COMMAND :
-  REQUIRES PythonInterp
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/doc/textbook)
 
 # yaml_cpp
@@ -192,18 +166,16 @@ drake_add_external(yaml_cpp PUBLIC CMAKE
    -DYAML_CPP_BUILD_TOOLS=OFF)
 
 # iris
-drake_add_external(iris PUBLIC CMAKE
+drake_add_external(iris PUBLIC CMAKE MATLAB PYTHON
   CMAKE_ARGS
     -DBUILD_TESTING=OFF
     -DIRIS_WITH_CDD=ON
     -DIRIS_WITH_EIGEN=OFF
     -DIRIS_WITH_MOSEK=OFF
-    -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR}
   DEPENDS eigen mosek)
 
-
 # lcm
-drake_add_external(lcm PUBLIC CMAKE
+drake_add_external(lcm PUBLIC CMAKE PYTHON
   CMAKE_ARGS
     -DBUILD_SHARED_LIBS=ON
     -DLCM_ENABLE_EXAMPLES=OFF
@@ -212,20 +184,19 @@ drake_add_external(lcm PUBLIC CMAKE
     -DLCM_INSTALL_M4MACROS=OFF)
 
 # libbot
-drake_add_external(libbot PUBLIC CMAKE
+drake_add_external(libbot PUBLIC CMAKE PYTHON
   DEPENDS lcm)
 
 # bot_core_lcmtypes
-drake_add_external(bot_core_lcmtypes PUBLIC CMAKE
+drake_add_external(bot_core_lcmtypes PUBLIC CMAKE PYTHON
   DEPENDS lcm libbot) # Conflicts with libbot; ensure this is built after
 
 # robotlocomotion_lcmtypes
-drake_add_external(robotlocomotion_lcmtypes PUBLIC CMAKE
+drake_add_external(robotlocomotion_lcmtypes PUBLIC CMAKE PYTHON
   DEPENDS bot_core_lcmtypes lcm)
 
 # xfoil
-# The Ninja generator does not support Fortran.
-drake_add_external(xfoil PUBLIC CMAKE GENERATOR "Unix Makefiles")
+drake_add_external(xfoil PUBLIC CMAKE FORTRAN)
 
 # Option to skip building drake proper via the superbuild. This allows the
 # superbuild to build everything BUT drake, which can still be built separately
@@ -238,7 +209,7 @@ option(SKIP_DRAKE_BUILD "Build external projects but not drake itself" OFF)
 # drake: For drake, list both compilation AND RUNTIME dependencies. Runtime
 # dependencies are needed because the drake project must configure only after
 # any dependencies used by MATLAB have been installed.
-drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS TEST
+drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS TEST MATLAB PYTHON
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake
   BINARY_DIR ${PROJECT_BINARY_DIR}/drake
   CMAKE_ARGS
@@ -307,7 +278,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS TEST
 )
 
 # director
-drake_add_external(director PUBLIC CMAKE TEST
+drake_add_external(director PUBLIC CMAKE TEST PYTHON
   SOURCE_SUBDIR distro/superbuild
   CMAKE_ARGS
     -DUSE_DRAKE=ON

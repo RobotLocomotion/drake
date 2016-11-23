@@ -1,7 +1,8 @@
 #pragma once
 
 #include <Eigen/Core>
-#include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
+
+#include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
 
 struct TVLQRData {
   // TODO(tkoolen): move into its own file

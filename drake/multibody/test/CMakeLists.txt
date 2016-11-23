@@ -13,8 +13,8 @@ add_executable(debug_manipulator_dynamics debug_manipulator_dynamics.cc)
 target_link_libraries(debug_manipulator_dynamics drakeRBM)
 
 # RigidBodyTree parsers unit tests.
-drake_add_cc_test(NAME testXmlUtil EXTENSION cpp)
-target_link_libraries(testXmlUtil drakeXMLUtil)
+drake_add_cc_test(xml_util_test)
+target_link_libraries(xml_util_test drakeXMLUtil)
 
 add_executable(urdf_kinematics_test urdf_kinematics_test.cc)
 target_link_libraries(urdf_kinematics_test drakeRBM)
