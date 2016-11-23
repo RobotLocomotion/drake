@@ -38,6 +38,7 @@ target_link_libraries(demo1
     drakeRigidBodyConstraint
     drakeRigidBodyPlant
     drakeShapes
+    drakeSystemAnalysis
     drakeSystemFramework
     gflags
     lcm)
@@ -61,6 +62,7 @@ if (CATKIN_ENABLE_TESTING)
       drakeRigidBodyConstraint
       drakeRigidBodyPlant
       drakeShapes
+      drakeSystemAnalysis
       drakeSystemFramework
       lcm)
   set_target_properties(demo1_test
