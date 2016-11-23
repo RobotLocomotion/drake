@@ -18,7 +18,17 @@ then
   exit 1
 fi
 
-CLANG_FORMAT=${CLANG_FORMAT:-clang-format-3.7}
+mkdir -p $drake/lcmtypes
+mkdir -p $mydir/gen
+
+CLANG_FORMAT=${CLANG_FORMAT:-clang-format}
+if ! type -p $CLANG_FORMAT > /dev/null ; then
+    cat <<EOF
+Cannot find $CLANG_FORMAT ; see installation instructions at:
+http://drake.mit.edu/code_style_tools.html
+EOF
+    exit 1
+fi
 
 # Call the code generator to produce an LCM message, a translator, and
 # a Drake BasicVector.

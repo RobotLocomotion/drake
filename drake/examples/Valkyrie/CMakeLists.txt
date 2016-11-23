@@ -15,14 +15,14 @@ if (lcm_FOUND)
       robot_command_to_desired_effort_converter.cc)
   target_link_libraries(drakeRobotCommandToDesiredEffortConverter
       drakeLCMSystem2)
-  pods_install_libraries(drakeRobotCommandToDesiredEffortConverter)
+  drake_install_libraries(drakeRobotCommandToDesiredEffortConverter)
   drake_install_headers(robot_command_to_desired_effort_converter.h)
 
   add_library_with_exports(LIB_NAME drakeActuatorEffortToRigidBodyPlantInputConverter SOURCE_FILES
       actuator_effort_to_rigid_body_plant_input_converter.cc)
   target_link_libraries(drakeActuatorEffortToRigidBodyPlantInputConverter
       drakeLCMSystem2)
-  pods_install_libraries(drakeActuatorEffortToRigidBodyPlantInputConverter)
+  drake_install_libraries(drakeActuatorEffortToRigidBodyPlantInputConverter)
   drake_install_headers(actuator_effort_to_rigid_body_plant_input_converter.h)
 
   add_library_with_exports(LIB_NAME drakeRobotStateLcmTypeUtil SOURCE_FILES
@@ -30,7 +30,7 @@ if (lcm_FOUND)
   target_link_libraries(drakeRobotStateLcmTypeUtil
       drakeRigidBodyPlant
       )
-  pods_install_libraries(drakeRobotStateLcmTypeUtil)
+  drake_install_libraries(drakeRobotStateLcmTypeUtil)
   drake_install_headers(robot_state_lcmtype_util.h)
 
   add_library_with_exports(LIB_NAME drakeRobotStateEncoder SOURCE_FILES
@@ -42,7 +42,7 @@ if (lcm_FOUND)
       drakeSide
       drakeRobotStateLcmTypeUtil
       )
-  pods_install_libraries(drakeRobotStateEncoder)
+  drake_install_libraries(drakeRobotStateEncoder)
   drake_install_headers(robot_state_encoder.h)
 
   add_library_with_exports(LIB_NAME drakeRobotStateDecoder SOURCE_FILES
@@ -53,10 +53,10 @@ if (lcm_FOUND)
       drakeRigidBodyPlant
       drakeRobotStateLcmTypeUtil
       )
-  pods_install_libraries(drakeRobotStateDecoder)
+  drake_install_libraries(drakeRobotStateDecoder)
   drake_install_headers(robot_state_decoder.h)
 
-  add_executable(valkyrie_simulation valkyrie_simulation.cc)
+  add_executable(valkyrie_simulation valkyrie_simulation.cc valkyrie_constants.cc)
   target_link_libraries(valkyrie_simulation
       drakeRigidBodyPlant
       drakeLCMSystem2
@@ -65,6 +65,13 @@ if (lcm_FOUND)
       drakeSystemFramework
       drakeActuatorEffortToRigidBodyPlantInputConverter
       drakeRobotCommandToDesiredEffortConverter)
+
+  add_executable(valkyrie_pd_ff_controller valkyrie_pd_ff_controller.cc valkyrie_constants.cc)
+  target_link_libraries(valkyrie_pd_ff_controller
+      drakeRigidBodyPlant
+      drakeLCMSystem2
+      drakeRobotStateDecoder
+      drakeSystemFramework)
 endif()
 
 if(BUILD_TESTING)

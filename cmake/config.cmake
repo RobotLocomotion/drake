@@ -32,7 +32,7 @@ macro(drake_setup_matlab)
   if(DISABLE_MATLAB)
     message(STATUS "MATLAB is disabled.")
     unset(MATLAB_EXECUTABLE CACHE)
-    unset(Matlab_FOUND)
+    set(Matlab_FOUND OFF)
   else()
     # Look for the MATLAB executable. This does not use find_package(Matlab)
     # because that is "really good at finding MATLAB", and we only want to
@@ -47,15 +47,14 @@ macro(drake_setup_matlab)
       unset(_matlab_realpath)
       unset(_matlab_bindir)
 
-      if(MATLAB_EXECUTABLE)
-        find_package(Matlab MODULE
-          COMPONENTS
-            MAIN_PROGRAM
-            MEX_COMPILER
-            MX_LIBRARY
-            SIMULINK)
-      endif()
+      find_package(Matlab MODULE
+        COMPONENTS
+          MAIN_PROGRAM
+          MEX_COMPILER
+          MX_LIBRARY
+          SIMULINK)
     else()
+      set(Matlab_FOUND OFF)
       message(STATUS "MATLAB was not found.")
     endif()
   endif()
@@ -71,10 +70,6 @@ function(drake_setup_java_for_matlab)
     # Set arguments for running MATLAB
     set(_args -nodesktop -nodisplay -nosplash)
     set(_input_file /dev/null)
-    if(WIN32)
-      set(_args ${_args} -wait)
-      set(_input_file NUL)
-    endif()
     set(_logfile "${CMAKE_CURRENT_BINARY_DIR}/drake_setup_java_for_matlab.log")
 
     # Ask MATLAB for its JVM version
@@ -192,7 +187,8 @@ macro(drake_setup_fortran)
       enable_language(Fortran)
 
       if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" AND CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "4.9")
-        message(FATAL_ERROR "GCC version must be at least 4.9")
+        message(FATAL_ERROR "GNU Fortran compiler version must be at least 4.9 \
+                             (detected version ${CMAKE_Fortran_COMPILER_VERSION})")
       endif()
     endif()
   endif()
@@ -207,12 +203,19 @@ macro(drake_setup_python)
 
   # Choose your python (major) version
   option(WITH_PYTHON_3 "Force Drake to use Python 3 instead of Python 2" OFF)
+
+  if(WITH_PYTHON_3)
+    find_package(Python 3 MODULE REQUIRED)
+  else()
+    find_package(Python 2.7 MODULE REQUIRED)
+  endif()
 endmacro()
 
 #------------------------------------------------------------------------------
 # Add local CMake modules to CMake search path.
 #------------------------------------------------------------------------------
 function(drake_setup_cmake BASE_PATH)
+  set(CMAKE_MODULE_PATH "${BASE_PATH}")
   file(GLOB _versions RELATIVE ${BASE_PATH} "${BASE_PATH}/*/")
   foreach(_version ${_versions})
     if(IS_DIRECTORY "${BASE_PATH}/${_version}")

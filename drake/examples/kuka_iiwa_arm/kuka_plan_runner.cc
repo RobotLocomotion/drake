@@ -14,10 +14,10 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
 
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"

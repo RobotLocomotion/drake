@@ -10,8 +10,9 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
-#include "drake/solvers/mathematical_program.h"
+#include "drake/math/cross_product.h"
 #include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace examples {
@@ -873,6 +874,9 @@ class ResolvedContact {
   inline const Vector3<double>& reference_point() const {
     return reference_point_;
   }
+  inline const Vector6<double>& body_acceleration() const {
+    return body_acceleration_;
+  }
   inline int num_contact_points() const { return contact_points_.cols(); }
   inline int num_basis_per_contact_point() const {
     return num_basis_per_contact_point_;
@@ -887,6 +891,9 @@ class ResolvedContact {
     return equivalent_wrench_;
   }
   inline Vector3<double>& mutable_reference_point() { return reference_point_; }
+  inline Vector6<double>& mutable_body_acceleration() {
+    return body_acceleration_;
+  }
   inline int& mutable_num_basis_per_contact_point() {
     return num_basis_per_contact_point_;
   }
@@ -910,6 +917,10 @@ class ResolvedContact {
   // The equivalent wrench of all the point forces, w.r.t a frame that has
   // the same orientation as the world frame, but located at reference_point.
   Vector6<double> equivalent_wrench_;
+
+  // Body acceleration w.r.t a frame that has the same orientation as the
+  // world frame, but located at body's origin.
+  Vector6<double> body_acceleration_;
 
   // Reference point in the world frame for the equivalent wrench.
   Vector3<double> reference_point_;

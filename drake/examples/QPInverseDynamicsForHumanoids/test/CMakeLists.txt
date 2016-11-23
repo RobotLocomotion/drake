@@ -20,16 +20,9 @@ if(gurobi_FOUND)
 endif()
 
 if(gurobi_FOUND AND lcm_FOUND)
-  add_executable(val_sim val_sim.cc)
-  target_link_libraries(val_sim
-    drakeLCMSystem2
-    drakeQPController
-    drakeQPControllerLcmTranslator
-    drakeRigidBodyPlant
-    drakeSystemAnalysis)
-
-  add_executable(val_con val_con.cc)
-  target_link_libraries(val_con
+  add_executable(valkyrie_qp_inverse_dynamics_controller
+    valkyrie_qp_inverse_dynamics_controller.cc)
+  target_link_libraries(valkyrie_qp_inverse_dynamics_controller
     drakeLCMSystem2
     drakeQPController
     drakeQPControllerLcmTranslator

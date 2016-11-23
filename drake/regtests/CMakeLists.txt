@@ -6,7 +6,7 @@
 # is always available.
 find_program(xvfb-run xvfb-run)
 
-if(APPLE OR WIN32 OR DEFINED ENV{DISPLAY})
+if(APPLE OR DEFINED ENV{DISPLAY})
   set(hasDisplay TRUE)
 else()
   set(hasDisplay FALSE)

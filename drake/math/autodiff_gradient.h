@@ -121,5 +121,21 @@ initializeAutoDiffGivenGradientMatrix(
   return ret;
 }
 
+template <typename DerivedGradient, typename DerivedAutoDiff>
+void gradientMatrixToAutoDiff(
+    const Eigen::MatrixBase<DerivedGradient>& gradient,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix) {
+  typedef typename Eigen::MatrixBase<DerivedGradient>::Index Index;
+  auto nx = gradient.cols();
+  for (Index row = 0; row < auto_diff_matrix.rows(); row++) {
+    for (Index col = 0; col < auto_diff_matrix.cols(); col++) {
+      auto_diff_matrix(row, col).derivatives().resize(nx, 1);
+      auto_diff_matrix(row, col).derivatives() =
+          gradient.row(row + col * auto_diff_matrix.rows()).transpose();
+    }
+  }
+}
+
 }  // namespace math
 }  // namespace drake

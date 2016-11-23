@@ -2,6 +2,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/kinematics_cache.h"
+#include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
 namespace systems {

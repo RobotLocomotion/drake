@@ -1,10 +1,12 @@
 #include <mex.h>
 
-#include <Eigen/Core>
-#include "drake/solvers/qpSpline/splineGeneration.h"
-#include "drake/matlab/util/drakeMexUtil.h"
 #include <iostream>
 #include <limits>
+
+#include <Eigen/Core>
+
+#include "drake/common/trajectories/qp_spline/spline_generation.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;

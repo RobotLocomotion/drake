@@ -7,10 +7,22 @@ package(default_visibility = ["//visibility:public"])
 
 DEPS = ["//drake/common:common", "@gtest//:main"]
 
+cc_library(
+    name = "random_polynomial_matrix",
+    hdrs = ["random_polynomial_matrix.h"],
+    deps = ["//drake/common:polynomial"],
+    testonly = 1,
+    linkstatic = 1)
+
 cc_test(
     name = "autodiff_overloads_test",
     srcs = ["autodiff_overloads_test.cc"],
     size = "small", deps = DEPS + ["//drake/common:autodiff"])
+
+cc_test(
+    name = "double_overloads_test",
+    srcs = ["double_overloads_test.cc"],
+    size = "small", deps = DEPS + ["//drake/common:double", "//drake/common:cond"])
 
 cc_test(
     name = "drake_assert_test",
@@ -56,8 +68,8 @@ cc_test(
 
 cc_test(
     name = "polynomial_test",
-    srcs = ["polynomial_test.cc", "random_polynomial_matrix.h"],
-    size = "small", deps = DEPS + ["//drake/common:polynomial", "//drake/common:eigen_matrix_compare"])
+    srcs = ["polynomial_test.cc"],
+    size = "small", deps = DEPS + [":random_polynomial_matrix", "//drake/common:eigen_matrix_compare"])
 
 cc_test(
     name = "sorted_vectors_have_intersection_test",

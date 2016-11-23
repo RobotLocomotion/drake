@@ -8,6 +8,7 @@
 #include "drake/common/test/measure_execution.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/gradient_util.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 using Eigen::AutoDiffScalar;
@@ -20,6 +21,7 @@ using Eigen::VectorXd;
 using drake::common::test::MeasureExecutionTime;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::autoDiffToValueMatrix;
+using drake::math::gradientMatrixToAutoDiff;
 using std::cout;
 using std::default_random_engine;
 using std::endl;

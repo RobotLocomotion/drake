@@ -3,7 +3,7 @@ if(gurobi_FOUND)
   target_include_directories(drakeQP PUBLIC ${gurobi_INCLUDE_DIRS})
   target_link_libraries(drakeQP gurobi)
 
-  pods_install_libraries(drakeQP)
+  drake_install_libraries(drakeQP)
   drake_install_headers(fast_qp.h gurobi_qp.h)
   drake_install_pkg_config_file(drake-qp
     TARGET drakeQP
@@ -11,12 +11,26 @@ if(gurobi_FOUND)
     REQUIRES gurobi)
 endif()
 
+set(private_headers
+  dreal_solver.h
+  gurobi_solver.h
+  ipopt_solver.h
+  linear_system_solver.h
+  moby_lcp_solver.h
+  mosek_solver.h
+  nlopt_solver.h
+  snopt_solver.h
+  )
 set(optimization_files)
 set(optimization_requires)
 list(APPEND optimization_files
-  mathematical_program.cc moby_lcp_solver.cc
-  system_identification.cc linear_system_solver.cc
-  equality_constrained_qp_solver.cc)
+  ${private_headers}
+  equality_constrained_qp_solver.cc
+  linear_system_solver.cc
+  mathematical_program.cc
+  moby_lcp_solver.cc
+  system_identification.cc
+  )
 pods_find_pkg_config(ipopt)
 if (ipopt_FOUND)
  list(APPEND optimization_files ipopt_solver.cc)
@@ -66,7 +80,7 @@ drake_install_headers(
   solution_result.h
   system_identification.h
   )
-pods_install_libraries(drakeOptimization)
+drake_install_libraries(drakeOptimization)
 drake_install_pkg_config_file(drake-optimization
   TARGET drakeOptimization
   LIBS -ldrakeOptimization
@@ -88,7 +102,7 @@ if(ipopt_FOUND)
   # BLAS.
   #
   # This should probably be a test for the GNU linker instead of a platform.
-  if (NOT (APPLE OR WIN32))
+  if(NOT APPLE)
     set(CMAKE_SHARED_LINKER_FLAGS
       "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic -Wl,-Bsymbolic-functions")
   endif()
@@ -112,8 +126,6 @@ if(mosek_FOUND)
   target_include_directories(drakeOptimization PUBLIC ${mosek_INCLUDE_DIRS})
   target_link_libraries(drakeOptimization ${mosek_LIBRARIES})
 endif()
-
-add_subdirectory(qpSpline)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

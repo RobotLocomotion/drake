@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <sstream>
 #include <utility>
 #include <vector>
 
@@ -12,12 +13,12 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
 #include "drake/solvers/fast_qp.h"
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/multibody/parser_urdf.h"
+#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/lcmUtil.h"
 #include "drake/util/yaml/yamlUtil.h"
 #include "drake/lcmt_zmp_com_observer_state.hpp"
@@ -580,11 +581,13 @@ void checkCentroidalMomentumMatchesTotalWrench(
   Vector6d momentum_rate_of_change =
       world_momentum_matrix * qdd + world_momentum_matrix_dot_times_v;
 
-  std::string explanation;
-  if (!drake::CompareMatrices(total_wrench_in_world, momentum_rate_of_change,
-                              1e-6, drake::MatrixCompareType::absolute,
-                              &explanation)) {
-    throw std::runtime_error("Drake:ValueCheck ERROR:" + explanation);
+  if ((total_wrench_in_world - momentum_rate_of_change)
+          .lpNorm<Eigen::Infinity>() > 1e-6) {
+    std::stringstream message;
+    message << "ERROR in checkCentroidalMomentumMatchesTotalWrench:"
+            << " total_wrench_in_world = " << total_wrench_in_world
+            << " momentum_rate_of_change = " << momentum_rate_of_change;
+    throw std::runtime_error(message.str());
   }
 }
 
