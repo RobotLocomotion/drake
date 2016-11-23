@@ -38,6 +38,19 @@ class AffineLinearSystemTest : public ::testing::Test {
     return std::make_unique<FreestandingInputPort>(std::move(data));
   }
 
+  static Eigen::MatrixXd make_2x2_matrix(
+      double a, double b, double c, double d) {
+    Eigen::MatrixXd m(2, 2);
+    m << a, b, c, d;
+    return m;
+  }
+
+  static Eigen::VectorXd make_2x1_vector(double a, double b) {
+    Eigen::VectorXd v(2);
+    v << a, b;
+    return v;
+  }
+
  protected:
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> system_output_;
@@ -53,18 +66,6 @@ class AffineLinearSystemTest : public ::testing::Test {
   const Eigen::MatrixXd C_;
   const Eigen::MatrixXd D_;
   const Eigen::VectorXd y0_;
-
-  Eigen::MatrixXd make_2x2_matrix(double a, double b, double c, double d) {
-    Eigen::MatrixXd m(2, 2);
-    m << a, b, c, d;
-    return m;
-  }
-
-  Eigen::VectorXd make_2x1_vector(double a, double b) {
-    Eigen::VectorXd v(2);
-    v << a, b;
-    return v;
-  }
 };
 
 }  // namespace systems
