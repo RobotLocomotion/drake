@@ -145,10 +145,11 @@ using DecisionVariableMatrixX =
     DecisionVariableMatrix<Eigen::Dynamic, Eigen::Dynamic>;
 using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
 
+using VariableListRef = std::list<Eigen::Ref<const DecisionVariableMatrixX>>;
+
 class VariableList {
  public:
-  VariableList(const std::list<Eigen::Ref<const DecisionVariableMatrixX>>&
-                   variable_list);
+  VariableList(const VariableListRef& variable_list);
 
   /**
    * Return all the stored DecisionVariableMatrix.
@@ -182,7 +183,7 @@ class VariableList {
    *
    * The output is
    * <pre>
-   * The size of variable list (including duplication) is 5.
+   * The number of unique variables is 4
    * </pre>
    */
   size_t num_unique_variables() const { return unique_variables_.size(); }
@@ -214,7 +215,7 @@ class VariableList {
    *
    * The output is
    * <pre>
-   * The size of variable list (including duplication) is 5.
+   * The size of variable list (including duplication) is 5
    * </pre>
    */
   size_t size() const { return size_; }
@@ -281,7 +282,5 @@ bool DecisionVariableMatrixContainsIndex(
   }
   return false;
 }
-
-using VariableListRef = std::list<Eigen::Ref<const DecisionVariableMatrixX>>;
 }  // end namespace solvers
 }  // end namespace drake

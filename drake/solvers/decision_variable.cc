@@ -3,7 +3,7 @@
 namespace drake {
 namespace solvers {
 VariableList::VariableList(
-    const std::list<Eigen::Ref<const DecisionVariableMatrixX>>& variable_list) {
+    const VariableListRef & variable_list) {
   variables_.resize(variable_list.size());
   size_ = 0;
   column_vectors_only_ = true;
