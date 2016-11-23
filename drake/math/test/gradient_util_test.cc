@@ -1,4 +1,4 @@
-#include "drake/util/drakeGradientUtil.h"
+#include "drake/math/gradient_util.h"
 
 #include <array>
 #include <random>
@@ -10,12 +10,12 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/util/drakeGeometryUtil.h"
 
 using Eigen::Matrix;
 using Eigen::MatrixXd;
 
 namespace drake {
+namespace math {
 namespace {
 
 GTEST_TEST(DrakeGradientUtilTest, MatGradMult) {
@@ -59,4 +59,5 @@ GTEST_TEST(DrakeGradientUtilTest, SetSubMatrixGradient) {
 }
 
 }  // namespace
+}  // namespace math
 }  // namespace drake
