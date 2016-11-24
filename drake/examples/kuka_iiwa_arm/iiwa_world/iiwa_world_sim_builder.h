@@ -14,9 +14,9 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
-/// A helper class to construct and run KUKA IIWA World simulations; i.e.
-/// Simulation setting up the KUKA IIWA robot arm and various objects for
-/// to manipulate.
+/// A helper class to construct and run KUKA iiwa World simulations; i.e.
+/// Simulation sets up a KUKA iiwa robot arm and various objects for
+/// it to manipulate.
 /// @tparam T must be a valid Eigen ScalarType.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
@@ -25,60 +25,71 @@ namespace kuka_iiwa_arm {
 template <typename T>
 class IiwaWorldSimBuilder {
  public:
-  /// A constructor configuring this object to use DrakeLcm, which encapsulates
-  /// a _real_ LCM instance
   IiwaWorldSimBuilder();
 
   ~IiwaWorldSimBuilder();
 
-  /// Adds a fixed object specified by its name `object_name` to the
-  /// `RigidBodyTree^` at a pose specified by the position `xyz` and
-  /// orientation specified by `rpy`. Wraps AddObjectToFrame.
-  int AddObjectFixedToWorld(Eigen::Vector3d xyz, Eigen::Vector3d rpy,
-                            std::string object_name);
+  /// Adds a fixed object specified by its name @p object_name to the
+  /// `RigidBodyTree` at the pose specified by the position @p xyz and
+  /// orientation @p rpy.
+  ///
+  /// @return model_instance_id of the object that is added.
+  int AddObjectFixedToWorld(const std::string& object_name,
+                            const Eigen::Vector3d& xyz,
+                            const Eigen::Vector3d& rpy);
 
-  /// Adds a floating object specified by its name `object_name` to the
-  /// `RigidBodyTree^` at a pose specified by the position `xyz` and
-  /// orientation specified by `rpy`. Wraps AddObjectToFrame.
-  int AddObjectFloatingToWorld(Eigen::Vector3d xyz, Eigen::Vector3d rpy,
-                               std::string object_name);
+  /// Adds a floating object specified by its name @p object_name to the
+  /// `RigidBodyTree` at the pose specified by the position @p xyz and
+  /// orientation @p rpy.
+  ///
+  /// @return model_instance_id of the object that is added.
+  int AddObjectFloatingInWorld(const std::string& object_name,
+                               const Eigen::Vector3d& xyz,
+                               const Eigen::Vector3d& rpy);
 
-  /// Adds an object specified by its name `object_name` to the
-  /// `RigidBodyTree^` at a pose specified by the position `xyz` and
-  /// orientation specified by `rpy`
+  /// Adds an object specified by its name @p object_name to the
+  /// `RigidBodyTree` at a pose specified by the position @p xyz and
+  /// orientation @p rpy.
+  ///
+  /// @return model_instance_id of the object that is added.
   int AddObjectToFrame(
-      Eigen::Vector3d xyz, Eigen::Vector3d rpy, std::string object_name,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame,
+      const std::string& object_name, const Eigen::Vector3d& xyz,
+      const Eigen::Vector3d& rpy, std::shared_ptr<RigidBodyFrame> weld_to_frame,
       const drake::multibody::joints::FloatingBaseType floating_base_type =
           drake::multibody::joints::kFixed);
 
-  ///  Adds a flat terrain to the ground.
-  ///  Wraps drake::multibody::AddFlatTerrainToWorld
-  void AddGroundToTree();
+  ///  Adds a flat terrain to the simulation.
+  void AddGround();
 
-  /// Builds a diagram and assigned it to a Simulator
+  /// Builds a diagram composed of a `RigidBodyPlant` and `DrakeVisualizer`
+  /// and returns it.
   std::unique_ptr<systems::Diagram<T>> Build();
-  //
-  //  /// Set the zero configuration
+
+  // TODO(naveenoid):
+  /// Sets the zero configuration of the plant.
   void SetZeroConfiguration(systems::Simulator<T>* simulator,
-                            const systems::Diagram<T>* diagram);
+                            const systems::Diagram<T>* demo_diagram,
+                            const systems::Diagram<T>* plant_diagram);
 
   // We are neither copyable nor moveable.
   IiwaWorldSimBuilder(const IiwaWorldSimBuilder<T>& other) = delete;
   IiwaWorldSimBuilder& operator=(const IiwaWorldSimBuilder<T>& other) = delete;
 
-  /// Set the parameters related to the penetration and friction throughout the
+  /// Sets the parameters related to the penetration and friction throughout the
   /// world.
   void SetPenetrationContactParameters(double penetration_stiffness,
                                        double penetration_damping,
                                        double contact_friction);
 
+  /// Allows the addition of objects to the iiwa World described by
+  /// @p object_name coupled with URDF/SDF paths in @p urdf_sdf_path.
   void AddObjectUrdf(const std::string& object_name,
-                     const std::string& urdf_path);
+                     const std::string& urdf_sdf_path);
 
   /// Returns the size of the input port for the plant being built in the
   /// diagram.
   int GetPlantInputSize(void);
+
  private:
   // For both building and simulation.
   std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{
@@ -86,10 +97,10 @@ class IiwaWorldSimBuilder {
   lcm::DrakeLcm lcm_;
   systems::RigidBodyPlant<T>* plant_{nullptr};
 
-  // Map between objects loadable in the simulation and a convenient string
+  // Maps between objects loadable in the simulation and a convenient string
   // name.
   std::map<std::string, std::string> object_urdf_map_;
-  bool started_{false};
+  bool built_{false};
 
   double penetration_stiffness_{3000.0};
   double penetration_damping_{1.0};

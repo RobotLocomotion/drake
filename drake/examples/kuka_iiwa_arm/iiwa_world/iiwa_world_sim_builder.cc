@@ -1,5 +1,7 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_world_sim_builder.h"
 
+#include <utility>
+
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -51,33 +53,35 @@ template <typename T>
 IiwaWorldSimBuilder<T>::~IiwaWorldSimBuilder() {}
 
 template <typename T>
-int IiwaWorldSimBuilder<T>::AddObjectFixedToWorld(Vector3d xyz, Vector3d rpy,
-                                                  string object_name) {
-  DRAKE_DEMAND(!started_);
+int IiwaWorldSimBuilder<T>::AddObjectFixedToWorld(const string& object_name,
+                                                  const Vector3d& xyz,
+                                                  const Vector3d& rpy) {
+  DRAKE_DEMAND(!built_);
 
   auto weld_to_frame = allocate_shared<RigidBodyFrame>(
       aligned_allocator<RigidBodyFrame>(), "world", nullptr, xyz, rpy);
 
-  return AddObjectToFrame(xyz, rpy, object_name, weld_to_frame);
+  return AddObjectToFrame(object_name, xyz, rpy, weld_to_frame);
 }
 
 template <typename T>
-int IiwaWorldSimBuilder<T>::AddObjectFloatingToWorld(Vector3d xyz, Vector3d rpy,
-                                                     string object_name) {
-  DRAKE_DEMAND(!started_);
+int IiwaWorldSimBuilder<T>::AddObjectFloatingInWorld(const string& object_name,
+                                                     const Vector3d& xyz,
+                                                     const Vector3d& rpy) {
+  DRAKE_DEMAND(!built_);
 
   auto weld_to_frame = allocate_shared<RigidBodyFrame>(
       aligned_allocator<RigidBodyFrame>(), "world", nullptr, xyz, rpy);
 
-  return AddObjectToFrame(xyz, rpy, object_name, weld_to_frame, kQuaternion);
+  return AddObjectToFrame(object_name, xyz, rpy, weld_to_frame, kQuaternion);
 }
 
 template <typename T>
 int IiwaWorldSimBuilder<T>::AddObjectToFrame(
-    Vector3d xyz, Vector3d rpy, string object_name,
+    const string& object_name, const Vector3d& xyz, const Vector3d& rpy,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     const drake::multibody::joints::FloatingBaseType floating_base_type) {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!built_);
   std::size_t extension_location =
       object_urdf_map_[object_name].find_last_of(".");
 
@@ -105,13 +109,13 @@ int IiwaWorldSimBuilder<T>::AddObjectToFrame(
 }
 
 template <typename T>
-void IiwaWorldSimBuilder<T>::AddGroundToTree() {
+void IiwaWorldSimBuilder<T>::AddGround() {
   drake::multibody::AddFlatTerrainToWorld(rigid_body_tree_.get());
 }
 
 template <typename T>
 std::unique_ptr<systems::Diagram<T>> IiwaWorldSimBuilder<T>::Build() {
-  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND(!built_);
 
   rigid_body_tree_->compile();
 
@@ -120,11 +124,12 @@ std::unique_ptr<systems::Diagram<T>> IiwaWorldSimBuilder<T>::Build() {
 
   plant_ = builder->template AddSystem<systems::RigidBodyPlant<T>>(
       move(rigid_body_tree_));
+
+  DRAKE_DEMAND(plant_ != nullptr);
   plant_->set_contact_parameters(penetration_stiffness_, penetration_damping_,
                                  contact_friction_);
 
   DRAKE_DEMAND(plant_->get_num_actuators() > 0);
-
 
   // Creates and adds a DrakeVisualizer publisher.
   auto viz_publisher_ = builder->template AddSystem<DrakeVisualizer>(
@@ -138,34 +143,25 @@ std::unique_ptr<systems::Diagram<T>> IiwaWorldSimBuilder<T>::Build() {
   builder->ExportOutput(plant_->get_output_port(0));
   builder->ExportInput(plant_->get_input_port(0));
 
-  std::cout<<"About to build\n";
-
-  auto diagram = builder->Build();
-
   drake::log()->debug("Simulation initialized...");
-  started_ = true;
+  built_ = true;
 
-  std::cout<<"About to return diagram\n";
-
-  std::unique_ptr<Diagram<T>> dg(std::move(diagram));
-
-  std::cout<<"About to return dg\n";
-  return (std::move(dg));
+  return std::move(builder->Build());
 }
 
 template <typename T>
 void IiwaWorldSimBuilder<T>::SetZeroConfiguration(
-    systems::Simulator<T>* simulator, const systems::Diagram<T>* diagram) {
-  DRAKE_DEMAND(simulator != nullptr && diagram != nullptr);
+    systems::Simulator<T>* simulator, const systems::Diagram<T>* demo_diagram,
+    const systems::Diagram<T>* plant_diagram) {
+  DRAKE_DEMAND(simulator != nullptr && demo_diagram != nullptr &&
+               plant_diagram != nullptr);
 
-  std::cout<<"Getting mutable subsystem context\n";
-  auto sim = simulator->get_mutable_context();
+  Context<double>* input_diagram_context =
+      demo_diagram->GetMutableSubsystemContext(simulator->get_mutable_context(),
+                                               plant_diagram);
 
-  std::cout<<"getting diagram mutable context\n";
-
-  Context<T>* plant_context = diagram->GetMutableSubsystemContext(
-      sim, plant_);
-  std::cout<<"Setting plants 0 config\n";
+  Context<double>* plant_context =
+      plant_diagram->GetMutableSubsystemContext(input_diagram_context, plant_);
   plant_->SetZeroConfiguration(plant_context);
 }
 
@@ -180,14 +176,14 @@ void IiwaWorldSimBuilder<T>::SetPenetrationContactParameters(
 
 template <typename T>
 void IiwaWorldSimBuilder<T>::AddObjectUrdf(const std::string& object_name,
-                                           const std::string& urdf_path) {
+                                           const std::string& urdf_sdf_path) {
   object_urdf_map_.insert(
-      std::pair<std::string, std::string>(object_name, urdf_path));
+      std::pair<std::string, std::string>(object_name, urdf_sdf_path));
 }
 
 template <typename T>
 int IiwaWorldSimBuilder<T>::GetPlantInputSize() {
-  return(plant_->get_input_size());
+  return (plant_->get_input_size());
 }
 
 template class IiwaWorldSimBuilder<double>;
