@@ -16,9 +16,6 @@ namespace sensors {
 /// The inputs to this system are assumed to be in radians, and the outputs of
 /// the system are also in radians.
 ///
-/// @note As we would expect from a physical encoder, the quantization uses
-/// floor() for positive values and ceil() for negative values.
-///
 /// @ingroup sensor_systems
 template <typename T>
 class RotaryEncoders : public systems::LeafSystem<T> {

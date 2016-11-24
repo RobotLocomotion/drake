@@ -32,15 +32,9 @@ GTEST_TEST(TestEncoders, QuantizeOnly) {
   for (int i = 0; i < 10; i++) {
     angle = Eigen::Vector2d::Random();
     using std::floor;
-    using std::ceil;
     for (int j = 0; j < 2; j++) {
-      if (angle(j) < 0.0) {
-        desired_measurement(j) =
-            ceil(angle(j) * ticks_per_radian(j)) / ticks_per_radian(j);
-      } else {
-        desired_measurement(j) =
-            floor(angle(j) * ticks_per_radian(j)) / ticks_per_radian(j);
-      }
+      desired_measurement(j) =
+          floor(angle(j) * ticks_per_radian(j)) / ticks_per_radian(j);
     }
 
     context->FixInputPort(0, angle);
@@ -110,14 +104,8 @@ GTEST_TEST(TestEncoders, QuantizationAndSelector) {
     using std::floor;
     using std::ceil;
     for (int j = 0; j < 2; j++) {
-      if (angle(indices[j]) < 0.0) {
-        desired_measurement(j) =
-            ceil(angle(indices[j]) * ticks_per_radian(j)) / ticks_per_radian(j);
-      } else {
-        desired_measurement(j) =
-            floor(angle(indices[j]) * ticks_per_radian(j))
-                / ticks_per_radian(j);
-      }
+      desired_measurement(j) =
+          floor(angle(indices[j]) * ticks_per_radian(j)) / ticks_per_radian(j);
     }
 
     encoders.EvalOutput(*context, output.get());
@@ -127,7 +115,6 @@ GTEST_TEST(TestEncoders, QuantizationAndSelector) {
                                 MatrixCompareType::absolute));
   }
 }
-
 
 // Test the calibration offsets (via the parameters).
 GTEST_TEST(TestEncoders, CalibrationOffsets) {
@@ -161,13 +148,8 @@ GTEST_TEST(TestEncoders, CalibrationOffsets) {
     using std::floor;
     using std::ceil;
     for (int j = 0; j < 2; j++) {
-      if (angle(j) < 0.0) {
-        desired_measurement(j) =
-            ceil(angle(j) * ticks_per_radian(j)) / ticks_per_radian(j);
-      } else {
-        desired_measurement(j) =
-            floor(angle(j) * ticks_per_radian(j)) / ticks_per_radian(j);
-      }
+      desired_measurement(j) =
+          floor(angle(j) * ticks_per_radian(j)) / ticks_per_radian(j);
     }
 
     encoders.EvalOutput(*context, output.get());
