@@ -40,6 +40,7 @@ int do_main(int argc, char* argv[]) {
   x0->set_theta1dot(0.0);
   x0->set_theta2dot(0.0);
 
+  simulator.set_target_realtime_rate(1.0);
   simulator.Initialize();
   simulator.StepTo(10);
   return 0;
