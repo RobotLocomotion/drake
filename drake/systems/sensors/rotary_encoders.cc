@@ -78,13 +78,9 @@ void RotaryEncoders<T>::EvalOutput(const systems::Context<T>& context,
 
     // Quantization.
     if (!ticks_per_revolution_.empty()) {
-      using std::abs;
       using std::floor;
-      using std::copysign;
-      // Round towards zero.
-      y(i) = copysign(floor(ticks_per_revolution_[i] * abs(y(i)) / M_2_PI) *
-                          M_2_PI / ticks_per_revolution_[i],
-                      y(i));
+      y(i) = floor(y(i) * ticks_per_revolution_[i] / M_2_PI) * M_2_PI /
+             ticks_per_revolution_[i];
     }
   }
 }
