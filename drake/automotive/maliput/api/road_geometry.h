@@ -54,7 +54,7 @@ class RoadGeometry {
     return do_branch_point(index);
   }
 
-  /// Determine the RoadPosition corresponding to GeoPosition @p geo_pos,
+  /// Determines the RoadPosition corresponding to GeoPosition @p geo_pos,
   /// potentially using @p hint to guide the search.
   ///
   /// For an input value g, this method guarantees that the return
@@ -81,7 +81,7 @@ class RoadGeometry {
     return do_angular_tolerance();
   }
 
-  /// Verify certain invariants guaranteed by the API.
+  /// Verifies certain invariants guaranteed by the API.
   ///
   /// Returns a vector of strings describing violations of invariants.
   /// Return value with size() == 0 indicates success.

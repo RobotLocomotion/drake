@@ -103,7 +103,7 @@ class BranchPoint {
   // TODO(maddog@tri.global)  The return type yearns to be
   //                          const boost::optional<LaneEnd>&.
   std::unique_ptr<LaneEnd> GetDefaultBranch(const LaneEnd& end) const {
-    return std::move(DoGetDefaultBranch(end));
+    return DoGetDefaultBranch(end);
   }
 
   /// Returns the set of LaneEnds grouped together on the "A-side".

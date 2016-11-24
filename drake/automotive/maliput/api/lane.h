@@ -86,7 +86,7 @@ class Lane {
     return DoToGeoPosition(lane_pos);
   }
 
-  /// Calculate position in the LANE-space domain of the Lane which maps to
+  /// Calculates position in the LANE-space domain of the Lane which maps to
   /// the GEO-space point closest (per Cartesian metric) to the specified
   /// @p geo_pos.
   // TODO(maddog@tri.global)  UNDER CONSTRUCTION
@@ -98,9 +98,10 @@ class Lane {
 
   // TODO(maddog@tri.global) Method to convert LanePosition to that of
   //                         another Lane.  (Should assert that both
-  //                         lanes belong to same Segment.)
-  // LanePosition ToOtherLane(const LanePosition& in_this_lane,
-  //                          const Lane* other_lane) const;
+  //                         lanes belong to same Segment.)  It should look
+  //                         something like this:
+  //           LanePosition ToOtherLane(const LanePosition& in_this_lane,
+  //                                    const Lane* other_lane) const;
 
   /// Return the rotation which expresses the orientation of the
   /// LANE-space basis at @p lane_pos with regards to the (single, global)
@@ -123,7 +124,7 @@ class Lane {
   // void EvalSurfaceDerivatives(...) const { return do_(); }
 
 
-  /// Returns the lane's BranchPoint for the end specificed by @p which_end.
+  /// Returns the lane's BranchPoint for the end specified by @p which_end.
   const BranchPoint* GetBranchPoint(const LaneEnd::Which which_end) const {
     return DoGetBranchPoint(which_end);
   }
@@ -151,7 +152,7 @@ class Lane {
   //                          const boost::optional<LaneEnd>&.
   std::unique_ptr<LaneEnd> GetDefaultBranch(
       const LaneEnd::Which which_end) const {
-    return std::move(DoGetDefaultBranch(which_end));
+    return DoGetDefaultBranch(which_end);
   }
 
   /// @name Deleted Copy/Move Operations

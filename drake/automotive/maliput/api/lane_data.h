@@ -86,6 +86,13 @@ struct LanePosition {
 
 
 /// Isometric velocity vector in LANE-space.
+///
+/// sigma_v, rho_v, and eta_v are the components of velocity in a
+/// (sigma, rho, eta) coordinate system.  (sigma, rho, eta) have the same
+/// orientation as the (s, r, h) at any given point in space, however they
+/// form an isometric system with a Cartesian distance metric.  Hence,
+/// IsoLaneVelocity represents a "real" physical velocity vector (albeit
+/// with an orientation relative to the road surface).
 struct IsoLaneVelocity {
   /// Default constructor.
   IsoLaneVelocity() {}
