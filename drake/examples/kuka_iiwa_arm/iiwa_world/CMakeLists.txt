@@ -22,6 +22,6 @@ if(lcm_FOUND)
   target_link_libraries(iiwa_world_demo
       drakeKukaIiwaWorld)
   drake_add_test(
-      NAME iiwa_world_demo COMMAND iiwa_world_demo -simulation_sec 3.0)
+      NAME iiwa_world_demo COMMAND iiwa_world_demo -simulation_sec 1.0)
 
 endif()
