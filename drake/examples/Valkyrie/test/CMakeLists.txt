@@ -5,6 +5,7 @@
 
 if(lcm_FOUND)
   drake_add_cc_test(robot_state_encoder_decoder_test)
+  add_definitions(-g)
   target_link_libraries(robot_state_encoder_decoder_test
     drakeRobotStateEncoder
     drakeRobotStateDecoder)

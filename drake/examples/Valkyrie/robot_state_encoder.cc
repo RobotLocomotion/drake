@@ -197,14 +197,14 @@ RobotStateEncoder::GetSpatialForceActingOnBody1ByBody2InBody1Frame(
         *tree_.FindBody(contact_info.get_element_id_1());
     const RigidBody<double>& b2 =
         *tree_.FindBody(contact_info.get_element_id_2());
-    if (b1.get_name().compare(body1.get_name()) == 0 &&
-        b2.get_name().compare(body2.get_name()) == 0) {
+    // These are point forces in the world frame, and are applied at points
+    // in the world frame.
+    if (b1 == body1 && b2 == body2) {
       contact_forces.push_back(contact_info.get_resultant_force());
     }
-    if (b2.get_name().compare(body1.get_name()) == 0 &&
-        b1.get_name().compare(body2.get_name()) == 0) {
+    if (b2 == body1 && b1 == body2) {
       contact_forces.push_back(
-          contact_info.get_resultant_force().reaction_force());
+          contact_info.get_resultant_force().get_reaction_force());
     }
   }
 
@@ -212,7 +212,9 @@ RobotStateEncoder::GetSpatialForceActingOnBody1ByBody2InBody1Frame(
   const Vector3<double>& reference_point =
       kinematics_results.get_pose_in_world(body1).translation();
 
-  for (const ContactForce<double>& f : contact_forces) calc.AddForce(f);
+  for (const ContactForce<double>& f : contact_forces) {
+    calc.AddForce(f);
+  }
 
   SpatialForce<double> wrench_in_world_aligned_body_frame =
       calc.ComputeResultant(reference_point).get_spatial_force();
@@ -236,8 +238,9 @@ void RobotStateEncoder::SetForceTorque(
     SpatialForce<double> wrench =
         GetSpatialForceActingOnBody1ByBody2InBody1Frame(
             kinematics_results, contact_results, body, tree_.world());
-    wrench_in_sensor_frame[i] = transformSpatialForce(
-        force_torque_sensor_info_[i].get_transform_to_body(), wrench);
+    Isometry3<double> body_to_sensor =
+        force_torque_sensor_info_[i].get_transform_to_body().inverse();
+    wrench_in_sensor_frame[i] = transformSpatialForce(body_to_sensor, wrench);
   }
 
   auto& force_torque = message->force_torque;

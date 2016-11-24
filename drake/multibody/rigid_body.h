@@ -362,6 +362,11 @@ class RigidBody {
    */
   void AddCollisionElementsToClique(int clique_id);
 
+  inline bool operator==(const RigidBody& other) const {
+    return (get_model_instance_id() == other.get_model_instance_id() &&
+            get_body_index() == other.get_body_index());
+  }
+
  public:
   friend std::ostream& operator<<(
       std::ostream& out, const RigidBody<double>& b);

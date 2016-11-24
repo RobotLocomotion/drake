@@ -6,10 +6,14 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_value_source.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
+
+#include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
 namespace systems {
@@ -24,6 +28,25 @@ using bot_core::robot_state_t;
 
 using multibody::joints::FloatingBaseType;
 
+// Transforms a wrench expressed in the sensor frame to an equivalent one
+// in a frame that is world aligned frame located at the sensor position.
+static ContactForce<double> TransformContactWrench(
+    const RigidBodyFrame& sensor_info, const Isometry3<double>& body_pose,
+    const SpatialForce<double>& wrench_in_sensor_frame) {
+  Isometry3<double> sensor_pose =
+      body_pose * sensor_info.get_transform_to_body();
+  Isometry3<double> sensor_to_world_aligned_sensor = sensor_pose;
+  sensor_to_world_aligned_sensor.translation().setZero();
+
+  SpatialForce<double> wrench_in_world_aligned_sensor = transformSpatialForce(
+      sensor_to_world_aligned_sensor, wrench_in_sensor_frame);
+
+  return ContactForce<double>(sensor_pose.translation(),
+                              Vector3<double>::UnitZ(),
+                              wrench_in_world_aligned_sensor.tail<3>(),
+                              wrench_in_world_aligned_sensor.head<3>());
+}
+
 // This tests encoding and decoding of kinematics information to and from
 // bot_core::robot_state_t. It does not test encoding or decoding of the force
 // torque information, partially because it's not possible to construct
@@ -36,12 +59,49 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
       floating_base_type, nullptr /* weld to frame */, &tree);
+  // Add a collision geom for the world.
+  multibody::AddFlatTerrainToWorld(&tree, 100., 10.);
+
+  // Make hand / foot mounted force torque sensors.
+  std::vector<RigidBodyFrame> force_torque_sensor_info;
+  std::map<Side, RigidBodyFrame> hand_ft_sensor_info;
+  std::map<Side, RigidBodyFrame> foot_ft_sensor_info;
+  std::map<Side, std::string> foot_names;
+  foot_names[Side::LEFT] = "leftFoot";
+  foot_names[Side::RIGHT] = "rightFoot";
+  std::map<Side, std::string> hand_names;
+  hand_names[Side::LEFT] = "leftPalm";
+  hand_names[Side::RIGHT] = "rightPalm";
+
+  Isometry3<double> foot_ft_sensor_offset;
+  foot_ft_sensor_offset.linear() =
+      Matrix3<double>(AngleAxis<double>(M_PI, Vector3<double>::UnitX()));
+  foot_ft_sensor_offset.translation() = Vector3<double>(0.02, 0., -0.09);
+
+  Isometry3<double> hand_ft_sensor_offset;
+  hand_ft_sensor_offset.linear() =
+      Matrix3<double>(AngleAxis<double>(M_PI, Vector3<double>::UnitZ()));
+  hand_ft_sensor_offset.translation() = Vector3<double>(0., 0., 0.05);
+
+  for (Side side : Side::values) {
+    foot_ft_sensor_info[side] = RigidBodyFrame(foot_names[side] + "FTSensor",
+                                               tree.FindBody(foot_names[side]),
+                                               foot_ft_sensor_offset);
+    hand_ft_sensor_info[side] = RigidBodyFrame(hand_names[side] + "FTSensor",
+                                               tree.FindBody(hand_names[side]),
+                                               hand_ft_sensor_offset);
+    force_torque_sensor_info.push_back(foot_ft_sensor_info[side]);
+    force_torque_sensor_info.push_back(hand_ft_sensor_info[side]);
+  }
 
   DiagramBuilder<double> builder;
 
   // KinematicsResults source.
-  auto kinematics_results = make_unique<Value<KinematicsResults<double>>>(
+  auto kinematics_results_value = make_unique<Value<KinematicsResults<double>>>(
       KinematicsResults<double>(&tree));
+  KinematicsResults<double>& kinematics_results =
+      kinematics_results_value->GetMutableValue<KinematicsResults<double>>();
+
   std::default_random_engine generator;  // Same seed every time, but that's OK.
   std::normal_distribution<double> distribution;
   auto q = tree.getRandomConfiguration(generator);
@@ -49,9 +109,19 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
   for (int i = 0; i < tree.get_num_velocities(); i++) {
     v[i] = distribution(generator);
   }
-  kinematics_results->GetMutableValue<KinematicsResults<double>>().Update(q, v);
+  kinematics_results.Update(q, v);
+  std::map<Side, Isometry3<double>> foot_poses;
+  std::map<Side, Isometry3<double>> hand_poses;
+  for (Side side : Side::values) {
+    foot_poses[side] =
+        kinematics_results.get_pose_in_world(*tree.FindBody(foot_names[side]));
+    hand_poses[side] =
+        kinematics_results.get_pose_in_world(*tree.FindBody(hand_names[side]));
+  }
+
   auto& kinematics_results_source =
-      *builder.AddSystem<ConstantValueSource<double>>(move(kinematics_results));
+      *builder.AddSystem<ConstantValueSource<double>>(
+          move(kinematics_results_value));
 
   // Effort sources.
   VectorX<double> efforts = VectorX<double>::LinSpaced(
@@ -65,13 +135,56 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
     effort_sources.emplace(make_pair(&actuator, effort_source));
   }
 
-  // RobotStateEncoder and RobotStateDecoder.
-  std::vector<RigidBodyFrame> force_torque_sensor_info = {
-      RigidBodyFrame("leftFootFTSensor", tree.FindBody("leftFoot"),
-                     Isometry3<double>::Identity()),
-      RigidBodyFrame("rightFootFTSensor", tree.FindBody("rightFoot"),
-                     Isometry3<double>::Identity())};
+  // Wrench sources.
+  // These are in sensor frames.
+  eigen_aligned_std_map<Side, Vector6<double>> hand_wrenches;
+  eigen_aligned_std_map<Side, Vector6<double>> foot_wrenches;
+  auto contact_results_value =
+      make_unique<Value<ContactResults<double>>>(ContactResults<double>());
+  ContactResults<double>& contact_results =
+      contact_results_value->GetMutableValue<ContactResults<double>>();
 
+  double wrenches_start = 0.0;
+  for (Side side : Side::values) {
+    {
+      // Hand.
+      Vector6<double> hand_wrench;
+      hand_wrench.setLinSpaced(wrenches_start,
+                               wrenches_start + hand_wrench.size() - 1.0);
+      wrenches_start += hand_wrench.size();
+      hand_wrenches[side] = hand_wrench;
+
+      ContactInfo<double>& contact_info = contact_results.AddContact(
+          tree.FindBody(hand_names[side])->get_collision_element_ids().front(),
+          tree.world().get_collision_element_ids().front());
+      ContactForce<double> contact_wrench = TransformContactWrench(
+          hand_ft_sensor_info[side], hand_poses[side], hand_wrench);
+
+      contact_info.set_resultant_force(contact_wrench);
+    }
+
+    {
+      // Foot.
+      Vector6<double> foot_wrench;
+      foot_wrench.setLinSpaced(wrenches_start,
+                               wrenches_start + foot_wrench.size() - 1.0);
+      wrenches_start += foot_wrench.size();
+      foot_wrenches[side] = foot_wrench;
+
+      ContactInfo<double>& contact_info = contact_results.AddContact(
+          tree.FindBody(foot_names[side])->get_collision_element_ids().front(),
+          tree.world().get_collision_element_ids().front());
+      ContactForce<double> contact_wrench = TransformContactWrench(
+          foot_ft_sensor_info[side], foot_poses[side], foot_wrench);
+      contact_info.set_resultant_force(contact_wrench);
+    }
+  }
+
+  auto& contact_results_source =
+      *builder.AddSystem<ConstantValueSource<double>>(
+          move(contact_results_value));
+
+  // RobotStateEncoder and RobotStateDecoder.
   auto& robot_state_encoder =
       *builder.AddSystem<RobotStateEncoder>(tree, force_torque_sensor_info);
   auto& robot_state_decoder = *builder.AddSystem<RobotStateDecoder>(tree);
@@ -86,6 +199,8 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
 
   builder.Connect(kinematics_results_source.get_output_port(0),
                   robot_state_encoder.kinematics_results_port());
+  builder.Connect(contact_results_source.get_output_port(0),
+                  robot_state_encoder.contact_results_port());
   builder.Connect(robot_state_encoder, robot_state_decoder);
 
   // Diagram outputs.
@@ -121,6 +236,42 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
                 msg_output.joint_position[i], tolerance);
     EXPECT_NEAR(v[body.get_velocity_start_index()],
                 msg_output.joint_velocity[i], tolerance);
+  }
+
+  const auto& force_torque = msg_output.force_torque;
+
+  // Check left foot wrench.
+  const auto& left_foot_wrench = foot_wrenches.at(Side::LEFT);
+  EXPECT_NEAR(force_torque.l_foot_torque_x,
+              left_foot_wrench[RobotStateEncoder::kTorqueXIndex], tolerance);
+  EXPECT_NEAR(force_torque.l_foot_torque_y,
+              left_foot_wrench[RobotStateEncoder::kTorqueYIndex], tolerance);
+  EXPECT_NEAR(force_torque.l_foot_force_z,
+              left_foot_wrench[RobotStateEncoder::kForceZIndex], tolerance);
+
+  // Check left hand wrench.
+  const auto& left_hand_wrench = hand_wrenches.at(Side::LEFT);
+  for (int i = 0; i < kSpaceDimension; i++) {
+    EXPECT_NEAR(force_torque.l_hand_torque[i], left_hand_wrench[i], tolerance);
+    EXPECT_NEAR(force_torque.l_hand_force[i],
+                left_hand_wrench[kSpaceDimension + i], tolerance);
+  }
+
+  // Check right foot wrench.
+  const auto& right_foot_wrench = foot_wrenches.at(Side::RIGHT);
+  EXPECT_NEAR(force_torque.r_foot_torque_x,
+              right_foot_wrench[RobotStateEncoder::kTorqueXIndex], tolerance);
+  EXPECT_NEAR(force_torque.r_foot_torque_y,
+              right_foot_wrench[RobotStateEncoder::kTorqueYIndex], tolerance);
+  EXPECT_NEAR(force_torque.r_foot_force_z,
+              right_foot_wrench[RobotStateEncoder::kForceZIndex], tolerance);
+
+  // Check right hand wrench.
+  const auto& right_hand_wrench = hand_wrenches.at(Side::RIGHT);
+  for (int i = 0; i < kSpaceDimension; i++) {
+    EXPECT_NEAR(force_torque.r_hand_torque[i], right_hand_wrench[i], tolerance);
+    EXPECT_NEAR(force_torque.r_hand_force[i],
+                right_hand_wrench[kSpaceDimension + i], tolerance);
   }
 
   // Test conversion back to KinematicsCache.

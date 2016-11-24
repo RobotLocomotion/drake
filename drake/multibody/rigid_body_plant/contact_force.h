@@ -60,7 +60,11 @@ class ContactForce {
   ContactForce(const Vector3<T>& application_point, const Vector3<T>& normal,
                const Vector3<T>& force);
 
-  ContactForce reaction_force() const {
+  /**
+   Returns a spatial force applied at the same application point with negative
+   force and torque.
+   */
+  ContactForce get_reaction_force() const {
     return ContactForce(application_point_, -normal_, -force_, -torque_);
   }
 

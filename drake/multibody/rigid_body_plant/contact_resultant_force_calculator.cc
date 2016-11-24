@@ -180,7 +180,7 @@ ContactForce<T> ContactResultantForceCalculator<T>::ComputeResultant(
   }
 
   Vector3<T> normal;
-  T denom = normal_component_sum.dot(normal_component_sum);
+  T denom = normal_component_sum.squaredNorm();
   if (denom > Eigen::NumTraits<T>::dummy_precision()) {
     normal = normal_component_sum.normalized();
   } else {
