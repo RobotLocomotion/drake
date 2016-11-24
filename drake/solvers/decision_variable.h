@@ -28,7 +28,7 @@ class DecisionVariableScalar {
   /**
    * This constructor creates a dummy placeholder, the value_ pointer
    * is initialized to nullptr. The usage of this function is
-   *
+   * <!-- clang-format off -->
    * @code{.cc}
    * // Creates an optimization program object
    * // with no decision variables.
@@ -37,26 +37,24 @@ class DecisionVariableScalar {
    * // Add a 2 x 1 vector containing two
    * // decision variables to the optimization program.
    * // This calls the private constructor
-   * // DecisionVariableScalar(VarType type, const std::string &name, double*
-   * value, size_t index)
+   * // DecisionVariableScalar(VarType type, const std::string &name, double* value, size_t index)
    * DecisionVariableVector<2> x1 = prog.AddContinuousVariables<2>();
    *
    * // // Add 2 x 1 vector containing two
    * // decision variables to the optimization program.
    * // This calls the private constructor
-   * // DecisionVariableScalar(VarType type, const std::string &name, double*
-   * value, size_t index)
+   * // DecisionVariableScalar(VarType type, const std::string &name, double* value, size_t index)
    * DecisionVariableVector<2> x2 = prog.AddContinuousVariables<2>();
    *
    * // This calls the default constructor DecisionVariableScalar(),
    * // X is not related to the optimization program prog yet.
    * DecisionVariableMatrix<2, 2> X;
    *
-   * // Now X contains the decision variables from the optimization program
-   * object prog.
+   * // Now X contains the decision variables from the optimization program object prog.
    * // The first column of X is x1, the second column of X is x2.
    * X << x1, x2;
    * @endcode
+   * <!-- clang-format on -->
    */
   DecisionVariableScalar()
       : type_(VarType::CONTINUOUS), name_(""), value_(nullptr), index_(0) {}
@@ -147,6 +145,11 @@ using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
 
 using VariableListRef = std::list<Eigen::Ref<const DecisionVariableMatrixX>>;
 
+/**
+ * This class stores a list of DecisionVariableMatrix. An instance
+ * of this class is going to be bound to a constraint, indicating that a
+ * constraint is imposed on one or several DecisionVariableMatrix objects.
+ */
 class VariableList {
  public:
   explicit VariableList(const VariableListRef& variable_list);

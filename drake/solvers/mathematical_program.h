@@ -474,7 +474,7 @@ class MathematicalProgram {
    * @code{.cc}
    * MathematicalProgram prog;
    * std::array<std::string, 6> names = {"x1", "x2", "x3", "x4", "x5", "x6"};
-   * auto x = prog.AddContinuousVariables(names);
+   * auto x = prog.AddContinuousVariables<2, 3>(names);
    * @endcode
    * This adds a 2 x 3 matrix decision variables into the program.
    *
@@ -505,7 +505,7 @@ class MathematicalProgram {
    * @code{.cc}
    * MathematicalProgram prog;
    * std::array<std::string, 2> names = {"x1", "x2"};
-   * auto x = prog.AddContinuousVariables(names);
+   * auto x = prog.AddContinuousVariables<2>(names);
    * @endcode
    * This adds a 2 x 1 vector containing decision variables into the program.
    *
