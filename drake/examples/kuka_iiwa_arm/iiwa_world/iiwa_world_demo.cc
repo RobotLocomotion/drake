@@ -14,6 +14,11 @@ namespace kuka_iiwa_arm {
 
 namespace {
 
+// This demo sets up an uncontrolled KUKA iiwa robot within a simulation
+// mounted upon a table and with some simple objects (2 cylinders and
+// 1 cuboid) placed in its vicinity. The uncontrolled iiwa arm collapses
+// under the influence of gravity and results in the objects being scattered
+// due to collisions with the robot arm and among themselves.
 int DoMain() {
   auto iiwa_world = std::make_unique<IiwaWorldSimBuilder<double>>();
 
@@ -44,10 +49,10 @@ int DoMain() {
   // in a manner that they are distributed over the surface of the heavy duty
   // table. Only the positions are set, as the default orientations are used
   // in each case.
-  const Eigen::Vector3d kRobotBase(-0.25, -0.75, kTableTopZInWorld);
-  const Eigen::Vector3d kBoxBase(-0.45, -0.4, kTableTopZInWorld + 0.15);
-  const Eigen::Vector3d kCylinder1Base(-0.5, -0.60, kTableTopZInWorld + 0.1);
-  const Eigen::Vector3d kCylinder2Base(-0.05, -0.75, kTableTopZInWorld + 0.1);
+  const Eigen::Vector3d kRobotBase(-0.243716, -0.625087, kTableTopZInWorld);
+  const Eigen::Vector3d kBoxBase(-0.53, -0.35, kTableTopZInWorld + 0.15);
+  const Eigen::Vector3d kCylinder1Base(-0.5, -0.51, kTableTopZInWorld + 0.1);
+  const Eigen::Vector3d kCylinder2Base(-0.32, -0.325, kTableTopZInWorld + 0.1);
 
   iiwa_world->AddObjectFixedToWorld("iiwa", kRobotBase,
                                     Eigen::Vector3d::Zero() /* rpy */);
