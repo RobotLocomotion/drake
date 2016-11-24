@@ -2,6 +2,7 @@
 
 #include "drake/automotive/maliput/api/lane_data.h"
 
+#include <string>
 #include <vector>
 
 namespace drake {

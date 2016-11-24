@@ -3,11 +3,11 @@
 #include "drake/automotive/maliput/api/lane_data.h"
 
 #include <memory>
+#include <string>
 
 namespace drake {
 namespace maliput {
 namespace api {
-
 
 class BranchPoint;
 class Segment;

@@ -3,6 +3,7 @@
 #include <cmath>
 #include <iostream>
 #include <sstream>
+#include <string>
 #include <vector>
 
 #include "drake/automotive/maliput/api/branch_point.h"
@@ -126,7 +127,7 @@ double Distance(const Rotation& a, const Rotation& b) {
   return std::sqrt((ds * ds) + (dr * dr) + (dh * dh));
 }
 
-} // namespace
+}  // namespace
 
 
 std::vector<std::string> RoadGeometry::CheckInvariants() const {
@@ -138,10 +139,10 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
     if (bp->road_geometry() != this) {
       std::stringstream ss;
       ss << "BranchPoint " << bp->id().id << " is owned by "
-         << this->id().id << " (" << (void*)this
+         << this->id().id << " (" << this
          << ") but claims to be owned by "
          << bp->road_geometry()->id().id << " ("
-         << (void*)(bp->road_geometry()) << ").";
+         << bp->road_geometry() << ").";
       failures.push_back(ss.str());
     }
   }
@@ -150,10 +151,9 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
     if (jnx->road_geometry() != this) {
       std::stringstream ss;
       ss << "Junction " << jnx->id().id << " is owned by "
-         << this->id().id << " (" << (void*)this
-         << ") but claims to be owned by "
+         << this->id().id << " (" << this << ") but claims to be owned by "
          << jnx->road_geometry()->id().id << " ("
-         << (void*)(jnx->road_geometry()) << ").";
+         << jnx->road_geometry() << ").";
       failures.push_back(ss.str());
     }
     for (int si = 0; si < jnx->num_segments(); ++si) {
@@ -161,10 +161,8 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
       if (seg->junction() != jnx) {
         std::stringstream ss;
         ss << "Segment " << seg->id().id << " is owned by "
-           << jnx->id().id << " (" << (void*)jnx
-           << ") but claims to be owned by "
-           << seg->junction()->id().id << " ("
-           << (void*)(seg->junction()) << ").";
+           << jnx->id().id << " (" << jnx << ") but claims to be owned by "
+           << seg->junction()->id().id << " (" << seg->junction() << ").";
         failures.push_back(ss.str());
       }
       for (int li = 0; li < seg->num_lanes(); ++li) {
@@ -172,10 +170,8 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
         if (lane->segment() != seg) {
           std::stringstream ss;
           ss << "Lane " << lane->id().id << " is owned by "
-             << seg->id().id << " (" << (void*)seg
-             << ") but claims to be owned by "
-             << lane->segment()->id().id << " ("
-             << (void*)(lane->segment()) << ").";
+             << seg->id().id << " (" << seg << ") but claims to be owned by "
+             << lane->segment()->id().id << " (" << lane->segment() << ").";
           failures.push_back(ss.str());
         }
         // Currently, only Lane has an index() accessor, because its the only
