@@ -19,8 +19,8 @@ LcmMatlabRemoteVariable::LcmMatlabRemoteVariable()
 // TODO(russt): replace this with a random int64_t, e.g.
 // http://stackoverflow.com/questions/7114043/random-number-generation-in-c11-how-to-generate-how-do-they-work
 // TODO(russt): david-german-tri recommended a more robust (but more complex)
-// solution was to use e.g.
-// [IP address + process id + time].  We decided this was sufficient for now.
+// solution was to use e.g. [IP address + process id + time].  We decided this
+// was sufficient for now.
 {}
 
 void ToLcmMatlabArray(const LcmMatlabRemoteVariable& var,

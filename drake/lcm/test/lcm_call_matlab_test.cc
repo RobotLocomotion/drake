@@ -19,7 +19,7 @@ GTEST_TEST(TestLcmCallMatlab, DispEigenMatrix) {
 
 GTEST_TEST(TestLcmCallMatlab, RemoteVarTest) {
   auto m = LcmCallMatlab(1, "eye", 2);
-  LcmCallMatlab("disp", m[0]);  // should display eye(2)
+  LcmCallMatlab("disp", m[0]);  // Should display eye(2).
 }
 
 GTEST_TEST(TestLcmCallMatlab, SimplePlot) {
@@ -31,7 +31,7 @@ GTEST_TEST(TestLcmCallMatlab, SimplePlot) {
     val[i] = sin(2 * M_PI * time[i]);
   }
 
-  LcmCallMatlab("disp","Plotting a (red) sine wave.");
+  LcmCallMatlab("disp", "Plotting a (red) sine wave.");
   LcmCallMatlab("figure", 1);
   auto h = LcmCallMatlab(1, "plot", time, val);
   LcmCallMatlab("set", h[0], "Color", "r");
@@ -55,7 +55,7 @@ GTEST_TEST(TestLcmCallMatlab, MeshTest) {
                 1.0 / 3.0 * exp(-pow(x(i) + 1, 2) - pow(y(j), 2));
     }
   }
-  LcmCallMatlab("disp","Plotting a simple 3D surface");
+  LcmCallMatlab("disp", "Plotting a simple 3D surface");
   LcmCallMatlab("figure", 2);
   LcmCallMatlab("surf", x, y, Z);
 }
