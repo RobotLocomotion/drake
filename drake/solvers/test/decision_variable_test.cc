@@ -51,6 +51,11 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
     EXPECT_TRUE(DecisionVariableMatrixContainsIndex(X2, i + 18));
   }
 
+  for (int i = 0; i < 6; ++i) {
+    for (int j = 0; j < 6; ++j) {
+      EXPECT_EQ(x1(i) == x1(j), i == j);
+    }
+  }
   DecisionVariableMatrix<2, 6> X_assembled;
   X_assembled << X1, X2;
   Eigen::Matrix<double, 2, 6> X_assembled_expected;
@@ -59,6 +64,12 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
                               X_assembled_expected, 1E-10,
                               MatrixCompareType::absolute));
 
+  for (int i = 0; i < 2; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      EXPECT_TRUE(X_assembled(i, j) == X1(i, j));
+      EXPECT_TRUE(X_assembled(i, j + 3) == X2(i, j));
+    }
+  }
 
   EXPECT_EQ(VariableList({X1}).num_unique_variables(), 6);
   EXPECT_EQ(VariableList({X1}).size(), 6);
@@ -66,6 +77,17 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_EQ(VariableList({X1, X1}).size(), 12);
   EXPECT_EQ(VariableList({X1, X1.row(1)}).num_unique_variables(), 6);
   EXPECT_EQ(VariableList({X1, X1.row(1)}).size(), 9);
+
+  std::unordered_set<DecisionVariableScalar> X1_unique_variables_expected;
+  for (int i = 0; i < 2; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      X1_unique_variables_expected.insert(X1(i, j));
+    }
+  }
+  EXPECT_EQ(VariableList({X1}).unique_variables(),
+            X1_unique_variables_expected);
+  EXPECT_EQ(VariableList({X1, X1.row(1)}).unique_variables(),
+            X1_unique_variables_expected);
 }
 }  // namespace solvers
 }  // namespace drake

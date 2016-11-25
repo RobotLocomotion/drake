@@ -37,20 +37,23 @@ class DecisionVariableScalar {
    * // Add a 2 x 1 vector containing two
    * // decision variables to the optimization program.
    * // This calls the private constructor
-   * // DecisionVariableScalar(VarType type, const std::string &name, double* value, size_t index)
+   * // DecisionVariableScalar(VarType type, const std::string &name, double*
+   * value, size_t index)
    * DecisionVariableVector<2> x1 = prog.AddContinuousVariables<2>();
    *
    * // // Add 2 x 1 vector containing two
    * // decision variables to the optimization program.
    * // This calls the private constructor
-   * // DecisionVariableScalar(VarType type, const std::string &name, double* value, size_t index)
+   * // DecisionVariableScalar(VarType type, const std::string &name, double*
+   * value, size_t index)
    * DecisionVariableVector<2> x2 = prog.AddContinuousVariables<2>();
    *
    * // This calls the default constructor DecisionVariableScalar(),
    * // X is not related to the optimization program prog yet.
    * DecisionVariableMatrix<2, 2> X;
    *
-   * // Now X contains the decision variables from the optimization program object prog.
+   * // Now X contains the decision variables from the optimization program
+   * object prog.
    * // The first column of X is x1, the second column of X is x2.
    * X << x1, x2;
    * @endcode
@@ -78,6 +81,15 @@ class DecisionVariableScalar {
    * @return The index of the variable in the optimization program.
    */
   size_t index() const { return index_; }
+
+  /**
+   * Determine if the two DecisionVariableScalar objects are the same. This
+   * comparison is only meaningful if the two DecisionVariableScalar objects
+   * are created by the same MathematicalProgram object.
+   */
+  bool operator==(const DecisionVariableScalar& rhs) const {
+    return index_ == rhs.index();
+  }
 
   friend class MathematicalProgram;
 
@@ -131,6 +143,16 @@ struct NumTraits<drake::solvers::DecisionVariableScalar> {
   typedef drake::solvers::DecisionVariableScalar Literal;
 };
 }  // namespace Eigen
+
+namespace std {
+template <>
+struct hash<drake::solvers::DecisionVariableScalar> {
+  size_t operator()(const drake::solvers::DecisionVariableScalar& var) const {
+    return var.index();
+  }
+};
+
+}  // namespace std
 
 namespace drake {
 namespace solvers {
@@ -189,7 +211,9 @@ class VariableList {
    * The number of unique variables is 4
    * </pre>
    */
-  size_t num_unique_variables() const { return unique_variables_.size(); }
+  size_t num_unique_variables() const {
+    return unique_variable_indices_.size();
+  }
 
   /**
    * Given a list of DecisionVariableMatrix @p vars, computes the TOTAL number
@@ -228,11 +252,18 @@ class VariableList {
    */
   bool column_vectors_only() const { return column_vectors_only_; }
 
+  /**
+   * @return The all unique variables stored in the class.
+   */
+  std::unordered_set<DecisionVariableScalar> unique_variables() const {
+    return unique_variable_indices_;
+  }
+
  private:
   std::list<DecisionVariableMatrixX> variables_;
   size_t size_;
   bool column_vectors_only_;
-  std::unordered_set<size_t> unique_variables_;
+  std::unordered_set<DecisionVariableScalar> unique_variable_indices_;
 };
 
 /**

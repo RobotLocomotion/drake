@@ -16,7 +16,7 @@ VariableList::VariableList(
 
     for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
       for (int j = 0; j < static_cast<int>(var.cols()); ++j) {
-        unique_variables_.insert(var(i, j).index());
+        unique_variable_indices_.insert(var(i, j));
       }
     }
   }
