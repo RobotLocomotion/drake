@@ -53,7 +53,8 @@ class Handler {
       switch (msg->rhs[i].type) {
         case drake::lcmt_matlab_array::REMOTE_VARIABLE_REFERENCE: {
           int64_t id;
-          DRAKE_DEMAND(sizeof(int64_t) == msg->rhs[i].num_bytes);
+          DRAKE_DEMAND(static_cast<int>(sizeof(int64_t)) ==
+                       msg->rhs[i].num_bytes);
           memcpy(&id, msg->rhs[i].data.data(), msg->rhs[i].num_bytes);
           if (client_vars_.find(id) == client_vars_.end()) {
             mexWarnMsgTxt(
@@ -69,7 +70,8 @@ class Handler {
         case drake::lcmt_matlab_array::DOUBLE: {
           rhs[i] =
               mxCreateDoubleMatrix(msg->rhs[i].rows, msg->rhs[i].cols, mxREAL);
-          DRAKE_DEMAND(sizeof(double) * msg->rhs[i].rows * msg->rhs[i].cols ==
+          DRAKE_DEMAND(static_cast<int>(sizeof(double)) * msg->rhs[i].rows *
+                           msg->rhs[i].cols ==
                        msg->rhs[i].num_bytes);
           memcpy(mxGetPr(rhs[i]), msg->rhs[i].data.data(),
                  msg->rhs[i].num_bytes);
@@ -82,8 +84,8 @@ class Handler {
           rhs[i] = mxCreateCharArray(2, dims);
           mxChar* char_data = static_cast<mxChar*>(mxGetData(rhs[i]));
           DRAKE_DEMAND(msg->rhs[i].rows * msg->rhs[i].cols ==
-                       msg->rhs[i].data.size());
-          for (int j = 0; j < dims[0] * dims[1];
+                       static_cast<int>(msg->rhs[i].data.size()));
+          for (int j = 0; j < static_cast<int>(dims[0] * dims[1]);
                j++) {  // Note: sizeof(mxChar) == 2.
             char_data[j] = static_cast<mxChar>(msg->rhs[i].data[j]);
           }
@@ -92,9 +94,9 @@ class Handler {
         case drake::lcmt_matlab_array::LOGICAL: {
           rhs[i] = mxCreateLogicalMatrix(msg->rhs[i].rows, msg->rhs[i].cols);
           DRAKE_DEMAND(msg->rhs[i].rows * msg->rhs[i].cols ==
-                       msg->rhs[i].data.size());
+                       static_cast<int>(msg->rhs[i].data.size()));
           mxLogical* logical_data = static_cast<mxLogical*>(mxGetData(rhs[i]));
-          for (int j = 0; j < msg->rhs[i].data.size(); j++) {
+          for (int j = 0; j < static_cast<int>(msg->rhs[i].data.size()); j++) {
             logical_data[j] = static_cast<mxLogical>(msg->rhs[i].data[j]);
           }
           break;
@@ -122,7 +124,7 @@ class Handler {
     }
 
     // Clean up the input argument data.
-    for (i = 0; i < rhs.size(); i++) {
+    for (i = 0; i < static_cast<int>(rhs.size()); i++) {
       mxDestroyArray(rhs[i]);
     }
   }

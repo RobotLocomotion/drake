@@ -56,7 +56,7 @@ if(Matlab_FOUND)
     target_link_libraries(lcm_call_matlab_client
         drakeCommon
         drakeMexUtil
-        drake_lcmtypes
+        drakeLCMTypes
         lcm)
   endif()
 endif()

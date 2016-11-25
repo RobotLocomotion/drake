@@ -59,12 +59,12 @@ extern void ToLcmMatlabArray(const std::string& str,
 // Helper methods for variadic template call in CallMatlab.
 namespace internal {
 void AssembleLcmCallMatlabMsg(drake::lcmt_call_matlab* msg,
-                              unsigned int* index) {
+                              int* index) {
   // Intentionally left blank.  Base case for template recursion.
 }
 
 template <typename T, typename... Types>
-void AssembleLcmCallMatlabMsg(drake::lcmt_call_matlab* msg, unsigned int* index,
+void AssembleLcmCallMatlabMsg(drake::lcmt_call_matlab* msg, int* index,
                               T first, Types... args) {
   ToLcmMatlabArray(first, &(msg->rhs[*index]));
   *index += 1;
@@ -96,9 +96,9 @@ void PublishLcmCallMatlab(const drake::lcmt_call_matlab& msg);
 /// See lcm_call_matlab_test.cc for some simple examples.
 template <typename... Types>
 std::vector<LcmMatlabRemoteVariable> LcmCallMatlab(
-    const unsigned int num_outputs, const std::string& function_name,
-    Types... args) {
+    int num_outputs, const std::string& function_name, Types... args) {
   const int num_inputs = sizeof...(args);
+  if (num_outputs < 0) num_outputs = 0;
   std::vector<LcmMatlabRemoteVariable> remote_vars(num_outputs);
 
   drake::lcmt_call_matlab msg;
@@ -108,7 +108,7 @@ std::vector<LcmMatlabRemoteVariable> LcmCallMatlab(
     msg.lhs[i] = remote_vars[i].uid;
   }
 
-  unsigned int index = 0;
+  int index = 0;
   msg.nrhs = num_inputs;
   msg.rhs.resize(num_inputs);
   internal::AssembleLcmCallMatlabMsg(&msg, &index, args...);
