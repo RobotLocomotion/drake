@@ -70,6 +70,8 @@ class AcrobotPlant : public systems::LeafSystem<T> {
       g{9.81};    // Gravitational constant (m/s^2).
 };
 
+/// Constructs the LQR controller for stabilizing the upright fixed point using
+/// default LQR cost matrices which have been tested for this system.
 std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
     const AcrobotPlant<double>* acrobot);
 
