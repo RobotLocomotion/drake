@@ -1,3 +1,5 @@
+
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/primitives/affine_system.h"
 #include "drake/systems/framework/primitives/test/affine_linear_test.h"
 
@@ -57,7 +59,7 @@ TEST_F(AffineSystemTest, Derivatives) {
   Eigen::VectorXd expected_derivatives(2);
   expected_derivatives = A_ * x + B_ * u + xDot0_;
 
-  EXPECT_EQ(expected_derivatives, derivatives_->get_vector().CopyToVector());
+  EXPECT_TRUE(CompareMatrices(expected_derivatives, derivatives_->get_vector().CopyToVector(), 1e-10));
 }
 
 // Tests that the outputs are correctly computed.
@@ -76,7 +78,7 @@ TEST_F(AffineSystemTest, Output) {
 
   expected_output = C_ * x + D_ * u + y0_;
 
-  EXPECT_EQ(expected_output, system_output_->get_vector_data(0)->get_value());
+  EXPECT_TRUE(CompareMatrices(expected_output, system_output_->get_vector_data(0)->get_value(), 1e-10));
 }
 
 
