@@ -3,17 +3,19 @@ add_library_with_exports(LIB_NAME drakeAcrobotPlant
 target_link_libraries(drakeAcrobotPlant drakeSystemFramework drakeLinearControl)
 
 if(lcm_FOUND)
-  drake_add_cc_test(acrobot_run_passive acrobot_run_passive.cc)
+  add_executable(acrobot_run_passive acrobot_run_passive.cc)
   target_link_libraries(acrobot_run_passive
       drakeAcrobotPlant
       drakeRigidBodyPlant
       drakeSystemAnalysis)
+  add_test(NAME acrobot_run_passive COMMAND acrobot_run_passive -realtime_factor 0.0)
 
-  drake_add_cc_test(acrobot_run_lqr acrobot_run_lqr.cc)
+  add_executable(acrobot_run_lqr acrobot_run_lqr.cc)
   target_link_libraries(acrobot_run_lqr
       drakeAcrobotPlant
       drakeRigidBodyPlant
       drakeSystemAnalysis)
+  add_test(NAME acrobot_run_lqr COMMAND acrobot_run_lqr -realtime_factor 0.0)
 endif(lcm_FOUND)
 
 drake_add_matlab_test(NAME examples/Acrobot/runLQR COMMAND runLQR)
