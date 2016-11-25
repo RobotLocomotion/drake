@@ -62,13 +62,6 @@ drake_install_pkg_config_file(drake-lcm
     LIBS -ldrakeLcm ${lcm_dependent_libs}
     REQUIRES ${lcm_dependent_requires})
 
-if(Matlab_FOUND AND lcm_FOUND)
-  drake_add_mex(lcm_call_matlab_client lcm_call_matlab_client.cc)
-  target_link_libraries(lcm_call_matlab_client
-      drake_lcmtypes
-      lcm)
-endif()
-
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()

@@ -66,7 +66,8 @@ void AssembleLcmCallMatlabMsg(drake::lcmt_call_matlab* msg,
 template <typename T, typename... Types>
 void AssembleLcmCallMatlabMsg(drake::lcmt_call_matlab* msg,
                                   unsigned int* index, T first, Types... args) {
-  ToLcmMatlabArray(first, &(msg->rhs[*index++]));
+  ToLcmMatlabArray(first, &(msg->rhs[*index]));
+  *index += 1;
   AssembleLcmCallMatlabMsg(msg, index, args...);
 }
 

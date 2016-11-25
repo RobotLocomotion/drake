@@ -54,6 +54,8 @@ if(Matlab_FOUND)
 
     drake_add_mex(lcm_call_matlab_client lcm_call_matlab_client.cc)
     target_link_libraries(lcm_call_matlab_client
+        drakeCommon
+        drakeMexUtil
         drake_lcmtypes
         lcm)
   endif()

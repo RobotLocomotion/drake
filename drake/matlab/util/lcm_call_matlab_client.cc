@@ -6,6 +6,8 @@
 #include "lcm/lcm-cpp.hpp"
 
 #include "drake/lcmt_call_matlab.hpp"
+#include "drake/common/drake_assert.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 // Mex client for matlab feval
 
@@ -31,13 +33,29 @@ class Handler {
 
     // Create the input arguments
     for (i = 0; i < msg->nrhs; i++) {
+      if (msg->rhs[i].num_bytes == 0) {
+        mexPrintf("rhs %d seems to have zero bytes.  dropping message %s.\n", i, msg->function_name.c_str());
+        mexPrintf("type: %d\n", msg->rhs[i].type);
+        mexPrintf("rows: %d\n", msg->rhs[i].rows);
+        mexPrintf("cols: %d\n", msg->rhs[i].cols);
+        mexPrintf("num_bytes: %d\n", msg->rhs[i].num_bytes);
+        for (int j=0; j<i; j++) {
+          mxDestroyArray(rhs[j]);
+        }
+        return;
+      }
+
       switch (msg->rhs[i].type) {
         case drake::lcmt_matlab_array::REMOTE_VARIABLE_REFERENCE: {
           int64_t id;
-          memcpy(&id, msg->rhs[i].data.data(), sizeof(int64_t));
+          DRAKE_DEMAND(sizeof(int64_t) == msg->rhs[i].num_bytes);
+          memcpy(&id, msg->rhs[i].data.data(), msg->rhs[i].num_bytes);
           if (client_vars_.find(id) == client_vars_.end()) {
             mexWarnMsgTxt(
                 "rhs referenced unknown local variable.  dropping message.");
+            for (int j=0; j<i; j++) {
+              mxDestroyArray(rhs[j]);
+            }
             return;
           }
           rhs[i] = client_vars_.at(id);
@@ -46,6 +64,7 @@ class Handler {
         case drake::lcmt_matlab_array::DOUBLE: {
           rhs[i] =
               mxCreateDoubleMatrix(msg->rhs[i].rows, msg->rhs[i].cols, mxREAL);
+          DRAKE_DEMAND(sizeof(double)*msg->rhs[i].rows*msg->rhs[i].cols == msg->rhs[i].num_bytes);
           memcpy(mxGetPr(rhs[i]), msg->rhs[i].data.data(),
                  msg->rhs[i].num_bytes);
           break;
@@ -56,6 +75,7 @@ class Handler {
           dims[1] = msg->rhs[i].cols;
           rhs[i] = mxCreateCharArray(2, dims);
           mxChar* char_data = static_cast<mxChar*>(mxGetData(rhs[i]));
+          DRAKE_DEMAND(msg->rhs[i].rows*msg->rhs[i].cols == msg->rhs[i].data.size());
           for (int j = 0; j < dims[0] * dims[1]; j++) { // Note: sizeof(mxChar) == 2.
             char_data[j] = static_cast<mxChar>(msg->rhs[i].data[j]);
           }
@@ -63,27 +83,32 @@ class Handler {
         }
         case drake::lcmt_matlab_array::LOGICAL: {
           rhs[i] = mxCreateLogicalMatrix(msg->rhs[i].rows, msg->rhs[i].cols);
-          memcpy(mxGetData(rhs[i]), msg->rhs[i].data.data(),
-                 msg->rhs[i].num_bytes);
+          DRAKE_DEMAND(msg->rhs[i].rows*msg->rhs[i].cols == msg->rhs[i].data.size());
+          mxLogical* logical_data = static_cast<mxLogical*>(mxGetData(rhs[i]));
+          for (int j = 0; j < msg->rhs[i].data.size(); j++) {
+            logical_data[j] = static_cast<mxLogical>(msg->rhs[i].data[j]);
+          }
           break;
         }
         default:
           mexWarnMsgTxt("Unknown rhs variable type.");
+          for (int j=0; j<i; j++) {
+            mxDestroyArray(rhs[j]);
+          }
           return;
       }
     }
 
-    // TODO(russt): zap any old variables that will be overwritten by this call
-    // (should only happen w/ probability -> 0, but my initial attempts
-    // generated segfaults)
-
     // Make the actual call to MATLAB.
-    mexCallMATLAB(static_cast<int>(lhs.size()), lhs.data(),
+    mexCallMATLABsafe(static_cast<int>(lhs.size()), lhs.data(),
                   static_cast<int>(rhs.size()), rhs.data(),
                   msg->function_name.c_str());
 
     // Assign any local variables that were returned by this call.
     for (i = 0; i < msg->nlhs; i++) {
+      // Zap any old variables that will be overwritten by this call
+      if (client_vars_.find(msg->lhs[i]) != client_vars_.end())
+        mxDestroyArray(client_vars_[msg->lhs[i]]);
       client_vars_[msg->lhs[i]] = lhs[i];
     }
 
