@@ -32,10 +32,10 @@ using parsers::urdf::AddModelInstanceFromUrdfString;
 namespace examples {
 namespace toyota_hsrb {
 
-unique_ptr<systems::Diagram<double>> CreateHsrbPlantDiagram(
-    const string& hsrb_urdf_string, double penetration_stiffness,
-    double penetration_damping, double friction_coefficient, lcm::DrakeLcm* lcm,
-    RigidBodyPlant<double>** plant) {
+unique_ptr<systems::Diagram<double>> CreatePlantAndVisualizerDiagram(
+    const string& urdf_string, double penetration_stiffness,
+    double penetration_damping, double friction_coefficient,
+    lcm::DrakeLcmInterface* lcm, RigidBodyPlant<double>** plant) {
   DiagramBuilder<double> builder;
   RigidBodyPlant<double>* plant_ptr{nullptr};
 
@@ -46,7 +46,7 @@ unique_ptr<systems::Diagram<double>> CreateHsrbPlantDiagram(
   {
     // Instantiates a model of the world.
     auto tree = make_unique<RigidBodyTreed>();
-    AddModelInstanceFromUrdfString(hsrb_urdf_string, "." /* root directory */,
+    AddModelInstanceFromUrdfString(urdf_string, "." /* root directory */,
                                    multibody::joints::kQuaternion,
                                    nullptr /* weld to frame */, tree.get());
     AddFlatTerrainToWorld(tree.get());
@@ -73,7 +73,7 @@ unique_ptr<systems::Diagram<double>> CreateHsrbPlantDiagram(
   return builder.Build();
 }
 
-std::unique_ptr<Diagram<double>> CreateHsrbDemo1Diagram(
+std::unique_ptr<Diagram<double>> CreateConstantSourceToPlantDiagram(
     const RigidBodyPlant<double>& plant,
     std::unique_ptr<Diagram<double>> plant_diagram) {
   DiagramBuilder<double> builder;

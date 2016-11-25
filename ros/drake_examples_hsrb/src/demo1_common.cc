@@ -43,9 +43,10 @@ std::unique_ptr<Simulator<double>> CreateSimulation(lcm::DrakeLcm* lcm,
   Diagram<double>* input_diagram{nullptr};
 
   {
-    std::unique_ptr<Diagram<double>> plant_diagram_ptr = CreateHsrbPlantDiagram(
-        urdf_string, penetration_stiffness, penetration_damping,
-        friction_coefficient, lcm, &plant);
+    std::unique_ptr<Diagram<double>> plant_diagram_ptr =
+        CreatePlantAndVisualizerDiagram(
+            urdf_string, penetration_stiffness, penetration_damping,
+            friction_coefficient, lcm, &plant);
     DRAKE_DEMAND(plant_diagram_ptr != nullptr);
     DRAKE_DEMAND(plant != nullptr);
 
@@ -53,7 +54,8 @@ std::unique_ptr<Simulator<double>> CreateSimulation(lcm::DrakeLcm* lcm,
     DRAKE_DEMAND(plant_diagram != nullptr);
 
     std::unique_ptr<Diagram<double>> input_diagram_ptr =
-        CreateHsrbDemo1Diagram(*plant, std::move(plant_diagram_ptr));
+        CreateConstantSourceToPlantDiagram(*plant,
+            std::move(plant_diagram_ptr));
     input_diagram =
         builder.AddSystem(std::move(input_diagram_ptr));
     DRAKE_DEMAND(input_diagram != nullptr);

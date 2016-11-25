@@ -1,3 +1,11 @@
+ message(STATUS "=============================================================")
+ get_cmake_property(_variableNames VARIABLES)
+ foreach (_variableName ${_variableNames})
+     message(STATUS "${_variableName}=${${_variableName}}")
+ endforeach()
+ message(STATUS "=============================================================")
+
+
 if(lcm_FOUND)
   # Defines a shared library for use by Drake demo1 of the Toyota Human Support
   # Robot revision B (HSRb).
@@ -19,8 +27,8 @@ if(lcm_FOUND)
         drake-rbm
         drake-rigid-body-plant
         drake-system-framework)
+endif()
 
-  if(BUILD_TESTING)
-    add_subdirectory(test)
-  endif()
+if(BUILD_TESTING)
+  add_subdirectory(test)
 endif()
