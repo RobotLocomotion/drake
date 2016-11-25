@@ -1,6 +1,6 @@
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/primitives/affine_system.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/primitives/test/affine_linear_test.h"
 
 using std::make_unique;
@@ -59,7 +59,8 @@ TEST_F(AffineSystemTest, Derivatives) {
   Eigen::VectorXd expected_derivatives(2);
   expected_derivatives = A_ * x + B_ * u + xDot0_;
 
-  EXPECT_TRUE(CompareMatrices(expected_derivatives, derivatives_->get_vector().CopyToVector(), 1e-10));
+  EXPECT_TRUE(CompareMatrices(
+      expected_derivatives, derivatives_->get_vector().CopyToVector(), 1e-10));
 }
 
 // Tests that the outputs are correctly computed.
@@ -78,9 +79,9 @@ TEST_F(AffineSystemTest, Output) {
 
   expected_output = C_ * x + D_ * u + y0_;
 
-  EXPECT_TRUE(CompareMatrices(expected_output, system_output_->get_vector_data(0)->get_value(), 1e-10));
+  EXPECT_TRUE(CompareMatrices(
+      expected_output, system_output_->get_vector_data(0)->get_value(), 1e-10));
 }
-
 
 class FeedthroughAffineSystemTest : public ::testing::Test {
  public:
@@ -95,14 +96,12 @@ class FeedthroughAffineSystemTest : public ::testing::Test {
         AffineLinearSystemTest::make_2x2_matrix(1.5, 2.7, 3.5, -4.9));
     Eigen::MatrixXd B_(
         AffineLinearSystemTest::make_2x2_matrix(4.9, -5.1, 6.8, 7.2));
-    Eigen::VectorXd xDot0_(
-        AffineLinearSystemTest::make_2x1_vector(0, 0));
+    Eigen::VectorXd xDot0_(AffineLinearSystemTest::make_2x1_vector(0, 0));
     Eigen::MatrixXd C_(
         AffineLinearSystemTest::make_2x2_matrix(1.1, 2.5, -3.8, 4.6));
     Eigen::MatrixXd D_(
         AffineLinearSystemTest::make_2x2_matrix(d_1_1_element_, 0, 0, 0));
-    Eigen::VectorXd y0_(
-        AffineLinearSystemTest::make_2x1_vector(0, 0));
+    Eigen::VectorXd y0_(AffineLinearSystemTest::make_2x1_vector(0, 0));
     dut_ = make_unique<AffineSystem<double>>(A_, B_, xDot0_, C_, D_, y0_);
     dut_->set_name("test_feedtroughaffine_system");
   }
@@ -128,7 +127,6 @@ TEST_F(FeedthroughAffineSystemTest, FeedthroughTest) {
   InitialiseSystem();
   EXPECT_TRUE(dut_->has_any_direct_feedthrough());
 }
-
 
 }  // namespace
 }  // namespace systems
