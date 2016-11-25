@@ -1,3 +1,5 @@
+#include <gflags/gflags.h>
+
 #include "drake/common/drake_path.h"
 #include "drake/examples/Acrobot/acrobot_plant.h"
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
@@ -14,7 +16,13 @@ namespace examples {
 namespace acrobot {
 namespace {
 
+DEFINE_double(realtime_factor, 1.0,
+              "Playback speed.  See documentation for "
+              "Simulator::set_target_realtime_rate() for details.");
+
 int do_main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+
   lcm::DrakeLcm lcm;
   RigidBodyTree<double> tree(GetDrakePath() + "/examples/Acrobot/Acrobot.urdf",
                              multibody::joints::kFixed);
@@ -42,7 +50,7 @@ int do_main(int argc, char* argv[]) {
   x0->set_theta1dot(0.0);
   x0->set_theta2dot(0.0);
 
-  simulator.set_target_realtime_rate(1.0);
+  simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
   simulator.StepTo(10);
   return 0;
