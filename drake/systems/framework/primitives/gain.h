@@ -8,8 +8,9 @@
 namespace drake {
 namespace systems {
 
-/// A gain block with input `u` and output `y = k * u` with `k` a constant.
-/// The input to this system directly feeds through to its output.
+/// An element-wise gain block with input `u` and output `y = k * u` with `k` a
+/// constant vector.  The input to this system directly feeds through to its
+/// output.
 ///
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
 /// this class, please refer to http://drake.mit.edu/cxx_inl.html.

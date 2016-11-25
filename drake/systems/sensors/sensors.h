@@ -1,6 +1,6 @@
 
-/** @defgroup sensor_systems Sensor Systems
- * @{
- * @ingroup systems
- * @}
- */
+/// @defgroup sensor_systems Sensors
+/// @{
+///   @ingroup systems
+/// @}
+
