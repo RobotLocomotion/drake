@@ -1,11 +1,15 @@
 #include "drake/examples/Acrobot/acrobot_plant.h"
 
 #include <cmath>
+#include <vector>
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
+#include "drake/systems/framework/diagram.h"
+#include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/sensors/rotary_encoders.h"
 
 namespace drake {
 namespace examples {
@@ -101,6 +105,27 @@ AcrobotPlant<AutoDiffXd>* AcrobotPlant<T>::DoToAutoDiffXd() const {
 
 template class AcrobotPlant<double>;
 template class AcrobotPlant<AutoDiffXd>;
+
+template <typename T>
+AcrobotWEncoder<T>::AcrobotWEncoder(
+    bool acrobot_state_as_second_output) {
+  systems::DiagramBuilder<T> builder;
+
+  acrobot_plant_ = builder.template AddSystem<AcrobotPlant<T>>();
+  auto encoder =
+      builder.template AddSystem<systems::sensors::RotaryEncoders<T>>(
+          4, std::vector<int>{0, 1});
+  builder.Cascade(*acrobot_plant_, *encoder);
+  builder.ExportInput(acrobot_plant_->get_input_port(0));
+  builder.ExportOutput(encoder->get_output_port(0));
+  if (acrobot_state_as_second_output)
+    builder.ExportOutput(acrobot_plant_->get_output_port(0));
+
+  builder.BuildInto(this);
+}
+
+template class AcrobotWEncoder<double>;
+template class AcrobotWEncoder<AutoDiffXd>;
 
 std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
     const AcrobotPlant<double>* acrobot) {
