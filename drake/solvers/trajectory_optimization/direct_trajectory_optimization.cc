@@ -1,4 +1,4 @@
-#include "drake/solvers/trajectoryOptimization/direct_trajectory_optimization.h"
+#include "drake/solvers/trajectory_optimization/direct_trajectory_optimization.h"
 
 #include <limits>
 #include <stdexcept>
