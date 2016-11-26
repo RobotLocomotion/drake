@@ -45,6 +45,9 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
   LuenbergerObserver(const LuenbergerObserver<T>&) = delete;
   LuenbergerObserver& operator=(const LuenbergerObserver<T>&) = delete;
 
+  /// This system is not direct feedthrough.
+  bool has_any_direct_feedthrough() const override { return false; }
+
   /// Advance the state estimate using forward dynamics and the observer gains.
   void EvalTimeDerivatives(
       const systems::Context<T>& context,
