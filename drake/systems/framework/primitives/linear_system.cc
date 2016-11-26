@@ -1,5 +1,8 @@
 #include "drake/systems/framework/primitives/linear_system.h"
 
+#include <Eigen/Dense>
+#include <Eigen/LU>
+
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
@@ -102,6 +105,46 @@ std::unique_ptr<LinearSystem<double>> Linearize(
   }
 
   return std::make_unique<LinearSystem<double>>(A, B, C, D);
+}
+
+/// Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].
+Eigen::MatrixXd ControllabilityMatrix(const LinearSystem<double>& sys) {
+  const int num_states = sys.B().rows(), num_inputs = sys.B().cols();
+  Eigen::MatrixXd R(num_states, num_states * num_inputs);
+  R.leftCols(num_inputs) = sys.B();
+  for (int i = 1; i < num_states; i++) {
+    R.middleCols(num_inputs * i, num_inputs) =
+        sys.A() * R.middleCols(num_inputs * (i - 1), num_inputs);
+  }
+  return R;
+}
+
+/// Returns true iff the controllability matrix is full row rank.
+bool IsControllable(const LinearSystem<double>& sys, double threshold) {
+  const auto R = ControllabilityMatrix(sys);
+  Eigen::ColPivHouseholderQR<Eigen::MatrixXd> lu_decomp(R);
+  lu_decomp.setThreshold(threshold);
+  return lu_decomp.rank() == sys.A().rows();
+}
+
+/// Returns the observability matrix: O = [ C; CA; ...; CA^{n-1} ].
+Eigen::MatrixXd ObservabilityMatrix(const LinearSystem<double>& sys) {
+  const int num_states = sys.C().cols(), num_outputs = sys.C().rows();
+  Eigen::MatrixXd O(num_states * num_outputs, num_states);
+  O.topRows(num_outputs) = sys.C();
+  for (int i = 1; i < num_states; i++) {
+    O.middleRows(num_outputs * i, num_outputs) =
+        O.middleRows(num_outputs * (i - 1), num_outputs) * sys.A();
+  }
+  return O;
+}
+
+/// Returns true iff the observability matrix is full column rank.
+bool IsObservable(const LinearSystem<double>& sys, double threshold) {
+  const auto O = ObservabilityMatrix(sys);
+  Eigen::ColPivHouseholderQR<Eigen::MatrixXd> lu_decomp(O);
+  lu_decomp.setThreshold(threshold);
+  return lu_decomp.rank() == sys.A().rows();
 }
 
 }  // namespace systems
