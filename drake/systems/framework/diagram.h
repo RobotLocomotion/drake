@@ -6,6 +6,7 @@
 #include <map>
 #include <set>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -158,6 +159,12 @@ class Diagram : public System<T>,
       result.push_back(system.get());
     }
     return result;
+  }
+
+  /// Returns a pointer to the subsystem, referenced by name.
+  const systems::System<T>* GetSubsystem(const std::string& name) const {
+    int id = GetSystemIndexOrAbort(name);
+    return sorted_systems_[id];
   }
 
   /// Returns true if any output of the Diagram might have direct-feedthrough
@@ -459,8 +466,9 @@ class Diagram : public System<T>,
   /// This is the NVI implementation of ToAutoDiffXd.
   Diagram<AutoDiffXd>* DoToAutoDiffXd() const override {
     return ConvertScalarType<AutoDiffXd>([](const System<double>& subsystem) {
-      return subsystem.ToAutoDiffXd();
-    }).release();
+             return subsystem.ToAutoDiffXd();
+           })
+        .release();
   }
 
  private:
@@ -473,8 +481,9 @@ class Diagram : public System<T>,
   template <typename NewType, typename T1 = T>
   std::unique_ptr<Diagram<NewType>> ConvertScalarType(
       std::function<std::unique_ptr<System<NewType>>(
-          const System<std::enable_if_t<std::is_same<T1, double>::value,
-                                        double>>&)> converter) const {
+          const System<
+              std::enable_if_t<std::is_same<T1, double>::value, double>>&)>
+          converter) const {
     std::vector<std::unique_ptr<System<NewType>>> new_systems;
     // Recursively convert all the subsystems.
     std::map<const System<T1>*, const System<NewType>*> old_to_new_map;
@@ -501,14 +510,14 @@ class Diagram : public System<T>,
       const PortIdentifier& old_dest = edge.first;
       const System<NewType>* const dest_system = old_to_new_map[old_dest.first];
       const int dest_port = old_dest.second;
-      const typename Diagram<NewType>::PortIdentifier new_dest{
-          dest_system, dest_port};
+      const typename Diagram<NewType>::PortIdentifier new_dest{dest_system,
+                                                               dest_port};
 
       const PortIdentifier& old_src = edge.second;
       const System<NewType>* const src_system = old_to_new_map[old_src.first];
       const int src_port = old_src.second;
-      const typename Diagram<NewType>::PortIdentifier new_src{
-          src_system, src_port};
+      const typename Diagram<NewType>::PortIdentifier new_src{src_system,
+                                                              src_port};
 
       blueprint.dependency_graph[new_dest] = new_src;
     }
@@ -532,8 +541,9 @@ class Diagram : public System<T>,
   template <typename NewType, typename T1 = T>
   std::unique_ptr<Diagram<NewType>> ConvertScalarType(
       std::function<std::unique_ptr<System<NewType>>(
-          const System<std::enable_if_t<!std::is_same<T1, double>::value,
-                                        double>>&)> converter) const {
+          const System<
+              std::enable_if_t<!std::is_same<T1, double>::value, double>>&)>
+          converter) const {
     DRAKE_ABORT_MSG(
         "Scalar type conversion is only supported from Diagram<double>.");
   }
@@ -765,6 +775,16 @@ class Diagram : public System<T>,
     auto it = sorted_systems_map_.find(sys);
     DRAKE_DEMAND(it != sorted_systems_map_.end());
     return it->second;
+  }
+
+  // Returns the index of the given @p sys in the sorted order of this diagram,
+  // or aborts if none of the members of the diagram have name @p name.
+  int GetSystemIndexOrAbort(const std::string& name) const {
+    for (int i = 0; i < static_cast<int>(sorted_systems_.size()); i++) {
+      if (name == sorted_systems_[i]->get_name()) return i;
+    }
+    DRAKE_DEMAND(false);  // If we get here, then abort.
+    return 0;
   }
 
   // Converts a PortIdentifier to a DiagramContext::PortIdentifier.

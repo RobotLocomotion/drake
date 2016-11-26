@@ -58,6 +58,9 @@ class RotaryEncoders : public systems::LeafSystem<T> {
       const systems::Context<T>& context) const;
 
  private:
+  // System<T> override.
+  RotaryEncoders<AutoDiffXd>* DoToAutoDiffXd() const override;
+
   const int num_encoders_{0};       // Dimension of the output port.
   const std::vector<int> indices_;  // Selects from the input port.
   const std::vector<int> ticks_per_revolution_;  // For quantization.

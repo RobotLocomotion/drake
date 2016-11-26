@@ -50,8 +50,10 @@ RotaryEncoders<T>::RotaryEncoders(int input_port_size,
   DRAKE_ASSERT(*std::min_element(indices_.begin(), indices_.end()) >= 0);
   DRAKE_ASSERT(*std::max_element(indices_.begin(), indices_.end()) <
                input_port_size);
-  DRAKE_DEMAND(indices_.size() == ticks_per_revolution_.size());
-  DRAKE_ASSERT(*std::min_element(ticks_per_revolution_.begin(),
+  DRAKE_DEMAND(ticks_per_revolution_.empty() ||
+               indices_.size() == ticks_per_revolution_.size());
+  DRAKE_ASSERT(ticks_per_revolution_.empty() ||
+               *std::min_element(ticks_per_revolution_.begin(),
                                  ticks_per_revolution_.end()) >= 0);
   this->DeclareInputPort(systems::kVectorValued, input_port_size,
                          systems::kContinuousSampling);
@@ -109,6 +111,12 @@ template <typename T>
 Eigen::VectorBlock<const VectorX<T>> RotaryEncoders<T>::get_calibration_offsets(
     const systems::Context<T>& context) const {
   return this->template GetNumericParameter(context, 0).get_value();
+}
+
+template <typename T>
+RotaryEncoders<AutoDiffXd>* RotaryEncoders<T>::DoToAutoDiffXd() const {
+  return new RotaryEncoders<AutoDiffXd>(this->get_input_port(0).get_size(),
+                                        indices_, ticks_per_revolution_);
 }
 
 template class RotaryEncoders<double>;
