@@ -1,4 +1,4 @@
-if(WITH_HSRB_DESCRIPTION)
+if(lcm_FOUND AND WITH_HSRB_DESCRIPTION)
   # Defines a shared library for use by Drake demo1 of the Toyota Human Support
   # Robot revision B (HSRb).
   add_library_with_exports(LIB_NAME drakeHsrb SOURCE_FILES
