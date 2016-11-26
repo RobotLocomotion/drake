@@ -364,13 +364,13 @@
 
 
     <collision group="rightforearm_middle">
-          <origin rpy="0 0 0" xyz="0.0 -0.40 0.0"/>
+          <origin rpy="0 0 0" xyz="0.0 -0.35 0.0"/>
           <geometry>
             <sphere radius="0.0"/>
           </geometry>
     </collision>
     <visual group="rightforearm_middle">
-        <origin rpy="0 0 0" xyz="0.0 -0.40 0.0"/>
+        <origin rpy="0 0 0" xyz="0.0 -0.35 0.0"/>
         <geometry>
             <sphere radius="0.01"/>
         </geometry>
@@ -969,13 +969,13 @@
     </collision>
 
     <collision group="leftforearm_middle">
-          <origin rpy="0 0 0" xyz="0.0 0.40 0.0"/>
+          <origin rpy="0 0 0" xyz="0.0 0.35 0.0"/>
           <geometry>
             <sphere radius="0.0"/>
           </geometry>
     </collision>
     <visual group="leftforearm_middle">
-        <origin rpy="0 0 0" xyz="0.0 0.40 0.0"/>
+        <origin rpy="0 0 0" xyz="0.0 0.35 0.0"/>
         <geometry>
             <sphere radius="0.01"/>
         </geometry>

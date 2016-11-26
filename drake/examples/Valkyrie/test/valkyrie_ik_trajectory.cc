@@ -1,6 +1,7 @@
 // finds a standing posture of Valkyrie by solving IK and displays it in drake
 // visualizer.
 
+#include <fstream>
 #include <iostream>
 #include <numeric>
 #include <vector>
@@ -30,6 +31,8 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using Eigen::Matrix3Xd;
+using std::cout;
+using std::endl;
 
 namespace drake {
 namespace examples {
@@ -78,25 +81,20 @@ int DoMain() {
   for (int i = 0; i < tree->get_num_bodies(); i++)
     std::cout << i << " " << tree->getBodyOrFrameName(i) << std::endl;
 
-  // Setting up constraints, based on testIKMoreConstraints.cpp and
-  // director-generated M-file.
-  const double inf = std::numeric_limits<double>::infinity();
-  Vector2d tspan;
-  tspan << 0, 1;
-
-  VectorXd reach_start(tree->get_num_positions());
-  reach_start << 0.0,  // base_x
-      0.0,             // base_y
-      1.025,           // base_z
-      0.0,             // base_roll
-      0.0,             // base_pitch
-      0.0,             // 5 base_yaw
-      0.0,             // 6 torsoYaw
-      0.0,             // 7 torsoPitch
-      0.0,             // 8 torsoRoll
-      0.0,             // 9 lowerNeckPitch
+  VectorXd standing_pose(tree->get_num_positions());
+  standing_pose << 0.0,  // base_x
+      0.0,               // base_y
+      1.025,             // base_z
+      0.0,               // base_roll
+      0.0,               // base_pitch
+      0.0,               // 5 base_yaw
+      0.0,               // 6 torsoYaw
+      0.0,               // 7 torsoPitch
+      0.0,               // 8 torsoRoll
+      0.0,               // 9 lowerNeckPitch
       // 0.0,                  // 10 neckYaw
       // 0.0,                  // 11 upperNeckPitch
+
       0.30019663134302466,  // 12 rightShoulderPitch
       1.25,                 // 13 rightShoulderRoll
       0.0,                  // 14 rightShoulderYaw
@@ -104,6 +102,7 @@ int DoMain() {
       1.571,                // 16 rightForearmYaw
       0.0,                  // 17 rightWristRoll
       0.0,                  // 18 rightWristPItch
+
       0.30019663134302466,  // 19 leftShoulderPitch
       -1.25,                // 20 leftShoulderRoll
       0.0,                  // 21 leftShoulderYaw
@@ -111,18 +110,20 @@ int DoMain() {
       1.571,                // 23 leftForearmYaw
       0.0,                  // 24 leftWristRoll
       0.0,                  // 25 LeftWristPitch
-      0.0,                  // 26 rightHipYaw
-      0.0,                  // 27 rightHipRoll
-      -0.49,                // 28 rightHipPitch
-      1.205,                // 29 rightKneePitch
-      -0.71,                // 30 rightAnklePitch
-      0.0,                  // 31 rightAnkleRoll
-      0.0,                  // 32 leftHipYaw
-      0.0,                  // 33 leftHipRoll
-      -0.49,                // 34 leftHipPitch
-      1.205,                // 35 leftKneePitch
-      -0.71,                // 36 leftAnklePitch
-      0.0;                  // 37 leftAnkleRoll
+
+      0.0,    // 26 rightHipYaw
+      0.0,    // 27 rightHipRoll
+      -0.49,  // 28 rightHipPitch
+      1.205,  // 29 rightKneePitch
+      -0.71,  // 30 rightAnklePitch
+      0.0,    // 31 rightAnkleRoll
+
+      0.0,    // 32 leftHipYaw
+      0.0,    // 33 leftHipRoll
+      -0.49,  // 34 leftHipPitch
+      1.205,  // 35 leftKneePitch
+      -0.71,  // 36 leftAnklePitch
+      0.0;    // 37 leftAnkleRoll
 
   VectorXd prone_pose(tree->get_num_positions());
   prone_pose << 0.7,  // base_x
@@ -168,6 +169,51 @@ int DoMain() {
       -0.8644,  // 36 leftAnklePitch
       0.0;      // 37 leftAnkleRoll
 
+  // a prone pose where only toes are contacting the ground
+  VectorXd prone_pose_toes(tree->get_num_positions());
+  prone_pose_toes << 0.0,  // base_x
+      0.0,                 // base_y
+      0.441116,            // base_z
+      0.0,                 // base_roll
+      1.21367,             // base_pitch
+      0.0,                 // 5 base_yaw
+      0.0,                 // 6 torsoYaw
+      0.139111,            // 7 torsoPitch
+      0.0,                 // 8 torsoRoll
+      0.0,                 // 9 lowerNeckPitch
+      // 0.0,                  // 10 neckYaw
+      // 0.0,                  // 11 upperNeckPitch
+
+      -2.0944,  // 12 rightShoulderPitch [-130, -40]
+      1.39626,  // 13 rightShoulderRoll  [70, 85]
+      0.05,     // 14 rightShoulderYaw [fixed]
+      0.0,      // 15 rightElbowPitch [-6, 120]
+      0.0,      // 16 rightForearmYaw [fixed]
+      0.0,      // 17 rightWristRoll [fixed]
+      -0.49,    // 18 rightWristPitch [fixed]
+
+      -2.06676,  // 19 leftShoulderPitch [-130 -40]
+      -1.40269,  // 20 leftShoulderRoll [-85, -70]
+      -0.05,     // 21 leftShoulderYaw
+      0.013267,  // 22 leftElbowPitch [-120, 6]
+      0,         // 23 leftForearmYaw
+      0,         // 24 leftWristRoll
+      0.49,      // 25 LeftWristPitch
+
+      0.0,    // 26 rightHipYaw
+      0.0,    // 27 rightHipRoll
+      -0.48,  // 28 rightHipPitch
+      1.21,   // 29 rightKneePitch
+      -0.71,  // 30 rightAnklePitch
+      0.0,    // 31 rightAnkleRoll
+
+      0.0,    // 32 leftHipYaw
+      0.0,    // 33 leftHipRoll
+      -0.48,  // 34 leftHipPitch
+      1.21,   // 35 leftKneePitch
+      -0.71,  // 36 leftAnklePitch
+      0.0;    // 37 leftAnkleRoll
+
   VectorXd squat_pose(tree->get_num_positions());
   squat_pose << -0.141714353,  // 0
       0.157190702,             // 1
@@ -195,22 +241,29 @@ int DoMain() {
       3.14000000000000,      // 23
       0.00160567432000000,   // 24
       0.490000000000000,     // 25
-      0.345962604000000,     // 26
-      -0.249349812000000,    // 27
-      -2.37711866000000,     // 28
-      1.15699985000000,      // 29
-      0.0306223996000000,    // 30
-      0.348000000000000,     // 31
-      0.964904798000000,     // 32
-      0.0342466052000000,    // 33
-      -2.42000000000000,     // 34
-      1.90000000000000,      // 35
-      -0.595530575000000,    // 36
-      -0.324304201000000;    // 37
 
-  KinematicsCache<double> cache = tree->doKinematics(prone_pose);
+      0.345962604000000,   // 26
+      -0.249349812000000,  // 27
+      -2.37711866000000,   // 28
+      1.15699985000000,    // 29
+      0.0306223996000000,  // 30
+      0.348000000000000,   // 31
 
-  // 1 Neck Posture Constraint, posture constraints are imposed on q
+      0.964904798000000,   // 32
+      0.0342466052000000,  // 33
+      -2.42000000000000,   // 34
+      1.90000000000000,    // 35
+      -0.595530575000000,  // 36
+      -0.324304201000000;  // 37
+
+  KinematicsCache<double> cache = tree->doKinematics(standing_pose);
+
+  // Setting up constraints, based on testIKMoreConstraints.cpp and
+  // director-generated M-file.
+  const double inf = std::numeric_limits<double>::infinity();
+
+  Vector2d tspan(0, 4);
+  // Neck Posture Constraint, posture constraints are imposed on q
   PostureConstraint kc_posture_neck(tree.get(), tspan);
   std::vector<int> neck_idx;
   FindJointAndInsert(tree.get(), "lowerNeckPitch", &neck_idx);
@@ -221,47 +274,22 @@ int DoMain() {
   kc_posture_neck.setJointLimits(neck_idx.size(), neck_idx.data(), neck_lb,
                                  neck_ub);
 
-  // 2 Left foot position and orientation constraint, position and orientation
-  // constraints are imposed on frames/bodies
-  const Vector3d origin(0, 0, 0);
+  // no collision constraint
+  std::vector<int> active_body_idx;
+  // active_body_idx.push_back(l_foot);
+  // active_body_idx.push_back(r_foot);
+  std::set<std::string> active_group_names;
+  active_group_names.insert("l_leg");
+  active_group_names.insert("r_leg");
+  active_group_names.insert("l_arm");
+  active_group_names.insert("r_arm");
+  active_group_names.insert("l_uleg");
+  active_group_names.insert("r_uleg");
+  active_group_names.insert("core");
+  AllBodiesClosestDistanceConstraint no_collision_feet(
+      tree.get(), 0.0, inf, active_body_idx, active_group_names, tspan);
 
-  int l_foot = tree->FindBodyIndex("leftFoot");
-  Vector4d lfoot_quat(1, 0, 0, 0);
-  auto lfoot_pos0 = tree->transformPoints(cache, origin, l_foot, 0);
-  Vector3d lfoot_pos_lb(-inf, -inf, lfoot_pos0(2));
-  // Position and quaternion constraints are relaxed to make the problem
-  // solvable by IPOPT.
-  lfoot_pos_lb -= 0.0001 * Vector3d::Ones();
-  std::cout << "lfoot_pos_lb: " << std::endl << lfoot_pos_lb << std::endl;
-  Vector3d lfoot_pos_ub(inf, inf, lfoot_pos0(2));
-  lfoot_pos_ub += 0.0001 * Vector3d::Ones();
-  std::cout << "lfoot_pos_ub: " << std::endl << lfoot_pos_ub << std::endl;
-  WorldPositionConstraint kc_lfoot_pos(tree.get(), l_foot, origin, lfoot_pos_lb,
-                                       lfoot_pos_ub, tspan);
-  double tol = 0.5 / 180 * M_PI;
-  WorldQuatConstraint kc_lfoot_quat(tree.get(), l_foot, lfoot_quat, tol, tspan);
-
-  // 3 Right foot position and orientation constraint
-  int r_foot = tree->FindBodyIndex("rightFoot");
-  auto rfoot_pos0 = tree->transformPoints(cache, origin, r_foot, 0);
-  Vector4d rfoot_quat(1, 0, 0, 0);
-  Vector3d rfoot_pos_lb(-inf, -inf, rfoot_pos0(2));
-  rfoot_pos_lb -= 0.0001 * Vector3d::Ones();
-  Vector3d rfoot_pos_ub(inf, inf, rfoot_pos0(2));
-  rfoot_pos_ub += 0.0001 * Vector3d::Ones();
-
-  WorldPositionConstraint kc_rfoot_pos(tree.get(), r_foot, origin, rfoot_pos_lb,
-                                       rfoot_pos_ub, tspan);
-  WorldQuatConstraint kc_rfoot_quat(tree.get(), r_foot, rfoot_quat, tol, tspan);
-
-  // Pelvis height constraint
-  int pelvis = tree->FindBodyIndex("Pelvis");
-  Vector3d pelvis_pos_lb(-inf, -inf, 0);
-  Vector3d pelvis_pos_ub(inf, inf, 0.5);
-  WorldPositionConstraint kc_pelvis_pos(tree.get(), pelvis, origin,
-                                        pelvis_pos_lb, pelvis_pos_ub, tspan);
-
-  // 4 Torso posture constraint
+  // Torso posture constraint
   PostureConstraint kc_posture_torso(tree.get(), tspan);
   std::vector<int> torso_idx;
   FindJointAndInsert(tree.get(), "torsoYaw", &torso_idx);
@@ -280,7 +308,7 @@ int DoMain() {
   Vector3d torso_ub(65.0 / 180 * M_PI, 38.0 / 180 * M_PI, 13.0 / 180 * M_PI);
   kc_posture_torso.setJointLimits(3, torso_idx.data(), torso_lb, torso_ub);
 
-  // 5 knee posture constraint
+  // knee posture constraint
   PostureConstraint kc_posture_knee(tree.get(), tspan);
   std::vector<int> knee_idx;
   FindJointAndInsert(tree.get(), "leftKneePitch", &knee_idx);
@@ -289,9 +317,64 @@ int DoMain() {
   Vector2d knee_ub(115.0 / 180 * M_PI, 115.0 / 180 * M_PI);
   kc_posture_knee.setJointLimits(2, knee_idx.data(), knee_lb, knee_ub);
 
-  // 6 Left arm posture constraint
 
-  PostureConstraint kc_posture_larm(tree.get(), tspan);
+  // Left foot position and orientation constraint, position and orientation
+  // constraints are imposed on frames/bodies
+  Vector2d tspan_foot_flat(0.5, 4);
+
+  auto leftFootPtr = tree->FindBody("leftFoot");
+  Matrix3Xd leftFootContactPts = leftFootPtr->get_contact_points();
+  Matrix3Xd l_foot_pts = leftFootContactPts.rightCols(8);
+  Matrix3Xd l_foot_toes = l_foot_pts.rightCols(2);
+  std::cout << "left foot contact pts: " << std::endl;
+  std::cout << l_foot_pts << std::endl;
+  const Vector3d origin(0, 0, 0);
+
+  int l_foot = tree->FindBodyIndex("leftFoot");
+  Vector4d lfoot_quat(1, 0, 0, 0);
+  Vector3d lfoot_pos_lb_one_pt(-inf, -inf, 0);
+  Matrix3Xd lfoot_pos_lb = lfoot_pos_lb_one_pt.replicate(1, 2);
+  // Position and quaternion constraints are relaxed to make the problem
+  // solvable by IPOPT.
+  lfoot_pos_lb(2, 0) -= 0.0001;
+  lfoot_pos_lb(2, 1) -= 0.0001;
+  std::cout << "lfoot_pos_lb: " << std::endl << lfoot_pos_lb << std::endl;
+  Vector3d lfoot_pos_ub_one_pt(inf, inf, 0);
+  Matrix3Xd lfoot_pos_ub = lfoot_pos_ub_one_pt.replicate(1, 2);
+  lfoot_pos_ub(2, 0) += 0.0001;
+  lfoot_pos_ub(2, 1) += 0.0001;
+  std::cout << "lfoot_pos_ub: " << std::endl << lfoot_pos_ub << std::endl;
+  WorldPositionConstraint kc_lfoot_pos(tree.get(), l_foot, l_foot_toes,
+                                       lfoot_pos_lb, lfoot_pos_ub, tspan);
+  double tol = 0.5 / 180 * M_PI;
+  WorldQuatConstraint kc_lfoot_quat(tree.get(), l_foot, lfoot_quat, tol,
+                                    tspan_foot_flat);
+
+  // Right foot position and orientation constraint
+  auto rightFootPtr = tree->FindBody("rightFoot");
+  Matrix3Xd rightFootContactPts = rightFootPtr->get_contact_points();
+  Matrix3Xd r_foot_pts = rightFootContactPts.rightCols(8);
+  Matrix3Xd r_foot_toes = r_foot_pts.rightCols(2);
+  std::cout << "right foot contact pts: " << std::endl;
+  std::cout << r_foot_pts << std::endl;
+
+  int r_foot = tree->FindBodyIndex("rightFoot");
+  Vector4d rfoot_quat(1, 0, 0, 0);
+  WorldPositionConstraint kc_rfoot_pos(tree.get(), r_foot, r_foot_toes,
+                                       lfoot_pos_lb, lfoot_pos_ub, tspan);
+  WorldQuatConstraint kc_rfoot_quat(tree.get(), r_foot, rfoot_quat, tol,
+                                    tspan_foot_flat);
+
+  // Pelvis height constraint
+  int pelvis = tree->FindBodyIndex("Pelvis");
+  Vector3d pelvis_pos_lb(-inf, -inf, 0);
+  Vector3d pelvis_pos_ub(inf, inf, 0.5);
+  WorldPositionConstraint kc_pelvis_pos(tree.get(), pelvis, origin,
+                                        pelvis_pos_lb, pelvis_pos_ub, tspan);
+
+  // Left arm posture constraint
+  Vector2d tspan_arm_posture(0, 2.5);
+  PostureConstraint kc_posture_larm(tree.get(), tspan_arm_posture);
   std::vector<int> larm_idx;
   FindJointAndInsert(tree.get(), "leftShoulderPitch", &larm_idx);
   FindJointAndInsert(tree.get(), "leftShoulderRoll", &larm_idx);
@@ -315,8 +398,8 @@ int DoMain() {
 
   kc_posture_larm.setJointLimits(7, larm_idx.data(), larm_lb, larm_ub);
 
-  // 7 Right arm posture constraint
-  PostureConstraint kc_posture_rarm(tree.get(), tspan);
+  // Right arm posture constraint
+  PostureConstraint kc_posture_rarm(tree.get(), tspan_arm_posture);
   std::vector<int> rarm_idx;
   FindJointAndInsert(tree.get(), "rightShoulderPitch", &rarm_idx);
   FindJointAndInsert(tree.get(), "rightShoulderRoll", &rarm_idx);
@@ -341,66 +424,58 @@ int DoMain() {
   kc_posture_rarm.setJointLimits(7, rarm_idx.data(), rarm_lb, rarm_ub);
 
   // 8 Quasistatic constraint
-  Vector2d tspan1(0, 0.5);
-  Vector2d tspan2(0.5, 1);
-  QuasiStaticConstraint kc_kuasi_start(tree.get(), tspan1);
-  QuasiStaticConstraint kc_kuasi_end(tree.get(), tspan2);
-  kc_kuasi_start.setShrinkFactor(0.9);
-  kc_kuasi_start.setActive(true);
-  kc_kuasi_end.setShrinkFactor(0.9);
-  kc_kuasi_end.setActive(true);
+  Vector2d tspan_4pts(0, 2.6);
+  Vector2d tspan_3pts(1.5, 2.5);
+  Vector2d tspan_2pts(2.5, 4);
+  QuasiStaticConstraint kc_kuasi_4pts(tree.get(), tspan_4pts);
+  QuasiStaticConstraint kc_kuasi_3pts(tree.get(), tspan_3pts);
+  QuasiStaticConstraint kc_kuasi_2pts(tree.get(), tspan_2pts);
+  kc_kuasi_4pts.setShrinkFactor(0.9);
+  kc_kuasi_4pts.setActive(true);
+  kc_kuasi_3pts.setShrinkFactor(0.9);
+  kc_kuasi_3pts.setActive(true);
+  kc_kuasi_2pts.setShrinkFactor(0.9);
+  kc_kuasi_2pts.setActive(true);
 
-  auto leftFootPtr = tree->FindBody("leftFoot");
-  Matrix3Xd leftFootContactPts = leftFootPtr->get_contact_points();
-  Matrix3Xd l_foot_pts = leftFootContactPts.rightCols(8);
-  kc_kuasi_start.addContact(1, &l_foot, &l_foot_pts);
-  kc_kuasi_end.addContact(1, &l_foot, &l_foot_pts);
+  kc_kuasi_4pts.addContact(1, &l_foot, &l_foot_pts);
+  kc_kuasi_3pts.addContact(1, &l_foot, &l_foot_pts);
+  kc_kuasi_2pts.addContact(1, &l_foot, &l_foot_pts);
 
-  auto rightFootPtr = tree->FindBody("rightFoot");
-  Matrix3Xd rightFootContactPts = rightFootPtr->get_contact_points();
-  Matrix3Xd r_foot_pts = rightFootContactPts.rightCols(8);
-  kc_kuasi_start.addContact(1, &r_foot, &r_foot_pts);
-  kc_kuasi_end.addContact(1, &r_foot, &r_foot_pts);
+  kc_kuasi_4pts.addContact(1, &r_foot, &r_foot_pts);
+  kc_kuasi_3pts.addContact(1, &r_foot, &r_foot_pts);
+  kc_kuasi_2pts.addContact(1, &r_foot, &r_foot_pts);
 
   auto leftArmPtr = tree->FindBody("leftForearmLink");
   Matrix3Xd leftArmContactPts = leftArmPtr->get_contact_points();
   std::cout << "left arm contact pts: " << std::endl
             << leftArmContactPts << std::endl;
   int l_forearm = tree->FindBodyIndex("leftForearmLink");
-  kc_kuasi_start.addContact(1, &l_forearm, &leftArmContactPts);
-  kc_kuasi_end.addContact(1, &l_forearm, &leftArmContactPts);
+  kc_kuasi_4pts.addContact(1, &l_forearm, &leftArmContactPts);
+  kc_kuasi_3pts.addContact(1, &l_forearm, &leftArmContactPts);
 
   auto rightArmPtr = tree->FindBody("rightForearmLink");
   Matrix3Xd rightArmContactPts = rightArmPtr->get_contact_points();
   std::cout << "right arm contact pts: " << std::endl
             << rightArmContactPts << std::endl;
   int r_forearm = tree->FindBodyIndex("rightForearmLink");
-  kc_kuasi_start.addContact(1, &r_forearm, &rightArmContactPts);
+  kc_kuasi_4pts.addContact(1, &r_forearm, &rightArmContactPts);
 
   // 9 leftForeArm position constraint
+  Vector2d tspan_larm_sliding(0, 2.6);
   Vector3d lforearm_pos_lb(-inf, -inf, 0);
   Vector3d lforearm_pos_ub(inf, inf, 0);
   WorldPositionConstraint kc_lforearm_pos(tree.get(), l_forearm,
                                           leftArmContactPts, lforearm_pos_lb,
-                                          lforearm_pos_ub, tspan);
+                                          lforearm_pos_ub, tspan_larm_sliding);
 
   // 9 rightForeArm position constraint
+  Vector2d tspan_rarm_sliding(0, 2.7);
   Vector3d rforearm_pos_lb(-inf, -inf, 0);
   Vector3d rforearm_pos_ub(inf, inf, 0);
   WorldPositionConstraint kc_rforearm_pos(tree.get(), r_forearm,
                                           rightArmContactPts, rforearm_pos_lb,
-                                          rforearm_pos_ub, tspan);
+                                          rforearm_pos_ub, tspan_rarm_sliding);
 
-  // 11 no collision constraint
-  std::vector<int> active_body_idx;
-  // active_body_idx.push_back(l_foot);
-  // active_body_idx.push_back(r_foot);
-  std::set<std::string> active_group_names;
-  active_group_names.insert("l_leg");
-  active_group_names.insert("r_leg");
-  active_group_names.insert("l_arm");
-  AllBodiesClosestDistanceConstraint no_collision_feet(
-      tree.get(), 0.0, inf, active_body_idx, active_group_names, tspan);
   // -----------------solve-----------------------------------------------------
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&kc_posture_neck);
@@ -412,8 +487,9 @@ int DoMain() {
   constraint_array.push_back(&kc_posture_knee);
   constraint_array.push_back(&kc_posture_larm);
   constraint_array.push_back(&kc_posture_rarm);
-  constraint_array.push_back(&kc_kuasi_start);
-  constraint_array.push_back(&kc_kuasi_end);
+  constraint_array.push_back(&kc_kuasi_4pts);
+  //constraint_array.push_back(&kc_kuasi_3pts);
+  constraint_array.push_back(&kc_kuasi_2pts);
   constraint_array.push_back(&kc_lforearm_pos);
   constraint_array.push_back(&kc_rforearm_pos);
   constraint_array.push_back(&no_collision_feet);
@@ -427,7 +503,7 @@ int DoMain() {
 
   VectorXd cost(tree->get_num_positions());
   cost.setOnes();
-  /*
+
   const int left_hip_pitch_idx = 32;
   const int right_hip_pitch_idx = 26;
   const int left_knee_pitch_idx = 33;
@@ -449,16 +525,18 @@ int DoMain() {
   std::vector<int> torso_rotation_idx = {torso_yaw_idx, torso_roll_idx,
                                          torso_pitch_idx};
 
-  std::vector<int> base_idx = {0, 1, 2, 3, 4, 5};
-  for (const int& i : base_idx) cost(i) = 0;
-  for (const int& i : torso_rotation_idx) cost(i) = 0.1;
-  for (const int& i : lower_body_pitch_idx) cost(i) = 0;
-  */
+  std::vector<int> base_translation_idx = {0, 1, 2};
+  std::vector<int> base_rotation_idx = {3, 4, 5};
+
+  for (const int& i : base_translation_idx) cost(i) = 0;
+  for (const int& i : torso_rotation_idx) cost(i) = 1;
+  for (const int& i : lower_body_pitch_idx) cost(i) = 1;
 
   // display all costs
   std::cout << "costs are:" << std::endl;
   for (int i = 0; i < cost.size(); i++) {
-    std::cout << cost(i) << " " << tree->get_position_name(i) << i << std::endl;
+    std::cout << cost(i) << " " << tree->get_position_name(i) << " " << i
+              << std::endl;
   }
 
   Eigen::MatrixXd Q = cost.asDiagonal();
@@ -469,42 +547,85 @@ int DoMain() {
   ikoptions.setQ(Q);
   ikoptions.setQa(Qa);
   ikoptions.setQv(Qv);
+  ikoptions.setSequentialSeedFlag(true);
 
-  int nT = 3;
-  std::vector<double> t = {0, 0.5, 1};
-  Eigen::MatrixXd q_sol(tree->get_num_positions(), nT);
-  Eigen::MatrixXd qdot_sol(tree->get_num_velocities(), nT);
-  Eigen::MatrixXd qddot_sol(tree->get_num_positions(), nT);
-  Eigen::MatrixXd q_nom = prone_pose.replicate(1, nT);
-  VectorXd qdot0 = VectorXd::Zero(tree->get_num_velocities());
-  // int info;
+  const int kN_per_step = 2;
+  int nT = kN_per_step + 1;
+  std::vector<double> t1;
+  for (int i = 0; i < nT; i++) t1.push_back(1.0 / (nT - 1) * i);
+  Eigen::MatrixXd q_sol1(tree->get_num_positions(), nT);
+  Eigen::MatrixXd q_nom(tree->get_num_positions(), nT);
+  q_nom = prone_pose.replicate(1, nT);
+
+  int nT2 = kN_per_step * 3;
+  std::vector<double> t2;
+  for (int i = 0; i < nT2; i++) t2.push_back(3.0 / nT2 * (i + 1) + 1);
+  Eigen::MatrixXd q_sol2(tree->get_num_positions(), nT2);
+  Eigen::MatrixXd q_nom2(tree->get_num_positions(), nT2);
+  q_nom2.leftCols(kN_per_step) = prone_pose.replicate(1, kN_per_step);
+  for (int i = kN_per_step; i < kN_per_step * 2; i++)
+    q_nom2.col(i) = squat_pose;
+  for (int i = kN_per_step * 2; i < kN_per_step * 3; i++)
+    q_nom2.col(i) = standing_pose;
+
   std::vector<int> info_v(nT, 0);
+  std::vector<int> info2_v(nT2, 0);
   std::vector<std::string> infeasible_constraint;
   /*
-  inverseKinTraj(tree.get(), nT, t.data(), qdot0, q_nom, q_nom,
-             constraint_array.size(), constraint_array.data(), ikoptions,
-             &q_sol, &qdot_sol,&qddot_sol, &info, &infeasible_constraint);
+  VectorXd qdot0 = VectorXd::Zero(tree->get_num_velocities());
+  Eigen::MatrixXd qdot_sol(tree->get_num_velocities(), nT);
+  Eigen::MatrixXd qddot_sol(tree->get_num_positions(), nT);
+  int info;
+  inverseKinTraj(tree.get(), nT, t1.data(), qdot0, q_nom, q_nom,
+                 constraint_array.size(), constraint_array.data(), ikoptions,
+                 &q_sol1, &qdot_sol, &qddot_sol, &info, &infeasible_constraint);
+  std::cout << "info: " << info << std::endl;
   */
-  inverseKinPointwise(tree.get(), nT, t.data(), q_nom, q_nom,
-                      constraint_array.size(), constraint_array.data(),
-                      ikoptions, &q_sol, info_v.data(), &infeasible_constraint);
 
-  // After solving
-  // Vector3d com = tree->centerOfMass(cache);
-  // std::cout << "info: " << info << std::endl;
+  inverseKinPointwise(tree.get(), nT, t1.data(), q_nom, q_nom,
+                      constraint_array.size(), constraint_array.data(),
+                      ikoptions, &q_sol1, info_v.data(),
+                      &infeasible_constraint);
+
+  inverseKinPointwise(tree.get(), nT2, t2.data(), q_nom2, q_nom2,
+                      constraint_array.size(), constraint_array.data(),
+                      ikoptions, &q_sol2, info2_v.data(),
+                      &infeasible_constraint);
+
   for (int i = 0; i < info_v.size(); i++) {
     std::cout << "info " << i << ": " << info_v[i] << std::endl;
   }
+  for (int i = 0; i < info2_v.size(); i++) {
+    std::cout << "info2 " << i << ": " << info2_v[i] << std::endl;
+  }
+  Eigen::MatrixXd q_sol(tree->get_num_positions(), nT + nT2);
+  q_sol.leftCols(nT) = q_sol1;
+  q_sol.rightCols(nT2) = q_sol2;
+  std::vector<double> t(t1);
+  t.insert(t.end(), t2.begin(), t2.end());
 
-  std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory =
-      std::make_unique<PiecewisePolynomialTrajectory>(q_sol, t);
+  // writing results to a file
+  std::ofstream myfile;
+
+  myfile.open("results.txt");
+  if (myfile.is_open()) {
+    for (int i = 0; i < t.size(); i++) {
+      myfile << t[i] << " ";
+    }
+    myfile << endl;
+    myfile << q_sol;
+    myfile.close();
+  } else
+    cout << "unable to open file \"results.txt\"" << endl;
 
   // show it in drake visualizer
+  std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory =
+      std::make_unique<PiecewisePolynomialTrajectory>(q_sol, t);
 
   // VectorXd x(tree->get_num_positions() + tree->get_num_velocities());
   VectorXd x(tree->get_num_velocities());
   x.setZero();
-  // x.head(q_sol.size()) = q_sol;
+  // x.head(q_sol1.size()) = q_sol1;
 
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
@@ -516,18 +637,14 @@ int DoMain() {
   builder.Connect(traj_source->get_output_port(0),
                   input_mux->get_input_port(0));
   builder.Connect(source->get_output_port(), input_mux->get_input_port(1));
-
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
 
   builder.Connect(input_mux->get_output_port(0), publisher->get_input_port(0));
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
-  // systems::Context<double>* context = simulator.get_mutable_context();
-
   simulator.Initialize();
-
-  simulator.StepTo(1.0);
+  simulator.StepTo(2.5);
 
   // auto context = diagram->CreateDefaultContext();
   // auto output = diagram->AllocateOutput(*context);
