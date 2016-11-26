@@ -1,11 +1,3 @@
- message(STATUS "=============================================================")
- get_cmake_property(_variableNames VARIABLES)
- foreach (_variableName ${_variableNames})
-     message(STATUS "${_variableName}=${${_variableName}}")
- endforeach()
- message(STATUS "=============================================================")
-
-
 if(WITH_HSRB_DESCRIPTION)
   # Defines a shared library for use by Drake demo1 of the Toyota Human Support
   # Robot revision B (HSRb).

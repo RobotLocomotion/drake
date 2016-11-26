@@ -5,7 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "drake/lcm/drake_lcm.h"
+#include "drake/lcm/drake_lcm_interface.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_tree.h";
 #include "drake/multibody/rigid_body_tree_construction.h"
