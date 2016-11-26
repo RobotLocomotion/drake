@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/primitives/affine_system.h"
 
@@ -69,6 +70,10 @@ class AcrobotPlant : public systems::LeafSystem<T> {
       b2{0.1},    // Damping coefficient of the elbow joint (kg*m^2/s).
       g{9.81};    // Gravitational constant (m/s^2).
 };
+
+/// Constructs the Acrobot with (only) encoder outputs.
+template <typename T>
+std::unique_ptr<systems::Diagram<T>> AcrobotWEncoder();
 
 /// Constructs the LQR controller for stabilizing the upright fixed point using
 /// default LQR cost matrices which have been tested for this system.

@@ -1,6 +1,6 @@
 add_library_with_exports(LIB_NAME drakeAcrobotPlant
     SOURCE_FILES acrobot_plant.cc)
-target_link_libraries(drakeAcrobotPlant drakeSystemFramework drakeLinearControl)
+target_link_libraries(drakeAcrobotPlant drakeSystemFramework drakeLinearControl drakeSensors)
 
 if(lcm_FOUND)
   add_executable(acrobot_run_passive acrobot_run_passive.cc)
