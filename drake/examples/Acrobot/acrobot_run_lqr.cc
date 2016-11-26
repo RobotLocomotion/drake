@@ -1,15 +1,19 @@
+#include <cmath>
+
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/Acrobot/acrobot_plant.h"
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcm/lcm_call_matlab.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/primitives/signal_logger.h"
 
 namespace drake {
 namespace examples {
@@ -40,6 +44,9 @@ int do_main(int argc, char* argv[]) {
   builder.Connect(acrobot->get_output_port(0), controller->get_input_port());
   builder.Connect(controller->get_output_port(), acrobot->get_input_port(0));
 
+  auto logger = builder.AddSystem<systems::SignalLogger<double>>(4);
+  builder.Connect(acrobot->get_output_port(0), logger->get_input_port(0));
+
   auto diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
   systems::Context<double>* acrobot_context =
@@ -56,8 +63,17 @@ int do_main(int argc, char* argv[]) {
   x0->set_theta2dot(0.0);
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
+  simulator.get_mutable_integrator()->set_minimum_step_size(0.01);
   simulator.Initialize();
-  simulator.StepTo(10);
+  simulator.StepTo(5);
+
+  // Launch lcm_call_matlab_client to see the plots.
+  using lcm::LcmCallMatlab;
+  LcmCallMatlab("figure",1);
+  LcmCallMatlab("plot", logger->sample_times(),
+                (logger->data().row(0).array() - M_PI).matrix(),
+                logger->sample_times(), logger->data().row(1));
+
   return 0;
 }
 
