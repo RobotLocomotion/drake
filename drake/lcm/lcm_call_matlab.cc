@@ -42,7 +42,7 @@ void ToLcmMatlabArray(double var, drake::lcmt_matlab_array* matlab_array) {
   memcpy(matlab_array->data.data(), &var, matlab_array->num_bytes);
 }
 
-void ToLcmMatlabArray(const Eigen::Ref<Eigen::MatrixXd>& mat,
+void ToLcmMatlabArray(const Eigen::Ref<const Eigen::MatrixXd>& mat,
                       drake::lcmt_matlab_array* matlab_array) {
   matlab_array->type = drake::lcmt_matlab_array::DOUBLE;
   matlab_array->rows = mat.rows();
