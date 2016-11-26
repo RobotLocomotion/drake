@@ -126,6 +126,54 @@ GTEST_TEST(TestLinearize, FromAffine) {
                               MatrixCompareType::absolute));
 }
 
+// Test a few simple systems that are known to be controllable (or not).
+GTEST_TEST(TestLinearize, Controllability) {
+  Eigen::Matrix2d A;
+  Eigen::Matrix<double, 2, 1> B;
+  Eigen::Matrix<double, 0, 2> C;
+  Eigen::Matrix<double, 0, 1> D;
+
+  // Controllable system: x1dot = x2, x2dot = u (aka xddot = u).
+  A << 0, 1, 0, 0;
+  B << 0, 1;
+  LinearSystem<double> sys1(A, B, C, D);
+
+  EXPECT_TRUE(IsControllable(sys1));
+
+  // Uncontrollable system: x1dot = u, x2dot = u.
+  A << 0, 0, 0, 0;
+  B << 1, 1;
+  LinearSystem<double> sys2(A, B, C, D);
+
+  EXPECT_FALSE(IsControllable(sys2));
+}
+
+// Test a few simple systems that are known to be observable (or not).
+GTEST_TEST(TestLinearize, Observability) {
+  Eigen::Matrix2d A;
+  Eigen::Matrix<double, 2, 1> B;
+  Eigen::Matrix<double, 2, 2> C;
+  Eigen::Matrix<double, 2, 1> D;
+
+  // x1dot = x2, x2dot = u (aka  xddot = u).
+  A << 0, 1, 0, 0;
+  B << 0, 1;
+  D << 0, 0;
+
+  // Observable: y = x.
+  C << 1, 0, 0, 1;
+  LinearSystem<double> sys1(A, B, C, D);
+  EXPECT_TRUE(IsObservable(sys1));
+
+  // Unobservable: y = x2;
+  LinearSystem<double> sys2(A, B, C.bottomRows(1), D.bottomRows(1));
+  EXPECT_FALSE(IsObservable(sys2));
+
+  // Observable: y = x1;
+  LinearSystem<double> sys3(A, B, C.topRows(1), D.topRows(1));
+  EXPECT_TRUE(IsObservable(sys3));
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

@@ -72,5 +72,19 @@ std::unique_ptr<LinearSystem<double>> Linearize(
     const System<double>& system, const Context<double>& context,
     const double equilibrium_check_tolerance = 1e-6);
 
+/// Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].
+Eigen::MatrixXd ControllabilityMatrix(const LinearSystem<double>& sys);
+
+/// Returns true iff the controllability matrix is full row rank.
+bool IsControllable(const LinearSystem<double>& sys,
+                    double threshold = Eigen::Default);
+
+/// Returns the observability matrix: O = [ C; CA; ...; CA^{n-1} ].
+Eigen::MatrixXd ObservabilityMatrix(const LinearSystem<double>& sys);
+
+/// Returns true iff the observability matrix is full column rank.
+bool IsObservable(const LinearSystem<double>& sys,
+                  double threshold = Eigen::Default);
+
 }  // namespace systems
 }  // namespace drake
