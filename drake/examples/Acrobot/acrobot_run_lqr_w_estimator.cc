@@ -25,9 +25,10 @@ namespace examples {
 namespace acrobot {
 namespace {
 
-// Simple example which simulates the Acrobot, started near the upright, with an
-// LQR controller designed to stabilize the unstable fixed point and a state
-// estimator in the loop. Run drake-visualizer to see the animated result.
+// Simple example which simulates the Acrobot, started near the upright
+// configuration, with an LQR controller designed to stabilize the unstable
+// fixed point and a state estimator in the loop. Run drake-visualizer to
+// see the animated result.
 
 DEFINE_double(realtime_factor, 1.0,
               "Playback speed.  See documentation for "
@@ -37,9 +38,11 @@ int do_main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   // Make the robot.
-  // TODO(russt): Replace this with AcrobotWEncoders once #4210 lands.
   systems::DiagramBuilder<double> builder;
-  auto acrobot = builder.AddSystem<AcrobotPlant>();
+  auto acrobot_w_encoder = builder.AddSystem<AcrobotWEncoder<double>>(true);
+
+  // Get a pointer to the actual plant subsystem (will be used below).
+  auto acrobot = acrobot_w_encoder->acrobot_plant();
 
   // Attach a DrakeVisualizer so we can animate the robot.
   lcm::DrakeLcm lcm;
@@ -48,48 +51,42 @@ int do_main(int argc, char* argv[]) {
       GetDrakePath() + "/examples/Acrobot/Acrobot.urdf",
       multibody::joints::kFixed, tree.get());
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
-  builder.Connect(acrobot->get_output_port(0), publisher->get_input_port(0));
+  builder.Connect(acrobot_w_encoder->get_output_port(1),
+                  publisher->get_input_port(0));
 
   // Make a Kalman filter observer.
-  auto observer_acrobot = std::make_unique<AcrobotPlant<double>>();
+  auto observer_acrobot = std::make_unique<AcrobotWEncoder<double>>();
   auto observer_context = observer_acrobot->CreateDefaultContext();
   {  // Set context to upright fixed point.
-    auto x0 = dynamic_cast<AcrobotStateVector<double>*>(
-        observer_context->get_mutable_continuous_state_vector());
-    DRAKE_DEMAND(x0 != nullptr);
+    AcrobotStateVector<double>* x0 =
+        observer_acrobot->get_mutable_acrobot_state(observer_context.get());
     x0->set_theta1(M_PI);
     x0->set_theta2(0.0);
     x0->set_theta1dot(0.0);
     x0->set_theta2dot(0.0);
     observer_context->FixInputPort(0, Vector1d::Constant(0.0));
   }
-  Eigen::Matrix4d W = Eigen::Matrix4d::Identity(),
-                  V = Eigen::Matrix4d::Identity();
-  V(0, 0) = 0.1;
-  V(1, 1) = 0.1;  // Position measurements are clean.
+  // Make a linearization here for the exercise below.  Need to do it before I
+  // std::move the pointers.
+  auto linearized_acrobot =
+      systems::Linearize(*observer_acrobot, *observer_context);
+
+  Eigen::Matrix4d W = Eigen::Matrix4d::Identity();
+  Eigen::Matrix2d V =
+      0.1 * Eigen::Matrix2d::Identity();  // Position measurements are clean.
   auto observer =
       builder.AddSystem(systems::estimators::SteadyStateKalmanFilter(
           std::move(observer_acrobot), std::move(observer_context), W, V));
-  builder.Connect(acrobot->get_output_port(0), observer->get_input_port(0));
+  builder.Connect(acrobot_w_encoder->get_output_port(0),
+                  observer->get_input_port(0));
 
   {  // As a simple exercise, analyze the closed-loop estimation error dynamics.
-    auto context = acrobot->CreateDefaultContext();
-    auto x0 = dynamic_cast<AcrobotStateVector<double>*>(
-        context->get_mutable_continuous_state_vector());
-    DRAKE_DEMAND(x0 != nullptr);
-    x0->set_theta1(M_PI);
-    x0->set_theta2(0.0);
-    x0->set_theta1dot(0.0);
-    x0->set_theta2dot(0.0);
-    context->FixInputPort(0, Vector1d::Constant(0.0));
-
-    auto linearized_acrobot = systems::Linearize(*acrobot, *context);
-
     std::cout << "Is this system observable? "
               << systems::IsObservable(*linearized_acrobot) << std::endl;
 
     Eigen::Matrix4d error_sys =
         linearized_acrobot->A() - observer->L() * linearized_acrobot->C();
+    std::cout << "L = " << observer->L() << std::endl;
     std::cout << "A - LC = " << std::endl << error_sys << std::endl;
     std::cout << "eig(A-LC) = " << error_sys.eigenvalues() << std::endl;
   }
@@ -97,12 +94,14 @@ int do_main(int argc, char* argv[]) {
   // Make the LQR Controller.
   auto controller = builder.AddSystem(BalancingLQRController(acrobot));
   builder.Connect(observer->get_output_port(0), controller->get_input_port());
-  builder.Connect(controller->get_output_port(), acrobot->get_input_port(0));
+  builder.Connect(controller->get_output_port(),
+                  acrobot_w_encoder->get_input_port(0));
   builder.Connect(controller->get_output_port(), observer->get_input_port(1));
 
   // Log the true state and the estimated state.
   auto x_logger = builder.AddSystem<systems::SignalLogger<double>>(4);
-  builder.Connect(acrobot->get_output_port(0), x_logger->get_input_port(0));
+  builder.Connect(acrobot_w_encoder->get_output_port(1),
+                  x_logger->get_input_port(0));
   auto xhat_logger = builder.AddSystem<systems::SignalLogger<double>>(4);
   builder.Connect(observer->get_output_port(0), xhat_logger->get_input_port(0));
 
@@ -112,8 +111,10 @@ int do_main(int argc, char* argv[]) {
 
   // Set an initial condition near the upright fixed point.
   auto x0 = dynamic_cast<AcrobotStateVector<double>*>(
-      diagram
-          ->GetMutableSubsystemContext(simulator.get_mutable_context(), acrobot)
+      dynamic_cast<systems::DiagramContext<double>*>(
+          diagram->GetMutableSubsystemContext(simulator.get_mutable_context(),
+                                              acrobot_w_encoder))
+          ->GetMutableSubsystemContext(0)
           ->get_mutable_continuous_state_vector());
   DRAKE_DEMAND(x0 != nullptr);
   x0->set_theta1(M_PI + 0.1);
@@ -137,7 +138,7 @@ int do_main(int argc, char* argv[]) {
   simulator.get_mutable_integrator()->set_maximum_step_size(0.01);
   simulator.get_mutable_integrator()->set_minimum_step_size(0.01);
   simulator.Initialize();
-  simulator.StepTo(3);
+  simulator.StepTo(5);
 
   // Plot the results (launch lcm_call_matlab_client to see the plots).
   using lcm::LcmCallMatlab;
