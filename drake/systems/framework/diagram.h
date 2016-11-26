@@ -377,6 +377,36 @@ class Diagram : public System<T>,
     }
   }
 
+  /// Returns true if and only if @p id exists in this Diagram and is
+  // connected.
+  bool is_connected(const PortIdentifier& id) const {
+    return dependency_graph_.find(id) != dependency_graph_.end();
+  }
+
+  /// Returns the output port that's connected to @p input_port if and only if
+  /// @p id exist inside this Diagram and is connected to an output
+  /// port. Otherwise it aborts. This method is typically used in conjuction
+  /// with is_connected().
+  const PortIdentifier get_connected(const PortIdentifier& id) const {
+    const auto itr = dependency_graph_.find(id);
+    DRAKE_DEMAND(itr != dependency_graph_.end());
+    return itr->second;
+  }
+
+  /// Returns true if and only if this Diagram has an input port that's
+  /// identified by @p id.
+  bool has_input(const PortIdentifier& id) const {
+    return std::find(input_port_ids_.begin(), input_port_ids_.end(), id) !=
+           input_port_ids_.end();
+  }
+
+  /// Returns true if and only if this Diagram has an output port that's
+  /// identified by @p id.
+  bool has_output(const PortIdentifier& id) const {
+    return std::find(output_port_ids_.begin(), output_port_ids_.end(), id) !=
+           output_port_ids_.end();
+  }
+
  protected:
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).
