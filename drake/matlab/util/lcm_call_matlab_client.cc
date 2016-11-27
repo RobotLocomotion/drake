@@ -15,11 +15,39 @@
 // from localhost by default.  Perhaps writing/sending a secret password file to
 // disk which is only accessible to localhost (e.g. .Xauthority) would work.
 
-void flushMatlabEventBuffer(void) {
+void FlushMatlabEventBuffer(void) {
   // An ugly hack.  drawnow used to work, but the internet confirms that it
   // stopped working around R2015.
   static mxArray* time = mxCreateDoubleScalar(0.001);
   mexCallMATLAB(0, nullptr, 1, &time, "pause");
+}
+
+// Per discussion at https://github.com/RobotLocomotion/drake/pull/4256 ,
+// guard against incompatibility between lcm and matlab.
+// Note: Candidate for moving to a shared location for reuse.
+void CheckIfLcmWillExplode() {
+  mxArray* plhs[1];
+  mxArray* prhs[2];
+
+  // Only known to fail on unix.
+  mexCallMATLAB(1, plhs, 0, nullptr, "isunix");
+  bool is_unix = mxIsLogicalScalarTrue(plhs[0]);
+  mxDestroyArray(plhs[0]);
+  if (!is_unix) return;
+
+  // Fails on MATLAB > 2014a
+  prhs[0] = mxCreateString("matlab");
+  prhs[1] = mxCreateString("2014b");
+  mexCallMATLAB(1, plhs, 2, prhs, "verLessThan");
+  bool is_safe_matlab_version = mxIsLogicalScalarTrue(plhs[0]);
+  mxDestroyArray(plhs[0]);
+  mxDestroyArray(prhs[0]);
+  mxDestroyArray(prhs[1]);
+  if (is_safe_matlab_version) return;
+
+  mexErrMsgTxt(
+      "LCM mex is incompatible with MATLAB >R2014a on unix.  See "
+      "https://github.com/lcm-proj/lcm/issues/147 .");
 }
 
 class Handler {
@@ -134,6 +162,8 @@ class Handler {
 };
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
+  CheckIfLcmWillExplode();  // Run-time compatibility check.
+
   lcm::LCM lcm;
   if (!lcm.good()) mexErrMsgTxt("Bad LCM reference.");
 
@@ -143,14 +173,14 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   lcm.subscribe(channel, &Handler::handleMessage, &handler_object);
 
   mexPrintf("Listening for messages on LCM_CALL_MATLAB...\n");
-  flushMatlabEventBuffer();
+  FlushMatlabEventBuffer();
 
   while (1) {
     int n = lcm.handleTimeout(10);
     if (n < 0) {
       mexErrMsgTxt("Something went wrong in lcm.handle.");
     } else if (n == 0) {  // No messages this time, let matlab refresh.
-      flushMatlabEventBuffer();
+      FlushMatlabEventBuffer();
     }  // Else I got a message, so do nothing.
   }
 
