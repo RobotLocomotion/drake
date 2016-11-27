@@ -1,6 +1,5 @@
-
-#include "drake/systems/framework/primitives/affine_system.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/framework/primitives/affine_system.h"
 #include "drake/systems/framework/primitives/test/affine_linear_test.h"
 
 using std::make_unique;

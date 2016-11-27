@@ -20,25 +20,28 @@ namespace systems {
 template <typename T>
 class SignalLogger : public LeafSystem<T> {
  public:
+  /// Construct the signal logger system.
   /// @param input_size Dimension of the (single) input port.
   /// @param batch_allocation_size Storage is (re)allocated in blocks of
   /// input_size-by-batch_allocation_size.
   explicit SignalLogger(int input_size, int batch_allocation_size = 1000);
 
-  /// Non-copyable.
+  // Non-copyable.
   SignalLogger(const SignalLogger<T>&) = delete;
   SignalLogger& operator=(const SignalLogger<T>&) = delete;
 
   /// No output.
   void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override{};
+                  SystemOutput<T>* output) const override {}
 
-  /// Accessor methods for the logged data.
-  const Eigen::VectorBlock<VectorX<T>> sample_times(void) const {
+  /// Access the (simulation) time of the logged data.
+  Eigen::VectorBlock<VectorX<T>> sample_times() const {
     return sample_times_.head(num_samples_);
   }
-  const Eigen::Block<MatrixX<T>, Eigen::Dynamic, Eigen::Dynamic, true> data(
-      void) const {
+
+  /// Access the logged data.
+  Eigen::Block<MatrixX<T>, Eigen::Dynamic, Eigen::Dynamic, true> data()
+      const {
     return data_.leftCols(num_samples_);
   }
 
