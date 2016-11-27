@@ -39,7 +39,7 @@ if(lcm_FOUND)
           drakeSystemAnalysis
           drakeRBM
           drakeTrajectories
-          GTest::GTest GTest::Main)
+          drakeConvexHull)
 
 endif()
 
