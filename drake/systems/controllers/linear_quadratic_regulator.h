@@ -5,6 +5,21 @@
 namespace drake {
 namespace systems {
 
+/// Computes the optimal feedback controller, u=-Kx
+///
+///   @f[ \dot{x} = Ax + Bu @f]
+///   @f[ \min_u \int_0^T x'Qx + u'Ru dt @f]
+///
+/// @param A The state-space dynamics matrix of size num_states x num_states.
+/// @param B The state-space input matrix of size num_states x num_inupts.
+/// @param Q A symmetric positive semi-definite cost matrix of size num_states x
+/// num_states.
+/// @param R A symmetric positive definite cost matrix of size num_inputs x
+/// num_inputs.
+/// @returns K The optimal feedback control is u=-Kx;
+///
+/// @throws std::runtime_error if R is not positive definite.
+///
 Eigen::MatrixXd LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::MatrixXd>& B,
