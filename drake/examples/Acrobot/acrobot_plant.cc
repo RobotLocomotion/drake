@@ -120,8 +120,7 @@ std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
   x->set_theta2dot(0.0);
 
   // Setup LQR Cost matrices (penalize position error 10x more than velocity
-  // to
-  // roughly address difference in units, using sqrt(g/l) as the time
+  // to roughly address difference in units, using sqrt(g/l) as the time
   // constant.
   Eigen::Matrix4d Q = Eigen::Matrix4d::Identity();
   Q(0, 0) = 10;

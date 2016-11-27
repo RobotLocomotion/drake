@@ -5,11 +5,26 @@
 namespace drake {
 namespace systems {
 
-Eigen::MatrixXd
-LinearQuadraticRegulator(const Eigen::Ref<const Eigen::MatrixXd> &A,
-                         const Eigen::Ref<const Eigen::MatrixXd> &B,
-                         const Eigen::Ref<const Eigen::MatrixXd> &Q,
-                         const Eigen::Ref<const Eigen::MatrixXd> &R);
+/// Computes the optimal feedback controller, u=-Kx
+///
+///   @f[ \dot{x} = Ax + Bu @f]
+///   @f[ \min_u \int_0^T x'Qx + u'Ru dt @f]
+///
+/// @param A The state-space dynamics matrix of size num_states x num_states.
+/// @param B The state-space input matrix of size num_states x num_inupts.
+/// @param Q A symmetric positive semi-definite cost matrix of size num_states x
+/// num_states.
+/// @param R A symmetric positive definite cost matrix of size num_inputs x
+/// num_inputs.
+/// @returns K The optimal feedback control is u=-Kx;
+///
+/// @throws std::runtime_error if R is not positive definite.
+///
+Eigen::MatrixXd LinearQuadraticRegulator(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::MatrixXd>& B,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R);
 
 /// Creates a system that implements the optimal time-invariant linear quadratic
 /// regulator (LQR):
@@ -26,10 +41,10 @@ LinearQuadraticRegulator(const Eigen::Ref<const Eigen::MatrixXd> &A,
 ///
 /// @throws std::runtime_error if R is not positive definite.
 ///
-std::unique_ptr<LinearSystem<double>>
-LinearQuadraticRegulator(const LinearSystem<double> &system,
-                         const Eigen::Ref<const Eigen::MatrixXd> &Q,
-                         const Eigen::Ref<const Eigen::MatrixXd> &R);
+std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
+    const LinearSystem<double>& system,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R);
 
 /// Linearizes the System around the specified Context, computes the optimal
 /// time-invariant linear quadratic regulator (LQR), and returns a System which
@@ -51,11 +66,10 @@ LinearQuadraticRegulator(const LinearSystem<double> &system,
 ///
 /// @throws std::runtime_error if R is not positive definite.
 ///
-std::unique_ptr<AffineSystem<double>>
-LinearQuadraticRegulator(const System<double> &system,
-                         const Context<double> &context,
-                         const Eigen::Ref<const Eigen::MatrixXd> &Q,
-                         const Eigen::Ref<const Eigen::MatrixXd> &R);
+std::unique_ptr<AffineSystem<double>> LinearQuadraticRegulator(
+    const System<double>& system, const Context<double>& context,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R);
 
 /// Computes the unique stabilizing solution X to the continuous-time algebraic
 /// Riccati equation:
@@ -69,11 +83,11 @@ LinearQuadraticRegulator(const System<double> &system,
 /// Based on the Matrix Sign Function method outlined in this paper:
 /// http://www.engr.iupui.edu/~skoskie/ECE684/Riccati_algorithms.pdf
 ///
-Eigen::MatrixXd
-ContinuousAlgebraicRiccatiEquation(const Eigen::Ref<const Eigen::MatrixXd> &A,
-                                   const Eigen::Ref<const Eigen::MatrixXd> &B,
-                                   const Eigen::Ref<const Eigen::MatrixXd> &Q,
-                                   const Eigen::Ref<const Eigen::MatrixXd> &R);
+Eigen::MatrixXd ContinuousAlgebraicRiccatiEquation(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::MatrixXd>& B,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R);
 
-} // namespace systems
-} // namespace drake
+}  // namespace systems
+}  // namespace drake
