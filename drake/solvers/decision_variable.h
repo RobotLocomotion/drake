@@ -16,7 +16,7 @@
 namespace drake {
 namespace solvers {
 /**
- * This class stores the type, the name, the value, and the index of a
+ * This class stores the type, name, value, and index of a
  * decision variable in an optimization program.
  * The DecisionVariableScalar created by MathematicalProgram should not outlive
  * its creator MathematicalProgram object.
@@ -28,24 +28,22 @@ class DecisionVariableScalar {
   /**
    * This constructor creates a dummy placeholder, the value_ pointer
    * is initialized to nullptr. The usage of this function is
-   * <!-- clang-format off -->
    * @code{.cc}
-   * // Creates an optimization program object
-   * // with no decision variables.
+   * // Creates an optimization program object with no decision variables.
    * MathematicalProgram prog;
    *
-   * // Add a 2 x 1 vector containing two
-   * // decision variables to the optimization program.
+   * // Add a 2 x 1 vector containing two decision variables to the optimization
+   * // program.
    * // This calls the private constructor
    * // DecisionVariableScalar(VarType type, const std::string &name, double*
-   * value, size_t index)
+   * // value, size_t index)
    * DecisionVariableVector<2> x1 = prog.AddContinuousVariables<2>();
    *
-   * // // Add 2 x 1 vector containing two
-   * // decision variables to the optimization program.
+   * // Add a 2 x 1 vector containing two decision variables to the optimization
+   * // program.
    * // This calls the private constructor
    * // DecisionVariableScalar(VarType type, const std::string &name, double*
-   * value, size_t index)
+   * // value, size_t index)
    * DecisionVariableVector<2> x2 = prog.AddContinuousVariables<2>();
    *
    * // This calls the default constructor DecisionVariableScalar(),
@@ -53,14 +51,14 @@ class DecisionVariableScalar {
    * DecisionVariableMatrix<2, 2> X;
    *
    * // Now X contains the decision variables from the optimization program
-   * object prog.
+   * // object prog.
    * // The first column of X is x1, the second column of X is x2.
    * X << x1, x2;
    * @endcode
-   * <!-- clang-format on -->
    */
   DecisionVariableScalar()
       : type_(VarType::CONTINUOUS), name_(""), value_(nullptr), index_(0) {}
+
   /**
    * @return The type of the variable.
    */
@@ -83,7 +81,7 @@ class DecisionVariableScalar {
   size_t index() const { return index_; }
 
   /**
-   * Determine if the two DecisionVariableScalar objects are the same. This
+   * Determines if the two DecisionVariableScalar objects are the same. This
    * comparison is only meaningful if the two DecisionVariableScalar objects
    * are created by the same MathematicalProgram object.
    */
@@ -94,11 +92,11 @@ class DecisionVariableScalar {
   friend class MathematicalProgram;
 
  private:
-  /**
-   * Construct a decision variable. We make this constructor private so that
+  /*
+   * Constructs a decision variable. We make this constructor private so that
    * only the friend class (aka MathematicalProgram) can construct a decision
    * variable.
-   * @param type Support CONTINUOUS, INTEGER or BINARY.
+   * @param type Supports CONTINUOUS, INTEGER or BINARY.
    * @param name The name of the variable.
    * @param index The index of the variable in the optimization program.
    */
@@ -168,7 +166,7 @@ using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
 using VariableListRef = std::list<Eigen::Ref<const DecisionVariableMatrixX>>;
 
 /**
- * This class stores a list of DecisionVariableMatrix. An instance
+ * This class stores a list of DecisionVariableMatrix objects. An instance
  * of this class is going to be bound to a constraint, indicating that a
  * constraint is imposed on one or several DecisionVariableMatrix objects.
  */
@@ -177,7 +175,7 @@ class VariableList {
   explicit VariableList(const VariableListRef& variable_list);
 
   /**
-   * Return all the stored DecisionVariableMatrix.
+   * Returns all the stored DecisionVariableMatrix.
    */
   std::list<DecisionVariableMatrixX> variables() const { return variables_; }
 
@@ -201,7 +199,7 @@ class VariableList {
    * // Construct a VariableList containing both x1 and x2.
    * VariableList var_list({x1, x2});
    *
-   * std::cout<<"The number of unique variables is "<<
+   * std::cout << "The number of unique variables is " <<
    * var_list.num_unique_variables() << std::endl;
    *
    * @endcode
@@ -235,7 +233,7 @@ class VariableList {
    * // Construct a VariableList containing both x1 and x2.
    * VariableList var_list({x1, x2});
    *
-   * std::cout<<"The size of variable list (including duplication) is "<<
+   * std::cout << "The size of variable list (including duplication) is " <<
    * var_list.size() << std::endl;
    *
    * @endcode
@@ -248,7 +246,7 @@ class VariableList {
   size_t size() const { return size_; }
 
   /**
-   * Determine if the DecisionVariableMatrix stored are all column vectors.
+   * Determines if the DecisionVariableMatrix stored are all column vectors.
    */
   bool column_vectors_only() const { return column_vectors_only_; }
 
@@ -267,7 +265,7 @@ class VariableList {
 };
 
 /**
- * Given a DecisionVariableMatrix object, return the Eigen::Matrix that
+ * Given a DecisionVariableMatrix object, returns the Eigen::Matrix that
  * stores the values of each decision variable.
  * @param decision_variable_matrix A DecisionVariableMatrix object.
  */
@@ -288,7 +286,7 @@ DecisionVariableMatrixToValueMatrix(
 }
 
 /**
- * Given a DecisionVariableMatrix object, return the Eigen::Matrix that
+ * Given a DecisionVariableMatrix object, returns the Eigen::Matrix that
  * stores the values of each decision variable.
  * @param decision_variable_matrix A DecisionVariableMatrix object.
  */
@@ -301,8 +299,8 @@ DecisionVariableMatrixToDoubleMatrix(
 }
 
 /**
- * Determine if a DecisionVariableMatrix object contains a variable with
- * given index.
+ * Determines if a DecisionVariableMatrix object contains a variable with
+ * given @p index.
  */
 template <typename Derived>
 bool DecisionVariableMatrixContainsIndex(
