@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/primitives/linear_system.h"
 
 namespace drake {
 namespace systems {
@@ -56,6 +57,12 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
   /// Outputs the estimated state.
   void EvalOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override;
+
+  /// Access to the observer gain
+  const Eigen::MatrixXd& observer_gain() { return observer_gain_; }
+
+  /// Provide access via the short-hand name, too.
+  const Eigen::MatrixXd& L() { return observer_gain_; }
 
  private:
   const std::unique_ptr<systems::System<T>> observed_system_;
