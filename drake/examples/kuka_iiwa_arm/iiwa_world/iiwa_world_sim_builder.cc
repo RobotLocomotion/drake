@@ -53,9 +53,9 @@ template <typename T>
 IiwaWorldSimBuilder<T>::~IiwaWorldSimBuilder() {}
 
 template <typename T>
-int IiwaWorldSimBuilder<T>::AddObjectFixedToWorld(const string& object_name,
-                                                  const Vector3d& xyz,
-                                                  const Vector3d& rpy) {
+int IiwaWorldSimBuilder<T>::AddFixedObject(const string &object_name,
+                                           const Vector3d &xyz,
+                                           const Vector3d &rpy) {
   DRAKE_DEMAND(!built_);
 
   auto weld_to_frame = allocate_shared<RigidBodyFrame>(
@@ -65,9 +65,9 @@ int IiwaWorldSimBuilder<T>::AddObjectFixedToWorld(const string& object_name,
 }
 
 template <typename T>
-int IiwaWorldSimBuilder<T>::AddObjectFloatingInWorld(const string& object_name,
-                                                     const Vector3d& xyz,
-                                                     const Vector3d& rpy) {
+int IiwaWorldSimBuilder<T>::AddFloatingObject(const string &object_name,
+                                              const Vector3d &xyz,
+                                              const Vector3d &rpy) {
   DRAKE_DEMAND(!built_);
 
   auto weld_to_frame = allocate_shared<RigidBodyFrame>(
@@ -139,11 +139,11 @@ std::unique_ptr<systems::Diagram<T>> IiwaWorldSimBuilder<T>::Build() {
   builder->Connect(plant_->get_output_port(0),
                    viz_publisher_->get_input_port(0));
 
-  // Exposing output and input port.
+  // Exposes output and input ports of the Diagram.
   builder->ExportOutput(plant_->get_output_port(0));
   builder->ExportInput(plant_->get_input_port(0));
 
-  drake::log()->debug("Simulation initialized...");
+  drake::log()->debug("Plant Diagram initialized...");
   built_ = true;
 
   return std::move(builder->Build());
