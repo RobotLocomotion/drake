@@ -1,3 +1,4 @@
+#define EIGEN_RUNTIME_NO_MALLOC
 #include "drake/examples/Acrobot/acrobot_plant.h"
 
 #include <cmath>
@@ -27,10 +28,12 @@ AcrobotPlant<T>::AcrobotPlant() {
 template <typename T>
 void AcrobotPlant<T>::EvalOutput(const systems::Context<T>& context,
                                  systems::SystemOutput<T>* output) const {
+  Eigen::internal::set_is_malloc_allowed(!std::is_same<T, double>::value);
   output->GetMutableVectorData(0)->set_value(
       dynamic_cast<const AcrobotStateVector<T>&>(
           context.get_continuous_state_vector())
           .get_value());
+  Eigen::internal::set_is_malloc_allowed(true);
 }
 
 // Compute the actual physics.
@@ -38,11 +41,12 @@ template <typename T>
 void AcrobotPlant<T>::EvalTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
+  Eigen::internal::set_is_malloc_allowed(std::is_same<T, AutoDiffXd>::value);
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
 
   const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
       context.get_continuous_state_vector());
-  const T tau = this->EvalVectorInput(context, 0)->GetAtIndex(0);
+  const T& tau = this->EvalVectorInput(context, 0)->GetAtIndex(0);
 
   const double I1 = Ic1 + m1 * lc1 * lc1;
   const double I2 = Ic2 + m2 * lc2 * lc2;
@@ -78,6 +82,7 @@ void AcrobotPlant<T>::EvalTimeDerivatives(
   Eigen::Matrix<T, 4, 1> xdot;
   xdot << x.theta1dot(), x.theta2dot(), H.inverse() * (B * tau - C);
   derivatives->SetFromVector(xdot);
+  Eigen::internal::set_is_malloc_allowed(true);
 }
 
 template <typename T>
