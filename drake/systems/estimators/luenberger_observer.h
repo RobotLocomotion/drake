@@ -57,6 +57,12 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
   void EvalOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override;
 
+  /// Provides access to the observer gain.
+  const Eigen::MatrixXd& observer_gain() { return observer_gain_; }
+
+  /// Provides access via the short-hand name, L, too.
+  const Eigen::MatrixXd& L() { return observer_gain_; }
+
  private:
   const std::unique_ptr<systems::System<T>> observed_system_;
   const Eigen::MatrixXd observer_gain_;  // Gain matrix (often called "L").
