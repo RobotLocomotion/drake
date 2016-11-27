@@ -15,7 +15,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 
 /// A helper class to construct and run KUKA iiwa World simulations; i.e.
-/// Simulation sets up a KUKA iiwa robot arm and various objects for
+/// a Simulation with a KUKA iiwa robot arm and various objects for
 /// it to manipulate.
 /// @tparam T must be a valid Eigen ScalarType.
 ///
@@ -34,18 +34,20 @@ class IiwaWorldSimBuilder {
   /// orientation @p rpy.
   ///
   /// @return model_instance_id of the object that is added.
-  int AddObjectFixedToWorld(const std::string& object_name,
-                            const Eigen::Vector3d& xyz,
-                            const Eigen::Vector3d& rpy);
+  int AddFixedObject(const std::string &object_name,
+                     const Eigen::Vector3d &xyz,
+                     const Eigen::Vector3d &rpy =
+                     Eigen::Vector3d::Zero());
 
   /// Adds a floating object specified by its name @p object_name to the
   /// `RigidBodyTree` at the pose specified by the position @p xyz and
   /// orientation @p rpy.
   ///
   /// @return model_instance_id of the object that is added.
-  int AddObjectFloatingInWorld(const std::string& object_name,
-                               const Eigen::Vector3d& xyz,
-                               const Eigen::Vector3d& rpy);
+  int AddFloatingObject(const std::string &object_name,
+                        const Eigen::Vector3d &xyz,
+                        const Eigen::Vector3d &rpy =
+                        Eigen::Vector3d::Zero());
 
   /// Adds an object specified by its name @p object_name to the
   /// `RigidBodyTree` at a pose specified by the position @p xyz and
@@ -62,10 +64,12 @@ class IiwaWorldSimBuilder {
   void AddGround();
 
   /// Builds a diagram composed of a `RigidBodyPlant` and `DrakeVisualizer`
-  /// and returns it.
+  /// and returns it. The output of the RigidBodyPlant containing the
+  /// plant's generalized state is connected to the input of the
+  /// DrakeVisualizer.
   std::unique_ptr<systems::Diagram<T>> Build();
 
-  // TODO(naveenoid):
+  // TODO(naveenoid): Remove this method once issue #4191 is addressed.
   /// Sets the zero configuration of the plant.
   void SetZeroConfiguration(systems::Simulator<T>* simulator,
                             const systems::Diagram<T>* demo_diagram,

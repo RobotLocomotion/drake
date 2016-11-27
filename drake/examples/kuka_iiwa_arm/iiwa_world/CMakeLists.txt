@@ -1,5 +1,5 @@
 if(lcm_FOUND)
-  # Defines a shared library for use by KUKA IIWA world demos based on
+  # Defines a shared library for use by KUKA iiwa world demos based on
   # System 2.0.
   add_library_with_exports(LIB_NAME drakeKukaIiwaWorld SOURCE_FILES
       iiwa_world_sim_builder.cc)
