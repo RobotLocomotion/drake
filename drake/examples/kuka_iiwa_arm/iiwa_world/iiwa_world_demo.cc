@@ -34,8 +34,8 @@ int DoMain() {
   iiwa_world->AddObjectUrdf(
       "cuboid", "/examples/kuka_iiwa_arm/models/objects/simple_cuboid.urdf");
 
-  iiwa_world->AddObjectFixedToWorld("table", Eigen::Vector3d::Zero() /* xyz */,
-                                    Eigen::Vector3d::Zero() /* rpy */);
+  iiwa_world->AddFixedObject("table", Eigen::Vector3d::Zero() /* xyz */,
+                             Eigen::Vector3d::Zero() /* rpy */);
   iiwa_world->AddGround();
 
   iiwa_world->SetPenetrationContactParameters(4500 /* penetration_stiffness */,
@@ -43,27 +43,26 @@ int DoMain() {
                                               1.0 /* contact friction */);
 
   // The z coordinate of the top of the table in the world frame.
+  // The quantity 0.736 is the z coordinate of the frame associated with the
+  // 'surface' collision element in the sdf. This element uses a box of height
+  // 0.057m thu giving the surface height (z) in world coordinates as
+  // 0.736 + 0.057 / 2
   const double kTableTopZInWorld = 0.736 + 0.057 / 2;
 
-  // The positions of the iiwa robot, two cylinders and the cuboid was fixed
-  // in a manner that they are distributed over the surface of the heavy duty
-  // table. Only the positions are set, as the default orientations are used
-  // in each case.
+  // The positions of the iiwa robot, two cylinders and the cuboid are
+  // distributed over the surface of the heavy duty table. Only the positions
+  // are set; the default orientations are used in each case.
   const Eigen::Vector3d kRobotBase(-0.243716, -0.625087, kTableTopZInWorld);
   const Eigen::Vector3d kBoxBase(-0.53, -0.35, kTableTopZInWorld + 0.15);
   const Eigen::Vector3d kCylinder1Base(-0.5, -0.51, kTableTopZInWorld + 0.1);
   const Eigen::Vector3d kCylinder2Base(-0.32, -0.325, kTableTopZInWorld + 0.1);
 
-  iiwa_world->AddObjectFixedToWorld("iiwa", kRobotBase,
-                                    Eigen::Vector3d::Zero() /* rpy */);
-  iiwa_world->AddObjectFloatingInWorld("cylinder", kCylinder1Base,
-                                       Eigen::Vector3d::Zero() /* rpy */);
-  iiwa_world->AddObjectFloatingInWorld("cylinder", kCylinder2Base,
-                                       Eigen::Vector3d::Zero() /* rpy */);
-  iiwa_world->AddObjectFloatingInWorld("cuboid", kBoxBase,
-                                       Eigen::Vector3d::Zero() /* rpy */);
+  iiwa_world->AddFixedObject("iiwa", kRobotBase);
+  iiwa_world->AddFloatingObject("cylinder", kCylinder1Base);
+  iiwa_world->AddFloatingObject("cylinder", kCylinder2Base);
+  iiwa_world->AddFloatingObject("cuboid", kBoxBase);
 
-  // Setup builder for the demo
+  // Setup builder for the demo.
   std::unique_ptr<drake::systems::DiagramBuilder<double>> demo_builder{
       std::make_unique<drake::systems::DiagramBuilder<double>>()};
 
