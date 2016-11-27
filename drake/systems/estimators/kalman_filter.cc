@@ -10,22 +10,20 @@ namespace drake {
 namespace systems {
 namespace estimators {
 
-Eigen::MatrixXd
-SteadyStateKalmanFilter(const Eigen::Ref<const Eigen::MatrixXd> &A,
-                        const Eigen::Ref<const Eigen::MatrixXd> &C,
-                        const Eigen::Ref<const Eigen::MatrixXd> &W,
-                        const Eigen::Ref<const Eigen::MatrixXd> &V) {
-
-  const auto &P =
+Eigen::MatrixXd SteadyStateKalmanFilter(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::MatrixXd>& C,
+    const Eigen::Ref<const Eigen::MatrixXd>& W,
+    const Eigen::Ref<const Eigen::MatrixXd>& V) {
+  const auto& P =
       ContinuousAlgebraicRiccatiEquation(A.transpose(), C.transpose(), W, V);
   return P * C.transpose() * (V.inverse());
 }
 
-std::unique_ptr<LuenbergerObserver<double>>
-SteadyStateKalmanFilter(std::unique_ptr<LinearSystem<double>> system,
-                        const Eigen::Ref<const Eigen::MatrixXd> &W,
-                        const Eigen::Ref<const Eigen::MatrixXd> &V) {
-
+std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
+    std::unique_ptr<LinearSystem<double>> system,
+    const Eigen::Ref<const Eigen::MatrixXd>& W,
+    const Eigen::Ref<const Eigen::MatrixXd>& V) {
   const Eigen::MatrixXd L =
       SteadyStateKalmanFilter(system->A(), system->C(), W, V);
 
@@ -33,16 +31,15 @@ SteadyStateKalmanFilter(std::unique_ptr<LinearSystem<double>> system,
       std::move(system), system->CreateDefaultContext(), L);
 }
 
-std::unique_ptr<LuenbergerObserver<double>>
-SteadyStateKalmanFilter(std::unique_ptr<System<double>> system,
-                        std::unique_ptr<Context<double>> context,
-                        const Eigen::Ref<const Eigen::MatrixXd> &W,
-                        const Eigen::Ref<const Eigen::MatrixXd> &V) {
-
+std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
+    std::unique_ptr<System<double>> system,
+    std::unique_ptr<Context<double>> context,
+    const Eigen::Ref<const Eigen::MatrixXd>& W,
+    const Eigen::Ref<const Eigen::MatrixXd>& V) {
   DRAKE_DEMAND(context->get_continuous_state_vector().size() >
-               0); // Otherwise, I don't need an estimator.
+               0);  // Otherwise, I don't need an estimator.
   DRAKE_DEMAND(system->get_num_output_ports() ==
-               1); // Need measurements to estimate state.
+               1);  // Need measurements to estimate state.
 
   // TODO(russt): Demand time-invariant once we can.
   // TODO(russt): Check continuous-time (only).
@@ -56,6 +53,6 @@ SteadyStateKalmanFilter(std::unique_ptr<System<double>> system,
                                                       std::move(context), L);
 }
 
-} // namespace estimators
-} // namespace systems
-} // namespace drake
+}  // namespace estimators
+}  // namespace systems
+}  // namespace drake

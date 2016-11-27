@@ -69,7 +69,7 @@ int do_main(int argc, char* argv[]) {
 
   // Launch lcm_call_matlab_client to see the plots.
   using lcm::LcmCallMatlab;
-  LcmCallMatlab("figure",1);
+  LcmCallMatlab("figure", 1);
   LcmCallMatlab("plot", logger->sample_times(),
                 (logger->data().row(0).array() - M_PI).matrix(),
                 logger->sample_times(), logger->data().row(1));

@@ -32,7 +32,7 @@ DEFINE_double(realtime_factor, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
-int do_main(int argc, char *argv[]) {
+int do_main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   // Make the robot.
@@ -50,8 +50,8 @@ int do_main(int argc, char *argv[]) {
   // Make a Kalman filter observer.
   auto observer_acrobot = std::make_unique<AcrobotPlant<double>>();
   auto observer_context = observer_acrobot->CreateDefaultContext();
-  { // Set context to upright fixed point.
-    auto x0 = dynamic_cast<AcrobotStateVector<double> *>(
+  {  // Set context to upright fixed point.
+    auto x0 = dynamic_cast<AcrobotStateVector<double>*>(
         observer_context->get_mutable_continuous_state_vector());
     DRAKE_DEMAND(x0 != nullptr);
     x0->set_theta1(M_PI);
@@ -63,15 +63,15 @@ int do_main(int argc, char *argv[]) {
   Eigen::Matrix4d W = Eigen::Matrix4d::Identity(),
                   V = Eigen::Matrix4d::Identity();
   V(0, 0) = 0.1;
-  V(1, 1) = 0.1; // Position measurements are clean.
+  V(1, 1) = 0.1;  // Position measurements are clean.
   auto observer =
       builder.AddSystem(systems::estimators::SteadyStateKalmanFilter(
           std::move(observer_acrobot), std::move(observer_context), W, V));
   builder.Connect(acrobot->get_output_port(0), observer->get_input_port(0));
 
-  { // As a simple exercise, analyze the closed-loop estimation error dynamics.
+  {  // As a simple exercise, analyze the closed-loop estimation error dynamics.
     auto context = acrobot->CreateDefaultContext();
-    auto x0 = dynamic_cast<AcrobotStateVector<double> *>(
+    auto x0 = dynamic_cast<AcrobotStateVector<double>*>(
         context->get_mutable_continuous_state_vector());
     DRAKE_DEMAND(x0 != nullptr);
     x0->set_theta1(M_PI);
@@ -108,7 +108,7 @@ int do_main(int argc, char *argv[]) {
   systems::Simulator<double> simulator(*diagram);
 
   // Set an initial condition near the upright fixed point.
-  auto x0 = dynamic_cast<AcrobotStateVector<double> *>(
+  auto x0 = dynamic_cast<AcrobotStateVector<double>*>(
       diagram
           ->GetMutableSubsystemContext(simulator.get_mutable_context(), acrobot)
           ->get_mutable_continuous_state_vector());
@@ -153,11 +153,11 @@ int do_main(int argc, char *argv[]) {
   return 0;
 }
 
-} // namespace
-} // namespace acrobot
-} // namespace examples
-} // namespace drake
+}  // namespace
+}  // namespace acrobot
+}  // namespace examples
+}  // namespace drake
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   return drake::examples::acrobot::do_main(argc, argv);
 }

@@ -11,23 +11,23 @@ namespace drake {
 namespace systems {
 namespace estimators {
 
-Eigen::MatrixXd
-SteadyStateKalmanFilter(const Eigen::Ref<const Eigen::MatrixXd> &A,
-                        const Eigen::Ref<const Eigen::MatrixXd> &C,
-                        const Eigen::Ref<const Eigen::MatrixXd> &W,
-                        const Eigen::Ref<const Eigen::MatrixXd> &V);
+Eigen::MatrixXd SteadyStateKalmanFilter(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::MatrixXd>& C,
+    const Eigen::Ref<const Eigen::MatrixXd>& W,
+    const Eigen::Ref<const Eigen::MatrixXd>& V);
 
-std::unique_ptr<LuenbergerObserver<double>>
-SteadyStateKalmanFilter(std::unique_ptr<LinearSystem<double>> system,
-                        const Eigen::Ref<const Eigen::MatrixXd> &W,
-                        const Eigen::Ref<const Eigen::MatrixXd> &V);
+std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
+    std::unique_ptr<LinearSystem<double>> system,
+    const Eigen::Ref<const Eigen::MatrixXd>& W,
+    const Eigen::Ref<const Eigen::MatrixXd>& V);
 
-std::unique_ptr<LuenbergerObserver<double>>
-SteadyStateKalmanFilter(std::unique_ptr<System<double>> system,
-                        std::unique_ptr<Context<double>> context,
-                        const Eigen::Ref<const Eigen::MatrixXd> &W,
-                        const Eigen::Ref<const Eigen::MatrixXd> &V);
+std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
+    std::unique_ptr<System<double>> system,
+    std::unique_ptr<Context<double>> context,
+    const Eigen::Ref<const Eigen::MatrixXd>& W,
+    const Eigen::Ref<const Eigen::MatrixXd>& V);
 
-} // namespace estimators
-} // namespace systems
-} // namespace drake
+}  // namespace estimators
+}  // namespace systems
+}  // namespace drake

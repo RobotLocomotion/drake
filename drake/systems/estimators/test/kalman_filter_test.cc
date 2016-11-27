@@ -56,8 +56,8 @@ GTEST_TEST(TestKalman, DoubleIntegrator) {
   EXPECT_TRUE(CompareMatrices(filter->L(), L, tol));
 }
 
-} // namespace
+}  // namespace
 
-} // namespace estimators
-} // namespace systems
-} // namespace drake
+}  // namespace estimators
+}  // namespace systems
+}  // namespace drake
