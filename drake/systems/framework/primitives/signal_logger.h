@@ -33,12 +33,14 @@ class SignalLogger : public LeafSystem<T> {
   void EvalOutput(const Context<T>& context,
                   SystemOutput<T>* output) const override{};
 
-  /// Accessor methods for the logged data.
-  const Eigen::VectorBlock<VectorX<T>> sample_times(void) const {
+  /// Access the (simulation) time of the logged data.
+  const Eigen::VectorBlock<VectorX<T>> sample_times() const {
     return sample_times_.head(num_samples_);
   }
-  const Eigen::Block<MatrixX<T>, Eigen::Dynamic, Eigen::Dynamic, true> data(
-      void) const {
+
+  /// Access the logged data.
+  const Eigen::Block<MatrixX<T>, Eigen::Dynamic, Eigen::Dynamic, true> data()
+      const {
     return data_.leftCols(num_samples_);
   }
 

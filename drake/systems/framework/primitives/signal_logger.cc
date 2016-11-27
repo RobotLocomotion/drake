@@ -11,9 +11,9 @@ SignalLogger<T>::SignalLogger(int input_size, int batch_allocation_size)
     : batch_allocation_size_(batch_allocation_size),
       sample_times_(batch_allocation_size_),
       data_(input_size, batch_allocation_size_) {
-  DRAKE_DEMAND(input_size >= 0);
+  DRAKE_DEMAND(input_size > 0);
   this->DeclareInputPort(kVectorValued, input_size, kInherited);
-  DRAKE_DEMAND(batch_allocation_size_ >= 0);
+  DRAKE_DEMAND(batch_allocation_size_ > 0);
 }
 
 template <typename T>
