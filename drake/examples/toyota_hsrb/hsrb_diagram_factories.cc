@@ -63,7 +63,7 @@ unique_ptr<systems::Diagram<double>> CreatePlantAndVisualizerDiagram(
   const RigidBodyTreed& tree = plant_ptr->get_rigid_body_tree();
 
   // Instantiates a system for visualizing the model.
-  auto visualizer = builder.AddSystem<DrakeVisualizer>(tree, lcm);
+  const auto visualizer = builder.AddSystem<DrakeVisualizer>(tree, lcm);
   builder.Connect(plant_ptr->get_output_port(0), visualizer->get_input_port(0));
 
   builder.ExportInput(plant_ptr->get_input_port(0));
