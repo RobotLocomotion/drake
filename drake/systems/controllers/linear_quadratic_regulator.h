@@ -20,7 +20,7 @@ namespace systems {
 ///
 /// @throws std::runtime_error if R is not positive definite.
 ///
-std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
+std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
     const LinearSystem<double>& system,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R);
@@ -45,7 +45,7 @@ std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
 ///
 /// @throws std::runtime_error if R is not positive definite.
 ///
-std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
+std::unique_ptr<AffineSystem<double>> LinearQuadraticRegulator(
     const System<double>& system, const Context<double>& context,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R);
@@ -54,7 +54,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
 /// Riccati equation:
 ///
 /// @verbatim
-///  S'A + A'S + S B inv(R) B' S + Q = 0
+///  S'A + A'S - S B inv(R) B' S + Q = 0
 /// @endverbatim
 ///
 /// @throws std::runtime_error if R is not positive definite.

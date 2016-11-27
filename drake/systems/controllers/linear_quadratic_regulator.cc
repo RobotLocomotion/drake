@@ -1,4 +1,4 @@
-#include "drake/systems/controllers/linear_optimal_control.h"
+#include "drake/systems/controllers/linear_quadratic_regulator.h"
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/primitives/linear_system.h"
