@@ -457,7 +457,7 @@ class System {
   ///   MySystem<double> plant;
   ///   std::unique_ptr<MySystem<AutoDiffXd>> ad_plant =
   ///       systems::System<double>::ToAutoDiffXd<MySystem>(plant);
-  /// @p endcode
+  /// @endcode
   ///
   /// @tparam S The specific System pointer type to return.
   template <template <typename> class S = ::drake::systems::System>
