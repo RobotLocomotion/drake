@@ -38,7 +38,7 @@ class AcrobotInputVector : public systems::BasicVector<T> {
   /// @name Getters and Setters
   //@{
   // tau
-  const T tau() const { return this->GetAtIndex(K::kTau); }
+  const T& tau() const { return this->GetAtIndex(K::kTau); }
   void set_tau(const T& tau) { this->SetAtIndex(K::kTau, tau); }
   //@}
 };

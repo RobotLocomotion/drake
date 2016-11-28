@@ -1,7 +1,5 @@
 # -*- python -*-
-
-# This file contains rules for the Bazel build system.
-# See http://bazel.io/ .
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
 
@@ -38,6 +36,15 @@ cc_library(
     name = "integrator",
     hdrs = ["integrator.h"],
     srcs = ["integrator.cc"],
+    deps = [
+        "//drake/systems/framework",
+    ],
+    linkstatic=1)
+
+cc_library(
+    name = "multiplexer",
+    hdrs = ["multiplexer.h"],
+    srcs = ["multiplexer.cc"],
     deps = [
         "//drake/systems/framework",
     ],

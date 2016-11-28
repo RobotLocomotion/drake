@@ -182,8 +182,8 @@ macro(drake_add_cmake_external PROJECT)
       CMAKE_Fortran_COMPILER
       CMAKE_Fortran_FLAGS)
 
-    if(_ext_GENERATOR STREQUAL "Ninja")
-      # The Ninja generator does not support Fortran.
+    if(NOT _ext_GENERATOR STREQUAL "Unix Makefiles")
+      # Ninja and Xcode may not support Fortran.
       set(_ext_GENERATOR "Unix Makefiles")
     endif()
   endif()

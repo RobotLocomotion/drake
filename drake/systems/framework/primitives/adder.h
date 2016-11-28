@@ -39,6 +39,15 @@ class Adder : public LeafSystem<T> {
   /// the appropriate count or size, std::runtime_error will be thrown.
   void EvalOutput(const Context<T>& context,
                   SystemOutput<T>* output) const override;
+
+  // Returns an Adder<AutoDiffXd> with the same dimensions as this Adder.
+  std::unique_ptr<Adder<AutoDiffXd>> ToAutoDiffXd() const {
+    return std::unique_ptr<Adder<AutoDiffXd>>(DoToAutoDiffXd());
+  }
+
+ protected:
+  // Returns an Adder<AutoDiffXd> with the same dimensions as this Adder.
+  Adder<AutoDiffXd>* DoToAutoDiffXd() const override;
 };
 
 }  // namespace systems

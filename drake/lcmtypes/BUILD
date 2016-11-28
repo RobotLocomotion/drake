@@ -1,7 +1,5 @@
 # -*- python -*-
-
-# This file contains rules for the Bazel build system.
-# See http://bazel.io/ .
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
 load("//tools:lcm.bzl", "lcm_cc_library")
@@ -10,6 +8,18 @@ lcm_cc_library(
     name = "drake_signal",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_drake_signal.lcm"],
+    linkstatic = 1)
+
+lcm_cc_library(
+    name = "viewer",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_viewer_command.lcm",
+        "lcmt_viewer_draw.lcm",
+        "lcmt_viewer_geometry_data.lcm",
+        "lcmt_viewer_link_data.lcm",
+        "lcmt_viewer_load_robot.lcm",
+    ],
     linkstatic = 1)
 
 lcm_cc_library(
