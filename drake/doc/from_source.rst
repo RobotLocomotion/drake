@@ -300,3 +300,13 @@ To work on the bleeding edge, do::
 This is especially useful if you are ready to contribute your work back to the
 main repository with a
 `pull request <https://help.github.com/articles/using-pull-requests/>`_.
+
+Bazel support
+=============
+
+Drake is adding support for the Bazel build system.
+
+.. toctree::
+    :maxdepth: 1
+
+    bazel
