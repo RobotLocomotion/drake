@@ -218,6 +218,10 @@ macro(drake_setup_options)
     DEPENDS "HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES"
     "VTK-based visualization tool and robot user interface")
 
+  drake_optional_external(FCL ON
+    DEPENDS "WITH_CCD"
+    "Flexible collision detection library")
+
   drake_optional_external(GOOGLE_STYLEGUIDE ON
     DEPENDS "NOT DISABLE_PYTHON"
     "Google code style tools for cpplint.py style checking" ON)
