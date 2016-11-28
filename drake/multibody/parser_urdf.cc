@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/is_approx_equal_matrix.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/joints/drake_joints.h"
 #include "drake/multibody/material_map.h"
@@ -111,7 +112,7 @@ void AddMaterialToMaterialMap(const string& material_name,
     // the same as the new material.  The range of values in the RGBA vectors
     // is [0, 1].
     const auto& existing_color = material_iter->second;
-    if ((color_rgba - existing_color).lpNorm<Eigen::Infinity>() > 1e-10) {
+    if (!is_approx_equal_matrix(color_rgba, existing_color, 1e-10)) {
       // The materials map already has the material_name key but the color
       // associated with it is different.
       stringstream error_buff;
