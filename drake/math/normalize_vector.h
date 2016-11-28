@@ -1,8 +1,9 @@
 #pragma once
 
 #include <Eigen/Dense>
+
 #include "drake/math/gradient.h"
-#include "drake/util/drakeGradientUtil.h"
+#include "drake/math/gradient_util.h"
 
 namespace drake {
 namespace math {

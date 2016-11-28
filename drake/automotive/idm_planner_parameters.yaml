@@ -1,5 +1,8 @@
 ---
 -
+     name: v_ref
+     doc: desired velocity in free traffic
+-
      name: a
      doc: max acceleration
 -

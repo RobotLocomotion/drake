@@ -1,7 +1,5 @@
 # -*- python -*-
-
-# This file contains rules for the Bazel build system.
-# See http://bazel.io/ .
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
 
@@ -15,14 +13,14 @@ cc_library(
         "text_logging.cc",
     ],
     hdrs = [
-        "drake_assert.h",
-        "drake_throw.h",
-        "text_logging.h",
         "constants.h",
+        "drake_assert.h",
+        "drake_compat.h",
         "drake_deprecated.h",
-        "drake_gcc48.h",
+        "drake_throw.h",
         "eigen_stl_types.h",
         "eigen_types.h",
+        "text_logging.h",
     ],
     deps = ["@eigen//:eigen", "@spdlog//:spdlog"],
     linkstatic = 1)
@@ -40,9 +38,15 @@ cc_library(
 
 # Drake's specific ScalarType-providing libraries.
 cc_library(
+    name = "double",
+    srcs = ["double_overloads.cc"],
+    hdrs = ["double_overloads.h"],
+    linkstatic = 1)
+
+cc_library(
     name = "autodiff",
     hdrs = ["autodiff_overloads.h", "eigen_autodiff_types.h"],
-    deps = [":common"],
+    deps = [":common", ":cond"],
     linkstatic = 1)
 
 cc_library(
@@ -86,10 +90,24 @@ cc_library(
 # Miscellaneous utilities.
 cc_library(
     name = "drake_path",
+    srcs = ["drake_path.cc"],
     hdrs = ["drake_path.h"],
     testonly = 1,
     deps = [":common"],
     linkstatic = 1)
+# TODO(jwnimmer-tri) GetDrakePath has a long and storied history (#1471, #2174).
+# It serves multiple purposes (unit tests loading their models; installed demos
+# loading their models; etc.) but doesn't really do any of them well.  The rule
+# here in Bazel is intended as a temporary shim, in order to support Bazel and
+# CMake build systems concurrently.  We should endeavor to remove this rule (in
+# lieu of properly-declared data dependencies) once we are unchained from CMake.
+genrule(
+    name = "drake_path_genrule",
+    srcs = ["drake_path.cc.in"],
+    outs = ["drake_path.cc"],
+    # TODO(jwnimmer-tri) This should be an abspath, not relpath.
+    cmd = "sed 's#@PROJECT_SOURCE_DIR@#drake#g' $< > $@",
+)
 
 cc_library(
     name = "eigen_matrix_compare",
@@ -111,13 +129,12 @@ cc_library(
     deps = [":common"],
     linkstatic = 1)
 
-# TODO(jwnimmer-tri) Re-test and get this working.  Approxmate answer:
-# genrule(
-#     name = "generate_drake_path_cc",
-#     srcs = ["drake_path.cc.in"],
-#     outs = ["drake_path.cc"],
-#     cmd = "sed 's#@PROJECT_SOURCE_DIR@#???#g' $< > $@",
-# )
-
-# TODO(jwnimmer-tri) These source files are not yet part of Bazel:
-# text_logging_gflags.h ... need to add gflags dependency first.
+cc_library(
+    name = "text_logging_gflags",
+    hdrs = ["text_logging_gflags.h"],
+    deps = [":common", "@gflags//:gflags"],
+    # TODO(jwnimmer-tri) Ideally, gflags BUILD would do this for us.  Figure
+    # out what's going on.  Definitely don't let "-pthread" get copy-pasta'd
+    # throughout our code.
+    linkopts = ["-pthread"],
+    linkstatic = 1)

@@ -1,19 +1,16 @@
 
-/// @file simple_continuous_time_system.cc
-/// Simple Continuous Time System Example
-///
-/// This is meant to be a sort of "hello world" example for the
-/// drake::system classes.  It defines a very simple continuous time system,
-/// simulates it from a given initial condition, and plots the result.
+// Simple Continuous Time System Example
+//
+// This is meant to be a sort of "hello world" example for the
+// drake::system classes.  It defines a very simple continuous time system,
+// simulates it from a given initial condition, and plots the result.
 
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/leaf_system.h"
 
-using drake::systems::ContinuousState;
-
-/// Simple Continuous Time System
-/// @f[ \dot{x} = -x + x^3 @f]
-/// @f[  y = x @f]
+// Simple Continuous Time System
+//   xdot = -x + x^3
+//   y = x
 class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
  public:
   SimpleContinuousTimeSystem() {
@@ -22,7 +19,6 @@ class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
                             kSize, drake::systems::kContinuousSampling);
     this->DeclareContinuousState(kSize);
   }
-  ~SimpleContinuousTimeSystem() override{};
 
   // xdot = -x + x^3
   void EvalTimeDerivatives(
@@ -33,7 +29,7 @@ class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
     derivatives->get_mutable_vector()->SetAtIndex(0, xdot);
   }
 
-  /// y = x
+  // y = x
   void EvalOutput(const drake::systems::Context<double>& context,
                   drake::systems::SystemOutput<double>* output) const override {
     double x = context.get_continuous_state_vector().GetAtIndex(0);
@@ -50,7 +46,7 @@ int main(int argc, char* argv[]) {
   drake::systems::Simulator<double> simulator(system);
 
   // set the initial conditions x(0);
-  ContinuousState<double>& xc =
+  drake::systems::ContinuousState<double>& xc =
       *simulator.get_mutable_context()->get_mutable_continuous_state();
   xc[0] = 0.9;
 
@@ -58,7 +54,7 @@ int main(int argc, char* argv[]) {
   simulator.StepTo(10);
 
   // make sure the simulation converges to the stable fixed point at x=0
-  DRAKE_ASSERT(xc[0] < 1.0e-4);
+  DRAKE_DEMAND(xc[0] < 1.0e-4);
 
   // TODO(russt): make a plot of the resulting trajectory (using vtk?)
 

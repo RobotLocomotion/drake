@@ -25,6 +25,7 @@ set(installed_headers
   eigen_sparse_triplet.h
   expmap.h
   gradient.h
+  gradient_util.h
   jacobian.h
   normalize_vector.h
   quaternion.h
@@ -45,7 +46,7 @@ target_link_libraries(drakeMath drakeCommon)
 
 drake_install_headers(${installed_headers})
 
-pods_install_libraries(drakeMath)
+drake_install_libraries(drakeMath)
 drake_install_pkg_config_file(drake-math
   TARGET drakeMath
   LIBS -ldrakeMath

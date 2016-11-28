@@ -4,8 +4,8 @@
 
 #include "drake/common/constants.h"
 #include "drake/math/gradient.h"
+#include "drake/math/gradient_util.h"
 #include "drake/math/normalize_vector.h"
-#include "drake/util/drakeGradientUtil.h"
 
 namespace drake {
 namespace math {

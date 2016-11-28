@@ -1,12 +1,12 @@
 group "0.sim" {
 
   cmd "0.kuka_simulation" {
-    exec = "build/drake/bin/kuka_simulation";
+    exec = "build/drake/examples/kuka_iiwa_arm/kuka_simulation";
     host = "localhost";
   }
 
   cmd "1.kuka_plan_runner" {
-    exec = "build/drake/bin/kuka_plan_runner";
+    exec = "build/drake/examples/kuka_iiwa_arm/kuka_plan_runner";
     host = "localhost";
   }
 
@@ -37,6 +37,6 @@ group "1.tools" {
 }
 
 cmd "2.kuka_ik_demo" {
-    exec = "build/drake/bin/kuka_ik_demo";
+    exec = "build/drake/examples/kuka_iiwa_arm/kuka_ik_demo";
     host = "localhost";
 }

@@ -75,6 +75,40 @@ function(drake_install_headers)
 endfunction()
 
 #------------------------------------------------------------------------------
+# Install a list of archive or library targets to the library installation
+# directory ("lib", "lib32", or "lib64") of the drake project.
+#
+# drake_install_libraries(<targets...>)
+#
+# drake_install_libraries([<args...>] TARGETS <targets...>)
+#
+# Arguments:
+#   TARGETS <targets...>
+#     List of library targets.
+#
+#   <args...>
+#     Additional arguments to be passed through to install(TARGETS).
+#
+# See the documentation of the "GNUInstallDirs" module for the rules that are
+# used to choose the library installation directory for a given host operating
+# system.
+#------------------------------------------------------------------------------
+function(drake_install_libraries)
+  cmake_parse_arguments("" "" "" "TARGETS" ${ARGN})
+
+  if(NOT _TARGETS)
+    set(_TARGETS ${_UNPARSED_ARGUMENTS})
+    set(_UNPARSED_ARGUMENTS)
+  endif()
+
+  install(TARGETS ${_TARGETS}
+    ARCHIVE DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
+    LIBRARY DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
+    RUNTIME DESTINATION "${DRAKE_INSTALL_RUNTIME_DIR}"
+    ${_UNPARSED_ARGUMENTS})
+endfunction()
+
+#------------------------------------------------------------------------------
 # Generate and install a pkg-config .pc file for a package to the "pkgconfig"
 # subdirectory of the library installation directory ("lib", "lib32", or
 # "lib64") of the drake project.

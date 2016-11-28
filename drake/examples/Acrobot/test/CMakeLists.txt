@@ -1,6 +1,6 @@
 if(lcm_FOUND)
   drake_add_cc_test(acrobot_urdf_dynamics_test)
-  target_link_libraries(acrobot_urdf_dynamics_test drakeRBSystem)
+  target_link_libraries(acrobot_urdf_dynamics_test drakeRigidBodyPlant drakeAcrobotPlant)
 endif()
 
 drake_add_matlab_test(NAME examples/Acrobot/test/dHtest OPTIONAL bullet COMMAND dHtest)

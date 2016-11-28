@@ -6,8 +6,8 @@ if(gurobi_FOUND)
   target_link_libraries(gurobiQPmex drakeQP)
 endif()
 
-drake_add_mex(lqrmex lqrmex.cpp $<TARGET_OBJECTS:drakeUtil>)
-target_link_libraries(lqrmex drakeCommon)
+drake_add_mex(lqrmex lqrmex.cpp)
+target_link_libraries(lqrmex drakeLinearControl)
 
 if(snopt_FOUND)
   drake_add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)

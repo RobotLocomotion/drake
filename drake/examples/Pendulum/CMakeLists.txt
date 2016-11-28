@@ -1,12 +1,10 @@
 if(lcm_FOUND)
-  drake_install_headers(Pendulum.h)
-
   add_library_with_exports(LIB_NAME drakePendulumPlant
     SOURCE_FILES pendulum_swing_up.cc pendulum_plant.cc)
   target_link_libraries(drakePendulumPlant drakeSystemFramework
     drakeDynamicConstraint
     drakeTrajectoryOptimization)
-  pods_install_libraries(drakePendulumPlant)
+  drake_install_libraries(drakePendulumPlant)
   drake_install_headers(pendulum_plant.h pendulum_swing_up.h)
   drake_install_pkg_config_file(drake-pendulum-plant
     TARGET drakePendulumPlant
@@ -33,9 +31,13 @@ if(lcm_FOUND)
     COMMAND pendulum_run_energy_shaping)
 
   add_executable(pendulum_run_lqr pendulum_run_lqr.cc)
-  target_link_libraries(pendulum_run_lqr drakeRBM drakeLCMSystem)
+  target_link_libraries(pendulum_run_lqr
+      drakePendulumPlant
+      drakeRigidBodyPlant
+      drakeSystemAnalysis
+      drakeLinearControl)
   drake_add_test(NAME pendulum_run_lqr
-    COMMAND pendulum_run_lqr --non-realtime)
+    COMMAND pendulum_run_lqr)
 
   add_executable(pendulum_run_swing_up pendulum_run_swing_up.cc)
   target_link_libraries(pendulum_run_swing_up

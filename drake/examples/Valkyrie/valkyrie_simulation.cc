@@ -1,13 +1,11 @@
 #include <memory>
 
-#include "lcmtypes/bot_core/atlas_command_t.hpp"
-#include "lcmtypes/bot_core/robot_state_t.hpp"
-
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging.h"
 #include "drake/examples/Valkyrie/actuator_effort_to_rigid_body_plant_input_converter.h"
 #include "drake/examples/Valkyrie/robot_command_to_desired_effort_converter.h"
 #include "drake/examples/Valkyrie/robot_state_encoder.h"
+#include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -21,6 +19,9 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
+
+#include "lcmtypes/bot_core/atlas_command_t.hpp"
+#include "lcmtypes/bot_core/robot_state_t.hpp"
 
 namespace drake {
 namespace systems {
@@ -38,20 +39,7 @@ using lcm::LcmSubscriberSystem;
 using lcm::LcmPublisherSystem;
 using multibody::joints::kRollPitchYaw;
 
-// TODO(tkoolen) shouldn't hard-code. Copied from fixed point file for Valkyrie.
-// Need C++ equivalent of resolveConstraints.
-VectorX<double> RPYValkyrieFixedPointState() {
-  VectorX<double> ret(72);
-  ret << 0, 0, 1.025, 0, 0, 0, 0, 0, 0, 0, 0.300196631343025, 1.25, 0,
-      0.785398163397448, 1.571, 0, 0, 0.300196631343025, -1.25, 0,
-      -0.785398163397448, 1.571, 0, 0, 0, 0, -0.49, 1.205, -0.71, 0, 0, 0,
-      -0.49, 1.205, -0.71, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-  return ret;
-}
-
 int main(int argc, const char** argv) {
-  //  drake::log()->set_level(spdlog::level::trace);
   DiagramBuilder<double> builder;
 
   // Create RigidBodyTree.
@@ -197,7 +185,8 @@ int main(int argc, const char** argv) {
   auto plant_context = diagram->GetMutableSubsystemContext(context, &plant);
 
   // TODO(tkoolen): make it easy to specify a different initial configuration.
-  VectorX<double> initial_state = RPYValkyrieFixedPointState();
+  VectorX<double> initial_state =
+    examples::valkyrie::RPYValkyrieFixedPointState();
   plant.set_state_vector(plant_context, initial_state);
   lcm.StartReceiveThread();
 

@@ -79,6 +79,55 @@ TEST_F(AffineSystemTest, Output) {
   EXPECT_EQ(expected_output, system_output_->get_vector_data(0)->get_value());
 }
 
+
+class FeedthroughAffineSystemTest : public ::testing::Test {
+ public:
+  void SetDCornerElement(double d_1_1_element) {
+    d_1_1_element_ = d_1_1_element;
+  }
+
+  void InitialiseSystem() {
+    // Setup an arbitrary AffineSystem which is feedthrough if and only if
+    // the elements of D matrix are exactly 0.
+    Eigen::MatrixXd A_(
+        AffineLinearSystemTest::make_2x2_matrix(1.5, 2.7, 3.5, -4.9));
+    Eigen::MatrixXd B_(
+        AffineLinearSystemTest::make_2x2_matrix(4.9, -5.1, 6.8, 7.2));
+    Eigen::VectorXd xDot0_(
+        AffineLinearSystemTest::make_2x1_vector(0, 0));
+    Eigen::MatrixXd C_(
+        AffineLinearSystemTest::make_2x2_matrix(1.1, 2.5, -3.8, 4.6));
+    Eigen::MatrixXd D_(
+        AffineLinearSystemTest::make_2x2_matrix(d_1_1_element_, 0, 0, 0));
+    Eigen::VectorXd y0_(
+        AffineLinearSystemTest::make_2x1_vector(0, 0));
+    dut_ = make_unique<AffineSystem<double>>(A_, B_, xDot0_, C_, D_, y0_);
+    dut_->set_name("test_feedtroughaffine_system");
+  }
+
+ protected:
+  // The Device Under Test is an AffineSystem<double>.
+  unique_ptr<AffineSystem<double>> dut_;
+  double d_1_1_element_{0.0};
+};
+
+// Tests that the system does not render as a direct feedthrough
+// when all elements of D are exactly 0.
+TEST_F(FeedthroughAffineSystemTest, NoFeedthroughTest) {
+  SetDCornerElement(0.0);
+  InitialiseSystem();
+  EXPECT_FALSE(dut_->has_any_direct_feedthrough());
+}
+
+// Tests that the system renders as a direct feedthrough
+// when a single element of D is set to 1e-12.
+TEST_F(FeedthroughAffineSystemTest, FeedthroughTest) {
+  SetDCornerElement(1e-12);
+  InitialiseSystem();
+  EXPECT_TRUE(dut_->has_any_direct_feedthrough());
+}
+
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

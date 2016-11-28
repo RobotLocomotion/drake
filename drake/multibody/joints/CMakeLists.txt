@@ -9,7 +9,7 @@ add_library_with_exports(LIB_NAME drakeJoints SOURCE_FILES
 
 target_link_libraries(drakeJoints drakeGeometryUtil)
 
-pods_install_libraries(drakeJoints)
+drake_install_libraries(drakeJoints)
 drake_install_headers(
         drake_joint.h
         drake_joint_impl.h

@@ -4,7 +4,7 @@ if(lcm_FOUND)
       iiwa_common.cc)
   target_link_libraries(drakeKukaIiwaArmCommon
       drakeRBM)
-  pods_install_libraries(drakeKukaIiwaArmCommon)
+  drake_install_libraries(drakeKukaIiwaArmCommon)
   drake_install_headers(
       iiwa_common.h)
   drake_install_pkg_config_file(drake-kuka-iiwa-arm-common
@@ -22,7 +22,7 @@ if(lcm_FOUND)
       drakeCommon
       drakeLCMSystem
       drakeLCMTypes)
-  pods_install_libraries(drakeKukaIiwaArm)
+  drake_install_libraries(drakeKukaIiwaArm)
   drake_install_headers(
       iiwa_simulation.h)
   drake_install_pkg_config_file(drake-kuka-iiwa-arm
@@ -80,21 +80,6 @@ if(lcm_FOUND)
   drake_add_test(
       NAME kuka_simulation COMMAND kuka_simulation -simulation_sec 0.1)
 
-  add_executable(run_kuka_iiwa_gravity_compensated_torque_control
-      run_kuka_iiwa_gravity_compensated_torque_control.cc)
-  target_link_libraries(run_kuka_iiwa_gravity_compensated_torque_control
-      drakeKukaIiwaArm
-      drakeRBSystem
-      drakeLCMSystem
-      gflags)
-
-  add_executable(run_kuka_iiwa_gravity_compensated_position_control
-      run_kuka_iiwa_gravity_compensated_position_control.cc)
-  target_link_libraries(run_kuka_iiwa_gravity_compensated_position_control
-      drakeKukaIiwaArm
-      drakeRBSystem
-      drakeLCMSystem
-      gflags)
 endif()
 
 add_subdirectory(controlled_kuka)
