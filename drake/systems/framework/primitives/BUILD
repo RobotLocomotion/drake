@@ -42,6 +42,15 @@ cc_library(
     linkstatic=1)
 
 cc_library(
+    name = "multiplexer",
+    hdrs = ["multiplexer.h"],
+    srcs = ["multiplexer.cc"],
+    deps = [
+        "//drake/systems/framework",
+    ],
+    linkstatic=1)
+
+cc_library(
     name = "zero_order_hold",
     hdrs = ["zero_order_hold.h",
             "zero_order_hold-inl.h"],
