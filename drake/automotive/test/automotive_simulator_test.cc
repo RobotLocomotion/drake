@@ -7,7 +7,6 @@
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 
 namespace drake {
 namespace automotive {
@@ -161,7 +160,8 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file_1, int num_bodies_1,
   const Curve2d curve{waypoints};
 
   // Set up a basic simulation with just some TrajectoryCars.
-  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
+      std::make_unique<lcm::DrakeMockLcm>());
   const int model_instance_id_1 =
       simulator->AddTrajectoryCarFromSdf(sdf_file_1, curve, 1.0, 0.0);
   const int model_instance_id_2 =

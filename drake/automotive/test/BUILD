@@ -6,6 +6,13 @@ package(default_visibility = ["//visibility:public"])
 DEPS = ["@gtest//:main"]
 
 cc_test(
+    name = "automotive_simulator_test",
+    srcs = ["automotive_simulator_test.cc"],
+    deps = DEPS + ["//drake/automotive:automotive_simulator", "//drake/lcm:mock"],
+    data = ["//drake/automotive:models"],
+    size = "small")
+
+cc_test(
     name = "curve2_test",
     srcs = ["curve2_test.cc"],
     deps = DEPS + ["//drake/automotive:curve2"],
