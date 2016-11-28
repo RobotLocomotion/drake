@@ -389,7 +389,8 @@ void ParseVisual(RigidBody<double>* body, XMLElement* node,
       // The `throw_if_name_clash` parameter is passed a value of `false` to
       // allow the same material to be defined across multiple links as long as
       // they correspond to the same RGBA value.
-      AddMaterialToMaterialMap(material_name, rgba, false, materials);
+      AddMaterialToMaterialMap(material_name, rgba,
+          false /* throw_if_name_clash */, materials);
     }
 
     // Sets the material's color.
