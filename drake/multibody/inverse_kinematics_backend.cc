@@ -26,7 +26,7 @@ using Eigen::VectorXi;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::autoDiffToValueMatrix;
 using drake::solvers::Constraint;
-using drake::solvers::DecisionVariableView;
+using drake::solvers::DecisionVariableMatrixX;
 using drake::solvers::MathematicalProgram;
 using drake::solvers::SolutionResult;
 
@@ -84,16 +84,17 @@ void SetIKSolverOptions(const IKoptions& ikoptions,
 }
 
 void AddSingleTimeLinearPostureConstraint(
-    const double *t, const RigidBodyConstraint* constraint, int nq,
-    const drake::solvers::DecisionVariableView& vars,
+    const double* t, const RigidBodyConstraint* constraint, int nq,
+    const drake::solvers::DecisionVariableMatrixX& vars,
     MathematicalProgram* prog) {
-  DRAKE_ASSERT(
-      constraint->getCategory() ==
-      RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory);
+  DRAKE_ASSERT(constraint->getCategory() ==
+               RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory);
 
   const SingleTimeLinearPostureConstraint* st_lpc =
       static_cast<const SingleTimeLinearPostureConstraint*>(constraint);
-  if (!st_lpc->isTimeValid(t)) { return; }
+  if (!st_lpc->isTimeValid(t)) {
+    return;
+  }
   VectorXd lb;
   VectorXd ub;
   st_lpc->bounds(t, lb, ub);
@@ -112,8 +113,7 @@ void AddSingleTimeLinearPostureConstraint(
     triplet_list.push_back(T(iAfun[i], jAvar[i], A[i]));
   }
 
-  Eigen::SparseMatrix<double> A_sparse(
-      st_lpc->getNumConstraint(t), nq);
+  Eigen::SparseMatrix<double> A_sparse(st_lpc->getNumConstraint(t), nq);
   A_sparse.setFromTriplets(triplet_list.begin(), triplet_list.end());
   prog->AddLinearConstraint(MatrixXd(A_sparse), lb, ub, {vars});
 }
@@ -122,31 +122,31 @@ void AddSingleTimeLinearPostureConstraint(
 /// t covering @p vars.  @p nq is the KinematicsCacheHelper for the
 /// underlying model.
 void AddQuasiStaticConstraint(
-    const double *t, const RigidBodyConstraint* constraint,
+    const double* t, const RigidBodyConstraint* constraint,
     KinematicsCacheHelper<double>* kin_helper,
-    const drake::solvers::DecisionVariableView& vars,
+    const drake::solvers::DecisionVariableMatrixX& vars,
     drake::solvers::MathematicalProgram* prog) {
   DRAKE_ASSERT(constraint->getCategory() ==
                RigidBodyConstraint::QuasiStaticConstraintCategory);
 
   const QuasiStaticConstraint* qsc =
       static_cast<const QuasiStaticConstraint*>(constraint);
-  if (!qsc->isTimeValid(t)) { return; }
+  if (!qsc->isTimeValid(t)) {
+    return;
+  }
   int num_vars = qsc->getNumWeights();
-  DecisionVariableView qsc_vars =
+  drake::solvers::DecisionVariableVectorX qsc_vars =
       prog->AddContinuousVariables(num_vars, "qsc");
-  auto wrapper = std::make_shared<QuasiStaticConstraintWrapper>(
-      qsc, kin_helper);
+  auto wrapper =
+      std::make_shared<QuasiStaticConstraintWrapper>(qsc, kin_helper);
   prog->AddConstraint(wrapper, {vars, qsc_vars});
   prog->AddBoundingBoxConstraint(VectorXd::Constant(num_vars, 0.),
-                                 VectorXd::Constant(num_vars, 1.),
-                                 {qsc_vars});
+                                 VectorXd::Constant(num_vars, 1.), {qsc_vars});
   VectorXd constraint_eq(num_vars);
   constraint_eq.fill(1.);
   prog->AddLinearEqualityConstraint(constraint_eq.transpose(),
                                     Vector1d::Constant(1.), {qsc_vars});
-  prog->SetInitialGuess(qsc_vars,
-                        VectorXd::Constant(num_vars, 1.0 / num_vars));
+  prog->SetInitialGuess(qsc_vars, VectorXd::Constant(num_vars, 1.0 / num_vars));
 }
 
 namespace {
@@ -155,8 +155,7 @@ class InverseKinObjective : public Constraint {
  public:
   // All references are aliased for the life of the objective.
   InverseKinObjective(const RigidBodyTree<double>* model, const MatrixXd& Q)
-      : Constraint(model->get_num_positions()),
-        Q_(Q) {}
+      : Constraint(model->get_num_positions()), Q_(Q) {}
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override {
@@ -175,13 +174,10 @@ class InverseKinObjective : public Constraint {
         y_val, (dy_vec * gradient_mat).eval(), y);
   }
 
-
   /// Set the nominal posture.  This should be invoked before any
   /// calls to Eval() (the output of Eval() is undefined if this has
   /// not been set.)
-  void set_q_nom(const VectorXd& q_nom_i) {
-    q_nom_i_ = q_nom_i;
-  }
+  void set_q_nom(const VectorXd& q_nom_i) { q_nom_i_ = q_nom_i; }
 
  private:
   const MatrixXd& Q_;
@@ -191,14 +187,14 @@ class InverseKinObjective : public Constraint {
 }  // anonymous namespace
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-void inverseKinBackend(
-    RigidBodyTree<double>* model, const int nT,
-    const double* t, const MatrixBase<DerivedA>& q_seed,
-    const MatrixBase<DerivedB>& q_nom, const int num_constraints,
-    const RigidBodyConstraint* const* constraint_array,
-    const IKoptions& ikoptions, MatrixBase<DerivedC>* q_sol,
-    int* info, std::vector<std::string>* infeasible_constraint) {
-
+void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
+                       const double* t, const MatrixBase<DerivedA>& q_seed,
+                       const MatrixBase<DerivedB>& q_nom,
+                       const int num_constraints,
+                       const RigidBodyConstraint* const* constraint_array,
+                       const IKoptions& ikoptions, MatrixBase<DerivedC>* q_sol,
+                       int* info,
+                       std::vector<std::string>* infeasible_constraint) {
   // Validate some basic parameters of the input.
   if (q_seed.rows() != model->get_num_positions() || q_seed.cols() != nT ||
       q_nom.rows() != model->get_num_positions() || q_nom.cols() != nT) {
@@ -218,7 +214,7 @@ void inverseKinBackend(
     MathematicalProgram prog;
     SetIKSolverOptions(ikoptions, &prog);
 
-    DecisionVariableView vars =
+    drake::solvers::DecisionVariableVectorX vars =
         prog.AddContinuousVariables(model->get_num_positions());
 
     MatrixXd Q;
@@ -233,7 +229,9 @@ void inverseKinBackend(
           RigidBodyConstraint::SingleTimeKinematicConstraintCategory) {
         const SingleTimeKinematicConstraint* stc =
             static_cast<const SingleTimeKinematicConstraint*>(constraint);
-        if (!stc->isTimeValid(&t[t_index])) { continue; }
+        if (!stc->isTimeValid(&t[t_index])) {
+          continue;
+        }
         auto wrapper = std::make_shared<SingleTimeKinematicConstraintWrapper>(
             stc, &kin_helper);
         prog.AddConstraint(wrapper, {vars});
@@ -241,29 +239,30 @@ void inverseKinBackend(
                  RigidBodyConstraint::PostureConstraintCategory) {
         const PostureConstraint* pc =
             static_cast<const PostureConstraint*>(constraint);
-        if (!pc->isTimeValid(&t[t_index])) { continue; }
+        if (!pc->isTimeValid(&t[t_index])) {
+          continue;
+        }
         VectorXd lb;
         VectorXd ub;
         pc->bounds(&t[t_index], lb, ub);
         prog.AddBoundingBoxConstraint(lb, ub, {vars});
-      } else if (
-          constraint_category ==
-          RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory) {
+      } else if (constraint_category ==
+                 RigidBodyConstraint::
+                     SingleTimeLinearPostureConstraintCategory) {
         AddSingleTimeLinearPostureConstraint(
-            &t[t_index], constraint, model->get_num_positions(),
-            vars, &prog);
+            &t[t_index], constraint, model->get_num_positions(), vars, &prog);
       } else if (constraint_category ==
                  RigidBodyConstraint::QuasiStaticConstraintCategory) {
-        AddQuasiStaticConstraint(&t[t_index], constraint, &kin_helper,
-                                 vars, &prog);
+        AddQuasiStaticConstraint(&t[t_index], constraint, &kin_helper, vars,
+                                 &prog);
       } else if (constraint_category ==
                  RigidBodyConstraint::MultipleTimeKinematicConstraintCategory) {
         throw std::runtime_error(
             "MultipleTimeKinematicConstraint is not supported"
             " in pointwise mode.");
-      } else if (
-          constraint_category ==
-          RigidBodyConstraint::MultipleTimeLinearPostureConstraintCategory) {
+      } else if (constraint_category ==
+                 RigidBodyConstraint::
+                     MultipleTimeLinearPostureConstraintCategory) {
         throw std::runtime_error(
             "MultipleTimeLinearPostureConstraint is not supported"
             " in pointwise mode.");
@@ -271,9 +270,8 @@ void inverseKinBackend(
     }
 
     // Add a bounding box constraint from the model.
-    prog.AddBoundingBoxConstraint(
-        model->joint_limit_min, model->joint_limit_max,
-        {vars});
+    prog.AddBoundingBoxConstraint(model->joint_limit_min,
+                                  model->joint_limit_max, {vars});
 
     // TODO(sam.creasey) would this be faster if we stored the view
     // instead of copying into a VectorXd?
@@ -285,39 +283,41 @@ void inverseKinBackend(
     }
 
     SolutionResult result = prog.Solve();
-    q_sol->col(t_index) = vars.value();
+    const VectorXd& vars_value =
+        drake::solvers::GetSolution(vars);
+    q_sol->col(t_index) = vars_value;
     info[t_index] = GetIKSolverInfo(prog, result);
   }
 }
 
 template void inverseKinBackend(
-    RigidBodyTree<double>* model, const int nT,
-    const double* t, const MatrixBase<Map<MatrixXd>>& q_seed,
+    RigidBodyTree<double>* model, const int nT, const double* t,
+    const MatrixBase<Map<MatrixXd>>& q_seed,
     const MatrixBase<Map<MatrixXd>>& q_nom, const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,
-    const IKoptions& ikoptions, MatrixBase<Map<MatrixXd>>* q_sol,
-    int* info, std::vector<std::string>* infeasible_constraint);
+    const IKoptions& ikoptions, MatrixBase<Map<MatrixXd>>* q_sol, int* info,
+    std::vector<std::string>* infeasible_constraint);
 template void inverseKinBackend(
-    RigidBodyTree<double>* model, const int nT,
-    const double* t, const MatrixBase<MatrixXd>& q_seed,
-    const MatrixBase<MatrixXd>& q_nom, const int num_constraints,
+    RigidBodyTree<double>* model, const int nT, const double* t,
+    const MatrixBase<MatrixXd>& q_seed, const MatrixBase<MatrixXd>& q_nom,
+    const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,
-    const IKoptions& ikoptions, MatrixBase<MatrixXd>* q_sol,
-    int* info, std::vector<std::string>* infeasible_constraint);
+    const IKoptions& ikoptions, MatrixBase<MatrixXd>* q_sol, int* info,
+    std::vector<std::string>* infeasible_constraint);
 template void inverseKinBackend(
-    RigidBodyTree<double>* model, const int nT,
-    const double* t, const MatrixBase<Map<VectorXd>>& q_seed,
+    RigidBodyTree<double>* model, const int nT, const double* t,
+    const MatrixBase<Map<VectorXd>>& q_seed,
     const MatrixBase<Map<VectorXd>>& q_nom, const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,
-    const IKoptions& ikoptions, MatrixBase<Map<VectorXd>>* q_sol,
-    int* info, std::vector<std::string>* infeasible_constraint);
+    const IKoptions& ikoptions, MatrixBase<Map<VectorXd>>* q_sol, int* info,
+    std::vector<std::string>* infeasible_constraint);
 template void inverseKinBackend(
-    RigidBodyTree<double>* model, const int nT,
-    const double* t, const MatrixBase<VectorXd>& q_seed,
-    const MatrixBase<VectorXd>& q_nom, const int num_constraints,
+    RigidBodyTree<double>* model, const int nT, const double* t,
+    const MatrixBase<VectorXd>& q_seed, const MatrixBase<VectorXd>& q_nom,
+    const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,
-    const IKoptions& ikoptions, MatrixBase<VectorXd>* q_sol,
-    int* info, std::vector<std::string>* infeasible_constraint);
+    const IKoptions& ikoptions, MatrixBase<VectorXd>* q_sol, int* info,
+    std::vector<std::string>* infeasible_constraint);
 
 }  // namespace plants
 }  // namespace systems

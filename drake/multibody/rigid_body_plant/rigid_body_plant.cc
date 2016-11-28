@@ -7,10 +7,10 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/collision/element.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/multibody/collision/element.h"
 
 using std::make_unique;
 using std::move;
@@ -199,9 +199,17 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
   ComputeContactResults(context, &contact_results);
 }
 
+/*
+ * TODO(hongkai.dai): This only works for templates on double, it does not
+ * work for autodiff yet, I will add the code to compute the gradient of vdot
+ * w.r.t. q and v. See issue
+ * https://github.com/RobotLocomotion/drake/issues/4267.
+ */
 template <typename T>
 void RigidBodyPlant<T>::EvalTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
+  static_assert(std::is_same<double, T>::value,
+                "Only support templating on double for now");
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   DRAKE_DEMAND(derivatives != nullptr);
   const BasicVector<T>* input = this->EvalVectorInput(context, 0);
@@ -232,7 +240,8 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // and simply update them then solve on each function eval.
   // How to place something like this in the context?
   drake::solvers::MathematicalProgram prog;
-  auto const& vdot = prog.AddContinuousVariables(nv, "vdot");
+  drake::solvers::DecisionVariableVectorX vdot =
+      prog.AddContinuousVariables(nv, "vdot");
 
   auto H = tree_->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
@@ -293,10 +302,18 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   prog.Solve();
 
   VectorX<T> xdot(get_num_states());
+
+  /*
+   * TODO(hongkai.dai): This only works for templates on double, it does not
+   * work for autodiff yet, I will add the code to compute the gradient of vdot
+   * w.r.t. q and v. See issue
+   * https://github.com/RobotLocomotion/drake/issues/4267.
+   */
+  const auto& vdot_value =
+      drake::solvers::GetSolution(vdot);
   xdot << kinsol.transformQDotMappingToVelocityMapping(
-              MatrixX<T>::Identity(nq, nq)) *
-              v,
-      vdot.value();
+              MatrixX<T>::Identity(nq, nq)) * v,
+      vdot_value;
 
   derivatives->SetFromVector(xdot);
 }

@@ -266,9 +266,9 @@ SystemIdentification<T>::EstimateParameters(
 
   // Build up our optimization problem's decision variables.
   MathematicalProgram problem;
-  const auto parameter_variables =
+  DecisionVariableVectorX parameter_variables =
       problem.AddContinuousVariables(num_to_estimate, "param");
-  const auto error_variables =
+  DecisionVariableVectorX error_variables =
       problem.AddContinuousVariables(num_err_terms, "error");
 
   // Create any necessary VarType IDs.  We build up two lists of VarType:
@@ -309,7 +309,7 @@ SystemIdentification<T>::EstimateParameters(
   auto cost = problem.AddQuadraticCost(
       Eigen::MatrixXd::Identity(num_err_terms, num_err_terms),
       Eigen::VectorXd::Zero(num_err_terms),
-      std::list<DecisionVariableView> { error_variables });
+      { error_variables });
 
   // Solve the problem and copy out the result.
   SolutionResult solution_result = problem.Solve();
@@ -320,11 +320,11 @@ SystemIdentification<T>::EstimateParameters(
   PartialEvalType estimates;
   for (int i = 0; i < num_to_estimate; i++) {
     VarType var = vars_to_estimate[i];
-    estimates[var] = parameter_variables.value()[i];
+    estimates[var] = parameter_variables(i).value();
   }
   T error_squared = 0;
   for (int i = 0; i < num_err_terms; i++) {
-    error_squared += error_variables.value()[i] * error_variables.value()[i];
+    error_squared += error_variables(i).value() * error_variables(i).value();
   }
 
   return std::make_pair(estimates, std::sqrt(error_squared / num_err_terms));

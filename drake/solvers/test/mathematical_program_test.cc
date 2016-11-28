@@ -62,7 +62,7 @@ struct Unique {
 
 GTEST_TEST(testMathematicalProgram, testAddFunction) {
   MathematicalProgram prog;
-  prog.AddContinuousVariables(1);
+  prog.AddContinuousVariables<1>();
 
   Movable movable;
   prog.AddCost(std::move(movable));
@@ -120,17 +120,20 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
   // Deliberately add two constraints on overlapped decision variables.
   // For x(1), the lower bound of the second constraint are used; while
   // the upper bound of the first variable is used.
+  DecisionVariableVector<2> variable_vec(x(1), x(3));
   prog.AddBoundingBoxConstraint(Vector2d(-1, -2), Vector2d(-0.2, -1),
-                                {x(1), x(3)});
+                                {variable_vec});
   prog.AddBoundingBoxConstraint(Vector3d(-1, -0.5, -3), Vector3d(2, 1, -0.1),
-                                {x(0), x(1), x(2)});
+                                {x.head(3)});
 
   Vector4d lb(-1, -0.5, -3, -2);
   Vector4d ub(2, -0.2, -0.1, -1);
+  prog.SetInitialGuessForAllVariables(Vector4d::Zero());
   RunNonlinearProgram(prog, [&]() {
+    const auto& x_value = GetSolution(x);
     for (int i = 0; i < 4; ++i) {
-      EXPECT_GE(x.value().coeff(i), lb(i) - 1E-10);
-      EXPECT_LE(x.value().coeff(i), ub(i) + 1E-10);
+      EXPECT_GE(x_value(i), lb(i) - 1E-10);
+      EXPECT_LE(x_value(i), ub(i) + 1E-10);
     }
   });
 }
@@ -140,7 +143,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
 
   // First, add four variables set equal by four equations
   // to equal a random vector
-  auto const& x = prog.AddContinuousVariables(4);
+  auto x = prog.AddContinuousVariables<4>();
 
   auto x2 = x(2);
   auto xhead = x.head(3);
@@ -148,71 +151,79 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   Vector4d b = Vector4d::Random();
   auto con = prog.AddLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
 
+  prog.SetInitialGuessForAllVariables(Vector4d::Zero());
   prog.Solve();
-  EXPECT_TRUE(
-      CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
+  auto x_value = GetSolution(x);
+  EXPECT_TRUE(CompareMatrices(b, x_value, 1e-10, MatrixCompareType::absolute));
 
-  EXPECT_NEAR(b(2), x2.value()(0), 1e-10);
-  EXPECT_TRUE(CompareMatrices(b.head(3), xhead.value(), 1e-10,
+  EXPECT_NEAR(b(2), x2.value(), 1e-10);
+
+  const auto& xhead_value = GetSolution(xhead);
+  EXPECT_TRUE(CompareMatrices(b.head(3), xhead_value, 1e-10,
                               MatrixCompareType::absolute));
 
-  EXPECT_NEAR(b(2), xhead(2).value()(0), 1e-10);  // a segment of a segment.
+  EXPECT_NEAR(b(2), xhead_value(2), 1e-10);  // a segment of a segment.
 
   CheckSolverType(prog, "Linear System Solver");
 
   // Add two more variables with a very slightly more complicated
   // constraint and solve again. Should still be a linear system.
-  auto const& y = prog.AddContinuousVariables(2);
+  auto y = prog.AddContinuousVariables<2>();
   prog.AddLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
   prog.Solve();
-  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
+  const auto& y_value = GetSolution(y);
+  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y_value, 1e-10,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(
-      CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
+  x_value = GetSolution(x);
+  EXPECT_TRUE(CompareMatrices(b, x_value, 1e-10, MatrixCompareType::absolute));
   CheckSolverType(prog, "Linear System Solver");
 
   // Now modify the original constraint by its handle
   con->UpdateConstraint(3 * Matrix4d::Identity(), b);
   prog.Solve();
-  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
+  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2,
+                              GetSolution(y), 1e-10,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(
-      CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(b / 3, GetSolution(x),
+                              1e-10, MatrixCompareType::absolute));
   CheckSolverType(prog, "Linear System Solver");
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
-      MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
+      Vector2d::Constant(-1000.0), Vector2d::Constant(1000.0)));
   prog.AddConstraint(bbcon, {x.head(2)});
 
   // Now solve as a nonlinear program.
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
+    EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2,
+                                GetSolution(y), 1e-10,
                                 MatrixCompareType::absolute));
-    EXPECT_TRUE(
-        CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(b / 3, GetSolution(x),
+                                1e-10, MatrixCompareType::absolute));
   });
 }
 
 GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
   MathematicalProgram prog;
 
-  auto vars = prog.AddContinuousVariables(2);
+  auto vars = prog.AddContinuousVariables<2>();
 
   // Use a non-square matrix to catch row/column mistakes in the solvers.
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(0, 1),
                                    Vector1d::Constant(1));
   prog.SetInitialGuess(vars, Vector2d(2, 2));
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_DOUBLE_EQ(vars.value()(0), 2);
-    EXPECT_DOUBLE_EQ(vars.value()(1), 1);
+    const auto& vars_value = GetSolution(vars);
+    EXPECT_DOUBLE_EQ(vars_value(0), 2);
+    EXPECT_DOUBLE_EQ(vars_value(1), 1);
   });
 }
+
 // Tests a quadratic optimization problem, with only quadratic cost
 // 0.5 *x'*Q*x + b'*x
 // The optimal solution is -inverse(Q)*b
 GTEST_TEST(testMathematicalProgram, QuadraticCost) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(4);
+  auto x = prog.AddContinuousVariables<4>();
 
   Vector4d Qdiag(1.0, 2.0, 3.0, 4.0);
   Matrix4d Q = Qdiag.asDiagonal();
@@ -226,10 +237,11 @@ GTEST_TEST(testMathematicalProgram, QuadraticCost) {
   Q_transpose.transposeInPlace();
   Matrix4d Q_symmetric = 0.5 * (Q + Q_transpose);
   Vector4d expected = -Q_symmetric.ldlt().solve(b);
-  prog.SetInitialGuess({x}, Vector4d::Zero());
+  prog.SetInitialGuess(x, Vector4d::Zero());
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
-                                MatrixCompareType::absolute));
+    const auto& x_value = GetSolution(x);
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-6, MatrixCompareType::absolute));
   });
 }
 
@@ -254,7 +266,7 @@ class TestProblem1Cost {
 
 GTEST_TEST(testMathematicalProgram, testProblem1) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(5);
+  auto x = prog.AddContinuousVariables<5>();
   prog.AddCost(TestProblem1Cost());
   VectorXd constraint(5);
   constraint << 20, 12, 11, 7, 4;
@@ -270,10 +282,11 @@ GTEST_TEST(testMathematicalProgram, testProblem1) {
   // IPOPT has difficulty with this problem depending on the initial
   // conditions, which is why the initial guess varies so little.
   std::srand(0);
-  prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(5));
+  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
-                                MatrixCompareType::absolute));
+    const auto& x_value = GetSolution(x);
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-9, MatrixCompareType::absolute));
   });
 }
 
@@ -281,7 +294,7 @@ GTEST_TEST(testMathematicalProgram, testProblem1) {
 // framed as a QP instead.
 GTEST_TEST(testMathematicalProgram, testProblem1AsQP) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(5);
+  auto x = prog.AddContinuousVariables<5>();
 
   Eigen::MatrixXd Q = -100 * Eigen::Matrix<double, 5, 5>::Identity();
   Eigen::VectorXd c(5);
@@ -291,9 +304,8 @@ GTEST_TEST(testMathematicalProgram, testProblem1AsQP) {
 
   VectorXd constraint(5);
   constraint << 20, 12, 11, 7, 4;
-  prog.AddLinearConstraint(
-      constraint.transpose(),
-      -std::numeric_limits<double>::infinity(), 40);
+  prog.AddLinearConstraint(constraint.transpose(),
+                           -std::numeric_limits<double>::infinity(), 40);
   EXPECT_EQ(prog.linear_constraints().size(), 1u);
   EXPECT_EQ(prog.generic_constraints().size(), 0u);
 
@@ -302,10 +314,11 @@ GTEST_TEST(testMathematicalProgram, testProblem1AsQP) {
   VectorXd expected(5);
   expected << 1, 1, 0, 1, 0;
   std::srand(0);
-  prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(5));
+  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
-                                MatrixCompareType::absolute));
+    const auto& x_value = GetSolution(x);
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-9, MatrixCompareType::absolute));
   });
 }
 
@@ -330,7 +343,7 @@ class TestProblem2Cost {
 
 GTEST_TEST(testMathematicalProgram, testProblem2) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(6);
+  auto x = prog.AddContinuousVariables<6>();
   prog.AddCost(TestProblem2Cost());
   VectorXd constraint1(6), constraint2(6);
   constraint1 << 6, 3, 3, 2, 1, 0;
@@ -351,13 +364,14 @@ GTEST_TEST(testMathematicalProgram, testProblem2) {
   VectorXd expected(6);
   expected << 0, 1, 0, 1, 1, 20;
   std::srand(0);
-  prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(6));
+  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(6));
   // This test seems to be fairly sensitive to how much the randomness
   // causes the initial guess to deviate, so the tolerance is a bit
   // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
-                                MatrixCompareType::absolute));
+    const auto& x_value = GetSolution(x);
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-3, MatrixCompareType::absolute));
   });
 }
 
@@ -365,7 +379,7 @@ GTEST_TEST(testMathematicalProgram, testProblem2) {
 // framed as a QP instead.
 GTEST_TEST(testMathematicalProgram, testProblem2AsQP) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(6);
+  auto x = prog.AddContinuousVariables<6>();
   MatrixXd Q = -100.0 * MatrixXd::Identity(6, 6);
   Q(5, 5) = 0.0;
   VectorXd c(6);
@@ -375,13 +389,11 @@ GTEST_TEST(testMathematicalProgram, testProblem2AsQP) {
 
   VectorXd constraint1(6), constraint2(6);
   constraint1 << 6, 3, 3, 2, 1, 0;
-  prog.AddLinearConstraint(
-      constraint1.transpose(),
-      -std::numeric_limits<double>::infinity(), 6.5);
+  prog.AddLinearConstraint(constraint1.transpose(),
+                           -std::numeric_limits<double>::infinity(), 6.5);
   constraint2 << 10, 0, 10, 0, 0, 1;
-  prog.AddLinearConstraint(
-      constraint2.transpose(),
-      -std::numeric_limits<double>::infinity(), 20);
+  prog.AddLinearConstraint(constraint2.transpose(),
+                           -std::numeric_limits<double>::infinity(), 20);
 
   Eigen::VectorXd lower(6);
   lower << 0, 0, 0, 0, 0, 0;
@@ -392,14 +404,15 @@ GTEST_TEST(testMathematicalProgram, testProblem2AsQP) {
   VectorXd expected(6);
   expected << 0, 1, 0, 1, 1, 20;
   std::srand(0);
-  prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(6));
+  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(6));
 
   // This test seems to be fairly sensitive to how much the randomness
   // causes the initial guess to deviate, so the tolerance is a bit
   // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
-                                MatrixCompareType::absolute));
+    const auto& x_value = GetSolution(x);
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-3, MatrixCompareType::absolute));
   });
 }
 
@@ -489,21 +502,23 @@ GTEST_TEST(testMathematicalProgram, lowerBoundTest) {
   expected << 5, 1, 5, 0, 5, 10;
   std::srand(0);
   Eigen::VectorXd delta = .05 * Eigen::VectorXd::Random(6);
-  prog.SetInitialGuess({x}, expected + delta);
+  prog.SetInitialGuess(x, expected + delta);
 
   // This test seems to be fairly sensitive to how much the randomness
   // causes the initial guess to deviate, so the tolerance is a bit
   // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
-                                MatrixCompareType::absolute));
+    const auto& x_value = GetSolution(x);
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-3, MatrixCompareType::absolute));
   });
 
   // Try again with the offsets in the opposite direction.
-  prog.SetInitialGuess({x}, expected - delta);
+  prog.SetInitialGuess(x, expected - delta);
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
-                                MatrixCompareType::absolute));
+    const auto& x_value = GetSolution(x);
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-3, MatrixCompareType::absolute));
   });
 }
 
@@ -528,12 +543,14 @@ GTEST_TEST(testMathematicalProgram, sixHumpCamel) {
   auto x = prog.AddContinuousVariables(2);
   auto cost = prog.AddCost(SixHumpCamelCost());
 
+  prog.SetInitialGuess(x, Vector2d::Random());
   RunNonlinearProgram(prog, [&]() {
     // check (numerically) if it is a local minimum
     VectorXd ystar, y;
-    cost->Eval(x.value(), ystar);
+    const auto& x_value = GetSolution(x);
+    cost->Eval(x_value, ystar);
     for (int i = 0; i < 10; i++) {
-      cost->Eval(x.value() + .01 * Matrix<double, 2, 1>::Random(), y);
+      cost->Eval(x_value + .01 * Matrix<double, 2, 1>::Random(), y);
       if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
     }
   });
@@ -584,12 +601,11 @@ class GloptipolyConstrainedExampleConstraint
   }
 };
 
-/** gloptiPolyConstrainedMinimization
- * @brief from section 5.8.2 of the gloptipoly3 documentation
- *
- * Which is from section 3.5 in
- *   Handbook of Test Problems in Local and Global Optimization
- */
+// gloptiPolyConstrainedMinimization
+// @brief from section 5.8.2 of the gloptipoly3 documentation
+//
+// Which is from section 3.5 in
+//   Handbook of Test Problems in Local and Global Optimization
 GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
   MathematicalProgram prog;
 
@@ -604,22 +620,14 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
       new GloptipolyConstrainedExampleConstraint());
   prog.AddConstraint(qp_con, {x});
   prog.AddConstraint(qp_con, {y});
-  prog.AddLinearConstraint(
-      Vector3d(1, 1, 1).transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(4), {x});
-  prog.AddLinearConstraint(
-      Vector3d(1, 1, 1).transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(4), {y});
-  prog.AddLinearConstraint(
-      Vector3d(0, 3, 1).transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(6), {x});
-  prog.AddLinearConstraint(
-      Vector3d(0, 3, 1).transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(6), {y});
+  prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
+                           -std::numeric_limits<double>::infinity(), 4, {x});
+  prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
+                           -std::numeric_limits<double>::infinity(), 4, {y});
+  prog.AddLinearConstraint(Vector3d(0, 3, 1).transpose(),
+                           -std::numeric_limits<double>::infinity(), 6, {x});
+  prog.AddLinearConstraint(Vector3d(0, 3, 1).transpose(),
+                           -std::numeric_limits<double>::infinity(), 6, {y});
   prog.AddBoundingBoxConstraint(
       Vector3d(0, 0, 0),
       Vector3d(2, std::numeric_limits<double>::infinity(), 3), {x});
@@ -630,20 +638,21 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
   // IPOPT has difficulty with this problem depending on the initial
   // conditions, which is why the initial guess varies so little.
   Vector3d initial_guess = Vector3d(.5, 0, 3) + .01 * Vector3d::Random();
-  prog.SetInitialGuess({x}, initial_guess);
-  prog.SetInitialGuess({y}, initial_guess);
+  prog.SetInitialGuess(x, initial_guess);
+  prog.SetInitialGuess(y, initial_guess);
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), Vector3d(0.5, 0, 3), 1e-4,
+    const auto& x_value = GetSolution(x);
+    const auto& y_value = GetSolution(y);
+    EXPECT_TRUE(CompareMatrices(x_value, Vector3d(0.5, 0, 3), 1e-4,
                                 MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(y.value(), Vector3d(0.5, 0, 3), 1e-4,
+    EXPECT_TRUE(CompareMatrices(y_value, Vector3d(0.5, 0, 3), 1e-4,
                                 MatrixCompareType::absolute));
   });
 }
 
-/**
- * Test that the Eval() method of LinearComplementarityConstraint correctly
- * returns the slack.
- */
+//
+// Test that the Eval() method of LinearComplementarityConstraint correctly
+// returns the slack.
 GTEST_TEST(testMathematicalProgram, simpleLCPConstraintEval) {
   MathematicalProgram prog;
   Eigen::Matrix<double, 2, 2> M;
@@ -667,13 +676,12 @@ GTEST_TEST(testMathematicalProgram, simpleLCPConstraintEval) {
       CompareMatrices(x, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
 }
 
-/** Simple linear complementarity problem example.
- * @brief a hand-created LCP easily solved.
- *
- * Note: This test is meant to test that MathematicalProgram.Solve() works in
- * this case; tests of the correctness of the Moby LCP solver itself live in
- * testMobyLCP.
- */
+// Simple linear complementarity problem example.
+// @brief a hand-created LCP easily solved.
+//
+// Note: This test is meant to test that MathematicalProgram.Solve() works in
+// this case; tests of the correctness of the Moby LCP solver itself live in
+// testMobyLCP.
 GTEST_TEST(testMathematicalProgram, simpleLCP) {
   MathematicalProgram prog;
   Eigen::Matrix<double, 2, 2> M;
@@ -685,18 +693,18 @@ GTEST_TEST(testMathematicalProgram, simpleLCP) {
 
   Eigen::Vector2d q(-16, -15);
 
-  auto x = prog.AddContinuousVariables(2);
+  auto x = prog.AddContinuousVariables<2>();
 
   prog.AddLinearComplementarityConstraint(M, q, {x});
   EXPECT_NO_THROW(prog.Solve());
-  EXPECT_TRUE(CompareMatrices(x.value(), Vector2d(16, 0), 1e-4,
+  const auto& x_value = GetSolution(x);
+  EXPECT_TRUE(CompareMatrices(x_value, Vector2d(16, 0), 1e-4,
                               MatrixCompareType::absolute));
 }
 
-/** Multiple LC constraints in a single optimization problem
- * @brief Just two copies of the simpleLCP example, to make sure that the
- * write-through of LCP results to the solution vector works correctly.
- */
+// Multiple LC constraints in a single optimization problem
+// @brief Just two copies of the simpleLCP example, to make sure that the
+// write-through of LCP results to the solution vector works correctly.
 GTEST_TEST(testMathematicalProgram, multiLCP) {
   MathematicalProgram prog;
   Eigen::Matrix<double, 2, 2> M;
@@ -708,23 +716,23 @@ GTEST_TEST(testMathematicalProgram, multiLCP) {
 
   Eigen::Vector2d q(-16, -15);
 
-  auto x = prog.AddContinuousVariables(2);
-  auto y = prog.AddContinuousVariables(2);
+  auto x = prog.AddContinuousVariables<2>();
+  auto y = prog.AddContinuousVariables<2>();
 
   prog.AddLinearComplementarityConstraint(M, q, {x});
   prog.AddLinearComplementarityConstraint(M, q, {y});
   EXPECT_NO_THROW(prog.Solve());
-
-  EXPECT_TRUE(CompareMatrices(x.value(), Vector2d(16, 0), 1e-4,
+  const auto& x_value = GetSolution(x);
+  const auto& y_value = GetSolution(y);
+  EXPECT_TRUE(CompareMatrices(x_value, Vector2d(16, 0), 1e-4,
                               MatrixCompareType::absolute));
 
-  EXPECT_TRUE(CompareMatrices(y.value(), Vector2d(16, 0), 1e-4,
+  EXPECT_TRUE(CompareMatrices(y_value, Vector2d(16, 0), 1e-4,
                               MatrixCompareType::absolute));
 }
 
-/**
- * Test that linear polynomial constraints get turned into linear constraints.
- */
+//
+// Test that linear polynomial constraints get turned into linear constraints.
 GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
   const Polynomiald x("x");
   MathematicalProgram problem;
@@ -739,8 +747,9 @@ GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
   EXPECT_NE(dynamic_cast<LinearConstraint*>(resulting_constraint.get()),
             nullptr);
   // Check that it gives the correct answer as well.
+  problem.SetInitialGuessForAllVariables(drake::Vector1d(0));
   RunNonlinearProgram(problem,
-                      [&]() { EXPECT_NEAR(x_var.value()[0], 2, kEpsilon); });
+                      [&]() { EXPECT_NEAR(x_var(0).value(), 2, kEpsilon); });
 }
 
 // The current windows CI build has no solver for generic constraints.  The
@@ -752,7 +761,7 @@ GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
 #define POLYNOMIAL_CONSTRAINT_TEST_NAME DISABLED_polynomialConstraint
 #endif
 
-/** Simple test of polynomial constraints. */
+// Simple test of polynomial constraints.
 GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   static const double kInf = std::numeric_limits<double>::infinity();
   // Generic constraints in nlopt require a very generous epsilon.
@@ -768,8 +777,9 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
                                     Vector1d::Constant(2),
                                     Vector1d::Constant(2));
+    problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
     RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(x_var.value()[0], 2, kEpsilon);
+      EXPECT_NEAR(x_var(0).value(), 2, kEpsilon);
       // TODO(ggould-tri) test this with a two-sided constraint, once
       // the nlopt wrapper supports those.
     });
@@ -786,9 +796,10 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
+    problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
     RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(x_var.value()[0], 1, 0.2);
-      EXPECT_LE(poly.EvaluateUnivariate(x_var.value()[0]), kEpsilon);
+      EXPECT_NEAR(x_var(0).value(), 1, 0.2);
+      EXPECT_LE(poly.EvaluateUnivariate(x_var(0).value()), kEpsilon);
     });
   }
 
@@ -804,12 +815,13 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
+    problem.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
     RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(xy_var.value()[0], 1, 0.2);
-      EXPECT_NEAR(xy_var.value()[1], -2, 0.2);
+      EXPECT_NEAR(xy_var(0).value(), 1, 0.2);
+      EXPECT_NEAR(xy_var(1).value(), -2, 0.2);
       std::map<Polynomiald::VarType, double> eval_point = {
-          {x.GetSimpleVariable(), xy_var.value()[0]},
-          {y.GetSimpleVariable(), xy_var.value()[1]}};
+          {x.GetSimpleVariable(), xy_var(0).value()},
+          {y.GetSimpleVariable(), xy_var(1).value()}};
       EXPECT_LE(poly.EvaluateMultivariate(eval_point), kEpsilon);
     });
   }
@@ -822,7 +834,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     const Polynomiald poly = x * x * x * x - x * x + 0.2;
     MathematicalProgram problem;
     const auto x_var = problem.AddContinuousVariables(1);
-    problem.SetInitialGuess({x_var}, Vector1d::Constant(-0.1));
+    problem.SetInitialGuess(x_var, Vector1d::Constant(-0.1));
     const std::vector<Polynomiald::VarType> var_mapping = {
         x.GetSimpleVariable()};
     VectorXPoly polynomials_vec(2, 1);
@@ -831,27 +843,26 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
                                     Eigen::VectorXd::Constant(2, -kInf),
                                     Eigen::VectorXd::Zero(2));
     RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(x_var.value()[0], -0.7, 0.2);
-      EXPECT_LE(poly.EvaluateUnivariate(x_var.value()[0]), kEpsilon);
+      EXPECT_NEAR(x_var(0).value(), -0.7, 0.2);
+      EXPECT_LE(poly.EvaluateUnivariate(x_var(0).value()), kEpsilon);
     });
   }
 }
 
-/*
- * Test how an unconstrained QP is dispatched and solved:
- *   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
- *     at (x1=1, x2=1).
- *   - on the same problem plus the additional problem
- *     (2*x2 - 5)^2 + (2*x3 - 2)^2, which, when combined
- *     with the first problem, has min at (x1=1, x2=2, x3=1)
- * The first case tests a single quadratic cost, and the
- * second case tests multiple quadratic costs affecting
- * different variable views. All fall under the
- * umbrella of the Equality Constrained QP Solver.
- */
+//
+// Test how an unconstrained QP is dispatched and solved:
+//   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
+//     at (x1=1, x2=1).
+//   - on the same problem plus the additional problem
+//     (2*x2 - 5)^2 + (2*x3 - 2)^2, which, when combined
+//     with the first problem, has min at (x1=1, x2=2, x3=1)
+// The first case tests a single quadratic cost, and the
+// second case tests multiple quadratic costs affecting
+// different variable views. All fall under the
+// umbrella of the Equality Constrained QP Solver.
 GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(2);
+  auto x = prog.AddContinuousVariables<2>();
   MatrixXd Q(2, 2);
   // clang-format off
   Q << 1.0, 0.0,
@@ -862,30 +873,35 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
 
   prog.AddQuadraticCost(Q, c);
 
+  prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
   prog.Solve();
 
   VectorXd expected_answer(2);
   expected_answer << 1.0, 1.0;
-  EXPECT_TRUE(CompareMatrices(expected_answer, x.value(), 1e-10,
+  auto x_value = GetSolution(x);
+  EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-10,
                               MatrixCompareType::absolute));
   // There are no inequality constraints, and only quadratic costs,
   // so this should hold:
   CheckSolverType(prog, "Equality Constrained QP Solver");
 
   // Add one more variable and constrain a view into them.
-  auto y = prog.AddContinuousVariables(1);
+  auto y = prog.AddContinuousVariables<1>("y");
   Q << 2.0, 0.0, 0.0, 2.0;
   c << -5.0, -2.0;
-  VariableList vars;
-  vars.push_back(x.segment(1, 1));
+  VariableListRef vars;
+  vars.push_back(x.segment<1>(1));
   vars.push_back(y);
 
   prog.AddQuadraticCost(Q, c, vars);
+  prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
   prog.Solve();
   expected_answer.resize(3);
   expected_answer << 1.0, 2.0, 1.0;
   VectorXd actual_answer(3);
-  actual_answer << x.value(), y.value();
+  x_value = GetSolution(x);
+  const auto& y_value = GetSolution(y);
+  actual_answer << x_value, y_value;
   EXPECT_TRUE(CompareMatrices(expected_answer, actual_answer, 1e-10,
                               MatrixCompareType::absolute))
       << "\tExpected: " << expected_answer.transpose()
@@ -895,15 +911,13 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   CheckSolverType(prog, "Equality Constrained QP Solver");
 }
 
-/*
- * Test how an equality-constrained QP is dispatched
- *   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
- *     at (x1=1, x2=1), constrained with (x1 + x2 = 1).
- *     The resulting constrained min is at (x1=0.5, x2=0.5).
- *   - on the same problem with an additional variable x3,
- *     with (2*x1 - x3 = 0). Resulting solution should be
- *     (x1=0.5, x2=0.5, x3=1.0)
- */
+// Test how an equality-constrained QP is dispatched
+//   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
+//     at (x1=1, x2=1), constrained with (x1 + x2 = 1).
+//     The resulting constrained min is at (x1=0.5, x2=0.5).
+//   - on the same problem with an additional variable x3,
+//     with (2*x1 - x3 = 0). Resulting solution should be
+//     (x1=0.5, x2=0.5, x3=1.0)
 GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2);
@@ -919,11 +933,13 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   constraint1 << 1, 1;
   prog.AddLinearEqualityConstraint(constraint1.transpose(), 1.0);
 
+  prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
   prog.Solve();
 
   VectorXd expected_answer(2);
   expected_answer << 0.5, 0.5;
-  EXPECT_TRUE(CompareMatrices(expected_answer, x.value(), 1e-10,
+  auto x_value = GetSolution(x);
+  EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-10,
                               MatrixCompareType::absolute));
 
   // This problem is now an Equality Constrained QP and should
@@ -935,43 +951,44 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   Vector2d constraint2(2);
   constraint2 << 2., -1.;
   // 2*x1 - x3 = 0, so x3 should wind up as 1.0
-  VariableList vars;
+  VariableListRef vars;
   vars.push_back(x.segment(0, 1));
   vars.push_back(y);
 
   prog.AddLinearEqualityConstraint(constraint2.transpose(), 0.0, vars);
+  prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
   prog.Solve();
   expected_answer.resize(3);
   expected_answer << 0.5, 0.5, 1.0;
   VectorXd actual_answer(3);
-  actual_answer << x.value(), y.value();
+  x_value = GetSolution(x);
+  auto y_value = GetSolution(y);
+  actual_answer << x_value, y_value;
   EXPECT_TRUE(CompareMatrices(expected_answer, actual_answer, 1e-10,
                               MatrixCompareType::absolute))
       << "\tExpected: " << expected_answer.transpose()
       << "\tActual: " << actual_answer.transpose();
 }
 
-/*
- * Solve an SOCP with Lorentz cone and rotated Lorentz cone constraint as a
- * nonlinear optimization problem.
- * The objective is to find the smallest distance from a hyperplane
- * A * x = b to the origin.
- * We can solve the following SOCP with Lorentz cone constraint
- * min  t
- *  s.t t >= sqrt(x'*x)
- *      A * x = b.
- * Alternatively, we can solve the following SOCP with rotated Lorentz cone
- * constraint
- * min t
- * s.t t >= x'*x
- *     A * x = b.
- *
- * The optimal solution of this equality constrained QP can be found using
- * Lagrangian method. The optimal solution x* and Lagrangiam multiplier z*
- * satisfy
- * A_hat * [x*; z*] = [b; 0]
- * where A_hat = [A 0; 2*I A'].
- */
+// Solve an SOCP with Lorentz cone and rotated Lorentz cone constraint as a
+// nonlinear optimization problem.
+// The objective is to find the smallest distance from a hyperplane
+// A * x = b to the origin.
+// We can solve the following SOCP with Lorentz cone constraint
+// min  t
+//  s.t t >= sqrt(x'*x)
+//      A * x = b.
+// Alternatively, we can solve the following SOCP with rotated Lorentz cone
+// constraint
+// min t
+// s.t t >= x'*x
+//     A * x = b.
+//
+// The optimal solution of this equality constrained QP can be found using
+// Lagrangian method. The optimal solution x* and Lagrangiam multiplier z*
+// satisfy
+// A_hat * [x*; z*] = [b; 0]
+// where A_hat = [A 0; 2*I A'].
 void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   DRAKE_ASSERT(A.rows() == b.rows());
   const int xDim = A.cols();
@@ -997,14 +1014,18 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   double cost_expected_lorentz = x_expected.norm();
   // NLopt needs a really good starting point to solve SOCP, while SNOPT and
   // IPOPT seems OK with starting point not so close to optimal solution.
-  prog_lorentz.SetInitialGuess({t_lorentz},
+  prog_lorentz.SetInitialGuess(t_lorentz,
                                drake::Vector1d(cost_expected_lorentz + 0.1));
   VectorXd x_lorentz_guess = x_expected + 0.1 * VectorXd::Ones(xDim);
-  prog_lorentz.SetInitialGuess({x_lorentz}, x_lorentz_guess);
+  prog_lorentz.SetInitialGuess(x_lorentz, x_lorentz_guess);
   RunNonlinearProgram(prog_lorentz, [&]() {
-    EXPECT_TRUE(CompareMatrices(x_lorentz.value(), x_expected, 1E-5,
+    const auto& x_lorentz_value =
+        GetSolution(x_lorentz);
+    EXPECT_TRUE(CompareMatrices(x_lorentz_value, x_expected, 1E-5,
                                 MatrixCompareType::absolute));
-    EXPECT_NEAR(cost_expected_lorentz, t_lorentz.value().coeff(0), 1E-3);
+    const auto& t_lorentz_value =
+        GetSolution(t_lorentz);
+    EXPECT_NEAR(cost_expected_lorentz, t_lorentz_value(0), 1E-3);
   });
 
   MathematicalProgram prog_rotated_lorentz;
@@ -1012,30 +1033,33 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   auto x_rotated_lorentz =
       prog_rotated_lorentz.AddContinuousVariables(xDim, "x");
   auto slack_rotated_lorentz =
-      prog_rotated_lorentz.AddContinuousVariables(1, "slack");
+      prog_rotated_lorentz.AddContinuousVariables<1>("slack");
   prog_rotated_lorentz.AddRotatedLorentzConeConstraint(
       {t_rotated_lorentz, slack_rotated_lorentz, x_rotated_lorentz});
   prog_rotated_lorentz.AddLinearEqualityConstraint(A, b, {x_rotated_lorentz});
-  prog_rotated_lorentz.AddBoundingBoxConstraint(
-      1.0, 1.0, slack_rotated_lorentz);
+  prog_rotated_lorentz.AddBoundingBoxConstraint(1.0, 1.0,
+                                                slack_rotated_lorentz(0));
   prog_rotated_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_rotated_lorentz});
 
   double cost_expected_rotated_lorentz = x_expected.squaredNorm();
   // NLopt needs a really good starting point to solve SOCP, while SNOPT and
   // IPOPT seems OK with starting point not so close to optimal solution.
   prog_rotated_lorentz.SetInitialGuess(
-      {t_rotated_lorentz},
-      drake::Vector1d(cost_expected_rotated_lorentz + 0.1));
-  prog_rotated_lorentz.SetInitialGuess({slack_rotated_lorentz},
+      t_rotated_lorentz, drake::Vector1d(cost_expected_rotated_lorentz + 0.1));
+  prog_rotated_lorentz.SetInitialGuess(slack_rotated_lorentz,
                                        drake::Vector1d(1.0));
   VectorXd x_rotated_lorentz_guess = x_expected + 0.1 * VectorXd::Ones(xDim);
-  prog_rotated_lorentz.SetInitialGuess({x_rotated_lorentz},
+  prog_rotated_lorentz.SetInitialGuess(x_rotated_lorentz,
                                        x_rotated_lorentz_guess);
   RunNonlinearProgram(prog_rotated_lorentz, [&]() {
-    EXPECT_TRUE(CompareMatrices(x_rotated_lorentz.value(), x_expected, 1E-5,
+    const auto& x_rotated_lorentz_value =
+        GetSolution(x_rotated_lorentz);
+    EXPECT_TRUE(CompareMatrices(x_rotated_lorentz_value, x_expected, 1E-5,
                                 MatrixCompareType::absolute));
-    EXPECT_NEAR(cost_expected_rotated_lorentz,
-                t_rotated_lorentz.value().coeff(0), 1E-3);
+    const auto& t_rotated_lorentz_value =
+        GetSolution(t_rotated_lorentz);
+    EXPECT_NEAR(cost_expected_rotated_lorentz, t_rotated_lorentz_value(0),
+                1E-3);
   });
 
   // Now add a constraint x'*x <= 2*x_expected'*x_expected to the problem.
@@ -1049,17 +1073,25 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
 
   prog_lorentz.AddConstraint(quadratic_constraint, {x_lorentz});
   RunNonlinearProgram(prog_lorentz, [&]() {
-    EXPECT_TRUE(CompareMatrices(x_lorentz.value(), x_expected, 1E-5,
+    const auto& x_lorentz_value =
+        GetSolution(x_lorentz);
+    EXPECT_TRUE(CompareMatrices(x_lorentz_value, x_expected, 1E-5,
                                 MatrixCompareType::absolute));
-    EXPECT_NEAR(cost_expected_lorentz, t_lorentz.value().coeff(0), 1E-3);
+    const auto& t_lorentz_value =
+        GetSolution(t_lorentz);
+    EXPECT_NEAR(cost_expected_lorentz, t_lorentz_value(0), 1E-3);
   });
 
   prog_rotated_lorentz.AddConstraint(quadratic_constraint, {x_rotated_lorentz});
   RunNonlinearProgram(prog_rotated_lorentz, [&]() {
-    EXPECT_TRUE(CompareMatrices(x_rotated_lorentz.value(), x_expected, 1E-5,
+    const auto& x_rotated_lorentz_value =
+        GetSolution(x_rotated_lorentz);
+    EXPECT_TRUE(CompareMatrices(x_rotated_lorentz_value, x_expected, 1E-5,
                                 MatrixCompareType::absolute));
-    EXPECT_NEAR(cost_expected_rotated_lorentz,
-                t_rotated_lorentz.value().coeff(0), 1E-3);
+    const auto& t_rotated_lorentz_value =
+        GetSolution(t_rotated_lorentz);
+    EXPECT_NEAR(cost_expected_rotated_lorentz, t_rotated_lorentz_value(0),
+                1E-3);
   });
 }
 
