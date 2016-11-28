@@ -29,31 +29,36 @@ class IiwaWorldSimBuilder {
 
   ~IiwaWorldSimBuilder();
 
-  /// Adds a fixed object specified by its name, @p model_instance_name, to the
-  /// `RigidBodyTree` at the pose specified by the position @p xyz and
-  /// orientation @p rpy.
+  /// Adds a fixed model instance specified by its name, @p model_name, to the
+  /// `RigidBodyTree` at the pose specified by position @p xyz and orientation
+  /// @p rpy. The model name must have been previously loaded via a call to
+  /// LoadModel().
   ///
   /// @return model_instance_id of the object that is added.
-  int AddFixedObject(const std::string& model_instance_name,
-                     const Eigen::Vector3d& xyz,
-                     const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
+  int AddFixedModelInstance(
+      const std::string& model_name, const Eigen::Vector3d& xyz,
+      const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
 
-  /// Adds a floating object specified by its name, @p model_instance_name, to
-  /// the `RigidBodyTree` at the pose specified by the position @p xyz and
-  /// orientation @p rpy.
+  /// Adds a floating model instance specified by its name, @p model_name, to
+  /// the `RigidBodyTree` at the pose specified by position @p xyz and
+  /// orientation @p rpy. The model name must have been previously loaded via
+  /// a call to LoadModel().
   ///
   /// @return model_instance_id of the object that is added.
-  int AddFloatingObject(const std::string& model_instance_name,
-                        const Eigen::Vector3d& xyz,
-                        const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
+  int AddFloatingModelInstance(
+      const std::string& model_name, const Eigen::Vector3d& xyz,
+      const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
 
-  /// Adds an object specified by its name, @p model_instance_name, to the
-  /// `RigidBodyTree` at a pose specified by the position @p xyz and
-  /// orientation @p rpy.
+  /// Adds an object specified by its name, @p model_name, to the
+  /// `RigidBodyTree` at a pose specified by position @p xyz and
+  /// orientation @p rpy. The model instance is connected to the existing
+  /// world based on @p weld_to_frame using a floating joint of type @p
+  /// floating_base_type. The model name must have been previously loaded via
+  /// a call to LoadModel().
   ///
   /// @return model_instance_id of the object that is added.
-  int AddObjectToFrame(
-      const std::string& model_instance_name, const Eigen::Vector3d& xyz,
+  int AddOModelInstanceToFrame(
+      const std::string& model_name, const Eigen::Vector3d& xyz,
       const Eigen::Vector3d& rpy, std::shared_ptr<RigidBodyFrame> weld_to_frame,
       const drake::multibody::joints::FloatingBaseType floating_base_type =
           drake::multibody::joints::kFixed);
@@ -85,17 +90,20 @@ class IiwaWorldSimBuilder {
                                        double contact_friction);
 
   /// Allows the addition of objects to the iiwa World described by
-  /// @p object_name coupled with URDF/SDF paths in @p urdf_sdf_path.
-  void AddModel(const std::string &object_name,
-                const std::string &model_path);
-
-  /// Adds a model to the internal model database. Instances of these models
-  /// can then be added to the world via the various `AddFoo()` methods
-  /// provided by this class.
+  ///
+  /// Adds a model to the internal model database. Models are described by
+  /// @p object_name coupled with URDF/SDF paths in @p urdf_sdf_path. Instances
+  /// of these models can then be added to the world via the various
+  /// `AddFoo()` methods provided by this class.
   ///
   /// @see AddObjectToFrame
   /// @see AddFloatingObject
   /// @see AddFixedObject
+  void StoreModel(const std::string& object_name,
+                  const std::string& model_path);
+
+  /// Returns the size of the input port for the plant being built in the
+  /// diagram.
   int GetPlantInputSize(void);
 
  private:
@@ -104,8 +112,8 @@ class IiwaWorldSimBuilder {
   lcm::DrakeLcm lcm_;
   systems::RigidBodyPlant<T>* plant_{nullptr};
 
-  // Maps between model instances of which are loadable into the simulation
-  // and a convenient name.
+  // Maps between models and their names. Instances of these models can be
+  // loaded into the simulation.
   std::map<std::string, std::string> object_urdf_map_;
   bool built_{false};
 
