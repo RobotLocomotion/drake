@@ -42,11 +42,11 @@ int DoMain() {
                                               1.0 /* penetration_damping */,
                                               1.0 /* contact friction */);
 
-  // The z coordinate of the top of the table in the world frame.
-  // The quantity 0.736 is the z coordinate of the frame associated with the
-  // 'surface' collision element in the sdf. This element uses a box of height
-  // 0.057m thu giving the surface height (z) in world coordinates as
-  // 0.736 + 0.057 / 2
+  // The `z` coordinate of the top of the table in the world frame.
+  // The quantity 0.736 is the `z` coordinate of the frame associated with the
+  // 'surface' collision element in the SDF. This element uses a box of height
+  // 0.057m thus giving the surface height (`z`) in world coordinates as
+  // 0.736 + 0.057 / 2.
   const double kTableTopZInWorld = 0.736 + 0.057 / 2;
 
   // The positions of the iiwa robot, two cylinders and the cuboid are
