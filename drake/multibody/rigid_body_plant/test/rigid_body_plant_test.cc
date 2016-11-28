@@ -122,7 +122,7 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
   ASSERT_EQ(positions_derivatives.size(), kNumPositions);
   ASSERT_EQ(generalized_velocities.size(), kNumVelocities);
 
-  plant.MapVelocityToQDot(*context, generalized_velocities, 
+  plant.MapVelocityToQDot(*context, generalized_velocities,
                           &positions_derivatives);
 
   // For zero rotation the velocity vector in the body's frame and in the
