@@ -1,8 +1,16 @@
 include(GenerateExportHeader)
 include(${LCM_USE_FILE})
 
+if(NOT DISABLE_PYTHON)
+  set(python_args PYTHON_SOURCES python_install_sources)
+else()
+  set(python_args)
+endif()
+
 if(JAVA_FOUND)
   set(java_args JAVA_SOURCES java_sources)
+else()
+  set(java_args)
 endif()
 
 lcm_wrap_types(
@@ -10,8 +18,8 @@ lcm_wrap_types(
   C_SOURCES c_sources
   C_HEADERS c_install_headers
   CPP_HEADERS cpp_install_headers
-  PYTHON_SOURCES python_install_sources
   ${java_args}
+  ${python_args}
   lcmt_body_acceleration.lcm
   lcmt_body_motion_data.lcm
   lcmt_body_wrench_data.lcm
@@ -84,7 +92,9 @@ install(TARGETS drake_lcmtypes drakeLCMTypes
   INCLUDES DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}/lcmtypes"
 )
 
-lcm_install_python(${python_install_sources})
+if(NOT DISABLE_PYTHON)
+  lcm_install_python(${python_install_sources})
+endif()
 
 if(JAVA_FOUND)
   if(NOT TARGET lcm-java)

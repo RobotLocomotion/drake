@@ -12,8 +12,8 @@
 #include "drake/math/gradient.h"
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/constraint_wrappers.h"
-#include "drake/multibody/ik_trajectory_helper.h"
 #include "drake/multibody/ik_options.h"
+#include "drake/multibody/ik_trajectory_helper.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
@@ -22,7 +22,8 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::VectorXi;
 
-using drake::solvers::DecisionVariableView;
+using drake::solvers::DecisionVariableMatrixX;
+using drake::solvers::DecisionVariableVectorX;
 using drake::solvers::SolutionResult;
 using drake::solvers::MathematicalProgram;
 
@@ -38,9 +39,7 @@ class IKTrajectoryCost : public drake::solvers::Constraint {
   template <typename Derived>
   IKTrajectoryCost(const IKTrajectoryHelper& helper,
                    const Eigen::MatrixBase<Derived>& q_nom)
-      : Constraint(1),
-        helper_(helper),
-        q_nom_(q_nom) {}
+      : Constraint(1), helper_(helper), q_nom_(q_nom) {}
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override {
@@ -58,13 +57,13 @@ class IKTrajectoryCost : public drake::solvers::Constraint {
     const VectorXd qdot0 = x_scalar.segment(nq * nT, nq);
     const VectorXd qdotf = x_scalar.segment(nq * (nT + 1), nq);
     MatrixXd dJ_vec;
-    const double J = helper_.CalculateCost(q, q_nom_, 0, qdot0, qdotf,
-                                           false, &dJ_vec);
+    const double J =
+        helper_.CalculateCost(q, q_nom_, 0, qdot0, qdotf, false, &dJ_vec);
     Eigen::VectorXd y_scalar(1);
     y_scalar(0) = J;
     drake::math::initializeAutoDiffGivenGradientMatrix(
-        y_scalar,
-        (dJ_vec * drake::math::autoDiffToGradientMatrix(x)).eval(), y);
+        y_scalar, (dJ_vec * drake::math::autoDiffToGradientMatrix(x)).eval(),
+        y);
   }
 
  private:
@@ -79,8 +78,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
   /// All pointers/references are aliased, and must remain valid for
   /// the life of this class.
   IKInbetweenConstraint(const RigidBodyTree<double>* model,
-                        const IKTrajectoryHelper& helper,
-                        int num_constraints,
+                        const IKTrajectoryHelper& helper, int num_constraints,
                         const RigidBodyConstraint* const* constraint_array)
       : Constraint(0),  // Update bounds later in constructor.
         model_(model),
@@ -137,8 +135,8 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
       if (mtk_nc > 0) {
         VectorXd lb;
         VectorXd ub;
-        mtkc->bounds(helper.t_samples().data(), helper.t_samples().size(),
-                     lb, ub);
+        mtkc->bounds(helper.t_samples().data(), helper.t_samples().size(), lb,
+                     ub);
         AppendBounds(lb, ub);
       }
     }
@@ -153,8 +151,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
             drake::TaylorVecXd& y) const override {
     const int nq = helper_.nq();
     const int nT = helper_.nT();
-    const std::vector<Eigen::VectorXd>& t_inbetween =
-        helper_.t_inbetween();
+    const std::vector<Eigen::VectorXd>& t_inbetween = helper_.t_inbetween();
 
     // TODO(sam.creasey): These are a little confusing now that they
     // don't change depending on if the initial state is fixed...
@@ -195,10 +192,9 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
     // the q_inbetween and q_samples data for use later.
     for (int i = 0; i < nT - 1; i++) {
       q.resize(nq * nT, 1);
-      MatrixXd q_inbetween_block_tmp =
-          helper_.dq_inbetween_dqknot()[i] * q +
-          helper_.dq_inbetween_dqd0()[i] * qdot0 +
-          helper_.dq_inbetween_dqdf()[i] * qdotf;
+      MatrixXd q_inbetween_block_tmp = helper_.dq_inbetween_dqknot()[i] * q +
+                                       helper_.dq_inbetween_dqd0()[i] * qdot0 +
+                                       helper_.dq_inbetween_dqdf()[i] * qdotf;
       q_inbetween_block_tmp.resize(nq, t_inbetween[i].size());
       q_inbetween.block(0, inbetween_idx, nq, t_inbetween[i].size()) =
           q_inbetween_block_tmp;
@@ -229,8 +225,8 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
                 MatrixXd::Zero(nc, nq * (num_qfree + num_qdotfree));
             dc_kdx.block(0, 0, nc, nq * num_qfree) =
                 dc_k *
-                helper_.dq_inbetween_dqknot()[i].block(
-                    nq * j, 0, nq, nq * num_qfree);
+                helper_.dq_inbetween_dqknot()[i].block(nq * j, 0, nq,
+                                                       nq * num_qfree);
 
             dc_kdx.block(0, nq * num_qfree, nc, nq) =
                 dc_k * helper_.dq_inbetween_dqd0()[i].block(nq * j, 0, nq, nq);
@@ -263,23 +259,21 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
         continue;
       }
       const MultipleTimeKinematicConstraint* mtkc =
-            static_cast<const MultipleTimeKinematicConstraint*>(constraint);
+          static_cast<const MultipleTimeKinematicConstraint*>(constraint);
       const int nc = mtkc->getNumConstraint(helper_.t_samples().data(),
                                             helper_.t_samples().size());
       VectorXd mtkc_c(nc);
       MatrixXd mtkc_dc(nc, nq * (num_qfree + num_inbetween_tsamples));
       DRAKE_ASSERT(static_cast<int>(helper_.t_samples().size()) ==
                    num_qfree + num_inbetween_tsamples);
-      mtkc->eval(
-          helper_.t_samples().data(), helper_.t_samples().size(),
-          q_samples.block(0, 0, nq, num_qfree + num_inbetween_tsamples),
-          mtkc_c, mtkc_dc);
+      mtkc->eval(helper_.t_samples().data(), helper_.t_samples().size(),
+                 q_samples.block(0, 0, nq, num_qfree + num_inbetween_tsamples),
+                 mtkc_c, mtkc_dc);
       y_scalar.segment(y_idx, nc) = mtkc_c;
 
       // Calculate our gradient output which should be the size of the
       // input data (timesteps not including the inbetween times).
-      MatrixXd mtkc_dc_dx =
-          MatrixXd::Zero(nc, nq * (num_qfree + num_qdotfree));
+      MatrixXd mtkc_dc_dx = MatrixXd::Zero(nc, nq * (num_qfree + num_qdotfree));
       int mtkc_dc_off = 0;
 
       // Initialize with the gradient outputs at the original timesteps.
@@ -296,8 +290,8 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
       // output (and building up the qdot0/qdotf gradients as well).
       mtkc_dc_off = 0;
       for (int j = 0; j < nT - 1; j++) {
-        MatrixXd dc_ij = mtkc_dc.block(0, nq * (mtkc_dc_off + 1),
-                                       nc, nq * t_inbetween[j].size());
+        MatrixXd dc_ij = mtkc_dc.block(0, nq * (mtkc_dc_off + 1), nc,
+                                       nq * t_inbetween[j].size());
         mtkc_dc_off += 1 + t_inbetween[j].size();
 
         mtkc_dc_dx.block(0, 0, nc, nq * num_qfree) +=
@@ -342,19 +336,17 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
 
 template <typename DerivedA, typename DerivedB, typename DerivedC,
           typename DerivedD, typename DerivedE>
-void inverseKinTrajBackend(
-    RigidBodyTree<double> *model, const int nT,
-    const double *t,
-    const Eigen::MatrixBase<DerivedA>& q_seed,
-    const Eigen::MatrixBase<DerivedB>& q_nom,
-    int num_constraints,
-    const RigidBodyConstraint* const* constraint_array,
-    const IKoptions& ikoptions,
-    Eigen::MatrixBase<DerivedC>* q_sol,
-    Eigen::MatrixBase<DerivedD>* qdot_sol,
-    Eigen::MatrixBase<DerivedE>* qddot_sol, int *info,
-    std::vector<std::string>* infeasible_constraint) {
-
+void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
+                           const double* t,
+                           const Eigen::MatrixBase<DerivedA>& q_seed,
+                           const Eigen::MatrixBase<DerivedB>& q_nom,
+                           int num_constraints,
+                           const RigidBodyConstraint* const* constraint_array,
+                           const IKoptions& ikoptions,
+                           Eigen::MatrixBase<DerivedC>* q_sol,
+                           Eigen::MatrixBase<DerivedD>* qdot_sol,
+                           Eigen::MatrixBase<DerivedE>* qddot_sol, int* info,
+                           std::vector<std::string>* infeasible_constraint) {
   DRAKE_ASSERT(q_sol->cols() == nT);
   DRAKE_ASSERT(qdot_sol->cols() == nT);
   DRAKE_ASSERT(qddot_sol->cols() == nT);
@@ -371,8 +363,8 @@ void inverseKinTrajBackend(
 
   const int nq = model->get_num_positions();
 
-  IKTrajectoryHelper helper(nq, nT, t, nT, 2,
-                            ikoptions, dt.data(), dt_ratio.data());
+  IKTrajectoryHelper helper(nq, nT, t, nT, 2, ikoptions, dt.data(),
+                            dt_ratio.data());
 
   MathematicalProgram prog;
   SetIKSolverOptions(ikoptions, &prog);
@@ -380,9 +372,9 @@ void inverseKinTrajBackend(
   // Create our decision variables.  "q" represents all positions of
   // the model at each timestep in nT.  "qdot0" and "qdotf" are qdot
   // at the initial and final timestep.
-  DecisionVariableView q = prog.AddContinuousVariables(nT * nq, "q");
-  DecisionVariableView qdot0 = prog.AddContinuousVariables(nq, "qdot0");
-  DecisionVariableView qdotf = prog.AddContinuousVariables(nq, "qdotf");
+  DecisionVariableVectorX q = prog.AddContinuousVariables(nT * nq, "q");
+  DecisionVariableVectorX qdot0 = prog.AddContinuousVariables(nq, "qdot0");
+  DecisionVariableVectorX qdotf = prog.AddContinuousVariables(nq, "qdotf");
 
   std::shared_ptr<drake::solvers::Constraint> cost =
       std::make_shared<IKTrajectoryCost>(helper, q_nom);
@@ -462,7 +454,9 @@ void inverseKinTrajBackend(
       auto wrapper = std::make_shared<SingleTimeKinematicConstraintWrapper>(
           stc, &kin_helper);
       for (int t_index = qstart_idx; t_index < nT; t_index++) {
-        if (!stc->isTimeValid(&t[t_index])) { continue; }
+        if (!stc->isTimeValid(&t[t_index])) {
+          continue;
+        }
         prog.AddConstraint(wrapper, {q.segment(nq * t_index, nq)});
       }
     } else if (constraint_category ==
@@ -470,33 +464,35 @@ void inverseKinTrajBackend(
       const PostureConstraint* pc =
           static_cast<const PostureConstraint*>(constraint);
       for (int t_index = qstart_idx; t_index < nT; t_index++) {
-        if (!pc->isTimeValid(&t[t_index])) { continue; }
+        if (!pc->isTimeValid(&t[t_index])) {
+          continue;
+        }
         VectorXd lb;
         VectorXd ub;
         pc->bounds(&t[t_index], lb, ub);
-        prog.AddBoundingBoxConstraint(lb, ub, {q.segment(nq * t_index , nq)});
+        prog.AddBoundingBoxConstraint(lb, ub, {q.segment(nq * t_index, nq)});
       }
-    } else if (
-        constraint_category ==
-        RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory) {
+    } else if (constraint_category ==
+               RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory) {
       for (int t_index = qstart_idx; t_index < nT; t_index++) {
         AddSingleTimeLinearPostureConstraint(
-            &t[t_index], constraint, nq, q.segment(nq * t_index , nq),
-            &prog);
+            &t[t_index], constraint, nq, q.segment(nq * t_index, nq), &prog);
       }
     } else if (constraint_category ==
                RigidBodyConstraint::QuasiStaticConstraintCategory) {
       for (int t_index = qstart_idx; t_index < nT; t_index++) {
         AddQuasiStaticConstraint(&t[t_index], constraint, &kin_helper,
-                                 q.segment(nq * t_index , nq), &prog);
+                                 q.segment(nq * t_index, nq), &prog);
       }
-    } else if (
-        constraint_category ==
-        RigidBodyConstraint::MultipleTimeLinearPostureConstraintCategory) {
+    } else if (constraint_category ==
+               RigidBodyConstraint::
+                   MultipleTimeLinearPostureConstraintCategory) {
       const MultipleTimeLinearPostureConstraint* mt_lpc =
           static_cast<const MultipleTimeLinearPostureConstraint*>(constraint);
       const int num_constraint = mt_lpc->getNumConstraint(t, nT);
-      if (num_constraint == 0) { continue; }
+      if (num_constraint == 0) {
+        continue;
+      }
 
       VectorXd lb;
       VectorXd ub;
@@ -509,7 +505,7 @@ void inverseKinTrajBackend(
       typedef Eigen::Triplet<double> T;
       std::vector<T> triplet_list;
       for (int j = 0; j < iAfun.size(); j++) {
-          triplet_list.push_back(T(iAfun[j], jAvar[j], A[j]));
+        triplet_list.push_back(T(iAfun[j], jAvar[j], A[j]));
       }
       Eigen::SparseMatrix<double> A_sparse(num_constraint, nq * nT);
       A_sparse.setFromTriplets(triplet_list.begin(), triplet_list.end());
@@ -520,8 +516,8 @@ void inverseKinTrajBackend(
   // Build an additional constraint to handle the "inbetween" samples
   // (if present).
   std::shared_ptr<drake::solvers::Constraint> inbetween_constraint =
-      std::make_shared<IKInbetweenConstraint>(
-          model, helper, num_constraints, constraint_array);
+      std::make_shared<IKInbetweenConstraint>(model, helper, num_constraints,
+                                              constraint_array);
   if (inbetween_constraint->num_constraints() > 0) {
     prog.AddConstraint(inbetween_constraint, {q, qdot0, qdotf});
   }
@@ -530,15 +526,19 @@ void inverseKinTrajBackend(
   *info = GetIKSolverInfo(prog, result);
 
   // Populate the output arguments.
-  const auto q_value = q.value();
+  const auto q_value = drake::solvers::GetSolution(q);
   q_sol->resize(nq, nT);
   for (int i = 0; i < nT; i++) {
-    q_sol->col(i) = q_value.segment(i * nq, nq);
+    q_sol->col(i) = q_value.block(i * nq, 0, nq, 1);
   }
 
   qdot_sol->resize(nq, nT);
-  qdot_sol->block(0, 0, nq, 1) = qdot0.value();
-  qdot_sol->block(0, nT - 1, nq, 1) = qdotf.value();
+  const VectorXd& qdot0_value =
+      drake::solvers::GetSolution(qdot0);
+  const VectorXd& qdotf_value =
+      drake::solvers::GetSolution(qdotf);
+  qdot_sol->block(0, 0, nq, 1) = qdot0_value;
+  qdot_sol->block(0, nT - 1, nq, 1) = qdotf_value;
   MatrixXd q_sol_tmp = *q_sol;
   q_sol_tmp.resize(nq * nT, 1);
   if (nT > 2) {
@@ -547,10 +547,9 @@ void inverseKinTrajBackend(
     qdot_sol->block(0, 1, nq, nT - 2) = qdot_sol_tmp;
   }
   MatrixXd qddot_sol_tmp(nq * nT, 1);
-  qddot_sol_tmp =
-      helper.accel_mat() * q_sol_tmp +
-      helper.accel_mat_qd0() * qdot0.value() +
-      helper.accel_mat_qdf() * qdotf.value();
+  qddot_sol_tmp = helper.accel_mat() * q_sol_tmp +
+                  helper.accel_mat_qd0() * qdot0_value +
+                  helper.accel_mat_qdf() * qdotf_value;
   qddot_sol_tmp.resize(nq, nT);
   (*qddot_sol) = qddot_sol_tmp;
 }
@@ -561,19 +560,16 @@ template void inverseKinTrajBackend(
     const Eigen::MatrixBase<Eigen::Map<MatrixXd>>& q_nom,
     const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,
-    const IKoptions& ikoptions,
-    Eigen::MatrixBase<Eigen::Map<MatrixXd>>* q_sol,
+    const IKoptions& ikoptions, Eigen::MatrixBase<Eigen::Map<MatrixXd>>* q_sol,
     Eigen::MatrixBase<Eigen::Map<MatrixXd>>* qdot_sol,
     Eigen::MatrixBase<Eigen::Map<MatrixXd>>* qddot_sol, int* info,
     std::vector<std::string>* infeasible_constraint);
 template void inverseKinTrajBackend(
     RigidBodyTree<double>* model, const int nT, const double* t,
     const Eigen::MatrixBase<MatrixXd>& q_seed,
-    const Eigen::MatrixBase<MatrixXd>& q_nom,
-    const int num_constraints,
+    const Eigen::MatrixBase<MatrixXd>& q_nom, const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,
-    const IKoptions& ikoptions,
-    Eigen::MatrixBase<MatrixXd>* q_sol,
+    const IKoptions& ikoptions, Eigen::MatrixBase<MatrixXd>* q_sol,
     Eigen::MatrixBase<MatrixXd>* qdot_sol,
     Eigen::MatrixBase<MatrixXd>* qddot_sol, int* info,
     std::vector<std::string>* infeasible_constraint);

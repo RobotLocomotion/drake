@@ -32,13 +32,6 @@ option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but ar
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-if(WITH_PYTHON_3)
-  set(Python_ADDITIONAL_VERSIONS 3.5)
-  find_package(PythonInterp 3 MODULE REQUIRED)
-else()
-  find_package(PythonInterp MODULE REQUIRED)
-endif()
-
 find_package(BLAS MODULE)
 find_package(Doxygen MODULE)
 find_package(Perl MODULE)
@@ -181,7 +174,10 @@ if(Matlab_FOUND)
   add_subdirectory(matlab)
 endif()
 add_subdirectory(examples)
-add_subdirectory(bindings)
+
+if(Matlab_FOUND OR NOT DISABLE_PYTHON)
+  add_subdirectory(bindings)
+endif()
 
 if(BUILD_TESTING)
   add_subdirectory(regtests)
