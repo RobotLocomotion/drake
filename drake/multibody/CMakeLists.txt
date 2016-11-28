@@ -9,6 +9,7 @@ drake_install_pkg_config_file(drake-xml-util
     eigen3)
 
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
+  kinematics_cache.cc
   parser_model_instance_id_table.cc
   parser_common.cc
   parser_sdf.cc
@@ -29,6 +30,7 @@ drake_install_headers(
   force_torque_measurement.h
   kinematic_path.h
   kinematics_cache.h
+  kinematics_cache-inl.h
   material_map.h
   pose_map.h
   rigid_body_actuator.h
