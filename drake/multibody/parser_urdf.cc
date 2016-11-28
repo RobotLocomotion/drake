@@ -96,10 +96,15 @@ void ParseInertial(RigidBody<double>* body, XMLElement* node) {
 // @param[in] color_rgba The red-green-blue-alpha color values of the material.
 // The range of values is [0, 1].
 //
+// @param[in] throw_if_name_clash If true, this method will throw a
+// std::runtime_error if @p material_name is already in @p materials
+// regardless of whether the RGBA values are the same.
+//
 // @param[out] materials A pointer to the map in which to store the material.
 // This cannot be nullptr.
 void AddMaterialToMaterialMap(const string& material_name,
                               const Vector4d& color_rgba,
+                              bool throw_if_name_clash,
                               MaterialMap* materials) {
   // Verifies that parameter materials is not nullptr.
   DRAKE_DEMAND(materials);
@@ -111,19 +116,17 @@ void AddMaterialToMaterialMap(const string& material_name,
     // the same as the new material.  The range of values in the RGBA vectors
     // is [0, 1].
     const auto& existing_color = material_iter->second;
-    if ((color_rgba - existing_color).lpNorm<Eigen::Infinity>() > 1e-10) {
+    if (throw_if_name_clash ||
+        (color_rgba - existing_color).lpNorm<Eigen::Infinity>() > 1e-10) {
       // The materials map already has the material_name key but the color
       // associated with it is different.
       stringstream error_buff;
       error_buff << "RigidBodyTreeURDF.cpp: AddMaterialToMaterialMap(): "
                  << "Error: Material \"" + material_name + "\" was previously "
-                 << "defined but was associated with different RGBA color "
-                 << "values." << std::endl
+                 << "defined." << std::endl
                  << "  - existing RGBA values: " << existing_color.transpose()
                  << std::endl
                  << "  - new RGBA values: " << color_rgba.transpose()
-                 << std::endl
-                 << "Keeping the original RGBA values in the materials map."
                  << std::endl;
       throw std::runtime_error(error_buff.str());
     }
@@ -134,7 +137,8 @@ void AddMaterialToMaterialMap(const string& material_name,
 }
 
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-void ParseMaterial(XMLElement* node, MaterialMap& materials) {
+void ParseMaterial(XMLElement* node, bool throw_if_name_clash,
+    MaterialMap& materials) {
   const char* attr;
   attr = node->Attribute("name");
   if (!attr || strlen(attr) == 0) {
@@ -154,7 +158,7 @@ void ParseMaterial(XMLElement* node, MaterialMap& materials) {
           "RigidBodyTreeURDF.cpp: ParseMaterial(): ERROR: "
           "Color tag is missing rgba attribute.");
     }
-    AddMaterialToMaterialMap(name, rgba, &materials);
+    AddMaterialToMaterialMap(name, rgba, throw_if_name_clash, &materials);
   } else {
     // If no color was specified and the material is not in the materials map,
     // check if the material is texture-based. If it is, print a warning, use
@@ -175,7 +179,7 @@ void ParseMaterial(XMLElement* node, MaterialMap& materials) {
             << "https://github.com/RobotLocomotion/drake/issues/2588. "
                "Defaulting to use the black color for this material."
             << endl;
-        AddMaterialToMaterialMap(name, rgba, &materials);
+        AddMaterialToMaterialMap(name, rgba, throw_if_name_clash, &materials);
       } else {
         throw std::runtime_error(
             "RigidBodyTreeURDF.cpp: ParseMaterial: ERROR: Material\"" + name +
@@ -382,7 +386,7 @@ void ParseVisual(RigidBody<double>* body, XMLElement* node,
     // released by companies and organizations like Robotiq and ROS Industrial
     // (for example, see this URDF by Robotiq: http://bit.ly/28P0pmo).
     if (color_specified && name_specified)
-      AddMaterialToMaterialMap(material_name, rgba, materials);
+      AddMaterialToMaterialMap(material_name, rgba, false, materials);
 
     // Sets the material's color.
     bool material_set = false;
@@ -973,12 +977,14 @@ ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
   int model_instance_id = tree->add_model_instance();
   model_instance_id_table[model_name] = model_instance_id;
 
-  // Parses the model's material elements.
+  // Parses the model's material elements. Throws an exception if there's a
+  // material name clash regardless of whether the associated RGBA values are
+  // the same.
   MaterialMap materials;
   for (XMLElement* material_node = node->FirstChildElement("material");
        material_node;
        material_node = material_node->NextSiblingElement("material")) {
-    ParseMaterial(material_node, materials);
+    ParseMaterial(material_node, true, materials);
   }
 
   // Makes a copy of parameter floating_base_type. This is necessary since the

@@ -87,6 +87,8 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
       "/multibody/test/parser_urdf_test/non_conflicting_materials_1.urdf";
   const std::string file_no_conflict_2 = drake::GetDrakePath() +
       "/multibody/test/parser_urdf_test/non_conflicting_materials_2.urdf";
+  const std::string file_duplicate = drake::GetDrakePath() +
+      "/multibody/test/parser_urdf_test/duplicate_materials.urdf";
   const std::string file_conflict = drake::GetDrakePath() +
       "/multibody/test/parser_urdf_test/conflicting_materials.urdf";
 
@@ -94,11 +96,15 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
       file_no_conflict_1, tree.get()));
 
-  tree.reset(new RigidBodyTree<double>());
+  tree = make_unique<RigidBodyTree<double>>();
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
       file_no_conflict_2, tree.get()));
 
-  tree.reset(new RigidBodyTree<double>());
+  tree = make_unique<RigidBodyTree<double>>();
+  EXPECT_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_duplicate, tree.get()), std::runtime_error);
+
+  tree = make_unique<RigidBodyTree<double>>();
   EXPECT_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
       file_conflict, tree.get()), std::runtime_error);
 }
