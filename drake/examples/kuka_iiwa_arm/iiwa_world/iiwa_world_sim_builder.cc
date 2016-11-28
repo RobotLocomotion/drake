@@ -84,12 +84,12 @@ int IiwaWorldSimBuilder<T>::AddModelInstanceToFrame(
     const drake::multibody::joints::FloatingBaseType floating_base_type) {
   DRAKE_DEMAND(!built_);
   std::size_t extension_location =
-      object_urdf_map_[model_name].find_last_of(".");
+      model_map_[model_name].find_last_of(".");
 
-  DRAKE_DEMAND(extension_location < object_urdf_map_[model_name].size());
+  DRAKE_DEMAND(extension_location < model_map_[model_name].size());
 
   std::string extension =
-      object_urdf_map_[model_name].substr(extension_location + 1);
+      model_map_[model_name].substr(extension_location + 1);
 
   parsers::ModelInstanceIdTable table;
 
@@ -97,12 +97,12 @@ int IiwaWorldSimBuilder<T>::AddModelInstanceToFrame(
 
   if (extension == "urdf") {
     table = drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + object_urdf_map_[model_name],
+        drake::GetDrakePath() + model_map_[model_name],
         floating_base_type, weld_to_frame, rigid_body_tree_.get());
 
   } else if (extension == "sdf") {
     table = drake::parsers::sdf::AddModelInstancesFromSdfFile(
-        drake::GetDrakePath() + object_urdf_map_[model_name],
+        drake::GetDrakePath() + model_map_[model_name],
         floating_base_type, weld_to_frame, rigid_body_tree_.get());
   }
   const int model_instance_id = table.begin()->second;
@@ -175,7 +175,7 @@ void IiwaWorldSimBuilder<T>::SetPenetrationContactParameters(
 template <typename T>
 void IiwaWorldSimBuilder<T>::StoreModel(const std::string& model_name,
                                         const std::string& model_path) {
-  object_urdf_map_.insert(
+  model_map_.insert(
       std::pair<std::string, std::string>(model_name, model_path));
 }
 

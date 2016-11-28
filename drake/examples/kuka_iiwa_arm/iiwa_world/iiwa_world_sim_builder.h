@@ -59,7 +59,8 @@ class IiwaWorldSimBuilder {
   /// @return model_instance_id of the object that is added.
   int AddModelInstanceToFrame(
       const std::string &model_name, const Eigen::Vector3d &xyz,
-      const Eigen::Vector3d &rpy, std::shared_ptr<RigidBodyFrame> weld_to_frame,
+      const Eigen::Vector3d &rpy,
+      std::shared_ptr<RigidBodyFrame> weld_to_frame,
       const drake::multibody::joints::FloatingBaseType floating_base_type =
       drake::multibody::joints::kFixed);
 
@@ -112,7 +113,7 @@ class IiwaWorldSimBuilder {
 
   // Maps between models and their names. Instances of these models can be
   // loaded into the simulation.
-  std::map<std::string, std::string> object_urdf_map_;
+  std::map<std::string, std::string> model_map_;
   bool built_{false};
 
   double penetration_stiffness_{3000.0};
