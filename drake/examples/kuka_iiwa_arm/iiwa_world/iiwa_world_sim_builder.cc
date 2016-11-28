@@ -53,9 +53,9 @@ template <typename T>
 IiwaWorldSimBuilder<T>::~IiwaWorldSimBuilder() {}
 
 template <typename T>
-int IiwaWorldSimBuilder<T>::AddFixedObject(const string &object_name,
-                                           const Vector3d &xyz,
-                                           const Vector3d &rpy) {
+int IiwaWorldSimBuilder<T>::AddFixedObject(const string& object_name,
+                                           const Vector3d& xyz,
+                                           const Vector3d& rpy) {
   DRAKE_DEMAND(!built_);
 
   auto weld_to_frame = allocate_shared<RigidBodyFrame>(
@@ -65,9 +65,9 @@ int IiwaWorldSimBuilder<T>::AddFixedObject(const string &object_name,
 }
 
 template <typename T>
-int IiwaWorldSimBuilder<T>::AddFloatingObject(const string &object_name,
-                                              const Vector3d &xyz,
-                                              const Vector3d &rpy) {
+int IiwaWorldSimBuilder<T>::AddFloatingObject(const string& object_name,
+                                              const Vector3d& xyz,
+                                              const Vector3d& rpy) {
   DRAKE_DEMAND(!built_);
 
   auto weld_to_frame = allocate_shared<RigidBodyFrame>(
