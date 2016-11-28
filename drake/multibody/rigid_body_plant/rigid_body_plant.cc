@@ -297,14 +297,14 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 
     prog.Solve();
 
-    xdot << kinsol.transformVelocityMappingToQDotMapping(v.transpose()).
-      transpose(), vdot.value();
+    xdot << kinsol.transformQDotMappingToVelocityMapping(
+               MatrixX<T>::Identity(nq, nq)) * v, vdot.value();
   } else {
     // No bilateral constraints. Solve (essentially) F=MA for A.
     Eigen::LLT<MatrixX<T>> llt(H);
     DRAKE_DEMAND(llt.info() == Eigen::Success);
-    xdot << kinsol.transformVelocityMappingToQDotMapping(v.transpose()).
-      transpose(), llt.solve(-right_hand_side);
+    xdot << kinsol.transformQDotMappingToVelocityMapping(
+               MatrixX<T>::Identity(nq, nq)) * v, llt.solve(-right_hand_side);
   }
 
   derivatives->SetFromVector(xdot);
