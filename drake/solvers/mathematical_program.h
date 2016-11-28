@@ -334,8 +334,9 @@ class MathematicalProgram {
    * Example:
    * @code{.cc}
    * MathematicalProgram prog;
-   * auto x = prog.AddVariables<2, 3>(DecisionVariableScalar::VarType::CONTINUOUS, {"x1", "x2", "x3", "x4",
-   * "x5", "x6"});
+   * auto x = prog.AddVariables<2, 3>(
+   *      DecisionVariableScalar::VarType::CONTINUOUS,
+   *      {"x1", "x2", "x3", "x4", "x5", "x6"});
    * @endcode
    * This adds a matrix of size 2 x 3 as new variables into the optimization
    * program.
