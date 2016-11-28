@@ -32,7 +32,7 @@ class IiwaWorldSimBuilder {
   /// Adds a fixed model instance specified by its name, @p model_name, to the
   /// `RigidBodyTree` at the pose specified by position @p xyz and orientation
   /// @p rpy. The model name must have been previously loaded via a call to
-  /// LoadModel().
+  /// StoreModel().
   ///
   /// @return model_instance_id of the object that is added.
   int AddFixedModelInstance(
@@ -42,26 +42,26 @@ class IiwaWorldSimBuilder {
   /// Adds a floating model instance specified by its name, @p model_name, to
   /// the `RigidBodyTree` at the pose specified by position @p xyz and
   /// orientation @p rpy. The model name must have been previously loaded via
-  /// a call to LoadModel().
+  /// a call to StoreModel().
   ///
   /// @return model_instance_id of the object that is added.
   int AddFloatingModelInstance(
       const std::string& model_name, const Eigen::Vector3d& xyz,
       const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
 
-  /// Adds an object specified by its name, @p model_name, to the
-  /// `RigidBodyTree` at a pose specified by position @p xyz and
+  /// Adds a model instance specified by its model name, @p model_name, to
+  /// the `RigidBodyTree` at a pose specified by position @p xyz and
   /// orientation @p rpy. The model instance is connected to the existing
   /// world based on @p weld_to_frame using a floating joint of type @p
   /// floating_base_type. The model name must have been previously loaded via
-  /// a call to LoadModel().
+  /// a call to StoreModel().
   ///
   /// @return model_instance_id of the object that is added.
-  int AddOModelInstanceToFrame(
-      const std::string& model_name, const Eigen::Vector3d& xyz,
-      const Eigen::Vector3d& rpy, std::shared_ptr<RigidBodyFrame> weld_to_frame,
+  int AddModelInstanceToFrame(
+      const std::string &model_name, const Eigen::Vector3d &xyz,
+      const Eigen::Vector3d &rpy, std::shared_ptr<RigidBodyFrame> weld_to_frame,
       const drake::multibody::joints::FloatingBaseType floating_base_type =
-          drake::multibody::joints::kFixed);
+      drake::multibody::joints::kFixed);
 
   ///  Adds a flat terrain to the simulation.
   void AddGround();
@@ -89,17 +89,15 @@ class IiwaWorldSimBuilder {
                                        double penetration_damping,
                                        double contact_friction);
 
-  /// Allows the addition of objects to the iiwa World described by
-  ///
   /// Adds a model to the internal model database. Models are described by
-  /// @p object_name coupled with URDF/SDF paths in @p urdf_sdf_path. Instances
+  /// @p model_name coupled with URDF/SDF paths in @p model_path. Instances
   /// of these models can then be added to the world via the various
   /// `AddFoo()` methods provided by this class.
   ///
   /// @see AddObjectToFrame
   /// @see AddFloatingObject
   /// @see AddFixedObject
-  void StoreModel(const std::string& object_name,
+  void StoreModel(const std::string& model_name,
                   const std::string& model_path);
 
   /// Returns the size of the input port for the plant being built in the

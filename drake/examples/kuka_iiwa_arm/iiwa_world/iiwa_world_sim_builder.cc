@@ -61,7 +61,7 @@ int IiwaWorldSimBuilder<T>::AddFixedModelInstance(const string& model_name,
   auto weld_to_frame = allocate_shared<RigidBodyFrame>(
       aligned_allocator<RigidBodyFrame>(), "world", nullptr, xyz, rpy);
 
-  return AddOModelInstanceToFrame(model_name, xyz, rpy, weld_to_frame);
+  return AddModelInstanceToFrame(model_name, xyz, rpy, weld_to_frame);
 }
 
 template <typename T>
@@ -73,13 +73,13 @@ int IiwaWorldSimBuilder<T>::AddFloatingModelInstance(const string& model_name,
   auto weld_to_frame = allocate_shared<RigidBodyFrame>(
       aligned_allocator<RigidBodyFrame>(), "world", nullptr, xyz, rpy);
 
-  return AddOModelInstanceToFrame(model_name, xyz, rpy, weld_to_frame,
-                                  kQuaternion);
+  return AddModelInstanceToFrame(model_name, xyz, rpy, weld_to_frame,
+                                 kQuaternion);
 }
 
 template <typename T>
-int IiwaWorldSimBuilder<T>::AddOModelInstanceToFrame(
-    const string& model_name, const Vector3d& xyz, const Vector3d& rpy,
+int IiwaWorldSimBuilder<T>::AddModelInstanceToFrame(
+    const string &model_name, const Vector3d &xyz, const Vector3d &rpy,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     const drake::multibody::joints::FloatingBaseType floating_base_type) {
   DRAKE_DEMAND(!built_);
@@ -173,10 +173,10 @@ void IiwaWorldSimBuilder<T>::SetPenetrationContactParameters(
 }
 
 template <typename T>
-void IiwaWorldSimBuilder<T>::StoreModel(const std::string& object_name,
+void IiwaWorldSimBuilder<T>::StoreModel(const std::string& model_name,
                                         const std::string& model_path) {
   object_urdf_map_.insert(
-      std::pair<std::string, std::string>(object_name, model_path));
+      std::pair<std::string, std::string>(model_name, model_path));
 }
 
 template <typename T>
