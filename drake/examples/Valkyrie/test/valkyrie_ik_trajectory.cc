@@ -342,7 +342,7 @@ int DoMain() {
 
   // a squat pose with both hands on the ground
   VectorXd squat_pose_2(tree->get_num_positions());
-  standing_pose << 0.714247,  // base_x
+  squat_pose_2 << 0.714247,  // base_x
       0.0,                    // base_y
       0.666345,               // base_z
       -0.914722,              // base_roll
@@ -704,10 +704,13 @@ int DoMain() {
   KinematicsCache<double> cache_start = tree->doKinematics(prone_pose_2);
   Vector3d left_start = tree->transformPoints(cache_start, origin, l_foot, 0);
   Vector3d right_start = tree->transformPoints(cache_start, origin, r_foot, 0);
-
+  cout << "left start" << endl << left_start << endl;
+  cout << "right start" << endl << right_start << endl;
   KinematicsCache<double> cache_end = tree->doKinematics(squat_pose_2);
   Vector3d left_end = tree->transformPoints(cache_end, origin, l_foot, 0);
   Vector3d right_end = tree->transformPoints(cache_end, origin, r_foot, 0);
+  cout << "left end" << endl << left_end << endl;
+  cout << "right end" << endl << right_end << endl;
 
   Matrix3Xd contact_pts(3, 10);
   contact_pts << leftArmContactPts, rightArmContactPts, l_foot_pts.rightCols(4),
@@ -730,7 +733,7 @@ int DoMain() {
   q_nom_i = squat_pose_2.replicate(1, nTi);
   std::vector<MatrixXd> q_sols;
 
-  while (count < 2) {
+  while (count < 6) {
     VectorXd q_cur = q_sol_i.rightCols(1);
     KinematicsCache<double> cache = tree->doKinematics(q_cur);
     Vector3d center_of_mass = tree->centerOfMass(cache);
@@ -774,7 +777,8 @@ int DoMain() {
     rfoot_origin_forward << convex_combination(right_start.head(2),
                                                right_end.head(2), lambda_r),
         (right_start(2) + right_end(2)) / 2;
-    // lambda_r += 0.2;
+    lambda_r += 0.2;
+    cout << "rfoot_origin_forward " << endl << rfoot_origin_forward << endl;
     Vector3d rfoot_origin_forward_lb = rfoot_origin_forward;
     rfoot_origin_forward_lb(0) -= 0.05;
     rfoot_origin_forward_lb(1) -= 0.05;
@@ -789,7 +793,8 @@ int DoMain() {
     lfoot_origin_forward << convex_combination(left_start.head(2),
                                                left_end.head(2), lambda_l),
         (left_start(2) + left_end(2)) / 2;
-    // lambda_l += 0.2;
+    lambda_l += 0.2;
+    cout << "lfoot_origin_forward " << endl << lfoot_origin_forward << endl;
     Vector3d lfoot_origin_forward_lb = lfoot_origin_forward;
     lfoot_origin_forward_lb(0) -= 0.05;
     lfoot_origin_forward_lb(1) -= 0.05;
@@ -836,12 +841,12 @@ int DoMain() {
     constraint_array.push_back(&kc_quasi_3pts_i);
     std::vector<int> info_i(nTi, 0);
     MatrixXd q_seed_i = q_cur.replicate(1, nTi);
-    /*
+
     inverseKinPointwise(tree.get(), nTi, ti.data(), q_seed_i, q_nom_i,
                         constraint_array.size(), constraint_array.data(),
                         ikoptions, &q_sol_i, info_i.data(),
                         &infeasible_constraint);
-    */
+
     for (int i = 0; i < info_i.size(); i++) {
       cout << "info_i" << count << " " << i << ": " << info_i[i] << endl;
     }
@@ -852,8 +857,8 @@ int DoMain() {
     constraint_array.pop_back();  // kc_rfoot_fixed/forward
     constraint_array.pop_back();  // kc_lfoot_fixed/forward
   }
+  //cout << "constraint_array_size = " << constraint_array.size() << endl;
 
-  cout << "constraint_array_size = " << constraint_array.size() << endl;
   Eigen::MatrixXd q_sol(tree->get_num_positions(), nT1 + count * nTi);
   q_sol.leftCols(nT1) = q_sol1;
   for (int i = 0; i < count; i++) {
@@ -929,7 +934,7 @@ int DoMain() {
 
   systems::Simulator<double> simulator(*diagram);
   simulator.Initialize();
-  simulator.StepTo(3);
+  simulator.StepTo(10);
 
   // auto context = diagram->CreateDefaultContext();
   // auto output = diagram->AllocateOutput(*context);
