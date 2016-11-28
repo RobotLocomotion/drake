@@ -170,8 +170,15 @@ macro(drake_setup_fortran)
   mark_as_advanced(DISABLE_FORTRAN)
 
   if(NOT DISABLE_FORTRAN)
-    if(CMAKE_GENERATOR STREQUAL "Ninja")
-      # The Ninja generator does not support Fortran, so manually find the Fortran
+    if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")
+      enable_language(Fortran)
+
+      if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" AND CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "4.9")
+        message(FATAL_ERROR "GNU Fortran compiler version must be at least 4.9 \
+                             (detected version ${CMAKE_Fortran_COMPILER_VERSION})")
+      endif()
+    else()
+      # Ninja and Xcode may not support Fortran, so manually find the Fortran
       # compiler and set any flags passed in by environment variable
       find_program(CMAKE_Fortran_COMPILER
         NAMES "$ENV{FC}" gfortran gfortran-6 gfortran-5 gfortran-4
@@ -183,13 +190,6 @@ macro(drake_setup_fortran)
       endif()
       set(CMAKE_Fortran_FLAGS "$ENV{FFLAGS}" CACHE STRING
         "Flags for Fortran compiler")
-    else()
-      enable_language(Fortran)
-
-      if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" AND CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "4.9")
-        message(FATAL_ERROR "GNU Fortran compiler version must be at least 4.9 \
-                             (detected version ${CMAKE_Fortran_COMPILER_VERSION})")
-      endif()
     endif()
   endif()
 endmacro()
