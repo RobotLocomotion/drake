@@ -111,7 +111,7 @@ void AddMaterialToMaterialMap(const string& material_name,
     // the same as the new material.  The range of values in the RGBA vectors
     // is [0, 1].
     const auto& existing_color = material_iter->second;
-    if ((color_rgba - existing_color).lpNorm<Eigen::Infinity>() > 1e-10) {
+    if (color_rgba != existing_color) {
       // The materials map already has the material_name key but the color
       // associated with it is different.
       stringstream error_buff;
