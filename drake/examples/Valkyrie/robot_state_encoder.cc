@@ -1,11 +1,11 @@
 #include <list>
 
-#include "drake/examples/Valkyrie/robot_state_encoder.h"
 #include "drake/common/constants.h"
+#include "drake/examples/Valkyrie/robot_state_encoder.h"
 #include "drake/examples/Valkyrie/robot_state_lcmtype_util.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
-#include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
+#include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -66,6 +66,9 @@ void RobotStateEncoder::EvalOutput(const Context<double>& context,
                       ->GetMutableValue<robot_state_t>();
   message.utime = static_cast<int64_t>(context.get_time() * 1e6);
 
+  // TODO(siyuan.feng): I explicitly evaluated kinematics and contacts
+  // separately here to avoid excessive calls given the same context.
+  // This shouldn't be necessary when cache is correctly implemented.
   const auto& contact_results =
       EvalAbstractInput(context, contact_results_port_index_)
           ->GetValue<ContactResults<double>>();
@@ -116,7 +119,8 @@ RobotStateEncoder::DeclareEffortInputPorts() {
   const int actuator_effort_length = 1;
   for (const auto& actuator : tree_.actuators) {
     ret[&actuator] = DeclareInputPort(kVectorValued, actuator_effort_length,
-                                      kContinuousSampling).get_index();
+                                      kContinuousSampling)
+                         .get_index();
   }
   return ret;
 }
@@ -201,8 +205,7 @@ RobotStateEncoder::GetSpatialForceActingOnBody1ByBody2InBody1Frame(
     // in the world frame.
     if (b1 == body1 && b2 == body2) {
       contact_forces.push_back(contact_info.get_resultant_force());
-    }
-    if (b2 == body1 && b1 == body2) {
+    } else if (b2 == body1 && b1 == body2) {
       contact_forces.push_back(
           contact_info.get_resultant_force().get_reaction_force());
     }
@@ -216,63 +219,70 @@ RobotStateEncoder::GetSpatialForceActingOnBody1ByBody2InBody1Frame(
     calc.AddForce(f);
   }
 
-  SpatialForce<double> wrench_in_world_aligned_body_frame =
+  SpatialForce<double> spatial_force_in_world_aligned_body_frame =
       calc.ComputeResultant(reference_point).get_spatial_force();
   Isometry3<double> world_aligned_to_body_frame(Isometry3<double>::Identity());
   world_aligned_to_body_frame.linear() =
       kinematics_results.get_pose_in_world(body1).linear().transpose();
   return transformSpatialForce(world_aligned_to_body_frame,
-                               wrench_in_world_aligned_body_frame);
+                               spatial_force_in_world_aligned_body_frame);
 }
 
 void RobotStateEncoder::SetForceTorque(
     const KinematicsResults<double>& kinematics_results,
     const ContactResults<double>& contact_results,
     bot_core::robot_state_t* message) const {
-  std::vector<SpatialForce<double>> wrench_in_sensor_frame(
+  std::vector<SpatialForce<double>> spatial_force_in_sensor_frame(
       force_torque_sensor_info_.size());
 
   for (size_t i = 0; i < force_torque_sensor_info_.size(); ++i) {
     const RigidBody<double>& body =
         force_torque_sensor_info_[i].get_rigid_body();
-    SpatialForce<double> wrench =
+    SpatialForce<double> spatial_force =
         GetSpatialForceActingOnBody1ByBody2InBody1Frame(
             kinematics_results, contact_results, body, tree_.world());
     Isometry3<double> body_to_sensor =
         force_torque_sensor_info_[i].get_transform_to_body().inverse();
-    wrench_in_sensor_frame[i] = transformSpatialForce(body_to_sensor, wrench);
+    spatial_force_in_sensor_frame[i] =
+        transformSpatialForce(body_to_sensor, spatial_force);
   }
 
   auto& force_torque = message->force_torque;
 
   if (l_foot_ft_sensor_idx_ != -1) {
-    const SpatialForce<double>& wrench =
-        wrench_in_sensor_frame.at(l_foot_ft_sensor_idx_);
-    force_torque.l_foot_force_z = static_cast<float>(wrench[kForceZIndex]);
-    force_torque.l_foot_torque_x = static_cast<float>(wrench[kTorqueXIndex]);
-    force_torque.l_foot_torque_y = static_cast<float>(wrench[kTorqueYIndex]);
+    const SpatialForce<double>& spatial_force =
+        spatial_force_in_sensor_frame.at(l_foot_ft_sensor_idx_);
+    force_torque.l_foot_force_z =
+        static_cast<float>(spatial_force[kForceZIndex]);
+    force_torque.l_foot_torque_x =
+        static_cast<float>(spatial_force[kTorqueXIndex]);
+    force_torque.l_foot_torque_y =
+        static_cast<float>(spatial_force[kTorqueYIndex]);
   }
   if (r_foot_ft_sensor_idx_ != -1) {
-    const SpatialForce<double>& wrench =
-        wrench_in_sensor_frame.at(r_foot_ft_sensor_idx_);
-    force_torque.r_foot_force_z = static_cast<float>(wrench[kForceZIndex]);
-    force_torque.r_foot_torque_x = static_cast<float>(wrench[kTorqueXIndex]);
-    force_torque.r_foot_torque_y = static_cast<float>(wrench[kTorqueYIndex]);
+    const SpatialForce<double>& spatial_force =
+        spatial_force_in_sensor_frame.at(r_foot_ft_sensor_idx_);
+    force_torque.r_foot_force_z =
+        static_cast<float>(spatial_force[kForceZIndex]);
+    force_torque.r_foot_torque_x =
+        static_cast<float>(spatial_force[kTorqueXIndex]);
+    force_torque.r_foot_torque_y =
+        static_cast<float>(spatial_force[kTorqueYIndex]);
   }
   if (l_hand_ft_sensor_idx_ != -1) {
-    const SpatialForce<double>& wrench =
-        wrench_in_sensor_frame.at(l_hand_ft_sensor_idx_);
-    eigenVectorToCArray(wrench.head<kSpaceDimension>(),
+    const SpatialForce<double>& spatial_force =
+        spatial_force_in_sensor_frame.at(l_hand_ft_sensor_idx_);
+    eigenVectorToCArray(spatial_force.head<kSpaceDimension>(),
                         force_torque.l_hand_torque);
-    eigenVectorToCArray(wrench.tail<kSpaceDimension>(),
+    eigenVectorToCArray(spatial_force.tail<kSpaceDimension>(),
                         force_torque.l_hand_force);
   }
   if (r_hand_ft_sensor_idx_ != -1) {
-    const SpatialForce<double>& wrench =
-        wrench_in_sensor_frame.at(r_hand_ft_sensor_idx_);
-    eigenVectorToCArray(wrench.head<kSpaceDimension>(),
+    const SpatialForce<double>& spatial_force =
+        spatial_force_in_sensor_frame.at(r_hand_ft_sensor_idx_);
+    eigenVectorToCArray(spatial_force.head<kSpaceDimension>(),
                         force_torque.r_hand_torque);
-    eigenVectorToCArray(wrench.tail<kSpaceDimension>(),
+    eigenVectorToCArray(spatial_force.tail<kSpaceDimension>(),
                         force_torque.r_hand_force);
   }
 }
