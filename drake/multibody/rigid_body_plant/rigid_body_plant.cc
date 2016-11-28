@@ -236,13 +236,6 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // reused.
   auto kinsol = tree_->doKinematics(q, v);
 
-  // TODO(amcastro-tri): preallocate the optimization problem and constraints,
-  // and simply update them then solve on each function eval.
-  // How to place something like this in the context?
-  drake::solvers::MathematicalProgram prog;
-  drake::solvers::DecisionVariableVectorX vdot =
-      prog.AddContinuousVariables(nv, "vdot");
-
   auto H = tree_->massMatrix(kinsol);
 
   // There are no external wrenches, but it is a required argument in
@@ -283,7 +276,6 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     // and simply update them then solve on each function eval.
     // How to place something like this in the context?
     drake::solvers::MathematicalProgram prog;
-
     auto const& vdot = prog.AddContinuousVariables(nv, "vdot");
 
     Eigen::MatrixXd H_and_neg_JT = H;
