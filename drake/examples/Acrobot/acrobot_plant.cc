@@ -42,7 +42,7 @@ void AcrobotPlant<T>::EvalTimeDerivatives(
 
   const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
       context.get_continuous_state_vector());
-  const T tau = this->EvalVectorInput(context, 0)->GetAtIndex(0);
+  const T& tau = this->EvalVectorInput(context, 0)->GetAtIndex(0);
 
   const double I1 = Ic1 + m1 * lc1 * lc1;
   const double I2 = Ic2 + m2 * lc2 * lc2;
