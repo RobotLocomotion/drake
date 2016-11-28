@@ -138,9 +138,8 @@ void AddMaterialToMaterialMap(const string& material_name,
   }
 }
 
-void ParseMaterial(XMLElement* node, bool abort_if_name_clash,
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    MaterialMap& materials) {
+void ParseMaterial(XMLElement* node, MaterialMap& materials) {
   const char* attr;
   attr = node->Attribute("name");
   if (!attr || strlen(attr) == 0) {
@@ -160,7 +159,8 @@ void ParseMaterial(XMLElement* node, bool abort_if_name_clash,
           "RigidBodyTreeURDF.cpp: ParseMaterial(): ERROR: "
           "Color tag is missing rgba attribute.");
     }
-    AddMaterialToMaterialMap(name, rgba, abort_if_name_clash, &materials);
+    AddMaterialToMaterialMap(name, rgba, true /* abort_if_name_clash */,
+        &materials);
   } else {
     // If no color was specified and the material is not in the materials map,
     // check if the material is texture-based. If it is, print a warning, use
@@ -181,7 +181,8 @@ void ParseMaterial(XMLElement* node, bool abort_if_name_clash,
             << "https://github.com/RobotLocomotion/drake/issues/2588. "
                "Defaulting to use the black color for this material."
             << endl;
-        AddMaterialToMaterialMap(name, rgba, abort_if_name_clash, &materials);
+        AddMaterialToMaterialMap(name, rgba, true /* abort_if_name_clash */,
+            &materials);
       } else {
         throw std::runtime_error(
             "RigidBodyTreeURDF.cpp: ParseMaterial: ERROR: Material\"" + name +
@@ -991,7 +992,7 @@ ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
   for (XMLElement* material_node = node->FirstChildElement("material");
        material_node;
        material_node = material_node->NextSiblingElement("material")) {
-    ParseMaterial(material_node, true, materials);
+    ParseMaterial(material_node, materials);
   }
 
   // Makes a copy of parameter floating_base_type. This is necessary since the
