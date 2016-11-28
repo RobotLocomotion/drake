@@ -7,6 +7,10 @@
 
 namespace drake {
 namespace solvers {
+/*
+ * Test adding decision variables, constructing VariableList, together with
+ * functions in DecisionVariableScalar and VariableList.
+ */
 GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   MathematicalProgram prog;
   auto X1 = prog.AddContinuousVariables(2, 3, std::vector<std::string>(6, "X"));
@@ -31,6 +35,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   Eigen::MatrixXd X_expected = x_value;
   X_expected.resize(2, 3);
 
+  // Test if the values in the decision variables are correct.
   EXPECT_TRUE(CompareMatrices(GetSolution(X1),
                               X_expected, 1E-14, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(GetSolution(S1),
@@ -40,6 +45,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_TRUE(CompareMatrices(GetSolution(X2),
                               X_expected, 1E-14, MatrixCompareType::absolute));
 
+  // Test constructing VariableList.
   VariableList var_list1({X1, S1});
   EXPECT_FALSE(var_list1.column_vectors_only());
   VariableList var_list2({x1});
@@ -71,6 +77,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
     }
   }
 
+  // Test size() and num_unique_variables() functions of VariableList.
   EXPECT_EQ(VariableList({X1}).num_unique_variables(), 6);
   EXPECT_EQ(VariableList({X1}).size(), 6);
   EXPECT_EQ(VariableList({X1, X1}).num_unique_variables(), 6);
