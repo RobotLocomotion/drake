@@ -25,18 +25,18 @@ int DoMain() {
 
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
-  iiwa_world->AddModel("iiwa", "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
-  iiwa_world->AddModel(
+  iiwa_world->StoreModel("iiwa", "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
+  iiwa_world->StoreModel(
       "table",
       "/examples/kuka_iiwa_arm/models/table/extra_heavy_duty_table.sdf");
-  iiwa_world->AddModel(
+  iiwa_world->StoreModel(
       "cylinder",
       "/examples/kuka_iiwa_arm/models/objects/simple_cylinder.urdf");
-  iiwa_world->AddModel(
+  iiwa_world->StoreModel(
       "cuboid", "/examples/kuka_iiwa_arm/models/objects/simple_cuboid.urdf");
 
-  iiwa_world->AddFixedObject("table", Eigen::Vector3d::Zero() /* xyz */,
-                             Eigen::Vector3d::Zero() /* rpy */);
+  iiwa_world->AddFixedModelInstance("table", Eigen::Vector3d::Zero() /* xyz */,
+                                    Eigen::Vector3d::Zero() /* rpy */);
   iiwa_world->AddGround();
 
   iiwa_world->SetPenetrationContactParameters(4500 /* penetration_stiffness */,
@@ -58,10 +58,10 @@ int DoMain() {
   const Eigen::Vector3d kCylinder1Base(-0.5, -0.51, kTableTopZInWorld + 0.1);
   const Eigen::Vector3d kCylinder2Base(-0.32, -0.325, kTableTopZInWorld + 0.1);
 
-  iiwa_world->AddFixedObject("iiwa", kRobotBase);
-  iiwa_world->AddFloatingObject("cylinder", kCylinder1Base);
-  iiwa_world->AddFloatingObject("cylinder", kCylinder2Base);
-  iiwa_world->AddFloatingObject("cuboid", kBoxBase);
+  iiwa_world->AddFixedModelInstance("iiwa", kRobotBase);
+  iiwa_world->AddFloatingModelInstance("cylinder", kCylinder1Base);
+  iiwa_world->AddFloatingModelInstance("cylinder", kCylinder2Base);
+  iiwa_world->AddFloatingModelInstance("cuboid", kBoxBase);
 
   // Setup builder for the demo.
   std::unique_ptr<drake::systems::DiagramBuilder<double>> demo_builder{
