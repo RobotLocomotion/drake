@@ -455,20 +455,24 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
                                                0, false);
       Vector3<T> this_normal = pair.normal;
 
-      // Computes a local surface coordinate frame with the local z axis
-      // aligned with the surface's normal. The other two axes are arbitrarily
-      // chosen to complete a right handed triplet.
+      // Creates a local basis for contact.  The frame's z-axis is the normal
+      // direction of the contact.  The other two vectors are arbitrary
+      // vectors that form the orthonormal basis.
       Vector3<T> tangent1;
-      if (1.0 - this_normal(2) < EPSILON) {
-        // Handles the unit-normal case. Since it's unit length, just check z.
-        tangent1 << 1.0, 0.0, 0.0;
-      } else if (1 + this_normal(2) < EPSILON) {
-        tangent1 << -1.0, 0.0, 0.0;  // Same for the reflected case.
-      } else {                       // Now the general case.
-        tangent1 << this_normal(1), -this_normal(0), 0.0;
-        tangent1 /= sqrt(this_normal(1) * this_normal(1) +
-                         this_normal(0) * this_normal(0));
-      }
+      // Projects the normal basis into the first quadrant. Used to find
+      // the *smallest* component of the normal.
+      const Vector3<T> u(this_normal.cwiseAbs());
+      const int minAxis =
+          u[0] <= u[1] ? (u[0] <= u[2] ? 0 : 2) : (u[1] <= u[2] ? 1 : 2);
+      // The world axis corresponding to the smallest component of the normal
+      // direction is *most* perpendicular.
+      Vector3<T> perpAxis;
+      perpAxis << (minAxis == 0 ? 1 : 0), (minAxis == 1 ? 1 : 0),
+          (minAxis == 2 ? 1 : 0);
+      // Creates a vector perpendicular to the normal -- a numerically robust
+      // cross product.
+      tangent1 = this_normal.cross(perpAxis).normalized();
+
       Vector3<T> tangent2 = this_normal.cross(tangent1);
       // Transformation from world frame to local surface frame.
       Matrix3<T> R;
