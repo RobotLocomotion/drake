@@ -267,35 +267,22 @@ class VariableList {
 /**
  * Given a DecisionVariableMatrix object, returns the Eigen::Matrix that
  * stores the values of each decision variable.
- * @param decision_variable_matrix A DecisionVariableMatrix object.
- */
-template <typename T, typename Derived>
-Eigen::Matrix<T, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
-DecisionVariableMatrixToValueMatrix(
-    const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
-  Eigen::Matrix<T, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
-      double_matrix(decision_variable_matrix.rows(),
-                    decision_variable_matrix.cols());
-  for (int i = 0; i < decision_variable_matrix.rows(); ++i) {
-    for (int j = 0; j < decision_variable_matrix.cols(); ++j) {
-      double_matrix(i, j) =
-          static_cast<T>(decision_variable_matrix(i, j).value());
-    }
-  }
-  return double_matrix;
-}
-
-/**
- * Given a DecisionVariableMatrix object, returns the Eigen::Matrix that
- * stores the values of each decision variable.
+ * @tparam Derived A DecisionVariableMatrix class.
  * @param decision_variable_matrix A DecisionVariableMatrix object.
  */
 template <typename Derived>
 Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
-DecisionVariableMatrixToDoubleMatrix(
-    const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
-  return DecisionVariableMatrixToValueMatrix<double, Derived>(
-      decision_variable_matrix);
+GetSolution(
+    const Eigen::MatrixBase<Derived> &decision_variable_matrix) {
+  Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
+      double_matrix(decision_variable_matrix.rows(),
+                    decision_variable_matrix.cols());
+  for (int i = 0; i < decision_variable_matrix.rows(); ++i) {
+    for (int j = 0; j < decision_variable_matrix.cols(); ++j) {
+      double_matrix(i, j) = decision_variable_matrix(i, j).value();
+    }
+  }
+  return double_matrix;
 }
 
 /**

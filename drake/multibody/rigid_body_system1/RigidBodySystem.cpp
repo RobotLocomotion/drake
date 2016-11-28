@@ -269,7 +269,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   StateVector<double> dot(nq + nv);
 
   Eigen::VectorXd vdot_value =
-      drake::solvers::DecisionVariableMatrixToDoubleMatrix(vdot);
+      drake::solvers::GetSolution(vdot);
   dot << kinsol.transformQDotMappingToVelocityMapping(
              Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Identity(
                  nq, nq)) *
@@ -356,7 +356,7 @@ RigidBodySystem::StateVector<double> getInitialState(
     prog.Solve();
 
     const VectorXd& qvar_value =
-        drake::solvers::DecisionVariableMatrixToDoubleMatrix(qvar);
+        drake::solvers::GetSolution(qvar);
     x0 << qvar_value, VectorXd::Zero(sys.tree->get_num_velocities());
   }
   return x0;

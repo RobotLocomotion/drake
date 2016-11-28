@@ -31,13 +31,13 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   Eigen::MatrixXd X_expected = x_value;
   X_expected.resize(2, 3);
 
-  EXPECT_TRUE(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(X1),
+  EXPECT_TRUE(CompareMatrices(GetSolution(X1),
                               X_expected, 1E-14, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(S1),
+  EXPECT_TRUE(CompareMatrices(GetSolution(S1),
                               S_expected, 1E-14, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(x1), x_value,
+  EXPECT_TRUE(CompareMatrices(GetSolution(x1), x_value,
                               1E-14, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(X2),
+  EXPECT_TRUE(CompareMatrices(GetSolution(X2),
                               X_expected, 1E-14, MatrixCompareType::absolute));
 
   VariableList var_list1({X1, S1});
@@ -60,7 +60,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   X_assembled << X1, X2;
   Eigen::Matrix<double, 2, 6> X_assembled_expected;
   X_assembled_expected << X_expected, X_expected;
-  EXPECT_TRUE(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(X_assembled),
+  EXPECT_TRUE(CompareMatrices(GetSolution(X_assembled),
                               X_assembled_expected, 1E-10,
                               MatrixCompareType::absolute));
 

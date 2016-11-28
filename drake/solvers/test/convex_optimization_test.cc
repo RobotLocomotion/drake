@@ -39,7 +39,7 @@ void TestLinearProgramFeasibility(
   }
   RunSolver(&prog, solver);
 
-  const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+  const auto& x_value = GetSolution(x);
   Eigen::Vector3d A_times_x = A * x_value;
   EXPECT_GE(A_times_x(0), 0 - 1e-10);
   EXPECT_LE(A_times_x(0), 10 + 1e-10);
@@ -82,7 +82,7 @@ void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
   RunSolver(&prog, solver);
 
   Eigen::Vector2d x_expected(1, 2);
-  const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+  const auto& x_value = GetSolution(x);
   EXPECT_TRUE(
       CompareMatrices(x_value, x_expected, 1E-10, MatrixCompareType::absolute));
 }
@@ -104,7 +104,7 @@ void TestLinearProgram1(const MathematicalProgramSolverInterface& solver) {
   }
   RunSolver(&prog, solver);
 
-  const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+  const auto& x_value = GetSolution(x);
   EXPECT_TRUE(x_value.isApprox(Eigen::Vector2d(0, 4)));
 }
 
@@ -155,7 +155,7 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
   RunSolver(&prog, solver);
 
   Eigen::Vector4d x_expected(0, 0, 15, 25.0 / 3.0);
-  const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+  const auto& x_value = GetSolution(x);
   EXPECT_TRUE(
       CompareMatrices(x_value, x_expected, 1e-10, MatrixCompareType::absolute));
 }
@@ -207,7 +207,7 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
   RunSolver(&prog, solver);
 
   Eigen::Vector2d x_expected(0.25, 0.75);
-  const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+  const auto& x_value = GetSolution(x);
   EXPECT_TRUE(
       CompareMatrices(x_value, x_expected, 1E-8, MatrixCompareType::absolute));
 }
@@ -261,7 +261,7 @@ void TestQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
   Eigen::VectorXd expected(3);
   expected << 0, 1, 2.0 / 3.0;
 
-  const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+  const auto& x_value = GetSolution(x);
   EXPECT_TRUE(
       CompareMatrices(x_value, expected, 1e-8, MatrixCompareType::absolute));
 }
@@ -297,7 +297,7 @@ void TestQuadraticProgram2(const MathematicalProgramSolverInterface& solver) {
   Eigen::MatrixXd Q_symmetric = 0.5 * (Q + Q.transpose());
   Eigen::VectorXd expected = -Q_symmetric.colPivHouseholderQr().solve(b);
 
-  const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+  const auto& x_value = GetSolution(x);
   EXPECT_TRUE(
       CompareMatrices(x_value, expected, 1e-6, MatrixCompareType::absolute));
 }
@@ -354,7 +354,7 @@ void TestQuadraticProgram3(const MathematicalProgramSolverInterface& solver) {
     prog.SetInitialGuessForAllVariables(Eigen::Matrix<double, 6, 1>::Zero());
   }
   RunSolver(&prog, solver);
-  const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+  const auto& x_value = GetSolution(x);
   EXPECT_TRUE(
       CompareMatrices(x_value, expected, 1e-8, MatrixCompareType::absolute));
 }
@@ -383,7 +383,7 @@ void TestQuadraticProgram4(const MathematicalProgramSolverInterface& solver) {
     prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
   }
   RunSolver(&prog, solver);
-  const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+  const auto& x_value = GetSolution(x);
   EXPECT_TRUE(CompareMatrices(Eigen::Vector3d(0.8, 0.2, 0.6), x_value, 1e-9,
                               MatrixCompareType::absolute));
 }
@@ -437,7 +437,7 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
       prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
     }
     RunSolver(&prog, solver);
-    const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+    const auto& x_value = GetSolution(x);
 
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-4,
                                 MatrixCompareType::absolute));
@@ -459,7 +459,7 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
     ASSERT_NO_THROW(result = prog.Solve());
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
 
-    const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+    const auto& x_value = GetSolution(x);
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-5,
                                 MatrixCompareType::absolute));
   }
@@ -539,9 +539,9 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
 
   // Check the solution.
   // First check if each constraint is satisfied.
-  const auto& R1a_value = DecisionVariableMatrixToDoubleMatrix(R1a);
-  const auto& R2a_value = DecisionVariableMatrixToDoubleMatrix(R2a);
-  const auto& a_value = DecisionVariableMatrixToDoubleMatrix(a);
+  const auto& R1a_value = GetSolution(R1a);
+  const auto& R2a_value = GetSolution(R2a);
+  const auto& a_value = GetSolution(a);
   EXPECT_TRUE(CompareMatrices(R1a_value, R1_transpose * a_value, 1e-7,
                               MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(R2a_value, R2_transpose * a_value, 1e-7,
@@ -603,11 +603,11 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
     RunSolver(&prog_intersect, solver);
 
     // Check if the constraints are satisfied
-    const auto& u1_value = DecisionVariableMatrixToDoubleMatrix(u1);
-    const auto& u2_value = DecisionVariableMatrixToDoubleMatrix(u2);
+    const auto& u1_value = GetSolution(u1);
+    const auto& u2_value = GetSolution(u2);
     EXPECT_LE(u1_value.norm(), 1);
     EXPECT_LE(u2_value.norm(), 1);
-    const auto& y_value = DecisionVariableMatrixToDoubleMatrix(y);
+    const auto& y_value = GetSolution(y);
     EXPECT_TRUE(CompareMatrices(y_value, x1 + R1 * u1_value, 1e-8,
                                 MatrixCompareType::absolute));
     EXPECT_TRUE(CompareMatrices(y_value, x2 + R2 * u2_value, 1e-8,
@@ -679,11 +679,11 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
   prog_socp.AddCost(cost_socp1, {x_socp});
   prog_socp.AddLinearCost(drake::Vector1d(1.0), {y});
   RunSolver(&prog_socp, solver);
-  const auto& x_socp_value = DecisionVariableMatrixToDoubleMatrix(x_socp);
+  const auto& x_socp_value = GetSolution(x_socp);
   double objective_value_socp = c.transpose() * x_socp_value + y(0).value();
 
   // Check the solution
-  const auto& w_value = DecisionVariableMatrixToDoubleMatrix(w);
+  const auto& w_value = GetSolution(w);
   EXPECT_NEAR(2 * y(0).value(), w_value.squaredNorm(), 1E-6);
   EXPECT_TRUE(CompareMatrices(w_value, Q_sqrt * x_socp_value, 1e-6,
                               MatrixCompareType::absolute));
@@ -697,7 +697,7 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
   prog_qp.AddQuadraticCost(Q, c, {x_qp});
   prog_qp.AddLinearConstraint(A, b_lb, b_ub, {x_qp});
   RunSolver(&prog_qp, solver);
-  const auto& x_qp_value = DecisionVariableMatrixToDoubleMatrix(x_qp);
+  const auto& x_qp_value = GetSolution(x_qp);
   Eigen::RowVectorXd x_qp_transpose = x_qp_value.transpose();
   Eigen::VectorXd Q_x_qp = Q * x_qp_value;
   double objective_value_qp = c.transpose() * x_qp_value;
@@ -857,7 +857,7 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
                   1E-3);
     }
   }
-  const auto& t_value = DecisionVariableMatrixToDoubleMatrix(t);
+  const auto& t_value = GetSolution(t);
   EXPECT_TRUE(std::abs(z(1).value() - t_value.squaredNorm()) < 1E-3);
   // Now test equilibrium.
   for (int i = 1; i < num_nodes - 1; i++) {

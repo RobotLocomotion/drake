@@ -228,7 +228,7 @@ class MathematicalProgram {
       Eigen::VectorXd X(GetNumElements());
       for (const auto& var : variable_list_.variables()) {
         DRAKE_ASSERT(var.cols() == 1);
-        X.segment(dim, var.rows()) = DecisionVariableMatrixToDoubleMatrix(var);
+        X.segment(dim, var.rows()) = GetSolution(var);
         dim += var.rows();
       }
       return X;
@@ -1562,7 +1562,7 @@ class MathematicalProgram {
    * @return a flat Eigen vector that represents the solution.
    */
   const Eigen::VectorXd GetSolutionVectorValues() const {
-    return DecisionVariableMatrixToDoubleMatrix(variables_);
+    return GetSolution(variables_);
   }
 
  private:

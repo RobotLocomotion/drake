@@ -199,9 +199,17 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
   ComputeContactResults(context, &contact_results);
 }
 
+/*
+ * TODO(hongkai.dai): This only works for templates on double, it does not
+ * work for autodiff yet, I will add the code to compute the gradient of vdot
+ * w.r.t q and v. See issue
+ * https://github.com/RobotLocomotion/drake/issues/4267
+ */
 template <typename T>
 void RigidBodyPlant<T>::EvalTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
+  static_assert(std::is_same<double, T>::value,
+                "Only support templating on double for now");
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   DRAKE_DEMAND(derivatives != nullptr);
   const BasicVector<T>* input = this->EvalVectorInput(context, 0);
@@ -295,11 +303,16 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 
   VectorX<T> xdot(get_num_states());
 
+  /*
+   * TODO(hongkai.dai): This only works for templates on double, it does not
+   * work for autodiff yet, I will add the code to compute the gradient of vdot
+   * w.r.t q and v. See issue
+   * https://github.com/RobotLocomotion/drake/issues/4267
+   */
   const auto& vdot_value =
-      drake::solvers::DecisionVariableMatrixToValueMatrix<T>(vdot);
+      drake::solvers::GetSolution(vdot);
   xdot << kinsol.transformQDotMappingToVelocityMapping(
-              MatrixX<T>::Identity(nq, nq)) *
-              v,
+              MatrixX<T>::Identity(nq, nq)) * v,
       vdot_value;
 
   derivatives->SetFromVector(xdot);
