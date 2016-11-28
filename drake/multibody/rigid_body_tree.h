@@ -15,7 +15,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/force_torque_measurement.h"
 #include "drake/multibody/kinematic_path.h"
-#include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/kinematics_cache-inl.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/collision/drake_collision.h"
