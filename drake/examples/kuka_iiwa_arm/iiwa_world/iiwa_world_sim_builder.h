@@ -34,20 +34,17 @@ class IiwaWorldSimBuilder {
   /// orientation @p rpy.
   ///
   /// @return model_instance_id of the object that is added.
-  int AddFixedObject(const std::string &object_name,
-                     const Eigen::Vector3d &xyz,
-                     const Eigen::Vector3d &rpy =
-                     Eigen::Vector3d::Zero());
+  int AddFixedObject(const std::string& object_name, const Eigen::Vector3d& xyz,
+                     const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
 
   /// Adds a floating object specified by its name @p object_name to the
   /// `RigidBodyTree` at the pose specified by the position @p xyz and
   /// orientation @p rpy.
   ///
   /// @return model_instance_id of the object that is added.
-  int AddFloatingObject(const std::string &object_name,
-                        const Eigen::Vector3d &xyz,
-                        const Eigen::Vector3d &rpy =
-                        Eigen::Vector3d::Zero());
+  int AddFloatingObject(const std::string& object_name,
+                        const Eigen::Vector3d& xyz,
+                        const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
 
   /// Adds an object specified by its name @p object_name to the
   /// `RigidBodyTree` at a pose specified by the position @p xyz and
