@@ -391,7 +391,13 @@ void ParseVisual(RigidBody<double>* body, XMLElement* node,
     if (color_specified && name_specified) {
       // The `abort_if_name_clash` parameter is passed a value of `false` to
       // allow the same material to be defined across multiple links as long as
-      // they correspond to the same RGBA value.
+      // they correspond to the same RGBA value. This can happen, for example,
+      // in URDFs that are automatically generated using `xacro` since `xacro`
+      // may produce a URDF from multiple `.xacro` files. Through testing, we
+      // determined that the Gazebo simulator supports loading URDFs containing
+      // duplicate material specifications as long as the duplicates are
+      // distributed across multiple `<link>` elements and are not at the
+      // `<robot>` level.
       AddMaterialToMaterialMap(material_name, rgba,
           false /* abort_if_name_clash */, materials);
     }
