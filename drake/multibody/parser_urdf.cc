@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/joints/drake_joints.h"
@@ -82,29 +83,28 @@ void ParseInertial(RigidBody<double>* body, XMLElement* node) {
   body->set_spatial_inertia(transformSpatialInertia(T, I));
 }
 
-// Adds a material to the supplied material map. If the material is already
-// present, it checks whether the new values are the same as the old values. If
-// they are the same, return normally. Otherwise print a warning to std::cerr.
-//
-// Currently, only simple colors are supported as the material.
+// Adds a material to the supplied @materials map. Currently, only simple colors
+// are supported.
 //
 // TODO(liang.fok) Add support for texture-based materials. See:
-// https://github.com/RobotLocomotion/drake/issues/2588
+// https://github.com/RobotLocomotion/drake/issues/2588.
 //
 // @param[in] material_name A human-understandable name of the material.
 //
 // @param[in] color_rgba The red-green-blue-alpha color values of the material.
 // The range of values is [0, 1].
 //
-// @param[in] throw_if_name_clash If true, this method will throw a
-// std::runtime_error if @p material_name is already in @p materials
-// regardless of whether the RGBA values are the same.
+// @param[in] abort_if_name_clash If true, this method will abort if
+// @p material_name is already in @p materials regardless of whether the RGBA
+// values are the same. If false, this method will abort if
+// @p material_name is already in @p materials and the infinity norm of the
+// difference is greater than 1e-10.
 //
 // @param[out] materials A pointer to the map in which to store the material.
 // This cannot be nullptr.
 void AddMaterialToMaterialMap(const string& material_name,
                               const Vector4d& color_rgba,
-                              bool throw_if_name_clash,
+                              bool abort_if_name_clash,
                               MaterialMap* materials) {
   // Verifies that parameter materials is not nullptr.
   DRAKE_DEMAND(materials);
@@ -116,19 +116,21 @@ void AddMaterialToMaterialMap(const string& material_name,
     // the same as the new material.  The range of values in the RGBA vectors
     // is [0, 1].
     const auto& existing_color = material_iter->second;
-    if (throw_if_name_clash ||
-        (color_rgba - existing_color).lpNorm<Eigen::Infinity>() > 1e-10) {
+    double delta_infinity_norm =
+        (color_rgba - existing_color).lpNorm<Eigen::Infinity>();
+    if (abort_if_name_clash || delta_infinity_norm > 1e-10) {
       // The materials map already has the material_name key but the color
       // associated with it is different.
       stringstream error_buff;
-      error_buff << "RigidBodyTreeURDF.cpp: AddMaterialToMaterialMap(): "
-                 << "Error: Material \"" + material_name + "\" was previously "
+      error_buff << "Material \"" + material_name + "\" was previously "
                  << "defined." << std::endl
                  << "  - existing RGBA values: " << existing_color.transpose()
                  << std::endl
                  << "  - new RGBA values: " << color_rgba.transpose()
+                 << std::endl
+                 << "  - infinity norm of delta: " << delta_infinity_norm
                  << std::endl;
-      throw std::runtime_error(error_buff.str());
+      DRAKE_ABORT_MSG(error_buff.str().c_str());
     }
   } else {
     // Adds the new color to the materials map.
@@ -136,7 +138,7 @@ void AddMaterialToMaterialMap(const string& material_name,
   }
 }
 
-void ParseMaterial(XMLElement* node, bool throw_if_name_clash,
+void ParseMaterial(XMLElement* node, bool abort_if_name_clash,
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     MaterialMap& materials) {
   const char* attr;
@@ -158,7 +160,7 @@ void ParseMaterial(XMLElement* node, bool throw_if_name_clash,
           "RigidBodyTreeURDF.cpp: ParseMaterial(): ERROR: "
           "Color tag is missing rgba attribute.");
     }
-    AddMaterialToMaterialMap(name, rgba, throw_if_name_clash, &materials);
+    AddMaterialToMaterialMap(name, rgba, abort_if_name_clash, &materials);
   } else {
     // If no color was specified and the material is not in the materials map,
     // check if the material is texture-based. If it is, print a warning, use
@@ -179,7 +181,7 @@ void ParseMaterial(XMLElement* node, bool throw_if_name_clash,
             << "https://github.com/RobotLocomotion/drake/issues/2588. "
                "Defaulting to use the black color for this material."
             << endl;
-        AddMaterialToMaterialMap(name, rgba, throw_if_name_clash, &materials);
+        AddMaterialToMaterialMap(name, rgba, abort_if_name_clash, &materials);
       } else {
         throw std::runtime_error(
             "RigidBodyTreeURDF.cpp: ParseMaterial: ERROR: Material\"" + name +
@@ -386,11 +388,11 @@ void ParseVisual(RigidBody<double>* body, XMLElement* node,
     // released by companies and organizations like Robotiq and ROS Industrial
     // (for example, see this URDF by Robotiq: http://bit.ly/28P0pmo).
     if (color_specified && name_specified) {
-      // The `throw_if_name_clash` parameter is passed a value of `false` to
+      // The `abort_if_name_clash` parameter is passed a value of `false` to
       // allow the same material to be defined across multiple links as long as
       // they correspond to the same RGBA value.
       AddMaterialToMaterialMap(material_name, rgba,
-          false /* throw_if_name_clash */, materials);
+          false /* abort_if_name_clash */, materials);
     }
 
     // Sets the material's color.

@@ -101,12 +101,12 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
       file_no_conflict_2, tree.get()));
 
   tree = make_unique<RigidBodyTree<double>>();
-  EXPECT_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
-      file_duplicate, tree.get()), std::runtime_error);
+  EXPECT_DEATH(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_duplicate, tree.get()), ".*");
 
   tree = make_unique<RigidBodyTree<double>>();
-  EXPECT_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
-      file_conflict, tree.get()), std::runtime_error);
+  EXPECT_DEATH(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_conflict, tree.get()), ".*");
 
   // This URDF defines the same color multiple times in different links.
   const std::string file_robotiq = drake::GetDrakePath() +
