@@ -215,7 +215,7 @@ macro(drake_setup_options)
   drake_optional_external(CCD ON "Convex shape Collision Detection library")
 
   drake_optional_external(DIRECTOR ON
-    DEPENDS "HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES"
+    DEPENDS "HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES\;NOT DISABLE_PYTHON"
     "VTK-based visualization tool and robot user interface")
 
   drake_optional_external(GOOGLE_STYLEGUIDE ON
