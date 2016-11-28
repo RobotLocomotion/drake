@@ -39,8 +39,8 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // returned to the user).
   //
   // This implementation was conducted using [Nocedal 1999], Ch. 16 (Quadratic
-  // Programming).  It is recommended that programmers desiring to modify this 
-  // code have a solid understanding of equality constrained quadratic 
+  // Programming).  It is recommended that programmers desiring to modify this
+  // code have a solid understanding of equality constrained quadratic
   // programming before proceeding.
   // - J. Nocedal and S. Wright. Numerical Optimization. Springer, 1999.
   DRAKE_ASSERT(prog.generic_constraints().empty());
