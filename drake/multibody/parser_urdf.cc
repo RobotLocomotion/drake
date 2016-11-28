@@ -136,8 +136,8 @@ void AddMaterialToMaterialMap(const string& material_name,
   }
 }
 
-// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void ParseMaterial(XMLElement* node, bool throw_if_name_clash,
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     MaterialMap& materials) {
   const char* attr;
   attr = node->Attribute("name");
