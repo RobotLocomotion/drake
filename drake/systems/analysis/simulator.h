@@ -229,16 +229,8 @@ class Simulator {
    */
   IntegratorBase<T>* get_mutable_integrator() { return integrator_.get(); }
 
-<<<<<<< HEAD
   /**
-   *   Resets the integrator with a new one. An example usage is:
-   *   simulator.reset_integrator<ExplicitEulerIntegrator<double>>(sys, DT,
-   *   context). The integrator must be initialized (via
-   *   IntegratorBase::Initialize() function)
-   *   before being used. The simulator will call that function automatically
-   *   in its own Initialize() function.
-=======
-  /** Resets the integrator with a new one. An example usage is:
+   * Resets the integrator with a new one. An example usage is:
    * @code
    * simulator.reset_integrator<ExplicitEulerIntegrator<double>>
    *               (sys, context, DT).
@@ -247,7 +239,6 @@ class Simulator {
    * ensure the integrator is properly initialized. You can do that explicitly
    * with the Initialize() method or it will be done implicitly at the first
    * time step.
->>>>>>> d4f877621b747173ec459da325744db6d6322c94
    */
   template <class U, typename... Args>
   U* reset_integrator(Args&&... args) {
