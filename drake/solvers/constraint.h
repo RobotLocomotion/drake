@@ -247,47 +247,6 @@ class RotatedLorentzConeConstraint : public Constraint {
     y(2) = x(0) * x(1) - x.tail(x.size() - 2).squaredNorm();
   }
 };
-/** A semidefinite constraint  that takes a symmetric matrix as
- well as a linear component.
- <pre>
- lb <= b'*x + Trace(G'*X) <= ub
- </pre>
- */
-class SemidefiniteConstraint : public Constraint {
- public:
-  static const int kNumConstraints = 1;
-  // TODO(naveenoid) : ASSERT check on dimensions of G and b.
-  // TODO(alexdunyak) : Implement Eval().
-  template <typename DerivedQ, typename Derivedb>
-  SemidefiniteConstraint(const Eigen::MatrixBase<DerivedQ>& G,
-                         const Eigen::MatrixBase<Derivedb>& b, double lb,
-                         double ub)
-      : Constraint(kNumConstraints, drake::Vector1d::Constant(lb),
-                   drake::Vector1d::Constant(ub)),
-        G_(G),
-        b_(b) {}
-
-  ~SemidefiniteConstraint() override {}
-
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
-    throw std::runtime_error(
-        "Eval is not implemented in SemidefiniteConstraint.");
-  };
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
-    throw std::runtime_error(
-        "Eval is not implemented in SemidefiniteConstraint.");
-  };
-
-  virtual const Eigen::MatrixXd& G() const { return G_; }
-
-  virtual const Eigen::VectorXd& b() const { return b_; }
-
- private:
-  Eigen::MatrixXd G_;
-  Eigen::VectorXd b_;
-};
 
 /**
  *  lb[i] <= P[i](x, y...) <= ub[i], where each P[i] is a multivariate
@@ -514,5 +473,24 @@ class LinearComplementarityConstraint : public Constraint {
   Eigen::VectorXd q_;
 };
 
+/**
+ * Implement a positive semidefinite constraint on a symmetric matrix S
+ *     S is p.s.d
+ * namely, all eigen values of S are non-negative.
+ * Notice that we forbid Eval() function since we do not want to solve this
+ * constraint through nonlinear optimization.
+ */
+class PositiveSemidefiniteConstraint : public Constraint {
+ public:
+  PositiveSemidefiniteConstraint() : Constraint(0) {};
+
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override {
+    throw std::runtime_error("The Eval function for positive semidefinite constraint is not defined.");
+  }
+
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override {
+    throw std::runtime_error("The Eval function for positive semidefinite constraint is not defined.");
+  }
+};
 }  // namespace solvers
 }  // namespace drake
