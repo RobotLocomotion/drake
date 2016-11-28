@@ -53,42 +53,43 @@ template <typename T>
 IiwaWorldSimBuilder<T>::~IiwaWorldSimBuilder() {}
 
 template <typename T>
-int IiwaWorldSimBuilder<T>::AddFixedObject(const string& model_instance_name,
-                                           const Vector3d& xyz,
-                                           const Vector3d& rpy) {
+int IiwaWorldSimBuilder<T>::AddFixedModelInstance(const string& model_name,
+                                                  const Vector3d& xyz,
+                                                  const Vector3d& rpy) {
   DRAKE_DEMAND(!built_);
 
   auto weld_to_frame = allocate_shared<RigidBodyFrame>(
       aligned_allocator<RigidBodyFrame>(), "world", nullptr, xyz, rpy);
 
-  return AddObjectToFrame(model_instance_name, xyz, rpy, weld_to_frame);
+  return AddOModelInstanceToFrame(model_name, xyz, rpy, weld_to_frame);
 }
 
 template <typename T>
-int IiwaWorldSimBuilder<T>::AddFloatingObject(const string& object_name,
-                                              const Vector3d& xyz,
-                                              const Vector3d& rpy) {
+int IiwaWorldSimBuilder<T>::AddFloatingModelInstance(const string& model_name,
+                                                     const Vector3d& xyz,
+                                                     const Vector3d& rpy) {
   DRAKE_DEMAND(!built_);
 
   auto weld_to_frame = allocate_shared<RigidBodyFrame>(
       aligned_allocator<RigidBodyFrame>(), "world", nullptr, xyz, rpy);
 
-  return AddObjectToFrame(object_name, xyz, rpy, weld_to_frame, kQuaternion);
+  return AddOModelInstanceToFrame(model_name, xyz, rpy, weld_to_frame,
+                                  kQuaternion);
 }
 
 template <typename T>
-int IiwaWorldSimBuilder<T>::AddObjectToFrame(
-    const string& object_name, const Vector3d& xyz, const Vector3d& rpy,
+int IiwaWorldSimBuilder<T>::AddOModelInstanceToFrame(
+    const string& model_name, const Vector3d& xyz, const Vector3d& rpy,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     const drake::multibody::joints::FloatingBaseType floating_base_type) {
   DRAKE_DEMAND(!built_);
   std::size_t extension_location =
-      object_urdf_map_[object_name].find_last_of(".");
+      object_urdf_map_[model_name].find_last_of(".");
 
-  DRAKE_DEMAND(extension_location < object_urdf_map_[object_name].size());
+  DRAKE_DEMAND(extension_location < object_urdf_map_[model_name].size());
 
   std::string extension =
-      object_urdf_map_[object_name].substr(extension_location + 1);
+      object_urdf_map_[model_name].substr(extension_location + 1);
 
   parsers::ModelInstanceIdTable table;
 
@@ -96,12 +97,12 @@ int IiwaWorldSimBuilder<T>::AddObjectToFrame(
 
   if (extension == "urdf") {
     table = drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + object_urdf_map_[object_name],
+        drake::GetDrakePath() + object_urdf_map_[model_name],
         floating_base_type, weld_to_frame, rigid_body_tree_.get());
 
   } else if (extension == "sdf") {
     table = drake::parsers::sdf::AddModelInstancesFromSdfFile(
-        drake::GetDrakePath() + object_urdf_map_[object_name],
+        drake::GetDrakePath() + object_urdf_map_[model_name],
         floating_base_type, weld_to_frame, rigid_body_tree_.get());
   }
   const int model_instance_id = table.begin()->second;
@@ -117,8 +118,7 @@ template <typename T>
 std::unique_ptr<systems::Diagram<T>> IiwaWorldSimBuilder<T>::Build() {
   DRAKE_DEMAND(!built_);
 
-  auto builder{
-      make_unique<systems::DiagramBuilder<T>>()};
+  auto builder{make_unique<systems::DiagramBuilder<T>>()};
 
   plant_ = builder->template AddSystem<systems::RigidBodyPlant<T>>(
       move(rigid_body_tree_));
@@ -173,8 +173,8 @@ void IiwaWorldSimBuilder<T>::SetPenetrationContactParameters(
 }
 
 template <typename T>
-void IiwaWorldSimBuilder<T>::AddModel(const std::string &object_name,
-                                      const std::string &model_path) {
+void IiwaWorldSimBuilder<T>::StoreModel(const std::string& object_name,
+                                        const std::string& model_path) {
   object_urdf_map_.insert(
       std::pair<std::string, std::string>(object_name, model_path));
 }
