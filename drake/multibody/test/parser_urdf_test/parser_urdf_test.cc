@@ -115,7 +115,6 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
   tree = make_unique<RigidBodyTree<double>>();
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
       file_robotiq, tree.get()));
-
 }
 
 }  // namespace
