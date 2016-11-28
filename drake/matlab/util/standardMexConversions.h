@@ -221,12 +221,12 @@ fromMexUnsafe(
     if (mxIsSparse(df)) {
       auto gradient_matrix = GradientTypeFixedMaxSize(
           matlabToEigenSparse(df));  // TODO(tkoolen): inefficient
-      gradientMatrixToAutoDiff(gradient_matrix, ret);
+      drake::math::gradientMatrixToAutoDiff(gradient_matrix, ret);
     } else {
       auto num_derivs = mxGetN(df);
       auto gradient_matrix = Map<GradientTypeFixedMaxSize>(
           mxGetPrSafe(df), mxGetM(df), num_derivs);
-      gradientMatrixToAutoDiff(gradient_matrix, ret);
+      drake::math::gradientMatrixToAutoDiff(gradient_matrix, ret);
     }
   }
   return ret;

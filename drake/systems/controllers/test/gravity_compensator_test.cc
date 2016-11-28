@@ -14,6 +14,7 @@
 #include "drake/systems/framework/system_input.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
 
 using Eigen::AutoDiffScalar;
@@ -24,11 +25,8 @@ namespace drake {
 namespace systems {
 namespace {
 
-VectorXd ComputeIiwaGravityTorque(const VectorXd& robot_state) {
-  RigidBodyTree<double> rigid_body_tree(
-      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::multibody::joints::kFixed);
-
+VectorXd ComputeGravityTorque(const RigidBodyTree<double>& rigid_body_tree,
+                                  const VectorXd& robot_state) {
   KinematicsCache<double> cache = rigid_body_tree.doKinematics(robot_state);
   eigen_aligned_std_unordered_map<RigidBody<double> const*,
                                   drake::TwistVector<double>> f_ext;
@@ -45,64 +43,77 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 
 class GravityCompensatorTest : public ::testing::Test {
  protected:
-  GravityCompensatorTest() {
-    tree_ = std::make_unique<RigidBodyTree<double>>();
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-        drake::multibody::joints::kFixed, nullptr /* weld to frame */,
-        tree_.get());
-  }
-
-  void SetUp() override {
+  void Init(std::unique_ptr<RigidBodyTree<double>> tree) {
+    tree_ = std::move(tree);
     gravity_compensator_ = make_unique<GravityCompensator<double>>(*tree_);
     context_ = gravity_compensator_->CreateDefaultContext();
     output_ = gravity_compensator_->AllocateOutput(*context_);
-    input_ = make_unique<BasicVector<double>>(7 /* length */);
+
+    // Checks that the number of input ports in the Gravity Compensator system
+    // and the Context are consistent.
+    ASSERT_EQ(gravity_compensator_->get_num_input_ports(), 1);
+    ASSERT_EQ(context_->get_num_input_ports(), 1);
+
+    // Checks that no state variables are allocated in the context.
+    EXPECT_EQ(context_->get_continuous_state()->size(), 0);
+
+    // Checks that the number of output ports in the Gravity Compensator system
+    // and the SystemOutput are consistent.
+    ASSERT_EQ(output_->get_num_ports(), 1);
+    ASSERT_EQ(gravity_compensator_->get_num_output_ports(), 1);
+    ASSERT_NE(output_->get_vector_data(0), nullptr);
+  }
+
+  void CheckConfiguration(const Eigen::VectorXd& position_vector) {
+    EXPECT_EQ(position_vector.size(), tree_->get_num_positions());
+    auto input = make_unique<BasicVector<double>>(tree_->get_num_positions());
+    input->get_mutable_value() << position_vector;
+
+    // Hook input of the expected size.
+    context_->SetInputPort(0, MakeInput(std::move(input)));
+    gravity_compensator_->EvalOutput(*context_, output_.get());
+
+    VectorXd expected_gravity_vector =
+      ComputeGravityTorque(*tree_, position_vector);
+
+    // Checks the expected and computed gravity torque.
+    const BasicVector<double>* output_vector = output_->get_vector_data(0);
+    EXPECT_EQ(expected_gravity_vector, output_vector->get_value());
   }
 
   std::unique_ptr<RigidBodyTree<double>> tree_;
   std::unique_ptr<System<double>> gravity_compensator_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
-  std::unique_ptr<BasicVector<double>> input_;
 };
-
 
 // Tests that the expected value of the gravity compensating torque and the
 // value computed by the GravityCompensator for a given joint configuration
-// on the IIWA Arm are identical.
-TEST_F(GravityCompensatorTest, OutputTest) {
-  // Checks that the number of input ports in the Gravity Compensator system
-  // and the Context are consistent.
-  ASSERT_EQ(1, gravity_compensator_->get_num_input_ports());
-  ASSERT_EQ(1, context_->get_num_input_ports());
+// of the KUKA IIWA Arm are identical.
+TEST_F(GravityCompensatorTest, IiwaOutputTest) {
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
+      tree.get());
+  Init(std::move(tree));
 
   // Defines an arbitrary robot position vector.
   Eigen::VectorXd robot_position = Eigen::VectorXd::Zero(7);
   robot_position << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
 
-  input_->get_mutable_value() << robot_position;
-
-  // Hook input of the expected size.
-  context_->SetInputPort(0, MakeInput(std::move(input_)));
-  gravity_compensator_->EvalOutput(*context_, output_.get());
-
-  // Checks that the number of output ports in the Gravity Compensator system
-  // and the SystemOutput are consistent.
-  ASSERT_EQ(1, output_->get_num_ports());
-  ASSERT_EQ(1, gravity_compensator_->get_num_output_ports());
-  const BasicVector<double>* output_vector = output_->get_vector_data(0);
-  ASSERT_NE(nullptr, output_vector);
-
-  VectorXd expected_gravity_vector = ComputeIiwaGravityTorque(robot_position);
-
-  // Checks the expected and computed gravity torque.
-  EXPECT_EQ(expected_gravity_vector, output_vector->get_value());
+  CheckConfiguration(robot_position);
 }
 
-// Tests that Gain allocates no state variables in the context.
-TEST_F(GravityCompensatorTest, GravityCompensatorIsStateless) {
-  EXPECT_EQ(0, context_->get_continuous_state()->size());
+// Tests that the GravityCompensator will abort if it is provided an
+// underactuated model.
+TEST_F(GravityCompensatorTest, UnderactuatedModelTest) {
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  drake::parsers::sdf::AddModelInstancesFromSdfFile(
+      drake::GetDrakePath() + "/examples/SimpleFourBar/FourBar.sdf",
+      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
+      tree.get());
+  EXPECT_DEATH(Init(std::move(tree)), ".*");
 }
 
 }  // namespace

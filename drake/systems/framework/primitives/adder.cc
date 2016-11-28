@@ -45,6 +45,12 @@ void Adder<T>::EvalOutput(const Context<T>& context,
   }
 }
 
+template<typename T>
+Adder<AutoDiffXd>* Adder<T>::DoToAutoDiffXd() const {
+  return new Adder<AutoDiffXd>(this->get_num_input_ports(),
+                               this->get_input_port(0).get_size());
+}
+
 // Explicitly instantiates on the most common scalar types.
 template class Adder<double>;
 template class Adder<AutoDiffXd>;

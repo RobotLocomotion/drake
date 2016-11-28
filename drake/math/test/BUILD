@@ -1,7 +1,5 @@
 # -*- python -*-
-
-# This file contains rules for the Bazel build system.
-# See http://bazel.io/ .
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
 
@@ -22,11 +20,26 @@ cc_test(
     size = "small", deps = DEPS + ["//drake/math:expmap"])
 
 cc_test(
+    name = "eigen_sparse_triplet_test",
+    srcs = ["eigen_sparse_triplet_test.cc"],
+    size = "small", deps = DEPS + ["//drake/math:eigen_sparse_triplet"])
+
+cc_test(
     name = "jacobian_test",
     srcs = ["jacobian_test.cc"],
     size = "small", deps = DEPS + ["//drake/math:jacobian", "//drake/math:gradient"])
 
-# TODO(jwnimmer-tri) These tests are not yet part of Bazel,
-# because they depend on "util":
-#     srcs = ["normalize_vector_test.cc"],
-#     srcs = ["rotation_conversion_test.cc"],
+cc_test(
+    name = "gradient_util_test",
+    srcs = ["gradient_util_test.cc"],
+    size = "small", deps = DEPS + ["//drake/math:gradient"])
+
+cc_test(
+    name = "normalize_vector_test",
+    srcs = ["normalize_vector_test.cc"],
+    size = "small", deps = DEPS + ["//drake/math:gradient"])
+
+cc_test(
+    name = "rotation_conversion_test",
+    srcs = ["rotation_conversion_test.cc"],
+    size = "small", deps = DEPS + ["//drake/math:gradient", "//drake/math:geometric_transform"])
