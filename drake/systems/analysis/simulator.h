@@ -334,11 +334,12 @@ void Simulator<T>::Initialize() {
   // Initialize the integrator.
   integrator_->Initialize();
 
-  // Do a publish before the simulation starts.
-  system_.Publish(*context_);
-
   // Restore default values.
   ResetStatistics();
+
+  // Do a publish before the simulation starts.
+  system_.Publish(*context_);
+  ++num_publishes_;
 
   // Initialize runtime variables.
   initialization_done_ = true;
@@ -380,6 +381,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
         switch (event.action) {
           case DiscreteEvent<T>::kPublishAction: {
             system_.Publish(*context_, event);
+            ++num_publishes_;
             break;
           }
           case DiscreteEvent<T>::kUpdateAction: {
@@ -403,7 +405,10 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     }
 
     // Allow System a chance to produce some output.
-    if (publish_hit) system_.Publish(*context_);
+    if (publish_hit) {
+      system_.Publish(*context_);
+      ++num_publishes_;
+    }
 
     // Remove old events
     update_actions.events.clear();
@@ -451,6 +456,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
   // publish at the end of the step
   system_.Publish(*context_);
+  ++num_publishes_;
 }
 
 // TODO(edrumwri): Prepare to remove

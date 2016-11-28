@@ -1,4 +1,4 @@
-#include "drake/systems/controllers/linear_optimal_control.h"
+#include "drake/systems/controllers/linear_quadratic_regulator.h"
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/primitives/linear_system.h"
@@ -6,17 +6,27 @@
 namespace drake {
 namespace systems {
 
+Eigen::MatrixXd LinearQuadraticRegulator(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::MatrixXd>& B,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R) {
+  const auto& S = ContinuousAlgebraicRiccatiEquation(A, B, Q, R);
+
+  Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
+  const Eigen::MatrixXd K = R_cholesky.solve(B.transpose() * S);
+
+  return K;
+}
+
 std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
     const LinearSystem<double>& system,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R) {
   const int num_states = system.B().rows(), num_inputs = system.B().cols();
 
-  const auto& S =
-      ContinuousAlgebraicRiccatiEquation(system.A(), system.B(), Q, R);
-
-  Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
-  const Eigen::MatrixXd K = R_cholesky.solve(system.B().transpose() * S);
+  const Eigen::MatrixXd K =
+      LinearQuadraticRegulator(system.A(), system.B(), Q, R);
 
   // Return the controller: u = -Kx.
   return std::make_unique<systems::LinearSystem<double>>(
@@ -41,12 +51,8 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
 
   auto linear_system = Linearize(system, context);
 
-  const auto& S = ContinuousAlgebraicRiccatiEquation(linear_system->A(),
-                                                     linear_system->B(), Q, R);
-
-  Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
   const Eigen::MatrixXd K =
-      R_cholesky.solve(linear_system->B().transpose() * S);
+      LinearQuadraticRegulator(linear_system->A(), linear_system->B(), Q, R);
 
   const Eigen::VectorXd& x0 =
       context.get_continuous_state_vector().CopyToVector();
