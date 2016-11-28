@@ -118,7 +118,8 @@ template <typename T>
 std::unique_ptr<systems::Diagram<T>> IiwaWorldSimBuilder<T>::Build() {
   DRAKE_DEMAND(!built_);
 
-  auto builder{make_unique<systems::DiagramBuilder<T>>()};
+  std::unique_ptr<systems::DiagramBuilder<T>> builder{
+    make_unique<systems::DiagramBuilder<T>>()};
 
   plant_ = builder->template AddSystem<systems::RigidBodyPlant<T>>(
       move(rigid_body_tree_));
