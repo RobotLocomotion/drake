@@ -54,6 +54,7 @@ using drake::kSpaceDimension;
 using drake::kTwistSize;
 
 using drake::math::autoDiffToGradientMatrix;
+using drake::math::gradientMatrixToAutoDiff;
 using drake::math::Gradient;
 using drake::multibody::joints::FloatingBaseType;
 
@@ -2547,6 +2548,10 @@ int RigidBodyTree<T>::number_of_velocities() const {
   return get_num_velocities();
 }
 
+template <typename T>
+int RigidBodyTree<T>::get_num_actuators() const {
+  return static_cast<int>(actuators.size());
+}
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 template <typename T>

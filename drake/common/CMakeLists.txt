@@ -10,6 +10,7 @@ configure_file(drake_path.cc.in ${drake_path_cc})
 
 # List all source files used to build libdrakeCommon.
 set(sources
+  double_overloads.cc
   drake_assert.cc
   ${drake_path_cc}
   drake_throw.cc
@@ -32,6 +33,7 @@ set(installed_headers
   autodiff_overloads.h
   cond.h
   constants.h
+  double_overloads.h
   drake_assert.h
   drake_compat.h
   drake_deprecated.h
@@ -91,3 +93,5 @@ drake_install_pkg_config_file(drake-common
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
+
+add_subdirectory(trajectories)

@@ -1,7 +1,6 @@
 #include "drake/systems/controllers/linear_optimal_control.h"
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/primitives/linear_system.h"
 
 namespace drake {
@@ -73,10 +72,8 @@ Eigen::MatrixXd ContinuousAlgebraicRiccatiEquation(
   DRAKE_DEMAND(A.rows() == n && A.cols() == n);
   DRAKE_DEMAND(Q.rows() == n && Q.cols() == n);
   DRAKE_DEMAND(R.rows() == m && R.cols() == m);
-  DRAKE_DEMAND(
-      CompareMatrices(Q, Q.transpose(), 1e-10, MatrixCompareType::absolute));
-  DRAKE_DEMAND(
-      CompareMatrices(R, R.transpose(), 1e-10, MatrixCompareType::absolute));
+  DRAKE_DEMAND((Q - Q.transpose()).lpNorm<Eigen::Infinity>() < 1e-10);
+  DRAKE_DEMAND((R - R.transpose()).lpNorm<Eigen::Infinity>() < 1e-10);
 
   Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
 

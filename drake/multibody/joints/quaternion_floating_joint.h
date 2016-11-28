@@ -148,6 +148,10 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
                             Eigen::Dynamic>* dv_to_qdot) const {
     v_to_qdot.resize(get_num_positions(), get_num_velocities());
 
+    if (dv_to_qdot) {
+      throw std::runtime_error("no longer supported");
+    }
+
     // Get the quaternion values.
     auto quat =
         q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);

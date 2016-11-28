@@ -38,15 +38,16 @@ cc_library(
          "autodiff_gradient.cc",
          "cross_product.cc",
          "gradient.cc",
-         # TODO(jwnimmer-tri) These source files are not yet part of Bazel,
-         # because they depend on "util":
-         # "normalize_vector.h",
-         # "rotation_conversion_gradient.h",
+         "normalize_vector.cc",
+         "rotation_conversion_gradient.cc",
     ],
     hdrs = [
          "autodiff_gradient.h",
          "cross_product.h",
          "gradient.h",
+         "gradient_util.h",
+         "normalize_vector.h",
+         "rotation_conversion_gradient.h",
     ],
     deps = DEPS + [":autodiff"],
     linkstatic = 1)
@@ -55,18 +56,21 @@ cc_library(
 # other important labels until we get all workspaces on newer-Eigen.
 cc_library(
     name = "eigen_sparse_triplet",
+    srcs = ["eigen_sparse_triplet.cc"],
     hdrs = ["eigen_sparse_triplet.h"],
     deps = DEPS,
     linkstatic = 1)
 
 cc_library(
     name = "expmap",
+    srcs = ["expmap.cc"],
     hdrs = ["expmap.h"],
     deps = DEPS + [":gradient"],
     linkstatic = 1)
 
 cc_library(
     name = "jacobian",
+    srcs = ["jacobian.cc"],
     hdrs = ["jacobian.h"],
     deps = DEPS,
     linkstatic = 1)

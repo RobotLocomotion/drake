@@ -70,10 +70,6 @@ function(drake_setup_java_for_matlab)
     # Set arguments for running MATLAB
     set(_args -nodesktop -nodisplay -nosplash)
     set(_input_file /dev/null)
-    if(WIN32)
-      set(_args ${_args} -wait)
-      set(_input_file NUL)
-    endif()
     set(_logfile "${CMAKE_CURRENT_BINARY_DIR}/drake_setup_java_for_matlab.log")
 
     # Ask MATLAB for its JVM version
@@ -191,7 +187,8 @@ macro(drake_setup_fortran)
       enable_language(Fortran)
 
       if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" AND CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "4.9")
-        message(FATAL_ERROR "GCC version must be at least 4.9")
+        message(FATAL_ERROR "GNU Fortran compiler version must be at least 4.9 \
+                             (detected version ${CMAKE_Fortran_COMPILER_VERSION})")
       endif()
     endif()
   endif()

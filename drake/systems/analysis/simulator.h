@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <chrono>
 #include <limits>
 #include <tuple>
 #include <utility>
@@ -101,6 +103,66 @@ class Simulator {
    */
   void StepTo(const T& boundary_time);
 
+  /** Slow the simulation down to *approximately* synchronize with real time
+   * when it would otherwise run too fast. Normally the %Simulator takes steps
+   * as quickly as it can. You can request that it slow down to synchronize with
+   * real time by providing a realtime rate greater than zero here.
+   *
+   * @warning No guarantees can be made about how accurately the simulation
+   * can be made to track real time, even if computation is fast enough. That's
+   * because the system utilities used to implement this do not themselves
+   * provide such guarantees. So this is likely to work nicely for visualization
+   * purposes where human perception is the only concern. For any other uses
+   * you should consider whether approximate real time is adequate for your
+   * purposes.
+   *
+   * @note If the full-speed simulation is already slower than real time you
+   * can't speed it up with this call! Instead consider requesting less
+   * integration accuracy, using a faster integration method or fixed time
+   * step, or using a simpler model.
+   *
+   * @param realtime_rate
+   *   Desired rate relative to real time. Set to 1 to track real time, 2 to
+   *   run twice as fast as real time, 0.5 for half speed, etc. Zero or
+   *   negative restores the rate to its default of 0, meaning the simulation
+   *   will proceed as fast as possible.
+   */
+  // TODO(sherm1): Provide options for issuing a warning or aborting the
+  // simulation if the desired rate cannot be achieved.
+  void set_target_realtime_rate(double realtime_rate) {
+    target_realtime_rate_ = std::max(realtime_rate, 0.);
+  }
+
+  /** Return the real time rate target currently in effect. The default is
+   * zero, meaning the %Simulator runs as fast as possible. You can change the
+   * target with set_target_realtime_rate().
+   */
+  double get_target_realtime_rate() const {
+    return target_realtime_rate_;
+  }
+
+  /** Return the rate that simulated time has progressed relative to real time.
+   * A return of 1 means the simulation just matched real
+   * time, 2 means the simulation was twice as fast as real time, 0.5 means
+   * it was running in 2X slow motion, etc.
+   *
+   * The value returned here is calculated as follows: <pre>
+   *
+   *          simulated_time_now - initial_simulated_time
+   *   rate = -------------------------------------------
+   *                realtime_now - initial_realtime
+   * </pre>
+   * The `initial` times are recorded when Initialize() or ResetStatistics()
+   * is called. The returned rate is undefined if Initialize() has not yet
+   * been called.
+   *
+   * @returns The rate achieved since the last Initialize() or ResetStatistics()
+   *          call.
+   *
+   * @see set_target_realtime_rate()
+   */
+  double get_actual_realtime_rate() const;
+
   /** Returns a const reference to the internally-maintained Context holding the
    * most recent step in the trajectory. This is suitable for publishing or
    * extracting information about this trajectory step.
@@ -142,12 +204,7 @@ class Simulator {
   /** Forget accumulated statistics. Statistics are reset to the values they
    * have post construction or immediately after `Initialize()`.
    */
-  void ResetStatistics() {
-    integrator_->ResetStatistics();
-    num_steps_taken_ = 0;
-    num_updates_ = 0;
-    num_publishes_ = 0;
-  }
+  void ResetStatistics();
 
   /**
    * Gets the number of publishes made since the last Initialize() or
@@ -162,25 +219,25 @@ class Simulator {
   Initialize() call? */
   int64_t get_num_updates() const { return num_updates_; }
 
-  /**
-   *   Gets a pointer to the integrator used to advance the continuous aspects
-   *   of the system.
+  /** Gets a pointer to the integrator used to advance the continuous aspects
+   *  of the system.
    */
   const IntegratorBase<T>* get_integrator() const { return integrator_.get(); }
 
-  /**
-   *   Gets a pointer to the mutable integrator used to advance the continuous
-   *   aspects of the system.
+  /** Gets a pointer to the mutable integrator used to advance the continuous
+   * aspects of the system.
    */
   IntegratorBase<T>* get_mutable_integrator() { return integrator_.get(); }
 
-  /**
-   *   Resets the integrator with a new one. An example usage is:
-   *   simulator.reset_integrator<ExplicitEulerIntegrator<double>>(sys, context,
-   *   DT). The integrator must be initialized (via
-   *   IntegratorBase::Initialize() function)
-   *   before being used. The simulator will call that function automatically
-   *   in its own Initialize() function.
+  /** Resets the integrator with a new one. An example usage is:
+   * @code
+   * simulator.reset_integrator<ExplicitEulerIntegrator<double>>
+   *               (sys, context, DT).
+   * @endcode
+   * The %Simulator must be reinitialized after resetting the integrator to
+   * ensure the integrator is properly initialized. You can do that explicitly
+   * with the Initialize() method or it will be done implicitly at the first
+   * time step.
    */
   template <class U, typename... Args>
   U* reset_integrator(Args&&... args) {
@@ -190,6 +247,12 @@ class Simulator {
   }
 
  private:
+  // The steady_clock is immune to system clock changes so increases
+  // monotonically. We'll work in fractional seconds.
+  using Clock = std::chrono::steady_clock;
+  using Duration = std::chrono::duration<double>;
+  using TimePoint = std::chrono::time_point<Clock, Duration>;
+
   Simulator(const Simulator& s) = delete;
   Simulator& operator=(const Simulator& s) = delete;
 
@@ -199,6 +262,10 @@ class Simulator {
                                                const T& ideal_step_size,
                                                const T& next_update_time,
                                                const T& final_time);
+
+  // If the simulated time in the context is ahead of real time, pause long
+  // enough to let real time catch up (approximately).
+  void PauseIfTooFast() const;
 
   // A pointer to the integrator.
   std::unique_ptr<IntegratorBase<T>> integrator_;
@@ -217,6 +284,13 @@ class Simulator {
   const System<T>& system_;              // Just a reference; not owned.
   std::unique_ptr<Context<T>> context_;  // The trajectory Context.
 
+  // Slow down to this rate if possible (user settable).
+  double target_realtime_rate_{0.};
+
+  // These are recorded at initialization or statistics reset.
+  double initial_simtime_{nan()};  // Simulated time at start of period.
+  TimePoint initial_realtime_;     // Real time at start of period.
+
   // The number of updates since the last call to Initialize().
   int64_t num_updates_{0};
 
@@ -225,6 +299,7 @@ class Simulator {
 
   // The number of integration steps since the last call to Initialize().
   int64_t num_steps_taken_{0};
+
 
   // Set by Initialize() and reset by various traumas.
   bool initialization_done_{false};
@@ -295,6 +370,9 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
     SPDLOG_TRACE(log(), "Starting a simulation step at {}", step_start_time);
+
+    // Delay to match target realtime rate if requested and possible.
+    PauseIfTooFast();
 
     // First take any necessary discrete actions.
     if (update_hit) {

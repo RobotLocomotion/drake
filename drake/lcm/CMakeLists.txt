@@ -49,10 +49,6 @@ target_link_libraries(drakeLcm
     ${lcm_dependent_link_libraries}
     ${lcm_independent_link_libraries})
 
-if (lcm_FOUND AND WIN32)
-  target_link_libraries(drakeLcm ws2_32)
-endif()
-
 drake_install_headers(
     ${lcm_dependent_header_files}
     ${lcm_independent_header_files})

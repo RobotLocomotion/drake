@@ -7,13 +7,19 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-GravityCompensator<T>::GravityCompensator(
-    const RigidBodyTree<T>& rigid_body_tree)
-    : rigid_body_tree_(rigid_body_tree) {
-  this->DeclareInputPort(kVectorValued, rigid_body_tree.get_num_positions(),
+GravityCompensator<T>::GravityCompensator(const RigidBodyTree<T>& tree)
+    : tree_(tree) {
+  this->DeclareInputPort(kVectorValued, tree.get_num_positions(),
                          kContinuousSampling);
-  this->DeclareOutputPort(kVectorValued, rigid_body_tree_.actuators.size(),
+  this->DeclareOutputPort(kVectorValued, tree_.get_num_actuators(),
                           kContinuousSampling);
+  if (tree.get_num_positions() != tree_.get_num_actuators()) {
+    std::stringstream msg;
+    msg << "The model is under-actuated!\n"
+        << "  - size of gravity vector: " << tree.get_num_positions() << "\n"
+        << "  - number of actuators: " << tree.get_num_actuators();
+    DRAKE_ABORT_MSG(msg.str().c_str());
+  }
 }
 
 template <typename T>
@@ -24,13 +30,15 @@ void GravityCompensator<T>::EvalOutput(const Context<T>& context,
 
   Eigen::VectorXd q = this->EvalEigenVectorInput(context, 0);
 
-  KinematicsCache<T> cache = rigid_body_tree_.doKinematics(q);
+  KinematicsCache<T> cache = tree_.doKinematics(q);
   eigen_aligned_std_unordered_map<RigidBody<T> const*, drake::TwistVector<T>>
       f_ext;
   f_ext.clear();
 
-  Eigen::VectorXd g = rigid_body_tree_.dynamicsBiasTerm(cache, f_ext,
-  false /* include velocity terms */);
+  Eigen::VectorXd g = tree_.dynamicsBiasTerm(
+      cache, f_ext, false /* include velocity terms */);
+
+  DRAKE_ASSERT(g.size() == System<T>::get_output_port(0).get_size());
   System<T>::GetMutableOutputVector(output, 0) = g;
 }
 

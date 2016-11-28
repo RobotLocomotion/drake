@@ -30,6 +30,17 @@ target_link_libraries(simple_continuous_time_system
     drakeSystemAnalysis)
 drake_add_test(NAME simple_continuous_time_system COMMAND simple_continuous_time_system)
 
+add_executable(simple_discrete_time_system simple_discrete_time_system.cc)
+target_link_libraries(simple_discrete_time_system
+    drakeSystemAnalysis)
+drake_add_test(NAME simple_discrete_time_system COMMAND simple_discrete_time_system)
+
+add_executable(simple_mixed_continuous_and_discrete_time_system simple_mixed_continuous_and_discrete_time_system.cc)
+target_link_libraries(simple_mixed_continuous_and_discrete_time_system
+    drakeSystemAnalysis)
+drake_add_test(NAME simple_mixed_continuous_and_discrete_time_system COMMAND simple_mixed_continuous_and_discrete_time_system)
+
+
 # recurse into all example subdirectories
 # Note: the GLOB workflow is typically not recommended due to the fact that
 # CMake will not be able to detect changes, but we currently support users

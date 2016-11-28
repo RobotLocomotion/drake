@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/solvers/trajectoryOptimization/dircol_trajectory_optimization.h"
+#include "drake/solvers/trajectory_optimization/dircol_trajectory_optimization.h"
 
 namespace drake {
 namespace examples {

@@ -1,13 +1,15 @@
 #pragma once
 
-#include <Eigen/Core>
 #include <iostream>
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
+
+#include <Eigen/Core>
 
 #include "bot_core/position_3d_t.hpp"
 #include "bot_core/quaternion_t.hpp"
 #include "bot_core/twist_t.hpp"
 #include "bot_core/vector_3d_t.hpp"
+
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/lcmt_piecewise_polynomial.hpp"
 #include "drake/lcmt_polynomial.hpp"
 #include "drake/lcmt_polynomial_matrix.hpp"

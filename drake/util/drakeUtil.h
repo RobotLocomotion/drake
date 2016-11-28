@@ -22,9 +22,7 @@
 
 template <typename Key, typename T>
 using eigen_aligned_unordered_map
-#ifndef _MSC_VER
-    DRAKE_DEPRECATED("Use drake::eigen_aligned_std_unordered_map")
-#endif
+DRAKE_DEPRECATED("Use drake::eigen_aligned_std_unordered_map")
     = drake::eigen_aligned_std_unordered_map<Key, T>;
 
 template <typename Derived>
