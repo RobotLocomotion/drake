@@ -1176,8 +1176,6 @@ class QPController {
   // matrices / vectors.
   drake::solvers::MathematicalProgram prog_;
   drake::solvers::GurobiSolver solver_;
-  drake::solvers::DecisionVariableVectorX basis_;
-  drake::solvers::DecisionVariableVectorX vd_;
 
   // pointers to different cost / constraint terms inside prog_
   drake::solvers::LinearEqualityConstraint* eq_dynamics_{nullptr};
