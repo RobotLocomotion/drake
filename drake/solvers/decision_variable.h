@@ -278,6 +278,9 @@ template <typename Derived>
 Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
 GetSolution(
     const Eigen::MatrixBase<Derived> &decision_variable_matrix) {
+  static_assert(
+      std::is_same<typename Derived::Scalar, DecisionVariableScalar>::value,
+      "The input should be a DecisionVariableMatrix object");
   Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
       double_matrix(decision_variable_matrix.rows(),
                     decision_variable_matrix.cols());
