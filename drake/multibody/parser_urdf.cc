@@ -385,8 +385,12 @@ void ParseVisual(RigidBody<double>* body, XMLElement* node,
     // http://wiki.ros.org/urdf/XML/link), but is needed by certain URDFs
     // released by companies and organizations like Robotiq and ROS Industrial
     // (for example, see this URDF by Robotiq: http://bit.ly/28P0pmo).
-    if (color_specified && name_specified)
+    if (color_specified && name_specified) {
+      // The `throw_if_name_clash` parameter is passed a value of `false` to allow
+      // the same material to be defined across multiple links as long as they
+      // correspond to the same RGBA value.
       AddMaterialToMaterialMap(material_name, rgba, false, materials);
+    }
 
     // Sets the material's color.
     bool material_set = false;

@@ -107,6 +107,15 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
   tree = make_unique<RigidBodyTree<double>>();
   EXPECT_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
       file_conflict, tree.get()), std::runtime_error);
+
+  // This URDF defines the same color multiple times in different links.
+  const std::string file_robotiq = drake::GetDrakePath() +
+      "/examples/Atlas/urdf/robotiq.urdf";
+
+  tree = make_unique<RigidBodyTree<double>>();
+  EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_robotiq, tree.get()));
+
 }
 
 }  // namespace
