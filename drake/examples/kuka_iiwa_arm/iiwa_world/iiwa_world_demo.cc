@@ -20,18 +20,19 @@ namespace {
 // under the influence of gravity and results in the objects being scattered
 // due to collisions with the robot arm and among themselves.
 int DoMain() {
+  DRAKE_DEMAND(FLAGS_simulation_sec > 0);
   auto iiwa_world = std::make_unique<IiwaWorldSimBuilder<double>>();
 
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
-  iiwa_world->AddObjectUrdf("iiwa", "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
-  iiwa_world->AddObjectUrdf(
+  iiwa_world->AddModel("iiwa", "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
+  iiwa_world->AddModel(
       "table",
       "/examples/kuka_iiwa_arm/models/table/extra_heavy_duty_table.sdf");
-  iiwa_world->AddObjectUrdf(
+  iiwa_world->AddModel(
       "cylinder",
       "/examples/kuka_iiwa_arm/models/objects/simple_cylinder.urdf");
-  iiwa_world->AddObjectUrdf(
+  iiwa_world->AddModel(
       "cuboid", "/examples/kuka_iiwa_arm/models/objects/simple_cuboid.urdf");
 
   iiwa_world->AddFixedObject("table", Eigen::Vector3d::Zero() /* xyz */,

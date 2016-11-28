@@ -53,7 +53,7 @@ template <typename T>
 IiwaWorldSimBuilder<T>::~IiwaWorldSimBuilder() {}
 
 template <typename T>
-int IiwaWorldSimBuilder<T>::AddFixedObject(const string& object_name,
+int IiwaWorldSimBuilder<T>::AddFixedObject(const string& model_instance_name,
                                            const Vector3d& xyz,
                                            const Vector3d& rpy) {
   DRAKE_DEMAND(!built_);
@@ -61,7 +61,7 @@ int IiwaWorldSimBuilder<T>::AddFixedObject(const string& object_name,
   auto weld_to_frame = allocate_shared<RigidBodyFrame>(
       aligned_allocator<RigidBodyFrame>(), "world", nullptr, xyz, rpy);
 
-  return AddObjectToFrame(object_name, xyz, rpy, weld_to_frame);
+  return AddObjectToFrame(model_instance_name, xyz, rpy, weld_to_frame);
 }
 
 template <typename T>
@@ -117,9 +117,7 @@ template <typename T>
 std::unique_ptr<systems::Diagram<T>> IiwaWorldSimBuilder<T>::Build() {
   DRAKE_DEMAND(!built_);
 
-  rigid_body_tree_->compile();
-
-  unique_ptr<systems::DiagramBuilder<T>> builder{
+  auto builder{
       make_unique<systems::DiagramBuilder<T>>()};
 
   plant_ = builder->template AddSystem<systems::RigidBodyPlant<T>>(
@@ -135,7 +133,7 @@ std::unique_ptr<systems::Diagram<T>> IiwaWorldSimBuilder<T>::Build() {
   auto viz_publisher_ = builder->template AddSystem<DrakeVisualizer>(
       plant_->get_rigid_body_tree(), &lcm_);
 
-  // Connects to publisher for visualization.
+  // Connects the plant to the publisher for visualization.
   builder->Connect(plant_->get_output_port(0),
                    viz_publisher_->get_input_port(0));
 
@@ -175,15 +173,15 @@ void IiwaWorldSimBuilder<T>::SetPenetrationContactParameters(
 }
 
 template <typename T>
-void IiwaWorldSimBuilder<T>::AddObjectUrdf(const std::string& object_name,
-                                           const std::string& urdf_sdf_path) {
+void IiwaWorldSimBuilder<T>::AddModel(const std::string &object_name,
+                                      const std::string &model_path) {
   object_urdf_map_.insert(
-      std::pair<std::string, std::string>(object_name, urdf_sdf_path));
+      std::pair<std::string, std::string>(object_name, model_path));
 }
 
 template <typename T>
 int IiwaWorldSimBuilder<T>::GetPlantInputSize() {
-  return (plant_->get_input_size());
+  return plant_->get_input_size();
 }
 
 template class IiwaWorldSimBuilder<double>;
