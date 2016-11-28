@@ -1,7 +1,5 @@
 # -*- python -*-
-
-# This file contains rules for the Bazel build system.
-# See http://bazel.io/ .
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
 
@@ -49,7 +47,7 @@ cc_test(
     name = "parameters_test",
     srcs = ["parameters_test.cc"],
     deps = [
-        "//drake/common", 
+        "//drake/common",
         "//drake/systems/framework",
         "//drake/systems/framework/test_utilities",
         "@gtest//:main",

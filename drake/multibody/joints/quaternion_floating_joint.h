@@ -12,8 +12,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverloaded-virtual"
-class DRAKE_EXPORT QuaternionFloatingJoint
-    : public DrakeJointImpl<QuaternionFloatingJoint> {
+class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
  public:
   QuaternionFloatingJoint(const std::string& name,
                           const Eigen::Isometry3d& transform_to_parent_body)
@@ -122,9 +121,11 @@ class DRAKE_EXPORT QuaternionFloatingJoint
 
       dv_to_qdot->setZero(v_to_qdot.size(), get_num_positions());
 
+      using drake::math::setSubMatrixGradient;
+      using drake::math::intRange;
       setSubMatrixGradient<4>(*dv_to_qdot, dR, intRange<3>(0), intRange<3>(3),
                               v_to_qdot.rows(), 3);
-      auto dMR = matGradMultMat(M, R, dM, dR);
+      auto dMR = drake::math::matGradMultMat(M, R, dM, dR);
       setSubMatrixGradient<4>(*dv_to_qdot, dMR, intRange<4>(3), intRange<3>(0),
                               v_to_qdot.rows(), 3);
     } else {

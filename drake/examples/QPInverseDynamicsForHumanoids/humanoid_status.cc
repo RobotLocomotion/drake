@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "drake/util/drakeGeometryUtil.h"
+
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
@@ -20,7 +22,7 @@ void HumanoidStatus::Update() {
   robot_->doKinematics(cache_, true);
 
   M_ = robot_->massMatrix(cache_);
-  drake::eigen_aligned_std_unordered_map<RigidBody const*,
+  drake::eigen_aligned_std_unordered_map<RigidBody<double> const*,
                                          drake::TwistVector<double>> f_ext;
   bias_term_ = robot_->dynamicsBiasTerm(cache_, f_ext);
 

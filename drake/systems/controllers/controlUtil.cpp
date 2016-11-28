@@ -7,6 +7,7 @@
 #include "drake/math/expmap.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 
 using Eigen::AutoDiffScalar;

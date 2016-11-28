@@ -30,11 +30,15 @@ if (lcm_FOUND)
 endif()
 
 set(lcm_dependent_link_libraries)
+set(lcm_dependent_libs)
+set(lcm_dependent_requires)
 if (lcm_FOUND)
   set(lcm_dependent_link_libraries
       ${CMAKE_THREAD_LIBS_INIT}
       drakeLCMTypes
       lcm)
+  set(lcm_dependent_libs ${CMAKE_THREAD_LIBS_INIT})
+  set(lcm_dependent_requires drake-lcmtypes-cpp lcm)
 endif()
 
 add_library_with_exports(LIB_NAME drakeLcm SOURCE_FILES
@@ -45,18 +49,15 @@ target_link_libraries(drakeLcm
     ${lcm_dependent_link_libraries}
     ${lcm_independent_link_libraries})
 
-if (lcm_FOUND AND WIN32)
-  target_link_libraries(drakeLcm ws2_32)
-endif()
-
 drake_install_headers(
     ${lcm_dependent_header_files}
     ${lcm_independent_header_files})
-pods_install_libraries(drakeLcm)
-pods_install_pkg_config_file(drake-lcm
+drake_install_libraries(drakeLcm)
+drake_install_pkg_config_file(drake-lcm
+    TARGET drakeLcm
     CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
-    LIBS -ldrakeLcm
-    VERSION 0.0.1)
+    LIBS -ldrakeLcm ${lcm_dependent_libs}
+    REQUIRES ${lcm_dependent_requires})
 
 if(BUILD_TESTING)
   add_subdirectory(test)

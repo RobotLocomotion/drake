@@ -12,7 +12,7 @@ if(lcm_FOUND)
     drakeLcm
     ${CMAKE_THREAD_LIBS_INIT})
 
-  pods_install_libraries(drakeLCMSystem2)
+  drake_install_libraries(drakeLCMSystem2)
   drake_install_headers(
     lcm_publisher_system.h
     lcm_subscriber_system.h
@@ -20,10 +20,13 @@ if(lcm_FOUND)
     lcm_and_vector_base_translator.h
     lcmt_drake_signal_translator.h
     serializer.h)
-  pods_install_pkg_config_file(drake-lcm-system2
+  drake_install_pkg_config_file(drake-lcm-system2
+    TARGET drakeLCMSystem2
     LIBS -ldrakeLCMSystem2
-    REQUIRES lcm
-    VERSION 0.0.1)
+    REQUIRES
+      drake-lcm
+      drake-lcmtypes-cpp
+      drake-system-framework)
 endif()
 
 if(BUILD_TESTING)

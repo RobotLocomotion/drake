@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.5)
-project(drake)
+project(drake VERSION 0.0.0)
 
 cmake_policy(SET CMP0025 NEW)
 cmake_policy(SET CMP0042 NEW)
 
 include(../cmake/config.cmake)
+include(../cmake/install.cmake)
 include(../cmake/packages.cmake)
 include(../cmake/test.cmake)
 
@@ -27,17 +28,9 @@ if(CMAKE_NINJA_LINK_POOL_SIZE GREATER 0)
 endif()
 
 # options
-option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-if(WITH_PYTHON_3)
-  set(Python_ADDITIONAL_VERSIONS 3.5)
-  find_package(PythonInterp 3 MODULE REQUIRED)
-else()
-  find_package(PythonInterp MODULE REQUIRED)
-endif()
 
 find_package(BLAS MODULE)
 find_package(Doxygen MODULE)
@@ -50,11 +43,6 @@ include(../cmake/pods.cmake)
 pods_find_pkg_config(bot2-lcmgl-client)
 pods_find_pkg_config(dreal)
 pods_find_pkg_config(ipopt)
-
-function(drake_install_headers)
-  file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
-  install(FILES ${ARGV} DESTINATION include/drake/${rel_path})
-endfunction()
 
 # A compatibility shim function that declares a library, with a built-in
 # default of SHARED.
@@ -162,10 +150,9 @@ endif()
 
 add_jar(drake SOURCES ${drake_jar_javafiles} INCLUDE_JARS ${drake_jar_requires})
 install_jar(drake share/java)
-pods_install_pkg_config_file(drake-java
+drake_install_pkg_config_file(drake-java
   CLASSPATH drake
-  REQUIRES ${drake_jar_requires}
-  VERSION 0.0.1)
+  REQUIRES ${drake_jar_requires})
 
 include_directories(SYSTEM "${EIGEN3_INCLUDE_DIRS}")
 
@@ -187,7 +174,10 @@ if(Matlab_FOUND)
   add_subdirectory(matlab)
 endif()
 add_subdirectory(examples)
-add_subdirectory(bindings)
+
+if(Matlab_FOUND OR NOT DISABLE_PYTHON)
+  add_subdirectory(bindings)
+endif()
 
 if(BUILD_TESTING)
   add_subdirectory(regtests)
@@ -229,14 +219,24 @@ find_program(AVL_EXECUTABLE avl PATHS "${CMAKE_INSTALL_PREFIX}/bin")
 find_program(XFOIL_EXECUTABLE xfoil PATHS "${CMAKE_INSTALL_PREFIX}/bin")
 find_program(FFMPEG_EXECUTABLE ffmpeg)
 
+# Used by matlab/util/systemWCMakeEnv.m
 if(APPLE)
-  set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
-  set(DYLD_FRAMEWORK_PATH "$ENV{DYLD_FRAMEWORK_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
-  mark_as_advanced(DYLD_LIBRARY_PATH)
-  mark_as_advanced(DYLD_FRAMEWORK_PATH)
+  if(DEFINED ENV{DYLD_LIBRARY_PATH})
+    set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE INTERNAL "" FORCE)
+  else()
+    set(DYLD_LIBRARY_PATH "" CACHE INTERNAL "" FORCE)
+  endif()
+  if(DEFINED ENV{DYLD_FRAMEWORK_PATH})
+    set(DYLD_FRAMEWORK_PATH "$ENV{DYLD_FRAMEWORK_PATH}" CACHE INTERNAL "" FORCE)
+  else()
+    set(DYLD_FRAMEWORK_PATH "" CACHE INTERNAL "" FORCE)
+  endif()
 else()
-  set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
-  mark_as_advanced(LD_LIBRARY_PATH)
+  if(DEFINED ENV{LD_LIBRARY_PATH})
+    set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE INTERNAL "" FORCE)
+  else()
+    set(LD_LIBRARY_PATH "" CACHE INTERNAL "" FORCE)
+  endif()
 endif()
 
 if(Matlab_FOUND)

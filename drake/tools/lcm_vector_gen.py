@@ -86,7 +86,7 @@ ACCESSOR_BEGIN = """
 """
 ACCESSOR = """
     // %(doc)s
-    const T %(field)s() const { return this->GetAtIndex(K::%(kname)s); }
+    const T& %(field)s() const { return this->GetAtIndex(K::%(kname)s); }
     void set_%(field)s(const T& %(field)s) {
       this->SetAtIndex(K::%(kname)s, %(field)s);
     }

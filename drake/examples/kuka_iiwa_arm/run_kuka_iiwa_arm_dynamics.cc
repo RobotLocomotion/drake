@@ -8,13 +8,13 @@
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/multibody/rigid_body_tree_construction.h"
 
 using std::make_unique;
 using std::move;
@@ -155,7 +155,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Ensures the robot's joints are within their position limits.
-  const std::vector<std::unique_ptr<RigidBody>>& bodies =
+  const std::vector<std::unique_ptr<RigidBody<double>>>& bodies =
       rigid_body_plant.get_rigid_body_tree().bodies;
   for (int state_index = 0, i = 0; i < static_cast<int>(bodies.size()); ++i) {
     // Skips rigid bodies without a parent. This includes the world.

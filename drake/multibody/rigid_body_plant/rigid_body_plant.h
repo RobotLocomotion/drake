@@ -5,7 +5,6 @@
 
 #include <Eigen/Geometry>
 
-#include "drake/common/drake_export.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
@@ -69,7 +68,7 @@ namespace systems {
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 /// @ingroup rigid_body_systems
 template <typename T>
-class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
+class RigidBodyPlant : public LeafSystem<T> {
  public:
   /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
   /// the world in @p tree.  @p tree must not be `nullptr`.
@@ -182,6 +181,16 @@ class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
   /// https://simtk.org/api_docs/simbody/latest/classSimTK_1_1Force_1_1MobilityLinearStop.html#details
   static T JointLimitForce(const DrakeJoint& joint,
                            const T& position, const T& velocity);
+
+  /// Returns descriptor of state output port.
+  const SystemPortDescriptor<T>& state_output_port() const {
+    return System<T>::get_output_port(state_output_port_id_);
+  }
+
+  /// Returns descriptor of KinematicsResults output port.
+  const SystemPortDescriptor<T>& kinematics_results_output_port() const {
+    return System<T>::get_output_port(kinematics_output_port_id_);
+  }
 
  protected:
   // LeafSystem<T> override.

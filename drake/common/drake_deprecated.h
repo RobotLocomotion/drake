@@ -37,19 +37,10 @@ C++14-compliant compiler. **/
 /* C++14 introduces a standard way to mark deprecated declarations. Before
 that we can use non-standard compiler hacks. */
 #ifndef SWIG
-  /* Make sure warnings are enabled in VC++; it is a common Windows hack for
-  programmers to turn them off due to much inconvenient deprecation of useful
-  things by Microsoft. */
-  #if _MSC_VER
-    #pragma warning(default:4996)
-  #endif
   /* Figure out the best form of deprecation for this compiler. */
   #if __cplusplus >= 201402L
     /* C++14 */
     #define DRAKE_DEPRECATED(MSG) [[deprecated("\nDRAKE DEPRECATED: " MSG)]]
-  #elif _MSC_VER
-    #define DRAKE_DEPRECATED(MSG) \
-      __declspec(deprecated("\nDRAKE DEPRECATED: " MSG))
   #else /* gcc or clang */
     #define DRAKE_DEPRECATED(MSG) \
       __attribute__((deprecated("\nDRAKE DEPRECATED: " MSG)))

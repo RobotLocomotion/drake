@@ -38,13 +38,12 @@
   <material name="White">
     <color rgba="1.0 1.0 1.0 1.0"/>
   </material>
-  <!-- Fix to world just for testing -->
-  <link name="world"/>
+  <link name="base"/>
   <!--iiwa-->
   <!--joint between {parent} and link_0-->
-  <joint name="world_iiwa_joint" type="fixed">
+  <joint name="base_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0.0"/>
-    <parent link="world"/>
+    <parent link="base"/>
     <child link="iiwa_link_0"/>
   </joint>
   <link name="iiwa_link_0">

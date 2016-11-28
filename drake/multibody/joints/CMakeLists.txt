@@ -9,7 +9,7 @@ add_library_with_exports(LIB_NAME drakeJoints SOURCE_FILES
 
 target_link_libraries(drakeJoints drakeGeometryUtil)
 
-pods_install_libraries(drakeJoints)
+drake_install_libraries(drakeJoints)
 drake_install_headers(
         drake_joint.h
         drake_joint_impl.h
@@ -21,8 +21,10 @@ drake_install_headers(
         revolute_joint.h
         roll_pitch_yaw_floating_joint.h
         floating_base_types.h)
-pods_install_pkg_config_file(drake-joints
+drake_install_pkg_config_file(drake-joints
+  TARGET drakeJoints
   LIBS -ldrakeJoints
   REQUIRES
-  VERSION 0.0.1)
+    drake-geometry-util
+    eigen3)
 add_subdirectory(test)

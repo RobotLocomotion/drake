@@ -38,7 +38,7 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 
 // Tests the ability to load a URDF model instance into the world of a rigid
 // body system.
-GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
+GTEST_TEST(RigidBodyPlantTest, TestLoadURDFWorld) {
   // Instantiates an Multibody Dynamics (MBD) model of the world.
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
@@ -47,21 +47,21 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
       tree_ptr.get());
 
   // Instantiates a RigidBodyPlant from an MBD model of the world.
-  RigidBodyPlant<double> rigid_body_sys(move(tree_ptr));
+  RigidBodyPlant<double> plant(move(tree_ptr));
 
   // Verifies that the number of states, inputs, and outputs are all zero.
-  EXPECT_EQ(rigid_body_sys.get_num_states(), 0);
-  EXPECT_EQ(rigid_body_sys.get_input_size(), 0);
-  EXPECT_EQ(rigid_body_sys.get_output_size(), 0);
+  EXPECT_EQ(plant.get_num_states(), 0);
+  EXPECT_EQ(plant.get_input_size(), 0);
+  EXPECT_EQ(plant.get_output_size(), 0);
 
   // Obtains a const pointer to the underlying multibody world in the system.
-  const RigidBodyTree<double>& tree = rigid_body_sys.get_rigid_body_tree();
+  const RigidBodyTree<double>& tree = plant.get_rigid_body_tree();
 
   // Checks that the bodies in the multibody world can be obtained by name and
   // that they have the correct model name.
   for (auto& body_name :
        {"floor", "ramp_1", "ramp_2", "box_1", "box_2", "box_3", "box_4"}) {
-    RigidBody* body = tree.FindBody(body_name);
+    RigidBody<double>* body = tree.FindBody(body_name);
     EXPECT_NE(body, nullptr);
     EXPECT_EQ(body->get_model_name(), "dual_ramps");
   }
@@ -69,7 +69,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
 
 // Unit tests the generalized velocities to generalized coordinates time
 // derivatives for a free body with a quaternion base.
-GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivativesAndBack) {
+GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
   const double kTol = 1e-10;     // Test succeeds at one order of magnitude
                                  // greater tolerance on my machine.
   const int kNumPositions = 7;   // One quaternion + 3d position.
@@ -79,8 +79,9 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivativesAndBack) {
   auto tree = make_unique<RigidBodyTree<double>>();
 
   // Add a single free body with a quaternion base.
-  RigidBody* body;
-  tree->add_rigid_body(unique_ptr<RigidBody>(body = new RigidBody()));
+  RigidBody<double>* body;
+  tree->add_rigid_body(
+      unique_ptr<RigidBody<double>>(body = new RigidBody<double>()));
   body->set_name("free_body");
   // Sets body to have a non-zero spatial inertia. Otherwise the body gets
   // welded by a fixed joint to the world by RigidBodyTree::compile().
@@ -375,16 +376,16 @@ GTEST_TEST(rigid_body_plant_test, TestJointLimitForcesFormula) {
 /// acceleration of the joint described in `limited_prismatic.sdf`.
 double GetPrismaticJointLimitAccel(double position, double applied_force) {
   // Build two links connected by a limited prismatic joint.
-  auto rigid_body_tree = std::make_unique<RigidBodyTree<double>>();
+  auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
       drake::GetDrakePath() +
           "/multibody/rigid_body_plant/test/limited_prismatic.sdf",
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
-      rigid_body_tree.get());
-  RigidBodyPlant<double> rigid_body_sys(move(rigid_body_tree));
+      tree.get());
+  RigidBodyPlant<double> plant(move(tree));
 
-  auto context = rigid_body_sys.CreateDefaultContext();
-  rigid_body_sys.SetZeroConfiguration(context.get());
+  auto context = plant.CreateDefaultContext();
+  plant.SetZeroConfiguration(context.get());
   context->get_mutable_continuous_state()
       ->get_mutable_generalized_position()
       ->SetAtIndex(0, position);
@@ -397,8 +398,8 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
   context->SetInputPort(0, MakeInput(move(input_vector)));
 
   // Obtain the time derivatives; test that speed is zero, return acceleration.
-  auto derivatives = rigid_body_sys.AllocateTimeDerivatives();
-  rigid_body_sys.EvalTimeDerivatives(*context, derivatives.get());
+  auto derivatives = plant.AllocateTimeDerivatives();
+  plant.EvalTimeDerivatives(*context, derivatives.get());
   auto xdot = derivatives->CopyToVector();
   EXPECT_EQ(xdot(0), 0.);  // Not moving.
   return xdot(1);

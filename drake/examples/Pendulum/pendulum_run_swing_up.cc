@@ -7,7 +7,7 @@
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
 #include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/solvers/trajectoryOptimization/dircol_trajectory_optimization.h"
+#include "drake/solvers/trajectory_optimization/dircol_trajectory_optimization.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram.h"

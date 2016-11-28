@@ -12,14 +12,20 @@ drake_install_headers(
   trajectory_logger.h
   robot_state_tap.h)
 
+drake_install_pkg_config_file(drake-system1
+  REQUIRES eigen3)
+
 if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeLCMSystem SOURCE_FILES LCMSystem.cpp)
   target_link_libraries(drakeLCMSystem drakeLCMTypes lcm)
 
-  pods_install_libraries(drakeLCMSystem)
+  drake_install_libraries(drakeLCMSystem)
   drake_install_headers(LCMSystem.h)
-  pods_install_pkg_config_file(drake-lcm-system
+  drake_install_pkg_config_file(drake-lcm-system
+    TARGET drakeLCMSystem
     LIBS -ldrakeLCMSystem
-    REQUIRES lcm
-    VERSION 0.0.1)
+    REQUIRES
+      eigen3
+      drake-lcmtypes-cpp
+      lcm)
 endif()

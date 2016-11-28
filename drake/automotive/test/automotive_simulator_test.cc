@@ -7,7 +7,6 @@
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 
 namespace drake {
 namespace automotive {
@@ -73,7 +72,7 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   ASSERT_EQ(1 + num_vehicle_bodies, tree.get_num_bodies());
 
   // Get the rigid bodies belonging to the vehicle's model instance.
-  const std::vector<const RigidBody*> vehicle_bodies =
+  const std::vector<const RigidBody<double>*> vehicle_bodies =
       tree.FindModelInstanceBodies(model_instance_id);
   EXPECT_EQ(vehicle_bodies.size(), num_vehicle_bodies);
 
@@ -161,17 +160,18 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file_1, int num_bodies_1,
   const Curve2d curve{waypoints};
 
   // Set up a basic simulation with just some TrajectoryCars.
-  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
+      std::make_unique<lcm::DrakeMockLcm>());
   const int model_instance_id_1 =
       simulator->AddTrajectoryCarFromSdf(sdf_file_1, curve, 1.0, 0.0);
   const int model_instance_id_2 =
       simulator->AddTrajectoryCarFromSdf(sdf_file_2, curve, 1.0, 10.0);
 
   // Obtain the number of bodies in the models.
-  const std::vector<const RigidBody*> vehicle_bodies_1 =
+  const std::vector<const RigidBody<double>*> vehicle_bodies_1 =
       simulator->get_rigid_body_tree().FindModelInstanceBodies(
           model_instance_id_1);
-  const std::vector<const RigidBody*> vehicle_bodies_2 =
+  const std::vector<const RigidBody<double>*> vehicle_bodies_2 =
       simulator->get_rigid_body_tree().FindModelInstanceBodies(
           model_instance_id_2);
   EXPECT_EQ(vehicle_bodies_1.size(), num_bodies_1);

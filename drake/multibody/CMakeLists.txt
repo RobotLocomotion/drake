@@ -1,11 +1,12 @@
-add_library_with_exports(LIB_NAME drakeXMLUtil SOURCE_FILES xmlUtil.cpp)
+add_library_with_exports(LIB_NAME drakeXMLUtil SOURCE_FILES xml_util.cc)
 target_link_libraries(drakeXMLUtil drakeCommon tinyxml2 spruce)
-pods_install_libraries(drakeXMLUtil)
-drake_install_headers(xmlUtil.h)
-pods_install_pkg_config_file(drake-xml-util
-  LIBS -ldrakeXMLUtil -ldrakeCommmon -ltinyxml2 -lspruce
+drake_install_libraries(drakeXMLUtil)
+drake_install_headers(xml_util.h)
+drake_install_pkg_config_file(drake-xml-util
+  LIBS -ldrakeXMLUtil -ltinyxml2 -lspruce
   REQUIRES
-  VERSION 0.0.1)
+    drake-common
+    eigen3)
 
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   parser_model_instance_id_table.cc
@@ -22,7 +23,7 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   $<TARGET_OBJECTS:drakeUtil>)
 target_link_libraries(drakeRBM
   drakeCollision drakeCommon drakeJoints drakeXMLUtil)
-pods_install_libraries(drakeRBM)
+drake_install_libraries(drakeRBM)
 drake_install_headers(
   constraint_wrappers.h
   force_torque_measurement.h
@@ -41,13 +42,24 @@ drake_install_headers(
   rigid_body_loop.h
   rigid_body_tree_construction.h)
 
-pods_install_pkg_config_file(drake-rbm
-  LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -ldrakeXMLUtil
+drake_install_pkg_config_file(drake-rbm
+  TARGET drakeRBM
+  LIBS -ldrakeRBM
   REQUIRES
-  VERSION 0.0.1)
+    drake-collision
+    drake-common
+    drake-joints
+    drake-xml-util
+    eigen3)
 
 add_library_with_exports(LIB_NAME drakeIKoptions SOURCE_FILES ik_options.cc)
 target_link_libraries(drakeIKoptions drakeRBM)
+drake_install_pkg_config_file(drake-ik-options
+  TARGET drakeIKoptions
+  LIBS -ldrakeIKoptions
+  REQUIRES
+    drake-rbm
+    eigen3)
 
 # Note that drakeIK is published via a SWIG MATLAB wrapper, but we haven't
 # moved it into the "C++ and MATLAB shared code" lower section of this file,
@@ -61,14 +73,19 @@ if (gurobi_FOUND)
 endif ()
 add_library_with_exports(LIB_NAME drakeIK SOURCE_FILES ${drakeIK_SRC_FILES})
 target_link_libraries(drakeIK drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIKoptions)
-pods_install_libraries(drakeIK)
-pods_install_libraries(drakeIKoptions)
+drake_install_libraries(drakeIK)
+drake_install_libraries(drakeIKoptions)
 drake_install_headers(constraint_wrappers.h ik_trajectory_helper.h ik_options.h
   inverse_kinematics_backend.h rigid_body_ik.h)
-pods_install_pkg_config_file(drake-ik
-  LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
-  REQUIRES drake-rbm
-  VERSION 0.0.1)
+drake_install_pkg_config_file(drake-ik
+  TARGET drakeIK
+  LIBS -ldrakeIK
+  REQUIRES
+    drake-ik-options
+    drake-optimization
+    drake-rbm
+    drake-rigid-body-constraint
+    eigen3)
 
 add_subdirectory(collision)
 add_subdirectory(constraint)

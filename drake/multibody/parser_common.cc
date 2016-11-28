@@ -23,7 +23,7 @@ int AddFloatingJoint(
     const PoseMap* pose_map,
     RigidBodyTree<double>* tree) {
   std::string floating_joint_name;
-  RigidBody* weld_to_body{nullptr};
+  RigidBody<double>* weld_to_body{nullptr};
   Eigen::Isometry3d transform_to_world;
 
   if (weld_to_frame == nullptr) {

@@ -53,7 +53,7 @@ class AffineSystem : public LeafSystem<T> {
 
   /// The input to this system is direct feedthrough only if the coefficient
   /// matrix `D` is non-zero.
-  bool has_any_direct_feedthrough() const override { return !D_.isZero(); }
+  bool has_any_direct_feedthrough() const override { return !D_.isZero(0.0); }
 
   /// Returns the input port containing the externally applied input.
   const SystemPortDescriptor<T>& get_input_port() const;

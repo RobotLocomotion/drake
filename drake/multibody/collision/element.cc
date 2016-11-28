@@ -21,13 +21,15 @@ Element::Element(const DrakeShapes::Geometry& geometry,
   id = (ElementId) this;
 }
 
-Element::Element(const Isometry3d& T_element_to_link, const RigidBody* body)
+Element::Element(const Isometry3d& T_element_to_link,
+                 const RigidBody<double>* body)
     : DrakeShapes::Element(T_element_to_link), body_(body) {
   id = (ElementId) this;
 }
 
 Element::Element(const DrakeShapes::Geometry& geometry,
-                 const Isometry3d& T_element_to_link, const RigidBody* body)
+                 const Isometry3d& T_element_to_link,
+                 const RigidBody<double>* body)
     : DrakeShapes::Element(geometry, T_element_to_link), body_(body) {
   id = (ElementId) this;
 }
@@ -46,9 +48,9 @@ Element* Element::clone() const { return new Element(*this); }
 
 ElementId Element::getId() const { return id; }
 
-const RigidBody* Element::get_body() const { return body_; }
+const RigidBody<double>* Element::get_body() const { return body_; }
 
-void Element::set_body(const RigidBody *body) { body_ = body; }
+void Element::set_body(const RigidBody<double> *body) { body_ = body; }
 
 bool Element::CanCollideWith(const Element *other) const {
   // If collision_cliques_.size() = N and other->collision_cliques_.size() = M

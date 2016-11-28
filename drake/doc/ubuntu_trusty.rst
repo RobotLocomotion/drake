@@ -20,14 +20,14 @@ GCC 4.9::
     sudo apt-get upgrade
     sudo apt-get install g++-4.9-multilib gfortran-4.9
 
-Clang 3.7::
+Clang 3.9::
 
     sudo apt-get install --no-install-recommends lsb-core software-properties-common wget
     wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
-    sudo add-apt-repository -y "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.7 main"
+    sudo add-apt-repository -y "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.9 main"
     sudo apt-get update
     sudo apt-get upgrade
-    sudo apt-get install clang-3.7
+    sudo apt-get install clang-3.9
 
 .. _cmake:
 
@@ -61,7 +61,7 @@ Other prerequisites may be installed as follows::
       libhtml-form-perl libjpeg-dev libmpfr-dev libpng-dev libqt4-dev \
       libqt4-opengl-dev libqwt-dev libterm-readkey-perl libtool libvtk-java \
       libvtk5-dev libvtk5-qt4-dev libwww-perl make ninja-build perl pkg-config \
-      python-bs4 python-dev python-gtk2 python-html5lib python-numpy
+      python-bs4 python-dev python-gtk2 python-html5lib python-numpy \
       python-pip python-sphinx python-vtk python-yaml unzip valgrind
 
 Environment
@@ -89,12 +89,12 @@ environment variable settings that specify the correct compiler. For example::
 The above examples result in the use of ``gcc`` as the compiler. If you want to
 use ``clang`` as the compiler, place the following in your ``~/.bashrc`` file::
 
-    export CC=clang-3.7 CXX=clang++-3.7 FC=gfortran-4.9
+    export CC=clang-3.9 CXX=clang++-3.9 FC=gfortran-4.9
 
 Or precede the initial call to ``cmake`` with compiler specifications.
 For example::
 
-    env CC=clang-3.7 CXX=clang++-3.7 FC=gfortran-4.9 cmake ...
+    env CC=clang-3.9 CXX=clang++-3.9 FC=gfortran-4.9 cmake ...
 
 MATLAB
 ======
