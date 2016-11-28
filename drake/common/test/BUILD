@@ -15,7 +15,7 @@ cc_library(
 cc_test(
     name = "autodiff_overloads_test",
     srcs = ["autodiff_overloads_test.cc"],
-    size = "small", deps = DEPS + ["//drake/common:autodiff"])
+    size = "small", deps = DEPS + ["//drake/common:autodiff", "//drake/common:eigen_matrix_compare"])
 
 cc_test(
     name = "double_overloads_test",

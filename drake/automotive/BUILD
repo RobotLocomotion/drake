@@ -88,3 +88,37 @@ cc_library(
     hdrs = ["trajectory_car.h"],
     deps = DEPS + [":curve2"],
     linkstatic = 1)
+
+cc_library(
+    name = "automotive_simulator",
+    srcs = ["automotive_simulator.cc"],
+    hdrs = ["automotive_simulator.h"],
+    deps = DEPS + [
+        "//drake/lcm",
+        "//drake/multibody:drake_visualizer",
+        "//drake/systems/analysis",
+        "//drake/systems/lcm",
+        "//drake/systems/framework/primitives:constant_vector_source",
+        "//drake/systems/framework/primitives:multiplexer",
+        ":generated_translators",
+        ":simple_car",
+        ":trajectory_car",
+    ],
+    linkstatic = 1)
+
+cc_binary(
+    name = "automotive_demo",
+    srcs = [
+        "automotive_demo.cc",
+        "create_trajectory_params.cc",
+        "create_trajectory_params.h"
+    ],
+    deps = [
+        "//drake/common:text_logging_gflags",
+        ":automotive_simulator",
+    ],
+    linkstatic = 1)
+
+filegroup(
+    name = "models",
+    srcs = glob(["models/**"]))
