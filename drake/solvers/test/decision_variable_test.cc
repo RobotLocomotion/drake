@@ -78,7 +78,8 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_EQ(VariableList({X1, X1.row(1)}).num_unique_variables(), 6);
   EXPECT_EQ(VariableList({X1, X1.row(1)}).size(), 9);
 
-  std::unordered_set<DecisionVariableScalar> X1_unique_variables_expected;
+  std::unordered_set<DecisionVariableScalar, DecisionVariableScalarHash>
+      X1_unique_variables_expected;
   for (int i = 0; i < 2; ++i) {
     for (int j = 0; j < 3; ++j) {
       X1_unique_variables_expected.insert(X1(i, j));

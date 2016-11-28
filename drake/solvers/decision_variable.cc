@@ -2,6 +2,11 @@
 
 namespace drake {
 namespace solvers {
+size_t DecisionVariableScalarHash::operator()(
+    const DecisionVariableScalar& var) const {
+  return var.index();
+}
+
 VariableList::VariableList(
     const VariableListRef& variable_list) {
   variables_.resize(variable_list.size());

@@ -74,7 +74,7 @@ class DecisionVariableScalar {
    * calling Solve() in MathematicalProgram.
    */
   double value() const {
-    /*TODO(hongkai.dai): check if Solve() has been called*/
+    // TODO(hongkai.dai): check if Solve() has been called.
     return *value_;
   }
 
@@ -114,6 +114,10 @@ class DecisionVariableScalar {
   double* value_;
   size_t index_;
 };
+
+struct DecisionVariableScalarHash {
+  size_t operator()(const DecisionVariableScalar& var) const;
+};
 }  // namespace solvers
 }  // namespace drake
 
@@ -144,16 +148,6 @@ struct NumTraits<drake::solvers::DecisionVariableScalar> {
   typedef drake::solvers::DecisionVariableScalar Literal;
 };
 }  // namespace Eigen
-
-namespace std {
-template <>
-struct hash<drake::solvers::DecisionVariableScalar> {
-  size_t operator()(const drake::solvers::DecisionVariableScalar& var) const {
-    return var.index();
-  }
-};
-
-}  // namespace std
 
 namespace drake {
 namespace solvers {
@@ -205,11 +199,14 @@ class VariableList {
    * std::cout << "The number of unique variables is " <<
    *     var_list.num_unique_variables() << std::endl;
    *
+   * std::cout << "The size of variable list (including duplication) is " <<
+   *     var_list.size() << std::endl;
    * @endcode
    *
    * The output is
    * <pre>
    * The number of unique variables is 4
+   * The size of variable list (including duplication) is 5
    * </pre>
    */
   size_t num_unique_variables() const {
@@ -218,33 +215,9 @@ class VariableList {
 
   /**
    * Given a list of DecisionVariableMatrix @p vars, computes the TOTAL number
-   * of scalar decision variables stored in @p vars, including duplication.
-   * Example
-   * @code{.cc}
-   * // Create a mathematical program with no decision variables.
-   * MathematicalProgram prog;
-   *
-   * // Add a vector containing 4 decision variables.
-   * auto x = prog.AddContinuousVariables<4>();
-   *
-   * // x1 contains x(0), x(1), x(2).
-   * DecisionVariableVector<3> x1 = x.head<3>();
-   *
-   * // x2 contains x(2), x(3).
-   * DecisionVariableVector<2> x2 = x.tail<2>();
-   *
-   * // Construct a VariableList containing both x1 and x2.
-   * VariableList var_list({x1, x2});
-   *
-   * std::cout << "The size of variable list (including duplication) is " <<
-   *     var_list.size() << std::endl;
-   *
-   * @endcode
-   *
-   * The output is
-   * <pre>
-   * The size of variable list (including duplication) is 5
-   * </pre>
+   * of scalar decision variables stored in @p vars, including duplication. The
+   * duplicated variables will be counted for more than once.
+   * @see num_unique_variables() for an example.
    */
   size_t size() const { return size_; }
 
@@ -257,7 +230,8 @@ class VariableList {
   /**
    * @return The all unique variables stored in the class.
    */
-  std::unordered_set<DecisionVariableScalar> unique_variables() const {
+  std::unordered_set<DecisionVariableScalar, DecisionVariableScalarHash>
+  unique_variables() const {
     return unique_variable_indices_;
   }
 
@@ -265,7 +239,8 @@ class VariableList {
   std::list<DecisionVariableMatrixX> variables_;
   size_t size_;
   bool column_vectors_only_;
-  std::unordered_set<DecisionVariableScalar> unique_variable_indices_;
+  std::unordered_set<DecisionVariableScalar, DecisionVariableScalarHash>
+      unique_variable_indices_;
 };
 
 /**
