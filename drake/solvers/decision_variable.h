@@ -73,7 +73,10 @@ class DecisionVariableScalar {
    * @return The value of the variable. This method is only meaningful after
    * calling Solve() in MathematicalProgram.
    */
-  double value() const { return *value_; }
+  double value() const {
+    /*TODO(hongkai.dai): check if Solve() has been called*/
+    return *value_;
+  }
 
   /**
    * @return The index of the variable in the optimization program.
@@ -200,7 +203,7 @@ class VariableList {
    * VariableList var_list({x1, x2});
    *
    * std::cout << "The number of unique variables is " <<
-   * var_list.num_unique_variables() << std::endl;
+   *     var_list.num_unique_variables() << std::endl;
    *
    * @endcode
    *
@@ -234,7 +237,7 @@ class VariableList {
    * VariableList var_list({x1, x2});
    *
    * std::cout << "The size of variable list (including duplication) is " <<
-   * var_list.size() << std::endl;
+   *     var_list.size() << std::endl;
    *
    * @endcode
    *
@@ -246,7 +249,8 @@ class VariableList {
   size_t size() const { return size_; }
 
   /**
-   * Determines if the DecisionVariableMatrix stored are all column vectors.
+   * Determines if the stored DecisionVariableMatrix objects are
+   * all column vectors.
    */
   bool column_vectors_only() const { return column_vectors_only_; }
 

@@ -324,8 +324,8 @@ class MathematicalProgram {
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
    * SetInitialGuess() or SetInitialGuessForAllVariables().
-   * @tparam rows, number of rows in the variables.
-   * @tparam cols, number of cols in the variables.
+   * @tparam rows Number of rows in the variables.
+   * @tparam cols Number of cols in the variables.
    * @param name An array containing the name of each variable.
    * @return The DecisionVariableMatrix<rows, cols> containing rows * cols new
    * variables (not

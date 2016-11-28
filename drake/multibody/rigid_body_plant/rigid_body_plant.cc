@@ -202,8 +202,8 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
 /*
  * TODO(hongkai.dai): This only works for templates on double, it does not
  * work for autodiff yet, I will add the code to compute the gradient of vdot
- * w.r.t q and v. See issue
- * https://github.com/RobotLocomotion/drake/issues/4267
+ * w.r.t. q and v. See issue
+ * https://github.com/RobotLocomotion/drake/issues/4267.
  */
 template <typename T>
 void RigidBodyPlant<T>::EvalTimeDerivatives(
@@ -306,8 +306,8 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   /*
    * TODO(hongkai.dai): This only works for templates on double, it does not
    * work for autodiff yet, I will add the code to compute the gradient of vdot
-   * w.r.t q and v. See issue
-   * https://github.com/RobotLocomotion/drake/issues/4267
+   * w.r.t. q and v. See issue
+   * https://github.com/RobotLocomotion/drake/issues/4267.
    */
   const auto& vdot_value =
       drake::solvers::GetSolution(vdot);
