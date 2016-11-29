@@ -115,12 +115,11 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
       file_conflict, tree.get()), ".*");
 
   // This URDF defines the same color multiple times in different links.
-  const std::string file_robotiq = drake::GetDrakePath() +
+  const std::string file_same_color_diff_links = drake::GetDrakePath() +
       "/multibody/test/parser_urdf_test/duplicate_but_same_materials.urdf";
-
   tree = make_unique<RigidBodyTree<double>>();
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
-      file_robotiq, tree.get()));
+      file_same_color_diff_links, tree.get()));
 }
 
 }  // namespace
