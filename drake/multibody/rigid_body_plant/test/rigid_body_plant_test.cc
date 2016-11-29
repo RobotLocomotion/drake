@@ -160,7 +160,7 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
                                 &positions_derivatives);
 
         // TODO(edrumwri): Uncomment the following test when the quaternion
-        // derivative code is correct.
+        // derivative code is correct. See #4121.
 
         // Test q * qdot near zero
         // Quaterniond qdot(xc->GetAtIndex(3), xc->GetAtIndex(4),
