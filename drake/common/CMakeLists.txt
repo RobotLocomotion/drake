@@ -2,6 +2,8 @@
 # Drake common library
 #
 
+include(${PROJECT_SOURCE_DIR}/../cmake/bazel.cmake)
+
 # Generated code.
 set(drake_path_cc ${PROJECT_BINARY_DIR}/generated/drake/common/test/drake_path.cc)
 set(THIS_FILE_IS_USED_BY_CMAKE_TO_CREATE_GENERATED_CODE
@@ -11,9 +13,7 @@ configure_file(drake_path.cc.in ${drake_path_cc})
 # List all source files used to build libdrakeCommon.
 set(sources
   double_overloads.cc
-  drake_assert.cc
   ${drake_path_cc}
-  drake_throw.cc
   functional_form.cc
   nice_type_name.cc
   polynomial.cc
@@ -24,7 +24,6 @@ set(sources
   symbolic_formula_cell.cc
   symbolic_variable.cc
   symbolic_variables.cc
-  text_logging.cc
   )
 
 # List headers that should be installed with Drake so that they
@@ -66,10 +65,13 @@ set(installed_headers
 set(private_headers
   )
 
+# List Bazel libraries on which we depend.
+drake_add_bazel_library(libcommon)
+
 # Create the library target and note its dependencies.
 add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
-target_link_libraries(drakeCommon gflags Threads::Threads)
+target_link_libraries(drakeCommon libcommonBazel gflags Threads::Threads)
 
 if(spdlog_FOUND)
   target_compile_definitions(drakeCommon PUBLIC HAVE_SPDLOG)
