@@ -24,8 +24,8 @@ cc_test(
     size = "small")
 
 cc_test(
-    name = "fastqp_solver_test",
-    srcs = ["fastqp_solver_test.cc"],
+    name = "decision_variable_test",
+    srcs = ["decision_variable_test.cc"],
     deps = DEPS + ["//drake/solvers:mathematical_program"],
     size = "small")
 
