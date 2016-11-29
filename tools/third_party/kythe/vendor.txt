@@ -1,0 +1,6 @@
+The files in this directory tree (other than this file) are derived from Kythe:
+
+  remote = "https://github.com/google/kythe.git"
+  sha = "5a42e0137ae93a3d890303ac03183156664e875d"
+
+Please update this metadata when copying new versions from upstream.
