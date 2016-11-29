@@ -59,7 +59,7 @@ cc_library(
         "LCM_EXPORT=",
         "LCM_NO_EXPORT=",
     ],
-    deps = ["@gtk//:glib"],
+    deps = ["@glib//:lib"],
 )
 
 cc_binary(
