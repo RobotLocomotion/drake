@@ -8,6 +8,15 @@ if(lcm_FOUND)
     TARGET drakeSchunkGripper
     LIBS -ldrakeSchunkGripper
     REQUIRES drake-rigid-body-plant)
+
+  add_executable(schunk_simulation schunk_simulation.cc)
+  target_link_libraries(schunk_simulation
+    drakeSchunkGripper
+    drakeSystemAnalysis
+    drakeSystemControllers
+    drakeLCMSystem2)
+  drake_add_test(
+      NAME schunk_simulation COMMAND schunk_simulation -simulation_sec 0.1)
 endif()
 
 if(BUILD_TESTING)
