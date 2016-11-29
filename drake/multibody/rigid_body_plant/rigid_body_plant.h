@@ -192,13 +192,14 @@ class RigidBodyPlant : public LeafSystem<T> {
     return System<T>::get_output_port(kinematics_output_port_id_);
   }
 
-  /// Creates a basis from a z-axis. Defines an arbitrary x- and y-axis
-  /// such that the basis is orthonormal.  The basis is R_LW, where W is
-  /// the frame in which the z-axis is expressed and L is a local basis such
-  /// that q_L = R_LW * q_W.
-  /// @param[in]  z_axis    The vector defining the basis's z-axis.
-  /// @param[out] R_LW      The final basis.
-  void ComputeBasisFromZ(const Vector3<T>& z_axis, Matrix3<T>* R_LW) const;
+  /// Creates a right-handed local basis from a z-axis. Defines an arbitrary x-
+  /// and y-axis such that the basis is orthonormal.  The basis is R_WL, where W
+  /// is the frame in which the z-axis is expressed and L is a local basis such
+  /// that v_W = R_WL * v_L.
+  /// @param[in] z_axis_W   The vector defining the basis's z-axis expressed
+  ///                       in frame W.
+  /// @retval R_WL          The computed basis.
+  static Matrix3<T> ComputeBasisFromZ(const Vector3<T>& z_axis_W);
 
  protected:
   // LeafSystem<T> override.

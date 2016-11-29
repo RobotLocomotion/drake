@@ -431,12 +431,10 @@ void RigidBodyPlant<T>::ComputeContactResults(
 }
 
 template <typename T>
-void RigidBodyPlant<T>::ComputeBasisFromZ(const Vector3<T>& z_axis,
-                                          Matrix3<T>* R_LW) const {
-  Vector3<T> x_axis;
+Matrix3<T> RigidBodyPlant<T>::ComputeBasisFromZ(const Vector3<T>& z_axis_W) {
   // Projects the z-axis into the first quadrant in order to identify the
   // *smallest* component of the normal.
-  const Vector3<T> u(z_axis.cwiseAbs());
+  const Vector3<T> u(z_axis_W.cwiseAbs());
   const int minAxis =
       u[0] <= u[1] ? (u[0] <= u[2] ? 0 : 2) : (u[1] <= u[2] ? 1 : 2);
   // The world axis corresponding to the smallest component of the local z-axis
@@ -445,12 +443,14 @@ void RigidBodyPlant<T>::ComputeBasisFromZ(const Vector3<T>& z_axis,
   perpAxis << (minAxis == 0 ? 1 : 0), (minAxis == 1 ? 1 : 0),
       (minAxis == 2 ? 1 : 0);
   // Now define x- and y-axes.
-  x_axis = z_axis.cross(perpAxis).normalized();
-  Vector3<T> y_axis = z_axis.cross(x_axis);
+  Vector3<T> x_axis_W = z_axis_W.cross(perpAxis).normalized();
+  Vector3<T> y_axis_W = z_axis_W.cross(x_axis_W);
   // Transformation from world frame to local frame.
-  (*R_LW).row(0) = x_axis;
-  (*R_LW).row(1) = y_axis;
-  (*R_LW).row(2) = z_axis;
+  Matrix3<T> R_WL;
+  R_WL.col(0) = x_axis_W;
+  R_WL.col(1) = y_axis_W;
+  R_WL.col(2) = z_axis_W;
+  return R_WL;
 }
 
 template <typename T>
@@ -478,11 +478,10 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
                                                0, false);
       Vector3<T> this_normal = pair.normal;
 
-      // R_CW is a rotation from world (W) to contact frame (C),
-      // e.g., q_C = R_CW * q_W.
-      Matrix3<T> R_CW;
-      ComputeBasisFromZ(this_normal, &R_CW);
-      auto J = R_CW * (JA - JB);  // J = [ D1; D2; n ]
+      // R_WC is a left-multiplied rotation matrix to transform a vector from
+      // contact frame (C) to world (W), e.g., v_W = R_WC * v_C.
+      Matrix3<T> R_WC = ComputeBasisFromZ(this_normal);
+      auto J = R_WC.transpose() * (JA - JB);  // J = [ D1; D2; n ]
 
       auto relative_velocity = J * kinsol.getV();
 
@@ -530,8 +529,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           // component (i.e., the torque portion of the wrench is zero.)
           // In contrast, other models (e.g., torsional friction model) can
           // also introduce a "pure torque" component to the wrench.
-          Vector3<T> force = R_CW.transpose() * fA;
-          Vector3<T> normal = R_CW.transpose().template block<3, 1>(0, 2);
+          Vector3<T> force = R_WC * fA;
+          Vector3<T> normal = R_WC.template block<3, 1>(0, 2);
 
           calculator.AddForce(point, normal, force);
 

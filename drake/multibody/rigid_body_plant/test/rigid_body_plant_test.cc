@@ -433,10 +433,14 @@ void ExpectOrthonormal(const Matrix3<double>& R) {
   EXPECT_NEAR(0.0, R.col(0).dot(R.col(1)), kEpsilon);
   EXPECT_NEAR(0.0, R.col(0).dot(R.col(2)), kEpsilon);
   EXPECT_NEAR(0.0, R.col(1).dot(R.col(2)), kEpsilon);
+  // Test right-handedness.
+  EXPECT_TRUE(R.col(0).isApprox(R.col(1).cross(R.col(2))));
+  EXPECT_TRUE(R.col(1).isApprox(R.col(2).cross(R.col(0))));
+  EXPECT_TRUE(R.col(2).isApprox(R.col(0).cross(R.col(1))));
 }
 
-// Tests the contact frame to confirm that a robust orthonormal frame
-// is generated.
+// Tests the contact frame to confirm that a robust, right-handed orthonormal
+// frame is generated.
 GTEST_TEST(rigid_body_plant_test, TestContactFrameCreation) {
   // NOTE: This RigidBodyTree is unpopulated and *not* compiled; the method
   // being tested does not actually require a valid RigidBodyTree.  So, this
@@ -446,31 +450,30 @@ GTEST_TEST(rigid_body_plant_test, TestContactFrameCreation) {
 
   // Case 1: z-axis is simply world aligned.
   z << 1, 0, 0;
-  Matrix3<double> R_LW;
-  plant.ComputeBasisFromZ(z, &R_LW);
-  ExpectOrthonormal(R_LW);
-  EXPECT_EQ(z, R_LW.row(2).transpose());
+  Matrix3<double> R_WL = RigidBodyPlant<double>::ComputeBasisFromZ(z);
+  ExpectOrthonormal(R_WL);
+  EXPECT_EQ(z, R_WL.col(2));
 
   // Case 2: z-axis is *slightly* off of z-axis.
   z << 1, 0.01, 0.01;
   z = z.normalized();
-  plant.ComputeBasisFromZ(z, &R_LW);
-  ExpectOrthonormal(R_LW);
-  EXPECT_EQ(z, R_LW.row(2).transpose());
+  R_WL = RigidBodyPlant<double>::ComputeBasisFromZ(z);
+  ExpectOrthonormal(R_WL);
+  EXPECT_EQ(z, R_WL.col(2));
 
   // Case 3: z-axis points into the "middle" of the "first" quadrant.
   z << 1, 1, 1;
   z = z.normalized();
-  plant.ComputeBasisFromZ(z, &R_LW);
-  ExpectOrthonormal(R_LW);
-  EXPECT_EQ(z, R_LW.row(2).transpose());
+  R_WL = RigidBodyPlant<double>::ComputeBasisFromZ(z);
+  ExpectOrthonormal(R_WL);
+  EXPECT_EQ(z, R_WL.col(2));
 
   // Case 4: z-axis points in direction with negative components.
   z << -1, -1, 1;
   z = z.normalized();
-  plant.ComputeBasisFromZ(z, &R_LW);
-  ExpectOrthonormal(R_LW);
-  EXPECT_EQ(z, R_LW.row(2).transpose());
+  R_WL = RigidBodyPlant<double>::ComputeBasisFromZ(z);
+  ExpectOrthonormal(R_WL);
+  EXPECT_EQ(z, R_WL.col(2));
 }
 
 }  // namespace
