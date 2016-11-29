@@ -19,6 +19,9 @@ if(Bullet_FOUND)
   endif()
 endif()
 
+drake_add_cc_test(contact_force_test)
+target_link_libraries(contact_force_test drakeRigidBodyPlant)
+
 drake_add_cc_test(contact_resultant_force_test)
 target_link_libraries(contact_resultant_force_test drakeRigidBodyPlant)
 

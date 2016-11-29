@@ -9,8 +9,8 @@
 namespace drake {
 namespace systems {
 
-// TODO(tkoolen): currently doesn't do anything with the efforts or wrenches in
-// the robot_state_t message.
+// TODO(tkoolen): currently doesn't do anything with the efforts or spatial
+// forces in the robot_state_t message.
 
 /**
  * Converts a robot_state_t LCM message into a KinematicsCache object.
