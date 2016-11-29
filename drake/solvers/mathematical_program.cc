@@ -71,7 +71,7 @@ MathematicalProgram::MathematicalProgram()
       mosek_solver_(new MosekSolver()) {}
 
 DecisionVariableMatrixX MathematicalProgram::AddVariables(DecisionVariableScalar::VarType type,
-                                     Eigen::Index rows, Eigen::Index cols,
+                                     int rows, int cols,
                                      bool is_symmetric,
                                      const std::vector<std::string>& names) {
   DecisionVariableMatrixX decision_variable_matrix(rows, cols);
@@ -80,7 +80,7 @@ DecisionVariableMatrixX MathematicalProgram::AddVariables(DecisionVariableScalar
 }
 
 DecisionVariableVectorX MathematicalProgram::AddVariables(DecisionVariableScalar::VarType type,
-                                     Eigen::Index rows,
+                                     int rows,
                                      const std::vector<std::string>& names) {
   return AddVariables(type, rows, 1, false, names);
 }

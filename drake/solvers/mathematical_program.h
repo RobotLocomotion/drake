@@ -344,7 +344,7 @@ class MathematicalProgram {
    * program.
    * The name of the variable is only used for the user to understand.
    */
-  template <Eigen::Index rows, Eigen::Index cols>
+  template <int rows, int cols>
   DecisionVariableMatrix<rows, cols> AddVariables(
       DecisionVariableScalar::VarType type,
       const std::array<std::string, rows * cols>& names) {
@@ -356,7 +356,7 @@ class MathematicalProgram {
   /**
    * Add column vector variables to the optimization program.
    */
-  template <Eigen::Index rows>
+  template <int rows>
   DecisionVariableVector<rows> AddVariables(
       DecisionVariableScalar::VarType type,
       const std::array<std::string, rows>& names) {
@@ -369,7 +369,7 @@ class MathematicalProgram {
    * @param names The names of the stacked columns of the lower triangular part
    * of the matrix.
    */
-  template <Eigen::Index rows>
+  template <int rows>
   DecisionVariableMatrix<rows, rows> AddSymmetricVariables(
       DecisionVariableScalar::VarType type,
       const std::array<std::string, rows * (rows + 1) / 2>& names) {
@@ -459,7 +459,7 @@ class MathematicalProgram {
    *
    * The name of the variable is only used for the user for understand.
    */
-  template <Eigen::Index rows, Eigen::Index cols>
+  template <int rows, int cols>
   DecisionVariableMatrix<rows, cols> AddContinuousVariables(
       const std::array<std::string, rows * cols>& names) {
     return AddVariables<rows, cols>(DecisionVariableScalar::VarType::CONTINUOUS,
@@ -490,7 +490,7 @@ class MathematicalProgram {
    *
    * The name of the variable is only used for the user for understand.
    */
-  template <Eigen::Index rows>
+  template <int rows>
   DecisionVariableVector<rows> AddContinuousVariables(
       const std::array<std::string, rows>& names) {
     return AddContinuousVariables<rows, 1>(names);
@@ -502,7 +502,7 @@ class MathematicalProgram {
    * is "x"
    * @see AddContinuousVariables(const std::array<std::string, rows>& names)
    */
-  template <Eigen::Index rows>
+  template <int rows>
   DecisionVariableVector<rows> AddContinuousVariables(
       const std::string& name = "x") {
     std::array<std::string, rows> names;
@@ -537,7 +537,7 @@ class MathematicalProgram {
    *
    * The name of the variable is only used for the user for understand.
    */
-  template <Eigen::Index rows, Eigen::Index cols>
+  template <int rows, int cols>
   DecisionVariableMatrix<rows, cols> AddBinaryVariables(
       const std::array<std::string, rows * cols>& names) {
     return AddVariables<rows, cols>(DecisionVariableScalar::VarType::BINARY,
@@ -550,7 +550,7 @@ class MathematicalProgram {
    * @param names An array of strings containing the name of each variable.
    * @return A vector containing the newly added variables.
    */
-  template <Eigen::Index rows>
+  template <int rows>
   DecisionVariableVector<rows> AddBinaryVariables(
       const std::array<std::string, rows>& names) {
     return AddBinaryVariables<rows, 1>(names);
@@ -563,7 +563,7 @@ class MathematicalProgram {
    * default name is "b".
    * @return A vector containing the newly added variables.
    */
-  template <Eigen::Index rows>
+  template <int rows>
   DecisionVariableVector<rows> AddBinaryVariables(
       const std::string& name = "b") {
     std::array<std::string, rows> names;
@@ -648,7 +648,7 @@ class MathematicalProgram {
    * @param name The name of the matrix. It is only used the for user to
    * understand the optimization program.
    */
-  template<Eigen::Index rows>
+  template<int rows>
   DecisionVariableMatrix<rows, rows> AddSymmetricContinuousVariables(
       const std::string& name = "S") {
     std::array<std::string, rows * (rows + 1) / 2> names;
@@ -1591,12 +1591,12 @@ class MathematicalProgram {
   }
 
   DecisionVariableMatrixX AddVariables(DecisionVariableScalar::VarType type,
-                                       Eigen::Index rows, Eigen::Index cols,
+                                       int rows, int cols,
                                        bool is_symmetric,
                                        const std::vector<std::string>& names);
 
   DecisionVariableVectorX AddVariables(DecisionVariableScalar::VarType type,
-                                       Eigen::Index rows,
+                                       int rows,
                                        const std::vector<std::string>& names);
 };
 }  // namespace solvers

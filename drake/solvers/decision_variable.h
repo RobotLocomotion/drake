@@ -158,10 +158,10 @@ struct NumTraits<drake::solvers::DecisionVariableScalar> {
 
 namespace drake {
 namespace solvers {
-template <Eigen::Index rows, Eigen::Index cols>
+template <int rows, int cols>
 using DecisionVariableMatrix =
     Eigen::Matrix<drake::solvers::DecisionVariableScalar, rows, cols>;
-template <Eigen::Index rows>
+template <int rows>
 using DecisionVariableVector = DecisionVariableMatrix<rows, 1>;
 using DecisionVariableMatrixX =
     DecisionVariableMatrix<Eigen::Dynamic, Eigen::Dynamic>;
