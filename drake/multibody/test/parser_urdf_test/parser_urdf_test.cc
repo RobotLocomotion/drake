@@ -1,11 +1,20 @@
 #include <iostream>
 
 #include <gtest/gtest.h>
+#include <memory>
 
+#include "drake/common/drake_path.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_tree.h"
 
+using std::make_unique;
+using std::unique_ptr;
+
 namespace drake {
+
+using parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld;
+using parsers::urdf::AddModelInstanceFromUrdfStringWithRpyJointToWorld;
+
 namespace systems {
 namespace plants {
 namespace test {
@@ -49,14 +58,12 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
       "</robot>";
 
   // Instantiates a RigidBodyTree using the URDF string defined above.
-  std::unique_ptr<RigidBodyTree<double>>
-      rigid_body_tree(new RigidBodyTree<double>());
-  drake::parsers::urdf::AddModelInstanceFromUrdfStringWithRpyJointToWorld(
-      urdf_string, rigid_body_tree.get());
+  auto tree = make_unique<RigidBodyTree<double>>();
+  AddModelInstanceFromUrdfStringWithRpyJointToWorld(
+      urdf_string, tree.get());
 
   // Obtains the child link of food_joint.
-  RigidBody<double>* foo_joint_link =
-      rigid_body_tree->FindChildBodyOfJoint("foo_joint");
+  RigidBody<double>* foo_joint_link = tree->FindChildBodyOfJoint("foo_joint");
   EXPECT_TRUE(foo_joint_link != nullptr);
 
   // Obtains a reference to foo_joint and verifies its parameters are correct.
@@ -68,12 +75,52 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
 
   // Obtains a reference to foo_transmission and verifies its parameters.
   const std::string actuator_name = "foo_motor";
-  const RigidBodyActuator& foo_actuator =
-      rigid_body_tree->GetActuator(actuator_name);
+  const RigidBodyActuator& foo_actuator = tree->GetActuator(actuator_name);
 
   EXPECT_EQ(foo_actuator.effort_limit_min_, -123);
   EXPECT_EQ(foo_actuator.effort_limit_max_, 123);
   EXPECT_EQ(foo_actuator.reduction_, 0.5);
+}
+
+GTEST_TEST(URDFParserTest, TestParseMaterial) {
+  const std::string file_no_conflict_1 = drake::GetDrakePath() +
+      "/multibody/test/parser_urdf_test/non_conflicting_materials_1.urdf";
+  const std::string file_no_conflict_2 = drake::GetDrakePath() +
+      "/multibody/test/parser_urdf_test/non_conflicting_materials_2.urdf";
+  const std::string file_no_conflict_3 = drake::GetDrakePath() +
+      "/multibody/test/parser_urdf_test/non_conflicting_materials_3.urdf";
+  const std::string file_duplicate = drake::GetDrakePath() +
+      "/multibody/test/parser_urdf_test/duplicate_materials.urdf";
+  const std::string file_conflict = drake::GetDrakePath() +
+      "/multibody/test/parser_urdf_test/conflicting_materials.urdf";
+
+  auto tree = make_unique<RigidBodyTree<double>>();
+  EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_no_conflict_1, tree.get()));
+
+  tree = make_unique<RigidBodyTree<double>>();
+  EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_no_conflict_2, tree.get()));
+
+  tree = make_unique<RigidBodyTree<double>>();
+  EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_no_conflict_3, tree.get()));
+
+  tree = make_unique<RigidBodyTree<double>>();
+  EXPECT_DEATH(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_duplicate, tree.get()), ".*");
+
+  tree = make_unique<RigidBodyTree<double>>();
+  EXPECT_DEATH(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_conflict, tree.get()), ".*");
+
+  // This URDF defines the same color multiple times in different links.
+  const std::string file_robotiq = drake::GetDrakePath() +
+      "/multibody/test/parser_urdf_test/duplicate_but_same_materials.urdf";
+
+  tree = make_unique<RigidBodyTree<double>>();
+  EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_robotiq, tree.get()));
 }
 
 }  // namespace

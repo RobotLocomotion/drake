@@ -1,0 +1,35 @@
+<?xml version="1.0" ?>
+
+<!--
+This URDF contains a robot-level material named "brown" that clashes with a
+link-level material named "brown". The material is defined before the link. When
+loading this, no exception should be thrown since the RGBA values for both are
+the same.
+-->
+<robot name="non_conflicting_materials_2">
+  <material name="brown">
+    <color rgba="0.93333333333 0.79607843137 0.67843137254 1"/>
+  </material>
+  <link name="base_link">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.0325" ixy="0.0" ixz="0.0" iyy="0.0325" iyz="0.0" izz="0.005"/>
+      <origin xyz="0 0 0.3"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.3" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.6" radius="0.1"/>
+      </geometry>
+      <material name="brown">
+        <color rgba="0.93333333333 0.79607843137 0.67843137254 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.6" radius="0.1"/>
+      </geometry>
+      <origin xyz="0 0 0.3"/>
+    </collision>
+  </link>
+</robot>

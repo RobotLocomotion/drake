@@ -26,9 +26,6 @@ endif ()
 add_executable(urdf_manipulator_dynamics_test urdf_manipulator_dynamics_test.cc)
 target_link_libraries(urdf_manipulator_dynamics_test drakeRBM)
 
-drake_add_cc_test(urdf_parser_test)
-target_link_libraries(urdf_parser_test drakeRBM)
-
 # Inverse kinematics unit tests.
 macro(add_ik_cpp)
   add_executable(${ARGV} ${ARGV}.cc)
@@ -56,4 +53,5 @@ if (snopt_FOUND)
   add_ik_gtest(test_ik_traj)
 endif ()
 
+add_subdirectory(parser_urdf_test)
 add_subdirectory(rigid_body_tree)
