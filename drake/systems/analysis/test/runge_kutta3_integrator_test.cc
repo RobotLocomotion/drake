@@ -1,10 +1,18 @@
-#include "drake/systems/analysis/runge_kutta3_integrator.h"
-
 #include <cmath>
-
+#include "drake/common/drake_path.h"
+#include "drake/common/eigen_types.h"
+#include "drake/math/roll_pitch_yaw.h"
+#include "drake/multibody/joints/prismatic_joint.h"
+#include "drake/multibody/joints/quaternion_floating_joint.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/parser_sdf.h"
+#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/runge_kutta3_integrator.h"
+#include "drake/systems/analysis/test/my_spring_mass_system.h"
 #include "gtest/gtest.h"
 
-#include "drake/systems/analysis/test/my_spring_mass_system.h"
 
 namespace drake {
 namespace systems {
@@ -265,6 +273,87 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   // Verify that less computation was performed compared to the fixed step
   // integrator.
   EXPECT_LT(integrator_->get_num_steps_taken(), fixed_steps);
+}
+
+// Tests accuracy when generalized velocity is not the time derivative of
+// generalized configuration (using a rigid body).
+GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
+  // Instantiates a Multibody Dynamics (MBD) model of the world.
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+
+  // Add a single free body with a quaternion base.
+  RigidBody<double>* body;
+  tree->add_rigid_body(
+      std::unique_ptr<RigidBody<double>>(body = new RigidBody<double>()));
+  body->set_name("free_body");
+
+  // Sets body to have a non-zero spatial inertia. Otherwise the body gets
+  // welded by a fixed joint to the world by RigidBodyTree::compile().
+  body->set_mass(1.0);
+  body->set_spatial_inertia(Matrix6<double>::Identity());
+  body->add_joint(&tree->world(), std::make_unique<QuaternionFloatingJoint>(
+      "base", Eigen::Isometry3d::Identity()));
+
+  tree->compile();
+
+  // Instantiates a RigidBodyPlant from the  MBD model.
+  RigidBodyPlant<double> plant(move(tree));
+  auto context = plant.CreateDefaultContext();
+
+  // Setup an empty input port.
+  context->SetInputPort(0, std::make_unique<FreestandingInputPort>(
+      std::make_unique<BasicVector<double>>(plant.get_num_actuators())));
+
+  // Set free_body to have zero translation, zero rotation, and zero velocity.
+  plant.SetZeroConfiguration(context.get());
+
+  Eigen::Vector3d v0(1, 2, 3);    // Linear velocity in body's frame.
+  Eigen::Vector3d w0(-4, 5, -6);  // Angular velocity in body's frame.
+  BasicVector<double> generalized_velocities(plant.get_num_velocities());
+  generalized_velocities.get_mutable_value() << w0, v0;
+
+  // Set the linear and angular velocity.
+  for (int i=0; i< plant.get_num_velocities(); ++i)
+    plant.set_velocity(context.get(), i, generalized_velocities[i]);
+
+  // Integrate for one seconds of virtual time using a RK2 integrator with
+  // small step size.
+  const double dt = 5e-5;
+  const double inf = std::numeric_limits<double>::infinity();
+  RungeKutta2Integrator<double> rk2(plant, dt, context.get());
+  rk2.Initialize();
+  const double t_final = 1.0;
+  double t;
+  for (t = 0.0; std::abs(t - t_final) > dt; t += dt)
+    rk2.StepOnceAtMost(inf, inf);
+
+  // Get the final state.
+  VectorX<double> x_final_rk2 = context->get_state().get_continuous_state()->
+      get_vector().CopyToVector();
+
+  // Re-integrate with RK3
+  context->set_time(0.);
+  plant.SetZeroConfiguration(context.get());
+  for (int i=0; i< plant.get_num_velocities(); ++i)
+    plant.set_velocity(context.get(), i, generalized_velocities[i]);
+  RungeKutta3Integrator<double> rk3(plant, context.get());
+  rk3.set_maximum_step_size(0.1);
+  rk3.set_target_accuracy(1e-6);
+  rk3.Initialize();
+
+  // StepOnceAtFixedSize for one second.
+  double t_remaining = t_final - context->get_time();
+  do {
+    rk3.StepOnceAtMost(t_remaining, t_remaining);
+    t_remaining = t_final - context->get_time();
+  } while (t_remaining > 0.0);
+
+  // Verify that the final states are "close".
+  VectorX<double> x_final_rk3 = context->get_state().get_continuous_state()->
+      get_vector().CopyToVector();
+  const double close_tol = 1e-6;
+  for (int i=0; i< x_final_rk2.size(); ++i)
+    EXPECT_NEAR(x_final_rk2[i], x_final_rk3[i], close_tol);
 }
 
 }  // namespace
