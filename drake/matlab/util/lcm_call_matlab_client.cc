@@ -15,6 +15,8 @@
 // from localhost by default.  Perhaps writing/sending a secret password file to
 // disk which is only accessible to localhost (e.g. .Xauthority) would work.
 
+namespace {
+
 void FlushMatlabEventBuffer(void) {
   // An ugly hack.  drawnow used to work, but the internet confirms that it
   // stopped working around R2015.
@@ -160,6 +162,8 @@ class Handler {
  private:
   std::map<int64_t, mxArray*> client_vars_;
 };
+
+}  // end namespace
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   CheckIfLcmWillExplode();  // Run-time compatibility check.

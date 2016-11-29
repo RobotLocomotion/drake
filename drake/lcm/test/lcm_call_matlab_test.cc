@@ -7,6 +7,8 @@
 // Note: Unfortunately these really only test whether the code compiles and
 // runs... the actual output must currently be verified by human inspection in
 // the matlab window.
+// TODO(russt): Add tests using the DrakeMockLcm to verify that the correct
+// messages are being sent.
 
 namespace drake {
 namespace lcm {
