@@ -36,6 +36,7 @@ if (lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeRobotStateEncoder SOURCE_FILES
       robot_state_encoder.cc)
   target_link_libraries(drakeRobotStateEncoder
+      drakeGeometryUtil
       drakeLCMSystem2
       drakeLCMUtil
       drakeRigidBodyPlant

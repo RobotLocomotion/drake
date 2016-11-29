@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/rigid_body_plant/point_contact_detail.h"
+#include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
 namespace systems {
@@ -51,6 +52,31 @@ GTEST_TEST(ContactResultantForceTest, ContactForceTests) {
   EXPECT_EQ(f1.get_force(), force);
   EXPECT_EQ(f2.get_torque(), torque);
   EXPECT_EQ(f2.get_application_point(), pos);
+}
+
+// Tests transforming wrench with respect to a given reference point.
+// Should match results from transformSpatialForce.
+GTEST_TEST(ContactResultantForceTest,
+           ForceAccumulationWithFixedReferencePointTest) {
+  Vector3<double> normal, force, torque, pos, ref_point;
+  normal << 0, 0, 1;
+  force << 1, 0, 1;
+  torque << 0, 2, 0;
+  pos << 0, 0, 1;
+  ref_point << 0, 0, 3;
+  ContactForce<double> cforce(pos, normal, force, torque);
+
+  SpatialForce<double> eq_wrench;
+  Isometry3<double> transform(Isometry3<double>::Identity());
+  transform.translation() = pos - ref_point;
+  eq_wrench = transformSpatialForce(transform, cforce.get_spatial_force());
+
+  ContactResultantForceCalculator<double> calc;
+  calc.AddForce(cforce);
+  ContactForce<double> wrench = calc.ComputeResultant(ref_point);
+
+  EXPECT_EQ(wrench.get_application_point(), ref_point);
+  EXPECT_EQ(wrench.get_spatial_force(), eq_wrench);
 }
 
 // Tests the various forms for adding forces to the accumulator.  This also
