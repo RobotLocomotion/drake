@@ -151,6 +151,7 @@ template <typename T>
 void IiwaWorldSimBuilder<T>::SetZeroConfiguration(
     systems::Simulator<T>* simulator, const systems::Diagram<T>* demo_diagram,
     const systems::Diagram<T>* plant_diagram) {
+  DRAKE_DEMAND(!built_);
   DRAKE_DEMAND(simulator != nullptr && demo_diagram != nullptr &&
                plant_diagram != nullptr);
 
@@ -167,6 +168,7 @@ template <typename T>
 void IiwaWorldSimBuilder<T>::SetPenetrationContactParameters(
     double penetration_stiffness, double penetration_damping,
     double contact_friction) {
+  DRAKE_DEMAND(!built_);
   penetration_stiffness_ = penetration_stiffness;
   penetration_damping_ = penetration_damping;
   contact_friction_ = contact_friction;
