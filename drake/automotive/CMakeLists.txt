@@ -16,6 +16,15 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   idm_planner.cc
   linear_car.cc
   maliput/api/road_geometry.cc
+  maliput/monolane/arc_lane.cc
+  maliput/monolane/branch_point.cc
+  maliput/monolane/builder.cc
+  maliput/monolane/junction.cc
+  maliput/monolane/lane.cc
+  maliput/monolane/line_lane.cc
+  maliput/monolane/loader.cc
+  maliput/monolane/road_geometry.cc
+  maliput/monolane/segment.cc
   simple_car.cc
   single_lane_ego_and_agent.cc
   trajectory_car.cc
@@ -26,6 +35,7 @@ target_link_libraries(drakeAutomotive
   drakeSystemFramework
   drakeSystemPrimitives
   Eigen3::Eigen
+  yaml-cpp
   )
 drake_install_libraries(drakeAutomotive)
 drake_install_headers(
