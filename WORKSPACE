@@ -5,6 +5,8 @@
 
 workspace(name = "drake")
 
+load("//tools/third_party/kythe/tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
+
 new_http_archive(
     name = "gtest",
     url = "https://github.com/google/googletest/archive/release-1.7.0.zip",
@@ -33,15 +35,14 @@ new_git_repository(
     build_file = "tools/spdlog.BUILD",
 )
 
-new_local_repository(
-    name = "gtk",
-    path = "/usr",
-    build_file = "tools/gtk.BUILD",
-)
-
 new_git_repository(
     name = "lcm",
     remote = "https://github.com/lcm-proj/lcm.git",
     commit = "a8cda6a64b31739a781b67408c63bec08b15ab32",
     build_file = "tools/lcm.BUILD",
+)
+
+pkg_config_package(
+    name = "glib",
+    modname = "glib-2.0",
 )
