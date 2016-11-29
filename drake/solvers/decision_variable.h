@@ -187,7 +187,7 @@ class VariableList {
   /**
    * Returns all the stored DecisionVariableMatrix.
    */
-  std::list<DecisionVariableMatrixX> variables() const { return variables_; }
+  const std::list<DecisionVariableMatrixX>& variables() const { return variables_; }
 
   /**
    * Given a list of DecisionVariableMatrix @p vars, computes the TOTAL number
@@ -265,7 +265,7 @@ class VariableList {
 template <typename Derived>
 Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
 GetSolution(
-    const Eigen::MatrixBase<Derived> &decision_variable_matrix) {
+    const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
   static_assert(
       std::is_same<typename Derived::Scalar, DecisionVariableScalar>::value,
       "The input should be a DecisionVariableMatrix object");

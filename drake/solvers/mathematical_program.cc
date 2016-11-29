@@ -312,6 +312,12 @@ void MathematicalProgram::AddConstraint(std::shared_ptr<PositiveSemidefiniteCons
   positive_semidefinite_constraint_.push_back(Binding<PositiveSemidefiniteConstraint>(con, {symmetric_matrix_var}));
 }
 
+std::shared_ptr<PositiveSemidefiniteConstraint> MathematicalProgram::AddPositiveSemidefiniteConstraint(const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var) {
+  auto constraint = std::make_shared<PositiveSemidefiniteConstraint>();
+  AddConstraint(constraint, symmetric_matrix_var);
+  return constraint;
+}
+
 SolutionResult MathematicalProgram::Solve() {
   // This implementation is simply copypasta for now; in the future we will
   // want to tweak the order of preference of solvers based on the types of
