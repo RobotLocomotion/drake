@@ -33,7 +33,7 @@
 	url = https://github.com/RobotLocomotion/gurobi.git
 [submodule "externals/mosek"]
 	path = externals/mosek
-	url = https://github.com/rdeits/mosek-pod.git
+	url = https://github.com/RobotLocomotion/mosek.git
 [submodule "externals/iris"]
 	path = externals/iris
 	url = https://github.com/rdeits/iris-distro.git
