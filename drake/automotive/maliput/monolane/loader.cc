@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <map>
 #include <string>
 
 #include <gflags/gflags.h>
@@ -59,18 +60,20 @@ mono::ArcOffset arc_offset(const YAML::Node& node) {
 
 std::unique_ptr<mono::XYZPoint> ResolvePointReference(
     const std::string& ref,
-    const std::map<std::string, mono::XYZPoint>& xyzpoints) {
-  auto parsed = [&](){
+    const std::map<std::string, mono::XYZPoint>& xyz_catalog) {
+  auto parsed = [&]() {
     static const std::string kReverse {"reverse "};
     int where = ref.find(kReverse);
     if (where == 0) {
+      // Strip "reverse " from head, and tag as reversed.
       return std::make_pair(ref.substr(kReverse.size()), true);
     } else {
+      // Leave alone, and tag as not-reversed.
       return std::make_pair(ref, false);
     }
   }();
-  auto it = xyzpoints.find(parsed.first);
-  if (it == xyzpoints.end()) {
+  auto it = xyz_catalog.find(parsed.first);
+  if (it == xyz_catalog.end()) {
     return nullptr;
   }
   return std::move(
@@ -79,40 +82,33 @@ std::unique_ptr<mono::XYZPoint> ResolvePointReference(
 }
 
 
-const mono::Connection* maybe_make_connection(
+const mono::Connection* MaybeMakeConnection(
     std::string id,
     YAML::Node node,
-    const std::map<std::string, mono::XYZPoint>& xyzpoints,
+    const std::map<std::string, mono::XYZPoint>& xyz_catalog,
     mono::Builder* builder) {
   DRAKE_DEMAND(node.IsMap());
 
-  // Check if needed symbols are available.
+  // "start" required.
+  DRAKE_DEMAND(node["start"]);
+  // "arc" or "length" (but not both) required.
+  DRAKE_DEMAND(node["arc"] || node["length"]);
+  DRAKE_DEMAND(!(node["arc"] && node["length"]));
+  // "z_end" or "explicit_end" (but not both) required.
+  DRAKE_DEMAND(node["z_end"] || node["explicit_end"]);
+  DRAKE_DEMAND(!(node["z_end"] && node["explicit_end"]));
+
   std::unique_ptr<mono::XYZPoint> start_point =
-      ResolvePointReference(node["start"].as<std::string>(), xyzpoints);
-  if (! start_point) { return nullptr; }
-
-  // Discover segment type.
-  std::unique_ptr<mono::XYZPoint> ee_point;
-  enum SegmentType{ kLine, kArc } segment_type{};
-  for (const auto& kv : node) {
-    std::string key = kv.first.as<std::string>();
-
-    if (key == "length") {
-      segment_type = kLine;
-    } else if (key == "arc") {
-      segment_type = kArc;
-    } else if (key == "explicit_end") {
-      // More symbol resolution.
-      // TODO(rico): fold this and above into a function.
-      ee_point = ResolvePointReference(node["explicit_end"].as<std::string>(),
-                                       xyzpoints);
-      if (! ee_point) {
-        // Skip this connection for now; maybe we can resolve this later.
-        return nullptr;
-      }
-    }
+      ResolvePointReference(node["start"].as<std::string>(), xyz_catalog);
+  if (!start_point) { return nullptr; }  // "Try to resolve later."
+  enum SegmentType { kLine, kArc } segment_type =
+                                       node["length"] ? kLine : kArc;
+  std::unique_ptr<mono::XYZPoint> ee_point;  // optional explicit endpoint
+  if (node["explicit_end"]) {
+    ee_point = ResolvePointReference(node["explicit_end"].as<std::string>(),
+                                     xyz_catalog);
+    if (!ee_point) { return nullptr; }  // "Try to resolve later."
   }
-  // TODO(maddog)  Ensure explicit_end and z_end are mutually exclusive.
 
   // Call appropriate method.
   switch (segment_type) {
@@ -147,17 +143,17 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
   YAML::Node mmb = node["maliput_monolane_builder"];
   DRAKE_DEMAND(mmb.IsMap());
 
-  mono::Builder b(rbounds(mmb["lane_bounds"]),
-                  rbounds(mmb["driveable_bounds"]),
-                  mmb["position_precision"].as<double>(),
-                  d2r(mmb["orientation_precision"].as<double>()));
+  mono::Builder builder(rbounds(mmb["lane_bounds"]),
+                        rbounds(mmb["driveable_bounds"]),
+                        mmb["position_precision"].as<double>(),
+                        d2r(mmb["orientation_precision"].as<double>()));
 
   std::cerr << "loading points !\n";
   YAML::Node points = mmb["points"];
   DRAKE_DEMAND(points.IsMap());
-  std::map<std::string, mono::XYZPoint> xyzpoints;
+  std::map<std::string, mono::XYZPoint> xyz_catalog;
   for (const auto& p : points) {
-    xyzpoints[std::string("points.") + p.first.as<std::string>()] =
+    xyz_catalog[std::string("points.") + p.first.as<std::string>()] =
         xyzpoint(p.second);
   }
 
@@ -178,15 +174,15 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
     for (const auto& r : raw_connections) {
       std::string id = r.first;
       const mono::Connection* conn =
-          maybe_make_connection(id, r.second, xyzpoints, &b);
+          MaybeMakeConnection(id, r.second, xyz_catalog, &builder);
       if (!conn) {
         std::cerr << "...skipping '" << id << "'" << std::endl;
         continue;
       }
       std::cerr << "...cooked '" << id << "'" << std::endl;
       cooked_connections[id] = conn;
-      xyzpoints[std::string("connections.") + id + ".start"] = conn->start();
-      xyzpoints[std::string("connections.") + id + ".end"] = conn->end();
+      xyz_catalog[std::string("connections.") + id + ".start"] = conn->start();
+      xyz_catalog[std::string("connections.") + id + ".end"] = conn->end();
     }
     DRAKE_DEMAND(cooked_connections.size() > cooked_before_this_pass);
     for (const auto& c : cooked_connections) {
@@ -202,7 +198,7 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
     for (const auto& g : groups) {
       const std::string gid = g.first.as<std::string>();
       std::cerr << "   create group '" << gid << "'" << std::endl;
-      mono::Group* group = b.MakeGroup(gid);
+      mono::Group* group = builder.MakeGroup(gid);
 
       YAML::Node cids_node = g.second;
       DRAKE_DEMAND(cids_node.IsSequence());
@@ -215,7 +211,7 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
   }
 
   std::cerr << "building road geometry !\n";
-  return std::move(b.Build({mmb["id"].Scalar()}));
+  return std::move(builder.Build({mmb["id"].Scalar()}));
 }
 
 }  // namespace

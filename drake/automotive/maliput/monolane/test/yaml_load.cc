@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
   auto rg = mono::LoadFile(FLAGS_yaml_file);
   const std::vector<std::string> failures = rg->CheckInvariants();
 
-  if (! failures.empty()) {
+  if (!failures.empty()) {
     for (const auto& f : failures) {
       std::cerr << f << std::endl;
     }
