@@ -1188,50 +1188,50 @@ template <typename T>
 template <typename Derived>
 MatrixX<typename Derived::Scalar> RigidBodyTree<T>::transformVelocityMappingToQDotMapping(
     const KinematicsCache<typename Derived::Scalar>& cache,
-    const Eigen::MatrixBase<Derived>& B) const {
+    const Eigen::MatrixBase<Derived>& Av) const {
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
-      A(B.rows(), get_num_positions());
-  int A_col_start = 0;
-  int B_col_start = 0;
+      Ap(Av.rows(), get_num_positions());
+  int Ap_col_start = 0;
+  int Av_col_start = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody<double>& body = **it;
     if (body.has_parent_body()) {
       const DrakeJoint& joint = body.getJoint();
       const auto& element = cache.getElement(body);
-      A.middleCols(A_col_start, joint.get_num_positions()).noalias() =
-          B.middleCols(B_col_start, joint.get_num_velocities()) *
+      Ap.middleCols(Ap_col_start, joint.get_num_positions()).noalias() =
+          Av.middleCols(Av_col_start, joint.get_num_velocities()) *
               element.qdot_to_v;
-      A_col_start += joint.get_num_positions();
-      B_col_start += joint.get_num_velocities();
+      Ap_col_start += joint.get_num_positions();
+      Av_col_start += joint.get_num_velocities();
     }
   }
-  return A;
+  return Ap;
 }
 
 template <typename T>
 template <typename Derived>
 MatrixX<typename Derived::Scalar> RigidBodyTree<T>::transformQDotMappingToVelocityMapping(
     const KinematicsCache<typename Derived::Scalar>& cache,
-    const Eigen::MatrixBase<Derived>& A) const {
+    const Eigen::MatrixBase<Derived>& Ap) const {
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
-      B(A.rows(), get_num_velocities());
-  int B_col_start = 0;
-  int A_col_start = 0;
+      Av(Ap.rows(), get_num_velocities());
+  int Av_col_start = 0;
+  int Ap_col_start = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody<double>& body = **it;
     if (body.has_parent_body()) {
       const DrakeJoint& joint = body.getJoint();
       const auto& element = cache.getElement(body);
-      B.middleCols(B_col_start, joint.get_num_velocities()).noalias() =
-          A.middleCols(A_col_start, joint.get_num_positions()) *
+      Av.middleCols(Av_col_start, joint.get_num_velocities()).noalias() =
+          Ap.middleCols(Ap_col_start, joint.get_num_positions()) *
               element.v_to_qdot;
-      B_col_start += joint.get_num_velocities();
-      A_col_start += joint.get_num_positions();
+      Av_col_start += joint.get_num_velocities();
+      Ap_col_start += joint.get_num_positions();
     }
   }
-  return B;
+  return Av;
 }
 
 template <typename T>
@@ -2969,23 +2969,23 @@ RigidBodyTree<double>::resolveCenterOfPressure<Vector3d, Vector3d>(
 template MatrixX<double>
 RigidBodyTree<double>::transformVelocityMappingToQDotMapping<VectorXd>(
     const KinematicsCache<double>& cache,
-    const Eigen::MatrixBase<VectorXd>& B) const;
+    const Eigen::MatrixBase<VectorXd>& Av) const;
 template MatrixX<double>
 RigidBodyTree<double>::transformVelocityMappingToQDotMapping<
     Eigen::RowVectorXd>(
     const KinematicsCache<double>& cache,
-    const Eigen::MatrixBase<Eigen::RowVectorXd>& B) const;
+    const Eigen::MatrixBase<Eigen::RowVectorXd>& Av) const;
 
 // Explicit template instantiations for transformQDotMappingToVelocityMapping.
 template MatrixX<double>
 RigidBodyTree<double>::transformQDotMappingToVelocityMapping<VectorXd>(
     const KinematicsCache<double>& cache,
-    const Eigen::MatrixBase<VectorXd>& B) const;
+    const Eigen::MatrixBase<VectorXd>& Ap) const;
 template MatrixX<double>
 RigidBodyTree<double>::transformQDotMappingToVelocityMapping<
     Eigen::RowVectorXd>(
     const KinematicsCache<double>& cache,
-    const Eigen::MatrixBase<Eigen::RowVectorXd>& B) const;
+    const Eigen::MatrixBase<Eigen::RowVectorXd>& Ap) const;
 
 // Explicit template instantiations for transformPointsJacobian.
 template MatrixX<AutoDiffUpTo73d>

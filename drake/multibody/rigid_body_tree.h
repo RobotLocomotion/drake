@@ -297,7 +297,7 @@ class RigidBodyTree {
    * with respect to quasi-coordinates (ꝗ). This function would allow
    * transforming that Jacobian so that all partial derivatives would be
    * computed with respect to qdot.
-   * @param B, a `m x nv` sized matrix, where `nv` is the dimension of the
+   * @param Av, a `m x nv` sized matrix, where `nv` is the dimension of the
    *      generalized velocities.
    * @retval A a `m x nq` sized matrix, where `nq` is the dimension of the
    *      generalized coordinates.
@@ -307,7 +307,7 @@ class RigidBodyTree {
   drake::MatrixX<typename Derived::Scalar>
   transformVelocityMappingToQDotMapping(
       const KinematicsCache<typename Derived::Scalar>& cache,
-      const Eigen::MatrixBase<Derived>& B) const;
+      const Eigen::MatrixBase<Derived>& Av) const;
 
   /**
    * Converts a matrix A, which transforms the time derivative of generalized
@@ -320,7 +320,7 @@ class RigidBodyTree {
    * transform this Jacobian matrix to the more commonly used one: the matrix of
    * partial derivatives of end-effector configuration computed with respect to
    * quasi-coordinates (ꝗ).
-   * @param A a `m x nq` sized matrix, where `nq` is the dimension of the
+   * @param Ap a `m x nq` sized matrix, where `nq` is the dimension of the
    *      generalized coordinates.
    * @retval B, a `m x nv` sized matrix, where `nv` is the dimension of the
    *      generalized velocities.
@@ -330,7 +330,7 @@ class RigidBodyTree {
   drake::MatrixX<typename Derived::Scalar>
   transformQDotMappingToVelocityMapping(
       const KinematicsCache<typename Derived::Scalar>& cache,
-      const Eigen::MatrixBase<Derived>& A) const;
+      const Eigen::MatrixBase<Derived>& Ap) const;
 
   template <typename Scalar>
   drake::MatrixX<Scalar> VelocityToPositionDotMapping(
