@@ -49,7 +49,7 @@ cc_library(
         "lcm/udpm_util.h",
     ],
     includes = ["."],
-    copts = ["-Wno-all", "-Wno-deprecated-declarations"],
+    copts = ["-Wno-all", "-Wno-deprecated-declarations", "-std=gnu11"],
     # In LCM's build system, these definitions are provided by a generated
     # lcm_export.h file.  For Bazel, we just set them directly as defines.
     defines = [
@@ -84,6 +84,6 @@ cc_binary(
         "-Wno-all", "-Wno-format-zero-length",
         # TODO(jwnimmer-tri) This hack should be removed when we ugprade
         # to the latest LCM.
-        "-include", "unistd.h"],
+        "-include", "unistd.h", "-std=gnu11"],
     deps = [":lcm"],
 )
