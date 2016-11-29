@@ -243,7 +243,7 @@ class VariableList {
   /**
    * @return The all unique variables stored in the class.
    */
-  std::unordered_set<DecisionVariableScalar, DecisionVariableScalarHash>
+  const std::unordered_set<DecisionVariableScalar, DecisionVariableScalarHash>&
   unique_variables() const {
     return unique_variable_indices_;
   }
