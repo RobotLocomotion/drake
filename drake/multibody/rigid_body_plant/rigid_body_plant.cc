@@ -478,7 +478,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
                                                0, false);
       Vector3<T> this_normal = pair.normal;
 
-      // rotation from world (W) to contact frame (C), e.g., q_C = R_CW * q_W.
+      // R_CW is a rotation from world (W) to contact frame (C),
+      // e.g., q_C = R_CW * q_W.
       Matrix3<T> R_CW;
       ComputeBasisFromZ(this_normal, &R_CW);
       auto J = R_CW * (JA - JB);  // J = [ D1; D2; n ]
