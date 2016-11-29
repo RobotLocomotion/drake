@@ -30,6 +30,7 @@ cc_library(
         "force_torque_measurement.h",
         "kinematic_path.h",
         "kinematics_cache.h",
+        "kinematics_cache-inl.h",
         "material_map.h",
         "parser_common.h",
         "parser_model_instance_id_table.h",
