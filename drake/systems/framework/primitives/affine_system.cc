@@ -38,10 +38,12 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
   DRAKE_DEMAND(num_outputs_ == D.rows());
 
   // Declares input port for u.
-  this->DeclareInputPort(kVectorValued, num_inputs_, kContinuousSampling);
+  if (num_inputs_ > 0)
+    this->DeclareInputPort(kVectorValued, num_inputs_, kContinuousSampling);
 
   // Declares output port for y.
-  this->DeclareOutputPort(kVectorValued, num_outputs_, kContinuousSampling);
+  if (num_outputs_ > 0)
+    this->DeclareOutputPort(kVectorValued, num_outputs_, kContinuousSampling);
 
   // Declares the number of continuous state variables. This is needed for
   // EvalTimeDerivaties() to work.
@@ -56,48 +58,62 @@ AffineSystem<AutoDiffXd>* AffineSystem<T>::DoToAutoDiffXd() const {
 
 template <typename T>
 const SystemPortDescriptor<T>& AffineSystem<T>::get_input_port() const {
+  DRAKE_DEMAND(num_inputs_ > 0);
   return System<T>::get_input_port(0);
 }
 
 template <typename T>
 const SystemPortDescriptor<T>& AffineSystem<T>::get_output_port() const {
+  DRAKE_DEMAND(num_outputs_ > 0);
   return System<T>::get_output_port(0);
 }
 
 template <typename T>
 void AffineSystem<T>::EvalOutput(const Context<T>& context,
                                  SystemOutput<T>* output) const {
+  if (num_outputs_ == 0) return;
+
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   // Evaluates the state output port.
   BasicVector<T>* output_vector = output->GetMutableVectorData(0);
 
-  auto x =
+  const auto& x =
       dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
           .get_value();
 
-  const BasicVector<T>* input = this->EvalVectorInput(context, 0);
-  DRAKE_DEMAND(input);
-  auto u = input->get_value();
+  auto y = output_vector->get_mutable_value();
+  y = C_ * x + y0_;
 
-  output_vector->get_mutable_value() = C_ * x + D_ * u + y0_;
+  if (num_inputs_) {
+    const BasicVector<T>* input = this->EvalVectorInput(context, 0);
+    DRAKE_DEMAND(input);
+    const auto& u = input->get_value();
+    y += D_ * u;
+  }
 }
 
 template <typename T>
 void AffineSystem<T>::EvalTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
+  if (num_states_ == 0) return;
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  auto x =
+  const auto& x =
       dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
           .get_value();
 
-  const BasicVector<T>* input = this->EvalVectorInput(context, 0);
-  DRAKE_DEMAND(input);
-  auto u = input->get_value();
+  VectorX<T> xdot = A_ * x + xDot0_;
 
-  derivatives->SetFromVector(A_ * x + B_ * u + xDot0_);
+  if (num_inputs_ > 0) {
+    const BasicVector<T>* input = this->EvalVectorInput(context, 0);
+    DRAKE_DEMAND(input);
+    const auto& u = input->get_value();
+
+    xdot += B_ * u;
+  }
+  derivatives->SetFromVector(xdot);
 }
 
 template class AffineSystem<double>;
