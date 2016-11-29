@@ -57,7 +57,7 @@ TEST_F(RK3IntegratorTest, ContextAccess) {
 }
 
 /// Verifies error estimation is supported.
-TEST_F(RK3IntegratorTest, ErrorEst) {
+TEST_F(RK3IntegratorTest, ErrorEstSupport) {
   EXPECT_GE(integrator_->get_error_estimate_order(), 1);
   EXPECT_EQ(integrator_->supports_error_estimation(), true);
   EXPECT_NO_THROW(integrator_->set_target_accuracy(1e-1));
@@ -86,7 +86,8 @@ TEST_F(RK3IntegratorTest, Scaling) {
 }
 
 // Tests the ability to setup the integrator robustly (i.e., with minimal
-// user knowledge).
+// user knowledge); in other words, if the user fails to set some aspect of the
+// integrator properly, will NaN values make it run forever?
 TEST_F(RK3IntegratorTest, BulletProofSetup) {
   // Setup the initial position and initial velocity
   const double kInitialPosition = 0.1;
@@ -109,13 +110,6 @@ TEST_F(RK3IntegratorTest, BulletProofSetup) {
   // Set the maximum step size and try again.
   integrator_->set_maximum_step_size(kBigDT);
   integrator_->Initialize();
-
-  // First attempt to step should result in a logic error because accuracy
-  // has not been set.
-  EXPECT_THROW(integrator_->StepOnceAtMost(1.0, 1.0), std::logic_error);
-
-  // Now set accuracy and try again.
-  integrator_->set_target_accuracy(1e-3);
 
   // StepOnceAtFixedSize for 1 second.
   const double kTFinal = 1.0;
@@ -316,20 +310,19 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   for (int i=0; i< plant.get_num_velocities(); ++i)
     plant.set_velocity(context.get(), i, generalized_velocities[i]);
 
-  // Integrate for one seconds of virtual time using a RK2 integrator with
+  // Integrate for one second of virtual time using a RK2 integrator with
   // small step size.
   const double dt = 5e-5;
   const double inf = std::numeric_limits<double>::infinity();
   RungeKutta2Integrator<double> rk2(plant, dt, context.get());
   rk2.Initialize();
   const double t_final = 1.0;
-  double t;
-  for (t = 0.0; std::abs(t - t_final) > dt; t += dt)
-    rk2.StepOnceAtMost(inf, inf);
+  for (double t = 0.0; std::abs(t - t_final) > dt; t += dt)
+    rk2.StepOnceAtMost(inf, inf);  // Steps forward by dt.
 
   // Get the final state.
-  VectorX<double> x_final_rk2 = context->get_state().get_continuous_state()->
-      get_vector().CopyToVector();
+  VectorX<double> x_final_rk2 = context->get_continuous_state_vector().
+      CopyToVector();
 
   // Re-integrate with RK3
   context->set_time(0.);
@@ -349,8 +342,8 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   } while (t_remaining > 0.0);
 
   // Verify that the final states are "close".
-  VectorX<double> x_final_rk3 = context->get_state().get_continuous_state()->
-      get_vector().CopyToVector();
+  VectorX<double> x_final_rk3 = context->get_continuous_state_vector().
+      CopyToVector();
   const double close_tol = 1e-6;
   for (int i=0; i< x_final_rk2.size(); ++i)
     EXPECT_NEAR(x_final_rk2[i], x_final_rk3[i], close_tol);

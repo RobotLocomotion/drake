@@ -18,6 +18,7 @@ namespace systems {
 template <class T>
 void RungeKutta3Integrator<T>::DoInitialize() {
   using std::isnan;
+  double kDefaultAccuracy = 1e-3;   // Good for this particular integrator.
 
   // Set an artificial step size target, if not set already.
   if (!(IntegratorBase<T>::get_initial_step_size_target() <
@@ -30,12 +31,17 @@ void RungeKutta3Integrator<T>::DoInitialize() {
 
     IntegratorBase<T>::request_initial_step_size_target(
         IntegratorBase<T>::get_maximum_step_size());
+
+  // TODO(edrumwri): Uncomment code below once we have a good
+  // Sets the working accuracy to a good value.
+  double working_accuracy = this->get_target_accuracy();
+  if (isnan(working_accuracy))
+    working_accuracy = kDefaultAccuracy;
+  this->set_accuracy_in_use(working_accuracy);
 }
 
 /**
  * RK3-specific stepping function.
- * @throws std::logic_error if the integrator target accuracy has not been
- *         specified.
  */
 template <class T>
 bool RungeKutta3Integrator<T>::DoStepOnceAtMost(const T& dt_max) {
@@ -46,10 +52,6 @@ bool RungeKutta3Integrator<T>::DoStepOnceAtMost(const T& dt_max) {
   auto& system = IntegratorBase<T>::get_system();
   auto& context = IntegratorBase<T>::get_context();
   system.EvalTimeDerivatives(context, derivs0_.get());
-
-  // Verify that target accuracy has been set.
-  if (isnan(this->get_accuracy_in_use()))
-    throw std::logic_error("Integrator target accuracy has not been set.");
 
   // Call the generic error controlled stepper.
   IntegratorBase<T>::StepErrorControlled(dt_max, derivs0_.get());

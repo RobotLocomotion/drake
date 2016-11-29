@@ -668,6 +668,15 @@ class IntegratorBase {
 
  protected:
   /**
+   * Sets the working ("in use") accuracy for this integrator. The working
+   * accuracy may not be equivalent to the target accuracy when the latter is
+   * too loose or tight for an integrator's capabilities.
+   * @sa get_accuracy_in_use()
+   * @sa get_target_accuracy()
+   */
+  void set_accuracy_in_use(double accuracy) { accuracy_in_use_ = accuracy; }
+
+  /**
    * Increments the count of integration step failures due to error tolerance
    * failure.
    */
