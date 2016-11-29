@@ -107,6 +107,34 @@ TEST_F(LeafContextTest, ClearInputPorts) {
   EXPECT_EQ(0, context_.get_num_input_ports());
 }
 
+TEST_F(LeafContextTest, GetNumDifferenceStateGroups) {
+  EXPECT_EQ(2, context_.get_num_difference_state_groups());
+}
+
+TEST_F(LeafContextTest, GetNumModalStateGroups) {
+  EXPECT_EQ(1, context_.get_num_modal_state_groups());
+}
+
+TEST_F(LeafContextTest, IsStateless) {
+  EXPECT_FALSE(context_.is_stateless());
+  LeafContext<double> empty_context;
+  EXPECT_TRUE(empty_context.is_stateless());
+}
+
+TEST_F(LeafContextTest, HasOnlyContinuousState) {
+  EXPECT_FALSE(context_.has_only_continuous_state());
+  context_.set_difference_state(std::make_unique<DifferenceState<double>>());
+  context_.set_modal_state(std::make_unique<ModalState>());
+  EXPECT_TRUE(context_.has_only_continuous_state());
+}
+
+TEST_F(LeafContextTest, HasOnlyDifferenceState) {
+  EXPECT_FALSE(context_.has_only_difference_state());
+  context_.set_continuous_state(std::make_unique<ContinuousState<double>>());
+  context_.set_modal_state(std::make_unique<ModalState>());
+  EXPECT_TRUE(context_.has_only_difference_state());
+}
+
 TEST_F(LeafContextTest, GetVectorInput) {
   LeafContext<double> context;
   context.SetNumInputPorts(2);
