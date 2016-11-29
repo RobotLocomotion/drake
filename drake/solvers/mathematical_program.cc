@@ -323,6 +323,22 @@ MathematicalProgram::AddPositiveSemidefiniteConstraint(
   return constraint;
 }
 
+void MathematicalProgram::AddConstraint(std::shared_ptr<LinearMatrixInequalityConstraint> con,
+const VariableListRef& vars) {
+  required_capabilities_ |= kPositiveSemidefiniteConstraint;
+  VariableList var_list(vars);
+  DRAKE_ASSERT(var_list.column_vectors_only());
+  linear_matrix_inequality_constraint_.push_back(Binding<LinearMatrixInequalityConstraint>(con, var_list));
+}
+
+std::shared_ptr<LinearMatrixInequalityConstraint> MathematicalProgram::AddLinearMatrixInequalityConstraint(
+    const std::list<Eigen::Ref<const Eigen::MatrixXd>> &F,
+    const VariableListRef &vars) {
+  auto constraint = std::make_shared<LinearMatrixInequalityConstraint>(F);
+  AddConstraint(constraint, vars);
+  return constraint;
+}
+
 SolutionResult MathematicalProgram::Solve() {
   // This implementation is simply copypasta for now; in the future we will
   // want to tweak the order of preference of solvers based on the types of
