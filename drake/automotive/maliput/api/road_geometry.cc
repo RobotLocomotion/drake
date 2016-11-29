@@ -45,22 +45,6 @@ Rotation ReverseOrientation(const Rotation& rot) {
 
 
 // Return the s/r/h orientation of the specified LaneEnd when travelling
-// *into* the lane from that end.
-Rotation OrientationIntoLane(const LaneEnd& lane_end) {
-  switch (lane_end.end) {
-    case LaneEnd::kStart: {
-      return lane_end.lane->GetOrientation({0., 0., 0.});
-    }
-    case LaneEnd::kFinish: {
-      return ReverseOrientation(
-          lane_end.lane->GetOrientation({lane_end.lane->length(), 0., 0.}));
-    }
-    default: { DRAKE_ABORT(); }
-  }
-}
-
-
-// Return the s/r/h orientation of the specified LaneEnd when travelling
 // *out from* the lane at that end.
 Rotation OrientationOutFromLane(const LaneEnd& lane_end) {
   switch (lane_end.end) {
@@ -231,11 +215,12 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
     const Rotation ref_rot =
         (bp->GetASide()->size() > 0)
         ? OrientationOutFromLane(bp->GetASide()->get(0))
-        : OrientationIntoLane(bp->GetBSide()->get(0));
-    const auto test_orientation = [&](const LaneEndSet& ends) {
+        : ReverseOrientation(OrientationOutFromLane(bp->GetBSide()->get(0)));
+    const auto test_orientation = [&](const LaneEndSet& ends,
+                                      const Rotation& reference) {
       for (int bi = 0; bi < ends.size(); ++bi) {
         const LaneEnd le = ends.get(bi);
-        const double d = Distance(ref_rot, OrientationOutFromLane(le));
+        const double d = Distance(reference, OrientationOutFromLane(le));
         if (d > angular_tolerance()) {
           std::stringstream ss;
           ss << "Lane " << le.lane->id().id
@@ -245,8 +230,8 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
         }
       }
     };
-    test_orientation(*(bp->GetASide()));
-    test_orientation(*(bp->GetBSide()));
+    test_orientation(*(bp->GetASide()), ref_rot);
+    test_orientation(*(bp->GetBSide()), ReverseOrientation(ref_rot));
   }
 
   // Check that Lane left/right relationships within a Segment are
