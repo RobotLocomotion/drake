@@ -1,3 +1,5 @@
+#include "drake/systems/framework/primitives/signal_logger.h"
+
 #include <stdexcept>
 
 #include "gtest/gtest.h"
@@ -7,7 +9,6 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/linear_system.h"
-#include "drake/systems/framework/primitives/signal_logger.h"
 
 namespace drake {
 namespace {
