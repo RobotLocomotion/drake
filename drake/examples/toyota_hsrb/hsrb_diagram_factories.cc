@@ -66,8 +66,14 @@ unique_ptr<systems::Diagram<double>> CreatePlantAndVisualizerDiagram(
   const auto visualizer = builder.AddSystem<DrakeVisualizer>(tree, lcm);
   builder.Connect(plant_ptr->get_output_port(0), visualizer->get_input_port(0));
 
-  builder.ExportInput(plant_ptr->get_input_port(0));
-  builder.ExportOutput(plant_ptr->get_output_port(0));
+  // Exports all of the RigidBodyPlant's input and output ports.
+  for (int i = 0; i < plant_ptr->get_num_input_ports(); ++i) {
+    builder.ExportInput(plant_ptr->get_input_port(i));
+  }
+
+  for (int i = 0; i < plant_ptr->get_num_output_ports(); ++i) {
+    builder.ExportOutput(plant_ptr->get_output_port(i));
+  }
 
   *plant = plant_ptr;
   return builder.Build();
@@ -84,7 +90,12 @@ std::unique_ptr<Diagram<double>> CreateConstantSourceToPlantDiagram(
   auto constant_zero_source =
       builder.template AddSystem<ConstantVectorSource<double>>(constant_vector);
   builder.Cascade(*constant_zero_source, *plant_diagram_ptr);
-  builder.ExportOutput(plant_diagram_ptr->get_output_port(0));
+
+  // Exports all of the RigidBodyPlant's output ports.
+  for (int i = 0; i < plant_diagram_ptr->get_num_output_ports(); ++i) {
+    builder.ExportOutput(plant_diagram_ptr->get_output_port(i));
+  }
+
   return builder.Build();
 }
 
