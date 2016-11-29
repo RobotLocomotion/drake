@@ -9,9 +9,6 @@ namespace drake {
 namespace maliput {
 namespace monolane {
 
-const double kPositionPrecision = 1e-2;
-const double kVeryExact = 1e-7;
-
 GTEST_TEST(MonolaneBuilderTest, Fig8) {
   const double kPosPrecision = 0.01;
   const double kOriPrecision = 0.01 * M_PI;
@@ -70,8 +67,8 @@ GTEST_TEST(MonolaneBuilderTest, Fig8) {
   }
 
   EXPECT_EQ(rg->num_branch_points(), 8);
-  for (int b = 0; b < rg->num_branch_points(); ++b) {
-    const api::BranchPoint* bp = rg->branch_point(b);
+  for (int bpi = 0; bpi < rg->num_branch_points(); ++bpi) {
+    const api::BranchPoint* bp = rg->branch_point(bpi);
     /////    EXPECT_EQ(bp->GetBranches()->size(), 2);
     EXPECT_EQ(bp->GetASide()->size(), 1);
     EXPECT_EQ(bp->GetBSide()->size(), 1);

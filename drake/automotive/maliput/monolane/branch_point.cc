@@ -32,8 +32,7 @@ const api::LaneEndSet* BranchPoint::DoGetOngoingBranches(
 
 std::unique_ptr<api::LaneEnd> BranchPoint::DoGetDefaultBranch(
     const api::LaneEnd& end) const {
-  return std::move(
-      std::make_unique<api::LaneEnd>(defaults_.find(end)->second));
+  return std::make_unique<api::LaneEnd>(defaults_.find(end)->second);
 }
 
 const api::LaneEnd& BranchPoint::AddABranch(const api::LaneEnd& lane_end) {

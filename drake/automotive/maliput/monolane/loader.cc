@@ -76,9 +76,8 @@ std::unique_ptr<mono::XYZPoint> ResolvePointReference(
   if (it == xyz_catalog.end()) {
     return nullptr;
   }
-  return std::move(
-      std::make_unique<mono::XYZPoint>(
-          parsed.second ? it->second.reverse() : it->second));
+  return std::make_unique<mono::XYZPoint>(
+      parsed.second ? it->second.reverse() : it->second);
 }
 
 
@@ -211,7 +210,7 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
   }
 
   std::cerr << "building road geometry !\n";
-  return std::move(builder.Build({mmb["id"].Scalar()}));
+  return builder.Build({mmb["id"].Scalar()});
 }
 
 }  // namespace
@@ -221,12 +220,12 @@ namespace maliput {
 namespace monolane {
 
 std::unique_ptr<const api::RoadGeometry> Load(const std::string& input) {
-  return std::move(BuildFrom(YAML::Load(input)));
+  return BuildFrom(YAML::Load(input));
 }
 
 
 std::unique_ptr<const api::RoadGeometry> LoadFile(const std::string& filename) {
-  return std::move(BuildFrom(YAML::LoadFile(filename)));
+  return BuildFrom(YAML::LoadFile(filename));
 }
 
 }  // namespace monolane
