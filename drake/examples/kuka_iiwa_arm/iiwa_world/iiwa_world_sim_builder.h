@@ -14,9 +14,8 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
-/// A helper class to construct and run KUKA iiwa world simulations; i.e.
-/// a Simulation with a KUKA iiwa robot arm and various objects for
-/// it to manipulate.
+/// A helper class to construct KUKA iiwa world simulations; i.e. a Simulation
+/// with a KUKA iiwa robot arm and various objects for it to manipulate.
 /// @tparam T must be a valid Eigen ScalarType.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
@@ -85,8 +84,7 @@ class IiwaWorldSimBuilder {
   IiwaWorldSimBuilder& operator=(const IiwaWorldSimBuilder<T>& other) = delete;
 
   /// Sets the parameters related to the penetration and friction throughout
-  /// the
-  /// world.
+  /// the world.
   void SetPenetrationContactParameters(double penetration_stiffness,
                                        double penetration_damping,
                                        double contact_friction);
