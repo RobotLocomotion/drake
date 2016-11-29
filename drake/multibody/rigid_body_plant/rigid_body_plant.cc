@@ -431,6 +431,29 @@ void RigidBodyPlant<T>::ComputeContactResults(
 }
 
 template <typename T>
+void RigidBodyPlant<T>::ComputeBasisFromZ(const Vector3<T>& z_axis,
+                                          Matrix3<T>* R_LW) const {
+  Vector3<T> x_axis;
+  // Projects the z-axis into the first quadrant in order to identify the
+  // *smallest* component of the normal.
+  const Vector3<T> u(z_axis.cwiseAbs());
+  const int minAxis =
+      u[0] <= u[1] ? (u[0] <= u[2] ? 0 : 2) : (u[1] <= u[2] ? 1 : 2);
+  // The world axis corresponding to the smallest component of the local z-axis
+  // will be *most* perpendicular.
+  Vector3<T> perpAxis;
+  perpAxis << (minAxis == 0 ? 1 : 0), (minAxis == 1 ? 1 : 0),
+      (minAxis == 2 ? 1 : 0);
+  // Now define x- and y-axes.
+  x_axis = z_axis.cross(perpAxis).normalized();
+  Vector3<T> y_axis = z_axis.cross(x_axis);
+  // Transformation from world frame to local frame.
+  (*R_LW).row(0) = x_axis;
+  (*R_LW).row(1) = y_axis;
+  (*R_LW).row(2) = z_axis;
+}
+
+template <typename T>
 VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
     const KinematicsCache<T>& kinsol, ContactResults<T>* contacts) const {
   std::vector<DrakeCollision::PointPair> pairs;
@@ -455,32 +478,11 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
                                                0, false);
       Vector3<T> this_normal = pair.normal;
 
-      // Creates a local basis for contact.  The frame's z-axis is the normal
-      // direction of the contact.  The other two vectors are arbitrary
-      // vectors that form the orthonormal basis.
-      Vector3<T> tangent1;
-      // Projects the normal basis into the first quadrant. Used to find
-      // the *smallest* component of the normal.
-      const Vector3<T> u(this_normal.cwiseAbs());
-      const int minAxis =
-          u[0] <= u[1] ? (u[0] <= u[2] ? 0 : 2) : (u[1] <= u[2] ? 1 : 2);
-      // The world axis corresponding to the smallest component of the normal
-      // direction is *most* perpendicular.
-      Vector3<T> perpAxis;
-      perpAxis << (minAxis == 0 ? 1 : 0), (minAxis == 1 ? 1 : 0),
-          (minAxis == 2 ? 1 : 0);
-      // Creates a vector perpendicular to the normal -- a numerically robust
-      // cross product.
-      tangent1 = this_normal.cross(perpAxis).normalized();
+      // rotation from world (W) to contact frame (C), e.g., q_C = R_CW * q_W.
+      Matrix3<T> R_CW;
+      ComputeBasisFromZ(this_normal, &R_CW);
+      auto J = R_CW * (JA - JB);  // J = [ D1; D2; n ]
 
-      Vector3<T> tangent2 = this_normal.cross(tangent1);
-      // Transformation from world frame to local surface frame.
-      Matrix3<T> R;
-      R.row(0) = tangent1;
-      R.row(1) = tangent2;
-      R.row(2) = this_normal;
-      auto J = R * (JA - JB);  // J = [ D1; D2; n ]
-      // [ tangent1dot; tangent2dot; phidot ]
       auto relative_velocity = J * kinsol.getV();
 
       {
@@ -499,8 +501,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
 
         // fB is equal and opposite to fA: fB = -fA.
         // Therefore the generalized forces tau_c due to contact are:
-        // tau_c = (R * JA)^T * fA + (R * JB)^T * fB = J^T * fA.
-        // With J computed as above: J = R * (JA - JB).
+        // tau_c = (R_CW * JA)^T * fA + (R_CW * JB)^T * fB = J^T * fA.
+        // With J computed as above: J = R_CW * (JA - JB).
         // Since right_hand_side has a negative sign when on the RHS of the
         // system of equations ([H,-J^T] * [vdot;f] + right_hand_side = 0),
         // this term needs to be subtracted.
@@ -527,8 +529,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           // component (i.e., the torque portion of the wrench is zero.)
           // In contrast, other models (e.g., torsional friction model) can
           // also introduce a "pure torque" component to the wrench.
-          Vector3<T> force = R.transpose() * fA;
-          Vector3<T> normal = R.transpose().template block<3, 1>(0, 2);
+          Vector3<T> force = R_CW.transpose() * fA;
+          Vector3<T> normal = R_CW.transpose().template block<3, 1>(0, 2);
 
           calculator.AddForce(point, normal, force);
 
