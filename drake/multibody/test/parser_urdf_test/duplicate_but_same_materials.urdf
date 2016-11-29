@@ -16,7 +16,7 @@ should NOT be a problem.
       <geometry>
         <cylinder length=".02858" radius="0.001"/>
       </geometry>
-      <material name="fourbar">
+      <material name="foo_color">
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -32,7 +32,7 @@ should NOT be a problem.
       <geometry>
         <cylinder length=".05398" radius="0.001"/>
       </geometry>
-      <material name="fourbar">
+      <material name="foo_color">
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
