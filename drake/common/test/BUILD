@@ -88,6 +88,11 @@ cc_test(
 )
 
 cc_test(
+    name = "is_approx_equal_abstol_test",
+    srcs = ["is_approx_equal_abstol_test.cc"],
+    size = "small", deps = DEPS + ["//drake/common:is_approx_equal_abstol"])
+
+cc_test(
     name = "nice_type_name_test",
     size = "small",
     srcs = ["nice_type_name_test.cc"],
