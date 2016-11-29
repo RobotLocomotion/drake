@@ -187,60 +187,6 @@ TEST_F(DiagramTest, Topology) {
     EXPECT_EQ(kSize, descriptor.get_size());
   }
 
-  const Diagram<double>::PortIdentifier adder0_input0{diagram_->adder0(), 0};
-  const Diagram<double>::PortIdentifier adder0_input1{diagram_->adder0(), 1};
-  const Diagram<double>::PortIdentifier adder0_output{diagram_->adder0(), 0};
-
-  const Diagram<double>::PortIdentifier adder1_input0{diagram_->adder1(), 0};
-  const Diagram<double>::PortIdentifier adder1_input1{diagram_->adder1(), 1};
-  const Diagram<double>::PortIdentifier adder1_output{diagram_->adder1(), 0};
-
-  const Diagram<double>::PortIdentifier adder2_input0{diagram_->adder2(), 0};
-  const Diagram<double>::PortIdentifier adder2_input1{diagram_->adder2(), 1};
-  const Diagram<double>::PortIdentifier adder2_output{diagram_->adder2(), 0};
-
-  const Diagram<double>::PortIdentifier
-      integrator0_input{diagram_->integrator0(), 0};
-  const Diagram<double>::PortIdentifier
-      integrator0_output{diagram_->integrator0(), 0};
-
-  const Diagram<double>::PortIdentifier
-      integrator1_input{diagram_->integrator1(), 0};
-  const Diagram<double>::PortIdentifier
-      integrator1_output{diagram_->integrator1(), 0};
-
-  // Verifies that the diagram's inputs are wired up correctly.
-  EXPECT_TRUE(diagram_->has_input(adder0_input0));
-  EXPECT_TRUE(diagram_->has_input(adder0_input1));
-  EXPECT_TRUE(diagram_->has_input(adder1_input1));
-
-  // Verifies that the sole output of adder0 is connected to the first input of
-  // adder1.
-  ASSERT_TRUE(diagram_->is_connected(adder1_input0));
-  EXPECT_EQ(diagram_->get_connected(adder1_input0), adder0_output);
-
-  // Verifies that the sole output of adder0 is connected to the first input of
-  // adder2, and the sole output of adder1 is connected to second input of
-  // adder2.
-  ASSERT_TRUE(diagram_->is_connected(adder2_input0));
-  ASSERT_TRUE(diagram_->is_connected(adder2_input1));
-  EXPECT_EQ(diagram_->get_connected(adder2_input0), adder0_output);
-  EXPECT_EQ(diagram_->get_connected(adder2_input1), adder1_output);
-
-  // Verifies that the sole input of integrator0 is connected to the sole output
-  // of adder0.
-  ASSERT_TRUE(diagram_->is_connected(integrator0_input));
-  EXPECT_EQ(diagram_->get_connected(integrator0_input), adder0_output);
-
-  // Verifies that the sole input of integrator1 is connected to the sole output
-  // of integrator0.
-  ASSERT_TRUE(diagram_->is_connected(integrator1_input));
-  EXPECT_EQ(diagram_->get_connected(integrator1_input), integrator0_output);
-
-  // Verifies that the sole output of integrator1 is connected to the Diagram's
-  // sole output.
-  EXPECT_TRUE(diagram_->has_output(integrator1_output));
-
   // The adder output ports have inherited sampling.
   EXPECT_EQ(kInheritedSampling, diagram_->get_output_port(0).get_sampling());
   EXPECT_EQ(kInheritedSampling, diagram_->get_output_port(1).get_sampling());

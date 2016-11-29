@@ -91,28 +91,6 @@ GTEST_TEST(ToyotaHsrbTests, TestDiagramFactories) {
     ASSERT_NE(rigid_body_plant, nullptr);
     ASSERT_NE(visualizer, nullptr);
 
-    const Diagram<double>::PortIdentifier visualizer_input_port_id{visualizer,
-                                                                   0};
-    const Diagram<double>::PortIdentifier plant_input_port{rigid_body_plant, 0};
-    const Diagram<double>::PortIdentifier plant_output_port_zero{
-        rigid_body_plant, 0};
-
-    // Verifies that the plant's output port zero is connected to the
-    // visualizer's sole input port.
-    ASSERT_TRUE(dut1->is_connected(visualizer_input_port_id));
-    EXPECT_EQ(dut1->get_connected(visualizer_input_port_id),
-              plant_output_port_zero);
-
-    // Verifies that the Diagram has one input port and that it's connected to
-    // the plant's input port.
-    EXPECT_EQ(dut1->get_num_input_ports(), 1);
-    EXPECT_TRUE(dut1->has_input(plant_input_port));
-
-    // Verifies that the plant's output port is connected to the Diagram's
-    // output port.
-    EXPECT_EQ(dut1->get_num_output_ports(), 1);
-    EXPECT_TRUE(dut1->has_output(plant_output_port_zero));
-
     dut2 = CreateConstantSourceToPlantDiagram(*plant, std::move(dut1));
   }
   ASSERT_NE(dut2, nullptr);
@@ -124,8 +102,6 @@ GTEST_TEST(ToyotaHsrbTests, TestDiagramFactories) {
   // The DUT should have one output port that's connected to DUT #1's output
   // port zero.
   EXPECT_EQ(dut2->get_num_output_ports(), 1);
-  const Diagram<double>::PortIdentifier dut1_output_port_zero{dut1_ptr, 0};
-  EXPECT_TRUE(dut2->has_output(dut1_output_port_zero));
 
   // 7 floating joint positions + 6 floating joint velocities + 2 joint
   // positions + 2 joint velocities = 17 states.
