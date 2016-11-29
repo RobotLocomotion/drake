@@ -20,7 +20,6 @@ drake_setup_options()
 # External projects in order of dependencies; 'trivial' ones first
 drake_add_external(eigen PUBLIC CMAKE)
 drake_add_external(meshconverters PUBLIC CMAKE)
-drake_add_external(mosek PUBLIC MATLAB)
 drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(swigmake PUBLIC CMAKE MATLAB PYTHON)
 drake_add_external(yalmip PUBLIC CMAKE MATLAB)
@@ -105,6 +104,13 @@ drake_add_external(ipopt PUBLIC AUTOTOOLS FORTRAN
     --with-blas=BUILD
     --with-lapack=BUILD
     --with-pic)
+
+# mosek
+drake_add_external(mosek PUBLIC CMAKE MATLAB
+  CMAKE_ARGS
+    -DBUILD_TESTING=OFF
+    -DWITH_MATLAB=${Matlab_FOUND}
+    -DWITH_PYTHON=OFF)
 
 # nlopt
 drake_add_external(nlopt PUBLIC CMAKE

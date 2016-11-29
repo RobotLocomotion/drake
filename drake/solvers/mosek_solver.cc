@@ -9,7 +9,7 @@
 #include <list>
 #include <vector>
 
-#include <mosek/mosek.h>
+#include <mosek.h>
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
