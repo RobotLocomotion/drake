@@ -41,19 +41,19 @@ struct LcmMatlabRemoteVariable {
 };
 
 /// Serialize our favorite data types into the lcm_matlab_array structure.
-/// To support a calling lcm_call_matlab a new type of input, simply implement
+/// To support a calling lcm_call_matlab for a new data type, simply implement
 //  another one of these methods.
 
-extern void ToLcmMatlabArray(const LcmMatlabRemoteVariable& var,
+void ToLcmMatlabArray(const LcmMatlabRemoteVariable& var,
                              drake::lcmt_matlab_array* matlab_array);
 
-extern void ToLcmMatlabArray(double scalar,
+void ToLcmMatlabArray(double scalar,
                              drake::lcmt_matlab_array* matlab_array);
 
-extern void ToLcmMatlabArray(const Eigen::Ref<Eigen::MatrixXd>& mat,
+void ToLcmMatlabArray(const Eigen::Ref<Eigen::MatrixXd>& mat,
                              drake::lcmt_matlab_array* matlab_array);
 
-extern void ToLcmMatlabArray(const std::string& str,
+void ToLcmMatlabArray(const std::string& str,
                              drake::lcmt_matlab_array* matlab_array);
 
 // Helper methods for variadic template call in CallMatlab.
@@ -81,16 +81,15 @@ void PublishLcmCallMatlab(const drake::lcmt_call_matlab& msg);
 
 /// Invokes a mexCallMATLAB call on the remote client.
 ///
-/// @param channel The name of the channel to publish the LCM message on.
-/// @param function_name Name of the matlab function to call.  Any argument
-///     that could have been passed to mexCallMATLAB is allowed.
-///     https://www.mathworks.com/help/matlab/apiref/mexcallmatlab.html
 /// @param num_outputs Number of return variables (left-side arguments) to
 ///     request from matlab.  As in matlab, you need not request all of the
 ///     outputs for any given method.
-/// @option argument1 Any data type which has a ToLcmMatlabArray method
+/// @param function_name Name of the matlab function to call.  Any argument
+///     that could have been passed to mexCallMATLAB is allowed.
+///     https://www.mathworks.com/help/matlab/apiref/mexcallmatlab.html
+/// @param argument1 Any data type which has a ToLcmMatlabArray method
 /// implemented.
-/// @option argument2 Same as above.
+/// @param argument2 Same as above.
 /// ...
 ///
 /// See lcm_call_matlab_test.cc for some simple examples.

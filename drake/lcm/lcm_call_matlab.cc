@@ -63,10 +63,15 @@ void ToLcmMatlabArray(const std::string& str,
 }
 
 void internal::PublishLcmCallMatlab(const drake::lcmt_call_matlab& msg) {
-  static ::lcm::LCM lcm;  // just keep a local copy here for publishing
-  if (!lcm.good()) return;
+  // Keep a local instance of LCM here for publishing.
+  // Per the style guide, must use a raw pointer (who's destructor will never be
+  // called).
+  // https://google.github.io/styleguide/cppguide.html#Static_and_Global_Variables
+  static ::lcm::LCM* lcm = new ::lcm::LCM();
 
-  lcm.publish("LCM_CALL_MATLAB", &msg);
+  if (!lcm->good()) return;
+
+  lcm->publish("LCM_CALL_MATLAB", &msg);
 }
 
 }  // namespace lcm
