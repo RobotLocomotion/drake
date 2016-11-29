@@ -1,0 +1,74 @@
+# -*- yaml -*-
+---
+# distances are meters; angles are degrees.
+maliput_monolane_builder:
+  id: sidewinder
+  lane_bounds: [-3, 3]
+  driveable_bounds: [-8, 8]
+  position_precision: .01
+  orientation_precision: 0.5
+  points:
+    start:
+      xypoint: [0, 0, 0]  # x,y, heading
+      zpoint: [0, 0, 0, 0]  # z, zdot, theta (superelevation), thetadot
+  connections:
+    0:
+      start: "points.start"
+      length: 100
+      z_end: [50, 0, 0, 0]
+    1.1:
+      start: "connections.0.end"
+      arc: [50, 45]
+      z_end: [50, 0, -30, 0]
+    1.2:
+      start: "connections.1.1.end"
+      arc: [50, 495]
+      z_end: [0, 0, -30, 0]
+    2:
+      start: "connections.1.2.end"
+      arc: [50, 45]
+      z_end: [0, 0, 0, 0]
+    3.1:
+      start: "connections.2.end"
+      arc: [20, -45]
+      z_end: [0, 0, 30, 0]
+    3.2:
+      start: "connections.3.1.end"
+      arc: [20, -45]
+      z_end: [0, 0, 0, 0]
+    4.1:
+      start: "connections.3.2.end"
+      arc: [20, 45]
+      z_end: [0, 0, -30, 0]
+    4.2:
+      start: "connections.4.1.end"
+      arc: [20, 45]
+      z_end: [0, 0, 0, 0]
+    5.1:
+      start: "connections.4.2.end"
+      arc: [20, -45]
+      z_end: [0, 0, 30, 0]
+    5.2:
+      start: "connections.5.1.end"
+      arc: [20, -45]
+      z_end: [0, 0, 0, 0]
+    6.1:
+      start: "connections.5.2.end"
+      arc: [20, 45]
+      z_end: [0, 0, -30, 0]
+    6.2:
+      start: "connections.6.1.end"
+      arc: [20, 45]
+      z_end: [0, 0, -30, 0]
+    7.1:
+      start: "connections.6.2.end"
+      arc: [50, 90]
+      z_end: [0, 0, -30, 0]
+    7.2:
+      start: "connections.7.1.end"
+      arc: [50, 45]
+      z_end: [0, 0, 0, 0]
+    8:
+      start: "connections.7.2.end"
+      length: 10
+      explicit_end: "points.start"
