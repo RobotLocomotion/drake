@@ -19,12 +19,12 @@ if not os.path.exists(DRAKE_INSTALL_BIN_DIR):
     raise RuntimeError(
         "cannot find DRAKE_DIST_BUILD_DIR at " + DRAKE_DIST_BUILD_DIR)
 
-DRAKE_DRAKE_BIN_DIR = os.path.join(DRAKE_DIST_BUILD_DIR, "drake", "bin")
+DRAKE_DRAKE_BUILD_DIR = os.path.join(DRAKE_DIST_BUILD_DIR, "drake")
 
 DRAKE_LCMTYPES_DIR = os.path.join(
     DRAKE_DIST_BUILD_DIR, 'drake', 'lcmtypes')
-LCM_PYTHON_DIR = os.path.join(
-    DRAKE_DIST_BUILD_DIR, 'externals', 'lcm', 'lib', 'python2.7')
+DRAKE_DIST_PYTHON_INSTALL_DIR = os.path.join(
+    DRAKE_DIST_BUILD_DIR, 'install', 'lib', 'python2.7')
 
 
 def _add_path(apath):
@@ -34,5 +34,5 @@ def _add_path(apath):
 
 def add_module_search_paths():
     _add_path(DRAKE_LCMTYPES_DIR)  # First, to pick up local edits to messages.
-    _add_path(os.path.join(LCM_PYTHON_DIR, 'dist-packages'))
-    _add_path(os.path.join(LCM_PYTHON_DIR, 'site-packages'))
+    _add_path(os.path.join(DRAKE_DIST_PYTHON_INSTALL_DIR, 'dist-packages'))
+    _add_path(os.path.join(DRAKE_DIST_PYTHON_INSTALL_DIR, 'site-packages'))

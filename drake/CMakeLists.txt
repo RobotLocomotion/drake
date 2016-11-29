@@ -79,6 +79,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=shadow")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=inconsistent-missing-override")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=sign-compare")
 else()
   # TODO(jwnimmer-tri) Get a similar complement of flags working on clang.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=extra -Wno-unused-parameter")

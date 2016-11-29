@@ -2,13 +2,15 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
+
 load("//tools:lcm.bzl", "lcm_cc_library")
 
 lcm_cc_library(
     name = "drake_signal",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_drake_signal.lcm"],
-    linkstatic = 1)
+    linkstatic = 1,
+)
 
 lcm_cc_library(
     name = "viewer",
@@ -20,7 +22,8 @@ lcm_cc_library(
         "lcmt_viewer_link_data.lcm",
         "lcmt_viewer_load_robot.lcm",
     ],
-    linkstatic = 1)
+    linkstatic = 1,
+)
 
 lcm_cc_library(
     name = "automotive",
@@ -31,7 +34,8 @@ lcm_cc_library(
         "lcmt_simple_car_config_t.lcm",
         "lcmt_simple_car_state_t.lcm",
     ],
-    linkstatic = 1)
+    linkstatic = 1,
+)
 
 lcm_cc_library(
     name = "iiwa",
@@ -40,6 +44,7 @@ lcm_cc_library(
         "lcmt_iiwa_command.lcm",
         "lcmt_iiwa_status.lcm",
     ],
-    linkstatic = 1)
+    linkstatic = 1,
+)
 
 # TODO(jwnimmer-tri) Many more messages are missing ...
