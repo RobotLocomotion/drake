@@ -482,14 +482,20 @@ class LinearComplementarityConstraint : public Constraint {
  */
 class PositiveSemidefiniteConstraint : public Constraint {
  public:
-  PositiveSemidefiniteConstraint() : Constraint(0) {};
+  PositiveSemidefiniteConstraint() : Constraint(0) {}
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override {
-    throw std::runtime_error("The Eval function for positive semidefinite constraint is not defined.");
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+            Eigen::VectorXd& y) const override {
+    throw std::runtime_error(
+        "The Eval function for positive semidefinite constraint is not "
+        "defined.");
   }
 
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override {
-    throw std::runtime_error("The Eval function for positive semidefinite constraint is not defined.");
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+            TaylorVecXd& y) const override {
+    throw std::runtime_error(
+        "The Eval function for positive semidefinite constraint is not "
+        "defined.");
   }
 };
 }  // namespace solvers

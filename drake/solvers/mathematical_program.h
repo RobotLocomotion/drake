@@ -655,12 +655,13 @@ class MathematicalProgram {
     int var_count = 0;
     for (int j = 0; j < static_cast<int>(rows); ++j) {
       for (int i = j; i < static_cast<int>(rows); ++i) {
-        names[var_count] = name + "(" + std::to_string(i) + "," + std::to_string(j) + ")";
+        names[var_count] =
+            name + "(" + std::to_string(i) + "," + std::to_string(j) + ")";
         ++var_count;
       }
     }
-    return AddSymmetricVariables<rows>(DecisionVariableScalar::VarType::CONTINUOUS,
-                        names);
+    return AddSymmetricVariables<rows>(
+        DecisionVariableScalar::VarType::CONTINUOUS, names);
   }
 
   /**
@@ -1210,7 +1211,9 @@ class MathematicalProgram {
    * Add a positive semidefinite constraint on a symmetric matrix.
    * @param symmetric_matrix_var A symmetric DecisionVariableMatrix object.
    */
-  std::shared_ptr<PositiveSemidefiniteConstraint> AddPositiveSemidefiniteConstraint(const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var);
+  std::shared_ptr<PositiveSemidefiniteConstraint>
+  AddPositiveSemidefiniteConstraint(
+      const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var);
 
   // template <typename FunctionType>
   // void AddCost(std::function..);
@@ -1393,7 +1396,8 @@ class MathematicalProgram {
   }
 
   /** Getter for positive semidefinite constraint */
-  const std::vector<Binding<PositiveSemidefiniteConstraint>>& positive_semidefinite_constraints() const {
+  const std::vector<Binding<PositiveSemidefiniteConstraint>>&
+  positive_semidefinite_constraints() const {
     return positive_semidefinite_constraint_;
   }
 
@@ -1501,7 +1505,8 @@ class MathematicalProgram {
   std::vector<Binding<LorentzConeConstraint>> lorentz_cone_constraint_;
   std::vector<Binding<RotatedLorentzConeConstraint>>
       rotated_lorentz_cone_constraint_;
-  std::vector<Binding<PositiveSemidefiniteConstraint>> positive_semidefinite_constraint_;
+  std::vector<Binding<PositiveSemidefiniteConstraint>>
+      positive_semidefinite_constraint_;
 
   // Invariant:  The bindings in this list must be non-overlapping.
   // TODO(ggould-tri) can this constraint be relaxed?

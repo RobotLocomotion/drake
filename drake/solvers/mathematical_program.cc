@@ -33,8 +33,8 @@ AttributesSet kGurobiCapabilities =
 // Mosek solver capabilities.
 AttributesSet kMosekCapabilities =
     (kLinearEqualityConstraint | kLinearConstraint | kLorentzConeConstraint |
-     kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost | kPositiveSemidefiniteConstraint |
-     kBinaryVariable);
+     kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost |
+     kPositiveSemidefiniteConstraint | kBinaryVariable);
 
 // Solvers for generic systems of constraints and costs.
 AttributesSet kGenericSolverCapabilities =
@@ -70,30 +70,27 @@ MathematicalProgram::MathematicalProgram()
       gurobi_solver_(new GurobiSolver()),
       mosek_solver_(new MosekSolver()) {}
 
-DecisionVariableMatrixX MathematicalProgram::AddVariables(DecisionVariableScalar::VarType type,
-                                     int rows, int cols,
-                                     bool is_symmetric,
-                                     const std::vector<std::string>& names) {
+DecisionVariableMatrixX MathematicalProgram::AddVariables(
+    DecisionVariableScalar::VarType type, int rows, int cols, bool is_symmetric,
+    const std::vector<std::string>& names) {
   DecisionVariableMatrixX decision_variable_matrix(rows, cols);
   AddVariables_impl(type, names, is_symmetric, decision_variable_matrix);
   return decision_variable_matrix;
 }
 
-DecisionVariableVectorX MathematicalProgram::AddVariables(DecisionVariableScalar::VarType type,
-                                     int rows,
-                                     const std::vector<std::string>& names) {
+DecisionVariableVectorX MathematicalProgram::AddVariables(
+    DecisionVariableScalar::VarType type, int rows,
+    const std::vector<std::string>& names) {
   return AddVariables(type, rows, 1, false, names);
 }
 
 DecisionVariableVectorX MathematicalProgram::AddContinuousVariables(
     std::size_t rows, const std::vector<std::string>& names) {
-  return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows,
-                      names);
+  return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, names);
 }
 
 const DecisionVariableMatrixX MathematicalProgram::AddContinuousVariables(
-    std::size_t rows, std::size_t cols,
-    const std::vector<std::string>& names) {
+    std::size_t rows, std::size_t cols, const std::vector<std::string>& names) {
   return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, cols,
                       false, names);
 }
@@ -122,8 +119,8 @@ DecisionVariableMatrixX MathematicalProgram::AddBinaryVariables(
                       false, names);
 }
 
-DecisionVariableMatrixX MathematicalProgram::AddBinaryVariables(size_t rows, size_t cols,
-                                           const std::string& name) {
+DecisionVariableMatrixX MathematicalProgram::AddBinaryVariables(
+    size_t rows, size_t cols, const std::string& name) {
   std::vector<std::string> names = std::vector<std::string>(rows * cols);
   for (int i = 0; i < static_cast<int>(names.size()); ++i) {
     names[i] = name + std::to_string(num_vars_ + i);
@@ -142,15 +139,16 @@ DecisionVariableMatrixX MathematicalProgram::AddSymmetricContinuousVariables(
   std::vector<std::string> names(rows * (rows + 1) / 2);
   for (int j = 0; j < static_cast<int>(rows); ++j) {
     for (int i = j; i < static_cast<int>(rows); ++i) {
-      names.push_back( name + "(" + std::to_string(i) +","+std::to_string(j)+")");
+      names.push_back(name + "(" + std::to_string(i) + "," + std::to_string(j) +
+                      ")");
     }
   }
   return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, rows,
                       true, names);
 }
 
-DecisionVariableVectorX MathematicalProgram::AddBinaryVariables(size_t rows,
-                                           const std::string& name) {
+DecisionVariableVectorX MathematicalProgram::AddBinaryVariables(
+    size_t rows, const std::string& name) {
   std::vector<std::string> names = std::vector<std::string>(rows);
   for (int i = 0; i < static_cast<int>(rows); ++i) {
     names[i] = name + std::to_string(num_vars_ + i);
@@ -159,7 +157,7 @@ DecisionVariableVectorX MathematicalProgram::AddBinaryVariables(size_t rows,
 }
 
 void MathematicalProgram::AddCost(const std::shared_ptr<Constraint>& obj,
-             const VariableListRef& vars) {
+                                  const VariableListRef& vars) {
   VariableList var_list(vars);
   DRAKE_ASSERT(var_list.column_vectors_only());
   required_capabilities_ |= kGenericCost;
@@ -167,7 +165,7 @@ void MathematicalProgram::AddCost(const std::shared_ptr<Constraint>& obj,
 }
 
 void MathematicalProgram::AddCost(const std::shared_ptr<LinearConstraint>& obj,
-             const VariableListRef& vars) {
+                                  const VariableListRef& vars) {
   VariableList var_list(vars);
   DRAKE_ASSERT(var_list.column_vectors_only());
   required_capabilities_ |= kLinearCost;
@@ -176,8 +174,9 @@ void MathematicalProgram::AddCost(const std::shared_ptr<LinearConstraint>& obj,
   linear_costs_.push_back(Binding<LinearConstraint>(obj, var_list));
 }
 
-void MathematicalProgram::AddCost(const std::shared_ptr<QuadraticConstraint>& obj,
-             const VariableListRef& vars) {
+void MathematicalProgram::AddCost(
+    const std::shared_ptr<QuadraticConstraint>& obj,
+    const VariableListRef& vars) {
   VariableList var_list(vars);
   DRAKE_ASSERT(var_list.column_vectors_only());
   required_capabilities_ |= kQuadraticCost;
@@ -187,13 +186,13 @@ void MathematicalProgram::AddCost(const std::shared_ptr<QuadraticConstraint>& ob
 }
 
 void MathematicalProgram::AddConstraint(std::shared_ptr<Constraint> con,
-                   const VariableListRef& vars) {
+                                        const VariableListRef& vars) {
   required_capabilities_ |= kGenericConstraint;
   generic_constraints_.push_back(Binding<Constraint>(con, vars));
 }
 
 void MathematicalProgram::AddConstraint(std::shared_ptr<LinearConstraint> con,
-                   const VariableListRef& vars) {
+                                        const VariableListRef& vars) {
   VariableList var_list(vars);
   DRAKE_ASSERT(var_list.column_vectors_only());
   required_capabilities_ |= kLinearConstraint;
@@ -202,8 +201,9 @@ void MathematicalProgram::AddConstraint(std::shared_ptr<LinearConstraint> con,
   linear_constraints_.push_back(Binding<LinearConstraint>(con, var_list));
 }
 
-void MathematicalProgram::AddConstraint(std::shared_ptr<LinearEqualityConstraint> con,
-                   const VariableListRef& vars) {
+void MathematicalProgram::AddConstraint(
+    std::shared_ptr<LinearEqualityConstraint> con,
+    const VariableListRef& vars) {
   VariableList var_list(vars);
   DRAKE_ASSERT(var_list.column_vectors_only());
   required_capabilities_ |= kLinearEqualityConstraint;
@@ -213,8 +213,8 @@ void MathematicalProgram::AddConstraint(std::shared_ptr<LinearEqualityConstraint
       Binding<LinearEqualityConstraint>(con, var_list));
 }
 
-void MathematicalProgram::AddConstraint(std::shared_ptr<LorentzConeConstraint> con,
-                   const VariableListRef& vars) {
+void MathematicalProgram::AddConstraint(
+    std::shared_ptr<LorentzConeConstraint> con, const VariableListRef& vars) {
   VariableList var_list(vars);
   DRAKE_ASSERT(var_list.column_vectors_only());
   required_capabilities_ |= kLorentzConeConstraint;
@@ -222,15 +222,16 @@ void MathematicalProgram::AddConstraint(std::shared_ptr<LorentzConeConstraint> c
       Binding<LorentzConeConstraint>(con, var_list));
 }
 
-std::shared_ptr<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
-    const VariableListRef& vars) {
+std::shared_ptr<LorentzConeConstraint>
+MathematicalProgram::AddLorentzConeConstraint(const VariableListRef& vars) {
   auto constraint = std::make_shared<LorentzConeConstraint>();
   AddConstraint(constraint, vars);
   return constraint;
 }
 
-void MathematicalProgram::AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con,
-                   const VariableListRef& vars) {
+void MathematicalProgram::AddConstraint(
+    std::shared_ptr<RotatedLorentzConeConstraint> con,
+    const VariableListRef& vars) {
   VariableList var_list(vars);
   DRAKE_ASSERT(var_list.column_vectors_only());
   required_capabilities_ |= kRotatedLorentzConeConstraint;
@@ -238,7 +239,8 @@ void MathematicalProgram::AddConstraint(std::shared_ptr<RotatedLorentzConeConstr
       Binding<RotatedLorentzConeConstraint>(con, var_list));
 }
 
-std::shared_ptr<RotatedLorentzConeConstraint> MathematicalProgram::AddRotatedLorentzConeConstraint(
+std::shared_ptr<RotatedLorentzConeConstraint>
+MathematicalProgram::AddRotatedLorentzConeConstraint(
     const VariableListRef& vars) {
   auto constraint = std::make_shared<RotatedLorentzConeConstraint>();
   AddConstraint(constraint, vars);
@@ -277,7 +279,7 @@ std::shared_ptr<Constraint> MathematicalProgram::AddPolynomialConstraint(
           const Polynomiald::VarType term_var = monomial.terms[0].var;
           int var_num =
               (std::find(poly_vars.begin(), poly_vars.end(), term_var) -
-                  poly_vars.begin());
+               poly_vars.begin());
           DRAKE_ASSERT(var_num < static_cast<int>(poly_vars.size()));
           linear_constraint_matrix(poly_num, var_num) = monomial.coefficient;
         } else {
@@ -292,27 +294,30 @@ std::shared_ptr<Constraint> MathematicalProgram::AddPolynomialConstraint(
       return constraint;
     } else {
       auto constraint = std::make_shared<LinearConstraint>(
-          linear_constraint_matrix, linear_constraint_lb,
-          linear_constraint_ub);
+          linear_constraint_matrix, linear_constraint_lb, linear_constraint_ub);
       AddConstraint(constraint, vars);
       return constraint;
     }
   } else {
-    auto constraint = std::make_shared<PolynomialConstraint>(
-        polynomials, poly_vars, lb, ub);
+    auto constraint =
+        std::make_shared<PolynomialConstraint>(polynomials, poly_vars, lb, ub);
     AddConstraint(constraint, vars);
     return constraint;
   }
 }
 
-void MathematicalProgram::AddConstraint(std::shared_ptr<PositiveSemidefiniteConstraint> con,
-                                        const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var) {
+void MathematicalProgram::AddConstraint(
+    std::shared_ptr<PositiveSemidefiniteConstraint> con,
+    const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var) {
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
   DRAKE_ASSERT(IsDecisionVariableMatrixSymmetric(symmetric_matrix_var));
-  positive_semidefinite_constraint_.push_back(Binding<PositiveSemidefiniteConstraint>(con, {symmetric_matrix_var}));
+  positive_semidefinite_constraint_.push_back(
+      Binding<PositiveSemidefiniteConstraint>(con, {symmetric_matrix_var}));
 }
 
-std::shared_ptr<PositiveSemidefiniteConstraint> MathematicalProgram::AddPositiveSemidefiniteConstraint(const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var) {
+std::shared_ptr<PositiveSemidefiniteConstraint>
+MathematicalProgram::AddPositiveSemidefiniteConstraint(
+    const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var) {
   auto constraint = std::make_shared<PositiveSemidefiniteConstraint>();
   AddConstraint(constraint, symmetric_matrix_var);
   return constraint;
