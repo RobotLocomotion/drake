@@ -1185,6 +1185,74 @@ const {
 }
 
 template <typename T>
+template <typename Derived>
+MatrixX<typename Derived::Scalar> RigidBodyTree<T>::transformVelocityMappingToQDotMapping(
+    const KinematicsCache<typename Derived::Scalar>& cache,
+    const Eigen::MatrixBase<Derived>& B) const {
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
+                Eigen::Dynamic>
+      A(B.rows(), get_num_positions());
+  int A_col_start = 0;
+  int B_col_start = 0;
+  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+    const RigidBody<double>& body = **it;
+    if (body.has_parent_body()) {
+      const DrakeJoint& joint = body.getJoint();
+      const auto& element = cache.getElement(body);
+      A.middleCols(A_col_start, joint.get_num_positions()).noalias() =
+          B.middleCols(B_col_start, joint.get_num_velocities()) *
+              element.qdot_to_v;
+      A_col_start += joint.get_num_positions();
+      B_col_start += joint.get_num_velocities();
+    }
+  }
+  return A;
+}
+
+template <typename T>
+template <typename Derived>
+MatrixX<typename Derived::Scalar> RigidBodyTree<T>::transformQDotMappingToVelocityMapping(
+    const KinematicsCache<typename Derived::Scalar>& cache,
+    const Eigen::MatrixBase<Derived>& A) const {
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
+                Eigen::Dynamic>
+      B(A.rows(), get_num_velocities());
+  int B_col_start = 0;
+  int A_col_start = 0;
+  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+    const RigidBody<double>& body = **it;
+    if (body.has_parent_body()) {
+      const DrakeJoint& joint = body.getJoint();
+      const auto& element = cache.getElement(body);
+      B.middleCols(B_col_start, joint.get_num_velocities()).noalias() =
+          A.middleCols(A_col_start, joint.get_num_positions()) *
+              element.v_to_qdot;
+      B_col_start += joint.get_num_velocities();
+      A_col_start += joint.get_num_positions();
+    }
+  }
+  return B;
+}
+
+template <typename T>
+template <typename Scalar>
+MatrixX<Scalar> RigidBodyTree<T>::VelocityToPositionDotMapping(
+    const KinematicsCache<Scalar>& cache) const {
+  return transformQDotMappingToVelocityMapping(
+      cache,
+      MatrixX<Scalar>::Identity(get_num_positions(), get_num_positions()));
+};
+
+template <typename T>
+template <typename Scalar>
+MatrixX<Scalar> RigidBodyTree<T>::PositionDotToVelocityMapping(
+    const KinematicsCache<Scalar>& cache) const {
+  return transformVelocityMappingToQDotMapping(
+      cache,
+      MatrixX<Scalar>::Identity(get_num_velocities(), get_num_velocities()));
+};
+
+template <typename T>
 template <typename Scalar>
 Matrix<Scalar, kSpaceDimension, Eigen::Dynamic>
 RigidBodyTree<T>::centerOfMassJacobian(
@@ -2641,6 +2709,28 @@ RigidBodyTree<double>::centerOfMass<AutoDiffXd>(
 template Vector3d RigidBodyTree<double>::centerOfMass<double>(
     KinematicsCache<double>&, set<int, less<int>, allocator<int>> const&) const;
 
+// Explicit template instantiations for VelocityToPositionDotMapping.
+template MatrixX<AutoDiffUpTo73d>
+RigidBodyTree<double>::VelocityToPositionDotMapping(
+    const KinematicsCache<AutoDiffUpTo73d>& cache) const;
+template MatrixX<AutoDiffXd>
+RigidBodyTree<double>::VelocityToPositionDotMapping(
+    const KinematicsCache<AutoDiffXd>& cache) const;
+template MatrixX<double>
+RigidBodyTree<double>::VelocityToPositionDotMapping(
+    const KinematicsCache<double>& cache) const;
+
+// Explicit template instantiations for PositionDotToVelocityMapping
+template MatrixX<AutoDiffUpTo73d>
+RigidBodyTree<double>::PositionDotToVelocityMapping(
+    const KinematicsCache<AutoDiffUpTo73d>& cache) const;
+template MatrixX<AutoDiffXd>
+RigidBodyTree<double>::PositionDotToVelocityMapping(
+    const KinematicsCache<AutoDiffXd>& cache) const;
+template MatrixX<double>
+RigidBodyTree<double>::PositionDotToVelocityMapping(
+    const KinematicsCache<double>& cache) const;
+
 // Explicit template instantiations for dynamicsBiasTerm.
 template VectorX<AutoDiffUpTo73d>
 RigidBodyTree<double>::dynamicsBiasTerm<AutoDiffUpTo73d>(
@@ -2874,6 +2964,28 @@ RigidBodyTree<double>::resolveCenterOfPressure<Vector3d, Vector3d>(
     vector<ForceTorqueMeasurement, allocator<ForceTorqueMeasurement>> const&,
     Eigen::MatrixBase<Vector3d> const&,
     Eigen::MatrixBase<Vector3d> const&) const;
+
+// Explicit template instantiations for transformVelocityMappingToQDotMapping.
+template MatrixX<double>
+RigidBodyTree<double>::transformVelocityMappingToQDotMapping<VectorXd>(
+    const KinematicsCache<double>& cache,
+    const Eigen::MatrixBase<VectorXd>& B) const;
+template MatrixX<double>
+RigidBodyTree<double>::transformVelocityMappingToQDotMapping<
+    Eigen::RowVectorXd>(
+    const KinematicsCache<double>& cache,
+    const Eigen::MatrixBase<Eigen::RowVectorXd>& B) const;
+
+// Explicit template instantiations for transformQDotMappingToVelocityMapping.
+template MatrixX<double>
+RigidBodyTree<double>::transformQDotMappingToVelocityMapping<VectorXd>(
+    const KinematicsCache<double>& cache,
+    const Eigen::MatrixBase<VectorXd>& B) const;
+template MatrixX<double>
+RigidBodyTree<double>::transformQDotMappingToVelocityMapping<
+    Eigen::RowVectorXd>(
+    const KinematicsCache<double>& cache,
+    const Eigen::MatrixBase<Eigen::RowVectorXd>& B) const;
 
 // Explicit template instantiations for transformPointsJacobian.
 template MatrixX<AutoDiffUpTo73d>

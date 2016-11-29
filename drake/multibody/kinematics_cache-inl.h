@@ -101,58 +101,6 @@ void KinematicsCache<T>::checkCachedKinematicsSettings(
 }
 
 template <typename T>
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-              Eigen::Dynamic>
-KinematicsCache<T>::transformVelocityMappingToQDotMapping(
-    const Eigen::MatrixBase<Derived>& B) const {
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                Eigen::Dynamic>
-      A(B.rows(), get_num_positions());
-  int A_col_start = 0;
-  int B_col_start = 0;
-  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-    const RigidBody<double>& body = **it;
-    if (body.has_parent_body()) {
-      const DrakeJoint& joint = body.getJoint();
-      const auto& element = getElement(body);
-      A.middleCols(A_col_start, joint.get_num_positions()).noalias() =
-          B.middleCols(B_col_start, joint.get_num_velocities()) *
-              element.qdot_to_v;
-      A_col_start += joint.get_num_positions();
-      B_col_start += joint.get_num_velocities();
-    }
-  }
-  return A;
-}
-
-template <typename T>
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-              Eigen::Dynamic>
-KinematicsCache<T>::transformQDotMappingToVelocityMapping(
-    const Eigen::MatrixBase<Derived>& A) const {
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                Eigen::Dynamic>
-      B(A.rows(), get_num_velocities());
-  int B_col_start = 0;
-  int A_col_start = 0;
-  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-    const RigidBody<double>& body = **it;
-    if (body.has_parent_body()) {
-      const DrakeJoint& joint = body.getJoint();
-      const auto& element = getElement(body);
-      B.middleCols(B_col_start, joint.get_num_velocities()).noalias() =
-          A.middleCols(A_col_start, joint.get_num_positions()) *
-              element.v_to_qdot;
-      B_col_start += joint.get_num_velocities();
-      A_col_start += joint.get_num_positions();
-    }
-  }
-  return B;
-}
-
-template <typename T>
 const Eigen::Matrix<T, Eigen::Dynamic, 1>& KinematicsCache<T>::getQ() const {
   return q;
 }
