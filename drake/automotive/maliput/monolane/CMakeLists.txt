@@ -1,0 +1,12 @@
+add_subdirectory(test)
+drake_install_headers(
+  arc_lane.h
+  branch_point.h
+  builder.h
+  junction.h
+  lane.h
+  line_lane.h
+  mathiness.h
+  road_geometry.h
+  segment.h
+  )
