@@ -17,9 +17,9 @@ cc_system_package:
   repository, whose `:lib` target is then bound to '{name}'.
 """
 
-load("@//tools/build_rules/config:wrapped_ctx.bzl", "wrapctx")
-load("@//tools/build_rules/config:local.bzl", "setup_local_cc_library")
-load("@//tools/build_rules/config:pkg_config.bzl", "setup_pkg_config_package")
+load("@//tools/third_party/kythe/tools/build_rules/config:wrapped_ctx.bzl", "wrapctx")
+load("@//tools/third_party/kythe/tools/build_rules/config:local.bzl", "setup_local_cc_library")
+load("@//tools/third_party/kythe/tools/build_rules/config:pkg_config.bzl", "setup_pkg_config_package")
 
 def try_local_library(repo_ctx):
   if repo_ctx.attr.envvar and repo_ctx.attr.envvar in repo_ctx.os.environ:
@@ -58,7 +58,7 @@ cc_system_package_configure = repository_rule(
         "default": attr.string(),
         "defines": attr.string_list(),
         "build_file_template": attr.label(
-            default = Label("@//tools/build_rules/config:BUILD.tpl"),
+            default = Label("@//tools/third_party/kythe/tools/build_rules/config:BUILD.tpl"),
             single_file = True,
             allow_files = True,
         ),
