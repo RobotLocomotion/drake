@@ -12,6 +12,30 @@ namespace drake {
 namespace solvers {
 namespace test {
 namespace {
+void GetLinearProgramSolvers(
+    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
+  AddSolverIfAvailable("Gurobi", solvers);
+  AddSolverIfAvailable("Mosek", solvers);
+  AddSolverIfAvailable("SNOPT", solvers);
+}
+
+void GetQuadraticProgramSolvers(
+    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
+  AddSolverIfAvailable("Gurobi", solvers);
+  AddSolverIfAvailable("Mosek", solvers);
+  AddSolverIfAvailable("SNOPT", solvers);
+}
+
+void GetSecondOrderConicProgramSolvers(
+    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
+  AddSolverIfAvailable("Gurobi", solvers);
+  AddSolverIfAvailable("Mosek", solvers);
+}
+
+void GetSemidefiniteProgramSolvers(
+    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
+  AddSolverIfAvailable("Mosek", solvers);
+}
 /////////////////////////
 ///// Linear Program ////
 /////////////////////////
@@ -903,25 +927,6 @@ void TestFindSpringEquilibrium(
                         solver);
 }
 
-void GetLinearProgramSolvers(
-    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  AddSolverIfAvailable("Gurobi", solvers);
-  AddSolverIfAvailable("Mosek", solvers);
-  AddSolverIfAvailable("SNOPT", solvers);
-}
-
-void GetQuadraticProgramSolvers(
-    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  AddSolverIfAvailable("Gurobi", solvers);
-  AddSolverIfAvailable("Mosek", solvers);
-  AddSolverIfAvailable("SNOPT", solvers);
-}
-
-void GetSecondOrderConicProgramSolvers(
-    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  AddSolverIfAvailable("Gurobi", solvers);
-  AddSolverIfAvailable("Mosek", solvers);
-}
 }  // namespace
 
 GTEST_TEST(TestConvexOptimization, TestLinearProgramFeasibility) {
@@ -1135,6 +1140,56 @@ GTEST_TEST(TestConvexOptimization, TestFindSpringEquilibrium) {
   for (const auto& solver : solvers) {
     TestFindSpringEquilibrium(*solver);
   }
+}
+
+// Solve a semidefinite programming problem.
+// Find the common Lyapunov function for linear systems
+// xdot = Ai*x
+// The condition is
+// min 0
+// s.t P is positive semidefinite
+//     Ai'*P + P*Ai is positive semidefinite
+GTEST_TEST(TestConvexOptimization, TestCommonLyapunov) {
+std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GetSemidefiniteProgramSolvers(&solvers);
+for (const auto& solver : solvers) {
+MathematicalProgram prog;
+auto P = prog.AddSymmetricContinuousVariables<3>("P");
+prog.AddPositiveSemidefiniteConstraint(P);
+Eigen::Matrix3d A1;
+A1 << -1, -1, -2,
+0, -1, -3,
+0,  0, -1;
+auto Q1 = prog.AddSymmetricContinuousVariables<3>("Q1");
+// Add constraint A1'*P + P*A1 + Q1 = 0.
+Eigen::Matrix3d C = 0.5 * Eigen::Matrix3d::Identity();
+prog.AddSymmetricProductEquality(Eigen::Matrix3d::Zero(),{A1, C}, {P, Q1});
+// Add constraint Q1 is positive semidefinite
+prog.AddPositiveSemidefiniteConstraint(Q1);
+Eigen::Matrix3d A2;
+A2 << -1, -1.2, -1.8,
+0, -0.7, -2,
+0,  0,  -0.4;
+auto Q2 = prog.AddSymmetricContinuousVariables<3>("Q2");
+// Add constraint A2'*P + P*A2 + Q2 = 0
+prog.AddSymmetricProductEquality(Eigen::Matrix3d::Zero(),{A2, C}, {P, Q2});
+// Add constraint Q2 is positive semidefinite
+prog.AddPositiveSemidefiniteConstraint(Q2);
+
+RunSolver(&prog, *solver);
+
+Eigen::Matrix3d P_value = GetSolution(P);
+Eigen::Matrix3d Q1_value = GetSolution(Q1);
+Eigen::Matrix3d Q2_value = GetSolution(Q2);
+Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_P(P_value);
+EXPECT_GE(eigen_solver_P.eigenvalues().real().minCoeff(), -1E-8);
+Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_Q1(Q1_value);
+EXPECT_GE(eigen_solver_Q1.eigenvalues().real().minCoeff(), -1E-8);
+Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_Q2(Q2_value);
+EXPECT_GE(eigen_solver_Q2.eigenvalues().real().minCoeff(), -1E-8);
+EXPECT_TRUE(CompareMatrices(A1.transpose()*P_value + P_value*A1, -Q1_value, 1e-6, MatrixCompareType::absolute));
+EXPECT_TRUE(CompareMatrices(A2.transpose()*P_value + P_value*A2, -Q2_value, 1e-6, MatrixCompareType::absolute));
+}
 }
 }  // namespace test
 }  // namespace solvers
