@@ -5,7 +5,8 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "analysis",
-    hdrs = glob(["*.h"]),
     srcs = glob(["*.cc"]),
+    hdrs = glob(["*.h"]),
+    linkstatic = 1,
     deps = ["//drake/systems/framework"],
-    linkstatic = 1)
+)
