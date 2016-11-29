@@ -19,6 +19,10 @@ struct BranchPointId {
 
 /// A set of LaneEnds.
 class LaneEndSet {
+  // NB: This is abstract (versus being a std::set or what not) to allow the
+  // implementation to decide on how best to handle storage/indexing/etc.
+  // E.g., it could very well be a view into a database or tiled storage or
+  // something.
  public:
   virtual ~LaneEndSet() {}
 

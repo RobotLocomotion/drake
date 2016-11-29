@@ -43,6 +43,9 @@ class Segment {
   /// to geometrically adjacent Lanes.
   ///
   /// @pre @p index must be >= 0 and < num_lanes().
+  // TODO(maddog@tri.global) Does increasing index value mean "to left" or
+  //                         "to right"?  Resolve this by the first multilane
+  //                         implementation.
   const Lane* lane(int index) const { return do_lane(index); }
 
   /// @name Deleted Copy/Move Operations

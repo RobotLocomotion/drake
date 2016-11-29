@@ -212,55 +212,41 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
         : bp->GetBSide()->get(0);
     // ...test GEO-space position similarity.
     const GeoPosition ref_geo = LaneEndGeoPosition(ref_end);
-    for (int bi = 0; bi < bp->GetASide()->size(); ++bi) {
-      const LaneEnd le = bp->GetASide()->get(bi);
-      const double d = Distance(ref_geo, LaneEndGeoPosition(le));
-      if (d > linear_tolerance()) {
-        std::stringstream ss;
-        ss << "Lane " << le.lane->id().id
-           << ((le.end == LaneEnd::kStart) ? "[start]" : "[end]")
-           << " position is off by " << d << ".";
-        failures.push_back(ss.str());
+    const auto test_geo_position = [&](const LaneEndSet& ends) {
+      for (int bi = 0; bi < ends.size(); ++bi) {
+        const LaneEnd le = ends.get(bi);
+        const double d = Distance(ref_geo, LaneEndGeoPosition(le));
+        if (d > linear_tolerance()) {
+          std::stringstream ss;
+          ss << "Lane " << le.lane->id().id
+             << ((le.end == LaneEnd::kStart) ? "[start]" : "[end]")
+             << " position is off by " << d << ".";
+          failures.push_back(ss.str());
+        }
       }
-    }
-    for (int bi = 0; bi < bp->GetBSide()->size(); ++bi) {
-      const LaneEnd le = bp->GetBSide()->get(bi);
-      const double d = Distance(ref_geo, LaneEndGeoPosition(le));
-      if (d > linear_tolerance()) {
-        std::stringstream ss;
-        ss << "Lane " << le.lane->id().id
-           << ((le.end == LaneEnd::kStart) ? "[start]" : "[end]")
-           << " position is off by " << d << ".";
-        failures.push_back(ss.str());
-      }
-    }
+    };
+    test_geo_position(*(bp->GetASide()));
+    test_geo_position(*(bp->GetBSide()));
     // ...test orientation similarity.
     const Rotation ref_rot =
         (bp->GetASide()->size() > 0)
         ? OrientationOutFromLane(bp->GetASide()->get(0))
         : OrientationIntoLane(bp->GetBSide()->get(0));
-    for (int bi = 0; bi < bp->GetASide()->size(); ++bi) {
-      const LaneEnd le = bp->GetASide()->get(bi);
-      const double d = Distance(ref_rot, OrientationOutFromLane(le));
-      if (d > angular_tolerance()) {
-        std::stringstream ss;
-        ss << "Lane " << le.lane->id().id
-           << ((le.end == LaneEnd::kStart) ? "[start]" : "[end]")
-           << " orientation is off by " << d << ".";
-        failures.push_back(ss.str());
+    const auto test_orientation = [&](const LaneEndSet& ends) {
+      for (int bi = 0; bi < ends.size(); ++bi) {
+        const LaneEnd le = ends.get(bi);
+        const double d = Distance(ref_rot, OrientationOutFromLane(le));
+        if (d > angular_tolerance()) {
+          std::stringstream ss;
+          ss << "Lane " << le.lane->id().id
+             << ((le.end == LaneEnd::kStart) ? "[start]" : "[end]")
+             << " orientation is off by " << d << ".";
+          failures.push_back(ss.str());
+        }
       }
-    }
-    for (int bi = 0; bi < bp->GetBSide()->size(); ++bi) {
-      const LaneEnd le = bp->GetBSide()->get(bi);
-      const double d = Distance(ref_rot, OrientationIntoLane(le));
-      if (d > angular_tolerance()) {
-        std::stringstream ss;
-        ss << "Lane " << le.lane->id().id
-           << ((le.end == LaneEnd::kStart) ? "[start]" : "[end]")
-           << " orientation is off by " << d << ".";
-        failures.push_back(ss.str());
-      }
-    }
+    };
+    test_orientation(*(bp->GetASide()));
+    test_orientation(*(bp->GetBSide()));
   }
 
   // Check that Lane left/right relationships within a Segment are

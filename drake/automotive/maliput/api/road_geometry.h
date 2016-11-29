@@ -21,6 +21,8 @@ struct RoadGeometryId {
 
 /// Abstract API for the geometry of a road network, including both
 /// the network topology and the geometry of its embedding in 3-space.
+// TODO(maddog@tri.global)  This entire API should be templated on a
+//                          scalar type T like everything else in drake.
 class RoadGeometry {
  public:
   virtual ~RoadGeometry() {}
@@ -64,7 +66,6 @@ class RoadGeometry {
   // TODO(maddog@tri.global)  How should the "geo_pos is nowhere near the
   //                          road surface" case be handled?  Ability to
   //                          return 'no result'?
-  // TODO(maddog@tri.global)  UNDER CONSTRUCTION
   RoadPosition ToRoadPosition(const GeoPosition& geo_pos,
                               const RoadPosition& hint) const {
     // TODO(maddog@tri.global)  Assert the linear-tolerance constraint.
