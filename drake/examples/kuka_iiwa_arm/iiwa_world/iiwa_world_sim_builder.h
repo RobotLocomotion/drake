@@ -58,11 +58,11 @@ class IiwaWorldSimBuilder {
   ///
   /// @return model_instance_id of the object that is added.
   int AddModelInstanceToFrame(
-      const std::string &model_name, const Eigen::Vector3d &xyz,
-      const Eigen::Vector3d &rpy,
+      const std::string& model_name, const Eigen::Vector3d& xyz,
+      const Eigen::Vector3d& rpy,
       std::shared_ptr<RigidBodyFrame> weld_to_frame,
       const drake::multibody::joints::FloatingBaseType floating_base_type =
-      drake::multibody::joints::kFixed);
+          drake::multibody::joints::kFixed);
 
   ///  Adds a flat terrain to the simulation.
   void AddGround();
@@ -84,7 +84,8 @@ class IiwaWorldSimBuilder {
   IiwaWorldSimBuilder(const IiwaWorldSimBuilder<T>& other) = delete;
   IiwaWorldSimBuilder& operator=(const IiwaWorldSimBuilder<T>& other) = delete;
 
-  /// Sets the parameters related to the penetration and friction throughout the
+  /// Sets the parameters related to the penetration and friction throughout
+  /// the
   /// world.
   void SetPenetrationContactParameters(double penetration_stiffness,
                                        double penetration_damping,

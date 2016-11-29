@@ -79,17 +79,16 @@ int IiwaWorldSimBuilder<T>::AddFloatingModelInstance(const string& model_name,
 
 template <typename T>
 int IiwaWorldSimBuilder<T>::AddModelInstanceToFrame(
-    const string &model_name, const Vector3d &xyz, const Vector3d &rpy,
+    const string& model_name, const Vector3d& xyz, const Vector3d& rpy,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     const drake::multibody::joints::FloatingBaseType floating_base_type) {
   DRAKE_DEMAND(!built_);
-  std::size_t extension_location =
-      model_map_[model_name].find_last_of(".");
+  std::size_t extension_location = model_map_[model_name].find_last_of(".");
 
   DRAKE_DEMAND(extension_location < model_map_[model_name].size());
 
-  std::string extension =
-      model_map_[model_name].substr(extension_location + 1);
+  std::string extension = model_map_[model_name].substr(
+      extension_location + 1);
 
   parsers::ModelInstanceIdTable table;
 
@@ -97,13 +96,13 @@ int IiwaWorldSimBuilder<T>::AddModelInstanceToFrame(
 
   if (extension == "urdf") {
     table = drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + model_map_[model_name],
-        floating_base_type, weld_to_frame, rigid_body_tree_.get());
+        drake::GetDrakePath() + model_map_[model_name], floating_base_type,
+        weld_to_frame, rigid_body_tree_.get());
 
   } else if (extension == "sdf") {
     table = drake::parsers::sdf::AddModelInstancesFromSdfFile(
-        drake::GetDrakePath() + model_map_[model_name],
-        floating_base_type, weld_to_frame, rigid_body_tree_.get());
+        drake::GetDrakePath() + model_map_[model_name], floating_base_type,
+        weld_to_frame, rigid_body_tree_.get());
   }
   const int model_instance_id = table.begin()->second;
   return model_instance_id;
@@ -119,7 +118,7 @@ std::unique_ptr<systems::Diagram<T>> IiwaWorldSimBuilder<T>::Build() {
   DRAKE_DEMAND(!built_);
 
   std::unique_ptr<systems::DiagramBuilder<T>> builder{
-    make_unique<systems::DiagramBuilder<T>>()};
+      make_unique<systems::DiagramBuilder<T>>()};
 
   plant_ = builder->template AddSystem<systems::RigidBodyPlant<T>>(
       move(rigid_body_tree_));
@@ -156,8 +155,8 @@ void IiwaWorldSimBuilder<T>::SetZeroConfiguration(
                plant_diagram != nullptr);
 
   Context<double>* input_diagram_context =
-      demo_diagram->GetMutableSubsystemContext(simulator->get_mutable_context(),
-                                               plant_diagram);
+      demo_diagram->GetMutableSubsystemContext(
+          simulator->get_mutable_context(), plant_diagram);
 
   Context<double>* plant_context =
       plant_diagram->GetMutableSubsystemContext(input_diagram_context, plant_);
