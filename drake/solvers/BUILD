@@ -36,18 +36,20 @@ cc_library(
         "snopt_solver.h",
     ],
     hdrs = [
-        "function.h",
         "constraint.h",
         "decision_variable.h",
+        "function.h",
         "mathematical_program.h",
         "solution_result.h",
     ],
+    linkstatic = 1,
     deps = DEPS,
-    linkstatic = 1)
+)
 
 cc_library(
     name = "system_identification",
     srcs = ["system_identification.cc"],
     hdrs = ["system_identification.h"],
+    linkstatic = 1,
     deps = DEPS + [":mathematical_program"],
-    linkstatic = 1)
+)
