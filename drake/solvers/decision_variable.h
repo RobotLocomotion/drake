@@ -11,7 +11,6 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/number_traits.h"
 
 namespace drake {
 namespace solvers {
