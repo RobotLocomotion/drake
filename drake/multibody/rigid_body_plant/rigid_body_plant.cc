@@ -435,8 +435,8 @@ Matrix3<T> RigidBodyPlant<T>::ComputeBasisFromZ(const Vector3<T>& z_axis_W) {
   // Projects the z-axis into the first quadrant in order to identify the
   // *smallest* component of the normal.
   const Vector3<T> u(z_axis_W.cwiseAbs());
-  const int minAxis =
-      u[0] <= u[1] ? (u[0] <= u[2] ? 0 : 2) : (u[1] <= u[2] ? 1 : 2);
+  int minAxis;
+  u.minCoeff(&minAxis);
   // The world axis corresponding to the smallest component of the local z-axis
   // will be *most* perpendicular.
   Vector3<T> perpAxis;

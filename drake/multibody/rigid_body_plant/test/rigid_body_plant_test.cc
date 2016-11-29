@@ -442,10 +442,6 @@ void ExpectOrthonormal(const Matrix3<double>& R) {
 // Tests the contact frame to confirm that a robust, right-handed orthonormal
 // frame is generated.
 GTEST_TEST(rigid_body_plant_test, TestContactFrameCreation) {
-  // NOTE: This RigidBodyTree is unpopulated and *not* compiled; the method
-  // being tested does not actually require a valid RigidBodyTree.  So, this
-  // uninitialized tree is sufficient.
-  RigidBodyPlant<double> plant(make_unique<RigidBodyTree<double>>());
   Vector3<double> z;
 
   // Case 1: z-axis is simply world aligned.
