@@ -253,7 +253,8 @@ MSKrescodee AddSecondOrderConeConstraints(
 MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog, MSKtask_t* task) {
   MSKrescodee rescode = MSK_RES_OK;
 for (const auto& binding : prog.positive_semidefinite_constraints()) {
-  const auto& symmetric_matrix_variable = *(binding.variable_list().variables().begin());
+  DRAKE_ASSERT(binding.variable_list().variables().size() == 1);
+  const auto& symmetric_matrix_variable = binding.variable_list().variables().front();
   // Add S_bar as new variables. Mosek needs to create so called "bar variable"
   // for matrix in positive semidefinite cones.
   int rows = symmetric_matrix_variable.rows();

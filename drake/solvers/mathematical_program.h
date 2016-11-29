@@ -1206,11 +1206,11 @@ class MathematicalProgram {
   void AddConstraint(std::shared_ptr<PositiveSemidefiniteConstraint> con,
       const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var);
 
-  std::shared_ptr<PositiveSemidefiniteConstraint> AddPositiveSemidefiniteConstraint(const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var) {
-    auto constraint = std::make_shared<PositiveSemidefiniteConstraint>();
-    AddConstraint(constraint, symmetric_matrix_var);
-    return constraint;
-  }
+  /**
+   * Add a positive semidefinite constraint on a symmetric matrix.
+   * @param symmetric_matrix_var A symmetric DecisionVariableMatrix object.
+   */
+  std::shared_ptr<PositiveSemidefiniteConstraint> AddPositiveSemidefiniteConstraint(const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var);
 
   // template <typename FunctionType>
   // void AddCost(std::function..);

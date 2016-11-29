@@ -1153,7 +1153,7 @@ GTEST_TEST(TestConvexOptimization, TestFindSpringEquilibrium) {
 namespace {
 template<int x_dim>
 DecisionVariableMatrix<x_dim, x_dim> AddLyapunovCondition(const Eigen::Matrix<double, x_dim, x_dim>& A, const DecisionVariableMatrix<x_dim, x_dim>& P, MathematicalProgram* prog) {
-  auto Q = prog->AddSymmetricContinuousVariables<x_dim>();
+  const auto Q = prog->AddSymmetricContinuousVariables<x_dim>();
   prog->AddPositiveSemidefiniteConstraint(Q);
   Eigen::Matrix<double, x_dim * (x_dim + 1) / 2, 1> lin_eq_bnd;
   lin_eq_bnd.setZero();
@@ -1166,6 +1166,7 @@ DecisionVariableMatrix<x_dim, x_dim> AddLyapunovCondition(const Eigen::Matrix<do
         lin_eq_triplets.push_back(Eigen::Triplet<double>(lin_eq_idx, P(i, k).index(), A(k, j)));
       }
       lin_eq_triplets.push_back(Eigen::Triplet<double>(lin_eq_idx, Q(i, j).index(), 1.0));
+      ++lin_eq_idx;
     }
   }
   Eigen::SparseMatrix<double> lin_eq_A_sparse(x_dim * (x_dim + 1) / 2, prog->num_vars());
@@ -1202,6 +1203,7 @@ for (const auto& solver : solvers) {
   Eigen::Matrix3d Q1_value = GetSolution(Q1);
   Eigen::Matrix3d Q2_value = GetSolution(Q2);
   Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_P(P_value);
+  EXPECT_TRUE(CompareMatrices(P_value, P_value.transpose(), 1E-6, MatrixCompareType::absolute));
   EXPECT_GE(eigen_solver_P.eigenvalues().real().minCoeff(), -1E-8);
   Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_Q1(Q1_value);
   EXPECT_GE(eigen_solver_Q1.eigenvalues().real().minCoeff(), -1E-8);
