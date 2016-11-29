@@ -13,6 +13,9 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
+// TODO(naveenoid): If this could be made slightly more generic, it
+// could be a good wrapper/template for building world demos for LCM
+// controlled robots.
 
 /// A helper class to construct KUKA iiwa world simulations; i.e. a Simulation
 /// with a KUKA iiwa robot arm and various objects for it to manipulate.
