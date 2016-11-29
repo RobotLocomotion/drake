@@ -51,7 +51,7 @@ GTEST_TEST(RigidBodyPlantTest, TestLoadUrdf) {
   EXPECT_EQ(plant.get_input_size(), 0);
   EXPECT_EQ(plant.get_output_size(), 0);
 
-  // Obtains a const pointer to the underlying RigidBodyTree within the
+  // Obtains a const reference to the underlying RigidBodyTree within the
   // RigidBodyPlant.
   const RigidBodyTree<double>& tree = plant.get_rigid_body_tree();
 
@@ -70,7 +70,7 @@ GTEST_TEST(RigidBodyPlantTest, TestLoadUrdf) {
 GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
   const double kTol = 1e-10;     // Test succeeds at one order of magnitude
                                  // greater tolerance on my machine.
-  const int kNumPositions = 7;   // One quaternion + 3d position.
+  const int kNumPositions = 7;   // One quaternion + 3D position.
   const int kNumVelocities = 6;  // Angular velocity + linear velocity.
   const int kNumStates = kNumPositions + kNumVelocities;
 
@@ -162,7 +162,7 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
         // TODO(edrumwri): Uncomment the following test when the quaternion
         // derivative code is correct. See #4121.
 
-        // Test q * qdot near zero
+        // Test q * qdot near zero.
         // Quaterniond qdot(xc->GetAtIndex(3), xc->GetAtIndex(4),
         //                  xc->GetAtIndex(5), xc->GetAtIndex(6));
         // DRAKE_ASSERT(std::abs(q.dot(qdot)) < 1e-14);
