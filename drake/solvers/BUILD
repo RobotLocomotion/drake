@@ -15,6 +15,7 @@ DEPS = [
 cc_library(
     name = "mathematical_program",
     srcs = [
+        "decision_variable.cc",
         "dreal_solver.h",
         "equality_constrained_qp_solver.cc",
         "equality_constrained_qp_solver.h",
