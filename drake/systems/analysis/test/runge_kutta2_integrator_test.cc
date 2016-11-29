@@ -54,6 +54,7 @@ GTEST_TEST(IntegratorTest, ErrorEst) {
 
   EXPECT_EQ(integrator.get_error_estimate_order(), 0);
   EXPECT_EQ(integrator.supports_error_estimation(), false);
+  EXPECT_THROW(integrator.set_fixed_step_mode(false), std::logic_error);
   EXPECT_THROW(integrator.set_target_accuracy(1e-1), std::logic_error);
   EXPECT_THROW(integrator.request_initial_step_size_target(DT),
                std::logic_error);
@@ -105,8 +106,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   EXPECT_NEAR(context->get_time(), 1., DT);  // Should be exact.
 
   // Get the final position.
-  const double x_final = context->get_state().get_continuous_state()->
-      get_vector().GetAtIndex(0);
+  const double x_final = context->get_continuous_state_vector().GetAtIndex(0);
 
   // Check the solution.
   double true_sol = C1 * std::cos(kOmega * t) + C2 * std::sin(kOmega * t);

@@ -322,10 +322,11 @@ Simulator<T>::Simulator(const System<T>& system,
   // Setup defaults that should be generally reasonable.
   const double dt = 1e-3;
 
-  // create a context if necessary
+  // Create a context if necessary.
   if (!context_) context_ = system_.CreateDefaultContext();
 
-  // create a default integrator and initialize it.
+  // @TODO(edrumwri): Make variable step integrator default.
+  // Create a default integrator and initialize it.
   integrator_ = std::unique_ptr<IntegratorBase<T>>(
       new RungeKutta2Integrator<T>(system_, dt, context_.get()));
   integrator_->Initialize();

@@ -88,6 +88,29 @@ class IntegratorBase {
    */
   virtual bool supports_error_estimation() const = 0;
 
+  /**
+   * Sets an integrator with error control to fixed step mode.
+   * @throws std::logic_error if integrator does not support error
+   *         estimation.
+   */
+  virtual void set_fixed_step_mode(bool flag) {
+    if (!supports_error_estimation())
+      throw std::logic_error("Integrator does not support accuracy estimation");
+    fixed_step_mode_ = flag;
+  }
+
+  /**
+   * Gets whether an integrator is running in fixed step mode. If the integrator
+   * does not support error estimation, this function will always return `true`.
+   * If the integrator runs in fixed step mode, it will always take the largest
+   * possible step size.
+   * @sa set_fixed_step_mode()
+   * @sa set_maximum_step_size()
+   */
+  bool get_fixed_step_mode() const {
+    return (!supports_error_estimation() || fixed_step_mode_);
+  }
+
   /** Request that the integrator attempt to achieve a particular accuracy for
    * the continuous portions of the simulation. Otherwise a default accuracy is
    * chosen for you. This may be ignored for fixed-step integration since
@@ -108,7 +131,7 @@ class IntegratorBase {
    * information, see [Sherman 2011].
    * - M. Sherman, et al. Procedia IUTAM 2:241-261 (2011), Section 3.3.
    *   http://dx.doi.org/10.1016/j.piutam.2011.04.023
-   * @throws std::logic_error if integrator does not support accuracy
+   * @throws std::logic_error if integrator does not support error
    *         estimation.
    */
   // TODO(edrumwri): complain if integrator with error estimation wants to drop
@@ -176,6 +199,9 @@ class IntegratorBase {
     pinvN_dq_err_.reset();
     unweighted_err_.setZero(0);
     weighted_q_err_.reset();
+
+    // Integrator no longer operates in fixed step mode.
+    fixed_step_mode_ = false;
 
     // Statistics no longer valid.
     ResetStatistics();
@@ -798,6 +824,18 @@ class IntegratorBase {
     return xcdot0_save_;
   }
 
+  /**
+   * Get a mutable reference to the system state at the start of the last
+   * integration interval.
+   */
+  VectorX<T>& get_mutable_interval_start_state() { return xc0_save_; }
+
+  /**
+   * Get a mutable reference to the system state derivative at the start of
+   * the last integration interval.
+   */
+  VectorX<T>& get_mutable_interval_start_state_deriv() { return xcdot0_save_; }
+
  private:
   void set_ideal_next_step_size(const T& dt) { ideal_next_step_size_ = dt; }
 
@@ -852,6 +890,10 @@ class IntegratorBase {
 
   // The last step taken by the integrator.
   T prev_step_size_{nan()};
+
+  // Whether error-controlled integrator is running in fixed step mode. Value
+  // is irrelevant for integrators without error estimation capabilities.
+  bool fixed_step_mode_{false};
 
   // Statistics.
   T actual_initial_step_size_taken_{nan()};

@@ -91,7 +91,7 @@ TEST_F(RK3IntegratorTest, Scaling) {
 TEST_F(RK3IntegratorTest, BulletProofSetup) {
   // Setup the initial position and initial velocity
   const double kInitialPosition = 0.1;
-  const double kInitialVelocity = 0.0;
+  const double kInitialVelocity = 0.01;
   const double kOmega = std::sqrt(kSpring / kMass);
 
   // Set initial condition using the Simulator's internal Context.
@@ -107,11 +107,15 @@ TEST_F(RK3IntegratorTest, BulletProofSetup) {
   // Initialize the integrator.
   EXPECT_THROW(integrator_->Initialize(), std::logic_error);
 
-  // Set the maximum step size and try again.
+  // Set the accuracy to something too low, set the maximum step size and
+  // try again.
+  integrator_->set_target_accuracy(10.0);
   integrator_->set_maximum_step_size(kBigDT);
   integrator_->Initialize();
+  EXPECT_LE(integrator_->get_accuracy_in_use(),
+            integrator_->get_target_accuracy());
 
-  // StepOnceAtFixedSize for 1 second.
+  // Integrate for 1 second using variable stepping.
   const double kTFinal = 1.0;
   double t_remaining = kTFinal - context_->get_time();
   do {
@@ -134,7 +138,7 @@ TEST_F(RK3IntegratorTest, BulletProofSetup) {
 TEST_F(RK3IntegratorTest, ErrEst) {
   // Setup the initial position and initial velocity
   const double kInitialPosition = 0.1;
-  const double kInitialVelocity = 0.0;
+  const double kInitialVelocity = 0.01;
   const double kOmega = std::sqrt(kSpring / kMass);
 
   // Set initial condition using the Simulator's internal Context.
@@ -149,8 +153,7 @@ TEST_F(RK3IntegratorTest, ErrEst) {
 
   // Set integrator parameters: do no error control.
   integrator_->set_maximum_step_size(kBigDT);
-  integrator_->set_minimum_step_size(kBigDT);
-  integrator_->set_target_accuracy(10.0);
+  integrator_->set_fixed_step_mode(true);
 
   // Initialize the integrator.
   integrator_->Initialize();
@@ -190,15 +193,14 @@ TEST_F(RK3IntegratorTest, ErrEst) {
 TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   // Set integrator parameters: do no error control.
   integrator_->set_maximum_step_size(DT);
-  integrator_->set_minimum_step_size(DT);
-  integrator_->set_target_accuracy(1.0);
+  integrator_->set_fixed_step_mode(true);
 
   // Initialize the integrator.
   integrator_->Initialize();
 
   // Setup the initial position and initial velocity
   const double kInitialPosition = 0.1;
-  const double kInitialVelocity = 0.0;
+  const double kInitialVelocity = 0.01;
   const double kOmega = std::sqrt(kSpring / kMass);
 
   // Set initial condition using the Simulator's internal Context.
