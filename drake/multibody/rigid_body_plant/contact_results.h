@@ -25,6 +25,7 @@ class RigidBodyPlant;
 template <typename T>
 class ContactResults {
  public:
+  ContactResults() = default;
   ContactResults(const ContactResults<T>& other) = default;
   ContactResults<T>& operator=(const ContactResults<T>& other) = default;
   ContactResults(ContactResults<T>&& other) = delete;
@@ -47,9 +48,6 @@ class ContactResults {
   // TODO(SeanCurtis-TRI): when ContactResults can reference entries in the
   // cache this friendship and the method UpdateFromContext() won't be needed.
   friend class RigidBodyPlant<T>;
-
-  // Only RigidBodyPlant can construct a ContactResults.
-  ContactResults();
 
   // Clears the set of contact information for when the old data becomes
   // invalid.

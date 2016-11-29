@@ -17,9 +17,6 @@ const ContactInfo<T>& ContactResults<T>::get_contact_info(int i) const {
 }
 
 template <typename T>
-ContactResults<T>::ContactResults() : contacts_() {}
-
-template <typename T>
 void ContactResults<T>::Clear() {
   contacts_.clear();
 }

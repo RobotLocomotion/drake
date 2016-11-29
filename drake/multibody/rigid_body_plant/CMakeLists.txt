@@ -6,7 +6,8 @@ set(source_files
     contact_results.cc
     kinematics_results.cc
     point_contact_detail.cc
-    rigid_body_plant.cc)
+    rigid_body_plant.cc
+    rigid_body_plant_context.cc)
 
 # The following variables are necessary to conditionally include
 # DrakeVisualizer and ViewerDrawTranslator in libdrakeRigidBodyPlant.so if LCM
@@ -49,7 +50,8 @@ drake_install_headers(
     contact_info.h
     contact_results.h
     kinematics_results.h
-    rigid_body_plant.h)
+    rigid_body_plant.h
+    rigid_body_plant_context.h)
 
 drake_install_libraries(drakeRigidBodyPlant)
 drake_install_pkg_config_file(drake-rigid-body-plant
