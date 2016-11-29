@@ -87,6 +87,8 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
       "/multibody/test/parser_urdf_test/non_conflicting_materials_1.urdf";
   const std::string file_no_conflict_2 = drake::GetDrakePath() +
       "/multibody/test/parser_urdf_test/non_conflicting_materials_2.urdf";
+  const std::string file_no_conflict_3 = drake::GetDrakePath() +
+      "/multibody/test/parser_urdf_test/non_conflicting_materials_3.urdf";
   const std::string file_duplicate = drake::GetDrakePath() +
       "/multibody/test/parser_urdf_test/duplicate_materials.urdf";
   const std::string file_conflict = drake::GetDrakePath() +
@@ -101,6 +103,10 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
       file_no_conflict_2, tree.get()));
 
   tree = make_unique<RigidBodyTree<double>>();
+  EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_no_conflict_3, tree.get()));
+
+  tree = make_unique<RigidBodyTree<double>>();
   EXPECT_DEATH(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
       file_duplicate, tree.get()), ".*");
 
@@ -110,7 +116,7 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
 
   // This URDF defines the same color multiple times in different links.
   const std::string file_robotiq = drake::GetDrakePath() +
-      "/examples/Atlas/urdf/robotiq.urdf";
+      "/multibody/test/parser_urdf_test/duplicate_but_same_materials.urdf";
 
   tree = make_unique<RigidBodyTree<double>>();
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
