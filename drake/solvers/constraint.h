@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <list>
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -485,18 +486,29 @@ class PositiveSemidefiniteConstraint : public Constraint {
   PositiveSemidefiniteConstraint() : Constraint(0) {}
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
-    throw std::runtime_error(
-        "The Eval function for positive semidefinite constraint is not "
-        "defined.");
-  }
+            Eigen::VectorXd& y) const override;
 
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
-    throw std::runtime_error(
-        "The Eval function for positive semidefinite constraint is not "
-        "defined.");
-  }
+            TaylorVecXd& y) const override;
+};
+
+/**
+ * Impose the matrix inequality constraint on variable x
+ * F0 + x1 * F1 + ... xn*Fn is p.s.d
+ * where p.s.d stands for positive semidefinite.
+ * F0, F1, ..., Fn are all given symmetric matrix of the same size.
+ */
+class LinearMatrixInequalityConstraint : public Constraint {
+ public:
+  LinearMatrixInequalityConstraint(const std::list<Eigen::Ref<const Eigen::MatrixXd>>& F);
+  const std::list<Eigen::MatrixXd>& F() const {return F_; }
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+            Eigen::VectorXd& y) const override;
+
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+            TaylorVecXd& y) const override;
+ private:
+  std::list<Eigen::MatrixXd> F_;
 };
 }  // namespace solvers
 }  // namespace drake

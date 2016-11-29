@@ -1215,6 +1215,18 @@ class MathematicalProgram {
   AddPositiveSemidefiniteConstraint(
       const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var);
 
+  /**
+   * Add a linear matrix inequality constraint to the program.
+   */
+  void AddConstraint(std::shared_ptr<LinearMatrixInequalityConstraint> con,
+      const VariableListRef& vars);
+
+  /**
+   * Add a linear matrix inequality constraint to the program.
+   */
+  std::shared_ptr<LinearMatrixInequalityConstraint>
+      AddLinearMatrixInequalityConstraint(const std::list<Eigen::Ref<const Eigen::MatrixXd>>& F, const VariableListRef& vars);
+
   // template <typename FunctionType>
   // void AddCost(std::function..);
   // void AddLinearCost(const Eigen::MatrixBase<Derived>& c, const vector<const
@@ -1401,6 +1413,12 @@ class MathematicalProgram {
     return positive_semidefinite_constraint_;
   }
 
+  /** Getter for linear matrix inequality constraint */
+  const std::vector<Binding<LinearMatrixInequalityConstraint>>&
+      linear_matrix_inequality_constraints() const {
+    return linear_matrix_inequality_constraint_;
+  }
+
   /** GetAllCosts
    *
    * @brief Getter returning all costs (for now linear costs appended to
@@ -1507,6 +1525,7 @@ class MathematicalProgram {
       rotated_lorentz_cone_constraint_;
   std::vector<Binding<PositiveSemidefiniteConstraint>>
       positive_semidefinite_constraint_;
+  std::vector<Binding<LinearMatrixInequalityConstraint>> linear_matrix_inequality_constraint_;
 
   // Invariant:  The bindings in this list must be non-overlapping.
   // TODO(ggould-tri) can this constraint be relaxed?
