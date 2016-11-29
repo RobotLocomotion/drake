@@ -37,7 +37,6 @@ set(installed_headers
   drake_assert.h
   drake_compat.h
   drake_deprecated.h
-  drake_export.h
   drake_path.h
   drake_throw.h
   eigen_autodiff_types.h
