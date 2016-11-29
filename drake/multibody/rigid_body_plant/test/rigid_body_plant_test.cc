@@ -435,7 +435,7 @@ void ExpectOrthonormal(const Matrix3<double>& R) {
   EXPECT_NEAR(0.0, R.col(1).dot(R.col(2)), kEpsilon);
 }
 
-// This tests the contact frame to confirm that a robust orthonormal frame
+// Tests the contact frame to confirm that a robust orthonormal frame
 // is generated.
 GTEST_TEST(rigid_body_plant_test, TestContactFrameCreation) {
   // NOTE: This RigidBodyTree is unpopulated and *not* compiled; the method
