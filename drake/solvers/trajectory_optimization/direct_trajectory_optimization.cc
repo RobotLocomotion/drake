@@ -81,9 +81,9 @@ void DirectTrajectoryOptimization::AddTimeIntervalBounds(
 void DirectTrajectoryOptimization::AddTimeIntervalBounds(
     const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound,
     const std::vector<int>& interval_indices) {
-  VariableList h_list;
+  VariableListRef h_list;
   for (const auto& idx : interval_indices) {
-    h_list.push_back(h_vars_(idx));
+    h_list.push_back(h_vars_.segment<1>(idx));
   }
   opt_problem_.AddBoundingBoxConstraint(lower_bound, upper_bound, h_list);
 }
@@ -189,7 +189,7 @@ std::vector<double> DirectTrajectoryOptimization::GetTimeVector() const {
   std::vector<double> times;
   times.resize(N_, 0);
 
-  const auto h_values = h_vars_.value();
+  const auto h_values = GetSolution(h_vars_);
   for (int i = 1; i < N_; i++) {
     times[i] = times[i - 1] + h_values(i - 1);
   }
@@ -201,7 +201,7 @@ std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetInputVector()
   std::vector<Eigen::MatrixXd> inputs;
   inputs.reserve(N_);
 
-  const auto u_values = u_vars_.value();
+  const auto u_values = GetSolution(u_vars_);
 
   for (int i = 0; i < N_; i++) {
     inputs.push_back(u_values.segment(i * num_inputs_, num_inputs_));
@@ -214,7 +214,7 @@ std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetStateVector()
   std::vector<Eigen::MatrixXd> states;
   states.reserve(N_);
 
-  const auto x_values = x_vars_.value();
+  const auto x_values = GetSolution(x_vars_);
 
   for (int i = 0; i < N_; i++) {
     states.push_back(x_values.segment(i * num_states_, num_states_));
@@ -233,8 +233,8 @@ void DirectTrajectoryOptimization::GetResultSamples(
   states->resize(num_states_, N_);
   states->fill(0);
 
-  const auto u_values = u_vars_.value();
-  const auto x_values = x_vars_.value();
+  const auto& u_values = GetSolution(u_vars_);
+  const auto& x_values = GetSolution(x_vars_);
 
   for (int i = 0; i < N_; i++) {
     inputs->col(i) = u_values.segment(i * num_inputs_, num_inputs_);

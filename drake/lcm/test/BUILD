@@ -1,24 +1,31 @@
 # -*- python -*-
-
-# This file contains rules for the Bazel build system.
-# See http://bazel.io/ .
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
 
-DEPS = ["//drake/lcm:lcmt_drake_signal_utils", "@gtest//:main"]
+DEPS = [
+    "//drake/lcm:lcmt_drake_signal_utils",
+    "@gtest//:main",
+]
 
 cc_test(
     name = "drake_lcm_test",
+    size = "small",
     srcs = ["drake_lcm_test.cc"],
-    size = "small", deps = DEPS + ["//drake/lcm:lcm"],
-    local = 1)
+    local = 1,
+    deps = DEPS + ["//drake/lcm:lcm"],
+)
 
 cc_test(
     name = "drake_mock_lcm_test",
+    size = "small",
     srcs = ["drake_mock_lcm_test.cc"],
-    size = "small", deps = DEPS + ["//drake/lcm:mock"])
+    deps = DEPS + ["//drake/lcm:mock"],
+)
 
 cc_test(
     name = "lcmt_drake_signal_utils_test",
+    size = "small",
     srcs = ["lcmt_drake_signal_utils_test.cc"],
-    size = "small", deps = DEPS)
+    deps = DEPS,
+)

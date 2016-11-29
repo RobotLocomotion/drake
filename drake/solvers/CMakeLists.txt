@@ -25,6 +25,7 @@ set(optimization_files)
 set(optimization_requires)
 list(APPEND optimization_files
   ${private_headers}
+  decision_variable.cc
   equality_constrained_qp_solver.cc
   linear_system_solver.cc
   mathematical_program.cc
@@ -68,7 +69,6 @@ if(gurobi_FOUND)
 else()
   list(APPEND optimization_files no_gurobi.cc)
 endif()
-
 
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
 target_link_libraries(drakeOptimization drakeCommon)
@@ -123,8 +123,7 @@ if(gurobi_FOUND)
   target_link_libraries(drakeOptimization gurobi)
 endif()
 if(mosek_FOUND)
-  target_include_directories(drakeOptimization PUBLIC ${mosek_INCLUDE_DIRS})
-  target_link_libraries(drakeOptimization ${mosek_LIBRARIES})
+  target_link_libraries(drakeOptimization mosek)
 endif()
 
 if(BUILD_TESTING)

@@ -15,7 +15,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/force_torque_measurement.h"
 #include "drake/multibody/kinematic_path.h"
-#include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/kinematics_cache-inl.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/collision/drake_collision.h"
@@ -779,48 +779,6 @@ class RigidBodyTree {
       std::vector<int>& bodyB_idx,
       bool use_margins = true);
 
-  // TODO(SeanCurtis-TRI): Properly classify the use_margins parameter so it
-  // can be meaningfully documented.
-  /**
-   * This performs all-pairs collision detection (excepting those filtered out)
-   * across all of the bodies in the tree.  One result is provided for each
-   * tested pair (colliding or not).
-   *
-   * @param[in]  cache          The dynamic pose data for the tree.
-   * @param[out] pairs          A vector that will be populated with the query
-   *                            data.  There will be one entry per pair of
-   *                            tested collision elements. The contact
-   *                            points are each expressed in their corresponding
-   *                            body's frame and the normal is expressed in the
-   *                            world frame.
-   * @param use_margins         Unclear purpose; requires investigation.
-   * @returns                   The same bool as RigidBodyTree::collisionDetect.
-   */
-  bool AllPairsClosestPoints(const KinematicsCache<double>& cache,
-                             std::vector<DrakeCollision::PointPair>* pairs,
-                             bool use_margins = true);
-
-  /**
-   * This performs all-pairs collision detection (excepting those filtered out)
-   * across the provided set of collision elements (named by id).  One result is
-   * provided for each tested pair (colliding or not).
-   *
-   * @param[in]  cache          The dynamic pose data for the tree.
-   * @param[in]  ids_to_check   The set of collision element ids to test.
-   * @param[out] pairs          A vector that will be populated with the query
-   *                            data.  There will be one entry per pair of
-   *                            tested collision elements. The the contact
-   *                            points are each expressed in their corresponding
-   *                            body's frame and the normal is expressed in the
-   *                            world frame.
-   * @param use_margins         Unclear purpose; requires investigation.
-   * @returns                   The same bool as RigidBodyTree::collisionDetect.
-   */
-  bool AllPairsClosestPointsInSet(
-      const KinematicsCache<double>& cache,
-      const std::vector<DrakeCollision::ElementId>& ids_to_check,
-      std::vector<DrakeCollision::PointPair>* pairs, bool use_margins);
-
   /** Computes the point of closest approach between bodies in the
    RigidBodyTree that are in contact.
 
@@ -1242,9 +1200,6 @@ class RigidBodyTree {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 
-  // The following was required for building w/ DRAKE_EXPORT on windows (due
-  // to the unique_ptrs).  See
-  // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
  private:
   RigidBodyTree(const RigidBodyTree&);
   RigidBodyTree& operator=(const RigidBodyTree&) { return *this; }

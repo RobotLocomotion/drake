@@ -1,7 +1,5 @@
 # -*- python -*-
-
-# This file contains rules for the Bazel build system.
-# See http://bazel.io/ .
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
 
@@ -17,6 +15,7 @@ DEPS = [
 cc_library(
     name = "mathematical_program",
     srcs = [
+        "decision_variable.cc",
         "dreal_solver.h",
         "equality_constrained_qp_solver.cc",
         "equality_constrained_qp_solver.h",
@@ -38,18 +37,20 @@ cc_library(
         "snopt_solver.h",
     ],
     hdrs = [
-        "function.h",
         "constraint.h",
         "decision_variable.h",
+        "function.h",
         "mathematical_program.h",
         "solution_result.h",
     ],
+    linkstatic = 1,
     deps = DEPS,
-    linkstatic = 1)
+)
 
 cc_library(
     name = "system_identification",
     srcs = ["system_identification.cc"],
     hdrs = ["system_identification.h"],
+    linkstatic = 1,
     deps = DEPS + [":mathematical_program"],
-    linkstatic = 1)
+)

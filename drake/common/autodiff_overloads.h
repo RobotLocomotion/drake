@@ -2,10 +2,16 @@
 /// Overloads for STL mathematical operations on AutoDiffScalar.
 ///
 /// Used via argument-dependent lookup (ADL). These functions appear
-/// in the global namespace so that ADL can automatically choose between
+/// in the Eigen namespace so that ADL can automatically choose between
 /// the STL version and the overloaded version to match the type of the
-/// arguments. We could alternatively have placed them in the Eigen
-/// namespace, but since we don't own that, we don't wish to pollute it.
+/// arguments. The proper use would be e.g.
+///
+/// \code{.cc}
+///    void mymethod() {
+///       using std::isinf;
+///       isinf(myval);
+///    }
+/// \endcode{}
 ///
 /// @note The if_then_else and cond functions for AutoDiffScalar are in
 /// namespace drake because cond is defined in namespace drake in
@@ -19,6 +25,8 @@
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/cond.h"
+
+namespace Eigen {
 
 /// Overloads round to mimic std::round from <cmath>.
 template <typename DerType>
@@ -55,6 +63,29 @@ double ceil(const Eigen::AutoDiffScalar<DerType>& x) {
   return ceil(x.value());
 }
 
+/// Overloads copysign from <cmath>.
+template <typename DerType, typename T>
+Eigen::AutoDiffScalar<DerType> copysign(const Eigen::AutoDiffScalar<DerType>& x,
+                                        const T& y) {
+  using std::isnan;
+  if (isnan(x)) return (y >= 0) ? NAN : -NAN;
+  if ((x < 0 && y >= 0) || (x >= 0 && y < 0))
+    return -x;
+  else
+    return x;
+}
+
+/// Overloads copysign from <cmath>.
+template <typename DerType>
+double copysign(double x, const Eigen::AutoDiffScalar<DerType>& y) {
+  using std::isnan;
+  if (isnan(x)) return (y >= 0) ? NAN : -NAN;
+  if ((x < 0 && y >= 0) || (x >= 0 && y < 0))
+    return -x;
+  else
+    return x;
+}
+
 #if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
 /// Overloads pow for an AutoDiffScalar base and exponent, implementing the
 /// chain rule.
@@ -84,13 +115,13 @@ Eigen::AutoDiffScalar<typename DerTypeA::PlainObject> pow(
       // df/dv_i = (∂f/∂x * dx/dv_i) + (∂f/∂y * dy/dv_i)
       // ∂f/∂x is y*x^(y-1)
       y * pow(x, y - 1) * xgrad +
-      // ∂f/∂y is (x^y)*ln(x)
-      x_to_the_y * log(x) * ygrad);
+          // ∂f/∂y is (x^y)*ln(x)
+          x_to_the_y * log(x) * ygrad);
 }
+
 #endif  // EIGEN_VERSION...
 
 #if !EIGEN_VERSION_AT_LEAST(3, 2, 93)  // False when built via Drake superbuild.
-namespace Eigen {
 /// Overloads max to mimic std::max from <algorithm>.
 /// Required for old, broken Eigen versions.
 template <typename DerType>
@@ -99,10 +130,12 @@ const Eigen::AutoDiffScalar<DerType>& max(
     const Eigen::AutoDiffScalar<DerType>& y) {
   return (x > y) ? x : y;
 }
-}
 #endif  // EIGEN_VERSION...
 
+}  // namespace Eigen
+
 namespace drake {
+
 /// Provides if-then-else expression for Eigen::AutoDiffScalar type. To support
 /// Eigen's generic expressions, we use casting to the plain object after
 /// applying Eigen::internal::remove_all. It is based on the Eigen's
@@ -131,4 +164,5 @@ Eigen::AutoDiffScalar<
 cond(bool f_cond, const Eigen::AutoDiffScalar<DerType>& e_then, Rest... rest) {
   return if_then_else(f_cond, e_then, cond(rest...));
 }
+
 }  // namespace drake

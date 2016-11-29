@@ -1,7 +1,5 @@
 # -*- python -*-
-
-# This file contains rules for the Bazel build system.
-# See http://bazel.io/ .
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
 
@@ -9,24 +7,33 @@ DEPS = [
     "//drake/lcm:mock",
     "//drake/lcm:lcmt_drake_signal_utils",
     "//drake/systems/lcm:lcmt_drake_signal_translator",
-    "@gtest//:main"]
+    "@gtest//:main",
+]
 
 cc_test(
     name = "lcm_publisher_system_test",
+    size = "small",
     srcs = ["lcm_publisher_system_test.cc"],
-    size = "small", deps = DEPS + ["//drake/systems/lcm:lcm"])
+    deps = DEPS + ["//drake/systems/lcm:lcm"],
+)
 
 cc_test(
     name = "lcm_subscriber_system_test",
+    size = "small",
     srcs = ["lcm_subscriber_system_test.cc"],
-    size = "small", deps = DEPS + ["//drake/systems/lcm:lcm"])
+    deps = DEPS + ["//drake/systems/lcm:lcm"],
+)
 
 cc_test(
     name = "lcm_translator_dictionary_test",
+    size = "small",
     srcs = ["lcm_translator_dictionary_test.cc"],
-    size = "small", deps = DEPS + ["//drake/systems/lcm:translator"])
+    deps = DEPS + ["//drake/systems/lcm:translator"],
+)
 
 cc_test(
     name = "serializer_test",
+    size = "small",
     srcs = ["serializer_test.cc"],
-    size = "small", deps = DEPS + ["//drake/systems/lcm:lcm"])
+    deps = DEPS + ["//drake/systems/lcm:lcm"],
+)

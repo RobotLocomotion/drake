@@ -9,7 +9,7 @@
 #include <list>
 #include <vector>
 
-#include <mosek/mosek.h>
+#include <mosek.h>
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
@@ -20,11 +20,10 @@ namespace {
 // Add LinearConstraints and LinearEqualityConstraints to the Mosek task.
 template <typename Binding>
 MSKrescodee AddLinearConstraintsFromBindings(
-    MSKtask_t* task, const std::list<Binding>& constraint_list,
+    MSKtask_t* task, const std::vector<Binding>& constraint_list,
     bool is_equality_constraint) {
   for (const auto& binding : constraint_list) {
     auto constraint = binding.constraint();
-    const std::vector<int>& var_indices = binding.variable_indices();
     const Eigen::MatrixXd& A = constraint->A();
     const Eigen::VectorXd& lb = constraint->lower_bound();
     const Eigen::VectorXd& ub = constraint->upper_bound();
@@ -69,10 +68,16 @@ MSKrescodee AddLinearConstraintsFromBindings(
       std::vector<double> A_nonzero_val;
       A_nonzero_col_idx.reserve(A.cols());
       A_nonzero_val.reserve(A.cols());
-      for (int j = 0; j < A.cols(); ++j) {
-        if (std::abs(A(i, j)) > Eigen::NumTraits<double>::epsilon()) {
-          A_nonzero_col_idx.push_back(var_indices[j]);
-          A_nonzero_val.push_back(A(i, j));
+      int A_col_idx = 0;
+      for (const DecisionVariableMatrixX& var :
+           binding.variable_list().variables()) {
+        DRAKE_ASSERT(var.cols() == 1);
+        for (int k = 0; k < static_cast<int>(var.rows()); ++k) {
+          if (std::abs(A(i, A_col_idx)) > Eigen::NumTraits<double>::epsilon()) {
+            A_nonzero_col_idx.push_back(var(k, 0).index());
+            A_nonzero_val.push_back(A(i, A_col_idx));
+          }
+          ++A_col_idx;
         }
       }
       rescode = MSK_putarow(*task, constraint_idx + i, A_nonzero_val.size(),
@@ -111,9 +116,11 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
     int var_count = 0;
-    for (const DecisionVariableView& var : binding.variable_list()) {
-      for (int i = 0; i < static_cast<int>(var.size()); ++i) {
-        int x_idx = var.index() + i;
+    for (const DecisionVariableMatrixX& var :
+         binding.variable_list().variables()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
+        int x_idx = var(i).index();
         x_lb[x_idx] = std::max(x_lb[x_idx], lower_bound[var_count]);
         x_ub[x_idx] = std::min(x_ub[x_idx], upper_bound[var_count]);
         var_count++;
@@ -160,12 +167,21 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
  */
 template <typename Bindings>
 MSKrescodee AddSecondOrderConeConstraints(
-    const std::list<Bindings>& second_order_cone_constraints,
+    const std::vector<Bindings>& second_order_cone_constraints,
     bool is_rotated_cone, MSKtask_t* task, std::vector<bool>* is_new_variable) {
   MSKrescodee rescode = MSK_RES_OK;
 
   for (auto const& binding : second_order_cone_constraints) {
-    const std::vector<int>& cone_var_indices = binding.variable_indices();
+    std::vector<int> cone_var_indices(binding.GetNumElements());
+    int var_count = 0;
+    for (const DecisionVariableMatrixX& var :
+         binding.variable_list().variables()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
+        cone_var_indices[var_count] = var(i, 0).index();
+        ++var_count;
+      }
+    }
     const int num_cone_vars = static_cast<int>(cone_var_indices.size());
     MSKint32t num_total_vars = 0;
     rescode = MSK_getnumvar(*task, &num_total_vars);
@@ -251,7 +267,17 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
     // The quadratic cost is of form 0.5*x'*Q*x + b*x
     const auto& Q = constraint->Q();
     const auto& b = constraint->b();
-    const auto& var_indices = binding.variable_indices();
+    std::vector<int> var_indices(Q.rows());
+    {
+      int var_count = 0;
+      for (const auto& var : binding.variable_list().variables()) {
+        DRAKE_ASSERT(var.cols() == 1);
+        for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
+          var_indices[var_count] = var(i, 0).index();
+          ++var_count;
+        }
+      }
+    }
     for (int i = 0; i < Q.rows(); ++i) {
       int var_index_i = var_indices[i];
       for (int j = 0; j < i; ++j) {
@@ -274,11 +300,13 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
   for (const auto& binding : prog.linear_costs()) {
     int var_count = 0;
     const auto& c = binding.constraint()->A();
-    for (const DecisionVariableView& var : binding.variable_list()) {
-      for (int i = 0; i < static_cast<int>(var.size()); ++i) {
+    for (const DecisionVariableMatrixX& var :
+         binding.variable_list().variables()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         if (std::abs(c(var_count)) > Eigen::NumTraits<double>::epsilon()) {
           linear_term_triplets.push_back(
-              Eigen::Triplet<double>(var.index() + i, 0, c(var_count)));
+              Eigen::Triplet<double>(var(i, 0).index(), 0, c(var_count)));
         }
         var_count++;
       }
@@ -324,15 +352,16 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
                                 bool* with_integer_or_binary_variable) {
   MSKrescodee rescode = MSK_RES_OK;
   int num_vars = prog.num_vars();
-  const std::vector<DecisionVariable::VarType>& var_type = prog.VariableTypes();
+  const std::vector<DecisionVariableScalar::VarType>& var_type =
+      prog.VariableTypes();
   for (int i = 0; i < num_vars && rescode == MSK_RES_OK; ++i) {
-    if (var_type[i] == DecisionVariable::VarType::INTEGER) {
+    if (var_type[i] == DecisionVariableScalar::VarType::INTEGER) {
       rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
       *with_integer_or_binary_variable = true;
-    } else if (var_type[i] == DecisionVariable::VarType::BINARY) {
+    } else if (var_type[i] == DecisionVariableScalar::VarType::BINARY) {
       *with_integer_or_binary_variable = true;
       rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
       double xi_lb = NAN;
@@ -486,7 +515,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverResult("Mosek", result);
+  prog.SetSolverResult(SolverName(), result);
   if (rescode != MSK_RES_OK) {
     result = SolutionResult::kUnknownError;
   }

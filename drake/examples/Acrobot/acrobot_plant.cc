@@ -5,6 +5,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
+#include "drake/systems/controllers/linear_optimal_control.h"
 
 namespace drake {
 namespace examples {
@@ -41,7 +42,7 @@ void AcrobotPlant<T>::EvalTimeDerivatives(
 
   const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
       context.get_continuous_state_vector());
-  const T tau = this->EvalVectorInput(context, 0)->GetAtIndex(0);
+  const T& tau = this->EvalVectorInput(context, 0)->GetAtIndex(0);
 
   const double I1 = Ic1 + m1 * lc1 * lc1;
   const double I2 = Ic2 + m2 * lc2 * lc2;
@@ -98,6 +99,32 @@ std::unique_ptr<systems::BasicVector<T>> AcrobotPlant<T>::AllocateOutputVector(
 template <typename T>
 AcrobotPlant<AutoDiffXd>* AcrobotPlant<T>::DoToAutoDiffXd() const {
   return new AcrobotPlant<AutoDiffXd>();
+}
+
+std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
+    const AcrobotPlant<double>* acrobot) {
+  auto context = acrobot->CreateDefaultContext();
+
+  // Set nominal torque to zero.
+  context->FixInputPort(0, Vector1d::Constant(0.0));
+
+  // Set nominal state to the upright fixed point.
+  AcrobotStateVector<double>* x = dynamic_cast<AcrobotStateVector<double>*>(
+      context->get_mutable_continuous_state_vector());
+  DRAKE_ASSERT(x != nullptr);
+  x->set_theta1(M_PI);
+  x->set_theta2(0.0);
+  x->set_theta1dot(0.0);
+  x->set_theta2dot(0.0);
+
+  // Setup LQR Cost matrices (penalize position error 10x more than velocity to
+  // roughly address difference in units, using sqrt(g/l) as the time constant.
+  Eigen::Matrix4d Q = Eigen::Matrix4d::Identity();
+  Q(0, 0) = 10;
+  Q(1, 1) = 10;
+  Vector1d R = Vector1d::Constant(1);
+
+  return systems::LinearQuadraticRegulator(*acrobot, *context, Q, R);
 }
 
 template class AcrobotPlant<double>;
