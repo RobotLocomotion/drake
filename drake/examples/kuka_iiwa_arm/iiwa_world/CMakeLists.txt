@@ -23,5 +23,4 @@ if(lcm_FOUND)
       drakeKukaIiwaWorld)
   drake_add_test(
       NAME iiwa_world_demo COMMAND iiwa_world_demo -simulation_sec 1.0)
-
 endif()
