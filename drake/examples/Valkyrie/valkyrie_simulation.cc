@@ -96,20 +96,16 @@ int main(int argc, const char** argv) {
   }
 
   // LCM outputs.
-  auto& robot_state_encoder =
-      *builder.AddSystem<RobotStateEncoder>(plant.get_rigid_body_tree());
+  std::vector<RigidBodyFrame> force_torque_sensor_info = {
+      RigidBodyFrame("leftFootFTSensor", tree.FindBody("leftFoot"),
+                     Isometry3<double>::Identity()),
+      RigidBodyFrame("rightFootFTSensor", tree.FindBody("rightFoot"),
+                     Isometry3<double>::Identity())};
+
+  auto& robot_state_encoder = *builder.AddSystem<RobotStateEncoder>(
+      plant.get_rigid_body_tree(), force_torque_sensor_info);
   auto& robot_state_publisher = *builder.AddSystem(
       LcmPublisherSystem::Make<robot_state_t>("EST_ROBOT_STATE", &lcm));
-
-  // TODO(tkoolen): Force/torque sensors. Zero for now.
-  map<Side, System<double>*> hand_wrench_sensors;
-  map<Side, System<double>*> foot_wrench_sensors;
-  for (Side side : Side::values) {
-    hand_wrench_sensors[side] =
-        builder.AddSystem<ConstantVectorSource>(Vector6<double>::Zero().eval());
-    foot_wrench_sensors[side] =
-        builder.AddSystem<ConstantVectorSource>(Vector6<double>::Zero().eval());
-  }
 
   // Visualizer.
   const DrakeVisualizer& visualizer_publisher =
@@ -162,12 +158,9 @@ int main(int argc, const char** argv) {
   builder.Connect(plant.kinematics_results_output_port(),
                   robot_state_encoder.kinematics_results_port());
 
-  for (Side side : Side::values) {
-    builder.Connect(hand_wrench_sensors.at(side)->get_output_port(0),
-                    robot_state_encoder.hand_contact_wrench_port(side));
-    builder.Connect(foot_wrench_sensors.at(side)->get_output_port(0),
-                    robot_state_encoder.foot_contact_wrench_port(side));
-  }
+  // Contact results to robot state encoder.
+  builder.Connect(plant.contact_results_output_port(),
+                  robot_state_encoder.contact_results_port());
 
   // Robot state encoder to robot state publisher.
   builder.Connect(robot_state_encoder, robot_state_publisher);
@@ -186,7 +179,7 @@ int main(int argc, const char** argv) {
 
   // TODO(tkoolen): make it easy to specify a different initial configuration.
   VectorX<double> initial_state =
-    examples::valkyrie::RPYValkyrieFixedPointState();
+      examples::valkyrie::RPYValkyrieFixedPointState();
   plant.set_state_vector(plant_context, initial_state);
   lcm.StartReceiveThread();
 
