@@ -1,17 +1,22 @@
 # -*- python -*
 
 package(default_visibility = ["//visibility:public"])
+
 DEPS = ["//drake/common:common"]
 
 cc_library(
     name = "util",
     srcs = [
-         "drakeGeometryUtil.cpp",
-         "drakeUtil.cpp",
+        "drakeGeometryUtil.cpp",
+        "drakeUtil.cpp",
     ],
     hdrs = [
-         "drakeGeometryUtil.h",
-         "drakeUtil.h",
+        "drakeGeometryUtil.h",
+        "drakeUtil.h",
     ],
-    deps = DEPS + ["//drake/math:geometric_transform", "//drake/math:gradient"],
-    linkstatic = 1)
+    linkstatic = 1,
+    deps = DEPS + [
+        "//drake/math:geometric_transform",
+        "//drake/math:gradient",
+    ],
+)

@@ -5,10 +5,11 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "test_utilities",
-    hdrs = glob(["*.h"]),
+    testonly = 1,
     srcs = glob(["*.cc"]),
+    hdrs = glob(["*.h"]),
+    linkstatic = 1,
     deps = [
-        "//drake/systems/framework"
+        "//drake/systems/framework",
     ],
-    linkstatic=1,
-    testonly=1)
+)

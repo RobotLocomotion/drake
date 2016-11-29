@@ -4,6 +4,7 @@
 package(default_visibility = ["//visibility:public"])
 
 DEPS = ["//drake/systems/framework"]
+
 cc_library(
     name = "generated_vectors",
     srcs = [
@@ -20,8 +21,9 @@ cc_library(
         "gen/simple_car_config.h",
         "gen/simple_car_state.h",
     ],
+    linkstatic = 1,
     deps = DEPS,
-    linkstatic = 1)
+)
 
 cc_library(
     name = "generated_translators",
@@ -37,62 +39,76 @@ cc_library(
         "gen/simple_car_config_translator.h",
         "gen/simple_car_state_translator.h",
     ],
+    linkstatic = 1,
     deps = DEPS + [
         ":generated_vectors",
         "//drake/systems/lcm:translator",
         "//drake/lcmtypes:automotive",
     ],
-    linkstatic = 1)
+)
 
 DEPS = [":generated_vectors"]
+
 cc_library(
     name = "curve2",
     srcs = ["curve2.cc"],
     hdrs = ["curve2.h"],
+    linkstatic = 1,
     deps = DEPS,
-    linkstatic = 1)
+)
 
 cc_library(
     name = "linear_car",
     srcs = ["linear_car.cc"],
     hdrs = ["linear_car.h"],
+    linkstatic = 1,
     deps = DEPS + ["//drake/common:symbolic"],
-    linkstatic = 1)
+)
 
 cc_library(
     name = "idm_planner",
     srcs = ["idm_planner.cc"],
     hdrs = ["idm_planner.h"],
+    linkstatic = 1,
     deps = DEPS + ["//drake/common:symbolic"],
-    linkstatic = 1)
+)
 
 cc_library(
     name = "simple_car",
     srcs = ["simple_car.cc"],
-    hdrs = ["simple_car.h", "simple_car_to_euler_floating_joint.h"],
+    hdrs = [
+        "simple_car.h",
+        "simple_car_to_euler_floating_joint.h",
+    ],
+    linkstatic = 1,
     deps = DEPS + ["//drake/common:symbolic"],
-    linkstatic = 1)
+)
 
 cc_library(
     name = "single_lane_ego_and_agent",
     srcs = ["single_lane_ego_and_agent.cc"],
     hdrs = ["single_lane_ego_and_agent.h"],
+    linkstatic = 1,
     deps = DEPS + [
         "//drake/systems/framework/primitives:constant_vector_source",
-        ":linear_car", ":idm_planner"],
-    linkstatic = 1)
+        ":linear_car",
+        ":idm_planner",
+    ],
+)
 
 cc_library(
     name = "trajectory_car",
     srcs = ["trajectory_car.cc"],
     hdrs = ["trajectory_car.h"],
+    linkstatic = 1,
     deps = DEPS + [":curve2"],
-    linkstatic = 1)
+)
 
 cc_library(
     name = "automotive_simulator",
     srcs = ["automotive_simulator.cc"],
     hdrs = ["automotive_simulator.h"],
+    linkstatic = 1,
     deps = DEPS + [
         "//drake/lcm",
         "//drake/multibody:drake_visualizer",
@@ -104,21 +120,23 @@ cc_library(
         ":simple_car",
         ":trajectory_car",
     ],
-    linkstatic = 1)
+)
 
 cc_binary(
     name = "automotive_demo",
     srcs = [
         "automotive_demo.cc",
         "create_trajectory_params.cc",
-        "create_trajectory_params.h"
+        "create_trajectory_params.h",
     ],
+    linkstatic = 1,
     deps = [
-        "//drake/common:text_logging_gflags",
         ":automotive_simulator",
+        "//drake/common:text_logging_gflags",
     ],
-    linkstatic = 1)
+)
 
 filegroup(
     name = "models",
-    srcs = glob(["models/**"]))
+    srcs = glob(["models/**"]),
+)
