@@ -236,7 +236,15 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // reused.
   auto kinsol = tree_->doKinematics(q, v);
 
+  // TODO(amcastro-tri): preallocate the optimization problem and constraints,
+  // and simply update them then solve on each function eval.
+  // How to place something like this in the context?
+  drake::solvers::MathematicalProgram prog;
+  drake::solvers::DecisionVariableVectorX vdot =
+      prog.AddContinuousVariables(nv, "vdot");
+
   auto H = tree_->massMatrix(kinsol);
+  Eigen::MatrixXd H_and_neg_JT = H;
 
   // There are no external wrenches, but it is a required argument in
   // dynamicsBiasTerm.
@@ -268,18 +276,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 
   right_hand_side -= ComputeContactForce(kinsol);
 
-  // Derivatives will be stored here temporarily before output.
-  VectorX<T> xdot(get_num_states());
-
   if (tree_->getNumPositionConstraints()) {
-    // TODO(amcastro-tri): preallocate the optimization problem and constraints,
-    // and simply update them then solve on each function eval.
-    // How to place something like this in the context?
-    drake::solvers::MathematicalProgram prog;
-    auto const& vdot = prog.AddContinuousVariables(nv, "vdot");
-
-    Eigen::MatrixXd H_and_neg_JT = H;
-
     size_t nc = tree_->getNumPositionConstraints();
     // 1/time constant of position constraint satisfaction.
     const T alpha = 5.0;
@@ -297,30 +294,26 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     H_and_neg_JT.conservativeResize(Eigen::NoChange,
                                     H_and_neg_JT.cols() + J.rows());
     H_and_neg_JT.rightCols(J.rows()) = -J.transpose();
+  }
 
-    // Adds [H,-J^T] * [vdot;f] = -C.
-    prog.AddLinearEqualityConstraint(H_and_neg_JT, -right_hand_side);
+  // Adds [H,-J^T] * [vdot;f] = -C.
+  prog.AddLinearEqualityConstraint(H_and_neg_JT, -right_hand_side);
 
-    prog.Solve();
+  prog.Solve();
 
-    /*
-     * TODO(hongkai.dai): This only works for templates on double, it does not
-     * work for autodiff yet, I will add the code to compute the gradient of 
-     * vdot w.r.t. q and v. See issue
-     * https://github.com/RobotLocomotion/drake/issues/4267.
-     */
-    const auto& vdot_value =
+  VectorX<T> xdot(get_num_states());
+
+  /*
+   * TODO(hongkai.dai): This only works for templates on double, it does not
+   * work for autodiff yet, I will add the code to compute the gradient of vdot
+   * w.r.t. q and v. See issue
+   * https://github.com/RobotLocomotion/drake/issues/4267.
+   */
+  const auto& vdot_value =
       drake::solvers::GetSolution(vdot);
-    xdot << kinsol.transformQDotMappingToVelocityMapping(
+  xdot << kinsol.transformQDotMappingToVelocityMapping(
               MatrixX<T>::Identity(nq, nq)) * v,
       vdot_value;
-  } else {
-    // No bilateral constraints. Solve (essentially) F=MA for A.
-    Eigen::LLT<MatrixX<T>> llt(H);
-    DRAKE_DEMAND(llt.info() == Eigen::Success);
-    xdot << kinsol.transformQDotMappingToVelocityMapping(
-               MatrixX<T>::Identity(nq, nq)) * v, llt.solve(-right_hand_side);
-  }
 
   derivatives->SetFromVector(xdot);
 }
