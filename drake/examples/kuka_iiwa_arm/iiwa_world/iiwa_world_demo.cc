@@ -63,7 +63,7 @@ int DoMain() {
   iiwa_world->AddFloatingModelInstance("cylinder", kCylinder2Base);
   iiwa_world->AddFloatingModelInstance("cuboid", kBoxBase);
 
-  // Setup builder for the demo.
+  // Sets up a builder for the demo.
   std::unique_ptr<drake::systems::DiagramBuilder<double>> demo_builder{
       std::make_unique<drake::systems::DiagramBuilder<double>>()};
 
