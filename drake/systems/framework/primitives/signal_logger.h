@@ -35,8 +35,8 @@ class SignalLogger : public LeafSystem<T> {
                   SystemOutput<T>* output) const override {}
 
   /// Access the (simulation) time of the logged data.
-  Eigen::VectorBlock<VectorX<T>> sample_times() const {
-    return sample_times_.head(num_samples_);
+  Eigen::VectorBlock<const VectorX<T>> sample_times() const {
+    return const_cast<const VectorX<T>&>(sample_times_).head(num_samples_);
   }
 
   /// Access the logged data.
