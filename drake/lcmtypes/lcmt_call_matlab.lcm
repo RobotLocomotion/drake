@@ -1,0 +1,20 @@
+package drake;
+
+/* A thin LCM wrapper to support asynchronous RPC to a matlab client.
+ * The interface is modeled on mexCallMATLAB
+ *  (see http://www.mathworks.com/help/matlab/apiref/mexcallmatlab.html)
+ * but with output arguments assigned in the remote client's workspace
+ * due to the asynchronous nature of the protocol.
+ */
+
+struct lcmt_call_matlab {
+  int32_t nlhs;       // the number of output arguments
+  int64_t lhs[nlhs];  // unique id for variables held in the MATLAB client's
+                      // workspace
+
+  int32_t nrhs;                 // the number of input arguments
+  lcmt_matlab_array rhs[nrhs];  // the input argument data
+
+  string function_name;  // any input allowed by matlab's mexcallmatlab command
+  // (http://www.mathworks.com/help/matlab/apiref/mexcallmatlab.html)
+}
