@@ -105,7 +105,7 @@ def _symlink_directories(repo_ctx, basename, pathnames):
   base = root.get_child(basename)
   rootlen = len(str(base)) - len(basename)  # Include separator length.
   for srcpath in [unwrap(repo_ctx).path(p) for p in pathnames]:
-    destpath = base.get_child(srcpath.basename)
+    destpath = base.get_child(str(srcpath).replace('/', '_'))
     unwrap(repo_ctx).symlink(srcpath, destpath)
     result += [str(destpath)[rootlen:]]
   return result
