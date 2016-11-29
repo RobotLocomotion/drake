@@ -253,7 +253,7 @@ MSKrescodee AddSecondOrderConeConstraints(
 MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog, MSKtask_t* task) {
   MSKrescodee rescode = MSK_RES_OK;
 for (const auto& binding : prog.positive_semidefinite_constraints()) {
-  const auto symmetric_matrix_variable = *(binding.variable_list().variables().begin());
+  const auto& symmetric_matrix_variable = *(binding.variable_list().variables().begin());
   // Add S_bar as new variables. Mosek needs to create so called "bar variable"
   // for matrix in positive semidefinite cones.
   int rows = symmetric_matrix_variable.rows();
@@ -267,11 +267,11 @@ for (const auto& binding : prog.positive_semidefinite_constraints()) {
   // where bar_A_ij has the same dimension as S_bar
   // bar_A_ij(i, j) = 0.5, bar_A_ij(j, i) = 0.5 if i != j
   // bar_A_ij(i, j) = 1                         if i == j
-  rescode = MSK_appendcons(*task, (rows + 1) * rows / 2);
-  if (rescode != MSK_RES_OK) {return rescode;}
-
   int num_linear_constraint = 0;
   rescode = MSK_getnumcon(*task, &num_linear_constraint);
+  if (rescode != MSK_RES_OK) {return rescode;}
+
+  rescode = MSK_appendcons(*task, (rows + 1) * rows / 2);
   if (rescode != MSK_RES_OK) {return rescode;}
 
   int new_linear_constraint_count = 0;
@@ -287,7 +287,7 @@ for (const auto& binding : prog.positive_semidefinite_constraints()) {
       rescode = MSK_putarow(*task, linear_constraint_index, 1, &symmetric_matrix_var_ij_index, &symmetric_matrix_val);
       if (rescode != MSK_RES_OK) {return rescode;}
       double bar_A_weights = 1.0;
-      rescode = MSK_putbaraij(*task, linear_constraint_index, num_bar_var, 1, &bar_A_matrix_idx, &bar_A_weights);
+      rescode = MSK_putbaraij(*task, linear_constraint_index, num_bar_var - 1, 1, &bar_A_matrix_idx, &bar_A_weights);
       if (rescode != MSK_RES_OK) { return rescode;}
       rescode = MSK_putconbound(*task, linear_constraint_index, MSK_BK_FX, 0.0, 0.0);
       if (rescode != MSK_RES_OK) {return rescode;}
