@@ -1149,46 +1149,59 @@ GTEST_TEST(TestConvexOptimization, TestFindSpringEquilibrium) {
 // min 0
 // s.t P is positive semidefinite
 //     Ai'*P + P*Ai is positive semidefinite
+namespace {
+template<int x_dim>
+DecisionVariableMatrix<x_dim, x_dim> AddLyapunovCondition(const Eigen::Matrix<double, x_dim, x_dim>& A, const DecisionVariableMatrix<x_dim, x_dim>& P, MathematicalProgram* prog) {
+  auto Q = prog->AddSymmetricContinuousVariables<x_dim>();
+  prog->AddPositiveSemidefiniteConstraint(Q);
+  Eigen::Matrix<double, x_dim * (x_dim + 1) / 2, 1> lin_eq_bnd;
+  std::vector<Eigen::Triplet<double>> lin_eq_triplets;
+  int lin_eq_idx = 0;
+  for (int j = 0; j < static_cast<int>(x_dim); ++j) {
+    for (int i = j; i < static_cast<int>(x_dim); ++i) {
+      for (int k = 0; k < static_cast<int>(x_dim); ++k) {
+        lin_eq_triplets.push_back(Eigen::Triplet<double>(lin_eq_idx, P(k, j).index(), A(k, i)));
+        lin_eq_triplets.push_back(Eigen::Triplet<double>(lin_eq_idx, P(i, k).index(), A(k, j)));
+      }
+      lin_eq_triplets.push_back(Eigen::Triplet<double>(lin_eq_idx, Q(i, j).index(), 1.0));
+    }
+  }
+  return Q;
+}
+} // namespace
+
 GTEST_TEST(TestConvexOptimization, TestCommonLyapunov) {
 std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
 GetSemidefiniteProgramSolvers(&solvers);
 for (const auto& solver : solvers) {
-MathematicalProgram prog;
-auto P = prog.AddSymmetricContinuousVariables<3>("P");
-prog.AddPositiveSemidefiniteConstraint(P);
-Eigen::Matrix3d A1;
-A1 << -1, -1, -2,
-0, -1, -3,
-0,  0, -1;
-auto Q1 = prog.AddSymmetricContinuousVariables<3>("Q1");
-// Add constraint A1'*P + P*A1 + Q1 = 0.
-Eigen::Matrix3d C = 0.5 * Eigen::Matrix3d::Identity();
-prog.AddSymmetricProductEquality(Eigen::Matrix3d::Zero(),{A1, C}, {P, Q1});
-// Add constraint Q1 is positive semidefinite
-prog.AddPositiveSemidefiniteConstraint(Q1);
-Eigen::Matrix3d A2;
-A2 << -1, -1.2, -1.8,
-0, -0.7, -2,
-0,  0,  -0.4;
-auto Q2 = prog.AddSymmetricContinuousVariables<3>("Q2");
-// Add constraint A2'*P + P*A2 + Q2 = 0
-prog.AddSymmetricProductEquality(Eigen::Matrix3d::Zero(),{A2, C}, {P, Q2});
-// Add constraint Q2 is positive semidefinite
-prog.AddPositiveSemidefiniteConstraint(Q2);
+  MathematicalProgram prog;
+  auto P = prog.AddSymmetricContinuousVariables<3>("P");
+  prog.AddPositiveSemidefiniteConstraint(P);
+  Eigen::Matrix3d A1;
+  A1 << -1, -1, -2,
+         0, -1, -3,
+         0,  0, -1;
+  const auto& Q1 = AddLyapunovCondition(A1, P, &prog);
 
-RunSolver(&prog, *solver);
+  Eigen::Matrix3d A2;
+  A2 << -1, -1.2, -1.8,
+         0, -0.7, -2,
+         0,  0,  -0.4;
+  const auto& Q2 = AddLyapunovCondition(A2, P, &prog);
 
-Eigen::Matrix3d P_value = GetSolution(P);
-Eigen::Matrix3d Q1_value = GetSolution(Q1);
-Eigen::Matrix3d Q2_value = GetSolution(Q2);
-Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_P(P_value);
-EXPECT_GE(eigen_solver_P.eigenvalues().real().minCoeff(), -1E-8);
-Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_Q1(Q1_value);
-EXPECT_GE(eigen_solver_Q1.eigenvalues().real().minCoeff(), -1E-8);
-Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_Q2(Q2_value);
-EXPECT_GE(eigen_solver_Q2.eigenvalues().real().minCoeff(), -1E-8);
-EXPECT_TRUE(CompareMatrices(A1.transpose()*P_value + P_value*A1, -Q1_value, 1e-6, MatrixCompareType::absolute));
-EXPECT_TRUE(CompareMatrices(A2.transpose()*P_value + P_value*A2, -Q2_value, 1e-6, MatrixCompareType::absolute));
+  RunSolver(&prog, *solver);
+
+  Eigen::Matrix3d P_value = GetSolution(P);
+  Eigen::Matrix3d Q1_value = GetSolution(Q1);
+  Eigen::Matrix3d Q2_value = GetSolution(Q2);
+  Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_P(P_value);
+  EXPECT_GE(eigen_solver_P.eigenvalues().real().minCoeff(), -1E-8);
+  Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_Q1(Q1_value);
+  EXPECT_GE(eigen_solver_Q1.eigenvalues().real().minCoeff(), -1E-8);
+  Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_Q2(Q2_value);
+  EXPECT_GE(eigen_solver_Q2.eigenvalues().real().minCoeff(), -1E-8);
+  EXPECT_TRUE(CompareMatrices(A1.transpose()*P_value + P_value*A1, -Q1_value, 1e-6, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(A2.transpose()*P_value + P_value*A2, -Q2_value, 1e-6, MatrixCompareType::absolute));
 }
 }
 }  // namespace test

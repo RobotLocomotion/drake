@@ -70,6 +70,21 @@ MathematicalProgram::MathematicalProgram()
       gurobi_solver_(new GurobiSolver()),
       mosek_solver_(new MosekSolver()) {}
 
+DecisionVariableMatrixX MathematicalProgram::AddVariables(DecisionVariableScalar::VarType type,
+                                     Eigen::Index rows, Eigen::Index cols,
+                                     bool is_symmetric,
+                                     const std::vector<std::string>& names) {
+  DecisionVariableMatrixX decision_variable_matrix(rows, cols);
+  AddVariables_impl(type, names, is_symmetric, decision_variable_matrix);
+  return decision_variable_matrix;
+}
+
+DecisionVariableVectorX MathematicalProgram::AddVariables(DecisionVariableScalar::VarType type,
+                                     Eigen::Index rows,
+                                     const std::vector<std::string>& names) {
+  return AddVariables(type, rows, 1, false, names);
+}
+
 DecisionVariableVectorX MathematicalProgram::AddContinuousVariables(
     std::size_t rows, const std::vector<std::string>& names) {
   return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows,
@@ -82,6 +97,154 @@ const DecisionVariableMatrixX MathematicalProgram::AddContinuousVariables(
   return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, cols,
                       false, names);
 }
+
+DecisionVariableVectorX MathematicalProgram::AddContinuousVariables(
+    std::size_t rows, const std::string& name) {
+  std::vector<std::string> names(rows);
+  for (int i = 0; i < static_cast<int>(rows); ++i) {
+    names[i] = name + std::to_string(num_vars_ + i);
+  }
+  return AddContinuousVariables(rows, names);
+}
+
+const DecisionVariableMatrixX MathematicalProgram::AddContinuousVariables(
+    std::size_t rows, std::size_t cols, const std::string& name) {
+  std::vector<std::string> names(rows * cols);
+  for (int i = 0; i < static_cast<int>(names.size()); ++i) {
+    names[i] = name + std::to_string(num_vars_ + i);
+  }
+  return AddContinuousVariables(rows, cols, names);
+}
+
+DecisionVariableMatrixX MathematicalProgram::AddBinaryVariables(
+    size_t rows, size_t cols, const std::vector<std::string>& names) {
+  return AddVariables(DecisionVariableScalar::VarType::BINARY, rows, cols,
+                      false, names);
+}
+
+DecisionVariableMatrixX MathematicalProgram::AddBinaryVariables(size_t rows, size_t cols,
+                                           const std::string& name) {
+  std::vector<std::string> names = std::vector<std::string>(rows * cols);
+  for (int i = 0; i < static_cast<int>(names.size()); ++i) {
+    names[i] = name + std::to_string(num_vars_ + i);
+  }
+  return AddBinaryVariables(rows, cols, names);
+}
+
+DecisionVariableMatrixX MathematicalProgram::AddSymmetricContinuousVariables(
+    size_t rows, const std::vector<std::string>& names) {
+  return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, rows,
+                      true, names);
+}
+
+DecisionVariableMatrixX MathematicalProgram::AddSymmetricContinuousVariables(
+    size_t rows, const std::string& name) {
+  std::vector<std::string> names(rows * (rows + 1) / 2);
+  for (int j = 0; j < static_cast<int>(rows); ++j) {
+    for (int i = j; i < static_cast<int>(rows); ++i) {
+      names.push_back( name + "(" + std::to_string(i) +","+std::to_string(j)+")");
+    }
+  }
+  return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, rows,
+                      true, names);
+}
+
+DecisionVariableVectorX MathematicalProgram::AddBinaryVariables(size_t rows,
+                                           const std::string& name) {
+  std::vector<std::string> names = std::vector<std::string>(rows);
+  for (int i = 0; i < static_cast<int>(rows); ++i) {
+    names[i] = name + std::to_string(num_vars_ + i);
+  }
+  return AddVariables(DecisionVariableScalar::VarType::BINARY, rows, names);
+}
+
+void MathematicalProgram::AddCost(const std::shared_ptr<Constraint>& obj,
+             const VariableListRef& vars) {
+  VariableList var_list(vars);
+  DRAKE_ASSERT(var_list.column_vectors_only());
+  required_capabilities_ |= kGenericCost;
+  generic_costs_.push_back(Binding<Constraint>(obj, var_list));
+}
+
+void MathematicalProgram::AddCost(const std::shared_ptr<LinearConstraint>& obj,
+             const VariableListRef& vars) {
+  VariableList var_list(vars);
+  DRAKE_ASSERT(var_list.column_vectors_only());
+  required_capabilities_ |= kLinearCost;
+  int var_dim = var_list.size();
+  DRAKE_ASSERT(obj->A().rows() == 1 && obj->A().cols() == var_dim);
+  linear_costs_.push_back(Binding<LinearConstraint>(obj, var_list));
+}
+
+void MathematicalProgram::AddCost(const std::shared_ptr<QuadraticConstraint>& obj,
+             const VariableListRef& vars) {
+  VariableList var_list(vars);
+  DRAKE_ASSERT(var_list.column_vectors_only());
+  required_capabilities_ |= kQuadraticCost;
+  int var_dim = var_list.size();
+  DRAKE_ASSERT(obj->Q().rows() == var_dim && obj->b().rows() == var_dim);
+  quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, var_list));
+}
+
+void MathematicalProgram::AddConstraint(std::shared_ptr<Constraint> con,
+                   const VariableListRef& vars) {
+  required_capabilities_ |= kGenericConstraint;
+  generic_constraints_.push_back(Binding<Constraint>(con, vars));
+}
+
+void MathematicalProgram::AddConstraint(std::shared_ptr<LinearConstraint> con,
+                   const VariableListRef& vars) {
+  VariableList var_list(vars);
+  DRAKE_ASSERT(var_list.column_vectors_only());
+  required_capabilities_ |= kLinearConstraint;
+  int var_dim = var_list.size();
+  DRAKE_ASSERT(con->A().cols() == var_dim);
+  linear_constraints_.push_back(Binding<LinearConstraint>(con, var_list));
+}
+
+void MathematicalProgram::AddConstraint(std::shared_ptr<LinearEqualityConstraint> con,
+                   const VariableListRef& vars) {
+  VariableList var_list(vars);
+  DRAKE_ASSERT(var_list.column_vectors_only());
+  required_capabilities_ |= kLinearEqualityConstraint;
+  int var_dim = var_list.size();
+  DRAKE_ASSERT(con->A().cols() == var_dim);
+  linear_equality_constraints_.push_back(
+      Binding<LinearEqualityConstraint>(con, var_list));
+}
+
+void MathematicalProgram::AddConstraint(std::shared_ptr<LorentzConeConstraint> con,
+                   const VariableListRef& vars) {
+  VariableList var_list(vars);
+  DRAKE_ASSERT(var_list.column_vectors_only());
+  required_capabilities_ |= kLorentzConeConstraint;
+  lorentz_cone_constraint_.push_back(
+      Binding<LorentzConeConstraint>(con, var_list));
+}
+
+std::shared_ptr<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
+    const VariableListRef& vars) {
+  auto constraint = std::make_shared<LorentzConeConstraint>();
+  AddConstraint(constraint, vars);
+  return constraint;
+}
+
+void MathematicalProgram::AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con,
+                   const VariableListRef& vars) {
+  VariableList var_list(vars);
+  DRAKE_ASSERT(var_list.column_vectors_only());
+  required_capabilities_ |= kRotatedLorentzConeConstraint;
+  rotated_lorentz_cone_constraint_.push_back(
+      Binding<RotatedLorentzConeConstraint>(con, var_list));
+}
+
+std::shared_ptr<RotatedLorentzConeConstraint> MathematicalProgram::AddRotatedLorentzConeConstraint(
+    const VariableListRef& vars) {
+  auto constraint = std::make_shared<RotatedLorentzConeConstraint>();
+  AddConstraint(constraint, vars);
+  return constraint;
+}
+
 std::shared_ptr<Constraint> MathematicalProgram::AddPolynomialConstraint(
     const VectorXPoly& polynomials,
     const std::vector<Polynomiald::VarType>& poly_vars,
