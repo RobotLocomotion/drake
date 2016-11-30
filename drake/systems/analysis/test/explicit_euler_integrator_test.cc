@@ -87,7 +87,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   auto context = spring_mass.CreateDefaultContext();
 
   // Setup the integration size and infinity.
-  const double dt = 1e-6;
+  const double dt = 5e-7;
   const double inf = std::numeric_limits<double>::infinity();
 
   // Create the integrator.
