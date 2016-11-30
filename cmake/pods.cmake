@@ -194,8 +194,10 @@ macro(pods_config_search_paths)
       # set where files should be installed to
       set(LIBRARY_INSTALL_PATH "${DRAKE_LIBRARY_DIR}")
 
-      # add build/lib/pkgconfig to the pkg-config search path
-      set(ENV{PKG_CONFIG_PATH} "${DRAKE_PKGCONFIG_DIR}:$ENV{PKG_CONFIG_PATH}")
+      # add install/lib/pkgconfig to the pkg-config search path so we find
+      # .pc files installed by externals (use both the correct library dir, and
+      # plain 'lib', as some externals may not use the correct library dir)
+      set(ENV{PKG_CONFIG_PATH} "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/pkgconfig:${CMAKE_INSTALL_PREFIX}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
 
       # abuse RPATH
       if(CMAKE_INSTALL_RPATH)
