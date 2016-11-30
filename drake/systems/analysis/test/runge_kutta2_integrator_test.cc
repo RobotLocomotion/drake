@@ -110,7 +110,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Check the solution.
   double true_sol = C1 * std::cos(kOmega * t) + C2 * std::sin(kOmega * t);
-  EXPECT_NEAR(true_sol, x_final, 1e-5);
+  EXPECT_NEAR(true_sol, x_final, 5e-3);
 
   // Verify that integrator statistics are valid
   EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
