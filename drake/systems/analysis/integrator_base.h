@@ -92,7 +92,7 @@ class IntegratorBase {
    * Sets an integrator with error control to fixed step mode. If the integrator
    * runs in fixed step mode, it will always take the maximum step size
    * directed (which may be that determined by get_maximum_step_size(), or may
-   * be smaller, as directed by, e.g., @Simulator for event handling purposes).
+   * be smaller, as directed by, e.g., Simulator for event handling purposes).
    * @throws std::logic_error if integrator does not support error
    *         estimation and @p flag is set to `false`.
    */
@@ -107,7 +107,7 @@ class IntegratorBase {
    * does not support error estimation, this function will always return `true`.
    * If the integrator runs in fixed step mode, it will always take the maximum
    * step size directed (which may be that determined by get_maximum_step_size()
-   * or may be smaller, as directed by, e.g., @Simulator for event handling
+   * or may be smaller, as directed by, e.g., Simulator for event handling
    * purposes).
    * @sa set_fixed_step_mode()
    */
