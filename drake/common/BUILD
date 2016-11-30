@@ -117,7 +117,9 @@ cc_library(
 # Miscellaneous utilities.
 cc_library(
     name = "drake_path",
-    testonly = 1,
+    # TODO(david-german-tri): Set testonly = 1 once the non-test uses of
+    # drake_path are removed.
+    # testonly = 1,
     srcs = ["drake_path.cc"],
     hdrs = ["drake_path.h"],
     linkstatic = 1,
