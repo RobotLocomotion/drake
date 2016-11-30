@@ -83,7 +83,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Setup the initial position and initial velocity.
   const double kInitialPosition = 0.1;
-  const double kInitialVelocity = 0.0;
+  const double kInitialVelocity = 0.01;
   const double kOmega = std::sqrt(kSpring / kMass);
 
   // Set initial condition using the Simulator's internal Context.
