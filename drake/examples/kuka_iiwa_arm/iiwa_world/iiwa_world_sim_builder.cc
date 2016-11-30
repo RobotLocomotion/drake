@@ -169,6 +169,8 @@ void IiwaWorldSimBuilder<T>::SetZeroConfiguration(
       dynamic_cast<const RigidBodyPlant<double>*>(
           plant_and_visualizer_subsystems.at(0));
 
+  DRAKE_DEMAND(rigid_body_plant != nullptr);
+
   Context<double>* input_diagram_context =
       demo_diagram->GetMutableSubsystemContext(
           simulator->get_mutable_context(), plant_and_visualizer_diagram);
