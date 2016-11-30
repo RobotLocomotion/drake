@@ -87,7 +87,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   auto context = spring_mass.CreateDefaultContext();
 
   // Setup the integration size and infinity.
-  const double dt = 5e-7;
+  const double dt = 1e-6;
   const double inf = std::numeric_limits<double>::infinity();
 
   // Create the integrator.
@@ -123,7 +123,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Check the solution.
   EXPECT_NEAR(c1 * std::cos(kOmega * t) + c2 * std::sin(kOmega * t), x_final,
-              1e-5);
+              5e-3);
 
   // Verify that integrator statistics are valid
   EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
