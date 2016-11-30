@@ -1,3 +1,11 @@
+/// @file
+///
+/// This demo sets up an uncontrolled KUKA iiwa robot within a simulation
+/// mounted upon a table and with some simple objects (2 cylinders and
+/// 1 cuboid) placed in its vicinity. The uncontrolled iiwa arm collapses
+/// under the influence of gravity and results in the objects being scattered
+/// due to collisions with the robot arm and among themselves.
+
 #include <gflags/gflags.h>
 
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_world_sim_builder.h"
@@ -14,11 +22,6 @@ namespace kuka_iiwa_arm {
 
 namespace {
 
-// This demo sets up an uncontrolled KUKA iiwa robot within a simulation
-// mounted upon a table and with some simple objects (2 cylinders and
-// 1 cuboid) placed in its vicinity. The uncontrolled iiwa arm collapses
-// under the influence of gravity and results in the objects being scattered
-// due to collisions with the robot arm and among themselves.
 int DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
   auto iiwa_world = std::make_unique<IiwaWorldSimBuilder<double>>();
