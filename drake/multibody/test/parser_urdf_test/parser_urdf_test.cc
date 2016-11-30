@@ -4,7 +4,6 @@
 #include <fstream>
 #include <memory>
 #include <string>
-#include <memory>
 
 #include <gtest/gtest.h>
 
