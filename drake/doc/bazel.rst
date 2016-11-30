@@ -53,6 +53,10 @@ Build and test the entire project::
 
   bazel test //...
 
+Build the entire project using clang::
+
+  bazel build --compiler=clang-3.9 --crosstool_top=//tools:default-toolchain ...
+
 Run one specific test::
 
   bazel test drake/systems/framework/test/diagram_test
