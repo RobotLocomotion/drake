@@ -34,7 +34,7 @@ class RK3IntegratorTest : public ::testing::Test {
   std::unique_ptr<analysis_test::MySpringMassSystem<double>> spring_mass_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<RungeKutta3Integrator<double>> integrator_;
-  const double DT = 1e-3;        // Integration step size.
+  const double kDT = 1e-3;        // Integration step size.
   const double kBigDT = 1e-1;    // Big integration step size.
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
@@ -42,9 +42,9 @@ class RK3IntegratorTest : public ::testing::Test {
 
 TEST_F(RK3IntegratorTest, ReqAccuracy) {
   // Set the accuracy.
-  integrator_->request_initial_step_size_target(DT);
+  integrator_->request_initial_step_size_target(kDT);
 
-  EXPECT_EQ(integrator_->get_initial_step_size_target(), DT);
+  EXPECT_EQ(integrator_->get_initial_step_size_target(), kDT);
 }
 
 TEST_F(RK3IntegratorTest, ContextAccess) {
@@ -61,7 +61,7 @@ TEST_F(RK3IntegratorTest, ErrorEstSupport) {
   EXPECT_GE(integrator_->get_error_estimate_order(), 1);
   EXPECT_EQ(integrator_->supports_error_estimation(), true);
   EXPECT_NO_THROW(integrator_->set_target_accuracy(1e-1));
-  EXPECT_NO_THROW(integrator_->request_initial_step_size_target(DT));
+  EXPECT_NO_THROW(integrator_->request_initial_step_size_target(kDT));
 }
 
 // Test scaling vectors
@@ -101,8 +101,8 @@ TEST_F(RK3IntegratorTest, BulletProofSetup) {
                              kInitialVelocity);
 
   // Setup c1 and c2 for ODE constants.
-  const double kC1 = kInitialPosition;
-  const double kC2 = kInitialVelocity / kOmega;
+  const double c1 = kInitialPosition;
+  const double c2 = kInitialVelocity / kOmega;
 
   // Initialize the integrator.
   EXPECT_THROW(integrator_->Initialize(), std::logic_error);
@@ -130,7 +130,7 @@ TEST_F(RK3IntegratorTest, BulletProofSetup) {
   // Check the solution. We're not really looking for accuracy here, just
   // want to make sure that the value is finite.
   EXPECT_NEAR(
-      kC1 * std::cos(kOmega * kTFinal) + kC2 * std::sin(kOmega * kTFinal),
+      c1 * std::cos(kOmega * kTFinal) + c2 * std::sin(kOmega * kTFinal),
       x_final, 1e0);
 }
 
@@ -148,8 +148,8 @@ TEST_F(RK3IntegratorTest, ErrEst) {
                              kInitialVelocity);
 
   // Setup c1 and c2 for ODE constants.
-  const double kC1 = kInitialPosition;
-  const double kC2 = kInitialVelocity / kOmega;
+  const double c1 = kInitialPosition;
+  const double c2 = kInitialVelocity / kOmega;
 
   // Set integrator parameters: do no error control.
   integrator_->set_maximum_step_size(kBigDT);
@@ -158,16 +158,16 @@ TEST_F(RK3IntegratorTest, ErrEst) {
   // Initialize the integrator.
   integrator_->Initialize();
 
-  // Take a single step of size DT.
+  // Take a single step of size kBigDT.
   integrator_->StepOnceAtMost(kBigDT, kBigDT);
 
-  // Verify that a step of DT was taken.
+  // Verify that a step of kBigDT was taken.
   EXPECT_NEAR(context_->get_time(), kBigDT,
               std::numeric_limits<double>::epsilon());
 
   // Get the true solution
   const double kXTrue =
-      kC1 * std::cos(kOmega * kBigDT) + kC2 * std::sin(kOmega * kBigDT);
+      c1 * std::cos(kOmega * kBigDT) + c2 * std::sin(kOmega * kBigDT);
 
   // Get the integrator's solution
   const double kXApprox = context_->get_continuous_state_vector().GetAtIndex(0);
@@ -192,7 +192,7 @@ TEST_F(RK3IntegratorTest, ErrEst) {
 // for t = 0, x(0) = c1, x'(0) = c2*omega
 TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   // Set integrator parameters: do no error control.
-  integrator_->set_maximum_step_size(DT);
+  integrator_->set_maximum_step_size(kDT);
   integrator_->set_fixed_step_mode(true);
 
   // Initialize the integrator.
@@ -210,13 +210,13 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
                              kInitialVelocity);
 
   // Setup c1 and c2 for ODE constants.
-  const double kC1 = kInitialPosition;
-  const double kC2 = kInitialVelocity / kOmega;
+  const double c1 = kInitialPosition;
+  const double c2 = kInitialVelocity / kOmega;
 
   // StepOnceAtFixedSize for 1 second.
   const double kTFinal = 1.0;
-  for (double t = 0.0; t < kTFinal; t += DT)
-    integrator_->StepOnceAtMost(DT, DT);
+  for (double t = 0.0; t < kTFinal; t += kDT)
+    integrator_->StepOnceAtMost(kDT, kDT);
 
   // Get the final position.
   const double x_final =
@@ -227,7 +227,7 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
 
   // Check the solution.
   EXPECT_NEAR(
-      kC1 * std::cos(kOmega * kTFinal) + kC2 * std::sin(kOmega * kTFinal),
+      c1 * std::cos(kOmega * kTFinal) + c2 * std::sin(kOmega * kTFinal),
       x_final, 1e-5);
 
   // Reset the integrator and set reasonable parameters for integration with
@@ -256,7 +256,7 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
 
   // Check the solution.
   EXPECT_NEAR(
-      kC1 * std::cos(kOmega * kTFinal) + kC2 * std::sin(kOmega * kTFinal),
+      c1 * std::cos(kOmega * kTFinal) + c2 * std::sin(kOmega * kTFinal),
       x_final, 1e-5);
 
   // Verify that integrator statistics are valid
