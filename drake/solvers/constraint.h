@@ -501,14 +501,23 @@ class PositiveSemidefiniteConstraint : public Constraint {
 class LinearMatrixInequalityConstraint : public Constraint {
  public:
   LinearMatrixInequalityConstraint(const std::list<Eigen::Ref<const Eigen::MatrixXd>>& F);
+
+  /* Getter for all given matrices F */
   const std::list<Eigen::MatrixXd>& F() const {return F_; }
+
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override;
 
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override;
+
+  // Get the number of rows in the matrix inequality constraint. Namely
+  // Fi are all rows x rows matrices.
+  int matrix_rows() const {return matrix_rows_;}
+
  private:
   std::list<Eigen::MatrixXd> F_;
+  int matrix_rows_;
 };
 }  // namespace solvers
 }  // namespace drake

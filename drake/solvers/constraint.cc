@@ -41,7 +41,7 @@ throw std::runtime_error(
 }
 
 LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(const std::list<
-    Eigen::Ref<const Eigen::MatrixXd>> &F) : Constraint(0) {
+    Eigen::Ref<const Eigen::MatrixXd>> &F) : Constraint(0), matrix_rows_(F.front().rows()){
   F_.resize(F.size());
   auto F_it = F_.begin();
   for (const auto& Fi : F) {

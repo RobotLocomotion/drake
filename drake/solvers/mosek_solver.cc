@@ -288,9 +288,6 @@ MSKrescodee AddBarVariable(int rows, MSKtask_t* task) {
                               1, &bar_A_matrix_idx, &bar_A_weights);
       if (rescode != MSK_RES_OK) { return rescode;}
 
-      rescode = MSK_putconbound(*task, linear_constraint_index, MSK_BK_FX,
-                                0.0, 0.0);
-      if (rescode != MSK_RES_OK) { return rescode;}
       ++new_linear_constraint_count;
     }
   }
@@ -323,6 +320,8 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
     // bar_A_ij(i, j) = 1                         if i == j
 
     int new_linear_constraint_count = 0;
+    // It is important to use the same for-loop order as in
+    // AddBarVariable()
     for (int j = 0; j < rows; ++j) {
       for (int i = j; i < rows; ++i) {
         int linear_constraint_index =
@@ -335,6 +334,10 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
                         &symmetric_matrix_var_ij_index, &symmetric_matrix_val);
         if (rescode != MSK_RES_OK) { return rescode;}
 
+        rescode = MSK_putconbound(*task, linear_constraint_index, MSK_BK_FX,
+                                  0.0, 0.0);
+        if (rescode != MSK_RES_OK) { return rescode;}
+
         ++new_linear_constraint_count;
       }
     }
@@ -344,6 +347,47 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
 
 MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog, MSKtask_t* task) {
   MSKrescodee rescode = MSK_RES_OK;
+  for (const auto& binding : prog.linear_matrix_inequality_constraints()) {
+    int num_linear_constraint = 0;
+    rescode = MSK_getnumcon(*task, &num_linear_constraint);
+    if (rescode != MSK_RES_OK) { return rescode;}
+
+    int rows = binding.constraint()->matrix_rows();
+
+    AddBarVariable(rows, task);
+
+    int new_linear_constraint_count = 0;
+    // It is important to use the same for-loop order as in
+    // AddBarVariable()
+    for (int j = 0; j < rows; ++j) {
+      for (int i = j; i < rows; ++i) {
+        int linear_constraint_index =
+            num_linear_constraint + new_linear_constraint_count;
+
+        const auto& F = binding.constraint()->F();
+        auto F_it = F.begin();
+        rescode = MSK_putconbound(*task, linear_constraint_index, MSK_BK_FX,
+            -(*F_it)(i, j), -(*F_it)(i, j));
+        if (rescode != MSK_RES_OK) { return rescode;}
+        ++F_it;
+
+        Eigen::SparseVector<double, Eigen::RowMajor> A_row(prog.num_vars());
+        A_row.setZero();
+        A_row.reserve(binding.variable_list().size());
+        for (const auto& var : binding.variable_list().variables()) {
+          for (int k = 0; k < static_cast<int>(var.rows()); ++k) {
+            A_row.coeffRef(var(k, 0).index()) += (*F_it)(i, j);
+            ++F_it;
+          }
+        }
+
+        rescode = MSK_putarow(*task, linear_constraint_index, A_row.nonZeros(), A_row.innerIndexPtr(), A_row.valuePtr());
+        if (rescode != MSK_RES_OK) { return rescode;}
+
+        ++new_linear_constraint_count;
+      }
+    }
+  }
   return rescode;
 }
 
@@ -566,7 +610,8 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   } else if (prog.quadratic_costs().empty() &&
              prog.lorentz_cone_constraints().empty() &&
              prog.rotated_lorentz_cone_constraints().empty() &&
-             prog.positive_semidefinite_constraints().empty()) {
+             prog.positive_semidefinite_constraints().empty() &&
+             prog.linear_matrix_inequality_constraints().empty()) {
     solution_type = MSK_SOL_BAS;
   } else {
     solution_type = MSK_SOL_ITR;
