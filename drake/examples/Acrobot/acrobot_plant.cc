@@ -7,6 +7,7 @@
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 
+namespace drake {
 namespace examples {
 namespace acrobot {
 
