@@ -205,22 +205,11 @@ endfunction()
 # manually.
 macro(pods_config_search_paths)
     if(NOT DEFINED __pods_setup)
-      # set where files should be output locally
-      set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
-      foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
-        string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
-        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${LIBRARY_OUTPUT_PATH})
-      endforeach()
-
       # set where files should be installed to
       set(LIBRARY_INSTALL_PATH "${DRAKE_LIBRARY_DIR}")
 
       # add build/lib/pkgconfig to the pkg-config search path
       set(ENV{PKG_CONFIG_PATH} "${DRAKE_PKGCONFIG_DIR}:$ENV{PKG_CONFIG_PATH}")
-
-      # add build/lib to the link path
-      link_directories(${LIBRARY_OUTPUT_PATH})
-      link_directories(${LIBRARY_INSTALL_PATH})
 
       # abuse RPATH
       if(CMAKE_INSTALL_RPATH)
