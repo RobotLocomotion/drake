@@ -86,8 +86,7 @@ int DoMain() {
 
   auto simulator = std::make_unique<systems::Simulator<double>>(*demo_diagram);
 
-  iiwa_world->SetZeroConfiguration(simulator.get(), demo_diagram.get(),
-                                   iiwa_plant_diagram);
+  iiwa_world->SetZeroConfiguration(simulator.get(), demo_diagram.get());
 
   simulator->Initialize();
   simulator->StepTo(FLAGS_simulation_sec);
