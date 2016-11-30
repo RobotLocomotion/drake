@@ -62,6 +62,14 @@ in debug mode)::
 
   bazel test -c dbg drake/systems/framework/test/diagram_test
 
+Run a test under memcheck::
+
+  bazel test --config=memcheck drake/systems/framework/test/diagram_test
+
+Run a test under AddressSanitizer::
+
+  bazel test --config=asan drake/systems/framework/test/diagram_test
+
 Run one of the compiled programs manually, from the build outputs directory
 (note that ``bazel-bin`` is a directory name here)::
 
