@@ -110,6 +110,7 @@ int IiwaWorldSimBuilder<T>::AddModelInstanceToFrame(
 
 template <typename T>
 void IiwaWorldSimBuilder<T>::AddGround() {
+  DRAKE_DEMAND(!built_);
   drake::multibody::AddFlatTerrainToWorld(rigid_body_tree_.get());
 }
 
@@ -151,7 +152,6 @@ template <typename T>
 void IiwaWorldSimBuilder<T>::SetZeroConfiguration(
     systems::Simulator<T>* simulator, const systems::Diagram<T>* demo_diagram,
     const systems::Diagram<T>* plant_diagram) {
-  DRAKE_DEMAND(!built_);
   DRAKE_DEMAND(simulator != nullptr && demo_diagram != nullptr &&
                plant_diagram != nullptr);
 
