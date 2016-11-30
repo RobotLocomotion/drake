@@ -1820,23 +1820,49 @@ RigidBodyTree<T>::transformPointsJacobian(
   int body_ind = parseBodyOrFrameID(from_body_or_frame_ind);
   int base_ind = parseBodyOrFrameID(to_body_or_frame_ind);
   std::vector<int> v_or_q_indices;
+  // Herein ndof = cols = in_terms_of_qdot ? num_positions_ : num_velocities_.
+  // J_geometric lives in R^(6 x ndof).
   auto J_geometric =
       geometricJacobian(cache, base_ind, body_ind, to_body_or_frame_ind,
                         in_terms_of_qdot, &v_or_q_indices);
 
+  // Jomega, Jv live in R^{3 x ndof}.
   auto Jomega = J_geometric.template topRows<kSpaceDimension>();
   auto Jv = J_geometric.template bottomRows<kSpaceDimension>();
 
+  // J lives in R^{3*npoints x ndof}.
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> J(
       points_base.size(), cols);  // TODO(tkoolen): size at compile time
   J.setZero();
 
+  // Herein the following notation is used:
+  //  B: the frame referenced by from_body_or_frame_ind.
+  //  O: the "base" or "origin" frame referenced by to_body_or_frame_ind.
+  //  pi: the i-th point in the input parameter "points".
+  // Given the i-th point, its linear velocity vi_O expressed in frame O is:
+  // vi_O = v0_O - pi_O.cross(w_OB),
+  // with v0_O the instantaneous velocity of a point at the origin of O rigidly
+  // attached to frame B. w_OB is the angular velocity of frame B with respect
+  // to frame O expressed in frame O.
+  // The Plucker vector velocity of the i-th point is:
+  //   Vi_O = Jg * v
+  // Since the linear velocity is vi_O = v0_O - pi_O.cross(w_OB) then this can
+  // be rewritten as:
+  //   vi_O = (Jv - [pi_O] * Jw) * v = J * v
+  // where [pi_O] is the skew symmetric cross product matrix.
+  // Notice bellow that this cross product is performed by taking the cross
+  // product of each column in Jw with with pi_O and therefore the minus sign
+  // changes to a plus sign.
+
   int row_start = 0;
   for (int i = 0; i < npoints; ++i) {
-    // translation part
     int col = 0;
     for (std::vector<int>::iterator it = v_or_q_indices.begin();
          it != v_or_q_indices.end(); ++it) {
+      // Since J_geometric relates generalized velocities (or generalized
+      // coordinates time derivatives) to Plucker vectors, the code below
+      // makes the transformation from the origin's linear velocity (actual
+      // the base linear velocity) to the particular point linear velocity.
       J.template block<kSpaceDimension, 1>(row_start, *it) = Jv.col(col);
       J.template block<kSpaceDimension, 1>(row_start, *it).noalias() +=
           Jomega.col(col).cross(points_base.col(i));
