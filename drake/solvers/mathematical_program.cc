@@ -323,18 +323,21 @@ MathematicalProgram::AddPositiveSemidefiniteConstraint(
   return constraint;
 }
 
-void MathematicalProgram::AddConstraint(std::shared_ptr<LinearMatrixInequalityConstraint> con,
-const VariableListRef& vars) {
+void MathematicalProgram::AddConstraint(
+    std::shared_ptr<LinearMatrixInequalityConstraint> con,
+    const VariableListRef& vars) {
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
   VariableList var_list(vars);
   DRAKE_ASSERT(var_list.column_vectors_only());
   DRAKE_ASSERT(con->F().size() == var_list.size() + 1);
-  linear_matrix_inequality_constraint_.push_back(Binding<LinearMatrixInequalityConstraint>(con, var_list));
+  linear_matrix_inequality_constraint_.push_back(
+      Binding<LinearMatrixInequalityConstraint>(con, var_list));
 }
 
-std::shared_ptr<LinearMatrixInequalityConstraint> MathematicalProgram::AddLinearMatrixInequalityConstraint(
-    const std::list<Eigen::Ref<const Eigen::MatrixXd>> &F,
-    const VariableListRef &vars) {
+std::shared_ptr<LinearMatrixInequalityConstraint>
+MathematicalProgram::AddLinearMatrixInequalityConstraint(
+    const std::list<Eigen::Ref<const Eigen::MatrixXd>>& F,
+    const VariableListRef& vars) {
   auto constraint = std::make_shared<LinearMatrixInequalityConstraint>(F);
   AddConstraint(constraint, vars);
   return constraint;

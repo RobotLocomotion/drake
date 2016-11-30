@@ -1151,7 +1151,7 @@ DecisionVariableMatrix<x_dim, x_dim> AddLyapunovCondition(
     const DecisionVariableMatrix<x_dim, x_dim>& P, MathematicalProgram* prog) {
   const auto Q = prog->AddSymmetricContinuousVariables<x_dim>();
   prog->AddPositiveSemidefiniteConstraint(Q);
-  Eigen::Matrix<double, x_dim * (x_dim + 1) / 2, 1> lin_eq_bnd;
+  Eigen::Matrix<double, x_dim*(x_dim + 1) / 2, 1> lin_eq_bnd;
   lin_eq_bnd.setZero();
   std::vector<Eigen::Triplet<double>> lin_eq_triplets;
   int lin_eq_idx = 0;
@@ -1187,44 +1187,39 @@ DecisionVariableMatrix<x_dim, x_dim> AddLyapunovCondition(
 // s.t P is positive semidefinite
 //     Ai'*P + P*Ai is positive semidefinite
 GTEST_TEST(TestConvexOptimization, TestCommonLyapunov) {
-std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
-GetSemidefiniteProgramSolvers(&solvers);
-for (const auto& solver : solvers) {
-  MathematicalProgram prog;
-  auto P = prog.AddSymmetricContinuousVariables<3>("P");
-  prog.AddPositiveSemidefiniteConstraint(P);
-  Eigen::Matrix3d A1;
-  A1 << -1, -1, -2,
-         0, -1, -3,
-         0,  0, -1;
-  const auto& Q1 = AddLyapunovCondition(A1, P, &prog);
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+  GetSemidefiniteProgramSolvers(&solvers);
+  for (const auto& solver : solvers) {
+    MathematicalProgram prog;
+    auto P = prog.AddSymmetricContinuousVariables<3>("P");
+    prog.AddPositiveSemidefiniteConstraint(P);
+    Eigen::Matrix3d A1;
+    A1 << -1, -1, -2, 0, -1, -3, 0, 0, -1;
+    const auto& Q1 = AddLyapunovCondition(A1, P, &prog);
 
-  Eigen::Matrix3d A2;
-  A2 << -1, -1.2, -1.8,
-         0, -0.7, -2,
-         0,  0,  -0.4;
-  const auto& Q2 = AddLyapunovCondition(A2, P, &prog);
+    Eigen::Matrix3d A2;
+    A2 << -1, -1.2, -1.8, 0, -0.7, -2, 0, 0, -0.4;
+    const auto& Q2 = AddLyapunovCondition(A2, P, &prog);
 
-  RunSolver(&prog, *solver);
+    RunSolver(&prog, *solver);
 
-  Eigen::Matrix3d P_value = GetSolution(P);
-  Eigen::Matrix3d Q1_value = GetSolution(Q1);
-  Eigen::Matrix3d Q2_value = GetSolution(Q2);
-  Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_P(P_value);
-  EXPECT_TRUE(CompareMatrices(P_value, P_value.transpose(), 1E-6,
-                              MatrixCompareType::absolute));
-  EXPECT_GE(eigen_solver_P.eigenvalues().real().minCoeff(), -1E-8);
-  Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_Q1(Q1_value);
-  EXPECT_GE(eigen_solver_Q1.eigenvalues().real().minCoeff(), -1E-8);
-  Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_Q2(Q2_value);
-  EXPECT_GE(eigen_solver_Q2.eigenvalues().real().minCoeff(), -1E-8);
-  EXPECT_TRUE(CompareMatrices(A1.transpose() * P_value + P_value * A1,
-                              -Q1_value, 1e-6, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(A2.transpose() * P_value + P_value * A2,
-                              -Q2_value, 1e-6, MatrixCompareType::absolute));
+    Eigen::Matrix3d P_value = GetSolution(P);
+    Eigen::Matrix3d Q1_value = GetSolution(Q1);
+    Eigen::Matrix3d Q2_value = GetSolution(Q2);
+    Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_P(P_value);
+    EXPECT_TRUE(CompareMatrices(P_value, P_value.transpose(), 1E-6,
+                                MatrixCompareType::absolute));
+    EXPECT_GE(eigen_solver_P.eigenvalues().real().minCoeff(), -1E-8);
+    Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_Q1(Q1_value);
+    EXPECT_GE(eigen_solver_Q1.eigenvalues().real().minCoeff(), -1E-8);
+    Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_Q2(Q2_value);
+    EXPECT_GE(eigen_solver_Q2.eigenvalues().real().minCoeff(), -1E-8);
+    EXPECT_TRUE(CompareMatrices(A1.transpose() * P_value + P_value * A1,
+                                -Q1_value, 1e-6, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(A2.transpose() * P_value + P_value * A2,
+                                -Q2_value, 1e-6, MatrixCompareType::absolute));
+  }
 }
-}
-
 
 // Solve an eigen value problem through a semidefinite programming.
 // Minimize the maximum eigen value of a matrix that depends affinly on a
@@ -1240,21 +1235,19 @@ GTEST_TEST(TestConvexOptimization, TestEigenvalueProblem) {
     MathematicalProgram prog;
     auto x = prog.AddContinuousVariables<2>("x");
     Eigen::Matrix3d F1;
-    F1 << 1, 0.2, 0.3,
-          0.2, 2, -0.1,
-          0.3, -0.1, 4;
+    F1 << 1, 0.2, 0.3, 0.2, 2, -0.1, 0.3, -0.1, 4;
     Eigen::Matrix3d F2;
-    F2 << 2, 0.4, 0.7,
-          0.4, -1, 0.1,
-          0.7, 0.1, 5;
+    F2 << 2, 0.4, 0.7, 0.4, -1, 0.1, 0.7, 0.1, 5;
     auto z = prog.AddContinuousVariables<1>("z");
-    prog.AddLinearMatrixInequalityConstraint({Eigen::Matrix3d::Zero(), Eigen::Matrix3d::Identity(), -F1, -F2}, {z, x});
+    prog.AddLinearMatrixInequalityConstraint(
+        {Eigen::Matrix3d::Zero(), Eigen::Matrix3d::Identity(), -F1, -F2},
+        {z, x});
 
     Eigen::Vector2d x_lb(0.1, 1);
     Eigen::Vector2d x_ub(2, 3);
     prog.AddBoundingBoxConstraint(x_lb, x_ub, {x});
 
-    prog.AddLinearCost(drake::Vector1d(1),{z});
+    prog.AddLinearCost(drake::Vector1d(1), {z});
 
     RunSolver(&prog, *solver);
 

@@ -364,7 +364,8 @@ class MathematicalProgram {
   }
 
   /**
-   * Add symmetric matrix variables to optimization program. Only the lower triangular
+   * Add symmetric matrix variables to optimization program. Only the lower
+   * triangular
    * part of the matrix is used as decision variables.
    * @param names The names of the stacked columns of the lower triangular part
    * of the matrix.
@@ -372,7 +373,7 @@ class MathematicalProgram {
   template <int rows>
   DecisionVariableMatrix<rows, rows> AddSymmetricVariables(
       DecisionVariableScalar::VarType type,
-      const std::array<std::string, rows * (rows + 1) / 2>& names) {
+      const std::array<std::string, rows*(rows + 1) / 2>& names) {
     DecisionVariableMatrix<rows, rows> decision_variable_matrix;
     AddVariables_impl(type, names, true, decision_variable_matrix);
     return decision_variable_matrix;
@@ -392,8 +393,8 @@ class MathematicalProgram {
    * @see AddContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  DecisionVariableVectorX AddContinuousVariables(
-      std::size_t rows, const std::string& name = "x");
+  DecisionVariableVectorX AddContinuousVariables(std::size_t rows,
+                                                 const std::string& name = "x");
 
   /// Add continuous variables to this MathematicalProgram.
   /**
@@ -648,10 +649,10 @@ class MathematicalProgram {
    * @param name The name of the matrix. It is only used the for user to
    * understand the optimization program.
    */
-  template<int rows>
+  template <int rows>
   DecisionVariableMatrix<rows, rows> AddSymmetricContinuousVariables(
       const std::string& name = "S") {
-    std::array<std::string, rows * (rows + 1) / 2> names;
+    std::array<std::string, rows*(rows + 1) / 2> names;
     int var_count = 0;
     for (int j = 0; j < static_cast<int>(rows); ++j) {
       for (int i = j; i < static_cast<int>(rows); ++i) {
@@ -1204,7 +1205,8 @@ class MathematicalProgram {
    * Add a positive semidefinite constraint on a symmetric matrix.
    * @param symmetric_matrix_var A symmetric DecisionVariableMatrix object.
    */
-  void AddConstraint(std::shared_ptr<PositiveSemidefiniteConstraint> con,
+  void AddConstraint(
+      std::shared_ptr<PositiveSemidefiniteConstraint> con,
       const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var);
 
   /**
@@ -1219,13 +1221,15 @@ class MathematicalProgram {
    * Add a linear matrix inequality constraint to the program.
    */
   void AddConstraint(std::shared_ptr<LinearMatrixInequalityConstraint> con,
-      const VariableListRef& vars);
+                     const VariableListRef& vars);
 
   /**
    * Add a linear matrix inequality constraint to the program.
    */
   std::shared_ptr<LinearMatrixInequalityConstraint>
-      AddLinearMatrixInequalityConstraint(const std::list<Eigen::Ref<const Eigen::MatrixXd>>& F, const VariableListRef& vars);
+  AddLinearMatrixInequalityConstraint(
+      const std::list<Eigen::Ref<const Eigen::MatrixXd>>& F,
+      const VariableListRef& vars);
 
   // template <typename FunctionType>
   // void AddCost(std::function..);
@@ -1415,7 +1419,7 @@ class MathematicalProgram {
 
   /** Getter for linear matrix inequality constraint */
   const std::vector<Binding<LinearMatrixInequalityConstraint>>&
-      linear_matrix_inequality_constraints() const {
+  linear_matrix_inequality_constraints() const {
     return linear_matrix_inequality_constraint_;
   }
 
@@ -1525,7 +1529,8 @@ class MathematicalProgram {
       rotated_lorentz_cone_constraint_;
   std::vector<Binding<PositiveSemidefiniteConstraint>>
       positive_semidefinite_constraint_;
-  std::vector<Binding<LinearMatrixInequalityConstraint>> linear_matrix_inequality_constraint_;
+  std::vector<Binding<LinearMatrixInequalityConstraint>>
+      linear_matrix_inequality_constraint_;
 
   // Invariant:  The bindings in this list must be non-overlapping.
   // TODO(ggould-tri) can this constraint be relaxed?
@@ -1615,8 +1620,7 @@ class MathematicalProgram {
   }
 
   DecisionVariableMatrixX AddVariables(DecisionVariableScalar::VarType type,
-                                       int rows, int cols,
-                                       bool is_symmetric,
+                                       int rows, int cols, bool is_symmetric,
                                        const std::vector<std::string>& names);
 
   DecisionVariableVectorX AddVariables(DecisionVariableScalar::VarType type,
