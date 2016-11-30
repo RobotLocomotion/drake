@@ -10,6 +10,10 @@ build --cxxopt -std=c++1y
 # Test options.
 test --test_output=errors
 
+# Clang.
+build:clang --compiler=clang-3.9
+build:clang --crosstool_top=//tools:default-toolchain
+
 # Coverage build.
 build:coverage --strip=never
 build:coverage --copt -g
