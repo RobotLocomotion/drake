@@ -77,9 +77,11 @@ class IiwaWorldSimBuilder {
   std::unique_ptr<systems::Diagram<T>> Build();
 
   // TODO(naveenoid): Remove this method once issue #4191 is addressed.
+  // TODO(naveenoid) : Subsystem names should be documented here once #3556 is
+  // resolved.
   /// Sets the zero configuration of the plant.
-  /// Note that this method assumes that @p demo_diagram is in itself composed
-  /// of a `Diagram` containing the plant and visualizer systems as built by
+  /// Note that this method assumes that @p demo_diagram is composed of a
+  /// `Diagram` containing the plant and visualizer systems as built by
   /// the `Build()` method.
   ///
   /// @see Build
