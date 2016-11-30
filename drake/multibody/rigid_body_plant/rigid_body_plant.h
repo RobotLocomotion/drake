@@ -192,6 +192,11 @@ class RigidBodyPlant : public LeafSystem<T> {
     return System<T>::get_output_port(kinematics_output_port_id_);
   }
 
+  /// Returns descriptor of ContactResults output port.
+  const SystemPortDescriptor<T>& contact_results_output_port() const {
+    return System<T>::get_output_port(contact_output_port_id_);
+  }
+
   /// Creates a right-handed local basis from a z-axis. Defines an arbitrary x-
   /// and y-axis such that the basis is orthonormal.  The basis is R_WL, where W
   /// is the frame in which the z-axis is expressed and L is a local basis such
