@@ -8,7 +8,6 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -16,7 +15,7 @@ namespace examples {
 namespace pendulum {
 
 /// Describes the row indices of a PendulumStateVector.
-struct DRAKE_EXPORT PendulumStateVectorIndices {
+struct PendulumStateVectorIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 2;
 
@@ -39,9 +38,11 @@ class PendulumStateVector : public systems::BasicVector<T> {
 
   /// @name Getters and Setters
   //@{
-  const T theta() const { return this->GetAtIndex(K::kTheta); }
+  // theta
+  const T& theta() const { return this->GetAtIndex(K::kTheta); }
   void set_theta(const T& theta) { this->SetAtIndex(K::kTheta, theta); }
-  const T thetadot() const { return this->GetAtIndex(K::kThetadot); }
+  // thetadot
+  const T& thetadot() const { return this->GetAtIndex(K::kThetadot); }
   void set_thetadot(const T& thetadot) {
     this->SetAtIndex(K::kThetadot, thetadot);
   }

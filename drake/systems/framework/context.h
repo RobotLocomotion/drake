@@ -33,24 +33,19 @@ class Context {
  public:
   virtual ~Context() {}
 
+  // =========================================================================
+  // Accessors and Mutators for Time.
+
   /// Returns the current time in seconds.
   const T& get_time() const { return get_step_info().time_sec; }
 
   /// Set the current time in seconds.
-  virtual void set_time(const T& time_sec)  {
+  virtual void set_time(const T& time_sec) {
     get_mutable_step_info()->time_sec = time_sec;
   }
 
-  /// Connects the input port @p port to this Context at the given @p index.
-  /// Disconnects whatever input port was previously there, and deregisters
-  /// it from the output port on which it depends.  In some Context
-  /// implementations, may require a recursive search through a tree of
-  /// subcontexts.
-  /// Throws std::out_of_range if @p index is out of range.
-  virtual void SetInputPort(int index, std::unique_ptr<InputPort> port) = 0;
-
-  /// Returns the number of input ports.
-  virtual int get_num_input_ports() const = 0;
+  // =========================================================================
+  // Accessors and Mutators for State.
 
   virtual const State<T>& get_state() const = 0;
   virtual State<T>* get_mutable_state() = 0;
@@ -61,22 +56,39 @@ class Context {
   }
 
   /// Returns a mutable pointer to the continuous component of the state,
-  /// or nullptr if there is no continuous state.
+  /// which may be of size zero.
   ContinuousState<T>* get_mutable_continuous_state() {
     return get_mutable_state()->get_mutable_continuous_state();
   }
 
-  /// Returns a mutable pointer to the difference component of the state, or
-  /// nullptr if there is no difference state.
+  /// Returns a mutable pointer to the continuous state, devoid of second-order
+  /// structure. The vector may be of size zero.
+  VectorBase<T>* get_mutable_continuous_state_vector() {
+    return get_mutable_continuous_state()->get_mutable_vector();
+  }
+
+  /// Returns a const pointer to the continuous component of the state,
+  /// which may be of size zero.
+  const ContinuousState<T>* get_continuous_state() const {
+    return get_state().get_continuous_state();
+  }
+
+  /// Returns a reference to the continuous state vector, devoid of second-order
+  /// structure. The vector may be of size zero.
+  const VectorBase<T>& get_continuous_state_vector() const {
+    return get_continuous_state()->get_vector();
+  }
+
+  /// Returns a mutable pointer to the difference component of the state,
+  /// which may be of size zero.
   DifferenceState<T>* get_mutable_difference_state() {
     return get_mutable_state()->get_mutable_difference_state();
   }
 
   /// Returns a mutable pointer to element @p index of the difference state.
-  /// Asserts if there is no difference state, or if @p index doesn't exist.
+  /// Asserts if @p index doesn't exist.
   BasicVector<T>* get_mutable_difference_state(int index) {
     DifferenceState<T>* xd = get_mutable_difference_state();
-    DRAKE_ASSERT(xd != nullptr);
     return xd->get_mutable_difference_state(index);
   }
 
@@ -86,24 +98,70 @@ class Context {
   }
 
   /// Returns a const pointer to the discrete difference component of the
-  /// state at @p index.
-  const VectorBase<T>* get_difference_state(int index) const {
+  /// state at @p index.  Asserts if @p index doesn't exist.
+  const BasicVector<T>* get_difference_state(int index) const {
     const DifferenceState<T>* xd = get_state().get_difference_state();
-    if (xd == nullptr) return nullptr;
     return xd->get_difference_state(index);
   }
 
-  /// Returns a const pointer to the continuous component of the state,
-  /// or nullptr if there is no continuous state.
-  const ContinuousState<T>* get_continuous_state() const {
-    return get_state().get_continuous_state();
+  /// Returns a mutable pointer to the modal component of the state,
+  /// which may be of size zero.
+  ModalState* get_mutable_modal_state() {
+    return get_mutable_state()->get_mutable_modal_state();
   }
 
-  /// Returns a deep copy of this Context. The clone's input ports will
-  /// hold deep copies of the data that appears on this context's input ports
-  /// at the time the clone is created.
-  std::unique_ptr<Context<T>> Clone() const {
-    return std::unique_ptr<Context<T>>(DoClone());
+  /// Returns a mutable pointer to element @p index of the modal state.
+  /// Asserts if @p index doesn't exist.
+  template <typename U>
+  U& get_mutable_modal_state(int index) {
+    ModalState* xm = get_mutable_modal_state();
+    return xm->get_mutable_modal_state(index).GetMutableValue<U>();
+  }
+
+  /// Sets the modal state to @p xm, deleting whatever was there before.
+  void set_modal_state(std::unique_ptr<ModalState> xm) {
+    get_mutable_state()->set_modal_state(std::move(xm));
+  }
+
+  /// Returns a const pointer to the discrete modal component of the
+  /// state at @p index.  Asserts if @p index doesn't exist.
+  template <typename U>
+  const U& get_modal_state(int index) const {
+    const ModalState* xm = get_state().get_modal_state();
+    return xm->get_modal_state(index).GetValue<U>();
+  }
+
+  // =========================================================================
+  // Accessors and Mutators for Input.
+
+  /// Connects the input port @p port to this Context at the given @p index.
+  /// Disconnects whatever input port was previously there, and deregisters
+  /// it from the output port on which it depends.  In some Context
+  /// implementations, may require a recursive search through a tree of
+  /// subcontexts. Asserts if @p index is out of range.
+  virtual void SetInputPort(int index, std::unique_ptr<InputPort> port) = 0;
+
+  /// Returns the number of input ports.
+  virtual int get_num_input_ports() const = 0;
+
+  /// Connects a FreestandingInputPort with the given @p value at the given
+  /// @p index. Asserts if @p index is out of range.
+  void FixInputPort(int index, std::unique_ptr<BasicVector<T>> value) {
+    SetInputPort(index,
+                 std::make_unique<FreestandingInputPort>(std::move(value)));
+  }
+
+  /// Connects a FreestandingInputPort with the given @p value at the given
+  /// @p index. Asserts if @p index is out of range.  Returns a raw pointer to
+  /// the allocated BasicVector that will remain valid until this input
+  /// port is overwritten or the context is destroyed.
+  BasicVector<T>* FixInputPort(int index,
+                               const Eigen::Ref<const VectorX<T>>& data) {
+    auto vec = std::make_unique<BasicVector<T>>(data);
+    BasicVector<T>* ptr = vec.get();
+    SetInputPort(index, std::make_unique<systems::FreestandingInputPort>(
+                            std::move(vec)));
+    return ptr;
   }
 
   /// Evaluates and returns the input port identified by @p descriptor,
@@ -183,6 +241,25 @@ class Context {
     return &(value->GetValue<V>());
   }
 
+  // =========================================================================
+  // Miscellaneous Public Methods
+
+  /// Returns a deep copy of this Context. The clone's input ports will
+  /// hold deep copies of the data that appears on this context's input ports
+  /// at the time the clone is created.
+  std::unique_ptr<Context<T>> Clone() const {
+    return std::unique_ptr<Context<T>>(DoClone());
+  }
+
+  /// Initializes this context's time, state, and parameters from the real
+  /// values in @p source, regardless of this context's scalar type.
+  /// Requires a constructor T(double).
+  void SetTimeStateAndParametersFrom(const Context<double>& source) {
+    set_time(T(source.get_time()));
+    get_mutable_state()->SetFrom(source.get_state());
+    // TODO(david-german-tri): Parameters.
+  }
+
   /// Declares that @p parent is the context of the enclosing Diagram. The
   /// enclosing Diagram context is needed to evaluate inputs recursively.
   /// Aborts if the parent has already been set to something else.
@@ -227,12 +304,12 @@ class Context {
 
   /// Returns the InputPort at the given @p index, which may be nullptr if
   /// it has never been set with SetInputPort.
-  /// Throws std::out_of_range if @p index is out of range.
+  /// Asserts if @p index is out of range.
   virtual const InputPort* GetInputPort(int index) const = 0;
 
   /// Returns the InputPort at the given @p index from the given @p context.
   /// Returns nullptr if the given port has never been set with SetInputPort.
-  /// Throws std::out_of_range if @p index is out of range.
+  /// Asserts if @p index is out of range.
   static const InputPort* GetInputPort(const Context<T>& context, int index) {
     return context.GetInputPort(index);
   }
@@ -249,4 +326,3 @@ class Context {
 
 }  // namespace systems
 }  // namespace drake
-

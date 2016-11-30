@@ -113,7 +113,7 @@ The implementation file explicitly instantiates the templates
 
   #include "my_class-inl.h"
 
-  template MyClass<double>;
+  template class MyClass<double>;
 
 ``main.cc``
 -----------

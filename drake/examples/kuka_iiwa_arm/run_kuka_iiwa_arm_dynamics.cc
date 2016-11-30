@@ -1,18 +1,20 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_path.h"
+#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/plants/parser_urdf.h"
-#include "drake/systems/plants/parser_model_instance_id_table.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 
 using std::make_unique;
 using std::move;
@@ -29,11 +31,11 @@ using systems::Context;
 using systems::ContinuousState;
 using systems::Diagram;
 using systems::DiagramBuilder;
+using systems::DrakeVisualizer;
 using systems::RigidBodyPlant;
-using systems::RigidBodyTreeLcmPublisher;
 using systems::Simulator;
 using systems::VectorBase;
-using systems::plants::joints::kFixed;
+using multibody::joints::kFixed;
 
 namespace examples {
 namespace kuka_iiwa_arm {
@@ -49,13 +51,13 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
     this->set_name("KukaIiwaArmDynamicsSim");
 
     // Instantiates an Multibody Dynamics (MBD) model of the world.
-    auto tree = make_unique<RigidBodyTree>();
+    auto tree = make_unique<RigidBodyTree<T>>();
     ModelInstanceIdTable vehicle_instance_id_table =
         drake::parsers::urdf::AddModelInstanceFromUrdfFile(
             drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
             kFixed, nullptr /* weld to frame */, tree.get());
 
-    AddGround(tree.get());
+    drake::multibody::AddFlatTerrainToWorld(tree.get());
 
     DiagramBuilder<T> builder;
 
@@ -71,7 +73,7 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
         constant_value);
 
     // Creates and adds LCM publisher for visualization.
-    viz_publisher_ = builder.template AddSystem<RigidBodyTreeLcmPublisher>(
+    viz_publisher_ = builder.template AddSystem<DrakeVisualizer>(
         plant_->get_rigid_body_tree(), &lcm_);
 
     // Connects the constant source output port to the RigidBodyPlant's input
@@ -99,7 +101,7 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
 
  private:
   RigidBodyPlant<T>* plant_;
-  RigidBodyTreeLcmPublisher* viz_publisher_;
+  DrakeVisualizer* viz_publisher_;
   DrakeLcm lcm_;
 
   ConstantVectorSource<T>* const_source_;
@@ -107,6 +109,7 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  logging::HandleSpdlogGflags();
 
   KukaIiwaArmDynamicsSim<double> model;
   Simulator<double> simulator(model);
@@ -152,7 +155,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Ensures the robot's joints are within their position limits.
-  const std::vector<std::unique_ptr<RigidBody>>& bodies =
+  const std::vector<std::unique_ptr<RigidBody<double>>>& bodies =
       rigid_body_plant.get_rigid_body_tree().bodies;
   for (int state_index = 0, i = 0; i < static_cast<int>(bodies.size()); ++i) {
     // Skips rigid bodies without a parent. This includes the world.

@@ -8,14 +8,13 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
 namespace automotive {
 
 /// Describes the row indices of a DrivingCommand.
-struct DRAKE_EXPORT DrivingCommandIndices {
+struct DrivingCommandIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 3;
 
@@ -39,15 +38,20 @@ class DrivingCommand : public systems::BasicVector<T> {
 
   /// @name Getters and Setters
   //@{
-  const T steering_angle() const { return this->GetAtIndex(K::kSteeringAngle); }
+  // steering_angle
+  const T& steering_angle() const {
+    return this->GetAtIndex(K::kSteeringAngle);
+  }
   void set_steering_angle(const T& steering_angle) {
     this->SetAtIndex(K::kSteeringAngle, steering_angle);
   }
-  const T throttle() const { return this->GetAtIndex(K::kThrottle); }
+  // throttle
+  const T& throttle() const { return this->GetAtIndex(K::kThrottle); }
   void set_throttle(const T& throttle) {
     this->SetAtIndex(K::kThrottle, throttle);
   }
-  const T brake() const { return this->GetAtIndex(K::kBrake); }
+  // brake
+  const T& brake() const { return this->GetAtIndex(K::kBrake); }
   void set_brake(const T& brake) { this->SetAtIndex(K::kBrake, brake); }
   //@}
 };

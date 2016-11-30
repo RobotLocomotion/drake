@@ -11,8 +11,8 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
 namespace examples {
@@ -27,7 +27,7 @@ GTEST_TEST(SimulatedSchunkSystemTest, OpenGripper) {
       builder.AddSystem<systems::RigidBodyPlant<double>>(
           CreateSimulatedSchunkSystem<double>());
   ASSERT_NE(schunk, nullptr);
-  const RigidBodyTree& tree = schunk->get_rigid_body_tree();
+  const RigidBodyTree<double>& tree = schunk->get_rigid_body_tree();
 
   // The simulated Schunk plant has seven links (the gripper body, two
   // fingers, a nonphysical rotor, two nonphysical pushers, and the world
@@ -81,7 +81,7 @@ GTEST_TEST(SimulatedSchunkSystemTest, OpenGripper) {
   // require `drake_visualizer` but it is convenient to have when debugging.
   drake::lcm::DrakeLcm lcm;
   const auto viz_publisher =
-      builder.template AddSystem<systems::RigidBodyTreeLcmPublisher>(
+      builder.template AddSystem<systems::DrakeVisualizer>(
           schunk->get_rigid_body_tree(), &lcm);
   builder.Connect(schunk->get_output_port(0),
                   viz_publisher->get_input_port(0));

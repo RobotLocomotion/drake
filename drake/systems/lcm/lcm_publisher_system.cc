@@ -17,13 +17,45 @@ namespace {
 const int kPortIndex = 0;
 }  // namespace
 
+// TODO(jwnimmer-tri) The "serializer xor translator" disjoint implementations
+// within the method bodies below are not ideal, because of the code smell, and
+// because it is likely confusing for users.  We should take further steps to
+// make the Value<LcmMessage> port the primary output port, and find a better
+// phrasing for the vector-valued output port for users.  For now though, this
+// implementation serves as a transition point where we don't have to rewrite
+// the old code yet, but still can supply the AbstractValue port for new code.
+
 LcmPublisherSystem::LcmPublisherSystem(
-    const std::string& channel, const LcmAndVectorBaseTranslator& translator,
+    const std::string& channel,
+    const LcmAndVectorBaseTranslator* translator,
+    std::unique_ptr<SerializerInterface> serializer,
     DrakeLcmInterface* lcm)
-    : channel_(channel), translator_(translator), lcm_(lcm) {
-  DeclareInputPort(kVectorValued, translator_.get_vector_size(),
-                   kContinuousSampling);
+    : channel_(channel),
+      translator_(translator),
+      serializer_(std::move(serializer)),
+      lcm_(lcm) {
+  DRAKE_DEMAND((translator_ != nullptr) != (serializer_.get() != nullptr));
+  DRAKE_DEMAND(lcm_);
+
+  if (translator_ != nullptr) {
+    DeclareInputPort(kVectorValued, translator_->get_vector_size(),
+                     kContinuousSampling);
+  } else {
+    DeclareAbstractInputPort(kContinuousSampling);
+  }
 }
+
+LcmPublisherSystem::LcmPublisherSystem(
+    const std::string& channel,
+    std::unique_ptr<SerializerInterface> serializer,
+    drake::lcm::DrakeLcmInterface* lcm)
+    : LcmPublisherSystem(channel, nullptr, std::move(serializer), lcm) {}
+
+LcmPublisherSystem::LcmPublisherSystem(
+    const std::string& channel,
+    const LcmAndVectorBaseTranslator& translator,
+    drake::lcm::DrakeLcmInterface* lcm)
+    : LcmPublisherSystem(channel, &translator, nullptr, lcm) {}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
@@ -50,21 +82,29 @@ const std::string& LcmPublisherSystem::get_channel_name() const {
 
 void LcmPublisherSystem::DoPublish(const Context<double>& context) const {
   SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
+  DRAKE_ASSERT((translator_ != nullptr) != (serializer_.get() != nullptr));
 
-  // Obtains the input vector.
-  const VectorBase<double>* const input_vector =
-      this->EvalVectorInput(context, kPortIndex);
-
-  // Translates the input vector into LCM message bytes.
+  // Converts the input into LCM message bytes.
   std::vector<uint8_t> message_bytes;
-  translator_.Serialize(context.get_time(), *input_vector, &message_bytes);
+  if (translator_ != nullptr) {
+    const VectorBase<double>* const input_vector =
+        this->EvalVectorInput(context, kPortIndex);
+    DRAKE_ASSERT(input_vector != nullptr);
+    translator_->Serialize(context.get_time(), *input_vector, &message_bytes);
+  } else {
+    const AbstractValue* const input_value =
+        this->EvalAbstractInput(context, kPortIndex);
+    DRAKE_ASSERT(input_value != nullptr);
+    serializer_->Serialize(*input_value, &message_bytes);
+  }
 
   // Publishes onto the specified LCM channel.
   lcm_->Publish(channel_, message_bytes.data(), message_bytes.size());
 }
 
 const LcmAndVectorBaseTranslator& LcmPublisherSystem::get_translator() const {
-  return translator_;
+  DRAKE_DEMAND(translator_ != nullptr);
+  return *translator_;
 }
 
 }  // namespace lcm

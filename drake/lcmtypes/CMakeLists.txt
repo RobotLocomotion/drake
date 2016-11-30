@@ -1,35 +1,51 @@
+include(GenerateExportHeader)
 include(${LCM_USE_FILE})
 
-if(PYTHONINTERP_FOUND)
+if(NOT DISABLE_PYTHON)
   set(python_args PYTHON_SOURCES python_install_sources)
+else()
+  set(python_args)
 endif()
-if(JAVA_FOUND AND TARGET lcm-java)
+
+if(JAVA_FOUND)
   set(java_args JAVA_SOURCES java_sources)
+else()
+  set(java_args)
 endif()
 
 lcm_wrap_types(
-  C_SOURCES sources
+  C_EXPORT drake_lcmtypes
+  C_SOURCES c_sources
   C_HEADERS c_install_headers
   CPP_HEADERS cpp_install_headers
-  ${python_args}
   ${java_args}
+  ${python_args}
+  lcmt_body_acceleration.lcm
   lcmt_body_motion_data.lcm
   lcmt_body_wrench_data.lcm
+  lcmt_constrained_values.lcm
+  lcmt_contact_information.lcm
+  lcmt_desired_body_motion.lcm
+  lcmt_desired_centroidal_momentum_dot.lcm
+  lcmt_desired_dof_motions.lcm
   lcmt_drake_signal.lcm
   lcmt_driving_command_t.lcm
   lcmt_euler_floating_joint_state_t.lcm
   lcmt_foot_flag.lcm
   lcmt_force_torque.lcm
-  lcmt_idm_with_trajectory_agent_state_t.lcm
   lcmt_iiwa_command.lcm
   lcmt_iiwa_status.lcm
   lcmt_joint_pd_override.lcm
+  lcmt_matlab_array.lcm
+  lcmt_call_matlab.lcm
   lcmt_piecewise_polynomial.lcm
   lcmt_polynomial.lcm
   lcmt_polynomial_matrix.lcm
   lcmt_qp_controller_input.lcm
+  lcmt_qp_input.lcm
   lcmt_quadrotor_input_t.lcm
   lcmt_quadrotor_output_t.lcm
+  lcmt_resolved_contact.lcm
   lcmt_robot_state.lcm
   lcmt_scope_data.lcm
   lcmt_schunk_command.lcm
@@ -48,28 +64,37 @@ lcm_wrap_types(
   lcmt_zmp_data.lcm
 )
 
-add_custom_target(drake_lcmtypes_hpp DEPENDS ${cpp_install_headers})
-
-add_library(drake_lcmtypes STATIC ${sources})
-target_link_libraries(drake_lcmtypes lcm)
+lcm_add_library(drake_lcmtypes C ${c_sources} ${c_install_headers})
+generate_export_header(drake_lcmtypes)
 target_include_directories(drake_lcmtypes INTERFACE
-  ${CMAKE_CURRENT_BINARY_DIR})
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
-add_library(drakeLCMTypes INTERFACE)
-add_dependencies(drakeLCMTypes drake_lcmtypes_hpp)
-target_link_libraries(drakeLCMTypes INTERFACE lcm-coretypes)
+drake_install_pkg_config_file(drake-lcmtypes
+  TARGET drake_lcmtypes
+  LIBS -ldrake_lcm_types)
+
+lcm_add_library(drakeLCMTypes CPP ${cpp_install_headers})
 target_include_directories(drakeLCMTypes INTERFACE
-  ${CMAKE_CURRENT_BINARY_DIR})
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
-install(FILES ${c_install_headers} DESTINATION include/lcmtypes)
-install(FILES ${cpp_install_headers} DESTINATION include/lcmtypes/drake)
+drake_install_pkg_config_file(drake-lcmtypes-cpp)
 
-install(TARGETS drake_lcmtypes
-  ARCHIVE DESTINATION lib${LIB_SUFFIX}
-  INCLUDES DESTINATION include
+lcm_install_headers(
+  ${CMAKE_CURRENT_BINARY_DIR}/drake_lcmtypes_export.h
+  ${c_install_headers}
+  ${cpp_install_headers}
+  DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}/lcmtypes"
 )
 
-if(PYTHONINTERP_FOUND)
+install(TARGETS drake_lcmtypes drakeLCMTypes
+  EXPORT ${PROJECT_NAME}-targets
+  RUNTIME DESTINATION "${DRAKE_INSTALL_RUNTIME_DIR}"
+  LIBRARY DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
+  ARCHIVE DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
+  INCLUDES DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}/lcmtypes"
+)
+
+if(NOT DISABLE_PYTHON)
   lcm_install_python(${python_install_sources})
 endif()
 

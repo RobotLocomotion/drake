@@ -1,0 +1,67 @@
+<?xml version='1.0' ?>
+<sdf version='1.6'>
+  <model name='simple_collision_world'>
+    <pose>0 0 0 0 0 0</pose>
+    <link name='large_box'>
+      <pose>0 2.5 0 0 0 0</pose>
+      <visual name='box'>
+        <geometry>
+          <box>
+            <size>5.0 5.0 5.0</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name='box'>
+        <geometry>
+          <box>
+            <size>5.0 5.0 5.0</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name='small_sphere_1'>
+      <pose>0 5.4 0 0 0 0</pose>
+      <visual name='box'>
+        <geometry>
+          <sphere>
+            <radius>0.5</radius>
+          </sphere>
+        </geometry>
+      </visual>
+      <collision name='sphere'>
+        <geometry>
+          <sphere>
+            <radius>0.5</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name='small_sphere_2'>
+      <pose>0 6.3 0 0.5 0 0</pose>
+      <visual name='box'>
+        <geometry>
+          <sphere>
+            <radius>0.5</radius>
+          </sphere>
+        </geometry>
+      </visual>
+      <collision name='sphere'>
+        <geometry>
+          <sphere>
+            <radius>0.5</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="sphere_joint" type="revolute">
+      <parent>small_sphere_1</parent>
+      <child>small_sphere_2</child>
+      <pose>0 0.5 0 0 0 0</pose>
+      <axis> <xyz>0 1 0</xyz> </axis>
+    </joint>
+
+  </model>
+</sdf>

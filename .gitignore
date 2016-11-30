@@ -56,3 +56,4 @@ drake/doc/DoxygenCPP
 *.bak
 Pendulum.pmd
 drake/doc/_build
+bazel-*

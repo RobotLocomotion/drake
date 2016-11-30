@@ -34,7 +34,7 @@ classdef irb140_trajfollow_block < MIMODrakeSystem
       obj.nq = r.getNumPositions;
 
       checkDependency('lcmgl');
-      obj.lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'irb140 target pose');
+      obj.lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'irb140 target pose');
     
     end
     

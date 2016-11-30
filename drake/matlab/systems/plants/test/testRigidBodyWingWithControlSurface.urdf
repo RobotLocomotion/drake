@@ -1,0 +1,123 @@
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd" name="testRigidBodyWingWithControlSurface">
+  <link
+    name="fuselage">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.648412" />
+      <inertia
+        ixx="0.014894"
+        ixy="0.000082"
+        ixz="0.000152"
+        iyy="0.005580"
+        iyz="-0.000001"
+        izz="0.019316" />
+    </inertial>
+  </link>
+
+  <force_element name="left_wing_and_elevon_force">
+    <wing_with_control_surface
+        name="left_wing_and_elveon"
+        profile="flat plate"
+        chord="0.2097"
+        span="0.31115"
+        nominal_speed="10"
+        stall_angle="10"
+        visual_geometry="true"
+        control_surface_chord="0.0402"
+        control_surface_min_deflection="-0.90"
+        control_surface_max_deflection="0.855">
+      <parent link="fuselage"/>
+        <origin
+          xyz="-0.0349593479683926 -0.276225 0.00735412367732659"
+          rpy="0 0 0" />
+    </wing_with_control_surface>
+  </force_element>
+
+  <force_element name="right_wing_and_elevon_force">
+    <wing_with_control_surface
+        name="right_wing_and_elveon"
+        profile="flat plate"
+        chord="0.2097"
+        span="0.31115"
+        nominal_speed="10"
+        stall_angle="10"
+        visual_geometry="true"
+        control_surface_chord="0.0402"
+        control_surface_min_deflection="-0.90"
+        control_surface_max_deflection="0.855">
+      <parent link="fuselage"/>
+      <origin
+          xyz="-0.0349593479683926 0.276225 0.00735412367732659"
+          rpy="0 0 0" />
+    </wing_with_control_surface>
+  </force_element>
+
+  <force_element name="center_wing_force">
+    <wing
+        name="center_wing"
+        profile="flat plate"
+        chord="0.2097"
+        span="0.2413"
+        nominal_speed="10"
+        stall_angle="10"
+        visual_geometry="true">
+
+      <parent link="fuselage"/>
+      <origin
+          xyz="-0.0349593479683926 0 0.00735412367732659"
+          rpy="0 0 0" />
+    </wing>
+  </force_element>
+
+
+    <force_element name="left_winglet_force">
+    <wing
+      name="left_winglet"
+      profile="flat plate"
+      chord=".1303"
+      span="0.1492"
+      nominal_speed="10"
+      stall_angle="10"
+      visual_geometry="true">
+
+      <parent link="fuselage"/>
+      <origin
+          xyz="-0.08 -0.4318 0.081954"
+          rpy="1.5707 0 0" />
+    </wing>
+  </force_element>
+
+  <force_element name="right_winglet_force">
+    <wing
+      name="right_winglet"
+      profile="flat plate"
+      chord=".1303"
+      span="0.1492"
+      nominal_speed="10"
+      stall_angle="10"
+      visual_geometry="true">
+
+      <parent link="fuselage"/>
+      <origin
+          xyz="-0.08 0.4318 0.081954"
+          rpy="1.5707 0 0" />
+    </wing>
+  </force_element>
+
+
+  <force_element name="propeller_force">
+    <propellor name="propeller" lower_limit="0" upper_limit="100" scale_factor_thrust="0.05159" scale_factor_moment="0" visual_geometry="true" visual_diameter=".2">
+  <!--see thrustSketch.m for data from the propeller to justify the scale_factor. The factor between scale_factor_thrust and scale_factor_moment is taken from the quadrotor urdf (which in turn is from the group at Penn)... but is disabled for this test -->
+      <parent link="fuselage"/>
+      <origin
+        xyz="-.15 0 0"
+        rpy="0 0 0" />
+      <axis xyz="1 0 0" />
+    </propellor>
+  </force_element>
+</robot>

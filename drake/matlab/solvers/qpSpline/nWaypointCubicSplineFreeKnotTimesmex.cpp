@@ -1,16 +1,19 @@
 #include <mex.h>
 
-#include <Eigen/Core>
-#include "drake/solvers/qpSpline/splineGeneration.h"
-#include "drake/util/drakeMexUtil.h"
 #include <iostream>
 #include <limits>
+
+#include <Eigen/Core>
+
+#include "drake/common/trajectories/qp_spline/spline_generation.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;
 
 const int GRID_STEPS = 10;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   string usage =
       "[coefs, ts, objective_value] = "

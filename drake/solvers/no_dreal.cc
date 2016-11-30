@@ -13,5 +13,5 @@ SolutionResult DrealSolver::Solve(MathematicalProgram& prog) const {
       "The Dreal bindings were not compiled.  You'll need to use a different "
       "solver.");
 }
-}  // namespace drake
 }  // namespace solvers
+}  // namespace drake

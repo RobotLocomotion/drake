@@ -1,17 +1,25 @@
 #include "drake/systems/controllers/InstantaneousQPController.h"
 
-#include <lcm/lcm-cpp.hpp>
+#include <algorithm>
+#include <limits>
 #include <map>
 #include <memory>
+#include <set>
+#include <sstream>
+#include <utility>
+#include <vector>
+
+#include <lcm/lcm-cpp.hpp>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/is_approx_equal_abstol.h"
 #include "drake/math/quaternion.h"
 #include "drake/solvers/fast_qp.h"
 #include "drake/systems/controllers/controlUtil.h"
-#include "drake/systems/plants/parser_urdf.h"
+#include "drake/multibody/parser_urdf.h"
+#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/lcmUtil.h"
 #include "drake/util/yaml/yamlUtil.h"
 #include "drake/lcmt_zmp_com_observer_state.hpp"
@@ -21,6 +29,8 @@ const double REG = 1e-8;
 const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
 const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
 
+// TODO(jwnimmer-tri) Someone with gurobi has to fix this.
+// NOLINTNEXTLINE(build/namespaces)
 using namespace Eigen;
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.07
@@ -110,7 +120,8 @@ void InstantaneousQPController::loadConfigurationFromYAML(
                                    *robot);
 }
 
-void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+void applyURDFModifications(std::unique_ptr<RigidBodyTree<double>>& robot,
                             const KinematicModifications& modifications) {
   for (auto it = modifications.attachments.begin();
        it != modifications.attachments.end(); ++it) {
@@ -134,7 +145,8 @@ void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
   robot->compile();
 }
 
-void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+void applyURDFModifications(std::unique_ptr<RigidBodyTree<double>>& robot,
                             const std::string& urdf_modifications_filename) {
   KinematicModifications modifications =
       parseKinematicModifications(YAML::LoadFile(urdf_modifications_filename));
@@ -314,6 +326,7 @@ void addJointSoftLimits(
     const VectorXd& q_des,
     const std::vector<SupportStateElement,
                       Eigen::aligned_allocator<SupportStateElement>>& supports,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::vector<drake::lcmt_joint_pd_override>& joint_pd_override) {
   Matrix<bool, Dynamic, 1> has_joint_override =
       Matrix<bool, Dynamic, 1>::Zero(q_des.size());
@@ -352,7 +365,9 @@ void addJointSoftLimits(
 
 void applyJointPDOverride(
     const std::vector<drake::lcmt_joint_pd_override>& joint_pd_override,
-    const DrakeRobotState& robot_state, PIDOutput& pid_out, VectorXd& w_qdd) {
+    const DrakeRobotState& robot_state,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PIDOutput& pid_out, VectorXd& w_qdd) {
   for (std::vector<drake::lcmt_joint_pd_override>::const_iterator it =
            joint_pd_override.begin();
        it != joint_pd_override.end(); ++it) {
@@ -365,8 +380,9 @@ void applyJointPDOverride(
 }
 
 double averageContactPointHeight(
-    const RigidBodyTree& robot, const KinematicsCache<double>& cache,
+    const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
     std::vector<SupportStateElement,
+                // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                 Eigen::aligned_allocator<SupportStateElement>>& active_supports,
     int nc) {
   Eigen::Matrix3Xd contact_positions_world(3, nc);
@@ -387,7 +403,7 @@ double averageContactPointHeight(
 }
 
 Vector2d computeCoP(
-    const RigidBodyTree& robot, const KinematicsCache<double>& cache,
+    const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
     const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
         foot_force_torque_measurements,
     Vector3d point_on_contact_plane, Eigen::Vector3d normal) {
@@ -505,7 +521,9 @@ void InstantaneousQPController::estimateCoMBasedOnMeasuredZMP(
 }
 
 void checkCentroidalMomentumMatchesTotalWrench(
-    const RigidBodyTree& robot, KinematicsCache<double>& cache,
+    const RigidBodyTree<double>& robot,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    KinematicsCache<double>& cache,
     const VectorXd& qdd,
     const std::vector<SupportStateElement,
                       Eigen::aligned_allocator<SupportStateElement>>&
@@ -564,16 +582,18 @@ void checkCentroidalMomentumMatchesTotalWrench(
   Vector6d momentum_rate_of_change =
       world_momentum_matrix * qdd + world_momentum_matrix_dot_times_v;
 
-  std::string explanation;
-  if (!drake::CompareMatrices(total_wrench_in_world, momentum_rate_of_change,
-                              1e-6, drake::MatrixCompareType::absolute,
-                              &explanation)) {
-    throw std::runtime_error("Drake:ValueCheck ERROR:" + explanation);
+  if (!drake::is_approx_equal_abstol(total_wrench_in_world,
+                                     momentum_rate_of_change, 1e-6)) {
+    std::stringstream message;
+    message << "ERROR in checkCentroidalMomentumMatchesTotalWrench:"
+            << " total_wrench_in_world = " << total_wrench_in_world
+            << " momentum_rate_of_change = " << momentum_rate_of_change;
+    throw std::runtime_error(message.str());
   }
 }
 
 std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
-    const RigidBodyTree& robot) {
+    const RigidBodyTree<double>& robot) {
   auto id_map = std::unordered_map<std::string, int>();
   for (auto it = robot.bodies.begin(); it != robot.bodies.end(); ++it) {
     id_map[(*it)->get_name()] = it - robot.bodies.begin();
@@ -793,7 +813,7 @@ int InstantaneousQPController::setupAndSolveQP(
   }
 
   // handle external wrenches to compensate for
-  RigidBodyTree::BodyToWrenchMap<double> external_wrenches;
+  RigidBodyTree<double>::BodyToWrenchMap external_wrenches;
   for (auto it = qp_input.body_wrench_data.begin();
        it != qp_input.body_wrench_data.end(); ++it) {
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
@@ -993,8 +1013,8 @@ int InstantaneousQPController::setupAndSolveQP(
   if (qp_input.whole_body_data.num_constrained_dofs > 0) {
     // add joint acceleration constraints
     for (int i = 0; i < qp_input.whole_body_data.num_constrained_dofs; i++) {
-      Aeq(equality_ind, (int)condof[i] - 1) = 1;
-      beq[equality_ind++] = pid_out.qddot_des[(int)condof[i] - 1];
+      Aeq(equality_ind, static_cast<int>(condof[i]) - 1) = 1;
+      beq[equality_ind++] = pid_out.qddot_des[static_cast<int>(condof[i]) - 1];
     }
   }
 
@@ -1042,7 +1062,7 @@ int InstantaneousQPController::setupAndSolveQP(
 
   for (int i = 0; i < n_ineq; ++i) {
     // remove inf constraints---needed by gurobi
-    if (std::isinf(double(bin(i)))) {
+    if (std::isinf(bin(i))) {
       Ain.row(i) = 0 * Ain.row(i);
       bin(i) = 0;
     }

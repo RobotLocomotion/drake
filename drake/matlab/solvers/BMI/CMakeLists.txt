@@ -1,3 +1,6 @@
-add_subdirectory(kinematics/test)
-add_subdirectory(util/test)
-add_subdirectory(test)
+add_subdirectory(kinematics)
+add_subdirectory(util)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

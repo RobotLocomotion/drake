@@ -3,14 +3,14 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
-#include "drake/examples/Pendulum/pendulum_system.h"
+#include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
 namespace examples {
@@ -20,7 +20,7 @@ namespace {
 template <typename T>
 class PendulumEnergyShapingController : public systems::LeafSystem<T> {
  public:
-  explicit PendulumEnergyShapingController(const PendulumSystem<T>& pendulum)
+  explicit PendulumEnergyShapingController(const PendulumPlant<T>& pendulum)
       : m_(pendulum.m()),
         l_(pendulum.l()),
         b_(pendulum.b()),
@@ -59,18 +59,19 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
 
 int do_main(int argc, char* argv[]) {
   lcm::DrakeLcm lcm;
-  RigidBodyTree tree(GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-                     systems::plants::joints::kFixed);
+  RigidBodyTree<double> tree(
+      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+      multibody::joints::kFixed);
 
   systems::DiagramBuilder<double> builder;
-  auto pendulum = builder.AddSystem<PendulumSystem>();
+  auto pendulum = builder.AddSystem<PendulumPlant>();
   auto controller =
       builder.AddSystem<PendulumEnergyShapingController>(*pendulum);
   builder.Connect(pendulum->get_output_port(), controller->get_input_port(0));
   builder.Connect(controller->get_output_port(0), pendulum->get_tau_port());
 
   auto publisher =
-      builder.AddSystem<systems::RigidBodyTreeLcmPublisher>(tree, &lcm);
+      builder.AddSystem<systems::DrakeVisualizer>(tree, &lcm);
   builder.Connect(pendulum->get_output_port(), publisher->get_input_port(0));
 
   auto diagram = builder.Build();

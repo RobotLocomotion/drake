@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "ros/ros.h"
 
 namespace drake {

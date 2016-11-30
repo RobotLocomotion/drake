@@ -11,6 +11,7 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/gain.h"
 #include "drake/systems/framework/primitives/integrator.h"
+#include "drake/systems/framework/primitives/zero_order_hold.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
@@ -95,15 +96,15 @@ class DiagramTest : public ::testing::Test {
     // Initialize the integrator states.
     auto integrator0_xc = GetMutableContinuousState(integrator0());
     ASSERT_TRUE(integrator0_xc != nullptr);
-    integrator0_xc->get_mutable_state()->SetAtIndex(0, 3);
-    integrator0_xc->get_mutable_state()->SetAtIndex(1, 9);
-    integrator0_xc->get_mutable_state()->SetAtIndex(2, 27);
+    integrator0_xc->get_mutable_vector()->SetAtIndex(0, 3);
+    integrator0_xc->get_mutable_vector()->SetAtIndex(1, 9);
+    integrator0_xc->get_mutable_vector()->SetAtIndex(2, 27);
 
     auto integrator1_xc = GetMutableContinuousState(integrator1());
     ASSERT_TRUE(integrator1_xc != nullptr);
-    integrator1_xc->get_mutable_state()->SetAtIndex(0, 81);
-    integrator1_xc->get_mutable_state()->SetAtIndex(1, 243);
-    integrator1_xc->get_mutable_state()->SetAtIndex(2, 729);
+    integrator1_xc->get_mutable_vector()->SetAtIndex(0, 81);
+    integrator1_xc->get_mutable_vector()->SetAtIndex(1, 243);
+    integrator1_xc->get_mutable_vector()->SetAtIndex(2, 729);
   }
 
   // Returns the continuous state of the given @p system.
@@ -217,7 +218,7 @@ TEST_F(DiagramTest, EvalTimeDerivatives) {
 
   diagram_->EvalTimeDerivatives(*context_, derivatives.get());
 
-  ASSERT_EQ(6, derivatives->get_state().size());
+  ASSERT_EQ(6, derivatives->size());
   ASSERT_EQ(0, derivatives->get_generalized_position().size());
   ASSERT_EQ(0, derivatives->get_generalized_velocity().size());
   ASSERT_EQ(6, derivatives->get_misc_continuous_state().size());
@@ -226,17 +227,78 @@ TEST_F(DiagramTest, EvalTimeDerivatives) {
   const ContinuousState<double>* integrator0_xcdot =
       diagram_->GetSubsystemDerivatives(*derivatives, integrator0());
   ASSERT_TRUE(integrator0_xcdot != nullptr);
-  EXPECT_EQ(1 + 8, integrator0_xcdot->get_state().GetAtIndex(0));
-  EXPECT_EQ(2 + 16, integrator0_xcdot->get_state().GetAtIndex(1));
-  EXPECT_EQ(4 + 32, integrator0_xcdot->get_state().GetAtIndex(2));
+  EXPECT_EQ(1 + 8, integrator0_xcdot->get_vector().GetAtIndex(0));
+  EXPECT_EQ(2 + 16, integrator0_xcdot->get_vector().GetAtIndex(1));
+  EXPECT_EQ(4 + 32, integrator0_xcdot->get_vector().GetAtIndex(2));
 
   // The derivative of the second integrator is the state of the first.
   const ContinuousState<double>* integrator1_xcdot =
       diagram_->GetSubsystemDerivatives(*derivatives, integrator1());
   ASSERT_TRUE(integrator1_xcdot != nullptr);
-  EXPECT_EQ(3, integrator1_xcdot->get_state().GetAtIndex(0));
-  EXPECT_EQ(9, integrator1_xcdot->get_state().GetAtIndex(1));
-  EXPECT_EQ(27, integrator1_xcdot->get_state().GetAtIndex(2));
+  EXPECT_EQ(3, integrator1_xcdot->get_vector().GetAtIndex(0));
+  EXPECT_EQ(9, integrator1_xcdot->get_vector().GetAtIndex(1));
+  EXPECT_EQ(27, integrator1_xcdot->get_vector().GetAtIndex(2));
+}
+
+/// Tests that a diagram can be transmogrified to AutoDiffXd.
+TEST_F(DiagramTest, ToAutoDiffXd) {
+  std::unique_ptr<System<AutoDiffXd>> ad_diagram =
+      System<double>::ToAutoDiffXd(*diagram_);
+  std::unique_ptr<Context<AutoDiffXd>> context =
+      ad_diagram->CreateDefaultContext();
+  std::unique_ptr<SystemOutput<AutoDiffXd>> output =
+      ad_diagram->AllocateOutput(*context);
+
+  // Set up some inputs, computing gradients with respect to every other input.
+/// adder0_: (input0_ + input1_) -> A
+/// adder1_: (A + input2_)       -> B, output 0
+/// adder2_: (A + B)             -> output 1
+/// integrator1_: A              -> C
+/// integrator2_: C              -> output 2
+  auto input0 = std::make_unique<BasicVector<AutoDiffXd>>(3);
+  auto input1 = std::make_unique<BasicVector<AutoDiffXd>>(3);
+  auto input2 = std::make_unique<BasicVector<AutoDiffXd>>(3);
+  for (int i = 0; i < 3; ++i) {
+    (*input0)[i].value() = 1 + 0.1 * i;
+    (*input0)[i].derivatives() = Eigen::VectorXd::Unit(9, i);
+    (*input1)[i].value() = 2 + 0.2 * i;
+    (*input1)[i].derivatives() = Eigen::VectorXd::Unit(9, 3 + i);
+    (*input2)[i].value() = 3 + 0.3 * i;
+    (*input2)[i].derivatives() = Eigen::VectorXd::Unit(9, 6 + i);
+  }
+  context->FixInputPort(0, std::move(input0));
+  context->FixInputPort(1, std::move(input1));
+  context->FixInputPort(2, std::move(input2));
+
+  ad_diagram->EvalOutput(*context, output.get());
+  ASSERT_EQ(kSize, output->get_num_ports());
+
+  // Spot-check some values and gradients.
+  // A = [1.0 + 2.0, 1.1 + 2.2, 1.2 + 2.4]
+  // output0 = B = A + [3.0, 3.3, 3.6]
+  const BasicVector<AutoDiffXd>* output0 = output->get_vector_data(0);
+  EXPECT_DOUBLE_EQ(1.2 + 2.4 + 3.6, (*output0)[2].value());
+  // ∂B[2]/∂input0,1,2[2] is 1.  Other partials are zero.
+  for (int i = 0; i < 9; ++i) {
+    if (i == 2 || i == 5 || i == 8) {
+      EXPECT_EQ(1.0, (*output0)[2].derivatives()[i]);
+    } else {
+      EXPECT_EQ(0.0, (*output0)[2].derivatives()[i]);
+    }
+  }
+  // output1 = A + B = 2A + [3.0, 3.3, 3.6]
+  const BasicVector<AutoDiffXd>* output1 = output->get_vector_data(1);
+  EXPECT_DOUBLE_EQ(2 * (1.1 + 2.2) + 3.3, (*output1)[1].value());
+  // ∂B[1]/∂input0,1[1] is 2. ∂B[1]/∂input2[1] is 1.  Other partials are zero.
+  for (int i = 0; i < 9; ++i) {
+    if (i == 1 || i == 4) {
+      EXPECT_EQ(2.0, (*output1)[1].derivatives()[i]);
+    } else if (i == 7) {
+      EXPECT_EQ(1.0, (*output1)[1].derivatives()[i]);
+    } else {
+      EXPECT_EQ(0.0, (*output1)[1].derivatives()[i]);
+    }
+  }
 }
 
 // Tests that the same diagram can be evaluated into the same output with
@@ -283,11 +345,12 @@ TEST_F(DiagramTest, Clone) {
 }
 
 // Tests that, when asked for the state derivatives of Systems that are
-// stateless, Diagram returns nullptr.
-TEST_F(DiagramTest, DerivativesOfStatelessSystemAreNullptr) {
+// stateless, Diagram returns an empty state.
+TEST_F(DiagramTest, DerivativesOfStatelessSystemAreEmpty) {
   std::unique_ptr<ContinuousState<double>> derivatives =
       diagram_->AllocateTimeDerivatives();
-  EXPECT_EQ(nullptr, diagram_->GetSubsystemDerivatives(*derivatives, adder0()));
+  EXPECT_EQ(0,
+            diagram_->GetSubsystemDerivatives(*derivatives, adder0())->size());
 }
 
 class DiagramOfDiagramsTest : public ::testing::Test {
@@ -330,26 +393,22 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     State<double>* integrator0_x = subdiagram0_->GetMutableSubsystemState(
         d0_context, subdiagram0_->integrator0());
     integrator0_x->get_mutable_continuous_state()
-        ->get_mutable_state()
-        ->SetAtIndex(0, 3);
+        ->get_mutable_vector()->SetAtIndex(0, 3);
 
     State<double>* integrator1_x = subdiagram0_->GetMutableSubsystemState(
         d0_context, subdiagram0_->integrator1());
     integrator1_x->get_mutable_continuous_state()
-        ->get_mutable_state()
-        ->SetAtIndex(0, 9);
+        ->get_mutable_vector()->SetAtIndex(0, 9);
 
     State<double>* integrator2_x = subdiagram1_->GetMutableSubsystemState(
         d1_context, subdiagram1_->integrator0());
     integrator2_x->get_mutable_continuous_state()
-        ->get_mutable_state()
-        ->SetAtIndex(0, 27);
+        ->get_mutable_vector()->SetAtIndex(0, 27);
 
     State<double>* integrator3_x = subdiagram1_->GetMutableSubsystemState(
         d1_context, subdiagram1_->integrator1());
     integrator3_x->get_mutable_continuous_state()
-        ->get_mutable_state()
-        ->SetAtIndex(0, 81);
+        ->get_mutable_vector()->SetAtIndex(0, 81);
   }
 
   const int kSize = 1;
@@ -548,7 +607,7 @@ class SecondOrderStateSystem : public LeafSystem<double> {
 
   SecondOrderStateVector* x(Context<double>* context) const {
     return dynamic_cast<SecondOrderStateVector*>(
-        context->get_mutable_continuous_state()->get_mutable_state());
+        context->get_mutable_continuous_state_vector());
   }
 
  protected:
@@ -560,11 +619,11 @@ class SecondOrderStateSystem : public LeafSystem<double> {
   }
 
   // qdot = 2 * v.
-  void DoMapVelocityToConfigurationDerivatives(
+  void DoMapVelocityToQDot(
       const Context<double>& context,
       const Eigen::Ref<const VectorX<double>>& generalized_velocity,
-      VectorBase<double>* configuration_derivatives) const override {
-    configuration_derivatives->SetAtIndex(
+      VectorBase<double>* qdot) const override {
+    qdot->SetAtIndex(
         0, 2 * generalized_velocity[0]);
   }
 };
@@ -597,26 +656,26 @@ class SecondOrderStateDiagram : public Diagram<double> {
   SecondOrderStateSystem* sys2_ = nullptr;
 };
 
-// Tests that MapVelocityToConfigurationDerivatives recursively invokes
-// MapVelocityToConfigurationDerivatives on the constituent systems,
+// Tests that MapVelocityToQDot recursively invokes
+// MapVelocityToQDot on the constituent systems,
 // and preserves placewise correspondence.
-GTEST_TEST(SecondOrderStateTest, MapVelocityToConfigurationDerivatives) {
+GTEST_TEST(SecondOrderStateTest, MapVelocityToQDot) {
   SecondOrderStateDiagram diagram;
   std::unique_ptr<Context<double>> context = diagram.CreateDefaultContext();
   diagram.x(context.get(), diagram.sys1())->set_v(13);
   diagram.x(context.get(), diagram.sys2())->set_v(17);
 
-  BasicVector<double> configuration_derivatives(2);
+  BasicVector<double> qdot(2);
   const VectorBase<double>& v =
       context->get_continuous_state()->get_generalized_velocity();
-  diagram.MapVelocityToConfigurationDerivatives(*context, v,
-                                                &configuration_derivatives);
+  diagram.MapVelocityToQDot(*context, v,
+                            &qdot);
 
   // The order of these derivatives is arbitrary, so this test is brittle.
   // TODO(david-german-tri): Use UnorderedElementsAre once gmock is available
   // in the superbuild. https://github.com/RobotLocomotion/drake/issues/3133
-  EXPECT_EQ(configuration_derivatives.GetAtIndex(0), 34);
-  EXPECT_EQ(configuration_derivatives.GetAtIndex(1), 26);
+  EXPECT_EQ(qdot.GetAtIndex(0), 34);
+  EXPECT_EQ(qdot.GetAtIndex(1), 26);
 }
 
 // Test for GetSystems.
@@ -627,6 +686,158 @@ GTEST_TEST(GetSystemsTest, GetSystems) {
                 diagram->integrator0(), diagram->integrator1(),
             }),
             diagram->GetSystems());
+}
+
+const double kTestPublishPeriod = 19.0;
+
+class TestPublishingSystem : public LeafSystem<double> {
+ public:
+  TestPublishingSystem() {
+    this->DeclarePublishPeriodSec(kTestPublishPeriod);
+  }
+
+  ~TestPublishingSystem() override {}
+
+  void EvalOutput(const Context<double>& context,
+                  SystemOutput<double>* output) const override {}
+
+  bool published() { return published_; }
+
+ protected:
+  void DoPublish(const Context<double>& context) const override {
+    published_ = true;
+  }
+
+ private:
+  mutable bool published_{false};
+};
+
+// A diagram that has difference state, and publishers.
+class DifferenceStateDiagram : public Diagram<double> {
+ public:
+  DifferenceStateDiagram() : Diagram<double>() {
+    DiagramBuilder<double> builder;
+    hold1_ = builder.template AddSystem<ZeroOrderHold<double>>(2.0, kSize);
+    hold2_ = builder.template AddSystem<ZeroOrderHold<double>>(3.0, kSize);
+    publisher_ = builder.template AddSystem<TestPublishingSystem>();
+    builder.ExportInput(hold1_->get_input_port(0));
+    builder.ExportInput(hold2_->get_input_port(0));
+    builder.BuildInto(this);
+  }
+
+  ZeroOrderHold<double>* hold1() { return hold1_; }
+  ZeroOrderHold<double>* hold2() { return hold2_; }
+  TestPublishingSystem* publisher() { return publisher_; }
+
+ private:
+  const int kSize = 1;
+  ZeroOrderHold<double>* hold1_ = nullptr;
+  ZeroOrderHold<double>* hold2_ = nullptr;
+  TestPublishingSystem* publisher_ = nullptr;
+};
+
+class DifferenceStateTest : public ::testing::Test {
+ public:
+  void SetUp() override {
+    context_ = diagram_.CreateDefaultContext();
+    context_->FixInputPort(0, BasicVector<double>::Make({17.0}));
+    context_->FixInputPort(1, BasicVector<double>::Make({23.0}));
+  }
+
+ protected:
+  DifferenceStateDiagram diagram_;
+  std::unique_ptr<Context<double>> context_;
+};
+
+// Tests that the next update time after 0.05 is 2.0.
+TEST_F(DifferenceStateTest, CalcNextUpdateTimeHold1) {
+  context_->set_time(0.05);
+  UpdateActions<double> actions;
+  diagram_.CalcNextUpdateTime(*context_, &actions);
+
+  EXPECT_EQ(2.0, actions.time);
+  ASSERT_EQ(1u, actions.events.size());
+  EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+}
+
+// Tests that the next update time after 5.1 is 6.0.
+TEST_F(DifferenceStateTest, CalcNextUpdateTimeHold2) {
+  context_->set_time(5.1);
+  UpdateActions<double> actions;
+  diagram_.CalcNextUpdateTime(*context_, &actions);
+
+  // Even though two subsystems are updating, there is only one update action
+  // on the Diagram.
+  EXPECT_EQ(6.0, actions.time);
+  ASSERT_EQ(1u, actions.events.size());
+  EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+}
+
+// Tests that on the 9-second tick, only hold2 latches its inputs. Then, on
+// the 12-second tick, both hold1 and hold2 latch their inputs.
+TEST_F(DifferenceStateTest, UpdateDifferenceVariables) {
+  // Initialize the zero-order holds to different values than their input ports.
+  Context<double>* ctx1 =
+      diagram_.GetMutableSubsystemContext(context_.get(), diagram_.hold1());
+  ctx1->get_mutable_difference_state(0)->SetAtIndex(0, 1001.0);
+  Context<double>* ctx2 =
+      diagram_.GetMutableSubsystemContext(context_.get(), diagram_.hold2());
+  ctx2->get_mutable_difference_state(0)->SetAtIndex(0, 1002.0);
+
+  // Allocate the difference variables.
+  std::unique_ptr<DifferenceState<double>> updates =
+      diagram_.AllocateDifferenceVariables();
+
+  // Set the time to 8.5, so only hold2 updates.
+  context_->set_time(8.5);
+
+  // Request the next update time.
+  UpdateActions<double> actions;
+  diagram_.CalcNextUpdateTime(*context_, &actions);
+  EXPECT_EQ(9.0, actions.time);
+  ASSERT_EQ(1u, actions.events.size());
+
+  // Fast forward to 9.0 sec and do the update.
+  context_->set_time(9.0);
+  diagram_.EvalDifferenceUpdates(*context_, actions.events[0], updates.get());
+  context_->get_mutable_difference_state()->SetFrom(*updates);
+  EXPECT_EQ(1001.0, ctx1->get_difference_state(0)->GetAtIndex(0));
+  EXPECT_EQ(23.0, ctx2->get_difference_state(0)->GetAtIndex(0));
+
+  // Restore hold2 to its original value.
+  ctx2->get_mutable_difference_state(0)->SetAtIndex(0, 1002.0);
+  // Set the time to 11.5, so both hold1 and hold2 update.
+  context_->set_time(11.5);
+  diagram_.CalcNextUpdateTime(*context_, &actions);
+  EXPECT_EQ(12.0, actions.time);
+  // A single update event on the Diagram is expanded to update events on
+  // each constituent system.
+  ASSERT_EQ(1u, actions.events.size());
+
+  // Fast forward to 12.0 sec and do the update again.
+  context_->set_time(12.0);
+  diagram_.EvalDifferenceUpdates(*context_, actions.events[0], updates.get());
+  context_->get_mutable_difference_state()->SetFrom(*updates);
+  EXPECT_EQ(17.0, ctx1->get_difference_state(0)->GetAtIndex(0));
+  EXPECT_EQ(23.0, ctx2->get_difference_state(0)->GetAtIndex(0));
+}
+
+// Tests that a publish action is taken at 19 sec.
+TEST_F(DifferenceStateTest, Publish) {
+  context_->set_time(18.5);
+  UpdateActions<double> actions;
+  diagram_.CalcNextUpdateTime(*context_, &actions);
+
+  EXPECT_EQ(19.0, actions.time);
+  ASSERT_EQ(1u, actions.events.size());
+  EXPECT_EQ(DiscreteEvent<double>::kPublishAction, actions.events[0].action);
+
+  // Fast forward to 19.0 sec and do the publish.
+  EXPECT_EQ(false, diagram_.publisher()->published());
+  context_->set_time(19.0);
+  diagram_.Publish(*context_, actions.events[0]);
+  // Check that publication occurred.
+  EXPECT_EQ(true, diagram_.publisher()->published());
 }
 
 }  // namespace

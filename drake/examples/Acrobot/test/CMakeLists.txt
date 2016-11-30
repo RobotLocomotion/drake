@@ -1,6 +1,6 @@
 if(lcm_FOUND)
   drake_add_cc_test(acrobot_urdf_dynamics_test)
-  target_link_libraries(acrobot_urdf_dynamics_test drakeRBSystem)
+  target_link_libraries(acrobot_urdf_dynamics_test drakeRigidBodyPlant drakeAcrobotPlant)
 endif()
 
 drake_add_matlab_test(NAME examples/Acrobot/test/dHtest OPTIONAL bullet COMMAND dHtest)
@@ -8,7 +8,6 @@ drake_add_matlab_test(NAME examples/Acrobot/test/dynamicsGradientsTest COMMAND d
 drake_add_matlab_test(NAME examples/Acrobot/test/lqrTest REQUIRES spotless OPTIONAL mosek sedumi COMMAND lqrTest)
 drake_add_matlab_test(NAME examples/Acrobot/test/paramEstSyntheticData REQUIRES spotless OPTIONAL snopt COMMAND paramEstSyntheticData)
 drake_add_matlab_test(NAME examples/Acrobot/test/paramExtractFromURDF REQUIRES spotless OPTIONAL bullet COMMAND paramExtractFromURDF)
-drake_add_matlab_test(NAME examples/Acrobot/test/testCpp REQUIRES spotless COMMAND testCpp)
 # drake_add_matlab_test(NAME examples/Acrobot/test/testJointLimits COMMAND testJointLimits)  # FIXME
 drake_add_matlab_test(NAME examples/Acrobot/test/testKinematics OPTIONAL bullet COMMAND testKinematics)
 drake_add_matlab_test(NAME examples/Acrobot/test/testManipulatorEquations REQUIRES spotless COMMAND testManipulatorEquations)

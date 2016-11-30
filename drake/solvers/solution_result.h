@@ -10,5 +10,5 @@ enum SolutionResult {
     kUnknownError = -3,
   };
 
-}  // namespace drake
 }  // namespace solvers
+}  // namespace drake

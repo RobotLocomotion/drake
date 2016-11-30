@@ -2,7 +2,7 @@ include(ExternalProject)
 
 find_package(Git REQUIRED)
 
-if(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
+if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")
   set(MAKE_COMMAND "$(MAKE)") # so we can pass through command line arguments
 else()
   find_program(MAKE_COMMAND make)
@@ -44,6 +44,10 @@ endfunction()
 #------------------------------------------------------------------------------
 function(drake_fixup_commands PREFIX)
   foreach(_fc_command ${ARGN})
+    # Some variables may not be defined unless a particular package or program
+    # is found or if a value is specified by the user on the command line. The
+    # effect of the variable may be different between being undefined and empty,
+    # so do not try to define it.
     if(DEFINED ${PREFIX}_${_fc_command})
       if(${PREFIX}_${_fc_command} STREQUAL ":")
         set(${PREFIX}_${_fc_command} ${CMAKE_COMMAND} -E sleep 0 PARENT_SCOPE)
@@ -69,9 +73,11 @@ endfunction()
 function(drake_build_cache_args OUTVAR SEPARATOR)
   set(_out)
   foreach(_var ${ARGN})
-    get_property(_type CACHE ${_var} PROPERTY TYPE)
-    string(REPLACE ";" "${SEPARATOR}" _value "${${_var}}")
-    list(APPEND _out -D${_var}:${_type}=${_value})
+    if(DEFINED ${_var})
+      get_property(_type CACHE ${_var} PROPERTY TYPE)
+      string(REPLACE ";" "${SEPARATOR}" _value "${${_var}}")
+      list(APPEND _out -D${_var}:${_type}=${_value})
+    endif()
   endforeach()
   set(${OUTVAR} ${_out} PARENT_SCOPE)
 endfunction()
@@ -148,7 +154,8 @@ macro(drake_add_cmake_external PROJECT)
 
   # Set arguments for cache propagation
   set(_ext_LIST_SEPARATOR "!")
-  drake_build_cache_args(_ext_PROPAGATE_CACHE ${_ext_LIST_SEPARATOR}
+
+  set(_ext_PROPAGATE_CACHE_VARS
     CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
     CMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY
     CMAKE_PREFIX_PATH
@@ -167,7 +174,33 @@ macro(drake_add_cmake_external PROJECT)
     Java_JAVAC_EXECUTABLE
     Java_JAVAH_EXECUTABLE
     Java_VERSION_STRING
-    CMAKE_JAVA_COMPILE_FLAGS)
+    CMAKE_JAVA_COMPILE_FLAGS
+    LIB_SUFFIX)
+
+  if(_ext_FORTRAN)
+    list(APPEND _ext_PROPAGATE_CACHE_VARS
+      CMAKE_Fortran_COMPILER
+      CMAKE_Fortran_FLAGS)
+
+    if(NOT _ext_GENERATOR STREQUAL "Unix Makefiles")
+      # Ninja and Xcode may not support Fortran.
+      set(_ext_GENERATOR "Unix Makefiles")
+    endif()
+  endif()
+
+  if(_ext_MATLAB AND Matlab_FOUND)
+    list(APPEND _ext_PROPAGATE_CACHE_VARS Matlab_ROOT_DIR)
+  endif()
+
+  if(_ext_PYTHON)
+    list(APPEND _ext_PROPAGATE_CACHE_VARS
+      PYTHON_EXECUTABLE
+      PYTHON_INCLUDE_DIR
+      PYTHON_LIBRARY)
+  endif()
+
+  drake_build_cache_args(_ext_PROPAGATE_CACHE ${_ext_LIST_SEPARATOR}
+    ${_ext_PROPAGATE_CACHE_VARS})
 
   # Set up the external project build
   ExternalProject_Add(${PROJECT}
@@ -179,6 +212,7 @@ macro(drake_add_cmake_external PROJECT)
     DOWNLOAD_COMMAND ${_ext_DOWNLOAD_COMMAND}
     UPDATE_COMMAND ${_ext_UPDATE_COMMAND}
     ${_ext_EXTRA_COMMANDS}
+    STEP_TARGETS configure build install
     INDEPENDENT_STEP_TARGETS update
     BUILD_ALWAYS 1
     DEPENDS ${_ext_deps}
@@ -187,6 +221,71 @@ macro(drake_add_cmake_external PROJECT)
       ${_ext_VERBOSE}
       ${_ext_PROPAGATE_CACHE}
       ${_ext_CMAKE_ARGS})
+
+  if(_ext_TEST)
+    file(APPEND ${CMAKE_BINARY_DIR}/CTestExternals.cmake
+      "subdirs(\"${_ext_BINARY_DIR}\")\n")
+  endif()
+endmacro()
+
+
+#------------------------------------------------------------------------------
+# Internal helper to set up an Autotools external project.
+#------------------------------------------------------------------------------
+macro(drake_add_autotools_external PROJECT)
+  if(NOT DEFINED _ext_BINARY_DIR)
+    set(_ext_BINARY_DIR ${PROJECT_BINARY_DIR}/externals/${PROJECT})
+  endif()
+
+  if(_ext_FORTRAN)
+    set(_ext_FORTRAN_ENV
+      F77=${CMAKE_Fortran_COMPILER}
+      FC=${CMAKE_Fortran_COMPILER}
+      FFLAGS=${CMAKE_Fortran_FLAGS})
+  else()
+    set(_ext_FORTRAN_ENV)
+  endif()
+
+  set(_env_command
+    ${CMAKE_COMMAND} -E env
+    CC=${CMAKE_C_COMPILER}
+    CFLAGS=${CMAKE_C_FLAGS}
+    CXX=${CMAKE_CXX_COMPILER}
+    CXXFLAGS=${CMAKE_CXX_FLAGS}
+    LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+    ${_ext_FORTRAN_ENV}
+    ${_ext_AUTOTOOLS_ENV})
+
+  if(NOT DEFINED _ext_CONFIGURE_COMMAND)
+    set(_ext_CONFIGURE_COMMAND
+      ${_env_command}
+      ${_ext_SOURCE_DIR}/configure
+      --prefix=${CMAKE_INSTALL_PREFIX}
+      ${_ext_AUTOTOOLS_CONFIGURE_ARGS})
+  endif()
+
+  if(CMAKE_VERBOSE_MAKEFILE)
+    set(_ext_VERBOSE "V=1")
+  else()
+    set(_ext_VERBOSE "V=0")
+  endif()
+
+  if(NOT DEFINED _ext_BUILD_COMMAND)
+    set(_ext_BUILD_COMMAND
+      ${_env_command}
+      ${MAKE_COMMAND}
+      ${_ext_VERBOSE})
+  endif()
+
+  if(NOT DEFINED _ext_INSTALL_COMMAND)
+    set(_ext_INSTALL_COMMAND
+      ${_env_command}
+      ${MAKE_COMMAND}
+      ${_ext_VERBOSE}
+      install)
+  endif()
+
+  drake_add_foreign_external(${PROJECT})
 endmacro()
 
 #------------------------------------------------------------------------------
@@ -225,6 +324,7 @@ macro(drake_add_foreign_external PROJECT)
     CONFIGURE_COMMAND "${_ext_CONFIGURE_COMMAND}"
     BUILD_COMMAND "${_ext_BUILD_COMMAND}"
     INSTALL_COMMAND "${_ext_INSTALL_COMMAND}"
+    STEP_TARGETS configure build install
     INDEPENDENT_STEP_TARGETS update
     BUILD_ALWAYS ${_ext_BUILD_ALWAYS}
     DEPENDS ${_ext_deps})
@@ -234,10 +334,15 @@ endmacro()
 # Add an external project.
 #
 # Arguments:
-#   LOCAL  - External is local to the source tree (i.e. not a submodule)
-#   PUBLIC - External is public
-#   CMAKE  - External uses CMake
-#   ALWAYS - External is always built
+#   LOCAL     - External is local to the source tree (i.e. not a submodule)
+#   PUBLIC    - External is public
+#   CMAKE     - External uses CMake
+#   AUTOTOOLS - External uses Autotools
+#   ALWAYS    - External is always built
+#   TEST      - External's tests should be included in the superbuild's tests
+#   FORTRAN   - External uses Fortran
+#   MATLAB    - External uses MATLAB
+#   PYTHON    - External uses Python
 #
 #   REQUIRES <deps...>
 #       List of packages (checked via `find_package`) that are required to
@@ -268,6 +373,14 @@ endmacro()
 #       Additional arguments to be passed to the CMake external's CONFIGURE
 #       step.
 #
+#   AUTOTOOLS_ENV <envvars...>
+#       Additional environment variables to be passed to the Autotools
+#       external's configure command.
+#
+#   AUTOTOOLS_CONFIGURE_ARGS <args...>
+#       Additional arguments to be passed to the Autotools external's configure
+#       command.
+#
 # Arguments with the same name as arguments to `ExternalProject_Add` generally
 # have the same function and are passed through.
 #------------------------------------------------------------------------------
@@ -278,7 +391,7 @@ function(drake_add_external PROJECT)
     CONFIGURE_COMMAND
     BUILD_COMMAND
     INSTALL_COMMAND)
-  set(_ext_flags LOCAL PUBLIC CMAKE ALWAYS)
+  set(_ext_flags LOCAL PUBLIC CMAKE AUTOTOOLS ALWAYS TEST FORTRAN MATLAB PYTHON)
   set(_ext_sv_args
     SOURCE_SUBDIR
     SOURCE_DIR
@@ -286,6 +399,8 @@ function(drake_add_external PROJECT)
     GENERATOR
   )
   set(_ext_mv_args
+    AUTOTOOLS_CONFIGURE_ARGS
+    AUTOTOOLS_ENV
     CMAKE_ARGS
     REQUIRES
     DEPENDS
@@ -379,6 +494,8 @@ function(drake_add_external PROJECT)
   set(_ext_VERBOSE)
   if(_ext_CMAKE)
     drake_add_cmake_external(${PROJECT})
+  elseif(_ext_AUTOTOOLS)
+    drake_add_autotools_external(${PROJECT})
   else()
     drake_add_foreign_external(${PROJECT})
   endif()
@@ -398,6 +515,35 @@ function(drake_add_external PROJECT)
     # TODO remove when we require CMake 3.7
     drake_add_submodule_sync_dependency(${PROJECT})
   endif()
+
+  # Check if project is build-skipped
+  string(TOUPPER SKIP_${PROJECT}_BUILD _ext_project_skip_build)
+  if(${_ext_project_skip_build})
+    # Remove project from ALL, but add configure step to ALL
+    set_target_properties(${PROJECT}
+      PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    set_target_properties(${PROJECT}-configure
+      PROPERTIES EXCLUDE_FROM_ALL FALSE)
+  endif()
+
+  # Check if project should be skipped due to skipped dependencies
+  foreach(_ext_dep ${_ext_deps})
+    string(TOUPPER SKIP_${_ext_dep}_BUILD _ext_dep_skip_build)
+    if(${_ext_dep_skip_build})
+      message(STATUS
+        "Excluding ${PROJECT} from ALL because build of dependency "
+        "${_ext_dep} is skipped or excluded")
+
+      # Remove project from ALL
+      set_target_properties(${PROJECT} ${PROJECT}-configure
+        PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+      # Mark project as skipped for this build only (not cached) so downstream
+      # dependencies (if any) will also be skipped
+      set(${_ext_project_skip_build} ON PARENT_SCOPE)
+      break()
+    endif()
+  endforeach()
 
   # Add extra per-project targets
   add_custom_target(status-${PROJECT}

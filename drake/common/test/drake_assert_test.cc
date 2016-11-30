@@ -22,7 +22,7 @@ GTEST_TEST(DrakeAssertDeathTest, DemandTest) {
       " assertion 'false' failed");
 }
 
-struct BoolConvertible { operator bool() { return true; } };
+struct BoolConvertible { operator bool() const { return true; } };
 GTEST_TEST(DrakeAssertDeathTest, AssertSyntaxTest) {
   // These should compile.
   DRAKE_ASSERT((2 + 2) == 4);

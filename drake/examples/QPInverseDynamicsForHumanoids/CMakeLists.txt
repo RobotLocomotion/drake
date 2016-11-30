@@ -1,17 +1,24 @@
-add_library(drakeQPController
+set(qp_inverse_dynamics_controller_src
+  humanoid_status.cc
+  example_qp_input_for_valkyrie.cc
   qp_controller.cc
-  rigid_body_tree_utils.cc
-  humanoid_status.cc)
+  rigid_body_tree_utils.cc)
+
+add_library(drakeQPController ${qp_inverse_dynamics_controller_src})
 target_link_libraries(drakeQPController
-  drakeRBSystem
   drakeOptimization
+  drakeRBM
   drakeSide)
 
-if(snopt_c_FOUND)
-  drake_add_cc_test(NAME valkyrie_balancing_test SIZE medium)
-  target_link_libraries(valkyrie_balancing_test
-    drakeQPController
-    GTest::GTest GTest::Main)
+if(lcm_FOUND)
+  add_library(drakeQPControllerLcmTranslator lcm_utils.cc)
+  target_link_libraries(drakeQPControllerLcmTranslator
+    drakeRBM
+    drakeLCMTypes
+    drakeLCMUtil
+    lcmtypes_bot2-core-cpp)
 endif()
 
-add_subdirectory(system)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

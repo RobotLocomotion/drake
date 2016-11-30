@@ -12,7 +12,7 @@ if(lcm_FOUND)
   # NLopt isn't sufficient to run the kuka_demo, as it is unable to
   # find a solution.  See
   # https://github.com/RobotLocomotion/drake/issues/3710
-  if(snopt_c_FOUND OR ipopt_FOUND)
-    add_test(NAME kuka_demo COMMAND kuka_demo)
+  if(snopt_FOUND OR ipopt_FOUND)
+    drake_add_test(NAME kuka_demo COMMAND kuka_demo)
   endif()
 endif()

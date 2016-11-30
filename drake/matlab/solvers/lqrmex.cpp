@@ -1,12 +1,13 @@
 #include <mex.h>
 
-#include "drake/common/drake_assert.h"
-#include "drake/util/drakeUtil.h"
 #include <Eigen/Dense>
+#include "drake/common/drake_assert.h"
+#include "drake/systems/controllers/linear_optimal_control.h"
 
 using namespace Eigen;
 
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+DLL_EXPORT_SYM
+void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 4 || nlhs != 2) {
     mexErrMsgIdAndTxt("Drake:lqrmex:InvalidUsage",
                       "Usage: [K, S] = lqrmex(A, B, Q, R)");
@@ -41,5 +42,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   Map<MatrixXd> K(mxGetPr(plhs[0]), R_rows, A_cols);
   Map<MatrixXd> S(mxGetPr(plhs[1]), A_rows, A_cols);
 
-  lqr(A, B, Q, R, K, S);
+  S = drake::systems::ContinuousAlgebraicRiccatiEquation(A, B, Q, R);
+
+  Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
+  K = R_cholesky.solve(B.transpose() * S);
 }

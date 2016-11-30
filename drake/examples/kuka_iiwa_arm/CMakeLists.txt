@@ -4,13 +4,13 @@ if(lcm_FOUND)
       iiwa_common.cc)
   target_link_libraries(drakeKukaIiwaArmCommon
       drakeRBM)
-  pods_install_libraries(drakeKukaIiwaArmCommon)
+  drake_install_libraries(drakeKukaIiwaArmCommon)
   drake_install_headers(
       iiwa_common.h)
-  pods_install_pkg_config_file(drake-kuka-iiwa-arm-common
+  drake_install_pkg_config_file(drake-kuka-iiwa-arm-common
+      TARGET drakeKukaIiwaArmCommon
       LIBS -ldrakeKukaIiwaArmCommon
-      REQUIRES
-      VERSION 0.0.1)
+      REQUIRES drake-rbm)
 
   # TODO(liang.fok) Remove this library once all System 1.0-based KUKA iiwa
   # demos that are removed.
@@ -22,13 +22,19 @@ if(lcm_FOUND)
       drakeCommon
       drakeLCMSystem
       drakeLCMTypes)
-  pods_install_libraries(drakeKukaIiwaArm)
+  drake_install_libraries(drakeKukaIiwaArm)
   drake_install_headers(
       iiwa_simulation.h)
-  pods_install_pkg_config_file(drake-kuka-iiwa-arm
+  drake_install_pkg_config_file(drake-kuka-iiwa-arm
+      TARGET drakeKukaIiwaArm
       LIBS -ldrakeKukaIiwaArm
       REQUIRES
-      VERSION 0.0.1)
+        drake-common
+        drake-lcm-system
+        drake-lcmtypes-cpp
+        drake-rbsystem
+        drake-shapes
+        eigen3)
 
   add_executable(run_kuka_iiwa_arm_dynamics run_kuka_iiwa_arm_dynamics.cc)
   target_link_libraries(run_kuka_iiwa_arm_dynamics
@@ -49,27 +55,35 @@ if(lcm_FOUND)
       Threads::Threads)
 
   add_executable(kuka_ik_demo kuka_ik_demo.cc)
-  target_link_libraries(kuka_ik_demo drakeIK
-      drakeTrajectories
-      drakeRBM
-      drakeLCMSystem)
+  target_link_libraries(kuka_ik_demo
+    drakeIK
+    drakeRBM
+    robotlocomotion-lcmtypes-cpp
+    lcm)
 
-  add_executable(run_kuka_iiwa_gravity_compensated_torque_control
-      run_kuka_iiwa_gravity_compensated_torque_control.cc)
-  target_link_libraries(run_kuka_iiwa_gravity_compensated_torque_control
-      drakeKukaIiwaArm
-      drakeRBSystem
-      drakeLCMSystem
-      gflags)
+  add_executable(kuka_plan_runner kuka_plan_runner.cc)
+  target_link_libraries(kuka_plan_runner
+    drakeKukaIiwaArmCommon
+    drakeTrajectories
+    drakeRBM
+    drakeLCMTypes
+    robotlocomotion-lcmtypes-cpp
+    lcm)
 
-  add_executable(run_kuka_iiwa_gravity_compensated_position_control
-      run_kuka_iiwa_gravity_compensated_position_control.cc)
-  target_link_libraries(run_kuka_iiwa_gravity_compensated_position_control
-      drakeKukaIiwaArm
-      drakeRBSystem
-      drakeLCMSystem
-      gflags)
+  add_executable(kuka_simulation kuka_simulation.cc)
+  target_link_libraries(kuka_simulation
+    drakeKukaIiwaArmCommon
+    drakeRigidBodyPlant
+    drakeSystemAnalysis
+    drakeSystemControllers
+    drakeLCMSystem2)
+  drake_add_test(
+      NAME kuka_simulation COMMAND kuka_simulation -simulation_sec 0.1)
+
 endif()
 
 add_subdirectory(controlled_kuka)
-add_subdirectory(test)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

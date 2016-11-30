@@ -18,6 +18,7 @@ namespace systems {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.

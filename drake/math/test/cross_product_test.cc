@@ -5,7 +5,8 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 
-using namespace Eigen;
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
 
 namespace drake {
 namespace math {

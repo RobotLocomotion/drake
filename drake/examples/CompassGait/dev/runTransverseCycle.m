@@ -1,6 +1,6 @@
 function c=runTransverseCycle
 
-tmp = addpathTemporary({fullfile(pwd,'..'),fullfile(getDrakePath(),'systems','controllers','dev')});
+tmp = addpathTemporary({fullfile(pwd,'..'),fullfile(getDrakePath(),'matlab','systems','controllers','dev')});
 
 [p,utraj,xtraj] = runDircolCycle;
 

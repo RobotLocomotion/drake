@@ -5,8 +5,11 @@
 #include "gtest/gtest.h"
 
 #include "drake/lcm/drake_mock_lcm.h"
+#include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
+
+using drake::lcm::CompareLcmtDrakeSignalMessages;
 
 namespace drake {
 namespace systems {
@@ -104,6 +107,36 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
   TestSubscriber(&lcm, channel_name, &dut);
 }
 
+// Tests LcmSubscriberSystem using a Serializer.
+GTEST_TEST(LcmSubscriberSystemTest, SerializerTest) {
+  drake::lcm::DrakeMockLcm lcm;
+  const std::string channel_name = "channel_name";
+
+  // The "device under test".
+  auto dut = LcmSubscriberSystem::Make<lcmt_drake_signal>(channel_name, &lcm);
+
+  // Establishes the context and output for the dut.
+  std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
+  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
+
+  // MockLcm produces a sample message.
+  lcm.StartReceiveThread();
+  const lcmt_drake_signal sample_data{
+    2, { 1.0, 2.0, }, { "x", "y", }, 12345,
+  };
+  const int num_bytes = sample_data.getEncodedSize();
+  std::vector<uint8_t> buffer(num_bytes);
+  sample_data.encode(buffer.data(), 0, num_bytes);
+  lcm.InduceSubscriberCallback(channel_name, buffer.data(), num_bytes);
+
+  // Verifies that the dut produces the output message.
+  dut->EvalOutput(*context.get(), output.get());
+  const AbstractValue* abstract_value = output->get_data(0);
+  ASSERT_NE(abstract_value, nullptr);
+  const auto& value = abstract_value->GetValueOrThrow<lcmt_drake_signal>();
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data));
+}
+
 // A lcmt_drake_signal translator that preserves coordinate names.
 class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
  public:
@@ -173,10 +206,12 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
 
 // Subscribe and output a custom VectorBase type.
 GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
+  const std::string kChannelName = "dummy";
+
   // The "device under test" and its prerequisites.
   CustomDrakeSignalTranslator translator;
   drake::lcm::DrakeMockLcm lcm;
-  LcmSubscriberSystem dut("dummy", translator, &lcm);
+  LcmSubscriberSystem dut(kChannelName, translator, &lcm);
   lcm.StartReceiveThread();
 
   // Create a data-filled vector.
@@ -187,10 +222,12 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
     sample_vector.SetName(i, std::to_string(i) + "_name");
   }
 
-  // Set message into the dut.  It is encoded into bytes internally, which lets
-  // us confirm that the full round-trip encode / decode cycle is correct.
-  const double time = 0;
-  dut.SetMessage(time, sample_vector);
+  // Induce a message transmission so we can evaluate whether the LCM
+  // subscriber was able to successfully decode the message.
+  std::vector<uint8_t> message_bytes;
+  translator.Serialize(0.0 /* time */, sample_vector, &message_bytes);
+  lcm.InduceSubscriberCallback(kChannelName, &message_bytes[0],
+      message_bytes.size());
 
   // Read back the vector via EvalOutput.
   auto context = dut.CreateDefaultContext();

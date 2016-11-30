@@ -1,5 +1,8 @@
 #pragma once
 
+#include <map>
+#include <string>
+
 #include <Eigen/Dense>
 
 #include "ros/ros.h"
@@ -8,11 +11,11 @@
 #include "tf/transform_broadcaster.h"
 
 #include "drake/math/rotation_matrix.h"
-#include "drake/systems/System.h"
-#include "drake/systems/plants/KinematicsCache.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/vector.h"
+#include "drake/system1/System.h"
+#include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
+#include "drake/system1/vector.h"
 
 using drake::NullVector;
 using drake::RigidBodySensor;
@@ -59,7 +62,7 @@ class DrakeRosTfPublisher {
    * is necessary to understand the meaning of the input data to this system.
    */
   explicit DrakeRosTfPublisher(
-      const std::shared_ptr<RigidBodyTree> rigid_body_tree)
+      const std::shared_ptr<RigidBodyTree<double>> rigid_body_tree)
       : rigid_body_tree_(rigid_body_tree), enable_tf_publisher_(true) {
     // Queries the ROS parameter server for a boolean parameter in
     // "/drake/enable_tf_publisher". This parameter is used to control whether
@@ -291,7 +294,7 @@ class DrakeRosTfPublisher {
   // Determines whether a transform should be published for the specified
   // rigid body. A rigid body should be skipped if it is the world link or if
   // it is connected to the world via a fixed joint.
-  bool PublishTfForRigidBody(const RigidBody* rigid_body) {
+  bool PublishTfForRigidBody(const RigidBody<double>* rigid_body) {
     // Skips rigid bodies without a mobilizer joint. This includes the RigidBody
     // that represents the world.
     if (!rigid_body->has_parent_body()) return false;
@@ -299,7 +302,7 @@ class DrakeRosTfPublisher {
   }
 
   // The rigid body tree being used by Drake's rigid body dynamics engine.
-  const std::shared_ptr<RigidBodyTree> rigid_body_tree_;
+  const std::shared_ptr<RigidBodyTree<double>> rigid_body_tree_;
 
   // Publishes the transform messages that specify the positions and
   // orientations of every rigid body and frame in the rigid body tree. This is

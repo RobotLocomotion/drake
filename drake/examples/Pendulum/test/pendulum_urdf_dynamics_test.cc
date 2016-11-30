@@ -1,34 +1,50 @@
-#include "drake/examples/Pendulum/Pendulum.h"
 
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/examples/Pendulum/pendulum_plant.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 
 namespace drake {
 namespace examples {
 namespace pendulum {
 namespace {
 
-GTEST_TEST(urdfDynamicsTest, AllTests) {
-  auto tree = shared_ptr<RigidBodyTree>(new RigidBodyTree(
+GTEST_TEST(UrdfDynamicsTest, AllTests) {
+  auto tree = std::make_unique<RigidBodyTree<double>>(
       GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-      drake::systems::plants::joints::kFixed));
-  auto rbsys = RigidBodySystem(tree);
-  auto p = Pendulum();
+      multibody::joints::kFixed);
+  systems::RigidBodyPlant<double> rbp(std::move(tree));
+  PendulumPlant<double> p;
 
-  for (int i = 0; i < 1000; ++i) {
-    auto x0 = getRandomVector<PendulumState>();
-    auto u0 = getRandomVector<PendulumInput>();
+  auto context_rbp = rbp.CreateDefaultContext();
+  auto context_p = p.CreateDefaultContext();
 
-    RigidBodySystem::StateVector<double> x0_rb = toEigen(x0);
-    RigidBodySystem::InputVector<double> u0_rb = toEigen(u0);
+  auto u_rbp = context_rbp->FixInputPort(0, Vector1d::Zero());
+  auto u_p = context_p->FixInputPort(0, Vector1d::Zero());
 
-    auto xdot = toEigen(p.dynamics(0.0, x0, u0));
-    auto xdot_rb = rbsys.dynamics(0.0, x0_rb, u0_rb);
-    EXPECT_TRUE(
-        CompareMatrices(xdot_rb, xdot, 1e-8, MatrixCompareType::absolute));
+  Eigen::Vector2d x;
+  Vector1d u;
+  auto xdot_rbp = rbp.AllocateTimeDerivatives();
+  auto xdot_p = p.AllocateTimeDerivatives();
+
+  for (int i = 0; i < 100; ++i) {
+    x = Eigen::Vector2d::Random();
+    u = Vector1d::Random();
+
+    context_rbp->get_mutable_continuous_state_vector()->SetFromVector(x);
+    context_p->get_mutable_continuous_state_vector()->SetFromVector(x);
+
+    u_rbp->SetFromVector(u);
+    u_p->SetFromVector(u);
+
+    rbp.EvalTimeDerivatives(*context_rbp, xdot_rbp.get());
+    p.EvalTimeDerivatives(*context_p, xdot_p.get());
+
+    EXPECT_TRUE(CompareMatrices(xdot_rbp->CopyToVector(),
+                                xdot_p->CopyToVector(), 1e-8,
+                                MatrixCompareType::absolute));
   }
 }
 

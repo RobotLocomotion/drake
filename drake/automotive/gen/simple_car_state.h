@@ -8,14 +8,13 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
 namespace automotive {
 
 /// Describes the row indices of a SimpleCarState.
-struct DRAKE_EXPORT SimpleCarStateIndices {
+struct SimpleCarStateIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 4;
 
@@ -40,13 +39,17 @@ class SimpleCarState : public systems::BasicVector<T> {
 
   /// @name Getters and Setters
   //@{
-  const T x() const { return this->GetAtIndex(K::kX); }
+  // x
+  const T& x() const { return this->GetAtIndex(K::kX); }
   void set_x(const T& x) { this->SetAtIndex(K::kX, x); }
-  const T y() const { return this->GetAtIndex(K::kY); }
+  // y
+  const T& y() const { return this->GetAtIndex(K::kY); }
   void set_y(const T& y) { this->SetAtIndex(K::kY, y); }
-  const T heading() const { return this->GetAtIndex(K::kHeading); }
+  // heading
+  const T& heading() const { return this->GetAtIndex(K::kHeading); }
   void set_heading(const T& heading) { this->SetAtIndex(K::kHeading, heading); }
-  const T velocity() const { return this->GetAtIndex(K::kVelocity); }
+  // velocity
+  const T& velocity() const { return this->GetAtIndex(K::kVelocity); }
   void set_velocity(const T& velocity) {
     this->SetAtIndex(K::kVelocity, velocity);
   }

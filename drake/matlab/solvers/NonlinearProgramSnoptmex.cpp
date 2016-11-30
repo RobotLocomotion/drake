@@ -70,6 +70,7 @@ void mysnsetr(const char* strOpt, snopt::doublereal val, snopt::integer* iPrint,
                  rw, lenrw, strOpt_len, 8 * (*lencw));
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 13 && nlhs != 5) {
     mexErrMsgIdAndTxt(

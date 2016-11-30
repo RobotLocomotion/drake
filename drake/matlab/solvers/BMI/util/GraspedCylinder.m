@@ -34,7 +34,7 @@ classdef GraspedCylinder < GraspedGeometry
     
     function plotGeometry(obj,use_lcmgl)
       if(use_lcmgl)
-        lcmgl_cylinder = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'cylinder');
+        lcmgl_cylinder = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'cylinder');
         lcmgl_cylinder.glColor3f(0,0,1);
         lcmgl_cylinder.glPushMatrix();
         lcmgl_cylinder.glTranslated(obj.b_cylinder(1),obj.b_cylinder(2),obj.b_cylinder(3));

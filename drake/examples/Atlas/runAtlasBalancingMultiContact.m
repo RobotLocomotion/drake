@@ -26,7 +26,7 @@ options.ignore_friction = true;
 options.dt = 0.001;
 
 box_xpos = 0.19;
-boxurdf = fullfile(getDrakePath,'systems','plants','test','FallingBrick.urdf');
+boxurdf = fullfile(getDrakePath,'matlab','systems','plants','test','FallingBrick.urdf');
 box_r = RigidBodyManipulator();
 box_r = box_r.setTerrain(RigidBodyFlatTerrain());
 box_r = box_r.addRobotFromURDF(boxurdf, [box_xpos;0;0], [0;0;pi/2]);
@@ -38,7 +38,7 @@ options.use_bullet = true;
 options.multiple_contacts = true;
 r = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_convex_hull.urdf'),options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
-r = r.addRobotFromURDF(fullfile(getDrakePath,'systems','plants','test','FallingBrick.urdf'), [box_xpos;0;0], [0;0;pi/2]);
+r = r.addRobotFromURDF(fullfile(getDrakePath,'matlab','systems','plants','test','FallingBrick.urdf'), [box_xpos;0;0], [0;0;pi/2]);
 options.floating = false;
 
 r = compile(r);

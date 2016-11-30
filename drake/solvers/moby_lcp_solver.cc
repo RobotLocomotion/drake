@@ -1,13 +1,15 @@
 // Adapted with permission from code by Evan Drumwright
 // (https://github.com/edrumwri).
 
-#include "moby_lcp_solver.h"
+#include "drake/solvers/moby_lcp_solver.h"
 
 #include <Eigen/LU>
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
 
+#include <algorithm>
 #include <cmath>
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -79,7 +81,7 @@ Eigen::Index minCoeffIdx(const Eigen::MatrixBase<Derived>& in) {
 }
 
 const double NEAR_ZERO = std::sqrt(std::numeric_limits<double>::epsilon());
-}
+}  // anonymous namespace
 
 // Sole constructor
 MobyLCPSolver::MobyLCPSolver() : log_enabled_(false) {}
@@ -135,7 +137,7 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
   for (size_t i = 0; i < prog.num_vars(); i++) {
     int coverings = 0;
     for (const auto& binding : bindings) {
-      if (binding.Covers(i)) {
+      if (binding.ContainsVariableIndex(i)) {
         coverings++;
       }
     }
@@ -157,7 +159,7 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
   Eigen::VectorXd solution(prog.num_vars());
 
   // We don't actually indicate different results.
-  prog.SetSolverResult("MobyLCP", 0);
+  prog.SetSolverResult(SolverName(), 0);
 
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.GetNumElements());

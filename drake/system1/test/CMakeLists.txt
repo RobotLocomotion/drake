@@ -1,0 +1,17 @@
+drake_add_cc_test(NAME testAffineSystem EXTENSION cpp)
+target_link_libraries(testAffineSystem drakeCommon)
+
+drake_add_cc_test(cascade_system_test)
+target_link_libraries(cascade_system_test drakeCommon)
+
+drake_add_cc_test(feedback_system_test)
+target_link_libraries(feedback_system_test drakeCommon)
+
+drake_add_cc_test(simulation_termination_test)
+target_link_libraries(simulation_termination_test drakeCommon)
+
+drake_add_cc_test(vector_test)
+target_link_libraries(vector_test drakeCommon)
+
+drake_add_cc_test(simulation_trajectory_logger_test)
+target_link_libraries(simulation_trajectory_logger_test drakeCommon)

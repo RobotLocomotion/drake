@@ -3,9 +3,9 @@
 #include <stdexcept>
 #include <string>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 
@@ -27,7 +27,7 @@ void Integrator<T>::set_integral_value(
   // TODO(amcastro-tri): Provide simple accessors here to avoid lengthy
   // constructions.
   VectorBase<T>* state_vector =
-      context->get_mutable_continuous_state()->get_mutable_state();
+      context->get_mutable_continuous_state_vector();
   // Asserts that the input value is a column vector of the appropriate size.
   DRAKE_ASSERT(value.rows() == state_vector->size() && value.cols() == 1);
   state_vector->SetFromVector(value);
@@ -57,7 +57,7 @@ void Integrator<T>::EvalTimeDerivatives(const Context<T>& context,
                                         ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   const BasicVector<T>* input = this->EvalVectorInput(context, 0);
-  derivatives->get_mutable_state()->SetFromVector(input->get_value());
+  derivatives->SetFromVector(input->get_value());
 }
 
 template <typename T>
@@ -72,10 +72,14 @@ void Integrator<T>::EvalOutput(const Context<T>& context,
       System<T>::CopyContinuousStateVector(context);
 }
 
+template<typename T>
+Integrator<AutoDiffXd>* Integrator<T>::DoToAutoDiffXd() const {
+  return new Integrator<AutoDiffXd>(this->get_input_port(0).get_size());
+}
 
 // Explicitly instantiates on the most common scalar types.
-template class DRAKE_EXPORT Integrator<double>;
-template class DRAKE_EXPORT Integrator<AutoDiffXd>;
+template class Integrator<double>;
+template class Integrator<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

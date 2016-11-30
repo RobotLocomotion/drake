@@ -19,7 +19,7 @@ classdef GraspedSphere < GraspedGeometry
     
     function obj = plotGeometry(obj,use_lcmgl)
       if(use_lcmgl)
-        lcmgl_sphere = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'sphere');
+        lcmgl_sphere = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'sphere');
         lcmgl_sphere.glColor4f(0,0,1,0.4);
         lcmgl_sphere.sphere(obj.sphere_center,obj.sphere_radius,20,20);
         lcmgl_sphere.switchBuffers();

@@ -1,4 +1,4 @@
-#include "gurobi_solver.h"
+#include "drake/solvers/gurobi_solver.h"
 
 #include <stdexcept>
 

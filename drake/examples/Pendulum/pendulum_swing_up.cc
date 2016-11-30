@@ -7,8 +7,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/examples/Pendulum/gen/pendulum_state_vector.h"
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
-#include "drake/examples/Pendulum/pendulum_system.h"
-#include "drake/solvers/Function.h"
+#include "drake/examples/Pendulum/pendulum_plant.h"
+#include "drake/solvers/function.h"
 #include "drake/systems/plants/constraint/direct_collocation_constraint.h"
 
 using drake::solvers::detail::VecIn;
@@ -33,6 +33,7 @@ class PendulumRunningCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(const VecIn<ScalarType>& x, VecOut<ScalarType>& y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -58,6 +59,7 @@ class PendulumFinalCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(const VecIn<ScalarType>& x, VecOut<ScalarType>& y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -89,9 +91,9 @@ void AddSwingUpTrajectoryParams(
   dircol_traj->AddDynamicConstraint(
       std::make_shared<
       drake::systems::System2DirectCollocationConstraint>(
-          std::make_unique<PendulumSystem<AutoDiffXd>>()));
+          std::make_unique<PendulumPlant<AutoDiffXd>>()));
 }
 
-}  // pendulum
-}  // examples
-}  // drake
+}  // namespace pendulum
+}  // namespace examples
+}  // namespace drake

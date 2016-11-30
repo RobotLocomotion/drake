@@ -1,0 +1,2 @@
+drake_add_cc_test(joint_test)
+target_link_libraries(joint_test drakeJoints)

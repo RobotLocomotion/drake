@@ -1,6 +1,10 @@
 #pragma once
 
+#include <limits>
+#include <map>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
@@ -56,24 +60,26 @@ class Constraint {
   // TODO(bradking): consider using a Ref for `y`.  This will require the client
   // to do allocation, but also allows it to choose stack allocation instead.
   virtual void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                     Eigen::VectorXd& y) const = 0;
   // Move this to DifferentiableConstraint derived class if/when we
   // need to support non-differentiable functions (at least, if
   // DifferentiableConstraint is ever implemented).
   virtual void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                     TaylorVecXd& y) const = 0;
 
   Eigen::VectorXd const& lower_bound() const { return lower_bound_; }
   Eigen::VectorXd const& upper_bound() const { return upper_bound_; }
   size_t num_constraints() const { return lower_bound_.size(); }
 
-  template <typename Derived> void UpdateLowerBound(
-      const Eigen::MatrixBase<Derived>& new_lb) {
+  template <typename Derived>
+  void UpdateLowerBound(const Eigen::MatrixBase<Derived>& new_lb) {
     set_bounds(new_lb, upper_bound_);
   }
 
-  template <typename Derived> void UpdateUpperBound(
-      const Eigen::MatrixBase<Derived>& new_ub) {
+  template <typename Derived>
+  void UpdateUpperBound(const Eigen::MatrixBase<Derived>& new_ub) {
     set_bounds(lower_bound_, new_ub);
   }
 
@@ -87,11 +93,10 @@ class Constraint {
    * @param lower_bound. A num_constraint() x 1 vector.
    * @param upper_bound. A num_constraint() x 1 vector.
    */
-  template <typename DerivedL, typename DerivedU> void set_bounds(
-      const Eigen::MatrixBase<DerivedL>& lower_bound,
-      const Eigen::MatrixBase<DerivedU>& upper_bound) {
-    if (lower_bound.rows() != upper_bound.rows() ||
-        lower_bound.cols() != 1 ||
+  template <typename DerivedL, typename DerivedU>
+  void set_bounds(const Eigen::MatrixBase<DerivedL>& lower_bound,
+                  const Eigen::MatrixBase<DerivedU>& upper_bound) {
+    if (lower_bound.rows() != upper_bound.rows() || lower_bound.cols() != 1 ||
         upper_bound.cols() != 1) {
       throw std::runtime_error("New constraints have invalid dimensions.");
     }
@@ -150,8 +155,8 @@ class QuadraticConstraint : public Constraint {
    * @param new_b new linear term
    */
   template <typename DerivedQ, typename DerivedB>
-    void UpdateQuadraticAndLinearTerms(const Eigen::MatrixBase<DerivedQ>& new_Q,
-      const Eigen::MatrixBase<DerivedB>& new_b) {
+  void UpdateQuadraticAndLinearTerms(const Eigen::MatrixBase<DerivedQ>& new_Q,
+                                     const Eigen::MatrixBase<DerivedB>& new_b) {
     if (new_Q.rows() != new_Q.cols() || new_Q.rows() != new_b.rows() ||
         new_b.cols() != 1) {
       throw std::runtime_error("New constraints have invalid dimensions");
@@ -170,6 +175,78 @@ class QuadraticConstraint : public Constraint {
   Eigen::VectorXd b_;
 };
 
+/**
+ A LorentzConeConstraint that takes a n x 1 vector x, and imposes constraint
+ \f[
+ x_1 >= \sqrt{x_2^2+...+x_n^2}
+ \f]
+ Ideally this constraint should be handled by a second-order cone solver.
+ In case the user wants to enforce this constraint through general nonlinear
+ optimization, with smooth gradient, we alternatively impose the following
+ constraint, with smooth gradient everywhere
+ \f[
+ x_1 >= 0 \\
+ x_1^2-x_2^2-...-x_n^2 >= 0
+ \f]
+ For more information and visualization, please refer to
+ https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
+ */
+class LorentzConeConstraint : public Constraint {
+ public:
+  LorentzConeConstraint()
+      : Constraint(2, Eigen::Vector2d::Constant(0.0),
+                   Eigen::Vector2d::Constant(
+                       std::numeric_limits<double>::infinity())) {}
+
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+            Eigen::VectorXd& y) const override {
+    y.resize(num_constraints());
+    y(0) = x(0);
+    y(1) = pow(x(0), 2) - x.tail(x.size() - 1).squaredNorm();
+  }
+
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+            TaylorVecXd& y) const override {
+    y.resize(num_constraints());
+    y(0) = x(0);
+    y(1) = pow(x(0), 2) - x.tail(x.size() - 1).squaredNorm();
+  }
+};
+
+/**
+ * A rotated Lorentz cone constraint that taks a n x 1 vector x, and imposes
+ * constraint
+ * \f[
+ * x_1 >= 0
+ * x_2 >= 0
+ * x_1 * x_2 >= x_3^2 + x_4^2 + ... + x_n^2
+ * \f]
+ * For more information and visualization, please refer to
+ * https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
+ */
+class RotatedLorentzConeConstraint : public Constraint {
+ public:
+  RotatedLorentzConeConstraint()
+      : Constraint(3, Eigen::Vector3d::Constant(0.0),
+                   Eigen::Vector3d::Constant(
+                       std::numeric_limits<double>::infinity())) {}
+
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+            Eigen::VectorXd& y) const override {
+    y.resize(num_constraints());
+    y(0) = x(0);
+    y(1) = x(1);
+    y(2) = x(0) * x(1) - x.tail(x.size() - 2).squaredNorm();
+  }
+
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+            TaylorVecXd& y) const override {
+    y.resize(num_constraints());
+    y(0) = x(0);
+    y(1) = x(1);
+    y(2) = x(0) * x(1) - x.tail(x.size() - 2).squaredNorm();
+  }
+};
 /** A semidefinite constraint  that takes a symmetric matrix as
  well as a linear component.
  <pre>
@@ -317,9 +394,9 @@ class LinearConstraint : public Constraint {
    * @param new_up new upper bound
    */
   template <typename DerivedA, typename DerivedL, typename DerivedU>
-    void UpdateConstraint(const Eigen::MatrixBase<DerivedA>& new_A,
-                          const Eigen::MatrixBase<DerivedL>& new_lb,
-                          const Eigen::MatrixBase<DerivedU>& new_ub) {
+  void UpdateConstraint(const Eigen::MatrixBase<DerivedA>& new_A,
+                        const Eigen::MatrixBase<DerivedL>& new_lb,
+                        const Eigen::MatrixBase<DerivedU>& new_ub) {
     if (new_A.rows() != new_lb.rows() || new_lb.rows() != new_ub.rows() ||
         new_lb.cols() != 1 || new_ub.cols() != 1) {
       throw std::runtime_error("New constraints have invalid dimensions");

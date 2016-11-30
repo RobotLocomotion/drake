@@ -7,6 +7,8 @@
 
 #include "drake/examples/bouncing_ball/bouncing_ball.h"
 
+#include <algorithm>
+
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/basic_vector.h"
 
@@ -23,7 +25,7 @@ T BouncingBall<T>::EvalGuard(const systems::Context<T>& context) const {
 
   // Evaluate the guard function.
   const systems::VectorBase<T>& state =
-    context.get_continuous_state()->get_state();
+    context.get_continuous_state_vector();
 
   // The guard is satisfied (returns a non-positive value) when
   // the ball's position is less than or equal to zero and its
@@ -38,11 +40,11 @@ void BouncingBall<T>::PerformReset(systems::Context<T>* context) const {
 
   // Define a pointer to the continuous state in the context.
   const auto result =
-    context->get_mutable_continuous_state()->get_mutable_state();
+    context->get_mutable_continuous_state_vector();
 
   // Perform the reset: map the position to itself and negate the
   // velocity and attenuate by the coefficient of restitution.
-  auto state = context->get_mutable_continuous_state()->get_mutable_state();
+  auto state = context->get_mutable_continuous_state_vector();
   result->SetAtIndex(1,
      -1.0 * this->restitution_coef_ * state->GetAtIndex(1));
 }

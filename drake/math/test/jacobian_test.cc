@@ -17,6 +17,7 @@ namespace math {
 namespace {
 
 template <typename Derived>
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void FillWithNumbersIncreasingFromZero(Eigen::MatrixBase<Derived>& matrix) {
   for (Eigen::Index i = 0; i < matrix.size(); i++) {
     matrix(i) = i;

@@ -1,4 +1,4 @@
-#include "BodyMotionData.h"
+#include "drake/systems/robotInterfaces/BodyMotionData.h"
 
 int BodyMotionData::findSegmentIndex(double t) const {
   return trajectory.getSegmentIndex(t);

@@ -116,8 +116,38 @@ Clarifications
 
 * For the `Use of const
   <https://google.github.io/styleguide/cppguide.html#Use_of_const>`_ style rule,
-  we clarify that a class member variable must be declared ``const`` if it
-  is not modified after the class is constructed.
+  we clarify that:
+
+  * A class member variable *must* be declared ``const`` if it is not modified
+    after the class is constructed, and
+  * You *must not* use ``const`` in a function declaration where it adds no
+    meaning. That occurs in pass-by-value parameter declarations, where
+    ``const int i`` and ``int i`` mean the same thing, and in return-by-value
+    declarations, where ``int f()`` and ``const int f()`` are also synonymous.
+    You may add ``const`` to such parameter declarations in the function
+    *definition*, where it does indicate that the implementation will not
+    modify its own copy of the parameter value. The C++ standard explicitly
+    states that the signatures are identical with or without the ``const`` in
+    these cases, see `Overloadable declarations
+    <http://www.lcdf.org/c%2B%2B/clause13.html>`_. (This applies to
+    ``volatile`` also.)
+
+    If you want to declare and define a function in one place, you have
+    several options:
+
+    * Forgo marking the parameters as ``const`` (not a great loss for short
+      functions defined inline), or
+    * create some ``const`` local variables initialized to the supplied
+      parameter values (likely to be optimized away by the compiler), or
+    * split the declaration and definition (be sure to add the ``inline``
+      keyword if the function would otherwise have been implicitly inlined).
+
+* For the `Pointer and Reference Expressions Rule <https://google.github.io/styleguide/cppguide.html#Pointer_and_Reference_Expressions>`_,
+  we clarify as follows. When declaring a pointer or a reference, the "``*``"
+  and "``&``" symbols must be next to the variable *type*, not the variable
+  *name*. In other words use "``const MyClass& foo;``" instead of
+  "``const MyClass &foo;``". This is what is enforced by :ref:`clang-format <code-style-tools-clang-format>`. For additional context, see
+  `this comment thread <https://github.com/robotlocomotion/drake/pull/3830#issuecomment-254849776>`_.
 
 .. _code-style-guide-cpp-exceptions:
 

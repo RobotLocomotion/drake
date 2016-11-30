@@ -1,9 +1,10 @@
 #pragma once
 
 #include <memory>
+#include <string>
+
 #include "QPCommon.h"
 #include "drake/common/eigen_stl_types.h"
-#include "drake/common/drake_export.h"
 #include "drake/solvers/gurobi_qp.h"
 #include "drake/lcmt_qp_controller_input.hpp"
 
@@ -15,10 +16,10 @@
 #define INSTQP_GUROBI_BARHOMOGENEOUS 0
 #define INSTQP_GUROBI_BARCONVTOL (5e-4)
 
-class DRAKE_EXPORT InstantaneousQPController {
+class InstantaneousQPController {
  public:
   InstantaneousQPController(
-      std::unique_ptr<RigidBodyTree> robot_in,
+      std::unique_ptr<RigidBodyTree<double>> robot_in,
       const drake::eigen_aligned_std_map<std::string, QPControllerParams>&
           param_sets_in,
       const RobotPropertyCache& rpc_in)
@@ -30,7 +31,7 @@ class DRAKE_EXPORT InstantaneousQPController {
     initialize();
   }
 
-  InstantaneousQPController(std::unique_ptr<RigidBodyTree> robot_in,
+  InstantaneousQPController(std::unique_ptr<RigidBodyTree<double>> robot_in,
                             const std::string& control_config_filename)
       : robot(std::move(robot_in)),
         use_fast_qp(INSTQP_USE_FASTQP),
@@ -41,7 +42,9 @@ class DRAKE_EXPORT InstantaneousQPController {
 
   InstantaneousQPController(const std::string& urdf_filename,
                             const std::string& control_config_filename)
-      : robot(std::unique_ptr<RigidBodyTree>(new RigidBodyTree(urdf_filename))),
+      : robot(
+          std::unique_ptr<RigidBodyTree<double>>(
+            new RigidBodyTree<double>(urdf_filename))),
         use_fast_qp(INSTQP_USE_FASTQP),
         cache(this->robot->bodies) {
     loadConfigurationFromYAML(control_config_filename);
@@ -55,9 +58,11 @@ class DRAKE_EXPORT InstantaneousQPController {
           contact_detected,
       const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
           foot_force_torque_measurements,
-      QPControllerOutput& qp_output, QPControllerDebugData* debug = NULL);
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      QPControllerOutput& qp_output,
+      QPControllerDebugData* debug = NULL);
 
-  const RigidBodyTree& getRobot() const { return *robot; }
+  const RigidBodyTree<double>& getRobot() const { return *robot; }
 
   std::unordered_map<std::string, int> body_or_frame_name_to_id;
 
@@ -65,7 +70,7 @@ class DRAKE_EXPORT InstantaneousQPController {
 
  private:
   GRBenv* env;
-  std::unique_ptr<RigidBodyTree> robot;
+  std::unique_ptr<RigidBodyTree<double>> robot;
   drake::eigen_aligned_std_map<std::string, QPControllerParams> param_sets;
   RobotPropertyCache rpc;
   Eigen::VectorXd umin, umax;
@@ -112,10 +117,12 @@ class DRAKE_EXPORT InstantaneousQPController {
 
   void estimateCoMBasedOnMeasuredZMP(
       const QPControllerParams& params,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       drake::eigen_aligned_std_vector<SupportStateElement>& active_supports,
       int num_contact_points,
       const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
           foot_force_torque_measurements,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       double dt, Eigen::Vector3d& xcom, Eigen::Vector3d& xcomdot);
 
   void initialize();
@@ -126,9 +133,11 @@ class DRAKE_EXPORT InstantaneousQPController {
   const QPControllerParams& FindParams(const std::string& param_set_name);
 };
 
-DRAKE_EXPORT void applyURDFModifications(
-    std::unique_ptr<RigidBodyTree>& robot,
+void applyURDFModifications(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    std::unique_ptr<RigidBodyTree<double>>& robot,
     const KinematicModifications& modifications);
-DRAKE_EXPORT void applyURDFModifications(
-    std::unique_ptr<RigidBodyTree>& robot,
+void applyURDFModifications(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    std::unique_ptr<RigidBodyTree<double>>& robot,
     const std::string& urdf_modifications_filename);

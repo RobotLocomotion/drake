@@ -1,77 +1,62 @@
+
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/Acrobot/Acrobot.h"
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/examples/Acrobot/acrobot_plant.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 
 namespace drake {
 namespace examples {
 namespace acrobot {
 namespace {
 
-// Tests whether the dynamics of Acrobot are the same regardless of whether
-// it is loaded via direct Acrobot object instantiation, URDF, or SDF. This
-// is done by loading random state and input values into the models and
-// verifying
-// that their dynamics are identical.
-GTEST_TEST(AcrobotDynamicsTest, ValueAssignment) {
-  // Create three Acrobot models
-  auto r = Acrobot();
+// Tests that the hand-derived dynamics (from the textbook) match the dynamics
+// generated from the urdf via the RigidBodyPlant class.
+GTEST_TEST(UrdfDynamicsTest, AllTests) {
+  auto tree = std::make_unique<RigidBodyTree<double>>(
+      GetDrakePath() + "/examples/Acrobot/Acrobot.urdf",
+      multibody::joints::kFixed);
+  systems::RigidBodyPlant<double> rbp(std::move(tree));
+  AcrobotPlant<double> p;
 
-  auto r_urdf = RigidBodySystem();
-  r_urdf.AddModelInstanceFromFile(GetDrakePath() +
-      "/examples/Acrobot/Acrobot.urdf", systems::plants::joints::kFixed);
+  auto context_rbp = rbp.CreateDefaultContext();
+  auto context_p = p.CreateDefaultContext();
 
-  auto r_sdf = RigidBodySystem();
-  r_sdf.AddModelInstanceFromFile(GetDrakePath() +
-      "/examples/Acrobot/Acrobot.sdf", systems::plants::joints::kFixed);
+  auto u_rbp = context_rbp->FixInputPort(0, Vector1d::Zero());
+  auto u_p = context_p->FixInputPort(0, Vector1d::Zero());
 
-  // for debugging:
-  /*
-  r_urdf.getRigidBodyTree()->drawKinematicTree("/tmp/urdf.dot");
-  r_sdf.getRigidBodyTree()->drawKinematicTree("/tmp/sdf.dot");
-  */
-  // I ran this at the console to see the output:
-  // dot -Tpng -O /tmp/urdf.dot; dot -Tpng -O /tmp/sdf.dot; open /tmp/*.dot.png
+  Eigen::Vector4d x;
+  Vector1d u;
+  auto xdot_rbp = rbp.AllocateTimeDerivatives();
+  auto xdot_p = p.AllocateTimeDerivatives();
+  auto y_rbp = rbp.AllocateOutput(*context_rbp);
+  auto y_p = p.AllocateOutput(*context_p);
 
-  // Iterate 1000 times each time sending in random state and input variables
-  // and verifying that the resulting dynamics are the same.
-  for (int ii = 0; ii < 1000; ii++) {
-    auto x0 = getRandomVector<AcrobotState>();
-    auto u0 = getRandomVector<AcrobotInput>();
+  srand(42);
+  for (int i = 0; i < 100; ++i) {
+    x = Eigen::Vector4d::Random();
+    u = Vector1d::Random();
 
-    RigidBodySystem::StateVector<double> x0_rb = toEigen(x0);
-    RigidBodySystem::InputVector<double> u0_rb = toEigen(u0);
+    context_rbp->get_mutable_continuous_state_vector()->SetFromVector(x);
+    context_p->get_mutable_continuous_state_vector()->SetFromVector(x);
 
-    /*
-    auto kinsol_urdf = r_urdf.getRigidBodyTree()->doKinematics(x0_rb.topRows(2),
-    x0_rb.bottomRows(2));
-    cout << "H_urdf = " << r_urdf.getRigidBodyTree()->massMatrix(kinsol_urdf) <<
-    endl;
-    auto kinsol_sdf = r_sdf.getRigidBodyTree()->doKinematics(x0_rb.topRows(2),
-    x0_rb.bottomRows(2));
-    cout << "H_sdf = " << r_sdf.getRigidBodyTree()->massMatrix(kinsol_sdf) <<
-    endl;
-    const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
-    cout << "C_urdf = " <<
-    r_urdf.getRigidBodyTree()->dynamicsBiasTerm(
-        kinsol_urdf, no_external_wrenches) << endl;
-    cout << "C_sdf = " <<
-    r_sdf.getRigidBodyTree()->dynamicsBiasTerm(
-        kinsol_sdf, no_external_wrenches) << endl;
-    */
+    u_rbp->SetFromVector(u);
+    u_p->SetFromVector(u);
 
-    auto xdot = toEigen(r.dynamics(0.0, x0, u0));
+    rbp.EvalTimeDerivatives(*context_rbp, xdot_rbp.get());
+    p.EvalTimeDerivatives(*context_p, xdot_p.get());
 
-    auto xdot_urdf = r_urdf.dynamics(0.0, x0_rb, u0_rb);
-    EXPECT_TRUE(
-        CompareMatrices(xdot_urdf, xdot, 1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(xdot_rbp->CopyToVector(),
+                                xdot_p->CopyToVector(), 1e-8,
+                                MatrixCompareType::absolute));
 
-    auto xdot_sdf = r_sdf.dynamics(0.0, x0_rb, u0_rb);
-    EXPECT_TRUE(
-        CompareMatrices(xdot_sdf, xdot, 1e-8, MatrixCompareType::absolute));
+    rbp.EvalOutput(*context_rbp, y_rbp.get());
+    p.EvalOutput(*context_p, y_p.get());
+
+    EXPECT_TRUE(CompareMatrices(y_rbp->get_vector_data(0)->CopyToVector(),
+                                y_p->get_vector_data(0)->CopyToVector(), 1e-8,
+                                MatrixCompareType::absolute));
   }
 }
 

@@ -1,13 +1,13 @@
 add_library_with_exports(LIB_NAME drakeAtlasUtil SOURCE_FILES atlasUtil.cpp)
-pods_install_libraries(drakeAtlasUtil)
+drake_install_libraries(drakeAtlasUtil)
 drake_install_headers(
         atlasUtil.h
         atlas_plant.h
         )
-pods_install_pkg_config_file(drake-atlas-util
+drake_install_pkg_config_file(drake-atlas-util
+  TARGET drakeAtlasUtil
   LIBS -ldrakeAtlasUtil
-  REQUIRES
-  VERSION 0.0.1)
+  REQUIRES eigen3)
 
 if (lcm_FOUND)
   add_executable(atlas_dynamics_demo atlas_dynamics_demo.cc atlas_plant.cc)
@@ -28,17 +28,17 @@ drake_add_matlab_test(NAME examples/Atlas/runDRCDoorTask REQUIRES iris mosek COM
 
 drake_add_matlab_test(NAME examples/Atlas/runRobotiqPDControl OPTIONAL bullet gurobi snopt COMMAND runRobotiqPDControl)
 
-if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug" AND UNIX) # FIXME: see #3147.
-  drake_add_matlab_test(NAME examples/Atlas/runAtlasBalancingPerturb REQUIRES gurobi lcm libbot yaml-cpp COMMAND runAtlasBalancingPerturb)
-endif()
+# if(NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug" AND UNIX) # FIXME: see #3147.
+#   drake_add_matlab_test(NAME examples/Atlas/runAtlasBalancingPerturb REQUIRES gurobi lcm libbot yaml-cpp COMMAND runAtlasBalancingPerturb)
+# endif()
 
-if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug" AND UNIX AND NOT APPLE) # FIXME: see #3147.
-  drake_add_matlab_test(NAME examples/Atlas/runAtlasManip REQUIRES gurobi lcm libbot yaml-cpp COMMAND runAtlasManip)
-endif()
+# if(NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug" AND UNIX AND NOT APPLE) # FIXME: see #3147.
+#   drake_add_matlab_test(NAME examples/Atlas/runAtlasManip REQUIRES gurobi lcm libbot yaml-cpp COMMAND runAtlasManip)
+# endif()
 
-if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug" AND UNIX) # FIXME: see #3147.
-  drake_add_matlab_test(NAME examples/Atlas/runAtlasWalking REQUIRES gurobi lcm libbot yaml-cpp COMMAND runAtlasWalking SIZE large)
-endif()
+# if(NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug" AND UNIX) # FIXME: see #3147.
+#   drake_add_matlab_test(NAME examples/Atlas/runAtlasWalking REQUIRES gurobi lcm libbot yaml-cpp COMMAND runAtlasWalking SIZE large)
+# endif()
 
 # drake_add_matlab_test(NAME examples/Atlas/runAtlasBalancing REQUIRES gurobi COMMAND runAtlasBalancing)  # FIXME: see #2839
 # drake_add_matlab_test(NAME examples/Atlas/runAtlasBalancingWithContactSensor REQUIRES gurobi COMMAND runAtlasBalancingWithContactSensor)  # FIXME: see #2839
@@ -48,4 +48,6 @@ drake_add_matlab_test(NAME examples/Atlas/runRobotiqTendons COMMAND runRobotiqTe
 
 # drake_add_matlab_test(NAME examples/Atlas/runDRCPracticeTerrain REQUIRES iris mosek COMMAND runDRCPracticeTerrain SIZE large)  # FIXME: see #3149
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

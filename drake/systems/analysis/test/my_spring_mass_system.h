@@ -1,10 +1,12 @@
 #pragma once
 
+#include <limits>
+
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 namespace drake {
 namespace systems {
-namespace {
+namespace analysis_test {
 
 template <class T>
 class MySpringMassSystem : public SpringMassSystem<T> {
@@ -75,7 +77,7 @@ class MySpringMassSystem : public SpringMassSystem<T> {
   mutable int update_count_{0};
 };  // MySpringMassSystem
 
-}  // namespace
-}  // systems
-}  // drake
+}  // namespace analysis_test
+}  // namespace systems
+}  // namespace drake
 

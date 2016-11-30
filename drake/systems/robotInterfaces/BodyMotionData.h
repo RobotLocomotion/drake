@@ -1,10 +1,11 @@
 #pragma once
 
 #include <vector>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include "drake/common/drake_export.h"  // TODO(tkoolen): exports
+
+#include "drake/common/trajectories/piecewise_polynomial.h"
 
 class BodyMotionData {
  public:  // TODO(tkoolen): would be better to make this private

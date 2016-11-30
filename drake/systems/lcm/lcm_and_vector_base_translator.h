@@ -4,7 +4,6 @@
 #include <memory>
 #include <vector>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -15,7 +14,7 @@ namespace lcm {
  * Defines an abstract parent class of all translators that convert between
  * LCM message bytes and `drake::systems::VectorBase` objects.
  */
-class DRAKE_EXPORT LcmAndVectorBaseTranslator {
+class LcmAndVectorBaseTranslator {
  public:
   /**
    * The constructor.

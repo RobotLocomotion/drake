@@ -1,22 +1,21 @@
 #pragma once
 
-#include <vector>
 #include <map>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/lcmt_qp_controller_input.hpp"
-#include "BodyMotionData.h"
-#include "drake/systems/robotInterfaces/Side.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/controllers/zmpUtil.h"
-#include "drake/common/drake_export.h"
+#include "drake/systems/robotInterfaces/BodyMotionData.h"
+#include "drake/systems/robotInterfaces/Side.h"
 
 class QuadraticLyapunovFunction {
   // TODO(tkoolen): move into its own file
@@ -40,7 +39,7 @@ class QuadraticLyapunovFunction {
   const ExponentialPlusPiecewisePolynomial<double>& getS1() const {
     return s1_;
   }
-  void setS1(ExponentialPlusPiecewisePolynomial<double>& new_s1) {
+  void setS1(const ExponentialPlusPiecewisePolynomial<double>& new_s1) {
     s1_ = new_s1;
   }
 };
@@ -134,12 +133,13 @@ struct QPLocomotionPlanSettings {
 
   // may be useful later in setting up constrained_position_indices
   static std::vector<int> findPositionIndices(
-      RigidBodyTree& robot,
+      // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
+      RigidBodyTree<double>& robot,
       const std::vector<std::string>& joint_name_substrings) {
     std::vector<int> ret;
     for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end();
          ++body_it) {
-      RigidBody& body = **body_it;
+      RigidBody<double>& body = **body_it;
       if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();
         for (auto joint_name_it = joint_name_substrings.begin();
@@ -157,9 +157,9 @@ struct QPLocomotionPlanSettings {
   }
 };
 
-class DRAKE_EXPORT QPLocomotionPlan {
+class QPLocomotionPlan {
  private:
-  RigidBodyTree& robot_;  // TODO(tkoolen): const correctness
+  RigidBodyTree<double>& robot_;  // TODO(tkoolen): const correctness
   QPLocomotionPlanSettings settings_;
   const std::map<Side, int> foot_body_ids_;
   const std::map<Side, int> knee_indices_;
@@ -190,7 +190,8 @@ class DRAKE_EXPORT QPLocomotionPlan {
       support_logic_maps_;
 
  public:
-  QPLocomotionPlan(RigidBodyTree& robot,
+  // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
+  QPLocomotionPlan(RigidBodyTree<double>& robot,
                    const QPLocomotionPlanSettings& settings,
                    const std::string& lcm_channel);
 
@@ -221,7 +222,7 @@ class DRAKE_EXPORT QPLocomotionPlan {
 
   drake::lcmt_qp_controller_input getLastQPInput() const;
 
-  const RigidBodyTree& getRobot() const;
+  const RigidBodyTree<double>& getRobot() const;
 
  private:
   drake::lcmt_zmp_data createZMPData(double t_plan) const;
@@ -236,6 +237,7 @@ class DRAKE_EXPORT QPLocomotionPlan {
   std::vector<Side> getSupportSides(
       const RigidBodySupportState& support_state) const;
 
+  // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
   void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data,
                              int body_motion_segment_index,
                              const KinematicsCache<double>& cache);
@@ -244,10 +246,14 @@ class DRAKE_EXPORT QPLocomotionPlan {
                        const std::vector<bool>& contact_force_detected,
                        int support_index);
 
-  void findPlannedSupportFraction(double t_plan, int support_index,
-                                  double& last_support_fraction,
-                                  double& next_support_fraction,
-                                  double& transition_fraction) const;
+  void findPlannedSupportFraction(
+      double t_plan, int support_index,
+      // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
+      double& last_support_fraction,
+      // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
+      double& next_support_fraction,
+      // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
+      double& transition_fraction) const;
 
   void updateZMPController(const double t_plan,
                            const double last_support_fraction,
@@ -261,14 +267,18 @@ class DRAKE_EXPORT QPLocomotionPlan {
 
   void updateS1Trajectory();
 
+  // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
   void applyKneePD(Side side, drake::lcmt_qp_controller_input& qp_input);
 
-  static const std::map<SupportLogicType, std::vector<bool> >
+  static const std::map<SupportLogicType, std::vector<bool>>
   createSupportLogicMaps();
 
   static const std::map<Side, int> createFootBodyIdMap(
-      RigidBodyTree& robot, const std::map<Side, std::string>& foot_names);
+      const RigidBodyTree<double>& robot,
+      const std::map<Side, std::string>& foot_names);
 
   static const std::map<Side, int> createJointIndicesMap(
-      RigidBodyTree& robot, const std::map<Side, std::string>& foot_body_ids);
+      // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
+      RigidBodyTree<double>& robot,
+      const std::map<Side, std::string>& foot_body_ids);
 };

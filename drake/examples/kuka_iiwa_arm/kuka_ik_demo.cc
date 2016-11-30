@@ -1,21 +1,20 @@
+/// @file
+///
+/// Generates a canned IK demo plan for an iiwa arm starting from the
+/// zero configuration and sends that plan over lcm using the
+/// robot_plan_t message.
+
 #include <iostream>
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "drake/lcmt_iiwa_command.hpp"
-#include "drake/lcmt_iiwa_status.hpp"
+#include "robotlocomotion/robot_plan_t.hpp"
 
-#include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
-#include "drake/common/polynomial.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_status.h"
-#include "drake/systems/plants/IKoptions.h"
-#include "drake/systems/plants/RigidBodyIK.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include "drake/systems/vector.h"
+#include "drake/multibody/ik_options.h"
+#include "drake/multibody/rigid_body_ik.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 
 namespace drake {
 namespace examples {
@@ -30,136 +29,12 @@ using Eigen::Vector3d;
 
 using drake::Vector1d;
 
-const char* kLcmCommandChannel = "IIWA_COMMAND";
-
-/// This is a really simple demo class to run a trajectory which is
-/// the output of an IK plan.  It lacks a lot of useful things, like a
-/// controller which does a remotely good job of mapping the
-/// trajectory onto the robot.  The paramaters @p nT and @p t are
-/// identical to their usage for inverseKinPointwise (@p nT is number
-/// of time samples and @p t is an array of times in seconds).
-class TrajectoryRunner {
- public:
-  TrajectoryRunner(std::shared_ptr<lcm::LCM> lcm, int nT, const double* t,
-                   const Eigen::MatrixXd& traj)
-      : lcm_(lcm), nT_(nT), t_(t), traj_(traj) {
-    lcm_->subscribe(IiwaStatus<double>::channel(),
-                    &TrajectoryRunner::HandleStatus, this);
-    DRAKE_ASSERT(traj_.cols() == nT);
-  }
-
-  void Run() {
-    typedef PiecewisePolynomial<double> PPType;
-    typedef PPType::PolynomialType PPPoly;
-    typedef PPType::PolynomialMatrix PPMatrix;
-    std::vector<PPMatrix> polys;
-    std::vector<double> times;
-
-    // For each timestep, create a PolynomialMatrix for each joint
-    // position.  Each column of traj_ represents a particular time,
-    // and the rows of that column contain values for each joint
-    // coordinate.
-    for (int i = 0; i < nT_; i++) {
-      PPMatrix poly_matrix(traj_.rows(), 1);
-      const auto traj_now = traj_.col(i);
-
-      // Produce interpolating polynomials for each joint coordinate.
-      if (i != nT_ - 1) {
-        for (int row = 0; row < traj_.rows(); row++) {
-          Eigen::Vector2d coeffs(0, 0);
-          coeffs[0] = traj_now(row);
-
-          // Sets the coefficients for a linear polynomial within the interval
-          // of time t_[i] < t < t_[i+1] so that the entire piecewise polynomial
-          // is continuous at the time instances t_[i].
-          // PiecewisePolynomial<T>::value(T t) clamps t to be between t_[0] and
-          // t_[nT-1] so that for t > t_[nT-1] the piecewise polynomial always
-          // evaluates to the last trajectory instance, traj_.col(nT_-1).
-          coeffs[1] = (traj_(row, i + 1) - coeffs[0]) / (t_[i + 1] - t_[i]);
-          poly_matrix(row) = PPPoly(coeffs);
-        }
-        polys.push_back(poly_matrix);
-      }
-      times.push_back(t_[i]);
-    }
-
-    PPType pp_traj(polys, times);
-
-    bool time_initialized = false;
-    int64_t start_time_ms = -1;
-    int64_t cur_time_ms = -1;
-    const int64_t end_time_offset_ms = (t_[nT_ - 1] * 1e3);
-    DRAKE_ASSERT(end_time_offset_ms > 0);
-
-    lcmt_iiwa_command iiwa_command;
-    iiwa_command.num_joints = kNumJoints;
-    iiwa_command.joint_position.resize(kNumJoints, 0.);
-    iiwa_command.num_torques = 0;
-    iiwa_command.joint_torque.resize(kNumJoints, 0.);
-
-    while (!time_initialized ||
-           cur_time_ms < (start_time_ms + end_time_offset_ms)) {
-      // The argument to handleTimeout is in msec, and should be
-      // safely bigger than e.g. a 200Hz input rate.
-      int handled  = lcm_->handleTimeout(10);
-      if (handled <= 0) {
-        std::cerr << "Failed to receive LCM status." << std::endl;
-        return;
-      }
-
-      if (!time_initialized) {
-        start_time_ms = iiwa_status_.timestamp;
-        time_initialized = true;
-      }
-      cur_time_ms = iiwa_status_.timestamp;
-
-      const double cur_traj_time_s =
-          static_cast<double>(cur_time_ms - start_time_ms) / 1e3;
-      const auto desired_next = pp_traj.value(cur_traj_time_s);
-
-      iiwa_command.timestamp = iiwa_status_.timestamp;
-
-      // This is totally arbitrary.  There's no good reason to
-      // implement this as a maximum delta to submit per tick.  What
-      // we actually need is something like a proper
-      // planner/interpolater which spreads the motion out over the
-      // entire duration from current_t to next_t, and commands the
-      // next position taking into account the velocity of the joints
-      // and the distance remaining.
-      const double max_joint_delta = 0.1;
-      for (int joint = 0; joint < kNumJoints; joint++) {
-        double joint_delta =
-            desired_next(joint) - iiwa_status_.joint_position_measured[joint];
-        joint_delta = std::max(-max_joint_delta,
-                               std::min(max_joint_delta, joint_delta));
-        iiwa_command.joint_position[joint] =
-            iiwa_status_.joint_position_measured[joint] + joint_delta;
-      }
-
-      lcm_->publish(kLcmCommandChannel, &iiwa_command);
-    }
-  }
-
- private:
-  void HandleStatus(const lcm::ReceiveBuffer* rbuf, const std::string& chan,
-                    const lcmt_iiwa_status* status) {
-    iiwa_status_ = *status;
-  }
-
-  static const int kNumJoints = 7;
-  std::shared_ptr<lcm::LCM> lcm_;
-  const int nT_;
-  const double* t_;
-  const Eigen::MatrixXd& traj_;
-  lcmt_iiwa_status iiwa_status_;
-};
+const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
 
 int main(int argc, const char* argv[]) {
-  std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
-
-  RigidBodyTree tree(
+  RigidBodyTree<double> tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::systems::plants::joints::kFixed);
+      drake::multibody::joints::kFixed);
 
   // Create a basic pointwise IK trajectory for moving the iiwa arm.
   // We start in the zero configuration (straight up).
@@ -243,10 +118,36 @@ int main(int argc, const char* argv[]) {
     return 1;
   }
 
-  // Now run through the plan.
-  TrajectoryRunner runner(lcm, kNumTimesteps, t, q_sol);
-  runner.Run();
-  return 0;
+  robotlocomotion::robot_plan_t plan{};
+  plan.utime = 0;  // I (sam.creasey) don't think this is used?
+  plan.robot_name = "iiwa";  // Arbitrary, probably ignored
+  plan.num_states = kNumTimesteps;
+  const bot_core::robot_state_t default_robot_state{};
+  plan.plan.resize(kNumTimesteps, default_robot_state);
+  plan.plan_info.resize(kNumTimesteps, 0);
+  /// Encode the q_sol returned for each timestep into the vector of
+  /// robot states.
+  for (int i = 0; i < kNumTimesteps; i++) {
+    bot_core::robot_state_t& step = plan.plan[i];
+    step.utime = t[i] * 1e6;
+    step.num_joints = 7;
+    for (int j = 0; j < step.num_joints; j++) {
+      step.joint_name.push_back(tree.get_position_name(j));
+      step.joint_position.push_back(q_sol(j, i));
+      step.joint_velocity.push_back(0);
+      step.joint_effort.push_back(0);
+    }
+    plan.plan_info[i] = info[i];
+  }
+  plan.num_grasp_transitions = 0;
+  plan.left_arm_control_type = plan.POSITION;
+  plan.right_arm_control_type = plan.NONE;
+  plan.left_leg_control_type = plan.NONE;
+  plan.right_leg_control_type = plan.NONE;
+  plan.num_bytes = 0;
+
+  lcm::LCM lcm;
+  return lcm.publish(kLcmPlanChannel, &plan);
 }
 
 }  // namespace

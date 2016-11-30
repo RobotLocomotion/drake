@@ -68,7 +68,7 @@ void DrakeMockLcm::InduceSubscriberCallback(const std::string& channel,
   if (receive_thread_started_) {
     if (subscriptions_.find(channel) == subscriptions_.end()) {
       throw std::runtime_error(
-          "DrakeMockLcm::InduceSubsciberCallback: No "
+          "DrakeMockLcm::InduceSubscriberCallback: No "
           "subscription to channel \"" +
           channel + "\".");
     } else {

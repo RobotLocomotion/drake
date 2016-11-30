@@ -1,3 +1,7 @@
+# This file is drake-distro/drake/Makefile.  It is here for projects still
+# using PODS to be able to build Drake.  Users and developers who use Drake by
+# itself own should ignore (and never run) this file.  For build instructions,
+# see drake-distro/drake/doc/from_source.rst.
 
 # support only a few flags that might be passed through:
 #   BUILD_PREFIX, BUILD_TYPE, CMAKE_FLAGS*

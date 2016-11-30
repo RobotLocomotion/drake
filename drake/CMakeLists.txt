@@ -1,13 +1,16 @@
 cmake_minimum_required(VERSION 3.5)
-project(drake)
+project(drake VERSION 0.0.0)
 
 cmake_policy(SET CMP0025 NEW)
 cmake_policy(SET CMP0042 NEW)
 
 include(../cmake/config.cmake)
+include(../cmake/install.cmake)
+include(../cmake/packages.cmake)
 include(../cmake/test.cmake)
 
 drake_setup_platform()
+drake_find_packages()
 
 # Create a cache variable that contains the
 # max number of concurent link jobs that can be run
@@ -25,26 +28,21 @@ if(CMAKE_NINJA_LINK_POOL_SIZE GREATER 0)
 endif()
 
 # options
-option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-if(WITH_PYTHON_3)
-  set(Python_ADDITIONAL_VERSIONS 3.5)
-  find_package(PythonInterp 3)
-else()
-  find_package(PythonInterp)
-endif()
+find_package(BLAS MODULE)
+find_package(Doxygen MODULE)
+find_package(Perl MODULE)
+find_package(Threads MODULE REQUIRED)
 
 # set up pods
-set(POD_NAME drake)
 include(../cmake/pods.cmake)
 
-function(drake_install_headers)
-  file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
-  install(FILES ${ARGV} DESTINATION include/drake/${rel_path})
-endfunction()
+pods_find_pkg_config(bot2-lcmgl-client)
+pods_find_pkg_config(dreal)
+pods_find_pkg_config(ipopt)
 
 # A compatibility shim function that declares a library, with a built-in
 # default of SHARED.
@@ -64,111 +62,61 @@ endfunction()
 # This makes all of our #include "drake/..." statemenets work.
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
-if(NOT APPLE)
-  # The linker on OS X likes to hide the typeinfo for template classes unless
-  # they are explicitly instantiated and exported, which causes dynamic_cast to
-  # fail across library boundaries.
-  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-  set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
-endif()
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers -Werror=overloaded-virtual")
+if(NOT CMAKE_CXX_FLAGS MATCHES "-fsanitize=") # sanitizers are extremely brittle without lazy linking
   if(APPLE)
     set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_SHARED_LINKER_FLAGS}")
     set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_EXECUTABLE_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_EXECUTABLE_LINKER_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_EXE_LINKER_FLAGS}")
   else()
     set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_SHARED_LINKER_FLAGS}")
     set(CMAKE_MODULE_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_EXECUTABLE_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_EXECUTABLE_LINKER_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_EXE_LINKER_FLAGS}")
   endif()
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    # TODO(#2852) Turn on shadow checking for g++ once we use a version that fixes
-    # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=shadow")
-  endif()
-  set(CXX_FLAGS_NO_ERROR_SHADOW -Wno-error=shadow -Wno-shadow)
-  set(CXX_FLAGS_NO_SIGN_COMPARE -Wno-sign-compare)
-elseif(MSVC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
-  # disable warning C4251: e.g.'RigidBody::linkname' : class 'std::basic_string<_Elem,_Traits,_Ax>' needs to have dll-interface to be used by clients of class 'RigidBody'
-  # followed by template linking errors. After reading, e.g.:
-  #   https://connect.microsoft.com/VisualStudio/feedback/details/696593/vc-10-vs-2010-basic-string-exports
-  # I think we're not being sufficiently careful with our library interfaces (on other platforms as well) - Russ
-
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4503")
-  # disable C4503: 'identifier' : decorated name length exceeded, name was truncated
-  # these occur due to AutoDiffScalar inputs to DrakeJoint methods, which results in very long type names
-  # From https://msdn.microsoft.com/en-us/library/074af4b6.aspx:
-  # It is possible to ship an application that generates C4503, but if you get link time errors on a truncated symbol,
-  # it will be more difficult to determine the type of the symbol in the error. Debugging will also be more difficult;
-  # the debugger will also have difficultly mapping symbol name to type name. The correctness of the program, however,
-  # is unaffected by the truncated name.
-
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4522")
-  # disable C4522: 'class' : multiple assignment operators specified
-  # The class has multiple assignment operators of a single type. This warning is informational;
-  # the constructors are callable in your program.
-
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996") # disable sprintf security warning
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj") # after receiving RigidBodyTree.cpp : fatal error C1128: number of sections exceeded object file format limit: compile with /bigobj
-
-  add_definitions(-D_USE_MATH_DEFINES) # to get math constants on MSVC (see https://msdn.microsoft.com/en-us/library/4hwaceh6.aspx)
-
-  set(CXX_FLAGS_NO_ERROR_SHADOW /wd4456 /wd4457)
-  set(CXX_FLAGS_NO_SIGN_COMPARE /wd4018)
 endif()
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # TODO(#2852) Turn on shadow checking for g++ once we use a version that fixes
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=shadow")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=inconsistent-missing-override")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=sign-compare")
+else()
+  # TODO(jwnimmer-tri) Get a similar complement of flags working on clang.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=extra -Wno-unused-parameter")
+  # TODO(jwnimmer-tri) Fix these warnings and remove this suppression.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers")
+endif()
+set(CXX_FLAGS_NO_ERROR_SHADOW -Wno-error=shadow -Wno-shadow)
+set(CXX_FLAGS_NO_SIGN_COMPARE -Wno-sign-compare)
 
 # set up matlab build
 include(../cmake/mex.cmake)
-if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
-  if(DISABLE_MATLAB)
-    message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
-  else()
-    # Search for MATLAB and configure various MEX options.
-    # If MATLAB is found, MATLAB_FOUND is set.
-    mex_setup()
-
-    # Use find_package to find "all of matlab" along with what is needed to use
-    # matlab_add_unit_test and matlab_add_mex
-    find_package(Matlab REQUIRED
-      COMPONENTS
-        MAIN_PROGRAM
-        MEX_COMPILER
-        MX_LIBRARY
-        SIMULINK)
-  endif()
+if(DISABLE_MATLAB AND Matlab_FOUND) # Set by drake_setup_platform
+  message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
+  unset(MATLAB_EXECUTABLE CACHE)
+  unset(Matlab_FOUND)
 endif()
 
 enable_testing()
 include(CTest)
 set(GTEST_ROOT ${CMAKE_INSTALL_PREFIX})
-find_package(GTest REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_FAIL=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_SUCCEED=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_TEST=1")
 
-find_package(gflags REQUIRED)
-
-set(drake_jar_javafiles util/Transform.java)
+set(drake_jar_javafiles matlab/util/Transform.java)
 set(drake_jar_requires)
 
-include(../cmake/procman.cmake)  # helper script for writing procman files
-
-find_package(Threads REQUIRED)
 
 # set up and build lcm types
-find_package(lcm)
 if(lcm_FOUND)
-  find_package(bot2-core)
-
   add_subdirectory(lcmtypes)
 
   list(APPEND drake_jar_javafiles
-    util/MyLCMTypeDatabase.java
-    util/MessageMonitor.java
-    util/CoordinateFrameData.java
-    util/LCMCoder.java)
+    matlab/util/MyLCMTypeDatabase.java
+    matlab/util/MessageMonitor.java
+    matlab/util/CoordinateFrameData.java
+    matlab/util/LCMCoder.java)
   list(APPEND drake_jar_requires lcm-java lcmtypes_drake-java)
 
   # add lcmgl
@@ -192,42 +140,49 @@ if(lcm_FOUND)
     else()
       message(STATUS "Found bot2-lcmgl")
     endif()
-    set(CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH}:${LCMGL_JAR_FILE})
-    list(APPEND drake_jar_javafiles util/BotLCMGLClient.java)
+    if(DEFINED CMAKE_JAVA_INCLUDE_PATH)
+      set(CMAKE_JAVA_INCLUDE_PATH "${CMAKE_JAVA_INCLUDE_PATH}:${LCMGL_JAR_FILE}")
+    else()
+      set(CMAKE_JAVA_INCLUDE_PATH "${LCMGL_JAR_FILE}")
+    endif()
+    list(APPEND drake_jar_javafiles matlab/util/BotLCMGLClient.java)
   endif()
 endif()
 
 add_jar(drake SOURCES ${drake_jar_javafiles} INCLUDE_JARS ${drake_jar_requires})
 install_jar(drake share/java)
-pods_install_pkg_config_file(drake-java
+drake_install_pkg_config_file(drake-java
   CLASSPATH drake
-  REQUIRES ${drake_jar_requires}
-  VERSION 0.0.1)
+  REQUIRES ${drake_jar_requires})
 
-find_package(Eigen3 REQUIRED)
 include_directories(SYSTEM "${EIGEN3_INCLUDE_DIRS}")
 
 include_directories(thirdParty/bsd/spruce/include)
 
+add_subdirectory(thirdParty/bsd/spruce)
+add_subdirectory(thirdParty/zlib/tinyxml2)
 add_subdirectory(common)
 add_subdirectory(lcm)
 add_subdirectory(math)
+add_subdirectory(multibody)
 add_subdirectory(util)
 add_subdirectory(solvers)
-if(MATLAB_FOUND)
+add_subdirectory(system1)
+add_subdirectory(systems)
+add_subdirectory(automotive)
+if(Matlab_FOUND)
+  add_subdirectory(thirdParty/bsd/GetFullPath)
   add_subdirectory(matlab)
 endif()
-add_subdirectory(systems)
-add_subdirectory(thirdParty/bsd/GetFullPath)
-add_subdirectory(thirdParty/bsd/spruce)
-add_subdirectory(thirdParty/zlib/tinyxml2)
-if(NOT WIN32)
-  # This subdirectory does not support windows.
-  add_subdirectory(automotive)
-endif()
 add_subdirectory(examples)
-add_subdirectory(bindings)
-add_subdirectory(regtests)
+
+if(Matlab_FOUND OR NOT DISABLE_PYTHON)
+  add_subdirectory(bindings)
+endif()
+
+if(BUILD_TESTING)
+  add_subdirectory(regtests)
+endif()
 
 # setup MATLAB pods-compliance
 include(../cmake/matlab_pods.cmake)
@@ -265,17 +220,27 @@ find_program(AVL_EXECUTABLE avl PATHS "${CMAKE_INSTALL_PREFIX}/bin")
 find_program(XFOIL_EXECUTABLE xfoil PATHS "${CMAKE_INSTALL_PREFIX}/bin")
 find_program(FFMPEG_EXECUTABLE ffmpeg)
 
+# Used by matlab/util/systemWCMakeEnv.m
 if(APPLE)
-  set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
-  set(DYLD_FRAMEWORK_PATH "$ENV{DYLD_FRAMEWORK_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
-  mark_as_advanced(DYLD_LIBRARY_PATH)
-  mark_as_advanced(DYLD_FRAMEWORK_PATH)
+  if(DEFINED ENV{DYLD_LIBRARY_PATH})
+    set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE INTERNAL "" FORCE)
+  else()
+    set(DYLD_LIBRARY_PATH "" CACHE INTERNAL "" FORCE)
+  endif()
+  if(DEFINED ENV{DYLD_FRAMEWORK_PATH})
+    set(DYLD_FRAMEWORK_PATH "$ENV{DYLD_FRAMEWORK_PATH}" CACHE INTERNAL "" FORCE)
+  else()
+    set(DYLD_FRAMEWORK_PATH "" CACHE INTERNAL "" FORCE)
+  endif()
 else()
-  set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
-  mark_as_advanced(LD_LIBRARY_PATH)
+  if(DEFINED ENV{LD_LIBRARY_PATH})
+    set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE INTERNAL "" FORCE)
+  else()
+    set(LD_LIBRARY_PATH "" CACHE INTERNAL "" FORCE)
+  endif()
 endif()
 
-if(MATLAB_FOUND)
+if(Matlab_FOUND)
   drake_add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
     COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot SIZE large)

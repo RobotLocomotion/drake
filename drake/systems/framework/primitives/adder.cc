@@ -3,9 +3,9 @@
 #include <stdexcept>
 #include <string>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 
@@ -45,9 +45,15 @@ void Adder<T>::EvalOutput(const Context<T>& context,
   }
 }
 
+template<typename T>
+Adder<AutoDiffXd>* Adder<T>::DoToAutoDiffXd() const {
+  return new Adder<AutoDiffXd>(this->get_num_input_ports(),
+                               this->get_input_port(0).get_size());
+}
+
 // Explicitly instantiates on the most common scalar types.
-template class DRAKE_EXPORT Adder<double>;
-template class DRAKE_EXPORT Adder<AutoDiffXd>;
+template class Adder<double>;
+template class Adder<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

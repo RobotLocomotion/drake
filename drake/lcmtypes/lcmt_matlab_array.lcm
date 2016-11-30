@@ -1,0 +1,30 @@
+package drake;
+
+/* A generic data structure to wrap the MATLAB Array type.  It is intended to
+ * serve approximately the same purpose as mxArray in MATLAB mex.
+ *  see http://www.mathworks.com/help/matlab/matlab_external/matlab-data.html
+ */
+
+struct lcmt_matlab_array
+{
+  // type enumeration
+  const int8_t REMOTE_VARIABLE_REFERENCE=0;    // encoded as a int64_t used in the lhs argument of lcmt_matlab_feval; rows and cols must be set to 1.
+  const int8_t DOUBLE=1;
+  const int8_t CHAR=2;
+  const int8_t LOGICAL=3;
+  int8_t type;
+
+  // dimensions
+  int32_t rows;
+  int32_t cols;
+
+  // data
+  int32_t num_bytes;               // must be consistent with type, rows, and cols
+  byte data[num_bytes];
+
+  /* TODO: Consider adding support for the remainder of the mxArray type:
+   *   - If numeric, whether the variable is real or complex
+   *   - If sparse, its indices and nonzero maximum elements
+   *   - If a structure or object, the number of fields and field names
+   */
+}

@@ -1,0 +1,11 @@
+
+# Default to an optimized build.
+build -c opt
+
+# Build options.
+build --strip=never
+build --copt -Werror=all
+build --cxxopt -std=c++1y
+
+# Test options.
+test --test_output=errors

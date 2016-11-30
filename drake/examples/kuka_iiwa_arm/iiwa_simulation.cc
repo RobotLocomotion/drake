@@ -1,7 +1,9 @@
-#include "iiwa_simulation.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
+
+#include <vector>
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 
 namespace drake {
 namespace examples {
@@ -16,7 +18,7 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
 
   rigid_body_system->AddModelInstanceFromFile(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::systems::plants::joints::kFixed);
+      drake::multibody::joints::kFixed);
 
   // Sets some simulation parameters.
   rigid_body_system->penetration_stiffness = 3000.0;
@@ -30,10 +32,10 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   T_element_to_link.translation() << 0, 0,
       -kBoxDepth / 2.0;  // top of the box is at z = 0
 
-  const std::shared_ptr<RigidBodyTree>& tree =
+  const std::shared_ptr<RigidBodyTree<double>>& tree =
       rigid_body_system->getRigidBodyTree();
 
-  RigidBody& world = tree->world();
+  RigidBody<double>& world = tree->world();
   Eigen::Vector4d color;
   color << 0.9297, 0.7930, 0.6758,
       1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
@@ -62,7 +64,6 @@ std::shared_ptr<BotVisualizer<RigidBodySystem::StateVector>>
   return visualizer;
 }
 
-DRAKE_EXPORT
 Eigen::VectorXd GenerateArbitraryIiwaInitialState() {
   const int kStateDimension = 14;  // Fixed for the IIWA Arm.
   const int kNumDof = 7;  // Fixed for the IIWA Arm.
@@ -121,7 +122,7 @@ void CheckLimitViolations(
   }
 
   // Ensures the robot's joints are within their position limits.
-  std::vector<std::unique_ptr<RigidBody>>& bodies = tree->bodies;
+  std::vector<std::unique_ptr<RigidBody<double>>>& bodies = tree->bodies;
   for (int robot_state_index = 0, body_index = 0;
        body_index < static_cast<int>(bodies.size()); ++body_index) {
     // Skips rigid bodies without a mobilizer joint. This includes the RigidBody

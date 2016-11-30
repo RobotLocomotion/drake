@@ -1,3 +1,3 @@
 if(CYGWIN)
-  add_mex(GetFullPath GetFullPath.c)
+  drake_add_mex(GetFullPath GetFullPath.c)
 endif()

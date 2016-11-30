@@ -4,17 +4,17 @@
 #pragma once
 
 #include <fstream>
+#include <vector>
+#include <string>
+
 #include <Eigen/SparseCore>
 
-#include "drake/common/drake_export.h"
-
-#include "mathematical_program.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
 
-class DRAKE_EXPORT MobyLCPSolver
-    : public MathematicalProgramSolverInterface {
+class MobyLCPSolver : public MathematicalProgramSolverInterface {
  public:
   MobyLCPSolver();
   virtual ~MobyLCPSolver() {}
@@ -44,6 +44,9 @@ class DRAKE_EXPORT MobyLCPSolver
                                 double zero_tol = -1.0) const;
 
   bool available() const override { return true; }
+
+  std::string SolverName() const override {return "MobyLCP"; }
+
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
  private:

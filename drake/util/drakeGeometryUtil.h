@@ -13,13 +13,12 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/drake_export.h"
 #include "drake/math/cross_product.h"
 #include "drake/math/gradient.h"
+#include "drake/math/gradient_util.h"
 #include "drake/math/normalize_vector.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_conversion_gradient.h"
-#include "drake/util/drakeGradientUtil.h"
 
 DRAKE_DEPRECATED("Use drake::kHomogeneousTransformSize instead.")
 const int HOMOGENEOUS_TRANSFORM_SIZE = 16;
@@ -33,7 +32,7 @@ const int SPACE_DIMENSION = 3;
 DRAKE_DEPRECATED("Use drake::kRotmatSize instead.")
 const int RotmatSize = drake::kSpaceDimension * drake::kSpaceDimension;
 
-DRAKE_EXPORT double angleDiff(double phi1, double phi2);
+double angleDiff(double phi1, double phi2);
 
 // NOTE: not reshaping second derivative to Matlab geval output format!
 template <typename Derived>
@@ -47,7 +46,7 @@ void normalizeVec(
   drake::math::NormalizeVector(x, x_norm, dx_norm, ddx_norm);
 }
 
-DRAKE_EXPORT int rotationRepresentationSize(int rotation_type);
+int rotationRepresentationSize(int rotation_type);
 
 /*
  * rotation conversion gradient functions
@@ -222,7 +221,7 @@ void rpydot2angularvel(
   if (domega) {
     Eigen::Matrix<typename DerivedOMEGA::Scalar, 9, 3> dE;
     rpydot2angularvelMatrix(rpy, E, &dE);
-    (*domega) << matGradMult(dE, rpydot), E;
+    (*domega) << drake::math::matGradMult(dE, rpydot), E;
   } else {
     rpydot2angularvelMatrix(rpy, E);
   }
@@ -271,8 +270,10 @@ dTransformSpatialMotion(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
   std::array<int, 3> R_cols = {{0, 1, 2}};
   std::array<int, 1> p_cols = {{3}};
 
-  auto dR = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, R_cols, T.Rows);
-  auto dp = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, p_cols, T.Rows);
+  auto dR = drake::math::getSubMatrixGradient<Eigen::Dynamic>(
+      dT, rows, R_cols, T.Rows);
+  auto dp = drake::math::getSubMatrixGradient<Eigen::Dynamic>(
+      dT, rows, p_cols, T.Rows);
 
   typename drake::math::Gradient<DerivedX, DerivedDX::ColsAtCompileTime,
                                  1>::type ret(X.size(), nq);
@@ -285,21 +286,22 @@ dTransformSpatialMotion(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
     auto RXomega_col = (R * Xomega_col).eval();
 
     std::array<int, 1> col_array = {{col}};
-    auto dXomega_col = getSubMatrixGradient<Eigen::Dynamic>(
+    auto dXomega_col = drake::math::getSubMatrixGradient<Eigen::Dynamic>(
         dX, Xomega_rows, col_array, X.rows());
-    auto dXv_col =
-        getSubMatrixGradient<Eigen::Dynamic>(dX, Xv_rows, col_array, X.rows());
+    auto dXv_col = drake::math::getSubMatrixGradient<Eigen::Dynamic>(
+        dX, Xv_rows, col_array, X.rows());
 
     auto domega_part_col =
-        (R * dXomega_col + matGradMult(dR, Xomega_col)).eval();
-    auto dv_part_col = (R * dXv_col + matGradMult(dR, Xv_col)).eval();
+        (R * dXomega_col + drake::math::matGradMult(dR, Xomega_col)).eval();
+    auto dv_part_col =
+        (R * dXv_col + drake::math::matGradMult(dR, Xv_col)).eval();
     dv_part_col += dp.colwise().cross(RXomega_col);
     dv_part_col -= domega_part_col.colwise().cross(p);
 
-    setSubMatrixGradient<Eigen::Dynamic>(ret, domega_part_col, Xomega_rows,
-                                         col_array, X.rows());
-    setSubMatrixGradient<Eigen::Dynamic>(ret, dv_part_col, Xv_rows, col_array,
-                                         X.rows());
+    drake::math::setSubMatrixGradient<Eigen::Dynamic>(
+        ret, domega_part_col, Xomega_rows, col_array, X.rows());
+    drake::math::setSubMatrixGradient<Eigen::Dynamic>(
+        ret, dv_part_col, Xv_rows, col_array, X.rows());
   }
   return ret;
 }
@@ -336,8 +338,10 @@ dTransformSpatialForce(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
   std::array<int, 3> R_cols = {{0, 1, 2}};
   std::array<int, 1> p_cols = {{3}};
 
-  auto dR = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, R_cols, T.Rows);
-  auto dp = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, p_cols, T.Rows);
+  auto dR = drake::math::getSubMatrixGradient<Eigen::Dynamic>(
+      dT, rows, R_cols, T.Rows);
+  auto dp = drake::math::getSubMatrixGradient<Eigen::Dynamic>(
+      dT, rows, p_cols, T.Rows);
 
   typename drake::math::Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type
       ret(X.size(), nq);
@@ -350,22 +354,22 @@ dTransformSpatialForce(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
     auto RXv_col = (R * Xv_col).eval();
 
     std::array<int, 1> col_array = {{col}};
-    auto dXomega_col = getSubMatrixGradient<Eigen::Dynamic>(
+    auto dXomega_col = drake::math::getSubMatrixGradient<Eigen::Dynamic>(
         dX, Xomega_rows, col_array, X.rows());
-    auto dXv_col =
-        getSubMatrixGradient<Eigen::Dynamic>(dX, Xv_rows, col_array, X.rows());
+    auto dXv_col = drake::math::getSubMatrixGradient<Eigen::Dynamic>(
+        dX, Xv_rows, col_array, X.rows());
 
     auto domega_part_col = (R * dXomega_col).eval();
-    domega_part_col += matGradMult(dR, Xomega_col);
+    domega_part_col += drake::math::matGradMult(dR, Xomega_col);
     auto dv_part_col = (R * dXv_col).eval();
-    dv_part_col += matGradMult(dR, Xv_col);
+    dv_part_col += drake::math::matGradMult(dR, Xv_col);
     domega_part_col += dp.colwise().cross(RXv_col);
     domega_part_col -= dv_part_col.colwise().cross(p);
 
-    setSubMatrixGradient<Eigen::Dynamic>(ret, domega_part_col, Xomega_rows,
-                                         col_array, X.rows());
-    setSubMatrixGradient<Eigen::Dynamic>(ret, dv_part_col, Xv_rows, col_array,
-                                         X.rows());
+    drake::math::setSubMatrixGradient<Eigen::Dynamic>(
+        ret, domega_part_col, Xomega_rows, col_array, X.rows());
+    drake::math::setSubMatrixGradient<Eigen::Dynamic>(
+        ret, dv_part_col, Xv_rows, col_array, X.rows());
   }
   return ret;
 }
@@ -606,17 +610,22 @@ typename DHomogTrans<DerivedDT>::type dHomogTransInv(
   std::array<int, 3> R_cols = {{0, 1, 2}};
   std::array<int, 1> p_cols = {{3}};
 
-  auto dR = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, R_cols, T.Rows);
-  auto dp = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, p_cols, T.Rows);
+  auto dR = drake::math::getSubMatrixGradient<Eigen::Dynamic>(
+      dT, rows, R_cols, T.Rows);
+  auto dp = drake::math::getSubMatrixGradient<Eigen::Dynamic>(
+      dT, rows, p_cols, T.Rows);
 
-  auto dinvT_R = transposeGrad(dR, R.rows());
-  auto dinvT_p = (-R.transpose() * dp - matGradMult(dinvT_R, p)).eval();
+  auto dinvT_R = drake::math::transposeGrad(dR, R.rows());
+  auto dinvT_p =
+      (-R.transpose() * dp - drake::math::matGradMult(dinvT_R, p)).eval();
 
   const int numel = drake::kHomogeneousTransformSize;
   Eigen::Matrix<typename DerivedDT::Scalar, numel, DerivedDT::ColsAtCompileTime>
       ret(numel, nq);
-  setSubMatrixGradient<Eigen::Dynamic>(ret, dinvT_R, rows, R_cols, T.Rows);
-  setSubMatrixGradient<Eigen::Dynamic>(ret, dinvT_p, rows, p_cols, T.Rows);
+  drake::math::setSubMatrixGradient<Eigen::Dynamic>(
+      ret, dinvT_R, rows, R_cols, T.Rows);
+  drake::math::setSubMatrixGradient<Eigen::Dynamic>(
+      ret, dinvT_p, rows, p_cols, T.Rows);
 
   // zero out gradient of elements in last row:
   const int last_row = 3;

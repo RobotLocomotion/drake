@@ -1,8 +1,8 @@
 #pragma once
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 using Eigen::VectorXd;
 
@@ -35,7 +35,7 @@ class AtlasPlant {
   size_t getNumInputs() const;
 
   /** @returns the underlying RigidBodyTree for the Atlas plant. **/
-  const std::shared_ptr<RigidBodyTree>& get_rigid_body_tree() const;
+  const std::shared_ptr<RigidBodyTree<double>>& get_rigid_body_tree() const;
 
   /** @returns the generalized positions followed by the sensors' outputs as
   the output of the system. **/

@@ -9,10 +9,10 @@
 #include "ackermann_msgs/AckermannDriveStamped.h"
 
 #include "drake/automotive/gen/driving_command.h"
-#include "drake/systems/Simulation.h"
-#include "drake/systems/simulation_options.h"
-#include "drake/systems/System.h"
-#include "drake/systems/cascade_system.h"
+#include "drake/system1/Simulation.h"
+#include "drake/system1/simulation_options.h"
+#include "drake/system1/System.h"
+#include "drake/system1/cascade_system.h"
 
 namespace drake {
 namespace ros {

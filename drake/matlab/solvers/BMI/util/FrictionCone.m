@@ -34,7 +34,7 @@ classdef FrictionCone
       assert(numel(cone_length) == 1 && cone_length > 0);
       assert(ischar(cone_name));
       if(use_lcmgl)
-        h = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,cone_name);
+        h = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,cone_name);
         h.glColor4f(1,0,0,0.5);
         h.glPushMatrix();
         h.glTranslated(obj.contact_pos(1),obj.contact_pos(2),obj.contact_pos(3));

@@ -3,11 +3,13 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/constants.h"
-#include "drake/common/drake_export.h"  // TODO(tkoolen): exports
+#include "drake/common/trajectories/qp_spline/spline_generation.h"
 #include "drake/examples/Atlas/atlasUtil.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -15,19 +17,29 @@
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/solvers/qpSpline/splineGeneration.h"
+#include "drake/util/convexHull.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 #include "drake/util/lcmUtil.h"
-#include "drake/util/convexHull.h"
 
 // TODO(tkoolen): discuss possibility of chatter in knee control
 // TODO(tkoolen): make body_motions a map from RigidBody* to BodyMotionData,
 // remove body_id from BodyMotionData?
 
-using namespace std;
-using namespace Eigen;
-using namespace drake;
+using Eigen::Dynamic;
+using Eigen::Isometry3d;
+using Eigen::Map;
+using Eigen::Matrix3Xd;
+using Eigen::Matrix;
+using Eigen::MatrixBase;
+using Eigen::MatrixXd;
+using Eigen::Ref;
+using Eigen::Stride;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::Vector4f;
+using Eigen::VectorXd;
 
 using drake::kQuaternionSize;
 using drake::kSpaceDimension;
@@ -40,6 +52,12 @@ using drake::math::expmap2quat;
 using drake::math::initializeAutoDiffGivenGradientMatrix;
 using drake::math::quat2expmap;
 using drake::math::quatRotateVec;
+
+using std::allocator;
+using std::cerr;
+using std::endl;
+using std::runtime_error;
+using std::vector;
 
 const std::map<SupportLogicType, std::vector<bool>>
     QPLocomotionPlan::support_logic_maps_ =
@@ -56,7 +74,7 @@ std::string primaryBodyOrFrameName(const std::string& full_body_name) {
   return full_body_name.substr(0, i);
 }
 
-QPLocomotionPlan::QPLocomotionPlan(RigidBodyTree& robot,
+QPLocomotionPlan::QPLocomotionPlan(RigidBodyTree<double>& robot,
                                    const QPLocomotionPlanSettings& settings,
                                    const std::string& lcm_channel)
     : robot_(robot),
@@ -457,7 +475,9 @@ bool QPLocomotionPlan::isFinished(double t) const {
   }
 }
 
-const RigidBodyTree& QPLocomotionPlan::getRobot() const { return robot_; }
+const RigidBodyTree<double>& QPLocomotionPlan::getRobot() const {
+  return robot_;
+}
 
 drake::lcmt_zmp_data QPLocomotionPlan::createZMPData(double t_plan) const {
   drake::lcmt_zmp_data zmp_data_lcm;
@@ -867,7 +887,8 @@ const std::map<SupportLogicType, std::vector<bool>>
 }
 
 const std::map<Side, int> QPLocomotionPlan::createFootBodyIdMap(
-    RigidBodyTree& robot, const std::map<Side, std::string>& foot_names) {
+    const RigidBodyTree<double>& robot,
+    const std::map<Side, std::string>& foot_names) {
   std::map<Side, int> foot_body_ids;
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     foot_body_ids[*it] = robot.FindBodyIndex(foot_names.at(*it));
@@ -876,7 +897,8 @@ const std::map<Side, int> QPLocomotionPlan::createFootBodyIdMap(
 }
 
 const std::map<Side, int> QPLocomotionPlan::createJointIndicesMap(
-    RigidBodyTree& robot, const std::map<Side, std::string>& joint_names) {
+    RigidBodyTree<double>& robot,
+    const std::map<Side, std::string>& joint_names) {
   std::map<Side, int> joint_indices;
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     int joint_id = robot.FindIndexOfChildBodyOfJoint(joint_names.at(*it));
@@ -885,14 +907,14 @@ const std::map<Side, int> QPLocomotionPlan::createJointIndicesMap(
   return joint_indices;
 }
 
-template DRAKE_EXPORT drake::lcmt_qp_controller_input
+template drake::lcmt_qp_controller_input
 QPLocomotionPlan::createQPControllerInput<
   Matrix<double, -1, 1, 0, -1, 1>,
   Matrix<double, -1, 1, 0, -1, 1>>(
       double, MatrixBase<Matrix<double, -1, 1, 0, -1, 1>> const&,
       MatrixBase<Matrix<double, -1, 1, 0, -1, 1>> const&,
       std::vector<bool, std::allocator<bool>> const&);
-template DRAKE_EXPORT drake::lcmt_qp_controller_input
+template drake::lcmt_qp_controller_input
 QPLocomotionPlan::createQPControllerInput<
   Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0>>,
   Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0>>>(

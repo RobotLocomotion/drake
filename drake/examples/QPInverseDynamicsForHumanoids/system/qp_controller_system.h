@@ -1,5 +1,8 @@
 #pragma once
 
+#include <iostream>
+
+#include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -7,13 +10,17 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+/**
+ * A wrapper around qp inverse dynamics controller.
+ *
+ * Input: HumanoidStatus
+ * Input: QPInput
+ * Output: QPOutput
+ */
 class QPControllerSystem : public systems::LeafSystem<double> {
  public:
-  /**
-   * Input: humanoid status, qp input
-   * Output: qp outout
-   */
-  explicit QPControllerSystem(const RigidBodyTree& robot) : robot_(robot) {
+  explicit QPControllerSystem(const RigidBodyTree<double>& robot)
+      : robot_(robot) {
     input_port_index_humanoid_status_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     input_port_index_qp_input_ =
@@ -29,19 +36,25 @@ class QPControllerSystem : public systems::LeafSystem<double> {
 
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override {
-    // Get robot status.
+    // Inputs:
     const HumanoidStatus* rs = EvalInputValue<HumanoidStatus>(
         context, input_port_index_humanoid_status_);
 
-    // Get qp input.
-    const QPInput* qp_input =
-        EvalInputValue<QPInput>(context, input_port_index_qp_input_);
+    const lcmt_qp_input* qp_input_msg =
+        EvalInputValue<lcmt_qp_input>(context, input_port_index_qp_input_);
 
+    QPInput qp_input(robot_);
+    DecodeQPInput(robot_, *qp_input_msg, &qp_input);
+
+    // Output:
     QPOutput& qp_output = output->GetMutableData(output_port_index_qp_input_)
                               ->GetMutableValue<QPOutput>();
 
-    if (qp_controller_.Control(*rs, *qp_input, &qp_output) < 0) {
-      throw std::runtime_error("System2QP: QP canot solve\n");
+    if (qp_controller_.Control(*rs, qp_input, &qp_output) < 0) {
+      std::cout << rs->position().transpose() << std::endl;
+      std::cout << rs->velocity().transpose() << std::endl;
+      std::cout << qp_input << std::endl;
+      throw std::runtime_error("System2QP: QP cannot solve\n");
     }
   }
 
@@ -55,7 +68,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
   }
 
   /**
-   * @return the input port number that corresponds to: humanoid status.
+   * @return Port for the input: HumanoidStatus.
    */
   inline const SystemPortDescriptor<double>& get_input_port_humanoid_status()
       const {
@@ -63,26 +76,26 @@ class QPControllerSystem : public systems::LeafSystem<double> {
   }
 
   /**
-   * @return the input port number that corresponds to: qp input.
+   * @return Port for the input: QPInput.
    */
   inline const SystemPortDescriptor<double>& get_input_port_qp_input() const {
     return get_input_port(input_port_index_qp_input_);
   }
 
   /**
-   * @return the output port number that corresponds to: qp output.
+   * @return Port for the output: QPOutput.
    */
   inline const SystemPortDescriptor<double>& get_output_port_qp_output() const {
     return get_output_port(output_port_index_qp_input_);
   }
 
  private:
-  const RigidBodyTree& robot_;
+  const RigidBodyTree<double>& robot_;
 
-  // TODO(siyuan.feng@tri.global): This is a bad temporary hack to the const
-  // constraint for EvalOutput. It is because qp controller needs to allocate
-  // mutable workspace (MathematicalProgram, temporary matrices for doing math,
-  // etc), and I want to avoid allocating these repeatedly.
+  // TODO(siyuan.feng): This is a bad temporary hack to the const constraint for
+  // EvalOutput. It is because qp controller needs to allocate mutable workspace
+  // (MathematicalProgram, temporary matrices for doing math, etc),
+  // and I want to avoid allocating these repeatedly.
   // This should be taken care of with the new system2 cache.
   mutable QPController qp_controller_;
 

@@ -6,6 +6,7 @@
 import argparse
 import os
 import subprocess
+import yaml
 
 
 def put(fileobj, text, newlines_after=0):
@@ -14,7 +15,7 @@ def put(fileobj, text, newlines_after=0):
 
 INDICES_BEGIN = """
 /// Describes the row indices of a %(camel)s.
-struct DRAKE_EXPORT %(indices)s {
+struct %(indices)s {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = %(nfields)d;
 
@@ -44,7 +45,7 @@ def generate_indices(hh, caller_context, fields):
         # field is the LCM message field name
         # kname is the C++ kConstant name
         # kvalue is the C++ vector row index integer value
-        context.update(kname = to_kname(field))
+        context.update(kname = to_kname(field['name']))
         context.update(kvalue = kvalue)
         put(hh, INDICES_FIELD % context, 1)
     put(hh, INDICES_END % context, 2)
@@ -62,7 +63,7 @@ def generate_indices_storage(cc, caller_context, fields):
         # field is the LCM message field name
         # kname is the C++ kConstant name
         # kvalue is the C++ vector row index integer value
-        context.update(kname = to_kname(field))
+        context.update(kname = to_kname(field['name']))
         context.update(kvalue = kvalue)
         put(cc, INDICES_FIELD_STORAGE % context, 1)
     put(cc, '', 1)
@@ -84,7 +85,8 @@ ACCESSOR_BEGIN = """
   //@{
 """
 ACCESSOR = """
-    const T %(field)s() const { return this->GetAtIndex(K::%(kname)s); }
+    // %(doc)s
+    const T& %(field)s() const { return this->GetAtIndex(K::%(kname)s); }
     void set_%(field)s(const T& %(field)s) {
       this->SetAtIndex(K::%(kname)s, %(field)s);
     }
@@ -97,8 +99,9 @@ def generate_accessors(hh, caller_context, fields):
     context = dict(caller_context)
     put(hh, ACCESSOR_BEGIN % context, 1)
     for field in fields:
-        context.update(field = field)
-        context.update(kname = to_kname(field))
+        context.update(field = field['name'])
+        context.update(kname = to_kname(field['name']))
+        context.update(doc = field['doc'])
         put(hh, ACCESSOR % context, 1)
     put(hh, ACCESSOR_END % context, 2)
 
@@ -113,7 +116,6 @@ VECTOR_HH_PREAMBLE = """
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 %(opening_namespace)s
@@ -154,8 +156,9 @@ TRANSLATOR_HH_PREAMBLE = """
 
 %(generated_code_warning)s
 
+#include <vector>
+
 #include "%(relative_cxx_dir)s/%(snake)s.h"
-#include "drake/common/drake_export.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/lcmt_%(snake)s_t.hpp"
 
@@ -167,7 +170,7 @@ TRANSLATOR_CLASS_DECL = """
  * Translates between LCM message objects and VectorBase objects for the
  * %(camel)s type.
  */
-class DRAKE_EXPORT %(camel)sTranslator
+class %(camel)sTranslator
     : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
   %(camel)sTranslator()
@@ -238,7 +241,7 @@ def generate_deserialize(cc, caller_context, fields):
     context = dict(caller_context)
     put(cc, DESERIALIZE_BEGIN % context, 1)
     for field in fields:
-        context.update(field = field)
+        context.update(field = field['name'])
         put(cc, DESERIALIZE_FIELD % context, 1)
     put(cc, DESERIALIZE_END % context, 2)
 
@@ -266,7 +269,7 @@ def generate_serialize(cc, caller_context, fields):
     context = dict(caller_context)
     put(cc, SERIALIZE_BEGIN % context, 1)
     for field in fields:
-        context.update(field = field)
+        context.update(field = field['name'])
         put(cc, SERIALIZE_FIELD % context, 1)
     put(cc, SERIALIZE_END % context, 2)
 
@@ -299,8 +302,16 @@ def generate_code(args):
 
     namespace = args.namespace.split("::")
     opening_namespace = "".join(["namespace " + x + "{\n" for x in namespace])
-    closing_namespace = "".join(["}  // namespace " + x + "\n" 
+    closing_namespace = "".join(["}  // namespace " + x + "\n"
                                  for x in reversed(namespace)])
+
+    if args.yaml_file:
+        # Load the field names and docstrings from YAML.
+        # In the future, this can be extended for nested messages.
+        fields = yaml.load(open(args.yaml_file, "r"))
+    else:
+        # Parse the field names from the command line.
+        fields = [{'name': x, 'doc': x} for x in args.fields]
 
     # The context provides string substitutions for the C++ code blocks in the
     # literal strings throughout this program.
@@ -324,17 +335,17 @@ def generate_code(args):
     with open(os.path.join(cxx_dir, "%s.h" % snake), 'w') as hh:
         print "generating %s" % hh.name
         put(hh, VECTOR_HH_PREAMBLE % context, 2)
-        generate_indices(hh, context, args.fields)
+        generate_indices(hh, context, fields)
         put(hh, VECTOR_CLASS_BEGIN % context, 2)
-        generate_default_ctor(hh, context, args.fields)
-        generate_accessors(hh, context, args.fields)
+        generate_default_ctor(hh, context, fields)
+        generate_accessors(hh, context, fields)
         put(hh, VECTOR_CLASS_END % context, 2)
         put(hh, VECTOR_HH_POSTAMBLE % context, 1)
 
     with open(os.path.join(cxx_dir, "%s.cc" % snake), 'w') as cc:
         print "generating %s" % cc.name
         put(cc, VECTOR_CC_PREAMBLE % context, 2)
-        generate_indices_storage(cc, context, args.fields)
+        generate_indices_storage(cc, context, fields)
         put(cc, VECTOR_CC_POSTAMBLE % context, 1)
 
     if args.lcmtype_dir:
@@ -348,17 +359,17 @@ def generate_code(args):
                   'w') as cc:
             print "generating %s" % cc.name
             put(cc, TRANSLATOR_CC_PREAMBLE % context, 2)
-            generate_allocate_output_vector(cc, context, args.fields)
-            generate_deserialize(cc, context, args.fields)
-            generate_serialize(cc, context, args.fields)
+            generate_allocate_output_vector(cc, context, fields)
+            generate_deserialize(cc, context, fields)
+            generate_serialize(cc, context, fields)
             put(cc, TRANSLATOR_CC_POSTAMBLE % context, 1)
 
         with open(os.path.join(lcmtype_dir, "lcmt_%s_t.lcm" % snake),
                   'w') as lcm:
             print "generating %s" % lcm.name
             put(lcm, LCMTYPE_PREAMBLE % context, 2)
-            for field in args.fields:
-                put(lcm, "  double %s;" % field, 1)
+            for field in fields:
+                put(lcm, "  double %s;" % field['name'], 1)
             put(lcm, LCMTYPE_POSTAMBLE % context, 1)
 
 
@@ -377,7 +388,10 @@ def main():
     parser.add_argument(
         '--title', help="title phrase, from which type names will be made")
     parser.add_argument(
-        'fields', metavar='FIELD', nargs='+', help="field names for vector")
+        '--yaml_file',
+        help="YAML description of vector, which supersedes command-line fields")
+    parser.add_argument(
+        'fields', metavar='FIELD', nargs='*', help="field names for vector")
     args = parser.parse_args()
     generate_code(args)
 

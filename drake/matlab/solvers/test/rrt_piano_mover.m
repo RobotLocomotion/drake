@@ -7,7 +7,7 @@ function rrt_piano_mover(n_obstacles, planning_mode, n_smoothing_passes, visuali
   if nargin < 2 || isempty(planning_mode), planning_mode = 'rrt'; end
   if nargin < 3 || isempty(n_smoothing_passes), n_smoothing_passes = 10; end
   if nargin < 4 || isempty(visualize), visualize = false; end
-  urdf = fullfile(getDrakePath, 'systems', 'plants', 'test', 'FallingBrick.urdf');
+  urdf = fullfile(getDrakePath, 'matlab', 'systems', 'plants', 'test', 'FallingBrick.urdf');
   options.floating = true;
   xyz0 = [0; 0; -2];
   xyzf = [0; 0; 12];

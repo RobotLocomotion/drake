@@ -7,14 +7,13 @@
 %include "exception_helper.i"
 %include <std_string.i>
 %include <windows.i>
-#define DRAKE_EXPORT
 
 %{
 #ifdef SWIGPYTHON
   #define SWIG_FILE_WITH_INIT
   #include <Python.h>
 #endif
-#include "drake/systems/plants/RigidBodyIK.h"
+#include "drake/multibody/rigid_body_ik.h"
 %}
 
 %include <typemaps.i>
@@ -27,6 +26,6 @@
 
 %eigen_typemaps(Eigen::Matrix<double, 7, 1>)
 
-%include "drake/systems/plants/IKoptions.h"
-%include "drake/systems/plants/RigidBodyIK.h"
-%include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+%include "drake/multibody/ik_options.h"
+%include "drake/multibody/rigid_body_ik.h"
+%include "drake/multibody/constraint/rigid_body_constraint.h"

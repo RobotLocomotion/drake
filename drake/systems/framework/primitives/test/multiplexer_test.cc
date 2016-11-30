@@ -83,7 +83,7 @@ TEST_F(MultiplexerTest, ScalarConstructor) {
 
 TEST_F(MultiplexerTest, IsStateless) {
   Reset({1});
-  ASSERT_EQ(nullptr, context_->get_continuous_state());
+  EXPECT_EQ(0, context_->get_continuous_state()->size());
 }
 
 }  // namespace

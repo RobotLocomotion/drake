@@ -30,12 +30,30 @@ class TestSystem : public LeafSystem<double> {
     this->DeclarePeriodicUpdate(period, offset);
   }
 
+  void AddContinuousState() {
+    this->DeclareContinuousState(4, 3, 2);
+  }
+
+  void AddContinuousState(std::unique_ptr<BasicVector<double>> vec) {
+    this->DeclareContinuousState(std::move(vec), 4, 3, 2);
+  }
+
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override {}
 
   void EvalTimeDerivatives(
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {}
+
+  std::unique_ptr<Parameters<double>> AllocateParameters() const override {
+    return std::make_unique<Parameters<double>>(
+        BasicVector<double>::Make({13.0, 7.0}));
+  }
+
+  const BasicVector<double>& GetVanillaNumericParameters(
+      const Context<double>& context) const {
+    return this->GetNumericParameter(context, 0 /* index */);
+  }
 };
 
 class LeafSystemTest : public ::testing::Test {
@@ -55,7 +73,7 @@ TEST_F(LeafSystemTest, NoUpdateEvents) {
 
 // Tests that if the current time is smaller than the offset, the next
 // update time is the offset.
-TEST_F(LeafSystemTest, OFfsetHasNotArrivedYet) {
+TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
   context_.set_time(2.0);
   UpdateActions<double> actions;
   system_.AddPeriodicUpdate();
@@ -103,6 +121,57 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
   EXPECT_EQ(35.0, actions.time);
   ASSERT_EQ(1u, actions.events.size());
   EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+}
+
+// Tests that the leaf system reserved the declared Parameters with default
+// values.
+TEST_F(LeafSystemTest, Parameters) {
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+  const BasicVector<double>& vec =
+      system_.GetVanillaNumericParameters(*context);
+  EXPECT_EQ(13.0, vec[0]);
+  EXPECT_EQ(7.0, vec[1]);
+}
+
+// Tests that the leaf system reserved the declared continuous state, of
+// vanilla type.
+TEST_F(LeafSystemTest, DeclareVanillaContinuousState) {
+  system_.AddContinuousState();
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+  const ContinuousState<double>* xc = context->get_continuous_state();
+  EXPECT_EQ(4 + 3 + 2, xc->size());
+  EXPECT_EQ(4, xc->get_generalized_position().size());
+  EXPECT_EQ(3, xc->get_generalized_velocity().size());
+  EXPECT_EQ(2, xc->get_misc_continuous_state().size());
+}
+
+class SizeNineBasicVector : public BasicVector<double> {
+ public:
+  SizeNineBasicVector() : BasicVector<double>(4 + 3 + 2) {}
+  ~SizeNineBasicVector() override {}
+
+ protected:
+  SizeNineBasicVector* DoClone() const override {
+    auto clone = new SizeNineBasicVector;
+    clone->set_value(this->get_value());
+    return clone;
+  }
+};
+
+// Tests that the leaf system reserved the declared continuous state, of
+// interesting custom type.
+TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
+  system_.AddContinuousState(std::make_unique<SizeNineBasicVector>());
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+  const ContinuousState<double>* xc = context->get_continuous_state();
+  // Check that type was preserved.
+  EXPECT_NE(nullptr, dynamic_cast<SizeNineBasicVector*>(
+      context->get_mutable_continuous_state_vector()));
+  // Check that dimensions were preserved.
+  EXPECT_EQ(4 + 3 + 2, xc->size());
+  EXPECT_EQ(4, xc->get_generalized_position().size());
+  EXPECT_EQ(3, xc->get_generalized_velocity().size());
+  EXPECT_EQ(2, xc->get_misc_continuous_state().size());
 }
 
 }  // namespace

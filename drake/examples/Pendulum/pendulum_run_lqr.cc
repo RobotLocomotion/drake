@@ -1,49 +1,74 @@
-#include <iostream>
+#include <cmath>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
-#include "drake/examples/Pendulum/Pendulum.h"
-#include "drake/systems/Simulation.h"
-#include "drake/systems/controllers/LQR.h"
-#include "drake/systems/plants/BotVisualizer.h"
-#include "drake/systems/cascade_system.h"
-#include "drake/systems/feedback_system.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
-#include "drake/util/drakeAppUtil.h"
+#include "drake/examples/Pendulum/pendulum_plant.h"
+#include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/systems/analysis/simulator.h"
+#include "drake/systems/controllers/linear_optimal_control.h"
+#include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/diagram.h"
+#include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/system_input.h"
 
-using namespace std;
-using namespace drake;
+namespace drake {
+namespace examples {
+namespace pendulum {
+namespace {
 
-int main(int argc, char* argv[]) {
-  shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
-  if (!lcm->good()) return 1;
+int do_main(int argc, char* argv[]) {
+  lcm::DrakeLcm lcm;
+  RigidBodyTree<double> tree(
+      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+      multibody::joints::kFixed);
 
-  auto p = std::make_shared<Pendulum>();
+  systems::DiagramBuilder<double> builder;
+  auto pendulum = builder.AddSystem<PendulumPlant>();
 
+  // Prepare to linearize around the vertical equilibrium point (with tau=0)
+  auto pendulum_context = pendulum->CreateDefaultContext();
+  pendulum->set_theta(pendulum_context.get(), M_PI);
+  pendulum->set_thetadot(pendulum_context.get(), 0);
+  pendulum_context->FixInputPort(0, Vector1d::Zero());
+
+  // Set up cost function for LQR: integral of 10*theta^2 + thetadot^2 + tau^2.
+  // The factor of 10 is heuristic, but roughly accounts for the unit conversion
+  // between angles and angular velocity (using the time constant, \sqrt{g/l},
+  // squared).
   Eigen::MatrixXd Q(2, 2);
   Q << 10, 0, 0, 1;
   Eigen::MatrixXd R(1, 1);
   R << 1;
-  PendulumState<double> xG;
-  xG.theta = M_PI;
-  xG.thetadot = 0;
-  PendulumInput<double> uG;
-  uG.tau = 0;
-  auto c = MakeTimeInvariantLqrSystem(*p, xG, uG, Q, R);
-  auto v = std::make_shared<BotVisualizer<PendulumState> >(
-      lcm, GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-      drake::systems::plants::joints::kFixed);
 
-  auto sys = cascade(feedback(p, c), v);
+  auto controller = builder.AddSystem(
+      LinearQuadraticRegulator(*pendulum, *pendulum_context, Q, R));
+  builder.Connect(pendulum->get_output_port(), controller->get_input_port());
+  builder.Connect(controller->get_output_port(), pendulum->get_tau_port());
 
-  SimulationOptions options;
-  options.realtime_factor = 1.0;
-  if (commandLineOptionExists(argv, argv + argc, "--non-realtime")) {
-    options.warn_real_time_violation = true;
-  }
+  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(tree, &lcm);
+  builder.Connect(pendulum->get_output_port(), publisher->get_input_port(0));
 
-  for (int i = 0; i < 5; i++) {
-    Eigen::Vector2d x0 = toEigen(xG);
-    x0 += Eigen::Vector2d::Random();
-    simulate(*sys, 0, 5, x0, options);
-  }
+  auto diagram = builder.Build();
+  systems::Simulator<double> simulator(*diagram);
+  systems::Context<double>* sim_pendulum_context =
+      diagram->GetMutableSubsystemContext(simulator.get_mutable_context(),
+                                          pendulum);
+  pendulum->set_theta(sim_pendulum_context, M_PI + 0.1);
+  pendulum->set_thetadot(sim_pendulum_context, 0.2);
+
+  simulator.Initialize();
+  simulator.StepTo(10);
+  return 0;
+}
+
+}  // namespace
+}  // namespace pendulum
+}  // namespace examples
+}  // namespace drake
+
+int main(int argc, char* argv[]) {
+  return drake::examples::pendulum::do_main(argc, argv);
 }

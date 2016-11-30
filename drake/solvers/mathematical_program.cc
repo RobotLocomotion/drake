@@ -1,39 +1,46 @@
-#include "mathematical_program.h"
+#include "drake/solvers/mathematical_program.h"
 
-#include "equality_constrained_qp_solver.h"
-#include "ipopt_solver.h"
-#include "linear_system_solver.h"
-#include "moby_lcp_solver.h"
-#include "nlopt_solver.h"
-#include "snopt_solver.h"
+#include "drake/solvers/equality_constrained_qp_solver.h"
+#include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/linear_system_solver.h"
+#include "drake/solvers/moby_lcp_solver.h"
+#include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/nlopt_solver.h"
+#include "drake/solvers/snopt_solver.h"
 
 namespace drake {
 namespace solvers {
 
 namespace {
 
-
 // Solver for simple linear systems of equalities
 AttributesSet kLinearSystemSolverCapabilities = kLinearEqualityConstraint;
 
 // Solver for equality-constrained QPs
-AttributesSet kEqualityConstrainedQPCapabilities = (
-  kQuadraticCost | kLinearCost | kLinearEqualityConstraint);
+AttributesSet kEqualityConstrainedQPCapabilities =
+    (kQuadraticCost | kLinearCost | kLinearEqualityConstraint);
 
 // Solver for Linear Complementarity Problems (LCPs)
 AttributesSet kMobyLcpCapabilities = kLinearComplementarityConstraint;
 
-// Solver for Quadratic Programs (QPs); commented out until Gurobi is ready
-// to land.
-// AttributesSet kGurobiCapabilities = (
-//     kLinearEqualityConstraint | kLinearInequalityConstraint |
-//     kLinearCost | kQuadraticCost);
+// Gurobi solver capabilities.
+AttributesSet kGurobiCapabilities =
+    (kLinearEqualityConstraint | kLinearConstraint | kLorentzConeConstraint |
+     kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost |
+     kBinaryVariable);
+
+// Mosek solver capabilities.
+AttributesSet kMosekCapabilities =
+    (kLinearEqualityConstraint | kLinearConstraint | kLorentzConeConstraint |
+     kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost |
+     kBinaryVariable);
 
 // Solvers for generic systems of constraints and costs.
-AttributesSet kGenericSolverCapabilities = (
-    kGenericCost | kGenericConstraint |
-    kQuadraticCost | kQuadraticConstraint |
-    kLinearCost | kLinearConstraint | kLinearEqualityConstraint);
+AttributesSet kGenericSolverCapabilities =
+    (kGenericCost | kGenericConstraint | kQuadraticCost | kQuadraticConstraint |
+     kLorentzConeConstraint | kRotatedLorentzConeConstraint | kLinearCost |
+     kLinearConstraint | kLinearEqualityConstraint);
 
 // Returns true iff no capabilities are in required and not in available.
 bool is_satisfied(AttributesSet required, AttributesSet available) {
@@ -42,18 +49,16 @@ bool is_satisfied(AttributesSet required, AttributesSet available) {
 
 }  // anon namespace
 
-
 enum {
   INITIAL_VARIABLE_ALLOCATION_NUM = 100
 };  // not const static int because the VectorXd constructor takes a reference
 // to int so it is odr-used (see
 // https://gcc.gnu.org/wiki/VerboseDiagnostics#missing_static_const_definition)
 
-
 MathematicalProgram::MathematicalProgram()
     : num_vars_(0),
       x_initial_guess_(
-                  static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
+          static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
       solver_result_(0),
       required_capabilities_(kNoCapabilities),
       ipopt_solver_(new IpoptSolver()),
@@ -61,10 +66,11 @@ MathematicalProgram::MathematicalProgram()
       snopt_solver_(new SnoptSolver()),
       moby_lcp_solver_(new MobyLCPSolver()),
       linear_system_solver_(new LinearSystemSolver()),
-      equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()) {}
+      equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
+      gurobi_solver_(new GurobiSolver()),
+      mosek_solver_(new MosekSolver()) {}
 
-
-SolutionResult MathematicalProgram::Solve()  {
+SolutionResult MathematicalProgram::Solve() {
   // This implementation is simply copypasta for now; in the future we will
   // want to tweak the order of preference of solvers based on the types of
   // constraints present.
@@ -77,8 +83,17 @@ SolutionResult MathematicalProgram::Solve()  {
     return linear_system_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_,
                           kEqualityConstrainedQPCapabilities) &&
-            equality_constrained_qp_solver_->available()) {
+             equality_constrained_qp_solver_->available()) {
     return equality_constrained_qp_solver_->Solve(*this);
+  } else if (is_satisfied(required_capabilities_, kMosekCapabilities) &&
+             mosek_solver_->available()) {
+    // TODO(hongkai.dai@tri.global): based on my limited experience, Mosek is
+    // faster than Gurobi for convex optimization problem. But we should run
+    // a more thorough comparison.
+    return mosek_solver_->Solve(*this);
+  } else if (is_satisfied(required_capabilities_, kGurobiCapabilities) &&
+             gurobi_solver_->available()) {
+    return gurobi_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
              moby_lcp_solver_->available()) {
     return moby_lcp_solver_->Solve(*this);

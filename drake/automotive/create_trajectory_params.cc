@@ -1,5 +1,6 @@
 #include "drake/automotive/create_trajectory_params.h"
 
+#include <algorithm>
 #include <vector>
 
 namespace drake {
@@ -51,9 +52,8 @@ Curve2<double> MakeCurve(double radius, double inset) {
 
   return Curve2<double>(looped_waypoints);
 }
-}  // namespace anonymous
+}  // anonymous namespace
 
-DRAKE_EXPORT
 std::tuple<Curve2<double>, double, double> CreateTrajectoryParams(int index) {
   // The possible curves to trace (lanes).
   static const std::vector<Curve2<double>> curves{

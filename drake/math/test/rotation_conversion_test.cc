@@ -32,6 +32,11 @@ using std::numeric_limits;
 namespace drake {
 namespace math {
 namespace {
+
+// kSweepSize is an even number, so that no samples are taken at zero. This
+// test scales as O(N^4) in sweep size, so be cautious about turning it up!
+const int kSweepSize = 6;
+
 Vector4d EigenQuaternionToOrderWXYZ(const Quaterniond& q) {
   return Vector4d(q.w(), q.x(), q.y(), q.z());
 }
@@ -78,16 +83,11 @@ bool AreRollPitchYawForSameOrientation(const Vector3d& rpy1,
                                        const Vector3d& rpy2) {
   Vector3d euler_angles1(rpy1(2), rpy1(1), rpy1(0));
   Vector3d euler_angles2(rpy2(2), rpy2(1), rpy2(0));
-  // When pitch is close to PI/2 or -PI/2, the derivative of rotation matrix
-  // w.r.t Euler angle is very big, so relax the tolerance to accomodate the
-  // numeric error.
-  // If better algorithm is implemented for calculating roll, pitch yaw angles,
-  // the precision should probably be 1E-12 (independent of pitch = +- PI/2).
-  double precision = 1E-12;
-  if (std::abs(rpy1(1) - M_PI / 2) < 1E-5 ||
-      std::abs(rpy1(1) + M_PI / 2) < 1E-5) {
-    precision = 1E-7;
-  }
+  // Note: When pitch is close to PI/2 or -PI/2, derivative calculations for
+  // Euler angle can encounter numerical problems.  However, although values
+  // of angles may "jump around" (hence, difficult derivatives), the angles'
+  // values should be accurately reproduced.
+  const double precision = 1E-13;
   return AreEulerAnglesForSameOrientation(euler_angles1, euler_angles2,
                                           precision);
 }
@@ -212,9 +212,9 @@ class RotationConversionTest : public ::testing::Test {
         Vector3d(M_PI / 4, 0.5 * M_PI - 2 * numeric_limits<double>::epsilon(),
                  M_PI / 3));
 
-    // pitch = 0.5*pi - 1E-6
+    // pitch = 0.5*pi - 1E-15
     rpy_test_cases_.push_back(
-        Vector3d(M_PI * 0.8, 0.5 * M_PI - 1E-6, 0.9 * M_PI));
+        Vector3d(M_PI * 0.8, 0.5 * M_PI - 1E-15, 0.9 * M_PI));
 
     // pitch = -0.5*pi+eps
     rpy_test_cases_.push_back(
@@ -231,17 +231,17 @@ class RotationConversionTest : public ::testing::Test {
         M_PI * -0.5, -0.5 * M_PI + 2 * numeric_limits<double>::epsilon(),
         M_PI * 0.4));
 
-    // pitch = -0.5*pi + 1E-6
+    // pitch = -0.5*pi + 1E-15
     rpy_test_cases_.push_back(
-        Vector3d(M_PI * 0.9, -0.5 * M_PI + 1E-6, 0.8 * M_PI));
+        Vector3d(M_PI * 0.9, -0.5 * M_PI + 1E-15, 0.8 * M_PI));
 
     // non-singular cases
-    auto roll =
-        Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -0.99 * M_PI, M_PI);
-    auto pitch = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -0.49 * M_PI,
-                                            0.49 * M_PI);
-    auto yaw =
-        Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -0.99 * M_PI, M_PI);
+    auto roll = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize,
+                                           -0.99 * M_PI, M_PI);
+    auto pitch = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize,
+                                            -0.49 * M_PI, 0.49 * M_PI);
+    auto yaw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize,
+                                          -0.99 * M_PI, M_PI);
     for (int i = 0; i < roll.size(); ++i) {
       for (int j = 0; j < pitch.size(); ++j) {
         for (int k = 0; k < yaw.size(); ++k) {
@@ -340,10 +340,10 @@ class RotationConversionTest : public ::testing::Test {
     addAngleAxisTestCase((-1 + 1E-10) * M_PI, axis);
 
     // non-singularity cases
-    auto a_x = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
-    auto a_y = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
-    auto a_z = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
-    auto a_angle = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20,
+    auto a_x = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto a_y = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto a_z = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto a_angle = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize,
                                               -0.95 * M_PI, 0.95 * M_PI);
     for (int i = 0; i < a_x.size(); ++i) {
       for (int j = 0; j < a_y.size(); ++j) {
@@ -362,10 +362,10 @@ class RotationConversionTest : public ::testing::Test {
 
   void setupQuaternionTestCases() {
     // Set up a variety of general tests for quaternions.
-    auto qw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
-    auto qx = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
-    auto qy = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
-    auto qz = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
+    auto qw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto qx = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto qy = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto qz = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
     for (int i = 0; i < qw.size(); ++i) {
       for (int j = 0; j < qx.size(); ++j) {
         for (int k = 0; k < qy.size(); ++k) {
@@ -569,18 +569,21 @@ TEST_F(RotationConversionTest, RPYAxis) {
   // Compute the angle-axis representation using Eigen's geometry module,
   // compare the result with rpy2axis
   for (const auto& rpyi : rpy_test_cases_) {
-    Quaterniond rotation_expected =
+    Quaterniond quaternion_expected =
         Eigen::AngleAxisd(rpyi(2), Vector3d::UnitZ()) *
         Eigen::AngleAxisd(rpyi(1), Vector3d::UnitY()) *
         Eigen::AngleAxisd(rpyi(0), Vector3d::UnitX());
-    auto a_eigen_expected = Eigen::AngleAxis<double>(rotation_expected);
-    Vector4d a = rpy2axis(rpyi);
-    AngleAxisd a_eigen = axisToEigenAngleAxis(a);
-    EXPECT_TRUE(AreAngleAxisForSameOrientation(a_eigen, a_eigen_expected));
+    auto eigenAngleAxis_expected =
+        Eigen::AngleAxis<double>(quaternion_expected);
+
+    Vector4d drakeAxisAngle_test = rpy2axis(rpyi);
+    AngleAxisd eigenAngleAxis_test = axisToEigenAngleAxis(drakeAxisAngle_test);
+    EXPECT_TRUE(AreAngleAxisForSameOrientation(eigenAngleAxis_test,
+                                               eigenAngleAxis_expected));
 
     // rpy2axis should be the inversion of axis2rpy
-    Vector3d rpy_expected = axis2rpy(a);
-    EXPECT_TRUE(AreRollPitchYawForSameOrientation(rpyi, rpy_expected));
+    Vector3d rpy_test_drake = axis2rpy(drakeAxisAngle_test);
+    EXPECT_TRUE(AreRollPitchYawForSameOrientation(rpyi, rpy_test_drake));
   }
 }
 

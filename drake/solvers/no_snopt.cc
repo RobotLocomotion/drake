@@ -16,5 +16,5 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram &prog) const {
       "solver.");
 }
 
-}  // namespace drake
 }  // namespace solvers
+}  // namespace drake

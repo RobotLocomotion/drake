@@ -2,7 +2,10 @@
 # be included regardless of whether LCM is present.
 set(lcm_independent_header_files
     drake_lcm_interface.h
-    drake_mock_lcm.h)
+    drake_lcm_message_handler_interface.h
+    drake_mock_lcm.h
+    lcm_call_matlab.h
+    )
 
 set(lcm_independent_source_files
     drake_mock_lcm.cc)
@@ -24,41 +27,41 @@ set(lcm_dependent_source_files)
 if (lcm_FOUND)
   set(lcm_dependent_source_files
       drake_lcm.cc
+      lcm_call_matlab.cc
       lcm_receive_thread.cc
       lcmt_drake_signal_utils.cc)
 endif()
 
 set(lcm_dependent_link_libraries)
+set(lcm_dependent_libs)
+set(lcm_dependent_requires)
 if (lcm_FOUND)
   set(lcm_dependent_link_libraries
       ${CMAKE_THREAD_LIBS_INIT}
       drakeLCMTypes
       lcm)
+  set(lcm_dependent_libs ${CMAKE_THREAD_LIBS_INIT})
+  set(lcm_dependent_requires drake-lcmtypes-cpp lcm)
 endif()
 
 add_library_with_exports(LIB_NAME drakeLcm SOURCE_FILES
     ${lcm_dependent_source_files}
     ${lcm_independent_source_files})
 
-if (lcm_FOUND)
-  add_dependencies(drakeLcm drake_lcmtypes_hpp)
-endif()
-
 target_link_libraries(drakeLcm
     ${lcm_dependent_link_libraries}
     ${lcm_independent_link_libraries})
 
-if (lcm_FOUND AND WIN32)
-  target_link_libraries(drakeLcm ws2_32)
-endif()
-
 drake_install_headers(
     ${lcm_dependent_header_files}
     ${lcm_independent_header_files})
-pods_install_libraries(drakeLcm)
-pods_install_pkg_config_file(drake-lcm
+drake_install_libraries(drakeLcm)
+drake_install_pkg_config_file(drake-lcm
+    TARGET drakeLcm
     CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
-    LIBS -ldrakeLcm
-    VERSION 0.0.1)
+    LIBS -ldrakeLcm ${lcm_dependent_libs}
+    REQUIRES ${lcm_dependent_requires})
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
