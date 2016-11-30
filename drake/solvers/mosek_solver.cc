@@ -259,18 +259,26 @@ MSKrescodee AddSecondOrderConeConstraints(
 MSKrescodee AddBarVariable(int rows, MSKtask_t* task) {
   MSKrescodee rescode = MSK_RES_OK;
   rescode = MSK_appendbarvars(*task, 1, &rows);
-  if (rescode != MSK_RES_OK) { return rescode;}
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
 
   int num_bar_var = 0;
   rescode = MSK_getnumbarvar(*task, &num_bar_var);
-  if (rescode != MSK_RES_OK) { return rescode;}
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
 
   int num_linear_constraint = 0;
   rescode = MSK_getnumcon(*task, &num_linear_constraint);
-  if (rescode != MSK_RES_OK) { return rescode;}
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
 
   rescode = MSK_appendcons(*task, (rows + 1) * rows / 2);
-  if (rescode != MSK_RES_OK) { return rescode;}
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
 
   int new_linear_constraint_count = 0;
   for (int j = 0; j < rows; ++j) {
@@ -281,12 +289,16 @@ MSKrescodee AddBarVariable(int rows, MSKtask_t* task) {
       MSKint64t bar_A_matrix_idx;
       rescode = MSK_appendsparsesymmat(*task, rows, 1, &i, &j, &bar_A_ij_val,
                                        &bar_A_matrix_idx);
-      if (rescode != MSK_RES_OK) { return rescode;}
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
 
       double bar_A_weights = 1.0;
       rescode = MSK_putbaraij(*task, linear_constraint_index, num_bar_var - 1,
                               1, &bar_A_matrix_idx, &bar_A_weights);
-      if (rescode != MSK_RES_OK) { return rescode;}
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
 
       ++new_linear_constraint_count;
     }
@@ -304,7 +316,9 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
 
     int num_linear_constraint = 0;
     rescode = MSK_getnumcon(*task, &num_linear_constraint);
-    if (rescode != MSK_RES_OK) { return rescode;}
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     // Add S_bar as new variables. Mosek needs to create so called "bar
     // variable"
     // for matrix in positive semidefinite cones.
@@ -332,11 +346,15 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
         rescode =
             MSK_putarow(*task, linear_constraint_index, 1,
                         &symmetric_matrix_var_ij_index, &symmetric_matrix_val);
-        if (rescode != MSK_RES_OK) { return rescode;}
+        if (rescode != MSK_RES_OK) {
+          return rescode;
+        }
 
         rescode = MSK_putconbound(*task, linear_constraint_index, MSK_BK_FX,
                                   0.0, 0.0);
-        if (rescode != MSK_RES_OK) { return rescode;}
+        if (rescode != MSK_RES_OK) {
+          return rescode;
+        }
 
         ++new_linear_constraint_count;
       }
@@ -345,12 +363,15 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
   return rescode;
 }
 
-MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog, MSKtask_t* task) {
+MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog,
+                                                MSKtask_t* task) {
   MSKrescodee rescode = MSK_RES_OK;
   for (const auto& binding : prog.linear_matrix_inequality_constraints()) {
     int num_linear_constraint = 0;
     rescode = MSK_getnumcon(*task, &num_linear_constraint);
-    if (rescode != MSK_RES_OK) { return rescode;}
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
 
     int rows = binding.constraint()->matrix_rows();
 
@@ -367,8 +388,10 @@ MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog,
         const auto& F = binding.constraint()->F();
         auto F_it = F.begin();
         rescode = MSK_putconbound(*task, linear_constraint_index, MSK_BK_FX,
-            -(*F_it)(i, j), -(*F_it)(i, j));
-        if (rescode != MSK_RES_OK) { return rescode;}
+                                  -(*F_it)(i, j), -(*F_it)(i, j));
+        if (rescode != MSK_RES_OK) {
+          return rescode;
+        }
         ++F_it;
 
         Eigen::SparseVector<double, Eigen::RowMajor> A_row(prog.num_vars());
@@ -381,8 +404,11 @@ MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog,
           }
         }
 
-        rescode = MSK_putarow(*task, linear_constraint_index, A_row.nonZeros(), A_row.innerIndexPtr(), A_row.valuePtr());
-        if (rescode != MSK_RES_OK) { return rescode;}
+        rescode = MSK_putarow(*task, linear_constraint_index, A_row.nonZeros(),
+                              A_row.innerIndexPtr(), A_row.valuePtr());
+        if (rescode != MSK_RES_OK) {
+          return rescode;
+        }
 
         ++new_linear_constraint_count;
       }
