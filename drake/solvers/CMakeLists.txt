@@ -25,7 +25,6 @@ set(optimization_files)
 set(optimization_requires)
 list(APPEND optimization_files
   ${private_headers}
-  decision_variable.cc
   equality_constrained_qp_solver.cc
   linear_system_solver.cc
   mathematical_program.cc
@@ -68,6 +67,7 @@ if(gurobi_FOUND)
 else()
   list(APPEND optimization_files no_gurobi.cc)
 endif()
+
 
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
 target_link_libraries(drakeOptimization drakeCommon)

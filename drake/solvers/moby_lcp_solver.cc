@@ -137,7 +137,7 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
   for (size_t i = 0; i < prog.num_vars(); i++) {
     int coverings = 0;
     for (const auto& binding : bindings) {
-      if (binding.ContainsVariableIndex(i)) {
+      if (binding.Covers(i)) {
         coverings++;
       }
     }
@@ -159,7 +159,7 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
   Eigen::VectorXd solution(prog.num_vars());
 
   // We don't actually indicate different results.
-  prog.SetSolverResult(SolverName(), 0);
+  prog.SetSolverResult("MobyLCP", 0);
 
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.GetNumElements());

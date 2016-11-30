@@ -73,10 +73,9 @@ int AddLorentzConeConstraints(GRBmodel* model,
     std::vector<int> variable_indices;
     variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
     auto variable_list = binding.variable_list();
-    for (const DecisionVariableMatrixX& var : variable_list.variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        variable_indices.push_back(static_cast<int>(var(i, 0).index()));
+    for (const DecisionVariableView& var : variable_list) {
+      for (int i = 0; i < static_cast<int>(var.size()); i++) {
+        variable_indices.push_back(static_cast<int>(var.index()) + i);
       }
     }
     // We will build a matrix Q = diag([-1;1;1;...;1;], and we will use
@@ -124,10 +123,9 @@ int AddRotatedLorentzConeConstraint(GRBmodel* model,
     std::vector<int> variable_indices;
     variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
     auto variable_list = binding.variable_list();
-    for (const DecisionVariableMatrixX& var : variable_list.variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        variable_indices.push_back(static_cast<int>(var(i, 0).index()));
+    for (const DecisionVariableView& var : variable_list) {
+      for (int i = 0; i < static_cast<int>(var.size()); i++) {
+        variable_indices.push_back(static_cast<int>(var.index()) + i);
       }
     }
     // Build a matrix Q = [0 -1 0 0 ... 0]
@@ -195,12 +193,9 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
     // binding.VariableListToVectorXd(i).
     std::vector<int> constraint_variable_index(constraint_variable_dimension);
     int constraint_variable_count = 0;
-    for (const DecisionVariableMatrixX& var :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        constraint_variable_index[constraint_variable_count] =
-            var(i, 0).index();
+    for (const DecisionVariableView& var : binding.variable_list()) {
+      for (int i = 0; i < static_cast<int>(var.size()); i++) {
+        constraint_variable_index[constraint_variable_count] = var.index() + i;
         constraint_variable_count++;
       }
     }
@@ -232,12 +227,10 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
     const auto& constraint = binding.constraint();
     Eigen::RowVectorXd c = constraint->A();
     int constraint_variable_count = 0;
-    for (const DecisionVariableMatrixX& var :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
+    for (const DecisionVariableView& var : binding.variable_list()) {
+      for (int i = 0; i < static_cast<int>(var.size()); i++) {
         b_nonzero_coefs.push_back(Eigen::Triplet<double>(
-            var(i, 0).index(), 0, c(constraint_variable_count)));
+            var.index() + i, 0, c(constraint_variable_count)));
         constraint_variable_count++;
       }
     }
@@ -300,11 +293,9 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
     // variable_indices[i] is the index of the i'th variable.
     std::vector<int> variable_indices;
     variable_indices.reserve(var_dim);
-    for (const DecisionVariableMatrixX& var :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        variable_indices.push_back(var(i, 0).index());
+    for (const DecisionVariableView& var : binding.variable_list()) {
+      for (int i = 0; i < static_cast<int>(var.size()); i++) {
+        variable_indices.push_back(var.index() + i);
       }
     }
     const int error =
@@ -321,11 +312,9 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
     // variable_indices[i] is the index of the i'th variable
     std::vector<int> variable_indices;
     variable_indices.reserve(var_dim);
-    for (const DecisionVariableMatrixX& var :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        variable_indices.push_back(var(i, 0).index());
+    for (const DecisionVariableView& var : binding.variable_list()) {
+      for (int i = 0; i < static_cast<int>(var.size()); i++) {
+        variable_indices.push_back(var.index() + i);
       }
     }
     const Eigen::MatrixXd& A = constraint->A();
@@ -393,19 +382,18 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   std::vector<double> xlow(num_vars, -std::numeric_limits<double>::infinity());
   std::vector<double> xupp(num_vars, std::numeric_limits<double>::infinity());
 
-  const std::vector<DecisionVariableScalar::VarType>& var_type =
-      prog.VariableTypes();
+  const std::vector<DecisionVariable::VarType>& var_type = prog.VariableTypes();
 
   std::vector<char> gurobi_var_type(num_vars);
   for (int i = 0; i < num_vars; ++i) {
     switch (var_type[i]) {
-      case DecisionVariableScalar::VarType::CONTINUOUS:
+      case DecisionVariable::VarType::CONTINUOUS:
         gurobi_var_type[i] = GRB_CONTINUOUS;
         break;
-      case DecisionVariableScalar::VarType::BINARY:
+      case DecisionVariable::VarType::BINARY:
         gurobi_var_type[i] = GRB_BINARY;
         break;
-      case DecisionVariableScalar::VarType::INTEGER:
+      case DecisionVariable::VarType::INTEGER:
         gurobi_var_type[i] = GRB_INTEGER;
     }
   }
@@ -415,11 +403,10 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
     int var_idx = 0;
-    for (const DecisionVariableMatrixX& var :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int k = 0; k < var.rows(); ++k) {
-        const int idx = var(k, 0).index();
+    for (const DecisionVariableView& decision_variable_view :
+         binding.variable_list()) {
+      for (size_t k = 0; k < decision_variable_view.size(); k++) {
+        const int idx = decision_variable_view.index() + k;
         xlow[idx] = std::max(lower_bound(var_idx), xlow[idx]);
         xupp[idx] = std::min(upper_bound(var_idx), xupp[idx]);
         var_idx++;
@@ -495,7 +482,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverResult(SolverName(), error);
+  prog.SetSolverResult("Gurobi", error);
 
   GRBfreemodel(model);
   GRBfreeenv(env);

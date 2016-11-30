@@ -54,7 +54,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
       std::cout << rs->position().transpose() << std::endl;
       std::cout << rs->velocity().transpose() << std::endl;
       std::cout << qp_input << std::endl;
-      throw std::runtime_error("System2QP: QP cannot solve\n");
+      throw std::runtime_error("System2QP: QP canot solve\n");
     }
   }
 
