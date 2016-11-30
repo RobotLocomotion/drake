@@ -516,12 +516,18 @@ class RigidBodyTree {
   /// (`in_terms_of_qdot = true`) or the generalized velocities
   /// (`in_terms_of_qdot = false`).
   ///
-  /// Defining `ndof = nq` if `in_terms_of_qdot = true` or `ndof = nv` if
-  /// `in_terms_of_qdot = false`, the Jacobian matrix lives in
-  /// `R^{3*n x ndof}` such that the linear velocity `v_i` of the `i-th`
-  /// point is computed as `v_i = [J * v].segment<3>(i)` or, in terms of
-  /// generalized coordinates time derivatives as
-  /// `v_i = [J * qdot].segment<3>(i)`.
+  /// Defining:
+  ///   `ndof = nq` if `in_terms_of_qdot = true` or
+  ///   `ndof = nv` if `in_terms_of_qdot = false`,
+  ///   `O`: the frame referenced by from_body_or_frame_ind.
+  ///   `B`: the frame referenced by to_body_or_frame_ind.
+  ///   `vi`: The linear velocity of the i-th point in `points`.
+  ///
+  /// The Jacobian matrix lives in `R^{3*n x ndof}` and relates to the linear
+  /// velocity of the i-th point expressed in frame `O` `vi_O` by:
+  ///   `vi_O = [J * v].segment<3>(i)` (in terms of generalized velocites)
+  ///   `vi_O = [J * qdot].segment<3>(i)` (in terms of generalized coordinates
+  ///                                     time derivatives)
   ///
   /// Note: Many entries in this matrix may be zero for non-participating
   /// degrees of freedom. This might have an impact in the efficiency of your
@@ -543,10 +549,9 @@ class RigidBodyTree {
   /// `in_terms_of_qdot = true` or `ndof = nv` if `in_terms_of_qdot = false`.
   ///
   /// @see transformPoints() to transform positions instead of velocities.
-  ///
-  /// The Jacobian in this method only allows to obtain the linear velocity
-  /// component. For a general transformation of spatial velocities see
-  /// Section 3.6 of A. Jain's book, Eq. 3.53, p. 55.
+  /// @see geometricJacobian() to obtain the Jacobian relating generalized
+  /// velocities (or generalized coordinates time derivatives) to Plucker
+  /// vector representations of spatial velocities.
   template <typename Scalar, typename DerivedPoints>
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> transformPointsJacobian(
       const KinematicsCache<Scalar>& cache,
@@ -591,6 +596,51 @@ class RigidBodyTree {
                                         int from_body_or_frame_ind,
                                         int to_body_or_frame_ind) const;
 
+  /// Computes a Jacobian matrix that relates the Plucker vector
+  /// representation of the spatial velocity `V_OB_E` of frame `B` with
+  /// respect to frame `O` exressed in frame `E`.
+  /// The Jacobian can be computed in terms of generalized
+  /// coordinates time derivatives (i.e. `V_OB_E = Jg * qdot`) or in terms of
+  /// generalized velocities (i.e. `V_OB_E = Jg * v`).
+  ///
+  /// Defining:
+  ///   `ndof = nq` if `in_terms_of_qdot = true` or
+  ///   `ndof = nv` if `in_terms_of_qdot = false`,
+  ///   `O`: the frame referenced by base_body_or_frame_ind.
+  ///   `B`: the frame referenced by end_effector_body_or_frame_ind.
+  ///   `E`: the frame referenced by expressed_in_body_or_frame_ind.
+  ///
+  /// The Jacobian matrix `Jg` lives in `R^{6 x ndof}` and relates to the
+  /// Plucker vector represenation of the spatial velocity `V_OB` by:
+  ///   `V_OB_E = Jg * v` (in terms of generalized velocites)
+  ///   `V_OB_E = Jg * qdot` (in terms of generalized coordinates
+  ///                         time derivatives)
+  ///
+  /// Note: Many entries in this matrix may be zero for non-participating
+  /// degrees of freedom. This might have an impact in the efficiency of your
+  /// particular computation.
+  ///
+  /// @param[in] cache KinematicsCache object.
+  /// @param[in] base_body_or_frame_ind Frame identifier for frame O.
+  /// @param[in] end_effector_body_or_frame_ind Frame identifier for frame B.
+  /// @param[in] expressed_in_body_or_frame_ind Frame identifier for frame E.
+  /// @param[in] in_terms_of_qdot if `true` the returned Jacobian is in terms
+  /// of generalized coordinates time derivatives or if `false`, it is in
+  /// terms of generalized velocities.
+  ///
+  /// @returns The Jacobian matrix `Jg` in `R^{6 x ndof}`.
+  ///
+  /// @see transformPoints() to transform positions instead of velocities.
+  /// @see transformPointsJacobian() to obtain a Jacobian matrix relating
+  /// generalized velocities to linear velocity of a particular set of points.
+  ///
+  /// A. Jain introduces a "Jacobian operator" J which relates generalized
+  /// velocities to spatial velocites (not Plucker vectors) in Section 3.6 of
+  /// of his book (see Eq. 3.53, p. 55).
+  /// A. Jain mentions the notion of "Inertially Fixed Velocity Reference
+  /// Frame" which is the equivalent of Plucker vectors in Section 2.5, p.31.
+  /// Velocity recursion using these frames is discussed as part of
+  /// Exercise 3.4, p. 47.
   template <typename Scalar>
   drake::TwistMatrix<Scalar> geometricJacobian(
       const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind,

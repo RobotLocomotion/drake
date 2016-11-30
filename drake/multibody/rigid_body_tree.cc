@@ -1380,22 +1380,23 @@ TwistMatrix<Scalar> RigidBodyTree<T>::geometricJacobian(
   KinematicPath kinematic_path =
       findKinematicPath(base_body_or_frame_ind, end_effector_body_or_frame_ind);
 
-  int cols = 0;
+  int ndof = 0;
   int body_index;
   for (size_t i = 0; i < kinematic_path.joint_path.size(); ++i) {
     body_index = kinematic_path.joint_path[i];
     const RigidBody<T>& body = *bodies[body_index];
     const DrakeJoint& joint = body.getJoint();
-    cols +=
+    ndof +=
         in_terms_of_qdot ? joint.get_num_positions() :
         joint.get_num_velocities();
   }
 
-  TwistMatrix<Scalar> J(kTwistSize, cols);
+  // J lives in R^{6 x ndof}
+  TwistMatrix<Scalar> J(kTwistSize, ndof);
 
   if (v_or_qdot_indices != nullptr) {
     v_or_qdot_indices->clear();
-    v_or_qdot_indices->reserve(cols);
+    v_or_qdot_indices->reserve(ndof);
   }
 
   int col_start = 0;
@@ -1811,7 +1812,7 @@ RigidBodyTree<T>::transformPointsJacobian(
     const KinematicsCache<Scalar>& cache,
     const Eigen::MatrixBase<DerivedPoints>& points, int from_body_or_frame_ind,
     int to_body_or_frame_ind, bool in_terms_of_qdot) const {
-  int cols = in_terms_of_qdot ? num_positions_ : num_velocities_;
+  int ndof = in_terms_of_qdot ? num_positions_ : num_velocities_;
   int npoints = static_cast<int>(points.cols());
 
   auto points_base = transformPoints(cache, points, from_body_or_frame_ind,
@@ -1820,10 +1821,20 @@ RigidBodyTree<T>::transformPointsJacobian(
   int body_ind = parseBodyOrFrameID(from_body_or_frame_ind);
   int base_ind = parseBodyOrFrameID(to_body_or_frame_ind);
   std::vector<int> v_or_q_indices;
-  // Herein ndof = cols = in_terms_of_qdot ? num_positions_ : num_velocities_.
+
+  // Herein the following notation is used:
+  //  B: the frame referenced by from_body_or_frame_ind.
+  //  O: the "base" or "origin" frame referenced by to_body_or_frame_ind.
+  //  pi: the i-th point in the input parameter "points".
+  //  vi: linear velocity of point pi.
+  //  Vi: Plucker vector representation of the velocity of point pi.
+
   // J_geometric lives in R^(6 x ndof).
   auto J_geometric =
-      geometricJacobian(cache, base_ind, body_ind, to_body_or_frame_ind,
+      geometricJacobian(cache,
+                        base_ind, /* frame O */
+                        body_ind, /* frame B */
+                        to_body_or_frame_ind, /* expressed in frame O */
                         in_terms_of_qdot, &v_or_q_indices);
 
   // Jomega, Jv live in R^{3 x ndof}.
@@ -1832,13 +1843,9 @@ RigidBodyTree<T>::transformPointsJacobian(
 
   // J lives in R^{3*npoints x ndof}.
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> J(
-      points_base.size(), cols);  // TODO(tkoolen): size at compile time
+      points_base.size(), ndof);  // TODO(tkoolen): size at compile time
   J.setZero();
 
-  // Herein the following notation is used:
-  //  B: the frame referenced by from_body_or_frame_ind.
-  //  O: the "base" or "origin" frame referenced by to_body_or_frame_ind.
-  //  pi: the i-th point in the input parameter "points".
   // Given the i-th point, its linear velocity vi_O expressed in frame O is:
   // vi_O = v0_O - pi_O.cross(w_OB),
   // with v0_O the instantaneous velocity of a point at the origin of O rigidly
