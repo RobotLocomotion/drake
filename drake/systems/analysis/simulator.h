@@ -9,8 +9,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/text_logging.h"
-#include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 
@@ -229,7 +229,8 @@ class Simulator {
    */
   IntegratorBase<T>* get_mutable_integrator() { return integrator_.get(); }
 
-  /** Resets the integrator with a new one. An example usage is:
+  /**
+   * Resets the integrator with a new one. An example usage is:
    * @code
    * simulator.reset_integrator<ExplicitEulerIntegrator<double>>
    *               (sys, context, DT).
@@ -245,6 +246,12 @@ class Simulator {
     integrator_ = std::make_unique<U>(std::forward<Args>(args)...);
     return static_cast<U*>(integrator_.get());
   }
+
+  /**
+   * Gets a constant reference to the system.
+   * @note a mutable reference is not available.
+   */
+  const System<T>& get_system() const { return system_; }
 
  private:
   // The steady_clock is immune to system clock changes so increases
@@ -312,15 +319,16 @@ template <typename T>
 Simulator<T>::Simulator(const System<T>& system,
                         std::unique_ptr<Context<T>> context)
     : system_(system), context_(std::move(context)) {
-  // TODO(edrumwri): remove default step size
-  const double DT = 1e-3;
+  // Setup defaults that should be generally reasonable.
+  const double dt = 1e-3;
 
-  // create a context if necessary
+  // Create a context if necessary.
   if (!context_) context_ = system_.CreateDefaultContext();
 
-  // create a default integrator and initialize it.
+  // @TODO(edrumwri): Make variable step integrator default.
+  // Create a default integrator and initialize it.
   integrator_ = std::unique_ptr<IntegratorBase<T>>(
-      new RungeKutta2Integrator<T>(system_, DT, context_.get()));
+      new RungeKutta2Integrator<T>(system_, dt, context_.get()));
   integrator_->Initialize();
 
   discrete_updates_ = system_.AllocateDifferenceVariables();
@@ -425,7 +433,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
     // Attempt to integrate.
     typename IntegratorBase<T>::StepResult result =
-        integrator_->Step(next_publish_dt, next_update_dt);
+        integrator_->StepOnceAtMost(next_publish_dt, next_update_dt);
     switch (result) {
       case IntegratorBase<T>::kReachedUpdateTime:
         update_hit = true;
