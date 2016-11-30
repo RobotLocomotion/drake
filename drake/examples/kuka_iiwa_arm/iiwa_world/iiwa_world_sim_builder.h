@@ -78,9 +78,13 @@ class IiwaWorldSimBuilder {
 
   // TODO(naveenoid): Remove this method once issue #4191 is addressed.
   /// Sets the zero configuration of the plant.
+  /// Note that this method assumes that @p demo_diagram is in itself composed
+  /// of a `Diagram` containing the plant and visualizer systems as built by
+  /// the `Build()` method.
+  ///
+  /// @see Build
   void SetZeroConfiguration(systems::Simulator<T>* simulator,
-                            const systems::Diagram<T>* demo_diagram,
-                            const systems::Diagram<T>* plant_diagram);
+                            const systems::Diagram<T>* demo_diagram);
 
   // We are neither copyable nor moveable.
   IiwaWorldSimBuilder(const IiwaWorldSimBuilder<T>& other) = delete;
