@@ -62,6 +62,10 @@ in debug mode)::
 
   bazel test -c dbg drake/systems/framework/test/diagram_test
 
+Build the entire project using clang (on Ubuntu)::
+
+  bazel build --compiler=clang-3.9 --crosstool_top=//tools:default-toolchain ...
+
 Run one of the compiled programs manually, from the build outputs directory
 (note that ``bazel-bin`` is a directory name here)::
 
