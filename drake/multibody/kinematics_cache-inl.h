@@ -109,6 +109,7 @@ KinematicsCache<T>::transformVelocityMappingToQDotMapping(
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
       A(B.rows(), get_num_positions());
+  DRAKE_DEMAND(B.cols() == get_num_velocities());
   int A_col_start = 0;
   int B_col_start = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
@@ -135,6 +136,7 @@ KinematicsCache<T>::transformQDotMappingToVelocityMapping(
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
       B(A.rows(), get_num_velocities());
+  DRAKE_DEMAND(A.cols() == get_num_positions());
   int B_col_start = 0;
   int A_col_start = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
