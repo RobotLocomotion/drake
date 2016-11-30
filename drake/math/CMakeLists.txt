@@ -8,6 +8,7 @@ set(sources
   expmap.cc
   gradient.cc
   jacobian.cc
+  matrix_util.cc
   normalize_vector.cc
   quaternion.cc
   random_rotation.cc
@@ -27,6 +28,7 @@ set(installed_headers
   gradient.h
   gradient_util.h
   jacobian.h
+  matrix_util.h
   normalize_vector.h
   quaternion.h
   random_rotation.h
