@@ -32,13 +32,12 @@ list(APPEND optimization_files
   moby_lcp_solver.cc
   system_identification.cc
   )
-pods_find_pkg_config(ipopt)
-if (ipopt_FOUND)
+if(ipopt_FOUND)
  list(APPEND optimization_files ipopt_solver.cc)
  list(APPEND optimization_requires ipopt)
 else()
   list(APPEND optimization_files no_ipopt.cc)
-endif(ipopt_FOUND)
+endif()
 if(NLopt_FOUND)
   list(APPEND optimization_files nlopt_solver.cc)
   list(APPEND optimization_requires nlopt)
