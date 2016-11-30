@@ -19,7 +19,7 @@ template <class T>
 void RungeKutta3Integrator<T>::DoInitialize() {
   using std::isnan;
   const double kDefaultAccuracy = 1e-3;  // Good for this particular integrator.
-  const double kMaxAccuracy = 1e-1;      // Integrator specific.
+  const double kLoosestAccuracy = 1e-1;  // Integrator specific.
   const double kMaxStepFraction = 0.1;   // Fraction of max step size for
                                          // less aggressive first step.
 
@@ -36,8 +36,8 @@ void RungeKutta3Integrator<T>::DoInitialize() {
 
   // Sets the working accuracy to a good value.
   double working_accuracy = this->get_target_accuracy();
-  if (working_accuracy > kMaxAccuracy)
-    working_accuracy = kMaxAccuracy;
+  if (working_accuracy > kLoosestAccuracy)
+    working_accuracy = kLoosestAccuracy;
   else if (isnan(working_accuracy))
     working_accuracy = kDefaultAccuracy;
   this->set_accuracy_in_use(working_accuracy);
