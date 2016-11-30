@@ -289,7 +289,7 @@ void Mesh::LoadObjFile(PointsVector* vertices,
         + obj_file_name + "\" : " + err);
   }
 
-  // Store the vertices
+  // Store the vertices.
   for (size_t index = 0; index < attrib.vertices.size(); index += 3) {
     vertices->push_back(Vector3d(attrib.vertices[index],
                                  attrib.vertices[index + 1],
