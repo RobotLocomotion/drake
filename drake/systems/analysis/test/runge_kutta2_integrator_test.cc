@@ -43,6 +43,23 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   EXPECT_EQ(context->get_time(), 3.);
 }
 
+/// Verifies error estimation is unsupported.
+GTEST_TEST(IntegratorTest, ErrorEst) {
+  // Spring-mass system is necessary only to setup the problem.
+  SpringMassSystem<double> spring_mass(1., 1., 0.);
+  const double DT = 1e-3;
+  auto context = spring_mass.CreateDefaultContext();
+  RungeKutta2Integrator<double> integrator(
+      spring_mass, DT, context.get());
+
+  EXPECT_EQ(integrator.get_error_estimate_order(), 0);
+  EXPECT_EQ(integrator.supports_error_estimation(), false);
+  EXPECT_THROW(integrator.set_fixed_step_mode(false), std::logic_error);
+  EXPECT_THROW(integrator.set_target_accuracy(1e-1), std::logic_error);
+  EXPECT_THROW(integrator.request_initial_step_size_target(DT),
+               std::logic_error);
+}
+
 // Try a purely continuous system with no sampling.
 // d^2x/dt^2 = -kx/m
 // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
@@ -66,7 +83,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Setup the initial position and initial velocity.
   const double kInitialPosition = 0.1;
-  const double kInitialVelocity = 0.0;
+  const double kInitialVelocity = 0.01;
   const double kOmega = std::sqrt(kSpring / kMass);
 
   // Set initial condition using the Simulator's internal Context.
@@ -81,19 +98,25 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double C2 = kInitialVelocity / kOmega;
 
   // Integrate for 1 second.
-  const double T_FINAL = 1.0;
+  const double kTFinal = 1.0;
   double t;
-  for (t = 0.0; std::abs(t - T_FINAL) > DT; t += DT)
-    integrator.Step(INF, INF);
+  for (t = 0.0; std::abs(t - kTFinal) > DT; t += DT)
+    integrator.StepOnceAtMost(INF, INF);
 
   EXPECT_NEAR(context->get_time(), 1., DT);  // Should be exact.
 
   // Get the final position.
-  const double kXFinal = context->get_continuous_state_vector().GetAtIndex(0);
+  const double x_final = context->get_continuous_state_vector().GetAtIndex(0);
 
   // Check the solution.
   double true_sol = C1 * std::cos(kOmega * t) + C2 * std::sin(kOmega * t);
-  EXPECT_NEAR(true_sol, kXFinal, 1e-5);
+  EXPECT_NEAR(true_sol, x_final, 5e-3);
+
+  // Verify that integrator statistics are valid
+  EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
+  EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
+  EXPECT_GE(integrator.get_num_steps_taken(), 0);
+  EXPECT_EQ(integrator.get_error_estimate(), nullptr);
 }
 
 }  // namespace
