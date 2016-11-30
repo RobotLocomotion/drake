@@ -1057,11 +1057,32 @@ class RigidBodyTree {
    */
   const RigidBodyActuator& GetActuator(const std::string& name) const;
 
+  /// Returns the index of the RigidBody associated with the frame
+  /// represented by body_or_frame_id. Therefore, this method always returns
+  /// the index of a RigidBody.
+  ///
+  /// If body_or_frame_id corresponds to a RigidBody index, this method
+  /// returns that index and sets `T_BF` to the identity.
+  /// If body_or_frame_id corresponds to a RigidBodyFrame `F`, this method
+  /// returns the index of the RigidBody associated with that frame and sets
+  /// set `T_BF` to the transormation from `F` to the frame `B` of the
+  /// RigidBody to which the frame is attached.
+
+  /// @param[in] body_or_frame_id the index representing the frame we are
+  /// referring to.
+  /// @param[out] T_BF The trasformation between `frame body_or_frame_id` (the
+  /// identity is this frame is a body) and the body to which that frame is
+  /// attached.
+  /// @returns The index of the RigidBody to which the frame is attached (or
+  /// the input frame id if it corresponds to a RigidBody).
   // TODO(tkoolen): remove parseBodyOrFrameID methods
+  // TODO(amcastro-tri): Provide (faster/cleaner) API's for methods now
+  // taking indexes that instead takes RigidBodyFrame's (which immediately
+  // gives access to RigidBody and transform).
   template <typename Scalar>
   int parseBodyOrFrameID(
       const int body_or_frame_id,
-      Eigen::Transform<Scalar, 3, Eigen::Isometry>* Tframe) const;
+      Eigen::Transform<Scalar, 3, Eigen::Isometry>* T_BF) const;
   int parseBodyOrFrameID(const int body_or_frame_id) const;
 
   template <typename Scalar>
