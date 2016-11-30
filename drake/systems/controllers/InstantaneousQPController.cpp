@@ -14,6 +14,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/is_approx_equal_abstol.h"
 #include "drake/math/quaternion.h"
 #include "drake/solvers/fast_qp.h"
 #include "drake/systems/controllers/controlUtil.h"
@@ -581,8 +582,8 @@ void checkCentroidalMomentumMatchesTotalWrench(
   Vector6d momentum_rate_of_change =
       world_momentum_matrix * qdd + world_momentum_matrix_dot_times_v;
 
-  if ((total_wrench_in_world - momentum_rate_of_change)
-          .lpNorm<Eigen::Infinity>() > 1e-6) {
+  if (!drake::is_approx_equal_abstol(total_wrench_in_world,
+                                     momentum_rate_of_change, 1e-6)) {
     std::stringstream message;
     message << "ERROR in checkCentroidalMomentumMatchesTotalWrench:"
             << " total_wrench_in_world = " << total_wrench_in_world

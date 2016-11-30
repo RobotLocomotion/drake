@@ -116,9 +116,7 @@ void AddMaterialToMaterialMap(const string& material_name,
     // the same as the new material.  The range of values in the RGBA vectors
     // is [0, 1].
     const auto& existing_color = material_iter->second;
-    double delta_infinity_norm =
-        (color_rgba - existing_color).lpNorm<Eigen::Infinity>();
-    if (abort_if_name_clash || delta_infinity_norm > 1e-10) {
+    if (abort_if_name_clash || (color_rgba != existing_color)) {
       // The materials map already has the material_name key but the color
       // associated with it is different.
       stringstream error_buff;
@@ -127,8 +125,6 @@ void AddMaterialToMaterialMap(const string& material_name,
                  << "  - existing RGBA values: " << existing_color.transpose()
                  << std::endl
                  << "  - new RGBA values: " << color_rgba.transpose()
-                 << std::endl
-                 << "  - infinity norm of delta: " << delta_infinity_norm
                  << std::endl;
       DRAKE_ABORT_MSG(error_buff.str().c_str());
     }

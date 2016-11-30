@@ -147,6 +147,12 @@ cc_library(
 )
 
 cc_library(
+    name = "is_approx_equal_abstol",
+    hdrs = ["is_approx_equal_abstol.h"],
+    deps = [":common"],
+    linkstatic = 1)
+
+cc_library(
     name = "nice_type_name",
     srcs = ["nice_type_name.cc"],
     hdrs = ["nice_type_name.h"],
