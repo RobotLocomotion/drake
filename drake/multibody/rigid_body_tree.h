@@ -461,6 +461,18 @@ class RigidBodyTree {
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorques(
       Eigen::MatrixBase<DerivedV> const& v) const;
 
+  /// Given a set of points in the frame referenced by @p
+  /// from_body_or_frame_ind this methods returns the same set of points in
+  /// described in the frame referenced by @p to_body_or_frame_ind.
+  /// @param[in] cache KinematicsCache object.
+  /// @param[in] points A matrix in R^{3 x n} containing n 3D column vectors
+  /// for each point to be transformed.
+  /// @param[in] from_body_or_frame_ind Frame identifier on which input points
+  /// are described.
+  /// @parame[out] to_body_or_frame_ind Frame identifier on which output points
+  /// are described.
+  /// @returns The inut set of points described in the frame referenced by
+  /// @p to_body_or_frame_ind.
   template <
       typename Scalar,
       typename DerivedPoints>  // not necessarily any relation between the two;
