@@ -469,7 +469,7 @@ class RigidBodyTree {
   /// for each point to be transformed.
   /// @param[in] from_body_or_frame_ind Frame identifier on which input points
   /// are described.
-  /// @parame[out] to_body_or_frame_ind Frame identifier on which output points
+  /// @param[in] to_body_or_frame_ind Frame identifier on which output points
   /// are described.
   /// @returns The inut set of points described in the frame referenced by
   /// @p to_body_or_frame_ind.
@@ -510,6 +510,43 @@ class RigidBodyTree {
             .linear());
   }
 
+  /// Given a set of `n` points provided as column entries in @p points in
+  /// `R^{3 x n}` this method computes a Jacobian matrix that relates each
+  /// point's velocity with the generalized coordinates time derivatives
+  /// (`in_terms_of_qdot = true`) or the generalized velocities
+  /// (`in_terms_of_qdot = false`).
+  ///
+  /// Defining `ndof = nq` if `in_terms_of_qdot = true` or `ndof = nv` if
+  /// `in_terms_of_qdot = false`, the Jacobian matrix lives in
+  /// `R^{3*n x ndof}` such that the linear velocity `v_i` of the `i-th`
+  /// point is computed as `v_i = [J * v].segment<3>(i)` or, in terms of
+  /// generalized coordinates time derivatives as
+  /// `v_i = [J * qdot].segment<3>(i)`.
+  ///
+  /// Note: Many entries in this matrix may be zero for non-participating
+  /// degrees of freedom. This might have an impact in the efficiency of your
+  /// particular computation.
+  ///
+  /// @param[in] cache KinematicsCache object.
+  /// @param[in] points A matrix in R^{3 x n} containing n 3D column vectors
+  /// for each point to be transformed.
+  /// @param[in] from_body_or_frame_ind Frame identifier on which input points
+  /// are described.
+  /// @param[in] to_body_or_frame_ind Frame identifier on which velocities
+  /// computed with this Jacobian are described i.e. `v_i`'s are described in
+  /// to_body_or_frame_ind.
+  /// @param[in] in_terms_of_qdot if `true` the returned Jacobian allows to
+  /// compute velocities as `v = J * qdot` or if `false`, it allows to compute
+  /// velocities as `v = J * v`.
+  ///
+  /// @returns A Jacobian matrix `J` in `R^{3*n x ndof}` with `ndof = nq` if
+  /// `in_terms_of_qdot = true` or `ndof = nv` if `in_terms_of_qdot = false`.
+  ///
+  /// @see transformPoints() to transform positions instead of velocities.
+  ///
+  /// The Jacobian in this method only allows to obtain the linear velocity
+  /// component. For a general transformation of spatial velocities see
+  /// Section 3.6 of A. Jain's book, Eq. 3.53, p. 55.
   template <typename Scalar, typename DerivedPoints>
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> transformPointsJacobian(
       const KinematicsCache<Scalar>& cache,
