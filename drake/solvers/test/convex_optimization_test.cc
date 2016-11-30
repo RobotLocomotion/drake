@@ -1,3 +1,4 @@
+#pragma GCC diagnostic ignored "-Wunused-function"
 #include <iostream>
 
 #include <list>
@@ -926,7 +927,6 @@ void TestFindSpringEquilibrium(
                         spring_stiffness_coefficient, end_pos1, end_pos2,
                         solver);
 }
-
 }  // namespace
 
 GTEST_TEST(TestConvexOptimization, TestLinearProgramFeasibility) {
@@ -1142,14 +1142,9 @@ GTEST_TEST(TestConvexOptimization, TestFindSpringEquilibrium) {
   }
 }
 
-// Solve a semidefinite programming problem.
-// Find the common Lyapunov function for linear systems
-// xdot = Ai*x
-// The condition is
-// min 0
-// s.t P is positive semidefinite
-//     Ai'*P + P*Ai is positive semidefinite
 namespace {
+// Add condition A' * P + P * A + Q = 0
+//               Q is p.s.d
 template <int x_dim>
 DecisionVariableMatrix<x_dim, x_dim> AddLyapunovCondition(
     const Eigen::Matrix<double, x_dim, x_dim>& A,
@@ -1184,6 +1179,13 @@ DecisionVariableMatrix<x_dim, x_dim> AddLyapunovCondition(
 }
 }  // namespace
 
+// Solve a semidefinite programming problem.
+// Find the common Lyapunov function for linear systems
+// xdot = Ai*x
+// The condition is
+// min 0
+// s.t P is positive semidefinite
+//     Ai'*P + P*Ai is positive semidefinite
 GTEST_TEST(TestConvexOptimization, TestCommonLyapunov) {
 std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
 GetSemidefiniteProgramSolvers(&solvers);
@@ -1221,6 +1223,48 @@ for (const auto& solver : solvers) {
   EXPECT_TRUE(CompareMatrices(A2.transpose() * P_value + P_value * A2,
                               -Q2_value, 1e-6, MatrixCompareType::absolute));
 }
+}
+
+
+// Solve an eigen value problem through a semidefinite programming.
+// Minimize the maximum eigen value of a matrix that depends affinly on a
+// variable x
+// min  z
+// s.t z * Identity - x1 * F1 - ... - xn * Fn is p.s.d
+//     A * x <= b
+//     C * x = d
+GTEST_TEST(TestConvexOptimization, TestEigenvalueProblem) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+  GetSemidefiniteProgramSolvers(&solvers);
+  for (const auto& solver : solvers) {
+    MathematicalProgram prog;
+    auto x = prog.AddContinuousVariables<2>("x");
+    Eigen::Matrix3d F1;
+    F1 << 1, 0.2, 0.3,
+          0.2, 2, -0.1,
+          0.3, -0.1, 4;
+    Eigen::Matrix3d F2;
+    F2 << 2, 0.4, 0.7,
+          0.4, -1, 0.1,
+          0.7, 0.1, 5;
+    auto z = prog.AddContinuousVariables<1>("z");
+    prog.AddLinearMatrixInequalityConstraint({Eigen::Matrix3d::Zero(), Eigen::Matrix3d::Identity(), -F1, -F2}, {z, x});
+
+    Eigen::Vector2d x_lb(0.1, 1);
+    Eigen::Vector2d x_ub(2, 3);
+    prog.AddBoundingBoxConstraint(x_lb, x_ub, {x});
+
+    prog.AddLinearCost(drake::Vector1d(1),{z});
+
+    RunSolver(&prog, *solver);
+
+    double z_value = z(0).value();
+    auto x_value = GetSolution(x);
+    auto xF_sum = x_value(0) * F1 + x_value(1) * F2;
+
+    Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_xF(xF_sum);
+    EXPECT_NEAR(z_value, eigen_solver_xF.eigenvalues().real().maxCoeff(), 1E-6);
+  }
 }
 }  // namespace test
 }  // namespace solvers
