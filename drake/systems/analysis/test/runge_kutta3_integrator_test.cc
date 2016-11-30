@@ -107,7 +107,7 @@ TEST_F(RK3IntegratorTest, BulletProofSetup) {
   // Initialize the integrator.
   EXPECT_THROW(integrator_->Initialize(), std::logic_error);
 
-  // Set the accuracy to something too low, set the maximum step size and
+  // Set the accuracy to something too loose, set the maximum step size and
   // try again.
   integrator_->set_target_accuracy(10.0);
   integrator_->set_maximum_step_size(kBigDT);

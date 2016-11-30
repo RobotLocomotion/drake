@@ -36,6 +36,10 @@ void RungeKutta3Integrator<T>::DoInitialize() {
 
   // Sets the working accuracy to a good value.
   double working_accuracy = this->get_target_accuracy();
+
+  // If the user asks for accuracy that is looser than the loosest this
+  // integrator can provide, use the integrator's loosest accuracy setting
+  // instead.
   if (working_accuracy > kLoosestAccuracy)
     working_accuracy = kLoosestAccuracy;
   else if (isnan(working_accuracy))

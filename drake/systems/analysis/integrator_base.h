@@ -89,12 +89,14 @@ class IntegratorBase {
   virtual bool supports_error_estimation() const = 0;
 
   /**
-   * Sets an integrator with error control to fixed step mode.
+   * Sets an integrator with error control to fixed step mode. If the integrator
+   * runs in fixed step mode, it will always take the maximum step size
+   * (i.e., that returned by get_maximum_step_size()).
    * @throws std::logic_error if integrator does not support error
-   *         estimation.
+   *         estimation and @p flag is set to `true`.
    */
-  virtual void set_fixed_step_mode(bool flag) {
-    if (!supports_error_estimation())
+  void set_fixed_step_mode(bool flag) {
+    if (flag && !supports_error_estimation())
       throw std::logic_error("Integrator does not support accuracy estimation");
     fixed_step_mode_ = flag;
   }
@@ -102,10 +104,9 @@ class IntegratorBase {
   /**
    * Gets whether an integrator is running in fixed step mode. If the integrator
    * does not support error estimation, this function will always return `true`.
-   * If the integrator runs in fixed step mode, it will always take the largest
-   * possible step size.
+   * If the integrator runs in fixed step mode, it will always take the maximum
+   * step size (i.e., that returned by get_maximum_step_size()).
    * @sa set_fixed_step_mode()
-   * @sa set_maximum_step_size()
    */
   bool get_fixed_step_mode() const {
     return (!supports_error_estimation() || fixed_step_mode_);
