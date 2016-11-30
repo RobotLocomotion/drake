@@ -70,6 +70,7 @@ set(private_headers
 add_custom_target(
   drakeBazelCommon
   COMMAND bazel build ...
+  COMMENT "Shelling out to bazel in ${CMAKE_CURRENT_SOURCE_DIR}"
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 # Create the library target and note its dependencies.
