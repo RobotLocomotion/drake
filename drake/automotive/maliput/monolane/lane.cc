@@ -37,24 +37,25 @@ std::unique_ptr<api::LaneEnd> Lane::DoGetDefaultBranch(
 
 
 double Lane::do_length() const {
+  // TODO(maddog@tri.global)  Integrate path-length properly.
   return elevation().s_p(1.0) * p_scale_;
 }
 
 
-Rot3 Lane::rot3_of_p_(const double p) const {
-  return Rot3(heading_of_p_(p),
+Rot3 Lane::rot3_of_p(const double p) const {
+  return Rot3(heading_of_p(p),
               -std::atan(elevation().fdot_p(p)),
               superelevation().f_p(p) * p_scale_);
 }
 
-double Lane::p_from_s_(const double s) const {
+double Lane::p_from_s(const double s) const {
   return elevation().p_s(s / p_scale_);
 }
 
 
-V3 Lane::W_prime_of_prh_(const double p, const double r, const double h,
-                         const Rot3& gba) const {
-  const V2 G_prime = xy_dot_of_p_(p);
+V3 Lane::W_prime_of_prh(const double p, const double r, const double h,
+                        const Rot3& gba) const {
+  const V2 G_prime = xy_dot_of_p(p);
   // TODO(maddog)  Until s(p) is integrated properly.
   const double g_prime = elevation().fdot_p(p);
   //const double g_prime = elevation().fake_gprime(p);
@@ -74,7 +75,7 @@ V3 Lane::W_prime_of_prh_(const double p, const double r, const double h,
   // TODO(maddog)  Hmm... is d_alpha scaled correctly?
   const double d_alpha = superelevation().fdot_p(p) * p_scale_;
   const double d_beta = -cb * cb * elevation().fddot_p(p);
-  const double d_gamma = heading_dot_of_p_(p);
+  const double d_gamma = heading_dot_of_p(p);
 
   // TODO(maddog)  NEEDS ALPHA SIGN CORRECTION.
   return
@@ -99,14 +100,14 @@ V3 Lane::W_prime_of_prh_(const double p, const double r, const double h,
 }
 
 
-V3 Lane::s_hat_of_prh_(const double p, const double r, const double h,
-                       const Rot3& gba) const {
-  const V3 W_prime = W_prime_of_prh_(p, r, h, gba);
+V3 Lane::s_hat_of_prh(const double p, const double r, const double h,
+                      const Rot3& gba) const {
+  const V3 W_prime = W_prime_of_prh(p, r, h, gba);
   return W_prime * (1.0 / W_prime.norm());
 }
 
 
-V3 Lane::r_hat_of_gba_(const Rot3& gba) const {
+V3 Lane::r_hat_of_gba(const Rot3& gba) const {
   return gba.apply({0., 1., 0.});
 }
 
@@ -114,13 +115,13 @@ V3 Lane::r_hat_of_gba_(const Rot3& gba) const {
 api::GeoPosition Lane::DoToGeoPosition(
     const api::LanePosition& lane_pos) const {
   // Recover parameter p from arc-length position s.
-  const double p = p_from_s_(lane_pos.s);
+  const double p = p_from_s(lane_pos.s);
   // Calculate z (elevation) of (s,0,0);
   const double z = elevation().f_p(p) * p_scale_;
   // Calculate x,y of (s,0,0).
-  const V2 xy = xy_of_p_(p);
+  const V2 xy = xy_of_p(p);
   // Calculate orientation of (s,r,h) basis at (s,0,0).
-  const Rot3 ypr = rot3_of_p_(p);
+  const Rot3 ypr = rot3_of_p(p);
 
   // Rotate (0,r,h) and sum with mapped (s,0,0).
   const V3 xyz =
@@ -131,15 +132,15 @@ api::GeoPosition Lane::DoToGeoPosition(
 
 api::Rotation Lane::DoGetOrientation(const api::LanePosition& lane_pos) const {
   // Recover linear parameter p from arc-length position s.
-  const double p = p_from_s_(lane_pos.s);
+  const double p = p_from_s(lane_pos.s);
   const double r = lane_pos.r;
   const double h = lane_pos.h;
   // Calculate orientation of (s,r,h) basis at (s,0,0).
-  const Rot3 gba = rot3_of_p_(p);
+  const Rot3 gba = rot3_of_p(p);
 
   // Calculate s,r basis vectors at (s,r,h)...
-  const V3 s_hat = s_hat_of_prh_(p, r, h, gba);
-  const V3 r_hat = r_hat_of_gba_(gba);
+  const V3 s_hat = s_hat_of_prh(p, r, h, gba);
+  const V3 r_hat = r_hat_of_gba(gba);
   // ...and then derive orientation from those basis vectors.
   const double gamma = std::atan2(s_hat.y(),
                                   s_hat.x());
@@ -157,7 +158,7 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
     const api::LanePosition& position,
     const api::IsoLaneVelocity& velocity) const {
 
-  const double p = p_from_s_(position.s);
+  const double p = p_from_s(position.s);
   const double r = position.r;
   const double h = position.h;
 
@@ -165,8 +166,8 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
   // const double g_prime = elevation().fdot_p(p);
   const double g_prime = elevation().fake_gprime(p);
 
-  const Rot3 R = rot3_of_p_(p);
-  const V3 W_prime = W_prime_of_prh_(p, r, h, R);
+  const Rot3 R = rot3_of_p(p);
+  const V3 W_prime = W_prime_of_prh(p, r, h, R);
 
   const double d_s = p_scale_ * std::sqrt(1 + (g_prime * g_prime));
 
@@ -174,8 +175,6 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
                            velocity.rho_v,
                            velocity.eta_v);
 }
-
-
 
 
 }  // namespace monolane
