@@ -61,9 +61,7 @@ bool CheckContinuity(const PiecewisePolynomial<CoefficientType>& traj,
   CoefficientType val0, val1;
 
   for (int n = 0; n < traj.getNumberOfSegments() - 1; ++n) {
-    double t0 = traj.getStartTime(n);
-    double t1 = traj.getEndTime(n);
-    double dt = t1 - t0;
+    double dt = traj.getDuration(n);
 
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
@@ -97,7 +95,8 @@ template <typename CoefficientType>
 bool CheckValues(
     const PiecewisePolynomial<CoefficientType>& traj,
     const std::vector<std::vector<MatrixX<CoefficientType>>>& values,
-    CoefficientType tol) {
+    CoefficientType tol,
+    bool check_last_time_step = true) {
   if (values.empty()) return false;
 
   typedef Polynomial<CoefficientType> PolynomialType;
@@ -108,9 +107,7 @@ bool CheckValues(
   CoefficientType val0, val1;
 
   for (int n = 0; n < traj.getNumberOfSegments(); ++n) {
-    double t0 = traj.getStartTime(n);
-    double t1 = traj.getEndTime(n);
-    double dt = t1 - t0;
+    double dt = traj.getDuration(n);
 
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
@@ -119,14 +116,17 @@ bool CheckValues(
         for (const auto& value : values) {
           // Values evaluated at the beginning of the current segment.
           val0 = poly.EvaluateUnivariate(0);
-          if (std::abs(val0 - value[n](i, j)) > tol) {
+          if (std::abs(val0 - value.at(n)(i, j)) > tol) {
             return false;
           }
 
-          // Values evaluated at the end of the current segment.
-          val1 = poly.EvaluateUnivariate(dt);
-          if (std::abs(val1 - value[n + 1](i, j)) > tol) {
-            return false;
+          // Checks the last time step's values.
+          if (check_last_time_step && n == traj.getNumberOfSegments() - 1) {
+            // Values evaluated at the end.
+            val1 = poly.EvaluateUnivariate(dt);
+            if (std::abs(val1 - value.at(n + 1)(i, j)) > tol) {
+              return false;
+            }
           }
 
           poly = poly.Derivative();
@@ -165,11 +165,9 @@ void PchipTest(const std::vector<double>& T,
 
   // Check monotonic.
   for (int n = 0; n < traj.getNumberOfSegments(); ++n) {
-    double t0 = traj.getStartTime(n);
-    double t1 = traj.getEndTime(n);
-    double dt = t1 - t0;
+    double dt = traj.getDuration(n);
 
-    EXPECT_NEAR(T[n], t0, tol);
+    EXPECT_NEAR(T[n], traj.getStartTime(n), tol);
 
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
@@ -272,9 +270,52 @@ GTEST_TEST(SplineTests, PchipAndCubicSplineCompareWithMatlabTest) {
   EXPECT_TRUE(CheckValues(spline, {Y}, 1e-12));
 }
 
+
+
+GTEST_TEST(SplineTests, RandomizedLinearSplineTest) {
+  default_random_engine generator;
+  int N = 11;
+  int num_tests = 1000;
+  int rows = 3;
+  int cols = 6;
+
+  for (int ctr = 0; ctr < num_tests; ++ctr) {
+    std::vector<double> T =
+        PiecewiseFunction::randomSegmentTimes(N - 1, generator);
+    std::vector<MatrixX<double>> Y(N);
+    for (int i = 0; i < N; ++i) Y[i] = MatrixX<double>::Random(rows, cols);
+
+    PiecewisePolynomial<double> spline =
+        PiecewisePolynomial<double>::FirstOrderHold(T, Y);
+    EXPECT_TRUE(CheckContinuity(spline, 1e-12, 0));
+    EXPECT_TRUE(CheckValues(spline, {Y}, 1e-12));
+  }
+}
+
+GTEST_TEST(SplineTests, RandomizedConstantSplineTest) {
+  default_random_engine generator;
+  int N = 6;
+  int num_tests = 100;
+  int rows = 3;
+  int cols = 6;
+
+  for (int ctr = 0; ctr < num_tests; ++ctr) {
+    std::vector<double> T =
+        PiecewiseFunction::randomSegmentTimes(N - 1, generator);
+    std::vector<MatrixX<double>> Y(N);
+    for (int i = 0; i < N; ++i) Y[i] = MatrixX<double>::Random(rows, cols);
+
+    PiecewisePolynomial<double> spline =
+        PiecewisePolynomial<double>::ZeroOrderHold(T, Y);
+    // Don't check the last time step, because constant spline ignores the last
+    // knot.
+    EXPECT_TRUE(CheckValues(spline, {Y}, 1e-12, false));
+  }
+}
+
 GTEST_TEST(SplineTests, RandomizedPchipSplineTest) {
   default_random_engine generator;
-  int N = 5;
+  int N = 10;
   int num_tests = 1000;
   int rows = 3;
   int cols = 4;
