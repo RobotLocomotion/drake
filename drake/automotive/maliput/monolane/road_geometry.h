@@ -14,10 +14,12 @@ namespace drake {
 namespace maliput {
 namespace monolane {
 
-/// A simple RoadGeometry implementation that only supports a
-/// single lane per segment.
+/// A simple RoadGeometry implementation that only supports a single
+/// lane per segment.  Use the Builder interface to actually assemble
+/// a sensible road network.
 class RoadGeometry : public api::RoadGeometry {
  public:
+  /// Construct an empty RoadGeometry with the specified tolerances.
   RoadGeometry(const api::RoadGeometryId& id,
                const double linear_tolerance,
                const double angular_tolerance)
@@ -25,9 +27,13 @@ class RoadGeometry : public api::RoadGeometry {
         linear_tolerance_(linear_tolerance),
         angular_tolerance_(angular_tolerance) {}
 
+  /// Create and add a new Junction with the specified @p id.
   Junction* NewJunction(api::JunctionId id);
 
+  /// Create and add a new BranchPoint with the specified @p id.
   BranchPoint* NewBranchPoint(api::BranchPointId id);
+
+  virtual ~RoadGeometry() {}
 
  private:
   const api::RoadGeometryId do_id() const override { return id_; }
