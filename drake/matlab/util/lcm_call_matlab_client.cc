@@ -15,6 +15,11 @@
 // from localhost by default.  Perhaps writing/sending a secret password file to
 // disk which is only accessible to localhost (e.g. .Xauthority) would work.
 
+// Known issues: Some functions in matlab do not like to get called from mex.
+// For instance, calling "histogram" fails with "Error using inputname...
+// Argument number is not valid." because it is trying to extract a variable
+// name from the matlab calling stack (and there are none).  Bad matlab.
+
 namespace {
 
 void FlushMatlabEventBuffer(void) {
