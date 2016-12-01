@@ -20,9 +20,14 @@ class LineLane;
 
 class Segment : public api::Segment {
  public:
+  /// Construct a new Segment.
+  ///
+  /// The Segment is not fully-baked until one of NewLineLane() or NewArcLane()
+  /// is called.
   Segment(const api::SegmentId& id, Junction* j)
       : id_(id), junction_(j) {}
 
+  /// Give the segment a newly constructed LineLane.
   LineLane* NewLineLane(api::LaneId id,
                         const V2& xy0, const V2& dxy,
                         const api::RBounds& lane_bounds,
@@ -30,6 +35,7 @@ class Segment : public api::Segment {
                         const CubicPolynomial& elevation,
                         const CubicPolynomial& superelevation);
 
+  /// Give the segment a newly constructed ArcLane.
   ArcLane* NewArcLane(api::LaneId id,
                       const V2& center, const double radius,
                       const double theta0, const double d_theta,
@@ -37,6 +43,8 @@ class Segment : public api::Segment {
                       const api::RBounds& driveable_bounds,
                       const CubicPolynomial& elevation,
                       const CubicPolynomial& superelevation);
+
+  virtual ~Segment() {}
 
  private:
   const api::SegmentId do_id() const override { return id_; }

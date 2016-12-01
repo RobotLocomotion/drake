@@ -16,11 +16,13 @@ class Lane;
 class RoadGeometry;
 
 
+/// An implementation of LaneEndSet.
 class LaneEndSet : public api::LaneEndSet {
  public:
-  virtual ~LaneEndSet() {}
-
+  /// Add a LaneEnd.
   void add(const api::LaneEnd& end) { ends_.push_back(end); }
+
+  virtual ~LaneEndSet() {}
 
  private:
   int do_size() const override { return ends_.size(); }
@@ -31,16 +33,25 @@ class LaneEndSet : public api::LaneEndSet {
 };
 
 
+/// An implementation of BranchPoint.
 class BranchPoint : public api::BranchPoint {
  public:
+  /// Construct an empty BranchPoint.
   BranchPoint(const api::BranchPointId& id, RoadGeometry* rg);
 
+  /// Add a LaneEnd to the "A side" of the BranchPoint.
   const api::LaneEnd& AddABranch(const api::LaneEnd& lane_end);
 
+  /// Add a LaneEnd to the "B side" of the BranchPoint.
   const api::LaneEnd& AddBBranch(const api::LaneEnd& lane_end);
 
+  /// Set the default branch for @p lane_end to @p default_branch.
+  ///
+  /// The specified LaneEnds must belong to opposite sides of this BranchPoint.
   void SetDefault(const api::LaneEnd& lane_end,
                   const api::LaneEnd& default_branch);
+
+  virtual ~BranchPoint() {}
 
  private:
   const api::BranchPointId do_id() const override { return id_; }
