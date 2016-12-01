@@ -1265,7 +1265,7 @@ class MathematicalProgram {
    */
   std::shared_ptr<LinearMatrixInequalityConstraint>
   AddLinearMatrixInequalityConstraint(
-      const std::list<Eigen::Ref<const Eigen::MatrixXd>>& F,
+      const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
       const VariableListRef& vars);
 
   // template <typename FunctionType>

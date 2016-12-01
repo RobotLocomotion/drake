@@ -6,8 +6,6 @@ namespace drake {
 namespace solvers {
 void PositiveSemidefiniteConstraint::Eval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
-  throw std::runtime_error(
-      "The Eval function for positive semidefinite constraint is not defined.");
 }
 
 void PositiveSemidefiniteConstraint::Eval(
@@ -31,16 +29,9 @@ void LinearMatrixInequalityConstraint::Eval(
 }
 
 LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
-    const std::list<Eigen::Ref<const Eigen::MatrixXd>>& F)
-    : Constraint(0), matrix_rows_(F.front().rows()) {
-  F_.resize(F.size());
-  auto F_it = F_.begin();
-  for (const auto& Fi : F) {
-    DRAKE_ASSERT(Fi.rows() == F.front().rows());
-    DRAKE_ASSERT(math::IsSymmetric(Fi, 1E-10));
-    *F_it = Fi;
-    ++F_it;
-  }
+    const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F, double symmetry_tolerance)
+    : Constraint(0), F_(F.begin(), F.end()), matrix_rows_(F.empty() ? 0 : F.front().rows()) {
+  DRAKE_DEMAND(!F.empty());
 }
 }  // namespace solvers
 }  // namespace drake

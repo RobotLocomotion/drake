@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/symbolic_expression.h"
-#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace math {
@@ -42,6 +42,24 @@ GTEST_TEST(TestMatrixUtil, TestIsSymmetric) {
   S << S00, S01,
        S01, S11;
   EXPECT_TRUE(IsSymmetric(S));
+}
+
+GTEST_TEST(TestMatrixUtil, TestToSymmetricMatrixFromLowerTriangularColumns) {
+  // Tests a static size vector.
+  Eigen::Vector3d x1(1, 2, 3);
+  Eigen::Matrix2d X1;
+  X1 << 1, 2,
+        2, 3;
+  EXPECT_TRUE(CompareMatrices(ToSymmetricMatrixFromLowerTriangularColumns(x1), X1, std::numeric_limits<double>::epsilon(), MatrixCompareType::absolute));
+
+  // Tests a dynamic size vector.
+  Eigen::VectorXd x2(6);
+  x2 << 1, 2, 3, 4, 5, 6;
+  Eigen::Matrix3d X2;
+  X2 << 1, 2, 3,
+        2, 4, 5,
+        3, 5, 6;
+  EXPECT_TRUE(CompareMatrices(ToSymmetricMatrixFromLowerTriangularColumns(x2), X2, std::numeric_limits<double>::epsilon(), MatrixCompareType::absolute));
 }
 }  // namespace test
 }  // namespace math

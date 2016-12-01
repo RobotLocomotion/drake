@@ -480,14 +480,24 @@ class LinearComplementarityConstraint : public Constraint {
  * namely, all eigen values of S are non-negative.
  * Notice that we forbid Eval() function since we do not want to solve this
  * constraint through nonlinear optimization.
+ * This class is only used in conjunction with a symmetric matrix through
+ * MathematicalProgram.
  */
 class PositiveSemidefiniteConstraint : public Constraint {
  public:
-  PositiveSemidefiniteConstraint() : Constraint(0) {}
+  PositiveSemidefiniteConstraint(int rows) : Constraint(rows, Eigen::VectorXd::Zero(rows), Eigen::VectorXd::Constant(rows, std::numeric_limits<double>::infinity())) {}
 
+  /**
+   * @param x The stacked columns of the lower diagonal part of the symmetric
+   * matrix.
+   */
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override;
 
+  /**
+   * @param x The stacked columns of the lower diagonal part of the symmetric
+   * matrix.
+   */
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override;
 };
@@ -500,11 +510,17 @@ class PositiveSemidefiniteConstraint : public Constraint {
  */
 class LinearMatrixInequalityConstraint : public Constraint {
  public:
+  /**
+   * @param F Each symmetric matrix F[i] should be of the same size.
+   * @param symmytry_tolerance  The precision to determine if the input matrices
+   * Fi are all symmetric. @see math::IsSymmetric()
+   */
   LinearMatrixInequalityConstraint(
-      const std::list<Eigen::Ref<const Eigen::MatrixXd>>& F);
+      const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
+      double symmetry_tolerance = 1E-10);
 
   /* Getter for all given matrices F */
-  const std::list<Eigen::MatrixXd>& F() const { return F_; }
+  const std::vector<Eigen::MatrixXd>& F() const { return F_; }
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override;
@@ -517,8 +533,8 @@ class LinearMatrixInequalityConstraint : public Constraint {
   int matrix_rows() const { return matrix_rows_; }
 
  private:
-  std::list<Eigen::MatrixXd> F_;
-  int matrix_rows_;
+  std::vector<Eigen::MatrixXd> F_;
+  const int matrix_rows_{};
 };
 }  // namespace solvers
 }  // namespace drake
