@@ -182,16 +182,16 @@ Lane* Builder::BuildConnection(
     case Connection::kLine: {
       const V2 xy0(cnx->start().xy.x,
                    cnx->start().xy.y);
-      const V2 dxy(cnx->end().xy.x - xy0.x,
-                   cnx->end().xy.y - xy0.y);
+      const V2 dxy(cnx->end().xy.x - xy0.x(),
+                   cnx->end().xy.y - xy0.y());
       const CubicPolynomial elevation(MakeCubic(
-          dxy.length(),
+          dxy.norm(),
           cnx->start().z.z,
           cnx->end().z.z - cnx->start().z.z,
           cnx->start().z.zdot,
           cnx->end().z.zdot));
       const CubicPolynomial superelevation(MakeCubic(
-          dxy.length(),
+          dxy.norm(),
           cnx->start().z.theta,
           cnx->end().z.theta - cnx->start().z.theta,
           cnx->start().z.thetadot,
@@ -206,8 +206,8 @@ Lane* Builder::BuildConnection(
     case Connection::kArc: {
       const V2 center(cnx->cx(), cnx->cy());
       const double radius = cnx->radius();
-      const double theta0 = std::atan2(cnx->start().xy.y - center.y,
-                                       cnx->start().xy.x - center.x);
+      const double theta0 = std::atan2(cnx->start().xy.y - center.y(),
+                                       cnx->start().xy.x - center.x());
       const double d_theta = cnx->d_theta();
       const double arc_length = radius * std::abs(d_theta);
       const CubicPolynomial elevation(MakeCubic(

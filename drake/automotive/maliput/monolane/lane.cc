@@ -60,9 +60,9 @@ V3 Lane::W_prime_of_prh_(const double p, const double r, const double h,
   //const double g_prime = elevation().fake_gprime(p);
 
   const Rot3& R = gba;
-  const double alpha = R.roll;
-  const double beta = R.pitch;
-  const double gamma = R.yaw;
+  const double alpha = R.roll();
+  const double beta = R.pitch();
+  const double gamma = R.yaw();
 
   const double ca = std::cos(alpha);
   const double cb = std::cos(beta);
@@ -78,8 +78,8 @@ V3 Lane::W_prime_of_prh_(const double p, const double r, const double h,
 
   // TODO(maddog)  NEEDS ALPHA SIGN CORRECTION.
   return
-      V3(G_prime.x,
-         G_prime.y,
+      V3(G_prime.x(),
+         G_prime.y(),
          p_scale_ * g_prime) +
 
       V3((((sa*sg)+(ca*sb*cg))*r + ((ca*sg)-(sa*sb*cg))*h),
@@ -102,7 +102,7 @@ V3 Lane::W_prime_of_prh_(const double p, const double r, const double h,
 V3 Lane::s_hat_of_prh_(const double p, const double r, const double h,
                        const Rot3& gba) const {
   const V3 W_prime = W_prime_of_prh_(p, r, h, gba);
-  return W_prime * (1.0 / W_prime.magnitude());
+  return W_prime * (1.0 / W_prime.norm());
 }
 
 
@@ -123,9 +123,9 @@ api::GeoPosition Lane::DoToGeoPosition(
   const Rot3 ypr = rot3_of_p_(p);
 
   // Rotate (0,r,h) and sum with mapped (s,0,0).
-  const V3 xyz = V3::sum(ypr.apply({0., lane_pos.r, lane_pos.h}),
-                         {xy.x, xy.y, z});
-  return {xyz.x, xyz.y, xyz.z};
+  const V3 xyz =
+      ypr.apply({0., lane_pos.r, lane_pos.h}) + V3(xy.x(), xy.y(), z);
+  return {xyz.x(), xyz.y(), xyz.z()};
 }
 
 
@@ -141,14 +141,14 @@ api::Rotation Lane::DoGetOrientation(const api::LanePosition& lane_pos) const {
   const V3 s_hat = s_hat_of_prh_(p, r, h, gba);
   const V3 r_hat = r_hat_of_gba_(gba);
   // ...and then derive orientation from those basis vectors.
-  const double gamma = std::atan2(s_hat.y,
-                                  s_hat.x);
-  const double beta = std::atan2(-s_hat.z,
-                                 V2(s_hat.x, s_hat.y).length());
+  const double gamma = std::atan2(s_hat.y(),
+                                  s_hat.x());
+  const double beta = std::atan2(-s_hat.z(),
+                                 V2(s_hat.x(), s_hat.y()).norm());
   const double cb = std::cos(beta);
   const double alpha =
-      std::atan2(r_hat.z / cb,
-                 ((r_hat.y * s_hat.x) - (r_hat.x * s_hat.y)) / cb);
+      std::atan2(r_hat.z() / cb,
+                 ((r_hat.y() * s_hat.x()) - (r_hat.x() * s_hat.y())) / cb);
   return api::Rotation(alpha, beta, gamma);
 }
 
@@ -170,7 +170,7 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
 
   const double d_s = p_scale_ * std::sqrt(1 + (g_prime * g_prime));
 
-  return api::LanePosition(d_s / W_prime.magnitude() * velocity.sigma_v,
+  return api::LanePosition(d_s / W_prime.norm() * velocity.sigma_v,
                            velocity.rho_v,
                            velocity.eta_v);
 }
