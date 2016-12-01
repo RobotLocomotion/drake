@@ -10,7 +10,6 @@
 
 #include "spruce.hh"
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/multibody/joints/floating_base_types.h"

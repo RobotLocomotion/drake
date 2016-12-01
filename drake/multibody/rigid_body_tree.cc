@@ -1193,6 +1193,7 @@ RigidBodyTree<T>::transformVelocityMappingToQDotMapping(
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
       Ap(Av.rows(), get_num_positions());
+  DRAKE_DEMAND(Av.cols() == get_num_velocities());
   int Ap_col_start = 0;
   int Av_col_start = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
@@ -1219,6 +1220,7 @@ RigidBodyTree<T>::transformQDotMappingToVelocityMapping(
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
       Av(Ap.rows(), get_num_velocities());
+  DRAKE_DEMAND(Ap.cols() == get_num_positions());
   int Av_col_start = 0;
   int Ap_col_start = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {

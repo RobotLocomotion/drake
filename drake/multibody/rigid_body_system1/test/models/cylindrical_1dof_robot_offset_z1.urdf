@@ -7,7 +7,8 @@
   <link name="link1">
     <inertial>
       <mass value="1"/>
-      <inertia ixx="0.0325" ixy="0.0" ixz="0.0" iyy="0.0325" iyz="0.0" izz="0.005"/>
+      <inertia ixx="0.0325" ixy="0.0" ixz="0.0" iyy="0.0325" iyz="0.0"
+          izz="0.005"/>
       <origin xyz="0 0 0.3"/>
     </inertial>
     <visual>
@@ -30,7 +31,8 @@
   <link name="link2">
     <inertial>
       <mass value="1"/>
-      <inertia ixx="0.0325" ixy="0.0" ixz="0.0" iyy="0.0325" iyz="0.0" izz="0.005"/>
+      <inertia ixx="0.0325" ixy="0.0" ixz="0.0" iyy="0.0325" iyz="0.0"
+          izz="0.005"/>
       <origin xyz="0 0 0.3"/>
     </inertial>
     <visual>

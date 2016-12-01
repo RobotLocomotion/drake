@@ -58,9 +58,9 @@ class RotaryEncoders : public systems::LeafSystem<T> {
       const systems::Context<T>& context) const;
 
  private:
-  const int num_encoders_{0};       /// Dimension of the output port.
-  const std::vector<int> indices_;  /// Selects from the input port.
-  const std::vector<int> ticks_per_revolution_;  /// For quantization.
+  const int num_encoders_{0};       // Dimension of the output port.
+  const std::vector<int> indices_;  // Selects from the input port.
+  const std::vector<int> ticks_per_revolution_;  // For quantization.
 };
 
 }  // namespace sensors

@@ -435,6 +435,29 @@ void RigidBodyPlant<T>::ComputeContactResults(
 }
 
 template <typename T>
+Matrix3<T> RigidBodyPlant<T>::ComputeBasisFromZ(const Vector3<T>& z_axis_W) {
+  // Projects the z-axis into the first quadrant in order to identify the
+  // *smallest* component of the normal.
+  const Vector3<T> u(z_axis_W.cwiseAbs());
+  int minAxis;
+  u.minCoeff(&minAxis);
+  // The world axis corresponding to the smallest component of the local z-axis
+  // will be *most* perpendicular.
+  Vector3<T> perpAxis;
+  perpAxis << (minAxis == 0 ? 1 : 0), (minAxis == 1 ? 1 : 0),
+      (minAxis == 2 ? 1 : 0);
+  // Now define x- and y-axes.
+  Vector3<T> x_axis_W = z_axis_W.cross(perpAxis).normalized();
+  Vector3<T> y_axis_W = z_axis_W.cross(x_axis_W);
+  // Transformation from world frame to local frame.
+  Matrix3<T> R_WL;
+  R_WL.col(0) = x_axis_W;
+  R_WL.col(1) = y_axis_W;
+  R_WL.col(2) = z_axis_W;
+  return R_WL;
+}
+
+template <typename T>
 VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
     const KinematicsCache<T>& kinsol, ContactResults<T>* contacts) const {
   std::vector<DrakeCollision::PointPair> pairs;
@@ -459,28 +482,11 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
                                                0, false);
       Vector3<T> this_normal = pair.normal;
 
-      // Computes a local surface coordinate frame with the local z axis
-      // aligned with the surface's normal. The other two axes are arbitrarily
-      // chosen to complete a right handed triplet.
-      Vector3<T> tangent1;
-      if (1.0 - this_normal(2) < EPSILON) {
-        // Handles the unit-normal case. Since it's unit length, just check z.
-        tangent1 << 1.0, 0.0, 0.0;
-      } else if (1 + this_normal(2) < EPSILON) {
-        tangent1 << -1.0, 0.0, 0.0;  // Same for the reflected case.
-      } else {                       // Now the general case.
-        tangent1 << this_normal(1), -this_normal(0), 0.0;
-        tangent1 /= sqrt(this_normal(1) * this_normal(1) +
-                         this_normal(0) * this_normal(0));
-      }
-      Vector3<T> tangent2 = this_normal.cross(tangent1);
-      // Transformation from world frame to local surface frame.
-      Matrix3<T> R;
-      R.row(0) = tangent1;
-      R.row(1) = tangent2;
-      R.row(2) = this_normal;
-      auto J = R * (JA - JB);  // J = [ D1; D2; n ]
-      // [ tangent1dot; tangent2dot; phidot ]
+      // R_WC is a left-multiplied rotation matrix to transform a vector from
+      // contact frame (C) to world (W), e.g., v_W = R_WC * v_C.
+      Matrix3<T> R_WC = ComputeBasisFromZ(this_normal);
+      auto J = R_WC.transpose() * (JA - JB);  // J = [ D1; D2; n ]
+
       auto relative_velocity = J * kinsol.getV();
 
       {
@@ -499,8 +505,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
 
         // fB is equal and opposite to fA: fB = -fA.
         // Therefore the generalized forces tau_c due to contact are:
-        // tau_c = (R * JA)^T * fA + (R * JB)^T * fB = J^T * fA.
-        // With J computed as above: J = R * (JA - JB).
+        // tau_c = (R_CW * JA)^T * fA + (R_CW * JB)^T * fB = J^T * fA.
+        // With J computed as above: J = R_CW * (JA - JB).
         // Since right_hand_side has a negative sign when on the RHS of the
         // system of equations ([H,-J^T] * [vdot;f] + right_hand_side = 0),
         // this term needs to be subtracted.
@@ -527,8 +533,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           // component (i.e., the torque portion of the wrench is zero.)
           // In contrast, other models (e.g., torsional friction model) can
           // also introduce a "pure torque" component to the wrench.
-          Vector3<T> force = R.transpose() * fA;
-          Vector3<T> normal = R.transpose().template block<3, 1>(0, 2);
+          Vector3<T> force = R_WC * fA;
+          Vector3<T> normal = R_WC.template block<3, 1>(0, 2);
 
           calculator.AddForce(point, normal, force);
 

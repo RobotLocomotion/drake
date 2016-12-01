@@ -16,16 +16,16 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
   SpringMassSystem<AScalar> spring_mass_ad(1., 1., 0.);
 
   // Setup the integration step size.
-  const double DT = 1e-3;
+  const double dt = 1e-3;
 
   // Create a context.
   auto context_dbl = spring_mass_dbl.CreateDefaultContext();
   auto context_ad = spring_mass_ad.CreateDefaultContext();
 
   // Create the integrator as a double and as an autodiff type
-  ExplicitEulerIntegrator<double> int_dbl(spring_mass_dbl, DT,
+  ExplicitEulerIntegrator<double> int_dbl(spring_mass_dbl, dt,
                                           context_dbl.get());
-  ExplicitEulerIntegrator<AScalar> int_ad(spring_mass_ad, DT, context_ad.get());
+  ExplicitEulerIntegrator<AScalar> int_ad(spring_mass_ad, dt, context_ad.get());
 
   // Test that setting the target accuracy or initial step size target fails.
   EXPECT_THROW(int_dbl.set_target_accuracy(1.0), std::logic_error);
@@ -37,21 +37,37 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   SpringMassSystem<double> spring_mass(1., 1., 0.);
 
   // Setup the integration step size.
-  const double DT = 1e-3;
+  const double dt = 1e-3;
 
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
 
   // Create the integrator.
   ExplicitEulerIntegrator<double> integrator(
-      spring_mass, DT, context.get());  // Use default Context.
+      spring_mass, dt, context.get());  // Use default Context.
 
   integrator.get_mutable_context()->set_time(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
   EXPECT_EQ(context->get_time(), 3.);\
   integrator.reset_context(nullptr);
   EXPECT_THROW(integrator.Initialize(), std::logic_error);
-  EXPECT_THROW(integrator.Step(DT, DT), std::logic_error);
+  EXPECT_THROW(integrator.StepOnceAtMost(dt, dt), std::logic_error);
+}
+
+/// Verifies error estimation is unsupported.
+GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
+  // Spring-mass system is necessary only to setup the problem.
+  SpringMassSystem<double> spring_mass(1., 1., 0.);
+  const double dt = 1e-3;
+  auto context = spring_mass.CreateDefaultContext();
+  ExplicitEulerIntegrator<double> integrator(
+      spring_mass, dt, context.get());
+
+  EXPECT_EQ(integrator.get_error_estimate_order(), 0);
+  EXPECT_EQ(integrator.supports_error_estimation(), false);
+  EXPECT_THROW(integrator.set_target_accuracy(1e-1), std::logic_error);
+  EXPECT_THROW(integrator.request_initial_step_size_target(dt),
+               std::logic_error);
 }
 
 // Try a purely continuous system with no sampling.
@@ -71,16 +87,16 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   auto context = spring_mass.CreateDefaultContext();
 
   // Setup the integration size and infinity.
-  const double DT = 1e-6;
-  const double INF = std::numeric_limits<double>::infinity();
+  const double dt = 1e-6;
+  const double inf = std::numeric_limits<double>::infinity();
 
   // Create the integrator.
   ExplicitEulerIntegrator<double> integrator(
-      spring_mass, DT, context.get());  // Use default Context.
+      spring_mass, dt, context.get());  // Use default Context.
 
   // Setup the initial position and initial velocity.
   const double kInitialPosition = 0.1;
-  const double kInitialVelocity = 0.0;
+  const double kInitialVelocity = 0.01;
   const double kOmega = std::sqrt(kSpring / kMass);
 
   // Set initial condition.
@@ -90,25 +106,31 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   integrator.Initialize();
 
   // Setup c1 and c2 for ODE constants.
-  const double C1 = kInitialPosition;
-  const double C2 = kInitialVelocity / kOmega;
+  const double c1 = kInitialPosition;
+  const double c2 = kInitialVelocity / kOmega;
 
   // Integrate for 1 second.
-  const double T_FINAL = 1.0;
+  const double kTFinal = 1.0;
   double t;
-  for (t = 0.0; std::abs(t - T_FINAL) > DT; t += DT) integrator.Step(INF, INF);
+  for (t = 0.0; std::abs(t - kTFinal) > dt; t += dt)
+    integrator.StepOnceAtMost(inf, inf);
 
-  EXPECT_NEAR(context->get_time(), t, DT);  // Should be exact.
+  EXPECT_NEAR(context->get_time(), t, dt);  // Should be exact.
 
   // Get the final position.
-  const double kXFinal =
-      context->get_continuous_state_vector().GetAtIndex(0);
+  const double x_final =
+      context->get_continuous_state()->get_vector().GetAtIndex(0);
 
   // Check the solution.
-  EXPECT_NEAR(C1 * std::cos(kOmega * t) + C2 * std::sin(kOmega * t), kXFinal,
-              1e-5);
-}
+  EXPECT_NEAR(c1 * std::cos(kOmega * t) + c2 * std::sin(kOmega * t), x_final,
+              5e-3);
 
+  // Verify that integrator statistics are valid
+  EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
+  EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
+  EXPECT_GE(integrator.get_num_steps_taken(), 0);
+  EXPECT_EQ(integrator.get_error_estimate(), nullptr);
+}
 }  // namespace
 }  // namespace systems
 }  // namespace drake

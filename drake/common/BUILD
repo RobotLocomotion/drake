@@ -117,7 +117,9 @@ cc_library(
 # Miscellaneous utilities.
 cc_library(
     name = "drake_path",
-    testonly = 1,
+    # TODO(david-german-tri): Set testonly = 1 once the non-test uses of
+    # drake_path are removed.
+    # testonly = 1,
     srcs = ["drake_path.cc"],
     hdrs = ["drake_path.h"],
     linkstatic = 1,
@@ -142,6 +144,13 @@ cc_library(
     name = "eigen_matrix_compare",
     testonly = 1,
     hdrs = ["eigen_matrix_compare.h"],
+    linkstatic = 1,
+    deps = [":common"],
+)
+
+cc_library(
+    name = "is_approx_equal_abstol",
+    hdrs = ["is_approx_equal_abstol.h"],
     linkstatic = 1,
     deps = [":common"],
 )
