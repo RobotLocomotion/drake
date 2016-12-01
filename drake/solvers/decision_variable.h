@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <list>
 #include <memory>
 #include <string>
@@ -11,6 +12,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/number_traits.h"
 
 namespace drake {
 namespace solvers {
@@ -87,17 +89,7 @@ class DecisionVariableScalar {
    * comparison is only meaningful if the two DecisionVariableScalar objects
    * are created by the same MathematicalProgram object.
    */
-  bool operator==(const DecisionVariableScalar& rhs) const {
-    return index_ == rhs.index();
-  }
-
-  /**
-   * Detemines if the two DecisionVariableScalar objects are different.
-   * @see operator==(const DecisionVariableScalar& rhs)
-   */
-  bool operator!=(const DecisionVariableScalar& rhs) const {
-    return !(*this == rhs);
-  }
+  bool operator==(const DecisionVariableScalar& rhs) const;
 
   friend class MathematicalProgram;
 
@@ -128,6 +120,17 @@ struct DecisionVariableScalarHash {
 }  // namespace solvers
 }  // namespace drake
 
+namespace std {
+/* Provides std::equal_to<drake::symbolic::Expression>. */
+template <>
+struct equal_to<drake::solvers::DecisionVariableScalar> {
+  bool operator()(const drake::solvers::DecisionVariableScalar& lhs,
+                  const drake::solvers::DecisionVariableScalar& rhs) const {
+    return lhs == rhs;
+  }
+};
+}  // namespace std
+
 namespace Eigen {
 
 /// Eigen scalar type traits for Matrix<DecisionVariableScalar>.
@@ -136,7 +139,7 @@ struct NumTraits<drake::solvers::DecisionVariableScalar> {
   enum {
     // Our set of allowed values is discrete, and no epsilon is allowed during
     // equality comparison, so treat this as an unsigned integer type.
-    IsInteger = 1,
+    IsInteger = 0,
     IsSigned = 0,
     IsComplex = 0,
     RequireInitialization = 1,
@@ -155,6 +158,13 @@ struct NumTraits<drake::solvers::DecisionVariableScalar> {
   typedef drake::solvers::DecisionVariableScalar Literal;
 };
 }  // namespace Eigen
+
+namespace drake {
+template <>
+struct is_numeric<solvers::DecisionVariableScalar> {
+  static constexpr bool value = false;
+};
+}  // namespace drake
 
 namespace drake {
 namespace solvers {
@@ -260,8 +270,7 @@ class VariableList {
  */
 template <typename Derived>
 Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
-GetSolution(
-    const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
+GetSolution(const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
   static_assert(
       std::is_same<typename Derived::Scalar, DecisionVariableScalar>::value,
       "The input should be a DecisionVariableMatrix object");

@@ -41,14 +41,14 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   X_expected.resize(2, 3);
 
   // Test if the values in the decision variables are correct.
-  EXPECT_TRUE(CompareMatrices(GetSolution(X1),
-                              X_expected, 1E-14, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(GetSolution(S1),
-                              S_expected, 1E-14, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(GetSolution(x1), x_value,
-                              1E-14, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(GetSolution(X2),
-                              X_expected, 1E-14, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(GetSolution(X1), X_expected, 1E-14,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(GetSolution(S1), S_expected, 1E-14,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(GetSolution(x1), x_value, 1E-14,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(GetSolution(X2), X_expected, 1E-14,
+                              MatrixCompareType::absolute));
 
   // Test constructing VariableList.
   VariableList var_list1({X1, S1});
@@ -64,21 +64,22 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
 
   for (int i = 0; i < 6; ++i) {
     for (int j = 0; j < 6; ++j) {
-      EXPECT_EQ(x1(i) == x1(j), i == j);
+      EXPECT_EQ(std::equal_to<DecisionVariableScalar>()(x1(i), x1(j)), i == j);
     }
   }
   DecisionVariableMatrix<2, 6> X_assembled;
   X_assembled << X1, X2;
   Eigen::Matrix<double, 2, 6> X_assembled_expected;
   X_assembled_expected << X_expected, X_expected;
-  EXPECT_TRUE(CompareMatrices(GetSolution(X_assembled),
-                              X_assembled_expected, 1E-10,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(GetSolution(X_assembled), X_assembled_expected,
+                              1E-10, MatrixCompareType::absolute));
 
   for (int i = 0; i < 2; ++i) {
     for (int j = 0; j < 3; ++j) {
-      EXPECT_TRUE(X_assembled(i, j) == X1(i, j));
-      EXPECT_TRUE(X_assembled(i, j + 3) == X2(i, j));
+      EXPECT_TRUE(
+          std::equal_to<DecisionVariableScalar>()(X_assembled(i, j), X1(i, j)));
+      EXPECT_TRUE(std::equal_to<DecisionVariableScalar>()(X_assembled(i, j + 3),
+                                                          X2(i, j)));
     }
   }
 
