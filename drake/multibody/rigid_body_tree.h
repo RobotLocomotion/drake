@@ -461,9 +461,18 @@ class RigidBodyTree {
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorques(
       Eigen::MatrixBase<DerivedV> const& v) const;
 
-  /// Given a set of points in the frame referenced by @p
-  /// from_body_or_frame_ind this methods returns the same set of points in
+  /// Given a set of points in the frame referenced by
+  /// @p from_body_or_frame_ind this methods returns the same set of points
   /// described in the frame referenced by @p to_body_or_frame_ind.
+  ///
+  /// The frames referenced by `from_body_or_frame_ind` and
+  /// `to_body_or_frame_ind` are always attached to a RigidBody either
+  /// because they are a RigidBody id (i.e. the result from
+  /// RigidBody::get_index()) or because they are a RigidBodyFrame id (i.e.
+  /// the result from `RigidBodyFrame::get_frame_index()`. Therefore the
+  /// result is state dependent, which gets reflected in the fact that his
+  /// method takes a KinematicsCache `cache` objects as an input.
+  ///
   /// @param[in] cache KinematicsCache object.
   /// @param[in] points A matrix in R^{3 x n} containing n 3D column vectors
   /// for each point to be transformed.
@@ -471,8 +480,11 @@ class RigidBodyTree {
   /// are described.
   /// @param[in] to_body_or_frame_ind Frame identifier on which output points
   /// are described.
-  /// @returns The inut set of points described in the frame referenced by
+  /// @returns The input set of points described in the frame referenced by
   /// @p to_body_or_frame_ind.
+  // TODO(amcastro-tri): write similar C++ test to the one in
+  // drake/bindings/python/pydrake/test/testPR2IK.py showing the use of
+  // RigidBodyFrame.
   template <
       typename Scalar,
       typename DerivedPoints>  // not necessarily any relation between the two;
@@ -512,9 +524,17 @@ class RigidBodyTree {
 
   /// Given a set of `n` points provided as column entries in @p points in
   /// `R^{3 x n}` this method computes a Jacobian matrix that relates each
-  /// point's velocity with the generalized coordinates time derivatives
-  /// (`in_terms_of_qdot = true`) or the generalized velocities
+  /// point's velocity with either the time derivatives of generalized
+  /// coordinates (`in_terms_of_qdot = true`) or the generalized velocities
   /// (`in_terms_of_qdot = false`).
+  ///
+  /// The frames referenced by `from_body_or_frame_ind` and
+  /// `to_body_or_frame_ind` are always attached to a RigidBody either
+  /// because they are a RigidBody id (i.e. the result from
+  /// RigidBody::get_index()) or because they are a RigidBodyFrame id (i.e.
+  /// the result from `RigidBodyFrame::get_frame_index()`. Therefore the
+  /// result is state dependent, which gets reflected in the fact that his
+  /// method takes a KinematicsCache `cache` objects as an input.
   ///
   /// Defining:
   ///   `ndof = nq` if `in_terms_of_qdot = true` or
@@ -530,7 +550,7 @@ class RigidBodyTree {
   ///                                     time derivatives)
   ///
   /// Note: Many entries in this matrix may be zero for non-participating
-  /// degrees of freedom. This might have an impact in the efficiency of your
+  /// degrees of freedom. This might have an impact on the efficiency of your
   /// particular computation.
   ///
   /// @param[in] cache KinematicsCache object.
@@ -549,9 +569,13 @@ class RigidBodyTree {
   /// `in_terms_of_qdot = true` or `ndof = nv` if `in_terms_of_qdot = false`.
   ///
   /// @see transformPoints() to transform positions instead of velocities.
-  /// @see geometricJacobian() to obtain the Jacobian relating generalized
-  /// velocities (or generalized coordinates time derivatives) to Plucker
-  /// vector representations of spatial velocities.
+  ///
+  /// The Jacobian returned consists only of the partial derivatives of the
+  /// input points computed with respect to the degrees of freedom. It does not
+  /// compute the partial derivatives of a frame orientation with respect to
+  /// the degrees of freedom. @see geometricJacobian() to obtain the Jacobian
+  /// relating generalized velocities (or generalized coordinates time
+  /// derivatives) to Plucker vector representations of spatial velocities.
   template <typename Scalar, typename DerivedPoints>
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> transformPointsJacobian(
       const KinematicsCache<Scalar>& cache,

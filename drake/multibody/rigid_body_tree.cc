@@ -1837,8 +1837,12 @@ RigidBodyTree<T>::transformPointsJacobian(
                         to_body_or_frame_ind, /* expressed in frame O */
                         in_terms_of_qdot, &v_or_q_indices);
 
-  // Jomega, Jv live in R^{3 x ndof}.
-  auto Jomega = J_geometric.template topRows<kSpaceDimension>();
+  // Jw, Jv live in R^{3 x ndof}.
+  // Jw is the Jacobian relating degrees of freedom to the angular velocity
+  // component of the Plucker vector spatial velocity.
+  // Jw is the Jacobian relating degrees of freedom to the linear velocity
+  // component of the Plucker vector spatial velocity.
+  auto Jw = J_geometric.template topRows<kSpaceDimension>();
   auto Jv = J_geometric.template bottomRows<kSpaceDimension>();
 
   // J lives in R^{3*npoints x ndof}.
@@ -1866,13 +1870,14 @@ RigidBodyTree<T>::transformPointsJacobian(
     int col = 0;
     for (std::vector<int>::iterator it = v_or_q_indices.begin();
          it != v_or_q_indices.end(); ++it) {
-      // Since J_geometric relates generalized velocities (or generalized
-      // coordinates time derivatives) to Plucker vectors, the code below
-      // makes the transformation from the origin's linear velocity (actual
-      // the base linear velocity) to the particular point linear velocity.
+      // Since J_geometric relates generalized velocities (or time
+      // derivatives of generalized coordinates) to Plucker vectors, the code
+      // below makes the transformation from the origin's linear velocity
+      // (actually the base linear velocity) to the particular point linear
+      // velocity.
       J.template block<kSpaceDimension, 1>(row_start, *it) = Jv.col(col);
       J.template block<kSpaceDimension, 1>(row_start, *it).noalias() +=
-          Jomega.col(col).cross(points_base.col(i));
+          Jw.col(col).cross(points_base.col(i));
       col++;
     }
     row_start += kSpaceDimension;
