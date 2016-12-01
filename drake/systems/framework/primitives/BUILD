@@ -23,7 +23,6 @@ cc_library(
     ],
 )
 
-
 cc_library(
     name = "constant_vector_source",
     srcs = ["constant_vector_source.cc"],
@@ -31,6 +30,16 @@ cc_library(
     linkstatic = 1,
     deps = [
         "//drake/common:symbolic",
+        "//drake/systems/framework",
+    ],
+)
+
+cc_library(
+    name = "demultiplexer",
+    srcs = ["demultiplexer.cc"],
+    hdrs = ["demultiplexer.h"],
+    linkstatic = 1,
+    deps = [
         "//drake/systems/framework",
     ],
 )
@@ -82,6 +91,19 @@ cc_library(
 )
 
 cc_library(
+    name = "pass_through",
+    srcs = ["pass_through.cc"],
+    hdrs = [
+        "pass_through.h",
+        "pass_through-inl.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        "//drake/systems/framework",
+    ],
+)
+
+cc_library(
     name = "signal_logger",
     srcs = ["signal_logger.cc"],
     hdrs = ["signal_logger.h"],
@@ -90,7 +112,6 @@ cc_library(
         "//drake/systems/framework",
     ],
 )
-
 
 cc_library(
     name = "zero_order_hold",
