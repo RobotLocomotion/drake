@@ -52,7 +52,12 @@ namespace systems {
 template <class T>
 class RungeKutta3Integrator : public IntegratorBase<T> {
  public:
-  virtual ~RungeKutta3Integrator() {}
+  ~RungeKutta3Integrator() override = default;
+
+  // Disable copy, assign, and move.
+  RungeKutta3Integrator(const RungeKutta3Integrator<T>& other) = delete;
+  RungeKutta3Integrator& operator=(const RungeKutta3Integrator<T>& other) =
+      delete;
 
   explicit RungeKutta3Integrator(const System<T>& system,
                                  Context<T>* context = nullptr)
