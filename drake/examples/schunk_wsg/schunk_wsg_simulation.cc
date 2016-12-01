@@ -54,14 +54,23 @@ using systems::SystemOutput;
 // control to, which is not going to be sufficient to capture the
 // entire control state of the gripper (particularly the maximum
 // force).
+
+/// Recieves commands for a Schunk WSG, and emits target
+/// position/velocity for the actuated finger to reach the commanded
+/// target.
 class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
  public:
-  explicit SchunkWsgCommandReceiver(int position_idx)
+  explicit SchunkWsgCommandReceiver(const RigidBodyTree<double>& tree,
+                                    int position_idx)
       : position_idx_(position_idx) {
+    DRAKE_ASSERT(position_idx_ < tree.get_num_positions());
+
     this->set_name("SchunkWsgCommandReceiver");
     this->DeclareAbstractInputPort(systems::kContinuousSampling);
-    this->DeclareInputPort(systems::kVectorValued, 10,
-                           systems::kContinuousSampling);
+    this->DeclareInputPort(
+        systems::kVectorValued,
+        tree.get_num_positions() + tree.get_num_velocities(),
+        systems::kContinuousSampling);
     this->DeclareOutputPort(systems::kVectorValued, 2,
                             systems::kContinuousSampling);
   }
@@ -75,11 +84,6 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
     if (std::isnan(target_position)) {
       target_position = 0;
     }
-
-    // Based on manually driving the actual gripper using the web
-    // interface, it appears that it will at least attempt to respond
-    // to commands as small as 0.1mm.
-    const double kTargetEpsilon = 0.0001;
 
     const systems::BasicVector<double>* state =
           this->EvalVectorInput(context, 1);
@@ -156,20 +160,34 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
         PiecewisePolynomial<double>::FirstOrderHold(times, knots)));
   }
 
+  /// The minimum change between the last receive command and the
+  /// current command to trigger a trajectory update.  Based on
+  /// manually driving the actual gripper using the web interface, it
+  /// appears that it will at least attempt to respond to commands as
+  /// small as 0.1mm.
+  const double kTargetEpsilon = 0.0001;
+
   int position_idx_;
   mutable double last_target_position_{};
   mutable double trajectory_start_time_{};
   mutable std::unique_ptr<Trajectory> trajectory_;
 };
 
-// This system has one input port for the current state of the plant.
+/// Sends status messages for a Schunk WSG.  This system has one input
+/// port for the current state of the plant.
 class SchunkWsgStatusSender : public systems::LeafSystem<double> {
  public:
-  SchunkWsgStatusSender(int position_idx, int velocity_idx)
+  SchunkWsgStatusSender(const RigidBodyTree<double>& tree,
+                        int position_idx, int velocity_idx)
       : position_idx_(position_idx), velocity_idx_(velocity_idx) {
+    DRAKE_ASSERT(position_idx_ < tree.get_num_positions());
+    DRAKE_ASSERT(velocity_idx_ <
+                 tree.get_num_positions() + tree.get_num_velocities());
     this->set_name("SchunkWsgStatusSender");
-    this->DeclareInputPort(systems::kVectorValued, 10,
-                           systems::kContinuousSampling);
+    this->DeclareInputPort(
+        systems::kVectorValued,
+        tree.get_num_positions() + tree.get_num_velocities(),
+        systems::kContinuousSampling);
     this->DeclareAbstractOutputPort(systems::kContinuousSampling);
   }
 
@@ -293,13 +311,13 @@ int DoMain() {
       systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
           "SCHUNK_WSG_COMMAND", &lcm));
   auto command_receiver =
-      builder.AddSystem<SchunkWsgCommandReceiver>(model->position_idx());
+      builder.AddSystem<SchunkWsgCommandReceiver>(tree, model->position_idx());
 
   auto status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS", &lcm));
   auto status_sender = builder.AddSystem<SchunkWsgStatusSender>(
-      model->position_idx(), model->velocity_idx());
+      tree, model->position_idx(), model->velocity_idx());
 
   builder.Connect(command_sub->get_output_port(0),
                   command_receiver->get_input_port(0));
