@@ -24,6 +24,19 @@ cc_library(
 )
 
 cc_library(
+    name = "constant_value_source",
+    srcs = ["constant_value_source.cc"],
+    hdrs = [
+        "constant_value_source.h",
+        "constant_value_source-inl.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        "//drake/systems/framework",
+    ],
+)
+
+cc_library(
     name = "constant_vector_source",
     srcs = ["constant_vector_source.cc"],
     hdrs = ["constant_vector_source.h"],
@@ -81,6 +94,17 @@ cc_library(
 )
 
 cc_library(
+    name = "matrix_gain",
+    srcs = ["matrix_gain.cc"],
+    hdrs = ["matrix_gain.h"],
+    linkstatic = 1,
+    deps = [
+        ":linear_system",
+        "//drake/systems/framework",
+    ],
+)
+
+cc_library(
     name = "multiplexer",
     srcs = ["multiplexer.cc"],
     hdrs = ["multiplexer.h"],
@@ -109,6 +133,17 @@ cc_library(
     hdrs = ["signal_logger.h"],
     linkstatic = 1,
     deps = [
+        "//drake/systems/framework",
+    ],
+)
+
+cc_library(
+    name = "trajectory_source",
+    srcs = ["trajectory_source.cc"],
+    hdrs = ["trajectory_source.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/common/trajectories:trajectory",
         "//drake/systems/framework",
     ],
 )

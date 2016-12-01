@@ -66,19 +66,11 @@ cc_library(
 )
 
 cc_library(
-    name = "drake_visualizer",
-    srcs = [
-        "rigid_body_plant/drake_visualizer.cc",
-        "rigid_body_plant/viewer_draw_translator.cc",
-    ],
-    hdrs = [
-        "rigid_body_plant/drake_visualizer.h",
-        "rigid_body_plant/viewer_draw_translator.h",
-    ],
+    name = "rigid_body_tree_construction",
+    srcs = ["rigid_body_tree_construction.cc"],
+    hdrs = ["rigid_body_tree_construction.h"],
     linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "//drake/lcmtypes:viewer",
-        "//drake/systems/lcm",
     ],
 )
