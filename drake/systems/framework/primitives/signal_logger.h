@@ -40,9 +40,9 @@ class SignalLogger : public LeafSystem<T> {
   }
 
   /// Access the logged data.
-  Eigen::Block<MatrixX<T>, Eigen::Dynamic, Eigen::Dynamic, true> data()
+  Eigen::Block<const MatrixX<T>, Eigen::Dynamic, Eigen::Dynamic, true> data()
       const {
-    return data_.leftCols(num_samples_);
+    return const_cast<const MatrixX<T>&>(data_).leftCols(num_samples_);
   }
 
  private:
