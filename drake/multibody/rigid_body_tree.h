@@ -15,7 +15,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/force_torque_measurement.h"
 #include "drake/multibody/kinematic_path.h"
-#include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/kinematics_cache-inl.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/collision/drake_collision.h"
@@ -1200,9 +1200,6 @@ class RigidBodyTree {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 
-  // The following was required for building w/ DRAKE_EXPORT on windows (due
-  // to the unique_ptrs).  See
-  // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
  private:
   RigidBodyTree(const RigidBodyTree&);
   RigidBodyTree& operator=(const RigidBodyTree&) { return *this; }

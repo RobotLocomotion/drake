@@ -30,6 +30,7 @@ cc_library(
         "force_torque_measurement.h",
         "kinematic_path.h",
         "kinematics_cache.h",
+        "kinematics_cache-inl.h",
         "material_map.h",
         "parser_common.h",
         "parser_model_instance_id_table.h",
@@ -51,6 +52,7 @@ cc_library(
         "joints/*.h",
         "shapes/*.h",
     ]),
+    linkstatic = 1,
     deps = [
         "//drake/common:drake_path",
         "//drake/common:sorted_vectors_have_intersection",
@@ -61,7 +63,7 @@ cc_library(
         "//drake/thirdParty:tinyxml2",
         "//drake/util",
     ],
-    linkstatic = 1)
+)
 
 cc_library(
     name = "drake_visualizer",
@@ -73,9 +75,10 @@ cc_library(
         "rigid_body_plant/drake_visualizer.h",
         "rigid_body_plant/viewer_draw_translator.h",
     ],
+    linkstatic = 1,
     deps = [
+        ":rigid_body_tree",
         "//drake/lcmtypes:viewer",
         "//drake/systems/lcm",
-        ":rigid_body_tree",
     ],
-    linkstatic = 1)
+)

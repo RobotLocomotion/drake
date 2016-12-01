@@ -5,7 +5,10 @@ package(default_visibility = ["//visibility:public"])
 
 cc_test(
     name = "leaf_context_test",
+    size = "small",
+    testonly = 1,
     srcs = ["leaf_context_test.cc"],
+    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
@@ -13,52 +16,56 @@ cc_test(
         "//drake/systems/framework/test_utilities",
         "@gtest//:main",
     ],
-    size = "small",
-    linkstatic=1,
-    testonly=1)
+)
 
 cc_test(
     name = "modal_state_test",
+    size = "small",
+    testonly = 1,
     srcs = ["modal_state_test.cc"],
+    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/systems/framework",
         "//drake/systems/framework/test_utilities",
         "@gtest//:main",
     ],
-    size = "small",
-    linkstatic=1,
-    testonly=1)
+)
 
 cc_test(
     name = "cache_test",
+    size = "small",
+    testonly = 1,
     srcs = ["cache_test.cc"],
+    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/systems/framework",
         "//drake/systems/framework/test_utilities",
         "@gtest//:main",
     ],
-    size = "small",
-    linkstatic=1,
-    testonly=1)
+)
 
 cc_test(
     name = "parameters_test",
+    size = "small",
+    testonly = 1,
     srcs = ["parameters_test.cc"],
+    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/systems/framework",
         "//drake/systems/framework/test_utilities",
         "@gtest//:main",
     ],
-    size = "small",
-    linkstatic=1,
-    testonly=1)
+)
 
 cc_test(
     name = "diagram_test",
+    size = "small",
+    testonly = 1,
     srcs = ["diagram_test.cc"],
+    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/systems/framework",
@@ -69,13 +76,14 @@ cc_test(
         "//drake/systems/framework/primitives:zero_order_hold",
         "@gtest//:main",
     ],
-    size = "small",
-    linkstatic=1,
-    testonly=1)
+)
 
 cc_test(
     name = "diagram_context_test",
+    size = "small",
+    testonly = 1,
     srcs = ["diagram_context_test.cc"],
+    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
@@ -86,6 +94,4 @@ cc_test(
         "//drake/systems/framework/primitives:zero_order_hold",
         "@gtest//:main",
     ],
-    size = "small",
-    linkstatic=1,
-    testonly=1)
+)

@@ -9,3 +9,16 @@ build --cxxopt -std=c++1y
 
 # Test options.
 test --test_output=errors
+
+# ASAN build.
+build:asan --strip=never
+build:asan --copt -fsanitize=address
+build:asan --copt -O1
+build:asan --copt -fno-omit-frame-pointer
+build:asan --linkopt -fsanitize=address
+
+# Memcheck build.
+build:memcheck --strip=never
+build:memcheck --copt -g
+build:memcheck --run_under="valgrind --leak-check=full --error-exitcode=1"
+
