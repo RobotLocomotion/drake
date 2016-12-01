@@ -1,3 +1,4 @@
+add_definitions(-g)
 add_library_with_exports(LIB_NAME drakeTrajectories SOURCE_FILES
     exponential_plus_piecewise_polynomial.cc
     piecewise_function.cc
