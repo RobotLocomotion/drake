@@ -20,6 +20,8 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
+// TODO(liang.fok) Remove the following include once this file no longer
+// references `PackageMap`.
 #include "drake/multibody/xml_util.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"

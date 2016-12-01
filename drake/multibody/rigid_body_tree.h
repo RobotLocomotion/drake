@@ -86,7 +86,8 @@ class RigidBodyTree {
 
   /**
    * A constructor that initializes the gravity vector to be [0, 0, -9.81] and
-   * creates an empty world.
+   * a single RigidBody named "world". This RigidBody can be accssed by calling
+   * RigidBodyTree::world().
    */
   RigidBodyTree(void);
 

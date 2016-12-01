@@ -79,7 +79,8 @@
 %include "drake/multibody/rigid_body_tree.h"
 %include "drake/multibody/joints/floating_base_types.h"
 %extend RigidBodyTree {
-  RigidBodyTree(const std::string& urdf_filename, const std::string& joint_type) {
+  RigidBodyTree(const std::string& urdf_filename,
+      const std::string& joint_type = "ROLLPITCHYAW") {
     // FIXED = 0, ROLLPITCHYAW = 1, QUATERNION = 2
     drake::multibody::joints::FloatingBaseType floating_base_type;
 

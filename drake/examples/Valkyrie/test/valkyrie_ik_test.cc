@@ -67,7 +67,7 @@ void FindJointAndInsert(const RigidBodyTreed* model, const std::string& name,
 }
 
 GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
-  auto tree = std::make_shared<RigidBodyTree<double>>();
+  auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
