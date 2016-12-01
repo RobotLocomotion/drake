@@ -170,18 +170,23 @@ class IntegratorBase {
   double get_accuracy_in_use() const { return accuracy_in_use_; }
 
   /**
-   * Sets the maximum step size that may be taken by this integrator. For fixed
-   * step integrators all steps will be taken at the maximum step size *unless*
-   * an event would be missed.
+   * Sets the maximum step size that may be taken by this integrator. The
+   * integrator may stretch the maximum step size by as much as 1% to reach a
+   * discrete event. For fixed step integrators, all steps will be taken at the
+   * maximum step size *unless* an event would be missed.
    */
+  // TODO(edrumwri): Update this comment when stretch size is configurable.
   void set_maximum_step_size(const T& max_step_size) {
     DRAKE_ASSERT(max_step_size >= 0.0);
     max_step_size_ = max_step_size;
   }
 
   /**
-   * Gets the maximum step size that may be taken by this integrator.
+   * Gets the maximum step size that may be taken by this integrator. This is
+   * a soft maximum: the integrator may stretch it by as much as 1% to hit a
+   * discrete event.
    */
+  // TODO(edrumwri): Update this comment when stretch size is configurable.
   const T& get_maximum_step_size() const { return max_step_size_; }
 
   /**
@@ -310,9 +315,10 @@ class IntegratorBase {
   /**
    * Integrates the system forward in time. Integrator must already have
    * been initialized or an exception will be thrown. The context will be
-   * integrated forward *at most*
-   * by the minimum of { `publish_dt`, `update_dt`, `get_maximum_step_size()` }.
+   * integrated forward by an amount that will never exceed the minimum of
+   * `publish_dt`, `update_dt`, and `1.01 * get_maximum_step_size()`.
    * Error controlled integrators may take smaller steps.
+   *
    * @param publish_dt The step size, >= 0.0 (exception will be thrown
    *        if this is not the case) at which the next publish will occur.
    * @param update_dt The step size, >= 0.0 (exception will be thrown
@@ -321,6 +327,7 @@ class IntegratorBase {
    *                          of publish_dt or update_dt is negative.
    * @return The reason for the integration step ending.
    */
+  // TODO(edrumwri): Make the stretch size configurable.
   StepResult StepOnceAtMost(const T& publish_dt, const T& update_dt);
 
   /**
@@ -958,9 +965,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
 
   // Verify that the integrator supports error estimates.
   if (!supports_error_estimation())
-    throw std::logic_error(
-        "StepErrorControlled() requires error "
-        "estimation.");
+    throw std::logic_error("StepErrorControlled() requires error estimation.");
 
   // Save time, continuous variables, and time derivative because we'll possibly
   // revert time and state.
@@ -1176,29 +1181,54 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
   if (!IntegratorBase<T>::is_initialized())
     throw std::logic_error("Integrator not initialized.");
 
-  // Sort the times for stopping- sort is stable to preserve preferences for
-  // stopping. In decreasing order of preference for equal values, we want
-  // the update step, then the publish step, then the maximum step size.
-  const int64_t kDTs = 3;  // Number of dt values to evaluate.
-  const T& max_step_size = IntegratorBase<T>::get_maximum_step_size();
-  const T* stop_dts[kDTs] = {&update_dt, &publish_dt, &max_step_size};
-  std::stable_sort(stop_dts, stop_dts + kDTs,
-                   [](const T* t1, const T* t2) { return *t1 < *t2; });
+  // The size of the integration step is the minimum of the time until the next
+  // update event, the time until the next publish event, and the maximum step
+  // size (which may stretch slightly to hit a discrete event).
 
-  // Set dt and take the step.
-  const T& dt = *stop_dts[0];
+  // We report to the caller which event ultimately constrained the step size.
+  // If multiple events constrained it equally, we prefer to report update
+  // events over publish events, and publish events over maximum step size
+  // limits. In such cases, the caller has to figure out for itself what other
+  // event times may have arrived simultaneously, by inspecting the time.
+  // TODO(edrumwri): This should be further clarified or cleaned up, see #4335.
+
+  // By default, the candidate dt is the next discrete update event.
+  StepResult candidate_dt = IntegratorBase<T>::kReachedUpdateTime;
+  T dt = update_dt;
+
+  // If the next discrete publish event is sooner than the next discrete update
+  // event, the publish event becomes the candidate dt
+  if (publish_dt < update_dt) {
+    candidate_dt = IntegratorBase<T>::kReachedPublishTime;
+    dt = publish_dt;
+  }
+
+  // If all discrete events are farther in the future than the maximum step
+  // size times a stretch factor of 1.01, the maximum step size becomes the
+  // candidate dt.
+  static constexpr double kMaxStretch = 1.01;  // Allow 1% step size stretch.
+  const T& max_dt = IntegratorBase<T>::get_maximum_step_size();
+  if (max_dt * kMaxStretch < dt) {
+    candidate_dt = IntegratorBase<T>::kTimeHasAdvanced;
+    dt = max_dt;
+  }
+
   if (dt < 0.0) throw std::logic_error("Negative dt.");
   const bool step_size_was_dt = DoStepOnceAtMost(dt);
 
-  // Update generic statistics.
+  // Update generic statistics. TODO(edrumwri): Fix #4336.
   UpdateStatistics(dt);
 
-  // Return depending on the step taken.
-  if (!step_size_was_dt || &dt == &max_step_size)
+  if (step_size_was_dt) {
+    // If the integrator took the entire maximum step size we allowed above,
+    // we report to the caller that a step constraint was hit, which may
+    // indicate a discrete event has arrived.
+    return candidate_dt;
+  } else {
+    // Otherwise, we report to the caller that time has advanced, but no
+    // discrete event has arrived.
     return IntegratorBase<T>::kTimeHasAdvanced;
-  if (&dt == &publish_dt) return IntegratorBase<T>::kReachedPublishTime;
-  if (&dt == &update_dt) return IntegratorBase<T>::kReachedUpdateTime;
-  DRAKE_ABORT_MSG("Never should have reached here.");
+  }
 }
 
 }  // namespace systems
