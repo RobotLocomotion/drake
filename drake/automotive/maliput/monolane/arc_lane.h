@@ -22,7 +22,7 @@ class ArcLane : public Lane {
              lane_bounds, driveable_bounds,
              radius * std::abs(d_theta),
              elevation, superelevation),
-        r_(radius), cx_(center.x), cy_(center.y),
+        r_(radius), cx_(center.x()), cy_(center.y()),
         theta0_(theta0), d_theta_(d_theta) {
     DRAKE_DEMAND(r_ > 0.);
   }

@@ -16,12 +16,12 @@ class LineLane : public Lane {
            const CubicPolynomial& superelevation)
       : Lane(id, segment,
              lane_bounds, driveable_bounds,
-             dxy.length(),
+             dxy.norm(),
              elevation, superelevation),
-        x0_(xy0.x),
-        y0_(xy0.y),
-        dx_(dxy.x),
-        dy_(dxy.y),
+        x0_(xy0.x()),
+        y0_(xy0.y()),
+        dx_(dxy.x()),
+        dy_(dxy.y()),
         heading_(std::atan2(dy_, dx_)) {}
 
  private:
