@@ -54,14 +54,24 @@ using systems::SystemOutput;
 // control to, which is not going to be sufficient to capture the
 // entire control state of the gripper (particularly the maximum
 // force).
+
+/// Recieves commands for a Schunk WSG (input port 0) along with the
+/// current state of the simulated WSG (input port 1), and emits
+/// target position/velocity for the actuated finger to reach the
+/// commanded target.
 class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
  public:
-  explicit SchunkWsgCommandReceiver(int position_idx)
-      : position_idx_(position_idx) {
+  explicit SchunkWsgCommandReceiver(const RigidBodyTree<double>& tree,
+                                    int position_index)
+      : position_index_(position_index) {
+    DRAKE_ASSERT(position_index_ < tree.get_num_positions());
+
     this->set_name("SchunkWsgCommandReceiver");
     this->DeclareAbstractInputPort(systems::kContinuousSampling);
-    this->DeclareInputPort(systems::kVectorValued, 10,
-                           systems::kContinuousSampling);
+    this->DeclareInputPort(
+        systems::kVectorValued,
+        tree.get_num_positions() + tree.get_num_velocities(),
+        systems::kContinuousSampling);
     this->DeclareOutputPort(systems::kVectorValued, 2,
                             systems::kContinuousSampling);
   }
@@ -71,19 +81,17 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
     const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
     DRAKE_ASSERT(input != nullptr);
     const auto& command = input->GetValue<lcmt_schunk_wsg_command>();
+    // The target_position_mm field represents the distance between
+    // the two fingers.  We want to move a single actuator for half of
+    // that distance.
     double target_position = -(command.target_position_mm / 1e3) / 2.;
     if (std::isnan(target_position)) {
       target_position = 0;
     }
 
-    // Based on manually driving the actual gripper using the web
-    // interface, it appears that it will at least attempt to respond
-    // to commands as small as 0.1mm.
-    const double kTargetEpsilon = 0.0001;
-
     const systems::BasicVector<double>* state =
           this->EvalVectorInput(context, 1);
-    const double cur_position = state->GetAtIndex(position_idx_);
+    const double cur_position = state->GetAtIndex(position_index_);
 
     if (std::abs(last_target_position_ - target_position) > kTargetEpsilon) {
       UpdateTrajectory(cur_position, target_position);
@@ -127,6 +135,10 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
     // configurable constants for the WSG 50, not on analysis of the
     // actual motion of the gripper.
     if (delta < kDistanceToMaxAccel * 2) {
+      // If we can't accelerate to our maximum (and decelerate again)
+      // within the target travel distance, calculate a the peak
+      // velocity we will reach and create a trajectory which ramps to
+      // that velocity and back down.
       const double mid_distance = delta / 2;
       const double mid_velocity =
           kMaxVelocity * (mid_distance / kDistanceToMaxAccel);
@@ -156,20 +168,34 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
         PiecewisePolynomial<double>::FirstOrderHold(times, knots)));
   }
 
-  int position_idx_;
+  /// The minimum change between the last receive command and the
+  /// current command to trigger a trajectory update.  Based on
+  /// manually driving the actual gripper using the web interface, it
+  /// appears that it will at least attempt to respond to commands as
+  /// small as 0.1mm.
+  const double kTargetEpsilon = 0.0001;
+
+  const int position_index_{};
   mutable double last_target_position_{};
   mutable double trajectory_start_time_{};
   mutable std::unique_ptr<Trajectory> trajectory_;
 };
 
-// This system has one input port for the current state of the plant.
+/// Sends status messages for a Schunk WSG.  This system has one input
+/// port for the current state of the plant.
 class SchunkWsgStatusSender : public systems::LeafSystem<double> {
  public:
-  SchunkWsgStatusSender(int position_idx, int velocity_idx)
-      : position_idx_(position_idx), velocity_idx_(velocity_idx) {
+  SchunkWsgStatusSender(const RigidBodyTree<double>& tree,
+                        int position_index, int velocity_index)
+      : position_index_(position_index), velocity_index_(velocity_index) {
+    DRAKE_ASSERT(position_index_ < tree.get_num_positions());
+    DRAKE_ASSERT(velocity_index_ <
+                 tree.get_num_positions() + tree.get_num_velocities());
     this->set_name("SchunkWsgStatusSender");
-    this->DeclareInputPort(systems::kVectorValued, 10,
-                           systems::kContinuousSampling);
+    this->DeclareInputPort(
+        systems::kVectorValued,
+        tree.get_num_positions() + tree.get_num_velocities(),
+        systems::kContinuousSampling);
     this->DeclareAbstractOutputPort(systems::kContinuousSampling);
   }
 
@@ -177,9 +203,8 @@ class SchunkWsgStatusSender : public systems::LeafSystem<double> {
       const Context<double>& context) const override {
     auto output = std::make_unique<systems::LeafSystemOutput<double>>();
     lcmt_schunk_wsg_status msg{};
-    output->get_mutable_ports()->emplace_back(
-        std::make_unique<systems::OutputPort>(
-            std::make_unique<systems::Value<lcmt_schunk_wsg_status>>(msg)));
+    output->add_port(
+        std::make_unique<systems::Value<lcmt_schunk_wsg_status>>(msg));
     return std::unique_ptr<SystemOutput<double>>(output.release());
   }
 
@@ -192,16 +217,20 @@ class SchunkWsgStatusSender : public systems::LeafSystem<double> {
     status.utime = context.get_time() * 1e6;
     const systems::BasicVector<double>* state =
         this->EvalVectorInput(context, 0);
-    status.actual_position_mm = -2 * state->GetAtIndex(position_idx_) * 1e3;
+    // The position and speed reported in this message are between the
+    // two fingers rather than the position/speed of a single finger
+    // (so effectively doubled).
+    status.actual_position_mm = -2 * state->GetAtIndex(position_index_) * 1e3;
     // TODO(sam.creasey) Figure out how to get the actual force from
     // the plant so that we can populate this field.
     status.actual_force = 0;
-    status.actual_speed_mm_per_s = -2 * state->GetAtIndex(velocity_idx_) * 1e3;
+    status.actual_speed_mm_per_s =
+        -2 * state->GetAtIndex(velocity_index_) * 1e3;
   }
 
  private:
-  const int position_idx_{};
-  const int velocity_idx_{};
+  const int position_index_{};
+  const int velocity_index_{};
 };
 
 template <typename T>
@@ -226,15 +255,15 @@ class PidControlledSchunkWsg : public systems::Diagram<T> {
         tree.computePositionNameToIndexMap();
     const int left_finger_position_index =
         index_map.at("left_finger_sliding_joint");
-    position_idx_ = left_finger_position_index;
-    velocity_idx_ = left_finger_position_index +
+    position_index_ = left_finger_position_index;
+    velocity_index_ = left_finger_position_index +
         plant->get_num_positions();
 
     Eigen::MatrixXd feedback_matrix = Eigen::MatrixXd::Zero(
         2 * plant->get_num_actuators(),
         2 * plant->get_num_positions());
-    feedback_matrix(0, position_idx_) = 1.;
-    feedback_matrix(1, velocity_idx_) = 1.;
+    feedback_matrix(0, position_index_) = 1.;
+    feedback_matrix(1, velocity_index_) = 1.;
     std::unique_ptr<MatrixGain<T>> feedback_selector =
         std::make_unique<MatrixGain<T>>(feedback_matrix);
 
@@ -266,14 +295,14 @@ class PidControlledSchunkWsg : public systems::Diagram<T> {
   }
 
   const RigidBodyPlant<T>& get_plant() const { return *plant_; }
-  int position_idx() const { return position_idx_; }
-  int velocity_idx() const { return velocity_idx_; }
+  int position_index() const { return position_index_; }
+  int velocity_index() const { return velocity_index_; }
 
  private:
   RigidBodyPlant<T>* plant_{nullptr};
   PidControlledSystem<T>* controller_{nullptr};
-  int position_idx_{};
-  int velocity_idx_{};
+  int position_index_{};
+  int velocity_index_{};
 };
 
 int DoMain() {
@@ -292,14 +321,14 @@ int DoMain() {
   auto command_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
           "SCHUNK_WSG_COMMAND", &lcm));
-  auto command_receiver =
-      builder.AddSystem<SchunkWsgCommandReceiver>(model->position_idx());
+  auto command_receiver = builder.AddSystem<SchunkWsgCommandReceiver>(
+      tree, model->position_index());
 
   auto status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS", &lcm));
   auto status_sender = builder.AddSystem<SchunkWsgStatusSender>(
-      model->position_idx(), model->velocity_idx());
+      tree, model->position_index(), model->velocity_index());
 
   builder.Connect(command_sub->get_output_port(0),
                   command_receiver->get_input_port(0));
@@ -324,8 +353,6 @@ int DoMain() {
 
   lcm.StartReceiveThread();
   simulator.Initialize();
-
-  // Simulate for a very long time.
   simulator.StepTo(FLAGS_simulation_sec);
   return 0;
 }
