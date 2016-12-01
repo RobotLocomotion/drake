@@ -71,8 +71,7 @@ std::unique_ptr<Simulator<double>> CreateSimulation(lcm::DrakeLcm* lcm,
 
   auto simulator = make_unique<Simulator<double>>(**demo_diagram);
 
-  // TODO(liang.fok): Modify System 2.0 to not require the following
-  // initialization. See #4191.
+  // TODO(liang.fok): Modify the following code once #4191 is resolved.
   //
   // Zeros the rigid body plant's state. This is necessary because it is by
   // default initialized to a vector a NaN values.
