@@ -1,6 +1,7 @@
 #include <mex.h>
 
 #include <iostream>
+#include <memory>
 
 #include <Eigen/Dense>
 
@@ -25,19 +26,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   RigidBodyTree<double> *model =
       (RigidBodyTree<double> *)getDrakeMexPointer(prhs[0]);
   mxGetString(prhs[1], buf, BUF_SIZE);
-  RigidBodyTree<double> cpp_model();
+  auto cpp_model = std::make_unique<RigidBodyTree<double>>();
 
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(buf,
-      drake::multibody::joints::kRollPitchYaw, &cpp_model);
+      drake::multibody::joints::kRollPitchYaw, cpp_model.get());
 
-  if (cpp_model.frames.size() != model->frames.size()) {
+  if (cpp_model->frames.size() != model->frames.size()) {
     mexErrMsgIdAndTxt("Drake:testFrameParsermex:FrameCountMismatch",
                       "The manipulator frame counts did not match");
   }
 
   for (size_t x = 0; x < model->frames.size(); x++) {
     double err = (model->frames[x]->get_transform_to_body().matrix() -
-                  cpp_model.frames[x]->get_transform_to_body().matrix()).norm();
+        cpp_model->frames[x]->get_transform_to_body().matrix()).norm();
 
     if (err > FRAME_PARSER_EPSILON) {
       mexErrMsgIdAndTxt(
@@ -45,7 +46,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
           "The homogeneous frame transformation matrix did not match");
     }
 
-    if (model->frames[x]->get_name().compare(cpp_model.frames[x]->get_name())
+    if (model->frames[x]->get_name().compare(cpp_model->frames[x]->get_name())
         != 0) {
       mexErrMsgIdAndTxt("Drake:testFrameParsermex:FrameNameMismatch",
                         "The frame name did not match");
