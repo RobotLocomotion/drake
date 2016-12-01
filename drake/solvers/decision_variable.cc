@@ -7,21 +7,6 @@ size_t DecisionVariableScalarHash::operator()(
   return var.index();
 }
 
-bool IsDecisionVariableMatrixSymmetric(
-    const Eigen::Ref<const DecisionVariableMatrixX> matrix) {
-  if (matrix.rows() != matrix.cols()) {
-    return false;
-  }
-  for (int i = 0; i < matrix.rows(); ++i) {
-    for (int j = i+1; j < matrix.cols(); ++j) {
-      if (matrix(i, j) != matrix(j, i)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
 VariableList::VariableList(
     const VariableListRef& variable_list) {
   variables_.resize(variable_list.size());

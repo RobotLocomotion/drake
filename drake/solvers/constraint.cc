@@ -1,25 +1,9 @@
 #include "drake/solvers/constraint.h"
 
+#include "drake/math/matrix_util.h"
+
 namespace drake {
 namespace solvers {
-namespace {
-bool IsMatrixSymmetric(
-    const Eigen::Ref<const Eigen::MatrixXd> X,
-    double precision = std::numeric_limits<double>::epsilon()) {
-  if (X.rows() != X.cols()) {
-    return false;
-  }
-  for (int i = 0; i < static_cast<int>(X.rows()); ++i) {
-    for (int j = i; j < static_cast<int>(X.cols()); ++j) {
-      if (std::abs(X(i, j) - X(j, i)) > precision) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-}  // namespace
 void PositiveSemidefiniteConstraint::Eval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
   throw std::runtime_error(
@@ -53,7 +37,7 @@ LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
   auto F_it = F_.begin();
   for (const auto& Fi : F) {
     DRAKE_ASSERT(Fi.rows() == F.front().rows());
-    DRAKE_ASSERT(IsMatrixSymmetric(Fi, 1E-10));
+    DRAKE_ASSERT(math::IsSymmetric(Fi, 1E-10));
     *F_it = Fi;
     ++F_it;
   }

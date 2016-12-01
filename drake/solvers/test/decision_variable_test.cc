@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/math/matrix_util.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -15,18 +16,18 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   MathematicalProgram prog;
   auto X1 = prog.AddContinuousVariables(2, 3, std::vector<std::string>(6, "X"));
   EXPECT_EQ(prog.num_vars(), 6);
-  EXPECT_FALSE(IsDecisionVariableMatrixSymmetric(X1));
+  EXPECT_FALSE(math::IsSymmetric(X1));
   auto S1 =
       prog.AddSymmetricContinuousVariables(3, std::vector<std::string>(6, "S"));
   EXPECT_EQ(prog.num_vars(), 12);
-  EXPECT_TRUE(IsDecisionVariableMatrixSymmetric(S1));
+  EXPECT_TRUE(math::IsSymmetric(S1));
   auto x1 = prog.AddContinuousVariables(6, "x");
   EXPECT_EQ(prog.num_vars(), 18);
-  EXPECT_FALSE(IsDecisionVariableMatrixSymmetric(x1));
+  EXPECT_FALSE(math::IsSymmetric(x1));
   std::array<std::string, 6> X_name = {{"X", "X", "X", "X", "X", "X"}};
   auto X2 = prog.AddContinuousVariables<2, 3>(X_name);
   EXPECT_EQ(prog.num_vars(), 24);
-  EXPECT_FALSE(IsDecisionVariableMatrixSymmetric(X2));
+  EXPECT_FALSE(math::IsSymmetric(X2));
   Eigen::Matrix<double, 6, 1> x_value;
   x_value << 0, 2, 4, 6, 8, 10;
   Eigen::Matrix<double, 6, 1> s_value;

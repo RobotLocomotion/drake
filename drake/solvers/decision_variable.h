@@ -167,13 +167,6 @@ using DecisionVariableMatrixX =
     DecisionVariableMatrix<Eigen::Dynamic, Eigen::Dynamic>;
 using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
 
-/*
- * Determines if a DecisionVariableMatrix object @p matrix is symmetric,
- * namely matrix(i, j) = matrix(j, i)
- */
-bool IsDecisionVariableMatrixSymmetric(
-    const Eigen::Ref<const DecisionVariableMatrixX> matrix);
-
 using VariableListRef = std::list<Eigen::Ref<const DecisionVariableMatrixX>>;
 
 /**

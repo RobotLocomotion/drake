@@ -1,5 +1,6 @@
 #include "drake/solvers/mathematical_program.h"
 
+#include "drake/math/matrix_util.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
@@ -310,7 +311,7 @@ void MathematicalProgram::AddConstraint(
     std::shared_ptr<PositiveSemidefiniteConstraint> con,
     const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var) {
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
-  DRAKE_ASSERT(IsDecisionVariableMatrixSymmetric(symmetric_matrix_var));
+  DRAKE_ASSERT(drake::math::IsSymmetric(symmetric_matrix_var));
   positive_semidefinite_constraint_.push_back(
       Binding<PositiveSemidefiniteConstraint>(con, {symmetric_matrix_var}));
 }

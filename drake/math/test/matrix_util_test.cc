@@ -1,7 +1,9 @@
 #include "drake/math/matrix_util.h"
 
 #include <gtest/gtest.h>
-#include <drake/solvers/mathematical_program.h>
+
+#include "drake/common/symbolic_variable.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace math {
@@ -37,10 +39,6 @@ GTEST_TEST(TestMatrixUtil, TestIsSymmetric) {
   EXPECT_TRUE(IsSymmetric(X1));
   auto X2 = prog.AddContinuousVariables<2, 2>();
   EXPECT_FALSE(IsSymmetric(X2));
-
-  // Test AutodiffScalar
-  Eigen::AutoDiffScalar<Eigen::Vector2d> a1;
-  Eigen::Auto
 }
 }
 }
