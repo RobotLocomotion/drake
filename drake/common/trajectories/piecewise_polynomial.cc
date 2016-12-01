@@ -61,7 +61,7 @@ PiecewisePolynomial<CoefficientType>::derivative(int derivative_order) const {
 
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType> PiecewisePolynomial<
-  CoefficientType>::integral(double value_at_start_time) const {
+    CoefficientType>::integral(double value_at_start_time) const {
   CoefficientMatrix matrix_value_at_start_time =
       CoefficientMatrix::Constant(rows(), cols(), value_at_start_time);
   return integral(matrix_value_at_start_time);
@@ -71,7 +71,7 @@ template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::integral(
     const typename PiecewisePolynomial<CoefficientType>::CoefficientMatrixRef&
-    value_at_start_time) const {
+        value_at_start_time) const {
   PiecewisePolynomial ret = *this;
   for (int segment_index = 0; segment_index < getNumberOfSegments();
        segment_index++) {
@@ -83,10 +83,8 @@ PiecewisePolynomial<CoefficientType>::integral(
               matrix(row, col).Integral(value_at_start_time(row, col));
         } else {
           matrix(row, col) =
-              matrix(row, col).Integral(
-                  ret.segmentValueAtGlobalAbscissa(
-                      segment_index - 1,
-                      getStartTime(segment_index), row, col));
+              matrix(row, col).Integral(ret.segmentValueAtGlobalAbscissa(
+                  segment_index - 1, getStartTime(segment_index), row, col));
         }
       }
     }
@@ -108,7 +106,8 @@ PiecewisePolynomial<CoefficientType>::value(double t) const {
   int segment_index = getSegmentIndex(t);
   t = std::min(std::max(t, getStartTime()), getEndTime());
   Eigen::Matrix<double, PolynomialMatrix::RowsAtCompileTime,
-                PolynomialMatrix::ColsAtCompileTime> ret(rows(), cols());
+                PolynomialMatrix::ColsAtCompileTime>
+      ret(rows(), cols());
   for (Eigen::Index row = 0; row < rows(); row++) {
     for (Eigen::Index col = 0; col < cols(); col++) {
       ret(row, col) = segmentValueAtGlobalAbscissa(segment_index, t, row, col);
@@ -176,7 +175,7 @@ operator*=(const PiecewisePolynomial<CoefficientType>& other) {
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::
 operator+=(const typename PiecewisePolynomial<
-             CoefficientType>::CoefficientMatrix& offset) {
+           CoefficientType>::CoefficientMatrix& offset) {
   for (size_t i = 0; i < polynomials_.size(); i++)
     polynomials_[i] += offset.template cast<PolynomialType>();
   return *this;
@@ -185,7 +184,7 @@ operator+=(const typename PiecewisePolynomial<
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::
 operator-=(const typename PiecewisePolynomial<
-             CoefficientType>::CoefficientMatrix& offset) {
+           CoefficientType>::CoefficientMatrix& offset) {
   for (size_t i = 0; i < polynomials_.size(); i++)
     polynomials_[i] -= offset.template cast<PolynomialType>();
   return *this;
@@ -211,8 +210,8 @@ PiecewisePolynomial<CoefficientType>::operator-(
 
 template <typename CoefficientType>
 const PiecewisePolynomial<CoefficientType>
-PiecewisePolynomial<CoefficientType>::operator*(
-    const PiecewisePolynomial<CoefficientType>& other) const {
+    PiecewisePolynomial<CoefficientType>::operator*(
+        const PiecewisePolynomial<CoefficientType>& other) const {
   PiecewisePolynomial<CoefficientType> ret = *this;
   ret *= other;
   return ret;
@@ -222,7 +221,7 @@ template <typename CoefficientType>
 const PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::operator+(
     const typename PiecewisePolynomial<CoefficientType>::CoefficientMatrix&
-    offset) const {
+        offset) const {
   PiecewisePolynomial<CoefficientType> ret = *this;
   ret += offset;
   return ret;
@@ -232,7 +231,7 @@ template <typename CoefficientType>
 const PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::operator-(
     const typename PiecewisePolynomial<CoefficientType>::CoefficientMatrix&
-    offset) const {
+        offset) const {
   PiecewisePolynomial<CoefficientType> ret = *this;
   ret -= offset;
   return ret;
@@ -269,7 +268,7 @@ void PiecewisePolynomial<CoefficientType>::shiftRight(double offset) {
 template <typename CoefficientType>
 void PiecewisePolynomial<CoefficientType>::setPolynomialMatrixBlock(
     const typename PiecewisePolynomial<CoefficientType>::PolynomialMatrix&
-    replacement,
+        replacement,
     int segment_number, Eigen::Index row_start, Eigen::Index col_start) {
   segmentNumberRangeCheck(segment_number);
   polynomials_[segment_number].block(row_start, col_start, replacement.rows(),
@@ -287,7 +286,7 @@ PiecewisePolynomial<CoefficientType>::slice(int start_segment_index,
   auto segment_times_slice = vector<double>(
       segment_times_start_it,
       segment_times_start_it + num_segments +
-      1);  // + 1 because there's one more segment times than segments
+          1);  // + 1 because there's one more segment times than segments
 
   auto polynomials_start_it = polynomials_.begin() + start_segment_index;
   auto polynomials_slice = vector<PolynomialMatrix>(
@@ -300,8 +299,8 @@ PiecewisePolynomial<CoefficientType>::slice(int start_segment_index,
 template <typename CoefficientType>
 double PiecewisePolynomial<CoefficientType>::segmentValueAtGlobalAbscissa(
     int segment_index, double t, Eigen::Index row, Eigen::Index col) const {
-  return polynomials_[segment_index](row, col)
-      .EvaluateUnivariate(t - getStartTime(segment_index));
+  return polynomials_[segment_index](row, col).EvaluateUnivariate(
+      t - getStartTime(segment_index));
 }
 
 template <typename CoefficientType>
@@ -325,12 +324,13 @@ Eigen::Index PiecewisePolynomial<CoefficientType>::cols() const {
 // Static generators for splines.
 
 template <typename CoefficientType>
-void PiecewisePolynomial<CoefficientType>::CheckSplineGenerationInputValidityOrThrow(
-    const std::vector<double>& T,
-    const std::vector<CoefficientMatrix> &Y,
-    int min_length) {
+void PiecewisePolynomial<CoefficientType>::
+    CheckSplineGenerationInputValidityOrThrow(
+        const std::vector<double>& T, const std::vector<CoefficientMatrix>& Y,
+        int min_length) {
   if (T.size() != Y.size()) {
-    throw std::runtime_error("Number of break points does not match number of knots.");
+    throw std::runtime_error(
+        "Number of break points does not match number of knots.");
   }
   if (static_cast<int>(T.size()) < min_length) {
     throw std::runtime_error("Not enough knots.");
@@ -389,10 +389,9 @@ PiecewisePolynomial<CoefficientType>::FirstOrderHold(
 
     for (int j = 0; j < knots[i].rows(); ++j) {
       for (int k = 0; k < knots[i].cols(); ++k) {
-        poly_matrix(j, k) = PolynomialType(
-            Eigen::Matrix<CoefficientType, 2, 1>(
-                knots[i](j, k), (knots[i + 1](j, k) - knots[i](j, k)) /
-                (breaks[i + 1] - breaks[i])));
+        poly_matrix(j, k) = PolynomialType(Eigen::Matrix<CoefficientType, 2, 1>(
+            knots[i](j, k), (knots[i + 1](j, k) - knots[i](j, k)) /
+                                (breaks[i + 1] - breaks[i])));
       }
     }
     polys.push_back(poly_matrix);
@@ -401,16 +400,18 @@ PiecewisePolynomial<CoefficientType>::FirstOrderHold(
 }
 
 template <typename CoefficientType>
-Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic> PiecewisePolynomial<CoefficientType>::ComputePchipEndSlope(
-    double dt0, double dt1,
-    const CoefficientMatrix& slope0,
+Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>
+PiecewisePolynomial<CoefficientType>::ComputePchipEndSlope(
+    double dt0, double dt1, const CoefficientMatrix& slope0,
     const CoefficientMatrix& slope1) {
-  CoefficientMatrix deriv = ((2.0 * dt0 + dt1) * slope0 - dt0 * slope1) / (dt0 + dt1);
+  CoefficientMatrix deriv =
+      ((2.0 * dt0 + dt1) * slope0 - dt0 * slope1) / (dt0 + dt1);
   for (int i = 0; i < deriv.rows(); ++i) {
     for (int j = 0; j < deriv.cols(); ++j) {
       if (deriv(i, j) * slope0(i, j) < 0.) {
         deriv(i, j) = 0.;
-      } else if (slope0(i, j) * slope1(i, j) < 0 && std::abs(deriv(i, j)) > std::abs(3. * slope0(i, j))) {
+      } else if (slope0(i, j) * slope1(i, j) < 0 &&
+                 std::abs(deriv(i, j)) > std::abs(3. * slope0(i, j))) {
         deriv(i, j) = 3. * slope0(i, j);
       }
     }
@@ -421,8 +422,7 @@ Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic> PiecewisePolynomi
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::Pchip(
-    const std::vector<double>& T,
-    const std::vector<CoefficientMatrix> &Y) {
+    const std::vector<double>& T, const std::vector<CoefficientMatrix>& Y) {
   CheckSplineGenerationInputValidityOrThrow(T, Y, 3);
 
   int N = static_cast<int>(T.size());
@@ -436,9 +436,14 @@ PiecewisePolynomial<CoefficientType>::Pchip(
   std::vector<CoefficientMatrix> Ydot(N, CoefficientMatrix::Zero(rows, cols));
   Eigen::Matrix<CoefficientType, 4, 1> coeffs;
 
-  // Compute the end slopes.
-  CoefficientMatrix Ydot0 = ComputePchipEndSlope(T[1] - T[0], T[2] - T[1], (Y[1] - Y[0]) / (T[1] - T[0]), (Y[2] - Y[1]) / (T[2] - T[1]));
-  CoefficientMatrix Ydot1 = ComputePchipEndSlope(T[N - 1] - T[N - 2], T[N - 2] - T[N - 3], (Y[N - 1] - Y[N - 2]) / (T[N - 1] - T[N - 2]), (Y[N - 2] - Y[N - 3]) / (T[N - 2] - T[N - 3]));
+  // Computes the end slopes.
+  CoefficientMatrix Ydot0 = ComputePchipEndSlope(T[1] - T[0], T[2] - T[1],
+                                                 (Y[1] - Y[0]) / (T[1] - T[0]),
+                                                 (Y[2] - Y[1]) / (T[2] - T[1]));
+  CoefficientMatrix Ydot1 =
+      ComputePchipEndSlope(T[N - 1] - T[N - 2], T[N - 2] - T[N - 3],
+                           (Y[N - 1] - Y[N - 2]) / (T[N - 1] - T[N - 2]),
+                           (Y[N - 2] - Y[N - 3]) / (T[N - 2] - T[N - 3]));
 
   for (int t = 0; t < N - 1; ++t) {
     dt[t] = T[t + 1] - T[t];
@@ -454,18 +459,20 @@ PiecewisePolynomial<CoefficientType>::Pchip(
           Ydot[t + 1](j, k) = 0;
         } else {
           CoefficientType common = dt[t] + dt[t + 1];
-          Ydot[t + 1](j, k) = 3 * common / ((common + dt[t + 1]) / slope[t](j, k) +
-                                          (common + dt[t]) / slope[t + 1](j, k));
+          Ydot[t + 1](j, k) =
+              3 * common / ((common + dt[t + 1]) / slope[t](j, k) +
+                            (common + dt[t]) / slope[t + 1](j, k));
         }
       }
 
-      // Fix end point slopes.
+      // Fixes end point slopes.
       Ydot[0](j, k) = Ydot0(j, k);
       Ydot[N - 1](j, k) = Ydot1(j, k);
 
       // Computes coeffs given Y and Ydot at the end points for each segment.
       for (int t = 0; t < N - 1; ++t) {
-        coeffs = ComputeCubicSplineCoeffs(dt[t], Y[t](j, k), Y[t + 1](j, k), Ydot[t](j, k), Ydot[t + 1](j, k));
+        coeffs = ComputeCubicSplineCoeffs(dt[t], Y[t](j, k), Y[t + 1](j, k),
+                                          Ydot[t](j, k), Ydot[t + 1](j, k));
         polynomials[t](j, k) = PolynomialType(coeffs);
       }
     }
@@ -477,8 +484,7 @@ PiecewisePolynomial<CoefficientType>::Pchip(
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::Cubic(
-    const std::vector<double>& T,
-    const std::vector<CoefficientMatrix>& Y,
+    const std::vector<double>& T, const std::vector<CoefficientMatrix>& Y,
     const std::vector<CoefficientMatrix>& Ydot) {
   CheckSplineGenerationInputValidityOrThrow(T, Y, 3);
 
@@ -487,7 +493,7 @@ PiecewisePolynomial<CoefficientType>::Cubic(
   int cols = Y.front().cols();
 
   if (T.size() != Ydot.size()) {
-      throw std::runtime_error("Y and Ydot have different length.");
+    throw std::runtime_error("Y and Ydot have different length.");
   }
   for (int t = 0; t < N; ++t) {
     if (rows != Ydot[t].rows() || cols != Ydot[t].cols()) {
@@ -502,8 +508,8 @@ PiecewisePolynomial<CoefficientType>::Cubic(
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
         double dt = T[t + 1] - T[t];
-        Eigen::Matrix<CoefficientType, 4, 1> coeffs =
-            ComputeCubicSplineCoeffs(dt, Y[t](i, j), Y[t+1](i, j), Ydot[t](i, j), Ydot[t+1](i, j));
+        Eigen::Matrix<CoefficientType, 4, 1> coeffs = ComputeCubicSplineCoeffs(
+            dt, Y[t](i, j), Y[t + 1](i, j), Ydot[t](i, j), Ydot[t + 1](i, j));
         polynomials[t](i, j) = PolynomialType(coeffs);
       }
     }
@@ -513,19 +519,19 @@ PiecewisePolynomial<CoefficientType>::Cubic(
 }
 
 template <typename CoefficientType>
-int PiecewisePolynomial<CoefficientType>::SetupCubicSplineInterieorCoeffsLinearSystem(
-    const std::vector<double>& T,
-    const std::vector<CoefficientMatrix>& Y,
-    int row, int col,
-    Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>* A,
-    Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>* b) {
+int PiecewisePolynomial<CoefficientType>::
+    SetupCubicSplineInterieorCoeffsLinearSystem(
+        const std::vector<double>& T, const std::vector<CoefficientMatrix>& Y,
+        int row, int col,
+        Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>* A,
+        Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>* b) {
   int N = static_cast<int>(T.size());
 
   DRAKE_DEMAND(A != nullptr);
   DRAKE_DEMAND(b != nullptr);
-  DRAKE_DEMAND(A->rows() == 4*(N-1));
-  DRAKE_DEMAND(A->cols() == 4*(N-1));
-  DRAKE_DEMAND(b->rows() == 4*(N-1));
+  DRAKE_DEMAND(A->rows() == 4 * (N - 1));
+  DRAKE_DEMAND(A->cols() == 4 * (N - 1));
+  DRAKE_DEMAND(b->rows() == 4 * (N - 1));
 
   int row_idx = 0;
   Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>& Aref = *A;
@@ -575,10 +581,8 @@ int PiecewisePolynomial<CoefficientType>::SetupCubicSplineInterieorCoeffsLinearS
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::Cubic(
-    const std::vector<double> &T,
-    const std::vector<CoefficientMatrix> &Y,
-    const CoefficientMatrix &Ydot0,
-    const CoefficientMatrix &Ydot1) {
+    const std::vector<double>& T, const std::vector<CoefficientMatrix>& Y,
+    const CoefficientMatrix& Ydot0, const CoefficientMatrix& Ydot1) {
   CheckSplineGenerationInputValidityOrThrow(T, Y, 3);
 
   int N = static_cast<int>(T.size());
@@ -598,17 +602,19 @@ PiecewisePolynomial<CoefficientType>::Cubic(
     polynomials[i].resize(rows, cols);
   }
 
-  Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic> A(4 * (N - 1), 4 * (N - 1));
+  Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic> A(4 * (N - 1),
+                                                                   4 * (N - 1));
   Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> b(4 * (N - 1));
   Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> solution;
 
   A.setZero();
   b.setZero();
 
-  // Set up a linear equation to solve for the coeffectients.
+  // Sets up a linear equation to solve for the coeffectients.
   for (int j = 0; j < rows; ++j) {
     for (int k = 0; k < cols; ++k) {
-      int row_idx = SetupCubicSplineInterieorCoeffsLinearSystem(T, Y, j, k, &A, &b);
+      int row_idx =
+          SetupCubicSplineInterieorCoeffsLinearSystem(T, Y, j, k, &A, &b);
 
       // Endpoints' velocity matches the given ones.
       A(row_idx, 1) = 1;
@@ -620,10 +626,12 @@ PiecewisePolynomial<CoefficientType>::Cubic(
           3 * (T[N - 1] - T[N - 2]) * (T[N - 1] - T[N - 2]);
       b(row_idx++) = Ydot1(j, k);
 
+      // TODO(siyuan.feng): Should switch to a sparse solver.
       solution = A.colPivHouseholderQr().solve(b);
 
       for (int i = 0; i < N - 1; ++i) {
-        polynomials[i](j, k) = Polynomial<CoefficientType>(solution.template segment<4>(4 * i));
+        polynomials[i](j, k) =
+            Polynomial<CoefficientType>(solution.template segment<4>(4 * i));
       }
     }
   }
@@ -634,8 +642,7 @@ PiecewisePolynomial<CoefficientType>::Cubic(
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::Cubic(
-    const std::vector<double>& T,
-    const std::vector<CoefficientMatrix>& Y) {
+    const std::vector<double>& T, const std::vector<CoefficientMatrix>& Y) {
   CheckSplineGenerationInputValidityOrThrow(T, Y, 3);
 
   int N = static_cast<int>(T.size());
@@ -647,25 +654,27 @@ PiecewisePolynomial<CoefficientType>::Cubic(
     polynomials[i].resize(rows, cols);
   }
 
-  Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic> A(4 * (N - 1), 4 * (N - 1));
+  Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic> A(4 * (N - 1),
+                                                                   4 * (N - 1));
   Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> b(4 * (N - 1));
   Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> solution;
 
   A.setZero();
   b.setZero();
 
-  // Set up a linear equation to solve for the coeffectients.
+  // Sets up a linear equation to solve for the coeffectients.
   for (int j = 0; j < rows; ++j) {
     for (int k = 0; k < cols; ++k) {
-      int row_idx = SetupCubicSplineInterieorCoeffsLinearSystem(T, Y, j, k, &A, &b);
+      int row_idx =
+          SetupCubicSplineInterieorCoeffsLinearSystem(T, Y, j, k, &A, &b);
 
       if (N > 3) {
-        // Ydddot(T[1]) is continuous
+        // Ydddot(T[1]) is continuous.
         A(row_idx, 3) = 1;
         A(row_idx, 4 + 3) = -1;
         b(row_idx++) = 0;
 
-        // Ydddot(T[N-2]) is continuous
+        // Ydddot(T[N-2]) is continuous.
         A(row_idx, 4 * (N - 3) + 3) = 1;
         A(row_idx, 4 * (N - 2) + 3) = -1;
         b(row_idx++) = 0;
@@ -678,10 +687,12 @@ PiecewisePolynomial<CoefficientType>::Cubic(
         b(row_idx++) = 0;
       }
 
+      // TODO(siyuan.feng): Should switch to a sparse solver.
       solution = A.colPivHouseholderQr().solve(b);
 
       for (int i = 0; i < N - 1; ++i) {
-        polynomials[i](j, k) = Polynomial<CoefficientType>(solution.template segment<4>(4 * i));
+        polynomials[i](j, k) =
+            Polynomial<CoefficientType>(solution.template segment<4>(4 * i));
       }
     }
   }
@@ -691,9 +702,9 @@ PiecewisePolynomial<CoefficientType>::Cubic(
 
 template <typename CoefficientType>
 Eigen::Matrix<CoefficientType, 4, 1>
-PiecewisePolynomial<CoefficientType>::ComputeCubicSplineCoeffs(double dt,
-    CoefficientType y0, CoefficientType y1,
-    CoefficientType yd0, CoefficientType yd1) {
+PiecewisePolynomial<CoefficientType>::ComputeCubicSplineCoeffs(
+    double dt, CoefficientType y0, CoefficientType y1, CoefficientType yd0,
+    CoefficientType yd1) {
   if (dt < Eigen::NumTraits<CoefficientType>::epsilon()) {
     throw std::runtime_error("dt < epsilon.");
   }
@@ -702,8 +713,7 @@ PiecewisePolynomial<CoefficientType>::ComputeCubicSplineCoeffs(double dt,
   double dt3 = dt2 * dt;
   CoefficientType c4 = y0;
   CoefficientType c3 = yd0;
-  CoefficientType c1 = 1. / dt2 * (yd1 - c3 -
-      2. / dt * (y1 - c4 - dt * c3));
+  CoefficientType c1 = 1. / dt2 * (yd1 - c3 - 2. / dt * (y1 - c4 - dt * c3));
   CoefficientType c2 = 1. / dt2 * (y1 - c4 - dt * c3 - dt3 * c1);
   return Eigen::Matrix<CoefficientType, 4, 1>(c4, c3, c2, c1);
 }

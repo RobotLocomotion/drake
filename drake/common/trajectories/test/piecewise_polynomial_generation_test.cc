@@ -16,11 +16,13 @@ namespace {
 // Computes the maximum or minimum velocity in interval [0, T].
 // This assumes \p vel is a second order polynomial.
 template <typename CoefficientType>
-CoefficientType ComputeExtremeVel(const Polynomial<CoefficientType>& vel, double T, bool max_vel) {
+CoefficientType ComputeExtremeVel(const Polynomial<CoefficientType>& vel,
+                                  double T, bool max_vel) {
   DRAKE_DEMAND(vel.GetDegree() == 2);
 
   Polynomial<CoefficientType> acc = vel.Derivative();
-  Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> acc_coeffs = acc.GetCoefficients();
+  Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> acc_coeffs =
+      acc.GetCoefficients();
 
   CoefficientType vel0 = vel.EvaluateUnivariate(0);
   CoefficientType vel1 = vel.EvaluateUnivariate(T);
@@ -39,8 +41,7 @@ CoefficientType ComputeExtremeVel(const Polynomial<CoefficientType>& vel, double
 
   if (max_vel) {
     return std::max(std::max(vel0, vel1), vel_extrema);
-  }
-  else {
+  } else {
     return std::min(std::min(vel0, vel1), vel_extrema);
   }
 }
@@ -48,9 +49,9 @@ CoefficientType ComputeExtremeVel(const Polynomial<CoefficientType>& vel, double
 // Check continuity for up to d degree, where d is the minimum of \p degree and
 // the highest degree of the trajectory.
 template <typename CoefficientType>
-bool CheckContinuity(const PiecewisePolynomial<CoefficientType>& traj, CoefficientType tol, int degree) {
-  if (degree < 0)
-    return false;
+bool CheckContinuity(const PiecewisePolynomial<CoefficientType>& traj,
+                     CoefficientType tol, int degree) {
+  if (degree < 0) return false;
 
   typedef Polynomial<CoefficientType> PolynomialType;
 
@@ -68,7 +69,8 @@ bool CheckContinuity(const PiecewisePolynomial<CoefficientType>& traj, Coefficie
       for (int j = 0; j < cols; ++j) {
         PolynomialType poly = traj.getPolynomial(n, i, j);
         PolynomialType next_poly = traj.getPolynomial(n + 1, i, j);
-        int max_degree = std::min(degree, traj.getSegmentPolynomialDegree(n, i, j));
+        int max_degree =
+            std::min(degree, traj.getSegmentPolynomialDegree(n, i, j));
         for (int d = 0; d < max_degree + 1; d++) {
           // Values evaluated at the end of the current segment.
           val0 = poly.EvaluateUnivariate(dt);
@@ -92,9 +94,11 @@ bool CheckContinuity(const PiecewisePolynomial<CoefficientType>& traj, Coefficie
 // Check P(t), P'(t), P''(t), ... match values[i][t], where i is the ith
 // derivative, and t is the tth break.
 template <typename CoefficientType>
-bool CheckValues(const PiecewisePolynomial<CoefficientType>& traj, const std::vector<std::vector<MatrixX<CoefficientType>>>& values, CoefficientType tol) {
-  if (values.empty())
-    return false;
+bool CheckValues(
+    const PiecewisePolynomial<CoefficientType>& traj,
+    const std::vector<std::vector<MatrixX<CoefficientType>>>& values,
+    CoefficientType tol) {
+  if (values.empty()) return false;
 
   typedef Polynomial<CoefficientType> PolynomialType;
 
@@ -146,7 +150,11 @@ bool CheckValues(const PiecewisePolynomial<CoefficientType>& traj, const std::ve
 //
 // The last two conditions are the monotonic conditions ("shape perserving").
 template <typename CoefficientType>
-void PchipTest(const std::vector<double>& T, const std::vector<Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>>& Y, const PiecewisePolynomial<CoefficientType>& traj, CoefficientType tol) {
+void PchipTest(const std::vector<double>& T,
+               const std::vector<Eigen::Matrix<CoefficientType, Eigen::Dynamic,
+                                               Eigen::Dynamic>>& Y,
+               const PiecewisePolynomial<CoefficientType>& traj,
+               CoefficientType tol) {
   typedef Polynomial<CoefficientType> PolynomialType;
 
   int rows = Y.front().rows();
@@ -172,13 +180,14 @@ void PchipTest(const std::vector<double>& T, const std::vector<Eigen::Matrix<Coe
         CoefficientType y1 = poly.EvaluateUnivariate(dt);
 
         double vv;
-        // If Y is increasing in this segment, all velocity in this segment >= 0.
+        // If Y is increasing in this segment, all velocity in this segment >=
+        // 0.
         if (y1 > y0) {
           vv = ComputeExtremeVel(poly_deriv, dt, false);
           EXPECT_TRUE(vv >= -tol);
-        }
-        // If Y is increasing in this segment, all velocity in this segment >= 0.
-        else if (y1 < y0) {
+        } else if (y1 < y0) {
+          // If Y is increasing in this segment, all velocity in this segment >=
+          // 0.
           vv = ComputeExtremeVel(poly_deriv, dt, true);
           EXPECT_TRUE(vv <= tol);
         } else {
@@ -219,15 +228,17 @@ GTEST_TEST(SplineTests, PchipAndCubicSplineCompareWithMatlabTest) {
   coeffs[0] << -1, 0, 0, 0;
   coeffs[1] << -1, 0, 0, 0;
   coeffs[2] << -1, 0, 2, -1;
-  coeffs[3] <<  0, 1, 1, -1;
-  coeffs[4] <<  1, 0, 0, 0;
-  coeffs[5] <<  1, 0, 0, 0;
+  coeffs[3] << 0, 1, 1, -1;
+  coeffs[4] << 1, 0, 0, 0;
+  coeffs[5] << 1, 0, 0, 0;
 
   PiecewisePolynomial<double> spline = PiecewisePolynomial<double>::Pchip(T, Y);
   EXPECT_EQ(spline.getNumberOfSegments(), T.size() - 1);
   for (int t = 0; t < spline.getNumberOfSegments(); ++t) {
-    const PiecewisePolynomial<double>::PolynomialMatrix& poly_matrix = spline.getPolynomialMatrix(t);
-    EXPECT_TRUE(CompareMatrices(poly_matrix(0, 0).GetCoefficients(), coeffs[t], 1e-12, MatrixCompareType::absolute));
+    const PiecewisePolynomial<double>::PolynomialMatrix& poly_matrix =
+        spline.getPolynomialMatrix(t);
+    EXPECT_TRUE(CompareMatrices(poly_matrix(0, 0).GetCoefficients(), coeffs[t],
+                                1e-12, MatrixCompareType::absolute));
   }
   PchipTest(T, Y, spline, 1e-12);
 
@@ -245,14 +256,16 @@ GTEST_TEST(SplineTests, PchipAndCubicSplineCompareWithMatlabTest) {
   coeffs[0] << -1, 0.5, -0.75, 0.25;
   coeffs[1] << -1, -0.25, 0, 0.25;
   coeffs[2] << -1, 0.5, 0.75, -0.25;
-  coeffs[3] <<  0, 1.25, 0, -0.25;
-  coeffs[4] <<  1, 0.5, -0.75, 0.25;
-  coeffs[5] <<  1, -0.25, 0, 0.25;
+  coeffs[3] << 0, 1.25, 0, -0.25;
+  coeffs[4] << 1, 0.5, -0.75, 0.25;
+  coeffs[5] << 1, -0.25, 0, 0.25;
   spline = PiecewisePolynomial<double>::Cubic(T, Y);
   EXPECT_EQ(spline.getNumberOfSegments(), T.size() - 1);
   for (int t = 0; t < spline.getNumberOfSegments(); ++t) {
-    const PiecewisePolynomial<double>::PolynomialMatrix& poly_matrix = spline.getPolynomialMatrix(t);
-    EXPECT_TRUE(CompareMatrices(poly_matrix(0, 0).GetCoefficients(), coeffs[t], 1e-12, MatrixCompareType::absolute));
+    const PiecewisePolynomial<double>::PolynomialMatrix& poly_matrix =
+        spline.getPolynomialMatrix(t);
+    EXPECT_TRUE(CompareMatrices(poly_matrix(0, 0).GetCoefficients(), coeffs[t],
+                                1e-12, MatrixCompareType::absolute));
   }
 
   EXPECT_TRUE(CheckContinuity(spline, 1e-12, 2));
@@ -267,12 +280,13 @@ GTEST_TEST(SplineTests, RandomizedPchipSplineTest) {
   int cols = 4;
 
   for (int ctr = 0; ctr < num_tests; ++ctr) {
-    std::vector<double> T = PiecewiseFunction::randomSegmentTimes(N - 1, generator);
+    std::vector<double> T =
+        PiecewiseFunction::randomSegmentTimes(N - 1, generator);
     std::vector<MatrixX<double>> Y(N);
-    for (int i = 0; i < N; ++i)
-      Y[i] = MatrixX<double>::Random(rows, cols);
+    for (int i = 0; i < N; ++i) Y[i] = MatrixX<double>::Random(rows, cols);
 
-    PiecewisePolynomial<double> spline = PiecewisePolynomial<double>::Pchip(T, Y);
+    PiecewisePolynomial<double> spline =
+        PiecewisePolynomial<double>::Pchip(T, Y);
     PchipTest(T, Y, spline, 1e-8);
   }
 }
@@ -286,39 +300,44 @@ GTEST_TEST(SplineTests, RandomizedCubicSplineTest) {
 
   // Test Cubic(T, Y)
   for (int ctr = 0; ctr < num_tests; ++ctr) {
-    std::vector<double> T = PiecewiseFunction::randomSegmentTimes(N - 1, generator);
+    std::vector<double> T =
+        PiecewiseFunction::randomSegmentTimes(N - 1, generator);
     std::vector<MatrixX<double>> Y(N);
-    for (int i = 0; i < N; ++i)
-      Y[i] = MatrixX<double>::Random(rows, cols);
+    for (int i = 0; i < N; ++i) Y[i] = MatrixX<double>::Random(rows, cols);
 
-    PiecewisePolynomial<double> spline = PiecewisePolynomial<double>::Cubic(T, Y);
+    PiecewisePolynomial<double> spline =
+        PiecewisePolynomial<double>::Cubic(T, Y);
     EXPECT_TRUE(CheckContinuity(spline, 1e-8, 2));
     EXPECT_TRUE(CheckValues(spline, {Y}, 1e-8));
   }
 
   // Test Cubic(T, Y, Ydot0, Ydot1)
   for (int ctr = 0; ctr < num_tests; ++ctr) {
-    std::vector<double> T = PiecewiseFunction::randomSegmentTimes(N - 1, generator);
+    std::vector<double> T =
+        PiecewiseFunction::randomSegmentTimes(N - 1, generator);
     std::vector<MatrixX<double>> Y(N);
-    for (int i = 0; i < N; ++i)
-      Y[i] = MatrixX<double>::Random(rows, cols);
+    for (int i = 0; i < N; ++i) Y[i] = MatrixX<double>::Random(rows, cols);
 
     MatrixX<double> Ydot0 = MatrixX<double>::Random(rows, cols);
     MatrixX<double> Ydot1 = MatrixX<double>::Random(rows, cols);
-    PiecewisePolynomial<double> spline = PiecewisePolynomial<double>::Cubic(T, Y, Ydot0, Ydot1);
+    PiecewisePolynomial<double> spline =
+        PiecewisePolynomial<double>::Cubic(T, Y, Ydot0, Ydot1);
     EXPECT_TRUE(CheckContinuity(spline, 1e-8, 2));
     EXPECT_TRUE(CheckValues(spline, {Y}, 1e-8));
 
     // Check the first and last first derivatives.
     MatrixX<double> Ydot0_test = spline.derivative().value(T.front());
     MatrixX<double> Ydot1_test = spline.derivative().value(T.back());
-    EXPECT_TRUE(CompareMatrices(Ydot0, Ydot0_test, 1e-8, MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(Ydot1, Ydot1_test, 1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(Ydot0, Ydot0_test, 1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(Ydot1, Ydot1_test, 1e-8, MatrixCompareType::absolute));
   }
 
   // Test Cubic(T, Y, Ydots)
   for (int ctr = 0; ctr < num_tests; ++ctr) {
-    std::vector<double> T = PiecewiseFunction::randomSegmentTimes(N - 1, generator);
+    std::vector<double> T =
+        PiecewiseFunction::randomSegmentTimes(N - 1, generator);
     std::vector<MatrixX<double>> Y(N);
     std::vector<MatrixX<double>> Ydot(N);
 
@@ -327,22 +346,30 @@ GTEST_TEST(SplineTests, RandomizedCubicSplineTest) {
       Ydot[i] = MatrixX<double>::Random(rows, cols);
     }
 
-    PiecewisePolynomial<double> spline = PiecewisePolynomial<double>::Cubic(T, Y, Ydot);
+    PiecewisePolynomial<double> spline =
+        PiecewisePolynomial<double>::Cubic(T, Y, Ydot);
     EXPECT_TRUE(CheckContinuity(spline, 1e-8, 1));
     EXPECT_TRUE(CheckValues(spline, {Y, Ydot}, 1e-8));
   }
 }
 
 template <typename CoefficientType>
-void TestThrows(const std::vector<double>& T, const std::vector<Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>>& Y) {
-  EXPECT_THROW(PiecewisePolynomial<double>::ZeroOrderHold(T, Y), std::runtime_error);
-  EXPECT_THROW(PiecewisePolynomial<double>::FirstOrderHold(T, Y), std::runtime_error);
+void TestThrows(const std::vector<double>& T,
+                const std::vector<Eigen::Matrix<CoefficientType, Eigen::Dynamic,
+                                                Eigen::Dynamic>>& Y) {
+  EXPECT_THROW(PiecewisePolynomial<double>::ZeroOrderHold(T, Y),
+               std::runtime_error);
+  EXPECT_THROW(PiecewisePolynomial<double>::FirstOrderHold(T, Y),
+               std::runtime_error);
   EXPECT_THROW(PiecewisePolynomial<double>::Pchip(T, Y), std::runtime_error);
   EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y), std::runtime_error);
 }
 
 template <typename CoefficientType>
-void TestNoThrows(const std::vector<double>& T, const std::vector<Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>>& Y) {
+void TestNoThrows(
+    const std::vector<double>& T,
+    const std::vector<
+        Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>>& Y) {
   EXPECT_NO_THROW(PiecewisePolynomial<double>::ZeroOrderHold(T, Y));
   EXPECT_NO_THROW(PiecewisePolynomial<double>::FirstOrderHold(T, Y));
   EXPECT_NO_THROW(PiecewisePolynomial<double>::Pchip(T, Y));
@@ -369,7 +396,8 @@ GTEST_TEST(SplineTests, TestException) {
   TestThrows(T, Y);
 
   // T size doesn't match Y size
-  Y = std::vector<MatrixX<double>>(T.size()+1, MatrixX<double>::Zero(rows, cols));
+  Y = std::vector<MatrixX<double>>(T.size() + 1,
+                                   MatrixX<double>::Zero(rows, cols));
   TestThrows(T, Y);
 
   // Min length
@@ -384,7 +412,8 @@ GTEST_TEST(SplineTests, TestException) {
   Y = std::vector<MatrixX<double>>(T.size(), MatrixX<double>::Zero(rows, cols));
   EXPECT_NO_THROW(PiecewisePolynomial<double>::ZeroOrderHold(T, Y));
 
-  EXPECT_THROW(PiecewisePolynomial<double>::FirstOrderHold(T, Y), std::runtime_error);
+  EXPECT_THROW(PiecewisePolynomial<double>::FirstOrderHold(T, Y),
+               std::runtime_error);
 
   // Test Ydot0 / Ydot1 mismatch.
   T = {1, 2, 3};
@@ -395,24 +424,31 @@ GTEST_TEST(SplineTests, TestException) {
 
   Ydot0.resize(rows, cols);
   Ydot1.resize(rows, cols + 1);
-  EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y, Ydot0, Ydot1), std::runtime_error);
+  EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y, Ydot0, Ydot1),
+               std::runtime_error);
 
   Ydot0.resize(rows + 1, cols);
   Ydot1.resize(rows, cols);
-  EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y, Ydot0, Ydot1), std::runtime_error);
+  EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y, Ydot0, Ydot1),
+               std::runtime_error);
 
   // Test Ydot mismatch.
   T = {1, 2, 3};
   Y = std::vector<MatrixX<double>>(T.size(), MatrixX<double>::Zero(rows, cols));
-  std::vector<MatrixX<double>> Ydot = std::vector<MatrixX<double>>(T.size(), MatrixX<double>::Zero(rows, cols));
+  std::vector<MatrixX<double>> Ydot =
+      std::vector<MatrixX<double>>(T.size(), MatrixX<double>::Zero(rows, cols));
   EXPECT_NO_THROW(PiecewisePolynomial<double>::Cubic(T, Y, Ydot));
 
-  Ydot = std::vector<MatrixX<double>>(T.size() + 1, MatrixX<double>::Zero(rows, cols));
-  EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y, Ydot), std::runtime_error);
+  Ydot = std::vector<MatrixX<double>>(T.size() + 1,
+                                      MatrixX<double>::Zero(rows, cols));
+  EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y, Ydot),
+               std::runtime_error);
 
-  Ydot = std::vector<MatrixX<double>>(T.size(), MatrixX<double>::Zero(rows, cols));
+  Ydot =
+      std::vector<MatrixX<double>>(T.size(), MatrixX<double>::Zero(rows, cols));
   Ydot.front().resize(rows + 2, cols + 1);
-  EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y, Ydot), std::runtime_error);
+  EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y, Ydot),
+               std::runtime_error);
 }
 
 }  // namespace
