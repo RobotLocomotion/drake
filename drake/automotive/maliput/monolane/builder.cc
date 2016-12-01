@@ -14,13 +14,6 @@ namespace drake {
 namespace maliput {
 namespace monolane {
 
-Builder::XYZPointFuzzyOrder::
-XYZPointFuzzyOrder(const double linear_tolerance,
-                   const double angular_tolerance)
-        : pos_pre_(linear_tolerance),
-          ori_pre_(angular_tolerance) {}
-
-
 Builder::Builder(const api::RBounds& lane_bounds,
                  const api::RBounds& driveable_bounds,
                  const double linear_tolerance,
@@ -29,6 +22,7 @@ Builder::Builder(const api::RBounds& lane_bounds,
       driveable_bounds_(driveable_bounds),
       linear_tolerance_(linear_tolerance),
       angular_tolerance_(angular_tolerance) {}
+
 
 const Connection* Builder::Connect(
     const std::string& id,
@@ -41,23 +35,7 @@ const Connection* Builder::Connect(
               start.xy.y + (length * std::sin(start.xy.heading)),
               start.xy.heading),
       z_end);
-  connections_.push_back(std::make_unique<Connection>(
-      Connection::Type::kLine, id,
-      start, end));
-  return connections_.back().get();
-}
-
-
-const Connection* Builder::Connect(
-    const std::string& id,
-    const XYZPoint& start,
-    const double length,
-    const XYZPoint& explicit_end) {
-  // TODO(maddog)  Validate length/heading vs forced_end.
-  DRAKE_DEMAND(length);
-  connections_.push_back(std::make_unique<Connection>(
-      Connection::Type::kLine, id,
-      start, explicit_end));
+  connections_.push_back(std::make_unique<Connection>(id, start, end));
   return connections_.back().get();
 }
 
@@ -80,26 +58,7 @@ const Connection* Builder::Connect(
                      z_end);
 
   connections_.push_back(std::make_unique<Connection>(
-      Connection::Type::kArc, id,
-      start, end, cx, cy, arc.radius, arc.d_theta));
-  return connections_.back().get();
-}
-
-
-const Connection* Builder::Connect(
-    const std::string& id,
-    const XYZPoint& start,
-    const ArcOffset& arc,
-    const XYZPoint& explicit_end) {
-  const double alpha = start.xy.heading;
-  const double theta0 = alpha - std::copysign(M_PI / 2., arc.d_theta);
-
-  const double cx = start.xy.x - (arc.radius * std::cos(theta0));
-  const double cy = start.xy.y - (arc.radius * std::sin(theta0));
-
-  connections_.push_back(std::make_unique<Connection>(
-      Connection::Type::kArc, id,
-      start, explicit_end, cx, cy, arc.radius, arc.d_theta));
+      id, start, end, cx, cy, arc.radius, arc.d_theta));
   return connections_.back().get();
 }
 
@@ -133,8 +92,8 @@ CubicPolynomial MakeCubic(const double dX, const double Y0, const double dY,
                          Ydot0 + Ydot1 - (2. * dY / dX));
 }
 
-/// Determine the heading (in xy-plane) along the centerline when
-/// travelling towards/into the lane, from the specified end.
+// Determine the heading (in xy-plane) along the centerline when
+// travelling towards/into the lane, from the specified end.
 double HeadingIntoLane(const api::Lane* const lane,
                        const api::LaneEnd::Which end) {
   switch (end) {
@@ -159,7 +118,7 @@ BranchPoint* Builder::FindOrCreateBranchPoint(
   if (ibp != bp_map->end()) {
     return ibp->second;
   }
-  // TODO(maddog) Generate a real id.
+  // TODO(maddog@tri.global) Generate a more meaningful id (user-specified?)
   BranchPoint* bp = rg->NewBranchPoint(
       {"bp:" + std::to_string(rg->num_branch_points())});
   auto result = bp_map->emplace(point, bp);
@@ -210,7 +169,6 @@ void Builder::AttachBranchPoint(
 }
 
 
-
 Lane* Builder::BuildConnection(
     const Connection* const cnx,
     Junction* const junction,
@@ -250,8 +208,6 @@ Lane* Builder::BuildConnection(
       const double radius = cnx->radius();
       const double theta0 = std::atan2(cnx->start().xy.y - center.y,
                                        cnx->start().xy.x - center.x);
-      // TODO(maddog) Uh, which direction?  Info lost since cnx constructed!
-      //              ...and deal with wrap-arounds, too.
       const double d_theta = cnx->d_theta();
       const double arc_length = radius * std::abs(d_theta);
       const CubicPolynomial elevation(MakeCubic(
@@ -289,7 +245,7 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
   auto rg = std::make_unique<RoadGeometry>(
       id, linear_tolerance_, angular_tolerance_);
   std::map<XYZPoint, BranchPoint*, XYZPointFuzzyOrder> bp_map(
-      XYZPointFuzzyOrder(linear_tolerance_, angular_tolerance_));
+      XYZPointFuzzyOrder(linear_tolerance_, 1.0));
   std::map<const Connection*, Lane*> lane_map;
   std::set<const Connection*> remaining_connections;
 
@@ -299,9 +255,9 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
 
   for (auto& grp : groups_) {
     Junction* junction = rg->NewJunction({std::string("j:") + grp->id()});
-    std::cout << "jnx: " << junction->id().id << std::endl;
+    std::cerr << "jnx: " << junction->id().id << std::endl;
     for (auto& cnx : grp->connections()) {
-      std::cout << "cnx: " << cnx->id() << std::endl;
+      std::cerr << "cnx: " << cnx->id() << std::endl;
       remaining_connections.erase(cnx);
       lane_map[cnx] = BuildConnection(cnx, junction, rg.get(), &bp_map);
     }
@@ -309,8 +265,8 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
 
   for (auto& cnx : remaining_connections) {
     Junction* junction = rg->NewJunction({std::string("j:") + cnx->id()});
-    std::cout << "jnx: " << junction->id().id << std::endl;
-    std::cout << "cnx: " << cnx->id() << std::endl;
+    std::cerr << "jnx: " << junction->id().id << std::endl;
+    std::cerr << "cnx: " << cnx->id() << std::endl;
     lane_map[cnx] = BuildConnection(cnx, junction, rg.get(), &bp_map);
   }
 
