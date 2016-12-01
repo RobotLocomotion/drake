@@ -66,7 +66,7 @@ class IiwaWorldSimBuilder {
       const drake::multibody::joints::FloatingBaseType floating_base_type =
           drake::multibody::joints::kFixed);
 
-  ///  Adds a flat terrain to the simulation.
+  /// Adds a flat terrain to the simulation.
   void AddGround();
 
   /// Builds a diagram composed of a `RigidBodyPlant` and `DrakeVisualizer`
@@ -77,7 +77,7 @@ class IiwaWorldSimBuilder {
   std::unique_ptr<systems::Diagram<T>> Build();
 
   // TODO(naveenoid): Remove this method once issue #4191 is addressed.
-  // TODO(naveenoid) : Subsystem names should be documented here once #3556 is
+  // TODO(naveenoid): Subsystem names should be documented here once #3556 is
   // resolved.
   /// Sets the zero configuration of the plant.
   /// Note that this method assumes that @p demo_diagram is composed of a
