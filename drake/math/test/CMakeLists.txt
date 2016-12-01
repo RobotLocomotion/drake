@@ -22,4 +22,4 @@ drake_add_cc_test(jacobian_test)
 target_link_libraries(jacobian_test drakeCommon)
 
 drake_add_cc_test(matrix_util_test)
-target_linK_libraries(matrix_util_test drakeCommon)
+target_linK_libraries(matrix_util_test drakeCommon drakeOptimization)

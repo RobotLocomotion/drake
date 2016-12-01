@@ -477,6 +477,43 @@ class MathematicalProgram {
    * Callers can also set the initial guess of the decision variables through
    * SetInitialGuess() or SetInitialGuessForAllVariables().
    * @tparam rows  The number of rows in the new variables.
+   * @tparam cols  The number of columns in the new variables.
+   * @param name All variables will share the same name, but different index.
+   * @return The DecisionVariableMatrix of size rows x cols, containing the new
+   * vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto x = prog.AddContinuousVariables<2, 3>("X");
+   * @endcode
+   * This adds a 2 x 3 matrix decision variables into the program.
+   *
+   * The name of the variable is only used for the user for understand.
+   */
+  template <int rows, int cols>
+  DecisionVariableMatrix<rows, cols> AddContinuousVariables(
+      const std::string& name = "X") {
+    std::array<std::string, rows * cols> names;
+    for (int j = 0; j < cols; ++j) {
+      for (int i = 0; i < rows; ++i) {
+        names[j * rows + i] = name + std::to_string(num_vars_ + j * rows + i);
+      }
+    }
+    return AddVariables<rows, cols>(DecisionVariableScalar::VarType::CONTINUOUS,
+                                    names);
+  }
+
+  /// Add continuous variables to this MathematicalProgram.
+  /**
+   * Add continuous variables, appending them to an internal vector of any
+   * existing vars.
+   * The new variables are initialized to zero.
+   * Callers are expected to add costs
+   * and/or constraints to have any effect during optimization.
+   * Callers can also set the initial guess of the decision variables through
+   * SetInitialGuess() or SetInitialGuessForAllVariables().
+   * @tparam rows  The number of rows in the new variables.
    * @param names An array of strings containing the name for each variable.
    * @return The DecisionVariableMatrix of size rows x cols, containing the new
    * vars (not all the vars stored).

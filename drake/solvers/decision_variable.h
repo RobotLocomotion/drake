@@ -136,7 +136,7 @@ struct NumTraits<drake::solvers::DecisionVariableScalar> {
   enum {
     // Our set of allowed values is discrete, and no epsilon is allowed during
     // equality comparison, so treat this as an unsigned integer type.
-    IsInteger = 0,
+    IsInteger = 1,
     IsSigned = 0,
     IsComplex = 0,
     RequireInitialization = 1,
