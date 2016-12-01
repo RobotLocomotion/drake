@@ -30,6 +30,12 @@ class TestSystem : public LeafSystem<double> {
     this->DeclarePeriodicUpdate(period, offset);
   }
 
+  void AddNonIntegerPeriodicUpdate() {
+    const double period = 0.015;
+    const double offset = 0.0;
+    this->DeclarePeriodicUpdate(period, offset);
+  }
+
   void AddContinuousState() {
     this->DeclareContinuousState(4, 3, 2);
   }
@@ -121,6 +127,14 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
   EXPECT_EQ(35.0, actions.time);
   ASSERT_EQ(1u, actions.events.size());
   EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+}
+
+TEST_F(LeafSystemTest, FloatingPointRounding) {
+  context_.set_time(0.015 * 11);
+  UpdateActions<double> actions;
+  system_.AddNonIntegerPeriodicUpdate();
+  system_.CalcNextUpdateTime(context_, &actions);
+  EXPECT_NEAR(0.18, actions.time, 1e-8);
 }
 
 // Tests that the leaf system reserved the declared Parameters with default

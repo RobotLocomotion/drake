@@ -19,6 +19,19 @@ cc_test(
 )
 
 cc_test(
+    name = "leaf_system_test",
+    size = "small",
+    testonly = 1,
+    srcs = ["leaf_system_test.cc"],
+    linkstatic = 1,
+    deps = [
+        "//drake/common",
+        "//drake/systems/framework",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
     name = "modal_state_test",
     size = "small",
     testonly = 1,

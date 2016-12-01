@@ -315,13 +315,16 @@ class LeafSystem : public System<T> {
     // NOLINTNEXTLINE(build/namespaces): Needed for ADL of floor and ceil.
     using namespace std;
 
-    // Compute the index in the sequence of samples for the next time to sample.
-    // If the current time is exactly a sample time, use the next index.
+    // Compute the index in the sequence of samples for the next time to sample,
+    // which should be greater than the present time.
     const T offset_time = current_time_sec - offset;
-    const int64_t prev_k = static_cast<int64_t>(floor(offset_time / period));
-    const int64_t next_k = static_cast<int64_t>(ceil(offset_time / period));
-    const int64_t k = (prev_k == next_k) ? next_k + 1 : next_k;
-    return offset + (k * period);
+    int64_t next_k = static_cast<int64_t>(ceil(offset_time / period));
+    T next_t = offset + next_k * period;
+    while (next_t <= current_time_sec) {
+      next_k++;
+      next_t = offset + next_k * period;
+    }
+    return next_t;
   }
 
   // Periodic Update or Publish events registered on this system.
