@@ -57,13 +57,17 @@ const api::LaneEnd& BranchPoint::AddBBranch(const api::LaneEnd& lane_end) {
 
 void BranchPoint::SetDefault(const api::LaneEnd& lane_end,
                              const api::LaneEnd& default_branch) {
-  DRAKE_DEMAND(ongoing_branches_.find(lane_end) != ongoing_branches_.end());
-  DRAKE_DEMAND(
-      ongoing_branches_.find(default_branch) != ongoing_branches_.end());
-  // TODO(maddog)  assert that default_branch is actually legal for lane_end.
+  const auto& le_ongoing = ongoing_branches_.find(lane_end);
+  const auto& db_confluent = confluent_branches_.find(default_branch);
+  // Verify that lane_end belongs to this BranchPoint.
+  DRAKE_DEMAND(le_ongoing != ongoing_branches_.end());
+  // Verify that default_branch belongs to this BranchPoint.
+  DRAKE_DEMAND(db_confluent != confluent_branches_.end());
+  // Verify that default_branch is an ongoing lane for lane_end.
+  DRAKE_DEMAND(db_confluent->second == le_ongoing->second);
+
   defaults_[lane_end] = default_branch;
 }
-
 
 
 }  // namespace monolane

@@ -17,11 +17,6 @@ Segment* Junction::NewSegment(api::SegmentId id) {
   return segments_.back().get();;
 }
 
-
-const api::Segment* Junction::do_segment(int index) const {
-  return segments_[index].get();
-}
-
 }  // namespace monolane
 }  // namespace maliput
 }  // namespace drake
