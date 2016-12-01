@@ -2986,6 +2986,15 @@ RigidBodyTree<double>::transformQDotMappingToVelocityMapping<
     Eigen::RowVectorXd>(
     const KinematicsCache<double>& cache,
     const Eigen::MatrixBase<Eigen::RowVectorXd>& Ap) const;
+template MatrixX<double>
+RigidBodyTree<double>::transformQDotMappingToVelocityMapping<MatrixXd>(
+        const KinematicsCache<double>& cache,
+        const Eigen::MatrixBase<MatrixXd>& Ap) const;
+template MatrixX<double>
+RigidBodyTree<double>::transformQDotMappingToVelocityMapping<
+        Eigen::Map<MatrixXd const>>(
+        const KinematicsCache<double>& cache,
+        const Eigen::MatrixBase<Eigen::Map<MatrixXd const>>& Ap) const;
 
 // Explicit template instantiations for transformPointsJacobian.
 template MatrixX<AutoDiffUpTo73d>
