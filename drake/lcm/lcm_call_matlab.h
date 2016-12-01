@@ -50,7 +50,7 @@ void ToLcmMatlabArray(const LcmMatlabRemoteVariable& var,
 void ToLcmMatlabArray(double scalar,
                              drake::lcmt_matlab_array* matlab_array);
 
-void ToLcmMatlabArray(const Eigen::Ref<Eigen::MatrixXd>& mat,
+void ToLcmMatlabArray(const Eigen::Ref<const Eigen::MatrixXd>& mat,
                              drake::lcmt_matlab_array* matlab_array);
 
 void ToLcmMatlabArray(const std::string& str,
