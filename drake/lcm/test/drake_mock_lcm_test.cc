@@ -58,7 +58,7 @@ class MockMessageHandler : public DrakeLcmMessageHandlerInterface {
   }
 
   int get_buffer_size() {
-    return static_cast<int>(buffer_.size());
+    return buffer_.size();
   }
 
  private:
