@@ -1,4 +1,4 @@
-#include "drake/examples/schunk_gripper/simulated_schunk_system.h"
+#include "drake/examples/schunk_wsg/simulated_schunk_wsg_system.h"
 
 #include <map>
 #include <memory>
@@ -16,16 +16,16 @@
 
 namespace drake {
 namespace examples {
-namespace schunk_gripper {
+namespace schunk_wsg {
 namespace {
 
 /// Test that the gripper model loads, and that under constant commanded force
 /// it opens to its widest point.
-GTEST_TEST(SimulatedSchunkSystemTest, OpenGripper) {
+GTEST_TEST(SimulatedSchunkWsgSystemTest, OpenGripper) {
   systems::DiagramBuilder<double> builder;
   const systems::RigidBodyPlant<double>* schunk =
       builder.AddSystem<systems::RigidBodyPlant<double>>(
-          CreateSimulatedSchunkSystem<double>());
+          CreateSimulatedSchunkWsgSystem<double>());
   ASSERT_NE(schunk, nullptr);
   const RigidBodyTree<double>& tree = schunk->get_rigid_body_tree();
 
@@ -137,6 +137,6 @@ GTEST_TEST(SimulatedSchunkSystemTest, OpenGripper) {
 }
 
 }  // namespace
-}  // namespace schunk_gripper
+}  // namespace schunk_wsg
 }  // namespace examples
 }  // namespace drake
