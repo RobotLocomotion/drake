@@ -84,11 +84,9 @@ class RigidBodyTree {
    */
   static const int kWorldBodyIndex;
 
-  /**
-   * A constructor that initializes the gravity vector to be [0, 0, -9.81] and
-   * a single RigidBody named "world". This RigidBody can be accssed by calling
-   * RigidBodyTree::world().
-   */
+  /// A constructor that initializes the gravity vector to be [0, 0, -9.81] and
+  /// a single RigidBody named "world". This RigidBody can be accssed by calling
+  /// RigidBodyTree::world().
   RigidBodyTree(void);
 
   virtual ~RigidBodyTree(void);

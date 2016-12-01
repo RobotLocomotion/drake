@@ -5,8 +5,7 @@ from pydrake.solvers import ik
 
 # Load our model from URDF
 robot = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(),
-                                                  "examples/PR2/pr2.urdf"),
-                                     "ROLLPITCHYAW")
+                                                  "examples/PR2/pr2.urdf"))
 
 # Add a convenient frame, positioned 0.1m away from the r_gripper_palm_link
 # along that link's x axis
