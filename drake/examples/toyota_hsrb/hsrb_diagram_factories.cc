@@ -40,9 +40,9 @@ unique_ptr<systems::Diagram<double>> BuildPlantAndVisualizerDiagram(
   RigidBodyPlant<double>* plant_ptr{nullptr};
 
   // The following curly brace defines a namespace scope for `tree_ptr`.
-  // Ownership of `tree_ptr` is passed to the `RigidBodyPlant`, and the name
-  // scope prevents downstream code from accessing `tree_ptr` since that'll
-  // result in a segmentation fault.
+  // Ownership of `tree_ptr` is passed to the `RigidBodyPlant`; the scope
+  // prevents downstream code from accessing `tree_ptr` since that'll result in
+  // a segmentation fault.
   {
     // Instantiates a model of the world.
     auto tree_ptr = make_unique<RigidBodyTreed>();
