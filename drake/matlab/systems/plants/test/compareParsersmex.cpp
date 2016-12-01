@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_urdf.h"
 #include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace Eigen;
@@ -52,8 +53,10 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         "Drake:compareParsersmex:BadInputs",
         "Unknown floating base type.  must be 'fixed', 'rpy', or 'quat'");
 
-  RigidBodyTree<double>* cpp_model =
-      new RigidBodyTree<double>(urdf_file, floating_base_type);
+  RigidBodyTree<double>* cpp_model = new RigidBodyTree<double>()
+
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf_file,
+      floating_base_type, cpp_model);
 
   // Compute coordinate transform between the two models (in case they are not
   // identical)

@@ -1,9 +1,13 @@
 #include <mex.h>
 
 #include <iostream>
-#include "drake/matlab/util/drakeMexUtil.h"
-#include "drake/multibody/rigid_body_tree.h"
+
 #include <Eigen/Dense>
+
+#include "drake/matlab/util/drakeMexUtil.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 using namespace std;
 
@@ -21,7 +25,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   RigidBodyTree<double> *model =
       (RigidBodyTree<double> *)getDrakeMexPointer(prhs[0]);
   mxGetString(prhs[1], buf, BUF_SIZE);
-  RigidBodyTree<double> cpp_model(buf);
+  RigidBodyTree<double> cpp_model();
+
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(buf,
+      drake::multibody::joints::kRollPitchYaw, &cpp_model);
 
   if (cpp_model.frames.size() != model->frames.size()) {
     mexErrMsgIdAndTxt("Drake:testFrameParsermex:FrameCountMismatch",
