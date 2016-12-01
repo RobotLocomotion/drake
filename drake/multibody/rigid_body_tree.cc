@@ -1186,7 +1186,8 @@ const {
 
 template <typename T>
 template <typename Derived>
-MatrixX<typename Derived::Scalar> RigidBodyTree<T>::transformVelocityMappingToQDotMapping(
+MatrixX<typename Derived::Scalar>
+RigidBodyTree<T>::transformVelocityMappingToQDotMapping(
     const KinematicsCache<typename Derived::Scalar>& cache,
     const Eigen::MatrixBase<Derived>& Av) const {
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
@@ -1211,7 +1212,8 @@ MatrixX<typename Derived::Scalar> RigidBodyTree<T>::transformVelocityMappingToQD
 
 template <typename T>
 template <typename Derived>
-MatrixX<typename Derived::Scalar> RigidBodyTree<T>::transformQDotMappingToVelocityMapping(
+MatrixX<typename Derived::Scalar>
+RigidBodyTree<T>::transformQDotMappingToVelocityMapping(
     const KinematicsCache<typename Derived::Scalar>& cache,
     const Eigen::MatrixBase<Derived>& Ap) const {
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
@@ -1241,7 +1243,7 @@ MatrixX<Scalar> RigidBodyTree<T>::VelocityToPositionDotMapping(
   return transformQDotMappingToVelocityMapping(
       cache,
       MatrixX<Scalar>::Identity(get_num_positions(), get_num_positions()));
-};
+}
 
 template <typename T>
 template <typename Scalar>
@@ -1250,7 +1252,7 @@ MatrixX<Scalar> RigidBodyTree<T>::PositionDotToVelocityMapping(
   return transformVelocityMappingToQDotMapping(
       cache,
       MatrixX<Scalar>::Identity(get_num_velocities(), get_num_velocities()));
-};
+}
 
 template <typename T>
 template <typename Scalar>
