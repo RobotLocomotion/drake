@@ -16,6 +16,10 @@ namespace toyota_hsrb {
 // rule-of-three is satisfied, they should be moved to a more general location
 // (probably somewhere in drake-distro/drake/multibody/).
 
+// TODO(liang.fok) Consider an alternative design of having the following two
+// methods operate on a DiagramBuilder object, which will allow the creation of
+// of an un-nested Diagram.
+
 /**
  * Builds and returns a systems::Diagram containing a systems::RigidBodyPlant
  * and a systems::DrakeVisualizer. The plant's output port zero is connected to
@@ -31,11 +35,10 @@ std::unique_ptr<systems::Diagram<double>> BuildPlantAndVisualizerDiagram(
  * Builds and returns a systems::Diagram consisting of a
  * systems::ConstantVectorSource connected to input port zero of
  * @p plant_diagram. The returned systems::Diagram has no input ports and the
- * same output ports as @p plant_diagram. Typically, @p plant and
- * @p plant_diagram are built using BuildPlantAndVisualizerDiagram().
+ * same output ports as @p plant_diagram. Typically, @p plant_diagram is built
+ * using BuildPlantAndVisualizerDiagram().
  */
 std::unique_ptr<systems::Diagram<double>> BuildConstantSourceToPlantDiagram(
-    const systems::RigidBodyPlant<double>& plant,
     std::unique_ptr<systems::Diagram<double>> plant_diagram);
 
 }  // namespace toyota_hsrb

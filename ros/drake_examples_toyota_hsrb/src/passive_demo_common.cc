@@ -54,8 +54,7 @@ std::unique_ptr<Simulator<double>> CreateSimulation(lcm::DrakeLcm* lcm,
     DRAKE_DEMAND(plant_diagram != nullptr);
 
     std::unique_ptr<Diagram<double>> input_diagram_ptr =
-        BuildConstantSourceToPlantDiagram(*plant,
-            std::move(plant_diagram_ptr));
+        BuildConstantSourceToPlantDiagram(std::move(plant_diagram_ptr));
     input_diagram =
         builder.AddSystem(std::move(input_diagram_ptr));
     DRAKE_DEMAND(input_diagram != nullptr);

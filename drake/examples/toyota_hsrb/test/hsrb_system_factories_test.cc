@@ -253,7 +253,7 @@ TEST_F(ToyotaHsrbTests, TestBuildPlantAndVisualizerDiagram) {
 
 // Tests BuildConstantSourceToPlantDiagram().
 TEST_F(ToyotaHsrbTests, TestBuildConstantSourceToPlantDiagram) {
-  unique_ptr<Diagram<double>> dut = BuildConstantSourceToPlantDiagram(*plant_,
+  unique_ptr<Diagram<double>> dut = BuildConstantSourceToPlantDiagram(
                                         std::move(plant_and_visualizer_));
   ASSERT_NE(dut, nullptr);
 
