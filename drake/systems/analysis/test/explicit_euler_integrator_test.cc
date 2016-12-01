@@ -131,6 +131,67 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   EXPECT_GE(integrator.get_num_steps_taken(), 0);
   EXPECT_EQ(integrator.get_error_estimate(), nullptr);
 }
+
+GTEST_TEST(IntegratorTest, StepSize) {
+  // Create the mass spring system.
+  SpringMassSystem<double> spring_mass(1., 1., 0.);
+  // Set the maximum step size.
+  const double max_dt = .01;
+  // Create a context.
+  auto context = spring_mass.CreateDefaultContext();
+  context->set_time(0.0);
+  double t = 0.0;
+  // Create the integrator.
+  ExplicitEulerIntegrator<double> integrator(
+      spring_mass, max_dt, context.get());
+  integrator.Initialize();
+
+  // The step ends on the next publish time.
+  {
+    const double publish_dt = 0.005;
+    const double update_dt = 0.007;
+    typename IntegratorBase<double>::StepResult result =
+        integrator.StepOnceAtMost(publish_dt, update_dt);
+    EXPECT_EQ(IntegratorBase<double>::kReachedPublishTime, result);
+    EXPECT_EQ(publish_dt, context->get_time());
+    t = context->get_time();
+  }
+
+  // The step ends on the next update time.
+  {
+    const double publish_dt = 0.0013;
+    const double update_dt = 0.0011;
+    typename IntegratorBase<double>::StepResult result =
+        integrator.StepOnceAtMost(publish_dt, update_dt);
+    EXPECT_EQ(IntegratorBase<double>::kReachedUpdateTime, result);
+    EXPECT_EQ(t + update_dt, context->get_time());
+    t = context->get_time();
+  }
+
+  // The step ends on the max step time, because both the publish and update
+  // times are too far in the future.
+  {
+    const double publish_dt = 0.17;
+    const double update_dt = 0.19;
+    typename IntegratorBase<double>::StepResult result =
+        integrator.StepOnceAtMost(publish_dt, update_dt);
+    EXPECT_EQ(IntegratorBase<double>::kTimeHasAdvanced, result);
+    EXPECT_EQ(t + max_dt, context->get_time());
+    t = context->get_time();
+  }
+
+  // The step ends on the next update time, even though it's a little larger
+  // than the max step time, because the max step time stretches.
+  {
+    const double publish_dt = 42.0;
+    const double update_dt = 0.01001;
+    typename IntegratorBase<double>::StepResult result =
+        integrator.StepOnceAtMost(publish_dt, update_dt);
+    EXPECT_EQ(IntegratorBase<double>::kReachedUpdateTime, result);
+    EXPECT_EQ(t + update_dt, context->get_time());
+  }
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
