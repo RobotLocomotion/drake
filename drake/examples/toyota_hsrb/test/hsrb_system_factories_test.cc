@@ -71,6 +71,7 @@ unique_ptr<FreestandingInputPort> MakeInput(unique_ptr<BasicVector<T>> data) {
   return make_unique<FreestandingInputPort>(move(data));
 }
 
+const char* kModelFileName = "/examples/toyota_hsrb/test/test_model.urdf";
 const int kNumPositions{8};   // 7 floating DOFs and 1 regular DOF.
 const int kNumVelocities{7};  // 6 floating DOFs and 1 regular DOF.
 const int kNumActuators{1};   // Just the 1 regular DOF is actuated.
@@ -89,9 +90,7 @@ class ToyotaHsrbTests : public ::testing::Test {
     //
     // TODO(liang.fok): Get `xacro` to work with Drake and then update this unit
     // test to use the Toyota HSRb model. See #4326.
-    const string urdf_string =
-        ReadTextFile(drake::GetDrakePath() +
-                     "/examples/toyota_hsrb/test/test_model.urdf");
+    const string urdf_string = ReadTextFile(GetDrakePath() + kModelFileName);
     const double penetration_stiffness = 4000;
     const double penetration_damping = 300;
     const double friction_coefficient = 10;
@@ -238,17 +237,16 @@ TEST_F(ToyotaHsrbTests, TestBuildPlantAndVisualizerDiagram) {
   context->SetInputPort(0, MakeInput(make_unique<BasicVector<double>>(
                                          plant_->get_num_actuators())));
 
-  // Zeroes the state.
-  plant_->SetZeroConfiguration(context.get());
-
   // Sets the state to a non-zero value.
-  VectorXd desired_angles(kNumPositions);
-  desired_angles << 0.5, 0.1, -0.1, 0.2, 0.3, -0.2, 0.15, 0.3;
-  for (int i = 0; i < kNumPositions; ++i) {
-    plant_->set_position(context.get(), i, desired_angles[i]);
-  }
   VectorXd desired_state(kNumStates);
-  desired_state << desired_angles, VectorXd::Zero(kNumVelocities);
+  desired_state << 0.5, 0.1, -0.1, 0.2, 0.3, -0.2, 0.15, 0.3,
+                    VectorXd::Zero(kNumVelocities);
+  for (int i = 0; i < kNumPositions; ++i) {
+    plant_->set_position(context.get(), i, desired_state[i]);
+  }
+  for (int i = 0; i < kNumVelocities; ++i) {
+    plant_->set_velocity(context.get(), i, desired_state[kNumPositions + i]);
+  }
 
   VerifyDiagram(*dut, desired_state, *plant_, *visualizer_, context.get());
 }
@@ -279,10 +277,8 @@ TEST_F(ToyotaHsrbTests, TestBuildConstantSourceToPlantDiagram) {
 
   std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
 
-  // Zeroes the state.
-  plant_->SetZeroConfiguration(context.get());
+  plant_->SetZeroConfiguration(context.get());  // Zeroes the state.
 
-  // Sets the state to the zero value.
   VectorXd desired_state(kNumStates);
   desired_state << VectorXd::Zero(kNumStates);
   desired_state(3) = 1;  // This is the `w` in the quaternion floating DOF.
