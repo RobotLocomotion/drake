@@ -12,7 +12,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
-#include "drake/examples/schunk_gripper/simulated_schunk_system.h"
+#include "drake/examples/schunk_wsg/simulated_schunk_wsg_system.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -27,15 +27,15 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
-#include "drake/lcmt_schunk_command.hpp"
-#include "drake/lcmt_schunk_status.hpp"
+#include "drake/lcmt_schunk_wsg_command.hpp"
+#include "drake/lcmt_schunk_wsg_status.hpp"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
 
 namespace drake {
 namespace examples {
-namespace schunk_gripper {
+namespace schunk_wsg {
 namespace {
 
 using systems::ConstantVectorSource;
@@ -54,11 +54,11 @@ using systems::SystemOutput;
 // control to, which is not going to be sufficient to capture the
 // entire control state of the gripper (particularly the maximum
 // force).
-class SchunkCommandReceiver : public systems::LeafSystem<double> {
+class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
  public:
-  explicit SchunkCommandReceiver(int position_idx)
+  explicit SchunkWsgCommandReceiver(int position_idx)
       : position_idx_(position_idx) {
-    this->set_name("SchunkCommandReceiver");
+    this->set_name("SchunkWsgCommandReceiver");
     this->DeclareAbstractInputPort(systems::kContinuousSampling);
     this->DeclareInputPort(systems::kVectorValued, 10,
                            systems::kContinuousSampling);
@@ -70,7 +70,7 @@ class SchunkCommandReceiver : public systems::LeafSystem<double> {
                   SystemOutput<double>* output) const {
     const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
     DRAKE_ASSERT(input != nullptr);
-    const auto& command = input->GetValue<lcmt_schunk_command>();
+    const auto& command = input->GetValue<lcmt_schunk_wsg_command>();
     double target_position = -(command.target_position_mm / 1e3) / 2.;
     if (std::isnan(target_position)) {
       target_position = 0;
@@ -163,11 +163,11 @@ class SchunkCommandReceiver : public systems::LeafSystem<double> {
 };
 
 // This system has one input port for the current state of the plant.
-class SchunkStatusSender : public systems::LeafSystem<double> {
+class SchunkWsgStatusSender : public systems::LeafSystem<double> {
  public:
-  SchunkStatusSender(int position_idx, int velocity_idx)
+  SchunkWsgStatusSender(int position_idx, int velocity_idx)
       : position_idx_(position_idx), velocity_idx_(velocity_idx) {
-    this->set_name("SchunkStatusSender");
+    this->set_name("SchunkWsgStatusSender");
     this->DeclareInputPort(systems::kVectorValued, 10,
                            systems::kContinuousSampling);
     this->DeclareAbstractOutputPort(systems::kContinuousSampling);
@@ -176,18 +176,18 @@ class SchunkStatusSender : public systems::LeafSystem<double> {
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override {
     auto output = std::make_unique<systems::LeafSystemOutput<double>>();
-    lcmt_schunk_status msg{};
+    lcmt_schunk_wsg_status msg{};
     output->get_mutable_ports()->emplace_back(
         std::make_unique<systems::OutputPort>(
-            std::make_unique<systems::Value<lcmt_schunk_status>>(msg)));
+            std::make_unique<systems::Value<lcmt_schunk_wsg_status>>(msg)));
     return std::unique_ptr<SystemOutput<double>>(output.release());
   }
 
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override {
     systems::AbstractValue* mutable_data = output->GetMutableData(0);
-    lcmt_schunk_status& status =
-        mutable_data->GetMutableValue<lcmt_schunk_status>();
+    lcmt_schunk_wsg_status& status =
+        mutable_data->GetMutableValue<lcmt_schunk_wsg_status>();
 
     status.utime = context.get_time() * 1e6;
     const systems::BasicVector<double>* state =
@@ -205,15 +205,15 @@ class SchunkStatusSender : public systems::LeafSystem<double> {
 };
 
 template <typename T>
-class PidControlledSchunk : public systems::Diagram<T> {
+class PidControlledSchunkWsg : public systems::Diagram<T> {
  public:
-  PidControlledSchunk() {
-    this->set_name("PidControlledSchunk");
+  PidControlledSchunkWsg() {
+    this->set_name("PidControlledSchunkWsg");
 
     DiagramBuilder<T> builder;
 
     std::unique_ptr<RigidBodyPlant<T>> plant =
-        CreateSimulatedSchunkSystem<T>();
+        CreateSimulatedSchunkWsgSystem<T>();
     plant_ = plant.get();
 
     // Create a source to emit a single zero.  We'll need this to
@@ -278,7 +278,7 @@ class PidControlledSchunk : public systems::Diagram<T> {
 
 int DoMain() {
   systems::DiagramBuilder<double> builder;
-  auto model = builder.AddSystem<PidControlledSchunk<double>>();
+  auto model = builder.AddSystem<PidControlledSchunkWsg<double>>();
 
   const RigidBodyTree<double>& tree =
       model->get_plant().get_rigid_body_tree();
@@ -290,15 +290,15 @@ int DoMain() {
 
   // Create the command subscriber and status publisher.
   auto command_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_command>(
-          "SCHUNK_COMMAND", &lcm));
+      systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
+          "SCHUNK_WSG_COMMAND", &lcm));
   auto command_receiver =
-      builder.AddSystem<SchunkCommandReceiver>(model->position_idx());
+      builder.AddSystem<SchunkWsgCommandReceiver>(model->position_idx());
 
   auto status_pub = builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_status>(
-          "SCHUNK_STATUS", &lcm));
-  auto status_sender = builder.AddSystem<SchunkStatusSender>(
+      systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
+          "SCHUNK_WSG_STATUS", &lcm));
+  auto status_sender = builder.AddSystem<SchunkWsgStatusSender>(
       model->position_idx(), model->velocity_idx());
 
   builder.Connect(command_sub->get_output_port(0),
@@ -331,11 +331,11 @@ int DoMain() {
 }
 
 }  // namespace
-}  // namespace schunk_gripper
+}  // namespace schunk_wsg
 }  // namespace examples
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::examples::schunk_gripper::DoMain();
+  return drake::examples::schunk_wsg::DoMain();
 }

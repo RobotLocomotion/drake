@@ -1,6 +1,6 @@
 package drake;
 
-struct lcmt_schunk_status
+struct lcmt_schunk_wsg_status
 {
   int64_t utime;  //< The timestamp in microseconds.
 
