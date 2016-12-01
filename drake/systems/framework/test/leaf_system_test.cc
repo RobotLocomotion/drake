@@ -30,6 +30,12 @@ class TestSystem : public LeafSystem<double> {
     this->DeclarePeriodicUpdate(period, offset);
   }
 
+  void AddNonIntegerPeriodicUpdate() {
+    const double period = 0.015;
+    const double offset = 0.0;
+    this->DeclarePeriodicUpdate(period, offset);
+  }
+
   void AddContinuousState() {
     this->DeclareContinuousState(4, 3, 2);
   }
@@ -121,6 +127,18 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
   EXPECT_EQ(35.0, actions.time);
   ASSERT_EQ(1u, actions.events.size());
   EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+}
+
+// Tests that if the integrator has stopped on the k-th sample, and the current
+// time for that sample is slightly less than k * period due to floating point
+// rounding, the next sample time is (k + 1) * period.
+TEST_F(LeafSystemTest, FloatingPointRounding) {
+  context_.set_time(0.015 * 11);  // Slightly less than 0.165.
+  UpdateActions<double> actions;
+  system_.AddNonIntegerPeriodicUpdate();
+  system_.CalcNextUpdateTime(context_, &actions);
+  // 0.015 * 12 = 0.18.
+  EXPECT_NEAR(0.18, actions.time, 1e-8);
 }
 
 // Tests that the leaf system reserved the declared Parameters with default
