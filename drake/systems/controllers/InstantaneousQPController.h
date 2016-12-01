@@ -47,8 +47,8 @@ class InstantaneousQPController {
       : robot(std::make_unique<RigidBodyTree<double>>()),
         use_fast_qp(INSTQP_USE_FASTQP),
         cache(this->robot->bodies) {
-    parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-        urdf_filename, multibody::joints::kRollPitchYaw, robot.get());
+    drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+        urdf_filename, drake::multibody::joints::kRollPitchYaw, robot.get());
     loadConfigurationFromYAML(control_config_filename);
     initialize();
   }
