@@ -82,6 +82,13 @@ class IntegratorBase {
     initialization_done_ = false;
   }
 
+  /** Destructor. */
+  virtual ~IntegratorBase() = default;
+
+  // Disable copy, assign, and move.
+  IntegratorBase(const IntegratorBase<T>& other) = delete;
+  IntegratorBase& operator=(const IntegratorBase<T>& other) = delete;
+
   /**
    * Indicates whether an integrator supports error estimation.
    * Without error estimation, target accuracy will be unused.

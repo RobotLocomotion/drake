@@ -15,7 +15,12 @@ namespace systems {
 template <class T>
 class ExplicitEulerIntegrator : public IntegratorBase<T> {
  public:
-  virtual ~ExplicitEulerIntegrator() {}
+  ~ExplicitEulerIntegrator() override = default;
+
+  // Disable copy, assign, and move.
+  ExplicitEulerIntegrator(const ExplicitEulerIntegrator<T>& other) = delete;
+  ExplicitEulerIntegrator& operator=(const ExplicitEulerIntegrator<T>& other) =
+      delete;
 
   /**
    * Constructs a fixed-step integrator for a given system using the given

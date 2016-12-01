@@ -11,7 +11,12 @@ namespace systems {
 template <class T>
 class RungeKutta2Integrator : public IntegratorBase<T> {
  public:
-  virtual ~RungeKutta2Integrator() {}
+  ~RungeKutta2Integrator() override = default;
+
+  // Disable copy, assign, and move.
+  RungeKutta2Integrator(const RungeKutta2Integrator<T>& other) = delete;
+  RungeKutta2Integrator& operator=(const RungeKutta2Integrator<T>& other) =
+      delete;
 
   /**
  * Constructs fixed-step integrator for a given system using the given
