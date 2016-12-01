@@ -114,7 +114,7 @@ const mono::Connection* MaybeMakeConnection(
     case kLine: {
       if (ee_point) {
         return builder->Connect(
-            id, *start_point, node["length"].as<double>(), *ee_point);
+            id, *start_point, node["length"].as<double>(), ee_point->z);
       } else {
         return builder->Connect(
             id, *start_point, node["length"].as<double>(),
@@ -124,7 +124,7 @@ const mono::Connection* MaybeMakeConnection(
     case kArc: {
       if (ee_point) {
         return builder->Connect(id, *start_point, arc_offset(node["arc"]),
-                                *ee_point);
+                                ee_point->z);
       } else {
         return builder->Connect(id, *start_point, arc_offset(node["arc"]),
                                 zpoint(node["z_end"]));

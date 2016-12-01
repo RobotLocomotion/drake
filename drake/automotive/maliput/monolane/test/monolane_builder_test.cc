@@ -33,9 +33,15 @@ GTEST_TEST(MonolaneBuilderTest, Fig8) {
   auto c6 = b.Connect("6", c5->end(),
                       ArcOffset(50., -0.75 * M_PI), {3., 0., 0., 0.});
 
-  b.Connect("6", c6->end(),
-            50.,
-            c0->start());
+  // Tweak ends to check if fuzzy-matching is working.
+  XYZPoint c6end = c6->end();
+  c6end.xy.x += kPosPrecision * 0.5;
+  c6end.xy.y -= kPosPrecision * 0.5;
+  c6end.z.z += kPosPrecision * 0.5;
+  ZPoint c0start_z = c0->start().z;
+  c0start_z.z -= kPosPrecision * 0.5;
+
+  b.Connect("7", c6end, 50., c0start_z);
 
   std::unique_ptr<const api::RoadGeometry> rg = b.Build({"figure-eight"});
 
