@@ -15,12 +15,17 @@ namespace monolane {
 
 class RoadGeometry;
 
+/// A Junction implementation.
 class Junction : public api::Junction {
  public:
+  /// Construct an empty Junction.
   Junction(const api::JunctionId& id, RoadGeometry* rg)
       : id_(id), road_geometry_(rg) {}
 
+  /// Create and add a new Segment with the specified @p id.
   Segment* NewSegment(api::SegmentId id);
+
+  virtual ~Junction() {}
 
  private:
   const api::JunctionId do_id() const override { return id_; }
@@ -29,7 +34,9 @@ class Junction : public api::Junction {
 
   int do_num_segments() const override { return segments_.size(); }
 
-  const api::Segment* do_segment(int index) const override;
+  const api::Segment* do_segment(int index) const override {
+    return segments_[index].get();
+  }
 
   api::JunctionId id_;
   RoadGeometry* road_geometry_{};
