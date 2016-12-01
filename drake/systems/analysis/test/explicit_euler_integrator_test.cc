@@ -131,6 +131,43 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   EXPECT_GE(integrator.get_num_steps_taken(), 0);
   EXPECT_EQ(integrator.get_error_estimate(), nullptr);
 }
+
+GTEST_TEST(IntegratorTest, StepSize) {
+  // Create the mass spring system.
+  SpringMassSystem<double> spring_mass(1., 1., 0.);
+  // Set the maximum step size.
+  const double max_dt = .01;
+  // Create a context.
+  auto context = spring_mass.CreateDefaultContext();
+  context->set_time(0.0);
+  // Create the integrator.
+  ExplicitEulerIntegrator<double> integrator(
+      spring_mass, max_dt, context.get());
+  integrator.Initialize();
+
+  // The step ends on the next publish time.
+  typename IntegratorBase<double>::StepResult result =
+      integrator.StepOnceAtMost(.005 /* publish */, .007 /* update */);
+  EXPECT_EQ(IntegratorBase<double>::kReachedPublishTime, result);
+  EXPECT_EQ(.005, context->get_time());
+
+  // The step ends on the next update time.
+  result = integrator.StepOnceAtMost(.007 /* publish */, .004 /* update */);
+  EXPECT_EQ(IntegratorBase<double>::kReachedUpdateTime, result);
+  EXPECT_EQ(.005 + .004, context->get_time());
+
+  // The step ends on the max step time.
+  result = integrator.StepOnceAtMost(.017 /* publish */, .015 /* update */);
+  EXPECT_EQ(IntegratorBase<double>::kTimeHasAdvanced, result);
+  EXPECT_EQ(.005 + .004 + .01, context->get_time());
+
+  // The step ends on the next update time, even though it's a little larger
+  // than the max step time, because the max step time stretches.
+  result = integrator.StepOnceAtMost(.017 /* publish */, .01001 /* update */);
+  EXPECT_EQ(IntegratorBase<double>::kReachedUpdateTime, result);
+  EXPECT_EQ(.005 + .004 + .01 + .01001, context->get_time());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

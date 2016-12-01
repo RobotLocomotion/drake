@@ -958,9 +958,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
 
   // Verify that the integrator supports error estimates.
   if (!supports_error_estimation())
-    throw std::logic_error(
-        "StepErrorControlled() requires error "
-        "estimation.");
+    throw std::logic_error("StepErrorControlled() requires error estimation.");
 
   // Save time, continuous variables, and time derivative because we'll possibly
   // revert time and state.
@@ -1176,29 +1174,50 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
   if (!IntegratorBase<T>::is_initialized())
     throw std::logic_error("Integrator not initialized.");
 
+  static constexpr double kMaxStretch = 1.01;  // Allow 1% step size stretch.
+  const T& max_step_size = IntegratorBase<T>::get_maximum_step_size();
+  const T stretched_max_step_size = max_step_size * kMaxStretch;
+
   // Sort the times for stopping- sort is stable to preserve preferences for
   // stopping. In decreasing order of preference for equal values, we want
   // the update step, then the publish step, then the maximum step size.
   const int64_t kDTs = 3;  // Number of dt values to evaluate.
-  const T& max_step_size = IntegratorBase<T>::get_maximum_step_size();
-  const T* stop_dts[kDTs] = {&update_dt, &publish_dt, &max_step_size};
-  std::stable_sort(stop_dts, stop_dts + kDTs,
+  const T* stop_dts_sans_stretch[kDTs] =
+      {&update_dt, &publish_dt, &max_step_size};
+  const T* stop_dts_avec_stretch[kDTs] =
+      {&update_dt, &publish_dt, &stretched_max_step_size};
+  std::stable_sort(stop_dts_sans_stretch, stop_dts_sans_stretch + kDTs,
+                   [](const T* t1, const T* t2) { return *t1 < *t2; });
+  std::stable_sort(stop_dts_avec_stretch, stop_dts_avec_stretch + kDTs,
                    [](const T* t1, const T* t2) { return *t1 < *t2; });
 
+  // Use the smallest of update_dt, publish_dt, and max_step_size, unless
+  // stretching the max step size allows us to hit an update or publish time.
+  const T* const dt_sans_stretch = stop_dts_sans_stretch[0];
+  const T* const dt_avec_stretch = stop_dts_avec_stretch[0];
+
+  const T* dt = dt_sans_stretch;
+  if (dt_avec_stretch == &publish_dt || dt_avec_stretch == &update_dt) {
+    dt = dt_avec_stretch;
+  }
+
   // Set dt and take the step.
-  const T& dt = *stop_dts[0];
-  if (dt < 0.0) throw std::logic_error("Negative dt.");
-  const bool step_size_was_dt = DoStepOnceAtMost(dt);
+  if (*dt < 0.0) throw std::logic_error("Negative dt.");
+  const bool step_size_was_dt = DoStepOnceAtMost(*dt);
 
   // Update generic statistics.
-  UpdateStatistics(dt);
+  UpdateStatistics(*dt);
 
   // Return depending on the step taken.
-  if (!step_size_was_dt || &dt == &max_step_size)
+  if (!step_size_was_dt) {
     return IntegratorBase<T>::kTimeHasAdvanced;
-  if (&dt == &publish_dt) return IntegratorBase<T>::kReachedPublishTime;
-  if (&dt == &update_dt) return IntegratorBase<T>::kReachedUpdateTime;
-  DRAKE_ABORT_MSG("Never should have reached here.");
+  } else if (dt == &publish_dt) {
+    return IntegratorBase<T>::kReachedPublishTime;
+  } else if (dt == &update_dt) {
+    return IntegratorBase<T>::kReachedUpdateTime;
+  } else {
+    return IntegratorBase<T>::kTimeHasAdvanced;
+  }
 }
 
 }  // namespace systems

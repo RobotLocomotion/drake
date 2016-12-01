@@ -4,6 +4,8 @@
 
 #include <unsupported/Eigen/AutoDiff>
 
+#include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
@@ -332,6 +334,48 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   // Compares with analytical solution (to numerical integration error).
   EXPECT_NEAR(spring_mass.get_position(context), x_final, 3.0e-6);
   EXPECT_NEAR(spring_mass.get_velocity(context), v_final, 1.0e-5);
+}
+
+
+// A shell System to test the default implementations.
+class DiscreteSystem : public LeafSystem<double> {
+ public:
+  DiscreteSystem() {
+    // Deliberately choose a period that is identical to, and therefore courts
+    // floating-point error with, the default max step size.
+    const double period = 0.001;
+    const double offset = 0.0;
+    this->DeclarePeriodicUpdate(period, offset);
+  }
+
+  ~DiscreteSystem() override {}
+
+  std::string get_name() const override { return "TestSystem"; }
+
+  void EvalOutput(const Context<double>& context,
+                  SystemOutput<double>* output) const override {}
+
+  void DoEvalDifferenceUpdates(
+      const drake::systems::Context<double>& context,
+      drake::systems::DifferenceState<double>* updates) const override {
+    const double k = context.get_time() / 0.001;
+    const double int_k = std::round(k);
+    DRAKE_DEMAND(std::abs(k - int_k) < 1e-8);
+    log()->info("time: {}", context.get_time());
+    num_updates_++;
+  }
+
+  int num_updates() { return num_updates_; }
+
+ private:
+  mutable int num_updates_{0};
+};
+
+GTEST_TEST(SimulatorTest, DiscreteUpdate) {
+  DiscreteSystem system;
+  drake::systems::Simulator<double> simulator(system);
+  simulator.StepTo(0.5);
+  EXPECT_EQ(500, system.num_updates());
 }
 
 }  // namespace
