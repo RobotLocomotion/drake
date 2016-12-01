@@ -1,4 +1,4 @@
-#include "drake/examples/toyota_hsrb/demo1_common.h"
+#include "drake/examples/toyota_hsrb/passive_demo_common.h"
 
 #include "drake/common/drake_assert.h"
 #include "drake/examples/toyota_hsrb/hsrb_diagram_factories.h"
@@ -44,7 +44,7 @@ std::unique_ptr<Simulator<double>> CreateSimulation(lcm::DrakeLcm* lcm,
 
   {
     std::unique_ptr<Diagram<double>> plant_diagram_ptr =
-        CreatePlantAndVisualizerDiagram(
+        BuildPlantAndVisualizerDiagram(
             urdf_string, penetration_stiffness, penetration_damping,
             friction_coefficient, lcm, &plant);
     DRAKE_DEMAND(plant_diagram_ptr != nullptr);
@@ -54,7 +54,7 @@ std::unique_ptr<Simulator<double>> CreateSimulation(lcm::DrakeLcm* lcm,
     DRAKE_DEMAND(plant_diagram != nullptr);
 
     std::unique_ptr<Diagram<double>> input_diagram_ptr =
-        CreateConstantSourceToPlantDiagram(*plant,
+        BuildConstantSourceToPlantDiagram(*plant,
             std::move(plant_diagram_ptr));
     input_diagram =
         builder.AddSystem(std::move(input_diagram_ptr));

@@ -13,7 +13,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging_gflags.h"
-#include "drake/examples/toyota_hsrb/demo1_common.h"
+#include "drake/examples/toyota_hsrb/passive_demo_common.h"
 
 using std::make_unique;
 using std::move;

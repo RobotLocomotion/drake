@@ -32,27 +32,28 @@ using parsers::urdf::AddModelInstanceFromUrdfString;
 namespace examples {
 namespace toyota_hsrb {
 
-unique_ptr<systems::Diagram<double>> CreatePlantAndVisualizerDiagram(
+unique_ptr<systems::Diagram<double>> BuildPlantAndVisualizerDiagram(
     const string& urdf_string, double penetration_stiffness,
     double penetration_damping, double friction_coefficient,
     lcm::DrakeLcmInterface* lcm, RigidBodyPlant<double>** plant) {
   DiagramBuilder<double> builder;
   RigidBodyPlant<double>* plant_ptr{nullptr};
 
-  // The following curly brace prevents leakage of variable `tree` outside of
-  // this scope. Ownership of `tree` is passed to the RigidBodyPlant, and we
-  // want to avoid downstream code from trying to access a `tree` that is a
-  // nullptr since that'll result in a seg fault.
+  // The following curly brace defines a namespace scope for `tree_ptr`.
+  // Ownership of `tree_ptr` is passed to the `RigidBodyPlant`, and the name
+  // scope prevents downstream code from accessing `tree_ptr` since that'll
+  // result in a segmentation fault.
   {
     // Instantiates a model of the world.
-    auto tree = make_unique<RigidBodyTreed>();
+    auto tree_ptr = make_unique<RigidBodyTreed>();
     AddModelInstanceFromUrdfString(urdf_string, "." /* root directory */,
                                    multibody::joints::kQuaternion,
-                                   nullptr /* weld to frame */, tree.get());
-    AddFlatTerrainToWorld(tree.get());
+                                   nullptr /* weld to frame */, tree_ptr.get());
+    AddFlatTerrainToWorld(tree_ptr.get());
 
     // Instantiates a RigidBodyPlant containing the tree.
-    plant_ptr = builder.template AddSystem<RigidBodyPlant<double>>(move(tree));
+    plant_ptr = builder.template AddSystem<RigidBodyPlant<double>>(
+        move(tree_ptr));
     DRAKE_DEMAND(plant_ptr != nullptr);
 
     // Sets the name and contact parameters.
@@ -79,7 +80,7 @@ unique_ptr<systems::Diagram<double>> CreatePlantAndVisualizerDiagram(
   return builder.Build();
 }
 
-std::unique_ptr<Diagram<double>> CreateConstantSourceToPlantDiagram(
+std::unique_ptr<Diagram<double>> BuildConstantSourceToPlantDiagram(
     const RigidBodyPlant<double>& plant,
     std::unique_ptr<Diagram<double>> plant_diagram) {
   DiagramBuilder<double> builder;

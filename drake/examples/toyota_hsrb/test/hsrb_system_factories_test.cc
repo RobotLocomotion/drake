@@ -87,8 +87,8 @@ class ToyotaHsrbTests : public ::testing::Test {
     //   (2) HSRb URDFs need to be generated using `xacro`, the latest version
     //       of which is currently not supported by Drake.
     //
-    // TODO(liang.fok) Get `xacro` to work with Drake and then update this unit
-    // test to use the Toyota HSRb model.
+    // TODO(liang.fok): Get `xacro` to work with Drake and then update this unit
+    // test to use the Toyota HSRb model. See #4326.
     const string urdf_string =
         ReadTextFile(drake::GetDrakePath() +
                      "/examples/toyota_hsrb/test/test_model.urdf");
@@ -96,15 +96,16 @@ class ToyotaHsrbTests : public ::testing::Test {
     const double penetration_damping = 300;
     const double friction_coefficient = 10;
 
-    // The manufactured Diagram contains a RigidBodyPlant
-    // whose output is connected to a DrakeVisualizer.
-    plant_and_visualizer_ = CreatePlantAndVisualizerDiagram(
+    plant_and_visualizer_ = BuildPlantAndVisualizerDiagram(
         urdf_string, penetration_stiffness, penetration_damping,
         friction_coefficient, &lcm_, &plant_);
 
     ASSERT_NE(plant_and_visualizer_, nullptr);
     ASSERT_NE(plant_, nullptr);
 
+    // Verifies that `plant_and_visualizer_` contains two systems, a
+    // `RigidBodyPlant` and a `DrakeVisualizer`, located at indices 0 and 1,
+    // respectively, within the `Diagram`.
     std::vector<const System<double>*> systems =
         plant_and_visualizer_->GetSystems();
     EXPECT_EQ(systems.size(), 2u);
@@ -217,8 +218,8 @@ void VerifyDiagram(const Diagram<double>& dut,
   VerifyDrawMessage(visualizer.get_draw_message_bytes());
 }
 
-// Tests CreatePlantAndVisualizerDiagram().
-TEST_F(ToyotaHsrbTests, TestCreatePlantAndVisualizerDiagram) {
+// Tests BuildPlantAndVisualizerDiagram().
+TEST_F(ToyotaHsrbTests, TestBuildPlantAndVisualizerDiagram) {
   Diagram<double>* dut = plant_and_visualizer_.get();
   ASSERT_EQ(dut->get_num_input_ports(), plant_->get_num_input_ports());
 
@@ -252,9 +253,9 @@ TEST_F(ToyotaHsrbTests, TestCreatePlantAndVisualizerDiagram) {
   VerifyDiagram(*dut, desired_state, *plant_, *visualizer_, context.get());
 }
 
-// Tests CreateConstantSourceToPlantDiagram().
-TEST_F(ToyotaHsrbTests, TestCreateConstantSourceToPlantDiagram) {
-  unique_ptr<Diagram<double>> dut = CreateConstantSourceToPlantDiagram(*plant_,
+// Tests BuildConstantSourceToPlantDiagram().
+TEST_F(ToyotaHsrbTests, TestBuildConstantSourceToPlantDiagram) {
+  unique_ptr<Diagram<double>> dut = BuildConstantSourceToPlantDiagram(*plant_,
                                         std::move(plant_and_visualizer_));
   ASSERT_NE(dut, nullptr);
 

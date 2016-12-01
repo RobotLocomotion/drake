@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(drake_examples_hsrb)
+project(drake_examples_toyota_hsrb)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -25,8 +25,10 @@ include_directories(
 
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 
-add_executable(demo1 src/demo1.cc src/demo1_common.cc)
-target_link_libraries(demo1
+add_executable(passive_demo
+    src/passive_demo.cc
+    src/passive_demo_common.cc)
+target_link_libraries(passive_demo
     ${catkin_LIBRARIES}
     drakeAutomotive
     drakeCommon
@@ -46,11 +48,11 @@ target_link_libraries(demo1
 if (CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
   add_rostest_gtest(
-      demo1_test
-      test/demo1_test.test
-      test/demo1_test.cc
-      src/demo1_common.cc)
-  target_link_libraries(demo1_test
+      passive_demo_test
+      test/passive_demo_test.test
+      test/passive_demo_test.cc
+      src/passive_demo_common.cc)
+  target_link_libraries(passive_demo_test
       ${catkin_LIBRARIES}
       drakeAutomotive
       drakeCommon
@@ -65,6 +67,6 @@ if (CATKIN_ENABLE_TESTING)
       drakeSystemAnalysis
       drakeSystemFramework
       lcm)
-  set_target_properties(demo1_test
+  set_target_properties(passive_demo_test
       PROPERTIES EXCLUDE_FROM_ALL FALSE)
 endif()

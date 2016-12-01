@@ -1,4 +1,4 @@
-#include "drake/examples/toyota_hsrb/demo1_common.h"
+#include "drake/examples/toyota_hsrb/passive_demo_common.h"
 
 #include <gtest/gtest.h>
 #include <memory>
@@ -35,7 +35,7 @@ GTEST_TEST(DrakeExamplesToyotaHsrbTest, TestSim) {
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "drake_examples_hsrb_demo1_test_node",
+  ros::init(argc, argv, "drake_examples_toyota_hsrb_passive_demo_test_node",
             ros::init_options::AnonymousName);
   ros::start();
   return RUN_ALL_TESTS();

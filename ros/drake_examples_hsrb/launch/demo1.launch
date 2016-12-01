@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-  <include file="$(find drake_examples_hsrb)/launch/demo1_sim.launch" />
-  <include file="$(find drake_examples_hsrb)/launch/demo1_vis.launch" />
-</launch>

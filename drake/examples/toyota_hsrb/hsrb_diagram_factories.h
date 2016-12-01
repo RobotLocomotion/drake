@@ -17,26 +17,24 @@ namespace toyota_hsrb {
 // (probably somewhere in drake-distro/drake/multibody/).
 
 /**
- * Creates and returns a systems::Diagram containing a systems::RigidBodyPlant
+ * Builds and returns a systems::Diagram containing a systems::RigidBodyPlant
  * and a systems::DrakeVisualizer. The plant's output port zero is connected to
  * the systems::DrakeVisualizer's input port zero. The returned
- * systems::Diagram has one input port that's connected to the plant's input
- * port zero (which accepts the effort command), and one output port that's
- * connected to the plant's output port zero (which contains the plant's
- * generalized state).
+ * systems::Diagram has the same input and output ports as the plant.
  */
-std::unique_ptr<systems::Diagram<double>> CreatePlantAndVisualizerDiagram(
+std::unique_ptr<systems::Diagram<double>> BuildPlantAndVisualizerDiagram(
     const std::string& urdf_string, double penetration_stiffness,
     double penetration_damping, double friction_coefficient,
     lcm::DrakeLcmInterface* lcm, systems::RigidBodyPlant<double>** plant);
 
 /**
- * Connects a constant source to the input port of @p plant_diagram and returns
- * the resulting systems::Diagram. The returned systems::Diagram has no input
- * ports and one output port that's wired to the output port zero of
- * @p plant_diagram (which contains the plant's generalized state).
+ * Builds and returns a systems::Diagram consisting of a
+ * systems::ConstantVectorSource connected to input port zero of
+ * @p plant_diagram. The returned systems::Diagram has no input ports and the
+ * same output ports as @p plant_diagram. Typically, @p plant and
+ * @p plant_diagram are built using BuildPlantAndVisualizerDiagram().
  */
-std::unique_ptr<systems::Diagram<double>> CreateConstantSourceToPlantDiagram(
+std::unique_ptr<systems::Diagram<double>> BuildConstantSourceToPlantDiagram(
     const systems::RigidBodyPlant<double>& plant,
     std::unique_ptr<systems::Diagram<double>> plant_diagram);
 

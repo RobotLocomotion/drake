@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>drake_examples_hsrb</name>
+  <name>drake_examples_toyota_hsrb</name>
 
   <version>0.0.0</version>
 
@@ -14,7 +14,7 @@
 
   <license>BSD</license>
 
-  <url>http://ros.org/wiki/drake_examples_hsrb</url>
+  <url>http://ros.org/wiki/drake_examples_toyota_hsrb</url>
 
   <buildtool_depend>catkin</buildtool_depend>
 

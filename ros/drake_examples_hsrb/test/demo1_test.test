@@ -1,8 +1,0 @@
-<launch>
-  <include file="$(find drake_examples_hsrb)/launch/load_model.launch" />
-  <group ns="drake">
-    <param name="enable_tf_publisher" type="bool" value="false" />
-    <test pkg="drake_examples_hsrb" test-name="demo1_test"
-          type="demo1_test" />
-  </group>
-</launch>

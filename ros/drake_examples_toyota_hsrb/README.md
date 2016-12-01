@@ -1,4 +1,4 @@
-# drake_examples_hsrb
+# drake_examples_toyota_hsrb
 
 ## Introduction
 
@@ -13,7 +13,7 @@ being installed into a ROS workspace called `drake_catkin_workspace`.
 
 ## Examples
 
-### Demo 1 - Dynamics
+### Demo 1 - Passive (Uncontrolled) Robot
 
 This loads an HSRb into Drake and starts a simulation. The robot is uncontrolled
 meaning the only motions observed are those due to the effects of gravity. Two
@@ -24,25 +24,22 @@ First start Drake Visualizer. This is necessary until
 
 ```
 roscd
+cd ..
 ./install/bin/drake-visualizer &
 ```
 
 Next start the simulation:
 
 ```
-roslaunch drake_examples_hsrb demo1.launch
+roslaunch drake_examples_toyota_hsrb passive_demo.launch
 ```
 
-The robot should be visible in RViz. Because Drake is running at a low real-time
-factor, the arm will fall down *extremely* slowly. The low real-time factor is
-necessary because some bodies in the robot have very small inertias. Perhaps
-once variable time-step integrators are supported, the simulation can be sped up
-without becoming unstable.
+The robot should be visible in RViz.
 
 To run the unit test for this demo:
 
 ```
-rostest drake_examples_hsrb demo1_test.test
+rostest drake_examples_toyota_hsrb passive_demo_test.test
 ```
 
 ## Debugging
@@ -50,11 +47,11 @@ rostest drake_examples_hsrb demo1_test.test
 ### Using `gdb`
 
 To use `gdb` with the examples, first build the workspace using mode
-`RelWithDebInfo`:
+`Debug`:
 
 ```
 cd drake_catkin_workspace
-catkin config -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
+catkin config -DCMAKE_BUILD_TYPE:STRING=Debug
 catkin build
 ```
 
@@ -71,7 +68,7 @@ Load the model onto the ROS parameter server:
 ```
 cd drake_catkin_workspace
 source devel/setup.bash
-roslaunch drake_examples_hsrb load_model.launch
+roslaunch drake_examples_toyota_hsrb load_model.launch
 ```
 
 Start `gdb` and tell it to load and execute the demo. The example below runs
@@ -80,5 +77,5 @@ Start `gdb` and tell it to load and execute the demo. The example below runs
 ```
 cd drake_catkin_workspace
 source devel/setup.bash
-gdb -ex run --args `rospack find drake_examples_hsrb`/../../../devel/lib/drake_examples_hsrb/demo1
+gdb -ex run --args `rospack find drake_examples_toyota_hsrb`/../../../devel/lib/drake_examples_toyota_hsrb/passive_demo
 ```
