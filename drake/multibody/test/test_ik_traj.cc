@@ -21,7 +21,7 @@ using Eigen::VectorXd;
 using drake::GetDrakePath;
 
 GTEST_TEST(testIKtraj, testIKtraj) {
-  auto model = make_unique<RigidBodyTree<double>>();
+  auto model = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
       drake::multibody::joints::kRollPitchYaw, model.get());

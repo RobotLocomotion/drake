@@ -69,7 +69,7 @@ GTEST_TEST(testIKMoreConstraints, IKMoreConstraints) {
       -0.5000, 0.0985, 0, 0.0008, 0.2564;
 
   // 1 Back Posture Constraint
-  PostureConstraint kc_posture_back(&model, tspan);
+  PostureConstraint kc_posture_back(model.get(), tspan);
   std::vector<int> back_idx;
   findJointAndInsert(*model, "back_bkz", back_idx);
   findJointAndInsert(*model, "back_bky", back_idx);

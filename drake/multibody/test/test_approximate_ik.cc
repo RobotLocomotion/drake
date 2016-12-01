@@ -18,7 +18,7 @@ int main() {
   auto model = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       "examples/Atlas/urdf/atlas_minimal_contact.urdf",
-      multibody::joints::kRollPitchYaw, model.get());
+      drake::multibody::joints::kRollPitchYaw, model.get());
 
   Vector2d tspan;
   tspan << 0, 1;
@@ -26,12 +26,13 @@ int main() {
   q0(3) = 0.8;
   Vector3d com_des = Vector3d::Zero();
   com_des(2) = std::numeric_limits<double>::quiet_NaN();
-  WorldCoMConstraint* com_kc = new WorldCoMConstraint(*model, com_des, com_des);
+  WorldCoMConstraint* com_kc = new WorldCoMConstraint(model.get(), com_des,
+                                                      com_des);
   int num_constraints = 1;
   RigidBodyConstraint** constraint_array =
       new RigidBodyConstraint* [num_constraints];
   constraint_array[0] = com_kc;
-  IKoptions ikoptions(*model);
+  IKoptions ikoptions(model.get());
   VectorXd q_sol(model->get_num_positions());
   int info;
   approximateIK(*model, q0, q0, num_constraints, constraint_array,
