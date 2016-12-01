@@ -263,13 +263,6 @@ class Simulator {
   Simulator(const Simulator& s) = delete;
   Simulator& operator=(const Simulator& s) = delete;
 
-  // Return a proposed end time for this step, and whether we picked that time
-  // because we hit the next update time.
-  static std::pair<T, bool> ProposeStepEndTime(const T& step_start_time,
-                                               const T& ideal_step_size,
-                                               const T& next_update_time,
-                                               const T& final_time);
-
   // If the simulated time in the context is ahead of real time, pause long
   // enough to let real time catch up (approximately).
   void PauseIfTooFast() const;
@@ -465,36 +458,6 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   // publish at the end of the step
   system_.Publish(*context_);
   ++num_publishes_;
-}
-
-// TODO(edrumwri): Prepare to remove
-template <typename T>
-std::pair<T, bool> Simulator<T>::ProposeStepEndTime(const T& step_start_time,
-                                                    const T& ideal_step_size,
-                                                    const T& next_update_time,
-                                                    const T& final_time) {
-  static constexpr double kMaxStretch = 0.01;  // Allow 1% step size stretch.
-
-  // Start with the ideal step size.
-  T step_end_time = step_start_time + ideal_step_size;
-
-  // We can be persuaded to take a slightly bigger step if necessary to
-  // avoid a tiny sliver step before we have to do something discrete.
-  const T step_stretch_time = step_end_time + kMaxStretch * ideal_step_size;
-
-  // The step may be limited or stretched either by final time or update
-  // time, whichever comes sooner.
-  bool update_time_hit = false;
-  if (next_update_time <= final_time) {
-    if (next_update_time <= step_stretch_time) {
-      step_end_time = next_update_time;
-      update_time_hit = true;
-    }
-  } else {  // boundary_time < next_update_time.
-    if (final_time <= step_stretch_time) step_end_time = final_time;
-  }
-
-  return std::make_pair(step_end_time, update_time_hit);
 }
 
 }  // namespace systems
