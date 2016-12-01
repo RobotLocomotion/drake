@@ -16,8 +16,10 @@ cc_library(
     srcs = ["spline_generation.cc"],
     hdrs = ["spline_generation.h"],
     linkstatic = 1,
-    deps = [":spline_information",
-            "//drake/common/trajectories:piecewise_polynomial"],
+    deps = [
+        ":spline_information",
+        "//drake/common/trajectories:piecewise_polynomial",
+    ],
 )
 
 cc_library(
@@ -25,9 +27,11 @@ cc_library(
     srcs = ["spline_information.cc"],
     hdrs = ["spline_information.h"],
     linkstatic = 1,
-    deps = [":continuity_constraint",
-            ":value_constraint",
-            "//drake/common/trajectories:piecewise_polynomial"],
+    deps = [
+        ":continuity_constraint",
+        ":value_constraint",
+        "//drake/common/trajectories:piecewise_polynomial",
+    ],
 )
 
 cc_library(

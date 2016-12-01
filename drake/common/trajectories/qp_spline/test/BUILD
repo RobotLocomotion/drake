@@ -9,5 +9,6 @@ cc_test(
     srcs = ["spline_generation_test.cc"],
     deps = [
         "//drake/common/trajectories/qp_spline:spline_generation",
-        "@gtest//:main",],
+        "@gtest//:main",
+    ],
 )
