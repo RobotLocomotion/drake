@@ -9,8 +9,20 @@ namespace drake {
 namespace maliput {
 namespace monolane {
 
+/// Specialization of Lane with a circular arc as its reference curve
+/// in the xy-plane.
 class ArcLane : public Lane {
  public:
+  /// Construct an ArcLane.
+  ///
+  /// @param center center of the reference arc
+  /// @param radius radius of the reference arc (must be positive)
+  /// @param theta0 angle of the start point of the reference arc with respect
+  ///               to @p center (0 == parallel to x-axis)
+  /// @param d_theta central angle of the arc, i.e., angular displacement
+  ///                from start to end.  d_theta > 0 is counter-clockwise.
+  ///
+  /// For remaining parameters, see documentation for the Lane base class.
   ArcLane(const api::LaneId& id, Segment* segment,
           const V2& center, const double radius,
           const double theta0, const double d_theta,
@@ -27,14 +39,18 @@ class ArcLane : public Lane {
     DRAKE_DEMAND(r_ > 0.);
   }
 
+  virtual ~ArcLane() {}
+
  private:
   api::LanePosition DoToLanePosition(
       const api::GeoPosition& geo_pos) const override;
 
-  V2 xy_of_p_(const double p) const override;
-  V2 xy_dot_of_p_(const double p) const override;
-  double heading_of_p_(const double p) const override;
-  double heading_dot_of_p_(const double p) const override;
+  V2 xy_of_p(const double p) const override;
+  V2 xy_dot_of_p(const double p) const override;
+  double heading_of_p(const double p) const override;
+  double heading_dot_of_p(const double p) const override;
+
+  double theta_of_p(double p) const;
 
   double r_{};
   double cx_{};

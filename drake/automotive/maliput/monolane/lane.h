@@ -14,8 +14,11 @@ class BranchPoint;
 class Segment;
 
 
+/// Base class for the monolane implementation of Lane.
 class Lane : public api::Lane {
  public:
+  /// @param id the ID
+  /// @param segment the Segment to which this Lane will belong
   Lane(const api::LaneId& id, Segment* segment,
        const api::RBounds& lane_bounds,
        const api::RBounds& driveable_bounds,
@@ -38,8 +41,6 @@ class Lane : public api::Lane {
   //              so that superelevation can have a center-of-rotation which
   //              is different from r=0.
 
-  virtual ~Lane() {}
-
   const CubicPolynomial& elevation() const { return elevation_; }
 
   const CubicPolynomial& superelevation() const { return superelevation_; }
@@ -51,6 +52,8 @@ class Lane : public api::Lane {
   BranchPoint* start_bp() { return start_bp_; }
 
   BranchPoint* end_bp() { return end_bp_; }
+
+  virtual ~Lane() {}
 
  private:
   const api::LaneId do_id() const override { return id_; }
@@ -93,18 +96,18 @@ class Lane : public api::Lane {
       const api::LanePosition& position,
       const api::IsoLaneVelocity& velocity) const override;
 
-  virtual V2 xy_of_p_(const double p) const = 0;
-  virtual V2 xy_dot_of_p_(const double p) const = 0;
-  virtual double heading_of_p_(const double p) const = 0;
-  virtual double heading_dot_of_p_(const double p) const = 0;
+  virtual V2 xy_of_p(const double p) const = 0;
+  virtual V2 xy_dot_of_p(const double p) const = 0;
+  virtual double heading_of_p(const double p) const = 0;
+  virtual double heading_dot_of_p(const double p) const = 0;
 
-  Rot3 rot3_of_p_(const double p) const;
-  double p_from_s_(const double s) const;
-  V3 W_prime_of_prh_(const double p, const double r, const double h,
+  Rot3 rot3_of_p(const double p) const;
+  double p_from_s(const double s) const;
+  V3 W_prime_of_prh(const double p, const double r, const double h,
                      const Rot3& gba) const;
-  V3 s_hat_of_prh_(const double p, const double r, const double h,
+  V3 s_hat_of_prh(const double p, const double r, const double h,
                    const Rot3& gba) const;
-  V3 r_hat_of_gba_(const Rot3& gba) const;
+  V3 r_hat_of_gba(const Rot3& gba) const;
 
   const api::LaneId id_;
   const Segment* segment_{};
