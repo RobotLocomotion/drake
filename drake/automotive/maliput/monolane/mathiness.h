@@ -7,89 +7,94 @@ namespace maliput {
 namespace monolane {
 
 
-struct V3 {
-  V3(double xx, double yy, double zz) : x(xx), y(yy), z(zz) {}
+class V3 {
+ public:
+  V3(double xx, double yy, double zz) : x_(xx), y_(yy), z_(zz) {}
 
-  static V3 sum(const V3& a, const V3& b) {
-    return V3(a.x + b.x,
-              a.y + b.y,
-              a.z + b.z);
-  }
-
-  double magnitude() const {
-    return std::sqrt((x * x) + (y * y) + (z * z));
+  double norm() const {
+    return std::sqrt((x_ * x_) + (y_ * y_) + (z_ * z_));
   }
 
   V3 operator*(const double rhs) const {
-    return V3(x * rhs, y * rhs, z * rhs);
+    return V3(x_ * rhs, y_ * rhs, z_ * rhs);
   }
 
-  double x{};
-  double y{};
-  double z{};
+  double x() const { return x_; }
+
+  double y() const { return y_; }
+
+  double z() const { return z_; }
+
+  friend V3 operator+(const V3& a, const V3& b);
+
+ private:
+  double x_{};
+  double y_{};
+  double z_{};
 };
 
 inline
 V3 operator+(const V3& a, const V3& b) {
-  return V3(a.x + b.x,
-            a.y + b.y,
-            a.z + b.z);
+  return V3(a.x_ + b.x_,
+            a.y_ + b.y_,
+            a.z_ + b.z_);
 }
 
-struct V2 {
-  V2(double xx, double yy) : x(xx), y(yy) {}
 
-  static V2 midpoint(const V2& a, const V2& b) {
-    return V2(0.5 * (a.x + b.x),
-              0.5 * (a.y + b.y));
+class V2 {
+ public:
+  V2(double xx, double yy) : x_(xx), y_(yy) {}
+
+  double norm() const {
+    return std::sqrt((x_ * x_) + (y_ * y_));
   }
 
-  static V2 difference(const V2& a, const V2& b) {
-    return V2(a.x - b.x,
-              a.y - b.y);
-  }
+  double x() const { return x_; }
 
-  double heading() const {
-    return std::atan2(y, x);
-  }
+  double y() const { return y_; }
 
-  double length() const {
-    return std::sqrt((x * x) + (y * y));
-  }
-
-  double x{};
-  double y{};
+ private:
+  double x_{};
+  double y_{};
 };
 
 
-struct Rot3 {
-  Rot3(double yy, double pp, double rr) : yaw(yy), pitch(pp), roll(rr) {}
+class Rot3 {
+ public:
+  Rot3(double yy, double pp, double rr) : yaw_(yy), pitch_(pp), roll_(rr) {}
 
   V3 apply(const V3& in) const {
-    const double sa = std::sin(roll);
-    const double ca = std::cos(roll);
-    const double sb = std::sin(pitch);
-    const double cb = std::cos(pitch);
-    const double sg = std::sin(yaw);
-    const double cg = std::cos(yaw);
+    const double sa = std::sin(roll_);
+    const double ca = std::cos(roll_);
+    const double sb = std::sin(pitch_);
+    const double cb = std::cos(pitch_);
+    const double sg = std::sin(yaw_);
+    const double cg = std::cos(yaw_);
 
     return V3(
-        ((cb * cg) * in.x) +
-        ((-ca*sg + sa*sb*cg) * in.y) +
-        ((sa*sg + ca*sb*cg) * in.z),
+        ((cb * cg) * in.x()) +
+        ((-ca*sg + sa*sb*cg) * in.y()) +
+        ((sa*sg + ca*sb*cg) * in.z()),
 
-        ((cb*sg) * in.x) +
-        ((ca*cg + sa*sb*sg) * in.y) +
-        ((-sa*cg + ca*sb*sg) * in.z),
+        ((cb*sg) * in.x()) +
+        ((ca*cg + sa*sb*sg) * in.y()) +
+        ((-sa*cg + ca*sb*sg) * in.z()),
 
-        ((-sb) * in.x) +
-        ((sa*cb) * in.y) +
-        ((ca*cb) * in.z));
+        ((-sb) * in.x()) +
+        ((sa*cb) * in.y()) +
+        ((ca*cb) * in.z()));
   }
 
-  double yaw{};
-  double pitch{};
-  double roll{};
+  double yaw() const { return yaw_; }
+
+  double pitch() const { return pitch_; }
+
+  double roll() const { return roll_; }
+
+ private:
+  double yaw_{};
+  double pitch_{};
+  double roll_{};
 };
 
 
