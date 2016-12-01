@@ -48,6 +48,42 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
   std::vector<PolynomialMatrix>
       polynomials_;  // a PolynomialMatrix for each piece (segment)
 
+  // Computes coeffecients for a cubic spline given the value and first
+  // derivatives at the end points.
+  // Throws std::runtime_error
+  // if \p dt < Eigen::NumTraits<CoefficientType>::epsilon()
+  static Eigen::Matrix<CoefficientType, 4, 1> ComputeCubicSplineCoeffs(
+      double dt, CoefficientType y0, CoefficientType y1,
+      CoefficientType yd0, CoefficientType yd1);
+
+  // Setups the linear constraints for solving coeffs for cubic splines:
+  // interior segments have continuous value, first and second derivatives,
+  // and end points' values match the given ones.
+  // There needs two more constraints to fully solve for the coeffs.
+  static int SetupCubicSplineInterieorCoeffsLinearSystem(
+      const std::vector<double>& T,
+      const std::vector<CoefficientMatrix>& Y,
+      int row, int col,
+      Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>* A,
+      Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>* b);
+
+  // Computes the first derivative at the end point using a non-centered,
+  // shape-preserving three-point formulae.
+  static CoefficientMatrix ComputePchipEndSlope(
+      double dt0, double dt1,
+      const CoefficientMatrix& slope0,
+      const CoefficientMatrix& slope1);
+
+  // Throws std::runtime_error if
+  // \p T and \Y have different length,
+  // \p T is not strictly increasing,
+  // \p Y have inconsistent dimensions,
+  // \P T's length is smaller than min_length.
+  static void CheckSplineGenerationInputValidityOrThrow(
+      const std::vector<double>& T,
+      const std::vector<CoefficientMatrix>& Y,
+      int min_length);
+
  public:
   virtual ~PiecewisePolynomial() {}
 
@@ -71,29 +107,105 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
                       std::vector<double> const& segment_times);
 
   /**
-   * Construct a PiecewisePolynomial using a first order hold from a
-   * series of knot points.
+   * Constructs a const PiecewisePolynomial.
+   *
+   * @throws std::runtime_error if
+   *    \p T and \p Y have different length,
+   *    \p T is not strictly increasing,
+   *    \p Y have inconsistent dimensions,
+   *    \p T has length smaller than 1.
+   */
+  static PiecewisePolynomial<CoefficientType> ZeroOrderHold(
+      const std::vector<double>& T,
+      const std::vector<CoefficientMatrix>& Y);
+
+  /**
+   * Constructs a linear PiecewisePolynomial.
+   *
+   * @throws std::runtime_error if
+   *    \p T and \p Y have different length,
+   *    \p T is not strictly increasing,
+   *    \p Y have inconsistent dimensions,
+   *    \p T has length smaller than 2.
    */
   static PiecewisePolynomial<CoefficientType> FirstOrderHold(
-      const std::vector<double>& segment_times,
-      const std::vector<CoefficientMatrix>& knots) {
-  std::vector<PolynomialMatrix> polys;
-  polys.reserve(segment_times.size() - 1);
-  for (int i = 0; i < static_cast<int>(segment_times.size()) - 1; ++i) {
-    PolynomialMatrix poly_matrix(knots[0].rows(), knots[0].cols());
+      const std::vector<double>& T,
+      const std::vector<CoefficientMatrix>& Y);
 
-    for (int j = 0; j < knots[i].rows(); ++j) {
-      for (int k = 0; k < knots[i].cols(); ++k) {
-        poly_matrix(j, k) = PolynomialType(
-            Eigen::Matrix<CoefficientType, 2, 1>(
-                knots[i](j, k), (knots[i + 1](j, k) - knots[i](j, k)) /
-                (segment_times[i + 1] - segment_times[i])));
-      }
-    }
-    polys.push_back(poly_matrix);
-  }
-  return PiecewisePolynomial<CoefficientType>(polys, segment_times);
-}
+  /**
+   * Constructs a third order PiecewisePolynomial from \p T and \p Y.
+   * First derivatives are chosen to be "shape preserving", i.e. if
+   * \p Y is monotonic within some interval, the interpolated data will
+   * also be monotonic.
+   * The second derivative is not guaranteed to be smooth across the
+   * entire spline.
+   *
+   * The first and last first derivative is chosen using a
+   * non-centered, shape-preserving three-point formulae.
+   *
+   * @throws std::runtime_error if
+   *    \p T and \p Y have different length,
+   *    \p T is not strictly increasing,
+   *    \p Y have inconsistent dimensions,
+   *    \p T has length smaller than 3.
+   */
+  static PiecewisePolynomial<CoefficientType> Pchip(
+      const std::vector<double>& T,
+      const std::vector<CoefficientMatrix>& Y);
+
+  /**
+   * Constructs a third order PiecewisePolynomial from \p T and \p Y.
+   * The PiecewisePolynomial is constructed such that the interior segments
+   * have the same value, first and second derivatives at \p T.
+   * \p Ydot0 and \p Ydot1 are used for the first and last first derivatives.
+   *
+   * @throws std::runtime_error if
+   *    \p T and \p Y have different length,
+   *    \p T is not strictly increasing,
+   *    \p Y have inconsistent dimensions,
+   *    \p Ydot0 or Ydot1 and Y have inconsistent dimensions,
+   *    \p T has length smaller than 3.
+   */
+  static PiecewisePolynomial<CoefficientType> Cubic(
+      const std::vector<double>& T,
+      const std::vector<CoefficientMatrix>& Y,
+      const CoefficientMatrix& Ydot0,
+      const CoefficientMatrix& Ydot1);
+
+  /**
+   * Constructs a third order PiecewisePolynomial from \p T, \p Y and \p Ydot.
+   * Each segment is fully specified by @Y and @Ydot at both ends.
+   * Second derivatives are not continuous.
+   *
+   * @throws std::runtime_error if
+   *    \p T and \p Y have different length,
+   *    \p T is not strictly increasing,
+   *    \p T and \p Ydot have different length,
+   *    \p Y have inconsistent dimensions,
+   *    \p Ydot have inconsistent dimensions,
+   *    \p T has length smaller than 2.
+   */
+  static PiecewisePolynomial<CoefficientType> Cubic(
+      const std::vector<double>& T,
+      const std::vector<CoefficientMatrix>& Y,
+      const std::vector<CoefficientMatrix>& Ydot);
+
+  /**
+   * Constructs a third order PiecewisePolynomial from \p T and \p Y.
+   * The PiecewisePolynomial is constructed such that the interior segments
+   * have the same value, first and second derivatives at \p T.
+   * "Not-a-knot" end condition is used, which means the third derivatives
+   * are continuous for the first two and last two segments.
+   *
+   * @throws std::runtime_error if
+   *    \p T and \p Y have different length,
+   *    \p T is not strictly increasing,
+   *    \p Y have inconsistent dimensions,
+   *    \p T has length smaller than 2.
+   */
+  static PiecewisePolynomial<CoefficientType> Cubic(
+      const std::vector<double>& T,
+      const std::vector<CoefficientMatrix>& Y);
 
   /// Takes the derivative of this PiecewisePolynomial.
   /**
