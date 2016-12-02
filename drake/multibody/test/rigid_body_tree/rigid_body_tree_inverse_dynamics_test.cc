@@ -320,7 +320,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   total_wrench_world += floating_joint_wrench_world;
 
   // Compute rate of change of momentum hdot.
-  auto v_to_qd = tree.GetVelocityToPositionDotMapping(kinematics_cache);
+  auto v_to_qd = tree.GetVelocityToQDotMapping(kinematics_cache);
   auto qd = v_to_qd * v;
   // Convert to MatrixXd to make another explicit instantiation unnecessary.
   auto q_time_autodiff = initializeAutoDiffGivenGradientMatrix(q, MatrixXd(qd));

@@ -361,12 +361,12 @@ void dynamicsBiasTermmex(int nlhs, mxArray* plhs[], int nrhs,
 void velocityToPositionDotMappingmex(int nlhs, mxArray* plhs[], int nrhs,
                                      const mxArray* prhs[]) {
   auto func_double = make_function
-          (&RigidBodyTreed::GetVelocityToPositionDotMapping <double>);
+          (&RigidBodyTreed::GetVelocityToQDotMapping<double>);
   auto func_autodiff_fixed_max =
-          make_function(&RigidBodyTreed::GetVelocityToPositionDotMapping
+          make_function(&RigidBodyTreed::GetVelocityToQDotMapping
                         <AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic =
-          make_function(&RigidBodyTreed::GetVelocityToPositionDotMapping
+          make_function(&RigidBodyTreed::GetVelocityToQDotMapping
                         <AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
@@ -375,12 +375,12 @@ void velocityToPositionDotMappingmex(int nlhs, mxArray* plhs[], int nrhs,
 void positionDotToVelocityMappingmex(int nlhs, mxArray* plhs[], int nrhs,
                                      const mxArray* prhs[]) {
   auto func_double = make_function
-          (&RigidBodyTreed::GetPositionDotToVelocityMapping <double>);
+          (&RigidBodyTreed::GetQDotToVelocityMapping<double>);
   auto func_autodiff_fixed_max =
-          make_function(&RigidBodyTreed::GetPositionDotToVelocityMapping
+          make_function(&RigidBodyTreed::GetQDotToVelocityMapping
                         <AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic =
-          make_function(&RigidBodyTreed::GetPositionDotToVelocityMapping
+          make_function(&RigidBodyTreed::GetQDotToVelocityMapping
                         <AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);

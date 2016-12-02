@@ -333,11 +333,11 @@ class RigidBodyTree {
       const Eigen::MatrixBase<Derived>& Ap);
 
   template <typename Scalar>
-  static drake::MatrixX<Scalar> GetVelocityToPositionDotMapping(
+  static drake::MatrixX<Scalar> GetVelocityToQDotMapping(
           const KinematicsCache<Scalar>& cache);
 
   template <typename Scalar>
-  static drake::MatrixX<Scalar> GetPositionDotToVelocityMapping(
+  static drake::MatrixX<Scalar> GetQDotToVelocityMapping(
           const KinematicsCache<Scalar>& cache);
 
   template <typename Scalar>
