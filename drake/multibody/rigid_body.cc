@@ -105,6 +105,7 @@ void RigidBody<T>::AddVisualElement(const DrakeShapes::VisualElement& element) {
   visual_elements_.push_back(element);
 }
 
+// TODO(SeanCurtis-TRI): This is no longer necessary.
 template <typename T>
 void RigidBody<T>::AddCollisionElementsToClique(int clique_id) {
   for (const auto& element : collision_elements_) {
