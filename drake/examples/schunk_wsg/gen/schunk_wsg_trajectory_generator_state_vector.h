@@ -14,8 +14,8 @@ namespace drake {
 namespace examples {
 namespace schunk_wsg {
 
-/// Describes the row indices of a SchunkWsgCommandReceiverStateVector.
-struct SchunkWsgCommandReceiverStateVectorIndices {
+/// Describes the row indices of a SchunkWsgTrajectoryGeneratorStateVector.
+struct SchunkWsgTrajectoryGeneratorStateVectorIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 2;
 
@@ -26,13 +26,13 @@ struct SchunkWsgCommandReceiverStateVectorIndices {
 
 /// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class SchunkWsgCommandReceiverStateVector : public systems::BasicVector<T> {
+class SchunkWsgTrajectoryGeneratorStateVector : public systems::BasicVector<T> {
  public:
   // An abbreviation for our row index constants.
-  typedef SchunkWsgCommandReceiverStateVectorIndices K;
+  typedef SchunkWsgTrajectoryGeneratorStateVectorIndices K;
 
   /// Default constructor.  Sets all rows to zero.
-  SchunkWsgCommandReceiverStateVector()
+  SchunkWsgTrajectoryGeneratorStateVector()
       : systems::BasicVector<T>(K::kNumCoordinates) {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }

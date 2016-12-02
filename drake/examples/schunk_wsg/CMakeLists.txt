@@ -1,6 +1,6 @@
 if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeSchunkWsg SOURCE_FILES
-    gen/schunk_wsg_command_receiver_state_vector.cc;
+    gen/schunk_wsg_trajectory_generator_state_vector.cc
     simulated_schunk_wsg_system.cc)
   target_link_libraries(drakeSchunkWsg drakeRigidBodyPlant)
   drake_install_libraries(drakeSchunkWsg)
