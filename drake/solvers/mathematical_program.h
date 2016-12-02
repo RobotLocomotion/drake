@@ -1248,6 +1248,8 @@ class MathematicalProgram {
 
   /**
    * Add a positive semidefinite constraint on a symmetric matrix.
+   * In Debug mode, @throws error if
+   * @p symmetric_matrix_var is not symmetric.
    * @param symmetric_matrix_var A symmetric DecisionVariableMatrix object.
    */
   std::shared_ptr<PositiveSemidefiniteConstraint>

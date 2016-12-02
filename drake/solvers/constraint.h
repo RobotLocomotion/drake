@@ -484,6 +484,13 @@ class LinearComplementarityConstraint : public Constraint {
  */
 class PositiveSemidefiniteConstraint : public Constraint {
  public:
+  /**
+   * Impose the constraint that a symmetric matrix with size rows x rows is
+   * positive semidefinite.
+   * @see MathematicalProgram::AddPositiveSemidefiniteConstraint() for how
+   * to use this constraint on some decision variables.
+   * @param rows The number of rows (and columns) of the symmetric matrix.
+   */
   explicit PositiveSemidefiniteConstraint(int rows)
       : Constraint(rows, Eigen::VectorXd::Zero(rows),
                    Eigen::VectorXd::Constant(
