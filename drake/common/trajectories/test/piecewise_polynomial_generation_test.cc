@@ -28,7 +28,7 @@ CoefficientType ComputeExtremeVel(const Polynomial<CoefficientType>& vel,
   CoefficientType vel1 = vel.EvaluateUnivariate(T);
   CoefficientType vel_extrema = vel0;
 
-  // Not constant acceleration, vel extrema is at when acc = 0.
+  // Not constant acceleration, vel extrema is when acc = 0.
   if (std::abs(acc_coeffs[1]) > 1e-12) {
     CoefficientType extrema_t = -acc_coeffs[0] / acc_coeffs[1];
 
@@ -273,7 +273,7 @@ GTEST_TEST(SplineTests, PchipAndCubicSplineCompareWithMatlabTest) {
 
 
 GTEST_TEST(SplineTests, RandomizedLinearSplineTest) {
-  default_random_engine generator;
+  default_random_engine generator(123);
   int N = 11;
   int num_tests = 1000;
   int rows = 3;
@@ -293,7 +293,7 @@ GTEST_TEST(SplineTests, RandomizedLinearSplineTest) {
 }
 
 GTEST_TEST(SplineTests, RandomizedConstantSplineTest) {
-  default_random_engine generator;
+  default_random_engine generator(123);
   int N = 6;
   int num_tests = 100;
   int rows = 3;
@@ -314,7 +314,7 @@ GTEST_TEST(SplineTests, RandomizedConstantSplineTest) {
 }
 
 GTEST_TEST(SplineTests, RandomizedPchipSplineTest) {
-  default_random_engine generator;
+  default_random_engine generator(123);
   int N = 10;
   int num_tests = 1000;
   int rows = 3;
@@ -333,7 +333,7 @@ GTEST_TEST(SplineTests, RandomizedPchipSplineTest) {
 }
 
 GTEST_TEST(SplineTests, RandomizedCubicSplineTest) {
-  default_random_engine generator;
+  default_random_engine generator(123);
   int N = 30;
   int num_tests = 40;
   int rows = 3;

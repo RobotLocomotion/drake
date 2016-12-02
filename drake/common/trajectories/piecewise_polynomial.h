@@ -5,6 +5,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial_base.h"
 
@@ -38,10 +39,8 @@ template <typename CoefficientType = double>
 class PiecewisePolynomial : public PiecewisePolynomialBase {
  public:
   typedef Polynomial<CoefficientType> PolynomialType;
-  typedef Eigen::Matrix<PolynomialType, Eigen::Dynamic, Eigen::Dynamic>
-      PolynomialMatrix;
-  typedef Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>
-      CoefficientMatrix;
+  typedef drake::MatrixX<PolynomialType> PolynomialMatrix;
+  typedef drake::MatrixX<CoefficientType> CoefficientMatrix;
   typedef Eigen::Ref<CoefficientMatrix> CoefficientMatrixRef;
 
  private:
@@ -72,12 +71,12 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
   // At this point, we have 2 * (N - 1) position constraints:
   // Pi(0) = Y[i], for i in [0, N - 2]
   // Pi(duration_i) = Y[i+1], for i in [0, N - 2]
-  // N - 2 for velocity constraints for the interior points:
+  // N - 2 velocity constraints for the interior points:
   // Pi'(duration_i) = Pi+1'(0), for i in [0, N - 3]
-  // N - 2 for acceleration constraints for the interior points:
+  // N - 2 acceleration constraints for the interior points:
   // Pi''(duration_i) = Pi+1''(0), for i in [0, N - 3]
   //
-  // These sum up to 4 * (N - 1) - 2. This function Sets up the above
+  // These sum up to 4 * (N - 1) - 2. This function sets up the above
   // constraints. There are still 2 constraints missing, which can be resolved
   // by various end point conditions (velocity at the end points /
   // "not-a-knot" / etc). These will be specified by the callers.
@@ -85,8 +84,8 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
       const std::vector<double>& T,
       const std::vector<CoefficientMatrix>& Y,
       int row, int col,
-      Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>* A,
-      Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>* b);
+      drake::MatrixX<CoefficientType>* A,
+      drake::VectorX<CoefficientType>* b);
 
   // Computes the first derivative at the end point using a non-centered,
   // shape-preserving three-point formulae.
@@ -98,7 +97,7 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
   // Throws std::runtime_error if
   // \p T and \Y have different length,
   // \p T is not strictly increasing,
-  // \p Y have inconsistent dimensions,
+  // \p Y has inconsistent dimensions,
   // \P T's length is smaller than min_length.
   static void CheckSplineGenerationInputValidityOrThrow(
       const std::vector<double>& T,
@@ -133,7 +132,7 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    * @throws std::runtime_error if
    *    \p T and \p Y have different length,
    *    \p T is not strictly increasing,
-   *    \p Y have inconsistent dimensions,
+   *    \p Y has inconsistent dimensions,
    *    \p T has length smaller than 1.
    */
   static PiecewisePolynomial<CoefficientType> ZeroOrderHold(
@@ -146,7 +145,7 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    * @throws std::runtime_error if
    *    \p T and \p Y have different length,
    *    \p T is not strictly increasing,
-   *    \p Y have inconsistent dimensions,
+   *    \p Y has inconsistent dimensions,
    *    \p T has length smaller than 2.
    */
   static PiecewisePolynomial<CoefficientType> FirstOrderHold(
@@ -167,7 +166,7 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    * @throws std::runtime_error if
    *    \p T and \p Y have different length,
    *    \p T is not strictly increasing,
-   *    \p Y have inconsistent dimensions,
+   *    \p Y has inconsistent dimensions,
    *    \p T has length smaller than 3.
    */
   static PiecewisePolynomial<CoefficientType> Pchip(
@@ -183,7 +182,7 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    * @throws std::runtime_error if
    *    \p T and \p Y have different length,
    *    \p T is not strictly increasing,
-   *    \p Y have inconsistent dimensions,
+   *    \p Y has inconsistent dimensions,
    *    \p Ydot_start or Ydot_end and Y have inconsistent dimensions,
    *    \p T has length smaller than 3.
    */
@@ -202,8 +201,8 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    *    \p T and \p Y have different length,
    *    \p T is not strictly increasing,
    *    \p T and \p Ydot have different length,
-   *    \p Y have inconsistent dimensions,
-   *    \p Ydot have inconsistent dimensions,
+   *    \p Y has inconsistent dimensions,
+   *    \p Ydot has inconsistent dimensions,
    *    \p T has length smaller than 2.
    */
   static PiecewisePolynomial<CoefficientType> Cubic(
@@ -215,13 +214,15 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    * Constructs a third order PiecewisePolynomial from \p T and \p Y.
    * The PiecewisePolynomial is constructed such that the interior segments
    * have the same value, first and second derivatives at \p T.
-   * "Not-a-knot" end condition is used, which means the third derivatives
+   * "Not-a-knot" end condition is used here, which means the third derivatives
    * are continuous for the first two and last two segments.
+   * See https://en.wikipedia.org/wiki/Spline_interpolation for more details
+   * about "Not-a-knot" condition.
    *
    * @throws std::runtime_error if
    *    \p T and \p Y have different length,
    *    \p T is not strictly increasing,
-   *    \p Y have inconsistent dimensions,
+   *    \p Y has inconsistent dimensions,
    *    \p T has length smaller than 2.
    */
   static PiecewisePolynomial<CoefficientType> Cubic(
@@ -271,7 +272,7 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
 
   double scalarValue(double t, Eigen::Index row = 0, Eigen::Index col = 0);
 
-  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> value(double t) const;
+  drake::MatrixX<double> value(double t) const;
 
   const PolynomialMatrix& getPolynomialMatrix(int segment_index) const;
 

@@ -101,7 +101,7 @@ double PiecewisePolynomial<CoefficientType>::scalarValue(double t,
 }
 
 template <typename CoefficientType>
-Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>
+drake::MatrixX<double>
 PiecewisePolynomial<CoefficientType>::value(double t) const {
   int segment_index = getSegmentIndex(t);
   t = std::min(std::max(t, getStartTime()), getEndTime());
@@ -342,7 +342,7 @@ void PiecewisePolynomial<CoefficientType>::
   }
   for (const auto& y : Y) {
     if (y.rows() != rows || y.cols() != cols) {
-      throw std::runtime_error("Knots have inconsisitent dimensions.");
+      throw std::runtime_error("Knots have inconsistent dimensions.");
     }
   }
   for (size_t i = 0; i < T.size() - 1; i++) {
@@ -400,7 +400,7 @@ PiecewisePolynomial<CoefficientType>::FirstOrderHold(
 }
 
 template <typename CoefficientType>
-Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>
+drake::MatrixX<CoefficientType>
 PiecewisePolynomial<CoefficientType>::ComputePchipEndSlope(
     double dt0, double dt1, const CoefficientMatrix& slope0,
     const CoefficientMatrix& slope1) {
@@ -523,8 +523,8 @@ int PiecewisePolynomial<CoefficientType>::
     SetupCubicSplineInteriorCoeffsLinearSystem(
         const std::vector<double>& T, const std::vector<CoefficientMatrix>& Y,
         int row, int col,
-        Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>* A,
-        Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>* b) {
+        drake::MatrixX<CoefficientType>* A,
+        drake::VectorX<CoefficientType>* b) {
   int N = static_cast<int>(T.size());
 
   DRAKE_DEMAND(A != nullptr);
@@ -534,8 +534,8 @@ int PiecewisePolynomial<CoefficientType>::
   DRAKE_DEMAND(b->rows() == 4 * (N - 1));
 
   int row_idx = 0;
-  Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>& Aref = *A;
-  Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>& bref = *b;
+  drake::MatrixX<CoefficientType>& Aref = *A;
+  drake::VectorX<CoefficientType>& bref = *b;
 
   for (int i = 0; i < N - 1; ++i) {
     double dt = T[i + 1] - T[i];
@@ -602,10 +602,9 @@ PiecewisePolynomial<CoefficientType>::Cubic(
     polynomials[i].resize(rows, cols);
   }
 
-  Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic> A(4 * (N - 1),
-                                                                   4 * (N - 1));
-  Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> b(4 * (N - 1));
-  Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> solution;
+  drake::MatrixX<CoefficientType> A(4 * (N - 1), 4 * (N - 1));
+  drake::VectorX<CoefficientType> b(4 * (N - 1));
+  drake::VectorX<CoefficientType> solution;
 
   A.setZero();
   b.setZero();
@@ -654,10 +653,9 @@ PiecewisePolynomial<CoefficientType>::Cubic(
     polynomials[i].resize(rows, cols);
   }
 
-  Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic> A(4 * (N - 1),
-                                                                   4 * (N - 1));
-  Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> b(4 * (N - 1));
-  Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> solution;
+  drake::MatrixX<CoefficientType> A(4 * (N - 1), 4 * (N - 1));
+  drake::VectorX<CoefficientType> b(4 * (N - 1));
+  drake::VectorX<CoefficientType> solution;
 
   A.setZero();
   b.setZero();
