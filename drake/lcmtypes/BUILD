@@ -47,4 +47,14 @@ lcm_cc_library(
     linkstatic = 1,
 )
 
+lcm_cc_library(
+    name = "call_matlab",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_call_matlab.lcm",
+        "lcmt_matlab_array.lcm",
+    ],
+    linkstatic = 1,
+)
+
 # TODO(jwnimmer-tri) Many more messages are missing ...
