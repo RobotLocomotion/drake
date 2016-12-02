@@ -2972,38 +2972,38 @@ RigidBodyTree<double>::resolveCenterOfPressure<Vector3d, Vector3d>(
 // Explicit template instantiations for transformVelocityMappingToQDotMapping.
 template MatrixX<double>
 RigidBodyTree<double>::transformVelocityMappingToQDotMapping<VectorXd>(
-    const KinematicsCache<double>& cache,
-    const Eigen::MatrixBase<VectorXd>& Av) const;
+    const KinematicsCache<double>&,
+    const Eigen::MatrixBase<VectorXd>&) const;
 template MatrixX<double>
 RigidBodyTree<double>::transformVelocityMappingToQDotMapping<
     Eigen::RowVectorXd>(
-    const KinematicsCache<double>& cache,
-    const Eigen::MatrixBase<Eigen::RowVectorXd>& Av) const;
+    const KinematicsCache<double>&,
+    const Eigen::MatrixBase<Eigen::RowVectorXd>&) const;
 
 // Explicit template instantiations for transformQDotMappingToVelocityMapping.
 template MatrixX<double>
 RigidBodyTree<double>::transformQDotMappingToVelocityMapping<VectorXd>(
-    const KinematicsCache<double>& cache,
-    const Eigen::MatrixBase<VectorXd>& Ap) const;
+    const KinematicsCache<double>&,
+    const Eigen::MatrixBase<VectorXd>&) const;
 template MatrixX<double>
 RigidBodyTree<double>::transformQDotMappingToVelocityMapping<
     Eigen::RowVectorXd>(
-    const KinematicsCache<double>& cache,
-    const Eigen::MatrixBase<Eigen::RowVectorXd>& Ap) const;
+    const KinematicsCache<double>&,
+    const Eigen::MatrixBase<Eigen::RowVectorXd>&) const;
 template MatrixX<double>
 RigidBodyTree<double>::transformQDotMappingToVelocityMapping<MatrixXd>(
-        const KinematicsCache<double>& cache,
-        const Eigen::MatrixBase<MatrixXd>& Ap) const;
+        const KinematicsCache<double>&,
+        const Eigen::MatrixBase<MatrixXd>&) const;
 template MatrixX<double>
 RigidBodyTree<double>::transformQDotMappingToVelocityMapping<
         Eigen::Map<MatrixXd const>>(
-        const KinematicsCache<double>& cache,
-        const Eigen::MatrixBase<Eigen::Map<MatrixXd const>>& Ap) const;
+        const KinematicsCache<double>&,
+        const Eigen::MatrixBase<Eigen::Map<MatrixXd const>>&) const;
 template MatrixX<double>
 RigidBodyTree<double>::transformQDotMappingToVelocityMapping<
         Eigen::Map<MatrixXd>>(
-        const KinematicsCache<double>& cache,
-        const Eigen::MatrixBase<Eigen::Map<MatrixXd>>& Ap) const;
+        const KinematicsCache<double>&,
+        const Eigen::MatrixBase<Eigen::Map<MatrixXd>>&) const;
 
 // Explicit template instantiations for transformPointsJacobian.
 template MatrixX<AutoDiffUpTo73d>
