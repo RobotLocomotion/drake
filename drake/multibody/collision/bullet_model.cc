@@ -244,8 +244,8 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletMeshPointsShape(
   return bt_shape;
 }
 
-ElementId BulletModel::addElement(const Element& element) {
-  ElementId id = Model::addElement(element);
+void BulletModel::DoAddElement(const Element& element) {
+  ElementId id = element.getId();
 
   if (id != 0) {
     std::unique_ptr<btCollisionShape> bt_shape;
@@ -374,7 +374,6 @@ ElementId BulletModel::addElement(const Element& element) {
       bt_collision_shapes_.push_back(move(bt_shape_no_margin));
     }
   }
-  return id;
 }
 
 std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {

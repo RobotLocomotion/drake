@@ -4,6 +4,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -122,19 +123,18 @@ class RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       std::vector<Eigen::Map<Eigen::Matrix3Xd>>& tangents) const;
 
-  /*!
-   * Updates the frame of collision elements to be equal to the joint's frame.
+  /**
+   * Applies the given transform to the given @p body's collision elements,
+   * displacing them from their current configurations.  These new poses
+   * will be considered the elements' pose with respect to the body.
    *
-   * @param eid The ID of the collision element to update.
-   * @param transform_body_to_joint The transform from the model's
-   * body frame to the joint frame.
-   * @return true if the collision element was successfully updated.
-   * False can be returned if a collision element with the specified eid
-   * cannot be found.
+   * @param body The body whose collision elements will be moved.
+   * @param displace_transform The transform to apply to each collision element.
+   * @param true if the collision element was successfully updated.
    */
   bool transformCollisionFrame(
-      const DrakeCollision::ElementId& eid,
-      const Eigen::Isometry3d& transform_body_to_joint);
+      RigidBody<T>* body,
+      const Eigen::Isometry3d& displace_transform);
 
   void compile(void);  // call me after the model is loaded
 
@@ -637,7 +637,7 @@ class RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
-  DrakeCollision::ElementId addCollisionElement(
+  void addCollisionElement(
       const DrakeCollision::Element& element,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       RigidBody<T>& body,
@@ -676,8 +676,6 @@ class RigidBodyTree {
   void updateCollisionElements(
       const RigidBody<T>& body,
       const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world);
-
-  void updateStaticCollisionElements();
 
   void updateDynamicCollisionElements(const KinematicsCache<double>& kin_cache);
 
@@ -1248,6 +1246,10 @@ class RigidBodyTree {
   // See RigidBodyTree::compile
   void SortTree();
 
+  // Performs the work that is required for the collision state of the
+  // RigidBodyTree to become finalized.
+  void CompileCollisionState();
+
   // Defines a number of collision cliques to be used by DrakeCollision::Model.
   // Collision cliques are defined so that:
   // - There is one clique per RigidBody: and so CollisionElement's attached to
@@ -1285,6 +1287,27 @@ class RigidBodyTree {
   bool initialized_{false};
 
   int next_available_clique_ = 0;
+ public:
+
+  // Utility class for storing body collision data during RBT instantiation.
+  struct BodyCollisionItem {
+    BodyCollisionItem(const std::string& group_name, std::unique_ptr<DrakeCollision::Element> element) {
+      this->group_name = group_name;
+      this->element = std::move(element);
+    }
+    std::string group_name;
+    std::unique_ptr<DrakeCollision::Element> element;
+  };
+
+  typedef std::vector<BodyCollisionItem> BodyCollisions;
+ private:
+  // This data structures supports an orderly instantiation of the collision
+  // elements.  It is populated during tree construction, exercised during
+  // RigidBodyTree::compile at the conclusion of which, it is emptied.
+  // It has no run-time value.  This is a hacky alternative to having a
+  // proper, intermediate representation.
+  std::unordered_map<RigidBody<T>*, BodyCollisions>
+      body_collision_map_;
 };
 
 typedef RigidBodyTree<double> RigidBodyTreed;
