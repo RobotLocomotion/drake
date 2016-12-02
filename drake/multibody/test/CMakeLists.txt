@@ -1,7 +1,6 @@
 # RigidBodyTree unit tests.
-add_executable(test_kinematics_cache_checks test_kinematics_cache_checks.cc)
+drake_add_cc_test(test_kinematics_cache_checks)
 target_link_libraries(test_kinematics_cache_checks drakeRBM)
-drake_add_test(NAME test_kinematics_cache_checks WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND test_kinematics_cache_checks)
 
 add_executable(benchmark_rigid_body_tree benchmark_rigid_body_tree.cc)
 target_link_libraries(benchmark_rigid_body_tree drakeRBM)
