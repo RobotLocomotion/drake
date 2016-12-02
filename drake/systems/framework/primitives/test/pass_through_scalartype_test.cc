@@ -20,14 +20,6 @@ namespace drake {
 namespace systems {
 namespace {
 
-// TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
-// the input of the PassThrough system.
-template<class T>
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
-}
-
 // Tests the ability to take derivatives of the output with respect to
 // the input. Since `y = u` the derivative in this case is the identity matrix.
 GTEST_TEST(PassThroughScalarTypeTest, AutoDiff) {
@@ -52,7 +44,7 @@ GTEST_TEST(PassThroughScalarTypeTest, AutoDiff) {
 
   input->get_mutable_value() << input_vector;
 
-  context->SetInputPort(0, MakeInput(std::move(input)));
+  context->FixInputPort(0, std::move(input));
 
   buffer->EvalOutput(*context, output.get());
 

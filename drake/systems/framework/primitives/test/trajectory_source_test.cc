@@ -30,11 +30,6 @@ class TrajectorySourceTest : public ::testing::Test {
     input_ = make_unique<BasicVector<double>>(3 /* length */);
   }
 
-  static std::unique_ptr<FreestandingInputPort> MakeInput(
-      std::unique_ptr<BasicVector<double>> data) {
-    return make_unique<FreestandingInputPort>(std::move(data));
-  }
-
   const PiecewisePolynomialTrajectory kppTraj;
   std::unique_ptr<System<double>> source_;
   std::unique_ptr<Context<double>> context_;
