@@ -261,11 +261,12 @@ class IntegratorBase {
       throw std::logic_error("Integrator maximum step size is less than the "
                              "minimum step size");
     }
-    if (req_initial_step_size > max_step_size_) {
+
+    if (req_initial_step_size_ > max_step_size_) {
       throw std::logic_error("Requested integrator initial step size is larger "
                              "than the maximum step size.");
     }
-    if (req_initial_step_size < min_step_size_) {
+    if (req_initial_step_size_ < min_step_size_) {
       throw std::logic_error("Requested integrator initial step size is smaller"
                              " than the minimum step size.");
     }
@@ -810,14 +811,17 @@ class IntegratorBase {
 
   /**
    * Derived classes may re-implement this method to integrate the continuous
-   * portion of this system forward by a single step of no greater size than
-   * dt_max. This method is called during the StepOnceAtMost() method. This
-   * default implementation simply calls DoStepOnceFixedSize(dt_max).
-   * @param dt The maximum integration step to take.
-   * @returns `false` if the integrator does not take the full step of dt;
-   *           otherwise, should return `true`.
+   * portion of this system forward by a *single step* of no greater size than
+   * @p max_dt. This method is called during the StepOnceAtMost() method. This
+   * default implementation simply calls DoStepOnceFixedSize(max_dt) and
+   * returns `{ true, max_dt }`.
+   * @param max_dt The maximum integration step to take.
+   * @returns a std::pair<bool, T>, with the first element corresponding to
+   *          `false` if the integrator does not take the full step of @p max_dt
+   *           (and `true` otherwise) and the second element corresponding to
+   *           the step size actually taken by the integrator. 
    */
-  virtual bool DoStepOnceAtMost(const T& dt_max);
+  virtual std::pair<bool, T> DoStepOnceAtMost(const T& max_dt);
 
   /**
    * Derived classes must implement this method to integrate the continuous
@@ -1187,9 +1191,9 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
 }
 
 template <class T>
-bool IntegratorBase<T>::DoStepOnceAtMost(const T& max_dt) {
+std::pair<bool, T> IntegratorBase<T>::DoStepOnceAtMost(const T& max_dt) {
   StepOnceAtFixedSize(max_dt);
-  return true;
+  return std::make_pair(true, max_dt);
 }
 
 template <class T>
@@ -1231,10 +1235,12 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
   }
 
   if (dt < 0.0) throw std::logic_error("Negative dt.");
-  const bool step_size_was_dt = DoStepOnceAtMost(dt);
+  bool step_size_was_dt;
+  T actual_dt;
+  std::tie(step_size_was_dt, actual_dt) = DoStepOnceAtMost(dt);
 
-  // Update generic statistics. TODO(edrumwri): Fix #4336.
-  UpdateStatistics(dt);
+  // Update generic statistics. 
+  UpdateStatistics(actual_dt);
 
   if (step_size_was_dt) {
     // If the integrator took the entire maximum step size we allowed above,

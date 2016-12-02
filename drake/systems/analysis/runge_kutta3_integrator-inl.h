@@ -51,7 +51,7 @@ void RungeKutta3Integrator<T>::DoInitialize() {
  * RK3-specific stepping function.
  */
 template <class T>
-bool RungeKutta3Integrator<T>::DoStepOnceAtMost(const T& dt_max) {
+std::pair<bool, T> RungeKutta3Integrator<T>::DoStepOnceAtMost(const T& max_dt) {
   using std::isnan;
 
   // TODO(edrumwri): move derivative evaluation at t0 to the simulator where
@@ -65,13 +65,13 @@ bool RungeKutta3Integrator<T>::DoStepOnceAtMost(const T& dt_max) {
   if (this->get_fixed_step_mode()) {
     this->get_mutable_interval_start_state() =
         context.get_continuous_state_vector().CopyToVector();
-    this->DoStepOnceFixedSize(dt_max);
+    this->DoStepOnceFixedSize(max_dt);
   } else {
-    this->StepErrorControlled(dt_max, derivs0_.get());
+    this->StepErrorControlled(max_dt, derivs0_.get());
   }
 
   const T& dt = this->get_previous_integration_step_size();
-  return (dt == dt_max);
+  return std::make_pair(dt == max_dt, dt);
 }
 
 template <class T>
