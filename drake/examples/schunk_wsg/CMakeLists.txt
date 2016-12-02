@@ -1,9 +1,12 @@
 if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeSchunkWsg SOURCE_FILES
+    gen/schunk_wsg_command_receiver_state_vector.cc;
     simulated_schunk_wsg_system.cc)
   target_link_libraries(drakeSchunkWsg drakeRigidBodyPlant)
   drake_install_libraries(drakeSchunkWsg)
-  drake_install_headers(simulated_schunk_wsg_system.h)
+  drake_install_headers(
+    # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
+    simulated_schunk_wsg_system.h)
   drake_install_pkg_config_file(drake-schunk-wsg
     TARGET drakeSchunkWsg
     LIBS -ldrakeSchunkWsg
