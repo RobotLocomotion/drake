@@ -15,7 +15,7 @@ namespace lcm {
 static int g_uid = 0;
 
 LcmMatlabRemoteVariable::LcmMatlabRemoteVariable()
-    : uid(g_uid++)
+    : uid_(g_uid++)
 // TODO(russt): replace this with a random int64_t, e.g.
 // http://stackoverflow.com/questions/7114043/random-number-generation-in-c11-how-to-generate-how-do-they-work
 // TODO(russt): david-german-tri recommended a more robust (but more complex)
@@ -30,7 +30,7 @@ void ToLcmMatlabArray(const LcmMatlabRemoteVariable& var,
   matlab_array->cols = 1;
   matlab_array->num_bytes = sizeof(int64_t);
   matlab_array->data.resize(matlab_array->num_bytes);
-  memcpy(matlab_array->data.data(), &var.uid, matlab_array->num_bytes);
+  memcpy(matlab_array->data.data(), &var.uid_, matlab_array->num_bytes);
 }
 
 void ToLcmMatlabArray(double var, drake::lcmt_matlab_array* matlab_array) {
