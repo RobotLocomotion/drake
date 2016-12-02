@@ -2,9 +2,13 @@
 
 #include <cmath>
 
+#include <Eigen/Dense>
+
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/segment.h"
+
+#include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
 namespace maliput {
@@ -13,99 +17,27 @@ namespace monolane {
 class BranchPoint;
 class Segment;
 
+typedef Eigen::Matrix<double, 3, 1> V3;
+typedef Eigen::Matrix<double, 2, 1> V2;
 
-/// A basic 3-vector.
-class V3 {
- public:
-  V3(double x, double y, double z) : x_(x), y_(y), z_(z) {}
-
-  /// Returns the L_2 norm (e.g., magnitude).
-  double norm() const { return std::sqrt((x_ * x_) + (y_ * y_) + (z_ * z_)); }
-
-  /// Multiplies by a scalar.
-  V3 operator*(const double rhs) const {
-    return V3(x_ * rhs, y_ * rhs, z_ * rhs);
-  }
-
-  double x() const { return x_; }
-  double y() const { return y_; }
-  double z() const { return z_; }
-
-  friend V3 operator+(const V3& a, const V3& b);
-
- private:
-  double x_{};
-  double y_{};
-  double z_{};
-};
-
-
-/// Sums two 3-vectors.
-inline V3 operator+(const V3& a, const V3& b) {
-  return V3(a.x_ + b.x_,
-            a.y_ + b.y_,
-            a.z_ + b.z_);
-}
-
-
-/// A basic 2-vector.
-class V2 {
- public:
-  V2(double x, double y) : x_(x), y_(y) {}
-
-  /// Returns the L_2 norm (e.g., magnitude).
-  double norm() const { return std::sqrt((x_ * x_) + (y_ * y_)); }
-
-  double x() const { return x_; }
-  double y() const { return y_; }
-
- private:
-  double x_{};
-  double y_{};
-};
-
-
-/// An R^3 rotation parameterized by yaw, pitch, roll.
+/// An R^3 rotation parameterized by roll, pitch, yaw.
 ///
 /// This effects a compound rotation around space-fixed x-y-z axes:
 ///
 ///   Rot3(yaw,pitch,roll) * V = RotZ(yaw) * RotY(pitch) * RotX(roll) * V
 class Rot3 {
  public:
-  Rot3(double yaw, double pitch, double roll)
-      : yaw_(yaw), pitch_(pitch), roll_(roll) {}
+  Rot3(double roll, double pitch, double yaw) : rpy_(roll, pitch, yaw) {}
 
   /// Applies the rotation to a 3-vector.
-  V3 apply(const V3& in) const {
-    const double sa = std::sin(roll_);
-    const double ca = std::cos(roll_);
-    const double sb = std::sin(pitch_);
-    const double cb = std::cos(pitch_);
-    const double sg = std::sin(yaw_);
-    const double cg = std::cos(yaw_);
+  V3 apply(const V3& in) const { return math::rpy2rotmat(rpy_) * in; }
 
-    return V3(
-        ((cb * cg) * in.x()) +
-        ((-ca*sg + sa*sb*cg) * in.y()) +
-        ((sa*sg + ca*sb*cg) * in.z()),
-
-        ((cb*sg) * in.x()) +
-        ((ca*cg + sa*sb*sg) * in.y()) +
-        ((-sa*cg + ca*sb*sg) * in.z()),
-
-        ((-sb) * in.x()) +
-        ((sa*cb) * in.y()) +
-        ((ca*cb) * in.z()));
-  }
-
-  double yaw() const { return yaw_; }
-  double pitch() const { return pitch_; }
-  double roll() const { return roll_; }
+  double yaw() const { return rpy_(2); }
+  double pitch() const { return rpy_(1); }
+  double roll() const { return rpy_(0); }
 
  private:
-  double yaw_{};
-  double pitch_{};
-  double roll_{};
+  Eigen::Matrix<double, 3, 1, Eigen::DontAlign> rpy_;
 };
 
 
