@@ -104,13 +104,29 @@ TEST_F(RK3IntegratorTest, BulletProofSetup) {
   const double c1 = kInitialPosition;
   const double c2 = kInitialVelocity / kOmega;
 
-  // Initialize the integrator.
+  // Attempt to initialize the integrator: should throw logic error because
+  // neither maximum step size nor target accuracy has been set.
   EXPECT_THROW(integrator_->Initialize(), std::logic_error);
 
-  // Set the accuracy to something too loose, set the maximum step size and
-  // try again.
-  integrator_->set_target_accuracy(10.0);
+  // Attempt to initialize the integrator: should throw logic error because
+  // maximum step size smaller than minimum step size.
+  integrator_->set_maximum_step_size(kDT);
+  integrator_->set_minimum_step_size(kBigDT);
+  EXPECT_THROW(integrator_->Initialize(), std::logic_error);
+
+  // Set step sizes to cogent values and try to initialize again but now using
+  // bad requested initial step sizes.
+  integrator_->set_minimum_step_size(1e-8);
   integrator_->set_maximum_step_size(kBigDT);
+  integrator_->request_initial_step_size_target(1e-10);
+  EXPECT_THROW(integrator_->Initialize(), std::logic_error);
+  integrator_->request_initial_step_size_target(kBigDT*2.0);
+
+  // Set the accuracy to something too loose, set the maximum step size and
+  // try again. Integrator should now silently adjust the target accuracy to
+  // the in-use accuracy.
+  integrator_->request_initial_step_size_target(kDT);
+  integrator_->set_target_accuracy(10.0);
   integrator_->Initialize();
   EXPECT_LE(integrator_->get_accuracy_in_use(),
             integrator_->get_target_accuracy());
