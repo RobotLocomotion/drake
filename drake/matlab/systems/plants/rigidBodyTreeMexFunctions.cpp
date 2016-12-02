@@ -361,12 +361,12 @@ void dynamicsBiasTermmex(int nlhs, mxArray* plhs[], int nrhs,
 void velocityToPositionDotMappingmex(int nlhs, mxArray* plhs[], int nrhs,
                                      const mxArray* prhs[]) {
   auto func_double = make_function
-      (&RigidBodyTreed::VelocityToPositionDotMapping<double>);
+          (&RigidBodyTreed::GetVelocityToPositionDotMapping <double>);
   auto func_autodiff_fixed_max =
-      make_function(&RigidBodyTreed::VelocityToPositionDotMapping
+          make_function(&RigidBodyTreed::GetVelocityToPositionDotMapping
                         <AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic =
-      make_function(&RigidBodyTreed::VelocityToPositionDotMapping
+          make_function(&RigidBodyTreed::GetVelocityToPositionDotMapping
                         <AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);

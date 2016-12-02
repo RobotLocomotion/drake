@@ -1240,8 +1240,8 @@ RigidBodyTree<T>::transformQDotMappingToVelocityMapping(
 
 template <typename T>
 template <typename Scalar>
-MatrixX<Scalar> RigidBodyTree<T>::VelocityToPositionDotMapping(
-    const KinematicsCache<Scalar>& cache) const {
+MatrixX<Scalar> RigidBodyTree<T>::GetVelocityToPositionDotMapping(
+        const KinematicsCache<Scalar>& cache) const {
   return transformQDotMappingToVelocityMapping(
       cache,
       MatrixX<Scalar>::Identity(get_num_positions(), get_num_positions()));
@@ -2713,16 +2713,16 @@ RigidBodyTree<double>::centerOfMass<AutoDiffXd>(
 template Vector3d RigidBodyTree<double>::centerOfMass<double>(
     KinematicsCache<double>&, set<int, less<int>, allocator<int>> const&) const;
 
-// Explicit template instantiations for VelocityToPositionDotMapping.
+// Explicit template instantiations for GetVelocityToPositionDotMapping.
 template MatrixX<AutoDiffUpTo73d>
-RigidBodyTree<double>::VelocityToPositionDotMapping(
-    const KinematicsCache<AutoDiffUpTo73d>& cache) const;
+RigidBodyTree<double>::GetVelocityToPositionDotMapping(
+        const KinematicsCache<AutoDiffUpTo73d>&) const;
 template MatrixX<AutoDiffXd>
-RigidBodyTree<double>::VelocityToPositionDotMapping(
-    const KinematicsCache<AutoDiffXd>& cache) const;
+RigidBodyTree<double>::GetVelocityToPositionDotMapping(
+        const KinematicsCache<AutoDiffXd>&) const;
 template MatrixX<double>
-RigidBodyTree<double>::VelocityToPositionDotMapping(
-    const KinematicsCache<double>& cache) const;
+RigidBodyTree<double>::GetVelocityToPositionDotMapping(
+        const KinematicsCache<double>&) const;
 
 // Explicit template instantiations for PositionDotToVelocityMapping
 template MatrixX<AutoDiffUpTo73d>
