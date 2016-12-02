@@ -143,14 +143,22 @@ GTEST_TEST(testConstraint, testPositiveSemidefiniteConstraint) {
   auto cnstr = PositiveSemidefiniteConstraint(3);
 
   Eigen::Matrix<double, 9, 1> X1;
-  X1 << 1, 0, 0, 0, 1, 0, 0, 0, 1;
+  // clang-format: off
+  X1 << 1, 0, 0,
+        0, 1, 0,
+        0, 0, 1;
+  // clang-format: on
   Eigen::VectorXd y;
   cnstr.Eval(X1, y);
   EXPECT_TRUE((y.array() >= cnstr.lower_bound().array()).all());
   EXPECT_TRUE((y.array() <= cnstr.upper_bound().array()).all());
 
   Eigen::Matrix<double, 9, 1> X2;
-  X2 << 1, 2, 0, 2, -2, -1, 0, -1, -2;
+  // clang-format: off
+  X2 << 1, 2, 0,
+        2, -2, -1,
+        0, -1, -2;
+  // clang-format: on
   cnstr.Eval(X2, y);
   EXPECT_TRUE((y.array() < cnstr.lower_bound().array()).any() ||
               (y.array() > cnstr.upper_bound().array()).any());

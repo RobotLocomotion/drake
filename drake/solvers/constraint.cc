@@ -10,13 +10,10 @@ void PositiveSemidefiniteConstraint::Eval(
                num_constraints() * num_constraints());
   Eigen::MatrixXd S(num_constraints(), num_constraints());
 
-  int count = 0;
-  for (size_t j = 0; j < num_constraints(); ++j) {
-    for (size_t i = 0; i < num_constraints(); ++i) {
-      S(i, j) = x(count);
-      ++count;
-    }
+  for (int i = 0; i < static_cast<int>(num_constraints()); ++i) {
+    S.col(i) = x.segment(i * num_constraints(), num_constraints());
   }
+
   DRAKE_ASSERT(S.rows() == static_cast<int>(num_constraints()));
 
   // This uses the lower diagonal part of S to compute the eigen values.

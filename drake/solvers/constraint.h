@@ -488,8 +488,53 @@ class PositiveSemidefiniteConstraint : public Constraint {
    * Impose the constraint that a symmetric matrix with size @p rows x @p rows
    * is positive semidefinite.
    * @see MathematicalProgram::AddPositiveSemidefiniteConstraint() for how
-   * to use this constraint on some decision variables.
+   * to use this constraint on some decision variables. We currently use this
+   * constraint as a place holder in MathematicalProgram, to indicate the
+   * positive semidefiniteness of some decision variables.
    * @param rows The number of rows (and columns) of the symmetric matrix.
+   *
+   * Example:
+   * @code{.cc}
+   * // Create a MathematicalProgram object.
+   * auto prog = MathematicalProgram();
+   *
+   * // Add a 2 x 2 symmetric matrix S to optimization program as new decision
+   * // variables.
+   * auto S = prog.AddSymmetricContinuousVariables<2>("S");
+   *
+   * // Impose a positive semidefinite constraint on S.
+   * std::shared_ptr<PositiveSemidefiniteConstraint> psd_constraint =
+   *     prog.AddPositiveSemidefiniteConstraint(S);
+   *
+   * /////////////////////////////////////////////////////////////
+   * // Add more constraints to make the program more interesting,
+   * // but this is not needed.
+   *
+   * // Add the constraint that S(1, 0) = 1.
+   * prog.AddBoundingBoxConstraint(1, 1, S(1, 0));
+   *
+   * // Minimize S(0, 0) + S(1, 1).
+   * prog.AddLinearCost(Eigen::RowVector2d(1, 1), {S.diagonal()});
+   *
+   * /////////////////////////////////////////////////////////////
+   *
+   * // Now solve the program.
+   * prog.Solve();
+   *
+   * // Retrieve the solution of matrix S.
+   * auto S_value = GetSolution(S);
+   *
+   * // Compute the eigen values of the solution, to see if they are
+   * // all non-negative.
+   * Eigen::Vector4d S_stacked;
+   * S_stacked << S_value.col(0), S_value.col(1);
+   *
+   * Eigen::VectorXd S_eigen_values;
+   * psd_constraint->Eval(S_stacked, S_eigen_values);
+   *
+   * std::cout<<"S solution is: " << S << std::endl;
+   * std::cout<<"The eigen value of S is " << S_eigen_values << std::endl;
+   * @endcode
    */
   explicit PositiveSemidefiniteConstraint(int rows)
       : Constraint(rows, Eigen::VectorXd::Zero(rows),
