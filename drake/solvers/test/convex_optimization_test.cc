@@ -1225,15 +1225,19 @@ GTEST_TEST(TestConvexOptimization, TestCommonLyapunov) {
     auto P = prog.AddSymmetricContinuousVariables<3>("P");
     prog.AddPositiveSemidefiniteConstraint(P);
     Eigen::Matrix3d A1;
-    // clang-format: off
-    A1 << -1, -1, -2, 0, -1, -3, 0, 0, -1;
-    // clang-format: on
+    // clang-format off
+    A1 << -1, -1, -2,
+           0, -1, -3,
+           0, 0, -1;
+    // clang-format on
     const auto& Q1 = AddLyapunovCondition(A1, P, &prog);
 
     Eigen::Matrix3d A2;
-    // clang-format: off
-    A2 << -1, -1.2, -1.8, 0, -0.7, -2, 0, 0, -0.4;
-    // clang-format: on
+    // clang-format off
+    A2 << -1, -1.2, -1.8,
+           0, -0.7, -2,
+           0, 0, -0.4;
+    // clang-format on
     const auto& Q2 = AddLyapunovCondition(A2, P, &prog);
 
     RunSolver(&prog, *solver);
@@ -1274,13 +1278,17 @@ GTEST_TEST(TestConvexOptimization, TestEigenvalueProblem) {
     MathematicalProgram prog;
     auto x = prog.AddContinuousVariables<2>("x");
     Eigen::Matrix3d F1;
-    // clang-format: off
-    F1 << 1, 0.2, 0.3, 0.2, 2, -0.1, 0.3, -0.1, 4;
-    // clang-format: on
+    // clang-format off
+    F1 << 1, 0.2, 0.3,
+          0.2, 2, -0.1,
+          0.3, -0.1, 4;
+    // clang-format on
     Eigen::Matrix3d F2;
-    // clang-format: off
-    F2 << 2, 0.4, 0.7, 0.4, -1, 0.1, 0.7, 0.1, 5;
-    // clang-format: on
+    // clang-format off
+    F2 << 2, 0.4, 0.7,
+         0.4, -1, 0.1,
+         0.7, 0.1, 5;
+    // clang-format on
     auto z = prog.AddContinuousVariables<1>("z");
     prog.AddLinearMatrixInequalityConstraint(
         {Eigen::Matrix3d::Zero(), Eigen::Matrix3d::Identity(), -F1, -F2},
