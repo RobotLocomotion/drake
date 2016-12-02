@@ -18,14 +18,6 @@ namespace drake {
 namespace systems {
 namespace {
 
-// TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
-// the input of the Demultiplexer system.
-template<class T>
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
-}
-
 class DemultiplexerTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -52,7 +44,7 @@ TEST_F(DemultiplexerTest, DemultiplexVector) {
   input_->get_mutable_value() << input_vector;
 
   // Hook input of the expected size.
-  context_->SetInputPort(0, MakeInput(std::move(input_)));
+  context_->FixInputPort(0, std::move(input_));
 
   demux_->EvalOutput(*context_, output_.get());
 
@@ -95,7 +87,7 @@ GTEST_TEST(OutputSize, SizeDifferentFromOne) {
   input->get_mutable_value() << input_vector;
 
   // Hook input of the expected size.
-  context->SetInputPort(0, MakeInput(std::move(input)));
+  context->FixInputPort(0, std::move(input));
 
   demux->EvalOutput(*context, output.get());
 

@@ -25,11 +25,6 @@ class ConstantVectorSourceTest : public ::testing::Test {
     input_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
-  static std::unique_ptr<FreestandingInputPort> MakeInput(
-      std::unique_ptr<BasicVector<double>> data) {
-    return make_unique<FreestandingInputPort>(std::move(data));
-  }
-
   const Matrix<double, 2, 1, Eigen::DontAlign> kConstantVectorSource{2.0, 1.5};
   std::unique_ptr<System<double>> source_;
   std::unique_ptr<Context<double>> context_;

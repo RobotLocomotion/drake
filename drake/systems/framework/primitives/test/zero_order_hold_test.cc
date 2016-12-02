@@ -20,20 +20,13 @@ namespace {
 const double kTenHertz = 0.1;
 const int kLength = 3;
 
-template <class T>
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
-  return std::make_unique<FreestandingInputPort>(std::move(data));
-}
-
 class ZeroOrderHoldTest : public ::testing::Test {
  protected:
   void SetUp() override {
     hold_ = std::make_unique<ZeroOrderHold<double>>(kTenHertz, kLength);
     context_ = hold_->CreateDefaultContext();
     output_ = hold_->AllocateOutput(*context_);
-    context_->SetInputPort(
-        0, MakeInput(BasicVector<double>::Make({1.0, 1.0, 3.0})));
+    context_->FixInputPort(0, BasicVector<double>::Make({1.0, 1.0, 3.0}));
   }
 
   std::unique_ptr<System<double>> hold_;
