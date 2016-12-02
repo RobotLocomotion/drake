@@ -375,12 +375,12 @@ void velocityToPositionDotMappingmex(int nlhs, mxArray* plhs[], int nrhs,
 void positionDotToVelocityMappingmex(int nlhs, mxArray* plhs[], int nrhs,
                                      const mxArray* prhs[]) {
   auto func_double = make_function
-      (&RigidBodyTreed::PositionDotToVelocityMapping<double>);
+          (&RigidBodyTreed::GetPositionDotToVelocityMapping <double>);
   auto func_autodiff_fixed_max =
-      make_function(&RigidBodyTreed::PositionDotToVelocityMapping
+          make_function(&RigidBodyTreed::GetPositionDotToVelocityMapping
                         <AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic =
-      make_function(&RigidBodyTreed::PositionDotToVelocityMapping
+          make_function(&RigidBodyTreed::GetPositionDotToVelocityMapping
                         <AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);

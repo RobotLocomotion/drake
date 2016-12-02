@@ -337,8 +337,8 @@ class RigidBodyTree {
           const KinematicsCache<Scalar>& cache) const;
 
   template <typename Scalar>
-  drake::MatrixX<Scalar> PositionDotToVelocityMapping(
-      const KinematicsCache<Scalar>& cache) const;
+  drake::MatrixX<Scalar> GetPositionDotToVelocityMapping(
+          const KinematicsCache<Scalar>& cache) const;
 
   template <typename Scalar>
   drake::TwistMatrix<Scalar> worldMomentumMatrix(
