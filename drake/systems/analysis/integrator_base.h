@@ -1239,7 +1239,7 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
   T actual_dt;
   std::tie(step_size_was_dt, actual_dt) = DoStepOnceAtMost(dt);
 
-  // Update generic statistics. 
+  // Update generic statistics.
   UpdateStatistics(actual_dt);
 
   if (step_size_was_dt) {

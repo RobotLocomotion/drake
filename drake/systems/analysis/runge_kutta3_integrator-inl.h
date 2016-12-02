@@ -5,6 +5,8 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
+#include <utility>
+
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 
 namespace drake {
