@@ -287,6 +287,59 @@ class RigidBodyTree {
       const std::set<int>& model_instance_id_set =
           default_model_instance_id_set) const;
 
+  /**
+   * Converts a matrix B, which transforms generalized velocities (v) to an
+   * output space X, to a matrix A, which transforms the time
+   * derivative of generalized coordinates (qdot) to the same output X. For
+   * example, B could be a Jacobian matrix that transforms generalized
+   * velocities to spatial velocities at the end-effector. Formally, this would
+   * be the matrix of partial derivatives of end-effector configuration computed
+   * with respect to quasi-coordinates (ꝗ). This function would allow
+   * transforming that Jacobian so that all partial derivatives would be
+   * computed with respect to qdot.
+   * @param Av, a `m x nv` sized matrix, where `nv` is the dimension of the
+   *      generalized velocities.
+   * @retval A a `m x nq` sized matrix, where `nq` is the dimension of the
+   *      generalized coordinates.
+   * @sa transformQDotMappingToVelocityMapping()
+   */
+  template <typename Derived>
+  static drake::MatrixX<typename Derived::Scalar>
+  transformVelocityMappingToQDotMapping(
+      const KinematicsCache<typename Derived::Scalar>& cache,
+      const Eigen::MatrixBase<Derived>& Av);
+
+  /**
+   * Converts a matrix A, which transforms the time derivative of generalized
+   * coordinates (qdot) to an output space X, to a matrix B, which transforms
+   * generalized velocities (v) to the same space X. For example, A could be a
+   * Jacobian matrix that transforms qdot to spatial velocities at the end
+   * effector. Formally, this would be the matrix of partial derivatives of
+   * end-effector configuration computed with respect to the generalized
+   * coordinates (q). This function would allow the user to
+   * transform this Jacobian matrix to the more commonly used one: the matrix of
+   * partial derivatives of end-effector configuration computed with respect to
+   * quasi-coordinates (ꝗ).
+   * @param Ap a `m x nq` sized matrix, where `nq` is the dimension of the
+   *      generalized coordinates.
+   * @retval B, a `m x nv` sized matrix, where `nv` is the dimension of the
+   *      generalized velocities.
+   * @sa transformVelocityMappingToQDotMapping()
+   */
+  template <typename Derived>
+  static drake::MatrixX<typename Derived::Scalar>
+  transformQDotMappingToVelocityMapping(
+      const KinematicsCache<typename Derived::Scalar>& cache,
+      const Eigen::MatrixBase<Derived>& Ap);
+
+  template <typename Scalar>
+  static drake::MatrixX<Scalar> GetVelocityToQDotMapping(
+          const KinematicsCache<Scalar>& cache);
+
+  template <typename Scalar>
+  static drake::MatrixX<Scalar> GetQDotToVelocityMapping(
+          const KinematicsCache<Scalar>& cache);
+
   template <typename Scalar>
   drake::TwistMatrix<Scalar> worldMomentumMatrix(
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
