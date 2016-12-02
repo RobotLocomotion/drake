@@ -14,22 +14,21 @@ class BranchPoint;
 class Segment;
 
 
+/// A basic 3-vector.
 class V3 {
  public:
-  V3(double xx, double yy, double zz) : x_(xx), y_(yy), z_(zz) {}
+  V3(double x, double y, double z) : x_(x), y_(y), z_(z) {}
 
-  double norm() const {
-    return std::sqrt((x_ * x_) + (y_ * y_) + (z_ * z_));
-  }
+  /// Returns the L_2 norm (e.g., magnitude).
+  double norm() const { return std::sqrt((x_ * x_) + (y_ * y_) + (z_ * z_)); }
 
+  /// Multiplies by a scalar.
   V3 operator*(const double rhs) const {
     return V3(x_ * rhs, y_ * rhs, z_ * rhs);
   }
 
   double x() const { return x_; }
-
   double y() const { return y_; }
-
   double z() const { return z_; }
 
   friend V3 operator+(const V3& a, const V3& b);
@@ -40,24 +39,24 @@ class V3 {
   double z_{};
 };
 
-inline
-V3 operator+(const V3& a, const V3& b) {
+
+/// Sums two 3-vectors.
+inline V3 operator+(const V3& a, const V3& b) {
   return V3(a.x_ + b.x_,
             a.y_ + b.y_,
             a.z_ + b.z_);
 }
 
 
+/// A basic 2-vector.
 class V2 {
  public:
-  V2(double xx, double yy) : x_(xx), y_(yy) {}
+  V2(double x, double y) : x_(x), y_(y) {}
 
-  double norm() const {
-    return std::sqrt((x_ * x_) + (y_ * y_));
-  }
+  /// Returns the L_2 norm (e.g., magnitude).
+  double norm() const { return std::sqrt((x_ * x_) + (y_ * y_)); }
 
   double x() const { return x_; }
-
   double y() const { return y_; }
 
  private:
@@ -66,10 +65,17 @@ class V2 {
 };
 
 
+/// An R^3 rotation parameterized by yaw, pitch, roll.
+///
+/// This effects a compound rotation around space-fixed x-y-z axes:
+///
+///   Rot3(yaw,pitch,roll) * V = RotZ(yaw) * RotY(pitch) * RotX(roll) * V
 class Rot3 {
  public:
-  Rot3(double yy, double pp, double rr) : yaw_(yy), pitch_(pp), roll_(rr) {}
+  Rot3(double yaw, double pitch, double roll)
+      : yaw_(yaw), pitch_(pitch), roll_(roll) {}
 
+  /// Applies the rotation to a 3-vector.
   V3 apply(const V3& in) const {
     const double sa = std::sin(roll_);
     const double ca = std::cos(roll_);
@@ -93,9 +99,7 @@ class Rot3 {
   }
 
   double yaw() const { return yaw_; }
-
   double pitch() const { return pitch_; }
-
   double roll() const { return roll_; }
 
  private:
@@ -105,51 +109,53 @@ class Rot3 {
 };
 
 
-// parameterized on domain p in [0, 1]
+/// A cubic polynomial, f(p) = a + b*p + c*p^2 + d*p^3.
 class CubicPolynomial {
  public:
+  /// Default constructor, all zero coefficients.
   CubicPolynomial() : CubicPolynomial(0., 0., 0., 0.) {}
 
+  /// Constructs a cubic polynomial given all four coefficients.
   CubicPolynomial(double a, double b, double c, double d)
       : a_(a), b_(b), c_(c), d_(d) {
     const double df = f_p(1.) - f_p(0.);
     s_1_ = std::sqrt(1. + (df * df));
   }
 
+  /// Evaluates the polynomial at @p p.
   double f_p(double p) const {
     return a_ + (b_ * p) + (c_ * p * p) + (d_ * p * p * p);
   }
 
+  /// Evaluates the derivative df/dp at @p p.
   double fdot_p(double p) const {
     return b_ + (2. * c_ * p) + (3. * d_ * p * p);
   }
 
+  /// Evaluates the double-derivative d^2f/dp^2 at @p p.
   double fddot_p(double p) const {
     return (2. * c_) + (6. * d_ * p);
   }
 
-
+  // TODO(maddog@tri.global)  s_p() and p_s() need to be replaced with a
+  //                          properly integrated path-length parameterization.
+  /// Returns the path-length s along the curve (p, f(p)) from p=0 to @p p.
   double s_p(double p) const {
-    // TODO(maddog@tri.global)  Replace with real arc-length parameterization.
     return s_1_ * p;
   }
 
-  // TODO(maddog@tri.global) Until s(p) is a proper arc-length parameterization,
-  //                         we have need to calculate a derivative of the
-  //                         actual linear function involved in our bogus
-  //                         path-length approximation.
-  double fake_gprime(double p) const {
-    // return df;  which is...
-    return f_p(1.) - f_p(0.);
-  }
-
+  /// Returns the inverse of the path-length parameterization s_p(p).
   double p_s(double s) const {
-    // TODO(maddog@tri.global)  Replace with real arc-length parameterization.
     return s / s_1_;
   }
 
-  double f_s(double s) const {
-    return f_p(p_s(s));
+  // TODO(maddog@tri.global) Until s(p) is a properly integrated path-length
+  //                         parameterization, we have need to calculate a
+  //                         derivative of the actual linear function
+  //                         involved in our bogus path-length approximation.
+  double fake_gprime(double p) const {
+    // return df;  which is...
+    return f_p(1.) - f_p(0.);
   }
 
  private:
