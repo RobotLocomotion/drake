@@ -33,6 +33,7 @@ namespace solvers {
  * on vdot and f, but are "parameterized" by q and v.
  */
 class Constraint {
+  // TODO(hongkai.dai): Add copyable and movable check.
   void check(size_t num_constraints) {
     static_cast<void>(num_constraints);
     DRAKE_ASSERT(static_cast<size_t>(lower_bound_.size()) == num_constraints &&
@@ -478,10 +479,6 @@ class LinearComplementarityConstraint : public Constraint {
  * Implement a positive semidefinite constraint on a symmetric matrix S
  *     S is p.s.d
  * namely, all eigen values of S are non-negative.
- * Notice that we forbid Eval() function since we do not want to solve this
- * constraint through nonlinear optimization.
- * This class is only used in conjunction with a symmetric matrix through
- * MathematicalProgram.
  */
 class PositiveSemidefiniteConstraint : public Constraint {
  public:
@@ -491,13 +488,16 @@ class PositiveSemidefiniteConstraint : public Constraint {
                        rows, std::numeric_limits<double>::infinity())) {}
 
   /**
+   * Evaluate the eigen values of the symmetric matrix.
    * @param x The stacked columns of the symmetric matrix.
    */
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override;
 
   /**
-   * @param x The stacked columns of the symmetric matrix.
+   * @param x The stacked columns of the symmetric matrix. This function is not
+   * supported yet, since Eigen's eigen value solver does not accept
+   * AutoDiffScalar.
    */
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override;
@@ -514,7 +514,7 @@ class LinearMatrixInequalityConstraint : public Constraint {
   /**
    * @param F Each symmetric matrix F[i] should be of the same size.
    * @param symmytry_tolerance  The precision to determine if the input matrices
-   * Fi are all symmetric. @see math::IsSymmetric()
+   * Fi are all symmetric. @see math::IsSymmetric().
    */
   LinearMatrixInequalityConstraint(
       const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
@@ -523,9 +523,16 @@ class LinearMatrixInequalityConstraint : public Constraint {
   /* Getter for all given matrices F */
   const std::vector<Eigen::MatrixXd>& F() const { return F_; }
 
+  /**
+   * Evaluate the eigen values of the linear matrix.
+   */
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override;
 
+  /**
+   * This function is not supported, since Eigen's eigen value solver does not
+   * accept AutoDiffScalar type.
+   */
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override;
 

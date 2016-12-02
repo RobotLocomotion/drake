@@ -80,6 +80,9 @@ void to_symmetric_matrix_from_lower_triangular_columns_impl(
 }
 }  // namespace internal
 
+/// Given a column vector containing the stacked columns of the lower triangular
+/// part of a square matrix, returnning a symmetric matrix, whose lower
+/// triangular part is the same as the original matrix.
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
 ToSymmetricMatrixFromLowerTriangularColumns(
@@ -97,6 +100,10 @@ ToSymmetricMatrixFromLowerTriangularColumns(
   return symmetric_matrix;
 }
 
+/// Given a column vector containing the stacked columns of the lower triangular
+/// part of a square matrix, returnning a symmetric matrix, whose lower
+/// triangular part is the same as the original matrix.
+/// @tparam rows The number of rows in the symmetric matrix.
 template <int rows, typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
 ToSymmetricMatrixFromLowerTriangularColumns(
