@@ -13,12 +13,6 @@ namespace drake {
 namespace systems {
 namespace {
 
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::initializer_list<double> values) {
-  return make_unique<FreestandingInputPort>(
-      BasicVector<double>::Make(values));
-}
-
 class MultiplexerTest : public ::testing::Test {
  protected:
   void Reset(std::vector<int> input_sizes) {
@@ -47,9 +41,9 @@ TEST_F(MultiplexerTest, Basic) {
   ASSERT_EQ(6, output_->get_vector_data(0)->size());
 
   // Provide input data.
-  context_->SetInputPort(0, MakeInput({11.0, 22.0}));
-  context_->SetInputPort(1, MakeInput({21.0}));
-  context_->SetInputPort(2, MakeInput({31.0, 32.0, 33.0}));
+  context_->FixInputPort(0, BasicVector<double>::Make({11.0, 22.0}));
+  context_->FixInputPort(1, BasicVector<double>::Make({21.0}));
+  context_->FixInputPort(2, BasicVector<double>::Make({31.0, 32.0, 33.0}));
 
   // Confirm output data.
   mux_->EvalOutput(*context_, output_.get());
