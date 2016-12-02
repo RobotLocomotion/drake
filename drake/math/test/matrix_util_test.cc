@@ -22,13 +22,13 @@ GTEST_TEST(TestMatrixUtil, TestIsSymmetric) {
   C(2, 0) = -1.0;
   EXPECT_FALSE(IsSymmetric(C, 1E-10));
 
-  // Test integer scalar type.
+  // Tests a integer scalar type.
   EXPECT_TRUE(IsSymmetric(Eigen::Matrix2i::Identity(), 0));
   Eigen::Matrix2i D;
   D << 0, 0, 1, 0;
   EXPECT_FALSE(IsSymmetric(D, 0));
 
-  // Test symbolic expression
+  // Tests a symbolic expression.
   Eigen::Matrix<symbolic::Expression, 2, 2> S;
   symbolic::Variable s1{"s1"};
   symbolic::Variable s2{"s2"};
@@ -48,8 +48,9 @@ GTEST_TEST(TestMatrixUtil, TestToSymmetricMatrixFromLowerTriangularColumns) {
   X1 << 1, 2,
         2, 3;
   // clang-format: on
-  EXPECT_TRUE(CompareMatrices(ToSymmetricMatrixFromLowerTriangularColumns(x1),
-                              X1));
+  auto X1_result = ToSymmetricMatrixFromLowerTriangularColumns(x1);
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(decltype(X1_result), Eigen::Matrix2d);
+  EXPECT_TRUE(CompareMatrices(X1_result, X1));
 
   // Tests a dynamic size vector.
   Eigen::VectorXd x2(6);

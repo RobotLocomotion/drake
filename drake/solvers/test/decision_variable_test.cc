@@ -26,6 +26,9 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_FALSE(math::IsSymmetric(x1));
   std::array<std::string, 6> X_name = {{"X", "X", "X", "X", "X", "X"}};
   auto X2 = prog.AddContinuousVariables<2, 3>(X_name);
+  static_assert(decltype(X2)::RowsAtCompileTime == 2 &&
+      decltype(X2)::ColsAtCompileTime == 3,
+      "should be a static matrix of type 2 x 3");
   EXPECT_EQ(prog.num_vars(), 24);
   EXPECT_FALSE(math::IsSymmetric(X2));
   Eigen::Matrix<double, 6, 1> x_value;

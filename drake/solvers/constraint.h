@@ -554,7 +554,7 @@ class LinearMatrixInequalityConstraint : public Constraint {
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override;
 
-  /// Get the number of rows in the matrix inequality constraint. Namely
+  /// Gets the number of rows in the matrix inequality constraint. Namely
   /// Fi are all matrix_rows() x matrix_rows() matrices.
   int matrix_rows() const { return matrix_rows_; }
 
