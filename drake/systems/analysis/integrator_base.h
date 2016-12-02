@@ -256,11 +256,11 @@ class IntegratorBase {
       throw std::logic_error("Integrator maximum step size is less than the "
                              "minimum step size");
     }
-    if (req_initial_step_size > max_step_size_) {
+    if (req_initial_step_size_ > max_step_size_) {
       throw std::logic_error("Requested integrator initial step size is larger "
                              "than the maximum step size.");
     }
-    if (req_initial_step_size < min_step_size_) {
+    if (req_initial_step_size_ < min_step_size_) {
       throw std::logic_error("Requested integrator initial step size is smaller"
                              " than the minimum step size.");
     }
