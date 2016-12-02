@@ -37,7 +37,6 @@ std::unique_ptr<api::LaneEnd> Lane::DoGetDefaultBranch(
 
 
 double Lane::do_length() const {
-  // TODO(maddog@tri.global)  Integrate path-length properly.
   return elevation().s_p(1.0) * p_scale_;
 }
 
@@ -48,6 +47,7 @@ Rot3 Lane::rot3_of_p(const double p) const {
               superelevation().f_p(p) * p_scale_);
 }
 
+
 double Lane::p_from_s(const double s) const {
   return elevation().p_s(s / p_scale_);
 }
@@ -56,9 +56,7 @@ double Lane::p_from_s(const double s) const {
 V3 Lane::W_prime_of_prh(const double p, const double r, const double h,
                         const Rot3& gba) const {
   const V2 G_prime = xy_dot_of_p(p);
-  // TODO(maddog)  Until s(p) is integrated properly.
   const double g_prime = elevation().fdot_p(p);
-  //const double g_prime = elevation().fake_gprime(p);
 
   const Rot3& R = gba;
   const double alpha = R.roll();
@@ -72,12 +70,10 @@ V3 Lane::W_prime_of_prh(const double p, const double r, const double h,
   const double sb = std::sin(beta);
   const double sg = std::sin(gamma);
 
-  // TODO(maddog)  Hmm... is d_alpha scaled correctly?
   const double d_alpha = superelevation().fdot_p(p) * p_scale_;
   const double d_beta = -cb * cb * elevation().fddot_p(p);
   const double d_gamma = heading_dot_of_p(p);
 
-  // TODO(maddog)  NEEDS ALPHA SIGN CORRECTION.
   return
       V3(G_prime.x(),
          G_prime.y(),
@@ -162,16 +158,17 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
   const double r = position.r;
   const double h = position.h;
 
-  // TODO(maddog)  Until s(p) is integrated properly.
-  // const double g_prime = elevation().fdot_p(p);
+  // TODO(maddog@tri.global)  When s(p) is integrated properly, do this:
+  //                          const double g_prime = elevation().fdot_p(p);
   const double g_prime = elevation().fake_gprime(p);
 
   const Rot3 R = rot3_of_p(p);
   const V3 W_prime = W_prime_of_prh(p, r, h, R);
 
-  const double d_s = p_scale_ * std::sqrt(1 + (g_prime * g_prime));
+  const double ds_dsigma =
+      p_scale_ * std::sqrt(1 + (g_prime * g_prime)) / W_prime.norm();
 
-  return api::LanePosition(d_s / W_prime.norm() * velocity.sigma_v,
+  return api::LanePosition(ds_dsigma * velocity.sigma_v,
                            velocity.rho_v,
                            velocity.eta_v);
 }
