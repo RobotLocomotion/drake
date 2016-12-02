@@ -1141,6 +1141,36 @@ GTEST_TEST(TestConvexOptimization, TestFindSpringEquilibrium) {
   }
 }
 
+// Test a trivial semidefinite problem.
+// min S(0, 0) + S(1, 1)
+// s.t S(1, 0) = 1
+//     S is p.s.d
+// The analytical solution is
+// S = [1 1]
+//     [1 1]
+GTEST_TEST(TestConvexOptimization, TestTrivialSDP) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+  GetSemidefiniteProgramSolvers(&solvers);
+  for (const auto& solver : solvers) {
+    auto prog = MathematicalProgram();
+
+    auto S = prog.AddSymmetricContinuousVariables<2>("S");
+
+    prog.AddPositiveSemidefiniteConstraint(S);
+
+    prog.AddBoundingBoxConstraint(1, 1, S(1, 0));
+
+    prog.AddLinearCost(Eigen::RowVector2d(1, 1), {S.diagonal()});
+
+    RunSolver(&prog, *solver);
+
+    auto S_value = GetSolution(S);
+
+    // Choose 1E-8 since that is Mosek's default feasibility tolerance.
+    EXPECT_TRUE(CompareMatrices(S_value, Eigen::Matrix2d::Ones(), 1E-8));
+  }
+}
+
 namespace {
 // Add condition A' * P + P * A + Q = 0
 //               Q is p.s.d
@@ -1180,32 +1210,6 @@ DecisionVariableMatrix<x_dim, x_dim> AddLyapunovCondition(
 }
 }  // namespace
 
-// Test a trivial semidefinite problem.
-// min S(0, 0) + S(1, 1)
-// s.t S(1, 0) = 1
-//     S is p.s.d
-// The analytical solution is
-// S = [1 1]
-//     [1 1]
-GTEST_TEST(TestConvexOptimization, TestTrivialSDP) {
-  auto prog = MathematicalProgram();
-
-  auto S = prog.AddSymmetricContinuousVariables<2>("S");
-
-  prog.AddPositiveSemidefiniteConstraint(S);
-
-  prog.AddBoundingBoxConstraint(1, 1, S(1, 0));
-
-  prog.AddLinearCost(Eigen::RowVector2d(1, 1), {S.diagonal()});
-
-  prog.Solve();
-
-  auto S_value = GetSolution(S);
-
-  // Choose 1E-8 since that is Mosek's default feasibility tolerance.
-  EXPECT_TRUE(CompareMatrices(S_value, Eigen::Matrix2d::Ones(), 1E-8));
-}
-
 // Solve a semidefinite programming problem.
 // Find the common Lyapunov function for linear systems
 // xdot = Ai*x
@@ -1222,17 +1226,13 @@ GTEST_TEST(TestConvexOptimization, TestCommonLyapunov) {
     prog.AddPositiveSemidefiniteConstraint(P);
     Eigen::Matrix3d A1;
     // clang-format: off
-    A1 << -1, -1, -2,
-           0, -1, -3,
-           0, 0, -1;
+    A1 << -1, -1, -2, 0, -1, -3, 0, 0, -1;
     // clang-format: on
     const auto& Q1 = AddLyapunovCondition(A1, P, &prog);
 
     Eigen::Matrix3d A2;
     // clang-format: off
-    A2 << -1, -1.2, -1.8,
-           0, -0.7, -2,
-           0, 0, -0.4;
+    A2 << -1, -1.2, -1.8, 0, -0.7, -2, 0, 0, -0.4;
     // clang-format: on
     const auto& Q2 = AddLyapunovCondition(A2, P, &prog);
 
@@ -1275,15 +1275,11 @@ GTEST_TEST(TestConvexOptimization, TestEigenvalueProblem) {
     auto x = prog.AddContinuousVariables<2>("x");
     Eigen::Matrix3d F1;
     // clang-format: off
-    F1 << 1, 0.2, 0.3,
-         0.2, 2, -0.1,
-         0.3, -0.1, 4;
+    F1 << 1, 0.2, 0.3, 0.2, 2, -0.1, 0.3, -0.1, 4;
     // clang-format: on
     Eigen::Matrix3d F2;
     // clang-format: off
-    F2 << 2, 0.4, 0.7,
-        0.4, -1, 0.1,
-        0.7, 0.1, 5;
+    F2 << 2, 0.4, 0.7, 0.4, -1, 0.1, 0.7, 0.1, 5;
     // clang-format: on
     auto z = prog.AddContinuousVariables<1>("z");
     prog.AddLinearMatrixInequalityConstraint(
