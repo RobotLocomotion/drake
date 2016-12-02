@@ -120,17 +120,6 @@ struct DecisionVariableScalarHash {
 }  // namespace solvers
 }  // namespace drake
 
-namespace std {
-/* Provides std::equal_to<drake::solvers::DecisionVariableScalar>. */
-template <>
-struct equal_to<drake::solvers::DecisionVariableScalar> {
-  bool operator()(const drake::solvers::DecisionVariableScalar& lhs,
-                  const drake::solvers::DecisionVariableScalar& rhs) const {
-    return lhs == rhs;
-  }
-};
-}  // namespace std
-
 namespace Eigen {
 
 /// Eigen scalar type traits for Matrix<DecisionVariableScalar>.
