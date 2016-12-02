@@ -51,6 +51,7 @@ using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
 using systems::Simulator;
 using systems::SystemOutput;
+using systems::SystemPortDescriptor;
 
 // TODO(sam.creasey) Right now this class just outputs a position to
 // control to, which is not going to be sufficient to capture the
@@ -81,8 +82,16 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
     this->DeclareUpdatePeriodSec(0.05);
   }
 
+  const SystemPortDescriptor<double>& get_command_input_port() const {
+    return this->get_input_port(0);
+  }
+
+  const SystemPortDescriptor<double>& get_state_input_port() const {
+    return this->get_input_port(1);
+  }
+
   void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const {
+                  SystemOutput<double>* output) const override {
     const systems::BasicVector<double>* state =
           this->EvalVectorInput(context, 1);
     const double cur_position = state->GetAtIndex(position_index_);
@@ -370,17 +379,13 @@ int DoMain() {
       tree, model->position_index(), model->velocity_index());
 
   builder.Connect(command_sub->get_output_port(0),
-                  command_receiver->get_input_port(0));
-  builder.Connect(command_receiver->get_output_port(0),
-                  model->get_input_port(0));
+                  command_receiver->get_command_input_port());
+  builder.Connect(*command_receiver, *model);
+  builder.Connect(*model, *visualizer);
+  builder.Connect(*model, *status_sender);
   builder.Connect(model->get_output_port(0),
-                  visualizer->get_input_port(0));
-  builder.Connect(model->get_output_port(0),
-                  status_sender->get_input_port(0));
-  builder.Connect(model->get_output_port(0),
-                  command_receiver->get_input_port(1));
-  builder.Connect(status_sender->get_output_port(0),
-                  status_pub->get_input_port(0));
+                  command_receiver->get_state_input_port());
+  builder.Connect(*status_sender, *status_pub);
   auto sys = builder.Build();
 
   Simulator<double> simulator(*sys);
