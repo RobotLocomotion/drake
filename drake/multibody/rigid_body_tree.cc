@@ -20,6 +20,9 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
+// TODO(liang.fok) Remove the following include once this file no longer
+// references `PackageMap`.
+#include "drake/multibody/xml_util.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 
@@ -96,16 +99,6 @@ void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
 std::ostream& operator<<(std::ostream& os, const RigidBodyTree<double>& tree) {
   os << *tree.collision_model_.get();
   return os;
-}
-
-template <typename T>
-RigidBodyTree<T>::RigidBodyTree(
-    const std::string& filename,
-    const FloatingBaseType floating_base_type)
-    : RigidBodyTree() {
-  // Adds the model defined in filename to this tree.
-  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      filename, floating_base_type, this);
 }
 
 template <typename T>
