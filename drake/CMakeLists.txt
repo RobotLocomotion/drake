@@ -255,3 +255,5 @@ endif()
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/textbook/CMakeLists.txt)
   add_subdirectory(doc/textbook)
 endif()
+
+drake_install_cmake_package_config_files()
