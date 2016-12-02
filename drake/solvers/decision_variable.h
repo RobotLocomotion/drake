@@ -121,7 +121,7 @@ struct DecisionVariableScalarHash {
 }  // namespace drake
 
 namespace std {
-/* Provides std::equal_to<drake::symbolic::Expression>. */
+/* Provides std::equal_to<drake::solvers::DecisionVariableScalar>. */
 template <>
 struct equal_to<drake::solvers::DecisionVariableScalar> {
   bool operator()(const drake::solvers::DecisionVariableScalar& lhs,
