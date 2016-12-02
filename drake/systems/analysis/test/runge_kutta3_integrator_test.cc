@@ -108,12 +108,12 @@ TEST_F(RK3IntegratorTest, BulletProofSetup) {
   // neither maximum step size nor target accuracy has been set.
   EXPECT_THROW(integrator_->Initialize(), std::logic_error);
 
-  // Attempt to initialize the integrator: should throw logic error because 
+  // Attempt to initialize the integrator: should throw logic error because
   // maximum step size smaller than minimum step size.
   integrator_->set_maximum_step_size(kDT);
   integrator_->set_minimum_step_size(kBigDT);
   EXPECT_THROW(integrator_->Initialize(), std::logic_error);
- 
+
   // Set step sizes to cogent values and try to initialize again but now using
   // bad requested initial step sizes.
   integrator_->set_minimum_step_size(1e-8);
