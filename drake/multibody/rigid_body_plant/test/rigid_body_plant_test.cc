@@ -30,12 +30,6 @@ namespace rigid_body_plant {
 namespace test {
 namespace {
 
-template <class T>
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
-}
-
 // Tests the ability to load an instance of a URDF model into a RigidBodyPlant.
 GTEST_TEST(RigidBodyPlantTest, TestLoadUrdf) {
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
@@ -233,8 +227,8 @@ TEST_F(KukaArmTest, SetZeroConfiguration) {
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
-  context_->SetInputPort(0, MakeInput(make_unique<BasicVector<double>>(
-                                kuka_plant_->get_num_actuators())));
+  context_->FixInputPort(0, make_unique<BasicVector<double>>(
+                                kuka_plant_->get_num_actuators()));
 
   kuka_plant_->SetZeroConfiguration(context_.get());
 
@@ -269,8 +263,8 @@ TEST_F(KukaArmTest, EvalOutput) {
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
-  context_->SetInputPort(0, MakeInput(make_unique<BasicVector<double>>(
-                                kuka_plant_->get_num_actuators())));
+  context_->FixInputPort(0, make_unique<BasicVector<double>>(
+                                kuka_plant_->get_num_actuators()));
 
   // Zeroes the state.
   kuka_plant_->SetZeroConfiguration(context_.get());
@@ -392,7 +386,7 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
   input << applied_force;
   auto input_vector = std::make_unique<BasicVector<double>>(1);
   input_vector->set_value(input);
-  context->SetInputPort(0, MakeInput(move(input_vector)));
+  context->FixInputPort(0, move(input_vector));
 
   // Obtain the time derivatives; test that speed is zero, return acceleration.
   auto derivatives = plant.AllocateTimeDerivatives();

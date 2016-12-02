@@ -18,11 +18,6 @@ namespace drake {
 namespace systems {
 namespace {
 
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<double>> data) {
-  return std::make_unique<FreestandingInputPort>(std::move(data));
-}
-
 /// ExampleDiagram has the following structure:
 /// adder0_: (input0_ + input1_) -> A
 /// adder1_: (A + input2_)       -> B, output 0
@@ -147,9 +142,9 @@ class DiagramTest : public ::testing::Test {
   }
 
   void AttachInputs() {
-    context_->SetInputPort(0, MakeInput(std::move(input0_)));
-    context_->SetInputPort(1, MakeInput(std::move(input1_)));
-    context_->SetInputPort(2, MakeInput(std::move(input2_)));
+    context_->FixInputPort(0, std::move(input0_));
+    context_->FixInputPort(1, std::move(input1_));
+    context_->FixInputPort(2, std::move(input2_));
   }
 
   Adder<double>* adder0() { return diagram_->adder0(); }
@@ -304,9 +299,9 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
 // Tests that the same diagram can be evaluated into the same output with
 // different contexts interchangeably.
 TEST_F(DiagramTest, Clone) {
-  context_->SetInputPort(0, MakeInput(std::move(input0_)));
-  context_->SetInputPort(1, MakeInput(std::move(input1_)));
-  context_->SetInputPort(2, MakeInput(std::move(input2_)));
+  context_->FixInputPort(0, std::move(input0_));
+  context_->FixInputPort(1, std::move(input1_));
+  context_->FixInputPort(2, std::move(input2_));
 
   // Compute the output with the default inputs and sanity-check it.
   diagram_->EvalOutput(*context_, output_.get());
@@ -317,7 +312,7 @@ TEST_F(DiagramTest, Clone) {
 
   auto next_input_0 = std::make_unique<BasicVector<double>>(kSize);
   next_input_0->get_mutable_value() << 3, 6, 9;
-  clone->SetInputPort(0, MakeInput(std::move(next_input_0)));
+  clone->FixInputPort(0, std::move(next_input_0));
 
   // Recompute the output and check the values.
   diagram_->EvalOutput(*clone, output_.get());
@@ -380,9 +375,9 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     input1_ = BasicVector<double>::Make({64});
     input2_ = BasicVector<double>::Make({512});
 
-    context_->SetInputPort(0, MakeInput(std::move(input0_)));
-    context_->SetInputPort(1, MakeInput(std::move(input1_)));
-    context_->SetInputPort(2, MakeInput(std::move(input2_)));
+    context_->FixInputPort(0, std::move(input0_));
+    context_->FixInputPort(1, std::move(input1_));
+    context_->FixInputPort(2, std::move(input2_));
 
     // Initialize the integrator states.
     Context<double>* d0_context =
@@ -471,7 +466,7 @@ GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
 
   auto vec = std::make_unique<BasicVector<double>>(1 /* size */);
   vec->get_mutable_value() << 12.0;
-  context->SetInputPort(0, MakeInput(std::move(vec)));
+  context->FixInputPort(0, std::move(vec));
 
   plus_seven.EvalOutput(*context, output.get());
 

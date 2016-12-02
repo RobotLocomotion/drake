@@ -23,14 +23,6 @@ namespace drake {
 namespace systems {
 namespace {
 
-// TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
-// the input of the Gain system.
-template <class T>
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
-}
-
 // Tests the ability to take derivatives of the output with respect to some
 // (not all) of the inputs.
 // In this unit test derivatives are taken with respect to the first and third
@@ -64,7 +56,7 @@ GTEST_TEST(GainScalarTypeTest, AutoDiff) {
 
   input->get_mutable_value() << input_vector;
 
-  context->SetInputPort(0, MakeInput(std::move(input)));
+  context->FixInputPort(0, std::move(input));
 
   gain->EvalOutput(*context, output.get());
 
@@ -120,7 +112,7 @@ TEST_F(SymbolicGainTest, VectorThroughGainSystem) {
   input0_->get_mutable_value() << input_vector;
 
   // Hook input of the expected size.
-  context_->SetInputPort(0, MakeInput(move(input0_)));
+  context_->FixInputPort(0, move(input0_));
   gain_->EvalOutput(*context_, output_.get());
 
   // Checks that the number of output ports in the Gain system and the
