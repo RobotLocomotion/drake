@@ -14,9 +14,22 @@ namespace drake {
 namespace maliput {
 namespace monolane {
 
+GTEST_TEST(MonolaneLanesTest, Rot3) {
+  Rot3 yaw90 {M_PI / 2., 0., 0.};
+  EXPECT_NEAR(yaw90.apply({1., 0., 0.}).x(), 0., 1e-6);
+  EXPECT_NEAR(yaw90.apply({1., 0., 0.}).y(), 1., 1e-6);
+  EXPECT_NEAR(yaw90.apply({1., 0., 0.}).z(), 0., 1e-6);
+
+  EXPECT_NEAR(yaw90.apply({0., 1., 0.}).x(), -1., 1e-6);
+  EXPECT_NEAR(yaw90.apply({0., 1., 0.}).y(),  0., 1e-6);
+  EXPECT_NEAR(yaw90.apply({0., 1., 0.}).z(),  0., 1e-6);
+}
+
+
 const double kLinearTolerance = 1e-2;
 const double kAngularTolerance = 1e-2;
 const double kVeryExact = 1e-7;
+
 
 GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
   CubicPolynomial zp {0., 0., 0., 0.};
