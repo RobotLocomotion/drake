@@ -54,6 +54,12 @@ const KinematicsCacheElement<T>& KinematicsCache<T>::getElement(
 }
 
 template <typename T>
+const std::vector<RigidBody<double> const*>&
+KinematicsCache<T>::get_bodies() const {
+    return bodies;
+}
+
+template <typename T>
 template <typename Derived>
 void KinematicsCache<T>::initialize(const Eigen::MatrixBase<Derived>& q_in) {
   static_assert(Derived::ColsAtCompileTime == 1, "q must be a vector");

@@ -103,6 +103,21 @@ class KinematicsCache {
   const KinematicsCacheElement<T>& getElement(
       const RigidBody<double>& body) const;
 
+  // TODO(amcastro-tri): This accessor was added to allow
+  // RigidBodyTree::transformVelocityMappingToQDotMapping() and
+  // RigidBodyTree::transformQDotMappingToVelocityMapping() to be static
+  // methods. That is a requirement from velocityToPositionDotMappingmex()
+  // and positionDotToVelocityMappingmex() in rigidBodyTreeMexFunctions which
+  // define a Matlab API not passing the "this" pointer to the RigidBodyTree
+  // model.
+  // This problem will be solved when KinematicsCache works with RigidBody
+  // id's instead of actual RigidBody pointers as handlers to KinematicsCache
+  // entries.
+  // Another solution would be to change the Matlab API to pass "this"
+  // pointer to the RigidBodyTree as it does with any other RigidBodyTree
+  // method.
+  const std::vector<RigidBody<double> const*>& get_bodies() const;
+
   template <typename Derived>
   void initialize(const Eigen::MatrixBase<Derived>& q_in);
 

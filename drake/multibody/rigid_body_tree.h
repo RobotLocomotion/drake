@@ -304,10 +304,10 @@ class RigidBodyTree {
    * @sa transformQDotMappingToVelocityMapping()
    */
   template <typename Derived>
-  drake::MatrixX<typename Derived::Scalar>
+  static drake::MatrixX<typename Derived::Scalar>
   transformVelocityMappingToQDotMapping(
       const KinematicsCache<typename Derived::Scalar>& cache,
-      const Eigen::MatrixBase<Derived>& Av) const;
+      const Eigen::MatrixBase<Derived>& Av);
 
   /**
    * Converts a matrix A, which transforms the time derivative of generalized
@@ -327,18 +327,18 @@ class RigidBodyTree {
    * @sa transformVelocityMappingToQDotMapping()
    */
   template <typename Derived>
-  drake::MatrixX<typename Derived::Scalar>
+  static drake::MatrixX<typename Derived::Scalar>
   transformQDotMappingToVelocityMapping(
       const KinematicsCache<typename Derived::Scalar>& cache,
-      const Eigen::MatrixBase<Derived>& Ap) const;
+      const Eigen::MatrixBase<Derived>& Ap);
 
   template <typename Scalar>
-  drake::MatrixX<Scalar> GetVelocityToPositionDotMapping(
-          const KinematicsCache<Scalar>& cache) const;
+  static drake::MatrixX<Scalar> GetVelocityToPositionDotMapping(
+          const KinematicsCache<Scalar>& cache);
 
   template <typename Scalar>
-  drake::MatrixX<Scalar> GetPositionDotToVelocityMapping(
-          const KinematicsCache<Scalar>& cache) const;
+  static drake::MatrixX<Scalar> GetPositionDotToVelocityMapping(
+          const KinematicsCache<Scalar>& cache);
 
   template <typename Scalar>
   drake::TwistMatrix<Scalar> worldMomentumMatrix(
