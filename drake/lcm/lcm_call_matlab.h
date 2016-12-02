@@ -58,8 +58,8 @@ void ToLcmMatlabArray(const std::string& str,
 
 // Helper methods for variadic template call in CallMatlab.
 namespace internal {
-void AssembleLcmCallMatlabMsg(drake::lcmt_call_matlab* msg,
-                              int* index) {
+inline void AssembleLcmCallMatlabMsg(drake::lcmt_call_matlab* msg,
+                                     int* index) {
   // Intentionally left blank.  Base case for template recursion.
 }
 
