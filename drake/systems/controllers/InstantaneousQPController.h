@@ -7,6 +7,8 @@
 #include "drake/common/eigen_stl_types.h"
 #include "drake/solvers/gurobi_qp.h"
 #include "drake/lcmt_qp_controller_input.hpp"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_urdf.h"
 
 #define INSTQP_USE_FASTQP 1
 #define INSTQP_GUROBI_OUTPUTFLAG 0
@@ -42,11 +44,11 @@ class InstantaneousQPController {
 
   InstantaneousQPController(const std::string& urdf_filename,
                             const std::string& control_config_filename)
-      : robot(
-          std::unique_ptr<RigidBodyTree<double>>(
-            new RigidBodyTree<double>(urdf_filename))),
+      : robot(std::make_unique<RigidBodyTree<double>>()),
         use_fast_qp(INSTQP_USE_FASTQP),
         cache(this->robot->bodies) {
+    drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+        urdf_filename, drake::multibody::joints::kRollPitchYaw, robot.get());
     loadConfigurationFromYAML(control_config_filename);
     initialize();
   }
