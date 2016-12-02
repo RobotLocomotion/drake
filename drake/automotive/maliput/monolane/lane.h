@@ -17,8 +17,39 @@ class Segment;
 /// Base class for the monolane implementation of Lane.
 class Lane : public api::Lane {
  public:
+  /// Construct a base Lane.
+  ///
   /// @param id the ID
   /// @param segment the Segment to which this Lane will belong
+  /// @param lane_bounds nominal bounds of the lane, uniform along the entire
+  ///        reference path
+  /// @param driveable_bounds driveable bounds of the lane, uniform along the
+  ///        entire reference path
+  /// @param p_scale isotropic scale factor for elevation and superelevation
+  /// @param elevation elevation function (see below)
+  /// @param superelevation superelevation function (see below)
+  ///
+  /// @p elevation and @p superelevation are cubic-polynomial functions which
+  /// define the elevation and superelevation as a function of position along
+  /// the planar reference curve defined by the concrete subclass.
+  /// (@p elevation specifies the z-component of the surface at r=0, h=0 ---
+  /// @p superelevation contributes at r!=0.)  These two functions must be
+  /// isotropically scaled to operate over the domain p in [0, 1], where p is
+  /// linear in the path-length of the planar reference curve, p=0 corresponds
+  /// to the start and p=1 to the end.  @p p_scale is the scale factor.
+  /// In other words...
+  ///
+  /// Given
+  ///  * a reference curve R(s) parameterized by path-length s in the
+  ///    domain [0., s_max], where s_max is the total path-length of R;
+  ///  * the true elevation function E_true(s), parameterized by the
+  ///    path-length s of R;
+  ///  * the true superelevation function S_true(s), parameterized by the
+  ///    path-length s of R;
+  /// then:
+  ///  * @p p_scale is s_max
+  ///  * @p elevation is  E_scaled = (1 / p_scale) * E_true(p_scale * p)
+  ///  * @p superelevation is  S_scaled = (1 / p_scale) * S_true(p_scale * p)
   Lane(const api::LaneId& id, Segment* segment,
        const api::RBounds& lane_bounds,
        const api::RBounds& driveable_bounds,
@@ -32,14 +63,8 @@ class Lane : public api::Lane {
         elevation_(elevation),
         superelevation_(superelevation) {}
 
-  // TODO(maddog) Explain clearly how/why the elevation and superelevation
-  //              functions need to be isotropically scaled by the xy-projected
-  //              arc-length of the xy-primitive curve.
-
-
-  // TODO(maddog) Allow lane centerline to be offset from "segment ref line",
-  //              so that superelevation can have a center-of-rotation which
-  //              is different from r=0.
+  // TODO(maddog@tri.global)  Allow superelevation to have a center-of-rotation
+  ///                         which is different from r=0.
 
   const CubicPolynomial& elevation() const { return elevation_; }
 
@@ -117,7 +142,6 @@ class Lane : public api::Lane {
   const api::RBounds lane_bounds_;
   const api::RBounds driveable_bounds_;
   const double p_scale_{};
-  // Common elevation and superelevation structures.
   const CubicPolynomial elevation_;
   const CubicPolynomial superelevation_;
 };

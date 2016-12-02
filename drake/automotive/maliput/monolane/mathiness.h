@@ -106,8 +106,6 @@ class CubicPolynomial {
   CubicPolynomial(double a, double b, double c, double d)
       : a_(a), b_(b), c_(c), d_(d) {
     const double df = f_p(1.) - f_p(0.);
-    // TODO(maddog)  For now, completely bogus linear distance
-    //               from (0,0) to (1,df):
     s_1_ = std::sqrt(1. + (df * df));
   }
 
@@ -124,17 +122,22 @@ class CubicPolynomial {
   }
 
 
-  // TODO(maddog)  Perform a proper arc-length parameterization!
   double s_p(double p) const {
+    // TODO(maddog@tri.global)  Replace with real arc-length parameterization.
     return s_1_ * p;
   }
 
+  // TODO(maddog@tri.global) Until s(p) is a proper arc-length parameterization,
+  //                         we have need to calculate a derivative of the
+  //                         actual linear function involved in our bogus
+  //                         path-length approximation.
   double fake_gprime(double p) const {
     // return df;  which is...
     return f_p(1.) - f_p(0.);
   }
 
   double p_s(double s) const {
+    // TODO(maddog@tri.global)  Replace with real arc-length parameterization.
     return s / s_1_;
   }
 
