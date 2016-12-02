@@ -437,10 +437,10 @@ PiecewisePolynomial<CoefficientType>::Pchip(
   Eigen::Matrix<CoefficientType, 4, 1> coeffs;
 
   // Computes the end slopes.
-  CoefficientMatrix Ydot0 = ComputePchipEndSlope(T[1] - T[0], T[2] - T[1],
+  CoefficientMatrix Ydot_start = ComputePchipEndSlope(T[1] - T[0], T[2] - T[1],
                                                  (Y[1] - Y[0]) / (T[1] - T[0]),
                                                  (Y[2] - Y[1]) / (T[2] - T[1]));
-  CoefficientMatrix Ydot1 =
+  CoefficientMatrix Ydot_end =
       ComputePchipEndSlope(T[N - 1] - T[N - 2], T[N - 2] - T[N - 3],
                            (Y[N - 1] - Y[N - 2]) / (T[N - 1] - T[N - 2]),
                            (Y[N - 2] - Y[N - 3]) / (T[N - 2] - T[N - 3]));
@@ -466,8 +466,8 @@ PiecewisePolynomial<CoefficientType>::Pchip(
       }
 
       // Fixes end point slopes.
-      Ydot[0](j, k) = Ydot0(j, k);
-      Ydot[N - 1](j, k) = Ydot1(j, k);
+      Ydot[0](j, k) = Ydot_start(j, k);
+      Ydot[N - 1](j, k) = Ydot_end(j, k);
 
       // Computes coeffs given Y and Ydot at the end points for each segment.
       for (int t = 0; t < N - 1; ++t) {
@@ -520,7 +520,7 @@ PiecewisePolynomial<CoefficientType>::Cubic(
 
 template <typename CoefficientType>
 int PiecewisePolynomial<CoefficientType>::
-    SetupCubicSplineInterieorCoeffsLinearSystem(
+    SetupCubicSplineInteriorCoeffsLinearSystem(
         const std::vector<double>& T, const std::vector<CoefficientMatrix>& Y,
         int row, int col,
         Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>* A,
@@ -582,19 +582,19 @@ template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::Cubic(
     const std::vector<double>& T, const std::vector<CoefficientMatrix>& Y,
-    const CoefficientMatrix& Ydot0, const CoefficientMatrix& Ydot1) {
+    const CoefficientMatrix& Ydot_start, const CoefficientMatrix& Ydot_end) {
   CheckSplineGenerationInputValidityOrThrow(T, Y, 3);
 
   int N = static_cast<int>(T.size());
   int rows = Y.front().rows();
   int cols = Y.front().cols();
 
-  if (Ydot0.rows() != rows || Ydot0.cols() != cols) {
-    throw std::runtime_error("Ydot0 and Y dimension mismatch");
+  if (Ydot_start.rows() != rows || Ydot_start.cols() != cols) {
+    throw std::runtime_error("Ydot_start and Y dimension mismatch");
   }
 
-  if (Ydot1.rows() != rows || Ydot1.cols() != cols) {
-    throw std::runtime_error("Ydot1 and Y dimension mismatch");
+  if (Ydot_end.rows() != rows || Ydot_end.cols() != cols) {
+    throw std::runtime_error("Ydot_end and Y dimension mismatch");
   }
 
   std::vector<PolynomialMatrix> polynomials(N - 1);
@@ -614,17 +614,17 @@ PiecewisePolynomial<CoefficientType>::Cubic(
   for (int j = 0; j < rows; ++j) {
     for (int k = 0; k < cols; ++k) {
       int row_idx =
-          SetupCubicSplineInterieorCoeffsLinearSystem(T, Y, j, k, &A, &b);
+          SetupCubicSplineInteriorCoeffsLinearSystem(T, Y, j, k, &A, &b);
 
       // Endpoints' velocity matches the given ones.
       A(row_idx, 1) = 1;
-      b(row_idx++) = Ydot0(j, k);
+      b(row_idx++) = Ydot_start(j, k);
 
       A(row_idx, 4 * (N - 2) + 1) = 1;
       A(row_idx, 4 * (N - 2) + 2) = 2 * (T[N - 1] - T[N - 2]);
       A(row_idx, 4 * (N - 2) + 3) =
           3 * (T[N - 1] - T[N - 2]) * (T[N - 1] - T[N - 2]);
-      b(row_idx++) = Ydot1(j, k);
+      b(row_idx++) = Ydot_end(j, k);
 
       // TODO(siyuan.feng): Should switch to a sparse solver.
       solution = A.colPivHouseholderQr().solve(b);
@@ -666,7 +666,7 @@ PiecewisePolynomial<CoefficientType>::Cubic(
   for (int j = 0; j < rows; ++j) {
     for (int k = 0; k < cols; ++k) {
       int row_idx =
-          SetupCubicSplineInterieorCoeffsLinearSystem(T, Y, j, k, &A, &b);
+          SetupCubicSplineInteriorCoeffsLinearSystem(T, Y, j, k, &A, &b);
 
       if (N > 3) {
         // Ydddot(T[1]) is continuous.

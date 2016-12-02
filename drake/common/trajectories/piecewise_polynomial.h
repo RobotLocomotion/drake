@@ -56,11 +56,32 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
       double dt, CoefficientType y0, CoefficientType y1,
       CoefficientType yd0, CoefficientType yd1);
 
-  // Setups the linear constraints for solving coeffs for cubic splines:
-  // interior segments have continuous value, first and second derivatives,
-  // and end points' values match the given ones.
-  // There needs two more constraints to fully solve for the coeffs.
-  static int SetupCubicSplineInterieorCoeffsLinearSystem(
+  // For a cubic spline, there are 4 unknowns for each segment Pi, namely
+  // the coefficients for Pi = a0 + a1 * t + a2 * t^2 + a3 * t^3.
+  // Let N be the size of T and Y, there are N-1 segments, and thus 4*(N-1)
+  // unknowns to fully specified a cubic spline for the given data.
+  //
+  // If we are also given N Ydot (velocity), each Pi will be fully specified
+  // by (Y[i], Ydot[i]) and (Y[i+1], Ydot[i+1]).
+  // When Ydot are not specified, we make the design choice to enforce
+  // continuity up to the second order (Yddot) for the interior points, i.e.
+  // Pi'(duration_i) = Pi+1'(0), and Pi''(duration_i) = Pi+1''(0), where
+  // ' means time derivative, and duration_i = T[i+1] - T[i] is the duration
+  // for the ith segment.
+  //
+  // At this point, we have 2 * (N - 1) position constraints:
+  // Pi(0) = Y[i], for i in [0, N - 2]
+  // Pi(duration_i) = Y[i+1], for i in [0, N - 2]
+  // N - 2 for velocity constraints for the interior points:
+  // Pi'(duration_i) = Pi+1'(0), for i in [0, N - 3]
+  // N - 2 for acceleration constraints for the interior points:
+  // Pi''(duration_i) = Pi+1''(0), for i in [0, N - 3]
+  //
+  // These sum up to 4 * (N - 1) - 2. This function Sets up the above
+  // constraints. There are still 2 constraints missing, which can be resolved
+  // by various end point conditions (velocity at the end points /
+  // "not-a-knot" / etc). These will be specified by the callers.
+  static int SetupCubicSplineInteriorCoeffsLinearSystem(
       const std::vector<double>& T,
       const std::vector<CoefficientMatrix>& Y,
       int row, int col,
@@ -107,7 +128,7 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
                       std::vector<double> const& segment_times);
 
   /**
-   * Constructs a const PiecewisePolynomial.
+   * Constructs a piecewise constant PiecewisePolynomial.
    *
    * @throws std::runtime_error if
    *    \p T and \p Y have different length,
@@ -120,7 +141,7 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
       const std::vector<CoefficientMatrix>& Y);
 
   /**
-   * Constructs a linear PiecewisePolynomial.
+   * Constructs a piecewise linear PiecewisePolynomial.
    *
    * @throws std::runtime_error if
    *    \p T and \p Y have different length,
@@ -157,20 +178,20 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    * Constructs a third order PiecewisePolynomial from \p T and \p Y.
    * The PiecewisePolynomial is constructed such that the interior segments
    * have the same value, first and second derivatives at \p T.
-   * \p Ydot0 and \p Ydot1 are used for the first and last first derivatives.
+   * \p Ydot_start and \p Ydot_end are used for the first and last first derivatives.
    *
    * @throws std::runtime_error if
    *    \p T and \p Y have different length,
    *    \p T is not strictly increasing,
    *    \p Y have inconsistent dimensions,
-   *    \p Ydot0 or Ydot1 and Y have inconsistent dimensions,
+   *    \p Ydot_start or Ydot_end and Y have inconsistent dimensions,
    *    \p T has length smaller than 3.
    */
   static PiecewisePolynomial<CoefficientType> Cubic(
       const std::vector<double>& T,
       const std::vector<CoefficientMatrix>& Y,
-      const CoefficientMatrix& Ydot0,
-      const CoefficientMatrix& Ydot1);
+      const CoefficientMatrix& Ydot_start,
+      const CoefficientMatrix& Ydot_end);
 
   /**
    * Constructs a third order PiecewisePolynomial from \p T, \p Y and \p Ydot.
