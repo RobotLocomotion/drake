@@ -319,7 +319,8 @@ void MathematicalProgram::AddConstraint(
 std::shared_ptr<PositiveSemidefiniteConstraint>
 MathematicalProgram::AddPositiveSemidefiniteConstraint(
     const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var) {
-  auto constraint = std::make_shared<PositiveSemidefiniteConstraint>(symmetric_matrix_var.rows());
+  auto constraint = std::make_shared<PositiveSemidefiniteConstraint>(
+      symmetric_matrix_var.rows());
   AddConstraint(constraint, symmetric_matrix_var);
   return constraint;
 }

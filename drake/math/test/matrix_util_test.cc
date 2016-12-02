@@ -14,11 +14,8 @@ GTEST_TEST(TestMatrixUtil, TestIsSymmetric) {
   EXPECT_TRUE(IsSymmetric(A.topLeftCorner<2, 2>(), 0.0));
   EXPECT_TRUE(IsSymmetric(Eigen::Matrix4d::Identity(), 0.0));
   Eigen::Matrix3d B;
-  B << 1, 2, 3,
-       2, 4, 5,
-       3, 5, 6;
-  EXPECT_TRUE(IsSymmetric(B,
-                          std::numeric_limits<double>::epsilon()));
+  B << 1, 2, 3, 2, 4, 5, 3, 5, 6;
+  EXPECT_TRUE(IsSymmetric(B, std::numeric_limits<double>::epsilon()));
   EXPECT_FALSE(IsSymmetric(Eigen::Matrix<double, 2, 3>::Zero(), 0.1));
   Eigen::Matrix3d C = B;
   C(0, 2) = 1.0;
@@ -39,8 +36,7 @@ GTEST_TEST(TestMatrixUtil, TestIsSymmetric) {
   symbolic::Expression S00{s1};
   symbolic::Expression S01{s2};
   symbolic::Expression S11{s3};
-  S << S00, S01,
-       S01, S11;
+  S << S00, S01, S01, S11;
   EXPECT_TRUE(IsSymmetric(S));
 }
 
@@ -48,18 +44,19 @@ GTEST_TEST(TestMatrixUtil, TestToSymmetricMatrixFromLowerTriangularColumns) {
   // Tests a static size vector.
   Eigen::Vector3d x1(1, 2, 3);
   Eigen::Matrix2d X1;
-  X1 << 1, 2,
-        2, 3;
-  EXPECT_TRUE(CompareMatrices(ToSymmetricMatrixFromLowerTriangularColumns(x1), X1, std::numeric_limits<double>::epsilon(), MatrixCompareType::absolute));
+  X1 << 1, 2, 2, 3;
+  EXPECT_TRUE(CompareMatrices(ToSymmetricMatrixFromLowerTriangularColumns(x1),
+                              X1, std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::absolute));
 
   // Tests a dynamic size vector.
   Eigen::VectorXd x2(6);
   x2 << 1, 2, 3, 4, 5, 6;
   Eigen::Matrix3d X2;
-  X2 << 1, 2, 3,
-        2, 4, 5,
-        3, 5, 6;
-  EXPECT_TRUE(CompareMatrices(ToSymmetricMatrixFromLowerTriangularColumns(x2), X2, std::numeric_limits<double>::epsilon(), MatrixCompareType::absolute));
+  X2 << 1, 2, 3, 2, 4, 5, 3, 5, 6;
+  EXPECT_TRUE(CompareMatrices(ToSymmetricMatrixFromLowerTriangularColumns(x2),
+                              X2, std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::absolute));
 }
 }  // namespace test
 }  // namespace math

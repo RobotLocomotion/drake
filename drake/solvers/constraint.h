@@ -485,18 +485,19 @@ class LinearComplementarityConstraint : public Constraint {
  */
 class PositiveSemidefiniteConstraint : public Constraint {
  public:
-  PositiveSemidefiniteConstraint(int rows) : Constraint(rows, Eigen::VectorXd::Zero(rows), Eigen::VectorXd::Constant(rows, std::numeric_limits<double>::infinity())) {}
+  explicit PositiveSemidefiniteConstraint(int rows)
+      : Constraint(rows, Eigen::VectorXd::Zero(rows),
+                   Eigen::VectorXd::Constant(
+                       rows, std::numeric_limits<double>::infinity())) {}
 
   /**
-   * @param x The stacked columns of the lower diagonal part of the symmetric
-   * matrix.
+   * @param x The stacked columns of the symmetric matrix.
    */
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override;
 
   /**
-   * @param x The stacked columns of the lower diagonal part of the symmetric
-   * matrix.
+   * @param x The stacked columns of the symmetric matrix.
    */
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override;

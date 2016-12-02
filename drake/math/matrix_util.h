@@ -62,9 +62,11 @@ bool IsSymmetric(const Eigen::MatrixBase<Derived>& matrix,
   return true;
 }
 
-namespace {
+namespace internal {
 template <typename Derived1, typename Derived2>
-void to_symmetric_matrix_from_lower_triangular_columns_impl(int rows, const Eigen::MatrixBase<Derived1>& lower_triangular_columns, Eigen::MatrixBase<Derived2>* symmetric_matrix) {
+void to_symmetric_matrix_from_lower_triangular_columns_impl(
+    int rows, const Eigen::MatrixBase<Derived1>& lower_triangular_columns,
+    Eigen::MatrixBase<Derived2>* symmetric_matrix) {
   int count = 0;
   for (int j = 0; j < rows; ++j) {
     (*symmetric_matrix)(j, j) = lower_triangular_columns(count);
@@ -75,32 +77,38 @@ void to_symmetric_matrix_from_lower_triangular_columns_impl(int rows, const Eige
       ++count;
     }
   }
-};
-}  // namespace
+}
+}  // namespace internal
 
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
-ToSymmetricMatrixFromLowerTriangularColumns(const Eigen::MatrixBase<Derived>& lower_triangular_columns) {
+ToSymmetricMatrixFromLowerTriangularColumns(
+    const Eigen::MatrixBase<Derived>& lower_triangular_columns) {
   int rows = (-1 + sqrt(1 + 8 * lower_triangular_columns.rows())) / 2;
 
   DRAKE_ASSERT(rows * (rows + 1) / 2 == lower_triangular_columns.rows());
   DRAKE_ASSERT(lower_triangular_columns.cols() == 1);
 
-  Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic> symmetric_matrix(rows, rows);
+  Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
+      symmetric_matrix(rows, rows);
 
-  to_symmetric_matrix_from_lower_triangular_columns_impl(rows, lower_triangular_columns, &symmetric_matrix);
+  internal::to_symmetric_matrix_from_lower_triangular_columns_impl(
+      rows, lower_triangular_columns, &symmetric_matrix);
   return symmetric_matrix;
-};
+}
 
 template <int rows, typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
-ToSymmetricMatrixFromLowerTriangularColumns(const Eigen::MatrixBase<Derived>& lower_triangular_columns) {
+ToSymmetricMatrixFromLowerTriangularColumns(
+    const Eigen::MatrixBase<Derived>& lower_triangular_columns) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, rows * (rows + 1) / 2);
 
-  Eigen::Matrix<typename Derived::Scalar, rows, rows> symmetric_matrix(rows, rows);
+  Eigen::Matrix<typename Derived::Scalar, rows, rows> symmetric_matrix(rows,
+                                                                       rows);
 
-  to_symmetric_matrix_from_lower_triangular_columns_impl(rows, lower_triangular_columns, &symmetric_matrix);
+  internal::to_symmetric_matrix_from_lower_triangular_columns_impl(
+      rows, lower_triangular_columns, &symmetric_matrix);
   return symmetric_matrix;
-};
+}
 }  // namespace math
 }  // namespace drake
