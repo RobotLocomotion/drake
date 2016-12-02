@@ -244,14 +244,31 @@ class IntegratorBase {
    * will be thrown). If Initialize() is not called, an exception will be
    * thrown when attempting to call StepOnceAtMost(). To reinitialize the
    * integrator, Reset() should be called followed by Initialize().
-   * @throws std::logic_error If the context has not been set or one of the
-   *         weighting matrix coefficients is set to a negative value (this
+   * @throws std::logic_error If the context has not been set or a user-set
+   *         parameter has been set illogically (i.e., one of the
+   *         weighting matrix coefficients is set to a negative value- this
    *         check is only performed for integrators that support error
-   *         estimation).
+   *         estimation; the maximum step size is smaller than the minimum
+   *         step size; the requested initial step size is outside of the
+   *         interval [minimum step size, maximum step size]).
    * @sa Reset()
    */
   void Initialize() {
     if (!context_) throw std::logic_error("Context has not been set.");
+
+    // Verify that user settings are reasonable.
+    if (max_step_size_ < min_step_size_) {
+      throw std::logic_error("Integrator maximum step size is less than the "
+                             "minimum step size");
+    }
+    if (req_initial_step_size_ > max_step_size_) {
+      throw std::logic_error("Requested integrator initial step size is larger "
+                             "than the maximum step size.");
+    }
+    if (req_initial_step_size_ < min_step_size_) {
+      throw std::logic_error("Requested integrator initial step size is smaller"
+                             " than the minimum step size.");
+    }
 
     // TODO(edrumwri): Compute qbar_weight_, z_weight_ automatically.
     // Set error weighting vectors if not already done.
