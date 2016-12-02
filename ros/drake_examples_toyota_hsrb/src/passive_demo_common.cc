@@ -14,7 +14,6 @@ using std::unique_ptr;
 
 namespace drake {
 
-using lcm::DrakeLcm;
 using ros::GetRosParameterOrThrow;
 using systems::Context;
 using systems::Diagram;
@@ -26,7 +25,7 @@ using systems::Simulator;
 namespace examples {
 namespace toyota_hsrb {
 
-std::unique_ptr<Simulator<double>> CreateSimulation(lcm::DrakeLcm* lcm,
+std::unique_ptr<Simulator<double>> CreateSimulation(lcm::DrakeLcmInterface* lcm,
     std::unique_ptr<Diagram<double>>* demo_diagram) {
   std::string urdf_string =
       GetRosParameterOrThrow<std::string>("/robot_description");
@@ -59,14 +58,13 @@ std::unique_ptr<Simulator<double>> CreateSimulation(lcm::DrakeLcm* lcm,
         builder.AddSystem(std::move(input_diagram_ptr));
     DRAKE_DEMAND(input_diagram != nullptr);
 
-    auto ros_tf_publisher = builder.AddSystem<RosTfPublisher<double>>(
+    auto ros_tf_publisher = builder.AddSystem<RosTfPublisher>(
         plant->get_rigid_body_tree());
     builder.Connect(input_diagram->get_output_port(0),
                     ros_tf_publisher->get_input_port(0));
   }
 
   *demo_diagram = builder.Build();
-  lcm->StartReceiveThread();
 
   auto simulator = make_unique<Simulator<double>>(**demo_diagram);
 

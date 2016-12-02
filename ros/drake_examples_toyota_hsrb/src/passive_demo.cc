@@ -14,16 +14,11 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/toyota_hsrb/passive_demo_common.h"
+#include "drake/lcm/drake_lcm.h"
 
-using std::make_unique;
-using std::move;
 using std::unique_ptr;
 
 namespace drake {
-
-using lcm::DrakeLcm;
-using systems::Diagram;
-
 namespace examples {
 namespace toyota_hsrb {
 namespace {
@@ -37,11 +32,12 @@ int exec(int argc, char* argv[]) {
   logging::HandleSpdlogGflags();
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
   lcm::DrakeLcm lcm;
-  std::unique_ptr<Diagram<double>> demo_diagram;
-
-  auto simulator = CreateSimulation(&lcm, &demo_diagram);
+  unique_ptr<systems::Diagram<double>> demo_diagram;
+  unique_ptr<systems::Simulator<double>> simulator =
+      CreateSimulation(&lcm, &demo_diagram);
   DRAKE_DEMAND(simulator != nullptr);
   DRAKE_DEMAND(demo_diagram != nullptr);
+  lcm.StartReceiveThread();
 
   // The amount of time to simulate between checking for ros::ok();
   const double kSimStepIncrement = 0.1;

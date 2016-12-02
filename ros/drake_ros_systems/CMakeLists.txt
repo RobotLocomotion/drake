@@ -9,18 +9,16 @@ find_package(catkin REQUIRED COMPONENTS
     sensor_msgs
     tf)
 
-# find_package(Eigen3 REQUIRED)
+# Include Drake's version of Eigen.
 set(EIGEN3_INCLUDE_DIRS ${CMAKE_INSTALL_PREFIX}/include/eigen3)
 set(EIGEN3_FOUND true)
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  #CATKIN_DEPENDS
-  #DEPENDS
 )
 
-## Specifies additional locations of header files.
+# Specifies additional locations of header files.
 include_directories(
   ${EIGEN3_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}

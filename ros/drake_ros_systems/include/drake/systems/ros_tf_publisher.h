@@ -11,6 +11,8 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
+#include "drake/multibody/rigid_body.h"
+#include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
@@ -20,23 +22,20 @@ namespace systems {
  * Publishes ROS TF messages for visualizing a RigidBodyTree. It is designed to
  * take as input a RigidBodyTree's generalized state, which is typically
  * ouputted by a RigidBodyPlant.
- *
- * @tparam T The vector element type, which must be a valid Eigen scalar.
- *
- * Instantiated templates for the following scalar types @p T are provided:
- * - double
  */
-template <typename T>
-class RosTfPublisher : public LeafSystem<T> {
+class RosTfPublisher : public LeafSystem<double> {
  public:
-  // Specifies the minimum period in seconds between successive transmissions of
-  // of tf transforms. This is to prevent flooding the tf ROS topic.
-  static constexpr double kMinTransmitPeriod_{0.01};
+  /**
+   * Specifies the minimum period in seconds between successive transmissions of
+   * of ROS tf transform messages. This is to prevent flooding the tf ROS topic.
+   */
+  static constexpr double kMinTransmitPeriod{0.01};
 
   /**
-   * Constructs a ROS tf publisher for a given `RigidBodyTree
+   * Constructs a ROS tf publisher that publishes the poses of the bodies in
+   * @p rigid_body_tree.
    */
-  explicit RosTfPublisher(const RigidBodyTree<T>& rigid_body_tree);
+  explicit RosTfPublisher(const RigidBodyTree<double>& rigid_body_tree);
 
   /**
    * Takes the current state of the RigidBodyTree and publishes ROS tf messages
@@ -68,9 +67,17 @@ class RosTfPublisher : public LeafSystem<T> {
   // a boolean value that determines whether this class publishes /tf messages.
   void LoadEnableParameter();
 
+  // Returns the key for obtaining the transform message in transform_messages_
+  // that is dedicated to hold the pose of @p rigid_body.
+  std::string GetKey(const RigidBody<double>& rigid_body) const;
+
+  // Returns the key for obtaining the transform message in transform_messages_
+  // that is dedicated to hold the pose of @p frame.
+  std::string GetKey(const RigidBodyFrame& frame) const;
+
   // The RigidBodyTree containing the bodies for whom transforms are being
   // published.
-  const RigidBodyTree<T>& tree_;
+  const RigidBodyTree<double>& tree_;
 
   // Publishes the transform messages that specify the positions and
   // orientations of every rigid body and frame in the rigid body tree. This is

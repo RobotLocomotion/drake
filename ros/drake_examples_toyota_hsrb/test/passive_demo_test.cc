@@ -2,13 +2,13 @@
 
 #include <gtest/gtest.h>
 #include <memory>
-#include "drake/lcm/drake_lcm.h"
+#include "drake/lcm/drake_mock_lcm.h"
 #include "drake/systems/framework/diagram.h"
 #include "ros/ros.h"
 
 namespace drake {
 
-using lcm::DrakeLcm;
+using lcm::DrakeMockLcm;
 using systems::Diagram;
 using systems::Simulator;
 
@@ -17,12 +17,14 @@ namespace toyota_hsrb {
 namespace {
 
 GTEST_TEST(DrakeExamplesToyotaHsrbTest, TestSim) {
-  lcm::DrakeLcm lcm;
+  lcm::DrakeMockLcm lcm;
   std::unique_ptr<Diagram<double>> demo_diagram;
 
-  auto simulator = CreateSimulation(&lcm, &demo_diagram);
+  std::unique_ptr<systems::Simulator<double>> simulator =
+      CreateSimulation(&lcm, &demo_diagram);
   EXPECT_NE(simulator, nullptr);
   EXPECT_NE(demo_diagram, nullptr);
+  lcm.StartReceiveThread();
 
   const double kSimDuration = 0.1;
   simulator->StepTo(kSimDuration);

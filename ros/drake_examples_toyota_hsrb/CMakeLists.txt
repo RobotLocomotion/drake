@@ -30,7 +30,6 @@ add_executable(passive_demo
     src/passive_demo_common.cc)
 target_link_libraries(passive_demo
     ${catkin_LIBRARIES}
-    drakeAutomotive
     drakeCommon
     drakeHsrb
     drakeJoints
@@ -54,7 +53,6 @@ if (CATKIN_ENABLE_TESTING)
       src/passive_demo_common.cc)
   target_link_libraries(passive_demo_test
       ${catkin_LIBRARIES}
-      drakeAutomotive
       drakeCommon
       drakeHsrb
       drakeJoints

@@ -20,13 +20,6 @@ namespace systems {
 namespace test {
 namespace {
 
-// TODO(liang.fok) Unify with identical code in gravity_compensation_test.cc.
-template <class T>
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
-}
-
 // Tests the RostfPublisher by instantiating it, making it publish a transform,
 // and verifying that the expected transform messages were transmitted.
 GTEST_TEST(RosTfPublisherTest, TestRosTfPublisher) {
@@ -36,21 +29,21 @@ GTEST_TEST(RosTfPublisherTest, TestRosTfPublisher) {
   auto tree = make_unique<RigidBodyTree<double>>();
   AddModelInstanceFromUrdfString(urdf_string, "." /* root string */, kFixed,
       nullptr /* weld to frame */, tree.get());
-  auto publisher = make_unique<RosTfPublisher<double>>(*tree);
+  auto publisher = make_unique<RosTfPublisher>(*tree);
   auto context = publisher->CreateDefaultContext();
   auto input = make_unique<BasicVector<double>>(tree->get_num_positions() +
       tree->get_num_velocities());
 
   EXPECT_EQ(publisher->get_num_output_ports(), 0);
-  EXPECT_EQ(input->size(), publisher->get_input_port(0).get_size());
   EXPECT_EQ(input->size(), 4);
+  EXPECT_EQ(publisher->get_input_port(0).get_size(), input->size());
 
   Eigen::VectorXd robot_position = Eigen::VectorXd::Zero(input->size());
   robot_position << 1.0, -0.5, 0, 0;
 
   input->get_mutable_value() << robot_position;
 
-  context->SetInputPort(0, MakeInput(std::move(input)));
+  context->FixInputPort(0, std::move(input));
   publisher->DoPublish(*context);
 
   const std::map<std::string, std::unique_ptr<geometry_msgs::TransformStamped>>&

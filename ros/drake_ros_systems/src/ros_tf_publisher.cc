@@ -5,8 +5,7 @@ namespace systems {
 
 using std::make_unique;
 
-template <typename T>
-RosTfPublisher<T>::RosTfPublisher(const RigidBodyTree<T>& tree)
+RosTfPublisher::RosTfPublisher(const RigidBodyTree<double>& tree)
     : tree_(tree) {
   const int vector_size =
       tree.get_num_positions() + tree.get_num_velocities();
@@ -15,8 +14,7 @@ RosTfPublisher<T>::RosTfPublisher(const RigidBodyTree<T>& tree)
   Init();
 }
 
-template <typename T>
-void RosTfPublisher<T>::Init() {
+void RosTfPublisher::Init() {
   // Initializes the time stamp of the previous transmission to be zero.
   previous_send_time_.sec = 0;
   previous_send_time_.nsec = 0;
@@ -25,10 +23,7 @@ void RosTfPublisher<T>::Init() {
   // body in the rigid body tree that has a parent body.
   for (const auto& rigid_body : tree_.bodies) {
     if (!rigid_body->has_parent_body()) continue;
-
-    std::string key = rigid_body->get_model_name() +
-        std::to_string(rigid_body->get_model_instance_id()) +
-        rigid_body->get_name();
+    std::string key = GetKey(*rigid_body);
 
     if (transform_messages_.find(key) != transform_messages_.end()) {
       throw std::runtime_error(
@@ -64,9 +59,7 @@ void RosTfPublisher<T>::Init() {
   // Instantiates a geometry_msgs::TransformStamped message for each frame
   // in the rigid body tree.
   for (auto const& frame : tree_.frames) {
-    std::string key = frame->get_rigid_body().get_model_name() +
-        std::to_string(frame->get_rigid_body().get_model_instance_id()) +
-        frame->get_name();
+    std::string key = GetKey(*frame);
 
     if (transform_messages_.find(key) != transform_messages_.end()) {
       throw std::runtime_error(
@@ -99,14 +92,13 @@ void RosTfPublisher<T>::Init() {
   }
 }
 
-template <typename T>
-void RosTfPublisher<T>::DoPublish(const Context<double>& context) const {
+void RosTfPublisher::DoPublish(const Context<double>& context) const {
   if (!enable_tf_publisher_) return;
 
   // Aborts if less than kMinTransmitPeriod_ has elapsed since the last
   // transmission to avoid flooding the ROS topic.
   ::ros::Time current_time = ::ros::Time::now();
-  if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod_)
+  if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod)
     return;
   previous_send_time_ = current_time;
 
@@ -117,9 +109,7 @@ void RosTfPublisher<T>::DoPublish(const Context<double>& context) const {
   // Publishes the transforms for the bodies in the tree.
   for (auto const& body : tree_.bodies) {
     if (!body->has_parent_body()) continue;
-
-    std::string key = body->get_model_name() +
-        std::to_string(body->get_model_instance_id()) + body->get_name();
+    std::string key = GetKey(*body);
 
     // Verifies that a message for the current body exists.
     auto message_in_map = transform_messages_.find(key);
@@ -154,15 +144,16 @@ void RosTfPublisher<T>::DoPublish(const Context<double>& context) const {
       message->transform.rotation.z = quat(3);
     }
 
+    // We use ROS time instead of the Context time since the messages are being
+    // consumed by ROS nodes. The two notions of time will be in sync once
+    // #4344 is resolved.
     message->header.stamp = current_time;
     tf_broadcaster_.sendTransform(*message);
   }
 
   // Publishes the transform for each frame in the tree.
   for (auto const& frame : tree_.frames) {
-    std::string key = frame->get_rigid_body().get_model_name() +
-        std::to_string(frame->get_rigid_body().get_model_instance_id()) +
-        frame->get_name();
+    std::string key = GetKey(*frame);
 
     // Verifies that a message for the current frame exists.
     auto message_in_map = transform_messages_.find(key);
@@ -178,15 +169,14 @@ void RosTfPublisher<T>::DoPublish(const Context<double>& context) const {
   }
 }
 
-template <typename T>
-void RosTfPublisher<T>::LoadEnableParameter() {
+void RosTfPublisher::LoadEnableParameter() {
   const int kMaxNumTries = 10;
   int num_get_attempts{0};
   bool continue_query{true};
   while (continue_query &&
          !::ros::param::get("/drake/enable_tf_publisher",
                             enable_tf_publisher_)) {
-    if (++num_get_attempts > kMaxNumTries) {
+    if (++num_get_attempts >= kMaxNumTries) {
       ROS_WARN(
           "Failed to get parameter /drake/enable_tf_publisher. "
           "Assuming publisher is enabled.");
@@ -199,13 +189,22 @@ void RosTfPublisher<T>::LoadEnableParameter() {
   }
 }
 
-template <typename T>
 const std::map<std::string, std::unique_ptr<geometry_msgs::TransformStamped>>&
-    RosTfPublisher<T>::get_transform_messages() const {
+    RosTfPublisher::get_transform_messages() const {
   return transform_messages_;
 }
 
-template class RosTfPublisher<double>;
+std::string RosTfPublisher::GetKey(const RigidBody<double>& rigid_body) const {
+  return rigid_body.get_model_name() +
+      std::to_string(rigid_body.get_model_instance_id()) +
+      rigid_body.get_name();
+}
+
+std::string RosTfPublisher::GetKey(const RigidBodyFrame& frame) const {
+  return frame.get_rigid_body().get_model_name() +
+      std::to_string(frame.get_rigid_body().get_model_instance_id()) +
+      frame.get_name();
+}
 
 }  // namespace systems
 }  // namespace drake
