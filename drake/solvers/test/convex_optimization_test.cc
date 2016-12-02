@@ -1151,6 +1151,8 @@ DecisionVariableMatrix<x_dim, x_dim> AddLyapunovCondition(
     const DecisionVariableMatrix<x_dim, x_dim>& P, MathematicalProgram* prog) {
   const auto Q = prog->AddSymmetricContinuousVariables<x_dim>();
   prog->AddPositiveSemidefiniteConstraint(Q);
+  // TODO(hongkai.dai): Use symbolic variable to compute the expression
+  // A' * P + P * A + Q.
   Eigen::Matrix<double, x_dim*(x_dim + 1) / 2, 1> lin_eq_bnd;
   lin_eq_bnd.setZero();
   std::vector<Eigen::Triplet<double>> lin_eq_triplets;
@@ -1206,23 +1208,27 @@ GTEST_TEST(TestConvexOptimization, TestCommonLyapunov) {
     Eigen::Matrix3d P_value = GetSolution(P);
     Eigen::Matrix3d Q1_value = GetSolution(Q1);
     Eigen::Matrix3d Q2_value = GetSolution(Q2);
-    Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_P(P_value);
-    EXPECT_TRUE(CompareMatrices(P_value, P_value.transpose(), 1E-6,
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver_P(P_value);
+
+    // The comparison tolerance is set as 1E-8, to match the Mosek default
+    // feasibility tolerance 1E-8.
+    EXPECT_TRUE(CompareMatrices(P_value, P_value.transpose(),
+                                std::numeric_limits<double>::epsilon(),
                                 MatrixCompareType::absolute));
-    EXPECT_GE(eigen_solver_P.eigenvalues().real().minCoeff(), -1E-8);
-    Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_Q1(Q1_value);
-    EXPECT_GE(eigen_solver_Q1.eigenvalues().real().minCoeff(), -1E-8);
-    Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_Q2(Q2_value);
-    EXPECT_GE(eigen_solver_Q2.eigenvalues().real().minCoeff(), -1E-8);
+    EXPECT_GE(eigen_solver_P.eigenvalues().minCoeff(), -1E-8);
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver_Q1(Q1_value);
+    EXPECT_GE(eigen_solver_Q1.eigenvalues().minCoeff(), -1E-8);
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver_Q2(Q2_value);
+    EXPECT_GE(eigen_solver_Q2.eigenvalues().minCoeff(), -1E-8);
     EXPECT_TRUE(CompareMatrices(A1.transpose() * P_value + P_value * A1,
-                                -Q1_value, 1e-6, MatrixCompareType::absolute));
+                                -Q1_value, 1e-8, MatrixCompareType::absolute));
     EXPECT_TRUE(CompareMatrices(A2.transpose() * P_value + P_value * A2,
-                                -Q2_value, 1e-6, MatrixCompareType::absolute));
+                                -Q2_value, 1e-8, MatrixCompareType::absolute));
   }
 }
 
 // Solve an eigen value problem through a semidefinite programming.
-// Minimize the maximum eigen value of a matrix that depends affinly on a
+// Minimize the maximum eigen value of a matrix that depends affinely on a
 // variable x
 // min  z
 // s.t z * Identity - x1 * F1 - ... - xn * Fn is p.s.d
@@ -1255,8 +1261,10 @@ GTEST_TEST(TestConvexOptimization, TestEigenvalueProblem) {
     auto x_value = GetSolution(x);
     auto xF_sum = x_value(0) * F1 + x_value(1) * F2;
 
-    Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver_xF(xF_sum);
-    EXPECT_NEAR(z_value, eigen_solver_xF.eigenvalues().real().maxCoeff(), 1E-6);
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver_xF(xF_sum);
+    // The comparison tolerance is set to 1E-7, slightly larger than Mosek's
+    // default feasibility tolerance 1E-8.
+    EXPECT_NEAR(z_value, eigen_solver_xF.eigenvalues().maxCoeff(), 1E-7);
   }
 }
 }  // namespace test

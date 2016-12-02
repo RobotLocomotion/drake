@@ -335,7 +335,7 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
 
     int new_linear_constraint_count = 0;
     // It is important to use the same for-loop order as in
-    // AddBarVariable()
+    // AddBarVariable().
     for (int j = 0; j < rows; ++j) {
       for (int i = j; i < rows; ++i) {
         int linear_constraint_index =
@@ -379,7 +379,7 @@ MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog,
 
     int new_linear_constraint_count = 0;
     // It is important to use the same for-loop order as in
-    // AddBarVariable()
+    // AddBarVariable().
     for (int j = 0; j < rows; ++j) {
       for (int i = j; i < rows; ++i) {
         int linear_constraint_index =
@@ -404,6 +404,7 @@ MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog,
           }
         }
 
+        DRAKE_ASSERT(F_it == F.end());
         rescode = MSK_putarow(*task, linear_constraint_index, A_row.nonZeros(),
                               A_row.innerIndexPtr(), A_row.valuePtr());
         if (rescode != MSK_RES_OK) {
@@ -428,7 +429,7 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
   std::vector<Eigen::Triplet<double>> linear_term_triplets;
   for (const auto& binding : prog.quadratic_costs()) {
     const auto& constraint = binding.constraint();
-    // The quadratic cost is of form 0.5*x'*Q*x + b*x
+    // The quadratic cost is of form 0.5*x'*Q*x + b*x.
     const auto& Q = constraint->Q();
     const auto& b = constraint->b();
     std::vector<int> var_indices(Q.rows());

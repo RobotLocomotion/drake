@@ -59,6 +59,10 @@ LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
   set_bounds(Eigen::VectorXd::Zero(matrix_rows_),
              Eigen::VectorXd::Constant(
                  matrix_rows_, std::numeric_limits<double>::infinity()));
+  for (const auto& Fi : F) {
+    DRAKE_ASSERT(Fi.rows() == matrix_rows_);
+    DRAKE_ASSERT(math::IsSymmetric(Fi, symmetry_tolerance));
+  }
 }
 }  // namespace solvers
 }  // namespace drake

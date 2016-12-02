@@ -1,16 +1,16 @@
 #include <Eigen/Dense>
 
-#include <math.h>
+#include <cmath>
 #include <functional>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
 
 namespace drake {
 namespace math {
 /// Determines if a matrix is symmetric. If std::equal_to<>()(matrix(i, j),
-/// matrix(j, i)) is
-/// true for all i, j, then the matrix is symmetric.
+/// matrix(j, i)) is true for all i, j, then the matrix is symmetric.
 template <typename Derived>
 bool IsSymmetric(const Eigen::MatrixBase<Derived>& matrix) {
   using DerivedScalar = typename Derived::Scalar;
@@ -27,10 +27,10 @@ bool IsSymmetric(const Eigen::MatrixBase<Derived>& matrix) {
   return true;
 }
 
-/// Determines if a matrix is symmetric. If the difference between matrix(i, j)
-/// and matrix(j, i) is smaller than precision for all i, j.
+/// Determines if a matrix is symmetric based on whether the difference between
+/// matrix(i, j) and matrix(j, i) is smaller than @p precision for all i, j.
 /// The precision is absolute.
-/// Matrix wit nan or inf entries is not allowed.
+/// Matrix with nan or inf entries is not allowed.
 template <typename Derived>
 bool IsSymmetric(const Eigen::MatrixBase<Derived>& matrix,
                  const typename Derived::Scalar& precision) {
@@ -81,10 +81,10 @@ void to_symmetric_matrix_from_lower_triangular_columns_impl(
 }  // namespace internal
 
 /// Given a column vector containing the stacked columns of the lower triangular
-/// part of a square matrix, returnning a symmetric matrix, whose lower
+/// part of a square matrix, returning a symmetric matrix whose lower
 /// triangular part is the same as the original matrix.
 template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
+drake::MatrixX<typename Derived::Scalar>
 ToSymmetricMatrixFromLowerTriangularColumns(
     const Eigen::MatrixBase<Derived>& lower_triangular_columns) {
   int rows = (-1 + sqrt(1 + 8 * lower_triangular_columns.rows())) / 2;
@@ -92,8 +92,7 @@ ToSymmetricMatrixFromLowerTriangularColumns(
   DRAKE_ASSERT(rows * (rows + 1) / 2 == lower_triangular_columns.rows());
   DRAKE_ASSERT(lower_triangular_columns.cols() == 1);
 
-  Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
-      symmetric_matrix(rows, rows);
+  drake::MatrixX<typename Derived::Scalar> symmetric_matrix(rows, rows);
 
   internal::to_symmetric_matrix_from_lower_triangular_columns_impl(
       rows, lower_triangular_columns, &symmetric_matrix);
@@ -101,11 +100,11 @@ ToSymmetricMatrixFromLowerTriangularColumns(
 }
 
 /// Given a column vector containing the stacked columns of the lower triangular
-/// part of a square matrix, returnning a symmetric matrix, whose lower
+/// part of a square matrix, returning a symmetric matrix whose lower
 /// triangular part is the same as the original matrix.
 /// @tparam rows The number of rows in the symmetric matrix.
 template <int rows, typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
+Eigen::Matrix<typename Derived::Scalar, rows, rows>
 ToSymmetricMatrixFromLowerTriangularColumns(
     const Eigen::MatrixBase<Derived>& lower_triangular_columns) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, rows * (rows + 1) / 2);

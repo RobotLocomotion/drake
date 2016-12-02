@@ -476,8 +476,10 @@ class LinearComplementarityConstraint : public Constraint {
 };
 
 /**
- * Implement a positive semidefinite constraint on a symmetric matrix S
+ * Implements a positive semidefinite constraint on a symmetric matrix S
+ * @f[\text{
  *     S is p.s.d
+ * }@f]
  * namely, all eigen values of S are non-negative.
  */
 class PositiveSemidefiniteConstraint : public Constraint {
@@ -487,6 +489,11 @@ class PositiveSemidefiniteConstraint : public Constraint {
                    Eigen::VectorXd::Constant(
                        rows, std::numeric_limits<double>::infinity())) {}
 
+  PositiveSemidefiniteConstraint(const PositiveSemidefiniteConstraint& rhs) =
+      default;
+
+  PositiveSemidefiniteConstraint& operator=(
+      const PositiveSemidefiniteConstraint& rhs) = default;
   /**
    * Evaluate the eigen values of the symmetric matrix.
    * @param x The stacked columns of the symmetric matrix.
@@ -505,9 +512,14 @@ class PositiveSemidefiniteConstraint : public Constraint {
 
 /**
  * Impose the matrix inequality constraint on variable x
- * F0 + x1 * F1 + ... xn*Fn is p.s.d
+ * <!-->
+ * F0 + x1 * F1 + ... xn * Fn is p.s.d
+ * <-->
+ * @f[
+ * F_0 + x_1  F_1 + ... + x_n  F_n \text{ is p.s.d}
+ * @f]
  * where p.s.d stands for positive semidefinite.
- * F0, F1, ..., Fn are all given symmetric matrix of the same size.
+ * @f$ F_0, F_1, ..., F_n @f$ are all given symmetric matrices of the same size.
  */
 class LinearMatrixInequalityConstraint : public Constraint {
  public:
@@ -519,6 +531,12 @@ class LinearMatrixInequalityConstraint : public Constraint {
   LinearMatrixInequalityConstraint(
       const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
       double symmetry_tolerance = 1E-10);
+
+  LinearMatrixInequalityConstraint(
+      const LinearMatrixInequalityConstraint& rhs) = default;
+
+  LinearMatrixInequalityConstraint& operator=(
+      const LinearMatrixInequalityConstraint& rhs) = default;
 
   /* Getter for all given matrices F */
   const std::vector<Eigen::MatrixXd>& F() const { return F_; }
@@ -536,8 +554,8 @@ class LinearMatrixInequalityConstraint : public Constraint {
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override;
 
-  // Get the number of rows in the matrix inequality constraint. Namely
-  // Fi are all rows x rows matrices.
+  /// Get the number of rows in the matrix inequality constraint. Namely
+  /// Fi are all matrix_rows() x matrix_rows() matrices.
   int matrix_rows() const { return matrix_rows_; }
 
  private:

@@ -44,19 +44,24 @@ GTEST_TEST(TestMatrixUtil, TestToSymmetricMatrixFromLowerTriangularColumns) {
   // Tests a static size vector.
   Eigen::Vector3d x1(1, 2, 3);
   Eigen::Matrix2d X1;
-  X1 << 1, 2, 2, 3;
+  // clang-format: off
+  X1 << 1, 2,
+        2, 3;
+  // clang-format: on
   EXPECT_TRUE(CompareMatrices(ToSymmetricMatrixFromLowerTriangularColumns(x1),
-                              X1, std::numeric_limits<double>::epsilon(),
-                              MatrixCompareType::absolute));
+                              X1));
 
   // Tests a dynamic size vector.
   Eigen::VectorXd x2(6);
   x2 << 1, 2, 3, 4, 5, 6;
   Eigen::Matrix3d X2;
-  X2 << 1, 2, 3, 2, 4, 5, 3, 5, 6;
+  // clang-format: off
+  X2 << 1, 2, 3,
+        2, 4, 5,
+        3, 5, 6;
+  // clang-format: on
   EXPECT_TRUE(CompareMatrices(ToSymmetricMatrixFromLowerTriangularColumns(x2),
-                              X2, std::numeric_limits<double>::epsilon(),
-                              MatrixCompareType::absolute));
+                              X2));
 }
 }  // namespace test
 }  // namespace math
