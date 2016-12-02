@@ -84,11 +84,11 @@ class RigidBodyTree {
    */
   static const int kWorldBodyIndex;
 
-  RigidBodyTree(
-      const std::string& urdf_filename,
-      const drake::multibody::joints::FloatingBaseType
-          floating_base_type = drake::multibody::joints::kRollPitchYaw);
+  /// A constructor that initializes the gravity vector to be [0, 0, -9.81] and
+  /// a single RigidBody named "world". This RigidBody can be accessed by
+  /// calling RigidBodyTree::world().
   RigidBodyTree(void);
+
   virtual ~RigidBodyTree(void);
 
 #ifndef SWIG
