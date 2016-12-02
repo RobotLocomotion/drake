@@ -111,7 +111,7 @@ cc_library(
     linkstatic = 1,
     deps = DEPS + [
         "//drake/lcm",
-        "//drake/multibody:drake_visualizer",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/lcm",
         "//drake/systems/framework/primitives:constant_vector_source",
@@ -133,6 +133,19 @@ cc_binary(
     deps = [
         ":automotive_simulator",
         "//drake/common:text_logging_gflags",
+    ],
+)
+
+cc_binary(
+    name = "car_sim_lcm",
+    srcs = ["car_sim_lcm.cc"],
+    linkstatic = 1,
+    deps = [
+        ":automotive_simulator",
+        "//drake/common:text_logging_gflags",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/systems/controllers:pid_controlled_system",
     ],
 )
 

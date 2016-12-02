@@ -23,7 +23,6 @@ cc_library(
 cc_test(
     name = "controlled_spring_mass_system_test",
     size = "small",
-    testonly = 1,
     srcs = ["controlled_spring_mass_system_test.cc"],
     linkstatic = 1,
     deps = [

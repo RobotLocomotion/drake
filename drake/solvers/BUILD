@@ -13,6 +13,13 @@ DEPS = [
 # External solvers are not yet supported.
 
 cc_library(
+    name = "constraint",
+    hdrs = ["constraint.h"],
+    linkstatic = 1,
+    deps = DEPS,
+)
+
+cc_library(
     name = "mathematical_program",
     srcs = [
         "decision_variable.cc",
@@ -44,7 +51,7 @@ cc_library(
         "solution_result.h",
     ],
     linkstatic = 1,
-    deps = DEPS,
+    deps = DEPS + [":constraint"],
 )
 
 cc_library(

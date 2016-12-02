@@ -17,7 +17,6 @@ cc_library(
 cc_test(
     name = "simulator_test",
     size = "small",
-    testonly = 1,
     srcs = ["simulator_test.cc"],
     linkstatic = 1,
     deps = [
@@ -31,7 +30,6 @@ cc_test(
 cc_test(
     name = "explicit_euler_integrator_test",
     size = "small",
-    testonly = 1,
     srcs = ["explicit_euler_integrator_test.cc"],
     linkstatic = 1,
     deps = [
@@ -44,7 +42,6 @@ cc_test(
 cc_test(
     name = "runge_kutta2_integrator_test",
     size = "small",
-    testonly = 1,
     srcs = ["runge_kutta2_integrator_test.cc"],
     linkstatic = 1,
     deps = [

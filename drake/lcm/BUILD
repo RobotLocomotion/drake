@@ -49,3 +49,12 @@ cc_library(
     linkstatic = 1,
     deps = DEPS + ["//drake/lcmtypes:drake_signal"],
 )
+
+cc_library(
+    name = "lcm_call_matlab",
+    testonly = 1,
+    srcs = ["lcm_call_matlab.cc"],
+    hdrs = ["lcm_call_matlab.h"],
+    linkstatic = 1,
+    deps = DEPS + ["//drake/lcmtypes:call_matlab"],
+)

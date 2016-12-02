@@ -94,6 +94,13 @@ cc_test(
     deps = DEPS + ["//drake/common:is_approx_equal_abstol"],
 )
 
+cc_library(
+    name = "measure_execution",
+    testonly = 1,
+    hdrs = ["measure_execution.h"],
+    linkstatic = 1,
+)
+
 cc_test(
     name = "nice_type_name_test",
     size = "small",
