@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
+#include "drake/common/trajectories/trajectory.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
