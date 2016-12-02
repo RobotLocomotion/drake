@@ -311,9 +311,8 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
    */
   const auto& vdot_value =
       drake::solvers::GetSolution(vdot);
-  xdot << kinsol.transformQDotMappingToVelocityMapping(
-              MatrixX<T>::Identity(nq, nq)) * v,
-      vdot_value;
+  xdot << tree_->transformQDotMappingToVelocityMapping(
+      kinsol, MatrixX<T>::Identity(nq, nq)) * v, vdot_value;
 
   derivatives->SetFromVector(xdot);
 }
@@ -346,9 +345,11 @@ void RigidBodyPlant<T>::DoMapQDotToVelocity(
   // reused.
   auto kinsol = tree_->doKinematics(q);
 
+  // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
+  // templatized.
   generalized_velocity->SetFromVector(
-      kinsol.transformQDotMappingToVelocityMapping(
-          configuration_dot.transpose()));
+      tree_->transformQDotMappingToVelocityMapping(
+          kinsol, configuration_dot.transpose().eval()).transpose());
 }
 
 template <typename T>
@@ -380,8 +381,11 @@ void RigidBodyPlant<T>::DoMapVelocityToQDot(
   // reused.
   auto kinsol = tree_->doKinematics(q, v);
 
+  // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
+  // templatized.
   configuration_dot->SetFromVector(
-      kinsol.transformVelocityMappingToQDotMapping(v.transpose()));
+      tree_->transformVelocityMappingToQDotMapping(
+          kinsol, v.transpose().eval()).transpose());
 }
 
 template <typename T>

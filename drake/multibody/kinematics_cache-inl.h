@@ -54,6 +54,12 @@ const KinematicsCacheElement<T>& KinematicsCache<T>::getElement(
 }
 
 template <typename T>
+const std::vector<RigidBody<double> const*>&
+KinematicsCache<T>::get_bodies() const {
+    return bodies;
+}
+
+template <typename T>
 template <typename Derived>
 void KinematicsCache<T>::initialize(const Eigen::MatrixBase<Derived>& q_in) {
   static_assert(Derived::ColsAtCompileTime == 1, "q must be a vector");
@@ -98,60 +104,6 @@ void KinematicsCache<T>::checkCachedKinematicsSettings(
         " requires Jdot times v, which has not been cached. Please call "
         "doKinematics with a velocity vector and compute_JdotV set to true.");
   }
-}
-
-template <typename T>
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-              Eigen::Dynamic>
-KinematicsCache<T>::transformVelocityMappingToQDotMapping(
-    const Eigen::MatrixBase<Derived>& B) const {
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                Eigen::Dynamic>
-      A(B.rows(), get_num_positions());
-  DRAKE_DEMAND(B.cols() == get_num_velocities());
-  int A_col_start = 0;
-  int B_col_start = 0;
-  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-    const RigidBody<double>& body = **it;
-    if (body.has_parent_body()) {
-      const DrakeJoint& joint = body.getJoint();
-      const auto& element = getElement(body);
-      A.middleCols(A_col_start, joint.get_num_positions()).noalias() =
-          B.middleCols(B_col_start, joint.get_num_velocities()) *
-              element.qdot_to_v;
-      A_col_start += joint.get_num_positions();
-      B_col_start += joint.get_num_velocities();
-    }
-  }
-  return A;
-}
-
-template <typename T>
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-              Eigen::Dynamic>
-KinematicsCache<T>::transformQDotMappingToVelocityMapping(
-    const Eigen::MatrixBase<Derived>& A) const {
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                Eigen::Dynamic>
-      B(A.rows(), get_num_velocities());
-  DRAKE_DEMAND(A.cols() == get_num_positions());
-  int B_col_start = 0;
-  int A_col_start = 0;
-  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-    const RigidBody<double>& body = **it;
-    if (body.has_parent_body()) {
-      const DrakeJoint& joint = body.getJoint();
-      const auto& element = getElement(body);
-      B.middleCols(B_col_start, joint.get_num_velocities()).noalias() =
-          A.middleCols(A_col_start, joint.get_num_positions()) *
-              element.v_to_qdot;
-      B_col_start += joint.get_num_velocities();
-      A_col_start += joint.get_num_positions();
-    }
-  }
-  return B;
 }
 
 template <typename T>
