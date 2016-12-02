@@ -58,7 +58,7 @@ class BulletModel : public Model {
 
   void updateModel() override;
 
-  ElementId addElement(const Element& element) override;
+  void DoAddElement(const Element& element) override;
 
   bool updateElementWorldTransform(
       ElementId, const Eigen::Isometry3d& T_local_to_world) override;

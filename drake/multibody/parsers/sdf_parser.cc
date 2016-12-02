@@ -597,21 +597,19 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
   } else {
     // Update the reference frames of the child link's inertia, visual,
     // and collision elements to be this joint's frame.
+    // This is required because Drake requires that link frames be defined
+    // by their parent joint frames.
     child->ApplyTransformToJointFrame(transform_to_model.inverse() *
                                       transform_child_to_model);
 
-    for (const auto& c : child->get_collision_element_ids()) {
-      if (!model->transformCollisionFrame(
-              c, transform_to_model.inverse() * transform_child_to_model)) {
-        stringstream ss;
-        ss << string(__FILE__) << ": " << __func__
-           << ": ERROR: Collision element with ID " << c
-           << " not found! Cannot update its local frame to be that of joint.";
-        throw std::runtime_error(ss.str());
-      }
-      // This log statement is required for users to work around #3673, and
-      // can be removed when that issue is resolved.
-      drake::log()->info("Adding joint {} to the plant.", name);
+    if (!model->transformCollisionFrame(
+            child, transform_to_model.inverse() * transform_child_to_model)) {
+      std::stringstream ss;
+      ss << std::string(__FILE__) << ": " << __func__
+         << ": ERROR: Unable to update collision elements for body "
+         << child->get_name() << " from model " << child->get_model_name()
+         << "to the body's parent joint frame.";
+      throw std::runtime_error(ss.str());
     }
 
     // Update pose_map with child's new frame, which is now the same as this
@@ -678,6 +676,10 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
     unique_ptr<DrakeJoint> joint_unique_ptr(joint);
     child->setJoint(move(joint_unique_ptr));
     child->set_parent(parent);
+
+    // This log statement is required for users to work around #3673, and
+    // can be removed when that issue is resolved.
+    drake::log()->info("Adding joint {} to the plant.", name);
   }
 }
 

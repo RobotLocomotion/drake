@@ -19,12 +19,12 @@ class Model {
 
   virtual ~Model() {}
 
-  /** \brief Add a collision element to this model.
-  * \param element the collision element to be added to this model
-  * \return an ElementId that uniquely identifies the added element within
-  * this model
-  */
-  virtual ElementId addElement(const Element& element);
+  /** Adds a collision element to this model.  It only adds the provided element
+   * if the given @p element has a unique identifier.
+   * @param element the element to add; the Model takes ownership.
+   * @returns true if the element was added successfully.
+   */
+  bool AddElement(std::unique_ptr<Element> element);
 
   bool removeElement(ElementId id);
 
@@ -45,6 +45,7 @@ class Model {
    **/
   virtual Element* FindMutableElement(ElementId id);
 
+  // TODO(SeanCurtis-TRI): Why is this virtual?
   virtual void getTerrainContactPoints(
       ElementId id0,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -240,6 +241,13 @@ class Model {
   friend std::ostream& operator<<(std::ostream&, const Model&);
 
  protected:
+  /** Allows sub-classes to do additional processing on elements added to the
+   * collision model.  This is called each time Model::AddElement is called.
+   * @param element the element that has been added.
+   * @returns true for successfull processing.
+   */
+  virtual void DoAddElement(const Element& element) {}
+
   // Protected member variables are forbidden by the style guide.
   // Please do not add new references to this member.  Instead, use
   // the accessors.
