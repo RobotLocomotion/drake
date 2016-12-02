@@ -103,6 +103,21 @@ class KinematicsCache {
   const KinematicsCacheElement<T>& getElement(
       const RigidBody<double>& body) const;
 
+  // TODO(amcastro-tri): This accessor was added to allow
+  // RigidBodyTree::transformVelocityMappingToQDotMapping() and
+  // RigidBodyTree::transformQDotMappingToVelocityMapping() to be static
+  // methods. That is a requirement from velocityToPositionDotMappingmex()
+  // and positionDotToVelocityMappingmex() in rigidBodyTreeMexFunctions which
+  // define a Matlab API not passing the "this" pointer to the RigidBodyTree
+  // model.
+  // This problem will be solved when KinematicsCache works with RigidBody
+  // id's instead of actual RigidBody pointers as handlers to KinematicsCache
+  // entries.
+  // Another solution would be to change the Matlab API to pass "this"
+  // pointer to the RigidBodyTree as it does with any other RigidBodyTree
+  // method.
+  const std::vector<RigidBody<double> const*>& get_bodies() const;
+
   template <typename Derived>
   void initialize(const Eigen::MatrixBase<Derived>& q_in);
 
@@ -113,51 +128,6 @@ class KinematicsCache {
   void checkCachedKinematicsSettings(bool velocity_kinematics_required,
                                      bool jdot_times_v_required,
                                      const std::string& method_name) const;
-
-  /**
-   * Converts a matrix B, which transforms generalized velocities (v) to an
-   * output space X, to a matrix A, which transforms the time
-   * derivative of generalized coordinates (qdot) to the same output X. For
-   * example, B could be a Jacobian matrix that transforms generalized
-   * velocities to spatial velocities at the end-effector. Formally, this would
-   * be the matrix of partial derivatives of end-effector configuration computed
-   * with respect to quasi-coordinates (ꝗ). This function would allow
-   * transforming that Jacobian so that all partial derivatives would be
-   * computed with respect to qdot.
-   * @param B, a `m x nv` sized matrix, where `nv` is the dimension of the
-   *      generalized velocities.
-   * @retval A a `m x nq` sized matrix, where `nq` is the dimension of the
-   *      generalized coordinates.
-   * @sa transformQDotMappingToVelocityMapping()
-   */
-  template <typename Derived>
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                Eigen::Dynamic>
-  transformVelocityMappingToQDotMapping(
-      const Eigen::MatrixBase<Derived>& B) const;
-
-  /**
-   * Converts a matrix A, which transforms the time derivative of generalized
-   * coordinates (qdot) to an output space X, to a matrix B, which transforms
-   * generalized velocities (v) to the same space X. For example, A could be a
-   * Jacobian matrix that transforms qdot to spatial velocities at the end
-   * effector. Formally, this would be the matrix of partial derivatives of
-   * end-effector configuration computed with respect to the generalized
-   * coordinates (q). This function would allow the user to
-   * transform this Jacobian matrix to the more commonly used one: the matrix of
-   * partial derivatives of end-effector configuration computed with respect to
-   * quasi-coordinates (ꝗ).
-   * @param A a `m x nq` sized matrix, where `nq` is the dimension of the
-   *      generalized coordinates.
-   * @retval B, a `m x nv` sized matrix, where `nv` is the dimension of the
-   *      generalized velocities.
-   * @sa transformVelocityMappingToQDotMapping()
-   */
-  template <typename Derived>
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                Eigen::Dynamic>
-  transformQDotMappingToVelocityMapping(
-      const Eigen::MatrixBase<Derived>& A) const;
 
   const Eigen::Matrix<T, Eigen::Dynamic, 1>& getQ() const;
 
