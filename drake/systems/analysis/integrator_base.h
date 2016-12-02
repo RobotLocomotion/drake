@@ -252,7 +252,7 @@ class IntegratorBase {
     if (!context_) throw std::logic_error("Context has not been set.");
 
     // Verify that user settings are reasonable.
-    if (max_step_size < min_step_size) {
+    if (max_step_size_ < min_step_size_) {
       throw std::logic_error("Integrator maximum step size is less than the "
                              "minimum step size");
     }
