@@ -12,6 +12,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
+#include "drake/examples/schunk_wsg/gen/schunk_wsg_command_receiver_state_vector.h"
 #include "drake/examples/schunk_wsg/simulated_schunk_wsg_system.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -42,6 +43,7 @@ using systems::ConstantVectorSource;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
+using systems::DifferenceState;
 using systems::DrakeVisualizer;
 using systems::MatrixGain;
 using systems::Multiplexer;
@@ -74,10 +76,35 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
         systems::kContinuousSampling);
     this->DeclareOutputPort(systems::kVectorValued, 2,
                             systems::kContinuousSampling);
+    // The update period below matches the polling rate from
+    // drake-schunk-driver.
+    this->DeclareUpdatePeriodSec(0.05);
   }
 
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const {
+    const systems::BasicVector<double>* state =
+          this->EvalVectorInput(context, 1);
+    const double cur_position = state->GetAtIndex(position_index_);
+
+    const SchunkWsgCommandReceiverStateVector<double>* traj_state =
+        dynamic_cast<const SchunkWsgCommandReceiverStateVector<double>*>(
+            context.get_difference_state(0));
+
+    if (trajectory_) {
+      this->GetMutableOutputVector(output, 0) = trajectory_->value(
+          context.get_time() - traj_state->trajectory_start_time());
+    } else {
+      this->GetMutableOutputVector(output, 0) =
+          Eigen::Vector2d(cur_position, 0);
+    }
+  }
+
+ protected:
+  /// Latches the input port into the discrete state.
+  void DoEvalDifferenceUpdates(
+      const Context<double>& context,
+      DifferenceState<double>* difference_state) const override {
     const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
     DRAKE_ASSERT(input != nullptr);
     const auto& command = input->GetValue<lcmt_schunk_wsg_command>();
@@ -93,19 +120,30 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
           this->EvalVectorInput(context, 1);
     const double cur_position = state->GetAtIndex(position_index_);
 
-    if (std::abs(last_target_position_ - target_position) > kTargetEpsilon) {
-      UpdateTrajectory(cur_position, target_position);
-      last_target_position_ = target_position;
-      trajectory_start_time_ = context.get_time();
-    }
+    const SchunkWsgCommandReceiverStateVector<double>* last_traj_state =
+        dynamic_cast<const SchunkWsgCommandReceiverStateVector<double>*>(
+            context.get_difference_state(0));
+    SchunkWsgCommandReceiverStateVector<double>* new_traj_state =
+        dynamic_cast<SchunkWsgCommandReceiverStateVector<double>*>(
+            difference_state->get_mutable_difference_state(0));
 
-    if (trajectory_) {
-      this->GetMutableOutputVector(output, 0) =
-          trajectory_->value(context.get_time() - trajectory_start_time_);
+    if (std::abs(last_traj_state->last_target_position() - target_position) >
+        kTargetEpsilon) {
+      UpdateTrajectory(cur_position, target_position);
+      new_traj_state->set_last_target_position(target_position);
+      new_traj_state->set_trajectory_start_time(context.get_time());
     } else {
-      this->GetMutableOutputVector(output, 0) =
-          Eigen::Vector2d(cur_position, 0);
+      new_traj_state->set_last_target_position(
+          last_traj_state->last_target_position());
+      new_traj_state->set_trajectory_start_time(
+          last_traj_state->trajectory_start_time());
     }
+  }
+
+  std::unique_ptr<DifferenceState<double>>
+  AllocateDifferenceState() const override {
+    return std::make_unique<systems::DifferenceState<double>>(
+        std::make_unique<SchunkWsgCommandReceiverStateVector<double>>());
   }
 
  private:
@@ -176,8 +214,9 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
   const double kTargetEpsilon = 0.0001;
 
   const int position_index_{};
-  mutable double last_target_position_{};
-  mutable double trajectory_start_time_{};
+  // TODO(sam.creasey) I'd prefer to store the trajectory as
+  // difference state, but unfortunately that's not currently possible
+  // as DifferenceState may only contain BasicVector.
   mutable std::unique_ptr<Trajectory> trajectory_;
 };
 
