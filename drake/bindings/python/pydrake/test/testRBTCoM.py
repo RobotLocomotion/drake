@@ -8,7 +8,7 @@ import os.path
 class TestRBTCoM(unittest.TestCase):
     def testCoM0(self):
         r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(),
-                                             "examples/Pendulum/Pendulum.urdf"))
+                                         "examples/Pendulum/Pendulum.urdf"))
 
         kinsol = r.doKinematics(np.zeros((7, 1)), np.zeros((7, 1)))
 
@@ -18,7 +18,7 @@ class TestRBTCoM(unittest.TestCase):
 
     def testCoMJacobian(self):
         r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(),
-                                             "examples/Pendulum/Pendulum.urdf"))
+                                         "examples/Pendulum/Pendulum.urdf"))
         q = r.getRandomConfiguration()
         kinsol = r.doKinematics(q, np.zeros((7, 1)))
         J = r.centerOfMassJacobian(kinsol)

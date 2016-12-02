@@ -63,7 +63,6 @@ const char kUrdfPath[] {
 
 unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   auto tree = make_unique<RigidBodyTree<double>>();
-
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       GetDrakePath() + kUrdfPath,
       multibody::joints::kFixed, tree.get());

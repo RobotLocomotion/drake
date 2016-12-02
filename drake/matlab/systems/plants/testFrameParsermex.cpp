@@ -27,7 +27,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       (RigidBodyTree<double> *)getDrakeMexPointer(prhs[0]);
   mxGetString(prhs[1], buf, BUF_SIZE);
   auto cpp_model = std::make_unique<RigidBodyTree<double>>();
-
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(buf,
       drake::multibody::joints::kRollPitchYaw, cpp_model.get());
 

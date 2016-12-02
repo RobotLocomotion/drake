@@ -29,7 +29,6 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   auto robot = std::make_unique<RigidBodyTree<double>>();
-
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       urdf, multibody::joints::kRollPitchYaw, robot.get());
 
