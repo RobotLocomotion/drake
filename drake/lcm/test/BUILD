@@ -29,3 +29,10 @@ cc_test(
     srcs = ["lcmt_drake_signal_utils_test.cc"],
     deps = DEPS,
 )
+
+cc_test(
+    name = "lcm_call_matlab_test",
+    size = "small",
+    srcs = ["lcm_call_matlab_test.cc"],
+    deps = DEPS + ["//drake/lcm:lcm_call_matlab"],
+)
