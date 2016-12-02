@@ -248,6 +248,11 @@ class IntegratorBase {
   void Initialize() {
     if (!context_) throw std::logic_error("Context has not been set.");
 
+    // Verify that user settings are reasonable.
+    if (max_step_size < min_step_size)
+      throw std::logic_error("Integrator maximum step size is less than the "
+                             "minimum step size");
+
     // TODO(edrumwri): Compute qbar_weight_, z_weight_ automatically.
     // Set error weighting vectors if not already done.
     if (supports_error_estimation()) {
