@@ -146,21 +146,26 @@ class Handler {
     }
 
     // Make the actual call to MATLAB.
-    mexCallMATLABsafe(static_cast<int>(lhs.size()), lhs.data(),
-                      static_cast<int>(rhs.size()), rhs.data(),
-                      msg->function_name.c_str());
+    bool trapped_error = mexCallMATLABsafe(
+        static_cast<int>(lhs.size()), lhs.data(), static_cast<int>(rhs.size()),
+        rhs.data(), msg->function_name.c_str());
 
-    // Assign any local variables that were returned by this call.
-    for (i = 0; i < msg->nlhs; i++) {
-      // Zap any old variables that will be overwritten by this call.
-      if (client_vars_.find(msg->lhs[i]) != client_vars_.end())
-        mxDestroyArray(client_vars_[msg->lhs[i]]);
-      client_vars_[msg->lhs[i]] = lhs[i];
+    if (!trapped_error) {
+      // Assign any local variables that were returned by this call.
+      for (i = 0; i < msg->nlhs; i++) {
+        // Zap any old variables that will be overwritten by this call.
+        if (client_vars_.find(msg->lhs[i]) != client_vars_.end())
+          mxDestroyArray(client_vars_[msg->lhs[i]]);
+        client_vars_[msg->lhs[i]] = lhs[i];
+      }
     }
 
     // Clean up the input argument data.
     for (i = 0; i < static_cast<int>(rhs.size()); i++) {
-      mxDestroyArray(rhs[i]);
+      // Make sure it's not a client var.
+      if (msg->rhs[i].type !=
+          drake::lcmt_matlab_array::REMOTE_VARIABLE_REFERENCE)
+        mxDestroyArray(rhs[i]);
     }
   }
 
