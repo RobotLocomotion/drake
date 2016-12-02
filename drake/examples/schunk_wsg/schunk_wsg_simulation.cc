@@ -2,8 +2,9 @@
 ///
 /// Implements a simulation of the Schunk WSG 50 gripper.  Like the
 /// driver for the physical gripper, this simulation communicates over
-/// LCM using the lcmt_schunk_status and lcmt_schunk_command messages,
-/// It is intended to be a direct replacement for the schunk driver.
+/// LCM using the lcmt_schunk_status and lcmt_schunk_command messages.
+/// It is intended to be a direct replacement for the Schunk WSG
+/// driver.
 
 #include <cmath>
 #include <memory>
@@ -12,7 +13,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
-#include "drake/examples/schunk_wsg/gen/schunk_wsg_command_receiver_state_vector.h"
+#include "drake/examples/schunk_wsg/gen/schunk_wsg_trajectory_generator_state_vector.h"
 #include "drake/examples/schunk_wsg/simulated_schunk_wsg_system.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -51,24 +52,24 @@ using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
 using systems::Simulator;
 using systems::SystemOutput;
+using systems::SystemPortDescriptor;
 
-// TODO(sam.creasey) Right now this class just outputs a position to
-// control to, which is not going to be sufficient to capture the
-// entire control state of the gripper (particularly the maximum
-// force).
+// TODO(sam.creasey) Right now this class just outputs a position
+// which is not going to be sufficient to capture the entire control
+// state of the gripper (particularly the maximum force).
 
 /// Recieves commands for a Schunk WSG (input port 0) along with the
 /// current state of the simulated WSG (input port 1), and emits
 /// target position/velocity for the actuated finger to reach the
 /// commanded target.
-class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
+class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
  public:
-  explicit SchunkWsgCommandReceiver(const RigidBodyTree<double>& tree,
+  explicit SchunkWsgTrajectoryGenerator(const RigidBodyTree<double>& tree,
                                     int position_index)
       : position_index_(position_index) {
     DRAKE_ASSERT(position_index_ < tree.get_num_positions());
 
-    this->set_name("SchunkWsgCommandReceiver");
+    this->set_name("SchunkWsgTrajectoryGenerator");
     this->DeclareAbstractInputPort(systems::kContinuousSampling);
     this->DeclareInputPort(
         systems::kVectorValued,
@@ -81,14 +82,22 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
     this->DeclareUpdatePeriodSec(0.05);
   }
 
+  const SystemPortDescriptor<double>& get_command_input_port() const {
+    return this->get_input_port(0);
+  }
+
+  const SystemPortDescriptor<double>& get_state_input_port() const {
+    return this->get_input_port(1);
+  }
+
   void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const {
+                  SystemOutput<double>* output) const override {
     const systems::BasicVector<double>* state =
           this->EvalVectorInput(context, 1);
     const double cur_position = state->GetAtIndex(position_index_);
 
-    const SchunkWsgCommandReceiverStateVector<double>* traj_state =
-        dynamic_cast<const SchunkWsgCommandReceiverStateVector<double>*>(
+    const SchunkWsgTrajectoryGeneratorStateVector<double>* traj_state =
+        dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
             context.get_difference_state(0));
 
     if (trajectory_) {
@@ -109,22 +118,24 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
     DRAKE_ASSERT(input != nullptr);
     const auto& command = input->GetValue<lcmt_schunk_wsg_command>();
     // The target_position_mm field represents the distance between
-    // the two fingers.  We want to move a single actuator for half of
-    // that distance.
+    // the two fingers. The fingers are connected by a mechanical
+    // linkage, so the relative movement between the two fingers is
+    // twice the actuator's movement (and what we want to calcuate
+    // here is the value for the actuator).
     double target_position = -(command.target_position_mm / 1e3) / 2.;
     if (std::isnan(target_position)) {
       target_position = 0;
     }
 
     const systems::BasicVector<double>* state =
-          this->EvalVectorInput(context, 1);
+        this->EvalVectorInput(context, 1);
     const double cur_position = state->GetAtIndex(position_index_);
 
-    const SchunkWsgCommandReceiverStateVector<double>* last_traj_state =
-        dynamic_cast<const SchunkWsgCommandReceiverStateVector<double>*>(
+    const SchunkWsgTrajectoryGeneratorStateVector<double>* last_traj_state =
+        dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
             context.get_difference_state(0));
-    SchunkWsgCommandReceiverStateVector<double>* new_traj_state =
-        dynamic_cast<SchunkWsgCommandReceiverStateVector<double>*>(
+    SchunkWsgTrajectoryGeneratorStateVector<double>* new_traj_state =
+        dynamic_cast<SchunkWsgTrajectoryGeneratorStateVector<double>*>(
             difference_state->get_mutable_difference_state(0));
 
     if (std::abs(last_traj_state->last_target_position() - target_position) >
@@ -143,7 +154,7 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
   std::unique_ptr<DifferenceState<double>>
   AllocateDifferenceState() const override {
     return std::make_unique<systems::DifferenceState<double>>(
-        std::make_unique<SchunkWsgCommandReceiverStateVector<double>>());
+        std::make_unique<SchunkWsgTrajectoryGeneratorStateVector<double>>());
   }
 
  private:
@@ -206,7 +217,7 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
         PiecewisePolynomial<double>::FirstOrderHold(times, knots)));
   }
 
-  /// The minimum change between the last receive command and the
+  /// The minimum change between the last received command and the
   /// current command to trigger a trajectory update.  Based on
   /// manually driving the actual gripper using the web interface, it
   /// appears that it will at least attempt to respond to commands as
@@ -351,16 +362,14 @@ int DoMain() {
   const RigidBodyTree<double>& tree =
       model->get_plant().get_rigid_body_tree();
 
-  // Creates and adds LCM publisher for visualization.
   drake::lcm::DrakeLcm lcm;
   DrakeVisualizer* visualizer =
       builder.AddSystem<DrakeVisualizer>(tree, &lcm);
 
-  // Create the command subscriber and status publisher.
   auto command_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
           "SCHUNK_WSG_COMMAND", &lcm));
-  auto command_receiver = builder.AddSystem<SchunkWsgCommandReceiver>(
+  auto trajectory_generator = builder.AddSystem<SchunkWsgTrajectoryGenerator>(
       tree, model->position_index());
 
   auto status_pub = builder.AddSystem(
@@ -370,17 +379,13 @@ int DoMain() {
       tree, model->position_index(), model->velocity_index());
 
   builder.Connect(command_sub->get_output_port(0),
-                  command_receiver->get_input_port(0));
-  builder.Connect(command_receiver->get_output_port(0),
-                  model->get_input_port(0));
+                  trajectory_generator->get_command_input_port());
+  builder.Connect(*trajectory_generator, *model);
+  builder.Connect(*model, *visualizer);
+  builder.Connect(*model, *status_sender);
   builder.Connect(model->get_output_port(0),
-                  visualizer->get_input_port(0));
-  builder.Connect(model->get_output_port(0),
-                  status_sender->get_input_port(0));
-  builder.Connect(model->get_output_port(0),
-                  command_receiver->get_input_port(1));
-  builder.Connect(status_sender->get_output_port(0),
-                  status_pub->get_input_port(0));
+                  trajectory_generator->get_state_input_port());
+  builder.Connect(*status_sender, *status_pub);
   auto sys = builder.Build();
 
   Simulator<double> simulator(*sys);
