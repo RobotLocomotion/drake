@@ -15,7 +15,7 @@ namespace maliput {
 namespace monolane {
 
 GTEST_TEST(MonolaneLanesTest, Rot3) {
-  Rot3 yaw90 {M_PI / 2., 0., 0.};
+  Rot3 yaw90 {0., 0., M_PI / 2.};
   EXPECT_NEAR(yaw90.apply({1., 0., 0.}).x(), 0., 1e-6);
   EXPECT_NEAR(yaw90.apply({1., 0., 0.}).y(), 1., 1e-6);
   EXPECT_NEAR(yaw90.apply({1., 0., 0.}).z(), 0., 1e-6);
