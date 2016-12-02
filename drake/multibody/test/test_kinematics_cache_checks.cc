@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_urdf.h"
