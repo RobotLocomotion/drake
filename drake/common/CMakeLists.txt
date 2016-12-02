@@ -45,6 +45,7 @@ set(installed_headers
   eigen_types.h
   functional_form.h
   hash.h
+  is_approx_equal_abstol.h
   nice_type_name.h
   number_traits.h
   polynomial.h
