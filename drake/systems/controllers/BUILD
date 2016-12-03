@@ -15,9 +15,9 @@ cc_library(
 )
 
 cc_library(
-    name = "linear_optimal_control",
-    srcs = ["linear_optimal_control.cc"],
-    hdrs = ["linear_optimal_control.h"],
+    name = "linear_quadratic_regulator",
+    srcs = ["linear_quadratic_regulator.cc"],
+    hdrs = ["linear_quadratic_regulator.h"],
     linkstatic = 1,
     deps = [
         "//drake/common:is_approx_equal_abstol",
