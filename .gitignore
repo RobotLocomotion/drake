@@ -46,6 +46,7 @@ drake.jar
 *.out
 pod-build
 build
+cmake-build*
 mlint_output.html
 .#*
 VALGRIND_OUTPUT.xml
