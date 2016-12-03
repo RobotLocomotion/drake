@@ -57,6 +57,14 @@ cc_library(
     deps = DEPS + [":autodiff"],
 )
 
+cc_library(
+    name = "matrix_util",
+    srcs = ["matrix_util.cc"],
+    hdrs = ["matrix_util.h"],
+    linkstatic = 1,
+    deps = DEPS + ["//drake/common:number_traits"],
+)
+
 # These all require bleeding-edge Eigen, so please don't fold them into any
 # other important labels until we get all workspaces on newer-Eigen.
 cc_library(
