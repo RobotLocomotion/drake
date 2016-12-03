@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <list>
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -32,6 +33,7 @@ namespace solvers {
  * on vdot and f, but are "parameterized" by q and v.
  */
 class Constraint {
+  // TODO(hongkai.dai): Add copyable and movable check.
   void check(size_t num_constraints) {
     static_cast<void>(num_constraints);
     DRAKE_ASSERT(static_cast<size_t>(lower_bound_.size()) == num_constraints &&
@@ -246,47 +248,6 @@ class RotatedLorentzConeConstraint : public Constraint {
     y(1) = x(1);
     y(2) = x(0) * x(1) - x.tail(x.size() - 2).squaredNorm();
   }
-};
-/** A semidefinite constraint  that takes a symmetric matrix as
- well as a linear component.
- <pre>
- lb <= b'*x + Trace(G'*X) <= ub
- </pre>
- */
-class SemidefiniteConstraint : public Constraint {
- public:
-  static const int kNumConstraints = 1;
-  // TODO(naveenoid) : ASSERT check on dimensions of G and b.
-  // TODO(alexdunyak) : Implement Eval().
-  template <typename DerivedQ, typename Derivedb>
-  SemidefiniteConstraint(const Eigen::MatrixBase<DerivedQ>& G,
-                         const Eigen::MatrixBase<Derivedb>& b, double lb,
-                         double ub)
-      : Constraint(kNumConstraints, drake::Vector1d::Constant(lb),
-                   drake::Vector1d::Constant(ub)),
-        G_(G),
-        b_(b) {}
-
-  ~SemidefiniteConstraint() override {}
-
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
-    throw std::runtime_error(
-        "Eval is not implemented in SemidefiniteConstraint.");
-  };
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
-    throw std::runtime_error(
-        "Eval is not implemented in SemidefiniteConstraint.");
-  };
-
-  virtual const Eigen::MatrixXd& G() const { return G_; }
-
-  virtual const Eigen::VectorXd& b() const { return b_; }
-
- private:
-  Eigen::MatrixXd G_;
-  Eigen::VectorXd b_;
 };
 
 /**
@@ -514,5 +475,144 @@ class LinearComplementarityConstraint : public Constraint {
   Eigen::VectorXd q_;
 };
 
+/**
+ * Implements a positive semidefinite constraint on a symmetric matrix S
+ * @f[\text{
+ *     S is p.s.d
+ * }@f]
+ * namely, all eigen values of S are non-negative.
+ */
+class PositiveSemidefiniteConstraint : public Constraint {
+ public:
+  /**
+   * Impose the constraint that a symmetric matrix with size @p rows x @p rows
+   * is positive semidefinite.
+   * @see MathematicalProgram::AddPositiveSemidefiniteConstraint() for how
+   * to use this constraint on some decision variables. We currently use this
+   * constraint as a place holder in MathematicalProgram, to indicate the
+   * positive semidefiniteness of some decision variables.
+   * @param rows The number of rows (and columns) of the symmetric matrix.
+   *
+   * Example:
+   * @code{.cc}
+   * // Create a MathematicalProgram object.
+   * auto prog = MathematicalProgram();
+   *
+   * // Add a 2 x 2 symmetric matrix S to optimization program as new decision
+   * // variables.
+   * auto S = prog.AddSymmetricContinuousVariables<2>("S");
+   *
+   * // Impose a positive semidefinite constraint on S.
+   * std::shared_ptr<PositiveSemidefiniteConstraint> psd_constraint =
+   *     prog.AddPositiveSemidefiniteConstraint(S);
+   *
+   * /////////////////////////////////////////////////////////////
+   * // Add more constraints to make the program more interesting,
+   * // but this is not needed.
+   *
+   * // Add the constraint that S(1, 0) = 1.
+   * prog.AddBoundingBoxConstraint(1, 1, S(1, 0));
+   *
+   * // Minimize S(0, 0) + S(1, 1).
+   * prog.AddLinearCost(Eigen::RowVector2d(1, 1), {S.diagonal()});
+   *
+   * /////////////////////////////////////////////////////////////
+   *
+   * // Now solve the program.
+   * prog.Solve();
+   *
+   * // Retrieve the solution of matrix S.
+   * auto S_value = GetSolution(S);
+   *
+   * // Compute the eigen values of the solution, to see if they are
+   * // all non-negative.
+   * Eigen::Vector4d S_stacked;
+   * S_stacked << S_value.col(0), S_value.col(1);
+   *
+   * Eigen::VectorXd S_eigen_values;
+   * psd_constraint->Eval(S_stacked, S_eigen_values);
+   *
+   * std::cout<<"S solution is: " << S << std::endl;
+   * std::cout<<"The eigen value of S is " << S_eigen_values << std::endl;
+   * @endcode
+   */
+  explicit PositiveSemidefiniteConstraint(int rows)
+      : Constraint(rows, Eigen::VectorXd::Zero(rows),
+                   Eigen::VectorXd::Constant(
+                       rows, std::numeric_limits<double>::infinity())) {}
+
+  PositiveSemidefiniteConstraint(const PositiveSemidefiniteConstraint& rhs) =
+      default;
+
+  PositiveSemidefiniteConstraint& operator=(
+      const PositiveSemidefiniteConstraint& rhs) = default;
+  /**
+   * Evaluate the eigen values of the symmetric matrix.
+   * @param x The stacked columns of the symmetric matrix.
+   */
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+            Eigen::VectorXd& y) const override;
+
+  /**
+   * @param x The stacked columns of the symmetric matrix. This function is not
+   * supported yet, since Eigen's eigen value solver does not accept
+   * AutoDiffScalar.
+   */
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+            TaylorVecXd& y) const override;
+};
+
+/**
+ * Impose the matrix inequality constraint on variable x
+ * <!-->
+ * F0 + x1 * F1 + ... xn * Fn is p.s.d
+ * <-->
+ * @f[
+ * F_0 + x_1  F_1 + ... + x_n  F_n \text{ is p.s.d}
+ * @f]
+ * where p.s.d stands for positive semidefinite.
+ * @f$ F_0, F_1, ..., F_n @f$ are all given symmetric matrices of the same size.
+ */
+class LinearMatrixInequalityConstraint : public Constraint {
+ public:
+  /**
+   * @param F Each symmetric matrix F[i] should be of the same size.
+   * @param symmytry_tolerance  The precision to determine if the input matrices
+   * Fi are all symmetric. @see math::IsSymmetric().
+   */
+  LinearMatrixInequalityConstraint(
+      const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
+      double symmetry_tolerance = 1E-10);
+
+  LinearMatrixInequalityConstraint(
+      const LinearMatrixInequalityConstraint& rhs) = default;
+
+  LinearMatrixInequalityConstraint& operator=(
+      const LinearMatrixInequalityConstraint& rhs) = default;
+
+  /* Getter for all given matrices F */
+  const std::vector<Eigen::MatrixXd>& F() const { return F_; }
+
+  /**
+   * Evaluate the eigen values of the linear matrix.
+   */
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+            Eigen::VectorXd& y) const override;
+
+  /**
+   * This function is not supported, since Eigen's eigen value solver does not
+   * accept AutoDiffScalar type.
+   */
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+            TaylorVecXd& y) const override;
+
+  /// Gets the number of rows in the matrix inequality constraint. Namely
+  /// Fi are all matrix_rows() x matrix_rows() matrices.
+  int matrix_rows() const { return matrix_rows_; }
+
+ private:
+  std::vector<Eigen::MatrixXd> F_;
+  const int matrix_rows_{};
+};
 }  // namespace solvers
 }  // namespace drake

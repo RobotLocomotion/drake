@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/math/matrix_util.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -15,14 +16,21 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   MathematicalProgram prog;
   auto X1 = prog.AddContinuousVariables(2, 3, std::vector<std::string>(6, "X"));
   EXPECT_EQ(prog.num_vars(), 6);
+  EXPECT_FALSE(math::IsSymmetric(X1));
   auto S1 =
       prog.AddSymmetricContinuousVariables(3, std::vector<std::string>(6, "S"));
   EXPECT_EQ(prog.num_vars(), 12);
+  EXPECT_TRUE(math::IsSymmetric(S1));
   auto x1 = prog.AddContinuousVariables(6, "x");
   EXPECT_EQ(prog.num_vars(), 18);
+  EXPECT_FALSE(math::IsSymmetric(x1));
   std::array<std::string, 6> X_name = {{"X", "X", "X", "X", "X", "X"}};
   auto X2 = prog.AddContinuousVariables<2, 3>(X_name);
+  static_assert(decltype(X2)::RowsAtCompileTime == 2 &&
+      decltype(X2)::ColsAtCompileTime == 3,
+      "should be a static matrix of type 2 x 3");
   EXPECT_EQ(prog.num_vars(), 24);
+  EXPECT_FALSE(math::IsSymmetric(X2));
   Eigen::Matrix<double, 6, 1> x_value;
   x_value << 0, 2, 4, 6, 8, 10;
   Eigen::Matrix<double, 6, 1> s_value;
@@ -36,14 +44,14 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   X_expected.resize(2, 3);
 
   // Test if the values in the decision variables are correct.
-  EXPECT_TRUE(CompareMatrices(GetSolution(X1),
-                              X_expected, 1E-14, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(GetSolution(S1),
-                              S_expected, 1E-14, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(GetSolution(x1), x_value,
-                              1E-14, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(GetSolution(X2),
-                              X_expected, 1E-14, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(GetSolution(X1), X_expected, 1E-14,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(GetSolution(S1), S_expected, 1E-14,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(GetSolution(x1), x_value, 1E-14,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(GetSolution(X2), X_expected, 1E-14,
+                              MatrixCompareType::absolute));
 
   // Test constructing VariableList.
   VariableList var_list1({X1, S1});
@@ -66,13 +74,13 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   X_assembled << X1, X2;
   Eigen::Matrix<double, 2, 6> X_assembled_expected;
   X_assembled_expected << X_expected, X_expected;
-  EXPECT_TRUE(CompareMatrices(GetSolution(X_assembled),
-                              X_assembled_expected, 1E-10,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(GetSolution(X_assembled), X_assembled_expected,
+                              1E-10, MatrixCompareType::absolute));
 
   for (int i = 0; i < 2; ++i) {
     for (int j = 0; j < 3; ++j) {
-      EXPECT_TRUE(X_assembled(i, j) == X1(i, j));
+      EXPECT_TRUE(
+          X_assembled(i, j) ==  X1(i, j));
       EXPECT_TRUE(X_assembled(i, j + 3) == X2(i, j));
     }
   }
