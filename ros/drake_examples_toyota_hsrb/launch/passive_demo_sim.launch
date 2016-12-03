@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+  <include file="$(find drake_examples_toyota_hsrb)/launch/load_model.launch" />
+
+  <!--
+    Sets the parameter that controls whether Drake publishes tf messages and
+    then starts the simulation.
+  -->
+  <group ns="drake">
+    <param name="enable_tf_publisher" type="bool" value="true" />
+    <node pkg="drake_examples_toyota_hsrb" type="passive_demo"
+          name="passive_demo" output="screen" />
+  </group>
+</launch>

@@ -1,0 +1,5 @@
+<launch>
+  <param name="model"
+         textfile="$(find drake)/drake/multibody/test/rigid_body_tree/two_dof_robot.urdf"/>
+  <test pkg="drake_ros_systems" test-name="ros_tf_publisher_test" type="ros_tf_publisher_test" />
+</launch>
