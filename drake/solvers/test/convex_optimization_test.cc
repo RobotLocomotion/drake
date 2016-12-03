@@ -12,6 +12,30 @@ namespace drake {
 namespace solvers {
 namespace test {
 namespace {
+void GetLinearProgramSolvers(
+    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
+  AddSolverIfAvailable("Gurobi", solvers);
+  AddSolverIfAvailable("Mosek", solvers);
+  AddSolverIfAvailable("SNOPT", solvers);
+}
+
+void GetQuadraticProgramSolvers(
+    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
+  AddSolverIfAvailable("Gurobi", solvers);
+  AddSolverIfAvailable("Mosek", solvers);
+  AddSolverIfAvailable("SNOPT", solvers);
+}
+
+void GetSecondOrderConicProgramSolvers(
+    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
+  AddSolverIfAvailable("Gurobi", solvers);
+  AddSolverIfAvailable("Mosek", solvers);
+}
+
+void GetSemidefiniteProgramSolvers(
+    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
+  AddSolverIfAvailable("Mosek", solvers);
+}
 /////////////////////////
 ///// Linear Program ////
 /////////////////////////
@@ -902,26 +926,6 @@ void TestFindSpringEquilibrium(
                         spring_stiffness_coefficient, end_pos1, end_pos2,
                         solver);
 }
-
-void GetLinearProgramSolvers(
-    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  AddSolverIfAvailable("Gurobi", solvers);
-  AddSolverIfAvailable("Mosek", solvers);
-  AddSolverIfAvailable("SNOPT", solvers);
-}
-
-void GetQuadraticProgramSolvers(
-    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  AddSolverIfAvailable("Gurobi", solvers);
-  AddSolverIfAvailable("Mosek", solvers);
-  AddSolverIfAvailable("SNOPT", solvers);
-}
-
-void GetSecondOrderConicProgramSolvers(
-    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  AddSolverIfAvailable("Gurobi", solvers);
-  AddSolverIfAvailable("Mosek", solvers);
-}
 }  // namespace
 
 GTEST_TEST(TestConvexOptimization, TestLinearProgramFeasibility) {
@@ -1134,6 +1138,178 @@ GTEST_TEST(TestConvexOptimization, TestFindSpringEquilibrium) {
   GetSecondOrderConicProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     TestFindSpringEquilibrium(*solver);
+  }
+}
+
+// Test a trivial semidefinite problem.
+// min S(0, 0) + S(1, 1)
+// s.t S(1, 0) = 1
+//     S is p.s.d
+// The analytical solution is
+// S = [1 1]
+//     [1 1]
+GTEST_TEST(TestConvexOptimization, TestTrivialSDP) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+  GetSemidefiniteProgramSolvers(&solvers);
+  for (const auto& solver : solvers) {
+    auto prog = MathematicalProgram();
+
+    auto S = prog.AddSymmetricContinuousVariables<2>("S");
+
+    prog.AddPositiveSemidefiniteConstraint(S);
+
+    prog.AddBoundingBoxConstraint(1, 1, S(1, 0));
+
+    prog.AddLinearCost(Eigen::RowVector2d(1, 1), {S.diagonal()});
+
+    RunSolver(&prog, *solver);
+
+    auto S_value = GetSolution(S);
+
+    // Choose 1E-8 since that is Mosek's default feasibility tolerance.
+    EXPECT_TRUE(CompareMatrices(S_value, Eigen::Matrix2d::Ones(), 1E-8));
+  }
+}
+
+namespace {
+// Add condition A' * P + P * A + Q = 0
+//               Q is p.s.d
+template <int x_dim>
+DecisionVariableMatrix<x_dim, x_dim> AddLyapunovCondition(
+    const Eigen::Matrix<double, x_dim, x_dim>& A,
+    const DecisionVariableMatrix<x_dim, x_dim>& P, MathematicalProgram* prog) {
+  const auto Q = prog->AddSymmetricContinuousVariables<x_dim>();
+  prog->AddPositiveSemidefiniteConstraint(Q);
+  // TODO(hongkai.dai): Use symbolic variable to compute the expression
+  // A' * P + P * A + Q.
+  Eigen::Matrix<double, x_dim*(x_dim + 1) / 2, 1> lin_eq_bnd;
+  lin_eq_bnd.setZero();
+  std::vector<Eigen::Triplet<double>> lin_eq_triplets;
+  int lin_eq_idx = 0;
+  for (int j = 0; j < static_cast<int>(x_dim); ++j) {
+    for (int i = j; i < static_cast<int>(x_dim); ++i) {
+      for (int k = 0; k < static_cast<int>(x_dim); ++k) {
+        lin_eq_triplets.push_back(
+            Eigen::Triplet<double>(lin_eq_idx, P(k, j).index(), A(k, i)));
+        lin_eq_triplets.push_back(
+            Eigen::Triplet<double>(lin_eq_idx, P(i, k).index(), A(k, j)));
+      }
+      lin_eq_triplets.push_back(
+          Eigen::Triplet<double>(lin_eq_idx, Q(i, j).index(), 1.0));
+      ++lin_eq_idx;
+    }
+  }
+  Eigen::SparseMatrix<double> lin_eq_A_sparse(x_dim * (x_dim + 1) / 2,
+                                              prog->num_vars());
+  lin_eq_A_sparse.setFromTriplets(lin_eq_triplets.begin(),
+                                  lin_eq_triplets.end());
+
+  Eigen::MatrixXd lin_eq_A(lin_eq_A_sparse);
+  prog->AddLinearEqualityConstraint(lin_eq_A, lin_eq_bnd);
+  return Q;
+}
+}  // namespace
+
+// Solve a semidefinite programming problem.
+// Find the common Lyapunov function for linear systems
+// xdot = Ai*x
+// The condition is
+// min 0
+// s.t P is positive semidefinite
+//     Ai'*P + P*Ai is positive semidefinite
+GTEST_TEST(TestConvexOptimization, TestCommonLyapunov) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+  GetSemidefiniteProgramSolvers(&solvers);
+  for (const auto& solver : solvers) {
+    MathematicalProgram prog;
+    auto P = prog.AddSymmetricContinuousVariables<3>("P");
+    prog.AddPositiveSemidefiniteConstraint(P);
+    Eigen::Matrix3d A1;
+    // clang-format off
+    A1 << -1, -1, -2,
+           0, -1, -3,
+           0, 0, -1;
+    // clang-format on
+    const auto& Q1 = AddLyapunovCondition(A1, P, &prog);
+
+    Eigen::Matrix3d A2;
+    // clang-format off
+    A2 << -1, -1.2, -1.8,
+           0, -0.7, -2,
+           0, 0, -0.4;
+    // clang-format on
+    const auto& Q2 = AddLyapunovCondition(A2, P, &prog);
+
+    RunSolver(&prog, *solver);
+
+    Eigen::Matrix3d P_value = GetSolution(P);
+    Eigen::Matrix3d Q1_value = GetSolution(Q1);
+    Eigen::Matrix3d Q2_value = GetSolution(Q2);
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver_P(P_value);
+
+    // The comparison tolerance is set as 1E-8, to match the Mosek default
+    // feasibility tolerance 1E-8.
+    EXPECT_TRUE(CompareMatrices(P_value, P_value.transpose(),
+                                std::numeric_limits<double>::epsilon(),
+                                MatrixCompareType::absolute));
+    EXPECT_GE(eigen_solver_P.eigenvalues().minCoeff(), -1E-8);
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver_Q1(Q1_value);
+    EXPECT_GE(eigen_solver_Q1.eigenvalues().minCoeff(), -1E-8);
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver_Q2(Q2_value);
+    EXPECT_GE(eigen_solver_Q2.eigenvalues().minCoeff(), -1E-8);
+    EXPECT_TRUE(CompareMatrices(A1.transpose() * P_value + P_value * A1,
+                                -Q1_value, 1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(A2.transpose() * P_value + P_value * A2,
+                                -Q2_value, 1e-8, MatrixCompareType::absolute));
+  }
+}
+
+// Solve an eigen value problem through a semidefinite programming.
+// Minimize the maximum eigen value of a matrix that depends affinely on a
+// variable x
+// min  z
+// s.t z * Identity - x1 * F1 - ... - xn * Fn is p.s.d
+//     A * x <= b
+//     C * x = d
+GTEST_TEST(TestConvexOptimization, TestEigenvalueProblem) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+  GetSemidefiniteProgramSolvers(&solvers);
+  for (const auto& solver : solvers) {
+    MathematicalProgram prog;
+    auto x = prog.AddContinuousVariables<2>("x");
+    Eigen::Matrix3d F1;
+    // clang-format off
+    F1 << 1, 0.2, 0.3,
+          0.2, 2, -0.1,
+          0.3, -0.1, 4;
+    // clang-format on
+    Eigen::Matrix3d F2;
+    // clang-format off
+    F2 << 2, 0.4, 0.7,
+         0.4, -1, 0.1,
+         0.7, 0.1, 5;
+    // clang-format on
+    auto z = prog.AddContinuousVariables<1>("z");
+    prog.AddLinearMatrixInequalityConstraint(
+        {Eigen::Matrix3d::Zero(), Eigen::Matrix3d::Identity(), -F1, -F2},
+        {z, x});
+
+    Eigen::Vector2d x_lb(0.1, 1);
+    Eigen::Vector2d x_ub(2, 3);
+    prog.AddBoundingBoxConstraint(x_lb, x_ub, {x});
+
+    prog.AddLinearCost(drake::Vector1d(1), {z});
+
+    RunSolver(&prog, *solver);
+
+    double z_value = z(0).value();
+    auto x_value = GetSolution(x);
+    auto xF_sum = x_value(0) * F1 + x_value(1) * F2;
+
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver_xF(xF_sum);
+    // The comparison tolerance is set to 1E-7, slightly larger than Mosek's
+    // default feasibility tolerance 1E-8.
+    EXPECT_NEAR(z_value, eigen_solver_xF.eigenvalues().maxCoeff(), 1E-7);
   }
 }
 }  // namespace test
