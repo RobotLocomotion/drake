@@ -11,6 +11,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/number_traits.h"
 
 namespace drake {
 namespace solvers {
@@ -87,9 +88,7 @@ class DecisionVariableScalar {
    * comparison is only meaningful if the two DecisionVariableScalar objects
    * are created by the same MathematicalProgram object.
    */
-  bool operator==(const DecisionVariableScalar& rhs) const {
-    return index_ == rhs.index();
-  }
+  bool operator==(const DecisionVariableScalar& rhs) const;
 
   friend class MathematicalProgram;
 
@@ -149,11 +148,18 @@ struct NumTraits<drake::solvers::DecisionVariableScalar> {
 }  // namespace Eigen
 
 namespace drake {
+template <>
+struct is_numeric<solvers::DecisionVariableScalar> {
+  static constexpr bool value = false;
+};
+}  // namespace drake
+
+namespace drake {
 namespace solvers {
-template <Eigen::Index rows, Eigen::Index cols>
+template <int rows, int cols>
 using DecisionVariableMatrix =
     Eigen::Matrix<drake::solvers::DecisionVariableScalar, rows, cols>;
-template <Eigen::Index rows>
+template <int rows>
 using DecisionVariableVector = DecisionVariableMatrix<rows, 1>;
 using DecisionVariableMatrixX =
     DecisionVariableMatrix<Eigen::Dynamic, Eigen::Dynamic>;
@@ -173,7 +179,9 @@ class VariableList {
   /**
    * Returns all the stored DecisionVariableMatrix.
    */
-  std::list<DecisionVariableMatrixX> variables() const { return variables_; }
+  const std::list<DecisionVariableMatrixX>& variables() const {
+    return variables_;
+  }
 
   /**
    * Given a list of DecisionVariableMatrix @p vars, computes the TOTAL number
@@ -229,7 +237,7 @@ class VariableList {
   /**
    * @return The all unique variables stored in the class.
    */
-  std::unordered_set<DecisionVariableScalar, DecisionVariableScalarHash>
+  const std::unordered_set<DecisionVariableScalar, DecisionVariableScalarHash>&
   unique_variables() const {
     return unique_variable_indices_;
   }
@@ -250,8 +258,7 @@ class VariableList {
  */
 template <typename Derived>
 Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
-GetSolution(
-    const Eigen::MatrixBase<Derived> &decision_variable_matrix) {
+GetSolution(const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
   static_assert(
       std::is_same<typename Derived::Scalar, DecisionVariableScalar>::value,
       "The input should be a DecisionVariableMatrix object");
