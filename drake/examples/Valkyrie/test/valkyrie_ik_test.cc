@@ -217,6 +217,52 @@ int DoMain() {
       -0.612404,   // 36 leftAnklePitch
       -0.354857;   // 37 leftAnkleRoll
 
+  // a squat pose "relaxed" from squat_pose_2 by setting torso rotations smaller
+  VectorXd squat_pose_3(tree->get_num_positions());
+  squat_pose_3 << 0.714247,  // base_x
+      0.0,                    // base_y
+      0.666345,               // base_z
+      -0.914722,              // base_roll
+      0.994925,               // base_pitch
+      0,               // 5 base_yaw
+
+      0,   // 6 torsoYaw
+      0.495029,   // 7 torsoPitch
+      -0.226893,  // 8 torsoRoll
+      0.0,        // 9 lowerNeckPitch
+      // 0.0,                  // 10 neckYaw
+      // 0.0,                  // 11 upperNeckPitch
+
+      -2.0944,  // 12 rightShoulderPitch
+      1.39626,  // 13 rightShoulderRoll
+      0.05,     // 14 rightShoulderYaw
+      0.0,      // 15 rightElbowPitch
+      0.0,      // 16 rightForearmYaw
+      0.0,      // 17 rightWristRoll
+      -0.49,    // 18 rightWristPItch
+
+      -2.04374,   // 19 leftShoulderPitch
+      -1.22173,   // 20 leftShoulderRoll
+      -0.05,      // 21 leftShoulderYaw
+      -0.286651,  // 22 leftElbowPitch
+      0.0,        // 23 leftForearmYaw
+      0.0,        // 24 leftWristRoll
+      0.49,       // 25 LeftWristPitch
+
+      0.196557,     // 26 rightHipYaw
+      0,    // 27 rightHipRoll
+      -2.42,        // 28 rightHipPitch
+      1.3,      // 29 rightKneePitch
+      0,  // 30 rightAnklePitch
+      0.331879,     // 31 rightAnkleRoll
+
+      0.196557,    // 32 leftHipYaw
+      0,  // 33 leftHipRoll
+      -2.37968,    // 34 leftHipPitch
+      1.3,     // 35 leftKneePitch
+      0,   // 36 leftAnklePitch
+      -0.354857;   // 37 leftAnkleRoll
+
   KinematicsCache<double> cache = tree->doKinematics(reach_start);
 
   // 1 Neck Posture Constraint, posture constraints are imposed on q
@@ -351,10 +397,15 @@ int DoMain() {
 
   // 8 Quasistatic constraint
   QuasiStaticConstraint kc_quasi(tree.get(), tspan);
+  QuasiStaticConstraint kc_quasi_feet(tree.get(), tspan);
   kc_quasi.setShrinkFactor(0.9);
   kc_quasi.setActive(true);
   kc_quasi.addContact(1, &l_foot, &l_foot_toes);
   kc_quasi.addContact(1, &r_foot, &r_foot_toes);
+  kc_quasi_feet.setShrinkFactor(0.9);
+  kc_quasi_feet.setActive(true);
+  kc_quasi_feet.addContact(1, &l_foot, &l_foot_pts);
+  kc_quasi_feet.addContact(1, &r_foot, &r_foot_pts);
 
   auto leftArmPtr = tree->FindBody("leftForearmLink");
   Matrix3Xd leftArmContactPts = leftArmPtr->get_contact_points();
@@ -388,20 +439,50 @@ int DoMain() {
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&kc_posture_neck);
   constraint_array.push_back(&kc_lfoot_pos);
-  //constraint_array.push_back(&kc_lfoot_quat);
+  constraint_array.push_back(&kc_lfoot_quat);
   constraint_array.push_back(&kc_rfoot_pos);
-  //constraint_array.push_back(&kc_rfoot_quat);
+  constraint_array.push_back(&kc_rfoot_quat);
   constraint_array.push_back(&kc_posture_torso);
   constraint_array.push_back(&kc_posture_knee);
-  constraint_array.push_back(&kc_posture_larm);
-  constraint_array.push_back(&kc_posture_rarm);
-  constraint_array.push_back(&kc_quasi);
+  //constraint_array.push_back(&kc_posture_larm);
+  //constraint_array.push_back(&kc_posture_rarm);
+  //constraint_array.push_back(&kc_quasi);
+  constraint_array.push_back(&kc_quasi_feet);
   constraint_array.push_back(&kc_lforearm_pos);
   constraint_array.push_back(&kc_rforearm_pos);
 
+
+  VectorXd cost(tree->get_num_positions());
+  cost.setOnes();
+  std::vector<int> base_translation_idx = {0, 1, 2};
+  std::vector<int> base_rotation_idx = {3, 4, 5};
+  std::vector<int> hips_idx={26,27,28,32,33,34};
+  std::vector<int> legs_idx={29,30,31,35,36,37};
+  std::vector<int> arms_idx;
+  for (int i = 12 - 2; i <= 25 - 2; i++) arms_idx.push_back(i);
+  for(int i=0;i<hips_idx.size();i++) hips_idx[i]-=2;
+  for(int i=0;i<legs_idx.size();i++) legs_idx[i]-=2;
+
+  for (const int& i : base_translation_idx) cost(i) = 0;
+  for (const int& i : base_rotation_idx) cost(i) = 1e3;
+  for (const int& i : torso_idx) cost(i) = 10;
+  for (const int& i : legs_idx) cost(i) = 1;
+  for (const int& i : hips_idx) cost(i) = 10;
+
+  // display all costs
+  std::cout << "costs are:" << std::endl;
+  for (int i = 0; i < cost.size(); i++) {
+    std::cout << cost(i) << " " << tree->get_position_name(i) << " " << i
+              << std::endl;
+  }
+
+  Eigen::MatrixXd Q = cost.asDiagonal();
+
   IKoptions ikoptions(tree.get());
+  ikoptions.setQ(Q);
+
   VectorXd q_sol(tree->get_num_positions());
-  VectorXd q_nom = downward_dog_toes;
+  VectorXd q_nom = squat_pose_3;
   int info;
   std::vector<std::string> infeasible_constraint;
   inverseKin(tree.get(), q_nom, q_nom, constraint_array.size(),

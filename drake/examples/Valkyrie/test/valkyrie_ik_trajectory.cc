@@ -652,14 +652,18 @@ int DoMain() {
 
   std::vector<int> base_translation_idx = {0, 1, 2};
   std::vector<int> base_rotation_idx = {3, 4, 5};
-  std::vector<int> legs_idx;
-  for (int i = 26 - 2; i <= 37 - 2; i++) legs_idx.push_back(i);
+  std::vector<int> hips_idx={26,27,28,32,33,34};
+  std::vector<int> legs_idx={29,30,31,35,36,37};
   std::vector<int> arms_idx;
   for (int i = 12 - 2; i <= 25 - 2; i++) arms_idx.push_back(i);
+  for(int i=0;i<hips_idx.size();i++) hips_idx[i]-=2;
+  for(int i=0;i<legs_idx.size();i++) legs_idx[i]-=2;
 
   for (const int& i : base_translation_idx) cost(i) = 0;
-  for (const int& i : torso_idx) cost(i) = 1;
+  for (const int& i : base_rotation_idx) cost(i) = 1e3;
+  for (const int& i : torso_idx) cost(i) = 10;
   for (const int& i : legs_idx) cost(i) = 1;
+  for (const int& i : hips_idx) cost(i) = 10;
   cost(9) = 1e6;  // neck cost
 
   // display all costs
@@ -733,13 +737,18 @@ int DoMain() {
   q_nom_i = squat_pose_2.replicate(1, nTi);
   std::vector<MatrixXd> q_sols;
 
-  while (count < 6) {
+  while (count < 8) {
     VectorXd q_cur = q_sol_i.rightCols(1);
     KinematicsCache<double> cache = tree->doKinematics(q_cur);
     Vector3d center_of_mass = tree->centerOfMass(cache);
     TransformPtsBatch(tree.get(), cache, contact_pts, bodies,
                       &contact_pts_world);
-    if (IsInsideFeet(contact_pts_world, center_of_mass)) break;
+    if (IsInsideFeet(contact_pts_world, center_of_mass)) {
+      cout << "CG is inside feet polygon." << endl;
+      break;
+    } else {
+      cout << "CG is outside feet polygon." << endl;
+    }
 
     /* constraints always active:
      * - arm posture constraint
