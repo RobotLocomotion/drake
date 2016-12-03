@@ -20,13 +20,13 @@ cc_test(
 )
 
 cc_test(
-    name = "linear_optimal_control_test",
+    name = "linear_quadratic_regulator_test",
     size = "small",
-    srcs = ["linear_optimal_control_test.cc"],
+    srcs = ["linear_quadratic_regulator_test.cc"],
     linkstatic = 1,
     deps = [
         "//drake/common:eigen_matrix_compare",
-        "//drake/systems/controllers:linear_optimal_control",
+        "//drake/systems/controllers:linear_quadratic_regulator",
         "@gtest//:main",
     ],
 )

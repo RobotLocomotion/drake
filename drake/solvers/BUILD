@@ -14,9 +14,10 @@ DEPS = [
 
 cc_library(
     name = "constraint",
+    srcs = ["constraint.cc"],
     hdrs = ["constraint.h"],
     linkstatic = 1,
-    deps = DEPS,
+    deps = DEPS + ["//drake/math:matrix_util"],
 )
 
 cc_library(
@@ -51,7 +52,11 @@ cc_library(
         "solution_result.h",
     ],
     linkstatic = 1,
-    deps = DEPS + [":constraint"],
+    deps = DEPS + [
+        "//drake/common:number_traits",
+        "//drake/math:matrix_util",
+        ":constraint",
+    ],
 )
 
 cc_library(
@@ -59,5 +64,7 @@ cc_library(
     srcs = ["system_identification.cc"],
     hdrs = ["system_identification.h"],
     linkstatic = 1,
-    deps = DEPS + [":mathematical_program"],
+    deps = DEPS + [
+        ":mathematical_program",
+    ],
 )
