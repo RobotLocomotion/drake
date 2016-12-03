@@ -40,7 +40,7 @@ bool CompareMatrices(
   if (m1.rows() != m2.rows() || m1.cols() != m2.cols()) {
     std::stringstream msg;
     msg << "Matrix size mismatch: (" << m1.rows() << " x " << m1.cols()
-        << " vs. " << m2.rows() << " x " << m2.rows() << ")";
+        << " vs. " << m2.rows() << " x " << m2.cols() << ")";
     error_message = msg.str();
     result = false;
   }

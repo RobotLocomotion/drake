@@ -30,7 +30,7 @@ GTEST_TEST(DrakeMockLcmTest, PublishTest) {
   const std::vector<uint8_t>& published_message_bytes =
       dut.get_last_published_message(channel_name);
 
-  EXPECT_EQ(message_size, published_message_bytes.size());
+  EXPECT_EQ(message_size, static_cast<int>(published_message_bytes.size()));
   EXPECT_EQ(message_bytes, published_message_bytes);
 }
 

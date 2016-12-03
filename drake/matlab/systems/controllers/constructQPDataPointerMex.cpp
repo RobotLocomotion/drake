@@ -1,5 +1,9 @@
+#include <memory>
+
 #include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/examples/Atlas/atlasUtil.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_urdf.h"
 #include "drake/systems/controllers/InstantaneousQPController.h"
 
 using namespace Eigen;
@@ -32,9 +36,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   std::cout << "urdf_filename: " << urdf_filename << std::endl;
   std::string control_config_filename = mxGetStdString(prhs[narg++]);
   std::cout << "control config: " << control_config_filename << std::endl;
-  std::unique_ptr<RigidBodyTree<double>> robot =
-      std::unique_ptr<RigidBodyTree<double>>(
-          new RigidBodyTree<double>(urdf_filename));
+  auto robot = std::make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf_filename,
+      drake::multibody::joints::kRollPitchYaw, robot.get());
 
   if (nrhs >= 3) {
     std::string urdf_modifications_filename = mxGetStdString(prhs[narg++]);

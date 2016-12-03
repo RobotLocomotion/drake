@@ -16,14 +16,6 @@ namespace drake {
 namespace systems {
 namespace {
 
-// TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
-// the input of the Gain system.
-template <class T>
-unique_ptr<FreestandingInputPort> MakeInput(
-    unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
-}
-
 template <typename T>
 void TestGainSystem(const Gain<T>& gain_system,
                     const Eigen::VectorXd& input_vector,
@@ -44,7 +36,7 @@ void TestGainSystem(const Gain<T>& gain_system,
   input->get_mutable_value() << input_vector;
 
   // Hook input of the expected size.
-  context->SetInputPort(0, MakeInput(std::move(input)));
+  context->FixInputPort(0, std::move(input));
 
   gain_system.EvalOutput(*context, output.get());
 

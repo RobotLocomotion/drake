@@ -457,14 +457,30 @@ class System {
   ///   MySystem<double> plant;
   ///   std::unique_ptr<MySystem<AutoDiffXd>> ad_plant =
   ///       systems::System<double>::ToAutoDiffXd<MySystem>(plant);
-  /// @p endcode
+  /// @endcode
   ///
   /// @tparam S The specific System pointer type to return.
   template <template <typename> class S = ::drake::systems::System>
   static std::unique_ptr<S<AutoDiffXd>> ToAutoDiffXd(
       const System<double>& from) {
+    // Capture the copy as System<AutoDiffXd>.
+    std::unique_ptr<System<AutoDiffXd>> clone(from.DoToAutoDiffXd());
+    // Attempt to downcast to S<AutoDiffXd>.
+    S<AutoDiffXd>* downcast = dynamic_cast<S<AutoDiffXd>*>(clone.get());
+    // If the downcast fails, return nullptr, letting the copy be deleted.
+    if (downcast == nullptr) {
+      return nullptr;
+    }
+    // If the downcast succeeds, redo it, taking ownership this time.
     return std::unique_ptr<S<AutoDiffXd>>(
-        dynamic_cast<S<AutoDiffXd>*>(from.DoToAutoDiffXd()));
+        dynamic_cast<S<AutoDiffXd>*>(clone.release()));
+  }
+
+  /// Creates a deep copy of this System, transmogrified to use the autodiff
+  /// scalar type, with a dynamic-sized vector of partial derivatives.
+  /// Concrete Systems may shadow this with a more specific return type.
+  std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXd() const {
+    return std::unique_ptr<System<AutoDiffXd>>(DoToAutoDiffXd());
   }
 
   /// Declares that @p parent is the immediately enclosing Diagram. The
@@ -640,8 +656,10 @@ class System {
   /// pointer. Overrides should return a more specific covariant type.
   /// Templated overrides may assume that they are subclasses of System<double>.
   ///
-  /// TODO(david-german-tri): Provide a default implementation on LeafSystem,
-  /// then make this method pure virtual.
+  /// No default implementation is provided in LeafSystem, since the member data
+  /// of particular concrete leaf Systems is not knowable to the framework.
+  /// A default implementation is provided in Diagram, which Diagram subclasses
+  /// with member data should override.
   virtual System<AutoDiffXd>* DoToAutoDiffXd() const {
     DRAKE_ABORT_MSG("Override DoToAutoDiffXd before using ToAutoDiffXd.");
     return nullptr;

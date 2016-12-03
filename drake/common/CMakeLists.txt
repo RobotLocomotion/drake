@@ -37,7 +37,6 @@ set(installed_headers
   drake_assert.h
   drake_compat.h
   drake_deprecated.h
-  drake_export.h
   drake_path.h
   drake_throw.h
   eigen_autodiff_types.h
@@ -46,6 +45,7 @@ set(installed_headers
   eigen_types.h
   functional_form.h
   hash.h
+  is_approx_equal_abstol.h
   nice_type_name.h
   number_traits.h
   polynomial.h

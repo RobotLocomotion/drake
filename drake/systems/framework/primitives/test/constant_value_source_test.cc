@@ -26,11 +26,6 @@ class ConstantValueSourceTest : public ::testing::Test {
     input_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
-  static std::unique_ptr<FreestandingInputPort> MakeInput(
-      std::unique_ptr<BasicVector<double>> data) {
-    return make_unique<FreestandingInputPort>(std::move(data));
-  }
-
   std::unique_ptr<System<double>> source_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;

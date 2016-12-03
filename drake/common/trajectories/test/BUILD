@@ -1,7 +1,5 @@
 # -*- python -*-
-
-# This file contains rules for the Bazel build system.
-# See http://bazel.io/ .
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
 
@@ -13,28 +11,32 @@ DEPS = [
 
 cc_library(
     name = "random_piecewise_polynomial",
-    hdrs = ["random_piecewise_polynomial.h"],
-    deps = ["//drake/common/test:random_polynomial_matrix"],
     testonly = 1,
-    linkstatic = 1)
+    hdrs = ["random_piecewise_polynomial.h"],
+    linkstatic = 1,
+    deps = ["//drake/common/test:random_polynomial_matrix"],
+)
 
 cc_test(
     name = "piecewise_polynomial_test",
+    size = "small",
     srcs = ["piecewise_polynomial_test.cc"],
     deps = DEPS + ["//drake/common/trajectories:piecewise_polynomial"],
-    size = "small")
+)
 
 cc_test(
     name = "exponential_plus_piecewise_polynomial_test",
-    srcs = ["exponential_plus_piecewise_polynomial_test.cc", "random_piecewise_polynomial.h"],
+    size = "small",
+    srcs = [
+        "exponential_plus_piecewise_polynomial_test.cc",
+        "random_piecewise_polynomial.h",
+    ],
     deps = DEPS + ["//drake/common/trajectories:piecewise_polynomial"],
-    size = "small")
+)
 
 cc_test(
     name = "piecewise_polynomial_trajectory_test",
+    size = "small",
     srcs = ["piecewise_polynomial_trajectory_test.cc"],
     deps = DEPS + ["//drake/common/trajectories:piecewise_polynomial_trajectory"],
-    size = "small")
-
-
-
+)

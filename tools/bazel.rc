@@ -9,3 +9,50 @@ build --cxxopt -std=c++1y
 
 # Test options.
 test --test_output=errors
+
+# Clang.
+build:clang --compiler=clang-3.9
+build:clang --crosstool_top=//tools:default-toolchain
+
+# Coverage build.
+build:coverage --strip=never
+build:coverage --copt -g
+build:coverage --copt -fprofile-arcs -ftest-coverage
+build:coverage --linkopt -fprofile-arcs -ftest-coverage
+
+# ASan build.
+build:asan --action_env=ASAN_OPTIONS
+build:asan --strip=never
+build:asan --copt -fsanitize=address
+build:asan --copt -O1
+build:asan --copt -fno-omit-frame-pointer
+build:asan --linkopt -fsanitize=address
+
+# LSan build.
+build:lsan --action_env=LSAN_OPTIONS
+build:lsan --strip=never
+build:lsan --copt -fsanitize=leak
+build:lsan --copt -O1
+build:lsan --copt -fno-omit-frame-pointer
+build:lsan --linkopt -fsanitize=leak
+
+# TSan build.
+build:tsan --action_env=TSAN_OPTIONS
+build:tsan --strip=never
+build:tsan --copt -fsanitize=thread
+build:tsan --copt -O1
+build:tsan --copt -fno-omit-frame-pointer
+build:tsan --linkopt -fsanitize=thread
+
+# UBSan build.
+build:ubsan --action_env=UBSAN_OPTIONS
+build:ubsan --strip=never
+build:ubsan --copt -fsanitize=undefined
+build:ubsan --copt -O1
+build:ubsan --copt -fno-omit-frame-pointer
+build:ubsan --linkopt -fsanitize=undefined
+
+# Memcheck build.
+build:memcheck --strip=never
+build:memcheck --copt -g
+build:memcheck --run_under=//tools:valgrind

@@ -14,8 +14,7 @@ class RigidBodyPlant;
 
 /**
  A class containg the contact results (contact points and response spatial
- forces for each colliding pair of collision elements) produced by a
- RigidBodyPlant system.
+ forces for each colliding pair of collision elements).
 
  @tparam T      The scalar type. It must be a valid Eigen scalar.
 
@@ -25,6 +24,8 @@ class RigidBodyPlant;
 template <typename T>
 class ContactResults {
  public:
+  ContactResults();
+
   ContactResults(const ContactResults<T>& other) = default;
   ContactResults<T>& operator=(const ContactResults<T>& other) = default;
   ContactResults(ContactResults<T>&& other) = delete;
@@ -39,18 +40,6 @@ class ContactResults {
    */
   const ContactInfo<T>& get_contact_info(int i) const;
 
-  // TODO(SeanCurtis-TRI): Explore additional interfaces for accessing collision
-  // information (e.g, query by body, etc.)
- private:
-  // RigidBodyPlant is the only class allowed to instantiate/update this class
-  // through Clear and AddContact().
-  // TODO(SeanCurtis-TRI): when ContactResults can reference entries in the
-  // cache this friendship and the method UpdateFromContext() won't be needed.
-  friend class RigidBodyPlant<T>;
-
-  // Only RigidBodyPlant can construct a ContactResults.
-  ContactResults();
-
   // Clears the set of contact information for when the old data becomes
   // invalid.
   void Clear();
@@ -60,6 +49,7 @@ class ContactResults {
   ContactInfo<T>& AddContact(DrakeCollision::ElementId element_a,
                              DrakeCollision::ElementId element_b);
 
+ private:
   std::vector<ContactInfo<T>> contacts_;
 };
 

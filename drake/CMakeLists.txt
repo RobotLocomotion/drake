@@ -32,13 +32,6 @@ option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but ar
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-if(WITH_PYTHON_3)
-  set(Python_ADDITIONAL_VERSIONS 3.5)
-  find_package(PythonInterp 3 MODULE REQUIRED)
-else()
-  find_package(PythonInterp MODULE REQUIRED)
-endif()
-
 find_package(BLAS MODULE)
 find_package(Doxygen MODULE)
 find_package(Perl MODULE)
@@ -86,6 +79,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=shadow")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=inconsistent-missing-override")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=sign-compare")
 else()
   # TODO(jwnimmer-tri) Get a similar complement of flags working on clang.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=extra -Wno-unused-parameter")
@@ -181,7 +175,10 @@ if(Matlab_FOUND)
   add_subdirectory(matlab)
 endif()
 add_subdirectory(examples)
-add_subdirectory(bindings)
+
+if(Matlab_FOUND OR NOT DISABLE_PYTHON)
+  add_subdirectory(bindings)
+endif()
 
 if(BUILD_TESTING)
   add_subdirectory(regtests)

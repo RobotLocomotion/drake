@@ -42,10 +42,7 @@ size_t GetConstraintBounds(const Constraint& c, Number* lb, Number* ub) {
 /// @return number of constraints
 size_t GetNumGradients(const Constraint& c, const VariableList& variable_list,
                        Index* num_grad) {
-  size_t var_count = 0;
-  for (const DecisionVariableView& v : variable_list) {
-    var_count += v.size();
-  }
+  size_t var_count = variable_list.size();
 
   const size_t num_constraints = c.num_constraints();
   *num_grad = num_constraints * var_count;
@@ -69,11 +66,12 @@ size_t GetGradientMatrix(const Constraint& c, const VariableList& variable_list,
   const size_t m = c.num_constraints();
   size_t grad_index = 0;
 
-  for (const DecisionVariableView& v : variable_list) {
-    for (size_t i = 0; i < m; i++) {
-      for (size_t j = 0; j < v.size(); j++) {
+  for (const DecisionVariableMatrixX& v : variable_list.variables()) {
+    DRAKE_ASSERT(v.cols() == 1);
+    for (int i = 0; i < static_cast<int>(m); ++i) {
+      for (int j = 0; j < v.size(); ++j) {
         iRow[grad_index] = constraint_idx + i;
-        jCol[grad_index] = v.index() + j;
+        jCol[grad_index] = v(j, 0).index();
         grad_index++;
       }
     }
@@ -105,17 +103,18 @@ size_t EvaluateConstraint(const Eigen::VectorXd& xvec, const Constraint& c,
   // the correct geometry (e.g. the constraint uses all decision
   // variables in the same order they appear in xvec), but this is not
   // currently done).
-  size_t var_count = 0;
-  for (const DecisionVariableView& v : variable_list) {
-    var_count += v.size();
-  }
+  size_t var_count = variable_list.size();
 
   auto tx = math::initializeAutoDiff(xvec);
   TaylorVecXd this_x(var_count);
   size_t index = 0;
-  for (const DecisionVariableView& v : variable_list) {
-    this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
-    index += v.size();
+  for (const DecisionVariableMatrixX& v : variable_list.variables()) {
+    DRAKE_ASSERT(v.cols() == 1);
+    int num_v_variables = v.size();
+    for (int i = 0; i < num_v_variables; ++i) {
+      this_x(index + i) = tx(v(i, 0).index());
+    }
+    index += num_v_variables;
   }
 
   TaylorVecXd ty(c.num_constraints());
@@ -132,10 +131,11 @@ size_t EvaluateConstraint(const Eigen::VectorXd& xvec, const Constraint& c,
   // figure out where the derivatives we actually care about are
   // located.
   size_t grad_idx = 0;
-  for (const DecisionVariableView& v : variable_list) {
+  for (const DecisionVariableMatrixX& v : variable_list.variables()) {
+    DRAKE_ASSERT(v.cols() == 1);
     for (size_t i = 0; i < c.num_constraints(); i++) {
-      for (size_t j = v.index(); j < v.index() + v.size(); j++) {
-        grad[grad_idx++] = ty(i).derivatives()(j);
+      for (int j = 0; j < v.size(); j++) {
+        grad[grad_idx++] = ty(i).derivatives()(v(j, 0).index());
       }
     }
   }
@@ -235,9 +235,11 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       const auto& lower_bound = c->lower_bound();
       const auto& upper_bound = c->upper_bound();
       int var_count = 0;
-      for (const DecisionVariableView& v : binding.variable_list()) {
-        for (size_t k = 0; k < v.size(); k++) {
-          const int idx = v.index() + k;
+      for (const DecisionVariableMatrixX& v :
+           binding.variable_list().variables()) {
+        DRAKE_ASSERT(v.cols() == 1);
+        for (int k = 0; k < v.size(); ++k) {
+          const int idx = v(k, 0).index();
           x_l[idx] = std::max(lower_bound(var_count), x_l[idx]);
           x_u[idx] = std::min(upper_bound(var_count), x_u[idx]);
           ++var_count;
@@ -428,19 +430,27 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     cost_cache_->grad.assign(n, 0);
 
     for (auto const& binding : problem_->GetAllCosts()) {
-      size_t index = 0;
-      for (const DecisionVariableView& v : binding.variable_list()) {
-        this_x.conservativeResize(index + v.size());
-        this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
-        index += v.size();
+      int index = 0;
+      for (const DecisionVariableMatrixX& v :
+           binding.variable_list().variables()) {
+        DRAKE_ASSERT(v.cols() == 1);
+        int num_v_variables = v.size();
+        this_x.conservativeResize(index + num_v_variables);
+        for (int i = 0; i < num_v_variables; ++i) {
+          this_x(index + i) = tx(v(i, 0).index());
+        }
+        index += num_v_variables;
       }
 
       binding.constraint()->Eval(this_x, ty);
 
       cost_cache_->result[0] += ty(0).value();
-      for (const DecisionVariableView& v : binding.variable_list()) {
-        for (size_t j = v.index(); j < v.index() + v.size(); j++) {
-          cost_cache_->grad[j] += ty(0).derivatives()(j);
+      for (const DecisionVariableMatrixX& v :
+           binding.variable_list().variables()) {
+        DRAKE_ASSERT(v.cols() == 1);
+        for (int j = 0; j < v.size(); ++j) {
+          cost_cache_->grad[v(j, 0).index()] +=
+              ty(0).derivatives()(v(j, 0).index());
         }
       }
     }

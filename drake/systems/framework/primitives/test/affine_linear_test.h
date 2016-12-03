@@ -26,16 +26,7 @@ class AffineLinearSystemTest : public ::testing::Test {
 
   void SetInput(const Eigen::Ref<const VectorX<double>>& u) {
     input_vector_->get_mutable_value() << u;
-    context_->SetInputPort(
-        0, std::make_unique<FreestandingInputPort>(std::move(input_vector_)));
-  }
-
-  // Helper method to create free standing input ports, i.e., those that are
-  // not connected to any other output port in the system.
-  // Used to test standalone systems not part of a Diagram.
-  static std::unique_ptr<FreestandingInputPort> MakeInput(
-      std::unique_ptr<BasicVector<double>> data) {
-    return std::make_unique<FreestandingInputPort>(std::move(data));
+    context_->FixInputPort(0, std::move(input_vector_));
   }
 
   static Eigen::MatrixXd make_2x2_matrix(

@@ -31,7 +31,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-misleading-indentation")
 endif()
 
-if(PYTHON_EXECUTABLE)
+if(NOT DISABLE_PYTHON)
   include(SwigPython)
   set(python_install_subdir lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages ${CMAKE_CURRENT_SOURCE_DIR}/../python)
 

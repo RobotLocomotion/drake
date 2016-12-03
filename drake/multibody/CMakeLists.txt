@@ -9,6 +9,7 @@ drake_install_pkg_config_file(drake-xml-util
     eigen3)
 
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
+  kinematics_cache.cc
   parser_model_instance_id_table.cc
   parser_common.cc
   parser_sdf.cc
@@ -29,6 +30,7 @@ drake_install_headers(
   force_torque_measurement.h
   kinematic_path.h
   kinematics_cache.h
+  kinematics_cache-inl.h
   material_map.h
   pose_map.h
   rigid_body_actuator.h
@@ -61,10 +63,6 @@ drake_install_pkg_config_file(drake-ik-options
     drake-rbm
     eigen3)
 
-# Note that drakeIK is published via a SWIG MATLAB wrapper, but we haven't
-# moved it into the "C++ and MATLAB shared code" lower section of this file,
-# because the C++ IK will remain in this directory.  Only MATLAB code that will
-# be evicted from this directory is moved to the lower section of this file.
 set(drakeIK_SRC_FILES constraint_wrappers.cc ik_trajectory_helper.cc
   inverse_kinematics.cc inverse_kinematics_backend.cc inverse_kinematics_pointwise.cc
   inverse_kinematics_trajectory.cc inverse_kinematics_trajectory_backend.cc)

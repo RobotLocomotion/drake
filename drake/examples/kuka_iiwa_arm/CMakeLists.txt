@@ -80,24 +80,10 @@ if(lcm_FOUND)
   drake_add_test(
       NAME kuka_simulation COMMAND kuka_simulation -simulation_sec 0.1)
 
-  add_executable(run_kuka_iiwa_gravity_compensated_torque_control
-      run_kuka_iiwa_gravity_compensated_torque_control.cc)
-  target_link_libraries(run_kuka_iiwa_gravity_compensated_torque_control
-      drakeKukaIiwaArm
-      drakeRBSystem
-      drakeLCMSystem
-      gflags)
-
-  add_executable(run_kuka_iiwa_gravity_compensated_position_control
-      run_kuka_iiwa_gravity_compensated_position_control.cc)
-  target_link_libraries(run_kuka_iiwa_gravity_compensated_position_control
-      drakeKukaIiwaArm
-      drakeRBSystem
-      drakeLCMSystem
-      gflags)
 endif()
 
 add_subdirectory(controlled_kuka)
+add_subdirectory(iiwa_world)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

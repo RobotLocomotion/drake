@@ -10,6 +10,8 @@
   #include <Python.h>
 #endif
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_urdf.h"
 %}
 
 %include <typemaps.i>
@@ -77,7 +79,8 @@
 %include "drake/multibody/rigid_body_tree.h"
 %include "drake/multibody/joints/floating_base_types.h"
 %extend RigidBodyTree {
-  RigidBodyTree(const std::string& urdf_filename, const std::string& joint_type) {
+  RigidBodyTree(const std::string& urdf_filename,
+      const std::string& joint_type = "ROLLPITCHYAW") {
     // FIXED = 0, ROLLPITCHYAW = 1, QUATERNION = 2
     drake::multibody::joints::FloatingBaseType floating_base_type;
 
@@ -92,7 +95,11 @@
       return nullptr;
     }
 
-    return new RigidBodyTree<double>(urdf_filename, floating_base_type);
+    auto tree = new RigidBodyTree<double>();
+    drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+        urdf_filename, floating_base_type, tree);
+
+    return tree;
   }
 
   KinematicsCache<double> doKinematics(

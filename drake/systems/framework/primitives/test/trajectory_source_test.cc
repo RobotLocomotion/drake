@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system_input.h"
@@ -27,11 +28,6 @@ class TrajectorySourceTest : public ::testing::Test {
     context_ = source_->CreateDefaultContext();
     output_ = source_->AllocateOutput(*context_);
     input_ = make_unique<BasicVector<double>>(3 /* length */);
-  }
-
-  static std::unique_ptr<FreestandingInputPort> MakeInput(
-      std::unique_ptr<BasicVector<double>> data) {
-    return make_unique<FreestandingInputPort>(std::move(data));
   }
 
   const PiecewisePolynomialTrajectory kppTraj;

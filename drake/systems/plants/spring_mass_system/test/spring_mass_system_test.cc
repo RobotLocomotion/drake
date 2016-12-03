@@ -54,14 +54,6 @@ class SpringMassSystemTest : public ::testing::Test {
     state_->set_conservative_work(0);
   }
 
-  // Helper method to create input ports (free standing input ports) that are
-  // not connected to any other output port in the system.
-  // Used to test standalone systems not part of a Diagram.
-  static std::unique_ptr<FreestandingInputPort> MakeInput(
-      std::unique_ptr<BasicVector<double>> data) {
-    return make_unique<FreestandingInputPort>(std::move(data));
-  }
-
  protected:
   std::unique_ptr<SpringMassSystem<double>> system_;
   std::unique_ptr<Context<double>> context_;
@@ -197,7 +189,7 @@ TEST_F(SpringMassSystemTest, DynamicsWithExternalForce) {
   // Creates a free standing input port not actually connected to the output of
   // another system but that has its own data in force_vector.
   // This is done in order to be able to test this system standalone.
-  context_->SetInputPort(0, MakeInput(std::move(force_vector)));
+  context_->FixInputPort(0, std::move(force_vector));
 
   InitializeState(0.1, 0.1);  // Displacement 0.1m, velocity 0.1m/sec.
   system_->EvalTimeDerivatives(*context_, system_derivatives_.get());

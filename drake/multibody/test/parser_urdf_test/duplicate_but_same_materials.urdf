@@ -1,0 +1,49 @@
+<?xml version="1.0" ?>
+
+<!--
+Defines a URDF model in which two links have the same material definition. This
+should NOT be a problem.
+-->
+
+<robot name="duplicate_but_same_materials" xmlns:xacro="http://ros.org/wiki/xacro">
+  <link name="link1">
+    <inertial>
+      <mass value="0.00001"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 1.57 0" xyz=".01429 0 0"/>
+      <geometry>
+        <cylinder length=".02858" radius="0.001"/>
+      </geometry>
+      <material name="foo_color">
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="link2">
+    <inertial>
+      <mass value="0.00001"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 1.57 0" xyz=".02699 0 0"/>
+      <geometry>
+        <cylinder length=".05398" radius="0.001"/>
+      </geometry>
+      <material name="foo_color">
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="joint1" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin rpy="0 0 0" xyz=".02858 0 0"/>
+    <limit effort="100" lower="1.092" upper="1.940" velocity="100"/>
+  </joint>
+</robot>
+

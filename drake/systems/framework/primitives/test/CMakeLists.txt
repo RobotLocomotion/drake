@@ -37,6 +37,9 @@ target_link_libraries(pass_through_test drakeSystemFramework)
 drake_add_cc_test(pass_through_scalartype_test)
 target_link_libraries(pass_through_scalartype_test drakeSystemFramework)
 
+drake_add_cc_test(signal_logger_test)
+target_link_libraries(signal_logger_test drakeSystemFramework drakeSystemAnalysis)
+
 drake_add_cc_test(trajectory_source_test)
 target_link_libraries(trajectory_source_test drakeSystemFramework)
 
