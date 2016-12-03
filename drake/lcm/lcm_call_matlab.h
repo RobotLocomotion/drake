@@ -37,7 +37,7 @@ struct LcmMatlabRemoteVariable {
   //  ~LcmMatlabRemoteVariable(); // TODO(russt): send a destroy message on
   //  deletion
 
-  int64_t uid_;
+  const int64_t uid_{};
 };
 
 /// Serialize our favorite data types into the lcm_matlab_array structure.
