@@ -343,11 +343,11 @@ int DoMain() {
   // a squat pose with both hands on the ground
   VectorXd squat_pose_2(tree->get_num_positions());
   squat_pose_2 << 0.714247,  // base_x
-      0.0,                    // base_y
-      0.666345,               // base_z
-      -0.914722,              // base_roll
-      0.994925,               // base_pitch
-      -1.12529,               // 5 base_yaw
+      0.0,                   // base_y
+      0.666345,              // base_z
+      -0.914722,             // base_roll
+      0.994925,              // base_pitch
+      -1.12529,              // 5 base_yaw
 
       0.366227,   // 6 torsoYaw
       0.495029,   // 7 torsoPitch
@@ -390,7 +390,7 @@ int DoMain() {
   // director-generated M-file.
   const double inf = std::numeric_limits<double>::infinity();
 
-  Vector2d tspan(0, 1);
+  Vector2d tspan(0, inf);
   // Neck Posture Constraint, posture constraints are imposed on q
   PostureConstraint kc_posture_neck(tree.get(), tspan);
   std::vector<int> neck_idx;
@@ -447,7 +447,7 @@ int DoMain() {
 
   // Left foot position and orientation constraint, position and orientation
   // constraints are imposed on frames/bodies
-  Vector2d tspan_foot_flat(0.5, 1);
+  Vector2d tspan_foot_flat(0.5, inf);
   const Vector3d origin(0, 0, 0);
 
   auto leftFootPtr = tree->FindBody("leftFoot");
@@ -551,10 +551,10 @@ int DoMain() {
 
   kc_posture_rarm.setJointLimits(7, rarm_idx.data(), rarm_lb, rarm_ub);
 
-  // 8 Quasistatic constraint
+  // Quasistatic constraint
   Vector2d tspan_4pts(0, 1);
   Vector2d tspan_3pts(1.5, 2.5);
-  Vector2d tspan_2pts(2.5, 3);
+  Vector2d tspan_2pts(0, inf);
   QuasiStaticConstraint kc_kuasi_4pts(tree.get(), tspan_4pts);
   QuasiStaticConstraint kc_kuasi_3pts(tree.get(), tspan_3pts);
   QuasiStaticConstraint kc_kuasi_2pts(tree.get(), tspan_2pts);
@@ -627,6 +627,17 @@ int DoMain() {
   // constraint_array.push_back(&kc_kuasi_3pts);
   // constraint_array.push_back(&kc_pelvis_pos);
 
+  std::vector<RigidBodyConstraint*> constraint_array_standing;
+  constraint_array_standing.push_back(&kc_posture_neck);
+  constraint_array_standing.push_back(&no_collision);
+  constraint_array_standing.push_back(&kc_posture_torso);
+  constraint_array_standing.push_back(&kc_posture_knee);
+  constraint_array_standing.push_back(&kc_lfoot_quat);
+  constraint_array_standing.push_back(&kc_rfoot_quat);
+  constraint_array_standing.push_back(&kc_lfoot_pos);
+  constraint_array_standing.push_back(&kc_rfoot_pos);
+  constraint_array_standing.push_back(&kc_kuasi_2pts);
+
   // setting Q
   std::cout << "postions and names: " << std::endl;
   for (int i = 0; i < tree->get_num_positions(); i++)
@@ -652,19 +663,19 @@ int DoMain() {
 
   std::vector<int> base_translation_idx = {0, 1, 2};
   std::vector<int> base_rotation_idx = {3, 4, 5};
-  std::vector<int> hips_idx={26,27,28,32,33,34};
-  std::vector<int> legs_idx={29,30,31,35,36,37};
+  std::vector<int> hips_idx = {26, 27, 28, 32, 33, 34};
+  std::vector<int> legs_idx = {29, 30, 31, 35, 36, 37};
   std::vector<int> arms_idx;
   for (int i = 12 - 2; i <= 25 - 2; i++) arms_idx.push_back(i);
-  for(int i=0;i<hips_idx.size();i++) hips_idx[i]-=2;
-  for(int i=0;i<legs_idx.size();i++) legs_idx[i]-=2;
+  for (int i = 0; i < hips_idx.size(); i++) hips_idx[i] -= 2;
+  for (int i = 0; i < legs_idx.size(); i++) legs_idx[i] -= 2;
 
-  for (const int& i : base_translation_idx) cost(i) = 0;
-  for (const int& i : base_rotation_idx) cost(i) = 1e3;
-  for (const int& i : torso_idx) cost(i) = 10;
-  for (const int& i : legs_idx) cost(i) = 1;
-  for (const int& i : hips_idx) cost(i) = 10;
-  cost(9) = 1e6;  // neck cost
+  //for (const int& i : base_translation_idx) cost(i) = 0;
+  //for (const int& i : base_rotation_idx) cost(i) = 1e3;
+  //for (const int& i : torso_idx) cost(i) = 10;
+  //for (const int& i : legs_idx) cost(i) = 1;
+  //for (const int& i : hips_idx) cost(i) = 10;
+  //cost(9) = 1e6;  // neck cost
 
   // display all costs
   std::cout << "costs are:" << std::endl;
@@ -681,8 +692,54 @@ int DoMain() {
   ikoptions.setQ(Q);
   ikoptions.setQa(Qa);
   ikoptions.setQv(Qv);
-  ikoptions.setSequentialSeedFlag(true);
+  ikoptions.setSequentialSeedFlag(false);
+  /*
+  int nT_s = 2;  // s stands for standing
+  const int kN_per_traj = 20;
+  int info_s = 0;
+  const std::vector<double> t_s = {0, 5};
+  MatrixXd q_nom_s(tree->get_num_positions(), nT_s);
+  q_nom_s.leftCols(1) = squat_pose_2;
+  q_nom_s.rightCols(1) = standing_pose;
+  VectorXd qdot0_s = VectorXd::Zero(tree->get_num_velocities());
+  MatrixXd q_sol_s(tree->get_num_positions(), nT_s);
+  MatrixXd qdot_sol_s(tree->get_num_velocities(), nT_s);
+  MatrixXd qddot_sol_s(tree->get_num_positions(), nT_s);
+  std::vector<std::string> infeasible_constraint;
+  inverseKinTraj(tree.get(), nT_s, t_s.data(), qdot0_s, q_nom_s, q_nom_s,
+                 constraint_array_standing.size(),
+                 constraint_array_standing.data(), ikoptions, &q_sol_s,
+                 &qdot_sol_s, &qddot_sol_s, &info_s, &infeasible_constraint);
+  cout << "info (standing) is " << info_s << endl;
 
+  std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory_s =
+      std::make_unique<PiecewisePolynomialTrajectory>(q_sol_s, t_s);
+
+  int nT_s_pointwise = 1 + kN_per_traj;
+  MatrixXd q_sol_s_pointwise(tree->get_num_positions(), nT_s_pointwise);
+  std::vector<double> t_s_pointwise;
+  t_s_pointwise.push_back(0);
+
+  MatrixXd q_nom_pointwise(tree->get_num_positions(), nT_s_pointwise);
+  q_nom_pointwise.leftCols(1)=squat_pose_2;
+
+  for(int i=1;i<=kN_per_traj;i++) {
+    double t_current = t_s[nT_s-1] / kN_per_traj * i;
+    t_s_pointwise.push_back(t_current);
+    q_nom_pointwise.col(i) = poly_trajectory_s->value(t_current);
+  }
+  std::vector<int> info_s_pointwise(nT_s_pointwise,0);
+
+  inverseKinPointwise(tree.get(), nT_s_pointwise, t_s_pointwise.data(),
+                      q_nom_pointwise, q_nom_pointwise,
+                      constraint_array_standing.size(),
+                      constraint_array_standing.data(),
+                      ikoptions, &q_sol_s_pointwise, info_s_pointwise.data(),
+                      &infeasible_constraint);
+  // for (int i = 0; i < info_s_pointwise.size(); i++)
+  //   cout << "info_s_ptwise" << i << ": "  << info_s_pointwise[i] << endl;
+  // cout << q_sol_s_pointwise << endl;
+  */
   const int kN_per_step = 2;
   int nT1 = kN_per_step + 1;
   std::vector<double> t1;
@@ -691,7 +748,7 @@ int DoMain() {
   Eigen::MatrixXd q_nom1(tree->get_num_positions(), nT1);
   q_nom1 = prone_pose_2.replicate(1, nT1);
   std::vector<int> info_v(nT1, 0);
-  std::vector<std::string> infeasible_constraint;
+
   inverseKinPointwise(tree.get(), nT1, t1.data(), q_nom1, q_nom1,
                       constraint_array.size(), constraint_array.data(),
                       ikoptions, &q_sol1, info_v.data(),
@@ -699,12 +756,8 @@ int DoMain() {
   for (int i = 0; i < info_v.size(); i++) {
     std::cout << "info " << i << ": " << info_v[i] << std::endl;
   }
-  /*
-  Vector2d x1(0,0);
-  Vector2d x2(1,1);
-  cout << "convex combination of x and y: " << convex_combination(x1,x2,0.8) <<
-       endl;
-  */
+
+
   KinematicsCache<double> cache_start = tree->doKinematics(prone_pose_2);
   Vector3d left_start = tree->transformPoints(cache_start, origin, l_foot, 0);
   Vector3d right_start = tree->transformPoints(cache_start, origin, r_foot, 0);
@@ -737,7 +790,7 @@ int DoMain() {
   q_nom_i = squat_pose_2.replicate(1, nTi);
   std::vector<MatrixXd> q_sols;
 
-  while (count < 8) {
+  while (count < 2) {
     VectorXd q_cur = q_sol_i.rightCols(1);
     KinematicsCache<double> cache = tree->doKinematics(q_cur);
     Vector3d center_of_mass = tree->centerOfMass(cache);
@@ -750,15 +803,14 @@ int DoMain() {
       cout << "CG is outside feet polygon." << endl;
     }
 
-    /* constraints always active:
-     * - arm posture constraint
-     * - arm position constraint
-     *
-     * constraints depending on left/right
-     * - 3 pts quasistatic
-     * - left(right) foot fixed
-     * - right(left) foot moving "forward"
-     */
+    // constraints always active:
+    // - arm posture constraint
+    // - arm position constraint
+    //
+    // constraints depending on left/right
+    // - 3 pts quasistatic
+    // - left(right) foot fixed
+    // - right(left) foot moving "forward"
 
     std::vector<double> ti;
     for (int i = 0; i < nTi; i++) ti.push_back(1.0 / kN_per_step * (i + 1));
@@ -866,6 +918,7 @@ int DoMain() {
     constraint_array.pop_back();  // kc_rfoot_fixed/forward
     constraint_array.pop_back();  // kc_lfoot_fixed/forward
   }
+
   //cout << "constraint_array_size = " << constraint_array.size() << endl;
 
   Eigen::MatrixXd q_sol(tree->get_num_positions(), nT1 + count * nTi);
@@ -918,8 +971,9 @@ int DoMain() {
     cout << "unable to open file \"contact_pts.txt\"" << endl;
 
   // show it in drake visualizer
+
   std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory =
-      std::make_unique<PiecewisePolynomialTrajectory>(q_sol, t);
+      std::make_unique<PiecewisePolynomialTrajectory>(q_sol_s_pointwise, t_s_pointwise);
 
   // VectorXd x(tree->get_num_positions() + tree->get_num_velocities());
   VectorXd x(tree->get_num_velocities());
@@ -943,7 +997,7 @@ int DoMain() {
 
   systems::Simulator<double> simulator(*diagram);
   simulator.Initialize();
-  simulator.StepTo(10);
+  simulator.StepTo(5);
 
   // auto context = diagram->CreateDefaultContext();
   // auto output = diagram->AllocateOutput(*context);
