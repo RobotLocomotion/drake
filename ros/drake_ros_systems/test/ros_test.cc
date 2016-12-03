@@ -7,7 +7,7 @@ namespace systems {
 namespace test {
 namespace {
 
-GTEST_TEST(ROSTest, TestROSNode) {
+GTEST_TEST(RosTest, TestRosNode) {
   // Verifies that ros core is running.
   bool ros_master_exists = ros::master::check();
   EXPECT_TRUE(ros_master_exists);
