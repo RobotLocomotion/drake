@@ -5,6 +5,27 @@
 namespace drake {
 namespace systems {
 
+/// Computes the optimal feedback controller, u=-Kx
+///
+///   @f[ \dot{x} = Ax + Bu @f]
+///   @f[ \min_u \int_0^T x'Qx + u'Ru dt @f]
+///
+/// @param A The state-space dynamics matrix of size num_states x num_states.
+/// @param B The state-space input matrix of size num_states x num_inupts.
+/// @param Q A symmetric positive semi-definite cost matrix of size num_states x
+/// num_states.
+/// @param R A symmetric positive definite cost matrix of size num_inputs x
+/// num_inputs.
+/// @returns K The optimal feedback control is u=-Kx;
+///
+/// @throws std::runtime_error if R is not positive definite.
+///
+Eigen::MatrixXd LinearQuadraticRegulator(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::MatrixXd>& B,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R);
+
 /// Creates a system that implements the optimal time-invariant linear quadratic
 /// regulator (LQR):
 ///
@@ -20,7 +41,7 @@ namespace systems {
 ///
 /// @throws std::runtime_error if R is not positive definite.
 ///
-std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
+std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
     const LinearSystem<double>& system,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R);
@@ -45,7 +66,7 @@ std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
 ///
 /// @throws std::runtime_error if R is not positive definite.
 ///
-std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
+std::unique_ptr<AffineSystem<double>> LinearQuadraticRegulator(
     const System<double>& system, const Context<double>& context,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R);
@@ -54,7 +75,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
 /// Riccati equation:
 ///
 /// @verbatim
-///  S'A + A'S + S B inv(R) B' S + Q = 0
+///  S'A + A'S - S B inv(R) B' S + Q = 0
 /// @endverbatim
 ///
 /// @throws std::runtime_error if R is not positive definite.
