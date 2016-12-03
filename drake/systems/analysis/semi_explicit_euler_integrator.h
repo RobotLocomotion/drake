@@ -9,18 +9,18 @@ namespace systems {
  * A first-order, semi-explicit Euler integrator. State is updated in the
  * following manner:
  * <pre>
- * v(t0+h) = v(t0) + dv/dt(t0) * h
- * qdot  = N(q(t0)) * v(t0+h)
- * q(t0+h) = q(t0) + qdot * h
+ * v(t₀+h) = v(t₀) + dv/dt(t₀) * h
+ * dq/dt  = N(q(t₀)) * v(t₀+h)
+ * q(t₀+h) = q(t₀) + dq/dt * h
  * </pre>
- * where `v = dx/dt` are the generalized velocity variables, `q` are generalized
- * coordinates, and `x` are known as quasi-coordinates. `h` is the integration
- * step size, and `N` is a matrix (dependent upon `q`) that maps velocities
- * to time derivatives of position coordinates. For rigid body systems in 2D,
- * for example, `N` will generally be an identity matrix. For rigid body systems
- * in 3D, `N` and its transpose are frequently used to transform between
- * time derivatives of Euler parameters (unit quaternions) and angular 
- * velocities (and vice versa). See [Nikravesh 1988].
+ * where `v` are the generalized velocity variables and `q` are generalized
+ * coordinates. `h` is the integration step size, and `N` is a matrix 
+ * (dependent upon `q`) that maps velocities to time derivatives of generalized
+ * coordinates. For rigid body systems in 2D, for example, `N` will generally 
+ * be an identity matrix. For a single rigid body in 3D, `N` and its inverse 
+ * are frequently used to transform between time derivatives of Euler 
+ * parameters (unit quaternions) and angular velocities (and vice versa), 
+ * [Nikravesh 1988].
  * 
  * Note that these equations imply that the velocity variables are updated
  * first and that these new velocities are then used to update the generalized
@@ -28,10 +28,16 @@ namespace systems {
  * coordinates are updated using the previous velocity variables).
  *
  * When a mechanical system is Hamiltonian (informally meaning that the
- * system is not subject to velocity-dependent forces), the semi-explicit 
- * Euler integrator is a symplectic (momentum conserving) integrator. 
- * Symplectic integrators promise energetically consistent behavior with large 
- * step sizes compared to non-symplectic integrators.
+ * system is not subject to velocity-dependent forces), the semi-explicit
+ * Euler integrator is a symplectic (momentum conserving) integrator.
+ * Symplectic integrators promise energetically consistent behavior with large
+ * step sizes compared to non-symplectic integrators. Multi-body systems
+ * are not Hamiltonian even in the absence of externally applied
+ * velocity-dependent forces due to the presence of both Coriolis and
+ * gyroscopic forces. These forces can be relatively large in reduced 
+ * coordinate formulations (like Drake's); we have observed anecdotally that 
+ * the greater the magnitude of such velocity-dependent forces, the less
+ * effective a symplectic integrator is at preserving momenta. 
  *
  * If we expand `dv/dt(t0)` to `dv/dt(q(t0), v(t0), t0)` it can start to become
  * clear how forces- functions of q(t0) or v(t0)- can be introduced. A 
@@ -68,19 +74,13 @@ namespace systems {
  * time in the integration process: though a billiard break may consist of tens
  * of collisions occurring sequentially over a millisecond of time, a time
  * stepping method will treat all of these collisions as occurring
- * simultaneously. [Stewart 1998] provides proofs that such an approach
- * converges to the solution of the continuous time rigid body dynamics problem
- * as the integration step goes to zero. The practical effect is of losing
- * first order accuracy when unilateral constraints are present.
+ * simultaneously.
  *
  * - [Baraff 1994]     D. Baraff. Fast Contact Force Computation for
  *                       Nonpenetrating Rigid Bodies, Proc. of ACM SIGGRAPH,
  *                       1994.
  * - [Nikravesh 1988]  P. Nikravesh. Computer-Aided Analysis of Mechanical 
  *                       Systems. Prentice Hall. New Jersey, 1988.
- * - [Stewart 1998]    D. Stewart. Convergence of a time-stepping scheme for
- *                       rigid-body dynamics and resolution of Painleve's
- *                       Problem. Arch. Ration. Mech. Anal. 145, 1998.
  * - [Stewart 2000]    D. Stewart. Rigid-body Dynamics with Friction and 
  *                       Impact. SIAM Review, 42:1, 2000.
  */
@@ -89,10 +89,12 @@ class SemiExplicitEulerIntegrator : public IntegratorBase<T> {
  public:
   virtual ~SemiExplicitEulerIntegrator() {}
 
+  // TODO(edrumwri): update documentation to account for stretching (after
+  //                 stretching has become a user settable).
   /**
    * Constructs a fixed-step integrator for a given system using the given
    * context for initial conditions.
-   * @param system A reference to the system to be simulated
+   * @param system A reference to the system to be simulated.
    * @param max_step_size The maximum (fixed) step size; the integrator will
    *                      not take larger step sizes than this.
    * @param context Pointer to the context (nullptr is ok, but the caller
