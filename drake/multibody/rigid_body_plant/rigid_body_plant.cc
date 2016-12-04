@@ -309,10 +309,12 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
    * w.r.t. q and v. See issue
    * https://github.com/RobotLocomotion/drake/issues/4267.
    */
+  // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
+  // templatized.
   const auto& vdot_value =
       drake::solvers::GetSolution(vdot);
   xdot << tree_->transformQDotMappingToVelocityMapping(
-      kinsol, MatrixX<T>::Identity(nq, nq)) * v, vdot_value;
+      kinsol, MatrixX<T>::Identity(nq, nq).eval()) * v, vdot_value;
 
   derivatives->SetFromVector(xdot);
 }
