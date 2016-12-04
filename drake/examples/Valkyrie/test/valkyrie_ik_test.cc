@@ -263,6 +263,51 @@ int DoMain() {
       0,   // 36 leftAnklePitch
       -0.354857;   // 37 leftAnkleRoll
 
+  // the robot's hands and feet are on the ground
+  VectorXd prone_pose_2(tree->get_num_positions());
+  prone_pose_2 << 0.785523,  // base_x
+      0.0,                   // base_y
+      0.711749,              // base_z
+      -0.00164626,           // base_roll
+      1.91036,               // base_pitch
+      0.00549406,            // 5 base_yaw
+      -0.0153586,            // 6 torsoYaw
+      -0.122173,             // 7 torsoPitch
+      -0.0115514,            // 8 torsoRoll
+      0.0,                   // 9 lowerNeckPitch
+      // 0.0,                  // 10 neckYaw
+      // 0.0,                  // 11 upperNeckPitch
+
+      -2.0944,  // 12 rightShoulderPitch [-130, -40]
+      1.39626,  // 13 rightShoulderRoll  [70, 85]
+      0.05,     // 14 rightShoulderYaw [fixed]
+      0.0,      // 15 rightElbowPitch [-6, 120]
+      0.0,      // 16 rightForearmYaw [fixed]
+      0.0,      // 17 rightWristRoll [fixed]
+      -0.49,    // 18 rightWristPitch [fixed]
+
+      -2.11865,     // 19 leftShoulderPitch [-130 -40]
+      -1.37398,     // 20 leftShoulderRoll [-85, -70]
+      -0.05,        // 21 leftShoulderYaw
+      -0.00917247,  // 22 leftElbowPitch [-120, 6]
+      0.0,          // 23 leftForearmYaw
+      0.0,          // 24 leftWristRoll
+      0.49,         // 25 LeftWristPitch
+
+      0.00469986,   // 26 rightHipYaw
+      0.00431728,   // 27 rightHipRoll
+      -1.73985,     // 28 rightHipPitch
+      0.614187,     // 29 rightKneePitch
+      -0.79335,     // 30 rightAnklePitch
+      -0.00354192,  // 31 rightAnkleRoll
+
+      -0.00148586,  // 32 leftHipYaw
+      0.00663385,   // 33 leftHipRoll
+      -1.74006,     // 34 leftHipPitch
+      0.614074,     // 35 leftKneePitch
+      -0.792986,    // 36 leftAnklePitch
+      0.00306235;   // 37 leftAnkleRoll
+
   KinematicsCache<double> cache = tree->doKinematics(reach_start);
 
   // 1 Neck Posture Constraint, posture constraints are imposed on q
@@ -500,7 +545,7 @@ int DoMain() {
   // show it in drake visualizer
   VectorXd x(tree->get_num_positions() + tree->get_num_velocities());
   x.setZero();
-  x.head(q_sol.size()) = q_sol;
+  x.head(q_sol.size()) = prone_pose_2;
   //x.head(q_sol.size()) = downward_dog_toes;
 
   lcm::DrakeLcm lcm;
