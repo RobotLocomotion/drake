@@ -56,7 +56,17 @@ class TestSystem : public LeafSystem<double> {
 
   std::unique_ptr<Parameters<double>> AllocateParameters() const override {
     return std::make_unique<Parameters<double>>(
-        BasicVector<double>::Make({13.0, 7.0}));
+        std::make_unique<BasicVector<double>>(2));
+  }
+
+  void SetDefaultParameters(Context<double>* context) const override {
+    auto leaf_context = dynamic_cast<LeafContext<double>*>(context);
+    DRAKE_DEMAND(leaf_context != nullptr);
+
+    auto params = leaf_context->get_mutable_numeric_parameter(0);
+    Eigen::Vector2d p0;
+    p0 << 13.0, 7.0;
+    params->SetFromVector(p0);
   }
 
   const BasicVector<double>& GetVanillaNumericParameters(
@@ -228,7 +238,7 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   const ContinuousState<double>* xc = context->get_continuous_state();
   // Check that type was preserved.
   EXPECT_NE(nullptr, dynamic_cast<SizeNineBasicVector*>(
-      context->get_mutable_continuous_state_vector()));
+                         context->get_mutable_continuous_state_vector()));
   // Check that dimensions were preserved.
   EXPECT_EQ(4 + 3 + 2, xc->size());
   EXPECT_EQ(4, xc->get_generalized_position().size());
