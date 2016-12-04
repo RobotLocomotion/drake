@@ -92,7 +92,7 @@ class PidController : public Diagram<T> {
 
   /// Sets @p context to a default state in which the integral of the error
   /// signal is zero.
-  void SetDefaultState(Context<T>* context) const;
+  void SetDefaultState(Context<T>* context) const override;
 
   /// Sets the integral of the %PidController to @p value.
   /// @p value must be a column vector of the appropriate size.
