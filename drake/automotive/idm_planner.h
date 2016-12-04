@@ -48,6 +48,8 @@ class IdmPlanner : public systems::LeafSystem<T> {
 
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
 
+  void SetDefaultParameters(systems::Context<T>* context) const override;
+
   // Disable copy and assignment.
   IdmPlanner(const IdmPlanner<T>&) = delete;
   IdmPlanner& operator=(const IdmPlanner<T>&) = delete;

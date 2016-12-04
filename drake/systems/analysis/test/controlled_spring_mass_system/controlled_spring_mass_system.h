@@ -65,7 +65,7 @@ class PidControlledSpringMassSystem : public Diagram<T> {
   /// Sets @p context to a default state in which the position and velocity of
   /// the mass are both zero.
   /// The integral of the controller is also set to zero.
-  void SetDefaultState(Context<T>* context) const;
+  void SetDefaultState(Context<T>* context) const override;
 
  private:
   // These are references into the Diagram; no ownership implied.

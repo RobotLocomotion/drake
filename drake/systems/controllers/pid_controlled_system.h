@@ -131,7 +131,7 @@ class PidControlledSystem : public Diagram<T> {
   /// Sets @p context to a default state in which the positions and
   /// velocities are all zero.  The integral of the controller is also
   /// set to zero.
-  void SetDefaultState(Context<T>* context) const;
+  void SetDefaultState(Context<T>* context) const override;
 
   /// @return the input port for the feed forward control input.
   const SystemPortDescriptor<T>& get_control_input_port() const {
