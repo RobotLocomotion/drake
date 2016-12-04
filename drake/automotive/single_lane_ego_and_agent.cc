@@ -40,23 +40,6 @@ SingleLaneEgoAndAgent<T>::SingleLaneEgoAndAgent(
   builder.BuildInto(this);
 }
 
-template <typename T>
-void SingleLaneEgoAndAgent<T>::SetDefaultState(
-    systems::Context<T>* context) const {
-  // Obtain mutable references to the contexts for each car.
-  DRAKE_DEMAND(context != nullptr);
-  systems::Context<T>* context_ego =
-      this->GetMutableSubsystemContext(context, ego_car_);
-  DRAKE_DEMAND(context_ego != nullptr);
-  systems::Context<T>* context_agent =
-      this->GetMutableSubsystemContext(context, agent_car_);
-  DRAKE_DEMAND(context_agent != nullptr);
-
-  // Set the default state for both cars.
-  ego_car_->SetDefaultState(context_ego);
-  agent_car_->SetDefaultState(context_agent);
-}
-
 // These instantiations must match the API documentation in
 // single_lane_ego_and_agent.h.
 template class SingleLaneEgoAndAgent<double>;
