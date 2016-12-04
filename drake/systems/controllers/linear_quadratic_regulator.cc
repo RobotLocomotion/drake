@@ -7,17 +7,58 @@
 namespace drake {
 namespace systems {
 
-Eigen::MatrixXd LinearQuadraticRegulator(
+static bool LinearQuadraticRegulatorDimensionCheck(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::MatrixXd>& B,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R) {
-  const Eigen::MatrixXd& S = ContinuousAlgebraicRiccatiEquation(A, B, Q, R);
+  bool res = (A.rows() == B.rows() && A.cols() == A.rows());
+  res &= (Q.rows() == A.rows() && Q.cols() == Q.rows());
+  res &= (R.rows() == B.cols() && R.cols() == R.rows());
+  return res;
+}
+
+LinearQuadraticRegulartorResult LinearQuadraticRegulator(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::MatrixXd>& B,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R,
+    const Eigen::Ref<const Eigen::MatrixXd>& N) {
+  DRAKE_DEMAND(LinearQuadraticRegulatorDimensionCheck(A, B, Q, R));
+  DRAKE_DEMAND(N.rows() == A.rows() && N.cols() == B.cols());
+  DRAKE_DEMAND(is_approx_equal_abstol(R, R.transpose(), 1e-10));
+
+  LinearQuadraticRegulartorResult ret;
 
   Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
-  const Eigen::MatrixXd K = R_cholesky.solve(B.transpose() * S);
+  if (R_cholesky.info() != Eigen::Success)
+    throw std::runtime_error("R must be positive definite");
 
-  return K;
+  Eigen::MatrixXd Q1 = Q - N * R_cholesky.solve(N.transpose());
+  Eigen::MatrixXd A1 = A - B * R_cholesky.solve(N.transpose());
+
+  ret.S = ContinuousAlgebraicRiccatiEquation(A1, B, Q1, R_cholesky);
+  ret.K = R_cholesky.solve(B.transpose() * ret.S + N.transpose());
+  return ret;
+}
+
+LinearQuadraticRegulartorResult LinearQuadraticRegulator(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::MatrixXd>& B,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R) {
+  DRAKE_DEMAND(LinearQuadraticRegulatorDimensionCheck(A, B, Q, R));
+  DRAKE_DEMAND(is_approx_equal_abstol(R, R.transpose(), 1e-10));
+
+  LinearQuadraticRegulartorResult ret;
+
+  Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
+  if (R_cholesky.info() != Eigen::Success)
+    throw std::runtime_error("R must be positive definite");
+
+  ret.S = ContinuousAlgebraicRiccatiEquation(A, B, Q, R_cholesky);
+  ret.K = R_cholesky.solve(B.transpose() * ret.S);
+  return ret;
 }
 
 std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
@@ -26,7 +67,7 @@ std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& R) {
   const int num_states = system.B().rows(), num_inputs = system.B().cols();
 
-  const Eigen::MatrixXd& K =
+  LinearQuadraticRegulartorResult lqr_result =
       LinearQuadraticRegulator(system.A(), system.B(), Q, R);
 
   // Return the controller: u = -Kx.
@@ -34,7 +75,7 @@ std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
       Eigen::Matrix<double, 0, 0>::Zero(),   // A
       Eigen::MatrixXd::Zero(0, num_states),  // B
       Eigen::MatrixXd::Zero(num_inputs, 0),  // C
-      -K);                                   // D
+      -lqr_result.K);                        // D
 }
 
 std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
@@ -52,7 +93,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
 
   auto linear_system = Linearize(system, context);
 
-  const Eigen::MatrixXd& K =
+  LinearQuadraticRegulartorResult lqr_result =
       LinearQuadraticRegulator(linear_system->A(), linear_system->B(), Q, R);
 
   const Eigen::VectorXd& x0 =
@@ -65,29 +106,26 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
       Eigen::MatrixXd::Zero(0, num_states),  // B
       Eigen::Matrix<double, 0, 1>::Zero(),   // xDot0
       Eigen::MatrixXd::Zero(num_inputs, 0),  // C
-      -K,                                    // D
-      u0 + K * x0);                          // y0
+      -lqr_result.K,                         // D
+      u0 + lqr_result.K * x0);               // y0
 }
 
 Eigen::MatrixXd ContinuousAlgebraicRiccatiEquation(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::MatrixXd>& B,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
-    const Eigen::Ref<const Eigen::MatrixXd>& R) {
+    const Eigen::LLT<Eigen::MatrixXd>& R_cholesky) {
   const Eigen::Index n = B.rows(), m = B.cols();
-
   DRAKE_DEMAND(A.rows() == n && A.cols() == n);
   DRAKE_DEMAND(Q.rows() == n && Q.cols() == n);
-  DRAKE_DEMAND(R.rows() == m && R.cols() == m);
-  DRAKE_DEMAND(is_approx_equal_abstol(Q, Q.transpose(), 1e-10));
-  DRAKE_DEMAND(is_approx_equal_abstol(R, R.transpose(), 1e-10));
+  DRAKE_DEMAND(R_cholesky.matrixL().rows() == m &&
+               R_cholesky.matrixL().cols() == m);
 
-  Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
+  DRAKE_DEMAND(is_approx_equal_abstol(Q, Q.transpose(), 1e-10));
 
   Eigen::MatrixXd H(2 * n, 2 * n);
+
   H << A, B * R_cholesky.solve(B.transpose()), Q, -A.transpose();
-  if (R_cholesky.info() != Eigen::Success)
-    throw std::runtime_error("R must be positive definite");
 
   Eigen::MatrixXd Z = H;
   Eigen::MatrixXd Z_old;
@@ -129,6 +167,19 @@ Eigen::MatrixXd ContinuousAlgebraicRiccatiEquation(
       lhs, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
   return svd.solve(rhs);
+}
+
+Eigen::MatrixXd ContinuousAlgebraicRiccatiEquation(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::MatrixXd>& B,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R) {
+  DRAKE_DEMAND(is_approx_equal_abstol(R, R.transpose(), 1e-10));
+
+  Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
+  if (R_cholesky.info() != Eigen::Success)
+    throw std::runtime_error("R must be positive definite");
+  return ContinuousAlgebraicRiccatiEquation(A, B, Q, R_cholesky);
 }
 
 }  // namespace systems
