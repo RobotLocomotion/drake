@@ -18,10 +18,8 @@ RotaryEncoders<T>::RotaryEncoders(const std::vector<int>& ticks_per_revolution)
       ticks_per_revolution_(ticks_per_revolution) {
   DRAKE_ASSERT(*std::min_element(ticks_per_revolution_.begin(),
                                  ticks_per_revolution_.end()) >= 0);
-  this->DeclareInputPort(systems::kVectorValued, num_encoders_,
-                         systems::kContinuousSampling);
-  this->DeclareOutputPort(systems::kVectorValued, num_encoders_,
-                          systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, num_encoders_);
+  this->DeclareOutputPort(systems::kVectorValued, num_encoders_);
 }
 
 template <typename T>
@@ -33,10 +31,8 @@ RotaryEncoders<T>::RotaryEncoders(int input_port_size,
   DRAKE_ASSERT(*std::min_element(indices_.begin(), indices_.end()) >= 0);
   DRAKE_ASSERT(*std::max_element(indices_.begin(), indices_.end()) <
                input_port_size);
-  this->DeclareInputPort(systems::kVectorValued, input_port_size,
-                         systems::kContinuousSampling);
-  this->DeclareOutputPort(systems::kVectorValued, num_encoders_,
-                          systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, input_port_size);
+  this->DeclareOutputPort(systems::kVectorValued, num_encoders_);
 }
 
 template <typename T>
@@ -53,10 +49,8 @@ RotaryEncoders<T>::RotaryEncoders(int input_port_size,
   DRAKE_DEMAND(indices_.size() == ticks_per_revolution_.size());
   DRAKE_ASSERT(*std::min_element(ticks_per_revolution_.begin(),
                                  ticks_per_revolution_.end()) >= 0);
-  this->DeclareInputPort(systems::kVectorValued, input_port_size,
-                         systems::kContinuousSampling);
-  this->DeclareOutputPort(systems::kVectorValued, num_encoders_,
-                          systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, input_port_size);
+  this->DeclareOutputPort(systems::kVectorValued, num_encoders_);
 }
 
 template <typename T>

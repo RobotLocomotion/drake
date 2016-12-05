@@ -26,8 +26,8 @@ Gain<T>::Gain(const T& k, int size) : Gain(VectorX<T>::Ones(size) * k) { }
 template <typename T>
 Gain<T>::Gain(const VectorX<T>& k) : k_(k) {
   DRAKE_DEMAND(k.size() > 0);
-  this->DeclareInputPort(kVectorValued, k.size(), kContinuousSampling);
-  this->DeclareOutputPort(kVectorValued, k.size(), kContinuousSampling);
+  this->DeclareInputPort(kVectorValued, k.size());
+  this->DeclareOutputPort(kVectorValued, k.size());
 }
 
 template <typename T>
