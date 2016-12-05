@@ -427,13 +427,13 @@ class MathematicalProgram {
 
   /**
    * Add continuous variables to this MathematicalProgram, with default name
-   * "x". The new variables are returned and viewed as a matrix, with size
+   * "X". The new variables are returned and viewed as a matrix, with size
    * @p rows x @p cols.
    * @see AddContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
   const DecisionVariableMatrixX AddContinuousVariables(
-      std::size_t rows, std::size_t cols, const std::string& name = "x");
+      std::size_t rows, std::size_t cols, const std::string& name = "X");
 
   /// Add continuous variables to this MathematicalProgram.
   /**
@@ -497,7 +497,8 @@ class MathematicalProgram {
     std::array<std::string, rows * cols> names;
     for (int j = 0; j < cols; ++j) {
       for (int i = 0; i < rows; ++i) {
-        names[j * rows + i] = name + std::to_string(num_vars_ + j * rows + i);
+        names[j * rows + i] =
+            name + "(" + std::to_string(i) + "," + std::to_string(j) + ")";
       }
     }
     return AddVariables<rows, cols>(DecisionVariableScalar::VarType::CONTINUOUS,
@@ -606,7 +607,7 @@ class MathematicalProgram {
       const std::string& name = "b") {
     std::array<std::string, rows> names;
     for (int i = 0; i < rows; ++i) {
-      names[i] = name + std::to_string(num_vars_ + i);
+      names[i] = name + std::to_string(i);
     }
     return AddBinaryVariables<rows, 1>(names);
   }
@@ -674,7 +675,13 @@ class MathematicalProgram {
    * The optimization will only use the stacked columns of the
    * lower triangular part of the symmetric matrix as decision variables.
    * @param name The name of the matrix. It is only used the for user to
-   * understand the optimization program.
+   * understand the optimization program. The default name is "S", and each
+   * variable will be named as
+   * S(0, 0)     S(1, 0)     ... S(rows-1, 0)
+   * S(1, 0)     S(1, 1)     ... S(rows-1, 1)
+   *            ...
+   * S(rows-1,0) S(rows-1,1) ... S(rows-1, rows-1)
+   * Notice that the (i,j)'th entry and (j,i)'th entry has the same name.
    */
   DecisionVariableMatrixX AddSymmetricContinuousVariables(
       size_t rows, const std::string& name = "S");
@@ -684,7 +691,13 @@ class MathematicalProgram {
    * The optimization will only use the stacked columns of the
    * lower triangular part of the symmetric matrix as decision variables.
    * @param name The name of the matrix. It is only used the for user to
-   * understand the optimization program.
+   * understand the optimization program. The default name is "S", and each
+   * variable will be named as
+   * S(0, 0)     S(1, 0)     ... S(rows-1, 0)
+   * S(1, 0)     S(1, 1)     ... S(rows-1, 1)
+   *            ...
+   * S(rows-1,0) S(rows-1,1) ... S(rows-1, rows-1)
+   * Notice that the (i,j)'th entry and (j,i)'th entry has the same name.
    */
   template <int rows>
   DecisionVariableMatrix<rows, rows> AddSymmetricContinuousVariables(

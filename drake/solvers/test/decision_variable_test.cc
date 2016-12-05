@@ -14,21 +14,24 @@ namespace solvers {
  */
 GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   MathematicalProgram prog;
-  auto X1 = prog.AddContinuousVariables(2, 3, std::vector<std::string>(6, "X"));
+  auto X1 = prog.AddContinuousVariables(2, 3, "X");
+  std::cout << X1 << std::endl;
   EXPECT_EQ(prog.num_vars(), 6);
   EXPECT_FALSE(math::IsSymmetric(X1));
-  auto S1 =
-      prog.AddSymmetricContinuousVariables(3, std::vector<std::string>(6, "S"));
+  auto S1 = prog.AddSymmetricContinuousVariables(3, "S");
+  std::cout << S1 << std::endl;
   EXPECT_EQ(prog.num_vars(), 12);
   EXPECT_TRUE(math::IsSymmetric(S1));
   auto x1 = prog.AddContinuousVariables(6, "x");
+  std::cout << x1 << std::endl;
   EXPECT_EQ(prog.num_vars(), 18);
   EXPECT_FALSE(math::IsSymmetric(x1));
-  std::array<std::string, 6> X_name = {{"X", "X", "X", "X", "X", "X"}};
+  std::array<std::string, 6> X_name = {{"X1", "X2", "X3", "X4", "X5", "X6"}};
   auto X2 = prog.AddContinuousVariables<2, 3>(X_name);
+  std::cout << X2 << std::endl;
   static_assert(decltype(X2)::RowsAtCompileTime == 2 &&
-      decltype(X2)::ColsAtCompileTime == 3,
-      "should be a static matrix of type 2 x 3");
+                    decltype(X2)::ColsAtCompileTime == 3,
+                "should be a static matrix of type 2 x 3");
   EXPECT_EQ(prog.num_vars(), 24);
   EXPECT_FALSE(math::IsSymmetric(X2));
   Eigen::Matrix<double, 6, 1> x_value;
@@ -79,8 +82,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
 
   for (int i = 0; i < 2; ++i) {
     for (int j = 0; j < 3; ++j) {
-      EXPECT_TRUE(
-          X_assembled(i, j) ==  X1(i, j));
+      EXPECT_TRUE(X_assembled(i, j) == X1(i, j));
       EXPECT_TRUE(X_assembled(i, j + 3) == X2(i, j));
     }
   }

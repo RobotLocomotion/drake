@@ -100,7 +100,7 @@ DecisionVariableVectorX MathematicalProgram::AddContinuousVariables(
     std::size_t rows, const std::string& name) {
   std::vector<std::string> names(rows);
   for (int i = 0; i < static_cast<int>(rows); ++i) {
-    names[i] = name + std::to_string(num_vars_ + i);
+    names[i] = name + std::to_string(i);
   }
   return AddContinuousVariables(rows, names);
 }
@@ -108,8 +108,13 @@ DecisionVariableVectorX MathematicalProgram::AddContinuousVariables(
 const DecisionVariableMatrixX MathematicalProgram::AddContinuousVariables(
     std::size_t rows, std::size_t cols, const std::string& name) {
   std::vector<std::string> names(rows * cols);
-  for (int i = 0; i < static_cast<int>(names.size()); ++i) {
-    names[i] = name + std::to_string(num_vars_ + i);
+  int count = 0;
+  for (int j = 0; j < static_cast<int>(cols); ++j) {
+    for (int i = 0; i < static_cast<int>(rows); ++i) {
+      names[count] =
+          name + "(" + std::to_string(i) + "," + std::to_string(j) + ")";
+      ++count;
+    }
   }
   return AddContinuousVariables(rows, cols, names);
 }
@@ -124,7 +129,7 @@ DecisionVariableMatrixX MathematicalProgram::AddBinaryVariables(
     size_t rows, size_t cols, const std::string& name) {
   std::vector<std::string> names = std::vector<std::string>(rows * cols);
   for (int i = 0; i < static_cast<int>(names.size()); ++i) {
-    names[i] = name + std::to_string(num_vars_ + i);
+    names[i] = name + std::to_string(i);
   }
   return AddBinaryVariables(rows, cols, names);
 }
@@ -138,10 +143,12 @@ DecisionVariableMatrixX MathematicalProgram::AddSymmetricContinuousVariables(
 DecisionVariableMatrixX MathematicalProgram::AddSymmetricContinuousVariables(
     size_t rows, const std::string& name) {
   std::vector<std::string> names(rows * (rows + 1) / 2);
+  int count = 0;
   for (int j = 0; j < static_cast<int>(rows); ++j) {
     for (int i = j; i < static_cast<int>(rows); ++i) {
-      names.push_back(name + "(" + std::to_string(i) + "," + std::to_string(j) +
-                      ")");
+      names[count] =
+          name + "(" + std::to_string(i) + "," + std::to_string(j) + ")";
+      ++count;
     }
   }
   return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, rows,
@@ -152,7 +159,7 @@ DecisionVariableVectorX MathematicalProgram::AddBinaryVariables(
     size_t rows, const std::string& name) {
   std::vector<std::string> names = std::vector<std::string>(rows);
   for (int i = 0; i < static_cast<int>(rows); ++i) {
-    names[i] = name + std::to_string(num_vars_ + i);
+    names[i] = name + std::to_string(i);
   }
   return AddVariables(DecisionVariableScalar::VarType::BINARY, rows, names);
 }

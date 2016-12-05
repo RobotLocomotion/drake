@@ -92,6 +92,9 @@ class DecisionVariableScalar {
 
   friend class MathematicalProgram;
 
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const DecisionVariableScalar& var);
+
  private:
   /*
    * Constructs a decision variable. We make this constructor private so that
@@ -124,11 +127,10 @@ namespace Eigen {
 /// Eigen scalar type traits for Matrix<DecisionVariableScalar>.
 template <>
 struct NumTraits<drake::solvers::DecisionVariableScalar> {
+  static inline int digits10() { return 0; }
   enum {
-    // Our set of allowed values is discrete, and no epsilon is allowed during
-    // equality comparison, so treat this as an unsigned integer type.
     IsInteger = 0,
-    IsSigned = 0,
+    IsSigned = 1,
     IsComplex = 0,
     RequireInitialization = 1,
     ReadCost = 1,
