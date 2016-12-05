@@ -30,9 +30,13 @@ class TestSystem : public LeafSystem<double> {
     this->DeclarePeriodicUpdate(period, offset);
   }
 
-  void AddNonIntegerPeriodicUpdate(double period) {
+  void AddPeriodicUpdate(double period) {
     const double offset = 0.0;
     this->DeclarePeriodicUpdate(period, offset);
+  }
+
+  void AddPublish(double period) {
+    this->DeclarePublishPeriodSec(period);
   }
 
   void AddContinuousState() {
@@ -128,13 +132,43 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
   EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
 }
 
+// Tests that if a LeafSystem has both a discrete update and a periodic Publish,
+// the update actions are computed appropriately.
+TEST_F(LeafSystemTest, UpdateAndPublish) {
+  system_.AddPeriodicUpdate(15.0);
+  system_.AddPublish(12.0);
+
+  UpdateActions<double> actions;
+
+  // The publish event fires at 12sec.
+  context_.set_time(9.0);
+  system_.CalcNextUpdateTime(context_, &actions);
+  EXPECT_EQ(12.0, actions.time);
+  ASSERT_EQ(1u, actions.events.size());
+  EXPECT_EQ(DiscreteEvent<double>::kPublishAction, actions.events[0].action);
+
+  // The update event fires at 15sec.
+  context_.set_time(14.0);
+  system_.CalcNextUpdateTime(context_, &actions);
+  EXPECT_EQ(15.0, actions.time);
+  ASSERT_EQ(1u, actions.events.size());
+  EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+
+  // Both events fire at 60sec.
+  context_.set_time(59.0);
+  system_.CalcNextUpdateTime(context_, &actions);
+  EXPECT_EQ(60.0, actions.time);
+  ASSERT_EQ(2u, actions.events.size());
+  EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+}
+
 // Tests that if the integrator has stopped on the k-th sample, and the current
 // time for that sample is slightly less than k * period due to floating point
 // rounding, the next sample time is (k + 1) * period.
 TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroOneFive) {
   context_.set_time(0.015 * 11);  // Slightly less than 0.165.
   UpdateActions<double> actions;
-  system_.AddNonIntegerPeriodicUpdate(0.015);
+  system_.AddPeriodicUpdate(0.015);
   system_.CalcNextUpdateTime(context_, &actions);
   // 0.015 * 12 = 0.18.
   EXPECT_NEAR(0.18, actions.time, 1e-8);
@@ -146,7 +180,7 @@ TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroOneFive) {
 TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroZeroTwoFive) {
   context_.set_time(0.0025 * 977);  // Slightly less than 2.4425
   UpdateActions<double> actions;
-  system_.AddNonIntegerPeriodicUpdate(0.0025);
+  system_.AddPeriodicUpdate(0.0025);
   system_.CalcNextUpdateTime(context_, &actions);
   EXPECT_NEAR(2.445, actions.time, 1e-8);
 }
