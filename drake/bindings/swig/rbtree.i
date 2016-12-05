@@ -71,6 +71,7 @@
 
 // unique_ptr confuses SWIG, so we'll ignore it for now
 %ignore RigidBodyTree<double>::add_rigid_body(std::unique_ptr<RigidBody<double> > body);
+%ignore RigidBodyTree<double>::CreateKinematicsCache() const;
 
 // Ignore this member so that it doesn't generate setters/getters.
 // These cause problems since bodies is a vector of unique_ptr's and
