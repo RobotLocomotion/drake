@@ -6,6 +6,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <string>
 
 #include "drake/common/constants.h"
@@ -567,7 +568,7 @@ void RigidBodyTree<T>::collisionDetectFromPoints(
     normal.col(i) = closest_points[i].normal;
     phi[i] = closest_points[i].distance;
     const DrakeCollision::Element* elementB = closest_points[i].elementB;
-    body_idx.push_back(elementB->get_body()->get_body_index());
+    body_idx.push_back(elementB->get_body()->get_id());
   }
 }
 
@@ -624,9 +625,9 @@ bool RigidBodyTree<T>::collisionDetect(
     normal.col(i) = points[i].normal;
     phi[i] = points[i].distance;
     const DrakeCollision::Element* elementA = points[i].elementA;
-    bodyA_idx.push_back(elementA->get_body()->get_body_index());
+    bodyA_idx.push_back(elementA->get_body()->get_id());
     const DrakeCollision::Element* elementB = points[i].elementB;
-    bodyB_idx.push_back(elementB->get_body()->get_body_index());
+    bodyB_idx.push_back(elementB->get_body()->get_id());
   }
   return points_found;
 }
@@ -750,8 +751,8 @@ void RigidBodyTree<T>::potentialCollisions(
     xB.col(i) = potential_collisions[i].ptB;
     normal.col(i) = potential_collisions[i].normal;
     phi[i] = potential_collisions[i].distance;
-    bodyA_idx.push_back(elementA->get_body()->get_body_index());
-    bodyB_idx.push_back(elementB->get_body()->get_body_index());
+    bodyA_idx.push_back(elementA->get_body()->get_id());
+    bodyB_idx.push_back(elementB->get_body()->get_id());
   }
 }
 
@@ -839,11 +840,34 @@ bool RigidBodyTree<T>::allCollisions(
     xB_in_world.col(i) = points[i].ptB;
 
     const DrakeCollision::Element* elementA = points[i].elementA;
-    bodyA_idx.push_back(elementA->get_body()->get_body_index());
+    bodyA_idx.push_back(elementA->get_body()->get_id());
     const DrakeCollision::Element* elementB = points[i].elementB;
-    bodyB_idx.push_back(elementB->get_body()->get_body_index());
+    bodyB_idx.push_back(elementB->get_body()->get_id());
   }
   return points_found;
+}
+
+template <typename T>
+unique_ptr<KinematicsCache<T>>
+RigidBodyTree<T>::CreateKinematicsCacheFromBodiesVector(
+    const std::vector<std::unique_ptr<RigidBody<T>>>& bodies) {
+  std::vector<int> num_joint_positions, num_joint_velocities;
+  for (const auto& body : bodies) {
+    int np =
+        body->has_parent_body() ? body->getJoint().get_num_positions() : 0;
+    int nv =
+        body->has_parent_body() ? body->getJoint().get_num_velocities() : 0;
+    num_joint_positions.push_back(np);
+    num_joint_velocities.push_back(nv);
+  }
+  const int num_positions = std::accumulate(
+      num_joint_positions.begin(), num_joint_positions.end(), 0);
+  const int num_velocities = std::accumulate(
+      num_joint_positions.begin(), num_joint_positions.end(), 0);
+  auto cache = make_unique<KinematicsCache<T>>(
+      num_positions, num_velocities,
+      num_joint_positions, num_joint_velocities);
+  return cache;
 }
 
 template <typename T>
@@ -1355,7 +1379,7 @@ int RigidBodyTree<T>::parseBodyOrFrameID(
       stream << "Got a frame ind greater than available!\n";
       throw std::runtime_error(stream.str());
     }
-    body_ind = frames[frame_ind]->get_rigid_body().get_body_index();
+    body_ind = frames[frame_ind]->get_rigid_body().get_id();
 
     if (Tframe) {
       (*Tframe) =
@@ -1383,7 +1407,7 @@ std::vector<int> RigidBodyTree<T>::FindAncestorBodies(
   std::vector<int> ancestor_body_list;
   const RigidBody<T>* current_body = bodies[body_index].get();
   while (current_body->has_parent_body()) {
-    ancestor_body_list.push_back(current_body->get_parent()->get_body_index());
+    ancestor_body_list.push_back(current_body->get_parent()->get_id());
     current_body = current_body->get_parent();
   }
   return ancestor_body_list;
@@ -1881,7 +1905,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::inverseDynamics(
       // should be *added* to the net wrench.
       const RigidBody<T>& parent_body = *(body.get_parent());
       auto parent_joint_wrench =
-          joint_wrenches.col(parent_body.get_body_index());
+          joint_wrenches.col(parent_body.get_id());
       parent_joint_wrench += joint_wrench;
     }
   }
@@ -2338,7 +2362,7 @@ int RigidBodyTree<T>::FindBodyIndex(const std::string& body_name,
             body_name + "\", model_instance_id = " +
             std::to_string(model_instance_id) + ".");
   }
-  return body->get_body_index();
+  return body->get_id();
 }
 
 template <typename T>
@@ -2449,7 +2473,7 @@ template <typename T>
 int RigidBodyTree<T>::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
                                                   int model_instance_id) const {
   RigidBody<T>* link = FindChildBodyOfJoint(joint_name, model_instance_id);
-  return link->get_body_index();
+  return link->get_id();
 }
 
 template <typename T>

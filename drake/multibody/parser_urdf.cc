@@ -528,7 +528,7 @@ bool ParseBody(RigidBodyTree<double>* tree, string robot_name, XMLElement* node,
   }
 
   tree->add_rigid_body(std::move(owned_body));
-  *index = body->get_body_index();
+  *index = body->get_id();
   return true;
 }
 

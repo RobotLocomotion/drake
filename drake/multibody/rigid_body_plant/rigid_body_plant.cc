@@ -474,8 +474,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
   //  as a zero-force contact.
   for (const auto& pair : pairs) {
     if (pair.distance < 0.0) {  // There is contact.
-      int body_a_index = pair.elementA->get_body()->get_body_index();
-      int body_b_index = pair.elementB->get_body()->get_body_index();
+      int body_a_index = pair.elementA->get_body()->get_id();
+      int body_b_index = pair.elementB->get_body()->get_id();
       auto JA = tree_->transformPointsJacobian(kinsol, pair.ptA, body_a_index,
                                                0, false);
       auto JB = tree_->transformPointsJacobian(kinsol, pair.ptB, body_b_index,
