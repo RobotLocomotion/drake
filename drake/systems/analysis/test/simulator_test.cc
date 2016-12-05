@@ -193,6 +193,23 @@ GTEST_TEST(SimulatorTest, RealtimeRate) {
   EXPECT_TRUE(simulator.get_actual_realtime_rate() <= 5.1);
 }
 
+// Tests that if publishing every timestep is disabled, publish only happens
+// on initialization.
+GTEST_TEST(SimulatorTest, DisablePublishEveryTimestep) {
+  analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
+  Simulator<double> simulator(spring_mass);  // Use default Context.
+  simulator.set_publish_every_timestep(false);
+
+  simulator.get_mutable_context()->set_time(0.);
+  simulator.Initialize();
+  // Publish should happen on initialization.
+  EXPECT_EQ(1, simulator.get_num_publishes());
+
+  // Simulate for 1 simulated second.  Publish should not happen.
+  simulator.StepTo(1.);
+  EXPECT_EQ(1, simulator.get_num_publishes());
+}
+
 // Repeat the previous test but now the continuous steps are interrupted
 // by a discrete sample every 1/30 second. The step size doesn't divide that
 // evenly so we should get some step size modification here.
@@ -336,8 +353,8 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 }
 
 
-// A System that requests discrete update at 1 kHz, and aborts if it is asked
-// to perform a discrete update at any other time.
+// A System that requests discrete update at 1 kHz, and publish at 400 Hz, and
+// aborts if it is asked to perform a discrete update at any other time.
 class DiscreteSystem : public LeafSystem<double> {
  public:
   DiscreteSystem() {
@@ -346,6 +363,8 @@ class DiscreteSystem : public LeafSystem<double> {
     const double period = 0.001;
     const double offset = 0.0;
     this->DeclarePeriodicUpdate(period, offset);
+    const double publish_period = 0.0025;
+    this->DeclarePublishPeriodSec(publish_period);
   }
 
   ~DiscreteSystem() override {}
@@ -364,19 +383,33 @@ class DiscreteSystem : public LeafSystem<double> {
     num_updates_++;
   }
 
+  void DoPublish(
+      const drake::systems::Context<double>& context) const override {
+    const double k = context.get_time() / 0.0025;
+    const double int_k = std::round(k);
+    DRAKE_DEMAND(std::abs(k - int_k) < 1e-8);
+    num_publishes_++;
+  }
+
   int num_updates() { return num_updates_; }
+  int num_publishes() { return num_publishes_; }
 
  private:
   mutable int num_updates_{0};
+  mutable int num_publishes_{0};
 };
 
 // Tests that the Simulator invokes the DiscreteSystem's update method every
-// 0.001 sec, without missing any updates.
+// 0.001 sec, and its publish method every 0.0025 sec, without missing any
+// updates.
 GTEST_TEST(SimulatorTest, DiscreteUpdate) {
   DiscreteSystem system;
   drake::systems::Simulator<double> simulator(system);
+  simulator.set_publish_every_timestep(false);
   simulator.StepTo(0.5);
   EXPECT_EQ(500, system.num_updates());
+  // Publication occurs at 400Hz, and also at initialization.
+  EXPECT_EQ(200 + 1, system.num_publishes());
 }
 
 }  // namespace
