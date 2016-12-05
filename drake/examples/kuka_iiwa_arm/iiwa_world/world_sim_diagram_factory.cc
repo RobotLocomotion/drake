@@ -31,15 +31,12 @@ namespace kuka_iiwa_arm {
 std::unique_ptr<Diagram<double>> BuildPlantAndVisualizerDiagram(
     std::unique_ptr<RigidBodyTree<double>> rigid_body_tree,
     double penetration_stiffness, double penetration_damping,
-    double friction_coefficient, DrakeLcmInterface* lcm,
-    RigidBodyPlant<double>** plant_ptr) {
+    double friction_coefficient, DrakeLcmInterface* lcm) {
   std::unique_ptr<DiagramBuilder<double>> builder{
       std::make_unique<DiagramBuilder<double>>()};
 
   auto plant = builder->template AddSystem<RigidBodyPlant<double>>(
       std::move(rigid_body_tree));
-
-  plant_ptr = &plant;
 
   DRAKE_DEMAND(plant != nullptr);
   plant->set_contact_parameters(penetration_stiffness, penetration_damping,

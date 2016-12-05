@@ -22,8 +22,7 @@ namespace kuka_iiwa_arm {
 std::unique_ptr<systems::Diagram<double>> BuildPlantAndVisualizerDiagram(
     std::unique_ptr<RigidBodyTree<double>> rigid_body_tree,
     double penetration_stiffness, double penetration_damping,
-    double friction_coefficient, lcm::DrakeLcmInterface* lcm,
-    systems::RigidBodyPlant<double>** plant);
+    double friction_coefficient, lcm::DrakeLcmInterface* lcm);
 
 /// Builds and returns a systems::Diagram consisting of a
 /// systems::ConstantVectorSource connected to input port zero of
@@ -39,3 +38,7 @@ std::unique_ptr<systems::Diagram<double>> BuildConstantSourceToPlantDiagram(
 /// was built by one of the factory methods above.
 void SetZeroConfiguration(systems::Simulator<double>* simulator,
                           const systems::Diagram<double>* diagram);
+
+}  // namespace kuka_iiwa_arm
+}  // namespace examples
+}  // namespace drake

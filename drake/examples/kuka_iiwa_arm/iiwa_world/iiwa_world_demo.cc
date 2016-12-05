@@ -67,11 +67,9 @@ int DoMain() {
 
   lcm::DrakeLcm lcm;
 
-  systems::RigidBodyPlant<double>* plant{nullptr};
-
   auto plant_visualizer_diagram = BuildPlantAndVisualizerDiagram(
-      iiwa_world->Build(), 4500 /* penetration_stiffness */,
-      1.0 /* penetration_damping */, 1.0 /* contact friction */, &lcm, &plant);
+      iiwa_world->GetRigidBodyTree(), 4500 /* penetration_stiffness */,
+      1.0 /* penetration_damping */, 1.0 /* contact friction */, &lcm);
 
   auto demo_diagram =
       BuildConstantSourceToPlantDiagram(std::move(plant_visualizer_diagram));
