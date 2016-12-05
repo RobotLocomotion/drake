@@ -176,8 +176,6 @@ class LeafSystem : public System<T> {
   /// period_sec thereafter. On the discrete tick, the system may update
   /// the discrete state. Clobbers any other periodic behaviors previously
   /// declared.
-  /// TODO(david-german-tri): Add more sophisticated mutators for more complex
-  /// periodic behaviors.
   void DeclareUpdatePeriodSec(const T& period_sec) {
     DeclarePeriodicUpdate(period_sec, 0.0);
   }
@@ -185,27 +183,24 @@ class LeafSystem : public System<T> {
   /// Declares that this System has a simple, fixed-period discrete update.
   /// The first tick will be at t= offset_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may update the
-  /// discrete state. Clobbers any other periodc behaviors previously declared.
+  /// discrete state.
   void DeclarePeriodicUpdate(const T& period_sec, const T& offset_sec) {
     PeriodicEvent<T> event;
     event.period_sec = period_sec;
     event.offset_sec = offset_sec;
     event.event.action = DiscreteEvent<T>::kUpdateAction;
-    periodic_events_ = {event};
+    periodic_events_.push_back(event);
   }
 
   /// Declares that this System has a simple, fixed-period publish.
   /// The first tick will be at t = period_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may update
-  /// the discrete state. Clobbers any other periodic behaviors previously
-  /// declared.
-  /// TODO(david-german-tri): Add more sophisticated mutators for more complex
-  /// periodic behaviors.
+  /// the discrete state.
   void DeclarePublishPeriodSec(const T& period_sec) {
     PeriodicEvent<T> event;
     event.period_sec = period_sec;
     event.event.action = DiscreteEvent<T>::kPublishAction;
-    periodic_events_ = {event};
+    periodic_events_.push_back(event);
   }
 
   /// Declares that this System should reserve continuous state with
