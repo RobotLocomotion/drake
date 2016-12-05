@@ -188,34 +188,6 @@ endif()
 include(../cmake/matlab_pods.cmake)
 pods_configure_matlab_paths()
 
-message(STATUS "Writing path utilities to ${CMAKE_INSTALL_PREFIX}/matlab")
-file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/addpath_drake.m
-  "function addpath_drake()\n"
-  "  addpath(fullfile('${CMAKE_INSTALL_PREFIX}', 'matlab'));\n"
-  "  wd = cd('${CMAKE_CURRENT_SOURCE_DIR}');\n"
-  "  addpath_drake();\n"
-  "  cd(wd);\n"
-  "end\n"
-  "\n")
-
-file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/rmpath_drake.m
-  "function rmpath_drake()\n"
-  "  wd = cd('${CMAKE_CURRENT_SOURCE_DIR}');\n"
-  "  rmpath_drake();\n"
-  "  cd(wd);\n")
-
-file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/get_drake_binary_dir.m
-  "function [binary_dir] = get_drake_binary_dir()\n"
-  "  binary_dir = '${PROJECT_BINARY_DIR}';\n"
-  "end\n"
-  "\n")
-
-file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/get_drake_install_dir.m
-  "function [install_dir] = get_drake_install_dir()\n"
-  "  install_dir = '${CMAKE_INSTALL_PREFIX}';\n"
-  "end\n"
-  "\n")
-
 find_program(AVL_EXECUTABLE avl PATHS "${CMAKE_INSTALL_PREFIX}/bin")
 find_program(XFOIL_EXECUTABLE xfoil PATHS "${CMAKE_INSTALL_PREFIX}/bin")
 find_program(FFMPEG_EXECUTABLE ffmpeg)
