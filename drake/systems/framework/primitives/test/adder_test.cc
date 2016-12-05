@@ -40,7 +40,6 @@ TEST_F(AdderTest, Topology) {
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
     EXPECT_EQ(kInputPort, descriptor.get_face());
     EXPECT_EQ(3, descriptor.get_size());
-    EXPECT_EQ(kInheritedSampling, descriptor.get_sampling());
   }
 
   ASSERT_EQ(1u, adder_->get_output_ports().size());
@@ -48,7 +47,6 @@ TEST_F(AdderTest, Topology) {
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
     EXPECT_EQ(kOutputPort, descriptor.get_face());
     EXPECT_EQ(3, descriptor.get_size());
-    EXPECT_EQ(kInheritedSampling, descriptor.get_sampling());
   }
 }
 

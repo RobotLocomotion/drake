@@ -15,7 +15,7 @@ DrakeVisualizer::DrakeVisualizer(
   set_name("drake_visualizer");
   const int vector_size =
       tree.get_num_positions() + tree.get_num_velocities();
-  DeclareInputPort(kVectorValued, vector_size, kContinuousSampling);
+  DeclareInputPort(kVectorValued, vector_size);
 }
 
 const lcmt_viewer_load_robot&

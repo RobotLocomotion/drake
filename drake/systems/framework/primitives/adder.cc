@@ -15,9 +15,9 @@ namespace systems {
 template <typename T>
 Adder<T>::Adder(int num_inputs, int size) {
   for (int i = 0; i < num_inputs; i++) {
-    this->DeclareInputPort(kVectorValued, size, kInheritedSampling);
+    this->DeclareInputPort(kVectorValued, size);
   }
-  this->DeclareOutputPort(kVectorValued, size, kInheritedSampling);
+  this->DeclareOutputPort(kVectorValued, size);
 }
 
 template <typename T>

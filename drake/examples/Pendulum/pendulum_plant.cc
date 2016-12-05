@@ -13,10 +13,8 @@ constexpr int kStateSize = 2;  // position, velocity
 
 template <typename T>
 PendulumPlant<T>::PendulumPlant() {
-  this->DeclareInputPort(
-      systems::kVectorValued, 1, systems::kContinuousSampling);
-  this->DeclareOutputPort(
-      systems::kVectorValued, kStateSize, systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, 1);
+  this->DeclareOutputPort(systems::kVectorValued, kStateSize);
 }
 
 template <typename T>

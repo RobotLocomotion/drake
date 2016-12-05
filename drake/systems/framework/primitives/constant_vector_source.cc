@@ -16,13 +16,13 @@ ConstantVectorSource<T>::ConstantVectorSource(
     const Eigen::Ref<const VectorX<T>>& source_value)
     : source_value_(source_value) {
   const int n = static_cast<int>(source_value.rows());
-  this->DeclareOutputPort(kVectorValued, n, kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, n);
 }
 
 template <typename T>
 ConstantVectorSource<T>::ConstantVectorSource(const T& source_value)
     : source_value_(Vector1<T>::Constant(source_value)) {
-  this->DeclareOutputPort(kVectorValued, 1, kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, 1);
 }
 
 template <typename T>

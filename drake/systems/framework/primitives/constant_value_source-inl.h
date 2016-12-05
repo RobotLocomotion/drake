@@ -20,7 +20,7 @@ template <typename T>
 ConstantValueSource<T>::ConstantValueSource(
     std::unique_ptr<AbstractValue> value)
     : source_value_(std::move(value)) {
-  this->DeclareAbstractOutputPort(kInheritedSampling);
+  this->DeclareAbstractOutputPort();
 }
 
 template <typename T>

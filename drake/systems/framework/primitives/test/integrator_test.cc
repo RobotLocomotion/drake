@@ -52,14 +52,12 @@ TEST_F(IntegratorTest, Topology) {
   EXPECT_EQ(kVectorValued, input_descriptor.get_data_type());
   EXPECT_EQ(kInputPort, input_descriptor.get_face());
   EXPECT_EQ(kLength, input_descriptor.get_size());
-  EXPECT_EQ(kContinuousSampling, input_descriptor.get_sampling());
 
   ASSERT_EQ(1u, integrator_->get_output_ports().size());
   const auto& output_descriptor = integrator_->get_output_ports()[0];
   EXPECT_EQ(kVectorValued, output_descriptor.get_data_type());
   EXPECT_EQ(kOutputPort, output_descriptor.get_face());
   EXPECT_EQ(kLength, output_descriptor.get_size());
-  EXPECT_EQ(kContinuousSampling, output_descriptor.get_sampling());
 }
 
 // Tests that the output of an integrator is its state.

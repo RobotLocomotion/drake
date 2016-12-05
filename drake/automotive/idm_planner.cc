@@ -18,18 +18,15 @@ IdmPlanner<T>::IdmPlanner(const T& v_ref) : v_ref_(v_ref) {
   // The reference velocity must be strictly positive.
   DRAKE_ASSERT(v_ref > 0);
 
+  const int kEgoCarOutputVectorSize = 2;
+  const int kAgentCarOutputVectorSize = 2;
+  const int kLinearAccelerationSize = 1;
   // Declare the ego car input port.
-  this->DeclareInputPort(systems::kVectorValued,
-                         2,  // Size of the ego car output vector.
-                         systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, kEgoCarOutputVectorSize);
   // Declare the agent car input port.
-  this->DeclareInputPort(systems::kVectorValued,
-                         2,  // Size of the agent car output vector.
-                         systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, kAgentCarOutputVectorSize);
   // Declare the output port.
-  this->DeclareOutputPort(systems::kVectorValued,
-                          1,  // We have a single linear acceleration value.
-                          systems::kContinuousSampling);
+  this->DeclareOutputPort(systems::kVectorValued, kLinearAccelerationSize);
 }
 
 template <typename T>

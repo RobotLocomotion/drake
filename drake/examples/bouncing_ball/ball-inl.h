@@ -15,9 +15,7 @@ namespace bouncing_ball {
 
 template <typename T>
 Ball<T>::Ball() {
-  this->DeclareOutputPort(systems::kVectorValued,
-                          2,
-                          systems::kContinuousSampling);
+  this->DeclareOutputPort(systems::kVectorValued, 2);
 }
 
 template <typename T>

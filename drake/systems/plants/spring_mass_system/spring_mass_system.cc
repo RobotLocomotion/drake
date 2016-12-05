@@ -68,11 +68,10 @@ SpringMassSystem<T>::SpringMassSystem(const T& spring_constant_N_per_m,
       mass_kg_(mass_kg),
       system_is_forced_(system_is_forced) {
   // Declares input port for forcing term.
-  if (system_is_forced_)
-    this->DeclareInputPort(kVectorValued, 1, kContinuousSampling);
+  if (system_is_forced_) this->DeclareInputPort(kVectorValued, 1);
 
   // Declares output port for q, qdot, Energy.
-  this->DeclareOutputPort(kVectorValued, 3, kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, 3);
 }
 
 template <typename T>

@@ -171,7 +171,6 @@ TEST_F(DiagramTest, Topology) {
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
     EXPECT_EQ(kInputPort, descriptor.get_face());
     EXPECT_EQ(kSize, descriptor.get_size());
-    EXPECT_EQ(kInheritedSampling, descriptor.get_sampling());
   }
 
   ASSERT_EQ(kSize, diagram_->get_num_output_ports());
@@ -181,12 +180,6 @@ TEST_F(DiagramTest, Topology) {
     EXPECT_EQ(kOutputPort, descriptor.get_face());
     EXPECT_EQ(kSize, descriptor.get_size());
   }
-
-  // The adder output ports have inherited sampling.
-  EXPECT_EQ(kInheritedSampling, diagram_->get_output_port(0).get_sampling());
-  EXPECT_EQ(kInheritedSampling, diagram_->get_output_port(1).get_sampling());
-  // The integrator output port has continuous sampling.
-  EXPECT_EQ(kContinuousSampling, diagram_->get_output_port(2).get_sampling());
 
   // The diagram has direct feedthrough.
   EXPECT_TRUE(diagram_->has_any_direct_feedthrough());
@@ -482,7 +475,7 @@ class PublishingSystem : public LeafSystem<double> {
  public:
   explicit PublishingSystem(std::function<void(int)> callback)
       : callback_(callback) {
-    this->DeclareInputPort(kVectorValued, 1, kInheritedSampling);
+    this->DeclareInputPort(kVectorValued, 1);
   }
 
   void EvalOutput(const Context<double>& context,
@@ -593,9 +586,7 @@ class SecondOrderStateVector : public BasicVector<double> {
 // A minimal system that has second-order state.
 class SecondOrderStateSystem : public LeafSystem<double> {
  public:
-  SecondOrderStateSystem() {
-    DeclareInputPort(kVectorValued, 1, kContinuousSampling);
-  }
+  SecondOrderStateSystem() { DeclareInputPort(kVectorValued, 1); }
 
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override {}

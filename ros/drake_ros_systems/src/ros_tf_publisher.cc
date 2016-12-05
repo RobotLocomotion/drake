@@ -9,7 +9,7 @@ RosTfPublisher::RosTfPublisher(const RigidBodyTree<double>& tree)
     : tree_(tree) {
   const int vector_size =
       tree.get_num_positions() + tree.get_num_velocities();
-  this->DeclareInputPort(kVectorValued, vector_size, kContinuousSampling);
+  this->DeclareInputPort(kVectorValued, vector_size);
   LoadEnableParameter();
   Init();
 }

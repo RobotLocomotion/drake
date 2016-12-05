@@ -10,8 +10,7 @@ template <typename T>
 TrajectorySource<T>::TrajectorySource(
     const Trajectory& trajectory)
     : trajectory_(trajectory) {
-  this->DeclareOutputPort(kVectorValued, trajectory_.rows(),
-                          kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, trajectory_.rows());
   // This class does not currently support trajectories which output
   // more complicated matrices.
   DRAKE_DEMAND(trajectory.cols() == 1);

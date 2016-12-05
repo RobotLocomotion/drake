@@ -711,8 +711,7 @@ class Diagram : public System<T>,
     const auto& subsystem_descriptor = subsystem_ports[port_index];
     SystemPortDescriptor<T> descriptor(
         this, kInputPort, this->get_num_input_ports(),
-        subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size(),
-        subsystem_descriptor.get_sampling());
+        subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size());
     this->DeclareInputPort(descriptor);
   }
 
@@ -732,8 +731,7 @@ class Diagram : public System<T>,
     const auto& subsystem_descriptor = subsystem_ports[port_index];
     SystemPortDescriptor<T> descriptor(
         this, kOutputPort, this->get_num_output_ports(),
-        subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size(),
-        subsystem_descriptor.get_sampling());
+        subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size());
     this->DeclareOutputPort(descriptor);
   }
 

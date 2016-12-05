@@ -37,16 +37,14 @@ LuenbergerObserver<T>::LuenbergerObserver(
   // Observer state is the (estimated) state of the observed system.
   this->DeclareContinuousState(x->size());
   // Output port is the (estimated) state of the observed system.
-  this->DeclareOutputPort(systems::kVectorValued, x->size(),
-                          systems::kContinuousSampling);
+  this->DeclareOutputPort(systems::kVectorValued, x->size());
   // TODO(russt): Could overload AllocateContinuousState and AllocateOutput to
   // call AllocateContinuousState on the observed system so that I can use the
   // actual derived class types.
 
   // First input port is the output of the observed system.
   this->DeclareInputPort(systems::kVectorValued,
-                         observed_system_->get_output_port(0).get_size(),
-                         systems::kContinuousSampling);
+                         observed_system_->get_output_port(0).get_size());
 
   // Check the size of the gain matrix.
   DRAKE_DEMAND(observer_gain_.rows() == x->size());
@@ -56,8 +54,7 @@ LuenbergerObserver<T>::LuenbergerObserver(
   // Second input port is the input to the observed system (if it exists).
   if (observed_system_->get_num_input_ports() > 0) {
     this->DeclareInputPort(systems::kVectorValued,
-                           observed_system_->get_input_port(0).get_size(),
-                           systems::kContinuousSampling);
+                           observed_system_->get_input_port(0).get_size());
   }
 }
 

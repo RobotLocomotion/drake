@@ -25,8 +25,8 @@ template <typename T>
 ZeroOrderHold<T>::ZeroOrderHold(const T& period_sec, int size) {
   // TODO(david-german-tri): remove the size parameter from the constructor
   // once #3109 supporting automatic sizes is resolved.
-  this->DeclareInputPort(kVectorValued, size, kContinuousSampling);
-  this->DeclareOutputPort(kVectorValued, size, kDiscreteSampling);
+  this->DeclareInputPort(kVectorValued, size);
+  this->DeclareOutputPort(kVectorValued, size);
   this->DeclareUpdatePeriodSec(period_sec);
 }
 

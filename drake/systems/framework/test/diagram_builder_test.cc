@@ -80,7 +80,7 @@ GTEST_TEST(DiagramBuilderTest, SystemsThatAreNotAddedThrow) {
 template <typename T>
 class Sink : public LeafSystem<T> {
  public:
-  Sink() { this->DeclareInputPort(kVectorValued, 1, kContinuousSampling); }
+  Sink() { this->DeclareInputPort(kVectorValued, 1); }
   void EvalOutput(const Context<T>&, SystemOutput<T>*) const override {}
 };
 
