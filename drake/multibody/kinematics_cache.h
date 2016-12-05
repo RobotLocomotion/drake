@@ -72,18 +72,8 @@ class KinematicsCacheElement {
 template <typename T>
 class KinematicsCache {
  private:
-  typedef KinematicsCacheElement<T> KinematicsCacheElementT;
-  typedef std::pair<RigidBody<double> const* const, KinematicsCacheElementT>
-      RigidBodyKCacheElementPair;
-  typedef Eigen::aligned_allocator<RigidBodyKCacheElementPair>
-      RigidBodyKCacheElementPairAllocator;
-  typedef std::unordered_map<RigidBody<double> const*, KinematicsCacheElementT,
-                             std::hash<RigidBody<double> const*>,
-                             std::equal_to<RigidBody<double> const*>,
-                             RigidBodyKCacheElementPairAllocator>
-      RigidBodyToKCacheElementMap;
-
-  RigidBodyToKCacheElementMap elements;
+  std::vector<KinematicsCacheElement<T>,
+              Eigen::aligned_allocator<KinematicsCacheElement<T>>> elements_;
   std::vector<RigidBody<double> const*> bodies;
   int num_positions;
   int num_velocities;
@@ -98,8 +88,20 @@ class KinematicsCache {
   explicit KinematicsCache(
       const std::vector<std::unique_ptr<RigidBody<double>> >& bodies_in);
 
+  /// Returns constant reference to a cach entry for body @p body_id.
+  const KinematicsCacheElement<T>& get_element(int body_id) const;
+
+  /// Returns mutable pointer to a cach entry for body @p body_id.
+  KinematicsCacheElement<T>* get_mutable_element(int body_id);
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_mutable_element().")
+#endif
   KinematicsCacheElement<T>& getElement(const RigidBody<double>& body);
 
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_element().")
+#endif
   const KinematicsCacheElement<T>& getElement(
       const RigidBody<double>& body) const;
 

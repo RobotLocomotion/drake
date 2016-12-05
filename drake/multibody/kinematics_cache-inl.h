@@ -34,23 +34,34 @@ KinematicsCache<T>::KinematicsCache(
         body.has_parent_body() ? body.getJoint().get_num_positions() : 0;
     int num_velocities_joint =
         body.has_parent_body() ? body.getJoint().get_num_velocities() : 0;
-    elements.insert({&body, KinematicsCacheElement<T>(
-        num_positions_joint, num_velocities_joint)});
+    elements_.emplace_back(num_positions_joint, num_velocities_joint);
     bodies.push_back(&body);
   }
   invalidate();
 }
 
 template <typename T>
+const KinematicsCacheElement<T>& KinematicsCache<T>::get_element(
+    int body_id) const {
+  return elements_[body_id];
+}
+
+template <typename T>
+KinematicsCacheElement<T>* KinematicsCache<T>::get_mutable_element(
+    int body_id) {
+  return &elements_[body_id];
+}
+
+template <typename T>
 KinematicsCacheElement<T>& KinematicsCache<T>::getElement(
     const RigidBody<double>& body) {
-  return elements.at(&body);
+  return elements_[body.get_id()];
 }
 
 template <typename T>
 const KinematicsCacheElement<T>& KinematicsCache<T>::getElement(
     const RigidBody<double>& body) const {
-  return elements.at(&body);
+  return elements_[body.get_id()];
 }
 
 template <typename T>

@@ -81,6 +81,9 @@ template <typename T>
 int RigidBody<T>::get_body_index() const { return body_index_; }
 
 template <typename T>
+int RigidBody<T>::get_id() const { return body_index_; }
+
+template <typename T>
 void RigidBody<T>::set_position_start_index(int position_start_index) {
   position_start_index_ = position_start_index;
 }
