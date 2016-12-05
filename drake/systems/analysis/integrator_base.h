@@ -819,7 +819,7 @@ class IntegratorBase {
    * @returns a std::pair<bool, T>, with the first element corresponding to
    *          `false` if the integrator does not take the full step of @p max_dt
    *           (and `true` otherwise) and the second element corresponding to
-   *           the step size actually taken by the integrator. 
+   *           the step size actually taken by the integrator.
    */
   virtual std::pair<bool, T> DoStepOnceAtMost(const T& max_dt);
 

@@ -287,6 +287,38 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   EXPECT_LT(integrator_->get_num_steps_taken(), fixed_steps);
 }
 
+// Verifies statistics validity for error controlled integrator.
+TEST_F(RK3IntegratorTest, CheckStat) {
+  // Set integrator parameters: do error control.
+  integrator_->set_maximum_step_size(kDT);
+  integrator_->set_fixed_step_mode(false);
+
+  // Set accuracy to a really small value so that the step is guaranteed to be
+  // small.
+  integrator_->set_target_accuracy(1e-8);
+
+  // Initialize the integrator.
+  integrator_->Initialize();
+
+  // Setup the initial position and initial velocity
+  const double kInitialPosition = 0.1;
+  const double kInitialVelocity = 0.01;
+
+  // Set initial condition using the Simulator's internal Context.
+  spring_mass_->set_position(integrator_->get_mutable_context(),
+                             kInitialPosition);
+  spring_mass_->set_velocity(integrator_->get_mutable_context(),
+                             kInitialVelocity);
+
+  // Integrate just one step.
+  integrator_->StepOnceAtMost(kDT, kDT);
+
+  // Verify that integrator statistics are valid
+  EXPECT_GE(integrator_->get_previous_integration_step_size(), 0.0);
+  EXPECT_LE(integrator_->get_previous_integration_step_size(), kDT);
+  EXPECT_LE(integrator_->get_smallest_adapted_step_size_taken(), kDT);
+}
+
 // Tests accuracy when generalized velocity is not the time derivative of
 // generalized configuration (using a rigid body).
 GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
