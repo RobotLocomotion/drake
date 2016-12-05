@@ -12,6 +12,9 @@ class XMLElement;
 
 class RigidBodyFrame {
  public:
+
+  RigidBodyFrame(int body_id, const Eigen::Isometry3d& X_BF);
+
   /**
    * A constructor where the transform-to-body is specified using an
    * Eigen::Isometry3d matrix.
@@ -91,6 +94,9 @@ class RigidBodyFrame {
    */
   int get_frame_index() const;
 
+  /// Returns the unique identifier of the body to which this frame is attached.
+  int get_body_id() const;
+
   /**
    * Sets the name of this `RigidBodyFrame`.
    */
@@ -129,6 +135,7 @@ class RigidBodyFrame {
  private:
   std::string name_;
   RigidBody<double>* body_{nullptr};
+  int body_id_{-1};  // Initialized to an invalid RigidBody id.
   Eigen::Isometry3d transform_to_body_;
   int frame_index_ = 0;  // this will be negative, but will also be gone soon!
 };
