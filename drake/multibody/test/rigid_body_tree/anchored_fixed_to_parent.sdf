@@ -1,0 +1,37 @@
+<?xml version='1.0' ?>
+<sdf version='1.6'>
+  <model name='simple_anchored'>
+    <pose>0 0 0 0 0 0</pose>
+
+    <link name='parentless_body'>
+      <pose>1 0 0 0 0 0</pose>
+      <collision name='anchor_box'>
+        <pose>0 0 1 0 0 0</pose>
+        <geometry>
+          <box>
+             <size>1 1 1</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name='fixed_body'>
+      <pose>1.5 0 1.5 0 0 0</pose>
+      <collision name='fixed_sphere'>
+        <pose>0 0 0  0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.5</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name='fixed' type="fixed">
+      <parent>parentless_body</parent>
+      <child>fixed_body</child>
+      <pose>0 0 0 0 0 0</pose>
+    </joint>
+
+  </model>
+</sdf>

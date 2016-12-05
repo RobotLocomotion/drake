@@ -36,9 +36,10 @@ void ExpectAnchored(RigidBody<double>* body, size_t collision_element_num,
 GTEST_TEST(SdfAnchoredGeometry, ParentlessLinkFixedToWorld) {
   RigidBodyTree<double> tree;
   // NOTE: nullptr for weld_to_frame implies welding to the world frame.
-  AddModelInstancesFromSdfFile(drake::GetDrakePath() + "/multibody/test/rigid_body_tree/anchored_parentless_link.sdf",
-                               drake::multibody::joints::kFixed, nullptr,
-                               &tree);
+  AddModelInstancesFromSdfFile(
+      drake::GetDrakePath() +
+          "/multibody/test/rigid_body_tree/anchored_parentless_link.sdf",
+      drake::multibody::joints::kFixed, nullptr, &tree);
   auto body = tree.FindBody("parentless_body");
   ExpectAnchored(body, 1, true);
 }
@@ -48,10 +49,41 @@ GTEST_TEST(SdfAnchoredGeometry, ParentlessLinkFixedToWorld) {
 GTEST_TEST(SdfAnchoredGeometry, ParentlessLinkFloatOnWorld) {
   RigidBodyTree<double> tree;
   // NOTE: nullptr for weld_to_frame implies welding to the world frame.
-  AddModelInstancesFromSdfFile(drake::GetDrakePath() + "/multibody/test/rigid_body_tree/anchored_parentless_link.sdf",
-                               drake::multibody::joints::kRollPitchYaw, nullptr,
-                               &tree);
+  AddModelInstancesFromSdfFile(
+      drake::GetDrakePath() +
+          "/multibody/test/rigid_body_tree/anchored_parentless_link.sdf",
+      drake::multibody::joints::kRollPitchYaw, nullptr, &tree);
   auto body = tree.FindBody("parentless_body");
+  ExpectAnchored(body, 1, false);
+}
+
+// Confirms that a body that is rigidly fixed to an anchored body is likewise
+// marked as anchored.
+GTEST_TEST(SdfAnchoredGeometry, LinkedToAnchoredIsAnchored) {
+  RigidBodyTree<double> tree;
+  // NOTE: nullptr for weld_to_frame implies welding to the world frame.
+  AddModelInstancesFromSdfFile(
+      drake::GetDrakePath() +
+          "/multibody/test/rigid_body_tree/anchored_fixed_to_parent.sdf",
+      drake::multibody::joints::kFixed, nullptr, &tree);
+  auto body = tree.FindBody("parentless_body");
+  ExpectAnchored(body, 1, true);
+  body = tree.FindBody("fixed_body");
+  ExpectAnchored(body, 1, true);
+}
+
+// Confirms that a body that is rigidly fixed to an anchored body is likewise
+// marked as anchored.
+GTEST_TEST(SdfAnchoredGeometry, LinkedToFloatdIsNotAnchored) {
+  RigidBodyTree<double> tree;
+  // NOTE: nullptr for weld_to_frame implies welding to the world frame.
+  AddModelInstancesFromSdfFile(
+      drake::GetDrakePath() +
+          "/multibody/test/rigid_body_tree/anchored_fixed_to_parent.sdf",
+      drake::multibody::joints::kQuaternion, nullptr, &tree);
+  auto body = tree.FindBody("parentless_body");
+  ExpectAnchored(body, 1, false);
+  body = tree.FindBody("fixed_body");
   ExpectAnchored(body, 1, false);
 }
 
