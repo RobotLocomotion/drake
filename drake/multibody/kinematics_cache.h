@@ -17,7 +17,6 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/joints/drake_joint.h"
-#include "drake/multibody/rigid_body.h"
 
 template <typename T>
 class KinematicsCacheElement {
@@ -78,7 +77,6 @@ class KinematicsCache {
  private:
   std::vector<KinematicsCacheElement<T>,
               Eigen::aligned_allocator<KinematicsCacheElement<T>>> elements_;
-  std::vector<RigidBody<double> const*> bodies;
   int num_positions_;
   int num_velocities_;
   Eigen::Matrix<T, Eigen::Dynamic, 1> q;
@@ -93,13 +91,6 @@ class KinematicsCache {
 
   void CreateCacheEntry(int num_positions, int num_velocities);
 
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use "
-                   "KinematicsCache(int num_positions, int num_velocities)")
-#endif
-  explicit KinematicsCache(
-      const std::vector<std::unique_ptr<RigidBody<double>> >& bodies_in);
-
   KinematicsCache(int num_positions, int num_velocities,
                   const std::vector<int>& num_joint_positions,
                   const std::vector<int>& num_joint_velocities);
@@ -109,17 +100,6 @@ class KinematicsCache {
 
   /// Returns mutable pointer to a cach entry for body @p body_id.
   KinematicsCacheElement<T>* get_mutable_element(int body_id);
-
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use get_mutable_element().")
-#endif
-  KinematicsCacheElement<T>& getElement(const RigidBody<double>& body);
-
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use get_element().")
-#endif
-  const KinematicsCacheElement<T>& getElement(
-      const RigidBody<double>& body) const;
 
   template <typename Derived>
   void initialize(const Eigen::MatrixBase<Derived>& q_in);
@@ -168,18 +148,6 @@ class KinematicsCache {
 
  private:
   void invalidate();
-
-  // TODO(amcastro-tri): this method should belong to RigidBodyTree and only be
-  // used on initialization. The RigidBodyTree should have this value stored so
-  // that KinematicsCache can request it when needed. See the KinematicsCache
-  // constructor where this request is made.
-  // See TODO for get_num_velocities.
-  static int get_num_positions(
-      const std::vector<std::unique_ptr<RigidBody<double>> >& bodies);
-
-  // TODO(amcastro-tri): See TODO for get_num_positions.
-  static int get_num_velocities(
-      const std::vector<std::unique_ptr<RigidBody<double>> >& bodies);
 
  public:
 #ifndef SWIG
