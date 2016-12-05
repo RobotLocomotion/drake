@@ -37,6 +37,7 @@ using Eigen::VectorXd;
 
 using drake::AutoDiffUpTo73d;
 using drake::AutoDiffXd;
+using drake::Isometry3;
 using drake::Matrix3X;
 using drake::Matrix4X;
 using drake::Matrix6X;
@@ -1599,6 +1600,29 @@ Transform<Scalar, 3, Isometry> RigidBodyTree<T>::relativeTransform(
   Transform<Scalar, 3, Isometry> Tbodyframe_to_world =
       body_element.transform_to_world * Tbody_frame;
   return Tworld_to_baseframe * Tbodyframe_to_world;
+}
+
+template <typename T>
+Isometry3<T> RigidBodyTree<T>::RelativeTransformBetweenFrames(
+    const KinematicsCache<T>& cache,
+    const RigidBodyFrame& frameA, const RigidBodyFrame& frameB) const {
+  cache.checkCachedKinematicsSettings(false, false, "relativeTransform");
+
+  int bodyA_id = frameA.get_body_id();
+  int bodyB_id = frameB.get_body_id();
+
+  const Isometry3d& X_BodyAFrameA = frameA.get_transform_to_body();
+  const Isometry3d& X_BodyBFrameB = frameB.get_transform_to_body();
+
+  const auto& bodyA_element = cache.get_element(bodyA_id);
+  const auto& bodyB_element = cache.get_element(bodyB_id);
+
+  Isometry3<T>  X_FrameAWorld =
+      (bodyA_element.transform_to_world * X_BodyAFrameA).inverse();
+  Isometry3<T>  X_WorldFrameB =
+      bodyB_element.transform_to_world * X_BodyBFrameB;
+  // Returns X_FrameAFrameB
+  return X_FrameAWorld * X_WorldFrameB;
 }
 
 template <typename T>

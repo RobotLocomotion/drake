@@ -575,6 +575,10 @@ class RigidBodyTree {
   relativeTransform(const KinematicsCache<Scalar>& cache, int base_or_frame_ind,
                     int body_or_frame_ind) const;
 
+  drake::Isometry3<T> RelativeTransformBetweenFrames(
+      const KinematicsCache<T>& cache,
+      const RigidBodyFrame& frameA, const RigidBodyFrame& frameB) const;
+
   /** computeContactJacobians
    * @brief Computes the jacobian for many points in the format currently used
    * by matlab.  (possibly should be scheduled for deletion, taking
