@@ -864,6 +864,23 @@ unique_ptr<KinematicsCache<T>> RigidBodyTree<T>::CreateKinematicsCache() const {
 }
 
 template <typename T>
+template <typename CacheT>
+unique_ptr<KinematicsCache<CacheT>>
+RigidBodyTree<T>::CreateKinematicsCacheWithType() const {
+  auto cache = make_unique<KinematicsCache<CacheT>>(get_num_positions(),
+                                                    get_num_velocities());
+  for (const auto& body_unique_ptr : bodies) {
+    const RigidBody<T>& body = *body_unique_ptr;
+    int num_positions_joint =
+        body.has_parent_body() ? body.getJoint().get_num_positions() : 0;
+    int num_velocities_joint =
+        body.has_parent_body() ? body.getJoint().get_num_velocities() : 0;
+    cache->CreateCacheEntry(num_positions_joint, num_velocities_joint);
+  }
+  return cache;
+}
+
+template <typename T>
 void RigidBodyTree<T>::DoKinematics(
     KinematicsCache<T>* cache,
     const Eigen::Ref<const VectorX<T>>& q) const {
@@ -876,7 +893,19 @@ template <typename DerivedQ, typename DerivedV>
 KinematicsCache<typename DerivedQ::Scalar> RigidBodyTree<T>::doKinematics(
     const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v,
     bool compute_JdotV) const {
-  KinematicsCache<typename DerivedQ::Scalar> ret(bodies);
+  vector<int> num_joint_positions, num_joint_velocities;
+  for (const auto& body : bodies) {
+    int nq =
+        body->has_parent_body() ? body->getJoint().get_num_positions() : 0;
+    int nv =
+        body->has_parent_body() ? body->getJoint().get_num_velocities() : 0;
+    num_joint_positions.push_back(nq);
+    num_joint_velocities.push_back(nv);
+  }
+  KinematicsCache<typename DerivedQ::Scalar> ret(
+      get_num_positions(), get_num_velocities(),
+      num_joint_positions, num_joint_velocities);
+
   ret.initialize(q, v);
   doKinematics(ret, compute_JdotV);
   return ret;
@@ -3150,6 +3179,14 @@ RigidBodyTree<double>::doKinematics(
 template int RigidBodyTree<double>::parseBodyOrFrameID(
     const int body_or_frame_id,
     Eigen::Transform<double, 3, Eigen::Isometry>* Tframe) const;
+
+// Explicit template instantiations for CreateKinematicsCacheWithType.
+template
+unique_ptr<KinematicsCache<AutoDiffXd>>
+RigidBodyTree<double>::CreateKinematicsCacheWithType<AutoDiffXd>() const;
+template
+unique_ptr<KinematicsCache<AutoDiffUpTo73d>>
+RigidBodyTree<double>::CreateKinematicsCacheWithType<AutoDiffUpTo73d>() const;
 
 // Explicitly instantiates on the most common scalar types.
 template class RigidBodyTree<double>;

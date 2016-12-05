@@ -25,12 +25,32 @@ KinematicsCache<T>::KinematicsCache(int num_positions, int num_velocities)
     : num_positions_(num_positions), num_velocities_(num_velocities),
       q(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_positions_)),
       v(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_velocities_)),
-      velocity_vector_valid(false) { }
+      velocity_vector_valid(false) {
+  invalidate();
+}
 
 template <typename T>
 void KinematicsCache<T>::CreateCacheEntry(
     int num_positions, int num_velocities) {
   elements_.emplace_back(num_positions, num_velocities);
+}
+
+template <typename T>
+KinematicsCache<T>::KinematicsCache(
+    int num_positions, int num_velocities,
+    const std::vector<int>& num_joint_positions,
+    const std::vector<int>& num_joint_velocities)
+    : num_positions_(num_positions),
+      num_velocities_(num_velocities),
+      q(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_positions_)),
+      v(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_velocities_)),
+      velocity_vector_valid(false) {
+  for (int body_id = 0;
+       body_id < static_cast<int>(num_joint_positions.size()); ++body_id) {
+    elements_.emplace_back(num_joint_positions[body_id],
+                           num_joint_velocities[body_id]);
+  }
+  invalidate();
 }
 
 template <typename T>

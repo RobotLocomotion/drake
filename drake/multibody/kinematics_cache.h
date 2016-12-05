@@ -100,6 +100,10 @@ class KinematicsCache {
   explicit KinematicsCache(
       const std::vector<std::unique_ptr<RigidBody<double>> >& bodies_in);
 
+  KinematicsCache(int num_positions, int num_velocities,
+                  const std::vector<int>& num_joint_positions,
+                  const std::vector<int>& num_joint_velocities);
+
   /// Returns constant reference to a cach entry for body @p body_id.
   const KinematicsCacheElement<T>& get_element(int body_id) const;
 
