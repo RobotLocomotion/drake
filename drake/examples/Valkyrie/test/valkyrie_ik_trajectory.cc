@@ -447,7 +447,7 @@ int DoMain() {
 
   // Left foot position and orientation constraint, position and orientation
   // constraints are imposed on frames/bodies
-  Vector2d tspan_foot_flat(0.5, inf);
+  Vector2d tspan_foot_flat(0, inf);
   const Vector3d origin(0, 0, 0);
 
   auto leftFootPtr = tree->FindBody("leftFoot");
@@ -476,8 +476,7 @@ int DoMain() {
   WorldPositionConstraint kc_lfoot_pos(tree.get(), l_foot, l_foot_toes,
                                        lfoot_pos_lb, lfoot_pos_ub, tspan);
   WorldPositionConstraint kc_lfoot_pos_above_ground(
-      tree.get(), l_foot, origin,
-      lfoot_pos_lb_origin,
+      tree.get(), l_foot, origin, lfoot_pos_lb_origin,
       lfoot_pos_above_ground_ub_one_pt, tspan);
   double tol = 0.5 / 180 * M_PI;
   WorldQuatConstraint kc_lfoot_quat(tree.get(), l_foot, lfoot_quat, tol,
@@ -496,8 +495,7 @@ int DoMain() {
   WorldPositionConstraint kc_rfoot_pos(tree.get(), r_foot, r_foot_toes,
                                        lfoot_pos_lb, lfoot_pos_ub, tspan);
   WorldPositionConstraint kc_rfoot_pos_above_ground(
-      tree.get(), r_foot, origin,
-      lfoot_pos_lb_origin,
+      tree.get(), r_foot, origin, lfoot_pos_lb_origin,
       lfoot_pos_above_ground_ub_one_pt, tspan);
   WorldQuatConstraint kc_rfoot_quat(tree.get(), r_foot, rfoot_quat, tol,
                                     tspan_foot_flat);
@@ -599,7 +597,7 @@ int DoMain() {
   kc_kuasi_4pts.addContact(1, &r_forearm, &rightArmContactPts);
 
   // 9 leftForeArm position constraint
-  Vector2d tspan_larm_sliding(0, 1);
+  Vector2d tspan_larm_sliding(0, inf);
   Vector3d lforearm_pos_lb(1.30, 0.38, 0);
   Vector3d lforearm_pos_ub(1.30, 0.38, 0);
   WorldPositionConstraint kc_lforearm_pos(tree.get(), l_forearm,
@@ -607,7 +605,7 @@ int DoMain() {
                                           lforearm_pos_ub, tspan_larm_sliding);
 
   // 9 rightForeArm position constraint
-  Vector2d tspan_rarm_sliding(0, 1);
+  Vector2d tspan_rarm_sliding(0, inf);
   Vector3d rforearm_pos_lb(1.30, -0.38, 0);
   Vector3d rforearm_pos_ub(1.30, -0.38, 0);
   WorldPositionConstraint kc_rforearm_pos(tree.get(), r_forearm,
@@ -683,12 +681,12 @@ int DoMain() {
   for (int i = 0; i < hips_idx.size(); i++) hips_idx[i] -= 2;
   for (int i = 0; i < legs_idx.size(); i++) legs_idx[i] -= 2;
 
-  // for (const int& i : base_translation_idx) cost(i) = 0;
+  for (const int& i : base_translation_idx) cost(i) = 0;
   // for (const int& i : base_rotation_idx) cost(i) = 1e3;
-  // for (const int& i : torso_idx) cost(i) = 10;
+  // for (const int& i : torso_idx) cost(i) = 1e3;
   // for (const int& i : legs_idx) cost(i) = 1;
   // for (const int& i : hips_idx) cost(i) = 10;
-  // cost(9) = 1e6;  // neck cost
+  cost(9) = 1e6;  // neck cost
 
   // display all costs
   std::cout << "costs are:" << std::endl;
@@ -707,16 +705,20 @@ int DoMain() {
   ikoptions.setQv(Qv);
   ikoptions.setSequentialSeedFlag(false);
   std::vector<std::string> infeasible_constraint;
-  /*
+
   int nT_s = 2;  // s stands for standing
   const int kN_per_traj = 20;
-  int info_s = 0;
+
   const std::vector<double> t_s = {0, 5};
+  MatrixXd q_sol_s(tree->get_num_positions(), nT_s);
+  q_sol_s << squat_pose_2, standing_pose;
   MatrixXd q_nom_s(tree->get_num_positions(), nT_s);
   q_nom_s.leftCols(1) = squat_pose_2;
   q_nom_s.rightCols(1) = standing_pose;
+
+  int info_s = 0;
   VectorXd qdot0_s = VectorXd::Zero(tree->get_num_velocities());
-  MatrixXd q_sol_s(tree->get_num_positions(), nT_s);
+
   MatrixXd qdot_sol_s(tree->get_num_velocities(), nT_s);
   MatrixXd qddot_sol_s(tree->get_num_positions(), nT_s);
   inverseKinTraj(tree.get(), nT_s, t_s.data(), qdot0_s, q_nom_s, q_nom_s,
@@ -734,27 +736,26 @@ int DoMain() {
   t_s_pointwise.push_back(0);
 
   MatrixXd q_nom_pointwise(tree->get_num_positions(), nT_s_pointwise);
-  q_nom_pointwise.leftCols(1)=squat_pose_2;
+  q_nom_pointwise.leftCols(1) = squat_pose_2;
 
-  for(int i=1;i<=kN_per_traj;i++) {
-    double t_current = t_s[nT_s-1] / kN_per_traj * i;
+  for (int i = 1; i <= kN_per_traj; i++) {
+    double t_current = t_s[nT_s - 1] / kN_per_traj * i;
     t_s_pointwise.push_back(t_current);
     q_nom_pointwise.col(i) = poly_trajectory_s->value(t_current);
   }
-  std::vector<int> info_s_pointwise(nT_s_pointwise,0);
+  std::vector<int> info_s_pointwise(nT_s_pointwise, 0);
 
-  inverseKinPointwise(tree.get(), nT_s_pointwise, t_s_pointwise.data(),
-                      q_nom_pointwise, q_nom_pointwise,
-                      constraint_array_standing.size(),
-                      constraint_array_standing.data(),
-                      ikoptions, &q_sol_s_pointwise, info_s_pointwise.data(),
-                      &infeasible_constraint);
+  inverseKinPointwise(
+      tree.get(), nT_s_pointwise, t_s_pointwise.data(), q_nom_pointwise,
+      q_nom_pointwise, constraint_array_standing.size(),
+      constraint_array_standing.data(), ikoptions, &q_sol_s_pointwise,
+      info_s_pointwise.data(), &infeasible_constraint);
+
   // for (int i = 0; i < info_s_pointwise.size(); i++)
   //   cout << "info_s_ptwise" << i << ": "  << info_s_pointwise[i] << endl;
   // cout << q_sol_s_pointwise << endl;
-  */
-  const int kN_per_step = 2;
 
+  const int kN_per_step = 2;
   /*
   // foot contact changes from toes only to entire sole
   int nT1 = kN_per_step + 1;
@@ -800,15 +801,18 @@ int DoMain() {
   double lambda_l = 0.2;
   double lambda_r = 0.2;
   int nTi = kN_per_step;
-  Eigen::MatrixXd q_nom_i(tree->get_num_positions(), nTi);
+
   MatrixXd q_sol_i(tree->get_num_positions(), nTi);
   q_sol_i.rightCols(1) = prone_pose_2;
-  q_nom_i = squat_pose_2.replicate(1, nTi);
+
   std::vector<MatrixXd> q_sols;
 
-  while (count < 6) {
-    VectorXd q_cur = q_sol_i.rightCols(1);
-    KinematicsCache<double> cache = tree->doKinematics(q_cur);
+  const double t_length = 2;  // will not work if changed to other values
+  const int kN_per_count = 20;
+
+  while (count < 8) {
+    VectorXd q_start = q_sol_i.rightCols(1);
+    KinematicsCache<double> cache = tree->doKinematics(q_start);
     Vector3d center_of_mass = tree->centerOfMass(cache);
     TransformPtsBatch(tree.get(), cache, contact_pts, bodies,
                       &contact_pts_world);
@@ -829,11 +833,14 @@ int DoMain() {
     // - right(left) foot moving "forward"
 
     std::vector<double> ti;
-    for (int i = 0; i < nTi; i++) ti.push_back(1.0 / kN_per_step * (i + 1));
-    Vector2d tspani(0, 1);
-    Vector2d tspani1(0, 0.5);
-    Vector2d tspani2(0.5, 1);
-    Vector2d tspani3(1, 1);
+    for (int i = 0; i < nTi; i++)
+      ti.push_back(t_length / kN_per_step * (i + 1));
+    Vector2d tspani(0, t_length);
+    Vector2d tspani1(0, 0.5 * t_length);
+    Vector2d tspani2(0.5 * t_length, t_length);
+    Vector2d tspani3(t_length, t_length);
+    Vector2d tspani4(0.3 * t_length, 0.7 * t_length);
+    const double foot_ground_clearance = 0.02;
     QuasiStaticConstraint kc_quasi_3pts_i(tree.get(), tspani2);
     QuasiStaticConstraint kc_quasi_4pts_i(tree.get(), tspani1);
 
@@ -866,6 +873,13 @@ int DoMain() {
     WorldPositionConstraint kc_rfoot_forward(tree.get(), r_foot, origin,
                                              rfoot_origin_forward_lb,
                                              rfoot_origin_forward_ub, tspani3);
+    // right foot above ground
+    Vector3d rfoot_origin_above_ground_lb(
+        -inf, -inf, rfoot_origin_forward(2) + foot_ground_clearance);
+    Vector3d rfoot_origin_above_ground_ub(inf, inf, inf);
+    WorldPositionConstraint kc_rfoot_above_ground(
+        tree.get(), r_foot, origin, rfoot_origin_above_ground_lb,
+        rfoot_origin_above_ground_ub, tspani4);
     // move left foot forward
     Vector3d lfoot_origin_forward;
     lfoot_origin_forward << convex_combination(left_start.head(2),
@@ -882,6 +896,14 @@ int DoMain() {
     WorldPositionConstraint kc_lfoot_forward(tree.get(), l_foot, origin,
                                              lfoot_origin_forward_lb,
                                              lfoot_origin_forward_ub, tspani3);
+    // left foot above ground
+    Vector3d lfoot_origin_above_ground_lb(
+        -inf, -inf, lfoot_origin_forward(2) + foot_ground_clearance);
+    Vector3d lfoot_origin_above_ground_ub(inf, inf, inf);
+    WorldPositionConstraint kc_lfoot_above_ground(
+        tree.get(), l_foot, origin, lfoot_origin_above_ground_lb,
+        lfoot_origin_above_ground_ub, tspani4);
+
     // fix right foot
     Vector3d rfoot_origin_fixed =
         tree->transformPoints(cache, origin, r_foot, 0);
@@ -906,19 +928,24 @@ int DoMain() {
     if (count % 2) {
       // move right foot
       constraint_array.push_back(&kc_rfoot_forward);
+      constraint_array.push_back(&kc_rfoot_above_ground);
       // fix left foot
       constraint_array.push_back(&kc_lfoot_fixed);
       kc_quasi_3pts_i.addContact(1, &l_foot, &l_foot_pts);
     } else {
       // move left foot
       constraint_array.push_back(&kc_lfoot_forward);
+      constraint_array.push_back(&kc_lfoot_above_ground);
       // fix right foot
       constraint_array.push_back(&kc_rfoot_fixed);
       kc_quasi_3pts_i.addContact(1, &r_foot, &r_foot_pts);
     }
     constraint_array.push_back(&kc_quasi_3pts_i);
     std::vector<int> info_i(nTi, 0);
-    MatrixXd q_seed_i = q_cur.replicate(1, nTi);
+    MatrixXd q_seed_i = q_start.replicate(1, nTi);
+
+    Eigen::MatrixXd q_nom_i(tree->get_num_positions(), nTi);
+    q_nom_i = squat_pose_2.replicate(1, nTi);
 
     inverseKinPointwise(tree.get(), nTi, ti.data(), q_seed_i, q_nom_i,
                         constraint_array.size(), constraint_array.data(),
@@ -928,11 +955,48 @@ int DoMain() {
     for (int i = 0; i < info_i.size(); i++) {
       cout << "info_i" << count << " " << i << ": " << info_i[i] << endl;
     }
-    q_sols.push_back(q_sol_i);
+
+    MatrixXd q_sol_i1(q_sol_i.rows(), q_sol_i.cols() + 1);
+    q_sol_i1 << q_start, q_sol_i;
+    std::vector<double> ti1 = {0};
+    ti1.insert(ti1.end(), ti.begin(), ti.end());
+
+    std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory_i =
+        std::make_unique<PiecewisePolynomialTrajectory>(q_sol_i1, ti1);
+
+    int nT_i_pointwise = kN_per_count;
+    MatrixXd q_sol_i_pointwise(tree->get_num_positions(), nT_i_pointwise);
+    std::vector<double> t_i_pointwise;
+    // t_s_pointwise.push_back(0);
+
+    MatrixXd q_nom_i_pointwise(tree->get_num_positions(), nT_i_pointwise);
+    // q_nom_i_pointwise.leftCols(1)=prone_pose_2;
+
+    for (int i = 0; i < kN_per_count; i++) {
+      double t_current = t_length / kN_per_count * (i + 1);
+      t_i_pointwise.push_back(t_current);
+      q_nom_i_pointwise.col(i) = poly_trajectory_i->value(t_current);
+    }
+
+    std::vector<int> info_i_pointwise(nT_i_pointwise, 0);
+
+    inverseKinPointwise(tree.get(), nT_i_pointwise, t_i_pointwise.data(),
+                        q_nom_i_pointwise, q_nom_i_pointwise,
+                        constraint_array.size(), constraint_array.data(),
+                        ikoptions, &q_sol_i_pointwise, info_i_pointwise.data(),
+                        &infeasible_constraint);
+
+    for (int i = 0; i < info_i_pointwise.size(); i++)
+      cout << "info_i_ptwise" << i << ": " << info_i_pointwise[i] << endl;
+    cout << q_sol_i_pointwise << endl;
+
+    // q_sols.push_back(q_sol_i);
+    q_sols.push_back(q_sol_i_pointwise);
     // clean up
     count++;
     constraint_array.pop_back();  // kc_kuqsi_3pts_i
     constraint_array.pop_back();  // kc_rfoot_fixed/forward
+    constraint_array.pop_back();  // l/r foot above ground
     constraint_array.pop_back();  // kc_lfoot_fixed/forward
   }
 
@@ -940,16 +1004,17 @@ int DoMain() {
 
   std::vector<double> t1 = {0};
   int nT1 = t1.size();
-  Eigen::MatrixXd q_sol(tree->get_num_positions(), nT1 + count * nTi);
+  Eigen::MatrixXd q_sol(tree->get_num_positions(), nT1 + count * kN_per_count);
   q_sol.leftCols(1) = prone_pose_2;
   for (int i = 0; i < count; i++) {
-    q_sol.block(0, i * nTi + nT1, tree->get_num_positions(), nTi) = q_sols[i];
+    q_sol.block(0, i * kN_per_count + nT1, tree->get_num_positions(),
+                kN_per_count) = q_sols.at(i);
   }
 
   std::vector<double> t(t1);
   for (int i = 0; i < count; i++) {
-    for (int j = 0; j < kN_per_step; j++)
-      t.push_back(t[nT1 - 1] + 1.0 / kN_per_step * (kN_per_step * i + (j + 1)));
+    for (int j = 0; j < kN_per_count; j++)
+      t.push_back(t[kN_per_count * i] + t_length / kN_per_count * (j + 1));
   }
 
   // writing results to a file
@@ -989,19 +1054,34 @@ int DoMain() {
   } else
     cout << "unable to open file \"contact_pts.txt\"" << endl;
 
-  // show it in drake visualizer
+  MatrixXd q_sol_all(tree->get_num_positions(),
+                     q_sol.cols() + q_sol_s_pointwise.cols() - 1);
+  q_sol_all << q_sol, q_sol_s_pointwise.rightCols(q_sol_s_pointwise.cols() - 1);
 
+  std::vector<double> t_all(t);
+  double t_end = t_all[t_all.size()-1];
+  for(int i=1;i<=t_s_pointwise.size()-1;i++)
+    t_all.push_back(t_end + t_s_pointwise[i]);
+
+  // show it in drake visualizer
   // std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory =
   //    std::make_unique<PiecewisePolynomialTrajectory>(q_sol_s_pointwise,
   //                                                    t_s_pointwise);
 
-  std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory =
-      std::make_unique<PiecewisePolynomialTrajectory>(q_sol, t);
+  // std::unique_ptr<PiecewisePolynomialTrajectory>
+  // poly_trajectory = std::make_unique<PiecewisePolynomialTrajectory>(q_sol,t);
 
-  // VectorXd x(tree->get_num_positions() + tree->get_num_velocities());
+  std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory =
+      std::make_unique<PiecewisePolynomialTrajectory>(q_sol_all, t_all);
+
+  // VectorXd
+  // x(tree->get_num_positions()
+  // +
+  // tree->get_num_velocities());
   VectorXd x(tree->get_num_velocities());
   x.setZero();
-  // x.head(q_sol1.size()) = q_sol1;
+  // x.head(q_sol1.size()) =
+  // q_sol1;
 
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
@@ -1020,10 +1100,12 @@ int DoMain() {
 
   systems::Simulator<double> simulator(*diagram);
   simulator.Initialize();
-  simulator.StepTo(10);
+  simulator.StepTo(20);
 
-  // auto context = diagram->CreateDefaultContext();
-  // auto output = diagram->AllocateOutput(*context);
+  // auto context =
+  // diagram->CreateDefaultContext();
+  // auto output =
+  // diagram->AllocateOutput(*context);
   // diagram->Publish(*context);
 
   return 0;
