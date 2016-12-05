@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/is_approx_equal_abstol.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
 using std::default_random_engine;
@@ -21,8 +22,7 @@ CoefficientType ComputeExtremeVel(const Polynomial<CoefficientType>& vel,
   DRAKE_DEMAND(vel.GetDegree() == 2);
 
   Polynomial<CoefficientType> acc = vel.Derivative();
-  Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> acc_coeffs =
-      acc.GetCoefficients();
+  VectorX<CoefficientType> acc_coeffs = acc.GetCoefficients();
 
   CoefficientType vel0 = vel.EvaluateUnivariate(0);
   CoefficientType vel1 = vel.EvaluateUnivariate(T);
@@ -138,6 +138,23 @@ bool CheckValues(
   return true;
 }
 
+template <typename CoefficientType>
+bool CheckInterpedValuesAtBreakTime(
+    const PiecewisePolynomial<CoefficientType>& traj,
+    const std::vector<double>& T,
+    const std::vector<MatrixX<CoefficientType>>& values,
+    CoefficientType tol,
+    bool check_last_time_step = true) {
+  int N = static_cast<int>(T.size());
+  for (int i = 0; i < N; ++i) {
+    if (i == N - 1 && !check_last_time_step)
+      continue;
+    if (!is_approx_equal_abstol(traj.value(T[i]), values[i], tol))
+      return false;
+  }
+  return true;
+}
+
 // This function does the following checks for each dimension of Y:
 // traj(T) = Y
 // for each segment Pi:
@@ -151,8 +168,7 @@ bool CheckValues(
 // The last two conditions are the monotonic conditions ("shape perserving").
 template <typename CoefficientType>
 void PchipTest(const std::vector<double>& T,
-               const std::vector<Eigen::Matrix<CoefficientType, Eigen::Dynamic,
-                                               Eigen::Dynamic>>& Y,
+               const std::vector<MatrixX<CoefficientType>>& Y,
                const PiecewisePolynomial<CoefficientType>& traj,
                CoefficientType tol) {
   typedef Polynomial<CoefficientType> PolynomialType;
@@ -162,6 +178,7 @@ void PchipTest(const std::vector<double>& T,
 
   EXPECT_TRUE(CheckContinuity(traj, tol, 1));
   EXPECT_TRUE(CheckValues(traj, {Y}, tol));
+  EXPECT_TRUE(CheckInterpedValuesAtBreakTime(traj, T, Y, tol));
 
   // Check monotonic.
   for (int n = 0; n < traj.getNumberOfSegments(); ++n) {
@@ -268,9 +285,8 @@ GTEST_TEST(SplineTests, PchipAndCubicSplineCompareWithMatlabTest) {
 
   EXPECT_TRUE(CheckContinuity(spline, 1e-12, 2));
   EXPECT_TRUE(CheckValues(spline, {Y}, 1e-12));
+  EXPECT_TRUE(CheckInterpedValuesAtBreakTime(spline, T, Y, 1e-12));
 }
-
-
 
 GTEST_TEST(SplineTests, RandomizedLinearSplineTest) {
   default_random_engine generator(123);
@@ -289,13 +305,14 @@ GTEST_TEST(SplineTests, RandomizedLinearSplineTest) {
         PiecewisePolynomial<double>::FirstOrderHold(T, Y);
     EXPECT_TRUE(CheckContinuity(spline, 1e-12, 0));
     EXPECT_TRUE(CheckValues(spline, {Y}, 1e-12));
+    EXPECT_TRUE(CheckInterpedValuesAtBreakTime(spline, T, Y, 1e-12));
   }
 }
 
 GTEST_TEST(SplineTests, RandomizedConstantSplineTest) {
   default_random_engine generator(123);
-  int N = 6;
-  int num_tests = 100;
+  int N = 2;
+  int num_tests = 1;
   int rows = 3;
   int cols = 6;
 
@@ -310,6 +327,7 @@ GTEST_TEST(SplineTests, RandomizedConstantSplineTest) {
     // Don't check the last time step, because constant spline ignores the last
     // knot.
     EXPECT_TRUE(CheckValues(spline, {Y}, 1e-12, false));
+    EXPECT_TRUE(CheckInterpedValuesAtBreakTime(spline, T, Y, 1e-12, false));
   }
 }
 
@@ -350,6 +368,7 @@ GTEST_TEST(SplineTests, RandomizedCubicSplineTest) {
         PiecewisePolynomial<double>::Cubic(T, Y);
     EXPECT_TRUE(CheckContinuity(spline, 1e-8, 2));
     EXPECT_TRUE(CheckValues(spline, {Y}, 1e-8));
+    EXPECT_TRUE(CheckInterpedValuesAtBreakTime(spline, T, Y, 1e-8));
   }
 
   // Test Cubic(T, Y, Ydot0, Ydot1)
@@ -365,6 +384,7 @@ GTEST_TEST(SplineTests, RandomizedCubicSplineTest) {
         PiecewisePolynomial<double>::Cubic(T, Y, Ydot0, Ydot1);
     EXPECT_TRUE(CheckContinuity(spline, 1e-8, 2));
     EXPECT_TRUE(CheckValues(spline, {Y}, 1e-8));
+    EXPECT_TRUE(CheckInterpedValuesAtBreakTime(spline, T, Y, 1e-8));
 
     // Check the first and last first derivatives.
     MatrixX<double> Ydot0_test = spline.derivative().value(T.front());
@@ -391,13 +411,13 @@ GTEST_TEST(SplineTests, RandomizedCubicSplineTest) {
         PiecewisePolynomial<double>::Cubic(T, Y, Ydot);
     EXPECT_TRUE(CheckContinuity(spline, 1e-8, 1));
     EXPECT_TRUE(CheckValues(spline, {Y, Ydot}, 1e-8));
+    EXPECT_TRUE(CheckInterpedValuesAtBreakTime(spline, T, Y, 1e-8));
   }
 }
 
 template <typename CoefficientType>
 void TestThrows(const std::vector<double>& T,
-                const std::vector<Eigen::Matrix<CoefficientType, Eigen::Dynamic,
-                                                Eigen::Dynamic>>& Y) {
+                const std::vector<MatrixX<CoefficientType>>& Y) {
   EXPECT_THROW(PiecewisePolynomial<double>::ZeroOrderHold(T, Y),
                std::runtime_error);
   EXPECT_THROW(PiecewisePolynomial<double>::FirstOrderHold(T, Y),
@@ -409,8 +429,7 @@ void TestThrows(const std::vector<double>& T,
 template <typename CoefficientType>
 void TestNoThrows(
     const std::vector<double>& T,
-    const std::vector<
-        Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>>& Y) {
+    const std::vector<MatrixX<CoefficientType>>& Y) {
   EXPECT_NO_THROW(PiecewisePolynomial<double>::ZeroOrderHold(T, Y));
   EXPECT_NO_THROW(PiecewisePolynomial<double>::FirstOrderHold(T, Y));
   EXPECT_NO_THROW(PiecewisePolynomial<double>::Pchip(T, Y));
@@ -445,13 +464,15 @@ GTEST_TEST(SplineTests, TestException) {
   T = {1, 2};
   Y = std::vector<MatrixX<double>>(T.size(), MatrixX<double>::Zero(rows, cols));
   EXPECT_NO_THROW(PiecewisePolynomial<double>::FirstOrderHold(T, Y));
+  EXPECT_NO_THROW(PiecewisePolynomial<double>::ZeroOrderHold(T, Y));
 
   EXPECT_THROW(PiecewisePolynomial<double>::Pchip(T, Y), std::runtime_error);
   EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y), std::runtime_error);
 
-  T = {1};
+  T = {2};
   Y = std::vector<MatrixX<double>>(T.size(), MatrixX<double>::Zero(rows, cols));
-  EXPECT_NO_THROW(PiecewisePolynomial<double>::ZeroOrderHold(T, Y));
+  EXPECT_THROW(PiecewisePolynomial<double>::ZeroOrderHold(T, Y),
+               std::runtime_error);
 
   EXPECT_THROW(PiecewisePolynomial<double>::FirstOrderHold(T, Y),
                std::runtime_error);

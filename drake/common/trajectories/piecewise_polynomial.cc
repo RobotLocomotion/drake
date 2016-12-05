@@ -357,7 +357,7 @@ PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::ZeroOrderHold(
     const std::vector<double>& breaks,
     const std::vector<CoefficientMatrix>& knots) {
-  CheckSplineGenerationInputValidityOrThrow(breaks, knots, 1);
+  CheckSplineGenerationInputValidityOrThrow(breaks, knots, 2);
 
   std::vector<PolynomialMatrix> polys;
   polys.reserve(breaks.size() - 1);
@@ -708,12 +708,12 @@ PiecewisePolynomial<CoefficientType>::ComputeCubicSplineCoeffs(
   }
 
   double dt2 = dt * dt;
-  double dt3 = dt2 * dt;
   CoefficientType c4 = y0;
   CoefficientType c3 = yd0;
-  CoefficientType c1 = 1. / dt2 * (yd1 - c3 - 2. / dt * (y1 - c4 - dt * c3));
-  CoefficientType c2 = 1. / dt2 * (y1 - c4 - dt * c3 - dt3 * c1);
-  return Eigen::Matrix<CoefficientType, 4, 1>(c4, c3, c2, c1);
+  CoefficientType common = (yd1 - c3 - 2. / dt * (y1 - c4 - dt * c3));
+  CoefficientType c1 = 1. / dt2 * common;
+  CoefficientType c2 = 1. / dt2 * (y1 - c4 - dt * c3 - dt * common);
+  return drake::Vector4<CoefficientType>(c4, c3, c2, c1);
 }
 
 template class PiecewisePolynomial<double>;

@@ -43,67 +43,6 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
   typedef drake::MatrixX<CoefficientType> CoefficientMatrix;
   typedef Eigen::Ref<CoefficientMatrix> CoefficientMatrixRef;
 
- private:
-  std::vector<PolynomialMatrix>
-      polynomials_;  // a PolynomialMatrix for each piece (segment)
-
-  // Computes coeffecients for a cubic spline given the value and first
-  // derivatives at the end points.
-  // Throws std::runtime_error
-  // if \p dt < Eigen::NumTraits<CoefficientType>::epsilon()
-  static Eigen::Matrix<CoefficientType, 4, 1> ComputeCubicSplineCoeffs(
-      double dt, CoefficientType y0, CoefficientType y1,
-      CoefficientType yd0, CoefficientType yd1);
-
-  // For a cubic spline, there are 4 unknowns for each segment Pi, namely
-  // the coefficients for Pi = a0 + a1 * t + a2 * t^2 + a3 * t^3.
-  // Let N be the size of T and Y, there are N-1 segments, and thus 4*(N-1)
-  // unknowns to fully specified a cubic spline for the given data.
-  //
-  // If we are also given N Ydot (velocity), each Pi will be fully specified
-  // by (Y[i], Ydot[i]) and (Y[i+1], Ydot[i+1]).
-  // When Ydot are not specified, we make the design choice to enforce
-  // continuity up to the second order (Yddot) for the interior points, i.e.
-  // Pi'(duration_i) = Pi+1'(0), and Pi''(duration_i) = Pi+1''(0), where
-  // ' means time derivative, and duration_i = T[i+1] - T[i] is the duration
-  // for the ith segment.
-  //
-  // At this point, we have 2 * (N - 1) position constraints:
-  // Pi(0) = Y[i], for i in [0, N - 2]
-  // Pi(duration_i) = Y[i+1], for i in [0, N - 2]
-  // N - 2 velocity constraints for the interior points:
-  // Pi'(duration_i) = Pi+1'(0), for i in [0, N - 3]
-  // N - 2 acceleration constraints for the interior points:
-  // Pi''(duration_i) = Pi+1''(0), for i in [0, N - 3]
-  //
-  // These sum up to 4 * (N - 1) - 2. This function sets up the above
-  // constraints. There are still 2 constraints missing, which can be resolved
-  // by various end point conditions (velocity at the end points /
-  // "not-a-knot" / etc). These will be specified by the callers.
-  static int SetupCubicSplineInteriorCoeffsLinearSystem(
-      const std::vector<double>& T,
-      const std::vector<CoefficientMatrix>& Y,
-      int row, int col,
-      drake::MatrixX<CoefficientType>* A,
-      drake::VectorX<CoefficientType>* b);
-
-  // Computes the first derivative at the end point using a non-centered,
-  // shape-preserving three-point formulae.
-  static CoefficientMatrix ComputePchipEndSlope(
-      double dt0, double dt1,
-      const CoefficientMatrix& slope0,
-      const CoefficientMatrix& slope1);
-
-  // Throws std::runtime_error if
-  // \p T and \Y have different length,
-  // \p T is not strictly increasing,
-  // \p Y has inconsistent dimensions,
-  // \P T's length is smaller than min_length.
-  static void CheckSplineGenerationInputValidityOrThrow(
-      const std::vector<double>& T,
-      const std::vector<CoefficientMatrix>& Y,
-      int min_length);
-
  public:
   virtual ~PiecewisePolynomial() {}
 
@@ -128,12 +67,15 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
 
   /**
    * Constructs a piecewise constant PiecewisePolynomial.
+   * Note that constructing a PiecewisePolynomial requires at least two knot
+   * points, although in this case, the second knot point's value is ignored,
+   * and only it's break time is used.
    *
    * @throws std::runtime_error if
    *    \p T and \p Y have different length,
    *    \p T is not strictly increasing,
    *    \p Y has inconsistent dimensions,
-   *    \p T has length smaller than 1.
+   *    \p T has length smaller than 2.
    */
   static PiecewisePolynomial<CoefficientType> ZeroOrderHold(
       const std::vector<double>& T,
@@ -157,11 +99,17 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    * First derivatives are chosen to be "shape preserving", i.e. if
    * \p Y is monotonic within some interval, the interpolated data will
    * also be monotonic.
-   * The second derivative is not guaranteed to be smooth across the
-   * entire spline.
+   * The second derivative is not guaranteed to be smooth across the entire
+   * spline.
+   * Pchip stands for "Piecewise Cubic Hermite Interpolating Polynomial".
+   * For more details, refer to the matlab file "pchip.m".
+   * http://home.uchicago.edu/~sctchoi/courses/cs138/interp.pdf is also a good
+   * reference.
    *
    * The first and last first derivative is chosen using a
    * non-centered, shape-preserving three-point formulae.
+   * See equation (2.10) in the following reference for more details.
+   * http://www.mi.sanu.ac.rs/~gvm/radovi/mon.pdf
    *
    * @throws std::runtime_error if
    *    \p T and \p Y have different length,
@@ -218,6 +166,9 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
    * are continuous for the first two and last two segments.
    * See https://en.wikipedia.org/wiki/Spline_interpolation for more details
    * about "Not-a-knot" condition.
+   * The matlab file "spline.m" and
+   * http://home.uchicago.edu/~sctchoi/courses/cs138/interp.pdf are also good
+   * references.
    *
    * @throws std::runtime_error if
    *    \p T and \p Y have different length,
@@ -326,4 +277,65 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
  protected:
   double segmentValueAtGlobalAbscissa(int segment_index, double t,
                                       Eigen::Index row, Eigen::Index col) const;
+
+ private:
+  // a PolynomialMatrix for each piece (segment)
+  std::vector<PolynomialMatrix> polynomials_;
+
+  // Computes coeffecients for a cubic spline given the value and first
+  // derivatives at the end points.
+  // Throws std::runtime_error
+  // if \p dt < Eigen::NumTraits<CoefficientType>::epsilon()
+  static Eigen::Matrix<CoefficientType, 4, 1> ComputeCubicSplineCoeffs(
+      double dt, CoefficientType y0, CoefficientType y1,
+      CoefficientType yd0, CoefficientType yd1);
+
+  // For a cubic spline, there are 4 unknowns for each segment Pi, namely
+  // the coefficients for Pi = a0 + a1 * t + a2 * t^2 + a3 * t^3.
+  // Let N be the size of T and Y, there are N-1 segments, and thus 4*(N-1)
+  // unknowns to fully specified a cubic spline for the given data.
+  //
+  // If we are also given N Ydot (velocity), each Pi will be fully specified
+  // by (Y[i], Ydot[i]) and (Y[i+1], Ydot[i+1]).
+  // When Ydot are not specified, we make the design choice to enforce
+  // continuity up to the second order (Yddot) for the interior points, i.e.
+  // Pi'(duration_i) = Pi+1'(0), and Pi''(duration_i) = Pi+1''(0), where
+  // ' means time derivative, and duration_i = T[i+1] - T[i] is the duration
+  // for the ith segment.
+  //
+  // At this point, we have 2 * (N - 1) position constraints:
+  // Pi(0) = Y[i], for i in [0, N - 2]
+  // Pi(duration_i) = Y[i+1], for i in [0, N - 2]
+  // N - 2 velocity constraints for the interior points:
+  // Pi'(duration_i) = Pi+1'(0), for i in [0, N - 3]
+  // N - 2 acceleration constraints for the interior points:
+  // Pi''(duration_i) = Pi+1''(0), for i in [0, N - 3]
+  //
+  // These sum up to 4 * (N - 1) - 2. This function sets up the above
+  // constraints. There are still 2 constraints missing, which can be resolved
+  // by various end point conditions (velocity at the end points /
+  // "not-a-knot" / etc). These will be specified by the callers.
+  static int SetupCubicSplineInteriorCoeffsLinearSystem(
+      const std::vector<double>& T,
+      const std::vector<CoefficientMatrix>& Y,
+      int row, int col,
+      drake::MatrixX<CoefficientType>* A,
+      drake::VectorX<CoefficientType>* b);
+
+  // Computes the first derivative at the end point using a non-centered,
+  // shape-preserving three-point formulae.
+  static CoefficientMatrix ComputePchipEndSlope(
+      double dt0, double dt1,
+      const CoefficientMatrix& slope0,
+      const CoefficientMatrix& slope1);
+
+  // Throws std::runtime_error if
+  // \p T and \Y have different length,
+  // \p T is not strictly increasing,
+  // \p Y has inconsistent dimensions,
+  // \P T's length is smaller than min_length.
+  static void CheckSplineGenerationInputValidityOrThrow(
+      const std::vector<double>& T,
+      const std::vector<CoefficientMatrix>& Y,
+      int min_length);
 };
