@@ -56,4 +56,73 @@ if(BUILD_TESTING)
   drake_add_matlab_addpath_test(snopt)
   drake_add_matlab_addpath_test(spotless)
   drake_add_matlab_addpath_test(yalmip)
+
+  function(drake_add_matlab_check_dependency_test dependency)
+    drake_add_matlab_test(NAME matlab/check_dependency_${dependency}
+      REQUIRES ${dependency} COMMAND "checkDependency('${dependency}')"
+      CHECK_DEPENDENCY_STRICT SIZE small)
+  endfunction()
+
+  drake_add_matlab_check_dependency_test(avl)
+  drake_add_matlab_check_dependency_test(bullet)
+  drake_add_matlab_check_dependency_test(gurobi)
+  drake_add_matlab_check_dependency_test(iris)
+  drake_add_matlab_check_dependency_test(lcm)
+  drake_add_matlab_check_dependency_test(mosek)
+  drake_add_matlab_check_dependency_test(sedumi)
+  drake_add_matlab_check_dependency_test(snopt)
+  drake_add_matlab_check_dependency_test(spotless)
+  drake_add_matlab_check_dependency_test(xfoil)
+
+  # Unknown dependency.
+  drake_add_matlab_test(NAME matlab/check_dependency_unknown
+    COMMAND "checkDependency('unknown')" CHECK_DEPENDENCY_STRICT)
+  set_tests_properties(matlab/check_dependency_unknown PROPERTIES WILL_FAIL ON)
+
+  function(drake_add_matlab_check_dependency_test_no dependency)
+    if(NOT ${dependency}_FOUND)
+      drake_add_matlab_test(NAME matlab/check_dependency_no_${dependency}
+        COMMAND "checkDependency('${dependency}')" CHECK_DEPENDENCY_STRICT
+        SIZE small)
+      set_tests_properties(matlab/check_dependency_no_${dependency}
+        PROPERTIES WILL_FAIL ON)
+    endif()
+  endfunction()
+
+  # TODO(jamiesnape): These would still pass if MATLAB fails for a reason
+  # other than a missing dependency.
+  drake_add_matlab_check_dependency_test_no(avl)
+  drake_add_matlab_check_dependency_test_no(gurobi)
+  drake_add_matlab_check_dependency_test_no(lcm)
+  drake_add_matlab_check_dependency_test_no(mosek)
+  drake_add_matlab_check_dependency_test_no(snopt)
+  drake_add_matlab_check_dependency_test_no(xfoil)
+
+  if(NOT Bullet_FOUND)
+    drake_add_matlab_test(NAME matlab/check_dependency_no_bullet
+      COMMAND "checkDependency('bullet')" CHECK_DEPENDENCY_STRICT SIZE small)
+    set_tests_properties(matlab/check_dependency_no_bullet
+      PROPERTIES WILL_FAIL ON)
+  endif()
+
+  if(FFMPEG_EXECUTABLE)
+    drake_add_matlab_test(NAME matlab/check_dependency_ffmpeg
+      COMMAND "checkDependency('ffmpeg')" CHECK_DEPENDENCY_STRICT SIZE small)
+  else()
+    drake_add_matlab_test(NAME matlab/check_dependency_no_ffmpeg
+      COMMAND "checkDependency('ffmpeg')" CHECK_DEPENDENCY_STRICT SIZE small)
+    set_tests_properties(matlab/check_dependency_no_ffmpeg
+      PROPERTIES WILL_FAIL ON)
+  endif()
+
+  if(Matlab_SIMULINK_FOUND)
+    drake_add_matlab_test(NAME matlab/check_dependency_simulink
+      COMMAND "checkDependency('simulink')" CHECK_DEPENDENCY_STRICT
+      SIZE small)
+  else()
+    drake_add_matlab_test(NAME matlab/check_dependency_no_simulink
+      COMMAND "checkDependency('simulink')" CHECK_DEPENDENCY_STRICT SIZE small)
+    set_tests_properties(matlab/check_dependency_no_simulink
+      PROPERTIES WILL_FAIL ON)
+  endif()
 endif()
