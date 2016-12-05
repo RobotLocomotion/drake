@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <utility>
@@ -230,6 +231,11 @@ class RigidBodyTree {
   std::string getStateName(int state_num) const;
 
   void drawKinematicTree(std::string graphviz_dotfile_filename) const;
+
+  std::unique_ptr<KinematicsCache<T>> CreateKinematicsCache() const;
+
+  void DoKinematics(KinematicsCache<T>* cache,
+                    const Eigen::Ref<const drake::VectorX<T>>& q) const;
 
   /// Initializes a `KinematicsCache` with the given configuration @p q,
   /// computes the kinematics, and returns the cache.

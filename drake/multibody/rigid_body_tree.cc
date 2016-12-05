@@ -68,6 +68,7 @@ using std::cout;
 using std::equal_to;
 using std::hash;
 using std::less;
+using std::make_unique;
 using std::map;
 using std::ofstream;
 using std::pair;
@@ -75,6 +76,7 @@ using std::runtime_error;
 using std::set;
 using std::shared_ptr;
 using std::string;
+using std::unique_ptr;
 using std::unordered_map;
 using std::vector;
 using std::endl;
@@ -852,6 +854,29 @@ KinematicsCache<typename DerivedQ::Scalar> RigidBodyTree<T>::doKinematics(
 }
 
 template <typename T>
+unique_ptr<KinematicsCache<T>> RigidBodyTree<T>::CreateKinematicsCache() const {
+  auto cache = make_unique<KinematicsCache<T>>(get_num_positions(),
+                                               get_num_velocities());
+  for (const auto& body_unique_ptr : bodies) {
+    const RigidBody<T>& body = *body_unique_ptr;
+    int num_positions_joint =
+        body.has_parent_body() ? body.getJoint().get_num_positions() : 0;
+    int num_velocities_joint =
+        body.has_parent_body() ? body.getJoint().get_num_velocities() : 0;
+    cache->CreateCacheEntry(num_positions_joint, num_velocities_joint);
+  }
+  return cache;
+}
+
+template <typename T>
+void RigidBodyTree<T>::DoKinematics(
+    KinematicsCache<T>* cache,
+    const Eigen::Ref<const VectorX<T>>& q) const {
+  cache->initialize(q);
+  doKinematics(*cache);
+}
+
+template <typename T>
 template <typename DerivedQ, typename DerivedV>
 KinematicsCache<typename DerivedQ::Scalar> RigidBodyTree<T>::doKinematics(
     const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v,
@@ -1190,18 +1215,13 @@ RigidBodyTree<T>::transformVelocityMappingToQDotMapping(
   DRAKE_DEMAND(Av.cols() == cache.get_num_velocities());
   int Ap_col_start = 0;
   int Av_col_start = 0;
-  for (auto it = cache.get_bodies().begin();
-       it != cache.get_bodies().end(); ++it) {
-    const RigidBody<double>& body = **it;
-    if (body.has_parent_body()) {
-      const DrakeJoint& joint = body.getJoint();
-      const auto& element = cache.getElement(body);
-      Ap.middleCols(Ap_col_start, joint.get_num_positions()).noalias() =
-          Av.middleCols(Av_col_start, joint.get_num_velocities()) *
-              element.qdot_to_v;
-      Ap_col_start += joint.get_num_positions();
-      Av_col_start += joint.get_num_velocities();
-    }
+  for (int body_id = 0; body_id < cache.get_num_body_entries(); ++body_id) {
+    const auto& element = cache.get_element(body_id);
+    Ap.middleCols(Ap_col_start, element.get_num_positions()).noalias() =
+        Av.middleCols(Av_col_start, element.get_num_velocities()) *
+            element.qdot_to_v;
+    Ap_col_start += element.get_num_positions();
+    Av_col_start += element.get_num_velocities();
   }
   return Ap;
 }
@@ -1218,18 +1238,13 @@ RigidBodyTree<T>::transformQDotMappingToVelocityMapping(
   DRAKE_DEMAND(Ap.cols() == cache.get_num_positions());
   int Av_col_start = 0;
   int Ap_col_start = 0;
-  for (auto it = cache.get_bodies().begin();
-       it != cache.get_bodies().end(); ++it) {
-    const RigidBody<double>& body = **it;
-    if (body.has_parent_body()) {
-      const DrakeJoint& joint = body.getJoint();
-      const auto& element = cache.getElement(body);
-      Av.middleCols(Av_col_start, joint.get_num_velocities()).noalias() =
-          Ap.middleCols(Ap_col_start, joint.get_num_positions()) *
-              element.v_to_qdot;
-      Av_col_start += joint.get_num_velocities();
-      Ap_col_start += joint.get_num_positions();
-    }
+  for (int body_id = 0; body_id < cache.get_num_body_entries(); ++body_id) {
+    const auto& element = cache.get_element(body_id);
+    Av.middleCols(Av_col_start, element.get_num_velocities()).noalias() =
+        Ap.middleCols(Ap_col_start, element.get_num_positions()) *
+            element.v_to_qdot;
+    Av_col_start += element.get_num_velocities();
+    Ap_col_start += element.get_num_positions();
   }
   return Av;
 }
