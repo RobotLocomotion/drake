@@ -45,6 +45,15 @@ if(BUILD_TESTING)
     COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Acrobot SIZE large)
 
-  drake_add_matlab_test(NAME addpath_spotless_test REQUIRES spotless
-    COMMAND addpath_spotless)
+  function(drake_add_matlab_addpath_test dependency)
+    drake_add_matlab_test(NAME matlab/addpath_${dependency}_test
+      REQUIRES ${dependency} COMMAND "addpath_${dependency}" SIZE small)
+  endfunction()
+
+  drake_add_matlab_addpath_test(gurobi)
+  drake_add_matlab_addpath_test(mosek)
+  drake_add_matlab_addpath_test(sedumi)
+  drake_add_matlab_addpath_test(snopt)
+  drake_add_matlab_addpath_test(spotless)
+  drake_add_matlab_addpath_test(yalmip)
 endif()
