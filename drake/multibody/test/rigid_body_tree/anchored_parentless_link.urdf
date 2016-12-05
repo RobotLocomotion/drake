@@ -1,0 +1,10 @@
+<robot name="simple_anchored">
+    <link name="parentless_body">
+      <collision>
+        <origin xyz="1 1 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="1 1 1" />
+        </geometry>
+      </collision>
+    </link>
+</robot>
