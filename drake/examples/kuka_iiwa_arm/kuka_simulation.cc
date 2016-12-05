@@ -12,6 +12,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -51,93 +52,6 @@ using systems::Multiplexer;
 using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
 using systems::Simulator;
-using systems::SystemOutput;
-
-// TODO(sam.creasey) If this could be made slightly more generic, it
-// could be a good wrapper/template for LCM controlled robots.
-class IiwaCommandReceiver : public systems::LeafSystem<double> {
- public:
-  explicit IiwaCommandReceiver(int num_joints) {
-    this->DeclareAbstractInputPort();
-    this->DeclareOutputPort(systems::kVectorValued, num_joints);
-  }
-
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const {
-    const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
-    DRAKE_ASSERT(input != nullptr);
-    const auto& command = input->GetValue<lcmt_iiwa_command>();
-    auto output_vec = this->GetMutableOutputVector(output, 0);
-
-    // If we're using a default constructed message (haven't received
-    // a command yet), just return 0.
-    if (command.num_joints == 0) {
-      output_vec.fill(0);
-    } else {
-      for (int i = 0; i < command.num_joints; ++i) {
-        output_vec(i) = command.joint_position[i];
-      }
-    }
-
-    // TODO(sam.creasey) Support torque control some day.
-    DRAKE_ASSERT(command.num_torques == 0);
-  }
-};
-
-// This system has two input ports.  Input port zero is for the
-// current state of the plant and input port one for the most recently
-// received command.
-class IiwaStatusSender : public systems::LeafSystem<double> {
- public:
-  // TODO(liang.fok): Replace these with semantically meaningful accessor
-  // methods like get_state_input_port() and get_command_input_port().
-  static const int kStateInputPort = 0;
-  static const int kCommandInputPort = 1;
-
-  explicit IiwaStatusSender(int num_joints) : num_joints_(num_joints) {
-    this->DeclareInputPort(systems::kVectorValued, num_joints * 2);
-    this->DeclareInputPort(systems::kVectorValued, num_joints);
-    this->DeclareAbstractOutputPort();
-  }
-
-  std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const Context<double>& context) const override {
-    auto output = std::make_unique<systems::LeafSystemOutput<double>>();
-    lcmt_iiwa_status msg{};
-    msg.num_joints = num_joints_;
-    msg.joint_position_measured.resize(msg.num_joints, 0);
-    msg.joint_position_commanded.resize(msg.num_joints, 0);
-    msg.joint_position_ipo.resize(msg.num_joints, 0);
-    msg.joint_torque_measured.resize(msg.num_joints, 0);
-    msg.joint_torque_commanded.resize(msg.num_joints, 0);
-    msg.joint_torque_external.resize(msg.num_joints, 0);
-
-    output->get_mutable_ports()->emplace_back(
-        std::make_unique<systems::OutputPort>(
-            std::make_unique<systems::Value<lcmt_iiwa_status>>(msg)));
-    return std::unique_ptr<SystemOutput<double>>(output.release());
-  }
-
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
-    systems::AbstractValue* mutable_data = output->GetMutableData(0);
-    lcmt_iiwa_status& status =
-        mutable_data->GetMutableValue<lcmt_iiwa_status>();
-
-    status.utime = context.get_time() * 1e6;
-    const systems::BasicVector<double>* state =
-        this->EvalVectorInput(context, 0);
-    const systems::BasicVector<double>* command =
-        this->EvalVectorInput(context, 1);
-    for (int i = 0; i < num_joints_; ++i) {
-      status.joint_position_measured[i] = state->GetAtIndex(i);
-      status.joint_position_commanded[i] = command->GetAtIndex(i);
-    }
-  }
-
- private:
-  int num_joints_{0};
-};
 
 // TODO(sam.creasey) We should de-duplicate this with kuka_demo.cc.
 // I'm holding off for now because I still need to investigate how to
@@ -259,14 +173,12 @@ int DoMain() {
   auto command_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>(
           "IIWA_COMMAND", &lcm));
-  auto command_receiver = builder.AddSystem<IiwaCommandReceiver>(
-      tree.get_num_positions());
+  auto command_receiver = builder.AddSystem<IiwaCommandReceiver>();
 
   auto status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
           "IIWA_STATUS", &lcm));
-  auto status_sender = builder.AddSystem<IiwaStatusSender>(
-      tree.get_num_positions());
+  auto status_sender = builder.AddSystem<IiwaStatusSender>();
 
   builder.Connect(command_sub->get_output_port(0),
                   command_receiver->get_input_port(0));
@@ -275,11 +187,9 @@ int DoMain() {
   builder.Connect(model->get_output_port(0),
                   visualizer->get_input_port(0));
   builder.Connect(model->get_output_port(0),
-                  status_sender->get_input_port(
-                      IiwaStatusSender::kStateInputPort));
+                  status_sender->get_state_input_port());
   builder.Connect(command_receiver->get_output_port(0),
-                  status_sender->get_input_port(
-                      IiwaStatusSender::kCommandInputPort));
+                  status_sender->get_command_input_port());
   builder.Connect(status_sender->get_output_port(0),
                   status_pub->get_input_port(0));
   auto sys = builder.Build();
