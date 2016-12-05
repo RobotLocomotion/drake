@@ -10,11 +10,9 @@ namespace examples {
 namespace kuka_iiwa_arm {
 // TODO(naveenoid): Consider a common location for this class.
 
-/// A helper class to construct Robot world trees from model (urdf/sdf) files ;
-/// Models
-/// (Robots, objects for manipulation etc.) can be stored and added to the tree
-/// to be
-/// built.
+/// A helper class to construct robot world RigidBodyTree objects from model
+/// (URDF/SDF) files. Models (e.g., robots, objects for manipulation, etc.)
+/// can be stored and added to the tree to be built.
 ///
 /// @tparam T must be a valid Eigen ScalarType.
 ///
@@ -29,9 +27,9 @@ class WorldSimTreeBuilder {
   ~WorldSimTreeBuilder();
 
   /// Adds a fixed model instance specified by its name, @p model_name, to the
-  /// `RigidBodyTree` at the pose specified by position @p xyz and orientation
-  /// @p rpy. The model name must have been previously loaded via a call to
-  /// StoreModel().
+  /// `RigidBodyTree` being built at the pose specified by position @p xyz and
+  /// orientation @p rpy. The model name must have been previously loaded via
+  /// a call to StoreModel().
   ///
   /// @return model_instance_id of the object that is added.
   int AddFixedModelInstance(
@@ -39,9 +37,9 @@ class WorldSimTreeBuilder {
       const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
 
   /// Adds a floating model instance specified by its name, @p model_name, to
-  /// the `RigidBodyTree` at the pose specified by position @p xyz and
-  /// orientation @p rpy. The model name must have been previously loaded via
-  /// a call to StoreModel().
+  /// the `RigidBodyTree` being built at the pose specified by position @p xyz
+  /// and orientation @p rpy. The model name must have been previously loaded
+  /// via a call to StoreModel().
   ///
   /// @return model_instance_id of the object that is added.
   int AddFloatingModelInstance(
@@ -49,8 +47,8 @@ class WorldSimTreeBuilder {
       const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
 
   /// Adds a model instance specified by its model name, @p model_name, to
-  /// the `RigidBodyTree` at a pose specified by position @p xyz and
-  /// orientation @p rpy. The model instance is connected to the existing
+  /// the `RigidBodyTree` being built at the pose specified by position @p xyz
+  /// and orientation @p rpy. The model instance is connected to the existing
   /// world based on @p weld_to_frame using a floating joint of type @p
   /// floating_base_type. The model name must have been previously loaded via
   /// a call to StoreModel().
@@ -73,15 +71,21 @@ class WorldSimTreeBuilder {
   /// Adds a model to the internal model database. Models are described by
   /// @p model_name coupled with URDF/SDF paths in @p model_path. Instances
   /// of these models can then be added to the world via the various
-  /// `AddFoo()` methods provided by this class.
+  /// `AddFoo()` methods provided by this class. Note that @p model_name is
+  /// user-selectable but must be unique among all of the models that are
+  /// stored.
   ///
   /// @see AddObjectToFrame
   /// @see AddFloatingObject
   /// @see AddFixedObject
   void StoreModel(const std::string& model_name, const std::string& model_path);
 
-  /// Gets a pointer to the `RigidBodyTree` that was built.
-  std::unique_ptr<RigidBodyTree<T>> Build(void) {
+  /// Gets a unique pointer to the `RigidBodyTree` that was built.
+  /// This method can only be called if it was not previously called.
+  /// Ownership of the manufactured RigidBodyTree is transferred to the
+  /// calling code. The instance of this class should be discarded after this
+  /// method is called.
+  std::unique_ptr<RigidBodyTree<T>> GetRigidBodyTree(void) {
     DRAKE_DEMAND(built_ == false && rigid_body_tree_ != nullptr);
     built_ = true;
     return std::move(rigid_body_tree_);
@@ -94,8 +98,9 @@ class WorldSimTreeBuilder {
 
   bool built_{false};
 
-  // Maps between models and their names. Instances of these models can be
-  // loaded into the simulation.
+  // Maps between models (values in the map) and their user-supplied names
+  // (keys in the map). Instances of these models can be loaded into the
+  // simulation.
   std::map<std::string, std::string> model_map_;
 };
 

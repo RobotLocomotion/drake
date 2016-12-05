@@ -104,6 +104,7 @@ void WorldSimTreeBuilder<T>::AddGround() {
 template <typename T>
 void WorldSimTreeBuilder<T>::StoreModel(const std::string& model_name,
                                         const std::string& model_path) {
+  DRAKE_DEMAND(model_map_.find(model_name) == model_map_.end());
   model_map_.insert(
       std::pair<std::string, std::string>(model_name, model_path));
 }

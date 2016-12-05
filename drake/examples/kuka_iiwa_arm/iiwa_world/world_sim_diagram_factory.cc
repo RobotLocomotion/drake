@@ -15,15 +15,16 @@
 
 namespace drake {
 
-using systems::Diagram;
-using systems::DiagramBuilder;
-using systems::RigidBodyPlant;
+using lcm::DrakeLcmInterface;
 using systems::ConstantVectorSource;
 using systems::Context;
+using systems::Diagram;
+using systems::DiagramBuilder;
+using systems::DrakeVisualizer;
+using systems::RigidBodyPlant;
 using systems::Simulator;
 using systems::System;
-using lcm::DrakeLcmInterface;
-using systems::DrakeVisualizer;
+
 
 namespace examples {
 namespace kuka_iiwa_arm {
@@ -56,7 +57,7 @@ std::unique_ptr<Diagram<double>> BuildPlantAndVisualizerDiagram(
   builder->ExportOutput(plant->get_output_port(0));
   builder->ExportInput(plant->get_input_port(0));
 
-  drake::log()->debug("Plant Diagram built...");
+  drake::log()->debug("Plant and visualizer Diagram built...");
 
   return builder->Build();
 }
@@ -80,8 +81,8 @@ std::unique_ptr<systems::Diagram<double>> BuildConstantSourceToPlantDiagram(
           ->template AddSystem<systems::ConstantVectorSource<double>>(
               constant_value);
 
-  // Cascades the constant source to the iiwa plant diagram. This effectively
-  // results in the robot being uncontrolled.
+  // Cascades the constant source to the plant and visualizer diagram. This
+  // effectively results in the robot being uncontrolled.
   source_plant_builder->Cascade(*const_source_, *plant_visualizer_diagram_ptr);
 
   return source_plant_builder->Build();
@@ -104,7 +105,6 @@ void SetZeroConfiguration(Simulator<double>* simulator,
   const RigidBodyPlant<double>* rigid_body_plant =
       dynamic_cast<const RigidBodyPlant<double>*>(
           plant_and_visualizer_subsystems.at(0));
-
   DRAKE_DEMAND(rigid_body_plant != nullptr);
 
   Context<double>* input_diagram_context =
