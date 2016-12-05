@@ -7,6 +7,9 @@ if(Bullet_FOUND)
 
   drake_add_cc_test(anchored_geometry_test)
   target_link_libraries(anchored_geometry_test drakeMultibodyParsers drakeRBM)
+
+  drake_add_cc_test(contact_points_generation_test)
+  target_link_libraries(contact_points_generation_test drakeMultibodyParsers drakeRBM)
 endif()
 
 drake_add_cc_test(NAME rigid_body_tree_test SIZE medium)
