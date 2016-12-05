@@ -155,20 +155,21 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
     auto q = tree->getRandomConfiguration(generator);
     auto v = VectorXd::Random(tree->get_num_velocities()).eval();
     auto vd = VectorXd::Random(tree->get_num_velocities()).eval();
-    KinematicsCache<double> kinematics_cache(tree->bodies);
-    kinematics_cache.initialize(q, v);
-    tree->doKinematics(kinematics_cache);
-    auto mass_matrix = tree->massMatrix(kinematics_cache);
+    auto kinematics_cache = tree->CreateKinematicsCache();
+    kinematics_cache->initialize(q, v);
+    tree->doKinematics(*kinematics_cache);
+    auto mass_matrix = tree->massMatrix(*kinematics_cache);
 
     auto vd_to_mass_matrix = [&](const auto& vd_arg) {
       using Scalar =
           typename std::remove_reference<decltype(vd_arg)>::type::Scalar;
-      KinematicsCache<Scalar> kinematics_cache_2(tree->bodies);
-      kinematics_cache_2.initialize(q.cast<Scalar>(), v.cast<Scalar>());
-      tree->doKinematics(kinematics_cache_2, true);
+      auto kinematics_cache_2 =
+          tree->CreateKinematicsCacheWithType<Scalar>();
+      kinematics_cache_2->initialize(q.cast<Scalar>(), v.cast<Scalar>());
+      tree->doKinematics(*kinematics_cache_2, true);
       const typename RigidBodyTree<Scalar>::
       BodyToWrenchMap no_external_wrenches;
-      return tree->inverseDynamics(kinematics_cache_2, no_external_wrenches,
+      return tree->inverseDynamics(*kinematics_cache_2, no_external_wrenches,
                                    vd_arg);
     };
     auto mass_matrix_from_inverse_dynamics =
@@ -201,12 +202,13 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   // dynamicsBiasTerm simply calls inverseDynamics with vd = 0.
   auto& tree = tree_rpy_;
   auto q = tree->getRandomConfiguration(generator);
-  KinematicsCache<double> kinematics_cache(tree->bodies);
-  kinematics_cache.initialize(q);
-  tree->doKinematics(kinematics_cache);
+  auto kinematics_cache = tree->CreateKinematicsCache();
+  kinematics_cache->initialize(q);
+  tree->doKinematics(*kinematics_cache);
+
   const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
   auto gravitational_forces =
-      tree->dynamicsBiasTerm(kinematics_cache, no_external_wrenches, false);
+      tree->dynamicsBiasTerm(*kinematics_cache, no_external_wrenches, false);
 
   // Compute the vector gradient of potential energy.
 
@@ -216,10 +218,11 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   auto q_to_gravitational_potential_energy = [&](const auto& q_arg) {
     using Scalar =
         typename std::remove_reference<decltype(q_arg)>::type::Scalar;
-    KinematicsCache<Scalar> kinematics_cache_2(tree->bodies);
-    kinematics_cache_2.initialize(q_arg);
-    tree->doKinematics(kinematics_cache_2);
-    auto center_of_mass = tree->centerOfMass(kinematics_cache_2);
+    auto kinematics_cache_2 =
+        tree->CreateKinematicsCacheWithType<Scalar>();
+    kinematics_cache_2->initialize(q_arg);
+    tree->doKinematics(*kinematics_cache_2);
+    auto center_of_mass = tree->centerOfMass(*kinematics_cache_2);
     Scalar gravitational_potential_energy =
         -center_of_mass.dot(gravitational_force.cast<Scalar>().eval());
     // The jacobian function expects a Matrix as output, so:
@@ -280,9 +283,9 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   auto vd = VectorXd::Random(tree.get_num_velocities()).eval();
   RigidBodyTree<double>::BodyToWrenchMap external_wrenches;
 
-  KinematicsCache<double> kinematics_cache(tree.bodies);
-  kinematics_cache.initialize(q, v);
-  tree.doKinematics(kinematics_cache, true);
+  auto kinematics_cache = tree.CreateKinematicsCache();
+  kinematics_cache->initialize(q, v);
+  tree.doKinematics(*kinematics_cache, true);
 
   // Compute gravitational wrench W_g.
   // Gravitational force can be thought of as acting at center of mass. Change
@@ -290,7 +293,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   auto gravitational_wrench_centroidal = (tree.a_grav * tree.getMass()).eval();
   Eigen::Isometry3d centroidal_to_world;
   centroidal_to_world.setIdentity();
-  centroidal_to_world.translation() = tree.centerOfMass(kinematics_cache);
+  centroidal_to_world.translation() = tree.centerOfMass(*kinematics_cache);
   auto gravitational_wrench_world = transformSpatialForce(
       centroidal_to_world, gravitational_wrench_centroidal);
 
@@ -300,38 +303,39 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
     if (body_ptr->has_parent_body()) {
       auto wrench_body = Vector6<double>::Random().eval();
       external_wrenches[body_ptr.get()] = wrench_body;
-      auto body_to_world = tree.relativeTransform(kinematics_cache, world_index,
-                                                  body_ptr->get_body_index());
+      auto body_to_world = tree.relativeTransform(
+          *kinematics_cache, world_index, body_ptr->get_id());
       auto wrench_world = transformSpatialForce(body_to_world, wrench_body);
       total_wrench_world += wrench_world;
     }
   }
 
   // Compute wrench across floating joint W_f, add to total wrench.
-  auto tau = tree.inverseDynamics(kinematics_cache, external_wrenches, vd);
+  auto tau = tree.inverseDynamics(*kinematics_cache, external_wrenches, vd);
   auto& floating_body_ptr = tree.bodies[1];
   int floating_joint_start_index =
       floating_body_ptr->get_velocity_start_index();
   Vector6<double> floating_joint_wrench_body =
       tau.segment<kTwistSize>(floating_joint_start_index);
   auto body_to_world = tree.relativeTransform(
-      kinematics_cache, world_index, floating_body_ptr->get_body_index());
+      *kinematics_cache, world_index, floating_body_ptr->get_id());
   auto floating_joint_wrench_world =
       transformSpatialForce(body_to_world, floating_joint_wrench_body);
   total_wrench_world += floating_joint_wrench_world;
 
   // Compute rate of change of momentum hdot.
-  auto v_to_qd = tree.GetVelocityToQDotMapping(kinematics_cache);
+  auto v_to_qd = tree.GetVelocityToQDotMapping(*kinematics_cache);
   auto qd = v_to_qd * v;
   // Convert to MatrixXd to make another explicit instantiation unnecessary.
   auto q_time_autodiff = initializeAutoDiffGivenGradientMatrix(q, MatrixXd(qd));
   auto v_time_autodiff = initializeAutoDiffGivenGradientMatrix(v, MatrixXd(vd));
   typedef decltype(q_time_autodiff)::Scalar ADScalar;
-  KinematicsCache<ADScalar> kinematics_cache_autodiff(tree.bodies);
-  kinematics_cache_autodiff.initialize(q_time_autodiff, v_time_autodiff);
-  tree.doKinematics(kinematics_cache_autodiff);
+  auto kinematics_cache_autodiff =
+      tree.CreateKinematicsCacheWithType<ADScalar>();
+  kinematics_cache_autodiff->initialize(q_time_autodiff, v_time_autodiff);
+  tree.doKinematics(*kinematics_cache_autodiff);
   auto momentum_matrix_time_autodiff =
-      tree.worldMomentumMatrix(kinematics_cache_autodiff);
+      tree.worldMomentumMatrix(*kinematics_cache_autodiff);
   auto momentum_world_time_autodiff =
       momentum_matrix_time_autodiff * v_time_autodiff;
   auto momentum_rate = autoDiffToGradientMatrix(momentum_world_time_autodiff);
