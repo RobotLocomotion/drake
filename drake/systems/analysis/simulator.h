@@ -163,6 +163,22 @@ class Simulator {
    */
   double get_actual_realtime_rate() const;
 
+  /** Sets whether the simulation should invoke Publish on the System under
+   * simulation during every time step. If enabled, Publish will be invoked
+   * after discrete updates and before continuous integration. Regardless of
+   * whether publishing every time step is enabled, Publish will be invoked at
+   * Simulator initialize time, and as System<T>::CalcNextUpdateTime requests.
+   */
+  void set_publish_every_time_step(bool publish) {
+    publish_every_time_step_ = publish;
+  }
+
+  /** Returns true if the simulation should invoke Publish on the System under
+   * simulation every time step.  By default, returns true.
+   */
+  // TODO(sherm1, edrumwri): Consider making this false by default.
+  bool get_publish_every_time_step() const { return publish_every_time_step_; }
+
   /** Returns a const reference to the internally-maintained Context holding the
    * most recent step in the trajectory. This is suitable for publishing or
    * extracting information about this trajectory step.
@@ -287,6 +303,8 @@ class Simulator {
   // Slow down to this rate if possible (user settable).
   double target_realtime_rate_{0.};
 
+  bool publish_every_time_step_{true};
+
   // These are recorded at initialization or statistics reset.
   double initial_simtime_{nan()};  // Simulated time at start of period.
   TimePoint initial_realtime_;     // Real time at start of period.
@@ -363,8 +381,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
   // Updates/publishes can be triggered throughout the integration process,
   // but are not active at the start of the step.
-  bool update_hit = false;
-  bool publish_hit = false;
+  bool sample_time_hit = false;
 
   // Integrate until desired interval has completed.
   UpdateActions<T> update_actions;
@@ -377,7 +394,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     PauseIfTooFast();
 
     // First take any necessary discrete actions.
-    if (update_hit) {
+    if (sample_time_hit) {
       for (const DiscreteEvent<T>& event : update_actions.events) {
         switch (event.action) {
           case DiscreteEvent<T>::kPublishAction: {
@@ -406,7 +423,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     }
 
     // Allow System a chance to produce some output.
-    if (publish_hit) {
+    if (get_publish_every_time_step()) {
       system_.Publish(*context_);
       ++num_publishes_;
     }
@@ -415,36 +432,34 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     update_actions.events.clear();
 
     // How far can we go before we have to take a sampling break?
-    const T next_update_time =
+    const T next_sample_time =
         system_.CalcNextUpdateTime(*context_, &update_actions);
-    DRAKE_ASSERT(next_update_time >= step_start_time);
-    const T next_update_dt = next_update_time - step_start_time;
+    DRAKE_ASSERT(next_sample_time >= step_start_time);
 
-    // TODO(edrumwri): Get the next publish time when API available.
+    // Determine whether the DiscreteEvent requested by the System at
+    // next_sample_time includes an Update action, a Publish action, or both.
+    T next_update_dt = std::numeric_limits<double>::infinity();
     T next_publish_dt = std::numeric_limits<double>::infinity();
-    T next_publish_time = step_start_time + next_publish_dt;
+    for (const DiscreteEvent<T>& event : update_actions.events) {
+      if (event.action == DiscreteEvent<T>::kUpdateAction) {
+        next_update_dt = next_sample_time - step_start_time;
+      }
+      if (event.action == DiscreteEvent<T>::kPublishAction) {
+        next_publish_dt = next_sample_time - step_start_time;
+      }
+    }
 
     // Attempt to integrate.
     typename IntegratorBase<T>::StepResult result =
         integrator_->StepOnceAtMost(next_publish_dt, next_update_dt);
     switch (result) {
       case IntegratorBase<T>::kReachedUpdateTime:
-        update_hit = true;
-
-        // Check whether update time effectively identical to publish time.
-        publish_hit = (context_->get_time() >= next_publish_time);
-        break;
-
       case IntegratorBase<T>::kReachedPublishTime:
-        update_hit = false;
-        publish_hit = true;
+        sample_time_hit = true;
         break;
 
       case IntegratorBase<T>::kTimeHasAdvanced:
-        update_hit = false;
-        // TODO(edrumwri): Check if not publishing after every step, then
-        //                 turn this off if that is the case.
-        publish_hit = true;
+        sample_time_hit = false;
         break;
 
       default:
@@ -454,10 +469,6 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
     // TODO(sherm1) Constraint projection goes here.
   }
-
-  // publish at the end of the step
-  system_.Publish(*context_);
-  ++num_publishes_;
 }
 
 }  // namespace systems
