@@ -22,4 +22,12 @@ add_subdirectory(util)
 add_subdirectory(solvers)
 add_subdirectory(systems)
 
-drake_add_matlab_test(NAME addpath_spotless_test COMMAND "addpath_spotless;")
+if(BUILD_TESTING)
+  drake_add_matlab_test(NAME "matlab/RigidBodyManipulatorMemoryTest"
+    OPTIONAL bullet
+    COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Acrobot SIZE large)
+
+  drake_add_matlab_test(NAME addpath_spotless_test REQUIRES spotless
+    COMMAND addpath_spotless)
+endif()
