@@ -378,6 +378,17 @@ class RigidBody {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 
+  typedef std::vector<DrakeCollision::Element*> CollisionElementsVector;
+  typedef typename CollisionElementsVector::iterator CollisionElementsIterator;
+
+  CollisionElementsIterator collision_elements_begin() {
+    return collision_elements_.begin();
+  }
+
+  CollisionElementsIterator collision_elements_end() {
+    return collision_elements_.end();
+  }
+
  private:
   // TODO(tkoolen): It's very ugly, but parent, dofnum, and pitch also exist
   // currently (independently) at the RigidBodyTree level to represent the
@@ -434,17 +445,6 @@ class RigidBody {
   // anything in terms of how the collision elements relate to each other.
   std::map<std::string, std::vector<DrakeCollision::ElementId>>
       collision_element_groups_;
-
-  typedef std::vector<DrakeCollision::Element*> CollisionElementsVector;
-  typedef typename CollisionElementsVector::iterator CollisionElementsIterator;
-
-  CollisionElementsIterator collision_elements_begin() {
-    return collision_elements_.begin();
-  }
-
-  CollisionElementsIterator collision_elements_end() {
-    return collision_elements_.end();
-  }
 
   // The contact points this rigid body has with its environment.
   Eigen::Matrix3Xd contact_points_;
