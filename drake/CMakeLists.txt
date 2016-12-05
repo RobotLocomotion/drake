@@ -188,26 +188,6 @@ find_program(AVL_EXECUTABLE avl PATHS "${CMAKE_INSTALL_PREFIX}/bin")
 find_program(XFOIL_EXECUTABLE xfoil PATHS "${CMAKE_INSTALL_PREFIX}/bin")
 find_program(FFMPEG_EXECUTABLE ffmpeg)
 
-# Used by matlab/util/systemWCMakeEnv.m
-if(APPLE)
-  if(DEFINED ENV{DYLD_LIBRARY_PATH})
-    set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE INTERNAL "" FORCE)
-  else()
-    set(DYLD_LIBRARY_PATH "" CACHE INTERNAL "" FORCE)
-  endif()
-  if(DEFINED ENV{DYLD_FRAMEWORK_PATH})
-    set(DYLD_FRAMEWORK_PATH "$ENV{DYLD_FRAMEWORK_PATH}" CACHE INTERNAL "" FORCE)
-  else()
-    set(DYLD_FRAMEWORK_PATH "" CACHE INTERNAL "" FORCE)
-  endif()
-else()
-  if(DEFINED ENV{LD_LIBRARY_PATH})
-    set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE INTERNAL "" FORCE)
-  else()
-    set(LD_LIBRARY_PATH "" CACHE INTERNAL "" FORCE)
-  endif()
-endif()
-
 if(Matlab_FOUND)
   drake_add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
     COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
