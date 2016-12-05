@@ -11,7 +11,15 @@
     <collision>
       <origin xyz="-1 0 0" rpy="0 0 0"/>
       <geometry>
-         <sphere radius="1e-7"/>
+         <sphere radius="0.9999e-6"/>
+      </geometry>
+    </collision>
+
+    <collision>
+      <!-- This should *not* generate a contact points. -->
+      <origin xyz="-1 0 0" rpy="0 0 0"/>
+      <geometry>
+         <sphere radius="1.0001e-6"/>
       </geometry>
     </collision>
 
@@ -43,7 +51,7 @@
       <!-- This should *not* generate a contact points. -->
       <origin xyz="0 0 5" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="/multibody/test/rigid_body_tree/tet.obj"/>
+        <mesh filename="/tet.obj"/>
       </geometry>
 
     </collision>
