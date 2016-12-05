@@ -16,8 +16,7 @@ namespace kuka_iiwa_arm {
 
 /// Builds a diagram composed of a `RigidBodyPlant` and `DrakeVisualizer` from
 /// a `RigidBodyTree` and returns it. The plant's output port zero is connected
-/// to
-/// the systems::DrakeVisualizer's input port zero. The returned
+/// to the systems::DrakeVisualizer's input port zero. The returned
 /// systems::Diagram has the same input and output ports as the plant.
 std::unique_ptr<systems::Diagram<double>> BuildPlantAndVisualizerDiagram(
     std::unique_ptr<RigidBodyTree<double>> rigid_body_tree,
@@ -33,9 +32,10 @@ std::unique_ptr<systems::Diagram<double>> BuildConstantSourceToPlantDiagram(
     std::unique_ptr<systems::Diagram<double>> plant_visualizer_diagram);
 
 /// Sets the zero configuration in a `RigidBodyPlant` underlying an assembled
-/// diagram by accessing the context from the `Simulator`. Assumes that the
-/// diagram
-/// was built by one of the factory methods above.
+/// diagram by accessing the context from the `Simulator`.
+/// The argument @p diagram is to be generated using the
+/// `BuildConstantSourceToPlantDiagram()` method.
+/// @see BuildConstantSourceToPlantDiagram
 void SetZeroConfiguration(systems::Simulator<double>* simulator,
                           const systems::Diagram<double>* diagram);
 
