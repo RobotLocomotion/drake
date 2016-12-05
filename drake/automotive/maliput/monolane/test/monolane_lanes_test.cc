@@ -5,6 +5,8 @@
 #include "drake/automotive/maliput/monolane/road_geometry.h"
 #include "drake/automotive/maliput/monolane/segment.h"
 
+#include "drake/common/eigen_matrix_compare.h"
+
 #include <cmath>
 #include <iostream>
 
@@ -14,28 +16,56 @@ namespace drake {
 namespace maliput {
 namespace monolane {
 
-GTEST_TEST(MonolaneLanesTest, Rot3) {
-  Rot3 yaw90 {0., 0., M_PI / 2.};
-  EXPECT_NEAR(yaw90.apply({1., 0., 0.}).x(), 0., 1e-6);
-  EXPECT_NEAR(yaw90.apply({1., 0., 0.}).y(), 1., 1e-6);
-  EXPECT_NEAR(yaw90.apply({1., 0., 0.}).z(), 0., 1e-6);
-
-  EXPECT_NEAR(yaw90.apply({0., 1., 0.}).x(), -1., 1e-6);
-  EXPECT_NEAR(yaw90.apply({0., 1., 0.}).y(),  0., 1e-6);
-  EXPECT_NEAR(yaw90.apply({0., 1., 0.}).z(),  0., 1e-6);
-}
-
-
 const double kLinearTolerance = 1e-2;
 const double kAngularTolerance = 1e-2;
 const double kVeryExact = 1e-7;
 
 
+GTEST_TEST(MonolaneLanesTest, Rot3) {
+  // Spot-check that Rot3 is behaving as advertised.
+  Rot3 rpy90 {M_PI / 2., M_PI / 2., M_PI / 2.};
+  EXPECT_TRUE(CompareMatrices(
+      rpy90.apply({1., 0., 0.}), V3(0., 0., -1.), kVeryExact));
+  EXPECT_TRUE(CompareMatrices(
+      rpy90.apply({0., 1., 0.}), V3(0., 1., 0.), kVeryExact));
+  EXPECT_TRUE(CompareMatrices(
+      rpy90.apply({0., 0., 1.}), V3(1., 0., 0.), kVeryExact));
+}
+
+
+#define EXPECT_GEO_NEAR(actual, expected, tolerance)         \
+  do {                                                       \
+    const api::GeoPosition _actual(actual);                  \
+    const api::GeoPosition _expected expected;               \
+    const double _tolerance = (tolerance);                   \
+    EXPECT_NEAR(_actual.x, _expected.x, _tolerance);         \
+    EXPECT_NEAR(_actual.y, _expected.y, _tolerance);         \
+    EXPECT_NEAR(_actual.z, _expected.z, _tolerance);         \
+  } while (0)
+
+#define EXPECT_LANE_NEAR(actual, expected, tolerance)         \
+  do {                                                        \
+    const api::LanePosition _actual(actual);                  \
+    const api::LanePosition _expected expected;               \
+    const double _tolerance = (tolerance);                    \
+    EXPECT_NEAR(_actual.s, _expected.s, _tolerance);          \
+    EXPECT_NEAR(_actual.r, _expected.r, _tolerance);          \
+    EXPECT_NEAR(_actual.h, _expected.h, _tolerance);          \
+  } while (0)
+
+#define EXPECT_ROT_NEAR(actual, expected, tolerance)                 \
+  do {                                                               \
+    const api::Rotation _actual(actual);                             \
+    const api::Rotation _expected expected;                          \
+    const double _tolerance = (tolerance);                           \
+    EXPECT_NEAR(_actual.yaw, _expected.yaw, _tolerance);             \
+    EXPECT_NEAR(_actual.pitch, _expected.pitch, _tolerance);         \
+    EXPECT_NEAR(_actual.roll, _expected.roll, _tolerance);           \
+  } while (0)
+
+
 GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
   CubicPolynomial zp {0., 0., 0., 0.};
-  api::GeoPosition xyz {0., 0., 0.};
-  api::Rotation rot {0., 0., 0.};
-
   RoadGeometry rg({"apple"}, kLinearTolerance, kAngularTolerance);
   Segment* s1 = rg.NewJunction({"j1"})->NewSegment({"s1"});
   Lane* l1 = s1->NewLineLane(
@@ -60,79 +90,54 @@ GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
   EXPECT_NEAR(l1->driveable_bounds(0.).r_min, -10., kVeryExact);
   EXPECT_NEAR(l1->driveable_bounds(0.).r_max,  10., kVeryExact);
 
-  xyz = l1->ToGeoPosition({0., 0., 0.});
-  EXPECT_NEAR(xyz.x, 100., kLinearTolerance);
-  EXPECT_NEAR(xyz.y, -75., kLinearTolerance);
-  EXPECT_NEAR(xyz.z,   0., kLinearTolerance);
+  EXPECT_GEO_NEAR(l1->ToGeoPosition({0., 0., 0.}),
+                  (100., -75., 0.), kLinearTolerance);
 
-  xyz = l1->ToGeoPosition({1., 0., 0.});
-  EXPECT_NEAR(xyz.x, 100 + (100. * (1. / l1->length())), kLinearTolerance);
-  EXPECT_NEAR(xyz.y, -75 + (50. * (1. / l1->length())), kLinearTolerance);
-  EXPECT_NEAR(xyz.z, 0., kLinearTolerance);
+  EXPECT_GEO_NEAR(l1->ToGeoPosition({1., 0., 0.}),
+                  (100. + (100. * (1. / l1->length())),
+                   -75. + (50. * (1. / l1->length())),
+                   0.), kLinearTolerance);
 
-  xyz = l1->ToGeoPosition({0., 1., 0.});
-  EXPECT_NEAR(xyz.x, 100 + (-50. * (1. / l1->length())), kLinearTolerance);
-  EXPECT_NEAR(xyz.y, -75 + (100. * (1. / l1->length())), kLinearTolerance);
-  EXPECT_NEAR(xyz.z, 0., kLinearTolerance);
+  EXPECT_GEO_NEAR(l1->ToGeoPosition({0., 1., 0.}),
+                  (100. + (-50. * (1. / l1->length())),
+                   -75. + (100. * (1. / l1->length())),
+                   0.), kLinearTolerance);
 
-  xyz = l1->ToGeoPosition({l1->length(), 0., 0.});
-  EXPECT_NEAR(xyz.x, 200., kLinearTolerance);
-  EXPECT_NEAR(xyz.y, -25., kLinearTolerance);
-  EXPECT_NEAR(xyz.z,   0., kLinearTolerance);
+  EXPECT_GEO_NEAR(l1->ToGeoPosition({l1->length(), 0., 0.}),
+                  (200., -25., 0.), kLinearTolerance);
 
   // TODO(maddog) Test ToLanePosition().
 
-  rot = l1->GetOrientation({0., 0., 0.});
-  EXPECT_NEAR(rot.yaw, std::atan2(50., 100.), kVeryExact);
-  EXPECT_NEAR(rot.pitch, 0., kVeryExact);
-  EXPECT_NEAR(rot.roll, 0., kVeryExact);
+  EXPECT_ROT_NEAR(l1->GetOrientation({0., 0., 0.}),
+                  (0., 0., std::atan2(50., 100.)), kVeryExact);
 
-  rot = l1->GetOrientation({1., 0., 0.});
-  EXPECT_NEAR(rot.yaw, std::atan2(50., 100.), kVeryExact);
-  EXPECT_NEAR(rot.pitch, 0., kVeryExact);
-  EXPECT_NEAR(rot.roll, 0., kVeryExact);
+  EXPECT_ROT_NEAR(l1->GetOrientation({1., 0., 0.}),
+                  (0., 0., std::atan2(50., 100.)), kVeryExact);
 
-  rot = l1->GetOrientation({0., 1., 0.});
-  EXPECT_NEAR(rot.yaw, std::atan2(50., 100.), kVeryExact);
-  EXPECT_NEAR(rot.pitch, 0., kVeryExact);
-  EXPECT_NEAR(rot.roll, 0., kVeryExact);
+  EXPECT_ROT_NEAR(l1->GetOrientation({0., 1., 0.}),
+                  (0., 0., std::atan2(50., 100.)), kVeryExact);
 
-  rot = l1->GetOrientation({l1->length(), 0., 0.});
-  EXPECT_NEAR(rot.yaw, std::atan2(50., 100.), kVeryExact);
-  EXPECT_NEAR(rot.pitch, 0., kVeryExact);
-  EXPECT_NEAR(rot.roll, 0., kVeryExact);
+  EXPECT_ROT_NEAR(l1->GetOrientation({l1->length(), 0., 0.}),
+                  (0., 0., std::atan2(50., 100.)), kVeryExact);
 
   // Derivative map should be identity (for a flat, straight road).
-  api::LanePosition pdot;
-  pdot = l1->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 0.});
-  EXPECT_NEAR(pdot.s, 0., kVeryExact);
-  EXPECT_NEAR(pdot.r, 0., kVeryExact);
-  EXPECT_NEAR(pdot.h, 0., kVeryExact);
+  EXPECT_LANE_NEAR(l1->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 0.}),
+                   (0., 0., 0.), kVeryExact);
 
-  pdot = l1->EvalMotionDerivatives({0., 0., 0.}, {1., 0., 0.});
-  EXPECT_NEAR(pdot.s, 1., kVeryExact);
-  EXPECT_NEAR(pdot.r, 0., kVeryExact);
-  EXPECT_NEAR(pdot.h, 0., kVeryExact);
+  EXPECT_LANE_NEAR(l1->EvalMotionDerivatives({0., 0., 0.}, {1., 0., 0.}),
+                   (1., 0., 0.), kVeryExact);
 
-  pdot = l1->EvalMotionDerivatives({0., 0., 0.}, {0., 1., 0.});
-  EXPECT_NEAR(pdot.s, 0., kVeryExact);
-  EXPECT_NEAR(pdot.r, 1., kVeryExact);
-  EXPECT_NEAR(pdot.h, 0., kVeryExact);
+  EXPECT_LANE_NEAR(l1->EvalMotionDerivatives({0., 0., 0.}, {0., 1., 0.}),
+                   (0., 1., 0.), kVeryExact);
 
-  pdot = l1->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 1.});
-  EXPECT_NEAR(pdot.s, 0., kVeryExact);
-  EXPECT_NEAR(pdot.r, 0., kVeryExact);
-  EXPECT_NEAR(pdot.h, 1., kVeryExact);
+  EXPECT_LANE_NEAR(l1->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 1.}),
+                   (0., 0., 1.), kVeryExact);
 
-  pdot = l1->EvalMotionDerivatives({0., 0., 0.}, {1., 1., 1.});
-  EXPECT_NEAR(pdot.s, 1., kVeryExact);
-  EXPECT_NEAR(pdot.r, 1., kVeryExact);
-  EXPECT_NEAR(pdot.h, 1., kVeryExact);
+  EXPECT_LANE_NEAR(l1->EvalMotionDerivatives({0., 0., 0.}, {1., 1., 1.}),
+                   (1., 1., 1.), kVeryExact);
 
-  pdot = l1->EvalMotionDerivatives({10., 5., 3.}, {1., 2., 3.});
-  EXPECT_NEAR(pdot.s, 1., kVeryExact);
-  EXPECT_NEAR(pdot.r, 2., kVeryExact);
-  EXPECT_NEAR(pdot.h, 3., kVeryExact);
+  EXPECT_LANE_NEAR(l1->EvalMotionDerivatives({10., 5., 3.}, {1., 2., 3.}),
+                   (1., 2., 3.), kVeryExact);
 }
 
 
@@ -165,12 +170,10 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
   EXPECT_NEAR(l2->driveable_bounds(0.).r_min, -10., kVeryExact);
   EXPECT_NEAR(l2->driveable_bounds(0.).r_max,  10., kVeryExact);
 
-  xyz = l2->ToGeoPosition({0., 0., 0.});
-  EXPECT_NEAR(xyz.x, 100. + (100. * std::cos(0.25 * M_PI)),
-              kLinearTolerance);
-  EXPECT_NEAR(xyz.y, -75. + (100. * std::sin(0.25 * M_PI)),
-              kLinearTolerance);
-  EXPECT_NEAR(xyz.z,   0., kLinearTolerance);
+  EXPECT_GEO_NEAR(l2->ToGeoPosition({0., 0., 0.}),
+                  (100. + (100. * std::cos(0.25 * M_PI)),
+                   -75. + (100. * std::sin(0.25 * M_PI)),
+                   0.), kLinearTolerance);
 
   xyz = l2->ToGeoPosition({1., 0., 0.});
   EXPECT_NEAR(
