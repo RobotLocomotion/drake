@@ -6,15 +6,15 @@
 
 namespace drake {
 namespace examples {
-namespace schunk_gripper {
+namespace schunk_wsg {
 
-/// Create a System for a simulated Schunk.
+/// Create a System for a simulated Schunk WSG 50.
 ///
 /// At present this System is only tested and instantiated for T == `double`.
 template<typename T>
 std::unique_ptr<drake::systems::RigidBodyPlant<T>>
-CreateSimulatedSchunkSystem();
+CreateSimulatedSchunkWsgSystem();
 
-}  // namespace schunk_gripper
+}  // namespace schunk_wsg
 }  // namespace examples
 }  // namespace drake
