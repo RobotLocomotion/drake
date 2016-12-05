@@ -238,9 +238,6 @@ class RigidBodyTree {
   std::unique_ptr<KinematicsCache<CacheT>>
   CreateKinematicsCacheWithType() const;
 
-  void DoKinematics(KinematicsCache<T>* cache,
-                    const Eigen::Ref<const drake::VectorX<T>>& q) const;
-
   /// Initializes a `KinematicsCache` with the given configuration @p q,
   /// computes the kinematics, and returns the cache.
   ///
