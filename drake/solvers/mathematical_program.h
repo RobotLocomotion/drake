@@ -319,7 +319,7 @@ class MathematicalProgram {
   MathematicalProgram();
 
   /**
-   * Add variables to MathematicalProgram.
+   * Adds variables to MathematicalProgram.
    * Appending new variables to an internal vector of any existing vars.
    * The new variables are initialized to zero.
    * Callers are expected to add costs
@@ -354,7 +354,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Add column vector variables to the optimization program.
+   * Adds column vector variables to the optimization program.
    */
   template <int rows>
   DecisionVariableVector<rows> AddVariables(
@@ -364,7 +364,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Add symmetric matrix variables to optimization program. Only the lower
+   * Adds symmetric matrix variables to optimization program. Only the lower
    * triangular
    * part of the matrix is used as decision variables.
    * @param names The names of the stacked columns of the lower triangular part
@@ -380,7 +380,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Add continuous variables to this MathematicalProgram.
+   * Adds continuous variables to this MathematicalProgram.
    * @see AddContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
@@ -388,7 +388,7 @@ class MathematicalProgram {
       std::size_t rows, const std::vector<std::string>& names);
 
   /**
-   * Add continuous variables to this MathematicalProgram, with default name
+   * Adds continuous variables to this MathematicalProgram, with default name
    * "x".
    * @see AddContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
@@ -396,9 +396,9 @@ class MathematicalProgram {
   DecisionVariableVectorX AddContinuousVariables(std::size_t rows,
                                                  const std::string& name = "x");
 
-  /// Add continuous variables to this MathematicalProgram.
+  /// Adds continuous variables to this MathematicalProgram.
   /**
-   * Add continuous variables, appending them to an internal vector of any
+   * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
    * The new variables are initialized to zero.
    * Callers are expected to add costs
@@ -426,7 +426,7 @@ class MathematicalProgram {
       const std::vector<std::string>& names);
 
   /**
-   * Add continuous variables to this MathematicalProgram, with default name
+   * Adds continuous variables to this MathematicalProgram, with default name
    * "X". The new variables are returned and viewed as a matrix, with size
    * @p rows x @p cols.
    * @see AddContinuousVariables(size_t rows, size_t cols, const
@@ -435,9 +435,9 @@ class MathematicalProgram {
   const DecisionVariableMatrixX AddContinuousVariables(
       std::size_t rows, std::size_t cols, const std::string& name = "X");
 
-  /// Add continuous variables to this MathematicalProgram.
+  /// Adds continuous variables to this MathematicalProgram.
   /**
-   * Add continuous variables, appending them to an internal vector of any
+   * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
    * The new variables are initialized to zero.
    * Callers are expected to add costs
@@ -467,9 +467,9 @@ class MathematicalProgram {
                                     names);
   }
 
-  /// Add continuous variables to this MathematicalProgram.
+  /// Adds continuous variables to this MathematicalProgram.
   /**
-   * Add continuous variables, appending them to an internal vector of any
+   * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
    * The new variables are initialized to zero.
    * Callers are expected to add costs
@@ -505,9 +505,9 @@ class MathematicalProgram {
                                     names);
   }
 
-  /// Add continuous variables to this MathematicalProgram.
+  /// Adds continuous variables to this MathematicalProgram.
   /**
-   * Add continuous variables, appending them to an internal vector of any
+   * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
    * The new variables are initialized to zero.
    * Callers are expected to add costs
@@ -536,7 +536,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Add continuous variables to the program.
+   * Adds continuous variables to the program.
    * The name for all newly added variables are set to "name". The default name
    * is "x"
    * @see AddContinuousVariables(const std::array<std::string, rows>& names)
@@ -551,9 +551,9 @@ class MathematicalProgram {
     return AddContinuousVariables<rows>(names);
   }
 
-  /// Add binary variables to this MathematicalProgram.
+  /// Adds binary variables to this MathematicalProgram.
   /**
-   * Add binary variables, appending them to an internal vector of any
+   * Adds binary variables, appending them to an internal vector of any
    * existing vars.
    * The new variables are initialized to zero.
    * Callers are expected to add costs
@@ -612,9 +612,9 @@ class MathematicalProgram {
     return AddBinaryVariables<rows, 1>(names);
   }
 
-  /// Add binary variables to this MathematicalProgram.
+  /// Adds binary variables to this MathematicalProgram.
   /**
-   * Add binary variables, appending them to an internal vector of any
+   * Adds binary variables, appending them to an internal vector of any
    * existing vars.
    * The new variables are initialized to zero.
    * Callers are expected to add costs
@@ -641,7 +641,7 @@ class MathematicalProgram {
       size_t rows, size_t cols, const std::vector<std::string>& names);
 
   /**
-   * Add binary variables to this MathematicalProgram, with default name "b".
+   * Adds binary variables to this MathematicalProgram, with default name "b".
    * The new variables are returned and viewed as a matrix, with size
    * \param rows x \param cols.
    * @see AddBinaryVariables(size_t rows, size_t cols, const
@@ -651,7 +651,7 @@ class MathematicalProgram {
                                              const std::string& name = "b");
 
   /**
-   * Add binary variables to this MathematicalProgram. The new variables are
+   * Adds binary variables to this MathematicalProgram. The new variables are
    * viewed as a column vector, with size @p rows x 1.
    * @see AddBinaryVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
@@ -660,7 +660,7 @@ class MathematicalProgram {
                                              const std::string& name = "b");
 
   /**
-   * Add a symmetric matrix as decision variables to this MathematicalProgram.
+   * Adds a symmetric matrix as decision variables to this MathematicalProgram.
    * The optimization will only use the stacked columns of the
    * lower triangular part of the symmetric matrix as decision variables.
    * @param names A std::vector containing the names of each entry in the lower
@@ -671,37 +671,41 @@ class MathematicalProgram {
       size_t rows, const std::vector<std::string>& names);
 
   /**
-   * Add a symmetric matrix as decision variables to this MathematicalProgram.
+   * Adds a symmetric matrix as decision variables to this MathematicalProgram.
    * The optimization will only use the stacked columns of the
    * lower triangular part of the symmetric matrix as decision variables.
    * @param name The name of the matrix. It is only used the for user to
-   * understand the optimization program. The default name is "S", and each
-   * variable will be named as
-   * S(0, 0)     S(1, 0)     ... S(rows-1, 0)
-   * S(1, 0)     S(1, 1)     ... S(rows-1, 1)
+   * understand the optimization program. The default name is "symmetric", and
+   * each variable will be named as
+   * <pre>
+   * symmetric(0, 0)     symmetric(1, 0)     ... symmetric(rows-1, 0)
+   * symmetric(1, 0)     symmetric(1, 1)     ... symmetric(rows-1, 1)
    *            ...
-   * S(rows-1,0) S(rows-1,1) ... S(rows-1, rows-1)
+   * symmetric(rows-1,0) symmetric(rows-1,1) ... symmetric(rows-1, rows-1)
+   * </pre>
    * Notice that the (i,j)'th entry and (j,i)'th entry has the same name.
    */
   DecisionVariableMatrixX AddSymmetricContinuousVariables(
-      size_t rows, const std::string& name = "S");
+      size_t rows, const std::string& name = "symmetric");
 
   /**
-   * Add a symmetric matrix as decision variables to this MathematicalProgram.
+   * Adds a symmetric matrix as decision variables to this MathematicalProgram.
    * The optimization will only use the stacked columns of the
    * lower triangular part of the symmetric matrix as decision variables.
    * @param name The name of the matrix. It is only used the for user to
-   * understand the optimization program. The default name is "S", and each
-   * variable will be named as
-   * S(0, 0)     S(1, 0)     ... S(rows-1, 0)
-   * S(1, 0)     S(1, 1)     ... S(rows-1, 1)
+   * understand the optimization program. The default name is "symmetric", and
+   * each variable will be named as
+   * <pre>
+   * symmetric(0, 0)     symmetric(1, 0)     ... symmetric(rows-1, 0)
+   * symmetric(1, 0)     symmetric(1, 1)     ... symmetric(rows-1, 1)
    *            ...
-   * S(rows-1,0) S(rows-1,1) ... S(rows-1, rows-1)
+   * symmetric(rows-1,0) symmetric(rows-1,1) ... symmetric(rows-1, rows-1)
+   * </pre>
    * Notice that the (i,j)'th entry and (j,i)'th entry has the same name.
    */
   template <int rows>
   DecisionVariableMatrix<rows, rows> AddSymmetricContinuousVariables(
-      const std::string& name = "S") {
+      const std::string& name = "symmetric") {
     std::array<std::string, rows*(rows + 1) / 2> names;
     int var_count = 0;
     for (int j = 0; j < static_cast<int>(rows); ++j) {
@@ -716,7 +720,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Add a generic cost to the optimization program.
+   * Adds a generic cost to the optimization program.
    * @param obj The added objective.
    * @param vars The decision variables on which the cost depend.
    */
@@ -925,7 +929,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Add one row of linear constraint referencing potentially a
+   * Adds one row of linear constraint referencing potentially a
    * subset of the decision variables (defined in the vars parameter).
    * lb <= a*vars <= ub
    * @param a A row vector.
@@ -945,7 +949,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Add one row of linear constraint on all variables.
+   * Adds one row of linear constraint on all variables.
    * lb <= a*vars <= ub
    * @param a A row vector.
    * @param lb A scalar, the lower bound.
@@ -1007,7 +1011,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Add one row of linear equality constraint referencing potentially a subset
+   * Adds one row of linear equality constraint referencing potentially a subset
    * of decision variables.
    * @f[
    * ax = beq
@@ -1025,7 +1029,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Add one row of linear equality constraint referencing all
+   * Adds one row of linear equality constraint referencing all
    * decision variables.
    * @f[
    * ax = beq
@@ -1080,7 +1084,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Add bounds for a single variable.
+   * Adds bounds for a single variable.
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param var The decision variable.
@@ -1252,7 +1256,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Add a positive semidefinite constraint on a symmetric matrix.
+   * Adds a positive semidefinite constraint on a symmetric matrix.
    * @param symmetric_matrix_var A symmetric DecisionVariableMatrix object.
    */
   void AddConstraint(
@@ -1260,7 +1264,7 @@ class MathematicalProgram {
       const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var);
 
   /**
-   * Add a positive semidefinite constraint on a symmetric matrix.
+   * Adds a positive semidefinite constraint on a symmetric matrix.
    * In Debug mode, @throws error if
    * @p symmetric_matrix_var is not symmetric.
    * @param symmetric_matrix_var A symmetric DecisionVariableMatrix object.
@@ -1270,13 +1274,13 @@ class MathematicalProgram {
       const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var);
 
   /**
-   * Add a linear matrix inequality constraint to the program.
+   * Adds a linear matrix inequality constraint to the program.
    */
   void AddConstraint(std::shared_ptr<LinearMatrixInequalityConstraint> con,
                      const VariableListRef& vars);
 
   /**
-   * Add a linear matrix inequality constraint to the program.
+   * Adds a linear matrix inequality constraint to the program.
    */
   std::shared_ptr<LinearMatrixInequalityConstraint>
   AddLinearMatrixInequalityConstraint(
