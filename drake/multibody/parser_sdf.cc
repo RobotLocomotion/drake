@@ -165,7 +165,7 @@ bool ParseSdfGeometry(XMLElement* node, const PackageMap& package_map,
 
     // This method will return an empty string if the file is not found or
     // resolved within a ROS package.
-    string resolved_filename = resolveFilename(uri, package_map, root_dir);
+    string resolved_filename = ResolveFilename(uri, package_map, root_dir);
 
     if (resolved_filename.empty()) {
       throw runtime_error(std::string(__FILE__) + ": " + __func__ +
@@ -810,15 +810,11 @@ void ParseWorld(RigidBodyTree<double>* model, XMLElement* node,
   }
 }
 
-ModelInstanceIdTable ParseSdf(
-    RigidBodyTree<double>* model, XMLDocument* xml_doc,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    PackageMap& package_map,
-    const string& root_dir,
+ModelInstanceIdTable ParseSdf(XMLDocument* xml_doc,
+    const PackageMap& package_map, const string& root_dir,
     const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  populatePackageMap(package_map);
-
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree<double>* model) {
   XMLElement* node = xml_doc->FirstChildElement("sdf");
   if (!node) {
     throw std::runtime_error(
@@ -857,24 +853,20 @@ ModelInstanceIdTable ParseSdf(
 }  // namespace
 
 ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
-    const string& filename,
+    const string& filename, const PackageMap& package_map,
     const FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree) {
-  // Ensures the output parameter pointers are valid.
   DRAKE_DEMAND(tree);
-  return AddModelInstancesFromSdfFile(filename, floating_base_type,
+  return AddModelInstancesFromSdfFile(filename, package_map, floating_base_type,
       nullptr /* weld_to_frame */, tree);
 }
 
 ModelInstanceIdTable AddModelInstancesFromSdfFile(
-    const string& filename,
+    const string& filename, const PackageMap& package_map,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree<double>* tree) {
-  // Ensures the output parameter pointers are valid.
   DRAKE_DEMAND(tree);
-
-  PackageMap package_map;
 
   XMLDocument xml_doc;
   xml_doc.LoadFile(filename.data());
@@ -890,19 +882,16 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
     root_dir = filename.substr(0, found);
   }
 
-  return ParseSdf(tree, &xml_doc, package_map, root_dir, floating_base_type,
-           weld_to_frame);
+  return ParseSdf(&xml_doc, package_map, root_dir, floating_base_type,
+           weld_to_frame, tree);
 }
 
 ModelInstanceIdTable AddModelInstancesFromSdfString(
-    const string& sdf_string,
+    const string& sdf_string, const PackageMap& package_map,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree<double>* tree) {
-  // Ensures the output parameter pointers are valid.
   DRAKE_DEMAND(tree);
-
-  PackageMap package_map;
 
   XMLDocument xml_doc;
   xml_doc.Parse(sdf_string.c_str());
@@ -914,8 +903,8 @@ ModelInstanceIdTable AddModelInstancesFromSdfString(
 
   string root_dir = ".";
 
-  return ParseSdf(tree, &xml_doc, package_map, root_dir, floating_base_type,
-      weld_to_frame);
+  return ParseSdf(&xml_doc, package_map, root_dir, floating_base_type,
+      weld_to_frame, tree);
 }
 
 }  // namespace sdf

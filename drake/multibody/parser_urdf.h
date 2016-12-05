@@ -7,9 +7,11 @@
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/xml_util.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
+
 
 namespace drake {
 namespace parsers {
@@ -77,7 +79,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 /**
  * This method is the same as
  * AddModelInstanceFromUrdfStringWithRpyJointToWorld() except it has an
- * additional parameter called @p ros_package_map. Parameter @p ros_package_map
+ * additional parameter called @p package_map. Parameter @p package_map
  * contains a mapping from ROS package names to their paths on the local file
  * system. The mapping is used to find resources like mesh files that are
  * referenced within the URDF. This method may be called from within the context
@@ -88,7 +90,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * A new model instance is created based on this URDF text and added to
  * @p tree.
  *
- * @param[in] ros_package_map A map of ROS package names to their paths. These
+ * @param[in] package_map A map of ROS package names to their paths. These
  * are the packages to search through when searching for files referenced in the
  * URDF.
  *
@@ -101,18 +103,14 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  */
 ModelInstanceIdTable
 AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
-    const std::string& urdf_string,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    std::map<std::string, std::string>& ros_package_map,
+    const std::string& urdf_string, const PackageMap& package_map,
     RigidBodyTree<double>* tree);
 
 #ifndef SWIG
 DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 #endif
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
-    const std::string& urdf_string,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    std::map<std::string, std::string>& ros_package_map,
+    const std::string& urdf_string, const PackageMap& package_map,
     RigidBodyTree<double>* tree);
 
 /**
@@ -149,7 +147,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 
 /**
  * This method is the same as AddModelInstanceFromUrdfString() except it has an
- * additional parameter called @p ros_package_map. Parameter @p ros_package_map
+ * additional parameter called @p package_map. Parameter @p package_map
  * contains a mapping from ROS package names to their paths on the local file
  * system. The mapping is used to find resources like mesh files that are
  * referenced within the URDF. This method may be called from within the context
@@ -160,7 +158,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * A new model instance is created based on this URDF text and added to
  * @p tree.
  *
- * @param[in] ros_package_map A map of ROS package names to their paths. These
+ * @param[in] package_map A map of ROS package names to their paths. These
  * are the packages to search through when finding files referenced in the URDF.
  *
  * @param[in] root_dir The root directory in which to search for files
@@ -180,9 +178,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * the `RigidBodyTree`.
  */
 ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
-    const std::string& urdf_string,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    PackageMap& ros_package_map,
+    const std::string& urdf_string, const PackageMap& package_map,
     const std::string& root_dir,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree<double>* tree);
@@ -191,9 +187,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
   DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 #endif
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
-    const std::string& urdf_string,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    PackageMap& ros_package_map,
+    const std::string& urdf_string, const PackageMap& package_map,
     const std::string& root_dir,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree<double>* tree);
@@ -291,7 +285,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 
 /**
  * This method is the same as AddModelInstanceFromUrdfFile() except it has an
- * additional parameter called @p ros_package_map. Parameter @p ros_package_map
+ * additional parameter called @p package_map. Parameter @p package_map
  * contains a mapping from ROS package names to their paths on the local file
  * system. The mapping is used to find resources like mesh files that are
  * referenced within the URDF. This method may be called from within the context
@@ -300,7 +294,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * @param[in] urdf_filename The name of the file containing the URDF model.
  * An instance of this model will be added to @p tree.
  *
- * @param[in] ros_package_map A map of ROS package names to their paths. These
+ * @param[in] package_map A map of ROS package names to their paths. These
  * are the packages to search through when finding files referenced in the URDF.
  *
  * @param[in] floating_base_type The type of joint that connects the model
@@ -317,9 +311,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * the `RigidBodyTree`.
  */
 ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
-    const std::string& urdf_filename,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    std::map<std::string, std::string>& ros_package_map,
+    const std::string& urdf_filename, const PackageMap& package_map,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree<double>* tree);
@@ -328,9 +320,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
   DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 #endif
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
-     const std::string& urdf_filename,
-     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-     std::map<std::string, std::string>& ros_package_map,
+     const std::string& urdf_filename, const PackageMap& package_map,
      const drake::multibody::joints::FloatingBaseType floating_base_type,
      std::shared_ptr<RigidBodyFrame> weld_to_frame,
      RigidBodyTree<double>* tree);

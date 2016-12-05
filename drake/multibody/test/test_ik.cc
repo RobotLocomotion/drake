@@ -30,7 +30,8 @@ GTEST_TEST(testIK, atlasIK) {
   examples::AddExamplePackages(&package_map);
   parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
       GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
-      drake::multibody::joints::kRollPitchYaw, model.get());
+      package_map, drake::multibody::joints::kRollPitchYaw,
+      nullptr /* weld_to_frame */, model.get());
 
   Vector2d tspan;
   tspan << 0, 1;

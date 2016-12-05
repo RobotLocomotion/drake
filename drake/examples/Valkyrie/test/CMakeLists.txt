@@ -7,17 +7,20 @@ if(lcm_FOUND)
   drake_add_cc_test(robot_state_encoder_decoder_test)
   add_definitions(-g)
   target_link_libraries(robot_state_encoder_decoder_test
+    drakeExamplesCommon
     drakeRobotStateEncoder
     drakeRobotStateDecoder)
 
   drake_add_cc_test(robot_command_to_desired_effort_converter_test)
   target_link_libraries(robot_command_to_desired_effort_converter_test
+    drakeExamplesCommon
     drakeRobotCommandToDesiredEffortConverter
     drakeRBM)
 
   add_executable(valkyrie_ik_test valkyrie_ik_test.cc)
   target_link_libraries(valkyrie_ik_test
     drakeCommon
+    drakeExamplesCommon
     drakeIK
     drakeLcm
     drakeRigidBodyPlant

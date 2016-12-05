@@ -8,6 +8,7 @@
 // NOLINTNEXTLINE(whitespace/line_length)
 #include "drake/examples/QPInverseDynamicsForHumanoids/example_qp_input_for_valkyrie.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
+#include "drake/examples/examples_package_map.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -199,10 +200,13 @@ class LcmUtilsTests : public ::testing::Test {
  protected:
   virtual void SetUp() {
     tree_ = std::make_unique<RigidBodyTree<double>>();
-    parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+    parsers::PackageMap package_map;
+    AddExamplePackages(&package_map);
+    parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
         GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
             "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
-        multibody::joints::kRollPitchYaw, tree_.get());
+        package_map, multibody::joints::kRollPitchYaw,
+        nullptr /* weld_to_frame */, tree_.get());
   }
 
   std::unique_ptr<RigidBodyTree<double>> tree_;

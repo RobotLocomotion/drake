@@ -9,6 +9,7 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_common.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 using std::endl;
@@ -25,9 +26,7 @@ using parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld;
 using parsers::urdf::AddModelInstanceFromUrdfStringWithRpyJointToWorld;
 using parsers::urdf::AddModelInstanceFromUrdfStringSearchingInRosPackages;
 
-namespace systems {
-namespace plants {
-namespace test {
+namespace parsers {
 namespace {
 
 GTEST_TEST(URDFParserTest, ParseJointProperties) {
@@ -152,11 +151,11 @@ GTEST_TEST(URDFParserTest, TestAddWithQuaternionFloatingDof) {
       "/multibody/test/parser_urdf_test/zero_dof_robot.urdf";
 
   const string model_string = ReadTextFile(model_file);
-  PackageMap ros_package_map;
+  PackageMap package_map;
 
   auto tree = make_unique<RigidBodyTree<double>>();
   EXPECT_NO_THROW(AddModelInstanceFromUrdfStringSearchingInRosPackages(
-      model_string, ros_package_map, "." /* root_dir */, kQuaternion,
+      model_string, package_map, "." /* root_dir */, kQuaternion,
       nullptr /* weld_to_frame */, tree.get()));
 
   EXPECT_EQ(tree->get_num_positions(), 7);
@@ -164,7 +163,5 @@ GTEST_TEST(URDFParserTest, TestAddWithQuaternionFloatingDof) {
 }
 
 }  // namespace
-}  // namespace test
-}  // namespace plants
-}  // namespace systems
+}  // namespace parsers
 }  // namespace drake

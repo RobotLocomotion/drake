@@ -27,6 +27,7 @@ void AddPackage(const string& name, const string& path,
 
 void AddExamplePackages(PackageMap* package_map) {
   AddPackage("Atlas", GetDrakePath() + "/examples/Atlas/", package_map);
+  AddPackage("IRB140", GetDrakePath() + "/examples/IRB140/", package_map);
   AddPackage("Valkyrie", GetDrakePath() + "/examples/Valkyrie", package_map);
   AddPackage("hsrb_description", GetDrakePath() + "/../ros/hsrb_description",
       package_map);

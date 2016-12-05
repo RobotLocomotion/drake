@@ -161,7 +161,8 @@ int main() {
   drake::examples::AddExamplePackages(&package_map);
   drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
       drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
-      drake::multibody::joints::kRollPitchYaw, tree.get());
+      package_map, drake::multibody::joints::kRollPitchYaw,
+      nullptr /* weld_to_frame */, tree.get());
 
   CheckSettings settings;
 

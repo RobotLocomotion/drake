@@ -8,8 +8,12 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+// TODO(liang.fok) Remove this once the layering violation of this file relying
+// on drake/examples is resolved.
+#include "drake/examples/examples_package_map.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -24,9 +28,12 @@ namespace {
 
 GTEST_TEST(testIKpointwise, simpleIKpointwise) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+  parsers::PackageMap package_map;
+  examples::AddExamplePackages(&package_map);
+  parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
       GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
-      multibody::joints::kRollPitchYaw, tree.get());
+      package_map, multibody::joints::kRollPitchYaw,
+      nullptr /* weld_to_frame */, tree.get());
 
   Vector2d tspan;
   tspan << 0, 1;

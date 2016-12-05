@@ -18,11 +18,17 @@
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
+
+using parsers::ModelInstanceIdTable;
+using parsers::PackageMap;
+using parsers::sdf::AddModelInstancesFromSdfFileInWorldFrame;
+
 namespace automotive {
 
 using drake::multibody::joints::kRollPitchYaw;

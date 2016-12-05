@@ -3,6 +3,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
@@ -39,7 +40,7 @@ class Quadrotor : public systems::Diagram<T> {
         drake::GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
         package_map, kRollPitchYaw, nullptr /* weld to frame */, tree.get());
 
-    drake::parsers::sdf::AddModelInstancesFromSdfFile(
+    AddModelInstancesFromSdfFile(
         drake::GetDrakePath() + "/examples/Quadrotor/warehouse.sdf",
         package_map, kFixed, nullptr /* weld to frame */, tree.get());
 

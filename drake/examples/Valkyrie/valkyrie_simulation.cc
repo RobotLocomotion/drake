@@ -6,7 +6,9 @@
 #include "drake/examples/Valkyrie/robot_command_to_desired_effort_converter.h"
 #include "drake/examples/Valkyrie/robot_state_encoder.h"
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
+#include "drake/examples/examples_package_map.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -44,11 +46,13 @@ int main(int argc, const char** argv) {
 
   // Create RigidBodyTree.
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+  parsers::PackageMap package_map;
+  examples::AddExamplePackages(&package_map);
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
       drake::GetDrakePath() +
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
-      kRollPitchYaw, nullptr /* weld to frame */, tree_ptr.get());
+      package_map, kRollPitchYaw, nullptr /* weld to frame */, tree_ptr.get());
   multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.

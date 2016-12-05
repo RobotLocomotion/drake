@@ -4,9 +4,11 @@
 #include <vector>
 
 #include "drake/common/drake_path.h"
+#include "drake/examples/examples_package_map.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_frame.h"
@@ -22,22 +24,7 @@
 
 using Eigen::aligned_allocator;
 using Eigen::Vector3d;
-using drake::lcm::DrakeLcm;
-using drake::multibody::joints::FloatingBaseType;
-using drake::multibody::joints::kFixed;
-using drake::multibody::joints::kQuaternion;
-using drake::parsers::ModelInstanceIdTable;
-using drake::parsers::sdf::AddModelInstancesFromSdfFile;
-using drake::parsers::urdf::AddModelInstanceFromUrdfFile;
-using drake::systems::ConstantVectorSource;
-using drake::systems::Context;
-using drake::systems::ContinuousState;
-using drake::systems::Diagram;
-using drake::systems::DiagramBuilder;
-using drake::systems::DrakeVisualizer;
-using drake::systems::RigidBodyPlant;
-using drake::systems::Simulator;
-using drake::systems::VectorBase;
+
 using std::allocate_shared;
 using std::make_unique;
 using std::string;
@@ -115,15 +102,17 @@ int IiwaWorldSimBuilder<T>::AddModelInstanceToFrame(
 
   DRAKE_DEMAND(extension == "urdf" || extension == "sdf");
 
+  parsers::PackageMap package_map;
+  AddExamplePackages(&package_map);
   if (extension == "urdf") {
     table = AddModelInstanceFromUrdfFileSearchingInRosPackages(
         GetDrakePath() + model_map_[model_name], package_map,
         floating_base_type, weld_to_frame, rigid_body_tree_.get());
 
   } else if (extension == "sdf") {
-    table = drake::parsers::sdf::AddModelInstancesFromSdfFile(
-        drake::GetDrakePath() + model_map_[model_name], floating_base_type,
-        weld_to_frame, rigid_body_tree_.get());
+    table = AddModelInstancesFromSdfFile(
+        GetDrakePath() + model_map_[model_name], package_map,
+        floating_base_type, weld_to_frame, rigid_body_tree_.get());
   }
   const int model_instance_id = table.begin()->second;
   return model_instance_id;
@@ -132,7 +121,7 @@ int IiwaWorldSimBuilder<T>::AddModelInstanceToFrame(
 template <typename T>
 void IiwaWorldSimBuilder<T>::AddGround() {
   DRAKE_DEMAND(!built_);
-  drake::multibody::AddFlatTerrainToWorld(rigid_body_tree_.get());
+  AddFlatTerrainToWorld(rigid_body_tree_.get());
 }
 
 template <typename T>

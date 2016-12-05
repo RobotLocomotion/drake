@@ -6,6 +6,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -28,6 +29,7 @@ namespace drake {
 
 using parsers::sdf::AddModelInstancesFromSdfFile;
 using lcm::DrakeLcm;
+using parsers::PackageMap;
 using systems::ConstantVectorSource;
 using systems::Context;
 using systems::DiagramBuilder;
@@ -96,6 +98,7 @@ int main(int argc, char* argv[]) {
   const PackageMap package_map;
   AddModelInstancesFromSdfFile(
       drake::GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
+      package_map,
       multibody::joints::kQuaternion, nullptr /* weld to frame */,
       rigid_body_tree.get());
   multibody::AddFlatTerrainToWorld(rigid_body_tree.get());

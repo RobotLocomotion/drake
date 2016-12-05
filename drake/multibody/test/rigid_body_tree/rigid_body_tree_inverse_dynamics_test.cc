@@ -38,16 +38,17 @@ class RigidBodyTreeInverseDynamicsTest : public ::testing::Test {
 
     const std::string kAtlasUrdf =
         drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf";
-
+  std::map<std::string, std::string> package_map = {
+      {"Atlas", GetDrakePath() + "/examples/Atlas/"}};
     tree_rpy_ = std::make_unique<RigidBodyTree<double>>();
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        kAtlasUrdf, kRollPitchYaw, nullptr /* weld_to_frame */,
+    drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
+        kAtlasUrdf, package_map, kRollPitchYaw, nullptr /* weld_to_frame */,
         tree_rpy_.get());
     trees_.push_back(tree_rpy_.get());
 
     tree_quaternion_ = std::make_unique<RigidBodyTree<double>>();
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        kAtlasUrdf, kQuaternion, nullptr /* weld_to_frame */,
+    drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
+        kAtlasUrdf, package_map, kQuaternion, nullptr /* weld_to_frame */,
         tree_quaternion_.get());
     trees_.push_back(tree_quaternion_.get());
   }

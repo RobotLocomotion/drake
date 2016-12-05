@@ -20,9 +20,6 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
-// TODO(liang.fok) Remove the following include once this file no longer
-// references `PackageMap`.
-#include "drake/multibody/xml_util.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 
@@ -2612,64 +2609,6 @@ int RigidBodyTree<T>::number_of_velocities() const {
 template <typename T>
 int RigidBodyTree<T>::get_num_actuators() const {
   return static_cast<int>(actuators.size());
-}
-
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-template <typename T>
-void RigidBodyTree<T>::addRobotFromURDFString(
-    const std::string& xml_string, const std::string& root_dir,
-    const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  PackageMap ros_package_map;
-  drake::parsers::urdf::AddModelInstanceFromUrdfStringSearchingInRosPackages(
-      xml_string, ros_package_map, root_dir, floating_base_type, weld_to_frame,
-      this);
-}
-
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-template <typename T>
-void RigidBodyTree<T>::addRobotFromURDFString(
-    const std::string& xml_string,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    std::map<std::string, std::string>& ros_package_map,
-    const std::string& root_dir, const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::urdf::AddModelInstanceFromUrdfStringSearchingInRosPackages(
-      xml_string, ros_package_map, root_dir, floating_base_type, weld_to_frame,
-      this);
-}
-
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-template <typename T>
-void RigidBodyTree<T>::addRobotFromURDF(
-    const std::string& filename,
-    const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  PackageMap ros_package_map;
-  drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
-      filename, ros_package_map, floating_base_type, weld_to_frame, this);
-}
-
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-template <typename T>
-void RigidBodyTree<T>::addRobotFromURDF(
-    const std::string& filename,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    std::map<std::string, std::string>& ros_package_map,
-    const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
-      filename, ros_package_map, floating_base_type, weld_to_frame, this);
-}
-
-// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-template <typename T>
-void RigidBodyTree<T>::addRobotFromSDF(
-    const std::string& filename,
-    const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::sdf::AddModelInstancesFromSdfFile(
-      filename, floating_base_type, weld_to_frame, this);
 }
 
 template <typename T>

@@ -43,8 +43,13 @@ endmacro()
 
 macro(add_ik_gtest)
   add_executable(${ARGV} ${ARGV}.cc)
-  target_link_libraries(${ARGV} drakeRigidBodyConstraint drakeIK
-    GTest::GTest GTest::Main)
+  target_link_libraries(${ARGV}
+      GTest::GTest GTest::Main
+      # TODO(liang.fok) Remove this once the examples-dependency layering
+      # violation is resolved.
+      drakeExamplesCommon
+      drakeIK
+      drakeRigidBodyConstraint)
   drake_add_test(NAME ${ARGV} WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND ${ARGV})
 endmacro()
 

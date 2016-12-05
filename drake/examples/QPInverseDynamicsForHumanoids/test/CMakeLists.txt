@@ -6,6 +6,7 @@ target_link_libraries(setpoint_test
 if(lcm_FOUND)
   drake_add_cc_test(NAME lcm_utils_test)
   target_link_libraries(lcm_utils_test
+    drakeExamplesCommon
     drakeQPControllerLcmTranslator
     drakeQPController
     GTest::GTest GTest::Main)

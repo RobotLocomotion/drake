@@ -4,6 +4,7 @@ if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeKukaIiwaWorld SOURCE_FILES
       iiwa_world_sim_builder.cc)
   target_link_libraries(drakeKukaIiwaWorld
+      drakeExamplesCommon
       drakeKukaIiwaArmCommon
       drakeLCMSystem2
       drakeRigidBodyPlant
@@ -22,5 +23,5 @@ if(lcm_FOUND)
   target_link_libraries(iiwa_world_demo
       drakeKukaIiwaWorld)
   drake_add_test(
-      NAME iiwa_world_demo COMMAND iiwa_world_demo -simulation_sec 1.0)
+      NAME iiwa_world_demo COMMAND iiwa_world_demo -simulation_sec 0.1)
 endif()

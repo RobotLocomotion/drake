@@ -91,56 +91,6 @@ class RigidBodyTree {
 
   virtual ~RigidBodyTree(void);
 
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDFString.")
-#endif
-  void addRobotFromURDFString(
-      const std::string& xml_string, const std::string& root_dir = ".",
-      const drake::multibody::joints::FloatingBaseType
-          floating_base_type = drake::multibody::joints::kRollPitchYaw,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDFString.")
-#endif
-  void addRobotFromURDFString(
-      const std::string& xml_string,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::map<std::string, std::string>& ros_package_map,
-      const std::string& root_dir = ".",
-      const drake::multibody::joints::FloatingBaseType
-          floating_base_type = drake::multibody::joints::kRollPitchYaw,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDF.")
-#endif
-  void addRobotFromURDF(
-      const std::string& urdf_filename,
-      const drake::multibody::joints::FloatingBaseType
-          floating_base_type = drake::multibody::joints::kRollPitchYaw,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDF.")
-#endif
-  void addRobotFromURDF(
-      const std::string& urdf_filename,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::map<std::string, std::string>& ros_package_map,
-      const drake::multibody::joints::FloatingBaseType
-          floating_base_type = drake::multibody::joints::kRollPitchYaw,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstancesFromSdfFile.")
-#endif
-  void addRobotFromSDF(const std::string& sdf_filename,
-                       const drake::multibody::joints::FloatingBaseType
-                           floating_base_type =
-                               drake::multibody::joints::kQuaternion,
-                       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-
   /**
    * Adds a new model instance to this `RigidBodyTree`. The model instance is
    * identified by a unique model instance ID, which is the return value of

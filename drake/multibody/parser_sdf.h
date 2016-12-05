@@ -1,12 +1,12 @@
 #pragma once
 
-#include <map>
 #include <string>
 
-#include "drake/multibody/rigid_body_frame.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/parser_common.h"
+#include "drake/multibody/rigid_body_frame.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace parsers {
@@ -32,7 +32,7 @@ namespace sdf {
  * the `RigidBodyTree`.
  */
 ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
-    const std::string& filename,
+    const std::string& filename, const PackageMap& package_map,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree);
 
@@ -57,7 +57,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
  * the `RigidBodyTree`.
  */
 ModelInstanceIdTable AddModelInstancesFromSdfFile(
-    const std::string& filename,
+    const std::string& filename, const PackageMap& package_map,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree<double>* tree);
@@ -80,7 +80,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
  * the `RigidBodyTree`.
  */
 ModelInstanceIdTable AddModelInstancesFromSdfString(
-    const std::string& sdf_string,
+    const std::string& sdf_string, const PackageMap& package_map,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree<double>* tree);
