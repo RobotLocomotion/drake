@@ -21,12 +21,25 @@ KinematicsCacheElement<T>::KinematicsCacheElement(
 }
 
 template <typename T>
+KinematicsCache<T>::KinematicsCache(int num_positions, int num_velocities)
+    : num_positions_(num_positions), num_velocities_(num_velocities),
+      q(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_positions_)),
+      v(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_velocities_)),
+      velocity_vector_valid(false) { }
+
+template <typename T>
+void KinematicsCache<T>::CreateCacheEntry(
+    int num_positions, int num_velocities) {
+  elements_.emplace_back(num_positions, num_velocities);
+}
+
+template <typename T>
 KinematicsCache<T>::KinematicsCache(
     const std::vector<std::unique_ptr<RigidBody<double>> >& bodies_in)
-    : num_positions(get_num_positions(bodies_in)),
-      num_velocities(get_num_velocities(bodies_in)),
-      q(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_positions)),
-      v(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_velocities)),
+    : num_positions_(get_num_positions(bodies_in)),
+      num_velocities_(get_num_velocities(bodies_in)),
+      q(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_positions_)),
+      v(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_velocities_)),
       velocity_vector_valid(false) {
   for (const auto& body_unique_ptr : bodies_in) {
     const RigidBody<double>& body = *body_unique_ptr;
@@ -62,12 +75,6 @@ template <typename T>
 const KinematicsCacheElement<T>& KinematicsCache<T>::getElement(
     const RigidBody<double>& body) const {
   return elements_[body.get_id()];
-}
-
-template <typename T>
-const std::vector<RigidBody<double> const*>&
-KinematicsCache<T>::get_bodies() const {
-    return bodies;
 }
 
 template <typename T>
@@ -163,13 +170,18 @@ void KinematicsCache<T>::setJdotVCached(bool jdotV_cached_in) {
 }
 
 template <typename T>
-int KinematicsCache<T>::get_num_positions() const { return num_positions; }
+int KinematicsCache<T>::get_num_body_entries() const {
+  return static_cast<int>(elements_.size());
+}
+
+template <typename T>
+int KinematicsCache<T>::get_num_positions() const { return num_positions_; }
 
 template <typename T>
 int KinematicsCache<T>::getNumPositions() const { return get_num_positions(); }
 
 template <typename T>
-int KinematicsCache<T>::get_num_velocities() const { return num_velocities; }
+int KinematicsCache<T>::get_num_velocities() const { return num_velocities_; }
 
 template <typename T>
 int KinematicsCache<T>::getNumVelocities() const {

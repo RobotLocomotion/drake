@@ -14,6 +14,7 @@
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/joints/drake_joint.h"
 #include "drake/multibody/rigid_body.h"
@@ -63,6 +64,9 @@ class KinematicsCacheElement {
  public:
   KinematicsCacheElement(int num_positions_joint, int num_velocities_joint);
 
+  int get_num_positions() const { return v_to_qdot.rows(); }
+  int get_num_velocities() const { return v_to_qdot.cols(); }
+
  public:
 #ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -75,8 +79,8 @@ class KinematicsCache {
   std::vector<KinematicsCacheElement<T>,
               Eigen::aligned_allocator<KinematicsCacheElement<T>>> elements_;
   std::vector<RigidBody<double> const*> bodies;
-  int num_positions;
-  int num_velocities;
+  int num_positions_;
+  int num_velocities_;
   Eigen::Matrix<T, Eigen::Dynamic, 1> q;
   Eigen::Matrix<T, Eigen::Dynamic, 1> v;
   bool velocity_vector_valid;
@@ -85,6 +89,14 @@ class KinematicsCache {
   bool inertias_cached;
 
  public:
+  KinematicsCache(int num_positions, int num_velocities);
+
+  void CreateCacheEntry(int num_positions, int num_velocities);
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use "
+                   "KinematicsCache(int num_positions, int num_velocities)")
+#endif
   explicit KinematicsCache(
       const std::vector<std::unique_ptr<RigidBody<double>> >& bodies_in);
 
@@ -104,21 +116,6 @@ class KinematicsCache {
 #endif
   const KinematicsCacheElement<T>& getElement(
       const RigidBody<double>& body) const;
-
-  // TODO(amcastro-tri): This accessor was added to allow
-  // RigidBodyTree::transformVelocityMappingToQDotMapping() and
-  // RigidBodyTree::transformQDotMappingToVelocityMapping() to be static
-  // methods. That is a requirement from velocityToPositionDotMappingmex()
-  // and positionDotToVelocityMappingmex() in rigidBodyTreeMexFunctions which
-  // define a Matlab API not passing the "this" pointer to the RigidBodyTree
-  // model.
-  // This problem will be solved when KinematicsCache works with RigidBody
-  // id's instead of actual RigidBody pointers as handlers to KinematicsCache
-  // entries.
-  // Another solution would be to change the Matlab API to pass "this"
-  // pointer to the RigidBodyTree as it does with any other RigidBodyTree
-  // method.
-  const std::vector<RigidBody<double> const*>& get_bodies() const;
 
   template <typename Derived>
   void initialize(const Eigen::MatrixBase<Derived>& q_in);
@@ -146,6 +143,8 @@ class KinematicsCache {
   void setPositionKinematicsCached();
 
   void setJdotVCached(bool jdotV_cached_in);
+
+  int get_num_body_entries() const;
 
   int get_num_positions() const;
 

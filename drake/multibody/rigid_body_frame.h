@@ -12,7 +12,6 @@ class XMLElement;
 
 class RigidBodyFrame {
  public:
-
   RigidBodyFrame(int body_id, const Eigen::Isometry3d& X_BF);
 
   /**
