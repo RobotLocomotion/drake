@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
@@ -77,7 +79,7 @@ class RungeKutta3Integrator : public IntegratorBase<T> {
 
  private:
   void DoInitialize() override;
-  bool DoStepOnceAtMost(const T& dt) override;
+  std::pair<bool, T> DoStepOnceAtMost(const T& max_dt) override;
   void DoStepOnceFixedSize(const T& dt) override;
 
   // Vector used in error estimate calculations.
