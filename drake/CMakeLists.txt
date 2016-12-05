@@ -184,10 +184,6 @@ if(BUILD_TESTING)
   add_subdirectory(regtests)
 endif()
 
-# setup MATLAB pods-compliance
-include(../cmake/matlab_pods.cmake)
-pods_configure_matlab_paths()
-
 find_program(AVL_EXECUTABLE avl PATHS "${CMAKE_INSTALL_PREFIX}/bin")
 find_program(XFOIL_EXECUTABLE xfoil PATHS "${CMAKE_INSTALL_PREFIX}/bin")
 find_program(FFMPEG_EXECUTABLE ffmpeg)
