@@ -90,12 +90,12 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
       initializeAutoDiffGivenGradientMatrix(q, qd_dynamic_num_rows);
   typedef decltype(q_time_autodiff)::Scalar TimeADScalar;
   auto qd_time_autodiff = qd.cast<TimeADScalar>();
-  KinematicsCache<TimeADScalar> kinematics_cache_time_autodiff(
-      tree_rpy_->bodies);
-  kinematics_cache_time_autodiff.initialize(q_time_autodiff, qd_time_autodiff);
-  tree_rpy_->doKinematics(kinematics_cache_time_autodiff);
+  auto kinematics_cache_time_autodiff =
+      tree_rpy_->CreateKinematicsCacheWithType<TimeADScalar>();
+  kinematics_cache_time_autodiff->initialize(q_time_autodiff, qd_time_autodiff);
+  tree_rpy_->doKinematics(*kinematics_cache_time_autodiff);
   auto mass_matrix_time_autodiff =
-      tree_rpy_->massMatrix(kinematics_cache_time_autodiff);
+      tree_rpy_->massMatrix(*kinematics_cache_time_autodiff);
 
   Eigen::MatrixXd mass_matrix_dot(qd.size(), qd.size());
   for (int i = 0; i < qd.size(); ++i) {
@@ -112,13 +112,14 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
   auto qd_to_coriolis_term = [&](const auto& qd_arg) {
     using Scalar =
         typename std::remove_reference<decltype(qd_arg)>::type::Scalar;
-    KinematicsCache<Scalar> kinematics_cache_coriolis(tree_rpy_->bodies);
-    kinematics_cache_coriolis.initialize(q.cast<Scalar>(), qd_arg);
-    tree_rpy_->doKinematics(kinematics_cache_coriolis, true);
+    auto kinematics_cache_coriolis =
+        tree_rpy_->CreateKinematicsCacheWithType<Scalar>();
+    kinematics_cache_coriolis->initialize(q.cast<Scalar>(), qd_arg);
+    tree_rpy_->doKinematics(*kinematics_cache_coriolis, true);
 
     const typename RigidBodyTree<Scalar>::BodyToWrenchMap no_external_wrenches;
     auto coriolis_term = tree_rpy_->inverseDynamics(
-        kinematics_cache_coriolis, no_external_wrenches,
+        *kinematics_cache_coriolis, no_external_wrenches,
         qdd.cast<Scalar>().eval(), true);
     coriolis_term -= tree_rpy_->frictionTorques(qd_arg);
     return coriolis_term;

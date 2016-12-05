@@ -6,7 +6,7 @@ using namespace std;
 
 template <typename Scalar>
 mxArray *createKinematicsCache(RigidBodyTree<double> &model) {
-  auto cache = model.CreateKinematicsCache();
+  auto cache = model.CreateKinematicsCacheWithType<Scalar>();
   return createDrakeMexPointer(
       (void*)cache.release(), typeid(KinematicsCache<Scalar>).name(),
       DrakeMexPointerTypeId<KinematicsCache<Scalar>>::value);
