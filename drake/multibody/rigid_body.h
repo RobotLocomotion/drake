@@ -139,18 +139,25 @@ class RigidBody {
     return parent_ == &other;
   }
 
-  /**
-   * Sets the "body index" of this `RigidBody`. The "body index" is the index of
-   * this `RigidBody` within the vector of `RigidBody` objects within the
-   * `RigidBodyTree`.
-   */
+
+  /// Sets the "body index" of this `RigidBody`. The "body index" is the
+  /// index of this `RigidBody` within the vector of `RigidBody` objects
+  /// within the `RigidBodyTree`.
+  /// Users should NOT call this method. It is only here to be used
+  /// internally by RigidBodyTree.
   void set_body_index(int body_index);
 
   /**
    * Returns the "body index" of this `RigidBody`. This is the index within the
    * vector of `RigidBody` objects within the `RigidBodyTree`.
    */
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_id().")
+#endif
   int get_body_index() const;
+
+  // Returns its unique identifier in its parent RigidBodyTree.
+  int get_id() const;
 
   /**
    * Sets the start index of this rigid body's mobilizer joint's contiguous
