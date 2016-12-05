@@ -327,9 +327,9 @@ class PidControlledSchunkWsg : public systems::Diagram<T> {
         std::move(plant), std::move(feedback_selector), kp, ki, kd);
 
     builder.Connect(zero_source->get_output_port(),
-                    controller_->get_input_port(0));
+                    controller_->get_control_input_port());
 
-    builder.ExportInput(controller_->get_input_port(1));
+    builder.ExportInput(controller_->get_state_input_port());
     builder.ExportOutput(controller_->get_output_port(0));
     builder.BuildInto(this);
   }
