@@ -216,7 +216,7 @@ class ContactInformation {
         3 * contact_points_.cols(),
         num_basis_per_contact_point_ * contact_points_.cols());
     Matrix3<double> body_rot =
-        robot.relativeTransform(cache, 0, body_->get_body_index()).linear();
+        robot.relativeTransform(cache, 0, body_->get_id()).linear();
     basis.setZero();
 
     Vector3<double> t1, t2, tangent_vec, base;
@@ -264,11 +264,11 @@ class ContactInformation {
       const Vector3<double>& offset, drake::Matrix3X<double>* contact_points,
       Vector3<double>* reference_point) const {
     *reference_point =
-        robot.transformPoints(cache, offset, body_->get_body_index(), 0);
+        robot.transformPoints(cache, offset, body_->get_id(), 0);
     contact_points->resize(3, contact_points_.cols());
     for (int i = 0; i < contact_points_.cols(); ++i) {
       contact_points->col(i) = robot.transformPoints(
-          cache, contact_points_.col(i), body_->get_body_index(), 0);
+          cache, contact_points_.col(i), body_->get_id(), 0);
     }
   }
 

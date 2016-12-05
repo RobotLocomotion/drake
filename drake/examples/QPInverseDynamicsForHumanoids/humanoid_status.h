@@ -39,7 +39,7 @@ class BodyOfInterest {
               const KinematicsCache<double>& cache) {
     pose_.translation() = offset_;
     pose_.linear().setIdentity();
-    pose_ = robot.relativeTransform(cache, 0, body_->get_body_index()) * pose_;
+    pose_ = robot.relativeTransform(cache, 0, body_->get_id()) * pose_;
 
     vel_ = GetTaskSpaceVel(robot, cache, *body_, offset_);
     J_ = GetTaskSpaceJacobian(robot, cache, *body_, offset_);
@@ -98,7 +98,7 @@ class HumanoidStatus {
    */
   explicit HumanoidStatus(const RigidBodyTree<double>& robot)
       : robot_(&robot),
-        cache_(robot_->bodies),
+        cache_(robot_->CreateKinematicsCache()),
         // TODO(siyuan.feng): The names of the links are hard coded for
         // Valkyrie, and they should be specified in some separate config file.
         bodies_of_interest_{
@@ -238,7 +238,7 @@ class HumanoidStatus {
 
   // Getters
   inline const RigidBodyTree<double>& robot() const { return *robot_; }
-  inline const KinematicsCache<double>& cache() const { return cache_; }
+  inline const KinematicsCache<double>& cache() const { return *cache_; }
   inline const std::unordered_map<std::string, int>& body_name_to_id() const {
     return body_name_to_id_;
   }
@@ -344,7 +344,7 @@ class HumanoidStatus {
 
  private:
   const RigidBodyTree<double>* robot_;
-  KinematicsCache<double> cache_;
+  std::unique_ptr<KinematicsCache<double>> cache_;
 
   // Nominal position for the robot.
   // TODO(siyuan.feng): should read this from the model file eventually.

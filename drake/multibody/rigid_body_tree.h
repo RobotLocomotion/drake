@@ -188,6 +188,10 @@ class RigidBodyTree {
   std::unique_ptr<KinematicsCache<CacheT>>
   CreateKinematicsCacheWithType() const;
 
+  static std::unique_ptr<KinematicsCache<T>>
+  CreateKinematicsCacheFromBodiesVector(
+      const std::vector<std::unique_ptr<RigidBody<T>>>& bodies);
+
   /// Initializes a `KinematicsCache` with the given configuration @p q,
   /// computes the kinematics, and returns the cache.
   ///

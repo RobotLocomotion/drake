@@ -37,13 +37,13 @@ MatrixX<double> GetTaskSpaceJacobian(const RigidBodyTree<double>& r,
                                      const RigidBody<double>& body,
                                      const Vector3<double>& local_offset) {
   std::vector<int> v_or_q_indices;
-  MatrixX<double> Jg = r.geometricJacobian(cache, 0, body.get_body_index(), 0,
+  MatrixX<double> Jg = r.geometricJacobian(cache, 0, body.get_id(), 0,
                                            true, &v_or_q_indices);
   MatrixX<double> J(6, r.get_num_velocities());
   J.setZero();
 
   Vector3<double> points =
-      r.transformPoints(cache, local_offset, body.get_body_index(), 0);
+      r.transformPoints(cache, local_offset, body.get_id(), 0);
 
   int col = 0;
   for (auto it = v_or_q_indices.begin(); it != v_or_q_indices.end(); ++it) {
@@ -67,10 +67,10 @@ Vector6<double> GetTaskSpaceJacobianDotTimesV(
     const RigidBody<double>& body, const Vector3<double>& local_offset) {
   // position of point in world
   Vector3<double> p =
-      r.transformPoints(cache, local_offset, body.get_body_index(), 0);
-  Vector6<double> twist = r.relativeTwist(cache, 0, body.get_body_index(), 0);
+      r.transformPoints(cache, local_offset, body.get_id(), 0);
+  Vector6<double> twist = r.relativeTwist(cache, 0, body.get_id(), 0);
   Vector6<double> J_geometric_dot_times_v =
-      r.geometricJacobianDotTimesV(cache, 0, body.get_body_index(), 0);
+      r.geometricJacobianDotTimesV(cache, 0, body.get_id(), 0);
 
   // linear vel of r
   Vector3<double> pdot = twist.head<3>().cross(p) + twist.tail<3>();
