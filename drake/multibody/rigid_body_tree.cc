@@ -900,11 +900,11 @@ void RigidBodyTree<T>::doKinematics(KinematicsCache<Scalar>& cache,
 
   for (size_t i = 0; i < bodies.size(); ++i) {
     RigidBody<T>& body = *bodies[i];
-    KinematicsCacheElement<Scalar>& element = cache.getElement(body);
+    KinematicsCacheElement<Scalar>& element = *cache.get_mutable_element(i);
 
     if (body.has_parent_body()) {
       const KinematicsCacheElement<Scalar>& parent_element =
-          cache.getElement(*body.get_parent());
+          *cache.get_mutable_element(body.get_parent()->get_id());
       const DrakeJoint& joint = body.getJoint();
       auto q_body = q.middleRows(body.get_position_start_index(),
                                  joint.get_num_positions());
@@ -999,20 +999,21 @@ void RigidBodyTree<T>::updateCompositeRigidBodyInertias(
   if (!cache.areInertiasCached()) {
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
       const RigidBody<T>& body = **it;
-      auto& element = cache.getElement(body);
-      element.inertia_in_world = transformSpatialInertia(
-          element.transform_to_world,
+      auto element = cache.get_mutable_element(body.get_id());
+      element->inertia_in_world = transformSpatialInertia(
+          element->transform_to_world,
           body.get_spatial_inertia().template cast<Scalar>());
-      element.crb_in_world = element.inertia_in_world;
+      element->crb_in_world = element->inertia_in_world;
     }
 
     // N.B. Reverse iteration.
     for (auto it = bodies.rbegin(); it != bodies.rend(); ++it) {
       const RigidBody<T>& body = **it;
       if (body.has_parent_body()) {
-        const auto& element = cache.getElement(body);
-        auto& parent_element = cache.getElement(*body.get_parent());
-        parent_element.crb_in_world += element.crb_in_world;
+        const auto element = cache.get_mutable_element(body.get_id());
+        auto parent_element = cache.get_mutable_element(
+            body.get_parent()->get_id());
+        parent_element->crb_in_world += element->crb_in_world;
       }
     }
   }
@@ -1037,7 +1038,7 @@ TwistMatrix<Scalar> RigidBodyTree<T>::worldMomentumMatrix(
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody<T>& body = **it;
     if (body.has_parent_body()) {
-      const auto& element = cache.getElement(body);
+      const auto& element = cache.get_element(body.get_id());
       const DrakeJoint& joint = body.getJoint();
       int ncols_joint =
           in_terms_of_qdot ? joint.get_num_positions() :
@@ -1078,7 +1079,7 @@ const {
     const RigidBody<T>& body = **it;
     if (body.has_parent_body()) {
       if (is_part_of_model_instances(body, model_instance_id_set)) {
-        const auto& element = cache.getElement(body);
+        const auto& element = cache.get_element(body.get_id());
         ret.noalias() += element.inertia_in_world *
             element.motion_subspace_in_world_dot_times_v;
         auto inertia_times_twist =
@@ -1658,7 +1659,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree<T>::massMatrix(
   for (size_t i = 0; i < bodies.size(); ++i) {
     RigidBody<T>& body_i = *bodies[i];
     if (body_i.has_parent_body()) {
-      const auto& element_i = cache.getElement(body_i);
+      const auto& element_i = cache.get_element(i);
       int v_start_i = body_i.get_velocity_start_index();
       int nv_i = body_i.getJoint().get_num_velocities();
       auto F =
@@ -1671,7 +1672,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree<T>::massMatrix(
       // Hij
       const RigidBody<T>* body_j(body_i.get_parent());
       while (body_j->has_parent_body()) {
-        const auto& element_j = cache.getElement(*body_j);
+        const auto& element_j = cache.get_element(body_j->get_id());
         int v_start_j = body_j->get_velocity_start_index();
         int nv_j = body_j->getJoint().get_num_velocities();
         auto Hji = (element_j.motion_subspace_in_world.transpose() * F).eval();
@@ -1730,7 +1731,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::inverseDynamics(
     const RigidBody<T>& body = *bodies[i];
     if (body.has_parent_body()) {
       const RigidBody<T>& parent_body = *(body.get_parent());
-      const auto& cache_element = cache.getElement(body);
+      const auto& cache_element = cache.get_element(i);
 
       // Denote the spatial acceleration twist derivative) of body i with
       // respect to the world as Tdot^w_i. Let lambda(i) denote the parent of
@@ -1773,12 +1774,13 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::inverseDynamics(
 
       // Initialize body acceleration to acceleration of parent body.
       auto parent_acceleration =
-          body_accelerations.col(parent_body.get_body_index());
+          body_accelerations.col(parent_body.get_id());
       body_acceleration = parent_acceleration;
 
       // Add bias acceleration relative to parent body.
       if (include_velocity_terms) {
-        const auto& parent_cache_element = cache.getElement(parent_body);
+        const auto& parent_cache_element =
+            cache.get_element(parent_body.get_id());
         body_acceleration += cache_element.motion_subspace_in_world_dot_times_v;
         body_acceleration -=
             parent_cache_element.motion_subspace_in_world_dot_times_v;
@@ -1851,7 +1853,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::inverseDynamics(
   for (ptrdiff_t i = bodies.size() - 1; i >= 0; --i) {
     RigidBody<T>& body = *bodies[i];
     if (body.has_parent_body()) {
-      const auto& cache_element = cache.getElement(body);
+      const auto& cache_element = cache.get_element(i);
       const auto& joint = body.getJoint();
       auto joint_wrench = joint_wrenches_const.col(i);
 
