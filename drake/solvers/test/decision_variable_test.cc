@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -15,20 +16,28 @@ namespace solvers {
 GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   MathematicalProgram prog;
   auto X1 = prog.AddContinuousVariables(2, 3, "X");
-  std::cout << X1 << std::endl;
+  std::stringstream msg_buff1;
+  msg_buff1 << X1 << std::endl;
+  drake::log()->debug(msg_buff1.str());
   EXPECT_EQ(prog.num_vars(), 6);
   EXPECT_FALSE(math::IsSymmetric(X1));
   auto S1 = prog.AddSymmetricContinuousVariables(3, "S");
-  std::cout << S1 << std::endl;
+  std::stringstream msg_buff2;
+  msg_buff2 << S1 << std::endl;
+  drake::log()->debug(msg_buff2.str());
   EXPECT_EQ(prog.num_vars(), 12);
   EXPECT_TRUE(math::IsSymmetric(S1));
   auto x1 = prog.AddContinuousVariables(6, "x");
-  std::cout << x1 << std::endl;
+  std::stringstream msg_buff3;
+  msg_buff1 << x1 << std::endl;
+  drake::log()->debug(msg_buff3.str());
   EXPECT_EQ(prog.num_vars(), 18);
   EXPECT_FALSE(math::IsSymmetric(x1));
   std::array<std::string, 6> X_name = {{"X1", "X2", "X3", "X4", "X5", "X6"}};
   auto X2 = prog.AddContinuousVariables<2, 3>(X_name);
-  std::cout << X2 << std::endl;
+  std::stringstream msg_buff4;
+  msg_buff4 << X2 << std::endl;
+  drake::log()->debug(msg_buff4.str());
   static_assert(decltype(X2)::RowsAtCompileTime == 2 &&
                     decltype(X2)::ColsAtCompileTime == 3,
                 "should be a static matrix of type 2 x 3");
