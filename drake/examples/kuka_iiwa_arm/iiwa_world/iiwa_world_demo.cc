@@ -8,7 +8,10 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_world_sim_builder.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_diagram_factory.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
+#include "drake/lcm/drake_lcm.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
@@ -24,7 +27,7 @@ namespace {
 
 int DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
-  auto iiwa_world = std::make_unique<IiwaWorldSimBuilder<double>>();
+  auto iiwa_world = std::make_unique<WorldSimTreeBuilder<double>>();
 
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
@@ -41,10 +44,6 @@ int DoMain() {
   iiwa_world->AddFixedModelInstance("table", Eigen::Vector3d::Zero() /* xyz */,
                                     Eigen::Vector3d::Zero() /* rpy */);
   iiwa_world->AddGround();
-
-  iiwa_world->SetPenetrationContactParameters(4500 /* penetration_stiffness */,
-                                              1.0 /* penetration_damping */,
-                                              1.0 /* contact friction */);
 
   // The `z` coordinate of the top of the table in the world frame.
   // The quantity 0.736 is the `z` coordinate of the frame associated with the
@@ -66,30 +65,23 @@ int DoMain() {
   iiwa_world->AddFloatingModelInstance("cylinder", kCylinder2Base);
   iiwa_world->AddFloatingModelInstance("cuboid", kBoxBase);
 
-  // Sets up a builder for the demo.
-  std::unique_ptr<drake::systems::DiagramBuilder<double>> demo_builder{
-      std::make_unique<drake::systems::DiagramBuilder<double>>()};
+  lcm::DrakeLcm lcm;
 
-  auto iiwa_plant_diagram =
-      demo_builder->template AddSystem(iiwa_world->Build());
+  systems::RigidBodyPlant<double>* plant{nullptr};
 
-  // Instantiates a constant source that outputs a vector of zeros.
-  VectorX<double> constant_value(iiwa_world->GetPlantInputSize());
-  constant_value.setZero();
+  auto plant_visualizer_diagram = BuildPlantAndVisualizerDiagram(
+      iiwa_world->Build(), 4500 /* penetration_stiffness */,
+      1.0 /* penetration_damping */, 1.0 /* contact friction */, &lcm, &plant);
 
-  auto const_source_ =
-      demo_builder->template AddSystem<systems::ConstantVectorSource<double>>(
-          constant_value);
-
-  // Cascades the constant source to the iiwa plant diagram. This effectively
-  // results in the robot being uncontrolled.
-  demo_builder->Cascade(*const_source_, *iiwa_plant_diagram);
-
-  auto demo_diagram = demo_builder->Build();
+  auto demo_diagram =
+      BuildConstantSourceToPlantDiagram(std::move(plant_visualizer_diagram));
 
   auto simulator = std::make_unique<systems::Simulator<double>>(*demo_diagram);
 
+  SetZeroConfiguration(simulator.get(), demo_diagram.get());
+
   simulator->Initialize();
+
   simulator->StepTo(FLAGS_simulation_sec);
 
   return 0;
