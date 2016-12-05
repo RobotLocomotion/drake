@@ -1,11 +1,10 @@
-#include <memory>
+#include "drake/multibody/rigid_body_tree.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
-#include "drake/multibody/rigid_body_tree.h"
 
 // This tests the functionality for classifying geometry in a RigidBodyTree
 // as "anchored".  It confirms that the DrakeCollision::Element exhibits the
@@ -21,6 +20,8 @@ namespace {
 
 using drake::parsers::sdf::AddModelInstancesFromSdfFile;
 using drake::parsers::urdf::AddModelInstanceFromUrdfFile;
+using Eigen::Isometry3d;
+using Eigen::Vector3d;
 
 // Utility function for asserting that a body's collision elements are marked as
 // static.
@@ -148,6 +149,21 @@ GTEST_TEST(UrdfAnchoredGeometry, LinkedToFloatdIsNotAnchored) {
   ExpectAnchored(body, 1, false);
   body = tree.FindBody("fixed_body");
   ExpectAnchored(body, 1, false);
+}
+
+
+
+// Tests the case where collision elements are explicitly added to the world.
+// Those elements *should* be marked anchored.
+GTEST_TEST(ByHandAnchoredGeometry, WorldCollisionElementIsAnchored) {
+  RigidBodyTree<double> tree;
+  RigidBody<double>& world = tree.world();
+  DrakeShapes::Box geom(Vector3d(1.0, 1.0, 1.0));
+  DrakeCollision::Element element(geom, Isometry3d::Identity(), &world);
+  tree.addCollisionElement(element, world, "rigid_body");
+  tree.compile();
+
+  ExpectAnchored(&world, 1, true);
 }
 }  // namespace
 }  // namespace rigid_body_tree
