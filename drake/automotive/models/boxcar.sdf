@@ -1,9 +1,10 @@
-<sdf version='1.6'>
-  <model name='boxcar'>
-    <link name='box_shape'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <model name="boxcar">
+    <link name="box_shape">
+      <pose frame="">0 0 0 0 -0 0</pose>
       <inertial>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose frame="">0 0 0 0 -0 0</pose>
         <mass>14.28</mass>
         <inertia>
           <ixx>0</ixx>
