@@ -102,9 +102,10 @@ template <typename T>
 int AutomotiveSimulator<T>::AddSdfModel(
     const std::string& sdf_filename,
     const SimpleCarToEulerFloatingJoint<T>* coord_transform) {
-  const parsers::ModelInstanceIdTable table =
-      parsers::sdf::AddModelInstancesFromSdfFileInWorldFrame(
-          sdf_filename, kRollPitchYaw, rigid_body_tree_.get());
+  const PackageMap package_map;
+  const ModelInstanceIdTable table =
+      AddModelInstancesFromSdfFileInWorldFrame(
+          sdf_filename, package_map, kRollPitchYaw, rigid_body_tree_.get());
 
   // TODO(liang.fok): Add support for SDF files containing more than one model.
   DRAKE_DEMAND(table.size() == 1);

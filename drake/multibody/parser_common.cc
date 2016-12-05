@@ -16,6 +16,78 @@ using drake::multibody::joints::kFixed;
 using drake::multibody::joints::kRollPitchYaw;
 using drake::multibody::joints::kQuaternion;
 
+
+namespace {
+// Searches for key @package in @package_map. If the key exists, this saves the
+// associated value in the string pointed to by @package_path and then returns
+// true. It returns false otherwise.
+bool GetPackagePath(const string& package,
+    const map<string, string>& package_map, string* package_path) {
+  // my own quick and dirty implementation of the rospack algorithm (based on my
+  // matlab version in rospack.m)
+  auto iter = package_map.find(package);
+  if (iter != package_map.end()) {
+    *package_path = iter->second;
+    return true;
+  } else {
+    drake::log()->warn("Warning: Couldn't find package '{}' in the supplied "
+                       "package path.", package);
+    return false;
+  }
+}
+}  // anonymous namespace
+
+string ResolveFilename(const string& filename,
+                       const map<string, string>& package_map,
+                       const string& root_dir) {
+  spruce::path mesh_filename_s;
+  spruce::path raw_filename_s(filename);
+
+  auto split_filename = raw_filename_s.split();
+
+  if (split_filename.front() == "package:") {
+    string package_path_string;
+    if (GetPackagePath(split_filename.at(2), package_map,
+        &package_path_string)) {
+      spruce::path package_path_s = spruce::path(package_path_string);
+      mesh_filename_s = package_path_s;
+
+      auto split_raw = raw_filename_s.split();
+      for (int i = 1; i < static_cast<int>(split_raw.size()) - 2; ++i) {
+        mesh_filename_s.append(split_raw.at(i + 2));
+      }
+    } else {
+      drake::log()->warn("Mesh '{}' could not be resolved and will be ignored "
+                         "by Drake. If you don't want it to be ignored, please "
+                         "include it in the package map.", filename);
+      return string();
+    }
+  } else {
+    std::string normalized_root_dir = spruce::path(root_dir).getStr();
+
+    // if root_dir is a relative path then convert it to absolute
+    bool dirIsRelative =
+        !(normalized_root_dir.size() >= 1 && normalized_root_dir[0] == '/');
+    if (dirIsRelative) {
+      mesh_filename_s = spruce::path();
+      mesh_filename_s.setAsCurrent();
+      mesh_filename_s.append(normalized_root_dir);
+    } else {
+      mesh_filename_s = spruce::path(normalized_root_dir);
+    }
+
+    mesh_filename_s.append(filename);
+  }
+  if (!mesh_filename_s.exists()) {
+    drake::log()->warn("File '{}' could not be found.",
+                       mesh_filename_s.getStr());
+    drake::log()->warn("Mesh '{}' could not be resolved and will be ignored by "
+                       "Drake.", filename);
+    return string();
+  }
+  return mesh_filename_s.getStr();
+}
+
 int AddFloatingJoint(
     const FloatingBaseType floating_base_type,
     const std::vector<int>& body_indices,

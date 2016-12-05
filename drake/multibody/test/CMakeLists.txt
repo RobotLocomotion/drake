@@ -1,6 +1,10 @@
 # RigidBodyTree unit tests.
 drake_add_cc_test(test_kinematics_cache_checks)
-target_link_libraries(test_kinematics_cache_checks drakeRBM)
+target_link_libraries(test_kinematics_cache_checks
+    # TODO(liang.fok) Remove this once the examples-dependency layering
+    # violation is resolved.
+    drakeExamplesCommon
+    drakeRBM)
 
 add_executable(benchmark_rigid_body_tree benchmark_rigid_body_tree.cc)
 target_link_libraries(benchmark_rigid_body_tree drakeRBM)
@@ -28,7 +32,12 @@ target_link_libraries(urdf_manipulator_dynamics_test drakeRBM)
 # Inverse kinematics unit tests.
 macro(add_ik_cpp)
   add_executable(${ARGV} ${ARGV}.cc)
-  target_link_libraries(${ARGV} drakeRigidBodyConstraint drakeIK)
+  target_link_libraries(${ARGV}
+      # TODO(liang.fok) Remove this once the examples-dependency layering
+      # violation is resolved.
+      drakeExamplesCommon
+      drakeRigidBodyConstraint
+      drakeIK)
   drake_add_test(NAME ${ARGV} WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND ${ARGV})
 endmacro()
 

@@ -3,12 +3,14 @@
 #include <iostream>
 
 #include "drake/common/drake_path.h"
+#include "drake/examples/examples_package_map.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/robot_state_decoder_system.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -39,8 +41,11 @@ void controller_loop() {
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   auto robot = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      urdf, multibody::joints::kRollPitchYaw, robot.get());
+  parsers::PackageMap package_map;
+  AddExamplePackages(&package_map);
+  parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
+      urdf, package_map, multibody::joints::kRollPitchYaw,
+      nullptr /* weld to frame */, robot.get());
 
   DiagramBuilder<double> builder;
 

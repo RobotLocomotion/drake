@@ -6,8 +6,10 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
+#include "drake/examples/examples_package_map.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -22,9 +24,12 @@ using drake::GetDrakePath;
 
 GTEST_TEST(testIKtraj, testIKtraj) {
   auto model = std::make_unique<RigidBodyTree<double>>();
-  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+  drake::parsers::PackageMap package_map;
+  drake::examples::AddExamplePackages(&package_map);
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
       GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
-      drake::multibody::joints::kRollPitchYaw, model.get());
+      package_map, drake::multibody::joints::kRollPitchYaw,
+      nullptr /* weld to frame */, model.get());
 
   int r_hand{};
   int pelvis{};

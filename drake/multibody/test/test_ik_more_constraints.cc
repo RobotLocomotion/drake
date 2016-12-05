@@ -9,9 +9,11 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/examples/examples_package_map.h"
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -54,9 +56,12 @@ void findJointAndInsert(const RigidBodyTree<double>& model,
 
 GTEST_TEST(testIKMoreConstraints, IKMoreConstraints) {
   auto model = std::make_unique<RigidBodyTree<double>>();
-  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      "examples/Atlas/urdf/atlas_minimal_contact.urdf",
-      multibody::joints::kRollPitchYaw, model.get());
+  drake::parsers::PackageMap package_map;
+  drake::examples::AddExamplePackages(&package_map);
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
+      "examples/Atlas/urdf/atlas_minimal_contact.urdf", package_map,
+      multibody::joints::kRollPitchYaw, nullptr /* weld to frame */,
+      model.get());
 
   Vector2d tspan;
   tspan << 0, 1;

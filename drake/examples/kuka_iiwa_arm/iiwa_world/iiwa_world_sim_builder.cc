@@ -44,6 +44,26 @@ using std::string;
 using std::unique_ptr;
 
 namespace drake {
+
+using lcm::DrakeLcm;
+using multibody::AddFlatTerrainToWorld;
+using multibody::joints::FloatingBaseType;
+using multibody::joints::kFixed;
+using multibody::joints::kQuaternion;
+using parsers::ModelInstanceIdTable;
+using parsers::PackageMap;
+using parsers::sdf::AddModelInstancesFromSdfFile;
+using parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages;
+using systems::ConstantVectorSource;
+using systems::Context;
+using systems::ContinuousState;
+using systems::Diagram;
+using systems::DiagramBuilder;
+using systems::DrakeVisualizer;
+using systems::RigidBodyPlant;
+using systems::Simulator;
+using systems::VectorBase;
+
 namespace examples {
 namespace kuka_iiwa_arm {
 
@@ -96,9 +116,9 @@ int IiwaWorldSimBuilder<T>::AddModelInstanceToFrame(
   DRAKE_DEMAND(extension == "urdf" || extension == "sdf");
 
   if (extension == "urdf") {
-    table = drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + model_map_[model_name], floating_base_type,
-        weld_to_frame, rigid_body_tree_.get());
+    table = AddModelInstanceFromUrdfFileSearchingInRosPackages(
+        GetDrakePath() + model_map_[model_name], package_map,
+        floating_base_type, weld_to_frame, rigid_body_tree_.get());
 
   } else if (extension == "sdf") {
     table = drake::parsers::sdf::AddModelInstancesFromSdfFile(

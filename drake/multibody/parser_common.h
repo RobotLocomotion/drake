@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+#include <string>
 #include <vector>
 
 #include "drake/multibody/rigid_body_frame.h"

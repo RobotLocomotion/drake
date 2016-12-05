@@ -1,3 +1,16 @@
+# Defines a shared library for use by all examples.
+add_library_with_exports(LIB_NAME drakeExamplesCommon SOURCE_FILES
+    examples_package_map.cc)
+target_link_libraries(drakeExamplesCommon
+    drakeRBM)
+drake_install_libraries(drakeExamplesCommon)
+drake_install_headers(
+    examples_package_map.h)
+drake_install_pkg_config_file(drake-examples-common
+    TARGET drakeExamplesCommon
+    LIBS -ldrakeExamplesCommon
+    REQUIRES drake-common)
+
 drake_add_matlab_test(NAME examples/CubicPolynomialExample.findFixedPointTest OPTIONAL snopt COMMAND CubicPolynomialExample.findFixedPointTest)
 drake_add_matlab_test(NAME examples/CubicPolynomialExample.animate COMMAND CubicPolynomialExample.animate)
 drake_add_matlab_test(NAME examples/CubicPolynomialExample.sosExample REQUIRES mosek spotless COMMAND CubicPolynomialExample.sosExample)

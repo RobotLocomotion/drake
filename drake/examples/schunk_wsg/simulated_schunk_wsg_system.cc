@@ -11,6 +11,7 @@ template<typename T>
 std::unique_ptr<drake::systems::RigidBodyPlant<T>>
 CreateSimulatedSchunkWsgSystem() {
   auto rigid_body_tree = std::make_unique<RigidBodyTree<T>>();
+  const PackageMap package_map;
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
       drake::GetDrakePath() +
       "/examples/schunk_wsg/models/schunk_wsg_50.sdf",

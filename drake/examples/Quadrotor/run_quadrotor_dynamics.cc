@@ -14,6 +14,13 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 
 namespace drake {
+
+using multibody::joints::kFixed;
+using multibody::joints::kRollPitchYaw;
+using parsers::PackageMap;
+using parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages;
+using parsers::sdf::AddModelInstancesFromSdfFile;
+
 namespace examples {
 namespace quadrotor {
 namespace {
@@ -27,14 +34,14 @@ class Quadrotor : public systems::Diagram<T> {
     this->set_name("Quadrotor");
 
     auto tree = std::make_unique<RigidBodyTree<T>>();
-
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+    const PackageMap package_map;
+    AddModelInstanceFromUrdfFileSearchingInRosPackages(
         drake::GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
-        multibody::joints::kRollPitchYaw, nullptr, tree.get());
+        package_map, kRollPitchYaw, nullptr /* weld to frame */, tree.get());
 
     drake::parsers::sdf::AddModelInstancesFromSdfFile(
         drake::GetDrakePath() + "/examples/Quadrotor/warehouse.sdf",
-        multibody::joints::kFixed, nullptr, tree.get());
+        package_map, kFixed, nullptr /* weld to frame */, tree.get());
 
     drake::multibody::AddFlatTerrainToWorld(tree.get());
 
