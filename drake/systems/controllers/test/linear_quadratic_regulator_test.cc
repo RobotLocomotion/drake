@@ -85,7 +85,7 @@ GTEST_TEST(TestLQR, DoubleIntegrator) {
                               tol, MatrixCompareType::absolute));
 
   // A different cost function with the same Q and R, and an extra N = [1; 0]
-  systems::LinearQuadraticRegulartorResult result =
+  systems::LinearQuadraticRegulatorResult result =
       systems::LinearQuadraticRegulator(A, B, Q, R, Eigen::Vector2d(1, 0));
 
   K = Eigen::Vector2d(1, 1);
