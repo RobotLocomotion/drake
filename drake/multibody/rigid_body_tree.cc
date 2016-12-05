@@ -489,7 +489,8 @@ void RigidBodyTree<T>::updateDynamicCollisionElements(
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody<T>& body = **it;
     if (body.has_parent_body()) {
-      updateCollisionElements(body, cache.getElement(body).transform_to_world);
+      updateCollisionElements(
+          body, cache.get_element(body.get_id()).transform_to_world);
     }
   }
   collision_model_->updateModel();
@@ -778,10 +779,12 @@ RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
     if (pair.elementA->CanCollideWith(pair.elementB)) {
       // Get bodies' transforms.
       const RigidBody<T>& bodyA = *pair.elementA->get_body();
-      const Isometry3d& TA = cache.getElement(bodyA).transform_to_world;
+      const Isometry3d& TA =
+          cache.get_element(bodyA.get_id()).transform_to_world;
 
       const RigidBody<T>& bodyB = *pair.elementB->get_body();
-      const Isometry3d& TB = cache.getElement(bodyB).transform_to_world;
+      const Isometry3d& TB =
+          cache.get_element(bodyB.get_id()).transform_to_world;
 
       // Transform to bodies' frames.
       // Note:
@@ -1486,7 +1489,7 @@ TwistMatrix<Scalar> RigidBodyTree<T>::geometricJacobian(
   for (size_t i = 0; i < kinematic_path.joint_path.size(); ++i) {
     body_index = kinematic_path.joint_path[i];
     RigidBody<T>& body = *bodies[body_index];
-    const auto& element = cache.getElement(body);
+    const auto& element = cache.get_element(body.get_id());
     const DrakeJoint& joint = body.getJoint();
     int ncols_block =
         in_terms_of_qdot ? joint.get_num_positions() :
@@ -1535,9 +1538,9 @@ TwistVector<Scalar> RigidBodyTree<T>::geometricJacobianDotTimesV(
   int end_effector_body_ind =
       parseBodyOrFrameID(end_effector_body_or_frame_ind);
 
-  const auto& base_element = cache.getElement(*bodies[base_body_ind]);
+  const auto& base_element = cache.get_element(base_body_ind);
   const auto& end_effector_element =
-      cache.getElement(*bodies[end_effector_body_ind]);
+      cache.get_element(end_effector_body_ind);
 
   ret = end_effector_element.motion_subspace_in_world_dot_times_v -
       base_element.motion_subspace_in_world_dot_times_v;
@@ -1560,8 +1563,8 @@ TwistVector<Scalar> RigidBodyTree<T>::relativeTwist(
   int world = 0;
   auto Tr = relativeTransform(cache, expressed_in_body_or_frame_ind, world);
 
-  const auto& base_element = cache.getElement(*bodies[base_ind]);
-  const auto& body_element = cache.getElement(*bodies[body_ind]);
+  const auto& base_element = cache.get_element(base_ind);
+  const auto& body_element = cache.get_element(body_ind);
   TwistVector<Scalar> relative_twist_in_world =
       body_element.twist_in_world - base_element.twist_in_world;
   return transformSpatialMotion(Tr, relative_twist_in_world);
@@ -1609,8 +1612,8 @@ Transform<Scalar, 3, Isometry> RigidBodyTree<T>::relativeTransform(
   Transform<Scalar, 3, Isometry> Tbody_frame;
   int body_ind = parseBodyOrFrameID(body_or_frame_ind, &Tbody_frame);
 
-  const auto& body_element = cache.getElement(*bodies[body_ind]);
-  const auto& base_element = cache.getElement(*bodies[base_ind]);
+  const auto& body_element = cache.get_element(body_ind);
+  const auto& base_element = cache.get_element(base_ind);
 
   Transform<Scalar, 3, Isometry> Tbaseframe_to_world =
       base_element.transform_to_world * Tbase_frame;
