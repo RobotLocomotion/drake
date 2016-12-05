@@ -92,8 +92,6 @@ class DecisionVariableScalar {
 
   friend class MathematicalProgram;
 
-  friend std::ostream& operator<<(std::ostream& os,
-                                  const DecisionVariableScalar& var);
 
  private:
   /*
@@ -115,6 +113,12 @@ class DecisionVariableScalar {
   double* value_;
   size_t index_;
 };
+
+/**
+ * @relates DecisionVariableScalar.
+ */
+std::ostream& operator<<(std::ostream& os,
+                                const DecisionVariableScalar& var);
 
 struct DecisionVariableScalarHash {
   size_t operator()(const DecisionVariableScalar& var) const;

@@ -671,41 +671,43 @@ class MathematicalProgram {
       size_t rows, const std::vector<std::string>& names);
 
   /**
+   * @brief Adds a runtime sized symmetric matrix as decision variables.
    * Adds a symmetric matrix as decision variables to this MathematicalProgram.
    * The optimization will only use the stacked columns of the
    * lower triangular part of the symmetric matrix as decision variables.
    * @param name The name of the matrix. It is only used the for user to
-   * understand the optimization program. The default name is "symmetric", and
+   * understand the optimization program. The default name is "Symmetric", and
    * each variable will be named as
    * <pre>
-   * symmetric(0, 0)     symmetric(1, 0)     ... symmetric(rows-1, 0)
-   * symmetric(1, 0)     symmetric(1, 1)     ... symmetric(rows-1, 1)
+   * Symmetric(0, 0)     Symmetric(1, 0)     ... Symmetric(rows-1, 0)
+   * Symmetric(1, 0)     Symmetric(1, 1)     ... Symmetric(rows-1, 1)
    *            ...
-   * symmetric(rows-1,0) symmetric(rows-1,1) ... symmetric(rows-1, rows-1)
+   * Symmetric(rows-1,0) Symmetric(rows-1,1) ... Symmetric(rows-1, rows-1)
    * </pre>
    * Notice that the (i,j)'th entry and (j,i)'th entry has the same name.
    */
   DecisionVariableMatrixX AddSymmetricContinuousVariables(
-      size_t rows, const std::string& name = "symmetric");
+      size_t rows, const std::string& name = "Symmetric");
 
   /**
+   * @brief Adds a compile time sized symmetric matrix as decision variables.
    * Adds a symmetric matrix as decision variables to this MathematicalProgram.
    * The optimization will only use the stacked columns of the
    * lower triangular part of the symmetric matrix as decision variables.
    * @param name The name of the matrix. It is only used the for user to
-   * understand the optimization program. The default name is "symmetric", and
+   * understand the optimization program. The default name is "Symmetric", and
    * each variable will be named as
    * <pre>
-   * symmetric(0, 0)     symmetric(1, 0)     ... symmetric(rows-1, 0)
-   * symmetric(1, 0)     symmetric(1, 1)     ... symmetric(rows-1, 1)
+   * Symmetric(0, 0)     Symmetric(1, 0)     ... Symmetric(rows-1, 0)
+   * Symmetric(1, 0)     Symmetric(1, 1)     ... Symmetric(rows-1, 1)
    *            ...
-   * symmetric(rows-1,0) symmetric(rows-1,1) ... symmetric(rows-1, rows-1)
+   * Symmetric(rows-1,0) Symmetric(rows-1,1) ... Symmetric(rows-1, rows-1)
    * </pre>
    * Notice that the (i,j)'th entry and (j,i)'th entry has the same name.
    */
   template <int rows>
   DecisionVariableMatrix<rows, rows> AddSymmetricContinuousVariables(
-      const std::string& name = "symmetric") {
+      const std::string& name = "Symmetric") {
     std::array<std::string, rows*(rows + 1) / 2> names;
     int var_count = 0;
     for (int j = 0; j < static_cast<int>(rows); ++j) {
