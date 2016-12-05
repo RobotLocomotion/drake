@@ -34,51 +34,23 @@ namespace systems {
  * step sizes compared to non-symplectic integrators. Multi-body systems
  * are not Hamiltonian even in the absence of externally applied
  * velocity-dependent forces due to the presence of both Coriolis and
- * gyroscopic forces. These forces can be relatively large in reduced 
- * coordinate formulations (like Drake's); we have observed anecdotally that 
- * the greater the magnitude of such velocity-dependent forces, the less
- * effective a symplectic integrator is at preserving momenta. 
- *
- * If we expand `dv/dt(t0)` to `dv/dt(q(t0), v(t0), t0)` it can start to become
- * clear how forces- functions of q(t0) or v(t0)- can be introduced. A 
- * simple example using a spring-mass-damper is:<pre>
- * `dv/dt(t0) =  (-kq(t0) - bv(t0))/m
- * </pre>
- * If we rearrange the top equation above to yield:
- * <pre>
- * v(t0+h) - v(t0) = dv/dt(t0) * h
- * </pre>
- * then it is apparent that any forces computed by `dv/dt(t0)` can be
- * made to be impulsive forces by scaling them by `1/h`. That "feature" allows
- * first-order integrators to easily work around the potential issue of 
- * _inconsistent configurations_ [Baraff 1994] that may arise when modeling 
- * rigid contact with Coulomb friction. An inconsistent configuration occurs 
- * when two rigid bodies contact *without impact*, yet no set of non-impulsive 
- * contact forces can satisfy all problem constraints. The prototypical 
- * inconsistent configuration problem is that of "Painleve's Paradox", which 
- * has been studied in some depth (see [Stewart 2000]). Higher order 
- * integration can conceivably be applied to these problems (using, e.g.,
- * collocation methods), but we are unaware of a working such method in
- * existence. 
+ * gyroscopic forces. 
  *
  * <h4>Association between time stepping and the semi-explicit Euler
  * integrator:</h4>
  * Though many time stepping approaches use the formulations above, these
- * equations do not represent a "time stepping scheme". These equations can
- * be applied from one point in state space to another, assuming smoothness
- * in between, just like any other integrator: (1) a simulator integrates to
- * discontinuities, (2) the state of the ODE/DAE is re-initialized, and (3)
- * integration continues.
+ * equations do not represent a "time stepping scheme". The semi-explicit
+ * Euler integration equations can be applied from one point in state space to 
+ * another, assuming smoothness in between, just like any other integrator: 
+ * (1) a simulator integrates to discontinuities, (2) the state of the ODE/DAE 
+ * is re-initialized, and (3) integration continues.
  *
- * On the other hand, time stepping schemes enforce all constraints at a single
+ * In contrast, time stepping schemes enforce all constraints at a single
  * time in the integration process: though a billiard break may consist of tens
  * of collisions occurring sequentially over a millisecond of time, a time
  * stepping method will treat all of these collisions as occurring
- * simultaneously.
+ * simultaneously. 
  *
- * - [Baraff 1994]     D. Baraff. Fast Contact Force Computation for
- *                       Nonpenetrating Rigid Bodies, Proc. of ACM SIGGRAPH,
- *                       1994.
  * - [Nikravesh 1988]  P. Nikravesh. Computer-Aided Analysis of Mechanical 
  *                       Systems. Prentice Hall. New Jersey, 1988.
  * - [Stewart 2000]    D. Stewart. Rigid-body Dynamics with Friction and 
