@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+  <include file="$(find drake_examples_toyota_hsrb)/launch/passive_demo_sim.launch" />
+  <include file="$(find drake_examples_toyota_hsrb)/launch/passive_demo_vis.launch" />
+</launch>

@@ -57,6 +57,16 @@ cc_test(
 )
 
 cc_test(
+    name = "matrix_util_test",
+    size = "small",
+    srcs = ["matrix_util_test.cc"],
+    deps = DEPS + [
+        "//drake/common:symbolic",
+        "//drake/math:matrix_util",
+    ],
+)
+
+cc_test(
     name = "normalize_vector_test",
     size = "small",
     srcs = ["normalize_vector_test.cc"],

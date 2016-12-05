@@ -19,7 +19,7 @@ cc_toolchain_suite(
 filegroup(
     name = "empty",
     srcs = [],
-) 
+)
 
 cc_toolchain(
     name = "cc-compiler-clang-3.9-linux",
@@ -34,4 +34,3 @@ cc_toolchain(
     strip_files = ":empty",
     supports_param_files = 0,
 )
-

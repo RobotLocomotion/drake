@@ -5,7 +5,7 @@
   <description>
     This package contains unit tests for drake_ros_common.
   </description>
-  <maintainer email="drake-users@mit.edu">Chien-Liang Fok</maintainer>
+  <maintainer email="drake-users@mit.edu">Drake Users</maintainer>
   <license>BSD</license>
 
   <buildtool_depend>catkin</buildtool_depend>
