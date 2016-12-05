@@ -18,6 +18,23 @@ install(FILES
   "${CMAKE_CURRENT_BINARY_DIR}/drake_get_lib_path.m"
   DESTINATION matlab)
 
+find_program(FFMPEG_EXECUTABLE NAMES ffmpeg avconv
+  DOC "Path to the ffmpeg executable")
+
+if(avl_FOUND)
+  # Needs to be in cache to keep MATLAB happy. AVL_EXECUTABLE is set by
+  # find_package(avl).
+  set(AVL_EXECUTABLE "${AVL_EXECUTABLE}"
+    CACHE FILEPATH "Path to the avl executable")
+endif()
+
+if(xfoil_FOUND)
+  # Needs to be in cache to keep MATLAB happy. XFOIL_EXECUTABLE is set by
+  # find_package(xfoil).
+  set(XFOIL_EXECUTABLE "${XFOIL_EXECUTABLE}"
+    CACHE FILEPATH "Path to the xfoil executable")
+endif()
+
 add_subdirectory(util)
 add_subdirectory(solvers)
 add_subdirectory(systems)

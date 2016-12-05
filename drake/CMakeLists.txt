@@ -184,10 +184,6 @@ if(BUILD_TESTING)
   add_subdirectory(regtests)
 endif()
 
-find_program(AVL_EXECUTABLE avl PATHS "${CMAKE_INSTALL_PREFIX}/bin")
-find_program(XFOIL_EXECUTABLE xfoil PATHS "${CMAKE_INSTALL_PREFIX}/bin")
-find_program(FFMPEG_EXECUTABLE ffmpeg)
-
 option(ENABLE_DOCUMENTATION "Enable build target for Doxygen and Sphinx documentation." ON)
 
 if(ENABLE_DOCUMENTATION)
