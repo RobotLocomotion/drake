@@ -70,13 +70,11 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
     DRAKE_ASSERT(position_index_ < tree.get_num_positions());
 
     this->set_name("SchunkWsgTrajectoryGenerator");
-    this->DeclareAbstractInputPort(systems::kContinuousSampling);
+    this->DeclareAbstractInputPort();
     this->DeclareInputPort(
         systems::kVectorValued,
-        tree.get_num_positions() + tree.get_num_velocities(),
-        systems::kContinuousSampling);
-    this->DeclareOutputPort(systems::kVectorValued, 2,
-                            systems::kContinuousSampling);
+        tree.get_num_positions() + tree.get_num_velocities());
+    this->DeclareOutputPort(systems::kVectorValued, 2);
     // The update period below matches the polling rate from
     // drake-schunk-driver.
     this->DeclareUpdatePeriodSec(0.05);
@@ -244,9 +242,8 @@ class SchunkWsgStatusSender : public systems::LeafSystem<double> {
     this->set_name("SchunkWsgStatusSender");
     this->DeclareInputPort(
         systems::kVectorValued,
-        tree.get_num_positions() + tree.get_num_velocities(),
-        systems::kContinuousSampling);
-    this->DeclareAbstractOutputPort(systems::kContinuousSampling);
+        tree.get_num_positions() + tree.get_num_velocities());
+    this->DeclareAbstractOutputPort();
   }
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
