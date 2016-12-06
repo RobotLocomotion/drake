@@ -90,10 +90,6 @@ class PidController : public Diagram<T> {
   /// of the error signal when the derivative constant is non-zero.
   bool has_any_direct_feedthrough() const override;
 
-  /// Sets @p context to a default state in which the integral of the error
-  /// signal is zero.
-  void SetDefaultState(Context<T>* context) const;
-
   /// Sets the integral of the %PidController to @p value.
   /// @p value must be a column vector of the appropriate size.
   void set_integral_value(Context<T>* context,

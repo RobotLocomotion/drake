@@ -123,16 +123,6 @@ void PidControlledSystem<T>::Initialize(
 template <typename T>
 PidControlledSystem<T>::~PidControlledSystem() {}
 
-template <typename T>
-void PidControlledSystem<T>::SetDefaultState(
-    Context<T>* context) const {
-  Context<T>* controller_context =
-      Diagram<T>::GetMutableSubsystemContext(context, controller_);
-  controller_->set_integral_value(
-      controller_context,
-      VectorX<T>::Zero(plant_->get_input_port(0).get_size()));
-}
-
 template class PidControlledSystem<double>;
 template class PidControlledSystem<AutoDiffXd>;
 
