@@ -18,27 +18,27 @@ const Matrix3<double> HumanoidStatus::kFootToSensorRotationOffset =
     Matrix3<double>(AngleAxis<double>(-M_PI, Vector3<double>::UnitX()));
 
 void HumanoidStatus::Update() {
-  cache_->initialize(position_, velocity_);
-  robot_->doKinematics(*cache_, true);
+  cache_.initialize(position_, velocity_);
+  robot_->doKinematics(cache_, true);
 
-  M_ = robot_->massMatrix(*cache_);
+  M_ = robot_->massMatrix(cache_);
   drake::eigen_aligned_std_unordered_map<RigidBody<double> const*,
                                          drake::TwistVector<double>> f_ext;
-  bias_term_ = robot_->dynamicsBiasTerm(*cache_, f_ext);
+  bias_term_ = robot_->dynamicsBiasTerm(cache_, f_ext);
 
   // com
-  com_ = robot_->centerOfMass(*cache_);
-  J_com_ = robot_->centerOfMassJacobian(*cache_);
-  Jdot_times_v_com_ = robot_->centerOfMassJacobianDotTimesV(*cache_);
+  com_ = robot_->centerOfMass(cache_);
+  J_com_ = robot_->centerOfMassJacobian(cache_);
+  Jdot_times_v_com_ = robot_->centerOfMassJacobianDotTimesV(cache_);
   comd_ = J_com_ * velocity_;
-  centroidal_momentum_matrix_ = robot_->centroidalMomentumMatrix(*cache_);
+  centroidal_momentum_matrix_ = robot_->centroidalMomentumMatrix(cache_);
   centroidal_momentum_matrix_dot_times_v_ =
-      robot_->centroidalMomentumMatrixDotTimesV(*cache_);
+      robot_->centroidalMomentumMatrixDotTimesV(cache_);
   centroidal_momentum_ = centroidal_momentum_matrix_ * velocity_;
 
   // body parts
   for (BodyOfInterest& body_of_interest : bodies_of_interest_)
-    body_of_interest.Update(*robot_, *cache_);
+    body_of_interest.Update(*robot_, cache_);
 
   // ft sensor
   for (int i = 0; i < 2; ++i) {

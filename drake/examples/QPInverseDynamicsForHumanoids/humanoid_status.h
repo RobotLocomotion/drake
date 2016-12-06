@@ -98,7 +98,7 @@ class HumanoidStatus {
    */
   explicit HumanoidStatus(const RigidBodyTree<double>& robot)
       : robot_(&robot),
-        cache_(robot_->CreateKinematicsCache()),
+        cache_(*robot_->CreateKinematicsCache()),
         // TODO(siyuan.feng): The names of the links are hard coded for
         // Valkyrie, and they should be specified in some separate config file.
         bodies_of_interest_{
@@ -238,7 +238,7 @@ class HumanoidStatus {
 
   // Getters
   inline const RigidBodyTree<double>& robot() const { return *robot_; }
-  inline const KinematicsCache<double>& cache() const { return *cache_; }
+  inline const KinematicsCache<double>& cache() const { return cache_; }
   inline const std::unordered_map<std::string, int>& body_name_to_id() const {
     return body_name_to_id_;
   }
@@ -344,7 +344,7 @@ class HumanoidStatus {
 
  private:
   const RigidBodyTree<double>* robot_;
-  std::unique_ptr<KinematicsCache<double>> cache_;
+  KinematicsCache<double> cache_;
 
   // Nominal position for the robot.
   // TODO(siyuan.feng): should read this from the model file eventually.
