@@ -27,7 +27,7 @@ void QuadraticConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
   y.resize(num_constraints());
   y = .5 * x.transpose() * Q_.cast<TaylorVarXd>() * x +
       b_.cast<TaylorVarXd>().transpose() * x;
-};
+}
 
 QuadraticConstraint& QuadraticConstraint::operator=(QuadraticConstraint&& rhs) {
   Constraint::operator=(std::move(rhs));
@@ -117,14 +117,16 @@ void LinearConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
                             TaylorVecXd& y) const {
   y.resize(num_constraints());
   y = A_.cast<TaylorVarXd>() * x;
-};
+}
 
-LinearEqualityConstraint& LinearEqualityConstraint::operator=(LinearEqualityConstraint&& rhs) {
+LinearEqualityConstraint& LinearEqualityConstraint::operator=(
+    LinearEqualityConstraint&& rhs) {
   LinearConstraint::operator=(std::move(rhs));
   return *this;
 }
 
-BoundingBoxConstraint& BoundingBoxConstraint::operator=(BoundingBoxConstraint&& rhs) {
+BoundingBoxConstraint& BoundingBoxConstraint::operator=(
+    BoundingBoxConstraint&& rhs) {
   LinearConstraint::operator=(std::move(rhs));
   return *this;
 }
@@ -140,7 +142,8 @@ void BoundingBoxConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
   y = x;
 }
 
-LinearComplementarityConstraint& LinearComplementarityConstraint::operator=(LinearComplementarityConstraint&& rhs) {
+LinearComplementarityConstraint& LinearComplementarityConstraint::operator=(
+    LinearComplementarityConstraint&& rhs) {
   Constraint::operator=(std::move(rhs));
   M_ = std::move(rhs.M_);
   q_ = std::move(rhs.q_);
@@ -157,9 +160,10 @@ void LinearComplementarityConstraint::Eval(
     const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const {
   y.resize(num_constraints());
   y = (M_.cast<TaylorVarXd>() * x) + q_.cast<TaylorVarXd>();
-};
+}
 
-PositiveSemidefiniteConstraint& PositiveSemidefiniteConstraint::operator=(PositiveSemidefiniteConstraint&& rhs) {
+PositiveSemidefiniteConstraint& PositiveSemidefiniteConstraint::operator=(
+    PositiveSemidefiniteConstraint&& rhs) {
   Constraint::operator=(std::move(rhs));
   return *this;
 }

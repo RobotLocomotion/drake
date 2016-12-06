@@ -19,21 +19,28 @@ namespace solvers {
 namespace {
 // This function is used to return a temporary object, so that we
 // can test move constructor.
-template<typename T>
+template <typename T>
 T pipe(T constraint) {
   return constraint;
 }
 
 // Tests if the copied and moved constraints behaves the same as the original
 // constraint.
-// is_copyable is true if the constraint can be constructed using T(const T& rhs).
+// is_copyable is true if the constraint can be constructed using T(const T&
+// rhs).
 // is_movable is true if the constraint can be constructed using T(T&& rhs).
-// is_copy_assignable is true if T can be copy-assigned from an lvalue expression.
-// is_move_assignable is true if T can be move-assigned from an rvalue expression.
-template<typename T>
-void TestMovableCopyableAssignableFun(const T &constraint,
-                                      const Eigen::Ref<const Eigen::VectorXd> x, bool is_copyable, bool is_movable, bool is_copy_assignable, bool is_move_assignable) {
-  static_assert(std::is_base_of<Constraint, T>::value, "T should be a Constraint type");
+// is_copy_assignable is true if T can be copy-assigned from an lvalue
+// expression.
+// is_move_assignable is true if T can be move-assigned from an rvalue
+// expression.
+template <typename T>
+void TestMovableCopyableAssignableFun(const T& constraint,
+                                      const Eigen::Ref<const Eigen::VectorXd> x,
+                                      bool is_copyable, bool is_movable,
+                                      bool is_copy_assignable,
+                                      bool is_move_assignable) {
+  static_assert(std::is_base_of<Constraint, T>::value,
+                "T should be a Constraint type");
   std::vector<T> constraints;
   if (is_copyable) {
     EXPECT_TRUE(std::is_copy_constructible<T>::value);
@@ -73,36 +80,52 @@ void TestMovableCopyableAssignableFun(const T &constraint,
 }
 
 GTEST_TEST(TestConstraint, TestMovableCopyable) {
-  QuadraticConstraint quadratic_constraint(Eigen::Matrix2d::Identity(), Eigen::Vector2d::Ones(), -1, 1);
-  TestMovableCopyableAssignableFun(quadratic_constraint,
-                                   Eigen::Vector2d(1.2, 0.2), true, true, true, true);
+  QuadraticConstraint quadratic_constraint(Eigen::Matrix2d::Identity(),
+                                           Eigen::Vector2d::Ones(), -1, 1);
+  TestMovableCopyableAssignableFun(
+      quadratic_constraint, Eigen::Vector2d(1.2, 0.2), true, true, true, true);
   LorentzConeConstraint lorentz_cone_constraint;
   TestMovableCopyableAssignableFun(lorentz_cone_constraint,
-                                   Eigen::Vector3d(1.2, 0.3, 0.3), true, true, true, true);
+                                   Eigen::Vector3d(1.2, 0.3, 0.3), true, true,
+                                   true, true);
   RotatedLorentzConeConstraint rotated_lorentz_cone_constraint;
   TestMovableCopyableAssignableFun(rotated_lorentz_cone_constraint,
-                                   Eigen::Vector4d(2.0, 3.0, 1.2, 0.3), true, true, true, true);
+                                   Eigen::Vector4d(2.0, 3.0, 1.2, 0.3), true,
+                                   true, true, true);
   Polynomiald x("x");
   std::vector<Polynomiald::VarType> var_mapping = {x.GetSimpleVariable()};
-  PolynomialConstraint polynomial_constraint(VectorXPoly::Constant(1, x), var_mapping, Vector1d::Constant(2), Vector1d::Constant(2));
-  TestMovableCopyableAssignableFun(polynomial_constraint, Vector1d::Constant(1), true, true, false, false);
-  LinearConstraint linear_constraint(Eigen::RowVector2d(1, 2), Vector1d(0), Vector1d(1));
-  TestMovableCopyableAssignableFun(linear_constraint,
-                                   Eigen::Vector2d(2, 3), true, true, true, true);
-  LinearEqualityConstraint linear_equality_constraint(Eigen::RowVector2d(1, 2), Vector1d(0));
+  PolynomialConstraint polynomial_constraint(VectorXPoly::Constant(1, x),
+                                             var_mapping, Vector1d::Constant(2),
+                                             Vector1d::Constant(2));
+  TestMovableCopyableAssignableFun(polynomial_constraint, Vector1d::Constant(1),
+                                   true, true, false, false);
+  LinearConstraint linear_constraint(Eigen::RowVector2d(1, 2), Vector1d(0),
+                                     Vector1d(1));
+  TestMovableCopyableAssignableFun(linear_constraint, Eigen::Vector2d(2, 3),
+                                   true, true, true, true);
+  LinearEqualityConstraint linear_equality_constraint(Eigen::RowVector2d(1, 2),
+                                                      Vector1d(0));
   TestMovableCopyableAssignableFun(linear_equality_constraint,
-                                   Eigen::Vector2d(2, 3), true, true, true, true);
-  BoundingBoxConstraint bounding_box_constraint(Eigen::Vector2d(0, 1), Eigen::Vector2d(1, 2));
+                                   Eigen::Vector2d(2, 3), true, true, true,
+                                   true);
+  BoundingBoxConstraint bounding_box_constraint(Eigen::Vector2d(0, 1),
+                                                Eigen::Vector2d(1, 2));
   TestMovableCopyableAssignableFun(bounding_box_constraint,
-                                   Eigen::Vector2d(0.5, 1.5), true, true, true, true);
-  LinearComplementarityConstraint linear_complementarity_constraint(Eigen::Matrix2d::Identity(), Eigen::Vector2d::Ones());
+                                   Eigen::Vector2d(0.5, 1.5), true, true, true,
+                                   true);
+  LinearComplementarityConstraint linear_complementarity_constraint(
+      Eigen::Matrix2d::Identity(), Eigen::Vector2d::Ones());
   TestMovableCopyableAssignableFun(linear_complementarity_constraint,
-                                   Eigen::Vector2d(2, 3), true, true, true, true);
+                                   Eigen::Vector2d(2, 3), true, true, true,
+                                   true);
   PositiveSemidefiniteConstraint positive_semidefinite_constraint(2);
   TestMovableCopyableAssignableFun(positive_semidefinite_constraint,
-                                   Eigen::Vector4d(1, 0, 0, 1), true, true, true, true);
-  LinearMatrixInequalityConstraint linear_matrix_inequality_constraint({Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Ones()});
-  TestMovableCopyableAssignableFun(linear_matrix_inequality_constraint, Vector1d(1), true, true, false, false);
+                                   Eigen::Vector4d(1, 0, 0, 1), true, true,
+                                   true, true);
+  LinearMatrixInequalityConstraint linear_matrix_inequality_constraint(
+      {Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Ones()});
+  TestMovableCopyableAssignableFun(linear_matrix_inequality_constraint,
+                                   Vector1d(1), true, true, false, false);
 }
 
 // Tests if the Lorentz Cone constraint is imposed correctly.
