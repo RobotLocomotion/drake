@@ -1,7 +1,5 @@
 # -*- python -*-
-
-# This file contains rules for the Bazel build system.
-# See http://bazel.io/ .
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
 
@@ -103,7 +101,7 @@ cc_test(
     name = "drake_visualizer_test",
     size = "small",
     srcs = ["test/drake_visualizer_test.cc"],
-    data = ["//drake/multibody:test_models"],
+    data = ["//drake/multibody/collision:test_models"],
     linkstatic = 1,
     deps = [
         ":drake_visualizer",
