@@ -7,6 +7,25 @@
 
 namespace drake {
 
+GTEST_TEST(TestLQR, TestException) {
+  Eigen::Matrix2d A;
+  Eigen::Vector2d B;
+
+  Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
+  Eigen::Matrix<double, 1, 1> R;
+  Eigen::Vector2d N = Eigen::Vector2d::Zero();
+  R << 1;
+
+  EXPECT_NO_THROW(systems::LinearQuadraticRegulator(A, B, Q, R, N));
+  EXPECT_NO_THROW(systems::LinearQuadraticRegulator(A, B, Q, R));
+
+  // R is not positive definite, should throw exception.
+  EXPECT_THROW(systems::LinearQuadraticRegulator(
+        A, B, Q, Eigen::Matrix<double, 1, 1>::Zero()), std::runtime_error);
+  EXPECT_THROW(systems::LinearQuadraticRegulator(
+        A, B, Q, Eigen::Matrix<double, 1, 1>::Zero(), N), std::runtime_error);
+}
+
 GTEST_TEST(TestLQR, DoubleIntegrator) {
   // Double integrator dynamics: qddot = u, where q is the position coordinate.
   Eigen::Matrix2d A;
@@ -64,6 +83,15 @@ GTEST_TEST(TestLQR, DoubleIntegrator) {
   EXPECT_TRUE(CompareMatrices(lqr->D(), -K, tol, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(lqr->y0(), Eigen::Matrix<double, 1, 1>::Zero(),
                               tol, MatrixCompareType::absolute));
+
+  // A different cost function with the same Q and R, and an extra N = [1; 0]
+  systems::LinearQuadraticRegulatorResult result =
+      systems::LinearQuadraticRegulator(A, B, Q, R, Eigen::Vector2d(1, 0));
+
+  K = Eigen::Vector2d(1, 1);
+  Eigen::Matrix2d S = Eigen::Matrix2d::Identity();
+  EXPECT_TRUE(CompareMatrices(K, result.K, tol, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(S, result.S, tol, MatrixCompareType::absolute));
 }
 
 }  // namespace drake
