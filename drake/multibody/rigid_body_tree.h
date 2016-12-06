@@ -221,7 +221,7 @@ class RigidBodyTree {
   /// RigidBodyTree for which a KinematicsCache needs to be created.
   /// @returns The created KinematicsCache.
   //
-  // TODO(amcastro-tri): Remove this method once older pieces of code such as in
+  // TODO(amcastro-tri): Remove this method once older pieces of code such as
   // KinematicsCacheHelper are updated to use a RigidBodyTree to manage cache
   // creation.
   static KinematicsCache<T>
