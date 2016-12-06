@@ -51,7 +51,7 @@ class IntegratorBase {
      */
     kReachedZeroCrossing = 2,
     /**
-     * Indicates that integration terminated at an update time.
+     * Indicates that integration terminated at a update time.
      */
     kReachedUpdateTime = 3,
     /**

@@ -68,12 +68,12 @@ std::pair<bool, T> RungeKutta3Integrator<T>::DoStepOnceAtMost(const T& max_dt) {
     this->get_mutable_interval_start_state() =
         context.get_continuous_state_vector().CopyToVector();
     this->DoStepOnceFixedSize(max_dt);
+    return std::make_pair(true, max_dt);
   } else {
     this->StepErrorControlled(max_dt, derivs0_.get());
+    const T& dt = this->get_previous_integration_step_size();
+    return std::make_pair(dt == max_dt, dt);
   }
-
-  const T& dt = this->get_previous_integration_step_size();
-  return std::make_pair(dt == max_dt, dt);
 }
 
 template <class T>

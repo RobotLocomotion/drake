@@ -25,23 +25,37 @@ struct DiscreteEvent {
   typedef std::function<void(const Context<T>&)> PublishCallback;
   typedef std::function<void(const Context<T>&, DifferenceState<T>*)>
   UpdateCallback;
+  typedef std::function<void(const Context<T>&)> UpdateUnrestrictedCallback;
 
   enum ActionType {
-    kUnknownAction = 0,  // A default value that causes the handler to abort.
-    kPublishAction = 1,  // On a publish action, state does not change.
-    kUpdateAction = 2,   // On an update action, discrete state may change.
+    // A default value that causes the handler to abort.
+    kUnknownAction = 0,
+
+    // On a publish action, state does not change.
+    kPublishAction = 1,
+
+    // On an update action, discrete state may change.
+    kUpdateAction = 2,
+
+    // On an update action, the state may change arbitrarily.
+    kUpdateUnrestrictedAction = 3,
   };
 
   /// The type of action the system must take in response to the event.
   ActionType action{kUnknownAction};
 
   /// An optional callback, supplied by the recipient, to carry out a
-  /// kPublishAction. If nullptr, Publish will be used.
+  /// kPublishAction. If nullptr, Publish() will be used.
   PublishCallback do_publish{nullptr};
 
   /// An optional callback, supplied by the recipient, to carry out a
-  /// kUpdateAction. If nullptr, DoEvalDifferenceUpdates will be used.
+  /// kUpdateAction. If nullptr, DoEvalDifferenceUpdates() will be used.
   UpdateCallback do_update{nullptr};
+
+  /// An optional callback, supplied by the recipient, to carry out a
+  /// kUpdateUnrestrictedAction. If nullptr, DoUpdateUnrestricted() will be
+  /// used.
+  UpdateUnrestrictedCallback do_update_unrestricted{nullptr};
 };
 
 /// A token that identifies the next sample time at which a System must
@@ -209,7 +223,7 @@ class System {
 
   /// This method is called to update discrete variables in the @p context
   /// because the given @p event has arrived.  Dispatches to
-  /// DoEvalDifferenceUpdates by default, or to `event.do_update` if provided.
+  /// DoEvalDifferenceUpdates() by default, or to `event.do_update` if provided.
   void EvalDifferenceUpdates(const Context<T>& context,
                              const DiscreteEvent<T>& event,
                              DifferenceState<T>* difference_state) const {
@@ -219,6 +233,20 @@ class System {
       DoEvalDifferenceUpdates(context, difference_state);
     } else {
       event.do_update(context, difference_state);
+    }
+  }
+
+  /// This method is called to update *any* state variables in the @p context
+  /// because the given @p event has arrived. Dispatches to
+  /// DoUpdateUnrestricted() by default, or to `event.do_unrestricted_update`
+  /// if provided.
+  virtual void UpdateUnrestricted(Context<T>& context,
+                                  const DiscreteEvent<T>& event) const {
+    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUpdateUnrestrictedAction);
+    if (event.do_update_unrestricted == nullptr) {
+      DoUpdateUnrestricted(context);
+    } else {
+      event.do_update_unrestricted(context);
     }
   }
 
@@ -583,6 +611,15 @@ class System {
   /// context later.
   virtual void DoEvalDifferenceUpdates(
       const Context<T>& context, DifferenceState<T>* difference_state) const {}
+
+  /// Updates the @p state *in an unrestricted fashion* on unrestricted update
+  /// events. "Unrestricted updates" place no restrictions on the state
+  /// variables that can be altered: continuous, discrete, and modal
+  /// variables are all modifiable. Unrestricted updates should be avoided,
+  /// if possible; discrete variables can be modified using
+  /// EvalDifferenceUpdates() and continuous variables are modified in the
+  /// course of the simulation process (through Simulator::StepTo()).
+  virtual void DoUpdateUnrestricted(Context<T>& context) const {}
 
   /// Computes the next time at which this System must perform a discrete
   /// action.

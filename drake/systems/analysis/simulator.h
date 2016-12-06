@@ -397,6 +397,10 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     if (sample_time_hit) {
       for (const DiscreteEvent<T>& event : update_actions.events) {
         switch (event.action) {
+          case DiscreteEvent<T>::kUpdateUnrestrictedAction: {
+            system_.UpdateUnrestricted(*context_, event);
+            break;
+          }
           case DiscreteEvent<T>::kPublishAction: {
             system_.Publish(*context_, event);
             ++num_publishes_;
@@ -441,7 +445,8 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     T next_update_dt = std::numeric_limits<double>::infinity();
     T next_publish_dt = std::numeric_limits<double>::infinity();
     for (const DiscreteEvent<T>& event : update_actions.events) {
-      if (event.action == DiscreteEvent<T>::kUpdateAction) {
+      if (event.action == DiscreteEvent<T>::kUpdateAction ||
+          event.action == DiscreteEvent<T>::kUpdateUnrestrictedAction) {
         next_update_dt = next_sample_time - step_start_time;
       }
       if (event.action == DiscreteEvent<T>::kPublishAction) {
