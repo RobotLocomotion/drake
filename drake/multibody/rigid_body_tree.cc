@@ -3160,10 +3160,10 @@ template int RigidBodyTree<double>::parseBodyOrFrameID(
 
 // Explicit template instantiations for CreateKinematicsCacheWithType.
 template
-unique_ptr<KinematicsCache<AutoDiffXd>>
+KinematicsCache<AutoDiffXd>
 RigidBodyTree<double>::CreateKinematicsCacheWithType<AutoDiffXd>() const;
 template
-unique_ptr<KinematicsCache<AutoDiffUpTo73d>>
+KinematicsCache<AutoDiffUpTo73d>
 RigidBodyTree<double>::CreateKinematicsCacheWithType<AutoDiffUpTo73d>() const;
 
 // Explicitly instantiates on the most common scalar types.
