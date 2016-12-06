@@ -101,7 +101,7 @@ cc_test(
     name = "drake_visualizer_test",
     size = "small",
     srcs = ["test/drake_visualizer_test.cc"],
-    data = ["//drake/multibody:test_models"],
+    data = ["//drake/multibody/collision:test_models"],
     linkstatic = 1,
     deps = [
         ":drake_visualizer",

@@ -45,8 +45,8 @@ cc_library(
     name = "rigid_body_tree",
     srcs = [
         "kinematics_cache.cc",
-        "parser_model_instance_id_table.cc",
         "parser_common.cc",
+        "parser_model_instance_id_table.cc",
         "parser_sdf.cc",
         "parser_urdf.cc",
         "rigid_body.cc",
@@ -56,14 +56,7 @@ cc_library(
         "rigid_body_tree.cc",
         "rigid_body_tree_contact.cc",
         "xml_util.cc",
-        "collision/drake_collision.cc",
-        "collision/element.cc",
-        "collision/model.cc",
-        "collision/unusable_model.cc",
-    ] + glob([
-        "joints/*.cc",
-        "shapes/*.cc",
-    ]),
+    ],
     hdrs = [
         "force_torque_measurement.h",
         "kinematic_path.h",
@@ -81,21 +74,15 @@ cc_library(
         "rigid_body_loop.h",
         "rigid_body_tree.h",
         "xml_util.h",
-        "collision/drake_collision.h",
-        "collision/element.h",
-        "collision/model.h",
-        "collision/point_pair.h",
-        "collision/unusable_model.h",
-    ] + glob([
-        "joints/*.h",
-        "shapes/*.h",
-    ]),
+    ],
     linkstatic = 1,
     deps = [
         "//drake/common:drake_path",
-        "//drake/common:sorted_vectors_have_intersection",
         "//drake/math:geometric_transform",
         "//drake/math:gradient",
+        "//drake/multibody/collision",
+        "//drake/multibody/joints",
+        "//drake/multibody/shapes",
         "//drake/thirdParty:spruce",
         "//drake/thirdParty:tinydir",
         "//drake/thirdParty:tinyxml2",
@@ -166,17 +153,6 @@ cc_binary(
 cc_binary(
     name = "urdf_manipulator_dynamics_test",
     srcs = ["test/urdf_manipulator_dynamics_test.cc"],
-    linkstatic = 1,
-    deps = [
-        ":rigid_body_tree",
-        "@gtest//:main",
-    ],
-)
-
-cc_test(
-    name = "joint_test",
-    size = "small",
-    srcs = ["joints/test/joint_test.cc"],
     linkstatic = 1,
     deps = [
         ":rigid_body_tree",
@@ -264,9 +240,5 @@ filegroup(
         "test/**/*.sdf",
         "test/**/*.urdf",
         "test/**/*.xml",
-        "collision/test/**/*.obj",
-        "collision/test/**/*.sdf",
-        "collision/test/**/*.urdf",
-        "collision/test/**/*.xml",
     ]),
 )
