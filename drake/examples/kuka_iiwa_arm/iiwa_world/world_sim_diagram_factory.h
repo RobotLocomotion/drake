@@ -33,8 +33,8 @@ std::unique_ptr<systems::Diagram<double>> BuildConstantSourceToPlantDiagram(
 
 /// Sets the zero configuration in a `RigidBodyPlant` underlying an assembled
 /// diagram by accessing the context from the `Simulator`.
-/// The argument @p diagram is to be generated using the
-/// `BuildConstantSourceToPlantDiagram()` method.
+/// The parameter @p diagram is to be generated using
+/// BuildConstantSourceToPlantDiagram().
 /// @see BuildConstantSourceToPlantDiagram
 void SetZeroConfiguration(systems::Simulator<double>* simulator,
                           const systems::Diagram<double>* diagram);
