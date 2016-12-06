@@ -217,7 +217,7 @@ class RigidBodyTree {
   /// corresponding KinematicsCache resides in the input parameter vector
   /// `bodies`.
   ///
-  /// @param bodies A vector of unique pointers to the rigid bodies of a
+  /// @param bodies A vector of unique pointers to the rigid bodies of a given
   /// RigidBodyTree for which a KinematicsCache needs to be created.
   /// @returns The created KinematicsCache.
   //
