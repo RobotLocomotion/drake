@@ -300,8 +300,8 @@ class Builder {
  private:
   class XYZPointFuzzyOrder {
    public:
-    explicit XYZPointFuzzyOrder(const double linear_tolerance, double x)
-        : lin_tol_(linear_tolerance), x_(x) {}
+    explicit XYZPointFuzzyOrder(const double linear_tolerance)
+        : lin_tol_(linear_tolerance) {}
 
     bool operator()(const XYZPoint& lhs, const XYZPoint& rhs) const {
       switch (fuzzy_compare(rhs.xy.x, lhs.xy.x)) {
@@ -328,13 +328,16 @@ class Builder {
 
    private:
     int fuzzy_compare(const double a, const double b) const {
-      if (a < (b - lin_tol_)) { return -1; }
-      else if (a > (b + lin_tol_)) { return 1; }
-      else { return 0; }
+      if (a < (b - lin_tol_)) {
+        return -1;
+      } else if (a > (b + lin_tol_)) {
+        return 1;
+      } else {
+        return 0;
+      }
     }
 
     const double lin_tol_{};
-    const double x_;
   };
 
   struct DefaultBranch {
