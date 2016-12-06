@@ -30,7 +30,7 @@ void ExpectAnchored(RigidBody<double>* body, size_t collision_element_num,
   EXPECT_EQ(collision_element_num, body->get_collision_element_ids().size());
   for (auto itr = body->collision_elements_begin();
        itr != body->collision_elements_end(); ++itr) {
-    EXPECT_EQ(is_anchored, (*itr)->is_anchored());
+    EXPECT_EQ((*itr)->is_anchored(), is_anchored);
     // TODO(SeanCurtis-TRI): It would be good to confirm that the underlying
     // collision object (btCollisionObject) has the appropriate
     // collision_filter_group based on this: e.g., StaticFilter for anchored,
@@ -50,6 +50,7 @@ GTEST_TEST(SdfAnchoredGeometry, ParentlessLinkFixedToWorld) {
   auto body = tree.FindBody("parentless_body");
   ExpectAnchored(body, 1, true);
 }
+
 
 // Confirms that parentless links are which are *floated* on world as a parse
 // setting are *not* marked as anchored from SDF file.
@@ -93,7 +94,6 @@ GTEST_TEST(SdfAnchoredGeometry, LinkedToFloatdIsNotAnchored) {
   body = tree.FindBody("fixed_body");
   ExpectAnchored(body, 1, false);
 }
-
 
 // Confirms that parentless links are which are *fixed* to world as a parse
 // setting are marked as anchored from URDF file.
@@ -165,6 +165,7 @@ GTEST_TEST(ByHandAnchoredGeometry, WorldCollisionElementIsAnchored) {
 
   ExpectAnchored(&world, 1, true);
 }
+
 }  // namespace
 }  // namespace rigid_body_tree
 }  // namespace test

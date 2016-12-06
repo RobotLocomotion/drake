@@ -3,6 +3,17 @@
   <model name='simple_anchored'>
     <pose>0 0 0 0 0 0</pose>
     <link name='parentless_body'>
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1</iyy>
+          <iyz>0</iyz>
+          <izz>1</izz>
+        </inertia>
+      </inertial>
       <pose>1 0 0 0 0 0</pose>
       <collision name='anchor_box'>
         <pose>0 0 1 0 0 0</pose>
