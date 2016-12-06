@@ -108,12 +108,6 @@ PidController<T>::get_control_output_port() const {
 }
 
 template <typename T>
-void PidController<T>::SetDefaultState(Context<T>* context) const {
-  const int size = Diagram<T>::get_input_port(0).get_size();
-  set_integral_value(context, VectorX<T>::Zero(size));
-}
-
-template <typename T>
 void PidController<T>::set_integral_value(
     Context<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
   Context<T>* integrator_context =

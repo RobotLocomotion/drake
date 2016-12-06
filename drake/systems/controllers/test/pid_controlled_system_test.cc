@@ -126,7 +126,6 @@ void DoPidControlledSystemTest(std::unique_ptr<TestPlant> plant,
 
   systems::Context<double>* controller_context =
       diagram->GetMutableSubsystemContext(context.get(), controller);
-  controller->SetDefaultState(controller_context);
   systems::Context<double>* plant_context =
       controller->GetMutableSubsystemContext(
           controller_context, controller->plant());

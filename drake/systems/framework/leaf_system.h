@@ -63,7 +63,8 @@ class LeafSystem : public System<T> {
     return std::unique_ptr<Context<T>>(context.release());
   }
 
-  // Default implementation: set all numeric state variables to zero.
+  /// Default implementation: set all continuous and difference state variables
+  /// to zero.  It makes no attempt to set abstract state values.
   void SetDefaultState(Context<T>* context) const override {
     ContinuousState<T>* continuous_state =
         context->get_mutable_continuous_state();
@@ -74,7 +75,8 @@ class LeafSystem : public System<T> {
     }
   }
 
-  // Default implementation: set all numeric parameters to one.
+  /// Default implementation: set all numeric parameters to one.  It makes no
+  /// attempt to set abstract parameter values.
   void SetDefaultParameters(Context<T>* context) const override {
     systems::LeafContext<T>* leaf_context =
         dynamic_cast<systems::LeafContext<T>*>(context);
