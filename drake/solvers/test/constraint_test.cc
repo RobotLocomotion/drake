@@ -42,25 +42,26 @@ void TestMovableCopyableAssignableFun(const T& constraint,
   static_assert(std::is_base_of<Constraint, T>::value,
                 "T should be a Constraint type");
   std::vector<T> constraints;
+  EXPECT_EQ(std::is_copy_constructible<T>::value, is_copyable);
   if (is_copyable) {
-    EXPECT_TRUE(std::is_copy_constructible<T>::value);
     T constraint_copied(constraint);
     constraints.push_back(constraint_copied);
   }
+
+  EXPECT_EQ(std::is_move_constructible<T>::value, is_movable);
   if (is_movable) {
-    EXPECT_TRUE(std::is_move_constructible<T>::value);
     T constraint_moved(pipe(constraint));
     constraints.push_back(constraint_moved);
   }
 
+  EXPECT_EQ(std::is_copy_assignable<T>::value, is_copy_assignable);
   if (is_copy_assignable) {
-    EXPECT_TRUE(std::is_copy_assignable<T>::value);
     T constraint_assigned_copy = constraint;
     constraints.push_back(constraint_assigned_copy);
   }
 
+  EXPECT_EQ(std::is_move_assignable<T>::value, is_move_assignable);
   if (is_move_assignable) {
-    EXPECT_TRUE(std::is_move_assignable<T>::value);
     T constraint_assigned_move = pipe(constraint);
     constraints.push_back(constraint_assigned_move);
   }
