@@ -182,12 +182,40 @@ class RigidBodyTree {
 
   void drawKinematicTree(std::string graphviz_dotfile_filename) const;
 
+  /// Creates a KinematicsCache to perform computations with this RigidBodyTree.
+  /// The returned KinematicsCache is consistently templated on the scalar type
+  /// for this RigidBodyTree instance.
   std::unique_ptr<KinematicsCache<T>> CreateKinematicsCache() const;
 
+  /// A helper template method used to create a KinematicsCache templated on
+  /// `CacheT` from a RigidBodyTree templated on `T`, with `CacheT` and `T`
+  /// not necessarily the same scalar type.
+  /// This method is particularly useful in mex files where only a reference
+  /// to a `RigidBodyTree<double>` is available to create kinematics caches
+  /// on different scalar types.
+  ///
+  /// Users should not call this method but instead create KinematicsCache
+  /// objects with RigidBodyTree:CreateKinematicsCache().
+  ///
+  /// @tparam CacheT The scalar type for the returned KinematicsCache.
+  /// @returns A KinematicsCache templated on `CacheT` that can be used for
+  /// computations on this RigidBodyTree with methods instantiated on `CacheT`.
   template <typename CacheT>
   std::unique_ptr<KinematicsCache<CacheT>>
   CreateKinematicsCacheWithType() const;
 
+  /// Creates a KinematicsCache given a vector of rigid bodies.
+  /// This method is static since all the information to create the
+  /// corresponding KinematicsCache resides in the input parameter vector
+  /// `bodies`.
+  ///
+  /// @param bodies A vector of unique pointers to the rigid bodies of a
+  /// RigidBodyTree for which a KinematicsCache needs to be created.
+  /// @returns A unique pointer to the created KinematicsCache.
+  //
+  // TODO(amcastro-tri): Remove this method once older pieces of code such as
+  // KinematicsCacheHelper are updated to use a RigidBodyTree to manage cache
+  // creation.
   static std::unique_ptr<KinematicsCache<T>>
   CreateKinematicsCacheFromBodiesVector(
       const std::vector<std::unique_ptr<RigidBody<T>>>& bodies);
