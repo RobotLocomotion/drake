@@ -187,6 +187,7 @@ class RigidBodyTree {
   /// for this RigidBodyTree instance.
   /// Aborts if this RigidBodyTree was not previously initialized with a call
   /// to RigidBodyTree::compile().
+  /// @returns The created KinematicsCache.
   KinematicsCache<T> CreateKinematicsCache() const;
 
   /// A helper template method used to create a KinematicsCache templated on
@@ -218,7 +219,7 @@ class RigidBodyTree {
   ///
   /// @param bodies A vector of unique pointers to the rigid bodies of a
   /// RigidBodyTree for which a KinematicsCache needs to be created.
-  /// @returns A unique pointer to the created KinematicsCache.
+  /// @returns The created KinematicsCache.
   //
   // TODO(amcastro-tri): Remove this method once older pieces of code such as
   // KinematicsCacheHelper are updated to use a RigidBodyTree to manage cache
