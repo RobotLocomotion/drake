@@ -245,7 +245,7 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
   auto rg = std::make_unique<RoadGeometry>(
       id, linear_tolerance_, angular_tolerance_);
   std::map<XYZPoint, BranchPoint*, XYZPointFuzzyOrder> bp_map(
-      XYZPointFuzzyOrder(linear_tolerance_, 1.0));
+      (XYZPointFuzzyOrder(linear_tolerance_)));
   std::map<const Connection*, Lane*> lane_map;
   std::set<const Connection*> remaining_connections;
 
@@ -283,7 +283,7 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
 
   // Make sure we didn't screw up!
   std::vector<std::string> failures = rg->CheckInvariants();
-  for (const auto& s: failures) {
+  for (const auto& s : failures) {
     std::cerr << s << std::endl;
   }
   DRAKE_DEMAND(failures.size() == 0);
