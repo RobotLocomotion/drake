@@ -2,14 +2,22 @@
 
 #include "drake/math/roll_pitch_yaw.h"
 
+
+RigidBodyFrame::RigidBodyFrame(
+    int body_id, const Eigen::Isometry3d& X_BF) : body_id_(body_id),
+                                                  transform_to_body_(X_BF) {}
+
 RigidBodyFrame::RigidBodyFrame(const std::string& name, RigidBody<double>* body,
                  const Eigen::Isometry3d& transform_to_body)
-      : name_(name), body_(body), transform_to_body_(transform_to_body) {}
+      : name_(name), body_(body), transform_to_body_(transform_to_body) {
+  if (body_) body_id_ = body_->get_body_index();
+}
 
 RigidBodyFrame::RigidBodyFrame(const std::string& name, RigidBody<double>* body,
                                const Eigen::Vector3d& xyz,
                                const Eigen::Vector3d& rpy)
     : name_(name), body_(body) {
+  if (body_) body_id_ = body_->get_body_index();
   transform_to_body_.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
 }
 
@@ -37,6 +45,10 @@ Eigen::Isometry3d* RigidBodyFrame::get_mutable_transform_to_body() {
 
 int RigidBodyFrame::get_frame_index() const {
   return frame_index_;
+}
+
+int RigidBodyFrame::get_body_id() const {
+  return body_id_;
 }
 
 void RigidBodyFrame::set_name(const std::string& name) {

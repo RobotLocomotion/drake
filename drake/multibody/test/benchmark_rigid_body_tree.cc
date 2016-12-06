@@ -151,25 +151,27 @@ void TestScenario1(const RigidBodyTree<double>& model) {
   body_fixed_points.insert(
       make_pair(head_id, Matrix3Xd::Random(3, npoints_head)));
 
-  KinematicsCache<double> cache_double(model.bodies);
-  KinematicsCache<AutoDiffFixedMaxSize> cache_autodiff_fixed(model.bodies);
-  KinematicsCache<AutoDiffDynamicSize> cache_autodiff_dynamic(model.bodies);
+  auto cache_double = model.CreateKinematicsCache();
+  auto cache_autodiff_fixed =
+      model.CreateKinematicsCacheWithType<AutoDiffFixedMaxSize>();
+  auto cache_autodiff_dynamic =
+      model.CreateKinematicsCacheWithType<AutoDiffDynamicSize>();
 
   cout << "scenario 1:" << endl;
   cout << "no gradients: "
-       << MeasureExecutionTime(Scenario1<double>, model, cache_double,
+       << MeasureExecutionTime(Scenario1<double>, model, *cache_double,
                                qs_double, body_fixed_points) /
               static_cast<double>(ntests)
        << " s" << endl;
   cout << "autodiff fixed max size: "
        << MeasureExecutionTime(Scenario1<AutoDiffFixedMaxSize>, model,
-                               cache_autodiff_fixed, qs_autodiff_fixed,
+                               *cache_autodiff_fixed, qs_autodiff_fixed,
                                body_fixed_points) /
               static_cast<double>(ntests)
        << " s" << endl;
   cout << "autodiff dynamic size: "
        << MeasureExecutionTime(Scenario1<AutoDiffDynamicSize>, model,
-                               cache_autodiff_dynamic, qs_autodiff_dynamic,
+                               *cache_autodiff_dynamic, qs_autodiff_dynamic,
                                body_fixed_points) /
               static_cast<double>(ntests)
        << " s" << endl;
@@ -214,24 +216,26 @@ void TestScenario2(const RigidBodyTree<double>& model) {
         make_pair(q_autodiff_dynamic, v_autodiff_dynamic));
   }
 
-  KinematicsCache<double> cache_double(model.bodies);
-  KinematicsCache<AutoDiffFixedMaxSize> cache_autodiff_fixed(model.bodies);
-  KinematicsCache<AutoDiffDynamicSize> cache_autodiff_dynamic(model.bodies);
+  auto cache_double = model.CreateKinematicsCache();
+  auto cache_autodiff_fixed =
+      model.CreateKinematicsCacheWithType<AutoDiffFixedMaxSize>();
+  auto cache_autodiff_dynamic =
+      model.CreateKinematicsCacheWithType<AutoDiffDynamicSize>();
 
   cout << "scenario 2:" << endl;
   cout << "no gradients: "
-       << MeasureExecutionTime(Scenario2<double>, model, cache_double,
+       << MeasureExecutionTime(Scenario2<double>, model, *cache_double,
                                states_double) /
               static_cast<double>(ntests)
        << " s" << endl;
   cout << "autodiff fixed max size: "
        << MeasureExecutionTime(Scenario2<AutoDiffFixedMaxSize>, model,
-                               cache_autodiff_fixed, states_autodiff_fixed) /
+                               *cache_autodiff_fixed, states_autodiff_fixed) /
               static_cast<double>(ntests)
        << " s" << endl;
   cout << "autodiff dynamic size: "
        << MeasureExecutionTime(Scenario2<AutoDiffDynamicSize>, model,
-                               cache_autodiff_dynamic,
+                               *cache_autodiff_dynamic,
                                states_autodiff_dynamic) /
               static_cast<double>(ntests)
        << " s" << endl;

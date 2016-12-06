@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <utility>
@@ -230,6 +231,16 @@ class RigidBodyTree {
   std::string getStateName(int state_num) const;
 
   void drawKinematicTree(std::string graphviz_dotfile_filename) const;
+
+  std::unique_ptr<KinematicsCache<T>> CreateKinematicsCache() const;
+
+  template <typename CacheT>
+  std::unique_ptr<KinematicsCache<CacheT>>
+  CreateKinematicsCacheWithType() const;
+
+  static std::unique_ptr<KinematicsCache<T>>
+  CreateKinematicsCacheFromBodiesVector(
+      const std::vector<std::unique_ptr<RigidBody<T>>>& bodies);
 
   /// Initializes a `KinematicsCache` with the given configuration @p q,
   /// computes the kinematics, and returns the cache.
@@ -624,6 +635,10 @@ class RigidBodyTree {
   Eigen::Transform<Scalar, drake::kSpaceDimension, Eigen::Isometry>
   relativeTransform(const KinematicsCache<Scalar>& cache, int base_or_frame_ind,
                     int body_or_frame_ind) const;
+
+  drake::Isometry3<T> RelativeTransformBetweenFrames(
+      const KinematicsCache<T>& cache,
+      const RigidBodyFrame& frameA, const RigidBodyFrame& frameB) const;
 
   /** computeContactJacobians
    * @brief Computes the jacobian for many points in the format currently used

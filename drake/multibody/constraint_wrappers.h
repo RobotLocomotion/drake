@@ -33,7 +33,7 @@ class KinematicsCacheHelper {
  private:
   Eigen::VectorXd last_q_;
   const RigidBodyTree<double>* last_tree_;
-  KinematicsCache<Scalar> kinsol_;
+  std::unique_ptr<KinematicsCache<Scalar>> kinsol_;
 };
 
 class SingleTimeKinematicConstraintWrapper : public drake::solvers::Constraint {

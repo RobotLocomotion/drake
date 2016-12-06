@@ -14,9 +14,9 @@
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/joints/drake_joint.h"
-#include "drake/multibody/rigid_body.h"
 
 template <typename T>
 class KinematicsCacheElement {
@@ -63,6 +63,9 @@ class KinematicsCacheElement {
  public:
   KinematicsCacheElement(int num_positions_joint, int num_velocities_joint);
 
+  int get_num_positions() const { return v_to_qdot.rows(); }
+  int get_num_velocities() const { return v_to_qdot.cols(); }
+
  public:
 #ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -72,21 +75,10 @@ class KinematicsCacheElement {
 template <typename T>
 class KinematicsCache {
  private:
-  typedef KinematicsCacheElement<T> KinematicsCacheElementT;
-  typedef std::pair<RigidBody<double> const* const, KinematicsCacheElementT>
-      RigidBodyKCacheElementPair;
-  typedef Eigen::aligned_allocator<RigidBodyKCacheElementPair>
-      RigidBodyKCacheElementPairAllocator;
-  typedef std::unordered_map<RigidBody<double> const*, KinematicsCacheElementT,
-                             std::hash<RigidBody<double> const*>,
-                             std::equal_to<RigidBody<double> const*>,
-                             RigidBodyKCacheElementPairAllocator>
-      RigidBodyToKCacheElementMap;
-
-  RigidBodyToKCacheElementMap elements;
-  std::vector<RigidBody<double> const*> bodies;
-  int num_positions;
-  int num_velocities;
+  std::vector<KinematicsCacheElement<T>,
+              Eigen::aligned_allocator<KinematicsCacheElement<T>>> elements_;
+  int num_positions_;
+  int num_velocities_;
   Eigen::Matrix<T, Eigen::Dynamic, 1> q;
   Eigen::Matrix<T, Eigen::Dynamic, 1> v;
   bool velocity_vector_valid;
@@ -95,28 +87,19 @@ class KinematicsCache {
   bool inertias_cached;
 
  public:
-  explicit KinematicsCache(
-      const std::vector<std::unique_ptr<RigidBody<double>> >& bodies_in);
+  KinematicsCache(int num_positions, int num_velocities);
 
-  KinematicsCacheElement<T>& getElement(const RigidBody<double>& body);
+  void CreateCacheEntry(int num_positions, int num_velocities);
 
-  const KinematicsCacheElement<T>& getElement(
-      const RigidBody<double>& body) const;
+  KinematicsCache(int num_positions, int num_velocities,
+                  const std::vector<int>& num_joint_positions,
+                  const std::vector<int>& num_joint_velocities);
 
-  // TODO(amcastro-tri): This accessor was added to allow
-  // RigidBodyTree::transformVelocityMappingToQDotMapping() and
-  // RigidBodyTree::transformQDotMappingToVelocityMapping() to be static
-  // methods. That is a requirement from velocityToPositionDotMappingmex()
-  // and positionDotToVelocityMappingmex() in rigidBodyTreeMexFunctions which
-  // define a Matlab API not passing the "this" pointer to the RigidBodyTree
-  // model.
-  // This problem will be solved when KinematicsCache works with RigidBody
-  // id's instead of actual RigidBody pointers as handlers to KinematicsCache
-  // entries.
-  // Another solution would be to change the Matlab API to pass "this"
-  // pointer to the RigidBodyTree as it does with any other RigidBodyTree
-  // method.
-  const std::vector<RigidBody<double> const*>& get_bodies() const;
+  /// Returns constant reference to a cach entry for body @p body_id.
+  const KinematicsCacheElement<T>& get_element(int body_id) const;
+
+  /// Returns mutable pointer to a cach entry for body @p body_id.
+  KinematicsCacheElement<T>* get_mutable_element(int body_id);
 
   template <typename Derived>
   void initialize(const Eigen::MatrixBase<Derived>& q_in);
@@ -145,6 +128,8 @@ class KinematicsCache {
 
   void setJdotVCached(bool jdotV_cached_in);
 
+  int get_num_body_entries() const;
+
   int get_num_positions() const;
 
 // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
@@ -163,18 +148,6 @@ class KinematicsCache {
 
  private:
   void invalidate();
-
-  // TODO(amcastro-tri): this method should belong to RigidBodyTree and only be
-  // used on initialization. The RigidBodyTree should have this value stored so
-  // that KinematicsCache can request it when needed. See the KinematicsCache
-  // constructor where this request is made.
-  // See TODO for get_num_velocities.
-  static int get_num_positions(
-      const std::vector<std::unique_ptr<RigidBody<double>> >& bodies);
-
-  // TODO(amcastro-tri): See TODO for get_num_positions.
-  static int get_num_velocities(
-      const std::vector<std::unique_ptr<RigidBody<double>> >& bodies);
 
  public:
 #ifndef SWIG

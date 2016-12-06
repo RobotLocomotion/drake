@@ -29,7 +29,7 @@ class InstantaneousQPController {
         param_sets(param_sets_in),
         rpc(rpc_in),
         use_fast_qp(INSTQP_USE_FASTQP),
-        cache(this->robot->bodies) {
+        cache(*this->robot->CreateKinematicsCache()) {
     initialize();
   }
 
@@ -37,7 +37,7 @@ class InstantaneousQPController {
                             const std::string& control_config_filename)
       : robot(std::move(robot_in)),
         use_fast_qp(INSTQP_USE_FASTQP),
-        cache(this->robot->bodies) {
+        cache(*this->robot->CreateKinematicsCache()) {
     loadConfigurationFromYAML(control_config_filename);
     initialize();
   }
@@ -46,7 +46,7 @@ class InstantaneousQPController {
                             const std::string& control_config_filename)
       : robot(std::make_unique<RigidBodyTree<double>>()),
         use_fast_qp(INSTQP_USE_FASTQP),
-        cache(this->robot->bodies) {
+        cache(*this->robot->CreateKinematicsCache()) {
     drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         urdf_filename, drake::multibody::joints::kRollPitchYaw, robot.get());
     loadConfigurationFromYAML(control_config_filename);
