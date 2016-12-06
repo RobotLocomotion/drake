@@ -196,8 +196,8 @@ class MathematicalProgramSolverInterface {
 };
 
 class MathematicalProgram {
-  /** Binding
-   * @brief A binding on constraint type C is a mapping of the decision
+  /**
+   * A binding on constraint type C is a mapping of the decision
    * variables onto the inputs of C.  This allows the constraint to operate
    * on a vector made up of different elements of the decision variables.
    */
@@ -237,7 +237,7 @@ class MathematicalProgram {
     }
 
     /**
-     * @brief returns true iff the given @p index of the enclosing
+     * Returns true iff the given @p index of the enclosing
      * MathematicalProgram is included in this Binding.*/
     bool ContainsVariableIndex(size_t index) const {
       for (const auto& view : variable_list_.variables()) {
@@ -254,8 +254,8 @@ class MathematicalProgram {
       return variable_list_.size();
     }
 
-    /** WriteThrough()
-     * @brief Writes the elements of @p solution to the bound elements of
+    /**
+     * Writes the elements of @p solution to the bound elements of
      * the @p output vector.
      */
     void WriteThrough(const Eigen::VectorXd& solution,
@@ -671,7 +671,6 @@ class MathematicalProgram {
       size_t rows, const std::vector<std::string>& names);
 
   /**
-   * @brief Adds a runtime sized symmetric matrix as decision variables.
    * Adds a symmetric matrix as decision variables to this MathematicalProgram.
    * The optimization will only use the stacked columns of the
    * lower triangular part of the symmetric matrix as decision variables.
@@ -690,7 +689,6 @@ class MathematicalProgram {
       size_t rows, const std::string& name = "Symmetric");
 
   /**
-   * @brief Adds a compile time sized symmetric matrix as decision variables.
    * Adds a symmetric matrix as decision variables to this MathematicalProgram.
    * The optimization will only use the stacked columns of the
    * lower triangular part of the symmetric matrix as decision variables.
@@ -889,7 +887,7 @@ class MathematicalProgram {
   }
 
   /**
-   * @brief Adds a generic constraint to the program.  This should
+   * Adds a generic constraint to the program.  This should
    * only be used if a more specific type of constraint is not
    * available, as it may require the use of a significantly more
    * expensive solver.
@@ -898,7 +896,7 @@ class MathematicalProgram {
                      const VariableListRef& vars);
 
   /**
-   * @brief Adds linear constraints referencing potentially a subset
+   * Adds linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
    */
   void AddConstraint(std::shared_ptr<LinearConstraint> con,
@@ -966,7 +964,7 @@ class MathematicalProgram {
   }
 
   /**
-   * @brief Adds linear equality constraints referencing potentially a
+   * Adds linear equality constraints referencing potentially a
    * subset of the decision variables (defined in the vars parameter).
    */
   void AddConstraint(std::shared_ptr<LinearEqualityConstraint> con,
@@ -974,7 +972,7 @@ class MathematicalProgram {
 
   /** AddLinearEqualityConstraint
    *
-   * @brief Adds linear equality constraints referencing potentially a subset of
+   * Adds linear equality constraints referencing potentially a subset of
    * the decision variables.
    *
    * Example: to add two equality constraints which only depend on two of the
@@ -1002,7 +1000,7 @@ class MathematicalProgram {
 
   /** AddLinearEqualityConstraint
    *
-   * @brief Adds linear equality constraints to the program for all
+   * Adds linear equality constraints to the program for all
    * (currently existing) variables.
    */
   template <typename DerivedA, typename DerivedB>
@@ -1046,7 +1044,7 @@ class MathematicalProgram {
     return AddLinearEqualityConstraint(a, drake::Vector1d(beq), {variables_});
   }
   /**
-   * @brief Adds bounding box constraints referencing potentially a subset of
+   * Adds bounding box constraints referencing potentially a subset of
    * the decision variables.
    */
   void AddConstraint(std::shared_ptr<BoundingBoxConstraint> con,
@@ -1061,7 +1059,7 @@ class MathematicalProgram {
 
   /** AddBoundingBoxConstraint
    *
-   * @brief Adds bounding box constraints referencing potentially a
+   * Adds bounding box constraints referencing potentially a
    * subset of the decision variables (defined in the vars parameter).
    */
   template <typename DerivedLB, typename DerivedUB>
@@ -1075,7 +1073,7 @@ class MathematicalProgram {
 
   /** AddBoundingBoxConstraint
    *
-   * @brief Adds bounding box constraints to the program for all
+   * Adds bounding box constraints to the program for all
    * (currently existing) variables.
    */
   template <typename DerivedLB, typename DerivedUB>
@@ -1187,9 +1185,8 @@ class MathematicalProgram {
     return AddRotatedLorentzConeConstraint({variables_});
   }
 
-  /** AddLinearComplementarityConstraint
-   *
-   * @brief Adds a linear complementarity constraints referencing a subset of
+  /**
+   * Adds a linear complementarity constraints referencing a subset of
    * the decision variables.
    */
   template <typename DerivedM, typename Derivedq>
@@ -1221,9 +1218,8 @@ class MathematicalProgram {
     return constraint;
   }
 
-  /** AddLinearComplementarityConstraint
-   *
-   * @brief Adds a linear complementarity constraint to the program for all
+  /**
+   * Adds a linear complementarity constraint to the program for all
    * (currently existing) variables.
    */
   template <typename DerivedM, typename Derivedq>
@@ -1233,9 +1229,8 @@ class MathematicalProgram {
     return AddLinearComplementarityConstraint(M, q, {variables_});
   }
 
-  /** AddPolynomialConstraint
-   *
-   * @brief Adds a polynomial constraint to the program referencing a subset
+  /**
+   * Adds a polynomial constraint to the program referencing a subset
    * of the decision variables (defined in the vars parameter).
    */
   std::shared_ptr<Constraint> AddPolynomialConstraint(
@@ -1244,9 +1239,8 @@ class MathematicalProgram {
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
       const VariableListRef& vars);
 
-  /** AddPolynomialConstraint
-   *
-   * @brief Adds a polynomial constraint to the program referencing all of the
+  /**
+   * Adds a polynomial constraint to the program referencing all of the
    * decision variables.
    */
   std::shared_ptr<Constraint> AddPolynomialConstraint(
@@ -1481,9 +1475,8 @@ class MathematicalProgram {
     return linear_matrix_inequality_constraint_;
   }
 
-  /** GetAllCosts
-   *
-   * @brief Getter returning all costs (for now linear costs appended to
+  /**
+   * Getter returning all costs (for now linear costs appended to
    * generic costs, then quadratic costs appended to
    * generic costs).
    */
