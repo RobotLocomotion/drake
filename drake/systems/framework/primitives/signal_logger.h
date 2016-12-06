@@ -1,7 +1,5 @@
 #pragma once
 
-#include <forward_list>
-
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
