@@ -767,10 +767,12 @@ GTEST_TEST(ModelTest, StaticElements) {
 
   // Create collision elements.
   // Flag ball1 and ball4 to be static.
-  Element ball1(sphere); ball1.set_static();
+  Element ball1(sphere);
+  ball1.set_anchored();
   Element ball2(sphere);
   Element ball3(sphere);
-  Element ball4(sphere); ball4.set_static();
+  Element ball4(sphere);
+  ball4.set_anchored();
 
   // Populate the model.
   std::shared_ptr<Model> model = newModel();
@@ -817,7 +819,8 @@ GTEST_TEST(ModelTest, StaticMeshes) {
   // Flag cap_element to be static. If not, Drake will create a convex hull for
   // dynamic collision elements out of the points in the mesh.
   Element sphere_element(sphere);
-  Element cap_element(cap); cap_element.set_static();
+  Element cap_element(cap);
+  cap_element.set_anchored();
 
   // Populate the model.
   std::shared_ptr<Model> model = newModel();

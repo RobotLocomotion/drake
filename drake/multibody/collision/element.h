@@ -79,16 +79,17 @@ class Element : public DrakeShapes::Element {
 
   virtual bool isStatic() const { return false; }
 
-  /** Flags this collision element to be static, i.e. does not move.
-  @see Element::is_static(). **/
-  void set_static() { is_static_ = true;}
+  /** Flags this collision element to be anchored, i.e. it does not move
+   * relative to the world frame.
+  @see Element::is_anchored(). **/
+  void set_anchored() { is_anchored_ = true;}
 
-  /** Returns `true` if the shape does not move, `false` otherwise.
+  /** Returns `true` if the shape does not move relative to the world frame.
 
-  For instance, a terrain commonly is a static collision element. This property
-  could allow the collision dispatcher to perform certain optimizations not
+  For instance, terrain geometry would commonly be anchored. This property
+  allows the collision engine to perform certain optimizations not
   generally possible for moving objects. **/
-  bool is_static() { return is_static_;}
+  bool is_anchored() { return is_anchored_;}
 
   /**
    * Returns true if this element should be checked for collisions
@@ -137,7 +138,7 @@ class Element : public DrakeShapes::Element {
 
  private:
   ElementId id;
-  bool is_static_{false};
+  bool is_anchored_{false};
   const RigidBody<double>* body_{};
 
   // Collision cliques are defined as a set of collision elements that do not
