@@ -67,18 +67,18 @@ void CalculateExactSolution(const double t, const double wxyzInitial[],
 
   // Return results.
   e[0] = e0;
-  eDt[0] = e0Dt;
   e[1] = e1;
-  eDt[1] = e1Dt;
   e[2] = e2;
-  eDt[2] = e2Dt;
   e[3] = e3;
-  eDt[3] = e3Dt;
   w[0] = wx;
-  wDt[0] = wxDt;
   w[1] = wy;
-  wDt[1] = wyDt;
   w[2] = wz;
+  eDt[0] = e0Dt;
+  eDt[1] = e1Dt;
+  eDt[2] = e2Dt;
+  eDt[3] = e3Dt;
+  wDt[0] = wxDt;
+  wDt[1] = wyDt;
   wDt[2] = wzDt;
 }
 
