@@ -9,7 +9,7 @@
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
 #include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/solvers/function.h"
-#include "drake/systems/plants/constraint/direct_collocation_constraint.h"
+#include "drake/systems/trajectory_optimization/direct_collocation.h"
 
 using drake::solvers::detail::VecIn;
 using drake::solvers::detail::VecOut;
@@ -72,7 +72,7 @@ class PendulumFinalCost {
 void AddSwingUpTrajectoryParams(
     int num_time_samples,
     const Eigen::Vector2d& x0, const Eigen::Vector2d& xG,
-    solvers::DircolTrajectoryOptimization* dircol_traj) {
+    systems::DircolTrajectoryOptimization* dircol_traj) {
 
   const int kTorqueLimit = 3;  // Arbitrary, taken from PendulumPlant.m.
   const drake::Vector1d umin(-kTorqueLimit);
@@ -88,10 +88,6 @@ void AddSwingUpTrajectoryParams(
 
   dircol_traj->AddRunningCostFunc(PendulumRunningCost());
   dircol_traj->AddFinalCostFunc(PendulumFinalCost());
-  dircol_traj->AddDynamicConstraint(
-      std::make_shared<
-      drake::systems::System2DirectCollocationConstraint>(
-          std::make_unique<PendulumPlant<AutoDiffXd>>()));
 }
 
 }  // namespace pendulum
