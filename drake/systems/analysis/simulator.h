@@ -398,7 +398,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
       for (const DiscreteEvent<T>& event : update_actions.events) {
         switch (event.action) {
           case DiscreteEvent<T>::kUpdateUnrestrictedAction: {
-            system_.UpdateUnrestricted(*context_, event);
+            system_.UpdateUnrestricted(context_.get(), event);
             break;
           }
           case DiscreteEvent<T>::kPublishAction: {

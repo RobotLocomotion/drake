@@ -25,7 +25,7 @@ struct DiscreteEvent {
   typedef std::function<void(const Context<T>&)> PublishCallback;
   typedef std::function<void(const Context<T>&, DifferenceState<T>*)>
   UpdateCallback;
-  typedef std::function<void(const Context<T>&)> UpdateUnrestrictedCallback;
+  typedef std::function<void(Context<T>*)> UpdateUnrestrictedCallback;
 
   enum ActionType {
     // A default value that causes the handler to abort.
@@ -240,7 +240,7 @@ class System {
   /// because the given @p event has arrived. Dispatches to
   /// DoUpdateUnrestricted() by default, or to `event.do_unrestricted_update`
   /// if provided.
-  virtual void UpdateUnrestricted(Context<T>& context,
+  virtual void UpdateUnrestricted(Context<T>* context,
                                   const DiscreteEvent<T>& event) const {
     DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUpdateUnrestrictedAction);
     if (event.do_update_unrestricted == nullptr) {
@@ -619,7 +619,7 @@ class System {
   /// if possible; discrete variables can be modified using
   /// EvalDifferenceUpdates() and continuous variables are modified in the
   /// course of the simulation process (through Simulator::StepTo()).
-  virtual void DoUpdateUnrestricted(Context<T>& context) const {}
+  virtual void DoUpdateUnrestricted(Context<T>* context) const {}
 
   /// Computes the next time at which this System must perform a discrete
   /// action.
