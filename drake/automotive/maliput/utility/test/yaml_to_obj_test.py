@@ -15,19 +15,21 @@ _DRAKE_PATHS_DIR = os.path.dirname(os.path.dirname(os.path.dirname(_THIS_DIR)))
 
 sys.path.append(_DRAKE_PATHS_DIR)
 
-from drake_paths import DRAKE_DRAKE_BIN_DIR
+from drake_paths import DRAKE_DRAKE_BUILD_DIR
 
 
-class TestYamlLoading(unittest.TestCase):
+class TestYamlObjing(unittest.TestCase):
     def test_yaml_files(self):
-        yaml_dir = os.path.dirname(_THIS_DIR)
-        yaml_files = glob.glob(os.path.join(yaml_dir, '*.yaml'))
-        blacklist = ["tee_intersection"]
+        this_dir = os.path.dirname(_THIS_DIR)
+        yaml_files = glob.glob(os.path.join(this_dir, '../monolane/*.yaml'))
+        blacklist = []
         test_yaml_files = [f for f in yaml_files
                            if not any([b in f for b in blacklist])]
+        assert len(test_yaml_files) > 0
         for yf in test_yaml_files:
             subprocess.check_call([
-                os.path.join(DRAKE_DRAKE_BIN_DIR, "yaml_to_obj"),
+                os.path.join(DRAKE_DRAKE_BUILD_DIR,
+                             "automotive/maliput/utility/yaml_to_obj"),
                 "-yaml_file", yf,
                 "-obj_file", "/dev/null"
             ])
