@@ -46,3 +46,10 @@ pkg_config_package(
     name = "glib",
     modname = "glib-2.0",
 )
+
+new_git_repository(
+    name = "bullet",
+    remote = "https://github.com/RobotLocomotion/bullet3.git",
+    commit = "ae2c4ca0618d55c6a29900aed75b958604149fdb",
+    build_file = "tools/bullet.BUILD",
+)
