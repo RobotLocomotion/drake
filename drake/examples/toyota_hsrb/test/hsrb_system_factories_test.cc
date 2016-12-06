@@ -277,8 +277,6 @@ TEST_F(ToyotaHsrbTests, TestBuildConstantSourceToPlantDiagram) {
 
   std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
 
-  plant_->SetZeroConfiguration(context.get());  // Zeroes the state.
-
   VectorXd desired_state(kNumStates);
   desired_state << VectorXd::Zero(kNumStates);
   desired_state(3) = 1;  // This is the `w` in the quaternion floating DOF.

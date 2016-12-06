@@ -108,7 +108,6 @@ int do_main(int argc, char* argv[]) {
   systems::Context<double>* controller_context =
       diagram->GetMutableSubsystemContext(
           simulator.get_mutable_context(), controller);
-  controller->SetDefaultState(controller_context);
 
   simulator.Initialize();
   simulator.StepTo(kTrajectoryTimeUpperBound);

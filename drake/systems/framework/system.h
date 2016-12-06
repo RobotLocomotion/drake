@@ -158,10 +158,10 @@ class System {
     return context.get_continuous_state()->CopyToVector();
   }
 
-  /// Returns a default context, initialized with the correct
-  /// numbers of concrete input ports and state variables for this System.
-  /// Since input port pointers are not owned by the context, they should
-  /// simply be initialized to nullptr.
+  /// Allocates a context, initialized with the correct numbers of concrete
+  /// input ports and state variables for this System.  Since input port
+  /// pointers are not owned by the context, they should simply be initialized
+  /// to nullptr.
   virtual std::unique_ptr<Context<T>> AllocateContext() const = 0;
 
   /// Assigns default values to all elements of the state.

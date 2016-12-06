@@ -129,7 +129,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// Sets the state in @p context so that generalized positions and velocities
   /// are zero. For quaternion based joints the quaternion is set to be the
   /// identity (or equivalently a zero rotation).
-  void SetZeroConfiguration(Context<T>* context) const {
+  void SetDefaultState(Context<T>* context) const override {
     // Extract a pointer to continuous state from the context.
     DRAKE_DEMAND(context != nullptr);
     ContinuousState<T>* xc = context->get_mutable_continuous_state();

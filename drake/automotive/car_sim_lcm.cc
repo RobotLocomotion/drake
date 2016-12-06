@@ -336,27 +336,6 @@ int main(int argc, char* argv[]) {
 
   Simulator<double> simulator(*diagram);
 
-  // TODO(liangfok): Modify System 2.0 to not require the following
-  // initialization.
-  //
-  // Zeros the state and initializes controller state.
-  systems::Context<double>* controller_context =
-      diagram->GetMutableSubsystemContext(
-          simulator.get_mutable_context(), controller);
-  controller->SetDefaultState(controller_context);
-
-  // TODO(liang.fok): Modify System 2.0 to not require the following
-  // initialization.
-  //
-  // Zeros the rigid body plant's state. This is necessary because it is by
-  // default initialized to a vector a NaN values.
-  RigidBodyPlant<double>* rigid_body_plant =
-      dynamic_cast<RigidBodyPlant<double>*>(controller->plant());
-  Context<double>* plant_context =
-      controller->GetMutableSubsystemContext(controller_context,
-                                             rigid_body_plant);
-  rigid_body_plant->SetZeroConfiguration(plant_context);
-
   simulator.Initialize();
   simulator.StepTo(FLAGS_simulation_sec);
   return 0;

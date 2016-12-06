@@ -89,12 +89,6 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
     builder.BuildInto(this);
   }
 
-  void SetDefaultState(Context<T>* context) const {
-    Context<T>* plant_context =
-        this->GetMutableSubsystemContext(context, plant_);
-    plant_->SetZeroConfiguration(plant_context);
-  }
-
   const RigidBodyPlant<T>& get_rigid_body_plant() {
     return *plant_;
   }
@@ -113,9 +107,6 @@ int main(int argc, char* argv[]) {
 
   KukaIiwaArmDynamicsSim<double> model;
   Simulator<double> simulator(model);
-
-  // Initializes the controller state and system state to be all zero.
-  model.SetDefaultState(simulator.get_mutable_context());
 
   simulator.Initialize();
 
