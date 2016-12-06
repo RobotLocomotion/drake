@@ -172,6 +172,22 @@ cc_test(
     ],
 )
 
+# TODO(jwnimmer-tri) This requires gmock.
+# cc_test(
+#     name = "rbt_collisions_test",
+#     srcs = ["test/rigid_body_tree/rbt_collisions_test.cc"],
+
+cc_test(
+    name = "rigid_body_collision_clique_test",
+    size = "small",
+    srcs = ["test/rigid_body_tree/rigid_body_collision_clique_test.cc"],
+    linkstatic = 1,
+    deps = [
+        ":rigid_body_tree",
+        "@gtest//:main",
+    ],
+)
+
 cc_test(
     name = "rigid_body_constraint_test",
     size = "small",
