@@ -115,6 +115,7 @@ class DecisionVariableScalar {
 };
 
 /**
+ * Prints out the DecisionVariableScalar's name.
  * @relates DecisionVariableScalar.
  */
 std::ostream& operator<<(std::ostream& os,
