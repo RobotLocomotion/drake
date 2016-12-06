@@ -242,6 +242,14 @@ class RigidBody {
   std::map<std::string, std::vector<DrakeCollision::ElementId>>&
     get_mutable_group_to_collision_ids_map();
 
+  /**
+   * Reports if there is a path in this tree from this body to the world where
+   * all joints are *fixed*. This requires that the RigidBody be properly
+   * connected into a RigidBodyTree in that the only RigidBody that doesn't have
+   * a parent body is the world body.  Furthermore, every RigidBody is connected
+   * to its parent body through a valid DrakeJoint.
+   */
+  bool IsRigidlyFixedToWorld() const;
 
   void setCollisionFilter(const DrakeCollision::bitmask& group,
                           const DrakeCollision::bitmask& ignores);
