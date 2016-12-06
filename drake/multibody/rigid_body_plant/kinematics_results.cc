@@ -9,7 +9,7 @@ namespace systems {
 
 template<typename T>
 KinematicsResults<T>::KinematicsResults(const RigidBodyTree<T>* tree) :
-    tree_(tree), kinematics_cache_(*tree_->CreateKinematicsCache()) {
+    tree_(tree), kinematics_cache_(tree_->CreateKinematicsCache()) {
 }
 
 template <typename T>

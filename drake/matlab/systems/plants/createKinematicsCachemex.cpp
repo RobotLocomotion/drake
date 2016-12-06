@@ -17,9 +17,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   } else if (nlhs == 1 && nrhs == 1) {
     RigidBodyTree<double> *model =
         static_cast<RigidBodyTree<double> *>(getDrakeMexPointer(prhs[0]));
-    auto cache = model->CreateKinematicsCache();
+    KinematicsCache<double>* cache =
+        new KinematicsCache<double>(model->CreateKinematicsCache());
     plhs[0] = createDrakeMexPointer(
-        (void *)cache.release(), typeid(KinematicsCache<double>).name(),
+        (void *)cache, typeid(KinematicsCache<double>).name(),
         DrakeMexPointerTypeId<KinematicsCache<double>>::value);
   } else {
     mexErrMsgTxt("couldn't parse input");
