@@ -383,21 +383,6 @@ class RigidBody {
   // TODO(SeanCurtis-TRI): This is no longer necessary.
   void AddCollisionElementsToClique(int clique_id);
 
-  /**
-   * Computes the contact points defined by this body's collision elements.
-   *
-   * @param[in] body The body who's collision elements are searched.
-   *
-   * @param[out] terrain_points Contact points are added to this matrix.
-   *
-   * @param[in] group_name If a group name was given, use it to look up the
-   * subset of collision elements that belong to that collision group.
-   * Otherwise, uses the full set of collision elements that belong to the body.
-   *
-   * @throws std::runtime_error if an invalid group name is given.
-   */
-  void ComputeContactPoints(const std::string& group_name = "");
-
  public:
   friend std::ostream& operator<<(
       std::ostream& out, const RigidBody<double>& b);
