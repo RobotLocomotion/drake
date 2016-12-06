@@ -17,6 +17,9 @@ DEFINE_string(yaml_file, "",
 DEFINE_string(obj_file, "yaml_to_obj.obj",
               "WaveFront OBJ output file"
               " to contain the rendered road surface");
+DEFINE_double(grid_size, 1.,
+              "Size of a grid unit in the rendered mesh covering the"
+              " road surface");
 
 int main(int argc, char* argv[]) {
   std::cerr << "main() !\n";
@@ -31,7 +34,8 @@ int main(int argc, char* argv[]) {
 
 
   std::cerr << "generating obj !\n";
-  drake::maliput::utility::generate_obj(rg.get(), FLAGS_obj_file, 1.);
+  drake::maliput::utility::generate_obj(rg.get(), FLAGS_obj_file,
+                                        FLAGS_grid_size);
 
   return 0;
 }
