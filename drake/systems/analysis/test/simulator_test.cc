@@ -482,7 +482,7 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   // the publish events precede all the eval-derivatives events, for each
   // time step in the simulation.
   for (const auto& log : events) {
-    ASSERT_GE(log.second.size(), 0);
+    ASSERT_GE(log.second.size(), 0u);
     EventType state = log.second[0];
     for (const EventType& event : log.second) {
       ASSERT_TRUE(event >= state);
