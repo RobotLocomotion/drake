@@ -1,5 +1,5 @@
 #pragma once
-
+#include <iostream>
 #include <limits>
 #include <list>
 #include <map>
@@ -33,7 +33,6 @@ namespace solvers {
  * on vdot and f, but are "parameterized" by q and v.
  */
 class Constraint {
-  // TODO(hongkai.dai): Add copyable and movable check.
   void check(size_t num_constraints) {
     static_cast<void>(num_constraints);
     DRAKE_ASSERT(static_cast<size_t>(lower_bound_.size()) == num_constraints &&
@@ -61,7 +60,14 @@ class Constraint {
   template <typename DerivedLB, typename DerivedUB>
   Constraint(size_t num_constraints, Eigen::MatrixBase<DerivedLB> const& lb,
              Eigen::MatrixBase<DerivedUB> const& ub)
-      : lower_bound_(lb), upper_bound_(ub) {
+      : lower_bound_(lb), upper_bound_(ub), description_() {
+    check(num_constraints);
+  }
+
+  template <typename DerivedLB, typename DerivedUB>
+  Constraint(size_t num_constraints, const Eigen::MatrixBase<DerivedLB>& lb,
+             const Eigen::MatrixBase<DerivedUB>& ub,
+             const std::string& description) : lower_bound_(lb), upper_bound_(ub), description_(description) {
     check(num_constraints);
   }
 
@@ -142,17 +148,17 @@ class QuadraticConstraint : public Constraint {
 
   ~QuadraticConstraint() override {}
 
+  QuadraticConstraint(const QuadraticConstraint& rhs) = default;
+
+  QuadraticConstraint& operator=(const QuadraticConstraint& rhs) = default;
+
+  QuadraticConstraint(QuadraticConstraint&& rhs) : Constraint(std::move(rhs)), Q_(rhs.Q()), b_(rhs.b()) {}
+
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
-    y.resize(num_constraints());
-    y = .5 * x.transpose() * Q_ * x + b_.transpose() * x;
-  }
+            Eigen::VectorXd& y) const override;
+
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
-    y.resize(num_constraints());
-    y = .5 * x.transpose() * Q_.cast<TaylorVarXd>() * x +
-        b_.cast<TaylorVarXd>().transpose() * x;
-  };
+            TaylorVecXd& y) const override;
 
   virtual const Eigen::MatrixXd& Q() const { return Q_; }
 
@@ -209,18 +215,10 @@ class LorentzConeConstraint : public Constraint {
                        std::numeric_limits<double>::infinity())) {}
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
-    y.resize(num_constraints());
-    y(0) = x(0);
-    y(1) = pow(x(0), 2) - x.tail(x.size() - 1).squaredNorm();
-  }
+            Eigen::VectorXd& y) const override;
 
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
-    y.resize(num_constraints());
-    y(0) = x(0);
-    y(1) = pow(x(0), 2) - x.tail(x.size() - 1).squaredNorm();
-  }
+            TaylorVecXd& y) const override;
 };
 
 /**
@@ -242,20 +240,10 @@ class RotatedLorentzConeConstraint : public Constraint {
                        std::numeric_limits<double>::infinity())) {}
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
-    y.resize(num_constraints());
-    y(0) = x(0);
-    y(1) = x(1);
-    y(2) = x(0) * x(1) - x.tail(x.size() - 2).squaredNorm();
-  }
+            Eigen::VectorXd& y) const override;
 
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
-    y.resize(num_constraints());
-    y(0) = x(0);
-    y(1) = x(1);
-    y(2) = x(0) * x(1) - x.tail(x.size() - 2).squaredNorm();
-  }
+            TaylorVecXd& y) const override;
 };
 
 /**
@@ -281,28 +269,10 @@ class PolynomialConstraint : public Constraint {
   ~PolynomialConstraint() override {}
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
-    double_evaluation_point_.clear();
-    for (size_t i = 0; i < poly_vars_.size(); i++) {
-      double_evaluation_point_[poly_vars_[i]] = x[i];
-    }
-    y.resize(num_constraints());
-    for (size_t i = 0; i < num_constraints(); i++) {
-      y[i] = polynomials_[i].EvaluateMultivariate(double_evaluation_point_);
-    }
-  }
+            Eigen::VectorXd& y) const override;
 
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
-    taylor_evaluation_point_.clear();
-    for (size_t i = 0; i < poly_vars_.size(); i++) {
-      taylor_evaluation_point_[poly_vars_[i]] = x[i];
-    }
-    y.resize(num_constraints());
-    for (size_t i = 0; i < num_constraints(); i++) {
-      y[i] = polynomials_[i].EvaluateMultivariate(taylor_evaluation_point_);
-    }
-  }
+            TaylorVecXd& y) const override;
 
  private:
   const VectorXPoly polynomials_;
@@ -334,15 +304,10 @@ class LinearConstraint : public Constraint {
   ~LinearConstraint() override {}
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
-    y.resize(num_constraints());
-    y = A_ * x;
-  }
+            Eigen::VectorXd& y) const override;
+
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
-    y.resize(num_constraints());
-    y = A_.cast<TaylorVarXd>() * x;
-  };
+            TaylorVecXd& y) const override;
 
   virtual Eigen::SparseMatrix<double> GetSparseMatrix() const {
     return A_.sparseView();
@@ -429,15 +394,10 @@ class BoundingBoxConstraint : public LinearConstraint {
   ~BoundingBoxConstraint() override {}
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
-    y.resize(num_constraints());
-    y = x;
-  }
+            Eigen::VectorXd& y) const override;
+
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
-    y.resize(num_constraints());
-    y = x;
-  }
+            TaylorVecXd& y) const override;
 };
 
 /**
@@ -463,15 +423,10 @@ class LinearComplementarityConstraint : public Constraint {
 
   /** Return Mx + q (the value of the slack variable). */
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
-    y.resize(num_constraints());
-    y = (M_ * x) + q_;
-  }
+            Eigen::VectorXd& y) const override;
+
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
-    y.resize(num_constraints());
-    y = (M_.cast<TaylorVarXd>() * x) + q_.cast<TaylorVarXd>();
-  };
+            TaylorVecXd& y) const override;
 
   const Eigen::MatrixXd& M() const { return M_; }
   const Eigen::VectorXd& q() const { return q_; }

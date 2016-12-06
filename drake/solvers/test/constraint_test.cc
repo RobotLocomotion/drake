@@ -15,8 +15,18 @@ using Eigen::Vector3d;
 namespace drake {
 namespace solvers {
 namespace {
-GTEST_TEST(TestConstraint, TestMovableCopyable) {
+// This function is used to return a temporary object, so that we
+// can test move constructor.
+template<typename T>
+T pipe(T constraint) {
+  return constraint;
+}
 
+GTEST_TEST(TestConstraint, TestMovableCopyable) {
+  QuadraticConstraint constraint(Eigen::Matrix2d::Identity(), Eigen::Vector2d::Ones(), -1, 1);
+  QuadraticConstraint constraint_copy(constraint);
+  QuadraticConstraint constraint_assign = constraint;
+  QuadraticConstraint constraint_move(pipe(constraint));
 }
 
 // Tests if the Lorentz Cone constraint is imposed correctly.
