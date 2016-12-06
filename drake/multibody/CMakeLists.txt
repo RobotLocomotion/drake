@@ -91,4 +91,7 @@ add_subdirectory(joints)
 add_subdirectory(rigid_body_plant)
 add_subdirectory(rigid_body_system1)
 add_subdirectory(shapes)
-add_subdirectory(test)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
