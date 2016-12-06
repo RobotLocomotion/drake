@@ -351,7 +351,7 @@ bool ParseSdfLink(RigidBodyTree<double>* model, std::string model_name,
   }
 
   model->add_rigid_body(std::move(owned_body));
-  *index = body->get_id();
+  *index = body->get_body_index();
   return true;
 }
 

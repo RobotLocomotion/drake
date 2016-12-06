@@ -10,14 +10,14 @@ RigidBodyFrame::RigidBodyFrame(
 RigidBodyFrame::RigidBodyFrame(const std::string& name, RigidBody<double>* body,
                  const Eigen::Isometry3d& transform_to_body)
       : name_(name), body_(body), transform_to_body_(transform_to_body) {
-  if (body_) body_id_ = body_->get_id();
+  if (body_) body_id_ = body_->get_body_index();
 }
 
 RigidBodyFrame::RigidBodyFrame(const std::string& name, RigidBody<double>* body,
                                const Eigen::Vector3d& xyz,
                                const Eigen::Vector3d& rpy)
     : name_(name), body_(body) {
-  if (body_) body_id_ = body_->get_id();
+  if (body_) body_id_ = body_->get_body_index();
   transform_to_body_.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
 }
 

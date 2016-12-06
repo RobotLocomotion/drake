@@ -471,8 +471,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
   //  as a zero-force contact.
   for (const auto& pair : pairs) {
     if (pair.distance < 0.0) {  // There is contact.
-      int body_a_index = pair.elementA->get_body()->get_id();
-      int body_b_index = pair.elementB->get_body()->get_id();
+      int body_a_index = pair.elementA->get_body()->get_body_index();
+      int body_b_index = pair.elementB->get_body()->get_body_index();
       auto JA = tree_->transformPointsJacobian(kinsol, pair.ptA, body_a_index,
                                                0, false);
       auto JB = tree_->transformPointsJacobian(kinsol, pair.ptB, body_b_index,
@@ -511,12 +511,12 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
         if (contacts != nullptr) {
           Vector3<T> pt_a_world =
               kinsol.get_element(
-                  pair.elementA->get_body()->get_id()).transform_to_world *
-              pair.ptA;
+                  pair.elementA->get_body()->
+                      get_body_index()).transform_to_world * pair.ptA;
           Vector3<T> pt_b_world =
               kinsol.get_element(
-                  pair.elementB->get_body()->get_id()).transform_to_world *
-              pair.ptB;
+                  pair.elementB->get_body()->
+                      get_body_index()).transform_to_world * pair.ptB;
           Vector3<T> point = (pt_a_world + pt_b_world) * 0.5;
 
           ContactInfo<T>& contact_info = contacts->AddContact(
