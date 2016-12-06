@@ -30,7 +30,7 @@ void ExpectAnchored(RigidBody<double>* body, size_t collision_element_num,
   EXPECT_EQ(collision_element_num, body->get_collision_element_ids().size());
   for (auto itr = body->collision_elements_begin();
        itr != body->collision_elements_end(); ++itr) {
-    EXPECT_EQ(is_anchored, (*itr)->is_static());
+    EXPECT_EQ(is_anchored, (*itr)->is_anchored());
     // TODO(SeanCurtis-TRI): It would be good to confirm that the underlying
     // collision object (btCollisionObject) has the appropriate
     // collision_filter_group based on this: e.g., StaticFilter for anchored,
