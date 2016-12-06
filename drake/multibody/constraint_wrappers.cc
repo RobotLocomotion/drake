@@ -6,8 +6,8 @@ namespace plants {
 
 template <typename T>
 KinematicsCacheHelper<T>::KinematicsCacheHelper(
-    const std::vector<std::unique_ptr<RigidBody<T>>>& bodies) {
-  kinsol_ = RigidBodyTree<T>::CreateKinematicsCacheFromBodiesVector(bodies);
+    const std::vector<std::unique_ptr<RigidBody<T>>>& bodies) :
+    kinsol_(RigidBodyTree<T>::CreateKinematicsCacheFromBodiesVector(bodies)) {
 }
 
 template <typename Scalar>
@@ -18,10 +18,10 @@ KinematicsCache<Scalar>& KinematicsCacheHelper<Scalar>::UpdateKinematics(
       (tree != last_tree_)) {
     last_q_ = q;
     last_tree_ = tree;
-    kinsol_->initialize(q);
-    tree->doKinematics(*kinsol_);
+    kinsol_.initialize(q);
+    tree->doKinematics(kinsol_);
   }
-  return *kinsol_;
+  return kinsol_;
 }
 
 SingleTimeKinematicConstraintWrapper::SingleTimeKinematicConstraintWrapper(

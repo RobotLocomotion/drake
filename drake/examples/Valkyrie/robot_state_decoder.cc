@@ -163,9 +163,9 @@ void RobotStateDecoder::EvalOutput(const Context<double>& context,
 std::unique_ptr<SystemOutput<double>> RobotStateDecoder::AllocateOutput(
     const Context<double>& context) const {
   auto output = make_unique<LeafSystemOutput<double>>();
-  auto cache = tree_.CreateKinematicsCache();
   auto kinematics_cache =
-      std::make_unique<Value<KinematicsCache<double>>>(*cache);
+      std::make_unique<Value<KinematicsCache<double>>>(
+          tree_.CreateKinematicsCache());
   output->add_port(move(kinematics_cache));
   return unique_ptr<SystemOutput<double>>(output.release());
 }

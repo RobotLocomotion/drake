@@ -843,7 +843,7 @@ bool RigidBodyTree<T>::allCollisions(
 }
 
 template <typename T>
-unique_ptr<KinematicsCache<T>>
+KinematicsCache<T>
 RigidBodyTree<T>::CreateKinematicsCacheFromBodiesVector(
     const std::vector<std::unique_ptr<RigidBody<T>>>& bodies) {
   std::vector<int> num_joint_positions, num_joint_velocities;
@@ -859,31 +859,29 @@ RigidBodyTree<T>::CreateKinematicsCacheFromBodiesVector(
       num_joint_positions.begin(), num_joint_positions.end(), 0);
   const int num_velocities = std::accumulate(
       num_joint_positions.begin(), num_joint_positions.end(), 0);
-  auto cache = make_unique<KinematicsCache<T>>(
-      num_positions, num_velocities,
-      num_joint_positions, num_joint_velocities);
+  KinematicsCache<T> cache(num_positions, num_velocities,
+                           num_joint_positions, num_joint_velocities);
   return cache;
 }
 
 template <typename T>
 template <typename CacheT>
-unique_ptr<KinematicsCache<CacheT>>
+KinematicsCache<CacheT>
 RigidBodyTree<T>::CreateKinematicsCacheWithType() const {
-  auto cache = make_unique<KinematicsCache<CacheT>>(get_num_positions(),
-                                                    get_num_velocities());
+  KinematicsCache<CacheT> cache(get_num_positions(), get_num_velocities());
   for (const auto& body_unique_ptr : bodies) {
     const RigidBody<T>& body = *body_unique_ptr;
     int num_positions_joint =
         body.has_parent_body() ? body.getJoint().get_num_positions() : 0;
     int num_velocities_joint =
         body.has_parent_body() ? body.getJoint().get_num_velocities() : 0;
-    cache->CreateCacheEntry(num_positions_joint, num_velocities_joint);
+    cache.CreateCacheEntry(num_positions_joint, num_velocities_joint);
   }
   return cache;
 }
 
 template <typename T>
-unique_ptr<KinematicsCache<T>> RigidBodyTree<T>::CreateKinematicsCache() const {
+KinematicsCache<T> RigidBodyTree<T>::CreateKinematicsCache() const {
   return CreateKinematicsCacheWithType<T>();
 }
 
@@ -892,9 +890,9 @@ template <typename DerivedQ>
 KinematicsCache<typename DerivedQ::Scalar> RigidBodyTree<T>::doKinematics(
     const Eigen::MatrixBase<DerivedQ>& q) const {
   auto cache = CreateKinematicsCacheWithType<typename DerivedQ::Scalar>();
-  cache->initialize(q);
-  doKinematics(*cache);
-  return *cache.release();
+  cache.initialize(q);
+  doKinematics(cache);
+  return cache;
 }
 
 template <typename T>
@@ -903,9 +901,9 @@ KinematicsCache<typename DerivedQ::Scalar> RigidBodyTree<T>::doKinematics(
     const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v,
     bool compute_JdotV) const {
   auto cache = CreateKinematicsCacheWithType<typename DerivedQ::Scalar>();
-  cache->initialize(q, v);
-  doKinematics(*cache, compute_JdotV);
-  return *cache.release();
+  cache.initialize(q, v);
+  doKinematics(cache, compute_JdotV);
+  return cache;
 }
 
 template <typename T>

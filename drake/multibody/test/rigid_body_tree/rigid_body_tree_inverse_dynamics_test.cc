@@ -92,10 +92,10 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
   auto qd_time_autodiff = qd.cast<TimeADScalar>();
   auto kinematics_cache_time_autodiff =
       tree_rpy_->CreateKinematicsCacheWithType<TimeADScalar>();
-  kinematics_cache_time_autodiff->initialize(q_time_autodiff, qd_time_autodiff);
-  tree_rpy_->doKinematics(*kinematics_cache_time_autodiff);
+  kinematics_cache_time_autodiff.initialize(q_time_autodiff, qd_time_autodiff);
+  tree_rpy_->doKinematics(kinematics_cache_time_autodiff);
   auto mass_matrix_time_autodiff =
-      tree_rpy_->massMatrix(*kinematics_cache_time_autodiff);
+      tree_rpy_->massMatrix(kinematics_cache_time_autodiff);
 
   Eigen::MatrixXd mass_matrix_dot(qd.size(), qd.size());
   for (int i = 0; i < qd.size(); ++i) {
@@ -114,12 +114,12 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
         typename std::remove_reference<decltype(qd_arg)>::type::Scalar;
     auto kinematics_cache_coriolis =
         tree_rpy_->CreateKinematicsCacheWithType<Scalar>();
-    kinematics_cache_coriolis->initialize(q.cast<Scalar>(), qd_arg);
-    tree_rpy_->doKinematics(*kinematics_cache_coriolis, true);
+    kinematics_cache_coriolis.initialize(q.cast<Scalar>(), qd_arg);
+    tree_rpy_->doKinematics(kinematics_cache_coriolis, true);
 
     const typename RigidBodyTree<Scalar>::BodyToWrenchMap no_external_wrenches;
     auto coriolis_term = tree_rpy_->inverseDynamics(
-        *kinematics_cache_coriolis, no_external_wrenches,
+        kinematics_cache_coriolis, no_external_wrenches,
         qdd.cast<Scalar>().eval(), true);
     coriolis_term -= tree_rpy_->frictionTorques(qd_arg);
     return coriolis_term;
@@ -156,20 +156,20 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
     auto v = VectorXd::Random(tree->get_num_velocities()).eval();
     auto vd = VectorXd::Random(tree->get_num_velocities()).eval();
     auto kinematics_cache = tree->CreateKinematicsCache();
-    kinematics_cache->initialize(q, v);
-    tree->doKinematics(*kinematics_cache);
-    auto mass_matrix = tree->massMatrix(*kinematics_cache);
+    kinematics_cache.initialize(q, v);
+    tree->doKinematics(kinematics_cache);
+    auto mass_matrix = tree->massMatrix(kinematics_cache);
 
     auto vd_to_mass_matrix = [&](const auto& vd_arg) {
       using Scalar =
           typename std::remove_reference<decltype(vd_arg)>::type::Scalar;
       auto kinematics_cache_2 =
           tree->CreateKinematicsCacheWithType<Scalar>();
-      kinematics_cache_2->initialize(q.cast<Scalar>(), v.cast<Scalar>());
-      tree->doKinematics(*kinematics_cache_2, true);
+      kinematics_cache_2.initialize(q.cast<Scalar>(), v.cast<Scalar>());
+      tree->doKinematics(kinematics_cache_2, true);
       const typename RigidBodyTree<Scalar>::
       BodyToWrenchMap no_external_wrenches;
-      return tree->inverseDynamics(*kinematics_cache_2, no_external_wrenches,
+      return tree->inverseDynamics(kinematics_cache_2, no_external_wrenches,
                                    vd_arg);
     };
     auto mass_matrix_from_inverse_dynamics =
@@ -203,12 +203,12 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   auto& tree = tree_rpy_;
   auto q = tree->getRandomConfiguration(generator);
   auto kinematics_cache = tree->CreateKinematicsCache();
-  kinematics_cache->initialize(q);
-  tree->doKinematics(*kinematics_cache);
+  kinematics_cache.initialize(q);
+  tree->doKinematics(kinematics_cache);
 
   const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
   auto gravitational_forces =
-      tree->dynamicsBiasTerm(*kinematics_cache, no_external_wrenches, false);
+      tree->dynamicsBiasTerm(kinematics_cache, no_external_wrenches, false);
 
   // Compute the vector gradient of potential energy.
 
@@ -220,9 +220,9 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
         typename std::remove_reference<decltype(q_arg)>::type::Scalar;
     auto kinematics_cache_2 =
         tree->CreateKinematicsCacheWithType<Scalar>();
-    kinematics_cache_2->initialize(q_arg);
-    tree->doKinematics(*kinematics_cache_2);
-    auto center_of_mass = tree->centerOfMass(*kinematics_cache_2);
+    kinematics_cache_2.initialize(q_arg);
+    tree->doKinematics(kinematics_cache_2);
+    auto center_of_mass = tree->centerOfMass(kinematics_cache_2);
     Scalar gravitational_potential_energy =
         -center_of_mass.dot(gravitational_force.cast<Scalar>().eval());
     // The jacobian function expects a Matrix as output, so:
@@ -284,8 +284,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   RigidBodyTree<double>::BodyToWrenchMap external_wrenches;
 
   auto kinematics_cache = tree.CreateKinematicsCache();
-  kinematics_cache->initialize(q, v);
-  tree.doKinematics(*kinematics_cache, true);
+  kinematics_cache.initialize(q, v);
+  tree.doKinematics(kinematics_cache, true);
 
   // Compute gravitational wrench W_g.
   // Gravitational force can be thought of as acting at center of mass. Change
@@ -293,7 +293,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   auto gravitational_wrench_centroidal = (tree.a_grav * tree.getMass()).eval();
   Eigen::Isometry3d centroidal_to_world;
   centroidal_to_world.setIdentity();
-  centroidal_to_world.translation() = tree.centerOfMass(*kinematics_cache);
+  centroidal_to_world.translation() = tree.centerOfMass(kinematics_cache);
   auto gravitational_wrench_world = transformSpatialForce(
       centroidal_to_world, gravitational_wrench_centroidal);
 
@@ -304,27 +304,27 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
       auto wrench_body = Vector6<double>::Random().eval();
       external_wrenches[body_ptr.get()] = wrench_body;
       auto body_to_world = tree.relativeTransform(
-          *kinematics_cache, world_index, body_ptr->get_body_index());
+          kinematics_cache, world_index, body_ptr->get_body_index());
       auto wrench_world = transformSpatialForce(body_to_world, wrench_body);
       total_wrench_world += wrench_world;
     }
   }
 
   // Compute wrench across floating joint W_f, add to total wrench.
-  auto tau = tree.inverseDynamics(*kinematics_cache, external_wrenches, vd);
+  auto tau = tree.inverseDynamics(kinematics_cache, external_wrenches, vd);
   auto& floating_body_ptr = tree.bodies[1];
   int floating_joint_start_index =
       floating_body_ptr->get_velocity_start_index();
   Vector6<double> floating_joint_wrench_body =
       tau.segment<kTwistSize>(floating_joint_start_index);
   auto body_to_world = tree.relativeTransform(
-      *kinematics_cache, world_index, floating_body_ptr->get_body_index());
+      kinematics_cache, world_index, floating_body_ptr->get_body_index());
   auto floating_joint_wrench_world =
       transformSpatialForce(body_to_world, floating_joint_wrench_body);
   total_wrench_world += floating_joint_wrench_world;
 
   // Compute rate of change of momentum hdot.
-  auto v_to_qd = tree.GetVelocityToQDotMapping(*kinematics_cache);
+  auto v_to_qd = tree.GetVelocityToQDotMapping(kinematics_cache);
   auto qd = v_to_qd * v;
   // Convert to MatrixXd to make another explicit instantiation unnecessary.
   auto q_time_autodiff = initializeAutoDiffGivenGradientMatrix(q, MatrixXd(qd));
@@ -332,10 +332,10 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   typedef decltype(q_time_autodiff)::Scalar ADScalar;
   auto kinematics_cache_autodiff =
       tree.CreateKinematicsCacheWithType<ADScalar>();
-  kinematics_cache_autodiff->initialize(q_time_autodiff, v_time_autodiff);
-  tree.doKinematics(*kinematics_cache_autodiff);
+  kinematics_cache_autodiff.initialize(q_time_autodiff, v_time_autodiff);
+  tree.doKinematics(kinematics_cache_autodiff);
   auto momentum_matrix_time_autodiff =
-      tree.worldMomentumMatrix(*kinematics_cache_autodiff);
+      tree.worldMomentumMatrix(kinematics_cache_autodiff);
   auto momentum_world_time_autodiff =
       momentum_matrix_time_autodiff * v_time_autodiff;
   auto momentum_rate = autoDiffToGradientMatrix(momentum_world_time_autodiff);
