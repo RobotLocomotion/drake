@@ -293,20 +293,14 @@ void RigidBodyTree<T>::compile(void) {
 
 template <typename T>
 void RigidBodyTree<T>::CompileCollisionState() {
-  // Identifies and processes collision elements that should be static.
-  // TODO: This should be visiting the bodies and invoking
-  // IsRigidlyFixedToWorld.  "Setting static" would then mean to flag it as
-  // static; do I have to do anything with the transform?
-  // I'd either be flatting the transform into something without multiplication,
-  // or I'm doing multiplication and it is irrelevant whether it is identity.
+  // Identifies and processes collision elements that should be marked
+  // "anchored".
   for( auto& pair : body_collision_map_ ) {
     RigidBody<T>* body = pair.first;
-    if ( !body->has_parent_body()) {
-      BodyCollisions& elements = pair.second;
-      for ( auto& collision_item : elements) {
-        // Static elements should be marked static and should have their
-        // local-to-world transform to identity.
-        collision_item.element->set_static();
+    if ( body->IsRigidlyFixedToWorld()) {
+      BodyCollisions &elements = pair.second;
+      for (auto &collision_item : elements) {
+        collision_item.element->set_anchored();
         collision_item.element->updateWorldTransform(
             Isometry3d::Identity());
       }

@@ -272,7 +272,7 @@ void BulletModel::DoAddElement(const Element& element) {
       case DrakeShapes::MESH: {
         const auto mesh =
             static_cast<const DrakeShapes::Mesh&>(elements[id]->getGeometry());
-        if (elements[id]->is_static()) {  // A static mesh representation.
+        if (elements[id]->is_anchored()) {  // An anchored mesh representation.
           bt_shape = newBulletStaticMeshShape(mesh, true);
           bt_shape_no_margin = newBulletStaticMeshShape(mesh, false);
         } else {  // A convex hull representation of the mesh points.
@@ -340,7 +340,7 @@ void BulletModel::DoAddElement(const Element& element) {
       //   2. The exclusive or operator (^) is an easy way to turn on/off
       //      specific bits (since A^0 = A and A^1 = ~A).
 
-      bool is_dynamic = !elements[id]->is_static();
+      bool is_dynamic = !elements[id]->is_anchored();
       short collision_filter_group =  is_dynamic?    // NOLINT(runtime/int)
           // NOLINTNEXTLINE(runtime/int)
           static_cast<short>(btBroadphaseProxy::DefaultFilter) :
