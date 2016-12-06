@@ -331,16 +331,6 @@ class PidControlledSchunkWsg : public systems::Diagram<T> {
     builder.BuildInto(this);
   }
 
-  void SetDefaultState(Context<T>* context) const {
-    Context<T>* controller_context =
-        this->GetMutableSubsystemContext(context, controller_);
-    controller_->SetDefaultState(controller_context);
-
-    Context<T>* plant_context =
-        controller_->GetMutableSubsystemContext(controller_context, plant_);
-    plant_->SetZeroConfiguration(plant_context);
-  }
-
   const RigidBodyPlant<T>& get_plant() const { return *plant_; }
   int position_index() const { return position_index_; }
   int velocity_index() const { return velocity_index_; }
@@ -386,11 +376,6 @@ int DoMain() {
   auto sys = builder.Build();
 
   Simulator<double> simulator(*sys);
-
-  // Zeroes the state and initializes controller state.
-  auto model_context = sys->GetMutableSubsystemContext(
-      simulator.get_mutable_context(), model);
-  model->SetDefaultState(model_context);
 
   lcm.StartReceiveThread();
   simulator.Initialize();
