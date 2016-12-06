@@ -16,9 +16,9 @@ namespace drake {
 namespace maliput {
 namespace monolane {
 
-const double kLinearTolerance = 1e-2;
-const double kAngularTolerance = 1e-2;
-const double kVeryExact = 1e-7;
+const double kLinearTolerance = 1e-6;
+const double kAngularTolerance = 1e-6;
+const double kVeryExact = 1e-12;
 
 
 GTEST_TEST(MonolaneLanesTest, Rot3) {
@@ -143,9 +143,6 @@ GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
 
 GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
   CubicPolynomial zp {0., 0., 0., 0.};
-  api::GeoPosition xyz {0., 0., 0.};
-  api::Rotation rot {0., 0., 0.};
-
   RoadGeometry rg({"apple"}, kLinearTolerance, kAngularTolerance);
   Segment* s1 = rg.NewJunction({"j1"})->NewSegment({"s1"});
   Lane* l2 = s1->NewArcLane(
@@ -175,107 +172,69 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
                    -75. + (100. * std::sin(0.25 * M_PI)),
                    0.), kLinearTolerance);
 
-  xyz = l2->ToGeoPosition({1., 0., 0.});
-  EXPECT_NEAR(
-      xyz.x,
-      100. + (100. * std::cos((0.25 * M_PI) + (1.5 / l2->length() * M_PI))),
-      kLinearTolerance);
-  EXPECT_NEAR(
-      xyz.y,
-      -75. + (100. * std::sin((0.25 * M_PI) + (1.5 / l2->length() * M_PI))),
-      kLinearTolerance);
-  EXPECT_NEAR(xyz.z, 0., kLinearTolerance);
+  EXPECT_GEO_NEAR(
+      l2->ToGeoPosition({1., 0., 0.}),
+      (100. + (100. * std::cos((0.25 * M_PI) + (1.5 / l2->length() * M_PI))),
+       -75. + (100. * std::sin((0.25 * M_PI) + (1.5 / l2->length() * M_PI))),
+       0.), kLinearTolerance);
 
-  xyz = l2->ToGeoPosition({0., 1., 0.});
-  EXPECT_NEAR(
-      xyz.x,
-      100. + (100. * std::cos(0.25 * M_PI)) + (1. * std::cos(1.25 * M_PI)),
-      kLinearTolerance);
-  EXPECT_NEAR(
-      xyz.y,
-      -75. + (100. * std::sin(0.25 * M_PI)) + (1. * std::sin(1.25 * M_PI)),
-      kLinearTolerance);
-  EXPECT_NEAR(xyz.z, 0., kLinearTolerance);
+  EXPECT_GEO_NEAR(
+      l2->ToGeoPosition({0., 1., 0.}),
+      (100. + (100. * std::cos(0.25 * M_PI)) + (1. * std::cos(1.25 * M_PI)),
+       -75. + (100. * std::sin(0.25 * M_PI)) + (1. * std::sin(1.25 * M_PI)),
+       0.), kLinearTolerance);
 
-  xyz = l2->ToGeoPosition({l2->length(), 0., 0.});
-  EXPECT_NEAR(xyz.x, 100. + (100. * std::cos(1.75 * M_PI)),
-              kLinearTolerance);
-  EXPECT_NEAR(xyz.y, -75. + (100. * std::sin(1.75 * M_PI)),
-              kLinearTolerance);
-  EXPECT_NEAR(xyz.z, 0., kLinearTolerance);
+  EXPECT_GEO_NEAR(l2->ToGeoPosition({l2->length(), 0., 0.}),
+                  (100. + (100. * std::cos(1.75 * M_PI)),
+                   -75. + (100. * std::sin(1.75 * M_PI)),
+                   0.), kLinearTolerance);
 
   // TODO(maddog) Test ToLanePosition().
 
-  rot = l2->GetOrientation({0., 0., 0.});
-  EXPECT_NEAR(rot.yaw, (0.25 + 0.5) * M_PI, kVeryExact);
-  EXPECT_NEAR(rot.pitch, 0., kVeryExact);
-  EXPECT_NEAR(rot.roll, 0., kVeryExact);
+  EXPECT_ROT_NEAR(l2->GetOrientation({0., 0., 0.}),
+                  (0., 0., (0.25 + 0.5) * M_PI), kVeryExact);
 
-  rot = l2->GetOrientation({0., 1., 0.});
-  EXPECT_NEAR(rot.yaw, (0.25 + 0.5) * M_PI, kVeryExact);
-  EXPECT_NEAR(rot.pitch, 0., kVeryExact);
-  EXPECT_NEAR(rot.roll, 0., kVeryExact);
+  EXPECT_ROT_NEAR(l2->GetOrientation({0., 1., 0.}),
+                  (0., 0., (0.25 + 0.5) * M_PI), kVeryExact);
 
-  rot = l2->GetOrientation({l2->length(), 0., 0.});
-  EXPECT_NEAR(rot.yaw, 0.25 * M_PI, kVeryExact);  // 0.25 + 1.5 + 0.5
-  EXPECT_NEAR(rot.pitch, 0., kVeryExact);
-  EXPECT_NEAR(rot.roll, 0., kVeryExact);
+  EXPECT_ROT_NEAR(l2->GetOrientation({l2->length(), 0., 0.}),
+                  (0., 0, 0.25 * M_PI), kVeryExact);  // 0.25 + 1.5 + 0.5
 
-  api::LanePosition pdot;
   // For r=0, derivative map should be identity.
-  pdot = l2->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 0.});
-  EXPECT_NEAR(pdot.s, 0., kVeryExact);
-  EXPECT_NEAR(pdot.r, 0., kVeryExact);
-  EXPECT_NEAR(pdot.h, 0., kVeryExact);
+  EXPECT_LANE_NEAR(l2->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 0.}),
+                   (0., 0., 0.), kVeryExact);
 
-  pdot = l2->EvalMotionDerivatives({0., 0., 0.}, {1., 0., 0.});
-  EXPECT_NEAR(pdot.s, 1., kVeryExact);
-  EXPECT_NEAR(pdot.r, 0., kVeryExact);
-  EXPECT_NEAR(pdot.h, 0., kVeryExact);
+  EXPECT_LANE_NEAR(l2->EvalMotionDerivatives({0., 0., 0.}, {1., 0., 0.}),
+                   (1., 0., 0.), kVeryExact);
 
-  pdot = l2->EvalMotionDerivatives({0., 0., 0.}, {0., 1., 0.});
-  EXPECT_NEAR(pdot.s, 0., kVeryExact);
-  EXPECT_NEAR(pdot.r, 1., kVeryExact);
-  EXPECT_NEAR(pdot.h, 0., kVeryExact);
+  EXPECT_LANE_NEAR(l2->EvalMotionDerivatives({0., 0., 0.}, {0., 1., 0.}),
+                   (0., 1., 0.), kVeryExact);
 
-  pdot = l2->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 1.});
-  EXPECT_NEAR(pdot.s, 0., kVeryExact);
-  EXPECT_NEAR(pdot.r, 0., kVeryExact);
-  EXPECT_NEAR(pdot.h, 1., kVeryExact);
+  EXPECT_LANE_NEAR(l2->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 1.}),
+                   (0., 0., 1.), kVeryExact);
 
-  pdot = l2->EvalMotionDerivatives({l2->length(), 0., 0.}, {1., 1., 1.});
-  EXPECT_NEAR(pdot.s, 1., kVeryExact);
-  EXPECT_NEAR(pdot.r, 1., kVeryExact);
-  EXPECT_NEAR(pdot.h, 1., kVeryExact);
+  EXPECT_LANE_NEAR(
+      l2->EvalMotionDerivatives({l2->length(), 0., 0.}, {1., 1., 1.}),
+      (1., 1., 1.), kVeryExact);
 
   // For a left-turning curve, r = +10 will decrease the radius of the path
   // from the original 100 down to 90.
-  pdot = l2->EvalMotionDerivatives({0., 10., 0.}, {1., 1., 1.});
-  EXPECT_NEAR(pdot.s, (100. / 90.) * 1., kVeryExact);
-  EXPECT_NEAR(pdot.r, 1., kVeryExact);
-  EXPECT_NEAR(pdot.h, 1., kVeryExact);
+  EXPECT_LANE_NEAR(l2->EvalMotionDerivatives({0., 10., 0.}, {1., 1., 1.}),
+                   ((100. / 90.) * 1., 1., 1.), kVeryExact);
   // Likewise, r = -10 will increase the radius of the path from the
   // original 100 up to 110.
-  pdot = l2->EvalMotionDerivatives({0., -10., 0.}, {1., 1., 1.});
-  EXPECT_NEAR(pdot.s, (100. / 110.) * 1., kVeryExact);
-  EXPECT_NEAR(pdot.r, 1., kVeryExact);
-  EXPECT_NEAR(pdot.h, 1., kVeryExact);
+  EXPECT_LANE_NEAR(l2->EvalMotionDerivatives({0., -10., 0.}, {1., 1., 1.}),
+                   ((100. / 110.) * 1., 1., 1.), kVeryExact);
   // ...and only r should matter for an otherwise flat arc.
-  pdot = l2->EvalMotionDerivatives({l2->length(), -10., 100.}, {1., 1., 1.});
-  EXPECT_NEAR(pdot.s, (100. / 110.) * 1., kVeryExact);
-  EXPECT_NEAR(pdot.r, 1., kVeryExact);
-  EXPECT_NEAR(pdot.h, 1., kVeryExact);
+  EXPECT_LANE_NEAR(
+      l2->EvalMotionDerivatives({l2->length(), -10., 100.}, {1., 1., 1.}),
+      ((100. / 110.) * 1., 1., 1.), kVeryExact);
 }
-
 
 
 GTEST_TEST(MonolaneLanesTest, ArcLaneWithConstantSuperelevation) {
   CubicPolynomial zp {0., 0., 0., 0.};
-  api::GeoPosition xyz {0., 0., 0.};
-  api::Rotation rot {0., 0., 0.};
-
   const double kTheta = 0.10 * M_PI;  // superelevation
-
   RoadGeometry rg({"apple"}, kLinearTolerance, kAngularTolerance);
   Segment* s1 = rg.NewJunction({"j1"})->NewSegment({"s1"});
   Lane* l2 = s1->NewArcLane(
@@ -289,99 +248,68 @@ GTEST_TEST(MonolaneLanesTest, ArcLaneWithConstantSuperelevation) {
 
   EXPECT_NEAR(l2->length(), 100. * 1.5 * M_PI, kVeryExact);
 
-  xyz = l2->ToGeoPosition({0., 0., 0.});
-  EXPECT_NEAR(xyz.x, 100. + (100. * std::cos(0.25 * M_PI)),
-              kLinearTolerance);
-  EXPECT_NEAR(xyz.y, -75. + (100. * std::sin(0.25 * M_PI)),
-              kLinearTolerance);
-  EXPECT_NEAR(xyz.z,   0., kLinearTolerance);
+  EXPECT_GEO_NEAR(l2->ToGeoPosition({0., 0., 0.}),
+                  (100. + (100. * std::cos(0.25 * M_PI)),
+                   -75. + (100. * std::sin(0.25 * M_PI)),
+                   0.), kLinearTolerance);
 
-  xyz = l2->ToGeoPosition({0., 10., 0.});
-  EXPECT_NEAR(
-      xyz.x,
-      100. + (100. * std::cos(0.25 * M_PI)) +
-      (10. * std::cos(0.10 *M_PI) * std::cos(1.25 * M_PI)),
-      kLinearTolerance);
-  EXPECT_NEAR(
-      xyz.y,
-      -75. + (100. * std::sin(0.25 * M_PI)) +
-      (10. * std::cos(kTheta) * std::sin(1.25 * M_PI)),
-      kLinearTolerance);
-  EXPECT_NEAR(xyz.z, 10. * std::sin(kTheta), kLinearTolerance);
-
+  EXPECT_GEO_NEAR(
+      l2->ToGeoPosition({0., 10., 0.}),
+      (100. + (100. * std::cos(0.25 * M_PI)) +
+       (10. * std::cos(0.10 *M_PI) * std::cos(1.25 * M_PI)),
+       -75. + (100. * std::sin(0.25 * M_PI)) +
+       (10. * std::cos(kTheta) * std::sin(1.25 * M_PI)),
+       10. * std::sin(kTheta)), kLinearTolerance);
 
   // TODO(maddog) Test ToLanePosition().
 
-  rot = l2->GetOrientation({0., 0., 0.});
-  EXPECT_NEAR(rot.yaw, (0.25 + 0.5) * M_PI, kVeryExact);
-  EXPECT_NEAR(rot.pitch, 0., kVeryExact);
-  EXPECT_NEAR(rot.roll, kTheta, kVeryExact);
+  EXPECT_ROT_NEAR(l2->GetOrientation({0., 0., 0.}),
+                  (kTheta, 0., (0.25 + 0.5) * M_PI), kVeryExact);
 
-  rot = l2->GetOrientation({0., 1., 0.});
-  EXPECT_NEAR(rot.yaw, (0.25 + 0.5) * M_PI, kVeryExact);
-  EXPECT_NEAR(rot.pitch, 0., kVeryExact);
-  EXPECT_NEAR(rot.roll, kTheta, kVeryExact);
+  EXPECT_ROT_NEAR(l2->GetOrientation({0., 1., 0.}),
+                  (kTheta, 0., (0.25 + 0.5) * M_PI), kVeryExact);
 
-  rot = l2->GetOrientation({l2->length(), 0., 0.});
-  EXPECT_NEAR(rot.yaw, 0.25 * M_PI, kVeryExact);  // 0.25 + 1.5 + 0.5
-  EXPECT_NEAR(rot.pitch, 0., kVeryExact);
-  EXPECT_NEAR(rot.roll, kTheta, kVeryExact);
+  EXPECT_ROT_NEAR(l2->GetOrientation({l2->length(), 0., 0.}),
+                  (kTheta, 0., 0.25 * M_PI), kVeryExact);  // 0.25 + 1.5 + 0.5
 
   api::LanePosition pdot;
   // For r=0, derivative map should be identity.
-  pdot = l2->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 0.});
-  EXPECT_NEAR(pdot.s, 0., kVeryExact);
-  EXPECT_NEAR(pdot.r, 0., kVeryExact);
-  EXPECT_NEAR(pdot.h, 0., kVeryExact);
+  EXPECT_LANE_NEAR(l2->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 0.}),
+                   (0., 0., 0.), kVeryExact);
 
-  pdot = l2->EvalMotionDerivatives({0., 0., 0.}, {1., 0., 0.});
-  EXPECT_NEAR(pdot.s, 1., kVeryExact);
-  EXPECT_NEAR(pdot.r, 0., kVeryExact);
-  EXPECT_NEAR(pdot.h, 0., kVeryExact);
+  EXPECT_LANE_NEAR(l2->EvalMotionDerivatives({0., 0., 0.}, {1., 0., 0.}),
+                   (1., 0., 0.), kVeryExact);
 
-  pdot = l2->EvalMotionDerivatives({0., 0., 0.}, {0., 1., 0.});
-  EXPECT_NEAR(pdot.s, 0., kVeryExact);
-  EXPECT_NEAR(pdot.r, 1., kVeryExact);
-  EXPECT_NEAR(pdot.h, 0., kVeryExact);
+  EXPECT_LANE_NEAR(l2->EvalMotionDerivatives({0., 0., 0.}, {0., 1., 0.}),
+                   (0., 1., 0.), kVeryExact);
 
-  pdot = l2->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 1.});
-  EXPECT_NEAR(pdot.s, 0., kVeryExact);
-  EXPECT_NEAR(pdot.r, 0., kVeryExact);
-  EXPECT_NEAR(pdot.h, 1., kVeryExact);
+  EXPECT_LANE_NEAR(l2->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 1.}),
+                   (0., 0., 1.), kVeryExact);
 
-  pdot = l2->EvalMotionDerivatives({l2->length(), 0., 0.}, {1., 1., 1.});
-  EXPECT_NEAR(pdot.s, 1., kVeryExact);
-  EXPECT_NEAR(pdot.r, 1., kVeryExact);
-  EXPECT_NEAR(pdot.h, 1., kVeryExact);
+  EXPECT_LANE_NEAR(
+      l2->EvalMotionDerivatives({l2->length(), 0., 0.}, {1., 1., 1.}),
+      (1., 1., 1.), kVeryExact);
 
   // For a left-turning curve, r = +10 will decrease the radius of the path
   // from the original 100 down to 90.
-  pdot = l2->EvalMotionDerivatives({0., 10., 0.}, {1., 1., 1.});
-  EXPECT_NEAR(pdot.s,
-              (100. / (100. - (10. * std::cos(kTheta)))) * 1., kVeryExact);
-  EXPECT_NEAR(pdot.r, 1., kVeryExact);
-  EXPECT_NEAR(pdot.h, 1., kVeryExact);
+  EXPECT_LANE_NEAR(
+      l2->EvalMotionDerivatives({0., 10., 0.}, {1., 1., 1.}),
+      ((100. / (100. - (10. * std::cos(kTheta)))) * 1., 1., 1.), kVeryExact);
   // Likewise, r = -10 will increase the radius of the path from the
   // original 100 up to 110.
-  pdot = l2->EvalMotionDerivatives({0., -10., 0.}, {1., 1., 1.});
-  EXPECT_NEAR(pdot.s,
-              (100. / (100 + (10. * std::cos(kTheta)))) * 1., kVeryExact);
-  EXPECT_NEAR(pdot.r, 1., kVeryExact);
-  EXPECT_NEAR(pdot.h, 1., kVeryExact);
+  EXPECT_LANE_NEAR(
+      l2->EvalMotionDerivatives({0., -10., 0.}, {1., 1., 1.}),
+      ((100. / (100 + (10. * std::cos(kTheta)))) * 1., 1., 1.), kVeryExact);
 
   // h matters, too.
-  pdot = l2->EvalMotionDerivatives({l2->length(), -10., 8.}, {1., 1., 1.});
-  EXPECT_NEAR(pdot.s,
-              (100. / (100
-                       + (10. * std::cos(kTheta))
-                       + (8. * std::sin(kTheta)))) * 1., kVeryExact);
-  EXPECT_NEAR(pdot.r, 1., kVeryExact);
-  EXPECT_NEAR(pdot.h, 1., kVeryExact);
+  EXPECT_LANE_NEAR(
+      l2->EvalMotionDerivatives({l2->length(), -10., 8.}, {1., 1., 1.}),
+      ((100. / (100 + (10. * std::cos(kTheta))
+                + (8. * std::sin(kTheta)))) * 1., 1., 1.), kVeryExact);
 }
 
 
 namespace {
-
 api::LanePosition IntegrateTrivially(const api::Lane* lane,
                                      const api::LanePosition& lp_initial,
                                      const api::IsoLaneVelocity& velocity,
@@ -398,14 +326,11 @@ api::LanePosition IntegrateTrivially(const api::Lane* lane,
   }
   return lp_current;
 }
-
 }  // namespace
+
 
 GTEST_TEST(MonolaneLanesTest, HillIntegration) {
   CubicPolynomial zp {0., 0., 0., 0.};
-  api::GeoPosition xyz {0., 0., 0.};
-  api::Rotation rot {0., 0., 0.};
-
   RoadGeometry rg({"apple"}, kLinearTolerance, kAngularTolerance);
   Segment* s1 = rg.NewJunction({"j1"})->NewSegment({"s1"});
   const double theta0 = 0.25 * M_PI;
@@ -424,43 +349,42 @@ GTEST_TEST(MonolaneLanesTest, HillIntegration) {
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
   const api::IsoLaneVelocity kVelocity { 1., 0., 0. };
-  const double kTimeStep = 0.01;
-  const int kStepsForZeroR = 15860;
+  const double kTimeStep = 0.001;
+  const int kStepsForZeroR = 158597;
+  const double kIntegrationTolerance = 3e-4;
 
   const api::LanePosition kLpInitialA { 0., 0., 0. };
-  xyz = l1->ToGeoPosition(kLpInitialA);
-  EXPECT_NEAR(xyz.x, -100. + (100. * std::cos(theta0)), kLinearTolerance);
-  EXPECT_NEAR(xyz.y, -100. + (100. * std::sin(theta0)), kLinearTolerance);
-  EXPECT_NEAR(xyz.z,  z0, kLinearTolerance);
+  EXPECT_GEO_NEAR(l1->ToGeoPosition(kLpInitialA),
+                  (-100. + (100. * std::cos(theta0)),
+                   -100. + (100. * std::sin(theta0)),
+                   z0), kLinearTolerance);
+
   api::LanePosition lp_final_a =
       IntegrateTrivially(l1, kLpInitialA, kVelocity, kTimeStep,
                          kStepsForZeroR);
-
-  xyz = l1->ToGeoPosition(lp_final_a);
-  EXPECT_NEAR(xyz.x, -100. + (100. * std::cos(theta1)), kLinearTolerance);
-  EXPECT_NEAR(xyz.y, -100. + (100. * std::sin(theta1)), kLinearTolerance);
-  EXPECT_NEAR(xyz.z,  z1, kLinearTolerance);
+  EXPECT_GEO_NEAR(l1->ToGeoPosition(lp_final_a),
+                  (-100. + (100. * std::cos(theta1)),
+                   -100. + (100. * std::sin(theta1)),
+                   z1), kIntegrationTolerance);
 
   const api::LanePosition kLpInitialB { 0., -10., 0. };
-  xyz = l1->ToGeoPosition(kLpInitialB);
-  EXPECT_NEAR(xyz.x, -100. + ((100. + 10.) * std::cos(theta0)),
-              kLinearTolerance);
-  EXPECT_NEAR(xyz.y, -100. + ((100. + 10.) * std::sin(theta0)),
-              kLinearTolerance);
-  EXPECT_NEAR(xyz.z,  z0, kLinearTolerance);
+  EXPECT_GEO_NEAR(l1->ToGeoPosition(kLpInitialB),
+                  (-100. + ((100. + 10.) * std::cos(theta0)),
+                   -100. + ((100. + 10.) * std::sin(theta0)),
+                   z0), kLinearTolerance);
 
   // NB:  '27' is a fudge-factor.  We know the steps should scale roughly
   //      as (r / r0), but not exactly because of the elevation curve.
-  const int kStepsForR10 = ((100. + 10.) / 100. * kStepsForZeroR) - 28;
+  //      Mostly, we are testing that we end up in the right place in
+  //      roughly the right number of steps.
+  const int kStepsForR10 = ((100. + 10.) / 100. * kStepsForZeroR) - 287;
   api::LanePosition lp_final_b =
       IntegrateTrivially(l1, kLpInitialB, kVelocity, kTimeStep,
                          kStepsForR10);
-  xyz = l1->ToGeoPosition(lp_final_b);
-  EXPECT_NEAR(xyz.x, -100. + ((100. + 10.) * std::cos(theta1)),
-              kLinearTolerance);
-  EXPECT_NEAR(xyz.y, -100. + ((100. + 10.) * std::sin(theta1)),
-              kLinearTolerance);
-  EXPECT_NEAR(xyz.z,  z1, kLinearTolerance);
+  EXPECT_GEO_NEAR(l1->ToGeoPosition(lp_final_b),
+                  (-100. + ((100. + 10.) * std::cos(theta1)),
+                   -100. + ((100. + 10.) * std::sin(theta1)),
+                   z1), kIntegrationTolerance);
 }
 
 
