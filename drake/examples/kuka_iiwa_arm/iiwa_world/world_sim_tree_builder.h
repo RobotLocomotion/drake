@@ -91,6 +91,8 @@ class WorldSimTreeBuilder {
     return std::move(rigid_body_tree_);
   }
 
+  const RigidBodyTree<T>& tree() const { return *rigid_body_tree_; }
+
  private:
   std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{
       std::make_unique<RigidBodyTree<T>>()};
