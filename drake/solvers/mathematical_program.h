@@ -671,7 +671,8 @@ class MathematicalProgram {
       size_t rows, const std::vector<std::string>& names);
 
   /**
-   * Adds a symmetric matrix as decision variables to this MathematicalProgram.
+   * Adds a runtime sized symmetric matrix as decision variables to
+   * this MathematicalProgram.
    * The optimization will only use the stacked columns of the
    * lower triangular part of the symmetric matrix as decision variables.
    * @param name The name of the matrix. It is only used the for user to
@@ -689,7 +690,8 @@ class MathematicalProgram {
       size_t rows, const std::string& name = "Symmetric");
 
   /**
-   * Adds a symmetric matrix as decision variables to this MathematicalProgram.
+   * Adds a static sized symmetric matrix as decision variables to
+   * this MathematicalProgram.
    * The optimization will only use the stacked columns of the
    * lower triangular part of the symmetric matrix as decision variables.
    * @param name The name of the matrix. It is only used the for user to

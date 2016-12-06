@@ -3,7 +3,6 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/common/text_logging.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -21,7 +20,6 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
                 "should be a dynamic sized matrix");
   std::stringstream msg_buff1;
   msg_buff1 << X1 << std::endl;
-  drake::log()->debug(msg_buff1.str());
   EXPECT_EQ(msg_buff1.str(), "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
   EXPECT_EQ(prog.num_vars(), 6);
   EXPECT_FALSE(math::IsSymmetric(X1));
@@ -31,7 +29,6 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
                 "should be a dynamic sized matrix");
   std::stringstream msg_buff2;
   msg_buff2 << S1 << std::endl;
-  drake::log()->debug(msg_buff2.str());
   EXPECT_EQ(
       msg_buff2.str(),
       "S(0,0) S(1,0) S(2,0)\nS(1,0) S(1,1) S(2,1)\nS(2,0) S(2,1) S(2,2)\n");
@@ -43,7 +40,6 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
                 "should be a dynamic sized matrix");
   std::stringstream msg_buff3;
   msg_buff3 << x1 << std::endl;
-  drake::log()->debug(msg_buff3.str());
   EXPECT_EQ(msg_buff3.str(), "x0\nx1\nx2\nx3\nx4\nx5\n");
   EXPECT_EQ(prog.num_vars(), 18);
   EXPECT_FALSE(math::IsSymmetric(x1));
@@ -51,7 +47,6 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   auto X2 = prog.AddContinuousVariables<2, 3>(X_name);
   std::stringstream msg_buff4;
   msg_buff4 << X2 << std::endl;
-  drake::log()->debug(msg_buff4.str());
   EXPECT_EQ(msg_buff4.str(), "X1 X3 X5\nX2 X4 X6\n");
   static_assert(decltype(X2)::RowsAtCompileTime == 2 &&
                     decltype(X2)::ColsAtCompileTime == 3,
