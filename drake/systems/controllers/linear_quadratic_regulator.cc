@@ -15,6 +15,7 @@ LinearQuadraticRegulatorResult LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& R,
     const Eigen::Ref<const Eigen::MatrixXd>& N) {
   Eigen::Index n = A.rows(), m = B.cols();
+  DRAKE_DEMAND(n > 0 && m > 0);
   DRAKE_DEMAND(B.rows() == n && A.cols() == n);
   DRAKE_DEMAND(Q.rows() == n && Q.cols() == n);
   DRAKE_DEMAND(R.rows() == m && R.cols() == m);
@@ -46,11 +47,12 @@ LinearQuadraticRegulatorResult LinearQuadraticRegulator(
 std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
     const LinearSystem<double>& system,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
-    const Eigen::Ref<const Eigen::MatrixXd>& R) {
+    const Eigen::Ref<const Eigen::MatrixXd>& R,
+    const Eigen::Ref<const Eigen::MatrixXd>& N) {
   const int num_states = system.B().rows(), num_inputs = system.B().cols();
 
   LinearQuadraticRegulatorResult lqr_result =
-      LinearQuadraticRegulator(system.A(), system.B(), Q, R);
+      LinearQuadraticRegulator(system.A(), system.B(), Q, R, N);
 
   // Return the controller: u = -Kx.
   return std::make_unique<systems::LinearSystem<double>>(
@@ -63,7 +65,8 @@ std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
 std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
     const System<double>& system, const Context<double>& context,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
-    const Eigen::Ref<const Eigen::MatrixXd>& R) {
+    const Eigen::Ref<const Eigen::MatrixXd>& R,
+    const Eigen::Ref<const Eigen::MatrixXd>& N) {
   // TODO(russt): accept optional additional argument to return the cost-to-go
   // but note that it will be a full quadratic form (x'S2x + s1'x + s0).
 
@@ -76,7 +79,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
   auto linear_system = Linearize(system, context);
 
   LinearQuadraticRegulatorResult lqr_result =
-      LinearQuadraticRegulator(linear_system->A(), linear_system->B(), Q, R);
+      LinearQuadraticRegulator(linear_system->A(), linear_system->B(), Q, R, N);
 
   const Eigen::VectorXd& x0 =
       context.get_continuous_state_vector().CopyToVector();
