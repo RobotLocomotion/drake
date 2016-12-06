@@ -506,23 +506,18 @@ class System {
     input_ports_.emplace_back(descriptor);
   }
 
-  /// Adds a port with the specified @p type, @p size, and @p sampling
-  /// to the input topology.
+  /// Adds a port with the specified @p type and @p size to the input topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareInputPort(PortDataType type, int size,
-                                                  SamplingSpec sampling) {
+  const SystemPortDescriptor<T>& DeclareInputPort(PortDataType type, int size) {
     int port_number = get_num_input_ports();
-    input_ports_.emplace_back(this, kInputPort, port_number, type, size,
-                              sampling);
+    input_ports_.emplace_back(this, kInputPort, port_number, type, size);
     return input_ports_.back();
   }
 
-  /// Adds an abstract-valued port with the specified @p sampling to the
-  /// input topology.
+  /// Adds an abstract-valued port to the input topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareAbstractInputPort(
-      SamplingSpec sampling) {
-    return DeclareInputPort(kAbstractValued, 0 /* size */, sampling);
+  const SystemPortDescriptor<T>& DeclareAbstractInputPort() {
+    return DeclareInputPort(kAbstractValued, 0 /* size */);
   }
 
   /// Adds a port with the specified @p descriptor to the output topology.
@@ -532,23 +527,19 @@ class System {
     output_ports_.emplace_back(descriptor);
   }
 
-  /// Adds a port with the specified @p type, @p size, and @p sampling
-  /// to the output topology.
+  /// Adds a port with the specified @p type and @p size to the output topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareOutputPort(PortDataType type, int size,
-                                                   SamplingSpec sampling) {
+  const SystemPortDescriptor<T>& DeclareOutputPort(PortDataType type,
+                                                   int size) {
     int port_number = get_num_output_ports();
-    output_ports_.emplace_back(this, kOutputPort, port_number, type, size,
-                               sampling);
+    output_ports_.emplace_back(this, kOutputPort, port_number, type, size);
     return output_ports_.back();
   }
 
-  /// Adds an abstract-valued port with the specified @p sampling to the
-  /// output topology.
+  /// Adds an abstract-valued port with to the output topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareAbstractOutputPort(
-      SamplingSpec sampling) {
-    return DeclareOutputPort(kAbstractValued, 0 /* size */, sampling);
+  const SystemPortDescriptor<T>& DeclareAbstractOutputPort() {
+    return DeclareOutputPort(kAbstractValued, 0 /* size */);
   }
 
   /// Returns a mutable Eigen expression for a vector valued output port with

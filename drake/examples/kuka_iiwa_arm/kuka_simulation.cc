@@ -58,9 +58,8 @@ using systems::SystemOutput;
 class IiwaCommandReceiver : public systems::LeafSystem<double> {
  public:
   explicit IiwaCommandReceiver(int num_joints) {
-    this->DeclareAbstractInputPort(systems::kContinuousSampling);
-    this->DeclareOutputPort(systems::kVectorValued, num_joints,
-                            systems::kContinuousSampling);
+    this->DeclareAbstractInputPort();
+    this->DeclareOutputPort(systems::kVectorValued, num_joints);
   }
 
   void EvalOutput(const Context<double>& context,
@@ -96,11 +95,9 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
   static const int kCommandInputPort = 1;
 
   explicit IiwaStatusSender(int num_joints) : num_joints_(num_joints) {
-    this->DeclareInputPort(systems::kVectorValued, num_joints * 2,
-                           systems::kContinuousSampling);
-    this->DeclareInputPort(systems::kVectorValued, num_joints,
-                           systems::kContinuousSampling);
-    this->DeclareAbstractOutputPort(systems::kContinuousSampling);
+    this->DeclareInputPort(systems::kVectorValued, num_joints * 2);
+    this->DeclareInputPort(systems::kVectorValued, num_joints);
+    this->DeclareAbstractOutputPort();
   }
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(

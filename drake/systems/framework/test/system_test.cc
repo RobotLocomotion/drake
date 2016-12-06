@@ -248,11 +248,11 @@ class ValueIOTestSystem : public System<double> {
   // std::string.
   // The second input / output pair are vector type with length 1.
   ValueIOTestSystem() {
-    DeclareAbstractInputPort(kInheritedSampling);
-    DeclareAbstractOutputPort(kInheritedSampling);
+    DeclareAbstractInputPort();
+    DeclareAbstractOutputPort();
 
-    DeclareInputPort(kVectorValued, 1, kInheritedSampling);
-    DeclareOutputPort(kVectorValued, 1, kInheritedSampling);
+    DeclareInputPort(kVectorValued, 1);
+    DeclareOutputPort(kVectorValued, 1);
   }
 
   ~ValueIOTestSystem() override {}

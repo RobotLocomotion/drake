@@ -38,12 +38,10 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
   DRAKE_DEMAND(num_outputs_ == D.rows());
 
   // Declares input port for u.
-  if (num_inputs_ > 0)
-    this->DeclareInputPort(kVectorValued, num_inputs_, kContinuousSampling);
+  if (num_inputs_ > 0) this->DeclareInputPort(kVectorValued, num_inputs_);
 
   // Declares output port for y.
-  if (num_outputs_ > 0)
-    this->DeclareOutputPort(kVectorValued, num_outputs_, kContinuousSampling);
+  if (num_outputs_ > 0) this->DeclareOutputPort(kVectorValued, num_outputs_);
 
   // Declares the number of continuous state variables. This is needed for
   // EvalTimeDerivaties() to work.

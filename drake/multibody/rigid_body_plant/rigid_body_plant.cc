@@ -31,19 +31,14 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree)
   // The input to this system are the generalized forces commanded on the
   // actuators.
   // TODO(amcastro-tri): add separate input ports for each model_instance_id.
-  System<T>::DeclareInputPort(kVectorValued, get_num_actuators(),
-                              kContinuousSampling);
+  System<T>::DeclareInputPort(kVectorValued, get_num_actuators());
   // The output of the system is the state vector.
   // TODO(amcastro-tri): add separate output ports for each model_id.
   state_output_port_id_ =
-      this->DeclareOutputPort(kVectorValued, get_num_states(),
-                              kContinuousSampling)
-          .get_index();
+      this->DeclareOutputPort(kVectorValued, get_num_states()).get_index();
   // Declares an abstract valued port for kinematics results.
-  kinematics_output_port_id_ =
-      this->DeclareAbstractOutputPort(kInheritedSampling).get_index();
-  contact_output_port_id_ =
-      this->DeclareAbstractOutputPort(kInheritedSampling).get_index();
+  kinematics_output_port_id_ = this->DeclareAbstractOutputPort().get_index();
+  contact_output_port_id_ = this->DeclareAbstractOutputPort().get_index();
 }
 
 template <typename T>
