@@ -10,7 +10,7 @@ cc_test(
     linkstatic = 1,
     deps = [
         "//drake/common:eigen_matrix_compare",
-        "//drake/systems/plants/constraint:direct_collocation_constraint",
+        "//drake/systems/trajectory_optimization:direct_collocation_constraint",
         "@gtest//:main",
     ],
 )
