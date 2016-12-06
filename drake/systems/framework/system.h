@@ -114,6 +114,22 @@ class System {
     return output_ports_;
   }
 
+  /// Returns the total dimension of all of the input ports (as if they were
+  /// muxed).
+  int get_num_total_inputs() const {
+    int count = 0;
+    for (const auto& in : input_ports_) count += in.get_size();
+    return count;
+  }
+
+  /// Returns the total dimension of all of the output ports (as if they were
+  /// muxed).
+  int get_num_total_outputs() const {
+    int count = 0;
+    for (const auto& out : output_ports_) count += out.get_size();
+    return count;
+  }
+
   /// Checks that @p output is consistent with the number and size of output
   /// ports declared by the system.
   /// @throw exception unless `output` is non-null and valid for this system.

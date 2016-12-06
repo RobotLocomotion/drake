@@ -4,7 +4,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/solvers/trajectory_optimization/direct_trajectory_optimization.h"
+#include "drake/systems/trajectory_optimization/direct_trajectory_optimization.h"
 
 using std::vector;
 using Eigen::MatrixXd;
@@ -14,7 +14,7 @@ using drake::solvers::detail::VecIn;
 using drake::solvers::detail::VecOut;
 
 namespace drake {
-namespace solvers {
+namespace systems {
 namespace {
 
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
@@ -52,8 +52,7 @@ class MyDirectTrajOpt : public DirectTrajectoryOptimization {
       : DirectTrajectoryOptimization(num_inputs, num_states, num_time_samples,
                                      traj_time_lower_bound,
                                      traj_time_upper_bound) {}
-  void AddDynamicConstraint(const std::shared_ptr<Constraint>& constraint) {}
-  void AddRunningCost(std::shared_ptr<Constraint> constraint) {}
+  void AddRunningCost(std::shared_ptr<solvers::Constraint> constraint) {}
 };
 
 GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
@@ -98,7 +97,7 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   const int kInputConstraintLo = 1;
   const int kInputConstraintHi = kNumTimeSamples - 2;
   const Vector1d constrained_input(30);
-  auto input_constraint = std::make_shared<LinearEqualityConstraint>(
+  auto input_constraint = std::make_shared<solvers::LinearEqualityConstraint>(
       Vector1d(1), constrained_input);
   direct_traj.AddInputConstraint(input_constraint,
                                  {kInputConstraintLo, kInputConstraintHi});
@@ -106,15 +105,16 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   const int kStateConstraintLo = 2;
   const int kStateConstraintHi = kNumTimeSamples - 3;
   const Eigen::Vector2d constrained_state(11, 22);
-  auto state_constraint = std::make_shared<LinearEqualityConstraint>(
+  auto state_constraint = std::make_shared<solvers::LinearEqualityConstraint>(
       Eigen::Matrix2d::Identity(), constrained_state);
   direct_traj.AddStateConstraint(state_constraint,
                                  {kStateConstraintLo, kStateConstraintHi});
 
-  SolutionResult result = SolutionResult::kUnknownError;
+  solvers::SolutionResult result = solvers::SolutionResult::kUnknownError;
   result =
       direct_traj.SolveTraj(t_init_in, PiecewisePolynomialType(), states_x);
-  EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
+  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound)
+      << "Result is an Error";
 
   Eigen::MatrixXd inputs;
   Eigen::MatrixXd states;
@@ -158,13 +158,15 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   direct_traj.AddInputBounds(input_min, constrained_input);
   result =
       direct_traj.SolveTraj(t_init_in, PiecewisePolynomialType(), states_x);
-  EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
+  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound)
+      << "Result is an Error";
   direct_traj.GetResultSamples(&inputs, &states, &times_out);
 
   EXPECT_GE(inputs(0, 0), input_min(0));
 
   result = direct_traj.SolveTraj(t_init_in, inputs_u, states_x);
-  EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
+  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound)
+      << "Result is an Error";
 
   // Add some cost functions and see that something gets minimized.
   // First check that we have values not particularly near zero where
@@ -174,7 +176,8 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   direct_traj.AddInitialCostFunc(InitialCost());
   direct_traj.AddFinalCostFunc(FinalCost());
   result = direct_traj.SolveTraj(t_init_in, inputs_u, states_x);
-  EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
+  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound)
+      << "Result is an Error";
 
   direct_traj.GetResultSamples(&inputs, &states, &times_out);
   EXPECT_NEAR(states(1, 0), 0, 1e-10);
@@ -182,5 +185,5 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
 }
 
 }  // anonymous namespace
-}  // namespace solvers
+}  // namespace systems
 }  // namespace drake

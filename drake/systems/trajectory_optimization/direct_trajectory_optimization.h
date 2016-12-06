@@ -8,18 +8,19 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/system.h"
 
 namespace drake {
-namespace solvers {
+namespace systems {
 
 /**
  * DirectTrajectoryOptimization is an abstract class for direct method
  * approaches to trajectory optimization.
  *
- * Subclasses must implement the two abstract methods:
+ * Subclasses must implement the abstract method:
  *  AddRunningCost()
- * and
- *  AddDynamicConstraint()
+ * and should add any dynamic constraints in their constructor.
  *
  * This class assumes that there are a fixed number (N) time steps/samples, and
  * that the trajectory is discretized into timesteps h (N-1 of these), state x
@@ -32,19 +33,13 @@ namespace solvers {
 class DirectTrajectoryOptimization {
  public:
   /**
-   * Adds a dynamic constraint to be applied to each pair of
-   * states/inputs.
-   */
-  virtual void AddDynamicConstraint(
-      const std::shared_ptr<Constraint>& constraint) = 0;
-
-  /**
    * Adds an integrated cost to all time steps.
    *
    * @param constraint A constraint which expects a timestep, state,
    * and input as the elements of x when Eval is invoked.
    */
-  virtual void AddRunningCost(std::shared_ptr<Constraint> constraint) = 0;
+  virtual void AddRunningCost(
+      std::shared_ptr<solvers::Constraint> constraint) = 0;
 
   /**
    * Adds an integrated cost to all time steps.
@@ -54,10 +49,10 @@ class DirectTrajectoryOptimization {
    */
   template <typename F>
   typename std::enable_if<
-      !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
-      std::shared_ptr<Constraint>>::type
+      !std::is_convertible<F, std::shared_ptr<solvers::Constraint>>::value,
+      std::shared_ptr<solvers::Constraint>>::type
   AddRunningCostFunc(F&& f) {
-    auto c = MathematicalProgram::MakeCost(std::forward<F>(f));
+    auto c = solvers::MathematicalProgram::MakeCost(std::forward<F>(f));
     AddRunningCost(c);
     return c;
   }
@@ -148,10 +143,10 @@ class DirectTrajectoryOptimization {
   */
   template <typename F>
   typename std::enable_if<
-      !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
-      std::shared_ptr<Constraint>>::type
+      !std::is_convertible<F, std::shared_ptr<solvers::Constraint>>::value,
+      std::shared_ptr<solvers::Constraint>>::type
   AddInitialCostFunc(F&& f) {
-    auto c = MathematicalProgram::MakeCost(std::forward<F>(f));
+    auto c = solvers::MathematicalProgram::MakeCost(std::forward<F>(f));
     AddInitialCost(c);
     return c;
   }
@@ -163,7 +158,7 @@ class DirectTrajectoryOptimization {
    * first element of x when Eval is invoked, followed by the final
    * state (num_states additional elements).
    */
-  void AddFinalCost(std::shared_ptr<Constraint> constraint);
+  void AddFinalCost(std::shared_ptr<solvers::Constraint> constraint);
 
   /**
    * Add a cost to the final state and total time.
@@ -173,10 +168,10 @@ class DirectTrajectoryOptimization {
    */
   template <typename F>
   typename std::enable_if<
-      !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
-      std::shared_ptr<Constraint>>::type
+      !std::is_convertible<F, std::shared_ptr<solvers::Constraint>>::value,
+      std::shared_ptr<solvers::Constraint>>::type
   AddFinalCostFunc(F&& f) {
-    auto c = MathematicalProgram::MakeCost(std::forward<F>(f));
+    auto c = solvers::MathematicalProgram::MakeCost(std::forward<F>(f));
     AddFinalCost(c);
     return c;
   }
@@ -195,9 +190,9 @@ class DirectTrajectoryOptimization {
    * input. The number of rows for each segment in @p traj_init_x must
    * be equal to num_states (the second param of the constructor).
    */
-  SolutionResult SolveTraj(double timespan_init,
-                           const PiecewisePolynomial<double>& traj_init_u,
-                           const PiecewisePolynomial<double>& traj_init_x);
+  solvers::SolutionResult SolveTraj(
+      double timespan_init, const PiecewisePolynomial<double>& traj_init_u,
+      const PiecewisePolynomial<double>& traj_init_x);
   // TODO(Lucy-tri) If timespan_init has any relationship to
   // trajectory_time_{lower,upper}_bound, then add doc and asserts.
 
@@ -241,6 +236,8 @@ class DirectTrajectoryOptimization {
    * @param trajectory_time_upper_bound Bound on total time for
    *        trajectory.
    */
+  // TODO(russt): update comment above. Note that system/context are cloned
+  // internally... must use accessors to make any changes to the system.
   DirectTrajectoryOptimization(int num_inputs, int num_states,
                                int num_time_samples,
                                double trajectory_time_lower_bound,
@@ -263,13 +260,17 @@ class DirectTrajectoryOptimization {
    */
   std::vector<Eigen::MatrixXd> GetStateVector() const;
 
+  // TODO(russt): Add accessors to a (mutable or not) raw pointer to the
+  // AutoDiffXd system and context used in the dynamic constraints.  This would
+  // allow folks to e.g. update the system parameters and then re-solve.
+
   int num_inputs() const { return num_inputs_; }
   int num_states() const { return num_states_; }
   int N() const { return N_; }
-  MathematicalProgram* opt_problem() { return &opt_problem_; }
-  const DecisionVariableVectorX& h_vars() const { return h_vars_; }
-  const DecisionVariableVectorX& u_vars() const { return u_vars_; }
-  const DecisionVariableVectorX& x_vars() const { return x_vars_; }
+  solvers::MathematicalProgram* opt_problem() { return &opt_problem_; }
+  const solvers::DecisionVariableVectorX& h_vars() const { return h_vars_; }
+  const solvers::DecisionVariableVectorX& u_vars() const { return u_vars_; }
+  const solvers::DecisionVariableVectorX& x_vars() const { return x_vars_; }
 
  private:
   /**
@@ -294,12 +295,12 @@ class DirectTrajectoryOptimization {
   const int num_states_;
   const int N_;  // Number of time samples
 
-  MathematicalProgram opt_problem_;
-  DecisionVariableVectorX h_vars_;  // Time deltas between each
-                                 // input/state sample.
-  DecisionVariableVectorX u_vars_;
-  DecisionVariableVectorX x_vars_;
+  solvers::MathematicalProgram opt_problem_;
+  solvers::DecisionVariableVectorX h_vars_;  // Time deltas between each
+                                             // input/state sample.
+  solvers::DecisionVariableVectorX u_vars_;
+  solvers::DecisionVariableVectorX x_vars_;
 };
 
-}  // namespace solvers
+}  // namespace systems
 }  // namespace drake

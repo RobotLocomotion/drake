@@ -1,4 +1,4 @@
-#include "drake/solvers/trajectory_optimization/direct_trajectory_optimization.h"
+#include "drake/systems/trajectory_optimization/direct_trajectory_optimization.h"
 
 #include <limits>
 #include <stdexcept>
@@ -7,7 +7,7 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 namespace drake {
-namespace solvers {
+namespace systems {
 namespace {
 VectorXd VectorDiff(const VectorXd& vec) {
   DRAKE_ASSERT(vec.size() > 1);
@@ -31,10 +31,10 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
       num_states_(num_states),
       N_(num_time_samples),
       h_vars_(opt_problem_.AddContinuousVariables(N_ - 1, "h")),
-      u_vars_(opt_problem_.AddContinuousVariables(num_inputs * N_, "u")),
-      x_vars_(opt_problem_.AddContinuousVariables(num_states * N_, "x")) {
-  DRAKE_ASSERT(num_inputs > 0);
-  DRAKE_ASSERT(num_states > 0);
+      u_vars_(opt_problem_.AddContinuousVariables(num_inputs_ * N_, "u")),
+      x_vars_(opt_problem_.AddContinuousVariables(num_states_ * N_, "x")) {
+  DRAKE_ASSERT(num_inputs_ > 0);
+  DRAKE_ASSERT(num_states_ > 0);
   DRAKE_ASSERT(num_time_samples > 1);
   DRAKE_ASSERT(trajectory_time_lower_bound <= trajectory_time_upper_bound);
   // Construct total time linear constraint.
@@ -81,7 +81,7 @@ void DirectTrajectoryOptimization::AddTimeIntervalBounds(
 void DirectTrajectoryOptimization::AddTimeIntervalBounds(
     const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound,
     const std::vector<int>& interval_indices) {
-  VariableListRef h_list;
+  solvers::VariableListRef h_list;
   for (const auto& idx : interval_indices) {
     h_list.push_back(h_vars_.segment<1>(idx));
   }
@@ -92,7 +92,7 @@ namespace {
 /// Since the final cost evaluation needs a total time, we need a
 /// wrapper which will calculate the total time from the individual
 /// time steps and mangle the output appropriately.
-class FinalCostWrapper : public Constraint {
+class FinalCostWrapper : public solvers::Constraint {
  public:
   FinalCostWrapper(int num_time_samples, int num_states,
                    std::shared_ptr<Constraint> constraint)
@@ -135,7 +135,7 @@ class FinalCostWrapper : public Constraint {
 // We just use a generic constraint here since we need to mangle the
 // input and output anyway.
 void DirectTrajectoryOptimization::AddFinalCost(
-    std::shared_ptr<Constraint> constraint) {
+    std::shared_ptr<solvers::Constraint> constraint) {
   auto wrapper =
       std::make_shared<FinalCostWrapper>(N_, num_states_, constraint);
   opt_problem_.AddCost(wrapper, {h_vars_, x_vars_.tail(num_states_)});
@@ -172,7 +172,7 @@ void DirectTrajectoryOptimization::GetInitialVars(
   opt_problem_.SetInitialGuess(x_vars_, guess_x);
 }
 
-SolutionResult DirectTrajectoryOptimization::SolveTraj(
+solvers::SolutionResult DirectTrajectoryOptimization::SolveTraj(
     double timespan_init, const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
   GetInitialVars(timespan_init, traj_init_u, traj_init_x);
@@ -181,7 +181,7 @@ SolutionResult DirectTrajectoryOptimization::SolveTraj(
   // default precision level.
   opt_problem_.SetSolverOption("IPOPT", "tol", 1e-7);
 
-  SolutionResult result = opt_problem_.Solve();
+  solvers::SolutionResult result = opt_problem_.Solve();
   return result;
 }
 
@@ -245,16 +245,16 @@ void DirectTrajectoryOptimization::GetResultSamples(
 PiecewisePolynomialTrajectory
 DirectTrajectoryOptimization::ReconstructInputTrajectory() const {
   return PiecewisePolynomialTrajectory(
-    PiecewisePolynomial<double>::FirstOrderHold(
-      GetTimeVector(), GetInputVector()));
+      PiecewisePolynomial<double>::FirstOrderHold(GetTimeVector(),
+                                                  GetInputVector()));
 }
 
 PiecewisePolynomialTrajectory
 DirectTrajectoryOptimization::ReconstructStateTrajectory() const {
   return PiecewisePolynomialTrajectory(
-    PiecewisePolynomial<double>::FirstOrderHold(
-      GetTimeVector(), GetStateVector()));
+      PiecewisePolynomial<double>::FirstOrderHold(GetTimeVector(),
+                                                  GetStateVector()));
 }
 
-}  // namespace solvers
+}  // namespace systems
 }  // namespace drake
