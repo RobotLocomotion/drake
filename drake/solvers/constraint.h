@@ -1,5 +1,5 @@
 #pragma once
-#include <iostream>
+
 #include <limits>
 #include <list>
 #include <map>
@@ -152,7 +152,9 @@ class QuadraticConstraint : public Constraint {
 
   QuadraticConstraint& operator=(const QuadraticConstraint& rhs) = default;
 
-  QuadraticConstraint(QuadraticConstraint&& rhs) : Constraint(std::move(rhs)), Q_(rhs.Q()), b_(rhs.b()) {std::cout<<"move"<<std::endl;}
+  QuadraticConstraint(QuadraticConstraint&& rhs) : Constraint(std::move(rhs)), Q_(rhs.Q()), b_(rhs.b()) {}
+
+  QuadraticConstraint& operator=(QuadraticConstraint&& rhs);
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override;
@@ -214,6 +216,14 @@ class LorentzConeConstraint : public Constraint {
                    Eigen::Vector2d::Constant(
                        std::numeric_limits<double>::infinity())) {}
 
+  LorentzConeConstraint(const LorentzConeConstraint& rhs) = default;
+
+  LorentzConeConstraint& operator=(const LorentzConeConstraint& rhs) = default;
+
+  LorentzConeConstraint(LorentzConeConstraint&& rhs) : Constraint(std::move(rhs)) {}
+
+  LorentzConeConstraint& operator=(LorentzConeConstraint&& rhs);
+
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override;
 
@@ -238,6 +248,14 @@ class RotatedLorentzConeConstraint : public Constraint {
       : Constraint(3, Eigen::Vector3d::Constant(0.0),
                    Eigen::Vector3d::Constant(
                        std::numeric_limits<double>::infinity())) {}
+
+  RotatedLorentzConeConstraint(const RotatedLorentzConeConstraint& rhs) = default;
+
+  RotatedLorentzConeConstraint& operator=(const RotatedLorentzConeConstraint& rhs) = default;
+
+  RotatedLorentzConeConstraint(RotatedLorentzConeConstraint&& rhs) : Constraint(std::move(rhs)) {}
+
+  RotatedLorentzConeConstraint& operator=(RotatedLorentzConeConstraint&& rhs);
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override;
@@ -267,6 +285,22 @@ class PolynomialConstraint : public Constraint {
         poly_vars_(poly_vars) {}
 
   ~PolynomialConstraint() override {}
+
+  PolynomialConstraint(const PolynomialConstraint& rhs) = default;
+
+  /// PolynomialConstraint object cannot be assigned, since it contains const
+  /// data members.
+  PolynomialConstraint& operator=(const PolynomialConstraint& rhs) = delete;
+
+  PolynomialConstraint(PolynomialConstraint&& rhs) :
+      Constraint(std::move(rhs)), polynomials_(std::move(rhs.polynomials_)),
+      poly_vars_(std::move(rhs.poly_vars_)),
+      double_evaluation_point_(std::move(rhs.double_evaluation_point_)),
+      taylor_evaluation_point_(std::move(rhs.taylor_evaluation_point_)) {}
+
+  /// PolynomialConstraint object cannot be assigned, since it contains const
+  /// data members.
+  PolynomialConstraint& operator=(PolynomialConstraint&& rhs) = delete;
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override;
@@ -300,6 +334,14 @@ class LinearConstraint : public Constraint {
       : Constraint(a.rows(), lb, ub), A_(a) {
     DRAKE_ASSERT(a.rows() == lb.rows());
   }
+
+  LinearConstraint(const LinearConstraint& rhs) = default;
+
+  LinearConstraint& operator=(const LinearConstraint& rhs) = default;
+
+  LinearConstraint(LinearConstraint&& rhs) : Constraint(std::move(rhs)), A_(std::move(rhs.A())) {}
+
+  LinearConstraint& operator=(LinearConstraint&& rhs);
 
   ~LinearConstraint() override {}
 
@@ -358,6 +400,14 @@ class LinearEqualityConstraint : public LinearConstraint {
                            const Eigen::MatrixBase<DerivedB>& beq)
       : LinearConstraint(Aeq, beq, beq) {}
 
+  LinearEqualityConstraint(const LinearEqualityConstraint& rhs) = default;
+
+  LinearEqualityConstraint& operator=(const LinearEqualityConstraint& rhs) = default;
+
+  LinearEqualityConstraint(LinearEqualityConstraint&& rhs) : LinearConstraint(std::move(rhs)) {};
+
+  LinearEqualityConstraint& operator=(LinearEqualityConstraint&& rhs);
+
   ~LinearEqualityConstraint() override {}
 
   /*
@@ -391,6 +441,14 @@ class BoundingBoxConstraint : public LinearConstraint {
       : LinearConstraint(Eigen::MatrixXd::Identity(lb.rows(), lb.rows()), lb,
                          ub) {}
 
+  BoundingBoxConstraint(const BoundingBoxConstraint& rhs) = default;
+
+  BoundingBoxConstraint& operator=(const BoundingBoxConstraint& rhs) = default;
+
+  BoundingBoxConstraint(BoundingBoxConstraint&& rhs) : LinearConstraint(std::move(rhs)) {};
+
+  BoundingBoxConstraint& operator=(BoundingBoxConstraint&& rhs);
+
   ~BoundingBoxConstraint() override {}
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -418,6 +476,14 @@ class LinearComplementarityConstraint : public Constraint {
   LinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                   const Eigen::MatrixBase<Derivedq>& q)
       : Constraint(q.rows()), M_(M), q_(q) {}
+
+  LinearComplementarityConstraint(const LinearComplementarityConstraint& rhs) = default;
+
+  LinearComplementarityConstraint& operator=(const LinearComplementarityConstraint& rhs) = default;
+
+  LinearComplementarityConstraint(LinearComplementarityConstraint&& rhs) : Constraint(std::move(rhs)), M_(std::move(rhs.M_)), q_(std::move(rhs.q_)) {};
+
+  LinearComplementarityConstraint& operator=(LinearComplementarityConstraint&& rhs);
 
   ~LinearComplementarityConstraint() override {}
 
@@ -509,6 +575,11 @@ class PositiveSemidefiniteConstraint : public Constraint {
 
   PositiveSemidefiniteConstraint& operator=(
       const PositiveSemidefiniteConstraint& rhs) = default;
+
+  PositiveSemidefiniteConstraint(PositiveSemidefiniteConstraint&& rhs) : Constraint(std::move(rhs)) {};
+
+  PositiveSemidefiniteConstraint& operator=(PositiveSemidefiniteConstraint&& rhs);
+
   /**
    * Evaluate the eigen values of the symmetric matrix.
    * @param x The stacked columns of the symmetric matrix.
@@ -550,8 +621,16 @@ class LinearMatrixInequalityConstraint : public Constraint {
   LinearMatrixInequalityConstraint(
       const LinearMatrixInequalityConstraint& rhs) = default;
 
+  /// LinearMatrixInequalityConstraint is not assignable since it has const
+  /// data members.
   LinearMatrixInequalityConstraint& operator=(
-      const LinearMatrixInequalityConstraint& rhs) = default;
+      const LinearMatrixInequalityConstraint& rhs) = delete;
+
+  LinearMatrixInequalityConstraint(LinearMatrixInequalityConstraint&& rhs) : Constraint(std::move(rhs)), F_(std::move(rhs.F_)), matrix_rows_(std::move(rhs.matrix_rows_)) {}
+
+  /// LinearMatrixInequalityConstraint is not assignable since it has const
+  /// data members.
+  LinearMatrixInequalityConstraint& operator=(LinearMatrixInequalityConstraint&& rhs) = delete;
 
   /* Getter for all given matrices F */
   const std::vector<Eigen::MatrixXd>& F() const { return F_; }

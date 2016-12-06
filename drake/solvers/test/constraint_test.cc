@@ -24,21 +24,31 @@ T pipe(T constraint) {
 
 // Tests if the copied and moved constraints behaves the same as the original
 // constraint.
-template<typename T>
-void TestMovableCopyableFun(const T& constraint, const Eigen::Ref<const Eigen::VectorXd> x) {
+// is_copyable is true if the constraint can be constructed using T(const T& rhs).
+// is_movable is true if the constraint can be constructed using T(T&& rhs).
+// is_assignable is true if the constraint can be assigned using operator=(const T& rhs) and operator(T&& rhs).
+template<bool is_copyable, bool is_movable, bool is_assignable, typename T>
+void TestMovableCopyableAssignableFun(const T &constraint,
+                                      const Eigen::Ref<const Eigen::VectorXd> x) {
   static_assert(std::is_base_of<Constraint, T>::value, "T should be a Constraint type");
-  T constraint_copied(constraint);
-  T constraint_assigned_copy = constraint;
-  T constraint_moved(pipe(constraint));
-  T constraint_assigned_move = pipe(constraint);
+  std::vector<T> constraints;
+  if (is_copyable) {
+    T constraint_copied(constraint);
+    constraints.push_back(constraint_copied);
+  }
+  if (is_movable) {
+    T constraint_moved(pipe(constraint));
+    constraints.push_back(constraint_moved);
+  }
+  if (is_assignable) {
+    T constraint_assigned_copy = constraint;
+    T constraint_assigned_move = pipe(constraint);
+    constraints.push_back(constraint_assigned_copy);
+    constraints.push_back(constraint_assigned_move);
+  }
 
   Eigen::VectorXd y_expected;
   constraint.Eval(x, y_expected);
-  std::vector<T> constraints;
-  constraints.push_back(constraint_copied);
-  constraints.push_back(constraint_assigned_copy);
-  constraints.push_back(constraint_moved);
-  constraints.push_back(constraint_assigned_move);
 
   for (const auto& con : constraints) {
     EXPECT_EQ(con.num_constraints(), constraint.num_constraints());
@@ -53,7 +63,31 @@ void TestMovableCopyableFun(const T& constraint, const Eigen::Ref<const Eigen::V
 
 GTEST_TEST(TestConstraint, TestMovableCopyable) {
   QuadraticConstraint quadratic_constraint(Eigen::Matrix2d::Identity(), Eigen::Vector2d::Ones(), -1, 1);
-  TestMovableCopyableFun(quadratic_constraint, Eigen::Vector2d(1.2, 0.2));
+  TestMovableCopyableAssignableFun<true, true, true>(quadratic_constraint,
+                                   Eigen::Vector2d(1.2, 0.2));
+  LorentzConeConstraint lorentz_cone_constraint;
+  TestMovableCopyableAssignableFun<true, true, true>(lorentz_cone_constraint,
+                                   Eigen::Vector3d(1.2, 0.3, 0.3));
+  RotatedLorentzConeConstraint rotated_lorentz_cone_constraint;
+  TestMovableCopyableAssignableFun<true, true, true>(rotated_lorentz_cone_constraint,
+                                   Eigen::Vector4d(2.0, 3.0, 1.2, 0.3));
+  LinearConstraint linear_constraint(Eigen::RowVector2d(1, 2), Vector1d(0), Vector1d(1));
+  TestMovableCopyableAssignableFun<true, true, true>(linear_constraint,
+                                   Eigen::Vector2d(2, 3));
+  LinearEqualityConstraint linear_equality_constraint(Eigen::RowVector2d(1, 2), Vector1d(0));
+  TestMovableCopyableAssignableFun<true, true, true>(linear_equality_constraint,
+                                   Eigen::Vector2d(2, 3));
+  BoundingBoxConstraint bounding_box_constraint(Eigen::Vector2d(0, 1), Eigen::Vector2d(1, 2));
+  TestMovableCopyableAssignableFun<true, true, true>(bounding_box_constraint,
+                                   Eigen::Vector2d(0.5, 1.5));
+  LinearComplementarityConstraint linear_complementarity_constraint(Eigen::Matrix2d::Identity(), Eigen::Vector2d::Ones());
+  TestMovableCopyableAssignableFun<true, true, true>(linear_complementarity_constraint,
+                                   Eigen::Vector2d(2, 3));
+  PositiveSemidefiniteConstraint positive_semidefinite_constraint(2);
+  TestMovableCopyableAssignableFun<true, true, true>(positive_semidefinite_constraint,
+                                   Eigen::Vector4d(1, 0, 0, 1));
+  LinearMatrixInequalityConstraint linear_matrix_inequality_constraint({Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Ones()});
+  TestMovableCopyableAssignableFun<true, true, false>(linear_matrix_inequality_constraint, Vector1d(1));
 }
 
 // Tests if the Lorentz Cone constraint is imposed correctly.
