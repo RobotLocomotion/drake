@@ -39,7 +39,7 @@ class BodyOfInterest {
               const KinematicsCache<double>& cache) {
     pose_.translation() = offset_;
     pose_.linear().setIdentity();
-    pose_ = robot.relativeTransform(cache, 0, body_->get_id()) * pose_;
+    pose_ = robot.relativeTransform(cache, 0, body_->get_body_index()) * pose_;
 
     vel_ = GetTaskSpaceVel(robot, cache, *body_, offset_);
     J_ = GetTaskSpaceJacobian(robot, cache, *body_, offset_);

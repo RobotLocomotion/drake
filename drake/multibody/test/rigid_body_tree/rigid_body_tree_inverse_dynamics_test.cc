@@ -304,7 +304,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
       auto wrench_body = Vector6<double>::Random().eval();
       external_wrenches[body_ptr.get()] = wrench_body;
       auto body_to_world = tree.relativeTransform(
-          *kinematics_cache, world_index, body_ptr->get_id());
+          *kinematics_cache, world_index, body_ptr->get_body_index());
       auto wrench_world = transformSpatialForce(body_to_world, wrench_body);
       total_wrench_world += wrench_world;
     }
@@ -318,7 +318,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   Vector6<double> floating_joint_wrench_body =
       tau.segment<kTwistSize>(floating_joint_start_index);
   auto body_to_world = tree.relativeTransform(
-      *kinematics_cache, world_index, floating_body_ptr->get_id());
+      *kinematics_cache, world_index, floating_body_ptr->get_body_index());
   auto floating_joint_wrench_world =
       transformSpatialForce(body_to_world, floating_joint_wrench_body);
   total_wrench_world += floating_joint_wrench_world;

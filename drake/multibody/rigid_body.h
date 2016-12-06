@@ -151,13 +151,7 @@ class RigidBody {
    * Returns the "body index" of this `RigidBody`. This is the index within the
    * vector of `RigidBody` objects within the `RigidBodyTree`.
    */
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use get_id().")
-#endif
   int get_body_index() const;
-
-  // Returns its unique identifier in its parent RigidBodyTree.
-  int get_id() const;
 
   /**
    * Sets the start index of this rigid body's mobilizer joint's contiguous
