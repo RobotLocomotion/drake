@@ -10,9 +10,9 @@ namespace maliput {
 namespace monolane {
 
 GTEST_TEST(MonolaneBuilderTest, Fig8) {
-  const double kPosPrecision = 0.01;
-  const double kOriPrecision = 0.01 * M_PI;
-  Builder b({-2., 2.}, {-4., 4.}, kPosPrecision, kOriPrecision);
+  const double kLinearTolerance = 0.01;
+  const double kAngularTolerance = 0.01 * M_PI;
+  Builder b({-2., 2.}, {-4., 4.}, kLinearTolerance, kAngularTolerance);
 
   XYZPoint start {{0., 0., -M_PI / 4.}, {0., 0., 0., 0.}};
   auto c0 = b.Connect("0", start,
@@ -35,11 +35,11 @@ GTEST_TEST(MonolaneBuilderTest, Fig8) {
 
   // Tweak ends to check if fuzzy-matching is working.
   XYZPoint c6end = c6->end();
-  c6end.xy.x += kPosPrecision * 0.5;
-  c6end.xy.y -= kPosPrecision * 0.5;
-  c6end.z.z += kPosPrecision * 0.5;
+  c6end.xy.x += kLinearTolerance * 0.5;
+  c6end.xy.y -= kLinearTolerance * 0.5;
+  c6end.z.z += kLinearTolerance * 0.5;
   ZPoint c0start_z = c0->start().z;
-  c0start_z.z -= kPosPrecision * 0.5;
+  c0start_z.z -= kLinearTolerance * 0.5;
 
   b.Connect("7", c6end, 50., c0start_z);
 
@@ -75,7 +75,6 @@ GTEST_TEST(MonolaneBuilderTest, Fig8) {
   EXPECT_EQ(rg->num_branch_points(), 8);
   for (int bpi = 0; bpi < rg->num_branch_points(); ++bpi) {
     const api::BranchPoint* bp = rg->branch_point(bpi);
-    /////    EXPECT_EQ(bp->GetBranches()->size(), 2);
     EXPECT_EQ(bp->GetASide()->size(), 1);
     EXPECT_EQ(bp->GetBSide()->size(), 1);
   }

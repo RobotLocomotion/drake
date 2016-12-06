@@ -1,6 +1,3 @@
-drake_add_cc_test(hodgepodge)
-target_link_libraries(hodgepodge drakeAutomotive)
-
 drake_add_cc_test(monolane_lanes_test)
 target_link_libraries(monolane_lanes_test drakeAutomotive)
 
