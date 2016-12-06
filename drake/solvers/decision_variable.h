@@ -118,8 +118,7 @@ class DecisionVariableScalar {
  * Prints out the DecisionVariableScalar's name.
  * @relates DecisionVariableScalar.
  */
-std::ostream& operator<<(std::ostream& os,
-                                const DecisionVariableScalar& var);
+std::ostream& operator<<(std::ostream& os, const DecisionVariableScalar& var);
 
 struct DecisionVariableScalarHash {
   size_t operator()(const DecisionVariableScalar& var) const;

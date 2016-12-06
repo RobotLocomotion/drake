@@ -13,8 +13,7 @@ size_t DecisionVariableScalarHash::operator()(
 }
 
 std::ostream& operator<<(std::ostream& os, const DecisionVariableScalar& var) {
-  os << var.name();
-  return os;
+  return os << var.name();
 }
 
 VariableList::VariableList(const VariableListRef& variable_list) {
