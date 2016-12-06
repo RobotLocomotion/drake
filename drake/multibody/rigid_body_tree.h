@@ -185,6 +185,8 @@ class RigidBodyTree {
   /// Creates a KinematicsCache to perform computations with this RigidBodyTree.
   /// The returned KinematicsCache is consistently templated on the scalar type
   /// for this RigidBodyTree instance.
+  /// Aborts if this RigidBodyTree was not previously initialized with a call
+  /// to RigidBodyTree::compile().
   KinematicsCache<T> CreateKinematicsCache() const;
 
   /// A helper template method used to create a KinematicsCache templated on
@@ -193,6 +195,8 @@ class RigidBodyTree {
   /// This method is particularly useful in mex files where only a reference
   /// to a `RigidBodyTree<double>` is available to create kinematics caches
   /// on different scalar types.
+  /// Aborts if this RigidBodyTree was not previously initialized with a call
+  /// to RigidBodyTree::compile().
   ///
   /// Users should not call this method but instead create KinematicsCache
   /// objects with RigidBodyTree:CreateKinematicsCache().
@@ -200,10 +204,14 @@ class RigidBodyTree {
   /// @tparam CacheT The scalar type for the returned KinematicsCache.
   /// @returns A KinematicsCache templated on `CacheT` that can be used for
   /// computations on this RigidBodyTree with methods instantiated on `CacheT`.
+  // TODO(amcastro-tri): Remove this method once older pieces of code such as
+  // createKinematicsCacheAutoDiffmex.cpp are updated to use a RigidBodyTree to
+  // manage cache creation.
   template <typename CacheT>
   KinematicsCache<CacheT> CreateKinematicsCacheWithType() const;
 
-  /// Creates a KinematicsCache given a vector of rigid bodies.
+  /// Creates a KinematicsCache given a reference to a vector of rigid bodies
+  /// contained within a RigidBodyTree.
   /// This method is static since all the information to create the
   /// corresponding KinematicsCache resides in the input parameter vector
   /// `bodies`.

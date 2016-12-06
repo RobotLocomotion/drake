@@ -868,6 +868,8 @@ template <typename T>
 template <typename CacheT>
 KinematicsCache<CacheT>
 RigidBodyTree<T>::CreateKinematicsCacheWithType() const {
+  DRAKE_DEMAND(initialized_ && "This RigidBodyTree was not initialized."
+      " RigidBodyTree::compile() must be called first.");
   KinematicsCache<CacheT> cache(get_num_positions(), get_num_velocities());
   for (const auto& body_unique_ptr : bodies) {
     const RigidBody<T>& body = *body_unique_ptr;
@@ -875,13 +877,15 @@ RigidBodyTree<T>::CreateKinematicsCacheWithType() const {
         body.has_parent_body() ? body.getJoint().get_num_positions() : 0;
     int num_velocities_joint =
         body.has_parent_body() ? body.getJoint().get_num_velocities() : 0;
-    cache.CreateCacheEntry(num_positions_joint, num_velocities_joint);
+    cache.CreateCacheElement(num_positions_joint, num_velocities_joint);
   }
   return cache;
 }
 
 template <typename T>
 KinematicsCache<T> RigidBodyTree<T>::CreateKinematicsCache() const {
+  DRAKE_DEMAND(initialized_ && "This RigidBodyTree was not initialized."
+      " RigidBodyTree::compile() must be called first.");
   return CreateKinematicsCacheWithType<T>();
 }
 
@@ -1235,7 +1239,7 @@ RigidBodyTree<T>::transformVelocityMappingToQDotMapping(
   DRAKE_DEMAND(Av.cols() == cache.get_num_velocities());
   int Ap_col_start = 0;
   int Av_col_start = 0;
-  for (int body_id = 0; body_id < cache.get_num_body_entries(); ++body_id) {
+  for (int body_id = 0; body_id < cache.get_num_cache_elements(); ++body_id) {
     const auto& element = cache.get_element(body_id);
     Ap.middleCols(Ap_col_start, element.get_num_positions()).noalias() =
         Av.middleCols(Av_col_start, element.get_num_velocities()) *
@@ -1258,7 +1262,7 @@ RigidBodyTree<T>::transformQDotMappingToVelocityMapping(
   DRAKE_DEMAND(Ap.cols() == cache.get_num_positions());
   int Av_col_start = 0;
   int Ap_col_start = 0;
-  for (int body_id = 0; body_id < cache.get_num_body_entries(); ++body_id) {
+  for (int body_id = 0; body_id < cache.get_num_cache_elements(); ++body_id) {
     const auto& element = cache.get_element(body_id);
     Av.middleCols(Av_col_start, element.get_num_velocities()).noalias() =
         Ap.middleCols(Ap_col_start, element.get_num_positions()) *

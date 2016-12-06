@@ -110,12 +110,12 @@ class KinematicsCache {
 
   /// Requests a cache entry for a body mobilized by a joint with
   /// @p num_positions and @p num_velocities.
-  void CreateCacheEntry(int num_positions, int num_velocities);
+  void CreateCacheElement(int num_positions, int num_velocities);
 
-  /// Returns constant reference to a cach entry for body @p body_id.
+  /// Returns constant reference to a cache entry for body @p body_id.
   const KinematicsCacheElement<T>& get_element(int body_id) const;
 
-  /// Returns mutable pointer to a cach entry for body @p body_id.
+  /// Returns mutable pointer to a cache entry for body @p body_id.
   KinematicsCacheElement<T>* get_mutable_element(int body_id);
 
   template <typename Derived>
@@ -145,7 +145,7 @@ class KinematicsCache {
 
   void setJdotVCached(bool jdotV_cached_in);
 
-  int get_num_body_entries() const;
+  int get_num_cache_elements() const;
 
   int get_num_positions() const;
 

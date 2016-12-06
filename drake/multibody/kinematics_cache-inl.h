@@ -30,7 +30,7 @@ KinematicsCache<T>::KinematicsCache(int num_positions, int num_velocities)
 }
 
 template <typename T>
-void KinematicsCache<T>::CreateCacheEntry(
+void KinematicsCache<T>::CreateCacheElement(
     int num_positions, int num_velocities) {
   elements_.emplace_back(num_positions, num_velocities);
 }
@@ -45,6 +45,7 @@ KinematicsCache<T>::KinematicsCache(
       q(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_positions_)),
       v(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_velocities_)),
       velocity_vector_valid(false) {
+  DRAKE_DEMAND(num_joint_positions.size() == num_joint_velocities.size());
   for (int body_id = 0;
        body_id < static_cast<int>(num_joint_positions.size()); ++body_id) {
     elements_.emplace_back(num_joint_positions[body_id],
@@ -158,7 +159,7 @@ void KinematicsCache<T>::setJdotVCached(bool jdotV_cached_in) {
 }
 
 template <typename T>
-int KinematicsCache<T>::get_num_body_entries() const {
+int KinematicsCache<T>::get_num_cache_elements() const {
   return static_cast<int>(elements_.size());
 }
 
