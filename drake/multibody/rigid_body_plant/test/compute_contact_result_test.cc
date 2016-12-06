@@ -87,7 +87,6 @@ class ContactResultTest : public ::testing::Test {
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
     context_->FixInputPort(0, make_unique<BasicVector<double>>(0));
-    plant_->SetZeroConfiguration(context_.get());
     plant_->EvalOutput(*context_.get(), output_.get());
 
     // TODO(SeanCurtis-TRI): This hard-coded value is unfortunate. However,

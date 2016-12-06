@@ -237,16 +237,6 @@ class SimulatedKuka : public systems::Diagram<T> {
 
   const RigidBodyPlant<T>& get_plant() const { return *plant_; }
 
-  void SetDefaultState(Context<T>* context) const {
-    Context<T>* controller_context =
-        this->GetMutableSubsystemContext(context, controller_);
-    controller_->SetDefaultState(controller_context);
-
-    Context<T>* plant_context =
-        controller_->GetMutableSubsystemContext(controller_context, plant_);
-    plant_->SetZeroConfiguration(plant_context);
-  }
-
  private:
   RigidBodyPlant<T>* plant_{nullptr};
   PidControlledSystem<T>* controller_{nullptr};
@@ -295,11 +285,6 @@ int DoMain() {
   auto sys = builder.Build();
 
   Simulator<double> simulator(*sys);
-
-  // Zeroes the state and initializes controller state.
-  auto model_context = sys->GetMutableSubsystemContext(
-      simulator.get_mutable_context(), model);
-  model->SetDefaultState(model_context);
 
   lcm.StartReceiveThread();
   simulator.Initialize();

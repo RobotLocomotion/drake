@@ -83,8 +83,6 @@ int do_main(int argc, char* argv[]) {
   Quadrotor<double> model;
   systems::Simulator<double> simulator(model);
 
-  model.SetDefaultState(simulator.get_mutable_context());
-
   simulator.Initialize();
   simulator.StepTo(FLAGS_duration);
   return 0;
