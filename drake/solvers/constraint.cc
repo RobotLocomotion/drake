@@ -4,6 +4,10 @@
 
 namespace drake {
 namespace solvers {
+Constraint::Constraint(Constraint&& rhs) : Constraint(rhs.num_constraints(), std::move(rhs.lower_bound()), std::move(rhs.upper_bound())) {
+  description_ = std::move(rhs.get_description());
+}
+
 void PositiveSemidefiniteConstraint::Eval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
   DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==

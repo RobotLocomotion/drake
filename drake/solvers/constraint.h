@@ -50,6 +50,14 @@ class Constraint {
     upper_bound_.setConstant(std::numeric_limits<double>::infinity());
   }
 
+  Constraint(const Constraint& rhs) = default;
+
+  Constraint& operator=(const Constraint& rhs) = default;
+
+  Constraint(Constraint&& rhs);
+
+  Constraint& operator=(Constraint&& rhs);
+
   template <typename DerivedLB, typename DerivedUB>
   Constraint(size_t num_constraints, Eigen::MatrixBase<DerivedLB> const& lb,
              Eigen::MatrixBase<DerivedUB> const& ub)

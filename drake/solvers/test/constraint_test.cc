@@ -15,6 +15,9 @@ using Eigen::Vector3d;
 namespace drake {
 namespace solvers {
 namespace {
+GTEST_TEST(TestConstraint, TestMovableCopyable) {
+
+}
 
 // Tests if the Lorentz Cone constraint is imposed correctly.
 void TestLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
