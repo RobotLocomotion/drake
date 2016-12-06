@@ -32,7 +32,8 @@ LinearQuadraticRegulatorResult LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& B,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,
-    const Eigen::Ref<const Eigen::MatrixXd>& N = Eigen::Matrix<double, 0, 0>::Zero());
+    const Eigen::Ref<const Eigen::MatrixXd>& N =
+        Eigen::Matrix<double, 0, 0>::Zero());
 
 /// Creates a system that implements the optimal time-invariant linear quadratic
 /// regulator (LQR):
@@ -44,6 +45,7 @@ LinearQuadraticRegulatorResult LinearQuadraticRegulator(
 /// num_states.
 /// @param R A symmetric positive definite cost matrix of size num_inputs x
 /// num_inputs.
+/// @param N A cost matrix of size num_states x num_inputs.
 /// @returns A system implementing the optimal controller in the original system
 /// coordinates.
 ///
@@ -52,7 +54,9 @@ LinearQuadraticRegulatorResult LinearQuadraticRegulator(
 std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
     const LinearSystem<double>& system,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
-    const Eigen::Ref<const Eigen::MatrixXd>& R);
+    const Eigen::Ref<const Eigen::MatrixXd>& R,
+    const Eigen::Ref<const Eigen::MatrixXd>& N =
+        Eigen::Matrix<double, 0, 0>::Zero());
 
 /// Linearizes the System around the specified Context, computes the optimal
 /// time-invariant linear quadratic regulator (LQR), and returns a System which
@@ -69,6 +73,7 @@ std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
 /// num_states.
 /// @param R A symmetric positive definite cost matrix of size num_inputs x
 /// num_inputs.
+/// @param N A cost matrix of size num_states x num_inputs.
 /// @returns A system implementing the optimal controller in the original system
 /// coordinates.
 ///
@@ -77,7 +82,9 @@ std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
 std::unique_ptr<AffineSystem<double>> LinearQuadraticRegulator(
     const System<double>& system, const Context<double>& context,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
-    const Eigen::Ref<const Eigen::MatrixXd>& R);
+    const Eigen::Ref<const Eigen::MatrixXd>& R,
+    const Eigen::Ref<const Eigen::MatrixXd>& N =
+        Eigen::Matrix<double, 0, 0>::Zero());
 
 }  // namespace systems
 }  // namespace drake
