@@ -60,9 +60,7 @@ class Constraint {
   template <typename DerivedLB, typename DerivedUB>
   Constraint(size_t num_constraints, Eigen::MatrixBase<DerivedLB> const& lb,
              Eigen::MatrixBase<DerivedUB> const& ub)
-      : lower_bound_(lb), upper_bound_(ub), description_() {
-    check(num_constraints);
-  }
+      : Constraint(num_constraints, lb, ub, "") {}
 
   template <typename DerivedLB, typename DerivedUB>
   Constraint(size_t num_constraints, const Eigen::MatrixBase<DerivedLB>& lb,
