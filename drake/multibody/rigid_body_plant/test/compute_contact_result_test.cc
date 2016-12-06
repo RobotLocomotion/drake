@@ -160,7 +160,7 @@ TEST_F(ContactResultTest, SingleCollision) {
       CompareMatrices(resultant.get_spatial_force(), expected_spatial_force));
 
   const auto& details = info.get_contact_details();
-  ASSERT_EQ(details.size(), 1);
+  ASSERT_EQ(details.size(), 1u);
   auto detail_force = details[0]->ComputeContactForce();
   ASSERT_TRUE(CompareMatrices(detail_force.get_spatial_force(),
                               expected_spatial_force));

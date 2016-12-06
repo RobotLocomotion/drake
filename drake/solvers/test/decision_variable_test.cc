@@ -21,7 +21,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   std::stringstream msg_buff1;
   msg_buff1 << X1 << std::endl;
   EXPECT_EQ(msg_buff1.str(), "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
-  EXPECT_EQ(prog.num_vars(), 6);
+  EXPECT_EQ(prog.num_vars(), 6u);
   EXPECT_FALSE(math::IsSymmetric(X1));
   auto S1 = prog.AddSymmetricContinuousVariables(3, "S");
   static_assert(decltype(S1)::RowsAtCompileTime == Eigen::Dynamic &&
@@ -32,7 +32,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_EQ(
       msg_buff2.str(),
       "S(0,0) S(1,0) S(2,0)\nS(1,0) S(1,1) S(2,1)\nS(2,0) S(2,1) S(2,2)\n");
-  EXPECT_EQ(prog.num_vars(), 12);
+  EXPECT_EQ(prog.num_vars(), 12u);
   EXPECT_TRUE(math::IsSymmetric(S1));
   auto x1 = prog.AddContinuousVariables(6, "x");
   static_assert(decltype(x1)::RowsAtCompileTime == Eigen::Dynamic &&
@@ -41,7 +41,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   std::stringstream msg_buff3;
   msg_buff3 << x1 << std::endl;
   EXPECT_EQ(msg_buff3.str(), "x0\nx1\nx2\nx3\nx4\nx5\n");
-  EXPECT_EQ(prog.num_vars(), 18);
+  EXPECT_EQ(prog.num_vars(), 18u);
   EXPECT_FALSE(math::IsSymmetric(x1));
   std::array<std::string, 6> X_name = {{"X1", "X2", "X3", "X4", "X5", "X6"}};
   auto X2 = prog.AddContinuousVariables<2, 3>(X_name);
@@ -51,7 +51,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   static_assert(decltype(X2)::RowsAtCompileTime == 2 &&
                     decltype(X2)::ColsAtCompileTime == 3,
                 "should be a static matrix of type 2 x 3");
-  EXPECT_EQ(prog.num_vars(), 24);
+  EXPECT_EQ(prog.num_vars(), 24u);
   EXPECT_FALSE(math::IsSymmetric(X2));
   Eigen::Matrix<double, 6, 1> x_value;
   x_value << 0, 2, 4, 6, 8, 10;
@@ -107,12 +107,12 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   }
 
   // Test size() and num_unique_variables() functions of VariableList.
-  EXPECT_EQ(VariableList({X1}).num_unique_variables(), 6);
-  EXPECT_EQ(VariableList({X1}).size(), 6);
-  EXPECT_EQ(VariableList({X1, X1}).num_unique_variables(), 6);
-  EXPECT_EQ(VariableList({X1, X1}).size(), 12);
-  EXPECT_EQ(VariableList({X1, X1.row(1)}).num_unique_variables(), 6);
-  EXPECT_EQ(VariableList({X1, X1.row(1)}).size(), 9);
+  EXPECT_EQ(VariableList({X1}).num_unique_variables(), 6u);
+  EXPECT_EQ(VariableList({X1}).size(), 6u);
+  EXPECT_EQ(VariableList({X1, X1}).num_unique_variables(), 6u);
+  EXPECT_EQ(VariableList({X1, X1}).size(), 12u);
+  EXPECT_EQ(VariableList({X1, X1.row(1)}).num_unique_variables(), 6u);
+  EXPECT_EQ(VariableList({X1, X1.row(1)}).size(), 9u);
 
   std::unordered_set<DecisionVariableScalar, DecisionVariableScalarHash>
       X1_unique_variables_expected;
