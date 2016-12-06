@@ -40,10 +40,8 @@ ValkyriePDAndFeedForwardController::ValkyriePDAndFeedForwardController(
       feedforward_torque_(nominal_torque),
       Kp_(Kp),
       Kd_(Kd) {
-  input_port_index_kinematics_result_ =
-      DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
-  output_port_index_atlas_command_ =
-      DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
+  input_port_index_kinematics_result_ = DeclareAbstractInputPort().get_index();
+  output_port_index_atlas_command_ = DeclareAbstractOutputPort().get_index();
 
   if (!Kp_.allFinite())
     throw std::runtime_error("Invalid Kp.");

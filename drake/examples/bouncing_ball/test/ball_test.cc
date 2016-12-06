@@ -42,7 +42,6 @@ TEST_F(BallTest, Topology) {
   const auto& output_descriptor = dut_->get_output_ports().at(0);
   EXPECT_EQ(systems::kVectorValued, output_descriptor.get_data_type());
   EXPECT_EQ(systems::kOutputPort, output_descriptor.get_face());
-  EXPECT_EQ(systems::kContinuousSampling, output_descriptor.get_sampling());
 }
 
 TEST_F(BallTest, Output) {

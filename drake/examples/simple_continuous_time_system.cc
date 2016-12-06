@@ -15,8 +15,7 @@ class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
  public:
   SimpleContinuousTimeSystem() {
     const int kSize = 1;  // The dimension of both output (y) and state (x).
-    this->DeclareOutputPort(drake::systems::kVectorValued,
-                            kSize, drake::systems::kContinuousSampling);
+    this->DeclareOutputPort(drake::systems::kVectorValued, kSize);
     this->DeclareContinuousState(kSize);
   }
 

@@ -17,11 +17,9 @@ constexpr int kNumDOF = 2;  // theta1 + theta2.
 
 template <typename T>
 AcrobotPlant<T>::AcrobotPlant() {
-  this->DeclareInputPort(systems::kVectorValued, 1,
-                         systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, 1);
   this->DeclareContinuousState(kNumDOF * 2);  // Position + velocity.
-  this->DeclareOutputPort(systems::kVectorValued, kNumDOF * 2,
-                          systems::kContinuousSampling);
+  this->DeclareOutputPort(systems::kVectorValued, kNumDOF * 2);
 }
 
 template <typename T>

@@ -14,11 +14,11 @@ template <typename T>
 Multiplexer<T>::Multiplexer(std::vector<int> input_sizes)
     : input_sizes_(input_sizes) {
   for (const int input_size : input_sizes_) {
-    this->DeclareInputPort(kVectorValued, input_size, kInheritedSampling);
+    this->DeclareInputPort(kVectorValued, input_size);
   }
   const int output_size = std::accumulate(
       input_sizes.begin(), input_sizes.end(), 0, std::plus<int>{});
-  this->DeclareOutputPort(kVectorValued, output_size, kInheritedSampling);
+  this->DeclareOutputPort(kVectorValued, output_size);
 }
 
 template <typename T>

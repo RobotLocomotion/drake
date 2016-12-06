@@ -34,12 +34,9 @@ RobotStateEncoder::RobotStateEncoder(
       floating_body_(tree.bodies[1]->getJoint().is_floating()
                          ? tree.bodies[1].get()
                          : nullptr),
-      lcm_message_port_index_(
-          DeclareAbstractOutputPort(kContinuousSampling).get_index()),
-      kinematics_results_port_index_(
-          DeclareAbstractInputPort(kContinuousSampling).get_index()),
-      contact_results_port_index_(
-          DeclareAbstractInputPort(kContinuousSampling).get_index()),
+      lcm_message_port_index_(DeclareAbstractOutputPort().get_index()),
+      kinematics_results_port_index_(DeclareAbstractInputPort().get_index()),
+      contact_results_port_index_(DeclareAbstractInputPort().get_index()),
       effort_port_indices_(DeclareEffortInputPorts()),
       force_torque_sensor_info_(ft_sensor_info) {
   int sensor_idx = 0;
@@ -118,9 +115,8 @@ RobotStateEncoder::DeclareEffortInputPorts() {
   // Currently, all RigidBodyActuators are assumed to be one-dimensional.
   const int actuator_effort_length = 1;
   for (const auto& actuator : tree_.actuators) {
-    ret[&actuator] = DeclareInputPort(kVectorValued, actuator_effort_length,
-                                      kContinuousSampling)
-                         .get_index();
+    ret[&actuator] =
+        DeclareInputPort(kVectorValued, actuator_effort_length).get_index();
   }
   return ret;
 }
@@ -128,8 +124,7 @@ RobotStateEncoder::DeclareEffortInputPorts() {
 std::map<Side, int> RobotStateEncoder::DeclareWrenchInputPorts() {
   std::map<Side, int> ret;
   for (const auto& side : Side::values) {
-    ret[side] = DeclareInputPort(kVectorValued, kTwistSize, kContinuousSampling)
-                    .get_index();
+    ret[side] = DeclareInputPort(kVectorValued, kTwistSize).get_index();
   }
   return ret;
 }
