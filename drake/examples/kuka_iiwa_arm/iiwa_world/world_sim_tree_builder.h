@@ -91,6 +91,13 @@ class WorldSimTreeBuilder {
     return std::move(rigid_body_tree_);
   }
 
+  /// Return the (not yet built) tree.  Build() must not have been
+  /// called yet.
+  const RigidBodyTree<T>& tree() const {
+    DRAKE_DEMAND(built_ == false && rigid_body_tree_ != nullptr);
+    return *rigid_body_tree_;
+  }
+
  private:
   std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{
       std::make_unique<RigidBodyTree<T>>()};
