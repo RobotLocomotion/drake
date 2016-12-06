@@ -152,7 +152,7 @@ void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
   drake::lcmt_viewer_draw expected_message;
   ASSERT_EQ(
       expected_message.decode(message_bytes.data(), 0, message_bytes.size()),
-      message_bytes.size());
+      static_cast<int>(message_bytes.size()));
   ASSERT_EQ(expected_message.num_links, 3);
   EXPECT_EQ(expected_message.timestamp, 0);
   EXPECT_EQ(expected_message.link_name.at(0), "world");
