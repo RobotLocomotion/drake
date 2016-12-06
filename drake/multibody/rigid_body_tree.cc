@@ -319,7 +319,7 @@ void RigidBodyTree<T>::CompileCollisionState() {
     // Note: contact points does *not* rely on collision element group names.
     for ( const auto& collision_item : elements ) {
       Matrix3Xd element_points;
-      collision_item.element->getTerrainContactPoints(contact_points);
+      collision_item.element->getTerrainContactPoints(element_points);
       contact_points.conservativeResize(
           Eigen::NoChange, contact_points.cols() + element_points.cols());
       contact_points.block(0, num_points, contact_points.rows(),
