@@ -89,11 +89,28 @@ class KinematicsCache {
  public:
   KinematicsCache(int num_positions, int num_velocities);
 
-  void CreateCacheEntry(int num_positions, int num_velocities);
-
+  /// Constructor for a KinematicsCache given the number of positions and
+  /// velocities per body in the vectors @p num_joint_positions and
+  /// @p num_joint_velocities, respectively.
+  ///
+  /// For a RigidBodyTree with `nbodies` rigid bodies, `num_joint_positions`
+  /// and `num_joint_velocities` are vectors of size `nbodies` containing in
+  /// the i-th entry the number of positions and the number of velocities for
+  /// the i-th RigidBody in the RigidBodyTree.
+  ///
+  /// @param num_positions Total number of positions in the RigidBodyTree.
+  /// @param num_velocities Total number of velocities in the RigidBodyTree.
+  /// @param num_joint_positions A `std::vector<int>` containing in the i-th
+  /// entry the number of positions for the i-th body in the RigidBodyTree.
+  /// @param num_joint_velocities A `std::vector<int>` containing in the i-th
+  /// entry the number of velocities for the i-th body in the RigidBodyTree.
   KinematicsCache(int num_positions, int num_velocities,
                   const std::vector<int>& num_joint_positions,
                   const std::vector<int>& num_joint_velocities);
+
+  /// Requests a cache entry for a body mobilized by a joint with
+  /// @p num_positions and @p num_velocities.
+  void CreateCacheEntry(int num_positions, int num_velocities);
 
   /// Returns constant reference to a cach entry for body @p body_id.
   const KinematicsCacheElement<T>& get_element(int body_id) const;
