@@ -152,7 +152,7 @@ class QuadraticConstraint : public Constraint {
 
   QuadraticConstraint& operator=(const QuadraticConstraint& rhs) = default;
 
-  QuadraticConstraint(QuadraticConstraint&& rhs) : Constraint(std::move(rhs)), Q_(rhs.Q()), b_(rhs.b()) {}
+  QuadraticConstraint(QuadraticConstraint&& rhs) : Constraint(std::move(rhs)), Q_(rhs.Q()), b_(rhs.b()) {std::cout<<"move"<<std::endl;}
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override;

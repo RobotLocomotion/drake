@@ -22,11 +22,38 @@ T pipe(T constraint) {
   return constraint;
 }
 
+// Tests if the copied and moved constraints behaves the same as the original
+// constraint.
+template<typename T>
+void TestMovableCopyableFun(const T& constraint, const Eigen::Ref<const Eigen::VectorXd> x) {
+  static_assert(std::is_base_of<Constraint, T>::value, "T should be a Constraint type");
+  T constraint_copied(constraint);
+  T constraint_assigned_copy = constraint;
+  T constraint_moved(pipe(constraint));
+  T constraint_assigned_move = pipe(constraint);
+
+  Eigen::VectorXd y_expected;
+  constraint.Eval(x, y_expected);
+  std::vector<T> constraints;
+  constraints.push_back(constraint_copied);
+  constraints.push_back(constraint_assigned_copy);
+  constraints.push_back(constraint_moved);
+  constraints.push_back(constraint_assigned_move);
+
+  for (const auto& con : constraints) {
+    EXPECT_EQ(con.num_constraints(), constraint.num_constraints());
+    EXPECT_TRUE(CompareMatrices(con.lower_bound(), constraint.lower_bound()));
+    EXPECT_TRUE(CompareMatrices(con.upper_bound(), constraint.upper_bound()));
+    EXPECT_EQ(con.get_description(), constraint.get_description());
+    Eigen::VectorXd y;
+    con.Eval(x, y);
+    EXPECT_TRUE(CompareMatrices(y, y_expected));
+  }
+}
+
 GTEST_TEST(TestConstraint, TestMovableCopyable) {
-  QuadraticConstraint constraint(Eigen::Matrix2d::Identity(), Eigen::Vector2d::Ones(), -1, 1);
-  QuadraticConstraint constraint_copy(constraint);
-  QuadraticConstraint constraint_assign = constraint;
-  QuadraticConstraint constraint_move(pipe(constraint));
+  QuadraticConstraint quadratic_constraint(Eigen::Matrix2d::Identity(), Eigen::Vector2d::Ones(), -1, 1);
+  TestMovableCopyableFun(quadratic_constraint, Eigen::Vector2d(1.2, 0.2));
 }
 
 // Tests if the Lorentz Cone constraint is imposed correctly.
