@@ -19,8 +19,6 @@ namespace test {
 namespace rigid_body_tree {
 namespace {
 
-using drake::parsers::urdf::AddModelInstanceFromUrdfFile;
-
 // Tests
 // 1. Test that only the right *type* of elements are giving contact points.
 //    Single link with collision elements of as many types as possible
