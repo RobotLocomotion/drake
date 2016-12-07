@@ -77,19 +77,20 @@ class Element : public DrakeShapes::Element {
 
   ElementId getId() const;
 
-  virtual bool isStatic() const { return false; }
-
-  /** Flags this collision element to be anchored, i.e. it does not move
+  /**
+   * Flags this collision element to be anchored, i.e. it does not move
    * relative to the world frame.
-  @see Element::is_anchored(). **/
-  void set_anchored() { is_anchored_ = true;}
+   * @see Element::is_anchored().
+   */
+  void set_anchored() { is_anchored_ = true; }
 
-  /** Returns `true` if the shape does not move relative to the world frame.
-
-  For instance, terrain geometry would commonly be anchored. This property
-  allows the collision engine to perform certain optimizations not
-  generally possible for moving objects. **/
-  bool is_anchored() { return is_anchored_;}
+  /**
+   * Returns `true` if the shape does not move relative to the world frame.
+   * For instance, terrain geometry would commonly be anchored. This property
+   * allows the collision engine to perform certain optimizations not
+   * generally possible for moving objects.
+   */
+  bool is_anchored() { return is_anchored_; }
 
   /**
    * Returns true if this element should be checked for collisions

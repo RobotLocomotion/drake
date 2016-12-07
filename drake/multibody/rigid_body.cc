@@ -158,10 +158,10 @@ bool RigidBody<T>::IsRigidlyFixedToWorld() const {
   if (parent_ == nullptr) {
     // TODO(SeanCurtis-TRI): This is templated explicitly on double because
     // RigidBodyTree can't actually be instantiated on AutoDiff yet.  But the
-    // RigidBody *is* explicitly instantiated.  By passing the template variable
-    // in to RigidBodyTree<T>, I am implicitly requiring an AutoDiff build.
-    // When RigidBodyTree<AutoDiff> becomes valid, this can be restored to the
-    // template parameter.
+    // RigidBody *is* explicitly instantiated with AutoDiff.  By passing the
+    // template variable, T, into RigidBodyTree<T>, I am implicitly requiring an
+    // AutoDiff build. When RigidBodyTree<AutoDiff> becomes valid, this can be
+    // restored to the template parameter.
     if (name_ != RigidBodyTree<double>::kWorldName) {
       throw std::runtime_error("Found a rigid body without a parent that is "
       "not the world frame: " + name_);
