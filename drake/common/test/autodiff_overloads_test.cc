@@ -28,7 +28,7 @@ GTEST_TEST(AutodiffOverloadsTest, TtoDouble) {
 
   // Test an arbitrary symbolic expression.
   drake::symbolic::Expression e;
-  EXPECT_TRUE(std::isnan(TtoDouble<drake::symbolic::Expression>::convert(e)));
+  EXPECT_DEATH(TtoDouble<drake::symbolic::Expression>::convert(e), ".");
 }
 
 // Tests correctness of isinf
