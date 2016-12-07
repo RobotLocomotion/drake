@@ -126,10 +126,8 @@ TEST_F(ContactGroupNameTest, GroupNameContactPointsTest) {
 
   tree_.getTerrainContactPoints(*body, &group_points, "two");
   ASSERT_EQ(2, group_points.cols());
-  EXPECT_TRUE(expected_points_.block(0,2,3,2).isApprox(group_points));
+  EXPECT_TRUE(expected_points_.block(0, 2, 3, 2).isApprox(group_points));
 }
-
-//GTEST_TEST()
 }  // namespace
 }  // namespace rigid_body_tree
 }  // namespace test
