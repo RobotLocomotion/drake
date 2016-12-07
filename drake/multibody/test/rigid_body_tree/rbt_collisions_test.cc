@@ -6,7 +6,6 @@
 #include "drake/multibody/joints/floating_base_types.h"
 
 #include "gtest/gtest.h"
-#include "gmock/gmock.h"
 
 namespace drake {
 namespace systems {
