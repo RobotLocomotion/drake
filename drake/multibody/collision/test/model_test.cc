@@ -3,17 +3,18 @@
 #include <vector>
 #include <unordered_map>
 
+#include "gtest/gtest.h"
+
 #include "drake/common/drake_path.h"
 #include "drake/multibody/collision/drake_collision.h"
 #include "drake/multibody/collision/model.h"
-#include "gtest/gtest.h"
 
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using Eigen::AngleAxisd;
-using std::unique_ptr;
 using std::make_unique;
 using std::move;
+using std::unique_ptr;
 
 namespace DrakeCollision {
 namespace {
