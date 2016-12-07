@@ -95,10 +95,8 @@ int main(int argc, char* argv[]) {
 
   // Instantiates a model of the world.
   auto rigid_body_tree = make_unique<RigidBodyTreed>();
-  const PackageMap package_map;
   AddModelInstancesFromSdfFile(
       drake::GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
-      package_map,
       multibody::joints::kQuaternion, nullptr /* weld to frame */,
       rigid_body_tree.get());
   multibody::AddFlatTerrainToWorld(rigid_body_tree.get());

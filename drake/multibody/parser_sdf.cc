@@ -853,6 +853,16 @@ ModelInstanceIdTable ParseSdf(XMLDocument* xml_doc,
 }  // namespace
 
 ModelInstanceIdTable
+AddModelInstancesFromSdfFileInWorldFrame(
+    const string& filename, const FloatingBaseType floating_base_type,
+    RigidBodyTree<double>* tree) {
+  DRAKE_DEMAND(tree);
+  const PackageMap package_map;
+  return AddModelInstancesFromSdfFileSearchingInRosPackages(filename,
+      package_map, floating_base_type, nullptr /* weld_to_frame */, tree);
+}
+
+ModelInstanceIdTable
 AddModelInstancesFromSdfFileInWorldFrameSearchingInRosPackages(
     const string& filename, const PackageMap& package_map,
     const FloatingBaseType floating_base_type,
@@ -860,6 +870,16 @@ AddModelInstancesFromSdfFileInWorldFrameSearchingInRosPackages(
   DRAKE_DEMAND(tree);
   return AddModelInstancesFromSdfFileSearchingInRosPackages(filename,
       package_map, floating_base_type, nullptr /* weld_to_frame */, tree);
+}
+
+ModelInstanceIdTable AddModelInstancesFromSdfFile(
+    const string& filename, const FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree<double>* tree) {
+  DRAKE_DEMAND(tree);
+  const PackageMap package_map;
+  return AddModelInstancesFromSdfFileSearchingInRosPackages(filename,
+      package_map, floating_base_type, weld_to_frame, tree);
 }
 
 ModelInstanceIdTable AddModelInstancesFromSdfFileSearchingInRosPackages(
@@ -885,6 +905,17 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileSearchingInRosPackages(
 
   return ParseSdf(&xml_doc, package_map, root_dir, floating_base_type,
            weld_to_frame, tree);
+}
+
+ModelInstanceIdTable AddModelInstancesFromSdfString(
+    const std::string& sdf_string,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree<double>* tree) {
+  DRAKE_DEMAND(tree);
+  const PackageMap package_map;
+  return AddModelInstancesFromSdfStringSearchingInRosPackages(sdf_string,
+      package_map, floating_base_type, weld_to_frame, tree);
 }
 
 ModelInstanceIdTable AddModelInstancesFromSdfStringSearchingInRosPackages(

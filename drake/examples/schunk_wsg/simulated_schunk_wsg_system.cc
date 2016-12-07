@@ -16,10 +16,9 @@ template<typename T>
 std::unique_ptr<drake::systems::RigidBodyPlant<T>>
 CreateSimulatedSchunkWsgSystem() {
   auto rigid_body_tree = std::make_unique<RigidBodyTree<T>>();
-  const PackageMap package_map;
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
       GetDrakePath() + "/examples/schunk_wsg/models/schunk_wsg_50.sdf",
-      package_map, kFixed, nullptr /* weld to frame */, rigid_body_tree.get());
+      kFixed, nullptr /* weld to frame */, rigid_body_tree.get());
   return std::make_unique<drake::systems::RigidBodyPlant<T>>(
       std::move(rigid_body_tree));
 }

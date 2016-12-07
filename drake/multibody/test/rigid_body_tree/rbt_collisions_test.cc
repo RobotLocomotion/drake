@@ -49,11 +49,9 @@ class RBTCollisionTest: public ::testing::Test {
 
  protected:
   void SetUp() override {
-    parsers::PackageMap package_map;
     parsers::sdf::AddModelInstancesFromSdfFileInWorldFrame(
         GetDrakePath() +
             "/multibody/test/rigid_body_tree/small_sphere_on_large_box.sdf",
-        package_map,
         multibody::joints::kQuaternion, &tree_);
 
     small_sphere_ = tree_.FindBody("small_sphere");
@@ -135,11 +133,9 @@ class RBTCollisionCliqueTest: public ::testing::Test {
 
  protected:
   void SetUp() override {
-    parsers::PackageMap package_map;
     parsers::sdf::AddModelInstancesFromSdfFileInWorldFrame(
         drake::GetDrakePath() +
             "/multibody/test/rigid_body_tree/linked_spheres_on_large_box.sdf",
-        package_map,
         multibody::joints::kQuaternion, &tree_);
 
     small_sphere_1_ = tree_.FindBody("small_sphere_1");

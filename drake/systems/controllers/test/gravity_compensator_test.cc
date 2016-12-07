@@ -14,7 +14,6 @@
 #include "drake/systems/framework/system_input.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
-#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
 
@@ -23,9 +22,6 @@ using Eigen::VectorXd;
 using std::make_unique;
 
 namespace drake {
-
-using parsers::PackageMap;
-
 namespace systems {
 namespace {
 
@@ -107,10 +103,8 @@ TEST_F(GravityCompensatorTest, IiwaOutputTest) {
 // underactuated model.
 TEST_F(GravityCompensatorTest, UnderactuatedModelTest) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
-  PackageMap package_map;
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
       drake::GetDrakePath() + "/examples/SimpleFourBar/FourBar.sdf",
-      package_map,
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree.get());
   EXPECT_DEATH(Init(std::move(tree)), ".*");

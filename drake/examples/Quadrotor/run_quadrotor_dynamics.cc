@@ -19,7 +19,7 @@ namespace drake {
 using multibody::joints::kFixed;
 using multibody::joints::kRollPitchYaw;
 using parsers::PackageMap;
-using parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages;
+using parsers::urdf::AddModelInstanceFromUrdfFile;
 using parsers::sdf::AddModelInstancesFromSdfFile;
 
 namespace examples {
@@ -35,14 +35,13 @@ class Quadrotor : public systems::Diagram<T> {
     this->set_name("Quadrotor");
 
     auto tree = std::make_unique<RigidBodyTree<T>>();
-    const PackageMap package_map;
-    AddModelInstanceFromUrdfFileSearchingInRosPackages(
+    AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
-        package_map, kRollPitchYaw, nullptr /* weld to frame */, tree.get());
+        kRollPitchYaw, nullptr /* weld to frame */, tree.get());
 
     AddModelInstancesFromSdfFile(
         drake::GetDrakePath() + "/examples/Quadrotor/warehouse.sdf",
-        package_map, kFixed, nullptr /* weld to frame */, tree.get());
+        kFixed, nullptr /* weld to frame */, tree.get());
 
     drake::multibody::AddFlatTerrainToWorld(tree.get());
 

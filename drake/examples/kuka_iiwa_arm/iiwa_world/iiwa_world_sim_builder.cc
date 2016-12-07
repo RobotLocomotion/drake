@@ -39,7 +39,7 @@ using multibody::joints::kFixed;
 using multibody::joints::kQuaternion;
 using parsers::ModelInstanceIdTable;
 using parsers::PackageMap;
-using parsers::sdf::AddModelInstancesFromSdfFile;
+using parsers::sdf::AddModelInstancesFromSdfFileSearchingInRosPackages;
 using parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages;
 using systems::ConstantVectorSource;
 using systems::Context;
@@ -110,7 +110,7 @@ int IiwaWorldSimBuilder<T>::AddModelInstanceToFrame(
         floating_base_type, weld_to_frame, rigid_body_tree_.get());
 
   } else if (extension == "sdf") {
-    table = AddModelInstancesFromSdfFile(
+    table = AddModelInstancesFromSdfFileSearchingInRosPackages(
         GetDrakePath() + model_map_[model_name], package_map,
         floating_base_type, weld_to_frame, rigid_body_tree_.get());
   }

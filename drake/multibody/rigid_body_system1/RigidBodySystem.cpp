@@ -955,9 +955,8 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfFile(
 ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfFile(
     const string& filename, const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  PackageMap package_map;
   ModelInstanceIdTable model_instance_id_table =
-      parsers::sdf::AddModelInstancesFromSdfFile(filename, package_map,
+      parsers::sdf::AddModelInstancesFromSdfFile(filename,
           floating_base_type, weld_to_frame, tree.get());
 
   // Parses the additional SDF elements that are understood by RigidBodySystem
@@ -979,9 +978,8 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfFile(
 ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfString(
     const string& sdf_string, const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  PackageMap package_map;
   ModelInstanceIdTable model_instance_id_table =
-      parsers::sdf::AddModelInstancesFromSdfString(sdf_string, package_map,
+      parsers::sdf::AddModelInstancesFromSdfString(sdf_string,
           floating_base_type, weld_to_frame, tree.get());
 
   // Parses the additional SDF elements that are understood by RigidBodySystem,

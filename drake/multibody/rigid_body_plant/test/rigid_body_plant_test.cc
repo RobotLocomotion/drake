@@ -366,10 +366,9 @@ GTEST_TEST(rigid_body_plant_test, TestJointLimitForcesFormula) {
 double GetPrismaticJointLimitAccel(double position, double applied_force) {
   // Build two links connected by a limited prismatic joint.
   auto tree = std::make_unique<RigidBodyTree<double>>();
-  PackageMap package_map;
   AddModelInstancesFromSdfFile(drake::GetDrakePath() +
       "/multibody/rigid_body_plant/test/limited_prismatic.sdf",
-      package_map, kFixed, nullptr /* weld to frame */, tree.get());
+      kFixed, nullptr /* weld to frame */, tree.get());
   RigidBodyPlant<double> plant(move(tree));
 
   auto context = plant.CreateDefaultContext();
