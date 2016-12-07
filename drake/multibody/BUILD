@@ -173,6 +173,29 @@ cc_test(
 )
 
 cc_test(
+    name = "rbt_collisions_test",
+    size = "small",
+    srcs = ["test/rigid_body_tree/rbt_collisions_test.cc"],
+    data = [":test_models"],
+    linkstatic = 1,
+    deps = [
+        ":rigid_body_tree",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "rigid_body_collision_clique_test",
+    size = "small",
+    srcs = ["test/rigid_body_tree/rigid_body_collision_clique_test.cc"],
+    linkstatic = 1,
+    deps = [
+        ":rigid_body_tree",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
     name = "rigid_body_constraint_test",
     size = "small",
     srcs = ["constraint/test/rigid_body_constraint_test.cc"],
@@ -235,6 +258,7 @@ cc_test(
 
 filegroup(
     name = "test_models",
+    testonly = 1,
     srcs = glob([
         "test/**/*.obj",
         "test/**/*.sdf",
