@@ -575,17 +575,15 @@ void ParseSdfJoint(RigidBodyTree<double>* model, std::string model_name,
     Eigen::Vector3d loop_point_parent =
         transform_parent_to_model.inverse() * loop_point_model;
 
-    auto frameA =
-        allocate_shared<RigidBodyFrame<double>>(
-            Eigen::aligned_allocator<RigidBodyFrame<double>>(),
-            name + "FrameA", parent,
-            loop_point_parent, Vector3d::Zero());
+    auto frameA = allocate_shared<RigidBodyFrame<double>>(
+        Eigen::aligned_allocator<RigidBodyFrame<double>>(),
+        name + "FrameA", parent,
+        loop_point_parent, Vector3d::Zero());
 
-    auto frameB =
-        allocate_shared<RigidBodyFrame<double>>(
-            Eigen::aligned_allocator<RigidBodyFrame<double>>(),
-            name + "FrameB", child,
-            loop_point_child, Vector3d::Zero());
+    auto frameB = allocate_shared<RigidBodyFrame<double>>(
+        Eigen::aligned_allocator<RigidBodyFrame<double>>(),
+        name + "FrameB", child,
+        loop_point_child, Vector3d::Zero());
 
     model->addFrame(frameA);
     model->addFrame(frameB);

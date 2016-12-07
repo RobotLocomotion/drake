@@ -13,7 +13,7 @@ class XMLElement;
 
 /// Multibody systems typically have distinguished frames of interest that
 /// need to be monitored. A frame is fully described by the body it is rigidly
-/// attaches to and the pose of this frame with respect to that body.
+/// attached to and the pose of this frame with respect to that body.
 /// RigidBodyFrame provides an abstraction to describe these frames.
 ///
 /// @tparam T The type being integrated. Must be a valid Eigen scalar.
