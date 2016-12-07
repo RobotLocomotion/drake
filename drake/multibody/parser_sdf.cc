@@ -588,7 +588,7 @@ void ParseSdfJoint(RigidBodyTree<double>* model, std::string model_name,
 
     model->addFrame(frameA);
     model->addFrame(frameB);
-    RigidBodyLoop l(frameA, frameB, axis);
+    RigidBodyLoop<double> l(frameA, frameB, axis);
     model->loops.push_back(l);
 
     // This log statement is required for users to work around #3673, and can
