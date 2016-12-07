@@ -12,7 +12,6 @@
 #include "drake/multibody/constraint_wrappers.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
-#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/pose_map.h"
@@ -48,7 +47,6 @@ namespace drake {
 using math::quatRotateVec;
 using multibody::joints::FloatingBaseType;
 using parsers::ModelInstanceIdTable;
-using parsers::PackageMap;
 
 size_t RigidBodySystem::getNumStates() const {
   return tree->get_num_positions() + tree->get_num_velocities();

@@ -3,11 +3,11 @@
 #include <iostream>
 
 #include "drake/common/drake_path.h"
-#include "drake/examples/examples_package_map.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/robot_state_decoder_system.h"
+#include "drake/examples/examples_package_map.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_common.h"

@@ -7,8 +7,8 @@
 #include "drake/examples/examples_package_map.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/parser_common.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_frame.h"
@@ -102,7 +102,7 @@ int IiwaWorldSimBuilder<T>::AddModelInstanceToFrame(
 
   DRAKE_DEMAND(extension == "urdf" || extension == "sdf");
 
-  parsers::PackageMap package_map;
+  PackageMap package_map;
   AddExamplePackages(&package_map);
   if (extension == "urdf") {
     table = AddModelInstanceFromUrdfFileSearchingInRosPackages(

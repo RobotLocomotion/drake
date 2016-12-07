@@ -29,8 +29,6 @@ namespace {
 // true. It returns false otherwise.
 bool GetPackagePath(const string& package,
     const map<string, string>& package_map, string* package_path) {
-  // my own quick and dirty implementation of the rospack algorithm (based on my
-  // matlab version in rospack.m)
   auto iter = package_map.find(package);
   if (iter != package_map.end()) {
     *package_path = iter->second;
@@ -71,7 +69,7 @@ string ResolveFilename(const string& filename,
   } else {
     std::string normalized_root_dir = spruce::path(root_dir).getStr();
 
-    // if root_dir is a relative path then convert it to absolute
+    // If root_dir is a relative path, convert it to an absolute path.
     bool dirIsRelative =
         !(normalized_root_dir.size() >= 1 && normalized_root_dir[0] == '/');
     if (dirIsRelative) {

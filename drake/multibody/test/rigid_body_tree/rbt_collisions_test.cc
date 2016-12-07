@@ -1,7 +1,6 @@
 #include <memory>
 
 #include "drake/common/drake_path.h"
-#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"

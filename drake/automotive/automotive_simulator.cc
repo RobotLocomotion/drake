@@ -23,10 +23,6 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
-
-using parsers::ModelInstanceIdTable;
-using parsers::sdf::AddModelInstancesFromSdfFileInWorldFrame;
-
 namespace automotive {
 
 using drake::multibody::joints::kRollPitchYaw;
@@ -106,8 +102,8 @@ template <typename T>
 int AutomotiveSimulator<T>::AddSdfModel(
     const std::string& sdf_filename,
     const SimpleCarToEulerFloatingJoint<T>* coord_transform) {
-  const ModelInstanceIdTable table =
-      AddModelInstancesFromSdfFileInWorldFrame(
+  const parsers::ModelInstanceIdTable table =
+      parsers::sdf::AddModelInstancesFromSdfFileInWorldFrame(
           sdf_filename, kRollPitchYaw, rigid_body_tree_.get());
 
   // TODO(liang.fok): Add support for SDF files containing more than one model.

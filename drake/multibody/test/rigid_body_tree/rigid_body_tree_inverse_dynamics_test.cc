@@ -4,29 +4,33 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/examples/examples_package_map.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/jacobian.h"
+#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/util/drakeGeometryUtil.h"
 
+using Eigen::VectorXd;
+using Eigen::MatrixXd;
+
 namespace drake {
+
+using parsers::ModelInstanceIdTable;
+using parsers::PackageMap;
+using math::initializeAutoDiff;
+using math::autoDiffToGradientMatrix;
+using math::initializeAutoDiffGivenGradientMatrix;
+using math::jacobian;
+using multibody::joints::kRollPitchYaw;
+using multibody::joints::kQuaternion;
+
 namespace systems {
 namespace plants {
 namespace test {
 namespace {
-
-using drake::parsers::ModelInstanceIdTable;
-using drake::math::initializeAutoDiff;
-using drake::math::autoDiffToGradientMatrix;
-using drake::math::initializeAutoDiffGivenGradientMatrix;
-using drake::math::jacobian;
-using Eigen::VectorXd;
-using Eigen::MatrixXd;
-using drake::CompareMatrices;
-using drake::multibody::joints::kRollPitchYaw;
-using drake::multibody::joints::kQuaternion;
 
 constexpr const int kChunkSize =
     drake::AutoDiffUpTo73d::DerType::MaxRowsAtCompileTime;
@@ -38,8 +42,8 @@ class RigidBodyTreeInverseDynamicsTest : public ::testing::Test {
 
     const std::string kAtlasUrdf =
         drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf";
-  std::map<std::string, std::string> package_map = {
-      {"Atlas", GetDrakePath() + "/examples/Atlas/"}};
+    PackageMap package_map;
+    examples::AddExamplePackages(&package_map);
     tree_rpy_ = std::make_unique<RigidBodyTree<double>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
         kAtlasUrdf, package_map, kRollPitchYaw, nullptr /* weld_to_frame */,

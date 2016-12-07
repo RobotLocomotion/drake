@@ -69,9 +69,8 @@ GTEST_TEST(testIK, atlasIK) {
 GTEST_TEST(testIK, iiwaIK) {
   auto model = std::make_unique<RigidBodyTree<double>>();
 
-  const parsers::PackageMap package_map;
-  parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
-      GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf", package_map,
+  parsers::urdf::AddModelInstanceFromUrdfFile(
+      GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       drake::multibody::joints::kRollPitchYaw, nullptr /* weld_to_frame */,
       model.get());
 

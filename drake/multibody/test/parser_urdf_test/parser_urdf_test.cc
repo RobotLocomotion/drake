@@ -9,7 +9,6 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_common.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 using std::endl;
@@ -24,7 +23,7 @@ namespace drake {
 using multibody::joints::kQuaternion;
 using parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld;
 using parsers::urdf::AddModelInstanceFromUrdfStringWithRpyJointToWorld;
-using parsers::urdf::AddModelInstanceFromUrdfStringSearchingInRosPackages;
+using parsers::urdf::AddModelInstanceFromUrdfString;
 
 namespace parsers {
 namespace {
@@ -68,8 +67,7 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
 
   // Instantiates a RigidBodyTree using the URDF string defined above.
   auto tree = make_unique<RigidBodyTree<double>>();
-  AddModelInstanceFromUrdfStringWithRpyJointToWorld(
-      urdf_string, tree.get());
+  AddModelInstanceFromUrdfStringWithRpyJointToWorld(urdf_string, tree.get());
 
   // Obtains the child link of food_joint.
   RigidBody<double>* foo_joint_link = tree->FindChildBodyOfJoint("foo_joint");
@@ -149,13 +147,11 @@ string ReadTextFile(const string& file) {
 GTEST_TEST(URDFParserTest, TestAddWithQuaternionFloatingDof) {
   const string model_file = drake::GetDrakePath() +
       "/multibody/test/parser_urdf_test/zero_dof_robot.urdf";
-
   const string model_string = ReadTextFile(model_file);
-  PackageMap package_map;
 
   auto tree = make_unique<RigidBodyTree<double>>();
-  EXPECT_NO_THROW(AddModelInstanceFromUrdfStringSearchingInRosPackages(
-      model_string, package_map, "." /* root_dir */, kQuaternion,
+  EXPECT_NO_THROW(AddModelInstanceFromUrdfString(
+      model_string, "." /* root_dir */, kQuaternion,
       nullptr /* weld_to_frame */, tree.get()));
 
   EXPECT_EQ(tree->get_num_positions(), 7);

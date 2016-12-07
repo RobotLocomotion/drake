@@ -12,7 +12,6 @@
 #include "drake/multibody/xml_util.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
-
 namespace drake {
 namespace parsers {
 namespace urdf {

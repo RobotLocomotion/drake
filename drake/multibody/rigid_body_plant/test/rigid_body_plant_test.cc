@@ -10,7 +10,6 @@
 #include "drake/multibody/joints/prismatic_joint.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
-#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -27,7 +26,6 @@ using std::unique_ptr;
 namespace drake {
 
 using multibody::joints::kFixed;
-using parsers::PackageMap;
 using parsers::sdf::AddModelInstancesFromSdfFile;
 
 namespace systems {

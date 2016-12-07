@@ -1,13 +1,11 @@
 #include "drake/examples/schunk_wsg/simulated_schunk_wsg_system.h"
 
 #include "drake/common/drake_path.h"
-#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_sdf.h"
 
 namespace drake {
 
 using multibody::joints::kFixed;
-using parsers::PackageMap;
 
 namespace examples {
 namespace schunk_wsg {

@@ -3,7 +3,6 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
@@ -18,7 +17,6 @@ namespace drake {
 
 using multibody::joints::kFixed;
 using multibody::joints::kRollPitchYaw;
-using parsers::PackageMap;
 using parsers::urdf::AddModelInstanceFromUrdfFile;
 using parsers::sdf::AddModelInstancesFromSdfFile;
 
