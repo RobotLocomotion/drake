@@ -121,7 +121,7 @@ RigidBody<double>* child) {
 // Confirms that only rigid bodies with multiple collision elements get self-
 // collision cliques.
 TEST_F(RigidBodyTreeCollisionCliqueTest, SelfCollisionClique) {
-  // link all elements to world
+  // Links all bodies to world.
   JoinBodies(FloatingBaseType::kQuaternion, &(tree_->world()), body1_);
   JoinBodies(FloatingBaseType::kQuaternion, &(tree_->world()), body2_);
   JoinBodies(FloatingBaseType::kQuaternion, &(tree_->world()), body3_);
@@ -134,19 +134,20 @@ TEST_F(RigidBodyTreeCollisionCliqueTest, SelfCollisionClique) {
 // Confirms that rigid bodies that cannot collide (i.e.,
 // RigidBody::CanCollideWith returns false) form a clique.
 TEST_F(RigidBodyTreeCollisionCliqueTest, CantCollideClique) {
-  // link all elements to world
+  // Links body1_ and body3_ to the world.
   JoinBodies(FloatingBaseType::kQuaternion, &(tree_->world()), body1_);
   JoinBodies(FloatingBaseType::kQuaternion, &(tree_->world()), body3_);
-  // Adding a parent relationship and a non-floating joint between bodies
-  // two and three will cause a clique to be assigned to collision element 2.
+  // Adds a parent relationship and a non-floating joint between body2_
+  // and body3_, causing a clique to be assigned to collision elements of
+  // body2_ (body3_ has no collision elements).
   JoinBodies(FloatingBaseType::kFixed, body3_, body2_);
 
   tree_->compile();
 
-  // Confirm that collision elements on body 1 are *still* only self-collision
+  // Confirms that collision elements on body 1 are *still* only self-collision
   // cliques, determined by a single clique.
   ExpectCliqueCount(body1_, 1);
-  // Confirm that collision element two has picked up a clique do to its body's
+  // Confirms that collision element two has picked up a clique do to its body's
   // relationship with body three.
   ExpectCliqueCount(body2_, 1);
 }

@@ -1284,6 +1284,12 @@ class RigidBodyTree {
   RigidBodyTree& operator=(const RigidBodyTree&) { return *this; }
 
   std::set<std::string> already_printed_warnings;
+  // TODO(SeanCurtis-TRI): This isn't properly used.  Initialized should be
+  // renamed "finalized".  No query operations should work if it hasn't been
+  // initialized.  Calling compile is the only thing that should set this.
+  // Furthermore, any operation that changes the tree (e.g., adding a body,
+  // collision element, etc.) should clear the bit again, requiring another
+  // call to compile.
   bool initialized_{false};
 
   int next_available_clique_ = 0;

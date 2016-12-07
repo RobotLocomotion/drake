@@ -19,13 +19,6 @@ namespace test {
 namespace rigid_body_tree {
 namespace {
 
-// Tests
-// 1. Test that only the right *type* of elements are giving contact points.
-//    Single link with collision elements of as many types as possible
-//    confirm that I have only the requisite number and values of points.
-// 2. Confirm that the group_name value works appropriately.
-//    Another urdf with elements selected by
-
 // Base class for the common functionality between the various tests.  Provides
 // functionality for loading a urdf file and coordinating the expected answers.
 class RBTContactPointsTest : public ::testing::Test {
