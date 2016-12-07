@@ -113,7 +113,7 @@ class RigidBodyTree {
 #endif
   int get_number_of_model_instances() const;
 
-  void addFrame(std::shared_ptr<RigidBodyFrame> frame);
+  void addFrame(std::shared_ptr<RigidBodyFrame<T>> frame);
 
   std::map<std::string, int> computePositionNameToIndexMap() const;
 
@@ -1022,7 +1022,7 @@ class RigidBodyTree {
    * value is -1, search all models.
    * @throws std::logic_error if multiple matching frames are found.
    */
-  std::shared_ptr<RigidBodyFrame> findFrame(const std::string& frame_name,
+  std::shared_ptr<RigidBodyFrame<T>> findFrame(const std::string& frame_name,
                                             int model_id = -1) const;
 
   /**
@@ -1180,7 +1180,7 @@ class RigidBodyTree {
   std::vector<std::unique_ptr<RigidBody<T>>> bodies;
 
   // Rigid body frames
-  std::vector<std::shared_ptr<RigidBodyFrame>> frames;
+  std::vector<std::shared_ptr<RigidBodyFrame<T>>> frames;
 
   // Rigid body actuators
   std::vector<RigidBodyActuator, Eigen::aligned_allocator<RigidBodyActuator>>

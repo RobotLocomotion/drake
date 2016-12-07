@@ -2266,7 +2266,7 @@ RigidBody<T>* RigidBodyTree<T>::findLink(const std::string& link_name,
 }
 
 template <typename T>
-shared_ptr<RigidBodyFrame> RigidBodyTree<T>::findFrame(
+shared_ptr<RigidBodyFrame<T>> RigidBodyTree<T>::findFrame(
     const std::string& frame_name, int model_instance_id) const {
   std::string frame_name_lower = frame_name;
 
@@ -2605,7 +2605,7 @@ size_t RigidBodyTree<T>::getNumPositionConstraints() const {
 }
 
 template <typename T>
-void RigidBodyTree<T>::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
+void RigidBodyTree<T>::addFrame(std::shared_ptr<RigidBodyFrame<T>> frame) {
   frames.push_back(frame);
   // yuck!!
   frame->set_frame_index(-(static_cast<int>(frames.size()) - 1) - 2);

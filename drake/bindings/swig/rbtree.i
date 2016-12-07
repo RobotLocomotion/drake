@@ -39,7 +39,7 @@
 %template(mapStringString) std::map<std::string,std::string>;
 %shared_ptr(RigidBody<double>)
 %template(vectorRigidBody) std::vector<std::shared_ptr<RigidBody<double> > >;
-%shared_ptr(RigidBodyFrame)
+%shared_ptr(RigidBodyFrame<double>)
 
 %eigen_typemaps(Eigen::VectorXd)
 %eigen_typemaps(Eigen::Vector2d)
@@ -165,3 +165,4 @@
 
 %template(RigidBodyTree_d) RigidBodyTree<double>;
 %template(RigidBody_d) RigidBody<double>;
+%template(RigidBodyFrame_d) RigidBodyFrame<double>;

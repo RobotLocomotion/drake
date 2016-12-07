@@ -73,7 +73,7 @@ class RosTfPublisher : public LeafSystem<double> {
 
   // Returns the key for obtaining the transform message in transform_messages_
   // that is dedicated to hold the pose of @p frame.
-  std::string GetKey(const RigidBodyFrame& frame) const;
+  std::string GetKey(const RigidBodyFrame<double>& frame) const;
 
   // The RigidBodyTree containing the bodies for whom transforms are being
   // published.
