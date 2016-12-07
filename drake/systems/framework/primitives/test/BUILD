@@ -126,6 +126,17 @@ cc_test(
 )
 
 cc_test(
+    name = "random_source_test",
+    size = "small",
+    srcs = ["random_source_test.cc"],
+    deps = DEPS + [
+        "//drake/systems/analysis",
+        "//drake/systems/framework/primitives:random_source",
+        "//drake/systems/framework/primitives:signal_logger",
+    ],
+)
+
+cc_test(
     name = "signal_logger_test",
     size = "small",
     srcs = ["signal_logger_test.cc"],
