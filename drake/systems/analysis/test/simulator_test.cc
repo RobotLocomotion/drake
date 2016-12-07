@@ -290,9 +290,6 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
                                                     x_target);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
-  // Sets initial conditions to zero.
-  spring_mass.SetDefaultState(simulator.get_mutable_context());
-
   // Sets initial condition using the Simulator's internal Context.
   spring_mass.set_position(simulator.get_mutable_context(), x0);
   spring_mass.set_velocity(simulator.get_mutable_context(), v0);
@@ -485,7 +482,7 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   // the publish events precede all the eval-derivatives events, for each
   // time step in the simulation.
   for (const auto& log : events) {
-    ASSERT_GE(log.second.size(), 0);
+    ASSERT_GE(log.second.size(), 0u);
     EventType state = log.second[0];
     for (const EventType& event : log.second) {
       ASSERT_TRUE(event >= state);

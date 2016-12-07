@@ -74,10 +74,6 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   arbitrary_angles << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
   x0.head(rbs1->get_num_positions()) += arbitrary_angles;
 
-  // For rbs2:
-  // Zeroes the state.
-  rbs2->SetZeroConfiguration(context.get());
-
   // Sets the state to a non-zero value matching the configuration for rbs1.
   rbs2->set_state_vector(context.get(), x0);
   VectorXd xc = context->get_continuous_state()->CopyToVector();

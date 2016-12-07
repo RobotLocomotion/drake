@@ -77,7 +77,6 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalOutput) {
   const systems::BasicVector<double>* output_agent =
       output_->get_vector_data(diagram_outport_agent_);
 
-  dut_.SetDefaultState(context_.get());
   dut_.EvalOutput(*context_, output_.get());
 
   // Default state vector is all zeros; outputs are one-to-one wrt. states.

@@ -159,40 +159,6 @@ std::unique_ptr<systems::Diagram<T>> IiwaWorldSimBuilder<T>::Build() {
 }
 
 template <typename T>
-void IiwaWorldSimBuilder<T>::SetZeroConfiguration(
-    systems::Simulator<T>* simulator,
-    const systems::Diagram<T>* demo_diagram) {
-  DRAKE_DEMAND(simulator != nullptr && demo_diagram != nullptr);
-
-  std::vector<const systems::System<double>* > demo_systems =
-      demo_diagram->GetSystems();
-
-  const systems::Diagram<T>* plant_and_visualizer_diagram =
-      dynamic_cast<const systems::Diagram<T>*>(demo_systems.at(0));
-  DRAKE_DEMAND(plant_and_visualizer_diagram != nullptr);
-
-  std::vector<const systems::System<double>*> plant_and_visualizer_subsystems =
-      plant_and_visualizer_diagram->GetSystems();
-
-  const RigidBodyPlant<double>* rigid_body_plant =
-      dynamic_cast<const RigidBodyPlant<double>*>(
-          plant_and_visualizer_subsystems.at(0));
-
-  DRAKE_DEMAND(rigid_body_plant != nullptr);
-
-  Context<double>* input_diagram_context =
-      demo_diagram->GetMutableSubsystemContext(
-          simulator->get_mutable_context(), plant_and_visualizer_diagram);
-  DRAKE_DEMAND(plant_and_visualizer_diagram != nullptr);
-
-  Context<double>* plant_context =
-      plant_and_visualizer_diagram->GetMutableSubsystemContext(
-          input_diagram_context, rigid_body_plant);
-
-  rigid_body_plant->SetZeroConfiguration(plant_context);
-}
-
-template <typename T>
 void IiwaWorldSimBuilder<T>::SetPenetrationContactParameters(
     double penetration_stiffness, double penetration_damping,
     double contact_friction) {

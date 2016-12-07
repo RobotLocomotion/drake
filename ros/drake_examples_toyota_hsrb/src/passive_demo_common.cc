@@ -68,24 +68,6 @@ std::unique_ptr<Simulator<double>> CreateSimulation(lcm::DrakeLcmInterface* lcm,
 
   auto simulator = make_unique<Simulator<double>>(**demo_diagram);
 
-  // TODO(liang.fok): Modify the following code once #4191 is resolved.
-  //
-  // Zeros the rigid body plant's state. This is necessary because it is by
-  // default initialized to a vector a NaN values.
-  systems::Context<double>* input_diagram_context =
-      (*demo_diagram)->GetMutableSubsystemContext(
-          simulator->get_mutable_context(), input_diagram);
-
-  systems::Context<double>* plant_diagram_context =
-      input_diagram->GetMutableSubsystemContext(
-          input_diagram_context, plant_diagram);
-
-  systems::Context<double>* plant_context =
-      plant_diagram->GetMutableSubsystemContext(
-          plant_diagram_context, plant);
-
-  plant->SetZeroConfiguration(plant_context);
-
   simulator->Initialize();
   return std::move(simulator);
 }

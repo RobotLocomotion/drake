@@ -90,12 +90,7 @@ GTEST_TEST(SimulatedSchunkWsgSystemTest, OpenGripper) {
 
   // Set up the model and simulator and set their starting state.
   const std::unique_ptr<systems::Diagram<double>> model = builder.Build();
-  std::unique_ptr<systems::Context<double>> model_context =
-      model->CreateDefaultContext();
-  systems::Context<double>* plant_context =
-      model->GetMutableSubsystemContext(model_context.get(), schunk);
-  schunk->SetZeroConfiguration(plant_context);
-  systems::Simulator<double> simulator(*model, std::move(model_context));
+  systems::Simulator<double> simulator(*model);
   simulator.Initialize();
 
   // Verify that the robot starts in the correct (zero) configuration.

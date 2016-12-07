@@ -176,7 +176,7 @@ class Diagram : public System<T>,
     return false;
   }
 
-  std::unique_ptr<Context<T>> CreateDefaultContext() const override {
+  std::unique_ptr<Context<T>> AllocateContext() const override {
     const int num_systems = num_subsystems();
     // Reserve inputs as specified during Diagram initialization.
     auto context = std::make_unique<DiagramContext<T>>(num_systems);
@@ -184,7 +184,7 @@ class Diagram : public System<T>,
     // Add each constituent system to the Context.
     for (int i = 0; i < num_systems; ++i) {
       const System<T>* const sys = sorted_systems_[i];
-      auto subcontext = sys->CreateDefaultContext();
+      auto subcontext = sys->AllocateContext();
       auto suboutput = sys->AllocateOutput(*subcontext);
       context->AddSystem(i, std::move(subcontext), std::move(suboutput));
     }
@@ -204,6 +204,28 @@ class Diagram : public System<T>,
 
     context->MakeState();
     return std::unique_ptr<Context<T>>(context.release());
+  }
+
+  void SetDefaultState(Context<T>* context) const override {
+    auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+
+    // Set default state of each constituent system.
+    for (int i = 0; i < num_subsystems(); ++i) {
+      auto subcontext = diagram_context->GetMutableSubsystemContext(i);
+      sorted_systems_[i]->SetDefaultState(subcontext);
+    }
+  }
+
+  void SetDefaultParameters(Context<T>* context) const override {
+    auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+
+    // Set default state of each constituent system.
+    for (int i = 0; i < num_subsystems(); ++i) {
+      auto subcontext = diagram_context->GetMutableSubsystemContext(i);
+      sorted_systems_[i]->SetDefaultParameters(subcontext);
+    }
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
@@ -459,8 +481,9 @@ class Diagram : public System<T>,
   /// This is the NVI implementation of ToAutoDiffXd.
   Diagram<AutoDiffXd>* DoToAutoDiffXd() const override {
     return ConvertScalarType<AutoDiffXd>([](const System<double>& subsystem) {
-      return subsystem.ToAutoDiffXd();
-    }).release();
+             return subsystem.ToAutoDiffXd();
+           })
+        .release();
   }
 
  private:
@@ -473,8 +496,9 @@ class Diagram : public System<T>,
   template <typename NewType, typename T1 = T>
   std::unique_ptr<Diagram<NewType>> ConvertScalarType(
       std::function<std::unique_ptr<System<NewType>>(
-          const System<std::enable_if_t<std::is_same<T1, double>::value,
-                                        double>>&)> converter) const {
+          const System<
+              std::enable_if_t<std::is_same<T1, double>::value, double>>&)>
+          converter) const {
     std::vector<std::unique_ptr<System<NewType>>> new_systems;
     // Recursively convert all the subsystems.
     std::map<const System<T1>*, const System<NewType>*> old_to_new_map;
@@ -501,14 +525,14 @@ class Diagram : public System<T>,
       const PortIdentifier& old_dest = edge.first;
       const System<NewType>* const dest_system = old_to_new_map[old_dest.first];
       const int dest_port = old_dest.second;
-      const typename Diagram<NewType>::PortIdentifier new_dest{
-          dest_system, dest_port};
+      const typename Diagram<NewType>::PortIdentifier new_dest{dest_system,
+                                                               dest_port};
 
       const PortIdentifier& old_src = edge.second;
       const System<NewType>* const src_system = old_to_new_map[old_src.first];
       const int src_port = old_src.second;
-      const typename Diagram<NewType>::PortIdentifier new_src{
-          src_system, src_port};
+      const typename Diagram<NewType>::PortIdentifier new_src{src_system,
+                                                              src_port};
 
       blueprint.dependency_graph[new_dest] = new_src;
     }
@@ -532,8 +556,9 @@ class Diagram : public System<T>,
   template <typename NewType, typename T1 = T>
   std::unique_ptr<Diagram<NewType>> ConvertScalarType(
       std::function<std::unique_ptr<System<NewType>>(
-          const System<std::enable_if_t<!std::is_same<T1, double>::value,
-                                        double>>&)> converter) const {
+          const System<
+              std::enable_if_t<!std::is_same<T1, double>::value, double>>&)>
+          converter) const {
     DRAKE_ABORT_MSG(
         "Scalar type conversion is only supported from Diagram<double>.");
   }

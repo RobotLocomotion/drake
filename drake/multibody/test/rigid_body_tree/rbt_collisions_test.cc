@@ -7,7 +7,6 @@
 #include "drake/multibody/joints/floating_base_types.h"
 
 #include "gtest/gtest.h"
-#include "gmock/gmock.h"
 
 using Eigen::Vector3d;
 using Eigen::VectorXd;

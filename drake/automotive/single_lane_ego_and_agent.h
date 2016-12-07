@@ -54,9 +54,6 @@ class SingleLaneEgoAndAgent : public systems::Diagram<T> {
 
   ~SingleLaneEgoAndAgent() override {}
 
-  /// Sets the continuous states in @p context to default values.
-  void SetDefaultState(systems::Context<T>* context) const;
-
   /// Getters for the ego and agent car systems.
   const LinearCar<T>* get_ego_car_system() const { return ego_car_; }
   const LinearCar<T>* get_agent_car_system() const { return agent_car_; }
