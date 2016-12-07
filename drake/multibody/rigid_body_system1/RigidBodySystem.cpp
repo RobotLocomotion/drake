@@ -434,7 +434,7 @@ const std::string& RigidBodySensor::get_model_name() const {
   return frame_->get_rigid_body().get_model_name();
 }
 
-const RigidBodyFrame& RigidBodySensor::get_frame() const {
+const RigidBodyFrame<double>& RigidBodySensor::get_frame() const {
   return *frame_.get();
 }
 
@@ -445,14 +445,14 @@ const RigidBodySystem& RigidBodySensor::get_rigid_body_system() const {
 
 RigidBodyMagnetometer::RigidBodyMagnetometer(
     RigidBodySystem const& sys, const std::string& name,
-    const std::shared_ptr<RigidBodyFrame> frame, double declination)
+    const std::shared_ptr<RigidBodyFrame<double>> frame, double declination)
     : RigidBodySensor(sys, name, frame) {
   setDeclination(declination);
 }
 
 RigidBodyAccelerometer::RigidBodyAccelerometer(
     RigidBodySystem const& sys, const std::string& name,
-    const std::shared_ptr<RigidBodyFrame> frame)
+    const std::shared_ptr<RigidBodyFrame<double>> frame)
     : RigidBodySensor(sys, name, frame), gravity_compensation(false) {}
 
 Eigen::VectorXd RigidBodyAccelerometer::output(
@@ -486,7 +486,7 @@ Eigen::VectorXd RigidBodyAccelerometer::output(
 
 RigidBodyGyroscope::RigidBodyGyroscope(
     RigidBodySystem const& sys, const std::string& name,
-    const std::shared_ptr<RigidBodyFrame> frame)
+    const std::shared_ptr<RigidBodyFrame<double>> frame)
     : RigidBodySensor(sys, name, frame) {}
 
 Eigen::VectorXd RigidBodyMagnetometer::output(
@@ -518,7 +518,7 @@ Eigen::VectorXd RigidBodyGyroscope::output(
 
 RigidBodyDepthSensor::RigidBodyDepthSensor(
     RigidBodySystem const& sys, const std::string& name,
-    const std::shared_ptr<RigidBodyFrame> frame, std::size_t samples,
+    const std::shared_ptr<RigidBodyFrame<double>> frame, std::size_t samples,
     double min_angle, double max_angle, double range)
     : RigidBodySensor(sys, name, frame),
       min_yaw_(min_angle),
@@ -531,7 +531,7 @@ RigidBodyDepthSensor::RigidBodyDepthSensor(
 
 RigidBodyDepthSensor::RigidBodyDepthSensor(
     RigidBodySystem const& sys, const std::string& name,
-    std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement* node)
+    std::shared_ptr<RigidBodyFrame<double>> frame, tinyxml2::XMLElement* node)
     : RigidBodySensor(sys, name, frame) {
   string type(node->Attribute("type"));
 
@@ -840,8 +840,8 @@ void parseSdfLink(RigidBodySystem& sys, int model_instance_id, XMLElement* node,
     }
 
     if (type == "ray") {
-      auto frame = allocate_shared<RigidBodyFrame>(
-          Eigen::aligned_allocator<RigidBodyFrame>(), sensor_name, body,
+      auto frame = allocate_shared<RigidBodyFrame<double>>(
+          Eigen::aligned_allocator<RigidBodyFrame<double>>(), sensor_name, body,
           transform_link_to_model.inverse() * transform_sensor_to_model);
       sys.getRigidBodyTree()->addFrame(frame);
       sys.addSensor(allocate_shared<RigidBodyDepthSensor>(
@@ -910,7 +910,7 @@ void parseSdf(RigidBodySystem& sys, XMLDocument* xml_doc,
 ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfString(
     const string& urdf_string, const string& root_dir,
     const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame) {
   // Adds the URDF to the RigidBodyTree.
   ModelInstanceIdTable model_instance_id_table =
       drake::parsers::urdf::AddModelInstanceFromUrdfString(
@@ -928,7 +928,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfString(
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfFile(
     const string& filename, const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame) {
   // Adds the URDF to the rigid body tree.
   ModelInstanceIdTable model_instance_id_table =
       drake::parsers::urdf::AddModelInstanceFromUrdfFile(
@@ -952,7 +952,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfFile(
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfFile(
     const string& filename, const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame) {
   // Adds the robot to the rigid body tree.
   ModelInstanceIdTable model_instance_id_table =
       drake::parsers::sdf::AddModelInstancesFromSdfFile(
@@ -976,7 +976,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfFile(
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfString(
     const string& sdf_string, const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame) {
   // Adds the robot to the rigid body tree.
   ModelInstanceIdTable model_instance_id_table =
       drake::parsers::sdf::AddModelInstancesFromSdfString(
@@ -999,7 +999,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfString(
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromFile(
     const std::string& filename, const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame) {
   spruce::path p(filename);
   auto ext = p.extension();
 
@@ -1027,7 +1027,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromFile(
 ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromString(
     const std::string& string_description,
     const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame) {
   // Parse the string using an XML parser.
   XMLDocument xml_doc;
   xml_doc.Parse(string_description.c_str());
@@ -1050,7 +1050,8 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromString(
 Eigen::VectorXd spatialForceInFrameToJointTorque(
     const RigidBodyTree<double>* tree,
     const KinematicsCache<double>& rigid_body_state,
-    const RigidBodyFrame* frame, const Eigen::Matrix<double, 6, 1>& wrench) {
+    const RigidBodyFrame<double>* frame,
+    const Eigen::Matrix<double, 6, 1>& wrench) {
   auto T_frame_to_world =
       tree->relativeTransform(rigid_body_state, 0, frame->get_frame_index());
   auto force_in_world = transformSpatialForce(T_frame_to_world, wrench);

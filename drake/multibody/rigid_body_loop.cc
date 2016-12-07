@@ -1,7 +1,7 @@
 #include "drake/multibody/rigid_body_loop.h"
 
-RigidBodyLoop::RigidBodyLoop(std::shared_ptr<RigidBodyFrame> frameA,
-                             std::shared_ptr<RigidBodyFrame> frameB,
+RigidBodyLoop::RigidBodyLoop(std::shared_ptr<RigidBodyFrame<double>> frameA,
+                             std::shared_ptr<RigidBodyFrame<double>> frameB,
                              const Eigen::Vector3d& axis)
     : frameA_(frameA), frameB_(frameB), axis_(axis) {}
 

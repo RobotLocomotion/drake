@@ -383,7 +383,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   // mexPrintf("constructModelmex: Parsing frames\n");
   // END_DEBUG
   for (int i = 0; i < num_frames; i++) {
-    shared_ptr<RigidBodyFrame> fr(new RigidBodyFrame());
+    shared_ptr<RigidBodyFrame<double>> fr(new RigidBodyFrame<double>());
 
     fr->set_name(mxGetStdString(mxGetPropertySafe(pFrames, i, "name")));
 

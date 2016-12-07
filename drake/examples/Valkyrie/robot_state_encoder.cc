@@ -29,7 +29,7 @@ namespace systems {
 
 RobotStateEncoder::RobotStateEncoder(
     const RigidBodyTree<double>& tree,
-    const std::vector<RigidBodyFrame>& ft_sensor_info)
+    const std::vector<RigidBodyFrame<double>>& ft_sensor_info)
     : tree_(CheckTreeIsRobotStateLcmTypeCompatible(tree)),
       floating_body_(tree.bodies[1]->getJoint().is_floating()
                          ? tree.bodies[1].get()
