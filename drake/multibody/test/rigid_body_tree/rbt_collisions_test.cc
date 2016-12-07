@@ -103,8 +103,16 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
   const RigidBody<double>* bodyA = collision_pairs[0].elementA->get_body();
   const RigidBody<double>* bodyB = collision_pairs[0].elementB->get_body();
 
+  // We expect the normal to be defined for the collision pair:
+  // (small_sphere_1, large_box_) pointing upwards, from box into sphere.
+  // If the in the reversed order, reverse the normal direction.
+  Vector3d expected_normal(0, 1, 0);
+  if (bodyA == collision_pairs[0].elementB->get_body()) {
+    expected_normal *= -1;
+  }
+
   EXPECT_NEAR(-0.1, collision_pairs[0].distance, tolerance_);
-  EXPECT_TRUE(collision_pairs[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_TRUE(collision_pairs[0].normal.isApprox(expected_normal));
 
   // Collision points are reported on each of the respective bodies' frames.
   EXPECT_TRUE(collision_pairs[0].ptA.isApprox(
@@ -185,11 +193,20 @@ TEST_F(RBTCollisionCliqueTest, ComputeContactPointsWithCliques) {
   // ignored because they are linked by a joint.
   ASSERT_EQ(1u, collision_pairs.size());
 
+
   const RigidBody<double>* bodyA = collision_pairs[0].elementA->get_body();
   const RigidBody<double>* bodyB = collision_pairs[0].elementB->get_body();
 
+  // We expect the normal to be defined for the collision pair:
+  // (small_sphere_1, large_box_) pointing upwards, from box into sphere.
+  // If the in the reversed order, reverse the normal direction.
+  Vector3d expected_normal(0, 1, 0);
+  if (bodyA == collision_pairs[0].elementB->get_body()) {
+    expected_normal *= -1;
+  }
+
   EXPECT_NEAR(-0.1, collision_pairs[0].distance, tolerance_);
-  EXPECT_TRUE(collision_pairs[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_TRUE(collision_pairs[0].normal.isApprox(expected_normal));
 
   // Collision points are reported on each of the respective bodies' frames.
   EXPECT_TRUE(collision_pairs[0].ptA.isApprox(
