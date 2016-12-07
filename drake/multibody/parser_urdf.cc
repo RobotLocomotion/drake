@@ -1139,6 +1139,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     PackageMap& ros_package_map,
     const std::string& root_dir,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
