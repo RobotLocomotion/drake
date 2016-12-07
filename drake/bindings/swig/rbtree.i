@@ -66,6 +66,12 @@
 
 %include "drake/multibody/rigid_body_frame.h"
 
+%inline %{
+  typedef std::map<std::string, std::string> PackageMap;
+  typedef std::map<std::string, int> ModelInstanceIdTable;
+%}
+%include "drake/multibody/parser_urdf.h"
+
 %immutable RigidBodyTree::actuators;
 %immutable RigidBodyTree::loops;
 
