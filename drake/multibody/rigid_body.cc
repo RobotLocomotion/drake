@@ -106,14 +106,6 @@ void RigidBody<T>::AddVisualElement(const DrakeShapes::VisualElement& element) {
   visual_elements_.push_back(element);
 }
 
-// TODO(SeanCurtis-TRI): This is no longer necessary.
-template <typename T>
-void RigidBody<T>::AddCollisionElementsToClique(int clique_id) {
-  for (const auto& element : collision_elements_) {
-    element->AddToCollisionClique(clique_id);
-  }
-}
-
 template <typename T>
 const DrakeShapes::VectorOfVisualElements& RigidBody<T>::get_visual_elements()
     const {
@@ -337,15 +329,6 @@ ostream& operator<<(ostream& out, const RigidBody<double>& b) {
       << "  - Collision elements IDs: " << collision_element_str.str();
 
   return out;
-}
-
-template <typename T>
-bool RigidBody<T>::SetSelfCollisionClique(int clique_id) {
-  if (collision_elements_.size() > 1) {
-    AddCollisionElementsToClique(clique_id);
-    return true;
-  }
-  return false;
 }
 
 // Explicitly instantiates on the most common scalar types.
