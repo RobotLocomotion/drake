@@ -348,9 +348,6 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   context->SetInputPort(0, std::make_unique<FreestandingInputPort>(
       std::make_unique<BasicVector<double>>(plant.get_num_actuators())));
 
-  // Set free_body to have zero translation, zero rotation, and zero velocity.
-  plant.SetZeroConfiguration(context.get());
-
   Eigen::Vector3d v0(1, 2, 3);    // Linear velocity in body's frame.
   Eigen::Vector3d w0(-4, 5, -6);  // Angular velocity in body's frame.
   BasicVector<double> generalized_velocities(plant.get_num_velocities());
@@ -376,7 +373,7 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
 
   // Re-integrate with RK3
   context->set_time(0.);
-  plant.SetZeroConfiguration(context.get());
+  plant.SetDefaultState(context.get());
   for (int i=0; i< plant.get_num_velocities(); ++i)
     plant.set_velocity(context.get(), i, generalized_velocities[i]);
   RungeKutta3Integrator<double> rk3(plant, context.get());

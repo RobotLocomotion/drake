@@ -129,10 +129,13 @@ class ToyotaHsrbTests : public ::testing::Test {
 // rule-of-three is met.
 
 
-// Verifies that @p message is correct. Only a few key fields are checked. The
-// rest of the message is assumed to be correct. See drake_visualizer_test.cc
-// for a more comprehensive test.
-void VerifyLoadMessage(const drake::lcmt_viewer_load_robot& message) {
+// Verifies that @p message_bytes is correct. Only a few key fields are checked.
+// The rest of the message is assumed to be correct.
+// See drake_visualizer_test.cc for a more comprehensive test.
+void VerifyLoadMessage(const std::vector<uint8_t>& message_bytes) {
+  drake::lcmt_viewer_load_robot message;
+  ASSERT_EQ(message.decode(message_bytes.data(), 0, message_bytes.size()),
+            static_cast<int>(message_bytes.size()));
   ASSERT_EQ(message.num_links, 3);
   EXPECT_EQ(message.link.at(0).name, "world");
   EXPECT_EQ(message.link.at(1).name, "link1");
@@ -152,7 +155,7 @@ void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
   drake::lcmt_viewer_draw expected_message;
   ASSERT_EQ(
       expected_message.decode(message_bytes.data(), 0, message_bytes.size()),
-      message_bytes.size());
+      static_cast<int>(message_bytes.size()));
   ASSERT_EQ(expected_message.num_links, 3);
   EXPECT_EQ(expected_message.timestamp, 0);
   EXPECT_EQ(expected_message.link_name.at(0), "world");
@@ -163,10 +166,10 @@ void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
   EXPECT_EQ(expected_message.robot_num.at(2), 0);
 }
 
-void VerifyDiagram(const Diagram<double>& dut,
-    const VectorXd& desired_state, const RigidBodyPlant<double>& plant,
-    const DrakeVisualizer& visualizer, Context<double>* context) {
-
+void VerifyDiagram(const Diagram<double>& dut, const VectorXd& desired_state,
+                   const RigidBodyPlant<double>& plant,
+                   const DrakeVisualizer& visualizer, const DrakeMockLcm& lcm,
+                   Context<double>* context) {
   std::unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*context);
   std::unique_ptr<ContinuousState<double>> derivatives =
       dut.AllocateTimeDerivatives();
@@ -213,8 +216,8 @@ void VerifyDiagram(const Diagram<double>& dut,
   }
 
   // // Verifies that the correct LCM messages were published
-  VerifyLoadMessage(visualizer.get_load_message());
-  VerifyDrawMessage(visualizer.get_draw_message_bytes());
+  VerifyLoadMessage(lcm.get_last_published_message("DRAKE_VIEWER_LOAD_ROBOT"));
+  VerifyDrawMessage(lcm.get_last_published_message("DRAKE_VIEWER_DRAW"));
 }
 
 // Tests BuildPlantAndVisualizerDiagram().
@@ -248,7 +251,8 @@ TEST_F(ToyotaHsrbTests, TestBuildPlantAndVisualizerDiagram) {
     plant_->set_velocity(context.get(), i, desired_state[kNumPositions + i]);
   }
 
-  VerifyDiagram(*dut, desired_state, *plant_, *visualizer_, context.get());
+  VerifyDiagram(*dut, desired_state, *plant_, *visualizer_, lcm_,
+                context.get());
 }
 
 // Tests BuildConstantSourceToPlantDiagram().
@@ -277,13 +281,12 @@ TEST_F(ToyotaHsrbTests, TestBuildConstantSourceToPlantDiagram) {
 
   std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
 
-  plant_->SetZeroConfiguration(context.get());  // Zeroes the state.
-
   VectorXd desired_state(kNumStates);
   desired_state << VectorXd::Zero(kNumStates);
   desired_state(3) = 1;  // This is the `w` in the quaternion floating DOF.
 
-  VerifyDiagram(*dut, desired_state, *plant_, *visualizer_, context.get());
+  VerifyDiagram(*dut, desired_state, *plant_, *visualizer_, lcm_,
+                context.get());
 }
 
 }  // namespace

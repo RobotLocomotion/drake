@@ -128,11 +128,6 @@ class PidControlledSystem : public Diagram<T> {
 
   System<T>* plant() { return plant_; }
 
-  /// Sets @p context to a default state in which the positions and
-  /// velocities are all zero.  The integral of the controller is also
-  /// set to zero.
-  void SetDefaultState(Context<T>* context) const;
-
   /// @return the input port for the feed forward control input.
   const SystemPortDescriptor<T>& get_control_input_port() const {
     return this->get_input_port(0);

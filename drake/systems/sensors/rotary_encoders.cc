@@ -18,10 +18,8 @@ RotaryEncoders<T>::RotaryEncoders(const std::vector<int>& ticks_per_revolution)
       ticks_per_revolution_(ticks_per_revolution) {
   DRAKE_ASSERT(*std::min_element(ticks_per_revolution_.begin(),
                                  ticks_per_revolution_.end()) >= 0);
-  this->DeclareInputPort(systems::kVectorValued, num_encoders_,
-                         systems::kContinuousSampling);
-  this->DeclareOutputPort(systems::kVectorValued, num_encoders_,
-                          systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, num_encoders_);
+  this->DeclareOutputPort(systems::kVectorValued, num_encoders_);
 }
 
 template <typename T>
@@ -33,10 +31,8 @@ RotaryEncoders<T>::RotaryEncoders(int input_port_size,
   DRAKE_ASSERT(*std::min_element(indices_.begin(), indices_.end()) >= 0);
   DRAKE_ASSERT(*std::max_element(indices_.begin(), indices_.end()) <
                input_port_size);
-  this->DeclareInputPort(systems::kVectorValued, input_port_size,
-                         systems::kContinuousSampling);
-  this->DeclareOutputPort(systems::kVectorValued, num_encoders_,
-                          systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, input_port_size);
+  this->DeclareOutputPort(systems::kVectorValued, num_encoders_);
 }
 
 template <typename T>
@@ -50,13 +46,13 @@ RotaryEncoders<T>::RotaryEncoders(int input_port_size,
   DRAKE_ASSERT(*std::min_element(indices_.begin(), indices_.end()) >= 0);
   DRAKE_ASSERT(*std::max_element(indices_.begin(), indices_.end()) <
                input_port_size);
-  DRAKE_DEMAND(indices_.size() == ticks_per_revolution_.size());
-  DRAKE_ASSERT(*std::min_element(ticks_per_revolution_.begin(),
+  DRAKE_DEMAND(ticks_per_revolution_.empty() ||
+               indices_.size() == ticks_per_revolution_.size());
+  DRAKE_ASSERT(ticks_per_revolution_.empty() ||
+               *std::min_element(ticks_per_revolution_.begin(),
                                  ticks_per_revolution_.end()) >= 0);
-  this->DeclareInputPort(systems::kVectorValued, input_port_size,
-                         systems::kContinuousSampling);
-  this->DeclareOutputPort(systems::kVectorValued, num_encoders_,
-                          systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, input_port_size);
+  this->DeclareOutputPort(systems::kVectorValued, num_encoders_);
 }
 
 template <typename T>
@@ -90,8 +86,15 @@ std::unique_ptr<systems::Parameters<T>> RotaryEncoders<T>::AllocateParameters()
     const {
   // Use parameters for the (unnamed) calibration offsets.
   return std::make_unique<systems::Parameters<T>>(
-      std::make_unique<systems::BasicVector<T>>(
-          VectorX<T>::Zero(num_encoders_)));
+      std::make_unique<systems::BasicVector<T>>(num_encoders_));
+}
+
+template <typename T>
+void RotaryEncoders<T>::SetDefaultParameters(
+    systems::Context<T>* context) const {
+  auto leaf_context = dynamic_cast<systems::LeafContext<T>*>(context);
+  DRAKE_DEMAND(leaf_context != nullptr);
+  leaf_context->get_mutable_numeric_parameter(0)->SetZero();
 }
 
 template <typename T>
@@ -109,6 +112,12 @@ template <typename T>
 Eigen::VectorBlock<const VectorX<T>> RotaryEncoders<T>::get_calibration_offsets(
     const systems::Context<T>& context) const {
   return this->template GetNumericParameter(context, 0).get_value();
+}
+
+template <typename T>
+RotaryEncoders<AutoDiffXd>* RotaryEncoders<T>::DoToAutoDiffXd() const {
+  return new RotaryEncoders<AutoDiffXd>(this->get_input_port(0).get_size(),
+                                        indices_, ticks_per_revolution_);
 }
 
 template class RotaryEncoders<double>;

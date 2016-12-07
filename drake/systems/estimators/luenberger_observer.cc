@@ -22,31 +22,25 @@ LuenbergerObserver<T>::LuenbergerObserver(
   DRAKE_DEMAND(observed_system_->get_num_input_ports() <= 1);
   DRAKE_DEMAND(observed_system_->get_num_output_ports() == 1);
 
-  // Check that the system is a continuous-time system (only).
-  // TODO(russt): Move this functionality to the System interface (and
-  // generalize it).
-  auto x = observed_system_context_->get_continuous_state();
-  DRAKE_DEMAND(x->size() > 0);  // Otherwise there is nothing to estimate.
-  // TODO(russt/david-german): Need the methods below to exist.
-  // DRAKE_DEMAND(observed_system_context_->get_num_difference_states() == 0);
-  // DRAKE_DEMAND(observed_system_context_->get_num_modal_states() == 0);
+  DRAKE_DEMAND(observed_system_context_->has_only_continuous_state());
+  // Otherwise there is nothing to estimate.
 
   // TODO(russt): Add support for discrete-time systems (should be easy enough
   // to support both discrete and continuous simultaneously).
 
-  // Observer state is the (estimated) state of the observed system.
-  this->DeclareContinuousState(x->size());
+  // Observer state is the (estimated) state of the observed system
+  // (returned by overloaded AllocateContinuousState).
+  auto x = observed_system_context_->get_continuous_state();
+
   // Output port is the (estimated) state of the observed system.
-  this->DeclareOutputPort(systems::kVectorValued, x->size(),
-                          systems::kContinuousSampling);
+  this->DeclareOutputPort(systems::kVectorValued, x->size());
   // TODO(russt): Could overload AllocateContinuousState and AllocateOutput to
   // call AllocateContinuousState on the observed system so that I can use the
   // actual derived class types.
 
   // First input port is the output of the observed system.
   this->DeclareInputPort(systems::kVectorValued,
-                         observed_system_->get_output_port(0).get_size(),
-                         systems::kContinuousSampling);
+                         observed_system_->get_output_port(0).get_size());
 
   // Check the size of the gain matrix.
   DRAKE_DEMAND(observer_gain_.rows() == x->size());
@@ -56,9 +50,14 @@ LuenbergerObserver<T>::LuenbergerObserver(
   // Second input port is the input to the observed system (if it exists).
   if (observed_system_->get_num_input_ports() > 0) {
     this->DeclareInputPort(systems::kVectorValued,
-                           observed_system_->get_input_port(0).get_size(),
-                           systems::kContinuousSampling);
+                           observed_system_->get_input_port(0).get_size());
   }
+}
+
+template <typename T>
+std::unique_ptr<systems::ContinuousState<T>>
+LuenbergerObserver<T>::AllocateContinuousState() const {
+  return observed_system_->AllocateTimeDerivatives();
 }
 
 template <typename T>

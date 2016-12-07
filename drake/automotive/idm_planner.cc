@@ -18,18 +18,15 @@ IdmPlanner<T>::IdmPlanner(const T& v_ref) : v_ref_(v_ref) {
   // The reference velocity must be strictly positive.
   DRAKE_ASSERT(v_ref > 0);
 
+  const int kEgoCarOutputVectorSize = 2;
+  const int kAgentCarOutputVectorSize = 2;
+  const int kLinearAccelerationSize = 1;
   // Declare the ego car input port.
-  this->DeclareInputPort(systems::kVectorValued,
-                         2,  // Size of the ego car output vector.
-                         systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, kEgoCarOutputVectorSize);
   // Declare the agent car input port.
-  this->DeclareInputPort(systems::kVectorValued,
-                         2,  // Size of the agent car output vector.
-                         systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, kAgentCarOutputVectorSize);
   // Declare the output port.
-  this->DeclareOutputPort(systems::kVectorValued,
-                          1,  // We have a single linear acceleration value.
-                          systems::kContinuousSampling);
+  this->DeclareOutputPort(systems::kVectorValued, kLinearAccelerationSize);
 }
 
 template <typename T>
@@ -96,8 +93,18 @@ void IdmPlanner<T>::EvalOutput(const systems::Context<T>& context,
 template <typename T>
 std::unique_ptr<systems::Parameters<T>> IdmPlanner<T>::AllocateParameters()
     const {
-  // Default values from https://en.wikipedia.org/wiki/Intelligent_driver_model.
   auto params = std::make_unique<IdmPlannerParameters<T>>();
+  return std::make_unique<systems::Parameters<T>>(std::move(params));
+}
+
+template <typename T>
+void IdmPlanner<T>::SetDefaultParameters(systems::Context<T>* context) const {
+  // Default values from https://en.wikipedia.org/wiki/Intelligent_driver_model.
+  auto leaf_context = dynamic_cast<systems::LeafContext<T>*>(context);
+  DRAKE_DEMAND(leaf_context != nullptr);
+  auto params = dynamic_cast<IdmPlannerParameters<T>*>(
+      leaf_context->get_mutable_numeric_parameter(0));
+  DRAKE_DEMAND(params != nullptr);
   params->set_v_ref(v_ref_);         // desired velocity in free traffic.
   params->set_a(T(1.0));             // max acceleration.
   params->set_b(T(3.0));             // comfortable braking deceleration.
@@ -105,7 +112,6 @@ std::unique_ptr<systems::Parameters<T>> IdmPlanner<T>::AllocateParameters()
   params->set_time_headway(T(0.1));  // desired time headway to lead vehicle.
   params->set_delta(T(4.0));  // recommended choice of free-road exponent.
   params->set_l_a(T(4.5));    // length of leading car.
-  return std::make_unique<systems::Parameters<T>>(std::move(params));
 }
 
 // These instantiations must match the API documentation in

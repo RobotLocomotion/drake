@@ -1,7 +1,5 @@
 # -*- python -*-
-
-# This file contains rules for the Bazel build system.
-# See http://bazel.io/ .
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
 
@@ -47,8 +45,8 @@ cc_library(
     name = "rigid_body_tree",
     srcs = [
         "kinematics_cache.cc",
-        "parser_model_instance_id_table.cc",
         "parser_common.cc",
+        "parser_model_instance_id_table.cc",
         "parser_sdf.cc",
         "parser_urdf.cc",
         "rigid_body.cc",
@@ -58,14 +56,7 @@ cc_library(
         "rigid_body_tree.cc",
         "rigid_body_tree_contact.cc",
         "xml_util.cc",
-        "collision/drake_collision.cc",
-        "collision/element.cc",
-        "collision/model.cc",
-        "collision/unusable_model.cc",
-    ] + glob([
-        "joints/*.cc",
-        "shapes/*.cc",
-    ]),
+    ],
     hdrs = [
         "force_torque_measurement.h",
         "kinematic_path.h",
@@ -83,21 +74,15 @@ cc_library(
         "rigid_body_loop.h",
         "rigid_body_tree.h",
         "xml_util.h",
-        "collision/drake_collision.h",
-        "collision/element.h",
-        "collision/model.h",
-        "collision/point_pair.h",
-        "collision/unusable_model.h",
-    ] + glob([
-        "joints/*.h",
-        "shapes/*.h",
-    ]),
+    ],
     linkstatic = 1,
     deps = [
         "//drake/common:drake_path",
-        "//drake/common:sorted_vectors_have_intersection",
         "//drake/math:geometric_transform",
         "//drake/math:gradient",
+        "//drake/multibody/collision",
+        "//drake/multibody/joints",
+        "//drake/multibody/shapes",
         "//drake/thirdParty:spruce",
         "//drake/thirdParty:tinydir",
         "//drake/thirdParty:tinyxml2",
@@ -176,9 +161,10 @@ cc_binary(
 )
 
 cc_test(
-    name = "joint_test",
+    name = "parser_urdf_test",
     size = "small",
-    srcs = ["joints/test/joint_test.cc"],
+    srcs = ["test/parser_urdf_test/parser_urdf_test.cc"],
+    data = glob(["test/parser_urdf_test/*.urdf"]),
     linkstatic = 1,
     deps = [
         ":rigid_body_tree",
@@ -187,10 +173,21 @@ cc_test(
 )
 
 cc_test(
-    name = "parser_urdf_test",
+    name = "rbt_collisions_test",
     size = "small",
-    srcs = ["test/parser_urdf_test/parser_urdf_test.cc"],
-    data = glob(["test/parser_urdf_test/*.urdf"]),
+    srcs = ["test/rigid_body_tree/rbt_collisions_test.cc"],
+    data = [":test_models"],
+    linkstatic = 1,
+    deps = [
+        ":rigid_body_tree",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "rigid_body_collision_clique_test",
+    size = "small",
+    srcs = ["test/rigid_body_tree/rigid_body_collision_clique_test.cc"],
     linkstatic = 1,
     deps = [
         ":rigid_body_tree",
@@ -261,14 +258,11 @@ cc_test(
 
 filegroup(
     name = "test_models",
+    testonly = 1,
     srcs = glob([
         "test/**/*.obj",
         "test/**/*.sdf",
         "test/**/*.urdf",
         "test/**/*.xml",
-        "collision/test/**/*.obj",
-        "collision/test/**/*.sdf",
-        "collision/test/**/*.urdf",
-        "collision/test/**/*.xml",
     ]),
 )

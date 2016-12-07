@@ -59,8 +59,8 @@ int IiwaWorldSimBuilder<T>::AddFixedModelInstance(const string& model_name,
                                                   const Vector3d& rpy) {
   DRAKE_DEMAND(!built_);
 
-  auto weld_to_frame = allocate_shared<RigidBodyFrame>(
-      aligned_allocator<RigidBodyFrame>(), "world", nullptr, xyz, rpy);
+  auto weld_to_frame = allocate_shared<RigidBodyFrame<double>>(
+      aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr, xyz, rpy);
 
   return AddModelInstanceToFrame(model_name, xyz, rpy, weld_to_frame);
 }
@@ -71,8 +71,8 @@ int IiwaWorldSimBuilder<T>::AddFloatingModelInstance(const string& model_name,
                                                      const Vector3d& rpy) {
   DRAKE_DEMAND(!built_);
 
-  auto weld_to_frame = allocate_shared<RigidBodyFrame>(
-      aligned_allocator<RigidBodyFrame>(), "world", nullptr, xyz, rpy);
+  auto weld_to_frame = allocate_shared<RigidBodyFrame<double>>(
+      aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr, xyz, rpy);
 
   return AddModelInstanceToFrame(model_name, xyz, rpy, weld_to_frame,
                                  kQuaternion);
@@ -81,7 +81,7 @@ int IiwaWorldSimBuilder<T>::AddFloatingModelInstance(const string& model_name,
 template <typename T>
 int IiwaWorldSimBuilder<T>::AddModelInstanceToFrame(
     const string& model_name, const Vector3d& xyz, const Vector3d& rpy,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     const drake::multibody::joints::FloatingBaseType floating_base_type) {
   DRAKE_DEMAND(!built_);
   std::size_t extension_location = model_map_[model_name].find_last_of(".");
@@ -147,40 +147,6 @@ std::unique_ptr<systems::Diagram<T>> IiwaWorldSimBuilder<T>::Build() {
   built_ = true;
 
   return std::move(builder->Build());
-}
-
-template <typename T>
-void IiwaWorldSimBuilder<T>::SetZeroConfiguration(
-    systems::Simulator<T>* simulator,
-    const systems::Diagram<T>* demo_diagram) {
-  DRAKE_DEMAND(simulator != nullptr && demo_diagram != nullptr);
-
-  std::vector<const systems::System<double>* > demo_systems =
-      demo_diagram->GetSystems();
-
-  const systems::Diagram<T>* plant_and_visualizer_diagram =
-      dynamic_cast<const systems::Diagram<T>*>(demo_systems.at(0));
-  DRAKE_DEMAND(plant_and_visualizer_diagram != nullptr);
-
-  std::vector<const systems::System<double>*> plant_and_visualizer_subsystems =
-      plant_and_visualizer_diagram->GetSystems();
-
-  const RigidBodyPlant<double>* rigid_body_plant =
-      dynamic_cast<const RigidBodyPlant<double>*>(
-          plant_and_visualizer_subsystems.at(0));
-
-  DRAKE_DEMAND(rigid_body_plant != nullptr);
-
-  Context<double>* input_diagram_context =
-      demo_diagram->GetMutableSubsystemContext(
-          simulator->get_mutable_context(), plant_and_visualizer_diagram);
-  DRAKE_DEMAND(plant_and_visualizer_diagram != nullptr);
-
-  Context<double>* plant_context =
-      plant_and_visualizer_diagram->GetMutableSubsystemContext(
-          input_diagram_context, rigid_body_plant);
-
-  rigid_body_plant->SetZeroConfiguration(plant_context);
 }
 
 template <typename T>

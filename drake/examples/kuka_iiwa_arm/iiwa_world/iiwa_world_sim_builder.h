@@ -62,7 +62,7 @@ class IiwaWorldSimBuilder {
   int AddModelInstanceToFrame(
       const std::string& model_name, const Eigen::Vector3d& xyz,
       const Eigen::Vector3d& rpy,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame,
+      std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
       const drake::multibody::joints::FloatingBaseType floating_base_type =
           drake::multibody::joints::kFixed);
 
@@ -75,18 +75,6 @@ class IiwaWorldSimBuilder {
   /// DrakeVisualizer. Once this method is called, this builder should be
   /// discarded.
   std::unique_ptr<systems::Diagram<T>> Build();
-
-  // TODO(naveenoid): Remove this method once issue #4191 is addressed.
-  // TODO(naveenoid): Subsystem names should be documented here once #3556 is
-  // resolved.
-  /// Sets the zero configuration of the plant.
-  /// Note that this method assumes that @p demo_diagram is composed of a
-  /// `Diagram` containing the plant and visualizer systems as built by
-  /// the `Build()` method.
-  ///
-  /// @see Build
-  void SetZeroConfiguration(systems::Simulator<T>* simulator,
-                            const systems::Diagram<T>* demo_diagram);
 
   // We are neither copyable nor moveable.
   IiwaWorldSimBuilder(const IiwaWorldSimBuilder<T>& other) = delete;

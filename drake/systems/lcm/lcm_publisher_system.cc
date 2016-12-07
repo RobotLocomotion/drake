@@ -38,10 +38,9 @@ LcmPublisherSystem::LcmPublisherSystem(
   DRAKE_DEMAND(lcm_);
 
   if (translator_ != nullptr) {
-    DeclareInputPort(kVectorValued, translator_->get_vector_size(),
-                     kContinuousSampling);
+    DeclareInputPort(kVectorValued, translator_->get_vector_size());
   } else {
-    DeclareAbstractInputPort(kContinuousSampling);
+    DeclareAbstractInputPort();
   }
 }
 

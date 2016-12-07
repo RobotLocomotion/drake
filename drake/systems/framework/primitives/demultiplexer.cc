@@ -15,11 +15,10 @@ Demultiplexer<T>::Demultiplexer(int size, int output_ports_sizes) {
 
   // TODO(amcastro-tri): remove the size parameter from the constructor once
   // #3109 supporting automatic sizes is resolved.
-  this->DeclareInputPort(kVectorValued, size, kInheritedSampling);
+  this->DeclareInputPort(kVectorValued, size);
   // TODO(david-german-tri): Provide a way to infer the type.
   for (int i = 0; i < num_output_ports; ++i) {
-    this->DeclareOutputPort(
-        kVectorValued, output_ports_sizes, kInheritedSampling);
+    this->DeclareOutputPort(kVectorValued, output_ports_sizes);
   }
 }
 

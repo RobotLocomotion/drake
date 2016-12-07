@@ -128,6 +128,16 @@ cc_library(
 )
 
 cc_library(
+    name = "random_source",
+    srcs = ["random_source.cc"],
+    hdrs = ["random_source.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/systems/framework",
+    ],
+)
+
+cc_library(
     name = "signal_logger",
     srcs = ["signal_logger.cc"],
     hdrs = ["signal_logger.h"],

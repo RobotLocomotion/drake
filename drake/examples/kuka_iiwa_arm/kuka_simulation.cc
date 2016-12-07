@@ -58,9 +58,8 @@ using systems::SystemOutput;
 class IiwaCommandReceiver : public systems::LeafSystem<double> {
  public:
   explicit IiwaCommandReceiver(int num_joints) {
-    this->DeclareAbstractInputPort(systems::kContinuousSampling);
-    this->DeclareOutputPort(systems::kVectorValued, num_joints,
-                            systems::kContinuousSampling);
+    this->DeclareAbstractInputPort();
+    this->DeclareOutputPort(systems::kVectorValued, num_joints);
   }
 
   void EvalOutput(const Context<double>& context,
@@ -96,11 +95,9 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
   static const int kCommandInputPort = 1;
 
   explicit IiwaStatusSender(int num_joints) : num_joints_(num_joints) {
-    this->DeclareInputPort(systems::kVectorValued, num_joints * 2,
-                           systems::kContinuousSampling);
-    this->DeclareInputPort(systems::kVectorValued, num_joints,
-                           systems::kContinuousSampling);
-    this->DeclareAbstractOutputPort(systems::kContinuousSampling);
+    this->DeclareInputPort(systems::kVectorValued, num_joints * 2);
+    this->DeclareInputPort(systems::kVectorValued, num_joints);
+    this->DeclareAbstractOutputPort();
   }
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
@@ -240,16 +237,6 @@ class SimulatedKuka : public systems::Diagram<T> {
 
   const RigidBodyPlant<T>& get_plant() const { return *plant_; }
 
-  void SetDefaultState(Context<T>* context) const {
-    Context<T>* controller_context =
-        this->GetMutableSubsystemContext(context, controller_);
-    controller_->SetDefaultState(controller_context);
-
-    Context<T>* plant_context =
-        controller_->GetMutableSubsystemContext(controller_context, plant_);
-    plant_->SetZeroConfiguration(plant_context);
-  }
-
  private:
   RigidBodyPlant<T>* plant_{nullptr};
   PidControlledSystem<T>* controller_{nullptr};
@@ -298,11 +285,6 @@ int DoMain() {
   auto sys = builder.Build();
 
   Simulator<double> simulator(*sys);
-
-  // Zeroes the state and initializes controller state.
-  auto model_context = sys->GetMutableSubsystemContext(
-      simulator.get_mutable_context(), model);
-  model->SetDefaultState(model_context);
 
   lcm.StartReceiveThread();
   simulator.Initialize();

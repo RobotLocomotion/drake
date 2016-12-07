@@ -25,10 +25,9 @@ class RobotStateDecoderSystem : public systems::LeafSystem<double> {
  public:
   explicit RobotStateDecoderSystem(const RigidBodyTree<double>& robot)
       : robot_(robot) {
-    input_port_index_lcm_msg_ =
-        DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
+    input_port_index_lcm_msg_ = DeclareAbstractInputPort().get_index();
     output_port_index_humanoid_status_ =
-        DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
+        DeclareAbstractOutputPort().get_index();
   }
 
   void EvalOutput(const Context<double>& context,

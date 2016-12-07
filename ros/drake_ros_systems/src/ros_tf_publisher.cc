@@ -9,7 +9,7 @@ RosTfPublisher::RosTfPublisher(const RigidBodyTree<double>& tree)
     : tree_(tree) {
   const int vector_size =
       tree.get_num_positions() + tree.get_num_velocities();
-  this->DeclareInputPort(kVectorValued, vector_size, kContinuousSampling);
+  this->DeclareInputPort(kVectorValued, vector_size);
   LoadEnableParameter();
   Init();
 }
@@ -200,7 +200,7 @@ std::string RosTfPublisher::GetKey(const RigidBody<double>& rigid_body) const {
       rigid_body.get_name();
 }
 
-std::string RosTfPublisher::GetKey(const RigidBodyFrame& frame) const {
+std::string RosTfPublisher::GetKey(const RigidBodyFrame<double>& frame) const {
   return frame.get_rigid_body().get_model_name() +
       std::to_string(frame.get_rigid_body().get_model_instance_id()) +
       frame.get_name();

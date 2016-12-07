@@ -78,20 +78,6 @@ bool PidControlledSpringMassSystem<T>::has_any_direct_feedthrough() const {
 }
 
 template <typename T>
-void PidControlledSpringMassSystem<T>::SetDefaultState(
-    Context<T>* context) const {
-  Context<T>* controller_context =
-      Diagram<T>::GetMutableSubsystemContext(context, controller_);
-  controller_->set_integral_value(controller_context, VectorX<T>::Zero(1));
-
-  Context<T>* plant_context =
-      Diagram<T>::GetMutableSubsystemContext(context, plant_);
-  plant_->set_position(plant_context, 0.0);
-  plant_->set_velocity(plant_context, 0.0);
-  plant_->set_conservative_work(plant_context, 0.0);
-}
-
-template <typename T>
 T PidControlledSpringMassSystem<T>::get_position(
     const Context<T>& context) const {
   const Context<T>& plant_context =

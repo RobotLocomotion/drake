@@ -70,13 +70,11 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
     DRAKE_ASSERT(position_index_ < tree.get_num_positions());
 
     this->set_name("SchunkWsgTrajectoryGenerator");
-    this->DeclareAbstractInputPort(systems::kContinuousSampling);
+    this->DeclareAbstractInputPort();
     this->DeclareInputPort(
         systems::kVectorValued,
-        tree.get_num_positions() + tree.get_num_velocities(),
-        systems::kContinuousSampling);
-    this->DeclareOutputPort(systems::kVectorValued, 2,
-                            systems::kContinuousSampling);
+        tree.get_num_positions() + tree.get_num_velocities());
+    this->DeclareOutputPort(systems::kVectorValued, 2);
     // The update period below matches the polling rate from
     // drake-schunk-driver.
     this->DeclareUpdatePeriodSec(0.05);
@@ -244,9 +242,8 @@ class SchunkWsgStatusSender : public systems::LeafSystem<double> {
     this->set_name("SchunkWsgStatusSender");
     this->DeclareInputPort(
         systems::kVectorValued,
-        tree.get_num_positions() + tree.get_num_velocities(),
-        systems::kContinuousSampling);
-    this->DeclareAbstractOutputPort(systems::kContinuousSampling);
+        tree.get_num_positions() + tree.get_num_velocities());
+    this->DeclareAbstractOutputPort();
   }
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
@@ -334,16 +331,6 @@ class PidControlledSchunkWsg : public systems::Diagram<T> {
     builder.BuildInto(this);
   }
 
-  void SetDefaultState(Context<T>* context) const {
-    Context<T>* controller_context =
-        this->GetMutableSubsystemContext(context, controller_);
-    controller_->SetDefaultState(controller_context);
-
-    Context<T>* plant_context =
-        controller_->GetMutableSubsystemContext(controller_context, plant_);
-    plant_->SetZeroConfiguration(plant_context);
-  }
-
   const RigidBodyPlant<T>& get_plant() const { return *plant_; }
   int position_index() const { return position_index_; }
   int velocity_index() const { return velocity_index_; }
@@ -389,11 +376,6 @@ int DoMain() {
   auto sys = builder.Build();
 
   Simulator<double> simulator(*sys);
-
-  // Zeroes the state and initializes controller state.
-  auto model_context = sys->GetMutableSubsystemContext(
-      simulator.get_mutable_context(), model);
-  model->SetDefaultState(model_context);
 
   lcm.StartReceiveThread();
   simulator.Initialize();

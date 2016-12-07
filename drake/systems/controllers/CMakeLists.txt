@@ -1,6 +1,6 @@
 
 add_library_with_exports(LIB_NAME drakeLinearControl SOURCE_FILES linear_quadratic_regulator.cc)
-target_link_libraries(drakeLinearControl drakeSystemFramework)
+target_link_libraries(drakeLinearControl drakeMath drakeSystemFramework)
 drake_install_libraries(drakeLinearControl)
 drake_install_headers(linear_quadratic_regulator.h)
 drake_install_pkg_config_file(drake-linear-control

@@ -40,7 +40,7 @@ namespace urdf {
  * @throws std::runtime_error if the rigid body to which the new
  * `RigidBodyFrame` is attached is not found.
  */
-std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
+std::shared_ptr<RigidBodyFrame<double>> MakeRigidBodyFrameFromUrdfNode(
     const RigidBodyTree<double>& tree, const tinyxml2::XMLElement& link,
     const tinyxml2::XMLElement* pose, const std::string& name,
     int model_instance_id);
@@ -145,7 +145,8 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string, const std::string& root_dir,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree<double>* tree);
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
+    RigidBodyTree<double>* tree);
 
 /**
  * This method is the same as AddModelInstanceFromUrdfString() except it has an
@@ -185,7 +186,8 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
     PackageMap& ros_package_map,
     const std::string& root_dir,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree<double>* tree);
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
+    RigidBodyTree<double>* tree);
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
@@ -196,7 +198,8 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     PackageMap& ros_package_map,
     const std::string& root_dir,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree<double>* tree);
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
+    RigidBodyTree<double>* tree);
 
 /**
  * Reads a URDF model specified by @p urdf_filename and adds an instance of it
@@ -286,7 +289,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
 
 /**
@@ -321,7 +324,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::map<std::string, std::string>& ros_package_map,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
 
 #ifndef SWIG
@@ -332,7 +335,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
      std::map<std::string, std::string>& ros_package_map,
      const drake::multibody::joints::FloatingBaseType floating_base_type,
-     std::shared_ptr<RigidBodyFrame> weld_to_frame,
+     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
      RigidBodyTree<double>* tree);
 }  // namespace urdf
 }  // namespace parsers
