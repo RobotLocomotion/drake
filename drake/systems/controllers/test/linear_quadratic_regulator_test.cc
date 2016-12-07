@@ -57,7 +57,7 @@ GTEST_TEST(TestLQR, DoubleIntegrator) {
                               tol, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(lqr->B(), Eigen::Matrix<double, 0, 2>::Zero(),
                               tol, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(lqr->xDot0(), Eigen::Matrix<double, 0, 1>::Zero(),
+  EXPECT_TRUE(CompareMatrices(lqr->f0(), Eigen::Matrix<double, 0, 1>::Zero(),
                               tol, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(lqr->C(), Eigen::Matrix<double, 1, 0>::Zero(),
                               tol, MatrixCompareType::absolute));

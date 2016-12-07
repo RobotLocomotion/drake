@@ -6,14 +6,20 @@
 namespace drake {
 namespace systems {
 
-/// A continuous affine system. Given an input vector `u`, an output
-/// vector `y`, a state vector `x`, its derivative `xDot` and
-/// state space coefficient matrices `A`, `B`, `C`, and `D`, initial time
-/// derivative `xDot0` and intial output `y0`, this system
-/// implements the following equations:
+/// A discrete OR continuous affine system.
 ///
-/// @f[\dot{x} = A x + B u + \dot{x}_0 @f]
-/// @f[y = C x + D u + y_0 @f]
+/// If time_period>0.0, then the affine system will have the following discrete-
+/// time state update:
+///   @f[ x[n+1] = A x[n] + B u[n] + f_0, @f]
+///
+/// or if time_period==0.0, then the affine system will have the following
+/// continuous-time state update:
+///   @f[\dot{x} = A x + B u + f_0. @f]
+///
+/// In both cases, the system will have the output:
+///   @f[y = C x + D u + y_0, @f]
+/// where `u` denotes the input vector, `x` denotes the state vector, and
+/// `y` denotes the output vector.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -41,15 +47,16 @@ class AffineSystem : public LeafSystem<T> {
   /// | B       | num states  | num inputs  |
   /// | C       | num outputs | num states  |
   /// | D       | num outputs | num inputs  |
+  ///
+  /// @param time_period Defines the period of the discrete time system; use
+  ///  time_period=0.0 to denote a continuous time system.  @default 0.0
   AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
                const Eigen::Ref<const Eigen::MatrixXd>& B,
-               const Eigen::Ref<const Eigen::VectorXd>& xDot0,
+               const Eigen::Ref<const Eigen::VectorXd>& f0,
                const Eigen::Ref<const Eigen::MatrixXd>& C,
                const Eigen::Ref<const Eigen::MatrixXd>& D,
-               const Eigen::Ref<const Eigen::VectorXd>& y0);
-
-  // System<T> override.
-  AffineSystem<AutoDiffXd>* DoToAutoDiffXd() const override;
+               const Eigen::Ref<const Eigen::VectorXd>& y0,
+               double time_period = 0.0);
 
   /// The input to this system is direct feedthrough only if the coefficient
   /// matrix `D` is non-zero.
@@ -67,24 +74,33 @@ class AffineSystem : public LeafSystem<T> {
   void EvalTimeDerivatives(const Context<T>& context,
                            ContinuousState<T>* derivatives) const override;
 
+  void DoEvalDifferenceUpdates(
+      const drake::systems::Context<T>& context,
+      drake::systems::DifferenceState<T>* updates) const override;
+
   // Helper getter methods.
-  const Eigen::MatrixXd& A(void) const { return A_; }
-  const Eigen::MatrixXd& B(void) const { return B_; }
-  const Eigen::MatrixXd& C(void) const { return C_; }
-  const Eigen::MatrixXd& D(void) const { return D_; }
-  const Eigen::VectorXd& xDot0(void) const { return xDot0_; }
-  const Eigen::VectorXd& y0(void) const { return y0_; }
+  const Eigen::MatrixXd& A() const { return A_; }
+  const Eigen::MatrixXd& B() const { return B_; }
+  const Eigen::VectorXd& f0() const { return f0_; }
+  const Eigen::MatrixXd& C() const { return C_; }
+  const Eigen::MatrixXd& D() const { return D_; }
+  const Eigen::VectorXd& y0() const { return y0_; }
+  double time_period() const { return time_period_; }
 
  private:
+  // System<T> override.
+  AffineSystem<AutoDiffXd>* DoToAutoDiffXd() const override;
+
   const Eigen::MatrixXd A_;
   const Eigen::MatrixXd B_;
-  const Eigen::VectorXd xDot0_;
+  const Eigen::VectorXd f0_;
   const Eigen::MatrixXd C_;
   const Eigen::MatrixXd D_;
   const Eigen::VectorXd y0_;
-  const int num_inputs_;
-  const int num_outputs_;
-  const int num_states_;
+  const int num_inputs_{0};
+  const int num_outputs_{0};
+  const int num_states_{0};
+  const double time_period_{0.0};
 };
 
 }  // namespace systems

@@ -12,8 +12,7 @@ namespace {
 class MatrixGainTest : public AffineLinearSystemTest {
  public:
   // Setup an arbitrary MatrixGain system.
-  MatrixGainTest()
-      : AffineLinearSystemTest(0.0, 0.0, 0.0, 0.0) {}
+  MatrixGainTest() : AffineLinearSystemTest(0.0, 0.0, 0.0, 0.0) {}
 
   void Initialize() override {
     // Construct the system I/O objects.
@@ -38,7 +37,7 @@ TEST_F(MatrixGainTest, Construction) {
   EXPECT_EQ(dut_->get_name(), "test_matrix_gain_system");
   EXPECT_EQ(dut_->A(), MatrixX<double>::Zero(kNumStates, kNumStates));
   EXPECT_EQ(dut_->B(), MatrixX<double>::Zero(kNumStates, D_.cols()));
-  EXPECT_EQ(dut_->xDot0(), Eigen::VectorXd::Zero(kNumStates));
+  EXPECT_EQ(dut_->f0(), Eigen::VectorXd::Zero(kNumStates));
   EXPECT_EQ(dut_->C(), MatrixX<double>::Zero(D_.rows(), kNumStates));
   EXPECT_EQ(dut_->D(), D_);
   EXPECT_EQ(dut_->y0(), Eigen::VectorXd::Zero(2));
@@ -58,8 +57,7 @@ TEST_F(MatrixGainTest, Derivatives) {
   dut_->EvalTimeDerivatives(*context_, derivatives_.get());
 
   // We expect the derivatives to be a vector of length zero.
-  Eigen::VectorXd expected_derivatives =
-      VectorX<double>::Zero(kNumStates);
+  Eigen::VectorXd expected_derivatives = VectorX<double>::Zero(kNumStates);
 
   EXPECT_EQ(derivatives_->get_vector().CopyToVector(), expected_derivatives);
 }

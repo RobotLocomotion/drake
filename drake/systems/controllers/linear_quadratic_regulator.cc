@@ -24,6 +24,9 @@ std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
     const LinearSystem<double>& system,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R) {
+  DRAKE_DEMAND(system.time_period() == 0.0);
+  // TODO(russt): Support discrete-time systems.
+
   const int num_states = system.B().rows(), num_inputs = system.B().cols();
 
   const Eigen::MatrixXd& K =

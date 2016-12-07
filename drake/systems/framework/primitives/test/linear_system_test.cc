@@ -40,7 +40,7 @@ TEST_F(LinearSystemTest, Construction) {
   EXPECT_EQ("test_linear_system", dut_->get_name());
   EXPECT_EQ(dut_->A(), A_);
   EXPECT_EQ(dut_->B(), B_);
-  EXPECT_EQ(dut_->xDot0(), xDot0_);
+  EXPECT_EQ(dut_->f0(), f0_);
   EXPECT_EQ(dut_->C(), C_);
   EXPECT_EQ(dut_->D(), D_);
   EXPECT_EQ(dut_->y0(), y0_);
@@ -88,17 +88,17 @@ TEST_F(LinearSystemTest, Output) {
 GTEST_TEST(TestLinearize, FromAffine) {
   Eigen::Matrix3d A;
   Eigen::Matrix<double, 3, 1> B;
-  Eigen::Vector3d xDot0;
+  Eigen::Vector3d f0;
   Eigen::Matrix<double, 2, 3> C;
   Eigen::Vector2d D;
   Eigen::Vector2d y0;
   A << 1, 2, 3, 4, 5, 6, 7, 8, 9;
   B << 10, 11, 12;
-  xDot0 << 13, 14, 15;
+  f0 << 13, 14, 15;
   C << 16, 17, 18, 19, 20, 21;
   D << 22, 23;
   y0 << 24, 25;
-  AffineSystem<double> system(A, B, xDot0, C, D, y0);
+  AffineSystem<double> system(A, B, f0, C, D, y0);
   auto context = system.CreateDefaultContext();
   Eigen::Vector3d x0;
   x0 << 26, 27, 28;
@@ -110,7 +110,7 @@ GTEST_TEST(TestLinearize, FromAffine) {
   EXPECT_THROW(Linearize(system, *context), std::runtime_error);
 
   // Set x0 to the actual equilibrium point.
-  x0 = A.colPivHouseholderQr().solve(-B * u0 - xDot0);
+  x0 = A.colPivHouseholderQr().solve(-B * u0 - f0);
   context->get_mutable_continuous_state_vector()->SetFromVector(x0);
 
   auto linearized_system = Linearize(system, *context);
