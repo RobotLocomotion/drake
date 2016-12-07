@@ -469,10 +469,14 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   // END_DEBUG
   model->compile();
 
+  auto matlab_model =
+      make_unique<MatlabRigidBodyTree>(
+          make_unique<RigidBodyTree<double>>(model));
+
   // mexPrintf("constructModelmex: Creating DrakeMexPointer\n");
   plhs[0] =
       createDrakeMexPointer(
-          (void*)model, "RigidBodyTree",
+          (void*)model.release(), "RigidBodyTree",
           DrakeMexPointerTypeId<RigidBodyTree<double>>::value);
   // DEBUG
   // mexPrintf("constructModelmex: END\n");
