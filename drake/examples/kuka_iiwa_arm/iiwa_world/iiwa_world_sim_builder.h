@@ -62,7 +62,7 @@ class IiwaWorldSimBuilder {
   int AddModelInstanceToFrame(
       const std::string& model_name, const Eigen::Vector3d& xyz,
       const Eigen::Vector3d& rpy,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame,
+      std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
       const drake::multibody::joints::FloatingBaseType floating_base_type =
           drake::multibody::joints::kFixed);
 

@@ -429,8 +429,10 @@ void ParseSdfFrame(RigidBodyTree<double>* rigid_body_tree, XMLElement* node,
   }
 
   // Create the frame
-  std::shared_ptr<RigidBodyFrame> frame = allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), name, link, xyz, rpy);
+  std::shared_ptr<RigidBodyFrame<double>> frame =
+      allocate_shared<RigidBodyFrame<double>>(
+          Eigen::aligned_allocator<RigidBodyFrame<double>>(),
+          name, link, xyz, rpy);
 
   rigid_body_tree->addFrame(frame);
 }
@@ -573,12 +575,14 @@ void ParseSdfJoint(RigidBodyTree<double>* model, std::string model_name,
     Eigen::Vector3d loop_point_parent =
         transform_parent_to_model.inverse() * loop_point_model;
 
-    std::shared_ptr<RigidBodyFrame> frameA = allocate_shared<RigidBodyFrame>(
-        Eigen::aligned_allocator<RigidBodyFrame>(), name + "FrameA", parent,
+    auto frameA = allocate_shared<RigidBodyFrame<double>>(
+        Eigen::aligned_allocator<RigidBodyFrame<double>>(),
+        name + "FrameA", parent,
         loop_point_parent, Vector3d::Zero());
 
-    std::shared_ptr<RigidBodyFrame> frameB = allocate_shared<RigidBodyFrame>(
-        Eigen::aligned_allocator<RigidBodyFrame>(), name + "FrameB", child,
+    auto frameB = allocate_shared<RigidBodyFrame<double>>(
+        Eigen::aligned_allocator<RigidBodyFrame<double>>(),
+        name + "FrameB", child,
         loop_point_child, Vector3d::Zero());
 
     model->addFrame(frameA);
@@ -709,7 +713,7 @@ void ParseSdfJoint(RigidBodyTree<double>* model, std::string model_name,
 void ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const FloatingBaseType floating_base_type,
-                std::shared_ptr<RigidBodyFrame> weld_to_frame,
+                std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
                 ModelInstanceIdTable* model_instance_id_table) {
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_DEMAND(tree);
@@ -773,8 +777,8 @@ void ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
     // Sets a default value for weld_to_frame if none was set.
     // By default, the robot is welded to the world frame.
     if (weld_to_frame == nullptr) {
-      weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-          Eigen::aligned_allocator<RigidBodyFrame>(),
+      weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+          Eigen::aligned_allocator<RigidBodyFrame<double>>(),
           std::string(RigidBodyTree<double>::kWorldName),
           nullptr,  // Valid since the robot is attached to the world.
           Eigen::Isometry3d::Identity());
@@ -801,7 +805,7 @@ void ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
 void ParseWorld(RigidBodyTree<double>* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const FloatingBaseType floating_base_type,
-                std::shared_ptr<RigidBodyFrame> weld_to_frame,
+                std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
                 ModelInstanceIdTable* model_instance_id_table) {
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model")) {
@@ -816,7 +820,7 @@ ModelInstanceIdTable ParseSdf(
     PackageMap& package_map,
     const string& root_dir,
     const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame) {
   populatePackageMap(package_map);
 
   XMLElement* node = xml_doc->FirstChildElement("sdf");
@@ -869,7 +873,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
 ModelInstanceIdTable AddModelInstancesFromSdfFile(
     const string& filename,
     const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
   // Ensures the output parameter pointers are valid.
   DRAKE_DEMAND(tree);
@@ -897,7 +901,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
 ModelInstanceIdTable AddModelInstancesFromSdfString(
     const string& sdf_string,
     const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
   // Ensures the output parameter pointers are valid.
   DRAKE_DEMAND(tree);

@@ -49,7 +49,7 @@ namespace parsers {
 int AddFloatingJoint(
     multibody::joints::FloatingBaseType floating_base_type,
     const std::vector<int>& body_indices,
-    const std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    const std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     const PoseMap* pose_map,
     RigidBodyTree<double>* tree);
 

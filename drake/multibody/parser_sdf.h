@@ -59,7 +59,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
 ModelInstanceIdTable AddModelInstancesFromSdfFile(
     const std::string& filename,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
 
 /**
@@ -82,7 +82,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
 ModelInstanceIdTable AddModelInstancesFromSdfString(
     const std::string& sdf_string,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
 
 }  // namespace sdf
