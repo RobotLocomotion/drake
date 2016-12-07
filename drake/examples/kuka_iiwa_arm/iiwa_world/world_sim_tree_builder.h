@@ -85,7 +85,7 @@ class WorldSimTreeBuilder {
   /// Ownership of the manufactured RigidBodyTree is transferred to the
   /// calling code. The instance of this class should be discarded after this
   /// method is called.
-  std::unique_ptr<RigidBodyTree<T>> GetRigidBodyTree(void) {
+  std::unique_ptr<RigidBodyTree<T>> Build(void) {
     DRAKE_DEMAND(built_ == false && rigid_body_tree_ != nullptr);
     built_ = true;
     return std::move(rigid_body_tree_);
