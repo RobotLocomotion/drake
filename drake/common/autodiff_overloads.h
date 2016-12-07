@@ -20,6 +20,7 @@
 #pragma once
 
 #include <cmath>
+#include <limits>
 
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
@@ -135,6 +136,33 @@ const Eigen::AutoDiffScalar<DerType>& max(
 }  // namespace Eigen
 
 namespace drake {
+
+/// This struct converts an object of type T to a double. The default
+/// implementation returns NaN. Overloads provide sensible conversions.
+/// Note that we do not expect to be running simulations while instantiated
+/// with non-numerical scalar types!
+/// (We're using a struct here because partial instantiation does not work
+/// with function templates.)
+template <typename T>
+struct TtoDouble {
+  static double convert(const T&) {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+};
+
+/// Partial specialization for AutoDiffScalar.
+template <typename DerType>
+struct TtoDouble<Eigen::AutoDiffScalar<DerType>> {
+  static double convert(const Eigen::AutoDiffScalar<DerType>& scalar) {
+    return static_cast<double>(scalar.value());
+  }
+};
+
+// Specializations for floating types.
+template <>
+struct TtoDouble<double> {
+  static double convert(const double& scalar) { return scalar; }
+};
 
 /// Provides if-then-else expression for Eigen::AutoDiffScalar type. To support
 /// Eigen's generic expressions, we use casting to the plain object after

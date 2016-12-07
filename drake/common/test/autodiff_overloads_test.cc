@@ -8,6 +8,7 @@
 #include "drake/common/cond.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic_expression.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -15,6 +16,20 @@ using Eigen::VectorXd;
 namespace drake {
 namespace common {
 namespace {
+
+// Test correctness of TtoDouble
+GTEST_TEST(AutodiffOverloadsTest, TtoDouble) {
+  Eigen::AutoDiffScalar<Eigen::Vector2d> x;
+  x.value() = 0.0;
+  EXPECT_EQ(TtoDouble<Eigen::AutoDiffScalar<Eigen::Vector2d>>::convert(x), 0.0);
+
+  double y = 0.0;
+  EXPECT_EQ(TtoDouble<double>::convert(y), 0.0);
+
+  // Test an arbitrary symbolic expression.
+  drake::symbolic::Expression e;
+  EXPECT_TRUE(std::isnan(TtoDouble<drake::symbolic::Expression>::convert(e)));
+}
 
 // Tests correctness of isinf
 GTEST_TEST(AutodiffOverloadsTest, IsInf) {
