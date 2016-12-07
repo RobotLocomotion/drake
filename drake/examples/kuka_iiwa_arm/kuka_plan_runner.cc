@@ -7,6 +7,7 @@
 ///
 /// When a plan is received, it will immediately begin executing that
 /// plan on the arm (replacing any plan in progress).
+#include <memory>
 
 #include <lcm/lcm-cpp.hpp>
 
@@ -17,6 +18,8 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 #include "drake/lcmt_iiwa_command.hpp"
@@ -142,11 +145,12 @@ class RobotPlanRunner {
 };
 
 int do_main(int argc, const char* argv[]) {
-  RigidBodyTree<double> tree(
-      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::multibody::joints::kFixed);
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      multibody::joints::kFixed, tree.get());
 
-  RobotPlanRunner runner(tree);
+  RobotPlanRunner runner(*tree);
   runner.Run();
   return 0;
 }

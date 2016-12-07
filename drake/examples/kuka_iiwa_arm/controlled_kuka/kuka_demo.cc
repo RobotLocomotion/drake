@@ -10,6 +10,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/ik_options.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -61,16 +62,18 @@ const char kUrdfPath[] {
     "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf" };
 
 unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
-  RigidBodyTree<double> tree(drake::GetDrakePath() + kUrdfPath,
-                             drake::multibody::joints::kFixed);
+  auto tree = make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      GetDrakePath() + kUrdfPath,
+      multibody::joints::kFixed, tree.get());
 
   // Creates a basic pointwise IK trajectory for moving the iiwa arm.
   // It starts in the zero configuration (straight up).
-  VectorXd zero_conf = tree.getZeroConfiguration();
+  VectorXd zero_conf = tree->getZeroConfiguration();
   VectorXd joint_lb = zero_conf - VectorXd::Constant(7, 0.01);
   VectorXd joint_ub = zero_conf + VectorXd::Constant(7, 0.01);
 
-  PostureConstraint pc1(&tree, Vector2d(0, 0.5));
+  PostureConstraint pc1(tree.get(), Vector2d(0, 0.5));
   VectorXi joint_idx(7);
   joint_idx << 0, 1, 2, 3, 4, 5, 6;
   pc1.setJointLimits(joint_idx, joint_lb, joint_ub);
@@ -82,16 +85,16 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   Vector3d pos_lb = pos_end - Vector3d::Constant(0.005);
   Vector3d pos_ub = pos_end + Vector3d::Constant(0.005);
   WorldPositionConstraint wpc1(
-      &tree, tree.FindBodyIndex("iiwa_link_ee"),
+      tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
       Vector3d::Zero(), pos_lb, pos_ub, Vector2d(1, 3));
 
   // After the end effector constraint is released, applies the straight
   // up configuration again from time 4 to 5.9.
-  PostureConstraint pc2(&tree, Vector2d(4, 5.9));
+  PostureConstraint pc2(tree.get(), Vector2d(4, 5.9));
   pc2.setJointLimits(joint_idx, joint_lb, joint_ub);
 
   // Apply the same end effector constraint from time 6 to 9 of the demo.
-  WorldPositionConstraint wpc2(&tree, tree.FindBodyIndex("iiwa_link_ee"),
+  WorldPositionConstraint wpc2(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                                Vector3d::Zero(), pos_lb, pos_ub,
                                Vector2d(6, 9));
 
@@ -102,13 +105,13 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   // the state vector referring to the positions of the joints to be
   // constrained.
   Eigen::VectorXi joint_position_start_idx(1);
-  joint_position_start_idx(0) = tree.FindChildBodyOfJoint("iiwa_joint_2")->
+  joint_position_start_idx(0) = tree->FindChildBodyOfJoint("iiwa_joint_2")->
       get_position_start_index();
-  PostureConstraint pc3(&tree, Vector2d(6, 8));
+  PostureConstraint pc3(tree.get(), Vector2d(6, 8));
   pc3.setJointLimits(joint_position_start_idx, Vector1d(0.7), Vector1d(0.8));
 
   const std::vector<double> kTimes { 0.0, 2.0, 5.0, 7.0, 9.0 };
-  MatrixXd q0(tree.get_num_positions(), kTimes.size());
+  MatrixXd q0(tree->get_num_positions(), kTimes.size());
   for (size_t i = 0; i < kTimes.size(); ++i) {
     q0.col(i) = zero_conf;
   }
@@ -119,12 +122,12 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   constraint_array.push_back(&pc2);
   constraint_array.push_back(&pc3);
   constraint_array.push_back(&wpc2);
-  IKoptions ikoptions(&tree);
+  IKoptions ikoptions(tree.get());
   std::vector<int> info(kTimes.size(), 0);
-  MatrixXd q_sol(tree.get_num_positions(), kTimes.size());
+  MatrixXd q_sol(tree->get_num_positions(), kTimes.size());
   std::vector<std::string> infeasible_constraint;
 
-  inverseKinPointwise(&tree, kTimes.size(), kTimes.data(), q0, q0,
+  inverseKinPointwise(tree.get(), kTimes.size(), kTimes.data(), q0, q0,
                       constraint_array.size(), constraint_array.data(),
                       ikoptions, &q_sol, info.data(), &infeasible_constraint);
   bool info_good = true;
@@ -155,20 +158,20 @@ class KukaDemo : public systems::Diagram<T> {
     this->set_name("KukaDemo");
 
     // Instantiates an Multibody Dynamics (MBD) model of the world.
-    auto rigid_body_tree = make_unique<RigidBodyTree<T>>();
+    auto tree = make_unique<RigidBodyTree<T>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + kUrdfPath,
         drake::multibody::joints::kFixed,
-        nullptr /* weld to frame */, rigid_body_tree.get());
+        nullptr /* weld to frame */, tree.get());
 
-    drake::multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
-    VerifyIiwaTree(*rigid_body_tree);
+    drake::multibody::AddFlatTerrainToWorld(tree.get());
+    VerifyIiwaTree(*tree);
 
     DiagramBuilder<T> builder;
 
     // Instantiates a RigidBodyPlant from an MBD model of the world.
     std::unique_ptr<RigidBodyPlant<T>> plant =
-        make_unique<RigidBodyPlant<T>>(move(rigid_body_tree));
+        make_unique<RigidBodyPlant<T>>(move(tree));
     plant_ = plant.get();
 
     DRAKE_ASSERT(plant_->get_input_port(0).get_size() ==
@@ -251,16 +254,6 @@ class KukaDemo : public systems::Diagram<T> {
     return controller_->GetMutableSubsystemContext(controller_context, plant_);
   }
 
-  void SetDefaultState(Context<T>* context) const {
-    Context<T>* controller_context =
-        this->GetMutableSubsystemContext(context, controller_);
-    controller_->SetDefaultState(controller_context);
-
-    Context<T>* plant_context =
-        controller_->GetMutableSubsystemContext(controller_context, plant_);
-    plant_->SetZeroConfiguration(plant_context);
-  }
-
  private:
   RigidBodyPlant<T>* plant_{nullptr};
   PidControlledSystem<T>* controller_{nullptr};
@@ -278,8 +271,6 @@ int DoMain() {
   KukaDemo<double> model;
   Simulator<double> simulator(model);
   Context<double>* context = simulator.get_mutable_context();
-  // Zeroes the state and initializes controller state.
-  model.SetDefaultState(context);
 
   VectorX<double> desired_state = VectorX<double>::Zero(14);
   model.get_kuka_plant().set_state_vector(

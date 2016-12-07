@@ -35,12 +35,6 @@ VectorXd ComputeGravityTorque(const RigidBodyTree<double>& rigid_body_tree,
   return rigid_body_tree.dynamicsBiasTerm(cache, f_ext, false);
 }
 
-template <class T>
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
-}
-
 class GravityCompensatorTest : public ::testing::Test {
  protected:
   void Init(std::unique_ptr<RigidBodyTree<double>> tree) {
@@ -70,7 +64,7 @@ class GravityCompensatorTest : public ::testing::Test {
     input->get_mutable_value() << position_vector;
 
     // Hook input of the expected size.
-    context_->SetInputPort(0, MakeInput(std::move(input)));
+    context_->FixInputPort(0, std::move(input));
     gravity_compensator_->EvalOutput(*context_, output_.get());
 
     VectorXd expected_gravity_vector =

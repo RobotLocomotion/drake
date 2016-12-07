@@ -32,9 +32,13 @@ class TestSystem : public System<double> {
     return nullptr;
   }
 
-  std::unique_ptr<Context<double>> CreateDefaultContext() const override {
+  std::unique_ptr<Context<double>> AllocateContext() const override {
     return nullptr;
   }
+
+  void SetDefaultState(Context<double>* context) const override {}
+
+  void SetDefaultParameters(Context<double>* context) const override {}
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override {
@@ -129,16 +133,13 @@ TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
   auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
   BasicVector<double> state_vec2(kSize);
 
-  system_.MapVelocityToQDot(context_, *state_vec1,
-                            &state_vec2);
+  system_.MapVelocityToQDot(context_, *state_vec1, &state_vec2);
   EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
   EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
   EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
 
   // Test Eigen specialized function specially.
-  system_.MapVelocityToQDot(context_,
-                            state_vec1->CopyToVector(),
-                            &state_vec2);
+  system_.MapVelocityToQDot(context_, state_vec1->CopyToVector(), &state_vec2);
   EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
   EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
   EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
@@ -148,16 +149,13 @@ TEST_F(SystemTest, MapConfigurationDerivativesToVelocity) {
   auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
   BasicVector<double> state_vec2(kSize);
 
-  system_.MapQDotToVelocity(context_, *state_vec1,
-                            &state_vec2);
+  system_.MapQDotToVelocity(context_, *state_vec1, &state_vec2);
   EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
   EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
   EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
 
   // Test Eigen specialized function specially.
-  system_.MapQDotToVelocity(context_,
-                            state_vec1->CopyToVector(),
-                            &state_vec2);
+  system_.MapQDotToVelocity(context_, state_vec1->CopyToVector(), &state_vec2);
   EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
   EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
   EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
@@ -167,8 +165,7 @@ TEST_F(SystemTest, ConfigurationDerivativeVelocitySizeMismatch) {
   auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
   BasicVector<double> state_vec2(kSize + 1);
 
-  EXPECT_THROW(system_.MapQDotToVelocity(
-      context_, *state_vec1, &state_vec2),
+  EXPECT_THROW(system_.MapQDotToVelocity(context_, *state_vec1, &state_vec2),
                std::runtime_error);
 }
 
@@ -176,8 +173,7 @@ TEST_F(SystemTest, VelocityConfigurationDerivativeSizeMismatch) {
   auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
   BasicVector<double> state_vec2(kSize + 1);
 
-  EXPECT_THROW(system_.MapVelocityToQDot(
-      context_, *state_vec1, &state_vec2),
+  EXPECT_THROW(system_.MapVelocityToQDot(context_, *state_vec1, &state_vec2),
                std::runtime_error);
 }
 
@@ -248,11 +244,11 @@ class ValueIOTestSystem : public System<double> {
   // std::string.
   // The second input / output pair are vector type with length 1.
   ValueIOTestSystem() {
-    DeclareAbstractInputPort(kInheritedSampling);
-    DeclareAbstractOutputPort(kInheritedSampling);
+    DeclareAbstractInputPort();
+    DeclareAbstractOutputPort();
 
-    DeclareInputPort(kVectorValued, 1, kInheritedSampling);
-    DeclareOutputPort(kVectorValued, 1, kInheritedSampling);
+    DeclareInputPort(kVectorValued, 1);
+    DeclareOutputPort(kVectorValued, 1);
   }
 
   ~ValueIOTestSystem() override {}
@@ -264,11 +260,15 @@ class ValueIOTestSystem : public System<double> {
     return nullptr;
   }
 
-  std::unique_ptr<Context<double>> CreateDefaultContext() const override {
+  std::unique_ptr<Context<double>> AllocateContext() const override {
     std::unique_ptr<LeafContext<double>> context(new LeafContext<double>);
     context->SetNumInputPorts(this->get_num_input_ports());
     return std::unique_ptr<Context<double>>(context.release());
   }
+
+  void SetDefaultState(Context<double>* context) const override {}
+
+  void SetDefaultParameters(Context<double>* context) const override {}
 
   // Eval append "output" to input(0), and sets output(1) = 2 * input(1).
   void EvalOutput(const Context<double>& context,

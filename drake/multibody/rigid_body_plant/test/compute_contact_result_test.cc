@@ -36,13 +36,6 @@ namespace rigid_body_plant {
 namespace test {
 namespace {
 
-// Utility function to create an input port.
-template <class T>
-unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
-}
-
 // Utility function to facilitate comparing matrices for equivalency.
 template <typename DerivedA, typename DerivedB>
 bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
@@ -93,8 +86,7 @@ class ContactResultTest : public ::testing::Test {
     plant_ = make_unique<RigidBodyPlant<double>>(move(unique_tree));
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
-    context_->SetInputPort(0, MakeInput(make_unique<BasicVector<double>>(0)));
-    plant_->SetZeroConfiguration(context_.get());
+    context_->FixInputPort(0, make_unique<BasicVector<double>>(0));
     plant_->EvalOutput(*context_.get(), output_.get());
 
     // TODO(SeanCurtis-TRI): This hard-coded value is unfortunate. However,
@@ -168,7 +160,7 @@ TEST_F(ContactResultTest, SingleCollision) {
       CompareMatrices(resultant.get_spatial_force(), expected_spatial_force));
 
   const auto& details = info.get_contact_details();
-  ASSERT_EQ(details.size(), 1);
+  ASSERT_EQ(details.size(), 1u);
   auto detail_force = details[0]->ComputeContactForce();
   ASSERT_TRUE(CompareMatrices(detail_force.get_spatial_force(),
                               expected_spatial_force));

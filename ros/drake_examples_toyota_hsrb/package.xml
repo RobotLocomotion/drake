@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>drake_examples_toyota_hsrb</name>
+
+  <version>0.0.0</version>
+
+  <description>
+    Contains Drake simulations of Toyota's Human Support Robot (HSR) Version B.
+  </description>
+
+  <maintainer email="drake-users@mit.edu">Drake Users</maintainer>
+
+  <author>Chien-Liang Fok</author>
+
+  <license>BSD</license>
+
+  <url>http://ros.org/wiki/drake_examples_toyota_hsrb</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>drake_ros_common</build_depend>
+  <build_depend>drake_ros_systems</build_depend>
+
+  <exec_depend>drake_ros_systems</exec_depend>
+</package>

@@ -21,7 +21,7 @@ drake_add_matlab_test(NAME systems/plants/test/collisionDetectCHullTest REQUIRES
 drake_add_matlab_test(NAME systems/plants/test/collisionDetectCapsuleTest REQUIRES bullet lcm libbot COMMAND collisionDetectCapsuleTest)
 drake_add_matlab_test(NAME systems/plants/test/collisionDetectGradTest REQUIRES lcm libbot OPTIONAL bullet COMMAND collisionDetectGradTest)
 drake_add_matlab_test(NAME systems/plants/test/collisionDetectSphereTest REQUIRES bullet lcm libbot COMMAND collisionDetectSphereTest)
-drake_add_matlab_test(NAME systems/plants/test/compareParsers REQUIRES avl spotless xfoil OPTIONAL bullet COMMAND compareParsers)
+drake_add_matlab_test(NAME systems/plants/test/compareParsers REQUIRES avl spotless xfoil OPTIONAL bullet COMMAND compareParsers SIZE large)
 drake_add_matlab_test(NAME systems/plants/test/contactNormalsTest OPTIONAL bullet COMMAND contactNormalsTest)
 drake_add_matlab_test(NAME systems/plants/test/contactSensorTest REQUIRES snopt OPTIONAL gurobi COMMAND contactSensorTest)
 drake_add_matlab_test(NAME systems/plants/test/coordinateSystemTest OPTIONAL bullet gurobi COMMAND coordinateSystemTest SIZE large)

@@ -1,8 +1,11 @@
 #include <iostream>
+#include <memory>
 
 #include <Eigen/Dense>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 using Eigen::VectorXd;
@@ -15,52 +18,49 @@ int main(int argc, char* argv[]) {
     cerr << "Usage: urdf_manipulator_dynamics_test urdf_filename" << endl;
     exit(-1);
   }
-  auto model =
-      std::unique_ptr<RigidBodyTree<double>>(
-          new RigidBodyTree<double>(argv[1]));
-  if (!model) {
-    cerr << "ERROR: Failed to load model from " << argv[1] << endl;
-    return -1;
-  }
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      argv[1], drake::multibody::joints::kRollPitchYaw, tree.get());
+
   cout << "=======" << endl;
 
   // the order of the bodies may be different in matlab, so print it out once
   // here
-  cout << model->bodies.size() << endl;
-  for (const auto& body : model->bodies) {
+  cout << tree->bodies.size() << endl;
+  for (const auto& body : tree->bodies) {
     cout << body->get_name() << endl;
   }
 
-  VectorXd q = model->getZeroConfiguration();
-  VectorXd v = VectorXd::Zero(model->get_num_velocities());
+  VectorXd q = tree->getZeroConfiguration();
+  VectorXd v = VectorXd::Zero(tree->get_num_velocities());
   int i;
 
-  if (argc >= 2 + model->get_num_positions()) {
-    for (i = 0; i < model->get_num_positions(); i++)
+  if (argc >= 2 + tree->get_num_positions()) {
+    for (i = 0; i < tree->get_num_positions(); i++)
       sscanf(argv[2 + i], "%lf", &q(i));
   }
 
   if (argc >=
-      2 + model->get_num_positions() + model->get_num_velocities()) {
-    for (i = 0; i < model->get_num_velocities(); i++)
-      sscanf(argv[2 + model->get_num_positions() + i], "%lf", &v(i));
+      2 + tree->get_num_positions() + tree->get_num_velocities()) {
+    for (i = 0; i < tree->get_num_velocities(); i++)
+      sscanf(argv[2 + tree->get_num_positions() + i], "%lf", &v(i));
   }
 
-  KinematicsCache<double> cache = model->doKinematics(q, v);
+  KinematicsCache<double> cache = tree->doKinematics(q, v);
 
-  auto H = model->massMatrix(cache);
+  auto H = tree->massMatrix(cache);
   cout << H << endl;
 
   const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
-  auto C = model->dynamicsBiasTerm(cache, no_external_wrenches);
+  auto C = tree->dynamicsBiasTerm(cache, no_external_wrenches);
   cout << C << endl;
 
-  cout << model->B << endl;
+  cout << tree->B << endl;
 
-  if (model->loops.size() > 0) {
-    auto phi = model->positionConstraints(cache);
+  if (tree->loops.size() > 0) {
+    auto phi = tree->positionConstraints(cache);
     cout << phi << endl;
-    auto dphi = model->positionConstraintsJacobian(cache);
+    auto dphi = tree->positionConstraintsJacobian(cache);
     cout << dphi << endl;
   }
 

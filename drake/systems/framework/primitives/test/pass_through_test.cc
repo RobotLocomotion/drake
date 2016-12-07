@@ -18,14 +18,6 @@ namespace drake {
 namespace systems {
 namespace {
 
-// TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
-// the input of the PassThrough system.
-template<class T>
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
-}
-
 class PassThroughTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -51,7 +43,7 @@ TEST_F(PassThroughTest, VectorThroughPassThroughSystem) {
   input_->get_mutable_value() << input_vector;
 
   // Hook input of the expected size.
-  context_->SetInputPort(0, MakeInput(std::move(input_)));
+  context_->FixInputPort(0, std::move(input_));
 
   pass_through_->EvalOutput(*context_, output_.get());
 

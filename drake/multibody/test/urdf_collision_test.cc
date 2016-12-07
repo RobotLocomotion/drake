@@ -1,7 +1,10 @@
 #include <iostream>
 #include <cstdlib>
+#include <memory>
 #include <vector>
 
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 using std::cerr;
@@ -14,29 +17,28 @@ int main(int argc, char* argv[]) {
     cerr << "Usage: urdf_collision_test urdf_filename" << endl;
     exit(-1);
   }
-  RigidBodyTree<double>* model = new RigidBodyTree<double>(argv[1]);
-  if (!model) {
-    cerr << "ERROR: Failed to load model from " << argv[1] << endl;
-    return -1;
-  }
+
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      argv[1], drake::multibody::joints::kRollPitchYaw, tree.get());
 
   // run kinematics with second derivatives 100 times
-  Eigen::VectorXd q = model->getZeroConfiguration();
-  if (argc >= 2 + model->get_num_positions()) {
-    for (int i = 0; i < model->get_num_positions(); i++)
+  Eigen::VectorXd q = tree->getZeroConfiguration();
+  if (argc >= 2 + tree->get_num_positions()) {
+    for (int i = 0; i < tree->get_num_positions(); i++)
       sscanf(argv[2 + i], "%lf", &q(i));
   }
 
-  // for (i=0; i<model->num_dof; i++)
+  // for (i=0; i<tree->num_dof; i++)
   //   q(i)=(double)rand() / RAND_MAX;
-  KinematicsCache<double> cache = model->doKinematics(q);
+  KinematicsCache<double> cache = tree->doKinematics(q);
   //  }
 
   Eigen::VectorXd phi;
   Eigen::Matrix3Xd normal, xA, xB;
   vector<int> bodyA_idx, bodyB_idx;
 
-  model->collisionDetect(cache, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
+  tree->collisionDetect(cache, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
 
   cout << "=======" << endl;
   for (int j = 0; j < phi.rows(); ++j) {
@@ -50,10 +52,9 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < 3; ++i) {
       cout << xB(i, j) << " ";
     }
-    cout << model->bodies[bodyA_idx.at(j)]->get_name() << " ";
-    cout << model->bodies[bodyB_idx.at(j)]->get_name() << endl;
+    cout << tree->bodies[bodyA_idx.at(j)]->get_name() << " ";
+    cout << tree->bodies[bodyB_idx.at(j)]->get_name() << endl;
   }
 
-  delete model;
   return 0;
 }

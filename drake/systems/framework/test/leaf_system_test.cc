@@ -30,6 +30,15 @@ class TestSystem : public LeafSystem<double> {
     this->DeclarePeriodicUpdate(period, offset);
   }
 
+  void AddPeriodicUpdate(double period) {
+    const double offset = 0.0;
+    this->DeclarePeriodicUpdate(period, offset);
+  }
+
+  void AddPublish(double period) {
+    this->DeclarePublishPeriodSec(period);
+  }
+
   void AddContinuousState() {
     this->DeclareContinuousState(4, 3, 2);
   }
@@ -47,7 +56,17 @@ class TestSystem : public LeafSystem<double> {
 
   std::unique_ptr<Parameters<double>> AllocateParameters() const override {
     return std::make_unique<Parameters<double>>(
-        BasicVector<double>::Make({13.0, 7.0}));
+        std::make_unique<BasicVector<double>>(2));
+  }
+
+  void SetDefaultParameters(Context<double>* context) const override {
+    auto leaf_context = dynamic_cast<LeafContext<double>*>(context);
+    DRAKE_DEMAND(leaf_context != nullptr);
+
+    auto params = leaf_context->get_mutable_numeric_parameter(0);
+    Eigen::Vector2d p0;
+    p0 << 13.0, 7.0;
+    params->SetFromVector(p0);
   }
 
   const BasicVector<double>& GetVanillaNumericParameters(
@@ -123,6 +142,59 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
   EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
 }
 
+// Tests that if a LeafSystem has both a discrete update and a periodic Publish,
+// the update actions are computed appropriately.
+TEST_F(LeafSystemTest, UpdateAndPublish) {
+  system_.AddPeriodicUpdate(15.0);
+  system_.AddPublish(12.0);
+
+  UpdateActions<double> actions;
+
+  // The publish event fires at 12sec.
+  context_.set_time(9.0);
+  system_.CalcNextUpdateTime(context_, &actions);
+  EXPECT_EQ(12.0, actions.time);
+  ASSERT_EQ(1u, actions.events.size());
+  EXPECT_EQ(DiscreteEvent<double>::kPublishAction, actions.events[0].action);
+
+  // The update event fires at 15sec.
+  context_.set_time(14.0);
+  system_.CalcNextUpdateTime(context_, &actions);
+  EXPECT_EQ(15.0, actions.time);
+  ASSERT_EQ(1u, actions.events.size());
+  EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+
+  // Both events fire at 60sec.
+  context_.set_time(59.0);
+  system_.CalcNextUpdateTime(context_, &actions);
+  EXPECT_EQ(60.0, actions.time);
+  ASSERT_EQ(2u, actions.events.size());
+  EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+}
+
+// Tests that if the integrator has stopped on the k-th sample, and the current
+// time for that sample is slightly less than k * period due to floating point
+// rounding, the next sample time is (k + 1) * period.
+TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroOneFive) {
+  context_.set_time(0.015 * 11);  // Slightly less than 0.165.
+  UpdateActions<double> actions;
+  system_.AddPeriodicUpdate(0.015);
+  system_.CalcNextUpdateTime(context_, &actions);
+  // 0.015 * 12 = 0.18.
+  EXPECT_NEAR(0.18, actions.time, 1e-8);
+}
+
+// Tests that if the integrator has stopped on the k-th sample, and the current
+// time for that sample is slightly less than k * period due to floating point
+// rounding, the next sample time is (k + 1) * period.
+TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroZeroTwoFive) {
+  context_.set_time(0.0025 * 977);  // Slightly less than 2.4425
+  UpdateActions<double> actions;
+  system_.AddPeriodicUpdate(0.0025);
+  system_.CalcNextUpdateTime(context_, &actions);
+  EXPECT_NEAR(2.445, actions.time, 1e-8);
+}
+
 // Tests that the leaf system reserved the declared Parameters with default
 // values.
 TEST_F(LeafSystemTest, Parameters) {
@@ -166,7 +238,7 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   const ContinuousState<double>* xc = context->get_continuous_state();
   // Check that type was preserved.
   EXPECT_NE(nullptr, dynamic_cast<SizeNineBasicVector*>(
-      context->get_mutable_continuous_state_vector()));
+                         context->get_mutable_continuous_state_vector()));
   // Check that dimensions were preserved.
   EXPECT_EQ(4 + 3 + 2, xc->size());
   EXPECT_EQ(4, xc->get_generalized_position().size());

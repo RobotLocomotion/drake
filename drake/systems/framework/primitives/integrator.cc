@@ -14,8 +14,8 @@ namespace systems {
 
 template <typename T>
 Integrator<T>::Integrator(int size) {
-  this->DeclareInputPort(kVectorValued, size, kContinuousSampling);
-  this->DeclareOutputPort(kVectorValued, size, kContinuousSampling);
+  this->DeclareInputPort(kVectorValued, size);
+  this->DeclareOutputPort(kVectorValued, size);
 }
 
 template <typename T>

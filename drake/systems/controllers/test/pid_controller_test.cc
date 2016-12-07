@@ -16,14 +16,6 @@ namespace {
 
 typedef Eigen::Matrix<double, 3, 1, Eigen::DontAlign> Vector3d;
 
-// TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
-// the input of the Gain system.
-template <class T>
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
-}
-
 class PidControllerTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -34,12 +26,12 @@ class PidControllerTest : public ::testing::Test {
     // Error signal input port.
     auto vec0 = std::make_unique<BasicVector<double>>(port_size_);
     vec0->get_mutable_value() << error_signal_;
-    context_->SetInputPort(0, MakeInput(std::move(vec0)));
+    context_->FixInputPort(0, std::move(vec0));
 
     // Error signal rate input port.
     auto vec1 = std::make_unique<BasicVector<double>>(port_size_);
     vec1->get_mutable_value() << error_rate_signal_;
-    context_->SetInputPort(1, MakeInput(std::move(vec1)));
+    context_->FixInputPort(1, std::move(vec1));
   }
 
   const int port_size_{3};
@@ -90,9 +82,7 @@ TEST_F(PidControllerTest, EvalOutput) {
   ASSERT_NE(nullptr, context_);
   ASSERT_NE(nullptr, output_);
 
-  // Initializes the controllers' context to the default value in which the
-  // integral is zero and evaluates the output.
-  controller_.SetDefaultState(context_.get());
+  // Evaluates the output.
   controller_.EvalOutput(*context_, output_.get());
   ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_vector = output_->get_vector_data(0);
@@ -118,10 +108,7 @@ TEST_F(PidControllerTest, EvalTimeDerivatives) {
   ASSERT_NE(nullptr, context_);
   ASSERT_NE(nullptr, derivatives_);
 
-  // Initializes the controllers' context to the default value in which the
-  // integral is zero and evaluates the derivatives.
-  controller_.SetDefaultState(context_.get());
-
+  // Evaluates the derivatives.
   controller_.EvalTimeDerivatives(*context_, derivatives_.get());
   ASSERT_EQ(3, derivatives_->size());
   ASSERT_EQ(0, derivatives_->get_generalized_position().size());

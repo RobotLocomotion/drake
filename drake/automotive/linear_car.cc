@@ -15,12 +15,10 @@ namespace automotive {
 template <typename T>
 LinearCar<T>::LinearCar(const T& x_init, const T& v_init)
     : x_init_(x_init), v_init_(v_init) {
-  this->DeclareInputPort(systems::kVectorValued,
-                         1,  // Acceleration is the sole input.
-                         systems::kContinuousSampling);
-  this->DeclareOutputPort(systems::kVectorValued,
-                          2,  // Two outputs: x, v.
-                          systems::kContinuousSampling);
+  const int kNumInputs = 1;   // Acceleration.
+  const int kNumOutputs = 2;  // x, v.
+  this->DeclareInputPort(systems::kVectorValued, kNumInputs);
+  this->DeclareOutputPort(systems::kVectorValued, kNumOutputs);
   this->DeclareContinuousState(1,   // num_q
                                1,   // num_v
                                0);  // num_z

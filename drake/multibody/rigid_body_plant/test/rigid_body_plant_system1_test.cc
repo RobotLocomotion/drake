@@ -20,12 +20,6 @@ namespace rigid_body_plant {
 namespace test {
 namespace {
 
-template <class T>
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
-}
-
 // Tests RigidBodyPlant<T>::EvalTimeDerivatives() for a Kuka arm model.
 // The test is performed by comparing against the results obtained with an RBS1
 // model of the same Kuka arm.
@@ -80,10 +74,6 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   arbitrary_angles << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
   x0.head(rbs1->get_num_positions()) += arbitrary_angles;
 
-  // For rbs2:
-  // Zeroes the state.
-  rbs2->SetZeroConfiguration(context.get());
-
   // Sets the state to a non-zero value matching the configuration for rbs1.
   rbs2->set_state_vector(context.get(), x0);
   VectorXd xc = context->get_continuous_state()->CopyToVector();
@@ -103,7 +93,7 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   auto input_vector = std::make_unique<BasicVector<double>>(
       rbs2->get_num_actuators());
   input_vector->set_value(u);
-  context->SetInputPort(0, MakeInput(move(input_vector)));
+  context->FixInputPort(0, move(input_vector));
 
   //////////////////////////////////////////////////////////////////////////////
   // Computes time derivatives to compare against rbs1 dynamics.

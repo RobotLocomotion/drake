@@ -15,9 +15,8 @@ namespace bouncing_ball {
 
 template <typename T>
 Ball<T>::Ball() {
-  this->DeclareOutputPort(systems::kVectorValued,
-                          2,
-                          systems::kContinuousSampling);
+  this->DeclareContinuousState(1, 1, 0);
+  this->DeclareOutputPort(systems::kVectorValued, 2);
 }
 
 template <typename T>
@@ -42,8 +41,7 @@ void Ball<T>::EvalTimeDerivatives(
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
 
   // Obtain the state.
-  const systems::VectorBase<T>& state =
-      context.get_continuous_state_vector();
+  const systems::VectorBase<T>& state = context.get_continuous_state_vector();
 
   // Obtain the structure we need to write into.
   DRAKE_ASSERT(derivatives != nullptr);
@@ -58,14 +56,10 @@ void Ball<T>::EvalTimeDerivatives(
 }
 
 template <typename T>
-std::unique_ptr<systems::ContinuousState<T>>
-Ball<T>::AllocateContinuousState() const {
-  auto state = std::make_unique<systems::BasicVector<T>>(2);
-  state->get_mutable_value() << 10, 0;   // initial state values.
-  return std::make_unique<systems::ContinuousState<T>>(std::move(state),
-                                                       1,  // num_q
-                                                       1,  // num_v
-                                                       0);  // num_z
+void Ball<T>::SetDefaultState(systems::Context<T>* context) const {
+  Vector2<T> x0;
+  x0 << 10.0, 0.0;  // initial state values.
+  context->get_mutable_continuous_state_vector()->SetFromVector(x0);
 }
 
 }  // namespace bouncing_ball

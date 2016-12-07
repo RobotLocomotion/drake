@@ -30,12 +30,6 @@ namespace rigid_body_plant {
 namespace test {
 namespace {
 
-template <class T>
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
-}
-
 // Tests the ability to load an instance of a URDF model into a RigidBodyPlant.
 GTEST_TEST(RigidBodyPlantTest, TestLoadUrdf) {
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
@@ -101,9 +95,6 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
   // RigidBodyTree.
   RigidBodyPlant<double> plant(move(tree));
   auto context = plant.CreateDefaultContext();
-
-  // Sets free_body to have zero translation and zero rotation.
-  plant.SetZeroConfiguration(context.get());
 
   // Verifies the number of states, inputs, and outputs.
   EXPECT_EQ(plant.get_num_states(), kNumStates);
@@ -229,14 +220,12 @@ TEST_F(KukaArmTest, StateHasTheRightSizes) {
 // Kuka arm model. In this case the zero configuration corresponds to all joint
 // angles and velocities being zero.
 // The system configuration is written to a context.
-TEST_F(KukaArmTest, SetZeroConfiguration) {
+TEST_F(KukaArmTest, SetDefaultState) {
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
-  context_->SetInputPort(0, MakeInput(make_unique<BasicVector<double>>(
-                                kuka_plant_->get_num_actuators())));
-
-  kuka_plant_->SetZeroConfiguration(context_.get());
+  context_->FixInputPort(0, make_unique<BasicVector<double>>(
+                                kuka_plant_->get_num_actuators()));
 
   // Asserts that for this case the zero configuration corresponds to a state
   // vector with all entries equal to zero.
@@ -269,11 +258,8 @@ TEST_F(KukaArmTest, EvalOutput) {
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
-  context_->SetInputPort(0, MakeInput(make_unique<BasicVector<double>>(
-                                kuka_plant_->get_num_actuators())));
-
-  // Zeroes the state.
-  kuka_plant_->SetZeroConfiguration(context_.get());
+  context_->FixInputPort(0, make_unique<BasicVector<double>>(
+                                kuka_plant_->get_num_actuators()));
 
   // Sets the state to a non-zero value.
   VectorXd desired_angles(kNumPositions_);
@@ -382,7 +368,6 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
   RigidBodyPlant<double> plant(move(tree));
 
   auto context = plant.CreateDefaultContext();
-  plant.SetZeroConfiguration(context.get());
   context->get_mutable_continuous_state()
       ->get_mutable_generalized_position()
       ->SetAtIndex(0, position);
@@ -392,7 +377,7 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
   input << applied_force;
   auto input_vector = std::make_unique<BasicVector<double>>(1);
   input_vector->set_value(input);
-  context->SetInputPort(0, MakeInput(move(input_vector)));
+  context->FixInputPort(0, move(input_vector));
 
   // Obtain the time derivatives; test that speed is zero, return acceleration.
   auto derivatives = plant.AllocateTimeDerivatives();

@@ -34,12 +34,6 @@ class IntegratorTest : public ::testing::Test {
     xc->SetFromVector(Eigen::VectorXd::Zero(kLength));
   }
 
-  static std::unique_ptr<FreestandingInputPort> MakeInput(
-      std::unique_ptr<BasicVector<double>> data) {
-    return std::unique_ptr<FreestandingInputPort>(
-        new FreestandingInputPort(std::move(data)));
-  }
-
   ContinuousState<double>* continuous_state() {
     return context_->get_mutable_continuous_state();
   }
@@ -58,21 +52,19 @@ TEST_F(IntegratorTest, Topology) {
   EXPECT_EQ(kVectorValued, input_descriptor.get_data_type());
   EXPECT_EQ(kInputPort, input_descriptor.get_face());
   EXPECT_EQ(kLength, input_descriptor.get_size());
-  EXPECT_EQ(kContinuousSampling, input_descriptor.get_sampling());
 
   ASSERT_EQ(1u, integrator_->get_output_ports().size());
   const auto& output_descriptor = integrator_->get_output_ports()[0];
   EXPECT_EQ(kVectorValued, output_descriptor.get_data_type());
   EXPECT_EQ(kOutputPort, output_descriptor.get_face());
   EXPECT_EQ(kLength, output_descriptor.get_size());
-  EXPECT_EQ(kContinuousSampling, output_descriptor.get_sampling());
 }
 
 // Tests that the output of an integrator is its state.
 TEST_F(IntegratorTest, Output) {
   ASSERT_EQ(1, context_->get_num_input_ports());
   input_->get_mutable_value() << 1.0, 2.0, 3.0;
-  context_->SetInputPort(0, MakeInput(std::move(input_)));
+  context_->FixInputPort(0, std::move(input_));
 
   integrator_->EvalOutput(*context_, output_.get());
 
@@ -94,7 +86,7 @@ TEST_F(IntegratorTest, Output) {
 TEST_F(IntegratorTest, Derivatives) {
   ASSERT_EQ(1, context_->get_num_input_ports());
   input_->get_mutable_value() << 1.0, 2.0, 3.0;
-  context_->SetInputPort(0, MakeInput(std::move(input_)));
+  context_->FixInputPort(0, std::move(input_));
 
   integrator_->EvalTimeDerivatives(*context_, derivatives_.get());
   Eigen::Vector3d expected;

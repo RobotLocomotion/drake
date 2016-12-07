@@ -26,11 +26,6 @@ class AdderTest : public ::testing::Test {
     input1_.reset(new BasicVector<double>(3 /* size */));
   }
 
-  static std::unique_ptr<FreestandingInputPort> MakeInput(
-      std::unique_ptr<BasicVector<double>> data) {
-    return make_unique<FreestandingInputPort>(std::move(data));
-  }
-
   std::unique_ptr<System<double>> adder_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
@@ -45,7 +40,6 @@ TEST_F(AdderTest, Topology) {
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
     EXPECT_EQ(kInputPort, descriptor.get_face());
     EXPECT_EQ(3, descriptor.get_size());
-    EXPECT_EQ(kInheritedSampling, descriptor.get_sampling());
   }
 
   ASSERT_EQ(1u, adder_->get_output_ports().size());
@@ -53,7 +47,6 @@ TEST_F(AdderTest, Topology) {
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
     EXPECT_EQ(kOutputPort, descriptor.get_face());
     EXPECT_EQ(3, descriptor.get_size());
-    EXPECT_EQ(kInheritedSampling, descriptor.get_sampling());
   }
 }
 
@@ -63,8 +56,8 @@ TEST_F(AdderTest, AddTwoVectors) {
   ASSERT_EQ(2, context_->get_num_input_ports());
   input0_->get_mutable_value() << 1, 2, 3;
   input1_->get_mutable_value() << 4, 5, 6;
-  context_->SetInputPort(0, MakeInput(std::move(input0_)));
-  context_->SetInputPort(1, MakeInput(std::move(input1_)));
+  context_->FixInputPort(0, std::move(input0_));
+  context_->FixInputPort(1, std::move(input1_));
 
   adder_->EvalOutput(*context_, output_.get());
 

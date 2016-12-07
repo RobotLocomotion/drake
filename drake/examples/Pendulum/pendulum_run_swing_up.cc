@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <memory>
 
@@ -7,13 +6,16 @@
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
 #include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+// NOLINTNEXTLINE(whitespace/line_length)
 #include "drake/solvers/trajectory_optimization/dircol_trajectory_optimization.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/trajectory_source.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/util/drakeAppUtil.h"
 
 using drake::solvers::SolutionResult;
@@ -28,8 +30,21 @@ namespace {
 
 int do_main(int argc, char* argv[]) {
   systems::DiagramBuilder<double> builder;
-  auto pendulum = std::make_unique<PendulumPlant<double>>();
-  PendulumPlant<double>* pendulum_p = pendulum.get();
+
+  PendulumPlant<double>* pendulum{nullptr};
+  systems::PidControlledSystem<double>* controller{nullptr};
+
+  {
+    auto pendulum_ptr = std::make_unique<PendulumPlant<double>>();
+    pendulum = pendulum_ptr.get();
+
+    // The choices of PidController constants here are fairly arbitrary,
+    // but seem to effectively swing up the pendulum and hold it.
+    controller = builder.AddSystem<systems::PidControlledSystem<double>>(
+        std::move(pendulum_ptr), 10., 0., 1.);
+  }
+  DRAKE_DEMAND(pendulum != nullptr);
+  DRAKE_DEMAND(controller != nullptr);
 
   // This is a fairly small number of time samples for this system,
   // and it winds up making the controller do a lot of the work when
@@ -72,16 +87,13 @@ int do_main(int argc, char* argv[]) {
     systems::TrajectorySource>(pp_xtraj);
 
   lcm::DrakeLcm lcm;
-  RigidBodyTree<double> tree(
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-      multibody::joints::kFixed);
-  auto publisher =
-      builder.AddSystem<systems::DrakeVisualizer>(tree, &lcm);
+      multibody::joints::kFixed, tree.get());
 
-  // The choices of PidController constants here are fairly arbitrary,
-  // but seem to effectively swing up the pendulum and hold it.
-  auto controller = builder.AddSystem<systems::PidControlledSystem>(
-      std::move(pendulum), 10., 0., 1.);
+  auto publisher =
+      builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
 
   builder.Connect(input_source->get_output_port(0),
                   controller->get_input_port(0));
@@ -96,13 +108,12 @@ int do_main(int argc, char* argv[]) {
   systems::Context<double>* controller_context =
       diagram->GetMutableSubsystemContext(
           simulator.get_mutable_context(), controller);
-  controller->SetDefaultState(controller_context);
 
   simulator.Initialize();
   simulator.StepTo(kTrajectoryTimeUpperBound);
 
   systems::Context<double>* pendulum_context =
-      controller->GetMutableSubsystemContext(controller_context, pendulum_p);
+      controller->GetMutableSubsystemContext(controller_context, pendulum);
   auto state_vec =
       pendulum_context->get_continuous_state()->CopyToVector();
   if (!CompareMatrices(state_vec, xG, 1e-3, MatrixCompareType::absolute)) {

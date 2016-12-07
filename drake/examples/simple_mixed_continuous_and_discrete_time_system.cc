@@ -19,8 +19,7 @@ class SimpleMixedContinuousTimeDiscreteTimeSystem
   SimpleMixedContinuousTimeDiscreteTimeSystem() {
     const int kSize = 1;
     this->DeclareUpdatePeriodSec(1.0);
-    this->DeclareOutputPort(drake::systems::kVectorValued, 2 * kSize,
-                            drake::systems::kDiscreteSampling);
+    this->DeclareOutputPort(drake::systems::kVectorValued, 2 * kSize);
     this->DeclareContinuousState(kSize);
     this->DeclareDifferenceState(kSize);
   }
@@ -55,13 +54,13 @@ class SimpleMixedContinuousTimeDiscreteTimeSystem
 };
 
 int main(int argc, char* argv[]) {
-  // create the simple system
+  // Create the simple system.
   SimpleMixedContinuousTimeDiscreteTimeSystem system;
 
-  // create the simulator
+  // Create the simulator.
   drake::systems::Simulator<double> simulator(system);
 
-  // set the initial conditions x(0);
+  // Set the initial conditions x(0).
   drake::systems::DifferenceState<double>& xd =
       *simulator.get_mutable_context()->get_mutable_difference_state();
   xd.get_mutable_difference_state(0)->SetAtIndex(0, 0.99);
@@ -69,14 +68,14 @@ int main(int argc, char* argv[]) {
       *simulator.get_mutable_context()->get_mutable_continuous_state();
   xc[0] = 0.9;
 
-  // simulate for 10 seconds
+  // Simulate for 10 seconds.
   simulator.StepTo(10);
 
-  // make sure the simulation converges to the stable fixed point at x=0
+  // Make sure the simulation converges to the stable fixed point at x=0.
   DRAKE_DEMAND(xd.get_difference_state(0)->GetAtIndex(0) < 1.0e-4);
   DRAKE_DEMAND(xc[0] < 1.0e-4);
 
-  // TODO(russt): make a plot of the resulting trajectory (using vtk?)
+  // TODO(russt): make a plot of the resulting trajectory (using vtk?).
 
   return 0;
 }

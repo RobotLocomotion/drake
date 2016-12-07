@@ -5,7 +5,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
-#include "drake/systems/controllers/linear_optimal_control.h"
+#include "drake/systems/controllers/linear_quadratic_regulator.h"
 
 namespace drake {
 namespace examples {
@@ -17,11 +17,9 @@ constexpr int kNumDOF = 2;  // theta1 + theta2.
 
 template <typename T>
 AcrobotPlant<T>::AcrobotPlant() {
-  this->DeclareInputPort(systems::kVectorValued, 1,
-                         systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, 1);
   this->DeclareContinuousState(kNumDOF * 2);  // Position + velocity.
-  this->DeclareOutputPort(systems::kVectorValued, kNumDOF * 2,
-                          systems::kContinuousSampling);
+  this->DeclareOutputPort(systems::kVectorValued, kNumDOF * 2);
 }
 
 template <typename T>
@@ -101,6 +99,9 @@ AcrobotPlant<AutoDiffXd>* AcrobotPlant<T>::DoToAutoDiffXd() const {
   return new AcrobotPlant<AutoDiffXd>();
 }
 
+template class AcrobotPlant<double>;
+template class AcrobotPlant<AutoDiffXd>;
+
 std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
     const AcrobotPlant<double>* acrobot) {
   auto context = acrobot->CreateDefaultContext();
@@ -117,8 +118,9 @@ std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
   x->set_theta1dot(0.0);
   x->set_theta2dot(0.0);
 
-  // Setup LQR Cost matrices (penalize position error 10x more than velocity to
-  // roughly address difference in units, using sqrt(g/l) as the time constant.
+  // Setup LQR Cost matrices (penalize position error 10x more than velocity
+  // to roughly address difference in units, using sqrt(g/l) as the time
+  // constant.
   Eigen::Matrix4d Q = Eigen::Matrix4d::Identity();
   Q(0, 0) = 10;
   Q(1, 1) = 10;
@@ -126,9 +128,6 @@ std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
 
   return systems::LinearQuadraticRegulator(*acrobot, *context, Q, R);
 }
-
-template class AcrobotPlant<double>;
-template class AcrobotPlant<AutoDiffXd>;
 
 }  // namespace acrobot
 }  // namespace examples

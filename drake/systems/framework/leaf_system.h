@@ -10,6 +10,7 @@
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/continuous_state.h"
@@ -48,7 +49,7 @@ class LeafSystem : public System<T> {
   // =========================================================================
   // Implementations of System<T> methods.
 
-  std::unique_ptr<Context<T>> CreateDefaultContext() const override {
+  std::unique_ptr<Context<T>> AllocateContext() const override {
     std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
     // Reserve inputs that have already been declared.
     context->SetNumInputPorts(this->get_num_input_ports());
@@ -60,6 +61,29 @@ class LeafSystem : public System<T> {
     // Reserve parameters via delegation to subclass.
     context->set_parameters(this->AllocateParameters());
     return std::unique_ptr<Context<T>>(context.release());
+  }
+
+  /// Default implementation: set all continuous and difference state variables
+  /// to zero.  It makes no attempt to set abstract state values.
+  void SetDefaultState(Context<T>* context) const override {
+    ContinuousState<T>* continuous_state =
+        context->get_mutable_continuous_state();
+    continuous_state->SetFromVector(VectorX<T>::Zero(continuous_state->size()));
+    for (int i = 0; i < context->get_num_difference_state_groups(); i++) {
+      BasicVector<T>* s = context->get_mutable_difference_state(i);
+      s->SetFromVector(VectorX<T>::Zero(s->size()));
+    }
+  }
+
+  /// Default implementation: set all numeric parameters to one.  It makes no
+  /// attempt to set abstract parameter values.
+  void SetDefaultParameters(Context<T>* context) const override {
+    systems::LeafContext<T>* leaf_context =
+        dynamic_cast<systems::LeafContext<T>*>(context);
+    for (int i = 0; i < leaf_context->num_numeric_parameters(); i++) {
+      BasicVector<T>* p = leaf_context->get_mutable_numeric_parameter(i);
+      p->SetFromVector(VectorX<T>::Constant(p->size(), 1.0));
+    }
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
@@ -176,8 +200,6 @@ class LeafSystem : public System<T> {
   /// period_sec thereafter. On the discrete tick, the system may update
   /// the discrete state. Clobbers any other periodic behaviors previously
   /// declared.
-  /// TODO(david-german-tri): Add more sophisticated mutators for more complex
-  /// periodic behaviors.
   void DeclareUpdatePeriodSec(const T& period_sec) {
     DeclarePeriodicUpdate(period_sec, 0.0);
   }
@@ -185,27 +207,24 @@ class LeafSystem : public System<T> {
   /// Declares that this System has a simple, fixed-period discrete update.
   /// The first tick will be at t= offset_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may update the
-  /// discrete state. Clobbers any other periodc behaviors previously declared.
+  /// discrete state.
   void DeclarePeriodicUpdate(const T& period_sec, const T& offset_sec) {
     PeriodicEvent<T> event;
     event.period_sec = period_sec;
     event.offset_sec = offset_sec;
     event.event.action = DiscreteEvent<T>::kUpdateAction;
-    periodic_events_ = {event};
+    periodic_events_.push_back(event);
   }
 
   /// Declares that this System has a simple, fixed-period publish.
   /// The first tick will be at t = period_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may update
-  /// the discrete state. Clobbers any other periodic behaviors previously
-  /// declared.
-  /// TODO(david-german-tri): Add more sophisticated mutators for more complex
-  /// periodic behaviors.
+  /// the discrete state.
   void DeclarePublishPeriodSec(const T& period_sec) {
     PeriodicEvent<T> event;
     event.period_sec = period_sec;
     event.event.action = DiscreteEvent<T>::kPublishAction;
-    periodic_events_ = {event};
+    periodic_events_.push_back(event);
   }
 
   /// Declares that this System should reserve continuous state with
@@ -315,13 +334,16 @@ class LeafSystem : public System<T> {
     // NOLINTNEXTLINE(build/namespaces): Needed for ADL of floor and ceil.
     using namespace std;
 
-    // Compute the index in the sequence of samples for the next time to sample.
-    // If the current time is exactly a sample time, use the next index.
+    // Compute the index in the sequence of samples for the next time to sample,
+    // which should be greater than the present time.
     const T offset_time = current_time_sec - offset;
-    const int64_t prev_k = static_cast<int64_t>(floor(offset_time / period));
     const int64_t next_k = static_cast<int64_t>(ceil(offset_time / period));
-    const int64_t k = (prev_k == next_k) ? next_k + 1 : next_k;
-    return offset + (k * period);
+    T next_t = offset + next_k * period;
+    if (next_t <= current_time_sec) {
+      next_t = offset + (next_k + 1) * period;
+    }
+    DRAKE_ASSERT(next_t > current_time_sec);
+    return next_t;
   }
 
   // Periodic Update or Publish events registered on this system.

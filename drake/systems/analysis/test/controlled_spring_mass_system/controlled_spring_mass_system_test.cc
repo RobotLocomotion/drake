@@ -30,10 +30,6 @@ class SpringMassSystemTest : public ::testing::Test {
     model_context_ = model_->CreateDefaultContext();
     output_ = model_->AllocateOutput(*model_context_);
 
-    // Initialize to default conditions (zero position, velocity and
-    // controllers' integral).
-    model_->SetDefaultState(model_context_.get());
-
     // Gets the plant subcontext.
     plant_context_ =
         model_->GetMutableSubsystemContext(
