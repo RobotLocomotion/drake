@@ -424,8 +424,10 @@ class SmallBoxSittingOnLargeBox: public ::testing::Test {
 
     // Populate the model.
     model_ = newModel();
-    unique_ptr<Element> colliding_large_box(large_box_ = new Element(large_box));
-    unique_ptr<Element> colliding_small_box(small_box_ = new Element(small_box));
+    unique_ptr<Element> colliding_large_box(large_box_ =
+                                                new Element(large_box));
+    unique_ptr<Element> colliding_small_box(small_box_ =
+                                                new Element(small_box));
     model_->AddElement(move(colliding_large_box));
     model_->AddElement(move(colliding_small_box));
 
@@ -477,7 +479,8 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   //    corners of the small box is the same.
 
   // Collision test performed with Model::closestPointsAllToAll.
-  const std::vector<ElementId> ids_to_check = {large_box_->getId(), small_box_->getId()};
+  const std::vector<ElementId> ids_to_check = {large_box_->getId(),
+                                               small_box_->getId()};
   model_->closestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
