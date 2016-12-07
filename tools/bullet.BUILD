@@ -1,5 +1,6 @@
 # -*- python -*-
 
+# Note that this is only a portion of Bullet.
 cc_library(
     name = "lib",
     hdrs = glob([

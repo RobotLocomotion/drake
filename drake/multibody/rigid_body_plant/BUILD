@@ -52,20 +52,21 @@ cc_library(
 )
 
 cc_test(
-    name = "contact_detail_test",
+    name = "compute_contact_result_test",
     size = "small",
-    srcs = ["test/contact_detail_test.cc"],
+    srcs = ["test/compute_contact_result_test.cc"],
     linkstatic = 1,
     deps = [
         ":rigid_body_plant",
+        "//drake/common:eigen_matrix_compare",
         "@gtest//:main",
     ],
 )
 
 cc_test(
-    name = "contact_info_test",
+    name = "contact_detail_test",
     size = "small",
-    srcs = ["test/contact_info_test.cc"],
+    srcs = ["test/contact_detail_test.cc"],
     linkstatic = 1,
     deps = [
         ":rigid_body_plant",
@@ -81,6 +82,17 @@ cc_test(
     deps = [
         ":rigid_body_plant",
         "//drake/common:eigen_matrix_compare",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "contact_info_test",
+    size = "small",
+    srcs = ["test/contact_info_test.cc"],
+    linkstatic = 1,
+    deps = [
+        ":rigid_body_plant",
         "@gtest//:main",
     ],
 )
@@ -124,6 +136,23 @@ cc_test(
 )
 
 cc_test(
+    name = "rigid_body_plant_test",
+    size = "small",
+    srcs = ["test/rigid_body_plant_test.cc"],
+    data = [
+        ":test_models",
+        "//drake/examples/kuka_iiwa_arm:models",
+    ],
+    linkstatic = 1,
+    deps = [
+        ":rigid_body_plant",
+        "//drake/common:drake_path",
+        "//drake/common:eigen_matrix_compare",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
     name = "viewer_draw_translator_test",
     size = "small",
     srcs = ["test/viewer_draw_translator_test.cc"],
@@ -132,4 +161,15 @@ cc_test(
         ":drake_visualizer",
         "@gtest//:main",
     ],
+)
+
+filegroup(
+    name = "test_models",
+    testonly = 1,
+    srcs = glob([
+        "test/**/*.obj",
+        "test/**/*.sdf",
+        "test/**/*.urdf",
+        "test/**/*.xml",
+    ]),
 )
