@@ -298,8 +298,6 @@ void RigidBodyTree<T>::CompileCollisionState() {
       BodyCollisions &elements = pair.second;
       for (auto &collision_item : elements) {
         collision_item.element->set_anchored();
-        collision_item.element->updateWorldTransform(
-            Isometry3d::Identity());
       }
     }
   }
