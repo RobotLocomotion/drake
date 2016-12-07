@@ -13,6 +13,14 @@ cc_library(
     deps = DEPS + ["//drake/common:autodiff"],
 )
 
+cc_library(
+    name = "continuous_algebraic_ricatti_equation",
+    srcs = ["continuous_algebraic_ricatti_equation.cc"],
+    hdrs = ["continuous_algebraic_ricatti_equation.h"],
+    linkstatic = 1,
+    deps = DEPS + ["//drake/common:is_approx_equal_abstol"],
+)
+
 # TODO(jwnimmer-tri) Improved name for this library, "pose_representations"?
 cc_library(
     name = "geometric_transform",

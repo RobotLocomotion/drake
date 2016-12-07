@@ -21,6 +21,7 @@ cc_library(
     linkstatic = 1,
     deps = [
         "//drake/common:is_approx_equal_abstol",
+        "//drake/math:continuous_algebraic_ricatti_equation",
         "//drake/systems/framework",
         "//drake/systems/framework/primitives:linear_system",
     ],
