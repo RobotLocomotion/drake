@@ -16,13 +16,14 @@ class AffineSystemTest : public AffineLinearSystemTest {
 
   void Initialize() override {
     // Construct the system I/O objects.
-    dut_ = make_unique<AffineSystem<double>>(A_, B_, xDot0_, C_, D_, y0_);
+    dut_ = make_unique<AffineSystem<double>>(A_, B_, f0_, C_, D_, y0_);
     dut_->set_name("test_affine_system");
     context_ = dut_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
     system_output_ = dut_->AllocateOutput(*context_);
     state_ = context_->get_mutable_continuous_state();
     derivatives_ = dut_->AllocateTimeDerivatives();
+    updates_ = dut_->AllocateDifferenceVariables();
   }
 
  protected:
@@ -38,7 +39,7 @@ TEST_F(AffineSystemTest, Construction) {
   EXPECT_EQ(dut_->B(), B_);
   EXPECT_EQ(dut_->C(), C_);
   EXPECT_EQ(dut_->D(), D_);
-  EXPECT_EQ(dut_->xDot0(), xDot0_);
+  EXPECT_EQ(dut_->f0(), f0_);
   EXPECT_EQ(dut_->y0(), y0_);
   EXPECT_EQ(dut_->get_num_output_ports(), 1);
   EXPECT_EQ(dut_->get_num_input_ports(), 1);
@@ -56,10 +57,17 @@ TEST_F(AffineSystemTest, Derivatives) {
   dut_->EvalTimeDerivatives(*context_, derivatives_.get());
 
   Eigen::VectorXd expected_derivatives(2);
-  expected_derivatives = A_ * x + B_ * u + xDot0_;
+  expected_derivatives = A_ * x + B_ * u + f0_;
 
   EXPECT_TRUE(CompareMatrices(
       expected_derivatives, derivatives_->get_vector().CopyToVector(), 1e-10));
+}
+
+// Tests that the updates are correctly (not) computed.
+TEST_F(AffineSystemTest, Updates) {
+  EXPECT_TRUE(context_->has_only_continuous_state());
+  EXPECT_NE(updates_, nullptr);
+  EXPECT_EQ(updates_->size(), 0);
 }
 
 // Tests that the outputs are correctly computed.
@@ -95,13 +103,13 @@ class FeedthroughAffineSystemTest : public ::testing::Test {
         AffineLinearSystemTest::make_2x2_matrix(1.5, 2.7, 3.5, -4.9));
     Eigen::MatrixXd B_(
         AffineLinearSystemTest::make_2x2_matrix(4.9, -5.1, 6.8, 7.2));
-    Eigen::VectorXd xDot0_(AffineLinearSystemTest::make_2x1_vector(0, 0));
+    Eigen::VectorXd f0_(AffineLinearSystemTest::make_2x1_vector(0, 0));
     Eigen::MatrixXd C_(
         AffineLinearSystemTest::make_2x2_matrix(1.1, 2.5, -3.8, 4.6));
     Eigen::MatrixXd D_(
         AffineLinearSystemTest::make_2x2_matrix(d_1_1_element_, 0, 0, 0));
     Eigen::VectorXd y0_(AffineLinearSystemTest::make_2x1_vector(0, 0));
-    dut_ = make_unique<AffineSystem<double>>(A_, B_, xDot0_, C_, D_, y0_);
+    dut_ = make_unique<AffineSystem<double>>(A_, B_, f0_, C_, D_, y0_);
     dut_->set_name("test_feedtroughaffine_system");
   }
 
@@ -125,6 +133,41 @@ TEST_F(FeedthroughAffineSystemTest, FeedthroughTest) {
   SetDCornerElement(1e-12);
   InitialiseSystem();
   EXPECT_TRUE(dut_->has_any_direct_feedthrough());
+}
+
+// Tests the discrete-time update.
+GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
+  Eigen::Matrix3d A;
+  Eigen::Matrix<double, 3, 1> B;
+  Eigen::Vector3d f0;
+  Eigen::Matrix<double, 2, 3> C;
+  Eigen::Vector2d D;
+  Eigen::Vector2d y0;
+  A << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  B << 10, 11, 12;
+  f0 << 13, 14, 15;
+  C << 16, 17, 18, 19, 20, 21;
+  D << 22, 23;
+  y0 << 24, 25;
+  AffineSystem<double> system(A, B, f0, C, D, y0, 1.0);
+  auto context = system.CreateDefaultContext();
+  EXPECT_TRUE(context->has_only_difference_state());
+
+  Eigen::Vector3d x0;
+  x0 << 26, 27, 28;
+
+  context->get_mutable_difference_state(0)->SetFromVector(x0);
+  double u0 = 29;
+  context->FixInputPort(0, Vector1d::Constant(u0));
+
+  auto update = system.AllocateDifferenceVariables();
+  DiscreteEvent<double> update_event;
+  update_event.action = DiscreteEvent<double>::kUpdateAction;
+
+  system.EvalDifferenceUpdates(*context, update_event, update.get());
+
+  EXPECT_TRUE(CompareMatrices(update->get_difference_state(0)->CopyToVector(),
+                              A * x0 + B * u0 + f0));
 }
 
 }  // namespace

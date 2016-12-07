@@ -94,7 +94,7 @@ void TestLQRAffineSystemAgainstKnownSolution(
                               tolerance, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(lqr->B(), Eigen::MatrixXd::Zero(0, n),
                               tolerance, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(lqr->xDot0(), Eigen::Matrix<double, 0, 1>::Zero(),
+  EXPECT_TRUE(CompareMatrices(lqr->f0(), Eigen::Matrix<double, 0, 1>::Zero(),
                               tolerance, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(lqr->C(), Eigen::MatrixXd::Zero(m, 0),
                               tolerance, MatrixCompareType::absolute));
@@ -136,7 +136,6 @@ GTEST_TEST(TestLQR, DoubleIntegrator) {
   // Call it as a generic System (by passing in a Context).
   // Should get the same result, but as an affine system.
   TestLQRAffineSystemAgainstKnownSolution(tol, sys, K, Q, R);
-
 
   // A different cost function with the same Q and R, and an extra N = [1; 0].
   Eigen::Vector2d N(1, 0);
