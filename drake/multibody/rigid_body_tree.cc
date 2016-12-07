@@ -295,9 +295,9 @@ template <typename T>
 void RigidBodyTree<T>::CompileCollisionState() {
   // Identifies and processes collision elements that should be marked
   // "anchored".
-  for( auto& pair : body_collision_map_ ) {
+  for (auto& pair : body_collision_map_) {
     RigidBody<T>* body = pair.first;
-    if ( body->IsRigidlyFixedToWorld()) {
+    if (body->IsRigidlyFixedToWorld()) {
       BodyCollisions &elements = pair.second;
       for (auto &collision_item : elements) {
         collision_item.element->set_anchored();
@@ -309,7 +309,7 @@ void RigidBodyTree<T>::CompileCollisionState() {
   CreateCollisionCliques();
 
   // Computes the contact points for a body.
-  for( auto& pair : body_collision_map_ ) {
+  for (auto& pair : body_collision_map_) {
     RigidBody<T>* body = pair.first;
     Eigen::Matrix3Xd contact_points;
     BodyCollisions& elements = pair.second;
@@ -323,7 +323,6 @@ void RigidBodyTree<T>::CompileCollisionState() {
       contact_points.block(0, num_points, contact_points.rows(),
                             element_points.cols()) = element_points;
       num_points += element_points.cols();
-
     }
     body->set_contact_points(contact_points);
   }
@@ -336,14 +335,14 @@ void RigidBodyTree<T>::CompileCollisionState() {
   for (auto& pair : body_collision_map_) {
     RigidBody<T>* body = pair.first;
     BodyCollisions& elements = pair.second;
-    for ( auto& collision_item : elements ) {
+    for (auto& collision_item : elements) {
       body->AddCollisionElement(collision_item.group_name,
                                 collision_item.element.get());
       collision_model_->AddElement(std::move(collision_item.element));
     }
   }
   body_collision_map_.clear();
-};
+}
 
 template <typename T>
 void RigidBodyTree<T>::CreateCollisionCliques() {
