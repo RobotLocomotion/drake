@@ -6,7 +6,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -29,7 +28,6 @@ namespace drake {
 
 using parsers::sdf::AddModelInstancesFromSdfFile;
 using lcm::DrakeLcm;
-using parsers::PackageMap;
 using systems::ConstantVectorSource;
 using systems::Context;
 using systems::DiagramBuilder;
