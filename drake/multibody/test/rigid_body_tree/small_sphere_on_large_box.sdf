@@ -4,6 +4,17 @@
     <pose>0 0 0 0 0 0</pose>
     <link name='large_box'>
       <pose>0 2.5 0 0 0 0</pose>
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1</iyy>
+          <iyz>0</iyz>
+          <izz>1</izz>
+        </inertia>
+      </inertial>
       <visual name='box'>
         <geometry>
           <box>
@@ -22,6 +33,17 @@
 
     <link name='small_sphere'>
       <pose>0 5.5 0 1.570796326794897 0 0</pose>
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1</iyy>
+          <iyz>0</iyz>
+          <izz>1</izz>
+        </inertia>
+      </inertial>
       <visual name='box'>
         <geometry>
           <sphere>

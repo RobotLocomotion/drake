@@ -6,6 +6,7 @@
 
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 #include "drake/multibody/collision/drake_collision.h"
+#include "drake/common/text_logging.h"
 
 using Eigen::Isometry3d;
 using Eigen::Matrix3Xd;
@@ -272,10 +273,20 @@ void BulletModel::DoAddElement(const Element& element) {
       case DrakeShapes::MESH: {
         const auto mesh =
             static_cast<const DrakeShapes::Mesh&>(elements[id]->getGeometry());
+        // TODO(SeanCurtis-TRI): Rather than catching the exception and falling
+        // back to a convex hull (with notification), the better solution would
+        // be to give the system the ability to triangulate on the fly.
+        bool success = false;
         if (elements[id]->is_anchored()) {  // An anchored mesh representation.
-          bt_shape = newBulletStaticMeshShape(mesh, true);
-          bt_shape_no_margin = newBulletStaticMeshShape(mesh, false);
-        } else {  // A convex hull representation of the mesh points.
+          try {
+            bt_shape = newBulletStaticMeshShape(mesh, true);
+            bt_shape_no_margin = newBulletStaticMeshShape(mesh, false);
+            success = true;
+          } catch (std::exception &e) {
+            drake::log()->log(spdlog::level::warn, e.what());
+          }
+        }
+        if (!success) {  // A convex hull representation of the mesh points.
           bt_shape = newBulletMeshShape(mesh, true);
           bt_shape_no_margin = newBulletMeshShape(mesh, false);
         }
