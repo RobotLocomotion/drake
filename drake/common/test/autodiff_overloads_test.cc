@@ -20,11 +20,11 @@ namespace {
 // Test correctness of TtoDouble
 GTEST_TEST(AutodiffOverloadsTest, TtoDouble) {
   Eigen::AutoDiffScalar<Eigen::Vector2d> x;
-  x.value() = 0.0;
-  EXPECT_EQ(TtoDouble<Eigen::AutoDiffScalar<Eigen::Vector2d>>::convert(x), 0.0);
+  x.value() = 1.0;
+  EXPECT_EQ(TtoDouble<Eigen::AutoDiffScalar<Eigen::Vector2d>>::convert(x), 1.0);
 
-  double y = 0.0;
-  EXPECT_EQ(TtoDouble<double>::convert(y), 0.0);
+  double y = 1.0;
+  EXPECT_EQ(TtoDouble<double>::convert(y), 1.0);
 
   // Test an arbitrary symbolic expression.
   drake::symbolic::Expression e;
