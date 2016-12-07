@@ -3168,3 +3168,4 @@ RigidBodyTree<double>::CreateKinematicsCacheWithType<AutoDiffUpTo73d>() const;
 
 // Explicitly instantiates on the most common scalar types.
 template class RigidBodyTree<double>;
+template class RigidBodyTree<AutoDiffXd>;
