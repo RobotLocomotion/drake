@@ -17,9 +17,10 @@ template <typename T>
 LinearSystem<T>::LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
                               const Eigen::Ref<const Eigen::MatrixXd>& B,
                               const Eigen::Ref<const Eigen::MatrixXd>& C,
-                              const Eigen::Ref<const Eigen::MatrixXd>& D)
+                              const Eigen::Ref<const Eigen::MatrixXd>& D,
+                              double time_period)
     : AffineSystem<T>(A, B, Eigen::VectorXd::Zero(A.rows()), C, D,
-                      Eigen::VectorXd::Zero(C.rows())) {}
+                      Eigen::VectorXd::Zero(C.rows()), time_period) {}
 // TODO(naveenoid): Modify constructor to accommodate 0 dimension systems;
 // i.e. in initializing xDot0 and y0 with a zero matrix.
 template class LinearSystem<double>;
@@ -30,7 +31,7 @@ std::unique_ptr<LinearSystem<double>> Linearize(
     const double equilibrium_check_tolerance) {
   DRAKE_ASSERT_VOID(system.CheckValidContext(context));
 
-  // TODO(russt): check if system is continuous time (only)
+  DRAKE_DEMAND(context.is_stateless() || context.has_only_continuous_state());
   // TODO(russt): handle the discrete time case
 
   DRAKE_DEMAND(system.get_num_input_ports() <= 1);
@@ -109,6 +110,9 @@ std::unique_ptr<LinearSystem<double>> Linearize(
 
 /// Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].
 Eigen::MatrixXd ControllabilityMatrix(const LinearSystem<double>& sys) {
+  DRAKE_DEMAND(sys.time_period() == 0.0);
+  // TODO(russt): handle the discrete time case
+
   const int num_states = sys.B().rows(), num_inputs = sys.B().cols();
   Eigen::MatrixXd R(num_states, num_states * num_inputs);
   R.leftCols(num_inputs) = sys.B();
@@ -129,6 +133,9 @@ bool IsControllable(const LinearSystem<double>& sys, double threshold) {
 
 /// Returns the observability matrix: O = [ C; CA; ...; CA^{n-1} ].
 Eigen::MatrixXd ObservabilityMatrix(const LinearSystem<double>& sys) {
+  DRAKE_DEMAND(sys.time_period() == 0.0);
+  // TODO(russt): handle the discrete time case
+
   const int num_states = sys.C().cols(), num_outputs = sys.C().rows();
   Eigen::MatrixXd O(num_states * num_outputs, num_states);
   O.topRows(num_outputs) = sys.C();

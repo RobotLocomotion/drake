@@ -5,13 +5,20 @@
 namespace drake {
 namespace systems {
 
-/// A continuous linear system that is a specialization of an AffineSystem
-/// where the inital time derivative of the system state `xDot0`
-/// and the initial system output `y0` are both zero. Given an input
-/// signal `u` and a state `x` the output of this system 'y' is:
+/// A discrete OR continuous linear system.
 ///
-/// @f[\dot{x} = A x + B u @f]
-/// @f[y = C x + D u @f]
+/// If time_period>0.0, then the linear system will have the following discrete-
+/// time state update:
+///   @f[ x[n+1] = A x[n] + B u[n], @f]
+///
+/// or if time_period==0.0, then the linear system will have the following
+/// continuous-time state update:
+///   @f[\dot{x} = A x + B u. @f]
+///
+/// In both cases, the system will have the output:
+///   @f[y = C x + D u, @f]
+/// where `u` denotes the input vector, `x` denotes the state vector, and
+/// `y` denotes the output vector.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -41,7 +48,8 @@ class LinearSystem : public AffineSystem<T> {
   LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
                const Eigen::Ref<const Eigen::MatrixXd>& B,
                const Eigen::Ref<const Eigen::MatrixXd>& C,
-               const Eigen::Ref<const Eigen::MatrixXd>& D);
+               const Eigen::Ref<const Eigen::MatrixXd>& D,
+               double time_period = 0.0);
 };
 
 /// Takes the first-order Taylor expansion of a System around a nominal
