@@ -1261,11 +1261,12 @@ class RigidBodyTree {
   bool initialized_{false};
 
   int next_available_clique_ = 0;
- public:
 
+ public:
   // Utility class for storing body collision data during RBT instantiation.
   struct BodyCollisionItem {
-    BodyCollisionItem(const std::string& group_name, std::unique_ptr<DrakeCollision::Element> element) {
+    BodyCollisionItem(const std::string& group_name,
+                      std::unique_ptr<DrakeCollision::Element> element) {
       this->group_name = group_name;
       this->element = std::move(element);
     }
@@ -1274,6 +1275,7 @@ class RigidBodyTree {
   };
 
   typedef std::vector<BodyCollisionItem> BodyCollisions;
+
  private:
   // This data structures supports an orderly instantiation of the collision
   // elements.  It is populated during tree construction, exercised during
