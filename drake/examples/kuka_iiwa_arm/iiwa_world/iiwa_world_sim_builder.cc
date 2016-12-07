@@ -66,8 +66,8 @@ int IiwaWorldSimBuilder<T>::AddFixedModelInstance(const string& model_name,
                                                   const Vector3d& rpy) {
   DRAKE_DEMAND(!built_);
 
-  auto weld_to_frame = allocate_shared<RigidBodyFrame>(
-      aligned_allocator<RigidBodyFrame>(), "world", nullptr, xyz, rpy);
+  auto weld_to_frame = allocate_shared<RigidBodyFrame<double>>(
+      aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr, xyz, rpy);
 
   return AddModelInstanceToFrame(model_name, xyz, rpy, weld_to_frame);
 }
@@ -78,8 +78,8 @@ int IiwaWorldSimBuilder<T>::AddFloatingModelInstance(const string& model_name,
                                                      const Vector3d& rpy) {
   DRAKE_DEMAND(!built_);
 
-  auto weld_to_frame = allocate_shared<RigidBodyFrame>(
-      aligned_allocator<RigidBodyFrame>(), "world", nullptr, xyz, rpy);
+  auto weld_to_frame = allocate_shared<RigidBodyFrame<double>>(
+      aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr, xyz, rpy);
 
   return AddModelInstanceToFrame(model_name, xyz, rpy, weld_to_frame,
                                  kQuaternion);
@@ -88,7 +88,7 @@ int IiwaWorldSimBuilder<T>::AddFloatingModelInstance(const string& model_name,
 template <typename T>
 int IiwaWorldSimBuilder<T>::AddModelInstanceToFrame(
     const string& model_name, const Vector3d& xyz, const Vector3d& rpy,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     const drake::multibody::joints::FloatingBaseType floating_base_type) {
   DRAKE_DEMAND(!built_);
   std::size_t extension_location = model_map_[model_name].find_last_of(".");

@@ -9,7 +9,7 @@ namespace systems {
 
 template<typename T>
 KinematicsResults<T>::KinematicsResults(const RigidBodyTree<T>* tree) :
-    tree_(tree), kinematics_cache_(tree_->bodies) {
+    tree_(tree), kinematics_cache_(tree_->CreateKinematicsCache()) {
 }
 
 template <typename T>
@@ -57,7 +57,7 @@ Isometry3<T> KinematicsResults<T>::get_pose_in_world(
     const RigidBody<T>& body) const {
   const auto& world = tree_->world();
   return tree_->relativeTransform(kinematics_cache_, world.get_body_index(),
-                                 body.get_body_index());
+                                  body.get_body_index());
 }
 
 template <typename T>
@@ -65,7 +65,7 @@ TwistVector<T> KinematicsResults<T>::get_twist_in_world_frame(
     const RigidBody<T>& body) const {
   const auto& world = tree_->world();
   return tree_->relativeTwist(kinematics_cache_, world.get_body_index(),
-                             body.get_body_index(), 0);
+                              body.get_body_index(), 0);
 }
 
 template <typename T>

@@ -95,8 +95,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
       initializeAutoDiffGivenGradientMatrix(q, qd_dynamic_num_rows);
   typedef decltype(q_time_autodiff)::Scalar TimeADScalar;
   auto qd_time_autodiff = qd.cast<TimeADScalar>();
-  KinematicsCache<TimeADScalar> kinematics_cache_time_autodiff(
-      tree_rpy_->bodies);
+  auto kinematics_cache_time_autodiff =
+      tree_rpy_->CreateKinematicsCacheWithType<TimeADScalar>();
   kinematics_cache_time_autodiff.initialize(q_time_autodiff, qd_time_autodiff);
   tree_rpy_->doKinematics(kinematics_cache_time_autodiff);
   auto mass_matrix_time_autodiff =
@@ -117,7 +117,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
   auto qd_to_coriolis_term = [&](const auto& qd_arg) {
     using Scalar =
         typename std::remove_reference<decltype(qd_arg)>::type::Scalar;
-    KinematicsCache<Scalar> kinematics_cache_coriolis(tree_rpy_->bodies);
+    auto kinematics_cache_coriolis =
+        tree_rpy_->CreateKinematicsCacheWithType<Scalar>();
     kinematics_cache_coriolis.initialize(q.cast<Scalar>(), qd_arg);
     tree_rpy_->doKinematics(kinematics_cache_coriolis, true);
 
@@ -159,7 +160,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
     auto q = tree->getRandomConfiguration(generator);
     auto v = VectorXd::Random(tree->get_num_velocities()).eval();
     auto vd = VectorXd::Random(tree->get_num_velocities()).eval();
-    KinematicsCache<double> kinematics_cache(tree->bodies);
+    auto kinematics_cache = tree->CreateKinematicsCache();
     kinematics_cache.initialize(q, v);
     tree->doKinematics(kinematics_cache);
     auto mass_matrix = tree->massMatrix(kinematics_cache);
@@ -167,7 +168,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
     auto vd_to_mass_matrix = [&](const auto& vd_arg) {
       using Scalar =
           typename std::remove_reference<decltype(vd_arg)>::type::Scalar;
-      KinematicsCache<Scalar> kinematics_cache_2(tree->bodies);
+      auto kinematics_cache_2 =
+          tree->CreateKinematicsCacheWithType<Scalar>();
       kinematics_cache_2.initialize(q.cast<Scalar>(), v.cast<Scalar>());
       tree->doKinematics(kinematics_cache_2, true);
       const typename RigidBodyTree<Scalar>::
@@ -205,9 +207,10 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   // dynamicsBiasTerm simply calls inverseDynamics with vd = 0.
   auto& tree = tree_rpy_;
   auto q = tree->getRandomConfiguration(generator);
-  KinematicsCache<double> kinematics_cache(tree->bodies);
+  auto kinematics_cache = tree->CreateKinematicsCache();
   kinematics_cache.initialize(q);
   tree->doKinematics(kinematics_cache);
+
   const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
   auto gravitational_forces =
       tree->dynamicsBiasTerm(kinematics_cache, no_external_wrenches, false);
@@ -220,7 +223,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   auto q_to_gravitational_potential_energy = [&](const auto& q_arg) {
     using Scalar =
         typename std::remove_reference<decltype(q_arg)>::type::Scalar;
-    KinematicsCache<Scalar> kinematics_cache_2(tree->bodies);
+    auto kinematics_cache_2 =
+        tree->CreateKinematicsCacheWithType<Scalar>();
     kinematics_cache_2.initialize(q_arg);
     tree->doKinematics(kinematics_cache_2);
     auto center_of_mass = tree->centerOfMass(kinematics_cache_2);
@@ -284,7 +288,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   auto vd = VectorXd::Random(tree.get_num_velocities()).eval();
   RigidBodyTree<double>::BodyToWrenchMap external_wrenches;
 
-  KinematicsCache<double> kinematics_cache(tree.bodies);
+  auto kinematics_cache = tree.CreateKinematicsCache();
   kinematics_cache.initialize(q, v);
   tree.doKinematics(kinematics_cache, true);
 
@@ -304,8 +308,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
     if (body_ptr->has_parent_body()) {
       auto wrench_body = Vector6<double>::Random().eval();
       external_wrenches[body_ptr.get()] = wrench_body;
-      auto body_to_world = tree.relativeTransform(kinematics_cache, world_index,
-                                                  body_ptr->get_body_index());
+      auto body_to_world = tree.relativeTransform(
+          kinematics_cache, world_index, body_ptr->get_body_index());
       auto wrench_world = transformSpatialForce(body_to_world, wrench_body);
       total_wrench_world += wrench_world;
     }
@@ -331,7 +335,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   auto q_time_autodiff = initializeAutoDiffGivenGradientMatrix(q, MatrixXd(qd));
   auto v_time_autodiff = initializeAutoDiffGivenGradientMatrix(v, MatrixXd(vd));
   typedef decltype(q_time_autodiff)::Scalar ADScalar;
-  KinematicsCache<ADScalar> kinematics_cache_autodiff(tree.bodies);
+  auto kinematics_cache_autodiff =
+      tree.CreateKinematicsCacheWithType<ADScalar>();
   kinematics_cache_autodiff.initialize(q_time_autodiff, v_time_autodiff);
   tree.doKinematics(kinematics_cache_autodiff);
   auto momentum_matrix_time_autodiff =

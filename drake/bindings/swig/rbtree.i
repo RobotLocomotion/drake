@@ -39,7 +39,7 @@
 %template(mapStringString) std::map<std::string,std::string>;
 %shared_ptr(RigidBody<double>)
 %template(vectorRigidBody) std::vector<std::shared_ptr<RigidBody<double> > >;
-%shared_ptr(RigidBodyFrame)
+%shared_ptr(RigidBodyFrame<double>)
 
 %eigen_typemaps(Eigen::VectorXd)
 %eigen_typemaps(Eigen::Vector2d)
@@ -71,6 +71,7 @@
 
 // unique_ptr confuses SWIG, so we'll ignore it for now
 %ignore RigidBodyTree<double>::add_rigid_body(std::unique_ptr<RigidBody<double> > body);
+%ignore RigidBodyTree<double>::CreateKinematicsCacheFromBodiesVector(const std::vector<std::unique_ptr<RigidBody<double>>>& bodies);
 
 // Ignore this member so that it doesn't generate setters/getters.
 // These cause problems since bodies is a vector of unique_ptr's and
@@ -164,3 +165,4 @@
 
 %template(RigidBodyTree_d) RigidBodyTree<double>;
 %template(RigidBody_d) RigidBody<double>;
+%template(RigidBodyFrame_d) RigidBodyFrame<double>;

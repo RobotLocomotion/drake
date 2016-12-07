@@ -858,12 +858,14 @@ void ParseLoop(RigidBodyTree<double>* tree, XMLElement* node,
   string name(node->Attribute("name"));
 
   XMLElement* link_node = node->FirstChildElement("link1");
-  std::shared_ptr<RigidBodyFrame> frameA = MakeRigidBodyFrameFromUrdfNode(
-      *tree, *link_node, link_node, name + "FrameA", model_instance_id);
+  std::shared_ptr<RigidBodyFrame<double>> frameA =
+      MakeRigidBodyFrameFromUrdfNode(
+          *tree, *link_node, link_node, name + "FrameA", model_instance_id);
 
   link_node = node->FirstChildElement("link2");
-  std::shared_ptr<RigidBodyFrame> frameB = MakeRigidBodyFrameFromUrdfNode(
-      *tree, *link_node, link_node, name + "FrameB", model_instance_id);
+  std::shared_ptr<RigidBodyFrame<double>> frameB =
+      MakeRigidBodyFrameFromUrdfNode(
+          *tree, *link_node, link_node, name + "FrameB", model_instance_id);
 
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && !parseVectorAttribute(axis_node, "xyz", axis))
@@ -880,8 +882,9 @@ void ParseFrame(RigidBodyTree<double>* tree, XMLElement* node,
   const char* frame_name = node->Attribute("name");
   if (!frame_name) throw runtime_error("ERROR parsing Drake frame name");
 
-  std::shared_ptr<RigidBodyFrame> frame = MakeRigidBodyFrameFromUrdfNode(
-      *tree, *node, node, frame_name, model_instance_id);
+  std::shared_ptr<RigidBodyFrame<double>> frame =
+      MakeRigidBodyFrameFromUrdfNode(
+          *tree, *node, node, frame_name, model_instance_id);
   tree->addFrame(frame);
 }
 
@@ -911,7 +914,7 @@ void ParseWorldJoint(XMLElement* node,
                      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                      FloatingBaseType& floating_base_type,
                      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                     std::shared_ptr<RigidBodyFrame>& weld_to_frame) {
+                     std::shared_ptr<RigidBodyFrame<double>>& weld_to_frame) {
   bool found_world_joint = false;
 
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
@@ -942,7 +945,8 @@ void ParseWorldJoint(XMLElement* node,
 
       // Creates a new rigid body frame if the weld_to_frame parameter contains
       // a nullptr.
-      if (weld_to_frame == nullptr) weld_to_frame.reset(new RigidBodyFrame());
+      if (weld_to_frame == nullptr)
+        weld_to_frame.reset(new RigidBodyFrame<double>());
 
       weld_to_frame->set_name(string(RigidBodyTree<double>::kWorldName));
       weld_to_frame->set_transform_to_body(
@@ -970,7 +974,8 @@ ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
                                 const PackageMap& ros_package_map,
                                 const string& root_dir,
                                 const FloatingBaseType floating_base_type,
-                                std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+                                std::shared_ptr<RigidBodyFrame<double>>
+                                    weld_to_frame) {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
 
@@ -1076,7 +1081,7 @@ ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
 ModelInstanceIdTable ParseUrdf(XMLDocument* xml_doc,
     const PackageMap& package_map, const string& root_dir,
     const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
   XMLElement* node = xml_doc->FirstChildElement("robot");
   if (!node) {
@@ -1129,7 +1134,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const string& urdf_string, const string& root_dir,
     const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
   PackageMap ros_package_map;
   return AddModelInstanceFromUrdfStringSearchingInRosPackages(
@@ -1140,7 +1145,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
     const string& urdf_string, const PackageMap& package_map,
     const string& root_dir, const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
   XMLDocument xml_doc;
   xml_doc.Parse(urdf_string.c_str());
@@ -1185,7 +1190,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const string& filename, const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_DEMAND(tree);
@@ -1197,7 +1202,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
     const string& filename, const PackageMap& package_map,
     const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_DEMAND(tree);
@@ -1224,16 +1229,15 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
 
 // TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
-    const string& filename,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    const PackageMap& package_map, const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    const string& filename, const PackageMap& package_map,
+    const FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
   return AddModelInstanceFromUrdfFileSearchingInRosPackages(
       filename, package_map, floating_base_type, weld_to_frame, tree);
 }
 
-std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
+std::shared_ptr<RigidBodyFrame<double>> MakeRigidBodyFrameFromUrdfNode(
     const RigidBodyTree<double>& tree, const tinyxml2::XMLElement& link,
     const tinyxml2::XMLElement* pose, const string& name,
     int model_instance_id) {
@@ -1250,8 +1254,8 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
     parseVectorAttribute(pose, "xyz", xyz);
     parseVectorAttribute(pose, "rpy", rpy);
   }
-  return allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), name, body, xyz, rpy);
+  return allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), name, body, xyz, rpy);
 }
 
 }  // namespace urdf

@@ -30,11 +30,11 @@ class RigidBodyLoop {
    * @param[in] axis The loop joint's axis of rotation expressed in the
    * coordinate frame of @p frameA.
    */
-  RigidBodyLoop(std::shared_ptr<RigidBodyFrame> frameA,
-                std::shared_ptr<RigidBodyFrame> frameB,
+  RigidBodyLoop(std::shared_ptr<RigidBodyFrame<double>> frameA,
+                std::shared_ptr<RigidBodyFrame<double>> frameB,
                 const Eigen::Vector3d& axis);
 
-  const std::shared_ptr<RigidBodyFrame> frameA_, frameB_;
+  const std::shared_ptr<RigidBodyFrame<double>> frameA_, frameB_;
   const Eigen::Vector3d axis_;
 
   friend std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj);

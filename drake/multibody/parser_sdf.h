@@ -79,7 +79,8 @@ AddModelInstancesFromSdfFileInWorldFrameSearchingInRosPackages(
 ModelInstanceIdTable AddModelInstancesFromSdfFile(
     const std::string& filename,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree<double>* tree);
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
+    RigidBodyTree<double>* tree);
 
 /**
  * Adds the model or models defined within an SDF file to a rigid body tree.
@@ -104,7 +105,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
 ModelInstanceIdTable AddModelInstancesFromSdfFileSearchingInRosPackages(
     const std::string& filename, const PackageMap& package_map,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
 
 
@@ -128,7 +129,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileSearchingInRosPackages(
 ModelInstanceIdTable AddModelInstancesFromSdfString(
     const std::string& sdf_string,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
 
 /**
@@ -154,7 +155,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfString(
 ModelInstanceIdTable AddModelInstancesFromSdfStringSearchingInRosPackages(
     const std::string& sdf_string, const PackageMap& package_map,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
 
 }  // namespace sdf

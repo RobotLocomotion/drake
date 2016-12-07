@@ -172,7 +172,7 @@ int main() {
 
   // check before calling doKinematics
   {
-    KinematicsCache<double> cache(tree->bodies);
+    auto cache = tree->CreateKinematicsCache();
     settings.expect_error_on_configuration_methods = true;
     settings.expect_error_on_velocity_methods = true;
     settings.expect_error_on_jdot_times_v_methods = true;

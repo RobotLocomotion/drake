@@ -151,9 +151,11 @@ void TestScenario1(const RigidBodyTree<double>& model) {
   body_fixed_points.insert(
       make_pair(head_id, Matrix3Xd::Random(3, npoints_head)));
 
-  KinematicsCache<double> cache_double(model.bodies);
-  KinematicsCache<AutoDiffFixedMaxSize> cache_autodiff_fixed(model.bodies);
-  KinematicsCache<AutoDiffDynamicSize> cache_autodiff_dynamic(model.bodies);
+  auto cache_double = model.CreateKinematicsCache();
+  auto cache_autodiff_fixed =
+      model.CreateKinematicsCacheWithType<AutoDiffFixedMaxSize>();
+  auto cache_autodiff_dynamic =
+      model.CreateKinematicsCacheWithType<AutoDiffDynamicSize>();
 
   cout << "scenario 1:" << endl;
   cout << "no gradients: "
@@ -214,9 +216,11 @@ void TestScenario2(const RigidBodyTree<double>& model) {
         make_pair(q_autodiff_dynamic, v_autodiff_dynamic));
   }
 
-  KinematicsCache<double> cache_double(model.bodies);
-  KinematicsCache<AutoDiffFixedMaxSize> cache_autodiff_fixed(model.bodies);
-  KinematicsCache<AutoDiffDynamicSize> cache_autodiff_dynamic(model.bodies);
+  auto cache_double = model.CreateKinematicsCache();
+  auto cache_autodiff_fixed =
+      model.CreateKinematicsCacheWithType<AutoDiffFixedMaxSize>();
+  auto cache_autodiff_dynamic =
+      model.CreateKinematicsCacheWithType<AutoDiffDynamicSize>();
 
   cout << "scenario 2:" << endl;
   cout << "no gradients: "
