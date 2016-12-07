@@ -195,16 +195,6 @@ class RigidBody {
 
   const DrakeShapes::VectorOfVisualElements& get_visual_elements() const;
 
-  /**
-   * Sets the rigid body's self-collision logic.
-   *
-   * The body may or may not require a self-collision clique. If not, the
-   * provided clique id will remain unused.
-   * @param[in] clique_id  An available clique id.
-   * @returns true if the clique id was used.
-   */
-  bool SetSelfCollisionClique(int clique_id);
-
   // TODO(SeanCurtis-TRI): This shouldn't be called publicly. Collision elements
   // have to be processed in the context of the rigid body tree.  Long term,
   // this will be displaced into GeometryWorld.  Short term, just don't call it.
@@ -372,16 +362,6 @@ class RigidBody {
    */
   void ApplyTransformToJointFrame(
       const Eigen::Isometry3d& transform_body_to_joint);
-
-  /** Adds body to a given collision clique by clique id.
-   *
-   * This call adds each of the collision elements in this body to the provided
-   * collision clique.
-   * @param[in] clique_id Collision clique id.
-   * @see Element::AddToCollisionClique.
-   */
-  // TODO(SeanCurtis-TRI): This is no longer necessary.
-  void AddCollisionElementsToClique(int clique_id);
 
  public:
   friend std::ostream& operator<<(
