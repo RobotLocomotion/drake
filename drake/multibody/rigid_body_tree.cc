@@ -138,6 +138,9 @@ bool RigidBodyTree<T>::transformCollisionFrame(
   // TODO(SeanCurtis-TRI): Determine if this should be happening.
   // Collision elements attached to the body have been registered with the
   // collision model; they must be moved through the collision model interface.
+  // We need to decide if a method that is intended to be called as part of
+  // *construction* should modify collision elements already registered with
+  // the collision engine.
   for (auto body_itr = body->collision_elements_begin();
        body_itr != body->collision_elements_end(); ++body_itr) {
     DrakeCollision::Element* element = *body_itr;
@@ -363,8 +366,7 @@ void RigidBodyTree<T>::CreateCollisionCliques() {
   // If this proves to be too expensive, walking the tree would be O(N)
   // and still capture all of the adjacency.
   // TODO(SeanCurtis-TRI): If compile gets called multiple times this will end
-  // up encoding redundant cliques.  Instead, this should only update the
-  // bodies/cliques currently in the body_collision_map_.
+  // up encoding redundant cliques.
   for (size_t i = 0; i < bodies.size(); ++i) {
     RigidBody<double>* body_i = bodies[i].get();
     for (size_t j = i + 1; j < bodies.size(); ++j) {
@@ -539,12 +541,6 @@ void RigidBodyTree<T>::addCollisionElement(
   BodyCollisions& body_collisions = itr->second;
   body_collisions.emplace_back(
       group_name, std::unique_ptr<DrakeCollision::Element>(element.clone()));
-  //
-  //  DrakeCollision::ElementId id = collision_model_->addElement(element);
-  //  if (id != 0) {
-  //    body.AddCollisionElement(group_name,
-  //                             collision_model_->FindMutableElement(id));
-  //  }
 }
 
 template <typename T>
@@ -842,7 +838,7 @@ RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
   // For each contact pair, map contact point from world frame to each body's
   // frame.
   for (size_t i = 0; i < contact_points.size(); ++i) {
-    auto &pair = contact_points[i];
+    auto& pair = contact_points[i];
     if (pair.elementA->CanCollideWith(pair.elementB)) {
       // Get bodies' transforms.
       const int bodyA_id = pair.elementA->get_body()->get_body_index();

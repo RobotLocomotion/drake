@@ -5,8 +5,8 @@
 #include <utility>
 
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
-#include "drake/multibody/collision/drake_collision.h"
 #include "drake/common/text_logging.h"
+#include "drake/multibody/collision/drake_collision.h"
 
 using Eigen::Isometry3d;
 using Eigen::Matrix3Xd;

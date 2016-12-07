@@ -244,7 +244,7 @@ class Model {
   /** Allows sub-classes to do additional processing on elements added to the
    * collision model.  This is called each time Model::AddElement is called.
    * @param element the element that has been added.
-   * @returns true for successfull processing.
+   * @returns true for successful processing.
    */
   virtual void DoAddElement(const Element& element) {}
 
