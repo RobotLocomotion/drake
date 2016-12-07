@@ -431,7 +431,8 @@ void ParseSdfFrame(RigidBodyTree<double>* rigid_body_tree, XMLElement* node,
   // Create the frame
   std::shared_ptr<RigidBodyFrame<double>> frame =
       allocate_shared<RigidBodyFrame<double>>(
-      Eigen::aligned_allocator<RigidBodyFrame<double>>(), name, link, xyz, rpy);
+          Eigen::aligned_allocator<RigidBodyFrame<double>>(),
+          name, link, xyz, rpy);
 
   rigid_body_tree->addFrame(frame);
 }
@@ -574,17 +575,17 @@ void ParseSdfJoint(RigidBodyTree<double>* model, std::string model_name,
     Eigen::Vector3d loop_point_parent =
         transform_parent_to_model.inverse() * loop_point_model;
 
-    std::shared_ptr<RigidBodyFrame<double>> frameA =
+    auto frameA =
         allocate_shared<RigidBodyFrame<double>>(
-        Eigen::aligned_allocator<RigidBodyFrame<double>>(),
-        name + "FrameA", parent,
-        loop_point_parent, Vector3d::Zero());
+            Eigen::aligned_allocator<RigidBodyFrame<double>>(),
+            name + "FrameA", parent,
+            loop_point_parent, Vector3d::Zero());
 
-    std::shared_ptr<RigidBodyFrame<double>> frameB =
+    auto frameB =
         allocate_shared<RigidBodyFrame<double>>(
-        Eigen::aligned_allocator<RigidBodyFrame<double>>(),
-        name + "FrameB", child,
-        loop_point_child, Vector3d::Zero());
+            Eigen::aligned_allocator<RigidBodyFrame<double>>(),
+            name + "FrameB", child,
+            loop_point_child, Vector3d::Zero());
 
     model->addFrame(frameA);
     model->addFrame(frameB);

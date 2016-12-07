@@ -859,14 +859,14 @@ void ParseLoop(RigidBodyTree<double>* tree, XMLElement* node,
   string name(node->Attribute("name"));
 
   XMLElement* link_node = node->FirstChildElement("link1");
-  std::shared_ptr<RigidBodyFrame<double>>
-      frameA = MakeRigidBodyFrameFromUrdfNode(
-      *tree, *link_node, link_node, name + "FrameA", model_instance_id);
+  std::shared_ptr<RigidBodyFrame<double>> frameA =
+      MakeRigidBodyFrameFromUrdfNode(
+          *tree, *link_node, link_node, name + "FrameA", model_instance_id);
 
   link_node = node->FirstChildElement("link2");
   std::shared_ptr<RigidBodyFrame<double>> frameB =
       MakeRigidBodyFrameFromUrdfNode(
-      *tree, *link_node, link_node, name + "FrameB", model_instance_id);
+          *tree, *link_node, link_node, name + "FrameB", model_instance_id);
 
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && !parseVectorAttribute(axis_node, "xyz", axis))
@@ -885,7 +885,7 @@ void ParseFrame(RigidBodyTree<double>* tree, XMLElement* node,
 
   std::shared_ptr<RigidBodyFrame<double>> frame =
       MakeRigidBodyFrameFromUrdfNode(
-      *tree, *node, node, frame_name, model_instance_id);
+          *tree, *node, node, frame_name, model_instance_id);
   tree->addFrame(frame);
 }
 
@@ -976,7 +976,7 @@ ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
                                 const string& root_dir,
                                 const FloatingBaseType floating_base_type,
                                 std::shared_ptr<RigidBodyFrame<double>>
-                                weld_to_frame) {
+                                    weld_to_frame) {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
 
