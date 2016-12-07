@@ -321,7 +321,8 @@ RigidBodySystem::StateVector<double> getInitialState(
     // todo: move this up to the system level?
 
     drake::solvers::MathematicalProgram prog;
-    std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> const&
+    std::vector<RigidBodyLoop<double>,
+                Eigen::aligned_allocator<RigidBodyLoop<double>>> const&
         loops = sys.tree->loops;
 
     int nq = sys.tree->get_num_positions();

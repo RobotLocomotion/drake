@@ -1187,7 +1187,8 @@ class RigidBodyTree {
       actuators;
 
   // Rigid body loops
-  std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> loops;
+  std::vector<RigidBodyLoop<T>,
+              Eigen::aligned_allocator<RigidBodyLoop<T>>> loops;
 
   drake::TwistVector<double> a_grav;
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces

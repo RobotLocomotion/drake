@@ -874,7 +874,7 @@ void ParseLoop(RigidBodyTree<double>* tree, XMLElement* node,
 
   tree->addFrame(frameA);
   tree->addFrame(frameB);
-  RigidBodyLoop l(frameA, frameB, axis);
+  RigidBodyLoop<double> l(frameA, frameB, axis);
   tree->loops.push_back(l);
 }
 
