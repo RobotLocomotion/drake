@@ -839,19 +839,10 @@ RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
   vector<DrakeCollision::PointPair> contact_points;
   collision_model_->ComputeMaximumDepthCollisionPoints(use_margins,
                                                        contact_points);
-  size_t num_contact_points = contact_points.size();
-
-  // TODO(SeanCurtis-TRI): Once the bullet collision detection *properly* takes
-  // the Element::CanCollideWith method into account, this can be removed.
-  // But, for now, ComputeMaximumDepthCollisionPoints may produce collision
-  // information for pairs that shouldn't be considered. This code filters the
-  // results into `valid_pairs` with the expectation of removal after drake
-  // collision filters are fully integrated into the collision model.
-  // See issue #4204 (https://github.com/RobotLocomotion/drake/issues/4204).
-  std::vector<DrakeCollision::PointPair> valid_pairs;
-  valid_pairs.reserve(contact_points.size());
-  for (size_t i = 0; i < num_contact_points; ++i) {
-    auto& pair = contact_points[i];
+  // For each contact pair, map contact point from world frame to each body's
+  // frame.
+  for (size_t i = 0; i < contact_points.size(); ++i) {
+    auto &pair = contact_points[i];
     if (pair.elementA->CanCollideWith(pair.elementB)) {
       // Get bodies' transforms.
       const int bodyA_id = pair.elementA->get_body()->get_body_index();
@@ -860,17 +851,16 @@ RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
 
       const int bodyB_id = pair.elementB->get_body()->get_body_index();
       const Isometry3d& TB =
-          cache.get_element(bodyB_id).transform_to_world;
+          cache.get_element(bodyB.get_body_index()).transform_to_world;
 
       // Transform to bodies' frames.
       // Note:
       // Eigen assumes aliasing by default and therefore this operation is safe.
       pair.ptA = TA.inverse() * contact_points[i].ptA;
       pair.ptB = TB.inverse() * contact_points[i].ptB;
-      valid_pairs.push_back(pair);
     }
   }
-  return valid_pairs;
+  return contact_points;
 }
 
 template <typename T>
