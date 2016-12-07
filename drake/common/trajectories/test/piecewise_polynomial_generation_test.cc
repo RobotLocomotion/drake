@@ -250,7 +250,7 @@ GTEST_TEST(SplineTests, PchipAndCubicSplineCompareWithMatlabTest) {
   coeffs[5] << 1, 0, 0, 0;
 
   PiecewisePolynomial<double> spline = PiecewisePolynomial<double>::Pchip(T, Y);
-  EXPECT_EQ(spline.getNumberOfSegments(), T.size() - 1);
+  EXPECT_EQ(spline.getNumberOfSegments(), static_cast<int>(T.size()) - 1);
   for (int t = 0; t < spline.getNumberOfSegments(); ++t) {
     const PiecewisePolynomial<double>::PolynomialMatrix& poly_matrix =
         spline.getPolynomialMatrix(t);
@@ -277,7 +277,7 @@ GTEST_TEST(SplineTests, PchipAndCubicSplineCompareWithMatlabTest) {
   coeffs[4] << 1, 0.5, -0.75, 0.25;
   coeffs[5] << 1, -0.25, 0, 0.25;
   spline = PiecewisePolynomial<double>::Cubic(T, Y);
-  EXPECT_EQ(spline.getNumberOfSegments(), T.size() - 1);
+  EXPECT_EQ(spline.getNumberOfSegments(), static_cast<int>(T.size()) - 1);
   for (int t = 0; t < spline.getNumberOfSegments(); ++t) {
     const PiecewisePolynomial<double>::PolynomialMatrix& poly_matrix =
         spline.getPolynomialMatrix(t);
