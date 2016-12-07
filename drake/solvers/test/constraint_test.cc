@@ -17,121 +17,9 @@ using Eigen::Vector3d;
 namespace drake {
 namespace solvers {
 namespace {
-// This function is used to return a temporary object, so that we
-// can test move constructor.
-template <typename T>
-T pipe(T constraint) {
-  return constraint;
-}
-
-// Tests if the copied and moved constraints behaves the same as the original
-// constraint.
-// is_copyable is true if the constraint can be constructed using T(const T&
-// rhs).
-// is_movable is true if the constraint can be constructed using T(T&& rhs).
-// is_copy_assignable is true if T can be copy-assigned from an lvalue
-// expression.
-// is_move_assignable is true if T can be move-assigned from an rvalue
-// expression.
-template <typename T>
-void TestMovableCopyableAssignableFun(const T& constraint,
-                                      const Eigen::Ref<const Eigen::VectorXd> x,
-                                      bool is_copyable, bool is_movable,
-                                      bool is_copy_assignable,
-                                      bool is_move_assignable) {
-  static_assert(std::is_base_of<Constraint, T>::value,
-                "T should be a Constraint type");
-  std::vector<T> constraints;
-  EXPECT_EQ(std::is_copy_constructible<T>::value, is_copyable);
-  if (is_copyable) {
-    T constraint_copied(constraint);
-    constraints.push_back(constraint_copied);
-  }
-
-  EXPECT_EQ(std::is_move_constructible<T>::value, is_movable);
-  if (is_movable) {
-    T constraint_moved(pipe(constraint));
-    constraints.push_back(constraint_moved);
-  }
-
-  EXPECT_EQ(std::is_copy_assignable<T>::value, is_copy_assignable);
-  if (is_copy_assignable) {
-    T constraint_assigned_copy = constraint;
-    constraints.push_back(constraint_assigned_copy);
-  }
-
-  EXPECT_EQ(std::is_move_assignable<T>::value, is_move_assignable);
-  if (is_move_assignable) {
-    T constraint_assigned_move = pipe(constraint);
-    constraints.push_back(constraint_assigned_move);
-  }
-
-  Eigen::VectorXd y_expected;
-  constraint.Eval(x, y_expected);
-
-  for (const auto& con : constraints) {
-    EXPECT_EQ(con.num_constraints(), constraint.num_constraints());
-    EXPECT_TRUE(CompareMatrices(con.lower_bound(), constraint.lower_bound()));
-    EXPECT_TRUE(CompareMatrices(con.upper_bound(), constraint.upper_bound()));
-    EXPECT_EQ(con.get_description(), constraint.get_description());
-    Eigen::VectorXd y;
-    con.Eval(x, y);
-    EXPECT_TRUE(CompareMatrices(y, y_expected));
-  }
-}
-
-GTEST_TEST(TestConstraint, TestMovableCopyable) {
-  QuadraticConstraint quadratic_constraint(Eigen::Matrix2d::Identity(),
-                                           Eigen::Vector2d::Ones(), -1, 1);
-  TestMovableCopyableAssignableFun(
-      quadratic_constraint, Eigen::Vector2d(1.2, 0.2), true, true, true, true);
-  LorentzConeConstraint lorentz_cone_constraint;
-  TestMovableCopyableAssignableFun(lorentz_cone_constraint,
-                                   Eigen::Vector3d(1.2, 0.3, 0.3), true, true,
-                                   true, true);
-  RotatedLorentzConeConstraint rotated_lorentz_cone_constraint;
-  TestMovableCopyableAssignableFun(rotated_lorentz_cone_constraint,
-                                   Eigen::Vector4d(2.0, 3.0, 1.2, 0.3), true,
-                                   true, true, true);
-  Polynomiald x("x");
-  std::vector<Polynomiald::VarType> var_mapping = {x.GetSimpleVariable()};
-  PolynomialConstraint polynomial_constraint(VectorXPoly::Constant(1, x),
-                                             var_mapping, Vector1d::Constant(2),
-                                             Vector1d::Constant(2));
-  TestMovableCopyableAssignableFun(polynomial_constraint, Vector1d::Constant(1),
-                                   true, true, false, false);
-  LinearConstraint linear_constraint(Eigen::RowVector2d(1, 2), Vector1d(0),
-                                     Vector1d(1));
-  TestMovableCopyableAssignableFun(linear_constraint, Eigen::Vector2d(2, 3),
-                                   true, true, true, true);
-  LinearEqualityConstraint linear_equality_constraint(Eigen::RowVector2d(1, 2),
-                                                      Vector1d(0));
-  TestMovableCopyableAssignableFun(linear_equality_constraint,
-                                   Eigen::Vector2d(2, 3), true, true, true,
-                                   true);
-  BoundingBoxConstraint bounding_box_constraint(Eigen::Vector2d(0, 1),
-                                                Eigen::Vector2d(1, 2));
-  TestMovableCopyableAssignableFun(bounding_box_constraint,
-                                   Eigen::Vector2d(0.5, 1.5), true, true, true,
-                                   true);
-  LinearComplementarityConstraint linear_complementarity_constraint(
-      Eigen::Matrix2d::Identity(), Eigen::Vector2d::Ones());
-  TestMovableCopyableAssignableFun(linear_complementarity_constraint,
-                                   Eigen::Vector2d(2, 3), true, true, true,
-                                   true);
-  PositiveSemidefiniteConstraint positive_semidefinite_constraint(2);
-  TestMovableCopyableAssignableFun(positive_semidefinite_constraint,
-                                   Eigen::Vector4d(1, 0, 0, 1), true, true,
-                                   true, true);
-  LinearMatrixInequalityConstraint linear_matrix_inequality_constraint(
-      {Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Ones()});
-  TestMovableCopyableAssignableFun(linear_matrix_inequality_constraint,
-                                   Vector1d(1), true, true, false, false);
-}
-
 // Tests if the Lorentz Cone constraint is imposed correctly.
 void TestLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
-  auto cnstr = LorentzConeConstraint();
+  LorentzConeConstraint cnstr;
   VectorXd y;
   // Test Eval with VectorXd.
   cnstr.Eval(x_test, y);
@@ -165,7 +53,7 @@ void TestLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
 }
 
 void TestRotatedLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
-  auto cnstr = RotatedLorentzConeConstraint();
+  RotatedLorentzConeConstraint cnstr;
   VectorXd y;
   cnstr.Eval(x_test, y);
   Vector3d y_expected;
@@ -203,7 +91,7 @@ void TestRotatedLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
 }
 
 GTEST_TEST(testConstraint, testLorentzConeConstraint) {
-  auto cnstr = LorentzConeConstraint();
+  LorentzConeConstraint cnstr;
   auto lb = cnstr.lower_bound();
   auto ub = cnstr.upper_bound();
   EXPECT_TRUE(CompareMatrices(Eigen::Vector2d(0.0, 0.0), lb, 1E-10,
@@ -230,7 +118,7 @@ GTEST_TEST(testConstraint, testLorentzConeConstraint) {
 }
 
 GTEST_TEST(testConstraint, testRotatedLorentzConeConstraint) {
-  auto cnstr = RotatedLorentzConeConstraint();
+  RotatedLorentzConeConstraint cnstr;
   auto lb = cnstr.lower_bound();
   auto ub = cnstr.upper_bound();
   EXPECT_TRUE(CompareMatrices(Eigen::Vector3d::Zero(), lb, 1E-10,
@@ -253,7 +141,7 @@ GTEST_TEST(testConstraint, testRotatedLorentzConeConstraint) {
 }
 
 GTEST_TEST(testConstraint, testPositiveSemidefiniteConstraint) {
-  auto cnstr = PositiveSemidefiniteConstraint(3);
+  PositiveSemidefiniteConstraint cnstr(3);
 
   Eigen::Matrix<double, 9, 1> X1;
   // clang-format off
@@ -283,7 +171,7 @@ GTEST_TEST(testConstraint, testLinearMatrixInequalityConstraint) {
   F1 << 1, 1, 1, 1;
   Eigen::Matrix2d F2;
   F2 << 1, 2, 2, 1;
-  auto cnstr = LinearMatrixInequalityConstraint({F0, F1, F2});
+  LinearMatrixInequalityConstraint cnstr({F0, F1, F2});
 
   // [4, 3]
   // [3, 4] is positive semidefinite
