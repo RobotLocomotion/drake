@@ -852,16 +852,17 @@ ModelInstanceIdTable ParseSdf(XMLDocument* xml_doc,
 
 }  // namespace
 
-ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
+ModelInstanceIdTable
+AddModelInstancesFromSdfFileInWorldFrameSearchingInRosPackages(
     const string& filename, const PackageMap& package_map,
     const FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree) {
   DRAKE_DEMAND(tree);
-  return AddModelInstancesFromSdfFile(filename, package_map, floating_base_type,
-      nullptr /* weld_to_frame */, tree);
+  return AddModelInstancesFromSdfFileSearchingInRosPackages(filename,
+      package_map, floating_base_type, nullptr /* weld_to_frame */, tree);
 }
 
-ModelInstanceIdTable AddModelInstancesFromSdfFile(
+ModelInstanceIdTable AddModelInstancesFromSdfFileSearchingInRosPackages(
     const string& filename, const PackageMap& package_map,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
@@ -886,7 +887,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
            weld_to_frame, tree);
 }
 
-ModelInstanceIdTable AddModelInstancesFromSdfString(
+ModelInstanceIdTable AddModelInstancesFromSdfStringSearchingInRosPackages(
     const string& sdf_string, const PackageMap& package_map,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,

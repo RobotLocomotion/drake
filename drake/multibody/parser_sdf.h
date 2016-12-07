@@ -19,6 +19,28 @@ namespace sdf {
  *
  * @param[in] filename The SDF file containing the model to be added.
  *
+ * @param[in] floating_base_type The type of joint that connects the model's
+ * root to the existing rigid body tree.
+ *
+ * @param[out] tree The rigid body tree to which to add the model.
+ *
+ * @return A table mapping the names of the models whose instances were just
+ * added to the `RigidBodyTree` to their instance IDs, which are unique within
+ * the `RigidBodyTree`.
+ */
+// ModelInstanceIdTable
+// AddModelInstancesFromSdfFileInWorldFrame(
+//     const std::string& filename,
+//     const drake::multibody::joints::FloatingBaseType floating_base_type,
+//     RigidBodyTree<double>* tree);
+
+/**
+ * Adds the model or models defined within an SDF file to a rigid body tree.
+ * One instance of each model is added. The models' frames are made coincident
+ * with the world's coordinate frame.
+ *
+ * @param[in] filename The SDF file containing the model to be added.
+ *
  * @param[in] package_map A map of ROS package names to their paths. These are
  * the packages to search through when finding files referenced in the SDF.
  *
@@ -31,7 +53,8 @@ namespace sdf {
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
+ModelInstanceIdTable
+AddModelInstancesFromSdfFileInWorldFrameSearchingInRosPackages(
     const std::string& filename, const PackageMap& package_map,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree);
@@ -56,7 +79,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-ModelInstanceIdTable AddModelInstancesFromSdfFile(
+ModelInstanceIdTable AddModelInstancesFromSdfFileSearchingInRosPackages(
     const std::string& filename, const PackageMap& package_map,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
@@ -79,7 +102,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-ModelInstanceIdTable AddModelInstancesFromSdfString(
+ModelInstanceIdTable AddModelInstancesFromSdfStringSearchingInRosPackages(
     const std::string& sdf_string, const PackageMap& package_map,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
