@@ -21,9 +21,9 @@ template <typename T>
 PassThrough<T>::PassThrough(int size) {
   // TODO(amcastro-tri): remove the size parameter from the constructor once
   // #3109 supporting automatic sizes is resolved.
-  this->DeclareInputPort(kVectorValued, size, kInheritedSampling);
+  this->DeclareInputPort(kVectorValued, size);
   // TODO(david-german-tri): Provide a way to infer the type.
-  this->DeclareOutputPort(kVectorValued, size, kInheritedSampling);
+  this->DeclareOutputPort(kVectorValued, size);
 }
 
 template <typename T>

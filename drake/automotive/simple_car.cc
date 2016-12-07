@@ -21,11 +21,9 @@ template <typename T>
 SimpleCar<T>::SimpleCar(const SimpleCarConfig<T>& config)
     : config_(config) {
   this->DeclareInputPort(systems::kVectorValued,
-                         DrivingCommandIndices::kNumCoordinates,
-                         systems::kContinuousSampling);
+                         DrivingCommandIndices::kNumCoordinates);
   this->DeclareOutputPort(systems::kVectorValued,
-                          SimpleCarStateIndices::kNumCoordinates,
-                          systems::kContinuousSampling);
+                          SimpleCarStateIndices::kNumCoordinates);
 }
 
 template <typename T>

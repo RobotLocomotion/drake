@@ -16,8 +16,7 @@ class SimpleDiscreteTimeSystem : public drake::systems::LeafSystem<double> {
   SimpleDiscreteTimeSystem() {
     const int kSize = 1;  // The dimension of both output (y) and state (x).
     this->DeclareUpdatePeriodSec(1.0);
-    this->DeclareOutputPort(drake::systems::kVectorValued, kSize,
-                            drake::systems::kDiscreteSampling);
+    this->DeclareOutputPort(drake::systems::kVectorValued, kSize);
     this->DeclareDifferenceState(kSize);
   }
 

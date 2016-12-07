@@ -1,6 +1,8 @@
 #include "drake/systems/analysis/simulator.h"
 #include <cmath>
 #include <complex>
+#include <functional>
+#include <map>
 
 #include <unsupported/Eigen/AutoDiff>
 
@@ -193,6 +195,23 @@ GTEST_TEST(SimulatorTest, RealtimeRate) {
   EXPECT_TRUE(simulator.get_actual_realtime_rate() <= 5.1);
 }
 
+// Tests that if publishing every timestep is disabled, publish only happens
+// on initialization.
+GTEST_TEST(SimulatorTest, DisablePublishEveryTimestep) {
+  analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
+  Simulator<double> simulator(spring_mass);  // Use default Context.
+  simulator.set_publish_every_time_step(false);
+
+  simulator.get_mutable_context()->set_time(0.);
+  simulator.Initialize();
+  // Publish should happen on initialization.
+  EXPECT_EQ(1, simulator.get_num_publishes());
+
+  // Simulate for 1 simulated second.  Publish should not happen.
+  simulator.StepTo(1.);
+  EXPECT_EQ(1, simulator.get_num_publishes());
+}
+
 // Repeat the previous test but now the continuous steps are interrupted
 // by a discrete sample every 1/30 second. The step size doesn't divide that
 // evenly so we should get some step size modification here.
@@ -271,9 +290,6 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
                                                     x_target);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
-  // Sets initial conditions to zero.
-  spring_mass.SetDefaultState(simulator.get_mutable_context());
-
   // Sets initial condition using the Simulator's internal Context.
   spring_mass.set_position(simulator.get_mutable_context(), x0);
   spring_mass.set_velocity(simulator.get_mutable_context(), v0);
@@ -336,16 +352,17 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 }
 
 
-// A System that requests discrete update at 1 kHz, and aborts if it is asked
-// to perform a discrete update at any other time.
+// A mock System that requests discrete update at 1 kHz, and publishes at 400
+// Hz. Calls user-configured callbacks on DoPublish, DoEvalDifferenceUpdates,
+// and EvalTimeDerivatives.
 class DiscreteSystem : public LeafSystem<double> {
  public:
   DiscreteSystem() {
     // Deliberately choose a period that is identical to, and therefore courts
     // floating-point error with, the default max step size.
-    const double period = 0.001;
     const double offset = 0.0;
-    this->DeclarePeriodicUpdate(period, offset);
+    this->DeclarePeriodicUpdate(kUpdatePeriod, offset);
+    this->DeclarePublishPeriodSec(kPublishPeriod);
   }
 
   ~DiscreteSystem() override {}
@@ -358,25 +375,120 @@ class DiscreteSystem : public LeafSystem<double> {
   void DoEvalDifferenceUpdates(
       const drake::systems::Context<double>& context,
       drake::systems::DifferenceState<double>* updates) const override {
-    const double k = context.get_time() / 0.001;
-    const double int_k = std::round(k);
-    DRAKE_DEMAND(std::abs(k - int_k) < 1e-8);
-    num_updates_++;
+    if (update_callback_ != nullptr) update_callback_(context);
   }
 
-  int num_updates() { return num_updates_; }
+  void DoPublish(
+      const drake::systems::Context<double>& context) const override {
+    if (publish_callback_ != nullptr) publish_callback_(context);
+  }
+
+  void EvalTimeDerivatives(
+      const Context<double>& context,
+      ContinuousState<double>* derivatives) const override {
+    if (derivatives_callback_ != nullptr) derivatives_callback_(context);
+  }
+
+  void set_update_callback(
+      std::function<void(const Context<double>&)> callback) {
+    update_callback_ = callback;
+  }
+
+  void set_publish_callback(
+      std::function<void(const Context<double>&)> callback) {
+    publish_callback_ = callback;
+  }
+
+  void set_derivatives_callback(
+      std::function<void(const Context<double>&)> callback) {
+    derivatives_callback_ = callback;
+  }
+
+  double update_period() const { return kUpdatePeriod; }
+  double publish_period() const { return kPublishPeriod; }
 
  private:
-  mutable int num_updates_{0};
+  const double kUpdatePeriod{0.001};
+  const double kPublishPeriod{0.0025};
+  std::function<void(const Context<double>&)> update_callback_{nullptr};
+  std::function<void(const Context<double>&)> publish_callback_{nullptr};
+  std::function<void(const Context<double>&)> derivatives_callback_{nullptr};
 };
 
+// Returns true if the time in the @p context is a multiple of the @p period.
+bool CheckSampleTime(const Context<double>& context, double period) {
+  const double k = context.get_time() / period;
+  const double int_k = std::round(k);
+  const double kTolerance = 1e-8;
+  return std::abs(k - int_k) < kTolerance;
+}
+
 // Tests that the Simulator invokes the DiscreteSystem's update method every
-// 0.001 sec, without missing any updates.
-GTEST_TEST(SimulatorTest, DiscreteUpdate) {
+// 0.001 sec, and its publish method every 0.0025 sec, without missing any
+// updates.
+GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
+  DiscreteSystem system;
+  int num_updates = 0;
+  system.set_update_callback([&](const Context<double>& context){
+    ASSERT_TRUE(CheckSampleTime(context, system.update_period()));
+    num_updates++;
+  });
+  int num_publishes = 0;
+  system.set_publish_callback([&](const Context<double>& context){
+    ASSERT_TRUE(CheckSampleTime(context, system.publish_period()));
+    num_publishes++;
+  });
+
+  drake::systems::Simulator<double> simulator(system);
+  simulator.set_publish_every_time_step(false);
+  simulator.StepTo(0.5);
+  EXPECT_EQ(500, num_updates);
+  // Publication occurs at 400Hz, and also at initialization.
+  EXPECT_EQ(200 + 1, num_publishes);
+}
+
+// Tests that the order of events in a simulator time step is first update
+// discrete state, then publish, then integrate.
+GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   DiscreteSystem system;
   drake::systems::Simulator<double> simulator(system);
+  enum EventType {
+    kUpdate = 0,
+    kPublish = 1,
+    kIntegrate = 2
+  };
+
+  // Write down the order in which the DiscreteSystem is asked to compute
+  // difference updates, do publishes, or compute derivatives at each time step.
+  std::map<int, std::vector<EventType>> events;
+  system.set_update_callback(
+      [&events, &simulator](const Context<double>& context) {
+    events[simulator.get_num_steps_taken()].push_back(kUpdate);
+  });
+  system.set_publish_callback(
+      [&events, &simulator](const Context<double>& context) {
+    events[simulator.get_num_steps_taken()].push_back(kPublish);
+  });
+  system.set_derivatives_callback(
+      [&events, &simulator](const Context<double>& context) {
+    events[simulator.get_num_steps_taken()].push_back(kIntegrate);
+  });
+
+  // Run a simulation.
+  simulator.set_publish_every_time_step(true);
   simulator.StepTo(0.5);
-  EXPECT_EQ(500, system.num_updates());
+
+  // Check that all the update events precede all the publish events, and all
+  // the publish events precede all the eval-derivatives events, for each
+  // time step in the simulation.
+  for (const auto& log : events) {
+    ASSERT_GE(log.second.size(), 0u);
+    EventType state = log.second[0];
+    for (const EventType& event : log.second) {
+      ASSERT_TRUE(event >= state);
+      state = event;
+    }
+  }
 }
 
 }  // namespace

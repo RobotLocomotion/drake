@@ -48,7 +48,6 @@ TEST_F(SimpleCarTest, Topology) {
   EXPECT_EQ(systems::kInputPort, input_descriptor.get_face());
   EXPECT_EQ(DrivingCommandIndices::kNumCoordinates,
             input_descriptor.get_size());
-  EXPECT_EQ(systems::kContinuousSampling, input_descriptor.get_sampling());
 
   ASSERT_EQ(1, dut_->get_num_output_ports());
   const auto& output_descriptor = dut_->get_output_ports().at(0);
@@ -56,7 +55,6 @@ TEST_F(SimpleCarTest, Topology) {
   EXPECT_EQ(systems::kOutputPort, output_descriptor.get_face());
   EXPECT_EQ(SimpleCarStateIndices::kNumCoordinates,
             output_descriptor.get_size());
-  EXPECT_EQ(systems::kContinuousSampling, output_descriptor.get_sampling());
 }
 
 TEST_F(SimpleCarTest, Output) {

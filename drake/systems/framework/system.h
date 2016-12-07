@@ -24,7 +24,7 @@ template <typename T>
 struct DiscreteEvent {
   typedef std::function<void(const Context<T>&)> PublishCallback;
   typedef std::function<void(const Context<T>&, DifferenceState<T>*)>
-  UpdateCallback;
+      UpdateCallback;
 
   enum ActionType {
     kUnknownAction = 0,  // A default value that causes the handler to abort.
@@ -158,11 +158,26 @@ class System {
     return context.get_continuous_state()->CopyToVector();
   }
 
-  /// Returns a default context, initialized with the correct
-  /// numbers of concrete input ports and state variables for this System.
-  /// Since input port pointers are not owned by the context, they should
-  /// simply be initialized to nullptr.
-  virtual std::unique_ptr<Context<T>> CreateDefaultContext() const = 0;
+  /// Allocates a context, initialized with the correct numbers of concrete
+  /// input ports and state variables for this System.  Since input port
+  /// pointers are not owned by the context, they should simply be initialized
+  /// to nullptr.
+  virtual std::unique_ptr<Context<T>> AllocateContext() const = 0;
+
+  /// Assigns default values to all elements of the state.
+  virtual void SetDefaultState(Context<T>* context) const = 0;
+
+  /// Assigns default values to all parameters declared in the context.
+  virtual void SetDefaultParameters(Context<T>* context) const = 0;
+
+  /// Allocates a context and sets the state and parameters to their default
+  /// values.
+  std::unique_ptr<Context<T>> CreateDefaultContext() const {
+    std::unique_ptr<Context<T>> context = AllocateContext();
+    SetDefaultState(context.get());
+    SetDefaultParameters(context.get());
+    return context;
+  }
 
   /// Returns a default output, initialized with the correct number of
   /// concrete output ports for this System. @p context is provided as
@@ -375,9 +390,9 @@ class System {
   /// matrix). See the alternate signature if you already have the generalized
   /// velocity in an Eigen VectorX object; this signature will copy the
   /// VectorBase into an Eigen object before performing the computation.
-  void MapVelocityToQDot(
-      const Context<T> &context, const VectorBase<T> &generalized_velocity,
-      VectorBase<T> *qdot) const {
+  void MapVelocityToQDot(const Context<T>& context,
+                         const VectorBase<T>& generalized_velocity,
+                         VectorBase<T>* qdot) const {
     MapVelocityToQDot(context, generalized_velocity.CopyToVector(), qdot);
   }
 
@@ -385,8 +400,8 @@ class System {
   /// generalized configuration (qdot). See alternate signature of
   /// MapVelocityToQDot() for more information.
   void MapVelocityToQDot(
-      const Context<T> &context,
-      const Eigen::Ref<const VectorX<T>> &generalized_velocity,
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       VectorBase<T>* qdot) const {
     DoMapVelocityToQDot(context, generalized_velocity, qdot);
   }
@@ -403,21 +418,18 @@ class System {
   /// already have `qdot` in an Eigen VectorX object; this signature will
   /// copy the VectorBase into an Eigen object before performing the
   /// computation.
-  void MapQDotToVelocity(
-      const Context<T> &context, const VectorBase<T> &qdot,
-      VectorBase<T> *generalized_velocity) const {
-    MapQDotToVelocity(
-        context, qdot.CopyToVector(),
-        generalized_velocity);
+  void MapQDotToVelocity(const Context<T>& context, const VectorBase<T>& qdot,
+                         VectorBase<T>* generalized_velocity) const {
+    MapQDotToVelocity(context, qdot.CopyToVector(), generalized_velocity);
   }
 
   /// Transforms the time derivative of configuration to generalized velocity.
   /// This signature allows using an Eigen VectorX object for faster speed.
   /// See the other signature of MapQDotToVelocity() for additional information.
   void MapQDotToVelocity(
-      const Context<T> &context,
-      const Eigen::Ref<const VectorX<T>> &configuration_derivatives,
-      VectorBase<T> *generalized_velocity) const {
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& configuration_derivatives,
+      VectorBase<T>* generalized_velocity) const {
     DoMapQDotToVelocity(context, configuration_derivatives,
                         generalized_velocity);
   }
@@ -506,23 +518,18 @@ class System {
     input_ports_.emplace_back(descriptor);
   }
 
-  /// Adds a port with the specified @p type, @p size, and @p sampling
-  /// to the input topology.
+  /// Adds a port with the specified @p type and @p size to the input topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareInputPort(PortDataType type, int size,
-                                                  SamplingSpec sampling) {
+  const SystemPortDescriptor<T>& DeclareInputPort(PortDataType type, int size) {
     int port_number = get_num_input_ports();
-    input_ports_.emplace_back(this, kInputPort, port_number, type, size,
-                              sampling);
+    input_ports_.emplace_back(this, kInputPort, port_number, type, size);
     return input_ports_.back();
   }
 
-  /// Adds an abstract-valued port with the specified @p sampling to the
-  /// input topology.
+  /// Adds an abstract-valued port to the input topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareAbstractInputPort(
-      SamplingSpec sampling) {
-    return DeclareInputPort(kAbstractValued, 0 /* size */, sampling);
+  const SystemPortDescriptor<T>& DeclareAbstractInputPort() {
+    return DeclareInputPort(kAbstractValued, 0 /* size */);
   }
 
   /// Adds a port with the specified @p descriptor to the output topology.
@@ -532,23 +539,19 @@ class System {
     output_ports_.emplace_back(descriptor);
   }
 
-  /// Adds a port with the specified @p type, @p size, and @p sampling
-  /// to the output topology.
+  /// Adds a port with the specified @p type and @p size to the output topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareOutputPort(PortDataType type, int size,
-                                                   SamplingSpec sampling) {
+  const SystemPortDescriptor<T>& DeclareOutputPort(PortDataType type,
+                                                   int size) {
     int port_number = get_num_output_ports();
-    output_ports_.emplace_back(this, kOutputPort, port_number, type, size,
-                               sampling);
+    output_ports_.emplace_back(this, kOutputPort, port_number, type, size);
     return output_ports_.back();
   }
 
-  /// Adds an abstract-valued port with the specified @p sampling to the
-  /// output topology.
+  /// Adds an abstract-valued port with to the output topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareAbstractOutputPort(
-      SamplingSpec sampling) {
-    return DeclareOutputPort(kAbstractValued, 0 /* size */, sampling);
+  const SystemPortDescriptor<T>& DeclareAbstractOutputPort() {
+    return DeclareOutputPort(kAbstractValued, 0 /* size */);
   }
 
   /// Returns a mutable Eigen expression for a vector valued output port with
@@ -615,10 +618,9 @@ class System {
   /// the same size as the generalized velocity allocated in
   /// AllocateTimeDerivatives(). Implementations that are not
   /// second-order systems may simply do nothing.
-  virtual void DoMapQDotToVelocity(
-      const Context<T> &context,
-      const Eigen::Ref<const VectorX<T>> &qdot,
-      VectorBase<T> *generalized_velocity) const {
+  virtual void DoMapQDotToVelocity(const Context<T>& context,
+                                   const Eigen::Ref<const VectorX<T>>& qdot,
+                                   VectorBase<T>* generalized_velocity) const {
     // In the particular case where generalized velocity and generalized
     // configuration are not even the same size, we detect this error and abort.
     // This check will thus not identify cases where the generalized velocity
@@ -638,8 +640,8 @@ class System {
    * additional information.
    */
   virtual void DoMapVelocityToQDot(
-      const Context<T> &context,
-      const Eigen::Ref<const VectorX<T>> &generalized_velocity,
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       VectorBase<T>* qdot) const {
     // In the particular case where generalized velocity and generalized
     // configuration are not even the same size, we detect this error and abort.

@@ -82,9 +82,7 @@ TEST_F(PidControllerTest, EvalOutput) {
   ASSERT_NE(nullptr, context_);
   ASSERT_NE(nullptr, output_);
 
-  // Initializes the controllers' context to the default value in which the
-  // integral is zero and evaluates the output.
-  controller_.SetDefaultState(context_.get());
+  // Evaluates the output.
   controller_.EvalOutput(*context_, output_.get());
   ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_vector = output_->get_vector_data(0);
@@ -110,10 +108,7 @@ TEST_F(PidControllerTest, EvalTimeDerivatives) {
   ASSERT_NE(nullptr, context_);
   ASSERT_NE(nullptr, derivatives_);
 
-  // Initializes the controllers' context to the default value in which the
-  // integral is zero and evaluates the derivatives.
-  controller_.SetDefaultState(context_.get());
-
+  // Evaluates the derivatives.
   controller_.EvalTimeDerivatives(*context_, derivatives_.get());
   ASSERT_EQ(3, derivatives_->size());
   ASSERT_EQ(0, derivatives_->get_generalized_position().size());

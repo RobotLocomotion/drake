@@ -87,7 +87,6 @@ class ContactResultTest : public ::testing::Test {
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
     context_->FixInputPort(0, make_unique<BasicVector<double>>(0));
-    plant_->SetZeroConfiguration(context_.get());
     plant_->EvalOutput(*context_.get(), output_.get());
 
     // TODO(SeanCurtis-TRI): This hard-coded value is unfortunate. However,
@@ -161,7 +160,7 @@ TEST_F(ContactResultTest, SingleCollision) {
       CompareMatrices(resultant.get_spatial_force(), expected_spatial_force));
 
   const auto& details = info.get_contact_details();
-  ASSERT_EQ(details.size(), 1);
+  ASSERT_EQ(details.size(), 1u);
   auto detail_force = details[0]->ComputeContactForce();
   ASSERT_TRUE(CompareMatrices(detail_force.get_spatial_force(),
                               expected_spatial_force));
