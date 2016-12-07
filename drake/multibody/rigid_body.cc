@@ -3,8 +3,8 @@
 #include <stdexcept>
 
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "rigid_body_tree.h"
 
 using Eigen::Isometry3d;
 using Eigen::Matrix;
