@@ -535,8 +535,15 @@ void RigidBodyTree<T>::addCollisionElement(
     const string& group_name) {
   auto itr = body_collision_map_.find(&body);
   if (itr == body_collision_map_.end()) {
-    body_collision_map_[&body] = BodyCollisions();
-    itr = body_collision_map_.find(&body);
+    bool success;
+    std::tie(itr, success) =
+        body_collision_map_.insert(std::make_pair(&body, BodyCollisions()));
+    if (!success) {
+      throw std::logic_error(
+          "Unable to add the collision element to the "
+          "body: " +
+          body.get_name() + ".");
+    }
   }
   BodyCollisions& body_collisions = itr->second;
   body_collisions.emplace_back(

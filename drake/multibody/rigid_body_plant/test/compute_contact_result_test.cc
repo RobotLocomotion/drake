@@ -146,10 +146,11 @@ TEST_F(ContactResultTest, SingleCollision) {
   ASSERT_NE(e1, e2);
   ASSERT_TRUE((b1 == body1_ && b2 == body2_) || (b1 == body2_ && b2 == body1_));
 
-  // The direction of the force depends on which body is 1 and which is 2.
-  double force_sign = 1;
-  if (b1 == body1_) {
-    force_sign = -1;
+  // The direction of the force depends on which body is 1 and which is 2. We
+  // assume b1 is body1_, if not, we reverse the sign of the force.
+  double force_sign = -1;
+  if (b2 == body1_) {
+    force_sign = 1;
   }
 
   // Confirms the contact details are as expected.
