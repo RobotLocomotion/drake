@@ -10,17 +10,17 @@ drake_install_pkg_config_file(drake-xml-util
 
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   kinematics_cache.cc
-#  parser_model_instance_id_table.cc
-#  parser_common.cc
-#  parser_sdf.cc
-#  parser_urdf.cc
+  parser_model_instance_id_table.cc
+  parser_common.cc
+  parser_sdf.cc
+  parser_urdf.cc
   rigid_body_tree.cc
   rigid_body.cc
   rigid_body_tree_contact.cc
   rigid_body_actuator.cc
   rigid_body_frame.cc
   rigid_body_loop.cc
-#  rigid_body_tree_construction.cc
+  rigid_body_tree_construction.cc
   $<TARGET_OBJECTS:drakeUtil>)
 target_link_libraries(drakeRBM
   drakeCollision drakeCommon drakeJoints drakeXMLUtil)
