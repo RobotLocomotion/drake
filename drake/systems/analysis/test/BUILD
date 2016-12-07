@@ -50,3 +50,18 @@ cc_test(
         "@gtest//:main",
     ],
 )
+
+cc_test(
+    name = "runge_kutta3_integrator_test",
+    size = "small",
+    srcs = ["runge_kutta3_integrator_test.cc"],
+    linkstatic = 1,
+    deps = [
+        ":my_spring_mass_system",
+        "//drake/common:drake_path",
+        "//drake/math:geometric_transform",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/systems/analysis",
+        "@gtest//:main",
+    ],
+)
