@@ -14,7 +14,7 @@ Bazel Installation
 Refer to the Bazel installation instructions:
 https://bazel.build/versions/master/docs/install.html
 
-We currently develop with Bazel 0.3.1 using Ubuntu Xenial.
+We develop with Bazel 0.3.1 using Ubuntu Trusty, Ubuntu Xenial, and OS X.
 
 Drake clone and platform setup
 ==============================
@@ -28,7 +28,7 @@ The one-time platform setup is the same as with CMake build:
    page.
 
    - Note that **only** the software installation steps are required.
-   - Do not set extra environment variables (Bazel ignores them).
+   - If applicable, you must ``export`` your compiler environment variables.
    - Be sure that **ccache is not on your default $PATH**, e.g.,
      ``env | grep ccache`` is empty.
 
