@@ -7,9 +7,8 @@
 #include "drake/multibody/parser_urdf.h"
 
 // This tests the functionality for classifying geometry in a RigidBodyTree
-// as "anchored".  It confirms that the DrakeCollision::Element exhibits the
-// property and that the corresponding bullet collision element likewise
-// exhibits this property.
+// as "anchored".  It confirms that, after calling RigidBodyTree::compile, the
+// correct collision elements have been flagged as anchored.
 
 namespace drake {
 namespace systems {
@@ -38,8 +37,8 @@ void ExpectAnchored(RigidBody<double>* body, size_t collision_element_num,
   }
 }
 
-// Confirms that parentless links are which are *fixed* to world as a parse
-// setting are marked as anchored from SDF file.
+// Confirms that parentless links, which are specified to be *fixed* to the
+// world by the parser, are marked as anchored from SDF file.
 GTEST_TEST(SdfAnchoredGeometry, ParentlessLinkFixedToWorld) {
   RigidBodyTree<double> tree;
   // NOTE: nullptr for weld_to_frame implies welding to the world frame.
@@ -51,9 +50,8 @@ GTEST_TEST(SdfAnchoredGeometry, ParentlessLinkFixedToWorld) {
   ExpectAnchored(body, 1, true);
 }
 
-
-// Confirms that parentless links are which are *floated* on world as a parse
-// setting are *not* marked as anchored from SDF file.
+// Confirms that parentless links, which are specified to be *floating* to the
+// world by the parser, are *not* marked as anchored from SDF file.
 GTEST_TEST(SdfAnchoredGeometry, ParentlessLinkFloatOnWorld) {
   RigidBodyTree<double> tree;
   // NOTE: nullptr for weld_to_frame implies welding to the world frame.
@@ -80,7 +78,7 @@ GTEST_TEST(SdfAnchoredGeometry, LinkedToAnchoredIsAnchored) {
   ExpectAnchored(body, 1, true);
 }
 
-// Confirms that a body that is rigidly fixed to an anchored body is likewise
+// Confirms that a body that is rigidly fixed to a dynamic body is *not*
 // marked as anchored from SDF file.
 GTEST_TEST(SdfAnchoredGeometry, LinkedToFloatdIsNotAnchored) {
   RigidBodyTree<double> tree;
@@ -95,8 +93,8 @@ GTEST_TEST(SdfAnchoredGeometry, LinkedToFloatdIsNotAnchored) {
   ExpectAnchored(body, 1, false);
 }
 
-// Confirms that parentless links are which are *fixed* to world as a parse
-// setting are marked as anchored from URDF file.
+// Confirms that parentless links, which are specified to be *fixed* to the
+// world by the parser, are marked as anchored from URDF file.
 GTEST_TEST(UrdfAnchoredGeometry, ParentlessLinkFixedToWorld) {
   RigidBodyTree<double> tree;
   // NOTE: nullptr for weld_to_frame implies welding to the world frame.
@@ -108,8 +106,8 @@ GTEST_TEST(UrdfAnchoredGeometry, ParentlessLinkFixedToWorld) {
   ExpectAnchored(body, 1, true);
 }
 
-// Confirms that parentless links are which are *floated* on world as a parse
-// setting are *not* marked as anchored from URDF file.
+// Confirms that parentless links, which are specified to be *floating* to the
+// world by the parser, are *not* marked as anchored from URDF file.
 GTEST_TEST(UrdfAnchoredGeometry, ParentlessLinkFloatOnWorld) {
   RigidBodyTree<double> tree;
   // NOTE: nullptr for weld_to_frame implies welding to the world frame.
@@ -136,7 +134,7 @@ GTEST_TEST(UrdfAnchoredGeometry, LinkedToAnchoredIsAnchored) {
   ExpectAnchored(body, 1, true);
 }
 
-// Confirms that a body that is rigidly fixed to an anchored body is likewise
+// Confirms that a body that is rigidly fixed to a dyanmic body is *not*
 // marked as anchored from URDF file.
 GTEST_TEST(UrdfAnchoredGeometry, LinkedToFloatdIsNotAnchored) {
   RigidBodyTree<double> tree;
