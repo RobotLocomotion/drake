@@ -67,16 +67,18 @@ int DoMain() {
 
   lcm::DrakeLcm lcm;
 
-  auto plant_visualizer_diagram = BuildPlantAndVisualizerDiagram(
-      iiwa_world->GetRigidBodyTree(), 4500 /* penetration_stiffness */,
-      1.0 /* penetration_damping */, 1.0 /* contact friction */, &lcm);
+  std::unique_ptr<VisualizedPlant<double>> visualized_plant =
+      std::make_unique<VisualizedPlant<double>>(
+          iiwa_world->Build(), 4500 /* penetration_stiffness */,
+          1.0 /* penetration_damping */, 1.0 /* contact friction */, &lcm);
 
-  auto demo_diagram =
-      BuildConstantSourceToPlantDiagram(std::move(plant_visualizer_diagram));
+  std::unique_ptr<PassiveVisualizedPlant<double>> demo_plant =
+      std::make_unique<PassiveVisualizedPlant<double>>(
+          std::move(visualized_plant));
 
-  auto simulator = std::make_unique<systems::Simulator<double>>(*demo_diagram);
+  auto simulator = std::make_unique<systems::Simulator<double>>(*demo_plant);
 
-  SetZeroConfiguration(simulator.get(), demo_diagram.get());
+  demo_plant->SetDefaultState(simulator->get_mutable_context());
 
   simulator->Initialize();
 

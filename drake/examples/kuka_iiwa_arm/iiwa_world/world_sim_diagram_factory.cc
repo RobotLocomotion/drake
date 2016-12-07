@@ -25,99 +25,68 @@ using systems::RigidBodyPlant;
 using systems::Simulator;
 using systems::System;
 
-
 namespace examples {
 namespace kuka_iiwa_arm {
 
-std::unique_ptr<Diagram<double>> BuildPlantAndVisualizerDiagram(
-    std::unique_ptr<RigidBodyTree<double>> rigid_body_tree,
+template <typename T>
+VisualizedPlant<T>::VisualizedPlant(
+    std::unique_ptr<RigidBodyTree<T>> rigid_body_tree,
     double penetration_stiffness, double penetration_damping,
-    double friction_coefficient, DrakeLcmInterface* lcm) {
-  std::unique_ptr<DiagramBuilder<double>> builder{
-      std::make_unique<DiagramBuilder<double>>()};
+    double friction_coefficient, lcm::DrakeLcmInterface* lcm) {
+  DiagramBuilder<T> builder;
 
-  auto plant = builder->template AddSystem<RigidBodyPlant<double>>(
-      std::move(rigid_body_tree));
+  rigid_body_plant_ =
+      builder.template AddSystem<RigidBodyPlant<T>>(std::move(rigid_body_tree));
 
-  DRAKE_DEMAND(plant != nullptr);
-  plant->set_contact_parameters(penetration_stiffness, penetration_damping,
-                                friction_coefficient);
+  DRAKE_DEMAND(rigid_body_plant_ != nullptr);
+  rigid_body_plant_->set_contact_parameters(
+      penetration_stiffness, penetration_damping, friction_coefficient);
 
-  DRAKE_DEMAND(plant->get_num_actuators() > 0);
+  DRAKE_DEMAND(rigid_body_plant_->get_num_actuators() > 0);
 
   // Creates and adds a DrakeVisualizer publisher.
-  auto viz_publisher_ = builder->template AddSystem<DrakeVisualizer>(
-      plant->get_rigid_body_tree(), lcm);
+  auto viz_publisher_ = builder.template AddSystem<DrakeVisualizer>(
+      rigid_body_plant_->get_rigid_body_tree(), lcm);
 
   // Connects the plant to the publisher for visualization.
-  builder->Connect(plant->get_output_port(0),
-                   viz_publisher_->get_input_port(0));
+  builder.Connect(rigid_body_plant_->get_output_port(0),
+                  viz_publisher_->get_input_port(0));
 
   // Exposes output and input ports of the Diagram.
-  builder->ExportOutput(plant->get_output_port(0));
-  builder->ExportInput(plant->get_input_port(0));
+  builder.ExportOutput(rigid_body_plant_->get_output_port(0));
+  builder.ExportInput(rigid_body_plant_->get_input_port(0));
 
   drake::log()->debug("Plant and visualizer Diagram built...");
 
-  return builder->Build();
+  builder.BuildInto(this);
 }
+template class VisualizedPlant<double>;
 
-std::unique_ptr<systems::Diagram<double>> BuildConstantSourceToPlantDiagram(
-    std::unique_ptr<systems::Diagram<double>> plant_visualizer_diagram) {
+template <typename T>
+PassiveVisualizedPlant<T>::PassiveVisualizedPlant(
+    std::unique_ptr<VisualizedPlant<T>> visualized_plant) {
   // Sets up a builder for the demo.
-  std::unique_ptr<drake::systems::DiagramBuilder<double>> source_plant_builder{
-      std::make_unique<drake::systems::DiagramBuilder<double>>()};
+  DiagramBuilder<T> builder;
 
-  const int num_inputs = plant_visualizer_diagram->get_input_port(0).get_size();
-  auto plant_visualizer_diagram_ptr = source_plant_builder->template AddSystem(
-      std::move(plant_visualizer_diagram));
+  const int num_inputs = visualized_plant->get_input_port(0).get_size();
+  visualized_plant_ = builder.template AddSystem<VisualizedPlant<T>>(
+      std::move(visualized_plant));
 
   // Instantiates a constant source that outputs a vector of zeros.
   VectorX<double> constant_value(num_inputs);
   constant_value.setZero();
 
-  auto const_source_ =
-      source_plant_builder
-          ->template AddSystem<systems::ConstantVectorSource<double>>(
-              constant_value);
+  constant_vector_source_ =
+      builder.template AddSystem<systems::ConstantVectorSource<T>>(
+          constant_value);
 
   // Cascades the constant source to the plant and visualizer diagram. This
   // effectively results in the robot being uncontrolled.
-  source_plant_builder->Cascade(*const_source_, *plant_visualizer_diagram_ptr);
+  builder.Cascade(*constant_vector_source_, *visualized_plant_);
 
-  return source_plant_builder->Build();
+  builder.BuildInto(this);
 }
-
-void SetZeroConfiguration(Simulator<double>* simulator,
-                          const Diagram<double>* demo_diagram) {
-  DRAKE_DEMAND(simulator != nullptr && demo_diagram != nullptr);
-
-  std::vector<const systems::System<double>*> demo_systems =
-      demo_diagram->GetSystems();
-
-  const Diagram<double>* plant_and_visualizer_diagram =
-      dynamic_cast<const systems::Diagram<double>*>(demo_systems.at(0));
-  DRAKE_DEMAND(plant_and_visualizer_diagram != nullptr);
-
-  std::vector<const System<double>*> plant_and_visualizer_subsystems =
-      plant_and_visualizer_diagram->GetSystems();
-
-  const RigidBodyPlant<double>* rigid_body_plant =
-      dynamic_cast<const RigidBodyPlant<double>*>(
-          plant_and_visualizer_subsystems.at(0));
-  DRAKE_DEMAND(rigid_body_plant != nullptr);
-
-  Context<double>* input_diagram_context =
-      demo_diagram->GetMutableSubsystemContext(simulator->get_mutable_context(),
-                                               plant_and_visualizer_diagram);
-  DRAKE_DEMAND(plant_and_visualizer_diagram != nullptr);
-
-  Context<double>* plant_context =
-      plant_and_visualizer_diagram->GetMutableSubsystemContext(
-          input_diagram_context, rigid_body_plant);
-
-  rigid_body_plant->SetDefaultState(plant_context);
-}
+template class PassiveVisualizedPlant<double>;
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
