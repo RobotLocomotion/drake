@@ -51,10 +51,8 @@ void Ball<T>::EvalTimeDerivatives(
       derivatives->get_mutable_vector();
   DRAKE_ASSERT(new_derivatives != nullptr);
 
-  const double g{9.81};  // gravity.
-
   new_derivatives->SetAtIndex(0, state.GetAtIndex(1));
-  new_derivatives->SetAtIndex(1, T{-g});
+  new_derivatives->SetAtIndex(1, T(get_gravitational_acceleration()));
 }
 
 template <typename T>

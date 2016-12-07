@@ -34,6 +34,31 @@ class BouncingBall : public Ball<T> {
   /// Constructor for the BouncingBall system.
   BouncingBall();
 
+  void DoCalcNextUpdateTime(const systems::Context<T>& context,
+                            systems::UpdateActions<T>* actions) const override;
+
+  void DoUpdateUnrestricted(systems::Context<T>* context) const override;
+
+  /// Calculates the closed form solution of the height of the bouncing ball
+  /// at the given time, assuming that the initial velocity is zero. Only works
+  /// for restricted restitution cases { 0, 1 }.
+  /// @p x0 the height of the ball at the initial time.
+  /// @p tf the desired time for which the height should be returned.
+  /// @returns the height of the ball at time tf.
+  /// @throws std::logic_error if restitution is a value other than zero or one.
+  T CalcClosedFormHeight(const T x0, const T tf);
+
+  /// Calculates the closed form solution of the velocity of the bouncing ball
+  /// at the given time, assuming that the initial velocity is zero. Only works
+  /// for restricted restitution cases { 0, 1 }.
+  /// @p x0 the height of the ball at the initial time.
+  /// @p tf the desired time for which the velocity should be returned.
+  /// @returns the velocity of the ball at time tf. *If tf corresponds to an
+  ///          impact time, the velocity of the ball after the collision will
+  ///          be returned.
+  /// @throws std::logic_error if restitution is a value other than zero or one.
+  T CalcClosedFormVelocity(const T x0, const T tf);
+
   /// TODO(jadecastro): This is a prototype implementation to be overridden from
   /// the system API, pending further discussions.
   ///
@@ -51,10 +76,20 @@ class BouncingBall : public Ball<T> {
   void PerformReset(systems::Context<T>* context) const;
 
   /// Getter for the coefficient of restitution for this model.
-  double GetRestitutionCoef() const { return restitution_coef_; }
+  double get_restitution_coef() const { return restitution_coef_; }
 
  private:
-  const double restitution_coef_ = 0.8;  // coefficient of restitution
+  const double restitution_coef_ = 1.0;  // Coefficient of restitution.
+
+  // Numerically intolerant signum function.
+  static T sgn(T x) {
+    if (x > 0.0)
+      return 1.0;
+    else if (x < 0.0)
+      return -1.0;
+    else
+      return 0.0;
+  }
 };
 
 }  // namespace bouncing_ball

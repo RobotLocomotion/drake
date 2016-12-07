@@ -372,6 +372,8 @@ void Simulator<T>::Initialize() {
  * 3. Integrate the smooth system (the ODE or DAE)
  * 4. Perform post-step stabilization for DAEs (if desired).
  * @param boundary_time The time to advance the context to.
+ * @pre The simulation state is valid  (i.e., no discrete updates or state
+ *      projections are necessary) at the present time.
  */
 template <typename T>
 void Simulator<T>::StepTo(const T& boundary_time) {
@@ -385,7 +387,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
   // Integrate until desired interval has completed.
   UpdateActions<T> update_actions;
-  while (context_->get_time() <= boundary_time) {
+  while (context_->get_time() < boundary_time || sample_time_hit) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
     SPDLOG_TRACE(log(), "Starting a simulation step at {}", step_start_time);
@@ -393,21 +395,35 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // Delay to match target realtime rate if requested and possible.
     PauseIfTooFast();
 
+    // Indicate no publishing has occurred on this step.
+    bool published = false;
+
     // First take any necessary discrete actions.
     if (sample_time_hit) {
+      // Do unrestricted updates first.
       for (const DiscreteEvent<T>& event : update_actions.events) {
         switch (event.action) {
           case DiscreteEvent<T>::kUpdateUnrestrictedAction: {
             system_.UpdateUnrestricted(context_.get(), event);
+            ++num_updates_;
             break;
+
+            // Do nothing for these cases *now*.
+            case DiscreteEvent<T>::kUpdateAction:
+            case DiscreteEvent<T>::kPublishAction:
+              break;
+
+            case DiscreteEvent<T>::kUnknownAction:
+              throw std::logic_error("kUnknownAction encountered.");
           }
-          case DiscreteEvent<T>::kPublishAction: {
-            system_.Publish(*context_, event);
-            ++num_publishes_;
-            break;
-          }
+        }
+      }
+
+      // Do restricted (discrete variable) updates next.
+      for (const DiscreteEvent<T>& event : update_actions.events) {
+        switch (event.action) {
           case DiscreteEvent<T>::kUpdateAction: {
-            DifferenceState<T>* xd = context_->get_mutable_difference_state();
+            DifferenceState<T> *xd = context_->get_mutable_difference_state();
             // Systems with discrete update events must have difference state.
             DRAKE_DEMAND(xd != nullptr);
             // First, compute the discrete updates into a temporary buffer.
@@ -415,19 +431,43 @@ void Simulator<T>::StepTo(const T& boundary_time) {
                                           discrete_updates_.get());
             // Then, write them back into the context.
             xd->CopyFrom(*discrete_updates_);
+            ++num_updates_;
             break;
           }
-          default: {
-            DRAKE_ABORT_MSG("Unknown DiscreteEvent action.");
+
+          // Do nothing for these cases *now*.
+          case DiscreteEvent<T>::kUpdateUnrestrictedAction:
+          case DiscreteEvent<T>::kPublishAction:
+          case DiscreteEvent<T>::kUnknownAction:
             break;
-          }
         }
       }
-      ++num_updates_;
+
+      // Do any publishes last.
+      for (const DiscreteEvent<T>& event : update_actions.events) {
+        switch (event.action) {
+          case DiscreteEvent<T>::kPublishAction: {
+            system_.Publish(*context_, event);
+            published = true;
+            ++num_publishes_;
+            break;
+          }
+
+          // Do nothing for these cases *now*.
+          case DiscreteEvent<T>::kUpdateUnrestrictedAction:
+          case DiscreteEvent<T>::kUpdateAction:
+          case DiscreteEvent<T>::kUnknownAction:
+            break;
+        }
+
+        // No reason to publish twice.
+        if (published)
+          break;
+      }
     }
 
     // Allow System a chance to produce some output.
-    if (get_publish_every_time_step()) {
+    if (!published && get_publish_every_time_step()) {
       system_.Publish(*context_);
       ++num_publishes_;
     }
@@ -454,9 +494,13 @@ void Simulator<T>::StepTo(const T& boundary_time) {
       }
     }
 
+    // Get the dt that gets to the boundary time.
+    const T boundary_dt = boundary_time - step_start_time;
+
     // Attempt to integrate.
     typename IntegratorBase<T>::StepResult result =
-        integrator_->StepOnceAtMost(next_publish_dt, next_update_dt);
+        integrator_->StepOnceAtMost(next_publish_dt, next_update_dt,
+                                    boundary_dt);
     switch (result) {
       case IntegratorBase<T>::kReachedUpdateTime:
       case IntegratorBase<T>::kReachedPublishTime:
@@ -464,6 +508,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
         break;
 
       case IntegratorBase<T>::kTimeHasAdvanced:
+      case IntegratorBase<T>::kReachedBoundaryTime:
         sample_time_hit = false;
         break;
 

@@ -40,6 +40,10 @@ class Ball : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
+  /// Gets the signed acceleration due to gravity. Since initial positions
+  /// correspond to heights, acceleration should be negative.
+  double get_gravitational_acceleration() const { return -9.81; }
+
  protected:
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
     const override;
