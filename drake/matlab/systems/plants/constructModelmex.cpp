@@ -437,8 +437,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     //    model->frames[frame_A_ind]->name << ", frame_B = " <<
     //    model->frames[frame_B_ind]->name << endl;
     model->loops.push_back(RigidBodyLoop<double>(
-        model->frames[frame_A_ind],
-        model->frames[frame_B_ind], axis));
+        model->frames[frame_A_ind], model->frames[frame_B_ind], axis));
   }
 
   // ACTUATORS

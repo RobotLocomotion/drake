@@ -88,11 +88,13 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
 
   for (Side side : Side::values) {
     foot_ft_sensor_info[side] =
-        RigidBodyFrame<double>(foot_names[side] + "FTSensor",
-                       tree.FindBody(foot_names[side]), foot_ft_sensor_offset);
+        RigidBodyFrame<double>(
+            foot_names[side] + "FTSensor",
+            tree.FindBody(foot_names[side]), foot_ft_sensor_offset);
     hand_ft_sensor_info[side] =
-        RigidBodyFrame<double>(hand_names[side] + "FTSensor",
-                       tree.FindBody(hand_names[side]), hand_ft_sensor_offset);
+        RigidBodyFrame<double>(
+            hand_names[side] + "FTSensor",
+            tree.FindBody(hand_names[side]), hand_ft_sensor_offset);
     force_torque_sensor_info.push_back(foot_ft_sensor_info[side]);
     force_torque_sensor_info.push_back(hand_ft_sensor_info[side]);
   }

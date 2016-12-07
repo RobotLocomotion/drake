@@ -49,6 +49,9 @@ std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,
     const Eigen::Ref<const Eigen::MatrixXd>& N) {
+  DRAKE_DEMAND(system.time_period() == 0.0);
+  // TODO(russt): Support discrete-time systems.
+
   const int num_states = system.B().rows(), num_inputs = system.B().cols();
 
   LinearQuadraticRegulatorResult lqr_result =
@@ -74,6 +77,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
   const int num_inputs = system.get_input_port(0).get_size(),
             num_states = context.get_continuous_state()->size();
   DRAKE_DEMAND(num_states > 0);
+  DRAKE_DEMAND(context.has_only_continuous_state());
   // TODO(russt): Confirm behavior if Q is not PSD.
 
   auto linear_system = Linearize(system, context);
