@@ -7,6 +7,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/multibody/collision/collision_filter.h"
 #include "drake/multibody/shapes/drake_shapes.h"
 
 // Forward declaration.
@@ -129,6 +130,16 @@ class Element : public DrakeShapes::Element {
   /** Sets the `RigidBody` this collision element is attached to. **/
   void set_body(const RigidBody<double> *body);
 
+  /** Sets the collision filter state of the element. */
+  void setCollisionFilter(const DrakeCollision::bitmask& group,
+                          const DrakeCollision::bitmask& ignores);
+
+  /** Sets the groups that this element belongs to. */
+  void setCollisionFilterGroup(const DrakeCollision::bitmask& group);
+
+  /** Sets the groups that this element ignores. */
+  void setCollisionFilterIgnores(const DrakeCollision::bitmask& ignores);
+
   /**
    * A toString method for this class.
    */
@@ -160,6 +171,16 @@ class Element : public DrakeShapes::Element {
   // requires the entries in CollisionElement::collision_cliques_ to be sorted.
   // By arbitrary convention, the ordering is monotonically increasing.
   std::vector<int> collision_cliques_;
+
+  // A bitmask that determines the collision groups that this rigid body is part
+  // of. If the i-th bit is set this rigid body belongs to the i-th collision
+  // group. A rigid body can belong to several collision groups.
+  DrakeCollision::bitmask collision_filter_group_;
+
+  // A bitmask that determines which collision groups this rigid body does not
+  // collide with. Thus, if the i-th bit is set this rigid body is not checked
+  // for collisions with bodies in the i-th group.
+  DrakeCollision::bitmask collision_filter_ignores_;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

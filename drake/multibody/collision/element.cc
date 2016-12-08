@@ -11,26 +11,34 @@ using std::ostream;
 namespace DrakeCollision {
 
 Element::Element()
-    : DrakeShapes::Element(Eigen::Isometry3d::Identity()), body_(nullptr) {
+    : DrakeShapes::Element(Eigen::Isometry3d::Identity()), body_(nullptr),
+      collision_filter_group_(DrakeCollision::DEFAULT_GROUP),
+      collision_filter_ignores_(DrakeCollision::NONE_MASK) {
   id = (ElementId) this;
 }
 
 Element::Element(const DrakeShapes::Geometry& geometry,
                  const Isometry3d& T_element_to_local)
-    : DrakeShapes::Element(geometry, T_element_to_local), body_(nullptr) {
+    : DrakeShapes::Element(geometry, T_element_to_local), body_(nullptr),
+      collision_filter_group_(DrakeCollision::DEFAULT_GROUP),
+      collision_filter_ignores_(DrakeCollision::NONE_MASK) {
   id = (ElementId) this;
 }
 
 Element::Element(const Isometry3d& T_element_to_link,
                  const RigidBody<double>* body)
-    : DrakeShapes::Element(T_element_to_link), body_(body) {
+    : DrakeShapes::Element(T_element_to_link), body_(body),
+      collision_filter_group_(DrakeCollision::DEFAULT_GROUP),
+      collision_filter_ignores_(DrakeCollision::NONE_MASK) {
   id = (ElementId) this;
 }
 
 Element::Element(const DrakeShapes::Geometry& geometry,
                  const Isometry3d& T_element_to_link,
                  const RigidBody<double>* body)
-    : DrakeShapes::Element(geometry, T_element_to_link), body_(body) {
+    : DrakeShapes::Element(geometry, T_element_to_link), body_(body),
+      collision_filter_group_(DrakeCollision::DEFAULT_GROUP),
+      collision_filter_ignores_(DrakeCollision::NONE_MASK) {
   id = (ElementId) this;
 }
 
@@ -42,7 +50,9 @@ Element::Element(const Element& other)
       id(reinterpret_cast<ElementId>(this)),
       is_anchored_(other.is_anchored_),
       body_(other.body_),
-      collision_cliques_(other.collision_cliques_) {}
+      collision_cliques_(other.collision_cliques_),
+      collision_filter_group_(other.collision_filter_group_),
+      collision_filter_ignores_(other.collision_filter_ignores_) {}
 
 Element* Element::clone() const { return new Element(*this); }
 
@@ -52,11 +62,21 @@ const RigidBody<double>* Element::get_body() const { return body_; }
 
 void Element::set_body(const RigidBody<double> *body) { body_ = body; }
 
-bool Element::CanCollideWith(const Element *other) const {
-  // If collision_cliques_.size() = N and other->collision_cliques_.size() = M
-  // The worst case (overlapping elements without intersection) is O(N+M).
-  return !SortedVectorsHaveIntersection(collision_cliques_,
-                                        other->collision_cliques_);
+bool Element::CanCollideWith(const Element* other) const {
+  // Determines if the elements filter each other via filter *groups*. The
+  // pair is *excluded* from consideration if this element's group is ignored
+  // by the other, or the other's group is ignored by this element.
+  bool excluded =
+      (collision_filter_group_ & other->collision_filter_ignores_).any() ||
+      (other->collision_filter_group_ & collision_filter_ignores_).any();
+  if (!excluded) {
+    // Group filtering didn't exclude the pair, try cliques.
+    // If collision_cliques_.size() = N and other->collision_cliques_.size() = M
+    // The worst case (overlapping elements without intersection) is O(N+M).
+    return !SortedVectorsHaveIntersection(collision_cliques_,
+                                          other->collision_cliques_);
+  }
+  return false;
 }
 
 void Element::AddToCollisionClique(int clique_id) {
@@ -78,6 +98,21 @@ int Element::get_num_cliques() const {
 
 const std::vector<int>& Element::collision_cliques() const {
   return collision_cliques_;
+}
+
+void Element::setCollisionFilter(const DrakeCollision::bitmask& group,
+                                 const DrakeCollision::bitmask& ignores) {
+  setCollisionFilterGroup(group);
+  setCollisionFilterIgnores(ignores);
+}
+
+void Element::setCollisionFilterGroup(const DrakeCollision::bitmask& group) {
+  collision_filter_group_ = group;
+}
+
+void Element::setCollisionFilterIgnores(
+    const DrakeCollision::bitmask& ignores) {
+  collision_filter_ignores_ = ignores;
 }
 
 ostream& operator<<(ostream& out, const Element& ee) {

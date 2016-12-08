@@ -423,6 +423,13 @@ class RigidBody {
   // A bitmask that determines the collision groups that this rigid body is part
   // of. If the i-th bit is set this rigid body belongs to the i-th collision
   // group. A rigid body can belong to several collision groups.
+  //
+  // This data structure does not *directly* contribute to collision filter.
+  // The body stores this data because collision filter groups are defined
+  // with respect to bodies.  However, the collision filtering functionality
+  // belongs to the DrakeCollision::Element.  If a new Element gets added to
+  // a body, it learns its collision filter groups from this cached data.
+  // Same for RigidBody::collision_filter_ignores_.
   DrakeCollision::bitmask collision_filter_group_;
 
   // A bitmask that determines which collision groups this rigid body does not
