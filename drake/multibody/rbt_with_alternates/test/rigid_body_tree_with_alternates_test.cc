@@ -8,12 +8,16 @@
 #include <utility>
 
 using drake::AutoDiffXd;
+using drake::RigidBodyTreeWithAlternates;
 
 using std::complex;
 using std::cout;
 using std::endl;
 using std::unique_ptr;
 using std::make_unique;
+
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
 
 int main() {
   // Fill in the "MultibodyTree" first.
@@ -31,12 +35,29 @@ int main() {
 
   // Create some alternate instantiations of MBSystem (kept within the
   // fundamental system).
+  // Adds double alternate so that I can request it below.
+  RigidBodyTreeWithAlternates<double>::AddAlternate(tree_with_alternates);
   RigidBodyTreeWithAlternates<AutoDiffXd>::AddAlternate(tree_with_alternates);
+
+  cout << "num alternates=" << tree_with_alternates.get_num_alternates() << endl;
+
+  //const auto& tree_double = tree_with_alternates.get_rigid_body_tree();
+  const auto& tree_double =
+      tree_with_alternates.get_alternate<double>().get_rigid_body_tree();
+  const auto& tree_dynamics_autodiff =
+      tree_with_alternates.get_alternate<AutoDiffXd>().get_rigid_body_tree();
+
+  PRINT_VAR(tree_with_alternates.get_alternate<double>().type());
+  PRINT_VAR(tree_with_alternates.get_alternate<AutoDiffXd>().type());
+
+  PRINT_VAR(tree_double.get_num_bodies());
+  PRINT_VAR(tree_dynamics_autodiff.get_num_bodies());
+
 
 #if 0
   MBSystem<float>::AddAlternate(sys);
 
-  cout << "num alternates=" << sys.get_num_alternates() << endl;
+
 
   // Stuff happens using the fundamental system, then at some point we decide
   // we want one of the alternate instantiations.
