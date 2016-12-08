@@ -45,4 +45,7 @@ class PiecewiseFunction {
   void checkScalarValued() const;
 
   PiecewiseFunction();
+
+ private:
+  size_t GetSegmentIndexRecursive(double time, size_t start, size_t end) const;
 };

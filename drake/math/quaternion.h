@@ -14,6 +14,26 @@
 
 namespace drake {
 namespace math {
+
+/**
+ * @Returns a quaternion that represents the same orientation as `q1`,
+ * and is the "closest" to `q0`.
+ */
+template <typename Scalar>
+const Eigen::Quaternion<Scalar> ClosetQuaternion(
+    const Eigen::Quaternion<Scalar>& q0,
+    const Eigen::Quaternion<Scalar>& q1) {
+  Eigen::Quaternion<Scalar> q = q1;
+  if (q0.dot(q) < 0) {
+    q.w() *= -1;
+    q.x() *= -1;
+    q.y() *= -1;
+    q.z() *= -1;
+  }
+  q.normalize();
+  return q;
+}
+
 template <typename Derived>
 Vector4<typename Derived::Scalar> quatConjugate(
     const Eigen::MatrixBase<Derived>& q) {
