@@ -23,6 +23,7 @@ cc_test(
     deps = DEPS + [
         "//drake/common:autodiff",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:extract_double",
     ],
 )
 
@@ -78,6 +79,15 @@ cc_test(
     size = "small",
     srcs = ["eigen_stl_types_test.cc"],
     deps = DEPS,
+)
+
+cc_test(
+    name = "extract_double_test",
+    size = "small",
+    srcs = ["extract_double_test.cc"],
+    deps = DEPS + [
+        "//drake/common:extract_double",
+    ],
 )
 
 cc_test(
