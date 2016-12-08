@@ -19,7 +19,7 @@ class RoadGeometry;
 /// An implementation of LaneEndSet.
 class LaneEndSet : public api::LaneEndSet {
  public:
-  /// Add a LaneEnd.
+  /// Adds a LaneEnd.
   void add(const api::LaneEnd& end) { ends_.push_back(end); }
 
   virtual ~LaneEndSet() {}
@@ -36,16 +36,16 @@ class LaneEndSet : public api::LaneEndSet {
 /// An implementation of BranchPoint.
 class BranchPoint : public api::BranchPoint {
  public:
-  /// Construct an empty BranchPoint.
+  /// Constructs an empty BranchPoint.
   BranchPoint(const api::BranchPointId& id, RoadGeometry* rg);
 
-  /// Add a LaneEnd to the "A side" of the BranchPoint.
+  /// Adds a LaneEnd to the "A side" of the BranchPoint.
   const api::LaneEnd& AddABranch(const api::LaneEnd& lane_end);
 
-  /// Add a LaneEnd to the "B side" of the BranchPoint.
+  /// Adds a LaneEnd to the "B side" of the BranchPoint.
   const api::LaneEnd& AddBBranch(const api::LaneEnd& lane_end);
 
-  /// Set the default branch for @p lane_end to @p default_branch.
+  /// Sets the default branch for @p lane_end to @p default_branch.
   ///
   /// The specified LaneEnds must belong to opposite sides of this BranchPoint.
   void SetDefault(const api::LaneEnd& lane_end,
