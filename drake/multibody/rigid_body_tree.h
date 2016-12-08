@@ -86,12 +86,13 @@ class RigidBodyTree {
   static const int kWorldBodyIndex;
 
   RigidBodyTree(const RigidBodyTree<double>& fundamental) {
+    a_grav = fundamental.a_grav;
+    B = fundamental.B;
     for (const auto& body: fundamental.bodies) {
-      (void) body;
-      // replace by CloneFrom (*body)
-      auto new_body = std::make_unique<RigidBody<T>>();
+      auto new_body = RigidBody<T>::CloneFrom(*body);
       this->add_rigid_body(std::move(new_body));
     }
+    //this->compile();
   }
 
   /// A constructor that initializes the gravity vector to be [0, 0, -9.81] and

@@ -1,6 +1,10 @@
 #include "drake/multibody/rbt_with_alternates/rigid_body_tree_with_alternates.h"
 
+#include "drake/common/drake_path.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/parser_sdf.h"
+#include "drake/multibody/parser_urdf.h"
 
 #include <cstdio>
 #include <iostream>
@@ -22,6 +26,11 @@ using std::make_unique;
 int main() {
   // Fill in the "MultibodyTree" first.
   auto tree = make_unique<RigidBodyTree<double>>();
+
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
+      tree.get());
 
 #if 0
   tree->AddJoint(make_unique<PinJoint<double>>(1.1));
@@ -53,6 +62,8 @@ int main() {
   PRINT_VAR(tree_double.get_num_bodies());
   PRINT_VAR(tree_dynamics_autodiff.get_num_bodies());
 
+  PRINT_VAR(tree_double.get_num_positions());
+  PRINT_VAR(tree_dynamics_autodiff.get_num_positions());
 
 #if 0
   MBSystem<float>::AddAlternate(sys);

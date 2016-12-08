@@ -9,6 +9,7 @@
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/drake_assert.h"
 #include "drake/math/gradient.h"
 #include "drake/multibody/joints/floating_base_types.h"
 
@@ -52,7 +53,11 @@
                                                                              \
   virtual Eigen::Matrix<Scalar, Eigen::Dynamic, 1> frictionTorque(           \
       const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& v)   \
-      const = 0;
+      const = 0;                                                             \
+                                                                             \
+  virtual DrakeJoint* DoCloneTo(const Scalar&) {                             \
+      DRAKE_ABORT_MSG("No implementation provided.");                        \
+  }
 
 /**
  * A joint defines a spatial relationship between two rigid bodies.
@@ -100,6 +105,11 @@ class DrakeJoint {
    * The destructor.
    */
   virtual ~DrakeJoint();
+
+  template <typename ToScalar>
+  DrakeJoint* CloneTo() {
+    return DoCloneTo(ToScalar());
+  }
 
   /**
    * Returns the transform `T_PF` giving the pose of the joint's "fixed" frame

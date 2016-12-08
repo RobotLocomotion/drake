@@ -1,8 +1,10 @@
 #pragma once
 
 #include <set>
+#include <string>
 
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rbt_with_alternates/object_with_alternates.h"
 
@@ -27,7 +29,7 @@ class RigidBodyTreeWithAlternates :
       : Super(fundamental), tree_(new RigidBodyTree<T>(*fundamental.tree_)) {}
 
   // For demo purposes, report the name of the scalar type here.
-  const char *type() const { return typeid(T).name(); }
+  std::string type() const { return NiceTypeName::Get<T>(); }
 
   // Return interesting concrete System-specific stuff.
   const RigidBodyTree<T> &get_rigid_body_tree() const { return *tree_; }
