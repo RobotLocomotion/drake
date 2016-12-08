@@ -23,7 +23,7 @@ namespace systems {
 template <typename T>
 struct DiscreteEvent {
   typedef std::function<void(const Context<T>&)> PublishCallback;
-  typedef std::function<void(const Context<T>&, DifferenceState<T>*)>
+  typedef std::function<void(const Context<T>&, DiscreteState<T>*)>
       UpdateCallback;
 
   enum ActionType {
@@ -40,7 +40,7 @@ struct DiscreteEvent {
   PublishCallback do_publish{nullptr};
 
   /// An optional callback, supplied by the recipient, to carry out a
-  /// kUpdateAction. If nullptr, DoEvalDifferenceUpdates will be used.
+  /// kUpdateAction. If nullptr, DoEvalDiscreteVariableUpdates() will be used.
   UpdateCallback do_update{nullptr};
 };
 
@@ -224,16 +224,17 @@ class System {
 
   /// This method is called to update discrete variables in the @p context
   /// because the given @p event has arrived.  Dispatches to
-  /// DoEvalDifferenceUpdates by default, or to `event.do_update` if provided.
-  void EvalDifferenceUpdates(const Context<T>& context,
-                             const DiscreteEvent<T>& event,
-                             DifferenceState<T>* difference_state) const {
+  /// DoEvalDiscreteVariableUpdates by default, or to `event.do_update` if
+  /// provided.
+  void EvalDiscreteVariableUpdates(const Context<T> &context,
+                                   const DiscreteEvent<T> &event,
+                                   DiscreteState<T> *discrete_state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUpdateAction);
     if (event.do_update == nullptr) {
-      DoEvalDifferenceUpdates(context, difference_state);
+      DoEvalDiscreteVariableUpdates(context, discrete_state);
     } else {
-      event.do_update(context, difference_state);
+      event.do_update(context, discrete_state);
     }
   }
 
@@ -305,12 +306,12 @@ class System {
     return nullptr;
   }
 
-  /// Returns a DifferenceState of the same dimensions as the difference_state
+  /// Returns a DiscreteState of the same dimensions as the discrete_state
   /// allocated in CreateDefaultContext. The simulator will provide this state
   /// as the output argument to Update.
   /// By default, allocates nothing. Systems with discrete state variables
   /// should override.
-  virtual std::unique_ptr<DifferenceState<T>> AllocateDifferenceVariables()
+  virtual std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables()
       const {
     return nullptr;
   }
@@ -577,15 +578,15 @@ class System {
   /// been validated before it is passed to you here.
   virtual void DoPublish(const Context<T>& context) const {}
 
-  /// Updates the @p difference_state on sample events.
+  /// Updates the @p discrete_state on sample events.
   /// Override it, along with DoCalcNextUpdateTime, if your System has any
-  /// difference variables.
+  /// discrete variables.
   ///
-  /// @p difference_state is not a pointer into @p context. It is a separate
+  /// @p discrete_state is not a pointer into @p context. It is a separate
   /// buffer, which the Simulator is responsible for writing back to the @p
   /// context later.
-  virtual void DoEvalDifferenceUpdates(
-      const Context<T>& context, DifferenceState<T>* difference_state) const {}
+  virtual void DoEvalDiscreteVariableUpdates(
+      const Context<T> &context, DiscreteState<T> *discrete_state) const {}
 
   /// Computes the next time at which this System must perform a discrete
   /// action.

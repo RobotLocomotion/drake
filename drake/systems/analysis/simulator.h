@@ -322,8 +322,8 @@ class Simulator {
   // Set by Initialize() and reset by various traumas.
   bool initialization_done_{false};
 
-  // Pre-allocated temporaries for updated difference states.
-  std::unique_ptr<DifferenceState<T>> discrete_updates_;
+  // Pre-allocated temporaries for updated discrete states.
+  std::unique_ptr<DiscreteState<T>> discrete_updates_;
 };
 
 template <typename T>
@@ -342,7 +342,7 @@ Simulator<T>::Simulator(const System<T>& system,
       new RungeKutta2Integrator<T>(system_, dt, context_.get()));
   integrator_->Initialize();
 
-  discrete_updates_ = system_.AllocateDifferenceVariables();
+  discrete_updates_ = system_.AllocateDiscreteVariables();
 }
 
 template <typename T>
@@ -367,7 +367,7 @@ void Simulator<T>::Initialize() {
 /**
  * Steps the simulation to the specified time.
  * The simulation loop is as follows:
- * 1. Perform necessary difference variable updates.
+ * 1. Perform necessary discrete variable updates.
  * 2. Publish.
  * 3. Integrate the smooth system (the ODE or DAE)
  * 4. Perform post-step stabilization for DAEs (if desired).
@@ -403,12 +403,12 @@ void Simulator<T>::StepTo(const T& boundary_time) {
             break;
           }
           case DiscreteEvent<T>::kUpdateAction: {
-            DifferenceState<T>* xd = context_->get_mutable_difference_state();
-            // Systems with discrete update events must have difference state.
+            DiscreteState<T>* xd = context_->get_mutable_discrete_state();
+            // Systems with discrete update events must have discrete state.
             DRAKE_DEMAND(xd != nullptr);
             // First, compute the discrete updates into a temporary buffer.
-            system_.EvalDifferenceUpdates(*context_, event,
-                                          discrete_updates_.get());
+            system_.EvalDiscreteVariableUpdates(*context_, event,
+                                                discrete_updates_.get());
             // Then, write them back into the context.
             xd->CopyFrom(*discrete_updates_);
             break;

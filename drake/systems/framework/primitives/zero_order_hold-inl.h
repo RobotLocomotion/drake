@@ -14,7 +14,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/difference_state.h"
+#include "drake/systems/framework/discrete_state.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
@@ -37,19 +37,19 @@ void ZeroOrderHold<T>::EvalOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   System<T>::GetMutableOutputVector(output, 0) =
-      context.get_difference_state(0)->CopyToVector();
+      context.get_discrete_state(0)->CopyToVector();
 }
 
 template <typename T>
-void ZeroOrderHold<T>::DoEvalDifferenceUpdates(
-    const Context<T>& context, DifferenceState<T>* difference_state) const {
-  DRAKE_DEMAND(difference_state->size() == 1);
-  difference_state->get_mutable_difference_state(0)->SetFromVector(
+void ZeroOrderHold<T>::DoEvalDiscreteVariableUpdates(
+    const Context<T>& context, DiscreteState<T>* discrete_state) const {
+  DRAKE_DEMAND(discrete_state->size() == 1);
+  discrete_state->get_mutable_discrete_state(0)->SetFromVector(
       this->EvalVectorInput(context, 0)->get_value());
 }
 
 template <typename T>
-std::unique_ptr<DifferenceState<T>> ZeroOrderHold<T>::AllocateDifferenceState()
+std::unique_ptr<DiscreteState<T>> ZeroOrderHold<T>::AllocateDiscreteState()
     const {
   // The zero-order hold's state is first-order. Its state vector size is the
   // same as the input (and output) vector size.
@@ -57,7 +57,7 @@ std::unique_ptr<DifferenceState<T>> ZeroOrderHold<T>::AllocateDifferenceState()
   DRAKE_DEMAND(System<T>::get_input_port(0).get_size() == size);
   std::vector<std::unique_ptr<BasicVector<T>>> xd;
   xd.push_back(std::make_unique<BasicVector<T>>(size));
-  return std::make_unique<DifferenceState<T>>(std::move(xd));
+  return std::make_unique<DiscreteState<T>>(std::move(xd));
 }
 
 }  // namespace systems

@@ -44,7 +44,7 @@ using systems::ConstantVectorSource;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
-using systems::DifferenceState;
+using systems::DiscreteState;
 using systems::DrakeVisualizer;
 using systems::MatrixGain;
 using systems::Multiplexer;
@@ -96,7 +96,7 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
 
     const SchunkWsgTrajectoryGeneratorStateVector<double>* traj_state =
         dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-            context.get_difference_state(0));
+            context.get_discrete_state(0));
 
     if (trajectory_) {
       this->GetMutableOutputVector(output, 0) = trajectory_->value(
@@ -109,9 +109,9 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
 
  protected:
   /// Latches the input port into the discrete state.
-  void DoEvalDifferenceUpdates(
+  void DoEvalDiscreteVariableUpdates(
       const Context<double>& context,
-      DifferenceState<double>* difference_state) const override {
+      DiscreteState<double>* discrete_state) const override {
     const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
     DRAKE_ASSERT(input != nullptr);
     const auto& command = input->GetValue<lcmt_schunk_wsg_command>();
@@ -131,10 +131,10 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
 
     const SchunkWsgTrajectoryGeneratorStateVector<double>* last_traj_state =
         dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-            context.get_difference_state(0));
+            context.get_discrete_state(0));
     SchunkWsgTrajectoryGeneratorStateVector<double>* new_traj_state =
         dynamic_cast<SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-            difference_state->get_mutable_difference_state(0));
+            discrete_state->get_mutable_discrete_state(0));
 
     if (std::abs(last_traj_state->last_target_position() - target_position) >
         kTargetEpsilon) {
@@ -149,9 +149,9 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
     }
   }
 
-  std::unique_ptr<DifferenceState<double>>
-  AllocateDifferenceState() const override {
-    return std::make_unique<systems::DifferenceState<double>>(
+  std::unique_ptr<DiscreteState<double>>
+  AllocateDiscreteState() const override {
+    return std::make_unique<systems::DiscreteState<double>>(
         std::make_unique<SchunkWsgTrajectoryGeneratorStateVector<double>>());
   }
 
@@ -224,8 +224,8 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
 
   const int position_index_{};
   // TODO(sam.creasey) I'd prefer to store the trajectory as
-  // difference state, but unfortunately that's not currently possible
-  // as DifferenceState may only contain BasicVector.
+  // discrete state, but unfortunately that's not currently possible
+  // as DiscreteState may only contain BasicVector.
   mutable std::unique_ptr<Trajectory> trajectory_;
 };
 

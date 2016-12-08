@@ -4,7 +4,7 @@ set(sources
   cache.cc
   context.cc
   continuous_state.cc
-  difference_state.cc
+        discrete_state.cc
   diagram.cc
   diagram_builder.cc
   diagram_context.cc
@@ -12,7 +12,7 @@ set(sources
   input_port_evaluator_interface.cc
   leaf_context.cc
   leaf_system.cc
-  modal_state.cc
+        abstract_state.cc
   output_port_listener_interface.cc
   parameters.cc
   primitives/adder.cc
@@ -57,11 +57,11 @@ set(installed_headers
   diagram_builder.h
   diagram_context.h
   diagram_continuous_state.h
-  difference_state.h
+        discrete_state.h
   input_port_evaluator_interface.h
   leaf_context.h
   leaf_system.h
-  modal_state.h
+        abstract_state.h
   output_port_listener_interface.h
   parameters.h
   state.h
