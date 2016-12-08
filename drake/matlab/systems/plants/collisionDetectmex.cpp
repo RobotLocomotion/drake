@@ -56,8 +56,9 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   }
 
   int arg_num = 0;
-  RigidBodyTree<double>* model =
-      static_cast<RigidBodyTree<double>*>(getDrakeMexPointer(prhs[arg_num++]));
+  RigidBodyTreeWithAlternates<double>* model =
+      static_cast<RigidBodyTreeWithAlternates<double>*>(
+          getDrakeMexPointer(prhs[arg_num++]));
 
   KinematicsCache<double>& cache =
       fromMex(prhs[arg_num++], static_cast<KinematicsCache<double>*>(nullptr));

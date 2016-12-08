@@ -167,6 +167,107 @@ class RigidBodyTreeWithAlternates :
                                 in_terms_of_qdot);
   };
 
+  bool collisionDetect(
+      const KinematicsCache<double>& cache,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::VectorXd& phi,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& normal,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& xA,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& xB,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      std::vector<int>& bodyA_idx,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      std::vector<int>& bodyB_idx,
+      const std::vector<int>& bodies_idx,
+      const std::set<std::string>& active_element_groups,
+      bool use_margins = true) {
+    return tree_->collisionDetect(cache, phi, normal, xA, xB, bodyA_idx,
+                                  bodyB_idx, bodies_idx,
+                                  active_element_groups, use_margins);
+  }
+
+  bool collisionDetect(
+      const KinematicsCache<double>& cache,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::VectorXd& phi,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& normal,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& xA,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& xB,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      std::vector<int>& bodyA_idx,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      std::vector<int>& bodyB_idx,
+      const std::vector<int>& bodies_idx,
+      bool use_margins = true) {
+    return tree_->collisionDetect(cache, phi, normal, xA, xB, bodyA_idx,
+                                  bodyB_idx, bodies_idx, use_margins);
+  }
+
+  bool collisionDetect(
+      const KinematicsCache<double>& cache,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::VectorXd& phi,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& normal,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& xA,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& xB,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      std::vector<int>& bodyA_idx,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      std::vector<int>& bodyB_idx,
+      const std::set<std::string>& active_element_groups,
+      bool use_margins = true) {
+    return tree_->collisionDetect(cache, phi, normal, xA, xB,
+                                  bodyA_idx, bodyB_idx,
+                                  active_element_groups, use_margins);
+  }
+
+  bool collisionDetect(
+      const KinematicsCache<double>& cache,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::VectorXd& phi,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& normal,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& xA,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& xB,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      std::vector<int>& bodyA_idx,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      std::vector<int>& bodyB_idx,
+      bool use_margins = true) {
+    return tree_->collisionDetect(cache, phi, normal, xA, xB,
+                                  bodyA_idx, bodyB_idx, use_margins);
+  }
+
+  void potentialCollisions(
+      const KinematicsCache<double>& cache,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::VectorXd& phi,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& normal,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& xA,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& xB,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      std::vector<int>& bodyA_idx,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      std::vector<int>& bodyB_idx,
+      bool use_margins = true) {
+    return tree_->potentialCollisions(cache, phi, normal, xA, xB,
+                                      bodyA_idx, bodyB_idx, use_margins);
+  }
+
  private:
   // Let all other instantiations of this class be friends with this one.
   template<typename TT>

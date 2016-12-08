@@ -3,11 +3,18 @@
 
 #include <memory>
 
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+
 using namespace Eigen;
 using namespace std;
 
 template <typename Scalar>
 mxArray *createKinematicsCache(RigidBodyTreeWithAlternates<double> &model) {
+  std::cout << "BUCHE: " << std::endl;
+  PRINT_VAR(__FILE__);
+  PRINT_VAR(__LINE__);
+  PRINT_VAR(__PRETTY_FUNCTION__);
   auto cache = std::make_unique<KinematicsCache<Scalar>>(
       model.CreateKinematicsCacheWithType<Scalar>());
   return createDrakeMexPointer(
@@ -27,6 +34,10 @@ void destructKinematicsCache(const mxArray *mex) {
  */
 DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+  std::cout << "BUCHE: " << std::endl;
+  PRINT_VAR(__FILE__);
+  PRINT_VAR(__LINE__);
+  PRINT_VAR(__PRETTY_FUNCTION__);
   if (nlhs == 0 && nrhs == 1) {
     // if a KinematicsCache is passed in, then assume the destructor is being
     // called

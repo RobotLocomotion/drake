@@ -17,7 +17,7 @@ if(Matlab_FOUND)
   endmacro()
 
   add_rbm_mex(constructModelmex)
-#  add_rbm_mex(collisionDetectmex)
+  add_rbm_mex(collisionDetectmex)
 #  add_rbm_mex(smoothDistancePenaltymex)
 #  add_rbm_mex(collisionRaycastmex)
 #  add_rbm_mex(allCollisionsmex)

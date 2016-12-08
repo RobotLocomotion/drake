@@ -8,6 +8,9 @@
 #include <utility>
 #include <vector>
 
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+
 /** This is the type-erased base class for instantiated `ObjectWithAlternates`
  * classes. **/
 class ObjectWithAlternatesBase {
@@ -72,6 +75,11 @@ class ObjectWithAlternates : public ObjectWithAlternatesBase {
   /** Create an alternate instantiation of the fundamental ObjectWithAlternates and
   register this one with it. **/
   static void AddAlternate(DerivedObjectWithAlternates<double>& fundamental) {
+    std::cout << "BUCHE: " << std::endl;
+    PRINT_VAR(__FILE__);
+    PRINT_VAR(__LINE__);
+    PRINT_VAR(__PRETTY_FUNCTION__);
+
     std::unique_ptr<DerivedObjectWithAlternates<T>> alternate(new DerivedObjectWithAlternates<T>(fundamental));
     // TODO(sherm) Make alternate mirror fundamental.
     fundamental.get_mutable_alternates()->RegisterAlternate(

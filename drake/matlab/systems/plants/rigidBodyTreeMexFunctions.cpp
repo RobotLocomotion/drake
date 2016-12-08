@@ -20,7 +20,7 @@ using namespace drake;
 typedef AutoDiffScalar<VectorXd> AutoDiffDynamicSize;
 typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;
 typedef RigidBodyTree<double> RigidBodyTreed;
-typedef RigidBodyTreeWithAlternates<double> RigidBodyTreedWAlt;
+typedef RigidBodyTreeWithAlternates<double> RigidBodyTreeWAlt;
 
 /**
  * Mex function implementations
@@ -40,11 +40,11 @@ void centerOfMassJacobianDotTimesVmex(int nlhs, mxArray* plhs[], int nrhs,
 
 void centerOfMassmex(int nlhs, mxArray* plhs[], int nrhs,
                      const mxArray* prhs[]) {
-  auto func_double = make_function(&RigidBodyTreedWAlt::centerOfMass<double>);
+  auto func_double = make_function(&RigidBodyTreeWAlt::centerOfMass<double>);
   auto func_autodiff_fixed_max =
-      make_function(&RigidBodyTreedWAlt::centerOfMass<AutoDiffFixedMaxSize>);
+      make_function(&RigidBodyTreeWAlt::centerOfMass<AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic =
-      make_function(&RigidBodyTreedWAlt::centerOfMass<AutoDiffDynamicSize>);
+      make_function(&RigidBodyTreeWAlt::centerOfMass<AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
 }
@@ -52,12 +52,12 @@ void centerOfMassmex(int nlhs, mxArray* plhs[], int nrhs,
 void centerOfMassJacobianmex(int nlhs, mxArray* plhs[], int nrhs,
                              const mxArray* prhs[]) {
   auto func_double =
-      make_function(&RigidBodyTreed::centerOfMassJacobian<double>);
+      make_function(&RigidBodyTreeWAlt::centerOfMassJacobian<double>);
   auto func_autodiff_fixed_max =
       make_function(
-          &RigidBodyTreed::centerOfMassJacobian<AutoDiffFixedMaxSize>);
+          &RigidBodyTreeWAlt::centerOfMassJacobian<AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic =
-      make_function(&RigidBodyTreed::centerOfMassJacobian<AutoDiffDynamicSize>);
+      make_function(&RigidBodyTreeWAlt::centerOfMassJacobian<AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
 }
@@ -87,7 +87,7 @@ void centroidalMomentumMatrixmex(int nlhs, mxArray* plhs[], int nrhs,
 }
 
 template <typename DerivedQ, typename DerivedV>
-void doKinematicsTemp(const RigidBodyTreed& model,
+void doKinematicsTemp(const RigidBodyTreeWAlt& model,
                       KinematicsCache<typename DerivedQ::Scalar>& cache,
                       const MatrixBase<DerivedQ>& q,
                       const MatrixBase<DerivedV>& v, bool compute_JdotV) {
