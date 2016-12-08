@@ -1,19 +1,27 @@
-#include "drake/solvers/trajectory_optimization/dircol_trajectory_optimization.h"
+#include "drake/systems/trajectory_optimization/direct_collocation.h"
 
 #include <stdexcept>
 
+#include "drake/systems/trajectory_optimization/direct_collocation_constraint.h"
+
 namespace drake {
-namespace solvers {
+namespace systems {
 
 DircolTrajectoryOptimization::DircolTrajectoryOptimization(
-    int num_inputs, int num_states, int num_time_samples,
+    const systems::System<double>& system,
+    const systems::Context<double>& context, int num_time_samples,
     double trajectory_time_lower_bound, double trajectory_time_upper_bound)
-    : DirectTrajectoryOptimization(num_inputs, num_states, num_time_samples,
-                                   trajectory_time_lower_bound,
-                                   trajectory_time_upper_bound) {}
+    : systems::DirectTrajectoryOptimization(
+          system.get_num_total_inputs(), context.get_continuous_state()->size(),
+          num_time_samples, trajectory_time_lower_bound,
+          trajectory_time_upper_bound) {
+  DRAKE_DEMAND(context.has_only_continuous_state());
 
-void DircolTrajectoryOptimization::AddDynamicConstraint(
-    const std::shared_ptr<Constraint>& constraint) {
+  // Add the dynamic constraints.
+  auto constraint =
+      std::make_shared<systems::SystemDirectCollocationConstraint>(system,
+                                                                    context);
+
   DRAKE_ASSERT(static_cast<int>(constraint->num_constraints()) == num_states());
 
   // For N-1 timesteps, add a constraint which depends on the knot
@@ -30,11 +38,13 @@ void DircolTrajectoryOptimization::AddDynamicConstraint(
 namespace {
 /// Since the running cost evaluation needs the timestep mangled, we
 /// need to wrap it and convert the input.
-class RunningCostEndWrapper : public Constraint {
+class RunningCostEndWrapper : public solvers::Constraint {
  public:
-  explicit RunningCostEndWrapper(std::shared_ptr<Constraint> constraint)
-      : Constraint(constraint->num_constraints(), constraint->lower_bound(),
-                   constraint->upper_bound()),
+  explicit RunningCostEndWrapper(
+      std::shared_ptr<solvers::Constraint> constraint)
+      : solvers::Constraint(constraint->num_constraints(),
+                            constraint->lower_bound(),
+                            constraint->upper_bound()),
         constraint_(constraint) {}
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -53,9 +63,10 @@ class RunningCostEndWrapper : public Constraint {
   std::shared_ptr<Constraint> constraint_;
 };
 
-class RunningCostMidWrapper : public Constraint {
+class RunningCostMidWrapper : public solvers::Constraint {
  public:
-  explicit RunningCostMidWrapper(std::shared_ptr<Constraint> constraint)
+  explicit RunningCostMidWrapper(
+      std::shared_ptr<solvers::Constraint> constraint)
       : Constraint(constraint->num_constraints(), constraint->lower_bound(),
                    constraint->upper_bound()),
         constraint_(constraint) {}
@@ -82,7 +93,7 @@ class RunningCostMidWrapper : public Constraint {
 // We just use a generic constraint here since we need to mangle the
 // input and output anyway.
 void DircolTrajectoryOptimization::AddRunningCost(
-    std::shared_ptr<Constraint> constraint) {
+    std::shared_ptr<solvers::Constraint> constraint) {
   opt_problem()->AddCost(std::make_shared<RunningCostEndWrapper>(constraint),
                          {h_vars().head(1), x_vars().head(num_states()),
                           u_vars().head(num_inputs())});
@@ -99,5 +110,5 @@ void DircolTrajectoryOptimization::AddRunningCost(
                           u_vars().tail(num_inputs())});
 }
 
-}  // namespace solvers
+}  // namespace systems
 }  // namespace drake

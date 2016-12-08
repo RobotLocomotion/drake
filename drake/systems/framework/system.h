@@ -93,25 +93,41 @@ class System {
     return input_ports_;
   }
 
-  /// Returns the input port @p input_port.
-  const SystemPortDescriptor<T>& get_input_port(int port_number) const {
-    if (port_number >= get_num_input_ports()) {
+  /// Returns the descriptor of the input port at index @p port_index.
+  const SystemPortDescriptor<T>& get_input_port(int port_index) const {
+    if (port_index >= get_num_input_ports()) {
       throw std::out_of_range("port number out of range.");
     }
-    return input_ports_[port_number];
+    return input_ports_[port_index];
   }
 
-  /// Returns the output port @p output_port.
-  const SystemPortDescriptor<T>& get_output_port(int port_number) const {
-    if (port_number >= get_num_output_ports()) {
+  /// Returns the descriptor of the output port at index @p port_index.
+  const SystemPortDescriptor<T>& get_output_port(int port_index) const {
+    if (port_index >= get_num_output_ports()) {
       throw std::out_of_range("port number out of range.");
     }
-    return output_ports_[port_number];
+    return output_ports_[port_index];
   }
 
   /// Returns descriptors for all the output ports of this system.
   const std::vector<SystemPortDescriptor<T>>& get_output_ports() const {
     return output_ports_;
+  }
+
+  /// Returns the total dimension of all of the input ports (as if they were
+  /// muxed).
+  int get_num_total_inputs() const {
+    int count = 0;
+    for (const auto& in : input_ports_) count += in.get_size();
+    return count;
+  }
+
+  /// Returns the total dimension of all of the output ports (as if they were
+  /// muxed).
+  int get_num_total_outputs() const {
+    int count = 0;
+    for (const auto& out : output_ports_) count += out.get_size();
+    return count;
   }
 
   /// Checks that @p output is consistent with the number and size of output
@@ -521,8 +537,8 @@ class System {
   /// Adds a port with the specified @p type and @p size to the input topology.
   /// @return descriptor of declared port.
   const SystemPortDescriptor<T>& DeclareInputPort(PortDataType type, int size) {
-    int port_number = get_num_input_ports();
-    input_ports_.emplace_back(this, kInputPort, port_number, type, size);
+    int port_index = get_num_input_ports();
+    input_ports_.emplace_back(this, kInputPort, port_index, type, size);
     return input_ports_.back();
   }
 
@@ -543,8 +559,8 @@ class System {
   /// @return descriptor of declared port.
   const SystemPortDescriptor<T>& DeclareOutputPort(PortDataType type,
                                                    int size) {
-    int port_number = get_num_output_ports();
-    output_ports_.emplace_back(this, kOutputPort, port_number, type, size);
+    int port_index = get_num_output_ports();
+    output_ports_.emplace_back(this, kOutputPort, port_index, type, size);
     return output_ports_.back();
   }
 
