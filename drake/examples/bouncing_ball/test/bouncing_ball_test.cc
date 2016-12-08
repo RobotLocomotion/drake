@@ -98,8 +98,10 @@ TEST_F(BouncingBallTest, Simulate) {
 
   // Check against closed form solution for the bouncing ball. We anticipate
   // some small integration error.
-  const double tol = 1e-12;
+  const double tol = 1e-11;
   EXPECT_NEAR(xc->GetAtIndex(0), dut_->CalcClosedFormHeight(x0, t_final), tol);
+  EXPECT_NEAR(xc->GetAtIndex(1),
+              dut_->CalcClosedFormVelocity(x0, t_final), tol);
 
   // Try again in variable step mode.
   simulator.get_mutable_context()->set_time(0.0);
@@ -117,6 +119,8 @@ TEST_F(BouncingBallTest, Simulate) {
   simulator.StepTo(t_final);
   EXPECT_EQ(simulator.get_mutable_context()->get_time(), t_final);
   EXPECT_NEAR(xc->GetAtIndex(0), dut_->CalcClosedFormHeight(x0, t_final), tol);
+  EXPECT_NEAR(xc->GetAtIndex(1), dut_->CalcClosedFormVelocity(x0, t_final),
+              tol);
 }
 
 }  // namespace

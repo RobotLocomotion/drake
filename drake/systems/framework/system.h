@@ -270,7 +270,7 @@ class System {
     const T c_time = context->get_time();
     DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
     if (event.do_update_unrestricted == nullptr) {
-      DoPerformedUnrestrictedUpdate(context);
+      DoPerformUnrestrictedUpdate(context);
     } else {
       event.do_update_unrestricted(context);
     }
@@ -636,7 +636,7 @@ class System {
   /// if possible; discrete variables can be modified using
   /// EvalDifferenceUpdates() and continuous variables are modified in the
   /// course of the simulation process (through Simulator::StepTo()).
-  virtual void DoPerformedUnrestrictedUpdate(Context <T> *context) const {}
+  virtual void DoPerformUnrestrictedUpdate(Context<T> *context) const {}
 
   /// Computes the next time at which this System must perform a discrete
   /// action.

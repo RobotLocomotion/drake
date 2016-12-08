@@ -68,7 +68,7 @@ class MySpringMassSystem : public SpringMassSystem<T> {
     actions->time = next_update;
     actions->events.clear();
     actions->events.push_back(DiscreteEvent<T>());
-    actions->events.back().action = DiscreteEvent<T>::kUpdateAction;
+    actions->events.back().action = DiscreteEvent<T>::kDiscreteUpdateAction;
   }
 
   double update_rate_{0.};  // Default is "don't update".

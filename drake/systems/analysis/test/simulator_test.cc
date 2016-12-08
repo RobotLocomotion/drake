@@ -126,7 +126,7 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
 
   EXPECT_NEAR(context->get_time(), 1., 1e-8);
   EXPECT_EQ(simulator.get_num_steps_taken(), 1000);
-  EXPECT_EQ(simulator.get_num_updates(), 0);
+  EXPECT_EQ(simulator.get_num_discrete_updates(), 0);
 
   EXPECT_EQ(spring_mass.get_publish_count(), 1001);
   EXPECT_EQ(spring_mass.get_update_count(), 0);
@@ -249,7 +249,7 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   simulator.StepTo(1.);
 
   EXPECT_GT(simulator.get_num_steps_taken(), 1000);
-  EXPECT_EQ(simulator.get_num_updates(), 30);
+  EXPECT_EQ(simulator.get_num_discrete_updates(), 30);
 
   // We're calling Publish() every step, and extra steps have to be taken
   // since the step size doesn't divide evenly into the sample rate. Shouldn't
@@ -428,10 +428,10 @@ bool CheckSampleTime(const Context<double>& context, double period) {
 // updates.
 GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
   DiscreteSystem system;
-  int num_updates = 0;
+  int num_disc_updates = 0;
   system.set_update_callback([&](const Context<double>& context){
     ASSERT_TRUE(CheckSampleTime(context, system.update_period()));
-    num_updates++;
+    num_disc_updates++;
   });
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
@@ -442,7 +442,7 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
   drake::systems::Simulator<double> simulator(system);
   simulator.set_publish_every_time_step(false);
   simulator.StepTo(0.5);
-  EXPECT_EQ(500, num_updates);
+  EXPECT_EQ(500, num_disc_updates);
   // Publication occurs at 400Hz, and also at initialization.
   EXPECT_EQ(200 + 1, num_publishes);
 }

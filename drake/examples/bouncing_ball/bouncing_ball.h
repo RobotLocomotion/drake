@@ -37,7 +37,7 @@ class BouncingBall : public Ball<T> {
   void DoCalcNextUpdateTime(const systems::Context<T>& context,
                             systems::UpdateActions<T>* actions) const override;
 
-  void DoUpdateUnrestricted(systems::Context<T>* context) const override;
+  void DoPerformUnrestrictedUpdate(systems::Context<T>* context) const override;
 
   /// Calculates the closed form solution of the height of the bouncing ball
   /// at the given time, assuming that the initial velocity is zero. Only works
