@@ -31,7 +31,7 @@ class RobotStateEncoder final : public LeafSystem<double> {
   static const size_t kForceZIndex = 5;
 
   RobotStateEncoder(const RigidBodyTree<double>& tree,
-                    const std::vector<RigidBodyFrame>& ft_sensor_info);
+                    const std::vector<RigidBodyFrame<double>>& ft_sensor_info);
 
   ~RobotStateEncoder() override;
 
@@ -97,7 +97,7 @@ class RobotStateEncoder final : public LeafSystem<double> {
   // These are used for force torque sensors.
   // The first part is the body that the sensor is attached to, and the second
   // part is local offset within the body frame.
-  const std::vector<RigidBodyFrame> force_torque_sensor_info_;
+  const std::vector<RigidBodyFrame<double>> force_torque_sensor_info_;
 
   // Index into force_torque_sensor_info_
   int l_foot_ft_sensor_idx_ = -1;

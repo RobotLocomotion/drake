@@ -1,8 +1,7 @@
 #include "drake/systems/estimators/kalman_filter.h"
 
 #include "drake/common/drake_assert.h"
-// TODO(russt): Move the Riccati method to drake/math.
-#include "drake/systems/controllers/linear_quadratic_regulator.h"
+#include "drake/math/continuous_algebraic_ricatti_equation.h"
 #include "drake/systems/estimators/luenberger_observer.h"
 #include "drake/systems/framework/primitives/linear_system.h"
 
@@ -16,7 +15,8 @@ Eigen::MatrixXd SteadyStateKalmanFilter(
     const Eigen::Ref<const Eigen::MatrixXd>& W,
     const Eigen::Ref<const Eigen::MatrixXd>& V) {
   const auto& P =
-      ContinuousAlgebraicRiccatiEquation(A.transpose(), C.transpose(), W, V);
+      math::ContinuousAlgebraicRiccatiEquation(
+          A.transpose(), C.transpose(), W, V);
   return P * C.transpose() * V.inverse();
 }
 

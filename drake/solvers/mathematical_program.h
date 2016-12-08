@@ -663,9 +663,11 @@ class MathematicalProgram {
    * Adds a symmetric matrix as decision variables to this MathematicalProgram.
    * The optimization will only use the stacked columns of the
    * lower triangular part of the symmetric matrix as decision variables.
+   * @param rows The rows of the symmetric matrix.
    * @param names A std::vector containing the names of each entry in the lower
    * triagular part of the symmetric matrix. The length of @p names is
    * @p rows * (rows+1) / 2.
+   * @return The newly added decision variables.
    */
   DecisionVariableMatrixX AddSymmetricContinuousVariables(
       size_t rows, const std::vector<std::string>& names);
@@ -675,6 +677,7 @@ class MathematicalProgram {
    * this MathematicalProgram.
    * The optimization will only use the stacked columns of the
    * lower triangular part of the symmetric matrix as decision variables.
+   * @param rows The number of rows in the symmetric matrix.
    * @param name The name of the matrix. It is only used the for user to
    * understand the optimization program. The default name is "Symmetric", and
    * each variable will be named as
@@ -685,6 +688,7 @@ class MathematicalProgram {
    * Symmetric(rows-1,0) Symmetric(rows-1,1) ... Symmetric(rows-1, rows-1)
    * </pre>
    * Notice that the (i,j)'th entry and (j,i)'th entry has the same name.
+   * @return The newly added decision variables.
    */
   DecisionVariableMatrixX AddSymmetricContinuousVariables(
       size_t rows, const std::string& name = "Symmetric");
@@ -694,6 +698,7 @@ class MathematicalProgram {
    * this MathematicalProgram.
    * The optimization will only use the stacked columns of the
    * lower triangular part of the symmetric matrix as decision variables.
+   * @tparam rows The number of rows in the symmetric matrix.
    * @param name The name of the matrix. It is only used the for user to
    * understand the optimization program. The default name is "Symmetric", and
    * each variable will be named as
@@ -704,6 +709,7 @@ class MathematicalProgram {
    * Symmetric(rows-1,0) Symmetric(rows-1,1) ... Symmetric(rows-1, rows-1)
    * </pre>
    * Notice that the (i,j)'th entry and (j,i)'th entry has the same name.
+   * @return The newly added decision variables.
    */
   template <int rows>
   DecisionVariableMatrix<rows, rows> AddSymmetricContinuousVariables(

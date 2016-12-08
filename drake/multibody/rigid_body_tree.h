@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <utility>
@@ -112,7 +113,7 @@ class RigidBodyTree {
 #endif
   int get_number_of_model_instances() const;
 
-  void addFrame(std::shared_ptr<RigidBodyFrame> frame);
+  void addFrame(std::shared_ptr<RigidBodyFrame<T>> frame);
 
   std::map<std::string, int> computePositionNameToIndexMap() const;
 
@@ -180,6 +181,52 @@ class RigidBodyTree {
   std::string getStateName(int state_num) const;
 
   void drawKinematicTree(std::string graphviz_dotfile_filename) const;
+
+  /// Creates a KinematicsCache to perform computations with this RigidBodyTree.
+  /// The returned KinematicsCache is consistently templated on the scalar type
+  /// for this RigidBodyTree instance.
+  /// Aborts if this RigidBodyTree was not previously initialized with a call
+  /// to RigidBodyTree::compile().
+  /// @returns The created KinematicsCache.
+  KinematicsCache<T> CreateKinematicsCache() const;
+
+  /// A helper template method used to create a KinematicsCache templated on
+  /// `CacheT` from a RigidBodyTree templated on `T`, with `CacheT` and `T`
+  /// not necessarily the same scalar type.
+  /// This method is particularly useful in mex files where only a reference
+  /// to a `RigidBodyTree<double>` is available to create kinematics caches
+  /// on different scalar types.
+  /// Aborts if this RigidBodyTree was not previously initialized with a call
+  /// to RigidBodyTree::compile().
+  ///
+  /// Users should not call this method but instead create KinematicsCache
+  /// objects with RigidBodyTree:CreateKinematicsCache().
+  ///
+  /// @tparam CacheT The scalar type for the returned KinematicsCache.
+  /// @returns A KinematicsCache templated on `CacheT` that can be used for
+  /// computations on this RigidBodyTree with methods instantiated on `CacheT`.
+  // TODO(amcastro-tri): Remove this method once older pieces of code such as
+  // createKinematicsCacheAutoDiffmex.cpp are updated to use a RigidBodyTree to
+  // manage cache creation.
+  template <typename CacheT>
+  KinematicsCache<CacheT> CreateKinematicsCacheWithType() const;
+
+  /// Creates a KinematicsCache given a reference to a vector of rigid bodies
+  /// contained within a RigidBodyTree.
+  /// This method is static since all the information to create the
+  /// corresponding KinematicsCache resides in the input parameter vector
+  /// `bodies`.
+  ///
+  /// @param bodies A vector of unique pointers to the rigid bodies of a given
+  /// RigidBodyTree for which a KinematicsCache needs to be created.
+  /// @returns The created KinematicsCache.
+  //
+  // TODO(amcastro-tri): Remove this method once older pieces of code such as
+  // KinematicsCacheHelper are updated to use a RigidBodyTree to manage cache
+  // creation.
+  static KinematicsCache<T>
+  CreateKinematicsCacheFromBodiesVector(
+      const std::vector<std::unique_ptr<RigidBody<T>>>& bodies);
 
   /// Initializes a `KinematicsCache` with the given configuration @p q,
   /// computes the kinematics, and returns the cache.
@@ -975,7 +1022,7 @@ class RigidBodyTree {
    * value is -1, search all models.
    * @throws std::logic_error if multiple matching frames are found.
    */
-  std::shared_ptr<RigidBodyFrame> findFrame(const std::string& frame_name,
+  std::shared_ptr<RigidBodyFrame<T>> findFrame(const std::string& frame_name,
                                             int model_id = -1) const;
 
   /**
@@ -1133,14 +1180,15 @@ class RigidBodyTree {
   std::vector<std::unique_ptr<RigidBody<T>>> bodies;
 
   // Rigid body frames
-  std::vector<std::shared_ptr<RigidBodyFrame>> frames;
+  std::vector<std::shared_ptr<RigidBodyFrame<T>>> frames;
 
   // Rigid body actuators
   std::vector<RigidBodyActuator, Eigen::aligned_allocator<RigidBodyActuator>>
       actuators;
 
   // Rigid body loops
-  std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> loops;
+  std::vector<RigidBodyLoop<T>,
+              Eigen::aligned_allocator<RigidBodyLoop<T>>> loops;
 
   drake::TwistVector<double> a_grav;
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
