@@ -40,10 +40,6 @@ find_package(Threads MODULE REQUIRED)
 # set up pods
 include(../cmake/pods.cmake)
 
-pods_find_pkg_config(bot2-lcmgl-client)
-pods_find_pkg_config(dreal)
-pods_find_pkg_config(ipopt)
-
 # A compatibility shim function that declares a library, with a built-in
 # default of SHARED.
 function(add_library_with_exports)
