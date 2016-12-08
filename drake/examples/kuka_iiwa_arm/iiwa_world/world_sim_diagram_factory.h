@@ -16,10 +16,10 @@ namespace kuka_iiwa_arm {
 // /examples/toyota_hsrb/hsrb_diagram_factories.h and moved to a common
 // library.
 
-/// A custom `Diagram` composed of a `RigidBodyPlant` and a `DrakeVisualizer`.
-/// The diagram's output port zero is connected to the
-/// `DrakeVisualizer`'s input port zero. The resulting diagram
-/// has the same input and output ports as the plant.
+/// A custom `systems::Diagram` composed of a `systems::RigidBodyPlant`
+/// and a `systems::DrakeVisualizer`. The diagram's output port zero is
+/// connected to the `systems::DrakeVisualizer`'s input port zero. The
+/// resulting diagram has the same input and output ports as the plant.
 template <typename T>
 class VisualizedPlant : public systems::Diagram<T> {
  public:
@@ -47,7 +47,8 @@ class PassiveVisualizedPlant : public systems::Diagram<T> {
  public:
   /// Builds the PassiveVisualizedPlant.
   /// \param visualized_plant a unique pointer to the `VisualizedPlant`.
-  explicit PassiveVisualizedPlant(std::unique_ptr<VisualizedPlant<T>> visualized_plant);
+  explicit PassiveVisualizedPlant(
+      std::unique_ptr<VisualizedPlant<T>> visualized_plant);
 
  private:
   VisualizedPlant<T>* visualized_plant_{nullptr};

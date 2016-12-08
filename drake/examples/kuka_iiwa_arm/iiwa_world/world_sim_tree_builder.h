@@ -56,9 +56,9 @@ class WorldSimTreeBuilder {
   /// @return model_instance_id of the object that is added.
   int AddModelInstanceToFrame(
       const std::string& model_name, const Eigen::Vector3d& xyz,
-<<<   const Eigen::Vector3d& rpy,
-      std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
-===   const drake::multibody::joints::FloatingBaseType floating_base_type =
+      const Eigen::Vector3d& rpy,
+      std::shared_ptr<RigidBodyFrame<T>> weld_to_frame,
+      const drake::multibody::joints::FloatingBaseType floating_base_type =
           drake::multibody::joints::kFixed);
 
   /// Adds a flat terrain to the simulation.
@@ -97,9 +97,9 @@ class WorldSimTreeBuilder {
 
   bool built_{false};
 
-  // Maps between models (values in the map) and their user-supplied names
-  // (keys in the map). Instances of these models can be loaded into the
-  // simulation.
+  // Maps between models (stored as filename strings in the map) and their
+  // user-supplied names (keys in the map). Instances of these models can be
+  // loaded into the simulation.
   std::map<std::string, std::string> model_map_;
 };
 

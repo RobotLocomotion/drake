@@ -1,5 +1,6 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 
+#include <algorithm>
 #include <map>
 #include <utility>
 
@@ -12,6 +13,8 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
+
+#include "spruce.hh"
 
 using Eigen::aligned_allocator;
 using Eigen::Vector3d;
@@ -46,8 +49,8 @@ int WorldSimTreeBuilder<T>::AddFixedModelInstance(const string& model_name,
                                                   const Vector3d& rpy) {
   DRAKE_DEMAND(!built_);
 
-  auto weld_to_frame = allocate_shared<RigidBodyFrame>(
-      aligned_allocator<RigidBodyFrame>(), "world", nullptr, xyz, rpy);
+  auto weld_to_frame = allocate_shared<RigidBodyFrame<T>>(
+      aligned_allocator<RigidBodyFrame<T>>(), "world", nullptr, xyz, rpy);
 
   return AddModelInstanceToFrame(model_name, xyz, rpy, weld_to_frame);
 }
@@ -58,8 +61,8 @@ int WorldSimTreeBuilder<T>::AddFloatingModelInstance(const string& model_name,
                                                      const Vector3d& rpy) {
   DRAKE_DEMAND(!built_);
 
-  auto weld_to_frame = allocate_shared<RigidBodyFrame>(
-      aligned_allocator<RigidBodyFrame>(), "world", nullptr, xyz, rpy);
+  auto weld_to_frame = allocate_shared<RigidBodyFrame<T>>(
+      aligned_allocator<RigidBodyFrame<T>>(), "world", nullptr, xyz, rpy);
 
   return AddModelInstanceToFrame(model_name, xyz, rpy, weld_to_frame,
                                  kQuaternion);
@@ -68,25 +71,26 @@ int WorldSimTreeBuilder<T>::AddFloatingModelInstance(const string& model_name,
 template <typename T>
 int WorldSimTreeBuilder<T>::AddModelInstanceToFrame(
     const string& model_name, const Vector3d& xyz, const Vector3d& rpy,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    std::shared_ptr<RigidBodyFrame<T>> weld_to_frame,
     const drake::multibody::joints::FloatingBaseType floating_base_type) {
   DRAKE_DEMAND(!built_);
-  std::size_t extension_location = model_map_[model_name].find_last_of(".");
 
-  DRAKE_DEMAND(extension_location < model_map_[model_name].size());
+  spruce::path p(model_map_[model_name]);
 
-  std::string extension = model_map_[model_name].substr(extension_location + 1);
+  // Converts the file extension to be lower case.
+  auto extension = p.extension();
+  std::transform(extension.begin(), extension.end(), extension.begin(),
+                 ::tolower);
 
   parsers::ModelInstanceIdTable table;
 
-  DRAKE_DEMAND(extension == "urdf" || extension == "sdf");
-
-  if (extension == "urdf") {
+  DRAKE_DEMAND(extension == ".urdf" || extension == ".sdf");
+  if (extension == ".urdf") {
     table = drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + model_map_[model_name], floating_base_type,
         weld_to_frame, rigid_body_tree_.get());
 
-  } else if (extension == "sdf") {
+  } else if (extension == ".sdf") {
     table = drake::parsers::sdf::AddModelInstancesFromSdfFile(
         drake::GetDrakePath() + model_map_[model_name], floating_base_type,
         weld_to_frame, rigid_body_tree_.get());

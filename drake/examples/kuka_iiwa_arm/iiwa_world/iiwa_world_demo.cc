@@ -67,14 +67,12 @@ int DoMain() {
 
   lcm::DrakeLcm lcm;
 
-  std::unique_ptr<VisualizedPlant<double>> visualized_plant =
-      std::make_unique<VisualizedPlant<double>>(
-          iiwa_world->Build(), 4500 /* penetration_stiffness */,
-          1.0 /* penetration_damping */, 1.0 /* contact friction */, &lcm);
+  auto visualized_plant = std::make_unique<VisualizedPlant<double>>(
+      iiwa_world->Build(), 4500 /* penetration_stiffness */,
+      1.0 /* penetration_damping */, 1.0 /* contact friction */, &lcm);
 
-  std::unique_ptr<PassiveVisualizedPlant<double>> demo_plant =
-      std::make_unique<PassiveVisualizedPlant<double>>(
-          std::move(visualized_plant));
+  auto demo_plant = std::make_unique<PassiveVisualizedPlant<double>>(
+      std::move(visualized_plant));
 
   auto simulator = std::make_unique<systems::Simulator<double>>(*demo_plant);
 
