@@ -4,10 +4,10 @@
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = "dircol_trajectory_optimization",
+    name = "direct_collocation", 
     testonly = 1,
-    srcs = ["dircol_trajectory_optimization.cc"],
-    hdrs = ["dircol_trajectory_optimization.h"],
+    srcs = ["direct_collocation.cc", "direct_collocation_constraint.cc"],
+    hdrs = ["direct_collocation.h", "direct_collocation_constraint.h"],
     linkstatic = 1,
     deps = [":direct_trajectory_optimization"],
 )

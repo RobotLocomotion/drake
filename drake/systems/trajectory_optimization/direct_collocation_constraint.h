@@ -45,14 +45,13 @@ class DirectCollocationConstraint : public solvers::Constraint {
       const DirectCollocationConstraint& other) = delete;
   DirectCollocationConstraint& operator=(
       const DirectCollocationConstraint& other) = delete;
-  explicit DirectCollocationConstraint(
-      DirectCollocationConstraint&& other) = delete;
-  DirectCollocationConstraint& operator=(
-      DirectCollocationConstraint&& other) = delete;
+  explicit DirectCollocationConstraint(DirectCollocationConstraint&& other) =
+      delete;
+  DirectCollocationConstraint& operator=(DirectCollocationConstraint&& other) =
+      delete;
 
  protected:
-  virtual void dynamics(const TaylorVecXd& state,
-                        const TaylorVecXd& input,
+  virtual void dynamics(const TaylorVecXd& state, const TaylorVecXd& input,
                         TaylorVecXd* xdot) const = 0;
 
  private:
@@ -62,28 +61,33 @@ class DirectCollocationConstraint : public solvers::Constraint {
 
 /// Implements a dynamic constraint which uses the continuous dynamics
 /// of a system.
-class System2DirectCollocationConstraint : public DirectCollocationConstraint {
+class SystemDirectCollocationConstraint : public DirectCollocationConstraint {
  public:
-  /// Create a direct colocation constraint for a system.  Systems
-  /// must have a single input port and a single output port, match
-  /// the template requirement of AutoDiffXd, and implement
-  /// EvalTimeDerivatives.
-  explicit System2DirectCollocationConstraint(
-      std::unique_ptr<System<AutoDiffXd>> system);
-  ~System2DirectCollocationConstraint() override;
+  /// Creates a direct collocation constraint for a system.
+  /// @param system A dynamical system to be used in the dynamic constraints.
+  ///  This system must implement DoToAutoDiffXd.  Note that the optimization
+  ///  will "clone" this system for it's internal use; changes to system
+  ///  after calling this method will NOT impact the trajectory optimization.
+  ///  Currently, this system must have exactly one input port.
+  /// @param context Required to describe any parameters of the system.  The
+  ///  values of the state in this context do not have any effect.  This
+  ///  context will also be "cloned" by the optimization; changes to the context
+  ///  after calling this method will NOT impact the trajectory optimization.
+  SystemDirectCollocationConstraint(const systems::System<double>& system,
+                                     const systems::Context<double>& context);
+  ~SystemDirectCollocationConstraint() override;
 
-  explicit System2DirectCollocationConstraint(
-      const System2DirectCollocationConstraint& other) = delete;
-  System2DirectCollocationConstraint& operator=(
-      const System2DirectCollocationConstraint& other) = delete;
-  explicit System2DirectCollocationConstraint(
-      System2DirectCollocationConstraint&& other) = delete;
-  System2DirectCollocationConstraint& operator=(
-      System2DirectCollocationConstraint&& other) = delete;
+  explicit SystemDirectCollocationConstraint(
+      const SystemDirectCollocationConstraint& other) = delete;
+  SystemDirectCollocationConstraint& operator=(
+      const SystemDirectCollocationConstraint& other) = delete;
+  explicit SystemDirectCollocationConstraint(
+      SystemDirectCollocationConstraint&& other) = delete;
+  SystemDirectCollocationConstraint& operator=(
+      SystemDirectCollocationConstraint&& other) = delete;
 
  private:
-  void dynamics(const TaylorVecXd& state,
-                const TaylorVecXd& input,
+  void dynamics(const TaylorVecXd& state, const TaylorVecXd& input,
                 TaylorVecXd* xdot) const override;
 
   std::unique_ptr<System<AutoDiffXd>> system_;
