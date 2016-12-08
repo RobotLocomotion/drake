@@ -743,7 +743,8 @@ TEST_F(DifferenceStateTest, CalcNextUpdateTimeHold1) {
 
   EXPECT_EQ(2.0, actions.time);
   ASSERT_EQ(1u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction, actions.events[0].action);
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
+            actions.events[0].action);
 }
 
 // Tests that the next update time after 5.1 is 6.0.
@@ -756,7 +757,8 @@ TEST_F(DifferenceStateTest, CalcNextUpdateTimeHold2) {
   // on the Diagram.
   EXPECT_EQ(6.0, actions.time);
   ASSERT_EQ(1u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction, actions.events[0].action);
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
+            actions.events[0].action);
 }
 
 // Tests that on the 9-second tick, only hold2 latches its inputs. Then, on

@@ -100,7 +100,8 @@ TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
 
   EXPECT_EQ(5.0, actions.time);
   ASSERT_EQ(1u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction, actions.events[0].action);
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
+            actions.events[0].action);
 }
 
 // Tests that if the current time is exactly the offset, the next
@@ -113,7 +114,8 @@ TEST_F(LeafSystemTest, ExactlyAtOffset) {
 
   EXPECT_EQ(15.0, actions.time);
   ASSERT_EQ(1u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction, actions.events[0].action);
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
+            actions.events[0].action);
 }
 
 // Tests that if the current time is larger than the offset, the next
@@ -126,7 +128,8 @@ TEST_F(LeafSystemTest, OffsetIsInThePast) {
 
   EXPECT_EQ(25.0, actions.time);
   ASSERT_EQ(1u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction, actions.events[0].action);
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
+            actions.events[0].action);
 }
 
 // Tests that if the current time is exactly an update time, the next update
@@ -139,7 +142,8 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
 
   EXPECT_EQ(35.0, actions.time);
   ASSERT_EQ(1u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction, actions.events[0].action);
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
+            actions.events[0].action);
 }
 
 // Tests that if a LeafSystem has both a discrete update and a periodic Publish,
@@ -162,14 +166,16 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   system_.CalcNextUpdateTime(context_, &actions);
   EXPECT_EQ(15.0, actions.time);
   ASSERT_EQ(1u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction, actions.events[0].action);
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
+            actions.events[0].action);
 
   // Both events fire at 60sec.
   context_.set_time(59.0);
   system_.CalcNextUpdateTime(context_, &actions);
   EXPECT_EQ(60.0, actions.time);
   ASSERT_EQ(2u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction, actions.events[0].action);
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
+            actions.events[0].action);
 }
 
 // Tests that if the integrator has stopped on the k-th sample, and the current
