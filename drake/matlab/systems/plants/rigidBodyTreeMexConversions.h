@@ -4,6 +4,9 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/kinematic_path.h"
+#include "drake/multibody/rbt_with_alternates/rigid_body_tree_with_alternates.h"
+
+using drake::RigidBodyTreeWithAlternates;
 
 template <typename T>
 struct DrakeMexPointerTypeId {
@@ -26,6 +29,11 @@ template <>
 struct DrakeMexPointerTypeId<
     KinematicsCache<DrakeJoint::AutoDiffFixedMaxSize>> {
   enum { value = 4 };
+};
+
+template <>
+struct DrakeMexPointerTypeId<RigidBodyTreeWithAlternates<double>> {
+  enum { value = 5 };
 };
 
 template <typename T>
@@ -55,6 +63,18 @@ bool isConvertibleFromMex(const mxArray *source, RigidBodyTree<double> *ptr,
 RigidBodyTree<double> &fromMexUnsafe(
     const mxArray *source, RigidBodyTree<double> *) {
   return *static_cast<RigidBodyTree<double> *>(getDrakeMexPointer(source));
+}
+
+bool isConvertibleFromMex(const mxArray *source,
+                          RigidBodyTreeWithAlternates<double> *ptr,
+                          std::ostream *log) NOEXCEPT {
+  return isDrakeMexPointerOfCorrectType(source, ptr, log);
+}
+
+RigidBodyTreeWithAlternates<double> &fromMexUnsafe(
+    const mxArray *source, RigidBodyTreeWithAlternates<double> *) {
+  return *static_cast<RigidBodyTreeWithAlternates<double>*>(
+      getDrakeMexPointer(source));
 }
 
 template <typename Scalar>

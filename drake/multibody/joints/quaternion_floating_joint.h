@@ -148,6 +148,12 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
         get_num_velocities(), 1);
   }
 
+  template <typename ToScalar>
+  DrakeJoint* DoCloneTo(const ToScalar& to) {
+    return new QuaternionFloatingJoint(this->get_name(),
+                                       this->get_transform_to_parent_body());
+  };
+
   bool is_floating() const override { return true; };
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.

@@ -6,6 +6,9 @@
 using namespace Eigen;
 using namespace std;
 
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+
 /**
  * usage:
  * * createKinematicsCachemex(model_ptr) to construct
@@ -13,12 +16,15 @@ using namespace std;
  */
 DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+  std::cout << "BUCHE: " << std::endl;
+  PRINT_VAR(__PRETTY_FUNCTION__);
   if (nlhs == 0 && nrhs == 1) {
     // if no output arguments, then assume the destructor is being called
     destroyDrakeMexPointer<KinematicsCache<double> *>(prhs[0]);
   } else if (nlhs == 1 && nrhs == 1) {
-    RigidBodyTree<double> *model =
-        static_cast<RigidBodyTree<double> *>(getDrakeMexPointer(prhs[0]));
+    RigidBodyTreeWithAlternates<double> *model =
+        static_cast<RigidBodyTreeWithAlternates<double>*>(
+            getDrakeMexPointer(prhs[0]));
     auto cache = std::make_unique<KinematicsCache<double>>(
         model->CreateKinematicsCache());
     plhs[0] = createDrakeMexPointer(

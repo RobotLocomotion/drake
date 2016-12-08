@@ -1,0 +1,4 @@
+
+drake_add_cc_test(rigid_body_tree_with_alternates_test)
+target_link_libraries(rigid_body_tree_with_alternates_test
+  drakeRigidBodyTreeWithAlternates)

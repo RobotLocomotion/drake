@@ -20,6 +20,22 @@ class RigidBody {
  public:
   RigidBody();
 
+  RigidBody(const RigidBody<double>& other) {
+    name_ = other.name_;
+    mass_ = other.mass_;
+    center_of_mass_ = other.center_of_mass_;
+    spatial_inertia_ = other.spatial_inertia_;
+    model_instance_id_ = other.model_instance_id_;
+    model_name_ = other.model_name_;
+    if(other.joint_)
+      joint_ = std::unique_ptr<DrakeJoint>(other.joint_->CloneTo<T>());
+  }
+
+  static std::unique_ptr<RigidBody<T>> CloneFrom(
+      const RigidBody<double>& fundamental) {
+    return std::make_unique<RigidBody<T>>(fundamental);
+  }
+
   /**
    * Returns the name of this rigid body.
    */
@@ -373,6 +389,10 @@ class RigidBody {
 #endif
 
  private:
+  // Let all other instantiations of this class be friends with this one.
+  template<typename TT>
+  friend class RigidBody;
+
   // TODO(tkoolen): It's very ugly, but parent, dofnum, and pitch also exist
   // currently (independently) at the RigidBodyTree level to represent the
   // featherstone structure. This version is for the kinematics.

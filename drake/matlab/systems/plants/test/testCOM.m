@@ -1,13 +1,14 @@
 function testCOM
+
 % test COM computation with/without affordance
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 options.floating = true;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 %warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
+
 r = RigidBodyManipulator(urdf,options);
 warning(w);
 nq = r.getNumPositions();
-
 
 nom_data = load('../../../../examples/Atlas/data/atlas_fp.mat');
 q_nom = nom_data.xstar(1:nq);

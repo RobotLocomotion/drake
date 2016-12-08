@@ -33,6 +33,9 @@
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+
 /**
  * Maintains a vector of RigidBody objects that are arranged into a kinematic
  * tree via DrakeJoint objects. It provides various utility methods for
@@ -84,6 +87,34 @@ class RigidBodyTree {
    * RigidBodyTree.
    */
   static const int kWorldBodyIndex;
+
+  RigidBodyTree(const RigidBodyTree<double>& fundamental) {
+    std::cout << "BUCHE: " << std::endl;
+    PRINT_VAR(__FILE__);
+    PRINT_VAR(__LINE__);
+    PRINT_VAR(__PRETTY_FUNCTION__);
+
+    a_grav = fundamental.a_grav;
+    B = fundamental.B;
+
+    PRINT_VAR(fundamental.bodies.size());
+
+    for (const auto& body: fundamental.bodies) {
+      auto new_body = RigidBody<T>::CloneFrom(*body);
+      this->add_rigid_body(std::move(new_body));
+    }
+    for (const auto& body: fundamental.bodies) {
+      if (body->has_parent_body()) {
+        int body_id = body->get_body_index();
+        int parent_body_id = body->get_parent()->get_body_index();
+        DRAKE_DEMAND(body_id == bodies[body_id]->get_body_index());
+        DRAKE_DEMAND(parent_body_id == bodies[parent_body_id]->get_body_index());
+
+        bodies[body_id]->set_parent(bodies[parent_body_id].get());
+      }
+    }
+    this->compile();
+  }
 
   /// A constructor that initializes the gravity vector to be [0, 0, -9.81] and
   /// a single RigidBody named "world". This RigidBody can be accessed by
@@ -1252,7 +1283,6 @@ class RigidBodyTree {
 #endif
 
  private:
-  RigidBodyTree(const RigidBodyTree&);
   RigidBodyTree& operator=(const RigidBodyTree&) { return *this; }
 
   std::set<std::string> already_printed_warnings;
