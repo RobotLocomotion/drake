@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -107,7 +108,10 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   //////////////////////////////////////////////////////////////////////////////
   EXPECT_TRUE(rbs1->get_num_positions() == rbs2->get_num_positions());
   EXPECT_TRUE(rbs1->get_num_velocities() == rbs2->get_num_velocities());
-  EXPECT_TRUE(rbs2_xdot.isApprox(rbs1_xdot));
+  std::cout << std::setprecision(14);
+  std::cout << "RBS2 xdot: " << rbs2_xdot << "\n";
+  std::cout << "RBS1 xdot: " << rbs1_xdot << "\n";
+  EXPECT_TRUE(CompareMatrices(rbs2_xdot, rbs1_xdot, 1e-14, MatrixCompareType::absolute));
 }
 
 }  // namespace
