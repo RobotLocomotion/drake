@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-"""
+"""Attempts to load each non-blacklisted *.yaml file from parent directory,
+returning a non-zero exit code if any file fails.
 """
 
 import glob

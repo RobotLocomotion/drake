@@ -3,11 +3,10 @@
 #include <memory>
 #include <vector>
 
-#include "drake/automotive/maliput/monolane/segment.h"
-
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/api/segment.h"
+#include "drake/automotive/maliput/monolane/segment.h"
 
 namespace drake {
 namespace maliput {
@@ -18,11 +17,11 @@ class RoadGeometry;
 /// A Junction implementation.
 class Junction : public api::Junction {
  public:
-  /// Construct an empty Junction.
+  /// Constructs an empty Junction.
   Junction(const api::JunctionId& id, RoadGeometry* rg)
       : id_(id), road_geometry_(rg) {}
 
-  /// Create and add a new Segment with the specified @p id.
+  /// Creates and adds a new Segment with the specified @p id.
   Segment* NewSegment(api::SegmentId id);
 
   virtual ~Junction() {}
