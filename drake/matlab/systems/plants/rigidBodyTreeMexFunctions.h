@@ -18,6 +18,8 @@ DLL_EXPORT_SYM void centroidalMomentumMatrixmex(int nlhs, mxArray* plhs[],
                                                 const mxArray* prhs[]);
 DLL_EXPORT_SYM void doKinematicsmex(int nlhs, mxArray* plhs[], int nrhs,
                                     const mxArray* prhs[]);
+
+#if 0
 DLL_EXPORT_SYM void findKinematicPathmex(int nlhs, mxArray* plhs[], int nrhs,
                                          const mxArray* prhs[]);
 DLL_EXPORT_SYM void forwardJacDotTimesVmex(int nlhs, mxArray* plhs[], int nrhs,
@@ -44,3 +46,4 @@ DLL_EXPORT_SYM void velocityToPositionDotMappingmex(int nlhs, mxArray* plhs[],
 DLL_EXPORT_SYM void positionDotToVelocityMappingmex(int nlhs, mxArray* plhs[],
                                                     int nrhs,
                                                     const mxArray* prhs[]);
+#endif

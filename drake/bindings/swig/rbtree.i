@@ -62,6 +62,7 @@
 
 // unique_ptr confuses SWIG, so we'll ignore it for now
 %ignore RigidBody<double>::setJoint(std::unique_ptr<DrakeJoint> joint);
+%ignore RigidBody<double>::CloneFrom(const RigidBody<double>& fundamental);
 %include "drake/multibody/rigid_body.h"
 
 %include "drake/multibody/rigid_body_frame.h"

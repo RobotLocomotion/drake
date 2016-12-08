@@ -2,11 +2,16 @@
 
 #include <iostream>
 #include <cmath>
+
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/matlab/systems/plants/rigidBodyTreeMexConversions.h"
 #include <stdexcept>
 #include "drake/multibody/joints/drake_joints.h"
 
+using drake::AutoDiffXd;
+using drake::AutoDiffUpTo73d;
+using drake::RigidBodyTreeWithAlternates;
 using namespace Eigen;
 using namespace std;
 
@@ -469,14 +474,17 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   // END_DEBUG
   model->compile();
 
-  auto matlab_model =
-      make_unique<MatlabRigidBodyTree>(
-          make_unique<RigidBodyTree<double>>(model));
+  auto tree_with_alternates =
+      std::make_unique<RigidBodyTreeWithAlternates<double>>(
+      std::unique_ptr<RigidBodyTree<double>>(model));
+
+  RigidBodyTreeWithAlternates<double>::AddAlternate(*tree_with_alternates);
+  RigidBodyTreeWithAlternates<AutoDiffXd>::AddAlternate(*tree_with_alternates);
 
   // mexPrintf("constructModelmex: Creating DrakeMexPointer\n");
   plhs[0] =
       createDrakeMexPointer(
-          (void*)model.release(), "RigidBodyTree",
+          (void*)tree_with_alternates.release(), "RigidBodyTree",
           DrakeMexPointerTypeId<RigidBodyTree<double>>::value);
   // DEBUG
   // mexPrintf("constructModelmex: END\n");

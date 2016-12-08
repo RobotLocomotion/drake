@@ -10,6 +10,7 @@
 #include "drake/matlab/util/makeFunction.h"
 #include "drake/matlab/util/standardMexConversions.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/rbt_with_alternates/rigid_body_tree_with_alternates.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 using namespace std;
@@ -19,6 +20,7 @@ using namespace drake;
 typedef AutoDiffScalar<VectorXd> AutoDiffDynamicSize;
 typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;
 typedef RigidBodyTree<double> RigidBodyTreed;
+typedef RigidBodyTreeWithAlternates<double> RigidBodyTreedWAlt;
 
 /**
  * Mex function implementations
@@ -38,11 +40,11 @@ void centerOfMassJacobianDotTimesVmex(int nlhs, mxArray* plhs[], int nrhs,
 
 void centerOfMassmex(int nlhs, mxArray* plhs[], int nrhs,
                      const mxArray* prhs[]) {
-  auto func_double = make_function(&RigidBodyTreed::centerOfMass<double>);
+  auto func_double = make_function(&RigidBodyTreedWAlt::centerOfMass<double>);
   auto func_autodiff_fixed_max =
-      make_function(&RigidBodyTreed::centerOfMass<AutoDiffFixedMaxSize>);
+      make_function(&RigidBodyTreedWAlt::centerOfMass<AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic =
-      make_function(&RigidBodyTreed::centerOfMass<AutoDiffDynamicSize>);
+      make_function(&RigidBodyTreedWAlt::centerOfMass<AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
 }
@@ -115,6 +117,7 @@ void doKinematicsmex(int nlhs, mxArray* plhs[], int nrhs,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
 }
 
+#if 0
 void findKinematicPathmex(int nlhs, mxArray* plhs[], int nrhs,
                           const mxArray* prhs[]) {
   auto func = make_function(&RigidBodyTreed::findKinematicPath);
@@ -385,3 +388,4 @@ void positionDotToVelocityMappingmex(int nlhs, mxArray* plhs[], int nrhs,
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
 }
+#endif
