@@ -495,7 +495,7 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
 GTEST_TEST(SimulatorTest, AutodiffBasic) {
   SpringMassSystem<AutoDiffXd> spring_mass(1., 1., 0.);
   Simulator<AutoDiffXd> simulator(spring_mass);
-  simulator.StepTo(1.0);
+  simulator.Initialize();
 }
 
 }  // namespace
