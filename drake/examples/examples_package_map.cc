@@ -25,6 +25,11 @@ void AddPackage(const string& name, const string& path,
 
 }  // namespace
 
+// TODO(liang.fok): Remove the reliance on GetDrakePath(). Usage of
+// GetDrakePath() is not good because it hard-codes a path that is determined at
+// compile time. This will not work once Drake has binary releases since the
+// path to the models will differ on the machine on which the binaries are run.
+// See: #1471.
 void AddExamplePackages(PackageMap* package_map) {
   AddPackage("Atlas", GetDrakePath() + "/examples/Atlas/", package_map);
   AddPackage("IRB140", GetDrakePath() + "/examples/IRB140/", package_map);

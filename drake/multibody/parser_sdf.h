@@ -17,7 +17,8 @@ namespace sdf {
  * One instance of each model is added. The models' frames are made coincident
  * with the world's coordinate frame.
  *
- * @param[in] filename The SDF file containing the model to be added.
+ * @param[in] filename The name of the SDF file containing the model to be
+ * added.
  *
  * @param[in] floating_base_type The type of joint that connects the model's
  * root to the existing rigid body tree.
@@ -39,7 +40,8 @@ AddModelInstancesFromSdfFileInWorldFrame(
  * One instance of each model is added. The models' frames are made coincident
  * with the world's coordinate frame.
  *
- * @param[in] filename The SDF file containing the model to be added.
+ * @param[in] filename The name of the SDF file containing the model to be
+ * added.
  *
  * @param[in] package_map A map of ROS package names to their paths. These are
  * the packages to search through when finding files referenced in the SDF.
@@ -63,7 +65,8 @@ AddModelInstancesFromSdfFileInWorldFrameSearchingInRosPackages(
  * Adds the model or models defined within an SDF file to a rigid body tree.
  * One instance of each model is added.
  *
- * @param[in] filename The SDF file containing the model to be added.
+ * @param[in] filename The name of the SDF file containing the model to be
+ * added.
  *
  * @param[in] floating_base_type The type of joint that connects the model's
  * root to the existing rigid body tree.
@@ -83,10 +86,11 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
     RigidBodyTree<double>* tree);
 
 /**
- * Adds the model or models defined within an SDF file to a rigid body tree.
- * One instance of each model is added.
+ * Adds the model or models defined within an SDF file to @p tree. One instance
+ * of each model is added.
  *
- * @param[in] filename The SDF file containing the model to be added.
+ * @param[in] filename The name of the SDF file containing the model to be
+ * added.
  *
  * @param[in] package_map A map of ROS package names to their paths. These are
  * the packages to search through when finding files referenced in the SDF.
@@ -110,8 +114,8 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileSearchingInRosPackages(
 
 
 /**
- * Adds a SDF model to a rigid body system based on a string containing an SDF
- * description.
+ * Adds the model or models defined within an SDF description to @p tree. One
+ * instance of each model is added.
  *
  * @param[in] sdf_string The SDF description of one or more models.
  *
@@ -133,8 +137,8 @@ ModelInstanceIdTable AddModelInstancesFromSdfString(
     RigidBodyTree<double>* tree);
 
 /**
- * Adds a SDF model to a rigid body system based on a string containing an SDF
- * description.
+ * Adds the model or models defined within an SDF description to @p tree. One
+ * instance of each model is added.
  *
  * @param[in] sdf_string The SDF description of one or more models.
  *

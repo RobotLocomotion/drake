@@ -717,8 +717,8 @@ void ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
                 std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
                 ModelInstanceIdTable* model_instance_id_table) {
   // Aborts if any of the output parameter pointers are invalid.
-  DRAKE_DEMAND(tree);
-  DRAKE_DEMAND(node);
+  DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
+  DRAKE_DEMAND(node && "You must provide a valid XMLElement node.");
 
   // The pose_map is needed because SDF specifies almost everything in the
   // model's coordinate frame.
@@ -860,7 +860,7 @@ ModelInstanceIdTable ParseSdf(XMLDocument* xml_doc,
 ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
     const string& filename, const FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree) {
-  DRAKE_DEMAND(tree);
+  DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
   const PackageMap package_map;
   return AddModelInstancesFromSdfFileSearchingInRosPackages(filename,
       package_map, floating_base_type, nullptr /* weld_to_frame */, tree);
@@ -871,7 +871,7 @@ AddModelInstancesFromSdfFileInWorldFrameSearchingInRosPackages(
     const string& filename, const PackageMap& package_map,
     const FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree) {
-  DRAKE_DEMAND(tree);
+  DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
   return AddModelInstancesFromSdfFileSearchingInRosPackages(filename,
       package_map, floating_base_type, nullptr /* weld_to_frame */, tree);
 }
@@ -880,7 +880,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
     const string& filename, const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
-  DRAKE_DEMAND(tree);
+  DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
   const PackageMap package_map;
   return AddModelInstancesFromSdfFileSearchingInRosPackages(filename,
       package_map, floating_base_type, weld_to_frame, tree);
@@ -891,7 +891,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileSearchingInRosPackages(
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
-  DRAKE_DEMAND(tree);
+  DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
 
   XMLDocument xml_doc;
   xml_doc.LoadFile(filename.data());
@@ -912,11 +912,10 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileSearchingInRosPackages(
 }
 
 ModelInstanceIdTable AddModelInstancesFromSdfString(
-    const string& sdf_string,
-    const drake::multibody::joints::FloatingBaseType floating_base_type,
+    const string& sdf_string, const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
-  DRAKE_DEMAND(tree);
+  DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
   const PackageMap package_map;
   return AddModelInstancesFromSdfStringSearchingInRosPackages(sdf_string,
       package_map, floating_base_type, weld_to_frame, tree);
@@ -927,7 +926,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfStringSearchingInRosPackages(
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
-  DRAKE_DEMAND(tree);
+  DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
 
   XMLDocument xml_doc;
   xml_doc.Parse(sdf_string.c_str());
