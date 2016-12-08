@@ -52,9 +52,9 @@ class AlternateInstantiations<double> {
   std::unordered_map<std::type_index, size_t> type_to_instantiation_;
 };
 
-/** This is a ObjectWithAlternates instantiated for a concrete ObjectWithAlternates type MySys, which
+/** This is a ObjectWithAlternates instantiated for a concrete ObjectWithAlternates type DerivedObjectWithAlternates, which
 must be derived from `ObjectWithAlternates<MyObjectWithAlternates, T>` for an Eigen Scalar type T. **/
-template <template <typename> class MySys, typename T>
+template <template <typename> class DerivedObjectWithAlternates, typename T>
 class ObjectWithAlternates : public ObjectWithAlternatesBase {
  public:
   using ObjectWithAlternatesT = ObjectWithAlternates;
@@ -64,15 +64,15 @@ class ObjectWithAlternates : public ObjectWithAlternatesBase {
   ObjectWithAlternates() {}
 
   /** Construction from fundamental instantiation. **/
-  explicit ObjectWithAlternates(const MySys<double>& fundamental) {
+  explicit ObjectWithAlternates(const DerivedObjectWithAlternates<double>& fundamental) {
 
   }
 
 
   /** Create an alternate instantiation of the fundamental ObjectWithAlternates and
   register this one with it. **/
-  static void AddAlternate(MySys<double>& fundamental) {
-    std::unique_ptr<MySys<T>> alternate(new MySys<T>(fundamental));
+  static void AddAlternate(DerivedObjectWithAlternates<double>& fundamental) {
+    std::unique_ptr<DerivedObjectWithAlternates<T>> alternate(new DerivedObjectWithAlternates<T>(fundamental));
     // TODO(sherm) Make alternate mirror fundamental.
     fundamental.get_mutable_alternates()->RegisterAlternate(
         std::type_index(typeid(T)),
@@ -80,10 +80,10 @@ class ObjectWithAlternates : public ObjectWithAlternatesBase {
   }
 
   template <class TT>
-  const MySys<TT>& get_alternate() const {
+  const DerivedObjectWithAlternates<TT>& get_alternate() const {
     const ObjectWithAlternatesBase& alt =
         alternates_.get_alternate(std::type_index(typeid(TT)));
-    return dynamic_cast<const MySys<TT>&>(alt);
+    return dynamic_cast<const DerivedObjectWithAlternates<TT>&>(alt);
   }
 
   int get_num_alternates() const { return alternates_.get_num_alternates(); }

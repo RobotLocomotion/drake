@@ -1,21 +1,39 @@
-#include "drake/multibody/rbt_with_alternates/rigid_body_tree_with_aleternates.h"
+#include "drake/multibody/rbt_with_alternates/rigid_body_tree_with_alternates.h"
+
+#include "drake/common/eigen_autodiff_types.h"
+
+#include <cstdio>
+#include <iostream>
+#include <memory>
+#include <utility>
+
+using drake::AutoDiffXd;
+
+using std::complex;
+using std::cout;
+using std::endl;
+using std::unique_ptr;
+using std::make_unique;
 
 int main() {
   // Fill in the "MultibodyTree" first.
-  auto mb_tree = make_unique<RigidBodyTree<double>>();
+  auto tree = make_unique<RigidBodyTree<double>>();
 
 #if 0
-  mb_tree->AddJoint(make_unique<PinJoint<double>>(1.1));
-  mb_tree->AddJoint(make_unique<SliderJoint<double>>(2.2));
-  mb_tree->AddJoint(make_unique<PinJoint<double>>(3.3));
-  mb_tree->AddJoint(make_unique<SliderJoint<double>>(4.4));
+  tree->AddJoint(make_unique<PinJoint<double>>(1.1));
+  tree->AddJoint(make_unique<SliderJoint<double>>(2.2));
+  tree->AddJoint(make_unique<PinJoint<double>>(3.3));
+  tree->AddJoint(make_unique<SliderJoint<double>>(4.4));
+#endif
 
   // Create the fundamental MBSystem (that is, type double).
-  MBSystem<double> sys(std::move(mb_tree));
+  RigidBodyTreeWithAlternates<double> tree_with_alternates(std::move(tree));
 
   // Create some alternate instantiations of MBSystem (kept within the
   // fundamental system).
-  MBSystem<complex<double>>::AddAlternate(sys);
+  RigidBodyTreeWithAlternates<AutoDiffXd>::AddAlternate(tree_with_alternates);
+
+#if 0
   MBSystem<float>::AddAlternate(sys);
 
   cout << "num alternates=" << sys.get_num_alternates() << endl;
@@ -31,8 +49,8 @@ int main() {
   cout << "fsys type=" << fsys.type() << endl;
 
   // Dig out the matching instantiations of the multibody tree.
-  const auto& dtree = sys.get_mb_tree();   // <double> (fundamental)
-  const auto& ftree = fsys.get_mb_tree();  // <float> (not useful)
+  const auto& dtree = sys.get_tree();   // <double> (fundamental)
+  const auto& ftree = fsys.get_tree();  // <float> (not useful)
 
   // Using the fundamental system, calculate derivative df analytically.
   Context<double> cd{0.5};  // set x=0.5 (set up context for fundamental)
@@ -43,7 +61,7 @@ int main() {
 
   // Instead, use the same joint of the complex alternate to calculate the
   // derivative using a complex step derivative (equivalent to autodiff).
-  const auto& ctree = csys.get_mb_tree();
+  const auto& ctree = csys.get_tree();
   const auto& cpin0 = ctree.GetJoint<PinJoint>(0);
 
   Context<complex<double>> cc(cd); // clone context for this alternate.
@@ -54,5 +72,5 @@ int main() {
          f, df, cdf);
 #endif
 
-  getchar();
+  //getchar();
 }
