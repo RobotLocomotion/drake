@@ -1,5 +1,7 @@
 #include "drake/common/autodiff_overloads.h"
 
+#include <type_traits>
+
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
 
@@ -303,6 +305,23 @@ GTEST_TEST(AutodiffOverloadsTest, Cond9) {
   EXPECT_DOUBLE_EQ(z.value(), x.value() * x.value());
   EXPECT_DOUBLE_EQ(z.derivatives()[0], 2 * 2 * x.value());
   EXPECT_DOUBLE_EQ(z.derivatives()[1], 2 * x.value());
+}
+
+// This is just a sanity check to make sure that Eigen::NumTraits::Literal
+// is the right way to dig through an AutoDiffScalar to find the underlying
+// floating point type. If this compiles it succeeds.
+GTEST_TEST(AutodiffOverloadsTest, CheckEigenLiteral) {
+  using DerTyped = Eigen::Vector2d;
+  using DerTypef = Eigen::Vector2f;
+  using Td = Eigen::AutoDiffScalar<DerTyped>;
+  using Tf = Eigen::AutoDiffScalar<DerTypef>;
+
+  using Literald = typename Eigen::NumTraits<Td>::Literal;
+  using Literalf = typename Eigen::NumTraits<Tf>::Literal;
+
+  static_assert(std::is_same<Literald, double>::value &&
+                    std::is_same<Literalf, float>::value,
+                "Eigen::NumTraits<T>::Literal didn't behave as expected.");
 }
 
 }  // namespace
