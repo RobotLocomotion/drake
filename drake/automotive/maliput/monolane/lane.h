@@ -7,7 +7,7 @@
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/segment.h"
-
+#include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
@@ -17,8 +17,8 @@ namespace monolane {
 class BranchPoint;
 class Segment;
 
-typedef Eigen::Matrix<double, 3, 1> V3;
-typedef Eigen::Matrix<double, 2, 1> V2;
+typedef Vector2<double> V2;
+typedef Vector3<double> V3;
 
 /// An R^3 rotation parameterized by roll, pitch, yaw.
 ///
@@ -71,7 +71,7 @@ class CubicPolynomial {
 
   // TODO(maddog@tri.global)  s_p() and p_s() need to be replaced with a
   //                          properly integrated path-length parameterization.
-  /// Returns the path-length s along the curve (p, f(p)) from p=0 to @p p.
+  /// Returns the path-length s along the curve (p, f(p)) from p = 0 to @p p.
   double s_p(double p) const {
     return s_1_ * p;
   }
@@ -102,7 +102,7 @@ class CubicPolynomial {
 /// Base class for the monolane implementation of Lane.
 class Lane : public api::Lane {
  public:
-  /// Construct a base Lane.
+  /// Constructs a base Lane.
   ///
   /// @param id the ID
   /// @param segment the Segment to which this Lane will belong
@@ -117,11 +117,11 @@ class Lane : public api::Lane {
   /// @p elevation and @p superelevation are cubic-polynomial functions which
   /// define the elevation and superelevation as a function of position along
   /// the planar reference curve defined by the concrete subclass.
-  /// (@p elevation specifies the z-component of the surface at r=0, h=0 ---
-  /// @p superelevation contributes at r!=0.)  These two functions must be
+  /// (@p elevation specifies the z-component of the surface at (r,h) = (0,0);
+  /// @p superelevation contributes at r != 0.)  These two functions must be
   /// isotropically scaled to operate over the domain p in [0, 1], where p is
-  /// linear in the path-length of the planar reference curve, p=0 corresponds
-  /// to the start and p=1 to the end.  @p p_scale is the scale factor.
+  /// linear in the path-length of the planar reference curve, p = 0 corresponds
+  /// to the start and p = 1 to the end.  @p p_scale is the scale factor.
   /// In other words...
   ///
   /// Given
@@ -149,7 +149,7 @@ class Lane : public api::Lane {
         superelevation_(superelevation) {}
 
   // TODO(maddog@tri.global)  Allow superelevation to have a center-of-rotation
-  ///                         which is different from r=0.
+  ///                         which is different from r = 0.
 
   const CubicPolynomial& elevation() const { return elevation_; }
 

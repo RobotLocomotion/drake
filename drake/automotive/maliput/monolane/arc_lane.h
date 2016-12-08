@@ -13,7 +13,8 @@ namespace monolane {
 /// in the xy-plane.
 class ArcLane : public Lane {
  public:
-  /// Construct an ArcLane.
+  /// Constructs an ArcLane, specified by a circular arc defined in the
+  /// xy-plane (the ground plane).
   ///
   /// @param center center of the reference arc
   /// @param radius radius of the reference arc (must be positive)
@@ -22,7 +23,8 @@ class ArcLane : public Lane {
   /// @param d_theta central angle of the arc, i.e., angular displacement
   ///                from start to end.  d_theta > 0 is counter-clockwise.
   ///
-  /// For remaining parameters, see documentation for the Lane base class.
+  /// @param id,segment,lane_bounds,driveable_bounds,elevation,superelevation
+  ///        See documentation for the Lane base class.
   ArcLane(const api::LaneId& id, Segment* segment,
           const V2& center, const double radius,
           const double theta0, const double d_theta,
@@ -58,8 +60,6 @@ class ArcLane : public Lane {
   double theta0_{};
   double d_theta_{};
 };
-
-
 
 }  // namespace monolane
 }  // namespace maliput

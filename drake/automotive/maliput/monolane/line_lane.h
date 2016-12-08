@@ -10,12 +10,14 @@ namespace monolane {
 /// in the xy-plane.
 class LineLane : public Lane {
  public:
-  /// Construct a LineLane.
+  /// Constructs a LineLane, specified by a line segment defined in the
+  /// xy-plane (the ground plane).
   ///
   /// @param xy0 start point of the reference line segment
   /// @param dxy displacement to the end point of the reference line segment
   ///
-  /// For remaining parameters, see documentation for the Lane base class.
+  /// @param id,segment,lane_bounds,driveable_bounds,elevation,superelevation
+  ///        See documentation for the Lane base class.
   LineLane(const api::LaneId& id, Segment* segment,
            const V2& xy0, const V2& dxy,
            const api::RBounds& lane_bounds,

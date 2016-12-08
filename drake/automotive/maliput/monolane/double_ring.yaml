@@ -28,7 +28,7 @@ maliput_monolane_builder:
       start: "connections.r2.end"
       arc: [50, -45]
       z_end: [0, 0, 0, 0]
-      
+
     l0:
       start: "connections.r3.end"
       arc: [50, 45]
@@ -46,6 +46,3 @@ maliput_monolane_builder:
       arc: [50, 45]
       z_end: [0, 0, 0, 0]
       forced_end: "points.start"
-    
-        
-  
