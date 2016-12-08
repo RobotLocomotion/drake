@@ -1131,6 +1131,7 @@ class MathematicalProgram {
   /**
    * Adds Lorentz cone constraint referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
+   * The linear expression @f$ Ax+b @f$ is in the Lorentz cone. Namely
    * <!--
    * z = A * x + b
    * z(0) >= sqrt{z(1)^2 + ... + z(N-1)^2}
@@ -1146,6 +1147,7 @@ class MathematicalProgram {
   /**
    * Adds Lorentz cone constraint referencing potentially a subset of the
    * decision variables (defined in the vars parameter).
+   * The linear expression @f$ Ax+b @f$ is in the Lorentz cone. Namely
    * <!--
    * z = A * x + b
    * z(0) >= sqrt{z(1)^2 + ... + z(N-1)^2}
@@ -1172,7 +1174,8 @@ class MathematicalProgram {
 
   /**
    * Adds Lorentz cone constraint to the program for all
-   * (currently existing) variables
+   * (currently existing) variables.
+   * The linear expression @f$ Ax+b @f$ is in the Lorentz cone. Namely
    * <!--
    * z = A * x + b
    * z(0) >= sqrt{z(1)^2 + ... + z(N-1)^2}
@@ -1195,7 +1198,8 @@ class MathematicalProgram {
 
   /**
    * Adds a rotated Lorentz cone constraint referencing potentially a subset
-   * of decision variables, such that
+   * of decision variables, that the linear expression @f$ Ax+b @f$ is in the
+   * rotated Lorentz cone. Namely
    * @f[
    * z = Ax+b\\
    * z_0 z_1 \ge z_2^2 + x_3^2 + ... + z_{n-1}^2\\
@@ -1215,14 +1219,9 @@ class MathematicalProgram {
                      const VariableListRef& vars);
 
   /**
-   * @param A A matrix whose number of columns equals to the size of the
-   * decision variables.
-   * @param b A vector whose number of rows equals to the size fo the decision
-   * variables.
-   * @param vars The decision variables on which the constraint is imposed.
-   * Each DecisionVariableMatrix object should have only one column.
-   * Example: if you want to add the rotated Lorentz cone constraint on vector
-   * @f$ x\in\mathbb{R}^m @f$
+   * Adds a rotated Lorentz cone constraint referencing potentially a subset
+   * of decision variables, that the linear expression @f$ Ax+b @f$ for
+   * @f$ x\in\mathbb{R}^m @f$ is in the rotated Lorentz cone. Namely
    * @f[
    * z = Ax+b\\
    * z_0 z_1 \ge z_2^2 + x_3^2 + ... + z_{n-1}^2\\
@@ -1240,6 +1239,13 @@ class MathematicalProgram {
    *   auto x = prog.NewContinuousVariables(n,'x');
    *   auto con = prog.AddRotatedLorentzConeConstraint(A, b, {x});
    * @endcode
+   *
+   * @param A A matrix whose number of columns equals to the size of the
+   * decision variables.
+   * @param b A vector whose number of rows equals to the size fo the decision
+   * variables.
+   * @param vars The decision variables on which the constraint is imposed.
+   * Each DecisionVariableMatrix object should have only one column.
    */
   template<typename DerivedA, typename DerivedB>
   std::shared_ptr<RotatedLorentzConeConstraint>
@@ -1253,11 +1259,8 @@ class MathematicalProgram {
 
   /**
    * Adds a rotated Lorentz constraint to the program for all
-   * (currently existing) variables.
-   * @param A A matrix whose number of columns equals to the size of the
-   * decision variables.
-   * @param b A vector whose number of rows equals to the size fo the decision
-   * variables.
+   * (currently existing) variables, that the linear expression @f$ Ax+b @f$ for
+   * @f$ x\in\mathbb{R}^m @f$ is in the rotated Lorentz cone. Namely
    * @f[
    * z = Ax+b\\
    * z_0 z_1 \ge z_2^2 + x_3^2 + ... + z_{n-1}^2\\
@@ -1270,6 +1273,10 @@ class MathematicalProgram {
    * z(0) * z(1) >= z(2)^2 + ...z(n-1)^2
    * z(0) >= 0, z(1) >= 0
    * -->
+   * @param A A matrix whose number of columns equals to the size of the
+   * decision variables.
+   * @param b A vector whose number of rows equals to the size fo the decision
+   * variables.
    */
   template<typename DerivedA, typename DerivedB>
   std::shared_ptr<RotatedLorentzConeConstraint>

@@ -195,8 +195,10 @@ class QuadraticConstraint : public Constraint {
 };
 
 /**
- A LorentzConeConstraint takes a vector @f$ x\in\mathbb{R}^m @f$, and impose the
- constraint
+ This constraint taks a vector @f$ x\in\mathbb{R}^m @f$, defines a
+ linear expression \f$ z\equiv Ax+b \f$, and imposes that
+ @f$ z @f$ is in the Lorentz cone.
+ Namely
  @f[
  z = Ax+b\\
  z_1 \ge \sqrt{z_2^2+...+z_n^2}
@@ -236,6 +238,12 @@ class LorentzConeConstraint : public Constraint {
 
   ~LorentzConeConstraint() override {}
 
+  /// Getter for A.
+  const Eigen::MatrixXd& A() {return A_;}
+
+  /// Getter for b.
+  const Eigen::VectorXd& b() {return b_;}
+
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override;
 
@@ -248,8 +256,10 @@ class LorentzConeConstraint : public Constraint {
 };
 
 /**
- * A rotated Lorentz cone constraint that taks a vector
- * @f$ x\in\mathbb{R}^m @f$, and imposes the constraint
+ * This constraint taks a vector @f$ x\in\mathbb{R}^m @f$, defines a
+ * linear expression @f$ z\equiv Ax+b @f$, and imposes that
+ * @f$ z @f$ is in the rotated Lorentz cone.
+ * Namely
  * @f[
  * z = Ax+b\\
  * z_1 \ge 0\\
@@ -275,6 +285,12 @@ class RotatedLorentzConeConstraint : public Constraint {
                        std::numeric_limits<double>::infinity())), A_(A), b_(b) {
     DRAKE_ASSERT(A_.rows() == b_.rows());
   }
+
+  /// Getter for A.
+  const Eigen::MatrixXd& A() {return A_;}
+
+  /// Getter for b.
+  const Eigen::VectorXd& b() {return b_;}
 
   RotatedLorentzConeConstraint(const RotatedLorentzConeConstraint& rhs) =
       delete;
