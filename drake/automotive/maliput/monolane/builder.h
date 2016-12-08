@@ -30,7 +30,8 @@ namespace monolane {
 ///  - only linear and constant-curvature-arc primitives in XY-plane;
 ///  - cubic polynomials (parameterized on XY-arc-length) for elevation
 ///    and superelevation;
-///  - superelevation rotates around reference line (r=0) of path.
+///  - superelevation (bank of road) rotates around the reference line (r = 0)
+///    of the path.
 
 
 /// Planar information for an endpoint specification.
@@ -61,9 +62,9 @@ struct XYPoint {
 ///  - z: elevation
 ///  - zdot: grade (rate of change of elevation with respect to
 ///          arc length of the reference path)
-///  - theta: superelevation (rotation of road surface around r=0 centerline;
-///           theta>0 --> elevation of r>0 above elevation of r<0)
-///  - thetadot: rate of change of superelevation with respec to arc length
+///  - theta: superelevation (rotation of road surface around r = 0 centerline;
+///           theta > 0 --> elevation at r > 0 is above elevation at r < 0)
+///  - thetadot: rate of change of superelevation with respect to arc length
 ///              of the reference path
 struct ZPoint {
   ZPoint reverse() const {
@@ -88,8 +89,8 @@ struct XYZPoint {
     return {xy.reverse(), z.reverse()};
   }
 
-  XYPoint xy{};
-  ZPoint z{};
+  XYPoint xy;
+  ZPoint z;
 };
 
 

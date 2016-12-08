@@ -3,12 +3,11 @@
 #include <memory>
 #include <vector>
 
-#include "drake/automotive/maliput/monolane/branch_point.h"
-#include "drake/automotive/maliput/monolane/junction.h"
-
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/maliput/monolane/branch_point.h"
+#include "drake/automotive/maliput/monolane/junction.h"
 
 namespace drake {
 namespace maliput {
@@ -19,7 +18,7 @@ namespace monolane {
 /// a sensible road network.
 class RoadGeometry : public api::RoadGeometry {
  public:
-  /// Construct an empty RoadGeometry with the specified tolerances.
+  /// Constructs an empty RoadGeometry with the specified tolerances.
   RoadGeometry(const api::RoadGeometryId& id,
                const double linear_tolerance,
                const double angular_tolerance)
@@ -27,10 +26,10 @@ class RoadGeometry : public api::RoadGeometry {
         linear_tolerance_(linear_tolerance),
         angular_tolerance_(angular_tolerance) {}
 
-  /// Create and add a new Junction with the specified @p id.
+  /// Creates and adds a new Junction with the specified @p id.
   Junction* NewJunction(api::JunctionId id);
 
-  /// Create and add a new BranchPoint with the specified @p id.
+  /// Creates and adds a new BranchPoint with the specified @p id.
   BranchPoint* NewBranchPoint(api::BranchPointId id);
 
   virtual ~RoadGeometry() {}
