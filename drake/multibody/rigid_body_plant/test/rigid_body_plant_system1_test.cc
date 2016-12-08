@@ -111,7 +111,8 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   std::cout << std::setprecision(14);
   std::cout << "RBS2 xdot: " << rbs2_xdot << "\n";
   std::cout << "RBS1 xdot: " << rbs1_xdot << "\n";
-  EXPECT_TRUE(CompareMatrices(rbs2_xdot, rbs1_xdot, 1e-14, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(rbs2_xdot, rbs1_xdot, 1e-14,
+                              MatrixCompareType::absolute));
 }
 
 }  // namespace
