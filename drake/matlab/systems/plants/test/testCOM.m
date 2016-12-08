@@ -4,24 +4,36 @@ urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 options.floating = true;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 %warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
+
+pause
+
 r = RigidBodyManipulator(urdf,options);
 warning(w);
-nq = r.getNumPositions();
+nq = r.getNumPositions()
 
+pause
 
 nom_data = load('../../../../examples/Atlas/data/atlas_fp.mat');
 q_nom = nom_data.xstar(1:nq);
 q_seed = q_nom+0.1*randn(nq,1);
-v = randn(r.getNumVelocities(),1);
+v = randn(r.getNumVelocities(),1)
+
+pause
 
 display('Check the CoM with robot only');
+pause
+
 kinsol = doKinematics(r,q_seed,true,true,v);
+pause
+
 [com_mex,J_mex,dJ_mex] = r.getCOM(kinsol);
 [com_mex1,J_mex1,dJ_mex1] = r.getCOM(kinsol,1);
 valuecheck(com_mex,com_mex1);
 valuecheck(J_mex,J_mex1);
 valuecheck(dJ_mex,dJ_mex1);
 valuecheck(J_mex(1:3,1:3),eye(3),1e-6);
+
+pause
 
 display('Check if MATLAB and mex are consistent for robot only');
 kinsol = doKinematics(r,q_seed,true,false,v);
