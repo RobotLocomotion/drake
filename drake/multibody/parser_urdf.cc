@@ -873,7 +873,7 @@ void ParseLoop(RigidBodyTree<double>* tree, XMLElement* node,
 
   tree->addFrame(frameA);
   tree->addFrame(frameB);
-  RigidBodyLoop l(frameA, frameB, axis);
+  RigidBodyLoop<double> l(frameA, frameB, axis);
   tree->loops.push_back(l);
 }
 
@@ -1129,6 +1129,19 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
   return
       AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
       urdf_string, package_map, tree);
+}
+
+ModelInstanceIdTable AddModelInstanceFromUrdfString(
+    const std::string& urdf_string,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PackageMap& ros_package_map,
+    const std::string& root_dir,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
+    RigidBodyTree<double>* tree) {
+  return AddModelInstanceFromUrdfStringSearchingInRosPackages(
+      urdf_string, ros_package_map, root_dir, floating_base_type,
+      weld_to_frame, tree);
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfString(

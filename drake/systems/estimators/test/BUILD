@@ -4,6 +4,18 @@
 package(default_visibility = ["//visibility:public"])
 
 cc_test(
+    name = "kalman_filter_test",
+    size = "small",
+    srcs = ["kalman_filter_test.cc"],
+    linkstatic = 1,
+    deps = [
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/estimators:kalman_filter",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
     name = "luenberger_observer_test",
     size = "small",
     srcs = ["luenberger_observer_test.cc"],
