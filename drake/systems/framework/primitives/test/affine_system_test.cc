@@ -162,7 +162,7 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
 
   auto update = system.AllocateDifferenceVariables();
   DiscreteEvent<double> update_event;
-  update_event.action = DiscreteEvent<double>::kUpdateAction;
+  update_event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
 
   system.EvalDifferenceUpdates(*context, update_event, update.get());
 

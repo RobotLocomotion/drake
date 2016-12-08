@@ -231,9 +231,14 @@ class Simulator {
   /** Gets the number of integration steps since the last Initialize() call. */
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
-  /** Gets the number of difference equation updates performed since the last
-  Initialize() call? */
-  int64_t get_num_updates() const { return num_updates_; }
+  /** Gets the number of discrete variable updates performed since the last
+  Initialize() call. */
+  int64_t get_num_discrete_updates() const { return num_discrete_updates_; }
+
+  /** Gets the number of "unrestricted" updates performed since the last
+  Initialize() call. */
+  int64_t get_num_unrestricted_updates() const {
+    return num_unrestricted_updates_; }
 
   /** Gets a pointer to the integrator used to advance the continuous aspects
    *  of the system.
@@ -309,8 +314,11 @@ class Simulator {
   double initial_simtime_{nan()};  // Simulated time at start of period.
   TimePoint initial_realtime_;     // Real time at start of period.
 
-  // The number of updates since the last call to Initialize().
-  int64_t num_updates_{0};
+  // The number of discrete updates since the last call to Initialize().
+  int64_t num_discrete_updates_{0};
+
+  // The number of unrestricted updates since the last call to Initialize().
+  int64_t num_unrestricted_updates_{0};
 
   // The number of publishes since the last call to Initialize().
   int64_t num_publishes_{0};
@@ -403,13 +411,13 @@ void Simulator<T>::StepTo(const T& boundary_time) {
       // Do unrestricted updates first.
       for (const DiscreteEvent<T>& event : update_actions.events) {
         switch (event.action) {
-          case DiscreteEvent<T>::kUpdateUnrestrictedAction: {
-            system_.UpdateUnrestricted(context_.get(), event);
-            ++num_updates_;
+          case DiscreteEvent<T>::kUnrestrictedUpdateAction: {
+            system_.PerformedUnrestrictedUpdate(context_.get(), event);
+            ++num_unrestricted_updates_;
             break;
 
             // Do nothing for these cases *now*.
-            case DiscreteEvent<T>::kUpdateAction:
+            case DiscreteEvent<T>::kDiscreteUpdateAction:
             case DiscreteEvent<T>::kPublishAction:
               break;
 
@@ -422,7 +430,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
       // Do restricted (discrete variable) updates next.
       for (const DiscreteEvent<T>& event : update_actions.events) {
         switch (event.action) {
-          case DiscreteEvent<T>::kUpdateAction: {
+          case DiscreteEvent<T>::kDiscreteUpdateAction: {
             DifferenceState<T> *xd = context_->get_mutable_difference_state();
             // Systems with discrete update events must have difference state.
             DRAKE_DEMAND(xd != nullptr);
@@ -431,12 +439,12 @@ void Simulator<T>::StepTo(const T& boundary_time) {
                                           discrete_updates_.get());
             // Then, write them back into the context.
             xd->CopyFrom(*discrete_updates_);
-            ++num_updates_;
+            ++num_discrete_updates_;
             break;
           }
 
           // Do nothing for these cases *now*.
-          case DiscreteEvent<T>::kUpdateUnrestrictedAction:
+          case DiscreteEvent<T>::kUnrestrictedUpdateAction:
           case DiscreteEvent<T>::kPublishAction:
           case DiscreteEvent<T>::kUnknownAction:
             break;
@@ -454,8 +462,8 @@ void Simulator<T>::StepTo(const T& boundary_time) {
           }
 
           // Do nothing for these cases *now*.
-          case DiscreteEvent<T>::kUpdateUnrestrictedAction:
-          case DiscreteEvent<T>::kUpdateAction:
+          case DiscreteEvent<T>::kUnrestrictedUpdateAction:
+          case DiscreteEvent<T>::kDiscreteUpdateAction:
           case DiscreteEvent<T>::kUnknownAction:
             break;
         }
@@ -485,8 +493,8 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     T next_update_dt = std::numeric_limits<double>::infinity();
     T next_publish_dt = std::numeric_limits<double>::infinity();
     for (const DiscreteEvent<T>& event : update_actions.events) {
-      if (event.action == DiscreteEvent<T>::kUpdateAction ||
-          event.action == DiscreteEvent<T>::kUpdateUnrestrictedAction) {
+      if (event.action == DiscreteEvent<T>::kDiscreteUpdateAction ||
+          event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction) {
         next_update_dt = next_sample_time - step_start_time;
       }
       if (event.action == DiscreteEvent<T>::kPublishAction) {

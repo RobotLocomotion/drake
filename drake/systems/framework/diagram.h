@@ -616,7 +616,7 @@ class Diagram : public System<T>,
         publishers.emplace_back(i, sub_actions[i]);
       }
       if (internal::HasEvent(sub_actions[i],
-                             DiscreteEvent<T1>::kUpdateAction)) {
+                             DiscreteEvent<T1>::kDiscreteUpdateAction)) {
         updaters.emplace_back(i, sub_actions[i]);
       }
     }
@@ -635,7 +635,7 @@ class Diagram : public System<T>,
     // Request an update event, if our subsystems want it.
     if (!updaters.empty()) {
       DiscreteEvent<T1> event;
-      event.action = DiscreteEvent<T1>::kUpdateAction;
+      event.action = DiscreteEvent<T1>::kDiscreteUpdateAction;
       event.do_update = std::bind(&Diagram<T1>::HandleUpdate, this,
                                   std::placeholders::_1, /* context */
                                   std::placeholders::_2, /* difference state */
@@ -965,7 +965,7 @@ class Diagram : public System<T>,
 
       // Do that system's update actions.
       for (const DiscreteEvent<T>& event : action_details.events) {
-        if (event.action == DiscreteEvent<T>::kUpdateAction) {
+        if (event.action == DiscreteEvent<T>::kDiscreteUpdateAction) {
           sorted_systems_[index]->EvalDifferenceUpdates(*subcontext, event,
                                                         subdifference);
         }

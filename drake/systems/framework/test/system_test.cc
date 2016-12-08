@@ -74,7 +74,7 @@ class TestSystem : public System<double> {
       event.action = DiscreteEvent<double>::kPublishAction;
     } else if (context.get_time() < 20.0) {
       // Use the default update action.
-      event.action = DiscreteEvent<double>::kUpdateAction;
+      event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
     } else if (context.get_time() < 30.0) {
       // Use a custom publish action.
       event.action = DiscreteEvent<double>::kPublishAction;
@@ -82,7 +82,7 @@ class TestSystem : public System<double> {
                                    std::placeholders::_1 /* context */);
     } else {
       // Use a custom update action.
-      event.action = DiscreteEvent<double>::kUpdateAction;
+      event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
       event.do_update = std::bind(&TestSystem::DoEvalDifferenceUpdatesNumber,
                                   this, std::placeholders::_1 /* context */,
                                   std::placeholders::_2 /* difference state */,

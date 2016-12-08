@@ -96,11 +96,11 @@ void BouncingBall<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
   actions->time = context.get_time() + std::min(r1, r2);
   actions->events.push_back(systems::DiscreteEvent<T>());
   actions->events.back().action = systems::DiscreteEvent<T>::
-                                                  kUpdateUnrestrictedAction;
+                                                  kUnrestrictedUpdateAction;
 }
 
 template <typename T>
-void BouncingBall<T>::DoUpdateUnrestricted(systems::Context<T>* context)
+void BouncingBall<T>::DoPerformUnrestrictedUpdate(systems::Context<T>* context)
                                                             const {
   // Verify that velocity is non-positive.
   const systems::VectorBase<T>& state =

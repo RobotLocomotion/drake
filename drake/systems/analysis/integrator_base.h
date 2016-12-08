@@ -59,7 +59,7 @@ class IntegratorBase {
      */
     kTimeHasAdvanced = 4,
     /**
-     * Reached the desired integration time without reaching an update.
+     * Reached the desired integration time without reaching an update time.
      */
     kReachedBoundaryTime = 5,
     /** Took maximum number of steps without finishing integrating over the

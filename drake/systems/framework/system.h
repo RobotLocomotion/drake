@@ -19,26 +19,32 @@ namespace drake {
 namespace systems {
 
 /// A description of a discrete-time event, which is passed from the simulator
-/// to the recipient System's HandleEvent method.
+/// to the recipient System's appropriate event handling method, depending
+/// how much of the Context is allowed to be changed (none, discrete variables
+/// only, anything but time) as well as how the mechanism for changing the
+/// Context (i.e., Simulator changes the context itself for "discrete" updates,
+/// while the System's unrestricted update function changes the context for
+/// "unrestricted" updates.
 template <typename T>
 struct DiscreteEvent {
   typedef std::function<void(const Context<T>&)> PublishCallback;
   typedef std::function<void(const Context<T>&, DifferenceState<T>*)>
-      UpdateCallback;
+      DiscreteUpdateCallback;
   typedef std::function<void(Context<T>*)> UpdateUnrestrictedCallback;
 
+  ///
   enum ActionType {
-    // A default value that causes the handler to abort.
+    /// A default value that causes the handler to abort.
     kUnknownAction = 0,
 
-    // On a publish action, state does not change.
+    /// On a publish action, state does not change.
     kPublishAction = 1,
 
-    // On an update action, discrete state may change.
-    kUpdateAction = 2,
+    /// On a discrete update action, discrete state may change.
+    kDiscreteUpdateAction = 2,
 
-    // On an update action, the state may change arbitrarily.
-    kUpdateUnrestrictedAction = 3,
+    /// On an unrestricted update action, the state may change arbitrarily.
+    kUnrestrictedUpdateAction = 3,
   };
 
   /// The type of action the system must take in response to the event.
@@ -50,7 +56,7 @@ struct DiscreteEvent {
 
   /// An optional callback, supplied by the recipient, to carry out a
   /// kUpdateAction. If nullptr, DoEvalDifferenceUpdates() will be used.
-  UpdateCallback do_update{nullptr};
+  DiscreteUpdateCallback do_update{nullptr};
 
   /// An optional callback, supplied by the recipient, to carry out a
   /// kUpdateUnrestrictedAction. If nullptr, DoUpdateUnrestricted() will be
@@ -243,7 +249,7 @@ class System {
                              const DiscreteEvent<T>& event,
                              DifferenceState<T>* difference_state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUpdateAction);
+    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kDiscreteUpdateAction);
     if (event.do_update == nullptr) {
       DoEvalDifferenceUpdates(context, difference_state);
     } else {
@@ -255,14 +261,19 @@ class System {
   /// because the given @p event has arrived. Dispatches to
   /// DoUpdateUnrestricted() by default, or to `event.do_unrestricted_update`
   /// if provided.
-  virtual void UpdateUnrestricted(Context<T>* context,
-                                  const DiscreteEvent<T>& event) const {
-    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUpdateUnrestrictedAction);
+  /// @throws std::logic_error if the contex time is changed in the update
+  ///         callback.
+  void PerformedUnrestrictedUpdate(Context <T> *context,
+                                   const DiscreteEvent<T> &event) const {
+    const T c_time = context->get_time();
+    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
     if (event.do_update_unrestricted == nullptr) {
-      DoUpdateUnrestricted(context);
+      DoPerformedUnrestrictedUpdate(context);
     } else {
       event.do_update_unrestricted(context);
     }
+    if (c_time != context->get_time())
+      throw std::logic_error("Context time unexpectedly changed.");
   }
 
   /// This method is called by a Simulator during its calculation of the size of
@@ -616,13 +627,14 @@ class System {
       const Context<T>& context, DifferenceState<T>* difference_state) const {}
 
   /// Updates the @p state *in an unrestricted fashion* on unrestricted update
-  /// events. "Unrestricted updates" place no restrictions on the state
-  /// variables that can be altered: continuous, discrete, and modal
-  /// variables are all modifiable. Unrestricted updates should be avoided,
+  /// events. "Unrestricted updates" place almost no restrictions on alterations
+  /// to the context: continuous, discrete, and modal state variables are all
+  /// modifiable, as are parameters (only modifications to the context time are
+  /// prohibited). Unrestricted updates should be avoided,
   /// if possible; discrete variables can be modified using
   /// EvalDifferenceUpdates() and continuous variables are modified in the
   /// course of the simulation process (through Simulator::StepTo()).
-  virtual void DoUpdateUnrestricted(Context<T>* context) const {}
+  virtual void DoPerformedUnrestrictedUpdate(Context <T> *context) const {}
 
   /// Computes the next time at which this System must perform a discrete
   /// action.
