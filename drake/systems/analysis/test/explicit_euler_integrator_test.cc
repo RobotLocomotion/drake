@@ -216,7 +216,6 @@ GTEST_TEST(IntegratorTest, StepSize) {
     EXPECT_EQ(IntegratorBase<double>::kReachedBoundaryTime, result);
     EXPECT_EQ(t + boundary_dt, context->get_time());
   }
-
 }
 
 }  // namespace
