@@ -16,6 +16,8 @@ void generate_urdf(const std::string& dirname,
                    const std::string& fileroot,
                    const api::RoadGeometry* rg,
                    const double grid_unit) {
+  GenerateObjFile(rg, dirname, fileroot, grid_unit);
+
   const std::string obj_filename = fileroot + ".obj";
 
   std::ofstream os(dirname + "/" + fileroot + ".urdf");
@@ -41,7 +43,6 @@ void generate_urdf(const std::string& dirname,
   os << "  </link>" << std::endl;
   os << "</robot>" << std::endl;
 
-  generate_obj(rg, dirname + "/" + obj_filename, grid_unit);
 }
 
 

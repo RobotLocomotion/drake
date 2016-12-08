@@ -144,7 +144,7 @@ class ObjData {
  public:
   ObjData() {}
 
-  void push_face(const GeoFace& geo_face) {
+  void PushFace(const GeoFace& geo_face) {
     IndexFace face;
     for (size_t gi = 0; gi < geo_face.vs.size(); ++gi) {
       int vi = vertices_.push_back(geo_face.vs[gi]);
@@ -155,34 +155,28 @@ class ObjData {
   }
 
 
-  void dump(std::ostream& os, const std::string& material) {
+  void Dump(std::ostream& os, const std::string& material) {
     os << "# Vertices" << std::endl;
     for (const GeoVertex& gv : vertices_.vector()) {
       os << "v " << gv.v.x << " " << gv.v.y << " " << gv.v.z << std::endl;
     }
     os << "# Normals" << std::endl;
     for (const GeoNormal& gn : normals_.vector()) {
-      os << "vn "
-         << gn.n.x << " " << gn.n.y << " " << gn.n.z << std::endl;
+      os << "vn " << gn.n.x << " " << gn.n.y << " " << gn.n.z << std::endl;
     }
     os << std::endl;
     os << "# Faces" << std::endl;
-    if (! material.empty()) {
+    if (!material.empty()) {
       os << "usemtl " << material << std::endl;
     }
     for (const IndexFace& f : faces_) {
       os << "f";
       for (const IndexVertexWithNormal& ivwn : f.vns) {
-        os << " "
-           << (ivwn.vertex_index + 1)
-           << "//"
-           << (ivwn.normal_index + 1);
+        os << " " << (ivwn.vertex_index + 1) << "//" << (ivwn.normal_index + 1);
       }
       os << std::endl;
     }
   }
-
-
 
  private:
   IndexMap<GeoVertex> vertices_;
@@ -198,6 +192,7 @@ struct SRPos {
   double r{};
 };
 
+
 struct SRFace {
   SRFace(const std::initializer_list<SRPos> asr) : sr(asr) {}
 
@@ -205,7 +200,7 @@ struct SRFace {
 };
 
 
-void push_face(ObjData* obj, const api::Lane* lane, const SRFace srface) {
+void PushFace(ObjData* obj, const api::Lane* lane, const SRFace srface) {
   GeoFace geoface;
   for (const SRPos& sr : srface.sr) {
     api::GeoPosition v0(lane->ToGeoPosition({sr.s, sr.r, 0.}));
@@ -213,22 +208,23 @@ void push_face(ObjData* obj, const api::Lane* lane, const SRFace srface) {
     geoface.vs.push_back(GeoVertex(v0));
     geoface.ns.push_back(GeoNormal(v0, v1));
   }
-
-  obj->push_face(geoface);
+  obj->PushFace(geoface);
 }
 
 
-
-void cover_lane_with_quads(ObjData* obj, const api::Lane* lane,
-                           const double grid_unit) {
+void CoverLaneWithQuads(ObjData* obj, const api::Lane* lane,
+                        const double grid_unit) {
   const double s_max = lane->length();
-  double s0 = 0.;
-  while (s0 < s_max) {
+  for (double s0 = 0; s0 < s_max; s0 += grid_unit) {
     double s1 = s0 + grid_unit;
     if (s1 > s_max) { s1 = s_max; }
 
     api::RBounds rb0 = lane->lane_bounds(s0);
     api::RBounds rb1 = lane->lane_bounds(s1);
+
+    // TODO(maddog)  Go back to api::RoadGeometry and assert that lane-bounds
+    //               always straddle r=0.  E.g., it should be nonsense if
+    //               the r=0 centerline is not within the bounds of the lane.
 
     // Left side of lane.
     {
@@ -243,11 +239,7 @@ void cover_lane_with_quads(ObjData* obj, const api::Lane* lane,
         if (r01 > rb0.r_max) { r01 = rb0.r_max; }
         if (r11 > rb1.r_max) { r11 = rb0.r_max; }
 
-        // std::cerr << "{{" << s0 << ", " << r00
-        //           << "}, {" << s1 << ", " << r10 << "}, {"
-        //           << s1 << ", " << r11 << "}, {" << s0 << ", " << r01
-        //           << "}}" << std::endl;
-        push_face(obj, lane, {{s0, r00}, {s1, r10}, {s1, r11}, {s0, r01}});
+        PushFace(obj, lane, {{s0, r00}, {s1, r10}, {s1, r11}, {s0, r01}});
 
         r00 += grid_unit;
         r10 += grid_unit;
@@ -266,24 +258,22 @@ void cover_lane_with_quads(ObjData* obj, const api::Lane* lane,
         if (r01 < rb0.r_min) { r01 = rb0.r_min; }
         if (r11 < rb1.r_min) { r11 = rb0.r_min; }
 
-        push_face(obj, lane, {{s0, r00}, {s0, r01}, {s1, r11}, {s1, r10}});
+        PushFace(obj, lane, {{s0, r00}, {s0, r01}, {s1, r11}, {s1, r10}});
 
         r00 -= grid_unit;
         r10 -= grid_unit;
       }
     }
-
-    s0 += grid_unit;
   }
 }
-
 
 }  // namespace
 
 
-void generate_obj(const api::RoadGeometry* rg,
-                  const std::string& filename,
-                  const double grid_unit) {
+void GenerateObjFile(const api::RoadGeometry* rg,
+                     const std::string& dirpath,
+                     const std::string& fileroot,
+                     const double grid_unit) {
   ObjData obj;
 
   // Walk the network.
@@ -291,9 +281,12 @@ void generate_obj(const api::RoadGeometry* rg,
     const api::Junction* junction = rg->junction(ji);
     for (int si = 0; si < junction->num_segments(); ++si) {
       const api::Segment* segment = junction->segment(si);
+      // TODO(maddog) We should be doing "cover segment with quads" instead,
+      //              using the driveable-bounds from any lane, and then
+      //              going back and using lane-bounds to paint stripes.
       for (int li = 0; li < segment->num_lanes(); ++li) {
         const api::Lane* lane = segment->lane(li);
-        cover_lane_with_quads(&obj, lane, grid_unit);
+        CoverLaneWithQuads(&obj, lane, grid_unit);
       }
     }
   }
@@ -301,23 +294,25 @@ void generate_obj(const api::RoadGeometry* rg,
   const std::string kYellowPaint("yellow_paint");
   const std::string kBlandAsphalt("bland_asphalt");
 
-  std::string mtl_filename = filename + ".mtl";
+  const std::string obj_filename = fileroot + ".obj";
+  const std::string mtl_filename = fileroot + ".mtl";
+
+  // Create the requested OBJ file.
   {
-    // std::cerr << filename << std::endl;
-    std::ofstream os(filename);
-    os << "# GENERATED BY maliput::utility::generate_obj()" << std::endl;
+    std::ofstream os(dirpath + "/" + obj_filename);
+    os << "# GENERATED BY maliput::utility::GenerateObjFile()" << std::endl;
     os << "#" << std::endl;
     os << "# DON'T BE A HERO, do not edit by hand." << std::endl;
     os << std::endl;
     os << "mtllib " << mtl_filename << std::endl;
     os << std::endl;
-    obj.dump(os, kBlandAsphalt);
+    obj.Dump(os, kBlandAsphalt);
   }
 
-  // Create the requisite MTL file.
+  // Create the MTL file referenced by the OBJ file.
   {
-    std::ofstream os(mtl_filename);
-    os << "# GENERATED BY maliput::utility::generate_obj()" << std::endl;
+    std::ofstream os(dirpath + "/" + mtl_filename);
+    os << "# GENERATED BY maliput::utility::GenerateObjFile()" << std::endl;
     os << "#" << std::endl;
     os << "# DON'T BE A HERO, do not edit by hand." << std::endl;
     os << std::endl;

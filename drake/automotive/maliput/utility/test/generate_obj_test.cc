@@ -74,7 +74,7 @@ GTEST_TEST(GenerateObj, Podge) {
 
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
-  generate_obj(&rg, "/tmp/omg.obj", 1.);
+  GenerateObjFile(&rg, "/tmp", "omg", 1.);
 }
 
 
@@ -101,7 +101,7 @@ GTEST_TEST(GenerateObj, Hodge) {
 // SOON//  b.Connect("6", c5->end(), c1->begin());
 
   std::unique_ptr<const api::RoadGeometry> rg = b.Build({"apple"});
-  generate_obj(rg.get(), "/tmp/omg2.obj", 1.);
+  GenerateObjFile(rg.get(), "/tmp", "omg2", 1.);
 }
 
 
@@ -133,7 +133,7 @@ GTEST_TEST(GenerateObj, Fig8Builder) {
                       50., {0., 0., 0., 0.});
 
   std::unique_ptr<const api::RoadGeometry> rg = b.Build({"figure-eight"});
-  generate_obj(rg.get(), "/tmp/wtf2.obj", 1.);
+  GenerateObjFile(rg.get(), "/tmp", "wtf2", 1.);
 }
 
 
@@ -164,7 +164,7 @@ GTEST_TEST(GenerateObj, DoubleRing) {
                            start.z);
 
   std::unique_ptr<const api::RoadGeometry> rg = b.Build({"double-ring"});
-  generate_obj(rg.get(), "/tmp/double-ring.obj", 1.);
+  GenerateObjFile(rg.get(), "/tmp", "double-ring", 1.);
 }
 
 
@@ -202,7 +202,7 @@ GTEST_TEST(GenerateObj, TeeIntersection) {
   b.SetDefaultBranch(cew, api::LaneEnd::kFinish, cw, api::LaneEnd::kStart);
 
   std::unique_ptr<const api::RoadGeometry> rg = b.Build({"tee"});
-  generate_obj(rg.get(), "/tmp/tee.obj", 1.);
+  GenerateObjFile(rg.get(), "/tmp", "tee", 1.);
 }
 
 
@@ -216,7 +216,7 @@ GTEST_TEST(GenerateObj, Helix) {
             mono::ArcOffset(10., 4. * M_PI), {20., 0., 0.4, 0.});
 
   std::unique_ptr<const api::RoadGeometry> rg = b.Build({"helix"});
-  generate_obj(rg.get(), "/tmp/helix.obj", 1.);
+  GenerateObjFile(rg.get(), "/tmp", "helix", 1.);
 }
 
 
