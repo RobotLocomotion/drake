@@ -61,6 +61,10 @@
       const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& v)   \
       const override {                                                       \
     return derived_.frictionTorque(v);                                       \
+  };                                                                         \
+                                                                             \
+  DrakeJoint* DoCloneTo(const Scalar& to) {                                  \
+      return derived_.DoCloneTo(to);                                         \
   };
 
 #pragma GCC diagnostic push

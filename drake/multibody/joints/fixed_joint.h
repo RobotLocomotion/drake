@@ -93,6 +93,12 @@ class FixedJoint : public DrakeJointImpl<FixedJoint> {
         get_num_velocities(), 1);
   }
 
+  template <typename ToScalar>
+  DrakeJoint* DoCloneTo(const ToScalar& to) {
+      return new FixedJoint(this->get_name(),
+                            this->get_transform_to_parent_body());
+  };
+
   std::string get_position_name(int index) const override;
   Eigen::VectorXd zeroConfiguration() const override;
   Eigen::VectorXd randomConfiguration(

@@ -41,6 +41,13 @@ class RevoluteJoint : public FixedAxisOneDoFJoint<RevoluteJoint> {
     return ret;
   }
 
+  template <typename ToScalar>
+  DrakeJoint* DoCloneTo(const ToScalar& to) {
+    return new RevoluteJoint(this->get_name(),
+                             this->get_transform_to_parent_body(),
+                             this->rotation_axis);
+  };
+
  private:
   static drake::TwistVector<double> spatialJointAxis(
       const Eigen::Vector3d& rotation_axis);

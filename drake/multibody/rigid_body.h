@@ -21,7 +21,12 @@ class RigidBody {
   RigidBody();
 
   RigidBody(const RigidBody<double>& other) {
+    name_ = other.name_;
+    mass_ = other.mass_;
     center_of_mass_ = other.center_of_mass_;
+    spatial_inertia_ = other.spatial_inertia_;
+    model_instance_id_ = other.model_instance_id_;
+    model_name_ = other.model_name_;
     if(other.joint_)
       joint_ = std::unique_ptr<DrakeJoint>(other.joint_->CloneTo<T>());
   }

@@ -1,7 +1,9 @@
 #include "drake/multibody/rbt_with_alternates/rigid_body_tree_with_alternates.h"
 
 #include "drake/common/drake_path.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
@@ -12,7 +14,10 @@
 #include <utility>
 
 using drake::AutoDiffXd;
+using drake::math::initializeAutoDiffGivenGradientMatrix;
 using drake::RigidBodyTreeWithAlternates;
+using Eigen::VectorXd;
+using Eigen::MatrixXd;
 
 using std::complex;
 using std::cout;
@@ -60,49 +65,56 @@ int main() {
   PRINT_VAR(tree_with_alternates.get_alternate<AutoDiffXd>().type());
 
   PRINT_VAR(tree_double.get_num_bodies());
-  PRINT_VAR(tree_dynamics_autodiff.get_num_bodies());
-
   PRINT_VAR(tree_double.get_num_positions());
+  PRINT_VAR(tree_double.get_num_velocities());
+
+  PRINT_VAR(tree_dynamics_autodiff.get_num_bodies());
   PRINT_VAR(tree_dynamics_autodiff.get_num_positions());
+  PRINT_VAR(tree_dynamics_autodiff.get_num_velocities());
 
-#if 0
-  MBSystem<float>::AddAlternate(sys);
+  const int num_positions = tree_with_alternates.get_num_positions();
+  const int num_velocities = tree_with_alternates.get_num_velocities();
+  PRINT_VAR(num_positions);
+  PRINT_VAR(num_velocities);
+
+  auto q = VectorXd::Random(num_positions).eval();
+  auto qd = VectorXd::Random(num_positions).eval();
+  auto qdd = VectorXd::Zero(num_positions).eval();
+
+  // First convert qd to MatrixXd to make another explicit instantiation of
+  // mass_matrix unnecessary.
+  auto qd_dynamic_num_rows = MatrixXd(qd);
+  auto q_time_autodiff =
+      initializeAutoDiffGivenGradientMatrix(q, qd_dynamic_num_rows);
+  typedef decltype(q_time_autodiff)::Scalar TimeADScalar;
+  auto qd_time_autodiff = qd.cast<TimeADScalar>();
 
 
+  auto cache_double = tree_double.doKinematics(q, qd);
 
-  // Stuff happens using the fundamental system, then at some point we decide
-  // we want one of the alternate instantiations.
+  // Notice I call here doKinematics on tree_double instead given that the
+  // explicit instantiations are done on RigidBodyTree<double> only.
+  // Once doKinematics is templated on <T> we will be able to call it on
+  // tree_dynamics_autodiff
 
-  const auto& csys = sys.get_alternate<complex<double>>();
-  const auto& fsys = sys.get_alternate<float>();
+  auto cache_dynamics_autodiff =
+      tree_dynamics_autodiff.CreateKinematicsCache();
+  cache_dynamics_autodiff.initialize(q_time_autodiff, qd_time_autodiff);
+  tree_double.doKinematics(cache_dynamics_autodiff);
 
-  cout << "my type=" << sys.type() << endl;
-  cout << "csys type=" << csys.type() << endl;
-  cout << "fsys type=" << fsys.type() << endl;
+  //auto cache_dynamics_autodiff =
+  //    tree_double.doKinematics(q_time_autodiff, qd_time_autodiff);
 
-  // Dig out the matching instantiations of the multibody tree.
-  const auto& dtree = sys.get_tree();   // <double> (fundamental)
-  const auto& ftree = fsys.get_tree();  // <float> (not useful)
+  auto com_double = tree_with_alternates.centerOfMass(cache_double);
 
-  // Using the fundamental system, calculate derivative df analytically.
-  Context<double> cd{0.5};  // set x=0.5 (set up context for fundamental)
+  PRINT_VAR(com_double.transpose());
 
-  const auto& dpin0 = dtree.GetJoint<PinJoint>(0);
-  double f = dpin0.PinFunc(cd);
-  double df = dpin0.DPinFuncDx(cd);  // analytical derivative
+  auto com_dynamics_autodiff =
+      tree_with_alternates.centerOfMass(cache_dynamics_autodiff);
 
-  // Instead, use the same joint of the complex alternate to calculate the
-  // derivative using a complex step derivative (equivalent to autodiff).
-  const auto& ctree = csys.get_tree();
-  const auto& cpin0 = ctree.GetJoint<PinJoint>(0);
+  for (int i = 0; i < com_dynamics_autodiff.size(); ++i) {
+    PRINT_VAR(com_dynamics_autodiff(i).value());
+    PRINT_VAR(com_dynamics_autodiff(i).derivatives().transpose());
+  }
 
-  Context<complex<double>> cc(cd); // clone context for this alternate.
-  cc.x += complex<double>(0, 1e-20);  // complex step derivative
-  double cdf = cpin0.PinFunc(cc).imag() / 1e-20;
-
-  printf("  f(x)=%.16g;\n df(x)=%.16g (analytical)\ncdf(x)=%.16g (autodiff)\n",
-         f, df, cdf);
-#endif
-
-  //getchar();
 }

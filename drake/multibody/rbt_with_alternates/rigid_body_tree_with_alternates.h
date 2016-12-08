@@ -34,6 +34,14 @@ class RigidBodyTreeWithAlternates :
   // Return interesting concrete System-specific stuff.
   const RigidBodyTree<T> &get_rigid_body_tree() const { return *tree_; }
 
+  int get_num_positions() const { return tree_->get_num_positions(); }
+
+  int get_num_velocities() const { return tree_->get_num_velocities(); }
+
+  KinematicsCache<T> CreateKinematicsCache() const {
+    return tree_->CreateKinematicsCache();
+  }
+
   template<typename Scalar>
   Vector3<Scalar> centerOfMass(
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -42,7 +50,7 @@ class RigidBodyTreeWithAlternates :
     // TODO(amcastro-tri): replace <double> by <Scalar> once
     // RigidBodyTree<T>::RigidBodyTree(const RigidBodyTree<double>&) is
     // implemented.
-    this->template get_alternate<double>().get_rigid_body_tree().
+    return this->template get_alternate<double>().get_rigid_body_tree().
         centerOfMass(cache, model_instance_id_set);
   }
 
@@ -56,7 +64,7 @@ class RigidBodyTreeWithAlternates :
     // TODO(amcastro-tri): replace <double> by <Scalar> once
     // RigidBodyTree<T>::RigidBodyTree(const RigidBodyTree<double>&) is
     // implemented.
-    this->template get_alternate<double>().get_rigid_body_tree().
+    return this->template get_alternate<double>().get_rigid_body_tree().
         centerOfMassJacobianDotTimesV(cache, model_instance_id_set);
   };
 
@@ -70,7 +78,7 @@ class RigidBodyTreeWithAlternates :
     // TODO(amcastro-tri): replace <double> by <Scalar> once
     // RigidBodyTree<T>::RigidBodyTree(const RigidBodyTree<double>&) is
     // implemented.
-    this->template get_alternate<double>().get_rigid_body_tree().
+    return this->template get_alternate<double>().get_rigid_body_tree().
         centerOfMassJacobian(cache, model_instance_id_set, in_terms_of_qdot);
   };
 
@@ -83,7 +91,7 @@ class RigidBodyTreeWithAlternates :
     // TODO(amcastro-tri): replace <double> by <Scalar> once
     // RigidBodyTree<T>::RigidBodyTree(const RigidBodyTree<double>&) is
     // implemented.
-    this->template get_alternate<double>().get_rigid_body_tree().
+    return this->template get_alternate<double>().get_rigid_body_tree().
         centroidalMomentumMatrixDotTimesV(cache, model_instance_id_set);
   }
 
@@ -97,7 +105,7 @@ class RigidBodyTreeWithAlternates :
     // TODO(amcastro-tri): replace <double> by <Scalar> once
     // RigidBodyTree<T>::RigidBodyTree(const RigidBodyTree<double>&) is
     // implemented.
-    this->template get_alternate<double>().get_rigid_body_tree().
+    return this->template get_alternate<double>().get_rigid_body_tree().
         centroidalMomentumMatrix(cache, model_instance_id_set, in_terms_of_qdot);
   }
 
@@ -127,10 +135,25 @@ class RigidBodyTreeWithAlternates :
     // TODO(amcastro-tri): replace <double> by <Scalar> once
     // RigidBodyTree<T>::RigidBodyTree(const RigidBodyTree<double>&) is
     // implemented.
-    this->template get_alternate<double>().get_rigid_body_tree().
+    return this->template get_alternate<double>().get_rigid_body_tree().
         transformPointsJacobianDotTimesV(cache, points,
                                          from_body_or_frame_ind,
                                          to_body_or_frame_ind);
+  };
+
+  template <typename Scalar, typename DerivedPoints>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> transformPointsJacobian(
+      const KinematicsCache<Scalar>& cache,
+      const Eigen::MatrixBase<DerivedPoints>& points,
+      int from_body_or_frame_ind, int to_body_or_frame_ind,
+      bool in_terms_of_qdot) const {
+    // TODO(amcastro-tri): replace <double> by <Scalar> once
+    // RigidBodyTree<T>::RigidBodyTree(const RigidBodyTree<double>&) is
+    // implemented.
+    return this->template get_alternate<double>().get_rigid_body_tree().
+        transformPointsJacobian(cache, points,
+                                from_body_or_frame_ind, to_body_or_frame_ind,
+                                in_terms_of_qdot);
   };
 
  private:

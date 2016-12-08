@@ -92,7 +92,14 @@ class RigidBodyTree {
       auto new_body = RigidBody<T>::CloneFrom(*body);
       this->add_rigid_body(std::move(new_body));
     }
-    //this->compile();
+    for (const auto& body: fundamental.bodies) {
+      if (body->has_parent_body()) {
+        int body_id = body->get_body_index();
+        int parent_body_id = body->get_parent()->get_body_index();
+        bodies[body_id]->set_parent(bodies[parent_body_id].get());
+      }
+    }
+    this->compile();
   }
 
   /// A constructor that initializes the gravity vector to be [0, 0, -9.81] and
