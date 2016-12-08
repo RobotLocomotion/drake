@@ -234,13 +234,6 @@ void MathematicalProgram::AddConstraint(
       Binding<LorentzConeConstraint>(con, var_list));
 }
 
-std::shared_ptr<LorentzConeConstraint>
-MathematicalProgram::AddLorentzConeConstraint(const VariableListRef& vars) {
-  auto constraint = std::make_shared<LorentzConeConstraint>();
-  AddConstraint(constraint, vars);
-  return constraint;
-}
-
 void MathematicalProgram::AddConstraint(
     std::shared_ptr<RotatedLorentzConeConstraint> con,
     const VariableListRef& vars) {
@@ -250,14 +243,6 @@ void MathematicalProgram::AddConstraint(
   required_capabilities_ |= kRotatedLorentzConeConstraint;
   rotated_lorentz_cone_constraint_.push_back(
       Binding<RotatedLorentzConeConstraint>(con, var_list));
-}
-
-std::shared_ptr<RotatedLorentzConeConstraint>
-MathematicalProgram::AddRotatedLorentzConeConstraint(
-    const VariableListRef& vars) {
-  auto constraint = std::make_shared<RotatedLorentzConeConstraint>();
-  AddConstraint(constraint, vars);
-  return constraint;
 }
 
 std::shared_ptr<Constraint> MathematicalProgram::AddPolynomialConstraint(
