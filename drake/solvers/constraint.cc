@@ -4,6 +4,107 @@
 
 namespace drake {
 namespace solvers {
+void QuadraticConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                               Eigen::VectorXd& y) const {
+  y.resize(num_constraints());
+  y = .5 * x.transpose() * Q_ * x + b_.transpose() * x;
+}
+
+void QuadraticConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
+                               TaylorVecXd& y) const {
+  y.resize(num_constraints());
+  y = .5 * x.transpose() * Q_.cast<TaylorVarXd>() * x +
+      b_.cast<TaylorVarXd>().transpose() * x;
+}
+
+void LorentzConeConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                                 Eigen::VectorXd& y) const {
+  y.resize(num_constraints());
+  y(0) = x(0);
+  y(1) = pow(x(0), 2) - x.tail(x.size() - 1).squaredNorm();
+}
+
+void LorentzConeConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
+                                 TaylorVecXd& y) const {
+  y.resize(num_constraints());
+  y(0) = x(0);
+  y(1) = pow(x(0), 2) - x.tail(x.size() - 1).squaredNorm();
+}
+
+void RotatedLorentzConeConstraint::Eval(
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
+  y.resize(num_constraints());
+  y(0) = x(0);
+  y(1) = x(1);
+  y(2) = x(0) * x(1) - x.tail(x.size() - 2).squaredNorm();
+}
+
+void RotatedLorentzConeConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
+                                        TaylorVecXd& y) const {
+  y.resize(num_constraints());
+  y(0) = x(0);
+  y(1) = x(1);
+  y(2) = x(0) * x(1) - x.tail(x.size() - 2).squaredNorm();
+}
+
+void PolynomialConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                                Eigen::VectorXd& y) const {
+  double_evaluation_point_.clear();
+  for (size_t i = 0; i < poly_vars_.size(); i++) {
+    double_evaluation_point_[poly_vars_[i]] = x[i];
+  }
+  y.resize(num_constraints());
+  for (size_t i = 0; i < num_constraints(); i++) {
+    y[i] = polynomials_[i].EvaluateMultivariate(double_evaluation_point_);
+  }
+}
+
+void PolynomialConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
+                                TaylorVecXd& y) const {
+  taylor_evaluation_point_.clear();
+  for (size_t i = 0; i < poly_vars_.size(); i++) {
+    taylor_evaluation_point_[poly_vars_[i]] = x[i];
+  }
+  y.resize(num_constraints());
+  for (size_t i = 0; i < num_constraints(); i++) {
+    y[i] = polynomials_[i].EvaluateMultivariate(taylor_evaluation_point_);
+  }
+}
+
+void LinearConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                            Eigen::VectorXd& y) const {
+  y.resize(num_constraints());
+  y = A_ * x;
+}
+void LinearConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
+                            TaylorVecXd& y) const {
+  y.resize(num_constraints());
+  y = A_.cast<TaylorVarXd>() * x;
+}
+
+void BoundingBoxConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                                 Eigen::VectorXd& y) const {
+  y.resize(num_constraints());
+  y = x;
+}
+void BoundingBoxConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
+                                 TaylorVecXd& y) const {
+  y.resize(num_constraints());
+  y = x;
+}
+
+void LinearComplementarityConstraint::Eval(
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
+  y.resize(num_constraints());
+  y = (M_ * x) + q_;
+}
+
+void LinearComplementarityConstraint::Eval(
+    const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const {
+  y.resize(num_constraints());
+  y = (M_.cast<TaylorVarXd>() * x) + q_.cast<TaylorVarXd>();
+}
+
 void PositiveSemidefiniteConstraint::Eval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
   DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
