@@ -131,7 +131,7 @@ void CrawlForPackages(const string& path, PackageMap* package_map) {
 
   istringstream iss(directory_path);
   const string target_filename("package.xml");
-  const char pathsep = ':';
+  const char pathsep = ':';
 
   while (getline(iss, token, pathsep)) {
     tinydir_dir dir;
@@ -139,21 +139,21 @@ void CrawlForPackages(const string& path, PackageMap* package_map) {
       cerr << "Unable to open directory: " << token << endl;
       continue;
     }
- 
+
     while (dir.has_next) {
       tinydir_file file;
       tinydir_readfile(&dir, &file);
- 
+
       // Skips hidden directories (including "." and "..").
       if (file.is_dir && (file.name[0] != '.')) {
         CrawlForPackages(file.path, package_map);
       } else if (file.name == target_filename) {
         // Parses the package.xml file to find the name of the package.
         string package_name;
- 
+
         {
           string file_name = string(file.path);
- 
+
           XMLDocument xml_doc;
           xml_doc.LoadFile(file_name.data());
           if (xml_doc.ErrorID()) {
@@ -161,26 +161,26 @@ void CrawlForPackages(const string& path, PackageMap* package_map) {
                 "Failed to parse XML in file \"" + file_name + "\".\n" +
                 xml_doc.ErrorName());
           }
- 
+
           XMLElement* package_node = xml_doc.FirstChildElement("package");
           if (!package_node) {
             throw runtime_error("parser_common.cc: CrawlForPackages(): "
                 "ERROR: XML file \"" + file_name + "\" does not contain "
                 "element <package>.");
           }
- 
+
           XMLElement* name_node = package_node->FirstChildElement("name");
           if (!name_node) {
             throw runtime_error("parser_common.cc: CrawlForPackages(): "
                 "ERROR: <package> element does not contain element <name> "
                 "(XML file \"" + file_name + "\").");
           }
- 
+
           package_name = name_node->FirstChild()->Value();
         }
- 
+
         spruce::path mypath_s(file.path);
- 
+
         // Don't overwrite entries in the map.
         auto package_iter = package_map->find(package_name);
         if (package_iter == package_map->end()) {
