@@ -353,8 +353,8 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 
 
 // A mock System that requests discrete update at 1 kHz, and publishes at 400
-// Hz. Calls user-configured callbacks on DoPublish, DoEvalDiscreteVariableUpdates,
-// and EvalTimeDerivatives.
+// Hz. Calls user-configured callbacks on DoPublish,
+// DoEvalDiscreteVariableUpdates, and EvalTimeDerivatives.
 class DiscreteSystem : public LeafSystem<double> {
  public:
   DiscreteSystem() {

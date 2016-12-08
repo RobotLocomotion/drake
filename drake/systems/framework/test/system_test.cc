@@ -202,7 +202,8 @@ TEST_F(SystemTest, DiscreteUpdate) {
 
   std::unique_ptr<DiscreteState<double>> update =
       system_.AllocateDiscreteVariables();
-  system_.EvalDiscreteVariableUpdates(context_, actions.events[0], update.get());
+  system_.EvalDiscreteVariableUpdates(context_, actions.events[0],
+                                      update.get());
   EXPECT_EQ(1, system_.get_update_count());
 }
 
@@ -231,7 +232,8 @@ TEST_F(SystemTest, CustomDiscreteUpdate) {
 
   std::unique_ptr<DiscreteState<double>> update =
       system_.AllocateDiscreteVariables();
-  system_.EvalDiscreteVariableUpdates(context_, actions.events[0], update.get());
+  system_.EvalDiscreteVariableUpdates(context_, actions.events[0],
+                                      update.get());
   ASSERT_EQ(1u, system_.get_updated_numbers().size());
   EXPECT_EQ(kNumberToUpdate, system_.get_updated_numbers()[0]);
 }
