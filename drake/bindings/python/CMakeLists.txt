@@ -24,10 +24,18 @@ install(FILES ${PYDRAKE_SOLVERS_SRCS}
   DESTINATION "${DRAKE_INSTALL_PYTHON_DIR}/pydrake/solvers")
 
 if(BUILD_TESTING)
+  # TODO(jamiesnape): Fix swigmake, so we do not have to hard-code the paths.
+  set(PYDRAKE_REQUIRED_FILES
+    pydrake/_autodiffutils.so
+    pydrake/_rbtree.so
+    pydrake/solvers/_ik.so)
+
   function(drake_add_python_test module_name)
     drake_add_test(NAME test_python_${module_name}
       COMMAND "${PYTHON_EXECUTABLE}" -m unittest ${module_name}
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+    set_tests_properties(test_python_${module_name} PROPERTIES
+      REQUIRED_FILES "${PYDRAKE_REQUIRED_FILES}")
   endfunction()
 
   if(snopt_FOUND)
