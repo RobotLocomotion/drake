@@ -9,35 +9,6 @@
 namespace drake {
 namespace systems {
 
-namespace {
-
-// This struct converts an object of type T to a double. The default
-// implementation returns NaN. Overloads provide sensible conversions.
-// Note that we do not expect to be running simulations while instantiated
-// with non-numerical scalar types!
-// (We're using a struct here because partial instantiation does not work
-// with function templates.)
-template <typename T>
-struct TtoDouble {
-  static double convert(const T&) {
-    return std::numeric_limits<double>::quiet_NaN();
-  }
-};
-// Partial specialization for AutoDiffScalar.
-template <typename DerType>
-struct TtoDouble<Eigen::AutoDiffScalar<DerType>> {
-  static double convert(const Eigen::AutoDiffScalar<DerType>& scalar) {
-    return static_cast<double>(scalar.value());
-  }
-};
-// Specializations for floating types.
-template <>
-struct TtoDouble<double> {
-  static double convert(const double& scalar) { return scalar; }
-};
-
-}  // namespace
-
 template <typename T>
 void Simulator<T>::PauseIfTooFast() const {
   if (target_realtime_rate_ <= 0) return;  // Run at full speed.
