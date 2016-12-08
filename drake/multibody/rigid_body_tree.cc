@@ -368,9 +368,9 @@ void RigidBodyTree<T>::CreateCollisionCliques() {
   // TODO(SeanCurtis-TRI): If compile gets called multiple times this will end
   // up encoding redundant cliques.
   for (size_t i = 0; i < bodies.size(); ++i) {
-    RigidBody<double>* body_i = bodies[i].get();
+    RigidBody<T>* body_i = bodies[i].get();
     for (size_t j = i + 1; j < bodies.size(); ++j) {
-      RigidBody<double>* body_j = bodies[j].get();
+      RigidBody<T>* body_j = bodies[j].get();
       // TODO(SeanCurtis-TRI): This translates collision filter information into
       // cliques.  In the future, don't collapse these.
       if (!body_i->CanCollideWith(*body_j)) {
@@ -854,7 +854,7 @@ RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
 
       const int bodyB_id = pair.elementB->get_body()->get_body_index();
       const Isometry3d& TB =
-          cache.get_element(bodyB.get_body_index()).transform_to_world;
+          cache.get_element(bodyB_id).transform_to_world;
 
       // Transform to bodies' frames.
       // Note:
