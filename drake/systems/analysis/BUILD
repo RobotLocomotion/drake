@@ -8,5 +8,8 @@ cc_library(
     srcs = glob(["*.cc"]),
     hdrs = glob(["*.h"]),
     linkstatic = 1,
-    deps = ["//drake/systems/framework"],
+    deps = [
+        "//drake/common:extract_double",
+        "//drake/systems/framework",
+    ],
 )

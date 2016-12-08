@@ -12,8 +12,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
-#include "drake/examples/schunk_wsg/gen/schunk_wsg_trajectory_generator_state_vector.h"
+#include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/examples/schunk_wsg/simulated_schunk_wsg_system.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -279,6 +278,8 @@ class SchunkWsgStatusSender : public systems::LeafSystem<double> {
   const int position_index_{};
   const int velocity_index_{};
 };
+=======
+>>>>>>> 973c892bc4b455eec05746d530bf5ea7021b843f
 
 template <typename T>
 class PidControlledSchunkWsg : public systems::Diagram<T> {
@@ -357,13 +358,15 @@ int DoMain() {
       systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
           "SCHUNK_WSG_COMMAND", &lcm));
   auto trajectory_generator = builder.AddSystem<SchunkWsgTrajectoryGenerator>(
-      tree, model->position_index());
+      tree.get_num_positions() + tree.get_num_velocities(),
+      model->position_index());
 
   auto status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS", &lcm));
   auto status_sender = builder.AddSystem<SchunkWsgStatusSender>(
-      tree, model->position_index(), model->velocity_index());
+      tree.get_num_positions() + tree.get_num_velocities(),
+      model->position_index(), model->velocity_index());
 
   builder.Connect(command_sub->get_output_port(0),
                   trajectory_generator->get_command_input_port());

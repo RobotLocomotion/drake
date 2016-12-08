@@ -32,7 +32,7 @@ class MySpringMassSystem : public SpringMassSystem<T> {
 
  private:
   // Publish t q u to standard output.
-  void DoPublish(const Context<double> &context) const override {
+  void DoPublish(const Context<T>& context) const override {
     ++publish_count_;
   }
 
@@ -48,8 +48,8 @@ class MySpringMassSystem : public SpringMassSystem<T> {
   // time is exactly at a update time, we assume the update has been
   // done and return the following update time. That means we don't get a
   // sample at 0 but will get one at the end.
-  void DoCalcNextUpdateTime(const Context<double> &context,
-                            UpdateActions<T> *actions) const override {
+  void DoCalcNextUpdateTime(const Context<T>& context,
+                            UpdateActions<T>* actions) const override {
     if (update_rate_ <= 0.) {
       actions->time = std::numeric_limits<double>::infinity();
       return;
