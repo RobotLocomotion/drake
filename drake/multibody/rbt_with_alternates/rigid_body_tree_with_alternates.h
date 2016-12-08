@@ -99,8 +99,37 @@ class RigidBodyTreeWithAlternates :
         centroidalMomentumMatrix(cache, model_instance_id_set, in_terms_of_qdot);
   }
 
-  
+  template <typename Scalar>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+  void doKinematics(KinematicsCache<Scalar>& cache,
+                    bool compute_JdotV = false) const {
+    // TODO(amcastro-tri): replace <double> by <Scalar> once
+    // RigidBodyTree<T>::RigidBodyTree(const RigidBodyTree<double>&) is
+    // implemented.
+    this->template get_alternate<double>().get_rigid_body_tree().
+        doKinematics(cache, compute_JdotV);
+  }
 
+  KinematicPath findKinematicPath(int start_body_or_frame_idx,
+                                  int end_body_or_frame_idx) const {
+    // Any alternate should return the same result.
+    return this->template get_alternate<double>().get_rigid_body_tree().
+        findKinematicPath(start_body_or_frame_idx, end_body_or_frame_idx);
+  }
+
+  template <typename Scalar, typename DerivedPoints>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> transformPointsJacobianDotTimesV(
+      const KinematicsCache<Scalar>& cache,
+      const Eigen::MatrixBase<DerivedPoints>& points,
+      int from_body_or_frame_ind, int to_body_or_frame_ind) const {
+    // TODO(amcastro-tri): replace <double> by <Scalar> once
+    // RigidBodyTree<T>::RigidBodyTree(const RigidBodyTree<double>&) is
+    // implemented.
+    this->template get_alternate<double>().get_rigid_body_tree().
+        transformPointsJacobianDotTimesV(cache, points,
+                                         from_body_or_frame_ind,
+                                         to_body_or_frame_ind);
+  };
 
  private:
   // Let all other instantiations of this class be friends with this one.
