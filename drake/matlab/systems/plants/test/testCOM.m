@@ -1,4 +1,11 @@
 function testCOM
+
+'I am here'
+
+pause
+
+'I am there'
+
 % test COM computation with/without affordance
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 options.floating = true;

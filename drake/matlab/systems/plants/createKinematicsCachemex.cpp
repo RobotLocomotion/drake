@@ -17,8 +17,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // if no output arguments, then assume the destructor is being called
     destroyDrakeMexPointer<KinematicsCache<double> *>(prhs[0]);
   } else if (nlhs == 1 && nrhs == 1) {
-    RigidBodyTree<double> *model =
-        static_cast<RigidBodyTree<double> *>(getDrakeMexPointer(prhs[0]));
+    RigidBodyTreeWithAlternates<double> *model =
+        static_cast<RigidBodyTreeWithAlternates<double>*>(
+            getDrakeMexPointer(prhs[0]));
     auto cache = std::make_unique<KinematicsCache<double>>(
         model->CreateKinematicsCache());
     plhs[0] = createDrakeMexPointer(

@@ -43,6 +43,17 @@ class RigidBodyTreeWithAlternates :
   }
 
   template<typename Scalar>
+  KinematicsCache<Scalar> CreateKinematicsCacheWithType() const {
+    // TODO(amcastro-tri): replace <double> by <Scalar> once
+    // RigidBodyTree<T>::RigidBodyTree(const RigidBodyTree<double>&) is
+    // implemented.
+    // This should also work.
+    //return this->template get_alternate<double>().get_rigid_body_tree().
+    //    CreateKinematicsCache();
+    return tree_->CreateKinematicsCacheWithType<Scalar>();
+  }
+
+  template<typename Scalar>
   Vector3<Scalar> centerOfMass(
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       KinematicsCache<Scalar> &cache,
