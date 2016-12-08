@@ -37,6 +37,27 @@ std::string ResolveFilename(const std::string& filename,
                             const PackageMap& package_map,
                             const std::string& root_dir);
 
+
+// Adds key @p name and value @p path to @p package_map.
+// Aborts if @p package_map is nullptr or @p name is already a key in
+// @p package_map.
+void AddPackage(const std::string& name, const std::string& path,
+    PackageMap* package_map);
+
+/// Crawls through @p path searching for directories containing the file
+/// `package.xml`. For each of these directories, this method adds a new entry
+/// into @p package_map where the key is the package name as specified within
+/// `package.xml` and the directory's path is the value.
+void PopulateMapFromFolder(const std::string& path, PackageMap* package_map);
+
+/// Obtains a path from environment variable @p environment_variable. Crawls
+/// through this path searching for directories containing the file
+/// `package.xml`. For each of these directories, this method adds a new entry
+/// into @p package_map where the key is the package name as specified within
+/// `package.xml` and the directory's path is the value.
+void PopulateMapFromEnvironment(const std::string environment_variable,
+    PackageMap* package_map);
+
 // TODO(liang.fok): Deprecate this method. See: #3361.
 /**
  * Adds a floating joint to each body specified by @p body_indices that does

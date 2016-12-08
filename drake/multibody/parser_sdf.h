@@ -17,6 +17,11 @@ namespace sdf {
  * One instance of each model is added. The models' frames are made coincident
  * with the world's coordinate frame.
  *
+ * This method can only be used with SDF models that do not use `package://` to
+ * reference modeling resources like mesh files. SDF models that contain
+ * `package://` should instead use
+ * AddModelInstancesFromSdfFileInWorldFrameSearchingInRosPackages().
+ *
  * @param[in] filename The name of the SDF file containing the model to be
  * added.
  *
@@ -39,6 +44,12 @@ AddModelInstancesFromSdfFileInWorldFrame(
  * Adds the model or models defined within an SDF file to a rigid body tree.
  * One instance of each model is added. The models' frames are made coincident
  * with the world's coordinate frame.
+ *
+ * This method has input parameter @p package_map. This parameter is only
+ * necessary if the SDF contains models that reference meshes and other modeling
+ * resources using `package://`. If the models in the SDF do not use
+ * `package://`, the SDF could instead be loaded using
+ * AddModelInstancesFromSdfFileInWorldFrame().
  *
  * @param[in] filename The name of the SDF file containing the model to be
  * added.
@@ -65,6 +76,11 @@ AddModelInstancesFromSdfFileInWorldFrameSearchingInRosPackages(
  * Adds the model or models defined within an SDF file to a rigid body tree.
  * One instance of each model is added.
  *
+ * This method can only be used with SDF models that do not use `package://` to
+ * reference modeling resources like mesh files. SDF models that contain
+ * `package://` should instead use
+ * AddModelInstancesFromSdfFileSearchingInRosPackages().
+ *
  * @param[in] filename The name of the SDF file containing the model to be
  * added.
  *
@@ -88,6 +104,12 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
 /**
  * Adds the model or models defined within an SDF file to @p tree. One instance
  * of each model is added.
+ *
+ * This method has input parameter @p package_map. This parameter is only
+ * necessary if the SDF contains models that reference meshes and other modeling
+ * resources using `package://`. If the models in the SDF do not use
+ * `package://`, the SDF could instead be loaded using
+ * AddModelInstancesFromSdfFile().
  *
  * @param[in] filename The name of the SDF file containing the model to be
  * added.
@@ -117,6 +139,11 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileSearchingInRosPackages(
  * Adds the model or models defined within an SDF description to @p tree. One
  * instance of each model is added.
  *
+ * This method can only be used with SDF models that do not use `package://` to
+ * reference modeling resources like mesh files. SDF models that contain
+ * `package://` should instead use
+ * AddModelInstancesFromSdfStringSearchingInRosPackages().
+ *
  * @param[in] sdf_string The SDF description of one or more models.
  *
  * @param[in] floating_base_type The type of joint that connects the model's
@@ -139,6 +166,12 @@ ModelInstanceIdTable AddModelInstancesFromSdfString(
 /**
  * Adds the model or models defined within an SDF description to @p tree. One
  * instance of each model is added.
+ *
+ * This method has input parameter @p package_map. This parameter is only
+ * necessary if the SDF contains models that reference meshes and other modeling
+ * resources using `package://`. If the models in the SDF do not use
+ * `package://`, the SDF could instead be loaded using
+ * AddModelInstancesFromSdfFile().
  *
  * @param[in] sdf_string The SDF description of one or more models.
  *

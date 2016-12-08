@@ -1,0 +1,2 @@
+drake_add_cc_test(parser_common_test)
+target_link_libraries(parser_common_test drakeRBM)
