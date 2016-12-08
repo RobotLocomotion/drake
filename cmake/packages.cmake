@@ -47,6 +47,9 @@ macro(drake_find_package PACKAGE)
     set(PKG_CONFIG_USE_CMAKE_PREFIX_PATH ON)
     pkg_check_modules("${PACKAGE}" ${dfp_required} ${dfp_quiet}
       ${DFP_UNPARSED_ARGUMENTS} "${PACKAGE}")
+    if(${PACKAGE}_FOUND)
+      drake_create_pkg_config_imported_target(${PACKAGE})
+    endif()
   else()
     find_package("${PACKAGE}" ${dfp_required} ${dfp_quiet}
       ${DFP_UNPARSED_ARGUMENTS})
@@ -71,6 +74,48 @@ macro(drake_find_package PACKAGE)
 endmacro()
 
 #------------------------------------------------------------------------------
+# Create an imported target from information from pkg_check_modules.
+#
+# TODO(jamiesnape): Fix the version upstream.
+#------------------------------------------------------------------------------
+function(drake_create_pkg_config_imported_target PACKAGE)
+  set(_libraries)
+
+  foreach(_library ${${PACKAGE}_LIBRARIES})
+    find_library(${PACKAGE}_${_library}_LIBRARY
+      NAMES ${_library} HINTS ${${PACKAGE}_LIBRARY_DIRS})
+    if(${PACKAGE}_${_library}_LIBRARY)
+      list(APPEND _libraries ${${PACKAGE}_${_library}_LIBRARY})
+    endif()
+    mark_as_advanced(${PACKAGE}_${_library}_LIBRARY)
+  endforeach()
+
+  if(${PACKAGE}_LDFLAGS_OTHER)
+    list(APPEND _libraries ${${PACKAGE}_LDFLAGS_OTHER})
+  endif()
+
+  if(NOT TARGET ${PACKAGE} AND
+     (${PACKAGE}_INCLUDE_DIRS OR _libraries OR ${PACKAGE}_CFLAGS_OTHER))
+    add_library(${PACKAGE} INTERFACE IMPORTED)
+
+    if(${PACKAGE}_INCLUDE_DIRS)
+      set_property(TARGET ${PACKAGE} PROPERTY
+        INTERFACE_INCLUDE_DIRECTORIES "${${PACKAGE}_INCLUDE_DIRS}")
+    endif()
+
+    if(_libraries)
+      set_property(TARGET ${PACKAGE} PROPERTY
+        INTERFACE_LINK_LIBRARIES "${_libraries}")
+    endif()
+
+    if(${PACKAGE}_CFLAGS_OTHER)
+      set_property(TARGET ${PACKAGE} PROPERTY
+        INTERFACE_COMPILE_OPTIONS "${${PACKAGE}_CFLAGS_OTHER}")
+    endif()
+  endif()
+endfunction()
+
+#------------------------------------------------------------------------------
 # Find external packages.
 #------------------------------------------------------------------------------
 macro(drake_find_packages)
@@ -88,8 +133,11 @@ macro(drake_find_packages)
 
   drake_find_package(avl CONFIG)
   drake_find_package(bot2-core CONFIG)
+  drake_find_package(bot2-lcmgl-client PKG_CONFIG)
   drake_find_package(Bullet MODULE)
+  drake_find_package(dreal PKG_CONFIG)
   drake_find_package(gurobi CONFIG)
+  drake_find_package(ipopt PKG_CONFIG)
   drake_find_package(lcm CONFIG)
   drake_find_package(meshconverters CONFIG)
   drake_find_package(mosek CONFIG)
