@@ -76,7 +76,10 @@ endmacro()
 #------------------------------------------------------------------------------
 # Create an imported target from information from pkg_check_modules.
 #
-# TODO(jamiesnape): Fix the version upstream.
+# This behavior differs from the similar function in newer versions of CMake in
+# that it does not require that all libraries specified by -l are in one of the
+# directories specified by -L, but rather they may also be in a system
+# directory.
 #------------------------------------------------------------------------------
 function(drake_create_pkg_config_imported_target PACKAGE)
   set(_libraries)
