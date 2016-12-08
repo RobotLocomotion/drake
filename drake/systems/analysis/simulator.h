@@ -434,7 +434,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // How far can we go before we have to take a sampling break?
     const T next_sample_time =
         system_.CalcNextUpdateTime(*context_, &update_actions);
-    DRAKE_ASSERT(next_sample_time >= step_start_time);
+    DRAKE_DEMAND(next_sample_time >= step_start_time);
 
     // Determine whether the DiscreteEvent requested by the System at
     // next_sample_time includes an Update action, a Publish action, or both.
