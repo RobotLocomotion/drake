@@ -32,7 +32,9 @@ struct DiscreteEvent {
       DiscreteUpdateCallback;
   typedef std::function<void(Context<T>*)> UpdateUnrestrictedCallback;
 
-  ///
+  /// These enumerations represent an indication of the type of event that
+  /// triggered the event handler, toward obviating the need to redetermine
+  /// the reason that the event handler is called.
   enum ActionType {
     /// A default value that causes the handler to abort.
     kUnknownAction = 0,
