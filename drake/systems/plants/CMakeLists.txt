@@ -1,1 +1,2 @@
+add_subdirectory(constraint)
 add_subdirectory(spring_mass_system)
