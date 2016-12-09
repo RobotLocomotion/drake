@@ -23,7 +23,6 @@ Quaternion<double> EulerIntegrateQuaternion(const Quaternion<Scalar>& q0,
   } else {
     Quaternion<Scalar> q_delta =
         Quaternion<Scalar>(AngleAxis<Scalar>(delta.norm(), delta.normalized()));
-    DRAKE_ASSERT(q_delta.norm() == 1);
     q1 = q_delta * q0;
   }
   q1.normalize();
