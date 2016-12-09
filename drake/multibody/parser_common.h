@@ -29,7 +29,7 @@ typedef std::map<std::string, std::string> PackageMap;
 /// starts with "package:".
 ///
 /// @param[in] root_dir The root directory to look in. This is only used when
-/// assuming @p filename does not start with "package:".
+/// @p filename does not start with "package:".
 ///
 /// @return The file's fully-qualified name or an empty string if the file is
 /// not found or does not exist.
