@@ -15,3 +15,6 @@ target_link_libraries(pid_controller_test drakeSystemControllers drakeSystemFram
 
 drake_add_cc_test(linear_quadratic_regulator_test linear_quadratic_regulator_test.cc)
 target_link_libraries(linear_quadratic_regulator_test drakeLinearControl)
+
+drake_add_cc_test(zmp_planner_test zmp_planner_test.cc)
+target_link_libraries(zmp_planner_test drakeZMPPlanner)
