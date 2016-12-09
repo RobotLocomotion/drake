@@ -14,13 +14,13 @@ namespace sdf {
 
 /**
  * Adds the model or models defined within an SDF file to a rigid body tree.
- * One instance of each model is added. The models' frames are made coincident
- * with the world's coordinate frame.
+ * One instance of each model is added. The models in the SDF are assumed to be
+ * described in the world frame.
  *
  * This method can only be used with SDF models that do not use `package://` to
  * reference modeling resources like mesh files. SDF models that contain
  * `package://` should instead use
- * AddModelInstancesFromSdfFileInWorldFrameSearchingInRosPackages().
+ * AddModelInstancesFromSdfFileToWorldSearchingInRosPackages().
  *
  * @param[in] filename The name of the SDF file containing the model to be
  * added.
@@ -35,21 +35,21 @@ namespace sdf {
  * the `RigidBodyTree`.
  */
 ModelInstanceIdTable
-AddModelInstancesFromSdfFileInWorldFrame(
+AddModelInstancesFromSdfFileToWorld(
     const std::string& filename,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree);
 
 /**
  * Adds the model or models defined within an SDF file to a rigid body tree.
- * One instance of each model is added. The models' frames are made coincident
- * with the world's coordinate frame.
+ * One instance of each model is added. The models in the SDF are assumed to be
+ * described in the world frame.
  *
  * This method has input parameter @p package_map. This parameter is only
  * necessary if the SDF contains models that reference meshes and other modeling
  * resources using `package://`. If the models in the SDF do not use
  * `package://`, the SDF could instead be loaded using
- * AddModelInstancesFromSdfFileInWorldFrame().
+ * AddModelInstancesFromSdfFileToWorld().
  *
  * @param[in] filename The name of the SDF file containing the model to be
  * added.
@@ -67,7 +67,7 @@ AddModelInstancesFromSdfFileInWorldFrame(
  * the `RigidBodyTree`.
  */
 ModelInstanceIdTable
-AddModelInstancesFromSdfFileInWorldFrameSearchingInRosPackages(
+AddModelInstancesFromSdfFileToWorldSearchingInRosPackages(
     const std::string& filename, const PackageMap& package_map,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree);

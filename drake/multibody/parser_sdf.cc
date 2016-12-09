@@ -857,7 +857,7 @@ ModelInstanceIdTable ParseSdf(XMLDocument* xml_doc,
 
 }  // namespace
 
-ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
+ModelInstanceIdTable AddModelInstancesFromSdfFileToWorld(
     const string& filename, const FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree) {
   DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
@@ -867,7 +867,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
 }
 
 ModelInstanceIdTable
-AddModelInstancesFromSdfFileInWorldFrameSearchingInRosPackages(
+AddModelInstancesFromSdfFileToWorldSearchingInRosPackages(
     const string& filename, const PackageMap& package_map,
     const FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree) {
