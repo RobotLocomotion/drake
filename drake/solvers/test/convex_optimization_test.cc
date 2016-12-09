@@ -533,27 +533,28 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   // t1 >= |R1'*a|
   // t2 >= |R2'*a|
   // Introduce matrices
-  // A1 = [1 0;0 R1']
-  // A2 = [1 0;0 R2']
-  // b1 = 0;
-  // b2 = 0;
-  // And both A1*[t;a]+b1, A2*[t;a]+b2 are in the Lorentz cone.
-  Eigen::MatrixXd A1(1 + R1.cols(), 1 + R1.rows());
-  Eigen::MatrixXd A2(1 + R2.cols(), 1 + R2.rows());
-  A1.setZero();
-  A2.setZero();
+  // A_lorentz1 = [1 0;0 R1']
+  // A_lorentz2 = [1 0;0 R2']
+  // b_lorentz1 = 0;
+  // b_lorentz2 = 0;
+  // And both A_lorentz1*[t;a]+b_lorentz1, A_lorentz2*[t;a]+b_lorentz2 are
+  // in the Lorentz cone.
+  Eigen::MatrixXd A_lorentz1(1 + R1.cols(), 1 + R1.rows());
+  Eigen::MatrixXd A_lorentz2(1 + R2.cols(), 1 + R2.rows());
+  A_lorentz1.setZero();
+  A_lorentz2.setZero();
   // clang-format off
-  A1 << 1, Eigen::RowVectorXd::Zero(R1.rows()),
+  A_lorentz1 << 1, Eigen::RowVectorXd::Zero(R1.rows()),
         Eigen::VectorXd::Zero(R1.cols()), R1.transpose();
-  A2 << 1, Eigen::RowVectorXd::Zero(R2.rows()),
+  A_lorentz2 << 1, Eigen::RowVectorXd::Zero(R2.rows()),
       Eigen::VectorXd::Zero(R2.cols()), R2.transpose();
   // clang-format on
-  Eigen::VectorXd b1 = Eigen::VectorXd::Zero(1 + R1.cols());
-  Eigen::VectorXd b2 = Eigen::VectorXd::Zero(1 + R2.cols());
-  auto lorentz_cone1 =
-      prog.AddLorentzConeConstraint(A1, b1, {t.segment<1>(0), a});
-  auto lorentz_cone2 =
-      prog.AddLorentzConeConstraint(A2, b2, {t.segment<1>(1), a});
+  Eigen::VectorXd b_lorentz1 = Eigen::VectorXd::Zero(1 + R1.cols());
+  Eigen::VectorXd b_lorentz2 = Eigen::VectorXd::Zero(1 + R2.cols());
+  auto lorentz_cone1 = prog.AddLorentzConeConstraint(A_lorentz1, b_lorentz1,
+                                                     {t.segment<1>(0), a});
+  auto lorentz_cone2 = prog.AddLorentzConeConstraint(A_lorentz2, b_lorentz2,
+                                                     {t.segment<1>(1), a});
   // a'*(x2 - x1) = 1
   prog.AddLinearEqualityConstraint((x2 - x1).transpose(), 1.0, {a});
 
@@ -603,24 +604,24 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
     auto y = prog_intersect.NewContinuousVariables(kXdim, "y");
 
     // Add the constraint that both
-    // A_lorentz1 * u1 + b_lorentz1
+    // A_lorentz3 * u1 + b_lorentz3
     // and
-    // A_lorentz2 * u2 + b_lorentz2
+    // A_lorentz4 * u2 + b_lorentz4
     // are in the Lorentz cone.
-    // A_lorentz1 = [0; I], b_lorentz1 = [1; 0]
-    // A_lorentz2 = [0; I], b_lorentz2 = [1; 0]
-    Eigen::MatrixXd A_lorentz1(R1.cols() + 1, R1.cols());
-    Eigen::MatrixXd A_lorentz2(R2.cols() + 1, R2.cols());
-    Eigen::VectorXd b_lorentz1(R1.cols() + 1);
-    Eigen::VectorXd b_lorentz2(R2.cols() + 1);
-    A_lorentz1 << Eigen::RowVectorXd::Zero(R1.cols()),
+    // A_lorentz3 = [0; I], b_lorentz3 = [1; 0]
+    // A_lorentz4 = [0; I], b_lorentz4 = [1; 0]
+    Eigen::MatrixXd A_lorentz3(R1.cols() + 1, R1.cols());
+    Eigen::MatrixXd A_lorentz4(R2.cols() + 1, R2.cols());
+    Eigen::VectorXd b_lorentz3(R1.cols() + 1);
+    Eigen::VectorXd b_lorentz4(R2.cols() + 1);
+    A_lorentz3 << Eigen::RowVectorXd::Zero(R1.cols()),
         Eigen::MatrixXd::Identity(R1.cols(), R1.cols());
-    A_lorentz2 << Eigen::RowVectorXd::Zero(R2.cols()),
+    A_lorentz4 << Eigen::RowVectorXd::Zero(R2.cols()),
         Eigen::MatrixXd::Identity(R2.cols(), R1.cols());
-    b_lorentz1 << 1, Eigen::VectorXd::Zero(R1.cols());
-    b_lorentz2 << 1, Eigen::VectorXd::Zero(R2.cols());
-    prog_intersect.AddLorentzConeConstraint(A_lorentz1, b_lorentz1, {u1});
-    prog_intersect.AddLorentzConeConstraint(A_lorentz2, b_lorentz2, {u2});
+    b_lorentz3 << 1, Eigen::VectorXd::Zero(R1.cols());
+    b_lorentz4 << 1, Eigen::VectorXd::Zero(R2.cols());
+    prog_intersect.AddLorentzConeConstraint(A_lorentz3, b_lorentz3, {u1});
+    prog_intersect.AddLorentzConeConstraint(A_lorentz4, b_lorentz4, {u2});
 
     // Add constraint y = x1 + R1*u1
     //                y = x2 + R2*u2
