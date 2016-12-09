@@ -26,18 +26,20 @@ void PiecewiseQuaternionSlerp<Scalar>::ComputeAngularVelocities() {
 template <typename Scalar>
 void PiecewiseQuaternionSlerp<Scalar>::Initialize(
     const std::vector<double>& breaks,
-    const std::vector<Quaternion<Scalar>>& quaternions) {
+    const eigen_aligned_std_vector<Quaternion<Scalar>>& quaternions,
+    bool enforce_closest) {
   if (quaternions.size() != breaks.size()) {
     throw std::runtime_error("Quaternions and breaks length mismatch.");
   }
   if (quaternions.size() < 2) {
     throw std::runtime_error("Not enough quaternions for slerp.");
   }
+  is_enforcing_closest_ = enforce_closest;
   quaternions_.resize(breaks.size());
 
   // Set to the closest wrt to the previous, also normalize.
   for (size_t i = 0; i < quaternions.size(); ++i) {
-    if (i == 0)
+    if (i == 0 || !enforce_closest)
       quaternions_[i] = quaternions[i].normalized();
     else
       quaternions_[i] =
@@ -49,33 +51,36 @@ void PiecewiseQuaternionSlerp<Scalar>::Initialize(
 template <typename Scalar>
 PiecewiseQuaternionSlerp<Scalar>::PiecewiseQuaternionSlerp(
     const std::vector<double>& breaks,
-    const std::vector<Quaternion<Scalar>>& quaternions)
+    const eigen_aligned_std_vector<Quaternion<Scalar>>& quaternions,
+    bool enforce_closest)
     : PiecewiseFunction(breaks) {
-  Initialize(breaks, quaternions);
+  Initialize(breaks, quaternions, enforce_closest);
 }
 
 template <typename Scalar>
 PiecewiseQuaternionSlerp<Scalar>::PiecewiseQuaternionSlerp(
     const std::vector<double>& breaks,
-    const std::vector<Matrix3<Scalar>>& rot_matrices)
+    const eigen_aligned_std_vector<Matrix3<Scalar>>& rot_matrices,
+    bool enforce_closest)
     : PiecewiseFunction(breaks) {
-  std::vector<Quaternion<Scalar>> quaternions(rot_matrices.size());
+  eigen_aligned_std_vector<Quaternion<Scalar>> quaternions(rot_matrices.size());
   for (size_t i = 0; i < rot_matrices.size(); ++i) {
     quaternions[i] = Quaternion<Scalar>(rot_matrices[i]);
   }
-  Initialize(breaks, quaternions);
+  Initialize(breaks, quaternions, enforce_closest);
 }
 
 template <typename Scalar>
 PiecewiseQuaternionSlerp<Scalar>::PiecewiseQuaternionSlerp(
     const std::vector<double>& breaks,
-    const std::vector<AngleAxis<Scalar>>& ang_axises)
+    const eigen_aligned_std_vector<AngleAxis<Scalar>>& ang_axises,
+    bool enforce_closest)
     : PiecewiseFunction(breaks) {
-  std::vector<Quaternion<Scalar>> quaternions(ang_axises.size());
+  eigen_aligned_std_vector<Quaternion<Scalar>> quaternions(ang_axises.size());
   for (size_t i = 0; i < ang_axises.size(); ++i) {
     quaternions[i] = Quaternion<Scalar>(ang_axises[i]);
   }
-  Initialize(breaks, quaternions);
+  Initialize(breaks, quaternions, enforce_closest);
 }
 
 template <typename Scalar>

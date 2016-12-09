@@ -31,7 +31,8 @@ Quaternion<double> EulerIntegrateQuaternion(const Quaternion<Scalar>& q0,
 
 // Checks q[n].dot(q[n-1]) >= 0
 template <typename Scalar>
-bool CheckClosest(const std::vector<Quaternion<Scalar>>& quaternions) {
+bool CheckClosest(
+    const eigen_aligned_std_vector<Quaternion<Scalar>>& quaternions) {
   if (quaternions.size() <= 1) return true;
   for (size_t i = 1; i < quaternions.size(); ++i) {
     if (quaternions[i].dot(quaternions[i - 1]) < 0) return false;
@@ -69,10 +70,10 @@ bool CheckSlerpInterpolation(const PiecewiseQuaternionSlerp<Scalar>& spline,
 
 // Generates a vector of random orientation using randomized axis angles.
 template <typename Scalar>
-std::vector<Quaternion<Scalar>> GenerateRandomQuaternions(
+eigen_aligned_std_vector<Quaternion<Scalar>> GenerateRandomQuaternions(
     int size, std::default_random_engine* generator) {
   DRAKE_DEMAND(size >= 0);
-  std::vector<Quaternion<Scalar>> ret(size);
+  eigen_aligned_std_vector<Quaternion<Scalar>> ret(size);
   std::uniform_real_distribution<double> uniform(-1, 1);
   for (int i = 0; i < size; ++i) {
     ret[i] = Quaternion<Scalar>(AngleAxis<Scalar>(
@@ -91,7 +92,7 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
   int N = 10000;
   std::vector<double> time =
       PiecewiseFunction::randomSegmentTimes(N - 1, generator);
-  std::vector<Quaternion<double>> quat =
+  eigen_aligned_std_vector<Quaternion<double>> quat =
       GenerateRandomQuaternions<double>(N, &generator);
 
   PiecewiseQuaternionSlerp<double> rot_spline(time, quat);
@@ -110,7 +111,7 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
   std::vector<double> time = {0, 1.6, 2.32};
   std::vector<double> ang = {1, 2.4, 5.3};
   Vector3<double> axis = Vector3<double>(1, 2, 3).normalized();
-  std::vector<Quaternion<double>> quat(ang.size());
+  eigen_aligned_std_vector<Quaternion<double>> quat(ang.size());
   for (size_t i = 0; i < ang.size(); ++i) {
     quat[i] = Quaternion<double>(AngleAxis<double>(ang[i], axis));
   }
@@ -140,6 +141,27 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
   // same.
   for (size_t i = 0; i < time.size() - 1; ++i) {
     double omega = angleDiff(ang[i], ang[i + 1]) / (time[i + 1] - time[i]);
+    EXPECT_TRUE(CompareMatrices(rot_spline.angular_velocity(time[i]),
+                                omega * axis, 1e-10,
+                                MatrixCompareType::absolute));
+  }
+
+  // Now check the "non-closest" version of the splines.
+  rot_spline = PiecewiseQuaternionSlerp<double>(time, quat, false);
+  EXPECT_FALSE(CheckClosest(rot_spline.get_quaternion_knots()));
+  EXPECT_FALSE(CheckClosest(quat));
+  for (size_t i = 0; i < time.size() - 1; ++i) {
+    EXPECT_TRUE(CompareMatrices(rot_spline.orientation(time[i]).coeffs(),
+                                quat[i].coeffs(), 1e-10,
+                                MatrixCompareType::absolute));
+
+    // Angular velocity goes the "other" direction if we want the "longer"
+    // distance between the two quaterions.
+    double omega = angleDiff(ang[i], ang[i + 1]);
+    if (quat[i].dot(quat[i + 1]) < 0) {
+      omega -= 2 * M_PI;
+    }
+    omega /= (time[i + 1] - time[i]);
     EXPECT_TRUE(CompareMatrices(rot_spline.angular_velocity(time[i]),
                                 omega * axis, 1e-10,
                                 MatrixCompareType::absolute));
