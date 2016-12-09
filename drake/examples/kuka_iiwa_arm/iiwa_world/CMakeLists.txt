@@ -2,17 +2,20 @@ if(lcm_FOUND)
   # Defines a shared library for use by KUKA iiwa world demos based on
   # System 2.0.
   add_library_with_exports(LIB_NAME drakeKukaIiwaWorld SOURCE_FILES
-      iiwa_world_sim_builder.cc)
+      world_sim_tree_builder.cc
+      world_sim_diagram_factory.cc)
   target_link_libraries(drakeKukaIiwaWorld
       drakeExamplesCommon
       drakeKukaIiwaArmCommon
       drakeLCMSystem2
       drakeRigidBodyPlant
       drakeSystemAnalysis
+      drakeSystemFramework
       gflags)
   drake_install_libraries(drakeKukaIiwaWorld)
   drake_install_headers(
-      iiwa_world_sim_builder.h)
+      world_sim_tree_builder.h
+      world_sim_diagram_factory.h)
   drake_install_pkg_config_file(drake-kuka-iiwa-world
       TARGET drakeKukaIiwaWorld
       LIBS -ldrakeKukaIiwaWorld
