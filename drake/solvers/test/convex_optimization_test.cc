@@ -189,7 +189,6 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
 /////////// Quadratic Program ///////////
 /////////////////////////////////////////
 
-
 // Test a simple Quadratic Program.
 // The example is taken from
 // http://cvxopt.org/examples/tutorial/qp.html
@@ -551,8 +550,10 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   // clang-format on
   Eigen::VectorXd b1 = Eigen::VectorXd::Zero(1 + R1.cols());
   Eigen::VectorXd b2 = Eigen::VectorXd::Zero(1 + R2.cols());
-  auto lorentz_cone1 = prog.AddLorentzConeConstraint(A1, b1, {t.segment<1>(0), a});
-  auto lorentz_cone2 = prog.AddLorentzConeConstraint(A2, b2, {t.segment<1>(1), a});
+  auto lorentz_cone1 =
+      prog.AddLorentzConeConstraint(A1, b1, {t.segment<1>(0), a});
+  auto lorentz_cone2 =
+      prog.AddLorentzConeConstraint(A2, b2, {t.segment<1>(1), a});
   // a'*(x2 - x1) = 1
   prog.AddLinearEqualityConstraint((x2 - x1).transpose(), 1.0, {a});
 
@@ -564,8 +565,8 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   // Check the solution.
   // First check if each constraint is satisfied.
   const auto& a_value = prog.GetSolution(a);
-  const auto& R1a_value = R1.transpose()*a_value;
-  const auto& R2a_value = R2.transpose()*a_value;
+  const auto& R1a_value = R1.transpose() * a_value;
+  const auto& R2a_value = R2.transpose() * a_value;
   EXPECT_NEAR(t(0).value(), R1a_value.norm(), 1e-6);
   EXPECT_NEAR(t(1).value(), R2a_value.norm(), 1e-6);
   EXPECT_TRUE(CompareMatrices((x2 - x1).transpose() * a_value,
@@ -601,7 +602,6 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
     auto u2 = prog_intersect.NewContinuousVariables(R2.cols(), "u2");
     auto y = prog_intersect.NewContinuousVariables(kXdim, "y");
 
-
     // Add the constraint that both
     // A_lorentz1 * u1 + b_lorentz1
     // and
@@ -613,8 +613,10 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
     Eigen::MatrixXd A_lorentz2(R2.cols() + 1, R2.cols());
     Eigen::VectorXd b_lorentz1(R1.cols() + 1);
     Eigen::VectorXd b_lorentz2(R2.cols() + 1);
-    A_lorentz1 << Eigen::RowVectorXd::Zero(R1.cols()), Eigen::MatrixXd::Identity(R1.cols(), R1.cols());
-    A_lorentz2 << Eigen::RowVectorXd::Zero(R2.cols()), Eigen::MatrixXd::Identity(R2.cols(), R1.cols());
+    A_lorentz1 << Eigen::RowVectorXd::Zero(R1.cols()),
+        Eigen::MatrixXd::Identity(R1.cols(), R1.cols());
+    A_lorentz2 << Eigen::RowVectorXd::Zero(R2.cols()),
+        Eigen::MatrixXd::Identity(R2.cols(), R1.cols());
     b_lorentz1 << 1, Eigen::VectorXd::Zero(R1.cols());
     b_lorentz2 << 1, Eigen::VectorXd::Zero(R2.cols());
     prog_intersect.AddLorentzConeConstraint(A_lorentz1, b_lorentz1, {u1});
@@ -647,7 +649,6 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
                                 MatrixCompareType::absolute));
   }
 }
-
 
 // This example is taken from
 // https://inst.eecs.berkeley.edu/~ee127a/book/login/exa_qp_as_socp.html
@@ -691,8 +692,9 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
   auto y = prog_socp.NewContinuousVariables<1>("y");
   auto w = prog_socp.NewContinuousVariables(kXdim, "w");
 
-  Eigen::MatrixXd A_lorentz(2 + kXdim, 1+kXdim);
-  A_lorentz << Eigen::RowVectorXd::Zero(1 + kXdim), Eigen::MatrixXd::Identity(1 + kXdim, 1+kXdim);
+  Eigen::MatrixXd A_lorentz(2 + kXdim, 1 + kXdim);
+  A_lorentz << Eigen::RowVectorXd::Zero(1 + kXdim),
+      Eigen::MatrixXd::Identity(1 + kXdim, 1 + kXdim);
   Eigen::VectorXd b_lorentz(2 + kXdim);
   b_lorentz << 2, Eigen::VectorXd::Zero(1 + kXdim);
   prog_socp.AddRotatedLorentzConeConstraint(A_lorentz, b_lorentz, {y, w});
@@ -824,7 +826,8 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
   prog.AddBoundingBoxConstraint(
       Eigen::VectorXd::Zero(num_nodes - 1),
       Eigen::VectorXd::Constant(num_nodes - 1,
-                                std::numeric_limits<double>::infinity()), {t});
+                                std::numeric_limits<double>::infinity()),
+      {t});
 
   // sqrt((x(i)-x(i+1))^2 + (y(i) - y(i+1))^2) <= ti + spring_rest_length
   for (int i = 0; i < num_nodes - 1; ++i) {
@@ -838,13 +841,16 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
     A_lorentz1(2, 2) = 1;
     A_lorentz1(2, 3) = -1;
     Eigen::Vector3d b_lorentz1(spring_rest_length, 0, 0);
-    prog.AddLorentzConeConstraint(A_lorentz1, b_lorentz1, {x.segment<2>(i), y.segment<2>(i), t.segment<1>(i)});
+    prog.AddLorentzConeConstraint(
+        A_lorentz1, b_lorentz1,
+        {x.segment<2>(i), y.segment<2>(i), t.segment<1>(i)});
   }
 
   // Add constraint z >= t_1^2 + .. + t_(N-1)^2
   auto z = prog.NewContinuousVariables<1>("z");
   Eigen::MatrixXd A_lorentz2(1 + num_nodes, num_nodes);
-  A_lorentz2 << Eigen::RowVectorXd::Zero(num_nodes), Eigen::MatrixXd::Identity(num_nodes, num_nodes);
+  A_lorentz2 << Eigen::RowVectorXd::Zero(num_nodes),
+      Eigen::MatrixXd::Identity(num_nodes, num_nodes);
   Eigen::VectorXd b_lorentz2(1 + num_nodes);
   b_lorentz2 << 1, Eigen::VectorXd::Zero(num_nodes);
   prog.AddRotatedLorentzConeConstraint(A_lorentz2, b_lorentz2, {z, t});

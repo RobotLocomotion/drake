@@ -26,8 +26,7 @@ void TestLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
   Vector2d y_expected;
   VectorXd z = A * x_test + b;
   y_expected(0) = z(0);
-  y_expected(1) =
-      z(0) * z(0) - z.tail(z.size() - 1).squaredNorm();
+  y_expected(1) = z(0) * z(0) - z.tail(z.size() - 1).squaredNorm();
   EXPECT_TRUE(
       CompareMatrices(y, y_expected, 1E-10, MatrixCompareType::absolute));
 
@@ -58,8 +57,7 @@ void TestRotatedLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
       CompareMatrices(y, y_expected, 1E-10, MatrixCompareType::absolute));
 
   bool is_in_cone_expected =
-      (z(0) >= 0) & (z(1) >= 0) &
-      (z(0) * z(1) >= z.tail(z.size() - 2).norm());
+      (z(0) >= 0) & (z(1) >= 0) & (z(0) * z(1) >= z.tail(z.size() - 2).norm());
   EXPECT_TRUE(is_in_cone == is_in_cone_expected);
 
   // Eval with taylor var.
@@ -74,8 +72,8 @@ void TestRotatedLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
 GTEST_TEST(testConstraint, testLorentzConeConstraint) {
   // [3;1;1] is in the interior of the Lorentz cone.
   Eigen::Vector3d x1(3.0, 1.0, 1.0);
-  TestLorentzConeEval(Eigen::Matrix3d::Identity(), Eigen::Vector3d::Zero(),
-                      x1, true);
+  TestLorentzConeEval(Eigen::Matrix3d::Identity(), Eigen::Vector3d::Zero(), x1,
+                      true);
 
   // [3;2;2;1] is on the boundary of the Lorentz cone.
   Eigen::Vector2d x2(1, 3);
@@ -109,7 +107,8 @@ GTEST_TEST(testConstraint, testLorentzConeConstraint) {
 
 GTEST_TEST(testConstraint, testRotatedLorentzConeConstraint) {
   // [1;2;1] is in the interior of the rotated lorentz cone.
-  TestRotatedLorentzConeEval(Eigen::Matrix3d::Identity(), Eigen::Vector3d::Zero(), Vector3d(1, 2, 1), true);
+  TestRotatedLorentzConeEval(Eigen::Matrix3d::Identity(),
+                             Eigen::Vector3d::Zero(), Vector3d(1, 2, 1), true);
 
   // [1;2;1;1] is on the boundary of the rotated Lorentz cone.
   Eigen::Vector2d x2(1, 2);
