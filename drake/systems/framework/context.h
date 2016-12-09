@@ -17,7 +17,7 @@ struct StepInfo {
   /// The time, in seconds. For typical T implementations based on
   /// doubles, time resolution will gradually degrade as time increases.
   // TODO(sherm1): Consider whether this is sufficiently robust.
-  T time_sec{};
+  T time_sec{0.0};
 };
 
 /// Context is an abstract base class template that represents all
