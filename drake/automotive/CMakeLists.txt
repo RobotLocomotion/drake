@@ -77,13 +77,21 @@ if(lcm_FOUND)
   add_executable(automotive_demo automotive_demo.cc)
   target_link_libraries(automotive_demo drakeAutomotiveLcm drakeLCMTypes)
 
-  add_executable(car_sim_lcm car_sim_lcm.cc)
+  add_executable(car_sim_lcm car_sim_lcm.cc car_sim_lcm_common.cc)
   target_link_libraries(car_sim_lcm
       drakeAutomotiveLcm
       drakeRigidBodyPlant
       drakeSystemAnalysis
       drakeSystemControllers
       drakeLCMSystem2)
-
   add_test(NAME car_sim_lcm COMMAND car_sim_lcm -simulation_sec 0.1)
+
+  add_executable(car_sim_lcm_speed_bump car_sim_lcm_speed_bump.cc car_sim_lcm_common.cc)
+  target_link_libraries(car_sim_lcm_speed_bump
+      drakeAutomotiveLcm
+      drakeRigidBodyPlant
+      drakeSystemAnalysis
+      drakeSystemControllers
+      drakeLCMSystem2)
+  add_test(NAME car_sim_lcm_speed_bump COMMAND car_sim_lcm_speed_bump -simulation_sec 0.1)
 endif()

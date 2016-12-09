@@ -1,0 +1,36 @@
+# -*- yaml -*-
+---
+# Implements a speed bump that is 7cm tall and 30 cm wide. These
+# dimensions were taken based on information from the following website:
+#
+# https://en.wikipedia.org/wiki/Speed_bump#Speed_bumps
+#
+# Distances are meters; Angles are degrees.
+maliput_monolane_builder:
+  id: speed_bump
+  lane_bounds: [-3, 3]
+  driveable_bounds: [-8, 8]
+  position_precision: .01
+  orientation_precision: 0.5
+  points:
+    start:
+      xypoint: [0, 0, 0]    # x,y, heading
+      zpoint: [0, 0, 0, 0]  # z, zdot, theta, thetadot
+                            #   - z: the height of the road relative to the
+                            #     world's ground.
+                            #   - zdot: the road's grade relative to the world's
+                            #     ground.
+                            #   - theta: the road's superelevation, which is its
+                            #     bank relative to the world's ground.
+                            #   - thetadot: the change in theta
+  connections:
+    # Connection 0 defines the first half of the speed bump.
+    0:
+      start: "points.start"
+      length: 0.15
+      z_end: [0.07, 0, 0, 0] # z, zdot, theta, thetadot
+    # Connection 1 defines the second half of the speed bump.
+    1:
+      start: "connections.0.end"
+      length: 0.15
+      z_end: [0, 0, 0, 0]

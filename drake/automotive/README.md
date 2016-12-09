@@ -49,10 +49,36 @@ $ python steering_command_driver.py
 Start Drake's Simulator
 -----------------------
 
+There are currently two physics-based car simulation demonstrations:
+`car_sim_lcm` and `car_sim_lcm_speed_bump`. `car_sim_lcm` is a simulation of a
+Toyota Prius on a flat terrain. `car_sim_lcm_speed_bump` is the same as
+`car_sim_lcm` except there is a speed bump placed in front of the vehicle. See
+the instructions below on how to run each.
+
+Running car_sim_lcm
+===================
+
 Open a new terminal and execute the following:
 
 ```
-$ drake-distro/build/drake/bin/car_sim_lcm
+$ drake-distro/build/drake/automotive/car_sim_lcm
+```
+
+Running car_sim_lcm_speed_bump
+==============================
+
+Open a new terminal. Then execute the following command to generate the
+`speed_bump.obj` file using `maliput`:
+
+```
+$ cd drake-distro/build
+$ ./drake/drake/automotive/maliput/yaml_to_obj --yaml_file ../drake/automotive/models/speed_bump/speed_bump.yaml --obj_file ../drake/automotive/models/speed_bump/speed_bump.obj
+```
+
+Next execute the following to start the simulation:
+
+```
+$ drake-distro/build/drake/automotive/car_sim_lcm_speed_bump
 ```
 
 Additional Simulation Notes

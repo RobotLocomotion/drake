@@ -31,7 +31,7 @@ namespace {
 // Verifies that the order of rigid body names and actuator names within the
 // provided tree are as expected.
 void VerifyCarSimLcmTree(const RigidBodyTreed& tree) {
-  DRAKE_DEMAND(tree.get_num_bodies() == 18);
+  DRAKE_DEMAND(tree.get_num_bodies() == 19);
 
   std::map<std::string, int> name_to_idx =
       tree.computePositionNameToIndexMap();
@@ -83,6 +83,10 @@ int main(int argc, char* argv[]) {
       multibody::joints::kQuaternion, nullptr /* weld to frame */,
       rigid_body_tree.get());
   multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
+  AddModelInstancesFromSdfFile(
+      drake::GetDrakePath() + "/automotive/models/speed_bump/speed_bump.sdf",
+      multibody::joints::kFixed, nullptr /* weld to frame */,
+      rigid_body_tree.get());
   VerifyCarSimLcmTree(*rigid_body_tree);
 
   lcm::DrakeLcm lcm;
