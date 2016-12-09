@@ -7,6 +7,14 @@ drake_install_pkg_config_file(drake-linear-control
   TARGET drakeLinearControl
   LIBS -ldrakeLinearControl)
 
+add_library_with_exports(LIB_NAME drakeZMPPlanner SOURCE_FILES zmp_planner.cc)
+target_link_libraries(drakeZMPPlanner drakeLinearControl)
+drake_install_libraries(drakeZMPPlanner)
+drake_install_headers(zmp_planner.h)
+drake_install_pkg_config_file(drake-zmp-planner
+  TARGET drakeZMPPlanner
+  LIBS -ldrakeZMPPlanner)
+
 add_library_with_exports(LIB_NAME drakeControlUtil SOURCE_FILES controlUtil.cpp)
 target_link_libraries(drakeControlUtil
   drakeRBM
