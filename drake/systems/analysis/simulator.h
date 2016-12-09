@@ -410,18 +410,11 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     if (sample_time_hit) {
       // Do unrestricted updates first.
       for (const DiscreteEvent<T>& event : update_actions.events) {
-        switch (event.action) {
-          case DiscreteEvent<T>::kUnrestrictedUpdateAction: {
-            system_.PerformedUnrestrictedUpdate(context_.get(), event);
-            ++num_unrestricted_updates_;
-            break;
-
-            // Do nothing for these cases *now*.
-            case DiscreteEvent<T>::kDiscreteUpdateAction:
-            case DiscreteEvent<T>::kPublishAction:
-              break;
-
-            case DiscreteEvent<T>::kUnknownAction:
+        if (event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction) {
+          system_.PerformUnrestrictedUpdate(context_.get(), event);
+          ++num_unrestricted_updates_;
+        } else {
+          if (event.action == DiscreteEvent<T>::kUnknownAction) {
               throw std::logic_error("kUnknownAction encountered.");
           }
         }
@@ -429,49 +422,27 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
       // Do restricted (discrete variable) updates next.
       for (const DiscreteEvent<T>& event : update_actions.events) {
-        switch (event.action) {
-          case DiscreteEvent<T>::kDiscreteUpdateAction: {
-            DifferenceState<T> *xd = context_->get_mutable_difference_state();
-            // Systems with discrete update events must have difference state.
-            DRAKE_DEMAND(xd != nullptr);
-            // First, compute the discrete updates into a temporary buffer.
-            system_.EvalDifferenceUpdates(*context_, event,
-                                          discrete_updates_.get());
-            // Then, write them back into the context.
-            xd->CopyFrom(*discrete_updates_);
-            ++num_discrete_updates_;
-            break;
-          }
-
-          // Do nothing for these cases *now*.
-          case DiscreteEvent<T>::kUnrestrictedUpdateAction:
-          case DiscreteEvent<T>::kPublishAction:
-          case DiscreteEvent<T>::kUnknownAction:
-            break;
+        if (event.action == DiscreteEvent<T>::kDiscreteUpdateAction) {
+          DifferenceState<T> *xd = context_->get_mutable_difference_state();
+          // Systems with discrete update events must have difference state.
+          DRAKE_DEMAND(xd != nullptr);
+          // First, compute the discrete updates into a temporary buffer.
+          system_.EvalDifferenceUpdates(*context_, event,
+                                        discrete_updates_.get());
+          // Then, write them back into the context.
+          xd->CopyFrom(*discrete_updates_);
+          ++num_discrete_updates_;
         }
       }
 
       // Do any publishes last.
       for (const DiscreteEvent<T>& event : update_actions.events) {
-        switch (event.action) {
-          case DiscreteEvent<T>::kPublishAction: {
+        if (event.action == DiscreteEvent<T>::kPublishAction) {
             system_.Publish(*context_, event);
             published = true;
             ++num_publishes_;
-            break;
           }
-
-          // Do nothing for these cases *now*.
-          case DiscreteEvent<T>::kUnrestrictedUpdateAction:
-          case DiscreteEvent<T>::kDiscreteUpdateAction:
-          case DiscreteEvent<T>::kUnknownAction:
-            break;
         }
-
-        // No reason to publish twice.
-        if (published)
-          break;
-      }
     }
 
     // Allow System a chance to produce some output.
@@ -512,6 +483,9 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     switch (result) {
       case IntegratorBase<T>::kReachedUpdateTime:
       case IntegratorBase<T>::kReachedPublishTime:
+        // Next line sets the time to the exact sample time rather than
+        // introducing rounding error by summing the context time + dt.
+        context_->set_time(next_sample_time);
         sample_time_hit = true;
         break;
 

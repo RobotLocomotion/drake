@@ -51,7 +51,7 @@ class IntegratorBase {
      */
     kReachedZeroCrossing = 2,
     /**
-     * Indicates that integration terminated at a update time.
+     * Indicates that integration terminated at an update time.
      */
     kReachedUpdateTime = 3,
     /**
@@ -1266,20 +1266,20 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
   // StepTo(.) return).
 
   // By default, the candidate dt is the next discrete update event.
-  StepResult candidate_dt = IntegratorBase<T>::kReachedUpdateTime;
+  StepResult candidate_result = IntegratorBase<T>::kReachedUpdateTime;
   T dt = update_dt;
 
   // If the next discrete publish event is sooner than the next discrete update
   // event, the publish event becomes the candidate dt
   if (publish_dt < update_dt) {
-    candidate_dt = IntegratorBase<T>::kReachedPublishTime;
+    candidate_result = IntegratorBase<T>::kReachedPublishTime;
     dt = publish_dt;
   }
 
   // If the stop time (boundary time) is sooner than the candidate, use it
   // instead.
   if (boundary_dt < dt) {
-    candidate_dt = IntegratorBase<T>::kReachedBoundaryTime;
+    candidate_result = IntegratorBase<T>::kReachedBoundaryTime;
     dt = boundary_dt;
   }
 
@@ -1287,14 +1287,15 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
   // size times a stretch factor of 1.01, the maximum step size becomes the
   // candidate dt. Put another way, if the maximum step occurs right before
   // an update or a publish, the update or publish is done instead. If the
-  // maximum step occurs right before the boundary time, we integrate to
+  // maximum step occurs right after the boundary time, we integrate to
   // the boundary instead.
   static constexpr double kMaxStretch = 1.01;  // Allow 1% step size stretch.
   const T& max_dt = IntegratorBase<T>::get_maximum_step_size();
-  if ((candidate_dt == IntegratorBase<T>::kReachedBoundaryTime && max_dt < dt)
-      || (candidate_dt != IntegratorBase<T>::kReachedBoundaryTime &&
+  if ((candidate_result == IntegratorBase<T>::kReachedBoundaryTime &&
+       max_dt < dt) ||
+      (candidate_result != IntegratorBase<T>::kReachedBoundaryTime &&
           max_dt * kMaxStretch < dt)) {
-    candidate_dt = IntegratorBase<T>::kTimeHasAdvanced;
+    candidate_result = IntegratorBase<T>::kTimeHasAdvanced;
     dt = max_dt;
   }
 
@@ -1310,7 +1311,7 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
     // If the integrator took the entire maximum step size we allowed above,
     // we report to the caller that a step constraint was hit, which may
     // indicate a discrete event has arrived.
-    return candidate_dt;
+    return candidate_result;
   } else {
     // Otherwise, we report to the caller that time has advanced, but no
     // discrete event has arrived.

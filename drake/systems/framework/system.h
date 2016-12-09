@@ -30,7 +30,7 @@ struct DiscreteEvent {
   typedef std::function<void(const Context<T>&)> PublishCallback;
   typedef std::function<void(const Context<T>&, DifferenceState<T>*)>
       DiscreteUpdateCallback;
-  typedef std::function<void(Context<T>*)> UpdateUnrestrictedCallback;
+  typedef std::function<void(Context<T>*)> UnrestrictedUpdateCallback;
 
   /// These enumerations represent an indication of the type of event that
   /// triggered the event handler, toward obviating the need to redetermine
@@ -63,7 +63,7 @@ struct DiscreteEvent {
   /// An optional callback, supplied by the recipient, to carry out a
   /// kUpdateUnrestrictedAction. If nullptr, DoUpdateUnrestricted() will be
   /// used.
-  UpdateUnrestrictedCallback do_update_unrestricted{nullptr};
+  UnrestrictedUpdateCallback do_update_unrestricted{nullptr};
 };
 
 /// A token that identifies the next sample time at which a System must
@@ -265,8 +265,8 @@ class System {
   /// if provided.
   /// @throws std::logic_error if the contex time is changed in the update
   ///         callback.
-  void PerformedUnrestrictedUpdate(Context <T> *context,
-                                   const DiscreteEvent<T> &event) const {
+  void PerformUnrestrictedUpdate(Context<T> *context,
+                                 const DiscreteEvent<T> &event) const {
     const T c_time = context->get_time();
     DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
     if (event.do_update_unrestricted == nullptr) {
