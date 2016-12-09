@@ -17,6 +17,10 @@
 namespace drake {
 namespace solvers {
 namespace {
+/// Check is the number of variables in the Gurobi model is as expected. This
+/// operation can be EXPENSIVE, since it requires calling GRBupdatemodel
+/// (Gurobi typically adopts lazy update, that it does not update the model
+/// until calling optimize function).
 bool IsNumberOfVariablesAsExpected(GRBmodel* model, int num_vars_expected) {
   int error = GRBupdatemodel(model);
   if (error) return false;
@@ -96,16 +100,16 @@ int AddSecondOrderConeConstraints(
         variable_indices.push_back(static_cast<int>(var(i, 0).index()));
       }
     }
-    int num_x_variables = static_cast<int>(variable_indices.size());
+    int num_x = static_cast<int>(variable_indices.size());
 
     const auto& A = binding.constraint()->A();
     const auto& b = binding.constraint()->b();
     int num_total_variables = is_new_variable->size();
     // First add new decision variables z, with the constraints z - A*x = b
-    int num_new_variables = A.rows();
-    std::vector<char> new_variable_types(num_new_variables, GRB_CONTINUOUS);
+    int num_z = A.rows();
+    std::vector<char> new_variable_types(num_z, GRB_CONTINUOUS);
     std::vector<double> new_variable_lb(
-        num_new_variables, -std::numeric_limits<double>::infinity());
+        num_z, -std::numeric_limits<double>::infinity());
     new_variable_lb[0] = 0.0;
     if (is_rotated_cone) {
       new_variable_lb[1] = 0.0;
@@ -117,20 +121,20 @@ int AddSecondOrderConeConstraints(
       return error;
     }
     // Append the newly added variable indices to variable_indices.
-    variable_indices.reserve(variable_indices.size() + num_new_variables);
-    is_new_variable->reserve(is_new_variable->size() + num_new_variables);
-    for (int i = 0; i < num_new_variables; ++i) {
+    variable_indices.reserve(variable_indices.size() + num_z);
+    is_new_variable->reserve(is_new_variable->size() + num_z);
+    for (int i = 0; i < num_z; ++i) {
       variable_indices.push_back(num_total_variables + i);
       is_new_variable->push_back(true);
     }
     DRAKE_ASSERT(IsNumberOfVariablesAsExpected(model, is_new_variable->size()));
     // TODO(hongkai.dai): Use a sparse A_lorentz matrix.
-    Eigen::MatrixXd A_lorentz(A.rows(), A.rows() + A.cols());
+    Eigen::MatrixXd A_lorentz(num_z, num_x + num_z);
     A_lorentz << -A, Eigen::MatrixXd::Identity(A.rows(), A.rows());
     error = AddLinearConstraint(model, A_lorentz, b, variable_indices,
                                 GRB_EQUAL, sparseness_threshold);
 
-    // Mosek uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
+    // Gurobi uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
     // cone constraint.
     // For Lorentz cone constraint,
     // Q = [-1 0 0 ... 0]
@@ -146,31 +150,31 @@ int AddSecondOrderConeConstraints(
     //     [0  0 0 1 ... 0]
     //           ...
     //     [0  0 0 0 ... 1]
-    // We will store Q in a sparse format
+    // We will store Q in a sparse format.
     // qrow stores the row    indices of the non-zero entries of Q.
     // qcol stores the column indices of the non-zero entries of Q.
     // qval stores the value          of the non-zero entries of Q.
     size_t num_Q_nonzero =
-        is_rotated_cone ? num_new_variables - 1 : num_new_variables;
+        is_rotated_cone ? num_z - 1 : num_z;
     std::vector<int> qrow(num_Q_nonzero);
     std::vector<int> qcol(num_Q_nonzero);
     std::vector<double> qval(num_Q_nonzero);
-    for (int i = 0; i < num_new_variables - 2; ++i) {
-      qrow[i] = variable_indices[num_x_variables + i + 2];
-      qcol[i] = variable_indices[num_x_variables + i + 2];
+    for (int i = 0; i < num_z - 2; ++i) {
+      qrow[i] = variable_indices[num_x + i + 2];
+      qcol[i] = variable_indices[num_x + i + 2];
       qval[i] = 1.0;
     }
     if (is_rotated_cone) {
-      qrow[num_new_variables - 2] = variable_indices[num_x_variables];
-      qcol[num_new_variables - 2] = variable_indices[num_x_variables + 1];
-      qval[num_new_variables - 2] = -1;
+      qrow[num_z - 2] = variable_indices[num_x];
+      qcol[num_z - 2] = variable_indices[num_x + 1];
+      qval[num_z - 2] = -1;
     } else {
-      qrow[num_new_variables - 2] = variable_indices[num_x_variables];
-      qcol[num_new_variables - 2] = variable_indices[num_x_variables];
-      qval[num_new_variables - 2] = -1;
-      qrow[num_new_variables - 1] = variable_indices[num_x_variables + 1];
-      qcol[num_new_variables - 1] = variable_indices[num_x_variables + 1];
-      qval[num_new_variables - 1] = 1;
+      qrow[num_z - 2] = variable_indices[num_x];
+      qcol[num_z - 2] = variable_indices[num_x];
+      qval[num_z - 2] = -1;
+      qrow[num_z - 1] = variable_indices[num_x + 1];
+      qcol[num_z - 1] = variable_indices[num_x + 1];
+      qval[num_z - 1] = 1;
     }
     error =
         GRBaddqconstr(model, 0, nullptr, nullptr, num_Q_nonzero, qrow.data(),
@@ -407,6 +411,10 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // For example, for Lorentz cone and rotated Lorentz cone constraint,to impose
   // that A*x+b lies in the (rotated) Lorentz cone, we add decision variable z
   // to Gurobi, defined as z = A*x + b.
+  // The size of is_new_variable should increase if we add new decision
+  // variables to Gurobi model.
+  // The invariant is
+  // EXPECT_TRUE(IsNumberOfVariablesAsExpected(model, is_new_variables.size()))
   std::vector<bool> is_new_variable(num_prog_vars, false);
 
   // Bound constraints.

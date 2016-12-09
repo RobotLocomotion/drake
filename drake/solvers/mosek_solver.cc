@@ -180,19 +180,19 @@ MSKrescodee AddSecondOrderConeConstraints(
 
     const auto& A = binding.constraint()->A();
     const auto& b = binding.constraint()->b();
-    const int num_new_vars = A.rows();
+    const int num_z = A.rows();
     MSKint32t num_total_vars = 0;
     rescode = MSK_getnumvar(*task, &num_total_vars);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    rescode = MSK_appendvars(*task, num_new_vars);
+    rescode = MSK_appendvars(*task, num_z);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    is_new_variable->resize(num_total_vars + num_new_vars);
-    std::vector<MSKint32t> new_var_indices(num_new_vars);
-    for (int i = 0; i < num_new_vars; ++i) {
+    is_new_variable->resize(num_total_vars + num_z);
+    std::vector<MSKint32t> new_var_indices(num_z);
+    for (int i = 0; i < num_z; ++i) {
       is_new_variable->at(num_total_vars + i) = true;
       new_var_indices[i] = num_total_vars + i;
       rescode = MSK_putvarbound(*task, new_var_indices[i], MSK_BK_FR,
@@ -202,7 +202,7 @@ MSKrescodee AddSecondOrderConeConstraints(
       }
     }
     MSKconetypee cone_type = is_rotated_cone ? MSK_CT_RQUAD : MSK_CT_QUAD;
-    rescode = MSK_appendcone(*task, cone_type, 0.0, num_new_vars,
+    rescode = MSK_appendcone(*task, cone_type, 0.0, num_z,
                              new_var_indices.data());
     if (rescode != MSK_RES_OK) {
       return rescode;
@@ -210,16 +210,25 @@ MSKrescodee AddSecondOrderConeConstraints(
 
     // Add the linear constraint
     // z = A*x+b
-    // The first row of this constraint needs special treatment.
+    // Unfortunately Mosek's definition of rotated Lorentz cone is different
+    // from ours. The rotated Lorentz cone in Mosek is defined as
+    // 2*z(0) * z(1) >= z(2)^2 + ... + z(n-1)^2
+    // Our definition of rotated Lorentz cone is
+    //   z(0) * z(1) >= z(2)^2 + ... + z(n-1)^2
+    // So there is a factor of 2 for rotated Lorentz cone.
+    // With this difference in rotated Lorentz cone, the first row of constraint
+    // z = A * x + b needs special treatment.
     // If using Lorentz cone,
-    // Add the linear constraint z0 = a0^T*x+b0
-    // otherwise, add the linear constraint 2*z0 = a0^T*x0 + b0
+    // Add the linear constraint
+    //   z0 = a0^T * x + b0;
+    // If using rotated Lorentz cone, add the linear constraint
+    // 2*z0 = a0^T * x + b0
     int num_lin_cons;
     rescode = MSK_getnumcon(*task, &num_lin_cons);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    rescode = MSK_appendcons(*task, num_new_vars);
+    rescode = MSK_appendcons(*task, num_z);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
@@ -238,7 +247,7 @@ MSKrescodee AddSecondOrderConeConstraints(
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    for (int i = 1; i < num_new_vars; ++i) {
+    for (int i = 1; i < num_z; ++i) {
       // In every row of the linear constraint z = A*x+b, the only changed
       // decision variable is z(i), so pop the last variable (z(i-1)), and
       // push back z(i)
