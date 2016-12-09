@@ -40,8 +40,7 @@ class VisualizedPlant : public systems::Diagram<T> {
 
 /// A custom `Diagram` consisting of a `ConstantVectorSource` of 0 magnitude
 /// connected to a `VisualizedPlant`'s input port zero. The resulting diagram
-/// has no input
-/// ports and the same output ports as the `VisualizedPlant`.
+/// has no input ports and the same output ports as the `VisualizedPlant`.
 template <typename T>
 class PassiveVisualizedPlant : public systems::Diagram<T> {
  public:
