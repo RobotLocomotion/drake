@@ -17,10 +17,9 @@ namespace math {
 
 /**
  * @Returns a quaternion that represents the same orientation as `q1`,
- * and is the "closest" to `q0`.
+ * and has the "shortest" geodesic distance on the unit sphere to `q0`.
  */
-template <typename Scalar>
-const Eigen::Quaternion<Scalar> ClosetQuaternion(
+template <typename Scalar> Eigen::Quaternion<Scalar> ClosetQuaternion(
     const Eigen::Quaternion<Scalar>& q0,
     const Eigen::Quaternion<Scalar>& q1) {
   Eigen::Quaternion<Scalar> q = q1;
