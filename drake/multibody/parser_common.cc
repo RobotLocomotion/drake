@@ -17,7 +17,7 @@
 
 using std::cerr;
 using std::endl;
-using std::getenv;
+
 using std::istringstream;
 using std::make_pair;
 using std::map;
@@ -41,11 +41,10 @@ namespace {
 // Searches for key @package in @package_map. If the key exists, this saves the
 // associated value in the string pointed to by @package_path and then returns
 // true. It returns false otherwise.
-bool GetPackagePath(const string& package,
-    const map<string, string>& package_map, string* package_path) {
-  auto iter = package_map.find(package);
-  if (iter != package_map.end()) {
-    *package_path = iter->second;
+bool GetPackagePath(const string& package, const PackageMap& package_map,
+                    string* package_path) {
+  if (package_map.Contains(package)) {
+    *package_path = package_map.GetPath(package);
     return true;
   } else {
     drake::log()->warn("Warning: Couldn't find package '{}' in the supplied "
@@ -55,8 +54,7 @@ bool GetPackagePath(const string& package,
 }
 }  // anonymous namespace
 
-string ResolveFilename(const string& filename,
-                       const map<string, string>& package_map,
+string ResolveFilename(const string& filename, const PackageMap& package_map,
                        const string& root_dir) {
   spruce::path mesh_filename_s;
   spruce::path raw_filename_s(filename);
@@ -106,114 +104,6 @@ string ResolveFilename(const string& filename,
   return mesh_filename_s.getStr();
 }
 
-void AddPackage(const string& name, const string& path,
-    PackageMap* package_map) {
-  DRAKE_DEMAND(package_map != nullptr);
-  DRAKE_DEMAND(package_map->find(name) == package_map->end());
-  package_map->insert(make_pair(name, path));
-}
-
-namespace {
-
-// Searches in directory @p path for files called "package.xml".
-// Adds the package name specified in package.xml and the path to the
-// package to @p package_map.
-void CrawlForPackages(const string& path, PackageMap* package_map) {
-  string token, t;
-  std::string directory_path = path;
-
-  // Removes trailing "/" if it exists.
-  if (directory_path.length() > 0) {
-    std::string::iterator it = directory_path.end() - 1;
-    if (*it == '/')
-      directory_path.erase(it);
-  }
-
-  istringstream iss(directory_path);
-  const string target_filename("package.xml");
-  const char pathsep = ':';
-
-  while (getline(iss, token, pathsep)) {
-    tinydir_dir dir;
-    if (tinydir_open(&dir, token.c_str()) < 0) {
-      cerr << "Unable to open directory: " << token << endl;
-      continue;
-    }
-
-    while (dir.has_next) {
-      tinydir_file file;
-      tinydir_readfile(&dir, &file);
-
-      // Skips hidden directories (including "." and "..").
-      if (file.is_dir && (file.name[0] != '.')) {
-        CrawlForPackages(file.path, package_map);
-      } else if (file.name == target_filename) {
-        // Parses the package.xml file to find the name of the package.
-        string package_name;
-
-        {
-          string file_name = string(file.path);
-
-          XMLDocument xml_doc;
-          xml_doc.LoadFile(file_name.data());
-          if (xml_doc.ErrorID()) {
-            throw runtime_error("parser_common.cc: CrawlForPackages(): "
-                "Failed to parse XML in file \"" + file_name + "\".\n" +
-                xml_doc.ErrorName());
-          }
-
-          XMLElement* package_node = xml_doc.FirstChildElement("package");
-          if (!package_node) {
-            throw runtime_error("parser_common.cc: CrawlForPackages(): "
-                "ERROR: XML file \"" + file_name + "\" does not contain "
-                "element <package>.");
-          }
-
-          XMLElement* name_node = package_node->FirstChildElement("name");
-          if (!name_node) {
-            throw runtime_error("parser_common.cc: CrawlForPackages(): "
-                "ERROR: <package> element does not contain element <name> "
-                "(XML file \"" + file_name + "\").");
-          }
-
-          package_name = name_node->FirstChild()->Value();
-        }
-
-        spruce::path mypath_s(file.path);
-
-        // Don't overwrite entries in the map.
-        auto package_iter = package_map->find(package_name);
-        if (package_iter == package_map->end()) {
-          package_map->insert(
-              make_pair(package_name, mypath_s.root().append("/")));
-        } else {
-          cerr << "parser_common.cc: CrawlForPackages: WARNING: Package \""
-               << package_name
-               << "\" was found more than once in the search "
-               << "space." << endl;
-        }
-      }
-      tinydir_next(&dir);
-    }
-    tinydir_close(&dir);
-  }
-}
-
-}  // namespace
-
-void PopulateMapFromFolder(const string& path, PackageMap* package_map) {
-  CrawlForPackages(path, package_map);
-}
-
-void PopulateMapFromEnvironment(const string environment_variable,
-    PackageMap* package_map) {
-  const char* path_char = getenv(environment_variable.c_str());
-  DRAKE_DEMAND(path_char);
-  string path = string(path_char);
-  CrawlForPackages(path, package_map);
-}
-
-
 int AddFloatingJoint(
     const FloatingBaseType floating_base_type,
     const vector<int>& body_indices,
@@ -239,9 +129,8 @@ int AddFloatingJoint(
           == string(RigidBodyTree<double>::kWorldName)) {
       if (!weld_to_frame->has_as_rigid_body(nullptr)) {
         throw runtime_error(
-            "RigidBodyTree::AddFloatingJoint: "
-            "Attempted to weld robot to the world while specifying a body "
-            "link!");
+            "AddFloatingJoint: Attempted to weld robot to the world while "
+            "specifying a body link!");
       }
       weld_to_body = tree->bodies[0].get();  // the world's body
       floating_joint_name = "base";
@@ -285,7 +174,7 @@ int AddFloatingJoint(
           num_floating_joints_added++;
         } break;
         default:
-          throw runtime_error("unknown floating base type");
+          throw runtime_error("Unknown floating base type.");
       }
     }
   }

@@ -1,12 +1,11 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>parser_common_test_package_b</name>
+  <name>package_map_test_package_a</name>
   <version>0.0.0</version>
   <description>
-    A model of the parser_common_test_package_b.
+    A model of the package_map_test_package_a.
   </description>
   <maintainer email="user@host.com">John Doe</maintainer>
   <author>Jane Doe</author>
   <license>N/A</license>
 </package>
-

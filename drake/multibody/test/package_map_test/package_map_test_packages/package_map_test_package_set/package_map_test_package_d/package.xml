@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>parser_common_test_package_d</name>
+  <name>package_map_test_package_d</name>
   <version>0.0.0</version>
   <description>
-    A model of the parser_common_test_package_d.
+    A model of the package_map_test_package_d.
   </description>
   <maintainer email="user@host.com">John Doe</maintainer>
   <author>Jane Doe</author>
