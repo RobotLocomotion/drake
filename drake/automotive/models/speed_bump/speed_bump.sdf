@@ -4,7 +4,7 @@
     <pose>0 0 0 0 0 0</pose>
     <link name="bump">
       <pose>2 0 0 0 0 0</pose>
-      <!-- Since the speed bump is intended to the welded to the world, its
+      <!-- Since the speed bump is intended to be welded to the world, its
       inertial values don't matter. -->
       <inertial>
         <pose>0 0 0 0 0 0</pose>
