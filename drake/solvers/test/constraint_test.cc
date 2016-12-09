@@ -31,7 +31,7 @@ void TestLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
       CompareMatrices(y, y_expected, 1E-10, MatrixCompareType::absolute));
 
   bool is_in_cone_expected = (y(0) >= 0) & (y(1) >= 0);
-  EXPECT_TRUE(is_in_cone == is_in_cone_expected);
+  EXPECT_EQ(is_in_cone, is_in_cone_expected);
 
   auto tx = drake::math::initializeAutoDiff(x_test);
   TaylorVecXd x_taylor = tx;
@@ -58,7 +58,7 @@ void TestRotatedLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
 
   bool is_in_cone_expected =
       (z(0) >= 0) & (z(1) >= 0) & (z(0) * z(1) >= z.tail(z.size() - 2).norm());
-  EXPECT_TRUE(is_in_cone == is_in_cone_expected);
+  EXPECT_EQ(is_in_cone, is_in_cone_expected);
 
   // Eval with taylor var.
   auto tx = drake::math::initializeAutoDiff(x_test);

@@ -242,10 +242,10 @@ class LorentzConeConstraint : public Constraint {
   ~LorentzConeConstraint() override {}
 
   /// Getter for A.
-  const Eigen::MatrixXd& A() { return A_; }
+  const Eigen::MatrixXd& A() const { return A_; }
 
   /// Getter for b.
-  const Eigen::VectorXd& b() { return b_; }
+  const Eigen::VectorXd& b() const { return b_; }
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override;
@@ -293,10 +293,10 @@ class RotatedLorentzConeConstraint : public Constraint {
   }
 
   /// Getter for A.
-  const Eigen::MatrixXd& A() { return A_; }
+  const Eigen::MatrixXd& A() const { return A_; }
 
   /// Getter for b.
-  const Eigen::VectorXd& b() { return b_; }
+  const Eigen::VectorXd& b() const { return b_; }
 
   RotatedLorentzConeConstraint(const RotatedLorentzConeConstraint& rhs) =
       delete;
