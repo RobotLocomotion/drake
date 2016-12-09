@@ -3,8 +3,8 @@
 #include <memory>
 #include <vector>
 
-#include "drake/systems/framework/discrete_state.h"
 #include "drake/systems/framework/abstract_state.h"
+#include "drake/systems/framework/discrete_state.h"
 
 namespace drake {
 namespace systems {

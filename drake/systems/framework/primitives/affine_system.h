@@ -75,8 +75,8 @@ class AffineSystem : public LeafSystem<T> {
                            ContinuousState<T>* derivatives) const override;
 
   void DoEvalDiscreteVariableUpdates(
-      const drake::systems::Context<T> &context,
-      drake::systems::DiscreteState<T> *updates) const override;
+      const drake::systems::Context<T>& context,
+      drake::systems::DiscreteState<T>* updates) const override;
 
   // Helper getter methods.
   const Eigen::MatrixXd& A() const { return A_; }

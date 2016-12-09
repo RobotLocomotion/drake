@@ -2,9 +2,9 @@
 
 #include <vector>
 
+#include "drake/systems/framework/abstract_state.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/discrete_state.h"
-#include "drake/systems/framework/abstract_state.h"
 
 namespace drake {
 namespace systems {
@@ -76,9 +76,9 @@ class State {
   State& operator=(State&& other) = delete;
 
  private:
+  std::unique_ptr<AbstractState> abstract_state_;
   std::unique_ptr<ContinuousState<T>> continuous_state_;
   std::unique_ptr<DiscreteState<T>> discrete_state_;
-  std::unique_ptr<AbstractState> abstract_state_;
 };
 
 }  // namespace systems

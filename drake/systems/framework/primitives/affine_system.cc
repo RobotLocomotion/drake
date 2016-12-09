@@ -124,8 +124,8 @@ void AffineSystem<T>::EvalTimeDerivatives(
 
 template <typename T>
 void AffineSystem<T>::DoEvalDiscreteVariableUpdates(
-    const drake::systems::Context<T> &context,
-    drake::systems::DiscreteState<T> *updates) const {
+    const drake::systems::Context<T>& context,
+    drake::systems::DiscreteState<T>* updates) const {
   if (num_states_ == 0 || time_period_ == 0.0) return;
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 

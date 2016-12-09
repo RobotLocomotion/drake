@@ -602,7 +602,7 @@ class System {
   /// buffer, which the Simulator is responsible for writing back to the @p
   /// context later.
   virtual void DoEvalDiscreteVariableUpdates(
-      const Context<T> &context, DiscreteState<T> *discrete_state) const {}
+      const Context<T>& context, DiscreteState<T>* discrete_state) const {}
 
   /// Computes the next time at which this System must perform a discrete
   /// action.

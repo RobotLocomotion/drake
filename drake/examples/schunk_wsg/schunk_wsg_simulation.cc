@@ -43,15 +43,12 @@ using systems::ConstantVectorSource;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
-using systems::DiscreteState;
 using systems::DrakeVisualizer;
 using systems::MatrixGain;
 using systems::Multiplexer;
 using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
 using systems::Simulator;
-using systems::SystemOutput;
-using systems::SystemPortDescriptor;
 
 template <typename T>
 class PidControlledSchunkWsg : public systems::Diagram<T> {
