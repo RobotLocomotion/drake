@@ -1167,10 +1167,24 @@ class MathematicalProgram {
    */
   template<typename DerivedA, typename DerivedB>
   std::shared_ptr<LorentzConeConstraint>
-  AddLorentzConeConstraint(const Eigen::MatrixBase<DerivedA>& A,
-                           const Eigen::MatrixBase<DerivedB>& b) {
+      AddLorentzConeConstraint(const Eigen::MatrixBase<DerivedA>& A,
+                               const Eigen::MatrixBase<DerivedB>& b) {
     return AddLorentzConeConstraint(A, b, {variables_});
   }
+
+  /**
+   * Imposes that a vector @f$ x\in\mathbb{R}^m @f$ lies in Lorentz cone. Namely
+   * @f[
+   * x_0 \ge \sqrt{x_1^2 + .. + x_{m-1}^2}
+   * @f]
+   * <!-->
+   * x(0) >= sqrt(x(1)^2 + ... + x(m-1)^2)
+   * <-->
+   * @param vars The stacked column of vars should lie within the Lorentz cone.
+   * @return The newly added Lorentz cone constraint.
+   */
+  std::shared_ptr<LorentzConeConstraint>
+      AddLorentzConeConstraint(const VariableListRef& vars);
 
   /**
    * Adds a rotated Lorentz cone constraint referencing potentially a subset
@@ -1260,6 +1274,23 @@ class MathematicalProgram {
                                       const Eigen::MatrixBase<DerivedB>& b) {
     return AddRotatedLorentzConeConstraint(A, b, {variables_});
   }
+
+  /**
+   * Impose that a vector @f$ x\in\mathbb{R}^m @f$ is in rotated Lorentz cone.
+   * Namely
+   * @f[
+   * x_0 x_1 \ge x_2^2 + ... + x_{m-1}^2\\
+   * x_0 \ge 0, x_1 \ge 0
+   * @f]
+   * <!-->
+   * x(0)*x(1) >= x(2)^2 + ... x(m-1)^2
+   * x(0) >= 0, x(1) >= 0
+   * <-->
+   * @param vars The stacked column of vars lies in the rotated Lorentz cone.
+   * @return The newly added rotated Lorentz cone constraint.
+   */
+  std::shared_ptr<RotatedLorentzConeConstraint>
+      AddRotatedLorentzConeConstraint(const VariableListRef& vars);
 
   /**
    * Adds a linear complementarity constraints referencing a subset of
