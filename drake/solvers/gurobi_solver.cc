@@ -26,7 +26,6 @@ bool IsNumberOfVariablesAsExpected(GRBmodel* model, int num_vars_expected) {
   return (num_vars == num_vars_expected);
 }
 
-
 /**
  * Adds a constraint of one of the following forms :
  * Ax>=b, Ax<=b, or Ax==b,
@@ -73,16 +72,19 @@ int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
 }
 
 /*
- * Add (rotated) Lorentz cone constraints, that A*x+b is in the (rotated) Lorentz cone.
+ * Add (rotated) Lorentz cone constraints, that A*x+b is in the (rotated)
+ * Lorentz cone.
  * A vector z is in the Lorentz cone, if
  * z(0) >= sqrt(z(1)^2 + ... + z(N-1)^2)
  * A vector z is in the rotated Lorentz cone, if
  * z(0)*z(1) >= z(2)^2 + ... + z(N-1)^2
  * z(0) >= 0, z(1) >= 0
  */
-template<typename Binding>
-int AddSecondOrderConeConstraints(const std::vector<Binding>& second_order_cone_constraints,
-bool is_rotated_cone, double sparseness_threshold, GRBmodel* model, std::vector<bool>* is_new_variable) {
+template <typename Binding>
+int AddSecondOrderConeConstraints(
+    const std::vector<Binding>& second_order_cone_constraints,
+    bool is_rotated_cone, double sparseness_threshold, GRBmodel* model,
+    std::vector<bool>* is_new_variable) {
   for (const auto& binding : second_order_cone_constraints) {
     int num_constraint_variable = static_cast<int>(binding.GetNumElements());
     std::vector<int> variable_indices;
@@ -102,13 +104,18 @@ bool is_rotated_cone, double sparseness_threshold, GRBmodel* model, std::vector<
     // First add new decision variables z, with the constraints z - A*x = b
     int num_new_variables = A.rows();
     std::vector<char> new_variable_types(num_new_variables, GRB_CONTINUOUS);
-    std::vector<double> new_variable_lb(num_new_variables, -std::numeric_limits<double>::infinity());
+    std::vector<double> new_variable_lb(
+        num_new_variables, -std::numeric_limits<double>::infinity());
     new_variable_lb[0] = 0.0;
     if (is_rotated_cone) {
       new_variable_lb[1] = 0.0;
     }
-    int error = GRBaddvars(model, A.rows(), 0, nullptr, nullptr, nullptr, nullptr, new_variable_lb.data(), nullptr, new_variable_types.data(), nullptr);
-    if (error) {return error;}
+    int error = GRBaddvars(model, A.rows(), 0, nullptr, nullptr, nullptr,
+                           nullptr, new_variable_lb.data(), nullptr,
+                           new_variable_types.data(), nullptr);
+    if (error) {
+      return error;
+    }
     // Append the newly added variable indices to variable_indices.
     variable_indices.reserve(variable_indices.size() + num_new_variables);
     is_new_variable->reserve(is_new_variable->size() + num_new_variables);
@@ -120,9 +127,11 @@ bool is_rotated_cone, double sparseness_threshold, GRBmodel* model, std::vector<
     // TODO(hongkai.dai): Use a sparse A_lorentz matrix.
     Eigen::MatrixXd A_lorentz(A.rows(), A.rows() + A.cols());
     A_lorentz << -A, Eigen::MatrixXd::Identity(A.rows(), A.rows());
-    error = AddLinearConstraint(model, A_lorentz, b, variable_indices, GRB_EQUAL, sparseness_threshold);
+    error = AddLinearConstraint(model, A_lorentz, b, variable_indices,
+                                GRB_EQUAL, sparseness_threshold);
 
-    // Mosek uses a matrix Q to differentiate Lorentz cone and rotated Lorentz cone constraint.
+    // Mosek uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
+    // cone constraint.
     // For Lorentz cone constraint,
     // Q = [-1 0 0 ... 0]
     //     [ 0 1 0 ... 0]
@@ -141,9 +150,10 @@ bool is_rotated_cone, double sparseness_threshold, GRBmodel* model, std::vector<
     // qrow stores the row    indices of the non-zero entries of Q.
     // qcol stores the column indices of the non-zero entries of Q.
     // qval stores the value          of the non-zero entries of Q.
-    size_t num_Q_nonzero = is_rotated_cone ? num_new_variables - 1 : num_new_variables;
-    std::vector<int>    qrow(num_Q_nonzero);
-    std::vector<int>    qcol(num_Q_nonzero);
+    size_t num_Q_nonzero =
+        is_rotated_cone ? num_new_variables - 1 : num_new_variables;
+    std::vector<int> qrow(num_Q_nonzero);
+    std::vector<int> qcol(num_Q_nonzero);
     std::vector<double> qval(num_Q_nonzero);
     for (int i = 0; i < num_new_variables - 2; ++i) {
       qrow[i] = variable_indices[num_x_variables + i + 2];
@@ -154,8 +164,7 @@ bool is_rotated_cone, double sparseness_threshold, GRBmodel* model, std::vector<
       qrow[num_new_variables - 2] = variable_indices[num_x_variables];
       qcol[num_new_variables - 2] = variable_indices[num_x_variables + 1];
       qval[num_new_variables - 2] = -1;
-    }
-    else {
+    } else {
       qrow[num_new_variables - 2] = variable_indices[num_x_variables];
       qcol[num_new_variables - 2] = variable_indices[num_x_variables];
       qval[num_new_variables - 2] = -1;
@@ -163,10 +172,12 @@ bool is_rotated_cone, double sparseness_threshold, GRBmodel* model, std::vector<
       qcol[num_new_variables - 1] = variable_indices[num_x_variables + 1];
       qval[num_new_variables - 1] = 1;
     }
-    error = GRBaddqconstr(model, 0, nullptr, nullptr,
-                          num_Q_nonzero, qrow.data(), qcol.data(),
-                          qval.data(), GRB_LESS_EQUAL, 0.0, NULL);
-    if (error) {return error;}
+    error =
+        GRBaddqconstr(model, 0, nullptr, nullptr, num_Q_nonzero, qrow.data(),
+                      qcol.data(), qval.data(), GRB_LESS_EQUAL, 0.0, NULL);
+    if (error) {
+      return error;
+    }
   }
   return 0;
 }
@@ -388,7 +399,8 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   const int num_prog_vars = prog.num_vars();
 
-  // Potentially Gurobi can add variables on top of the variables in MathematicalProgram prog.
+  // Potentially Gurobi can add variables on top of the variables in
+  // MathematicalProgram prog.
   // is_new_variable[i] is true if the i'th variable in Gurobi environment is
   // not stored in MathematicalProgram, but added by the GurobiSolver.
   // For example, for Lorentz cone and rotated Lorentz cone constraint,to impose
@@ -397,8 +409,10 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   std::vector<bool> is_new_variable(num_prog_vars, false);
 
   // Bound constraints.
-  std::vector<double> xlow(num_prog_vars, -std::numeric_limits<double>::infinity());
-  std::vector<double> xupp(num_prog_vars, std::numeric_limits<double>::infinity());
+  std::vector<double> xlow(num_prog_vars,
+                           -std::numeric_limits<double>::infinity());
+  std::vector<double> xupp(num_prog_vars,
+                           std::numeric_limits<double>::infinity());
 
   const std::vector<DecisionVariableScalar::VarType>& var_type =
       prog.VariableTypes();
@@ -449,12 +463,16 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   // Add Lorentz cone constraints.
   if (!error) {
-    error = AddSecondOrderConeConstraints(prog.lorentz_cone_constraints(), false, sparseness_threshold, model, &is_new_variable);
+    error = AddSecondOrderConeConstraints(prog.lorentz_cone_constraints(),
+                                          false, sparseness_threshold, model,
+                                          &is_new_variable);
   }
 
   // Add rotated Lorentz cone constraints.
   if (!error) {
-    error = AddSecondOrderConeConstraints(prog.rotated_lorentz_cone_constraints(), true, sparseness_threshold, model, &is_new_variable);
+    error = AddSecondOrderConeConstraints(
+        prog.rotated_lorentz_cone_constraints(), true, sparseness_threshold,
+        model, &is_new_variable);
   }
 
   DRAKE_ASSERT(IsNumberOfVariablesAsExpected(model, is_new_variable.size()));
@@ -503,9 +521,11 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
       // solver_sol_vector includes the potentially newly added variables, i.e.,
       // variables not in MathematicalProgram prog, but added to Gurobi by
       // GurobiSolver.
-      // prog_sol_vector only includes the original variables in MathematicalProgram prog.
+      // prog_sol_vector only includes the original variables in
+      // MathematicalProgram prog.
       std::vector<double> solver_sol_vector(num_total_variables);
-      GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_total_variables, solver_sol_vector.data());
+      GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_total_variables,
+                         solver_sol_vector.data());
       Eigen::VectorXd prog_sol_vector(num_prog_vars);
       int prog_var_count = 0;
       for (int i = 0; i < num_total_variables; ++i) {

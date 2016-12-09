@@ -231,7 +231,7 @@ void MathematicalProgram::AddConstraint(
 }
 
 std::shared_ptr<LorentzConeConstraint>
-    MathematicalProgram::AddLorentzConeConstraint(const VariableListRef& vars) {
+MathematicalProgram::AddLorentzConeConstraint(const VariableListRef& vars) {
   int num_vars = 0;
   for (const auto& var : vars) {
     num_vars += var.rows();
@@ -252,7 +252,8 @@ void MathematicalProgram::AddConstraint(
 }
 
 std::shared_ptr<RotatedLorentzConeConstraint>
-    MathematicalProgram::AddRotatedLorentzConeConstraint(const VariableListRef& vars) {
+MathematicalProgram::AddRotatedLorentzConeConstraint(
+    const VariableListRef& vars) {
   int num_vars = 0;
   for (const auto& var : vars) {
     num_vars += var.rows();

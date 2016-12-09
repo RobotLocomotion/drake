@@ -220,11 +220,14 @@ class QuadraticConstraint : public Constraint {
  */
 class LorentzConeConstraint : public Constraint {
  public:
-  template<typename DerivedA, typename DerivedB>
-  LorentzConeConstraint(const Eigen::MatrixBase<DerivedA>& A, const Eigen::MatrixBase<DerivedB>& b)
-      : Constraint(2, Eigen::Vector2d::Constant(0.0),
-                   Eigen::Vector2d::Constant(
-                       std::numeric_limits<double>::infinity())), A_(A), b_(b){
+  template <typename DerivedA, typename DerivedB>
+  LorentzConeConstraint(const Eigen::MatrixBase<DerivedA>& A,
+                        const Eigen::MatrixBase<DerivedB>& b)
+      : Constraint(
+            2, Eigen::Vector2d::Constant(0.0),
+            Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())),
+        A_(A),
+        b_(b) {
     DRAKE_ASSERT(A_.rows() == b_.rows());
   }
 
@@ -239,10 +242,10 @@ class LorentzConeConstraint : public Constraint {
   ~LorentzConeConstraint() override {}
 
   /// Getter for A.
-  const Eigen::MatrixXd& A() {return A_;}
+  const Eigen::MatrixXd& A() { return A_; }
 
   /// Getter for b.
-  const Eigen::VectorXd& b() {return b_;}
+  const Eigen::VectorXd& b() { return b_; }
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override;
@@ -278,19 +281,22 @@ class LorentzConeConstraint : public Constraint {
  */
 class RotatedLorentzConeConstraint : public Constraint {
  public:
-  template<typename DerivedA, typename DerivedB>
-  RotatedLorentzConeConstraint(const Eigen::MatrixBase<DerivedA>& A, const Eigen::MatrixBase<DerivedB>& b)
-      : Constraint(3, Eigen::Vector3d::Constant(0.0),
-                   Eigen::Vector3d::Constant(
-                       std::numeric_limits<double>::infinity())), A_(A), b_(b) {
+  template <typename DerivedA, typename DerivedB>
+  RotatedLorentzConeConstraint(const Eigen::MatrixBase<DerivedA>& A,
+                               const Eigen::MatrixBase<DerivedB>& b)
+      : Constraint(
+            3, Eigen::Vector3d::Constant(0.0),
+            Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity())),
+        A_(A),
+        b_(b) {
     DRAKE_ASSERT(A_.rows() == b_.rows());
   }
 
   /// Getter for A.
-  const Eigen::MatrixXd& A() {return A_;}
+  const Eigen::MatrixXd& A() { return A_; }
 
   /// Getter for b.
-  const Eigen::VectorXd& b() {return b_;}
+  const Eigen::VectorXd& b() { return b_; }
 
   RotatedLorentzConeConstraint(const RotatedLorentzConeConstraint& rhs) =
       delete;

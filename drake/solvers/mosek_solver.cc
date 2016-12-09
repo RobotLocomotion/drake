@@ -181,9 +181,13 @@ MSKrescodee AddSecondOrderConeConstraints(
     const int num_new_vars = A.rows();
     MSKint32t num_total_vars = 0;
     rescode = MSK_getnumvar(*task, &num_total_vars);
-    if (rescode != MSK_RES_OK) { return rescode;}
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     rescode = MSK_appendvars(*task, num_new_vars);
-    if (rescode != MSK_RES_OK) { return rescode;}
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     is_new_variable->resize(num_total_vars + num_new_vars);
     std::vector<MSKint32t> new_var_indices(num_new_vars);
     for (int i = 0; i < num_new_vars; ++i) {
@@ -191,12 +195,16 @@ MSKrescodee AddSecondOrderConeConstraints(
       new_var_indices[i] = num_total_vars + i;
       rescode = MSK_putvarbound(*task, new_var_indices[i], MSK_BK_FR,
                                 -MSK_INFINITY, MSK_INFINITY);
-      if (rescode != MSK_RES_OK) {return rescode;}
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
     }
     MSKconetypee cone_type = is_rotated_cone ? MSK_CT_RQUAD : MSK_CT_QUAD;
     rescode = MSK_appendcone(*task, cone_type, 0.0, num_new_vars,
                              new_var_indices.data());
-    if (rescode != MSK_RES_OK) {return rescode;}
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
 
     // Add the linear constraint
     // z = A*x+b
@@ -206,19 +214,28 @@ MSKrescodee AddSecondOrderConeConstraints(
     // otherwise, add the linear constraint 2*z0 = a0^T*x0 + b0
     int num_lin_cons;
     rescode = MSK_getnumcon(*task, &num_lin_cons);
-    if (rescode != MSK_RES_OK) {return rescode;}
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     rescode = MSK_appendcons(*task, num_new_vars);
-    if (rescode != MSK_RES_OK) {return rescode;}
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     std::vector<MSKint32t> var_indices(cone_var_indices);
     var_indices.push_back(new_var_indices[0]);
     double y0_factor = is_rotated_cone ? -2 : -1;
     Eigen::RowVectorXd val0(1 + cone_var_indices.size());
     val0.head(cone_var_indices.size()) = A.row(0);
     val0(cone_var_indices.size()) = y0_factor;
-    rescode = MSK_putarow(*task, num_lin_cons, 1 + cone_var_indices.size(), var_indices.data(), val0.data());
-    if (rescode != MSK_RES_OK) {return rescode;}
+    rescode = MSK_putarow(*task, num_lin_cons, 1 + cone_var_indices.size(),
+                          var_indices.data(), val0.data());
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     rescode = MSK_putconbound(*task, num_lin_cons, MSK_BK_FX, -b(0), -b(0));
-    if (rescode != MSK_RES_OK) {return rescode;}
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     for (int i = 1; i < num_new_vars; ++i) {
       // In every row of the linear constraint z = A*x+b, the only changed
       // decision variable is z(i), so pop the last variable (z(i-1)), and
@@ -228,10 +245,17 @@ MSKrescodee AddSecondOrderConeConstraints(
       Eigen::RowVectorXd val(1 + cone_var_indices.size());
       val.head(cone_var_indices.size()) = A.row(i);
       val(cone_var_indices.size()) = -1;
-      rescode = MSK_putarow(*task, num_lin_cons + i, 1 + cone_var_indices.size(), var_indices.data(), val.data());
-      if (rescode != MSK_RES_OK) {return rescode; }
-      rescode = MSK_putconbound(*task, num_lin_cons + i, MSK_BK_FX, -b(i), -b(i));
-      if (rescode != MSK_RES_OK) {return rescode;}
+      rescode =
+          MSK_putarow(*task, num_lin_cons + i, 1 + cone_var_indices.size(),
+                      var_indices.data(), val.data());
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
+      rescode =
+          MSK_putconbound(*task, num_lin_cons + i, MSK_BK_FX, -b(i), -b(i));
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
     }
   }
   // Expect rescode == MSK_RES_OK.
