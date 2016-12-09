@@ -15,6 +15,9 @@
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
     "Number of seconds to simulate.");
 
+DEFINE_bool(with_speed_bump, false,
+    "Whether to include a speed bump in front of the vehicle.");
+
 using std::make_unique;
 using std::move;
 
@@ -30,8 +33,8 @@ namespace {
 
 // Verifies that the order of rigid body names and actuator names within the
 // provided tree are as expected.
-void VerifyCarSimLcmTree(const RigidBodyTreed& tree) {
-  DRAKE_DEMAND(tree.get_num_bodies() == 18);
+void VerifyCarSimLcmTree(const RigidBodyTreed& tree, int expected_num_bodies) {
+  DRAKE_DEMAND(tree.get_num_bodies() == expected_num_bodies);
 
   std::map<std::string, int> name_to_idx =
       tree.computePositionNameToIndexMap();
@@ -83,7 +86,15 @@ int main(int argc, char* argv[]) {
       multibody::joints::kQuaternion, nullptr /* weld to frame */,
       rigid_body_tree.get());
   multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
-  VerifyCarSimLcmTree(*rigid_body_tree);
+  if (FLAGS_with_speed_bump) {
+    AddModelInstancesFromSdfFile(
+      drake::GetDrakePath() + "/automotive/models/speed_bump/speed_bump.sdf",
+      multibody::joints::kFixed, nullptr /* weld to frame */,
+      rigid_body_tree.get());
+    VerifyCarSimLcmTree(*rigid_body_tree, 19);
+  } else {
+    VerifyCarSimLcmTree(*rigid_body_tree, 18);
+  }
 
   lcm::DrakeLcm lcm;
   DrivingCommandTranslator driving_command_translator;

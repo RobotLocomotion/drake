@@ -86,15 +86,8 @@ if(lcm_FOUND)
       drakeLCMSystem2)
   add_test(NAME car_sim_lcm COMMAND car_sim_lcm -simulation_sec 0.1)
 
-  add_executable(car_sim_lcm_speed_bump car_sim_lcm_speed_bump.cc car_sim_lcm_common.cc)
-  target_link_libraries(car_sim_lcm_speed_bump
-      drakeAutomotiveLcm
-      drakeRigidBodyPlant
-      drakeSystemAnalysis
-      drakeSystemControllers
-      drakeLCMSystem2)
   # TODO(liang.fok) Enable the following unit test once the build system is able
   # to automatically generate the speed_bump.obj file from the speed_bump.yaml
   # file.
-  # add_test(NAME car_sim_lcm_speed_bump COMMAND car_sim_lcm_speed_bump -simulation_sec 0.1)
+  # add_test(NAME car_sim_lcm COMMAND car_sim_lcm -with_speed_bump true -simulation_sec 0.1)
 endif()
