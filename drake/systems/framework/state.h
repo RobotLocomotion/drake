@@ -19,9 +19,9 @@ template <typename T>
 class State {
  public:
   State()
-      : continuous_state_(std::make_unique<ContinuousState<T>>()),
-        discrete_state_(std::make_unique<DiscreteState<T>>()),
-        abstract_state_(std::make_unique<AbstractState>()) {}
+      : abstract_state_(std::make_unique<AbstractState>()),
+        continuous_state_(std::make_unique<ContinuousState<T>>()),
+        discrete_state_(std::make_unique<DiscreteState<T>>()) {}
   virtual ~State() {}
 
   void set_continuous_state(std::unique_ptr<ContinuousState<T>> xc) {
