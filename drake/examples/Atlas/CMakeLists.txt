@@ -2,18 +2,11 @@ add_library_with_exports(LIB_NAME drakeAtlasUtil SOURCE_FILES atlasUtil.cpp)
 drake_install_libraries(drakeAtlasUtil)
 drake_install_headers(
         atlasUtil.h
-        atlas_plant.h
         )
 drake_install_pkg_config_file(drake-atlas-util
   TARGET drakeAtlasUtil
   LIBS -ldrakeAtlasUtil
   REQUIRES eigen3)
-
-if (lcm_FOUND)
-  add_executable(atlas_dynamics_demo atlas_dynamics_demo.cc atlas_plant.cc)
-  target_link_libraries(atlas_dynamics_demo drakeRBSystem drakeLCMSystem drakeLCMTypes)
-  drake_add_test(NAME atlas_dynamics_demo COMMAND atlas_dynamics_demo 0.4)
-endif()
 
 drake_add_matlab_test(NAME examples/Atlas/robotiqHandInspector OPTIONAL bullet COMMAND robotiqHandInspector)
 drake_add_matlab_test(NAME examples/Atlas/runAtlasDynamics OPTIONAL bullet gurobi snopt COMMAND runAtlasDynamics SIZE large)
