@@ -55,16 +55,33 @@ def _limit_throttle_step(requested_value):
 class KeyboardEventProcessor:
     def __init__(self):
         pygame.event.set_allowed(None)
+        # pygame.KEYDOWN corresponds to any key pressed, and pygame.KEYUP 
+        # corresponds to any key releasing 
         pygame.event.set_allowed([pygame.QUIT, pygame.KEYUP, pygame.KEYDOWN])
         pygame.key.set_repeat(100, 10)
 
     def processEvent(self, event, last_msg):
         new_msg = copy.copy(last_msg)
+        # when up arrow is pressed
         if (event.key == pygame.K_UP) and (event.type == pygame.KEYDOWN):
             new_msg.throttle = _limit_throttle_step(
-                last_msg.throttle + (
-                    (event.type == pygame.KEYDOWN) * THROTTLE_SCALE))
-        elif event.key == pygame.K_DOWN:
+                last_msg.throttle + THROTTLE_SCALE)
+        # when up arrow is released
+        elif (event.key == pygame.K_UP) and (event.type == pygame.KEYUP):
+            # pygame.time.delay(pygame.key.get_repeat()[1])
+            new_msg.throttle = _limit_throttle_step(
+                last_msg.throttle - (THROTTLE_SCALE))
+            # if there is no other key being pressed
+            if not pygame.event.peek(pygame.KEYDOWN): 
+                # creates a dummy key releasing event 
+                dummyKeyUpEvent = pygame.event.Event(pygame.KEYUP)
+                # sets the dummy key releasing mappping to up arrow key so to
+                # come back to this if branch
+                dummyKeyUpEvent.key = pygame.K_UP
+                # posts the dummy key releasing event 
+                pygame.event.post(dummyKeyUpEvent)
+
+        elif (event.key == pygame.K_DOWN) and (event.type == pygame.KEYDOWN):
             new_msg.brake = (
                 (event.type == pygame.KEYDOWN) * BRAKE_SCALE)
         elif (event.key == pygame.K_LEFT) and (event.type == pygame.KEYDOWN):
