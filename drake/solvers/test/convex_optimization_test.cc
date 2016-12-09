@@ -1,4 +1,3 @@
-#pragma GCC diagnostic ignored "-Wunused-function"
 #include <iostream>
 
 #include <list>
