@@ -62,10 +62,35 @@ int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
 }
 
 /*
- * Add Lorentz cone constraints.
- * A Lorentz cone constraint is the convex conic constraint
- * x(0) >= sqrt(x(1)^2 + ... + x(N-1)^2)
+ * Add (rotated) Lorentz cone constraints, that A*x+b is in the (rotated) Lorentz cone.
+ * A vector z is in the Lorentz cone, if
+ * z(0) >= sqrt(z(1)^2 + ... + z(N-1)^2)
+ * A vector z is in the rotated Lorentz cone, if
+ * z(0)*z(1) >= z(2)^2 + ... + z(N-1)^2
+ * z(0) >= 0, z(1) >= 0
  */
+template<typename Binding>
+int AddSecondOrderConeConstraints(const std::vector<Binding>& second_order_cone_constraints,
+bool is_rotated_cone, GRBmodel& model, std::vector<bool>* is_new_variable) {
+  for (const auto& binding : second_order_cone_constraints) {
+    int num_constraint_variable = static_cast<int>(binding.GetNumElements());
+    std::vector<int> variable_indices;
+    variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
+    auto variable_list = binding.variable_list();
+    for (const DecisionVariableMatrixX& var : variable_list.variables()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
+        variable_indices.push_back(static_cast<int>(var(i, 0).index()));
+      }
+    }
+
+    const auto& A = binding.constraint()->A();
+    const auto& b = binding.constraint()->b();
+    // First add new decision variables z, with the constraints A*x-z = b
+    int error = 0;
+    error = GRBaddvars(model, )
+  }
+}
 int AddLorentzConeConstraints(GRBmodel* model,
                               const MathematicalProgram& prog) {
   for (const auto& binding : prog.lorentz_cone_constraints()) {
