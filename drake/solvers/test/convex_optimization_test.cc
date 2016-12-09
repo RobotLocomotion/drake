@@ -28,7 +28,7 @@ void GetQuadraticProgramSolvers(
 
 void GetSecondOrderConicProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  //AddSolverIfAvailable("Gurobi", solvers);
+  AddSolverIfAvailable("Gurobi", solvers);
   AddSolverIfAvailable("Mosek", solvers);
 }
 
@@ -36,7 +36,7 @@ void GetSemidefiniteProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
   AddSolverIfAvailable("Mosek", solvers);
 }
-/*
+
 /////////////////////////
 ///// Linear Program ////
 /////////////////////////
@@ -487,7 +487,7 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-5,
                                 MatrixCompareType::absolute));
   }
-}*/
+}
 
 ////////////////////////////////////////
 //// Second order conic program ////////
@@ -922,7 +922,7 @@ void TestFindSpringEquilibrium(
                         solver);
 }
 }  // namespace
-/*
+
 GTEST_TEST(TestConvexOptimization, TestLinearProgramFeasibility) {
   std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetLinearProgramSolvers(&solvers);
@@ -1097,7 +1097,7 @@ GTEST_TEST(TestConvexOptimization, TestQuadraticProgram5) {
       get_solution = true;
     }
   }
-}*/
+}
 
 GTEST_TEST(TestConvexOptimization, TestEllipsoidsSeparation0) {
   std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
@@ -1171,7 +1171,7 @@ GTEST_TEST(TestConvexOptimization, TestFindSpringEquilibrium) {
     TestFindSpringEquilibrium(*solver);
   }
 }
-/*
+
 // Test a trivial semidefinite problem.
 // min S(0, 0) + S(1, 1)
 // s.t S(1, 0) = 1
@@ -1342,7 +1342,7 @@ GTEST_TEST(TestConvexOptimization, TestEigenvalueProblem) {
     // default feasibility tolerance 1E-8.
     EXPECT_NEAR(z_value, eigen_solver_xF.eigenvalues().maxCoeff(), 1E-7);
   }
-}*/
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
