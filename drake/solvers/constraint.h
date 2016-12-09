@@ -228,6 +228,7 @@ class LorentzConeConstraint : public Constraint {
             Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())),
         A_(A),
         b_(b) {
+    DRAKE_DEMAND(A_.rows() >= 2);
     DRAKE_ASSERT(A_.rows() == b_.rows());
   }
 
@@ -289,6 +290,7 @@ class RotatedLorentzConeConstraint : public Constraint {
             Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity())),
         A_(A),
         b_(b) {
+    DRAKE_DEMAND(A_.rows() >= 3);
     DRAKE_ASSERT(A_.rows() == b_.rows());
   }
 

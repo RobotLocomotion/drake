@@ -136,13 +136,15 @@ int AddSecondOrderConeConstraints(
 
     // Gurobi uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
     // cone constraint.
+    // https://www.gurobi.com/documentation/7.0/refman/c_grbaddqconstr.html
     // For Lorentz cone constraint,
     // Q = [-1 0 0 ... 0]
     //     [ 0 1 0 ... 0]
     //     [ 0 0 1 ... 0]
     //          ...
     //     [ 0 0 0 ... 1]
-    // namely Q = diag([-1; 1; 1; ...; 1]
+    // namely Q = diag([-1; 1; 1; ...; 1], so
+    // z' * Q * z = z(1)^2 + ... + z(n-1)^2 - z(0)^2.
     // For rotated Lorentz cone constraint
     // Q = [0 -1 0 0 ... 0]
     //     [0  0 0 0 ... 0]
@@ -150,6 +152,7 @@ int AddSecondOrderConeConstraints(
     //     [0  0 0 1 ... 0]
     //           ...
     //     [0  0 0 0 ... 1]
+    // so z' * Q * z = z(2)^2 + ... + z(n-1)^2 - z(0) * z(1).
     // We will store Q in a sparse format.
     // qrow stores the row    indices of the non-zero entries of Q.
     // qcol stores the column indices of the non-zero entries of Q.
