@@ -19,7 +19,7 @@ void QuadraticConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
 
 void LorentzConeConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                  Eigen::VectorXd& y) const {
-  Eigen::VectorXd z = A_*x + b_;
+  Eigen::VectorXd z = A_ * x + b_;
   y.resize(num_constraints());
   y(0) = z(0);
   y(1) = pow(z(0), 2) - z.tail(z.size() - 1).squaredNorm();
@@ -27,7 +27,7 @@ void LorentzConeConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
 
 void LorentzConeConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
                                  TaylorVecXd& y) const {
-  TaylorVecXd z = A_.cast<TaylorVarXd>()*x + b_.cast<TaylorVarXd>();
+  TaylorVecXd z = A_.cast<TaylorVarXd>() * x + b_.cast<TaylorVarXd>();
   y.resize(num_constraints());
   y(0) = z(0);
   y(1) = pow(z(0), 2) - z.tail(z.size() - 1).squaredNorm();
