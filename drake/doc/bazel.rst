@@ -2,8 +2,9 @@
 Bazel build system
 ******************
 
-Drake is experimenting with the Bazel build system, but we do not officially
-support Bazel builds.  For more information, see:
+The Bazel build system is officially supported for a subset of Drake on
+Ubuntu Xenial, and is being tested on Ubuntu Trusty and OS X.
+For more information, see:
 
  * https://bazel.build/
  * https://github.com/RobotLocomotion/drake/issues/3129
@@ -11,15 +12,14 @@ support Bazel builds.  For more information, see:
 Bazel Installation
 ==================
 
-Refer to the Bazel installation instructions:
+The Ubuntu Xenial platform setup process installs Bazel for you. On other
+platforms, refer to the Bazel installation instructions. We use Bazel 0.4.2.
 https://bazel.build/versions/master/docs/install.html
-
-We develop with Bazel 0.3.1 using Ubuntu Trusty, Ubuntu Xenial, and OS X.
 
 Drake clone and platform setup
 ==============================
 
-The one-time platform setup is the same as with CMake build:
+The one-time platform setup is the same as for a CMake build:
 
  - Start with a **git clone** of drake, per the :ref:`Getting Drake
    <getting_drake>` instructions.
@@ -27,8 +27,8 @@ The one-time platform setup is the same as with CMake build:
  - Continue with the *"Mandatory platform specific instructions"* on the same
    page.
 
-   - Be sure that **ccache is not on your default $PATH**, e.g.,
-     ``env | grep ccache`` is empty.
+When using Bazel, be sure that **ccache is not on your default $PATH**, e.g.,
+``env | grep ccache`` is empty.
 
 Developing Drake using Bazel
 ============================

@@ -56,10 +56,13 @@ fi
 
 # Install the APT dependencies.
 # TODO(david-german-tri): Can we remove libvtk-java?
+apt update -y
+
 apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
 autoconf
 automake
+bash-completion
 bison
 default-jdk
 doxygen
@@ -100,9 +103,15 @@ python-vtk
 python-yaml
 unzip
 valgrind
+zlib1g-dev
 
 EOF
     )
+
+# Install Bazel.
+wget -O /tmp/bazel_0.4.2-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.4.2/bazel_0.4.2-linux-x86_64.deb
+sudo dpkg -i /tmp/bazel_0.4.2-linux-x86_64.deb
+rm /tmp/bazel_0.4.2-linux-x86_64.deb
 
 # TODO(david-german-tri): Do we need to munge the MATLAB C++ libraries?
 # http://drake.mit.edu/ubuntu.html#matlab
