@@ -94,7 +94,7 @@ int AddSecondOrderConeConstraints(
         GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, variable_indices[0], 0.0);
     if (error) return error;
     if (is_rotated_cone) {
-      int error = GRBsetdblattrelement(model, GRB_DBL_ATTR_LB,
+      error = GRBsetdblattrelement(model, GRB_DBL_ATTR_LB,
                                        variable_indices[1], 0.0);
       if (error) return error;
     }
