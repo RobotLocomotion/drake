@@ -86,6 +86,7 @@ int AddSecondOrderConeConstraints(
       }
     }
     int num_x = static_cast<int>(variable_indices.size());
+    DRAKE_DEMAND(num_x >= (is_rotated_cone ? 3 : 2));
 
     // Set the lower bound for the second order conic variables.
     // If using Lorentz cone, x(0) >= 0
