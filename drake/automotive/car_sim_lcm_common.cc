@@ -236,14 +236,9 @@ std::unique_ptr<systems::Diagram<double>> CreatCarSimLcmDiagram(
   auto constant_zero_source =
       builder.template AddSystem<ConstantVectorSource<double>>(constant_vector);
 
-  // TODO(liang.fok): Modify controller to provide named accessors to these
-  // ports.
-  const int kControllerFeedforwardInputPort = 0;
-  const int kControllerFeedbackInputPort = 1;
-
   // Connects the feed-forward torque command.
   builder.Connect(constant_zero_source->get_output_port(),
-                  controller->get_input_port(kControllerFeedforwardInputPort));
+                  controller->get_control_input_port());
 
   // Connects the system that converts from user commands to actuator commands.
   builder.Connect(command_subscriber->get_output_port(0),
@@ -251,7 +246,7 @@ std::unique_ptr<systems::Diagram<double>> CreatCarSimLcmDiagram(
 
   // Connects the controller, which includes the plant being controlled.
   builder.Connect(user_to_actuator_cmd_sys->get_output_port(),
-                  controller->get_input_port(kControllerFeedbackInputPort));
+                  controller->get_state_input_port());
 
   // Connects the LCM publisher, which is used for visualization.
   builder.Connect(controller->get_output_port(0),
