@@ -6,6 +6,8 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/functional_form.h"
 
@@ -31,6 +33,14 @@ GTEST_TEST(BasicVectorTest, DoubleInitiallyNaN) {
   EXPECT_TRUE(CompareMatrices(expected, vec.get_value(),
                               Eigen::NumTraits<double>::epsilon(),
                               MatrixCompareType::absolute));
+}
+
+// Tests that the BasicVector<AutoDiffXd> is initialized to NaN.
+GTEST_TEST(BasicVectorTest, AutodiffInitiallyNaN) {
+  BasicVector<AutoDiffXd> vec(3);
+  EXPECT_TRUE(std::isnan(vec.GetAtIndex(0).value()));
+  EXPECT_TRUE(std::isnan(vec.GetAtIndex(1).value()));
+  EXPECT_TRUE(std::isnan(vec.GetAtIndex(2).value()));
 }
 
 // Tests that the BasicVector<int> is initialized to zero.

@@ -11,6 +11,7 @@
 #include <limits>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/extract_double.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -101,15 +102,17 @@ void BouncingBall<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
 }
 
 template <typename T>
-void BouncingBall<T>::DoPerformUnrestrictedUpdate(systems::Context<T>* context)
-                                                            const {
-  // Verify that velocity is non-positive.
-  const systems::VectorBase<T>& state =
-      context->get_continuous_state_vector();
-  DRAKE_DEMAND(state.GetAtIndex(1) <= 0.0);
+void BouncingBall<T>::DoEvalUnrestrictedUpdate(const systems::Context<T>& 
+                                               context, systems::State<T>*
+                                               state) const {
+  systems::VectorBase<T>* cstate = state->get_mutable_continuous_state()->
+                                                          get_mutable_vector();
 
-  // Call the reset function.
-  PerformReset(context);
+  // Verify that velocity is non-positive.
+  DRAKE_DEMAND(cstate->GetAtIndex(1) <= 0.0);
+
+  // Update the velocity.
+  cstate->SetAtIndex(1, cstate->GetAtIndex(1) * this->restitution_coef_ * -1.);
 }
 
 template <typename T>
@@ -138,7 +141,7 @@ T BouncingBall<T>::CalcClosedFormHeight(const T x0, const T tf) {
     if (get_restitution_coef() == T(1)) {
       // Get the number of phases that have passed.
       using std::floor;
-      int num_phases = static_cast<int>(drake::TtoDouble<T>::convert(
+      int num_phases = static_cast<int>(ExtractDoubleOrThrow(
           floor(tf / drop_time)));
 
       // Get the time within the phase.
@@ -189,7 +192,7 @@ T BouncingBall<T>::CalcClosedFormVelocity(const T x0, const T tf) {
     if (get_restitution_coef() == T(1)) {
       // Get the number of phases that have passed.
       using std::floor;
-      int num_phases = static_cast<int>(drake::TtoDouble<T>::convert(
+      int num_phases = static_cast<int>(ExtractDoubleOrThrow(
           floor(tf / drop_time)));
 
       // Get the time within the phase.

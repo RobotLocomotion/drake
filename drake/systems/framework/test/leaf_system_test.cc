@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
@@ -17,7 +18,8 @@ namespace systems {
 namespace {
 
 // A shell System to test the default implementations.
-class TestSystem : public LeafSystem<double> {
+template<typename T>
+class TestSystem : public LeafSystem<T> {
  public:
   TestSystem() {}
   ~TestSystem() override {}
@@ -43,41 +45,41 @@ class TestSystem : public LeafSystem<double> {
     this->DeclareContinuousState(4, 3, 2);
   }
 
-  void AddContinuousState(std::unique_ptr<BasicVector<double>> vec) {
+  void AddContinuousState(std::unique_ptr<BasicVector<T>> vec) {
     this->DeclareContinuousState(std::move(vec), 4, 3, 2);
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {}
+  void EvalOutput(const Context<T>& context,
+                  SystemOutput<T>* output) const override {}
 
   void EvalTimeDerivatives(
-      const Context<double>& context,
-      ContinuousState<double>* derivatives) const override {}
+      const Context<T>& context,
+      ContinuousState<T>* derivatives) const override {}
 
-  std::unique_ptr<Parameters<double>> AllocateParameters() const override {
-    return std::make_unique<Parameters<double>>(
-        std::make_unique<BasicVector<double>>(2));
+  std::unique_ptr<Parameters<T>> AllocateParameters() const override {
+    return std::make_unique<Parameters<T>>(
+        std::make_unique<BasicVector<T>>(2));
   }
 
-  void SetDefaultParameters(Context<double>* context) const override {
-    auto leaf_context = dynamic_cast<LeafContext<double>*>(context);
+  void SetDefaultParameters(Context<T>* context) const override {
+    auto leaf_context = dynamic_cast<LeafContext<T>*>(context);
     DRAKE_DEMAND(leaf_context != nullptr);
 
     auto params = leaf_context->get_mutable_numeric_parameter(0);
-    Eigen::Vector2d p0;
+    Vector2<T> p0;
     p0 << 13.0, 7.0;
     params->SetFromVector(p0);
   }
 
-  const BasicVector<double>& GetVanillaNumericParameters(
-      const Context<double>& context) const {
+  const BasicVector<T>& GetVanillaNumericParameters(
+      const Context<T>& context) const {
     return this->GetNumericParameter(context, 0 /* index */);
   }
 };
 
 class LeafSystemTest : public ::testing::Test {
  protected:
-  TestSystem system_;
+  TestSystem<double> system_;
   LeafContext<double> context_;
 };
 
@@ -250,6 +252,21 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   EXPECT_EQ(4, xc->get_generalized_position().size());
   EXPECT_EQ(3, xc->get_generalized_velocity().size());
   EXPECT_EQ(2, xc->get_misc_continuous_state().size());
+}
+
+
+// Tests that the next update time is computed correctly for LeafSystems
+// templated on AutoDiffXd. Protects against regression on #4431.
+GTEST_TEST(AutodiffLeafSystemTest, NextUpdateTimeAutodiff) {
+  TestSystem<AutoDiffXd> system;
+  LeafContext<AutoDiffXd> context;
+
+  context.set_time(21.0);
+  UpdateActions<AutoDiffXd> actions;
+  system.AddPeriodicUpdate();
+  system.CalcNextUpdateTime(context, &actions);
+
+  EXPECT_EQ(25.0, actions.time);
 }
 
 }  // namespace

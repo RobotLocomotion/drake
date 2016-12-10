@@ -51,7 +51,7 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
     this->DeclareContinuousState(num_states_);
   } else {
     this->DeclareContinuousState(0);
-    this->DeclareDifferenceState(num_states_);
+    this->DeclareDiscreteState(num_states_);
     this->DeclarePeriodicUpdate(time_period_, 0.0);
   }
 }
@@ -123,13 +123,13 @@ void AffineSystem<T>::EvalTimeDerivatives(
 }
 
 template <typename T>
-void AffineSystem<T>::DoEvalDifferenceUpdates(
+void AffineSystem<T>::DoEvalDiscreteVariableUpdates(
     const drake::systems::Context<T>& context,
-    drake::systems::DifferenceState<T>* updates) const {
+    drake::systems::DiscreteState<T>* updates) const {
   if (num_states_ == 0 || time_period_ == 0.0) return;
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  const auto& x = context.get_difference_state(0)->get_value();
+  const auto& x = context.get_discrete_state(0)->get_value();
 
   VectorX<T> xnext = A_ * x + f0_;
 
@@ -140,7 +140,7 @@ void AffineSystem<T>::DoEvalDifferenceUpdates(
 
     xnext += B_ * u;
   }
-  updates->get_mutable_difference_state(0)->SetFromVector(xnext);
+  updates->get_mutable_discrete_state(0)->SetFromVector(xnext);
 }
 
 template class AffineSystem<double>;

@@ -45,9 +45,9 @@ TEST_F(ZeroOrderHoldTest, Topology) {
   EXPECT_FALSE(hold_->has_any_direct_feedthrough());
 }
 
-// Tests that the zero-order hold has difference state.
+// Tests that the zero-order hold has discrete state.
 TEST_F(ZeroOrderHoldTest, ReservesState) {
-  const VectorBase<double>* xd = context_->get_difference_state(0);
+  const VectorBase<double>* xd = context_->get_discrete_state(0);
   ASSERT_NE(nullptr, xd);
   EXPECT_EQ(kLength, xd->size());
 }
@@ -55,7 +55,7 @@ TEST_F(ZeroOrderHoldTest, ReservesState) {
 // Tests that the output is the state.
 TEST_F(ZeroOrderHoldTest, Output) {
   BasicVector<double>* xd = dynamic_cast<BasicVector<double>*>(
-      context_->get_mutable_difference_state(0));
+      context_->get_mutable_discrete_state(0));
   xd->get_mutable_value() << 1.0, 3.14, 2.18;
 
   hold_->EvalOutput(*context_, output_.get());
@@ -109,12 +109,12 @@ TEST_F(ZeroOrderHoldTest, Update) {
   DiscreteEvent<double> update_event;
   update_event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
 
-  std::unique_ptr<DifferenceState<double>> update =
-      hold_->AllocateDifferenceVariables();
-  hold_->EvalDifferenceUpdates(*context_, {update_event}, update.get());
+  std::unique_ptr<DiscreteState<double>> update =
+      hold_->AllocateDiscreteVariables();
+  hold_->EvalDiscreteVariableUpdates(*context_, {update_event}, update.get());
 
   // Check that the state has been updated to the input.
-  const VectorBase<double>* xd = update->get_difference_state(0);
+  const VectorBase<double>* xd = update->get_discrete_state(0);
   EXPECT_EQ(1.0, xd->GetAtIndex(0));
   EXPECT_EQ(1.0, xd->GetAtIndex(1));
   EXPECT_EQ(3.0, xd->GetAtIndex(2));

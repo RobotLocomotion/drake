@@ -14,7 +14,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/diagram_context.h"
-#include "drake/systems/framework/difference_state.h"
+#include "drake/systems/framework/discrete_state.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/subvector.h"
@@ -100,40 +100,40 @@ class DiagramTimeDerivatives : public DiagramContinuousState<T> {
   std::vector<std::unique_ptr<ContinuousState<T>>> substates_;
 };
 
-/// DiagramDifferenceVariables is a version of DifferenceState that owns
-/// the constituent difference states. As the name implies, it is only useful
+/// DiagramDiscreteVariables is a version of DiscreteState that owns
+/// the constituent discrete states. As the name implies, it is only useful
 /// for the discrete updates.
 template <typename T>
-class DiagramDifferenceVariables : public DifferenceState<T> {
+class DiagramDiscreteVariables : public DiscreteState<T> {
  public:
-  explicit DiagramDifferenceVariables(
-      std::vector<std::unique_ptr<DifferenceState<T>>>&& subdifferences)
-      : DifferenceState<T>(Flatten(Unpack(subdifferences))),
+  explicit DiagramDiscreteVariables(
+      std::vector<std::unique_ptr<DiscreteState<T>>>&& subdifferences)
+      : DiscreteState<T>(Flatten(Unpack(subdifferences))),
         subdifferences_(std::move(subdifferences)) {}
 
-  ~DiagramDifferenceVariables() override {}
+  ~DiagramDiscreteVariables() override {}
 
   int num_subdifferences() const {
     return static_cast<int>(subdifferences_.size());
   }
 
-  DifferenceState<T>* get_mutable_subdifference(int index) {
+  DiscreteState<T>* get_mutable_subdifference(int index) {
     DRAKE_DEMAND(index >= 0 && index < num_subdifferences());
     return subdifferences_[index].get();
   }
 
  private:
   std::vector<BasicVector<T>*> Flatten(
-      const std::vector<DifferenceState<T>*>& in) const {
+      const std::vector<DiscreteState<T>*>& in) const {
     std::vector<BasicVector<T>*> out;
-    for (const DifferenceState<T>* xd : in) {
+    for (const DiscreteState<T>* xd : in) {
       const std::vector<BasicVector<T>*>& xd_data = xd->get_data();
       out.insert(out.end(), xd_data.begin(), xd_data.end());
     }
     return out;
   }
 
-  std::vector<std::unique_ptr<DifferenceState<T>>> subdifferences_;
+  std::vector<std::unique_ptr<DiscreteState<T>>> subdifferences_;
 };
 
 }  // namespace internal
@@ -274,15 +274,15 @@ class Diagram : public System<T>,
   }
 
   /// Aggregates the discrete update variables from each subsystem into a
-  /// DiagramDifferenceVariables.
-  std::unique_ptr<DifferenceState<T>> AllocateDifferenceVariables()
+  /// DiagramDiscreteVariables.
+  std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables()
       const override {
-    std::vector<std::unique_ptr<DifferenceState<T>>> sub_differences;
+    std::vector<std::unique_ptr<DiscreteState<T>>> sub_differences;
     for (const System<T>* const system : sorted_systems_) {
-      sub_differences.push_back(system->AllocateDifferenceVariables());
+      sub_differences.push_back(system->AllocateDiscreteVariables());
     }
-    return std::unique_ptr<DifferenceState<T>>(
-        new internal::DiagramDifferenceVariables<T>(
+    return std::unique_ptr<DiscreteState<T>>(
+        new internal::DiagramDiscreteVariables<T>(
             std::move(sub_differences)));
   }
 
@@ -636,7 +636,7 @@ class Diagram : public System<T>,
     if (!updaters.empty()) {
       DiscreteEvent<T1> event;
       event.action = DiscreteEvent<T1>::kDiscreteUpdateAction;
-      event.do_update = std::bind(&Diagram<T1>::HandleUpdate, this,
+      event.do_discrete_update = std::bind(&Diagram<T1>::HandleUpdate, this,
                                   std::placeholders::_1, /* context */
                                   std::placeholders::_2, /* difference state */
                                   updaters);
@@ -933,19 +933,19 @@ class Diagram : public System<T>,
   /// Handles Update calbacks that were registered in DoCalcNextUpdateTime.
   /// Dispatches the Publish events to the subsystems that requested them.
   void HandleUpdate(
-      const Context<T>& context, DifferenceState<T>* update,
+      const Context<T>& context, DiscreteState<T>* update,
       const std::vector<std::pair<int, UpdateActions<T>>>& sub_actions) const {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
     auto diagram_differences =
-        dynamic_cast<internal::DiagramDifferenceVariables<T>*>(update);
+        dynamic_cast<internal::DiagramDiscreteVariables<T>*>(update);
     DRAKE_DEMAND(diagram_differences != nullptr);
 
     // As a baseline, initialize all the difference variables to their
     // current values.
     for (int i = 0; i < diagram_differences->size(); ++i) {
-      diagram_differences->get_mutable_difference_state(i)->set_value(
-          context.get_difference_state(i)->get_value());
+      diagram_differences->get_mutable_discrete_state(i)->set_value(
+          context.get_discrete_state(i)->get_value());
     }
 
     // Then, allow the systems that wanted to update a difference variable
@@ -959,15 +959,16 @@ class Diagram : public System<T>,
       const Context<T>* subcontext =
           diagram_context->GetSubsystemContext(index);
       DRAKE_DEMAND(subcontext != nullptr);
-      DifferenceState<T>* subdifference =
+      DiscreteState<T>* subdifference =
           diagram_differences->get_mutable_subdifference(index);
       DRAKE_DEMAND(subdifference != nullptr);
 
       // Do that system's update actions.
       for (const DiscreteEvent<T>& event : action_details.events) {
         if (event.action == DiscreteEvent<T>::kDiscreteUpdateAction) {
-          sorted_systems_[index]->EvalDifferenceUpdates(*subcontext, event,
-                                                        subdifference);
+          sorted_systems_[index]->EvalDiscreteVariableUpdates(*subcontext,
+                                                              event,
+                                                              subdifference);
         }
       }
     }

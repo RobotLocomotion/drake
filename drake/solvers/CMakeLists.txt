@@ -88,7 +88,7 @@ drake_install_pkg_config_file(drake-optimization
     ${optimization_requires})
 
 if(ipopt_FOUND)
-  pods_use_pkg_config_packages(drakeOptimization ipopt)
+  target_link_libraries(drakeOptimization ipopt)
   # IPOPT builds its own version of BLAS during compilation, and links
   # it into the output library.  On (at least some) ELF systems, you
   # wind up with a symbol name collision between IPOPT's BLAS and
@@ -112,7 +112,7 @@ if(NLopt_FOUND)
   target_link_libraries(drakeOptimization nlopt)
 endif()
 if(dreal_FOUND)
-  pods_use_pkg_config_packages(drakeOptimization dreal)
+  target_link_libraries(drakeOptimization dreal)
 endif()
 if(snopt_FOUND)
   target_link_libraries(drakeOptimization snopt_c)
@@ -128,4 +128,3 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
-add_subdirectory(trajectory_optimization)

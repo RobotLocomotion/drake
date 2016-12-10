@@ -1,5 +1,7 @@
 #include "drake/common/autodiff_overloads.h"
 
+#include <type_traits>
+
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
 
@@ -8,7 +10,7 @@
 #include "drake/common/cond.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/extract_double.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -17,18 +19,16 @@ namespace drake {
 namespace common {
 namespace {
 
-// Test correctness of TtoDouble
-GTEST_TEST(AutodiffOverloadsTest, TtoDouble) {
+// Test ExtractDoubleOrThrow on autodiff.
+GTEST_TEST(AutodiffOverloadsTest, ExtractDouble) {
+  // On autodiff.
   Eigen::AutoDiffScalar<Eigen::Vector2d> x;
   x.value() = 1.0;
-  EXPECT_EQ(TtoDouble<Eigen::AutoDiffScalar<Eigen::Vector2d>>::convert(x), 1.0);
+  EXPECT_EQ(ExtractDoubleOrThrow(x), 1.0);
 
+  // A double still works, too.
   double y = 1.0;
-  EXPECT_EQ(TtoDouble<double>::convert(y), 1.0);
-
-  // Test an arbitrary symbolic expression.
-  drake::symbolic::Expression e;
-  EXPECT_DEATH(TtoDouble<drake::symbolic::Expression>::convert(e), ".");
+  EXPECT_EQ(ExtractDoubleOrThrow(y), 1.0);
 }
 
 // Tests correctness of isinf
@@ -305,6 +305,23 @@ GTEST_TEST(AutodiffOverloadsTest, Cond9) {
   EXPECT_DOUBLE_EQ(z.value(), x.value() * x.value());
   EXPECT_DOUBLE_EQ(z.derivatives()[0], 2 * 2 * x.value());
   EXPECT_DOUBLE_EQ(z.derivatives()[1], 2 * x.value());
+}
+
+// This is just a sanity check to make sure that Eigen::NumTraits::Literal
+// is the right way to dig through an AutoDiffScalar to find the underlying
+// floating point type. If this compiles it succeeds.
+GTEST_TEST(AutodiffOverloadsTest, CheckEigenLiteral) {
+  using DerTyped = Eigen::Vector2d;
+  using DerTypef = Eigen::Vector2f;
+  using Td = Eigen::AutoDiffScalar<DerTyped>;
+  using Tf = Eigen::AutoDiffScalar<DerTypef>;
+
+  using Literald = typename Eigen::NumTraits<Td>::Literal;
+  using Literalf = typename Eigen::NumTraits<Tf>::Literal;
+
+  static_assert(std::is_same<Literald, double>::value &&
+                    std::is_same<Literalf, float>::value,
+                "Eigen::NumTraits<T>::Literal didn't behave as expected.");
 }
 
 }  // namespace

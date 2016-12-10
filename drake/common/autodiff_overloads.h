@@ -138,32 +138,12 @@ const Eigen::AutoDiffScalar<DerType>& max(
 
 namespace drake {
 
-/// This struct converts an object of type T to a double. The default
-/// implementation does a DRAKE_ABORT (and returns NaN, to make compilers
-/// happy). Overloads provide sensible conversions.
-/// (We're using a struct here because partial instantiation does not work
-/// with function templates.)
-template <typename T>
-struct TtoDouble {
-  static double convert(const T&) {
-    DRAKE_ABORT();
-    return std::numeric_limits<double>::quiet_NaN();
-  }
-};
-
-/// Partial specialization for AutoDiffScalar.
+/// Returns the autodiff scalar's value() as a double.  Never throws.
+/// Overloads ExtractDoubleOrThrow from common/extract_double.h.
 template <typename DerType>
-struct TtoDouble<Eigen::AutoDiffScalar<DerType>> {
-  static double convert(const Eigen::AutoDiffScalar<DerType>& scalar) {
-    return static_cast<double>(scalar.value());
-  }
-};
-
-// Specializations for floating types.
-template <>
-struct TtoDouble<double> {
-  static double convert(const double& scalar) { return scalar; }
-};
+double ExtractDoubleOrThrow(const Eigen::AutoDiffScalar<DerType>& scalar) {
+  return static_cast<double>(scalar.value());
+}
 
 /// Provides if-then-else expression for Eigen::AutoDiffScalar type. To support
 /// Eigen's generic expressions, we use casting to the plain object after

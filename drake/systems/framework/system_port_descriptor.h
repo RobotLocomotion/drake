@@ -39,7 +39,8 @@ class SystemPortDescriptor {
   /// @param system The system to which this descriptor belongs.
   /// @param face Whether an input or output port is described.
   /// @param index The index of the port described. Input and output ports
-  ///              are indexed separately.
+  ///              are indexed separately. They both start from zero and
+  ///              increment by one per port.
   /// @param data_type Whether the port described is vector or abstract valued.
   /// @param size If the port described is vector-valued, the number of
   ///             elements, or kAutoSize if determined by connections.

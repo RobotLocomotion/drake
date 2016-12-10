@@ -4,6 +4,7 @@
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/extract_double.h"
 #include "drake/systems/analysis/simulator.h"
 
 namespace drake {
@@ -12,7 +13,7 @@ namespace systems {
 template <typename T>
 void Simulator<T>::PauseIfTooFast() const {
   if (target_realtime_rate_ <= 0) return;  // Run at full speed.
-  const double simtime_now = TtoDouble<T>::convert(get_context().get_time());
+  const double simtime_now = ExtractDoubleOrThrow(get_context().get_time());
   const double simtime_passed = simtime_now - initial_simtime_;
   const TimePoint desired_realtime =
       initial_realtime_ + Duration(simtime_passed / target_realtime_rate_);
@@ -24,7 +25,7 @@ void Simulator<T>::PauseIfTooFast() const {
 
 template <typename T>
 double Simulator<T>::get_actual_realtime_rate() const {
-  const double simtime_now = TtoDouble<T>::convert(get_context().get_time());
+  const double simtime_now = ExtractDoubleOrThrow(get_context().get_time());
   const double simtime_passed = simtime_now - initial_simtime_;
   const Duration realtime_passed = Clock::now() - initial_realtime_;
   const double rate = (simtime_passed / realtime_passed.count());
@@ -39,7 +40,7 @@ void Simulator<T>::ResetStatistics() {
   num_unrestricted_updates_ = 0;
   num_publishes_ = 0;
 
-  initial_simtime_ = TtoDouble<T>::convert(get_context().get_time());
+  initial_simtime_ = ExtractDoubleOrThrow(get_context().get_time());
   initial_realtime_ = Clock::now();
 }
 

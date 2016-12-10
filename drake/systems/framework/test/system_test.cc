@@ -83,9 +83,10 @@ class TestSystem : public System<double> {
     } else {
       // Use a custom update action.
       event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
-      event.do_update = std::bind(&TestSystem::DoEvalDifferenceUpdatesNumber,
+      event.do_discrete_update = std::bind(
+                                  &TestSystem::DoEvalDiscreteUpdatesNumber,
                                   this, std::placeholders::_1 /* context */,
-                                  std::placeholders::_2 /* difference state */,
+                                  std::placeholders::_2 /* discrete state */,
                                   kNumberToUpdate);
     }
   }
@@ -96,9 +97,9 @@ class TestSystem : public System<double> {
   }
 
   // The default update function.
-  void DoEvalDifferenceUpdates(
-      const Context<double>& context,
-      DifferenceState<double>* difference_state) const override {
+  void DoEvalDiscreteVariableUpdates(
+      const Context<double> &context,
+      DiscreteState<double> *discrete_state) const override {
     ++update_count_;
   }
 
@@ -110,9 +111,9 @@ class TestSystem : public System<double> {
 
   // A custom update function with additional argument @p num, which may be
   // bound in DoCalcNextUpdateTime.
-  void DoEvalDifferenceUpdatesNumber(const Context<double>& context,
-                                     DifferenceState<double>* difference_state,
-                                     int num) const {
+  void DoEvalDiscreteUpdatesNumber(const Context<double> &context,
+                                   DiscreteState<double> *discrete_state,
+                                   int num) const {
     updated_numbers_.push_back(num);
   }
 
@@ -190,7 +191,7 @@ TEST_F(SystemTest, DiscretePublish) {
   EXPECT_EQ(1, system_.get_publish_count());
 }
 
-// Tests that the default DoEvalDifferenceUpdates is invoked when no other
+// Tests that the default DoEvalDiscreteVariableUpdates is invoked when no other
 // handler is
 // registered in DoCalcNextUpdateTime.
 TEST_F(SystemTest, DiscreteUpdate) {
@@ -200,9 +201,10 @@ TEST_F(SystemTest, DiscreteUpdate) {
   system_.CalcNextUpdateTime(context_, &actions);
   ASSERT_EQ(1u, actions.events.size());
 
-  std::unique_ptr<DifferenceState<double>> update =
-      system_.AllocateDifferenceVariables();
-  system_.EvalDifferenceUpdates(context_, actions.events[0], update.get());
+  std::unique_ptr<DiscreteState<double>> update =
+      system_.AllocateDiscreteVariables();
+  system_.EvalDiscreteVariableUpdates(context_, actions.events[0],
+                                      update.get());
   EXPECT_EQ(1, system_.get_update_count());
 }
 
@@ -229,9 +231,10 @@ TEST_F(SystemTest, CustomDiscreteUpdate) {
   system_.CalcNextUpdateTime(context_, &actions);
   ASSERT_EQ(1u, actions.events.size());
 
-  std::unique_ptr<DifferenceState<double>> update =
-      system_.AllocateDifferenceVariables();
-  system_.EvalDifferenceUpdates(context_, actions.events[0], update.get());
+  std::unique_ptr<DiscreteState<double>> update =
+      system_.AllocateDiscreteVariables();
+  system_.EvalDiscreteVariableUpdates(context_, actions.events[0],
+                                      update.get());
   ASSERT_EQ(1u, system_.get_updated_numbers().size());
   EXPECT_EQ(kNumberToUpdate, system_.get_updated_numbers()[0]);
 }

@@ -23,7 +23,7 @@ class AffineSystemTest : public AffineLinearSystemTest {
     system_output_ = dut_->AllocateOutput(*context_);
     state_ = context_->get_mutable_continuous_state();
     derivatives_ = dut_->AllocateTimeDerivatives();
-    updates_ = dut_->AllocateDifferenceVariables();
+    updates_ = dut_->AllocateDiscreteVariables();
   }
 
  protected:
@@ -151,22 +151,22 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
   y0 << 24, 25;
   AffineSystem<double> system(A, B, f0, C, D, y0, 1.0);
   auto context = system.CreateDefaultContext();
-  EXPECT_TRUE(context->has_only_difference_state());
+  EXPECT_TRUE(context->has_only_discrete_state());
 
   Eigen::Vector3d x0;
   x0 << 26, 27, 28;
 
-  context->get_mutable_difference_state(0)->SetFromVector(x0);
+  context->get_mutable_discrete_state(0)->SetFromVector(x0);
   double u0 = 29;
   context->FixInputPort(0, Vector1d::Constant(u0));
 
-  auto update = system.AllocateDifferenceVariables();
+  auto update = system.AllocateDiscreteVariables();
   DiscreteEvent<double> update_event;
   update_event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
 
-  system.EvalDifferenceUpdates(*context, update_event, update.get());
+  system.EvalDiscreteVariableUpdates(*context, update_event, update.get());
 
-  EXPECT_TRUE(CompareMatrices(update->get_difference_state(0)->CopyToVector(),
+  EXPECT_TRUE(CompareMatrices(update->get_discrete_state(0)->CopyToVector(),
                               A * x0 + B * u0 + f0));
 }
 

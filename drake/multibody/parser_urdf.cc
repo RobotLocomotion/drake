@@ -1138,6 +1138,19 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
+    const std::string& urdf_string,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PackageMap& ros_package_map,
+    const std::string& root_dir,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
+    RigidBodyTree<double>* tree) {
+  return AddModelInstanceFromUrdfStringSearchingInRosPackages(
+      urdf_string, ros_package_map, root_dir, floating_base_type,
+      weld_to_frame, tree);
+}
+
+ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const string& urdf_string, const string& root_dir,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,

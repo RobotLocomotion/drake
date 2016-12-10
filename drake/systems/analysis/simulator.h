@@ -330,8 +330,8 @@ class Simulator {
   // Set by Initialize() and reset by various traumas.
   bool initialization_done_{false};
 
-  // Pre-allocated temporaries for updated difference states.
-  std::unique_ptr<DifferenceState<T>> discrete_updates_;
+  // Pre-allocated temporaries for updated discrete states.
+  std::unique_ptr<DiscreteState<T>> discrete_updates_;
 };
 
 template <typename T>
@@ -350,7 +350,7 @@ Simulator<T>::Simulator(const System<T>& system,
       new RungeKutta2Integrator<T>(system_, dt, context_.get()));
   integrator_->Initialize();
 
-  discrete_updates_ = system_.AllocateDifferenceVariables();
+  discrete_updates_ = system_.AllocateDiscreteVariables();
 }
 
 template <typename T>
@@ -375,7 +375,7 @@ void Simulator<T>::Initialize() {
 /**
  * Steps the simulation to the specified time.
  * The simulation loop is as follows:
- * 1. Perform necessary difference variable updates.
+ * 1. Perform necessary discrete variable updates.
  * 2. Publish.
  * 3. Integrate the smooth system (the ODE or DAE)
  * 4. Perform post-step stabilization for DAEs (if desired).
@@ -411,7 +411,8 @@ void Simulator<T>::StepTo(const T& boundary_time) {
       // Do unrestricted updates first.
       for (const DiscreteEvent<T>& event : update_actions.events) {
         if (event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction) {
-          system_.PerformUnrestrictedUpdate(context_.get(), event);
+          system_.EvalUnrestrictedUpdate(*context_, event,
+                                         context_->get_mutable_state());
           ++num_unrestricted_updates_;
         } else {
           if (event.action == DiscreteEvent<T>::kUnknownAction) {
@@ -423,12 +424,12 @@ void Simulator<T>::StepTo(const T& boundary_time) {
       // Do restricted (discrete variable) updates next.
       for (const DiscreteEvent<T>& event : update_actions.events) {
         if (event.action == DiscreteEvent<T>::kDiscreteUpdateAction) {
-          DifferenceState<T> *xd = context_->get_mutable_difference_state();
-          // Systems with discrete update events must have difference state.
+          DiscreteState<T> *xd = context_->get_mutable_discrete_state();
+          // Systems with discrete update events must have discrete state.
           DRAKE_DEMAND(xd != nullptr);
           // First, compute the discrete updates into a temporary buffer.
-          system_.EvalDifferenceUpdates(*context_, event,
-                                        discrete_updates_.get());
+          system_.EvalDiscreteVariableUpdates(*context_, event,
+                                              discrete_updates_.get());
           // Then, write them back into the context.
           xd->CopyFrom(*discrete_updates_);
           ++num_discrete_updates_;
@@ -441,6 +442,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
             system_.Publish(*context_, event);
             published = true;
             ++num_publishes_;
+            break;
           }
         }
     }
@@ -457,7 +459,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // How far can we go before we have to take a sampling break?
     const T next_sample_time =
         system_.CalcNextUpdateTime(*context_, &update_actions);
-    DRAKE_ASSERT(next_sample_time >= step_start_time);
+    DRAKE_DEMAND(next_sample_time >= step_start_time);
 
     // Determine whether the DiscreteEvent requested by the System at
     // next_sample_time includes an Update action, a Publish action, or both.
