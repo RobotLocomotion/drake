@@ -9,6 +9,8 @@ class PiecewiseFunction {
   std::vector<double> segment_times;
 
  public:
+  static constexpr double kEpsilonTime = 1e-10;
+
   explicit PiecewiseFunction(std::vector<double> const& segment_times);
 
   virtual ~PiecewiseFunction();

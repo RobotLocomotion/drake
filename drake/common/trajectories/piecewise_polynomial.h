@@ -281,6 +281,8 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
                                       Eigen::Index row, Eigen::Index col) const;
 
  private:
+  static constexpr CoefficientType kSlopeEpsilon = 1e-10;
+
   // a PolynomialMatrix for each piece (segment)
   std::vector<PolynomialMatrix> polynomials_;
 
