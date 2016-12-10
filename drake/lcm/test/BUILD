@@ -34,5 +34,6 @@ cc_test(
     name = "lcm_call_matlab_test",
     size = "small",
     srcs = ["lcm_call_matlab_test.cc"],
+    local = 1,
     deps = DEPS + ["//drake/lcm:lcm_call_matlab"],
 )

@@ -10,6 +10,7 @@ cc_test(
     size = "small",
     srcs = ["automotive_simulator_test.cc"],
     data = ["//drake/automotive:models"],
+    local = 1,
     deps = DEPS + [
         "//drake/automotive:automotive_simulator",
         "//drake/lcm:mock",
