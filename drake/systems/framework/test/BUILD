@@ -100,10 +100,10 @@ cc_test(
 )
 
 cc_test(
-    name = "difference_state_test",
+    name = "discrete_state_test",
     size = "small",
     testonly = 1,
-    srcs = ["difference_state_test.cc"],
+    srcs = ["discrete_state_test.cc"],
     linkstatic = 1,
     deps = [
         "//drake/common",
@@ -141,10 +141,10 @@ cc_test(
 )
 
 cc_test(
-    name = "modal_state_test",
+    name = "abstract_state_test",
     size = "small",
     testonly = 1,
-    srcs = ["modal_state_test.cc"],
+    srcs = ["abstract_state_test.cc"],
     linkstatic = 1,
     deps = [
         "//drake/common",
