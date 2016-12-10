@@ -225,9 +225,11 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * this joint is at its zero position, the base bodies' frames are coincident
  * with the world's coordinate frame.
  *
- * This method can only be used with URDF models that do not use `package://` to
- * reference modeling resources like mesh files. URDF models that contain
- * `package://` should instead use
+ * This method can only be used with URDF models that either (1) do not use
+ * `package://` to reference modeling resources like mesh files, or (2)
+ * only reference packages that are defined up the directory tree relative to
+ * @p urdf_filename. URDF files that contain `package://` references to do not
+ * meet these requirements should instead use
  * AddModelInstanceFromUrdfFileSearchingInRosPackages().
  *
  * @param[in] urdf_filename The name of the file containing the URDF model.
@@ -255,9 +257,11 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * their zero positions, the base bodies' frames are coincident with the
  * world's coordinate frame.
  *
- * This method can only be used with URDF models that do not use `package://` to
- * reference modeling resources like mesh files. URDF models that contain
- * `package://` should instead use
+ * This method can only be used with URDF models that either (1) do not use
+ * `package://` to reference modeling resources like mesh files, or (2)
+ * only reference packages that are defined up the directory tree relative to
+ * @p urdf_filename. URDF files that contain `package://` references to do not
+ * meet these requirements should instead use
  * AddModelInstanceFromUrdfFileSearchingInRosPackages().
  *
  * @param[in] urdf_filename The name of the file containing a URDF
@@ -296,9 +300,11 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * the base bodies when the joints are in their zero positions is specified by
  * @p weld_to_frame.
  *
- * This method can only be used with URDF models that do not use `package://` to
- * reference modeling resources like mesh files. URDF models that contain
- * `package://` should instead use
+ * This method can only be used with URDF models that either (1) do not use
+ * `package://` to reference modeling resources like mesh files, or (2)
+ * only reference packages that are defined up the directory tree relative to
+ * @p urdf_filename. URDF files that contain `package://` references to do not
+ * meet these requirements should instead use
  * AddModelInstanceFromUrdfFileSearchingInRosPackages().
  *
  * @param[in] urdf_filename The name of the file containing the URDF model. A
@@ -331,10 +337,11 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * referenced within the URDF. This method may be called from within the context
  * of a [ROS node](http://wiki.ros.org/Nodes) or a regular non-ROS application.
  *
- * This method has input parameter @p package_map. This parameter is only
- * necessary if the URDF contains a model that references meshes and other
- * modeling resources using `package://`. If the model in the URDF does not use
- * `package://`, the URDF could instead be loaded using
+ * This method can only be used with URDF models that either (1) do not use
+ * `package://` to reference modeling resources like mesh files, or (2)
+ * only reference packages that are defined up the directory tree relative to
+ * @p urdf_filename. URDF files that contain `package://` references to do not
+ * meet these requirements should instead use
  * AddModelInstanceFromUrdfFile().
  *
  * @param[in] urdf_filename The name of the file containing the URDF model.

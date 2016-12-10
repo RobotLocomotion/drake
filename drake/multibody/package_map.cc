@@ -63,9 +63,7 @@ string GetParentDirectory(const string& directory) {
   std::vector<std::string> v = spruce_path.split();
   DRAKE_DEMAND(v.size() > 0);
   spruce::path result;
-  // std::cout << "Contents of spruce_path.spit():" << std::endl;
   for (size_t i = 0; i < v.size() - 1; ++i) {
-    // std::cout << "  - " << i << " " << v.at(i) << std::endl;
     if (v.at(i) != "")
       result.append(v.at(i));
   }
@@ -112,25 +110,13 @@ void PackageMap::AddPackageIfNew(const string& package_name,
 }
 
 void PackageMap::PopulateUpstreamToDrakeDistroHelper(const string& directory) {
-  // std::cout << "PopulateUpstreamToDrakeDistroHelper: Method called!\n"
-  //           << "  - directory: " << directory << "\n"
-  //           << "  - drake path: " << GetDrakePath()
-  //           << std::endl;
   if (HasPackageMap(directory)) {
-    // std::cout << "Found package.xml in " << directory << std::endl;
     spruce::path spruce_path(directory);
     spruce_path.append("package.xml");
     const string package_name = GetPackageName(spruce_path.getStr());
-    if (!Contains(package_name)) {
-      // std::cout << "Adding package " << package_name << ", path " << directory << std::endl;
+    if (!Contains(package_name))
       AddPackageIfNew(package_name, directory);
-    }
   }
-  // std::string parent_path = GetParentDirectory(spruce_path.root());
-  // std::cout << "Parent of spruce_path.root(): " << parent_path << std::endl;
-  // std::cout << "Does parent_path have a package.xml file? "
-  //           << (HasPackageMap(parent_path) ? "TRUE" : "FALSE")
-  //           << std::endl;
   if (directory != "/" && directory != GetDrakePath())
     PopulateUpstreamToDrakeDistroHelper(GetParentDirectory(directory));
 }
@@ -147,42 +133,6 @@ void PackageMap::PopulateUpstreamToDrakeDistro(const string& model_file) {
                  ::tolower);
   DRAKE_DEMAND(extension == ".urdf" || extension == ".sdf");
   PopulateUpstreamToDrakeDistroHelper(spruce_path.root());
-
-  // std::cout << "spruce path: " << spruce_path.getStr() << std::endl;
-  // std::cout << "root: " << spruce_path.root() << std::endl;
-
-  // std::cout << "Does the root have a package.xml file? "
-  //           << (HasPackageMap(spruce_path.root()) ? "TRUE" : "FALSE")
-  //           << std::endl;
-  // spruce::path spruce_path_2(spruce_path.root());
-  // spruce_path_2.append("..");
-  // std::cout << "After appending ..: " << spruce_path_2.getStr() << std::endl;
-
-  // std::vector<std::string> v = spruce_path.split();
-  // std::cout << "Contents of spruce_path.spit():" << std::endl;
-  // for (size_t i = 0; i < v.size(); ++i) {
-  //   std::cout << "  - " << i << " " << v.at(i) << std::endl;
-  // }
-
-  // std::string parent_path = GetParentDirectory(spruce_path.root());
-  // std::cout << "Parent of spruce_path.root(): " << parent_path << std::endl;
-  // std::cout << "Does parent_path have a package.xml file? "
-  //           << (HasPackageMap(parent_path) ? "TRUE" : "FALSE")
-  //           << std::endl;
-  // tinydir_dir dir;
-  // if (tinydir_open(&dir, spruce_path_2.getStr().c_str()) < 0) {
-  //   cerr << "Unable to open directory: " << spruce_path_2.root() << endl;
-  //   return;
-  // }
-
-  // std::cout << "Contents of " << spruce_path_2.getStr() << ":" << std::endl;
-  // while (dir.has_next) {
-  //   tinydir_file file;
-  //   tinydir_readfile(&dir, &file);
-  //   std::cout << "  - " << string(file.name) << std::endl;
-  //   tinydir_next(&dir);
-  // }
-  // tinydir_close(&dir);
 }
 
 // Searches in directory @p path for files called "package.xml".

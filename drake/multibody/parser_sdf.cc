@@ -861,9 +861,8 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileToWorld(
     const string& filename, const FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree) {
   DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
-  const PackageMap package_map;
-  // TODO(liang.fok): Search up directory tree from filename for package.xml
-  // files and add them to package_map.
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrakeDistro(filename);
   return AddModelInstancesFromSdfFileSearchingInRosPackages(filename,
       package_map, floating_base_type, nullptr /* weld_to_frame */, tree);
 }
@@ -883,9 +882,8 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
   DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
-  const PackageMap package_map;
-  // TODO(liang.fok): Search up directory tree from filename for package.xml
-  // files and add them to package_map.
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrakeDistro(filename);
   return AddModelInstancesFromSdfFileSearchingInRosPackages(filename,
       package_map, floating_base_type, weld_to_frame, tree);
 }
@@ -921,8 +919,6 @@ ModelInstanceIdTable AddModelInstancesFromSdfString(
     RigidBodyTree<double>* tree) {
   DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
   const PackageMap package_map;
-  // TODO(liang.fok): Search up directory tree from filename for package.xml
-  // files and add them to package_map.
   return AddModelInstancesFromSdfStringSearchingInRosPackages(sdf_string,
       package_map, floating_base_type, weld_to_frame, tree);
 }

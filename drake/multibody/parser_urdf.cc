@@ -1148,7 +1148,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
-  PackageMap package_map;
+  const PackageMap package_map;
   return AddModelInstanceFromUrdfStringSearchingInRosPackages(
       urdf_string, package_map, root_dir, floating_base_type,
       nullptr /* weld_to_frame */, tree);
@@ -1170,8 +1170,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileWithRpyJointToWorld(
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_DEMAND(tree);
   PackageMap package_map;
-  // TODO(liang.fok): Search up directory tree from filename for package.xml
-  // files and add them to package_map.
+  package_map.PopulateUpstreamToDrakeDistro(filename);
   return AddModelInstanceFromUrdfFileSearchingInRosPackages(
       filename, package_map, kRollPitchYaw, nullptr /* weld_to_frame */,
       tree);
@@ -1189,8 +1188,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileToWorld(
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_DEMAND(tree);
   PackageMap package_map;
-  // TODO(liang.fok): Search up directory tree from filename for package.xml
-  // files and add them to package_map.
+  package_map.PopulateUpstreamToDrakeDistro(filename);
   return AddModelInstanceFromUrdfFileSearchingInRosPackages(
       filename, package_map, floating_base_type, nullptr /*weld_to_frame*/,
       tree);
@@ -1211,8 +1209,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_DEMAND(tree);
   PackageMap package_map;
-  // TODO(liang.fok): Search up directory tree from filename for package.xml
-  // files and add them to package_map.
+  package_map.PopulateUpstreamToDrakeDistro(filename);
   return AddModelInstanceFromUrdfFileSearchingInRosPackages(
       filename, package_map, floating_base_type, weld_to_frame, tree);
 }
