@@ -103,7 +103,7 @@ class LeafContext : public Context<T> {
 
   // =========================================================================
   // Accessors and Mutators for Parameters.
-  // TODO(david-german-tri): Add accessors for modal parameters.
+  // TODO(david-german-tri): Add accessors for abstract parameters.
 
   /// Sets the parameters to @p params, deleting whatever was there before.
   void set_parameters(std::unique_ptr<Parameters<T>> params) {
@@ -144,9 +144,9 @@ class LeafContext : public Context<T> {
           xc_vector.Clone(), num_q, num_v, num_z));
     }
 
-    // Make deep copies of the difference and modal states.
-    context->set_difference_state(get_state().get_difference_state()->Clone());
-    context->set_modal_state(get_state().get_modal_state()->Clone());
+    // Make deep copies of the discrete and abstract states.
+    context->set_discrete_state(get_state().get_discrete_state()->Clone());
+    context->set_abstract_state(get_state().get_abstract_state()->Clone());
 
     // Make deep copies of the parameters.
     context->set_parameters(parameters_->Clone());

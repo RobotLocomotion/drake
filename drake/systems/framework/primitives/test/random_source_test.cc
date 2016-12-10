@@ -26,7 +26,7 @@ GTEST_TEST(TestSignalLogger, GaussianWhiteNoise) {
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
-  simulator.get_mutable_context()->get_mutable_difference_state(0)->SetAtIndex(
+  simulator.get_mutable_context()->get_mutable_discrete_state(0)->SetAtIndex(
       0, 0.0);
 
   simulator.Initialize();
@@ -57,7 +57,7 @@ GTEST_TEST(TestSignalLogger, UniformWhiteNoise) {
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
-  simulator.get_mutable_context()->get_mutable_difference_state(0)->SetAtIndex(
+  simulator.get_mutable_context()->get_mutable_discrete_state(0)->SetAtIndex(
       0, 0.0);
 
   simulator.Initialize();

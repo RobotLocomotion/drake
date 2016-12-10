@@ -109,21 +109,21 @@ class DiagramContext : public Context<T> {
     for (auto& context : contexts_) {
       // Continuous
       sub_xcs.push_back(context->get_mutable_continuous_state());
-      // Difference
+      // Discrete
       const std::vector<BasicVector<T>*>& xd_data =
-          context->get_mutable_difference_state()->get_data();
+          context->get_mutable_discrete_state()->get_data();
       sub_xds.insert(sub_xds.end(), xd_data.begin(), xd_data.end());
-      // Modal
-      ModalState* xm = context->get_mutable_modal_state();
+      // Abstract
+      AbstractState* xm = context->get_mutable_abstract_state();
       for (int i = 0; i < xm->size(); ++i) {
-        sub_xms.push_back(&xm->get_mutable_modal_state(i));
+        sub_xms.push_back(&xm->get_mutable_abstract_state(i));
       }
     }
     // The wrapper states do not own the constituent state.
     this->set_continuous_state(
         std::make_unique<DiagramContinuousState<T>>(sub_xcs));
-    this->set_difference_state(std::make_unique<DifferenceState<T>>(sub_xds));
-    this->set_modal_state(std::make_unique<ModalState>(sub_xms));
+    this->set_discrete_state(std::make_unique<DiscreteState<T>>(sub_xds));
+    this->set_abstract_state(std::make_unique<AbstractState>(sub_xms));
   }
 
   /// Returns the output structure for a given constituent system at @p index.
