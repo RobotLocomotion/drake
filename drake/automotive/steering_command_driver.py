@@ -35,7 +35,8 @@ TURN_RIGHT_SIGN = -1.0
 MAX_VELOCITY = 26.8224
 THROTTLE_SCALE = MAX_VELOCITY / 300.0
 
-BRAKE_SCALE = 1.0
+MAX_BRAKE = MAX_VELOCITY
+BRAKE_SCALE = THROTTLE_SCALE /10
 
 
 def _limit_steering(requested_value):
@@ -44,13 +45,21 @@ def _limit_steering(requested_value):
     else:
         return math.copysign(MAX_STEERING_ANGLE, requested_value)
 
-
-def _limit_throttle_step(requested_value):
-    if abs(requested_value) <= MAX_VELOCITY:
+def _limit_throttle(requested_value):
+    if 0 <= requested_value <= MAX_VELOCITY:
         return requested_value
+    elif 0 > requested_value:
+        return 0
     else:
         return MAX_VELOCITY
 
+def _limit_brake(requested_value):
+    if 0 <= requested_value <= MAX_BRAKE:
+        return requested_value
+    elif 0 > requested_value:
+        return 0
+    else:
+        return MAX_BRAKE
 
 class KeyboardEventProcessor:
     def __init__(self):
@@ -59,39 +68,63 @@ class KeyboardEventProcessor:
         # corresponds to any key releasing 
         pygame.event.set_allowed([pygame.QUIT, pygame.KEYUP, pygame.KEYDOWN])
         pygame.key.set_repeat(100, 10)
+        self.upKeyReleased = False;
+        self.downKeyReleased = False;
 
     def processEvent(self, event, last_msg):
         new_msg = copy.copy(last_msg)
-        # when up arrow is pressed
-        if (event.key == pygame.K_UP) and (event.type == pygame.KEYDOWN):
-            new_msg.throttle = _limit_throttle_step(
-                last_msg.throttle + THROTTLE_SCALE)
-        # when up arrow is released
-        elif (event.key == pygame.K_UP) and (event.type == pygame.KEYUP):
-            # pygame.time.delay(pygame.key.get_repeat()[1])
-            new_msg.throttle = _limit_throttle_step(
-                last_msg.throttle - (THROTTLE_SCALE))
-            # if there is no other key being pressed
+        # pressing the enter key keeps all current commands
+
+        if (event.type == pygame.KEYUP):
+            if hasattr(event, 'key'):
+                if (event.key == pygame.K_UP):
+                    self.upKeyReleased = True
+                elif (event.key == pygame.K_DOWN):
+                    self.downKeyReleased = True
+                elif (event.key == pygame.K_LEFT) or (event.key == pygame.K_RIGHT):
+                    pass
+                else:
+                    print 'stopped here'
+                    return new_msg
+            else:
+                if self.downKeyReleased:
+                    new_msg.throttle = _limit_throttle(
+                        last_msg.throttle - THROTTLE_SCALE)
+
             if not pygame.event.peek(pygame.KEYDOWN): 
-                # creates a dummy key releasing event 
                 dummyKeyUpEvent = pygame.event.Event(pygame.KEYUP)
-                # sets the dummy key releasing mappping to up arrow key so to
-                # come back to this if branch
-                dummyKeyUpEvent.key = pygame.K_UP
-                # posts the dummy key releasing event 
                 pygame.event.post(dummyKeyUpEvent)
 
-        elif (event.key == pygame.K_DOWN) and (event.type == pygame.KEYDOWN):
-            new_msg.brake = (
-                (event.type == pygame.KEYDOWN) * BRAKE_SCALE)
-        elif (event.key == pygame.K_LEFT) and (event.type == pygame.KEYDOWN):
-            new_msg.steering_angle = _limit_steering(
+
+        if (event.type == pygame.KEYDOWN):
+            if (event.key == pygame.K_RETURN):
+                return new_msg
+            elif (event.key == pygame.K_UP):
+                self.upKeyReleased = False
+            elif (event.key == pygame.K_DOWN):
+                self.downKeyReleased = False
+            elif (event.key == pygame.K_LEFT): 
+                new_msg.steering_angle = _limit_steering(
                 last_msg.steering_angle + (
                     STEERING_BUTTON_STEP_ANGLE * TURN_LEFT_SIGN))
-        elif (event.key == pygame.K_RIGHT) and (event.type == pygame.KEYDOWN):
-            new_msg.steering_angle = _limit_steering(
-                last_msg.steering_angle + (
-                    STEERING_BUTTON_STEP_ANGLE * TURN_RIGHT_SIGN))
+            elif (event.key == pygame.K_RIGHT):
+                new_msg.steering_angle = _limit_steering(
+                    last_msg.steering_angle + (
+                        STEERING_BUTTON_STEP_ANGLE * TURN_RIGHT_SIGN))
+
+        if not self.upKeyReleased:
+            new_msg.throttle = _limit_throttle(
+                last_msg.throttle + THROTTLE_SCALE)
+        else:
+            new_msg.throttle = _limit_throttle(
+                last_msg.throttle - THROTTLE_SCALE)
+
+        # if not self.downKeyReleased:
+        #     new_msg.brake = _limit_brake(
+        #         last_msg.brake + BRAKE_SCALE)
+        # else:
+        #     new_msg.brake = _limit_brake(
+        #         last_msg.brake - BRAKE_SCALE)
         return new_msg
 
 
@@ -214,7 +247,7 @@ def main():
     if 'pygame' not in sys.modules:
         print >>sys.stderr, 'error: missing pygame; see README.md for help.'
         return 1
-
+    print 'Instruction: keep'
     publisher = SteeringCommandPublisher(
       args.input_method, args.lcm_tag, args.joy_name)
     publisher.start()
