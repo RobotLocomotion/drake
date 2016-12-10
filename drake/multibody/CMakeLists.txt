@@ -10,6 +10,7 @@ drake_install_pkg_config_file(drake-xml-util
 
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   kinematics_cache.cc
+  package_map.cc
   parser_model_instance_id_table.cc
   parser_common.cc
   parser_sdf.cc
@@ -37,6 +38,7 @@ drake_install_headers(
   rigid_body_frame.h
   rigid_body.h
   rigid_body_tree.h
+  package_map.h
   parser_model_instance_id_table.h
   parser_common.h
   parser_sdf.h

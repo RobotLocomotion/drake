@@ -12,6 +12,9 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/package_map.h"
+
+using drake::parsers::PackageMap;
 %}
 
 %include <typemaps.i>
@@ -67,7 +70,6 @@
 %include "drake/multibody/rigid_body_frame.h"
 
 %inline %{
-  typedef std::map<std::string, std::string> PackageMap;
   typedef std::map<std::string, int> ModelInstanceIdTable;
 %}
 %include "drake/multibody/parser_urdf.h"

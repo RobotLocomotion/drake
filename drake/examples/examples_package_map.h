@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/multibody/parser_common.h"
+#include "drake/multibody/package_map.h"
 
 namespace drake {
 namespace examples {

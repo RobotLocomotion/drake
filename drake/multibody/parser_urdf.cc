@@ -189,7 +189,7 @@ void ParseMaterial(XMLElement* node, MaterialMap& materials) {
   }
 }
 
-bool ParseGeometry(XMLElement* node, const PackageMap& ros_package_map,
+bool ParseGeometry(XMLElement* node, const PackageMap& package_map,
                    const string& root_dir,
                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                    DrakeShapes::Element& element) {
@@ -271,7 +271,7 @@ bool ParseGeometry(XMLElement* node, const PackageMap& ros_package_map,
     // This method will return an empty string if the file is not found or
     // resolved within a ROS package.
     string resolved_filename =
-        ResolveFilename(filename, ros_package_map, root_dir);
+        ResolveFilename(filename, package_map, root_dir);
 
     if (resolved_filename.empty()) {
       throw runtime_error(
@@ -310,7 +310,7 @@ bool ParseGeometry(XMLElement* node, const PackageMap& ros_package_map,
 // body's visualization.
 void ParseVisual(RigidBody<double>* body, XMLElement* node,
                  RigidBodyTree<double>* tree,
-                 MaterialMap* materials, const PackageMap& ros_package_map,
+                 MaterialMap* materials, const PackageMap& package_map,
                  const string& root_dir) {
   // Ensures there is a geometry child element. Since this is a required
   // element, throws an exception if a geometry element does not exist.
@@ -331,7 +331,7 @@ void ParseVisual(RigidBody<double>* body, XMLElement* node,
   DrakeShapes::VisualElement element(T_element_to_link);
 
   // Parses the geometry specifications of the visualization.
-  if (!ParseGeometry(geometry_node, ros_package_map, root_dir, element))
+  if (!ParseGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse visual element in link " +
                         body->get_name() + ".");
 
@@ -445,7 +445,7 @@ void ParseVisual(RigidBody<double>* body, XMLElement* node,
 
 void ParseCollision(RigidBody<double>* body, XMLElement* node,
                     RigidBodyTree<double>* tree,
-                    const PackageMap& ros_package_map, const string& root_dir) {
+                    const PackageMap& package_map, const string& root_dir) {
   Isometry3d T_element_to_link = Isometry3d::Identity();
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin) originAttributesToTransform(origin, T_element_to_link);
@@ -484,7 +484,7 @@ void ParseCollision(RigidBody<double>* body, XMLElement* node,
   // parseSDFCollision in RigidBodyTreeSDF.cpp.
   if (body->get_name().compare(string(RigidBodyTree<double>::kWorldName)) == 0)
     element.set_static();
-  if (!ParseGeometry(geometry_node, ros_package_map, root_dir, element))
+  if (!ParseGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse collision element in link " +
                         body->get_name() + ".");
 
@@ -494,7 +494,7 @@ void ParseCollision(RigidBody<double>* body, XMLElement* node,
 }
 
 bool ParseBody(RigidBodyTree<double>* tree, string robot_name, XMLElement* node,
-               MaterialMap* materials, const PackageMap& ros_package_map,
+               MaterialMap* materials, const PackageMap& package_map,
                const string& root_dir, int model_instance_id, int* index) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && (std::strcmp(attr, "true") == 0)) return false;
@@ -517,13 +517,13 @@ bool ParseBody(RigidBodyTree<double>* tree, string robot_name, XMLElement* node,
 
   for (XMLElement* visual_node = node->FirstChildElement("visual"); visual_node;
        visual_node = visual_node->NextSiblingElement("visual")) {
-    ParseVisual(body, visual_node, tree, materials, ros_package_map, root_dir);
+    ParseVisual(body, visual_node, tree, materials, package_map, root_dir);
   }
 
   for (XMLElement* collision_node = node->FirstChildElement("collision");
        collision_node;
        collision_node = collision_node->NextSiblingElement("collision")) {
-    ParseCollision(body, collision_node, tree, ros_package_map, root_dir);
+    ParseCollision(body, collision_node, tree, package_map, root_dir);
   }
 
   tree->add_rigid_body(std::move(owned_body));
@@ -971,7 +971,7 @@ void ParseWorldJoint(XMLElement* node,
 }
 
 ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
-                                const PackageMap& ros_package_map,
+                                const PackageMap& package_map,
                                 const string& root_dir,
                                 const FloatingBaseType floating_base_type,
                                 std::shared_ptr<RigidBodyFrame<double>>
@@ -1016,7 +1016,7 @@ ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
   for (XMLElement* link_node = node->FirstChildElement("link"); link_node;
        link_node = link_node->NextSiblingElement("link")) {
     int index;
-    if (ParseBody(tree, model_name, link_node, &materials, ros_package_map,
+    if (ParseBody(tree, model_name, link_node, &materials, package_map,
                   root_dir, model_instance_id, &index)) {
       link_indices.push_back(index);
     } else {
@@ -1103,7 +1103,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringWithRpyJointToWorld(
   const PackageMap package_map;
   return
       AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
-      urdf_string, package_map, tree);
+          urdf_string, package_map, tree);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
@@ -1128,18 +1128,18 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     RigidBodyTree<double>* tree) {
   return
       AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
-      urdf_string, package_map, tree);
+          urdf_string, package_map, tree);
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
-    const PackageMap& ros_package_map,
+    const PackageMap& package_map,
     const std::string& root_dir,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
   return AddModelInstanceFromUrdfStringSearchingInRosPackages(
-      urdf_string, ros_package_map, root_dir, floating_base_type,
+      urdf_string, package_map, root_dir, floating_base_type,
       weld_to_frame, tree);
 }
 
@@ -1148,9 +1148,9 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
-  PackageMap ros_package_map;
+  PackageMap package_map;
   return AddModelInstanceFromUrdfStringSearchingInRosPackages(
-      urdf_string, ros_package_map, root_dir, floating_base_type,
+      urdf_string, package_map, root_dir, floating_base_type,
       nullptr /* weld_to_frame */, tree);
 }
 
@@ -1170,6 +1170,8 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileWithRpyJointToWorld(
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_DEMAND(tree);
   PackageMap package_map;
+  // TODO(liang.fok): Search up directory tree from filename for package.xml
+  // files and add them to package_map.
   return AddModelInstanceFromUrdfFileSearchingInRosPackages(
       filename, package_map, kRollPitchYaw, nullptr /* weld_to_frame */,
       tree);
@@ -1187,6 +1189,8 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileToWorld(
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_DEMAND(tree);
   PackageMap package_map;
+  // TODO(liang.fok): Search up directory tree from filename for package.xml
+  // files and add them to package_map.
   return AddModelInstanceFromUrdfFileSearchingInRosPackages(
       filename, package_map, floating_base_type, nullptr /*weld_to_frame*/,
       tree);
@@ -1207,6 +1211,8 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_DEMAND(tree);
   PackageMap package_map;
+  // TODO(liang.fok): Search up directory tree from filename for package.xml
+  // files and add them to package_map.
   return AddModelInstanceFromUrdfFileSearchingInRosPackages(
       filename, package_map, floating_base_type, weld_to_frame, tree);
 }

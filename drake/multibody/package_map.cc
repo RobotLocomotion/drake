@@ -1,9 +1,26 @@
 #include "drake/multibody/package_map.h"
 
-using std::getenv;
-using std::string;
+#include <cstdlib>
+#include <sstream>
 
+#include "spruce.hh"
+
+#include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
+#include "drake/thirdParty/bsd/tinydir/tinydir.h"
+#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
+
+using std::cerr;
+using std::endl;
+using std::getenv;
+using std::istringstream;
+using std::runtime_error;
+using std::string;
+using tinyxml2::XMLDocument;
+using tinyxml2::XMLElement;
+
+namespace drake {
+namespace parsers {
 
 PackageMap::PackageMap() {}
 
@@ -12,8 +29,13 @@ void PackageMap::Add(const string& package_name, const string& package_path) {
   map_.insert(make_pair(package_name, package_path));
 }
 
-bool PackageMap::Contains(const string& package_name) {
+bool PackageMap::Contains(const string& package_name) const {
   return map_.find(package_name) != map_.end();
+}
+
+const string& PackageMap::GetPath(const string& package_name) const {
+  DRAKE_DEMAND(Contains(package_name));
+  return map_.at(package_name);
 }
 
 void PackageMap::PopulateFromFolder(const string& path) {
@@ -24,7 +46,7 @@ void PackageMap::PopulateFromEnvironment(const string& environment_variable) {
   const char* path_char = getenv(environment_variable.c_str());
   DRAKE_DEMAND(path_char);
   string path = string(path_char);
-  CrawlForPackages(path, package_map);
+  CrawlForPackages(path);
 }
 
 void AddPackage(const string& name, const string& path,
@@ -63,7 +85,7 @@ void PackageMap::CrawlForPackages(const string& path) {
 
       // Skips hidden directories (including "." and "..").
       if (file.is_dir && (file.name[0] != '.')) {
-        CrawlForPackages(file.path, package_map);
+        CrawlForPackages(file.path);
       } else if (file.name == target_filename) {
         // Parses the package.xml file to find the name of the package.
         string package_name;
@@ -99,8 +121,8 @@ void PackageMap::CrawlForPackages(const string& path) {
         spruce::path mypath_s(file.path);
 
         // Don't overwrite entries in the map.
-        if (!package_map->Contains(package_name)) {
-          package_map->Add(package_name, mypath_s.root().append("/"));
+        if (!Contains(package_name)) {
+          Add(package_name, mypath_s.root().append("/"));
         } else {
           drake::log()->error(
               "parser_common.cc: CrawlForPackages: WARNING: Package \"{}\" "
@@ -113,4 +135,5 @@ void PackageMap::CrawlForPackages(const string& path) {
   }
 }
 
-}  // namespace
+}  // namespace parsers
+}  // namespace drake

@@ -16,11 +16,11 @@ class PackageMap {
   void Add(const std::string& package_name, const std::string& package_path);
 
   /// Returns true if and only if this PackageMap contains @p package_map.
-  bool Contains(const std::string& package_map);
+  bool Contains(const std::string& package_map) const;
 
   /// Obtains the path associated with package @p package_name. Aborts if no
   /// package named @p package_name exists in this PackageMap.
-  std::string GetPath(const std::string& package_name);
+  const std::string& GetPath(const std::string& package_name) const;
 
   /// Crawls through @p path searching for directories containing the file
   /// `package.xml`. For each of these directories, this method adds a new entry
@@ -38,12 +38,12 @@ class PackageMap {
  private:
   // Recursively crawls through @p path looking for package.xml files. Adds
   // the packages defined by these package.xml files to this PackageMap.
-  void PackageMap::CrawlForPackages(const string& path);
+  void CrawlForPackages(const std::string& path);
 
   // The key is the name of a ROS package and the value is the package's
   // directory.
   std::map<std::string, std::string> map_;
-}
+};
 
 }  // namespace parsers
 }  // namespace drake

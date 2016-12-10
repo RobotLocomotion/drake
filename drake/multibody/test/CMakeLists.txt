@@ -66,6 +66,7 @@ if (snopt_FOUND)
   add_ik_gtest(test_ik_traj)
 endif ()
 
+add_subdirectory(package_map_test)
 add_subdirectory(parser_common_test)
 add_subdirectory(parser_urdf_test)
 add_subdirectory(rigid_body_tree)

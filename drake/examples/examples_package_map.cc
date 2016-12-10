@@ -8,7 +8,6 @@ using std::string;
 
 namespace drake {
 
-using parsers::AddPackage;
 using parsers::PackageMap;
 
 namespace examples {
@@ -19,11 +18,11 @@ namespace examples {
 // path to the models will differ on the machine on which the binaries are run.
 // See: #1471.
 void AddExamplePackages(PackageMap* package_map) {
-  AddPackage("Atlas", GetDrakePath() + "/examples/Atlas/", package_map);
-  AddPackage("IRB140", GetDrakePath() + "/examples/IRB140/", package_map);
-  AddPackage("Valkyrie", GetDrakePath() + "/examples/Valkyrie", package_map);
-  AddPackage("hsrb_description", GetDrakePath() + "/../ros/hsrb_description",
-      package_map);
+  package_map->Add("Atlas", GetDrakePath() + "/examples/Atlas/");
+  package_map->Add("IRB140", GetDrakePath() + "/examples/IRB140/");
+  package_map->Add("Valkyrie", GetDrakePath() + "/examples/Valkyrie");
+  package_map->Add("hsrb_description",
+                GetDrakePath() + "/../ros/hsrb_description");
 }
 
 }  // namespace examples

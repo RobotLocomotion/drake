@@ -3,6 +3,7 @@
 #include <string>
 
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/package_map.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/parser_common.h"
 #include "drake/multibody/rigid_body_frame.h"
