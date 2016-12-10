@@ -19,32 +19,36 @@ void QuadraticConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
 
 void LorentzConeConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                  Eigen::VectorXd& y) const {
+  Eigen::VectorXd z = A_ * x + b_;
   y.resize(num_constraints());
-  y(0) = x(0);
-  y(1) = pow(x(0), 2) - x.tail(x.size() - 1).squaredNorm();
+  y(0) = z(0);
+  y(1) = pow(z(0), 2) - z.tail(z.size() - 1).squaredNorm();
 }
 
 void LorentzConeConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
                                  TaylorVecXd& y) const {
+  TaylorVecXd z = A_.cast<TaylorVarXd>() * x + b_.cast<TaylorVarXd>();
   y.resize(num_constraints());
-  y(0) = x(0);
-  y(1) = pow(x(0), 2) - x.tail(x.size() - 1).squaredNorm();
+  y(0) = z(0);
+  y(1) = pow(z(0), 2) - z.tail(z.size() - 1).squaredNorm();
 }
 
 void RotatedLorentzConeConstraint::Eval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
+  Eigen::VectorXd z = A_ * x + b_;
   y.resize(num_constraints());
-  y(0) = x(0);
-  y(1) = x(1);
-  y(2) = x(0) * x(1) - x.tail(x.size() - 2).squaredNorm();
+  y(0) = z(0);
+  y(1) = z(1);
+  y(2) = z(0) * z(1) - z.tail(z.size() - 2).squaredNorm();
 }
 
 void RotatedLorentzConeConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
                                         TaylorVecXd& y) const {
+  TaylorVecXd z = A_.cast<TaylorVarXd>() * x + b_.cast<TaylorVarXd>();
   y.resize(num_constraints());
-  y(0) = x(0);
-  y(1) = x(1);
-  y(2) = x(0) * x(1) - x.tail(x.size() - 2).squaredNorm();
+  y(0) = z(0);
+  y(1) = z(1);
+  y(2) = z(0) * z(1) - z.tail(z.size() - 2).squaredNorm();
 }
 
 void PolynomialConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,

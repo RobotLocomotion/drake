@@ -232,9 +232,13 @@ void MathematicalProgram::AddConstraint(
 
 std::shared_ptr<LorentzConeConstraint>
 MathematicalProgram::AddLorentzConeConstraint(const VariableListRef& vars) {
-  auto constraint = std::make_shared<LorentzConeConstraint>();
-  AddConstraint(constraint, vars);
-  return constraint;
+  int num_vars = 0;
+  for (const auto& var : vars) {
+    num_vars += var.rows();
+  }
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(num_vars, num_vars);
+  Eigen::MatrixXd b = Eigen::VectorXd::Zero(num_vars);
+  return AddLorentzConeConstraint(A, b, vars);
 }
 
 void MathematicalProgram::AddConstraint(
@@ -250,9 +254,13 @@ void MathematicalProgram::AddConstraint(
 std::shared_ptr<RotatedLorentzConeConstraint>
 MathematicalProgram::AddRotatedLorentzConeConstraint(
     const VariableListRef& vars) {
-  auto constraint = std::make_shared<RotatedLorentzConeConstraint>();
-  AddConstraint(constraint, vars);
-  return constraint;
+  int num_vars = 0;
+  for (const auto& var : vars) {
+    num_vars += var.rows();
+  }
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(num_vars, num_vars);
+  Eigen::MatrixXd b = Eigen::VectorXd::Zero(num_vars);
+  return AddRotatedLorentzConeConstraint(A, b, vars);
 }
 
 std::shared_ptr<Constraint> MathematicalProgram::AddPolynomialConstraint(

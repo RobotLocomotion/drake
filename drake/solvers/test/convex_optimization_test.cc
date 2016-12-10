@@ -36,6 +36,7 @@ void GetSemidefiniteProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
   AddSolverIfAvailable("Mosek", solvers);
 }
+
 /////////////////////////
 ///// Linear Program ////
 /////////////////////////
@@ -188,15 +189,13 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
 /////////// Quadratic Program ///////////
 /////////////////////////////////////////
 
-/*
- * Test a simple Quadratic Program.
- * The example is taken from
- * http://cvxopt.org/examples/tutorial/qp.html
- * min 2x1^2 + x2^2 + x1x2 + x1 + x2
- * s.t x1 >= 0
- *     x2 >= 0
- *     x1 + x2 = 1
- */
+// Test a simple Quadratic Program.
+// The example is taken from
+// http://cvxopt.org/examples/tutorial/qp.html
+// min 2x1^2 + x2^2 + x1x2 + x1 + x2
+// s.t x1 >= 0
+//     x2 >= 0
+//     x1 + x2 = 1
 void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables<2>();
@@ -412,10 +411,10 @@ void TestQuadraticProgram4(const MathematicalProgramSolverInterface& solver) {
                               MatrixCompareType::absolute));
 }
 
-/// Solve a series of QPs with the objective being the Euclidean distance
-/// from a point which moves along the unit circle (L2 ball), but
-/// constrained to lie inside the L1 ball.  Implemented in 2D, so that the
-/// active set moves along 4 faces of the L1 ball.
+// Solve a series of QPs with the objective being the Euclidean distance
+// from a point which moves along the unit circle (L2 ball), but
+// constrained to lie inside the L1 ball.  Implemented in 2D, so that the
+// active set moves along 4 faces of the L1 ball.
 void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2);
@@ -493,26 +492,25 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
 //// Second order conic program ////////
 ////////////////////////////////////////
 
-/*
- * This test is taken from
- * https://inst.eecs.berkeley.edu/~ee127a/book/login/exa_ell_sep.html
- * The goal is to find a hyperplane, that separates two ellipsoids
- * E1 = x1 + R1 * u1, u1' * u1<=1
- * E2 = x2 + R2 * u2, u2' * u2<=1
- * A hyperplane a' * x = b separates these two ellipsoids, if and only if for
- * SOCP p* = min t1 + t2
- *           s.t t1 >= |R1' * a|
- *               t2 >= |R2' * a|
- *               a'*(x2-x1) = 1
- * the optimal solution p* is no larger than 1. In that case, an approppriate
- * value of b is b = 0.5 * (b1 + b2), where
- * b1 = a' * x1 + |R1' * a|
- * b2 = a' * x2 - |R2' * a|
- * @param x1  the center of ellipsoid 1
- * @param x2  the center of ellipsoid 2
- * @param R1  the shape of ellipsoid 1
- * @param R2  the shape of ellipsoid 2
- */
+//
+// This test is taken from
+// https://inst.eecs.berkeley.edu/~ee127a/book/login/exa_ell_sep.html
+// The goal is to find a hyperplane, that separates two ellipsoids
+// E1 = x1 + R1 * u1, u1' * u1<=1
+// E2 = x2 + R2 * u2, u2' * u2<=1
+// A hyperplane a' * x = b separates these two ellipsoids, if and only if for
+// SOCP p* = min t1 + t2
+//           s.t t1 >= |R1' * a|
+//               t2 >= |R2' * a|
+//               a'*(x2-x1) = 1
+// the optimal solution p* is no larger than 1. In that case, an approppriate
+// value of b is b = 0.5 * (b1 + b2), where
+// b1 = a' * x1 + |R1' * a|
+// b2 = a' * x2 - |R2' * a|
+// @param x1  the center of ellipsoid 1
+// @param x2  the center of ellipsoid 2
+// @param R1  the shape of ellipsoid 1
+// @param R2  the shape of ellipsoid 2
 template <typename DerivedX1, typename DerivedX2, typename DerivedR1,
           typename DerivedR2>
 void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
@@ -530,46 +528,46 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   const int kXdim = x1.rows();
   auto t = prog.AddContinuousVariables(2, "t");
   auto a = prog.AddContinuousVariables(kXdim, "a");
-  // R1a = R1' * a
-  // R2a = R2' * a
-  auto R1a = prog.AddContinuousVariables(R1.cols(), "R1a");
-  auto R2a = prog.AddContinuousVariables(R2.cols(), "R2a");
-  Eigen::MatrixXd R1_transpose = R1.transpose();
-  Eigen::MatrixXd R2_transpose = R2.transpose();
-  Eigen::MatrixXd A_R1a(R1.cols(), R1.cols() + R1.rows());
-  A_R1a.block(0, 0, R1.cols(), R1.cols()) =
-      Eigen::MatrixXd::Identity(R1.cols(), R1.cols());
-  A_R1a.block(0, R1.cols(), R1.cols(), R1.rows()) = -R1_transpose;
-  Eigen::MatrixXd A_R2a(R2.cols(), R2.cols() + R2.rows());
-  A_R2a.block(0, 0, R2.cols(), R2.cols()) =
-      Eigen::MatrixXd::Identity(R2.cols(), R2.cols());
-  A_R2a.block(0, R2.cols(), R2.cols(), R2.rows()) = -R2_transpose;
-  Eigen::VectorXd b_R1a = Eigen::VectorXd::Zero(R1.cols());
-  Eigen::VectorXd b_R2a = Eigen::VectorXd::Zero(R2.cols());
-  prog.AddLinearEqualityConstraint(A_R1a, b_R1a, {R1a, a});
-  prog.AddLinearEqualityConstraint(A_R2a, b_R2a, {R2a, a});
 
+  // Add Lorentz cone constraints
+  // t1 >= |R1'*a|
+  // t2 >= |R2'*a|
+  // Introduce matrices
+  // A_lorentz1 = [1 0;0 R1']
+  // A_lorentz2 = [1 0;0 R2']
+  // b_lorentz1 = 0;
+  // b_lorentz2 = 0;
+  // And both A_lorentz1*[t;a]+b_lorentz1, A_lorentz2*[t;a]+b_lorentz2 are
+  // in the Lorentz cone.
+  Eigen::MatrixXd A_lorentz1(1 + R1.cols(), 1 + R1.rows());
+  Eigen::MatrixXd A_lorentz2(1 + R2.cols(), 1 + R2.rows());
+  A_lorentz1.setZero();
+  A_lorentz2.setZero();
+  // clang-format off
+  A_lorentz1 << 1, Eigen::RowVectorXd::Zero(R1.rows()),
+        Eigen::VectorXd::Zero(R1.cols()), R1.transpose();
+  A_lorentz2 << 1, Eigen::RowVectorXd::Zero(R2.rows()),
+      Eigen::VectorXd::Zero(R2.cols()), R2.transpose();
+  // clang-format on
+  Eigen::VectorXd b_lorentz1 = Eigen::VectorXd::Zero(1 + R1.cols());
+  Eigen::VectorXd b_lorentz2 = Eigen::VectorXd::Zero(1 + R2.cols());
+  auto lorentz_cone1 = prog.AddLorentzConeConstraint(A_lorentz1, b_lorentz1,
+                                                     {t.segment<1>(0), a});
+  auto lorentz_cone2 = prog.AddLorentzConeConstraint(A_lorentz2, b_lorentz2,
+                                                     {t.segment<1>(1), a});
   // a'*(x2 - x1) = 1
   prog.AddLinearEqualityConstraint((x2 - x1).transpose(), 1.0, {a});
 
   // Add cost
   auto cost = prog.AddLinearCost(Eigen::RowVector2d(1.0, 1.0), {t});
 
-  // Add Lorentz cones
-  auto lorentz_cone1 = prog.AddLorentzConeConstraint({t.segment<1>(0), R1a});
-  auto lorentz_cone2 = prog.AddLorentzConeConstraint({t.segment<1>(1), R2a});
-
   RunSolver(&prog, solver);
 
   // Check the solution.
   // First check if each constraint is satisfied.
-  const auto& R1a_value = GetSolution(R1a);
-  const auto& R2a_value = GetSolution(R2a);
   const auto& a_value = GetSolution(a);
-  EXPECT_TRUE(CompareMatrices(R1a_value, R1_transpose * a_value, 1e-7,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(R2a_value, R2_transpose * a_value, 1e-7,
-                              MatrixCompareType::absolute));
+  const auto& R1a_value = R1.transpose() * a_value;
+  const auto& R2a_value = R2.transpose() * a_value;
   EXPECT_NEAR(t(0).value(), R1a_value.norm(), 1e-6);
   EXPECT_NEAR(t(1).value(), R2a_value.norm(), 1e-6);
   EXPECT_TRUE(CompareMatrices((x2 - x1).transpose() * a_value,
@@ -591,9 +589,9 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
     // Verify that b - a'*x1 >= |R1' * a|
     //             a'*x2 - b >= |R2' * a|
     EXPECT_TRUE(b - a_value.transpose() * x1 >=
-                (R1_transpose * a_value).norm());
+                (R1.transpose() * a_value).norm());
     EXPECT_TRUE(a_value.transpose() * x2 - b >=
-                (R2_transpose * a_value).norm());
+                (R2.transpose() * a_value).norm());
   } else {
     // Now solve another SOCP to find a point y in the intersecting region
     // y = x1 + R1*u1
@@ -605,11 +603,25 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
     auto u2 = prog_intersect.AddContinuousVariables(R2.cols(), "u2");
     auto y = prog_intersect.AddContinuousVariables(kXdim, "y");
 
-    auto slack = prog_intersect.AddContinuousVariables<1>("slack");
-    prog_intersect.AddBoundingBoxConstraint(1, 1, slack(0));
-
-    prog_intersect.AddLorentzConeConstraint({slack, u1});
-    prog_intersect.AddLorentzConeConstraint({slack, u2});
+    // Add the constraint that both
+    // A_lorentz3 * u1 + b_lorentz3
+    // and
+    // A_lorentz4 * u2 + b_lorentz4
+    // are in the Lorentz cone.
+    // A_lorentz3 = [0; I], b_lorentz3 = [1; 0]
+    // A_lorentz4 = [0; I], b_lorentz4 = [1; 0]
+    Eigen::MatrixXd A_lorentz3(R1.cols() + 1, R1.cols());
+    Eigen::MatrixXd A_lorentz4(R2.cols() + 1, R2.cols());
+    Eigen::VectorXd b_lorentz3(R1.cols() + 1);
+    Eigen::VectorXd b_lorentz4(R2.cols() + 1);
+    A_lorentz3 << Eigen::RowVectorXd::Zero(R1.cols()),
+        Eigen::MatrixXd::Identity(R1.cols(), R1.cols());
+    A_lorentz4 << Eigen::RowVectorXd::Zero(R2.cols()),
+        Eigen::MatrixXd::Identity(R2.cols(), R1.cols());
+    b_lorentz3 << 1, Eigen::VectorXd::Zero(R1.cols());
+    b_lorentz4 << 1, Eigen::VectorXd::Zero(R2.cols());
+    prog_intersect.AddLorentzConeConstraint(A_lorentz3, b_lorentz3, {u1});
+    prog_intersect.AddLorentzConeConstraint(A_lorentz4, b_lorentz4, {u2});
 
     // Add constraint y = x1 + R1*u1
     //                y = x2 + R2*u2
@@ -639,26 +651,23 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   }
 }
 
-/*
- * This example is taken from
- * https://inst.eecs.berkeley.edu/~ee127a/book/login/exa_qp_as_socp.html
- * For a quadratic program
- * 0.5 * x' * Q * x + c' * x
- * s.t b_lb <= A * x <= b_ub
- * It can be casted as an SOCP, as follows
- * By introducing a new variable w = Q^{1/2}*x and y, z
- * The equivalent SOCP is
- * min c'x + y
- * s.t y * z >= w' * w
- *     z = 2
- *     w = Q^{1/2} * x
- *     b_lb <= A * x <= b_ub
- * @param Q A positive definite matrix
- * @param c A column vector
- * @param A A matrix
- * @param b_lb A column vector
- * @param b_ub A column vector
- */
+// This example is taken from
+// https://inst.eecs.berkeley.edu/~ee127a/book/login/exa_qp_as_socp.html
+// For a quadratic program
+// 0.5 * x' * Q * x + c' * x
+// s.t b_lb <= A * x <= b_ub
+// It can be casted as an SOCP, as follows
+// By introducing a new variable w = Q^{1/2}*x and y, z
+// The equivalent SOCP is
+// min c'x + y
+// s.t 2 * y >= w' * w
+//     w = Q^{1/2} * x
+//     b_lb <= A * x <= b_ub
+// @param Q A positive definite matrix
+// @param c A column vector
+// @param A A matrix
+// @param b_lb A column vector
+// @param b_ub A column vector
 template <typename DerivedQ, typename DerivedC, typename DerivedA,
           typename DerivedBlower, typename DerivedBupper>
 void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
@@ -682,11 +691,14 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
 
   auto x_socp = prog_socp.AddContinuousVariables(kXdim, "x");
   auto y = prog_socp.AddContinuousVariables<1>("y");
-  auto z = prog_socp.AddContinuousVariables<1>("z");
   auto w = prog_socp.AddContinuousVariables(kXdim, "w");
 
-  prog_socp.AddBoundingBoxConstraint(2.0, 2.0, z(0));
-  prog_socp.AddRotatedLorentzConeConstraint({y, z, w});
+  Eigen::MatrixXd A_lorentz(2 + kXdim, 1 + kXdim);
+  A_lorentz << Eigen::RowVectorXd::Zero(1 + kXdim),
+      Eigen::MatrixXd::Identity(1 + kXdim, 1 + kXdim);
+  Eigen::VectorXd b_lorentz(2 + kXdim);
+  b_lorentz << 2, Eigen::VectorXd::Zero(1 + kXdim);
+  prog_socp.AddRotatedLorentzConeConstraint(A_lorentz, b_lorentz, {y, w});
 
   Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> lltOfQ(Q_symmetric);
   Eigen::MatrixXd Q_sqrt = lltOfQ.matrixU();
@@ -770,36 +782,33 @@ void TestQPasSOCP(const MathematicalProgramSolverInterface& solver) {
   SolveQPasSOCP(Q, c, A, b_lb, b_ub, solver);
 }
 
-/*
- * This example is taken from the paper
- * Applications of second-order cone programming
- * By M.S.Lobo, L.Vandenberghe, S.Boyd and H.Lebret,
- * Section 3.6
- * http://www.seas.ucla.edu/~vandenbe/publications/socp.pdf
- * The problem tries to find the equilibrium state of a mechanical
- * system, which consists of N nodes at position (x1,y1), (x2,y2), ..., (xN,yN)
- * in R2.
- * The nodes are connected by springs with given coefficient.
- * The spring generate force when it is stretched,
- * but not when it is compressed.
- * Namely, the spring force is
- * (spring_length - spring_rest_length) * spring_stiffness,
- * if spring_length >= spring_rest_length;
- * otherwise the spring force is zero.
- * weight_i is the mass * gravity_acceleration
- * of the i'th link.
- * The equilibrium point is obtained when the total energy is minimized
- * namely min sum_i weight_i * yi + stiffness/2 * t_i^2
- *        s.t  sqrt((x(i) - x(i+1))^2 + (y(i) - y(i+1))^2) - spring_rest_length
- * <= t_i
- *             0 <= t_i
- *             (x1,y1) = end_pos1
- *             (xN,yN) = end_pos2
- * By introducing a slack variable z >= t_1^2 + ... + t_(N-1)^2, the problem
- * becomes
- * an SOCP, with both Lorentz cone and rotated Lorentz cone constraints
- *
- */
+// This example is taken from the paper
+// Applications of second-order cone programming
+// By M.S.Lobo, L.Vandenberghe, S.Boyd and H.Lebret,
+// Section 3.6
+// http://www.seas.ucla.edu/~vandenbe/publications/socp.pdf
+// The problem tries to find the equilibrium state of a mechanical
+// system, which consists of N nodes at position (x1,y1), (x2,y2), ..., (xN,yN)
+// in R2.
+// The nodes are connected by springs with given coefficient.
+// The spring generate force when it is stretched,
+// but not when it is compressed.
+// Namely, the spring force is
+// (spring_length - spring_rest_length) * spring_stiffness,
+// if spring_length >= spring_rest_length;
+// otherwise the spring force is zero.
+// weight_i is the mass * gravity_acceleration
+// of the i'th link.
+// The equilibrium point is obtained when the total energy is minimized
+// namely min sum_i weight_i * yi + stiffness/2 * t_i^2
+//        s.t  sqrt((x(i) - x(i+1))^2 + (y(i) - y(i+1))^2) - spring_rest_length
+// <= t_i
+//             0 <= t_i
+//             (x1,y1) = end_pos1
+//             (xN,yN) = end_pos2
+// By introducing a slack variable z >= t_1^2 + ... + t_(N-1)^2, the problem
+// becomes
+// an SOCP, with both Lorentz cone and rotated Lorentz cone constraints
 void FindSpringEquilibrium(const Eigen::VectorXd& weight,
                            double spring_rest_length, double spring_stiffness,
                            const Eigen::Vector2d& end_pos1,
@@ -819,44 +828,34 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
       Eigen::VectorXd::Constant(num_nodes - 1,
                                 std::numeric_limits<double>::infinity()),
       {t});
-  auto t_plus_l0 = prog.AddContinuousVariables(
-      num_nodes - 1,
-      "t_plus_l0");  // The slack variable equals to t_i + spring_rest_length
-  Eigen::MatrixXd A1(num_nodes - 1, 2 * (num_nodes - 1));
-  A1 << Eigen::MatrixXd::Identity(num_nodes - 1, num_nodes - 1),
-      -Eigen::MatrixXd::Identity(num_nodes - 1, num_nodes - 1);
-  prog.AddLinearEqualityConstraint(
-      A1, Eigen::VectorXd::Constant(num_nodes - 1, spring_rest_length),
-      {t_plus_l0, t});
-  // x_diff(i) = x(i+1) - x(i)
-  // y_diff(i) = y(i+1) - y(i)
-  auto x_diff = prog.AddContinuousVariables(num_nodes - 1, "xd");
-  auto y_diff = prog.AddContinuousVariables(num_nodes - 1, "yd");
-  Eigen::MatrixXd A2(num_nodes - 1, 2 * num_nodes - 1);
-  A2.setZero();
-  A2.block(0, 0, num_nodes - 1, num_nodes - 1) =
-      -Eigen::MatrixXd::Identity(num_nodes - 1, num_nodes - 1);
-  A2.block(0, 1, num_nodes - 1, num_nodes - 1) +=
-      Eigen::MatrixXd::Identity(num_nodes - 1, num_nodes - 1);
-  A2.block(0, num_nodes, num_nodes - 1, num_nodes - 1) =
-      -Eigen::MatrixXd::Identity(num_nodes - 1, num_nodes - 1);
-  prog.AddLinearEqualityConstraint(A2, Eigen::VectorXd::Zero(num_nodes - 1),
-                                   {x, x_diff});
-  prog.AddLinearEqualityConstraint(A2, Eigen::VectorXd::Zero(num_nodes - 1),
-                                   {y, y_diff});
 
   // sqrt((x(i)-x(i+1))^2 + (y(i) - y(i+1))^2) <= ti + spring_rest_length
   for (int i = 0; i < num_nodes - 1; ++i) {
+    // A_lorentz1 * [x(i); x(i+1); y(i); y(i+1); t(i)] + b_lorentz1
+    //     = [ti + spring_rest_length; x(i) - x(i+1); y(i) - y(i+1)]
+    Eigen::Matrix<double, 3, 5> A_lorentz1;
+    A_lorentz1.setZero();
+    A_lorentz1(0, 4) = 1;
+    A_lorentz1(1, 0) = 1;
+    A_lorentz1(1, 1) = -1;
+    A_lorentz1(2, 2) = 1;
+    A_lorentz1(2, 3) = -1;
+    Eigen::Vector3d b_lorentz1(spring_rest_length, 0, 0);
     prog.AddLorentzConeConstraint(
-        {t_plus_l0.segment<1>(i), x_diff.segment<1>(i), y_diff.segment<1>(i)});
+        A_lorentz1, b_lorentz1,
+        {x.segment<2>(i), y.segment<2>(i), t.segment<1>(i)});
   }
 
   // Add constraint z >= t_1^2 + .. + t_(N-1)^2
-  auto z = prog.AddContinuousVariables(2, "z");
-  prog.AddBoundingBoxConstraint(1, 1, z(0));
-  prog.AddRotatedLorentzConeConstraint({z, t});
+  auto z = prog.AddContinuousVariables<1>("z");
+  Eigen::MatrixXd A_lorentz2(1 + num_nodes, num_nodes);
+  A_lorentz2 << Eigen::RowVectorXd::Zero(num_nodes),
+      Eigen::MatrixXd::Identity(num_nodes, num_nodes);
+  Eigen::VectorXd b_lorentz2(1 + num_nodes);
+  b_lorentz2 << 1, Eigen::VectorXd::Zero(num_nodes);
+  prog.AddRotatedLorentzConeConstraint(A_lorentz2, b_lorentz2, {z, t});
 
-  prog.AddLinearCost(drake::Vector1d(spring_stiffness / 2), {z.segment<1>(1)});
+  prog.AddLinearCost(drake::Vector1d(spring_stiffness / 2), {z});
   prog.AddLinearCost(weight.transpose(), {y});
 
   RunSolver(&prog, solver);
@@ -882,7 +881,7 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
     }
   }
   const auto& t_value = GetSolution(t);
-  EXPECT_TRUE(std::abs(z(1).value() - t_value.squaredNorm()) < 1E-3);
+  EXPECT_TRUE(std::abs(z(0).value() - t_value.squaredNorm()) < 1E-3);
   // Now test equilibrium.
   for (int i = 1; i < num_nodes - 1; i++) {
     Eigen::Vector2d left_spring(x(i - 1).value() - x(i).value(),
