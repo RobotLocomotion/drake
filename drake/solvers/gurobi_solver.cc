@@ -73,7 +73,7 @@ int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
 template <typename Binding>
 int AddSecondOrderConeConstraints(
     const std::vector<Binding>& second_order_cone_constraints,
-    bool is_rotated_cone, double sparseness_threshold, GRBmodel* model) {
+    bool is_rotated_cone, GRBmodel* model) {
   for (const auto& binding : second_order_cone_constraints) {
     int num_constraint_variable = static_cast<int>(binding.GetNumElements());
     std::vector<int> variable_indices;
@@ -424,14 +424,14 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // Add Lorentz cone constraints.
   if (!error) {
     error = AddSecondOrderConeConstraints(prog.lorentz_cone_constraints(),
-                                          false, sparseness_threshold, model);
+                                          false, model);
   }
 
   // Add rotated Lorentz cone constraints.
   if (!error) {
     error =
         AddSecondOrderConeConstraints(prog.rotated_lorentz_cone_constraints(),
-                                      true, sparseness_threshold, model);
+                                      true, model);
   }
 
   SolutionResult result = SolutionResult::kUnknownError;
