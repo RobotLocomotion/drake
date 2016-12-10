@@ -240,24 +240,44 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
 
   Eigen::Index cols() const override;
 
+  /// @throws std::runtime_error if other.segment_times is not within
+  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
   PiecewisePolynomial& operator+=(const PiecewisePolynomial& other);
 
+  /// @throws std::runtime_error if other.segment_times is not within
+  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
   PiecewisePolynomial& operator-=(const PiecewisePolynomial& other);
 
+  /// @throws std::runtime_error if other.segment_times is not within
+  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
   PiecewisePolynomial& operator*=(const PiecewisePolynomial& other);
 
+  /// @throws std::runtime_error if offset.segment_times is not within
+  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
   PiecewisePolynomial& operator+=(const CoefficientMatrix& offset);
 
+  /// @throws std::runtime_error if offset.segment_times is not within
+  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
   PiecewisePolynomial& operator-=(const CoefficientMatrix& offset);
 
+  /// @throws std::runtime_error if other.segment_times is not within
+  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
   const PiecewisePolynomial operator+(const PiecewisePolynomial& other) const;
 
+  /// @throws std::runtime_error if other.segment_times is not within
+  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
   const PiecewisePolynomial operator-(const PiecewisePolynomial& other) const;
 
+  /// @throws std::runtime_error if other.segment_times is not within
+  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
   const PiecewisePolynomial operator*(const PiecewisePolynomial& other) const;
 
+  /// @throws std::runtime_error if offset.segment_times is not within
+  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
   const PiecewisePolynomial operator+(const CoefficientMatrix& offset) const;
 
+  /// @throws std::runtime_error if offset.segment_times is not within
+  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
   const PiecewisePolynomial operator-(const CoefficientMatrix& offset) const;
 
   /// Checks if a PiecewisePolynomial is approximately equal to this one.
