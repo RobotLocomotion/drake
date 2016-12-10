@@ -45,6 +45,7 @@ class PackageMap {
   /// @param[in] model_file The model file whose directory is the start of the
   /// search for `package.xml` files. This file must be an SDF or URDF file.
   void PopulateUpstreamToDrakeDistro(const std::string& model_file);
+
  private:
   // Recursively crawls through @p path looking for package.xml files. Adds
   // the packages defined by these package.xml files to this PackageMap.

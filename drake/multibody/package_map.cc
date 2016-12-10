@@ -1,7 +1,9 @@
 #include "drake/multibody/package_map.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <sstream>
+#include <vector>
 
 #include "spruce.hh"
 
