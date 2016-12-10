@@ -447,6 +447,8 @@ void Simulator<T>::StepTo(const T& boundary_time) {
         }
     }
 
+    // TODO(edrumwri): Add every step updates in the same manner as every step
+    //                 publishes.
     // Allow System a chance to produce some output.
     if (!published && get_publish_every_time_step()) {
       system_.Publish(*context_);

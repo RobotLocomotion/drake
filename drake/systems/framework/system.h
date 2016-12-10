@@ -23,8 +23,14 @@ namespace systems {
 /// how much of the Context is allowed to be changed (none, discrete variables
 /// only, anything but time) as well as how the mechanism for changing the
 /// Context (i.e., Simulator changes the context itself for "discrete" updates,
-/// while the System's unrestricted update function changes the context for
-/// "unrestricted" updates.
+/// while the System's unrestricted update function is able to change all
+/// state variables (continuous, discrete, and abstract) directly. Such
+/// unrestricted updates should be avoided, if possible, by using the other
+/// mechanisms for updated variables: discrete
+/// variables can be modified using EvalDiscreteVariableUpdates()
+/// and continuous variables are normally modified during the course of the 
+/// simulation process (through Simulator::StepTo()).
+
 template <typename T>
 struct DiscreteEvent {
   typedef std::function<void(const Context<T>&)> PublishCallback;
@@ -279,11 +285,11 @@ class System {
 
   /// This method is called to update *any* state variables in the @p context
   /// because the given @p event has arrived. Dispatches to
-  /// DoEvalUnrestrictedUpdate() by default, or to 
+  /// DoEvalUnrestrictedUpdate() by default, or to
   /// `event.do_unrestricted_update` if provided. Does not allow the
   /// dimensionality of the state variables to change.
   /// @throws std::logic_error if the dimensionality of the state variables
-  ///         changes in the callback. 
+  ///         changes in the callback.
   void EvalUnrestrictedUpdate(const Context<T>& context,
                               const DiscreteEvent<T>& event,
                               State<T>* state) const {
@@ -655,10 +661,10 @@ class System {
       const Context<T>& context, DiscreteState<T>* discrete_state) const {}
 
   /// Updates the @p state *in an unrestricted fashion* on unrestricted update
-  /// events. Unrestricted updates should be avoided, if possible; discrete
-  /// variables can be modified using EvalDiscreteVariableUpdates()
-  /// and continuous variables are normally modified during the course of the 
-  /// simulation process (through Simulator::StepTo()).
+  /// events. Override this function if you need your System to update
+  /// abstract variables or generally make changes to state that cannot be
+  /// made using EvalDiscreteVariableUpdates() or via integration of continuous
+  /// variables.
   virtual void DoEvalUnrestrictedUpdate(const Context<T>& context,
                                         State<T>* state) const {}
 
