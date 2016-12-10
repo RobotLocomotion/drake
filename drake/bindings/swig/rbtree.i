@@ -14,6 +14,12 @@
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/package_map.h"
 
+// TODO(liang.fok) Figure out why the following is necessary. It was a hack to
+// get around the following error:
+//
+// bindings/swig/rbtreePYTHON_wrap.cxx:30673:95: error:
+//     use of undeclared identifier 'PackageMap'
+//
 using drake::parsers::PackageMap;
 %}
 
@@ -68,6 +74,8 @@ using drake::parsers::PackageMap;
 %include "drake/multibody/rigid_body.h"
 
 %include "drake/multibody/rigid_body_frame.h"
+
+%include "drake/multibody/package_map.h"
 
 %inline %{
   typedef std::map<std::string, int> ModelInstanceIdTable;
