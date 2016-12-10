@@ -13,14 +13,6 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/package_map.h"
-
-// TODO(liang.fok) Figure out why the following is necessary. It was a hack to
-// get around the following error:
-//
-// bindings/swig/rbtreePYTHON_wrap.cxx:30673:95: error:
-//     use of undeclared identifier 'PackageMap'
-//
-using drake::parsers::PackageMap;
 %}
 
 %include <typemaps.i>

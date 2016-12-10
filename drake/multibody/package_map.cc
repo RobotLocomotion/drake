@@ -25,6 +25,8 @@ namespace parsers {
 
 PackageMap::PackageMap() {}
 
+PackageMap::~PackageMap() {}
+
 void PackageMap::Add(const string& package_name, const string& package_path) {
   DRAKE_DEMAND(map_.find(package_name) == map_.end());
   map_.insert(make_pair(package_name, package_path));

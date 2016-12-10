@@ -15,7 +15,7 @@ def load_robot_from_urdf(urdf_file):
     """
     urdf_string = open(urdf_file).read()
     base_dir = os.path.dirname(urdf_file)
-    package_map = pydrake.rbtree.mapStringString()
+    package_map = pydrake.rbtree.PackageMap()
     weld_frame = None
     floating_base_type = pydrake.rbtree.kRollPitchYaw
 

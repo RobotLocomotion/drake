@@ -11,6 +11,8 @@ class PackageMap {
   /// A constructor that initializes an empty map.
   PackageMap();
 
+  virtual ~PackageMap();
+
   /// Adds package @p package_name and its path, @p package_path. Aborts if
   /// @p package_name is already present in this PackageMap.
   void Add(const std::string& package_name, const std::string& package_path);

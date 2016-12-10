@@ -4,7 +4,6 @@ import numpy as np
 import pydrake
 import os.path
 
-
 class TestUrdfParser(unittest.TestCase):
     def testAddModelInstanceFromUrdfStringSearchingInRosPackages(self):
         urdf_file = os.path.join(pydrake.getDrakePath(),
@@ -15,9 +14,7 @@ class TestUrdfParser(unittest.TestCase):
         weld_frame = None
         floating_base_type = pydrake.rbtree.kRollPitchYaw
 
-        # Load our model from URDF
         robot = pydrake.rbtree.RigidBodyTree()
-
         pydrake.rbtree.AddModelInstanceFromUrdfStringSearchingInRosPackages(
             urdf_string,
             package_map,
@@ -26,7 +23,10 @@ class TestUrdfParser(unittest.TestCase):
             weld_frame,
             robot)
 
-        self.assertTrue(robot.get_num_bodies() == 2)
+        expected_num_bodies = 83
+        self.assertEqual(robot.get_num_bodies(), expected_num_bodies,
+            msg='Incorrect number of bodies: {0} vs. {1}'.format(
+                robot.get_num_bodies(), expected_num_bodies))
 
 if __name__ == '__main__':
     unittest.main()

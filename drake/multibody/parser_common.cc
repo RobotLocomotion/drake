@@ -56,21 +56,32 @@ bool GetPackagePath(const string& package, const PackageMap& package_map,
 
 string ResolveFilename(const string& filename, const PackageMap& package_map,
                        const string& root_dir) {
-  spruce::path mesh_filename_s;
-  spruce::path raw_filename_s(filename);
+  spruce::path mesh_filename_spruce;
+  spruce::path raw_filename_spruce(filename);
 
-  auto split_filename = raw_filename_s.split();
+  vector<std::string> split_filename = raw_filename_spruce.split();
 
   if (split_filename.front() == "package:") {
-    string package_path_string;
-    if (GetPackagePath(split_filename.at(2), package_map,
-        &package_path_string)) {
-      spruce::path package_path_s = spruce::path(package_path_string);
-      mesh_filename_s = package_path_s;
+    // A correctly formatted filename is:
+    //
+    //   package://package_name/bar/baz/model.xyz
+    //
+    // Thus, index 0 contains "package", index 1 contains "", and index 2
+    // contains the package name. Furthermore, since the model file must follow
+    // the package name, there must be at least 4 tokens.
+    const int kMinNumTokens = 4;
+    const int kPackageNameIndex = 2;
+    DRAKE_DEMAND(split_filename.size() >= kMinNumTokens);
 
-      auto split_raw = raw_filename_s.split();
+    string package_path_string;
+    if (GetPackagePath(split_filename.at(kPackageNameIndex), package_map,
+        &package_path_string)) {
+      spruce::path package_path_spruce = spruce::path(package_path_string);
+      mesh_filename_spruce = package_path_spruce;
+
+      auto split_raw = raw_filename_spruce.split();
       for (int i = 1; i < static_cast<int>(split_raw.size()) - 2; ++i) {
-        mesh_filename_s.append(split_raw.at(i + 2));
+        mesh_filename_spruce.append(split_raw.at(i + 2));
       }
     } else {
       drake::log()->warn("Mesh '{}' could not be resolved and will be ignored "
@@ -82,26 +93,26 @@ string ResolveFilename(const string& filename, const PackageMap& package_map,
     string normalized_root_dir = spruce::path(root_dir).getStr();
 
     // If root_dir is a relative path, convert it to an absolute path.
-    bool dirIsRelative =
+    bool dir_is_relative =
         !(normalized_root_dir.size() >= 1 && normalized_root_dir[0] == '/');
-    if (dirIsRelative) {
-      mesh_filename_s = spruce::path();
-      mesh_filename_s.setAsCurrent();
-      mesh_filename_s.append(normalized_root_dir);
+    if (dir_is_relative) {
+      mesh_filename_spruce = spruce::path();
+      mesh_filename_spruce.setAsCurrent();
+      mesh_filename_spruce.append(normalized_root_dir);
     } else {
-      mesh_filename_s = spruce::path(normalized_root_dir);
+      mesh_filename_spruce = spruce::path(normalized_root_dir);
     }
 
-    mesh_filename_s.append(filename);
+    mesh_filename_spruce.append(filename);
   }
-  if (!mesh_filename_s.exists()) {
+  if (!mesh_filename_spruce.exists()) {
     drake::log()->warn("File '{}' could not be found.",
-                       mesh_filename_s.getStr());
+                       mesh_filename_spruce.getStr());
     drake::log()->warn("Mesh '{}' could not be resolved and will be ignored by "
                        "Drake.", filename);
     return string();
   }
-  return mesh_filename_s.getStr();
+  return mesh_filename_spruce.getStr();
 }
 
 int AddFloatingJoint(
