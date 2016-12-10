@@ -1,0 +1,42 @@
+<?xml version='1.0' ?>
+<sdf version="1.6">
+  <model name="speed_bump">
+    <pose>0 0 0 0 0 0</pose>
+    <link name="bump">
+      <pose>2 0 0 0 0 0</pose>
+      <!-- Since the speed bump is intended to be welded to the world, its
+      inertial values don't matter. -->
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>100</mass>
+        <inertia>
+          <ixx>0.0216238</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>5.00375</iyy>
+          <iyz>0</iyz>
+          <izz>5.01672</izz>
+        </inertia>
+      </inertial>
+      <visual name="speed_bump_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>speed_bump.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <emissive>0 0 0 1</emissive>
+        </material>
+      </visual>
+      <collision name="speed_bump_collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>speed_bump.obj</uri>
+          </mesh>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
