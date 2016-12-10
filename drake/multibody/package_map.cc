@@ -49,11 +49,6 @@ void PackageMap::PopulateFromEnvironment(const string& environment_variable) {
   CrawlForPackages(path);
 }
 
-void AddPackage(const string& name, const string& path,
-    PackageMap* package_map) {
-
-}
-
 // Searches in directory @p path for files called "package.xml".
 // Adds the package name specified in package.xml and the path to the
 // package to @p package_map.
