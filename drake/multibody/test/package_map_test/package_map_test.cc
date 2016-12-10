@@ -22,6 +22,7 @@ void VerifyMatch(const PackageMap& package_map,
   }
 }
 
+// Tests that the PackageMap can be manually populated.
 GTEST_TEST(PackageMapTest, TestManualPopulation) {
   PackageMap package_map;
   package_map.Add("package_foo", "foo/bar/baz");
@@ -35,6 +36,7 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
   VerifyMatch(package_map, expected_packages);
 }
 
+// Tests that PackageMap can be populated by crawling down a directory tree.
 GTEST_TEST(PackageMapTest, TestPopulateMapFromFolder) {
   const string root_path(GetDrakePath() + "/multibody/test/package_map_test/");
 
@@ -52,6 +54,24 @@ GTEST_TEST(PackageMapTest, TestPopulateMapFromFolder) {
     {"package_map_test_package_d", root_path +
         "package_map_test_packages/package_map_test_package_set/"
         "package_map_test_package_d/"}
+  };
+
+  VerifyMatch(package_map, expected_packages);
+}
+
+// Tests that PackageMap can be populated by crawling up a directory tree.
+GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrakeDistro) {
+  const string sdf_file_name(GetDrakePath() +
+      "/multibody/test/package_map_test/package_map_test_packages/"
+      "package_map_test_package_a/sdf/test_model.sdf");
+
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrakeDistro(sdf_file_name);
+
+  map<string, string> expected_packages = {
+    {"package_map_test_package_a",
+        GetDrakePath() + "/multibody/test/package_map_test/"
+                         "package_map_test_packages/package_map_test_package_a"}
   };
 
   VerifyMatch(package_map, expected_packages);
