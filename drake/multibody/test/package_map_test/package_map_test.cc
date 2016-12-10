@@ -29,7 +29,7 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
 
   map<string, string> expected_packages = {
     {"package_foo", "foo/bar/baz"},
-    {"my_package", "my_mysterious/package"}
+    {"my_package", "my/mysterious/package"}
   };
 
   VerifyMatch(package_map, expected_packages);

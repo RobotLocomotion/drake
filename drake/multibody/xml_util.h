@@ -5,7 +5,6 @@
 
 #include <Eigen/Dense>
 
-#include "drake/common/text_logging.h"
 #include "drake/multibody/pose_map.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 

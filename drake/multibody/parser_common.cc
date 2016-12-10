@@ -38,8 +38,8 @@ using drake::multibody::joints::kQuaternion;
 
 
 namespace {
-// Searches for key @package in @package_map. If the key exists, this saves the
-// associated value in the string pointed to by @package_path and then returns
+// Searches for key p package in package_map. If the key exists, this saves the
+// associated value in the string pointed to by package_path and then returns
 // true. It returns false otherwise.
 bool GetPackagePath(const string& package, const PackageMap& package_map,
                     string* package_path) {
@@ -47,8 +47,8 @@ bool GetPackagePath(const string& package, const PackageMap& package_map,
     *package_path = package_map.GetPath(package);
     return true;
   } else {
-    drake::log()->warn("Warning: Couldn't find package '{}' in the supplied "
-                       "package path.", package);
+    drake::log()->warn("Couldn't find package '{}' in the supplied package"
+                       "path.", package);
     return false;
   }
 }
