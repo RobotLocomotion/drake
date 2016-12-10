@@ -28,7 +28,7 @@ namespace systems {
 /// unrestricted updates should be avoided, if possible, by using the other
 /// mechanisms for updated variables: discrete
 /// variables can be modified using EvalDiscreteVariableUpdates()
-/// and continuous variables are normally modified during the course of the 
+/// and continuous variables are normally modified during the course of the
 /// simulation process (through Simulator::StepTo()).
 
 template <typename T>
@@ -36,7 +36,7 @@ struct DiscreteEvent {
   typedef std::function<void(const Context<T>&)> PublishCallback;
   typedef std::function<void(const Context<T>&, DiscreteState<T>*)>
       DiscreteUpdateCallback;
-  typedef std::function<void(const Context<T>&, State<T>*)> 
+  typedef std::function<void(const Context<T>&, State<T>*)>
       UnrestrictedUpdateCallback;
 
   /// These enumerations represent an indication of the type of event that
@@ -293,19 +293,19 @@ class System {
   void EvalUnrestrictedUpdate(const Context<T>& context,
                               const DiscreteEvent<T>& event,
                               State<T>* state) const {
-    const int64_t num_continuous_state_vars = 
+    const int64_t continuous_state_dim =
                        state->get_continuous_state()->size();
-    const int64_t num_discrete_state_vars = state->get_discrete_state()->size();
-    const int64_t num_abstract_state_vars = state->get_abstract_state()->size(); 
+    const int64_t discrete_state_dim = state->get_discrete_state()->size();
+    const int64_t abstract_state_dim = state->get_abstract_state()->size();
     DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
     if (event.do_unrestricted_update == nullptr) {
       DoEvalUnrestrictedUpdate(context, state);
     } else {
       event.do_unrestricted_update(context, state);
     }
-    if (num_continuous_state_vars != state->get_continuous_state()->size() ||
-        num_discrete_state_vars != state->get_discrete_state()->size() ||
-        num_abstract_state_vars != state->get_abstract_state()->size())
+    if (continuous_state_dim != state->get_continuous_state()->size() ||
+        discrete_state_dim != state->get_discrete_state()->size() ||
+        abstract_state_dim != state->get_abstract_state()->size())
       throw std::logic_error("State variable dimensions cannot be changed "
                                "in EvalUnrestrictedUpdate().");
   }
