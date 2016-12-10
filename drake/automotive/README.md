@@ -51,9 +51,9 @@ Start Drake's Simulator
 
 There is currently one physics-based car simulation called `car_sim_lcm`. This
 simulation can be run in two modes: "normal" and "speed bump". The "normal" mode
-simulation consists of a Toyota Prius on a flat terrain. The "speed bump" mode
-is the same as the "normal" mode except there is a speed bump placed in front of
-the vehicle. See the instructions below on how to run each.
+consists of a Toyota Prius on a flat terrain. The "speed bump" mode is the same
+as the "normal" mode except there is a speed bump placed in front of the
+vehicle. See the instructions below on how to run each.
 
 Running car_sim_lcm in Normal Mode
 ==================================
