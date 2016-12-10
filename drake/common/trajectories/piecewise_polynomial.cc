@@ -142,7 +142,7 @@ int PiecewisePolynomial<CoefficientType>::getSegmentPolynomialDegree(
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::
 operator+=(const PiecewisePolynomial<CoefficientType>& other) {
-  if (!segmentTimesEqual(other, 1e-10))
+  if (!segmentTimesEqual(other, kEpsilonTime))
     throw runtime_error(
         "Addition not yet implemented when segment times are not equal");
   for (size_t i = 0; i < polynomials_.size(); i++)
@@ -153,7 +153,7 @@ operator+=(const PiecewisePolynomial<CoefficientType>& other) {
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::
 operator-=(const PiecewisePolynomial<CoefficientType>& other) {
-  if (!segmentTimesEqual(other, 1e-10))
+  if (!segmentTimesEqual(other, kEpsilonTime))
     throw runtime_error(
         "Addition not yet implemented when segment times are not equal");
   for (size_t i = 0; i < polynomials_.size(); i++)
@@ -164,7 +164,7 @@ operator-=(const PiecewisePolynomial<CoefficientType>& other) {
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::
 operator*=(const PiecewisePolynomial<CoefficientType>& other) {
-  if (!segmentTimesEqual(other, 1e-10))
+  if (!segmentTimesEqual(other, kEpsilonTime))
     throw runtime_error(
         "Multiplication not yet implemented when segment times are not equal");
   for (size_t i = 0; i < polynomials_.size(); i++)
@@ -355,7 +355,7 @@ void PiecewisePolynomial<CoefficientType>::
     }
   }
   for (size_t i = 0; i < T.size() - 1; i++) {
-    if (T[i + 1] - T[i] < Eigen::NumTraits<CoefficientType>::epsilon()) {
+    if (T[i + 1] - T[i] < kEpsilonTime) {
       throw std::runtime_error("T must be in increasing order.");
     }
   }
@@ -412,6 +412,15 @@ PiecewisePolynomial<CoefficientType>::FirstOrderHold(
   return PiecewisePolynomial<CoefficientType>(polys, breaks);
 }
 
+template <typename CoefficientType>
+static int sign(CoefficientType val, CoefficientType tol) {
+  if (val < -tol)
+    return -1;
+  else if (val > tol)
+    return 1;
+  return 0;
+}
+
 // Computes the first derivative for either the starting or the end knot point.
 // This is an internal helpful function for pchip.
 // The first derivative is computed using a non-centered, shape-preserving
@@ -427,9 +436,11 @@ PiecewisePolynomial<CoefficientType>::ComputePchipEndSlope(
       ((2.0 * dt0 + dt1) * slope0 - dt0 * slope1) / (dt0 + dt1);
   for (int i = 0; i < deriv.rows(); ++i) {
     for (int j = 0; j < deriv.cols(); ++j) {
-      if (deriv(i, j) * slope0(i, j) < 0.) {
+      if (sign(deriv(i, j), kSlopeEpsilon) !=
+          sign(slope0(i, j), kSlopeEpsilon)) {
         deriv(i, j) = 0.;
-      } else if (slope0(i, j) * slope1(i, j) < 0 &&
+      } else if (sign(slope0(i, j), kSlopeEpsilon) !=
+                 sign(slope1(i, j), kSlopeEpsilon) &&
                  std::abs(deriv(i, j)) > std::abs(3. * slope0(i, j))) {
         deriv(i, j) = 3. * slope0(i, j);
       }
@@ -767,7 +778,7 @@ Eigen::Matrix<CoefficientType, 4, 1>
 PiecewisePolynomial<CoefficientType>::ComputeCubicSplineCoeffs(
     double dt, CoefficientType y0, CoefficientType y1, CoefficientType yd0,
     CoefficientType yd1) {
-  if (dt < Eigen::NumTraits<CoefficientType>::epsilon()) {
+  if (dt < kEpsilonTime) {
     throw std::runtime_error("dt < epsilon.");
   }
 
