@@ -291,7 +291,7 @@ GTEST_TEST(SplineTests, PchipAndCubicSplineCompareWithMatlabTest) {
 
   // Add special case for pchip to test for the last two knots being the same.
   // There was a sign comparison bug in ComputePchipEndSlope when the end
-  // slope = 0.
+  // slope = 0. See issue #4450.
   T = {0, 1, 2};
   Y.resize(T.size(), MatrixX<double>::Zero(1, 1));
   Y[0](0, 0) = 1;
