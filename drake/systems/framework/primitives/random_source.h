@@ -34,7 +34,7 @@ class RandomSource : public LeafSystem<double> {
   RandomSource(int num_outputs, double sampling_interval_sec) {
     this->DeclareUpdatePeriodSec(sampling_interval_sec);
     this->DeclareOutputPort(drake::systems::kVectorValued, num_outputs);
-    this->DeclareDifferenceState(num_outputs);
+    this->DeclareDiscreteState(num_outputs);
   }
 
   // Non-copyable.
@@ -45,13 +45,13 @@ class RandomSource : public LeafSystem<double> {
   void set_random_seed(double seed) { generator_.seed(seed); }
 
   /// Computes a random number and stores it in the discrete state.
-  void DoEvalDifferenceUpdates(
+  void DoEvalDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
-      drake::systems::DifferenceState<double>* updates) const override {
-    const int N = updates->get_difference_state(0)->size();
+      drake::systems::DiscreteState<double>* updates) const override {
+    const int N = updates->get_discrete_state(0)->size();
     for (int i = 0; i < N; i++) {
       double random_value = distribution_(generator_);
-      updates->get_mutable_difference_state(0)->SetAtIndex(0, random_value);
+      updates->get_mutable_discrete_state(0)->SetAtIndex(0, random_value);
     }
   }
 
@@ -59,7 +59,7 @@ class RandomSource : public LeafSystem<double> {
   void EvalOutput(const drake::systems::Context<double>& context,
                   drake::systems::SystemOutput<double>* output) const override {
     output->GetMutableVectorData(0)->SetFromVector(
-        context.get_difference_state(0)->CopyToVector());
+        context.get_discrete_state(0)->CopyToVector());
   }
 
  private:

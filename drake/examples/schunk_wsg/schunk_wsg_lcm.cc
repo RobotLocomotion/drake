@@ -15,7 +15,7 @@ namespace examples {
 namespace schunk_wsg {
 
 using systems::Context;
-using systems::DifferenceState;
+using systems::DiscreteState;
 using systems::SystemOutput;
 using systems::SystemPortDescriptor;
 
@@ -40,7 +40,7 @@ void SchunkWsgTrajectoryGenerator::EvalOutput(
 
   const SchunkWsgTrajectoryGeneratorStateVector<double>* traj_state =
       dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-          context.get_difference_state(0));
+          context.get_discrete_state(0));
 
   if (trajectory_) {
     this->GetMutableOutputVector(output, 0) = trajectory_->value(
@@ -51,9 +51,9 @@ void SchunkWsgTrajectoryGenerator::EvalOutput(
   }
 }
 
-void SchunkWsgTrajectoryGenerator::DoEvalDifferenceUpdates(
+void SchunkWsgTrajectoryGenerator::DoEvalDiscreteVariableUpdates(
     const Context<double>& context,
-    DifferenceState<double>* difference_state) const {
+    DiscreteState<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& command = input->GetValue<lcmt_schunk_wsg_command>();
@@ -73,10 +73,10 @@ void SchunkWsgTrajectoryGenerator::DoEvalDifferenceUpdates(
 
   const SchunkWsgTrajectoryGeneratorStateVector<double>* last_traj_state =
       dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-          context.get_difference_state(0));
+          context.get_discrete_state(0));
   SchunkWsgTrajectoryGeneratorStateVector<double>* new_traj_state =
       dynamic_cast<SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-          difference_state->get_mutable_difference_state(0));
+          discrete_state->get_mutable_discrete_state(0));
 
   if (std::abs(last_traj_state->last_target_position() - target_position) >
       kTargetEpsilon) {
@@ -91,9 +91,9 @@ void SchunkWsgTrajectoryGenerator::DoEvalDifferenceUpdates(
   }
 }
 
-std::unique_ptr<DifferenceState<double>>
-SchunkWsgTrajectoryGenerator::AllocateDifferenceState() const {
-  return std::make_unique<DifferenceState<double>>(
+std::unique_ptr<DiscreteState<double>>
+SchunkWsgTrajectoryGenerator::AllocateDiscreteState() const {
+  return std::make_unique<DiscreteState<double>>(
       std::make_unique<SchunkWsgTrajectoryGeneratorStateVector<double>>());
 }
 

@@ -232,7 +232,7 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   // TODO(edrumwri): Remove this when discrete state has been created
   // automatically.
   // Create the discrete state.
-  context->set_difference_state(std::make_unique<DifferenceState<double>>());
+  context->set_discrete_state(std::make_unique<DiscreteState<double>>());
 
   // Set initial condition using the Simulator's internal context.
   spring_mass.set_position(simulator.get_mutable_context(), 0.1);
@@ -353,8 +353,8 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 
 
 // A mock System that requests discrete update at 1 kHz, and publishes at 400
-// Hz. Calls user-configured callbacks on DoPublish, DoEvalDifferenceUpdates,
-// and EvalTimeDerivatives.
+// Hz. Calls user-configured callbacks on DoPublish,
+// DoEvalDiscreteVariableUpdates, and EvalTimeDerivatives.
 class DiscreteSystem : public LeafSystem<double> {
  public:
   DiscreteSystem() {
@@ -372,9 +372,9 @@ class DiscreteSystem : public LeafSystem<double> {
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override {}
 
-  void DoEvalDifferenceUpdates(
+  void DoEvalDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
-      drake::systems::DifferenceState<double>* updates) const override {
+      drake::systems::DiscreteState<double>* updates) const override {
     if (update_callback_ != nullptr) update_callback_(context);
   }
 
@@ -459,7 +459,7 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   };
 
   // Write down the order in which the DiscreteSystem is asked to compute
-  // difference updates, do publishes, or compute derivatives at each time step.
+  // discrete updates, do publishes, or compute derivatives at each time step.
   std::map<int, std::vector<EventType>> events;
   system.set_update_callback(
       [&events, &simulator](const Context<double>& context) {
