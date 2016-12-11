@@ -41,4 +41,5 @@ The ``drake/examples`` directories are logically after all of the core libraries
 in ``drake``.  ``test`` directories located throughout the code are logically
 last in the dependency tree -- they are allowed to depend on any of the other
 directories.  For example, ``test`` code **is** allowed to use models/code from
-the ``examples`` directories to test core functionality.
+the ``examples`` directories to test core functionality, as long as that
+dependency is explicitly declared in the build system rules for that test.
