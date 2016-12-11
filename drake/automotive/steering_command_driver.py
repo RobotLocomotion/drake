@@ -45,8 +45,7 @@ def _limit_steering(requested_value):
     else:
         return math.copysign(MAX_STEERING_ANGLE, requested_value)
 
-# since there are both throttle and brake values, both of them should be 
-# non-negative
+# Since there are both throttle and brake values, they should be non-negative.
 def _limit_throttle(requested_value):
     if 0 <= requested_value <= MAX_VELOCITY:
         return requested_value
@@ -76,7 +75,6 @@ class KeyboardEventProcessor:
         new_msg = copy.copy(last_msg)
 
         if (event.type == pygame.KEYUP) and not self.keepCurrentThrottleBrake:
-            # if the KEYUP event is trigured by a real key releasing
             if hasattr(event, 'key'):
                 if (event.key == pygame.K_SPACE):
                     self.keepCurrentThrottleBrake = True
@@ -84,10 +82,11 @@ class KeyboardEventProcessor:
                 if (event.key == pygame.K_UP):
                     self.throttle_gradient = -1
                 elif (event.key == pygame.K_DOWN):
-                    self.brake_gradient = -1
-            # if there is not a KEYDOWN event waiting in the queue
+                    self.brake_gradient = -1 
+            # Post a fake KEYUP event so that the throttle/brake can keep 
+            # decreasing in the absence of real (and impossible) successive 
+            # key releasing. Yield to any KEYDOWN event waiting in the queue. 
             if not pygame.event.peek(pygame.KEYDOWN): 
-                # creates a fake KEYUP event to force the loop
                 dummyKeyUpEvent = pygame.event.Event(pygame.KEYUP)
                 pygame.event.post(dummyKeyUpEvent)
 
@@ -166,7 +165,8 @@ class SteeringCommandPublisher:
             self.event_processor = KeyboardEventProcessor()
             print bcolors.OKBLUE + '--- Keyboard Control Instruction --- '\
                     + bcolors.ENDC
-            print 'To increase the throttle/brake: press and hold the Up/Down Arrow'
+            print 'To increase the throttle/brake: press and hold the Up/Down'\
+                    + ' Arrow'
             print 'To decrease the throttle/brake: release the Up/Down Arrow'
             print 'To keep the the current throttle/brake: press the Space Bar'
             print 'To increase left/right steering: press the Left/Right Arrow'
