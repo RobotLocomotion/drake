@@ -66,14 +66,8 @@ def _limit_brake(requested_value):
 class KeyboardEventProcessor:
     def __init__(self):
         pygame.event.set_allowed(None)
-        # pygame.KEYDOWN corresponds to any key pressed, and pygame.KEYUP 
-        # corresponds to any key releasing
         pygame.event.set_allowed([pygame.QUIT, pygame.KEYUP, pygame.KEYDOWN])
         pygame.key.set_repeat(100, 10)
-        # self.throttle_gradient/self.brake_gradient takes 3 possible values,
-        # 0, 1, and -1. The values determine if the corresponding lcm msg stay
-         # the same, increasing, or decreaisng
-        # initialize them as neutral
         self.throttle_gradient = 0; 
         self.brake_gradient = 0;
         self.keepCurrentThrottleBrake = False;
@@ -152,7 +146,7 @@ class JoystickEventProcessor:
         elif event.axis == ACCEL_AXIS:
             new_msg.throttle = _limit_throttle(-0.5 * event.value + 0.5)
         elif event.axis == BRAKE_AXIS:
-            new_msg.brake = _limit_throttle(-0.5 * event.value + 0.5)
+            new_msg.brake = _limit_brake(-0.5 * event.value + 0.5)
         return new_msg
 
 
@@ -256,6 +250,7 @@ def main():
     if 'pygame' not in sys.modules:
         print >>sys.stderr, 'error: missing pygame; see README.md for help.'
         return 1
+        
     publisher = SteeringCommandPublisher(
       args.input_method, args.lcm_tag, args.joy_name)
     publisher.start()

@@ -52,7 +52,7 @@ Start Drake's Simulator
 Open a new terminal and execute the following:
 
 ```
-$ drake-distro/build/drake/automotive/car_sim_lcm
+$ drake-distro/build/drake/bin/car_sim_lcm
 ```
 
 Additional Simulation Notes
