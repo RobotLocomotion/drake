@@ -65,11 +65,13 @@ class Painleve : public systems::LeafSystem<T> {
   void SetDefaultState(systems::Context<T>* context) const override;
 
  private:
-  T mass_{1.0};         // The mass of the rod.
-  T rod_length_{1.0};   // The length of the rod.
-  T mu_{1.0};           // The coefficient of friction.
-  T g_{-9.81};          // The acceleration due to gravity.  
-  T J_{1.0};            // The moment of the inertia of the rod.
+  static T sqr(const T& x) { return x*x; }
+
+  T mass_{1.0};        // The mass of the rod.
+  T rod_length_{1.0};  // The length of the rod.
+  T mu_{1000.0};       // The coefficient of friction.
+  T g_{-9.81};         // The acceleration due to gravity.
+  T J_{1.0};           // The moment of the inertia of the rod.
 };
 
 }  // namespace painleve 
