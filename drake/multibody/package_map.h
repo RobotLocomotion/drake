@@ -27,17 +27,19 @@ class PackageMap {
   /// package named @p package_name exists in this PackageMap.
   const std::string& GetPath(const std::string& package_name) const;
 
-  /// Crawls through @p path searching for directories containing the file
-  /// `package.xml`. For each of these directories, this method adds a new entry
-  /// into @p package_map where the key is the package name as specified within
-  /// `package.xml` and the directory's path is the value.
+  /// Crawls down the directory tree starting at @p path searching for
+  /// directories containing the file `package.xml`. For each of these
+  /// directories, this method adds a new entry into this PackageMap where the
+  /// key is the package name as specified within `package.xml` and the
+  /// directory's path is the value.
   void PopulateFromFolder(const std::string& path);
 
   /// Obtains a path from environment variable @p environment_variable. Crawls
-  /// through this path searching for directories containing the file
-  /// `package.xml`. For each of these directories, this method adds a new entry
-  /// into @p package_map where the key is the package name as specified within
-  /// `package.xml` and the directory's path is the value.
+  /// through the directory tree starting the path searching for directories
+  /// containing a file called `package.xml`. For each of these directories,
+  /// this method adds a new entry into this PackageMap where the key is the
+  /// package name as specified within `package.xml` and the directory's path is
+  /// the value.
   void PopulateFromEnvironment(const std::string& environment_variable);
 
   /// Searches up the directory tree from @p model_file to `drake_distro`

@@ -143,20 +143,23 @@ void PackageMap::PopulateUpstreamToDrakeDistro(const string& model_file) {
 // Adds the package name specified in package.xml and the path to the
 // package to @p package_map.
 void PackageMap::CrawlForPackages(const string& path) {
-  string token, t;
   string directory_path = path;
 
-  // Removes trailing "/" if it exists.
+  // Removes all trailing "/" characters if any exist.
   if (directory_path.length() > 0) {
     string::iterator it = directory_path.end() - 1;
-    if (*it == '/')
+    while (*it == '/') {
       directory_path.erase(it);
+      if (directory_path.length() > 0)
+        it = directory_path.end() - 1;
+    }
   }
 
   istringstream iss(directory_path);
   const string target_filename("package.xml");
   const char pathsep = ':';
 
+  string token;
   while (getline(iss, token, pathsep)) {
     tinydir_dir dir;
     if (tinydir_open(&dir, token.c_str()) < 0) {

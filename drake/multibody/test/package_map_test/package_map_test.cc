@@ -59,6 +59,31 @@ GTEST_TEST(PackageMapTest, TestPopulateMapFromFolder) {
   VerifyMatch(package_map, expected_packages);
 }
 
+// Tests that PackageMap can handle being populated by crawling down a directory
+// tree when it is provided a path with extraneous trailing slashes.
+GTEST_TEST(PackageMapTest, TestPopulateMapFromFolderExtraTrailingSlashes) {
+  const string root_path(GetDrakePath() +
+                         "/multibody/test/package_map_test/");
+
+  PackageMap package_map;
+  package_map.PopulateFromFolder(root_path + "///////");
+
+  map<string, string> expected_packages = {
+    {"package_map_test_package_a", root_path +
+        "package_map_test_packages/package_map_test_package_a/"},
+    {"package_map_test_package_b", root_path +
+        "package_map_test_packages/package_map_test_package_b/"},
+    {"package_map_test_package_c", root_path +
+        "package_map_test_packages/package_map_test_package_set/"
+        "package_map_test_package_c/"},
+    {"package_map_test_package_d", root_path +
+        "package_map_test_packages/package_map_test_package_set/"
+        "package_map_test_package_d/"}
+  };
+
+  VerifyMatch(package_map, expected_packages);
+}
+
 // Tests that PackageMap can be populated by crawling up a directory tree.
 GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrakeDistro) {
   const string sdf_file_name(GetDrakePath() +

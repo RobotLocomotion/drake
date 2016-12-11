@@ -80,8 +80,10 @@ string ResolveFilename(const string& filename, const PackageMap& package_map,
       mesh_filename_spruce = package_path_spruce;
 
       auto split_raw = raw_filename_spruce.split();
-      for (int i = 1; i < static_cast<int>(split_raw.size()) - 2; ++i) {
-        mesh_filename_spruce.append(split_raw.at(i + 2));
+      // The following loop starts at index 3 to skip the "package", "", and
+      // [package name] tokens as described above.
+      for (int i = 3; i < static_cast<int>(split_raw.size()); ++i) {
+        mesh_filename_spruce.append(split_raw.at(i));
       }
     } else {
       drake::log()->warn("Mesh '{}' could not be resolved and will be ignored "
