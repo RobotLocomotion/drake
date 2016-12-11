@@ -138,7 +138,11 @@ cc_binary(
 
 cc_binary(
     name = "car_sim_lcm",
-    srcs = ["car_sim_lcm.cc"],
+    srcs = [
+        "car_sim_lcm.cc",
+        "car_sim_lcm_common.cc",
+        "car_sim_lcm_common.h",
+    ],
     linkstatic = 1,
     deps = [
         ":automotive_simulator",
