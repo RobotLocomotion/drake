@@ -24,14 +24,15 @@ void VerifyMatch(const PackageMap& package_map,
 
 // Tests that the PackageMap can be manually populated.
 GTEST_TEST(PackageMapTest, TestManualPopulation) {
-  PackageMap package_map;
-  package_map.Add("package_foo", "foo/bar/baz");
-  package_map.Add("my_package", "my/mysterious/package");
-
   map<string, string> expected_packages = {
-    {"package_foo", "foo/bar/baz"},
-    {"my_package", "my/mysterious/package"}
+    {"package_foo", GetDrakePath() + "/common"},
+    {"my_package", GetDrakePath() + "/multibody"}
   };
+
+  PackageMap package_map;
+  for(auto const& it : expected_packages) {
+    package_map.Add(it.first, it.second);
+  }
 
   VerifyMatch(package_map, expected_packages);
 }

@@ -9,6 +9,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 #include "drake/thirdParty/bsd/tinydir/tinydir.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
@@ -31,6 +32,7 @@ PackageMap::~PackageMap() {}
 
 void PackageMap::Add(const string& package_name, const string& package_path) {
   DRAKE_DEMAND(map_.find(package_name) == map_.end());
+  DRAKE_DEMAND(spruce::path(package_path).exists());
   map_.insert(make_pair(package_name, package_path));
 }
 
@@ -80,26 +82,30 @@ std::string GetPackageName(const string& package_map_file) {
   XMLDocument xml_doc;
   xml_doc.LoadFile(package_map_file.data());
   if (xml_doc.ErrorID()) {
-    throw runtime_error("parser_common.cc: CrawlForPackages(): "
+    throw runtime_error("package_map.cc: GetPackageName(): "
         "Failed to parse XML in file \"" + package_map_file + "\".\n" +
         xml_doc.ErrorName());
   }
 
   XMLElement* package_node = xml_doc.FirstChildElement("package");
   if (!package_node) {
-    throw runtime_error("parser_common.cc: CrawlForPackages(): "
+    throw runtime_error("package_map.cc: GetPackageName(): "
         "ERROR: XML file \"" + package_map_file + "\" does not contain "
         "element <package>.");
   }
 
   XMLElement* name_node = package_node->FirstChildElement("name");
   if (!name_node) {
-    throw runtime_error("parser_common.cc: CrawlForPackages(): "
+    throw runtime_error("package_map.cc: GetPackageName(): "
         "ERROR: <package> element does not contain element <name> "
         "(XML file \"" + package_map_file + "\").");
   }
 
-  return name_node->FirstChild()->Value();
+  // Throws an exception if the name node does not have any children.
+  DRAKE_THROW_UNLESS(!name_node->NoChildren());
+  const string package_name = name_node->FirstChild()->Value();
+  DRAKE_THROW_UNLESS(package_name != "");
+  return package_name;
 }
 
 void PackageMap::AddPackageIfNew(const string& package_name,
@@ -141,7 +147,9 @@ void PackageMap::PopulateUpstreamToDrakeDistro(const string& model_file) {
 
 // Searches in directory @p path for files called "package.xml".
 // Adds the package name specified in package.xml and the path to the
-// package to @p package_map.
+// package to @p package_map. Multiple paths can be searched by separating them
+// using the ':' symbol. In other words, @p path can be
+// [path 1]:[path 2]:[path 3] to search three different paths.
 void PackageMap::CrawlForPackages(const string& path) {
   string directory_path = path;
 
@@ -172,7 +180,8 @@ void PackageMap::CrawlForPackages(const string& path) {
       tinydir_readfile(&dir, &file);
 
       // Skips hidden directories (including "." and "..").
-      if (file.is_dir && (file.name[0] != '.')) {
+      if (file.is_dir && (string(file.name) != "")
+          && (file.name[0] != '.')) {
         CrawlForPackages(file.path);
       } else if (file.name == target_filename) {
         const string package_name = GetPackageName(file.path);

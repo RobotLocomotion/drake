@@ -17,7 +17,8 @@ class PackageMap {
   virtual ~PackageMap();
 
   /// Adds package @p package_name and its path, @p package_path. Aborts if
-  /// @p package_name is already present in this PackageMap.
+  /// @p package_name is already present in this PackageMap, or if
+  /// @p package_path does not exist.
   void Add(const std::string& package_name, const std::string& package_path);
 
   /// Returns true if and only if this PackageMap contains @p package_map.
@@ -39,7 +40,9 @@ class PackageMap {
   /// containing a file called `package.xml`. For each of these directories,
   /// this method adds a new entry into this PackageMap where the key is the
   /// package name as specified within `package.xml` and the directory's path is
-  /// the value.
+  /// the value. Multiple paths can be searched by separating them
+  /// using the ':' symbol. For example, the environment variable can contain
+  /// [path 1]:[path 2]:[path 3] to search three different paths.
   void PopulateFromEnvironment(const std::string& environment_variable);
 
   /// Searches up the directory tree from @p model_file to `drake_distro`

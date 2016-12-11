@@ -21,9 +21,12 @@ using std::unique_ptr;
 namespace drake {
 
 using multibody::joints::kQuaternion;
+using parsers::urdf::AddModelInstanceFromUrdfFile;
+using parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages;
 using parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld;
 using parsers::urdf::AddModelInstanceFromUrdfStringWithRpyJointToWorld;
 using parsers::urdf::AddModelInstanceFromUrdfString;
+
 
 namespace parsers {
 namespace {
@@ -90,15 +93,15 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
 }
 
 GTEST_TEST(URDFParserTest, TestParseMaterial) {
-  const string file_no_conflict_1 = drake::GetDrakePath() +
+  const string file_no_conflict_1 = GetDrakePath() +
       "/multibody/test/parser_urdf_test/non_conflicting_materials_1.urdf";
-  const string file_no_conflict_2 = drake::GetDrakePath() +
+  const string file_no_conflict_2 = GetDrakePath() +
       "/multibody/test/parser_urdf_test/non_conflicting_materials_2.urdf";
-  const string file_no_conflict_3 = drake::GetDrakePath() +
+  const string file_no_conflict_3 = GetDrakePath() +
       "/multibody/test/parser_urdf_test/non_conflicting_materials_3.urdf";
-  const string file_duplicate = drake::GetDrakePath() +
+  const string file_duplicate = GetDrakePath() +
       "/multibody/test/parser_urdf_test/duplicate_materials.urdf";
-  const string file_conflict = drake::GetDrakePath() +
+  const string file_conflict = GetDrakePath() +
       "/multibody/test/parser_urdf_test/conflicting_materials.urdf";
 
   auto tree = make_unique<RigidBodyTree<double>>();
@@ -122,7 +125,7 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
       file_conflict, tree.get()), ".*");
 
   // This URDF defines the same color multiple times in different links.
-  const string file_same_color_diff_links = drake::GetDrakePath() +
+  const string file_same_color_diff_links = GetDrakePath() +
       "/multibody/test/parser_urdf_test/duplicate_but_same_materials.urdf";
   tree = make_unique<RigidBodyTree<double>>();
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
@@ -145,18 +148,50 @@ string ReadTextFile(const string& file) {
 // Tests that a URDF string can be loaded using a quaternion floating joint.
 // This was added as a result of #4248.
 GTEST_TEST(URDFParserTest, TestAddWithQuaternionFloatingDof) {
-  const string model_file = drake::GetDrakePath() +
+  const string model_file = GetDrakePath() +
       "/multibody/test/parser_urdf_test/zero_dof_robot.urdf";
   const string model_string = ReadTextFile(model_file);
 
   auto tree = make_unique<RigidBodyTree<double>>();
-  EXPECT_NO_THROW(AddModelInstanceFromUrdfString(
+  ASSERT_NO_THROW(AddModelInstanceFromUrdfString(
       model_string, "." /* root_dir */, kQuaternion,
       nullptr /* weld_to_frame */, tree.get()));
 
   EXPECT_EQ(tree->get_num_positions(), 7);
   EXPECT_EQ(tree->get_num_velocities(), 6);
 }
+
+// Tests that AddModelInstanceFromUrdfFile works.
+GTEST_TEST(URDFParserTest, TestAddModelInstanceFromUrdfFile) {
+  const string model_file = GetDrakePath() +
+      "/examples/Atlas/urdf/atlas_minimal_contact.urdf";
+
+  auto tree = make_unique<RigidBodyTree<double>>();
+  ASSERT_NO_THROW(AddModelInstanceFromUrdfFile(
+      model_file, kQuaternion, nullptr /* weld_to_frame */, tree.get()));
+
+  EXPECT_EQ(tree->get_num_positions(), 37);
+  EXPECT_EQ(tree->get_num_velocities(), 36);
+}
+
+// Tests that AddModelInstanceFromUrdfFileSearchingInRosPackages works.
+GTEST_TEST(URDFParserTest,
+    TestAddModelInstanceFromUrdfFileSearchingInRosPackages) {
+  const string model_file = GetDrakePath() +
+      "/examples/Atlas/urdf/atlas_minimal_contact.urdf";
+
+  PackageMap package_map;
+  package_map.Add("Atlas", GetDrakePath() + "/examples/Atlas");
+
+  auto tree = make_unique<RigidBodyTree<double>>();
+  ASSERT_NO_THROW(AddModelInstanceFromUrdfFileSearchingInRosPackages(
+      model_file, package_map, kQuaternion,
+      nullptr /* weld_to_frame */, tree.get()));
+
+  EXPECT_EQ(tree->get_num_positions(), 37);
+  EXPECT_EQ(tree->get_num_velocities(), 36);
+}
+
 
 }  // namespace
 }  // namespace parsers
