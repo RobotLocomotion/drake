@@ -74,7 +74,7 @@ eigen_aligned_std_vector<Quaternion<Scalar>> GenerateRandomQuaternions(
     int size, std::default_random_engine* generator) {
   DRAKE_DEMAND(size >= 0);
   eigen_aligned_std_vector<Quaternion<Scalar>> ret(size);
-  std::uniform_real_distribution<double> uniform(-1, 1);
+  std::uniform_real_distribution<double> uniform(-10, 10);
   for (int i = 0; i < size; ++i) {
     ret[i] = Quaternion<Scalar>(AngleAxis<Scalar>(
         uniform(*generator),
@@ -110,7 +110,7 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
 GTEST_TEST(TestPiecewiseQuaternionSlerp,
            TestShortestQuaternionPiecewiseQuaternionSlerp) {
   std::vector<double> time = {0, 1.6, 2.32};
-  std::vector<double> ang = {1, 2.4, 5.3};
+  std::vector<double> ang = {1, 2.4 - 2 * M_PI, 5.3};
   Vector3<double> axis = Vector3<double>(1, 2, 3).normalized();
   eigen_aligned_std_vector<Quaternion<double>> quat(ang.size());
   for (size_t i = 0; i < ang.size(); ++i) {
@@ -118,12 +118,15 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
   }
 
   PiecewiseQuaternionSlerp<double> rot_spline(time, quat);
-  EXPECT_TRUE(CheckClosest(rot_spline.get_quaternion_knots()));
-  EXPECT_TRUE(CheckClosest(quat));
+  const eigen_aligned_std_vector<Quaternion<double>>& internal_quat =
+      rot_spline.get_quaternion_knots();
+
+  EXPECT_TRUE(CheckClosest(internal_quat));
+  EXPECT_FALSE(CheckClosest(quat));
 
   for (size_t i = 0; i < time.size() - 1; ++i) {
     EXPECT_TRUE(CompareMatrices(rot_spline.orientation(time[i]).coeffs(),
-                                quat[i].coeffs(), 1e-10,
+                                internal_quat[i].coeffs(), 1e-10,
                                 MatrixCompareType::absolute));
     double omega = angleDiff(ang[i], ang[i + 1]) / (time[i + 1] - time[i]);
     EXPECT_TRUE(CompareMatrices(rot_spline.angular_velocity(time[i]),
@@ -131,62 +134,34 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
                                 MatrixCompareType::absolute));
   }
 
-  // Now "flip" quat[1].
-  ang[1] -= 2 * M_PI;
-  quat[1] = Quaternion<double>(AngleAxis<double>(ang[1], axis));
-  rot_spline = PiecewiseQuaternionSlerp<double>(time, quat);
-  EXPECT_TRUE(CheckClosest(rot_spline.get_quaternion_knots()));
-  EXPECT_FALSE(CheckClosest(quat));
-
-  // Since quat[1] is flipped, the interpolated quaternion's coeffs won't be the
-  // same.
-  for (size_t i = 0; i < time.size() - 1; ++i) {
-    double omega = angleDiff(ang[i], ang[i + 1]) / (time[i + 1] - time[i]);
-    EXPECT_TRUE(CompareMatrices(rot_spline.angular_velocity(time[i]),
-                                omega * axis, 1e-10,
-                                MatrixCompareType::absolute));
-  }
-
-  // Now check the "non-closest" version of the splines.
-  rot_spline = PiecewiseQuaternionSlerp<double>(time, quat, false);
-  EXPECT_FALSE(CheckClosest(rot_spline.get_quaternion_knots()));
-  EXPECT_FALSE(CheckClosest(quat));
-  for (size_t i = 0; i < time.size() - 1; ++i) {
-    EXPECT_TRUE(CompareMatrices(rot_spline.orientation(time[i]).coeffs(),
-                                quat[i].coeffs(), 1e-10,
-                                MatrixCompareType::absolute));
-
-    // Angular velocity goes the "other" direction if we want the "longer"
-    // distance between the two quaterions.
-    double omega = angleDiff(ang[i], ang[i + 1]);
-    if (quat[i].dot(quat[i + 1]) < 0) {
-      omega -= 2 * M_PI;
-    }
-    omega /= (time[i + 1] - time[i]);
-    EXPECT_TRUE(CompareMatrices(rot_spline.angular_velocity(time[i]),
-                                omega * axis, 1e-10,
-                                MatrixCompareType::absolute));
+  // Check dense interpolated quaternions.
+  for (double t = time.front(); t < time.back(); t += 0.01) {
+    EXPECT_TRUE(CheckSlerpInterpolation(rot_spline, t));
   }
 }
 
 GTEST_TEST(TestPiecewiseQuaternionSlerp,
            TestIdenticalPiecewiseQuaternionSlerp) {
   std::vector<double> time = {0, 1.6};
-  std::vector<double> ang = {-1.3, -1.3};
+  std::vector<double> ang = {-1.3, -1.3 + 2 * M_PI};
   Vector3<double> axis = Vector3<double>(1, 2, 3).normalized();
   eigen_aligned_std_vector<Quaternion<double>> quat(ang.size());
   for (size_t i = 0; i < ang.size(); ++i) {
     quat[i] = Quaternion<double>(AngleAxis<double>(ang[i], axis));
   }
-
   PiecewiseQuaternionSlerp<double> rot_spline(time, quat);
+
+  double t = 0.3 * time[0] + 0.7 * time[1];
+
+  const eigen_aligned_std_vector<Quaternion<double>>& internal_quats =
+      rot_spline.get_quaternion_knots();
   EXPECT_TRUE(CompareMatrices(
-      rot_spline.orientation((time[0] + time[1]) / 2.).coeffs(),
-      quat[0].coeffs(), 1e-10,
+      rot_spline.orientation(t).coeffs(),
+      internal_quats[0].coeffs(), 1e-10,
       MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(
-      rot_spline.orientation((time[0] + time[1]) / 2.).coeffs(),
-      quat[1].coeffs(), 1e-10,
+      rot_spline.orientation(t).coeffs(),
+      internal_quats[1].coeffs(), 1e-10,
       MatrixCompareType::absolute));
 }
 

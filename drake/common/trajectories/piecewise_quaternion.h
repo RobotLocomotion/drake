@@ -13,6 +13,11 @@ namespace drake {
  * using piecewise slerp (spherical linear interpolation).
  * All the quaternions, angular velocity, angular acceleration are assumed to
  * be in the same reference frame.
+ * Since there is a sign ambiguity when using quaternions to represent
+ * orientation, namely q and -q represent the same orientation, the internal
+ * quaternion representations ensure that q_n.dot(q_{n+1}) >= 0.
+ * Another intuitive way to think about this is that consecutive quaternions
+ * have the shortest geodesic distance on the unit sphere.
  */
 template <typename Scalar = double>
 class PiecewiseQuaternionSlerp : public PiecewiseFunction {
@@ -21,22 +26,15 @@ class PiecewiseQuaternionSlerp : public PiecewiseFunction {
 
   /*
    * Build a PiecewiseQuaternionSlerp.
-   * @param enforce_closest If true, the internal representations of
-   * `quaternions` are set to have the shortest geodesic distance on the unit
-   * sphere relative to the previous ones.
    * @throws if breaks and quaternions have different length,
    * or breaks have length < 2.
    */
   PiecewiseQuaternionSlerp(
       const std::vector<double>& breaks,
-      const eigen_aligned_std_vector<Quaternion<Scalar>>& quaternions,
-      bool enforce_closest = true);
+      const eigen_aligned_std_vector<Quaternion<Scalar>>& quaternions);
 
   /*
    * Build a PiecewiseQuaternionSlerp.
-   * The internal quaternion representations of `rot_matrices` are set to have
-   * the shortest geodesic distance on the unit sphere relative to the previous
-   * ones.
    * @throws if breaks and rot_matrices have different length,
    * or breaks have length < 2.
    */
@@ -46,16 +44,12 @@ class PiecewiseQuaternionSlerp : public PiecewiseFunction {
 
   /*
    * Build a PiecewiseQuaternionSlerp.
-   * @param enforce_closest If true, the internal representations of
-   * `quaternions` are set to have the shortest geodesic distance on the unit
-   * sphere relative to the previous ones.
    * @throws if breaks and ang_axises have different length,
    * or breaks have length < 2.
    */
   PiecewiseQuaternionSlerp(
       const std::vector<double>& breaks,
-      const eigen_aligned_std_vector<AngleAxis<Scalar>>& ang_axises,
-      bool enforce_closest = true);
+      const eigen_aligned_std_vector<AngleAxis<Scalar>>& ang_axises);
 
   Eigen::Index rows() const override { return 4; }
   Eigen::Index cols() const override { return 1; }
@@ -82,7 +76,7 @@ class PiecewiseQuaternionSlerp : public PiecewiseFunction {
 
   /**
    * Note: the returned quaternions might be different from the ones that are
-   * passed in during construction because the internal representations can be
+   * passed in during construction because the internal representations are
    * set to always be the "closest" w.r.t to the previous one.
    *
    * @returns the internal knot points.
@@ -92,18 +86,11 @@ class PiecewiseQuaternionSlerp : public PiecewiseFunction {
     return quaternions_;
   }
 
-  /**
-   * @returns true if the internal representations always have the shortest
-   * geodesic distance on the unit sphere w.r.t the previous one.
-   */
-  inline bool is_enforcing_closest() const { return is_enforcing_closest_; }
-
  private:
   // Initialize quaternions_ and computes angular velocity for each segment.
   void Initialize(
       const std::vector<double>& breaks,
-      const eigen_aligned_std_vector<Quaternion<Scalar>>& quaternions,
-      bool enforce_closest);
+      const eigen_aligned_std_vector<Quaternion<Scalar>>& quaternions);
 
   // Computes angular velocity for each segment.
   void ComputeAngularVelocities();
@@ -113,8 +100,6 @@ class PiecewiseQuaternionSlerp : public PiecewiseFunction {
 
   eigen_aligned_std_vector<Quaternion<Scalar>> quaternions_;
   eigen_aligned_std_vector<Vector3<Scalar>> angular_velocities_;
-
-  bool is_enforcing_closest_;
 };
 
 }  // namespace drake
