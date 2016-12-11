@@ -30,7 +30,7 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
   };
 
   PackageMap package_map;
-  for(auto const& it : expected_packages) {
+  for (auto const& it : expected_packages) {
     package_map.Add(it.first, it.second);
   }
 
