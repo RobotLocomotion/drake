@@ -150,6 +150,11 @@ class JoystickEventProcessor:
         return new_msg
 
 
+
+class bcolors:
+    OKBLUE = '\033[94m'
+    ENDC = '\033[0m'
+
 class SteeringCommandPublisher:
     def __init__(self, input_method, lcm_tag, joy_name):
         print 'Initializing...'
@@ -159,6 +164,14 @@ class SteeringCommandPublisher:
         self.font = pygame.font.SysFont('Courier', 20)
         if input_method == 'keyboard':
             self.event_processor = KeyboardEventProcessor()
+            print bcolors.OKBLUE + '--- Keyboard Control Instruction --- '\
+                    + bcolors.ENDC
+            print 'To increase the throttle/brake: press and hold the Up/Down Arrow'
+            print 'To decrease the throttle/brake: release the Up/Down Arrow'
+            print 'To keep the the current throttle/brake: press the Space Bar'
+            print 'To increase left/right steering: press the Left/Right Arrow'
+            print bcolors.OKBLUE + '------------------------------------ ' \
+                    + bcolors.ENDC
         else:
             self.event_processor = JoystickEventProcessor(joy_name)
         self.last_msg = lcm_msg()
@@ -237,7 +250,6 @@ def main():
     if 'pygame' not in sys.modules:
         print >>sys.stderr, 'error: missing pygame; see README.md for help.'
         return 1
-    print 'Instruction: keep'
     publisher = SteeringCommandPublisher(
       args.input_method, args.lcm_tag, args.joy_name)
     publisher.start()
