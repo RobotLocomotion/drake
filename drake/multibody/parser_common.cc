@@ -1,6 +1,5 @@
 #include "drake/multibody/parser_common.h"
 
-#include <cstdlib>
 #include <string>
 
 #include "spruce.hh"
@@ -12,21 +11,11 @@
 #include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
-#include "drake/thirdParty/bsd/tinydir/tinydir.h"
 
-using std::cerr;
-using std::endl;
-
-using std::istringstream;
-using std::make_pair;
-using std::map;
 using std::runtime_error;
 using std::string;
 using std::unique_ptr;
 using std::vector;
-using tinyxml2::XMLDocument;
-using tinyxml2::XMLElement;
 
 namespace drake {
 namespace parsers {
@@ -54,6 +43,8 @@ bool GetPackagePath(const string& package, const PackageMap& package_map,
 }
 }  // anonymous namespace
 
+// The unit test that most directly covers this method is:
+// drake-distro/drake/multibody/test/parser_urdf_test/parser_urdf_test.cc.
 string ResolveFilename(const string& filename, const PackageMap& package_map,
                        const string& root_dir) {
   spruce::path mesh_filename_spruce;
@@ -76,13 +67,13 @@ string ResolveFilename(const string& filename, const PackageMap& package_map,
     string package_path_string;
     if (GetPackagePath(split_filename.at(kPackageNameIndex), package_map,
         &package_path_string)) {
-      spruce::path package_path_spruce = spruce::path(package_path_string);
-      mesh_filename_spruce = package_path_spruce;
+      mesh_filename_spruce = spruce::path(package_path_string);
 
       auto split_raw = raw_filename_spruce.split();
       // The following loop starts at index 3 to skip the "package", "", and
       // [package name] tokens as described above.
-      for (int i = 3; i < static_cast<int>(split_raw.size()); ++i) {
+      for (int i = kPackageNameIndex + 1;
+          i < static_cast<int>(split_raw.size()); ++i) {
         mesh_filename_spruce.append(split_raw.at(i));
       }
     } else {
