@@ -15,10 +15,9 @@ using Eigen::Vector3d;
 namespace drake {
 namespace solvers {
 namespace {
-
 // Tests if the Lorentz Cone constraint is imposed correctly.
 void TestLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
-  auto cnstr = LorentzConeConstraint();
+  LorentzConeConstraint cnstr;
   VectorXd y;
   // Test Eval with VectorXd.
   cnstr.Eval(x_test, y);
@@ -52,7 +51,7 @@ void TestLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
 }
 
 void TestRotatedLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
-  auto cnstr = RotatedLorentzConeConstraint();
+  RotatedLorentzConeConstraint cnstr;
   VectorXd y;
   cnstr.Eval(x_test, y);
   Vector3d y_expected;
@@ -90,7 +89,7 @@ void TestRotatedLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
 }
 
 GTEST_TEST(testConstraint, testLorentzConeConstraint) {
-  auto cnstr = LorentzConeConstraint();
+  LorentzConeConstraint cnstr;
   auto lb = cnstr.lower_bound();
   auto ub = cnstr.upper_bound();
   EXPECT_TRUE(CompareMatrices(Eigen::Vector2d(0.0, 0.0), lb, 1E-10,
@@ -117,7 +116,7 @@ GTEST_TEST(testConstraint, testLorentzConeConstraint) {
 }
 
 GTEST_TEST(testConstraint, testRotatedLorentzConeConstraint) {
-  auto cnstr = RotatedLorentzConeConstraint();
+  RotatedLorentzConeConstraint cnstr;
   auto lb = cnstr.lower_bound();
   auto ub = cnstr.upper_bound();
   EXPECT_TRUE(CompareMatrices(Eigen::Vector3d::Zero(), lb, 1E-10,
@@ -140,7 +139,7 @@ GTEST_TEST(testConstraint, testRotatedLorentzConeConstraint) {
 }
 
 GTEST_TEST(testConstraint, testPositiveSemidefiniteConstraint) {
-  auto cnstr = PositiveSemidefiniteConstraint(3);
+  PositiveSemidefiniteConstraint cnstr(3);
 
   Eigen::Matrix<double, 9, 1> X1;
   // clang-format off
@@ -170,7 +169,7 @@ GTEST_TEST(testConstraint, testLinearMatrixInequalityConstraint) {
   F1 << 1, 1, 1, 1;
   Eigen::Matrix2d F2;
   F2 << 1, 2, 2, 1;
-  auto cnstr = LinearMatrixInequalityConstraint({F0, F1, F2});
+  LinearMatrixInequalityConstraint cnstr({F0, F1, F2});
 
   // [4, 3]
   // [3, 4] is positive semidefinite

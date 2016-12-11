@@ -3,6 +3,7 @@ set(sources
   autodiff.cc
   autodiff_gradient.cc
   axis_angle.cc
+  continuous_algebraic_ricatti_equation.cc
   cross_product.cc
   eigen_sparse_triplet.cc
   expmap.cc
@@ -22,6 +23,7 @@ set(installed_headers
   autodiff.h
   autodiff_gradient.h
   axis_angle.h
+  continuous_algebraic_ricatti_equation.h
   cross_product.h
   eigen_sparse_triplet.h
   expmap.h

@@ -159,6 +159,8 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
  * we will add a new set of variable (y0, ..., yN), with the constraint
  * 2*y0*y1 >= y2^2 + ... + yN^2, y0 >= 0, y1 >=0
  * y0 = x0 / 2, y1 = x1, ..., yN = xN
+ * The reason for a factor of 2 in y0 is because Mosek's rotated lorentz cone is
+ * 2*y0*y1 >= y2^2 + ... + yN^2, y0 >= 0, y1 >=0
  * @param is_new_variable  Refer to the documentation on is_new_variable in
  * MosekSolver::Solve() function
  */
@@ -207,11 +209,23 @@ MSKrescodee AddSecondOrderConeConstraints(
       return rescode;
     }
 
-    // Add the linear constraint
-    // y1 = x1, ..., yN = xN
-    // If using Lorentz cone,
-    // Add the linear constraint y0 = x0.
-    // otherwise, add the linear constraint y0 = x0 / 2;
+    // Unfortunately Mosek's definition of rotated Lorentz cone is different
+    // from ours. The rotated Lorentz cone in Mosek is defined as
+    // 2*y(0) * y(1) >= y(2)^2 + ... + y(n-1)^2
+    // Our definition of rotated Lorentz cone is
+    //   y(0) * y(1) >= y(2)^2 + ... + y(n-1)^2
+    // So there is a factor of 2 for rotated Lorentz cone.
+    // With this difference in rotated Lorentz cone,
+    // if using Lorentz cone, adds the linear constraint
+    //   y(0)   = x(0),
+    //   y(1)   = x(1),
+    //        ...
+    //   y(n-1) = x(n-1)
+    // If using rotated Lorentz cone, add the linear constraint
+    // 2*y(0)   = x(0),
+    //   y(1)   = x(1),
+    //     ...
+    //   y(n-1) = x(n-1)
     int num_lin_cons;
     rescode = MSK_getnumcon(*task, &num_lin_cons);
     if (rescode != MSK_RES_OK) {

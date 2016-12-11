@@ -1,6 +1,6 @@
 
 add_library_with_exports(LIB_NAME drakeLinearControl SOURCE_FILES linear_quadratic_regulator.cc)
-target_link_libraries(drakeLinearControl drakeSystemFramework)
+target_link_libraries(drakeLinearControl drakeMath drakeSystemFramework)
 drake_install_libraries(drakeLinearControl)
 drake_install_headers(linear_quadratic_regulator.h)
 drake_install_pkg_config_file(drake-linear-control
@@ -37,8 +37,7 @@ if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
 
   if(bot2-lcmgl-client_FOUND)
     add_executable(zmpCoMObserverStateVisualizer zmpCoMObserverStateVisualizer.cpp)
-    pods_use_pkg_config_packages(zmpCoMObserverStateVisualizer bot2-lcmgl-client)
-    target_link_libraries(zmpCoMObserverStateVisualizer drake_lcmtypes lcm)
+    target_link_libraries(zmpCoMObserverStateVisualizer drake_lcmtypes bot2-lcmgl-client lcm)
   endif()
 endif()
 

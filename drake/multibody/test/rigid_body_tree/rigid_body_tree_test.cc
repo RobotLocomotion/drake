@@ -161,8 +161,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
     T_r3_and_r4_to_r2.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  auto r3b1_and_r4b1_weld = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), "body1",
+  auto r3b1_and_r4b1_weld = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "body1",
       tree_->FindBody("body1", "robot2"), T_r3_and_r4_to_r2);
 
   r3b1->add_joint(&tree_->world(),

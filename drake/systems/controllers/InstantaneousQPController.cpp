@@ -125,7 +125,7 @@ void applyURDFModifications(std::unique_ptr<RigidBodyTree<double>>& robot,
                             const KinematicModifications& modifications) {
   for (auto it = modifications.attachments.begin();
        it != modifications.attachments.end(); ++it) {
-    std::shared_ptr<RigidBodyFrame> attach_to_frame =
+    std::shared_ptr<RigidBodyFrame<double>> attach_to_frame =
         robot->findFrame(it->attach_to_frame);
     if (!attach_to_frame) {
       std::cerr << "frame name: " << it->attach_to_frame << std::endl;

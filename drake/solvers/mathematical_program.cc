@@ -225,6 +225,7 @@ void MathematicalProgram::AddConstraint(
     std::shared_ptr<LorentzConeConstraint> con, const VariableListRef& vars) {
   VariableList var_list(vars);
   DRAKE_ASSERT(var_list.column_vectors_only());
+  DRAKE_ASSERT(var_list.size() >= 2);
   required_capabilities_ |= kLorentzConeConstraint;
   lorentz_cone_constraint_.push_back(
       Binding<LorentzConeConstraint>(con, var_list));
@@ -242,6 +243,7 @@ void MathematicalProgram::AddConstraint(
     const VariableListRef& vars) {
   VariableList var_list(vars);
   DRAKE_ASSERT(var_list.column_vectors_only());
+  DRAKE_ASSERT(var_list.size() >= 3);
   required_capabilities_ |= kRotatedLorentzConeConstraint;
   rotated_lorentz_cone_constraint_.push_back(
       Binding<RotatedLorentzConeConstraint>(con, var_list));

@@ -23,7 +23,7 @@ namespace systems {
 template <typename T>
 struct DiscreteEvent {
   typedef std::function<void(const Context<T>&)> PublishCallback;
-  typedef std::function<void(const Context<T>&, DifferenceState<T>*)>
+  typedef std::function<void(const Context<T>&, DiscreteState<T>*)>
       UpdateCallback;
 
   enum ActionType {
@@ -40,7 +40,7 @@ struct DiscreteEvent {
   PublishCallback do_publish{nullptr};
 
   /// An optional callback, supplied by the recipient, to carry out a
-  /// kUpdateAction. If nullptr, DoEvalDifferenceUpdates will be used.
+  /// kUpdateAction. If nullptr, DoEvalDiscreteVariableUpdates() will be used.
   UpdateCallback do_update{nullptr};
 };
 
@@ -93,25 +93,41 @@ class System {
     return input_ports_;
   }
 
-  /// Returns the input port @p input_port.
-  const SystemPortDescriptor<T>& get_input_port(int port_number) const {
-    if (port_number >= get_num_input_ports()) {
+  /// Returns the descriptor of the input port at index @p port_index.
+  const SystemPortDescriptor<T>& get_input_port(int port_index) const {
+    if (port_index >= get_num_input_ports()) {
       throw std::out_of_range("port number out of range.");
     }
-    return input_ports_[port_number];
+    return input_ports_[port_index];
   }
 
-  /// Returns the output port @p output_port.
-  const SystemPortDescriptor<T>& get_output_port(int port_number) const {
-    if (port_number >= get_num_output_ports()) {
+  /// Returns the descriptor of the output port at index @p port_index.
+  const SystemPortDescriptor<T>& get_output_port(int port_index) const {
+    if (port_index >= get_num_output_ports()) {
       throw std::out_of_range("port number out of range.");
     }
-    return output_ports_[port_number];
+    return output_ports_[port_index];
   }
 
   /// Returns descriptors for all the output ports of this system.
   const std::vector<SystemPortDescriptor<T>>& get_output_ports() const {
     return output_ports_;
+  }
+
+  /// Returns the total dimension of all of the input ports (as if they were
+  /// muxed).
+  int get_num_total_inputs() const {
+    int count = 0;
+    for (const auto& in : input_ports_) count += in.get_size();
+    return count;
+  }
+
+  /// Returns the total dimension of all of the output ports (as if they were
+  /// muxed).
+  int get_num_total_outputs() const {
+    int count = 0;
+    for (const auto& out : output_ports_) count += out.get_size();
+    return count;
   }
 
   /// Checks that @p output is consistent with the number and size of output
@@ -224,16 +240,17 @@ class System {
 
   /// This method is called to update discrete variables in the @p context
   /// because the given @p event has arrived.  Dispatches to
-  /// DoEvalDifferenceUpdates by default, or to `event.do_update` if provided.
-  void EvalDifferenceUpdates(const Context<T>& context,
-                             const DiscreteEvent<T>& event,
-                             DifferenceState<T>* difference_state) const {
+  /// DoEvalDiscreteVariableUpdates by default, or to `event.do_update` if
+  /// provided.
+  void EvalDiscreteVariableUpdates(const Context<T> &context,
+                                   const DiscreteEvent<T> &event,
+                                   DiscreteState<T> *discrete_state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUpdateAction);
     if (event.do_update == nullptr) {
-      DoEvalDifferenceUpdates(context, difference_state);
+      DoEvalDiscreteVariableUpdates(context, discrete_state);
     } else {
-      event.do_update(context, difference_state);
+      event.do_update(context, discrete_state);
     }
   }
 
@@ -305,12 +322,12 @@ class System {
     return nullptr;
   }
 
-  /// Returns a DifferenceState of the same dimensions as the difference_state
+  /// Returns a DiscreteState of the same dimensions as the discrete_state
   /// allocated in CreateDefaultContext. The simulator will provide this state
   /// as the output argument to Update.
   /// By default, allocates nothing. Systems with discrete state variables
   /// should override.
-  virtual std::unique_ptr<DifferenceState<T>> AllocateDifferenceVariables()
+  virtual std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables()
       const {
     return nullptr;
   }
@@ -521,8 +538,8 @@ class System {
   /// Adds a port with the specified @p type and @p size to the input topology.
   /// @return descriptor of declared port.
   const SystemPortDescriptor<T>& DeclareInputPort(PortDataType type, int size) {
-    int port_number = get_num_input_ports();
-    input_ports_.emplace_back(this, kInputPort, port_number, type, size);
+    int port_index = get_num_input_ports();
+    input_ports_.emplace_back(this, kInputPort, port_index, type, size);
     return input_ports_.back();
   }
 
@@ -543,8 +560,8 @@ class System {
   /// @return descriptor of declared port.
   const SystemPortDescriptor<T>& DeclareOutputPort(PortDataType type,
                                                    int size) {
-    int port_number = get_num_output_ports();
-    output_ports_.emplace_back(this, kOutputPort, port_number, type, size);
+    int port_index = get_num_output_ports();
+    output_ports_.emplace_back(this, kOutputPort, port_index, type, size);
     return output_ports_.back();
   }
 
@@ -577,15 +594,15 @@ class System {
   /// been validated before it is passed to you here.
   virtual void DoPublish(const Context<T>& context) const {}
 
-  /// Updates the @p difference_state on sample events.
+  /// Updates the @p discrete_state on sample events.
   /// Override it, along with DoCalcNextUpdateTime, if your System has any
-  /// difference variables.
+  /// discrete variables.
   ///
-  /// @p difference_state is not a pointer into @p context. It is a separate
+  /// @p discrete_state is not a pointer into @p context. It is a separate
   /// buffer, which the Simulator is responsible for writing back to the @p
   /// context later.
-  virtual void DoEvalDifferenceUpdates(
-      const Context<T>& context, DifferenceState<T>* difference_state) const {}
+  virtual void DoEvalDiscreteVariableUpdates(
+      const Context<T>& context, DiscreteState<T>* discrete_state) const {}
 
   /// Computes the next time at which this System must perform a discrete
   /// action.

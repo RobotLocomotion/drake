@@ -1,6 +1,7 @@
 #include "drake/common/trajectories/piecewise_function.h"
 
 #include <algorithm>
+#include <cmath>
 #include <stdexcept>
 
 using std::uniform_real_distribution;
@@ -10,8 +11,8 @@ PiecewiseFunction::PiecewiseFunction(
     std::vector<double> const& segment_times_in)
     : segment_times(segment_times_in) {
   for (int i = 1; i < getNumberOfSegments() + 1; i++) {
-    if (segment_times[i] < segment_times[i - 1])
-      throw std::runtime_error("times must be increasing");
+    if (segment_times[i] - segment_times[i - 1] < kEpsilonTime)
+      throw std::runtime_error("times must be increasing.");
   }
 }
 

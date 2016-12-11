@@ -64,6 +64,17 @@ cc_library(
 )
 
 cc_library(
+    name = "extract_double",
+    hdrs = ["extract_double.h"],
+    linkstatic = 1,
+    deps = [
+        ":common",
+        ":nice_type_name",
+        ":number_traits",
+    ],
+)
+
+cc_library(
     name = "functional_form",
     srcs = ["functional_form.cc"],
     hdrs = ["functional_form.h"],

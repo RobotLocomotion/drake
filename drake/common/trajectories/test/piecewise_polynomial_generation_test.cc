@@ -250,7 +250,7 @@ GTEST_TEST(SplineTests, PchipAndCubicSplineCompareWithMatlabTest) {
   coeffs[5] << 1, 0, 0, 0;
 
   PiecewisePolynomial<double> spline = PiecewisePolynomial<double>::Pchip(T, Y);
-  EXPECT_EQ(spline.getNumberOfSegments(), T.size() - 1);
+  EXPECT_EQ(spline.getNumberOfSegments(), static_cast<int>(T.size()) - 1);
   for (int t = 0; t < spline.getNumberOfSegments(); ++t) {
     const PiecewisePolynomial<double>::PolynomialMatrix& poly_matrix =
         spline.getPolynomialMatrix(t);
@@ -277,7 +277,7 @@ GTEST_TEST(SplineTests, PchipAndCubicSplineCompareWithMatlabTest) {
   coeffs[4] << 1, 0.5, -0.75, 0.25;
   coeffs[5] << 1, -0.25, 0, 0.25;
   spline = PiecewisePolynomial<double>::Cubic(T, Y);
-  EXPECT_EQ(spline.getNumberOfSegments(), T.size() - 1);
+  EXPECT_EQ(spline.getNumberOfSegments(), static_cast<int>(T.size()) - 1);
   for (int t = 0; t < spline.getNumberOfSegments(); ++t) {
     const PiecewisePolynomial<double>::PolynomialMatrix& poly_matrix =
         spline.getPolynomialMatrix(t);
@@ -288,6 +288,22 @@ GTEST_TEST(SplineTests, PchipAndCubicSplineCompareWithMatlabTest) {
   EXPECT_TRUE(CheckContinuity(spline, 1e-12, 2));
   EXPECT_TRUE(CheckValues(spline, {Y}, 1e-12));
   EXPECT_TRUE(CheckInterpolatedValuesAtBreakTime(spline, T, Y, 1e-12));
+
+  // Add special case for pchip to test for the last two knots being the same.
+  // There was a sign comparison bug in ComputePchipEndSlope when the end
+  // slope = 0. See issue #4450.
+  T = {0, 1, 2};
+  Y.resize(T.size(), MatrixX<double>::Zero(1, 1));
+  Y[0](0, 0) = 1;
+  Y[1](0, 0) = 3;
+  Y[2](0, 0) = 3;
+  spline = PiecewisePolynomial<double>::Pchip(T, Y);
+  EXPECT_TRUE(CompareMatrices(
+      spline.getPolynomialMatrix(0)(0, 0).GetCoefficients(),
+      Vector4<double>(1, 3, 0, -1), 1e-12, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(
+      spline.getPolynomialMatrix(1)(0, 0).GetCoefficients(),
+      Vector4<double>(3, 0, 0, 0), 1e-12, MatrixCompareType::absolute));
 }
 
 GTEST_TEST(SplineTests, RandomizedLinearSplineTest) {
