@@ -4,10 +4,12 @@
 Directory Structure
 *******************
 
-The current directory structure in Drake is organized to group functional
-components, limit dependencies, and prevent circular dependencies.
+The current directory structure in Drake is organized to (1) group functional
+components, (2) limit dependencies, and (3) prevent circular dependencies.
 
-Special directories
+.. _directory_structure_special_directories:
+
+Special Directories
 ===================
 
 All code that implements core functionality in Drake must adhere to the strict
@@ -15,7 +17,7 @@ code standards described in :ref:`Developer Notes <developer_notes>`, and must
 have unit test coverage via code implemented in a ``test`` subdirectory
 immediately below the core implementation.
 
-In order to promote rapid development of research ideas within the code base,
+To promote rapid development of research ideas within the code base,
 we allow for some exceptions to this rule for experimental code.  This includes
 any subdirectory labeled ``dev`` and directories with a special ``README.md``
 file describing the protocol for that directory.  For PRs that affect only these
@@ -26,7 +28,9 @@ be assigned to the author of the code. If the issue is not resolved within 24
 hours, the core development team may disable the offending targets.
 
 
-Controlling dependencies
+.. _directory_structure_controlling_dependencies:
+
+Controlling Dependencies
 ========================
 
 We would like to avoid circular dependencies in the source code tree.  For
