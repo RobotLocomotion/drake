@@ -1,9 +1,9 @@
-from __future__ import print_function
 import unittest
-import numpy as np
 import pydrake
 import os.path
 
+# Tests that an instance of a URDF model can be loaded into a RigidBodyTree by
+# passing a complete set of arguments to Drake's URDF parser.
 class TestUrdfParser(unittest.TestCase):
     def testAddModelInstanceFromUrdfStringSearchingInRosPackages(self):
         urdf_file = os.path.join(pydrake.getDrakePath(),
