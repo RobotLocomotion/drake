@@ -5,7 +5,7 @@
   <description>
     A model of the package_map_test_package_a.
   </description>
-  <maintainer email="user@host.com">John Doe</maintainer>
+  <maintainer email="user@example.com">John Doe</maintainer>
   <author>Jane Doe</author>
   <license>N/A</license>
 </package>
