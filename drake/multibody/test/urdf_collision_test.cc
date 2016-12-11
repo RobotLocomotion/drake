@@ -19,6 +19,11 @@ int main(int argc, char* argv[]) {
   }
 
   auto tree = std::make_unique<RigidBodyTree<double>>();
+
+  // TODO(liang.fok) The following method call assumes this program is only
+  // called using URDFs that satisfy the requirements of this method. Noteably,
+  // if the URDF references meshes using package://, the referenced packages
+  // can be found by crawling up the directory tree relative to the URDF file.
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       argv[1], drake::multibody::joints::kRollPitchYaw, tree.get());
 

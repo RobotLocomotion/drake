@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/drake_path.h"
 #include "drake/multibody/package_map.h"
 
 namespace drake {
@@ -18,7 +19,13 @@ namespace examples {
  * @param[out] package_map A pointer to the PackageMap to which the exmamples
  * should be added. This must not be nullptr.
  */
-void AddExamplePackages(parsers::PackageMap* package_map);
+void AddExamplePackages(parsers::PackageMap* package_map) {
+  package_map->Add("Atlas", GetDrakePath() + "/examples/Atlas/");
+  package_map->Add("IRB140", GetDrakePath() + "/examples/IRB140/");
+  package_map->Add("Valkyrie", GetDrakePath() + "/examples/Valkyrie");
+  package_map->Add("hsrb_description",
+                   GetDrakePath() + "/../ros/hsrb_description");
+}
 
 }  // namespace examples
 }  // namespace drake

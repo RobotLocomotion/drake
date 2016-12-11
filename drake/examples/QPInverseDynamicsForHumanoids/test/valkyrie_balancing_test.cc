@@ -2,7 +2,6 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/examples_package_map.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/example_qp_input_for_valkyrie.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
@@ -31,10 +30,8 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   auto robot = std::make_unique<RigidBodyTree<double>>();
-  parsers::PackageMap package_map;
-  AddExamplePackages(&package_map);
-  parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
-      urdf, package_map, multibody::joints::kRollPitchYaw,
+  parsers::urdf::AddModelInstanceFromUrdfFile(
+      urdf, multibody::joints::kRollPitchYaw,
       nullptr /* weld to frame */, robot.get());
 
   HumanoidStatus robot_status(*robot);

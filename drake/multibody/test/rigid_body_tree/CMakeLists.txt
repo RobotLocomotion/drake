@@ -11,7 +11,4 @@ target_link_libraries(rigid_body_tree_test drakeRBM)
 
 drake_add_cc_test(rigid_body_tree_inverse_dynamics_test)
 target_link_libraries(rigid_body_tree_inverse_dynamics_test
-    # TODO(liang.fok) Remove this once the examples-dependency layering
-    # violation is resolved.
-    drakeExamplesCommon
     drakeRBM)

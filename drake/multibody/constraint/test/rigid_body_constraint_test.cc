@@ -5,13 +5,9 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
-// TODO(liang.fok) Remove this once the layering violation of this file relying
-// on drake/examples is resolved.
-#include "drake/examples/examples_package_map.h"
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_urdf.h"
 
 using std::cerr;
@@ -24,12 +20,10 @@ namespace {
 
 GTEST_TEST(RigidBodyConstraintTest, TestWorldComConstraint) {
   auto tree = make_unique<RigidBodyTree<double>>();
-  parsers::PackageMap package_map;
-  examples::AddExamplePackages(&package_map);
-  parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
+  parsers::urdf::AddModelInstanceFromUrdfFile(
       GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
-      package_map, multibody::joints::kRollPitchYaw,
-      nullptr /* weld_to_frame */, tree.get());
+      multibody::joints::kRollPitchYaw, nullptr /* weld_to_frame */,
+      tree.get());
 
   ASSERT_NE(tree, nullptr);
 

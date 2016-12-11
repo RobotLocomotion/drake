@@ -4,11 +4,9 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
-#include "drake/examples/examples_package_map.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/jacobian.h"
-#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -42,17 +40,15 @@ class RigidBodyTreeInverseDynamicsTest : public ::testing::Test {
 
     const std::string kAtlasUrdf =
         drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf";
-    PackageMap package_map;
-    examples::AddExamplePackages(&package_map);
     tree_rpy_ = std::make_unique<RigidBodyTree<double>>();
-    drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
-        kAtlasUrdf, package_map, kRollPitchYaw, nullptr /* weld_to_frame */,
+    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+        kAtlasUrdf, kRollPitchYaw, nullptr /* weld_to_frame */,
         tree_rpy_.get());
     trees_.push_back(tree_rpy_.get());
 
     tree_quaternion_ = std::make_unique<RigidBodyTree<double>>();
-    drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
-        kAtlasUrdf, package_map, kQuaternion, nullptr /* weld_to_frame */,
+    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+        kAtlasUrdf, kQuaternion, nullptr /* weld_to_frame */,
         tree_quaternion_.get());
     trees_.push_back(tree_quaternion_.get());
   }

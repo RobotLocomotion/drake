@@ -5,7 +5,6 @@ if(lcm_FOUND)
       world_sim_tree_builder.cc
       world_sim_diagram_factory.cc)
   target_link_libraries(drakeKukaIiwaWorld
-      drakeExamplesCommon
       drakeKukaIiwaArmCommon
       drakeLCMSystem2
       drakeRigidBodyPlant

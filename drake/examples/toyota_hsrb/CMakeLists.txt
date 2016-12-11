@@ -4,7 +4,6 @@ if(lcm_FOUND AND WITH_HSRB_DESCRIPTION)
   add_library_with_exports(LIB_NAME drakeHsrb SOURCE_FILES
       hsrb_diagram_factories.cc)
   target_link_libraries(drakeHsrb
-      drakeExamplesCommon
       drakeLcm
       drakeRBM
       drakeRigidBodyPlant

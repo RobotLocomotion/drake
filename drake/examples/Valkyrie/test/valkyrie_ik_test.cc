@@ -13,7 +13,6 @@
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 
 #include "drake/common/drake_path.h"
-#include "drake/examples/examples_package_map.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
@@ -69,13 +68,11 @@ void FindJointAndInsert(const RigidBodyTreed* model, const std::string& name,
 
 GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::PackageMap package_map;
-  examples::AddExamplePackages(&package_map);
-  parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
+  parsers::urdf::AddModelInstanceFromUrdfFile(
       GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
-      package_map, multibody::joints::kRollPitchYaw,
-      nullptr /* weld to frame */, tree.get());
+      multibody::joints::kRollPitchYaw, nullptr /* weld to frame */,
+      tree.get());
 
   // Setting up constraints, based on testIKMoreConstraints.cpp and
   // director-generated M-file.

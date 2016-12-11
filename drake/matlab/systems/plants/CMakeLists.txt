@@ -12,9 +12,6 @@ if(Matlab_FOUND)
   macro(add_rbm_mex)
     drake_add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV}
-        # TODO(liang.fok) Remove this once the examples-dependency layering
-        # violation is resolved.
-        drakeExamplesCommon
         rbmMexFunctions)
     # These warnings are not worth fixing.
     target_compile_options(${ARGV} PRIVATE ${CXX_FLAGS_NO_SIGN_COMPARE})

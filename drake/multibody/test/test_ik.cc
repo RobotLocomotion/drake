@@ -8,11 +8,9 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/examples_package_map.h"
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -26,12 +24,10 @@ namespace {
 
 GTEST_TEST(testIK, atlasIK) {
   auto model = std::make_unique<RigidBodyTree<double>>();
-  parsers::PackageMap package_map;
-  examples::AddExamplePackages(&package_map);
-  parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
+  parsers::urdf::AddModelInstanceFromUrdfFile(
       GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
-      package_map, drake::multibody::joints::kRollPitchYaw,
-      nullptr /* weld_to_frame */, model.get());
+      drake::multibody::joints::kRollPitchYaw, nullptr /* weld_to_frame */,
+      model.get());
 
   Vector2d tspan;
   tspan << 0, 1;

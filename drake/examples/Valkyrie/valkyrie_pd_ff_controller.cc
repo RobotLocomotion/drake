@@ -4,13 +4,11 @@
 #include <string>
 
 #include "drake/common/drake_path.h"
-#include "drake/examples/examples_package_map.h"
 #include "drake/examples/Valkyrie/robot_state_decoder.h"
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/examples/Valkyrie/valkyrie_pd_ff_controller.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/kinematics_cache.h"
-#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -135,11 +133,9 @@ void run_valkyrie_pd_ff_controller() {
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   auto robot = std::make_unique<RigidBodyTree<double>>();
-  parsers::PackageMap package_map;
-  examples::AddExamplePackages(&package_map);
-  parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
-      urdf, package_map, multibody::joints::kRollPitchYaw,
-      nullptr /* weld to frame */, robot.get());
+  parsers::urdf::AddModelInstanceFromUrdfFile(
+      urdf, multibody::joints::kRollPitchYaw, nullptr /* weld to frame */,
+      robot.get());
 
   VectorX<double> Kp(kRPYValkyrieDoF);
   Kp << 0, 0, 0, 0, 0, 0,            // base

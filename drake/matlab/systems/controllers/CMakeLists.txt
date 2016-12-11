@@ -5,9 +5,6 @@ if(Matlab_FOUND)
 
     drake_add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
     target_link_libraries(constructQPDataPointerMex
-        # TODO(liang.fok) Remove this once the examples-dependency layering
-        # violation is resolved.
-        drakeExamplesCommon
         drakeAtlasUtil
         drakeControlUtil
         drakeMexUtil

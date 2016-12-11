@@ -4,10 +4,8 @@
 #include <vector>
 
 #include "drake/common/drake_path.h"
-#include "drake/examples/examples_package_map.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
@@ -39,8 +37,8 @@ using multibody::joints::kFixed;
 using multibody::joints::kQuaternion;
 using parsers::ModelInstanceIdTable;
 using parsers::PackageMap;
-using parsers::sdf::AddModelInstancesFromSdfFileSearchingInRosPackages;
-using parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages;
+using parsers::sdf::AddModelInstancesFromSdfFile;
+using parsers::urdf::AddModelInstanceFromUrdfFile;
 using systems::ConstantVectorSource;
 using systems::Context;
 using systems::ContinuousState;
@@ -102,17 +100,15 @@ int IiwaWorldSimBuilder<T>::AddModelInstanceToFrame(
 
   DRAKE_DEMAND(extension == "urdf" || extension == "sdf");
 
-  PackageMap package_map;
-  AddExamplePackages(&package_map);
   if (extension == "urdf") {
-    table = AddModelInstanceFromUrdfFileSearchingInRosPackages(
-        GetDrakePath() + model_map_[model_name], package_map,
-        floating_base_type, weld_to_frame, rigid_body_tree_.get());
+    table = AddModelInstanceFromUrdfFile(
+        GetDrakePath() + model_map_[model_name], floating_base_type,
+        weld_to_frame, rigid_body_tree_.get());
 
   } else if (extension == "sdf") {
-    table = AddModelInstancesFromSdfFileSearchingInRosPackages(
-        GetDrakePath() + model_map_[model_name], package_map,
-        floating_base_type, weld_to_frame, rigid_body_tree_.get());
+    table = AddModelInstancesFromSdfFile(
+        GetDrakePath() + model_map_[model_name], floating_base_type,
+        weld_to_frame, rigid_body_tree_.get());
   }
   const int model_instance_id = table.begin()->second;
   return model_instance_id;

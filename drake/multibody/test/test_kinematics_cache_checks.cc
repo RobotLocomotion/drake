@@ -11,9 +11,7 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
-#include "drake/examples/examples_package_map.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/util/drakeGeometryUtil.h"
 
@@ -157,12 +155,10 @@ void performChecks(RigidBodyTree<double>& model, KinematicsCache<double>& cache,
 
 int main() {
   auto tree = std::make_unique<RigidBodyTree<double>>();
-  drake::parsers::PackageMap package_map;
-  drake::examples::AddExamplePackages(&package_map);
-  drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
-      package_map, drake::multibody::joints::kRollPitchYaw,
-      nullptr /* weld_to_frame */, tree.get());
+      drake::multibody::joints::kRollPitchYaw, nullptr /* weld_to_frame */,
+      tree.get());
 
   CheckSettings settings;
 
