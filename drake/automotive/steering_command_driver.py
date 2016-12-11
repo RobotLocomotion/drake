@@ -75,20 +75,22 @@ class KeyboardEventProcessor:
          # the same, increasing, or decreaisng
         # initialize them as neutral
         self.throttle_gradient = 0; 
-        self.downKeyReleased = 0;
+        self.brake_gradient = 0;
+        self.keepCurrentThrottleBrake = False;
 
     def processEvent(self, event, last_msg):
         new_msg = copy.copy(last_msg)
 
-        if (event.type == pygame.KEYUP):
+        if (event.type == pygame.KEYUP) and not self.keepCurrentThrottleBrake:
             # if the KEYUP event is trigured by a real key releasing
             if hasattr(event, 'key'):
-                if (event.key == pygame.K_RETURN):
+                if (event.key == pygame.K_SPACE):
+                    self.keepCurrentThrottleBrake = True
                     return new_msg
                 if (event.key == pygame.K_UP):
                     self.throttle_gradient = -1
                 elif (event.key == pygame.K_DOWN):
-                    self.downKeyReleased = -1
+                    self.brake_gradient = -1
             # if there is not a KEYDOWN event waiting in the queue
             if not pygame.event.peek(pygame.KEYDOWN): 
                 # creates a fake KEYUP event to force the loop
@@ -96,12 +98,15 @@ class KeyboardEventProcessor:
                 pygame.event.post(dummyKeyUpEvent)
 
         if (event.type == pygame.KEYDOWN):
-            if (event.key == pygame.K_RETURN):
-                return new_msg
+            self.keepCurrentThrottleBrake = False;
+            if (event.key == pygame.K_SPACE):
+                self.keepCurrentThrottleBrake = True;
+                self.throttle_gradient = 0
+                self.brake_gradient = 0
             elif (event.key == pygame.K_UP):
                 self.throttle_gradient = 1
             elif (event.key == pygame.K_DOWN):
-                self.downKeyReleased = 1
+                self.brake_gradient = 1
             elif (event.key == pygame.K_LEFT): 
                 new_msg.steering_angle = _limit_steering(
                 last_msg.steering_angle + (
@@ -114,7 +119,8 @@ class KeyboardEventProcessor:
         new_msg.throttle = _limit_throttle(
                 last_msg.throttle + self.throttle_gradient * THROTTLE_SCALE)
         new_msg.brake = _limit_brake(
-                last_msg.brake + self.downKeyReleased * BRAKE_SCALE)
+                last_msg.brake + self.brake_gradient * BRAKE_SCALE)
+        
         return new_msg
 
 
