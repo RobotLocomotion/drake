@@ -6,6 +6,9 @@
 namespace drake {
 namespace parsers {
 
+/// Maps ROS package names to their full path on the local file system. It is
+/// used by the SDF and URDF parsers when parsing files that reference ROS
+/// packages for resources like mesh files.
 class PackageMap {
  public:
   /// A constructor that initializes an empty map.

@@ -199,11 +199,10 @@ class LcmUtilsTests : public ::testing::Test {
  protected:
   virtual void SetUp() {
     tree_ = std::make_unique<RigidBodyTree<double>>();
-    parsers::urdf::AddModelInstanceFromUrdfFile(
+    parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
             "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
-        multibody::joints::kRollPitchYaw,
-        nullptr /* weld_to_frame */, tree_.get());
+        multibody::joints::kRollPitchYaw, tree_.get());
   }
 
   std::unique_ptr<RigidBodyTree<double>> tree_;

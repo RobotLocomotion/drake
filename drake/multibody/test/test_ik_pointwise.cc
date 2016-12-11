@@ -24,10 +24,9 @@ namespace {
 
 GTEST_TEST(testIKpointwise, simpleIKpointwise) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFile(
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
-      multibody::joints::kRollPitchYaw, nullptr /* weld_to_frame */,
-      tree.get());
+      multibody::joints::kRollPitchYaw, tree.get());
 
   Vector2d tspan;
   tspan << 0, 1;

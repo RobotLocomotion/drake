@@ -68,11 +68,10 @@ void FindJointAndInsert(const RigidBodyTreed* model, const std::string& name,
 
 GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFile(
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
-      multibody::joints::kRollPitchYaw, nullptr /* weld to frame */,
-      tree.get());
+      multibody::joints::kRollPitchYaw, tree.get());
 
   // Setting up constraints, based on testIKMoreConstraints.cpp and
   // director-generated M-file.

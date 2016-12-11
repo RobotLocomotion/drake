@@ -6,7 +6,6 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/example_qp_input_for_valkyrie.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_urdf.h"
 
 namespace drake {
@@ -30,9 +29,8 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   auto robot = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFile(
-      urdf, multibody::joints::kRollPitchYaw,
-      nullptr /* weld to frame */, robot.get());
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      urdf, multibody::joints::kRollPitchYaw, robot.get());
 
   HumanoidStatus robot_status(*robot);
 
