@@ -22,10 +22,9 @@ using drake::GetDrakePath;
 
 GTEST_TEST(testIKtraj, testIKtraj) {
   auto model = std::make_unique<RigidBodyTree<double>>();
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
-      drake::multibody::joints::kRollPitchYaw, nullptr /* weld to frame */,
-      model.get());
+      drake::multibody::joints::kRollPitchYaw, model.get());
 
   int r_hand{};
   int pelvis{};

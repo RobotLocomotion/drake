@@ -155,10 +155,9 @@ void performChecks(RigidBodyTree<double>& model, KinematicsCache<double>& cache,
 
 int main() {
   auto tree = std::make_unique<RigidBodyTree<double>>();
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
-      drake::multibody::joints::kRollPitchYaw, nullptr /* weld_to_frame */,
-      tree.get());
+      drake::multibody::joints::kRollPitchYaw, tree.get());
 
   CheckSettings settings;
 

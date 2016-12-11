@@ -17,10 +17,9 @@ using namespace Eigen;  // NOLINT(build/namespaces)
 
 int main() {
   auto model = std::make_unique<RigidBodyTree<double>>();
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
-      drake::multibody::joints::kRollPitchYaw, nullptr /* weld to frame */,
-      model.get());
+      drake::multibody::joints::kRollPitchYaw, model.get());
 
   Vector2d tspan;
   tspan << 0, 1;

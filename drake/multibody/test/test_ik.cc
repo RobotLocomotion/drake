@@ -24,10 +24,9 @@ namespace {
 
 GTEST_TEST(testIK, atlasIK) {
   auto model = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFile(
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
-      drake::multibody::joints::kRollPitchYaw, nullptr /* weld_to_frame */,
-      model.get());
+      drake::multibody::joints::kRollPitchYaw, model.get());
 
   Vector2d tspan;
   tspan << 0, 1;
@@ -65,10 +64,9 @@ GTEST_TEST(testIK, atlasIK) {
 GTEST_TEST(testIK, iiwaIK) {
   auto model = std::make_unique<RigidBodyTree<double>>();
 
-  parsers::urdf::AddModelInstanceFromUrdfFile(
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::multibody::joints::kRollPitchYaw, nullptr /* weld_to_frame */,
-      model.get());
+      drake::multibody::joints::kRollPitchYaw, model.get());
 
   // Create a timespan for the constraints.  It's not particularly
   // meaningful in this test since inverseKin() only tests a single

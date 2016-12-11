@@ -54,10 +54,9 @@ void findJointAndInsert(const RigidBodyTree<double>& model,
 
 GTEST_TEST(testIKMoreConstraints, IKMoreConstraints) {
   auto model = std::make_unique<RigidBodyTree<double>>();
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
-      multibody::joints::kRollPitchYaw, nullptr /* weld to frame */,
-      model.get());
+      multibody::joints::kRollPitchYaw, model.get());
 
   Vector2d tspan;
   tspan << 0, 1;

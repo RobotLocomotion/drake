@@ -1,5 +1,3 @@
-#include <iostream>
-#include <map>
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -20,10 +18,9 @@ namespace {
 
 GTEST_TEST(RigidBodyConstraintTest, TestWorldComConstraint) {
   auto tree = make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFile(
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
-      multibody::joints::kRollPitchYaw, nullptr /* weld_to_frame */,
-      tree.get());
+      multibody::joints::kRollPitchYaw, tree.get());
 
   ASSERT_NE(tree, nullptr);
 
