@@ -28,7 +28,7 @@ class PackageMap {
   /// Returns true if and only if this PackageMap contains @p package_name.
   bool Contains(const std::string& package_name) const;
 
-  /// Returns the number of packages in this PackageMap.
+  /// Returns the number of entries in this PackageMap.
   int size() const;
 
   /// Obtains the path associated with package @p package_name. Aborts if no
@@ -42,17 +42,18 @@ class PackageMap {
   /// directory's path is the value.
   void PopulateFromFolder(const std::string& path);
 
-  /// Obtains a path from environment variable @p environment_variable. Crawls
-  /// through the directory tree starting the path searching for directories
-  /// containing a file called `package.xml`. For each of these directories,
-  /// this method adds a new entry into this PackageMap where the key is the
-  /// package name as specified within `package.xml` and the directory's path is
-  /// the value. Multiple paths can be searched by separating them
-  /// using the ':' symbol. For example, the environment variable can contain
-  /// [path 1]:[path 2]:[path 3] to search three different paths.
+  /// Obtains one or more paths from environment variable
+  /// @p environment_variable. Crawls downard through the directory tree(s)
+  /// starting from the path(s) searching for `package.xml` files. For each of
+  /// these files, this method adds a new entry into this PackageMap where the
+  /// key is the package name as specified within `package.xml` and the value is
+  /// the path to the `package.xml` file. Multiple paths can be specified by
+  /// separating them using the ':' symbol. For example, the environment
+  /// variable can contain [path 1]:[path 2]:[path 3] to search three different
+  /// paths.
   void PopulateFromEnvironment(const std::string& environment_variable);
 
-  /// Searches up the directory tree from @p model_file to `drake-distro/drake`
+  /// Crawls up the directory tree from @p model_file to `drake-distro/drake`
   /// searching for `package.xml` files. Adds the packages described by these
   /// `package.xml` files. If @p model_file is not in `drake-distro/drake`, this
   /// method returns without doing anything.
