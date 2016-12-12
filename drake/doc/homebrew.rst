@@ -19,7 +19,7 @@ Install the prerequisites::
     brew install autoconf automake cmake doxygen gcc glib graphviz gtk+ jpeg \
       libpng libtool libyaml mpfr ninja numpy python qt qwt valgrind wget
     brew install vtk5 --with-qt
-    pip install -U beautifulsoup4 html5lib Sphinx PyYAML
+    pip install -U beautifulsoup4 html5lib Sphinx PyYAML lxml
 
 Add the line::
 
