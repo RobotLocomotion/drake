@@ -110,7 +110,7 @@ cc_binary(
     linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "//drake/common/test:measure_execution",
+        "//drake/common:measure_execution",
         "@gtest//:main",
     ],
 )

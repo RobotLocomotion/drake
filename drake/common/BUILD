@@ -194,3 +194,258 @@ cc_library(
         "@gflags//:gflags",
     ],
 )
+
+# === test/ ===
+
+cc_library(
+    name = "random_polynomial_matrix",
+    testonly = 1,
+    hdrs = ["test/random_polynomial_matrix.h"],
+    linkstatic = 1,
+    deps = [":polynomial"],
+)
+
+cc_library(
+    name = "measure_execution",
+    testonly = 1,
+    hdrs = ["test/measure_execution.h"],
+    linkstatic = 1,
+)
+
+cc_test(
+    name = "autodiff_overloads_test",
+    size = "small",
+    srcs = ["test/autodiff_overloads_test.cc"],
+    deps = [
+        ":autodiff",
+        ":common",
+        ":eigen_matrix_compare",
+        ":extract_double",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "double_overloads_test",
+    size = "small",
+    srcs = ["test/double_overloads_test.cc"],
+    deps = [
+        ":common",
+        ":cond",
+        ":double",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "drake_assert_test",
+    size = "small",
+    srcs = ["test/drake_assert_test.cc"],
+    deps = [
+        ":common",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "drake_assert_test_compile",
+    size = "small",
+    srcs = ["test/drake_assert_test_compile.cc"],
+    deps = [
+        ":common",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "drake_deprecated_test",
+    size = "small",
+    srcs = ["test/drake_deprecated_test.cc"],
+    # Remove spurious warnings from the default build output.
+    copts = ["-Wno-deprecated-declarations"],
+    deps = [
+        ":common",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "drake_throw_test",
+    size = "small",
+    srcs = ["test/drake_throw_test.cc"],
+    deps = [
+        ":common",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "eigen_matrix_compare_test",
+    size = "small",
+    srcs = ["test/eigen_matrix_compare_test.cc"],
+    deps = [
+        ":common",
+        ":eigen_matrix_compare",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "eigen_stl_types_test",
+    size = "small",
+    srcs = ["test/eigen_stl_types_test.cc"],
+    deps = [
+        ":common",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "extract_double_test",
+    size = "small",
+    srcs = ["test/extract_double_test.cc"],
+    deps = [
+        ":common",
+        ":extract_double",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "functional_form_test",
+    size = "small",
+    srcs = ["test/functional_form_test.cc"],
+    deps = [
+        ":common",
+        ":functional_form",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "is_approx_equal_abstol_test",
+    size = "small",
+    srcs = ["test/is_approx_equal_abstol_test.cc"],
+    deps = [
+        ":common",
+        ":is_approx_equal_abstol",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "nice_type_name_test",
+    size = "small",
+    srcs = ["test/nice_type_name_test.cc"],
+    deps = [
+        ":common",
+        ":nice_type_name",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "polynomial_test",
+    size = "small",
+    srcs = ["test/polynomial_test.cc"],
+    deps = [
+        ":common",
+        ":eigen_matrix_compare",
+        ":random_polynomial_matrix",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "sorted_vectors_have_intersection_test",
+    size = "small",
+    srcs = ["test/sorted_vectors_have_intersection_test.cc"],
+    deps = [
+        ":common",
+        ":sorted_vectors_have_intersection",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "symbolic_environment_test",
+    size = "small",
+    srcs = ["test/symbolic_environment_test.cc"],
+    deps = [
+        ":common",
+        ":symbolic",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "symbolic_expression_test",
+    size = "small",
+    srcs = ["test/symbolic_expression_test.cc"],
+    deps = [
+        ":common",
+        ":symbolic",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "symbolic_formula_test",
+    size = "small",
+    srcs = ["test/symbolic_formula_test.cc"],
+    deps = [
+        ":common",
+        ":symbolic",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "symbolic_variable_test",
+    size = "small",
+    srcs = ["test/symbolic_variable_test.cc"],
+    deps = [
+        ":common",
+        ":symbolic",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "symbolic_variables_test",
+    size = "small",
+    srcs = ["test/symbolic_variables_test.cc"],
+    deps = [
+        ":common",
+        ":symbolic",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "text_logging_test",
+    size = "small",
+    srcs = ["test/text_logging_test.cc"],
+    deps = [
+        ":common",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "trig_poly_test",
+    size = "small",
+    srcs = ["test/trig_poly_test.cc"],
+    deps = [
+        ":common",
+        ":polynomial",
+        "@gtest//:main",
+    ],
+)
+
+# TODO(jwnimmer-tri) These tests are currently missing...
+# - drake_assert_test in fancy variants
+# - drake_assert_test_compile in fancy variants
+# - text_logging_test in fancy variants
+# - drake_deprecated_test in fancy variants
+# - cpplint_wrapper_test.py
