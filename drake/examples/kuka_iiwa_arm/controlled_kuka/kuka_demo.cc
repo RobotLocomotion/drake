@@ -144,7 +144,16 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
         "inverseKinPointwise failed to compute a valid solution.");
   }
 
-  return make_unique<PiecewisePolynomialTrajectory>(q_sol, kTimes);
+  std::vector<PiecewisePolynomial<double>::CoefficientMatrix> knots(
+      kTimes.size());
+  for (size_t i = 0; i < kTimes.size(); ++i) {
+    knots[i] = Eigen::MatrixXd::Zero(tree->get_num_positions(), 1);
+    // We only use column 0 (for joint positions)
+    knots[i].col(0) = q_sol.col(i);
+  }
+
+  return make_unique<PiecewisePolynomialTrajectory>(
+      PiecewisePolynomial<double>::FirstOrderHold(kTimes, knots));
 }
 
 // A model of a Kuka iiwa arm with position control using gravity compensation

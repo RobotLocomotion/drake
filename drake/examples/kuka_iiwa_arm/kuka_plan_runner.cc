@@ -124,6 +124,7 @@ class RobotPlanRunner {
         if (name_to_idx.count(state.joint_name[j]) == 0) {
           continue;
         }
+        // Treat the matrix at knots[i] as a column vector.
         knots[i](name_to_idx[state.joint_name[j]], 0) = state.joint_position[j];
       }
     }

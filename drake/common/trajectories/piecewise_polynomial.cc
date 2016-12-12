@@ -373,6 +373,8 @@ PiecewisePolynomial<CoefficientType>::ZeroOrderHold(
 
   std::vector<PolynomialMatrix> polys;
   polys.reserve(breaks.size() - 1);
+  // For each of the breaks, creates a PolynomialMatrix which can contain joint
+  // positions.
   for (int i = 0; i < static_cast<int>(breaks.size()) - 1; ++i) {
     PolynomialMatrix poly_matrix(knots[0].rows(), knots[0].cols());
 
@@ -397,6 +399,8 @@ PiecewisePolynomial<CoefficientType>::FirstOrderHold(
 
   std::vector<PolynomialMatrix> polys;
   polys.reserve(breaks.size() - 1);
+  // For each of the breaks, creates a PolynomialMatrix which can contain joint
+  // positions.
   for (int i = 0; i < static_cast<int>(breaks.size()) - 1; ++i) {
     PolynomialMatrix poly_matrix(knots[0].rows(), knots[0].cols());
 
