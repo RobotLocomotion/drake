@@ -1,7 +1,7 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:drake.bzl", "cc_unit_test")
+load("//tools:drake.bzl", "cc_component", "cc_unit_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -23,12 +23,8 @@ cc_library(
     ],
 )
 
-cc_library(
+cc_component(
     name = "direct_trajectory_optimization",
-    testonly = 1,
-    srcs = ["direct_trajectory_optimization.cc"],
-    hdrs = ["direct_trajectory_optimization.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",

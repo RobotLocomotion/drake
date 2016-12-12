@@ -1,7 +1,7 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:drake.bzl", "cc_unit_test")
+load("//tools:drake.bzl", "cc_component", "cc_unit_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -41,11 +41,8 @@ cc_library(
     ],
 )
 
-cc_library(
+cc_component(
     name = "lcmt_drake_signal_translator",
-    srcs = ["lcmt_drake_signal_translator.cc"],
-    hdrs = ["lcmt_drake_signal_translator.h"],
-    linkstatic = 1,
     deps = [
         ":translator",
         "//drake/lcmtypes:drake_signal",

@@ -1,7 +1,7 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:drake.bzl", "cc_unit_test")
+load("//tools:drake.bzl", "cc_component", "cc_unit_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -82,11 +82,8 @@ cc_library(
     ],
 )
 
-cc_library(
+cc_component(
     name = "rigid_body_tree_construction",
-    srcs = ["rigid_body_tree_construction.cc"],
-    hdrs = ["rigid_body_tree_construction.h"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
     ],

@@ -1,26 +1,20 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:drake.bzl", "cc_unit_test")
+load("//tools:drake.bzl", "cc_component", "cc_unit_test")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+cc_component(
     name = "autodiff",
-    srcs = ["autodiff.cc"],
-    hdrs = ["autodiff.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:autodiff",
     ],
 )
 
-cc_library(
+cc_component(
     name = "continuous_algebraic_ricatti_equation",
-    srcs = ["continuous_algebraic_ricatti_equation.cc"],
-    hdrs = ["continuous_algebraic_ricatti_equation.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:is_approx_equal_abstol",
@@ -76,11 +70,8 @@ cc_library(
     ],
 )
 
-cc_library(
+cc_component(
     name = "matrix_util",
-    srcs = ["matrix_util.cc"],
-    hdrs = ["matrix_util.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:number_traits",
@@ -89,32 +80,23 @@ cc_library(
 
 # These all require bleeding-edge Eigen, so please don't fold them into any
 # other important labels until we get all workspaces on newer-Eigen.
-cc_library(
+cc_component(
     name = "eigen_sparse_triplet",
-    srcs = ["eigen_sparse_triplet.cc"],
-    hdrs = ["eigen_sparse_triplet.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
     ],
 )
 
-cc_library(
+cc_component(
     name = "expmap",
-    srcs = ["expmap.cc"],
-    hdrs = ["expmap.h"],
-    linkstatic = 1,
     deps = [
         ":gradient",
         "//drake/common",
     ],
 )
 
-cc_library(
+cc_component(
     name = "jacobian",
-    srcs = ["jacobian.cc"],
-    hdrs = ["jacobian.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
     ],

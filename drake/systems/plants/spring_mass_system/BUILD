@@ -1,15 +1,12 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:drake.bzl", "cc_unit_test")
+load("//tools:drake.bzl", "cc_component", "cc_unit_test")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+cc_component(
     name = "spring_mass_system",
-    srcs = ["spring_mass_system.cc"],
-    hdrs = ["spring_mass_system.h"],
-    linkstatic = 1,
     deps = [
         "//drake/systems/framework",
     ],

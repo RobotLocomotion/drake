@@ -1,18 +1,15 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:drake.bzl", "cc_unit_test")
+load("//tools:drake.bzl", "cc_component", "cc_unit_test")
 
 package(default_visibility = ["//visibility:public"])
 
 # TODO(jwnimmer-tri) This BUILD file only compiles the in-tree solvers.
 # External solvers are not yet supported.
 
-cc_library(
+cc_component(
     name = "constraint",
-    srcs = ["constraint.cc"],
-    hdrs = ["constraint.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:autodiff",
@@ -63,11 +60,8 @@ cc_library(
     ],
 )
 
-cc_library(
+cc_component(
     name = "system_identification",
-    srcs = ["system_identification.cc"],
-    hdrs = ["system_identification.h"],
-    linkstatic = 1,
     deps = [
         ":mathematical_program",
         "//drake/common",

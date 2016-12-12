@@ -1,7 +1,7 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:drake.bzl", "cc_unit_test")
+load("//tools:drake.bzl", "cc_component", "cc_unit_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -46,24 +46,18 @@ cc_library(
     ],
 )
 
-cc_library(
+cc_component(
     name = "lcmt_drake_signal_utils",
     testonly = 1,
-    srcs = ["lcmt_drake_signal_utils.cc"],
-    hdrs = ["lcmt_drake_signal_utils.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/lcmtypes:drake_signal",
     ],
 )
 
-cc_library(
+cc_component(
     name = "lcm_call_matlab",
     testonly = 1,
-    srcs = ["lcm_call_matlab.cc"],
-    hdrs = ["lcm_call_matlab.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/lcmtypes:call_matlab",
