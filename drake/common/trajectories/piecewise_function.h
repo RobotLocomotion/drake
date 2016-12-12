@@ -53,5 +53,5 @@ class PiecewiseFunction {
   PiecewiseFunction();
 
  private:
-  size_t GetSegmentIndexRecursive(double time, size_t start, size_t end) const;
+  int GetSegmentIndexRecursive(double time, int start, int end) const;
 };

@@ -5,7 +5,7 @@
 #include "drake/common/drake_assert.h"
 #include "gtest/gtest.h"
 
-// Dummy implmentation of PiecewiseFunction to test the basic indexing
+// Dummy implementation of PiecewiseFunction to test the basic indexing
 // functions.
 class PiecewiseFunctionTester : public PiecewiseFunction {
  public:

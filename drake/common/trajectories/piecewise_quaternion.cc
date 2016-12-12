@@ -41,7 +41,7 @@ void PiecewiseQuaternionSlerp<Scalar>::Initialize(
       quaternions_[i] = quaternions[i].normalized();
     } else {
       quaternions_[i] =
-          math::ClosetQuaternion(quaternions_[i - 1], quaternions[i]);
+          math::ClosestQuaternion(quaternions_[i - 1], quaternions[i]);
     }
   }
   ComputeAngularVelocities();
@@ -70,11 +70,11 @@ PiecewiseQuaternionSlerp<Scalar>::PiecewiseQuaternionSlerp(
 template <typename Scalar>
 PiecewiseQuaternionSlerp<Scalar>::PiecewiseQuaternionSlerp(
     const std::vector<double>& breaks,
-    const eigen_aligned_std_vector<AngleAxis<Scalar>>& ang_axises)
+    const eigen_aligned_std_vector<AngleAxis<Scalar>>& ang_axes)
     : PiecewiseFunction(breaks) {
-  eigen_aligned_std_vector<Quaternion<Scalar>> quaternions(ang_axises.size());
-  for (size_t i = 0; i < ang_axises.size(); ++i) {
-    quaternions[i] = Quaternion<Scalar>(ang_axises[i]);
+  eigen_aligned_std_vector<Quaternion<Scalar>> quaternions(ang_axes.size());
+  for (size_t i = 0; i < ang_axes.size(); ++i) {
+    quaternions[i] = Quaternion<Scalar>(ang_axes[i]);
   }
   Initialize(breaks, quaternions);
 }

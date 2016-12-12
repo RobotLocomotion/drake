@@ -50,13 +50,14 @@ double PiecewiseFunction::getEndTime() const {
   return getEndTime(getNumberOfSegments() - 1);
 }
 
-size_t PiecewiseFunction::GetSegmentIndexRecursive(
-    double time, size_t start, size_t end) const {
+int PiecewiseFunction::GetSegmentIndexRecursive(
+    double time, int start, int end) const {
   DRAKE_DEMAND(end >= start);
-  DRAKE_DEMAND(end < segment_times.size());
+  DRAKE_DEMAND(end < static_cast<int>(segment_times.size()));
+  DRAKE_DEMAND(start >= 0);
   DRAKE_DEMAND(time <= segment_times[end] && time >= segment_times[start]);
 
-  size_t mid = (start + end) / 2;
+  int mid = (start + end) / 2;
 
   // one or two numbers
   if (end - start <= 1)
@@ -71,10 +72,12 @@ size_t PiecewiseFunction::GetSegmentIndexRecursive(
 }
 
 int PiecewiseFunction::getSegmentIndex(double t) const {
+  if (segment_times.empty())
+    return 0;
   // clip to min/max times
   t = std::min(std::max(t, getStartTime()), getEndTime());
-  size_t idx = GetSegmentIndexRecursive(t, 0, segment_times.size() - 1);
-  return static_cast<int>(idx);
+  return GetSegmentIndexRecursive(
+      t, 0, static_cast<int>(segment_times.size() - 1));
 }
 
 const std::vector<double>& PiecewiseFunction::getSegmentTimes() const {

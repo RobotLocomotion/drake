@@ -9,15 +9,17 @@
 namespace drake {
 
 /**
- * A class representing a trajectory for quaternions that can be interpolated
+ * A class representing a trajectory for quaternions that are interpolated
  * using piecewise slerp (spherical linear interpolation).
- * All the quaternions, angular velocity, angular acceleration are assumed to
- * be in the same reference frame.
+ * All the quaternions, angular velocity and angular acceleration are assumed
+ * to be in the same common reference frame.
  * Since there is a sign ambiguity when using quaternions to represent
  * orientation, namely q and -q represent the same orientation, the internal
  * quaternion representations ensure that q_n.dot(q_{n+1}) >= 0.
  * Another intuitive way to think about this is that consecutive quaternions
  * have the shortest geodesic distance on the unit sphere.
+ *
+ * @tparam Scalar, scalar types like double / float.
  */
 template <typename Scalar = double>
 class PiecewiseQuaternionSlerp : public PiecewiseFunction {
@@ -25,8 +27,8 @@ class PiecewiseQuaternionSlerp : public PiecewiseFunction {
   PiecewiseQuaternionSlerp() {}
 
   /*
-   * Build a PiecewiseQuaternionSlerp.
-   * @throws if breaks and quaternions have different length,
+   * Builds a PiecewiseQuaternionSlerp.
+   * @throw if breaks and quaternions have different length,
    * or breaks have length < 2.
    */
   PiecewiseQuaternionSlerp(
@@ -34,8 +36,8 @@ class PiecewiseQuaternionSlerp : public PiecewiseFunction {
       const eigen_aligned_std_vector<Quaternion<Scalar>>& quaternions);
 
   /*
-   * Build a PiecewiseQuaternionSlerp.
-   * @throws if breaks and rot_matrices have different length,
+   * Builds a PiecewiseQuaternionSlerp.
+   * @throw if breaks and rot_matrices have different length,
    * or breaks have length < 2.
    */
   PiecewiseQuaternionSlerp(
@@ -43,43 +45,47 @@ class PiecewiseQuaternionSlerp : public PiecewiseFunction {
       const eigen_aligned_std_vector<Matrix3<Scalar>>& rot_matrices);
 
   /*
-   * Build a PiecewiseQuaternionSlerp.
-   * @throws if breaks and ang_axises have different length,
+   * Builds a PiecewiseQuaternionSlerp.
+   * @throw if breaks and ang_axes have different length,
    * or breaks have length < 2.
    */
   PiecewiseQuaternionSlerp(
       const std::vector<double>& breaks,
-      const eigen_aligned_std_vector<AngleAxis<Scalar>>& ang_axises);
+      const eigen_aligned_std_vector<AngleAxis<Scalar>>& ang_axes);
 
   Eigen::Index rows() const override { return 4; }
   Eigen::Index cols() const override { return 1; }
 
   /**
+   * Interpolates orientation.
    * @param t Time for interpolation.
-   * @returns The interpolated quaternion at `t`.
+   * @return The interpolated quaternion at `t`.
    */
   Quaternion<Scalar> orientation(double t) const;
 
   /**
+   * Interpolates angular velocity.
    * @param t Time for interpolation.
-   * @returns The interpolated angular velocity at `t`,
+   * @return The interpolated angular velocity at `t`,
    * which is constant per segment.
    */
   Vector3<Scalar> angular_velocity(double t) const;
 
   /**
+   * Interpolates angular acceleration.
    * @param t Time for interpolation.
-   * @returns The interpolated angular acceleration at `t`,
+   * @return The interpolated angular acceleration at `t`,
    * which is always zero for slerp.
    */
   Vector3<Scalar> angular_acceleration(double t) const;
 
   /**
-   * Note: the returned quaternions might be different from the ones that are
-   * passed in during construction because the internal representations are
-   * set to always be the "closest" w.r.t to the previous one.
+   * Getter for the internal quaternion knots.
+   * Note: the returned quaternions might be different from the ones used for
+   * construction because the internal representations are set to always be
+   * the "closest" w.r.t to the previous one.
    *
-   * @returns the internal knot points.
+   * @return the internal knot points.
    */
   const eigen_aligned_std_vector<Quaternion<Scalar>>& get_quaternion_knots()
       const {

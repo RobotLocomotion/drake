@@ -16,19 +16,15 @@ namespace drake {
 namespace math {
 
 /**
- * @Returns a quaternion that represents the same orientation as `q1`,
+ * Returns an unit quaternion that represents the same orientation as `q1`,
  * and has the "shortest" geodesic distance on the unit sphere to `q0`.
  */
-template <typename Scalar> Eigen::Quaternion<Scalar> ClosetQuaternion(
+template <typename Scalar> Eigen::Quaternion<Scalar> ClosestQuaternion(
     const Eigen::Quaternion<Scalar>& q0,
     const Eigen::Quaternion<Scalar>& q1) {
   Eigen::Quaternion<Scalar> q = q1;
-  if (q0.dot(q) < 0) {
-    q.w() *= -1;
-    q.x() *= -1;
-    q.y() *= -1;
-    q.z() *= -1;
-  }
+  if (q0.dot(q) < 0)
+    q.coeffs() *= -1;
   q.normalize();
   return q;
 }
