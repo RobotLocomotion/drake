@@ -107,7 +107,7 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
   // (small_sphere_1, large_box_) pointing upwards, from box into sphere.
   // If they are in the reversed order, reverse the normal direction.
   Vector3d expected_normal(0, 1, 0);
-  if (bodyA == collision_pairs[0].elementB->get_body()) {
+  if (bodyA == large_box_) {
     expected_normal *= -1;
   }
 
@@ -201,7 +201,7 @@ TEST_F(RBTCollisionCliqueTest, ComputeContactPointsWithCliques) {
   // (small_sphere_1, large_box_) pointing upwards, from box into sphere.
   // If they are in the reversed order, reverse the normal direction.
   Vector3d expected_normal(0, 1, 0);
-  if (bodyA == collision_pairs[0].elementB->get_body()) {
+  if (bodyA == large_box_) {
     expected_normal *= -1;
   }
 
