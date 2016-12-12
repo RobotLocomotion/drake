@@ -9,6 +9,11 @@ sh_binary(
     data = ["valgrind.supp"],
 )
 
+alias(
+    name = "buildifier",
+    actual = "@com_github_bazelbuild_buildifier//buildifier",
+)
+
 cc_toolchain_suite(
     name = "default-toolchain",
     toolchains = {
