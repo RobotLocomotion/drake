@@ -1298,12 +1298,12 @@ class RigidBodyTree {
   // Utility class for storing body collision data during RBT instantiation.
   struct BodyCollisionItem {
     BodyCollisionItem(const std::string& group_name,
-                      std::unique_ptr<DrakeCollision::Element> element) {
+                      size_t element) {
       this->group_name = group_name;
       this->element = std::move(element);
     }
     std::string group_name;
-    std::unique_ptr<DrakeCollision::Element> element;
+    size_t element;
   };
 
   typedef std::vector<BodyCollisionItem> BodyCollisions;
@@ -1316,6 +1316,11 @@ class RigidBodyTree {
   // proper, intermediate representation.
   std::unordered_map<RigidBody<T>*, BodyCollisions>
       body_collision_map_;
+  // Collision results depend on the order the collision elements are added.
+  // This queues the collision elements in the added order so that when
+  // actually registered with the collision engine, they'll be submitted
+  // in the invocation order.
+  std::vector< std::unique_ptr<DrakeCollision::Element>> element_order_;
 };
 
 typedef RigidBodyTree<double> RigidBodyTreed;
