@@ -4,6 +4,9 @@
 #include "drake/multibody/parser_sdf.h"
 
 namespace drake {
+
+using multibody::joints::kFixed;
+
 namespace examples {
 namespace schunk_wsg {
 
@@ -12,11 +15,8 @@ std::unique_ptr<drake::systems::RigidBodyPlant<T>>
 CreateSimulatedSchunkWsgSystem() {
   auto rigid_body_tree = std::make_unique<RigidBodyTree<T>>();
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
-      drake::GetDrakePath() +
-      "/examples/schunk_wsg/models/schunk_wsg_50.sdf",
-      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
-      rigid_body_tree.get());
-
+      GetDrakePath() + "/examples/schunk_wsg/models/schunk_wsg_50.sdf",
+      kFixed, nullptr /* weld to frame */, rigid_body_tree.get());
   return std::make_unique<drake::systems::RigidBodyPlant<T>>(
       std::move(rigid_body_tree));
 }

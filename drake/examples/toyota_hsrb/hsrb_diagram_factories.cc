@@ -5,7 +5,9 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
+#include "drake/examples/examples_package_map.h"
 #include "drake/lcm/drake_lcm_interface.h"
+#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
@@ -27,7 +29,7 @@ using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::DrakeVisualizer;
 using systems::RigidBodyPlant;
-using parsers::urdf::AddModelInstanceFromUrdfString;
+using parsers::urdf::AddModelInstanceFromUrdfStringSearchingInRosPackages;
 
 namespace examples {
 namespace toyota_hsrb {
@@ -46,9 +48,12 @@ unique_ptr<systems::Diagram<double>> BuildPlantAndVisualizerDiagram(
   {
     // Instantiates a model of the world.
     auto tree_ptr = make_unique<RigidBodyTreed>();
-    AddModelInstanceFromUrdfString(urdf_string, "." /* root directory */,
-                                   multibody::joints::kQuaternion,
-                                   nullptr /* weld to frame */, tree_ptr.get());
+    parsers::PackageMap package_map;
+    AddExamplePackages(&package_map);
+    AddModelInstanceFromUrdfStringSearchingInRosPackages(
+        urdf_string, package_map, "." /* root directory */,
+        multibody::joints::kQuaternion, nullptr /* weld to frame */,
+        tree_ptr.get());
     AddFlatTerrainToWorld(tree_ptr.get());
 
     // Instantiates a RigidBodyPlant containing the tree.
