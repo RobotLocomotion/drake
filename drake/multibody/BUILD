@@ -45,6 +45,7 @@ cc_library(
     name = "rigid_body_tree",
     srcs = [
         "kinematics_cache.cc",
+        "package_map.cc",
         "parser_common.cc",
         "parser_model_instance_id_table.cc",
         "parser_sdf.cc",
@@ -63,6 +64,7 @@ cc_library(
         "kinematics_cache.h",
         "kinematics_cache-inl.h",
         "material_map.h",
+        "package_map.h",
         "parser_common.h",
         "parser_model_instance_id_table.h",
         "parser_sdf.h",
@@ -164,7 +166,9 @@ cc_test(
     name = "parser_urdf_test",
     size = "small",
     srcs = ["test/parser_urdf_test/parser_urdf_test.cc"],
-    data = glob(["test/parser_urdf_test/*.urdf"]),
+    data = glob(["test/parser_urdf_test/*.urdf"]) + [
+        "//drake/examples/Atlas:models",
+    ],
     linkstatic = 1,
     deps = [
         ":rigid_body_tree",

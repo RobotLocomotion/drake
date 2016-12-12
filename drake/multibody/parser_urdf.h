@@ -7,6 +7,8 @@
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/package_map.h"
+#include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/xml_util.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
@@ -53,6 +55,11 @@ std::shared_ptr<RigidBodyFrame<double>> MakeRigidBodyFrameFromUrdfNode(
  * zero positions, the base body's frames are coincident with the world's
  * coordinate frame.
  *
+ * This method can only be used with URDF models that do not use `package://` to
+ * reference modeling resources like mesh files. URDF models that contain
+ * `package://` should instead use
+ * AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages().
+ *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
  * A new model instance is created based on this URDF text and added to
@@ -77,18 +84,24 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 /**
  * This method is the same as
  * AddModelInstanceFromUrdfStringWithRpyJointToWorld() except it has an
- * additional parameter called @p ros_package_map. Parameter @p ros_package_map
+ * additional parameter called @p package_map. Parameter @p package_map
  * contains a mapping from ROS package names to their paths on the local file
  * system. The mapping is used to find resources like mesh files that are
  * referenced within the URDF. This method may be called from within the context
  * of a [ROS node](http://wiki.ros.org/Nodes) or a regular non-ROS application.
+ *
+ * This method has input parameter @p package_map. This parameter is only
+ * necessary if the URDF contains a model that references meshes and other
+ * modeling resources using `package://`. If the model in the URDF does not use
+ * `package://`, the URDF could instead be loaded using
+ * AddModelInstanceFromUrdfStringWithRpyJointToWorld().
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
  * A new model instance is created based on this URDF text and added to
  * @p tree.
  *
- * @param[in] ros_package_map A map of ROS package names to their paths. These
+ * @param[in] package_map A map of ROS package names to their paths. These
  * are the packages to search through when searching for files referenced in the
  * URDF.
  *
@@ -101,18 +114,14 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  */
 ModelInstanceIdTable
 AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
-    const std::string& urdf_string,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    std::map<std::string, std::string>& ros_package_map,
+    const std::string& urdf_string, const PackageMap& package_map,
     RigidBodyTree<double>* tree);
 
 #ifndef SWIG
 DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 #endif
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
-    const std::string& urdf_string,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    std::map<std::string, std::string>& ros_package_map,
+    const std::string& urdf_string, const PackageMap& package_map,
     RigidBodyTree<double>* tree);
 
 /**
@@ -123,6 +132,11 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * tree to which to which these joints attach and the transform between this
  * body and the base bodies' frames when the joints are in their zero positions
  * is determined by @p weld_to_frame.
+ *
+ * This method can only be used with URDF models that do not use `package://` to
+ * reference modeling resources like mesh files. URDF models that contain
+ * `package://` should instead use
+ * AddModelInstanceFromUrdfStringSearchingInRosPackages().
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
@@ -150,18 +164,24 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 
 /**
  * This method is the same as AddModelInstanceFromUrdfString() except it has an
- * additional parameter called @p ros_package_map. Parameter @p ros_package_map
+ * additional parameter called @p package_map. Parameter @p package_map
  * contains a mapping from ROS package names to their paths on the local file
  * system. The mapping is used to find resources like mesh files that are
  * referenced within the URDF. This method may be called from within the context
  * of a [ROS node](http://wiki.ros.org/Nodes) or a regular non-ROS application.
+ *
+ * This method has input parameter @p package_map. This parameter is only
+ * necessary if the URDF contains a model that references meshes and other
+ * modeling resources using `package://`. If the model in the URDF does not use
+ * `package://`, the URDF could instead be loaded using
+ * AddModelInstanceFromUrdfString().
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
  * A new model instance is created based on this URDF text and added to
  * @p tree.
  *
- * @param[in] ros_package_map A map of ROS package names to their paths. These
+ * @param[in] package_map A map of ROS package names to their paths. These
  * are the packages to search through when finding files referenced in the URDF.
  *
  * @param[in] root_dir The root directory in which to search for files
@@ -181,9 +201,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * the `RigidBodyTree`.
  */
 ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
-    const std::string& urdf_string,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    PackageMap& ros_package_map,
+    const std::string& urdf_string, const PackageMap& package_map,
     const std::string& root_dir,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
@@ -193,9 +211,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
   DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 #endif
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
-    const std::string& urdf_string,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    PackageMap& ros_package_map,
+    const std::string& urdf_string, const PackageMap& package_map,
     const std::string& root_dir,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
@@ -208,6 +224,13 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * world via multibody::joints::kRollPitchYaw joints. When
  * this joint is at its zero position, the base bodies' frames are coincident
  * with the world's coordinate frame.
+ *
+ * This method can only be used with URDF models that either (1) do not use
+ * `package://` to reference modeling resources like mesh files, or (2)
+ * only reference packages that are defined up the directory tree relative to
+ * @p urdf_filename. URDF files that contain `package://` references that do not
+ * meet these requirements should instead use
+ * AddModelInstanceFromUrdfFileSearchingInRosPackages().
  *
  * @param[in] urdf_filename The name of the file containing the URDF model.
  *
@@ -233,6 +256,13 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * world via joints of type @p floating_base_type. When these joints are at
  * their zero positions, the base bodies' frames are coincident with the
  * world's coordinate frame.
+ *
+ * This method can only be used with URDF models that either (1) do not use
+ * `package://` to reference modeling resources like mesh files, or (2)
+ * only reference packages that are defined up the directory tree relative to
+ * @p urdf_filename. URDF files that contain `package://` references that do not
+ * meet these requirements should instead use
+ * AddModelInstanceFromUrdfFileSearchingInRosPackages().
  *
  * @param[in] urdf_filename The name of the file containing a URDF
  * description of the model. An instance of this model will be added to
@@ -270,6 +300,13 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * the base bodies when the joints are in their zero positions is specified by
  * @p weld_to_frame.
  *
+ * This method can only be used with URDF models that either (1) do not use
+ * `package://` to reference modeling resources like mesh files, or (2)
+ * only reference packages that are defined up the directory tree relative to
+ * @p urdf_filename. URDF files that contain `package://` references that do not
+ * meet these requirements should instead use
+ * AddModelInstanceFromUrdfFileSearchingInRosPackages().
+ *
  * @param[in] urdf_filename The name of the file containing the URDF model. A
  * new instance of this model is created and added to @p tree.
  *
@@ -294,16 +331,22 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 
 /**
  * This method is the same as AddModelInstanceFromUrdfFile() except it has an
- * additional parameter called @p ros_package_map. Parameter @p ros_package_map
+ * additional parameter called @p package_map. Parameter @p package_map
  * contains a mapping from ROS package names to their paths on the local file
  * system. The mapping is used to find resources like mesh files that are
  * referenced within the URDF. This method may be called from within the context
  * of a [ROS node](http://wiki.ros.org/Nodes) or a regular non-ROS application.
  *
+ * This method has input parameter @p package_map. This parameter is only
+ * necessary if the URDF contains a model that references meshes and other
+ * modeling resources using `package://`. If the model in the URDF does not use
+ * `package://`, the URDF could instead be loaded using
+ * AddModelInstanceFromUrdfFile().
+ *
  * @param[in] urdf_filename The name of the file containing the URDF model.
  * An instance of this model will be added to @p tree.
  *
- * @param[in] ros_package_map A map of ROS package names to their paths. These
+ * @param[in] package_map A map of ROS package names to their paths. These
  * are the packages to search through when finding files referenced in the URDF.
  *
  * @param[in] floating_base_type The type of joint that connects the model
@@ -320,9 +363,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * the `RigidBodyTree`.
  */
 ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
-    const std::string& urdf_filename,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    std::map<std::string, std::string>& ros_package_map,
+    const std::string& urdf_filename, const PackageMap& package_map,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
@@ -331,9 +372,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
   DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 #endif
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
-     const std::string& urdf_filename,
-     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-     std::map<std::string, std::string>& ros_package_map,
+     const std::string& urdf_filename, const PackageMap& package_map,
      const drake::multibody::joints::FloatingBaseType floating_base_type,
      std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
      RigidBodyTree<double>* tree);

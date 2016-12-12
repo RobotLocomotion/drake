@@ -4,7 +4,6 @@
 #include <string>
 
 #include "drake/common/drake_path.h"
-
 #include "drake/examples/Valkyrie/robot_state_decoder.h"
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/examples/Valkyrie/valkyrie_pd_ff_controller.h"

@@ -14,17 +14,6 @@ using tinyxml2::XMLElement;
 
 namespace {
 
-GTEST_TEST(testXmlUtil, testPopulatePackageMap) {
-  PackageMap package_map;
-  populatePackageMap(package_map);
-
-  std::list<std::string> expected_packages = {"drake", "test"};
-  for (auto package : expected_packages) {
-    EXPECT_TRUE(package_map.count(package))
-        << std::string("Expected package not found in list: ") << package;
-  }
-}
-
 // Tests the ability to load a three vector from a string. Evaluates both
 // the case where the string describes a three vector and the case where
 // the string describes a single scalar value.
