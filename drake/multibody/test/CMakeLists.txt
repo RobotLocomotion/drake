@@ -28,20 +28,18 @@ target_link_libraries(urdf_manipulator_dynamics_test drakeRBM)
 
 # Inverse kinematics unit tests.
 macro(add_ik_cpp)
-  add_executable(${ARGV} ${ARGV}.cc)
+  drake_add_cc_test(${ARGV})
   target_link_libraries(${ARGV}
-      drakeRigidBodyConstraint
-      drakeIK)
-  drake_add_test(NAME ${ARGV} WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND ${ARGV})
+    drakeRigidBodyConstraint
+    drakeIK)
 endmacro()
 
 macro(add_ik_gtest)
-  add_executable(${ARGV} ${ARGV}.cc)
+  drake_add_cc_test(${ARGV})
   target_link_libraries(${ARGV}
-      GTest::GTest GTest::Main
-      drakeIK
-      drakeRigidBodyConstraint)
-  drake_add_test(NAME ${ARGV} WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND ${ARGV})
+    GTest::GTest GTest::Main
+    drakeIK
+    drakeRigidBodyConstraint)
 endmacro()
 
 if (gurobi_FOUND)

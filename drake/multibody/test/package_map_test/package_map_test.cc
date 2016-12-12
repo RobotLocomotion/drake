@@ -13,6 +13,7 @@ namespace {
 
 void VerifyMatch(const PackageMap& package_map,
     const map<string, string>& expected_packages) {
+  EXPECT_EQ(package_map.size(), static_cast<int>(expected_packages.size()));
   for (const auto& path_entry : expected_packages) {
     const std::string& package_name = path_entry.first;
     const std::string& package_path = path_entry.second;
@@ -86,13 +87,13 @@ GTEST_TEST(PackageMapTest, TestPopulateMapFromFolderExtraTrailingSlashes) {
 }
 
 // Tests that PackageMap can be populated by crawling up a directory tree.
-GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrakeDistro) {
+GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
   const string sdf_file_name(GetDrakePath() +
       "/multibody/test/package_map_test/package_map_test_packages/"
       "package_map_test_package_a/sdf/test_model.sdf");
 
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrakeDistro(sdf_file_name);
+  package_map.PopulateUpstreamToDrake(sdf_file_name);
 
   map<string, string> expected_packages = {
     {"package_map_test_package_a",

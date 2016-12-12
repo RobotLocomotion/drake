@@ -862,7 +862,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileToWorld(
     RigidBodyTree<double>* tree) {
   DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrakeDistro(filename);
+  package_map.PopulateUpstreamToDrake(filename);
   return AddModelInstancesFromSdfFileSearchingInRosPackages(filename,
       package_map, floating_base_type, nullptr /* weld_to_frame */, tree);
 }
@@ -883,7 +883,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
     RigidBodyTree<double>* tree) {
   DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrakeDistro(filename);
+  package_map.PopulateUpstreamToDrake(filename);
   return AddModelInstancesFromSdfFileSearchingInRosPackages(filename,
       package_map, floating_base_type, weld_to_frame, tree);
 }

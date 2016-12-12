@@ -14,15 +14,22 @@ class PackageMap {
   /// A constructor that initializes an empty map.
   PackageMap();
 
-  virtual ~PackageMap();
+  // Disable copy and assignment.
+  PackageMap(const PackageMap&) = delete;
+  PackageMap& operator=(const PackageMap&) = delete;
+  PackageMap(PackageMap&&) = delete;
+  PackageMap& operator=(PackageMap&&) = delete;
 
   /// Adds package @p package_name and its path, @p package_path. Aborts if
   /// @p package_name is already present in this PackageMap, or if
   /// @p package_path does not exist.
   void Add(const std::string& package_name, const std::string& package_path);
 
-  /// Returns true if and only if this PackageMap contains @p package_map.
-  bool Contains(const std::string& package_map) const;
+  /// Returns true if and only if this PackageMap contains @p package_name.
+  bool Contains(const std::string& package_name) const;
+
+  /// Returns the number of packages in this PackageMap.
+  int size() const;
 
   /// Obtains the path associated with package @p package_name. Aborts if no
   /// package named @p package_name exists in this PackageMap.
@@ -45,14 +52,14 @@ class PackageMap {
   /// [path 1]:[path 2]:[path 3] to search three different paths.
   void PopulateFromEnvironment(const std::string& environment_variable);
 
-  /// Searches up the directory tree from @p model_file to `drake_distro`
+  /// Searches up the directory tree from @p model_file to `drake-distro/drake`
   /// searching for `package.xml` files. Adds the packages described by these
-  /// `package.xml` files. If @p model_file is not in `drake_distro`, this
+  /// `package.xml` files. If @p model_file is not in `drake-distro/drake`, this
   /// method returns without doing anything.
   ///
   /// @param[in] model_file The model file whose directory is the start of the
   /// search for `package.xml` files. This file must be an SDF or URDF file.
-  void PopulateUpstreamToDrakeDistro(const std::string& model_file);
+  void PopulateUpstreamToDrake(const std::string& model_file);
 
  private:
   // Recursively crawls through @p path looking for package.xml files. Adds
@@ -70,8 +77,8 @@ class PackageMap {
 
   // Recursively searches up the directory path searching for package.xml files.
   // Adds the packages defined by these package.xml files to this PackageMap.
-  // This method is intended to be called by PopulateUpstreamToDrakeDistro().
-  void PopulateUpstreamToDrakeDistroHelper(const std::string& directory);
+  // This method is intended to be called by PopulateUpstreamToDrake().
+  void PopulateUpstreamToDrakeHelper(const std::string& directory);
 
   // The key is the name of a ROS package and the value is the package's
   // directory.

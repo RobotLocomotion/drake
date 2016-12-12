@@ -1170,7 +1170,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileWithRpyJointToWorld(
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_DEMAND(tree);
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrakeDistro(filename);
+  package_map.PopulateUpstreamToDrake(filename);
   return AddModelInstanceFromUrdfFileSearchingInRosPackages(
       filename, package_map, kRollPitchYaw, nullptr /* weld_to_frame */,
       tree);
@@ -1188,7 +1188,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileToWorld(
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_DEMAND(tree);
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrakeDistro(filename);
+  package_map.PopulateUpstreamToDrake(filename);
   return AddModelInstanceFromUrdfFileSearchingInRosPackages(
       filename, package_map, floating_base_type, nullptr /*weld_to_frame*/,
       tree);
@@ -1209,7 +1209,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
   // Aborts if any of the output parameter pointers are invalid.
   DRAKE_DEMAND(tree);
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrakeDistro(filename);
+  package_map.PopulateUpstreamToDrake(filename);
   return AddModelInstanceFromUrdfFileSearchingInRosPackages(
       filename, package_map, floating_base_type, weld_to_frame, tree);
 }

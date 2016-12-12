@@ -28,8 +28,6 @@ namespace parsers {
 
 PackageMap::PackageMap() {}
 
-PackageMap::~PackageMap() {}
-
 void PackageMap::Add(const string& package_name, const string& package_path) {
   DRAKE_DEMAND(map_.find(package_name) == map_.end());
   DRAKE_DEMAND(spruce::path(package_path).exists());
@@ -40,16 +38,22 @@ bool PackageMap::Contains(const string& package_name) const {
   return map_.find(package_name) != map_.end();
 }
 
+int PackageMap::size() const {
+  return map_.size();
+}
+
 const string& PackageMap::GetPath(const string& package_name) const {
   DRAKE_DEMAND(Contains(package_name));
   return map_.at(package_name);
 }
 
 void PackageMap::PopulateFromFolder(const string& path) {
+  DRAKE_DEMAND(!path.empty());
   CrawlForPackages(path);
 }
 
 void PackageMap::PopulateFromEnvironment(const string& environment_variable) {
+  DRAKE_DEMAND(!environment_variable.empty());
   const char* path_char = getenv(environment_variable.c_str());
   DRAKE_DEMAND(path_char);
   string path = string(path_char);
@@ -60,6 +64,7 @@ namespace {
 
 // Returns true if @p directory has a package.xml file.
 bool HasPackageXmlFile(const string& directory) {
+  DRAKE_DEMAND(!directory.empty());
   spruce::path spruce_path(directory);
   spruce_path.append("package.xml");
   return spruce_path.exists();
@@ -67,12 +72,14 @@ bool HasPackageXmlFile(const string& directory) {
 
 // Returns the parent directory of @p directory.
 string GetParentDirectory(const string& directory) {
+  DRAKE_DEMAND(!directory.empty());
   return spruce::path(directory).root();
 }
 
 // Parses the package.xml file specified by package_xml_file. Finds and returns
 // the name of the package.
 std::string GetPackageName(const string& package_xml_file) {
+  DRAKE_DEMAND(!package_xml_file.empty());
   XMLDocument xml_doc;
   xml_doc.LoadFile(package_xml_file.data());
   if (xml_doc.ErrorID()) {
@@ -106,6 +113,8 @@ std::string GetPackageName(const string& package_xml_file) {
 
 void PackageMap::AddPackageIfNew(const string& package_name,
     const string& path) {
+  DRAKE_DEMAND(!package_name.empty());
+  DRAKE_DEMAND(!path.empty());
   // Don't overwrite entries in the map.
   if (!Contains(package_name)) {
     Add(package_name, path);
@@ -115,7 +124,7 @@ void PackageMap::AddPackageIfNew(const string& package_name,
   }
 }
 
-void PackageMap::PopulateUpstreamToDrakeDistroHelper(const string& directory) {
+void PackageMap::PopulateUpstreamToDrakeHelper(const string& directory) {
   DRAKE_DEMAND(!directory.empty());
   if (HasPackageXmlFile(directory)) {
     spruce::path spruce_path(directory);
@@ -124,10 +133,11 @@ void PackageMap::PopulateUpstreamToDrakeDistroHelper(const string& directory) {
     AddPackageIfNew(package_name, directory);
   }
   if (directory != "/" && directory != GetDrakePath())
-    PopulateUpstreamToDrakeDistroHelper(GetParentDirectory(directory));
+    PopulateUpstreamToDrakeHelper(GetParentDirectory(directory));
 }
 
-void PackageMap::PopulateUpstreamToDrakeDistro(const string& model_file) {
+void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
+  DRAKE_DEMAND(!model_file.empty());
   // Aborts if the file is not in drake-distro.
   if (model_file.find(GetDrakePath()) == std::string::npos) return;
 
@@ -138,21 +148,18 @@ void PackageMap::PopulateUpstreamToDrakeDistro(const string& model_file) {
   std::transform(extension.begin(), extension.end(), extension.begin(),
                  ::tolower);
   DRAKE_DEMAND(extension == ".urdf" || extension == ".sdf");
-  PopulateUpstreamToDrakeDistroHelper(spruce_path.root());
+  PopulateUpstreamToDrakeHelper(spruce_path.root());
 }
 
 void PackageMap::CrawlForPackages(const string& path) {
+  DRAKE_DEMAND(!path.empty());
   string directory_path = path;
 
   // Removes all trailing "/" characters if any exist.
-  if (directory_path.length() > 0) {
-    string::iterator it = directory_path.end() - 1;
-    while (*it == '/') {
-      directory_path.erase(it);
-      if (directory_path.length() > 0)
-        it = directory_path.end() - 1;
-    }
+  while (directory_path.length() > 0 && *(directory_path.end() - 1) == '/') {
+    directory_path.erase(directory_path.end() - 1);
   }
+  DRAKE_DEMAND(directory_path.length() > 0);
 
   istringstream iss(directory_path);
   const string target_filename("package.xml");
