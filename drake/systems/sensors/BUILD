@@ -10,3 +10,17 @@ cc_library(
     linkstatic = 1,
     deps = ["//drake/systems/framework"],
 )
+
+# === test/ ===
+
+cc_test(
+    name = "rotary_encoders_test",
+    size = "small",
+    srcs = ["test/rotary_encoders_test.cc"],
+    linkstatic = 1,
+    deps = [
+        ":rotary_encoders",
+        "//drake/common:eigen_matrix_compare",
+        "@gtest//:main",
+    ],
+)

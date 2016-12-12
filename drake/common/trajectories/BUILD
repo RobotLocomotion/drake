@@ -40,3 +40,52 @@ cc_library(
         ":piecewise_polynomial",
     ],
 )
+
+# === test/ ===
+
+cc_library(
+    name = "random_piecewise_polynomial",
+    testonly = 1,
+    hdrs = ["test/random_piecewise_polynomial.h"],
+    linkstatic = 1,
+    deps = ["//drake/common:random_polynomial_matrix"],
+)
+
+cc_test(
+    name = "piecewise_polynomial_test",
+    size = "small",
+    srcs = ["test/piecewise_polynomial_test.cc"],
+    deps = [
+        ":piecewise_polynomial",
+        ":random_piecewise_polynomial",
+        "//drake/common:eigen_matrix_compare",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "exponential_plus_piecewise_polynomial_test",
+    size = "small",
+    srcs = [
+        "test/exponential_plus_piecewise_polynomial_test.cc",
+        "test/random_piecewise_polynomial.h",
+    ],
+    deps = [
+        ":piecewise_polynomial",
+        ":random_piecewise_polynomial",
+        "//drake/common:eigen_matrix_compare",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "piecewise_polynomial_trajectory_test",
+    size = "small",
+    srcs = ["test/piecewise_polynomial_trajectory_test.cc"],
+    deps = [
+        ":piecewise_polynomial_trajectory",
+        ":random_piecewise_polynomial",
+        "//drake/common:eigen_matrix_compare",
+        "@gtest//:main",
+    ],
+)

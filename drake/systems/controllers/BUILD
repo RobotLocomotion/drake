@@ -53,3 +53,57 @@ cc_library(
         "//drake/systems/framework/primitives:matrix_gain",
     ],
 )
+
+# === test/ ===
+
+cc_test(
+    name = "gravity_compensator_test",
+    size = "small",
+    srcs = ["test/gravity_compensator_test.cc"],
+    data = [
+        "//drake/examples/SimpleFourBar:models",
+        "//drake/examples/kuka_iiwa_arm:models",
+    ],
+    linkstatic = 1,
+    deps = [
+        ":gravity_compensator",
+        "//drake/common:eigen_matrix_compare",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "linear_quadratic_regulator_test",
+    size = "small",
+    srcs = ["test/linear_quadratic_regulator_test.cc"],
+    linkstatic = 1,
+    deps = [
+        ":linear_quadratic_regulator",
+        "//drake/common:eigen_matrix_compare",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "pid_controlled_system_test",
+    size = "small",
+    srcs = ["test/pid_controlled_system_test.cc"],
+    linkstatic = 1,
+    deps = [
+        ":pid_controlled_system",
+        "//drake/common:eigen_matrix_compare",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "pid_controller_test",
+    size = "small",
+    srcs = ["test/pid_controller_test.cc"],
+    linkstatic = 1,
+    deps = [
+        ":pid_controller",
+        "//drake/common:eigen_matrix_compare",
+        "@gtest//:main",
+    ],
+)

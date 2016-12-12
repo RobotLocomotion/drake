@@ -157,3 +157,98 @@ filegroup(
     name = "models",
     srcs = glob(["models/**"]),
 )
+
+# === test/ ===
+
+cc_test(
+    name = "automotive_simulator_test",
+    size = "small",
+    srcs = ["test/automotive_simulator_test.cc"],
+    data = ["//drake/automotive:models"],
+    local = 1,
+    deps = [
+        "//drake/automotive:automotive_simulator",
+        "//drake/lcm:mock",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "curve2_test",
+    size = "small",
+    srcs = ["test/curve2_test.cc"],
+    deps = [
+        "//drake/automotive:curve2",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "simple_car_test",
+    size = "small",
+    srcs = ["test/simple_car_test.cc"],
+    deps = [
+        "//drake/automotive:simple_car",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "idm_planner_test",
+    size = "small",
+    srcs = ["test/idm_planner_test.cc"],
+    deps = [
+        "//drake/automotive:idm_planner",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "linear_car_test",
+    size = "small",
+    srcs = ["test/linear_car_test.cc"],
+    deps = [
+        "//drake/automotive:linear_car",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "simple_car_to_euler_floating_joint_test",
+    size = "small",
+    srcs = ["test/simple_car_to_euler_floating_joint_test.cc"],
+    deps = [
+        "//drake/automotive:simple_car",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "single_lane_ego_and_agent_test",
+    size = "small",
+    srcs = ["test/single_lane_ego_and_agent_test.cc"],
+    deps = [
+        "//drake/automotive:single_lane_ego_and_agent",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "trajectory_car_test",
+    size = "small",
+    srcs = ["test/trajectory_car_test.cc"],
+    deps = [
+        "//drake/automotive:trajectory_car",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "simple_car_state_translator_test",
+    size = "small",
+    srcs = ["test/simple_car_state_translator_test.cc"],
+    deps = [
+        "//drake/automotive:generated_translators",
+        "@gtest//:main",
+    ],
+)
