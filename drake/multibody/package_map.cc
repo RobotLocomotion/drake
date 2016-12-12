@@ -56,8 +56,10 @@ void PackageMap::PopulateFromEnvironment(const string& environment_variable) {
   CrawlForPackages(path);
 }
 
+namespace {
+
 // Returns true if @p directory has a package.xml file.
-bool HasPackageMap(const string& directory) {
+bool HasPackageXmlFile(const string& directory) {
   spruce::path spruce_path(directory);
   spruce_path.append("package.xml");
   return spruce_path.exists();
@@ -76,21 +78,21 @@ string GetParentDirectory(const string& directory) {
   return result.getStr();
 }
 
-// Parses the package.xml file specified by package_map_file. Finds and returns
+// Parses the package.xml file specified by package_xml_file. Finds and returns
 // the name of the package.
-std::string GetPackageName(const string& package_map_file) {
+std::string GetPackageName(const string& package_xml_file) {
   XMLDocument xml_doc;
-  xml_doc.LoadFile(package_map_file.data());
+  xml_doc.LoadFile(package_xml_file.data());
   if (xml_doc.ErrorID()) {
     throw runtime_error("package_map.cc: GetPackageName(): "
-        "Failed to parse XML in file \"" + package_map_file + "\".\n" +
+        "Failed to parse XML in file \"" + package_xml_file + "\".\n" +
         xml_doc.ErrorName());
   }
 
   XMLElement* package_node = xml_doc.FirstChildElement("package");
   if (!package_node) {
     throw runtime_error("package_map.cc: GetPackageName(): "
-        "ERROR: XML file \"" + package_map_file + "\" does not contain "
+        "ERROR: XML file \"" + package_xml_file + "\" does not contain "
         "element <package>.");
   }
 
@@ -98,7 +100,7 @@ std::string GetPackageName(const string& package_map_file) {
   if (!name_node) {
     throw runtime_error("package_map.cc: GetPackageName(): "
         "ERROR: <package> element does not contain element <name> "
-        "(XML file \"" + package_map_file + "\").");
+        "(XML file \"" + package_xml_file + "\").");
   }
 
   // Throws an exception if the name node does not have any children.
@@ -107,6 +109,8 @@ std::string GetPackageName(const string& package_map_file) {
   DRAKE_THROW_UNLESS(package_name != "");
   return package_name;
 }
+
+}  // namespace
 
 void PackageMap::AddPackageIfNew(const string& package_name,
     const string& path) {
@@ -120,12 +124,11 @@ void PackageMap::AddPackageIfNew(const string& package_name,
 }
 
 void PackageMap::PopulateUpstreamToDrakeDistroHelper(const string& directory) {
-  if (HasPackageMap(directory)) {
+  if (HasPackageXmlFile(directory)) {
     spruce::path spruce_path(directory);
     spruce_path.append("package.xml");
     const string package_name = GetPackageName(spruce_path.getStr());
-    if (!Contains(package_name))
-      AddPackageIfNew(package_name, directory);
+    AddPackageIfNew(package_name, directory);
   }
   if (directory != "/" && directory != GetDrakePath())
     PopulateUpstreamToDrakeDistroHelper(GetParentDirectory(directory));
@@ -145,11 +148,6 @@ void PackageMap::PopulateUpstreamToDrakeDistro(const string& model_file) {
   PopulateUpstreamToDrakeDistroHelper(spruce_path.root());
 }
 
-// Searches in directory @p path for files called "package.xml".
-// Adds the package name specified in package.xml and the path to the
-// package to @p package_map. Multiple paths can be searched by separating them
-// using the ':' symbol. In other words, @p path can be
-// [path 1]:[path 2]:[path 3] to search three different paths.
 void PackageMap::CrawlForPackages(const string& path) {
   string directory_path = path;
 

@@ -57,6 +57,9 @@ class PackageMap {
  private:
   // Recursively crawls through @p path looking for package.xml files. Adds
   // the packages defined by these package.xml files to this PackageMap.
+  // Multiple paths can be searched by separating them using the ':' symbol. In
+  // other words, @p path can be [path 1]:[path 2]:[path 3] to crawl through
+  // three different paths.
   void CrawlForPackages(const std::string& path);
 
   // This method is the same as Add() except it first checks to ensure that
