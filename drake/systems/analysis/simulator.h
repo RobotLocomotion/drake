@@ -403,9 +403,6 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // Delay to match target realtime rate if requested and possible.
     PauseIfTooFast();
 
-    // Indicate no publishing has occurred on this step.
-    bool published = false;
-
     // First take any necessary discrete actions.
     if (sample_time_hit) {
       // Do unrestricted updates first.
@@ -440,9 +437,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
       for (const DiscreteEvent<T>& event : update_actions.events) {
         if (event.action == DiscreteEvent<T>::kPublishAction) {
             system_.Publish(*context_, event);
-            published = true;
             ++num_publishes_;
-            break;
           }
         }
     }
@@ -450,7 +445,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // TODO(edrumwri): Add every step updates in the same manner as every step
     //                 publishes.
     // Allow System a chance to produce some output.
-    if (!published && get_publish_every_time_step()) {
+    if (get_publish_every_time_step()) {
       system_.Publish(*context_);
       ++num_publishes_;
     }

@@ -10,6 +10,100 @@ namespace drake {
 namespace bouncing_ball {
 namespace {
 
+static double CalcClosedFormHeight(double g, double e, double x0, double tf) {
+  // The time that the ball will impact the ground is:
+  // gt^2/2 + x0 = 0
+  // Solve the quadratic equation for t.
+  const double a = g/2;
+  const double c = x0;
+  const double drop_time = std::sqrt(-c/a);
+
+  // Handle the cases appropriately.
+  if (e == 0.0) {
+    // TODO(edrumwri): Test these cases when we can handle the Zeno's Paradox
+    // problem.
+    if (tf < drop_time) {
+      // In a ballistic phase.
+      return g*tf*tf*0.5 + x0;
+    } else {
+      // Ball has hit the ground.
+      return 0.0;
+    }
+  } else {
+    if (e == 1.0) {
+      // Get the number of phases that have passed.
+      int num_phases = static_cast<int>(std::floor(tf / drop_time));
+
+      // Get the time within the phase.
+      const double t = tf - num_phases*drop_time;
+
+      // Even phases mean that the ball is falling, odd phases mean that it is
+      // rising.
+      if ((num_phases & 1) == 0) {
+        return g*t*t*0.5 + x0;
+      } else {
+        // Get the ball velocity at the time of impact.
+        const double vf = g*drop_time;
+        return g*t*t*0.5 - vf*t;
+      }
+    } else {
+      throw std::logic_error("Invalid restitution coefficient!");
+    }
+
+    // Should never reach here.
+    DRAKE_ABORT();
+    return 0.0;
+  }
+}
+
+static double CalcClosedFormVelocity(double g, double e, double x0, double tf) {
+  // The time that the ball will impact the ground is:
+  // gt^2/2 + x0 = 0
+  // Solve the quadratic equation for t.
+  const double a = g/2;
+  const double c = x0;
+  const double drop_time = std::sqrt(-c/a);
+
+  // Handle the cases appropriately.
+  if (e == 0.0) {
+    // TODO(edrumwri): Test these cases when we can handle the Zeno's Paradox
+    // problem.
+    if (tf < drop_time) {
+      // In a ballistic phase.
+      return g*tf;
+    } else {
+      // Ball has hit the ground.
+      return 0.0;
+    }
+  } else {
+    if (e == 1.0) {
+      // Get the number of phases that have passed.
+      using std::floor;
+      int num_phases = static_cast<int>(std::floor(tf / drop_time));
+
+      // Get the time within the phase.
+      const double t = tf - num_phases*drop_time;
+
+      // Even phases mean that the ball is falling, odd phases mean that it is
+      // rising.
+      if ((num_phases & 1) == 0) {
+        return g*t;
+      } else {
+        // Get the ball velocity at the time of impact.
+        const double vf = g*drop_time;
+        return g*t - vf;
+      }
+    } else {
+      throw std::logic_error("Invalid restitution coefficient!");
+    }
+
+    // Should never reach here.
+    DRAKE_ABORT();
+    return 0.0;
+  }
+}
+
+
 class BouncingBallTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -99,9 +193,12 @@ TEST_F(BouncingBallTest, Simulate) {
   // Check against closed form solution for the bouncing ball. We anticipate
   // some small integration error.
   const double tol = 1e-11;
-  EXPECT_NEAR(xc->GetAtIndex(0), dut_->CalcClosedFormHeight(x0, t_final), tol);
-  EXPECT_NEAR(xc->GetAtIndex(1),
-              dut_->CalcClosedFormVelocity(x0, t_final), tol);
+  EXPECT_NEAR(xc->GetAtIndex(0), CalcClosedFormHeight(
+      dut_->get_gravitational_acceleration(),
+      dut_->get_restitution_coef(), x0, t_final), tol);
+  EXPECT_NEAR(xc->GetAtIndex(1), CalcClosedFormVelocity(
+      dut_->get_gravitational_acceleration(),
+      dut_->get_restitution_coef(), x0, t_final), tol);
 
   // Try again in variable step mode.
   simulator.get_mutable_context()->set_time(0.0);
@@ -118,9 +215,12 @@ TEST_F(BouncingBallTest, Simulate) {
   // Integrate.
   simulator.StepTo(t_final);
   EXPECT_EQ(simulator.get_mutable_context()->get_time(), t_final);
-  EXPECT_NEAR(xc->GetAtIndex(0), dut_->CalcClosedFormHeight(x0, t_final), tol);
-  EXPECT_NEAR(xc->GetAtIndex(1), dut_->CalcClosedFormVelocity(x0, t_final),
-              tol);
+  EXPECT_NEAR(xc->GetAtIndex(0), CalcClosedFormHeight(
+      dut_->get_gravitational_acceleration(),
+      dut_->get_restitution_coef(), x0, t_final), tol);
+  EXPECT_NEAR(xc->GetAtIndex(1), CalcClosedFormVelocity(
+      dut_->get_gravitational_acceleration(),
+      dut_->get_restitution_coef(), x0, t_final), tol);
 }
 
 }  // namespace

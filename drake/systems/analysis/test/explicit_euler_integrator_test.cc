@@ -206,7 +206,7 @@ GTEST_TEST(IntegratorTest, StepSize) {
     t = context->get_time();
   }
 
-  // The step should still end on the desired step end time.
+  // The step must still end on the desired step end time.
   {
     const double publish_dt = 42.0;
     const double update_dt = 0.01001;

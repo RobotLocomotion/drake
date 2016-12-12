@@ -21,7 +21,7 @@ namespace systems {
 /// A description of a discrete-time event, which is passed from the simulator
 /// to the recipient System's appropriate event handling method, depending
 /// how much of the Context is allowed to be changed (none, discrete variables
-/// only, anything but time) as well as how the mechanism for changing the
+/// only, any state variable) as well as how the mechanism for changing the
 /// Context (i.e., Simulator changes the context itself for "discrete" updates,
 /// while the System's unrestricted update function is able to change all
 /// state variables (continuous, discrete, and abstract) directly. Such
@@ -46,13 +46,13 @@ struct DiscreteEvent {
     /// A default value that causes the handler to abort.
     kUnknownAction = 0,
 
-    /// On a publish action, state does not change.
+    /// On publish actions, state does not change.
     kPublishAction = 1,
 
-    /// On a discrete update action, discrete state may change.
+    /// On discrete updates, discrete state may change.
     kDiscreteUpdateAction = 2,
 
-    /// On an unrestricted update action, the state may change arbitrarily.
+    /// On unrestricted updates, the state variables may change arbitrarily.
     kUnrestrictedUpdateAction = 3,
   };
 
