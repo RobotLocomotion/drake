@@ -41,3 +41,15 @@ cc_library(
     linkstatic = 1,
     deps = ["//drake/common"],
 )
+
+# === test/ ===
+
+cc_test(
+    name = "spline_generation_test",
+    size = "small",
+    srcs = ["test/spline_generation_test.cc"],
+    deps = [
+        ":spline_generation",
+        "@gtest//:main",
+    ],
+)
