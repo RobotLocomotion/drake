@@ -1,6 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_component", "cc_unit_test")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -39,11 +41,8 @@ cc_library(
     ],
 )
 
-cc_library(
+cc_component(
     name = "lcmt_drake_signal_translator",
-    srcs = ["lcmt_drake_signal_translator.cc"],
-    hdrs = ["lcmt_drake_signal_translator.h"],
-    linkstatic = 1,
     deps = [
         ":translator",
         "//drake/lcmtypes:drake_signal",
@@ -53,54 +52,42 @@ cc_library(
 
 # === test ===
 
-cc_test(
+cc_unit_test(
     name = "lcm_publisher_system_test",
-    size = "small",
-    srcs = ["test/lcm_publisher_system_test.cc"],
     deps = [
         ":lcm",
         ":lcmt_drake_signal_translator",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "lcm_subscriber_system_test",
-    size = "small",
-    srcs = ["test/lcm_subscriber_system_test.cc"],
     deps = [
         ":lcm",
         ":lcmt_drake_signal_translator",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "lcm_translator_dictionary_test",
-    size = "small",
-    srcs = ["test/lcm_translator_dictionary_test.cc"],
     deps = [
         ":lcmt_drake_signal_translator",
         ":translator",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "serializer_test",
-    size = "small",
-    srcs = ["test/serializer_test.cc"],
     deps = [
         ":lcm",
         ":lcmt_drake_signal_translator",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
-        "@gtest//:main",
     ],
 )

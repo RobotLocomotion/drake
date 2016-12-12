@@ -1,13 +1,12 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_component", "cc_unit_test")
+
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+cc_component(
     name = "rotary_encoders",
-    srcs = ["rotary_encoders.cc"],
-    hdrs = ["rotary_encoders.h"],
-    linkstatic = 1,
     deps = [
         "//drake/systems/framework",
     ],
@@ -15,14 +14,10 @@ cc_library(
 
 # === test/ ===
 
-cc_test(
+cc_unit_test(
     name = "rotary_encoders_test",
-    size = "small",
-    srcs = ["test/rotary_encoders_test.cc"],
-    linkstatic = 1,
     deps = [
         ":rotary_encoders",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )

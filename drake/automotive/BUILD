@@ -1,6 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_component", "cc_unit_test")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -48,32 +50,23 @@ cc_library(
     ],
 )
 
-cc_library(
+cc_component(
     name = "curve2",
-    srcs = ["curve2.cc"],
-    hdrs = ["curve2.h"],
-    linkstatic = 1,
     deps = [
         ":generated_vectors",
     ],
 )
 
-cc_library(
+cc_component(
     name = "linear_car",
-    srcs = ["linear_car.cc"],
-    hdrs = ["linear_car.h"],
-    linkstatic = 1,
     deps = [
         ":generated_vectors",
         "//drake/common:symbolic",
     ],
 )
 
-cc_library(
+cc_component(
     name = "idm_planner",
-    srcs = ["idm_planner.cc"],
-    hdrs = ["idm_planner.h"],
-    linkstatic = 1,
     deps = [
         ":generated_vectors",
         "//drake/common:symbolic",
@@ -94,11 +87,8 @@ cc_library(
     ],
 )
 
-cc_library(
+cc_component(
     name = "single_lane_ego_and_agent",
-    srcs = ["single_lane_ego_and_agent.cc"],
-    hdrs = ["single_lane_ego_and_agent.h"],
-    linkstatic = 1,
     deps = [
         ":idm_planner",
         ":linear_car",
@@ -106,22 +96,16 @@ cc_library(
     ],
 )
 
-cc_library(
+cc_component(
     name = "trajectory_car",
-    srcs = ["trajectory_car.cc"],
-    hdrs = ["trajectory_car.h"],
-    linkstatic = 1,
     deps = [
         ":curve2",
         ":generated_vectors",
     ],
 )
 
-cc_library(
+cc_component(
     name = "automotive_simulator",
-    srcs = ["automotive_simulator.cc"],
-    hdrs = ["automotive_simulator.h"],
-    linkstatic = 1,
     deps = [
         ":generated_translators",
         ":generated_vectors",
@@ -179,95 +163,68 @@ filegroup(
 
 # === test/ ===
 
-cc_test(
+cc_unit_test(
     name = "automotive_simulator_test",
-    size = "small",
-    srcs = ["test/automotive_simulator_test.cc"],
     data = ["//drake/automotive:models"],
     local = 1,
     deps = [
         "//drake/automotive:automotive_simulator",
         "//drake/lcm:mock",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "curve2_test",
-    size = "small",
-    srcs = ["test/curve2_test.cc"],
     deps = [
         "//drake/automotive:curve2",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "simple_car_test",
-    size = "small",
-    srcs = ["test/simple_car_test.cc"],
     deps = [
         "//drake/automotive:simple_car",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "idm_planner_test",
-    size = "small",
-    srcs = ["test/idm_planner_test.cc"],
     deps = [
         "//drake/automotive:idm_planner",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "linear_car_test",
-    size = "small",
-    srcs = ["test/linear_car_test.cc"],
     deps = [
         "//drake/automotive:linear_car",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "simple_car_to_euler_floating_joint_test",
-    size = "small",
-    srcs = ["test/simple_car_to_euler_floating_joint_test.cc"],
     deps = [
         "//drake/automotive:simple_car",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "single_lane_ego_and_agent_test",
-    size = "small",
-    srcs = ["test/single_lane_ego_and_agent_test.cc"],
     deps = [
         "//drake/automotive:single_lane_ego_and_agent",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "trajectory_car_test",
-    size = "small",
-    srcs = ["test/trajectory_car_test.cc"],
     deps = [
         "//drake/automotive:trajectory_car",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "simple_car_state_translator_test",
-    size = "small",
-    srcs = ["test/simple_car_state_translator_test.cc"],
     deps = [
         "//drake/automotive:generated_translators",
-        "@gtest//:main",
     ],
 )
