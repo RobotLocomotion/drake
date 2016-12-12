@@ -3,7 +3,6 @@ add_library_with_exports(LIB_NAME drakeTrajectories SOURCE_FILES
     piecewise_function.cc
     piecewise_polynomial.cc
     piecewise_polynomial_base.cc
-    piecewise_polynomial_trajectory.cc
     piecewise_quaternion.cc
     )
 target_link_libraries(drakeTrajectories drakeCommon)
