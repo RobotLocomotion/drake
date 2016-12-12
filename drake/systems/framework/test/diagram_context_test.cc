@@ -9,11 +9,11 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
-#include "drake/systems/framework/primitives/adder.h"
-#include "drake/systems/framework/primitives/integrator.h"
-#include "drake/systems/framework/primitives/zero_order_hold.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_input.h"
+#include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/integrator.h"
+#include "drake/systems/primitives/zero_order_hold.h"
 
 namespace drake {
 namespace systems {

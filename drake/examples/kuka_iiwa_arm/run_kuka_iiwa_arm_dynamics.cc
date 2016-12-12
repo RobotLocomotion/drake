@@ -4,8 +4,8 @@
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
@@ -14,7 +14,7 @@
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 using std::make_unique;
 using std::move;

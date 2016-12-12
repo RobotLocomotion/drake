@@ -16,8 +16,8 @@
 #include "drake/systems/estimators/kalman_filter.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/linear_system.h"
-#include "drake/systems/framework/primitives/signal_logger.h"
+#include "drake/systems/primitives/linear_system.h"
+#include "drake/systems/primitives/signal_logger.h"
 #include "drake/systems/sensors/rotary_encoders.h"
 
 namespace drake {

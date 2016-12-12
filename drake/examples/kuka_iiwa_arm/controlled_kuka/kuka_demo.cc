@@ -21,10 +21,10 @@
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/demultiplexer.h"
-#include "drake/systems/framework/primitives/multiplexer.h"
-#include "drake/systems/framework/primitives/trajectory_source.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/multiplexer.h"
+#include "drake/systems/primitives/trajectory_source.h"
 
 DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
 

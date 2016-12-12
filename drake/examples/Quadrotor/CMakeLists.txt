@@ -5,6 +5,7 @@ if(lcm_FOUND)
   target_link_libraries(run_quadrotor_dynamics
     drakeRigidBodyPlant
     drakeSystemAnalysis
+    drakeSystemPrimitives
     drakeLCMSystem2
     gflags)
   drake_add_test(NAME run_quadrotor_dynamics COMMAND run_quadrotor_dynamics --duration=1.0 SIZE medium)

@@ -24,6 +24,7 @@ target_link_libraries(drakeAutomotive
   drakeCommon
   drakeSystemAnalysis
   drakeSystemFramework
+  drakeSystemPrimitives
   )
 drake_install_libraries(drakeAutomotive)
 drake_install_headers(
@@ -46,6 +47,7 @@ drake_install_pkg_config_file(drake-automotive
     drake-shapes
     drake-system-analysis
     drake-system-framework
+    drake-system-primitives
     eigen3)
 
 if(lcm_FOUND)

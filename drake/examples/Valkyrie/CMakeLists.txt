@@ -64,6 +64,7 @@ if (lcm_FOUND)
       drakeRobotStateEncoder
       drakeSystemAnalysis
       drakeSystemFramework
+      drakeSystemPrimitives
       drakeActuatorEffortToRigidBodyPlantInputConverter
       drakeRobotCommandToDesiredEffortConverter)
 

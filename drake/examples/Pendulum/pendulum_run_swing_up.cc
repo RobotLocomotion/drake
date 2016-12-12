@@ -13,7 +13,7 @@
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/trajectory_source.h"
+#include "drake/systems/primitives/trajectory_source.h"
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
 #include "drake/util/drakeAppUtil.h"
 
