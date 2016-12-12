@@ -166,7 +166,9 @@ cc_test(
     name = "parser_urdf_test",
     size = "small",
     srcs = ["test/parser_urdf_test/parser_urdf_test.cc"],
-    data = glob(["test/parser_urdf_test/*.urdf"]),
+    data = glob(["test/parser_urdf_test/*.urdf"]) + [
+        "//drake/examples/Atlas:models",
+    ],
     linkstatic = 1,
     deps = [
         ":rigid_body_tree",
