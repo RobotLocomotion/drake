@@ -67,15 +67,7 @@ bool HasPackageXmlFile(const string& directory) {
 
 // Returns the parent directory of @p directory.
 string GetParentDirectory(const string& directory) {
-  spruce::path spruce_path(directory);
-  std::vector<std::string> v = spruce_path.split();
-  DRAKE_DEMAND(v.size() > 0);
-  spruce::path result;
-  for (size_t i = 0; i < v.size() - 1; ++i) {
-    if (v.at(i) != "")
-      result.append(v.at(i));
-  }
-  return result.getStr();
+  return spruce::path(directory).root();
 }
 
 // Parses the package.xml file specified by package_xml_file. Finds and returns
@@ -124,6 +116,7 @@ void PackageMap::AddPackageIfNew(const string& package_name,
 }
 
 void PackageMap::PopulateUpstreamToDrakeDistroHelper(const string& directory) {
+  DRAKE_DEMAND(!directory.empty());
   if (HasPackageXmlFile(directory)) {
     spruce::path spruce_path(directory);
     spruce_path.append("package.xml");
