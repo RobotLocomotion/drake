@@ -10,6 +10,7 @@ if(lcm_FOUND)
       drakeRigidBodyPlant
       drakeSystemAnalysis
       drakeSystemFramework
+      drakeSystemPrimitives
       gflags)
   drake_install_libraries(drakeKukaIiwaWorld)
   drake_install_headers(

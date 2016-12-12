@@ -22,9 +22,9 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/matrix_gain.h"
-#include "drake/systems/framework/primitives/multiplexer.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/matrix_gain.h"
+#include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 

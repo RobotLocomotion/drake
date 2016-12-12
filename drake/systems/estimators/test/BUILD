@@ -23,7 +23,7 @@ cc_test(
     deps = [
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/estimators:luenberger_observer",
-        "//drake/systems/framework/primitives:linear_system",
+        "//drake/systems/primitives:linear_system",
         "@gtest//:main",
     ],
 )

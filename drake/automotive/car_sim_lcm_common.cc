@@ -4,8 +4,8 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/matrix_gain.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/matrix_gain.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
 using std::make_unique;

@@ -14,7 +14,7 @@
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 using std::make_unique;
 using std::move;
