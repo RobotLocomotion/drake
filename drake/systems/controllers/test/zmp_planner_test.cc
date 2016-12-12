@@ -3,12 +3,36 @@
 
 #include "drake/systems/controllers/zmp_planner.h"
 
-int main() {
-  drake::systems::ZMPPlanner zmp;
+void TestZMPPlanner(const PiecewisePolynomial<double>& zmp_d, const Eigen::Vector4d& x0, double height) {
+  std::ofstream out;
+  drake::systems::ZMPPlanner zmp_planner;
+  zmp_planner.Plan(zmp_d, x0, height);
 
+  //std::cout << "S: " << zmp.S_ << std::endl;
+  out.open("/home/sfeng/zmp_d");
+  for (double t = zmp_d.getStartTime(); t <= zmp_d.getEndTime() + 1; t+= 0.01) {
+    out << t << " " << zmp_planner.get_desired_zmp(t).transpose() << std::endl;
+  }
+  out.close();
+
+  out.open("/home/sfeng/com");
+  for (double t = zmp_d.getStartTime(); t <= zmp_d.getEndTime() + 1; t+= 0.01) {
+    out << t << " " << zmp_planner.get_nominal_com(t).transpose() << std::endl;
+  }
+  out.close();
+
+  out.open("/home/sfeng/ff");
+  for (double t = zmp_d.getStartTime(); t <= zmp_d.getEndTime() + 1; t+= 0.01) {
+    Eigen::Vector4d nominal_x;
+    nominal_x << zmp_planner.get_nominal_com(t), zmp_planner.get_nominal_comd(t);
+    out << t << " " << zmp_planner.get_nominal_comdd(t).transpose() << " " << zmp_planner.ComputeOptimalCoMdd(t, nominal_x).transpose() << std::endl;
+  }
+  out.close();
+}
+
+int main() {
   std::vector<double> Ts;
   std::vector<Eigen::MatrixXd> zmp_d;
-  std::ofstream out;
 
   Eigen::Vector4d x0(0, 0, 0, 0);
   double x = 0;
@@ -29,45 +53,11 @@ int main() {
     time += ss;
     Ts.push_back(time);
     zmp_d.push_back(Eigen::Vector2d(x, y));
-
   }
 
-  for (const auto& knot : zmp_d) {
-    std::cout << knot(1,0) << std::endl;
-  }
-
-  for (const auto& t : Ts) {
-    std::cout << t << std::endl;
-  }
-
-  //PiecewisePolynomial<double> zmp_traj_ = PiecewisePolynomial<double>::FirstOrderHold(Ts, zmp_d);
-  PiecewisePolynomial<double> zmp_traj_ = PiecewisePolynomial<double>::Pchip(Ts, zmp_d);
-  for (int i = 0; i < zmp_traj_.getNumberOfSegments(); i++) {
-    std::cout << zmp_traj_.getPolynomialMatrix(i)(1, 0).GetCoefficients().transpose() << std::endl;
-  }
-
-  zmp.Plan(zmp_traj_, x0, 1);
-
-  //std::cout << "S: " << zmp.S_ << std::endl;
-  out.open("/home/sfeng/zmp_d");
-  for (double t = Ts[0]; t <= Ts[Ts.size()-1] + 5; t+= 0.01) {
-    out << t << " " << zmp.get_desired_zmp(t).transpose() << std::endl;
-  }
-  out.close();
-
-  out.open("/home/sfeng/com");
-  for (double t = Ts[0]; t <= Ts[Ts.size()-1] + 5; t+= 0.01) {
-    out << t << " " << zmp.get_nominal_com(t).transpose() << std::endl;
-  }
-  out.close();
-
-  out.open("/home/sfeng/ff");
-  for (double t = Ts[0]; t <= Ts[Ts.size()-1] + 5; t+= 0.01) {
-    Eigen::Vector4d nominal_x;
-    nominal_x << zmp.get_nominal_com(t), zmp.get_nominal_comd(t);
-    out << t << " " << zmp.get_nominal_comdd(t).transpose() << " " << zmp.ComputeOptimalCoMdd(t, nominal_x).transpose() << std::endl;
-  }
-  out.close();
+  //PiecewisePolynomial<double> zmp_traj = PiecewisePolynomial<double>::FirstOrderHold(Ts, zmp_d);
+  PiecewisePolynomial<double> zmp_traj = PiecewisePolynomial<double>::Pchip(Ts, zmp_d);
+  TestZMPPlanner(zmp_traj, x0, 1);
 
   return 0;
 }
