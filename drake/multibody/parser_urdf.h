@@ -228,7 +228,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * This method can only be used with URDF models that either (1) do not use
  * `package://` to reference modeling resources like mesh files, or (2)
  * only reference packages that are defined up the directory tree relative to
- * @p urdf_filename. URDF files that contain `package://` references to do not
+ * @p urdf_filename. URDF files that contain `package://` references that do not
  * meet these requirements should instead use
  * AddModelInstanceFromUrdfFileSearchingInRosPackages().
  *
@@ -260,7 +260,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * This method can only be used with URDF models that either (1) do not use
  * `package://` to reference modeling resources like mesh files, or (2)
  * only reference packages that are defined up the directory tree relative to
- * @p urdf_filename. URDF files that contain `package://` references to do not
+ * @p urdf_filename. URDF files that contain `package://` references that do not
  * meet these requirements should instead use
  * AddModelInstanceFromUrdfFileSearchingInRosPackages().
  *
@@ -303,7 +303,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * This method can only be used with URDF models that either (1) do not use
  * `package://` to reference modeling resources like mesh files, or (2)
  * only reference packages that are defined up the directory tree relative to
- * @p urdf_filename. URDF files that contain `package://` references to do not
+ * @p urdf_filename. URDF files that contain `package://` references that do not
  * meet these requirements should instead use
  * AddModelInstanceFromUrdfFileSearchingInRosPackages().
  *
