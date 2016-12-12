@@ -1,0 +1,5 @@
+<launch>
+  <test pkg="drake_ros_systems"
+        test-name="ros_clock_publisher_test"
+        type="ros_clock_publisher_test" />
+</launch>
