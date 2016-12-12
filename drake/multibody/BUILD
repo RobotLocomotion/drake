@@ -1,6 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_component", "cc_unit_test")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -92,11 +94,8 @@ cc_library(
     ],
 )
 
-cc_library(
+cc_component(
     name = "rigid_body_tree_construction",
-    srcs = ["rigid_body_tree_construction.cc"],
-    hdrs = ["rigid_body_tree_construction.h"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
     ],
@@ -162,101 +161,75 @@ cc_binary(
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "parser_urdf_test",
-    size = "small",
     srcs = ["test/parser_urdf_test/parser_urdf_test.cc"],
     data = glob(["test/parser_urdf_test/*.urdf"]) + [
         "//drake/examples/Atlas:models",
     ],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "rbt_collisions_test",
-    size = "small",
     srcs = ["test/rigid_body_tree/rbt_collisions_test.cc"],
     data = [":test_models"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "rigid_body_collision_clique_test",
-    size = "small",
     srcs = ["test/rigid_body_tree/rigid_body_collision_clique_test.cc"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "rigid_body_constraint_test",
-    size = "small",
     srcs = ["constraint/test/rigid_body_constraint_test.cc"],
     data = ["//drake/examples/Atlas:models"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_constraint",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "rigid_body_tree_inverse_dynamics_test",
-    size = "small",
     srcs = ["test/rigid_body_tree/rigid_body_tree_inverse_dynamics_test.cc"],
     data = ["//drake/examples/Atlas:models"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
         "//drake/common:eigen_matrix_compare",
         "//drake/math:jacobian",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "rigid_body_tree_test",
-    size = "small",
     srcs = ["test/rigid_body_tree/rigid_body_tree_test.cc"],
     data = glob(["test/rigid_body_tree/*.urdf"]),
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "test_kinematics_cache_checks",
-    size = "small",
-    srcs = ["test/test_kinematics_cache_checks.cc"],
     data = ["//drake/examples/Atlas:models"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "rigid_body_test",
-    size = "small",
-    srcs = ["test/rigid_body_test.cc"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "@gtest//:main",
     ],
 )
 

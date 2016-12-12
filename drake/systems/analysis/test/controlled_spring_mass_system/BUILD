@@ -1,14 +1,13 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_component", "cc_unit_test")
+
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+cc_component(
     name = "controlled_spring_mass_system",
     testonly = 1,
-    srcs = ["controlled_spring_mass_system.cc"],
-    hdrs = ["controlled_spring_mass_system.h"],
-    linkstatic = 1,
     deps = [
         "//drake/systems/controllers:pid_controller",
         "//drake/systems/framework",
@@ -20,13 +19,11 @@ cc_library(
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "controlled_spring_mass_system_test",
-    size = "small",
     srcs = ["controlled_spring_mass_system_test.cc"],
     linkstatic = 1,
     deps = [
         ":controlled_spring_mass_system",
-        "@gtest//:main",
     ],
 )

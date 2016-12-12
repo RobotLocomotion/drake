@@ -1,16 +1,15 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_component", "cc_unit_test")
+
 package(default_visibility = ["//visibility:public"])
 
 # TODO(jwnimmer-tri) This BUILD file only compiles the in-tree solvers.
 # External solvers are not yet supported.
 
-cc_library(
+cc_component(
     name = "constraint",
-    srcs = ["constraint.cc"],
-    hdrs = ["constraint.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
         "//drake/common:autodiff",
@@ -61,11 +60,8 @@ cc_library(
     ],
 )
 
-cc_library(
+cc_component(
     name = "system_identification",
-    srcs = ["system_identification.cc"],
-    hdrs = ["system_identification.h"],
-    linkstatic = 1,
     deps = [
         ":mathematical_program",
         "//drake/common",
@@ -76,21 +72,17 @@ cc_library(
 
 # === test/ ===
 
-cc_test(
+cc_unit_test(
     name = "constraint_test",
-    size = "small",
-    srcs = ["test/constraint_test.cc"],
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
         "//drake/math:gradient",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "convex_optimization_test",
-    size = "small",
     srcs = [
         "test/convex_optimization_test.cc",
         "test/mathematical_program_test_util.h",
@@ -98,24 +90,19 @@ cc_test(
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "decision_variable_test",
-    size = "small",
-    srcs = ["test/decision_variable_test.cc"],
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "mathematical_program_test",
-    size = "small",
     srcs = [
         "test/mathematical_program_test.cc",
         "test/mathematical_program_test_util.h",
@@ -123,13 +110,11 @@ cc_test(
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "mixed_integer_optimization_test",
-    size = "small",
     srcs = [
         "test/mathematical_program_test_util.h",
         "test/mixed_integer_optimization_test.cc",
@@ -137,28 +122,21 @@ cc_test(
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "moby_lcp_solver_test",
-    size = "small",
-    srcs = ["test/moby_lcp_solver_test.cc"],
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "system_identification_test",
-    size = "medium",
-    srcs = ["test/system_identification_test.cc"],
     deps = [
         ":system_identification",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
