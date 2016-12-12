@@ -1,1 +1,1 @@
-add_subdirectory(cylinderTorqueFreeAnalyticalSolutionForQuaternion)
+add_subdirectory(cylinder_torque_free_analytical_solution)

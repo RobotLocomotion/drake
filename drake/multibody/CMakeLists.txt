@@ -83,6 +83,7 @@ drake_install_pkg_config_file(drake-ik
         drake-rigid-body-constraint
         eigen3)
 
+add_subdirectory(benchmarks)
 add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(joints)

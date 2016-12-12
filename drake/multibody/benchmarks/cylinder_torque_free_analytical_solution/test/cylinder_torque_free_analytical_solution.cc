@@ -21,6 +21,9 @@
 namespace drake {
 namespace benchmarks {
 namespace cylinder_torque_free_analytical_solution {
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
 
 /**
  * Calculates exact solutions for Euler parameters, angular velocity measures,
@@ -30,26 +33,25 @@ namespace cylinder_torque_free_analytical_solution {
  * @param wInitial Initial values of wx, wy, wz which are the Bx>, By>, Bz>
  * measures of B's angular velocity in N.  Note: Bx>, By>, Bz> are right-handed
  * orthogonal unit vectors fixed in B, with Bz> parallel to B's symmetry axis.
- * @returns Computer-exact values at time t are returned as defined below.
+ * @returns Machine-precision values at time t are returned as defined below.
  *
- * std:tuple | Description
- * ----------|------------------
- * quat      | Eigen::Vector4d quaternion representing B's orientation in N.
- * w         | Eigen::Vector3d with wx, wy, wz.
- * quatDt    | Eigen::Vector4d with time-derivative of quaternion.
- * wDt       | Eigen::Vector3d with time-derivative of wx, wy, wz.
+ * std::tuple | Description
+ * -----------|------------------
+ * quat       | Eigen::Vector4d quaternion representing B's orientation in N.
+ * w          | Eigen::Vector3d with wx, wy, wz.
+ * quatDt     | Eigen::Vector4d with time-derivative of quaternion.
+ * wDt        | Eigen::Vector3d with time-derivative of wx, wy, wz.
  */
-std::tuple<Eigen::Vector4d, Eigen::Vector3d,
-           Eigen::Vector4d, Eigen::Vector3d>
-    CalculateExactSolution(const double t, const Eigen::Vector3d& wInitial ) {
+std::tuple<Vector4d, Vector3d, Vector4d, Vector3d>
+    CalculateExactSolution(const double t, const Vector3d& w_initial ) {
     // Constant values of moments of inertia.
   const double I = 0.04;
   const double J = 0.02;
 
   // Initial values of wx, wy, wz.
-  const double wx0 = wInitial[0];
-  const double wy0 = wInitial[1];
-  const double wz0 = wInitial[2];
+  const double wx0 = w_initial[0];
+  const double wy0 = w_initial[1];
+  const double wz0 = w_initial[2];
 
   // Analytical solution for Euler parameters (quaternion).
   const double p = sqrt(wx0 * wx0 + wy0 * wy0 + (wz0 * J / I) * (wz0 * J / I));
@@ -82,21 +84,17 @@ std::tuple<Eigen::Vector4d, Eigen::Vector3d,
   const double wzDt = 0.0;
 
   // Create a tuple to package for returning.
-  std::tuple< Eigen::Vector4d, Eigen::Vector3d,
-              Eigen::Vector4d, Eigen::Vector3d> retTuple;
-  Eigen::Vector4d& quat   = std::get<0>(retTuple);
-  Eigen::Vector4d& quatDt = std::get<2>(retTuple);
-  Eigen::Vector3d& w   = std::get<1>(retTuple);
-  Eigen::Vector3d& wDt = std::get<3>(retTuple);
+  std::tuple< Vector4d, Vector3d, Vector4d, Vector3d> retTuple;
+  Vector4d& quat   = std::get<0>(retTuple);
+  Vector4d& quatDt = std::get<2>(retTuple);
+  Vector3d& w      = std::get<1>(retTuple);
+  Vector3d& wDt    = std::get<3>(retTuple);
 
   // Return results.
-  quat[0] = e0;      quatDt[0] = e0Dt;
-  quat[1] = e1;      quatDt[1] = e1Dt;
-  quat[2] = e2;      quatDt[2] = e2Dt;
-  quat[3] = e3;      quatDt[3] = e3Dt;
-  w[0] = wx;            wDt[0] = wxDt;
-  w[1] = wy;            wDt[1] = wyDt;
-  w[2] = wz;            wDt[2] = wzDt;
+  quat << e0, e1, e2, e3;
+  quatDt << e0Dt, e1Dt, e2Dt, e3Dt;
+  w << wx, wy, wz;
+  wDt << wxDt, wyDt, wzDt;
 
   return retTuple;
 }
@@ -108,7 +106,7 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // Note: .urdf file defines mass and inertia properties.
   // Create the path to the file containing geometry.
   const std::string urdf_name = "uniform_solid_cylinder.urdf";
-  const std::string urdf_dir = "/benchmarks/"
+  const std::string urdf_dir = "/multibody/benchmarks/"
                                "cylinder_torque_free_analytical_solution/";
   const std::string urdf_dirFilename = GetDrakePath() + urdf_dir + urdf_name;
 
@@ -142,32 +140,32 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // (where q1=Roll, q2=Pitch, q3=Yaw for SpaceXYZ rotation sequence).
   // TODO(mitiguy) Update comment/code when GitHub issue #4398 is fixed.
   // TODO(mitiguy) kRollPitchYaw is documented here for my sanity/later use.
-  systems::VectorBase<double>& stateDrake =
+  systems::VectorBase<double>& state_drake =
       *(context->get_mutable_continuous_state_vector());
 
   // Create 3x1 Eigen column matrix for x, y, z.
   // Create 3x1 Eigen column matrix for x', y', z'.
-  Eigen::Vector3d xyzInitial(1.0, 2.0, 3.0);
-  Eigen::Vector3d xyzDtInitial(0.0, 0.0, 0.0);
+  Vector3d xyz_initial(1.0, 2.0, 3.0);
+  Vector3d xyzDt_initial(0.0, 0.0, 0.0);
 
   // Create 4x1 Eigen column matrix for quaternion e0, e1, e2, e3.
   // Create 3x1 Eigen column matrix for wx, wy, wz.
   // TODO(mitiguy) Add a non-identity initial alignment.
-  Eigen::Vector4d quatInitial(1.0, 0.0, 0.0, 0.0);
-  Eigen::Vector3d wInitial(2.0, 4.0, 6.0);
+  Vector4d quat_initial(1.0, 0.0, 0.0, 0.0);
+  Vector3d w_initial(2.0, 4.0, 6.0);
 
   // Concatenate these 4 Eigen column matrices into one Eigen column matrix.
   // Note: The state has a weird order (see previous comment).
-  Eigen::Matrix<double, 13, 1> eigenState;
-  eigenState << xyzInitial, quatInitial, wInitial, xyzDtInitial;
+  Eigen::Matrix<double, 13, 1> eigen_state;
+  eigen_state << xyz_initial, quat_initial, w_initial, xyzDt_initial;
 
-  // Set state portion of Context using eigenState.
-  stateDrake.SetFromVector(eigenState);
+  // Set state portion of Context using eigen_state.
+  state_drake.SetFromVector(eigen_state);
 
   // Construct enough space to hold time-derivative of state s.
   std::unique_ptr<systems::ContinuousState<double>> ds =
       rigid_body_plant.AllocateTimeDerivatives();
-  systems::ContinuousState<double>* stateDrakeDt = ds.get();
+  systems::ContinuousState<double>* stateDt_drake = ds.get();
 
   // Setup an empty input port - that serves no purpose but to frustrate me.
   const int numActuators = rigid_body_plant.get_num_actuators();
@@ -177,36 +175,36 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   context->SetInputPort(0, std::move(port));
 
   // Evaluate the time-derivatives of the state.
-  systems::Context<double>* rawContext = context.get();
-  rigid_body_plant.EvalTimeDerivatives(*rawContext, stateDrakeDt);
+  systems::Context<double>* raw_context = context.get();
+  rigid_body_plant.EvalTimeDerivatives(*raw_context, stateDt_drake);
 
   // TODO(mitiguy) Add simulation and check numerical integrator.
 
   // Get the state and state time-derivatives for comparison.
   // State for joints::kQuaternion   -- x,y,z, e0,e1,e2,e3, wx,wy,wz, x',y',z'.
   // TODO(mitiguy) Update comment/code when GitHub issue #4398 is fixed.
-  Eigen::VectorXd stateEigen = stateDrake.CopyToVector();
-  Eigen::Vector4d eDrakeEigen = stateEigen.segment<4>(3);
-  Eigen::Vector3d wDrakeEigen = stateEigen.segment<3>(7);
+  VectorXd state_eigen = state_drake.CopyToVector();
+  Vector4d quat_eigen  = state_eigen.segment<4>(3);
+  Vector3d w_eigen     = state_eigen.segment<3>(7);
 
-  Eigen::VectorXd stateDtEigen = stateDrakeDt->CopyToVector();
-  Eigen::Vector4d eDtDrakeEigen = stateDtEigen.segment<4>(3);
-  Eigen::Vector3d wDtDrakeEigen = stateDtEigen.segment<3>(7);
+  VectorXd stateDt_eigen = stateDt_drake->CopyToVector();
+  Vector4d quatDt_eigen  = stateDt_eigen.segment<4>(3);
+  Vector3d wDt_eigen     = stateDt_eigen.segment<3>(7);
 
   // Reserve space for values returned by calculating exact solution.
-  Eigen::Vector4d quatExact, quatDtExact;
-  Eigen::Vector3d wExact, wDtExact;
+  Vector4d quat_exact, quatDt_exact;
+  Vector3d w_exact, wDt_exact;
 
   // Calculate exact analytical solution.
   const double t = 0;
-  std::tie(quatExact, wExact, quatDtExact, wDtExact) =
-      CalculateExactSolution(t, wInitial);
+  std::tie(quat_exact, w_exact, quatDt_exact, wDt_exact) =
+      CalculateExactSolution(t, w_initial);
 
   // Compare Drake results with exact results.
-  EXPECT_TRUE(CompareMatrices(eDrakeEigen, quatExact, 1.0E-15));
-  EXPECT_TRUE(CompareMatrices(wDrakeEigen, wExact, 1.0E-15));
-  EXPECT_TRUE(CompareMatrices(eDtDrakeEigen, quatDtExact, 1.0E-15));
-  EXPECT_TRUE(CompareMatrices(wDtDrakeEigen, wDtExact, 1.0E-15));
+  EXPECT_TRUE(CompareMatrices(  quat_eigen,   quat_exact, 1.0E-15));
+  EXPECT_TRUE(CompareMatrices(     w_eigen,      w_exact, 1.0E-15));
+  EXPECT_TRUE(CompareMatrices(quatDt_eigen, quatDt_exact, 1.0E-15));
+  EXPECT_TRUE(CompareMatrices(   wDt_eigen,    wDt_exact, 1.0E-15));
 }
 
 }  // namespace cylinder_torque_free_analytical_solution
