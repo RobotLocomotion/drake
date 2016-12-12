@@ -108,19 +108,14 @@ class RobotPlanRunner {
     iiwa_status_ = *status;
   }
 
-//#define RUN_OLD_CODE
-
   void HandlePlan(const lcm::ReceiveBuffer* rbuf, const std::string& chan,
                   const robotlocomotion::robot_plan_t* plan) {
     std::cout << "New plan received." << std::endl;
 
-    // NEW code
-    std::vector<Eigen::MatrixXd> knots(plan->num_states); // Have to use a matrix?
+    std::vector<Eigen::MatrixXd> knots(plan->num_states);
     for (int i = 0; i < plan->num_states; ++i) {
       knots[i] = Eigen::MatrixXd::Zero(kNumJoints, 1);
-//      std::cout << "Zero Joint #" << i << " " << knots[i] << std::endl;
     }
-
     std::map<std::string, int> name_to_idx =
         tree_.computePositionNameToIndexMap();
     for (int i = 0; i < plan->num_states; ++i) {
@@ -129,9 +124,7 @@ class RobotPlanRunner {
         if (name_to_idx.count(state.joint_name[j]) == 0) {
           continue;
         }
-//        Eigen::MatrixXd& joints = knots[i]; // does this get refreshed to point at the new row each time?
         knots[i](name_to_idx[state.joint_name[j]], 0) = state.joint_position[j];
-//        std::cout << "Joint #" << i << ": " << joints << std::endl;
       }
     }
 
@@ -139,44 +132,12 @@ class RobotPlanRunner {
       std::cout << knots[i] << std::endl;
     }
 
-      // OLD code
-    Eigen::MatrixXd traj_mat(kNumJoints, plan->num_states);
-    traj_mat.fill(0);
-
-//    std::map<std::string, int> name_to_idx =
-//        tree_.computePositionNameToIndexMap();
-    for (int i = 0; i < plan->num_states; ++i) {
-      const auto& state = plan->plan[i];
-      for (int j = 0; j < state.num_joints; ++j) {
-        if (name_to_idx.count(state.joint_name[j]) == 0) {
-          continue;
-        }
-        traj_mat(name_to_idx[state.joint_name[j]], i) =
-            state.joint_position[j];
-      }
-    }
-    std::cout << "traj_mat: " << traj_mat << std::endl;
-
     std::vector<double> input_time;
     for (int k = 0; k < static_cast<int>(plan->plan.size()); ++k) {
       input_time.push_back(plan->plan[k].utime / 1e6);
     }
-
-#ifdef RUN_OLD_CODE
-    plan_.reset(new PiecewisePolynomialTrajectory(traj_mat, input_time));
-#else
-    PiecewisePolynomial<double> foh = PiecewisePolynomial<double>::FirstOrderHold(input_time, knots);
-    plan_.reset(new PiecewisePolynomialTrajectory(foh));
-
-    PiecewisePolynomialTrajectory pp_traj = PiecewisePolynomialTrajectory(traj_mat, input_time);
-    std::cout << "Rows = " << pp_traj.rows() << std::endl;
-    std::cout << "Cols = " << pp_traj.cols() << std::endl;
-
-    pp_traj = PiecewisePolynomialTrajectory(foh);
-    std::cout << "Rows = " << pp_traj.rows() << std::endl;
-    std::cout << "Cols = " << pp_traj.cols() << std::endl;
-#endif
-
+    plan_.reset(new PiecewisePolynomialTrajectory(
+        PiecewisePolynomial<double>::FirstOrderHold(input_time, knots)));
     ++plan_number_;
   }
 
