@@ -17,7 +17,8 @@ if(lcm_FOUND)
   target_link_libraries(pendulum_run_dynamics
     drakePendulumPlant
     drakeRigidBodyPlant
-    drakeSystemAnalysis)
+    drakeSystemAnalysis
+    drakeSystemPrimitives)
   drake_add_test(NAME pendulum_run_dynamics
     COMMAND pendulum_run_dynamics)
 

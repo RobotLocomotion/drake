@@ -11,8 +11,8 @@
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_value_source.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/constant_value_source.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 #include "drake/util/drakeGeometryUtil.h"
 

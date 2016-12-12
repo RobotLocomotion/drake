@@ -23,7 +23,7 @@ cc_library(
         "//drake/common:is_approx_equal_abstol",
         "//drake/math:continuous_algebraic_ricatti_equation",
         "//drake/systems/framework",
-        "//drake/systems/framework/primitives:linear_system",
+        "//drake/systems/primitives:linear_system",
     ],
 )
 
@@ -34,10 +34,10 @@ cc_library(
     linkstatic = 1,
     deps = [
         "//drake/systems/framework",
-        "//drake/systems/framework/primitives:adder",
-        "//drake/systems/framework/primitives:gain",
-        "//drake/systems/framework/primitives:integrator",
-        "//drake/systems/framework/primitives:pass_through",
+        "//drake/systems/primitives:adder",
+        "//drake/systems/primitives:gain",
+        "//drake/systems/primitives:integrator",
+        "//drake/systems/primitives:pass_through",
     ],
 )
 
@@ -48,9 +48,9 @@ cc_library(
     linkstatic = 1,
     deps = [
         ":pid_controller",
-        "//drake/systems/framework/primitives:constant_vector_source",
-        "//drake/systems/framework/primitives:demultiplexer",
-        "//drake/systems/framework/primitives:matrix_gain",
+        "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:demultiplexer",
+        "//drake/systems/primitives:matrix_gain",
     ],
 )
 

@@ -14,14 +14,14 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_urdf.h"
-#include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
