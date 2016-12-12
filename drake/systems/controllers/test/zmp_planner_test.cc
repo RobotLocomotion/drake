@@ -51,23 +51,23 @@ int main() {
   //std::cout << "S: " << zmp.S_ << std::endl;
   out.open("/home/sfeng/zmp_d");
   for (double t = Ts[0]; t <= Ts[Ts.size()-1] + 5; t+= 0.01) {
-    out << t << " " << zmp.GetDesiredZMP(t).transpose() << std::endl;
+    out << t << " " << zmp.get_desired_zmp(t).transpose() << std::endl;
   }
   out.close();
 
   out.open("/home/sfeng/com");
   for (double t = Ts[0]; t <= Ts[Ts.size()-1] + 5; t+= 0.01) {
-    out << t << " " << zmp.GetNominalCOM(t).transpose() << std::endl;
+    out << t << " " << zmp.get_nominal_com(t).transpose() << std::endl;
   }
   out.close();
 
-  /*
-  out.open("/home/sfeng/s1");
+  out.open("/home/sfeng/ff");
   for (double t = Ts[0]; t <= Ts[Ts.size()-1] + 5; t+= 0.01) {
-    out << t << " " << zmp.s1_traj_.value(t).transpose() << std::endl;
+    Eigen::Vector4d nominal_x;
+    nominal_x << zmp.get_nominal_com(t), zmp.get_nominal_comd(t);
+    out << t << " " << zmp.get_nominal_comdd(t).transpose() << " " << zmp.ComputeOptimalCoMdd(t, nominal_x).transpose() << std::endl;
   }
   out.close();
-  */
 
   return 0;
 }
