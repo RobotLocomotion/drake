@@ -8,13 +8,12 @@
 namespace drake {
 
 GTEST_TEST(TestLQR, TestException) {
-  Eigen::Matrix2d A;
-  Eigen::Vector2d B;
+  Eigen::Matrix2d A = Eigen::Matrix2d::Zero();
+  Eigen::Vector2d B = Eigen::Vector2d::Zero();
 
   Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
-  Eigen::Matrix<double, 1, 1> R;
+  Eigen::Matrix<double, 1, 1> R = Eigen::MatrixXd::Identity(1, 1);
   Eigen::Vector2d N = Eigen::Vector2d::Zero();
-  R << 1;
 
   EXPECT_NO_THROW(systems::LinearQuadraticRegulator(A, B, Q, R, N));
   EXPECT_NO_THROW(systems::LinearQuadraticRegulator(A, B, Q, R));
