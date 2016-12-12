@@ -1,7 +1,9 @@
+#include "drake/systems/controllers/zmp_planner.h"
+
 #include <unsupported/Eigen/MatrixFunctions>
+#include <vector>
 
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
-#include "drake/systems/controllers/zmp_planner.h"
 
 namespace drake {
 namespace systems {
