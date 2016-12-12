@@ -22,28 +22,33 @@
 
 using Eigen::aligned_allocator;
 using Eigen::Vector3d;
-using drake::lcm::DrakeLcm;
-using drake::multibody::joints::FloatingBaseType;
-using drake::multibody::joints::kFixed;
-using drake::multibody::joints::kQuaternion;
-using drake::parsers::ModelInstanceIdTable;
-using drake::parsers::sdf::AddModelInstancesFromSdfFile;
-using drake::parsers::urdf::AddModelInstanceFromUrdfFile;
-using drake::systems::ConstantVectorSource;
-using drake::systems::Context;
-using drake::systems::ContinuousState;
-using drake::systems::Diagram;
-using drake::systems::DiagramBuilder;
-using drake::systems::DrakeVisualizer;
-using drake::systems::RigidBodyPlant;
-using drake::systems::Simulator;
-using drake::systems::VectorBase;
+
 using std::allocate_shared;
 using std::make_unique;
 using std::string;
 using std::unique_ptr;
 
 namespace drake {
+
+using lcm::DrakeLcm;
+using multibody::AddFlatTerrainToWorld;
+using multibody::joints::FloatingBaseType;
+using multibody::joints::kFixed;
+using multibody::joints::kQuaternion;
+using parsers::ModelInstanceIdTable;
+using parsers::PackageMap;
+using parsers::sdf::AddModelInstancesFromSdfFile;
+using parsers::urdf::AddModelInstanceFromUrdfFile;
+using systems::ConstantVectorSource;
+using systems::Context;
+using systems::ContinuousState;
+using systems::Diagram;
+using systems::DiagramBuilder;
+using systems::DrakeVisualizer;
+using systems::RigidBodyPlant;
+using systems::Simulator;
+using systems::VectorBase;
+
 namespace examples {
 namespace kuka_iiwa_arm {
 
@@ -96,13 +101,13 @@ int IiwaWorldSimBuilder<T>::AddModelInstanceToFrame(
   DRAKE_DEMAND(extension == "urdf" || extension == "sdf");
 
   if (extension == "urdf") {
-    table = drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + model_map_[model_name], floating_base_type,
+    table = AddModelInstanceFromUrdfFile(
+        GetDrakePath() + model_map_[model_name], floating_base_type,
         weld_to_frame, rigid_body_tree_.get());
 
   } else if (extension == "sdf") {
-    table = drake::parsers::sdf::AddModelInstancesFromSdfFile(
-        drake::GetDrakePath() + model_map_[model_name], floating_base_type,
+    table = AddModelInstancesFromSdfFile(
+        GetDrakePath() + model_map_[model_name], floating_base_type,
         weld_to_frame, rigid_body_tree_.get());
   }
   const int model_instance_id = table.begin()->second;
@@ -112,7 +117,7 @@ int IiwaWorldSimBuilder<T>::AddModelInstanceToFrame(
 template <typename T>
 void IiwaWorldSimBuilder<T>::AddGround() {
   DRAKE_DEMAND(!built_);
-  drake::multibody::AddFlatTerrainToWorld(rigid_body_tree_.get());
+  AddFlatTerrainToWorld(rigid_body_tree_.get());
 }
 
 template <typename T>
