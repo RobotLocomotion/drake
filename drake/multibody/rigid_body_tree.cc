@@ -129,8 +129,9 @@ bool RigidBodyTree<T>::transformCollisionFrame(
   if (map_itr != body_collision_map_.end()) {
     BodyCollisions& collision_items = map_itr->second;
     for (auto& item : collision_items) {
-      item.element->SetLocalTransform(displace_transform *
-                                      item.element->getLocalTransform());
+      element_order_[item.element]->SetLocalTransform(
+          displace_transform *
+          element_order_[item.element]->getLocalTransform());
     }
   }
 
@@ -300,7 +301,7 @@ void RigidBodyTree<T>::CompileCollisionState() {
     if (body->IsRigidlyFixedToWorld()) {
       BodyCollisions &elements = pair.second;
       for (auto &collision_item : elements) {
-        collision_item.element->set_anchored();
+        element_order_[collision_item.element]->set_anchored();
       }
     }
   }
@@ -315,13 +316,14 @@ void RigidBodyTree<T>::CompileCollisionState() {
     BodyCollisions& elements = pair.second;
     int num_points = 0;
     // Note: contact points does *not* rely on collision element group names.
-    for ( const auto& collision_item : elements ) {
+    for (const auto& collision_item : elements) {
       Matrix3Xd element_points;
-      collision_item.element->getTerrainContactPoints(element_points);
+      element_order_[collision_item.element]->getTerrainContactPoints(
+          element_points);
       contact_points.conservativeResize(
           Eigen::NoChange, contact_points.cols() + element_points.cols());
       contact_points.block(0, num_points, contact_points.rows(),
-                            element_points.cols()) = element_points;
+                           element_points.cols()) = element_points;
       num_points += element_points.cols();
     }
     body->set_contact_points(contact_points);
@@ -337,11 +339,17 @@ void RigidBodyTree<T>::CompileCollisionState() {
     BodyCollisions& elements = pair.second;
     for (auto& collision_item : elements) {
       body->AddCollisionElement(collision_item.group_name,
-                                collision_item.element.get());
-      collision_model_->AddElement(std::move(collision_item.element));
+                                element_order_[collision_item.element].get());
     }
   }
+
+  // Registers collision elements in the instantiation order to guarantee
+  // deterministc results.
+  for (size_t i = 0; i < element_order_.size(); ++i) {
+    collision_model_->AddElement(std::move(element_order_[i]));
+  }
   body_collision_map_.clear();
+  element_order_.clear();
 }
 
 template <typename T>
@@ -352,7 +360,7 @@ void RigidBodyTree<T>::CreateCollisionCliques() {
     BodyCollisions& collision_items = pair.second;
     if ( collision_items.size() > 1 ) {
       for (auto& item : collision_items) {
-        item.element->AddToCollisionClique(clique_id);
+        element_order_[item.element]->AddToCollisionClique(clique_id);
       }
       clique_id = get_next_clique_id();
     }
@@ -373,11 +381,11 @@ void RigidBodyTree<T>::CreateCollisionCliques() {
       if (!body_i->CanCollideWith(*body_j)) {
         BodyCollisions& elements_i =  body_collision_map_[body_i];
         for (auto& item : elements_i) {
-          item.element->AddToCollisionClique(clique_id);
+          element_order_[item.element]->AddToCollisionClique(clique_id);
         }
         BodyCollisions& elements_j =  body_collision_map_[body_j];
         for (auto& item : elements_j) {
-          item.element->AddToCollisionClique(clique_id);
+          element_order_[item.element]->AddToCollisionClique(clique_id);
         }
         clique_id = get_next_clique_id();
       }
@@ -535,6 +543,7 @@ void RigidBodyTree<T>::addCollisionElement(
     bool success;
     std::tie(itr, success) =
         body_collision_map_.insert(std::make_pair(&body, BodyCollisions()));
+
     if (!success) {
       throw std::logic_error(
           "Unable to add the collision element to the "
@@ -543,8 +552,10 @@ void RigidBodyTree<T>::addCollisionElement(
     }
   }
   BodyCollisions& body_collisions = itr->second;
-  body_collisions.emplace_back(
-      group_name, std::unique_ptr<DrakeCollision::Element>(element.clone()));
+  size_t id = element_order_.size();
+  element_order_.emplace_back(
+      std::unique_ptr<DrakeCollision::Element>(element.clone()));
+  body_collisions.emplace_back(group_name, id);
 }
 
 template <typename T>
