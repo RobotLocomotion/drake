@@ -1,0 +1,50 @@
+drake_add_cc_test(adder_test)
+target_link_libraries(adder_test drakeSystemPrimitives)
+
+drake_add_cc_test(affine_system_test)
+target_link_libraries(affine_system_test drakeSystemPrimitives)
+
+drake_add_cc_test(constant_value_source_test)
+target_link_libraries(constant_value_source_test drakeSystemPrimitives)
+
+drake_add_cc_test(constant_vector_source_test)
+target_link_libraries(constant_vector_source_test drakeSystemPrimitives)
+
+drake_add_cc_test(demultiplexer_test)
+target_link_libraries(demultiplexer_test drakeSystemPrimitives)
+
+drake_add_cc_test(gain_test)
+target_link_libraries(gain_test drakeSystemPrimitives)
+
+drake_add_cc_test(gain_scalartype_test)
+target_link_libraries(gain_scalartype_test drakeSystemPrimitives)
+
+drake_add_cc_test(integrator_test)
+target_link_libraries(integrator_test drakeSystemPrimitives)
+
+drake_add_cc_test(linear_system_test)
+target_link_libraries(linear_system_test drakeSystemPrimitives)
+
+drake_add_cc_test(matrix_gain_test)
+target_link_libraries(matrix_gain_test drakeSystemPrimitives)
+
+drake_add_cc_test(multiplexer_test)
+target_link_libraries(multiplexer_test drakeSystemPrimitives)
+
+drake_add_cc_test(pass_through_test)
+target_link_libraries(pass_through_test drakeSystemPrimitives)
+
+drake_add_cc_test(pass_through_scalartype_test)
+target_link_libraries(pass_through_scalartype_test drakeSystemPrimitives)
+
+drake_add_cc_test(random_source_test)
+target_link_libraries(random_source_test drakeSystemPrimitives drakeSystemAnalysis)
+
+drake_add_cc_test(signal_logger_test)
+target_link_libraries(signal_logger_test drakeSystemPrimitives drakeSystemAnalysis)
+
+drake_add_cc_test(trajectory_source_test)
+target_link_libraries(trajectory_source_test drakeSystemPrimitives)
+
+drake_add_cc_test(zero_order_hold_test)
+target_link_libraries(zero_order_hold_test drakeSystemPrimitives)
