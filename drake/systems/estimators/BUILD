@@ -12,7 +12,7 @@ cc_library(
         ":luenberger_observer",
         "//drake/systems/controllers:linear_quadratic_regulator",
         "//drake/systems/framework",
-        "//drake/systems/framework/primitives:linear_system",
+        "//drake/systems/primitives:linear_system",
     ],
 )
 
@@ -46,7 +46,7 @@ cc_test(
     deps = [
         ":luenberger_observer",
         "//drake/common:eigen_matrix_compare",
-        "//drake/systems/framework/primitives:linear_system",
+        "//drake/systems/primitives:linear_system",
         "@gtest//:main",
     ],
 )
