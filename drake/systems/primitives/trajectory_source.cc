@@ -7,8 +7,7 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-TrajectorySource<T>::TrajectorySource(
-    const Trajectory& trajectory)
+TrajectorySource<T>::TrajectorySource(const Trajectory& trajectory)
     : trajectory_(trajectory) {
   this->DeclareOutputPort(kVectorValued, trajectory_.rows());
   // This class does not currently support trajectories which output
@@ -17,8 +16,8 @@ TrajectorySource<T>::TrajectorySource(
 }
 
 template <typename T>
-void TrajectorySource<T>::EvalOutput(
-    const Context<T>& context, SystemOutput<T>* output) const {
+void TrajectorySource<T>::EvalOutput(const Context<T>& context,
+                                     SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
   T time = context.get_time();
   System<T>::GetMutableOutputVector(output, 0) = trajectory_.value(time);

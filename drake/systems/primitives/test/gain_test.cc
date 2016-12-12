@@ -25,8 +25,8 @@ void TestGainSystem(const Gain<T>& gain_system,
   // Verifies that Gain allocates no state variables in the context.
   EXPECT_EQ(0, context->get_continuous_state()->size());
   auto output = gain_system.AllocateOutput(*context);
-  auto input = make_unique<BasicVector<double>>(
-      gain_system.get_gain_vector().size());
+  auto input =
+      make_unique<BasicVector<double>>(gain_system.get_gain_vector().size());
 
   // Checks that the number of input ports in the Gain system and the Context
   // are consistent.
@@ -53,7 +53,8 @@ void TestGainSystem(const Gain<T>& gain_system,
 GTEST_TEST(GainTest, GainScalarTest) {
   const double kGain{2.0};
   const int kSize = 3;
-  const auto gain_system = make_unique<Gain<double>>(kGain, kSize);;
+  const auto gain_system = make_unique<Gain<double>>(kGain, kSize);
+  ;
   const Eigen::Vector3d input_vector(1.0, 3.14, 2.18);
   const Eigen::Vector3d expected_output(kGain * input_vector);
 
@@ -73,8 +74,8 @@ GTEST_TEST(GainTest, GainVectorTest) {
   const Vector4<double> gain_values(1.0, 2.0, 3.0, 4.0);
   const auto gain_system = make_unique<Gain<double>>(gain_values);
   const Eigen::Vector4d input_vector(9.81, 5.46, 16.24, 98.12);
-  const Eigen::Vector4d expected_output(
-      gain_values.array() * input_vector.array());
+  const Eigen::Vector4d expected_output(gain_values.array() *
+                                        input_vector.array());
 
   // Verifies the gain accessors are OK.
   EXPECT_DEATH(gain_system->get_gain(), ".*");

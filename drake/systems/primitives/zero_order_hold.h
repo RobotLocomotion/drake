@@ -30,8 +30,8 @@ class ZeroOrderHold : public LeafSystem<T> {
  protected:
   /// Latches the input port into the discrete state.
   void DoEvalDiscreteVariableUpdates(
-      const Context<T> &context,
-      DiscreteState<T> *discrete_state) const override;
+      const Context<T>& context,
+      DiscreteState<T>* discrete_state) const override;
 
   std::unique_ptr<DiscreteState<T>> AllocateDiscreteState() const override;
 };

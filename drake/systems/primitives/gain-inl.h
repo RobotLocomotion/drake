@@ -21,7 +21,7 @@ namespace systems {
 // TODO(amcastro-tri): remove the size parameter from the constructor once
 // #3109 supporting automatic sizes is resolved.
 template <typename T>
-Gain<T>::Gain(const T& k, int size) : Gain(VectorX<T>::Ones(size) * k) { }
+Gain<T>::Gain(const T& k, int size) : Gain(VectorX<T>::Ones(size) * k) {}
 
 template <typename T>
 Gain<T>::Gain(const VectorX<T>& k) : k_(k) {

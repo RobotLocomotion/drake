@@ -11,8 +11,7 @@ namespace systems {
 class AffineLinearSystemTest : public ::testing::Test {
  public:
   // Setup an arbitrary AffineSystem.
-  AffineLinearSystemTest(double f0_0, double f0_1, double y0_0,
-                         double y0_1)
+  AffineLinearSystemTest(double f0_0, double f0_1, double y0_0, double y0_1)
       : A_(make_2x2_matrix(1.5, 2.7, 3.5, -4.9)),
         B_(make_2x2_matrix(4.9, -5.1, 6.8, 7.2)),
         f0_(make_2x1_vector(f0_0, f0_1)),
@@ -29,8 +28,8 @@ class AffineLinearSystemTest : public ::testing::Test {
     context_->FixInputPort(0, std::move(input_vector_));
   }
 
-  static Eigen::MatrixXd make_2x2_matrix(
-      double a, double b, double c, double d) {
+  static Eigen::MatrixXd make_2x2_matrix(double a, double b, double c,
+                                         double d) {
     Eigen::MatrixXd m(2, 2);
     m << a, b, c, d;
     return m;

@@ -40,8 +40,7 @@ TEST_F(ConstantValueSourceTest, Output) {
 
   EXPECT_EQ("foo",
             output_->get_port(0).get_abstract_data()->GetValue<std::string>());
-  EXPECT_EQ("foo",
-            output_->get_data(0)->GetValue<std::string>());
+  EXPECT_EQ("foo", output_->get_data(0)->GetValue<std::string>());
 }
 
 // Tests that ConstantValueSource allocates no state variables in the context_.

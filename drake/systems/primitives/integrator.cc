@@ -26,8 +26,7 @@ void Integrator<T>::set_integral_value(
     Context<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
   // TODO(amcastro-tri): Provide simple accessors here to avoid lengthy
   // constructions.
-  VectorBase<T>* state_vector =
-      context->get_mutable_continuous_state_vector();
+  VectorBase<T>* state_vector = context->get_mutable_continuous_state_vector();
   // Asserts that the input value is a column vector of the appropriate size.
   DRAKE_ASSERT(value.rows() == state_vector->size() && value.cols() == 1);
   state_vector->SetFromVector(value);
@@ -72,7 +71,7 @@ void Integrator<T>::EvalOutput(const Context<T>& context,
       System<T>::CopyContinuousStateVector(context);
 }
 
-template<typename T>
+template <typename T>
 Integrator<AutoDiffXd>* Integrator<T>::DoToAutoDiffXd() const {
   return new Integrator<AutoDiffXd>(this->get_input_port(0).get_size());
 }

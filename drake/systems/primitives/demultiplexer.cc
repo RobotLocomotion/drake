@@ -1,7 +1,7 @@
 #include "drake/systems/primitives/demultiplexer.h"
 
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/autodiff_overloads.h"
+#include "drake/common/eigen_autodiff_types.h"
 
 namespace drake {
 namespace systems {

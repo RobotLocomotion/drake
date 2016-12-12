@@ -40,7 +40,7 @@ GTEST_TEST(TestSignalLogger, GaussianWhiteNoise) {
     EXPECT_NEAR(count / x.size(),
                 .5 + std::erf(threshold / std::sqrt(2.0)) / 2.0,
                 0.02);  // Note intentionally very large tolerance.
-                // TODO(russt): Tighten tolerance once #4325 is resolved.
+    // TODO(russt): Tighten tolerance once #4325 is resolved.
   }
 }
 
@@ -71,7 +71,7 @@ GTEST_TEST(TestSignalLogger, UniformWhiteNoise) {
     // (threshold+1)/2.
     EXPECT_NEAR(count / x.size(), (threshold + 1.0) / 2.0,
                 0.02);  // Note intentionally very large tolerance.
-                // TODO(russt): Tighten tolerance once #4325 is resolved.
+    // TODO(russt): Tighten tolerance once #4325 is resolved.
   }
 }
 
