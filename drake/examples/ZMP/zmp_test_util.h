@@ -7,6 +7,8 @@ namespace drake {
 namespace examples {
 namespace zmp {
 
+// A structure for storing trajectories from simulating a LIPM model using
+// the policy from a drake::systems::ZMPPlanner.
 struct ZMPTestTraj {
   Eigen::Matrix<double, 1, Eigen::Dynamic> time;
   Eigen::Matrix<double, 6, Eigen::Dynamic> nominal_com;
@@ -16,7 +18,7 @@ struct ZMPTestTraj {
   Eigen::Matrix<double, 2, Eigen::Dynamic> u;
   Eigen::Matrix<double, 2, Eigen::Dynamic> cop;
 
-  ZMPTestTraj(int N) {
+  explicit ZMPTestTraj(int N) {
     time.resize(N);
     nominal_com.resize(6, N);
     desired_zmp.resize(2, N);
@@ -26,12 +28,39 @@ struct ZMPTestTraj {
   }
 };
 
+/**
+ * Forward simulation using the linear policy from `zmp_planner` starting from
+ * the initial condition `x0` using Euler integration.
+ * @param zmp_planner, Contains planned center of mass trajectory,
+ * value function, and linear policy.
+ * @param x0, Initial condition.
+ * @param dt, Time step
+ * @param T_final_offset, Simulate until `T_final_offset` pass the end of the
+ * trajectories for convergence.
+ * @return ZMPTestTraj that contains all the information.
+ */
 ZMPTestTraj Simulate(const drake::systems::ZMPPlanner& zmp_planner,
     const Eigen::Vector4d& x0, double dt, double T_final_offset);
 
 // Generates desired ZMP trajectories (piecewise constant, linear, and cubic).
 // The ZMP knot points moves forward in the x direction, and alternates in the
 // y direction.
+
+/**
+ * Generates desired ZMP trajectories as piecewise polynomials given the
+ * desired footsteps. The knot points are generated as follows:
+ * T: 0, knots: fs[0]
+ * T: ss, knots: fs[0]
+ * T: ss + ds, knots: fs[1]
+ * T: 2 * ss + ds, knots: fs[1]
+ * T: 2 * ss + 2 * ds, knots: fs[2]
+ * T: 3 * ss + 2 * ds, knots: fs[2]
+ *  ...
+ * @param footsteps, X Y pair
+ * @param double_support_duration, Duration for double support.
+ * @param single_support_duration, Duration for single support.
+ * @return Three trajectories, 0 is piecewise constant, 1 is linear, 2 is cubic.
+ */
 std::vector<PiecewisePolynomial<double>> GenerateDesiredZMPTrajs(
     const std::vector<Eigen::Vector2d>& footsteps,
     double double_support_duration,

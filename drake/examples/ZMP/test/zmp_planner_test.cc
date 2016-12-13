@@ -1,13 +1,13 @@
+#include "drake/common/eigen_matrix_compare.h"
+#include "drake/examples/ZMP/zmp_test_util.h"
+
 #include "drake/systems/controllers/zmp_planner.h"
 
 #include "gtest/gtest.h"
-#include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/ZMP/zmp_test_util.h"
 
 namespace drake {
 namespace examples {
 namespace zmp {
-
 
 // Given the value function of the form:
 // J(x_bar) = x_bar^T * S1 * x_bar + x_bar^T * S2 + constant,
@@ -23,8 +23,8 @@ namespace zmp {
 // (R + D^T * Qy * D) * u =
 // -(C * x - y_d)^T * Qy * D - (S1 * x_bar + 0.5 * S2)^T * B
 Eigen::Vector2d ComputeOptimalCoMddGivenValueFunction(
-    const drake::systems::ZMPPlanner& zmp_planner,
-    double time, const Eigen::Vector4d& x) {
+    const drake::systems::ZMPPlanner& zmp_planner, double time,
+    const Eigen::Vector4d& x) {
   Eigen::Vector4d x_bar = x;
   x_bar.head<2>() -= zmp_planner.get_final_desired_zmp();
   Eigen::Vector2d zmp_d = zmp_planner.get_desired_zmp(time);
@@ -36,12 +36,11 @@ Eigen::Vector2d ComputeOptimalCoMddGivenValueFunction(
   const Eigen::Matrix<double, 2, 2>& R = zmp_planner.get_R();
   const Eigen::Matrix<double, 4, 4>& S =
       zmp_planner.get_value_function_second_derivative();
-  Eigen::Vector4d s1 =
-      zmp_planner.get_value_function_first_derivative(time);
+  Eigen::Vector4d s1 = zmp_planner.get_value_function_first_derivative(time);
 
   Eigen::Matrix2d R1 = R + D.transpose() * Qy * D;
-  Eigen::Vector2d lin = -(C * x - zmp_d).transpose() * Qy * D
-                 - (S * x_bar + 0.5 * s1).transpose() * B;
+  Eigen::Vector2d lin = -(C * x - zmp_d).transpose() * Qy * D -
+                        (S * x_bar + 0.5 * s1).transpose() * B;
   Eigen::Vector2d comdd_d = R1.inverse() * lin;
 
   return comdd_d;
@@ -52,7 +51,7 @@ Eigen::Vector2d ComputeOptimalCoMddGivenValueFunction(
 // with each other.
 GTEST_TEST(TestZMP, TestOptimalControl) {
   std::vector<Eigen::Vector2d> footsteps = {
-      Eigen::Vector2d(0, 0), Eigen::Vector2d(0.5, 0.1),
+      Eigen::Vector2d(0, 0),    Eigen::Vector2d(0.5, 0.1),
       Eigen::Vector2d(1, -0.1), Eigen::Vector2d(1.5, 0.1),
       Eigen::Vector2d(2, -0.1), Eigen::Vector2d(2.5, 0)};
 
@@ -78,14 +77,14 @@ GTEST_TEST(TestZMP, TestOptimalControl) {
       Eigen::Vector2d u0 = ComputeOptimalCoMddGivenValueFunction(
           zmp_planner, result.time[i], result.x.col(i));
       EXPECT_TRUE(CompareMatrices(u0, result.u.col(i), 1e-8,
-            MatrixCompareType::absolute));
+                                  MatrixCompareType::absolute));
     }
 
     int N = result.time.size();
     // Expect the trajectory converges to the desired at the end.
-    EXPECT_TRUE(CompareMatrices(
-          result.x.col(N - 1).head<4>(), result.nominal_com.col(N - 1).head<4>(),
-          1e-4, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(result.x.col(N - 1).head<4>(),
+                                result.nominal_com.col(N - 1).head<4>(), 1e-4,
+                                MatrixCompareType::absolute));
   }
 }
 
