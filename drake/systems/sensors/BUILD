@@ -8,7 +8,9 @@ cc_library(
     srcs = ["rotary_encoders.cc"],
     hdrs = ["rotary_encoders.h"],
     linkstatic = 1,
-    deps = ["//drake/systems/framework"],
+    deps = [
+        "//drake/systems/framework",
+    ],
 )
 
 # === test/ ===

@@ -25,7 +25,9 @@ cc_library(
 cc_library(
     name = "collision_api",
     hdrs = ["drake_collision.h"],
-    deps = [":model"],
+    deps = [
+        ":model",
+    ],
 )
 
 cc_library(
@@ -55,7 +57,9 @@ cc_library(
     ],
     linkstatic = 1,
     visibility = ["//visibility:private"],
-    deps = [":collision_api"],
+    deps = [
+        ":collision_api",
+    ],
 )
 
 # By default, supply a bullet-only model.  As we gain more collision library
