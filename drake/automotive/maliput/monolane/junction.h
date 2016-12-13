@@ -18,8 +18,10 @@ class RoadGeometry;
 class Junction : public api::Junction {
  public:
   /// Constructs an empty Junction.
-  Junction(const api::JunctionId& id, RoadGeometry* rg)
-      : id_(id), road_geometry_(rg) {}
+  ///
+  /// @p road_geometry must remain valid for the lifetime of this class.
+  Junction(const api::JunctionId& id, RoadGeometry* road_geometry)
+      : id_(id), road_geometry_(road_geometry) {}
 
   /// Creates and adds a new Segment with the specified @p id.
   Segment* NewSegment(api::SegmentId id);

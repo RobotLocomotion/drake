@@ -44,8 +44,6 @@ api::LanePosition ArcLane::DoToLanePosition(const api::GeoPosition&) const {
   DRAKE_ABORT();  // TODO(maddog) Implement me.
 }
 
-
-
 }  // namespace monolane
 }  // namespace maliput
 }  // namespace drake

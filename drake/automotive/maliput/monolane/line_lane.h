@@ -10,7 +10,7 @@ namespace monolane {
 /// in the xy-plane.
 class LineLane : public Lane {
  public:
-  /// Constructs a LineLane, specified by a line segment defined in the
+  /// Constructs a LineLane, a lane specified by a line segment defined in the
   /// xy-plane (the ground plane).
   ///
   /// @param xy0 start point of the reference line segment

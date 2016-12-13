@@ -27,7 +27,7 @@ class LaneEndSet : public api::LaneEndSet {
  private:
   int do_size() const override { return ends_.size(); }
 
-  const api::LaneEnd& do_get(int index) const override;
+  const api::LaneEnd& do_get(int index) const override { return ends_[index]; }
 
   std::vector<api::LaneEnd> ends_;
 };
@@ -37,7 +37,9 @@ class LaneEndSet : public api::LaneEndSet {
 class BranchPoint : public api::BranchPoint {
  public:
   /// Constructs an empty BranchPoint.
-  BranchPoint(const api::BranchPointId& id, RoadGeometry* rg);
+  ///
+  /// @p road_geometry must remain valid for the lifetime of this class.
+  BranchPoint(const api::BranchPointId& id, RoadGeometry* road_geometry);
 
   /// Adds a LaneEnd to the "A side" of the BranchPoint.
   const api::LaneEnd& AddABranch(const api::LaneEnd& lane_end);
