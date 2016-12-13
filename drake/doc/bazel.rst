@@ -36,12 +36,16 @@ Developing Drake using Bazel
 To build or test Drake, run **bazel build** or **bazel test** with the desired
 target label.
 
-All of the below commands should be run from the **drake-distro** working
+Unless otherwise noted,
+all of the below commands should be run from the **drake-distro** working
 directory, i.e., at the root directory of the git clone.
 
 Build the entire project::
 
   bazel build //...
+
+The "``//``" above means "starting from the root of the project";
+the "``...``" above means "everything including subdirectories' ``BUILD`` files".
 
 Build only the systems (sub)directories::
 
@@ -53,29 +57,51 @@ Build and test the entire project::
 
 Run one specific test::
 
-  bazel test drake/systems/framework/test/diagram_test
+  bazel test drake/systems/framework:diagram_test
+
+The "``:``" above is syntax that separates target names from the directory path
+of the ``BUILD`` file they appear in.  In this case, for example,
+``drake/systems/framework/BUILD`` specifies ``cc_test(name = "diagram_test")``.
 
 Run one specific test in debug mode (including all dependencies also compiled
 in debug mode)::
 
-  bazel test -c dbg drake/systems/framework/test/diagram_test
+  bazel test -c dbg drake/systems/framework:diagram_test
 
 Run a test under memcheck::
 
-  bazel test --config=memcheck drake/systems/framework/test/diagram_test
+  bazel test --config=memcheck drake/systems/framework:diagram_test
 
 Run a test under AddressSanitizer::
 
-  bazel test --config=asan drake/systems/framework/test/diagram_test
+  bazel test --config=asan drake/systems/framework:diagram_test
 
 Build the entire project using clang (on Ubuntu)::
 
-  bazel build --config=clang ...
+  bazel build --config=clang //...
 
 Run one of the compiled programs manually, from the build outputs directory
 (note that ``bazel-bin`` is a directory name here)::
 
   bazel-bin/drake/systems/framework/test/diagram_test
+
+You can also use relative pathnames if your shell's working directory is not at
+the project root.  Run a test using a relative path::
+
+  cd drake/common
+  bazel build ...          # Build everything in common/ and its children.
+  bazel build :*           # Build everything in common/ but NOT its children.
+  bazel test ...           # Test everything in common/ and its children.
+  bazel test :*            # Test everything in common/ but NOT its children.
+
+As before, the "``...``" above means "everything including subdirectories".
+However, since we did not precede it with "``//``", the search begins in the
+current directory (``common``) not from the ``drake-distro`` root.  As before,
+the "``:``" above is syntax that separates target names from the directory path
+of the ``BUILD`` file they appear in.  In this case there is nothing before the
+"``:``" so the context is "in the current directory" (``common``).  The "``*``"
+after the colon indicates "all targets" but without searching in
+subdirectories.
 
 For more reading about target patterns, see:
 https://bazel.build/versions/master/docs/bazel-user-manual.html#target-patterns
