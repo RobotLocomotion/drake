@@ -59,7 +59,7 @@ class AutomotiveSimulator {
   ///
   /// @return The model instance ID of the SimpleCar that was just added to
   /// the simulation.
-  int AddSimpleCarFromSdf(const std::string& sdf_filename, const std::string& channel_postfix="");
+  int AddSimpleCarFromSdf(const std::string& sdf_filename, const std::string& name="");
 
   /// Adds a TrajectoryCar system to this simulation, including its
   /// EulerFloatingJoint output.

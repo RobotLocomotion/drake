@@ -61,15 +61,15 @@ const RigidBodyTree<T>& AutomotiveSimulator<T>::get_rigid_body_tree() {
 
 template <typename T>
 int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
-    const std::string& sdf_filename, const std::string& channel_postfix) {
+    const std::string& sdf_filename, const std::string& name) {
   DRAKE_DEMAND(!started_);
   const int vehicle_number = allocate_vehicle_number();
 
   static const DrivingCommandTranslator driving_command_translator;
   std::string channel_name = "DRIVING_COMMAND";
-  if (!channel_postfix.empty()) {
+  if (!name.empty()) {
     channel_name += "_";
-    channel_name += channel_postfix;
+    channel_name += name;
   }
   auto command_subscriber =
       builder_->template AddSystem<systems::lcm::LcmSubscriberSystem>(
@@ -82,7 +82,18 @@ int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
   builder_->Connect(*simple_car, *coord_transform);
   AddPublisher(*simple_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  return AddSdfModel(sdf_filename, coord_transform);
+  int model_instance_id = AddSdfModel(sdf_filename, coord_transform);
+
+  if (!name.empty()) {
+    // TODO(russt): Set the model_name instead, once 
+    // https://github.com/RobotLocomotion/drake/issues/3053 is resolved.
+    // For now, only the body names show up in the drake visualizer.
+    const auto& bodies = rigid_body_tree_->FindBaseBodies(model_instance_id);
+    DRAKE_DEMAND(bodies.size()>0);
+    for (auto body : bodies)
+      rigid_body_tree_->bodies[body]->set_name(name);
+  }
+  return model_instance_id;
 }
 
 template <typename T>

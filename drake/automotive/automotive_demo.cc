@@ -10,9 +10,8 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging_gflags.h"
 
-DEFINE_string(simple_car_channel_postfix, "",
-              "Add a simple car subscribed to each channel in a "
-              "comma-separated list (e.g. 'Russ,Jeremy,Liang' would spawn 3 "
+DEFINE_string(simple_car_names, "",
+              "A comma-separated list (e.g. 'Russ,Jeremy,Liang' would spawn 3 "
               "cars subscribed to DRIVING_COMMAND_Russ, "
               "DRIVING_COMMAND_Jeremy, and DRIVING_COMMAND_Liang)");
 DEFINE_int32(num_trajectory_car, 1, "Number of TrajectoryCar vehicles");
@@ -34,11 +33,11 @@ int main(int argc, char* argv[]) {
       GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf";
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
 
-  if (FLAGS_simple_car_channel_postfix.empty()) {
+  if (FLAGS_simple_car_names.empty()) {
     std::cout << "Adding simple car subscribed to DRIVING_COMMAND" << std::endl;
     simulator->AddSimpleCarFromSdf(kSdfFile);
   } else {
-    std::istringstream f(FLAGS_simple_car_channel_postfix);
+    std::istringstream f(FLAGS_simple_car_names);
     std::string s;
     while (getline(f, s, ',')) {
       if (s.empty()) {
