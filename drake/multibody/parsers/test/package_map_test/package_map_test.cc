@@ -26,7 +26,7 @@ void VerifyMatch(const PackageMap& package_map,
 // Tests that the PackageMap can be manually populated.
 GTEST_TEST(PackageMapTest, TestManualPopulation) {
   map<string, string> expected_packages = {
-    {"package_foo", GetDrakePath() + "/common"},
+    {"package_foo", GetDrakePath() + "/multibody/parsers"},
     {"my_package", GetDrakePath() + "/multibody"}
   };
 
