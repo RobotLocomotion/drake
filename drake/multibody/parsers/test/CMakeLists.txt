@@ -1,0 +1,2 @@
+add_subdirectory(package_map_test)
+add_subdirectory(urdf_parser_test)

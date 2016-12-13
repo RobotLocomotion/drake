@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_path.h"
-#include "drake/multibody/package_map.h"
+#include "drake/multibody/parsers/package_map.h"
 
 namespace drake {
 namespace examples {

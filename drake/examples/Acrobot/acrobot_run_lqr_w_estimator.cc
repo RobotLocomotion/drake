@@ -9,7 +9,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/lcm_call_matlab.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"

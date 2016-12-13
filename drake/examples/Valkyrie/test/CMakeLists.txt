@@ -7,23 +7,26 @@ if(lcm_FOUND)
   drake_add_cc_test(robot_state_encoder_decoder_test)
   add_definitions(-g)
   target_link_libraries(robot_state_encoder_decoder_test
+    drakeParsers
     drakeRobotStateEncoder
     drakeRobotStateDecoder)
 
   drake_add_cc_test(robot_command_to_desired_effort_converter_test)
   target_link_libraries(robot_command_to_desired_effort_converter_test
-    drakeRobotCommandToDesiredEffortConverter
-    drakeRBM)
+    drakeParsers
+    drakeRBM
+    drakeRobotCommandToDesiredEffortConverter)
 
   add_executable(valkyrie_ik_test valkyrie_ik_test.cc)
   target_link_libraries(valkyrie_ik_test
+    GTest::GTest GTest::Main
     drakeCommon
     drakeIK
     drakeLcm
-    drakeRigidBodyPlant
-    drakeSystemFramework
-    drakeSystemAnalysis
+    drakeParsers
     drakeRBM
-    GTest::GTest GTest::Main)
+    drakeRigidBodyPlant
+    drakeSystemAnalysis
+    drakeSystemFramework)
   drake_add_test(NAME valkyrie_ik_test WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND valkyrie_ik_test)
 endif()

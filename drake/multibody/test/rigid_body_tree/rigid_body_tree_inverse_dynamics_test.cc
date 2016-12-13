@@ -7,7 +7,7 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/jacobian.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/util/drakeGeometryUtil.h"
 

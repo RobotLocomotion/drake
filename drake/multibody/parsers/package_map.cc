@@ -1,4 +1,4 @@
-#include "drake/multibody/package_map.h"
+#include "drake/multibody/parsers/package_map.h"
 
 #include <algorithm>
 #include <cstdlib>
