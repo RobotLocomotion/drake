@@ -76,7 +76,8 @@ int DoMain() {
 
   auto simulator = std::make_unique<systems::Simulator<double>>(*demo_plant);
 
-  demo_plant->SetDefaultState(simulator->get_mutable_context());
+  systems::Context<double>* context = simulator->get_mutable_context();
+  demo_plant->SetDefaultState(*context, context->get_mutable_state());
 
   simulator->Initialize();
 
