@@ -20,9 +20,10 @@ class Segment : public api::Segment {
   /// Constructs a new Segment.
   ///
   /// The Segment is not fully initialized until one of NewLineLane()
-  /// or NewArcLane() is called.
-  Segment(const api::SegmentId& id, Junction* j)
-      : id_(id), junction_(j) {}
+  /// or NewArcLane() is called.  @p junction must remain valid for the
+  /// lifetime of this class.
+  Segment(const api::SegmentId& id, Junction* junction)
+      : id_(id), junction_(junction) {}
 
   /// Gives the segment a newly constructed LineLane.
   LineLane* NewLineLane(api::LaneId id,

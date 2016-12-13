@@ -9,12 +9,9 @@ namespace drake {
 namespace maliput {
 namespace monolane {
 
-const api::LaneEnd& LaneEndSet::do_get(int index) const {
-  return ends_[index]; }
-
-
-BranchPoint::BranchPoint(const api::BranchPointId& id, RoadGeometry* rg)
-    : id_(id), road_geometry_(rg) {}
+BranchPoint::BranchPoint(const api::BranchPointId& id,
+                         RoadGeometry* road_geometry)
+    : id_(id), road_geometry_(road_geometry) {}
 
 const api::RoadGeometry* BranchPoint::do_road_geometry() const {
   return road_geometry_;
