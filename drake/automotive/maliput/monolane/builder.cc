@@ -1,7 +1,6 @@
 #include "drake/automotive/maliput/monolane/builder.h"
 
 #include <cmath>
-#include <iostream>
 
 #include "drake/automotive/maliput/monolane/arc_lane.h"
 #include "drake/automotive/maliput/monolane/branch_point.h"
@@ -9,6 +8,7 @@
 #include "drake/automotive/maliput/monolane/road_geometry.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace maliput {
@@ -147,7 +147,7 @@ void Builder::AttachBranchPoint(
   // Now, tell the branch-point about the lane.
   //
   // Is this the first lane-end added to the branch-point?
-  // If so, just stick it on Side-A.
+  // If so, just stick it on A-Side.
   // (NB: We just test size of A-Side, since A-Side is always populated first.)
   if (bp->GetASide()->size() == 0) {
     bp->AddABranch({lane, end});
@@ -155,8 +155,8 @@ void Builder::AttachBranchPoint(
   }
   // Otherwise, assess if this new lane-end is parallel or anti-parallel to
   // the first lane-end.  Parallel: go to same, A-side; anti-parallel:
-  // other, B-side.  Do this by examining dot-product of heading vectors
-  // (rather than goofing around with cyclic angle arithmetic).
+  // other, B-side.  Do this by examining the dot-product of the heading
+  // vectors (rather than goofing around with cyclic angle arithmetic).
   const double new_h = HeadingIntoLane(lane, end);
   const api::LaneEnd old_le = bp->GetASide()->get(0);
   const double old_h = HeadingIntoLane(old_le.lane, old_le.end);
@@ -255,9 +255,9 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
 
   for (auto& grp : groups_) {
     Junction* junction = rg->NewJunction({std::string("j:") + grp->id()});
-    std::cerr << "jnx: " << junction->id().id << std::endl;
+    drake::log()->debug("jnx: {}", junction->id().id);
     for (auto& cnx : grp->connections()) {
-      std::cerr << "cnx: " << cnx->id() << std::endl;
+      drake::log()->debug("cnx: {}", cnx->id());
       remaining_connections.erase(cnx);
       lane_map[cnx] = BuildConnection(cnx, junction, rg.get(), &bp_map);
     }
@@ -265,8 +265,8 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
 
   for (auto& cnx : remaining_connections) {
     Junction* junction = rg->NewJunction({std::string("j:") + cnx->id()});
-    std::cerr << "jnx: " << junction->id().id << std::endl;
-    std::cerr << "cnx: " << cnx->id() << std::endl;
+    drake::log()->debug("jnx: {}", junction->id().id);
+    drake::log()->debug("cnx: {}", cnx->id());
     lane_map[cnx] = BuildConnection(cnx, junction, rg.get(), &bp_map);
   }
 
@@ -284,7 +284,7 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
   // Make sure we didn't screw up!
   std::vector<std::string> failures = rg->CheckInvariants();
   for (const auto& s : failures) {
-    std::cerr << s << std::endl;
+    drake::log()->error(s);
   }
   DRAKE_DEMAND(failures.size() == 0);
 

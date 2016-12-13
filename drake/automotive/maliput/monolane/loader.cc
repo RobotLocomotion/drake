@@ -1,18 +1,19 @@
 #include "drake/automotive/maliput/monolane/loader.h"
 
 #include <cmath>
-#include <iostream>
 #include <map>
 #include <string>
 
 #include <gflags/gflags.h>
 #include "yaml-cpp/yaml.h"
 
-#include "drake/common/drake_assert.h"
 #include "drake/automotive/maliput/monolane/builder.h"
+#include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 
-namespace api = drake::maliput::api;
-namespace mono = drake::maliput::monolane;
+namespace drake {
+namespace maliput {
+namespace monolane {
 
 namespace {
 
@@ -28,7 +29,7 @@ double d2r(double degrees) {
 }
 
 
-mono::XYPoint xypoint(const YAML::Node& node) {
+XYPoint xypoint(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 3);
   return {
@@ -36,7 +37,7 @@ mono::XYPoint xypoint(const YAML::Node& node) {
 }
 
 
-mono::ZPoint zpoint(const YAML::Node& node) {
+ZPoint zpoint(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 4);
   return {
@@ -45,22 +46,22 @@ mono::ZPoint zpoint(const YAML::Node& node) {
 }
 
 
-mono::XYZPoint xyzpoint(const YAML::Node& node) {
+XYZPoint xyzpoint(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsMap());
   return {xypoint(node["xypoint"]), zpoint(node["zpoint"])};
 }
 
 
-mono::ArcOffset arc_offset(const YAML::Node& node) {
+ArcOffset arc_offset(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 2);
   return {node[0].as<double>(), d2r(node[1].as<double>())};
 }
 
 
-std::unique_ptr<mono::XYZPoint> ResolvePointReference(
+std::unique_ptr<XYZPoint> ResolvePointReference(
     const std::string& ref,
-    const std::map<std::string, mono::XYZPoint>& xyz_catalog) {
+    const std::map<std::string, XYZPoint>& xyz_catalog) {
   auto parsed = [&]() {
     static const std::string kReverse {"reverse "};
     int where = ref.find(kReverse);
@@ -76,16 +77,19 @@ std::unique_ptr<mono::XYZPoint> ResolvePointReference(
   if (it == xyz_catalog.end()) {
     return nullptr;
   }
-  return std::make_unique<mono::XYZPoint>(
+  return std::make_unique<XYZPoint>(
       parsed.second ? it->second.reverse() : it->second);
 }
 
 
-const mono::Connection* MaybeMakeConnection(
+// Make a Connection, if all the references in the yaml node can be resolved.
+// Otherwise, return a nullptr (meaning, "try again after making some other
+// connections").
+const Connection* MaybeMakeConnection(
     std::string id,
     YAML::Node node,
-    const std::map<std::string, mono::XYZPoint>& xyz_catalog,
-    mono::Builder* builder) {
+    const std::map<std::string, XYZPoint>& xyz_catalog,
+    Builder* builder) {
   DRAKE_DEMAND(node.IsMap());
 
   // "start" required.
@@ -97,12 +101,11 @@ const mono::Connection* MaybeMakeConnection(
   DRAKE_DEMAND(node["z_end"] || node["explicit_end"]);
   DRAKE_DEMAND(!(node["z_end"] && node["explicit_end"]));
 
-  std::unique_ptr<mono::XYZPoint> start_point =
+  std::unique_ptr<XYZPoint> start_point =
       ResolvePointReference(node["start"].as<std::string>(), xyz_catalog);
   if (!start_point) { return nullptr; }  // "Try to resolve later."
-  enum SegmentType { kLine, kArc } segment_type =
-                                       node["length"] ? kLine : kArc;
-  std::unique_ptr<mono::XYZPoint> ee_point;  // optional explicit endpoint
+  enum SegmentType { kLine, kArc } segment_type = node["length"] ? kLine : kArc;
+  std::unique_ptr<XYZPoint> ee_point;  // optional explicit endpoint
   if (node["explicit_end"]) {
     ee_point = ResolvePointReference(node["explicit_end"].as<std::string>(),
                                      xyz_catalog);
@@ -142,21 +145,21 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
   YAML::Node mmb = node["maliput_monolane_builder"];
   DRAKE_DEMAND(mmb.IsMap());
 
-  mono::Builder builder(rbounds(mmb["lane_bounds"]),
-                        rbounds(mmb["driveable_bounds"]),
-                        mmb["position_precision"].as<double>(),
-                        d2r(mmb["orientation_precision"].as<double>()));
+  Builder builder(rbounds(mmb["lane_bounds"]),
+                  rbounds(mmb["driveable_bounds"]),
+                  mmb["position_precision"].as<double>(),
+                  d2r(mmb["orientation_precision"].as<double>()));
 
-  std::cerr << "loading points !\n";
+  drake::log()->debug("loading points !");
   YAML::Node points = mmb["points"];
   DRAKE_DEMAND(points.IsMap());
-  std::map<std::string, mono::XYZPoint> xyz_catalog;
+  std::map<std::string, XYZPoint> xyz_catalog;
   for (const auto& p : points) {
     xyz_catalog[std::string("points.") + p.first.as<std::string>()] =
         xyzpoint(p.second);
   }
 
-  std::cerr << "loading raw connections !\n";
+  drake::log()->debug("loading raw connections !");
   YAML::Node connections = mmb["connections"];
   DRAKE_DEMAND(connections.IsMap());
   std::map<std::string, YAML::Node> raw_connections;
@@ -164,21 +167,21 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
     raw_connections[c.first.as<std::string>()] = c.second;
   }
 
-  std::cerr << "building cooked connections !\n";
-  std::map<std::string, const mono::Connection*> cooked_connections;
+  drake::log()->debug("building cooked connections !");
+  std::map<std::string, const Connection*> cooked_connections;
   while (!raw_connections.empty()) {
-    std::cerr << "raw count " << raw_connections.size()
-              << " cooked count " << cooked_connections.size() << "\n";
+    drake::log()->debug("raw count {}  cooked count {}",
+                       raw_connections.size(), cooked_connections.size());
     size_t cooked_before_this_pass = cooked_connections.size();
     for (const auto& r : raw_connections) {
       std::string id = r.first;
-      const mono::Connection* conn =
+      const Connection* conn =
           MaybeMakeConnection(id, r.second, xyz_catalog, &builder);
       if (!conn) {
-        std::cerr << "...skipping '" << id << "'" << std::endl;
+        drake::log()->debug("...skipping '{}'", id);
         continue;
       }
-      std::cerr << "...cooked '" << id << "'" << std::endl;
+      drake::log()->debug("...cooked '{}'", id);
       cooked_connections[id] = conn;
       xyz_catalog[std::string("connections.") + id + ".start"] = conn->start();
       xyz_catalog[std::string("connections.") + id + ".end"] = conn->end();
@@ -190,34 +193,31 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
   }
 
   if (mmb["groups"]) {
-    std::cerr << "grouping connections !\n";
+    drake::log()->debug("grouping connections !");
     YAML::Node groups = mmb["groups"];
     DRAKE_DEMAND(groups.IsMap());
-    std::map<std::string, const mono::Group*> cooked_groups;
+    std::map<std::string, const Group*> cooked_groups;
     for (const auto& g : groups) {
       const std::string gid = g.first.as<std::string>();
-      std::cerr << "   create group '" << gid << "'" << std::endl;
-      mono::Group* group = builder.MakeGroup(gid);
+      drake::log()->debug("   create group '{}'", gid);
+      Group* group = builder.MakeGroup(gid);
 
       YAML::Node cids_node = g.second;
       DRAKE_DEMAND(cids_node.IsSequence());
       for (const YAML::Node& cid_node : cids_node) {
         const std::string cid = cid_node.as<std::string>();
-        std::cerr << "      add cnx '" << cid << "'" << std::endl;
+        drake::log()->debug("      add cnx '{}'", cid);
         group->Add(cooked_connections[cid]);
       }
     }
   }
 
-  std::cerr << "building road geometry !\n";
+  drake::log()->debug("building road geometry {}", mmb["id"].Scalar());
   return builder.Build({mmb["id"].Scalar()});
 }
 
 }  // namespace
 
-namespace drake {
-namespace maliput {
-namespace monolane {
 
 std::unique_ptr<const api::RoadGeometry> Load(const std::string& input) {
   return BuildFrom(YAML::Load(input));

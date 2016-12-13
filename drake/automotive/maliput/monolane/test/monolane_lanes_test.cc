@@ -373,7 +373,7 @@ GTEST_TEST(MonolaneLanesTest, HillIntegration) {
                    -100. + ((100. + 10.) * std::sin(theta0)),
                    z0), kLinearTolerance);
 
-  // NB:  '27' is a fudge-factor.  We know the steps should scale roughly
+  // NB:  '287' is a fudge-factor.  We know the steps should scale roughly
   //      as (r / r0), but not exactly because of the elevation curve.
   //      Mostly, we are testing that we end up in the right place in
   //      roughly the right number of steps.

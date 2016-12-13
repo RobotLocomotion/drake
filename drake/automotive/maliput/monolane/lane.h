@@ -114,6 +114,8 @@ class Lane : public api::Lane {
   /// @param elevation elevation function (see below)
   /// @param superelevation superelevation function (see below)
   ///
+  /// @p segment must remain valid for the lifetime of this class.
+  ///
   /// @p elevation and @p superelevation are cubic-polynomial functions which
   /// define the elevation and superelevation as a function of position along
   /// the planar reference curve defined by the concrete subclass.
@@ -156,7 +158,6 @@ class Lane : public api::Lane {
   const CubicPolynomial& superelevation() const { return superelevation_; }
 
   void SetStartBp(BranchPoint* bp) { start_bp_ = bp; }
-
   void SetEndBp(BranchPoint* bp) { end_bp_ = bp; }
 
   BranchPoint* start_bp() { return start_bp_; }
@@ -206,9 +207,24 @@ class Lane : public api::Lane {
       const api::LanePosition& position,
       const api::IsoLaneVelocity& velocity) const override;
 
+  // The following virtual methods define a reference curve in the xy-plane
+  // (i.e., the Earth ground plane).  The curve is a parametric curve:
+  //
+  //    F: p --> (x, y)  for p in [0, 1]
+
+  // Returns the reference curve itself, F(p).
   virtual V2 xy_of_p(const double p) const = 0;
+
+  // Returns the derivative of the curve with respect to p, at p,
+  // i.e., F'(p0) = (dx/dp, dy/dp) at p0
   virtual V2 xy_dot_of_p(const double p) const = 0;
+
+  // Returns the heading of the curve at p, i.e., the angle of the tangent
+  // vector (with respect to x-axis) in the increasing-p direction.
   virtual double heading_of_p(const double p) const = 0;
+
+  // Returns the derivative of the heading with respect to p,
+  // i.e., d_heading/dp evaluated at p.
   virtual double heading_dot_of_p(const double p) const = 0;
 
   Rot3 rot3_of_p(const double p) const;
