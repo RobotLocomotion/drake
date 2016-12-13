@@ -181,17 +181,29 @@ class System {
   virtual std::unique_ptr<Context<T>> AllocateContext() const = 0;
 
   /// Assigns default values to all elements of the state.
-  virtual void SetDefaultState(Context<T>* context) const = 0;
+  virtual void SetDefaultState(const Context<T>& context,
+                               State<T>* state) const = 0;
 
-  /// Assigns default values to all parameters declared in the context.
-  virtual void SetDefaultParameters(Context<T>* context) const = 0;
+  // Sets Context fields to their default values.  User code should not
+  // override.
+  virtual void SetDefaults(Context<T>* context) const {
+    const int n_xc = context->get_continuous_state()->size();
+    const int n_xd = context->get_num_discrete_state_groups();
+    const int n_xm = context->get_num_abstract_state_groups();
 
-  /// Allocates a context and sets the state and parameters to their default
-  /// values.
+    SetDefaultState(*context, context->get_mutable_state());
+
+    // Implementations of SetDefaultState are not allowed to change the number
+    // of State elements.
+    DRAKE_DEMAND(n_xc == context->get_continuous_state()->size());
+    DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
+    DRAKE_DEMAND(n_xm == context->get_num_abstract_state_groups());
+  }
+
+  /// Allocates a context and sets its default values.
   std::unique_ptr<Context<T>> CreateDefaultContext() const {
     std::unique_ptr<Context<T>> context = AllocateContext();
-    SetDefaultState(context.get());
-    SetDefaultParameters(context.get());
+    SetDefaults(context.get());
     return context;
   }
 

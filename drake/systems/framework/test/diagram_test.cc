@@ -190,6 +190,23 @@ TEST_F(DiagramTest, Path) {
   EXPECT_EQ("::Unicode Snowman's Favorite Diagram!!1!☃!::adder0", path);
 }
 
+// Tests that both variants of GetMutableSubsystemState do what they say on
+// the tin.
+TEST_F(DiagramTest, GetMutableSubsystemState) {
+  State<double>* state_from_context = diagram_->GetMutableSubsystemState(
+      context_.get(), diagram_->integrator0());
+  ASSERT_NE(nullptr, state_from_context);
+  State<double>* state_from_state = diagram_->GetMutableSubsystemState(
+      context_->get_mutable_state(), diagram_->integrator0());
+  ASSERT_NE(nullptr, state_from_state);
+
+  EXPECT_EQ(state_from_context, state_from_state);
+  const ContinuousState<double>& xc =
+      *state_from_context->get_continuous_state();
+  EXPECT_EQ(3, xc[0]);
+  EXPECT_EQ(9, xc[1]);
+  EXPECT_EQ(27, xc[2]);
+}
 // Tests that the diagram computes the correct sum.
 TEST_F(DiagramTest, EvalOutput) {
   AttachInputs();

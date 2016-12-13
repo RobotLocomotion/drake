@@ -58,7 +58,8 @@ class RotaryEncoders : public systems::LeafSystem<T> {
       const systems::Context<T>& context) const;
 
  private:
-  void SetDefaultParameters(systems::Context<T>* context) const override;
+  void SetDefaultParameters(const systems::LeafContext<T>& context,
+                            systems::Parameters<T>* params) const override;
 
   // System<T> override.
   RotaryEncoders<AutoDiffXd>* DoToAutoDiffXd() const override;

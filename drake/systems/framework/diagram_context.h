@@ -19,6 +19,35 @@
 namespace drake {
 namespace systems {
 
+/// DiagramState is a State, annotated with un-owned pointers to all the mutable
+/// substates that it spans.
+template <typename T>
+class DiagramState : public State<T> {
+ public:
+  /// Constructs a DiagramState consisting of @p size substates.
+  explicit DiagramState<T>(int size) : State<T>(), substates_(size) {}
+
+  /// Sets the substate at @p index to @p substate, or aborts if @p index is
+  /// out of bounds.
+  void set_substate(int index, State<T>* substate) {
+    DRAKE_DEMAND(index >= 0 && index < num_substates());
+    substates_[index] = substate;
+  }
+
+  /// Returns the substate at @p index.
+  State<T>* get_mutable_substate(int index) {
+    DRAKE_DEMAND(index >= 0 && index < num_substates());
+    return substates_[index];
+  }
+
+ private:
+  int num_substates() {
+    return static_cast<int>(substates_.size());
+  }
+
+  std::vector<State<T>*> substates_;
+};
+
 /// The DiagramContext is a container for all of the data necessary to uniquely
 /// determine the computations performed by a Diagram. Specifically, a
 /// DiagramContext contains contexts and outputs for all the constituent
@@ -39,7 +68,8 @@ class DiagramContext : public Context<T> {
   /// Constructs a DiagramContext with the given @p num_subsystems, which is
   /// final: you cannot resize a DiagramContext after construction.
   explicit DiagramContext(const int num_subsystems)
-      : outputs_(num_subsystems), contexts_(num_subsystems) {}
+      : outputs_(num_subsystems), contexts_(num_subsystems),
+        state_(num_subsystems) {}
 
   /// Declares a new subsystem in the DiagramContext. Subsystems are identified
   /// by number. If the subsystem has already been declared, aborts.
@@ -106,7 +136,10 @@ class DiagramContext : public Context<T> {
     std::vector<ContinuousState<T>*> sub_xcs;
     std::vector<BasicVector<T>*> sub_xds;
     std::vector<AbstractValue*> sub_xms;
-    for (auto& context : contexts_) {
+    for (int i = 0; i < num_subsystems(); ++i) {
+      Context<T>* context = contexts_[i].get();
+      state_.set_substate(i, context->get_mutable_state());
+
       // Continuous
       sub_xcs.push_back(context->get_mutable_continuous_state());
       // Discrete
@@ -115,8 +148,8 @@ class DiagramContext : public Context<T> {
       sub_xds.insert(sub_xds.end(), xd_data.begin(), xd_data.end());
       // Abstract
       AbstractState* xm = context->get_mutable_abstract_state();
-      for (int i = 0; i < xm->size(); ++i) {
-        sub_xms.push_back(&xm->get_mutable_abstract_state(i));
+      for (int i_xm = 0; i_xm < xm->size(); ++i_xm) {
+        sub_xms.push_back(&xm->get_mutable_abstract_state(i_xm));
       }
     }
     // The wrapper states do not own the constituent state.
@@ -250,8 +283,8 @@ class DiagramContext : public Context<T> {
   // the systems on which they depend.
   std::map<PortIdentifier, PortIdentifier> dependency_graph_;
 
-  // The internal state of the System.
-  State<T> state_;
+  // The internal state of the Diagram, which includes all its subsystem states.
+  DiagramState<T> state_;
 };
 
 }  // namespace systems

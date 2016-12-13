@@ -126,13 +126,18 @@ class RigidBodyPlant : public LeafSystem<T> {
   void set_state_vector(Context<T>* context,
                         const Eigen::Ref<const VectorX<T>> x) const;
 
+  /// Sets the continuous state vector of the system to be @p x.
+  void set_state_vector(State<T>* state,
+                        const Eigen::Ref<const VectorX<T>> x) const;
+
   /// Sets the state in @p context so that generalized positions and velocities
   /// are zero. For quaternion based joints the quaternion is set to be the
   /// identity (or equivalently a zero rotation).
-  void SetDefaultState(Context<T>* context) const override {
+  void SetDefaultState(const Context<T>& context,
+                       State<T>* state) const override {
     // Extract a pointer to continuous state from the context.
-    DRAKE_DEMAND(context != nullptr);
-    ContinuousState<T>* xc = context->get_mutable_continuous_state();
+    DRAKE_DEMAND(state != nullptr);
+    ContinuousState<T>* xc = state->get_mutable_continuous_state();
     DRAKE_DEMAND(xc != nullptr);
 
     // Write the zero configuration into the continuous state.
