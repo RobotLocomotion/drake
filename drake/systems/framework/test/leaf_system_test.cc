@@ -61,14 +61,12 @@ class TestSystem : public LeafSystem<T> {
         std::make_unique<BasicVector<T>>(2));
   }
 
-  void SetDefaultParameters(Context<T>* context) const override {
-    auto leaf_context = dynamic_cast<LeafContext<T>*>(context);
-    DRAKE_DEMAND(leaf_context != nullptr);
-
-    auto params = leaf_context->get_mutable_numeric_parameter(0);
+  void SetDefaultParameters(const LeafContext<T>& context,
+                            Parameters<T>* params) const override {
+    BasicVector<T>* param = params->get_mutable_numeric_parameter(0);
     Vector2<T> p0;
     p0 << 13.0, 7.0;
-    params->SetFromVector(p0);
+    param->SetFromVector(p0);
   }
 
   const BasicVector<T>& GetVanillaNumericParameters(

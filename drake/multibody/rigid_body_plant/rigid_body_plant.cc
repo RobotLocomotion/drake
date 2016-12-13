@@ -122,8 +122,15 @@ template <typename T>
 void RigidBodyPlant<T>::set_state_vector(
     Context<T>* context, const Eigen::Ref<const VectorX<T>> x) const {
   DRAKE_ASSERT(context != nullptr);
+  set_state_vector(context->get_mutable_state(), x);
+}
+
+template <typename T>
+void RigidBodyPlant<T>::set_state_vector(
+    State<T>* state, const Eigen::Ref<const VectorX<T>> x) const {
+  DRAKE_ASSERT(state != nullptr);
   DRAKE_ASSERT(x.size() == get_num_states());
-  context->get_mutable_continuous_state_vector()->SetFromVector(x);
+  state->get_mutable_continuous_state()->SetFromVector(x);
 }
 
 template <typename T>

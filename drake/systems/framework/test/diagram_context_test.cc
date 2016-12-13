@@ -144,6 +144,18 @@ TEST_F(DiagramContextTest, State) {
   EXPECT_EQ(1001.0, xd->get_discrete_state(0)->GetAtIndex(0));
 }
 
+// Tests that the pointers to substates in the DiagramState are equal to the
+// substates in the subsystem contexts.
+TEST_F(DiagramContextTest, DiagramState) {
+  auto diagram_state = dynamic_cast<DiagramState<double>*>(
+      context_->get_mutable_state());
+  ASSERT_NE(nullptr, diagram_state);
+  for (int i = 0; i < kNumSystems; ++i) {
+    EXPECT_EQ(context_->GetMutableSubsystemContext(i)->get_mutable_state(),
+              diagram_state->get_mutable_substate(i));
+  }
+}
+
 // Tests that no exception is thrown when connecting a valid source
 // and destination port.
 TEST_F(DiagramContextTest, ConnectValid) {

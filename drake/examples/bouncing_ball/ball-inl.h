@@ -56,10 +56,12 @@ void Ball<T>::EvalTimeDerivatives(
 }
 
 template <typename T>
-void Ball<T>::SetDefaultState(systems::Context<T>* context) const {
+void Ball<T>::SetDefaultState(const systems::Context<T>& context,
+                              systems::State<T>* state) const {
+  DRAKE_DEMAND(state != nullptr);
   Vector2<T> x0;
   x0 << 10.0, 0.0;  // initial state values.
-  context->get_mutable_continuous_state_vector()->SetFromVector(x0);
+  state->get_mutable_continuous_state()->SetFromVector(x0);
 }
 
 }  // namespace bouncing_ball

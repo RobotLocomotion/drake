@@ -373,7 +373,7 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
 
   // Re-integrate with RK3
   context->set_time(0.);
-  plant.SetDefaultState(context.get());
+  plant.SetDefaultState(*context, context->get_mutable_state());
   for (int i=0; i< plant.get_num_velocities(); ++i)
     plant.set_velocity(context.get(), i, generalized_velocities[i]);
   RungeKutta3Integrator<double> rk3(plant, context.get());

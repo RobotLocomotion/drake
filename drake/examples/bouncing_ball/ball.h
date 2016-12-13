@@ -41,7 +41,8 @@ class Ball : public systems::LeafSystem<T> {
       systems::ContinuousState<T>* derivatives) const override;
 
  protected:
-  void SetDefaultState(systems::Context<T>* context) const override;
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override;
 };
 
 }  // namespace bouncing_ball
