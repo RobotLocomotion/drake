@@ -92,6 +92,8 @@ int main() {
   zmp_planner.Plan(zmp_trajs[0], x0, z);
 
   double sample_dt = 0.01;
+
+  // Perturb the initial state a bit.
   x0 << 0, 0, 0.2, -0.1;
   drake::examples::zmp::ZMPTestTraj result =
       drake::examples::zmp::Simulate(zmp_planner, x0, sample_dt, 2);
