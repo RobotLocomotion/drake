@@ -1,5 +1,4 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include <iostream>
 #include <algorithm>
 
 #include "drake/common/drake_assert.h"
