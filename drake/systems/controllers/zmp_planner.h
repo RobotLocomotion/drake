@@ -81,6 +81,16 @@ class ZMPPlanner {
   inline const Eigen::Matrix<double, 2, 2>& get_D() const { return D_; }
 
   /**
+   * Getter for Qy matrix.
+   */
+  inline const Eigen::Matrix<double, 2, 2>& get_Qy() const { return Qy_; }
+
+  /**
+   * Getter for R matrix.
+   */
+  inline const Eigen::Matrix<double, 2, 2>& get_R() const { return R_; }
+
+  /**
    * Returns the desired ZMP evaluated at `time`.
    */
   inline Eigen::Vector2d get_desired_zmp(double time) const {
@@ -113,6 +123,10 @@ class ZMPPlanner {
    */
   inline Eigen::Vector2d get_nominal_comdd(double time) const {
     return comdd_.value(time);
+  }
+
+  inline Eigen::Vector2d get_final_desired_zmp() const {
+    return zmp_d_.value(zmp_d_.getEndTime());
   }
 
   /**
@@ -167,6 +181,14 @@ class ZMPPlanner {
   inline const ExponentialPlusPiecewisePolynomial<double>&
   get_value_function_first_derivative() const {
     return s2_;
+  }
+
+  /**
+   * Returns the time varying first order term of the value function.
+   */
+  inline const Eigen::Vector4d
+  get_value_function_first_derivative(double time) const {
+    return s2_.value(time);
   }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
