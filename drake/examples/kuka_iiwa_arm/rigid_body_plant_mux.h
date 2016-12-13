@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/multibody/rigid_body_tree.h"
@@ -21,19 +22,23 @@ class RigidBodyPlantMux {
   explicit RigidBodyPlantMux(const RigidBodyTree<T>& tree);
   ~RigidBodyPlantMux();
 
-  /// Creates a new vector valued input port where the values of the
-  /// port correspond to the actuators from the rigid boty tree
-  /// provided in @p actuator_names.
-  const systems::SystemPortDescriptor<T>& AddInput(
-      const std::vector<std::string>& actuator_names);
+  // TODO(liangfok) Generalize to support multi-DOF actuators once
+  // #4153 is resolved.
 
-  /// Creates a new vector values output port where the values of the
-  /// port correspond to the positions/velocities from the rigid body
-  /// tree provided in @p position_names followed by @p
-  /// velocity_names.
+  /// Creates a new vector valued input port where the values of the
+  /// port correspond to the actuators from the RigidBodyTree provided
+  /// in @p actuators which consists of {name, model_instance_id}
+  /// pairs.
+  const systems::SystemPortDescriptor<T>& AddInput(
+      const std::vector<std::pair<std::string, int>>& actuators);
+
+  /// Creates a new vector valued output port where the values of the
+  /// port correspond to the positions/velocities from the
+  /// RigidBodyTree provided in @p positions followed by @p velocities
+  /// which consist of {name, model_instance_id} pairs.
   const systems::SystemPortDescriptor<T>& AddOutput(
-      const std::vector<std::string>& position_names,
-      const std::vector<std::string>& velocity_names);
+      const std::vector<std::pair<std::string, int>>& positions,
+      const std::vector<std::pair<std::string, int>>& velocities);
 
   /// Using @p builder, connect the ports previously created with
   /// AddInput and AddOutput to @p plant.  It is an error to call
