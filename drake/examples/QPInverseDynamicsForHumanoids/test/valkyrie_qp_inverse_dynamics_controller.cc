@@ -12,9 +12,9 @@
 #include "drake/multibody/parser_urdf.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_value_source.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
+#include "drake/systems/primitives/constant_value_source.h"
 
 namespace drake {
 

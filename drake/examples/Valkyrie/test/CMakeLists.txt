@@ -8,12 +8,14 @@ if(lcm_FOUND)
   add_definitions(-g)
   target_link_libraries(robot_state_encoder_decoder_test
     drakeRobotStateEncoder
-    drakeRobotStateDecoder)
+    drakeRobotStateDecoder
+    drakeSystemPrimitives)
 
   drake_add_cc_test(robot_command_to_desired_effort_converter_test)
   target_link_libraries(robot_command_to_desired_effort_converter_test
     drakeRobotCommandToDesiredEffortConverter
-    drakeRBM)
+    drakeRBM
+    drakeSystemPrimitives)
 
   add_executable(valkyrie_ik_test valkyrie_ik_test.cc)
   target_link_libraries(valkyrie_ik_test
@@ -22,6 +24,7 @@ if(lcm_FOUND)
     drakeLcm
     drakeRigidBodyPlant
     drakeSystemFramework
+    drakeSystemPrimitives
     drakeSystemAnalysis
     drakeRBM
     GTest::GTest GTest::Main)

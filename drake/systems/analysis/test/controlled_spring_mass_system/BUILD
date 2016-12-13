@@ -12,10 +12,10 @@ cc_library(
     deps = [
         "//drake/systems/controllers:pid_controller",
         "//drake/systems/framework",
-        "//drake/systems/framework/primitives:adder",
-        "//drake/systems/framework/primitives:constant_vector_source",
-        "//drake/systems/framework/primitives:demultiplexer",
-        "//drake/systems/framework/primitives:gain",
+        "//drake/systems/primitives:adder",
+        "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:demultiplexer",
+        "//drake/systems/primitives:gain",
         "//drake/systems/plants/spring_mass_system",
     ],
 )

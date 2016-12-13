@@ -7,12 +7,12 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/primitives/adder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/gain.h"
-#include "drake/systems/framework/primitives/integrator.h"
-#include "drake/systems/framework/primitives/zero_order_hold.h"
 #include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/gain.h"
+#include "drake/systems/primitives/integrator.h"
+#include "drake/systems/primitives/zero_order_hold.h"
 
 namespace drake {
 namespace systems {

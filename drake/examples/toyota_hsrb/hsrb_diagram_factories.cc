@@ -9,13 +9,13 @@
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_urdf.h"
-#include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 using std::make_unique;
 using std::unique_ptr;

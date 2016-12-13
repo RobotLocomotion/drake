@@ -7,7 +7,8 @@ if(lcm_FOUND AND WITH_HSRB_DESCRIPTION)
       drakeLcm
       drakeRBM
       drakeRigidBodyPlant
-      drakeSystemFramework)
+      drakeSystemFramework
+      drakeSystemPrimitives)
   drake_install_libraries(drakeHsrb)
   drake_install_headers(
       hsrb_diagram_factories.h)
@@ -18,7 +19,8 @@ if(lcm_FOUND AND WITH_HSRB_DESCRIPTION)
         drake-lcm
         drake-rbm
         drake-rigid-body-plant
-        drake-system-framework)
+        drake-system-framework
+        drake-system-primitives)
 endif()
 
 if(BUILD_TESTING)
