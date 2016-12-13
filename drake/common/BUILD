@@ -79,7 +79,9 @@ cc_library(
     srcs = ["functional_form.cc"],
     hdrs = ["functional_form.h"],
     linkstatic = 1,
-    deps = [":common"],
+    deps = [
+        ":common",
+    ],
 )
 
 cc_library(
@@ -134,7 +136,9 @@ cc_library(
     srcs = ["drake_path.cc"],
     hdrs = ["drake_path.h"],
     linkstatic = 1,
-    deps = [":common"],
+    deps = [
+        ":common",
+    ],
 )
 
 # TODO(jwnimmer-tri) GetDrakePath has a long and storied history (#1471, #2174).
@@ -151,19 +155,25 @@ genrule(
     cmd = "sed 's#@PROJECT_SOURCE_DIR@#drake#g' $< > $@",
 )
 
+# TODO(jwnimmer-tri) Move this header file into test/ subdirectory (and this
+# stanza below the "test/" comment marker).
 cc_library(
     name = "eigen_matrix_compare",
     testonly = 1,
     hdrs = ["eigen_matrix_compare.h"],
     linkstatic = 1,
-    deps = [":common"],
+    deps = [
+        ":common",
+    ],
 )
 
 cc_library(
     name = "is_approx_equal_abstol",
     hdrs = ["is_approx_equal_abstol.h"],
     linkstatic = 1,
-    deps = [":common"],
+    deps = [
+        ":common",
+    ],
 )
 
 cc_library(
@@ -171,14 +181,18 @@ cc_library(
     srcs = ["nice_type_name.cc"],
     hdrs = ["nice_type_name.h"],
     linkstatic = 1,
-    deps = [":common"],
+    deps = [
+        ":common",
+    ],
 )
 
 cc_library(
     name = "sorted_vectors_have_intersection",
     hdrs = ["sorted_vectors_have_intersection.h"],
     linkstatic = 1,
-    deps = [":common"],
+    deps = [
+        ":common",
+    ],
 )
 
 cc_library(
@@ -202,7 +216,9 @@ cc_library(
     testonly = 1,
     hdrs = ["test/random_polynomial_matrix.h"],
     linkstatic = 1,
-    deps = [":polynomial"],
+    deps = [
+        ":polynomial",
+    ],
 )
 
 cc_library(
