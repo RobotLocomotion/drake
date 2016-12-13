@@ -61,14 +61,19 @@ const RigidBodyTree<T>& AutomotiveSimulator<T>::get_rigid_body_tree() {
 
 template <typename T>
 int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
-    const std::string& sdf_filename) {
+    const std::string& sdf_filename, const std::string& channel_postfix) {
   DRAKE_DEMAND(!started_);
   const int vehicle_number = allocate_vehicle_number();
 
   static const DrivingCommandTranslator driving_command_translator;
+  std::string channel_name = "DRIVING_COMMAND";
+  if (!channel_postfix.empty()) {
+    channel_name += "_";
+    channel_name += channel_postfix;
+  }
   auto command_subscriber =
       builder_->template AddSystem<systems::lcm::LcmSubscriberSystem>(
-          "DRIVING_COMMAND", driving_command_translator, lcm_.get());
+          channel_name, driving_command_translator, lcm_.get());
   auto simple_car = builder_->template AddSystem<SimpleCar<T>>();
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
