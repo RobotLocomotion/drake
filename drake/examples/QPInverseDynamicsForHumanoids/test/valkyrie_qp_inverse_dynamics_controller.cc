@@ -9,7 +9,7 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/robot_state_decoder_system.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"

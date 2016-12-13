@@ -1,4 +1,4 @@
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 
 #include <algorithm>
 #include <fstream>
@@ -9,10 +9,10 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/joints/drake_joints.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/material_map.h"
-#include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/xml_util.h"
 
 namespace drake {

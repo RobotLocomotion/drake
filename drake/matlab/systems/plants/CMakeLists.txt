@@ -5,7 +5,7 @@
 if(Matlab_FOUND)
   drake_add_mex(rbmMexFunctions rigidBodyTreeMexFunctions.cpp)
   drake_install_libraries(rbmMexFunctions)
-  target_link_libraries(rbmMexFunctions drakeRBM drakeMexUtil)
+  target_link_libraries(rbmMexFunctions drakeMexUtil drakeParsers drakeRBM)
   # These warnings are not worth fixing.
   target_compile_options(rbmMexFunctions PRIVATE ${CXX_FLAGS_NO_SIGN_COMPARE})
 

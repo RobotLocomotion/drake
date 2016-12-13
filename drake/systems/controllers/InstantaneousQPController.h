@@ -8,7 +8,7 @@
 #include "drake/solvers/gurobi_qp.h"
 #include "drake/lcmt_qp_controller_input.hpp"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 
 #define INSTQP_USE_FASTQP 1
 #define INSTQP_GUROBI_OUTPUTFLAG 0
