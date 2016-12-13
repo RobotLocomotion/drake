@@ -14,7 +14,7 @@ const api::RoadGeometry* Junction::do_road_geometry() const {
 
 Segment* Junction::NewSegment(api::SegmentId id) {
   segments_.push_back(std::make_unique<Segment>(id, this));
-  return segments_.back().get();;
+  return segments_.back().get();
 }
 
 }  // namespace monolane
