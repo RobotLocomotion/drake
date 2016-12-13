@@ -3,13 +3,14 @@
 
 package(default_visibility = ["//visibility:public"])
 
-DEPS = ["//drake/common:common"]
-
+# TODO(jwnimmer-tri) Move code to a trajectory.cc file
 cc_library(
     name = "trajectory",
     hdrs = ["trajectory.h"],
     linkstatic = 1,
-    deps = DEPS,
+    deps = [
+        "//drake/common",
+    ],
 )
 
 cc_library(
@@ -27,7 +28,10 @@ cc_library(
         "piecewise_polynomial_base.h",
     ],
     linkstatic = 1,
-    deps = DEPS + ["//drake/common:polynomial"],
+    deps = [
+        "//drake/common",
+        "//drake/common:polynomial",
+    ],
 )
 
 cc_library(
@@ -35,9 +39,10 @@ cc_library(
     srcs = ["piecewise_polynomial_trajectory.cc"],
     hdrs = ["piecewise_polynomial_trajectory.h"],
     linkstatic = 1,
-    deps = DEPS + [
-        ":trajectory",
+    deps = [
         ":piecewise_polynomial",
+        ":trajectory",
+        "//drake/common",
     ],
 )
 
@@ -48,7 +53,9 @@ cc_library(
     testonly = 1,
     hdrs = ["test/random_piecewise_polynomial.h"],
     linkstatic = 1,
-    deps = ["//drake/common:random_polynomial_matrix"],
+    deps = [
+        "//drake/common:random_polynomial_matrix",
+    ],
 )
 
 cc_test(

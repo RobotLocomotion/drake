@@ -2,8 +2,6 @@
 
 package(default_visibility = ["//visibility:public"])
 
-DEPS = ["//drake/common:common"]
-
 cc_library(
     name = "util",
     srcs = [
@@ -15,7 +13,8 @@ cc_library(
         "drakeUtil.h",
     ],
     linkstatic = 1,
-    deps = DEPS + [
+    deps = [
+        "//drake/common",
         "//drake/math:geometric_transform",
         "//drake/math:gradient",
     ],

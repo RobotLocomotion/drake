@@ -21,7 +21,9 @@ cc_library(
     srcs = ["luenberger_observer.cc"],
     hdrs = ["luenberger_observer.h"],
     linkstatic = 1,
-    deps = ["//drake/systems/framework"],
+    deps = [
+        "//drake/systems/framework",
+    ],
 )
 
 # === test/ ===

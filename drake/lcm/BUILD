@@ -3,8 +3,6 @@
 
 package(default_visibility = ["//visibility:public"])
 
-DEPS = ["//drake/common:common"]
-
 cc_library(
     name = "interface",
     hdrs = [
@@ -12,7 +10,9 @@ cc_library(
         "drake_lcm_message_handler_interface.h",
     ],
     linkstatic = 1,
-    deps = DEPS,
+    deps = [
+        "//drake/common",
+    ],
 )
 
 cc_library(
@@ -21,7 +21,9 @@ cc_library(
     srcs = ["drake_mock_lcm.cc"],
     hdrs = ["drake_mock_lcm.h"],
     linkstatic = 1,
-    deps = DEPS + [":interface"],
+    deps = [
+        ":interface",
+    ],
 )
 
 cc_library(
@@ -35,8 +37,9 @@ cc_library(
         "lcm_receive_thread.h",
     ],
     linkstatic = 1,
-    deps = DEPS + [
+    deps = [
         ":interface",
+        "//drake/common",
         "@lcm//:lcm",
     ],
 )
@@ -47,7 +50,10 @@ cc_library(
     srcs = ["lcmt_drake_signal_utils.cc"],
     hdrs = ["lcmt_drake_signal_utils.h"],
     linkstatic = 1,
-    deps = DEPS + ["//drake/lcmtypes:drake_signal"],
+    deps = [
+        "//drake/common",
+        "//drake/lcmtypes:drake_signal",
+    ],
 )
 
 cc_library(
@@ -56,7 +62,10 @@ cc_library(
     srcs = ["lcm_call_matlab.cc"],
     hdrs = ["lcm_call_matlab.h"],
     linkstatic = 1,
-    deps = DEPS + ["//drake/lcmtypes:call_matlab"],
+    deps = [
+        "//drake/common",
+        "//drake/lcmtypes:call_matlab",
+    ],
 )
 
 # === test/ ===

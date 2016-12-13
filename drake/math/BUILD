@@ -3,14 +3,15 @@
 
 package(default_visibility = ["//visibility:public"])
 
-DEPS = ["//drake/common:common"]
-
 cc_library(
     name = "autodiff",
     srcs = ["autodiff.cc"],
     hdrs = ["autodiff.h"],
     linkstatic = 1,
-    deps = DEPS + ["//drake/common:autodiff"],
+    deps = [
+        "//drake/common",
+        "//drake/common:autodiff",
+    ],
 )
 
 cc_library(
@@ -18,7 +19,10 @@ cc_library(
     srcs = ["continuous_algebraic_ricatti_equation.cc"],
     hdrs = ["continuous_algebraic_ricatti_equation.h"],
     linkstatic = 1,
-    deps = DEPS + ["//drake/common:is_approx_equal_abstol"],
+    deps = [
+        "//drake/common",
+        "//drake/common:is_approx_equal_abstol",
+    ],
 )
 
 # TODO(jwnimmer-tri) Improved name for this library, "pose_representations"?
@@ -41,7 +45,9 @@ cc_library(
         "rotation_matrix.h",
     ],
     linkstatic = 1,
-    deps = DEPS,
+    deps = [
+        "//drake/common",
+    ],
 )
 
 cc_library(
@@ -62,7 +68,10 @@ cc_library(
         "rotation_conversion_gradient.h",
     ],
     linkstatic = 1,
-    deps = DEPS + [":autodiff"],
+    deps = [
+        ":autodiff",
+        "//drake/common",
+    ],
 )
 
 cc_library(
@@ -70,7 +79,10 @@ cc_library(
     srcs = ["matrix_util.cc"],
     hdrs = ["matrix_util.h"],
     linkstatic = 1,
-    deps = DEPS + ["//drake/common:number_traits"],
+    deps = [
+        "//drake/common",
+        "//drake/common:number_traits",
+    ],
 )
 
 # These all require bleeding-edge Eigen, so please don't fold them into any
@@ -80,7 +92,9 @@ cc_library(
     srcs = ["eigen_sparse_triplet.cc"],
     hdrs = ["eigen_sparse_triplet.h"],
     linkstatic = 1,
-    deps = DEPS,
+    deps = [
+        "//drake/common",
+    ],
 )
 
 cc_library(
@@ -88,7 +102,10 @@ cc_library(
     srcs = ["expmap.cc"],
     hdrs = ["expmap.h"],
     linkstatic = 1,
-    deps = DEPS + [":gradient"],
+    deps = [
+        ":gradient",
+        "//drake/common",
+    ],
 )
 
 cc_library(
@@ -96,7 +113,9 @@ cc_library(
     srcs = ["jacobian.cc"],
     hdrs = ["jacobian.h"],
     linkstatic = 1,
-    deps = DEPS,
+    deps = [
+        "//drake/common",
+    ],
 )
 
 # === test/ ===

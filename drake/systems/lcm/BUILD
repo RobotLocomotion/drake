@@ -14,7 +14,9 @@ cc_library(
         "lcm_translator_dictionary.h",
     ],
     linkstatic = 1,
-    deps = ["//drake/systems/framework"],
+    deps = [
+        "//drake/systems/framework",
+    ],
 )
 
 cc_library(

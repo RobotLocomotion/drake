@@ -49,16 +49,18 @@ def _lcmhpp_impl(ctx):
 # Create rule to invoke lcmgen on some lcm_srcs.
 # https://www.bazel.io/versions/master/docs/skylark/rules.html
 _lcmhpp_library_gen = rule(
-    implementation = _lcmhpp_impl,
     attrs = {
         "lcm_package": attr.string(),
         "lcm_srcs": attr.label_list(allow_files = True),
         "lcmgen": attr.label(
-            cfg = "host", executable = True,
-            default = Label("@lcm//:lcmgen")),
+            cfg = "host",
+            executable = True,
+            default = Label("@lcm//:lcmgen"),
+        ),
         "outs": attr.output_list(),
     },
     output_to_genfiles = True,
+    implementation = _lcmhpp_impl,
 )
 
 def lcm_cc_library(
