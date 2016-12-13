@@ -45,11 +45,11 @@ def _limit_steering(requested_value):
     else:
         return math.copysign(MAX_STEERING_ANGLE, requested_value)
 
-# Since there are both throttle and brake values, they should be non-negative.
+# Applies the lower and upper limits to @p requested value.
 def _limit_throttle(requested_value):
     if 0 <= requested_value <= MAX_VELOCITY:
         return requested_value
-    elif 0 > requested_value:
+    elif requested_value < 0:
         return 0
     else:
         return MAX_VELOCITY
@@ -57,7 +57,7 @@ def _limit_throttle(requested_value):
 def _limit_brake(requested_value):
     if 0 <= requested_value <= MAX_BRAKE:
         return requested_value
-    elif 0 > requested_value:
+    elif requested_value < 0:
         return 0
     else:
         return MAX_BRAKE
@@ -67,40 +67,40 @@ class KeyboardEventProcessor:
         pygame.event.set_allowed(None)
         pygame.event.set_allowed([pygame.QUIT, pygame.KEYUP, pygame.KEYDOWN])
         pygame.key.set_repeat(100, 10)
-        self.throttle_gradient = 0; 
+        self.throttle_gradient = 0;
         self.brake_gradient = 0;
-        self.keepCurrentThrottleBrake = False;
+        self.keep_current_throttle_brake = False;
 
     def processEvent(self, event, last_msg):
         new_msg = copy.copy(last_msg)
 
-        if (event.type == pygame.KEYUP) and not self.keepCurrentThrottleBrake:
+        if event.type == pygame.KEYUP and not self.keep_current_throttle_brake:
             if hasattr(event, 'key'):
                 if (event.key == pygame.K_SPACE):
-                    self.keepCurrentThrottleBrake = True
+                    self.keep_current_throttle_brake = True
                     return new_msg
                 if (event.key == pygame.K_UP):
                     self.throttle_gradient = -1
                 elif (event.key == pygame.K_DOWN):
-                    self.brake_gradient = -1 
-            # Post a fake KEYUP event so that the throttle/brake can keep 
-            # decreasing in the absence of real (and impossible) successive 
-            # key releasing. Yield to any KEYDOWN event waiting in the queue. 
-            if not pygame.event.peek(pygame.KEYDOWN): 
+                    self.brake_gradient = -1
+            # Post a fake KEYUP event so the throttle/brake can keep decreasing
+            # in the absence of real (and impossible) successive key releases.
+            # Yield to any KEYDOWN event waiting in the queue.
+            if not pygame.event.peek(pygame.KEYDOWN):
                 dummyKeyUpEvent = pygame.event.Event(pygame.KEYUP)
                 pygame.event.post(dummyKeyUpEvent)
 
         if (event.type == pygame.KEYDOWN):
-            self.keepCurrentThrottleBrake = False;
+            self.keep_current_throttle_brake = False;
             if (event.key == pygame.K_SPACE):
-                self.keepCurrentThrottleBrake = True;
+                self.keep_current_throttle_brake = True;
                 self.throttle_gradient = 0
                 self.brake_gradient = 0
             elif (event.key == pygame.K_UP):
                 self.throttle_gradient = 1
             elif (event.key == pygame.K_DOWN):
                 self.brake_gradient = 1
-            elif (event.key == pygame.K_LEFT): 
+            elif (event.key == pygame.K_LEFT):
                 new_msg.steering_angle = _limit_steering(
                 last_msg.steering_angle + (
                     STEERING_BUTTON_STEP_ANGLE * TURN_LEFT_SIGN))
@@ -113,7 +113,7 @@ class KeyboardEventProcessor:
                 last_msg.throttle + self.throttle_gradient * THROTTLE_SCALE)
         new_msg.brake = _limit_brake(
                 last_msg.brake + self.brake_gradient * BRAKE_SCALE)
-        
+
         return new_msg
 
 
