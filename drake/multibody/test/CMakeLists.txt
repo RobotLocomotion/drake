@@ -1,35 +1,45 @@
 # RigidBodyTree unit tests.
 drake_add_cc_test(test_kinematics_cache_checks)
 target_link_libraries(test_kinematics_cache_checks
+    drakeParsers
     drakeRBM)
 
 add_executable(benchmark_rigid_body_tree benchmark_rigid_body_tree.cc)
-target_link_libraries(benchmark_rigid_body_tree drakeRBM)
+target_link_libraries(benchmark_rigid_body_tree
+    drakeParsers
+    drakeRBM)
 
 drake_add_cc_test(rigid_body_test)
 target_link_libraries(rigid_body_test drakeRBM)
 
 add_executable(debug_manipulator_dynamics debug_manipulator_dynamics.cc)
-target_link_libraries(debug_manipulator_dynamics drakeRBM)
+target_link_libraries(debug_manipulator_dynamics
+    drakeParsers
+    drakeRBM)
 
 # RigidBodyTree parsers unit tests.
 drake_add_cc_test(xml_util_test)
 target_link_libraries(xml_util_test drakeXMLUtil)
 
 add_executable(urdf_kinematics_test urdf_kinematics_test.cc)
-target_link_libraries(urdf_kinematics_test drakeRBM)
+target_link_libraries(urdf_kinematics_test
+    drakeParsers
+    drakeRBM)
 if (Bullet_FOUND)
   add_executable(urdf_collision_test urdf_collision_test.cc)
-  target_link_libraries(urdf_collision_test drakeRBM)
+  target_link_libraries(urdf_collision_test drakeParsers drakeRBM)
 endif ()
 
 add_executable(urdf_manipulator_dynamics_test urdf_manipulator_dynamics_test.cc)
-target_link_libraries(urdf_manipulator_dynamics_test drakeRBM)
+target_link_libraries(urdf_manipulator_dynamics_test
+    drakeParsers
+    drakeRBM)
 
 # Inverse kinematics unit tests.
 macro(add_ik_cpp)
   drake_add_cc_test(${ARGV})
   target_link_libraries(${ARGV}
+    drakeParsers
     drakeRigidBodyConstraint
     drakeIK)
 endmacro()
@@ -39,6 +49,7 @@ macro(add_ik_gtest)
   target_link_libraries(${ARGV}
     GTest::GTest GTest::Main
     drakeIK
+    drakeParsers
     drakeRigidBodyConstraint)
 endmacro()
 
@@ -55,6 +66,4 @@ if (snopt_FOUND)
   add_ik_gtest(test_ik_traj)
 endif ()
 
-add_subdirectory(package_map_test)
-add_subdirectory(parser_urdf_test)
 add_subdirectory(rigid_body_tree)

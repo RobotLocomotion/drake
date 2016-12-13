@@ -1,7 +1,8 @@
 if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakePendulumPlant
     SOURCE_FILES pendulum_swing_up.cc pendulum_plant.cc)
-  target_link_libraries(drakePendulumPlant 
+  target_link_libraries(drakePendulumPlant
+    drakeParsers
     drakeSystemFramework
     drakeTrajectoryOptimization)
   drake_install_libraries(drakePendulumPlant)
@@ -15,6 +16,7 @@ if(lcm_FOUND)
 
   add_executable(pendulum_run_dynamics pendulum_run_dynamics.cc)
   target_link_libraries(pendulum_run_dynamics
+    drakeParsers
     drakePendulumPlant
     drakeRigidBodyPlant
     drakeSystemAnalysis
@@ -24,6 +26,7 @@ if(lcm_FOUND)
 
   add_executable(pendulum_run_energy_shaping pendulum_run_energy_shaping.cc)
   target_link_libraries(pendulum_run_energy_shaping
+    drakeParsers
     drakePendulumPlant
     drakeRigidBodyPlant
     drakeSystemAnalysis)
@@ -32,6 +35,7 @@ if(lcm_FOUND)
 
   add_executable(pendulum_run_lqr pendulum_run_lqr.cc)
   target_link_libraries(pendulum_run_lqr
+      drakeParsers
       drakePendulumPlant
       drakeRigidBodyPlant
       drakeSystemAnalysis

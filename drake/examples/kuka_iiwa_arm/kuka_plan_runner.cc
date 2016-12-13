@@ -19,7 +19,7 @@
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 #include "drake/lcmt_iiwa_command.hpp"

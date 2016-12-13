@@ -7,7 +7,7 @@
 #include "drake/examples/Valkyrie/robot_state_encoder.h"
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"

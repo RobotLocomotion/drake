@@ -1,5 +1,10 @@
 add_library_with_exports(LIB_NAME drakeRBSystem SOURCE_FILES RigidBodySystem.cpp)
-target_link_libraries(drakeRBSystem drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIK)
+target_link_libraries(drakeRBSystem
+    drakeIK
+    drakeOptimization
+    drakeParsers
+    drakeRBM
+    drakeRigidBodyConstraint)
 
 drake_install_headers(RigidBodySystem.h)
 drake_install_libraries(drakeRBSystem)
@@ -16,7 +21,11 @@ drake_install_pkg_config_file(drake-rbsystem
 
 if (lcm_FOUND)
   add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)
-  target_link_libraries(rigidBodyLCMNode gflags drakeRBSystem drakeLCMSystem Threads::Threads)
+  target_link_libraries(rigidBodyLCMNode
+      Threads::Threads
+      drakeLCMSystem
+      drakeRBSystem
+      gflags)
   drake_install_executables(TARGETS rigidBodyLCMNode)
   drake_install_headers(BotVisualizer.h)
 endif ()
