@@ -12,9 +12,9 @@ namespace drake {
  * A class representing a trajectory for quaternions that are interpolated
  * using piecewise slerp (spherical linear interpolation).
  * All the orientation knots are expected to be with respect to the same
- * parent reference frame, i.e. q_i represents the rotation R^p_i,
- * where p is the parent frame. The world frame is a common choice for the
- * parent frame.
+ * parent reference frame, i.e. q_i represents the rotation R_PBi for the
+ * orientation of frame B at the ith knot in a fixed parent frame P.
+ * The world frame is a common choice for the parent frame.
  * The angular velocity and acceleration are also relative to the parent frame
  * and expressed in the parent frame.
  * Since there is a sign ambiguity when using quaternions to represent
@@ -25,8 +25,8 @@ namespace drake {
  *
  * @tparam Scalar, double.
  *
- * TODO(siyuan.feng): check if this works for AutoDiffScalar.
  */
+// TODO(siyuan.feng): check if this works for AutoDiffScalar.
 template <typename Scalar = double>
 class PiecewiseQuaternionSlerp : public PiecewiseFunction {
  public:
