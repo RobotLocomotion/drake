@@ -49,6 +49,38 @@ class ZMPPlanner {
                                       const Eigen::Vector4d& x) const;
 
   /**
+   * Converts CoM acceleration to center of pressure (CoP) using
+   *    cop = C * x + D * u
+   * @param x, CoM position and velocity
+   * @param u, CoM acceleration
+   * @return center of pressure (CoP)
+   */
+  inline Eigen::Vector2d comdd_to_cop(const Eigen::Vector4d& x,
+                                      const Eigen::Vector2d& u) const {
+    return C_ * x + D_ * u;
+  }
+
+  /**
+   * Getter for A matrix.
+   */
+  inline const Eigen::Matrix<double, 4, 4>& get_A() const { return A_; }
+
+  /**
+   * Getter for B matrix.
+   */
+  inline const Eigen::Matrix<double, 4, 2>& get_B() const { return B_; }
+
+  /**
+   * Getter for C matrix.
+   */
+  inline const Eigen::Matrix<double, 2, 4>& get_C() const { return C_; }
+
+  /**
+   * Getter for D matrix.
+   */
+  inline const Eigen::Matrix<double, 2, 2>& get_D() const { return D_; }
+
+  /**
    * Returns the desired ZMP evaluated at `time`.
    */
   inline Eigen::Vector2d get_desired_zmp(double time) const {
@@ -86,21 +118,21 @@ class ZMPPlanner {
   /**
    * Returns the desired ZMP trajectory.
    */
-  inline const PiecewisePolynomial<double> get_desired_zmp() const {
+  inline const PiecewisePolynomial<double>& get_desired_zmp() const {
     return zmp_d_;
   }
 
   /**
    * Returns the desired ZMP velocity trajectory.
    */
-  inline const PiecewisePolynomial<double> get_desired_zmpd() const {
+  inline const PiecewisePolynomial<double>& get_desired_zmpd() const {
     return zmpd_d_;
   }
 
   /**
    * Returns the nominal CoM trajectory.
    */
-  inline const ExponentialPlusPiecewisePolynomial<double> get_nominal_com()
+  inline const ExponentialPlusPiecewisePolynomial<double>& get_nominal_com()
       const {
     return com_;
   }
@@ -108,7 +140,7 @@ class ZMPPlanner {
   /**
    * Returns the nominal CoM velocity trajectory.
    */
-  inline const ExponentialPlusPiecewisePolynomial<double> get_nominal_comd()
+  inline const ExponentialPlusPiecewisePolynomial<double>& get_nominal_comd()
       const {
     return comd_;
   }
@@ -116,7 +148,7 @@ class ZMPPlanner {
   /**
    * Returns the nominal CoM acceleration trajectory.
    */
-  inline const ExponentialPlusPiecewisePolynomial<double> get_nominal_comdd()
+  inline const ExponentialPlusPiecewisePolynomial<double>& get_nominal_comdd()
       const {
     return comdd_;
   }
@@ -124,7 +156,7 @@ class ZMPPlanner {
   /**
    * Returns the time invariant second order term of the value function.
    */
-  inline const Eigen::Matrix<double, 4, 4>
+  inline const Eigen::Matrix<double, 4, 4>&
   get_value_function_second_derivative() const {
     return S1_;
   }
@@ -132,7 +164,7 @@ class ZMPPlanner {
   /**
    * Returns the time varying first order term of the value function.
    */
-  inline const ExponentialPlusPiecewisePolynomial<double>
+  inline const ExponentialPlusPiecewisePolynomial<double>&
   get_value_function_first_derivative() const {
     return s2_;
   }
