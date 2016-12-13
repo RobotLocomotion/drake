@@ -53,3 +53,23 @@ new_git_repository(
     commit = "ae2c4ca0618d55c6a29900aed75b958604149fdb",
     build_file = "tools/bullet.BUILD",
 )
+
+# Necessary for buildifier.
+http_archive(
+    name = "io_bazel_rules_go",
+    sha256 = "b7759f01d29c075db177f688ffb4464aad2b8fbb7017f89a1d3819ce07f1d584",
+    strip_prefix = "rules_go-0.3.1",
+    url = "https://github.com/bazelbuild/rules_go/archive/0.3.1.tar.gz",
+)
+
+# Necessary for buildifier.
+load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
+
+# Necessary for buildifier.
+go_repositories()
+
+git_repository(
+    name = "com_github_bazelbuild_buildifier",
+    commit = "93929369232fcda305607a2e0aa7b3cd9cf8912d",
+    remote = "https://github.com/bazelbuild/buildifier.git",
+)
