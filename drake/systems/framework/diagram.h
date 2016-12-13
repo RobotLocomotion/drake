@@ -15,7 +15,6 @@
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/discrete_state.h"
-#include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
