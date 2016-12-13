@@ -8,8 +8,8 @@
 #include "drake/examples/examples_package_map.h"
 #include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_common.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/parser_common.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 using namespace std;

@@ -5,6 +5,7 @@ if(lcm_FOUND)
     simulated_schunk_wsg_system.cc)
   target_link_libraries(drakeSchunkWsg
     drakeLCMSystem2
+    drakeParsers
     drakeRigidBodyPlant)
   drake_install_libraries(drakeSchunkWsg)
   drake_install_headers(

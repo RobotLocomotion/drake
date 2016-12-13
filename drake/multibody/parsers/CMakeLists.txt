@@ -1,0 +1,24 @@
+add_library_with_exports(LIB_NAME drakeParsers SOURCE_FILES
+    model_instance_id_table.cc
+    package_map.cc
+    parser_common.cc
+    model_instance_id_table.cc
+    sdf_parser.cc
+    urdf_parser.cc)
+target_link_libraries(drakeParsers drakeRBM)
+drake_install_libraries(drakeParsers)
+drake_install_headers(
+    model_instance_id_table.h
+    package_map.h
+    parser_common.h
+    model_instance_id_table.h
+    sdf_parser.h
+    urdf_parser.h)
+drake_install_pkg_config_file(drakeParsers
+  LIBS -ldrakeRBM -ltinyxml2 -lspruce
+  REQUIRES
+    drake-rbm)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

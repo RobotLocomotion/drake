@@ -3,10 +3,11 @@
 if(lcm_FOUND)
   add_executable(run_quadrotor_dynamics run_quadrotor_dynamics.cc)
   target_link_libraries(run_quadrotor_dynamics
-    drakeRigidBodyPlant
-    drakeSystemAnalysis
-    drakeLCMSystem2
-    gflags)
+      drakeParsers
+      drakeRigidBodyPlant
+      drakeSystemAnalysis
+      drakeLCMSystem2
+      gflags)
   drake_add_test(NAME run_quadrotor_dynamics COMMAND run_quadrotor_dynamics --duration=1.0 SIZE medium)
 endif()
 

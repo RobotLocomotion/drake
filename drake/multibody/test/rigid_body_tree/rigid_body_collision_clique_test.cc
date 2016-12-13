@@ -3,9 +3,10 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/parser_common.h"
-#include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/joints/fixed_joint.h"
+#include "drake/multibody/parsers/model_instance_id_table.h"
+#include "drake/multibody/parsers/parser_common.h"
+
 
 namespace drake {
 namespace systems {

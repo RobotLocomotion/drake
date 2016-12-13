@@ -42,7 +42,7 @@ if(NOT DISABLE_PYTHON)
 
   add_swig_python_module(rbtPython rbtree.i
     CPLUSPLUS
-    LINK_LIBRARIES drakeRBM
+    LINK_LIBRARIES drakeParsers drakeRBM
     SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
     DESTINATION ${python_install_subdir})
 
