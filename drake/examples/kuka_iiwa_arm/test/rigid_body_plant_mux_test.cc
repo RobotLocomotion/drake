@@ -29,23 +29,35 @@ GTEST_TEST(RigidBodyPlantMuxTest, SimpleMuxTest) {
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       &tree);
 
+  AddModelInstanceFromUrdfFile(
+      drake::GetDrakePath() +
+      "/multibody/test/rigid_body_tree/four_dof_robot.urdf",
+      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
+      &tree);
+
   // Create our mux under test, and make two inputs and two outputs.
   RigidBodyPlantMux<double> dut(tree);
-  auto input_one = dut.AddInput({"joint1", "joint2"});
-  auto input_two = dut.AddInput({"joint3", "joint4"});
-  auto output_one = dut.AddOutput({"joint1", "joint2"},
-                                  {"joint1dot", "joint2dot"});
-  auto output_two = dut.AddOutput({"joint3", "joint4"},
-                                  {"joint3dot", "joint4dot"});
+  auto input_one = dut.AddInput({{"joint1", 0}, {"joint2", 0}});
+  auto input_two = dut.AddInput({{"joint3", 0}, {"joint4", 0}});
+  auto input_three = dut.AddInput({{"joint1", 1}, {"joint2", 1}});
+  auto input_four = dut.AddInput({{"joint3", 1}, {"joint4", 1}});
+  auto output_one = dut.AddOutput({{"joint1", 0}, {"joint2", 0}},
+                                  {{"joint1dot", 0}, {"joint2dot", 0}});
+  auto output_two = dut.AddOutput({{"joint3", 0}, {"joint4", 0}},
+                                  {{"joint3dot", 0}, {"joint4dot", 0}});
+  auto output_three = dut.AddOutput({{"joint1", 1}, {"joint2", 1}},
+                                    {{"joint1dot", 1}, {"joint2dot", 1}});
+  auto output_four = dut.AddOutput({{"joint3", 1}, {"joint4", 1}},
+                                   {{"joint3dot", 1}, {"joint4dot", 1}});
 
   // Build up a diagram with a multiplexer and a couple of gain blocks
-  // to simulate a plant with 4 inputs and 8 outputs.
+  // to simulate a plant with 8 inputs and 16 outputs.
   systems::DiagramBuilder<double> plant_builder;
-  auto pass = plant_builder.AddSystem<systems::PassThrough<double>>(4);
-  auto position_gain = plant_builder.AddSystem<systems::Gain<double>>(10, 4);
-  auto velocity_gain = plant_builder.AddSystem<systems::Gain<double>>(100, 4);
+  auto pass = plant_builder.AddSystem<systems::PassThrough<double>>(8);
+  auto position_gain = plant_builder.AddSystem<systems::Gain<double>>(10, 8);
+  auto velocity_gain = plant_builder.AddSystem<systems::Gain<double>>(100, 8);
   auto plant_mux = plant_builder.AddSystem<systems::Multiplexer<double>>(
-      std::vector<int>({4, 4}));
+      std::vector<int>({8, 8}));
 
   plant_builder.Connect(*pass, *position_gain);
   plant_builder.Connect(*pass, *velocity_gain);
@@ -61,20 +73,32 @@ GTEST_TEST(RigidBodyPlantMuxTest, SimpleMuxTest) {
   dut.ConnectPlant(*plant, &builder);
   builder.ExportInput(input_one);
   builder.ExportInput(input_two);
+  builder.ExportInput(input_three);
+  builder.ExportInput(input_four);
   builder.ExportOutput(output_one);
   builder.ExportOutput(output_two);
+  builder.ExportOutput(output_three);
+  builder.ExportOutput(output_four);
   auto sys = builder.Build();
 
   auto context = sys->CreateDefaultContext();
   auto output = sys->AllocateOutput(*context);
+  ASSERT_EQ(output->get_num_ports(), 4);
+
   context->FixInputPort(0, Eigen::Vector2d(1, 2));
   context->FixInputPort(1, Eigen::Vector2d(3, 4));
+  context->FixInputPort(2, Eigen::Vector2d(5, 6));
+  context->FixInputPort(3, Eigen::Vector2d(7, 8));
   sys->EvalOutput(*context, output.get());
 
   auto output_one_vec = output->get_vector_data(0);
   auto output_two_vec = output->get_vector_data(1);
-  ASSERT_EQ(output_one_vec->size(), 4);
+  auto output_three_vec = output->get_vector_data(2);
+  auto output_four_vec = output->get_vector_data(3);
+  ASSERT_EQ(output_one_vec->get_value().size(), 4);
   ASSERT_EQ(output_two_vec->size(), 4);
+  ASSERT_EQ(output_three_vec->size(), 4);
+  ASSERT_EQ(output_four_vec->size(), 4);
 
   Eigen::VectorXd expected_output_one(4);
   expected_output_one << 10, 20, 100, 200;
@@ -82,10 +106,20 @@ GTEST_TEST(RigidBodyPlantMuxTest, SimpleMuxTest) {
   Eigen::VectorXd expected_output_two(4);
   expected_output_two << 30, 40, 300, 400;
 
-  EXPECT_TRUE(CompareMatrices(output_one_vec->get_value(), expected_output_one,
-                              1e-10));
-  EXPECT_TRUE(CompareMatrices(output_two_vec->get_value(), expected_output_two,
-                              1e-10));
+  Eigen::VectorXd expected_output_three(4);
+  expected_output_three << 50, 60, 500, 600;
+
+  Eigen::VectorXd expected_output_four(4);
+  expected_output_four << 70, 80, 700, 800;
+
+  EXPECT_TRUE(CompareMatrices(
+      output_one_vec->get_value(), expected_output_one, 1e-10));
+  EXPECT_TRUE(CompareMatrices(
+      output_two_vec->get_value(), expected_output_two, 1e-10));
+  EXPECT_TRUE(CompareMatrices(
+      output_three_vec->get_value(), expected_output_three, 1e-10));
+  EXPECT_TRUE(CompareMatrices(
+      output_four_vec->get_value(), expected_output_four, 1e-10));
 }
 
 }  // namespace
