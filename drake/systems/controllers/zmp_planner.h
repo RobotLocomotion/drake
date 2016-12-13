@@ -7,13 +7,13 @@ namespace drake {
 namespace systems {
 
 /**
- * Given a desired 2 dimensional (X and Y) zero-moment point (ZMP) trajectory
- * parametrized as a piecewise polynomial up to the third order, an optimal
- * center of mass (CoM) trajectory is planned using a linear inverted pendulum
- * model (LIPM) dynamics.
- * A second order value function and linear policy is also computed with the
- * optimal trajectory.
- * The state of the system is [CoM; CoMd], and the control is CoMdd.
+ * Given a desired two dimensional (X and Y) zero-moment point (ZMP) trajectory
+ * parametrized as a piecewise polynomial, an optimal center of mass (CoM)
+ * trajectory is planned using a linear inverted pendulum model (LIPM).
+ * A second order value function and a linear policy are also computed along
+ * the optimal trajectory.
+ * The state of the system is CoM position and velocity, and the control is
+ * CoM acceleration.
  * See the following reference for more details about the algorithm.
  * [1] R. Tedrake, S. Kuindersma, R. Deits and K. Miura, "A closed-form solution
  * for real-time ZMP gait generation and feedback stabilization,"
@@ -25,12 +25,12 @@ class ZMPPlanner {
   ZMPPlanner() {}
 
   /**
-   * Implements the algorithms described in [1] that computes a nominal CoM
-   * trajectory, and the corresponding second value function and linear policy.
-   * @param zmp_d, Desired 2 dimensional ZMP trajectory up to the 3rd order.
-   * @param x0, Initial state of the CoM.
-   * @param height, Height of CoM from the ground.
-   * @param Qy, Quadratic cost term on ZMP deviation.
+   * Implements the algorithm in [1] that computes a nominal CoM trajectory,
+   * and the corresponding second order value function and linear policy.
+   * @param zmp_d, Desired two dimensional ZMP trajectory.
+   * @param x0, Initial CoM state.
+   * @param height, CoM height from the ground.
+   * @param Qy, Quadratic cost term on ZMP deviation from the desired.
    * @param R, Quadratic cost term on CoM acceleration.
    */
   void Plan(const PiecewisePolynomial<double>& zmp_d, const Eigen::Vector4d& x0,
@@ -39,8 +39,8 @@ class ZMPPlanner {
             const Eigen::Matrix2d& R = Eigen::Matrix2d::Zero());
 
   /**
-   * Computes the optimal control (CoM acceleration) at `time` given state `x`
-   * using the linear policy.
+   * Computes the optimal control (CoM acceleration) at `time` given CoM state
+   * `x` using the linear policy.
    * @param time, Current time.
    * @param x, Current state.
    * @return Optimal CoMdd.
@@ -164,7 +164,7 @@ class ZMPPlanner {
   Eigen::Matrix<double, 2, 2> D_;
 
   // One step cost function:
-  // L = (y - y_d)^T * Qy * (y - y_d)^T + u * R * u.
+  // L = (y - y_d)^T * Qy * (y - y_d)^T + u^T * R * u.
   Eigen::Matrix<double, 2, 2> Qy_, R_;
 
   // Value function
