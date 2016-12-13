@@ -1,36 +1,59 @@
 #include <iostream>
-#include <fstream>
 
 #include "drake/systems/controllers/zmp_planner.h"
 
+#include "drake/lcm/lcm_call_matlab.h"
+
 void TestZMPPlanner(const PiecewisePolynomial<double>& zmp_d,
     const Eigen::Vector4d& x0, double height) {
-  std::ofstream out;
   drake::systems::ZMPPlanner zmp_planner;
   zmp_planner.Plan(zmp_d, x0, height);
 
-  out.open("/home/sfeng/zmp_d");
-  for (double t = zmp_d.getStartTime(); t <= zmp_d.getEndTime() + 1; t+= 0.01) {
-    out << t << " " << zmp_planner.get_desired_zmp(t).transpose() << std::endl;
-  }
-  out.close();
+  double dt = 0.01;
+  int N = static_cast<int>(
+      (zmp_d.getEndTime() + 1 - zmp_d.getStartTime()) / dt);
 
-  out.open("/home/sfeng/com");
-  for (double t = zmp_d.getStartTime(); t <= zmp_d.getEndTime() + 1; t+= 0.01) {
-    out << t << " " << zmp_planner.get_nominal_com(t).transpose() << std::endl;
-  }
-  out.close();
+  Eigen::VectorXd time(N);
+  Eigen::MatrixXd zmp(2, N);
+  Eigen::MatrixXd com(2, N);
+  Eigen::MatrixXd comd(2, N);
+  Eigen::MatrixXd comdd(2, N);
+  Eigen::MatrixXd u(2, N);
+  Eigen::Vector4d x;
 
-  out.open("/home/sfeng/ff");
-  for (double t = zmp_d.getStartTime(); t <= zmp_d.getEndTime() + 1; t+= 0.01) {
-    Eigen::Vector4d nominal_x;
-    nominal_x << zmp_planner.get_nominal_com(t),
-                 zmp_planner.get_nominal_comd(t);
-    out << t << " " << zmp_planner.get_nominal_comdd(t).transpose() << " "
-        << zmp_planner.ComputeOptimalCoMdd(t, nominal_x).transpose()
-        << std::endl;
+  for (int i = 0; i < N; i++) {
+    time[i] = zmp_d.getStartTime() + i * dt;
+    zmp.col(i) = zmp_planner.get_desired_zmp(time[i]);
+    com.col(i) = zmp_planner.get_nominal_com(time[i]);
+    comd.col(i) = zmp_planner.get_nominal_comd(time[i]);
+    comdd.col(i) = zmp_planner.get_nominal_comdd(time[i]);
+
+    x << com.col(i), comd.col(i);
+    u.col(i) = zmp_planner.ComputeOptimalCoMdd(time[i], x);
   }
-  out.close();
+
+  using drake::lcm::LcmCallMatlab;
+  LcmCallMatlab("figure", 1);
+  LcmCallMatlab("clf");
+  LcmCallMatlab("subplot", 2, 1, 1);
+  LcmCallMatlab("hold", "on");
+  LcmCallMatlab("plot", time, zmp.row(0), "r");
+  LcmCallMatlab("plot", time, com.row(0), "b");
+  LcmCallMatlab("subplot", 2, 1, 2);
+  LcmCallMatlab("hold", "on");
+  LcmCallMatlab("plot", time, zmp.row(1), "r");
+  LcmCallMatlab("plot", time, com.row(1), "b");
+
+  LcmCallMatlab("figure", 2);
+  LcmCallMatlab("clf");
+  LcmCallMatlab("subplot", 2, 1, 1);
+  LcmCallMatlab("hold", "on");
+  LcmCallMatlab("plot", time, u.row(0), "r");
+  LcmCallMatlab("plot", time, comdd.row(0), "b.");
+  LcmCallMatlab("subplot", 2, 1, 2);
+  LcmCallMatlab("hold", "on");
+  LcmCallMatlab("plot", time, u.row(1), "r");
+  LcmCallMatlab("plot", time, comdd.row(1), "b.");
 }
 
 int main() {
