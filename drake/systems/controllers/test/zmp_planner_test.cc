@@ -3,12 +3,12 @@
 
 #include "drake/systems/controllers/zmp_planner.h"
 
-void TestZMPPlanner(const PiecewisePolynomial<double>& zmp_d, const Eigen::Vector4d& x0, double height) {
+void TestZMPPlanner(const PiecewisePolynomial<double>& zmp_d,
+    const Eigen::Vector4d& x0, double height) {
   std::ofstream out;
   drake::systems::ZMPPlanner zmp_planner;
   zmp_planner.Plan(zmp_d, x0, height);
 
-  //std::cout << "S: " << zmp.S_ << std::endl;
   out.open("/home/sfeng/zmp_d");
   for (double t = zmp_d.getStartTime(); t <= zmp_d.getEndTime() + 1; t+= 0.01) {
     out << t << " " << zmp_planner.get_desired_zmp(t).transpose() << std::endl;
@@ -24,8 +24,11 @@ void TestZMPPlanner(const PiecewisePolynomial<double>& zmp_d, const Eigen::Vecto
   out.open("/home/sfeng/ff");
   for (double t = zmp_d.getStartTime(); t <= zmp_d.getEndTime() + 1; t+= 0.01) {
     Eigen::Vector4d nominal_x;
-    nominal_x << zmp_planner.get_nominal_com(t), zmp_planner.get_nominal_comd(t);
-    out << t << " " << zmp_planner.get_nominal_comdd(t).transpose() << " " << zmp_planner.ComputeOptimalCoMdd(t, nominal_x).transpose() << std::endl;
+    nominal_x << zmp_planner.get_nominal_com(t),
+                 zmp_planner.get_nominal_comd(t);
+    out << t << " " << zmp_planner.get_nominal_comdd(t).transpose() << " "
+        << zmp_planner.ComputeOptimalCoMdd(t, nominal_x).transpose()
+        << std::endl;
   }
   out.close();
 }
@@ -55,9 +58,15 @@ int main() {
     zmp_d.push_back(Eigen::Vector2d(x, y));
   }
 
-  //PiecewisePolynomial<double> zmp_traj = PiecewisePolynomial<double>::FirstOrderHold(Ts, zmp_d);
-  PiecewisePolynomial<double> zmp_traj = PiecewisePolynomial<double>::Pchip(Ts, zmp_d);
-  TestZMPPlanner(zmp_traj, x0, 1);
+  PiecewisePolynomial<double> zmp_traj =
+      PiecewisePolynomial<double>::ZeroOrderHold(Ts, zmp_d);
+  // PiecewisePolynomial<double> zmp_traj =
+  //  PiecewisePolynomial<double>::FirstOrderHold(Ts, zmp_d);
+  // PiecewisePolynomial<double> zmp_traj =
+  //  PiecewisePolynomial<double>::Pchip(Ts, zmp_d);
+
+  double z = 1;
+  TestZMPPlanner(zmp_traj, x0, z);
 
   return 0;
 }

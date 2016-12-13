@@ -21,8 +21,8 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
                       const Eigen::Vector4d& x0, double height,
                       const Eigen::Matrix2d& Qy, const Eigen::Matrix2d& R) {
   int n_segments = zmp_d.getNumberOfSegments();
-  int zmp_d_poly_order = zmp_d.getSegmentPolynomialDegree(0);
-  DRAKE_DEMAND(zmp_d_poly_order <= 3);
+  int zmp_d_degree = zmp_d.getSegmentPolynomialDegree(0);
+  DRAKE_DEMAND(zmp_d_degree >= 0);
   DRAKE_DEMAND(zmp_d.rows() == 2 && zmp_d.cols() == 1);
 
   zmp_d_ = zmp_d;
@@ -65,34 +65,38 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
   Eigen::Vector2d zmp_tf = zmp_d.value(zmp_d.getEndTime());
   Eigen::Vector4d tmp4;
 
-  Eigen::MatrixXd alpha(4, n_segments);
-  // Col is number of coefficients. Row is state degree.
-  std::vector<Eigen::Matrix<double, 4, 4>> beta(n_segments);
-  std::vector<Eigen::Matrix<double, 2, 4>> gamma(n_segments);
-  std::vector<Eigen::Matrix<double, 2, 4>> c(n_segments);
-  alpha.setZero();
+  Eigen::MatrixXd alpha = Eigen::MatrixXd::Zero(4, n_segments);
+  std::vector<Eigen::MatrixXd> beta(n_segments,
+      Eigen::MatrixXd::Zero(4, zmp_d_degree + 1));
+  std::vector<Eigen::MatrixXd> gamma(n_segments,
+      Eigen::MatrixXd::Zero(2, zmp_d_degree + 1));
+  std::vector<Eigen::MatrixXd> c(n_segments,
+      Eigen::MatrixXd::Zero(2, zmp_d_degree + 1));
 
   std::vector<Eigen::Matrix<Polynomial<double>, Eigen::Dynamic, Eigen::Dynamic>>
       beta_poly(n_segments);
   std::vector<Eigen::Matrix<Polynomial<double>, Eigen::Dynamic, Eigen::Dynamic>>
       gamma_poly(n_segments);
 
+  Eigen::VectorXd delta_time_vec(zmp_d_degree + 1);
+  delta_time_vec[0] = 1;
+
   // Algorithm 1 in [1] to solve for parameters of s2 and k2.
   for (int t = n_segments - 1; t >= 0; t--) {
     c[t].setZero();
-    c[t].row(0).head(zmp_d_poly_order + 1) =
+    c[t].row(0).head(zmp_d_degree + 1) =
         zmp_d.getPolynomial(t, 0, 0).GetCoefficients();
-    c[t].row(1).head(zmp_d_poly_order + 1) =
+    c[t].row(1).head(zmp_d_degree + 1) =
         zmp_d.getPolynomial(t, 1, 0).GetCoefficients();
     /// switch to zbar coord
     c[t].col(0) -= zmp_tf;
 
     // degree 4
-    beta[t].col(3) = -A2i * B2 * c[t].col(3);
-    gamma[t].col(3) = R1i * D_ * Qy_ * c[t].col(3) -
-                      0.5 * R1i * B_.transpose() * beta[t].col(3);
+    beta[t].col(zmp_d_degree) = -A2i * B2 * c[t].col(zmp_d_degree);
+    gamma[t].col(zmp_d_degree) = R1i * D_ * Qy_ * c[t].col(zmp_d_degree) -
+                      0.5 * R1i * B_.transpose() * beta[t].col(zmp_d_degree);
 
-    for (int d = 2; d >= 0; d--) {
+    for (int d = zmp_d_degree - 1; d >= 0; d--) {
       beta[t].col(d) = A2i * ((d + 1) * beta[t].col(d + 1) - B2 * c[t].col(d));
       gamma[t].col(d) = R1i * D_ * Qy_ * c[t].col(d) -
                         0.5 * R1i * B_.transpose() * beta[t].col(d);
@@ -107,7 +111,9 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
     double dt = zmp_d.getDuration(t);
     Eigen::Matrix4d A2exp = A2 * dt;
     A2exp = A2exp.exp();
-    tmp4 = tmp4 - beta[t] * Eigen::Vector4d(1, dt, dt * dt, dt * dt * dt);
+    for (int i = 0; i < zmp_d_degree + 1; i++)
+      delta_time_vec[i] = std::pow(dt, i);
+    tmp4 = tmp4 - beta[t] * delta_time_vec;
 
     alpha.col(t) = A2exp.inverse() * tmp4;
 
@@ -138,7 +144,7 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
   Eigen::Matrix<double, 8, 2> Bz;
   Az.block<4, 4>(0, 0) = A_ + B_ * K_;
   Az.block<4, 4>(0, 4) = -0.5 * B_ * R1i * B_.transpose();
-  Az.block<4, 4>(4, 0) = Eigen::Matrix<double, 4, 4>::Zero();
+  Az.block<4, 4>(4, 0).setZero();
   Az.block<4, 4>(4, 4) = A2;
   Azi = Az.inverse();
   Bz.block<4, 2>(0, 0) = B_ * R1i * D_ * Qy_;
@@ -149,7 +155,8 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
   std::vector<Eigen::Matrix<Polynomial<double>, Eigen::Dynamic, Eigen::Dynamic>>
       b_poly(n_segments);
 
-  std::vector<Eigen::Matrix<double, 4, 4>> b(n_segments);
+  std::vector<Eigen::MatrixXd> b(n_segments,
+      Eigen::MatrixXd(4, zmp_d_degree + 1));
   Eigen::Matrix<double, 8, 1> tmp81;
   Eigen::Matrix<double, 8, 8> Az_exp;
   Eigen::Matrix<double, 4, 8> I48;
@@ -164,8 +171,8 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
   // CoM trajectory.
   for (int t = 0; t < n_segments; t++) {
     double dt = zmp_d.getDuration(t);
-    b[t].col(3) = -Azi.topRows(4) * Bz * c[t].col(3);
-    for (int d = 2; d >= 0; d--) {
+    b[t].col(zmp_d_degree) = -Azi.topRows(4) * Bz * c[t].col(zmp_d_degree);
+    for (int d = zmp_d_degree - 1; d >= 0; d--) {
       tmp81.head<4>() = b[t].col(d + 1);
       tmp81.tail<4>() = beta[t].col(d + 1);
       tmp81 = tmp81 * (d + 1);
@@ -176,8 +183,10 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
 
     Az_exp = Az * dt;
     Az_exp = Az_exp.exp();
+    for (int i = 0; i < zmp_d_degree + 1; i++)
+      delta_time_vec[i] = std::pow(dt, i);
     x = I48 * Az_exp * a.col(t) +
-        b[t] * Eigen::Vector4d(1, dt, dt * dt, dt * dt * dt);
+        b[t] * delta_time_vec;
 
     b[t].block<2, 1>(0, 0) += zmp_tf;  // Map CoM position back to world frame.
 
