@@ -7,6 +7,7 @@ if(lcm_FOUND)
   target_link_libraries(drakeKukaIiwaWorld
       drakeKukaIiwaArmCommon
       drakeLCMSystem2
+      drakeMultibodyParsers
       drakeRigidBodyPlant
       drakeSystemAnalysis
       drakeSystemFramework

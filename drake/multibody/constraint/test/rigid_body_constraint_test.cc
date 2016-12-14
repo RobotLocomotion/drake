@@ -6,7 +6,7 @@
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 
 using std::cerr;
 using std::endl;
