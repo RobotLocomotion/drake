@@ -5,13 +5,257 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "framework",
-    srcs = glob(["*.cc"]),
-    hdrs = glob(["*.h"]),
+    srcs = [],
+    hdrs = [],
+    linkstatic = 1,
+    deps = [
+        ":cache",
+        ":context",
+        ":diagram",
+        ":diagram_builder",
+        ":diagram_context",
+        ":leaf_context",
+        ":leaf_system",
+        ":parameters",
+        ":state",
+        ":system",
+        ":value",
+        ":vector",
+    ],
+)
+
+cc_library(
+    name = "vector",
+    srcs = [
+        "basic_vector.cc",
+        "subvector.cc",
+        "supervector.cc",
+        "vector_base.cc",
+    ],
+    hdrs = [
+        "basic_vector.h",
+        "subvector.h",
+        "supervector.h",
+        "vector_base.h",
+    ],
     linkstatic = 1,
     deps = [
         "//drake/common",
+    ],
+)
+
+cc_library(
+    name = "value",
+    srcs = ["value.cc"],
+    hdrs = ["value.h"],
+    linkstatic = 1,
+    deps = [
+        ":vector",
+        "//drake/common",
+    ],
+)
+
+cc_library(
+    name = "cache",
+    srcs = ["cache.cc"],
+    hdrs = ["cache.h"],
+    linkstatic = 1,
+    deps = [
+        ":value",
+        "//drake/common",
+    ],
+)
+
+cc_library(
+    name = "state",
+    srcs = [
+        "abstract_state.cc",
+        "continuous_state.cc",
+        "discrete_state.cc",
+        "state.cc",
+    ],
+    hdrs = [
+        "abstract_state.h",
+        "continuous_state.h",
+        "discrete_state.h",
+        "state.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        ":value",
+        ":vector",
+        "//drake/common",
         "//drake/common:autodiff",
+    ],
+)
+
+cc_library(
+    name = "parameters",
+    srcs = ["parameters.cc"],
+    hdrs = ["parameters.h"],
+    linkstatic = 1,
+    deps = [
+        ":state",
+        "//drake/common",
+    ],
+)
+
+cc_library(
+    name = "system_port_descriptor",
+    srcs = ["system_port_descriptor.cc"],
+    hdrs = ["system_port_descriptor.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/common",
+    ],
+)
+
+cc_library(
+    name = "output_port_listener_interface",
+    srcs = ["output_port_listener_interface.cc"],
+    hdrs = ["output_port_listener_interface.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/common",
+    ],
+)
+
+cc_library(
+    name = "system_output",
+    srcs = ["system_output.cc"],
+    hdrs = ["system_output.h"],
+    linkstatic = 1,
+    deps = [
+        ":output_port_listener_interface",
+        ":value",
+        ":vector",
+        "//drake/common",
+    ],
+)
+
+cc_library(
+    name = "input_port_evaluator_interface",
+    srcs = ["input_port_evaluator_interface.cc"],
+    hdrs = ["input_port_evaluator_interface.h"],
+    linkstatic = 1,
+    deps = [
+        ":system_output",
+        ":system_port_descriptor",
+        "//drake/common",
+    ],
+)
+
+cc_library(
+    name = "system_input",
+    srcs = ["system_input.cc"],
+    hdrs = ["system_input.h"],
+    linkstatic = 1,
+    deps = [
+        ":input_port_evaluator_interface",
+        ":vector",
+        "//drake/common",
+    ],
+)
+
+cc_library(
+    name = "context",
+    srcs = ["context.cc"],
+    hdrs = ["context.h"],
+    linkstatic = 1,
+    deps = [
+        ":input_port_evaluator_interface",
+        ":state",
+        ":system_input",
+        "//drake/common",
+    ],
+)
+
+cc_library(
+    name = "leaf_context",
+    srcs = ["leaf_context.cc"],
+    hdrs = ["leaf_context.h"],
+    linkstatic = 1,
+    deps = [
+        ":cache",
+        ":context",
+        ":parameters",
+        ":vector",
+        "//drake/common",
+    ],
+)
+
+cc_library(
+    name = "system",
+    srcs = ["system.cc"],
+    hdrs = ["system.h"],
+    linkstatic = 1,
+    deps = [
+        ":cache",
+        ":context",
+        "//drake/common",
+        "//drake/common:autodiff",
+    ],
+)
+
+cc_library(
+    name = "leaf_system",
+    srcs = ["leaf_system.cc"],
+    hdrs = ["leaf_system.h"],
+    linkstatic = 1,
+    deps = [
+        ":leaf_context",
+        ":system",
+        "//drake/common",
         "//drake/common:number_traits",
+    ],
+)
+
+cc_library(
+    name = "diagram_continuous_state",
+    srcs = ["diagram_continuous_state.cc"],
+    hdrs = ["diagram_continuous_state.h"],
+    linkstatic = 1,
+    deps = [
+        ":state",
+        "//drake/common",
+    ],
+)
+
+cc_library(
+    name = "diagram_context",
+    srcs = ["diagram_context.cc"],
+    hdrs = ["diagram_context.h"],
+    linkstatic = 1,
+    deps = [
+        ":context",
+        ":diagram_continuous_state",
+        ":vector",
+        "//drake/common",
+    ],
+)
+
+cc_library(
+    name = "diagram",
+    srcs = ["diagram.cc"],
+    hdrs = ["diagram.h"],
+    linkstatic = 1,
+    deps = [
+        ":cache",
+        ":diagram_context",
+        ":system",
+        "//drake/common",
+        "//drake/common:number_traits",
+    ],
+)
+
+cc_library(
+    name = "diagram_builder",
+    srcs = ["diagram_builder.cc"],
+    hdrs = ["diagram_builder.h"],
+    linkstatic = 1,
+    deps = [
+        ":diagram",
+        "//drake/common",
     ],
 )
 
@@ -24,8 +268,9 @@ cc_test(
     srcs = ["test/basic_vector_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":vector",
         "//drake/common",
+        "//drake/common:autodiff",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:functional_form",
         "@gtest//:main",
@@ -39,7 +284,7 @@ cc_test(
     srcs = ["test/cache_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":cache",
         "//drake/common",
         "//drake/systems/framework/test_utilities",
         "@gtest//:main",
@@ -53,7 +298,7 @@ cc_test(
     srcs = ["test/continuous_state_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":state",
         "//drake/common",
         "@gtest//:main",
     ],
@@ -66,7 +311,7 @@ cc_test(
     srcs = ["test/diagram_builder_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":diagram_builder",
         "//drake/common",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
@@ -84,7 +329,7 @@ cc_test(
     srcs = ["test/diagram_context_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":diagram_context",
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/primitives:adder",
@@ -102,7 +347,7 @@ cc_test(
     srcs = ["test/diagram_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":diagram",
         "//drake/common",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
@@ -120,7 +365,7 @@ cc_test(
     srcs = ["test/discrete_state_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":state",
         "//drake/common",
         "@gtest//:main",
     ],
@@ -133,7 +378,7 @@ cc_test(
     srcs = ["test/leaf_context_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":leaf_context",
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework/test_utilities",
@@ -148,7 +393,7 @@ cc_test(
     srcs = ["test/leaf_system_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":leaf_system",
         "//drake/common",
         "@gtest//:main",
     ],
@@ -161,7 +406,7 @@ cc_test(
     srcs = ["test/abstract_state_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":state",
         "//drake/common",
         "//drake/systems/framework/test_utilities",
         "@gtest//:main",
@@ -175,7 +420,7 @@ cc_test(
     srcs = ["test/parameters_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":parameters",
         "//drake/common",
         "//drake/systems/framework/test_utilities",
         "@gtest//:main",
@@ -189,7 +434,7 @@ cc_test(
     srcs = ["test/subvector_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":vector",
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
         "@gtest//:main",
@@ -203,7 +448,7 @@ cc_test(
     srcs = ["test/supervector_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":vector",
         "//drake/common",
         "@gtest//:main",
     ],
@@ -216,7 +461,7 @@ cc_test(
     srcs = ["test/system_input_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":system_input",
         "//drake/common",
         "@gtest//:main",
     ],
@@ -229,7 +474,7 @@ cc_test(
     srcs = ["test/system_output_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":system_output",
         "//drake/common",
         "@gtest//:main",
     ],
@@ -242,7 +487,8 @@ cc_test(
     srcs = ["test/system_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":leaf_context",
+        ":system",
         "//drake/common",
         "@gtest//:main",
     ],
@@ -255,7 +501,7 @@ cc_test(
     srcs = ["test/value_test.cc"],
     linkstatic = 1,
     deps = [
-        ":framework",
+        ":value",
         "//drake/common",
         "@gtest//:main",
     ],
