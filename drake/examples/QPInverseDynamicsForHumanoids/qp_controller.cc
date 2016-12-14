@@ -107,7 +107,6 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
 
   // The order of insertion is important, the rest of the program assumes this
   // layout.
-  prog_ = solvers::MathematicalProgram();
   vd_ = prog_.AddContinuousVariables(num_vd_, "vd");
   basis_ = prog_.AddContinuousVariables(num_basis_, "basis");
 
