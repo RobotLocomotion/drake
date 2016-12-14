@@ -133,6 +133,10 @@ cc_library(
         "//drake/systems/lcm",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:multiplexer",
+
+        # TODO(rpoyner-tri): This only exists to get the yaml_cpp external to
+        # build; remove once maliput (the eventual consumer) is integrated.
+        "@yaml_cpp//:lib",
     ],
 )
 
