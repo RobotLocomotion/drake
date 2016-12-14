@@ -1141,12 +1141,12 @@ class QPController {
   std::vector<VectorX<double>> body_Jdv_;
 
   // These determines the size of the QP. These are set in ResizeQP
-  int num_contact_body_;
-  int num_vd_;
-  int num_point_force_;
-  int num_basis_;
-  int num_torque_;
-  int num_variable_;
+  int num_contact_body_{0};
+  int num_vd_{0};
+  int num_point_force_{0};
+  int num_basis_{0};
+  int num_torque_{0};
+  int num_variable_{0};
   // One cost / eqaulity constraint term per body motion.
   // For each dimension (row) of the desired body motion, it can be treated
   // as a cost term (Soft), skipped (SKip) or as an equality constraint (Hard)
@@ -1162,15 +1162,15 @@ class QPController {
   //           + vd^T * J(1:2,:)^T * (Jdv(1:2,:) - pelvdd_d(1:2)))
   // The equality constraint term is:
   // J(5:6,:) * vd + Jdv(5:6,:) = pelvdd_d(5:6)
-  int num_body_motion_as_cost_;
-  int num_body_motion_as_eq_;
+  int num_body_motion_as_cost_{0};
+  int num_body_motion_as_eq_{0};
   // Same as for body_motiom, replace J with the identity matrix.
-  int num_dof_motion_as_cost_;
-  int num_dof_motion_as_eq_;
-  int num_cen_mom_dot_as_cost_;
-  int num_cen_mom_dot_as_eq_;
-  int num_contact_as_cost_;
-  int num_contact_as_eq_;
+  int num_dof_motion_as_cost_{0};
+  int num_dof_motion_as_eq_{0};
+  int num_cen_mom_dot_as_cost_{0};
+  int num_cen_mom_dot_as_eq_{0};
+  int num_contact_as_cost_{0};
+  int num_contact_as_eq_{0};
 
   // prog_ is only allocated in ResizeQP, Control only updates the appropriate
   // matrices / vectors.
