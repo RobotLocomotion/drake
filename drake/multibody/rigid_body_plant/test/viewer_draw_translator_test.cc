@@ -8,9 +8,9 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 
 namespace drake {
 namespace systems {
@@ -29,7 +29,8 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   for (int i = 0; i < kNumBodies; ++i) {
     auto body = make_unique<RigidBody<double>>();
     body->set_name("body" + std::to_string(i));
-    body->set_model_instance_id(tree->add_model_instance());
+    body->set_model_instance_id(
+        tree->add_model_instance("body" + std::to_string(i)));
 
     // The inertia model must be set to prevent RigidBodyTree::compile() from
     // replacing the body's joint with a FixedJoint.

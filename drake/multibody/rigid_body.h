@@ -31,16 +31,6 @@ class RigidBody {
   void set_name(const std::string& name);
 
   /**
-   * Returns the name of the model defining this rigid body.
-   */
-  const std::string& get_model_name() const;
-
-  /**
-   * Sets the name of the model defining this rigid body.
-   */
-  void set_model_name(const std::string& name);
-
-  /**
    * Returns the ID of the model instance to which this rigid body belongs.
    */
   int get_model_instance_id() const;
@@ -393,11 +383,6 @@ class RigidBody {
 
   // The name of this rigid body.
   std::string name_;
-
-  // TODO(liang.fok) Remove this member variable, see:
-  // https://github.com/RobotLocomotion/drake/issues/3053
-  // The name of the model that defined this rigid body.
-  std::string model_name_;
 
   // A unique ID for the model instance to which this body belongs.
   int model_instance_id_{0};

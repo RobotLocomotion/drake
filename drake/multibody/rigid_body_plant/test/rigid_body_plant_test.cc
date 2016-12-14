@@ -59,7 +59,7 @@ GTEST_TEST(RigidBodyPlantTest, TestLoadUrdf) {
        {"floor", "ramp_1", "ramp_2", "box_1", "box_2", "box_3", "box_4"}) {
     RigidBody<double>* body = tree.FindBody(body_name);
     EXPECT_NE(body, nullptr);
-    EXPECT_EQ(body->get_model_name(), "dual_ramps");
+    EXPECT_EQ(tree.get_model_name(body->get_model_instance_id()), "dual_ramps");
   }
 }
 
@@ -134,8 +134,8 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
       for (double yaw = 0; yaw <= M_PI_2; yaw += kAngleInc) {
         // Get the mutable state.
         VectorBase<double>* xc = context->get_mutable_state()
-                                        ->get_mutable_continuous_state()
-                                        ->get_mutable_generalized_position();
+                                     ->get_mutable_continuous_state()
+                                     ->get_mutable_generalized_position();
 
         // Update the orientation.
         const Quaterniond q = Eigen::AngleAxisd(roll, Vector3d::UnitZ()) *
@@ -228,8 +228,8 @@ TEST_F(KukaArmTest, SetDefaultState) {
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
-  context_->FixInputPort(0, make_unique<BasicVector<double>>(
-                                kuka_plant_->get_num_actuators()));
+  context_->FixInputPort(
+      0, make_unique<BasicVector<double>>(kuka_plant_->get_num_actuators()));
 
   // Asserts that for this case the zero configuration corresponds to a state
   // vector with all entries equal to zero.
@@ -262,8 +262,8 @@ TEST_F(KukaArmTest, EvalOutput) {
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
-  context_->FixInputPort(0, make_unique<BasicVector<double>>(
-                                kuka_plant_->get_num_actuators()));
+  context_->FixInputPort(
+      0, make_unique<BasicVector<double>>(kuka_plant_->get_num_actuators()));
 
   // Sets the state to a non-zero value.
   VectorXd desired_angles(kNumPositions_);
@@ -364,8 +364,9 @@ GTEST_TEST(rigid_body_plant_test, TestJointLimitForcesFormula) {
 double GetPrismaticJointLimitAccel(double position, double applied_force) {
   // Build two links connected by a limited prismatic joint.
   auto tree = std::make_unique<RigidBodyTree<double>>();
-  AddModelInstancesFromSdfFile(drake::GetDrakePath() +
-      "/multibody/rigid_body_plant/test/limited_prismatic.sdf",
+  AddModelInstancesFromSdfFile(
+      drake::GetDrakePath() +
+          "/multibody/rigid_body_plant/test/limited_prismatic.sdf",
       kFixed, nullptr /* weld to frame */, tree.get());
   RigidBodyPlant<double> plant(move(tree));
 

@@ -3,8 +3,8 @@
 #include <memory>
 #include <vector>
 
-#include <Eigen/Dense>
 #include <gtest/gtest.h>
+#include <Eigen/Dense>
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_mock_lcm.h"
@@ -140,8 +140,8 @@ void VerifyLoadMessage(const std::vector<uint8_t>& message_bytes) {
     geometry_data.color[1] = 0.7;
     geometry_data.color[2] = 0.3;
     geometry_data.color[3] = 1.0;
-    geometry_data.string_data = drake::GetDrakePath() +
-        "/multibody/collision/test/spherical_cap.obj";
+    geometry_data.string_data =
+        drake::GetDrakePath() + "/multibody/collision/test/spherical_cap.obj";
     geometry_data.num_float_data = 3;
     geometry_data.float_data.push_back(1);
     geometry_data.float_data.push_back(1);
@@ -292,7 +292,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
   {
     auto body = make_unique<RigidBody<double>>();
     body->set_name("box_body");
-    body->set_model_instance_id(tree->add_model_instance());
+    body->set_model_instance_id(tree->add_model_instance("box"));
     body->set_mass(1.0);
     body->set_spatial_inertia(Matrix6<double>::Identity());
 
@@ -313,8 +313,8 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
       joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
     }
 
-    auto joint = make_unique<RollPitchYawFloatingJoint>(
-        "box_joint", joint_transform);
+    auto joint =
+        make_unique<RollPitchYawFloatingJoint>("box_joint", joint_transform);
     body->add_joint(&tree->world(), std::move(joint));
 
     tree->bodies.push_back(std::move(body));
@@ -325,7 +325,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
   {
     auto body = make_unique<RigidBody<double>>();
     body->set_name("capsule_body");
-    body->set_model_instance_id(tree->add_model_instance());
+    body->set_model_instance_id(tree->add_model_instance("capsule"));
     body->set_mass(1.0);
     body->set_spatial_inertia(Matrix6<double>::Identity());
 
@@ -345,8 +345,8 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
       joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
     }
 
-    auto joint = make_unique<RollPitchYawFloatingJoint>(
-        "capsule_joint", joint_transform);
+    auto joint = make_unique<RollPitchYawFloatingJoint>("capsule_joint",
+                                                        joint_transform);
     body->add_joint(&tree->world(), std::move(joint));
 
     tree->bodies.push_back(std::move(body));
@@ -357,7 +357,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
   {
     auto body = make_unique<RigidBody<double>>();
     body->set_name("cylinder_body");
-    body->set_model_instance_id(tree->add_model_instance());
+    body->set_model_instance_id(tree->add_model_instance("cylinder"));
     body->set_mass(1.0);
     body->set_spatial_inertia(Matrix6<double>::Identity());
 
@@ -377,8 +377,8 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
       joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
     }
 
-    auto joint = make_unique<RollPitchYawFloatingJoint>(
-        "cylinder_joint", joint_transform);
+    auto joint = make_unique<RollPitchYawFloatingJoint>("cylinder_joint",
+                                                        joint_transform);
     body->add_joint(&tree->world(), std::move(joint));
 
     tree->bodies.push_back(std::move(body));
@@ -390,13 +390,13 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
   {
     auto body = make_unique<RigidBody<double>>();
     body->set_name("mesh_body");
-    body->set_model_instance_id(tree->add_model_instance());
+    body->set_model_instance_id(tree->add_model_instance("mesh"));
     body->set_mass(1.0);
     body->set_spatial_inertia(Matrix6<double>::Identity());
 
-    Mesh shape("spherical_cap.obj",
-        drake::GetDrakePath() +
-        "/multibody/collision/test/spherical_cap.obj");
+    Mesh shape(
+        "spherical_cap.obj",
+        drake::GetDrakePath() + "/multibody/collision/test/spherical_cap.obj");
     Eigen::Vector4d material(0.2, 0.7, 0.3, 1.0);
 
     DrakeShapes::VisualElement visual_element(
@@ -412,8 +412,8 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
       joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
     }
 
-    auto joint = make_unique<RollPitchYawFloatingJoint>(
-        "mesh_joint", joint_transform);
+    auto joint =
+        make_unique<RollPitchYawFloatingJoint>("mesh_joint", joint_transform);
     body->add_joint(&tree->world(), std::move(joint));
 
     tree->bodies.push_back(std::move(body));
@@ -424,7 +424,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
   {
     auto body = make_unique<RigidBody<double>>();
     body->set_name("sphere_body");
-    body->set_model_instance_id(tree->add_model_instance());
+    body->set_model_instance_id(tree->add_model_instance("sphere"));
     body->set_mass(1.0);
     body->set_spatial_inertia(Matrix6<double>::Identity());
 
@@ -443,8 +443,8 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
       joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
     }
 
-    auto joint = make_unique<RollPitchYawFloatingJoint>(
-        "sphere_joint", joint_transform);
+    auto joint =
+        make_unique<RollPitchYawFloatingJoint>("sphere_joint", joint_transform);
     body->add_joint(&tree->world(), std::move(joint));
     tree->bodies.push_back(std::move(body));
   }
@@ -478,8 +478,8 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   auto input_data = make_unique<BasicVector<double>>(vector_size);
   input_data->set_value(Eigen::VectorXd::Zero(vector_size));
 
-  context->SetInputPort(0,
-      std::make_unique<systems::FreestandingInputPort>(std::move(input_data)));
+  context->SetInputPort(0, std::make_unique<systems::FreestandingInputPort>(
+                               std::move(input_data)));
 
   // Publishes the `RigidBodyTree` visualization messages.
   dut.Publish(*context.get());
