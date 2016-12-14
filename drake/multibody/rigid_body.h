@@ -16,6 +16,8 @@
 #include "drake/multibody/collision/drake_collision.h"
 #include "drake/multibody/joints/drake_joint.h"
 
+using Eigen::Isometry3d;
+
 template <typename T>
 class RigidBody {
  public:
@@ -245,6 +247,17 @@ class RigidBody {
    * to its parent body through a valid DrakeJoint.
    */
   bool IsRigidlyFixedToWorld() const;
+
+  /**
+   * Reports the transform from this body to the world frame based on the
+   * *rigid* pose. The rigid pose is the pose defined at instantiation; based
+   * purely on the transforms that map parent joints to parent frames.
+   * This can only be invoked on a body that is rigidly fixed to
+   * the world (@see IsRigidlyFixedToWorld).  If the body is not rigidly fixed
+   * to the world, an exception will be thrown.
+   * @return The world transform between this body and the world frame.
+   */
+  Isometry3d ComputeWorldPose() const;
 
   void setCollisionFilter(const DrakeCollision::bitmask& group,
                           const DrakeCollision::bitmask& ignores);

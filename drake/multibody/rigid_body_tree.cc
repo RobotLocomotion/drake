@@ -305,6 +305,9 @@ void RigidBodyTree<T>::CompileCollisionState() {
       BodyCollisions &elements = pair.second;
       for (auto &collision_item : elements) {
         element_order_[collision_item.element]->set_anchored();
+        element_order_[collision_item.element]->updateWorldTransform(
+          body->ComputeWorldPose()
+        );
       }
     }
   }
