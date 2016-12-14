@@ -27,6 +27,20 @@ Eigen::Map<const Vector3d> toVector3d(const btVector3& bt_vec) {
 static const int kPerturbationIterations = 8;
 static const int kMinimumPointsPerturbationThreshold = 8;
 
+// Converts between two representations of a pose.
+btTransform convert(const Isometry3d& T) {
+  btTransform btT;
+  btMatrix3x3 rot;
+  btVector3 pos;
+
+  rot.setValue(T(0, 0), T(0, 1), T(0, 2), T(1, 0), T(1, 1), T(1, 2), T(2, 0),
+               T(2, 1), T(2, 2));
+  btT.setBasis(rot);
+  pos.setValue(T(0, 3), T(1, 3), T(2, 3));
+  btT.setOrigin(pos);
+  return btT;
+}
+
 struct BinaryContactResultCallback
     : public btCollisionWorld::ContactResultCallback {
  public:
@@ -366,12 +380,20 @@ void BulletModel::DoAddElement(const Element& element) {
           static_cast<short>(
              btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
 
+      // NOTE: This is the *only* chance for the transform to be set on anchored
+      // geometry.  It is assumed that by the time the collision element has
+      // been added, its transforms have been properly set.  This does not
+      // preclude the possibility of *actively* moving it later and updating
+      // its world transform.
+      btTransform btT = convert(element.getWorldTransform());
+      bt_obj->setWorldTransform(btT);
       bullet_world_.bt_collision_world->
           addCollisionObject(bt_obj.get(),
                              collision_filter_group, collision_filter_mask);
-      bullet_world_no_margin_.bt_collision_world->
-          addCollisionObject(bt_obj_no_margin.get(),
-                             collision_filter_group, collision_filter_mask);
+
+      bullet_world_no_margin_.bt_collision_world->addCollisionObject(
+          bt_obj_no_margin.get(), collision_filter_group,
+          collision_filter_mask);
 
       // Take ownership of the Bullet collision objects.
       bullet_world_.bt_collision_objects.insert(
@@ -532,16 +554,7 @@ bool BulletModel::updateElementWorldTransform(
   const bool element_exists(
       Model::updateElementWorldTransform(id, T_local_to_world));
   if (element_exists) {
-    const Isometry3d& T = elements[id]->getWorldTransform();
-    btMatrix3x3 rot;
-    btVector3 pos;
-    btTransform btT;
-
-    rot.setValue(T(0, 0), T(0, 1), T(0, 2), T(1, 0), T(1, 1), T(1, 2), T(2, 0),
-                 T(2, 1), T(2, 2));
-    btT.setBasis(rot);
-    pos.setValue(T(0, 3), T(1, 3), T(2, 3));
-    btT.setOrigin(pos);
+    btTransform btT = convert(elements[id]->getWorldTransform());
 
     auto bt_obj_iter = bullet_world_.bt_collision_objects.find(id);
     auto bt_obj_no_margin_iter =
