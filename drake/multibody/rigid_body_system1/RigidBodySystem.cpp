@@ -270,11 +270,12 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
 
   // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
   // templatized.
-  Eigen::VectorXd vdot_value =
-      drake::solvers::GetSolution(vdot);
-  dot << tree->transformQDotMappingToVelocityMapping(kinsol,
-             Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Identity(
-                 nq, nq).eval()) *
+  Eigen::VectorXd vdot_value = drake::solvers::GetSolution(vdot);
+  dot << tree->transformQDotMappingToVelocityMapping(
+             kinsol,
+             Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Identity(nq,
+                                                                             nq)
+                 .eval()) *
              v,
       vdot_value;
   return dot;
@@ -322,8 +323,8 @@ RigidBodySystem::StateVector<double> getInitialState(
 
     drake::solvers::MathematicalProgram prog;
     std::vector<RigidBodyLoop<double>,
-                Eigen::aligned_allocator<RigidBodyLoop<double>>> const&
-        loops = sys.tree->loops;
+                Eigen::aligned_allocator<RigidBodyLoop<double>>> const& loops =
+        sys.tree->loops;
 
     int nq = sys.tree->get_num_positions();
     auto qvar = prog.AddContinuousVariables(nq);
@@ -358,8 +359,7 @@ RigidBodySystem::StateVector<double> getInitialState(
     prog.AddQuadraticCost(MatrixXd::Identity(nq, nq), q_guess);
     prog.Solve();
 
-    const VectorXd& qvar_value =
-        drake::solvers::GetSolution(qvar);
+    const VectorXd& qvar_value = drake::solvers::GetSolution(qvar);
     x0 << qvar_value, VectorXd::Zero(sys.tree->get_num_velocities());
   }
   return x0;
@@ -408,7 +408,7 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem& sys,
       stiffness(0.0),
       damping(0.0),
       rest_length(0.0) {
-  auto tree = sys.getRigidBodyTree();
+  const auto& tree = sys.getRigidBodyTree();
 
   parseScalarAttribute(node, "rest_length", rest_length);
   parseScalarAttribute(node, "stiffness", stiffness);
@@ -432,7 +432,8 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem& sys,
 }
 
 const std::string& RigidBodySensor::get_model_name() const {
-  return frame_->get_rigid_body().get_model_name();
+  const auto& tree = sys_.getRigidBodyTree();
+  return tree->get_model_name(frame_->get_rigid_body().get_model_instance_id());
 }
 
 const RigidBodyFrame<double>& RigidBodySensor::get_frame() const {
@@ -956,8 +957,8 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfFile(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame) {
   // Adds the robot to the rigid body tree.
   ModelInstanceIdTable model_instance_id_table =
-      parsers::sdf::AddModelInstancesFromSdfFile(filename,
-          floating_base_type, weld_to_frame, tree.get());
+      parsers::sdf::AddModelInstancesFromSdfFile(filename, floating_base_type,
+                                                 weld_to_frame, tree.get());
 
   // Parses the additional SDF elements that are understood by RigidBodySystem
   // namely (actuators, sensors, etc.).
@@ -980,8 +981,8 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfString(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame) {
   // Adds the robot to the rigid body tree.
   ModelInstanceIdTable model_instance_id_table =
-      parsers::sdf::AddModelInstancesFromSdfString(sdf_string,
-          floating_base_type, weld_to_frame, tree.get());
+      parsers::sdf::AddModelInstancesFromSdfString(
+          sdf_string, floating_base_type, weld_to_frame, tree.get());
 
   // Parses the additional SDF elements that are understood by RigidBodySystem,
   // namely (actuators, sensors, etc.).

@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/math/roll_pitch_yaw.h"
 #include "drake/common/drake_path.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 
@@ -41,7 +41,8 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
        {"floor", "ramp_1", "ramp_2", "box_1", "box_2", "box_3", "box_4"}) {
     RigidBody<double>* body = tree->FindBody(body_name);
     EXPECT_NE(body, nullptr);
-    EXPECT_EQ(body->get_model_name(), "dual_ramps");
+    EXPECT_EQ(tree->get_model_name(body->get_model_instance_id()),
+              "dual_ramps");
   }
 }
 
@@ -65,8 +66,8 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
     Eigen::Vector3d xyz, rpy;
     xyz << 1, 1, 1;
     rpy = Eigen::Vector3d::Zero();
-    T_second_model_to_world.matrix()
-        << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    T_second_model_to_world.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0,
+        0, 1;
   }
 
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
@@ -132,37 +133,37 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
 
   // Checks that a body can be obtained when we specify the body's name and
   // model instance ID.
-  EXPECT_NE(tree->FindBody("link_1", "", 0), nullptr);
   EXPECT_NE(tree->FindBody("link_1", "", 1), nullptr);
   EXPECT_NE(tree->FindBody("link_1", "", 2), nullptr);
   EXPECT_NE(tree->FindBody("link_1", "", 3), nullptr);
-  EXPECT_NE(tree->FindBody("link_2", "", 0), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "", 4), nullptr);
   EXPECT_NE(tree->FindBody("link_2", "", 1), nullptr);
   EXPECT_NE(tree->FindBody("link_2", "", 2), nullptr);
   EXPECT_NE(tree->FindBody("link_2", "", 3), nullptr);
-  EXPECT_NE(tree->FindBody("link_3", "", 0), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "", 4), nullptr);
   EXPECT_NE(tree->FindBody("link_3", "", 1), nullptr);
   EXPECT_NE(tree->FindBody("link_3", "", 2), nullptr);
   EXPECT_NE(tree->FindBody("link_3", "", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "", 4), nullptr);
 
   // Checks that a body can be obtained when we specify the body's name, model
   // name, and model instance ID.
-  EXPECT_NE(tree->FindBody("link_1", "model_1", 0), nullptr);
-  EXPECT_NE(tree->FindBody("link_1", "model_2", 1), nullptr);
-  EXPECT_NE(tree->FindBody("link_1", "model_1", 2), nullptr);
-  EXPECT_NE(tree->FindBody("link_1", "model_2", 3), nullptr);
-  EXPECT_NE(tree->FindBody("link_2", "model_1", 0), nullptr);
-  EXPECT_NE(tree->FindBody("link_2", "model_2", 1), nullptr);
-  EXPECT_NE(tree->FindBody("link_2", "model_1", 2), nullptr);
-  EXPECT_NE(tree->FindBody("link_2", "model_2", 3), nullptr);
-  EXPECT_NE(tree->FindBody("link_3", "model_1", 0), nullptr);
-  EXPECT_NE(tree->FindBody("link_3", "model_2", 1), nullptr);
-  EXPECT_NE(tree->FindBody("link_3", "model_1", 2), nullptr);
-  EXPECT_NE(tree->FindBody("link_3", "model_2", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "model_1", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "model_2", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "model_1", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_1", "model_2", 4), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "model_1", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "model_2", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "model_1", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_2", "model_2", 4), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "model_1", 1), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "model_2", 2), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "model_1", 3), nullptr);
+  EXPECT_NE(tree->FindBody("link_3", "model_2", 4), nullptr);
 
   // Checks that we cannot access a non-existent joint.
   EXPECT_THROW(tree->FindChildBodyOfJoint("non-existent-joint"),
-      std::runtime_error);
+               std::runtime_error);
 
   // Checks that we cannot access a joint using just the joint name.
   // This is impossible because there are multiple joints with the same name.
@@ -171,14 +172,14 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
 
   // Checks that we can access a joint using the joint name and model instance
   // ID.
-  EXPECT_NE(tree->FindChildBodyOfJoint("joint_1", 0), nullptr);
   EXPECT_NE(tree->FindChildBodyOfJoint("joint_1", 1), nullptr);
   EXPECT_NE(tree->FindChildBodyOfJoint("joint_1", 2), nullptr);
   EXPECT_NE(tree->FindChildBodyOfJoint("joint_1", 3), nullptr);
-  EXPECT_NE(tree->FindChildBodyOfJoint("joint_2", 0), nullptr);
+  EXPECT_NE(tree->FindChildBodyOfJoint("joint_1", 4), nullptr);
   EXPECT_NE(tree->FindChildBodyOfJoint("joint_2", 1), nullptr);
   EXPECT_NE(tree->FindChildBodyOfJoint("joint_2", 2), nullptr);
   EXPECT_NE(tree->FindChildBodyOfJoint("joint_2", 3), nullptr);
+  EXPECT_NE(tree->FindChildBodyOfJoint("joint_2", 4), nullptr);
 }
 
 // Tests whether the URDF parser is robust against an improperly specified
@@ -193,14 +194,15 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWithBadTransmission) {
   // transmission that specifies a non-existent joint. This is done by first
   // verifying that an exception is thrown, and then verifying that the thrown
   // exception is the correct one.
-  EXPECT_THROW(
-      rigid_body_sys->AddModelInstanceFromFile(drake::GetDrakePath() +
-          "/multibody/rigid_body_system1/test/rigid_body_system/"
-          "bad_transmission_no_joint.urdf"),
-      std::runtime_error);
+  EXPECT_THROW(rigid_body_sys->AddModelInstanceFromFile(
+                   drake::GetDrakePath() +
+                   "/multibody/rigid_body_system1/test/rigid_body_system/"
+                   "bad_transmission_no_joint.urdf"),
+               std::runtime_error);
 
   try {
-    rigid_body_sys->AddModelInstanceFromFile(drake::GetDrakePath() +
+    rigid_body_sys->AddModelInstanceFromFile(
+        drake::GetDrakePath() +
         "/multibody/rigid_body_system1/test/rigid_body_system/"
         "bad_transmission_no_joint.urdf");
   } catch (std::runtime_error& error) {

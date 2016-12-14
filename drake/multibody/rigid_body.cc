@@ -24,21 +24,19 @@ RigidBody<T>::RigidBody()
 }
 
 template <typename T>
-const std::string& RigidBody<T>::get_name() const { return name_; }
-
-template <typename T>
-void RigidBody<T>::set_name(const std::string& name) { name_ = name; }
-
-template <typename T>
-const std::string& RigidBody<T>::get_model_name() const { return model_name_; }
-
-template <typename T>
-void RigidBody<T>::set_model_name(const std::string& name) {
-    model_name_ = name;
+const std::string& RigidBody<T>::get_name() const {
+  return name_;
 }
 
 template <typename T>
-int RigidBody<T>::get_model_instance_id() const { return model_instance_id_; }
+void RigidBody<T>::set_name(const std::string& name) {
+  name_ = name;
+}
+
+template <typename T>
+int RigidBody<T>::get_model_instance_id() const {
+  return model_instance_id_;
+}
 
 template <typename T>
 void RigidBody<T>::set_model_instance_id(int model_instance_id) {
@@ -56,29 +54,42 @@ const DrakeJoint& RigidBody<T>::getJoint() const {
     return (*joint_);
   } else {
     throw runtime_error("ERROR: RigidBody<T>::getJoint(): Rigid body \"" +
-                        name_ + "\" in model " + model_name_ +
+                        name_ + "\" in model " +
+                        std::to_string(model_instance_id_) +
                         " does not have a joint!");
   }
 }
 
 template <typename T>
-void RigidBody<T>::set_parent(RigidBody* parent) { parent_ = parent; }
+void RigidBody<T>::set_parent(RigidBody* parent) {
+  parent_ = parent;
+}
 
 template <typename T>
-const RigidBody<T>* RigidBody<T>::get_parent() const { return parent_; }
+const RigidBody<T>* RigidBody<T>::get_parent() const {
+  return parent_;
+}
 
 template <typename T>
-bool RigidBody<T>::has_parent_body() const { return parent_ != nullptr; }
+bool RigidBody<T>::has_parent_body() const {
+  return parent_ != nullptr;
+}
 
 // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
 template <typename T>
-bool RigidBody<T>::hasParent() const { return has_parent_body(); }
+bool RigidBody<T>::hasParent() const {
+  return has_parent_body();
+}
 
 template <typename T>
-void RigidBody<T>::set_body_index(int body_index) { body_index_ = body_index; }
+void RigidBody<T>::set_body_index(int body_index) {
+  body_index_ = body_index;
+}
 
 template <typename T>
-int RigidBody<T>::get_body_index() const { return body_index_; }
+int RigidBody<T>::get_body_index() const {
+  return body_index_;
+}
 
 template <typename T>
 void RigidBody<T>::set_position_start_index(int position_start_index) {
@@ -120,7 +131,7 @@ const DrakeShapes::VectorOfVisualElements& RigidBody<T>::get_visual_elements()
 
 template <typename T>
 void RigidBody<T>::AddCollisionElement(const std::string& group_name,
-                                    DrakeCollision::Element* element) {
+                                       DrakeCollision::Element* element) {
   DrakeCollision::ElementId id = element->getId();
   collision_element_ids_.push_back(id);
   collision_element_groups_[group_name].push_back(id);
@@ -129,31 +140,31 @@ void RigidBody<T>::AddCollisionElement(const std::string& group_name,
 
 template <typename T>
 const std::vector<DrakeCollision::ElementId>&
-    RigidBody<T>::get_collision_element_ids() const {
+RigidBody<T>::get_collision_element_ids() const {
   return collision_element_ids_;
 }
 
 template <typename T>
 std::vector<DrakeCollision::ElementId>&
-    RigidBody<T>::get_mutable_collision_element_ids() {
+RigidBody<T>::get_mutable_collision_element_ids() {
   return collision_element_ids_;
 }
 
 template <typename T>
 const std::map<std::string, std::vector<DrakeCollision::ElementId>>&
-    RigidBody<T>::get_group_to_collision_ids_map() const {
+RigidBody<T>::get_group_to_collision_ids_map() const {
   return collision_element_groups_;
 }
 
 template <typename T>
 std::map<std::string, std::vector<DrakeCollision::ElementId>>&
-    RigidBody<T>::get_mutable_group_to_collision_ids_map() {
+RigidBody<T>::get_mutable_group_to_collision_ids_map() {
   return collision_element_groups_;
 }
 
 template <typename T>
 void RigidBody<T>::setCollisionFilter(const DrakeCollision::bitmask& group,
-                                   const DrakeCollision::bitmask& ignores) {
+                                      const DrakeCollision::bitmask& ignores) {
   setCollisionFilterGroup(group);
   setCollisionFilterIgnores(ignores);
 }
@@ -165,7 +176,7 @@ const DrakeCollision::bitmask& RigidBody<T>::getCollisionFilterGroup() const {
 
 template <typename T>
 void RigidBody<T>::setCollisionFilterGroup(
-  const DrakeCollision::bitmask& group) {
+    const DrakeCollision::bitmask& group) {
   collision_filter_group_ = group;
 }
 
@@ -175,27 +186,26 @@ const DrakeCollision::bitmask& RigidBody<T>::getCollisionFilterIgnores() const {
 }
 
 template <typename T>
-void RigidBody<T>::setCollisionFilterIgnores(const DrakeCollision::bitmask&
-    ignores) {
+void RigidBody<T>::setCollisionFilterIgnores(
+    const DrakeCollision::bitmask& ignores) {
   collision_filter_ignores_ = ignores;
 }
 
 template <typename T>
-void RigidBody<T>::addToCollisionFilterGroup(const DrakeCollision::bitmask&
-    group) {
+void RigidBody<T>::addToCollisionFilterGroup(
+    const DrakeCollision::bitmask& group) {
   collision_filter_group_ |= group;
 }
 
 template <typename T>
-void RigidBody<T>::ignoreCollisionFilterGroup(const DrakeCollision::bitmask&
-    group) {
+void RigidBody<T>::ignoreCollisionFilterGroup(
+    const DrakeCollision::bitmask& group) {
   collision_filter_ignores_ |= group;
 }
 
 template <typename T>
 void RigidBody<T>::collideWithCollisionFilterGroup(
-  const DrakeCollision::bitmask&
-    group) {
+    const DrakeCollision::bitmask& group) {
   collision_filter_ignores_ &= ~group;
 }
 
@@ -244,8 +254,8 @@ bool RigidBody<T>::appendCollisionElementIdsFromThisBody(
 template <typename T>
 void RigidBody<T>::ApplyTransformToJointFrame(
     const Eigen::Isometry3d& transform_body_to_joint) {
-  spatial_inertia_ = transformSpatialInertia(transform_body_to_joint,
-      spatial_inertia_);
+  spatial_inertia_ =
+      transformSpatialInertia(transform_body_to_joint, spatial_inertia_);
   for (auto& v : visual_elements_) {
     v.SetLocalTransform(transform_body_to_joint * v.getLocalTransform());
   }
@@ -282,8 +292,8 @@ const Eigen::Vector3d& RigidBody<T>::get_center_of_mass() const {
 }
 
 template <typename T>
-void RigidBody<T>::set_spatial_inertia(const drake::SquareTwistMatrix<double>&
-    spatial_inertia) {
+void RigidBody<T>::set_spatial_inertia(
+    const drake::SquareTwistMatrix<double>& spatial_inertia) {
   spatial_inertia_ = spatial_inertia;
 }
 

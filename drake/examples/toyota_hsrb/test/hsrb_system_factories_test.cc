@@ -141,8 +141,8 @@ void VerifyLoadMessage(const std::vector<uint8_t>& message_bytes) {
   EXPECT_EQ(message.link.at(1).name, "link1");
   EXPECT_EQ(message.link.at(2).name, "link2");
   EXPECT_EQ(message.link.at(0).robot_num, 0);
-  EXPECT_EQ(message.link.at(1).robot_num, 0);
-  EXPECT_EQ(message.link.at(2).robot_num, 0);
+  EXPECT_EQ(message.link.at(1).robot_num, 1);
+  EXPECT_EQ(message.link.at(2).robot_num, 1);
   EXPECT_EQ(message.link.at(0).num_geom, 1);
   EXPECT_EQ(message.link.at(1).num_geom, 1);
   EXPECT_EQ(message.link.at(2).num_geom, 1);
@@ -162,8 +162,8 @@ void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
   EXPECT_EQ(expected_message.link_name.at(1), "link1");
   EXPECT_EQ(expected_message.link_name.at(2), "link2");
   EXPECT_EQ(expected_message.robot_num.at(0), 0);
-  EXPECT_EQ(expected_message.robot_num.at(1), 0);
-  EXPECT_EQ(expected_message.robot_num.at(2), 0);
+  EXPECT_EQ(expected_message.robot_num.at(1), 1);
+  EXPECT_EQ(expected_message.robot_num.at(2), 1);
 }
 
 void VerifyDiagram(const Diagram<double>& dut, const VectorXd& desired_state,
