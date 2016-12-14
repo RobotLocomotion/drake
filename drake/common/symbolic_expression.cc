@@ -461,14 +461,6 @@ Expression pow(const Expression& e1, const Expression& e2) {
   return Expression{make_shared<ExpressionPow>(e1, e2)};
 }
 
-Expression pow(const Expression& e1, const double v2) {
-  return pow(e1, Expression{v2});
-}
-
-Expression pow(const double v1, const Expression& e2) {
-  return pow(Expression{v1}, e2);
-}
-
 Expression sin(const Expression& e) {
   // simplification: constant folding.
   if (is_constant(e)) {
@@ -529,14 +521,6 @@ Expression atan2(const Expression& e1, const Expression& e2) {
         std::atan2(get_constant_value(e1), get_constant_value(e2))};
   }
   return Expression{make_shared<ExpressionAtan2>(e1, e2)};
-}
-
-Expression atan2(const Expression& e1, const double v2) {
-  return atan2(e1, Expression{v2});
-}
-
-Expression atan2(const double v1, const Expression& e2) {
-  return atan2(Expression{v1}, e2);
 }
 
 Expression sinh(const Expression& e) {
