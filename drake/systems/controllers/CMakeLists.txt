@@ -18,7 +18,15 @@ drake_install_pkg_config_file(drake-control-util
 
 if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
   add_library_with_exports(LIB_NAME drakeQPCommon SOURCE_FILES InstantaneousQPController.cpp)
-  target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil drakeSide drakeYAMLUtil lcm)
+  target_link_libraries(drakeQPCommon
+      drakeControlUtil
+      drakeLCMUtil
+      drakeMultibodyParsers
+      drakeQP
+      drakeSide
+      drakeTrajectories
+      drakeYAMLUtil
+      lcm)
   drake_install_libraries(drakeQPCommon)
   drake_install_headers(QPCommon.h InstantaneousQPController.h)
   drake_install_pkg_config_file(drake-qp-common
