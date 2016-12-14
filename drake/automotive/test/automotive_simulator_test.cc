@@ -67,7 +67,7 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
 
   // Confirm that the RigidBodyTree has been appropriately amended.
   const auto& tree = simulator->get_rigid_body_tree();
-  EXPECT_EQ(1, tree.get_num_model_instances());
+  EXPECT_EQ(2, tree.get_num_model_instances());
   // One body belongs to the world, the rest belong to the car.
   ASSERT_EQ(1 + num_vehicle_bodies, tree.get_num_bodies());
 
@@ -182,7 +182,7 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file_1, int num_bodies_1,
 
   // Confirm that the RigidBodyTree has been appropriately amended.
   const auto& tree = simulator->get_rigid_body_tree();
-  EXPECT_EQ(2, tree.get_num_model_instances());
+  EXPECT_EQ(3, tree.get_num_model_instances());
   // One body belongs to the world, the rest belong to two car models.
   ASSERT_EQ(1 + num_bodies_1 + num_bodies_2, tree.get_num_bodies());
 

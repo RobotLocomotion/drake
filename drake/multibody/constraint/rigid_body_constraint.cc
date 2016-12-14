@@ -64,7 +64,7 @@ std::string RigidBodyConstraint::getTimeString(const double* t) const {
 }
 
 namespace {
-const int QuasiStaticDefaultRobotNum[1] = {0};
+const int QuasiStaticDefaultRobotNum[1] = {1};
 }
 
 const std::set<int> QuasiStaticConstraint::defaultRobotNumSet(
@@ -724,12 +724,8 @@ void WorldPositionConstraint::evalNames(
   }
 }
 
-namespace {
-const int WorldCoMDefaultRobotNum[1] = {0};
-}
 
-const std::set<int> WorldCoMConstraint::defaultRobotNumSet(
-    WorldCoMDefaultRobotNum, WorldCoMDefaultRobotNum + 1);
+const std::set<int> WorldCoMConstraint::defaultRobotNumSet({1});
 
 WorldCoMConstraint::WorldCoMConstraint(
     RigidBodyTree<double>* robot,

@@ -14,16 +14,16 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/force_torque_measurement.h"
-#include "drake/multibody/kinematic_path.h"
-#include "drake/multibody/kinematics_cache-inl.h"
-#include "drake/multibody/rigid_body.h"
-#include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/collision/drake_collision.h"
 #include "drake/multibody/collision/element.h"
+#include "drake/multibody/force_torque_measurement.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/kinematic_path.h"
+#include "drake/multibody/kinematics_cache-inl.h"
 #include "drake/multibody/pose_map.h"
+#include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_actuator.h"
+#include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_loop.h"
 #include "drake/multibody/shapes/drake_shapes.h"
 
@@ -98,7 +98,7 @@ class RigidBodyTree {
    * this method.
    */
   // This method is not thread safe!
-  int add_model_instance();
+  int add_model_instance(const std::string& name);
 
   // This method is not thread safe.
   int get_next_clique_id() { return next_available_clique_++; }
@@ -107,6 +107,13 @@ class RigidBodyTree {
    * Returns the number of model instances in the tree.
    */
   int get_num_model_instances() const;
+
+  /**
+   * Returns the string name of a given model instance.
+   */
+  const std::string& get_model_name(int model_instance_id) const {
+    return model_instances_[model_instance_id];
+  }
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_model_instances().")
@@ -224,8 +231,7 @@ class RigidBodyTree {
   // TODO(amcastro-tri): Remove this method once older pieces of code such as
   // KinematicsCacheHelper are updated to use a RigidBodyTree to manage cache
   // creation.
-  static KinematicsCache<T>
-  CreateKinematicsCacheFromBodiesVector(
+  static KinematicsCache<T> CreateKinematicsCacheFromBodiesVector(
       const std::vector<std::unique_ptr<RigidBody<T>>>& bodies);
 
   /// Initializes a `KinematicsCache` with the given configuration @p q,
@@ -331,11 +337,11 @@ class RigidBodyTree {
 
   template <typename Scalar>
   static drake::MatrixX<Scalar> GetVelocityToQDotMapping(
-          const KinematicsCache<Scalar>& cache);
+      const KinematicsCache<Scalar>& cache);
 
   template <typename Scalar>
   static drake::MatrixX<Scalar> GetQDotToVelocityMapping(
-          const KinematicsCache<Scalar>& cache);
+      const KinematicsCache<Scalar>& cache);
 
   template <typename Scalar>
   drake::TwistMatrix<Scalar> worldMomentumMatrix(
@@ -369,11 +375,11 @@ class RigidBodyTree {
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, Eigen::Dynamic>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  centerOfMassJacobian(KinematicsCache<Scalar>& cache,
-                       const std::set<int>& model_instance_id_set =
-                           default_model_instance_id_set,
-                       bool in_terms_of_qdot = false) const;
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      centerOfMassJacobian(KinematicsCache<Scalar>& cache,
+                           const std::set<int>& model_instance_id_set =
+                               default_model_instance_id_set,
+                           bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1>
@@ -449,8 +455,9 @@ class RigidBodyTree {
 #ifndef SWIG
   /// Convenience alias for rigid body to external wrench map, for use with
   /// inverseDynamics and dynamicsBiasTerm.
-  using BodyToWrenchMap = drake::eigen_aligned_std_unordered_map<
-    RigidBody<double> const*, drake::WrenchVector<T>>;
+  using BodyToWrenchMap =
+      drake::eigen_aligned_std_unordered_map<RigidBody<double> const*,
+                                             drake::WrenchVector<T>>;
 #endif
 
   /** \brief Compute the term \f$ C(q, v, f_\text{ext}) \f$ in the manipulator
@@ -640,8 +647,7 @@ class RigidBodyTree {
   DrakeCollision::ElementId addCollisionElement(
       const DrakeCollision::Element& element,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      RigidBody<T>& body,
-      const std::string& group_name);
+      RigidBody<T>& body, const std::string& group_name);
 
   template <class UnaryPredicate>
   void removeCollisionGroupsIf(UnaryPredicate test) {
@@ -693,8 +699,7 @@ class RigidBodyTree {
                         const Eigen::Matrix3Xd& origins,
                         const Eigen::Matrix3Xd& ray_endpoints,
                         // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                        Eigen::VectorXd& distances,
-                        bool use_margins = false);
+                        Eigen::VectorXd& distances, bool use_margins = false);
   bool collisionRaycast(const KinematicsCache<double>& cache,
                         const Eigen::Matrix3Xd& origins,
                         const Eigen::Matrix3Xd& ray_endpoints,
@@ -707,8 +712,7 @@ class RigidBodyTree {
    * body in the RigidBodyTree.
    */
   void collisionDetectFromPoints(
-      const KinematicsCache<double>& cache,
-      const Eigen::Matrix3Xd& points,
+      const KinematicsCache<double>& cache, const Eigen::Matrix3Xd& points,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       Eigen::VectorXd& phi, Eigen::Matrix3Xd& normal,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -733,85 +737,78 @@ class RigidBodyTree {
       const std::vector<DrakeCollision::ElementId>& ids_to_check,
       bool use_margins);
 
-  bool collisionDetect(
-      const KinematicsCache<double>& cache,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::VectorXd& phi,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& normal,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& xA,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& xB,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<int>& bodyA_idx,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<int>& bodyB_idx,
-      const std::vector<int>& bodies_idx,
-      const std::set<std::string>& active_element_groups,
-      bool use_margins = true);
+  bool collisionDetect(const KinematicsCache<double>& cache,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Eigen::VectorXd& phi,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Eigen::Matrix3Xd& normal,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Eigen::Matrix3Xd& xA,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Eigen::Matrix3Xd& xB,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       std::vector<int>& bodyA_idx,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       std::vector<int>& bodyB_idx,
+                       const std::vector<int>& bodies_idx,
+                       const std::set<std::string>& active_element_groups,
+                       bool use_margins = true);
 
-  bool collisionDetect(
-      const KinematicsCache<double>& cache,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::VectorXd& phi,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& normal,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& xA,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& xB,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<int>& bodyA_idx,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<int>& bodyB_idx,
-      const std::vector<int>& bodies_idx,
-      bool use_margins = true);
+  bool collisionDetect(const KinematicsCache<double>& cache,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Eigen::VectorXd& phi,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Eigen::Matrix3Xd& normal,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Eigen::Matrix3Xd& xA,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Eigen::Matrix3Xd& xB,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       std::vector<int>& bodyA_idx,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       std::vector<int>& bodyB_idx,
+                       const std::vector<int>& bodies_idx,
+                       bool use_margins = true);
 
-  bool collisionDetect(
-      const KinematicsCache<double>& cache,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::VectorXd& phi,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& normal,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& xA,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& xB,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<int>& bodyA_idx,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<int>& bodyB_idx,
-      const std::set<std::string>& active_element_groups,
-      bool use_margins = true);
+  bool collisionDetect(const KinematicsCache<double>& cache,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Eigen::VectorXd& phi,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Eigen::Matrix3Xd& normal,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Eigen::Matrix3Xd& xA,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Eigen::Matrix3Xd& xB,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       std::vector<int>& bodyA_idx,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       std::vector<int>& bodyB_idx,
+                       const std::set<std::string>& active_element_groups,
+                       bool use_margins = true);
 
-  bool collisionDetect(
-      const KinematicsCache<double>& cache,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::VectorXd& phi,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& normal,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& xA,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& xB,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<int>& bodyA_idx,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<int>& bodyB_idx,
-      bool use_margins = true);
+  bool collisionDetect(const KinematicsCache<double>& cache,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Eigen::VectorXd& phi,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Eigen::Matrix3Xd& normal,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Eigen::Matrix3Xd& xA,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       Eigen::Matrix3Xd& xB,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       std::vector<int>& bodyA_idx,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                       std::vector<int>& bodyB_idx, bool use_margins = true);
 
-  bool allCollisions(
-      const KinematicsCache<double>& cache,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<int>& bodyA_idx,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<int>& bodyB_idx,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& ptsA,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& ptsB,
-      bool use_margins = true);
+  bool allCollisions(const KinematicsCache<double>& cache,
+                     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                     std::vector<int>& bodyA_idx,
+                     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                     std::vector<int>& bodyB_idx,
+                     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                     Eigen::Matrix3Xd& ptsA,
+                     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                     Eigen::Matrix3Xd& ptsB, bool use_margins = true);
 
   void potentialCollisions(
       const KinematicsCache<double>& cache,
@@ -826,8 +823,7 @@ class RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       std::vector<int>& bodyA_idx,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<int>& bodyB_idx,
-      bool use_margins = true);
+      std::vector<int>& bodyB_idx, bool use_margins = true);
 
   /** Computes the point of closest approach between bodies in the
    RigidBodyTree that are in contact.
@@ -856,10 +852,10 @@ class RigidBodyTree {
 
   /**
    * Finds a body with the specified \p body_name belonging to a model
-   * with the specified \p model_name and \p model_id. Note that if
-   * \p model_name is the empty string and \p model_id is -1, every model is
-   * searched. If \p model_name and \p model_id are inconsistent, no body
-   * will be found and an exception will be thrown.
+   * with the specified \p model_name and \p model_instance_id. Note that if
+   * \p model_name is the empty string and \p model_instance_id is -1, every
+   * model is searched. If \p model_name and \p model_id are inconsistent, no
+   * body will be found and an exception will be thrown.
    *
    * @param[in] body_name The name of the body to find.
    * @param[in] model_name The name of the model to which the body belongs. If
@@ -870,8 +866,8 @@ class RigidBodyTree {
    * matching bodies are found.
    */
   RigidBody<T>* FindBody(const std::string& body_name,
-                      const std::string& model_name = "",
-                      int model_id = -1) const;
+                         const std::string& model_name = "",
+                         int model_id = -1) const;
 
   /**
    * Reports the RigidBody that owns the collision element indicated by the id.
@@ -891,8 +887,8 @@ class RigidBodyTree {
    * @return A vector of pointers to every rigid body belonging to the sepcified
    * model instance.
    */
-  std::vector<const RigidBody<T>*>
-  FindModelInstanceBodies(int model_instance_id) const;
+  std::vector<const RigidBody<T>*> FindModelInstanceBodies(
+      int model_instance_id) const;
 
 /**
  * This is a deprecated version of `FindBody(...)`. Please use `FindBody(...)`
@@ -902,8 +898,8 @@ class RigidBodyTree {
   DRAKE_DEPRECATED("Please use RigidBodyTree::FindBody().")
 #endif
   RigidBody<T>* findLink(const std::string& link_name,
-                      const std::string& model_name = "",
-                      int model_id = -1) const;
+                         const std::string& model_name = "",
+                         int model_id = -1) const;
 
   /**
    * Obtains a vector of indexes of the bodies that are directly attached to the
@@ -981,8 +977,8 @@ class RigidBodyTree {
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use FindChildBodyOfJoint().")
 #endif
-  RigidBody<T>* findJoint(
-          const std::string& joint_name, int model_id = -1) const;
+  RigidBody<T>* findJoint(const std::string& joint_name,
+                          int model_id = -1) const;
 
   /**
    * Returns the index within the vector of rigid bodies of the rigid body whose
@@ -1023,7 +1019,7 @@ class RigidBodyTree {
    * @throws std::logic_error if multiple matching frames are found.
    */
   std::shared_ptr<RigidBodyFrame<T>> findFrame(const std::string& frame_name,
-                                            int model_id = -1) const;
+                                               int model_id = -1) const;
 
   /**
    * Returns the body at index @p body_index. Parameter @p body_index must be
@@ -1187,8 +1183,8 @@ class RigidBodyTree {
       actuators;
 
   // Rigid body loops
-  std::vector<RigidBodyLoop<T>,
-              Eigen::aligned_allocator<RigidBodyLoop<T>>> loops;
+  std::vector<RigidBodyLoop<T>, Eigen::aligned_allocator<RigidBodyLoop<T>>>
+      loops;
 
   drake::TwistVector<double> a_grav;
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
@@ -1201,7 +1197,7 @@ class RigidBodyTree {
   int num_velocities_{};
 
   // The number of model instances in this rigid body tree.
-  int num_model_instances_{};
+  std::vector<std::string> model_instances_;
 
   // Helper functions for contactConstraints.
   template <typename Scalar>

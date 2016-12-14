@@ -5,12 +5,12 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/joints/quaternion_floating_joint.h"
+#include "drake/multibody/joints/revolute_joint.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/joints/quaternion_floating_joint.h"
-#include "drake/multibody/joints/revolute_joint.h"
-#include "drake/multibody/joints/floating_base_types.h"
 
 namespace drake {
 namespace systems {
@@ -31,19 +31,23 @@ class RigidBodyTreeTest : public ::testing::Test {
 
     // Defines four rigid bodies.
     r1b1_ = std::make_unique<RigidBody<double>>();
-    r1b1_->set_model_name("robot1");
+    int r1id = tree_->add_model_instance("robot1");
+    r1b1_->set_model_instance_id(r1id);
     r1b1_->set_name("body1");
 
     r2b1_ = std::make_unique<RigidBody<double>>();
-    r2b1_->set_model_name("robot2");
+    int r2id = tree_->add_model_instance("robot2");
+    r2b1_->set_model_instance_id(r2id);
     r2b1_->set_name("body1");
 
     r3b1_ = std::make_unique<RigidBody<double>>();
-    r3b1_->set_model_name("robot3");
+    int r3id = tree_->add_model_instance("robot3");
+    r3b1_->set_model_instance_id(r3id);
     r3b1_->set_name("body1");
 
     r4b1_ = std::make_unique<RigidBody<double>>();
-    r4b1_->set_model_name("robot4");
+    int r4id = tree_->add_model_instance("robot4");
+    r4b1_->set_model_instance_id(r4id);
     r4b1_->set_name("body1");
   }
 
@@ -71,7 +75,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
   // Adds floating joints that connect r1b1_ and r2b1_ to the rigid body tree's
   // world at zero offset.
   r1b1->add_joint(&tree_->world(), std::make_unique<QuaternionFloatingJoint>(
-                                        "base", Isometry3d::Identity()));
+                                       "base", Isometry3d::Identity()));
 
   r2b1->add_joint(
       r1b1, std::make_unique<RevoluteJoint>("Joint1", Isometry3d::Identity(),
@@ -103,13 +107,11 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
     T_r1and2_to_world.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  r1b1->add_joint(&tree_->world(),
-                  std::make_unique<QuaternionFloatingJoint>(
-                      "base", T_r1and2_to_world));
+  r1b1->add_joint(&tree_->world(), std::make_unique<QuaternionFloatingJoint>(
+                                       "base", T_r1and2_to_world));
 
-  r2b1->add_joint(&tree_->world(),
-                  std::make_unique<QuaternionFloatingJoint>(
-                      "base", T_r1and2_to_world));
+  r2b1->add_joint(&tree_->world(), std::make_unique<QuaternionFloatingJoint>(
+                                       "base", T_r1and2_to_world));
 
   // Verfies that the two rigid bodies are located in the correct place.
   const DrakeJoint& jointR1B1 = tree_->FindBody("body1", "robot1")->getJoint();
@@ -128,9 +130,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
   // zero offset. Verifies that it is in the correct place.
   RigidBody<double>* r1b1 = tree_->add_rigid_body(std::move(r1b1_));
 
-  r1b1->add_joint(&tree_->world(),
-                  std::make_unique<QuaternionFloatingJoint>(
-                      "base", Isometry3d::Identity()));
+  r1b1->add_joint(&tree_->world(), std::make_unique<QuaternionFloatingJoint>(
+                                       "base", Isometry3d::Identity()));
 
   // Adds rigid body r2b1_ to the rigid body tree and welds it to r1b1_ with
   // offset x = 1, y = 1, z = 1. Verifies that it is in the correct place.
@@ -144,9 +145,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
     T_r2_to_r1.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  r2b1->add_joint(&tree_->world(),
-                  std::make_unique<QuaternionFloatingJoint>(
-                      "base", T_r2_to_r1));
+  r2b1->add_joint(&tree_->world(), std::make_unique<QuaternionFloatingJoint>(
+                                       "base", T_r2_to_r1));
 
   // Adds rigid body r3b1 and r4b1 to the rigid body tree and welds it to r2b1
   // with offset x = 2, y = 2, z = 2. Verifies that it is in the correct place.
@@ -165,13 +165,11 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "body1",
       tree_->FindBody("body1", "robot2"), T_r3_and_r4_to_r2);
 
-  r3b1->add_joint(&tree_->world(),
-                  std::make_unique<QuaternionFloatingJoint>(
-                      "base", T_r3_and_r4_to_r2));
+  r3b1->add_joint(&tree_->world(), std::make_unique<QuaternionFloatingJoint>(
+                                       "base", T_r3_and_r4_to_r2));
 
-  r4b1->add_joint(&tree_->world(),
-                  std::make_unique<QuaternionFloatingJoint>(
-                      "base", T_r3_and_r4_to_r2));
+  r4b1->add_joint(&tree_->world(), std::make_unique<QuaternionFloatingJoint>(
+                                       "base", T_r3_and_r4_to_r2));
 
   EXPECT_TRUE(tree_->FindBody("body1", "robot1")
                   ->getJoint()
@@ -198,9 +196,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 // with vector block input parameters. For more information, see:
 // https://github.com/RobotLocomotion/drake/issues/2634.
 TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
-  std::string filename =
-      drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+  std::string filename = drake::GetDrakePath() +
+                         "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
   AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename, tree_.get());
 
   VectorX<double> q;
@@ -222,15 +219,14 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
 // model in the table. Furthermore, it should be called "two_dof_robot" and
 // the model instance ID should be 1 (zero was assigned to the world model).
 TEST_F(RigidBodyTreeTest, TestModelInstanceIdTable) {
-  std::string filename =
-      drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+  std::string filename = drake::GetDrakePath() +
+                         "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
 
   ModelInstanceIdTable model_instance_id_table =
       AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename, tree_.get());
 
   const int kExpectedTableSize = 1;
-  const int kExpectedModelInstanceId = 0;
+  const int kExpectedModelInstanceId = 5;
   EXPECT_EQ(static_cast<int>(model_instance_id_table.size()),
             kExpectedTableSize);
   EXPECT_NE(model_instance_id_table.find("two_dof_robot"),
@@ -308,17 +304,20 @@ TEST_F(RigidBodyTreeTest, TestFindModelInstanceBodies) {
   // Verifies that the model instance IDs and model names are correct.
   for (const RigidBody<double>* body : two_dof_robot_bodies) {
     EXPECT_EQ(body->get_model_instance_id(), two_dof_model_instance_id);
-    EXPECT_EQ(body->get_model_name(), kTwoDofModelName);
+    EXPECT_EQ(tree_->get_model_name(body->get_model_instance_id()),
+              kTwoDofModelName);
   }
 
   for (const RigidBody<double>* body : three_dof_robot_bodies) {
     EXPECT_EQ(body->get_model_instance_id(), three_dof_model_instance_id);
-    EXPECT_EQ(body->get_model_name(), kThreeDofModelName);
+    EXPECT_EQ(tree_->get_model_name(body->get_model_instance_id()),
+              kThreeDofModelName);
   }
 
   for (const RigidBody<double>* body : four_dof_robot_bodies) {
     EXPECT_EQ(body->get_model_instance_id(), four_dof_model_instance_id);
-    EXPECT_EQ(body->get_model_name(), kFourDofModelName);
+    EXPECT_EQ(tree_->get_model_name(body->get_model_instance_id()),
+              kFourDofModelName);
   }
 
   // Verifies that the names of the RigidBodies fall into the expected range of
@@ -338,9 +337,8 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
   // Stores the model instance IDs in model_instance_id_list.
   const int kNumModelInstances = 10;
 
-  std::string file_name =
-      drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+  std::string file_name = drake::GetDrakePath() +
+                          "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
 
   std::vector<int> model_instance_id_list;
 
@@ -432,7 +430,7 @@ TEST_F(RigidBodyTreeTest, TestGetNumActuators) {
       drake::GetDrakePath() +
       "/multibody/test/rigid_body_tree/four_dof_robot.urdf";
   AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename_4dof_robot,
-                                                    tree_.get());
+                                                  tree_.get());
   EXPECT_EQ(tree_->get_num_actuators(), 4);
 }
 

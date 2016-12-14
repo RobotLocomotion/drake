@@ -3,9 +3,9 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
-#include "drake/multibody/joints/fixed_joint.h"
 
 namespace drake {
 namespace systems {
@@ -36,7 +36,7 @@ class RigidBodyTreeCollisionCliqueTest : public ::testing::Test {
     RigidBody<double>* temp_body;
     tree_->add_rigid_body(
         unique_ptr<RigidBody<double>>(temp_body = new RigidBody<double>()));
-    temp_body->set_model_name("robot1");
+    temp_body->set_model_instance_id(tree_->add_model_instance("robot1"));
     temp_body->set_name("body1");
     temp_body->set_spatial_inertia(I);
     body1_collision_element_1_ = make_unique<Element>();
@@ -47,7 +47,7 @@ class RigidBodyTreeCollisionCliqueTest : public ::testing::Test {
     // These next bodies will *not* require self-collision clique
     tree_->add_rigid_body(
         unique_ptr<RigidBody<double>>(body2_ = new RigidBody<double>()));
-    body2_->set_model_name("robot2");
+    body2_->set_model_instance_id(tree_->add_model_instance("robot2"));
     body2_->set_name("body2");
     body2_->set_spatial_inertia(I);
     body2_collision_element_ = make_unique<Element>();
@@ -55,7 +55,7 @@ class RigidBodyTreeCollisionCliqueTest : public ::testing::Test {
 
     tree_->add_rigid_body(
         unique_ptr<RigidBody<double>>(body3_ = new RigidBody<double>()));
-    body3_->set_model_name("robot3");
+    body3_->set_model_instance_id(tree_->add_model_instance("robot3"));
     body3_->set_name("body3");
     body3_->set_spatial_inertia(I);
   }
