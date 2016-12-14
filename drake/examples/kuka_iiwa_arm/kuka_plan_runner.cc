@@ -112,10 +112,8 @@ class RobotPlanRunner {
                   const robotlocomotion::robot_plan_t* plan) {
     std::cout << "New plan received." << std::endl;
 
-    std::vector<Eigen::MatrixXd> knots(plan->num_states);
-    for (int i = 0; i < plan->num_states; ++i) {
-      knots[i] = Eigen::MatrixXd::Zero(kNumJoints, 1);
-    }
+    std::vector<Eigen::MatrixXd> knots(plan->num_states,
+                                       Eigen::MatrixXd::Zero(kNumJoints, 1));
     std::map<std::string, int> name_to_idx =
         tree_.computePositionNameToIndexMap();
     for (int i = 0; i < plan->num_states; ++i) {

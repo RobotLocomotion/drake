@@ -137,15 +137,13 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
       info_good = false;
     }
   }
-  printf("\n");
 
   if (!info_good) {
     throw std::runtime_error(
         "inverseKinPointwise failed to compute a valid solution.");
   }
 
-  std::vector<PiecewisePolynomial<double>::CoefficientMatrix> knots(
-      kTimes.size());
+  std::vector<MatrixXd> knots(kTimes.size());
   for (size_t i = 0; i < kTimes.size(); ++i) {
     // We only use column 0 of the matrix in knots (for joint positions),
     // so we write a vector.
