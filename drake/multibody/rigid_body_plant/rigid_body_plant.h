@@ -1,7 +1,9 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <Eigen/Geometry>
 
@@ -94,15 +96,34 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// Returns the number of generalized coordinates of the model.
   int get_num_positions() const;
 
+  /// Returns the number of generalized coordinates for a specific
+  /// model instance.
+  int get_num_positions(int model_instance_id) const;
+
   /// Returns the number of generalized velocities of the model.
   int get_num_velocities() const;
+
+  /// Returns the number of generalized velocities for a specific
+  /// model instance.
+  int get_num_velocities(int model_instance_id) const;
 
   /// Returns the size of the continuous state of the system which equals
   /// get_num_positions() plus get_num_velocities().
   int get_num_states() const;
 
+  /// Returns the size of the continuous state of a specific model
+  /// instance which equals get_num_positions() plus
+  /// get_num_velocities().
+  int get_num_states(int model_instance_id) const;
+
   /// Returns the number of actuators.
   int get_num_actuators() const;
+
+  /// Returns the number of actuators for a specific model instance.
+  int get_num_actuators(int model_instance_id) const;
+
+  /// Returns the number of model instances in the world.
+  int get_num_model_instances() const;
 
   /// Returns the size of the input vector to the system. This equals the
   /// number of actuators.
@@ -197,6 +218,26 @@ class RigidBodyPlant : public LeafSystem<T> {
     return System<T>::get_output_port(contact_output_port_id_);
   }
 
+  /// Returns descriptor of the input port for a specific model
+  /// instance.
+  const SystemPortDescriptor<T>& model_input_port(
+      int model_instance_id) const {
+    return System<T>::get_input_port(input_map_.at(model_instance_id));
+  }
+
+  /// Returns descriptor of the output port for a specific model
+  /// instance.
+  const SystemPortDescriptor<T>& model_state_output_port(
+      int model_instance_id) const {
+    return System<T>::get_output_port(output_map_.at(model_instance_id));
+  }
+
+  /// Returns the index into the output port for @p model_instance_id
+  /// which corresponds to the world position index of @p
+  /// position_index, or -1 if the position index does not correspond
+  /// to the model id.
+  int FindInstancePositionIndex(int model_instance_id, int position_index);
+
   /// Creates a right-handed local basis from a z-axis. Defines an arbitrary x-
   /// and y-axis such that the basis is orthonormal.  The basis is R_WL, where W
   /// is the frame in which the z-axis is expressed and L is a local basis such
@@ -249,6 +290,16 @@ void DoMapQDotToVelocity(
   int state_output_port_id_{};
   int kinematics_output_port_id_{};
   int contact_output_port_id_{};
+
+  // Maps model instance ids to input ports and actuator indices.
+  std::map<int, int> input_map_;
+  std::map<int, std::vector<int>> actuator_map_;
+
+  // Maps model instance ids to output ports and position/velocity
+  // indices.
+  std::map<int, int> output_map_;
+  std::map<int, std::vector<int>> position_map_;
+  std::map<int, std::vector<int>> velocity_map_;
 };
 
 }  // namespace systems
