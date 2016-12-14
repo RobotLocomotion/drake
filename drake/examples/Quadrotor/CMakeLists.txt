@@ -4,7 +4,7 @@ if(lcm_FOUND)
   add_executable(run_quadrotor_dynamics run_quadrotor_dynamics.cc)
   target_link_libraries(run_quadrotor_dynamics
       drakeLCMSystem2
-      drakeParsers
+      drakeMultibodyParsers
       drakeRigidBodyPlant
       drakeSystemAnalysis
       drakeSystemPrimitives

@@ -42,7 +42,7 @@ if(NOT DISABLE_PYTHON)
 
   add_swig_python_module(rbtPython rbtree.i
     CPLUSPLUS
-    LINK_LIBRARIES drakeParsers drakeRBM
+    LINK_LIBRARIES drakeMultibodyParsers drakeRBM
     SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
     DESTINATION ${python_install_subdir})
 
@@ -68,7 +68,7 @@ if(Matlab_FOUND)
 
     add_swig_matlab_module(rbtMatlab rbtree_matlab.i
       CPLUSPLUS
-      LINK_LIBRARIES drakeParsers drakeRBM
+      LINK_LIBRARIES drakeMultibodyParsers drakeRBM
       SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
       DESTINATION ${matlab_install_subdir})
 

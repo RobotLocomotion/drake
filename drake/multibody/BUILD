@@ -99,7 +99,7 @@ cc_binary(
     deps = [
         ":rigid_body_tree",
         "//drake/common:measure_execution",
-        "//drake/multibody/parsers",
+        "//drake/multibody/parsers:multi_body_parsers",
         "@gtest//:main",
     ],
 )
@@ -112,7 +112,7 @@ cc_binary(
     linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "//drake/multibody/parsers",
+        "//drake/multibody/parsers:multi_body_parsers",
         "@gtest//:main",
     ],
 )
@@ -125,7 +125,7 @@ cc_test(
     linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "//drake/multibody/parsers",
+        "//drake/multibody/parsers:multi_body_parsers",
         "@gtest//:main",
     ],
 )
@@ -137,7 +137,7 @@ cc_test(
     linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "//drake/multibody/parsers",
+        "//drake/multibody/parsers:multi_body_parsers",
         "@gtest//:main",
     ],
 )
@@ -150,7 +150,7 @@ cc_test(
     linkstatic = 1,
     deps = [
         ":rigid_body_constraint",
-        "//drake/multibody/parsers",
+        "//drake/multibody/parsers:multi_body_parsers",
         "@gtest//:main",
     ],
 )
@@ -165,7 +165,7 @@ cc_test(
         ":rigid_body_tree",
         "//drake/common:eigen_matrix_compare",
         "//drake/math:jacobian",
-        "//drake/multibody/parsers",
+        "//drake/multibody/parsers:multi_body_parsers",
         "@gtest//:main",
     ],
 )
@@ -178,7 +178,7 @@ cc_test(
     linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "//drake/multibody/parsers",
+        "//drake/multibody/parsers:multi_body_parsers",
         "@gtest//:main",
     ],
 )
@@ -191,7 +191,7 @@ cc_test(
     linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "//drake/multibody/parsers",
+        "//drake/multibody/parsers:multi_body_parsers",
         "@gtest//:main",
     ],
 )

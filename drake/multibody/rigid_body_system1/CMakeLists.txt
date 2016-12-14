@@ -2,7 +2,7 @@ add_library_with_exports(LIB_NAME drakeRBSystem SOURCE_FILES RigidBodySystem.cpp
 target_link_libraries(drakeRBSystem
     drakeIK
     drakeOptimization
-    drakeParsers
+    drakeMultibodyParsers
     drakeRBM
     drakeRigidBodyConstraint)
 

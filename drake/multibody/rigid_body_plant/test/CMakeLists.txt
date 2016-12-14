@@ -1,12 +1,12 @@
 if(Bullet_FOUND)
   drake_add_cc_test(rigid_body_plant_test)
   target_link_libraries(rigid_body_plant_test
-      drakeParsers
+      drakeMultibodyParsers
       drakeRigidBodyPlant)
 
   drake_add_cc_test(rigid_body_plant_system1_test)
   target_link_libraries(rigid_body_plant_system1_test
-    drakeParsers
+    drakeMultibodyParsers
     drakeRBSystem
     drakeRigidBodyPlant)
 
@@ -37,5 +37,5 @@ target_link_libraries(contact_info_test drakeRigidBodyPlant)
 
 drake_add_cc_test(kinematics_results_test)
 target_link_libraries(kinematics_results_test
-    drakeParsers
+    drakeMultibodyParsers
     drakeRigidBodyPlant)

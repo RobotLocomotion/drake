@@ -10,7 +10,7 @@ cc_library(
     linkstatic = 1,
     deps = [
         "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
+        "//drake/multibody/parsers:multi_body_parsers",
         "//drake/systems/framework",
     ],
 )

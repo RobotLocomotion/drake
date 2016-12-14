@@ -5,7 +5,7 @@ if(lcm_FOUND AND WITH_HSRB_DESCRIPTION)
       hsrb_diagram_factories.cc)
   target_link_libraries(drakeHsrb
       drakeLcm
-      drakeParsers
+      drakeMultibodyParsers
       drakeRBM
       drakeRigidBodyPlant
       drakeSystemFramework

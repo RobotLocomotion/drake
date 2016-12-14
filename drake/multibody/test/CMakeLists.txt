@@ -1,12 +1,12 @@
 # RigidBodyTree unit tests.
 drake_add_cc_test(test_kinematics_cache_checks)
 target_link_libraries(test_kinematics_cache_checks
-    drakeParsers
+    drakeMultibodyParsers
     drakeRBM)
 
 add_executable(benchmark_rigid_body_tree benchmark_rigid_body_tree.cc)
 target_link_libraries(benchmark_rigid_body_tree
-    drakeParsers
+    drakeMultibodyParsers
     drakeRBM)
 
 drake_add_cc_test(rigid_body_test)
@@ -14,14 +14,14 @@ target_link_libraries(rigid_body_test drakeRBM)
 
 add_executable(debug_manipulator_dynamics debug_manipulator_dynamics.cc)
 target_link_libraries(debug_manipulator_dynamics
-    drakeParsers
+    drakeMultibodyParsers
     drakeRBM)
 
 # Inverse kinematics unit tests.
 macro(add_ik_cpp)
   drake_add_cc_test(${ARGV})
   target_link_libraries(${ARGV}
-    drakeParsers
+    drakeMultibodyParsers
     drakeRigidBodyConstraint
     drakeIK)
 endmacro()
@@ -31,7 +31,7 @@ macro(add_ik_gtest)
   target_link_libraries(${ARGV}
     GTest::GTest GTest::Main
     drakeIK
-    drakeParsers
+    drakeMultibodyParsers
     drakeRigidBodyConstraint)
 endmacro()
 

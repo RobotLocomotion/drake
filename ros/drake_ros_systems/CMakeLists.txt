@@ -48,7 +48,7 @@ if (CATKIN_ENABLE_TESTING)
       ${catkin_LIBRARIES}
       drakeCommon
       drakeJoints
-      drakeParsers
+      drakeMultibodyParsers
       drakeRBM
       drakeSystemFramework)
   set_target_properties(ros_tf_publisher_test PROPERTIES EXCLUDE_FROM_ALL FALSE)

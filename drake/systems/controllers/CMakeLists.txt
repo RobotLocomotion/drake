@@ -21,7 +21,7 @@ if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
   target_link_libraries(drakeQPCommon
       drakeControlUtil
       drakeLCMUtil
-      drakeParsers
+      drakeMultibodyParsers
       drakeQP
       drakeSide
       drakeTrajectories

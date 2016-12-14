@@ -3,7 +3,7 @@ if(lcm_FOUND)
   target_link_libraries(kuka_demo
       drakeIK
       drakeKukaIiwaArmCommon
-      drakeParsers
+      drakeMultibodyParsers
       drakeRigidBodyPlant
       drakeSystemAnalysis
       drakeSystemControllers

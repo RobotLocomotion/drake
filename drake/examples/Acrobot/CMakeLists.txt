@@ -2,7 +2,7 @@ add_library_with_exports(LIB_NAME drakeAcrobotPlant
     SOURCE_FILES acrobot_plant.cc)
 target_link_libraries(drakeAcrobotPlant
     drakeLinearControl
-    drakeParsers
+    drakeMultibodyParsers
     drakeSensors
     drakeSystemFramework)
 
@@ -17,7 +17,7 @@ if(lcm_FOUND)
   add_executable(acrobot_run_lqr acrobot_run_lqr.cc)
   target_link_libraries(acrobot_run_lqr
       drakeAcrobotPlant
-      drakeParsers
+      drakeMultibodyParsers
       drakeRigidBodyPlant
       drakeSystemAnalysis)
   add_test(NAME acrobot_run_lqr COMMAND acrobot_run_lqr -realtime_factor 0.0)
@@ -26,7 +26,7 @@ if(lcm_FOUND)
   target_link_libraries(acrobot_run_lqr_w_estimator
       drakeAcrobotPlant
       drakeEstimators
-      drakeParsers
+      drakeMultibodyParsers
       drakeRigidBodyPlant
       drakeSensors
       drakeSystemAnalysis)

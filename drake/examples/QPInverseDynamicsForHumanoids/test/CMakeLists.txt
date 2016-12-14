@@ -6,7 +6,7 @@ target_link_libraries(setpoint_test
 if(lcm_FOUND)
   drake_add_cc_test(NAME lcm_utils_test)
   target_link_libraries(lcm_utils_test
-    drakeParsers
+    drakeMultibodyParsers
     drakeQPControllerLcmTranslator
     drakeQPController
     GTest::GTest GTest::Main)
@@ -15,7 +15,7 @@ endif()
 if(gurobi_FOUND)
   drake_add_cc_test(NAME valkyrie_balancing_test SIZE medium)
   target_link_libraries(valkyrie_balancing_test
-    drakeParsers
+    drakeMultibodyParsers
     drakeQPController
     GTest::GTest GTest::Main)
 endif()
@@ -25,7 +25,7 @@ if(gurobi_FOUND AND lcm_FOUND)
     valkyrie_qp_inverse_dynamics_controller.cc)
   target_link_libraries(valkyrie_qp_inverse_dynamics_controller
     drakeLCMSystem2
-    drakeParsers
+    drakeMultibodyParsers
     drakeQPController
     drakeQPControllerLcmTranslator
     drakeRigidBodyPlant

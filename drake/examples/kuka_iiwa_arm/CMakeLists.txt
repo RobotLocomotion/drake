@@ -16,7 +16,7 @@ if(lcm_FOUND)
   add_executable(run_kuka_iiwa_arm_dynamics run_kuka_iiwa_arm_dynamics.cc)
   target_link_libraries(run_kuka_iiwa_arm_dynamics
       drakeKukaIiwaArmCommon
-      drakeParsers
+      drakeMultibodyParsers
       drakeRigidBodyPlant
       drakeSystemAnalysis
       drakeSystemControllers
@@ -29,7 +29,7 @@ if(lcm_FOUND)
   add_executable(kuka_ik_demo kuka_ik_demo.cc)
   target_link_libraries(kuka_ik_demo
     drakeIK
-    drakeParsers
+    drakeMultibodyParsers
     drakeRBM
     robotlocomotion-lcmtypes-cpp
     lcm)
@@ -38,7 +38,7 @@ if(lcm_FOUND)
   target_link_libraries(kuka_plan_runner
     drakeKukaIiwaArmCommon
     drakeTrajectories
-    drakeParsers
+    drakeMultibodyParsers
     drakeRBM
     drakeLCMTypes
     robotlocomotion-lcmtypes-cpp
@@ -47,7 +47,7 @@ if(lcm_FOUND)
   add_executable(kuka_simulation kuka_simulation.cc)
   target_link_libraries(kuka_simulation
     drakeKukaIiwaArmCommon
-    drakeParsers
+    drakeMultibodyParsers
     drakeRigidBodyPlant
     drakeSystemAnalysis
     drakeSystemControllers
