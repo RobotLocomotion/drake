@@ -72,12 +72,23 @@ GTEST_TEST(TestZMP, TestOptimalControl) {
     double sample_dt = 0.01;
     ZMPTestTraj result = Simulate(zmp_planner, x0, sample_dt, 2);
 
-    // Test the optimal control computed differently.
+    // The linear policy from zmp_planner should return the same control as
+    // ComputeOptimalCoMddGivenValueFunction.
     for (int i = 0; i < result.time.size(); i++) {
       Eigen::Vector2d u0 = ComputeOptimalCoMddGivenValueFunction(
           zmp_planner, result.time[i], result.x.col(i));
-      EXPECT_TRUE(CompareMatrices(u0, result.u.col(i), 1e-8,
+      EXPECT_TRUE(CompareMatrices(result.u.col(i), u0, 1e-8,
                                   MatrixCompareType::absolute));
+    }
+
+    // The nominal CoM acceleration (given by take derivatives from the CoM
+    // position trajectory) should equal to calling the linear controller
+    // with the nominal CoM state.
+    for (int i = 0; i < result.time.size(); i++) {
+      Eigen::Vector2d u0 = zmp_planner.ComputeOptimalCoMdd(
+          result.time[i], result.nominal_com.col(i).head<4>());
+      EXPECT_TRUE(CompareMatrices(result.nominal_com.col(i).tail<2>(), u0,
+                                  1e-8, MatrixCompareType::absolute));
     }
 
     int N = result.time.size();
