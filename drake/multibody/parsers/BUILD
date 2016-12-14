@@ -11,6 +11,7 @@ cc_library(
         "parser_common.cc",
         "sdf_parser.cc",
         "urdf_parser.cc",
+        "xml_util.cc",
     ],
     hdrs = [
         "model_instance_id_table.h",
@@ -18,10 +19,49 @@ cc_library(
         "parser_common.h",
         "sdf_parser.h",
         "urdf_parser.h",
+        "xml_util.h",
     ],
     linkstatic = 1,
     deps = [
         "//drake/multibody:rigid_body_tree",
+    ],
+)
+
+# TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
+cc_binary(
+    name = "urdf_kinematics_test",
+    testonly = 1,
+    srcs = ["test/urdf_kinematics_test.cc"],
+    linkstatic = 1,
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "@gtest//:main",
+    ],
+)
+
+# TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
+cc_binary(
+    name = "urdf_collision_test",
+    testonly = 1,
+    srcs = ["test/urdf_collision_test.cc"],
+    linkstatic = 1,
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "@gtest//:main",
+    ],
+)
+
+# TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
+cc_binary(
+    name = "urdf_manipulator_dynamics_test",
+    srcs = ["test/urdf_manipulator_dynamics_test.cc"],
+    linkstatic = 1,
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "@gtest//:main",
     ],
 )
 
@@ -46,6 +86,16 @@ cc_test(
         ":test_models",
         "//drake/examples/Atlas:models",
     ],
+    deps = [
+        ":parsers",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "xml_util_test",
+    size = "small",
+    srcs = ["test/xml_util_test.cc"],
     deps = [
         ":parsers",
         "@gtest//:main",

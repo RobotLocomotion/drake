@@ -14,8 +14,8 @@
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/parsers/xml_util.h"
 #include "drake/multibody/pose_map.h"
-#include "drake/multibody/xml_util.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/util/drakeGeometryUtil.h"
 

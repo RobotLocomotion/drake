@@ -17,24 +17,6 @@ target_link_libraries(debug_manipulator_dynamics
     drakeParsers
     drakeRBM)
 
-# RigidBodyTree parsers unit tests.
-drake_add_cc_test(xml_util_test)
-target_link_libraries(xml_util_test drakeXMLUtil)
-
-add_executable(urdf_kinematics_test urdf_kinematics_test.cc)
-target_link_libraries(urdf_kinematics_test
-    drakeParsers
-    drakeRBM)
-if (Bullet_FOUND)
-  add_executable(urdf_collision_test urdf_collision_test.cc)
-  target_link_libraries(urdf_collision_test drakeParsers drakeRBM)
-endif ()
-
-add_executable(urdf_manipulator_dynamics_test urdf_manipulator_dynamics_test.cc)
-target_link_libraries(urdf_manipulator_dynamics_test
-    drakeParsers
-    drakeRBM)
-
 # Inverse kinematics unit tests.
 macro(add_ik_cpp)
   drake_add_cc_test(${ARGV})

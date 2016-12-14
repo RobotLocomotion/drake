@@ -13,7 +13,7 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/material_map.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
-#include "drake/multibody/xml_util.h"
+#include "drake/multibody/parsers/xml_util.h"
 
 namespace drake {
 namespace parsers {

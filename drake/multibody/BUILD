@@ -51,7 +51,6 @@ cc_library(
         "rigid_body_loop.cc",
         "rigid_body_tree.cc",
         "rigid_body_tree_contact.cc",
-        "xml_util.cc",
     ],
     hdrs = [
         "force_torque_measurement.h",
@@ -65,7 +64,6 @@ cc_library(
         "rigid_body_frame.h",
         "rigid_body_loop.h",
         "rigid_body_tree.h",
-        "xml_util.h",
     ],
     linkstatic = 1,
     deps = [
@@ -111,44 +109,6 @@ cc_binary(
     name = "debug_manipulator_dynamics",
     testonly = 1,
     srcs = ["test/debug_manipulator_dynamics.cc"],
-    linkstatic = 1,
-    deps = [
-        ":rigid_body_tree",
-        "//drake/multibody/parsers",
-        "@gtest//:main",
-    ],
-)
-
-# TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
-cc_binary(
-    name = "urdf_kinematics_test",
-    testonly = 1,
-    srcs = ["test/urdf_kinematics_test.cc"],
-    linkstatic = 1,
-    deps = [
-        ":rigid_body_tree",
-        "//drake/multibody/parsers",
-        "@gtest//:main",
-    ],
-)
-
-# TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
-cc_binary(
-    name = "urdf_collision_test",
-    testonly = 1,
-    srcs = ["test/urdf_collision_test.cc"],
-    linkstatic = 1,
-    deps = [
-        ":rigid_body_tree",
-        "//drake/multibody/parsers",
-        "@gtest//:main",
-    ],
-)
-
-# TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
-cc_binary(
-    name = "urdf_manipulator_dynamics_test",
-    srcs = ["test/urdf_manipulator_dynamics_test.cc"],
     linkstatic = 1,
     deps = [
         ":rigid_body_tree",

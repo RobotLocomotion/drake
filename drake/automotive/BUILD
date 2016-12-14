@@ -128,6 +128,7 @@ cc_library(
         ":simple_car",
         ":trajectory_car",
         "//drake/lcm",
+        "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/lcm",
