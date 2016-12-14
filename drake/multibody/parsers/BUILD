@@ -11,7 +11,6 @@ cc_library(
         "parser_common.cc",
         "sdf_parser.cc",
         "urdf_parser.cc",
-        "xml_util.cc",
     ],
     hdrs = [
         "model_instance_id_table.h",
@@ -19,7 +18,6 @@ cc_library(
         "parser_common.h",
         "sdf_parser.h",
         "urdf_parser.h",
-        "xml_util.h",
     ],
     linkstatic = 1,
     deps = [
