@@ -73,3 +73,10 @@ git_repository(
     commit = "93929369232fcda305607a2e0aa7b3cd9cf8912d",
     remote = "https://github.com/bazelbuild/buildifier.git",
 )
+
+new_git_repository(
+    name = "yaml_cpp",
+    remote = "https://github.com/jbeder/yaml-cpp.git",
+    commit = "85af926ddc5f3c8fb438001743e65ec3a039ceec",
+    build_file = "tools/yaml_cpp.BUILD",
+)

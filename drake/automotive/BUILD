@@ -133,6 +133,9 @@ cc_library(
         "//drake/systems/lcm",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:multiplexer",
+
+        # TODO(rpoyner-tri): testing; remove once maliput is integrated.
+        "@yaml_cpp//:lib",
     ],
 )
 
