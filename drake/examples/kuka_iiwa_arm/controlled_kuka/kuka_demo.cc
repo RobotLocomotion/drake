@@ -26,7 +26,7 @@
 #include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/trajectory_source.h"
 
-DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
+DEFINE_double(simulation_sec, 20.5, "Number of seconds to simulate.");
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -147,9 +147,9 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   std::vector<PiecewisePolynomial<double>::CoefficientMatrix> knots(
       kTimes.size());
   for (size_t i = 0; i < kTimes.size(); ++i) {
-    knots[i] = Eigen::MatrixXd::Zero(tree->get_num_positions(), 1);
-    // We only use column 0 (for joint positions)
-    knots[i].col(0) = q_sol.col(i);
+    // We only use column 0 of the matrix in knots (for joint positions),
+    // so we write a vector.
+    knots[i] = q_sol.col(i);
   }
 
   return make_unique<PiecewisePolynomialTrajectory>(
