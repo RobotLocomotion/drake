@@ -67,21 +67,51 @@ cc_library(
 )
 
 cc_library(
-    name = "state",
-    srcs = [
-        "abstract_state.cc",
-        "continuous_state.cc",
-        "discrete_state.cc",
-        "state.cc",
-    ],
-    hdrs = [
-        "abstract_state.h",
-        "continuous_state.h",
-        "discrete_state.h",
-        "state.h",
-    ],
+    name = "abstract_state",
+    srcs = ["abstract_state.cc"],
+    hdrs = ["abstract_state.h"],
     linkstatic = 1,
     deps = [
+        ":value",
+        "//drake/common",
+        "//drake/common:autodiff",
+    ],
+)
+
+cc_library(
+    name = "continuous_state",
+    srcs = ["continuous_state.cc"],
+    hdrs = ["continuous_state.h"],
+    linkstatic = 1,
+    deps = [
+        ":vector",
+        "//drake/common",
+        "//drake/common:autodiff",
+    ],
+)
+
+cc_library(
+    name = "discrete_state",
+    srcs = ["discrete_state.cc"],
+    hdrs = ["discrete_state.h"],
+    linkstatic = 1,
+    deps = [
+        ":value",
+        ":vector",
+        "//drake/common",
+        "//drake/common:autodiff",
+    ],
+)
+
+cc_library(
+    name = "state",
+    srcs = ["state.cc"],
+    hdrs = ["state.h"],
+    linkstatic = 1,
+    deps = [
+        ":abstract_state",
+        ":continuous_state",
+        ":discrete_state",
         ":value",
         ":vector",
         "//drake/common",
@@ -95,7 +125,8 @@ cc_library(
     hdrs = ["parameters.h"],
     linkstatic = 1,
     deps = [
-        ":state",
+        ":abstract_state",
+        ":discrete_state",
         "//drake/common",
     ],
 )
@@ -298,7 +329,7 @@ cc_test(
     srcs = ["test/continuous_state_test.cc"],
     linkstatic = 1,
     deps = [
-        ":state",
+        ":continuous_state",
         "//drake/common",
         "@gtest//:main",
     ],
@@ -365,7 +396,7 @@ cc_test(
     srcs = ["test/discrete_state_test.cc"],
     linkstatic = 1,
     deps = [
-        ":state",
+        ":discrete_state",
         "//drake/common",
         "@gtest//:main",
     ],
@@ -406,7 +437,7 @@ cc_test(
     srcs = ["test/abstract_state_test.cc"],
     linkstatic = 1,
     deps = [
-        ":state",
+        ":abstract_state",
         "//drake/common",
         "//drake/systems/framework/test_utilities",
         "@gtest//:main",
