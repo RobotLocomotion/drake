@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <Eigen/Geometry>
 
@@ -94,15 +95,34 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// Returns the number of generalized coordinates of the model.
   int get_num_positions() const;
 
+  /// Returns the number of generalized coordinates for a specific
+  /// model instance.
+  int get_num_positions(int model_instance_id) const;
+
   /// Returns the number of generalized velocities of the model.
   int get_num_velocities() const;
+
+  /// Returns the number of generalized velocities for a specific
+  /// model instance.
+  int get_num_velocities(int model_instance_id) const;
 
   /// Returns the size of the continuous state of the system which equals
   /// get_num_positions() plus get_num_velocities().
   int get_num_states() const;
 
+  /// Returns the size of the continuous state of a specific model
+  /// instance which equals get_num_positions() plus
+  /// get_num_velocities().
+  int get_num_states(int model_instance_id) const;
+
   /// Returns the number of actuators.
   int get_num_actuators() const;
+
+  /// Returns the number of actuators for a specific model instance.
+  int get_num_actuators(int model_instance_id) const;
+
+  /// Returns the number of model instances in the world.
+  int get_num_model_instances() const;
 
   /// Returns the size of the input vector to the system. This equals the
   /// number of actuators.
@@ -187,20 +207,41 @@ class RigidBodyPlant : public LeafSystem<T> {
   static T JointLimitForce(const DrakeJoint& joint,
                            const T& position, const T& velocity);
 
-  /// Returns descriptor of state output port.
+  /// Returns a descriptor of state output port.
   const SystemPortDescriptor<T>& state_output_port() const {
     return System<T>::get_output_port(state_output_port_id_);
   }
 
-  /// Returns descriptor of KinematicsResults output port.
+  /// Returns a descriptor of KinematicsResults output port.
   const SystemPortDescriptor<T>& kinematics_results_output_port() const {
     return System<T>::get_output_port(kinematics_output_port_id_);
   }
 
-  /// Returns descriptor of ContactResults output port.
+  /// Returns a descriptor of ContactResults output port.
   const SystemPortDescriptor<T>& contact_results_output_port() const {
     return System<T>::get_output_port(contact_output_port_id_);
   }
+
+  /// Returns a descriptor of the input port for a specific model
+  /// instance.
+  const SystemPortDescriptor<T>& model_input_port(
+      int model_instance_id) const {
+    return System<T>::get_input_port(input_map_.at(model_instance_id));
+  }
+
+  /// Returns a descriptor of the output port for a specific model
+  /// instance.
+  const SystemPortDescriptor<T>& model_state_output_port(
+      int model_instance_id) const {
+    return System<T>::get_output_port(output_map_.at(model_instance_id));
+  }
+
+  /// Returns the index into the output port for @p model_instance_id
+  /// which corresponds to the world position index of @p
+  /// world_position_index, or throws if the position index does not
+  /// correspond to the model id.
+  int FindInstancePositionIndexFromWorldIndex(
+      int model_instance_id, int world_position_index);
 
   /// Creates a right-handed local basis from a z-axis. Defines an arbitrary x-
   /// and y-axis such that the basis is orthonormal.  The basis is R_WL, where W
@@ -254,6 +295,20 @@ void DoMapQDotToVelocity(
   int state_output_port_id_{};
   int kinematics_output_port_id_{};
   int contact_output_port_id_{};
+
+  // Maps model instance ids to input ports.  A value of -1 indicates
+  // that a model instance has no corresponding input port.
+  std::vector<int> input_map_;
+  // Maps model instance ids to actuator indices in the RigidBodyTree.
+  std::vector<std::vector<int>> actuator_map_;
+
+  // Maps model instance ids to output ports.  A value of -1 indicates
+  // that a model instance has no corresponding output port.
+  std::vector<int> output_map_;
+  // Maps model instance ids to position indices in the RigidBodyTree.
+  std::vector<std::vector<int>> position_map_;
+  // Maps model instance ids to velocity indices in the RigidBodyTree.
+  std::vector<std::vector<int>> velocity_map_;
 };
 
 }  // namespace systems
