@@ -165,6 +165,23 @@ bool RigidBody<T>::IsRigidlyFixedToWorld() const {
 }
 
 template <typename T>
+Isometry3d RigidBody<T>::ComputeWorldPose() const {
+  if (parent_ == nullptr) {
+    return Isometry3d::Identity();
+  }
+
+  if (joint_ == nullptr) {
+    throw std::runtime_error("Trying to compute world pose for body with no parent joint:  " +
+        name_);
+  }
+  if (!joint_->is_fixed()) {
+    throw std::runtime_error("Trying to compute world pose for a body with a non-fixed parent joint:  " +
+        name_);
+  }
+  return parent_->ComputeWorldPose() * joint_->get_transform_to_parent_body();
+}
+
+template <typename T>
 void RigidBody<T>::setCollisionFilter(const DrakeCollision::bitmask& group,
                                    const DrakeCollision::bitmask& ignores) {
   setCollisionFilterGroup(group);
