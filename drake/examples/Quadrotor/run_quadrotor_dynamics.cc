@@ -64,9 +64,12 @@ class Quadrotor : public systems::Diagram<T> {
     builder.BuildInto(this);
   }
 
-  void SetDefaultState(systems::Context<T>* context) const {
-    systems::Context<T>* plant_context =
-        this->GetMutableSubsystemContext(context, plant_);
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override {
+    DRAKE_DEMAND(state != nullptr);
+    systems::Diagram<T>::SetDefaultState(context, state);
+    systems::State<T>* plant_state =
+        this->GetMutableSubsystemState(state, plant_);
     VectorX<T> x0(plant_->get_num_states());
     x0.setZero();
     /* x0 is the initial state where
@@ -74,7 +77,7 @@ class Quadrotor : public systems::Diagram<T> {
      * x0(3), x0(4), x0(5) are the quedrotor's Euler angles phi, theta, psi
      */
     x0(2) = 0.2;  // setting arbitrary z-position
-    plant_->set_state_vector(plant_context, x0);
+    plant_->set_state_vector(plant_state, x0);
   }
 
  private:

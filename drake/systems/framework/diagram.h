@@ -205,25 +205,32 @@ class Diagram : public System<T>,
     return std::unique_ptr<Context<T>>(context.release());
   }
 
-  void SetDefaultState(Context<T>* context) const override {
-    auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
+  void SetDefaultState(const Context<T>& context,
+                       State<T>* state) const override {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
+
+    auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
+    DRAKE_DEMAND(diagram_state != nullptr);
 
     // Set default state of each constituent system.
     for (int i = 0; i < num_subsystems(); ++i) {
-      auto subcontext = diagram_context->GetMutableSubsystemContext(i);
-      sorted_systems_[i]->SetDefaultState(subcontext);
+      auto subcontext = diagram_context->GetSubsystemContext(i);
+      DRAKE_DEMAND(subcontext != nullptr);
+      auto substate = diagram_state->get_mutable_substate(i);
+      DRAKE_DEMAND(substate != nullptr);
+      sorted_systems_[i]->SetDefaultState(*subcontext, substate);
     }
   }
 
-  void SetDefaultParameters(Context<T>* context) const override {
+  void SetDefaults(Context<T>* context) const final {
     auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
-    // Set default state of each constituent system.
+    // Set defaults of each constituent system.
     for (int i = 0; i < num_subsystems(); ++i) {
       auto subcontext = diagram_context->GetMutableSubsystemContext(i);
-      sorted_systems_[i]->SetDefaultParameters(subcontext);
+      sorted_systems_[i]->SetDefaults(subcontext);
     }
   }
 
@@ -357,6 +364,17 @@ class Diagram : public System<T>,
                                      const System<T>* subsystem) const {
     Context<T>* subcontext = GetMutableSubsystemContext(context, subsystem);
     return subcontext->get_mutable_state();
+  }
+
+  /// Retrieves the state for a particular subsystem from the @p state for the
+  /// entire diagram. Aborts if @p subsystem is not actually a subsystem of this
+  /// diagram.
+  State<T>* GetMutableSubsystemState(State<T>* state,
+                                     const System<T>* subsystem) const {
+    const int i = GetSystemIndexOrAbort(subsystem);
+    auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
+    DRAKE_DEMAND(diagram_state != nullptr);
+    return diagram_state->get_mutable_substate(i);
   }
 
   /// Returns the full path of this Diagram in the tree of Diagrams. Implemented
