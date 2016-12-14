@@ -26,7 +26,7 @@
 #include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/trajectory_source.h"
 
-DEFINE_double(simulation_sec, 20.5, "Number of seconds to simulate.");
+DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
