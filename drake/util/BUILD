@@ -1,4 +1,4 @@
-# -*- python -*
+# -*- python -*-
 
 package(default_visibility = ["//visibility:public"])
 
