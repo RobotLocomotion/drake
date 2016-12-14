@@ -4,11 +4,17 @@ if(Matlab_FOUND)
     target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeSide drakeYAMLUtil)
 
     drake_add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
-    target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeYAMLUtil drakeAtlasUtil)
+    target_link_libraries(constructQPDataPointerMex
+        drakeAtlasUtil
+        drakeControlUtil
+        drakeMexUtil
+        drakeQP
+        drakeQPCommon
+        drakeYAMLUtil
+        )
   endif()
 
   drake_add_mex(supportDetectmex supportDetectmex.cpp)
   target_link_libraries(supportDetectmex drakeRBM drakeControlUtil)
 
 endif()
-

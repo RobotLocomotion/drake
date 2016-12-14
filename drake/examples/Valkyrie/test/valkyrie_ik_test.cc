@@ -2,9 +2,8 @@
 // visualizer.
 
 #include <iostream>
+#include <memory>
 #include <numeric>
-
-#include "gtest/gtest.h"
 
 // Includes for IK solver.
 #include "drake/multibody/ik_options.h"
@@ -13,12 +12,14 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -69,6 +70,7 @@ int DoMain() {
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_sim_drake_one_neck_dof_additional_contact_pts.urdf",
       drake::multibody::joints::kRollPitchYaw);
+
 
   // Setting up constraints, based on testIKMoreConstraints.cpp and
   // director-generated M-file.

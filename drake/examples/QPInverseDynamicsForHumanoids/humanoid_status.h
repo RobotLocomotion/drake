@@ -98,7 +98,7 @@ class HumanoidStatus {
    */
   explicit HumanoidStatus(const RigidBodyTree<double>& robot)
       : robot_(&robot),
-        cache_(robot_->bodies),
+        cache_(robot_->CreateKinematicsCache()),
         // TODO(siyuan.feng): The names of the links are hard coded for
         // Valkyrie, and they should be specified in some separate config file.
         bodies_of_interest_{
@@ -141,27 +141,28 @@ class HumanoidStatus {
 
     // TODO(siyuan.feng): these are hard coded for Valkyrie, and they should
     // be included in the model file or loaded from a separate config file.
-    nominal_position_[name_to_position_index().at("rightHipRoll")] = 0.01;
-    nominal_position_[name_to_position_index().at("rightHipPitch")] = -0.5432;
-    nominal_position_[name_to_position_index().at("rightKneePitch")] = 1.2195;
-    nominal_position_[name_to_position_index().at("rightAnklePitch")] = -0.7070;
-    nominal_position_[name_to_position_index().at("rightAnkleRoll")] = -0.0069;
+    nominal_position_[name_to_position_index().at("base_z")] = 1.025;
+    nominal_position_[name_to_position_index().at("rightHipPitch")] = -0.49;
+    nominal_position_[name_to_position_index().at("rightKneePitch")] = 1.205;
+    nominal_position_[name_to_position_index().at("rightAnklePitch")] = -0.71;
 
-    nominal_position_[name_to_position_index().at("leftHipRoll")] = -0.01;
-    nominal_position_[name_to_position_index().at("leftHipPitch")] = -0.5432;
-    nominal_position_[name_to_position_index().at("leftKneePitch")] = 1.2195;
-    nominal_position_[name_to_position_index().at("leftAnklePitch")] = -0.7070;
-    nominal_position_[name_to_position_index().at("leftAnkleRoll")] = 0.0069;
+    nominal_position_[name_to_position_index().at("leftHipPitch")] = -0.49;
+    nominal_position_[name_to_position_index().at("leftKneePitch")] = 1.205;
+    nominal_position_[name_to_position_index().at("leftAnklePitch")] = -0.71;
 
-    nominal_position_[name_to_position_index().at("rightShoulderRoll")] = 1;
-    nominal_position_[name_to_position_index().at("rightShoulderYaw")] = 0.5;
+    nominal_position_[name_to_position_index().at("rightShoulderPitch")] =
+        0.300196631343025;
+    nominal_position_[name_to_position_index().at("rightShoulderRoll")] = 1.25;
     nominal_position_[name_to_position_index().at("rightElbowPitch")] =
-        M_PI / 2.;
+        0.785398163397448;
+    nominal_position_[name_to_position_index().at("rightForearmYaw")] = 1.571;
 
-    nominal_position_[name_to_position_index().at("leftShoulderRoll")] = -1;
-    nominal_position_[name_to_position_index().at("leftShoulderYaw")] = 0.5;
+    nominal_position_[name_to_position_index().at("leftShoulderPitch")] =
+        0.300196631343025;
+    nominal_position_[name_to_position_index().at("leftShoulderRoll")] = -1.25;
     nominal_position_[name_to_position_index().at("leftElbowPitch")] =
-        -M_PI / 2.;
+      -0.785398163397448;
+    nominal_position_[name_to_position_index().at("leftForearmYaw")] = 1.571;
 
     leg_joint_names_.insert("rightHipYaw");
     leg_joint_names_.insert("rightHipRoll");

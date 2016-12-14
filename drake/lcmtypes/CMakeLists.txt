@@ -1,8 +1,16 @@
 include(GenerateExportHeader)
 include(${LCM_USE_FILE})
 
+if(NOT DISABLE_PYTHON)
+  set(python_args PYTHON_SOURCES python_install_sources)
+else()
+  set(python_args)
+endif()
+
 if(JAVA_FOUND)
   set(java_args JAVA_SOURCES java_sources)
+else()
+  set(java_args)
 endif()
 
 lcm_wrap_types(
@@ -10,8 +18,8 @@ lcm_wrap_types(
   C_SOURCES c_sources
   C_HEADERS c_install_headers
   CPP_HEADERS cpp_install_headers
-  PYTHON_SOURCES python_install_sources
   ${java_args}
+  ${python_args}
   lcmt_body_acceleration.lcm
   lcmt_body_motion_data.lcm
   lcmt_body_wrench_data.lcm
@@ -28,6 +36,8 @@ lcm_wrap_types(
   lcmt_iiwa_command.lcm
   lcmt_iiwa_status.lcm
   lcmt_joint_pd_override.lcm
+  lcmt_matlab_array.lcm
+  lcmt_call_matlab.lcm
   lcmt_piecewise_polynomial.lcm
   lcmt_polynomial.lcm
   lcmt_polynomial_matrix.lcm
@@ -38,8 +48,8 @@ lcm_wrap_types(
   lcmt_resolved_contact.lcm
   lcmt_robot_state.lcm
   lcmt_scope_data.lcm
-  lcmt_schunk_command.lcm
-  lcmt_schunk_status.lcm
+  lcmt_schunk_wsg_command.lcm
+  lcmt_schunk_wsg_status.lcm
   lcmt_simple_car_config_t.lcm
   lcmt_simple_car_state_t.lcm
   lcmt_simulation_command.lcm
@@ -77,14 +87,16 @@ lcm_install_headers(
 )
 
 install(TARGETS drake_lcmtypes drakeLCMTypes
-  EXPORT ${PROJECT_NAME}Targets
-  RUNTIME DESTINATION bin
+  EXPORT ${PROJECT_NAME}-targets
+  RUNTIME DESTINATION "${DRAKE_INSTALL_RUNTIME_DIR}"
   LIBRARY DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
   ARCHIVE DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
   INCLUDES DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}/lcmtypes"
 )
 
-lcm_install_python(${python_install_sources})
+if(NOT DISABLE_PYTHON)
+  lcm_install_python(${python_install_sources})
+endif()
 
 if(JAVA_FOUND)
   if(NOT TARGET lcm-java)

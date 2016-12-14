@@ -6,6 +6,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
+#include "drake/examples/Pendulum/pendulum_plant.h"
 
 using drake::solvers::SolutionResult;
 
@@ -25,8 +26,11 @@ GTEST_TEST(PendulumTrajectoryOptimization,
   const Eigen::Vector2d x0(0, 0);
   const Eigen::Vector2d xG(M_PI, 0);
 
-  solvers::DircolTrajectoryOptimization dircol_traj(
-      1 /* num inputs */, 2 /* num_states */,
+  PendulumPlant<double> pendulum;
+  auto context = pendulum.CreateDefaultContext();
+
+  systems::DircolTrajectoryOptimization dircol_traj(
+      pendulum, *context,
       kNumTimeSamples, kTrajectoryTimeLowerBound,
       kTrajectoryTimeUpperBound);
   AddSwingUpTrajectoryParams(kNumTimeSamples, x0, xG, &dircol_traj);

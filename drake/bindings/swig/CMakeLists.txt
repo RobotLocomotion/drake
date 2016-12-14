@@ -31,7 +31,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-misleading-indentation")
 endif()
 
-if(PYTHON_EXECUTABLE)
+if(NOT DISABLE_PYTHON)
   include(SwigPython)
   set(python_install_subdir lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages ${CMAKE_CURRENT_SOURCE_DIR}/../python)
 
@@ -42,7 +42,7 @@ if(PYTHON_EXECUTABLE)
 
   add_swig_python_module(rbtPython rbtree.i
     CPLUSPLUS
-    LINK_LIBRARIES drakeRBM
+    LINK_LIBRARIES drakeMultibodyParsers drakeRBM
     SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
     DESTINATION ${python_install_subdir})
 
@@ -68,7 +68,7 @@ if(Matlab_FOUND)
 
     add_swig_matlab_module(rbtMatlab rbtree_matlab.i
       CPLUSPLUS
-      LINK_LIBRARIES drakeRBM
+      LINK_LIBRARIES drakeMultibodyParsers drakeRBM
       SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
       DESTINATION ${matlab_install_subdir})
 

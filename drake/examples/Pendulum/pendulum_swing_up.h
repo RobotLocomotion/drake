@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/solvers/trajectoryOptimization/dircol_trajectory_optimization.h"
+#include "drake/systems/trajectory_optimization/direct_collocation.h"
 
 namespace drake {
 namespace examples {
@@ -19,7 +19,7 @@ namespace pendulum {
 void AddSwingUpTrajectoryParams(
     int num_time_samples,
     const Eigen::Vector2d& x0, const Eigen::Vector2d& xG,
-    solvers::DircolTrajectoryOptimization*);
+    systems::DircolTrajectoryOptimization*);
 
 }  // namespace pendulum
 }  // namespace examples

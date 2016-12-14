@@ -26,7 +26,7 @@ Installation
 
 On Ubuntu, first determine which versions are available::
 
-    sudo apt-cache search clang-format
+    apt-cache search clang-format
 
 Then install the version you prefer::
 

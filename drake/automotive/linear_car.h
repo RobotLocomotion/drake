@@ -37,7 +37,8 @@ class LinearCar : public systems::LeafSystem<T> {
   const systems::SystemPortDescriptor<T>& get_output_port() const;
 
   /// Sets the continuous states in @p context to default values.
-  void SetDefaultState(systems::Context<T>* context) const;
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override;
 
   // System<T> overrides.
   // Declare that the outputs are all algebraically isolated from the input.

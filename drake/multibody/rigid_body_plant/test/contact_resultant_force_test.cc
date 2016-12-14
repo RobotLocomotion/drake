@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/rigid_body_plant/point_contact_detail.h"
+#include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
 namespace systems {
@@ -51,6 +52,31 @@ GTEST_TEST(ContactResultantForceTest, ContactForceTests) {
   EXPECT_EQ(f1.get_force(), force);
   EXPECT_EQ(f2.get_torque(), torque);
   EXPECT_EQ(f2.get_application_point(), pos);
+}
+
+// Tests transforming wrench with respect to a given reference point.
+// Should match results from transformSpatialForce.
+GTEST_TEST(ContactResultantForceTest,
+           ForceAccumulationWithFixedReferencePointTest) {
+  Vector3<double> normal, force, torque, pos, ref_point;
+  normal << 0, 0, 1;
+  force << 1, 0, 1;
+  torque << 0, 2, 0;
+  pos << 0, 0, 1;
+  ref_point << 0, 0, 3;
+  ContactForce<double> cforce(pos, normal, force, torque);
+
+  SpatialForce<double> eq_wrench;
+  Isometry3<double> transform(Isometry3<double>::Identity());
+  transform.translation() = pos - ref_point;
+  eq_wrench = transformSpatialForce(transform, cforce.get_spatial_force());
+
+  ContactResultantForceCalculator<double> calc;
+  calc.AddForce(cforce);
+  ContactForce<double> wrench = calc.ComputeResultant(ref_point);
+
+  EXPECT_EQ(wrench.get_application_point(), ref_point);
+  EXPECT_EQ(wrench.get_spatial_force(), eq_wrench);
 }
 
 // Tests the various forms for adding forces to the accumulator.  This also
@@ -128,7 +154,7 @@ GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
     ContactResultantForceCalculator<double> calc(&details);
     ContactForce<double> cforce(pos, normal, force, torque);
     calc.AddForce(cforce);
-    EXPECT_EQ(details.size(), 1);
+    EXPECT_EQ(details.size(), 1u);
     PointContactDetail<double>* detail =
         dynamic_cast<PointContactDetail<double>*>(details[0].get());
     ASSERT_NE(detail, nullptr);
@@ -144,7 +170,7 @@ GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
     std::vector<unique_ptr<ContactDetail<double>>> details;
     ContactResultantForceCalculator<double> calc(&details);
     calc.AddForce(pos, normal, force);
-    EXPECT_EQ(details.size(), 1);
+    EXPECT_EQ(details.size(), 1u);
     PointContactDetail<double>* detail =
         dynamic_cast<PointContactDetail<double>*>(details[0].get());
     ASSERT_NE(detail, nullptr);
@@ -160,7 +186,7 @@ GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
     std::vector<unique_ptr<ContactDetail<double>>> details;
     ContactResultantForceCalculator<double> calc(&details);
     calc.AddForce(pos, normal, force, torque);
-    EXPECT_EQ(details.size(), 1);
+    EXPECT_EQ(details.size(), 1u);
     PointContactDetail<double>* detail =
         dynamic_cast<PointContactDetail<double>*>(details[0].get());
     ASSERT_NE(detail, nullptr);
@@ -179,7 +205,7 @@ GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
     unique_ptr<ContactDetail<double>> input_detail(
         new PointContactDetail<double>(cforce));
     calc.AddForce(move(input_detail));
-    EXPECT_EQ(details.size(), 1);
+    EXPECT_EQ(details.size(), 1u);
     PointContactDetail<double>* detail =
         dynamic_cast<PointContactDetail<double>*>(details[0].get());
     ASSERT_NE(detail, nullptr);

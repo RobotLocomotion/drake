@@ -1,8 +1,0 @@
-drake_add_cc_test(NAME testPiecewisePolynomial EXTENSION cpp)
-target_link_libraries(testPiecewisePolynomial drakeTrajectories)
-
-drake_add_cc_test(NAME testExponentialPlusPiecewisePolynomial EXTENSION cpp)
-target_link_libraries(testExponentialPlusPiecewisePolynomial drakeTrajectories)
-
-drake_add_cc_test(NAME piecewise_polynomial_trajectory_test EXTENSION cc)
-target_link_libraries(piecewise_polynomial_trajectory_test drakeTrajectories)

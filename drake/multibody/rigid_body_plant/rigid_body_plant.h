@@ -126,13 +126,18 @@ class RigidBodyPlant : public LeafSystem<T> {
   void set_state_vector(Context<T>* context,
                         const Eigen::Ref<const VectorX<T>> x) const;
 
+  /// Sets the continuous state vector of the system to be @p x.
+  void set_state_vector(State<T>* state,
+                        const Eigen::Ref<const VectorX<T>> x) const;
+
   /// Sets the state in @p context so that generalized positions and velocities
   /// are zero. For quaternion based joints the quaternion is set to be the
   /// identity (or equivalently a zero rotation).
-  void SetZeroConfiguration(Context<T>* context) const {
+  void SetDefaultState(const Context<T>& context,
+                       State<T>* state) const override {
     // Extract a pointer to continuous state from the context.
-    DRAKE_DEMAND(context != nullptr);
-    ContinuousState<T>* xc = context->get_mutable_continuous_state();
+    DRAKE_DEMAND(state != nullptr);
+    ContinuousState<T>* xc = state->get_mutable_continuous_state();
     DRAKE_DEMAND(xc != nullptr);
 
     // Write the zero configuration into the continuous state.
@@ -191,6 +196,20 @@ class RigidBodyPlant : public LeafSystem<T> {
   const SystemPortDescriptor<T>& kinematics_results_output_port() const {
     return System<T>::get_output_port(kinematics_output_port_id_);
   }
+
+  /// Returns descriptor of ContactResults output port.
+  const SystemPortDescriptor<T>& contact_results_output_port() const {
+    return System<T>::get_output_port(contact_output_port_id_);
+  }
+
+  /// Creates a right-handed local basis from a z-axis. Defines an arbitrary x-
+  /// and y-axis such that the basis is orthonormal.  The basis is R_WL, where W
+  /// is the frame in which the z-axis is expressed and L is a local basis such
+  /// that v_W = R_WL * v_L.
+  /// @param[in] z_axis_W   The vector defining the basis's z-axis expressed
+  ///                       in frame W.
+  /// @retval R_WL          The computed basis.
+  static Matrix3<T> ComputeBasisFromZ(const Vector3<T>& z_axis_W);
 
  protected:
   // LeafSystem<T> override.

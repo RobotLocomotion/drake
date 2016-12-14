@@ -1,15 +1,18 @@
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
-#include "drake/common/eigen_types.h"
 #include "drake/common/eigen_matrix_compare.h"
-
+#include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_plant/kinematics_results.h"
+#include "drake/util/drakeGeometryUtil.h"
+
 
 namespace drake {
 namespace systems {
@@ -19,10 +22,10 @@ class KinematicsResultsTest : public ::testing::Test {
  protected:
   void SetUp() override {
     std::string file_name =
-        drake::GetDrakePath() +
-        "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
-    robot_ = std::make_unique<RigidBodyTree<double>>(
-        file_name, multibody::joints::kRollPitchYaw);
+        GetDrakePath() + "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+    robot_ = std::make_unique<RigidBodyTree<double>>();
+    parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+        file_name, multibody::joints::kRollPitchYaw, robot_.get());
     kinematics_result_ =
         std::make_unique<KinematicsResults<double>>(robot_.get());
 

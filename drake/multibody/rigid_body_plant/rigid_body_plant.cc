@@ -7,10 +7,10 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/collision/element.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/multibody/collision/element.h"
 
 using std::make_unique;
 using std::move;
@@ -31,19 +31,14 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree)
   // The input to this system are the generalized forces commanded on the
   // actuators.
   // TODO(amcastro-tri): add separate input ports for each model_instance_id.
-  System<T>::DeclareInputPort(kVectorValued, get_num_actuators(),
-                              kContinuousSampling);
+  System<T>::DeclareInputPort(kVectorValued, get_num_actuators());
   // The output of the system is the state vector.
   // TODO(amcastro-tri): add separate output ports for each model_id.
   state_output_port_id_ =
-      this->DeclareOutputPort(kVectorValued, get_num_states(),
-                              kContinuousSampling)
-          .get_index();
+      this->DeclareOutputPort(kVectorValued, get_num_states()).get_index();
   // Declares an abstract valued port for kinematics results.
-  kinematics_output_port_id_ =
-      this->DeclareAbstractOutputPort(kInheritedSampling).get_index();
-  contact_output_port_id_ =
-      this->DeclareAbstractOutputPort(kInheritedSampling).get_index();
+  kinematics_output_port_id_ = this->DeclareAbstractOutputPort().get_index();
+  contact_output_port_id_ = this->DeclareAbstractOutputPort().get_index();
 }
 
 template <typename T>
@@ -127,8 +122,15 @@ template <typename T>
 void RigidBodyPlant<T>::set_state_vector(
     Context<T>* context, const Eigen::Ref<const VectorX<T>> x) const {
   DRAKE_ASSERT(context != nullptr);
+  set_state_vector(context->get_mutable_state(), x);
+}
+
+template <typename T>
+void RigidBodyPlant<T>::set_state_vector(
+    State<T>* state, const Eigen::Ref<const VectorX<T>> x) const {
+  DRAKE_ASSERT(state != nullptr);
   DRAKE_ASSERT(x.size() == get_num_states());
-  context->get_mutable_continuous_state_vector()->SetFromVector(x);
+  state->get_mutable_continuous_state()->SetFromVector(x);
 }
 
 template <typename T>
@@ -199,9 +201,17 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
   ComputeContactResults(context, &contact_results);
 }
 
+/*
+ * TODO(hongkai.dai): This only works for templates on double, it does not
+ * work for autodiff yet, I will add the code to compute the gradient of vdot
+ * w.r.t. q and v. See issue
+ * https://github.com/RobotLocomotion/drake/issues/4267.
+ */
 template <typename T>
 void RigidBodyPlant<T>::EvalTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
+  static_assert(std::is_same<double, T>::value,
+                "Only support templating on double for now");
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   DRAKE_DEMAND(derivatives != nullptr);
   const BasicVector<T>* input = this->EvalVectorInput(context, 0);
@@ -232,7 +242,8 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // and simply update them then solve on each function eval.
   // How to place something like this in the context?
   drake::solvers::MathematicalProgram prog;
-  auto const& vdot = prog.AddContinuousVariables(nv, "vdot");
+  drake::solvers::DecisionVariableVectorX vdot =
+      prog.AddContinuousVariables(nv, "vdot");
 
   auto H = tree_->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
@@ -293,10 +304,19 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   prog.Solve();
 
   VectorX<T> xdot(get_num_states());
-  xdot << kinsol.transformQDotMappingToVelocityMapping(
-              MatrixX<T>::Identity(nq, nq)) *
-              v,
-      vdot.value();
+
+  /*
+   * TODO(hongkai.dai): This only works for templates on double, it does not
+   * work for autodiff yet, I will add the code to compute the gradient of vdot
+   * w.r.t. q and v. See issue
+   * https://github.com/RobotLocomotion/drake/issues/4267.
+   */
+  // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
+  // templatized.
+  const auto& vdot_value =
+      drake::solvers::GetSolution(vdot);
+  xdot << tree_->transformQDotMappingToVelocityMapping(
+      kinsol, MatrixX<T>::Identity(nq, nq).eval()) * v, vdot_value;
 
   derivatives->SetFromVector(xdot);
 }
@@ -329,9 +349,11 @@ void RigidBodyPlant<T>::DoMapQDotToVelocity(
   // reused.
   auto kinsol = tree_->doKinematics(q);
 
+  // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
+  // templatized.
   generalized_velocity->SetFromVector(
-      kinsol.transformQDotMappingToVelocityMapping(
-          configuration_dot.transpose()));
+      tree_->transformQDotMappingToVelocityMapping(
+          kinsol, configuration_dot.transpose().eval()).transpose());
 }
 
 template <typename T>
@@ -363,8 +385,11 @@ void RigidBodyPlant<T>::DoMapVelocityToQDot(
   // reused.
   auto kinsol = tree_->doKinematics(q, v);
 
+  // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
+  // templatized.
   configuration_dot->SetFromVector(
-      kinsol.transformVelocityMappingToQDotMapping(v.transpose()));
+      tree_->transformVelocityMappingToQDotMapping(
+          kinsol, v.transpose().eval()).transpose());
 }
 
 template <typename T>
@@ -414,6 +439,29 @@ void RigidBodyPlant<T>::ComputeContactResults(
 }
 
 template <typename T>
+Matrix3<T> RigidBodyPlant<T>::ComputeBasisFromZ(const Vector3<T>& z_axis_W) {
+  // Projects the z-axis into the first quadrant in order to identify the
+  // *smallest* component of the normal.
+  const Vector3<T> u(z_axis_W.cwiseAbs());
+  int minAxis;
+  u.minCoeff(&minAxis);
+  // The world axis corresponding to the smallest component of the local z-axis
+  // will be *most* perpendicular.
+  Vector3<T> perpAxis;
+  perpAxis << (minAxis == 0 ? 1 : 0), (minAxis == 1 ? 1 : 0),
+      (minAxis == 2 ? 1 : 0);
+  // Now define x- and y-axes.
+  Vector3<T> x_axis_W = z_axis_W.cross(perpAxis).normalized();
+  Vector3<T> y_axis_W = z_axis_W.cross(x_axis_W);
+  // Transformation from world frame to local frame.
+  Matrix3<T> R_WL;
+  R_WL.col(0) = x_axis_W;
+  R_WL.col(1) = y_axis_W;
+  R_WL.col(2) = z_axis_W;
+  return R_WL;
+}
+
+template <typename T>
 VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
     const KinematicsCache<T>& kinsol, ContactResults<T>* contacts) const {
   std::vector<DrakeCollision::PointPair> pairs;
@@ -421,8 +469,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
   // TODO(amcastro-tri): get rid of this const_cast.
   // Unfortunately collisionDetect() modifies the collision model in the RBT
   // when updating the collision element poses.
-  const_cast<RigidBodyTree<T>*>(tree_.get())
-      ->AllPairsClosestPoints(kinsol, &pairs);
+  pairs = const_cast<RigidBodyTree<T>*>(tree_.get())
+      ->ComputeMaximumDepthCollisionPoints(kinsol, true);
 
   VectorX<T> contact_force(kinsol.getV().rows(), 1);
   contact_force.setZero();
@@ -438,28 +486,11 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
                                                0, false);
       Vector3<T> this_normal = pair.normal;
 
-      // Computes a local surface coordinate frame with the local z axis
-      // aligned with the surface's normal. The other two axes are arbitrarily
-      // chosen to complete a right handed triplet.
-      Vector3<T> tangent1;
-      if (1.0 - this_normal(2) < EPSILON) {
-        // Handles the unit-normal case. Since it's unit length, just check z.
-        tangent1 << 1.0, 0.0, 0.0;
-      } else if (1 + this_normal(2) < EPSILON) {
-        tangent1 << -1.0, 0.0, 0.0;  // Same for the reflected case.
-      } else {                       // Now the general case.
-        tangent1 << this_normal(1), -this_normal(0), 0.0;
-        tangent1 /= sqrt(this_normal(1) * this_normal(1) +
-                         this_normal(0) * this_normal(0));
-      }
-      Vector3<T> tangent2 = this_normal.cross(tangent1);
-      // Transformation from world frame to local surface frame.
-      Matrix3<T> R;
-      R.row(0) = tangent1;
-      R.row(1) = tangent2;
-      R.row(2) = this_normal;
-      auto J = R * (JA - JB);  // J = [ D1; D2; n ]
-      // [ tangent1dot; tangent2dot; phidot ]
+      // R_WC is a left-multiplied rotation matrix to transform a vector from
+      // contact frame (C) to world (W), e.g., v_W = R_WC * v_C.
+      Matrix3<T> R_WC = ComputeBasisFromZ(this_normal);
+      auto J = R_WC.transpose() * (JA - JB);  // J = [ D1; D2; n ]
+
       auto relative_velocity = J * kinsol.getV();
 
       {
@@ -478,19 +509,21 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
 
         // fB is equal and opposite to fA: fB = -fA.
         // Therefore the generalized forces tau_c due to contact are:
-        // tau_c = (R * JA)^T * fA + (R * JB)^T * fB = J^T * fA.
-        // With J computed as above: J = R * (JA - JB).
+        // tau_c = (R_CW * JA)^T * fA + (R_CW * JB)^T * fB = J^T * fA.
+        // With J computed as above: J = R_CW * (JA - JB).
         // Since right_hand_side has a negative sign when on the RHS of the
         // system of equations ([H,-J^T] * [vdot;f] + right_hand_side = 0),
         // this term needs to be subtracted.
         contact_force += J.transpose() * fA;
         if (contacts != nullptr) {
           Vector3<T> pt_a_world =
-              kinsol.getElement(*pair.elementA->get_body()).transform_to_world *
-              pair.ptA;
+              kinsol.get_element(
+                  pair.elementA->get_body()->
+                      get_body_index()).transform_to_world * pair.ptA;
           Vector3<T> pt_b_world =
-              kinsol.getElement(*pair.elementB->get_body()).transform_to_world *
-              pair.ptB;
+              kinsol.get_element(
+                  pair.elementB->get_body()->
+                      get_body_index()).transform_to_world * pair.ptB;
           Vector3<T> point = (pt_a_world + pt_b_world) * 0.5;
 
           ContactInfo<T>& contact_info = contacts->AddContact(
@@ -506,8 +539,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           // component (i.e., the torque portion of the wrench is zero.)
           // In contrast, other models (e.g., torsional friction model) can
           // also introduce a "pure torque" component to the wrench.
-          Vector3<T> force = R.transpose() * fA;
-          Vector3<T> normal = R.transpose().template block<3, 1>(0, 2);
+          Vector3<T> force = R_WC * fA;
+          Vector3<T> normal = R_WC.template block<3, 1>(0, 2);
 
           calculator.AddForce(point, normal, force);
 

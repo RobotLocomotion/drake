@@ -6,8 +6,9 @@ namespace plants {
 
 template <typename T>
 KinematicsCacheHelper<T>::KinematicsCacheHelper(
-    const std::vector<std::unique_ptr<RigidBody<T>>>& bodies)
-    : kinsol_(bodies) {}
+    const std::vector<std::unique_ptr<RigidBody<T>>>& bodies) :
+    kinsol_(RigidBodyTree<T>::CreateKinematicsCacheFromBodiesVector(bodies)) {
+}
 
 template <typename Scalar>
 KinematicsCache<Scalar>& KinematicsCacheHelper<Scalar>::UpdateKinematics(

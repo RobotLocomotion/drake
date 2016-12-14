@@ -8,9 +8,9 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/gain.h"
-#include "drake/systems/framework/primitives/matrix_gain.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/gain.h"
+#include "drake/systems/primitives/matrix_gain.h"
 
 namespace drake {
 namespace systems {
@@ -44,8 +44,8 @@ class TestPlant : public LeafSystem<double> {
 class TestPlantWithMinOutputs : public TestPlant {
  public:
   TestPlantWithMinOutputs() {
-    DeclareInputPort(kVectorValued, 1, kContinuousSampling);
-    DeclareOutputPort(kVectorValued, 2, kContinuousSampling);
+    DeclareInputPort(kVectorValued, 1);
+    DeclareOutputPort(kVectorValued, 2);
   }
 
   void EvalOutput(const Context<double>& context,
@@ -79,8 +79,8 @@ class TestPlantWithMinOutputs : public TestPlant {
 class TestPlantWithMoreOutputs : public TestPlant {
  public:
   TestPlantWithMoreOutputs() {
-    DeclareInputPort(kVectorValued, 1, kContinuousSampling);
-    DeclareOutputPort(kVectorValued, 6, kContinuousSampling);
+    DeclareInputPort(kVectorValued, 1);
+    DeclareOutputPort(kVectorValued, 6);
   }
 
   void EvalOutput(const Context<double>& context,
@@ -126,7 +126,6 @@ void DoPidControlledSystemTest(std::unique_ptr<TestPlant> plant,
 
   systems::Context<double>* controller_context =
       diagram->GetMutableSubsystemContext(context.get(), controller);
-  controller->SetDefaultState(controller_context);
   systems::Context<double>* plant_context =
       controller->GetMutableSubsystemContext(
           controller_context, controller->plant());

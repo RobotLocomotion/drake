@@ -1,10 +1,7 @@
-# -*- python -*
-
-# This file contains rules for the Bazel build system.
-# See http://bazel.io/ .
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
-DEPS = ["//drake/common:common"]
 
 cc_library(
     name = "interface",
@@ -12,16 +9,22 @@ cc_library(
         "drake_lcm_interface.h",
         "drake_lcm_message_handler_interface.h",
     ],
-    deps = DEPS,
-    linkstatic = 1)
+    linkstatic = 1,
+    deps = [
+        "//drake/common",
+    ],
+)
 
 cc_library(
     name = "mock",
+    testonly = 1,
     srcs = ["drake_mock_lcm.cc"],
     hdrs = ["drake_mock_lcm.h"],
-    deps = DEPS + [":interface"],
     linkstatic = 1,
-    testonly = 1)
+    deps = [
+        ":interface",
+    ],
+)
 
 cc_library(
     name = "lcm",
@@ -33,13 +36,81 @@ cc_library(
         "drake_lcm.h",
         "lcm_receive_thread.h",
     ],
-    deps = DEPS + [":interface", "@lcm//:lcm"],
-    linkstatic = 1)
+    linkstatic = 1,
+    deps = [
+        ":interface",
+        "//drake/common",
+        "@lcm//:lcm",
+    ],
+)
 
 cc_library(
     name = "lcmt_drake_signal_utils",
+    testonly = 1,
     srcs = ["lcmt_drake_signal_utils.cc"],
     hdrs = ["lcmt_drake_signal_utils.h"],
-    deps = DEPS + ["//drake/lcmtypes:drake_signal"],
     linkstatic = 1,
-    testonly = 1)
+    deps = [
+        "//drake/common",
+        "//drake/lcmtypes:drake_signal",
+    ],
+)
+
+cc_library(
+    name = "lcm_call_matlab",
+    testonly = 1,
+    srcs = ["lcm_call_matlab.cc"],
+    hdrs = ["lcm_call_matlab.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/common",
+        "//drake/lcmtypes:call_matlab",
+    ],
+)
+
+# === test/ ===
+
+cc_test(
+    name = "drake_lcm_test",
+    size = "small",
+    srcs = ["test/drake_lcm_test.cc"],
+    local = 1,
+    deps = [
+        ":lcm",
+        ":lcmt_drake_signal_utils",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "drake_mock_lcm_test",
+    size = "small",
+    srcs = ["test/drake_mock_lcm_test.cc"],
+    deps = [
+        ":lcmt_drake_signal_utils",
+        ":mock",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "lcmt_drake_signal_utils_test",
+    size = "small",
+    srcs = ["test/lcmt_drake_signal_utils_test.cc"],
+    deps = [
+        ":lcmt_drake_signal_utils",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "lcm_call_matlab_test",
+    size = "small",
+    srcs = ["test/lcm_call_matlab_test.cc"],
+    local = 1,
+    deps = [
+        ":lcm_call_matlab",
+        ":lcmt_drake_signal_utils",
+        "@gtest//:main",
+    ],
+)

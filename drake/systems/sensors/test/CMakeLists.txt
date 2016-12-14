@@ -1,0 +1,3 @@
+
+drake_add_cc_test(rotary_encoders_test rotary_encoders_test.cc)
+target_link_libraries(rotary_encoders_test drakeSensors)

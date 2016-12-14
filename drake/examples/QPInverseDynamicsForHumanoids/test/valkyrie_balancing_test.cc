@@ -6,6 +6,7 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/example_qp_input_for_valkyrie.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 
 namespace drake {
 namespace examples {
@@ -27,23 +28,25 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
       std::string(
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
-  RigidBodyTree<double> robot(urdf,
-                              drake::multibody::joints::kRollPitchYaw);
-  HumanoidStatus robot_status(robot);
+  auto robot = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      urdf, multibody::joints::kRollPitchYaw, robot.get());
+
+  HumanoidStatus robot_status(*robot);
 
   QPController con;
   QPInput input = MakeExampleQPInput(robot_status);
-  QPOutput output(robot);
+  QPOutput output(*robot);
 
   // Set up initial condition.
-  VectorX<double> q(robot.get_num_positions());
-  VectorX<double> v(robot.get_num_velocities());
+  VectorX<double> q(robot->get_num_positions());
+  VectorX<double> v(robot->get_num_velocities());
 
   q = robot_status.GetNominalPosition();
   v.setZero();
   VectorX<double> q_ini = q;
 
-  robot_status.Update(0, q, v, VectorX<double>::Zero(robot.actuators.size()),
+  robot_status.Update(0, q, v, VectorX<double>::Zero(robot->actuators.size()),
                       Vector6<double>::Zero(), Vector6<double>::Zero());
 
   // Set up a tracking problem.
@@ -70,7 +73,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
 
   // Perturb initial condition.
   v[robot_status.name_to_position_index().at("torsoRoll")] += 1;
-  robot_status.Update(0, q, v, VectorX<double>::Zero(robot.actuators.size()),
+  robot_status.Update(0, q, v, VectorX<double>::Zero(robot->actuators.size()),
                       Vector6<double>::Zero(), Vector6<double>::Zero());
 
   // dt = 3e-3 is picked arbitrarily, with Gurobi, this one control call takes
@@ -97,7 +100,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
     input.mutable_desired_centroidal_momentum_dot().mutable_values().tail<3>() =
         (Kp_com.array() * (desired_com - robot_status.com()).array() -
          Kd_com.array() * robot_status.comd().array()).matrix() *
-        robot.getMass();
+        robot->getMass();
 
     int status = con.Control(robot_status, input, &output);
 
@@ -113,7 +116,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
     time += dt;
 
     robot_status.Update(time, q, v,
-                        VectorX<double>::Zero(robot.actuators.size()),
+                        VectorX<double>::Zero(robot->actuators.size()),
                         Vector6<double>::Zero(), Vector6<double>::Zero());
     tick_ctr++;
   }
@@ -128,7 +131,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   EXPECT_TRUE(drake::CompareMatrices(q, q_ini, 1e-4,
                                      drake::MatrixCompareType::absolute));
   EXPECT_TRUE(drake::CompareMatrices(
-      v, VectorX<double>::Zero(robot.get_num_velocities()), 1e-4,
+      v, VectorX<double>::Zero(robot->get_num_velocities()), 1e-4,
       drake::MatrixCompareType::absolute));
 
   std::cout << output;

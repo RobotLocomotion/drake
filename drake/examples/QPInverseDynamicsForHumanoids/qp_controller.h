@@ -10,8 +10,9 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
-#include "drake/solvers/mathematical_program.h"
+#include "drake/math/cross_product.h"
 #include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace examples {
@@ -873,6 +874,9 @@ class ResolvedContact {
   inline const Vector3<double>& reference_point() const {
     return reference_point_;
   }
+  inline const Vector6<double>& body_acceleration() const {
+    return body_acceleration_;
+  }
   inline int num_contact_points() const { return contact_points_.cols(); }
   inline int num_basis_per_contact_point() const {
     return num_basis_per_contact_point_;
@@ -887,6 +891,9 @@ class ResolvedContact {
     return equivalent_wrench_;
   }
   inline Vector3<double>& mutable_reference_point() { return reference_point_; }
+  inline Vector6<double>& mutable_body_acceleration() {
+    return body_acceleration_;
+  }
   inline int& mutable_num_basis_per_contact_point() {
     return num_basis_per_contact_point_;
   }
@@ -910,6 +917,10 @@ class ResolvedContact {
   // The equivalent wrench of all the point forces, w.r.t a frame that has
   // the same orientation as the world frame, but located at reference_point.
   Vector6<double> equivalent_wrench_;
+
+  // Body acceleration w.r.t a frame that has the same orientation as the
+  // world frame, but located at body's origin.
+  Vector6<double> body_acceleration_;
 
   // Reference point in the world frame for the equivalent wrench.
   Vector3<double> reference_point_;
@@ -1130,12 +1141,12 @@ class QPController {
   std::vector<VectorX<double>> body_Jdv_;
 
   // These determines the size of the QP. These are set in ResizeQP
-  int num_contact_body_;
-  int num_vd_;
-  int num_point_force_;
-  int num_basis_;
-  int num_torque_;
-  int num_variable_;
+  int num_contact_body_{0};
+  int num_vd_{0};
+  int num_point_force_{0};
+  int num_basis_{0};
+  int num_torque_{0};
+  int num_variable_{0};
   // One cost / eqaulity constraint term per body motion.
   // For each dimension (row) of the desired body motion, it can be treated
   // as a cost term (Soft), skipped (SKip) or as an equality constraint (Hard)
@@ -1151,20 +1162,22 @@ class QPController {
   //           + vd^T * J(1:2,:)^T * (Jdv(1:2,:) - pelvdd_d(1:2)))
   // The equality constraint term is:
   // J(5:6,:) * vd + Jdv(5:6,:) = pelvdd_d(5:6)
-  int num_body_motion_as_cost_;
-  int num_body_motion_as_eq_;
+  int num_body_motion_as_cost_{0};
+  int num_body_motion_as_eq_{0};
   // Same as for body_motiom, replace J with the identity matrix.
-  int num_dof_motion_as_cost_;
-  int num_dof_motion_as_eq_;
-  int num_cen_mom_dot_as_cost_;
-  int num_cen_mom_dot_as_eq_;
-  int num_contact_as_cost_;
-  int num_contact_as_eq_;
+  int num_dof_motion_as_cost_{0};
+  int num_dof_motion_as_eq_{0};
+  int num_cen_mom_dot_as_cost_{0};
+  int num_cen_mom_dot_as_eq_{0};
+  int num_contact_as_cost_{0};
+  int num_contact_as_eq_{0};
 
   // prog_ is only allocated in ResizeQP, Control only updates the appropriate
   // matrices / vectors.
   drake::solvers::MathematicalProgram prog_;
   drake::solvers::GurobiSolver solver_;
+  drake::solvers::DecisionVariableVectorX basis_;
+  drake::solvers::DecisionVariableVectorX vd_;
 
   // pointers to different cost / constraint terms inside prog_
   drake::solvers::LinearEqualityConstraint* eq_dynamics_{nullptr};

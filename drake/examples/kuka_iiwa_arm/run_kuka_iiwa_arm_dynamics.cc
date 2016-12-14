@@ -4,17 +4,17 @@
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/parser_urdf.h"
-#include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/parsers/model_instance_id_table.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 using std::make_unique;
 using std::move;
@@ -89,12 +89,6 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
     builder.BuildInto(this);
   }
 
-  void SetDefaultState(Context<T>* context) const {
-    Context<T>* plant_context =
-        this->GetMutableSubsystemContext(context, plant_);
-    plant_->SetZeroConfiguration(plant_context);
-  }
-
   const RigidBodyPlant<T>& get_rigid_body_plant() {
     return *plant_;
   }
@@ -113,9 +107,6 @@ int main(int argc, char* argv[]) {
 
   KukaIiwaArmDynamicsSim<double> model;
   Simulator<double> simulator(model);
-
-  // Initializes the controller state and system state to be all zero.
-  model.SetDefaultState(simulator.get_mutable_context());
 
   simulator.Initialize();
 

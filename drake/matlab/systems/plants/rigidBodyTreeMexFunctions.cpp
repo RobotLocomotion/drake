@@ -10,6 +10,7 @@
 #include "drake/matlab/util/makeFunction.h"
 #include "drake/matlab/util/standardMexConversions.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/util/drakeGeometryUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -357,40 +358,30 @@ void dynamicsBiasTermmex(int nlhs, mxArray* plhs[], int nrhs,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
 }
 
-template <typename Scalar>
-Matrix<Scalar, Dynamic, Dynamic> velocityToPositionDotMapping(
-    const KinematicsCache<Scalar>& cache) {
-  auto nq = cache.get_num_positions();
-  return cache.transformQDotMappingToVelocityMapping(
-      Matrix<Scalar, Dynamic, Dynamic>::Identity(nq, nq));
-}
-
-template <typename Scalar>
-Matrix<Scalar, Dynamic, Dynamic> positionDotToVelocityMapping(
-    const KinematicsCache<Scalar>& cache) {
-  auto nv = cache.get_num_velocities();
-  return cache.transformVelocityMappingToQDotMapping(
-      Matrix<Scalar, Dynamic, Dynamic>::Identity(nv, nv));
-}
-
 void velocityToPositionDotMappingmex(int nlhs, mxArray* plhs[], int nrhs,
                                      const mxArray* prhs[]) {
-  auto func_double = make_function(&velocityToPositionDotMapping<double>);
+  auto func_double = make_function
+          (&RigidBodyTreed::GetVelocityToQDotMapping<double>);
   auto func_autodiff_fixed_max =
-      make_function(&velocityToPositionDotMapping<AutoDiffFixedMaxSize>);
+          make_function(&RigidBodyTreed::GetVelocityToQDotMapping
+                        <AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic =
-      make_function(&velocityToPositionDotMapping<AutoDiffDynamicSize>);
+          make_function(&RigidBodyTreed::GetVelocityToQDotMapping
+                        <AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
 }
 
 void positionDotToVelocityMappingmex(int nlhs, mxArray* plhs[], int nrhs,
                                      const mxArray* prhs[]) {
-  auto func_double = make_function(&positionDotToVelocityMapping<double>);
+  auto func_double = make_function
+          (&RigidBodyTreed::GetQDotToVelocityMapping<double>);
   auto func_autodiff_fixed_max =
-      make_function(&positionDotToVelocityMapping<AutoDiffFixedMaxSize>);
+          make_function(&RigidBodyTreed::GetQDotToVelocityMapping
+                        <AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic =
-      make_function(&positionDotToVelocityMapping<AutoDiffDynamicSize>);
+          make_function(&RigidBodyTreed::GetQDotToVelocityMapping
+                        <AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
 }

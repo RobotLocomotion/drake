@@ -1,5 +1,6 @@
 #include <cmath>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -8,6 +9,9 @@
 #include "drake/common/test/measure_execution.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/gradient_util.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 using Eigen::AutoDiffScalar;
@@ -17,9 +21,6 @@ using Eigen::Matrix;
 using Eigen::MatrixBase;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
-using drake::common::test::MeasureExecutionTime;
-using drake::math::autoDiffToGradientMatrix;
-using drake::math::autoDiffToValueMatrix;
 using std::cout;
 using std::default_random_engine;
 using std::endl;
@@ -29,6 +30,16 @@ using std::pair;
 using std::string;
 using std::uniform_real_distribution;
 using std::vector;
+
+namespace drake {
+
+using common::test::MeasureExecutionTime;
+using math::autoDiffToGradientMatrix;
+using math::autoDiffToValueMatrix;
+using math::gradientMatrixToAutoDiff;
+
+namespace multibody {
+namespace {
 
 typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;
 typedef AutoDiffScalar<VectorXd> AutoDiffDynamicSize;
@@ -46,7 +57,7 @@ void printMatrix(
 }
 
 template <typename Scalar>
-void scenario1(const RigidBodyTree<double>& model,
+void Scenario1(const RigidBodyTree<double>& model,
                // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                KinematicsCache<Scalar>& cache,
                const vector<Matrix<Scalar, Dynamic, 1>>& qs,
@@ -71,7 +82,7 @@ void scenario1(const RigidBodyTree<double>& model,
 }
 
 template <typename Scalar>
-void scenario2(
+void Scenario2(
     const RigidBodyTree<double>& model,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache,
@@ -98,7 +109,7 @@ void scenario2(
   }
 }
 
-void testScenario1(const RigidBodyTree<double>& model) {
+void TestScenario1(const RigidBodyTree<double>& model) {
   int ntests = 1000;
 
   vector<VectorXd> qs_double;
@@ -140,24 +151,26 @@ void testScenario1(const RigidBodyTree<double>& model) {
   body_fixed_points.insert(
       make_pair(head_id, Matrix3Xd::Random(3, npoints_head)));
 
-  KinematicsCache<double> cache_double(model.bodies);
-  KinematicsCache<AutoDiffFixedMaxSize> cache_autodiff_fixed(model.bodies);
-  KinematicsCache<AutoDiffDynamicSize> cache_autodiff_dynamic(model.bodies);
+  auto cache_double = model.CreateKinematicsCache();
+  auto cache_autodiff_fixed =
+      model.CreateKinematicsCacheWithType<AutoDiffFixedMaxSize>();
+  auto cache_autodiff_dynamic =
+      model.CreateKinematicsCacheWithType<AutoDiffDynamicSize>();
 
   cout << "scenario 1:" << endl;
   cout << "no gradients: "
-       << MeasureExecutionTime(scenario1<double>, model, cache_double,
+       << MeasureExecutionTime(Scenario1<double>, model, cache_double,
                                qs_double, body_fixed_points) /
               static_cast<double>(ntests)
        << " s" << endl;
   cout << "autodiff fixed max size: "
-       << MeasureExecutionTime(scenario1<AutoDiffFixedMaxSize>, model,
+       << MeasureExecutionTime(Scenario1<AutoDiffFixedMaxSize>, model,
                                cache_autodiff_fixed, qs_autodiff_fixed,
                                body_fixed_points) /
               static_cast<double>(ntests)
        << " s" << endl;
   cout << "autodiff dynamic size: "
-       << MeasureExecutionTime(scenario1<AutoDiffDynamicSize>, model,
+       << MeasureExecutionTime(Scenario1<AutoDiffDynamicSize>, model,
                                cache_autodiff_dynamic, qs_autodiff_dynamic,
                                body_fixed_points) /
               static_cast<double>(ntests)
@@ -165,7 +178,7 @@ void testScenario1(const RigidBodyTree<double>& model) {
   cout << endl;
 }
 
-void testScenario2(const RigidBodyTree<double>& model) {
+void TestScenario2(const RigidBodyTree<double>& model) {
   int ntests = 1000;
 
   vector<pair<VectorXd, VectorXd>> states_double;
@@ -203,23 +216,25 @@ void testScenario2(const RigidBodyTree<double>& model) {
         make_pair(q_autodiff_dynamic, v_autodiff_dynamic));
   }
 
-  KinematicsCache<double> cache_double(model.bodies);
-  KinematicsCache<AutoDiffFixedMaxSize> cache_autodiff_fixed(model.bodies);
-  KinematicsCache<AutoDiffDynamicSize> cache_autodiff_dynamic(model.bodies);
+  auto cache_double = model.CreateKinematicsCache();
+  auto cache_autodiff_fixed =
+      model.CreateKinematicsCacheWithType<AutoDiffFixedMaxSize>();
+  auto cache_autodiff_dynamic =
+      model.CreateKinematicsCacheWithType<AutoDiffDynamicSize>();
 
   cout << "scenario 2:" << endl;
   cout << "no gradients: "
-       << MeasureExecutionTime(scenario2<double>, model, cache_double,
+       << MeasureExecutionTime(Scenario2<double>, model, cache_double,
                                states_double) /
               static_cast<double>(ntests)
        << " s" << endl;
   cout << "autodiff fixed max size: "
-       << MeasureExecutionTime(scenario2<AutoDiffFixedMaxSize>, model,
+       << MeasureExecutionTime(Scenario2<AutoDiffFixedMaxSize>, model,
                                cache_autodiff_fixed, states_autodiff_fixed) /
               static_cast<double>(ntests)
        << " s" << endl;
   cout << "autodiff dynamic size: "
-       << MeasureExecutionTime(scenario2<AutoDiffDynamicSize>, model,
+       << MeasureExecutionTime(Scenario2<AutoDiffDynamicSize>, model,
                                cache_autodiff_dynamic,
                                states_autodiff_dynamic) /
               static_cast<double>(ntests)
@@ -227,10 +242,18 @@ void testScenario2(const RigidBodyTree<double>& model) {
   cout << endl;
 }
 
+}  // namespace
+}  // namespace multibody
+}  // namespace drake
+
 int main() {
-  RigidBodyTree<double> model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
-  testScenario1(model);
-  testScenario2(model);
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      "examples/Atlas/urdf/atlas_minimal_contact.urdf",
+      drake::multibody::joints::kRollPitchYaw, tree.get());
+
+  drake::multibody::TestScenario1(*tree);
+  drake::multibody::TestScenario2(*tree);
 
   return 0;
 }

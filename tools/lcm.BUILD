@@ -15,7 +15,8 @@ genrule(
     name = "lcm_export",
     outs = ["lcm_export.h"],
     cmd = "echo '' > \"$@\"",
-    visibility = [])
+    visibility = [],
+)
 
 cc_library(
     name = "lcm",
@@ -33,13 +34,12 @@ cc_library(
         "lcm/udpm_util.c",
     ],
     hdrs = [
-        "lcm_export.h",  # N.B. This is from lcm_export genrule above.
         "lcm/dbg.h",
         "lcm/eventlog.h",
         "lcm/ioutils.h",
-        "lcm/lcm-cpp-impl.hpp",
-        "lcm/lcm-cpp.hpp",
         "lcm/lcm.h",
+        "lcm/lcm-cpp.hpp",
+        "lcm/lcm-cpp-impl.hpp",
         "lcm/lcm_coretypes.h",
         "lcm/lcm_internal.h",
         "lcm/lcm_version.h",
@@ -47,9 +47,13 @@ cc_library(
         "lcm/lcmtypes/channel_to_port_t.h",
         "lcm/ringbuffer.h",
         "lcm/udpm_util.h",
+        "lcm_export.h",  # N.B. This is from lcm_export genrule above.
     ],
-    includes = ["."],
-    copts = ["-Wno-all", "-Wno-deprecated-declarations"],
+    copts = [
+        "-Wno-all",
+        "-Wno-deprecated-declarations",
+        "-std=gnu11",
+    ],
     # In LCM's build system, these definitions are provided by a generated
     # lcm_export.h file.  For Bazel, we just set them directly as defines.
     defines = [
@@ -59,7 +63,8 @@ cc_library(
         "LCM_EXPORT=",
         "LCM_NO_EXPORT=",
     ],
-    deps = ["@gtk//:glib"],
+    includes = ["."],
+    deps = ["@glib//:lib"],
 )
 
 cc_binary(
@@ -79,11 +84,15 @@ cc_binary(
         "lcmgen/tokenize.c",
         "lcmgen/tokenize.h",
     ],
-    includes = ["."],
     copts = [
-        "-Wno-all", "-Wno-format-zero-length",
+        "-Wno-all",
+        "-Wno-format-zero-length",
+        "-std=gnu11",
         # TODO(jwnimmer-tri) This hack should be removed when we ugprade
         # to the latest LCM.
-        "-include", "unistd.h"],
+        "-include",
+        "unistd.h",
+    ],
+    includes = ["."],
     deps = [":lcm"],
 )

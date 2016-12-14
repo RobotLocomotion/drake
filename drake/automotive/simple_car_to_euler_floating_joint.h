@@ -14,11 +14,9 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
   SimpleCarToEulerFloatingJoint() {
     this->set_name("SimpleCarToEulerFloatingJoint");
     this->DeclareInputPort(systems::kVectorValued,
-                           SimpleCarStateIndices::kNumCoordinates,
-                           systems::kContinuousSampling);
+                           SimpleCarStateIndices::kNumCoordinates);
     this->DeclareOutputPort(systems::kVectorValued,
-                            EulerFloatingJointStateIndices::kNumCoordinates,
-                            systems::kContinuousSampling);
+                            EulerFloatingJointStateIndices::kNumCoordinates);
   }
 
   void EvalOutput(const systems::Context<T>& context,

@@ -5,16 +5,19 @@
 /// robot_plan_t message.
 
 #include <iostream>
+#include <memory>
 
 #include <lcm/lcm-cpp.hpp>
 
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/drake_path.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/constraint/rigid_body_constraint.h"
 
 namespace drake {
 namespace examples {
@@ -32,20 +35,22 @@ using drake::Vector1d;
 const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
 
 int main(int argc, const char* argv[]) {
-  RigidBodyTree<double> tree(
-      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::multibody::joints::kFixed);
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      multibody::joints::kFixed, tree.get());
 
   // Create a basic pointwise IK trajectory for moving the iiwa arm.
   // We start in the zero configuration (straight up).
 
   // TODO(sam.creasey) We should start planning with the robot's
   // current position rather than assuming vertical.
-  VectorXd zero_conf = tree.getZeroConfiguration();
+  VectorXd zero_conf = tree->getZeroConfiguration();
   VectorXd joint_lb = zero_conf - VectorXd::Constant(7, 0.01);
   VectorXd joint_ub = zero_conf + VectorXd::Constant(7, 0.01);
 
-  PostureConstraint pc1(&tree, Vector2d(0, 0.5));
+  PostureConstraint pc1(tree.get(), Vector2d(0, 0.5));
   VectorXi joint_idx(7);
   joint_idx << 0, 1, 2, 3, 4, 5, 6;
   pc1.setJointLimits(joint_idx, joint_lb, joint_ub);
@@ -56,17 +61,17 @@ int main(int argc, const char* argv[]) {
   pos_end << 0.6, 0, 0.325;
   Vector3d pos_lb = pos_end - Vector3d::Constant(0.005);
   Vector3d pos_ub = pos_end + Vector3d::Constant(0.005);
-  WorldPositionConstraint wpc(&tree, tree.FindBodyIndex("iiwa_link_ee"),
+  WorldPositionConstraint wpc(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                               Vector3d::Zero(), pos_lb, pos_ub, Vector2d(1, 3));
 
   // After the end effector constraint is released, apply the straight
   // up configuration again.
-  PostureConstraint pc2(&tree, Vector2d(4, 5.9));
+  PostureConstraint pc2(tree.get(), Vector2d(4, 5.9));
   pc2.setJointLimits(joint_idx, joint_lb, joint_ub);
 
   // Bring back the end effector constraint through second 9 of the
   // demo.
-  WorldPositionConstraint wpc2(&tree, tree.FindBodyIndex("iiwa_link_ee"),
+  WorldPositionConstraint wpc2(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                                Vector3d::Zero(), pos_lb, pos_ub,
                                Vector2d(6, 9));
 
@@ -77,15 +82,15 @@ int main(int argc, const char* argv[]) {
   // the state vector referring to the positions of the joints to be
   // constrained.
   Eigen::VectorXi joint_position_start_idx(1);
-  joint_position_start_idx(0) = tree.FindChildBodyOfJoint("iiwa_joint_2")->
+  joint_position_start_idx(0) = tree->FindChildBodyOfJoint("iiwa_joint_2")->
       get_position_start_index();
-  PostureConstraint pc3(&tree, Vector2d(6, 8));
+  PostureConstraint pc3(tree.get(), Vector2d(6, 8));
   pc3.setJointLimits(joint_position_start_idx, Vector1d(0.7), Vector1d(0.8));
 
 
   const int kNumTimesteps = 5;
   double t[kNumTimesteps] = { 0.0, 2.0, 5.0, 7.0, 9.0 };
-  MatrixXd q0(tree.get_num_positions(), kNumTimesteps);
+  MatrixXd q0(tree->get_num_positions(), kNumTimesteps);
   for (int i = 0; i < kNumTimesteps; i++) {
     q0.col(i) = zero_conf;
   }
@@ -96,14 +101,14 @@ int main(int argc, const char* argv[]) {
   constraint_array.push_back(&pc2);
   constraint_array.push_back(&pc3);
   constraint_array.push_back(&wpc2);
-  IKoptions ikoptions(&tree);
+  IKoptions ikoptions(tree.get());
   int info[kNumTimesteps];
-  MatrixXd q_sol(tree.get_num_positions(), kNumTimesteps);
+  MatrixXd q_sol(tree->get_num_positions(), kNumTimesteps);
   std::vector<std::string> infeasible_constraint;
 
-  inverseKinPointwise(&tree, kNumTimesteps, t, q0, q0, constraint_array.size(),
-                      constraint_array.data(), ikoptions, &q_sol, info,
-                      &infeasible_constraint);
+  inverseKinPointwise(tree.get(), kNumTimesteps, t, q0, q0,
+                      constraint_array.size(), constraint_array.data(),
+                      ikoptions, &q_sol, info, &infeasible_constraint);
   bool info_good = true;
   for (int i = 0; i < kNumTimesteps; ++i) {
     printf("INFO[%d] = %d ", i, info[i]);
@@ -132,7 +137,7 @@ int main(int argc, const char* argv[]) {
     step.utime = t[i] * 1e6;
     step.num_joints = 7;
     for (int j = 0; j < step.num_joints; j++) {
-      step.joint_name.push_back(tree.get_position_name(j));
+      step.joint_name.push_back(tree->get_position_name(j));
       step.joint_position.push_back(q_sol(j, i));
       step.joint_velocity.push_back(0);
       step.joint_effort.push_back(0);

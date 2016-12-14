@@ -14,8 +14,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/diagram_context.h"
-#include "drake/systems/framework/difference_state.h"
-#include "drake/systems/framework/leaf_context.h"
+#include "drake/systems/framework/discrete_state.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
@@ -100,40 +99,40 @@ class DiagramTimeDerivatives : public DiagramContinuousState<T> {
   std::vector<std::unique_ptr<ContinuousState<T>>> substates_;
 };
 
-/// DiagramDifferenceVariables is a version of DifferenceState that owns
-/// the constituent difference states. As the name implies, it is only useful
+/// DiagramDiscreteVariables is a version of DiscreteState that owns
+/// the constituent discrete states. As the name implies, it is only useful
 /// for the discrete updates.
 template <typename T>
-class DiagramDifferenceVariables : public DifferenceState<T> {
+class DiagramDiscreteVariables : public DiscreteState<T> {
  public:
-  explicit DiagramDifferenceVariables(
-      std::vector<std::unique_ptr<DifferenceState<T>>>&& subdifferences)
-      : DifferenceState<T>(Flatten(Unpack(subdifferences))),
+  explicit DiagramDiscreteVariables(
+      std::vector<std::unique_ptr<DiscreteState<T>>>&& subdifferences)
+      : DiscreteState<T>(Flatten(Unpack(subdifferences))),
         subdifferences_(std::move(subdifferences)) {}
 
-  ~DiagramDifferenceVariables() override {}
+  ~DiagramDiscreteVariables() override {}
 
   int num_subdifferences() const {
     return static_cast<int>(subdifferences_.size());
   }
 
-  DifferenceState<T>* get_mutable_subdifference(int index) {
+  DiscreteState<T>* get_mutable_subdifference(int index) {
     DRAKE_DEMAND(index >= 0 && index < num_subdifferences());
     return subdifferences_[index].get();
   }
 
  private:
   std::vector<BasicVector<T>*> Flatten(
-      const std::vector<DifferenceState<T>*>& in) const {
+      const std::vector<DiscreteState<T>*>& in) const {
     std::vector<BasicVector<T>*> out;
-    for (const DifferenceState<T>* xd : in) {
+    for (const DiscreteState<T>* xd : in) {
       const std::vector<BasicVector<T>*>& xd_data = xd->get_data();
       out.insert(out.end(), xd_data.begin(), xd_data.end());
     }
     return out;
   }
 
-  std::vector<std::unique_ptr<DifferenceState<T>>> subdifferences_;
+  std::vector<std::unique_ptr<DiscreteState<T>>> subdifferences_;
 };
 
 }  // namespace internal
@@ -176,7 +175,7 @@ class Diagram : public System<T>,
     return false;
   }
 
-  std::unique_ptr<Context<T>> CreateDefaultContext() const override {
+  std::unique_ptr<Context<T>> AllocateContext() const override {
     const int num_systems = num_subsystems();
     // Reserve inputs as specified during Diagram initialization.
     auto context = std::make_unique<DiagramContext<T>>(num_systems);
@@ -184,7 +183,7 @@ class Diagram : public System<T>,
     // Add each constituent system to the Context.
     for (int i = 0; i < num_systems; ++i) {
       const System<T>* const sys = sorted_systems_[i];
-      auto subcontext = sys->CreateDefaultContext();
+      auto subcontext = sys->AllocateContext();
       auto suboutput = sys->AllocateOutput(*subcontext);
       context->AddSystem(i, std::move(subcontext), std::move(suboutput));
     }
@@ -204,6 +203,35 @@ class Diagram : public System<T>,
 
     context->MakeState();
     return std::unique_ptr<Context<T>>(context.release());
+  }
+
+  void SetDefaultState(const Context<T>& context,
+                       State<T>* state) const override {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+
+    auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
+    DRAKE_DEMAND(diagram_state != nullptr);
+
+    // Set default state of each constituent system.
+    for (int i = 0; i < num_subsystems(); ++i) {
+      auto subcontext = diagram_context->GetSubsystemContext(i);
+      DRAKE_DEMAND(subcontext != nullptr);
+      auto substate = diagram_state->get_mutable_substate(i);
+      DRAKE_DEMAND(substate != nullptr);
+      sorted_systems_[i]->SetDefaultState(*subcontext, substate);
+    }
+  }
+
+  void SetDefaults(Context<T>* context) const final {
+    auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+
+    // Set defaults of each constituent system.
+    for (int i = 0; i < num_subsystems(); ++i) {
+      auto subcontext = diagram_context->GetMutableSubsystemContext(i);
+      sorted_systems_[i]->SetDefaults(subcontext);
+    }
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
@@ -252,15 +280,15 @@ class Diagram : public System<T>,
   }
 
   /// Aggregates the discrete update variables from each subsystem into a
-  /// DiagramDifferenceVariables.
-  std::unique_ptr<DifferenceState<T>> AllocateDifferenceVariables()
+  /// DiagramDiscreteVariables.
+  std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables()
       const override {
-    std::vector<std::unique_ptr<DifferenceState<T>>> sub_differences;
+    std::vector<std::unique_ptr<DiscreteState<T>>> sub_differences;
     for (const System<T>* const system : sorted_systems_) {
-      sub_differences.push_back(system->AllocateDifferenceVariables());
+      sub_differences.push_back(system->AllocateDiscreteVariables());
     }
-    return std::unique_ptr<DifferenceState<T>>(
-        new internal::DiagramDifferenceVariables<T>(
+    return std::unique_ptr<DiscreteState<T>>(
+        new internal::DiagramDiscreteVariables<T>(
             std::move(sub_differences)));
   }
 
@@ -336,6 +364,17 @@ class Diagram : public System<T>,
                                      const System<T>* subsystem) const {
     Context<T>* subcontext = GetMutableSubsystemContext(context, subsystem);
     return subcontext->get_mutable_state();
+  }
+
+  /// Retrieves the state for a particular subsystem from the @p state for the
+  /// entire diagram. Aborts if @p subsystem is not actually a subsystem of this
+  /// diagram.
+  State<T>* GetMutableSubsystemState(State<T>* state,
+                                     const System<T>* subsystem) const {
+    const int i = GetSystemIndexOrAbort(subsystem);
+    auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
+    DRAKE_DEMAND(diagram_state != nullptr);
+    return diagram_state->get_mutable_substate(i);
   }
 
   /// Returns the full path of this Diagram in the tree of Diagrams. Implemented
@@ -452,7 +491,95 @@ class Diagram : public System<T>,
     DoCalcNextUpdateTimeImpl(context, actions);
   }
 
+  /// Creates a deep copy of this Diagram<double>, converting the scalar type
+  /// to AutoDiffXd, and preserving all internal structure. Diagram subclasses
+  /// may wish to override to initialize additional member data, or to return a
+  /// more specific covariant type.
+  /// This is the NVI implementation of ToAutoDiffXd.
+  Diagram<AutoDiffXd>* DoToAutoDiffXd() const override {
+    return ConvertScalarType<AutoDiffXd>([](const System<double>& subsystem) {
+             return subsystem.ToAutoDiffXd();
+           })
+        .release();
+  }
+
  private:
+  /// Uses this Diagram<double> to manufacture a Diagram<NewType>, given a
+  /// @p converter for subsystems from System<double> to System<NewType>.
+  /// SFINAE overload for std::is_same<T, double>.
+  ///
+  /// @tparam NewType The scalar type to which to convert.
+  /// @tparam T1 SFINAE boilerplate.
+  template <typename NewType, typename T1 = T>
+  std::unique_ptr<Diagram<NewType>> ConvertScalarType(
+      std::function<std::unique_ptr<System<NewType>>(
+          const System<
+              std::enable_if_t<std::is_same<T1, double>::value, double>>&)>
+          converter) const {
+    std::vector<std::unique_ptr<System<NewType>>> new_systems;
+    // Recursively convert all the subsystems.
+    std::map<const System<T1>*, const System<NewType>*> old_to_new_map;
+    for (const auto& old_system : registered_systems_) {
+      new_systems.push_back(converter(*old_system));
+      old_to_new_map[old_system.get()] = new_systems.back().get();
+    }
+
+    // Set up the blueprint.
+    typename Diagram<NewType>::Blueprint blueprint;
+    // Make all the inputs and outputs.
+    for (const PortIdentifier& id : input_port_ids_) {
+      const System<NewType>* new_system = old_to_new_map[id.first];
+      const int port = id.second;
+      blueprint.input_port_ids.emplace_back(new_system, port);
+    }
+    for (const PortIdentifier& id : output_port_ids_) {
+      const System<NewType>* new_system = old_to_new_map[id.first];
+      const int port = id.second;
+      blueprint.output_port_ids.emplace_back(new_system, port);
+    }
+    // Make all the connections.
+    for (const auto& edge : dependency_graph_) {
+      const PortIdentifier& old_dest = edge.first;
+      const System<NewType>* const dest_system = old_to_new_map[old_dest.first];
+      const int dest_port = old_dest.second;
+      const typename Diagram<NewType>::PortIdentifier new_dest{dest_system,
+                                                               dest_port};
+
+      const PortIdentifier& old_src = edge.second;
+      const System<NewType>* const src_system = old_to_new_map[old_src.first];
+      const int src_port = old_src.second;
+      const typename Diagram<NewType>::PortIdentifier new_src{src_system,
+                                                              src_port};
+
+      blueprint.dependency_graph[new_dest] = new_src;
+    }
+    // Preserve the sort order.
+    for (const System<T1>* system : sorted_systems_) {
+      blueprint.sorted_systems.push_back(old_to_new_map[system]);
+    }
+
+    // Construct a new Diagram of type NewType from the blueprint.
+    std::unique_ptr<Diagram<NewType>> new_diagram(
+        new Diagram<NewType>(blueprint));
+    new_diagram->Own(std::move(new_systems));
+    return std::move(new_diagram);
+  }
+
+  /// Aborts at runtime.
+  /// SFINAE overload for !std::is_same<T, double>.
+  ///
+  /// @tparam NewType The scalar type to which to convert.
+  /// @tparam T1 SFINAE boilerplate.
+  template <typename NewType, typename T1 = T>
+  std::unique_ptr<Diagram<NewType>> ConvertScalarType(
+      std::function<std::unique_ptr<System<NewType>>(
+          const System<
+              std::enable_if_t<!std::is_same<T1, double>::value, double>>&)>
+          converter) const {
+    DRAKE_ABORT_MSG(
+        "Scalar type conversion is only supported from Diagram<double>.");
+  }
+
   // Aborts for scalar types that are not numeric, since there is no reasonable
   // definition of "next update time" outside of the real line.
   //
@@ -626,8 +753,7 @@ class Diagram : public System<T>,
     const auto& subsystem_descriptor = subsystem_ports[port_index];
     SystemPortDescriptor<T> descriptor(
         this, kInputPort, this->get_num_input_ports(),
-        subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size(),
-        subsystem_descriptor.get_sampling());
+        subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size());
     this->DeclareInputPort(descriptor);
   }
 
@@ -647,8 +773,7 @@ class Diagram : public System<T>,
     const auto& subsystem_descriptor = subsystem_ports[port_index];
     SystemPortDescriptor<T> descriptor(
         this, kOutputPort, this->get_num_output_ports(),
-        subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size(),
-        subsystem_descriptor.get_sampling());
+        subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size());
     this->DeclareOutputPort(descriptor);
   }
 
@@ -825,19 +950,19 @@ class Diagram : public System<T>,
   /// Handles Update calbacks that were registered in DoCalcNextUpdateTime.
   /// Dispatches the Publish events to the subsystems that requested them.
   void HandleUpdate(
-      const Context<T>& context, DifferenceState<T>* update,
+      const Context<T>& context, DiscreteState<T>* update,
       const std::vector<std::pair<int, UpdateActions<T>>>& sub_actions) const {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
     auto diagram_differences =
-        dynamic_cast<internal::DiagramDifferenceVariables<T>*>(update);
+        dynamic_cast<internal::DiagramDiscreteVariables<T>*>(update);
     DRAKE_DEMAND(diagram_differences != nullptr);
 
     // As a baseline, initialize all the difference variables to their
     // current values.
     for (int i = 0; i < diagram_differences->size(); ++i) {
-      diagram_differences->get_mutable_difference_state(i)->set_value(
-          context.get_difference_state(i)->get_value());
+      diagram_differences->get_mutable_discrete_state(i)->set_value(
+          context.get_discrete_state(i)->get_value());
     }
 
     // Then, allow the systems that wanted to update a difference variable
@@ -851,15 +976,16 @@ class Diagram : public System<T>,
       const Context<T>* subcontext =
           diagram_context->GetSubsystemContext(index);
       DRAKE_DEMAND(subcontext != nullptr);
-      DifferenceState<T>* subdifference =
+      DiscreteState<T>* subdifference =
           diagram_differences->get_mutable_subdifference(index);
       DRAKE_DEMAND(subdifference != nullptr);
 
       // Do that system's update actions.
       for (const DiscreteEvent<T>& event : action_details.events) {
         if (event.action == DiscreteEvent<T>::kUpdateAction) {
-          sorted_systems_[index]->EvalDifferenceUpdates(*subcontext, event,
-                                                        subdifference);
+          sorted_systems_[index]->EvalDiscreteVariableUpdates(*subcontext,
+                                                              event,
+                                                              subdifference);
         }
       }
     }
@@ -894,7 +1020,14 @@ class Diagram : public System<T>,
   std::vector<PortIdentifier> input_port_ids_;
   std::vector<PortIdentifier> output_port_ids_;
 
+  // For all T, Diagram<T> considers DiagramBuilder<T> a friend, so that the
+  // builder can set the internal state correctly.
   friend class DiagramBuilder<T>;
+
+  // For all T, Diagram<T> considers Diagram<double> a friend, so that
+  // Diagram<double> can provide transmogrification methods to more flavorful
+  // scalar types.  See Diagram<T>::ConvertScalarType.
+  friend class Diagram<double>;
 };
 
 }  // namespace systems

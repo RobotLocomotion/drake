@@ -1,3 +1,5 @@
-add_executable(testConstraintConstructor testConstraintConstructor.cpp)
-target_link_libraries(testConstraintConstructor drakeRBM drakeRigidBodyConstraint)
-drake_add_test(NAME testConstraintConstructor WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" COMMAND testConstraintConstructor)
+drake_add_cc_test(NAME rigid_body_constraint_test)
+target_link_libraries(rigid_body_constraint_test
+    drakeMultibodyParsers
+    drakeRBM
+    drakeRigidBodyConstraint)
