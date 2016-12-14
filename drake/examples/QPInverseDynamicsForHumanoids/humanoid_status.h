@@ -98,7 +98,7 @@ class HumanoidStatus {
    */
   explicit HumanoidStatus(const RigidBodyTree<double>& robot)
       : robot_(&robot),
-        cache_(robot_->bodies),
+        cache_(robot_->CreateKinematicsCache()),
         // TODO(siyuan.feng): The names of the links are hard coded for
         // Valkyrie, and they should be specified in some separate config file.
         bodies_of_interest_{

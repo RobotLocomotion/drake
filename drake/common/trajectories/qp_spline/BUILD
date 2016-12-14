@@ -8,7 +8,9 @@ cc_library(
     srcs = ["continuity_constraint.cc"],
     hdrs = ["continuity_constraint.h"],
     linkstatic = 1,
-    deps = ["//drake/common"],
+    deps = [
+        "//drake/common",
+    ],
 )
 
 cc_library(
@@ -39,5 +41,19 @@ cc_library(
     srcs = ["value_constraint.cc"],
     hdrs = ["value_constraint.h"],
     linkstatic = 1,
-    deps = ["//drake/common"],
+    deps = [
+        "//drake/common",
+    ],
+)
+
+# === test/ ===
+
+cc_test(
+    name = "spline_generation_test",
+    size = "small",
+    srcs = ["test/spline_generation_test.cc"],
+    deps = [
+        ":spline_generation",
+        "@gtest//:main",
+    ],
 )

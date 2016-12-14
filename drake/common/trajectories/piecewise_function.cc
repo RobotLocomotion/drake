@@ -1,7 +1,10 @@
 #include "drake/common/trajectories/piecewise_function.h"
 
 #include <algorithm>
+#include <cmath>
 #include <stdexcept>
+
+#include "drake/common/drake_assert.h"
 
 using std::uniform_real_distribution;
 using std::vector;
@@ -10,8 +13,8 @@ PiecewiseFunction::PiecewiseFunction(
     std::vector<double> const& segment_times_in)
     : segment_times(segment_times_in) {
   for (int i = 1; i < getNumberOfSegments() + 1; i++) {
-    if (segment_times[i] < segment_times[i - 1])
-      throw std::runtime_error("times must be increasing");
+    if (segment_times[i] - segment_times[i - 1] < kEpsilonTime)
+      throw std::runtime_error("times must be increasing.");
   }
 }
 
@@ -47,17 +50,34 @@ double PiecewiseFunction::getEndTime() const {
   return getEndTime(getNumberOfSegments() - 1);
 }
 
+int PiecewiseFunction::GetSegmentIndexRecursive(
+    double time, int start, int end) const {
+  DRAKE_DEMAND(end >= start);
+  DRAKE_DEMAND(end < static_cast<int>(segment_times.size()));
+  DRAKE_DEMAND(start >= 0);
+  DRAKE_DEMAND(time <= segment_times[end] && time >= segment_times[start]);
+
+  int mid = (start + end) / 2;
+
+  // one or two numbers
+  if (end - start <= 1)
+    return start;
+
+  if (time < segment_times[mid])
+    return GetSegmentIndexRecursive(time, start, mid);
+  else if (time > segment_times[mid])
+    return GetSegmentIndexRecursive(time, mid, end);
+  else
+    return mid;
+}
+
 int PiecewiseFunction::getSegmentIndex(double t) const {
+  if (segment_times.empty())
+    return 0;
   // clip to min/max times
   t = std::min(std::max(t, getStartTime()), getEndTime());
-
-  int segment_index = 0;
-  // TODO(tkoolen): something smarter than this linear search
-  while (t >= getEndTime(segment_index) &&
-         segment_index < getNumberOfSegments() - 1)
-    segment_index++;
-
-  return segment_index;
+  return GetSegmentIndexRecursive(
+      t, 0, static_cast<int>(segment_times.size() - 1));
 }
 
 const std::vector<double>& PiecewiseFunction::getSegmentTimes() const {

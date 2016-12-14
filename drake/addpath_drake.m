@@ -7,13 +7,13 @@ function [] = addpath_drake()
 
 root = fileparts(mfilename('fullpath'));
 
-if ~exist('pods_get_base_path','file')
+if ~exist('drake_get_base_path','file')
   % The Drake build process produces some MATLAB files, and those files are
   % not already on the MATLAB path, so we need to find them first.
   addBuildProductsToPath(root);
 end
 
-if ~exist('pods_get_base_path','file')
+if ~exist('drake_get_base_path','file')
   error(['The Drake build outputs are not on the MATLAB path, and could ' ...
          'not be auto-detected. Please add the build output directory ' ...
          '"matlab" to the path, then re-run addpath_drake.']);
@@ -87,7 +87,7 @@ if (strcmp(computer('arch'),'maci64'))
 end
 
 if ispc
-  setenv('PATH',[getenv('PATH'),';',GetFullPath(pods_get_lib_path),';',fullfile(get_drake_binary_dir(),'lib','Release'),';',fullfile(get_drake_binary_dir(),'lib')]);
+  setenv('PATH',[getenv('PATH'),';',GetFullPath(drake_get_lib_path),';',fullfile(get_drake_binary_dir(),'lib','Release'),';',fullfile(get_drake_binary_dir(),'lib')]);
 end
 
 
@@ -97,7 +97,7 @@ end
 % for example, tried to load the LCMGL jar after creating an lcm object. Now,
 % we instead just add all available .jars to the classpath at startup. See
 % also https://github.com/mitdrc/drc/issues/2100
-jarfiledir = fullfile(pods_get_base_path(), 'share', 'java');
+jarfiledir = fullfile(drake_get_base_path(), 'share', 'java');
 if exist(jarfiledir, 'dir')
  javaaddpathIfNew(jarfiledir);
  for jarfile = dir(fullfile(jarfiledir, '*.jar'))';

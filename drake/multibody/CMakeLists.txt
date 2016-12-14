@@ -10,6 +10,7 @@ drake_install_pkg_config_file(drake-xml-util
 
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   kinematics_cache.cc
+  package_map.cc
   parser_model_instance_id_table.cc
   parser_common.cc
   parser_sdf.cc
@@ -32,16 +33,17 @@ drake_install_headers(
   kinematics_cache.h
   kinematics_cache-inl.h
   material_map.h
-  pose_map.h
-  rigid_body_actuator.h
-  rigid_body_frame.h
-  rigid_body.h
-  rigid_body_tree.h
-  parser_model_instance_id_table.h
+  package_map.h
   parser_common.h
+  parser_model_instance_id_table.h
   parser_sdf.h
   parser_urdf.h
+  pose_map.h
+  rigid_body.h
+  rigid_body_actuator.h
+  rigid_body_frame.h
   rigid_body_loop.h
+  rigid_body_tree.h
   rigid_body_tree_construction.h)
 
 drake_install_pkg_config_file(drake-rbm
@@ -92,4 +94,7 @@ add_subdirectory(joints)
 add_subdirectory(rigid_body_plant)
 add_subdirectory(rigid_body_system1)
 add_subdirectory(shapes)
-add_subdirectory(test)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

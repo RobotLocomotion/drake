@@ -2,8 +2,9 @@
 Bazel build system
 ******************
 
-Drake is experimenting with the Bazel build system, but we do not officially
-support Bazel builds.  For more information, see:
+The Bazel build system is officially supported for a subset of Drake on
+Ubuntu Xenial, and is being tested on Ubuntu Trusty and OS X.
+For more information, see:
 
  * https://bazel.build/
  * https://github.com/RobotLocomotion/drake/issues/3129
@@ -11,15 +12,14 @@ support Bazel builds.  For more information, see:
 Bazel Installation
 ==================
 
-Refer to the Bazel installation instructions:
+The Ubuntu Xenial platform setup process installs Bazel for you. On other
+platforms, refer to the Bazel installation instructions. We use Bazel 0.4.2.
 https://bazel.build/versions/master/docs/install.html
-
-We currently develop with Bazel 0.3.1 using Ubuntu Xenial.
 
 Drake clone and platform setup
 ==============================
 
-The one-time platform setup is the same as with CMake build:
+The one-time platform setup is the same as for a CMake build:
 
  - Start with a **git clone** of drake, per the :ref:`Getting Drake
    <getting_drake>` instructions.
@@ -27,57 +27,79 @@ The one-time platform setup is the same as with CMake build:
  - Continue with the *"Mandatory platform specific instructions"* on the same
    page.
 
-   - Note that **only** the software installation steps are required.
-   - Do not set extra environment variables (Bazel ignores them).
-   - Be sure that **ccache is not on your default $PATH**, e.g.,
-     ``env | grep ccache`` is empty.
+When using Bazel, be sure that **ccache is not on your default $PATH**, e.g.,
+``env | grep ccache`` is empty.
 
 Developing Drake using Bazel
 ============================
 
 To build or test Drake, run **bazel build** or **bazel test** with the desired
-target label.
+target label (and optional configuration options if desired).  We give some
+typical examples below; for more reading about target patterns, see:
+https://bazel.build/versions/master/docs/bazel-user-manual.html#target-patterns.
 
-All of the below commands should be run from the **drake-distro** working
-directory, i.e., at the root directory of the git clone.
+Cheat sheet for operating on the entire project::
 
-Build the entire project::
+  cd /path/to/drake-distro
+  bazel build //...                 # Build the entire project.
+  bazel test //...                  # Build and test the entire project.
+  bazel build --config=clang //...  # Build the entire project using clang (on Ubuntu).
 
-  bazel build //...
+- The "``//``" means "starting from the root of the project".
+- The "``...``" means "everything including the subdirectories' ``BUILD`` files".
 
-Build only the systems (sub)directories::
+  - Contrast with, e.g., the "``bazel build common:*``" explained below, where
+    only targets declared *directly* in ``drake/common/BUILD`` are compiled,
+    and not the targets in ``drake/common/trajectories/BUILD``.  The "``*``"
+    matches targets in that directory; the "``...``" also matches down into
+    subdirectories.
 
-  bazel build drake/systems/...
+You may use relative pathnames if your shell's working directory is not at the
+project root::
 
-Build and test the entire project::
+  cd /path/to/drake-distro/drake/common
+  bazel build ...                   # Build everything in common and its child subdirectories.
+  bazel test ...                    # Test everything in common and its child subdirectories.
+  bazel build //...                 # Build the entire project.
+  bazel test //...                  # Build and test the entire project.
 
-  bazel test //...
+- As before, the "``...``" above means "everything including subdirectories".
 
-Run one specific test::
+  - In the first two lines we did not precede "``...``" with "``//``", so the
+    search begins in the current directory (``common``) and not from the
+    ``drake-distro`` root.
+  - In the second two lines we used the "``//``" prefix to specify the project
+    root, so we're back to operating on the entire project even though
+    ``common`` is still our shell's current working directory.
 
-  bazel test drake/systems/framework/test/diagram_test
+Cheat sheet for operating on specific portions of the project::
 
-Run one specific test in debug mode (including all dependencies also compiled
-in debug mode)::
+  cd /path/to/drake-distro/drake
+  bazel build common/...                               # Build everything in common and its child subdirectories.
+  bazel build common                                   # Build libcommon.
+  bazel build common:polynomial                        # Build libpolynomial.
+  bazel build common:*                                 # Build everything in common but NOT its children.
 
-  bazel test -c dbg drake/systems/framework/test/diagram_test
+  bazel test common:polynomial_test                    # Run one test.
+  bazel test -c dbg common:polynomial_test             # Run one test in debug mode.
+  bazel test --config=memcheck common:polynomial_test  # Run one test under memcheck (valgrind).
+  bazel test --config=asan common:polynomial_test      # Run one test under AddressSanitizer.
+  bazel build -c dbg common:polynomial_test && \
+    gdb ../bazel-bin/drake/common/polynomial_test      # Run one test under gdb.
 
-Run a test under memcheck::
+- The "``:``" syntax separates target names from the directory path of the
+  ``BUILD`` file they appear in.  In this case, for example,
+  ``drake/commmon/BUILD`` specifies ``cc_test(name = "polynomial_test")``.
+- Note that the configuration switches (``-c`` and ``--config``) influence the
+  entire command.  For example, running a test in ``dbg`` mode means that its
+  prerequisite libraries are also compiled and linked in ``dbg`` mode.
 
-  bazel test --config=memcheck drake/systems/framework/test/diagram_test
+Updating BUILD files
+====================
 
-Run a test under AddressSanitizer::
+Please use the "``buildifier``" tool to format edits to ``BUILD`` files (in the
+same spirit as ``clang-format`` formatting C++ code)::
 
-  bazel test --config=asan drake/systems/framework/test/diagram_test
-
-Build the entire project using clang (on Ubuntu)::
-
-  bazel build --config=clang ...
-
-Run one of the compiled programs manually, from the build outputs directory
-(note that ``bazel-bin`` is a directory name here)::
-
-  bazel-bin/drake/systems/framework/test/diagram_test
-
-For more reading about target patterns, see:
-https://bazel.build/versions/master/docs/bazel-user-manual.html#target-patterns
+  cd /path/to/drake-distro
+  tools/buildifier.sh                     # By default, reformats all BUILD files.
+  tools/buildifier.sh drake/common/BUILD  # Only reformat one file.

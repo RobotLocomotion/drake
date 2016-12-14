@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="robot" default="hsrb3s" />
+
+  <param name="robot_description"
+         command="$(find xacro)/xacro.py '$(find hsrb_description)/robots/$(arg robot).urdf.xacro'" />
+
+  <group ns="drake">
+    <param name="penetration_stiffness" type="double" value="4000" />
+    <param name="penetration_damping" type="double" value="300" />
+    <param name="friction_coefficient" type="double" value="10" />
+  </group>
+</launch>

@@ -2,8 +2,9 @@
 
 #ifdef BULLET_COLLISION
 #include "drake/multibody/collision/bullet_model.h"
-#endif
+#else
 #include "drake/multibody/collision/unusable_model.h"
+#endif
 
 using std::unique_ptr;
 
@@ -16,8 +17,9 @@ const bitmask DEFAULT_GROUP(1);
 unique_ptr<Model> newModel() {
 #ifdef BULLET_COLLISION
   return unique_ptr<Model>(new BulletModel());
-#endif
+#else
   return unique_ptr<Model>(new UnusableModel());
+#endif
 }
 
 }  // namespace DrakeCollision

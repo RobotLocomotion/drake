@@ -14,11 +14,11 @@
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/pass_through.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/pass_through.h"
 
 #include "lcmtypes/bot_core/atlas_command_t.hpp"
 #include "lcmtypes/bot_core/robot_state_t.hpp"
@@ -96,11 +96,11 @@ int main(int argc, const char** argv) {
   }
 
   // LCM outputs.
-  std::vector<RigidBodyFrame> force_torque_sensor_info = {
-      RigidBodyFrame("leftFootFTSensor", tree.FindBody("leftFoot"),
-                     Isometry3<double>::Identity()),
-      RigidBodyFrame("rightFootFTSensor", tree.FindBody("rightFoot"),
-                     Isometry3<double>::Identity())};
+  std::vector<RigidBodyFrame<double>> force_torque_sensor_info = {
+      RigidBodyFrame<double>("leftFootFTSensor", tree.FindBody("leftFoot"),
+                             Isometry3<double>::Identity()),
+      RigidBodyFrame<double>("rightFootFTSensor", tree.FindBody("rightFoot"),
+                             Isometry3<double>::Identity())};
 
   auto& robot_state_encoder = *builder.AddSystem<RobotStateEncoder>(
       plant.get_rigid_body_tree(), force_torque_sensor_info);

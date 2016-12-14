@@ -26,7 +26,7 @@ using DrakeShapes::Mesh;
 using DrakeShapes::Sphere;
 
 // Verifies that @p message is correct.
-void VerifyLoadMessage(const drake::lcmt_viewer_load_robot& message) {
+void VerifyLoadMessage(const std::vector<uint8_t>& message_bytes) {
   // Instantiates the expected message.
   drake::lcmt_viewer_load_robot expected_message;
   expected_message.num_links = 6;
@@ -184,15 +184,12 @@ void VerifyLoadMessage(const drake::lcmt_viewer_load_robot& message) {
   }
 
   // Ensures both messages have the same length.
-  EXPECT_EQ(expected_message.getEncodedSize(), message.getEncodedSize());
+  EXPECT_EQ(expected_message.getEncodedSize(), message_bytes.size());
   int byte_count = expected_message.getEncodedSize();
 
-  // Serializes both messages.
+  // Serialize the expected message.
   std::vector<uint8_t> expected_message_bytes(byte_count);
   expected_message.encode(expected_message_bytes.data(), 0, byte_count);
-
-  std::vector<uint8_t> message_bytes(byte_count);
-  message.encode(message_bytes.data(), 0, byte_count);
 
   // Verifies that the messages are equal.
   EXPECT_EQ(expected_message_bytes, message_bytes);
@@ -488,10 +485,8 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   dut.Publish(*context.get());
 
   // Verifies that the correct messages were actually transmitted.
-  // TODO(liang.fok) Update the following tests to obtain the last published
-  // message from the mock LCM object.
-  VerifyLoadMessage(dut.get_load_message());
-  VerifyDrawMessage(dut.get_draw_message_bytes());
+  VerifyLoadMessage(lcm.get_last_published_message("DRAKE_VIEWER_LOAD_ROBOT"));
+  VerifyDrawMessage(lcm.get_last_published_message("DRAKE_VIEWER_DRAW"));
 }
 
 }  // namespace

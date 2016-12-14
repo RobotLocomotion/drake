@@ -45,6 +45,9 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
   LuenbergerObserver(const LuenbergerObserver<T>&) = delete;
   LuenbergerObserver& operator=(const LuenbergerObserver<T>&) = delete;
 
+  /// This system is not direct feedthrough.
+  bool has_any_direct_feedthrough() const override { return false; }
+
   /// Advance the state estimate using forward dynamics and the observer gains.
   void EvalTimeDerivatives(
       const systems::Context<T>& context,
@@ -54,7 +57,16 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
   void EvalOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override;
 
+  /// Provides access to the observer gain.
+  const Eigen::MatrixXd& observer_gain() { return observer_gain_; }
+
+  /// Provides access via the short-hand name, L, too.
+  const Eigen::MatrixXd& L() { return observer_gain_; }
+
  private:
+  std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
+      const override;
+
   const std::unique_ptr<systems::System<T>> observed_system_;
   const Eigen::MatrixXd observer_gain_;  // Gain matrix (often called "L").
 

@@ -350,6 +350,22 @@ else % then try to evaluate the dependency now...
       end
       conf.avl_enabled = ~isempty(conf.avl);
 
+    case 'ffmpeg'
+      if ~isfield(conf,'ffmpeg') || isempty(conf.ffmpeg)
+        path_to_ffmpeg = getCMakeParam('FFMPEG_EXECUTABLE');
+        if isempty(path_to_ffmpeg) || strcmp(path_to_ffmpeg,'FFMPEG_EXECUTABLE-NOTFOUND')
+          if nargout<1
+            disp(' ');
+            disp(' FFmpeg support is disabled.  To enable it, install FFmpeg or Libav, then re-run CMake.');
+            disp(' ');
+          end
+          conf.ffmpeg = '';
+        else
+          conf.ffmpeg = path_to_ffmpeg;
+        end
+      end
+      conf.ffmpeg_enabled = ~isempty(conf.ffmpeg);
+
     case 'xfoil'
       if ~isfield(conf,'xfoil') || isempty(conf.xfoil)
         path_to_xfoil = getCMakeParam('XFOIL_EXECUTABLE');

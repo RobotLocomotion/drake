@@ -3,9 +3,39 @@ import numpy as np
 import pydrake
 from pydrake.solvers import ik
 
+def load_robot_from_urdf(urdf_file):
+    """
+    This function demonstrates how to pass a complete
+    set of arguments to Drake's URDF parser.  It is also
+    possible to load a robot with a much simpler syntax
+    that uses default values, such as:
+
+      robot = pydrake.rbtree.RigidBodyTree(urdf_file)
+
+    """
+    urdf_string = open(urdf_file).read()
+    base_dir = os.path.dirname(urdf_file)
+    package_map = pydrake.rbtree.PackageMap()
+    weld_frame = None
+    floating_base_type = pydrake.rbtree.kRollPitchYaw
+
+    # Load our model from URDF
+    robot = pydrake.rbtree.RigidBodyTree()
+
+    pydrake.rbtree.AddModelInstanceFromUrdfStringSearchingInRosPackages(
+      urdf_string,
+      package_map,
+      base_dir,
+      floating_base_type,
+      weld_frame,
+      robot)
+
+    return robot
+
+urdf_file = os.path.join(pydrake.getDrakePath(), "examples/PR2/pr2.urdf")
+
 # Load our model from URDF
-robot = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(),
-                                                  "examples/PR2/pr2.urdf"))
+robot = load_robot_from_urdf(urdf_file)
 
 # Add a convenient frame, positioned 0.1m away from the r_gripper_palm_link
 # along that link's x axis

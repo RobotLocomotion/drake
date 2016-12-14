@@ -1,0 +1,9 @@
+package drake;
+
+struct lcmt_schunk_wsg_command
+{
+  int64_t utime;  //< The timestamp in microseconds.
+
+  double target_position_mm;
+  double force;
+}

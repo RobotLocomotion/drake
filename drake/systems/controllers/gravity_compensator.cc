@@ -9,10 +9,8 @@ namespace systems {
 template <typename T>
 GravityCompensator<T>::GravityCompensator(const RigidBodyTree<T>& tree)
     : tree_(tree) {
-  this->DeclareInputPort(kVectorValued, tree.get_num_positions(),
-                         kContinuousSampling);
-  this->DeclareOutputPort(kVectorValued, tree_.get_num_actuators(),
-                          kContinuousSampling);
+  this->DeclareInputPort(kVectorValued, tree.get_num_positions());
+  this->DeclareOutputPort(kVectorValued, tree_.get_num_actuators());
   if (tree.get_num_positions() != tree_.get_num_actuators()) {
     std::stringstream msg;
     msg << "The model is under-actuated!\n"

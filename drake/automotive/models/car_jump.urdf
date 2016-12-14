@@ -1,3 +1,4 @@
+<?xml version="1.0" ?>
 <!--
   A simple world URDF composed of two ramps with cars underneath.
 -->
@@ -8,10 +9,7 @@
   <material name="ramp">
     <color rgba="0.93333333333 0.2 0.2 1"/>
   </material>
-
-  <link name="world_">
-  </link>
-
+  <link name="world_"/>
   <link name="floor">
     <visual>
       <material name="terrain"/>
@@ -27,7 +25,6 @@
       </geometry>
     </collision>
   </link>
-
   <link name="ramp_1">
     <visual>
       <material name="ramp"/>
@@ -43,7 +40,6 @@
       </geometry>
     </collision>
   </link>
-
   <link name="ramp_2">
     <visual>
       <material name="ramp"/>
@@ -59,40 +55,38 @@
       </geometry>
     </collision>
   </link>
-
   <link name="car_1">
     <visual>
-      <origin xyz="0 -2 0" rpy="0 0 1.57079632679"/>
+      <origin rpy="0 0 1.57079632679" xyz="0 -2 0"/>
       <geometry>
-        <mesh filename="prius/prius.dae" scale="1" />
+        <mesh filename="prius/prius.dae" scale="1"/>
       </geometry>
     </visual>
   </link>
   <link name="car_2">
     <visual>
-      <origin xyz="0 -2 0" rpy="0 0 1.57079632679"/>
+      <origin rpy="0 0 1.57079632679" xyz="0 -2 0"/>
       <geometry>
-        <mesh filename="prius/prius.dae" scale="1" />
+        <mesh filename="prius/prius.dae" scale="1"/>
       </geometry>
     </visual>
   </link>
   <link name="car_3">
     <visual>
-      <origin xyz="0 -2 0" rpy="0 0 1.57079632679"/>
+      <origin rpy="0 0 1.57079632679" xyz="0 -2 0"/>
       <geometry>
-        <mesh filename="prius/prius.dae" scale="1" />
+        <mesh filename="prius/prius.dae" scale="1"/>
       </geometry>
     </visual>
   </link>
   <link name="car_4">
     <visual>
-      <origin xyz="0 -2 0" rpy="0 0 1.57079632679"/>
+      <origin rpy="0 0 1.57079632679" xyz="0 -2 0"/>
       <geometry>
-        <mesh filename="prius/prius.dae" scale="1" />
+        <mesh filename="prius/prius.dae" scale="1"/>
       </geometry>
     </visual>
   </link>
-
   <joint name="world_to_floor" type="fixed">
     <parent link="world_"/>
     <child link="floor"/>

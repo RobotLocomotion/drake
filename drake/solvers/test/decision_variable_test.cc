@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/math/matrix_util.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -13,16 +14,45 @@ namespace solvers {
  */
 GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   MathematicalProgram prog;
-  auto X1 = prog.AddContinuousVariables(2, 3, std::vector<std::string>(6, "X"));
-  EXPECT_EQ(prog.num_vars(), 6);
-  auto S1 =
-      prog.AddSymmetricContinuousVariables(3, std::vector<std::string>(6, "S"));
-  EXPECT_EQ(prog.num_vars(), 12);
+  auto X1 = prog.AddContinuousVariables(2, 3, "X");
+  static_assert(decltype(X1)::RowsAtCompileTime == Eigen::Dynamic &&
+                    decltype(X1)::ColsAtCompileTime == Eigen::Dynamic,
+                "should be a dynamic sized matrix");
+  std::stringstream msg_buff1;
+  msg_buff1 << X1 << std::endl;
+  EXPECT_EQ(msg_buff1.str(), "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
+  EXPECT_EQ(prog.num_vars(), 6u);
+  EXPECT_FALSE(math::IsSymmetric(X1));
+  auto S1 = prog.AddSymmetricContinuousVariables(3, "S");
+  static_assert(decltype(S1)::RowsAtCompileTime == Eigen::Dynamic &&
+                    decltype(S1)::ColsAtCompileTime == Eigen::Dynamic,
+                "should be a dynamic sized matrix");
+  std::stringstream msg_buff2;
+  msg_buff2 << S1 << std::endl;
+  EXPECT_EQ(
+      msg_buff2.str(),
+      "S(0,0) S(1,0) S(2,0)\nS(1,0) S(1,1) S(2,1)\nS(2,0) S(2,1) S(2,2)\n");
+  EXPECT_EQ(prog.num_vars(), 12u);
+  EXPECT_TRUE(math::IsSymmetric(S1));
   auto x1 = prog.AddContinuousVariables(6, "x");
-  EXPECT_EQ(prog.num_vars(), 18);
-  std::array<std::string, 6> X_name = {{"X", "X", "X", "X", "X", "X"}};
+  static_assert(decltype(x1)::RowsAtCompileTime == Eigen::Dynamic &&
+                    decltype(x1)::ColsAtCompileTime == 1,
+                "should be a dynamic sized matrix");
+  std::stringstream msg_buff3;
+  msg_buff3 << x1 << std::endl;
+  EXPECT_EQ(msg_buff3.str(), "x0\nx1\nx2\nx3\nx4\nx5\n");
+  EXPECT_EQ(prog.num_vars(), 18u);
+  EXPECT_FALSE(math::IsSymmetric(x1));
+  std::array<std::string, 6> X_name = {{"X1", "X2", "X3", "X4", "X5", "X6"}};
   auto X2 = prog.AddContinuousVariables<2, 3>(X_name);
-  EXPECT_EQ(prog.num_vars(), 24);
+  std::stringstream msg_buff4;
+  msg_buff4 << X2 << std::endl;
+  EXPECT_EQ(msg_buff4.str(), "X1 X3 X5\nX2 X4 X6\n");
+  static_assert(decltype(X2)::RowsAtCompileTime == 2 &&
+                    decltype(X2)::ColsAtCompileTime == 3,
+                "should be a static matrix of type 2 x 3");
+  EXPECT_EQ(prog.num_vars(), 24u);
+  EXPECT_FALSE(math::IsSymmetric(X2));
   Eigen::Matrix<double, 6, 1> x_value;
   x_value << 0, 2, 4, 6, 8, 10;
   Eigen::Matrix<double, 6, 1> s_value;
@@ -36,14 +66,14 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   X_expected.resize(2, 3);
 
   // Test if the values in the decision variables are correct.
-  EXPECT_TRUE(CompareMatrices(GetSolution(X1),
-                              X_expected, 1E-14, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(GetSolution(S1),
-                              S_expected, 1E-14, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(GetSolution(x1), x_value,
-                              1E-14, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(GetSolution(X2),
-                              X_expected, 1E-14, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(GetSolution(X1), X_expected, 1E-14,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(GetSolution(S1), S_expected, 1E-14,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(GetSolution(x1), x_value, 1E-14,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(GetSolution(X2), X_expected, 1E-14,
+                              MatrixCompareType::absolute));
 
   // Test constructing VariableList.
   VariableList var_list1({X1, S1});
@@ -66,9 +96,8 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   X_assembled << X1, X2;
   Eigen::Matrix<double, 2, 6> X_assembled_expected;
   X_assembled_expected << X_expected, X_expected;
-  EXPECT_TRUE(CompareMatrices(GetSolution(X_assembled),
-                              X_assembled_expected, 1E-10,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(GetSolution(X_assembled), X_assembled_expected,
+                              1E-10, MatrixCompareType::absolute));
 
   for (int i = 0; i < 2; ++i) {
     for (int j = 0; j < 3; ++j) {
@@ -78,12 +107,12 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   }
 
   // Test size() and num_unique_variables() functions of VariableList.
-  EXPECT_EQ(VariableList({X1}).num_unique_variables(), 6);
-  EXPECT_EQ(VariableList({X1}).size(), 6);
-  EXPECT_EQ(VariableList({X1, X1}).num_unique_variables(), 6);
-  EXPECT_EQ(VariableList({X1, X1}).size(), 12);
-  EXPECT_EQ(VariableList({X1, X1.row(1)}).num_unique_variables(), 6);
-  EXPECT_EQ(VariableList({X1, X1.row(1)}).size(), 9);
+  EXPECT_EQ(VariableList({X1}).num_unique_variables(), 6u);
+  EXPECT_EQ(VariableList({X1}).size(), 6u);
+  EXPECT_EQ(VariableList({X1, X1}).num_unique_variables(), 6u);
+  EXPECT_EQ(VariableList({X1, X1}).size(), 12u);
+  EXPECT_EQ(VariableList({X1, X1.row(1)}).num_unique_variables(), 6u);
+  EXPECT_EQ(VariableList({X1, X1.row(1)}).size(), 9u);
 
   std::unordered_set<DecisionVariableScalar, DecisionVariableScalarHash>
       X1_unique_variables_expected;

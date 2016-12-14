@@ -4,6 +4,7 @@ add_library_with_exports(LIB_NAME drakeTrajectories SOURCE_FILES
     piecewise_polynomial.cc
     piecewise_polynomial_base.cc
     piecewise_polynomial_trajectory.cc
+    piecewise_quaternion.cc
     )
 target_link_libraries(drakeTrajectories drakeCommon)
 drake_install_libraries(drakeTrajectories)
@@ -14,6 +15,7 @@ drake_install_headers(
     piecewise_polynomial_base.h
     piecewise_polynomial_trajectory.h
     trajectory.h
+    piecewise_quaternion.h
     )
 drake_install_pkg_config_file(drake-trajectories
   TARGET drakeTrajectories

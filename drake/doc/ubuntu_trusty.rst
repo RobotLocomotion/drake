@@ -67,9 +67,6 @@ Other prerequisites may be installed as follows::
 Environment
 -----------
 
-There are up to two important environment variables to set depending on which
-version of Ubuntu is being used.
-
 Compiler Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -10,7 +10,7 @@ Vector6<double> GetTaskSpaceVel(const RigidBodyTree<double>& r,
                                 const KinematicsCache<double>& cache,
                                 const RigidBody<double>& body,
                                 const Vector3<double>& local_offset) {
-  const auto& element = cache.getElement(body);
+  const auto& element = cache.get_element(body.get_body_index());
   Vector3<double> pt = element.transform_to_world.translation();
 
   // Get the body's task space vel.

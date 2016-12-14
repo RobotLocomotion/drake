@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <utility>
@@ -91,56 +92,6 @@ class RigidBodyTree {
 
   virtual ~RigidBodyTree(void);
 
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDFString.")
-#endif
-  void addRobotFromURDFString(
-      const std::string& xml_string, const std::string& root_dir = ".",
-      const drake::multibody::joints::FloatingBaseType
-          floating_base_type = drake::multibody::joints::kRollPitchYaw,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDFString.")
-#endif
-  void addRobotFromURDFString(
-      const std::string& xml_string,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::map<std::string, std::string>& ros_package_map,
-      const std::string& root_dir = ".",
-      const drake::multibody::joints::FloatingBaseType
-          floating_base_type = drake::multibody::joints::kRollPitchYaw,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDF.")
-#endif
-  void addRobotFromURDF(
-      const std::string& urdf_filename,
-      const drake::multibody::joints::FloatingBaseType
-          floating_base_type = drake::multibody::joints::kRollPitchYaw,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDF.")
-#endif
-  void addRobotFromURDF(
-      const std::string& urdf_filename,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::map<std::string, std::string>& ros_package_map,
-      const drake::multibody::joints::FloatingBaseType
-          floating_base_type = drake::multibody::joints::kRollPitchYaw,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstancesFromSdfFile.")
-#endif
-  void addRobotFromSDF(const std::string& sdf_filename,
-                       const drake::multibody::joints::FloatingBaseType
-                           floating_base_type =
-                               drake::multibody::joints::kQuaternion,
-                       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-
   /**
    * Adds a new model instance to this `RigidBodyTree`. The model instance is
    * identified by a unique model instance ID, which is the return value of
@@ -162,7 +113,7 @@ class RigidBodyTree {
 #endif
   int get_number_of_model_instances() const;
 
-  void addFrame(std::shared_ptr<RigidBodyFrame> frame);
+  void addFrame(std::shared_ptr<RigidBodyFrame<T>> frame);
 
   std::map<std::string, int> computePositionNameToIndexMap() const;
 
@@ -231,6 +182,52 @@ class RigidBodyTree {
 
   void drawKinematicTree(std::string graphviz_dotfile_filename) const;
 
+  /// Creates a KinematicsCache to perform computations with this RigidBodyTree.
+  /// The returned KinematicsCache is consistently templated on the scalar type
+  /// for this RigidBodyTree instance.
+  /// Aborts if this RigidBodyTree was not previously initialized with a call
+  /// to RigidBodyTree::compile().
+  /// @returns The created KinematicsCache.
+  KinematicsCache<T> CreateKinematicsCache() const;
+
+  /// A helper template method used to create a KinematicsCache templated on
+  /// `CacheT` from a RigidBodyTree templated on `T`, with `CacheT` and `T`
+  /// not necessarily the same scalar type.
+  /// This method is particularly useful in mex files where only a reference
+  /// to a `RigidBodyTree<double>` is available to create kinematics caches
+  /// on different scalar types.
+  /// Aborts if this RigidBodyTree was not previously initialized with a call
+  /// to RigidBodyTree::compile().
+  ///
+  /// Users should not call this method but instead create KinematicsCache
+  /// objects with RigidBodyTree:CreateKinematicsCache().
+  ///
+  /// @tparam CacheT The scalar type for the returned KinematicsCache.
+  /// @returns A KinematicsCache templated on `CacheT` that can be used for
+  /// computations on this RigidBodyTree with methods instantiated on `CacheT`.
+  // TODO(amcastro-tri): Remove this method once older pieces of code such as
+  // createKinematicsCacheAutoDiffmex.cpp are updated to use a RigidBodyTree to
+  // manage cache creation.
+  template <typename CacheT>
+  KinematicsCache<CacheT> CreateKinematicsCacheWithType() const;
+
+  /// Creates a KinematicsCache given a reference to a vector of rigid bodies
+  /// contained within a RigidBodyTree.
+  /// This method is static since all the information to create the
+  /// corresponding KinematicsCache resides in the input parameter vector
+  /// `bodies`.
+  ///
+  /// @param bodies A vector of unique pointers to the rigid bodies of a given
+  /// RigidBodyTree for which a KinematicsCache needs to be created.
+  /// @returns The created KinematicsCache.
+  //
+  // TODO(amcastro-tri): Remove this method once older pieces of code such as
+  // KinematicsCacheHelper are updated to use a RigidBodyTree to manage cache
+  // creation.
+  static KinematicsCache<T>
+  CreateKinematicsCacheFromBodiesVector(
+      const std::vector<std::unique_ptr<RigidBody<T>>>& bodies);
+
   /// Initializes a `KinematicsCache` with the given configuration @p q,
   /// computes the kinematics, and returns the cache.
   ///
@@ -286,6 +283,59 @@ class RigidBodyTree {
       KinematicsCache<Scalar>& cache,
       const std::set<int>& model_instance_id_set =
           default_model_instance_id_set) const;
+
+  /**
+   * Converts a matrix B, which transforms generalized velocities (v) to an
+   * output space X, to a matrix A, which transforms the time
+   * derivative of generalized coordinates (qdot) to the same output X. For
+   * example, B could be a Jacobian matrix that transforms generalized
+   * velocities to spatial velocities at the end-effector. Formally, this would
+   * be the matrix of partial derivatives of end-effector configuration computed
+   * with respect to quasi-coordinates (ꝗ). This function would allow
+   * transforming that Jacobian so that all partial derivatives would be
+   * computed with respect to qdot.
+   * @param Av, a `m x nv` sized matrix, where `nv` is the dimension of the
+   *      generalized velocities.
+   * @retval A a `m x nq` sized matrix, where `nq` is the dimension of the
+   *      generalized coordinates.
+   * @sa transformQDotMappingToVelocityMapping()
+   */
+  template <typename Derived>
+  static drake::MatrixX<typename Derived::Scalar>
+  transformVelocityMappingToQDotMapping(
+      const KinematicsCache<typename Derived::Scalar>& cache,
+      const Eigen::MatrixBase<Derived>& Av);
+
+  /**
+   * Converts a matrix A, which transforms the time derivative of generalized
+   * coordinates (qdot) to an output space X, to a matrix B, which transforms
+   * generalized velocities (v) to the same space X. For example, A could be a
+   * Jacobian matrix that transforms qdot to spatial velocities at the end
+   * effector. Formally, this would be the matrix of partial derivatives of
+   * end-effector configuration computed with respect to the generalized
+   * coordinates (q). This function would allow the user to
+   * transform this Jacobian matrix to the more commonly used one: the matrix of
+   * partial derivatives of end-effector configuration computed with respect to
+   * quasi-coordinates (ꝗ).
+   * @param Ap a `m x nq` sized matrix, where `nq` is the dimension of the
+   *      generalized coordinates.
+   * @retval B, a `m x nv` sized matrix, where `nv` is the dimension of the
+   *      generalized velocities.
+   * @sa transformVelocityMappingToQDotMapping()
+   */
+  template <typename Derived>
+  static drake::MatrixX<typename Derived::Scalar>
+  transformQDotMappingToVelocityMapping(
+      const KinematicsCache<typename Derived::Scalar>& cache,
+      const Eigen::MatrixBase<Derived>& Ap);
+
+  template <typename Scalar>
+  static drake::MatrixX<Scalar> GetVelocityToQDotMapping(
+          const KinematicsCache<Scalar>& cache);
+
+  template <typename Scalar>
+  static drake::MatrixX<Scalar> GetQDotToVelocityMapping(
+          const KinematicsCache<Scalar>& cache);
 
   template <typename Scalar>
   drake::TwistMatrix<Scalar> worldMomentumMatrix(
@@ -972,7 +1022,7 @@ class RigidBodyTree {
    * value is -1, search all models.
    * @throws std::logic_error if multiple matching frames are found.
    */
-  std::shared_ptr<RigidBodyFrame> findFrame(const std::string& frame_name,
+  std::shared_ptr<RigidBodyFrame<T>> findFrame(const std::string& frame_name,
                                             int model_id = -1) const;
 
   /**
@@ -1130,14 +1180,15 @@ class RigidBodyTree {
   std::vector<std::unique_ptr<RigidBody<T>>> bodies;
 
   // Rigid body frames
-  std::vector<std::shared_ptr<RigidBodyFrame>> frames;
+  std::vector<std::shared_ptr<RigidBodyFrame<T>>> frames;
 
   // Rigid body actuators
   std::vector<RigidBodyActuator, Eigen::aligned_allocator<RigidBodyActuator>>
       actuators;
 
   // Rigid body loops
-  std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> loops;
+  std::vector<RigidBodyLoop<T>,
+              Eigen::aligned_allocator<RigidBodyLoop<T>>> loops;
 
   drake::TwistVector<double> a_grav;
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces

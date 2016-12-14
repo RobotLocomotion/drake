@@ -26,12 +26,10 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
         l_(pendulum.l()),
         b_(pendulum.b()),
         g_(pendulum.g()) {
-    this->DeclareInputPort(
-        systems::kVectorValued, pendulum.get_output_port().get_size(),
-        systems::kContinuousSampling);
-    this->DeclareOutputPort(
-        systems::kVectorValued, pendulum.get_tau_port().get_size(),
-        systems::kContinuousSampling);
+    this->DeclareInputPort(systems::kVectorValued,
+                           pendulum.get_output_port().get_size());
+    this->DeclareOutputPort(systems::kVectorValued,
+                            pendulum.get_tau_port().get_size());
   }
 
   void EvalOutput(const systems::Context<T>& context,

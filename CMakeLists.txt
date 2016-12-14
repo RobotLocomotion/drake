@@ -130,9 +130,10 @@ drake_add_external(sedumi PUBLIC CMAKE MATLAB)
 drake_add_external(snopt CMAKE MATLAB
   CMAKE_ARGS
     -DBUILD_SNOPT_CPP=OFF
-    -DBUILD_SHARED_LIBS=ON
+    -DBUILD_SHARED_LIBS=OFF  # For licensing reasons
     -DBUILD_TESTING=OFF
-    -DBUILD_SNOPT_C_MEX=${Matlab_FOUND})
+    -DBUILD_SNOPT_C_MEX=${Matlab_FOUND}
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON)
 
 # spotless
 drake_add_external(spotless PUBLIC CMAKE MATLAB)
@@ -208,7 +209,8 @@ option(SKIP_DRAKE_BUILD "Build external projects but not drake itself" OFF)
 # drake: For drake, list both compilation AND RUNTIME dependencies. Runtime
 # dependencies are needed because the drake project must configure only after
 # any dependencies used by MATLAB have been installed.
-drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS TEST MATLAB PYTHON
+# TODO: re-add TEST to drake flags when subprojects arrive
+drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake
   BINARY_DIR ${PROJECT_BINARY_DIR}/drake
   CMAKE_ARGS
@@ -226,6 +228,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS TEST MATLAB PYTHON
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
     -DWITH_GTEST:BOOL=${WITH_GOOGLETEST}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_GUROBI:BOOL=${WITH_GUROBI}
+    -DWITH_HSRB_DESCRIPTION:BOOL=${WITH_HSRB_DESCRIPTION}
     -DWITH_IPOPT:BOOL=${WITH_IPOPT}
     -DWITH_IRIS:BOOL=${WITH_IRIS}
     -DWITH_LCM:BOOL=${WITH_LCM}

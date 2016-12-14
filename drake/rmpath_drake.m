@@ -44,5 +44,5 @@ rmpath(fullfile(root,'matlab','util','geometry'));
 rmpath(fullfile(root,'matlab','util','visualization'));
 rmpath(fullfile(root,'bindings','matlab'));
 
-javarmpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
-javarmpath(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
+javarmpath(fullfile(drake_get_base_path,'share','java','drake.jar'));
+javarmpath(fullfile(drake_get_base_path,'share','java','lcmtypes_drake.jar'));

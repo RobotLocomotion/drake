@@ -7,12 +7,12 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/primitives/adder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/gain.h"
-#include "drake/systems/framework/primitives/integrator.h"
-#include "drake/systems/framework/primitives/zero_order_hold.h"
 #include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/gain.h"
+#include "drake/systems/primitives/integrator.h"
+#include "drake/systems/primitives/zero_order_hold.h"
 
 namespace drake {
 namespace systems {
@@ -171,7 +171,6 @@ TEST_F(DiagramTest, Topology) {
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
     EXPECT_EQ(kInputPort, descriptor.get_face());
     EXPECT_EQ(kSize, descriptor.get_size());
-    EXPECT_EQ(kInheritedSampling, descriptor.get_sampling());
   }
 
   ASSERT_EQ(kSize, diagram_->get_num_output_ports());
@@ -182,12 +181,6 @@ TEST_F(DiagramTest, Topology) {
     EXPECT_EQ(kSize, descriptor.get_size());
   }
 
-  // The adder output ports have inherited sampling.
-  EXPECT_EQ(kInheritedSampling, diagram_->get_output_port(0).get_sampling());
-  EXPECT_EQ(kInheritedSampling, diagram_->get_output_port(1).get_sampling());
-  // The integrator output port has continuous sampling.
-  EXPECT_EQ(kContinuousSampling, diagram_->get_output_port(2).get_sampling());
-
   // The diagram has direct feedthrough.
   EXPECT_TRUE(diagram_->has_any_direct_feedthrough());
 }
@@ -197,6 +190,23 @@ TEST_F(DiagramTest, Path) {
   EXPECT_EQ("::Unicode Snowman's Favorite Diagram!!1!☃!::adder0", path);
 }
 
+// Tests that both variants of GetMutableSubsystemState do what they say on
+// the tin.
+TEST_F(DiagramTest, GetMutableSubsystemState) {
+  State<double>* state_from_context = diagram_->GetMutableSubsystemState(
+      context_.get(), diagram_->integrator0());
+  ASSERT_NE(nullptr, state_from_context);
+  State<double>* state_from_state = diagram_->GetMutableSubsystemState(
+      context_->get_mutable_state(), diagram_->integrator0());
+  ASSERT_NE(nullptr, state_from_state);
+
+  EXPECT_EQ(state_from_context, state_from_state);
+  const ContinuousState<double>& xc =
+      *state_from_context->get_continuous_state();
+  EXPECT_EQ(3, xc[0]);
+  EXPECT_EQ(9, xc[1]);
+  EXPECT_EQ(27, xc[2]);
+}
 // Tests that the diagram computes the correct sum.
 TEST_F(DiagramTest, EvalOutput) {
   AttachInputs();
@@ -482,7 +492,7 @@ class PublishingSystem : public LeafSystem<double> {
  public:
   explicit PublishingSystem(std::function<void(int)> callback)
       : callback_(callback) {
-    this->DeclareInputPort(kVectorValued, 1, kInheritedSampling);
+    this->DeclareInputPort(kVectorValued, 1);
   }
 
   void EvalOutput(const Context<double>& context,
@@ -593,9 +603,7 @@ class SecondOrderStateVector : public BasicVector<double> {
 // A minimal system that has second-order state.
 class SecondOrderStateSystem : public LeafSystem<double> {
  public:
-  SecondOrderStateSystem() {
-    DeclareInputPort(kVectorValued, 1, kContinuousSampling);
-  }
+  SecondOrderStateSystem() { DeclareInputPort(kVectorValued, 1); }
 
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override {}
@@ -707,10 +715,10 @@ class TestPublishingSystem : public LeafSystem<double> {
   mutable bool published_{false};
 };
 
-// A diagram that has difference state, and publishers.
-class DifferenceStateDiagram : public Diagram<double> {
+// A diagram that has discrete state and publishers.
+class DiscreteStateDiagram : public Diagram<double> {
  public:
-  DifferenceStateDiagram() : Diagram<double>() {
+  DiscreteStateDiagram() : Diagram<double>() {
     DiagramBuilder<double> builder;
     hold1_ = builder.template AddSystem<ZeroOrderHold<double>>(2.0, kSize);
     hold2_ = builder.template AddSystem<ZeroOrderHold<double>>(3.0, kSize);
@@ -731,7 +739,7 @@ class DifferenceStateDiagram : public Diagram<double> {
   TestPublishingSystem* publisher_ = nullptr;
 };
 
-class DifferenceStateTest : public ::testing::Test {
+class DiscreteStateTest : public ::testing::Test {
  public:
   void SetUp() override {
     context_ = diagram_.CreateDefaultContext();
@@ -740,12 +748,12 @@ class DifferenceStateTest : public ::testing::Test {
   }
 
  protected:
-  DifferenceStateDiagram diagram_;
+  DiscreteStateDiagram diagram_;
   std::unique_ptr<Context<double>> context_;
 };
 
 // Tests that the next update time after 0.05 is 2.0.
-TEST_F(DifferenceStateTest, CalcNextUpdateTimeHold1) {
+TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold1) {
   context_->set_time(0.05);
   UpdateActions<double> actions;
   diagram_.CalcNextUpdateTime(*context_, &actions);
@@ -756,7 +764,7 @@ TEST_F(DifferenceStateTest, CalcNextUpdateTimeHold1) {
 }
 
 // Tests that the next update time after 5.1 is 6.0.
-TEST_F(DifferenceStateTest, CalcNextUpdateTimeHold2) {
+TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold2) {
   context_->set_time(5.1);
   UpdateActions<double> actions;
   diagram_.CalcNextUpdateTime(*context_, &actions);
@@ -770,18 +778,18 @@ TEST_F(DifferenceStateTest, CalcNextUpdateTimeHold2) {
 
 // Tests that on the 9-second tick, only hold2 latches its inputs. Then, on
 // the 12-second tick, both hold1 and hold2 latch their inputs.
-TEST_F(DifferenceStateTest, UpdateDifferenceVariables) {
+TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   // Initialize the zero-order holds to different values than their input ports.
   Context<double>* ctx1 =
       diagram_.GetMutableSubsystemContext(context_.get(), diagram_.hold1());
-  ctx1->get_mutable_difference_state(0)->SetAtIndex(0, 1001.0);
+  ctx1->get_mutable_discrete_state(0)->SetAtIndex(0, 1001.0);
   Context<double>* ctx2 =
       diagram_.GetMutableSubsystemContext(context_.get(), diagram_.hold2());
-  ctx2->get_mutable_difference_state(0)->SetAtIndex(0, 1002.0);
+  ctx2->get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
 
-  // Allocate the difference variables.
-  std::unique_ptr<DifferenceState<double>> updates =
-      diagram_.AllocateDifferenceVariables();
+  // Allocate the discrete variables.
+  std::unique_ptr<DiscreteState<double>> updates =
+      diagram_.AllocateDiscreteVariables();
 
   // Set the time to 8.5, so only hold2 updates.
   context_->set_time(8.5);
@@ -794,13 +802,15 @@ TEST_F(DifferenceStateTest, UpdateDifferenceVariables) {
 
   // Fast forward to 9.0 sec and do the update.
   context_->set_time(9.0);
-  diagram_.EvalDifferenceUpdates(*context_, actions.events[0], updates.get());
-  context_->get_mutable_difference_state()->SetFrom(*updates);
-  EXPECT_EQ(1001.0, ctx1->get_difference_state(0)->GetAtIndex(0));
-  EXPECT_EQ(23.0, ctx2->get_difference_state(0)->GetAtIndex(0));
+  diagram_.EvalDiscreteVariableUpdates(*context_,
+                                       actions.events[0],
+                                       updates.get());
+  context_->get_mutable_discrete_state()->SetFrom(*updates);
+  EXPECT_EQ(1001.0, ctx1->get_discrete_state(0)->GetAtIndex(0));
+  EXPECT_EQ(23.0, ctx2->get_discrete_state(0)->GetAtIndex(0));
 
   // Restore hold2 to its original value.
-  ctx2->get_mutable_difference_state(0)->SetAtIndex(0, 1002.0);
+  ctx2->get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
   // Set the time to 11.5, so both hold1 and hold2 update.
   context_->set_time(11.5);
   diagram_.CalcNextUpdateTime(*context_, &actions);
@@ -811,14 +821,16 @@ TEST_F(DifferenceStateTest, UpdateDifferenceVariables) {
 
   // Fast forward to 12.0 sec and do the update again.
   context_->set_time(12.0);
-  diagram_.EvalDifferenceUpdates(*context_, actions.events[0], updates.get());
-  context_->get_mutable_difference_state()->SetFrom(*updates);
-  EXPECT_EQ(17.0, ctx1->get_difference_state(0)->GetAtIndex(0));
-  EXPECT_EQ(23.0, ctx2->get_difference_state(0)->GetAtIndex(0));
+  diagram_.EvalDiscreteVariableUpdates(*context_,
+                                       actions.events[0],
+                                       updates.get());
+  context_->get_mutable_discrete_state()->SetFrom(*updates);
+  EXPECT_EQ(17.0, ctx1->get_discrete_state(0)->GetAtIndex(0));
+  EXPECT_EQ(23.0, ctx2->get_discrete_state(0)->GetAtIndex(0));
 }
 
 // Tests that a publish action is taken at 19 sec.
-TEST_F(DifferenceStateTest, Publish) {
+TEST_F(DiscreteStateTest, Publish) {
   context_->set_time(18.5);
   UpdateActions<double> actions;
   diagram_.CalcNextUpdateTime(*context_, &actions);

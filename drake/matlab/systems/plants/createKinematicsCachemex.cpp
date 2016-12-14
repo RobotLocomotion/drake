@@ -1,6 +1,8 @@
 #include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/matlab/systems/plants/rigidBodyTreeMexConversions.h"
 
+#include <memory>
+
 using namespace Eigen;
 using namespace std;
 
@@ -17,9 +19,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   } else if (nlhs == 1 && nrhs == 1) {
     RigidBodyTree<double> *model =
         static_cast<RigidBodyTree<double> *>(getDrakeMexPointer(prhs[0]));
-    KinematicsCache<double> *cache = new KinematicsCache<double>(model->bodies);
+    auto cache = std::make_unique<KinematicsCache<double>>(
+        model->CreateKinematicsCache());
     plhs[0] = createDrakeMexPointer(
-        (void *)cache, typeid(KinematicsCache<double>).name(),
+        (void *)cache.release(), typeid(KinematicsCache<double>).name(),
         DrakeMexPointerTypeId<KinematicsCache<double>>::value);
   } else {
     mexErrMsgTxt("couldn't parse input");

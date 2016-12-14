@@ -15,17 +15,7 @@ DrakeVisualizer::DrakeVisualizer(
   set_name("drake_visualizer");
   const int vector_size =
       tree.get_num_positions() + tree.get_num_velocities();
-  DeclareInputPort(kVectorValued, vector_size, kContinuousSampling);
-}
-
-const lcmt_viewer_load_robot&
-DrakeVisualizer::get_load_message() const {
-  return load_message_;
-}
-
-const std::vector<uint8_t>&
-DrakeVisualizer::get_draw_message_bytes() const {
-  return draw_message_bytes_;
+  DeclareInputPort(kVectorValued, vector_size);
 }
 
 void DrakeVisualizer::DoPublish(const Context<double>& context)
@@ -47,12 +37,13 @@ void DrakeVisualizer::DoPublish(const Context<double>& context)
 
   // Translates the input vector into an array of bytes representing an LCM
   // message.
-  draw_message_translator_.Serialize(
-      context.get_time(), *input_vector, &draw_message_bytes_);
+  std::vector<uint8_t> message_bytes;
+  draw_message_translator_.Serialize(context.get_time(), *input_vector,
+                                     &message_bytes);
 
   // Publishes onto the specified LCM channel.
-  lcm_->Publish("DRAKE_VIEWER_DRAW", draw_message_bytes_.data(),
-      draw_message_bytes_.size());
+  lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
+                message_bytes.size());
 }
 
 void DrakeVisualizer::PublishLoadRobot() const {

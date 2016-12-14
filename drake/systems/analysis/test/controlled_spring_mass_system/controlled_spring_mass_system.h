@@ -4,11 +4,11 @@
 
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
-#include "drake/systems/framework/primitives/adder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/demultiplexer.h"
-#include "drake/systems/framework/primitives/gain.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
+#include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/gain.h"
 
 namespace drake {
 namespace systems {
@@ -61,11 +61,6 @@ class PidControlledSpringMassSystem : public Diagram<T> {
 
   // System<T> overrides
   bool has_any_direct_feedthrough() const override;
-
-  /// Sets @p context to a default state in which the position and velocity of
-  /// the mass are both zero.
-  /// The integral of the controller is also set to zero.
-  void SetDefaultState(Context<T>* context) const;
 
  private:
   // These are references into the Diagram; no ownership implied.

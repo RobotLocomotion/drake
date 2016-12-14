@@ -15,10 +15,9 @@ using Eigen::Vector3d;
 namespace drake {
 namespace solvers {
 namespace {
-
 // Tests if the Lorentz Cone constraint is imposed correctly.
 void TestLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
-  auto cnstr = LorentzConeConstraint();
+  LorentzConeConstraint cnstr;
   VectorXd y;
   // Test Eval with VectorXd.
   cnstr.Eval(x_test, y);
@@ -52,14 +51,14 @@ void TestLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
 }
 
 void TestRotatedLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
-  auto cnstr = RotatedLorentzConeConstraint();
+  RotatedLorentzConeConstraint cnstr;
   VectorXd y;
   cnstr.Eval(x_test, y);
   Vector3d y_expected;
   y_expected(0) = x_test(0);
   y_expected(1) = x_test(1);
-  y_expected(2) = x_test(0) * x_test(1) -
-                  x_test.tail(x_test.size() - 2).squaredNorm();
+  y_expected(2) =
+      x_test(0) * x_test(1) - x_test.tail(x_test.size() - 2).squaredNorm();
   EXPECT_TRUE(
       CompareMatrices(y, y_expected, 1E-10, MatrixCompareType::absolute));
 
@@ -90,7 +89,7 @@ void TestRotatedLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
 }
 
 GTEST_TEST(testConstraint, testLorentzConeConstraint) {
-  auto cnstr = LorentzConeConstraint();
+  LorentzConeConstraint cnstr;
   auto lb = cnstr.lower_bound();
   auto ub = cnstr.upper_bound();
   EXPECT_TRUE(CompareMatrices(Eigen::Vector2d(0.0, 0.0), lb, 1E-10,
@@ -117,7 +116,7 @@ GTEST_TEST(testConstraint, testLorentzConeConstraint) {
 }
 
 GTEST_TEST(testConstraint, testRotatedLorentzConeConstraint) {
-  auto cnstr = RotatedLorentzConeConstraint();
+  RotatedLorentzConeConstraint cnstr;
   auto lb = cnstr.lower_bound();
   auto ub = cnstr.upper_bound();
   EXPECT_TRUE(CompareMatrices(Eigen::Vector3d::Zero(), lb, 1E-10,
@@ -137,6 +136,53 @@ GTEST_TEST(testConstraint, testRotatedLorentzConeConstraint) {
 
   // [-1; -2; 1] is outside of the rotated Lorentz cone.
   TestRotatedLorentzConeEval(Vector3d(-1, -2, 1), false);
+}
+
+GTEST_TEST(testConstraint, testPositiveSemidefiniteConstraint) {
+  PositiveSemidefiniteConstraint cnstr(3);
+
+  Eigen::Matrix<double, 9, 1> X1;
+  // clang-format off
+  X1 << 1, 0, 0,
+        0, 1, 0,
+        0, 0, 1;
+  // clang-format on
+  Eigen::VectorXd y;
+  cnstr.Eval(X1, y);
+  EXPECT_TRUE((y.array() >= cnstr.lower_bound().array()).all());
+  EXPECT_TRUE((y.array() <= cnstr.upper_bound().array()).all());
+
+  Eigen::Matrix<double, 9, 1> X2;
+  // clang-format off
+  X2 << 1, 2, 0,
+        2, -2, -1,
+        0, -1, -2;
+  // clang-format on
+  cnstr.Eval(X2, y);
+  EXPECT_TRUE((y.array() < cnstr.lower_bound().array()).any() ||
+              (y.array() > cnstr.upper_bound().array()).any());
+}
+
+GTEST_TEST(testConstraint, testLinearMatrixInequalityConstraint) {
+  Eigen::Matrix2d F0 = 2 * Eigen::Matrix2d::Identity();
+  Eigen::Matrix2d F1;
+  F1 << 1, 1, 1, 1;
+  Eigen::Matrix2d F2;
+  F2 << 1, 2, 2, 1;
+  LinearMatrixInequalityConstraint cnstr({F0, F1, F2});
+
+  // [4, 3]
+  // [3, 4] is positive semidefinite
+  Eigen::VectorXd y;
+  cnstr.Eval(Eigen::Vector2d(1, 1), y);
+  EXPECT_TRUE((y.array() >= cnstr.lower_bound().array()).all());
+  EXPECT_TRUE((y.array() <= cnstr.upper_bound().array()).all());
+
+  // [1 -2]
+  // [-2 1] is not p.s.d
+  cnstr.Eval(Eigen::Vector2d(0, -1), y);
+  EXPECT_TRUE((y.array() < cnstr.lower_bound().array()).any() ||
+              (y.array() > cnstr.upper_bound().array()).any());
 }
 }  // namespace
 }  // namespace solvers

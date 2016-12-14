@@ -37,8 +37,7 @@ class TrajectoryCar : public systems::LeafSystem<T> {
       throw std::invalid_argument{"empty curve"};
     }
     this->DeclareOutputPort(systems::kVectorValued,
-                            SimpleCarStateIndices::kNumCoordinates,
-                            systems::kContinuousSampling);
+                            SimpleCarStateIndices::kNumCoordinates);
   }
 
   void EvalOutput(const systems::Context<T>& context,

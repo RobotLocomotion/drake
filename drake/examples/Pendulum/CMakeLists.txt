@@ -1,8 +1,8 @@
 if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakePendulumPlant
     SOURCE_FILES pendulum_swing_up.cc pendulum_plant.cc)
-  target_link_libraries(drakePendulumPlant drakeSystemFramework
-    drakeDynamicConstraint
+  target_link_libraries(drakePendulumPlant 
+    drakeSystemFramework
     drakeTrajectoryOptimization)
   drake_install_libraries(drakePendulumPlant)
   drake_install_headers(pendulum_plant.h pendulum_swing_up.h)
@@ -10,7 +10,6 @@ if(lcm_FOUND)
     TARGET drakePendulumPlant
     LIBS -ldrakePendulumPlant
     REQUIRES
-      drake-dynamic-constraint
       drake-trajectory-optimization
       eigen3)
 
@@ -18,7 +17,8 @@ if(lcm_FOUND)
   target_link_libraries(pendulum_run_dynamics
     drakePendulumPlant
     drakeRigidBodyPlant
-    drakeSystemAnalysis)
+    drakeSystemAnalysis
+    drakeSystemPrimitives)
   drake_add_test(NAME pendulum_run_dynamics
     COMMAND pendulum_run_dynamics)
 

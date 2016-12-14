@@ -1,3 +1,4 @@
+<?xml version="1.0" ?>
 <robot name="breadtruck">
   <link name="box_shape">
     <!-- Inertia data is arbitrary. Its purpose here is to evade the
@@ -5,15 +6,14 @@
          joint should be a full 6DF floating joint.
     -->
     <inertial>
-      <mass value="14.28" />
-      <inertia iyy=".77843904" ixx=".49991220" izz=".49991220" />
+      <mass value="14.28"/>
+      <inertia ixx=".49991220" iyy=".77843904" izz=".49991220"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 2.0" rpy="0 0 0" />
+      <origin rpy="0 0 0" xyz="0 0 2.0"/>
       <geometry>
-        <box size="5.0 2.5 4.0" />
+        <box size="5.0 2.5 4.0"/>
       </geometry>
     </visual>
   </link>
-
 </robot>

@@ -3,8 +3,8 @@
 #include <memory>
 #include <vector>
 
-#include "drake/systems/framework/difference_state.h"
-#include "drake/systems/framework/modal_state.h"
+#include "drake/systems/framework/abstract_state.h"
+#include "drake/systems/framework/discrete_state.h"
 
 namespace drake {
 namespace systems {
@@ -30,9 +30,9 @@ class Parameters {
   Parameters(std::vector<std::unique_ptr<BasicVector<T>>>&& numeric,
              std::vector<std::unique_ptr<AbstractValue>>&& abstract)
       : numeric_parameters_(
-            std::make_unique<DifferenceState<T>>(std::move(numeric))),
+            std::make_unique<DiscreteState<T>>(std::move(numeric))),
         abstract_parameters_(
-            std::make_unique<ModalState>(std::move(abstract))) {}
+            std::make_unique<AbstractState>(std::move(abstract))) {}
 
   /// Constructs Parameters that are purely @p numeric.
   explicit Parameters(std::vector<std::unique_ptr<BasicVector<T>>>&& numeric)
@@ -46,8 +46,8 @@ class Parameters {
   /// exactly one numeric vector.
   explicit Parameters(std::unique_ptr<BasicVector<T>> vec)
       : numeric_parameters_(
-          std::make_unique<DifferenceState<T>>(std::move(vec))),
-        abstract_parameters_(std::make_unique<ModalState>()) {}
+          std::make_unique<DiscreteState<T>>(std::move(vec))),
+        abstract_parameters_(std::make_unique<AbstractState>()) {}
 
   virtual ~Parameters() {}
 
@@ -58,25 +58,25 @@ class Parameters {
   /// Returns the vector-valued parameter at @p index. Asserts if the index
   /// is out of bounds.
   const BasicVector<T>* get_numeric_parameter(int index) const {
-    return numeric_parameters_->get_difference_state(index);
+    return numeric_parameters_->get_discrete_state(index);
   }
 
   /// Returns the vector-valued parameter at @p index. Asserts if the index
   /// is out of bounds.
   BasicVector<T>* get_mutable_numeric_parameter(int index) {
-    return numeric_parameters_->get_mutable_difference_state(index);
+    return numeric_parameters_->get_mutable_discrete_state(index);
   }
 
   /// Returns the abstract-valued parameter at @p index. Asserts if the index
   /// is out of bounds.
   const AbstractValue& get_abstract_parameter(int index) const {
-    return abstract_parameters_->get_modal_state(index);
+    return abstract_parameters_->get_abstract_state(index);
   }
 
   /// Returns the abstract-valued parameter at @p index. Asserts if the index
   /// is out of bounds.
   AbstractValue& get_mutable_abstract_parameter(int index) {
-    return abstract_parameters_->get_mutable_modal_state(index);
+    return abstract_parameters_->get_mutable_abstract_state(index);
   }
 
   /// Returns the abstract-valued parameter at @p index. Asserts if the index
@@ -108,11 +108,11 @@ class Parameters {
   Parameters& operator=(Parameters&& other) = delete;
 
  private:
-  // TODO(david-german-tri): Consider renaming ModalState and DifferenceState
+  // TODO(david-german-tri): Consider renaming AbstractState and DiscreteState
   // to NumericValues and AbstractValues, since the abstraction is actually
   // used in both State and Parameters.
-  std::unique_ptr<DifferenceState<T>> numeric_parameters_;
-  std::unique_ptr<ModalState> abstract_parameters_;
+  std::unique_ptr<DiscreteState<T>> numeric_parameters_;
+  std::unique_ptr<AbstractState> abstract_parameters_;
 };
 
 }  // namespace systems

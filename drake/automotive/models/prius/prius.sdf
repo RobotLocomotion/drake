@@ -1,31 +1,27 @@
 <?xml version='1.0' ?>
-
-<sdf version='1.6'>
-  <model name='prius_1'>
+<sdf version="1.6">
+  <model name="prius_1">
     <pose>0 0 0 0 0 0</pose>
-
-    <link name='chassis_floor'>
+    <link name="chassis_floor">
       <pose>0 0 0.378326 0 0 0</pose>
       <inertial>
-       <pose>0 0 0 0 0 0</pose>
-      <!--  The 2015 Prius has a curb weight of 3,072 lbs. (~1,400 kg)
-      based on the PDF linked below:
-      https://pressroom.toyota.com/releases/
-      toyota+2015+prius+product+specs.download -->
-
-      <!-- Our simplified model as of now assumes that only six links have
-      non-zero weight: the chassis_floor, the body, and the four wheels. The
-      chassis_floor's share of the curb weight is set to 1,360 kg, and the only
-      justification for this otherwise arbitrary value is to bring the center of
-      mass reasonably low.  -->
-
-      <!-- TODO(shensquared): Refine the weight distribution when the model is
-      of higher fidelity. -->
+        <pose>0 0 0 0 0 0</pose>
+        <!--  The 2015 Prius has a curb weight of 3,072 lbs. (~1,400 kg)
+              based on the PDF linked below:
+              https://pressroom.toyota.com/releases/
+              toyota+2015+prius+product+specs.download -->
+        <!-- Our simplified model as of now assumes that only six links have
+             non-zero weight: the chassis_floor, the body, and the four wheels.
+             The chassis_floor's share of the curb weight is set to 1,360 kg,
+             and the only justification for this otherwise arbitrary value is to
+             bring the center of mass reasonably low.  -->
+        <!-- TODO(shensquared): Refine the weight distribution when the model is
+             of higher fidelity. -->
         <mass>1360</mass>
-      <!-- The inertia is calculated by assuming that the chassis_floor link is
-      a cuboid, with its size as specified in the geometry/box/size tag below,
-      and then using the formula from
-      https://en.wikipedia.org/wiki/List_of_moments_of_inertia.-->
+        <!-- The inertia is calculated by assuming that the chassis_floor link
+             is a cuboid, with its size as specified in the geometry/box/size
+             tag below, and then using the formula from
+             https://en.wikipedia.org/wiki/List_of_moments_of_inertia.-->
         <inertia>
           <ixx>63.858358934</ixx>
           <ixy>0</ixy>
@@ -35,7 +31,7 @@
           <izz>1004.304312533</izz>
         </inertia>
       </inertial>
-      <visual name='main'>
+      <visual name="main">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
@@ -47,10 +43,9 @@
         </material>
       </visual>
     </link>
-
-    <link name='front_axle'>
+    <link name="front_axle">
       <pose>1.40948 0 0.323342 0 0 0</pose>
-      <visual name='visual'>
+      <visual name="visual">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
@@ -62,10 +57,9 @@
         </material>
       </visual>
     </link>
-
-    <link name='left_tie_rod_arm'>
+    <link name="left_tie_rod_arm">
       <pose>1.23701032 0.40850253 0.292422 0 0 0</pose>
-      <visual name='v2'>
+      <visual name="v2">
         <pose>.06385963 0.03192981 0 0 0 0.463648</pose>
         <geometry>
           <box>
@@ -76,7 +70,7 @@
           <diffuse>0 0.5 0 1</diffuse>
         </material>
       </visual>
-      <visual name='v1'>
+      <visual name="v1">
         <pose>.17246863 0.10851978 0 0 -0 0</pose>
         <geometry>
           <box>
@@ -88,10 +82,9 @@
         </material>
       </visual>
     </link>
-
-    <link name='left_hub'>
+    <link name="left_hub">
       <pose>1.40948 0.61841 0.316482 1.570796326794896557998982 0 0</pose>
-      <visual name='visual'>
+      <visual name="visual">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -104,10 +97,9 @@
         </material>
       </visual>
     </link>
-
-    <link name='tie_rod'>
+    <link name="tie_rod">
       <pose>1.23702 0 0.323342 0 0 0</pose>
-      <visual name='visual'>
+      <visual name="visual">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
@@ -116,11 +108,10 @@
         </geometry>
         <material>
           <diffuse>0 0 1 1</diffuse>
-      </material>
+        </material>
       </visual>
     </link>
-
-    <link name='left_wheel'>
+    <link name="left_wheel">
       <pose>1.40948 0.801993 0.3164819999999999855511135
         1.570796326794896557998982 0 0</pose>
       <inertial>
@@ -134,7 +125,7 @@
           <izz>0.499912</izz>
         </inertia>
       </inertial>
-      <visual name='m2'>
+      <visual name="m2">
         <pose>0 0 -.1075 0 1.570796326794896557998982
           3.141592653589793115997963</pose>
         <material>
@@ -146,7 +137,7 @@
           </box>
         </geometry>
       </visual>
-      <visual name='wheel'>
+      <visual name="wheel">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -158,7 +149,7 @@
           <diffuse>0.2 0.2 0.2 1</diffuse>
         </material>
       </visual>
-      <visual name='m1'>
+      <visual name="m1">
         <pose>0 0 -.1075 0 1.570796326794896557998982
           1.570796326794896557998982</pose>
         <material>
@@ -170,7 +161,7 @@
           </box>
         </geometry>
       </visual>
-      <collision name='wheel'>
+      <collision name="wheel">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -180,10 +171,9 @@
         </geometry>
       </collision>
     </link>
-
-    <link name='right_tie_rod_arm'>
+    <link name="right_tie_rod_arm">
       <pose>1.23701032 -0.40849616 0.292422 0 0 0</pose>
-      <visual name='v1'>
+      <visual name="v1">
         <pose>.17246863 -0.10851978 0 0 -0 0</pose>
         <geometry>
           <box>
@@ -194,7 +184,7 @@
           <diffuse>0 0.5 0 1</diffuse>
         </material>
       </visual>
-      <visual name='v2'>
+      <visual name="v2">
         <pose>.06385963 -0.03192981 0 0 0 -0.463648</pose>
         <geometry>
           <box>
@@ -206,10 +196,9 @@
         </material>
       </visual>
     </link>
-
-    <link name='right_hub'>
+    <link name="right_hub">
       <pose>1.40948 -0.61841 0.316482 1.570796326794896557998982 0 0</pose>
-      <visual name='visual'>
+      <visual name="visual">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -222,8 +211,7 @@
         </material>
       </visual>
     </link>
-
-    <link name='right_wheel'>
+    <link name="right_wheel">
       <pose>1.40948 -0.80198 0.3164819999999999855511135
         1.570796326794896557998982 0 0</pose>
       <inertial>
@@ -237,7 +225,7 @@
           <izz>0.499912</izz>
         </inertia>
       </inertial>
-      <visual name='m2'>
+      <visual name="m2">
         <pose>0 0 .1075 0 1.570796326794896557998982
           3.141592653589793115997963</pose>
         <material>
@@ -249,7 +237,7 @@
           </box>
         </geometry>
       </visual>
-      <visual name='wheel'>
+      <visual name="wheel">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -261,7 +249,7 @@
           <diffuse>0.2 0.2 0.2 1</diffuse>
         </material>
       </visual>
-      <visual name='m1'>
+      <visual name="m1">
         <pose>0 0 0.1075 0 1.570796326794896557998982
           1.570796326794896557998982</pose>
         <material>
@@ -273,7 +261,7 @@
           </box>
         </geometry>
       </visual>
-      <collision name='wheel'>
+      <collision name="wheel">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -283,10 +271,9 @@
         </geometry>
       </collision>
     </link>
-
-    <link name='rear_axle'>
+    <link name="rear_axle">
       <pose>-1.40948 0 0.323342 0 0 0</pose>
-      <visual name='visual'>
+      <visual name="visual">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
@@ -298,8 +285,7 @@
         </material>
       </visual>
     </link>
-
-    <link name='left_wheel_rear'>
+    <link name="left_wheel_rear">
       <pose>-1.40948 0.8019899999999999806732376 0.323342
         1.570796326794896557998982 0 0</pose>
       <inertial>
@@ -313,7 +299,7 @@
           <izz>0.499912</izz>
         </inertia>
       </inertial>
-      <visual name='m2'>
+      <visual name="m2">
         <pose>0 0 -.1075 0 1.570796326794896557998982
           3.141592653589793115997963</pose>
         <material>
@@ -325,7 +311,7 @@
           </box>
         </geometry>
       </visual>
-      <visual name='m1'>
+      <visual name="m1">
         <pose>0 0 -.1075 0 1.570796326794896557998982
           1.570796326794896557998982</pose>
         <material>
@@ -337,7 +323,7 @@
           </box>
         </geometry>
       </visual>
-      <visual name='wheel'>
+      <visual name="wheel">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -349,7 +335,7 @@
           <diffuse>0.2 0.2 0.2 1</diffuse>
         </material>
       </visual>
-      <collision name='wheel'>
+      <collision name="wheel">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -359,8 +345,7 @@
         </geometry>
       </collision>
     </link>
-
-    <link name='right_wheel_rear'>
+    <link name="right_wheel_rear">
       <pose>-1.40948 -0.8019899999999999806732376 0.323342
         1.570796326794896557998982 0 0</pose>
       <inertial>
@@ -374,7 +359,7 @@
           <izz>0.499912</izz>
         </inertia>
       </inertial>
-      <visual name='m2'>
+      <visual name="m2">
         <pose>0 0 .1075 0 1.570796326794896557998982
           3.141592653589793115997963</pose>
         <material>
@@ -386,7 +371,7 @@
           </box>
         </geometry>
       </visual>
-      <visual name='wheel'>
+      <visual name="wheel">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -398,7 +383,7 @@
           <diffuse>0.2 0.2 0.2 1</diffuse>
         </material>
       </visual>
-      <visual name='m1'>
+      <visual name="m1">
         <pose>0 0 .1075 0 1.570796326794896557998982
           1.570796326794896557998982</pose>
         <material>
@@ -410,7 +395,7 @@
           </box>
         </geometry>
       </visual>
-      <collision name='wheel'>
+      <collision name="wheel">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -420,8 +405,7 @@
         </geometry>
       </collision>
     </link>
-
-    <link name='body'>
+    <link name="body">
       <pose>0 0 0.385184 0 0 0</pose>
       <inertial>
         <pose>0 0 0 0 0 0</pose>
@@ -437,7 +421,7 @@
           <izz>5.01672</izz>
         </inertia>
       </inertial>
-      <visual name='visual'>
+      <visual name="visual">
         <pose>-2.27 -0.91139 -0.21858 0 0 0</pose>
         <geometry>
           <mesh>
@@ -449,14 +433,12 @@
         </material>
       </visual>
     </link>
-
-    <joint name='chassis_floor_axle' type='fixed'>
+    <joint name="chassis_floor_axle" type="fixed">
       <parent>chassis_floor</parent>
       <child>front_axle</child>
       <pose>0 0 0 0 0 0</pose>
     </joint>
-
-    <joint name='steering' type='revolute'>
+    <joint name="steering" type="revolute">
       <parent>front_axle</parent>
       <child>left_tie_rod_arm</child>
       <pose>0.17246968 0.08622747 0 0 0 0</pose>
@@ -468,13 +450,12 @@
         </limit>
       </axis>
     </joint>
-
-    <joint name='left_hub' type='fixed'>
+    <joint name="left_hub" type="fixed">
       <parent>left_tie_rod_arm</parent>
       <child>left_hub</child>
       <pose>0 0 0 0 0 0</pose>
     </joint>
-    <joint name='left_pin' type='revolute'>
+    <joint name="left_pin" type="revolute">
       <parent>left_tie_rod_arm</parent>
       <child>tie_rod</child>
       <pose>0 0.4085 0 0 0 0</pose>
@@ -487,8 +468,7 @@
         </limit>
       </axis>
     </joint>
-
-    <joint name='left_wheel_joint' type='revolute'>
+    <joint name="left_wheel_joint" type="revolute">
       <parent>left_hub</parent>
       <child>left_wheel</child>
       <pose>0 0 0 0 0 0</pose>
@@ -497,8 +477,7 @@
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-
-    <joint name='axle_tie_rod_arm' type='revolute'>
+    <joint name="axle_tie_rod_arm" type="revolute">
       <parent>front_axle</parent>
       <child>right_tie_rod_arm</child>
       <pose>0.17246968 -0.08623384 0 0 0 0</pose>
@@ -511,14 +490,12 @@
         </limit>
       </axis>
     </joint>
-
-    <joint name='right_hub' type='fixed'>
+    <joint name="right_hub" type="fixed">
       <parent>right_tie_rod_arm</parent>
       <child>right_hub</child>
       <pose>0 0 0 0 0 0</pose>
     </joint>
-
-    <joint name='right_pin' type='revolute'>
+    <joint name="right_pin" type="revolute">
       <parent>right_tie_rod_arm</parent>
       <child>tie_rod</child>
       <pose>0 -0.817006 0 0 0 0</pose>
@@ -531,8 +508,7 @@
         </limit>
       </axis>
     </joint>
-
-    <joint name='right_wheel_joint' type='revolute'>
+    <joint name="right_wheel_joint" type="revolute">
       <parent>right_hub</parent>
       <child>right_wheel</child>
       <pose>0 0 0 0 0 0</pose>
@@ -541,14 +517,12 @@
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-
-    <joint name='chassis_rear_axle' type='fixed'>
+    <joint name="chassis_rear_axle" type="fixed">
       <parent>chassis_floor</parent>
       <child>rear_axle</child>
       <pose>0 0 0 0 0 0</pose>
     </joint>
-
-    <joint name='rear_left_wheel_joint' type='revolute'>
+    <joint name="rear_left_wheel_joint" type="revolute">
       <parent>rear_axle</parent>
       <child>left_wheel_rear</child>
       <pose>0 0 0 0 0 0</pose>
@@ -560,8 +534,7 @@
         </limit>
       </axis>
     </joint>
-
-    <joint name='rear_right_wheel_joint' type='revolute'>
+    <joint name="rear_right_wheel_joint" type="revolute">
       <parent>rear_axle</parent>
       <child>right_wheel_rear</child>
       <pose>0 0 0 0 0 0</pose>
@@ -573,12 +546,10 @@
         </limit>
       </axis>
     </joint>
-
-    <joint name='body' type='fixed'>
+    <joint name="body" type="fixed">
       <parent>chassis_floor</parent>
       <child>body</child>
       <pose>0 0 0 0 0 0</pose>
     </joint>
-
   </model>
 </sdf>

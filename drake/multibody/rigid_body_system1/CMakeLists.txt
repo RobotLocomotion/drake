@@ -21,4 +21,6 @@ if (lcm_FOUND)
   drake_install_headers(BotVisualizer.h)
 endif ()
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

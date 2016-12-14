@@ -15,11 +15,11 @@ class ParametersTest : public ::testing::Test {
     numeric.push_back(BasicVector<double>::Make({3.0, 6.0}));
     numeric.push_back(BasicVector<double>::Make({9.0, 12.0}));
 
-    std::vector<std::unique_ptr<AbstractValue>> modal;
-    modal.push_back(PackValue<int>(72));
-    modal.push_back(PackValue<int>(144));
+    std::vector<std::unique_ptr<AbstractValue>> abstract;
+    abstract.push_back(PackValue<int>(72));
+    abstract.push_back(PackValue<int>(144));
     params_ = std::make_unique<Parameters<double>>(
-        std::move(numeric), std::move(modal));
+        std::move(numeric), std::move(abstract));
   }
 
   std::unique_ptr<Parameters<double>> params_;
@@ -35,7 +35,7 @@ TEST_F(ParametersTest, Numeric) {
   EXPECT_EQ(42.0, params_->get_numeric_parameter(0)->GetAtIndex(1));
 }
 
-TEST_F(ParametersTest, Modal) {
+TEST_F(ParametersTest, Abstract) {
   EXPECT_EQ(72, UnpackIntValue(params_->get_abstract_parameter(0)));
   EXPECT_EQ(144, params_->template get_abstract_parameter<int>(1));
   params_->template get_mutable_abstract_parameter<int>(1) = 512;
@@ -53,7 +53,7 @@ TEST_F(ParametersTest, Clone) {
   // - numeric
   clone->get_mutable_numeric_parameter(0)->SetAtIndex(1, 42.0);
   EXPECT_EQ(6.0, params_->get_numeric_parameter(0)->GetAtIndex(1));
-  // - modal
+  // - abstract
   clone->get_mutable_abstract_parameter(0).SetValue<int>(256);
   EXPECT_EQ(72, UnpackIntValue(params_->get_abstract_parameter(0)));
 }

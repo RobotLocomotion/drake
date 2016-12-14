@@ -29,7 +29,7 @@ class BasicVector : public VectorBase<T> {
   explicit BasicVector(int size)
       : values_(VectorX<T>::Constant(
             size, std::numeric_limits<
-                      typename Eigen::NumTraits<T>::Real>::quiet_NaN())) {}
+                      typename Eigen::NumTraits<T>::Literal>::quiet_NaN())) {}
 
   /// Constructs a BasicVector with the specified @p data.
   explicit BasicVector(const VectorX<T>& data) : values_(data) {}

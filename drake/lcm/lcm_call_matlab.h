@@ -37,7 +37,7 @@ struct LcmMatlabRemoteVariable {
   //  ~LcmMatlabRemoteVariable(); // TODO(russt): send a destroy message on
   //  deletion
 
-  const int64_t uid;
+  const int64_t uid_{};
 };
 
 /// Serialize our favorite data types into the lcm_matlab_array structure.
@@ -104,7 +104,7 @@ std::vector<LcmMatlabRemoteVariable> LcmCallMatlab(
   msg.nlhs = num_outputs;
   msg.lhs.resize(num_outputs);
   for (int i = 0; i < num_outputs; i++) {
-    msg.lhs[i] = remote_vars[i].uid;
+    msg.lhs[i] = remote_vars[i].uid_;
   }
 
   int index = 0;

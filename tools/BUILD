@@ -9,6 +9,11 @@ sh_binary(
     data = ["valgrind.supp"],
 )
 
+alias(
+    name = "buildifier",
+    actual = "@com_github_bazelbuild_buildifier//buildifier",
+)
+
 cc_toolchain_suite(
     name = "default-toolchain",
     toolchains = {
@@ -19,7 +24,7 @@ cc_toolchain_suite(
 filegroup(
     name = "empty",
     srcs = [],
-) 
+)
 
 cc_toolchain(
     name = "cc-compiler-clang-3.9-linux",
@@ -34,4 +39,3 @@ cc_toolchain(
     strip_files = ":empty",
     supports_param_files = 0,
 )
-

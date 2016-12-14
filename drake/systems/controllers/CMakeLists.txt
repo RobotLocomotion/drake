@@ -1,8 +1,8 @@
 
-add_library_with_exports(LIB_NAME drakeLinearControl SOURCE_FILES linear_optimal_control.cc)
-target_link_libraries(drakeLinearControl drakeSystemFramework)
+add_library_with_exports(LIB_NAME drakeLinearControl SOURCE_FILES linear_quadratic_regulator.cc)
+target_link_libraries(drakeLinearControl drakeMath drakeSystemFramework drakeSystemPrimitives)
 drake_install_libraries(drakeLinearControl)
-drake_install_headers(linear_optimal_control.h)
+drake_install_headers(linear_quadratic_regulator.h)
 drake_install_pkg_config_file(drake-linear-control
   TARGET drakeLinearControl
   LIBS -ldrakeLinearControl)
@@ -37,8 +37,7 @@ if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
 
   if(bot2-lcmgl-client_FOUND)
     add_executable(zmpCoMObserverStateVisualizer zmpCoMObserverStateVisualizer.cpp)
-    pods_use_pkg_config_packages(zmpCoMObserverStateVisualizer bot2-lcmgl-client)
-    target_link_libraries(zmpCoMObserverStateVisualizer drake_lcmtypes lcm)
+    target_link_libraries(zmpCoMObserverStateVisualizer drake_lcmtypes bot2-lcmgl-client lcm)
   endif()
 endif()
 
@@ -62,11 +61,12 @@ set(system2_installed_headers
   pid_controller.h)
 add_library_with_exports(LIB_NAME drakeSystemControllers
     SOURCE_FILES ${system2_sources} ${system2_installed_headers})
-add_dependencies(drakeSystemControllers drakeCommon drakeRBM drakeSystemFramework)
+add_dependencies(drakeSystemControllers drakeCommon drakeRBM drakeSystemFramework drakeSystemPrimitives)
 target_link_libraries(drakeSystemControllers
     drakeCommon
     drakeRBM
-    drakeSystemFramework)
+    drakeSystemFramework
+    drakeSystemPrimitives)
 
 drake_install_headers(${system2_installed_headers})
 
@@ -76,7 +76,8 @@ drake_install_pkg_config_file(drake-system2-controllers
     LIBS -ldrakeSystemControllers
     REQUIRES
       drake-rbm
-      drake-system-framework)
+      drake-system-framework
+      drake-system-primitives)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

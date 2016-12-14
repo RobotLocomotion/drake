@@ -21,12 +21,9 @@ class QPControllerSystem : public systems::LeafSystem<double> {
  public:
   explicit QPControllerSystem(const RigidBodyTree<double>& robot)
       : robot_(robot) {
-    input_port_index_humanoid_status_ =
-        DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
-    input_port_index_qp_input_ =
-        DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
-    output_port_index_qp_input_ =
-        DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
+    input_port_index_humanoid_status_ = DeclareAbstractInputPort().get_index();
+    input_port_index_qp_input_ = DeclareAbstractInputPort().get_index();
+    output_port_index_qp_input_ = DeclareAbstractOutputPort().get_index();
 
     DRAKE_ASSERT(this->get_num_input_ports() == 2);
     DRAKE_ASSERT(this->get_num_output_ports() == 1);

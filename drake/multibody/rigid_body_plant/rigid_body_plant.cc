@@ -31,19 +31,14 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree)
   // The input to this system are the generalized forces commanded on the
   // actuators.
   // TODO(amcastro-tri): add separate input ports for each model_instance_id.
-  System<T>::DeclareInputPort(kVectorValued, get_num_actuators(),
-                              kContinuousSampling);
+  System<T>::DeclareInputPort(kVectorValued, get_num_actuators());
   // The output of the system is the state vector.
   // TODO(amcastro-tri): add separate output ports for each model_id.
   state_output_port_id_ =
-      this->DeclareOutputPort(kVectorValued, get_num_states(),
-                              kContinuousSampling)
-          .get_index();
+      this->DeclareOutputPort(kVectorValued, get_num_states()).get_index();
   // Declares an abstract valued port for kinematics results.
-  kinematics_output_port_id_ =
-      this->DeclareAbstractOutputPort(kInheritedSampling).get_index();
-  contact_output_port_id_ =
-      this->DeclareAbstractOutputPort(kInheritedSampling).get_index();
+  kinematics_output_port_id_ = this->DeclareAbstractOutputPort().get_index();
+  contact_output_port_id_ = this->DeclareAbstractOutputPort().get_index();
 }
 
 template <typename T>
@@ -127,8 +122,15 @@ template <typename T>
 void RigidBodyPlant<T>::set_state_vector(
     Context<T>* context, const Eigen::Ref<const VectorX<T>> x) const {
   DRAKE_ASSERT(context != nullptr);
+  set_state_vector(context->get_mutable_state(), x);
+}
+
+template <typename T>
+void RigidBodyPlant<T>::set_state_vector(
+    State<T>* state, const Eigen::Ref<const VectorX<T>> x) const {
+  DRAKE_ASSERT(state != nullptr);
   DRAKE_ASSERT(x.size() == get_num_states());
-  context->get_mutable_continuous_state_vector()->SetFromVector(x);
+  state->get_mutable_continuous_state()->SetFromVector(x);
 }
 
 template <typename T>
@@ -309,11 +311,12 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
    * w.r.t. q and v. See issue
    * https://github.com/RobotLocomotion/drake/issues/4267.
    */
+  // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
+  // templatized.
   const auto& vdot_value =
       drake::solvers::GetSolution(vdot);
-  xdot << kinsol.transformQDotMappingToVelocityMapping(
-              MatrixX<T>::Identity(nq, nq)) * v,
-      vdot_value;
+  xdot << tree_->transformQDotMappingToVelocityMapping(
+      kinsol, MatrixX<T>::Identity(nq, nq).eval()) * v, vdot_value;
 
   derivatives->SetFromVector(xdot);
 }
@@ -346,9 +349,11 @@ void RigidBodyPlant<T>::DoMapQDotToVelocity(
   // reused.
   auto kinsol = tree_->doKinematics(q);
 
+  // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
+  // templatized.
   generalized_velocity->SetFromVector(
-      kinsol.transformQDotMappingToVelocityMapping(
-          configuration_dot.transpose()));
+      tree_->transformQDotMappingToVelocityMapping(
+          kinsol, configuration_dot.transpose().eval()).transpose());
 }
 
 template <typename T>
@@ -380,8 +385,11 @@ void RigidBodyPlant<T>::DoMapVelocityToQDot(
   // reused.
   auto kinsol = tree_->doKinematics(q, v);
 
+  // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
+  // templatized.
   configuration_dot->SetFromVector(
-      kinsol.transformVelocityMappingToQDotMapping(v.transpose()));
+      tree_->transformVelocityMappingToQDotMapping(
+          kinsol, v.transpose().eval()).transpose());
 }
 
 template <typename T>
@@ -509,11 +517,13 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
         contact_force += J.transpose() * fA;
         if (contacts != nullptr) {
           Vector3<T> pt_a_world =
-              kinsol.getElement(*pair.elementA->get_body()).transform_to_world *
-              pair.ptA;
+              kinsol.get_element(
+                  pair.elementA->get_body()->
+                      get_body_index()).transform_to_world * pair.ptA;
           Vector3<T> pt_b_world =
-              kinsol.getElement(*pair.elementB->get_body()).transform_to_world *
-              pair.ptB;
+              kinsol.get_element(
+                  pair.elementB->get_body()->
+                      get_body_index()).transform_to_world * pair.ptB;
           Vector3<T> point = (pt_a_world + pt_b_world) * 0.5;
 
           ContactInfo<T>& contact_info = contacts->AddContact(

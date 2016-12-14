@@ -4,10 +4,10 @@
 
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
-#include "drake/systems/framework/primitives/adder.h"
-#include "drake/systems/framework/primitives/gain.h"
-#include "drake/systems/framework/primitives/integrator.h"
-#include "drake/systems/framework/primitives/pass_through.h"
+#include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/gain.h"
+#include "drake/systems/primitives/integrator.h"
+#include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
 namespace systems {
@@ -89,10 +89,6 @@ class PidController : public Diagram<T> {
   /// the proportional constant is non-zero. It feeds through the rate of change
   /// of the error signal when the derivative constant is non-zero.
   bool has_any_direct_feedthrough() const override;
-
-  /// Sets @p context to a default state in which the integral of the error
-  /// signal is zero.
-  void SetDefaultState(Context<T>* context) const;
 
   /// Sets the integral of the %PidController to @p value.
   /// @p value must be a column vector of the appropriate size.

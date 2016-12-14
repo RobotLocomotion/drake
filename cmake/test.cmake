@@ -159,6 +159,7 @@ endfunction()
 # Add a MATLAB test to the drake project to be run by ctest.
 #
 #   drake_add_matlab_test(NAME <name> COMMAND <matlab_string_to_evaluate>
+#                         [CHECK_DEPENDENCY_STRICT]
 #                         [CONFIGURATIONS <configuration>...]
 #                         [REQUIRES <external>...]
 #                         [OPTIONAL <external>...]
@@ -170,7 +171,9 @@ endfunction()
 #     Set the name of the test. The test name may not contain spaces or quotes.
 #   COMMAND
 #     Specify the MATLAB string to evaluate.
-#  CONFIGURATIONS
+#   CHECK_DEPENDENCY_STRICT
+#     Fail the test if a MATLAB dependency check fails.
+#   CONFIGURATIONS
 #     Restrict execution of the test to only the named configurations.
 #   REQUIRES
 #     Declare required external dependencies. Each required dependency must
@@ -194,7 +197,8 @@ function(drake_add_matlab_test)
     return()
   endif()
 
-  cmake_parse_arguments("" "" "COMMAND;NAME;SIZE;WORKING_DIRECTORY" "OPTIONAL;REQUIRES" ${ARGN})
+  cmake_parse_arguments("" "CHECK_DEPENDENCY_STRICT"
+    "COMMAND;NAME;SIZE;WORKING_DIRECTORY" "OPTIONAL;REQUIRES" ${ARGN})
 
   if(NOT _NAME)
     message(FATAL_ERROR "The NAME argument to drake_add_matlab_test is required")
@@ -233,7 +237,7 @@ function(drake_add_matlab_test)
   set(_test_precommand
     "addpath_drake; global g_disable_visualizers; g_disable_visualizers=true;")
 
-  if(CHECK_DEPENDENCY_STRICT)
+  if(CHECK_DEPENDENCY_STRICT OR _CHECK_DEPENDENCY_STRICT)
     set(_exit_status 1)
   else()
     set(_exit_status

@@ -36,10 +36,9 @@ LcmSubscriberSystem::LcmSubscriberSystem(
 
   lcm->Subscribe(channel_, this);
   if (translator_ != nullptr) {
-    DeclareOutputPort(kVectorValued, translator_->get_vector_size(),
-                      kContinuousSampling);
+    DeclareOutputPort(kVectorValued, translator_->get_vector_size());
   } else {
-    DeclareAbstractOutputPort(kContinuousSampling);
+    DeclareAbstractOutputPort();
   }
 }
 

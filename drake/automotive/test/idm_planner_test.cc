@@ -54,15 +54,12 @@ TEST_F(IdmPlannerTest, Topology) {
   EXPECT_EQ(systems::kVectorValued, input_agent.get_data_type());
   EXPECT_EQ(systems::kInputPort, input_ego.get_face());
   EXPECT_EQ(systems::kInputPort, input_agent.get_face());
-  EXPECT_EQ(systems::kContinuousSampling, input_ego.get_sampling());
-  EXPECT_EQ(systems::kContinuousSampling, input_agent.get_sampling());
 
   ASSERT_EQ(1, dut_->get_num_output_ports());
   const auto& output_descriptor = dut_->get_output_ports().at(0);
   EXPECT_EQ(systems::kVectorValued, output_descriptor.get_data_type());
   EXPECT_EQ(systems::kOutputPort, output_descriptor.get_face());
   EXPECT_EQ(1, output_descriptor.get_size());
-  EXPECT_EQ(systems::kContinuousSampling, output_descriptor.get_sampling());
 }
 
 // Set the initial states such that the agent and ego start at the

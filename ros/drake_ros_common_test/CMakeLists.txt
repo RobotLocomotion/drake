@@ -23,15 +23,6 @@ if (CATKIN_ENABLE_TESTING)
   target_link_libraries(parameter_server_test
       ${catkin_LIBRARIES})
   set_target_properties(parameter_server_test PROPERTIES EXCLUDE_FROM_ALL FALSE)
-
-  add_rostest_gtest(
-      simulation_abort_function_test
-      test/simulation_abort_function_test.test
-      test/simulation_abort_function_test.cc)
-  target_link_libraries(simulation_abort_function_test
-      ${catkin_LIBRARIES})
-  set_target_properties(simulation_abort_function_test
-      PROPERTIES EXCLUDE_FROM_ALL FALSE)
 endif()
 
 install(DIRECTORY include/${PROJECT_NAME}/

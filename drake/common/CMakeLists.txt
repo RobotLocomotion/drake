@@ -43,6 +43,7 @@ set(installed_headers
   eigen_matrix_compare.h
   eigen_stl_types.h
   eigen_types.h
+  extract_double.h
   functional_form.h
   hash.h
   is_approx_equal_abstol.h

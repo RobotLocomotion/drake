@@ -3,11 +3,13 @@ set(sources
   autodiff.cc
   autodiff_gradient.cc
   axis_angle.cc
+  continuous_algebraic_ricatti_equation.cc
   cross_product.cc
   eigen_sparse_triplet.cc
   expmap.cc
   gradient.cc
   jacobian.cc
+  matrix_util.cc
   normalize_vector.cc
   quaternion.cc
   random_rotation.cc
@@ -21,12 +23,14 @@ set(installed_headers
   autodiff.h
   autodiff_gradient.h
   axis_angle.h
+  continuous_algebraic_ricatti_equation.h
   cross_product.h
   eigen_sparse_triplet.h
   expmap.h
   gradient.h
   gradient_util.h
   jacobian.h
+  matrix_util.h
   normalize_vector.h
   quaternion.h
   random_rotation.h

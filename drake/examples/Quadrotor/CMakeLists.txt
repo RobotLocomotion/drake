@@ -5,14 +5,10 @@ if(lcm_FOUND)
   target_link_libraries(run_quadrotor_dynamics
     drakeRigidBodyPlant
     drakeSystemAnalysis
+    drakeSystemPrimitives
     drakeLCMSystem2
     gflags)
   drake_add_test(NAME run_quadrotor_dynamics COMMAND run_quadrotor_dynamics --duration=1.0 SIZE medium)
-
-# TODO(russt): port this to System2.0 and re-enable
-#  add_executable(runQuadrotorLQR runLQR.cpp)
-#  target_link_libraries(runQuadrotorLQR drakeRBM drakeLCMTypes lcm)
-#  drake_add_test(NAME runQuadrotorLQR COMMAND runQuadrotorLQR --non-realtime SIZE medium)
 endif()
 
 # drake_add_matlab_test(NAME examples/Quadrotor/Quadrotor.runOpenLoop COMMAND Quadrotor.runOpenLoop)  # FIXME: see #3313
