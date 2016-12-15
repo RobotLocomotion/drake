@@ -88,10 +88,6 @@ cc_binary(
         "-Wno-all",
         "-Wno-format-zero-length",
         "-std=gnu11",
-        # TODO(jwnimmer-tri) This hack should be removed when we ugprade
-        # to the latest LCM.
-        "-include",
-        "unistd.h",
     ],
     includes = ["."],
     deps = [":lcm"],
