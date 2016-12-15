@@ -1,5 +1,4 @@
 <?xml version="1.0"?>
-<!-- File: uniform_solid_cylinder.urdf -->
 <robot name="uniformSolidCylinderNoForceTorque">
   <material name="darkGreen"> <color rgba="0.0 0.8 0.0 1.0" />  </material>
   <material name="darkRed">   <color rgba="0.8 0.0 0.0 1.0" />  </material>
