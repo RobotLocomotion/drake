@@ -85,3 +85,11 @@ new_git_repository(
     commit = "85af926ddc5f3c8fb438001743e65ec3a039ceec",
     build_file = "tools/yaml_cpp.BUILD",
 )
+
+load("//tools:gurobi.bzl", "gurobi_repository")
+gurobi_repository(
+    name = "gurobi",
+    workspace_dir = __workspace_dir__,
+    build_file = "tools/gurobi.BUILD",
+)
+
