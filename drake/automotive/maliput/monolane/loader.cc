@@ -4,7 +4,6 @@
 #include <map>
 #include <string>
 
-#include <gflags/gflags.h>
 #include "yaml-cpp/yaml.h"
 
 #include "drake/automotive/maliput/monolane/builder.h"
