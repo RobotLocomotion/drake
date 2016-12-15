@@ -71,6 +71,10 @@ class CubicPolynomial {
 
   // TODO(maddog@tri.global)  s_p() and p_s() need to be replaced with a
   //                          properly integrated path-length parameterization.
+  //                          For the moment, we are calculating the length by
+  //                          approximating the curve with a single linear
+  //                          segment from (0, f(0)) to (1, f(1)), which is
+  //                          not entirely awful for relatively flat curves.
   /// Returns the path-length s along the curve (p, f(p)) from p = 0 to @p p.
   double s_p(double p) const {
     return s_1_ * p;
@@ -116,27 +120,38 @@ class Lane : public api::Lane {
   ///
   /// @p segment must remain valid for the lifetime of this class.
   ///
+  /// This is the base class for subclasses, each of which describe a
+  /// primitive reference curve in the xy ground-plane of the World frame.
+  /// The specific curve is expressed by the virtual functions; see the
+  /// method xy_of_p().
+  ///
   /// @p elevation and @p superelevation are cubic-polynomial functions which
   /// define the elevation and superelevation as a function of position along
-  /// the planar reference curve defined by the concrete subclass.
-  /// (@p elevation specifies the z-component of the surface at (r,h) = (0,0);
-  /// @p superelevation contributes at r != 0.)  These two functions must be
-  /// isotropically scaled to operate over the domain p in [0, 1], where p is
-  /// linear in the path-length of the planar reference curve, p = 0 corresponds
-  /// to the start and p = 1 to the end.  @p p_scale is the scale factor.
-  /// In other words...
+  /// the planar reference curve.  @p elevation specifies the z-component of
+  /// the surface at (r,h) = (0,0).  @p superelevation specifies the angle
+  /// of the r-axis with respect to the horizon, i.e., how the road twists.
+  /// Thus, non-zero @p superelevation contributes to the z-component at
+  /// r != 0.
   ///
-  /// Given
-  ///  * a reference curve R(s) parameterized by path-length s in the
-  ///    domain [0., s_max], where s_max is the total path-length of R;
-  ///  * the true elevation function E_true(s), parameterized by the
-  ///    path-length s of R;
-  ///  * the true superelevation function S_true(s), parameterized by the
-  ///    path-length s of R;
+  /// These two functions (@p elevation and @p superelevation) must be
+  /// isotropically scaled to operate over the domain p in [0, 1], where
+  /// p is linear in the path-length of the planar reference curve,
+  /// p = 0 corresponds to the start and p = 1 to the end.  @p p_scale is
+  /// the scale factor.  In other words...
+  ///
+  /// Given:
+  ///  * a reference curve R(p) parameterized by p in domain [0, 1], which
+  ///    has a path-length q(p) in range [0, q_max], linearly related to p,
+  ///    where q_max is the total path-length of R (in real-world units);
+  ///  * the true elevation function E_true(q), parameterized by the
+  ///    path-length q of R;
+  ///  * the true superelevation function S_true(q), parameterized by the
+  ///    path-length q of R;
+  ///
   /// then:
-  ///  * @p p_scale is s_max
-  ///  * @p elevation is  E_scaled = (1 / p_scale) * E_true(p_scale * p)
-  ///  * @p superelevation is  S_scaled = (1 / p_scale) * S_true(p_scale * p)
+  ///  * @p p_scale is q_max (and p = q / p_scale);
+  ///  * @p elevation is  E_scaled = (1 / p_scale) * E_true(p_scale * p);
+  ///  * @p superelevation is  S_scaled = (1 / p_scale) * S_true(p_scale * p).
   Lane(const api::LaneId& id, Segment* segment,
        const api::RBounds& lane_bounds,
        const api::RBounds& driveable_bounds,
@@ -151,7 +166,7 @@ class Lane : public api::Lane {
         superelevation_(superelevation) {}
 
   // TODO(maddog@tri.global)  Allow superelevation to have a center-of-rotation
-  ///                         which is different from r = 0.
+  //                          which is different from r = 0.
 
   const CubicPolynomial& elevation() const { return elevation_; }
 
@@ -208,9 +223,12 @@ class Lane : public api::Lane {
       const api::IsoLaneVelocity& velocity) const override;
 
   // The following virtual methods define a reference curve in the xy-plane
-  // (i.e., the Earth ground plane).  The curve is a parametric curve:
+  // of the World frame (i.e., the Earth ground plane).  The curve is a
+  // parametric curve:
   //
   //    F: p --> (x, y)  for p in [0, 1]
+  //
+  // defined such that parameter p is linear in the path-length of the curve.
 
   // Returns the reference curve itself, F(p).
   virtual V2 xy_of_p(const double p) const = 0;

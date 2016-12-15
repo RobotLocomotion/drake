@@ -112,15 +112,15 @@ double HeadingIntoLane(const api::Lane* const lane,
 
 BranchPoint* Builder::FindOrCreateBranchPoint(
     const Endpoint& point,
-    RoadGeometry* rg,
+    RoadGeometry* road_geometry,
     std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder>* bp_map) const {
   auto ibp = bp_map->find(point);
   if (ibp != bp_map->end()) {
     return ibp->second;
   }
   // TODO(maddog@tri.global) Generate a more meaningful id (user-specified?)
-  BranchPoint* bp = rg->NewBranchPoint(
-      {"bp:" + std::to_string(rg->num_branch_points())});
+  BranchPoint* bp = road_geometry->NewBranchPoint(
+      {"bp:" + std::to_string(road_geometry->num_branch_points())});
   auto result = bp_map->emplace(point, bp);
   DRAKE_DEMAND(result.second);
   return bp;
@@ -129,9 +129,9 @@ BranchPoint* Builder::FindOrCreateBranchPoint(
 
 void Builder::AttachBranchPoint(
     const Endpoint& point, Lane* const lane, const api::LaneEnd::Which end,
-    RoadGeometry* rg,
+    RoadGeometry* road_geometry,
     std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder>* bp_map) const {
-  BranchPoint* bp = FindOrCreateBranchPoint(point, rg, bp_map);
+  BranchPoint* bp = FindOrCreateBranchPoint(point, road_geometry, bp_map);
   // Tell the lane about its branch-point.
   switch (end) {
     case api::LaneEnd::kStart: {
@@ -170,32 +170,32 @@ void Builder::AttachBranchPoint(
 
 
 Lane* Builder::BuildConnection(
-    const Connection* const cnx,
+    const Connection* const conn,
     Junction* const junction,
-    RoadGeometry* const rg,
+    RoadGeometry* const road_geometry,
     std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder>* const bp_map) const {
-  Segment* segment = junction->NewSegment({std::string("s:") + cnx->id()});
+  Segment* segment = junction->NewSegment({std::string("s:") + conn->id()});
   Lane* lane;
-  api::LaneId lane_id({std::string("l:") + cnx->id()});
+  api::LaneId lane_id{std::string("l:") + conn->id()};
 
-  switch (cnx->type()) {
+  switch (conn->type()) {
     case Connection::kLine: {
-      const V2 xy0(cnx->start().xy().x(),
-                   cnx->start().xy().y());
-      const V2 dxy(cnx->end().xy().x() - xy0.x(),
-                   cnx->end().xy().y() - xy0.y());
+      const V2 xy0(conn->start().xy().x(),
+                   conn->start().xy().y());
+      const V2 dxy(conn->end().xy().x() - xy0.x(),
+                   conn->end().xy().y() - xy0.y());
       const CubicPolynomial elevation(MakeCubic(
           dxy.norm(),
-          cnx->start().z().z(),
-          cnx->end().z().z() - cnx->start().z().z(),
-          cnx->start().z().z_dot(),
-          cnx->end().z().z_dot()));
+          conn->start().z().z(),
+          conn->end().z().z() - conn->start().z().z(),
+          conn->start().z().z_dot(),
+          conn->end().z().z_dot()));
       const CubicPolynomial superelevation(MakeCubic(
           dxy.norm(),
-          cnx->start().z().theta(),
-          cnx->end().z().theta() - cnx->start().z().theta(),
-          cnx->start().z().theta_dot(),
-          cnx->end().z().theta_dot()));
+          conn->start().z().theta(),
+          conn->end().z().theta() - conn->start().z().theta(),
+          conn->start().z().theta_dot(),
+          conn->end().z().theta_dot()));
 
       lane = segment->NewLineLane(lane_id,
                                   xy0, dxy,
@@ -204,24 +204,24 @@ Lane* Builder::BuildConnection(
       break;
     }
     case Connection::kArc: {
-      const V2 center(cnx->cx(), cnx->cy());
-      const double radius = cnx->radius();
-      const double theta0 = std::atan2(cnx->start().xy().y() - center.y(),
-                                       cnx->start().xy().x() - center.x());
-      const double d_theta = cnx->d_theta();
+      const V2 center(conn->cx(), conn->cy());
+      const double radius = conn->radius();
+      const double theta0 = std::atan2(conn->start().xy().y() - center.y(),
+                                       conn->start().xy().x() - center.x());
+      const double d_theta = conn->d_theta();
       const double arc_length = radius * std::abs(d_theta);
       const CubicPolynomial elevation(MakeCubic(
           arc_length,
-          cnx->start().z().z(),
-          cnx->end().z().z() - cnx->start().z().z(),
-          cnx->start().z().z_dot(),
-          cnx->end().z().z_dot()));
+          conn->start().z().z(),
+          conn->end().z().z() - conn->start().z().z(),
+          conn->start().z().z_dot(),
+          conn->end().z().z_dot()));
       const CubicPolynomial superelevation(MakeCubic(
           arc_length,
-          cnx->start().z().theta(),
-          cnx->end().z().theta() - cnx->start().z().theta(),
-          cnx->start().z().theta_dot(),
-          cnx->end().z().theta_dot()));
+          conn->start().z().theta(),
+          conn->end().z().theta() - conn->start().z().theta(),
+          conn->start().z().theta_dot(),
+          conn->end().z().theta_dot()));
 
       lane = segment->NewArcLane(lane_id,
                                  center, radius, theta0, d_theta,
@@ -234,40 +234,46 @@ Lane* Builder::BuildConnection(
     }
   }
 
-  AttachBranchPoint(cnx->start(), lane, api::LaneEnd::kStart, rg, bp_map);
-  AttachBranchPoint(cnx->end(), lane, api::LaneEnd::kFinish, rg, bp_map);
+  AttachBranchPoint(
+      conn->start(), lane, api::LaneEnd::kStart, road_geometry, bp_map);
+  AttachBranchPoint(
+      conn->end(), lane, api::LaneEnd::kFinish, road_geometry, bp_map);
   return lane;
 }
 
 
 std::unique_ptr<const api::RoadGeometry> Builder::Build(
     const api::RoadGeometryId& id) const {
-  auto rg = std::make_unique<RoadGeometry>(
+  auto road_geometry = std::make_unique<RoadGeometry>(
       id, linear_tolerance_, angular_tolerance_);
   std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder> bp_map(
       (EndpointFuzzyOrder(linear_tolerance_)));
   std::map<const Connection*, Lane*> lane_map;
   std::set<const Connection*> remaining_connections;
 
-  for (auto& cnx : connections_) {
-    remaining_connections.insert(cnx.get());
+  for (auto& connection : connections_) {
+    remaining_connections.insert(connection.get());
   }
 
-  for (auto& grp : groups_) {
-    Junction* junction = rg->NewJunction({std::string("j:") + grp->id()});
-    drake::log()->debug("jnx: {}", junction->id().id);
-    for (auto& cnx : grp->connections()) {
-      drake::log()->debug("cnx: {}", cnx->id());
-      remaining_connections.erase(cnx);
-      lane_map[cnx] = BuildConnection(cnx, junction, rg.get(), &bp_map);
+  for (auto& group : groups_) {
+    Junction* junction =
+        road_geometry->NewJunction({std::string("j:") + group->id()});
+    drake::log()->debug("junction: {}", junction->id().id);
+    for (auto& connection : group->connections()) {
+      drake::log()->debug("connection: {}", connection->id());
+      remaining_connections.erase(connection);
+      lane_map[connection] = BuildConnection(
+          connection, junction, road_geometry.get(), &bp_map);
     }
   }
 
-  for (auto& cnx : remaining_connections) {
-    Junction* junction = rg->NewJunction({std::string("j:") + cnx->id()});
-    drake::log()->debug("jnx: {}", junction->id().id);
-    drake::log()->debug("cnx: {}", cnx->id());
-    lane_map[cnx] = BuildConnection(cnx, junction, rg.get(), &bp_map);
+  for (auto& connection : remaining_connections) {
+    Junction* junction =
+        road_geometry->NewJunction({std::string("j:") + connection->id()});
+    drake::log()->debug("junction: {}", junction->id().id);
+    drake::log()->debug("connection: {}", connection->id());
+    lane_map[connection] =
+        BuildConnection(connection, junction, road_geometry.get(), &bp_map);
   }
 
   for (auto& def : default_branches_) {
@@ -282,13 +288,13 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
   }
 
   // Make sure we didn't screw up!
-  std::vector<std::string> failures = rg->CheckInvariants();
+  std::vector<std::string> failures = road_geometry->CheckInvariants();
   for (const auto& s : failures) {
     drake::log()->error(s);
   }
   DRAKE_DEMAND(failures.size() == 0);
 
-  return std::move(rg);
+  return std::move(road_geometry);
 }
 
 

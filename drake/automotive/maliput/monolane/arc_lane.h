@@ -14,7 +14,7 @@ namespace monolane {
 class ArcLane : public Lane {
  public:
   /// Constructs an ArcLane, specified by a circular arc defined in the
-  /// xy-plane (the ground plane).
+  /// xy-plane (the ground plane) of the World frame.
   ///
   /// @param center center of the reference arc
   /// @param radius radius of the reference arc (must be positive)

@@ -202,16 +202,28 @@ class Connection {
   const Endpoint& end() const { return end_; }
 
   /// Returns the x-component of the arc center (for arc connections only).
-  double cx() const { return cx_; }
+  double cx() const {
+    DRAKE_DEMAND(type_ == kArc);
+    return cx_;
+  }
 
   /// Returns the y-component of the arc center (for arc connections only).
-  double cy() const { return cy_; }
+  double cy() const {
+    DRAKE_DEMAND(type_ == kArc);
+    return cy_;
+  }
 
   /// Returns the radius of the arc (for arc connections only).
-  double radius() const { return radius_; }
+  double radius() const {
+    DRAKE_DEMAND(type_ == kArc);
+    return radius_;
+  }
 
   /// Returns the angle of the arc (for arc connections only).
-  double d_theta() const { return d_theta_; }
+  double d_theta() const {
+    DRAKE_DEMAND(type_ == kArc);
+    return d_theta_;
+  }
 
   /// @name Deleted Copy/Move Operations
   /// Connection is neither copyable nor moveable.

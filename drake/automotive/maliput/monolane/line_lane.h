@@ -11,7 +11,7 @@ namespace monolane {
 class LineLane : public Lane {
  public:
   /// Constructs a LineLane, a lane specified by a line segment defined in the
-  /// xy-plane (the ground plane).
+  /// xy-plane (the ground plane) of the World frame.
   ///
   /// @param xy0 start point of the reference line segment
   /// @param dxy displacement to the end point of the reference line segment
