@@ -1,0 +1,307 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='extra_heavy_duty_table_surface_only_collision'>
+    <!--
+    This model is identical to the extra heavy duty table in nearly
+    every respect except that the collision tags are present only for
+    the surface link. This leads to a large speedup in simulations
+    involving the table due to a decrease in number of collision
+    checks needed.
+    -->
+    <link name='link'>
+      <pose frame=''>-0.243716 -0.625087 0 0 -0 0</pose>
+      <inertial>
+        <mass>53.5</mass>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <!--
+        The spatial inertia values given below were derived based on the
+        equation for a cuboid:
+
+        https://en.wikipedia.org/wiki/List_of_moments_of_inertia#List_of_3D_inertia_tensors.
+
+        Obviously, the table is not a cuboid, meaning the inertia matrix is
+        imperfect. Having an accurate spatial inertia specification may be
+        important for us to know when / if a robot mounted on top of the
+        table will cause the table to tip over. It will also be necessary to
+        model what happens when a mobile robot bumps into the table.
+
+        TODO(lucy-tri): Compute a more accurate spatial inertia of this table.
+        -->
+        <inertia>
+          <ixx>5.177409</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>4.843753753</iyy>
+          <iyz>0</iyz>
+          <izz>4.843753753</izz>
+        </inertia>
+      </inertial>
+      <self_collide>0</self_collide>
+      <kinematic>0</kinematic>
+      <visual name='back_right_leg'>
+        <pose frame=''>-0.33 -0.35 0.381 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.762</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+          <ambient>0.3 0.3 0.3 1</ambient>
+          <diffuse>0.7 0.7 0.7 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+          <emissive>0 0 0 1</emissive>
+          <shader type='vertex'>
+            <normal_map>__default__</normal_map>
+          </shader>
+        </material>
+        <cast_shadows>1</cast_shadows>
+        <transparency>0</transparency>
+      </visual>
+      <visual name='front_left_leg'>
+        <pose frame=''>0.33 0.35 0.381 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.762</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+          <ambient>0.3 0.3 0.3 1</ambient>
+          <diffuse>0.7 0.7 0.7 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+          <emissive>0 0 0 1</emissive>
+          <shader type='vertex'>
+            <normal_map>__default__</normal_map>
+          </shader>
+        </material>
+        <cast_shadows>1</cast_shadows>
+        <transparency>0</transparency>
+      </visual>
+      <visual name='left_crossbar'>
+        <pose frame=''>0.33 0 0.13335 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.05 0.662 0.05</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+          <ambient>0.3 0.3 0.3 1</ambient>
+          <diffuse>0.7 0.7 0.7 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+          <emissive>0 0 0 1</emissive>
+          <shader type='vertex'>
+            <normal_map>__default__</normal_map>
+          </shader>
+        </material>
+        <cast_shadows>1</cast_shadows>
+        <transparency>0</transparency>
+      </visual>
+      <visual name='right_crossbar'>
+        <pose frame=''>-0.33 0 0.13335 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.05 0.662 0.05</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+          <ambient>0.3 0.3 0.3 1</ambient>
+          <diffuse>0.7 0.7 0.7 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+          <emissive>0 0 0 1</emissive>
+          <shader type='vertex'>
+            <normal_map>__default__</normal_map>
+          </shader>
+        </material>
+        <cast_shadows>1</cast_shadows>
+        <transparency>0</transparency>
+      </visual>
+      <visual name='back_left_leg'>
+        <pose frame=''>-0.33 0.35 0.381 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.762</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+          <ambient>0.3 0.3 0.3 1</ambient>
+          <diffuse>0.7 0.7 0.7 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+          <emissive>0 0 0 1</emissive>
+          <shader type='vertex'>
+            <normal_map>__default__</normal_map>
+          </shader>
+        </material>
+        <cast_shadows>1</cast_shadows>
+        <transparency>0</transparency>
+      </visual>
+      <visual name='front_right_leg'>
+        <pose frame=''>0.33 -0.35 0.381 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.762</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+          <ambient>0.3 0.3 0.3 1</ambient>
+          <diffuse>0.7 0.7 0.7 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+          <emissive>0 0 0 1</emissive>
+          <shader type='vertex'>
+            <normal_map>__default__</normal_map>
+          </shader>
+        </material>
+        <cast_shadows>1</cast_shadows>
+        <transparency>0</transparency>
+      </visual>
+      <visual name='back_crossbar'>
+        <pose frame=''>0 0.35 0.13335 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.6112 0.05 0.05</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+          <ambient>0.3 0.3 0.3 1</ambient>
+          <diffuse>0.7 0.7 0.7 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+          <emissive>0 0 0 1</emissive>
+          <shader type='vertex'>
+            <normal_map>__default__</normal_map>
+          </shader>
+        </material>
+        <cast_shadows>1</cast_shadows>
+        <transparency>0</transparency>
+      </visual>
+      <visual name='front_crossbar'>
+        <pose frame=''>0 -0.35 0.13335 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.6112 0.05 0.05</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+          <ambient>0.3 0.3 0.3 1</ambient>
+          <diffuse>0.7 0.7 0.7 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+          <emissive>0 0 0 1</emissive>
+          <shader type='vertex'>
+            <normal_map>__default__</normal_map>
+          </shader>
+        </material>
+        <cast_shadows>1</cast_shadows>
+        <transparency>0</transparency>
+      </visual>
+      <visual name='visual1'>
+        <pose frame=''>0 0 0.736 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.7112 0.762 0.057</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+          <ambient>0.3 0.3 0.3 1</ambient>
+          <diffuse>0.7 0.7 0.7 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+          <emissive>0 0 0 1</emissive>
+          <shader type='vertex'>
+            <normal_map>__default__</normal_map>
+          </shader>
+        </material>
+        <cast_shadows>1</cast_shadows>
+        <transparency>0</transparency>
+      </visual>
+      <collision name='surface'>
+        <laser_retro>0</laser_retro>
+        <max_contacts>10</max_contacts>
+        <pose frame=''>0 0 0.736 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.7112 0.762 0.057</size>
+          </box>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.6</mu>
+              <mu2>0.6</mu2>
+              <fdir1>0 0 0</fdir1>
+              <slip1>0</slip1>
+              <slip2>0</slip2>
+            </ode>
+            <torsional>
+              <coefficient>1</coefficient>
+              <patch_radius>0</patch_radius>
+              <surface_radius>0</surface_radius>
+              <use_patch_radius>1</use_patch_radius>
+              <ode>
+                <slip>0</slip>
+              </ode>
+            </torsional>
+          </friction>
+          <bounce>
+            <restitution_coefficient>0</restitution_coefficient>
+            <threshold>1e+06</threshold>
+          </bounce>
+          <contact>
+            <collide_without_contact>0</collide_without_contact>
+            <collide_without_contact_bitmask>1</collide_without_contact_bitmask>
+            <collide_bitmask>1</collide_bitmask>
+            <ode>
+              <soft_cfm>0</soft_cfm>
+              <soft_erp>0.2</soft_erp>
+              <kp>1e+13</kp>
+              <kd>1</kd>
+              <max_vel>0.01</max_vel>
+              <min_depth>0</min_depth>
+            </ode>
+            <bullet>
+              <split_impulse>1</split_impulse>
+              <split_impulse_penetration_threshold>-0.01</split_impulse_penetration_threshold>
+              <soft_cfm>0</soft_cfm>
+              <soft_erp>0.2</soft_erp>
+              <kp>1e+13</kp>
+              <kd>1</kd>
+            </bullet>
+          </contact>
+        </surface>
+      </collision>
+    </link>
+    <static>1</static>
+    <allow_auto_disable>1</allow_auto_disable>
+  </model>
+</sdf>
