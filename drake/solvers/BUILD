@@ -3,9 +3,6 @@
 
 package(default_visibility = ["//visibility:public"])
 
-# TODO(jwnimmer-tri) This BUILD file only compiles the in-tree solvers.
-# External solvers are not yet supported.
-
 cc_library(
     name = "constraint",
     srcs = ["constraint.cc"],
@@ -20,13 +17,54 @@ cc_library(
 )
 
 cc_library(
+    name = "decision_variable",
+    srcs = ["decision_variable.cc"],
+    hdrs = ["decision_variable.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/common",
+        "//drake/common:number_traits",
+    ],
+)
+
+cc_library(
+    name = "function",
+    srcs = [],
+    hdrs = ["function.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/common",
+    ],
+)
+
+cc_library(
+    name = "solution_result",
+    srcs = [],
+    hdrs = ["solution_result.h"],
+    linkstatic = 1,
+    deps = [],
+)
+
+# Supported solvers:
+# - equality_constrained_qp_solver
+# - linear_system_solver
+# - moby_lcp_solver
+# - Gurobi (on Ubuntu)
+
+# Unsupported solvers:
+# - dReal
+# - IPOPT
+# - NLOPT
+# - SNOPT
+# - MOSEK
+
+# TODO(jwnimmer-tri, david-german-tri): Support more solvers.
+cc_library(
     name = "mathematical_program",
     srcs = [
-        "decision_variable.cc",
         "dreal_solver.h",
         "equality_constrained_qp_solver.cc",
         "equality_constrained_qp_solver.h",
-        "gurobi_solver.h",
         "ipopt_solver.h",
         "linear_system_solver.cc",
         "linear_system_solver.h",
@@ -36,7 +74,6 @@ cc_library(
         "mosek_solver.h",
         "nlopt_solver.h",
         "no_dreal.cc",
-        "no_gurobi.cc",
         "no_ipopt.cc",
         "no_mosek.cc",
         "no_nlopt.cc",
@@ -45,14 +82,15 @@ cc_library(
     ],
     hdrs = [
         "constraint.h",
-        "decision_variable.h",
-        "function.h",
         "mathematical_program.h",
-        "solution_result.h",
     ],
     linkstatic = 1,
     deps = [
         ":constraint",
+        ":decision_variable",
+        ":function",
+        ":gurobi_solver",
+        ":solution_result",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:number_traits",
@@ -74,6 +112,57 @@ cc_library(
     ],
 )
 
+# The mathematical_program_api target exists so that solver targets can access
+# the mathematical_program.h header, and the :mathematical_program target can
+# depend on solver targets, without creating a circular dependency.
+#
+# TODO(david-german-tri): MathematicalProgram should be refactored so that
+# implementations of MathematicalProgramSolverInterface are not co-dependent
+# with MathematicalProgram itself, and then this target should be deleted.
+cc_library(
+    name = "mathematical_program_api",
+    srcs = [],
+    hdrs = ["mathematical_program.h"],
+    linkstatic = 1,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":constraint",
+        ":decision_variable",
+        ":function",
+        ":solution_result",
+        "//drake/common",
+        "//drake/common:autodiff",
+        "//drake/common:number_traits",
+        "//drake/common:polynomial",
+    ],
+)
+
+# External Solvers.
+
+# If --config gurobi is used, this target builds object code that satisfies
+# MathematicalProgramSolverInterface by calling Gurobi. Otherwise, this target
+# builds dummy object code that fails at runtime.
+cc_library(
+    name = "gurobi_solver",
+    srcs = select({
+        "//tools:with_gurobi": ["gurobi_solver.cc"],
+        "//conditions:default": ["no_gurobi.cc"],
+    }),
+    hdrs = ["gurobi_solver.h"],
+    linkstatic = 1,
+    visibility = ["//visibility:private"],
+    deps = select({
+        "//tools:with_gurobi": [
+            ":mathematical_program_api",
+            "//drake/math:eigen_sparse_triplet",
+            "@gurobi//:lib",
+        ],
+        "//conditions:default": [
+            ":mathematical_program_api",
+        ],
+    }),
+)
+
 # === test/ ===
 
 cc_test(
@@ -88,12 +177,19 @@ cc_test(
     ],
 )
 
+# TODO(hongkai-dai): Separate this test into a test that uses Gurobi, and a
+# test that doesn't.
 cc_test(
     name = "convex_optimization_test",
     size = "small",
     srcs = [
         "test/convex_optimization_test.cc",
         "test/mathematical_program_test_util.h",
+    ],
+    # This test uses Gurobi if present, but does not require it.
+    tags = [
+        "exclusive",
+        "local",
     ],
     deps = [
         ":mathematical_program",
@@ -127,12 +223,19 @@ cc_test(
     ],
 )
 
+# TODO(hongkai-dai): Separate this test into a test that uses Gurobi, and a
+# test that doesn't.
 cc_test(
     name = "mixed_integer_optimization_test",
     size = "small",
     srcs = [
         "test/mathematical_program_test_util.h",
         "test/mixed_integer_optimization_test.cc",
+    ],
+    # This test uses Gurobi if present, but does not require it.
+    tags = [
+        "exclusive",
+        "local",
     ],
     deps = [
         ":mathematical_program",

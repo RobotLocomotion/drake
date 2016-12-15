@@ -39,3 +39,8 @@ cc_toolchain(
     strip_files = ":empty",
     supports_param_files = 0,
 )
+
+config_setting(
+    name = "with_gurobi",
+    values = {"define": "WITH_GUROBI=ON"},
+)
