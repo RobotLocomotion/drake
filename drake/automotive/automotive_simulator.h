@@ -9,10 +9,10 @@
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
 #include "drake/lcm/drake_lcm_interface.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace automotive {
@@ -59,7 +59,8 @@ class AutomotiveSimulator {
   ///
   /// @return The model instance ID of the SimpleCar that was just added to
   /// the simulation.
-  int AddSimpleCarFromSdf(const std::string& sdf_filename, const std::string& name="");
+  int AddSimpleCarFromSdf(const std::string& sdf_filename,
+                          const std::string& name = "");
 
   /// Adds a TrajectoryCar system to this simulation, including its
   /// EulerFloatingJoint output.
@@ -122,7 +123,7 @@ class AutomotiveSimulator {
   // TODO(jwnimmer-tri) Perhaps this should be Build(), that returns an
   // AutomotiveSimulator, and our class should be AutomotiveSimulatorBuilder?
   // Port a few more demo programs, then decide what looks best.
-  void Start();
+  void Start(double realtime_factor = 0.0);
 
   /// Advance simulated time by the given @p time_step increment in seconds.
   void StepBy(const T& time_step);
