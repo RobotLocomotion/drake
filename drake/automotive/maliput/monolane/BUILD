@@ -104,3 +104,9 @@ cc_binary(
         "//drake/common:text_logging_gflags",
     ],
 )
+
+# TODO(maddog@tri.global)  Run this test somehow, too.
+#py_test(
+#    name = "yaml_load_test",
+#    srcs = ["test/yaml_load_test.py"],
+#)
