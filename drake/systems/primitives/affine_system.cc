@@ -92,7 +92,7 @@ void AffineSystem<T>::DoCalcOutput(const Context<T>& context,
   auto y = output_vector->get_mutable_value();
   y = C_ * x + y0_;
 
-  if (num_inputs_) {
+  if (num_inputs_ > 0) {
     const BasicVector<T>* input = this->EvalVectorInput(context, 0);
     DRAKE_DEMAND(input);
     const auto& u = input->get_value();

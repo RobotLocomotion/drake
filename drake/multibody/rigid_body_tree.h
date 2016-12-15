@@ -1142,9 +1142,11 @@ class RigidBodyTree {
    */
   const RigidBody<T>& world() const { return *bodies[0]; }
 
-  /**
-   * Returns the number of position states outputted by this %RigidBodyTree.
-   */
+  /// Returns the number of states in this RigidBodyTree, which is equal to
+  /// get_num_positions() + get_num_velocities().
+  int get_num_states() const;
+
+  /// Returns the number of position states outputted by this %RigidBodyTree.
   int get_num_positions() const;
 
 #ifndef SWIG
@@ -1152,9 +1154,7 @@ class RigidBodyTree {
 #endif
   int number_of_positions() const;
 
-  /**
-   * Returns the number of velocity states outputted by this %RigidBodyTree.
-   */
+  /// Returns the number of velocity states outputted by this %RigidBodyTree.
   int get_num_velocities() const;
 
 #ifndef SWIG

@@ -679,7 +679,7 @@ class RigidBodySensor {
   /// Returns the name of the model (i.e., robot) that owns this sensor.
   const std::string& get_model_name() const;
 
-  /// Returns the frame to which thi sensor is attached.
+  /// Returns the frame to which this sensor is attached.
   const RigidBodyFrame<double>& get_frame() const;
 
   /// Returns the rigid body system to which this sensor attaches.
