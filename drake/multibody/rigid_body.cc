@@ -171,11 +171,13 @@ Isometry3d RigidBody<T>::ComputeWorldPose() const {
   }
 
   if (joint_ == nullptr) {
-    throw std::runtime_error("Trying to compute world pose for body with no parent joint:  " +
+    throw std::runtime_error("Trying to compute world pose for body with no "
+    "parent joint:  " +
         name_);
   }
   if (!joint_->is_fixed()) {
-    throw std::runtime_error("Trying to compute world pose for a body with a non-fixed parent joint:  " +
+    throw std::runtime_error("Trying to compute world pose for a body with a "
+    "non-fixed parent joint:  " +
         name_);
   }
   return parent_->ComputeWorldPose() * joint_->get_transform_to_parent_body();
