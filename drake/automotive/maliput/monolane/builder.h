@@ -22,6 +22,7 @@ class RoadGeometry;
 
 namespace monolane {
 
+/// @file
 /// Builder for monolane road networks.
 ///
 /// monolane is a simple road-network implementation:
@@ -34,63 +35,104 @@ namespace monolane {
 ///    of the path.
 
 
-/// Planar information for an endpoint specification.
+/// XY-plane-only parameters for an endpoint of a connection, specified in
+/// the world frame.
+///
 /// The three components are:
 ///  - x: x position
 ///  - y: y position
 ///  - heading: heading of reference path (radians, zero == x-direction)
-struct XYPoint {
-  XYPoint() {}
+class EndpointXy {
+ public:
+  EndpointXy() {}
 
-  XYPoint(double ax, double ay, double aheading)
-      :x(ax), y(ay), heading(aheading) {}
+  EndpointXy(double x, double y, double heading)
+      :x_(x), y_(y), heading_(heading) {}
 
-
-  XYPoint reverse() const {
-    return XYPoint(x, y,
-                   std::atan2(-std::sin(heading), -std::cos(heading)));
+  /// Returns the parameters for an endpoint with reversed direction.
+  EndpointXy reverse() const {
+    return EndpointXy(x_, y_,
+                      std::atan2(-std::sin(heading_), -std::cos(heading_)));
   }
 
-  double x{};
-  double y{};
-  double heading{};
+  double x() const { return x_; }
+
+  double y() const { return y_; }
+
+  double heading() const { return heading_; }
+
+ private:
+  double x_{};
+  double y_{};
+  double heading_{};
 };
 
 
-/// Out-of-plane information for endpoint specification.
+/// Out-of-plane parameters for an endpoint of a connection, specified in
+/// the world frame.
+///
 /// The four components are:
 ///  - z: elevation
-///  - zdot: grade (rate of change of elevation with respect to
-///          arc length of the reference path)
+///  - z_dot: grade (rate of change of elevation with respect to
+///           arc length of the reference path)
 ///  - theta: superelevation (rotation of road surface around r = 0 centerline;
 ///           theta > 0 --> elevation at r > 0 is above elevation at r < 0)
-///  - thetadot: rate of change of superelevation with respect to arc length
-///              of the reference path
-struct ZPoint {
-  ZPoint reverse() const {
-    return {z, -zdot, -theta, -thetadot};
+///  - theta_dot: rate of change of superelevation with respect to arc length
+///               of the reference path
+class EndpointZ {
+ public:
+  EndpointZ() {}
+
+  EndpointZ(double z, double z_dot, double theta, double theta_dot)
+      : z_(z), z_dot_(z_dot), theta_(theta), theta_dot_(theta_dot) {}
+
+  /// Returns the parameters for an endpoint with reversed direction.
+  EndpointZ reverse() const {
+    return EndpointZ(z_, -z_dot_, -theta_, -theta_dot_);
   }
 
-  double z{};
-  double zdot{};
+  double z() const { return z_; }
 
-  double theta{};  // superelevation
-  double thetadot{};
+  double z_dot() const { return z_dot_; }
+
+  double theta() const { return theta_; }
+
+  double theta_dot() const { return theta_dot_; }
+
+ private:
+  double z_{};
+  double z_dot_{};
+
+  double theta_{};
+  double theta_dot_{};
 };
 
 
-/// Complete information for endpoint specification.
-struct XYZPoint {
-  XYZPoint() {}
+/// Complete set of parameters for an endpoint of a connection,
+/// specified in the world frame.  It comprises two subsets of parameters:
+/// those pertaining only to the xy ground-plane, and those pertaining to
+/// out-of-plane aspects of an endpoint.
+class Endpoint {
+ public:
+  Endpoint() {}
 
-  XYZPoint(const XYPoint& axy, const ZPoint& az) : xy(axy), z(az) {}
+  Endpoint(const EndpointXy& xy, const EndpointZ& z) : xy_(xy), z_(z) {}
 
-  XYZPoint reverse() const {
-    return {xy.reverse(), z.reverse()};
+  /// Returns the parameters for an endpoint with reversed direction.
+  Endpoint reverse() const {
+    return Endpoint(xy_.reverse(), z_.reverse());
   }
 
-  XYPoint xy;
-  ZPoint z;
+  /// Returns the subset of parameters pertaining to the xy ground-plane.
+  const EndpointXy& xy() const { return xy_; }
+
+  /// Returns the subset of parameters pertaining to out-of-ground-plane
+  /// aspects.
+  const EndpointZ& z() const { return z_; }
+
+ private:
+  EndpointXy xy_;
+  EndpointZ z_;
 };
 
 
@@ -122,7 +164,7 @@ struct ArcOffset {
 /// Two connection geometries are supported: line and arc.  These
 /// primitives determine the projection of the reference path onto the
 /// (locally-flat) plane of the earth.  The out-of-plane shape of
-/// the path will be determined by the ZPoint (elevation) parameters
+/// the path will be determined by the EndpointZ (elevation) parameters
 /// of the endpoints.
 class Connection {
  public:
@@ -131,7 +173,7 @@ class Connection {
 
   /// Construct a line-segment connection joining @p start to @p end.
   Connection(const std::string& id,
-             const XYZPoint& start, const XYZPoint& end)
+             const Endpoint& start, const Endpoint& end)
       : type_(kLine), id_(id), start_(start), end_(end) {}
 
   /// Constructs an arc-segment connection joining @p start to @p end.
@@ -142,7 +184,7 @@ class Connection {
   /// @p radius must be non-negative.  @p d_theta > 0 indicates a
   /// counterclockwise arc from start to end.
   Connection(const std::string& id,
-             const XYZPoint& start, const XYZPoint& end,
+             const Endpoint& start, const Endpoint& end,
              double cx, double cy, double radius, double d_theta)
       : type_(kArc), id_(id), start_(start), end_(end),
         cx_(cx), cy_(cy), radius_(radius), d_theta_(d_theta) {}
@@ -154,10 +196,10 @@ class Connection {
   const std::string& id() const { return id_; }
 
   /// Returns the parameters of the start point.
-  const XYZPoint& start() const { return start_; }
+  const Endpoint& start() const { return start_; }
 
   /// Returns the parameters of the endpoint.
-  const XYZPoint& end() const { return end_; }
+  const Endpoint& end() const { return end_; }
 
   /// Returns the x-component of the arc center (for arc connections only).
   double cx() const { return cx_; }
@@ -181,8 +223,8 @@ class Connection {
  private:
   Type type_{};
   std::string id_;
-  XYZPoint start_;
-  XYZPoint end_;
+  Endpoint start_;
+  Endpoint end_;
 
   // Bits specific to type_ == kArc:
   double cx_{};
@@ -255,24 +297,24 @@ class Builder {
   /// at the end-point.
   const Connection* Connect(
       const std::string& id,
-      const XYZPoint& start,
+      const Endpoint& start,
       const double length,
-      const ZPoint& z_end);
+      const EndpointZ& z_end);
 
   /// Connect @p start to an end-point displaced from @p start via an arc.
   /// @p arc specifies the shape of the arc.  @p z_end specifies the
   /// elevation characteristics at the end-point.
   const Connection* Connect(
       const std::string& id,
-      const XYZPoint& start,
+      const Endpoint& start,
       const ArcOffset& arc,
-      const ZPoint& z_end);
+      const EndpointZ& z_end);
 
   /// Set the default branch for one end of a connection.
   ///
   /// The default branch for the @p in_end of connection @p in will set to be
   /// @p out_end of connection @p out.  The specified connections must
-  /// actually be joined at the specified ends (i.e., the XYZPoint's for
+  /// actually be joined at the specified ends (i.e., the Endpoint's for
   /// those ends must be coincident and (anti)parallel within the tolerances
   /// for the Builder).
   void SetDefaultBranch(
@@ -299,21 +341,21 @@ class Builder {
   ///@}
 
  private:
-  class XYZPointFuzzyOrder {
+  class EndpointFuzzyOrder {
    public:
-    explicit XYZPointFuzzyOrder(const double linear_tolerance)
+    explicit EndpointFuzzyOrder(const double linear_tolerance)
         : lin_tol_(linear_tolerance) {}
 
-    bool operator()(const XYZPoint& lhs, const XYZPoint& rhs) const {
-      switch (fuzzy_compare(rhs.xy.x, lhs.xy.x)) {
+    bool operator()(const Endpoint& lhs, const Endpoint& rhs) const {
+      switch (fuzzy_compare(rhs.xy().x(), lhs.xy().x())) {
         case -1: { return true; }
         case 1: { return false; }
         case 0: {
-          switch (fuzzy_compare(rhs.xy.y, lhs.xy.y)) {
+          switch (fuzzy_compare(rhs.xy().y(), lhs.xy().y())) {
             case -1: { return true; }
             case 1: { return false; }
             case 0: {
-              switch (fuzzy_compare(rhs.z.z, lhs.z.z)) {
+              switch (fuzzy_compare(rhs.z().z(), lhs.z().z())) {
                 case -1: { return true; }
                 case 1: { return false; }
                 case 0: { return false; }
@@ -359,17 +401,17 @@ class Builder {
       const Connection* const cnx,
       Junction* const junction,
       RoadGeometry* const rg,
-      std::map<XYZPoint, BranchPoint*, XYZPointFuzzyOrder>* const bp_map) const;
+      std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder>* const bp_map) const;
 
   BranchPoint* FindOrCreateBranchPoint(
-      const XYZPoint& point,
+      const Endpoint& point,
       RoadGeometry* rg,
-      std::map<XYZPoint, BranchPoint*, XYZPointFuzzyOrder>* const bp_map) const;
+      std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder>* const bp_map) const;
 
   void AttachBranchPoint(
-      const XYZPoint& point, Lane* const lane, const api::LaneEnd::Which end,
+      const Endpoint& point, Lane* const lane, const api::LaneEnd::Which end,
       RoadGeometry* rg,
-      std::map<XYZPoint, BranchPoint*, XYZPointFuzzyOrder>* bp_map) const;
+      std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder>* bp_map) const;
 
   api::RBounds lane_bounds_;
   api::RBounds driveable_bounds_;
