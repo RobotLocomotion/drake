@@ -19,7 +19,6 @@
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/function.h"
-#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solution_result.h"
 
 namespace drake {
