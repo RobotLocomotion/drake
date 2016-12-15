@@ -5,7 +5,8 @@ add_library_with_exports(LIB_NAME drakeTrajectoryOptimization SOURCE_FILES
 target_link_libraries(drakeTrajectoryOptimization
   drakeOptimization
   drakeSystemFramework
-  drakeTrajectories)
+  drakeTrajectories
+  Eigen3::Eigen)
 drake_install_libraries(drakeTrajectoryOptimization)
 drake_install_headers(
   direct_collocation.h

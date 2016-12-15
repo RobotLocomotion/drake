@@ -36,11 +36,12 @@ add_library_with_exports(LIB_NAME drakeRigidBodyPlant SOURCE_FILES
   ${lcm_dependent_source_files}
   ${source_files})
 target_link_libraries(drakeRigidBodyPlant
-  ${lcm_dependent_link_libraries}
   drakeCommon
-  drakeSystemFramework
+  drakeOptimization
   drakeRBM
-  drakeOptimization)
+  drakeSystemFramework
+  Eigen3::Eigen
+  ${lcm_dependent_link_libraries})
 
 drake_install_headers(
     ${lcm_dependent_header_files}

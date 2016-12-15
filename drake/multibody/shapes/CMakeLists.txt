@@ -1,6 +1,8 @@
 add_library_with_exports(LIB_NAME drakeShapes SOURCE_FILES geometry.cc element.cc visual_element.cc)
-target_link_libraries(drakeShapes spruce tinyobjloader)
-include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/externals/tinyobjloader)
+target_link_libraries(drakeShapes
+  Eigen3::Eigen
+  spruce
+  tinyobjloader)
 
 # if(BUILD_TESTING)
 #   add_subdirectory(test)

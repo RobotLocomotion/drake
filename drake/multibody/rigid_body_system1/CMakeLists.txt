@@ -1,10 +1,11 @@
 add_library_with_exports(LIB_NAME drakeRBSystem SOURCE_FILES RigidBodySystem.cpp)
 target_link_libraries(drakeRBSystem
     drakeIK
-    drakeOptimization
     drakeMultibodyParsers
+    drakeOptimization
     drakeRBM
-    drakeRigidBodyConstraint)
+    drakeRigidBodyConstraint
+    Eigen3::Eigen)
 
 drake_install_headers(RigidBodySystem.h)
 drake_install_libraries(drakeRBSystem)
@@ -14,6 +15,7 @@ drake_install_pkg_config_file(drake-rbsystem
   LIBS -ldrakeRBSystem
   REQUIRES
     drake-ik
+    drake-multibody-parsers
     drake-optimization
     drake-rbm
     drake-rigid-body-constraint
