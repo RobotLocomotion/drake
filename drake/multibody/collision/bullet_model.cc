@@ -387,6 +387,7 @@ void BulletModel::DoAddElement(const Element& element) {
       // its world transform.
       btTransform btT = convert(element.getWorldTransform());
       bt_obj->setWorldTransform(btT);
+      bt_obj_no_margin->setWorldTransform(btT);
       bullet_world_.bt_collision_world->
           addCollisionObject(bt_obj.get(),
                              collision_filter_group, collision_filter_mask);
