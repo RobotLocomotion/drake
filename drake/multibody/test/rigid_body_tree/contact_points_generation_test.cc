@@ -6,7 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 
 // Tests the functionality that computes the contact points for each body.
 // A body's contact points depend on its collision elements.  These tests
