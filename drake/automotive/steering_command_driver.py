@@ -250,7 +250,7 @@ def main():
     if 'pygame' not in sys.modules:
         print >>sys.stderr, 'error: missing pygame; see README.md for help.'
         return 1
-        
+
     publisher = SteeringCommandPublisher(
       args.input_method, args.lcm_tag, args.joy_name)
     publisher.start()
