@@ -38,7 +38,7 @@ new_git_repository(
 new_git_repository(
     name = "lcm",
     remote = "https://github.com/lcm-proj/lcm.git",
-    commit = "a8cda6a64b31739a781b67408c63bec08b15ab32",
+    commit = "9015dce5defd3902b1725bd091b80c0517774e40",
     build_file = "tools/lcm.BUILD",
 )
 
