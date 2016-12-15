@@ -16,14 +16,14 @@ namespace monolane {
 
 namespace {
 
-api::RBounds rbounds(const YAML::Node& node) {
+api::RBounds r_bounds(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 2);
-  return {node[0].as<double>(), node[1].as<double>()};
+  return api::RBounds(node[0].as<double>(), node[1].as<double>());
 }
 
 
-double d2r(double degrees) {
+double deg_to_rad(double degrees) {
   return degrees * M_PI / 180.;
 }
 
@@ -31,30 +31,30 @@ double d2r(double degrees) {
 EndpointXy endpoint_xy(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 3);
-  return {
-    node[0].as<double>(), node[1].as<double>(), d2r(node[2].as<double>())};
+  return EndpointXy(node[0].as<double>(), node[1].as<double>(),
+                    deg_to_rad(node[2].as<double>()));
 }
 
 
-EndpointZ zpoint(const YAML::Node& node) {
+EndpointZ endpoint_z(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 4);
-  return {
-    node[0].as<double>(), node[1].as<double>(),
-        d2r(node[2].as<double>()), d2r(node[3].as<double>())};
+  return EndpointZ(
+      node[0].as<double>(), node[1].as<double>(),
+      deg_to_rad(node[2].as<double>()), deg_to_rad(node[3].as<double>()));
 }
 
 
-Endpoint xyzpoint(const YAML::Node& node) {
+Endpoint endpoint(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsMap());
-  return {endpoint_xy(node["xypoint"]), zpoint(node["zpoint"])};
+  return Endpoint(endpoint_xy(node["xypoint"]), endpoint_z(node["zpoint"]));
 }
 
 
 ArcOffset arc_offset(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 2);
-  return {node[0].as<double>(), d2r(node[1].as<double>())};
+  return ArcOffset(node[0].as<double>(), deg_to_rad(node[1].as<double>()));
 }
 
 
@@ -120,7 +120,7 @@ const Connection* MaybeMakeConnection(
       } else {
         return builder->Connect(
             id, *start_point, node["length"].as<double>(),
-            zpoint(node["z_end"]));
+            endpoint_z(node["z_end"]));
       }
     }
     case kArc: {
@@ -129,7 +129,7 @@ const Connection* MaybeMakeConnection(
                                 ee_point->z());
       } else {
         return builder->Connect(id, *start_point, arc_offset(node["arc"]),
-                                zpoint(node["z_end"]));
+                                endpoint_z(node["z_end"]));
       }
     }
     default: {
@@ -144,10 +144,10 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
   YAML::Node mmb = node["maliput_monolane_builder"];
   DRAKE_DEMAND(mmb.IsMap());
 
-  Builder builder(rbounds(mmb["lane_bounds"]),
-                  rbounds(mmb["driveable_bounds"]),
+  Builder builder(r_bounds(mmb["lane_bounds"]),
+                  r_bounds(mmb["driveable_bounds"]),
                   mmb["position_precision"].as<double>(),
-                  d2r(mmb["orientation_precision"].as<double>()));
+                  deg_to_rad(mmb["orientation_precision"].as<double>()));
 
   drake::log()->debug("loading points !");
   YAML::Node points = mmb["points"];
@@ -155,7 +155,7 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
   std::map<std::string, Endpoint> xyz_catalog;
   for (const auto& p : points) {
     xyz_catalog[std::string("points.") + p.first.as<std::string>()] =
-        xyzpoint(p.second);
+        endpoint(p.second);
   }
 
   drake::log()->debug("loading raw connections !");
