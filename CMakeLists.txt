@@ -19,8 +19,11 @@ drake_setup_options()
 
 # External projects in order of dependencies; 'trivial' ones first
 drake_add_external(avl PUBLIC CMAKE FORTRAN)
+drake_add_external(ctk_python_console CMAKE PYTHON QT)
 drake_add_external(eigen PUBLIC CMAKE)
 drake_add_external(meshconverters PUBLIC CMAKE)
+drake_add_external(pythonqt CMAKE PYTHON QT)
+drake_add_external(qt_property_browser CMAKE QT)
 drake_add_external(sedumi PUBLIC CMAKE MATLAB)
 drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(spotless PUBLIC CMAKE MATLAB)
@@ -274,16 +277,23 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
 )
 
 # director
-drake_add_external(director PUBLIC CMAKE TEST PYTHON
-  SOURCE_SUBDIR distro/superbuild
+drake_add_external(director PUBLIC CMAKE TEST PYTHON QT
   CMAKE_ARGS
     -DUSE_DRAKE=ON
     -DUSE_LCM=${HAVE_LCM}
     -DUSE_LCMGL=${HAVE_LIBBOT}
-    -DUSE_SYSTEM_LCM=ON
-    -DUSE_EXTERNAL_INSTALL=ON
+    -DUSE_LIBBOT=${HAVE_LIBBOT}
+    -DENABLE_TESTING=ON
   INSTALL_COMMAND :
-  DEPENDS bot_core_lcmtypes drake lcm libbot)
+  DEPENDS
+    bot_core_lcmtypes
+    ctk_python_console
+    drake
+    lcm
+    libbot
+    pythonqt
+    qt_property_browser
+)
 
 # signalscope
 drake_add_external(signalscope PUBLIC

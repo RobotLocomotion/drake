@@ -99,3 +99,12 @@
 [submodule "ros/hsrb_description"]
 	path = ros/hsrb_description
 	url = https://github.com/ToyotaResearchInstitute/hsrb_description.git
+[submodule "externals/pythonqt"]
+	path = externals/pythonqt
+	url = https://github.com/commontk/PythonQt.git
+[submodule "externals/ctk_python_console"]
+	path = externals/ctk_python_console
+	url = https://github.com/patmarion/ctkPythonConsole
+[submodule "externals/qt_property_browser"]
+	path = externals/qt_property_browser
+	url = https://github.com/patmarion/QtPropertyBrowser
