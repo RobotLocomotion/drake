@@ -18,15 +18,14 @@ drake_setup_options()
 # BEGIN external projects
 
 # External projects in order of dependencies; 'trivial' ones first
+drake_add_external(avl PUBLIC CMAKE FORTRAN)
 drake_add_external(eigen PUBLIC CMAKE)
 drake_add_external(meshconverters PUBLIC CMAKE)
+drake_add_external(sedumi PUBLIC CMAKE MATLAB)
 drake_add_external(spdlog PUBLIC CMAKE)
+drake_add_external(spotless PUBLIC CMAKE MATLAB)
 drake_add_external(swigmake PUBLIC CMAKE MATLAB PYTHON)
 drake_add_external(yalmip PUBLIC CMAKE MATLAB)
-
-# avl
-# The Ninja generator does not support Fortran.
-drake_add_external(avl PUBLIC CMAKE FORTRAN)
 
 # bullet
 drake_add_external(bullet PUBLIC CMAKE
@@ -123,9 +122,6 @@ drake_add_external(nlopt PUBLIC CMAKE
     -DINSTALL_INCLUDE_DIR=${CMAKE_INSTALL_PREFIX}/include/nlopt
     -DUSE_SWIG=OFF)
 
-# sedumi
-drake_add_external(sedumi PUBLIC CMAKE MATLAB)
-
 # snopt
 drake_add_external(snopt CMAKE MATLAB
   CMAKE_ARGS
@@ -134,9 +130,6 @@ drake_add_external(snopt CMAKE MATLAB
     -DBUILD_TESTING=OFF
     -DBUILD_SNOPT_C_MEX=${Matlab_FOUND}
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON)
-
-# spotless
-drake_add_external(spotless PUBLIC CMAKE MATLAB)
 
 # octomap
 drake_add_external(octomap PUBLIC CMAKE
