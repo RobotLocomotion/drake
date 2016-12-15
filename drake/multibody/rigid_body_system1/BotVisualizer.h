@@ -11,7 +11,7 @@
 
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/system1/System.h"
 

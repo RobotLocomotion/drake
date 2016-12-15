@@ -35,7 +35,8 @@ TURN_RIGHT_SIGN = -1.0
 MAX_VELOCITY = 26.8224
 THROTTLE_SCALE = MAX_VELOCITY / 300.0
 
-BRAKE_SCALE = 1.0
+MAX_BRAKE = MAX_VELOCITY
+BRAKE_SCALE = THROTTLE_SCALE
 
 
 def _limit_steering(requested_value):
@@ -44,37 +45,75 @@ def _limit_steering(requested_value):
     else:
         return math.copysign(MAX_STEERING_ANGLE, requested_value)
 
-
-def _limit_throttle_step(requested_value):
-    if abs(requested_value) <= MAX_VELOCITY:
+# Applies the lower and upper limits to @p requested value.
+def _limit_throttle(requested_value):
+    if 0 <= requested_value <= MAX_VELOCITY:
         return requested_value
+    elif requested_value < 0:
+        return 0
     else:
         return MAX_VELOCITY
 
+def _limit_brake(requested_value):
+    if 0 <= requested_value <= MAX_BRAKE:
+        return requested_value
+    elif requested_value < 0:
+        return 0
+    else:
+        return MAX_BRAKE
 
 class KeyboardEventProcessor:
     def __init__(self):
         pygame.event.set_allowed(None)
         pygame.event.set_allowed([pygame.QUIT, pygame.KEYUP, pygame.KEYDOWN])
         pygame.key.set_repeat(100, 10)
+        self.throttle_gradient = 0;
+        self.brake_gradient = 0;
+        self.keep_current_throttle_brake = False;
 
     def processEvent(self, event, last_msg):
         new_msg = copy.copy(last_msg)
-        if (event.key == pygame.K_UP) and (event.type == pygame.KEYDOWN):
-            new_msg.throttle = _limit_throttle_step(
-                last_msg.throttle + (
-                    (event.type == pygame.KEYDOWN) * THROTTLE_SCALE))
-        elif event.key == pygame.K_DOWN:
-            new_msg.brake = (
-                (event.type == pygame.KEYDOWN) * BRAKE_SCALE)
-        elif (event.key == pygame.K_LEFT) and (event.type == pygame.KEYDOWN):
-            new_msg.steering_angle = _limit_steering(
+
+        if event.type == pygame.KEYUP and not self.keep_current_throttle_brake:
+            if hasattr(event, 'key'):
+                if (event.key == pygame.K_SPACE):
+                    self.keep_current_throttle_brake = True
+                    return new_msg
+                if (event.key == pygame.K_UP):
+                    self.throttle_gradient = -1
+                elif (event.key == pygame.K_DOWN):
+                    self.brake_gradient = -1
+            # Post a fake KEYUP event so the throttle/brake can keep decreasing
+            # in the absence of real (and impossible) successive key releases.
+            # Yield to any KEYDOWN event waiting in the queue.
+            if not pygame.event.peek(pygame.KEYDOWN):
+                dummyKeyUpEvent = pygame.event.Event(pygame.KEYUP)
+                pygame.event.post(dummyKeyUpEvent)
+
+        if (event.type == pygame.KEYDOWN):
+            self.keep_current_throttle_brake = False;
+            if (event.key == pygame.K_SPACE):
+                self.keep_current_throttle_brake = True;
+                self.throttle_gradient = 0
+                self.brake_gradient = 0
+            elif (event.key == pygame.K_UP):
+                self.throttle_gradient = 1
+            elif (event.key == pygame.K_DOWN):
+                self.brake_gradient = 1
+            elif (event.key == pygame.K_LEFT):
+                new_msg.steering_angle = _limit_steering(
                 last_msg.steering_angle + (
                     STEERING_BUTTON_STEP_ANGLE * TURN_LEFT_SIGN))
-        elif (event.key == pygame.K_RIGHT) and (event.type == pygame.KEYDOWN):
-            new_msg.steering_angle = _limit_steering(
-                last_msg.steering_angle + (
-                    STEERING_BUTTON_STEP_ANGLE * TURN_RIGHT_SIGN))
+            elif (event.key == pygame.K_RIGHT):
+                new_msg.steering_angle = _limit_steering(
+                    last_msg.steering_angle + (
+                        STEERING_BUTTON_STEP_ANGLE * TURN_RIGHT_SIGN))
+
+        new_msg.throttle = _limit_throttle(
+                last_msg.throttle + self.throttle_gradient * THROTTLE_SCALE)
+        new_msg.brake = _limit_brake(
+                last_msg.brake + self.brake_gradient * BRAKE_SCALE)
+
         return new_msg
 
 
@@ -104,11 +143,16 @@ class JoystickEventProcessor:
             new_msg.steering_angle = (
                 TURN_RIGHT_SIGN * event.value * MAX_STEERING_ANGLE)
         elif event.axis == ACCEL_AXIS:
-            new_msg.throttle = -0.5 * event.value + 0.5
+            new_msg.throttle = _limit_throttle(-0.5 * event.value + 0.5)
         elif event.axis == BRAKE_AXIS:
-            new_msg.brake = -0.5 * event.value + 0.5
+            new_msg.brake = _limit_brake(-0.5 * event.value + 0.5)
         return new_msg
 
+
+
+class bcolors:
+    OKBLUE = '\033[94m'
+    ENDC = '\033[0m'
 
 class SteeringCommandPublisher:
     def __init__(self, input_method, lcm_tag, joy_name):
@@ -119,6 +163,15 @@ class SteeringCommandPublisher:
         self.font = pygame.font.SysFont('Courier', 20)
         if input_method == 'keyboard':
             self.event_processor = KeyboardEventProcessor()
+            print bcolors.OKBLUE + '--- Keyboard Control Instruction --- '\
+                    + bcolors.ENDC
+            print 'To increase the throttle/brake: press and hold the Up/Down'\
+                    + ' Arrow'
+            print 'To decrease the throttle/brake: release the Up/Down Arrow'
+            print 'To keep the the current throttle/brake: press the Space Bar'
+            print 'To increase left/right steering: press the Left/Right Arrow'
+            print bcolors.OKBLUE + '------------------------------------ ' \
+                    + bcolors.ENDC
         else:
             self.event_processor = JoystickEventProcessor(joy_name)
         self.last_msg = lcm_msg()

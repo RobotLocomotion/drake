@@ -1,4 +1,4 @@
-#include "drake/multibody/package_map.h"
+#include "drake/multibody/parsers/package_map.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -30,7 +30,11 @@ PackageMap::PackageMap() {}
 
 void PackageMap::Add(const string& package_name, const string& package_path) {
   DRAKE_DEMAND(map_.find(package_name) == map_.end());
-  DRAKE_DEMAND(spruce::path(package_path).exists());
+  if (!spruce::path(package_path).exists()) {
+    throw std::runtime_error(
+        "Could not add package://" + package_name + " to the search path "
+        "because directory " + package_path + " does not exist");
+  }
   map_.insert(make_pair(package_name, package_path));
 }
 

@@ -1174,7 +1174,7 @@ class QPController {
 
   // prog_ is only allocated in ResizeQP, Control only updates the appropriate
   // matrices / vectors.
-  drake::solvers::MathematicalProgram prog_;
+  std::unique_ptr<drake::solvers::MathematicalProgram> prog_;
   drake::solvers::GurobiSolver solver_;
   drake::solvers::DecisionVariableVectorX basis_;
   drake::solvers::DecisionVariableVectorX vd_;

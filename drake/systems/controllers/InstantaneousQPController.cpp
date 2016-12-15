@@ -18,7 +18,7 @@
 #include "drake/math/quaternion.h"
 #include "drake/solvers/fast_qp.h"
 #include "drake/systems/controllers/controlUtil.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/lcmUtil.h"
 #include "drake/util/yaml/yamlUtil.h"

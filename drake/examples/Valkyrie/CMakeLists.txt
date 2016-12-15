@@ -59,8 +59,9 @@ if (lcm_FOUND)
 
   add_executable(valkyrie_simulation valkyrie_simulation.cc valkyrie_constants.cc)
   target_link_libraries(valkyrie_simulation
-      drakeRigidBodyPlant
       drakeLCMSystem2
+      drakeMultibodyParsers
+      drakeRigidBodyPlant
       drakeRobotStateEncoder
       drakeSystemAnalysis
       drakeSystemFramework
@@ -70,8 +71,9 @@ if (lcm_FOUND)
 
   add_executable(valkyrie_pd_ff_controller valkyrie_pd_ff_controller.cc valkyrie_constants.cc)
   target_link_libraries(valkyrie_pd_ff_controller
-      drakeRigidBodyPlant
       drakeLCMSystem2
+      drakeMultibodyParsers
+      drakeRigidBodyPlant
       drakeRobotStateDecoder
       drakeSystemFramework)
 endif()

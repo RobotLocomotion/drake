@@ -62,6 +62,7 @@ if(lcm_FOUND)
     )
   target_link_libraries(drakeAutomotiveLcm
     drakeAutomotive
+    drakeMultibodyParsers
     drakeRigidBodyPlant
     )
   drake_install_libraries(drakeAutomotiveLcm)

@@ -1,4 +1,4 @@
-#include "drake/multibody/package_map.h"
+#include "drake/multibody/parsers/package_map.h"
 
 #include <gtest/gtest.h>
 
@@ -26,7 +26,7 @@ void VerifyMatch(const PackageMap& package_map,
 // Tests that the PackageMap can be manually populated.
 GTEST_TEST(PackageMapTest, TestManualPopulation) {
   map<string, string> expected_packages = {
-    {"package_foo", GetDrakePath() + "/common"},
+    {"package_foo", GetDrakePath() + "/multibody/parsers"},
     {"my_package", GetDrakePath() + "/multibody"}
   };
 
@@ -40,7 +40,8 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
 
 // Tests that PackageMap can be populated by crawling down a directory tree.
 GTEST_TEST(PackageMapTest, TestPopulateMapFromFolder) {
-  const string root_path(GetDrakePath() + "/multibody/test/package_map_test/");
+  const string root_path(GetDrakePath() +
+                         "/multibody/parsers/test/package_map_test/");
 
   PackageMap package_map;
   package_map.PopulateFromFolder(root_path);
@@ -65,7 +66,7 @@ GTEST_TEST(PackageMapTest, TestPopulateMapFromFolder) {
 // tree when it is provided a path with extraneous trailing slashes.
 GTEST_TEST(PackageMapTest, TestPopulateMapFromFolderExtraTrailingSlashes) {
   const string root_path(GetDrakePath() +
-                         "/multibody/test/package_map_test/");
+                         "/multibody/parsers/test/package_map_test/");
 
   PackageMap package_map;
   package_map.PopulateFromFolder(root_path + "///////");
@@ -89,7 +90,7 @@ GTEST_TEST(PackageMapTest, TestPopulateMapFromFolderExtraTrailingSlashes) {
 // Tests that PackageMap can be populated by crawling up a directory tree.
 GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
   const string sdf_file_name(GetDrakePath() +
-      "/multibody/test/package_map_test/package_map_test_packages/"
+      "/multibody/parsers/test/package_map_test/package_map_test_packages/"
       "package_map_test_package_a/sdf/test_model.sdf");
 
   PackageMap package_map;
@@ -97,7 +98,7 @@ GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
 
   map<string, string> expected_packages = {
     {"package_map_test_package_a",
-        GetDrakePath() + "/multibody/test/package_map_test/"
+        GetDrakePath() + "/multibody/parsers/test/package_map_test/"
                          "package_map_test_packages/package_map_test_package_a"}
   };
 
