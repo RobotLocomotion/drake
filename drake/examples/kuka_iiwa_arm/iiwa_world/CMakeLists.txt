@@ -19,9 +19,17 @@ if(lcm_FOUND)
       world_sim_diagram_factory.h)
   drake_install_pkg_config_file(drake-kuka-iiwa-world
       TARGET drakeKukaIiwaWorld
-      LIBS -ldrakeKukaIiwaWorld
-      REQUIRES drake-kuka-iiwa-arm-common
-      VERSION 0.0.1)
+      LIBS
+        -ldrakeKukaIiwaWorld
+        -lgflags
+      REQUIRES
+        drake-kuka-iiwa-arm-common
+        drake-lcm-system2
+        drake-multibody-parsers
+        drake-rigid-body-plant
+        drake-system-analysis
+        drake-system-framework
+        drake-system-primitives)
 
   add_executable(iiwa_world_demo iiwa_world_demo.cc)
   target_link_libraries(iiwa_world_demo

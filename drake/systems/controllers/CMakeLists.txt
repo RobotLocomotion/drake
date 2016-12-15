@@ -8,13 +8,19 @@ drake_install_pkg_config_file(drake-linear-control
   LIBS -ldrakeLinearControl)
 
 add_library_with_exports(LIB_NAME drakeControlUtil SOURCE_FILES controlUtil.cpp)
-target_link_libraries(drakeControlUtil drakeRBM drakeTrajectories)
+target_link_libraries(drakeControlUtil
+  drakeRBM
+  drakeTrajectories
+  Eigen3::Eigen)
 drake_install_libraries(drakeControlUtil)
 drake_install_headers(controlUtil.h)
 drake_install_pkg_config_file(drake-control-util
   TARGET drakeControlUtil
   LIBS -ldrakeControlUtil
-  REQUIRES eigen3)
+  REQUIRES
+    drake-rbm
+    drake-trajectories
+    eigen3)
 
 if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
   add_library_with_exports(LIB_NAME drakeQPCommon SOURCE_FILES InstantaneousQPController.cpp)
@@ -26,6 +32,7 @@ if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
       drakeSide
       drakeTrajectories
       drakeYAMLUtil
+      Eigen3::Eigen
       lcm)
   drake_install_libraries(drakeQPCommon)
   drake_install_headers(QPCommon.h InstantaneousQPController.h)
@@ -36,6 +43,7 @@ if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
     REQUIRES
       drake-control-util
       drake-lcm-util
+      drake-multibody-parsers
       drake-qp
       drake-side
       drake-trajectories
@@ -50,13 +58,17 @@ if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
 endif()
 
 add_library_with_exports(LIB_NAME drakeZMPUtil SOURCE_FILES zmpUtil.cpp)
-target_link_libraries(drakeZMPUtil drakeTrajectories)
+target_link_libraries(drakeZMPUtil
+  drakeTrajectories
+  Eigen3::Eigen)
 drake_install_libraries(drakeZMPUtil)
 drake_install_headers(zmpUtil.h)
 drake_install_pkg_config_file(drake-zmp-util
   TARGET drakeZMPUtil
   LIBS -ldrakeZMPUtil
-  REQUIRES eigen3)
+  REQUIRES
+    drake-trajectories
+    eigen3)
 
 # System 2 controllers
 set(system2_sources
