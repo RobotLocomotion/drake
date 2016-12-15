@@ -48,6 +48,11 @@ class RosClockPublisher : public LeafSystem<double> {
                   SystemOutput<double>* output) const
       override {}
 
+  /**
+   * Returns the number of subscribers to this clock publisher.
+   */
+  int get_num_subscribers() const;
+
   // TODO(liang.fok) Remove this method once we have a proper mock-ROS-topic
   // framework in place.
   /**

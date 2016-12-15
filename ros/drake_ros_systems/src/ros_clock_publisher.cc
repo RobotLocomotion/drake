@@ -18,11 +18,8 @@ RosClockPublisher::RosClockPublisher() {
   clock_publisher_ = node_handle.advertise<rosgraph_msgs::Clock>("/clock", 1);
 }
 
-
 void RosClockPublisher::DoPublish(const Context<double>& context) const {
-  // If the clock message is not in its initial state, check if the minimum
-  // period between transmission has elapsed before proceeding with the
-  // transmission.
+  // Aborts the transmission if the minimum transmission period hasn't been met.
   if (clock_message_.clock.sec != 0 || clock_message_.clock.nsec != 0) {
     double duration = duration_cast<milliseconds>(steady_clock::now() -
                         previous_transmit_time_).count();
@@ -38,6 +35,10 @@ void RosClockPublisher::DoPublish(const Context<double>& context) const {
   clock_message_.clock.sec = static_cast<int>(whole_seconds);
   clock_message_.clock.nsec = static_cast<int>(fractional_seconds * 1e9);
   clock_publisher_.publish(clock_message_);
+}
+
+int RosClockPublisher::get_num_subscribers() const {
+  return static_cast<int>(clock_publisher_.getNumSubscribers());
 }
 
 }  // namespace systems
