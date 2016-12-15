@@ -103,3 +103,12 @@ same spirit as ``clang-format`` formatting C++ code)::
   cd /path/to/drake-distro
   tools/buildifier.sh                     # By default, reformats all BUILD files.
   tools/buildifier.sh drake/common/BUILD  # Only reformat one file.
+
+FAQ
+===
+
+Q. What does ``ccache: error: Could not find compiler "gcc" in PATH`` mean?
+
+   A. Your ``$PATH`` still has the magic ``ccache`` directory on it somewhere.
+      Update your dotfiles so that something like ``/usr/lib/ccache`` is not on
+      your ``$PATH``.
