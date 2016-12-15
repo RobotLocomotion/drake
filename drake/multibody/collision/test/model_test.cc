@@ -761,31 +761,40 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
   }
 }
 
-// Tests that static collision elements do not collide with other static
+// Tests that anchored collision elements do not collide with other anchored
 // collision elements.
 // This test sets four spheres in a box arrangement so that they collide with
 // their neighboring spheres. In this configuration, the collision dispatcher
 // will return four collision points.
-// However, two collision elements (ball1 and ball4) are flagged as static and
-// therefore only three collision points are reported. Dynamic (non-static)
-// collision elements can still collide with static elements.
-GTEST_TEST(ModelTest, StaticElements) {
+// However, two collision elements (ball1 and ball4) are flagged as anchored and
+// therefore only three collision points are reported. Dynamic (non-anchored)
+// collision elements can still collide with anchored elements.
+GTEST_TEST(ModelTest, AnchoredElements) {
   DrakeShapes::Sphere sphere(0.5);
   Isometry3d pose = Isometry3d::Identity();
 
-  // Create collision elements.
-  // Flag ball1 and ball4 to be static.
+  // Creates collision elements.
+  // Positions the balls on the corners of squares.  This positioning is done
+  // on the *elements* themselves.  This confirms that this information is
+  // properly inherited by the underlying collision model
+  // Flags ball1 and ball4 to be anchored.
   auto ball1 = make_unique<Element>(sphere);
   ball1->set_anchored();
+  pose.translation() = Vector3d(0.45, 0.45, 0.0);
+  ball1->updateWorldTransform(pose);
+
   auto ball2 = make_unique<Element>(sphere);
+  pose.translation() = Vector3d(-0.45, 0.45, 0.0);
+  ball2->updateWorldTransform(pose);
+
   auto ball3 = make_unique<Element>(sphere);
+  pose.translation() = Vector3d(-0.45, -0.45, 0.0);
+  ball3->updateWorldTransform(pose);
+
   auto ball4 = make_unique<Element>(sphere);
   ball4->set_anchored();
-
-  ElementId ball1_id = ball1->getId();
-  ElementId ball2_id = ball2->getId();
-  ElementId ball3_id = ball3->getId();
-  ElementId ball4_id = ball4->getId();
+  pose.translation() = Vector3d(0.45, -0.45, 0.0);
+  ball4->updateWorldTransform(pose);
 
   // Populate the model.
   std::shared_ptr<Model> model = newModel();
@@ -794,18 +803,6 @@ GTEST_TEST(ModelTest, StaticElements) {
   model->AddElement(move(ball3));
   model->AddElement(move(ball4));
 
-  pose.translation() = Vector3d(0.45, 0.45, 0.0);
-  model->updateElementWorldTransform(ball1_id, pose);
-
-  pose.translation() = Vector3d(-0.45, 0.45, 0.0);
-  model->updateElementWorldTransform(ball2_id, pose);
-
-  pose.translation() = Vector3d(-0.45, -0.45, 0.0);
-  model->updateElementWorldTransform(ball3_id, pose);
-
-  pose.translation() = Vector3d(0.45, -0.45, 0.0);
-  model->updateElementWorldTransform(ball4_id, pose);
-
   // List of collision points.
   std::vector<PointPair> points;
 
@@ -813,11 +810,11 @@ GTEST_TEST(ModelTest, StaticElements) {
   model->ComputeMaximumDepthCollisionPoints(false, points);
 
   // Only three points are expected (instead of four) since ball1 and ball4 are
-  // flagged as static.
+  // flagged as anchored.
   ASSERT_EQ(3u, points.size());
 }
 
-GTEST_TEST(ModelTest, StaticMeshes) {
+GTEST_TEST(ModelTest, AnchoredMeshes) {
   // Numerical precision tolerance to perform floating point comparisons.
   const double tolerance = 1.0e-8;
 
@@ -829,8 +826,8 @@ GTEST_TEST(ModelTest, StaticMeshes) {
   DrakeShapes::Mesh cap_shape(file_name, file_name);
 
   // Creates collision elements.
-  // Flag cap_element to be static. If not, Drake will create a convex hull for
-  // dynamic collision elements out of the points in the mesh.
+  // Flag cap_element to be anchored. If not, Drake will create a convex hull
+  // for dynamic collision elements out of the points in the mesh.
   auto sphere_element = make_unique<Element>(sphere_shape);
   Element* sphere = sphere_element.get();
   auto cap_element = make_unique<Element>(cap_shape);

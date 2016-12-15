@@ -93,6 +93,8 @@ GTEST_TEST(SdfAnchoredGeometry, LinkedToFloatdIsNotAnchored) {
   ExpectAnchored(body, 1, false);
 }
 
+
+
 // Confirms that parentless links, which are specified to be *fixed* to the
 // world by the parser, are marked as anchored from URDF file.
 GTEST_TEST(UrdfAnchoredGeometry, ParentlessLinkFixedToWorld) {
