@@ -38,9 +38,9 @@ template <typename T>
 class AffineSystem : public LeafSystem<T> {
  public:
   /// Constructs an Affine system with a fixed set of coefficient matrices `A`,
-  /// `B`,`C`, and `D` as well as fixed initial velocity offset `xDot0` and
+  /// `B`, `C`, and `D` as well as fixed initial velocity offset `xDot0` and
   /// output offset `y0`.
-  /// The coefficient matrices must obey the following dimensions :
+  /// The coefficient matrices must obey the following dimensions:
   /// | Matrix  | Num Rows    | Num Columns |
   /// |:-------:|:-----------:|:-----------:|
   /// | A       | num states  | num states  |

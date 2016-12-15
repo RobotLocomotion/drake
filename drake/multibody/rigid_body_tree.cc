@@ -2629,6 +2629,11 @@ RigidBody<T>* RigidBodyTree<T>::add_rigid_body(
 }
 
 template <typename T>
+int RigidBodyTree<T>::get_num_states() const {
+  return get_num_positions() + get_num_velocities();
+}
+
+template <typename T>
 int RigidBodyTree<T>::get_num_positions() const {
   return num_positions_;
 }

@@ -689,12 +689,14 @@ class RigidBodyTree {
                                Eigen::Matrix3Xd* terrain_points,
                                const std::string& group_name = "") const;
 
+  /// Infinity values show up as -1.
   bool collisionRaycast(const KinematicsCache<double>& cache,
                         const Eigen::Matrix3Xd& origins,
                         const Eigen::Matrix3Xd& ray_endpoints,
                         // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                         Eigen::VectorXd& distances,
                         bool use_margins = false);
+
   bool collisionRaycast(const KinematicsCache<double>& cache,
                         const Eigen::Matrix3Xd& origins,
                         const Eigen::Matrix3Xd& ray_endpoints,
@@ -1142,9 +1144,11 @@ class RigidBodyTree {
    */
   const RigidBody<T>& world() const { return *bodies[0]; }
 
-  /**
-   * Returns the number of position states outputted by this %RigidBodyTree.
-   */
+  /// Returns the number of states in this RigidBodyTree, which is equal to
+  /// get_num_positions() + get_num_velocities().
+  int get_num_states() const;
+
+  /// Returns the number of position states outputted by this %RigidBodyTree.
   int get_num_positions() const;
 
 #ifndef SWIG
@@ -1152,9 +1156,7 @@ class RigidBodyTree {
 #endif
   int number_of_positions() const;
 
-  /**
-   * Returns the number of velocity states outputted by this %RigidBodyTree.
-   */
+  /// Returns the number of velocity states outputted by this %RigidBodyTree.
   int get_num_velocities() const;
 
 #ifndef SWIG
