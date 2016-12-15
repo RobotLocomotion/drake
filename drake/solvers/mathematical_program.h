@@ -318,6 +318,18 @@ class MathematicalProgram {
  public:
   MathematicalProgram();
 
+  /** MathematicalProgram is not copyable. */
+  MathematicalProgram(const MathematicalProgram& rhs) = delete;
+
+  /** MathematicalProgram is not assinable. */
+  MathematicalProgram& operator=(const MathematicalProgram& rhs) = delete;
+
+  /** MathematicalProgram is not movable. */
+  MathematicalProgram(MathematicalProgram&& rhs) = delete;
+
+  /** MathematicalProgram is not move-assignable. */
+  MathematicalProgram& operator=(MathematicalProgram&& rhs) = delete;
+
   /**
    * Adds variables to MathematicalProgram.
    * Appending new variables to an internal vector of any existing vars.
