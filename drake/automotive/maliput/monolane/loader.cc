@@ -29,7 +29,7 @@ double d2r(double degrees) {
 }
 
 
-XYPoint xypoint(const YAML::Node& node) {
+EndpointXy endpoint_xy(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 3);
   return {
@@ -37,7 +37,7 @@ XYPoint xypoint(const YAML::Node& node) {
 }
 
 
-ZPoint zpoint(const YAML::Node& node) {
+EndpointZ zpoint(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 4);
   return {
@@ -46,9 +46,9 @@ ZPoint zpoint(const YAML::Node& node) {
 }
 
 
-XYZPoint xyzpoint(const YAML::Node& node) {
+Endpoint xyzpoint(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsMap());
-  return {xypoint(node["xypoint"]), zpoint(node["zpoint"])};
+  return {endpoint_xy(node["xypoint"]), zpoint(node["zpoint"])};
 }
 
 
@@ -59,9 +59,9 @@ ArcOffset arc_offset(const YAML::Node& node) {
 }
 
 
-std::unique_ptr<XYZPoint> ResolvePointReference(
+std::unique_ptr<Endpoint> ResolvePointReference(
     const std::string& ref,
-    const std::map<std::string, XYZPoint>& xyz_catalog) {
+    const std::map<std::string, Endpoint>& xyz_catalog) {
   auto parsed = [&]() {
     static const std::string kReverse {"reverse "};
     int where = ref.find(kReverse);
@@ -77,7 +77,7 @@ std::unique_ptr<XYZPoint> ResolvePointReference(
   if (it == xyz_catalog.end()) {
     return nullptr;
   }
-  return std::make_unique<XYZPoint>(
+  return std::make_unique<Endpoint>(
       parsed.second ? it->second.reverse() : it->second);
 }
 
@@ -88,7 +88,7 @@ std::unique_ptr<XYZPoint> ResolvePointReference(
 const Connection* MaybeMakeConnection(
     std::string id,
     YAML::Node node,
-    const std::map<std::string, XYZPoint>& xyz_catalog,
+    const std::map<std::string, Endpoint>& xyz_catalog,
     Builder* builder) {
   DRAKE_DEMAND(node.IsMap());
 
@@ -101,11 +101,11 @@ const Connection* MaybeMakeConnection(
   DRAKE_DEMAND(node["z_end"] || node["explicit_end"]);
   DRAKE_DEMAND(!(node["z_end"] && node["explicit_end"]));
 
-  std::unique_ptr<XYZPoint> start_point =
+  std::unique_ptr<Endpoint> start_point =
       ResolvePointReference(node["start"].as<std::string>(), xyz_catalog);
   if (!start_point) { return nullptr; }  // "Try to resolve later."
   enum SegmentType { kLine, kArc } segment_type = node["length"] ? kLine : kArc;
-  std::unique_ptr<XYZPoint> ee_point;  // optional explicit endpoint
+  std::unique_ptr<Endpoint> ee_point;  // optional explicit endpoint
   if (node["explicit_end"]) {
     ee_point = ResolvePointReference(node["explicit_end"].as<std::string>(),
                                      xyz_catalog);
@@ -117,7 +117,7 @@ const Connection* MaybeMakeConnection(
     case kLine: {
       if (ee_point) {
         return builder->Connect(
-            id, *start_point, node["length"].as<double>(), ee_point->z);
+            id, *start_point, node["length"].as<double>(), ee_point->z());
       } else {
         return builder->Connect(
             id, *start_point, node["length"].as<double>(),
@@ -127,7 +127,7 @@ const Connection* MaybeMakeConnection(
     case kArc: {
       if (ee_point) {
         return builder->Connect(id, *start_point, arc_offset(node["arc"]),
-                                ee_point->z);
+                                ee_point->z());
       } else {
         return builder->Connect(id, *start_point, arc_offset(node["arc"]),
                                 zpoint(node["z_end"]));
@@ -153,7 +153,7 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
   drake::log()->debug("loading points !");
   YAML::Node points = mmb["points"];
   DRAKE_DEMAND(points.IsMap());
-  std::map<std::string, XYZPoint> xyz_catalog;
+  std::map<std::string, Endpoint> xyz_catalog;
   for (const auto& p : points) {
     xyz_catalog[std::string("points.") + p.first.as<std::string>()] =
         xyzpoint(p.second);

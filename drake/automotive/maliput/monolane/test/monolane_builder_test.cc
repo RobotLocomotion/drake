@@ -14,7 +14,7 @@ GTEST_TEST(MonolaneBuilderTest, Fig8) {
   const double kAngularTolerance = 0.01 * M_PI;
   Builder b({-2., 2.}, {-4., 4.}, kLinearTolerance, kAngularTolerance);
 
-  XYZPoint start {{0., 0., -M_PI / 4.}, {0., 0., 0., 0.}};
+  Endpoint start {{0., 0., -M_PI / 4.}, {0., 0., 0., 0.}};
   auto c0 = b.Connect("0", start,
                       50., {3., 0., 0., 0.});
 
@@ -34,12 +34,17 @@ GTEST_TEST(MonolaneBuilderTest, Fig8) {
                       ArcOffset(50., -0.75 * M_PI), {3., 0., 0., 0.});
 
   // Tweak ends to check if fuzzy-matching is working.
-  XYZPoint c6end = c6->end();
-  c6end.xy.x += kLinearTolerance * 0.5;
-  c6end.xy.y -= kLinearTolerance * 0.5;
-  c6end.z.z += kLinearTolerance * 0.5;
-  ZPoint c0start_z = c0->start().z;
-  c0start_z.z -= kLinearTolerance * 0.5;
+  Endpoint c6end = c6->end();
+  c6end = Endpoint(EndpointXy(c6end.xy().x() + kLinearTolerance * 0.5,
+                              c6end.xy().y() - kLinearTolerance * 0.5,
+                              c6end.xy().heading()),
+                   EndpointZ(c6end.z().z() + kLinearTolerance * 0.5,
+                             c6end.z().z_dot(),
+                             c6end.z().theta(), c6end.z().theta_dot()));
+  EndpointZ c0start_z = c0->start().z();
+  c0start_z = EndpointZ(c0start_z.z() - kLinearTolerance * 0.5,
+                        c0start_z.z_dot(),
+                        c0start_z.theta(), c0start_z.theta_dot());
 
   b.Connect("7", c6end, 50., c0start_z);
 
