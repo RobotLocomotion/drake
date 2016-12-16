@@ -6,8 +6,9 @@ namespace drake {
 namespace examples {
 namespace zmp {
 
-ZMPTestTraj Simulate(const drake::systems::ZMPPlanner& zmp_planner,
-             const Eigen::Vector4d& x0, double dt, double T_final_offset) {
+ZMPTestTraj SimulateZMPPolicy(const drake::systems::ZMPPlanner& zmp_planner,
+                              const Eigen::Vector4d& x0, double dt,
+                              double T_final_offset) {
   const PiecewisePolynomial<double>& zmp_d = zmp_planner.get_desired_zmp();
   int N = static_cast<int>(
       (zmp_d.getEndTime() + T_final_offset - zmp_d.getStartTime()) / dt);
@@ -42,8 +43,7 @@ ZMPTestTraj Simulate(const drake::systems::ZMPPlanner& zmp_planner,
 
 std::vector<PiecewisePolynomial<double>> GenerateDesiredZMPTrajs(
     const std::vector<Eigen::Vector2d>& footsteps,
-    double double_support_duration,
-    double single_support_duration) {
+    double double_support_duration, double single_support_duration) {
   DRAKE_DEMAND(!footsteps.empty());
 
   std::vector<double> Ts;
@@ -80,4 +80,3 @@ std::vector<PiecewisePolynomial<double>> GenerateDesiredZMPTrajs(
 }  // namespace zmp
 }  // namespace examples
 }  // namespace drake
-

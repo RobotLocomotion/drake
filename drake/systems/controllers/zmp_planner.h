@@ -51,7 +51,8 @@ class ZMPPlanner {
 
   /**
    * Converts CoM acceleration to center of pressure (CoP) using
-   *    cop = C * x + D * u
+   *    cop = C * x + D * u or
+   *    cop = com - z / g * comdd
    * @param x, CoM position and velocity
    * @param u, CoM acceleration
    * @return center of pressure (CoP)
