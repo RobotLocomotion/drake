@@ -19,7 +19,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/systems/primitives/trajectory_source.h"
 
@@ -97,7 +97,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
     q0.col(i) = zero_conf;
   }
 
-  std::vector<RigidBodyConstraint*> constraint_array;
+  std::vector<RigidBodyConstraint *> constraint_array;
   constraint_array.push_back(&pc1);
   constraint_array.push_back(&wpc1);
   constraint_array.push_back(&pc2);
@@ -125,7 +125,15 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
         "inverseKinPointwise failed to compute a valid solution.");
   }
 
-  return make_unique<PiecewisePolynomialTrajectory>(q_sol, kTimes);
+  std::vector<MatrixXd> knots(kTimes.size());
+  for (size_t i = 0; i < kTimes.size(); ++i) {
+    // We only use column 0 of the matrix in knots (for joint positions),
+    // so we write a vector.
+    knots[i] = q_sol.col(i);
+  }
+
+  return make_unique<PiecewisePolynomialTrajectory>(
+      PiecewisePolynomial<double>::FirstOrderHold(kTimes, knots));
 }
 
 int DoMain() {
