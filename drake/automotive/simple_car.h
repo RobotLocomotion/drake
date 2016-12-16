@@ -66,7 +66,8 @@ class SimpleCar : public systems::LeafSystem<T> {
 
  private:
   void ImplCalcOutput(const SimpleCarState<T>&, SimpleCarState<T>*) const;
-  void ImplCalcTimeDerivatives(const SimpleCarState<T>&, const DrivingCommand<T>&,
+  void ImplCalcTimeDerivatives(const SimpleCarState<T>&,
+                               const DrivingCommand<T>&,
                                SimpleCarState<T>*) const;
 
   const SimpleCarConfig<T> config_;

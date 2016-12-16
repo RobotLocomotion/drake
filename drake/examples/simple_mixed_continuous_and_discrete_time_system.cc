@@ -43,8 +43,9 @@ class SimpleMixedContinuousTimeDiscreteTimeSystem
   }
 
   // y = x
-  void DoCalcOutput(const drake::systems::Context<double>& context,
-                    drake::systems::SystemOutput<double>* output) const override {
+  void DoCalcOutput(
+      const drake::systems::Context<double>& context,
+      drake::systems::SystemOutput<double>* output) const override {
     const double x1 = context.get_discrete_state(0)->GetAtIndex(0);
     output->GetMutableVectorData(0)->SetAtIndex(0, x1);
 
