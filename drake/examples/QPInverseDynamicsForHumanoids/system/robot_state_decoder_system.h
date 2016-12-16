@@ -30,8 +30,8 @@ class RobotStateDecoderSystem : public systems::LeafSystem<double> {
         DeclareAbstractOutputPort().get_index();
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     // Input:
     const bot_core::robot_state_t* msg =
         EvalInputValue<bot_core::robot_state_t>(context,

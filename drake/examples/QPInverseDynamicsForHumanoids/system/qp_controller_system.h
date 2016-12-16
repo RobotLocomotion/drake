@@ -31,8 +31,8 @@ class QPControllerSystem : public systems::LeafSystem<double> {
     set_name("qp_controller");
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     // Inputs:
     const HumanoidStatus* rs = EvalInputValue<HumanoidStatus>(
         context, input_port_index_humanoid_status_);
