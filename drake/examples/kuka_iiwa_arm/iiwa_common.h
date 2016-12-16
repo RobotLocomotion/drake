@@ -18,15 +18,38 @@ namespace kuka_iiwa_arm {
  */
 void VerifyIiwaTree(const RigidBodyTree<double>& tree);
 
-/// This method generates a trajectory plan for a robot. It assumes that the
-/// robot is fixed in the world at a position specified by
-/// @p robot_base_position, and @p robot_base_orientation. The robot itself
-/// is defined by a URDF file @p robot_urdf_file.
-std::unique_ptr<PiecewisePolynomialTrajectory> PositionViaPointCartesianPlanner(
-    Eigen::Vector3d robot_base_position, Eigen::Vector3d robot_base_orientation,
-    std::string robot_urdf_file,
-    std::vector<Eigen::Vector3d> object_position_list,
-    std::vector<double> time_stamps);
+/// This method generates a simple trajectory plan for a robot using Cartesian
+/// (end effector) way points. It assumes that the robot is fixed in the world
+/// at a position specified by @p robot_base_position, and @p
+/// robot_base_orientation.
+/// The robot itself is defined by a URDF file @p robot_urdf_file. The way
+/// points
+/// are assumed to be presented in the World Frame. This method wraps a call to
+/// the
+/// `iKinPointwise` method.
+/// @see iKinPointwise.
+std::unique_ptr<PiecewisePolynomialTrajectory> SimpleCartesianWayPointPlanner(
+    const Eigen::Vector3d& robot_base_position,
+    const Eigen::Vector3d& robot_base_orientation,
+    const std::string& robot_urdf_file,
+    const std::vector<Eigen::Vector3d>& way_point_list,
+    const std::vector<double>& time_stamps);
+
+/// Builds a vector of time window points distributed about the given time
+/// stamps. Time window positions do not overlap. The @p lower_ratio
+/// and @p upper_ratio variables can be used to proportionally compute
+/// the lower and upper window points between adjacent
+/// time stamps. The logic ensures that the windows never overlap for a
+/// monotonically increasing time stamp vector.
+/// For instance, for a lower_ratio = 0.4, and upper_ratio = 0.5, and time
+/// stamp t(k), the window is located at
+/// [t(k-1) + 0.4 * ( t(k) - t(k-1)), t(k) + 0.5 * (t(k+1) - t(k))]
+/// i.e. between 40% of the previous time step to 50% of the subsequent time
+/// step, with the boundary conditions [0, t(f) + 0.5*(t(f) - t(f-1))].
+/// The method requires @p upper_ratio > @p lower_ratio.
+std::vector<Eigen::Vector2d> TimeWindowBuilder(
+    const std::vector<double>& time_stamps, double lower_ratio = 0.4,
+    double upper_ratio = 0.5);
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
