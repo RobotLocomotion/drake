@@ -96,12 +96,10 @@ class LcmPublisherSystem : public LeafSystem<double> {
   LcmPublisherSystem(const LcmPublisherSystem&) = delete;
   LcmPublisherSystem& operator=(const LcmPublisherSystem&) = delete;
 
-  std::string get_name() const override;
-
   const std::string& get_channel_name() const;
 
   /// Returns the default name for a system that publishes @p channel.
-  static std::string get_name(const std::string& channel);
+  static std::string make_name(const std::string& channel);
 
   /**
    * Takes the VectorBase from the input port of the context and publishes

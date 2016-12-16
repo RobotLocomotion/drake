@@ -240,13 +240,127 @@ class System {
   }
 
   //----------------------------------------------------------------------------
+  /// @name                        Evaluations
+  /// Given the values in a Context, a Drake %System must be able to provide
+  /// the results of particular computations needed for analysis and simulation
+  /// of the %System. These results are maintained in a mutable cache within
+  /// the Context so that a result need be computed only once, the first time
+  /// it is requested after a change to one of its prerequisite values.
+  ///
+  /// The `Eval` methods in this group return a reference to the
+  /// already-computed result in the given Context's cache. If the current value
+  /// is out of date, they first update the cache entry using the corresponding
+  /// `Calc` method from the "Calculations" group. Evaluations of input ports
+  /// instead delegate to the containing Diagram, which arranges to have the
+  /// appropriate subsystem evaluate the source output port.
+  //@{
+
+  //TODO(sherm1) EvalTimeDerivatives(), EvalDiscreteVariableUpdates(),
+  //             EvalUnrestrictedUpdate() PR #4382, EvalOutputPort().
+
+  // These are here as models of API-to-be.
+
+  /// Returns a reference to the cached value of the potential energy. If
+  /// necessary the cache will be updated first using CalcPotentialEnergy().
+  /// @see CalcPotentialEnergy()
+  const T& EvalPotentialEnergy(const Context<T>& context) const {
+    // TODO(sherm1) Replace with an actual cache entry.
+    static T fake_cache_entry;
+    fake_cache_entry = CalcPotentialEnergy(context);
+    return fake_cache_entry;
+  }
+
+  /// Returns a reference to the cached value of the kinetic energy. If
+  /// necessary the cache will be updated first using CalcKineticEnergy().
+  /// @see CalcKineticEnergy()
+  const T& EvalKineticEnergy(const Context<T>& context) const {
+    // TODO(sherm1) Replace with an actual cache entry.
+    static T fake_cache_entry;
+    fake_cache_entry = CalcKineticEnergy(context);
+    return fake_cache_entry;
+  }
+
+  /// Returns a reference to the cached value of the conservative power. If
+  /// necessary the cache will be updated first using CalcConservativePower().
+  /// @see CalcConservativePower()
+  const T& EvalConservativePower(const Context<T>& context) const {
+    // TODO(sherm1) Replace with an actual cache entry.
+    static T fake_cache_entry;
+    fake_cache_entry = CalcConservativePower(context);
+    return fake_cache_entry;
+  }
+
+  /// Returns a reference to the cached value of the non-conservative power. If
+  /// necessary the cache will be updated first using
+  /// CalcNonConservativePower().
+  /// @see CalcNonConservativePower()
+  const T& EvalNonConservativePower(const Context<T>& context) const {
+    // TODO(sherm1) Replace with an actual cache entry.
+    static T fake_cache_entry;
+    fake_cache_entry = CalcNonConservativePower(context);
+    return fake_cache_entry;
+  }
+
+  /// Causes the vector-valued input port with the given `port_index` to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's value, or nullptr if the port is not connected.
+  ///
+  /// Throws std::bad_cast if the port is not vector-valued. Aborts if the port
+  /// does not exist.
+  const BasicVector<T>* EvalVectorInput(const Context<T>& context,
+                                        int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.EvalVectorInput(parent_, get_input_port(port_index));
+  }
+
+  /// Causes the vector-valued input port with the given `port_index` to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's value as an %Eigen expression.
+  Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
+      const Context<T>& context, int port_index) const {
+    const BasicVector<T>* input_vector = EvalVectorInput(context, port_index);
+    DRAKE_ASSERT(input_vector != nullptr);
+    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).get_size());
+    return input_vector->get_value();
+  }
+
+  /// Causes the abstract-valued input port with the given `port_index` to
+  /// become up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's abstract value pointer, or nullptr if the port is not
+  /// connected.
+  const AbstractValue* EvalAbstractInput(const Context<T>& context,
+                                         int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.EvalAbstractInput(parent_, get_input_port(port_index));
+  }
+
+  /// Causes the abstract-valued input port with the given `port_index` to
+  /// become up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's abstract value, or nullptr if the port is not connected.
+  ///
+  /// @tparam V The type of data expected.
+  template <typename V>
+  const V* EvalInputValue(const Context<T>& context, int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.template EvalInputValue<V>(parent_,
+                                              get_input_port(port_index));
+  }
+
+  //@}
+
+  //----------------------------------------------------------------------------
   /// @name                        Calculations
   /// A Drake %System defines a set of common computations that are understood
-  /// by the framework. Each of these is embodied in a `Calc` method that
+  /// by the framework. Most of these are embodied in a `Calc` method that
   /// unconditionally performs the calculation into an output argument of the
-  /// appropriate type. Most of these are paired with an `Eval` method that
-  /// returns a reference to an already-calculated result residing in the
-  /// cache; if needed that result is first obtained using the `Calc` method.
+  /// appropriate type, using only values from the given Context. These are
+  /// paired with an `Eval` method that returns a reference to an
+  /// already-calculated result residing in the cache; if needed that result is
+  /// first obtained using the `Calc` method. See the "Evaluations" group for
+  /// more information.
+  ///
+  /// This group also includes additional %System-specific operations that
+  /// depend on both Context and additional input arguments.
   //@{
 
   /// Calculates the time derivatives `xcdot` of the continuous state `xc`.
@@ -284,6 +398,8 @@ class System {
     }
   }
 
+  // TODO(edrumwri) CalcUnrestrictedUpdate() PR #4382.
+
   /// This method is called by a Simulator during its calculation of the size of
   /// the next continuous step to attempt. The System returns the next time at
   /// which some discrete action must be taken, and records what those actions
@@ -320,16 +436,6 @@ class System {
     return DoCalcPotentialEnergy(context);
   }
 
-  /// Returns a reference to the cached value of the potential energy. If
-  /// necessary the cache will be updated first using CalcPotentialEnergy().
-  /// @see CalcPotentialEnergy()
-  const T& EvalPotentialEnergy(const Context<T>& context) const {
-    // TODO(sherm1) Replace with an actual cache entry.
-    static T fake_cache_entry;
-    fake_cache_entry = CalcPotentialEnergy(context);
-    return fake_cache_entry;
-  }
-
   /// Calculates and returns the kinetic energy currently present in the motion
   /// provided in the given Context. Non-physical Systems will return zero.
   /// @see EvalKineticEnergy()
@@ -338,23 +444,12 @@ class System {
     return DoCalcKineticEnergy(context);
   }
 
-  /// Returns a reference to the cached value of the kinetic energy. If
-  /// necessary the cache will be updated first using CalcKineticEnergy().
-  /// @see CalcKineticEnergy()
-  const T& EvalKineticEnergy(const Context<T>& context) const {
-    // TODO(sherm1) Replace with an actual cache entry.
-    static T fake_cache_entry;
-    fake_cache_entry = CalcKineticEnergy(context);
-    return fake_cache_entry;
-  }
-
   /// Calculates and returns the rate at which mechanical energy is being
-  /// converted *from*
-  /// potential energy *to* kinetic energy by this system in the given Context.
-  /// This quantity will be positive when potential energy is decreasing. Note
-  /// that kinetic energy will also be affected by non-conservative forces so we
-  /// can't say whether it is increasing or decreasing in an absolute sense,
-  /// only whether the conservative
+  /// converted *from* potential energy *to* kinetic energy by this system in
+  /// the given Context. This quantity will be positive when potential energy is
+  /// decreasing. Note that kinetic energy will also be affected by
+  /// non-conservative forces so we can't say whether it is increasing or
+  /// decreasing in an absolute sense, only whether the conservative
   /// power is increasing or decreasing the kinetic energy. Power is in watts
   /// (J/s).Non-physical Systems will return zero.
   /// @see EvalConservativePower()
@@ -363,50 +458,30 @@ class System {
     return DoCalcConservativePower(context);
   }
 
-  /// Returns a reference to the cached value of the conservative power. If
-  /// necessary the cache will be updated first using CalcConservativePower().
-  /// @see CalcConservativePower()
-  const T& EvalConservativePower(const Context<T>& context) const {
-    // TODO(sherm1) Replace with an actual cache entry.
-    static T fake_cache_entry;
-    fake_cache_entry = CalcConservativePower(context);
-    return fake_cache_entry;
-  }
-
   /// Calculates and returns the rate at which mechanical energy is being
-  /// generated (positive)
-  /// or dissipated (negative) *other than* by conversion between potential and
-  /// kinetic energy (in the given Context). Integrating this quantity yields
-  /// work W, and the total energy `E=PE+KE-W` should be conserved by any
-  /// physically-correct model, to within integration accuracy of W. Power is in
-  /// watts (J/s). (Watts are abbreviated W but not to be confused with work!)
-  /// This method is meaningful only for physical systems; others return 0.
+  /// generated (positive) or dissipated (negative) *other than* by conversion
+  /// between potential and kinetic energy (in the given Context). Integrating
+  /// this quantity yields work W, and the total energy `E=PE+KE-W` should be
+  /// conserved by any physically-correct model, to within integration accuracy
+  /// of W. Power is in watts (J/s). (Watts are abbreviated W but not to be
+  /// confused with work!) This method is meaningful only for physical systems;
+  /// others return zero.
   /// @see EvalNonConservativePower()
   T CalcNonConservativePower(const Context<T>& context) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     return DoCalcNonConservativePower(context);
   }
 
-  /// Returns a reference to the cached value of the non-conservative power. If
-  /// necessary the cache will be updated first using
-  /// CalcNonConservativePower().
-  /// @see CalcNonConservativePower()
-  const T& EvalNonConservativePower(const Context<T>& context) const {
-    // TODO(sherm1) Replace with an actual cache entry.
-    static T fake_cache_entry;
-    fake_cache_entry = CalcNonConservativePower(context);
-    return fake_cache_entry;
-  }
 
   /// Transforms a given generalized velocity `v` to the time derivative `qdot`
   /// of the generalized configuration `q` taken from the supplied Context.
-  /// `v` and `qdot` are
-  /// related linearly by `qdot = N(q) * v`, where `N` is a block diagonal
-  /// matrix with a block for each tree joint. Note that `v` is *not* taken
-  /// from the Context; it is given as an argument here.
+  /// `v` and `qdot` are related linearly by `qdot = N(q) * v`, where `N` is a
+  /// block diagonal matrix with a block for each tree joint. Note that `v` is
+  /// *not* taken from the Context; it is given as an argument here.
   /// See the alternate signature if you already have the generalized
   /// velocity in an Eigen VectorX object; this signature will copy the
   /// VectorBase into an Eigen object before performing the computation.
+  /// @see MapQDotToVelocity()
   void MapVelocityToQDot(const Context<T>& context,
                          const VectorBase<T>& generalized_velocity,
                          VectorBase<T>* qdot) const {
@@ -414,8 +489,8 @@ class System {
   }
 
   /// Transforms the given generalized velocity to the time derivative of
-  /// generalized configuration. See the alternate signature of
-  /// MapVelocityToQDot() for more information.
+  /// generalized configuration. See the other signature of MapVelocityToQDot()
+  /// for more information.
   void MapVelocityToQDot(
       const Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
@@ -424,27 +499,26 @@ class System {
   }
 
   /// Transforms the time derivative `qdot` of the generalized configuration `q`
-  /// to generalized
-  /// velocities `v`. `v` and `qdot` are related linearly by `qdot = N(q) * v`,
-  /// where `N` is a block diagonal matrix with a block for each tree joint.
-  /// Although `N` is not necessarily square,
+  /// to generalized velocities `v`. `v` and `qdot` are related linearly by
+  /// `qdot = N(q) * v`, where `N` is a block diagonal matrix with a block for
+  /// each tree joint. Although `N` is not necessarily square,
   /// its left pseudo-inverse `N+` can be used to invert that relationship
   /// without residual error. Using the configuration `q` from the given
   /// context this method calculates `v = N+ * qdot` (where `N+=N+(q)`) for
-  /// a given `qdot`. This method does not
-  /// take `qdot` from the context. See the alternate signature if you
-  /// already have `qdot` in an %Eigen VectorX object; this signature will
-  /// copy the VectorBase into an %Eigen object before performing the
-  /// computation.
+  /// a given `qdot`. This method does not take `qdot` from the context. See the
+  /// alternate signature if you already have `qdot` in an %Eigen VectorX
+  /// object; this signature will copy the VectorBase into an %Eigen object
+  /// before performing the computation.
+  /// @see MapVelocityToQDot()
   void MapQDotToVelocity(const Context<T>& context, const VectorBase<T>& qdot,
                          VectorBase<T>* generalized_velocity) const {
     MapQDotToVelocity(context, qdot.CopyToVector(), generalized_velocity);
   }
 
   /// Transforms the given time derivative `qdot` of generalized configuration
-  /// `q` to generalized velocity `v`.
-  /// This signature takes `qdot` as an %Eigen VectorX object for faster speed.
-  /// See the other signature of MapQDotToVelocity() for additional information.
+  /// `q` to generalized velocity `v`. This signature takes `qdot` as an %Eigen
+  /// VectorX object for faster speed. See the other signature of
+  /// MapQDotToVelocity() for additional information.
   void MapQDotToVelocity(const Context<T>& context,
                          const Eigen::Ref<const VectorX<T>>& qdot,
                          VectorBase<T>* generalized_velocity) const {
@@ -475,59 +549,14 @@ class System {
     return nullptr;
   }
 
-  /// Causes the vector-valued port with the given @p port_index to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's value, or nullptr if the port is not connected.
-  ///
-  /// Throws std::bad_cast if the port is not vector-valued.
-  /// Aborts if the port does not exist.
-  const BasicVector<T>* EvalVectorInput(const Context<T>& context,
-                                        int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.EvalVectorInput(parent_, get_input_port(port_index));
-  }
-
-  /// Causes the vector-valued port with the given @p port_index to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's value as an Eigen expression.
-  Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
-      const Context<T>& context, int port_index) const {
-    const BasicVector<T>* input_vector = EvalVectorInput(context, port_index);
-    DRAKE_ASSERT(input_vector != nullptr);
-    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).get_size());
-    return input_vector->get_value();
-  }
-
-  /// Causes the abstract-valued port with the given @p port_index to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's abstract value pointer, or nullptr if the port is not
-  /// connected.
-  const AbstractValue* EvalAbstractInput(const Context<T>& context,
-                                         int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.EvalAbstractInput(parent_, get_input_port(port_index));
-  }
-
-  /// Causes the abstract-valued port with the given @p port_index to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's abstract value, or nullptr if the port is not connected.
-  ///
-  /// @tparam V The type of data expected.
-  template <typename V>
-  const V* EvalInputValue(const Context<T>& context, int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.template EvalInputValue<V>(parent_,
-                                              get_input_port(port_index));
-  }
-
   // Sets the name of the system. It is recommended that the name not include
   // the character ':', since that the path delimiter. is "::".
-  virtual void set_name(const std::string& name) { name_ = name; }
-  virtual std::string get_name() const { return name_; }
+  void set_name(const std::string& name) { name_ = name; }
+  std::string get_name() const { return name_; }
 
   /// Writes the full path of this System in the tree of Systems to @p output.
   /// The path has the form (::ancestor_system_name)*::this_system_name.
-  virtual void GetPath(std::stringstream* output) const {
+  void GetPath(std::stringstream* output) const {
     // If this System has a parent, that parent's path is a prefix to this
     // System's path. Otherwise, this is the root system and there is no prefix.
     if (parent_ != nullptr) {
@@ -593,6 +622,11 @@ class System {
   }
 
  protected:
+  /// @name                 System construction
+  /// Authors of concrete %Systems can use these methods in the constructor
+  /// for those %Systems.
+  //@{
+  /// Constructs an empty %System base class object.
   System() {}
 
   /// Adds a port with the specified @p descriptor to the input topology.
@@ -637,24 +671,9 @@ class System {
   const SystemPortDescriptor<T>& DeclareAbstractOutputPort() {
     return DeclareOutputPort(kAbstractValued, 0 /* size */);
   }
+  //@}
 
-  /// Returns a mutable Eigen expression for a vector valued output port with
-  /// index @p port_index in this system. All InputPorts that directly depend
-  /// on this OutputPort will be notified that upstream data has changed, and
-  /// may invalidate cache entries as a result.
-  Eigen::VectorBlock<VectorX<T>> GetMutableOutputVector(SystemOutput<T>* output,
-                                                        int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_output_ports());
-
-    BasicVector<T>* output_vector = output->GetMutableVectorData(port_index);
-    DRAKE_ASSERT(output_vector != nullptr);
-    DRAKE_ASSERT(output_vector->size() ==
-                 get_output_port(port_index).get_size());
-
-    return output_vector->get_mutable_value();
-  }
-
-
+  //----------------------------------------------------------------------------
   /// @name               Virtual methods for calculations
   /// These virtuals allow concrete systems to implement the calculations
   /// defined by the `Calc` methods in the public interface. Most have default
@@ -754,10 +773,9 @@ class System {
   }
 
   /// Override this method to return the rate at which mechanical energy is
-  /// being converted *from*
-  /// potential energy *to* kinetic energy by this system in the given Context.
-  /// This quantity must be positive when potential energy is *decreasing*.
-  /// Power is in watts (J/s).
+  /// being converted *from* potential energy *to* kinetic energy by this system
+  /// in the given Context. This quantity must be positive when potential energy
+  /// is *decreasing*. Power is in watts (J/s).
   ///
   /// By default, returns zero. Continuous, physical systems should override.
   virtual T DoCalcConservativePower(const Context<T>& context) const {
@@ -765,13 +783,13 @@ class System {
   }
 
   /// Override this method to return the rate at which mechanical energy is
-  /// being generated (positive)
-  /// or dissipated (negative) *other than* by conversion between potential and
-  /// kinetic energy (in the given Context). Integrating this quantity yields
-  /// work W, and the total energy `E=PE+KE-W` should be conserved by any
-  /// physically-correct model, to within integration accuracy of W. Power is in
-  /// watts (J/s). (Watts are abbreviated W but not to be confused with work!)
-  /// This method is meaningful only for physical systems; others return 0.
+  /// being generated (positive) or dissipated (negative) *other than* by
+  /// conversion between potential and kinetic energy (in the given Context).
+  /// Integrating this quantity yields work W, and the total energy `E=PE+KE-W`
+  /// should be conserved by any physically-correct model, to within integration
+  /// accuracy of W. Power is in watts (J/s). (Watts are abbreviated W but not
+  /// to be confused with work!) This method is meaningful only for physical
+  /// systems; others return zero.
   ///
   /// By default, returns zero. Continuous, physical systems should override.
   virtual T DoCalcNonConservativePower(const Context<T>& context) const {
@@ -837,19 +855,36 @@ class System {
     qdot->SetFromVector(generalized_velocity);
   }
 
-  //@}
-
   /// NVI implementation of ToAutoDiffXd. Caller takes ownership of the returned
   /// pointer. Overrides should return a more specific covariant type.
   /// Templated overrides may assume that they are subclasses of System<double>.
   ///
   /// No default implementation is provided in LeafSystem, since the member data
-  /// of particular concrete leaf Systems is not knowable to the framework.
+  /// of a particular concrete leaf system is not knowable to the framework.
   /// A default implementation is provided in Diagram, which Diagram subclasses
   /// with member data should override.
   virtual System<AutoDiffXd>* DoToAutoDiffXd() const {
     DRAKE_ABORT_MSG("Override DoToAutoDiffXd before using ToAutoDiffXd.");
     return nullptr;
+  }
+  //@}
+
+  /// @name                    Utility methods
+  //@{
+  /// Returns a mutable Eigen expression for a vector valued output port with
+  /// index @p port_index in this system. All InputPorts that directly depend
+  /// on this OutputPort will be notified that upstream data has changed, and
+  /// may invalidate cache entries as a result.
+  Eigen::VectorBlock<VectorX<T>> GetMutableOutputVector(SystemOutput<T>* output,
+                                                        int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_output_ports());
+
+    BasicVector<T>* output_vector = output->GetMutableVectorData(port_index);
+    DRAKE_ASSERT(output_vector != nullptr);
+    DRAKE_ASSERT(output_vector->size() ==
+        get_output_port(port_index).get_size());
+
+    return output_vector->get_mutable_value();
   }
 
   /// Causes an InputPort in the @p context to become up-to-date, delegating to
@@ -860,6 +895,7 @@ class System {
     DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
     context.EvalInputPort(parent_, get_input_port(port_index));
   }
+  //@}
 
  private:
   // System objects are neither copyable nor moveable.

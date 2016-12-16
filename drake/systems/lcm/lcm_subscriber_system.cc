@@ -40,6 +40,8 @@ LcmSubscriberSystem::LcmSubscriberSystem(
   } else {
     DeclareAbstractOutputPort();
   }
+
+  set_name(make_name(channel_));
 }
 
 LcmSubscriberSystem::LcmSubscriberSystem(
@@ -62,11 +64,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
 
 LcmSubscriberSystem::~LcmSubscriberSystem() {}
 
-std::string LcmSubscriberSystem::get_name() const {
-  return get_name(channel_);
-}
-
-std::string LcmSubscriberSystem::get_name(const std::string& channel) {
+std::string LcmSubscriberSystem::make_name(const std::string& channel) {
   return "LcmSubscriberSystem(" + channel + ")";
 }
 

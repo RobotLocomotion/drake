@@ -363,11 +363,11 @@ class DiscreteSystem : public LeafSystem<double> {
     const double offset = 0.0;
     this->DeclarePeriodicUpdate(kUpdatePeriod, offset);
     this->DeclarePublishPeriodSec(kPublishPeriod);
+
+    set_name("TestSystem");
   }
 
   ~DiscreteSystem() override {}
-
-  std::string get_name() const override { return "TestSystem"; }
 
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}

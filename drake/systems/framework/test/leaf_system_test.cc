@@ -21,10 +21,10 @@ namespace {
 template<typename T>
 class TestSystem : public LeafSystem<T> {
  public:
-  TestSystem() {}
+  TestSystem() {
+    this->set_name("TestSystem");
+  }
   ~TestSystem() override {}
-
-  std::string get_name() const override { return "TestSystem"; }
 
   void AddPeriodicUpdate() {
     const double period = 10.0;

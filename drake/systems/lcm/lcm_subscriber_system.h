@@ -95,10 +95,8 @@ class LcmSubscriberSystem : public LeafSystem<double>,
 
   ~LcmSubscriberSystem() override;
 
-  std::string get_name() const override;
-
   /// Returns the default name for a system that subscribes to @p channel.
-  static std::string get_name(const std::string& channel);
+  static std::string make_name(const std::string& channel);
 
   const std::string& get_channel_name() const;
 

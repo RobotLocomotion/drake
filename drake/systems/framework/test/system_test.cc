@@ -22,10 +22,10 @@ const int kNumberToUpdate = 2001;
 // A shell System to test the default implementations.
 class TestSystem : public System<double> {
  public:
-  TestSystem() {}
+  TestSystem() {
+    this->set_name("TestSystem");
+  }
   ~TestSystem() override {}
-
-  std::string get_name() const override { return "TestSystem"; }
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
       const override {
@@ -253,11 +253,11 @@ class ValueIOTestSystem : public System<double> {
 
     DeclareInputPort(kVectorValued, 1);
     DeclareOutputPort(kVectorValued, 1);
+
+    set_name("ValueIOTestSystem");
   }
 
   ~ValueIOTestSystem() override {}
-
-  std::string get_name() const override { return "ValueIOTestSystem"; }
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
       const override {
