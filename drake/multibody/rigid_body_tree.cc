@@ -106,13 +106,14 @@ RigidBodyTree<T>::RigidBodyTree(void)
   // Sets the gravity vector.
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
+  // Assign the world a unique model instance (with ID of zero).
+  model_instances_.push_back(RigidBodyTree<T>::kWorldName);
+
   // Adds the rigid body representing the world. It has model instance ID 0.
   std::unique_ptr<RigidBody<T>> world_body(new RigidBody<T>());
   world_body->set_name(RigidBodyTree<T>::kWorldName);
   world_body->set_model_instance_id(add_model_instance(
     world_body->get_name()));
-
-  world_body->set_model_instance_id(0);
 
   bodies.push_back(std::move(world_body));
 }
