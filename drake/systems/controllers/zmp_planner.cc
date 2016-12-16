@@ -18,15 +18,16 @@ Eigen::Vector2d ZMPPlanner::ComputeOptimalCoMdd(
 }
 
 void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
-                      const Eigen::Vector4d& x0, double height,
+                      const Eigen::Vector4d& x0, double height, double gravity,
                       const Eigen::Matrix2d& Qy, const Eigen::Matrix2d& R) {
   int n_segments = zmp_d.getNumberOfSegments();
   int zmp_d_degree = zmp_d.getSegmentPolynomialDegree(0);
   DRAKE_DEMAND(zmp_d_degree >= 0);
   DRAKE_DEMAND(zmp_d.rows() == 2 && zmp_d.cols() == 1);
+  DRAKE_DEMAND(height > 0);
+  DRAKE_DEMAND(gravity > 0);
 
   zmp_d_ = zmp_d;
-  zmpd_d_ = zmp_d.derivative();
 
   Qy_ = Qy;
   R_ = R;
@@ -38,7 +39,7 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
   B_.block<2, 2>(2, 0).setIdentity();
   C_.setZero();
   C_.block<2, 2>(0, 0).setIdentity();
-  D_ = -height / 9.81 * Eigen::Matrix2d::Identity();
+  D_ = -height / gravity * Eigen::Matrix2d::Identity();
 
   // Eq. 9 - 14 in [1].
   Eigen::Matrix<double, 4, 4> Q1 = C_.transpose() * Qy_ * C_;
@@ -152,7 +153,7 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
   Bz.block<4, 2>(4, 0) = B2;
 
   Eigen::MatrixXd a(8, n_segments);
-  a.bottomRows(4) = alpha;
+  a.bottomRows<4>() = alpha;
   std::vector<Eigen::Matrix<Polynomial<double>, Eigen::Dynamic, Eigen::Dynamic>>
       b_poly(n_segments);
 
