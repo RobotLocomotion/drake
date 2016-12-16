@@ -25,7 +25,7 @@ class ArcLane : public Lane {
   ///
   /// @param id,segment,lane_bounds,driveable_bounds,elevation,superelevation
   ///        See documentation for the Lane base class.
-  ArcLane(const api::LaneId& id, Segment* segment,
+  ArcLane(const api::LaneId& id, const Segment* segment,
           const V2& center, const double radius,
           const double theta0, const double d_theta,
           const api::RBounds& lane_bounds,

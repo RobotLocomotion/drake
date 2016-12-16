@@ -152,7 +152,7 @@ class Lane : public api::Lane {
   ///  * @p p_scale is q_max (and p = q / p_scale);
   ///  * @p elevation is  E_scaled = (1 / p_scale) * E_true(p_scale * p);
   ///  * @p superelevation is  S_scaled = (1 / p_scale) * S_true(p_scale * p).
-  Lane(const api::LaneId& id, Segment* segment,
+  Lane(const api::LaneId& id, const Segment* segment,
        const api::RBounds& lane_bounds,
        const api::RBounds& driveable_bounds,
        const double p_scale,
@@ -245,13 +245,67 @@ class Lane : public api::Lane {
   // i.e., d_heading/dp evaluated at p.
   virtual double heading_dot_of_p(const double p) const = 0;
 
-  Rot3 rot3_of_p(const double p) const;
+
+  // The geometry here revolves around an abstract "world function"
+  //
+  //    W: (p,r,h) --> (x,y,z)
+  //
+  // which maps a LANE-space position to it corresponding representation in
+  // world coordinates (with the caveat that instead of the lane's native
+  // longitudinal coordinate 's', the reference curve parameter 'p' is used).
+  //
+  // W is derived from the three functions which define the lane:
+  //
+  //   G: p --> (x,y)     = the reference curve, a.k.a. xy_of_p()
+  //   Z: p --> z / q_max = the elevation function, a.k.a. elevation_
+  //   Θ: p --> θ / q_max = the superelevation function, a.k.a. superelevation_
+  //
+  // as:
+  //
+  //   (x,y,z) = W(p,r,h) = (G(p), Z(p)) + R_αβγ*(0,r,h)
+  //
+  // where R_αβγ is the roll/pitch/yaw rotation given by angles:
+  //
+  //   α = Θ(p)
+  //   β = -atan(dZ/dp) at p
+  //   γ = atan2(dG_y/dp, dG_x/dp) at p
+  //
+  // (R_αβγ is essentially the orientation of the (s,r,h) LANE-space frame
+  // at a location (s,0,0) on the reference-line of the lane.  However, it
+  // is *not* necessarily the correct orientation at r != 0 or h != 0.)
+  //
+  // The following methods compute various terms derived from the above which
+  // see repeated use.
+
+  // Returns the parametric position p along the reference curve corresponding
+  // to longitudinal position @p s along the lane.
   double p_from_s(const double s) const;
+
+  // Returns the rotation R_αβγ, evaluated at @p p along the reference curve.
+  Rot3 Rabg_of_p(const double p) const;
+
+  // Returns W' = ∂W/∂p, the partial differential of W with respect to p,
+  // evaluated at @p p, @p r, @p h.
+  //
+  // (@p Rabg must be the result of Rabg_of_p(p) --- passed in here to
+  // avoid recomputing it.)
   V3 W_prime_of_prh(const double p, const double r, const double h,
-                     const Rot3& gba) const;
+                    const Rot3& Rabg) const;
+
+  // Returns the s-axis unit-vector, expressed in the world frame,
+  // of the (s,r,h) LANE-space frame (with respect to the world frame).
+  //
+  // (@p Rabg must be the result of Rabg_of_p(p) --- passed in here to
+  // avoid recomputing it.)
   V3 s_hat_of_prh(const double p, const double r, const double h,
-                   const Rot3& gba) const;
-  V3 r_hat_of_gba(const Rot3& gba) const;
+                  const Rot3& Rabg) const;
+
+  // Returns the r-axis unit-vector, expressed in the world frame,
+  // of the (s,r,h) LANE-space frame (with respect to the world frame).
+  //
+  // (@p Rabg must be the result of Rabg_of_p(p) --- passed in here to
+  // avoid recomputing it.)
+  V3 r_hat_of_Rabg(const Rot3& Rabg) const;
 
   const api::LaneId id_;
   const Segment* segment_{};

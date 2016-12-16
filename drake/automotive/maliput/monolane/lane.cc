@@ -41,7 +41,7 @@ double Lane::do_length() const {
 }
 
 
-Rot3 Lane::rot3_of_p(const double p) const {
+Rot3 Lane::Rabg_of_p(const double p) const {
   return Rot3(superelevation().f_p(p) * p_scale_,
               -std::atan(elevation().fdot_p(p)),
               heading_of_p(p));
@@ -54,11 +54,11 @@ double Lane::p_from_s(const double s) const {
 
 
 V3 Lane::W_prime_of_prh(const double p, const double r, const double h,
-                        const Rot3& gba) const {
+                        const Rot3& Rabg) const {
   const V2 G_prime = xy_dot_of_p(p);
   const double g_prime = elevation().fdot_p(p);
 
-  const Rot3& R = gba;
+  const Rot3& R = Rabg;
   const double alpha = R.roll();
   const double beta = R.pitch();
   const double gamma = R.yaw();
@@ -97,14 +97,14 @@ V3 Lane::W_prime_of_prh(const double p, const double r, const double h,
 
 
 V3 Lane::s_hat_of_prh(const double p, const double r, const double h,
-                      const Rot3& gba) const {
-  const V3 W_prime = W_prime_of_prh(p, r, h, gba);
+                      const Rot3& Rabg) const {
+  const V3 W_prime = W_prime_of_prh(p, r, h, Rabg);
   return W_prime * (1.0 / W_prime.norm());
 }
 
 
-V3 Lane::r_hat_of_gba(const Rot3& gba) const {
-  return gba.apply({0., 1., 0.});
+V3 Lane::r_hat_of_Rabg(const Rot3& Rabg) const {
+  return Rabg.apply({0., 1., 0.});
 }
 
 
@@ -117,7 +117,7 @@ api::GeoPosition Lane::DoToGeoPosition(
   // Calculate x,y of (s,0,0).
   const V2 xy = xy_of_p(p);
   // Calculate orientation of (s,r,h) basis at (s,0,0).
-  const Rot3 ypr = rot3_of_p(p);
+  const Rot3 ypr = Rabg_of_p(p);
 
   // Rotate (0,r,h) and sum with mapped (s,0,0).
   const V3 xyz =
@@ -132,11 +132,11 @@ api::Rotation Lane::DoGetOrientation(const api::LanePosition& lane_pos) const {
   const double r = lane_pos.r;
   const double h = lane_pos.h;
   // Calculate orientation of (s,r,h) basis at (s,0,0).
-  const Rot3 gba = rot3_of_p(p);
+  const Rot3 Rabg = Rabg_of_p(p);
 
   // Calculate s,r basis vectors at (s,r,h)...
-  const V3 s_hat = s_hat_of_prh(p, r, h, gba);
-  const V3 r_hat = r_hat_of_gba(gba);
+  const V3 s_hat = s_hat_of_prh(p, r, h, Rabg);
+  const V3 r_hat = r_hat_of_Rabg(Rabg);
   // ...and then derive orientation from those basis vectors.
   const double gamma = std::atan2(s_hat.y(),
                                   s_hat.x());
@@ -162,7 +162,7 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
   //                          const double g_prime = elevation().fdot_p(p);
   const double g_prime = elevation().fake_gprime(p);
 
-  const Rot3 R = rot3_of_p(p);
+  const Rot3 R = Rabg_of_p(p);
   const V3 W_prime = W_prime_of_prh(p, r, h, R);
 
   const double ds_dsigma =
