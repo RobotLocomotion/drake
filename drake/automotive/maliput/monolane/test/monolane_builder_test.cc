@@ -86,6 +86,123 @@ GTEST_TEST(MonolaneBuilderTest, Fig8) {
 };
 
 
+GTEST_TEST(MonolaneBuilderTest, QuadRing) {
+  const double kLinearTolerance = 0.01;
+  const double kAngularTolerance = 0.01 * M_PI;
+  Builder b({-2., 2.}, {-4., 4.}, kLinearTolerance, kAngularTolerance);
+
+  Endpoint northbound {{0., 0., M_PI / 2.}, {0., 0., 0., 0.}};
+
+  // This heads -y, loops to -x, clockwise, back to origin.
+  auto left1 = b.Connect("left1", northbound.reverse(),
+                         ArcOffset(150., -2. * M_PI),
+                         {0., 0., 0., 0.});
+  // This heads +y, loops to -x, counterclockwise, back to origin.
+  auto left0 = b.Connect("left0", northbound,
+                         ArcOffset(50., 2. * M_PI),
+                         {0., 0., 0., 0.});
+  // This heads +y, loops to +x, clockwise, back to origin.
+  auto right0 = b.Connect("right0", northbound,
+                          ArcOffset(50., -2. * M_PI),
+                          {0., 0., 0., 0.});
+  // This heads -y, loops to +x, counterclockwise, back to origin.
+  auto right1 = b.Connect("right1", northbound.reverse(),
+                          ArcOffset(150., 2. * M_PI),
+                          {0., 0., 0., 0.});
+
+  // There is only one branch-point in this topology, since every lane is
+  // a ring connecting back to itself and all other lanes.
+  //
+  //                    -y <-------+-------> +y
+  //
+  //  #  -----< left1/start   o--      ---o  left1/finish <------  #
+  //  #                          \    /                            #
+  //  #  -----> left0/finish  o---\  /----o   left0/start >------  #
+  //  #                            BP                              #
+  //  #  -----> right0/finish o---/  \----o  right0/start >------  #
+  //  #                          /    \                            #
+  //  #  -----< right1/start  o--      ---o right1/finish <------  #
+  //
+  // Make up some combination of default routes:
+  b.SetDefaultBranch(
+      left1, api::LaneEnd::kStart, left1, api::LaneEnd::kFinish);
+  b.SetDefaultBranch(
+      left0, api::LaneEnd::kFinish, right0, api::LaneEnd::kStart);
+  b.SetDefaultBranch(
+      right0, api::LaneEnd::kFinish, right1, api::LaneEnd::kFinish);
+  b.SetDefaultBranch(
+      right1, api::LaneEnd::kStart, left1, api::LaneEnd::kFinish);
+
+  b.SetDefaultBranch(
+      left1, api::LaneEnd::kFinish, left1, api::LaneEnd::kStart);
+  b.SetDefaultBranch(
+      left0, api::LaneEnd::kStart, right1, api::LaneEnd::kStart);
+  b.SetDefaultBranch(
+      right0, api::LaneEnd::kStart, right1, api::LaneEnd::kStart);
+  // And, leave right1/finish without a default branch.
+
+  b.MakeGroup("all", {right1, right0, left0, left1});
+
+  std::unique_ptr<const api::RoadGeometry> rg = b.Build({"figure-eight"});
+
+  EXPECT_EQ(rg->num_branch_points(), 1);
+  EXPECT_EQ(rg->branch_point(0)->GetASide()->size(), 4);
+  EXPECT_EQ(rg->branch_point(0)->GetBSide()->size(), 4);
+
+  EXPECT_EQ(rg->num_junctions(), 1);
+  const api::Junction* junction = rg->junction(0);
+  EXPECT_EQ(junction->id().id, "j:all");
+
+  EXPECT_EQ(junction->num_segments(), 4);
+  for (int si = 0; si < 4; ++si) {
+    const api::Segment* segment = junction->segment(si);
+    EXPECT_EQ(segment->num_lanes(), 1);
+    const api::Lane* lane = segment->lane(0);
+
+    if (lane->id().id == "l:left1") {
+      EXPECT_EQ(lane->segment()->id().id, "s:left1");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->lane->id().id,
+                "l:left1");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->end,
+                api::LaneEnd::kFinish);
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish)->lane->id().id,
+                "l:left1");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish)->end,
+                api::LaneEnd::kStart);
+    } else if (lane->id().id == "l:left0") {
+      EXPECT_EQ(lane->segment()->id().id, "s:left0");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->lane->id().id,
+                "l:right1");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->end,
+                api::LaneEnd::kStart);
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish)->lane->id().id,
+                "l:right0");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish)->end,
+                api::LaneEnd::kStart);
+    } else if (lane->id().id == "l:right0") {
+      EXPECT_EQ(lane->segment()->id().id, "s:right0");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->lane->id().id,
+                "l:right1");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->end,
+                api::LaneEnd::kStart);
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish)->lane->id().id,
+                "l:right1");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish)->end,
+                api::LaneEnd::kFinish);
+    } else if (lane->id().id == "l:right1") {
+      EXPECT_EQ(lane->segment()->id().id, "s:right1");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->lane->id().id,
+                "l:left1");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->end,
+                api::LaneEnd::kFinish);
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish).get(), nullptr);
+    } else {
+      FAIL();
+    }
+  }
+};
+
+
 }  // namespace monolane
 }  // namespace maliput
 }  // namespace drake
