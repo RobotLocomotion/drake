@@ -131,6 +131,7 @@ cc_test(
     deps = [
         ":rigid_body_plant",
         "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers:multi_body_parsers",
         "@gtest//:main",
     ],
 )
@@ -148,6 +149,7 @@ cc_test(
         ":rigid_body_plant",
         "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers:multi_body_parsers",
         "@gtest//:main",
     ],
 )

@@ -5,6 +5,7 @@ if(lcm_FOUND AND WITH_HSRB_DESCRIPTION)
       hsrb_diagram_factories.cc)
   target_link_libraries(drakeHsrb
       drakeLcm
+      drakeMultibodyParsers
       drakeRBM
       drakeRigidBodyPlant
       drakeSystemFramework
@@ -17,6 +18,7 @@ if(lcm_FOUND AND WITH_HSRB_DESCRIPTION)
       LIBS -ldrakeHsrb
       REQUIRES
         drake-lcm
+        drake-multibody-parsers
         drake-rbm
         drake-rigid-body-plant
         drake-system-framework

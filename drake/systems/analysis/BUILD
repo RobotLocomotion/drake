@@ -75,6 +75,7 @@ cc_test(
         "//drake/common:drake_path",
         "//drake/math:geometric_transform",
         "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/parsers:multi_body_parsers",
         "@gtest//:main",
     ],
 )

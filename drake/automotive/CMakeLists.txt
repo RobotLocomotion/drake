@@ -25,6 +25,7 @@ target_link_libraries(drakeAutomotive
   drakeSystemAnalysis
   drakeSystemFramework
   drakeSystemPrimitives
+  Eigen3::Eigen
   )
 drake_install_libraries(drakeAutomotive)
 drake_install_headers(
@@ -62,6 +63,7 @@ if(lcm_FOUND)
     )
   target_link_libraries(drakeAutomotiveLcm
     drakeAutomotive
+    drakeMultibodyParsers
     drakeRigidBodyPlant
     )
   drake_install_libraries(drakeAutomotiveLcm)

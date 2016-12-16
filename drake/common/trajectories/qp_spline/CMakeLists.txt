@@ -4,7 +4,9 @@ add_library_with_exports(LIB_NAME drakeSplineGeneration SOURCE_FILES
     spline_information.cc
     value_constraint.cc
     )
-target_link_libraries(drakeSplineGeneration drakeTrajectories)
+target_link_libraries(drakeSplineGeneration
+  drakeTrajectories
+  Eigen3::Eigen)
 drake_install_libraries(drakeSplineGeneration)
 drake_install_headers(
     continuity_constraint.h

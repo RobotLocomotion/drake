@@ -6,7 +6,9 @@ add_library_with_exports(LIB_NAME drakeTrajectories SOURCE_FILES
     piecewise_polynomial_trajectory.cc
     piecewise_quaternion.cc
     )
-target_link_libraries(drakeTrajectories drakeCommon)
+target_link_libraries(drakeTrajectories
+  drakeCommon
+  Eigen3::Eigen)
 drake_install_libraries(drakeTrajectories)
 drake_install_headers(
     exponential_plus_piecewise_polynomial.h

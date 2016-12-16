@@ -6,7 +6,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/Acrobot/acrobot_plant.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 
 namespace drake {

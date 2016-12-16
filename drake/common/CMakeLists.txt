@@ -71,7 +71,10 @@ set(private_headers
 # Create the library target and note its dependencies.
 add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
-target_link_libraries(drakeCommon gflags Threads::Threads)
+target_link_libraries(drakeCommon
+  Eigen3::Eigen
+  gflags
+  Threads::Threads)
 
 if(spdlog_FOUND)
   target_compile_definitions(drakeCommon PUBLIC HAVE_SPDLOG)
