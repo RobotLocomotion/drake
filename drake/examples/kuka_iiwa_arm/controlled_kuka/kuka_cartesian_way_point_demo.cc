@@ -16,12 +16,6 @@
 #include "drake/examples/kuka_iiwa_arm/controlled_kuka/kuka_demo_plant_builder.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/math/roll_pitch_yaw.h"
-#include "drake/multibody/ik_options.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_urdf.h"
-#include "drake/multibody/rigid_body_ik.h"
-#include "drake/systems/primitives/trajectory_source.h"
 
 DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
 
@@ -36,8 +30,6 @@ using systems::Simulator;
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
-
-const char kUrdfPath[]{"/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf"};
 
 int DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
@@ -66,7 +58,7 @@ int DoMain() {
   Simulator<double> simulator(model);
   Context<double>* context = simulator.get_mutable_context();
 
-  model.SetDefaultState(context);
+  model.SetDefaultState(*context, context->get_mutable_state());
 
   simulator.Initialize();
 
