@@ -83,7 +83,6 @@ drake_install_headers(
   mathematical_program.h
   mathematical_program_solver_interface.h
   decision_variable.h
-  solution_result.h
   system_identification.h
   )
 drake_install_libraries(drakeOptimization)
