@@ -6,6 +6,7 @@
 #include "drake/ros/parameter_server.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/ros_clock_publisher.h"
 #include "drake/systems/ros_tf_publisher.h"
 
 using std::make_unique;
@@ -19,6 +20,7 @@ using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::RigidBodyPlant;
+using systems::RosClockPublisher;
 using systems::RosTfPublisher;
 using systems::Simulator;
 
@@ -62,6 +64,7 @@ std::unique_ptr<Simulator<double>> CreateSimulation(lcm::DrakeLcmInterface* lcm,
         plant->get_rigid_body_tree());
     builder.Connect(input_diagram->get_output_port(0),
                     ros_tf_publisher->get_input_port(0));
+    builder.AddSystem<RosClockPublisher>();
   }
 
   *demo_diagram = builder.Build();
