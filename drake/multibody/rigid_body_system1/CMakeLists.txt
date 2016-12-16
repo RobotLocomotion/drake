@@ -5,7 +5,8 @@ target_link_libraries(drakeRBSystem
     drakeOptimization
     drakeRBM
     drakeRigidBodyConstraint
-    Eigen3::Eigen)
+    Eigen3::Eigen
+    spruce)
 
 drake_install_headers(RigidBodySystem.h)
 drake_install_libraries(drakeRBSystem)
@@ -19,7 +20,8 @@ drake_install_pkg_config_file(drake-rbsystem
     drake-optimization
     drake-rbm
     drake-rigid-body-constraint
-    eigen3)
+    eigen3
+    spruce)
 
 if (lcm_FOUND)
   add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)

@@ -12,7 +12,8 @@ if(lcm_FOUND)
       drakeSystemAnalysis
       drakeSystemFramework
       drakeSystemPrimitives
-      gflags)
+      gflags
+      spruce)
   drake_install_libraries(drakeKukaIiwaWorld)
   drake_install_headers(
       world_sim_tree_builder.h
@@ -29,7 +30,8 @@ if(lcm_FOUND)
         drake-rigid-body-plant
         drake-system-analysis
         drake-system-framework
-        drake-system-primitives)
+        drake-system-primitives
+        spruce)
 
   add_executable(iiwa_world_demo iiwa_world_demo.cc)
   target_link_libraries(iiwa_world_demo
