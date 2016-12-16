@@ -4,7 +4,7 @@
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = "multi_body_parsers",
+    name = "parsers",
     srcs = [
         "model_instance_id_table.cc",
         "package_map.cc",
@@ -34,7 +34,7 @@ cc_binary(
     srcs = ["test/urdf_kinematics_test.cc"],
     linkstatic = 1,
     deps = [
-        ":multi_body_parsers",
+        ":parsers",
         "//drake/multibody:rigid_body_tree",
         "@gtest//:main",
     ],
@@ -47,7 +47,7 @@ cc_binary(
     srcs = ["test/urdf_collision_test.cc"],
     linkstatic = 1,
     deps = [
-        ":multi_body_parsers",
+        ":parsers",
         "//drake/multibody:rigid_body_tree",
         "@gtest//:main",
     ],
@@ -59,7 +59,7 @@ cc_binary(
     srcs = ["test/urdf_manipulator_dynamics_test.cc"],
     linkstatic = 1,
     deps = [
-        ":multi_body_parsers",
+        ":parsers",
         "//drake/multibody:rigid_body_tree",
         "@gtest//:main",
     ],
@@ -73,7 +73,7 @@ cc_test(
         ":test_models",
     ],
     deps = [
-        ":multi_body_parsers",
+        ":parsers",
         "@gtest//:main",
     ],
 )
@@ -87,7 +87,7 @@ cc_test(
         "//drake/examples/Atlas:models",
     ],
     deps = [
-        ":multi_body_parsers",
+        ":parsers",
         "@gtest//:main",
     ],
 )
@@ -97,7 +97,7 @@ cc_test(
     size = "small",
     srcs = ["test/xml_util_test.cc"],
     deps = [
-        ":multi_body_parsers",
+        ":parsers",
         "@gtest//:main",
     ],
 )

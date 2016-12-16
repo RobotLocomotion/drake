@@ -74,7 +74,7 @@ cc_test(
         ":my_spring_mass_system",
         "//drake/common:drake_path",
         "//drake/math:geometric_transform",
-        "//drake/multibody/parsers:multi_body_parsers",
+        "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
         "@gtest//:main",
     ],
