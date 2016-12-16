@@ -53,6 +53,9 @@ using systems::TrajectorySource;
 namespace examples {
 namespace kuka_iiwa_arm {
 
+const string kUrdfPath =
+    "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf";
+
 // A model of a Kuka iiwa arm with position control using gravity compensation
 // and a PID controller. A plan may be passed in as a unique_ptr to a
 // PiecewisePolynomialTrajectory.

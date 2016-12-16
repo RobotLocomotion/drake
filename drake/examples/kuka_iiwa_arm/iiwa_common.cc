@@ -11,7 +11,7 @@
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
-#include "drake/multibody/parsers/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -115,7 +115,15 @@ std::unique_ptr<PiecewisePolynomialTrajectory> SimpleCartesianWayPointPlanner(
     DRAKE_ABORT_MSG("inverseKinPointwise failed to compute a valid solution.");
   }
 
-  return make_unique<PiecewisePolynomialTrajectory>(q_sol, time_stamps);
+  std::vector<MatrixXd> knots(time_stamps.size());
+  for (size_t i = 0; i < time_stamps.size(); ++i) {
+    // We only use column 0 of the matrix in knots (for joint positions),
+    // so we write a vector.
+    knots[i] = q_sol.col(i);
+  }
+
+  return make_unique<PiecewisePolynomialTrajectory>(
+      PiecewisePolynomial<double>::FirstOrderHold(time_stamps, knots));
 }
 
 std::vector<Eigen::Vector2d> TimeWindowBuilder(
