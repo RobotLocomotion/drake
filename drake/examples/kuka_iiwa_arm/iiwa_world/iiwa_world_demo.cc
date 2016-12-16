@@ -37,12 +37,10 @@ int DoMain() {
       "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf");
 
   // The components of the filename need splitting due to the length.
-  const std::string kCollisionFreeTablePath =
-      "/examples/kuka_iiwa_arm/models/table/";
-  const std::string kCollisionFreeTableFile =
-       "extra_heavy_duty_table_surface_only_collision.sdf";
+
   iiwa_world->StoreModel(
-      "table", kCollisionFreeTablePath + kCollisionFreeTableFile);
+      "table", "/examples/kuka_iiwa_arm/models/table/"
+          "extra_heavy_duty_table_surface_only_collision.sdf");
   iiwa_world->StoreModel(
       "cylinder",
       "/examples/kuka_iiwa_arm/models/objects/simple_cylinder.urdf");
