@@ -27,7 +27,9 @@ include_directories(
 
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 
-add_library(${PROJECT_NAME} SHARED src/ros_tf_publisher.cc)
+add_library(${PROJECT_NAME} SHARED
+    src/ros_clock_publisher.cc
+    src/ros_tf_publisher.cc)
 
 target_link_libraries(${PROJECT_NAME}
     ${catkin_LIBRARIES}
@@ -52,6 +54,16 @@ if (CATKIN_ENABLE_TESTING)
       drakeRBM
       drakeSystemFramework)
   set_target_properties(ros_tf_publisher_test PROPERTIES EXCLUDE_FROM_ALL FALSE)
+
+  add_rostest_gtest(ros_clock_publisher_test test/ros_clock_publisher_test.test
+      test/ros_clock_publisher_test.cc
+      src/ros_clock_publisher.cc)
+  target_link_libraries(ros_clock_publisher_test
+      ${catkin_LIBRARIES}
+      drakeCommon
+      drakeSystemFramework)
+  set_target_properties(ros_clock_publisher_test PROPERTIES
+      EXCLUDE_FROM_ALL FALSE)
 endif()
 
 install(DIRECTORY include/${PROJECT_NAME}/
