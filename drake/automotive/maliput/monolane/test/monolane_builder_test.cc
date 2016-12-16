@@ -197,7 +197,7 @@ GTEST_TEST(MonolaneBuilderTest, QuadRing) {
                 api::LaneEnd::kFinish);
       EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish).get(), nullptr);
     } else {
-      FAIL();
+      GTEST_FAIL();
     }
   }
 };
