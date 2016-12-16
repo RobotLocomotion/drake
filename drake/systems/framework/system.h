@@ -255,8 +255,8 @@ class System {
   /// appropriate subsystem evaluate the source output port.
   //@{
 
-  //TODO(sherm1) EvalTimeDerivatives(), EvalDiscreteVariableUpdates(),
-  //             EvalUnrestrictedUpdate() PR #4382, EvalOutputPort().
+  // TODO(sherm1) EvalTimeDerivatives(), EvalDiscreteVariableUpdates(),
+  //              EvalUnrestrictedUpdate() PR #4382, EvalOutputPort().
 
   // These are here as models of API-to-be.
 
