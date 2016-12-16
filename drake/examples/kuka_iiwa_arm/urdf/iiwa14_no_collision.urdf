@@ -7,9 +7,9 @@
 
      Collision models: complex meshes drastically affect run time.
      Therefore the collision models are removed for all links except for the
-     end effector to speed up the simulation. The collision and visualization
-     models for link 7 have been modified to utilise a polytope, which offers
-     a significant speed up as well.
+     end effector to speed up the simulation. The collision models for link 7
+     have been modified to utilise a polytope, which offers a significant speed
+     up as well.
 -->
 <!-- ===================================================================== -->
 <robot name="iiwa14" xmlns:xacro="http://www.ros.org/wiki/xacro">
@@ -229,7 +229,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/link_7_polytope.obj"/>
+        <mesh filename="meshes/visual/link_7.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
