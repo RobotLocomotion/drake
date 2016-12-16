@@ -39,8 +39,9 @@ struct ZMPTestTraj {
  * trajectories for convergence.
  * @return ZMPTestTraj that contains all the information.
  */
-ZMPTestTraj Simulate(const drake::systems::ZMPPlanner& zmp_planner,
-    const Eigen::Vector4d& x0, double dt, double T_final_offset);
+ZMPTestTraj SimulateZMPPolicy(const drake::systems::ZMPPlanner& zmp_planner,
+                              const Eigen::Vector4d& x0, double dt,
+                              double T_final_offset);
 
 /**
  * Generates desired ZMP trajectories as piecewise polynomials given the
@@ -61,8 +62,7 @@ ZMPTestTraj Simulate(const drake::systems::ZMPPlanner& zmp_planner,
  */
 std::vector<PiecewisePolynomial<double>> GenerateDesiredZMPTrajs(
     const std::vector<Eigen::Vector2d>& footsteps,
-    double double_support_duration,
-    double single_support_duration);
+    double double_support_duration, double single_support_duration);
 
 }  // namespace zmp
 }  // namespace examples

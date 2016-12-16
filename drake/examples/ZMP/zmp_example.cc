@@ -1,5 +1,5 @@
-#include <thread>
 #include <chrono>
+#include <thread>
 
 #include "drake/examples/ZMP/zmp_test_util.h"
 
@@ -77,13 +77,12 @@ void PlotResults(const drake::examples::zmp::ZMPTestTraj& traj) {
 
 int main() {
   std::vector<Eigen::Vector2d> footsteps = {
-      Eigen::Vector2d(0, 0), Eigen::Vector2d(0.5, 0.1),
+      Eigen::Vector2d(0, 0),    Eigen::Vector2d(0.5, 0.1),
       Eigen::Vector2d(1, -0.1), Eigen::Vector2d(1.5, 0.1),
       Eigen::Vector2d(2, -0.1), Eigen::Vector2d(2.5, 0)};
 
   std::vector<PiecewisePolynomial<double>> zmp_trajs =
-      drake::examples::zmp::GenerateDesiredZMPTrajs(
-          footsteps, 0.5, 1);
+      drake::examples::zmp::GenerateDesiredZMPTrajs(footsteps, 0.5, 1);
 
   Eigen::Vector4d x0(0, 0, 0, 0);
   double z = 1;
@@ -96,7 +95,7 @@ int main() {
   // Perturb the initial state a bit.
   x0 << 0, 0, 0.2, -0.1;
   drake::examples::zmp::ZMPTestTraj result =
-      drake::examples::zmp::Simulate(zmp_planner, x0, sample_dt, 2);
+      drake::examples::zmp::SimulateZMPPolicy(zmp_planner, x0, sample_dt, 2);
 
   PlotResults(result);
 

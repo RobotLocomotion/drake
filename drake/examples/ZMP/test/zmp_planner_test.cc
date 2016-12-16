@@ -230,8 +230,8 @@ TEST_F(ZMPPlannerTest, TestOptimalControl) {
     double simulation_past_end_time = 2;
 
     x0 << 0.1, -0.05, 0.1, 0.1;
-    ZMPTestTraj result =
-        Simulate(zmp_planner_, x0, sample_dt, simulation_past_end_time);
+    ZMPTestTraj result = SimulateZMPPolicy(zmp_planner_, x0, sample_dt,
+                                           simulation_past_end_time);
 
     int N = result.time.size();
     // Expect the trajectory converges to the desired at the end.
