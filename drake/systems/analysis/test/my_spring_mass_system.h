@@ -38,7 +38,7 @@ class MySpringMassSystem : public SpringMassSystem<T> {
 
   // The discrete equation update here is for the special case of zero
   // discrete variables- in other words, this is just a counter.
-  void DoEvalDiscreteVariableUpdates(const Context<T>& context,
+  void DoCalcDiscreteVariableUpdates(const Context<T>& context,
                                      DiscreteState<T>* discrete_state)
     const override {
     ++update_count_;

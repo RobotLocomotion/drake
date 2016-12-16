@@ -66,7 +66,7 @@ TEST_F(IntegratorTest, Output) {
   input_->get_mutable_value() << 1.0, 2.0, 3.0;
   context_->FixInputPort(0, std::move(input_));
 
-  integrator_->EvalOutput(*context_, output_.get());
+  integrator_->CalcOutput(*context_, output_.get());
 
   ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_port = output_->get_vector_data(0);
@@ -78,7 +78,7 @@ TEST_F(IntegratorTest, Output) {
 
   continuous_state()->get_mutable_vector()->SetAtIndex(1, 42.0);
   expected << 0.0, 42.0, 0.0;
-  integrator_->EvalOutput(*context_, output_.get());
+  integrator_->CalcOutput(*context_, output_.get());
   EXPECT_EQ(expected, output_port->get_value());
 }
 
@@ -88,7 +88,7 @@ TEST_F(IntegratorTest, Derivatives) {
   input_->get_mutable_value() << 1.0, 2.0, 3.0;
   context_->FixInputPort(0, std::move(input_));
 
-  integrator_->EvalTimeDerivatives(*context_, derivatives_.get());
+  integrator_->CalcTimeDerivatives(*context_, derivatives_.get());
   Eigen::Vector3d expected;
   expected << 1.0, 2.0, 3.0;
   EXPECT_EQ(expected, derivatives_->CopyToVector());

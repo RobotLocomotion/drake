@@ -49,15 +49,15 @@ GTEST_TEST(UrdfDynamicsTest, AllTests) {
     u_rbp->SetFromVector(u);
     u_p->SetFromVector(u);
 
-    rbp.EvalTimeDerivatives(*context_rbp, xdot_rbp.get());
-    p.EvalTimeDerivatives(*context_p, xdot_p.get());
+    rbp.CalcTimeDerivatives(*context_rbp, xdot_rbp.get());
+    p.CalcTimeDerivatives(*context_p, xdot_p.get());
 
     EXPECT_TRUE(CompareMatrices(xdot_rbp->CopyToVector(),
                                 xdot_p->CopyToVector(), 1e-8,
                                 MatrixCompareType::absolute));
 
-    rbp.EvalOutput(*context_rbp, y_rbp.get());
-    p.EvalOutput(*context_p, y_p.get());
+    rbp.CalcOutput(*context_rbp, y_rbp.get());
+    p.CalcOutput(*context_p, y_p.get());
 
     EXPECT_TRUE(CompareMatrices(y_rbp->get_vector_data(0)->CopyToVector(),
                                 y_p->get_vector_data(0)->CopyToVector(), 1e-8,

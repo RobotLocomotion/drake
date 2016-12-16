@@ -153,30 +153,6 @@ class RigidBodyPlant : public LeafSystem<T> {
       const Context<T>& context) const override;
 
   bool has_any_direct_feedthrough() const override;
-  void EvalTimeDerivatives(const Context<T>& context,
-                           ContinuousState<T>* derivatives) const override;
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override;
-
-  // System<T> overrides to track energy conservation.
-  // TODO(amcastro-tri): provide proper implementations for these methods to
-  // track energy conservation.
-  // TODO(amcastro-tri): provide a method to track applied actuator power.
-  T EvalPotentialEnergy(const Context<T>& context) const override {
-    return T(NAN);
-  }
-
-  T EvalKineticEnergy(const Context<T>& context) const override {
-    return T(NAN);
-  }
-
-  T EvalConservativePower(const Context<T>& context) const override {
-    return T(NAN);
-  }
-
-  T EvalNonConservativePower(const Context<T>& context) const override {
-    return T(NAN);
-  }
 
   /// Computes the force exerted by the stop when a joint hits its limit,
   /// using a linear stiffness model.
@@ -215,14 +191,38 @@ class RigidBodyPlant : public LeafSystem<T> {
   // LeafSystem<T> override.
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
 
-  // System<T> override.
+  // System<T> overrides.
+
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override;
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override;
+
+  // TODO(amcastro-tri): provide proper implementations for these methods to
+  // track energy conservation.
+  // TODO(amcastro-tri): provide a method to track applied actuator power.
+  T DoCalcPotentialEnergy(const Context<T>& context) const override {
+    return T(NAN);
+  }
+
+  T DoCalcKineticEnergy(const Context<T>& context) const override {
+    return T(NAN);
+  }
+
+  T DoCalcConservativePower(const Context<T>& context) const override {
+    return T(NAN);
+  }
+
+  T DoCalcNonConservativePower(const Context<T>& context) const override {
+    return T(NAN);
+  }
+
   void DoMapVelocityToQDot(
       const Context<T> &context,
       const Eigen::Ref<const VectorX<T>> &generalized_velocity,
       VectorBase<T> *positions_derivative) const override;
 
-// System<T> override.
-void DoMapQDotToVelocity(
+  void DoMapQDotToVelocity(
       const Context<T> &context,
       const Eigen::Ref<const VectorX<T>> &configuration_dot,
       VectorBase<T> *generalized_velocity) const override;

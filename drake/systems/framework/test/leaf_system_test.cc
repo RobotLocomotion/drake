@@ -49,10 +49,10 @@ class TestSystem : public LeafSystem<T> {
     this->DeclareContinuousState(std::move(vec), 4, 3, 2);
   }
 
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override {}
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override {}
 
-  void EvalTimeDerivatives(
+  void DoCalcTimeDerivatives(
       const Context<T>& context,
       ContinuousState<T>* derivatives) const override {}
 

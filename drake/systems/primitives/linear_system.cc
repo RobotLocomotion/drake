@@ -75,7 +75,7 @@ std::unique_ptr<LinearSystem<double>> Linearize(
 
   std::unique_ptr<ContinuousState<AutoDiffXd>> autodiff_xdot =
       autodiff_system->AllocateTimeDerivatives();
-  autodiff_system->EvalTimeDerivatives(*autodiff_context, autodiff_xdot.get());
+  autodiff_system->CalcTimeDerivatives(*autodiff_context, autodiff_xdot.get());
   auto autodiff_xdot_vec = autodiff_xdot->CopyToVector();
 
   // Ensure that xdot0 = f(x0,u0) == 0.
@@ -97,7 +97,7 @@ std::unique_ptr<LinearSystem<double>> Linearize(
   if (num_outputs > 0) {
     std::unique_ptr<SystemOutput<AutoDiffXd>> autodiff_y0 =
         autodiff_system->AllocateOutput(*autodiff_context);
-    autodiff_system->EvalOutput(*autodiff_context, autodiff_y0.get());
+    autodiff_system->CalcOutput(*autodiff_context, autodiff_y0.get());
     auto autodiff_y0_vec = autodiff_y0->get_vector_data(0)->CopyToVector();
 
     Eigen::MatrixXd CD = math::autoDiffToGradientMatrix(autodiff_y0_vec);

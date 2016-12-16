@@ -61,14 +61,15 @@ LuenbergerObserver<T>::AllocateContinuousState() const {
 }
 
 template <typename T>
-void LuenbergerObserver<T>::EvalOutput(const systems::Context<T>& context,
-                                       systems::SystemOutput<T>* output) const {
+void LuenbergerObserver<T>::DoCalcOutput(
+    const systems::Context<T>& context,
+    systems::SystemOutput<T>* output) const {
   output->GetMutableVectorData(0)->set_value(
       context.get_continuous_state_vector().CopyToVector());
 }
 
 template <typename T>
-void LuenbergerObserver<T>::EvalTimeDerivatives(
+void LuenbergerObserver<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   // (Note that all relevant data in the observed_system_context is set here
@@ -88,9 +89,9 @@ void LuenbergerObserver<T>::EvalTimeDerivatives(
       ->SetFromVector(context.get_continuous_state_vector().CopyToVector());
 
   // Evaluate the observed system.
-  observed_system_->EvalOutput(*observed_system_context_,
+  observed_system_->CalcOutput(*observed_system_context_,
                                observed_system_output_.get());
-  observed_system_->EvalTimeDerivatives(*observed_system_context_, derivatives);
+  observed_system_->CalcTimeDerivatives(*observed_system_context_, derivatives);
 
   // Get the measurements.
   auto y = this->EvalVectorInput(context, 0)->CopyToVector();

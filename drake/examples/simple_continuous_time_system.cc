@@ -20,7 +20,7 @@ class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
   }
 
   // xdot = -x + x^3
-  void EvalTimeDerivatives(
+  void DoCalcTimeDerivatives(
       const drake::systems::Context<double>& context,
       drake::systems::ContinuousState<double>* derivatives) const override {
     double x = context.get_continuous_state_vector().GetAtIndex(0);
@@ -29,8 +29,8 @@ class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
   }
 
   // y = x
-  void EvalOutput(const drake::systems::Context<double>& context,
-                  drake::systems::SystemOutput<double>* output) const override {
+  void DoCalcOutput(const drake::systems::Context<double>& context,
+                    drake::systems::SystemOutput<double>* output) const override {
     double x = context.get_continuous_state_vector().GetAtIndex(0);
     output->GetMutableVectorData(0)->SetAtIndex(0, x);
   }

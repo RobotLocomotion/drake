@@ -36,7 +36,7 @@ TEST_F(ConstantValueSourceTest, Output) {
   ASSERT_EQ(source_->get_num_input_ports(), context_->get_num_input_ports());
   ASSERT_EQ(source_->get_num_output_ports(), output_->get_num_ports());
 
-  source_->EvalOutput(*context_, output_.get());
+  source_->CalcOutput(*context_, output_.get());
 
   EXPECT_EQ("foo",
             output_->get_port(0).get_abstract_data()->GetValue<std::string>());

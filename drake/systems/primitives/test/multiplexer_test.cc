@@ -46,7 +46,7 @@ TEST_F(MultiplexerTest, Basic) {
   context_->FixInputPort(2, BasicVector<double>::Make({31.0, 32.0, 33.0}));
 
   // Confirm output data.
-  mux_->EvalOutput(*context_, output_.get());
+  mux_->CalcOutput(*context_, output_.get());
   ASSERT_EQ(6, output_->get_vector_data(0)->size());
   auto value = output_->get_vector_data(0)->get_value();
   ASSERT_EQ(11.0, value[0]);

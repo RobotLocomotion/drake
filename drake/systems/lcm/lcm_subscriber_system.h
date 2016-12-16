@@ -105,9 +105,6 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override;
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override;
-
   /**
    * Returns the translator used by this subscriber. This translator can be used
    * to translate a BasicVector into a serialized LCM message, which is then
@@ -122,6 +119,9 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   LcmSubscriberSystem& operator=(const LcmSubscriberSystem&) = delete;
 
  protected:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override;
+
   std::unique_ptr<BasicVector<double>> AllocateOutputVector(
       const SystemPortDescriptor<double>& descriptor) const override;
 

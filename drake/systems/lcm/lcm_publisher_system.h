@@ -110,10 +110,10 @@ class LcmPublisherSystem : public LeafSystem<double> {
   void DoPublish(const Context<double>& context) const override;
 
   /**
-   * This System has no output ports so EvalOutput() does nothing.
+   * This System has no output ports so CalcOutput() does nothing.
    */
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {}
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
 
   /**
    * Returns the translator used by this publisher. This can be used to convert

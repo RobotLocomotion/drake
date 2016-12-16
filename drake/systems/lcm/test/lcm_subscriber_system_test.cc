@@ -43,7 +43,7 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
   lcm->InduceSubscriberCallback(dut->get_channel_name(), &buffer[0],
       message.getEncodedSize());
 
-  dut->EvalOutput(*context.get(), output.get());
+  dut->CalcOutput(*context.get(), output.get());
 
   const BasicVector<double>& basic_vector = *output->get_vector_data(0);
   EXPECT_EQ(basic_vector.size(), kDim);
@@ -130,7 +130,7 @@ GTEST_TEST(LcmSubscriberSystemTest, SerializerTest) {
   lcm.InduceSubscriberCallback(channel_name, buffer.data(), num_bytes);
 
   // Verifies that the dut produces the output message.
-  dut->EvalOutput(*context.get(), output.get());
+  dut->CalcOutput(*context.get(), output.get());
   const AbstractValue* abstract_value = output->get_data(0);
   ASSERT_NE(abstract_value, nullptr);
   const auto& value = abstract_value->GetValueOrThrow<lcmt_drake_signal>();
@@ -229,10 +229,10 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
   lcm.InduceSubscriberCallback(kChannelName, &message_bytes[0],
       message_bytes.size());
 
-  // Read back the vector via EvalOutput.
+  // Read back the vector via CalcOutput.
   auto context = dut.CreateDefaultContext();
   auto output = dut.AllocateOutput(*context);
-  dut.EvalOutput(*context, output.get());
+  dut.CalcOutput(*context, output.get());
   const VectorBase<double>* const output_vector = output->get_vector_data(0);
   ASSERT_NE(nullptr, output_vector);
 

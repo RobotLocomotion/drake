@@ -238,7 +238,7 @@ TEST_F(KukaArmTest, SetDefaultState) {
   ASSERT_EQ(xc, VectorXd::Zero(xc.size()));
 }
 
-// Tests RigidBodyPlant<T>::EvalOutput() for a KUKA iiwa arm model.
+// Tests RigidBodyPlant<T>::CalcOutput() for a KUKA iiwa arm model.
 // For a RigidBodyPlant<T> the first output of the system should equal the
 // state vector. The second output from this system should correspond to a
 // RigidBodyPlant<T>::VectorOfPoses containing the poses of all bodies in the
@@ -281,7 +281,7 @@ TEST_F(KukaArmTest, EvalOutput) {
   const BasicVector<double>* output_state = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_state);
 
-  kuka_plant_->EvalOutput(*context_, output_.get());
+  kuka_plant_->CalcOutput(*context_, output_.get());
 
   // Asserts the output equals the state.
   EXPECT_EQ(desired_state, output_state->get_value());
@@ -383,7 +383,7 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
 
   // Obtain the time derivatives; test that speed is zero, return acceleration.
   auto derivatives = plant.AllocateTimeDerivatives();
-  plant.EvalTimeDerivatives(*context, derivatives.get());
+  plant.CalcTimeDerivatives(*context, derivatives.get());
   auto xdot = derivatives->CopyToVector();
   EXPECT_EQ(xdot(0), 0.);  // Not moving.
   return xdot(1);

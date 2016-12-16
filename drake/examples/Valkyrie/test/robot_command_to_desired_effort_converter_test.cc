@@ -50,7 +50,7 @@ void TestCommandToDesiredEffortConverter(
 
   auto context = diagram->CreateDefaultContext();
   auto output = diagram->AllocateOutput(*context);
-  diagram->EvalOutput(*context, output.get());
+  diagram->CalcOutput(*context, output.get());
 
   // TODO(tkoolen): assumption about ordering of exported output ports.
   int output_port_id = 0;

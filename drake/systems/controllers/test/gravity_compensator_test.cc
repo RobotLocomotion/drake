@@ -65,7 +65,7 @@ class GravityCompensatorTest : public ::testing::Test {
 
     // Hook input of the expected size.
     context_->FixInputPort(0, std::move(input));
-    gravity_compensator_->EvalOutput(*context_, output_.get());
+    gravity_compensator_->CalcOutput(*context_, output_.get());
 
     VectorXd expected_gravity_vector =
       ComputeGravityTorque(*tree_, position_vector);

@@ -74,8 +74,8 @@ const std::string& LcmSubscriberSystem::get_channel_name() const {
   return channel_;
 }
 
-void LcmSubscriberSystem::EvalOutput(const Context<double>&,
-                                     SystemOutput<double>* output) const {
+void LcmSubscriberSystem::DoCalcOutput(const Context<double>&,
+                                       SystemOutput<double>* output) const {
   DRAKE_ASSERT((translator_ != nullptr) != (serializer_.get() != nullptr));
 
   if (translator_ != nullptr) {

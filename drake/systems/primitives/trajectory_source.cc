@@ -16,8 +16,8 @@ TrajectorySource<T>::TrajectorySource(const Trajectory& trajectory)
 }
 
 template <typename T>
-void TrajectorySource<T>::EvalOutput(const Context<T>& context,
-                                     SystemOutput<T>* output) const {
+void TrajectorySource<T>::DoCalcOutput(const Context<T>& context,
+                                       SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
   T time = context.get_time();
   System<T>::GetMutableOutputVector(output, 0) = trajectory_.value(time);

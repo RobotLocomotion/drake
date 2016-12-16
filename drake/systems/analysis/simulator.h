@@ -407,7 +407,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
             // Systems with discrete update events must have discrete state.
             DRAKE_DEMAND(xd != nullptr);
             // First, compute the discrete updates into a temporary buffer.
-            system_.EvalDiscreteVariableUpdates(*context_, event,
+            system_.CalcDiscreteVariableUpdates(*context_, event,
                                                 discrete_updates_.get());
             // Then, write them back into the context.
             xd->CopyFrom(*discrete_updates_);
