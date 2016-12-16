@@ -1,0 +1,86 @@
+/// @file
+///
+/// This demo sets up a position controlled and gravity compensated KUKA iiwa
+/// robot within a simulation to follow an arbitrarily designed plan. The
+/// generated plan takes the arm from the zero configuration to track the 4
+/// vertices of a square in space.
+
+#include <iostream>
+#include <memory>
+#include <string>
+
+#include <gflags/gflags.h>
+
+#include "drake/common/drake_path.h"
+#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
+#include "drake/examples/kuka_iiwa_arm/controlled_kuka/kuka_demo_plant_builder.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/lcm/drake_lcm.h"
+#include "drake/math/roll_pitch_yaw.h"
+#include "drake/multibody/ik_options.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/rigid_body_ik.h"
+#include "drake/systems/primitives/trajectory_source.h"
+
+DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
+
+using Eigen::Vector3d;
+using std::string;
+using std::unique_ptr;
+
+namespace drake {
+
+using systems::Simulator;
+
+namespace examples {
+namespace kuka_iiwa_arm {
+namespace {
+
+const char kUrdfPath[]{"/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf"};
+
+int DoMain() {
+  DRAKE_DEMAND(FLAGS_simulation_sec > 0);
+
+  Eigen::Vector3d kSquareCorner1(0.3, -0.3, 0.3);
+  Eigen::Vector3d kSquareCorner2(0.3, -0.3, 0.6);
+  Eigen::Vector3d kSquareCorner3(0.3, 0.3, 0.6);
+  Eigen::Vector3d kSquareCorner4(0.3, 0.3, 0.3);
+
+  std::vector<Eigen::Vector3d> way_points;
+  way_points.push_back(kSquareCorner1);
+  way_points.push_back(kSquareCorner2);
+  way_points.push_back(kSquareCorner3);
+  way_points.push_back(kSquareCorner4);
+  way_points.push_back(kSquareCorner1);
+
+  std::vector<double> time_stamps{1.0, 2.0, 3.0, 4.0, 5.0};
+
+  std::unique_ptr<PiecewisePolynomialTrajectory> cartesian_trajectory =
+      SimpleCartesianWayPointPlanner(
+          Eigen::Vector3d::Zero() /* robot base position */,
+          Eigen::Vector3d::Zero() /* robot base orientation */, kUrdfPath,
+          way_points, time_stamps);
+
+  KukaDemo<double> model(std::move(cartesian_trajectory));
+  Simulator<double> simulator(model);
+  Context<double>* context = simulator.get_mutable_context();
+
+  model.SetDefaultState(context);
+
+  simulator.Initialize();
+
+  simulator.StepTo(FLAGS_simulation_sec);
+
+  return 0;
+}
+
+}  // namespace
+}  // namespace kuka_iiwa_arm
+}  // namespace examples
+}  // namespace drake
+
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::kuka_iiwa_arm::DoMain();
+}
