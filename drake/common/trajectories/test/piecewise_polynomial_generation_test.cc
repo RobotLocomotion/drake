@@ -6,7 +6,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/common/is_approx_equal_abstol.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
 using std::default_random_engine;
@@ -149,8 +148,10 @@ bool CheckInterpolatedValuesAtBreakTime(
   for (int i = 0; i < N; ++i) {
     if (i == N - 1 && !check_last_time_step)
       continue;
-    if (!is_approx_equal_abstol(traj.value(breaks[i]), values[i], tol))
+    if (!CompareMatrices(traj.value(breaks[i]), values[i], tol,
+                         MatrixCompareType::absolute)) {
       return false;
+    }
   }
   return true;
 }
