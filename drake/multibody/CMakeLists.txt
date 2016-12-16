@@ -10,7 +10,9 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
     $<TARGET_OBJECTS:drakeUtil>)
 target_link_libraries(drakeRBM
     drakeCollision
-    drakeCommon drakeJoints)
+    drakeCommon
+    drakeJoints
+    Eigen3::Eigen)
 drake_install_libraries(drakeRBM)
 drake_install_headers(
     constraint_wrappers.h
@@ -61,7 +63,8 @@ target_link_libraries(drakeIK
     drakeIKoptions
     drakeOptimization
     drakeRBM
-    drakeRigidBodyConstraint)
+    drakeRigidBodyConstraint
+    Eigen3::Eigen)
 drake_install_libraries(drakeIK)
 drake_install_libraries(drakeIKoptions)
 drake_install_headers(

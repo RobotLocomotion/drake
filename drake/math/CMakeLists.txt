@@ -46,7 +46,9 @@ set(private_headers)
 
 add_library_with_exports(LIB_NAME drakeMath
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
-target_link_libraries(drakeMath drakeCommon)
+target_link_libraries(drakeMath
+  drakeCommon
+  Eigen3::Eigen)
 
 drake_install_headers(${installed_headers})
 
