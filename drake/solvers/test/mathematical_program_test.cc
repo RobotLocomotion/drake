@@ -102,10 +102,10 @@ void RunNonlinearProgram(MathematicalProgram& prog,
     if (!solver.second->available()) {
       continue;
     }
-    SolutionResult result = SolutionResult::kUnknownError;
+    SolutionSummary result = SolutionSummary::kUnknownError;
     ASSERT_NO_THROW(result = solver.second->Solve(prog)) << "Using solver: "
                                                          << solver.first;
-    EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Using solver: "
+    EXPECT_EQ(result, SolutionSummary::kSolutionFound) << "Using solver: "
                                                       << solver.first;
     EXPECT_NO_THROW(test_func()) << "Using solver: " << solver.first;
   }

@@ -104,7 +104,7 @@ void MobyLCPSolver::ClearIndexVectors() const {
   j_.clear();
 }
 
-SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
+SolutionSummary MobyLCPSolver::Solve(MathematicalProgram& prog) const {
   // TODO(ggould-tri) This solver currently imposes restrictions that its
   // problem:
   //
@@ -168,12 +168,12 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
     bool solved = SolveLcpLemkeRegularized(
         constraint->M(), constraint->q(), &constraint_solution);
     if (!solved) {
-      return SolutionResult::kUnknownError;
+      return SolutionSummary::kUnknownError;
     }
     binding.WriteThrough(constraint_solution, &solution);
   }
   prog.SetDecisionVariableValues(solution);
-  return SolutionResult::kSolutionFound;
+  return SolutionSummary::kSolutionFound;
 }
 
 /// Fast pivoting algorithm for denerate, monotone LCPs with few nonzero,

@@ -13,7 +13,7 @@ namespace solvers {
 
 bool EqualityConstrainedQPSolver::available() const { return true; }
 
-SolutionResult EqualityConstrainedQPSolver::Solve(
+SolutionSummary EqualityConstrainedQPSolver::Solve(
     MathematicalProgram& prog) const {
   // There are three ways to solve the KKT subproblem for convex QPs.
   // Formally, we want to solve:
@@ -113,7 +113,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     // Solve G*x = A'y - c
     prog.SetDecisionVariableValues(llt.solve(A.transpose() * lambda - c));
     prog.SetSolverResult("Equality Constrained QP Solver", 0);
-    return SolutionResult::kSolutionFound;
+    return SolutionSummary::kSolutionFound;
   }
 
   // The following code assumes that the Hessian is not positive definite.
@@ -143,7 +143,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   prog.SetDecisionVariableValues(sol.segment(0, prog.num_vars()));
 
   prog.SetSolverResult(SolverName(), 0);
-  return SolutionResult::kSolutionFound;
+  return SolutionSummary::kSolutionFound;
 }
 
 }  // namespace solvers

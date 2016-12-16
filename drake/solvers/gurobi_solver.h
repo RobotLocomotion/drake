@@ -15,7 +15,7 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
 
   std::string SolverName() const override {return "Gurobi"; }
 
-  SolutionResult Solve(MathematicalProgram& prog) const override;
+  SolutionSummary Solve(MathematicalProgram& prog) const override;
 };
 
 }  // end namespace solvers

@@ -19,7 +19,7 @@ class MosekSolver : public MathematicalProgramSolverInterface {
 
   std::string SolverName() const override { return "Mosek";}
 
-  SolutionResult Solve(MathematicalProgram& prog) const override;
+  SolutionSummary Solve(MathematicalProgram& prog) const override;
 };
 
 }  // namespace solvers

@@ -15,7 +15,7 @@ class IpoptSolver : public MathematicalProgramSolverInterface {
 
   std::string SolverName() const override { return "IPOPT";}
 
-  SolutionResult Solve(MathematicalProgram& prog) const override;
+  SolutionSummary Solve(MathematicalProgram& prog) const override;
 };
 
 }  // namespace solvers

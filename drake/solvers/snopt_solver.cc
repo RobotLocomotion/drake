@@ -363,7 +363,7 @@ void UpdateConstraintBoundsAndGradients(
 
 bool SnoptSolver::available() const { return true; }
 
-SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
+SolutionSummary SnoptSolver::Solve(MathematicalProgram& prog) const {
   auto d = prog.GetSolverData<SNOPTData>();
   SNOPTRun cur(*d, &prog);
 
@@ -564,13 +564,13 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   // todo: extract the other useful quantities, too.
 
   if (info >= 1 && info <= 6) {
-    return SolutionResult::kSolutionFound;
+    return SolutionSummary::kSolutionFound;
   } else if (info >= 11 && info <= 16) {
-    return SolutionResult::kInfeasibleConstraints;
+    return SolutionSummary::kInfeasibleConstraints;
   } else if (info == 91) {
-    return SolutionResult::kInvalidInput;
+    return SolutionSummary::kInvalidInput;
   }
-  return SolutionResult::kUnknownError;
+  return SolutionSummary::kUnknownError;
 }
 
 }  // namespace solvers

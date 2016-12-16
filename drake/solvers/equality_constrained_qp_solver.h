@@ -15,7 +15,7 @@ class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
     return "Equality Constrained QP Solver";
   }
 
-  SolutionResult Solve(MathematicalProgram& prog) const override;
+  SolutionSummary Solve(MathematicalProgram& prog) const override;
 };
 
 }  // namespace solvers

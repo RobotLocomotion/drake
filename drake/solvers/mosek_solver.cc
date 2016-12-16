@@ -568,7 +568,7 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
 
 bool MosekSolver::available() const { return true; }
 
-SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
+SolutionSummary MosekSolver::Solve(MathematicalProgram& prog) const {
   const int num_vars = prog.num_vars();
   MSKenv_t env = nullptr;
   MSKtask_t task = nullptr;
@@ -634,7 +634,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     rescode = AddLinearMatrixInequalityConstraint(prog, &task);
   }
 
-  SolutionResult result = SolutionResult::kUnknownError;
+  SolutionSummary result = SolutionSummary::kUnknownError;
   // Run optimizer.
   if (rescode == MSK_RES_OK) {
     // TODO(hongkai.dai@tri.global): add trmcode to the returned struct.
@@ -671,7 +671,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
         case MSK_SOL_STA_NEAR_OPTIMAL:
         case MSK_SOL_STA_INTEGER_OPTIMAL:
         case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL: {
-          result = SolutionResult::kSolutionFound;
+          result = SolutionSummary::kSolutionFound;
           MSKint32t num_mosek_vars;
           rescode = MSK_getnumvar(task, &num_mosek_vars);
           DRAKE_ASSERT(rescode == MSK_RES_OK);
@@ -695,11 +695,11 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
         case MSK_SOL_STA_PRIM_INFEAS_CER:
         case MSK_SOL_STA_NEAR_DUAL_FEAS:
         case MSK_SOL_STA_NEAR_PRIM_INFEAS_CER: {
-          result = SolutionResult::kInfeasibleConstraints;
+          result = SolutionSummary::kInfeasibleConstraints;
           break;
         }
         default: {
-          result = SolutionResult::kUnknownError;
+          result = SolutionSummary::kUnknownError;
           break;
         }
       }
@@ -708,7 +708,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
 
   prog.SetSolverResult(SolverName(), result);
   if (rescode != MSK_RES_OK) {
-    result = SolutionResult::kUnknownError;
+    result = SolutionSummary::kUnknownError;
   }
 
   MSK_deletetask(&task);

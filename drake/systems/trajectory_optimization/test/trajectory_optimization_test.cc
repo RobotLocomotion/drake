@@ -110,10 +110,10 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   direct_traj.AddStateConstraint(state_constraint,
                                  {kStateConstraintLo, kStateConstraintHi});
 
-  solvers::SolutionResult result = solvers::SolutionResult::kUnknownError;
+  solvers::SolutionSummary result = solvers::SolutionSummary::kUnknownError;
   result =
       direct_traj.SolveTraj(t_init_in, PiecewisePolynomialType(), states_x);
-  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound)
+  EXPECT_EQ(result, solvers::SolutionSummary::kSolutionFound)
       << "Result is an Error";
 
   Eigen::MatrixXd inputs;
@@ -158,14 +158,14 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   direct_traj.AddInputBounds(input_min, constrained_input);
   result =
       direct_traj.SolveTraj(t_init_in, PiecewisePolynomialType(), states_x);
-  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound)
+  EXPECT_EQ(result, solvers::SolutionSummary::kSolutionFound)
       << "Result is an Error";
   direct_traj.GetResultSamples(&inputs, &states, &times_out);
 
   EXPECT_GE(inputs(0, 0), input_min(0));
 
   result = direct_traj.SolveTraj(t_init_in, inputs_u, states_x);
-  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound)
+  EXPECT_EQ(result, solvers::SolutionSummary::kSolutionFound)
       << "Result is an Error";
 
   // Add some cost functions and see that something gets minimized.
@@ -176,7 +176,7 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   direct_traj.AddInitialCostFunc(InitialCost());
   direct_traj.AddFinalCostFunc(FinalCost());
   result = direct_traj.SolveTraj(t_init_in, inputs_u, states_x);
-  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound)
+  EXPECT_EQ(result, solvers::SolutionSummary::kSolutionFound)
       << "Result is an Error";
 
   direct_traj.GetResultSamples(&inputs, &states, &times_out);

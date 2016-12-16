@@ -24,7 +24,7 @@ using Eigen::VectorXi;
 
 using drake::solvers::DecisionVariableMatrixX;
 using drake::solvers::DecisionVariableVectorX;
-using drake::solvers::SolutionResult;
+using drake::solvers::SolutionSummary;
 using drake::solvers::MathematicalProgram;
 
 namespace drake {
@@ -522,7 +522,7 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
     prog.AddConstraint(inbetween_constraint, {q, qdot0, qdotf});
   }
 
-  const SolutionResult result = prog.Solve();
+  const SolutionSummary result = prog.Solve();
   *info = GetIKSolverInfo(prog, result);
 
   // Populate the output arguments.

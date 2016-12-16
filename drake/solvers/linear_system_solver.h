@@ -13,7 +13,7 @@ class LinearSystemSolver : public MathematicalProgramSolverInterface {
 
   std::string SolverName() const override { return "Linear System Solver"; }
 
-  SolutionResult Solve(MathematicalProgram& prog) const override;
+  SolutionSummary Solve(MathematicalProgram& prog) const override;
 };
 
 }  // namespace solvers

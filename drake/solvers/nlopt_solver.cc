@@ -301,7 +301,7 @@ void WrapConstraint(const _Binding& binding, double constraint_tol,
 
 bool NloptSolver::available() const { return true; }
 
-SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
+SolutionSummary NloptSolver::Solve(MathematicalProgram& prog) const {
   int nx = prog.num_vars();
 
   // Load the algo to use and the size.
@@ -379,21 +379,21 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   opt.set_xtol_rel(xtol_rel);
   opt.set_xtol_abs(xtol_abs);
 
-  SolutionResult result = SolutionResult::kSolutionFound;
+  SolutionSummary result = SolutionSummary::kSolutionFound;
   nlopt::result nlopt_result = nlopt::FAILURE;
   try {
     double minf = 0;
     nlopt_result = opt.optimize(x, minf);
   } catch (std::invalid_argument&) {
-    result = SolutionResult::kInvalidInput;
+    result = SolutionSummary::kInvalidInput;
   } catch (std::bad_alloc&) {
-    result = SolutionResult::kUnknownError;
+    result = SolutionSummary::kUnknownError;
   } catch (nlopt::roundoff_limited) {
-    result = SolutionResult::kUnknownError;
+    result = SolutionSummary::kUnknownError;
   } catch (nlopt::forced_stop) {
-    result = SolutionResult::kUnknownError;
+    result = SolutionSummary::kUnknownError;
   } catch (std::runtime_error&) {
-    result = SolutionResult::kUnknownError;
+    result = SolutionSummary::kUnknownError;
   }
 
   Eigen::VectorXd sol(x.size());

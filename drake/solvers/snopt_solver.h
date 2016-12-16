@@ -15,7 +15,7 @@ class SnoptSolver : public MathematicalProgramSolverInterface  {
 
   std::string SolverName() const override { return "SNOPT"; }
 
-  SolutionResult Solve(MathematicalProgram& prog) const override;
+  SolutionSummary Solve(MathematicalProgram& prog) const override;
 };
 
 }  // namespace solvers

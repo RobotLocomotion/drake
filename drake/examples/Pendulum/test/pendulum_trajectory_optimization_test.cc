@@ -8,7 +8,7 @@
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
 #include "drake/examples/Pendulum/pendulum_plant.h"
 
-using drake::solvers::SolutionResult;
+using drake::solvers::SolutionSummary;
 
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 
@@ -38,10 +38,10 @@ GTEST_TEST(PendulumTrajectoryOptimization,
   const double timespan_init = 4;
   auto traj_init_x = PiecewisePolynomialType::FirstOrderHold(
       {0, timespan_init}, {x0, xG});
-  SolutionResult result =
+  SolutionSummary result =
       dircol_traj.SolveTraj(timespan_init, PiecewisePolynomialType(),
                             traj_init_x);
-  ASSERT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
+  ASSERT_EQ(result, SolutionSummary::kSolutionFound) << "Result is an Error";
 
   Eigen::MatrixXd inputs;
   Eigen::MatrixXd states;

@@ -15,7 +15,7 @@ class NloptSolver : public MathematicalProgramSolverInterface {
 
   std::string SolverName() const override { return "NLopt"; }
 
-  SolutionResult Solve(MathematicalProgram& prog) const override;
+  SolutionSummary Solve(MathematicalProgram& prog) const override;
 };
 
 }  // namespace solvers

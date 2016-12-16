@@ -172,7 +172,7 @@ void DirectTrajectoryOptimization::GetInitialVars(
   opt_problem_.SetInitialGuess(x_vars_, guess_x);
 }
 
-solvers::SolutionResult DirectTrajectoryOptimization::SolveTraj(
+solvers::SolutionSummary DirectTrajectoryOptimization::SolveTraj(
     double timespan_init, const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
   GetInitialVars(timespan_init, traj_init_u, traj_init_x);
@@ -181,7 +181,7 @@ solvers::SolutionResult DirectTrajectoryOptimization::SolveTraj(
   // default precision level.
   opt_problem_.SetSolverOption("IPOPT", "tol", 1e-7);
 
-  solvers::SolutionResult result = opt_problem_.Solve();
+  solvers::SolutionSummary result = opt_problem_.Solve();
   return result;
 }
 

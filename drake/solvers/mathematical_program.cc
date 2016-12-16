@@ -354,7 +354,7 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
   return constraint;
 }
 
-SolutionResult MathematicalProgram::Solve() {
+SolutionSummary MathematicalProgram::Solve() {
   // This implementation is simply copypasta for now; in the future we will
   // want to tweak the order of preference of solvers based on the types of
   // constraints present.

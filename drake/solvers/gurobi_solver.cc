@@ -357,7 +357,7 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
 
 bool GurobiSolver::available() const { return true; }
 
-SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
+SolutionSummary GurobiSolver::Solve(MathematicalProgram& prog) const {
   // We only process quadratic costs and linear / bounding box
   // constraints.
 
@@ -435,7 +435,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
                                       true, model);
   }
 
-  SolutionResult result = SolutionResult::kUnknownError;
+  SolutionSummary result = SolutionSummary::kUnknownError;
 
   if (!error) {
     error = GRBoptimize(model);
@@ -463,17 +463,17 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // message.
   if (error) {
     // TODO(naveenoid) : log error message using GRBgeterrormsg(env).
-    result = SolutionResult::kInvalidInput;
+    result = SolutionSummary::kInvalidInput;
   } else {
     int optimstatus = 0;
     GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
 
     if (optimstatus != GRB_OPTIMAL && optimstatus != GRB_SUBOPTIMAL) {
       if (optimstatus == GRB_INF_OR_UNBD) {
-        result = SolutionResult::kInfeasibleConstraints;
+        result = SolutionSummary::kInfeasibleConstraints;
       }
     } else {
-      result = SolutionResult::kSolutionFound;
+      result = SolutionSummary::kSolutionFound;
       Eigen::VectorXd sol_vector = Eigen::VectorXd::Zero(num_vars);
       GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_vars, sol_vector.data());
       prog.SetDecisionVariableValues(sol_vector);

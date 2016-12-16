@@ -47,7 +47,7 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
 
   std::string SolverName() const override {return "MobyLCP"; }
 
-  SolutionResult Solve(MathematicalProgram& prog) const override;
+  SolutionSummary Solve(MathematicalProgram& prog) const override;
 
  private:
   void ClearIndexVectors() const;
