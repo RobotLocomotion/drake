@@ -15,14 +15,14 @@ if(gurobi_FOUND)
 endif()
 
 set(private_headers
-  dreal_solver.h
-  gurobi_solver.h
-  ipopt_solver.h
+  #dreal_solver.h
+  #gurobi_solver.h
+  #ipopt_solver.h
   linear_system_solver.h
-  moby_lcp_solver.h
-  mosek_solver.h
-  nlopt_solver.h
-  snopt_solver.h
+  #moby_lcp_solver.h
+  #mosek_solver.h
+  #nlopt_solver.h
+  #snopt_solver.h
   )
 set(optimization_files)
 set(optimization_requires)
@@ -30,48 +30,48 @@ list(APPEND optimization_files
   ${private_headers}
   constraint.cc
   decision_variable.cc
-  equality_constrained_qp_solver.cc
+  #equality_constrained_qp_solver.cc
   linear_system_solver.cc
   mathematical_program.cc
-  moby_lcp_solver.cc
-  system_identification.cc
+  #moby_lcp_solver.cc
+  #system_identification.cc
   )
-if(ipopt_FOUND)
- list(APPEND optimization_files ipopt_solver.cc)
- list(APPEND optimization_requires ipopt)
-else()
-  list(APPEND optimization_files no_ipopt.cc)
-endif()
-if(NLopt_FOUND)
-  list(APPEND optimization_files nlopt_solver.cc)
-  list(APPEND optimization_requires nlopt)
-else()
-  list(APPEND optimization_files no_nlopt.cc)
-endif()
-if(dreal_FOUND)
-  list(APPEND optimization_files dreal_solver.cc)
-  list(APPEND optimization_requires dreal)
-else()
-  list(APPEND optimization_files no_dreal.cc)
-endif()
-if(snopt_FOUND)
-  list(APPEND optimization_files snopt_solver.cc)
-  list(APPEND optimization_requires snopt_c)
-else()
-  list(APPEND optimization_files no_snopt.cc)
-endif()
-if(mosek_FOUND)
-  list(APPEND optimization_files mosek_solver.cc)
-  list(APPEND optimization_requires mosek)
-else()
-  list(APPEND optimization_files no_mosek.cc)
-endif()
-if(gurobi_FOUND)
-  list(APPEND optimization_files gurobi_solver.cc)
-  list(APPEND optimization_requires gurobi)
-else()
-  list(APPEND optimization_files no_gurobi.cc)
-endif()
+#if(ipopt_FOUND)
+# list(APPEND optimization_files ipopt_solver.cc)
+# list(APPEND optimization_requires ipopt)
+#else()
+#  list(APPEND optimization_files no_ipopt.cc)
+#endif()
+#if(NLopt_FOUND)
+#  list(APPEND optimization_files nlopt_solver.cc)
+#  list(APPEND optimization_requires nlopt)
+#else()
+#  list(APPEND optimization_files no_nlopt.cc)
+#endif()
+#if(dreal_FOUND)
+#  list(APPEND optimization_files dreal_solver.cc)
+#  list(APPEND optimization_requires dreal)
+#else()
+#  list(APPEND optimization_files no_dreal.cc)
+#endif()
+#if(snopt_FOUND)
+#  list(APPEND optimization_files snopt_solver.cc)
+#  list(APPEND optimization_requires snopt_c)
+#else()
+#  list(APPEND optimization_files no_snopt.cc)
+#endif()
+#if(mosek_FOUND)
+#  list(APPEND optimization_files mosek_solver.cc)
+#  list(APPEND optimization_requires mosek)
+#else()
+#  list(APPEND optimization_files no_mosek.cc)
+#endif()
+#if(gurobi_FOUND)
+#  list(APPEND optimization_files gurobi_solver.cc)
+#  list(APPEND optimization_requires gurobi)
+#else()
+#  list(APPEND optimization_files no_gurobi.cc)
+#endif()
 
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
 target_link_libraries(drakeOptimization

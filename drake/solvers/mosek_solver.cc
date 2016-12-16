@@ -6,8 +6,6 @@
 #include <list>
 #include <vector>
 
-#include <mosek.h>
-
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 
@@ -568,7 +566,7 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
 
 bool MosekSolver::available() const { return true; }
 
-SolutionSummary MosekSolver::Solve(MathematicalProgram& prog) const {
+std::unique_ptr<MosekSolverResult> MosekSolver::Solve(MathematicalProgram& prog) const {
   const int num_vars = prog.num_vars();
   MSKenv_t env = nullptr;
   MSKtask_t task = nullptr;
@@ -634,17 +632,15 @@ SolutionSummary MosekSolver::Solve(MathematicalProgram& prog) const {
     rescode = AddLinearMatrixInequalityConstraint(prog, &task);
   }
 
-  SolutionSummary result = SolutionSummary::kUnknownError;
+  SolutionSummary solution_summary = SolutionSummary::kUnknownError;
   // Run optimizer.
   if (rescode == MSK_RES_OK) {
-    // TODO(hongkai.dai@tri.global): add trmcode to the returned struct.
     MSKrescodee trmcode;  // termination code
     rescode = MSK_optimizetrm(task, &trmcode);
   }
 
   // Determines the solution type.
-  // TODO(hongkai.dai@tri.global) : add the integer solution type. And test
-  // the non-default optimizer.
+  // TODO(hongkai.dai@tri.global) : And tests for the non-default optimizer.
   MSKsoltypee solution_type;
   if (with_integer_or_binary_variable) {
     solution_type = MSK_SOL_ITG;
@@ -658,12 +654,18 @@ SolutionSummary MosekSolver::Solve(MathematicalProgram& prog) const {
     solution_type = MSK_SOL_ITR;
   }
 
+  double primal_objective ;
+  double dual_objective;
+  MSKprostae problem_status;
+  MSKsolstae solution_status;
   // TODO(hongkai.dai@tri.global) : Add MOSEK paramaters.
   // Mosek parameter are added by enum, not by string.
   if (rescode == MSK_RES_OK) {
-    MSKsolstae solution_status;
     if (rescode == MSK_RES_OK) {
       rescode = MSK_getsolsta(task, solution_type, &solution_status);
+    }
+    if (rescode == MSK_RES_OK) {
+      rescode = MSK_getprosta(task, solution_type, &problem_status);
     }
     if (rescode == MSK_RES_OK) {
       switch (solution_status) {
@@ -671,13 +673,19 @@ SolutionSummary MosekSolver::Solve(MathematicalProgram& prog) const {
         case MSK_SOL_STA_NEAR_OPTIMAL:
         case MSK_SOL_STA_INTEGER_OPTIMAL:
         case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL: {
-          result = SolutionSummary::kSolutionFound;
+          rescode = MSK_getprimalobj(task, solution_type, &primal_objective);
+          if (rescode == MSK_RES_OK) {
+            rescode = MSK_getdualobj(task, solution_type, &dual_objective);
+          }
+          solution_summary = SolutionSummary::kSolutionFound;
           MSKint32t num_mosek_vars;
-          rescode = MSK_getnumvar(task, &num_mosek_vars);
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
+          if (rescode == MSK_RES_OK) {
+            rescode = MSK_getnumvar(task, &num_mosek_vars);
+          }
           Eigen::VectorXd mosek_sol_vector(num_mosek_vars);
-          rescode = MSK_getxx(task, solution_type, mosek_sol_vector.data());
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
+          if (rescode == MSK_RES_OK) {
+            rescode = MSK_getxx(task, solution_type, mosek_sol_vector.data());
+          }
           Eigen::VectorXd sol_vector(num_vars);
           int var_count = 0;
           for (int i = 0; i < num_mosek_vars; ++i) {
@@ -695,25 +703,25 @@ SolutionSummary MosekSolver::Solve(MathematicalProgram& prog) const {
         case MSK_SOL_STA_PRIM_INFEAS_CER:
         case MSK_SOL_STA_NEAR_DUAL_FEAS:
         case MSK_SOL_STA_NEAR_PRIM_INFEAS_CER: {
-          result = SolutionSummary::kInfeasibleConstraints;
+          solution_summary = SolutionSummary::kInfeasibleConstraints;
           break;
         }
         default: {
-          result = SolutionSummary::kUnknownError;
+          solution_summary = SolutionSummary::kUnknownError;
           break;
         }
       }
     }
   }
 
-  prog.SetSolverResult(SolverName(), result);
+  prog.SetSolverResult(SolverName(), solution_summary);
   if (rescode != MSK_RES_OK) {
-    result = SolutionSummary::kUnknownError;
+    solution_summary = SolutionSummary::kUnknownError;
   }
 
   MSK_deletetask(&task);
   MSK_deleteenv(&env);
-  return result;
+  return std::make_unique<MosekSolverResult>(solution_summary, primal_objective, dual_objective, problem_status, solution_status, rescode);
 }
 
 }  // namespace solvers

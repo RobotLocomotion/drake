@@ -9,9 +9,9 @@
 namespace drake {
 namespace solvers {
 
-bool LinearSystemSolver::available() const { return true; }
+bool LinearSystemSolver::available_impl() const { return true; }
 
-SolutionSummary LinearSystemSolver::Solve(MathematicalProgram& prog) const {
+LinearSystemSolverResult* LinearSystemSolver::Solve_impl(MathematicalProgram& prog) const {
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
     num_constraints += binding.constraint()->A().rows();
@@ -53,7 +53,7 @@ SolutionSummary LinearSystemSolver::Solve(MathematicalProgram& prog) const {
       Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
 
   prog.SetSolverResult(SolverName(), 0);
-  return SolutionSummary::kSolutionFound;
+  return new LinearSystemSolverResult(SolutionSummary ::kSolutionFound);
 }
 
 }  // namespace solvers
