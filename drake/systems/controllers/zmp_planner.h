@@ -34,7 +34,8 @@ class ZMPPlanner {
    * @param R, Quadratic cost term on CoM acceleration.
    */
   void Plan(const PiecewisePolynomial<double>& zmp_d, const Eigen::Vector4d& x0,
-            const double height,
+            double height,
+            double gravity = 9.81,
             const Eigen::Matrix2d& Qy = Eigen::Matrix2d::Identity(),
             const Eigen::Matrix2d& R = Eigen::Matrix2d::Zero());
 
@@ -98,13 +99,6 @@ class ZMPPlanner {
   }
 
   /**
-   * Returns the desired ZMP velocity evaluated at `time`.
-   */
-  inline Eigen::Vector2d get_desired_zmpd(double time) const {
-    return zmpd_d_.value(time);
-  }
-
-  /**
    * Returns the nominal CoM evaluated at `time`.
    */
   inline Eigen::Vector2d get_nominal_com(double time) const {
@@ -134,13 +128,6 @@ class ZMPPlanner {
    */
   inline const PiecewisePolynomial<double>& get_desired_zmp() const {
     return zmp_d_;
-  }
-
-  /**
-   * Returns the desired ZMP velocity trajectory.
-   */
-  inline const PiecewisePolynomial<double>& get_desired_zmpd() const {
-    return zmpd_d_;
   }
 
   /**
@@ -202,9 +189,8 @@ class ZMPPlanner {
   // x_bar = [x - y_tf, xd]
   // y_bar = y - y_tf
 
-  // Desired ZMP and ZMPd trajectories.
+  // Desired ZMP trajectories.
   PiecewisePolynomial<double> zmp_d_;
-  PiecewisePolynomial<double> zmpd_d_;
 
   // Nominal CoM, CoMd, and CoMdd trajectories.
   ExponentialPlusPiecewisePolynomial<double> com_;
