@@ -11,7 +11,7 @@
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/parser_urdf.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 
