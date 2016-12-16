@@ -1,13 +1,12 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_component", "cc_unit_test")
+
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+cc_component(
     name = "kalman_filter",
-    srcs = ["kalman_filter.cc"],
-    hdrs = ["kalman_filter.h"],
-    linkstatic = 1,
     deps = [
         ":luenberger_observer",
         "//drake/systems/controllers:linear_quadratic_regulator",
@@ -16,11 +15,8 @@ cc_library(
     ],
 )
 
-cc_library(
+cc_component(
     name = "luenberger_observer",
-    srcs = ["luenberger_observer.cc"],
-    hdrs = ["luenberger_observer.h"],
-    linkstatic = 1,
     deps = [
         "//drake/systems/framework",
     ],
@@ -28,27 +24,19 @@ cc_library(
 
 # === test/ ===
 
-cc_test(
+cc_unit_test(
     name = "kalman_filter_test",
-    size = "small",
-    srcs = ["test/kalman_filter_test.cc"],
-    linkstatic = 1,
     deps = [
         ":kalman_filter",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "luenberger_observer_test",
-    size = "small",
-    srcs = ["test/luenberger_observer_test.cc"],
-    linkstatic = 1,
     deps = [
         ":luenberger_observer",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/primitives:linear_system",
-        "@gtest//:main",
     ],
 )

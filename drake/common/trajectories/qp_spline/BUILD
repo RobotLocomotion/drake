@@ -1,34 +1,27 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_component", "cc_unit_test")
+
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+cc_component(
     name = "continuity_constraint",
-    srcs = ["continuity_constraint.cc"],
-    hdrs = ["continuity_constraint.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
     ],
 )
 
-cc_library(
+cc_component(
     name = "spline_generation",
-    srcs = ["spline_generation.cc"],
-    hdrs = ["spline_generation.h"],
-    linkstatic = 1,
     deps = [
         ":spline_information",
         "//drake/common/trajectories:piecewise_polynomial",
     ],
 )
 
-cc_library(
+cc_component(
     name = "spline_information",
-    srcs = ["spline_information.cc"],
-    hdrs = ["spline_information.h"],
-    linkstatic = 1,
     deps = [
         ":continuity_constraint",
         ":value_constraint",
@@ -36,11 +29,8 @@ cc_library(
     ],
 )
 
-cc_library(
+cc_component(
     name = "value_constraint",
-    srcs = ["value_constraint.cc"],
-    hdrs = ["value_constraint.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
     ],
@@ -48,12 +38,9 @@ cc_library(
 
 # === test/ ===
 
-cc_test(
+cc_unit_test(
     name = "spline_generation_test",
-    size = "small",
-    srcs = ["test/spline_generation_test.cc"],
     deps = [
         ":spline_generation",
-        "@gtest//:main",
     ],
 )
