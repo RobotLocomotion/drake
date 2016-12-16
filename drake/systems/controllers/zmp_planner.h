@@ -157,24 +157,21 @@ class ZMPPlanner {
   /**
    * Returns the time invariant second order term of the value function.
    */
-  inline const Eigen::Matrix<double, 4, 4>&
-  get_value_function_second_derivative() const {
+  inline const Eigen::Matrix<double, 4, 4>& get_Vxx() const {
     return S1_;
   }
 
   /**
    * Returns the time varying first order term of the value function.
    */
-  inline const ExponentialPlusPiecewisePolynomial<double>&
-  get_value_function_first_derivative() const {
+  inline const ExponentialPlusPiecewisePolynomial<double>& get_Vx() const {
     return s2_;
   }
 
   /**
    * Returns the time varying first order term of the value function.
    */
-  inline const Eigen::Vector4d
-  get_value_function_first_derivative(double time) const {
+  inline const Eigen::Vector4d get_Vx(double time) const {
     return s2_.value(time);
   }
 
@@ -202,6 +199,11 @@ class ZMPPlanner {
   Eigen::Matrix<double, 4, 2> B_;
   Eigen::Matrix<double, 2, 4> C_;
   Eigen::Matrix<double, 2, 2> D_;
+
+  Eigen::Matrix<double, 2, 4> NB_;
+  Eigen::Matrix<double, 2, 2> R1i_;
+  Eigen::Matrix<double, 4, 4> A2_;
+  Eigen::Matrix<double, 4, 2> B2_;
 
   // One step cost function:
   // L = (y - y_d)^T * Qy * (y - y_d)^T + u^T * R * u.

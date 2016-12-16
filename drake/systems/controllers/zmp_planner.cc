@@ -46,6 +46,7 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
   Eigen::Matrix<double, 2, 2> R1 = R_ + D_.transpose() * Qy_ * D_;
   Eigen::Matrix<double, 4, 2> N = C_.transpose() * Qy_ * D_;
   Eigen::Matrix<double, 2, 2> R1i = R1.inverse();
+  R1i_ = R1i;
 
   LinearQuadraticRegulatorResult lqr_result =
       LinearQuadraticRegulator(A_, B_, Q1, R1, N);
@@ -61,6 +62,10 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
   Eigen::Matrix<double, 4, 2> B2 =
       2 * (C_.transpose() - NB.transpose() * R1i * D_) * Qy_;
   Eigen::Matrix<double, 4, 4> A2i = A2.inverse();
+
+  NB_ = NB;
+  A2_ = A2;
+  B2_ = B2;
 
   // Last desired ZMP.
   Eigen::Vector2d zmp_tf = zmp_d.value(zmp_d.getEndTime());
