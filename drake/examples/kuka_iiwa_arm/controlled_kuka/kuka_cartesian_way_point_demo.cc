@@ -50,8 +50,7 @@ int DoMain() {
 
   std::unique_ptr<PiecewisePolynomialTrajectory> cartesian_trajectory =
       SimpleCartesianWayPointPlanner(
-          Eigen::Vector3d::Zero() /* robot base position */,
-          Eigen::Vector3d::Zero() /* robot base orientation */, kUrdfPath,
+          CreateTreeFromFixedModelAtPose(kUrdfPath), "iiwa_link_ee",
           way_points, time_stamps);
 
   KukaDemo<double> model(std::move(cartesian_trajectory));

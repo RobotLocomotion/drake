@@ -3,6 +3,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <memory.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
@@ -48,22 +49,14 @@ void VerifyIiwaTree(const RigidBodyTree<double>& tree) {
   DRAKE_DEMAND(name_to_idx["iiwa_joint_7"] == joint_idx++);
 }
 
+template <typename T>
 std::unique_ptr<PiecewisePolynomialTrajectory> SimpleCartesianWayPointPlanner(
-    const Eigen::Vector3d& robot_base_position,
-    const Eigen::Vector3d& robot_base_orientation,
-    const std::string& robot_urdf_file,
+    RigidBodyTree<T> tree,
+    const std::string& link_to_constraint,
     const std::vector<Eigen::Vector3d>& way_point_list,
     const std::vector<double>& time_stamps) {
+
   DRAKE_DEMAND(way_point_list.size() == time_stamps.size());
-  RigidBodyTree<double> tree{};
-
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
-      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
-      robot_base_position, robot_base_orientation);
-
-  parsers::urdf::AddModelInstanceFromUrdfFile(GetDrakePath() + robot_urdf_file,
-                                              multibody::joints::kFixed,
-                                              weld_to_frame, &tree);
 
   VectorXd zero_conf = tree.getZeroConfiguration();
 
@@ -78,21 +71,21 @@ std::unique_ptr<PiecewisePolynomialTrajectory> SimpleCartesianWayPointPlanner(
   vector<Eigen::Vector2d> time_window_list = TimeWindowBuilder(time_stamps);
 
   // Populates constraints.
-  for (size_t ctr = 0; ctr < way_point_list.size(); ++ctr) {
+  for (size_t i = 0; i < way_point_list.size(); ++i) {
     const double kCartesianPositionTolerance = 0.005;
     Vector3d pos_lb =
-        way_point_list[ctr] - Vector3d::Constant(kCartesianPositionTolerance);
+        way_point_list[i] - Vector3d::Constant(kCartesianPositionTolerance);
     Vector3d pos_ub =
-        way_point_list[ctr] + Vector3d::Constant(kCartesianPositionTolerance);
+        way_point_list[i] + Vector3d::Constant(kCartesianPositionTolerance);
 
     unique_ptr<WorldPositionConstraint> wpc =
         make_unique<WorldPositionConstraint>(
             &tree, tree.FindBodyIndex("iiwa_link_ee"), Vector3d::Zero(), pos_lb,
-            pos_ub, time_window_list.at(ctr));
+            pos_ub, time_window_list.at(i));
 
     // Stores the unique_ptr.
     constraint_unique_ptr_list.push_back(std::move(wpc));
-    constraint_ptr_list.push_back(constraint_unique_ptr_list.at(ctr).get());
+    constraint_ptr_list.push_back(constraint_unique_ptr_list.at(i).get());
   }
 
   IKoptions ikoptions(&tree);
@@ -132,29 +125,48 @@ std::vector<Eigen::Vector2d> TimeWindowBuilder(
   DRAKE_DEMAND(lower_ratio < upper_ratio);
   std::vector<Eigen::Vector2d> time_window_list;
 
-  for (size_t ctr = 0; ctr < time_stamps.size(); ++ctr) {
+  for (size_t i = 0; i < time_stamps.size(); ++i) {
     Eigen::Vector2d time_window;
-    if (ctr == 0) {
+    if (i == 0) {
       // If its the first (or only) time stamp
       time_window << 0,
           time_stamps[0] + lower_ratio * (time_stamps[1] - time_stamps[0]);
-    } else if (ctr == time_stamps.size() - 1) {
+    } else if (i == time_stamps.size() - 1) {
       // If its the last time stamp
-      time_window << time_stamps[ctr - 1] +
+      time_window << time_stamps[i - 1] +
                          upper_ratio *
-                             (time_stamps[ctr] - time_stamps[ctr - 1]),
-          time_stamps[ctr] +
-              lower_ratio * (time_stamps[ctr] - time_stamps[ctr - 1]);
+                             (time_stamps[i] - time_stamps[i - 1]),
+          time_stamps[i];
     } else {
-      time_window << time_stamps[ctr - 1] +
+      time_window << time_stamps[i - 1] +
                          upper_ratio *
-                             (time_stamps[ctr] - time_stamps[ctr - 1]),
-          time_stamps[ctr] +
-              lower_ratio * (time_stamps[ctr + 1] - time_stamps[ctr]);
+                             (time_stamps[i] - time_stamps[i - 1]),
+          time_stamps[i] +
+              lower_ratio * (time_stamps[i + 1] - time_stamps[i]);
     }
     time_window_list.push_back(time_window);
   }
   return time_window_list;
+}
+
+template <typename T>
+RigidBodyTree<T> CreateTreeFromFixedModelAtPose(
+    const std::string& model_file_name, const Vector3d& position,
+    const Vector3d& orientation) {
+  std::unique_ptr<RigidBodyTree<T>> tree;
+
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<T>>(
+      aligned_allocator<RigidBodyFrame<T>>(), "world", nullptr,
+      position, orientation);
+
+
+  // TODO(naveenoid) : consider implementing SDF version of this method.
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      drake::GetDrakePath() + model_file_name,
+      drake::multibody::joints::kFixed,
+      weld_to_frame, &tree);
+
+  return(tree);
 }
 
 }  // namespace kuka_iiwa_arm
