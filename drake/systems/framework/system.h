@@ -65,6 +65,61 @@ class System {
  public:
   virtual ~System() {}
 
+  //----------------------------------------------------------------------------
+  /// @name           Resource allocation and initialization
+  /// These methods are used to allocate and initialize Context resources.
+  //@{
+
+  /// Allocates a context, initialized with the correct numbers of concrete
+  /// input ports and state variables for this System.  Since input port
+  /// pointers are not owned by the context, they should simply be initialized
+  /// to nullptr.
+  virtual std::unique_ptr<Context<T>> AllocateContext() const = 0;
+
+  /// Returns a default output, initialized with the correct number of
+  /// concrete output ports for this System. @p context is provided as
+  /// an argument to support some specialized use cases. Most typical
+  /// System implementations should ignore it.
+  virtual std::unique_ptr<SystemOutput<T>> AllocateOutput(
+      const Context<T>& context) const = 0;
+
+  /// Returns a ContinuousState of the same size as the continuous_state
+  /// allocated in CreateDefaultContext. The simulator will provide this state
+  /// as the output argument to EvalTimeDerivatives.
+  ///
+  /// By default, allocates no derivatives. Systems with continuous state
+  /// variables should override.
+  virtual std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const {
+    return nullptr;
+  }
+
+  /// Returns a DiscreteState of the same dimensions as the discrete_state
+  /// allocated in CreateDefaultContext. The simulator will provide this state
+  /// as the output argument to Update.
+  /// By default, allocates nothing. Systems with discrete state variables
+  /// should override.
+  virtual std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables()
+  const {
+    return nullptr;
+  }
+
+  /// This convenience method allocates a context using AllocateContext() and
+  /// sets its default values using SetDefaults().
+  std::unique_ptr<Context<T>> CreateDefaultContext() const {
+    std::unique_ptr<Context<T>> context = AllocateContext();
+    SetDefaults(context.get());
+    return context;
+  }
+
+  /// Assigns default values to all elements of the state. Overrides must not
+  /// change the number of state variables.
+  virtual void SetDefaultState(const Context<T>& context,
+                               State<T>* state) const = 0;
+
+  // Sets Context fields to their default values.  User code should not
+  // override.
+  virtual void SetDefaults(Context<T>* context) const = 0;
+
   /// Evaluates to `true` if any of the inputs to the system is directly
   /// fed through to any of its outputs and `false` otherwise.
   ///
@@ -78,150 +133,34 @@ class System {
   // pairwise (input_port, output_port) feedthrough.
   virtual bool has_any_direct_feedthrough() const { return true; }
 
-  /// Returns the number of input ports of the system.
-  int get_num_input_ports() const {
-    return static_cast<int>(input_ports_.size());
-  }
+  //@}
 
-  /// Returns the number of output ports of the system.
-  int get_num_output_ports() const {
-    return static_cast<int>(output_ports_.size());
-  }
+  //----------------------------------------------------------------------------
+  /// @name                        Publishing
+  /// Publishing is the primary mechanism for a %System to communicate with
+  /// the world outside the %System abstraction during a simulation. Publishing
+  /// occurs at user-specified times or events and can generate side-effect
+  /// results such as terminal output, visualization, logging, plotting, and
+  /// network messages. Other than computational cost, publishing has no effect
+  /// on the progress of a simulation.
+  //@{
 
-  /// Returns descriptors for all the input ports of this system.
-  const std::vector<SystemPortDescriptor<T>>& get_input_ports() const {
-    return input_ports_;
-  }
-
-  /// Returns the descriptor of the input port at index @p port_index.
-  const SystemPortDescriptor<T>& get_input_port(int port_index) const {
-    if (port_index >= get_num_input_ports()) {
-      throw std::out_of_range("port number out of range.");
-    }
-    return input_ports_[port_index];
-  }
-
-  /// Returns the descriptor of the output port at index @p port_index.
-  const SystemPortDescriptor<T>& get_output_port(int port_index) const {
-    if (port_index >= get_num_output_ports()) {
-      throw std::out_of_range("port number out of range.");
-    }
-    return output_ports_[port_index];
-  }
-
-  /// Returns descriptors for all the output ports of this system.
-  const std::vector<SystemPortDescriptor<T>>& get_output_ports() const {
-    return output_ports_;
-  }
-
-  /// Returns the total dimension of all of the input ports (as if they were
-  /// muxed).
-  int get_num_total_inputs() const {
-    int count = 0;
-    for (const auto& in : input_ports_) count += in.get_size();
-    return count;
-  }
-
-  /// Returns the total dimension of all of the output ports (as if they were
-  /// muxed).
-  int get_num_total_outputs() const {
-    int count = 0;
-    for (const auto& out : output_ports_) count += out.get_size();
-    return count;
-  }
-
-  /// Checks that @p output is consistent with the number and size of output
-  /// ports declared by the system.
-  /// @throw exception unless `output` is non-null and valid for this system.
-  void CheckValidOutput(const SystemOutput<T>* output) const {
-    DRAKE_THROW_UNLESS(output != nullptr);
-
-    // Checks that the number of output ports in the system output is consistent
-    // with the number of output ports declared by the System.
-    DRAKE_THROW_UNLESS(output->get_num_ports() == get_num_output_ports());
-
-    // Checks the validity of each output port.
-    for (int i = 0; i < get_num_output_ports(); ++i) {
-      // TODO(amcastro-tri): add appropriate checks for kAbstractValued ports
-      // once abstract ports are implemented in 3164.
-      if (get_output_port(i).get_data_type() == kVectorValued) {
-        const VectorBase<T>* output_vector = output->get_vector_data(i);
-        DRAKE_THROW_UNLESS(output_vector != nullptr);
-        DRAKE_THROW_UNLESS(output_vector->size() ==
-                           get_output_port(i).get_size());
-      }
-    }
-  }
-
-  /// Checks that @p context is consistent for this system.
-  /// @throw exception unless `context` is valid for this system.
-  void CheckValidContext(const Context<T>& context) const {
-    // Checks that the number of input ports in the context is consistent with
-    // the number of ports declared by the System.
-    DRAKE_THROW_UNLESS(context.get_num_input_ports() ==
-                       this->get_num_input_ports());
-
-    // Checks that the size of the input ports in the context matches the
-    // declarations made by the system.
-    for (int i = 0; i < this->get_num_input_ports(); ++i) {
-      context.VerifyInputPort(this->get_input_port(i));
-    }
-  }
-
-  /// Returns a copy of the continuous state vector `xc` into an Eigen vector.
-  VectorX<T> CopyContinuousStateVector(const Context<T>& context) const {
-    DRAKE_ASSERT(context.get_continuous_state() != nullptr);
-    return context.get_continuous_state()->CopyToVector();
-  }
-
-  /// Allocates a context, initialized with the correct numbers of concrete
-  /// input ports and state variables for this System.  Since input port
-  /// pointers are not owned by the context, they should simply be initialized
-  /// to nullptr.
-  virtual std::unique_ptr<Context<T>> AllocateContext() const = 0;
-
-  /// Assigns default values to all elements of the state. Overrides must not
-  /// change the number of state variables.
-  virtual void SetDefaultState(const Context<T>& context,
-                               State<T>* state) const = 0;
-
-  // Sets Context fields to their default values.  User code should not
-  // override.
-  virtual void SetDefaults(Context<T>* context) const = 0;
-
-  /// Allocates a context and sets its default values.
-  std::unique_ptr<Context<T>> CreateDefaultContext() const {
-    std::unique_ptr<Context<T>> context = AllocateContext();
-    SetDefaults(context.get());
-    return context;
-  }
-
-  /// Returns a default output, initialized with the correct number of
-  /// concrete output ports for this System. @p context is provided as
-  /// an argument to support some specialized use cases. Most typical
-  /// System implementations should ignore it.
-  virtual std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const = 0;
-
-  /// Generates side-effect outputs such as terminal output, visualization,
-  /// logging, plotting, and network messages. Other than computational cost,
-  /// publishing has no effect on the progress of a simulation.
-  /// Dispatches to DoPublish.
-  ///
-  /// This method is invoked by the Simulator at the start of each continuous
-  /// integration step, after discrete variables have been updated to the values
+  /// This method is invoked by the Simulator when every-time step publishing
+  /// is enabled, at the start of each continuous integration step, after
+  /// discrete variables have been updated to the values
   /// they will hold throughout the step. It will always be called at the start
   /// of the first step of a simulation (after initialization) and after the
   /// final simulation step (after a final update to discrete variables).
+  /// Dispatches to DoPublish().
   void Publish(const Context<T>& context) const {
     DiscreteEvent<T> event;
     event.action = DiscreteEvent<T>::kPublishAction;
     Publish(context, event);
   }
 
-  /// Generates the particular side-effect outputs requested by @p event,
-  /// because the sample time requested by @p event has arrived. Dispatches to
-  /// DoPublish by default, or to `event.do_publish` if provided.
+  /// This method publishes as a result of a specified `event`, such as the
+  /// arrival of the sample time requested by `event`. Dispatches to
+  /// DoPublish() by default, or to `event.do_publish()` if provided.
   ///
   /// @note When publishing is scheduled at particular times, those times likely
   /// will not coincide with integrator step times. A Simulator may interpolate
@@ -238,9 +177,10 @@ class System {
       event.do_publish(context);
     }
   }
+  //@}
 
   //----------------------------------------------------------------------------
-  /// @name                        Evaluations
+  /// @name                     Cached evaluations
   /// Given the values in a Context, a Drake %System must be able to provide
   /// the results of particular computations needed for analysis and simulation
   /// of the %System. These results are maintained in a mutable cache within
@@ -345,7 +285,6 @@ class System {
     return context.template EvalInputValue<V>(parent_,
                                               get_input_port(port_index));
   }
-
   //@}
 
   //----------------------------------------------------------------------------
@@ -472,7 +411,6 @@ class System {
     return DoCalcNonConservativePower(context);
   }
 
-
   /// Transforms a given generalized velocity `v` to the time derivative `qdot`
   /// of the generalized configuration `q` taken from the supplied Context.
   /// `v` and `qdot` are related linearly by `qdot = N(q) * v`, where `N` is a
@@ -526,32 +464,18 @@ class System {
   }
 
   // TODO(edrumwri): MapAccelerationToQDotDot.
-
   //@}
 
-  /// Returns a ContinuousState of the same size as the continuous_state
-  /// allocated in CreateDefaultContext. The simulator will provide this state
-  /// as the output argument to EvalTimeDerivatives.
-  ///
-  /// By default, allocates no derivatives. Systems with continuous state
-  /// variables should override.
-  virtual std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const {
-    return nullptr;
-  }
+  //----------------------------------------------------------------------------
+  /// @name                      Utility methods
+  //@{
 
-  /// Returns a DiscreteState of the same dimensions as the discrete_state
-  /// allocated in CreateDefaultContext. The simulator will provide this state
-  /// as the output argument to Update.
-  /// By default, allocates nothing. Systems with discrete state variables
-  /// should override.
-  virtual std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables()
-      const {
-    return nullptr;
-  }
-
-  // Sets the name of the system. It is recommended that the name not include
-  // the character ':', since that the path delimiter. is "::".
+  /// Sets the name of the system. It is recommended that the name not include
+  /// the character ':', since the path delimiter is "::". When creating a
+  /// Diagram, names of sibling subsystems should be unique.
   void set_name(const std::string& name) { name_ = name; }
+
+  /// Retrieve the name last supplied to set_name().
   std::string get_name() const { return name_; }
 
   /// Writes the full path of this System in the tree of Systems to @p output.
@@ -573,9 +497,138 @@ class System {
     return path.str();
   }
 
-  /// Creates a deep copy of @p from, transmogrified to use the autodiff
+  /// Returns the number of input ports of the system.
+  int get_num_input_ports() const {
+    return static_cast<int>(input_ports_.size());
+  }
+
+  /// Returns the number of output ports of the system.
+  int get_num_output_ports() const {
+    return static_cast<int>(output_ports_.size());
+  }
+
+  /// Returns descriptors for all the input ports of this system.
+  const std::vector<SystemPortDescriptor<T>>& get_input_ports() const {
+    return input_ports_;
+  }
+
+  /// Returns the descriptor of the input port at index @p port_index.
+  const SystemPortDescriptor<T>& get_input_port(int port_index) const {
+    if (port_index >= get_num_input_ports()) {
+      throw std::out_of_range("port number out of range.");
+    }
+    return input_ports_[port_index];
+  }
+
+  /// Returns the descriptor of the output port at index @p port_index.
+  const SystemPortDescriptor<T>& get_output_port(int port_index) const {
+    if (port_index >= get_num_output_ports()) {
+      throw std::out_of_range("port number out of range.");
+    }
+    return output_ports_[port_index];
+  }
+
+  /// Returns descriptors for all the output ports of this system.
+  const std::vector<SystemPortDescriptor<T>>& get_output_ports() const {
+    return output_ports_;
+  }
+
+  /// Returns the total dimension of all of the input ports (as if they were
+  /// muxed).
+  int get_num_total_inputs() const {
+    int count = 0;
+    for (const auto& in : input_ports_) count += in.get_size();
+    return count;
+  }
+
+  /// Returns the total dimension of all of the output ports (as if they were
+  /// muxed).
+  int get_num_total_outputs() const {
+    int count = 0;
+    for (const auto& out : output_ports_) count += out.get_size();
+    return count;
+  }
+
+  /// Checks that @p output is consistent with the number and size of output
+  /// ports declared by the system.
+  /// @throw exception unless `output` is non-null and valid for this system.
+  void CheckValidOutput(const SystemOutput<T>* output) const {
+    DRAKE_THROW_UNLESS(output != nullptr);
+
+    // Checks that the number of output ports in the system output is consistent
+    // with the number of output ports declared by the System.
+    DRAKE_THROW_UNLESS(output->get_num_ports() == get_num_output_ports());
+
+    // Checks the validity of each output port.
+    for (int i = 0; i < get_num_output_ports(); ++i) {
+      // TODO(amcastro-tri): add appropriate checks for kAbstractValued ports
+      // once abstract ports are implemented in 3164.
+      if (get_output_port(i).get_data_type() == kVectorValued) {
+        const VectorBase<T>* output_vector = output->get_vector_data(i);
+        DRAKE_THROW_UNLESS(output_vector != nullptr);
+        DRAKE_THROW_UNLESS(output_vector->size() ==
+            get_output_port(i).get_size());
+      }
+    }
+  }
+
+  /// Checks that @p context is consistent for this system.
+  /// @throw exception unless `context` is valid for this system.
+  void CheckValidContext(const Context<T>& context) const {
+    // Checks that the number of input ports in the context is consistent with
+    // the number of ports declared by the System.
+    DRAKE_THROW_UNLESS(context.get_num_input_ports() ==
+        this->get_num_input_ports());
+
+    // Checks that the size of the input ports in the context matches the
+    // declarations made by the system.
+    for (int i = 0; i < this->get_num_input_ports(); ++i) {
+      context.VerifyInputPort(this->get_input_port(i));
+    }
+  }
+
+  /// Returns a copy of the continuous state vector `xc` into an Eigen vector.
+  VectorX<T> CopyContinuousStateVector(const Context<T>& context) const {
+    DRAKE_ASSERT(context.get_continuous_state() != nullptr);
+    return context.get_continuous_state()->CopyToVector();
+  }
+
+  /// Declares that `parent` is the immediately enclosing Diagram. The
+  /// enclosing Diagram is needed to evaluate inputs recursively. Aborts if
+  /// the parent has already been set to something else.
+  ///
+  /// This is a dangerous implementation detail. Conceptually, a System
+  /// ought to be completely ignorant of its parent Diagram. However, we
+  /// need this pointer so that we can cause our inputs to be evaluated.
+  /// See https://github.com/RobotLocomotion/drake/pull/3455.
+  void set_parent(const detail::InputPortEvaluatorInterface<T>* parent) {
+    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
+    parent_ = parent;
+  }
+  //@}
+
+  //----------------------------------------------------------------------------
+  /// @name                Automatic differentiation
+  /// From a %System templatized by `double`, you can obtain an identical system
+  /// templatized by an automatic differentation scalar providing
+  /// machine-precision computation of partial derivatives of any numerical
+  /// result of the %System with respect to any of the numerical values that
+  /// can be contained in a Context (time, inputs, parameters, and state).
+
+  // This group appears as a top-level heading in Doxygen because it contains
+  // both static and non-static member functions.
+  //@{
+
+  /// Creates a deep copy of this System, transmogrified to use the autodiff
+  /// scalar type, with a dynamic-sized vector of partial derivatives.
+  /// Concrete Systems may shadow this with a more specific return type.
+  std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXd() const {
+    return std::unique_ptr<System<AutoDiffXd>>(DoToAutoDiffXd());
+  }
+
+  /// Creates a deep copy of `from`, transmogrified to use the autodiff
   /// scalar type, with a dynamic-sized vector of partial derivatives. Returns
-  /// nullptr if the template parameter S is not the type of the concrete
+  /// `nullptr` if the template parameter `S` is not the type of the concrete
   /// system, or a superclass thereof.
   ///
   /// Usage: @code
@@ -600,26 +653,7 @@ class System {
     return std::unique_ptr<S<AutoDiffXd>>(
         dynamic_cast<S<AutoDiffXd>*>(clone.release()));
   }
-
-  /// Creates a deep copy of this System, transmogrified to use the autodiff
-  /// scalar type, with a dynamic-sized vector of partial derivatives.
-  /// Concrete Systems may shadow this with a more specific return type.
-  std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXd() const {
-    return std::unique_ptr<System<AutoDiffXd>>(DoToAutoDiffXd());
-  }
-
-  /// Declares that @p parent is the immediately enclosing Diagram. The
-  /// enclosing Diagram is needed to evaluate inputs recursively. Aborts if
-  /// the parent has already been set to something else.
-  ///
-  /// This is a dangerous implementation detail. Conceptually, a System
-  /// ought to be completely ignorant of its parent Diagram. However, we
-  /// need this pointer so that we can cause our inputs to be evaluated.
-  /// See https://github.com/RobotLocomotion/drake/pull/3455.
-  void set_parent(const detail::InputPortEvaluatorInterface<T>* parent) {
-    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
-    parent_ = parent;
-  }
+  //@}
 
  protected:
   /// @name                 System construction
@@ -869,7 +903,7 @@ class System {
   }
   //@}
 
-  /// @name                    Utility methods
+  /// @name                 Utility methods (protected)
   //@{
   /// Returns a mutable Eigen expression for a vector valued output port with
   /// index @p port_index in this system. All InputPorts that directly depend
