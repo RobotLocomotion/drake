@@ -5,9 +5,11 @@
 
 #include <Eigen/Dense>
 
+#include "drake/examples/examples_package_map.h"
 #include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/parser_common.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 using namespace std;
@@ -27,8 +29,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       (RigidBodyTree<double> *)getDrakeMexPointer(prhs[0]);
   mxGetString(prhs[1], buf, BUF_SIZE);
   auto cpp_model = std::make_unique<RigidBodyTree<double>>();
-  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(buf,
-      drake::multibody::joints::kRollPitchYaw, cpp_model.get());
+  drake::parsers::PackageMap package_map;
+  drake::examples::AddExamplePackages(&package_map);
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
+      buf, package_map, drake::multibody::joints::kRollPitchYaw,
+      nullptr /* weld to frame */, cpp_model.get());
 
   if (cpp_model->frames.size() != model->frames.size()) {
     mexErrMsgIdAndTxt("Drake:testFrameParsermex:FrameCountMismatch",

@@ -3,8 +3,6 @@
 
 package(default_visibility = ["//visibility:public"])
 
-DEPS = ["//drake/systems/framework"]
-
 cc_library(
     name = "translator",
     srcs = [
@@ -16,7 +14,9 @@ cc_library(
         "lcm_translator_dictionary.h",
     ],
     linkstatic = 1,
-    deps = DEPS,
+    deps = [
+        "//drake/systems/framework",
+    ],
 )
 
 cc_library(
@@ -32,9 +32,10 @@ cc_library(
         "serializer.h",
     ],
     linkstatic = 1,
-    deps = DEPS + [
+    deps = [
         ":translator",
         "//drake/lcm:interface",
+        "//drake/systems/framework",
     ],
 )
 
@@ -43,8 +44,63 @@ cc_library(
     srcs = ["lcmt_drake_signal_translator.cc"],
     hdrs = ["lcmt_drake_signal_translator.h"],
     linkstatic = 1,
-    deps = DEPS + [
+    deps = [
         ":translator",
         "//drake/lcmtypes:drake_signal",
+        "//drake/systems/framework",
+    ],
+)
+
+# === test ===
+
+cc_test(
+    name = "lcm_publisher_system_test",
+    size = "small",
+    srcs = ["test/lcm_publisher_system_test.cc"],
+    deps = [
+        ":lcm",
+        ":lcmt_drake_signal_translator",
+        "//drake/lcm:lcmt_drake_signal_utils",
+        "//drake/lcm:mock",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "lcm_subscriber_system_test",
+    size = "small",
+    srcs = ["test/lcm_subscriber_system_test.cc"],
+    deps = [
+        ":lcm",
+        ":lcmt_drake_signal_translator",
+        "//drake/lcm:lcmt_drake_signal_utils",
+        "//drake/lcm:mock",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "lcm_translator_dictionary_test",
+    size = "small",
+    srcs = ["test/lcm_translator_dictionary_test.cc"],
+    deps = [
+        ":lcmt_drake_signal_translator",
+        ":translator",
+        "//drake/lcm:lcmt_drake_signal_utils",
+        "//drake/lcm:mock",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "serializer_test",
+    size = "small",
+    srcs = ["test/serializer_test.cc"],
+    deps = [
+        ":lcm",
+        ":lcmt_drake_signal_translator",
+        "//drake/lcm:lcmt_drake_signal_utils",
+        "//drake/lcm:mock",
+        "@gtest//:main",
     ],
 )

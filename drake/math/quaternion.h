@@ -14,6 +14,21 @@
 
 namespace drake {
 namespace math {
+
+/**
+ * Returns a unit quaternion that represents the same orientation as `q1`,
+ * and has the "shortest" geodesic distance on the unit sphere to `q0`.
+ */
+template <typename Scalar> Eigen::Quaternion<Scalar> ClosestQuaternion(
+    const Eigen::Quaternion<Scalar>& q0,
+    const Eigen::Quaternion<Scalar>& q1) {
+  Eigen::Quaternion<Scalar> q = q1;
+  if (q0.dot(q) < 0)
+    q.coeffs() *= -1;
+  q.normalize();
+  return q;
+}
+
 template <typename Derived>
 Vector4<typename Derived::Scalar> quatConjugate(
     const Eigen::MatrixBase<Derived>& q) {

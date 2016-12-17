@@ -226,6 +226,7 @@ Programming Style Notes
     code_review_checklist
     code_style_guide
     code_style_tools
+    directory_structure
 
 Version Control
 ===============

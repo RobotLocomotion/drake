@@ -9,11 +9,11 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
-#include "drake/systems/framework/primitives/adder.h"
-#include "drake/systems/framework/primitives/integrator.h"
-#include "drake/systems/framework/primitives/zero_order_hold.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_input.h"
+#include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/integrator.h"
+#include "drake/systems/primitives/zero_order_hold.h"
 
 namespace drake {
 namespace systems {
@@ -142,6 +142,18 @@ TEST_F(DiagramContextTest, State) {
   // - Discrete
   hold_xd->get_mutable_discrete_state(0)->SetAtIndex(0, 1001.0);
   EXPECT_EQ(1001.0, xd->get_discrete_state(0)->GetAtIndex(0));
+}
+
+// Tests that the pointers to substates in the DiagramState are equal to the
+// substates in the subsystem contexts.
+TEST_F(DiagramContextTest, DiagramState) {
+  auto diagram_state = dynamic_cast<DiagramState<double>*>(
+      context_->get_mutable_state());
+  ASSERT_NE(nullptr, diagram_state);
+  for (int i = 0; i < kNumSystems; ++i) {
+    EXPECT_EQ(context_->GetMutableSubsystemContext(i)->get_mutable_state(),
+              diagram_state->get_mutable_substate(i));
+  }
 }
 
 // Tests that no exception is thrown when connecting a valid source

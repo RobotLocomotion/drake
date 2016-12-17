@@ -11,13 +11,19 @@ drake_install_headers(
   vector.h
   trajectory_logger.h
   robot_state_tap.h)
-
+add_library(drakeSystem1 INTERFACE)
+target_include_directories (drakeSystem1 INTERFACE
+  $<INSTALL_INTERFACE:${DRAKE_INCLUDE_DIR}>)
+target_link_libraries(drakeSystem1 INTERFACE Eigen3::Eigen)
 drake_install_pkg_config_file(drake-system1
   REQUIRES eigen3)
 
 if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeLCMSystem SOURCE_FILES LCMSystem.cpp)
-  target_link_libraries(drakeLCMSystem drakeLCMTypes lcm)
+  target_link_libraries(drakeLCMSystem
+    drakeLCMTypes
+    Eigen3::Eigen
+    lcm)
 
   drake_install_libraries(drakeLCMSystem)
   drake_install_headers(LCMSystem.h)

@@ -1152,7 +1152,7 @@ GTEST_TEST(TestConvexOptimization, TestTrivialSDP) {
   std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetSemidefiniteProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
-    auto prog = MathematicalProgram();
+    MathematicalProgram prog;
 
     auto S = prog.AddSymmetricContinuousVariables<2>("S");
 

@@ -5,15 +5,17 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
+#include "drake/examples/examples_package_map.h"
 #include "drake/lcm/drake_lcm_interface.h"
-#include "drake/multibody/parser_urdf.h"
-#include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/multibody/parsers/parser_common.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 using std::make_unique;
 using std::unique_ptr;
@@ -27,7 +29,7 @@ using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::DrakeVisualizer;
 using systems::RigidBodyPlant;
-using parsers::urdf::AddModelInstanceFromUrdfString;
+using parsers::urdf::AddModelInstanceFromUrdfStringSearchingInRosPackages;
 
 namespace examples {
 namespace toyota_hsrb {
@@ -46,9 +48,12 @@ unique_ptr<systems::Diagram<double>> BuildPlantAndVisualizerDiagram(
   {
     // Instantiates a model of the world.
     auto tree_ptr = make_unique<RigidBodyTreed>();
-    AddModelInstanceFromUrdfString(urdf_string, "." /* root directory */,
-                                   multibody::joints::kQuaternion,
-                                   nullptr /* weld to frame */, tree_ptr.get());
+    parsers::PackageMap package_map;
+    AddExamplePackages(&package_map);
+    AddModelInstanceFromUrdfStringSearchingInRosPackages(
+        urdf_string, package_map, "." /* root directory */,
+        multibody::joints::kQuaternion, nullptr /* weld to frame */,
+        tree_ptr.get());
     AddFlatTerrainToWorld(tree_ptr.get());
 
     // Instantiates a RigidBodyPlant containing the tree.

@@ -3,7 +3,10 @@ if(Matlab_FOUND)
 
   macro(add_ikoptions_mex)
     drake_add_mex(${ARGV} ${ARGV}.cpp)
-    target_link_libraries(${ARGV} drakeRBM drakeMexUtil drakeIKoptions)
+    target_link_libraries(${ARGV}
+        drakeIKoptions
+        drakeMexUtil
+        drakeRBM)
   endmacro()
   add_ikoptions_mex(testIKoptionsmex)
 endif()
