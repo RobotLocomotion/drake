@@ -30,11 +30,11 @@ using Eigen::VectorXd;
 using Eigen::Quaterniond;
 
 /** Calculate quaternion's time-derivative from angular velocity and quaternion.
- *  Algorithm from [Kane, 1983] Section 1.13, pages 58-59.
+ * Algorithm from [Kane, 1983] Section 1.13, pages 58-59.
  * @param quat  quaternion e0, e1, e2, e3 that relates two right-handed
  * orthogonal unitary bases e.g., ax, ay, az (A) to bx, by, bz (B).
  * The quaternion quat easily converts to the rotation matrix R_AB.
- * @param w_b  bx, by, bz measures of B's angular velocity in A.
+ * @param w_B  B's angular velocity in A, expressed in B (bx, by, bz).
  * @returns  time-derivative of quaternion quat, i.e., e0', e1', e2', e3'.
  *
  * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
@@ -63,7 +63,7 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
 
 
 /** Calculate angular velocity from quaternion and quaternion's time derivative.
- *  Algorithm from [Kane, 1983] Section 1.13, pages 58-59.
+ * Algorithm from [Kane, 1983] Section 1.13, pages 58-59.
  * @param quat  quaternion e0, e1, e2, e3 that relates two right-handed
  * orthogonal unitary bases e.g., ax, ay, az (A) to bx, by, bz (B).
  * The quaternion quat easily converts to the rotation matrix R_AB.
@@ -71,7 +71,7 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
  * @returns  bx, by, bz measures of B's angular velocity in A.
  *
  * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
- *   (With P. W. Likins and D. A. Levinson).  Available for free .pdf download:
+ *   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
  *   https://ecommons.cornell.edu/handle/1813/637
  */
 // TODO(mitiguy) Move this and related methods (make unit test) to quaternion.h.
@@ -94,21 +94,22 @@ Vector3<T> CalculateAngularVelocityExpressedInBFromQuaternion(
   return Vector3<T>(wx, wy, wz);
 }
 
+
 /**
- * Calculates exact solutions for quaternions, angular velocity expressed in
- * body-frame, center of mass position/velocity, and their time derivatives for
- * torque-free rotational motion of an axis-symmetric rigid body B
- * (e.g., uniform solid cylinder) in Newtonian frame (world) N.
- * Algorithm from [Kane, 1983] Sections 1.13 and 3.1, pages 60-62, 159-169.
+ * Calculates exact solutions for quaternion and angular velocity expressed in
+ * body-frame, and their time derivatives for torque-free rotational motion of
+ * axis-symmetric rigid body B (uniform cylinder) in Newtonian frame (world) N.
+ * Algorithm from [Kane, 1983] Sections 1.13 and 3.1, pages 60-62 and 159-169.
  * @param t Current value of time.
  * @param w_initial Initial values of wx, wy, wz (which are the Bx, By, Bz
  * measures of B's angular velocity in N).  Note: Bx, By, Bz are right-handed
  * orthogonal unit vectors fixed in B, with Bz parallel to B's symmetry axis.
- * @param xyz_initial Initial values of x, y, z [which are the Nx, Ny, Nz
- * measures of Bcm's position from No (a point fixed in world N)].
- * Note: Nx, Ny, Nz are right-handed orthogonal unit vectors fixed in N.
- * @param xyzDt_initial Initial values of x', y', z' (which are time-derivatives
- * of x, y,z -- and equal to the Nx, Ny, Nz measures of Bcm's velocity in N).
+ * Note: An initial value of the quaternion is not passed to this algorithm as
+ * this solution depends on it being [1, 0, 0, 0].  In other words, right-handed
+ * orthogonal unit vectors N1, N2, N3 fixed in N are _chosen_ so they initially
+ * align with Bx, By, Bz.  Yet another quaternion may be needed to account for
+ * initial misalignment of N1, N1, N2 from a more physically-meaningfully set of
+ * right-handed orthogonal unit vectors Nx, Ny, Nz fixed in N,
  * @returns Machine-precision values at time t are returned as defined below.
  *
  * std::tuple | Description
@@ -117,20 +118,14 @@ Vector3<T> CalculateAngularVelocityExpressedInBFromQuaternion(
  * quatDt     | Vector4d with time-derivative of quaternion.
  * w          | Vector3d wx, wy, wz (B's angular velocity in N, expressed in B).
  * wDt        | Vector3d with time-derivative of wx, wy, wz.
- * xyz        | Vector3d x, y, z (Bo's position from No, expressed in N).
- * xyzDt      | Vector3d with first-time-derivative of x, y, z.
- * xyzDDt     | Vector3D with second-time-derivative of x, y, z.
  *
  * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
- *   (With P. W. Likins and D. A. Levinson).  Available for free .pdf download:
- *   https://ecommons.cornell.edu/handle/1813/637*
+ *   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
+ *   https://ecommons.cornell.edu/handle/1813/637
  */
-std::tuple<Vector4d, Vector4d, Vector3d, Vector3d, Vector3d, Vector3d, Vector3d>
-    CalculateExactSolution(const double t,
-                           const Vector3d& w_initial,
-                           const Vector3d& xyz_initial,
-                           const Vector3d& xyzDt_initial,
-                           const Vector3d& gravity) {
+// TODO(mitiguy) Add a function to account for non-identity quat_initial.
+std::tuple<Vector4d, Vector4d, Vector3d, Vector3d>
+CalculateExactRotationalSolution(const double t, const Vector3d& w_initial) {
   using std::sin;
   using std::cos;
   using std::sqrt;
@@ -177,6 +172,44 @@ std::tuple<Vector4d, Vector4d, Vector3d, Vector3d, Vector3d, Vector3d, Vector3d>
   const double wyDt = (-1 + J / I) * wx * wz;
   const double wzDt = 0.0;
 
+  // Create a tuple to package for returning.
+  std::tuple<Vector4d, Vector4d, Vector3d, Vector3d> returned_tuple;
+  Vector4d& quat   = std::get<0>(returned_tuple);
+  Vector4d& quatDt = std::get<1>(returned_tuple);
+  Vector3d& w      = std::get<2>(returned_tuple);
+  Vector3d& wDt    = std::get<3>(returned_tuple);
+
+  // Fill returned_tuple with rotation results.
+  quat << e0, e1, e2, e3;
+  quatDt << e0Dt, e1Dt, e2Dt, e3Dt;
+  w << wx, wy, wz;
+  wDt << wxDt, wyDt, wzDt;
+
+  return returned_tuple;
+}
+
+/**
+ * Calculates exact solutions for translational motion of an arbitrary rigid
+ * body B in a Newtonian frame (world) N.  Algorithm from high-school physics.
+ * @param t Current value of time.
+ * @param xyz_initial Initial values of x, y, z -- [the Nx, Ny, Nz measures of
+ * Bcm's (B's center of mass) position from a point No fixed in world N].
+ * Note: Nx, Ny, Nz are right-handed orthogonal unit vectors fixed in N.
+ * @param xyzDt_initial Initial values of x', y', z' (which are time-derivatives
+ * of x, y,z -- and equal to the Nx, Ny, Nz measures of Bcm's velocity in N).
+ * @returns Machine-precision values at time t are returned as defined below.
+ *
+ * std::tuple | Description
+ * -----------|-------------------------------------------------
+ * xyz        | Vector3d x, y, z (Bcm's position from No, expressed in N).
+ * xyzDt      | Vector3d with first-time-derivative of x, y, z.
+ * xyzDDt     | Vector3D with second-time-derivative of x, y, z.
+ */
+std::tuple<Vector3d, Vector3d, Vector3d>
+    CalculateExactTranslationalSolution(const double t,
+                                        const Vector3d& xyz_initial,
+                                        const Vector3d& xyzDt_initial,
+                                        const Vector3d& gravity) {
   // Initial values of x, y, z and x', y', z'.
   const double x0 = xyz_initial[0];
   const double y0 = xyz_initial[1];
@@ -201,21 +234,12 @@ std::tuple<Vector4d, Vector4d, Vector3d, Vector3d, Vector3d, Vector3d, Vector3d>
   const double z = z0 + zDt0*t + 0.5 * z_acceleration * t * t;
 
   // Create a tuple to package for returning.
-  std::tuple<Vector4d, Vector4d, Vector3d, Vector3d,
-             Vector3d, Vector3d, Vector3d> returned_tuple;
-  Vector4d& quat   = std::get<0>(returned_tuple);
-  Vector4d& quatDt = std::get<1>(returned_tuple);
-  Vector3d& w      = std::get<2>(returned_tuple);
-  Vector3d& wDt    = std::get<3>(returned_tuple);
-  Vector3d& xyz    = std::get<4>(returned_tuple);
-  Vector3d& xyzDt  = std::get<5>(returned_tuple);
-  Vector3d& xyzDDt = std::get<6>(returned_tuple);
+  std::tuple<Vector3d, Vector3d, Vector3d> returned_tuple;
+  Vector3d& xyz    = std::get<0>(returned_tuple);
+  Vector3d& xyzDt  = std::get<1>(returned_tuple);
+  Vector3d& xyzDDt = std::get<2>(returned_tuple);
 
   // Fill returned_tuple with rotation results.
-  quat << e0, e1, e2, e3;
-  quatDt << e0Dt, e1Dt, e2Dt, e3Dt;
-  w << wx, wy, wz;
-  wDt << wxDt, wyDt, wzDt;
   xyz << x, y, z;
   xyzDt << xDt, yDt, zDt;
   xyzDDt << x_acceleration, y_acceleration, z_acceleration;
@@ -279,14 +303,23 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // Bx, By, Bz are fixed in B, with Bz along cylinder B's symmetric axis.
   // No is the origin of the Newtonian reference frame N (world).
   // Nx, Ny, Nz are fixed in N, with Nz vertically upward (opposite gravity).
-  // x  is the Nx measure of Bo's position from No (similarly for y, z).
-  // vx is the Bx measure of Bo's velocity in N (similarly for vy, vz).
-  // vx' is time-derivative of vx, but not Bx measure of Bo's acceleration in N.
   // e0, e1, e2, e3 is the quaternion relating Nx, Ny, Nz to Bx, By, Bz.
   // wx  is the Bx measure of B's angular velocity in N (similarly for wy, wz).
   // wx' is the Bx measure of B's angular acceleration in N (same for wy', wz').
+  // x  is the Nx measure of Bo's position from No (similarly for y, z).
+  // vx is the Bx measure of Bo's velocity in N (similarly for vy, vz).
+  // vx' is time-derivative of vx, but not Bx measure of Bo's acceleration in N.
+  // Note: Bo's acceleration in N is calculated by [Kane, 1985, pg. 23], as
+  // a = vx'*bx + vy'*by + vz'*bz
+  //   + Cross(wx*bx + wy*by + wz*bz, vx*bx + vy*by + vz*bz).
+  //
+  // - [Kane, 1985] "Dynamics: Theory and Applications," McGraw-Hill Book Co.,
+  //   New York, 1985 (with D. A. Levinson).  Available for free .pdf download:
+  //  https://ecommons.cornell.edu/handle/1813/637
+  //
   // TODO(mitiguy) Update comment/code when GitHub issue #4398 is fixed.
   // TODO(mitiguy) kRollPitchYaw is documented here for my sanity/later use.
+  // TODO(mitiguy) Confirm above comment about state kRollPitchYaw: x' or vx...?
   systems::VectorBase<double> &state_drake =
       *(context->get_mutable_continuous_state_vector());
 
@@ -302,6 +335,10 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   std::unique_ptr<systems::ContinuousState<double>> ds =
       rigid_body_plant.AllocateTimeDerivatives();
   systems::ContinuousState<double> *stateDt_drake = ds.get();
+  // TODO(mitiguy) Remove next three lines or resolve it using Sherm's advise.
+  // std::unique_ptr<systems::ContinuousState<double>> stateDt_drake =
+  //     std::make_unique<systems::ContinuousState<double>>(
+  //         rigid_body_plant.AllocateTimeDerivatives() );
 
   // Setup an empty input port - that serves no obvious purpose.
   const int num_actuators = rigid_body_plant.get_num_actuators();
@@ -330,11 +367,14 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   Vector3d w_exact, wDt_exact;
   Vector3d xyz_exact, xyzDt_exact, xyzDDt_exact;
 
-  // Calculate exact analytical solution.
+  // Calculate exact analytical rotational solution.
   const double t = 0;
-  std::tie(quat_exact, quatDt_exact, w_exact, wDt_exact,
-           xyz_exact, xyzDt_exact, xyzDDt_exact) =
-      CalculateExactSolution(t, w_initial, xyz_initial, v_initial, gravity);
+  std::tie(quat_exact, quatDt_exact, w_exact, wDt_exact) =
+      CalculateExactRotationalSolution(t, w_initial);
+
+  // Calculate exact analytical translational solution.
+  std::tie(xyz_exact, xyzDt_exact, xyzDDt_exact) =
+      CalculateExactTranslationalSolution(t, xyz_initial, v_initial, gravity);
 
 #if 0  // TODO(mitiguy) Remove these debug statements.
   std::cout << "\n\n quat_drake\n"   << quat_drake;
@@ -380,15 +420,10 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   EXPECT_TRUE(CompareMatrices(wDt_drake,    wDt_exact,  10 * epsilon));
   EXPECT_TRUE(CompareMatrices(xyz_drake,    xyz_exact,  10 * epsilon));
   EXPECT_TRUE(CompareMatrices(xyzDt_drake,  xyzDt_exact,  10 * epsilon));
-  // EXPECT_TRUE(CompareMatrices(v_drake,    xyzDt_exact,  10 * epsilon));
 
   // Compensate for definition of vDt.
-  const double wx = w_drake[0],  wy = w_drake[1],  wz = w_drake[2];
-  const double vx = v_drake[0],  vy = v_drake[1],  vz = v_drake[2];
-  const double diffx = (vz*wy-vy*wz);
-  const double diffy = (vx*wz-vz*wx);
-  const double diffz = (vy*wx-vx*wy);
-  const Vector3d vDt_test = xyzDDt_exact - Vector3d(diffx, diffy, diffz);
+  const Vector3d acceleration_difference = w_drake.cross(v_drake);
+  const Vector3d vDt_test = xyzDDt_exact - acceleration_difference;
   EXPECT_TRUE(CompareMatrices(vDt_drake, vDt_test,  10 * epsilon));
 }
 
