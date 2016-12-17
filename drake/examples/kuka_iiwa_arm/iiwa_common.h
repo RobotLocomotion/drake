@@ -23,15 +23,11 @@ void VerifyIiwaTree(const RigidBodyTree<double>& tree);
 /// at a position specified by @p robot_base_position, and @p
 /// robot_base_orientation.
 /// The robot itself is defined by a URDF file @p robot_urdf_file. The way
-/// points
-/// are assumed to be presented in the World Frame. This method wraps a call to
-/// the
-/// `iKinPointwise` method.
-/// @see iKinPointwise.
+/// points are assumed to be presented in the World Frame. This method wraps a
+/// call to the `inverseKinPointwise` method.
+/// @see inverseKinPointwise.
 std::unique_ptr<PiecewisePolynomialTrajectory> SimpleCartesianWayPointPlanner(
-    const Eigen::Vector3d& robot_base_position,
-    const Eigen::Vector3d& robot_base_orientation,
-    const std::string& robot_urdf_file,
+    const std::string& link_to_constraint,
     const std::vector<Eigen::Vector3d>& way_point_list,
     const std::vector<double>& time_stamps);
 
@@ -50,6 +46,16 @@ std::unique_ptr<PiecewisePolynomialTrajectory> SimpleCartesianWayPointPlanner(
 std::vector<Eigen::Vector2d> TimeWindowBuilder(
     const std::vector<double>& time_stamps, double lower_ratio = 0.4,
     double upper_ratio = 0.5);
+
+/// Builds a RigidBodyTree at the specified @position and @orientation from
+/// the model specified by @model_file_name.
+/// This method is a convinience wrapper over `AddModelInstanceFromUrdfFile`.
+/// @see drake::parsers::urdf::AddModelInstanceFromUrdfFile
+template <typename T>
+RigidBodyTree<T> CreateTreeFromFixedModelAtPose(
+    const std::string& model_file_name,
+    const Eigen::Vector3d& position = Eigen::Vector3d::Zero(),
+    const Eigen::Vector3d& orientation = Eigen::Vector3d::Zero());
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
