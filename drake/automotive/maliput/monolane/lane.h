@@ -54,18 +54,18 @@ class CubicPolynomial {
     s_1_ = std::sqrt(1. + (df * df));
   }
 
-  /// Evaluates the polynomial at @p p.
+  /// Evaluates the polynomial f at @p p.
   double f_p(double p) const {
     return a_ + (b_ * p) + (c_ * p * p) + (d_ * p * p * p);
   }
 
   /// Evaluates the derivative df/dp at @p p.
-  double fdot_p(double p) const {
+  double f_dot_p(double p) const {
     return b_ + (2. * c_ * p) + (3. * d_ * p * p);
   }
 
   /// Evaluates the double-derivative d^2f/dp^2 at @p p.
-  double fddot_p(double p) const {
+  double f_ddot_p(double p) const {
     return (2. * c_) + (6. * d_ * p);
   }
 
@@ -155,7 +155,7 @@ class Lane : public api::Lane {
   Lane(const api::LaneId& id, const Segment* segment,
        const api::RBounds& lane_bounds,
        const api::RBounds& driveable_bounds,
-       const double p_scale,
+       double p_scale,
        const CubicPolynomial& elevation,
        const CubicPolynomial& superelevation)
       : id_(id), segment_(segment),
@@ -250,7 +250,7 @@ class Lane : public api::Lane {
   //
   //    W: (p,r,h) --> (x,y,z)
   //
-  // which maps a LANE-space position to it corresponding representation in
+  // which maps a LANE-space position to its corresponding representation in
   // world coordinates (with the caveat that instead of the lane's native
   // longitudinal coordinate 's', the reference curve parameter 'p' is used).
   //

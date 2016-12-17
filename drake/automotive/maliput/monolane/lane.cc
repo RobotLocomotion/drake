@@ -43,7 +43,7 @@ double Lane::do_length() const {
 
 Rot3 Lane::Rabg_of_p(const double p) const {
   return Rot3(superelevation().f_p(p) * p_scale_,
-              -std::atan(elevation().fdot_p(p)),
+              -std::atan(elevation().f_dot_p(p)),
               heading_of_p(p));
 }
 
@@ -56,7 +56,7 @@ double Lane::p_from_s(const double s) const {
 V3 Lane::W_prime_of_prh(const double p, const double r, const double h,
                         const Rot3& Rabg) const {
   const V2 G_prime = xy_dot_of_p(p);
-  const double g_prime = elevation().fdot_p(p);
+  const double g_prime = elevation().f_dot_p(p);
 
   const Rot3& R = Rabg;
   const double alpha = R.roll();
@@ -70,8 +70,8 @@ V3 Lane::W_prime_of_prh(const double p, const double r, const double h,
   const double sb = std::sin(beta);
   const double sg = std::sin(gamma);
 
-  const double d_alpha = superelevation().fdot_p(p) * p_scale_;
-  const double d_beta = -cb * cb * elevation().fddot_p(p);
+  const double d_alpha = superelevation().f_dot_p(p) * p_scale_;
+  const double d_beta = -cb * cb * elevation().f_ddot_p(p);
   const double d_gamma = heading_dot_of_p(p);
 
   return

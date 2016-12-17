@@ -93,16 +93,19 @@ GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
   EXPECT_GEO_NEAR(l1->ToGeoPosition({0., 0., 0.}),
                   (100., -75., 0.), kLinearTolerance);
 
+  // A little bit along the lane, but still on the reference line.
   EXPECT_GEO_NEAR(l1->ToGeoPosition({1., 0., 0.}),
-                  (100. + (100. * (1. / l1->length())),
-                   -75. + (50. * (1. / l1->length())),
+                  (100. + ((100./ l1->length()) * 1.),
+                   -75. + ((50. / l1->length()) * 1.),
                    0.), kLinearTolerance);
 
-  EXPECT_GEO_NEAR(l1->ToGeoPosition({0., 1., 0.}),
-                  (100. + (-50. * (1. / l1->length())),
-                   -75. + (100. * (1. / l1->length())),
+  // At the very beginning of the lane, but laterally off the reference line.
+  EXPECT_GEO_NEAR(l1->ToGeoPosition({0., 3., 0.}),
+                  (100. + ((-50. / l1->length()) * 3.),
+                   -75. + ((100. / l1->length()) * 3.),
                    0.), kLinearTolerance);
 
+  // At the very end of the lane.
   EXPECT_GEO_NEAR(l1->ToGeoPosition({l1->length(), 0., 0.}),
                   (200., -25., 0.), kLinearTolerance);
 
@@ -167,6 +170,7 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
   EXPECT_NEAR(l2->driveable_bounds(0.).r_min, -10., kVeryExact);
   EXPECT_NEAR(l2->driveable_bounds(0.).r_max,  10., kVeryExact);
 
+  // Recall that the arc has center (100, -75) and radius 100.
   EXPECT_GEO_NEAR(l2->ToGeoPosition({0., 0., 0.}),
                   (100. + (100. * std::cos(0.25 * M_PI)),
                    -75. + (100. * std::sin(0.25 * M_PI)),
@@ -253,10 +257,11 @@ GTEST_TEST(MonolaneLanesTest, ArcLaneWithConstantSuperelevation) {
                    -75. + (100. * std::sin(0.25 * M_PI)),
                    0.), kLinearTolerance);
 
+  // NB: (1.25 * M_PI) is the direction of the r-axis at s = 0.
   EXPECT_GEO_NEAR(
       l2->ToGeoPosition({0., 10., 0.}),
       (100. + (100. * std::cos(0.25 * M_PI)) +
-       (10. * std::cos(0.10 *M_PI) * std::cos(1.25 * M_PI)),
+       (10. * std::cos(kTheta) * std::cos(1.25 * M_PI)),
        -75. + (100. * std::sin(0.25 * M_PI)) +
        (10. * std::cos(kTheta) * std::sin(1.25 * M_PI)),
        10. * std::sin(kTheta)), kLinearTolerance);
@@ -291,12 +296,13 @@ GTEST_TEST(MonolaneLanesTest, ArcLaneWithConstantSuperelevation) {
       (1., 1., 1.), kVeryExact);
 
   // For a left-turning curve, r = +10 will decrease the radius of the path
-  // from the original 100 down to 90.
+  // from the original 100 down to almost 90.  (r is scaled by the cosine of
+  // the superelevation since it is no longer horizontal).
   EXPECT_LANE_NEAR(
       l2->EvalMotionDerivatives({0., 10., 0.}, {1., 1., 1.}),
       ((100. / (100. - (10. * std::cos(kTheta)))) * 1., 1., 1.), kVeryExact);
   // Likewise, r = -10 will increase the radius of the path from the
-  // original 100 up to 110.
+  // original 100 up to almost 110 (since r is no longer horizontal).
   EXPECT_LANE_NEAR(
       l2->EvalMotionDerivatives({0., -10., 0.}, {1., 1., 1.}),
       ((100. / (100 + (10. * std::cos(kTheta)))) * 1., 1., 1.), kVeryExact);
