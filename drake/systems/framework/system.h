@@ -656,6 +656,7 @@ class System {
   //@}
 
  protected:
+  //----------------------------------------------------------------------------
   /// @name                 System construction
   /// Authors of concrete %Systems can use these methods in the constructor
   /// for those %Systems.
@@ -903,6 +904,7 @@ class System {
   }
   //@}
 
+  //----------------------------------------------------------------------------
   /// @name                 Utility methods (protected)
   //@{
   /// Returns a mutable Eigen expression for a vector valued output port with
