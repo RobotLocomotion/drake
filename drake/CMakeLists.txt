@@ -156,8 +156,6 @@ drake_install_pkg_config_file(drake-java
   CLASSPATH drake
   REQUIRES ${drake_jar_requires})
 
-include_directories(thirdParty/bsd/spruce/include)
-
 add_subdirectory(thirdParty/bsd/spruce)
 add_subdirectory(thirdParty/zlib/tinyxml2)
 add_subdirectory(common)
