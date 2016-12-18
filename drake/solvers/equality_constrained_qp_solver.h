@@ -6,16 +6,30 @@
 
 namespace drake {
 namespace solvers {
+class EqualityConstrainedQPSolverResult : public MathematicalProgramSolverResult {
+ public:
+  EqualityConstrainedQPSolverResult(SolutionSummary summary) : MathematicalProgramSolverResult(summary) {};
+
+ private:
+  // TODO(hongkai.dai) return the Lagrangian.
+};
 
 class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
  public:
-  bool available() const override;
+  bool available() const {return available_impl();}
 
-  std::string SolverName() const override {
-    return "Equality Constrained QP Solver";
-  }
+  std::string SolverName() const { return SolverName_impl();}
 
-  SolutionSummary Solve(MathematicalProgram& prog) const override;
+  std::unique_ptr<EqualityConstrainedQPSolverResult> Solve(MathematicalProgram& prog) const {
+    return std::unique_ptr<EqualityConstrainedQPSolverResult>(Solve_impl(prog));
+  };
+
+ private:
+  bool available_impl() const override;
+
+  std::string SolverName_impl() const override { return "Equality Constrained QP Solver";}
+
+  EqualityConstrainedQPSolverResult* Solve_impl(MathematicalProgram& prog) const override;
 };
 
 }  // namespace solvers

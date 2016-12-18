@@ -2,7 +2,7 @@
 #include "drake/solvers/mathematical_program.h"
 
 #include "drake/math/matrix_util.h"
-//#include "drake/solvers/equality_constrained_qp_solver.h"
+#include "drake/solvers/equality_constrained_qp_solver.h"
 //#include "drake/solvers/gurobi_solver.h"
 //#include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/linear_system_solver.h"
@@ -67,8 +67,8 @@ MathematicalProgram::MathematicalProgram()
       //nlopt_solver_(new NloptSolver()),
       //snopt_solver_(new SnoptSolver()),
       //moby_lcp_solver_(new MobyLCPSolver()),
-      linear_system_solver_(new LinearSystemSolver())
-      //equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
+      linear_system_solver_(new LinearSystemSolver()),
+      equality_constrained_qp_solver_(new EqualityConstrainedQPSolver())
       //gurobi_solver_(new GurobiSolver()),
       //mosek_solver_(new MosekSolver()) {}
 {}
@@ -367,11 +367,11 @@ SolutionSummary MathematicalProgram::Solve() {
     // Identity: This is the objective function the solver uses anyway when
     // underconstrainted, and is fairly common in real-world problems.
     return linear_system_solver_->Solve(*this)->summary();
-  } /*else if (is_satisfied(required_capabilities_,
+  } else if (is_satisfied(required_capabilities_,
                           kEqualityConstrainedQPCapabilities) &&
              equality_constrained_qp_solver_->available()) {
     return equality_constrained_qp_solver_->Solve(*this)->summary();
-  } else if (is_satisfied(required_capabilities_, kMosekCapabilities) &&
+  } /*else if (is_satisfied(required_capabilities_, kMosekCapabilities) &&
              mosek_solver_->available()) {
     // TODO(hongkai.dai@tri.global): based on my limited experience, Mosek is
     // faster than Gurobi for convex optimization problem. But we should run

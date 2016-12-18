@@ -35,11 +35,19 @@ class MosekSolver : public MathematicalProgramSolverInterface {
   /** available()
   * Defined true if Mosek was included during compilation, false otherwise.
   */
-  bool available() const override;
+  bool available() const { return available_impl();}
 
-  std::string SolverName() const override { return "Mosek";}
+  std::string SolverName() const { return SolverName_impl();}
 
-  std::unique_ptr<MosekSolverResult> Solve(MathematicalProgram& prog) const override;
+  std::unique_ptr<MosekSolverResult> Solve(MathematicalProgram& prog) const;
+
+ private:
+  bool available_impl() const override;
+
+  std::string SolverName_impl() const {return "Mosek";}
+
+  MosekSolverResult* Solve_impl(MathematicalProgram& prog) const override;
+
 };
 
 }  // namespace solvers

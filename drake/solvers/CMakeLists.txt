@@ -20,7 +20,7 @@ set(private_headers
   #ipopt_solver.h
   linear_system_solver.h
   #moby_lcp_solver.h
-  #mosek_solver.h
+  mosek_solver.h
   #nlopt_solver.h
   #snopt_solver.h
   )
@@ -30,7 +30,7 @@ list(APPEND optimization_files
   ${private_headers}
   constraint.cc
   decision_variable.cc
-  #equality_constrained_qp_solver.cc
+  equality_constrained_qp_solver.cc
   linear_system_solver.cc
   mathematical_program.cc
   #moby_lcp_solver.cc
@@ -60,12 +60,12 @@ list(APPEND optimization_files
 #else()
 #  list(APPEND optimization_files no_snopt.cc)
 #endif()
-#if(mosek_FOUND)
-#  list(APPEND optimization_files mosek_solver.cc)
-#  list(APPEND optimization_requires mosek)
-#else()
-#  list(APPEND optimization_files no_mosek.cc)
-#endif()
+if(mosek_FOUND)
+  list(APPEND optimization_files mosek_solver.cc)
+  list(APPEND optimization_requires mosek)
+else()
+  list(APPEND optimization_files no_mosek.cc)
+endif()
 #if(gurobi_FOUND)
 #  list(APPEND optimization_files gurobi_solver.cc)
 #  list(APPEND optimization_requires gurobi)
