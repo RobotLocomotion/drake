@@ -6,8 +6,6 @@
 #include <numeric>
 #include <vector>
 
-#include "gtest/gtest.h"
-
 // Includes for IK solver.
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
@@ -15,16 +13,18 @@
 #include "drake/multibody/rigid_body_ik.h"
 
 #include "drake/common/drake_path.h"
+#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/multiplexer.h"
-#include "drake/systems/framework/primitives/trajectory_source.h"
-#include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/multiplexer.h"
+#include "drake/systems/primitives/trajectory_source.h"
 #include "drake/util/convexHull.h"
 
 using Eigen::Vector2d;
@@ -110,11 +110,12 @@ Vector2d convex_combination(Vector2d x, Vector2d y, double lambda) {
 }
 
 int DoMain() {
-  std::shared_ptr<RigidBodyTreed> tree = std::make_shared<RigidBodyTreed>(
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       drake::GetDrakePath() +
           "/examples/Valkyrie/urdf/urdf/"
-          "valkyrie_sim_drake_one_neck_dof_additional_contact_pts.urdf",
-      drake::multibody::joints::kRollPitchYaw);
+              "valkyrie_sim_drake_one_neck_dof_additional_contact_pts.urdf",
+      drake::multibody::joints::kRollPitchYaw, tree.get());
 
   for (int i = 0; i < tree->get_num_bodies(); i++)
     std::cout << i << " " << tree->getBodyOrFrameName(i) << std::endl;
@@ -678,8 +679,8 @@ int DoMain() {
   std::vector<int> legs_idx = {29, 30, 31, 35, 36, 37};
   std::vector<int> arms_idx;
   for (int i = 12 - 2; i <= 25 - 2; i++) arms_idx.push_back(i);
-  for (int i = 0; i < hips_idx.size(); i++) hips_idx[i] -= 2;
-  for (int i = 0; i < legs_idx.size(); i++) legs_idx[i] -= 2;
+  for (int i = 0; i < int(hips_idx.size()); i++) hips_idx[i] -= 2;
+  for (int i = 0; i < int(legs_idx.size()); i++) legs_idx[i] -= 2;
 
   for (const int& i : base_translation_idx) cost(i) = 0;
   // for (const int& i : base_rotation_idx) cost(i) = 1e3;
@@ -952,7 +953,7 @@ int DoMain() {
                         ikoptions, &q_sol_i, info_i.data(),
                         &infeasible_constraint);
 
-    for (int i = 0; i < info_i.size(); i++) {
+    for (int i = 0; i < int(info_i.size()); i++) {
       cout << "info_i" << count << " " << i << ": " << info_i[i] << endl;
     }
 
@@ -986,7 +987,7 @@ int DoMain() {
                         ikoptions, &q_sol_i_pointwise, info_i_pointwise.data(),
                         &infeasible_constraint);
 
-    for (int i = 0; i < info_i_pointwise.size(); i++)
+    for (int i = 0; i < int(info_i_pointwise.size()); i++)
       cout << "info_i_ptwise" << i << ": " << info_i_pointwise[i] << endl;
     cout << q_sol_i_pointwise << endl;
 
@@ -1021,7 +1022,7 @@ int DoMain() {
   std::ofstream myfile;
   myfile.open("results.txt");
   if (myfile.is_open()) {
-    for (int i = 0; i < t.size(); i++) {
+    for (int i = 0; i < int(t.size()); i++) {
       myfile << t[i] << " ";
     }
     myfile << endl;
@@ -1033,7 +1034,7 @@ int DoMain() {
   // generate the CoM and support polygon for each q_sol
   myfile.open("contact_pts.txt");
   if (myfile.is_open()) {
-    for (int i = 0; i < t.size(); i++) {
+    for (size_t i = 0; i < t.size(); i++) {
       KinematicsCache<double> cache = tree->doKinematics(q_sol.col(i));
       TransformPtsBatch(tree.get(), cache, contact_pts, bodies,
                         &contact_pts_world);
@@ -1060,7 +1061,7 @@ int DoMain() {
 
   std::vector<double> t_all(t);
   double t_end = t_all[t_all.size()-1];
-  for(int i=1;i<=t_s_pointwise.size()-1;i++)
+  for(size_t i=1;i<=t_s_pointwise.size()-1;i++)
     t_all.push_back(t_end + t_s_pointwise[i]);
 
   // show it in drake visualizer

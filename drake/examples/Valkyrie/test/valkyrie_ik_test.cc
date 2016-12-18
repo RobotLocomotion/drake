@@ -6,9 +6,9 @@
 #include <numeric>
 
 // Includes for IK solver.
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/rigid_body_ik.h"
-#include "drake/multibody/constraint/rigid_body_constraint.h"
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
@@ -47,8 +47,8 @@ std::vector<int> GetJointPositionVectorIndices(const RigidBodyTreed* tree,
   // the rigid body tree's state vector, fill the return vector with
   // sequentially increasing indices starting at
   // `joint_child_body->get_position_start_index()`.
-  std::iota(ret.begin(), ret.end(), joint_child_body->get_position_start_index
-  ());
+  std::iota(ret.begin(), ret.end(),
+            joint_child_body->get_position_start_index());
   return ret;
 }
 
@@ -65,12 +65,12 @@ void FindJointAndInsert(const RigidBodyTreed* model, const std::string& name,
 }
 
 int DoMain() {
-  std::shared_ptr<RigidBodyTreed> tree = std::make_shared<RigidBodyTreed>(
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       drake::GetDrakePath() +
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_sim_drake_one_neck_dof_additional_contact_pts.urdf",
-      drake::multibody::joints::kRollPitchYaw);
-
+      drake::multibody::joints::kRollPitchYaw, tree.get());
 
   // Setting up constraints, based on testIKMoreConstraints.cpp and
   // director-generated M-file.
@@ -111,35 +111,34 @@ int DoMain() {
       0.0,                  // 24 leftWristRoll
       0.0,                  // 25 LeftWristPitch
 
-      0.0,                  // 26 rightHipYaw
-      0.0,                  // 27 rightHipRoll
-      -0.49,                // 28 rightHipPitch
-      1.205,                // 29 rightKneePitch
-      -0.71,                // 30 rightAnklePitch
-      0.0,                  // 31 rightAnkleRoll
+      0.0,    // 26 rightHipYaw
+      0.0,    // 27 rightHipRoll
+      -0.49,  // 28 rightHipPitch
+      1.205,  // 29 rightKneePitch
+      -0.71,  // 30 rightAnklePitch
+      0.0,    // 31 rightAnkleRoll
 
-      0.0,                  // 32 leftHipYaw
-      0.0,                  // 33 leftHipRoll
-      -0.49,                // 34 leftHipPitch
-      1.205,                // 35 leftKneePitch
-      -0.71,                // 36 leftAnklePitch
-      0.0;                  // 37 leftAnkleRoll
-
+      0.0,    // 32 leftHipYaw
+      0.0,    // 33 leftHipRoll
+      -0.49,  // 34 leftHipPitch
+      1.205,  // 35 leftKneePitch
+      -0.71,  // 36 leftAnklePitch
+      0.0;    // 37 leftAnkleRoll
 
   VectorXd downward_dog_toes(tree->get_num_positions());
   // There are two versions of Valkyrie models. The one in
   // Drake has two DOFs less (the two commented out) than the other. The
   // indices in the comment are for reference only and are not hard coded.
   downward_dog_toes << 0.0,  // base_x
-      0.0,             // base_y
-      0.6,           // base_z
-      0.0,             // base_roll
-      M_PI/3,             // base_pitch
-      0.0,             // 5 base_yaw
-      0.0,             // 6 torsoYaw
-      0.0,             // 7 torsoPitch
-      0.0,             // 8 torsoRoll
-      0.0,             // 9 lowerNeckPitch
+      0.0,                   // base_y
+      0.6,                   // base_z
+      0.0,                   // base_roll
+      M_PI / 3,              // base_pitch
+      0.0,                   // 5 base_yaw
+      0.0,                   // 6 torsoYaw
+      0.0,                   // 7 torsoPitch
+      0.0,                   // 8 torsoRoll
+      0.0,                   // 9 lowerNeckPitch
       // 0.0,                  // 10 neckYaw
       // 0.0,                  // 11 upperNeckPitch
 
@@ -159,28 +158,28 @@ int DoMain() {
       0.0,                  // 24 leftWristRoll
       0.49,                 // 25 LeftWristPitch
 
-      0.0,                  // 26 rightHipYaw
-      0.0,                  // 27 rightHipRoll
-      -0.49,                // 28 rightHipPitch
-      1.205,                // 29 rightKneePitch
-      -0.71,                // 30 rightAnklePitch
-      0.0,                  // 31 rightAnkleRoll
+      0.0,    // 26 rightHipYaw
+      0.0,    // 27 rightHipRoll
+      -0.49,  // 28 rightHipPitch
+      1.205,  // 29 rightKneePitch
+      -0.71,  // 30 rightAnklePitch
+      0.0,    // 31 rightAnkleRoll
 
-      0.0,                  // 32 leftHipYaw
-      0.0,                  // 33 leftHipRoll
-      -0.49,                // 34 leftHipPitch
-      1.205,                // 35 leftKneePitch
-      -0.71,                // 36 leftAnklePitch
-      0.0;                  // 37 leftAnkleRoll
+      0.0,    // 32 leftHipYaw
+      0.0,    // 33 leftHipRoll
+      -0.49,  // 34 leftHipPitch
+      1.205,  // 35 leftKneePitch
+      -0.71,  // 36 leftAnklePitch
+      0.0;    // 37 leftAnkleRoll
 
   // a squat pose with both hands on the ground
   VectorXd squat_pose_2(tree->get_num_positions());
   squat_pose_2 << 0.714247,  // base_x
-      0.0,                    // base_y
-      0.666345,               // base_z
-      -0.914722,              // base_roll
-      0.994925,               // base_pitch
-      -1.12529,               // 5 base_yaw
+      0.0,                   // base_y
+      0.666345,              // base_z
+      -0.914722,             // base_roll
+      0.994925,              // base_pitch
+      -1.12529,              // 5 base_yaw
 
       0.366227,   // 6 torsoYaw
       0.495029,   // 7 torsoPitch
@@ -222,13 +221,13 @@ int DoMain() {
   // a squat pose "relaxed" from squat_pose_2 by setting torso rotations smaller
   VectorXd squat_pose_3(tree->get_num_positions());
   squat_pose_3 << 0.714247,  // base_x
-      0.0,                    // base_y
-      0.666345,               // base_z
-      -0.914722,              // base_roll
-      0.994925,               // base_pitch
-      0,               // 5 base_yaw
+      0.0,                   // base_y
+      0.666345,              // base_z
+      -0.914722,             // base_roll
+      0.994925,              // base_pitch
+      0,                     // 5 base_yaw
 
-      0,   // 6 torsoYaw
+      0,          // 6 torsoYaw
       0.495029,   // 7 torsoPitch
       -0.226893,  // 8 torsoRoll
       0.0,        // 9 lowerNeckPitch
@@ -251,19 +250,19 @@ int DoMain() {
       0.0,        // 24 leftWristRoll
       0.49,       // 25 LeftWristPitch
 
-      0.196557,     // 26 rightHipYaw
-      0,    // 27 rightHipRoll
-      -2.42,        // 28 rightHipPitch
-      1.3,      // 29 rightKneePitch
-      0,  // 30 rightAnklePitch
-      0.331879,     // 31 rightAnkleRoll
+      0.196557,  // 26 rightHipYaw
+      0,         // 27 rightHipRoll
+      -2.42,     // 28 rightHipPitch
+      1.3,       // 29 rightKneePitch
+      0,         // 30 rightAnklePitch
+      0.331879,  // 31 rightAnkleRoll
 
-      0.196557,    // 32 leftHipYaw
-      0,  // 33 leftHipRoll
-      -2.37968,    // 34 leftHipPitch
-      1.3,     // 35 leftKneePitch
-      0,   // 36 leftAnklePitch
-      -0.354857;   // 37 leftAnkleRoll
+      0.196557,   // 32 leftHipYaw
+      0,          // 33 leftHipRoll
+      -2.37968,   // 34 leftHipPitch
+      1.3,        // 35 leftKneePitch
+      0,          // 36 leftAnklePitch
+      -0.354857;  // 37 leftAnkleRoll
 
   // the robot's hands and feet are on the ground
   VectorXd prone_pose_2(tree->get_num_positions());
@@ -336,16 +335,16 @@ int DoMain() {
   int l_foot = tree->FindBodyIndex("leftFoot");
   Vector4d lfoot_quat(1, 0, 0, 0);
   Vector3d lfoot_pos_lb_one_pt(-inf, -inf, 0);
-  Matrix3Xd lfoot_pos_lb = lfoot_pos_lb_one_pt.replicate(1,2);
+  Matrix3Xd lfoot_pos_lb = lfoot_pos_lb_one_pt.replicate(1, 2);
   // Position and quaternion constraints are relaxed to make the problem
   // solvable by IPOPT.
-  lfoot_pos_lb(2,0) -= 0.0001;
-  lfoot_pos_lb(2,1) -= 0.0001;
+  lfoot_pos_lb(2, 0) -= 0.0001;
+  lfoot_pos_lb(2, 1) -= 0.0001;
   std::cout << "lfoot_pos_lb: " << std::endl << lfoot_pos_lb << std::endl;
   Vector3d lfoot_pos_ub_one_pt(inf, inf, 0);
-  Matrix3Xd lfoot_pos_ub = lfoot_pos_ub_one_pt.replicate(1,2);
-  lfoot_pos_ub(2,0) += 0.0001;
-  lfoot_pos_ub(2,1) += 0.0001;
+  Matrix3Xd lfoot_pos_ub = lfoot_pos_ub_one_pt.replicate(1, 2);
+  lfoot_pos_ub(2, 0) += 0.0001;
+  lfoot_pos_ub(2, 1) += 0.0001;
   std::cout << "lfoot_pos_ub: " << std::endl << lfoot_pos_ub << std::endl;
   WorldPositionConstraint kc_lfoot_pos(tree.get(), l_foot, l_foot_toes,
                                        lfoot_pos_lb, lfoot_pos_ub, tspan);
@@ -384,8 +383,8 @@ int DoMain() {
   std::vector<int> knee_idx;
   FindJointAndInsert(tree.get(), "leftKneePitch", &knee_idx);
   FindJointAndInsert(tree.get(), "rightKneePitch", &knee_idx);
-  Vector2d knee_lb(-4.0/180*M_PI, -4.0/180*M_PI);
-  Vector2d knee_ub(115.0/180*M_PI, 115.0/180*M_PI);
+  Vector2d knee_lb(-4.0 / 180 * M_PI, -4.0 / 180 * M_PI);
+  Vector2d knee_ub(115.0 / 180 * M_PI, 115.0 / 180 * M_PI);
   kc_posture_knee.setJointLimits(2, knee_idx.data(), knee_lb, knee_ub);
 
   // 6 Left arm posture constraint
@@ -491,24 +490,23 @@ int DoMain() {
   constraint_array.push_back(&kc_rfoot_quat);
   constraint_array.push_back(&kc_posture_torso);
   constraint_array.push_back(&kc_posture_knee);
-  //constraint_array.push_back(&kc_posture_larm);
-  //constraint_array.push_back(&kc_posture_rarm);
-  //constraint_array.push_back(&kc_quasi);
+  // constraint_array.push_back(&kc_posture_larm);
+  // constraint_array.push_back(&kc_posture_rarm);
+  // constraint_array.push_back(&kc_quasi);
   constraint_array.push_back(&kc_quasi_feet);
   constraint_array.push_back(&kc_lforearm_pos);
   constraint_array.push_back(&kc_rforearm_pos);
-
 
   VectorXd cost(tree->get_num_positions());
   cost.setOnes();
   std::vector<int> base_translation_idx = {0, 1, 2};
   std::vector<int> base_rotation_idx = {3, 4, 5};
-  std::vector<int> hips_idx={26,27,28,32,33,34};
-  std::vector<int> legs_idx={29,30,31,35,36,37};
+  std::vector<int> hips_idx = {26, 27, 28, 32, 33, 34};
+  std::vector<int> legs_idx = {29, 30, 31, 35, 36, 37};
   std::vector<int> arms_idx;
   for (int i = 12 - 2; i <= 25 - 2; i++) arms_idx.push_back(i);
-  for(int i=0;i<hips_idx.size();i++) hips_idx[i]-=2;
-  for(int i=0;i<legs_idx.size();i++) legs_idx[i]-=2;
+  for (size_t i = 0; i < hips_idx.size(); i++) hips_idx[i] -= 2;
+  for (size_t i = 0; i < legs_idx.size(); i++) legs_idx[i] -= 2;
 
   for (const int& i : base_translation_idx) cost(i) = 0;
   for (const int& i : base_rotation_idx) cost(i) = 1e3;
@@ -537,9 +535,9 @@ int DoMain() {
              &infeasible_constraint);
 
   // After solving
-  //Vector3d com = tree->centerOfMass(cache);
-  //EXPECT_EQ(info, 1);
-  //EXPECT_GT(com(2), 0);
+  // Vector3d com = tree->centerOfMass(cache);
+  // EXPECT_EQ(info, 1);
+  // EXPECT_GT(com(2), 0);
 
   std::cout << "info: " << info << std::endl;
   std::cout << "q_sol: " << std::endl << q_sol << std::endl;
@@ -548,7 +546,7 @@ int DoMain() {
   VectorXd x(tree->get_num_positions() + tree->get_num_velocities());
   x.setZero();
   x.head(q_sol.size()) = prone_pose_2;
-  //x.head(q_sol.size()) = downward_dog_toes;
+  // x.head(q_sol.size()) = downward_dog_toes;
 
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
