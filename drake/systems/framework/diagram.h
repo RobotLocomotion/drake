@@ -483,6 +483,58 @@ class Diagram : public System<T>,
     }
   }
 
+  /// The @p generalized_velocity vector must have the same size and ordering as
+  /// the generalized velocity in the ContinuousState that this Diagram reserves
+  /// in its context.
+  void DoMapQDotToVelocity(
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& qdot,
+      VectorBase<T>* generalized_velocity) const override {
+    // Check that the dimensions of the continuous state in the context match
+    // the dimensions of the provided generalized velocity and configuration
+    // derivatives.
+    const ContinuousState<T>* xc = context.get_continuous_state();
+    DRAKE_DEMAND(xc != nullptr);
+    const int nq = xc->get_generalized_position().size();
+    const int nv = xc->get_generalized_velocity().size();
+    DRAKE_DEMAND(nq == qdot.size());
+    DRAKE_DEMAND(nv == generalized_velocity->size());
+
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+
+    // Iterate over the subsystems in sorted order, asking each subsystem to
+    // map its subslice of configuration derivatives to velocity. This approach
+    // is valid because the DiagramContinuousState guarantees that the subsystem
+    // states are concatenated in sorted order.
+    int q_index = 0;  // The next index to read in qdot.
+    int v_index = 0;  // The next index to write in generalized_velocity.
+    for (int i = 0; i < num_subsystems(); ++i) {
+      // Find the continuous state of subsystem i.
+      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+      DRAKE_DEMAND(subcontext != nullptr);
+      const ContinuousState<T>* sub_xc = subcontext->get_continuous_state();
+      // If subsystem i is stateless, skip it.
+      if (sub_xc == nullptr) continue;
+
+      // Select the chunk of qdot belonging to subsystem i.
+      const int num_q = sub_xc->get_generalized_position().size();
+      const Eigen::Ref<const VectorX<T>>& dq_slice =
+        qdot.segment(q_index, num_q);
+
+      // Select the chunk of generalized_velocity belonging to subsystem i.
+      const int num_v = sub_xc->get_generalized_velocity().size();
+      Subvector<T> v_slice(generalized_velocity, v_index, num_v);
+
+      // Delegate the actual mapping to subsystem i itself.
+      sorted_systems_[i]->MapQDotToVelocity(*subcontext, dq_slice, &v_slice);
+
+      // Advance the indices.
+      v_index += num_v;
+      q_index += num_q;
+    }
+  }
+
   /// Computes the next update time based on the configured actions, for scalar
   /// types that are arithmetic, or aborts for scalar types that are not
   /// arithmetic.
