@@ -10,7 +10,7 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/lcm/drake_lcm.h"
+//#include "drake/lcm/drake_lcm.h"
 #include "drake/math/quaternion.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
