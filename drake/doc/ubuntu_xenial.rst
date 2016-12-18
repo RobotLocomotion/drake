@@ -1,3 +1,5 @@
+.. _build_from_source_xenial:
+
 *************************
 Ubuntu 16.04 LTS (Xenial)
 *************************

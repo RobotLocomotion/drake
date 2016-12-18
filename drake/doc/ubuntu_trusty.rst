@@ -1,3 +1,5 @@
+.. _build_from_source_trusty:
+
 *************************
 Ubuntu 14.04 LTS (Trusty)
 *************************
