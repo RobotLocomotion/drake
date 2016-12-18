@@ -332,6 +332,9 @@ class Simulator {
 
   // Pre-allocated temporaries for updated discrete states.
   std::unique_ptr<DiscreteState<T>> discrete_updates_;
+
+  // Pre-allocated temporaries for states from unrestricted updates.
+  std::unique_ptr<State<T>> unrestricted_updates_;
 };
 
 template <typename T>
@@ -350,7 +353,23 @@ Simulator<T>::Simulator(const System<T>& system,
       new RungeKutta2Integrator<T>(system_, dt, context_.get()));
   integrator_->Initialize();
 
+  // Get the context's continuous, discrete, and abstract state so that
+  // we can copy them.
+  const ContinuousState<T>* cstate = context_->get_continuous_state();
+  const int nq = cstate->get_generalized_position().size();
+  const int nv = cstate->get_generalized_velocity().size();
+  const int nz = cstate->get_misc_continuous_state().size();
+
+  // Allocate the necessary temporaries for holding state variables.
   discrete_updates_ = system_.AllocateDiscreteVariables();
+  unrestricted_updates_ = std::make_unique<State<T>>();
+  unrestricted_updates_->set_continuous_state(
+      std::make_unique<ContinuousState<T>>(
+        std::make_unique<BasicVector<T>>(cstate->size()), nq, nv, nz));
+  unrestricted_updates_->get_mutable_discrete_state()->CopyFrom(
+      *context_->get_discrete_state());
+  unrestricted_updates_->get_mutable_abstract_state()->CopyFrom(
+      *context_->get_abstract_state());
 }
 
 template <typename T>
@@ -408,8 +427,13 @@ void Simulator<T>::StepTo(const T& boundary_time) {
       // Do unrestricted updates first.
       for (const DiscreteEvent<T>& event : update_actions.events) {
         if (event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction) {
+          State<T>* x = context_->get_mutable_state();
+          DRAKE_DEMAND(x != nullptr);
+          // First, compute the discrete updates into a temporary buffer.
           system_.EvalUnrestrictedUpdate(*context_, event,
-                                         context_->get_mutable_state());
+                                         unrestricted_updates_.get());
+          // Now write the update back into the context.
+          x->SetFrom(*unrestricted_updates_);
           ++num_unrestricted_updates_;
         } else {
           if (event.action == DiscreteEvent<T>::kUnknownAction) {

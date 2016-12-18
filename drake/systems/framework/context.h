@@ -110,6 +110,12 @@ class Context {
     return get_state().get_discrete_state()->size();
   }
 
+  /// Returns a pointer to the discrete component of the state,
+  /// which may be of size zero.
+  const DiscreteState<T>* get_discrete_state() {
+    return get_state().get_discrete_state();
+  }
+
   /// Returns a mutable pointer to the discrete component of the state,
   /// which may be of size zero.
   DiscreteState<T>* get_mutable_discrete_state() {
@@ -138,6 +144,12 @@ class Context {
   /// Returns the number of elements in the abstract state.
   int get_num_abstract_state_groups() const {
     return get_state().get_abstract_state()->size();
+  }
+
+  /// Returns a pointer to the abstract component of the state, which
+  /// may be of size zero.
+  const AbstractState* get_abstract_state() const {
+    return get_state().get_abstract_state();
   }
 
   /// Returns a mutable pointer to the abstract component of the state,

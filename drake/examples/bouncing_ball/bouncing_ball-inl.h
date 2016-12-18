@@ -104,15 +104,24 @@ void BouncingBall<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
 template <typename T>
 void BouncingBall<T>::DoEvalUnrestrictedUpdate(const systems::Context<T>&
                                                context, systems::State<T>*
-                                               state) const {
-  systems::VectorBase<T>* cstate = state->get_mutable_continuous_state()->
-                                                          get_mutable_vector();
+                                               next_state) const {
+  systems::VectorBase<T>* next_cstate = next_state->
+                           get_mutable_continuous_state()->get_mutable_vector();
+
+  // Get present state.
+  const systems::VectorBase<T>& cstate = context.get_continuous_state()->
+      get_vector();
+
+  // Copy the present state to the new one.
+//  next_state->SetFrom(context.get_state());
+  next_cstate->SetFromVector(cstate.CopyToVector());
 
   // Verify that velocity is non-positive.
-  DRAKE_DEMAND(cstate->GetAtIndex(1) <= 0.0);
+  DRAKE_DEMAND(cstate.GetAtIndex(1) <= 0.0);
 
   // Update the velocity.
-  cstate->SetAtIndex(1, cstate->GetAtIndex(1) * this->restitution_coef_ * -1.);
+  next_cstate->SetAtIndex(1, cstate.GetAtIndex(1) *
+      this->restitution_coef_ * -1.);
 }
 
 }  // namespace bouncing_ball

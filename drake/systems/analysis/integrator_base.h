@@ -1286,15 +1286,15 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
   // If all events are farther into the future than the maximum step
   // size times a stretch factor of 1.01, the maximum step size becomes the
   // candidate dt. Put another way, if the maximum step occurs right before
-  // an update or a publish, the update or publish is done instead. If the
-  // maximum step occurs right after the boundary time, we integrate to
-  // the boundary instead.
+  // an update or a publish, the update or publish is done instead. In contrast,
+  // we never step past boundary_dt, even if doing so would allow hitting a
+  // publish or an update.
+  const bool reached_boundary =
+      (candidate_result == IntegratorBase<T>::kReachedBoundaryTime);
   static constexpr double kMaxStretch = 1.01;  // Allow 1% step size stretch.
   const T& max_dt = IntegratorBase<T>::get_maximum_step_size();
-  if ((candidate_result == IntegratorBase<T>::kReachedBoundaryTime &&
-       max_dt < dt) ||
-      (candidate_result != IntegratorBase<T>::kReachedBoundaryTime &&
-          max_dt * kMaxStretch < dt)) {
+  if ((reached_boundary && max_dt < dt) ||
+      (!reached_boundary && max_dt * kMaxStretch < dt)) {
     candidate_result = IntegratorBase<T>::kTimeHasAdvanced;
     dt = max_dt;
   }
