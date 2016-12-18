@@ -36,9 +36,10 @@ class TestSystem : public System<double> {
     return nullptr;
   }
 
-  void SetDefaultState(Context<double>* context) const override {}
+  void SetDefaultState(const Context<double>& context,
+                       State<double>* state) const override {}
 
-  void SetDefaultParameters(Context<double>* context) const override {}
+  void SetDefaults(Context<double>* context) const override {}
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override {
@@ -269,9 +270,10 @@ class ValueIOTestSystem : public System<double> {
     return std::unique_ptr<Context<double>>(context.release());
   }
 
-  void SetDefaultState(Context<double>* context) const override {}
+  void SetDefaultState(const Context<double>& context,
+                       State<double>* state) const override {}
 
-  void SetDefaultParameters(Context<double>* context) const override {}
+  void SetDefaults(Context<double>* context) const override {}
 
   // Eval append "output" to input(0), and sets output(1) = 2 * input(1).
   void EvalOutput(const Context<double>& context,

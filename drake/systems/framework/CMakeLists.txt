@@ -15,20 +15,6 @@ set(sources
   leaf_system.cc
   output_port_listener_interface.cc
   parameters.cc
-  primitives/adder.cc
-  primitives/affine_system.cc
-  primitives/constant_value_source.cc
-  primitives/constant_vector_source.cc
-  primitives/demultiplexer.cc
-  primitives/gain.cc
-  primitives/integrator.cc
-  primitives/linear_system.cc
-  primitives/matrix_gain.cc
-  primitives/multiplexer.cc
-  primitives/pass_through.cc
-  primitives/signal_logger.cc
-  primitives/trajectory_source.cc
-  primitives/zero_order_hold.cc
   state.cc
   subvector.cc
   supervector.cc
@@ -81,7 +67,10 @@ set(private_headers)
 
 add_library_with_exports(LIB_NAME drakeSystemFramework
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
-target_link_libraries(drakeSystemFramework drakeCommon drakeTrajectories)
+target_link_libraries(drakeSystemFramework
+  drakeCommon
+  drakeTrajectories
+  Eigen3::Eigen)
 
 drake_install_headers(${installed_headers})
 
@@ -93,9 +82,6 @@ drake_install_pkg_config_file(drake-system-framework
     drake-common
     drake-trajectories
     eigen3)
-
-#add_subdirectory(examples)
-add_subdirectory(primitives)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

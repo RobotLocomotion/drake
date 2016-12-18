@@ -130,9 +130,10 @@ drake_add_external(sedumi PUBLIC CMAKE MATLAB)
 drake_add_external(snopt CMAKE MATLAB
   CMAKE_ARGS
     -DBUILD_SNOPT_CPP=OFF
-    -DBUILD_SHARED_LIBS=ON
+    -DBUILD_SHARED_LIBS=OFF  # For licensing reasons
     -DBUILD_TESTING=OFF
-    -DBUILD_SNOPT_C_MEX=${Matlab_FOUND})
+    -DBUILD_SNOPT_C_MEX=${Matlab_FOUND}
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON)
 
 # spotless
 drake_add_external(spotless PUBLIC CMAKE MATLAB)

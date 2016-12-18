@@ -1,6 +1,8 @@
 if(Matlab_FOUND)
   drake_add_mex(PPTmex PPTmex.cpp)
+  target_link_libraries(PPTmex Eigen3::Eigen)
   drake_add_mex(ExpPlusPPTrajectoryEvalmex ExpPlusPPTrajectoryEvalmex.cpp)
+  target_link_libraries(ExpPlusPPTrajectoryEvalmex Eigen3::Eigen)
 endif()
 
 if(Bullet_FOUND AND Matlab_FOUND)

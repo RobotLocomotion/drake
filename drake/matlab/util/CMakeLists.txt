@@ -57,7 +57,9 @@ if(Matlab_FOUND)
   target_link_libraries(closestExpmapmex drakeMexUtil drakeGeometryUtil)
 
   drake_add_mex(resolveCenterOfPressuremex resolveCenterOfPressuremex.cpp $<TARGET_OBJECTS:drakeUtil>)
-  target_link_libraries(resolveCenterOfPressuremex drakeMexUtil)
+  target_link_libraries(resolveCenterOfPressuremex
+    drakeMexUtil
+    Eigen3::Eigen)
 
   if(Matlab_SIMULINK_FOUND)
     drake_add_mex(realtime realtime.cpp)

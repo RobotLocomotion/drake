@@ -9,9 +9,10 @@
   #define SWIG_FILE_WITH_INIT
   #include <Python.h>
 #endif
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/package_map.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree.h"
 %}
 
 %include <typemaps.i>
@@ -66,11 +67,12 @@
 
 %include "drake/multibody/rigid_body_frame.h"
 
+%include "drake/multibody/parsers/package_map.h"
+
 %inline %{
-  typedef std::map<std::string, std::string> PackageMap;
   typedef std::map<std::string, int> ModelInstanceIdTable;
 %}
-%include "drake/multibody/parser_urdf.h"
+%include "drake/multibody/parsers/urdf_parser.h"
 
 %immutable RigidBodyTree::actuators;
 %immutable RigidBodyTree::loops;

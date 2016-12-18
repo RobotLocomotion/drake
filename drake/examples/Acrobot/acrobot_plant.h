@@ -8,7 +8,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/primitives/affine_system.h"
+#include "drake/systems/primitives/affine_system.h"
 
 namespace drake {
 namespace examples {

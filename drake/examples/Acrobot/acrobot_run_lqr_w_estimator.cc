@@ -9,15 +9,15 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/lcm_call_matlab.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/estimators/kalman_filter.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/linear_system.h"
-#include "drake/systems/framework/primitives/signal_logger.h"
+#include "drake/systems/primitives/linear_system.h"
+#include "drake/systems/primitives/signal_logger.h"
 #include "drake/systems/sensors/rotary_encoders.h"
 
 namespace drake {

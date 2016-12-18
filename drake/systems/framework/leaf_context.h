@@ -110,6 +110,11 @@ class LeafContext : public Context<T> {
     parameters_ = std::move(params);
   }
 
+  /// Returns the entire Parameters object.
+  Parameters<T>* get_mutable_parameters() {
+    return parameters_.get();
+  }
+
   /// Returns the number of vector-valued parameters.
   int num_numeric_parameters() const {
     return parameters_->num_numeric_parameters();

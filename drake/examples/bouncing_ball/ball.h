@@ -45,7 +45,8 @@ class Ball : public systems::LeafSystem<T> {
   double get_gravitational_acceleration() const { return -9.81; }
 
  protected:
-  void SetDefaultState(systems::Context<T>* context) const override;
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override;
 };
 
 }  // namespace bouncing_ball

@@ -14,7 +14,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
@@ -76,7 +76,8 @@ int DoMain() {
 
   auto simulator = std::make_unique<systems::Simulator<double>>(*demo_plant);
 
-  demo_plant->SetDefaultState(simulator->get_mutable_context());
+  systems::Context<double>* context = simulator->get_mutable_context();
+  demo_plant->SetDefaultState(*context, context->get_mutable_state());
 
   simulator->Initialize();
 

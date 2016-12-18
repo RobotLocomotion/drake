@@ -209,18 +209,19 @@ class System {
   /// to nullptr.
   virtual std::unique_ptr<Context<T>> AllocateContext() const = 0;
 
-  /// Assigns default values to all elements of the state.
-  virtual void SetDefaultState(Context<T>* context) const = 0;
+  /// Assigns default values to all elements of the state. Overrides must not
+  /// change the number of state variables.
+  virtual void SetDefaultState(const Context<T>& context,
+                               State<T>* state) const = 0;
 
-  /// Assigns default values to all parameters declared in the context.
-  virtual void SetDefaultParameters(Context<T>* context) const = 0;
+  // Sets Context fields to their default values.  User code should not
+  // override.
+  virtual void SetDefaults(Context<T>* context) const = 0;
 
-  /// Allocates a context and sets the state and parameters to their default
-  /// values.
+  /// Allocates a context and sets its default values.
   std::unique_ptr<Context<T>> CreateDefaultContext() const {
     std::unique_ptr<Context<T>> context = AllocateContext();
-    SetDefaultState(context.get());
-    SetDefaultParameters(context.get());
+    SetDefaults(context.get());
     return context;
   }
 

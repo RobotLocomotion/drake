@@ -45,7 +45,7 @@ class RosTfPublisher : public LeafSystem<double> {
       override;
 
   /**
-   * This System has no output ports so EvalOutput() does nothing.
+   * This System has no output ports. Thus, EvalOutput() does nothing.
    */
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const
