@@ -29,11 +29,16 @@ using Eigen::Quaterniond;
 
 /** Calculate quaternion's time-derivative from angular velocity and quaternion.
  * Algorithm from [Kane, 1983] Section 1.13, pages 58-59.
+ *
  * @param quat Quaternion e0, e1, e2, e3 that relates two right-handed
- * orthogonal unitary bases e.g., ax, ay, az (A) to bx, by, bz (B).
- * The quaternion `quat` easily converts to the rotation matrix R_AB.
+ *   orthogonal unitary bases e.g., ax, ay, az (A) to bx, by, bz (B).
+ *   The quaternion `quat` easily converts to the rotation matrix R_AB.
  * @param w_B  B's angular velocity in A, expressed in B (bx, by, bz).
- * @returns  time-derivative of quaternion `quat`, i.e., e0', e1', e2', e3'.
+ * @retval quatDt  time-derivative of `quat`, ordered e0', e1', e2', e3'.
+ *
+ * @note Eigen's internal ordering for its Quaternion class should be
+ * considered arbitrary. Herein we use `e0=quat.w()`, `e1=quat.x()`, etc.
+ * Return value `quatDt` *does* have a specific order as defined above.
  *
  * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
  *   (With P. W. Likins and D. A. Levinson).  Available for free .pdf download:
@@ -58,11 +63,16 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
 
 /** Calculate angular velocity from quaternion and quaternion's time derivative.
  * Algorithm from [Kane, 1983] Section 1.13, pages 58-59.
- * @param quat  quaternion e0, e1, e2, e3 that relates two right-handed
- * orthogonal unitary bases e.g., ax, ay, az (A) to bx, by, bz (B).
- * The quaternion `quat` easily converts to the rotation matrix R_AB.
- * @param quatDt  time-derivative of quaternion quat, i.e., e0', e1', e2', e3'.
- * @returns  bx, by, bz measures of B's angular velocity in A.
+ *
+ * @param quat  Quaternion e0, e1, e2, e3 that relates two right-handed
+ *   orthogonal unitary bases e.g., ax, ay, az (A) to bx, by, bz (B).
+ *   The quaternion `quat` easily converts to the rotation matrix R_AB
+ * @param quatDt  time-derivative of `quat`, ordered e0', e1', e2', e3'.
+ * @retval w_B  B's angular velocity in A, expressed in B (bx, by, bz).
+ *
+ * @note Eigen's internal ordering for its Quaternion class should be
+ * considered arbitrary. Herein we use `e0=quat.w()`, `e1=quat.x()`, etc.
+ * Parameter `quatDt` *does* have a specific order as defined above.
  *
  * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
  *   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
