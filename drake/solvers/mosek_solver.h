@@ -64,7 +64,7 @@ class MosekSolver : public MathematicalProgramSolverInterface {
  private:
   bool available_impl() const override;
 
-  std::string SolverName_impl() const { return "Mosek"; }
+  std::string SolverName_impl() const override { return "Mosek"; }
 
   MosekSolverResult* Solve_impl(MathematicalProgram* const prog) const override;
 };
