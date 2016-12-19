@@ -5,26 +5,23 @@
 /// generated plan takes the arm from the zero configuration to track the 4
 /// vertices of a square in space.
 
-#include <iostream>
 #include <memory>
-#include <string>
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/controlled_kuka/kuka_demo_plant_builder.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
-#include "drake/lcm/drake_lcm.h"
+#include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/context.h"
 
 DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
 
-using Eigen::Vector3d;
-using std::string;
 using std::unique_ptr;
 
 namespace drake {
 
+using systems::Context;
 using systems::Simulator;
 
 namespace examples {
@@ -48,17 +45,18 @@ int DoMain() {
 
   std::vector<double> time_stamps{1.0, 2.0, 3.0, 4.0, 5.0};
 
+  RigidBodyTreed tree;
+  CreateTreedFromFixedModelAtPose(kUrdfPath, &tree);
+
   std::unique_ptr<PiecewisePolynomialTrajectory> cartesian_trajectory =
-      SimpleCartesianWayPointPlanner(
-          CreateTreeFromFixedModelAtPose(kUrdfPath), "iiwa_link_ee",
-          way_points, time_stamps);
+      SimpleCartesianWayPointPlanner(&tree, "iiwa_link_ee", way_points,
+                                     time_stamps);
 
   KukaDemo<double> model(std::move(cartesian_trajectory));
   Simulator<double> simulator(model);
+
   Context<double>* context = simulator.get_mutable_context();
-
   model.SetDefaultState(*context, context->get_mutable_state());
-
   simulator.Initialize();
 
   simulator.StepTo(FLAGS_simulation_sec);
