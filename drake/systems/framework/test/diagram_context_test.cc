@@ -84,6 +84,19 @@ class DiagramContextTest : public ::testing::Test {
   std::unique_ptr<ZeroOrderHold<double>> hold_;
 };
 
+// Verifies that @p state is a clone of the state constructed in
+// LeafContextTest::SetUp.
+void VerifyClonedState(const State<double>& clone) {
+  // - Continuous
+  const ContinuousState<double>* xc = clone.get_continuous_state();
+  EXPECT_EQ(42.0, xc->get_vector().GetAtIndex(0));
+  EXPECT_EQ(43.0, xc->get_vector().GetAtIndex(1));
+  // - Discrete
+  const BasicVector<double>* xd_vec =
+      clone.get_discrete_state()->get_discrete_state(0);
+  EXPECT_EQ(44.0, xd_vec->GetAtIndex(0));
+}
+
 // Tests that subsystems have outputs and contexts in the DiagramContext.
 TEST_F(DiagramContextTest, RetrieveConstituents) {
   // All of the subsystems should be leaf Systems.
@@ -185,13 +198,7 @@ TEST_F(DiagramContextTest, Clone) {
   EXPECT_EQ(kTime, clone->get_time());
 
   // Verify that the state was copied.
-  // - Continuous
-  const ContinuousState<double>* xc = clone->get_continuous_state();
-  EXPECT_EQ(42.0, xc->get_vector().GetAtIndex(0));
-  EXPECT_EQ(43.0, xc->get_vector().GetAtIndex(1));
-  // - Discrete
-  const BasicVector<double>* xd_vec = clone->get_discrete_state(0);
-  EXPECT_EQ(44.0, xd_vec->GetAtIndex(0));
+  VerifyClonedState(clone->get_state());
 
   // Verify that the cloned input ports contain the same data,
   // but are different pointers.
@@ -203,6 +210,14 @@ TEST_F(DiagramContextTest, Clone) {
     EXPECT_TRUE(CompareMatrices(orig_port->get_value(), clone_port->get_value(),
                                 1e-8, MatrixCompareType::absolute));
   }
+}
+
+TEST_F(DiagramContextTest, CloneState) {
+  std::unique_ptr<State<double>> state = context_->CloneState();
+  // Verify that the state was copied.
+  VerifyClonedState(*state);
+  // Verify that the underlying type was preserved.
+  EXPECT_NE(nullptr, dynamic_cast<DiagramState<double>*>(state.get()));
 }
 
 }  // namespace
