@@ -717,7 +717,7 @@ void BulletModel::collisionDetectFromPoints(
       btGjkPairDetector convexConvex(&shapeA, shapeB, &sGjkSimplexSolver, &epa);
 
       input.m_transformA =
-          btTransform(btQuaternion(1, 0, 0, 0),
+          btTransform(btQuaternion(0, 0, 0, 1),
                       btVector3(points(0, i), points(1, i), points(2, i)));
       input.m_transformB = bt_objB->getWorldTransform();
 
