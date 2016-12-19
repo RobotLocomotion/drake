@@ -1,4 +1,4 @@
-#include "drake/examples/Painleve/painleve.h"
+#include "drake/examples/painleve/painleve.h"
 
 #include <memory>
 

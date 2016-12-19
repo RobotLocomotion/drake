@@ -8,7 +8,7 @@
 #include <limits>
 
 #include "drake/common/drake_assert.h"
-#include "drake/examples/Painleve/painleve.h"
+#include "drake/examples/painleve/painleve.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -315,7 +315,7 @@ void Painleve<T>::EvalTimeDerivatives(
           throw std::runtime_error("Inconsistent configuration detected.");
 
         // Now that normal force is computed, set the acceleration.
-        const F = -sgn_xcdot*mu_*N;
+        const T F = -sgn_xcdot*mu_*N;
         f->SetAtIndex(3, F/mass_);
         f->SetAtIndex(4, N/mass_ + get_gravitational_acceleration());
         f->SetAtIndex(5, half_rod_length*(F*stheta + k*N*ctheta)/J_);
