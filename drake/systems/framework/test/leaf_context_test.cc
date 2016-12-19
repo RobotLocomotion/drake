@@ -282,6 +282,20 @@ TEST_F(LeafContextTest, Clone) {
   EXPECT_EQ(1.0, context_.get_numeric_parameter(0)->GetAtIndex(0));
 }
 
+// Tests that the State can be copied from another State.
+TEST_F(LeafContextTest, CopyStateFrom) {
+  std::unique_ptr<Context<double>> clone = context_.Clone();
+  (*clone->get_mutable_continuous_state())[0] = 81.0;
+  (*clone->get_mutable_discrete_state(0))[0] = 243.0;
+  clone->get_mutable_abstract_state<int>(0) = 729;
+
+  context_.get_mutable_state()->CopyFrom(clone->get_state());
+
+  EXPECT_EQ(81.0, (*context_.get_continuous_state())[0]);
+  EXPECT_EQ(243.0, (*context_.get_discrete_state(0))[0]);
+  EXPECT_EQ(729, context_.get_abstract_state<int>(0));
+}
+
 // Tests that a LeafContext<AutoDiffXd> can be initialized from a
 // Leafcontext<double>.
 TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
