@@ -564,6 +564,11 @@ ExpressionMulFactory::ExpressionMulFactory(
     const map<Expression, Expression>& term_to_exp_map)
     : constant_factor_{constant_factor}, term_to_exp_map_{term_to_exp_map} {}
 
+ExpressionMulFactory::ExpressionMulFactory(
+    const shared_ptr<const ExpressionMul> ptr)
+    : ExpressionMulFactory{ptr->get_constant_factor(),
+                           ptr->get_term_to_exp_map()} {}
+
 void ExpressionMulFactory::AddExpression(const Expression& e) {
   if (is_constant(e)) {
     return AddConstant(get_constant_value(e));
