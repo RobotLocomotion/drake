@@ -56,16 +56,17 @@ class MosekSolver : public MathematicalProgramSolverInterface {
 
   std::string SolverName() const { return SolverName_impl(); }
 
-  std::unique_ptr<MosekSolverResult> Solve(MathematicalProgram* prog) const {
+  std::unique_ptr<MosekSolverResult> Solve(
+      MathematicalProgram* const prog) const {
     return std::unique_ptr<MosekSolverResult>(Solve_impl(prog));
-  };
+  }
 
  private:
   bool available_impl() const override;
 
   std::string SolverName_impl() const { return "Mosek"; }
 
-  MosekSolverResult* Solve_impl(MathematicalProgram* prog) const override;
+  MosekSolverResult* Solve_impl(MathematicalProgram* const prog) const override;
 };
 
 }  // namespace solvers

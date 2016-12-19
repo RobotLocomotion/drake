@@ -24,8 +24,10 @@ class SnoptSolverResult : public MathematicalProgramSolverResult {
   double objective_value() const { return objective_value_; }
 
  private:
-  const int snopt_info_;  // The returned code from calling snopta_. Refer to
+  // The returned code from calling snopta_. Refer to
   // http://web.stanford.edu/group/SOL/guides/sndoc7.pdf for more details.
+  const int snopt_info_;
+
   const double objective_value_;
   // TODO(hongkai.dai): Add Lagrangian multiplier and constraint value.
 };
@@ -37,7 +39,8 @@ class SnoptSolver : public MathematicalProgramSolverInterface {
 
   std::string SolverName() const { return SolverName_impl(); }
 
-  std::unique_ptr<SnoptSolverResult> Solve(MathematicalProgram& prog) const {
+  std::unique_ptr<SnoptSolverResult> Solve(
+      MathematicalProgram* const prog) const {
     return std::unique_ptr<SnoptSolverResult>(Solve_impl(prog));
   }
 
@@ -46,7 +49,7 @@ class SnoptSolver : public MathematicalProgramSolverInterface {
 
   std::string SolverName_impl() const override { return "SNOPT"; }
 
-  SnoptSolverResult* Solve_impl(MathematicalProgram& prog) const override;
+  SnoptSolverResult* Solve_impl(MathematicalProgram* const prog) const override;
 };
 
 }  // namespace solvers

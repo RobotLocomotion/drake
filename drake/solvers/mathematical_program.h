@@ -1324,7 +1324,6 @@ class MathematicalProgram {
   //    bool solve(const Eigen::MatrixBase<Derived>& x0);
 
   //    getCostValue();
-  //    getExitFlag();
   //    getInfeasibleConstraintNames();
 
   void PrintSolution() {

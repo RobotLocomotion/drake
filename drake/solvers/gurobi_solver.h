@@ -27,14 +27,16 @@ class GurobiSolverResult : public MathematicalProgramSolverResult {
   int status() const { return status_; }
 
  private:
+  // clang-format off
   int gurobi_error_;  // The error encountered by calling Gurobi functions,
-                      // refer
-  // to http://www.gurobi.com/documentation/6.5/refman/error_codes.html
-  // for more details.
+                      // refer to
+                      // http://www.gurobi.com/documentation/6.5/refman/error_codes.html
+                      // for more details.
   int status_;  // The status after the optimize call has returned.
                 // Refer to
-  // http://www.gurobi.com/documentation/6.5/refman/optimization_status_codes.html
-  // for more details.
+                // http://www.gurobi.com/documentation/6.5/refman/optimization_status_codes.html
+                // for more details.
+  // clang-format on
 };
 
 class GurobiSolver : public MathematicalProgramSolverInterface {
@@ -45,7 +47,8 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
 
   std::string SolverName() const { return SolverName_impl(); }
 
-  std::unique_ptr<GurobiSolverResult> Solve(MathematicalProgram& prog) const {
+  std::unique_ptr<GurobiSolverResult> Solve(
+      MathematicalProgram* const prog) const {
     return std::unique_ptr<GurobiSolverResult>(Solve_impl(prog));
   }
 
@@ -54,7 +57,8 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
 
   std::string SolverName_impl() const override { return "Gurobi"; }
 
-  GurobiSolverResult* Solve_impl(MathematicalProgram& prog) const override;
+  GurobiSolverResult* Solve_impl(
+      MathematicalProgram* const prog) const override;
 };
 
 }  // end namespace solvers

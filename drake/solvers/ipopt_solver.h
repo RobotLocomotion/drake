@@ -20,7 +20,8 @@ class IpoptSolver : public MathematicalProgramSolverInterface {
 
   std::string SolverName() const { return SolverName_impl(); }
 
-  std::unique_ptr<IpoptSolverResult> Solve(MathematicalProgram& prog) const {
+  std::unique_ptr<IpoptSolverResult> Solve(
+      MathematicalProgram* const prog) const {
     return std::unique_ptr<IpoptSolverResult>(Solve_impl(prog));
   }
 
@@ -29,7 +30,7 @@ class IpoptSolver : public MathematicalProgramSolverInterface {
 
   std::string SolverName_impl() const override { return "IPOPT"; }
 
-  IpoptSolverResult* Solve_impl(MathematicalProgram& prog) const override;
+  IpoptSolverResult* Solve_impl(MathematicalProgram* const prog) const override;
 };
 
 }  // namespace solvers

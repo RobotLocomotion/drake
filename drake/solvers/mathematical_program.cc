@@ -365,32 +365,32 @@ SolutionSummary MathematicalProgram::Solve() {
     // TODO(ggould-tri) Also allow quadratic objectives whose matrix is
     // Identity: This is the objective function the solver uses anyway when
     // underconstrainted, and is fairly common in real-world problems.
-    return linear_system_solver_->Solve(*this)->summary();
+    return linear_system_solver_->Solve(this)->summary();
   } else if (is_satisfied(required_capabilities_,
                           kEqualityConstrainedQPCapabilities) &&
              equality_constrained_qp_solver_->available()) {
-    return equality_constrained_qp_solver_->Solve(*this)->summary();
+    return equality_constrained_qp_solver_->Solve(this)->summary();
   } else if (is_satisfied(required_capabilities_, kMosekCapabilities) &&
              mosek_solver_->available()) {
     // TODO(hongkai.dai@tri.global): based on my limited experience, Mosek is
     // faster than Gurobi for convex optimization problem. But we should run
     // a more thorough comparison.
-    return mosek_solver_->Solve(*this)->summary();
+    return mosek_solver_->Solve(this)->summary();
   } else if (is_satisfied(required_capabilities_, kGurobiCapabilities) &&
              gurobi_solver_->available()) {
-    return gurobi_solver_->Solve(*this)->summary();
+    return gurobi_solver_->Solve(this)->summary();
   } else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
              moby_lcp_solver_->available()) {
-    return moby_lcp_solver_->Solve(*this)->summary();
+    return moby_lcp_solver_->Solve(this)->summary();
   } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              snopt_solver_->available()) {
-    return snopt_solver_->Solve(*this)->summary();
+    return snopt_solver_->Solve(this)->summary();
   } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              ipopt_solver_->available()) {
-    return ipopt_solver_->Solve(*this)->summary();
+    return ipopt_solver_->Solve(this)->summary();
   } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              nlopt_solver_->available()) {
-    return nlopt_solver_->Solve(*this)->summary();
+    return nlopt_solver_->Solve(this)->summary();
   } else {
     throw std::runtime_error(
         "MathematicalProgram::Solve: "

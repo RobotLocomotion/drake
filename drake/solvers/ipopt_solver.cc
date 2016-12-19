@@ -500,8 +500,9 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
 bool IpoptSolver::available_impl() const { return true; }
 
-IpoptSolverResult* IpoptSolver::Solve_impl(MathematicalProgram& prog) const {
-  DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
+IpoptSolverResult* IpoptSolver::Solve_impl(
+    MathematicalProgram* const prog) const {
+  DRAKE_ASSERT(prog->linear_complementarity_constraints().empty());
 
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);
@@ -516,15 +517,15 @@ IpoptSolverResult* IpoptSolver::Solve_impl(MathematicalProgram& prog) const {
   app->Options()->SetStringValue("hessian_approximation", "limited-memory");
   app->Options()->SetIntegerValue("print_level", 2);
 
-  for (const auto& it : prog.GetSolverOptionsDouble("IPOPT")) {
+  for (const auto& it : prog->GetSolverOptionsDouble("IPOPT")) {
     app->Options()->SetNumericValue(it.first, it.second);
   }
 
-  for (const auto& it : prog.GetSolverOptionsInt("IPOPT")) {
+  for (const auto& it : prog->GetSolverOptionsInt("IPOPT")) {
     app->Options()->SetIntegerValue(it.first, it.second);
   }
 
-  for (const auto& it : prog.GetSolverOptionsStr("IPOPT")) {
+  for (const auto& it : prog->GetSolverOptionsStr("IPOPT")) {
     app->Options()->SetStringValue(it.first, it.second);
   }
 
@@ -533,7 +534,7 @@ IpoptSolverResult* IpoptSolver::Solve_impl(MathematicalProgram& prog) const {
     return new IpoptSolverResult(SolutionSummary::kInvalidInput);
   }
 
-  Ipopt::SmartPtr<IpoptSolver_NLP> nlp = new IpoptSolver_NLP(&prog);
+  Ipopt::SmartPtr<IpoptSolver_NLP> nlp = new IpoptSolver_NLP(prog);
   status = app->OptimizeTNLP(nlp);
 
   return new IpoptSolverResult(nlp->result());

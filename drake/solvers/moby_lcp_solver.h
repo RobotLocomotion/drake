@@ -4,8 +4,8 @@
 #pragma once
 
 #include <fstream>
-#include <vector>
 #include <string>
+#include <vector>
 
 #include <Eigen/SparseCore>
 
@@ -16,7 +16,8 @@ namespace solvers {
 
 class MobyLCPSolverResult : public MathematicalProgramSolverResult {
  public:
-  explicit MobyLCPSolverResult(SolutionSummary summary) : MathematicalProgramSolverResult(summary) {}
+  explicit MobyLCPSolverResult(SolutionSummary summary)
+      : MathematicalProgramSolverResult(summary) {}
 };
 
 class MobyLCPSolver : public MathematicalProgramSolverInterface {
@@ -50,18 +51,20 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
 
   bool available() const { return available_impl(); }
 
-  std::string SolverName() const {return SolverName_impl(); }
+  std::string SolverName() const { return SolverName_impl(); }
 
-  std::unique_ptr<MobyLCPSolverResult> Solve(MathematicalProgram& prog) const {
+  std::unique_ptr<MobyLCPSolverResult> Solve(
+      MathematicalProgram* const prog) const {
     return std::unique_ptr<MobyLCPSolverResult>(Solve_impl(prog));
   }
 
  private:
-  bool available_impl() const override {return true;};
+  bool available_impl() const override { return true; };
 
-  std::string SolverName_impl() const override {return "MobyLCP";}
+  std::string SolverName_impl() const override { return "MobyLCP"; }
 
-  MobyLCPSolverResult* Solve_impl(MathematicalProgram& prog) const override;
+  MobyLCPSolverResult* Solve_impl(
+      MathematicalProgram* const prog) const override;
 
   void ClearIndexVectors() const;
   bool CheckLemkeTrivial(int n, double zero_tol, const Eigen::VectorXd& q,

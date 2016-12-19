@@ -102,7 +102,7 @@ void RunNonlinearProgram(MathematicalProgram& prog,
     if (!solver.second->available()) {
       continue;
     }
-    auto result = solver.second->Solve(prog);
+    auto result = solver.second->Solve(&prog);
 
     EXPECT_EQ(result->summary(), SolutionSummary::kSolutionFound)
         << "Using solver: " << solver.first;

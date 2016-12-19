@@ -6,9 +6,11 @@
 
 namespace drake {
 namespace solvers {
-class EqualityConstrainedQPSolverResult : public MathematicalProgramSolverResult {
+class EqualityConstrainedQPSolverResult
+    : public MathematicalProgramSolverResult {
  public:
-  EqualityConstrainedQPSolverResult(SolutionSummary summary) : MathematicalProgramSolverResult(summary) {};
+  explicit EqualityConstrainedQPSolverResult(SolutionSummary summary)
+      : MathematicalProgramSolverResult(summary) {}
 
  private:
   // TODO(hongkai.dai) return the Lagrangian.
@@ -16,20 +18,24 @@ class EqualityConstrainedQPSolverResult : public MathematicalProgramSolverResult
 
 class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
  public:
-  bool available() const {return available_impl();}
+  bool available() const { return available_impl(); }
 
-  std::string SolverName() const { return SolverName_impl();}
+  std::string SolverName() const { return SolverName_impl(); }
 
-  std::unique_ptr<EqualityConstrainedQPSolverResult> Solve(MathematicalProgram& prog) const {
+  std::unique_ptr<EqualityConstrainedQPSolverResult> Solve(
+      MathematicalProgram* const prog) const {
     return std::unique_ptr<EqualityConstrainedQPSolverResult>(Solve_impl(prog));
-  };
+  }
 
  private:
   bool available_impl() const override;
 
-  std::string SolverName_impl() const override { return "Equality Constrained QP Solver";}
+  std::string SolverName_impl() const override {
+    return "Equality Constrained QP Solver";
+  }
 
-  EqualityConstrainedQPSolverResult* Solve_impl(MathematicalProgram& prog) const override;
+  EqualityConstrainedQPSolverResult* Solve_impl(
+      MathematicalProgram* const prog) const override;
 };
 
 }  // namespace solvers

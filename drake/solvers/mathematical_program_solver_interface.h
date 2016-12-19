@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 namespace drake {
 namespace solvers {
@@ -16,10 +17,11 @@ enum SolutionSummary {
 /// optimization problem.
 class MathematicalProgramSolverResult {
  public:
-  explicit MathematicalProgramSolverResult(SolutionSummary summary) : summary_(summary) {}
+  explicit MathematicalProgramSolverResult(SolutionSummary summary)
+      : summary_(summary) {}
 
   /** Getter for summary. */
-  SolutionSummary summary() const {return summary_;}
+  SolutionSummary summary() const { return summary_; }
 
  private:
   const SolutionSummary summary_;
@@ -31,17 +33,18 @@ class MathematicalProgramSolverInterface {
   virtual ~MathematicalProgramSolverInterface() = default;
 
   /// Returns true iff this solver was enabled at compile-time.
-  bool available() const { return available_impl();}
+  bool available() const { return available_impl(); }
 
   /// Returns the name of the solver.
-  std::string SolverName() const { return SolverName_impl();}
+  std::string SolverName() const { return SolverName_impl(); }
 
   /// Sets values for the decision variables on the given MathematicalProgram
   /// @p prog, or:
   ///  * If no solver is available, throws std::runtime_error
   ///  * If the solver returns an error, returns a nonzero SolutionSummary.
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  std::unique_ptr<MathematicalProgramSolverResult> Solve(MathematicalProgram &prog) const {
+  std::unique_ptr<MathematicalProgramSolverResult> Solve(
+      MathematicalProgram* const prog) const {
     return std::unique_ptr<MathematicalProgramSolverResult>(Solve_impl(prog));
   }
 
@@ -50,10 +53,14 @@ class MathematicalProgramSolverInterface {
 
   virtual std::string SolverName_impl() const = 0;
 
-  /**
+  /** This function should be handled with caution, since it returns a raw
+   * pointer, pointing to the newly allocated memory on the heap. It is then
+   * called by the public Solve function, that wraps this raw pointer as a
+   * unique pointer.
    * @return The raw pointer to the newly constructed result.
    */
-  virtual MathematicalProgramSolverResult* Solve_impl(MathematicalProgram& prog) const = 0;
+  virtual MathematicalProgramSolverResult* Solve_impl(
+      MathematicalProgram* const prog) const = 0;
 };
-} // namespace solvers
-} // namespace drake
+}  // namespace solvers
+}  // namespace drake

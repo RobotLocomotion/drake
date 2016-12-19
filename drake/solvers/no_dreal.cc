@@ -8,7 +8,8 @@ namespace drake {
 namespace solvers {
 bool DrealSolver::available_impl() const { return false; }
 
-DrealSolverResult* DrealSolver::Solve_impl(MathematicalProgram& prog) const {
+DrealSolverResult* DrealSolver::Solve_impl(
+    MathematicalProgram* const prog) const {
   throw std::runtime_error(
       "The Dreal bindings were not compiled.  You'll need to use a different "
       "solver.");

@@ -19,7 +19,7 @@ class LinearSystemSolver : public MathematicalProgramSolverInterface {
   std::string SolverName() const { return SolverName_impl(); }
 
   std::unique_ptr<LinearSystemSolverResult> Solve(
-      MathematicalProgram& prog) const {
+      MathematicalProgram* const prog) const {
     return std::unique_ptr<LinearSystemSolverResult>(Solve_impl(prog));
   }
 
@@ -31,7 +31,7 @@ class LinearSystemSolver : public MathematicalProgramSolverInterface {
   }
 
   LinearSystemSolverResult* Solve_impl(
-      MathematicalProgram& prog) const override;
+      MathematicalProgram* const prog) const override;
 };
 
 }  // namespace solvers

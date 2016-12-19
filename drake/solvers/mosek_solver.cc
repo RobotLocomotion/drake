@@ -566,8 +566,9 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
 
 bool MosekSolver::available_impl() const { return true; }
 
-MosekSolverResult* MosekSolver::Solve_impl(MathematicalProgram& prog) const {
-  const int num_vars = prog.num_vars();
+MosekSolverResult* MosekSolver::Solve_impl(
+    MathematicalProgram* const prog) const {
+  const int num_vars = prog->num_vars();
   MSKenv_t env = nullptr;
   MSKtask_t task = nullptr;
   MSKrescodee rescode;
@@ -593,43 +594,44 @@ MosekSolverResult* MosekSolver::Solve_impl(MathematicalProgram& prog) const {
   }
   // Add costs
   if (rescode == MSK_RES_OK) {
-    rescode = AddCosts(prog, &task);
+    rescode = AddCosts(*prog, &task);
   }
   // Add bounding box constraints on decision variables.
   if (rescode == MSK_RES_OK) {
-    rescode = AddBoundingBoxConstraints(prog, &task);
+    rescode = AddBoundingBoxConstraints(*prog, &task);
   }
   // Specify binary variables.
   bool with_integer_or_binary_variable = false;
   if (rescode == MSK_RES_OK) {
     rescode =
-        SpecifyVariableType(prog, &task, &with_integer_or_binary_variable);
+        SpecifyVariableType(*prog, &task, &with_integer_or_binary_variable);
   }
   // Add linear constraints.
   if (rescode == MSK_RES_OK) {
-    rescode = AddLinearConstraints(prog, &task);
+    rescode = AddLinearConstraints(*prog, &task);
   }
 
   // Add Lorentz cone constraints.
   if (rescode == MSK_RES_OK) {
-    rescode = AddSecondOrderConeConstraints(prog.lorentz_cone_constraints(),
+    rescode = AddSecondOrderConeConstraints(prog->lorentz_cone_constraints(),
                                             false, &task, &is_new_variable);
   }
 
   // Add rotated Lorentz cone constraints.
   if (rescode == MSK_RES_OK) {
-    rescode = AddSecondOrderConeConstraints(
-        prog.rotated_lorentz_cone_constraints(), true, &task, &is_new_variable);
+    rescode =
+        AddSecondOrderConeConstraints(prog->rotated_lorentz_cone_constraints(),
+                                      true, &task, &is_new_variable);
   }
 
   // Add positive semidefinite constraints.
   if (rescode == MSK_RES_OK) {
-    rescode = AddPositiveSemidefiniteConstraints(prog, &task);
+    rescode = AddPositiveSemidefiniteConstraints(*prog, &task);
   }
 
   // Add linear matrix inequality constraints.
   if (rescode == MSK_RES_OK) {
-    rescode = AddLinearMatrixInequalityConstraint(prog, &task);
+    rescode = AddLinearMatrixInequalityConstraint(*prog, &task);
   }
 
   SolutionSummary solution_summary = SolutionSummary::kUnknownError;
@@ -644,11 +646,11 @@ MosekSolverResult* MosekSolver::Solve_impl(MathematicalProgram& prog) const {
   MSKsoltypee solution_type;
   if (with_integer_or_binary_variable) {
     solution_type = MSK_SOL_ITG;
-  } else if (prog.quadratic_costs().empty() &&
-             prog.lorentz_cone_constraints().empty() &&
-             prog.rotated_lorentz_cone_constraints().empty() &&
-             prog.positive_semidefinite_constraints().empty() &&
-             prog.linear_matrix_inequality_constraints().empty()) {
+  } else if (prog->quadratic_costs().empty() &&
+             prog->lorentz_cone_constraints().empty() &&
+             prog->rotated_lorentz_cone_constraints().empty() &&
+             prog->positive_semidefinite_constraints().empty() &&
+             prog->linear_matrix_inequality_constraints().empty()) {
     solution_type = MSK_SOL_BAS;
   } else {
     solution_type = MSK_SOL_ITR;
@@ -697,7 +699,7 @@ MosekSolverResult* MosekSolver::Solve_impl(MathematicalProgram& prog) const {
             }
           }
           if (rescode == MSK_RES_OK) {
-            prog.SetDecisionVariableValues(sol_vector);
+            prog->SetDecisionVariableValues(sol_vector);
           }
           break;
         }
@@ -716,7 +718,7 @@ MosekSolverResult* MosekSolver::Solve_impl(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverResult(SolverName(), solution_summary);
+  prog->SetSolverResult(SolverName(), solution_summary);
   if (rescode != MSK_RES_OK) {
     solution_summary = SolutionSummary::kUnknownError;
   }

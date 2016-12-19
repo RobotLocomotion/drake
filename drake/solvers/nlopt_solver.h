@@ -20,7 +20,8 @@ class NloptSolver : public MathematicalProgramSolverInterface {
 
   std::string SolverName() const { return SolverName_impl(); }
 
-  std::unique_ptr<NloptSolverResult> Solve(MathematicalProgram& prog) const {
+  std::unique_ptr<NloptSolverResult> Solve(
+      MathematicalProgram* const prog) const {
     return std::unique_ptr<NloptSolverResult>(Solve_impl(prog));
   }
 
@@ -29,7 +30,7 @@ class NloptSolver : public MathematicalProgramSolverInterface {
 
   std::string SolverName_impl() const override { return "NLopt"; }
 
-  NloptSolverResult* Solve_impl(MathematicalProgram& prog) const override;
+  NloptSolverResult* Solve_impl(MathematicalProgram* const prog) const override;
 };
 
 }  // namespace solvers
