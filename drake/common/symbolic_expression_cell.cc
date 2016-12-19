@@ -860,10 +860,6 @@ double ExpressionAtan2::DoEvaluate(const double v1, const double v2) const {
 ExpressionSinh::ExpressionSinh(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Sinh, e} {}
 
-double ExpressionSinh::Evaluate(const Environment& env) const {
-  return std::sinh(get_argument().Evaluate(env));
-}
-
 ostream& ExpressionSinh::Display(ostream& os) const {
   os << "sinh(" << get_argument() << ")";
   return os;
