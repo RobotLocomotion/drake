@@ -109,12 +109,32 @@ Vector2d convex_combination(Vector2d x, Vector2d y, double lambda) {
   return x + lambda * (y - x);
 }
 
+// calculate a concave parabola-shaped foot-trajectory with roots x_start,
+// x_end, and maximum value foot_height. lambda is between 0 and 1, and x =
+// x_start + lambda * (x_end - x_start)
+
+Vector3d GetFootPosition(Vector3d x_start, Vector3d x_end, double foot_height,
+                         double lambda) {
+  Vector3d ex = x_end - x_start;
+  double l = ex.norm();
+  double h = foot_height;
+  ex.normalize();
+  Vector3d ey(0, 0, 1);
+
+  double a = -4 * h / (l * l);
+  double x = lambda * l;
+  double y = a * x * (x - l);
+  Vector3d result = x_start + x * ex + y * ey;
+
+  return result;
+}
+
 int DoMain() {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       drake::GetDrakePath() +
           "/examples/Valkyrie/urdf/urdf/"
-              "valkyrie_sim_drake_one_neck_dof_additional_contact_pts.urdf",
+          "valkyrie_sim_drake_one_neck_dof_additional_contact_pts.urdf",
       drake::multibody::joints::kRollPitchYaw, tree.get());
 
   for (int i = 0; i < tree->get_num_bodies(); i++)
@@ -809,7 +829,7 @@ int DoMain() {
   std::vector<MatrixXd> q_sols;
 
   const double t_length = 2;  // will not work if changed to other values
-  const int kN_per_count = 20;
+  const int kN_per_count = 10;
 
   while (count < 8) {
     VectorXd q_start = q_sol_i.rightCols(1);
@@ -823,6 +843,10 @@ int DoMain() {
     } else {
       cout << "CG is outside feet polygon." << endl;
     }
+    Vector3d lfoot_origin_current =
+        tree->transformPoints(cache, origin, l_foot, 0);
+    Vector3d rfoot_origin_current =
+        tree->transformPoints(cache, origin, r_foot, 0);
 
     // constraints always active:
     // - arm posture constraint
@@ -840,8 +864,8 @@ int DoMain() {
     Vector2d tspani1(0, 0.5 * t_length);
     Vector2d tspani2(0.5 * t_length, t_length);
     Vector2d tspani3(t_length, t_length);
-    Vector2d tspani4(0.3 * t_length, 0.7 * t_length);
-    const double foot_ground_clearance = 0.02;
+    Vector2d tspani4(0.5*t_length, 0.5*t_length);
+    const double foot_height = 0.06;
     QuasiStaticConstraint kc_quasi_3pts_i(tree.get(), tspani2);
     QuasiStaticConstraint kc_quasi_4pts_i(tree.get(), tspani1);
 
@@ -859,48 +883,48 @@ int DoMain() {
     kc_quasi_4pts_i.addContact(1, &l_foot, &l_foot_pts);
 
     // move right foot forward
-    Vector3d rfoot_origin_forward;
-    rfoot_origin_forward << convex_combination(right_start.head(2),
-                                               right_end.head(2), lambda_r),
+    Vector3d rfoot_origin_next;
+    rfoot_origin_next << convex_combination(right_start.head(2),
+                                            right_end.head(2), lambda_r),
         (right_start(2) + right_end(2)) / 2;
     lambda_r += 0.2;
-    cout << "rfoot_origin_forward " << endl << rfoot_origin_forward << endl;
-    Vector3d rfoot_origin_forward_lb = rfoot_origin_forward;
-    rfoot_origin_forward_lb(0) -= 0.05;
-    rfoot_origin_forward_lb(1) -= 0.05;
-    Vector3d rfoot_origin_forward_ub = rfoot_origin_forward;
-    rfoot_origin_forward_ub(0) += 0.05;
-    rfoot_origin_forward_ub(1) += 0.05;
+    cout << "rfoot_origin_next " << endl << rfoot_origin_next << endl;
+    Vector3d rfoot_origin_next_lb = rfoot_origin_next;
+    rfoot_origin_next_lb(0) -= 0.05;
+    rfoot_origin_next_lb(1) -= 0.05;
+    Vector3d rfoot_origin_next_ub = rfoot_origin_next;
+    rfoot_origin_next_ub(0) += 0.05;
+    rfoot_origin_next_ub(1) += 0.05;
     WorldPositionConstraint kc_rfoot_forward(tree.get(), r_foot, origin,
-                                             rfoot_origin_forward_lb,
-                                             rfoot_origin_forward_ub, tspani3);
+                                             rfoot_origin_next_lb,
+                                             rfoot_origin_next_ub, tspani3);
     // right foot above ground
-    Vector3d rfoot_origin_above_ground_lb(
-        -inf, -inf, rfoot_origin_forward(2) + foot_ground_clearance);
-    Vector3d rfoot_origin_above_ground_ub(inf, inf, inf);
+    Vector3d rfoot_origin_above_ground_lb = GetFootPosition
+        (rfoot_origin_current, rfoot_origin_next, foot_height, 0.5);
+    Vector3d rfoot_origin_above_ground_ub = rfoot_origin_above_ground_lb;
     WorldPositionConstraint kc_rfoot_above_ground(
         tree.get(), r_foot, origin, rfoot_origin_above_ground_lb,
         rfoot_origin_above_ground_ub, tspani4);
     // move left foot forward
-    Vector3d lfoot_origin_forward;
-    lfoot_origin_forward << convex_combination(left_start.head(2),
-                                               left_end.head(2), lambda_l),
+    Vector3d lfoot_origin_next;
+    lfoot_origin_next << convex_combination(left_start.head(2),
+                                            left_end.head(2), lambda_l),
         (left_start(2) + left_end(2)) / 2;
     lambda_l += 0.2;
-    cout << "lfoot_origin_forward " << endl << lfoot_origin_forward << endl;
-    Vector3d lfoot_origin_forward_lb = lfoot_origin_forward;
-    lfoot_origin_forward_lb(0) -= 0.05;
-    lfoot_origin_forward_lb(1) -= 0.05;
-    Vector3d lfoot_origin_forward_ub = lfoot_origin_forward;
-    lfoot_origin_forward_ub(0) += 0.05;
-    lfoot_origin_forward_ub(1) += 0.05;
+    cout << "lfoot_origin_next " << endl << lfoot_origin_next << endl;
+    Vector3d lfoot_origin_next_lb = lfoot_origin_next;
+    lfoot_origin_next_lb(0) -= 0.05;
+    lfoot_origin_next_lb(1) -= 0.05;
+    Vector3d lfoot_origin_next_ub = lfoot_origin_next;
+    lfoot_origin_next_ub(0) += 0.05;
+    lfoot_origin_next_ub(1) += 0.05;
     WorldPositionConstraint kc_lfoot_forward(tree.get(), l_foot, origin,
-                                             lfoot_origin_forward_lb,
-                                             lfoot_origin_forward_ub, tspani3);
+                                             lfoot_origin_next_lb,
+                                             lfoot_origin_next_ub, tspani3);
     // left foot above ground
-    Vector3d lfoot_origin_above_ground_lb(
-        -inf, -inf, lfoot_origin_forward(2) + foot_ground_clearance);
-    Vector3d lfoot_origin_above_ground_ub(inf, inf, inf);
+    Vector3d lfoot_origin_above_ground_lb = GetFootPosition
+        (lfoot_origin_current, lfoot_origin_next, foot_height, 0.5);
+    Vector3d lfoot_origin_above_ground_ub = lfoot_origin_above_ground_lb;
     WorldPositionConstraint kc_lfoot_above_ground(
         tree.get(), l_foot, origin, lfoot_origin_above_ground_lb,
         lfoot_origin_above_ground_ub, tspani4);
@@ -973,13 +997,41 @@ int DoMain() {
     MatrixXd q_nom_i_pointwise(tree->get_num_positions(), nT_i_pointwise);
     // q_nom_i_pointwise.leftCols(1)=prone_pose_2;
 
+
+    std::vector<WorldPositionConstraint> constraint_array_pointwise;
     for (int i = 0; i < kN_per_count; i++) {
       double t_current = t_length / kN_per_count * (i + 1);
       t_i_pointwise.push_back(t_current);
       q_nom_i_pointwise.col(i) = poly_trajectory_i->value(t_current);
+
+      double lambda = t_current/t_length;
+      Vector2d tspan_pointwise(t_current-0.001, t_current+0.001);
+      if (count % 2) {
+        //move right foot
+        Vector3d rfoot_origin_trajectory_lb = GetFootPosition
+            (rfoot_origin_current, rfoot_origin_next, foot_height, lambda);
+        Vector3d rfoot_origin_trajectory_ub = rfoot_origin_trajectory_lb;
+        WorldPositionConstraint kc_rfoot_trajectory(
+            tree.get(), r_foot, origin, rfoot_origin_trajectory_lb,
+            rfoot_origin_trajectory_ub, tspan_pointwise);
+        constraint_array_pointwise.push_back(kc_rfoot_trajectory);
+      } else {
+        //move left foot
+        Vector3d lfoot_origin_trajectory_lb = GetFootPosition
+            (lfoot_origin_current, lfoot_origin_next, foot_height, lambda);
+        Vector3d lfoot_origin_trajectory_ub = lfoot_origin_trajectory_lb;
+        WorldPositionConstraint kc_lfoot_trajectory(
+            tree.get(), l_foot, origin, lfoot_origin_trajectory_lb,
+            lfoot_origin_trajectory_ub, tspan_pointwise);
+        constraint_array_pointwise.push_back(kc_lfoot_trajectory);
+      }
     }
 
-    std::vector<int> info_i_pointwise(nT_i_pointwise, 0);
+    for (int i = 0; i < kN_per_count; i++) {
+      constraint_array.push_back(&(constraint_array_pointwise[i]));
+    }
+
+      std::vector<int> info_i_pointwise(nT_i_pointwise, 0);
 
     inverseKinPointwise(tree.get(), nT_i_pointwise, t_i_pointwise.data(),
                         q_nom_i_pointwise, q_nom_i_pointwise,
@@ -995,6 +1047,7 @@ int DoMain() {
     q_sols.push_back(q_sol_i_pointwise);
     // clean up
     count++;
+    for (int i = 0; i < kN_per_count; i++) constraint_array.pop_back();
     constraint_array.pop_back();  // kc_kuqsi_3pts_i
     constraint_array.pop_back();  // kc_rfoot_fixed/forward
     constraint_array.pop_back();  // l/r foot above ground
@@ -1060,8 +1113,8 @@ int DoMain() {
   q_sol_all << q_sol, q_sol_s_pointwise.rightCols(q_sol_s_pointwise.cols() - 1);
 
   std::vector<double> t_all(t);
-  double t_end = t_all[t_all.size()-1];
-  for(size_t i=1;i<=t_s_pointwise.size()-1;i++)
+  double t_end = t_all[t_all.size() - 1];
+  for (size_t i = 1; i <= t_s_pointwise.size() - 1; i++)
     t_all.push_back(t_end + t_s_pointwise[i]);
 
   // show it in drake visualizer
