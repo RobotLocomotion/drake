@@ -6,7 +6,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/polynomial.h"
 #include "drake/solvers/constraint.h"
-//#include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mathematical_program.h"
 //#include "drake/solvers/nlopt_solver.h"
 #include "drake/solvers/snopt_solver.h"
@@ -89,14 +89,14 @@ void CheckSolverType(MathematicalProgram& prog,
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void RunNonlinearProgram(MathematicalProgram& prog,
                          std::function<void(void)> test_func) {
-  //IpoptSolver ipopt_solver;
+  IpoptSolver ipopt_solver;
   //NloptSolver nlopt_solver;
   SnoptSolver snopt_solver;
 
   std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
-      std::make_pair("SNOPT", &snopt_solver)};
+      std::make_pair("SNOPT", &snopt_solver),
       //std::make_pair("NLopt", &nlopt_solver),
-      //std::make_pair("Ipopt", &ipopt_solver)};
+      std::make_pair("Ipopt", &ipopt_solver)};
 
   for (const auto& solver : solvers) {
     if (!solver.second->available()) {

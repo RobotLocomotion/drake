@@ -498,9 +498,9 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
 }  // namespace
 
-bool IpoptSolver::available() const { return true; }
+bool IpoptSolver::available_impl() const { return true; }
 
-SolutionSummary IpoptSolver::Solve(MathematicalProgram& prog) const {
+IpoptSolverResult* IpoptSolver::Solve_impl(MathematicalProgram& prog) const {
   DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
 
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
@@ -530,13 +530,13 @@ SolutionSummary IpoptSolver::Solve(MathematicalProgram& prog) const {
 
   Ipopt::ApplicationReturnStatus status = app->Initialize();
   if (status != Ipopt::Solve_Succeeded) {
-    return SolutionSummary::kInvalidInput;
+    return new IpoptSolverResult(SolutionSummary::kInvalidInput);
   }
 
   Ipopt::SmartPtr<IpoptSolver_NLP> nlp = new IpoptSolver_NLP(&prog);
   status = app->OptimizeTNLP(nlp);
 
-  return nlp->result();
+  return new IpoptSolverResult(nlp->result());
 }
 
 }  // namespace solvers

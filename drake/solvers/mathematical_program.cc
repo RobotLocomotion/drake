@@ -4,7 +4,7 @@
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
-//#include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/linear_system_solver.h"
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/solvers/mosek_solver.h"
@@ -63,7 +63,7 @@ MathematicalProgram::MathematicalProgram()
           static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
       solver_result_(0),
       required_capabilities_(kNoCapabilities),
-      //ipopt_solver_(new IpoptSolver()),
+      ipopt_solver_(new IpoptSolver()),
       //nlopt_solver_(new NloptSolver()),
       snopt_solver_(new SnoptSolver()),
       moby_lcp_solver_(new MobyLCPSolver()),
@@ -385,10 +385,10 @@ SolutionSummary MathematicalProgram::Solve() {
   } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              snopt_solver_->available()) {
     return snopt_solver_->Solve(*this)->summary();
-  } /*else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
+  } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              ipopt_solver_->available()) {
     return ipopt_solver_->Solve(*this)->summary();
-  } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
+  } /*else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              nlopt_solver_->available()) {
     return nlopt_solver_->Solve(*this)->summary();
   } */else {

@@ -17,7 +17,7 @@ endif()
 set(private_headers
   #dreal_solver.h
   gurobi_solver.h
-  #ipopt_solver.h
+  ipopt_solver.h
   linear_system_solver.h
   moby_lcp_solver.h
   mosek_solver.h
@@ -36,12 +36,12 @@ list(APPEND optimization_files
   moby_lcp_solver.cc
   #system_identification.cc
   )
-#if(ipopt_FOUND)
-# list(APPEND optimization_files ipopt_solver.cc)
-# list(APPEND optimization_requires ipopt)
-#else()
-#  list(APPEND optimization_files no_ipopt.cc)
-#endif()
+if(ipopt_FOUND)
+ list(APPEND optimization_files ipopt_solver.cc)
+ list(APPEND optimization_requires ipopt)
+else()
+  list(APPEND optimization_files no_ipopt.cc)
+endif()
 #if(NLopt_FOUND)
 #  list(APPEND optimization_files nlopt_solver.cc)
 #  list(APPEND optimization_requires nlopt)
