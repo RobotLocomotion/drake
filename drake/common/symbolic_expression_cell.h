@@ -354,7 +354,7 @@ class ExpressionMulFactory {
                        const std::map<Expression, Expression>& term_to_exp_map);
 
   /** Constructs ExpressionMulFactory from @p ptr. */
-  explicit ExpressionMulFactory(std::shared_ptr<const ExpressionAdd> ptr);
+  explicit ExpressionMulFactory(std::shared_ptr<const ExpressionMul> ptr);
 
   /** Adds @p e to this factory. */
   void AddExpression(const Expression& e);
