@@ -58,11 +58,28 @@ static void CheckOrdering(const vector<Expression>& expressions) {
             << "(Expressions[" << i << "] = " << expressions[i] << ")"
             << " is not less than "
             << "(Expressions[" << j << "] = " << expressions[j] << ")";
+        EXPECT_PRED2(ExpNotLess, expressions[j], expressions[i])
+            << "(Expressions[" << j << "] = " << expressions[j] << ")"
+            << " is less than "
+            << "(Expressions[" << i << "] = " << expressions[i] << ")";
+      } else if (i > j) {
+        EXPECT_PRED2(ExpLess, expressions[j], expressions[i])
+            << "(Expressions[" << j << "] = " << expressions[j] << ")"
+            << " is not less than "
+            << "(Expressions[" << i << "] = " << expressions[i] << ")";
+        EXPECT_PRED2(ExpNotLess, expressions[i], expressions[j])
+            << "(Expressions[" << i << "] = " << expressions[i] << ")"
+            << " is less than "
+            << "(Expressions[" << j << "] = " << expressions[j] << ")";
       } else {
         EXPECT_PRED2(ExpNotLess, expressions[i], expressions[j])
             << "(Expressions[" << i << "] = " << expressions[i] << ")"
             << " is less than "
             << "(Expressions[" << j << "] = " << expressions[j] << ")";
+        EXPECT_PRED2(ExpNotLess, expressions[j], expressions[i])
+            << "(Expressions[" << j << "] = " << expressions[j] << ")"
+            << " is less than "
+            << "(Expressions[" << i << "] = " << expressions[i] << ")";
       }
     }
   }
@@ -77,9 +94,7 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Expression x_{var_x_};
   const Expression y_{var_y_};
   const Expression z_{var_z_};
-
   const Expression x_plus_y_{x_ + y_};
-
   const Expression x_plus_z_{x_ + z_};
 
   const Expression zero_{0.0};
@@ -411,10 +426,15 @@ TEST_F(SymbolicExpressionTest, LessNeg) {
 
 TEST_F(SymbolicExpressionTest, LessAdd) {
   const Expression add1{c1_ + x_ + y_};
-  const Expression add2{c1_ + y_ + z_};
-  const Expression add3{c3_ + x_ + y_};
-  const Expression add4{c3_ + y_ + z_};
-  CheckOrdering({add1, add2, add3, add4});
+  const Expression add2{c1_ + 2 * x_ + y_};
+  const Expression add3{c1_ - 2 * y_ + z_};
+  const Expression add4{c1_ + y_ + z_};
+  const Expression add5{c1_ + 5 * y_ + z_};
+  const Expression add6{c3_ - 2 * x_ + y_};
+  const Expression add7{c3_ + x_ + y_};
+  const Expression add8{c3_ + y_ + 2 * z_};
+  const Expression add9{c3_ + y_ + 3 * z_};
+  CheckOrdering({add1, add2, add3, add4, add5, add6, add7, add8, add9});
 }
 
 TEST_F(SymbolicExpressionTest, LessSub) {
@@ -598,6 +618,10 @@ TEST_F(SymbolicExpressionTest, Variable) {
   EXPECT_PRED2(ExpEqual, z_, z_);
 }
 
+TEST_F(SymbolicExpressionTest, Evaluate) {
+  EXPECT_THROW(x_plus_y_.Evaluate(), std::runtime_error);
+}
+
 TEST_F(SymbolicExpressionTest, Constant) {
   EXPECT_EQ(c1_.Evaluate(), -10);
   EXPECT_EQ(c2_.Evaluate(), 1);
@@ -674,6 +698,7 @@ TEST_F(SymbolicExpressionTest, UnaryMinus) {
   EXPECT_DOUBLE_EQ(c3_.Evaluate(), (-(-c3_)).Evaluate());
   const Expression e{x_ + y_};
   const Environment env{{var_x_, 1.0}, {var_y_, 2.0}};
+  EXPECT_EQ((-x_).Evaluate(env), -1.0);
   EXPECT_PRED2(ExpEqual, x_, -(-x_));
   // (x + y) and -(-(x + y)) are structurally equal (after simplification)
   EXPECT_PRED2(ExpEqual, e, -(-e));
@@ -682,6 +707,7 @@ TEST_F(SymbolicExpressionTest, UnaryMinus) {
 
   EXPECT_PRED2(ExpEqual, -(x_plus_y_ + x_plus_z_ + pi_),
                -x_plus_y_ + (-x_plus_z_) + (-pi_));
+  EXPECT_EQ((-(x_)).to_string(), "-(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Add1) {
@@ -710,6 +736,19 @@ TEST_F(SymbolicExpressionTest, Add2) {
   e1 += z_;
   EXPECT_PRED2(ExpEqual, e1, x_ + y_ + z_);
   EXPECT_EQ(e2.to_string(), str_rep_e2);  // e2 doesn't change.
+}
+
+TEST_F(SymbolicExpressionTest, Add3) {
+  const Expression e1{2 + x_ + y_};
+  const Expression e2{3 + x_ + y_};
+  EXPECT_PRED2(ExpNotEqual, e1, e2);
+}
+
+TEST_F(SymbolicExpressionTest, Add4) {
+  const Expression e1{-2 - x_ + -3 * y_};
+  const Expression e2{-2 - x_ - 3 * y_};
+  EXPECT_EQ(e1.to_string(), "(-2 - x - 3 * y)");
+  EXPECT_EQ(e2.to_string(), "(-2 - x - 3 * y)");
 }
 
 TEST_F(SymbolicExpressionTest, Inc1) {
@@ -890,6 +929,20 @@ TEST_F(SymbolicExpressionTest, Mul5) {
   EXPECT_PRED2(ExpEqual, (3 * x_) * (4 * y_), (3 * 4) * x_ * y_);
 }
 
+TEST_F(SymbolicExpressionTest, Mul6) {
+  EXPECT_EQ((x_ * x_ * y_ * y_ * y_).to_string(), "(pow(x, 2) * pow(y, 3))");
+  EXPECT_EQ((2 * x_ * x_ * y_ * y_ * y_).to_string(),
+            "(2 * pow(x, 2) * pow(y, 3))");
+  EXPECT_EQ((-3 * x_ * x_ * y_ * y_ * y_).to_string(),
+            "(-3 * pow(x, 2) * pow(y, 3))");
+}
+
+TEST_F(SymbolicExpressionTest, Mul7) {
+  const Expression e1{2 * pow(x_, 2)};
+  const Expression e2{3 * pow(x_, -2)};
+  EXPECT_PRED2(ExpEqual, e1 * e2, 6);
+}
+
 TEST_F(SymbolicExpressionTest, AddMul1) {
   const Expression e1{(x_ * y_ * y_ * x_) + (x_ * y_ * x_ * y_)};
   EXPECT_PRED2(ExpEqual, e1, 2 * pow(x_, 2) * pow(y_, 2));
@@ -938,6 +991,14 @@ TEST_F(SymbolicExpressionTest, Div3) {
   EXPECT_EQ(e1.to_string(), "(x / y)");
   EXPECT_EQ(e2.to_string(), "(x / y)");
   EXPECT_EQ(e3.to_string(), "1");  // simplified
+}
+
+TEST_F(SymbolicExpressionTest, Div4) {
+  const Expression e{x_ / y_};
+  const Environment env1{{var_x_, 1.0}, {var_y_, 5.0}};
+  const Environment env2{{var_x_, 1.0}, {var_y_, 0.0}};
+  EXPECT_EQ(e.Evaluate(env1), 1.0 / 5.0);
+  EXPECT_THROW(e.Evaluate(env2), std::runtime_error);
 }
 
 // This test checks whether symbolic::Expression is compatible with
@@ -994,6 +1055,7 @@ TEST_F(SymbolicExpressionTest, Log) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::log(2 * 3.2 * 3.141592) + std::log(2) + std::log(3.2));
+  EXPECT_EQ((log(x_)).to_string(), "log(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Abs) {
@@ -1006,6 +1068,7 @@ TEST_F(SymbolicExpressionTest, Abs) {
   const Environment env{{var_x_, -2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::fabs(-2 * 3.2 * 3.141592) +
                                         std::fabs(-2.0) + std::fabs(3.2));
+  EXPECT_EQ((abs(x_)).to_string(), "abs(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Exp) {
@@ -1019,6 +1082,7 @@ TEST_F(SymbolicExpressionTest, Exp) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::exp(2 * 3.2 * 3.141592) +
                                         std::exp(2.0) + std::exp(3.2));
+  EXPECT_EQ((exp(x_)).to_string(), "exp(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Sqrt1) {
@@ -1037,6 +1101,7 @@ TEST_F(SymbolicExpressionTest, Sqrt2) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::sqrt(2 * 3.2 * 3.141592) +
                                         std::sqrt(2.0) + std::sqrt(3.2));
+  EXPECT_EQ((sqrt(x_)).to_string(), "sqrt(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Pow1) {
@@ -1111,6 +1176,7 @@ TEST_F(SymbolicExpressionTest, Sin) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::sin(2 * 3.2 * 3.141592) + std::sin(2) + std::sin(3.2));
+  EXPECT_EQ((sin(x_)).to_string(), "sin(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Cos) {
@@ -1124,6 +1190,7 @@ TEST_F(SymbolicExpressionTest, Cos) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::cos(2 * 3.2 * 3.141592) + std::cos(2) + std::cos(3.2));
+  EXPECT_EQ((cos(x_)).to_string(), "cos(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Tan) {
@@ -1138,6 +1205,7 @@ TEST_F(SymbolicExpressionTest, Tan) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::tan(2 * 3.2 * 3.141592) + std::tan(2) + std::tan(3.2));
+  EXPECT_EQ((tan(x_)).to_string(), "tan(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Asin) {
@@ -1152,6 +1220,7 @@ TEST_F(SymbolicExpressionTest, Asin) {
   const Environment env{{var_x_, 0.2}, {var_y_, 0.3}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::asin(0.2 * 0.3 * 3.141592) +
                                         std::asin(0.2) + std::asin(0.3));
+  EXPECT_EQ((asin(x_)).to_string(), "asin(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Acos) {
@@ -1166,6 +1235,7 @@ TEST_F(SymbolicExpressionTest, Acos) {
   const Environment env{{var_x_, 0.2}, {var_y_, 0.3}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::acos(0.2 * 0.3 * 3.141592) +
                                         std::acos(0.2) + std::acos(0.3));
+  EXPECT_EQ((acos(x_)).to_string(), "acos(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Atan) {
@@ -1180,6 +1250,7 @@ TEST_F(SymbolicExpressionTest, Atan) {
   const Environment env{{var_x_, 0.2}, {var_y_, 0.3}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::atan(0.2 * 0.3 * 3.141592) +
                                         std::atan(0.2) + std::atan(0.3));
+  EXPECT_EQ((atan(x_)).to_string(), "atan(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Atan2) {
@@ -1234,6 +1305,7 @@ TEST_F(SymbolicExpressionTest, Atan2) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::atan2(2 * 3.2 * 3.141592, std::sin(2) + std::sin(3.2)));
+  EXPECT_EQ((atan2(x_, y_)).to_string(), "atan2(x, y)");
 }
 
 TEST_F(SymbolicExpressionTest, Sinh) {
@@ -1248,6 +1320,7 @@ TEST_F(SymbolicExpressionTest, Sinh) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::sinh(2 * 3.2 * 3.141592) +
                                         std::sinh(2) + std::sinh(3.2));
+  EXPECT_EQ((sinh(x_)).to_string(), "sinh(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Cosh) {
@@ -1262,6 +1335,7 @@ TEST_F(SymbolicExpressionTest, Cosh) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::cosh(2 * 3.2 * 3.141592) +
                                         std::cosh(2) + std::cosh(3.2));
+  EXPECT_EQ((cosh(x_)).to_string(), "cosh(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Tanh) {
@@ -1276,6 +1350,7 @@ TEST_F(SymbolicExpressionTest, Tanh) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::tanh(2 * 3.2 * 3.141592) +
                                         std::tanh(2) + std::tanh(3.2));
+  EXPECT_EQ((tanh(x_)).to_string(), "tanh(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Min1) {
@@ -1333,6 +1408,7 @@ TEST_F(SymbolicExpressionTest, Min2) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::min(2 * 3.2 * 3.141592, std::sin(2) + std::sin(3.2)));
+  EXPECT_EQ((min(x_, y_)).to_string(), "min(x, y)");
 }
 
 TEST_F(SymbolicExpressionTest, Max1) {
@@ -1390,6 +1466,7 @@ TEST_F(SymbolicExpressionTest, Max2) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::max(2 * 3.2 * 3.141592, std::sin(2) + std::sin(3.2)));
+  EXPECT_EQ((max(x_, y_)).to_string(), "max(x, y)");
 }
 
 TEST_F(SymbolicExpressionTest, IfThenElse1) {
@@ -1418,6 +1495,7 @@ TEST_F(SymbolicExpressionTest, IfThenElse2) {
   const Environment env2{{var_x_, 2.0}, {var_y_, 7.0}};
   EXPECT_EQ(max_fn.Evaluate(env2), std::max(2.0, 7.0));
   EXPECT_EQ(min_fn.Evaluate(env2), std::min(2.0, 7.0));
+  EXPECT_EQ(max_fn.to_string(), "(if (x > y) then x else y)");
 }
 
 TEST_F(SymbolicExpressionTest, IfThenElse3) {
@@ -1464,9 +1542,9 @@ TEST_F(SymbolicExpressionTest, GetVariables) {
   EXPECT_FALSE(vars1.include(var_z_));
   EXPECT_EQ(vars1.size(), 2u);
 
-  const Variables vars2{
-      (x_ * x_ * z_ - y_ * abs(x_) * log(x_ + y_) + cosh(x_) + cosh(y_))
-          .GetVariables()};
+  const Variables vars2{(x_ * x_ * z_ - y_ * abs(x_) * log(x_ + y_) + cosh(x_) +
+                         cosh(y_) + atan2(x_, y_))
+                            .GetVariables()};
   EXPECT_TRUE(vars2.include(var_x_));
   EXPECT_TRUE(vars2.include(var_y_));
   EXPECT_TRUE(vars2.include(var_z_));
