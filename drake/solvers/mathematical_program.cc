@@ -3,11 +3,11 @@
 
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
-//#include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/gurobi_solver.h"
 //#include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/linear_system_solver.h"
 //#include "drake/solvers/moby_lcp_solver.h"
-//#include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/mosek_solver.h"
 //#include "drake/solvers/nlopt_solver.h"
 //#include "drake/solvers/snopt_solver.h"
 
@@ -68,10 +68,9 @@ MathematicalProgram::MathematicalProgram()
       //snopt_solver_(new SnoptSolver()),
       //moby_lcp_solver_(new MobyLCPSolver()),
       linear_system_solver_(new LinearSystemSolver()),
-      equality_constrained_qp_solver_(new EqualityConstrainedQPSolver())
-      //gurobi_solver_(new GurobiSolver()),
-      //mosek_solver_(new MosekSolver()) {}
-{}
+      equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
+      gurobi_solver_(new GurobiSolver()),
+      mosek_solver_(new MosekSolver()) {}
 
 DecisionVariableMatrixX MathematicalProgram::AddVariables(
     DecisionVariableScalar::VarType type, int rows, int cols, bool is_symmetric,

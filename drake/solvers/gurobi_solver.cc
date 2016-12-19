@@ -355,11 +355,9 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
 }
 }  // close namespace
 
-bool GurobiSolver::available() const { return true; }
+bool GurobiSolver::available_impl() const { return true; }
 
-SolutionSummary GurobiSolver::Solve(MathematicalProgram& prog) const {
-  // We only process quadratic costs and linear / bounding box
-  // constraints.
+GurobiSolverResult* GurobiSolver::Solve_impl(MathematicalProgram& prog) const {
 
   GRBenv* env = nullptr;
   GRBloadenv(&env, nullptr);
@@ -435,7 +433,7 @@ SolutionSummary GurobiSolver::Solve(MathematicalProgram& prog) const {
                                       true, model);
   }
 
-  SolutionSummary result = SolutionSummary::kUnknownError;
+  SolutionSummary result_summary = SolutionSummary::kUnknownError;
 
   if (!error) {
     error = GRBoptimize(model);
@@ -461,19 +459,20 @@ SolutionSummary GurobiSolver::Solve(MathematicalProgram& prog) const {
   // from unknown errors.
   // TODO(naveenoid) : Properly handle gurobi specific error.
   // message.
+  int optimstatus = 0; // 0 is not a valid optimal status, according
+                       // to http://www.gurobi.com/documentation/6.5/refman/optimization_status_codes.html
   if (error) {
     // TODO(naveenoid) : log error message using GRBgeterrormsg(env).
-    result = SolutionSummary::kInvalidInput;
+    result_summary = SolutionSummary::kInvalidInput;
   } else {
-    int optimstatus = 0;
     GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
 
     if (optimstatus != GRB_OPTIMAL && optimstatus != GRB_SUBOPTIMAL) {
       if (optimstatus == GRB_INF_OR_UNBD) {
-        result = SolutionSummary::kInfeasibleConstraints;
+        result_summary = SolutionSummary::kInfeasibleConstraints;
       }
     } else {
-      result = SolutionSummary::kSolutionFound;
+      result_summary = SolutionSummary::kSolutionFound;
       Eigen::VectorXd sol_vector = Eigen::VectorXd::Zero(num_vars);
       GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_vars, sol_vector.data());
       prog.SetDecisionVariableValues(sol_vector);
@@ -485,7 +484,7 @@ SolutionSummary GurobiSolver::Solve(MathematicalProgram& prog) const {
   GRBfreemodel(model);
   GRBfreeenv(env);
 
-  return result;
+  return new GurobiSolverResult(result_summary, error, optimstatus);
 }
 
 }  // namespace solvers

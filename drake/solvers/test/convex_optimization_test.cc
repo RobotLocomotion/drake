@@ -16,14 +16,14 @@ void GetLinearProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
   AddSolverIfAvailable("Gurobi", solvers);
   AddSolverIfAvailable("Mosek", solvers);
-  AddSolverIfAvailable("SNOPT", solvers);
+  //AddSolverIfAvailable("SNOPT", solvers);
 }
 
 void GetQuadraticProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
   AddSolverIfAvailable("Gurobi", solvers);
   AddSolverIfAvailable("Mosek", solvers);
-  AddSolverIfAvailable("SNOPT", solvers);
+  //AddSolverIfAvailable("SNOPT", solvers);
 }
 
 void GetSecondOrderConicProgramSolvers(
@@ -477,11 +477,8 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
 
     x_expected << 2.0 / 3.0, 1.0 / 3.0;
 
-    SolutionSummary result = SolutionSummary::kUnknownError;
-
     prog.SetSolverOption("GUROBI", "BarConvTol", 1E-9);
-    ASSERT_NO_THROW(result = prog.Solve());
-    EXPECT_EQ(result, SolutionSummary::kSolutionFound);
+    RunSolver(&prog, solver);
 
     const auto& x_value = GetSolution(x);
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-5,

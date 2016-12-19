@@ -16,7 +16,7 @@ endif()
 
 set(private_headers
   #dreal_solver.h
-  #gurobi_solver.h
+  gurobi_solver.h
   #ipopt_solver.h
   linear_system_solver.h
   #moby_lcp_solver.h
@@ -66,12 +66,12 @@ if(mosek_FOUND)
 else()
   list(APPEND optimization_files no_mosek.cc)
 endif()
-#if(gurobi_FOUND)
-#  list(APPEND optimization_files gurobi_solver.cc)
-#  list(APPEND optimization_requires gurobi)
-#else()
-#  list(APPEND optimization_files no_gurobi.cc)
-#endif()
+if(gurobi_FOUND)
+  list(APPEND optimization_files gurobi_solver.cc)
+  list(APPEND optimization_requires gurobi)
+else()
+  list(APPEND optimization_files no_gurobi.cc)
+endif()
 
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
 target_link_libraries(drakeOptimization

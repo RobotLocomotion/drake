@@ -8,7 +8,7 @@
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mosek_solver.h"
-#include "drake/solvers/snopt_solver.h"
+//#include "drake/solvers/snopt_solver.h"
 
 namespace drake {
 namespace solvers {
@@ -16,11 +16,11 @@ namespace test {
 void RunSolver(MathematicalProgram* prog,
                const MathematicalProgramSolverInterface& solver) {
   if (solver.available()) {
-    SolutionSummary result = solver.Solve(*prog);
+    auto result = solver.Solve(*prog);
     std::string solver_name;
     int solver_status;
     prog->GetSolverResult(&solver_name, &solver_status);
-    EXPECT_EQ(result, SolutionSummary::kSolutionFound)
+    EXPECT_EQ(result->summary(), SolutionSummary::kSolutionFound)
         << "Solver " << solver_name << " fails to find the solution."
         << std::endl;
   }
@@ -35,8 +35,8 @@ void AddSolverIfAvailable(
   all_solvers.push_back(std::move(gurobi_solver));
   auto mosek_solver = std::make_unique<MosekSolver>();
   all_solvers.push_back(std::move(mosek_solver));
-  auto snopt_solver = std::make_unique<SnoptSolver>();
-  all_solvers.push_back(std::move(snopt_solver));
+//  auto snopt_solver = std::make_unique<SnoptSolver>();
+//  all_solvers.push_back(std::move(snopt_solver));
 
   for (auto& solver : all_solvers) {
     if (solver->SolverName() == solver_name) {

@@ -564,9 +564,9 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
 }
 }  // anonymous namespace
 
-bool MosekSolver::available() const { return true; }
+bool MosekSolver::available_impl() const { return true; }
 
-std::unique_ptr<MosekSolverResult> MosekSolver::Solve(MathematicalProgram& prog) const {
+MosekSolverResult* MosekSolver::Solve_impl(MathematicalProgram& prog) const {
   const int num_vars = prog.num_vars();
   MSKenv_t env = nullptr;
   MSKtask_t task = nullptr;
@@ -721,7 +721,7 @@ std::unique_ptr<MosekSolverResult> MosekSolver::Solve(MathematicalProgram& prog)
 
   MSK_deletetask(&task);
   MSK_deleteenv(&env);
-  return std::make_unique<MosekSolverResult>(solution_summary, primal_objective, dual_objective, problem_status, solution_status, rescode);
+  return new MosekSolverResult(solution_summary, primal_objective, dual_objective, problem_status, solution_status, rescode);
 }
 
 }  // namespace solvers

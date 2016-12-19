@@ -10,6 +10,11 @@
 
 namespace drake {
 namespace solvers {
+/**
+ * This class contains some information on the results of Mosek optimization.
+ * For details of the information, please refer to
+ * http://docs.mosek.com/7.1/pythonapi/The_solution_summary.html
+ */
 class MosekSolverResult : public MathematicalProgramSolverResult {
  public:
   MosekSolverResult(SolutionSummary summary, double primal_objective,
@@ -18,6 +23,16 @@ class MosekSolverResult : public MathematicalProgramSolverResult {
       MathematicalProgramSolverResult(summary), primal_objective_(primal_objective),
       dual_objective_(dual_objective), problem_status_(problem_status),
       solution_status_(solution_status), response_code_(response_code) {}
+
+  /** Getter for the objective value of the primal problem. */
+  double primal_objective() const {return primal_objective_;}
+
+  /** Getter for the objective value of the dual problem. */
+  double dual_objective() const {return dual_objective_;}
+
+  /** Getter for the problem status. */
+  MSKprostae problem_status() const {return problem_status_;}
+
 
  private:
   // Refer to http://docs.mosek.com/7.0/capi/The_solution_summary.html for more
