@@ -549,7 +549,6 @@ class ExpressionAtan2 : public BinaryExpressionCell {
 class ExpressionSinh : public UnaryExpressionCell {
  public:
   explicit ExpressionSinh(const Expression& e);
-  double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
