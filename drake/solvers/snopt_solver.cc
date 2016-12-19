@@ -361,9 +361,9 @@ void UpdateConstraintBoundsAndGradients(
 
 }  // anon namespace
 
-bool SnoptSolver::available() const { return true; }
+bool SnoptSolver::available_impl() const { return true; }
 
-SolutionSummary SnoptSolver::Solve(MathematicalProgram& prog) const {
+SnoptSolverResult* SnoptSolver::Solve_impl(MathematicalProgram& prog) const {
   auto d = prog.GetSolverData<SNOPTData>();
   SNOPTRun cur(*d, &prog);
 
@@ -563,14 +563,18 @@ SolutionSummary SnoptSolver::Solve(MathematicalProgram& prog) const {
 
   // todo: extract the other useful quantities, too.
 
+  SolutionSummary solution_summary = kUnknownError;
   if (info >= 1 && info <= 6) {
-    return SolutionSummary::kSolutionFound;
+    solution_summary = SolutionSummary::kSolutionFound;
   } else if (info >= 11 && info <= 16) {
-    return SolutionSummary::kInfeasibleConstraints;
+    solution_summary = SolutionSummary::kInfeasibleConstraints;
   } else if (info == 91) {
-    return SolutionSummary::kInvalidInput;
+    solution_summary = SolutionSummary::kInvalidInput;
+  } else {
+      solution_summary = SolutionSummary::kUnknownError;
   }
-  return SolutionSummary::kUnknownError;
+
+  return new SnoptSolverResult(solution_summary, info, F[0]);
 }
 
 }  // namespace solvers

@@ -6,11 +6,11 @@
 namespace drake {
 namespace solvers {
 
-bool MosekSolver::available() const {
+bool MosekSolver::available_impl() const {
   return false;
 }
 
-SolutionSummary MosekSolver::Solve(MathematicalProgram &prog) const {
+MosekSolverResult* MosekSolver::Solve_impl(MathematicalProgram &prog) const {
   throw std::runtime_error(
       "Mosek is not installed in your build. You'll need to use a different "
       "solver.");

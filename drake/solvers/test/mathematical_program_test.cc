@@ -9,7 +9,7 @@
 //#include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mathematical_program.h"
 //#include "drake/solvers/nlopt_solver.h"
-//#include "drake/solvers/snopt_solver.h"
+#include "drake/solvers/snopt_solver.h"
 
 using Eigen::Dynamic;
 using Eigen::Ref;
@@ -85,32 +85,31 @@ void CheckSolverType(MathematicalProgram& prog,
   prog.GetSolverResult(&solver_name, &solver_result);
   EXPECT_EQ(solver_name, desired_solver_name);
 }
-/*
+
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void RunNonlinearProgram(MathematicalProgram& prog,
                          std::function<void(void)> test_func) {
-  IpoptSolver ipopt_solver;
-  NloptSolver nlopt_solver;
+  //IpoptSolver ipopt_solver;
+  //NloptSolver nlopt_solver;
   SnoptSolver snopt_solver;
 
   std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
-      std::make_pair("SNOPT", &snopt_solver),
-      std::make_pair("NLopt", &nlopt_solver),
-      std::make_pair("Ipopt", &ipopt_solver)};
+      std::make_pair("SNOPT", &snopt_solver)};
+      //std::make_pair("NLopt", &nlopt_solver),
+      //std::make_pair("Ipopt", &ipopt_solver)};
 
   for (const auto& solver : solvers) {
     if (!solver.second->available()) {
       continue;
     }
-    SolutionSummary result = SolutionSummary::kUnknownError;
-    ASSERT_NO_THROW(result = solver.second->Solve(prog)) << "Using solver: "
-                                                         << solver.first;
-    EXPECT_EQ(result, SolutionSummary::kSolutionFound) << "Using solver: "
+    auto result = solver.second->Solve(prog);
+
+    EXPECT_EQ(result->summary(), SolutionSummary::kSolutionFound) << "Using solver: "
                                                       << solver.first;
     EXPECT_NO_THROW(test_func()) << "Using solver: " << solver.first;
   }
-}*/
-/*
+}
+
 GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
   // A simple test program to test if the bounding box constraints are added
   // correctly.
@@ -136,7 +135,7 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
       EXPECT_LE(x_value(i), ub(i) + 1E-10);
     }
   });
-}*/
+}
 
 GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   MathematicalProgram prog;
@@ -192,7 +191,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
       Vector2d::Constant(-1000.0), Vector2d::Constant(1000.0)));
   prog.AddConstraint(bbcon, {x.head(2)});
-/*
+
   // Now solve as a nonlinear program.
   RunNonlinearProgram(prog, [&]() {
     EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2,
@@ -200,7 +199,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
                                 MatrixCompareType::absolute));
     EXPECT_TRUE(CompareMatrices(b / 3, GetSolution(x),
                                 1e-10, MatrixCompareType::absolute));
-  });*/
+  });
 }
 
 GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
@@ -211,14 +210,14 @@ GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
   // Use a non-square matrix to catch row/column mistakes in the solvers.
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(0, 1),
                                    Vector1d::Constant(1));
-  prog.SetInitialGuess(vars, Vector2d(2, 2));/*
+  prog.SetInitialGuess(vars, Vector2d(2, 2));
   RunNonlinearProgram(prog, [&]() {
     const auto& vars_value = GetSolution(vars);
     EXPECT_DOUBLE_EQ(vars_value(0), 2);
     EXPECT_DOUBLE_EQ(vars_value(1), 1);
-  });*/
+  });
 }
-/*
+
 // Tests a quadratic optimization problem, with only quadratic cost
 // 0.5 *x'*Q*x + b'*x
 // The optimal solution is -inverse(Q)*b
@@ -649,7 +648,7 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
     EXPECT_TRUE(CompareMatrices(y_value, Vector3d(0.5, 0, 3), 1e-4,
                                 MatrixCompareType::absolute));
   });
-}*/
+}
 
 //
 // Test that the Eval() method of LinearComplementarityConstraint correctly
@@ -731,7 +730,7 @@ GTEST_TEST(testMathematicalProgram, multiLCP) {
   EXPECT_TRUE(CompareMatrices(y_value, Vector2d(16, 0), 1e-4,
                               MatrixCompareType::absolute));
 }
-/*
+
 //
 // Test that linear polynomial constraints get turned into linear constraints.
 GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
@@ -910,7 +909,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
 
   // Problem still has only quadratic costs, so solver should be the same.
   CheckSolverType(prog, "Equality Constrained QP Solver");
-}*/
+}
 
 // Test how an equality-constrained QP is dispatched
 //   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
@@ -970,7 +969,7 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
       << "\tExpected: " << expected_answer.transpose()
       << "\tActual: " << actual_answer.transpose();
 }
-/*
+
 // Solve an SOCP with Lorentz cone and rotated Lorentz cone constraint as a
 // nonlinear optimization problem.
 // The objective is to find the smallest distance from a hyperplane
@@ -1105,7 +1104,7 @@ GTEST_TEST(testMathematicalProgram, testSolveSOCPasNLP) {
   A << 0, 1, 2, -1, 2, 3;
   b = Vector2d(1.0, 3.0);
   MinDistanceFromPlaneToOrigin(A, b);
-}*/
+}
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

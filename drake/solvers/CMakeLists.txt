@@ -22,7 +22,7 @@ set(private_headers
   moby_lcp_solver.h
   mosek_solver.h
   #nlopt_solver.h
-  #snopt_solver.h
+  snopt_solver.h
   )
 set(optimization_files)
 set(optimization_requires)
@@ -54,12 +54,12 @@ list(APPEND optimization_files
 #else()
 #  list(APPEND optimization_files no_dreal.cc)
 #endif()
-#if(snopt_FOUND)
-#  list(APPEND optimization_files snopt_solver.cc)
-#  list(APPEND optimization_requires snopt_c)
-#else()
-#  list(APPEND optimization_files no_snopt.cc)
-#endif()
+if(snopt_FOUND)
+  list(APPEND optimization_files snopt_solver.cc)
+  list(APPEND optimization_requires snopt_c)
+else()
+  list(APPEND optimization_files no_snopt.cc)
+endif()
 if(mosek_FOUND)
   list(APPEND optimization_files mosek_solver.cc)
   list(APPEND optimization_requires mosek)

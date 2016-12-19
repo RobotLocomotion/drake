@@ -9,7 +9,7 @@
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/solvers/mosek_solver.h"
 //#include "drake/solvers/nlopt_solver.h"
-//#include "drake/solvers/snopt_solver.h"
+#include "drake/solvers/snopt_solver.h"
 
 namespace drake {
 namespace solvers {
@@ -65,7 +65,7 @@ MathematicalProgram::MathematicalProgram()
       required_capabilities_(kNoCapabilities),
       //ipopt_solver_(new IpoptSolver()),
       //nlopt_solver_(new NloptSolver()),
-      //snopt_solver_(new SnoptSolver()),
+      snopt_solver_(new SnoptSolver()),
       moby_lcp_solver_(new MobyLCPSolver()),
       linear_system_solver_(new LinearSystemSolver()),
       equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
@@ -382,10 +382,10 @@ SolutionSummary MathematicalProgram::Solve() {
   } else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
              moby_lcp_solver_->available()) {
     return moby_lcp_solver_->Solve(*this)->summary();
-  } /*else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
+  } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              snopt_solver_->available()) {
     return snopt_solver_->Solve(*this)->summary();
-  } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
+  } /*else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              ipopt_solver_->available()) {
     return ipopt_solver_->Solve(*this)->summary();
   } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
