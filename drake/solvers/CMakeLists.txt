@@ -21,7 +21,7 @@ set(private_headers
   linear_system_solver.h
   moby_lcp_solver.h
   mosek_solver.h
-  #nlopt_solver.h
+  nlopt_solver.h
   snopt_solver.h
   )
 set(optimization_files)
@@ -42,12 +42,12 @@ if(ipopt_FOUND)
 else()
   list(APPEND optimization_files no_ipopt.cc)
 endif()
-#if(NLopt_FOUND)
-#  list(APPEND optimization_files nlopt_solver.cc)
-#  list(APPEND optimization_requires nlopt)
-#else()
-#  list(APPEND optimization_files no_nlopt.cc)
-#endif()
+if(NLopt_FOUND)
+  list(APPEND optimization_files nlopt_solver.cc)
+  list(APPEND optimization_requires nlopt)
+else()
+  list(APPEND optimization_files no_nlopt.cc)
+endif()
 #if(dreal_FOUND)
 #  list(APPEND optimization_files dreal_solver.cc)
 #  list(APPEND optimization_requires dreal)

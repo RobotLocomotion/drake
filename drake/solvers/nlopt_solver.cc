@@ -299,9 +299,9 @@ void WrapConstraint(const _Binding& binding, double constraint_tol,
 
 }  // anonymous namespace
 
-bool NloptSolver::available() const { return true; }
+bool NloptSolver::available_impl() const { return true; }
 
-SolutionSummary NloptSolver::Solve(MathematicalProgram& prog) const {
+NloptSolverResult* NloptSolver::Solve_impl(MathematicalProgram& prog) const {
   int nx = prog.num_vars();
 
   // Load the algo to use and the size.
@@ -403,7 +403,7 @@ SolutionSummary NloptSolver::Solve(MathematicalProgram& prog) const {
 
   prog.SetDecisionVariableValues(sol);
   prog.SetSolverResult(SolverName(), nlopt_result);
-  return result;
+  return new NloptSolverResult(result);
 }
 
 }  // namespace solvers
