@@ -20,6 +20,24 @@ class MathematicalProgramSolverResult {
   explicit MathematicalProgramSolverResult(SolutionSummary summary)
       : summary_(summary) {}
 
+  virtual ~MathematicalProgramSolverResult() = default;
+
+  /** MathematicalProgramSolverResult is not copyable. */
+  MathematicalProgramSolverResult(const MathematicalProgramSolverResult& rhs) =
+      delete;
+
+  /** MathematicalProgramSolverResult is not assignable. */
+  MathematicalProgramSolverResult& operator=(
+      const MathematicalProgramSolverResult& rhs) = delete;
+
+  /** MathematicalProgramSolverResult is not movable. */
+  MathematicalProgramSolverResult(MathematicalProgramSolverResult&& rhs) =
+      delete;
+
+  /** MathematicalProgramSolverResult is not move-assignable.*/
+  MathematicalProgramSolverResult& operator=(
+      MathematicalProgramSolverResult&& rhs) = delete;
+
   /** Getter for summary. */
   SolutionSummary summary() const { return summary_; }
 
