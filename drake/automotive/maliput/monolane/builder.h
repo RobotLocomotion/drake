@@ -33,6 +33,18 @@ namespace monolane {
 ///    and superelevation;
 ///  - superelevation (bank of road) rotates around the reference line (r = 0)
 ///    of the path.
+///
+/// The Builder class simplifies the assembly of monolane road network
+/// components into a valid RoadGeometry.  In the Builder model, an Endpoint
+/// specifies a point in world coordinates (along with a direction, slope,
+/// and superelevation parameters).  A Connection is a path from an explicit
+/// start Endpoint to an end Endpoint calculated via a linear or arc
+/// displacement (ArcOffset).  A Group is a collection of Connections.
+///
+/// Builder::Build() constructs a RoadGeometry.  Each Connection yields a
+/// Segment bearing a single Lane.  Each Group yields a Junction containing
+/// the Segments associated with the grouped Connections; ungrouped
+/// Connections each receive their own Junction.
 
 
 /// XY-plane-only parameters for an endpoint of a connection, specified in
@@ -44,12 +56,13 @@ namespace monolane {
 ///  - heading: heading of reference path (radians, zero == x-direction)
 class EndpointXy {
  public:
+  // Constructs an EndpointXy with all zero parameters.
   EndpointXy() {}
 
   EndpointXy(double x, double y, double heading)
       :x_(x), y_(y), heading_(heading) {}
 
-  /// Returns the parameters for an endpoint with reversed direction.
+  /// Returns an EndpointXy with reversed direction.
   EndpointXy reverse() const {
     return EndpointXy(x_, y_,
                       std::atan2(-std::sin(heading_), -std::cos(heading_)));
@@ -81,12 +94,13 @@ class EndpointXy {
 ///               of the reference path
 class EndpointZ {
  public:
+  // Constructs an EndpointZ with all zero parameters.
   EndpointZ() {}
 
   EndpointZ(double z, double z_dot, double theta, double theta_dot)
       : z_(z), z_dot_(z_dot), theta_(theta), theta_dot_(theta_dot) {}
 
-  /// Returns the parameters for an endpoint with reversed direction.
+  /// Returns an EndpointZ with reversed direction.
   EndpointZ reverse() const {
     return EndpointZ(z_, -z_dot_, -theta_, -theta_dot_);
   }
@@ -114,11 +128,12 @@ class EndpointZ {
 /// out-of-plane aspects of an endpoint.
 class Endpoint {
  public:
+  // Constructs an Endpoint with all zero parameters.
   Endpoint() {}
 
   Endpoint(const EndpointXy& xy, const EndpointZ& z) : xy_(xy), z_(z) {}
 
-  /// Returns the parameters for an endpoint with reversed direction.
+  /// Returns an Endpoint with reversed direction.
   Endpoint reverse() const {
     return Endpoint(xy_.reverse(), z_.reverse());
   }

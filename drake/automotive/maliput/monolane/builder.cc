@@ -84,6 +84,14 @@ Group* Builder::MakeGroup(const std::string& id,
 
 
 namespace {
+// Construct a CubicPolynomial such that:
+//    f(0) = Y0 / dX           f'(0) = Ydot0
+//    f(1) = (Y0 + dY) / dX    f'(1) = Ydot1
+//
+// This is equivalent to taking a cubic polynomial g such that:
+//    g(0) = Y0          g'(0) = Ydot0
+//    g(dX) = Y0 + dY    g'(1) = Ydot1
+// and isotropically scaling it (scale both axes) by a factor of 1/dX
 CubicPolynomial MakeCubic(const double dX, const double Y0, const double dY,
                           const double Ydot0, const double Ydot1) {
   return CubicPolynomial(Y0 / dX,
@@ -175,7 +183,7 @@ Lane* Builder::BuildConnection(
     RoadGeometry* const road_geometry,
     std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder>* const bp_map) const {
   Segment* segment = junction->NewSegment({std::string("s:") + conn->id()});
-  Lane* lane;
+  Lane* lane{nullptr};
   api::LaneId lane_id{std::string("l:") + conn->id()};
 
   switch (conn->type()) {
@@ -251,23 +259,25 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
   std::map<const Connection*, Lane*> lane_map;
   std::set<const Connection*> remaining_connections;
 
-  for (auto& connection : connections_) {
+  for (const std::unique_ptr<Connection>& connection : connections_) {
     remaining_connections.insert(connection.get());
   }
 
-  for (auto& group : groups_) {
+  for (const std::unique_ptr<Group>& group : groups_) {
     Junction* junction =
         road_geometry->NewJunction({std::string("j:") + group->id()});
     drake::log()->debug("junction: {}", junction->id().id);
     for (auto& connection : group->connections()) {
       drake::log()->debug("connection: {}", connection->id());
-      remaining_connections.erase(connection);
+      // Remove connection from remaining_connections, and ensure that it
+      // was indeed in there.
+      DRAKE_DEMAND(remaining_connections.erase(connection) == 1);
       lane_map[connection] = BuildConnection(
           connection, junction, road_geometry.get(), &bp_map);
     }
   }
 
-  for (auto& connection : remaining_connections) {
+  for (const Connection* const connection : remaining_connections) {
     Junction* junction =
         road_geometry->NewJunction({std::string("j:") + connection->id()});
     drake::log()->debug("junction: {}", junction->id().id);
@@ -276,7 +286,7 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
         BuildConnection(connection, junction, road_geometry.get(), &bp_map);
   }
 
-  for (auto& def : default_branches_) {
+  for (const DefaultBranch& def : default_branches_) {
     Lane* in_lane = lane_map[def.in];
     Lane* out_lane = lane_map[def.out];
     DRAKE_DEMAND((def.in_end == api::LaneEnd::kStart) ||

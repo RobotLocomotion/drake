@@ -109,7 +109,7 @@ GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
   EXPECT_GEO_NEAR(l1->ToGeoPosition({l1->length(), 0., 0.}),
                   (200., -25., 0.), kLinearTolerance);
 
-  // TODO(maddog) Test ToLanePosition().
+  // TODO(maddog@tri.global) Test ToLanePosition().
 
   EXPECT_ROT_NEAR(l1->GetOrientation({0., 0., 0.}),
                   (0., 0., std::atan2(50., 100.)), kVeryExact);
@@ -193,7 +193,7 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
                    -75. + (100. * std::sin(1.75 * M_PI)),
                    0.), kLinearTolerance);
 
-  // TODO(maddog) Test ToLanePosition().
+  // TODO(maddog@tri.global) Test ToLanePosition().
 
   EXPECT_ROT_NEAR(l2->GetOrientation({0., 0., 0.}),
                   (0., 0., (0.25 + 0.5) * M_PI), kVeryExact);
@@ -266,7 +266,7 @@ GTEST_TEST(MonolaneLanesTest, ArcLaneWithConstantSuperelevation) {
        (10. * std::cos(kTheta) * std::sin(1.25 * M_PI)),
        10. * std::sin(kTheta)), kLinearTolerance);
 
-  // TODO(maddog) Test ToLanePosition().
+  // TODO(maddog@tri.global) Test ToLanePosition().
 
   EXPECT_ROT_NEAR(l2->GetOrientation({0., 0., 0.}),
                   (kTheta, 0., (0.25 + 0.5) * M_PI), kVeryExact);
@@ -345,11 +345,17 @@ GTEST_TEST(MonolaneLanesTest, HillIntegration) {
   const double p_scale = 100. * d_theta;
   const double z0 = 0.;
   const double z1 = 20.;
+  // A cubic polynomial such that:
+  //   f(0) = (z0 / p_scale), f(1) = (z1 / p_scale), and f'(0) = f'(1) = 0.
+  const CubicPolynomial kHillPolynomial(z0 / p_scale,
+                                        0.,
+                                        (3. * (z1 - z0) / p_scale),
+                                        (-2. * (z1 - z0) / p_scale));
   Lane* l1 = s1->NewArcLane(
       {"l2"},
       {-100., -100.}, 100., theta0, d_theta,
       {-5., 5.}, {-10., 10.},
-      {z0, 0., (3. * (z1 - z0) / p_scale), (-2. * (z1 - z0) / p_scale)},
+      kHillPolynomial,
       zp);
 
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());

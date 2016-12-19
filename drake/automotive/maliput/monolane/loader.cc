@@ -61,7 +61,7 @@ ArcOffset arc_offset(const YAML::Node& node) {
 std::unique_ptr<Endpoint> ResolvePointReference(
     const std::string& ref,
     const std::map<std::string, Endpoint>& xyz_catalog) {
-  auto parsed = [&]() {
+  const auto parsed = [&]() {
     static const std::string kReverse {"reverse "};
     int where = ref.find(kReverse);
     if (where == 0) {

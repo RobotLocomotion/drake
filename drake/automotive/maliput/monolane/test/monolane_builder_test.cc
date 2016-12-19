@@ -10,28 +10,33 @@ namespace maliput {
 namespace monolane {
 
 GTEST_TEST(MonolaneBuilderTest, Fig8) {
+  const api::RBounds kLaneBounds(-2., 2.);
+  const api::RBounds kDriveableBounds(-4., 4.);
   const double kLinearTolerance = 0.01;
   const double kAngularTolerance = 0.01 * M_PI;
-  Builder b({-2., 2.}, {-4., 4.}, kLinearTolerance, kAngularTolerance);
+  Builder b(kLaneBounds, kDriveableBounds, kLinearTolerance, kAngularTolerance);
 
-  Endpoint start {{0., 0., -M_PI / 4.}, {0., 0., 0., 0.}};
+  const EndpointZ kLowFlatZ(0., 0., 0., 0.);
+  const EndpointZ kMidFlatZ(3., 0., 0., 0.);
+  const EndpointZ kMidTiltLeftZ(3., 0., -0.4, 0.);
+  const EndpointZ kMidTiltRightZ(3., 0., 0.4, 0.);
+  const EndpointZ kHighFlatZ(6., 0., 0., 0.);
+
+  const ArcOffset kCounterClockwiseArc(50., 0.75 * M_PI);  // 135deg, 50m radius
+  const ArcOffset kClockwiseArc(50., -0.75 * M_PI);  // 135deg, 50m radius
+
+  Endpoint start {{0., 0., -M_PI / 4.}, kLowFlatZ};
   auto c0 = b.Connect("0", start,
-                      50., {3., 0., 0., 0.});
+                      50., kMidFlatZ);
 
-  auto c1 = b.Connect("1", c0->end(),
-                      ArcOffset(50., 0.75 * M_PI), {3., 0., 0.4, 0.});
-  auto c2 = b.Connect("2", c1->end(),
-                      ArcOffset(50., 0.75 * M_PI), {3., 0., 0., 0.});
+  auto c1 = b.Connect("1", c0->end(), kCounterClockwiseArc, kMidTiltLeftZ);
+  auto c2 = b.Connect("2", c1->end(), kCounterClockwiseArc, kMidFlatZ);
 
-  auto c3 = b.Connect("3", c2->end(),
-                      50., {6., 0., 0., 0.});
-  auto c4 = b.Connect("4", c3->end(),
-                      50., {3., 0., 0., 0.});
+  auto c3 = b.Connect("3", c2->end(), 50., kHighFlatZ);
+  auto c4 = b.Connect("4", c3->end(), 50., kMidFlatZ);
 
-  auto c5 = b.Connect("5", c4->end(),
-                      ArcOffset(50., -0.75 * M_PI), {3., 0., -0.4, 0.});
-  auto c6 = b.Connect("6", c5->end(),
-                      ArcOffset(50., -0.75 * M_PI), {3., 0., 0., 0.});
+  auto c5 = b.Connect("5", c4->end(), kClockwiseArc, kMidTiltRightZ);
+  auto c6 = b.Connect("6", c5->end(), kClockwiseArc, kMidFlatZ);
 
   // Tweak ends to check if fuzzy-matching is working.
   Endpoint c6end = c6->end();
@@ -87,28 +92,32 @@ GTEST_TEST(MonolaneBuilderTest, Fig8) {
 
 
 GTEST_TEST(MonolaneBuilderTest, QuadRing) {
+  const api::RBounds kLaneBounds(-2., 2.);
+  const api::RBounds kDriveableBounds(-4., 4.);
   const double kLinearTolerance = 0.01;
   const double kAngularTolerance = 0.01 * M_PI;
-  Builder b({-2., 2.}, {-4., 4.}, kLinearTolerance, kAngularTolerance);
+  Builder b(kLaneBounds, kDriveableBounds, kLinearTolerance, kAngularTolerance);
 
-  Endpoint northbound {{0., 0., M_PI / 2.}, {0., 0., 0., 0.}};
+  const EndpointZ kFlatZ(0., 0., 0., 0.);
+  const ArcOffset kLargeClockwiseLoop(150., -2. * M_PI);
+  const ArcOffset kSmallClockwiseLoop(50., -2. * M_PI);
+  const ArcOffset kLargeCounterClockwiseLoop(150., 2. * M_PI);
+  const ArcOffset kSmallCounterClockwiseLoop(50., 2. * M_PI);
+
+  Endpoint northbound {{0., 0., M_PI / 2.}, kFlatZ};
 
   // This heads -y, loops to -x, clockwise, back to origin.
   auto left1 = b.Connect("left1", northbound.reverse(),
-                         ArcOffset(150., -2. * M_PI),
-                         {0., 0., 0., 0.});
+                         kLargeClockwiseLoop, kFlatZ);
   // This heads +y, loops to -x, counterclockwise, back to origin.
   auto left0 = b.Connect("left0", northbound,
-                         ArcOffset(50., 2. * M_PI),
-                         {0., 0., 0., 0.});
+                         kSmallCounterClockwiseLoop, kFlatZ);
   // This heads +y, loops to +x, clockwise, back to origin.
   auto right0 = b.Connect("right0", northbound,
-                          ArcOffset(50., -2. * M_PI),
-                          {0., 0., 0., 0.});
+                          kSmallClockwiseLoop, kFlatZ);
   // This heads -y, loops to +x, counterclockwise, back to origin.
   auto right1 = b.Connect("right1", northbound.reverse(),
-                          ArcOffset(150., 2. * M_PI),
-                          {0., 0., 0., 0.});
+                          kLargeCounterClockwiseLoop, kFlatZ);
 
   // There is only one branch-point in this topology, since every lane is
   // a ring connecting back to itself and all other lanes.
@@ -154,7 +163,7 @@ GTEST_TEST(MonolaneBuilderTest, QuadRing) {
   EXPECT_EQ(junction->id().id, "j:all");
 
   EXPECT_EQ(junction->num_segments(), 4);
-  for (int si = 0; si < 4; ++si) {
+  for (int si = 0; si < junction->num_segments(); ++si) {
     const api::Segment* segment = junction->segment(si);
     EXPECT_EQ(segment->num_lanes(), 1);
     const api::Lane* lane = segment->lane(0);

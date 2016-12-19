@@ -7,11 +7,11 @@ namespace maliput {
 namespace monolane {
 
 /// Specialization of Lane with a line segment as its reference curve
-/// in the xy-plane.
+/// in the xy-plane (the ground plane) of the world frame.
 class LineLane : public Lane {
  public:
   /// Constructs a LineLane, a lane specified by a line segment defined in the
-  /// xy-plane (the ground plane) of the World frame.
+  /// xy-plane (the ground plane) of the world frame.
   ///
   /// @param xy0 start point of the reference line segment
   /// @param dxy displacement to the end point of the reference line segment

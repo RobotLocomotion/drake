@@ -10,11 +10,11 @@ namespace maliput {
 namespace monolane {
 
 /// Specialization of Lane with a circular arc as its reference curve
-/// in the xy-plane.
+/// in the xy-plane (the ground plane) of the world frame.
 class ArcLane : public Lane {
  public:
   /// Constructs an ArcLane, specified by a circular arc defined in the
-  /// xy-plane (the ground plane) of the World frame.
+  /// xy-plane (the ground plane) of the world frame.
   ///
   /// @param center center of the reference arc
   /// @param radius radius of the reference arc (must be positive)
@@ -31,15 +31,7 @@ class ArcLane : public Lane {
           const api::RBounds& lane_bounds,
           const api::RBounds& driveable_bounds,
           const CubicPolynomial& elevation,
-          const CubicPolynomial& superelevation)
-      : Lane(id, segment,
-             lane_bounds, driveable_bounds,
-             radius * std::abs(d_theta),
-             elevation, superelevation),
-        r_(radius), cx_(center.x()), cy_(center.y()),
-        theta0_(theta0), d_theta_(d_theta) {
-    DRAKE_DEMAND(r_ > 0.);
-  }
+          const CubicPolynomial& superelevation);
 
   virtual ~ArcLane() {}
 

@@ -54,6 +54,18 @@ class CubicPolynomial {
     s_1_ = std::sqrt(1. + (df * df));
   }
 
+  // Returns the a coefficient.
+  double a() const { return a_; }
+
+  // Returns the b coefficient.
+  double b() const { return b_; }
+
+  // Returns the c coefficient.
+  double c() const { return c_; }
+
+  // Returns the d coefficient.
+  double d() const { return d_; }
+
   /// Evaluates the polynomial f at @p p.
   double f_p(double p) const {
     return a_ + (b_ * p) + (c_ * p * p) + (d_ * p * p * p);
@@ -86,7 +98,7 @@ class CubicPolynomial {
   }
 
   // TODO(maddog@tri.global) Until s(p) is a properly integrated path-length
-  //                         parameterization, we have need to calculate a
+  //                         parameterization, we have a need to calculate the
   //                         derivative of the actual linear function
   //                         involved in our bogus path-length approximation.
   double fake_gprime(double p) const {
@@ -106,7 +118,7 @@ class CubicPolynomial {
 /// Base class for the monolane implementation of Lane.
 class Lane : public api::Lane {
  public:
-  /// Constructs a base Lane.
+  /// Constructs a Lane.
   ///
   /// @param id the ID
   /// @param segment the Segment to which this Lane will belong
@@ -121,7 +133,7 @@ class Lane : public api::Lane {
   /// @p segment must remain valid for the lifetime of this class.
   ///
   /// This is the base class for subclasses, each of which describe a
-  /// primitive reference curve in the xy ground-plane of the World frame.
+  /// primitive reference curve in the xy ground-plane of the world frame.
   /// The specific curve is expressed by the virtual functions; see the
   /// method xy_of_p().
   ///
@@ -223,7 +235,7 @@ class Lane : public api::Lane {
       const api::IsoLaneVelocity& velocity) const override;
 
   // The following virtual methods define a reference curve in the xy-plane
-  // of the World frame (i.e., the Earth ground plane).  The curve is a
+  // of the world frame (i.e., the Earth ground plane).  The curve is a
   // parametric curve:
   //
   //    F: p --> (x, y)  for p in [0, 1]

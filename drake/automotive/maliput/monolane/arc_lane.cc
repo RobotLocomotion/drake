@@ -1,12 +1,82 @@
 #include "drake/automotive/maliput/monolane/arc_lane.h"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace maliput {
 namespace monolane {
+
+ArcLane::ArcLane(const api::LaneId& id, const Segment* segment,
+                 const V2& center, double radius,
+                 const double theta0, const double d_theta,
+                 const api::RBounds& lane_bounds,
+                 const api::RBounds& driveable_bounds,
+                 const CubicPolynomial& elevation,
+                 const CubicPolynomial& superelevation)
+    : Lane(id, segment,
+           lane_bounds, driveable_bounds,
+           radius * std::abs(d_theta),
+           elevation, superelevation),
+      r_(radius), cx_(center.x()), cy_(center.y()),
+      theta0_(theta0), d_theta_(d_theta) {
+  DRAKE_DEMAND(r_ > 0.);
+
+  // Whether or not user code pays attention to driveable_bounds, at least
+  // ensure that bounds are sane.  Given the singularity at the center of
+  // the arc, it is not well-defined to consider parallel curves offset
+  // from the reference by a distance greater than or equal to the radius r_.
+  //
+  // The worst case happens at the minimum abs(superelevation) which occurs
+  // in the domain [0, 1].  There are up to four possible candidates for
+  // where an extremum can occur, since superelevation is cubic.
+  double theta_min = std::numeric_limits<double>::max();
+  double theta_max = std::numeric_limits<double>::min();
+  auto update_range_given_p =
+      [&theta_min, &theta_max, &superelevation](double p) {
+    const double theta_p = superelevation.f_p(p);
+    theta_min = std::min(theta_min, theta_p);
+    theta_max = std::max(theta_max, theta_p);
+  };
+  // ...possible extremum at p = 0.
+  update_range_given_p(0.);
+  // ...possible extremum at p = 1.
+  update_range_given_p(1.);
+  // ...possible extrema at the local min/max of superelevation.
+  if (superelevation.d() != 0) {
+    const double p_plus =
+        (-superelevation.c() +
+         std::sqrt((superelevation.c() * superelevation.c())
+                   - (3. * superelevation.b() * superelevation.d())))
+        / (3. * superelevation.d());
+    update_range_given_p(p_plus);
+    const double p_minus =
+        (-superelevation.c() -
+         std::sqrt((superelevation.c() * superelevation.c())
+                   - (3. * superelevation.b() * superelevation.d())))
+        / (3. * superelevation.d());
+    update_range_given_p(p_minus);
+  } else if (superelevation.c() != 0) {
+    const double p_extremum =
+        -superelevation.b() / (2. * superelevation.c());
+    update_range_given_p(p_extremum);
+  }
+  // If theta_min and theta_max flank zero, then min(abs(theta)) is 0....
+  const double max_cos_theta =
+      std::cos(((theta_min < 0.) && (theta_max > 0.)) ? 0.
+               : std::min(std::abs(theta_min), std::abs(theta_max)));
+  // TODO(maddog@tri.global)  When you have nothing better to do, handle the
+  //                          improbable case of superelevation >= 90 deg, too.
+  if (d_theta > 0.) {
+    DRAKE_DEMAND((driveable_bounds.r_max * max_cos_theta) < r_);
+  } else {
+    DRAKE_DEMAND((driveable_bounds.r_min * max_cos_theta) > -r_);
+  }
+}
+
 
 double ArcLane::theta_of_p(const double p) const {
   return theta0_ + (p * d_theta_);
@@ -43,8 +113,6 @@ double ArcLane::heading_of_p(const double p) const {
 
 
 double ArcLane::heading_dot_of_p(const double p) const {
-  // TODO(maddog)  Does this still hold if r exceeds radius r_, e.g. if r
-  //               approaches/crosses the singularity at center of arc?
   // Given:
   //      H = θ ± (π / 2)
   // and:
@@ -56,7 +124,7 @@ double ArcLane::heading_dot_of_p(const double p) const {
 
 
 api::LanePosition ArcLane::DoToLanePosition(const api::GeoPosition&) const {
-  DRAKE_ABORT();  // TODO(maddog) Implement me.
+  DRAKE_ABORT();  // TODO(maddog@tri.global) Implement me.
 }
 
 }  // namespace monolane
