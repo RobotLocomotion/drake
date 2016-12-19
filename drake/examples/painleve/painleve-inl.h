@@ -273,6 +273,8 @@ void Painleve<T>::EvalTimeDerivatives(
     if (yc_ddot < 0.0) {
       // Look for the case where the tangential velocity is zero.
       if (std::abs(xcdot) < std::numeric_limits<double>::epsilon()) {
+// TODO(edrumwri): Finish this implementation.
+/*
         // Solve for the case where xddot = 0. These equations were determined
         // by issuing the following command in Mathematica:
 
@@ -287,6 +289,7 @@ void Painleve<T>::EvalTimeDerivatives(
         f->SetAtIndex(3, F/mass_);
         f->SetAtIndex(4, N/mass_ + get_gravitational_acceleration());
         f->SetAtIndex(5, half_rod_length*(F*stheta + k*N*ctheta)/J_);
+*/
       } else { 
         // These equations were determined by issuing the following
         // command in Mathematica:
