@@ -18,6 +18,7 @@ class MobyLCPSolverResult : public MathematicalProgramSolverResult {
  public:
   explicit MobyLCPSolverResult(SolutionSummary summary)
       : MathematicalProgramSolverResult(summary) {}
+  // TODO(hongkai.dai): Also include the constraint value.
 };
 
 class MobyLCPSolver : public MathematicalProgramSolverInterface {

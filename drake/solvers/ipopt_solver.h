@@ -10,6 +10,7 @@ class IpoptSolverResult : public MathematicalProgramSolverResult {
  public:
   explicit IpoptSolverResult(SolutionSummary summary)
       : MathematicalProgramSolverResult(summary) {}
+  // TODO(hongkai.dai): Add Ipopt solver status.
 };
 
 class IpoptSolver : public MathematicalProgramSolverInterface {

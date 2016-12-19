@@ -660,8 +660,8 @@ MosekSolverResult* MosekSolver::Solve_impl(
 
   double primal_objective = NAN;
   double dual_objective = NAN;
-  MSKprostae problem_status;
-  MSKsolstae solution_status;
+  MSKprostae problem_status = MSK_PRO_STA_UNKNOWN;
+  MSKsolstae solution_status = MSK_SOL_STA_UNKNOWN;
   // TODO(hongkai.dai@tri.global) : Add MOSEK paramaters.
   // Mosek parameter are added by enum, not by string.
   if (rescode == MSK_RES_OK) {

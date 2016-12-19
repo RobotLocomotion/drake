@@ -10,6 +10,7 @@ class NloptSolverResult : public MathematicalProgramSolverResult {
  public:
   explicit NloptSolverResult(SolutionSummary summary)
       : MathematicalProgramSolverResult(summary) {}
+  // TODO(hongkai.dai): Add nlopt solver status.
 };
 
 class NloptSolver : public MathematicalProgramSolverInterface {
