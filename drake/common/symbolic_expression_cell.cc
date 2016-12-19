@@ -593,6 +593,11 @@ ExpressionMulFactory& ExpressionMulFactory::operator=(
   return *this;
 }
 
+ExpressionMulFactory& ExpressionMulFactory::Negate() {
+  constant_factor_ = -constant_factor_;
+  return *this;
+}
+
 Expression ExpressionMulFactory::GetExpression() const {
   if (term_to_exp_map_.empty()) {
     return Expression{constant_factor_};

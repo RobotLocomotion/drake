@@ -362,6 +362,12 @@ class ExpressionMulFactory {
   void Add(std::shared_ptr<const ExpressionMul> ptr);
   /** Assigns a factory from a shared pointer to ExpressionMul.  */
   ExpressionMulFactory& operator=(std::shared_ptr<ExpressionMul> ptr);
+  /** Negates the expressions in factory.
+   * If it represents c0 * p1 * ... * pn,
+   * this method flips it into -c0 * p1 * ... * pn.
+   * @returns *this.
+   */
+  ExpressionMulFactory& Negate();
   /** Returns a symbolic expression. */
   Expression GetExpression() const;
 
