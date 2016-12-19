@@ -38,6 +38,7 @@ class ClockMessageReceiver {
   }
 
   rosgraph_msgs::Clock get_received_message() {
+    std::lock_guard<std::mutex> lock(data_mutex_);
     return recieved_message_;
   }
 
@@ -45,10 +46,9 @@ class ClockMessageReceiver {
   static const int kSubscriberQueueSize = 100;
 
   void ClockCallback(const rosgraph_msgs::Clock& msg) {
-    data_mutex_.lock();
+    std::lock_guard<std::mutex> lock(data_mutex_);
     recieved_message_ = msg;
     message_received_ = true;
-    data_mutex_.unlock();
   }
 
   bool message_received_{false};
