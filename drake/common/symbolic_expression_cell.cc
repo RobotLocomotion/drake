@@ -50,23 +50,16 @@ Variables UnaryExpressionCell::GetVariables() const {
 }
 
 bool UnaryExpressionCell::EqualTo(const ExpressionCell& e) const {
-  if (get_kind() != e.get_kind()) {
-    return false;
-  }
+  // Expression::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const UnaryExpressionCell& unary_e{
       static_cast<const UnaryExpressionCell&>(e)};
   return e_.EqualTo(unary_e.e_);
 }
 
 bool UnaryExpressionCell::Less(const ExpressionCell& e) const {
-  const ExpressionKind k1{get_kind()};
-  const ExpressionKind k2{e.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
+  // Expression::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const UnaryExpressionCell& unary_e{
       static_cast<const UnaryExpressionCell&>(e)};
   return e_.Less(unary_e.e_);
@@ -89,23 +82,16 @@ Variables BinaryExpressionCell::GetVariables() const {
 }
 
 bool BinaryExpressionCell::EqualTo(const ExpressionCell& e) const {
-  if (get_kind() != e.get_kind()) {
-    return false;
-  }
+  // Expression::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const BinaryExpressionCell& binary_e{
       static_cast<const BinaryExpressionCell&>(e)};
   return e1_.EqualTo(binary_e.e1_) && e2_.EqualTo(binary_e.e2_);
 }
 
 bool BinaryExpressionCell::Less(const ExpressionCell& e) const {
-  const ExpressionKind k1{get_kind()};
-  const ExpressionKind k2{e.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
+  // Expression::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const BinaryExpressionCell& binary_e{
       static_cast<const BinaryExpressionCell&>(e)};
   if (e1_.Less(binary_e.e1_)) {
@@ -130,21 +116,14 @@ ExpressionVar::ExpressionVar(const Variable& v)
 Variables ExpressionVar::GetVariables() const { return {get_variable()}; }
 
 bool ExpressionVar::EqualTo(const ExpressionCell& e) const {
-  if (e.get_kind() != ExpressionKind::Var) {
-    return false;
-  }
+  // Expression::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   return var_ == static_cast<const ExpressionVar&>(e).var_;
 }
 
 bool ExpressionVar::Less(const ExpressionCell& e) const {
-  const ExpressionKind k1{get_kind()};
-  const ExpressionKind k2{e.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
+  // Expression::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   // Note the below is using the overloaded operator< between ExpressionVar
   // which is based on variable IDs.
   return var_ < static_cast<const ExpressionVar&>(e).var_;
@@ -178,21 +157,14 @@ ExpressionConstant::ExpressionConstant(const double v)
 Variables ExpressionConstant::GetVariables() const { return Variables{}; }
 
 bool ExpressionConstant::EqualTo(const ExpressionCell& e) const {
-  if (e.get_kind() != ExpressionKind::Constant) {
-    return false;
-  }
+  // Expression::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   return v_ == static_cast<const ExpressionConstant&>(e).v_;
 }
 
 bool ExpressionConstant::Less(const ExpressionCell& e) const {
-  const ExpressionKind k1{get_kind()};
-  const ExpressionKind k2{e.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
+  // Expression::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   return v_ < static_cast<const ExpressionConstant&>(e).v_;
 }
 
@@ -237,9 +209,8 @@ Variables ExpressionAdd::GetVariables() const {
 }
 
 bool ExpressionAdd::EqualTo(const ExpressionCell& e) const {
-  if (get_kind() != e.get_kind()) {
-    return false;
-  }
+  // Expression::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionAdd& add_e{static_cast<const ExpressionAdd&>(e)};
   // Compare constant_term.
   if (constant_term_ != add_e.constant_term_) {
@@ -255,15 +226,8 @@ bool ExpressionAdd::EqualTo(const ExpressionCell& e) const {
 }
 
 bool ExpressionAdd::Less(const ExpressionCell& e) const {
-  const ExpressionKind k1{get_kind()};
-  const ExpressionKind k2{e.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
-  DRAKE_ASSERT(is_addition(e));
+  // Expression::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionAdd& add_e{static_cast<const ExpressionAdd&>(e)};
   // Compare the constant_terms.
   if (constant_term_ < add_e.constant_term_) {
@@ -462,9 +426,8 @@ Variables ExpressionMul::GetVariables() const {
 }
 
 bool ExpressionMul::EqualTo(const ExpressionCell& e) const {
-  if (get_kind() != e.get_kind()) {
-    return false;
-  }
+  // Expression::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionMul& mul_e{static_cast<const ExpressionMul&>(e)};
   // Compare constant_factor.
   if (constant_factor_ != mul_e.constant_factor_) {
@@ -481,15 +444,8 @@ bool ExpressionMul::EqualTo(const ExpressionCell& e) const {
 }
 
 bool ExpressionMul::Less(const ExpressionCell& e) const {
-  const ExpressionKind k1{get_kind()};
-  const ExpressionKind k2{e.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
-  DRAKE_ASSERT(is_multiplication(e));
+  // Expression::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionMul& mul_e{static_cast<const ExpressionMul&>(e)};
   // Compare the constant_factors.
   if (constant_factor_ < mul_e.constant_factor_) {
@@ -941,9 +897,8 @@ Variables ExpressionIfThenElse::GetVariables() const {
 }
 
 bool ExpressionIfThenElse::EqualTo(const ExpressionCell& e) const {
-  if (get_kind() != e.get_kind()) {
-    return false;
-  }
+  // Expression::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionIfThenElse& ite_e{
       static_cast<const ExpressionIfThenElse&>(e)};
   return f_cond_.EqualTo(ite_e.f_cond_) && e_then_.EqualTo(ite_e.e_then_) &&
@@ -951,14 +906,8 @@ bool ExpressionIfThenElse::EqualTo(const ExpressionCell& e) const {
 }
 
 bool ExpressionIfThenElse::Less(const ExpressionCell& e) const {
-  const ExpressionKind k1{get_kind()};
-  const ExpressionKind k2{e.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
+  // Expression::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionIfThenElse& ite_e{
       static_cast<const ExpressionIfThenElse&>(e)};
   if (f_cond_.Less(ite_e.f_cond_)) {
