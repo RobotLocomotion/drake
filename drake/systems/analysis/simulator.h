@@ -429,7 +429,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
         if (event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction) {
           State<T>* x = context_->get_mutable_state();
           DRAKE_DEMAND(x != nullptr);
-          // First, compute the discrete updates into a temporary buffer.
+          // First, compute the unrestricted updates into a temporary buffer.
           system_.EvalUnrestrictedUpdate(*context_, event,
                                          unrestricted_updates_.get());
           // Now write the update back into the context.

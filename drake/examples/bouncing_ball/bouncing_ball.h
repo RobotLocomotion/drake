@@ -63,13 +63,8 @@ class BouncingBall : public Ball<T> {
   const double restitution_coef_ = 1.0;  // Coefficient of restitution.
 
   // Numerically intolerant signum function.
-  static T sgn(T x) {
-    if (x > 0.0)
-      return 1.0;
-    else if (x < 0.0)
-      return -1.0;
-    else
-      return 0.0;
+  int sgn(T x) const {
+    return (T(0) < x) - (x < T(0));
   }
 };
 
