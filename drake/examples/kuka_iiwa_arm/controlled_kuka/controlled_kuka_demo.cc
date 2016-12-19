@@ -21,6 +21,8 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_ik.h"
+#include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/primitives/trajectory_source.h"
 
 DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
@@ -37,6 +39,7 @@ using std::unique_ptr;
 
 namespace drake {
 
+using systems::Context;
 using systems::Simulator;
 
 namespace examples {
@@ -97,7 +100,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
     q0.col(i) = zero_conf;
   }
 
-  std::vector<RigidBodyConstraint *> constraint_array;
+  std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&pc1);
   constraint_array.push_back(&wpc1);
   constraint_array.push_back(&pc2);

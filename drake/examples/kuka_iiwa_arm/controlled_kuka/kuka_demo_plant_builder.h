@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string>
 #include <vector>
 
 #include "drake/common/drake_path.h"
@@ -8,16 +7,13 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/multibody/ik_options.h"
-#include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
-#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/gravity_compensator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -25,40 +21,17 @@
 #include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/trajectory_source.h"
 
-using Eigen::Vector2d;
-using Eigen::Vector3d;
-using Eigen::VectorXd;
-using Eigen::VectorXi;
-using Eigen::MatrixXd;
-using std::make_unique;
-using std::move;
-using std::string;
-using std::unique_ptr;
-
 namespace drake {
-
-using systems::ConstantVectorSource;
-using systems::Context;
-using systems::Demultiplexer;
-using systems::Diagram;
-using systems::DiagramBuilder;
-using systems::DrakeVisualizer;
-using systems::GravityCompensator;
-using systems::Multiplexer;
-using systems::PidControlledSystem;
-using systems::RigidBodyPlant;
-using systems::Simulator;
-using systems::TrajectorySource;
 
 namespace examples {
 namespace kuka_iiwa_arm {
 
-const string kUrdfPath =
+const char kUrdfPath[] =
     "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf";
 
-// A model of a Kuka iiwa arm with position control using gravity compensation
-// and a PID controller. A plan may be passed in as a unique_ptr to a
-// PiecewisePolynomialTrajectory.
+/// A systems::Diagram of a Kuka iiwa arm with position controller using
+/// gravity compensation and a PID controller. A plan may be passed in as
+/// a unique_ptr to a PiecewisePolynomialTrajectory.
 template <typename T>
 class KukaDemo : public systems::Diagram<T> {
  public:
@@ -68,7 +41,7 @@ class KukaDemo : public systems::Diagram<T> {
     this->set_name("KukaDemo");
 
     // Instantiates an Multibody Dynamics (MBD) model of the world.
-    auto tree = make_unique<RigidBodyTree<T>>();
+    auto tree = std::make_unique<RigidBodyTree<T>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + kUrdfPath, drake::multibody::joints::kFixed,
         nullptr /* weld to frame */, tree.get());
@@ -78,11 +51,11 @@ class KukaDemo : public systems::Diagram<T> {
 
     const int kNumActuators = tree->get_num_actuators();
 
-    DiagramBuilder<T> builder;
+    systems::DiagramBuilder<T> builder;
 
     // Instantiates a RigidBodyPlant from an MBD model of the world.
-    std::unique_ptr<RigidBodyPlant<T>> plant =
-        make_unique<RigidBodyPlant<T>>(move(tree));
+    std::unique_ptr<systems::RigidBodyPlant<T>> plant =
+        std::make_unique<systems::RigidBodyPlant<T>>(move(tree));
     plant_ = plant.get();
 
     DRAKE_ASSERT(plant_->get_input_port(0).size() ==
@@ -107,7 +80,7 @@ class KukaDemo : public systems::Diagram<T> {
       kd[i] = std::sqrt(kp[i]);
     }
 
-    controller_ = builder.template AddSystem<PidControlledSystem<T>>(
+    controller_ = builder.template AddSystem<systems::PidControlledSystem<T>>(
         std::move(plant), kp, ki, kd);
 
     // The iiwa's control protocol doesn't have any way to express the
@@ -117,33 +90,35 @@ class KukaDemo : public systems::Diagram<T> {
     // have any logic to calculate the desired target velocity (yet!)
     // set the D term (to stabilize the arm near the commanded
     // position) and feed a desired velocity vector of zero.
-    auto zero_source = builder.template AddSystem<ConstantVectorSource<T>>(
-        Eigen::VectorXd::Zero(plant_->get_num_velocities()));
+    auto zero_source =
+        builder.template AddSystem<systems::ConstantVectorSource<T>>(
+            Eigen::VectorXd::Zero(plant_->get_num_velocities()));
     auto input_mux =
-        builder.template AddSystem<Multiplexer<T>>(std::vector<int>{
+        builder.template AddSystem<systems::Multiplexer<T>>(std::vector<int>{
             plant_->get_num_positions(), plant_->get_num_velocities()});
     builder.Connect(zero_source->get_output_port(),
                     input_mux->get_input_port(1));
     builder.Connect(input_mux->get_output_port(0),
                     controller_->get_input_port(1));
 
-    gravity_compensator_ = builder.template AddSystem<GravityCompensator<T>>(
-        plant_->get_rigid_body_tree());
+    gravity_compensator_ =
+        builder.template AddSystem<systems::GravityCompensator<T>>(
+            plant_->get_rigid_body_tree());
 
     // Split the input state into two signals one with the positions and one
     // with the velocities.
     // For Kuka:
     // -  get_num_states() = 14
     // -  get_num_positions() = 7
-    rbp_state_demux_ = builder.template AddSystem<Demultiplexer<T>>(
+    rbp_state_demux_ = builder.template AddSystem<systems::Demultiplexer<T>>(
         plant_->get_num_states(), plant_->get_num_positions());
 
     // Creates a plan and wraps it into a source system.
-    desired_plan_ =
-        builder.template AddSystem<TrajectorySource<T>>(*poly_trajectory_);
+    desired_plan_ = builder.template AddSystem<systems::TrajectorySource<T>>(
+        *poly_trajectory_);
 
     // Creates and adds LCM publisher for visualization.
-    viz_publisher_ = builder.template AddSystem<DrakeVisualizer>(
+    viz_publisher_ = builder.template AddSystem<systems::DrakeVisualizer>(
         plant_->get_rigid_body_tree(), &lcm_);
 
     builder.Connect(desired_plan_->get_output_port(0),
@@ -170,22 +145,22 @@ class KukaDemo : public systems::Diagram<T> {
     builder.BuildInto(this);
   }
 
-  const RigidBodyPlant<T>& get_kuka_plant() const { return *plant_; }
+  const systems::RigidBodyPlant<T>& get_kuka_plant() const { return *plant_; }
 
-  Context<T>* get_kuka_context(Context<T>* context) const {
-    Context<T>* controller_context =
+  systems::Context<T>* get_kuka_context(systems::Context<T>* context) const {
+    systems::Context<T>* controller_context =
         this->GetMutableSubsystemContext(context, controller_);
     return controller_->GetMutableSubsystemContext(controller_context, plant_);
   }
 
  private:
-  RigidBodyPlant<T>* plant_{nullptr};
-  PidControlledSystem<T>* controller_{nullptr};
-  Demultiplexer<T>* rbp_state_demux_{nullptr};
-  GravityCompensator<T>* gravity_compensator_{nullptr};
-  TrajectorySource<T>* desired_plan_{nullptr};
+  systems::RigidBodyPlant<T>* plant_{nullptr};
+  systems::PidControlledSystem<T>* controller_{nullptr};
+  systems::Demultiplexer<T>* rbp_state_demux_{nullptr};
+  systems::GravityCompensator<T>* gravity_compensator_{nullptr};
+  systems::TrajectorySource<T>* desired_plan_{nullptr};
   std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory_;
-  DrakeVisualizer* viz_publisher_{nullptr};
+  systems::DrakeVisualizer* viz_publisher_{nullptr};
   drake::lcm::DrakeLcm lcm_;
 };
 

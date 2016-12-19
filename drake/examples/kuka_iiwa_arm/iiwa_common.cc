@@ -1,9 +1,9 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 
+#include <memory.h>
 #include <map>
 #include <string>
 #include <vector>
-#include <memory.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
@@ -20,6 +20,7 @@ using Eigen::Vector3d;
 using Eigen::Vector2d;
 using Eigen::VectorXd;
 using Eigen::MatrixXd;
+using Eigen::aligned_allocator;
 using std::string;
 using std::vector;
 using std::unique_ptr;
@@ -49,18 +50,15 @@ void VerifyIiwaTree(const RigidBodyTree<double>& tree) {
   DRAKE_DEMAND(name_to_idx["iiwa_joint_7"] == joint_idx++);
 }
 
-template <typename T>
 std::unique_ptr<PiecewisePolynomialTrajectory> SimpleCartesianWayPointPlanner(
-    RigidBodyTree<T> tree,
-    const std::string& link_to_constraint,
+    RigidBodyTreed* tree, const std::string& link_to_constraint,
     const std::vector<Eigen::Vector3d>& way_point_list,
     const std::vector<double>& time_stamps) {
-
   DRAKE_DEMAND(way_point_list.size() == time_stamps.size());
 
-  VectorXd zero_conf = tree.getZeroConfiguration();
+  VectorXd zero_conf = tree->getZeroConfiguration();
 
-  MatrixXd q0(tree.get_num_positions(), time_stamps.size());
+  MatrixXd q0(tree->get_num_positions(), time_stamps.size());
   for (size_t i = 0; i < time_stamps.size(); ++i) {
     q0.col(i) = zero_conf;
   }
@@ -80,20 +78,20 @@ std::unique_ptr<PiecewisePolynomialTrajectory> SimpleCartesianWayPointPlanner(
 
     unique_ptr<WorldPositionConstraint> wpc =
         make_unique<WorldPositionConstraint>(
-            &tree, tree.FindBodyIndex("iiwa_link_ee"), Vector3d::Zero(), pos_lb,
+            tree, tree->FindBodyIndex("iiwa_link_ee"), Vector3d::Zero(), pos_lb,
             pos_ub, time_window_list.at(i));
 
-    // Stores the unique_ptr.
+    // Stores the unique_ptr
     constraint_unique_ptr_list.push_back(std::move(wpc));
     constraint_ptr_list.push_back(constraint_unique_ptr_list.at(i).get());
   }
 
-  IKoptions ikoptions(&tree);
+  IKoptions ikoptions(tree);
   vector<int> info(time_stamps.size(), 0);
-  MatrixXd q_sol(tree.get_num_positions(), time_stamps.size());
+  MatrixXd q_sol(tree->get_num_positions(), time_stamps.size());
   vector<string> infeasible_constraint;
 
-  inverseKinPointwise(&tree, time_stamps.size(), time_stamps.data(), q0, q0,
+  inverseKinPointwise(tree, time_stamps.size(), time_stamps.data(), q0, q0,
                       constraint_ptr_list.size(), constraint_ptr_list.data(),
                       ikoptions, &q_sol, info.data(), &infeasible_constraint);
   bool info_good = true;
@@ -134,39 +132,30 @@ std::vector<Eigen::Vector2d> TimeWindowBuilder(
     } else if (i == time_stamps.size() - 1) {
       // If its the last time stamp
       time_window << time_stamps[i - 1] +
-                         upper_ratio *
-                             (time_stamps[i] - time_stamps[i - 1]),
+                         upper_ratio * (time_stamps[i] - time_stamps[i - 1]),
           time_stamps[i];
     } else {
       time_window << time_stamps[i - 1] +
-                         upper_ratio *
-                             (time_stamps[i] - time_stamps[i - 1]),
-          time_stamps[i] +
-              lower_ratio * (time_stamps[i + 1] - time_stamps[i]);
+                         upper_ratio * (time_stamps[i] - time_stamps[i - 1]),
+          time_stamps[i] + lower_ratio * (time_stamps[i + 1] - time_stamps[i]);
     }
     time_window_list.push_back(time_window);
   }
   return time_window_list;
 }
 
-template <typename T>
-RigidBodyTree<T> CreateTreeFromFixedModelAtPose(
-    const std::string& model_file_name, const Vector3d& position,
-    const Vector3d& orientation) {
-  std::unique_ptr<RigidBodyTree<T>> tree;
-
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<T>>(
-      aligned_allocator<RigidBodyFrame<T>>(), "world", nullptr,
-      position, orientation);
-
+void CreateTreedFromFixedModelAtPose(const std::string& model_file_name,
+                                     RigidBodyTreed* tree,
+                                     const Vector3d& position,
+                                     const Vector3d& orientation) {
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr, position,
+      orientation);
 
   // TODO(naveenoid) : consider implementing SDF version of this method.
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + model_file_name,
-      drake::multibody::joints::kFixed,
-      weld_to_frame, &tree);
-
-  return(tree);
+      drake::GetDrakePath() + model_file_name, drake::multibody::joints::kFixed,
+      weld_to_frame, tree);
 }
 
 }  // namespace kuka_iiwa_arm
