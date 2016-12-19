@@ -8,7 +8,7 @@ enum SolutionSummary {
   kSolutionFound = 0,
   kInvalidInput = -1,
   kInfeasibleConstraints = -2,
-  kUnknownError = -3,
+  kUnknownError = -3
 };
 
 /// This is the returned type of MathematicalProgramSolverInterface::Solve().
@@ -16,7 +16,7 @@ enum SolutionSummary {
 /// optimization problem.
 class MathematicalProgramSolverResult {
  public:
-  MathematicalProgramSolverResult(SolutionSummary summary) : summary_(summary) {}
+  explicit MathematicalProgramSolverResult(SolutionSummary summary) : summary_(summary) {}
 
   /** Getter for summary. */
   SolutionSummary summary() const {return summary_;}
@@ -41,7 +41,9 @@ class MathematicalProgramSolverInterface {
   ///  * If no solver is available, throws std::runtime_error
   ///  * If the solver returns an error, returns a nonzero SolutionSummary.
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  std::unique_ptr<MathematicalProgramSolverResult> Solve(MathematicalProgram &prog) const {return std::unique_ptr<MathematicalProgramSolverResult>(Solve_impl(prog));}
+  std::unique_ptr<MathematicalProgramSolverResult> Solve(MathematicalProgram &prog) const {
+    return std::unique_ptr<MathematicalProgramSolverResult>(Solve_impl(prog));
+  }
 
  protected:
   virtual bool available_impl() const = 0;

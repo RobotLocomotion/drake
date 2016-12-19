@@ -16,14 +16,14 @@ void GetLinearProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
   AddSolverIfAvailable("Gurobi", solvers);
   AddSolverIfAvailable("Mosek", solvers);
-  //AddSolverIfAvailable("SNOPT", solvers);
+  // AddSolverIfAvailable("SNOPT", solvers);
 }
 
 void GetQuadraticProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
   AddSolverIfAvailable("Gurobi", solvers);
   AddSolverIfAvailable("Mosek", solvers);
-  //AddSolverIfAvailable("SNOPT", solvers);
+  // AddSolverIfAvailable("SNOPT", solvers);
 }
 
 void GetSecondOrderConicProgramSolvers(

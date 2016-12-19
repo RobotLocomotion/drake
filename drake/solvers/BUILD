@@ -48,7 +48,7 @@ cc_library(
         "decision_variable.h",
         "function.h",
         "mathematical_program.h",
-"mathematical_program_solver_interface.h",
+        "mathematical_program_solver_interface.h",
     ],
     linkstatic = 1,
     deps = [

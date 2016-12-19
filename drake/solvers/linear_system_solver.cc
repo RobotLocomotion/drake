@@ -11,7 +11,8 @@ namespace solvers {
 
 bool LinearSystemSolver::available_impl() const { return true; }
 
-LinearSystemSolverResult* LinearSystemSolver::Solve_impl(MathematicalProgram& prog) const {
+LinearSystemSolverResult* LinearSystemSolver::Solve_impl(
+    MathematicalProgram& prog) const {
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
     num_constraints += binding.constraint()->A().rows();
@@ -53,7 +54,7 @@ LinearSystemSolverResult* LinearSystemSolver::Solve_impl(MathematicalProgram& pr
       Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
 
   prog.SetSolverResult(SolverName(), 0);
-  return new LinearSystemSolverResult(SolutionSummary ::kSolutionFound);
+  return new LinearSystemSolverResult(SolutionSummary::kSolutionFound);
 }
 
 }  // namespace solvers

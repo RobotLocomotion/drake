@@ -95,8 +95,8 @@ int AddSecondOrderConeConstraints(
         GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, variable_indices[0], 0.0);
     if (error) return error;
     if (is_rotated_cone) {
-      error = GRBsetdblattrelement(model, GRB_DBL_ATTR_LB,
-                                       variable_indices[1], 0.0);
+      error = GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, variable_indices[1],
+                                   0.0);
       if (error) return error;
     }
 
@@ -358,7 +358,6 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
 bool GurobiSolver::available_impl() const { return true; }
 
 GurobiSolverResult* GurobiSolver::Solve_impl(MathematicalProgram& prog) const {
-
   GRBenv* env = nullptr;
   GRBloadenv(&env, nullptr);
   // Corresponds to no console or file logging.
@@ -428,9 +427,8 @@ GurobiSolverResult* GurobiSolver::Solve_impl(MathematicalProgram& prog) const {
 
   // Add rotated Lorentz cone constraints.
   if (!error) {
-    error =
-        AddSecondOrderConeConstraints(prog.rotated_lorentz_cone_constraints(),
-                                      true, model);
+    error = AddSecondOrderConeConstraints(
+        prog.rotated_lorentz_cone_constraints(), true, model);
   }
 
   SolutionSummary result_summary = SolutionSummary::kUnknownError;
@@ -459,8 +457,9 @@ GurobiSolverResult* GurobiSolver::Solve_impl(MathematicalProgram& prog) const {
   // from unknown errors.
   // TODO(naveenoid) : Properly handle gurobi specific error.
   // message.
-  int optimstatus = 0; // 0 is not a valid optimal status, according
-                       // to http://www.gurobi.com/documentation/6.5/refman/optimization_status_codes.html
+  int optimstatus = 0;  // 0 is not a valid optimal status, according
+                        // to
+  // http://www.gurobi.com/documentation/6.5/refman/optimization_status_codes.html
   if (error) {
     // TODO(naveenoid) : log error message using GRBgeterrormsg(env).
     result_summary = SolutionSummary::kInvalidInput;

@@ -571,7 +571,7 @@ SnoptSolverResult* SnoptSolver::Solve_impl(MathematicalProgram& prog) const {
   } else if (info == 91) {
     solution_summary = SolutionSummary::kInvalidInput;
   } else {
-      solution_summary = SolutionSummary::kUnknownError;
+    solution_summary = SolutionSummary::kUnknownError;
   }
 
   return new SnoptSolverResult(solution_summary, info, F[0]);

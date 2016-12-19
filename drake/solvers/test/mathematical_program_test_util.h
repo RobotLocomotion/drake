@@ -27,16 +27,16 @@ void RunSolver(MathematicalProgram* prog,
 }
 
 void AddSolverIfAvailable(
-    const std::string &solver_name,
-    std::list<std::unique_ptr<MathematicalProgramSolverInterface>> *
-    solver_list) {
+    const std::string& solver_name,
+    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>*
+        solver_list) {
   std::list<std::unique_ptr<MathematicalProgramSolverInterface>> all_solvers;
   auto gurobi_solver = std::make_unique<GurobiSolver>();
   all_solvers.push_back(std::move(gurobi_solver));
   auto mosek_solver = std::make_unique<MosekSolver>();
   all_solvers.push_back(std::move(mosek_solver));
-//  auto snopt_solver = std::make_unique<SnoptSolver>();
-//  all_solvers.push_back(std::move(snopt_solver));
+  //  auto snopt_solver = std::make_unique<SnoptSolver>();
+  //  all_solvers.push_back(std::move(snopt_solver));
 
   for (auto& solver : all_solvers) {
     if (solver->SolverName() == solver_name) {

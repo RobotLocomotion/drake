@@ -723,7 +723,9 @@ MosekSolverResult* MosekSolver::Solve_impl(MathematicalProgram& prog) const {
 
   MSK_deletetask(&task);
   MSK_deleteenv(&env);
-  return new MosekSolverResult(solution_summary, primal_objective, dual_objective, problem_status, solution_status, rescode);
+  return new MosekSolverResult(solution_summary, primal_objective,
+                               dual_objective, problem_status, solution_status,
+                               rescode);
 }
 
 }  // namespace solvers

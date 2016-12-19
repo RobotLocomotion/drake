@@ -16,7 +16,7 @@ namespace solvers {
 
 class MobyLCPSolverResult : public MathematicalProgramSolverResult {
  public:
-  MobyLCPSolverResult(SolutionSummary summary) : MathematicalProgramSolverResult(summary) {}
+  explicit MobyLCPSolverResult(SolutionSummary summary) : MathematicalProgramSolverResult(summary) {}
 };
 
 class MobyLCPSolver : public MathematicalProgramSolverInterface {

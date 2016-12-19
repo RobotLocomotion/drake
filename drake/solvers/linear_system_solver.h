@@ -6,25 +6,32 @@
 
 namespace drake {
 namespace solvers {
-class LinearSystemSolverResult: public MathematicalProgramSolverResult {
+class LinearSystemSolverResult : public MathematicalProgramSolverResult {
  public:
-  LinearSystemSolverResult(SolutionSummary summary) : MathematicalProgramSolverResult(summary) {}
+  explicit LinearSystemSolverResult(SolutionSummary summary)
+      : MathematicalProgramSolverResult(summary) {}
 };
 
 class LinearSystemSolver : public MathematicalProgramSolverInterface {
  public:
-  bool available() const {return available_impl();}
+  bool available() const { return available_impl(); }
 
-  std::string SolverName() const { return SolverName_impl();}
+  std::string SolverName() const { return SolverName_impl(); }
 
-  std::unique_ptr<LinearSystemSolverResult> Solve(MathematicalProgram& prog) const {return std::unique_ptr<LinearSystemSolverResult>(Solve_impl(prog));}
+  std::unique_ptr<LinearSystemSolverResult> Solve(
+      MathematicalProgram& prog) const {
+    return std::unique_ptr<LinearSystemSolverResult>(Solve_impl(prog));
+  }
 
  private:
   bool available_impl() const override;
 
-  std::string SolverName_impl() const override {return "Linear System Solver";}
+  std::string SolverName_impl() const override {
+    return "Linear System Solver";
+  }
 
-  LinearSystemSolverResult* Solve_impl(MathematicalProgram& prog) const override;
+  LinearSystemSolverResult* Solve_impl(
+      MathematicalProgram& prog) const override;
 };
 
 }  // namespace solvers
