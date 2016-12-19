@@ -230,7 +230,6 @@ void Painleve<T>::EvalTimeDerivatives(
 
   // Determine which point is lower and use that to set a constant multiplier.
   const T k = (ctheta < 0.0) ? 1.0 : -1.0;
-
   const T yc = y + k*ctheta*half_rod_length;
   const T xcdot = x - k*ctheta*half_rod_length*thetadot;
 
@@ -256,6 +255,11 @@ void Painleve<T>::EvalTimeDerivatives(
     // Constraint stabilization should be used to eliminate embedding, but we
     // perform no such check in the derivative evaluation.
 
+    // Verify that the rod is not impacting and not separating.
+    const T ycdot = ydot - k*stheta*half_rod_length*thetadot;
+    DRAKE_DEMAND(ycdot > -std::numeric_limits<double>::epsilon() &&
+                 ycdot < std::numeric_limits<double>::epsilon());
+
     // We *should* ensure that the rod is not impacting at the contact, but it
     // is not clear how a good tolerance would be assigned.
 
@@ -267,33 +271,52 @@ void Painleve<T>::EvalTimeDerivatives(
     // If this derivative is negative, we must compute the normal force
     // necessary to set it to zero.
     if (yc_ddot < 0.0) {
-      // These equations were determined by issuing the following
-      // command in Mathematica:
-      // Solve[{0 == yddot - (ell/2)*k*stheta*thetaddot +
-      //             k*(ell/2)*ctheta*thetadot*thetadot,
-      //        yddot == 1/m*fN + g,
-      //        J*thetaddot == (ell/2)*(fF*stheta + k*fN*ctheta),
-      //        fF == -sgn_xcdot*mu*fN},
-      //       {yddot, fN, fF, thetaddot}]
-      // where 'ell' is the length of the rod, stheta = sin(theta),
-      // ctheta = cos(theta), m is the mass, fN and fF are normal and
-      // frictional forces, respectively, sgn_xcdot = sgn(xcdot), g is the
-      // acceleration due to gravity, and (hopefully) all other variables are
-      // self-explanatory.
-      const T lsq = rod_length_*rod_length_;
-      const T sgn_xcdot = (xcdot > 0.0) ? 1.0 : -1.0;
-      const T g = get_gravitational_acceleration();
-      const T N = ((2*(2*g*J_*mass_ +
-                     ctheta*rod_length_*J_*k*mass_*thetadot*thetadot))/
-                    (-4*J_ + ctheta*lsq*k*mass_*stheta -
-                     lsq*k*mass_*mu_*stheta*stheta*sgn_xcdot));
-      if (N < 0.0)
-        throw std::runtime_error("Inconsistent configuration detected.");
+      // Look for the case where the tangential velocity is zero.
+      if (std::abs(xcdot) < std::numeric_limits<double>::epsilon()) {
+        // Solve for the case where xddot = 0. These equations were determined
+        // by issuing the following command in Mathematica:
 
-      // Now that normal force is computed, set the acceleration.
-      f->SetAtIndex(3, mu_*N/mass_);
-      f->SetAtIndex(4, N/mass_ + get_gravitational_acceleration());
-      f->SetAtIndex(5, half_rod_length*(mu_*N*stheta + k*N*ctheta)/J_);
+        // Sanity check that normal force is non-negative. 
+        DRAKE_DEMAND(N >= 0.0);
+
+        // Constraint fF such that it lies on the edge of the friction cone.
+        if (std::abs(F) > mu_*N)
+          F *= mu_*N/std::abs(F);
+
+        // Now that normal force is computed, set the acceleration.
+        f->SetAtIndex(3, F/mass_);
+        f->SetAtIndex(4, N/mass_ + get_gravitational_acceleration());
+        f->SetAtIndex(5, half_rod_length*(F*stheta + k*N*ctheta)/J_);
+      } else { 
+        // These equations were determined by issuing the following
+        // command in Mathematica:
+        // Solve[{0 == yddot - (ell/2)*k*stheta*thetaddot +
+        //             k*(ell/2)*ctheta*thetadot*thetadot,
+        //        yddot == 1/m*fN + g,
+        //        J*thetaddot == (ell/2)*(fF*stheta + k*fN*ctheta),
+        //        fF == -sgn_xcdot*mu*fN},
+        //       {yddot, fN, fF, thetaddot}]
+        // where 'ell' is the length of the rod, stheta = sin(theta),
+        // ctheta = cos(theta), m is the mass, fN and fF are normal and
+        // frictional forces, respectively, sgn_xcdot = sgn(xcdot), g is the
+        // acceleration due to gravity, and (hopefully) all other variables are
+        // self-explanatory.
+        const T lsq = rod_length_*rod_length_;
+        const T sgn_xcdot = (xcdot > 0.0) ? 1.0 : -1.0;
+        const T g = get_gravitational_acceleration();
+        const T N = ((2*(2*g*J_*mass_ +
+                       ctheta*rod_length_*J_*k*mass_*thetadot*thetadot))/
+                      (-4*J_ + ctheta*lsq*k*mass_*stheta -
+                       lsq*k*mass_*mu_*stheta*stheta*sgn_xcdot));
+        if (N < 0.0)
+          throw std::runtime_error("Inconsistent configuration detected.");
+
+        // Now that normal force is computed, set the acceleration.
+        const F = -sgn_xcdot*mu_*N;
+        f->SetAtIndex(3, F/mass_);
+        f->SetAtIndex(4, N/mass_ + get_gravitational_acceleration());
+        f->SetAtIndex(5, half_rod_length*(F*stheta + k*N*ctheta)/J_);
+      }
     }
   }
 }
