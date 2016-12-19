@@ -145,15 +145,17 @@ class ContinuousState {
   }
 
 
+  /// Copies the values from another ContinuousState of the same scalar type
+  /// into this State.
+  void CopyFrom(const ContinuousState<T>& other) {
+    SetFromGeneric(other);
+  }
+
+  /// Initializes this ContinuousState (regardless of scalar type) from a
+  /// State<double>. All scalar types in Drake must support initialization from
+  /// doubles.
   void SetFrom(const ContinuousState<double>& other) {
-    DRAKE_DEMAND(size() == other.size());
-    DRAKE_DEMAND(get_generalized_position().size() ==
-                 other.get_generalized_position().size());
-    DRAKE_DEMAND(get_generalized_velocity().size() ==
-                 other.get_generalized_velocity().size());
-    DRAKE_DEMAND(get_misc_continuous_state().size() ==
-                 other.get_misc_continuous_state().size());
-    SetFromVector(other.CopyToVector().template cast<T>());
+    SetFromGeneric(other);
   }
 
   /// Sets the entire continuous state vector from an Eigen expression.
@@ -172,6 +174,18 @@ class ContinuousState {
   ContinuousState& operator=(ContinuousState&& other) = delete;
 
  private:
+  template <typename U>
+  void SetFromGeneric(const ContinuousState<U>& other) {
+    DRAKE_DEMAND(size() == other.size());
+    DRAKE_DEMAND(get_generalized_position().size() ==
+        other.get_generalized_position().size());
+    DRAKE_DEMAND(get_generalized_velocity().size() ==
+        other.get_generalized_velocity().size());
+    DRAKE_DEMAND(get_misc_continuous_state().size() ==
+        other.get_misc_continuous_state().size());
+    SetFromVector(other.CopyToVector().template cast<T>());
+  }
+
   // The entire continuous state vector.  May or may not own the underlying
   // data.
   std::unique_ptr<VectorBase<T>> state_;
