@@ -515,8 +515,8 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     std::cerr << "Solver not available.\n";
     return -1;
   }
-  solvers::SolutionSummary result = solver_.Solve(*(prog_.get()));
-  if (result != solvers::SolutionSummary::kSolutionFound) {
+  auto result = solver_.Solve(*(prog_));
+  if (result->summary() != solvers::SolutionSummary::kSolutionFound) {
     std::cerr << "solution not found\n";
     return -1;
   }

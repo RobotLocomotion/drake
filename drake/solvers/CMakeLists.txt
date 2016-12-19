@@ -15,7 +15,7 @@ if(gurobi_FOUND)
 endif()
 
 set(private_headers
-  #dreal_solver.h
+  dreal_solver.h
   gurobi_solver.h
   ipopt_solver.h
   linear_system_solver.h
@@ -34,7 +34,7 @@ list(APPEND optimization_files
   linear_system_solver.cc
   mathematical_program.cc
   moby_lcp_solver.cc
-  #system_identification.cc
+  system_identification.cc
   )
 if(ipopt_FOUND)
  list(APPEND optimization_files ipopt_solver.cc)
@@ -48,12 +48,12 @@ if(NLopt_FOUND)
 else()
   list(APPEND optimization_files no_nlopt.cc)
 endif()
-#if(dreal_FOUND)
-#  list(APPEND optimization_files dreal_solver.cc)
-#  list(APPEND optimization_requires dreal)
-#else()
-#  list(APPEND optimization_files no_dreal.cc)
-#endif()
+if(dreal_FOUND)
+  list(APPEND optimization_files dreal_solver.cc)
+  list(APPEND optimization_requires dreal)
+else()
+  list(APPEND optimization_files no_dreal.cc)
+endif()
 if(snopt_FOUND)
   list(APPEND optimization_files snopt_solver.cc)
   list(APPEND optimization_requires snopt_c)
