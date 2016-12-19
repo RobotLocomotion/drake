@@ -679,7 +679,7 @@ GTEST_TEST(SecondOrderStateTest, MapVelocityToQDot) {
 
   BasicVector<double> qdot(2);
   const VectorBase<double>& v = context->get_continuous_state()->
-                                          get_generalized_velocity();
+                                         get_generalized_velocity();
   diagram.MapVelocityToQDot(*context, v,
                             &qdot);
 
@@ -692,8 +692,8 @@ GTEST_TEST(SecondOrderStateTest, MapVelocityToQDot) {
   // Now map the configuration derivatives back to v.
   // TODO(david-german-tri): Address the issue broached immediately above
   // here too.
-  BasicVector<double> vmut(v.size());
-  diagram.MapQDotToVelocity(*context, qdot, &vmut);
+  BasicVector<double> vmutable(v.size());
+  diagram.MapQDotToVelocity(*context, qdot, &vmutable);
   EXPECT_EQ(vmut.GetAtIndex(0), 17);
   EXPECT_EQ(vmut.GetAtIndex(1), 13);
 }
