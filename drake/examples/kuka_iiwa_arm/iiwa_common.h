@@ -27,7 +27,7 @@ void VerifyIiwaTree(const RigidBodyTree<double>& tree);
 /// call to the `inverseKinPointwise` method.
 /// @see inverseKinPointwise.
 std::unique_ptr<PiecewisePolynomialTrajectory> SimpleCartesianWayPointPlanner(
-    const std::string& link_to_constraint,
+    RigidBodyTreed* tree, const std::string& link_to_constraint,
     const std::vector<Eigen::Vector3d>& way_point_list,
     const std::vector<double>& time_stamps);
 
@@ -51,9 +51,8 @@ std::vector<Eigen::Vector2d> TimeWindowBuilder(
 /// the model specified by @model_file_name.
 /// This method is a convinience wrapper over `AddModelInstanceFromUrdfFile`.
 /// @see drake::parsers::urdf::AddModelInstanceFromUrdfFile
-template <typename T>
-RigidBodyTree<T> CreateTreeFromFixedModelAtPose(
-    const std::string& model_file_name,
+void CreateTreedFromFixedModelAtPose(
+    const std::string& model_file_name, RigidBodyTreed* tree,
     const Eigen::Vector3d& position = Eigen::Vector3d::Zero(),
     const Eigen::Vector3d& orientation = Eigen::Vector3d::Zero());
 
