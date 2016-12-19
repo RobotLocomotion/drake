@@ -8,6 +8,21 @@
 
 {
     <1>
+    Memcheck:Leak
+    ...
+    fun:_dl_init
+    ...
+}
+
+{
+    <1>
+    Memcheck:Leak
+    ...
+    fun:_dlerror_run
+}
+
+{
+    <1>
     Memcheck:Cond
     ...
     fun:_ZN4dyld4loadEPKcRKNS_11LoadContextE
