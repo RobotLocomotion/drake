@@ -649,7 +649,7 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
     EXPECT_TRUE(CompareMatrices(y_value, Vector3d(0.5, 0, 3), 1e-4,
                                 MatrixCompareType::absolute));
   });
-}
+}*/
 
 //
 // Test that the Eval() method of LinearComplementarityConstraint correctly
@@ -731,7 +731,7 @@ GTEST_TEST(testMathematicalProgram, multiLCP) {
   EXPECT_TRUE(CompareMatrices(y_value, Vector2d(16, 0), 1e-4,
                               MatrixCompareType::absolute));
 }
-
+/*
 //
 // Test that linear polynomial constraints get turned into linear constraints.
 GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {

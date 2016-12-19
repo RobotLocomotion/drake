@@ -14,6 +14,11 @@
 namespace drake {
 namespace solvers {
 
+class MobyLCPSolverResult : public MathematicalProgramSolverResult {
+ public:
+  MobyLCPSolverResult(SolutionSummary summary) : MathematicalProgramSolverResult(summary) {}
+};
+
 class MobyLCPSolver : public MathematicalProgramSolverInterface {
  public:
   MobyLCPSolver();
@@ -43,13 +48,21 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
                                 int max_exp = 20, double piv_tol = -1.0,
                                 double zero_tol = -1.0) const;
 
-  bool available() const override { return true; }
+  bool available() const { return available_impl(); }
 
-  std::string SolverName() const override {return "MobyLCP"; }
+  std::string SolverName() const {return SolverName_impl(); }
 
-  SolutionSummary Solve(MathematicalProgram& prog) const override;
+  std::unique_ptr<MobyLCPSolverResult> Solve(MathematicalProgram& prog) const {
+    return std::unique_ptr<MobyLCPSolverResult>(Solve_impl(prog));
+  }
 
  private:
+  bool available_impl() const override {return true;};
+
+  std::string SolverName_impl() const override {return "MobyLCP";}
+
+  MobyLCPSolverResult* Solve_impl(MathematicalProgram& prog) const override;
+
   void ClearIndexVectors() const;
   bool CheckLemkeTrivial(int n, double zero_tol, const Eigen::VectorXd& q,
                          Eigen::VectorXd* z) const;

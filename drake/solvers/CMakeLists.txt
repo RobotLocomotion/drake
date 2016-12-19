@@ -19,7 +19,7 @@ set(private_headers
   gurobi_solver.h
   #ipopt_solver.h
   linear_system_solver.h
-  #moby_lcp_solver.h
+  moby_lcp_solver.h
   mosek_solver.h
   #nlopt_solver.h
   #snopt_solver.h
@@ -33,7 +33,7 @@ list(APPEND optimization_files
   equality_constrained_qp_solver.cc
   linear_system_solver.cc
   mathematical_program.cc
-  #moby_lcp_solver.cc
+  moby_lcp_solver.cc
   #system_identification.cc
   )
 #if(ipopt_FOUND)
