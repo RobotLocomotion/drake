@@ -25,8 +25,8 @@ namespace {
 class ClockMessageReceiver {
  public:
   ClockMessageReceiver() : spinner_(1)  {
-    recieved_message_.clock.sec = 0;
-    recieved_message_.clock.nsec = 0;
+    received_message_.clock.sec = 0;
+    received_message_.clock.nsec = 0;
     ros::NodeHandle node_handle;
     subscriber_ = node_handle.subscribe("clock", kSubscriberQueueSize,
                       &ClockMessageReceiver::ClockCallback, this);
@@ -38,24 +38,24 @@ class ClockMessageReceiver {
   }
 
   rosgraph_msgs::Clock get_received_message() {
-    return recieved_message_;
+    std::lock_guard<std::mutex> lock(data_mutex_);
+    return received_message_;
   }
 
  private:
   static const int kSubscriberQueueSize = 100;
 
   void ClockCallback(const rosgraph_msgs::Clock& msg) {
-    data_mutex_.lock();
-    recieved_message_ = msg;
+    std::lock_guard<std::mutex> lock(data_mutex_);
+    received_message_ = msg;
     message_received_ = true;
-    data_mutex_.unlock();
   }
 
   bool message_received_{false};
   ros::AsyncSpinner spinner_;
   ros::Subscriber subscriber_;
   std::mutex data_mutex_;
-  rosgraph_msgs::Clock recieved_message_;
+  rosgraph_msgs::Clock received_message_;
 };
 
 // Tests the RosClockPublisher by instantiating it, making it publish a
