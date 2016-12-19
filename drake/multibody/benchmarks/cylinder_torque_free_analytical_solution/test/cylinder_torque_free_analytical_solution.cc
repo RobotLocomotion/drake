@@ -40,6 +40,7 @@ using Eigen::Quaterniond;
  *   https://ecommons.cornell.edu/handle/1813/637
  */
 // TODO(mitiguy) Move this and related methods (make unit test) to quaternion.h.
+// TODO(mitiguy and Dai)  Create QuaternionDt class and update Doxygen.
 template<typename T>
 Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
     const Eigen::Quaternion<T>& quat,  const Vector3<T>& w_B ) {
@@ -68,12 +69,13 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
  *   https://ecommons.cornell.edu/handle/1813/637
  */
 // TODO(mitiguy) Move this and related methods (make unit test) to quaternion.h.
+// TODO(mitiguy and Dai)  Create QuaternionDt class and update Doxygen.
 template <typename T>
 Vector3<T> CalculateAngularVelocityExpressedInBFromQuaternion(
     const Eigen::Quaternion<T>& quat, const Vector4<T>& quatDt) {
   const T e0 = quat.w(), e1 = quat.x(), e2 = quat.y(), e3 = quat.z();
-  const T e0Dt = quatDt[0], e1Dt = quatDt[1], e2Dt = quatDt[2],
-          e3Dt = quatDt[3];
+  const T e0Dt = quatDt[0], e1Dt = quatDt[1],
+          e2Dt = quatDt[2], e3Dt = quatDt[3];
 
   const T wx = 2*(-e1*e0Dt + e0*e1Dt + e3*e2Dt - e2*e3Dt);
   const T wy = 2*(-e2*e0Dt - e3*e1Dt + e0*e2Dt + e1*e3Dt);
@@ -284,21 +286,21 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
 
   // Get the state portion of the Context. State has weird/inconsistent order.
   // State for joints::kQuaternion   -- x,y,z, e0,e1,e2,e3, wx,wy,wz, vx,vy,vz.
-  // State for joints::kRollPitchYaw -- x,y,z, q1,q2,q3, x',y',z', q1',q2',q3'
+  // State for joints::kRollPitchYaw -- x,y,z, q1,q2,q3, x',y',z', q1',q2',q3'.
   // (where q1=Roll, q2=Pitch, q3=Yaw for SpaceXYZ rotation sequence).
   // Note: Bo is the origin of rigid cylinder B (here, coincident with Bcm).
   // Bx, By, Bz are fixed in B, with Bz along cylinder B's symmetric axis.
   // No is the origin of the Newtonian reference frame N (world).
   // Nx, Ny, Nz are fixed in N, with Nz vertically upward (opposite gravity).
-  // e0, e1, e2, e3 is the quaternion relating Nx, Ny, Nz to Bx, By, Bz.
-  // wx  is the Bx measure of B's angular velocity in N (similarly for wy, wz).
-  // wx' is the Bx measure of B's angular acceleration in N (same for wy', wz').
-  // x  is the Nx measure of Bo's position from No (similarly for y, z).
-  // vx is the Bx measure of Bo's velocity in N (similarly for vy, vz).
-  // vx' is time-derivative of vx, but not Bx measure of Bo's acceleration in N.
-  // Note: Bo's acceleration in N is calculated by [Kane, 1985, pg. 23], as
-  // a = vx'*bx + vy'*by + vz'*bz
-  //   + Cross(wx*bx + wy*by + wz*bz, vx*bx + vy*by + vz*bz).
+  // e0, e1, e2, e3 is the quaternion relating Nx, Ny, Nz to Bx, By, Bz,
+  // with e0 being the scalar term in the quaternion.
+  // w_B is B's angular velocity in N expressed in B, [wx, wy, wz].
+  // wDt_B is  B's angular acceleration in N, expressed in B, [wx', wy', wz'].
+  // x, y, z are Bo's position from No, expressed in N.
+  // v_B is Bo's velocity in N, expressed in B, [vx, vy, vz], not [x', y', z']
+  // vDt_B is the time-derivative of v_B in B, [vx', vy', vz'] - not physically
+  // meaningful. Note: Bo's acceleration in N, expressed in B, is calculated by
+  // [Kane, 1985, pg. 23], as: a_NBo_B = vDt_B + w_B x v_B.
   //
   // - [Kane, 1985] "Dynamics: Theory and Applications," McGraw-Hill Book Co.,
   //   New York, 1985 (with D. A. Levinson).  Available for free .pdf download:
@@ -405,6 +407,7 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   EXPECT_TRUE(CompareMatrices(xyzDt_drake, xyzDt_exact, 10 * epsilon));
 
   // Compensate for definition of vDt.
+  // TODO(mitiguy) Premultiply by R_BN when non-identity quaternion.
   const Vector3d acceleration_difference = w_drake.cross(v_drake);
   const Vector3d vDt_test = xyzDDt_exact - acceleration_difference;
   EXPECT_TRUE(CompareMatrices(vDt_drake, vDt_test, 10 * epsilon));
