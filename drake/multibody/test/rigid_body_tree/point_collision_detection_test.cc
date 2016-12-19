@@ -53,9 +53,10 @@ GTEST_TEST(PointCollisionDetection, PointsWithMultiBodies) {
 
   const int kPointCount = 4;
   Eigen::RowVectorXd cx(kPointCount), cy(kPointCount), cz(kPointCount);
+
   // The points to use in the distance query.
   cx << 0, 0, 0, 1;
-  cy << 0.25, 0, -0.25, -0.25;
+  cy << 0.2499, 0, -0.25, -0.25;
   cz << 1, 1, 1, 1.75;
   Matrix3Xd points;
   points.resize(Eigen::NoChange, kPointCount);
@@ -68,9 +69,20 @@ GTEST_TEST(PointCollisionDetection, PointsWithMultiBodies) {
                                  body_x, body_idx, false);
 
   // Validates results.
-  double kThreshold = Eigen::NumTraits<double>::dummy_precision();
+  // Bullet can't promise any better than 1e-9 accuracy in this calculation.
+  // TODO(SeanCurtis-TRI): When we change the point-element query, we can
+  // increase the expected accuracy.
+  double kThreshold = 9e-9;
 
-  Vector4d expected_phi(0, 0.25, 0.5, 0.25);
+  // When we parse spheres from sdf/urdf files, we enforce a minimum radius.
+  // In this test, the final query point maps to such a sphere.  Thus the
+  // distance/nearest point isn't computed relative to the sphere center, but
+  // offset by this minimum radius.  This term allows us to account for it
+  // in assessing correctness, and will be automatically flagged when that
+  // value is removed by failing to compile.
+  const double kMinSphereError = DrakeShapes::MIN_RADIUS;
+
+  Vector4d expected_phi(0.0001, 0.25, 0.5, 0.25 - kMinSphereError);
   EXPECT_TRUE(CompareMatrices(phi, expected_phi, kThreshold,
                               MatrixCompareType::absolute));
 
@@ -83,8 +95,8 @@ GTEST_TEST(PointCollisionDetection, PointsWithMultiBodies) {
   Matrix3Xd expected_points;
   cx << 0, 0, 0, 1;
   cy << 0.25, 0.25, 0.25, -0.25;
-  cz << 1, 1, 1, 1.5;
-  expected_points.resize(Eigen::NoChange, 4);
+  cz << 1, 1, 1, 1.5 + kMinSphereError;
+  expected_points.resize(Eigen::NoChange, kPointCount);
   expected_points << cx, cy, cz;
   EXPECT_TRUE(CompareMatrices(x, expected_points, kThreshold,
                               MatrixCompareType::absolute));
@@ -93,7 +105,7 @@ GTEST_TEST(PointCollisionDetection, PointsWithMultiBodies) {
   cx << 0, 0, 0, 0;
   cy << -1, -1, -1, 0;
   cz << 0, 0, 0, 1;
-  expected_normals.resize(Eigen::NoChange, 4);
+  expected_normals.resize(Eigen::NoChange, kPointCount);
   expected_normals << cx, cy, cz;
   EXPECT_TRUE(CompareMatrices(normal, expected_normals, kThreshold,
                               MatrixCompareType::absolute));
