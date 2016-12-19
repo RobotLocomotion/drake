@@ -2,8 +2,6 @@
 
 #include <string>
 
-#include <mosek.h>
-
 #include <Eigen/Core>
 
 #include "drake/solvers/mathematical_program.h"
@@ -18,8 +16,8 @@ namespace solvers {
 class MosekSolverResult : public MathematicalProgramSolverResult {
  public:
   MosekSolverResult(SolutionSummary summary, double primal_objective,
-                    double dual_objective, MSKprostae problem_status,
-                    MSKsolstae solution_status, MSKrescodee response_code)
+                    double dual_objective, int problem_status,
+                    int solution_status, int response_code)
       : MathematicalProgramSolverResult(summary),
         primal_objective_(primal_objective),
         dual_objective_(dual_objective),
@@ -34,16 +32,22 @@ class MosekSolverResult : public MathematicalProgramSolverResult {
   double dual_objective() const { return dual_objective_; }
 
   /** Getter for the problem status. */
-  MSKprostae problem_status() const { return problem_status_; }
+  int problem_status() const { return problem_status_; }
+
+  /** Getter for solution status. */
+  int solution_status() const {return solution_status_;}
+
+  /** Getter for response code. */
+  int response_code() const {return response_code_;}
 
  private:
   // Refer to http://docs.mosek.com/7.0/capi/The_solution_summary.html for more
   // explanations on each term in the result
   const double primal_objective_;
   const double dual_objective_;
-  const MSKprostae problem_status_;
-  const MSKsolstae solution_status_;
-  const MSKrescodee response_code_;
+  const int problem_status_;
+  const int solution_status_;
+  const int response_code_;
   // TODO(hongkai.dai): Add constraints violation.
 };
 
