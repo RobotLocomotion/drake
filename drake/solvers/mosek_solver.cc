@@ -654,8 +654,8 @@ MosekSolverResult* MosekSolver::Solve_impl(MathematicalProgram& prog) const {
     solution_type = MSK_SOL_ITR;
   }
 
-  double primal_objective ;
-  double dual_objective;
+  double primal_objective = NAN;
+  double dual_objective = NAN;
   MSKprostae problem_status;
   MSKsolstae solution_status;
   // TODO(hongkai.dai@tri.global) : Add MOSEK paramaters.
@@ -675,7 +675,9 @@ MosekSolverResult* MosekSolver::Solve_impl(MathematicalProgram& prog) const {
         case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL: {
           rescode = MSK_getprimalobj(task, solution_type, &primal_objective);
           if (rescode == MSK_RES_OK) {
-            rescode = MSK_getdualobj(task, solution_type, &dual_objective);
+            if (solution_type != MSK_SOL_ITG) {
+              rescode = MSK_getdualobj(task, solution_type, &dual_objective);
+            }
           }
           solution_summary = SolutionSummary::kSolutionFound;
           MSKint32t num_mosek_vars;
