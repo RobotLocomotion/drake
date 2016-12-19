@@ -310,8 +310,8 @@ ExpressionAddFactory::ExpressionAddFactory(
 
 ExpressionAddFactory::ExpressionAddFactory(
     const shared_ptr<const ExpressionAdd> ptr)
-    : constant_term_{ptr->get_constant_term()},
-      term_to_coeff_map_{ptr->get_term_to_coeff_map()} {}
+    : ExpressionAddFactory{ptr->get_constant_term(),
+                           ptr->get_term_to_coeff_map()} {}
 
 void ExpressionAddFactory::AddExpression(const Expression& e) {
   if (is_constant(e)) {
