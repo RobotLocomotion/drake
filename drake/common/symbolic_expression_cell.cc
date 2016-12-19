@@ -242,17 +242,17 @@ bool ExpressionAdd::Less(const ExpressionCell& e) const {
       add_e.term_to_coeff_map_.cbegin(), add_e.term_to_coeff_map_.cend(),
       [](const pair<Expression, double>& p1,
          const pair<Expression, double>& p2) {
-        const double coeff1{p1.second};
-        const double coeff2{p2.second};
-        if (coeff1 < coeff2) {
-          return true;
-        }
-        if (coeff2 < coeff1) {
-          return false;
-        }
         const Expression& term1{p1.first};
         const Expression& term2{p2.first};
-        return term1.Less(term2);
+        if (term1.Less(term2)) {
+          return true;
+        }
+        if (term2.Less(term1)) {
+          return false;
+        }
+        const double coeff1{p1.second};
+        const double coeff2{p2.second};
+        return coeff1 < coeff2;
       });
 }
 
