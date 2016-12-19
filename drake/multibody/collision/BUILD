@@ -1,6 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_unit_test")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -69,15 +71,12 @@ alias(
     actual = ":bullet_collision",
 )
 
-cc_test(
+cc_unit_test(
     name = "model_test",
-    size = "small",
-    srcs = ["test/model_test.cc"],
-    data = ["test_models"],
+    data = [":test_models"],
     deps = [
         ":collision",
         "//drake/common:drake_path",
-        "@gtest//:main",
     ],
 )
 

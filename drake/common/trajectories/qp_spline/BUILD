@@ -1,6 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_unit_test")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -48,12 +50,9 @@ cc_library(
 
 # === test/ ===
 
-cc_test(
+cc_unit_test(
     name = "spline_generation_test",
-    size = "small",
-    srcs = ["test/spline_generation_test.cc"],
     deps = [
         ":spline_generation",
-        "@gtest//:main",
     ],
 )

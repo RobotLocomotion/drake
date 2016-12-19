@@ -1,6 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_unit_test")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -65,22 +67,19 @@ cc_binary(
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "package_map_test",
-    size = "small",
     srcs = ["test/package_map_test/package_map_test.cc"],
     data = [
         ":test_models",
     ],
     deps = [
         ":parsers",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "urdf_parser_test",
-    size = "small",
     srcs = ["test/urdf_parser_test/urdf_parser_test.cc"],
     data = [
         ":test_models",
@@ -88,17 +87,13 @@ cc_test(
     ],
     deps = [
         ":parsers",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "xml_util_test",
-    size = "small",
-    srcs = ["test/xml_util_test.cc"],
     deps = [
         ":parsers",
-        "@gtest//:main",
     ],
 )
 

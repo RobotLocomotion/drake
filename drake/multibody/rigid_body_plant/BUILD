@@ -1,6 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_unit_test")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -51,117 +53,81 @@ cc_library(
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "compute_contact_result_test",
-    size = "small",
-    srcs = ["test/compute_contact_result_test.cc"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_plant",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "contact_detail_test",
-    size = "small",
-    srcs = ["test/contact_detail_test.cc"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_plant",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "contact_force_test",
-    size = "small",
-    srcs = ["test/contact_force_test.cc"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_plant",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "contact_info_test",
-    size = "small",
-    srcs = ["test/contact_info_test.cc"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_plant",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "contact_resultant_force_test",
-    size = "small",
-    srcs = ["test/contact_resultant_force_test.cc"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_plant",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "drake_visualizer_test",
-    size = "small",
-    srcs = ["test/drake_visualizer_test.cc"],
     data = ["//drake/multibody/collision:test_models"],
-    linkstatic = 1,
     deps = [
         ":drake_visualizer",
         "//drake/lcm:mock",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "kinematics_results_test",
-    size = "small",
-    srcs = ["test/kinematics_results_test.cc"],
     data = ["//drake/multibody:test_models"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_plant",
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody/parsers",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "rigid_body_plant_test",
-    size = "small",
-    srcs = ["test/rigid_body_plant_test.cc"],
     data = [
         ":test_models",
         "//drake/examples/kuka_iiwa_arm:models",
     ],
-    linkstatic = 1,
     deps = [
         ":rigid_body_plant",
         "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody/parsers",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "viewer_draw_translator_test",
-    size = "small",
-    srcs = ["test/viewer_draw_translator_test.cc"],
-    linkstatic = 1,
     deps = [
         ":drake_visualizer",
-        "@gtest//:main",
     ],
 )
 

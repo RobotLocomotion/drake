@@ -1,6 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_unit_test")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -70,47 +72,35 @@ cc_library(
 
 # === test/ ===
 
-cc_test(
+cc_unit_test(
     name = "drake_lcm_test",
-    size = "small",
-    srcs = ["test/drake_lcm_test.cc"],
     local = 1,
     deps = [
         ":lcm",
         ":lcmt_drake_signal_utils",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "drake_mock_lcm_test",
-    size = "small",
-    srcs = ["test/drake_mock_lcm_test.cc"],
     deps = [
         ":lcmt_drake_signal_utils",
         ":mock",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "lcmt_drake_signal_utils_test",
-    size = "small",
-    srcs = ["test/lcmt_drake_signal_utils_test.cc"],
     deps = [
         ":lcmt_drake_signal_utils",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_unit_test(
     name = "lcm_call_matlab_test",
-    size = "small",
-    srcs = ["test/lcm_call_matlab_test.cc"],
     local = 1,
     deps = [
         ":lcm_call_matlab",
         ":lcmt_drake_signal_utils",
-        "@gtest//:main",
     ],
 )
