@@ -27,7 +27,7 @@ using std::static_pointer_cast;
 using std::string;
 
 FormulaCell::FormulaCell(const FormulaKind k, const size_t hash)
-    : kind_{k}, hash_{hash_combine(static_cast<size_t>(kind_), hash)} {}
+    : kind_{k}, hash_{hash_combine(hash, static_cast<size_t>(kind_))} {}
 
 RelationalFormulaCell::RelationalFormulaCell(const FormulaKind k,
                                              const Expression& e1,
