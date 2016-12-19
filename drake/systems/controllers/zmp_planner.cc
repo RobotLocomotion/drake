@@ -17,9 +17,31 @@ Eigen::Vector2d ZMPPlanner::ComputeOptimalCoMdd(
   return K_ * x_bar + k2_.value(time);
 }
 
+bool ZMPPlanner::CheckStationaryEndPoint(
+    const PiecewisePolynomial<double>& zmp_d) const {
+  PiecewisePolynomial<double> last_segment =
+      zmp_d.slice(zmp_d.getNumberOfSegments() - 1, 1);
+  PiecewisePolynomial<double> derivative = last_segment.derivative();
+  int degree = last_segment.getSegmentPolynomialDegree(0);
+  for (int d = degree; d >= 0; d--) {
+    if (derivative.value(derivative.getEndTime()).norm() > 1e-8) return false;
+    derivative = derivative.derivative();
+  }
+  return true;
+}
+
 void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
                       const Eigen::Vector4d& x0, double height, double gravity,
                       const Eigen::Matrix2d& Qy, const Eigen::Matrix2d& R) {
+  // Warn the caller if the last point is not stationary. The math is still
+  // correct, and this is an allowable (but dangerous) use case.
+  // If the user use the policy / nominal trajectory past the end point, the
+  // system diverges exponentially fast.
+  if (!CheckStationaryEndPoint(zmp_d)) {
+    std::cerr << "ZMPPlanner: The desired zmp trajectory does not end in a "
+                 "stationary condition.\n";
+  }
+
   int n_segments = zmp_d.getNumberOfSegments();
   int zmp_d_degree = zmp_d.getSegmentPolynomialDegree(0);
   DRAKE_DEMAND(zmp_d_degree >= 0);

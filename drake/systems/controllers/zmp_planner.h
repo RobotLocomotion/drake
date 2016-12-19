@@ -10,8 +10,8 @@ namespace systems {
  * Given a desired two dimensional (X and Y) zero-moment point (ZMP) trajectory
  * parametrized as a piecewise polynomial, an optimal center of mass (CoM)
  * trajectory is planned using a linear inverted pendulum model (LIPM).
- * A second order value function and a linear policy are also computed along
- * the optimal trajectory.
+ * A second order value function (cost-to-go) and a linear policy are also
+ * computed along the optimal trajectory.
  * The state of the system is CoM position and velocity, and the control is
  * CoM acceleration.
  * See the following reference for more details about the algorithm.
@@ -27,6 +27,9 @@ class ZMPPlanner {
   /**
    * Implements the algorithm in [1] that computes a nominal CoM trajectory,
    * and the corresponding second order value function and linear policy.
+   * It is allowed to pass in a `zmp_d` with a non-stationary end point, but
+   * the user should treat the result with caution, since the resulting nominal
+   * CoM trajectory diverges exponentially fast past the end point.
    * @param zmp_d, Desired two dimensional ZMP trajectory.
    * @param x0, Initial CoM state.
    * @param height, CoM height from the ground.
@@ -34,8 +37,7 @@ class ZMPPlanner {
    * @param R, Quadratic cost term on CoM acceleration.
    */
   void Plan(const PiecewisePolynomial<double>& zmp_d, const Eigen::Vector4d& x0,
-            double height,
-            double gravity = 9.81,
+            double height, double gravity = 9.81,
             const Eigen::Matrix2d& Qy = Eigen::Matrix2d::Identity(),
             const Eigen::Matrix2d& R = Eigen::Matrix2d::Zero());
 
@@ -156,21 +158,22 @@ class ZMPPlanner {
   }
 
   /**
-   * Returns the time invariant second order term of the value function.
+   * Returns the time invariant second order term (S1 in [1]) of the value
+   * function (cost-to-go).
    */
-  inline const Eigen::Matrix<double, 4, 4>& get_Vxx() const {
-    return S1_;
-  }
+  inline const Eigen::Matrix<double, 4, 4>& get_Vxx() const { return S1_; }
 
   /**
-   * Returns the time varying first order term of the value function.
+   * Returns the time varying first order term (s2 in [1]) of the value
+   * function (cost-to-go).
    */
   inline const ExponentialPlusPiecewisePolynomial<double>& get_Vx() const {
     return s2_;
   }
 
   /**
-   * Returns the time varying first order term of the value function.
+   * Returns the time varying first order term (s2 in [1]) of the value
+   * function (cost-to-go).
    */
   inline const Eigen::Vector4d get_Vx(double time) const {
     return s2_.value(time);
@@ -179,6 +182,10 @@ class ZMPPlanner {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
+  // Check if the last point of zmp_d is stationary (first and higher
+  // derivatives are zero).
+  bool CheckStationaryEndPoint(const PiecewisePolynomial<double>& zmp_d) const;
+
   // Symbols:
   // x: [com; comd]
   // y: zmp

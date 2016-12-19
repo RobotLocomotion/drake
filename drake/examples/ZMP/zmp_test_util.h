@@ -46,6 +46,7 @@ ZMPTestTraj SimulateZMPPolicy(const drake::systems::ZMPPlanner& zmp_planner,
 /**
  * Generates desired ZMP trajectories as piecewise polynomials given the
  * desired footsteps. The knot points are generated as follows:
+ * <pre>
  * T: 0, knots: fs[0]
  * T: ss, knots: fs[0]
  * T: ss + ds, knots: fs[1]
@@ -53,6 +54,7 @@ ZMPTestTraj SimulateZMPPolicy(const drake::systems::ZMPPlanner& zmp_planner,
  * T: 2 * ss + 2 * ds, knots: fs[2]
  * T: 3 * ss + 2 * ds, knots: fs[2]
  *  ...
+ * </pre>
  * ss stands for `single_support_duration`,
  * and ds for `double_support_duration`.
  * @param footsteps, X Y pair
