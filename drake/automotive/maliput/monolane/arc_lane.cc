@@ -78,6 +78,9 @@ ArcLane::ArcLane(const api::LaneId& id, const Segment* segment,
 }
 
 
+// Evaluate absolute position along reference arc as an angle in
+// range [theta0_, (theta0 + d_theta_)],
+// as a function of parameter p (in domain [0, 1]).
 double ArcLane::theta_of_p(const double p) const {
   return theta0_ + (p * d_theta_);
 }

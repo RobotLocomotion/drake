@@ -121,7 +121,8 @@ class Lane : public api::Lane {
   /// Constructs a Lane.
   ///
   /// @param id the ID
-  /// @param segment the Segment to which this Lane will belong
+  /// @param segment the Segment to which this Lane will belong, which must
+  ///        remain valid for the lifetime of this class
   /// @param lane_bounds nominal bounds of the lane, uniform along the entire
   ///        reference path
   /// @param driveable_bounds driveable bounds of the lane, uniform along the
@@ -129,8 +130,6 @@ class Lane : public api::Lane {
   /// @param p_scale isotropic scale factor for elevation and superelevation
   /// @param elevation elevation function (see below)
   /// @param superelevation superelevation function (see below)
-  ///
-  /// @p segment must remain valid for the lifetime of this class.
   ///
   /// This is the base class for subclasses, each of which describe a
   /// primitive reference curve in the xy ground-plane of the world frame.
