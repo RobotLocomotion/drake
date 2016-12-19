@@ -218,6 +218,11 @@ Expression operator-(Expression e) {
   if (is_addition(e)) {
     return ExpressionAddFactory{to_addition(e)}.Negate().GetExpression();
   }
+  // Simplification: push '-' inside over '*'.
+  // -(c0 * E_1 * ... * E_n) => (-c0 * E_1 * ... * E_n)
+  if (is_multiplication(e)) {
+    return ExpressionMulFactory{to_multiplication(e)}.Negate().GetExpression();
+  }
   return Expression{make_shared<ExpressionNeg>(e)};
 }
 
