@@ -38,7 +38,7 @@ int DoMain() {
 
   iiwa_world->StoreModel(
       "table", "/examples/kuka_iiwa_arm/models/table/"
-          "extra_heavy_duty_table_surface_only_collision.sdf");
+               "extra_heavy_duty_table_surface_only_collision.sdf");
   iiwa_world->StoreModel(
       "cylinder",
       "/examples/kuka_iiwa_arm/models/objects/simple_cylinder.urdf");
