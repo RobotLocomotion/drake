@@ -59,7 +59,7 @@ namespace controlled_kuka {
 namespace {
 
 const char kUrdfPath[] {
-    "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf" };
+    "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf" };
 
 unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   auto tree = make_unique<RigidBodyTree<double>>();
