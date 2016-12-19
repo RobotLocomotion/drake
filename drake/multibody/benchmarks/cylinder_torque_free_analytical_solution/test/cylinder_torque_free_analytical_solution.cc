@@ -29,11 +29,11 @@ using Eigen::Quaterniond;
 
 /** Calculate quaternion's time-derivative from angular velocity and quaternion.
  * Algorithm from [Kane, 1983] Section 1.13, pages 58-59.
- * @param quat  quaternion e0, e1, e2, e3 that relates two right-handed
+ * @param quat Quaternion e0, e1, e2, e3 that relates two right-handed
  * orthogonal unitary bases e.g., ax, ay, az (A) to bx, by, bz (B).
- * The quaternion quat easily converts to the rotation matrix R_AB.
+ * The quaternion `quat` easily converts to the rotation matrix R_AB.
  * @param w_B  B's angular velocity in A, expressed in B (bx, by, bz).
- * @returns  time-derivative of quaternion quat, i.e., e0', e1', e2', e3'.
+ * @returns  time-derivative of quaternion `quat`, i.e., e0', e1', e2', e3'.
  *
  * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
  *   (With P. W. Likins and D. A. Levinson).  Available for free .pdf download:
@@ -42,14 +42,9 @@ using Eigen::Quaterniond;
 // TODO(mitiguy) Move this and related methods (make unit test) to quaternion.h.
 template<typename T>
 Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
-    const Eigen::Quaternion<T>& quat,  const Vector3<T>& w_b ) {
-  const T e0 = quat.w();
-  const T e1 = quat.x();
-  const T e2 = quat.y();
-  const T e3 = quat.z();
-  const T wx = w_b[0];
-  const T wy = w_b[1];
-  const T wz = w_b[2];
+    const Eigen::Quaternion<T>& quat,  const Vector3<T>& w_B ) {
+  const T e0 = quat.w(), e1 = quat.x(), e2 = quat.y(), e3 = quat.z();
+  const T wx = w_B[0], wy = w_B[1], wz = w_B[2];
 
   const T e0Dt = 0.5*(-e1*wx - e2*wy - e3*wz);
   const T e1Dt = 0.5*(+e0*wx - e3*wy + e2*wz);
@@ -64,7 +59,7 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
  * Algorithm from [Kane, 1983] Section 1.13, pages 58-59.
  * @param quat  quaternion e0, e1, e2, e3 that relates two right-handed
  * orthogonal unitary bases e.g., ax, ay, az (A) to bx, by, bz (B).
- * The quaternion quat easily converts to the rotation matrix R_AB.
+ * The quaternion `quat` easily converts to the rotation matrix R_AB.
  * @param quatDt  time-derivative of quaternion quat, i.e., e0', e1', e2', e3'.
  * @returns  bx, by, bz measures of B's angular velocity in A.
  *
@@ -73,25 +68,19 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
  *   https://ecommons.cornell.edu/handle/1813/637
  */
 // TODO(mitiguy) Move this and related methods (make unit test) to quaternion.h.
-template<typename T>
+template <typename T>
 Vector3<T> CalculateAngularVelocityExpressedInBFromQuaternion(
-    const Eigen::Quaternion<T>& quat,  const Vector4<T>& quatDt ) {
-  const T e0 = quat.w();
-  const T e1 = quat.x();
-  const T e2 = quat.y();
-  const T e3 = quat.z();
-  const T e0Dt = quatDt[0];
-  const T e1Dt = quatDt[1];
-  const T e2Dt = quatDt[2];
-  const T e3Dt = quatDt[3];
+    const Eigen::Quaternion<T>& quat, const Vector4<T>& quatDt) {
+  const T e0 = quat.w(), e1 = quat.x(), e2 = quat.y(), e3 = quat.z();
+  const T e0Dt = quatDt[0], e1Dt = quatDt[1], e2Dt = quatDt[2],
+          e3Dt = quatDt[3];
 
-  const T wx = 2*(-e1 * e0Dt  +  e0 * e1Dt  +  e3 * e2Dt  -  e2 * e3Dt);
-  const T wy = 2*(-e2 * e0Dt  -  e3 * e1Dt  +  e0 * e2Dt  +  e1 * e3Dt);
-  const T wz = 2*(-e3 * e0Dt  +  e2 * e1Dt  -  e1 * e2Dt  +  e0 * e3Dt);
+  const T wx = 2*(-e1*e0Dt + e0*e1Dt + e3*e2Dt - e2*e3Dt);
+  const T wy = 2*(-e2*e0Dt - e3*e1Dt + e0*e2Dt + e1*e3Dt);
+  const T wz = 2*(-e3*e0Dt + e2*e1Dt - e1*e2Dt + e0*e3Dt);
 
   return Vector3<T>(wx, wy, wz);
 }
-
 
 /**
  * Calculates exact solutions for quaternion and angular velocity expressed in
@@ -178,10 +167,10 @@ CalculateExactRotationalSolution(const double t, const Vector3d& w_initial) {
   Vector3d& wDt    = std::get<3>(returned_tuple);
 
   // Fill returned_tuple with rotation results.
-  quat << e0, e1, e2, e3;
+  quat   << e0, e1, e2, e3;
   quatDt << e0Dt, e1Dt, e2Dt, e3Dt;
-  w << wx, wy, wz;
-  wDt << wxDt, wyDt, wzDt;
+  w      << wx, wy, wz;
+  wDt    << wxDt, wyDt, wzDt;
 
   return returned_tuple;
 }
@@ -198,7 +187,7 @@ CalculateExactRotationalSolution(const double t, const Vector3d& w_initial) {
  * @returns Machine-precision values at time t are returned as defined below.
  *
  * std::tuple | Description
- * -----------|-------------------------------------------------
+ * -----------|-----------------------------------------------------------
  * xyz        | Vector3d x, y, z (Bcm's position from No, expressed in N).
  * xyzDt      | Vector3d with first-time-derivative of x, y, z.
  * xyzDDt     | Vector3D with second-time-derivative of x, y, z.
@@ -238,8 +227,8 @@ std::tuple<Vector3d, Vector3d, Vector3d>
   Vector3d& xyzDDt = std::get<2>(returned_tuple);
 
   // Fill returned_tuple with rotation results.
-  xyz << x, y, z;
-  xyzDt << xDt, yDt, zDt;
+  xyz    << x, y, z;
+  xyzDt  << xDt, yDt, zDt;
   xyzDDt << x_acceleration, y_acceleration, z_acceleration;
 
   return returned_tuple;
@@ -318,7 +307,7 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // TODO(mitiguy) Update comment/code when GitHub issue #4398 is fixed.
   // TODO(mitiguy) kRollPitchYaw is documented here for my sanity/later use.
   // TODO(mitiguy) Confirm above comment about state kRollPitchYaw: x' or vx...?
-  systems::VectorBase<double> &state_drake =
+  systems::VectorBase<double>& state_drake =
       *(context->get_mutable_continuous_state_vector());
 
   // Concatenate these 4 Eigen column matrices into one Eigen column matrix.
@@ -329,21 +318,17 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // Set state portion of Context from initial state.
   state_drake.SetFromVector(state_initial);
 
-  // Construct enough space to hold time-derivative of state_drake.
-  std::unique_ptr<systems::ContinuousState<double>> ds =
+  // Allocate space to hold time-derivative of state_drake.
+  std::unique_ptr<systems::ContinuousState<double>> stateDt_drake =
       rigid_body_plant.AllocateTimeDerivatives();
-  systems::ContinuousState<double> *stateDt_drake = ds.get();
-  // TODO(mitiguy) Remove next three lines or resolve it using Sherm's advise.
-  // std::unique_ptr<systems::ContinuousState<double>> stateDt_drake =
-  //     std::make_unique<systems::ContinuousState<double>>(
-  //         rigid_body_plant.AllocateTimeDerivatives() );
 
-  // Setup an empty input port - that serves no obvious purpose.
+  // Even though there are no actuators here we have to create a zero-length
+  // actuator input port.
   const int num_actuators = rigid_body_plant.get_num_actuators();
   context->FixInputPort(0, VectorXd::Zero(num_actuators));
 
   // Evaluate the time-derivatives of the state.
-  rigid_body_plant.EvalTimeDerivatives(*context, stateDt_drake);
+  rigid_body_plant.EvalTimeDerivatives(*context, stateDt_drake.get());
 
   // TODO(mitiguy) Add simulation and check numerical integrator.
 
@@ -414,15 +399,15 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   EXPECT_TRUE(CompareMatrices(w_from_quatDt_exact, w_exact, 10 * epsilon));
 
   // Compare remaining drake and exact results.
-  EXPECT_TRUE(CompareMatrices(w_drake,        w_exact,  10 * epsilon));
-  EXPECT_TRUE(CompareMatrices(wDt_drake,    wDt_exact,  10 * epsilon));
-  EXPECT_TRUE(CompareMatrices(xyz_drake,    xyz_exact,  10 * epsilon));
-  EXPECT_TRUE(CompareMatrices(xyzDt_drake,  xyzDt_exact,  10 * epsilon));
+  EXPECT_TRUE(CompareMatrices(w_drake,         w_exact, 10 * epsilon));
+  EXPECT_TRUE(CompareMatrices(wDt_drake,     wDt_exact, 10 * epsilon));
+  EXPECT_TRUE(CompareMatrices(xyz_drake,     xyz_exact, 10 * epsilon));
+  EXPECT_TRUE(CompareMatrices(xyzDt_drake, xyzDt_exact, 10 * epsilon));
 
   // Compensate for definition of vDt.
   const Vector3d acceleration_difference = w_drake.cross(v_drake);
   const Vector3d vDt_test = xyzDDt_exact - acceleration_difference;
-  EXPECT_TRUE(CompareMatrices(vDt_drake, vDt_test,  10 * epsilon));
+  EXPECT_TRUE(CompareMatrices(vDt_drake, vDt_test, 10 * epsilon));
 }
 
 }  // namespace cylinder_torque_free_analytical_solution
