@@ -573,13 +573,9 @@ void ExpressionMulFactory::AddConstant(const double constant_factor) {
 
 void ExpressionMulFactory::AddTerm(const Expression& base,
                                    const Expression& exponent) {
-  // Case: both of base and exponent are constant, multiply this by pow(base,
-  // exponent).
-  // Example: (4 * x^2) * (3^2) => (4 * (3^2)) * x^2
-  if (is_constant(base) && is_constant(exponent)) {
-    constant_factor_ *= pow(base, exponent).Evaluate();
-    return;
-  }
+  // The following assertion holds because of
+  // ExpressionMulFactory::AddExpression.
+  DRAKE_ASSERT(!(is_constant(base) && is_constant(exponent)));
   const auto it(term_to_exp_map_.find(base));
   if (it != term_to_exp_map_.end()) {
     // base is already in map.
