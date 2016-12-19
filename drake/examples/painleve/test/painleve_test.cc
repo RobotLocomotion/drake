@@ -116,6 +116,25 @@ TEST_F(PainleveTest, NoFrictionImpactThenNoImpact) {
                 std::numeric_limits<double>::epsilon());
 }
 
+// Verify that no exceptions thrown for a non-sliding configuration.
+TEST_F(PainleveTest, NoSliding) {
+  const double half_len = dut_->get_rod_length()/2;
+  const double r22 = std::sqrt(2)/2;
+  systems::ContinuousState<double>& v = *context_->
+                                             get_mutable_continuous_state();
+
+  // This configuration has no sliding velocity. 
+  v[0] = -half_len*r22;
+  v[1] = half_len*r22;
+  v[2] = 3*M_PI/4.0;
+  v[3] = 0.0;
+  v[4] = 0.0;
+  v[5] = 0.0;
+
+  // No exceptions should be thrown.
+  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+}
+
 /// Verify the second Painleve configuration occurs.
 TEST_F(PainleveTest, Inconsistent2) {
   SetSecondInitialConfig();

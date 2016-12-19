@@ -211,7 +211,7 @@ void Painleve<T>::EvalTimeDerivatives(
 
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
-  const T x = state.GetAtIndex(0);
+  //const T x = state.GetAtIndex(0);
   const T y = state.GetAtIndex(1);
   const T theta = state.GetAtIndex(2);
   const T xdot = state.GetAtIndex(3);
@@ -229,9 +229,9 @@ void Painleve<T>::EvalTimeDerivatives(
   const T stheta = sin(theta);
 
   // Determine which point is lower and use that to set a constant multiplier.
-  const T k = (ctheta < 0.0) ? 1.0 : -1.0;
+  const T k = (ctheta <= 0.0) ? 1.0 : -1.0;
   const T yc = y + k*ctheta*half_rod_length;
-  const T xcdot = x - k*ctheta*half_rod_length*thetadot;
+  const T xcdot = xdot - k*ctheta*half_rod_length*thetadot;
 
   // Obtain the structure we need to write into.
   DRAKE_ASSERT(derivatives != nullptr);
@@ -260,9 +260,6 @@ void Painleve<T>::EvalTimeDerivatives(
     DRAKE_DEMAND(ycdot > -std::numeric_limits<double>::epsilon() &&
                  ycdot < std::numeric_limits<double>::epsilon());
 
-    // We *should* ensure that the rod is not impacting at the contact, but it
-    // is not clear how a good tolerance would be assigned.
-
     // Compute the normal acceleration at the point of contact (yc_ddot),
     // *assuming zero normal force*.
     T yc_ddot = get_gravitational_acceleration() -
@@ -273,22 +270,57 @@ void Painleve<T>::EvalTimeDerivatives(
     if (yc_ddot < 0.0) {
       // Look for the case where the tangential velocity is zero.
       if (std::abs(xcdot) < std::numeric_limits<double>::epsilon()) {
-// TODO(edrumwri): Finish this implementation.
 /*
-        // Solve for the case where xddot = 0. These equations were determined
+        // Solve for the case where xddot = 0. I fully expect that the
+        // tangential force will be zero. However, I've computed these
+        // equations just in case. These equations were determined
         // by issuing the following command in Mathematica:
+        const T g = get_gravitational_acceleration();
+        const T N = -g*mass_ - ctheta*ell*k*mass_*thetadot*thetadot + 
+                    mass_*xddot;
+        const T F = -((-ctheta*lsq*g*k*k*mass_*stheta +
+                       2*ctheta*ell*J_*k*thetadot*thetadot -
+                       ctheta*ctheta*lsq*ell*k*k*k*mass_*stheta*thetadot*thetadot - 4*J_*xddot + 
+      ctheta*lsq*k*k*mass_*stheta*xddot)/
+                      (lsq*k*stheta*stheta));
+*/
+
+        const T lsq = rod_length_*rod_length_;
+        const T g = get_gravitational_acceleration();
+        const T N = ((2*(2*g*J_*mass_ +
+                       ctheta*rod_length_*J_*k*mass_*thetadot*thetadot))/
+                      (-4*J_ + ctheta*lsq*k*mass_*stheta));
+        const T F = 0;
 
         // Sanity check that normal force is non-negative. 
         DRAKE_DEMAND(N >= 0.0);
-
-        // Constraint fF such that it lies on the edge of the friction cone.
-        if (std::abs(F) > mu_*N)
-          F *= mu_*N/std::abs(F);
 
         // Now that normal force is computed, set the acceleration.
         f->SetAtIndex(3, F/mass_);
         f->SetAtIndex(4, N/mass_ + get_gravitational_acceleration());
         f->SetAtIndex(5, half_rod_length*(F*stheta + k*N*ctheta)/J_);
+
+        // Get yddot and xddot and compute xcddot and ycddot.
+        const T xddot = f->GetAtIndex(3);
+        const T yddot = f->GetAtIndex(4);
+        const T thetaddot = f->GetAtIndex(5);
+
+        // Verify that xcddot, ycddot = 0
+        const T ell = rod_length_;
+        const T xcddot = xddot - ell/2*k*ctheta*thetaddot - 
+                         ell/2*k*stheta*thetadot*thetadot;
+        const T ycddot = yddot - ell/2*k*stheta*thetaddot -
+                         ell/2*k*ctheta*thetadot*thetadot; 
+
+        DRAKE_DEMAND(std::abs(xcddot) < std::numeric_limits<double>::epsilon());
+        DRAKE_DEMAND(std::abs(ycddot) < std::numeric_limits<double>::epsilon());
+/*
+        // Constrain F such that it lies on the edge of the friction cone.
+        if (std::abs(F) > mu_*N) {
+          F *= mu_*N/std::abs(F);
+          f->SetAtIndex(3, F/mass_);
+          f->SetAtIndex(5, half_rod_length*(F*stheta + k*N*ctheta)/J_);
+        }
 */
       } else { 
         // These equations were determined by issuing the following
