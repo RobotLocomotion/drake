@@ -1,5 +1,4 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
-
 #include <algorithm>
 
 #include "drake/common/drake_assert.h"
@@ -278,7 +277,7 @@ void PiecewisePolynomial<CoefficientType>::setPolynomialMatrixBlock(
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::slice(int start_segment_index,
-                                            int num_segments) {
+                                            int num_segments) const {
   segmentNumberRangeCheck(start_segment_index);
   segmentNumberRangeCheck(start_segment_index + num_segments - 1);
 
