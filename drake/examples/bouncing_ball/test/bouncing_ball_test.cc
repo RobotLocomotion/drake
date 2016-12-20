@@ -10,7 +10,10 @@ namespace drake {
 namespace bouncing_ball {
 namespace {
 
-static std::pair<double, double> CalcClosedFormHeightAndVelocity(double g, double e, double x0, double tf) {
+static std::pair<double, double> CalcClosedFormHeightAndVelocity(double g,
+                                                                 double e,
+                                                                 double x0,
+                                                                 double tf) {
   // The time that the ball will impact the ground is:
   // gt^2/2 + x0 = 0
   // Solve the quadratic equation for t.
@@ -170,8 +173,8 @@ TEST_F(BouncingBallTest, Simulate) {
   std::tie(height, velocity) = CalcClosedFormHeightAndVelocity(
                                     dut_->get_gravitational_acceleration(),
                                     dut_->get_restitution_coef(), x0, t_final);
-  EXPECT_NEAR(xc->GetAtIndex(0), height, tol); 
-  EXPECT_NEAR(xc->GetAtIndex(1), velocity, tol); 
+  EXPECT_NEAR(xc->GetAtIndex(0), height, tol);
+  EXPECT_NEAR(xc->GetAtIndex(1), velocity, tol);
 }
 
 }  // namespace

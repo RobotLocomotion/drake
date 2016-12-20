@@ -25,7 +25,7 @@ namespace systems {
 /// Context (i.e., Simulator changes the context itself for "discrete" updates,
 /// while the System's unrestricted update function is able to change all
 /// state variables (continuous, discrete, and abstract), albeit indirectly
-/// (through Simulator). Such unrestricted updates should be avoided, if 
+/// (through Simulator). Such unrestricted updates should be avoided, if
 /// possible, by using the other mechanisms for updated variables: discrete
 /// variables can be modified using EvalDiscreteVariableUpdates()
 /// and continuous variables are normally modified during the course of the
