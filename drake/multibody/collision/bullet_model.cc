@@ -294,7 +294,7 @@ void BulletModel::DoAddElement(const Element& element) {
         // TODO(SeanCurtis-TRI): This code is disabled because the collision
         // detection code is not yet in a state that can handle non-convex
         // meshes.  See issue 4548.
-//        if (elements[id]->is_anchored()) {  // An anchored mesh representation.
+//        if (elements[id]->is_anchored()) {
 //          try {
 //            bt_shape = newBulletStaticMeshShape(mesh, true);
 //            bt_shape_no_margin = newBulletStaticMeshShape(mesh, false);
