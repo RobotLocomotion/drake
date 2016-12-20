@@ -47,8 +47,12 @@ cc_test(
     ],
 )
 
-# TODO(maddog@tri.global)  Run this test somehow, too.
-#py_test(
-#    name = "yaml_to_obj_test",
-#    srcs = ["test/yaml_to_obj_test.py"],
-#)
+py_test(
+    name = "yaml_to_obj_test",
+    srcs = ["test/yaml_to_obj_test.py"],
+    args = ["drake/automotive/maliput/utility/yaml_to_obj"],
+    data = [
+        "//drake/automotive/maliput/monolane:yamls",
+        ":yaml_to_obj",
+    ],
+)

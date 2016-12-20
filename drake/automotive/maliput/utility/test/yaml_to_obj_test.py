@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-"""
+"""Attempts to generate a Wavefront OBJ file from each non-blacklisted
+*.yaml file from parent directory, returning a non-zero exit code if any
+file fails.
 """
 
 import glob
@@ -11,29 +13,30 @@ import sys
 
 _THIS_FILE = os.path.abspath(__file__)
 _THIS_DIR = os.path.dirname(_THIS_FILE)
-_DRAKE_PATHS_DIR = os.path.dirname(os.path.dirname(os.path.dirname(_THIS_DIR)))
-
-sys.path.append(_DRAKE_PATHS_DIR)
-
-from drake_paths import DRAKE_DRAKE_BUILD_DIR
-
 
 class TestYamlObjing(unittest.TestCase):
+    YAML_TO_OBJ = "yaml_to_obj"
     def test_yaml_files(self):
         this_dir = os.path.dirname(_THIS_DIR)
-        yaml_files = glob.glob(os.path.join(this_dir, '../monolane/*.yaml'))
+        yaml_dir = os.path.join(this_dir, '../monolane')
+
+        self.assertTrue(os.path.exists(self.YAML_TO_OBJ),
+                        self.YAML_TO_OBJ + " not found")
+
+        yaml_files = glob.glob(os.path.join(yaml_dir, '*.yaml'))
         blacklist = []
         test_yaml_files = [f for f in yaml_files
                            if not any([b in f for b in blacklist])]
-        assert len(test_yaml_files) > 0
+        self.assertTrue(len(test_yaml_files) > 0)
+
         for yf in test_yaml_files:
             subprocess.check_call([
-                os.path.join(DRAKE_DRAKE_BUILD_DIR,
-                             "automotive/maliput/utility/yaml_to_obj"),
+                self.YAML_TO_OBJ,
                 "-yaml_file", yf,
-                "-obj_file", "/dev/null"
+                "-obj_file", "/dev/null",
             ])
 
 
 if __name__ == '__main__':
+    TestYamlObjing.YAML_TO_OBJ = sys.argv.pop()
     unittest.main()
