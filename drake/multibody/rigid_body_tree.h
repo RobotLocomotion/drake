@@ -128,9 +128,17 @@ class RigidBodyTree {
    * displacing them from their current configurations.  These new poses
    * will be considered the elements' pose with respect to the body.
    *
+   * This is important to the parsing code to maintain an Drake RigidBodyTree
+   * invariant.  RigidBody instances do not maintain their own pose relative
+   * to their in-board joint.  The joint's space is considered to be the body's
+   * space.  So, if a urdf/sdf file defines the body with a non-identity pose
+   * relative to the parent, the parser uses this to move the collision elements
+   * relative to the effective body frame -- that of the parent joint.
+   *
    * @param body The body whose collision elements will be moved.
    * @param displace_transform The transform to apply to each collision element.
    * @param true if the collision element was successfully updated.
+   * @returns true if the @body's elements were successfully transformed.
    */
   bool transformCollisionFrame(
       RigidBody<T>* body,
@@ -1304,7 +1312,7 @@ class RigidBodyTree {
 
   int next_available_clique_ = 0;
 
- public:
+ private:
   // Utility class for storing body collision data during RBT instantiation.
   struct BodyCollisionItem {
     BodyCollisionItem(const std::string& group_name,
@@ -1317,8 +1325,6 @@ class RigidBodyTree {
   };
 
   typedef std::vector<BodyCollisionItem> BodyCollisions;
-
- private:
   // This data structures supports an orderly instantiation of the collision
   // elements.  It is populated during tree construction, exercised during
   // RigidBodyTree::compile at the conclusion of which, it is emptied.
@@ -1326,10 +1332,10 @@ class RigidBodyTree {
   // proper, intermediate representation.
   std::unordered_map<RigidBody<T>*, BodyCollisions>
       body_collision_map_;
-  // Collision results depend on the order the collision elements are added.
-  // This queues the collision elements in the added order so that when
-  // actually registered with the collision engine, they'll be submitted
-  // in the invocation order.
+  // Bullet's collision results are affected by the order in which the collision
+  // elements are added. This queues the collision elements in the added order
+  // so that when actually registered with the collision engine, they'll be
+  // submitted in the invocation order.
   std::vector< std::unique_ptr<DrakeCollision::Element>> element_order_;
 };
 

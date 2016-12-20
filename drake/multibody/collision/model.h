@@ -21,7 +21,7 @@ class Model {
 
   /** Adds a collision element to this model.  It only adds the provided element
    * if the given @p element has a unique identifier.
-   * @param element the element to add; the Model takes ownership.
+   * @param element the element to add.
    * @returns true if the element was added successfully.
    */
   bool AddElement(std::unique_ptr<Element> element);
