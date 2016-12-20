@@ -27,7 +27,7 @@ bool ZMPPlanner::CheckStationaryEndPoint(
   int degree = last_segment.getSegmentPolynomialDegree(0);
   for (int d = degree; d >= 0; d--) {
     if (derivative.value(derivative.getEndTime()).norm() >
-        kStaitionaryThreshold) {
+        kStationaryThreshold) {
       return false;
     }
     derivative = derivative.derivative();
