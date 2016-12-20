@@ -272,18 +272,18 @@ TEST_F(SymbolicVariablesTest, IsStrictSuperSetOf) {
 
 TEST_F(SymbolicVariablesTest, ToString) {
   const Variables vars0{};
-  const Variables vars1{x_, y_, z_, w_, v_};
+  const Variables vars1{v_, w_, x_, y_, z_};
   const Variables vars2{x_, y_};
   const Variables vars3{x_, y_, z_};
-  const Variables vars4{z_, w_, v_};
-  const Variables vars5{w_, v_};
+  const Variables vars4{v_, w_, z_};
+  const Variables vars5{v_, w_};
 
   EXPECT_EQ(vars0.to_string(), "{}");
-  EXPECT_EQ(vars1.to_string(), "{x, y, z, w, v}");
+  EXPECT_EQ(vars1.to_string(), "{v, w, x, y, z}");
   EXPECT_EQ(vars2.to_string(), "{x, y}");
   EXPECT_EQ(vars3.to_string(), "{x, y, z}");
-  EXPECT_EQ(vars4.to_string(), "{z, w, v}");
-  EXPECT_EQ(vars5.to_string(), "{w, v}");
+  EXPECT_EQ(vars4.to_string(), "{v, w, z}");
+  EXPECT_EQ(vars5.to_string(), "{v, w}");
 }
 }  // namespace
 }  // namespace symbolic
