@@ -8,9 +8,9 @@
 #include <lcm/lcm-cpp.hpp>
 #include "drake/lcmt_drake_signal.hpp"
 
-#include "drake/system1/Simulation.h"
-#include "drake/system1/System.h"
-#include "drake/system1/cascade_system.h"
+#include "drake/multibody/rigid_body_system1/Simulation.h"
+#include "drake/multibody/rigid_body_system1/System.h"
+#include "drake/multibody/rigid_body_system1/cascade_system.h"
 
 namespace drake {
 

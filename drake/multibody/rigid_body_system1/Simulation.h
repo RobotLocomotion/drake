@@ -6,8 +6,8 @@
 #include <stdexcept>
 #include <thread>
 
-#include "drake/system1/simulation_options.h"
-#include "drake/system1/vector.h"
+#include "drake/multibody/rigid_body_system1/simulation_options.h"
+#include "drake/multibody/rigid_body_system1/vector.h"
 
 namespace drake {
 

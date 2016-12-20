@@ -8,7 +8,7 @@
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/system1/System.h"
+#include "drake/multibody/rigid_body_system1/System.h"
 
 using drake::multibody::joints::FloatingBaseType;
 using drake::multibody::joints::kQuaternion;
