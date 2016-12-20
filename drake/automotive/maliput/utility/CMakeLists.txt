@@ -1,4 +1,7 @@
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
+
 drake_install_headers(
   generate_obj.h
   generate_urdf.h
