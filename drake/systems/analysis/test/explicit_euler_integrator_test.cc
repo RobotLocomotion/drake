@@ -184,6 +184,9 @@ GTEST_TEST(IntegratorTest, StepSize) {
 
   // The step ends on the next update time, even though it's a little larger
   // than the max step time, because the max step time stretches.
+  // TODO(edrumwri): This test is brittle because it assumes that the stretch
+  //                 "factor" is 1%. Update when stretch is programmatically
+  //                 settable.
   {
     const double publish_dt = 42.0;
     const double update_dt = 0.01001;
@@ -206,11 +209,15 @@ GTEST_TEST(IntegratorTest, StepSize) {
     t = context->get_time();
   }
 
-  // The step must still end on the desired step end time.
+  // The step must still end on the desired step end time. This tests that
+  // no stretching to update_dt is done.
+  // TODO(edrumwri): This test is brittle because it assumes that the stretch
+  //                 "factor" is 1%. Update when stretch is programmatically
+  //                 settable.
   {
     const double publish_dt = 42.0;
     const double update_dt = 0.01001;
-    const double boundary_dt = 0.0009;
+    const double boundary_dt = 0.01;
     typename IntegratorBase<double>::StepResult result =
         integrator.StepOnceAtMost(publish_dt, update_dt, boundary_dt);
     EXPECT_EQ(IntegratorBase<double>::kReachedBoundaryTime, result);

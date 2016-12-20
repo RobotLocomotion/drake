@@ -360,7 +360,8 @@ Simulator<T>::Simulator(const System<T>& system,
   const int nv = cstate->get_generalized_velocity().size();
   const int nz = cstate->get_misc_continuous_state().size();
 
-  // Allocate the necessary temporaries for holding state variables.
+  // Allocate the necessary temporaries for storing state in update calls
+  // (which will then be transferred back to system state).
   discrete_updates_ = system_.AllocateDiscreteVariables();
   unrestricted_updates_ = std::make_unique<State<T>>();
   unrestricted_updates_->set_continuous_state(
@@ -500,7 +501,9 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // Get the dt that gets to the boundary time.
     const T boundary_dt = boundary_time - step_start_time;
 
-    // Attempt to integrate.
+    // Attempt to integrate. Updates and boundary times are consciously
+    // distinguished between. See internal documentation for 
+    // IntegratorBase::StepOnceAtMost() for more information. 
     typename IntegratorBase<T>::StepResult result =
         integrator_->StepOnceAtMost(next_publish_dt, next_update_dt,
                                     boundary_dt);

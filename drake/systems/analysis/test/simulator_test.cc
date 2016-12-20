@@ -258,6 +258,90 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   EXPECT_EQ(spring_mass.get_update_count(), 30);
 }
 
+// A mock System that requests a single publication at a prespecified time. 
+namespace {
+class UnrestrictedUpdater : public LeafSystem<double> {
+ public:
+  UnrestrictedUpdater(double upd_t) : upd_t_(upd_t) {
+  }
+
+  ~UnrestrictedUpdater() override {}
+
+  std::string get_name() const override { return "UnrestrictedUpdater"; }
+
+  void EvalOutput(const Context<double>& context,
+                  SystemOutput<double>* output) const override {}
+
+  void DoCalcNextUpdateTime(const systems::Context<double>& context,
+                            systems::UpdateActions<double>* actions) 
+                              const override {
+    const double inf = std::numeric_limits<double>::infinity();
+    actions->time = (context.get_time() < upd_t_) ? upd_t_ : inf;
+    actions->events.push_back(systems::DiscreteEvent<double>());
+    actions->events.back().action = systems::DiscreteEvent<double>::
+                                               kUnrestrictedUpdateAction;
+  }
+
+  void DoEvalUnrestrictedUpdate(
+      const drake::systems::Context<double>& context,
+      drake::systems::State<double>* state) const override {
+    if (unrestricted_update_callback_ != nullptr) 
+      unrestricted_update_callback_(context, state);
+  }
+
+  void EvalTimeDerivatives(
+      const Context<double>& context,
+      ContinuousState<double>* derivatives) const override {
+    if (derivatives_callback_ != nullptr) derivatives_callback_(context);
+  }
+
+  void set_unrestricted_update_callback(
+      std::function<void(const Context<double>&, State<double>*)> callback) {
+    unrestricted_update_callback_ = callback;
+  }
+
+  void set_derivatives_callback(
+      std::function<void(const Context<double>&)> callback) {
+    derivatives_callback_ = callback;
+  }
+
+ private:
+  const double upd_t_{0.0};
+  std::function<void(const Context<double>&, State<double>*)> 
+                                      unrestricted_update_callback_{nullptr};
+  std::function<void(const Context<double>&)> derivatives_callback_{nullptr};
+};
+} // (anonymous)
+
+// Tests that the simulator captures an unrestricted update at the exact time
+// (i.e., without accumulating floating point error).
+GTEST_TEST(SimulatorTest, ExactUpdateTime) {
+
+  // Create the UnrestrictedUpdater system 
+  const double upd_t = 1e-10;                // Inexact floating point rep.
+  UnrestrictedUpdater unrest_upd(upd_t);
+  Simulator<double> simulator(unrest_upd);  // Use default Context.
+
+  // Set time to an exact floating point representation; we want upd_t to
+  // be much smaller in magnitude than the time, hence the negative time.
+  simulator.get_mutable_context()->set_time(-1.0/1024);
+
+  // Capture the time at which an update is done using a callback function. 
+  std::vector<double> updates;
+  unrest_upd.set_unrestricted_update_callback(
+      [&updates](const Context<double>& context, State<double>* state) {
+    updates.push_back(context.get_time());
+  });
+
+  // Simulate forward. 
+  simulator.Initialize();
+  simulator.StepTo(1.);
+
+  // Check that the update occurs at exactly the desired time. 
+  EXPECT_EQ(updates.size(), 1);
+  EXPECT_EQ(updates.front(), upd_t);
+}
+
 // Tests Simulator for a Diagram system consisting of a tree of systems.
 // In this case the System is a PidControlledSpringMassSystem which is a
 // Diagram containing a SpringMassSystem (the plant) and a PidController which
@@ -491,18 +575,13 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   }
 }
 
-// TODO(edrumwri): Re-enable below when state can be copied wtih AutoDiff.
-//                 Line that causes syntax errors is Simulator.h:428 when
-//                 compiled with lines below uncommented. See issue #4535.
-/*
-// A basic sanity check that AutoDiff works at all.
+// A basic sanity check that AutoDiff works.
 GTEST_TEST(SimulatorTest, AutodiffBasic) {
   SpringMassSystem<AutoDiffXd> spring_mass(1., 1., 0.);
   Simulator<AutoDiffXd> simulator(spring_mass);
   simulator.Initialize();
   simulator.StepTo(1);
 }
-*/
 
 }  // namespace
 }  // namespace systems
