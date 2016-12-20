@@ -414,8 +414,11 @@ class System {
   /// Transforms a given generalized velocity `v` to the time derivative `qdot`
   /// of the generalized configuration `q` taken from the supplied Context.
   /// `v` and `qdot` are related linearly by `qdot = N(q) * v`, where `N` is a
-  /// block diagonal matrix with a block for each tree joint. Note that `v` is
-  /// *not* taken from the Context; it is given as an argument here.
+  /// block diagonal matrix. For example, in a multibody system there will be
+  /// one block of `N` per tree joint. This computation requires only `O(nq)`
+  /// time where `nq` is the size of `qdot`. Note that `v` is *not* taken from
+  /// the Context; it is given as an argument here.
+  ///
   /// See the alternate signature if you already have the generalized
   /// velocity in an Eigen VectorX object; this signature will copy the
   /// VectorBase into an Eigen object before performing the computation.
@@ -438,15 +441,20 @@ class System {
 
   /// Transforms the time derivative `qdot` of the generalized configuration `q`
   /// to generalized velocities `v`. `v` and `qdot` are related linearly by
-  /// `qdot = N(q) * v`, where `N` is a block diagonal matrix with a block for
-  /// each tree joint. Although `N` is not necessarily square,
-  /// its left pseudo-inverse `N+` can be used to invert that relationship
-  /// without residual error. Using the configuration `q` from the given
-  /// context this method calculates `v = N+ * qdot` (where `N+=N+(q)`) for
-  /// a given `qdot`. This method does not take `qdot` from the context. See the
-  /// alternate signature if you already have `qdot` in an %Eigen VectorX
-  /// object; this signature will copy the VectorBase into an %Eigen object
-  /// before performing the computation.
+  /// `qdot = N(q) * v`, where `N` is a block diagonal matrix. For example, in a
+  /// multibody system there will be one block of `N` per tree joint. Although
+  /// `N` is not necessarily square, its left pseudo-inverse `N+` can be used to
+  /// invert that relationship without residual error, provided that `qdot` is
+  /// in the range space of `N` (that is, if it *could* have been produced as
+  /// `qdot=N*v` for some `v`). Using the configuration `q` from the given
+  /// Context this method calculates `v = N+ * qdot` (where `N+=N+(q)`) for
+  /// a given `qdot`. This computation requires only `O(nq)` time where `nq` is
+  /// the size of `qdot`. Note that this method does not take `qdot` from the
+  /// Context.
+  ///
+  /// See the alternate signature if you already have `qdot` in an %Eigen
+  /// VectorX object; this signature will copy the VectorBase into an %Eigen
+  /// object before performing the computation.
   /// @see MapVelocityToQDot()
   void MapQDotToVelocity(const Context<T>& context, const VectorBase<T>& qdot,
                          VectorBase<T>* generalized_velocity) const {
@@ -475,7 +483,7 @@ class System {
   /// Diagram, names of sibling subsystems should be unique.
   void set_name(const std::string& name) { name_ = name; }
 
-  /// Retrieve the name last supplied to set_name().
+  /// Retrieves the name last supplied to set_name().
   std::string get_name() const { return name_; }
 
   /// Writes the full path of this System in the tree of Systems to @p output.
@@ -743,7 +751,7 @@ class System {
   /// the given `derivatives` argument has the same constituent structure as was
   /// produced by AllocateTimeDerivatives().
   ///
-  /// The default implementation does nothing if the `derivatives` vector is,
+  /// The default implementation does nothing if the `derivatives` vector is
   /// size zero and aborts otherwise.
   virtual void DoCalcTimeDerivatives(const Context<T>& context,
                                      ContinuousState<T>* derivatives) const {
@@ -833,8 +841,9 @@ class System {
 
   /// Provides the substantive implementation of MapQDotToVelocity().
   ///
-  /// The default implementation uses the identity mapping. It throws
-  /// std::runtime_error if the `generalized_velocity` and
+  /// The default implementation uses the identity mapping, and correctly does
+  /// nothing if the %System does not have second-order state variables. It
+  /// throws std::runtime_error if the `generalized_velocity` and
   /// `qdot` are not the same size, but that is not enough to guarantee that
   /// the default implementation is adequate. Child classes must
   /// override this function if qdot != v (even if they are the same size).
@@ -842,10 +851,12 @@ class System {
   /// for orientation but angular velocity for rotational rate rather than
   /// rotation angle derivatives.
   ///
-  /// Implementations may assume that `qdot` has already been
-  /// validated to be the same size as `q` in the given
-  /// Context, and that `generalized_velocity` is non-null. Implementations that
-  /// are not second-order systems may simply do nothing.
+  /// If you implement this method you are required to use no more than `O(nq)`
+  /// time where `nq` is the size of `qdot`, so that the %System can meet the
+  /// performance guarantee made for the public interface, and you must also
+  /// implement DoMapVelocityToQDot(). Implementations may assume that `qdot`
+  /// has already been validated to be the same size as `q` in the given
+  /// Context, and that `generalized_velocity` is non-null.
   virtual void DoMapQDotToVelocity(const Context<T>& context,
                                    const Eigen::Ref<const VectorX<T>>& qdot,
                                    VectorBase<T>* generalized_velocity) const {
@@ -855,15 +866,16 @@ class System {
     // and time derivative of generalized configuration are identically sized
     // but not identical!
     const int n = qdot.size();
-    // You need to override System<T>::DoMapConfigurationDerivativestoVelocity!
+    // You need to override System<T>::DoMapQDottoVelocity!
     DRAKE_THROW_UNLESS(generalized_velocity->size() == n);
     generalized_velocity->SetFromVector(qdot);
   }
 
   /// Provides the substantive implementation of MapVelocityToQDot().
-
-  /// The default implementation uses the identity mapping. It throws
-  /// std::runtime_error if the `generalized_velocity` (`v`) and
+  ///
+  /// The default implementation uses the identity mapping, and correctly does
+  /// nothing if the %System does not have second-order state variables. It
+  /// throws std::runtime_error if the `generalized_velocity` (`v`) and
   /// `qdot` are not the same size, but that is not enough to guarantee that
   /// the default implementation is adequate. Child classes must
   /// override this function if `qdot != v` (even if they are the same size).
@@ -871,10 +883,12 @@ class System {
   /// for orientation but angular velocity for rotational rate rather than
   /// rotation angle derivatives.
   ///
-  /// Implementations may assume that `generalized_velocity` has already been
-  /// validated to be the same size as the generalized velocity in the given
-  /// Context, and that `qdot` is non-null. Implementations that are not
-  /// second-order systems may simply do nothing.
+  /// If you implement this method you are required to use no more than `O(nq)`
+  /// time where `nq` is the size of `qdot`, so that the %System can meet the
+  /// performance guarantee made for the public interface, and you must also
+  /// implement DoMapQDotToVelocity(). Implementations may assume that
+  /// `generalized_velocity` has already been validated to be the same size as
+  /// `v` in the given Context, and that `qdot` is non-null.
   virtual void DoMapVelocityToQDot(
       const Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
