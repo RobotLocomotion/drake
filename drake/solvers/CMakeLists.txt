@@ -29,7 +29,7 @@ set(optimization_requires)
 list(APPEND optimization_files
   ${private_headers}
   constraint.cc
-  decision_variable.cc
+  decision_variable_types.cc
   equality_constrained_qp_solver.cc
   linear_system_solver.cc
   mathematical_program.cc
@@ -82,7 +82,8 @@ drake_install_headers(
   function.h
   mathematical_program.h
   mathematical_program_solver_interface.h
-  decision_variable.h
+  decision_variable_types.h
+  solution_result.h
   system_identification.h
   )
 drake_install_libraries(drakeOptimization)
@@ -134,4 +135,3 @@ endif()
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
-

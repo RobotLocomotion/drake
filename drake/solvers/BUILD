@@ -22,7 +22,7 @@ cc_library(
 cc_library(
     name = "mathematical_program",
     srcs = [
-        "decision_variable.cc",
+        "decision_variable_types.cc",
         "dreal_solver.h",
         "equality_constrained_qp_solver.cc",
         "equality_constrained_qp_solver.h",
@@ -45,7 +45,7 @@ cc_library(
     ],
     hdrs = [
         "constraint.h",
-        "decision_variable.h",
+        "decision_variable_types.h",
         "function.h",
         "mathematical_program.h",
         "mathematical_program_solver_interface.h",
@@ -57,6 +57,7 @@ cc_library(
         "//drake/common:autodiff",
         "//drake/common:number_traits",
         "//drake/common:polynomial",
+        "//drake/common:symbolic",
         "//drake/math:matrix_util",
     ],
 )
