@@ -85,7 +85,7 @@ GTEST_TEST(GenerateObj, Hodge) {
   const double kOriPrecision = 0.01 * M_PI;
   mono::Builder b({-5., 5.}, {-10., 10.}, kPosPrecision, kOriPrecision);
 
-  mono::XYZPoint start {{0., 0., 0.}, {0., 0., 0., 0.}};
+  mono::Endpoint start {{0., 0., 0.}, {0., 0., 0., 0.}};
   auto c1 = b.Connect("1", start, 100,
                       {20., 0., 0., 0.});
   auto c2 = b.Connect("2", c1->end(), mono::ArcOffset(50., kPi2),
@@ -97,7 +97,7 @@ GTEST_TEST(GenerateObj, Hodge) {
   auto c5 = b.Connect("5", c4->end(), mono::ArcOffset(50., kPi2),
                       {0., 0., 0.5, 0.});
   /*auto c6 =*/ b.Connect("6", c5->end(), mono::ArcOffset(50., kPi2),
-                          c1->start().z);
+                          c1->start().z());
 // SOON//  b.Connect("6", c5->end(), c1->begin());
 
   std::unique_ptr<const api::RoadGeometry> rg = b.Build({"apple"});
@@ -110,7 +110,7 @@ GTEST_TEST(GenerateObj, Fig8Builder) {
   const double kOriPrecision = 0.01 * M_PI;
   mono::Builder b({-2., 2.}, {-4., 4.}, kPosPrecision, kOriPrecision);
 
-  mono::XYZPoint start {{0., 0., -M_PI / 4.}, {0., 0., 0., 0.}};
+  mono::Endpoint start {{0., 0., -M_PI / 4.}, {0., 0., 0., 0.}};
   auto c0 = b.Connect("0", start,
                       50., {3., 0., 0., 0.});
 
@@ -143,7 +143,7 @@ GTEST_TEST(GenerateObj, DoubleRing) {
   const double kOriPrecision = 0.01 * M_PI;
   mono::Builder b({-2., 2.}, {-4., 4.}, kPosPrecision, kOriPrecision);
 
-  mono::XYZPoint start {{0., 0., M_PI / 2.}, {0., 0., 0., 0.}};
+  mono::Endpoint start {{0., 0., M_PI / 2.}, {0., 0., 0., 0.}};
   auto cr0 = b.Connect("r0", start,
                       mono::ArcOffset(50., -0.25 * M_PI), {0., 0., 0.0, 0.});
   auto cr1 = b.Connect("r1", cr0->end(),
@@ -161,7 +161,7 @@ GTEST_TEST(GenerateObj, DoubleRing) {
                       mono::ArcOffset(50., 0.75 * M_PI), {0., 0., 0.0, 0.});
   /*auto cl3 =*/ b.Connect("l3", cl2->end(),
                            mono::ArcOffset(50., 0.25 * M_PI),
-                           start.z);
+                           start.z());
 
   std::unique_ptr<const api::RoadGeometry> rg = b.Build({"double-ring"});
   GenerateObjFile(rg.get(), "/tmp", "double-ring", 1.);
@@ -174,7 +174,7 @@ GTEST_TEST(GenerateObj, TeeIntersection) {
   const double kOriPrecision = 0.01 * M_PI;
   mono::Builder b({-2., 2.}, {-4., 4.}, kPosPrecision, kOriPrecision);
 
-  mono::XYZPoint start {{0., 0., M_PI / 2.}, {0., 0., 0., 0.}};
+  mono::Endpoint start {{0., 0., M_PI / 2.}, {0., 0., 0., 0.}};
   auto cs = b.Connect("south",
                       {{0., -10., -M_PI / 2.}, {0., 0., 0., 0.}},
                       10., {0., 0., 0.0, 0.});
@@ -187,13 +187,13 @@ GTEST_TEST(GenerateObj, TeeIntersection) {
 
   auto csw = b.Connect("south-west", cs->start().reverse(),
                        mono::ArcOffset(10., M_PI / 2.),
-                       cw->start().z);
+                       cw->start().z());
   auto cse = b.Connect("south-east", cs->start().reverse(),
                        mono::ArcOffset(10., -M_PI / 2.),
-                       ce->start().z);
+                       ce->start().z());
   auto cew = b.Connect("east-west",  ce->start().reverse(),
                        20.,
-                       cw->start().z);
+                       cw->start().z());
   b.MakeGroup("intersection", {csw, cse, cew});
 
   b.SetDefaultBranch(ce, api::LaneEnd::kStart, cew, api::LaneEnd::kStart);
@@ -211,7 +211,7 @@ GTEST_TEST(GenerateObj, Helix) {
   const double kOriPrecision = 0.01 * M_PI;
   mono::Builder b({-2., 2.}, {-4., 4.}, kPosPrecision, kOriPrecision);
 
-  mono::XYZPoint start {{0., -10., 0.}, {0., 0., 0.4, 0.}};
+  mono::Endpoint start {{0., -10., 0.}, {0., 0., 0.4, 0.}};
   b.Connect("1", start,
             mono::ArcOffset(10., 4. * M_PI), {20., 0., 0.4, 0.});
 
