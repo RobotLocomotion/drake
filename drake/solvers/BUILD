@@ -19,13 +19,13 @@ cc_library(
 )
 
 cc_library(
-    name = "decision_variable",
-    srcs = ["decision_variable.cc"],
-    hdrs = ["decision_variable.h"],
+    name = "decision_variable_types",
+    srcs = ["decision_variable_types.cc"],
+    hdrs = ["decision_variable_types.h"],
     linkstatic = 1,
     deps = [
         "//drake/common",
-        "//drake/common:number_traits",
+        "//drake/common:symbolic",
     ],
 )
 
@@ -82,7 +82,7 @@ cc_library(
     linkstatic = 1,
     deps = [
         ":constraint",
-        ":decision_variable",
+        ":decision_variable_types",
         ":function",
         ":gurobi_solver",
         "//drake/common",
@@ -124,7 +124,7 @@ cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":constraint",
-        ":decision_variable",
+        ":decision_variable_types",
         ":function",
         "//drake/common",
         "//drake/common:autodiff",
