@@ -637,6 +637,16 @@ class RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
+  /**
+   * Adds a new collision element to the tree.  The input @p element will be
+   * copied and that copy will be stored in the tree, associated with the
+   * given @p body.  This association is pending.  It is necessary to call
+   * compile() in order for the element to be fully integrated into the
+   * RigidBodyTree.
+   * @param element the element to add.
+   * @param body the body to associate the element with.
+   * @param group_name a group name to tag the associated element with.
+   */
   void addCollisionElement(
       const DrakeCollision::Element& element,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -1284,8 +1294,8 @@ class RigidBodyTree {
   RigidBodyTree& operator=(const RigidBodyTree&) { return *this; }
 
   std::set<std::string> already_printed_warnings;
-  // TODO(SeanCurtis-TRI): This isn't properly used.  Initialized should be
-  // renamed "finalized".  No query operations should work if it hasn't been
+  // TODO(SeanCurtis-TRI): This isn't properly used.
+  // No query operations should work if it hasn't been
   // initialized.  Calling compile is the only thing that should set this.
   // Furthermore, any operation that changes the tree (e.g., adding a body,
   // collision element, etc.) should clear the bit again, requiring another
