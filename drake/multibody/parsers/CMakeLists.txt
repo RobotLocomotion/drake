@@ -21,13 +21,12 @@ drake_install_headers(
     xml_util.h)
 drake_install_pkg_config_file(drake-multibody-parsers
     TARGET drakeMultibodyParsers
-    LIBS
-        -ldrakeMultibodyParsers
-        -lspruce
-        -ltinyxml2
+    LIBS -ldrakeMultibodyParsers
     REQUIRES
         drake-rbm
-        eigen3)
+        eigen3
+        spruce
+        tinyxml2)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

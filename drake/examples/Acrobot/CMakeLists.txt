@@ -12,7 +12,7 @@ if(lcm_FOUND)
       drakeAcrobotPlant
       drakeRigidBodyPlant
       drakeSystemAnalysis)
-  add_test(NAME acrobot_run_passive COMMAND acrobot_run_passive -realtime_factor 0.0)
+  drake_add_test(NAME acrobot_run_passive COMMAND acrobot_run_passive -realtime_factor 0.0)
 
   add_executable(acrobot_run_lqr acrobot_run_lqr.cc)
   target_link_libraries(acrobot_run_lqr
@@ -20,7 +20,7 @@ if(lcm_FOUND)
       drakeMultibodyParsers
       drakeRigidBodyPlant
       drakeSystemAnalysis)
-  add_test(NAME acrobot_run_lqr COMMAND acrobot_run_lqr -realtime_factor 0.0)
+  drake_add_test(NAME acrobot_run_lqr COMMAND acrobot_run_lqr -realtime_factor 0.0)
 
   add_executable(acrobot_run_lqr_w_estimator acrobot_run_lqr_w_estimator.cc)
   target_link_libraries(acrobot_run_lqr_w_estimator
@@ -30,7 +30,7 @@ if(lcm_FOUND)
       drakeRigidBodyPlant
       drakeSensors
       drakeSystemAnalysis)
-  add_test(NAME acrobot_run_lqr_w_estimator COMMAND acrobot_run_lqr_w_estimator -realtime_factor 0.0)
+  drake_add_test(NAME acrobot_run_lqr_w_estimator COMMAND acrobot_run_lqr_w_estimator -realtime_factor 0.0)
 
 endif(lcm_FOUND)
 

@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<robot name="uniformSolidCylinderNoForceTorque">
+  <material name="darkGreen"> <color rgba="0.0 0.8 0.0 1.0" />  </material>
+  <material name="darkRed">   <color rgba="0.8 0.0 0.0 1.0" />  </material>
+  <material name="darkBlue">  <color rgba="0.0 0.0 0.8 1.0" />  </material>
+  <link name="uniformSolidCylinder">
+    <visual>
+      <geometry>
+        <cylinder length="0.6" radius="0.2"/>
+      </geometry>
+      <material name="darkRed" />
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0" />
+      <mass value="1.0" />
+      <!-- B's moments of inertia about Bcm (solid uniform-density cylinder),
+           Ixx = Iyy = 1/12*m*(3*r^2 + h^2),   Izz = 1/2*m*r^2  -->
+      <inertia ixx="0.04" ixy="0" ixz="0" iyy="0.04" iyz="0" izz="0.02" />
+    </inertial>
+  </link>
+</robot>
+
