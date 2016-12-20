@@ -219,7 +219,7 @@ class DirectTrajectoryOptimization {
   /**
    * Get the state trajectory as a PiecewisePolynomialTrajectory
    */
-  PiecewisePolynomialTrajectory ReconstructStateTrajectory() const;
+  virtual PiecewisePolynomialTrajectory ReconstructStateTrajectory() const;
 
  protected:
   /**
