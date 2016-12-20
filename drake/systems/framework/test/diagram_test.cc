@@ -629,6 +629,15 @@ class SecondOrderStateSystem : public LeafSystem<double> {
     qdot->SetAtIndex(
         0, 2 * generalized_velocity[0]);
   }
+
+  // v = 1/2 * qdot.
+  void DoMapQDotToVelocity(
+      const Context<double>& context,
+      const Eigen::Ref<const VectorX<double>>& qdot,
+      VectorBase<double>* generalized_velocity) const override {
+    generalized_velocity->SetAtIndex(
+        0, 0.5 * qdot[0]);
+  }
 };
 
 // A diagram that has second-order state.
@@ -659,9 +668,9 @@ class SecondOrderStateDiagram : public Diagram<double> {
   SecondOrderStateSystem* sys2_ = nullptr;
 };
 
-// Tests that MapVelocityToQDot recursively invokes
-// MapVelocityToQDot on the constituent systems,
-// and preserves placewise correspondence.
+// Tests that MapVelocityToQDot and MapQDotToVelocity recursively invoke
+// MapVelocityToQDot (resp. MapQDotToVelocity) on the constituent systems,
+// and preserve placewise correspondence.
 GTEST_TEST(SecondOrderStateTest, MapVelocityToQDot) {
   SecondOrderStateDiagram diagram;
   std::unique_ptr<Context<double>> context = diagram.CreateDefaultContext();
@@ -669,16 +678,23 @@ GTEST_TEST(SecondOrderStateTest, MapVelocityToQDot) {
   diagram.x(context.get(), diagram.sys2())->set_v(17);
 
   BasicVector<double> qdot(2);
-  const VectorBase<double>& v =
-      context->get_continuous_state()->get_generalized_velocity();
-  diagram.MapVelocityToQDot(*context, v,
-                            &qdot);
+  const VectorBase<double>& v = context->get_continuous_state()->
+                                         get_generalized_velocity();
+  diagram.MapVelocityToQDot(*context, v, &qdot);
 
   // The order of these derivatives is arbitrary, so this test is brittle.
   // TODO(david-german-tri): Use UnorderedElementsAre once gmock is available
   // in the superbuild. https://github.com/RobotLocomotion/drake/issues/3133
   EXPECT_EQ(qdot.GetAtIndex(0), 34);
   EXPECT_EQ(qdot.GetAtIndex(1), 26);
+
+  // Now map the configuration derivatives back to v.
+  // TODO(david-german-tri): Address the issue broached immediately above
+  // here too.
+  BasicVector<double> vmutable(v.size());
+  diagram.MapQDotToVelocity(*context, qdot, &vmutable);
+  EXPECT_EQ(vmutable.GetAtIndex(0), 17);
+  EXPECT_EQ(vmutable.GetAtIndex(1), 13);
 }
 
 // Test for GetSystems.
