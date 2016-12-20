@@ -432,6 +432,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
           // First, compute the unrestricted updates into a temporary buffer.
           system_.EvalUnrestrictedUpdate(*context_, event,
                                          unrestricted_updates_.get());
+          // TODO(edrumwri): simply swap the states for additional speed.
           // Now write the update back into the context.
           x->CopyFrom(*unrestricted_updates_);
           ++num_unrestricted_updates_;

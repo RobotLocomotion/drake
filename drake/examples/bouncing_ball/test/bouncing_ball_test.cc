@@ -10,10 +10,16 @@ namespace drake {
 namespace bouncing_ball {
 namespace {
 
-static std::pair<double, double> CalcClosedFormHeightAndVelocity(double g,
-                                                                 double e,
-                                                                 double x0,
-                                                                 double tf) {
+// Computes the closed form height and velocity at tf seconds for a bouncing
+// ball starting from height x0, subject to gravitational acceleration g,
+// and with coefficient of restitution e, assuming that the initial velocity
+// is zero. Restitution coefficients of 0 and 1 are the only ones supported.
+// Returns a pair of values, the first corresponding to the height at tf,
+// the second corresponding to the velocity at tf.
+std::pair<double, double> CalcClosedFormHeightAndVelocity(double g,
+                                                          double e,
+                                                          double x0,
+                                                          double tf) {
   // The time that the ball will impact the ground is:
   // gt^2/2 + x0 = 0
   // Solve the quadratic equation for t.
