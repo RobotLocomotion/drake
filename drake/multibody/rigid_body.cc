@@ -150,9 +150,11 @@ bool RigidBody<T>::IsRigidlyFixedToWorld() const {
     // We assume that the world frame is the root of the tree, and, as such, the
     // first body in the vector of bodies.  The body_index_ member is defined
     // to be that position in the vector.
-    if ( body_index_ != 0 )  {
-      throw std::runtime_error("Found a rigid body without a parent that is "
-      "not the world frame: " + name_);
+    if (body_index_ != 0) {
+      throw std::runtime_error(
+          "Found a rigid body without a parent that is "
+          "not the world frame: " +
+          name_);
     }
     return true;
   }
@@ -165,22 +167,25 @@ bool RigidBody<T>::IsRigidlyFixedToWorld() const {
 }
 
 template <typename T>
-Isometry3d RigidBody<T>::ComputeWorldPose() const {
+Isometry3d RigidBody<T>::ComputeWorldFixedPose() const {
   if (parent_ == nullptr) {
     return Isometry3d::Identity();
   }
 
   if (joint_ == nullptr) {
-    throw std::runtime_error("Trying to compute world pose for body with no "
-    "parent joint:  " +
+    throw std::runtime_error(
+        "Trying to compute world pose for body with no "
+        "parent joint:  " +
         name_);
   }
   if (!joint_->is_fixed()) {
-    throw std::runtime_error("Trying to compute world pose for a body with a "
-    "non-fixed parent joint:  " +
+    throw std::runtime_error(
+        "Trying to compute world pose for a body with a "
+        "non-fixed parent joint:  " +
         name_);
   }
-  return parent_->ComputeWorldPose() * joint_->get_transform_to_parent_body();
+  return parent_->ComputeWorldFixedPose() *
+         joint_->get_transform_to_parent_body();
 }
 
 template <typename T>
