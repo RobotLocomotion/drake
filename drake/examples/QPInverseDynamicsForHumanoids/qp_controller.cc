@@ -562,12 +562,10 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // Compute resulting contact wrenches.
   int basis_index = 0;
   int point_force_index = 0;
-  const auto& basis_value =
-      drake::solvers::GetSolution(basis_);
+  const auto& basis_value = GetSolution(basis_);
   point_forces_ = basis_to_force_matrix_ * basis_value;
 
-  const auto& vd_value =
-      drake::solvers::GetSolution(vd_);
+  const auto& vd_value = GetSolution(vd_);
   for (const auto& contact_pair : input.contact_information()) {
     const ContactInformation& contact = contact_pair.second;
     if (output->mutable_resolved_contacts().find(contact.body_name()) ==
