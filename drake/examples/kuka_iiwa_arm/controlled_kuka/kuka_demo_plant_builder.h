@@ -27,7 +27,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 
 const char kUrdfPath[] =
-    "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf";
+    "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf";
 
 /// A systems::Diagram of a Kuka iiwa arm with position controller using
 /// gravity compensation and a PID controller. A plan may be passed in as
@@ -54,7 +54,7 @@ class KukaDemo : public systems::Diagram<T> {
     systems::DiagramBuilder<T> builder;
 
     // Instantiates a RigidBodyPlant from an MBD model of the world.
-    std::unique_ptr<systems::RigidBodyPlant<T>> plant =
+    auto plant =
         std::make_unique<systems::RigidBodyPlant<T>>(move(tree));
     plant_ = plant.get();
 

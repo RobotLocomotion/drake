@@ -151,6 +151,7 @@ int DoMain() {
                                           desired_state);
 
   simulator.Initialize();
+  simulator.set_target_realtime_rate(1.0);
 
   simulator.StepTo(FLAGS_simulation_sec);
 

@@ -12,10 +12,9 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
-/**
- * Verify that @p tree matches assumptions about joint indices.
- * Aborts if the tree isn't as expected.
- */
+
+/// Verifies that @p tree matches assumptions about joint indices.
+/// Aborts if the tree isn't as expected.
 void VerifyIiwaTree(const RigidBodyTree<double>& tree);
 
 /// This method generates a simple trajectory plan for a robot using Cartesian

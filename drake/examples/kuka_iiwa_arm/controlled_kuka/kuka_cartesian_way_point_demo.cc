@@ -58,6 +58,7 @@ int DoMain() {
   Context<double>* context = simulator.get_mutable_context();
   model.SetDefaultState(*context, context->get_mutable_state());
   simulator.Initialize();
+  simulator.set_target_realtime_rate(1.0);
 
   simulator.StepTo(FLAGS_simulation_sec);
 
