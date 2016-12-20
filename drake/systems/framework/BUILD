@@ -363,6 +363,7 @@ cc_test(
         ":diagram_context",
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework/test_utilities:pack_value",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:integrator",
