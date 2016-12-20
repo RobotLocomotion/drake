@@ -1,6 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_googletest")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -180,70 +182,54 @@ cc_library(
     linkstatic = 1,
 )
 
-cc_test(
+cc_googletest(
     name = "adder_test",
-    size = "small",
-    srcs = ["test/adder_test.cc"],
     deps = [
         ":adder",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "affine_system_test",
-    size = "small",
-    srcs = ["test/affine_system_test.cc"],
     deps = [
         ":affine_linear_test",
         ":affine_system",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "constant_value_source_test",
-    size = "small",
-    srcs = ["test/constant_value_source_test.cc"],
     deps = [
         ":constant_value_source",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "constant_vector_source_test",
-    size = "small",
-    srcs = ["test/constant_vector_source_test.cc"],
     deps = [
         ":constant_vector_source",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "demultiplexer_test",
-    size = "small",
-    srcs = ["test/demultiplexer_test.cc"],
     deps = [
         ":demultiplexer",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "gain_test",
-    size = "small",
     srcs = [
         "test/gain_scalartype_test.cc",
         "test/gain_test.cc",
@@ -253,63 +239,49 @@ cc_test(
         "//drake/common:eigen_matrix_compare",
         "//drake/common:symbolic",
         "//drake/systems/framework",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "integrator_test",
-    size = "small",
-    srcs = ["test/integrator_test.cc"],
     deps = [
         ":integrator",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "linear_system_test",
-    size = "small",
-    srcs = ["test/linear_system_test.cc"],
     deps = [
         ":affine_linear_test",
         ":linear_system",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "matrix_gain_test",
-    size = "small",
-    srcs = ["test/matrix_gain_test.cc"],
     deps = [
         ":affine_linear_test",
         ":matrix_gain",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "multiplexer_test",
-    size = "small",
-    srcs = ["test/multiplexer_test.cc"],
     deps = [
         ":multiplexer",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "pass_through_test",
-    size = "small",
     srcs = [
         "test/pass_through_scalartype_test.cc",
         "test/pass_through_test.cc",
@@ -318,27 +290,21 @@ cc_test(
         ":pass_through",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "random_source_test",
-    size = "small",
-    srcs = ["test/random_source_test.cc"],
     deps = [
         ":random_source",
         ":signal_logger",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/analysis",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "signal_logger_test",
-    size = "small",
-    srcs = ["test/signal_logger_test.cc"],
     deps = [
         ":affine_system",
         ":linear_system",
@@ -346,31 +312,24 @@ cc_test(
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/analysis",
         "//drake/systems/framework",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "trajectory_source_test",
-    size = "small",
-    srcs = ["test/trajectory_source_test.cc"],
     deps = [
         ":trajectory_source",
         "//drake/common:eigen_matrix_compare",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/systems/framework",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "zero_order_hold_test",
-    size = "small",
-    srcs = ["test/zero_order_hold_test.cc"],
     deps = [
         ":zero_order_hold",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
-        "@gtest//:main",
     ],
 )
