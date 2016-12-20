@@ -1,4 +1,4 @@
-#include "drake/solvers/decision_variable.h"
+#include "drake/solvers/decision_variable_types.h"
 
 #include "gtest/gtest.h"
 

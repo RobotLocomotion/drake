@@ -5,9 +5,9 @@
 
 #include <Eigen/Dense>
 
-#include "drake/solvers/decision_variable.h"
 #include "drake/multibody/constraint_wrappers.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/solvers/decision_variable_types.h"
 
 class RigidBodyConstraint;
 class IKoptions;
@@ -32,14 +32,14 @@ namespace plants {
 /// parameter is currently always empty untitl MathematicalProgram
 /// supports determining which constraints were infeasible.
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-void inverseKinBackend(RigidBodyTree<double> *model, const int nT,
-                       const double *t,
+void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
+                       const double* t,
                        const Eigen::MatrixBase<DerivedA>& q_seed,
                        const Eigen::MatrixBase<DerivedB>& q_nom,
                        int num_constraints,
                        const RigidBodyConstraint* const* constraint_array,
                        const IKoptions& ikoptions,
-                       Eigen::MatrixBase<DerivedC>* q_sol, int *info,
+                       Eigen::MatrixBase<DerivedC>* q_sol, int* info,
                        std::vector<std::string>* infeasible_constraint);
 
 /// This function is primarily documented through rigid_body_ik.h.  All
@@ -49,18 +49,17 @@ void inverseKinBackend(RigidBodyTree<double> *model, const int nT,
 /// infeasible.
 template <typename DerivedA, typename DerivedB, typename DerivedC,
           typename DerivedD, typename DerivedE>
-void inverseKinTrajBackend(
-    RigidBodyTree<double> *model, const int nT,
-    const double *t,
-    const Eigen::MatrixBase<DerivedA>& q_seed,
-    const Eigen::MatrixBase<DerivedB>& q_nom,
-    int num_constraints,
-    const RigidBodyConstraint* const* constraint_array,
-    const IKoptions& ikoptions,
-    Eigen::MatrixBase<DerivedC>* q_sol,
-    Eigen::MatrixBase<DerivedD>* qdot_sol,
-    Eigen::MatrixBase<DerivedE>* qddot_sol, int *info,
-    std::vector<std::string>* infeasible_constraint);
+void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
+                           const double* t,
+                           const Eigen::MatrixBase<DerivedA>& q_seed,
+                           const Eigen::MatrixBase<DerivedB>& q_nom,
+                           int num_constraints,
+                           const RigidBodyConstraint* const* constraint_array,
+                           const IKoptions& ikoptions,
+                           Eigen::MatrixBase<DerivedC>* q_sol,
+                           Eigen::MatrixBase<DerivedD>* qdot_sol,
+                           Eigen::MatrixBase<DerivedE>* qddot_sol, int* info,
+                           std::vector<std::string>* infeasible_constraint);
 
 /// Translate a solver result into something expected for the info
 /// output parameter.
@@ -75,7 +74,7 @@ void SetIKSolverOptions(const IKoptions& ikoptions,
 /// t covering @p vars.  @p nq is the number of positions in the
 /// underlying model.
 void AddSingleTimeLinearPostureConstraint(
-    const double *t, const RigidBodyConstraint*, int nq,
+    const double* t, const RigidBodyConstraint*, int nq,
     const drake::solvers::DecisionVariableMatrixX& vars,
     drake::solvers::MathematicalProgram* prog);
 
@@ -83,7 +82,7 @@ void AddSingleTimeLinearPostureConstraint(
 /// t covering @p vars.  @p kin_helper is the KinematicsCacheHelper for the
 /// underlying model.
 void AddQuasiStaticConstraint(
-    const double *t, const RigidBodyConstraint*,
+    const double* t, const RigidBodyConstraint*,
     KinematicsCacheHelper<double>* kin_helper,
     const drake::solvers::DecisionVariableMatrixX& vars,
     drake::solvers::MathematicalProgram* prog);
