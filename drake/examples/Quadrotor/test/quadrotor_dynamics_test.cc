@@ -207,7 +207,7 @@ TEST_F(QuadrotorTest, drop_from_initial_velocity) {
 
 // Test comparing the state for of each kind of plant under passive behaviour
 // after a 1.0 second motion. Each plant is dropped from the origin with an
-// intial rotational velocity.
+// initial rotational velocity.
 TEST_F(QuadrotorTest, drop_from_initial_rotation) {
   VectorX<double> x0 = VectorX<double>::Zero(12);
   x0.segment(9, 3) << 1, 1, 1;  // Some rotary velocity.
@@ -215,7 +215,7 @@ TEST_F(QuadrotorTest, drop_from_initial_rotation) {
 }
 
 // Test comparing the state for of each kind of plant under passive behaviour
-// after a 1.0 second motion. Each plant is dropped from and arbitrary intial
+// after a 1.0 second motion. Each plant is dropped from and arbitrary initial
 // state.
 TEST_F(QuadrotorTest, drop_from_arbitrary_state) {
   VectorX<double> x0 = VectorX<double>::Zero(12);
