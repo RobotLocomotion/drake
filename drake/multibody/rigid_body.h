@@ -239,10 +239,11 @@ class RigidBody {
 
   /**
    * Reports if there is a path in this tree from this body to the world where
-   * all joints are *fixed*. This requires that the RigidBody be properly
-   * connected into a RigidBodyTree in that the only RigidBody that doesn't have
-   * a parent body is the world body.  Furthermore, every RigidBody is connected
-   * to its parent body through a valid DrakeJoint.
+   * all joints are *fixed*. This method throws an exception if the
+   * RigidBodyTree is invalid in that:
+   *    - This node is the descendant of a parentless node that is *not* the
+   *      world node, or
+   *    - This node does not have a valid DrakeJoint.
    */
   bool IsRigidlyFixedToWorld() const;
 

@@ -145,7 +145,7 @@ bool RigidBodyTree<T>::transformCollisionFrame(
        body_itr != body->collision_elements_end(); ++body_itr) {
     DrakeCollision::Element* element = *body_itr;
     if (!collision_model_->transformCollisionFrame(element->getId(),
-                                              displace_transform)) {
+                                                   displace_transform)) {
       return false;
     }
   }
@@ -302,7 +302,7 @@ void RigidBodyTree<T>::CompileCollisionState() {
     RigidBody<T>* body = pair.first;
     if (body->IsRigidlyFixedToWorld()) {
       BodyCollisions& elements = pair.second;
-      for (auto& collision_item : elements) {
+      for (const auto& collision_item : elements) {
         element_order_[collision_item.element]->set_anchored();
         element_order_[collision_item.element]->updateWorldTransform(
             body->ComputeWorldFixedPose());
@@ -338,7 +338,7 @@ void RigidBodyTree<T>::CompileCollisionState() {
   for (auto& pair : body_collision_map_) {
     RigidBody<T>* body = pair.first;
     BodyCollisions& elements = pair.second;
-    for (auto& collision_item : elements) {
+    for (const auto& collision_item : elements) {
       body->AddCollisionElement(collision_item.group_name,
                                 element_order_[collision_item.element].get());
     }
