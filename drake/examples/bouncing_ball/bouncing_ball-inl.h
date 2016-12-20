@@ -53,7 +53,7 @@ void BouncingBall<T>::PerformReset(systems::Context<T>* context) const {
 
 template <typename T>
 void BouncingBall<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
-                                           systems::UpdateActions<T>* actions) 
+                                           systems::UpdateActions<T>* actions)
                                              const {
   using std::sqrt;
 
