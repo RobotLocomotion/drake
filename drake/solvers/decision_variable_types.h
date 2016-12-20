@@ -12,156 +12,11 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/number_traits.h"
+#include "drake/common/symbolic_decision_variable.h"
 
 namespace drake {
 namespace solvers {
-/**
- * This class stores the type, name, value, and index of a
- * decision variable in an optimization program.
- * The DecisionVariableScalar created by MathematicalProgram should not outlive
- * its creator MathematicalProgram object.
- */
-class DecisionVariableScalar {
- public:
-  enum class VarType { CONTINUOUS, INTEGER, BINARY };
-
-  /**
-   * This constructor creates a dummy placeholder, the value_ pointer
-   * is initialized to nullptr. The usage of this function is
-   * @code{.cc}
-   * // Creates an optimization program object with no decision variables.
-   * MathematicalProgram prog;
-   *
-   * // Add a 2 x 1 vector containing two decision variables to the optimization
-   * // program.
-   * // This calls the private constructor
-   * // DecisionVariableScalar(VarType type, const std::string &name, double*
-   * // value, size_t index)
-   * DecisionVariableVector<2> x1 = prog.AddContinuousVariables<2>();
-   *
-   * // Add a 2 x 1 vector containing two decision variables to the optimization
-   * // program.
-   * // This calls the private constructor
-   * // DecisionVariableScalar(VarType type, const std::string &name, double*
-   * // value, size_t index)
-   * DecisionVariableVector<2> x2 = prog.AddContinuousVariables<2>();
-   *
-   * // This calls the default constructor DecisionVariableScalar(),
-   * // X is not related to the optimization program prog yet.
-   * DecisionVariableMatrix<2, 2> X;
-   *
-   * // Now X contains the decision variables from the optimization program
-   * // object prog.
-   * // The first column of X is x1, the second column of X is x2.
-   * X << x1, x2;
-   * @endcode
-   */
-  DecisionVariableScalar()
-      : type_(VarType::CONTINUOUS), name_(""), value_(nullptr), index_(0) {}
-
-  /**
-   * @return The type of the variable.
-   */
-  VarType type() const { return type_; }
-
-  /**
-   * @return The name of the variable.
-   */
-  std::string name() const { return name_; }
-
-  /**
-   * @return The value of the variable. This method is only meaningful after
-   * calling Solve() in MathematicalProgram.
-   */
-  double value() const {
-    // TODO(hongkai.dai): check if Solve() has been called.
-    return *value_;
-  }
-
-  /**
-   * @return The index of the variable in the optimization program.
-   */
-  size_t index() const { return index_; }
-
-  /**
-   * Determines if the two DecisionVariableScalar objects are the same. This
-   * comparison is only meaningful if the two DecisionVariableScalar objects
-   * are created by the same MathematicalProgram object.
-   */
-  bool operator==(const DecisionVariableScalar& rhs) const;
-
-  friend class MathematicalProgram;
-
-
- private:
-  /*
-   * Constructs a decision variable. We make this constructor private so that
-   * only the friend class (aka MathematicalProgram) can construct a decision
-   * variable.
-   * @param type Supports CONTINUOUS, INTEGER or BINARY.
-   * @param name The name of the variable.
-   * @param index The index of the variable in the optimization program.
-   */
-  DecisionVariableScalar(VarType type, const std::string& name, double* value,
-                         size_t index)
-      : type_(type), name_(name), value_(value), index_(index) {}
-
-  void set_value(double new_value) { *value_ = new_value; }
-
-  VarType type_;
-  std::string name_;
-  double* value_;
-  size_t index_;
-};
-
-/**
- * Prints out the DecisionVariableScalar's name.
- * @relates DecisionVariableScalar.
- */
-std::ostream& operator<<(std::ostream& os, const DecisionVariableScalar& var);
-
-struct DecisionVariableScalarHash {
-  size_t operator()(const DecisionVariableScalar& var) const;
-};
-}  // namespace solvers
-}  // namespace drake
-
-namespace Eigen {
-
-/// Eigen scalar type traits for Matrix<DecisionVariableScalar>.
-template <>
-struct NumTraits<drake::solvers::DecisionVariableScalar> {
-  static inline int digits10() { return 0; }
-  enum {
-    IsInteger = 0,
-    IsSigned = 1,
-    IsComplex = 0,
-    RequireInitialization = 1,
-    ReadCost = 1,
-    AddCost = 1,
-    MulCost = 1
-  };
-
-  template <bool Vectorized>
-  struct Div {
-    enum { Cost = 1 };
-  };
-
-  typedef drake::solvers::DecisionVariableScalar Real;
-  typedef drake::solvers::DecisionVariableScalar Nested;
-  typedef drake::solvers::DecisionVariableScalar Literal;
-};
-}  // namespace Eigen
-
-namespace drake {
-template <>
-struct is_numeric<solvers::DecisionVariableScalar> {
-  static constexpr bool value = false;
-};
-}  // namespace drake
-
-namespace drake {
-namespace solvers {
+using DecisionVariableScalar = drake::symbolic::DecisionVariableScalar;
 template <int rows, int cols>
 using DecisionVariableMatrix =
     Eigen::Matrix<drake::solvers::DecisionVariableScalar, rows, cols>;
@@ -172,6 +27,10 @@ using DecisionVariableMatrixX =
 using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
 
 using VariableListRef = std::list<Eigen::Ref<const DecisionVariableMatrixX>>;
+
+struct DecisionVariableScalarHash {
+  size_t operator()(const DecisionVariableScalar& var) const;
+};
 
 /**
  * This class stores a list of DecisionVariableMatrix objects. An instance
@@ -255,6 +114,7 @@ class VariableList {
   std::unordered_set<DecisionVariableScalar, DecisionVariableScalarHash>
       unique_variable_indices_;
 };
+}  // end namespace solvers
 
 /**
  * Given a DecisionVariableMatrix object, returns the Eigen::Matrix that
@@ -265,9 +125,9 @@ class VariableList {
 template <typename Derived>
 Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
 GetSolution(const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
-  static_assert(
-      std::is_same<typename Derived::Scalar, DecisionVariableScalar>::value,
-      "The input should be a DecisionVariableMatrix object");
+  static_assert(std::is_same<typename Derived::Scalar,
+                             solvers::DecisionVariableScalar>::value,
+                "The input should be a DecisionVariableMatrix object");
   Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
       double_matrix(decision_variable_matrix.rows(),
                     decision_variable_matrix.cols());
@@ -295,5 +155,4 @@ bool DecisionVariableMatrixContainsIndex(
   }
   return false;
 }
-}  // end namespace solvers
 }  // end namespace drake
