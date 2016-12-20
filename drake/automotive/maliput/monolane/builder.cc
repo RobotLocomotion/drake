@@ -92,8 +92,8 @@ namespace {
 //    g(0) = Y0          g'(0) = Ydot0
 //    g(dX) = Y0 + dY    g'(1) = Ydot1
 // and isotropically scaling it (scale both axes) by a factor of 1/dX
-CubicPolynomial MakeCubic(const double dX, const double Y0, const double dY,
-                          const double Ydot0, const double Ydot1) {
+CubicPolynomial MakeCubic(double dX, double Y0, double dY,
+                          double Ydot0, double Ydot1) {
   return CubicPolynomial(Y0 / dX,
                          Ydot0,
                          (3. * dY / dX) - (2. * Ydot0) - Ydot1,
@@ -183,7 +183,7 @@ Lane* Builder::BuildConnection(
     RoadGeometry* const road_geometry,
     std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder>* const bp_map) const {
   Segment* segment = junction->NewSegment({std::string("s:") + conn->id()});
-  Lane* lane{nullptr};
+  Lane* lane{};
   api::LaneId lane_id{std::string("l:") + conn->id()};
 
   switch (conn->type()) {

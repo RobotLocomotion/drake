@@ -19,7 +19,9 @@ class Junction : public api::Junction {
  public:
   /// Constructs an empty Junction.
   ///
-  /// @p road_geometry must remain valid for the lifetime of this class.
+  /// @p road_geometry must remain valid for the lifetime of this class,
+  /// and must refer to the RoadGeometry which will contain the newly
+  /// constructed Junction instance.
   Junction(const api::JunctionId& id, RoadGeometry* road_geometry)
       : id_(id), road_geometry_(road_geometry) {}
 

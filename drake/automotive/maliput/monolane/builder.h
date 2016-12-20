@@ -368,6 +368,14 @@ class Builder {
   ///@}
 
  private:
+  // EndpointFuzzyOrder is an arbitrary strict complete ordering of Endpoints
+  // useful for, e.g., std::map.  It provides a comparison operation that
+  // treats two Endpoints within @p linear_tolerance of one another as
+  // equivalent.
+  //
+  // This is used to match up the endpoints of Connections, to determine
+  // how Connections are linked to one another.  Exact numeric equality
+  // would not be robust given the use of floating-point values in Endpoints.
   class EndpointFuzzyOrder {
    public:
     explicit EndpointFuzzyOrder(const double linear_tolerance)

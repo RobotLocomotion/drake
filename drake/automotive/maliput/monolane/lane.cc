@@ -70,10 +70,24 @@ V3 Lane::W_prime_of_prh(const double p, const double r, const double h,
   const double sb = std::sin(beta);
   const double sg = std::sin(gamma);
 
+  // Evaluate dα/dp, dβ/dp, dγ/dp...
   const double d_alpha = superelevation().f_dot_p(p) * p_scale_;
   const double d_beta = -cb * cb * elevation().f_ddot_p(p);
   const double d_gamma = heading_dot_of_p(p);
 
+  // Recall that W is the lane-to-world transform, defined by
+  //   (x,y,z)  = W(p,r,h) = (G(p), Z(p)) + R_αβγ*(0,r,h)
+  // where G is the reference curve, Z is the elevation profile, and R_αβγ is
+  // a rotation matrix derived from reference curve (heading), elevation,
+  // and superelevation.
+  //
+  // Thus, ∂W/∂p = (∂G(p)/∂p, ∂Z(p)/∂p) + (∂R_αβγ/∂p)*(0,r,h), where
+  //
+  //   ∂G(p)/∂p = G'(p)
+  //
+  //   ∂Z(p)/∂p = p_scale * (z / p_scale) = p_scale * g'(p)
+  //
+  //   ∂R_αβγ/∂p = (∂R_αβγ/∂α ∂R_αβγ/∂β ∂R_αβγ/∂γ)*(dα/dp, dβ/dp, dγ/dp)
   return
       V3(G_prime.x(),
          G_prime.y(),
@@ -138,6 +152,18 @@ api::Rotation Lane::DoGetOrientation(const api::LanePosition& lane_pos) const {
   const V3 s_hat = s_hat_of_prh(p, r, h, Rabg);
   const V3 r_hat = r_hat_of_Rabg(Rabg);
   // ...and then derive orientation from those basis vectors.
+  //
+  // (s_hat  r_hat  h_hat) is an orthonormal basis, obtained by rotating the
+  // (x_hat  y_hat  z_hat) basis by some R-P-Y rotation; in this case, we know
+  // the value of (s_hat  r_hat  h_hat) (w.r.t. 'xyz' world frame), so we are
+  // trying to recover the roll/pitch/yaw.  Since (x_hat  y_hat  z_hat) is an
+  // identity matrix (e.g., x_hat = column vector (1, 0, 0), etc), then
+  // (s_hat  r_hat  h_hat) equals the R-P-Y matrix itself.
+  // If we define a = alpha = roll, b = beta = pitch, g = gamma = yaw,
+  // then s_hat is the first column of the rotation, r_hat is the second:
+  //   s_hat = (cb * cg, cb * sg, - sb)
+  //   r_hat = (- ca * sg + sa * sb * cg, ca * cg + sa * sb * sg, sa * cb)
+  // We solve the above for a, b, g.
   const double gamma = std::atan2(s_hat.y(),
                                   s_hat.x());
   const double beta = std::atan2(-s_hat.z(),
@@ -165,6 +191,9 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
   const Rot3 R = Rabg_of_p(p);
   const V3 W_prime = W_prime_of_prh(p, r, h, R);
 
+  // The definition of path-length of a path along σ yields dσ = |∂W/∂p| dp.
+  // Similarly, path-length s along the road at r = 0 is related to the
+  // elevation by ds = p_scale * sqrt(1 + g'^2) dp.  Chaining yields ds/dσ:
   const double ds_dsigma =
       p_scale_ * std::sqrt(1 + (g_prime * g_prime)) / W_prime.norm();
 

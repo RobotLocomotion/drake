@@ -30,13 +30,21 @@ ArcLane::ArcLane(const api::LaneId& id, const Segment* segment,
   // the arc, it is not well-defined to consider parallel curves offset
   // from the reference by a distance greater than or equal to the radius r_.
   //
-  // The worst case happens at the minimum abs(superelevation) which occurs
-  // in the domain [0, 1].  There are up to four possible candidates for
-  // where an extremum can occur, since superelevation is cubic.
+  // In the presence of superelevation, the bounds are effectively scaled
+  // by cos(superelevation) (the more tilted the road, the narrower the
+  // road looks when projected onto the groundplane).  Thus, the worst case
+  // (widest effective bounds) happens at the position p along the arc
+  // with maximum cos(superelevation).
+  //
+  // In other words, the worst case happens at p in domain [0, 1] with the
+  // minimum abs(superelevation).  There are up to four possible candidates
+  // at which an extremum can occur, since superelevation is cubic.
   double theta_min = std::numeric_limits<double>::max();
   double theta_max = std::numeric_limits<double>::min();
   auto update_range_given_p =
       [&theta_min, &theta_max, &superelevation](double p) {
+    // Skip p if outside of domain [0, 1].
+    if ((p < 0.) || (p > 1.)) { return; }
     const double theta_p = superelevation.f_p(p);
     theta_min = std::min(theta_min, theta_p);
     theta_max = std::max(theta_max, theta_p);
@@ -45,7 +53,8 @@ ArcLane::ArcLane(const api::LaneId& id, const Segment* segment,
   update_range_given_p(0.);
   // ...possible extremum at p = 1.
   update_range_given_p(1.);
-  // ...possible extrema at the local min/max of superelevation.
+  // ...possible extrema at the local min/max of superelevation (if the local
+  // min/max occur within domain [0, 1]).
   if (superelevation.d() != 0) {
     const double p_plus =
         (-superelevation.c() +

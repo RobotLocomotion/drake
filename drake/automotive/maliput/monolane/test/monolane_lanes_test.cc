@@ -307,7 +307,8 @@ GTEST_TEST(MonolaneLanesTest, ArcLaneWithConstantSuperelevation) {
       l2->EvalMotionDerivatives({0., -10., 0.}, {1., 1., 1.}),
       ((100. / (100 + (10. * std::cos(kTheta)))) * 1., 1., 1.), kVeryExact);
 
-  // h matters, too.
+  // h matters, too (because hovering above a tilted road changes one's
+  // distance to the center of the arc).
   EXPECT_LANE_NEAR(
       l2->EvalMotionDerivatives({l2->length(), -10., 8.}, {1., 1., 1.}),
       ((100. / (100 + (10. * std::cos(kTheta))
