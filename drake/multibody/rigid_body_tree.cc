@@ -136,12 +136,11 @@ bool RigidBodyTree<T>::transformCollisionFrame(
     }
   }
 
-  // TODO(SeanCurtis-TRI): Determine if this should be happening.
-  // Collision elements attached to the body have been registered with the
-  // collision model; they must be moved through the collision model interface.
-  // We need to decide if a method that is intended to be called as part of
-  // *construction* should modify collision elements already registered with
-  // the collision engine.
+  // TODO(SeanCurtis-TRI): Collision elements attached to the body have been
+  // registered with the collision model; they must be moved through the
+  // collision model interface. We need to decide if a method that is intended
+  // to be called as part of *construction* should modify collision elements
+  // already registered with the collision engine.  I suspect not.
   for (auto body_itr = body->collision_elements_begin();
        body_itr != body->collision_elements_end(); ++body_itr) {
     DrakeCollision::Element* element = *body_itr;
@@ -306,7 +305,7 @@ void RigidBodyTree<T>::CompileCollisionState() {
       for (auto& collision_item : elements) {
         element_order_[collision_item.element]->set_anchored();
         element_order_[collision_item.element]->updateWorldTransform(
-            body->ComputeWorldPose());
+            body->ComputeWorldFixedPose());
       }
     }
   }
@@ -336,9 +335,6 @@ void RigidBodyTree<T>::CompileCollisionState() {
 
   // Assigns finished collision elements to their corresponding rigid bodies and
   // registers the geometry with the collision model.
-  // NOTE: Do *not* attempt to use the elements in the body_collision_map after
-  // this loop; the collision elements will have been moved into the collision
-  // model.
   for (auto& pair : body_collision_map_) {
     RigidBody<T>* body = pair.first;
     BodyCollisions& elements = pair.second;
@@ -349,7 +345,10 @@ void RigidBodyTree<T>::CompileCollisionState() {
   }
 
   // Registers collision elements in the instantiation order to guarantee
-  // deterministc results.
+  // deterministic results.
+  // NOTE: Do *not* attempt to use the elements in the body_collision_map after
+  // this loop; the collision elements will have been moved into the collision
+  // model.
   for (size_t i = 0; i < element_order_.size(); ++i) {
     collision_model_->AddElement(std::move(element_order_[i]));
   }
