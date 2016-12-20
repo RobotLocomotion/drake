@@ -72,6 +72,11 @@ cc_library(
     ],
 )
 
+filegroup(
+    name = "yamls",
+    srcs = glob(["*.yaml"]),
+)
+
 # === test/ ===
 
 cc_test(
@@ -105,8 +110,11 @@ cc_binary(
     ],
 )
 
-# TODO(maddog@tri.global)  Run this test somehow, too.
-#py_test(
-#    name = "yaml_load_test",
-#    srcs = ["test/yaml_load_test.py"],
-#)
+py_test(
+    name = "yaml_load_test",
+    srcs = ["test/yaml_load_test.py"],
+    data = [
+        ":yamls",
+        ":yaml_load",
+    ],
+)
