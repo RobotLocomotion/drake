@@ -6,7 +6,7 @@ target_link_libraries(monolane_builder_test drakeAutomotive)
 
 add_executable(yaml_load yaml_load.cc)
 target_link_libraries(yaml_load drakeAutomotive yaml-cpp)
-if (PYTHON_EXECUTABLE)
+if(PYTHON_EXECUTABLE)
   drake_add_test(
     NAME yaml_load_test
     COMMAND ${PYTHON_EXECUTABLE}

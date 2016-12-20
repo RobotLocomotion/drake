@@ -124,7 +124,7 @@ class Lane : public api::Lane {
   /// @param segment the Segment to which this Lane will belong, which must
   ///        remain valid for the lifetime of this class
   /// @param lane_bounds nominal bounds of the lane, uniform along the entire
-  ///        reference path
+  ///        reference path, which must be a subset of @p driveable_bounds
   /// @param driveable_bounds driveable bounds of the lane, uniform along the
   ///        entire reference path
   /// @param p_scale isotropic scale factor for elevation and superelevation
@@ -174,7 +174,10 @@ class Lane : public api::Lane {
         driveable_bounds_(driveable_bounds),
         p_scale_(p_scale),
         elevation_(elevation),
-        superelevation_(superelevation) {}
+        superelevation_(superelevation) {
+    DRAKE_DEMAND(lane_bounds_.r_min >= driveable_bounds_.r_min);
+    DRAKE_DEMAND(lane_bounds_.r_max <= driveable_bounds_.r_max);
+  }
 
   // TODO(maddog@tri.global)  Allow superelevation to have a center-of-rotation
   //                          which is different from r = 0.

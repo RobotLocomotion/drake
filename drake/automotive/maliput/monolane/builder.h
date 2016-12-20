@@ -310,9 +310,9 @@ class Builder {
   /// instance of an api::RoadGeometry.
   ///
   /// Bounds @p lane_bounds and @p driveable_bounds are applied uniformly
-  /// to the single lanes of every segment. @p linear_tolerance and
-  /// @p angular_tolerance specify the respective tolerances for the
-  /// resulting RoadGeometry.
+  /// to the single lanes of every segment; @p lane_bounds must be a subset
+  /// of @p driveable_bounds.  @p linear_tolerance and @p angular_tolerance
+  /// specify the respective tolerances for the resulting RoadGeometry.
   Builder(const api::RBounds& lane_bounds,
           const api::RBounds& driveable_bounds,
           const double linear_tolerance,
