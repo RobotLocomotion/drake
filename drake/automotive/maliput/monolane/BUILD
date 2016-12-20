@@ -113,6 +113,7 @@ cc_binary(
 py_test(
     name = "yaml_load_test",
     srcs = ["test/yaml_load_test.py"],
+    args = ["drake/automotive/maliput/monolane/yaml_load"],
     data = [
         ":yamls",
         ":yaml_load",

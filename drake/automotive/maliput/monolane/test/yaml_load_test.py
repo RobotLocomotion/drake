@@ -12,25 +12,14 @@ import sys
 
 _THIS_FILE = os.path.abspath(__file__)
 _THIS_DIR = os.path.dirname(_THIS_FILE)
-_DRAKE_PATHS_DIR = os.path.dirname(os.path.dirname(os.path.dirname(_THIS_DIR)))
-
-sys.path.append(_DRAKE_PATHS_DIR)
-
-try:
-    from drake_paths import DRAKE_DRAKE_BUILD_DIR
-except ImportError:
-    # In the case of Bazel.
-    DRAKE_DRAKE_BUILD_DIR = "drake"
-
 
 class TestYamlLoading(unittest.TestCase):
+    YAML_LOAD = "yaml_load"
     def test_yaml_files(self):
         yaml_dir = os.path.dirname(_THIS_DIR)
 
-        yaml_load = os.path.join(
-            DRAKE_DRAKE_BUILD_DIR,
-            "automotive/maliput/monolane/yaml_load")
-        self.assertTrue(os.path.exists(yaml_load), yaml_load + " not found")
+        self.assertTrue(os.path.exists(self.YAML_LOAD),
+                        self.YAML_LOAD + " not found")
 
         yaml_files = glob.glob(os.path.join(yaml_dir, '*.yaml'))
         blacklist = []
@@ -39,11 +28,9 @@ class TestYamlLoading(unittest.TestCase):
         self.assertTrue(len(test_yaml_files) > 0)
 
         for yf in test_yaml_files:
-            subprocess.check_call([
-                yaml_load,
-                "-yaml_file", yf,
-            ])
+            subprocess.check_call([self.YAML_LOAD, "-yaml_file", yf])
 
 
 if __name__ == '__main__':
+    TestYamlLoading.YAML_LOAD = sys.argv.pop()
     unittest.main()

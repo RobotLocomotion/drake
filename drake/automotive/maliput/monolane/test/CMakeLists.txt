@@ -10,5 +10,6 @@ if(PYTHON_EXECUTABLE)
   drake_add_test(
     NAME yaml_load_test
     COMMAND ${PYTHON_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/yaml_load_test.py)
+    ${CMAKE_CURRENT_SOURCE_DIR}/yaml_load_test.py
+    ${CMAKE_CURRENT_BINARY_DIR}/yaml_load)
 endif()
