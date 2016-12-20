@@ -49,7 +49,7 @@ template class Simulator<double>;
 // TODO(edrumwri): Re-enable below with state can be copied wtih AutoDiff.
 //                 Line that causes syntax errors is Simulator.h:428 when
 //                 compiled with line below uncommented. See issue #4535.
-// template class Simulator<AutoDiffXd>;
+template class Simulator<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

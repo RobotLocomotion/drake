@@ -367,9 +367,9 @@ Simulator<T>::Simulator(const System<T>& system,
       std::make_unique<ContinuousState<T>>(
         std::make_unique<BasicVector<T>>(cstate->size()), nq, nv, nz));
   unrestricted_updates_->get_mutable_discrete_state()->CopyFrom(
-      *context_->get_discrete_state());
+      *context_->get_state().get_discrete_state()->Clone());
   unrestricted_updates_->get_mutable_abstract_state()->CopyFrom(
-      *context_->get_abstract_state());
+      *context_->get_state().get_abstract_state()->Clone());
 }
 
 template <typename T>
@@ -433,7 +433,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
           system_.EvalUnrestrictedUpdate(*context_, event,
                                          unrestricted_updates_.get());
           // Now write the update back into the context.
-          x->SetFrom(*unrestricted_updates_);
+          x->CopyFrom(*unrestricted_updates_);
           ++num_unrestricted_updates_;
         } else {
           if (event.action == DiscreteEvent<T>::kUnknownAction) {
