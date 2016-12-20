@@ -1,5 +1,9 @@
 #include "drake/examples/Quadrotor/quadrotor_plant.h"
 
+#include "drake/math/gradient.h"
+#include "drake/math/roll_pitch_yaw.h"
+#include "drake/util/drakeGeometryUtil.h"
+
 namespace drake {
 namespace examples {
 namespace quadrotor {
@@ -11,9 +15,9 @@ QuadrotorPlant<T>::QuadrotorPlant() {
 }
 
 template <typename T>
-QuadrotorPlant<T>::QuadrotorPlant(const double m_arg, const double L_arg,
-                                  const Matrix3<T> I_arg, const double kF_arg,
-                                  const double kM_arg)
+QuadrotorPlant<T>::QuadrotorPlant(double m_arg, double L_arg,
+                                  const Matrix3<T>& I_arg, double kF_arg,
+                                  double kM_arg)
     : m(m_arg), L(L_arg), kF(kF_arg), kM(kM_arg), I(I_arg) {
   this->DeclareInputPort(systems::kVectorValued, kInputDimension);
   this->DeclareOutputPort(systems::kVectorValued, kStateDimension);

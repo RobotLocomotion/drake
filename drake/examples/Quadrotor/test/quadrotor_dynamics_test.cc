@@ -1,9 +1,9 @@
-#include <drake/common/eigen_matrix_compare.h>
 #include <stdexcept>
 
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/Quadrotor/quadrotor_plant.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -140,6 +140,26 @@ class QuadrotorTest : public ::testing::Test {
     rb_simulator_->StepTo(t);
   }
 
+  VectorX<double> GetState(systems::Simulator<double>* simulator) {
+    return simulator->get_context()
+        .get_continuous_state_vector()
+        .CopyToVector();
+  }
+
+  void PassiveBehaviorTest(VectorX<double> x0) {
+    SetState(x0);
+    Simulate(kSimulationDuration);
+    VectorX<double> my_state = ge_simulator_->get_context()
+                                   .get_continuous_state_vector()
+                                   .CopyToVector();
+    VectorX<double> rb_state = rb_simulator_->get_context()
+                                   .get_continuous_state_vector()
+                                   .CopyToVector();
+    double tol = 1e-10;
+    EXPECT_TRUE(
+        CompareMatrices(my_state, rb_state, tol, MatrixCompareType::absolute));
+  }
+
  protected:
   VectorX<double> x0_ = VectorX<double>::Zero(12);
 
@@ -164,8 +184,8 @@ TEST_F(QuadrotorTest, derivatives) {
   VectorX<double> my_derivative_vector = ge_derivatives_->CopyToVector();
   VectorX<double> rb_derivative_vector = rb_derivatives_->CopyToVector();
 
-  double tol = 1e-10;
-  EXPECT_TRUE(CompareMatrices(my_derivative_vector, rb_derivative_vector, tol,
+  EXPECT_TRUE(CompareMatrices(my_derivative_vector, rb_derivative_vector,
+                              1e-10 /* tolerance */,
                               MatrixCompareType::absolute));
 }
 
@@ -173,36 +193,16 @@ TEST_F(QuadrotorTest, derivatives) {
 // after a 1.0 second motion. Each plant is dropped from rest at the origin.
 TEST_F(QuadrotorTest, drop_from_rest) {
   VectorX<double> x0 = VectorX<double>::Zero(12);
-  SetState(x0);
-  Simulate(kSimulationDuration);
-
-  VectorX<double> my_state =
-      ge_simulator_->get_context().get_continuous_state_vector().CopyToVector();
-  VectorX<double> rb_state =
-      rb_simulator_->get_context().get_continuous_state_vector().CopyToVector();
-
-  double tol = 1e-10;
-  EXPECT_TRUE(
-      CompareMatrices(my_state, rb_state, tol, MatrixCompareType::absolute));
+  PassiveBehaviorTest(x0);
 }
 
 // Test comparing the state for of each kind of plant under passive behaviour
 // after a 1.0 second motion. Each plant is dropped from the origin with an
-// intial tranlatory velocity.
+// initial translational velocity.
 TEST_F(QuadrotorTest, drop_from_initial_velocity) {
   VectorX<double> x0 = VectorX<double>::Zero(12);
-  x0.segment(6, 3) << 1, 1, 1;  // Some translatory velocity.
-  SetState(x0);
-  Simulate(kSimulationDuration);
-
-  VectorX<double> my_state =
-      ge_simulator_->get_context().get_continuous_state_vector().CopyToVector();
-  VectorX<double> rb_state =
-      rb_simulator_->get_context().get_continuous_state_vector().CopyToVector();
-
-  double tol = 1e-10;
-  EXPECT_TRUE(
-      CompareMatrices(my_state, rb_state, tol, MatrixCompareType::absolute));
+  x0.segment(6, 3) << 1, 1, 1;  // Some translational velocity.
+  PassiveBehaviorTest(x0);
 }
 
 // Test comparing the state for of each kind of plant under passive behaviour
@@ -211,17 +211,7 @@ TEST_F(QuadrotorTest, drop_from_initial_velocity) {
 TEST_F(QuadrotorTest, drop_from_initial_rotation) {
   VectorX<double> x0 = VectorX<double>::Zero(12);
   x0.segment(9, 3) << 1, 1, 1;  // Some rotary velocity.
-  SetState(x0);
-  Simulate(kSimulationDuration);
-
-  VectorX<double> my_state =
-      ge_simulator_->get_context().get_continuous_state_vector().CopyToVector();
-  VectorX<double> rb_state =
-      rb_simulator_->get_context().get_continuous_state_vector().CopyToVector();
-
-  double tol = 1e-10;
-  EXPECT_TRUE(
-      CompareMatrices(my_state, rb_state, tol, MatrixCompareType::absolute));
+  PassiveBehaviorTest(x0);
 }
 
 // Test comparing the state for of each kind of plant under passive behaviour
@@ -230,17 +220,7 @@ TEST_F(QuadrotorTest, drop_from_initial_rotation) {
 TEST_F(QuadrotorTest, drop_from_arbitrary_state) {
   VectorX<double> x0 = VectorX<double>::Zero(12);
   x0 << 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6;  // Some initial state.
-  SetState(x0);
-  Simulate(kSimulationDuration);
-
-  VectorX<double> my_state =
-      ge_simulator_->get_context().get_continuous_state_vector().CopyToVector();
-  VectorX<double> rb_state =
-      rb_simulator_->get_context().get_continuous_state_vector().CopyToVector();
-
-  double tol = 1e-10;
-  EXPECT_TRUE(
-      CompareMatrices(my_state, rb_state, tol, MatrixCompareType::absolute));
+  PassiveBehaviorTest(x0);
 }
 
 }  // namespace quadrotor

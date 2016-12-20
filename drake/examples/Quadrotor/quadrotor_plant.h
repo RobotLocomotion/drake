@@ -1,14 +1,9 @@
 #pragma once
 
-#include <iostream>
-
 #include <Eigen/Core>
 
-#include "drake/math/gradient.h"
-#include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
 namespace examples {
@@ -21,8 +16,8 @@ template <typename T>
 class QuadrotorPlant : public systems::LeafSystem<T> {
  public:
   QuadrotorPlant();
-  QuadrotorPlant(const double m_arg, const double L_arg, const Matrix3<T> I_arg,
-                 const double kF_arg, const double kM_arg);
+  QuadrotorPlant(double m_arg, double L_arg, const Matrix3<T>& I_arg,
+                 double kF_arg, double kM_arg);
 
   /// The input force to this system is not direct feedthrough.
   bool has_any_direct_feedthrough() const override { return false; }
@@ -38,9 +33,9 @@ class QuadrotorPlant : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
-  int get_input_size() { return kInputDimension; }
+  int get_input_size() const { return kInputDimension; }
 
-  int get_num_states() { return kStateDimension; }
+  int get_num_states() const { return kStateDimension; }
 
   void set_state(systems::Context<T>* context, const VectorX<T> x) const {
     context->get_mutable_continuous_state_vector()->SetFromVector(x);
