@@ -11,51 +11,63 @@ namespace systems {
  * Given a desired two dimensional (X and Y) zero-moment point (ZMP) trajectory
  * parametrized as a piecewise polynomial, an optimal center of mass (CoM)
  * trajectory is planned using a linear inverted pendulum model (LIPM).
- * A second order value function (cost-to-go) and a linear policy are also
- * computed along the optimal trajectory.
- * The state of the system, x, is CoM position and velocity,
- * the control, u, is CoM acceleration, and y represents the center of
- * pressure (CoP).
- * The system dynamics for the X and Y directions are decoupled. We plan the
- * XY motion together for convenience.
- * For the X direction, the LIPM dynamics can is:
- * <pre>
- * y = com - z / g * u,
- * </pre>
- * where g is the gravity constant and z is the CoM height.
- * The full dynamics can also be written in the matrix form as:
- * <pre>
- * X_dot = A * X + B * u
- *     y = C * X + D * u
- * </pre>
- * The one step cost function L is defined as:
- * <pre>
- * L(y, u, t) = (y - y_d(t))^T * Qy * (y - y_d(t)) + u^T * R * u,
- * </pre>
- * where Qy and R are weighting matrices, and y_d(t) is the desired ZMP
- * trajectory at time t.
- * The value function (cost-to-go) is defined as
- * V(x, t) = x_bar(tf)^T * S * x_bar(tf) + integral L(y, u, dt) dt,
- * where tf is the last time in the desired ZMP trajectory,
- * x_bar is defined as [com - y_d(tf); comd], S is the quadratic term from the
- * infinite horizon continuous time LQR solution solved with the same dynamics
- * and one step cost function.
- * For this problem, V is known to have a quadratic form of:
- * V(x, t) = x_bar^T * Vxx * x_bar + x_bar^T * Vx(t) + V0(t),
- * and the corresponding optimal control policy, u*, is linear wrt to x:
- * u*(x, t) = K * x_bar + u0(t).
+ * A second order value function (optimal cost-to-go) and a linear policy are
+ * also computed along the optimal trajectory.
+ * The system dynamics for the X and Y directions are decoupled, however, we
+ * plan the XY motion together for convenience.
  *
- * See the following reference for more details about the algorithm.
- * <pre>
+ * Let \f$ c \f$ be the CoM position, the The state of the system, \f$ x \f$,
+ * is \f$ [c; \dot{c}] \f$, the control, \f$ u = \ddot{c} \f$,
+ * and \f$ y \f$ represents the center of pressure (CoP).
+ * For the X direction, the LIPM dynamics is:
+ * \f[
+ *   y = c - \frac{z}{g} * u,
+ * \f]
+ * where \f$ g \f$ is the gravity constant and \f$ z \f$ is the CoM height.
+ * \f$ z \f$ is assumed to be constant in LIPM.
+ * The full dynamics can also be written in the matrix form as:
+ * \f[
+ *   \dot{x} = A x + B u \\
+ *         y = C x + D u
+ * \f]
+ *
+ * The one step cost function \f$ L \f$ is defined as:
+ * \f[
+ *   L(y, u, t) = (y - y_d(t))^T Q_y (y - y_d(t)) + u^T R u,
+ * \f]
+ * where \f$ Q_y \f$ and \f$ R \f$ are weighting matrices, and \f$ y_d(t) \f$
+ * is the desired ZMP trajectory at time \f$ t \f$.
+ *
+ * The value function is defined as
+ * \f[
+ *   V(x, t) = \min_{u[t:t_f]} \bar{x}(t_f)^T S \bar{x}(t_f)
+ *           + \int_{t}^{t_f} L(y, u, \tau) d\tau,
+ * \f]
+ * subject to the dynamics, and \f$ t_f \f$ is the last time in the desired
+ * ZMP trajectory, \f$ \bar{x} = [c - y_d(t_f); \dot{c}] \f$,
+ * \f$ S \f$ is the quadratic term from the infinite horizon continuous time
+ * LQR solution solved with the same dynamics and one step cost function.
+ *
+ * For this problem, \f$ V \f$ is known to have a quadratic form of:
+ * \f[
+ *   V(x, t) = \bar{x}^T V_{xx} \bar{x} + \bar{x}^T V_x(t) + V_0(t),
+ * \f]
+ * and the corresponding optimal control policy, \f$ u^* \f$, is linear
+ * w.r.t. to \f$ x \f$:
+ * \f[
+ *   u^*(x, t) = K \bar{x} + u_0(t).
+ * \f]
+ *
+ * See the following reference for more details about the algorithm:
+ *
  * [1] R. Tedrake, S. Kuindersma, R. Deits and K. Miura, "A closed-form solution
  * for real-time ZMP gait generation and feedback stabilization,"
  * 2015 IEEE-RAS 15th International Conference on Humanoid Robots (Humanoids),
  * Seoul, 2015, pp. 936-940.
- * </pre>
  */
 class ZMPPlanner {
  public:
-  ZMPPlanner() : planned_(false) {}
+  ZMPPlanner() {}
 
   /**
    * Implements the algorithm in [1] that computes a nominal CoM trajectory,
@@ -232,7 +244,7 @@ class ZMPPlanner {
 
   /**
    * Returns the time invariant second order term (S1 in [1]) of the value
-   * function (cost-to-go).
+   * function.
    */
   const Eigen::Matrix<double, 4, 4>& get_Vxx() const {
     DRAKE_DEMAND(planned_);
@@ -241,7 +253,7 @@ class ZMPPlanner {
 
   /**
    * Returns the time varying first order term (s2 in [1]) of the value
-   * function (cost-to-go).
+   * function.
    */
   const ExponentialPlusPiecewisePolynomial<double>& get_Vx() const {
     DRAKE_DEMAND(planned_);
@@ -250,7 +262,7 @@ class ZMPPlanner {
 
   /**
    * Returns the time varying first order term (s2 in [1]) of the value
-   * function (cost-to-go).
+   * function.
    */
   const Eigen::Vector4d get_Vx(double time) const {
     DRAKE_DEMAND(planned_);
@@ -267,7 +279,7 @@ class ZMPPlanner {
   // Used to test whether the last point of the desired ZMP trajectory is
   // stationary or not in CheckStationaryEndPoint. This number is currently
   // arbitrarily chosen.
-  double kStaitionaryThreshold = 1e-8;
+  double kStationaryThreshold = 1e-8;
 
   // Symbols:
   // x: [com; comd]
@@ -310,7 +322,7 @@ class ZMPPlanner {
   Eigen::Matrix<double, 2, 4> K_;
   ExponentialPlusPiecewisePolynomial<double> k2_;
 
-  bool planned_;
+  bool planned_ {false};
 };
 
 }  // namespace systems
