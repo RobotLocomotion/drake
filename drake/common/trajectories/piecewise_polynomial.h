@@ -294,7 +294,7 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
                                 int segment_number, Eigen::Index row_start = 0,
                                 Eigen::Index col_start = 0);
 
-  PiecewisePolynomial slice(int start_segment_index, int num_segments);
+  PiecewisePolynomial slice(int start_segment_index, int num_segments) const;
 
  protected:
   double segmentValueAtGlobalAbscissa(int segment_index, double t,

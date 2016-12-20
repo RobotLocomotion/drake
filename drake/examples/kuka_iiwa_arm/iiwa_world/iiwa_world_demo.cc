@@ -31,10 +31,14 @@ int DoMain() {
 
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
-  iiwa_world->StoreModel("iiwa", "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
+
   iiwa_world->StoreModel(
-      "table",
-      "/examples/kuka_iiwa_arm/models/table/extra_heavy_duty_table.sdf");
+      "iiwa",
+      "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
+
+  iiwa_world->StoreModel(
+      "table", "/examples/kuka_iiwa_arm/models/table/"
+               "extra_heavy_duty_table_surface_only_collision.sdf");
   iiwa_world->StoreModel(
       "cylinder",
       "/examples/kuka_iiwa_arm/models/objects/simple_cylinder.urdf");
@@ -80,6 +84,7 @@ int DoMain() {
   demo_plant->SetDefaultState(*context, context->get_mutable_state());
 
   simulator->Initialize();
+  simulator->set_target_realtime_rate(1.0);
 
   simulator->StepTo(FLAGS_simulation_sec);
 
