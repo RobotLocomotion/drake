@@ -5,5 +5,6 @@ cc_library(
     hdrs = glob(["include/spdlog/**"]),
     defines = ["HAVE_SPDLOG"],
     includes = ["include"],
+    linkopts = ["-pthread"],
     visibility = ["//visibility:public"],
 )
