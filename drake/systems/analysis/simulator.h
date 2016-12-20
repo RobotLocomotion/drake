@@ -353,24 +353,10 @@ Simulator<T>::Simulator(const System<T>& system,
       new RungeKutta2Integrator<T>(system_, dt, context_.get()));
   integrator_->Initialize();
 
-  // Get the context's continuous, discrete, and abstract state so that
-  // we can copy them.
-  const ContinuousState<T>* cstate = context_->get_continuous_state();
-  const int nq = cstate->get_generalized_position().size();
-  const int nv = cstate->get_generalized_velocity().size();
-  const int nz = cstate->get_misc_continuous_state().size();
-
   // Allocate the necessary temporaries for storing state in update calls
   // (which will then be transferred back to system state).
   discrete_updates_ = system_.AllocateDiscreteVariables();
-  unrestricted_updates_ = std::make_unique<State<T>>();
-  unrestricted_updates_->set_continuous_state(
-      std::make_unique<ContinuousState<T>>(
-        std::make_unique<BasicVector<T>>(cstate->size()), nq, nv, nz));
-  unrestricted_updates_->get_mutable_discrete_state()->CopyFrom(
-      *context_->get_state().get_discrete_state()->Clone());
-  unrestricted_updates_->get_mutable_abstract_state()->CopyFrom(
-      *context_->get_state().get_abstract_state()->Clone());
+  unrestricted_updates_ = context_->CloneState();
 }
 
 template <typename T>
@@ -502,8 +488,8 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     const T boundary_dt = boundary_time - step_start_time;
 
     // Attempt to integrate. Updates and boundary times are consciously
-    // distinguished between. See internal documentation for 
-    // IntegratorBase::StepOnceAtMost() for more information. 
+    // distinguished between. See internal documentation for
+    // IntegratorBase::StepOnceAtMost() for more information.
     typename IntegratorBase<T>::StepResult result =
         integrator_->StepOnceAtMost(next_publish_dt, next_update_dt,
                                     boundary_dt);

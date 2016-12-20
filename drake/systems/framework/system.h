@@ -18,18 +18,14 @@
 namespace drake {
 namespace systems {
 
-/// A description of a discrete-time event, which is passed from the simulator
-/// to the recipient System's appropriate event handling method, depending
-/// how much of the Context is allowed to be changed (none, discrete variables
-/// only, any state variable) as well as how the mechanism for changing the
-/// Context (i.e., Simulator changes the context itself for "discrete" updates,
-/// while the System's unrestricted update function is able to change all
-/// state variables (continuous, discrete, and abstract), albeit indirectly
-/// (through Simulator). Such unrestricted updates should be avoided, if
-/// possible, by using the other mechanisms for updated variables: discrete
-/// variables can be modified using EvalDiscreteVariableUpdates()
-/// and continuous variables are normally modified during the course of the
-/// simulation process (through Simulator::StepTo()).
+/// A description of a discrete-time event, which is passed from the Simulator
+/// to the recipient System's appropriate event handling method. Different
+/// DiscreteEvent ActionTypes trigger different event handlers, which are
+/// permitted to modify different state fields. For instance, publish events may
+/// not modify any state at all, discrete update events may modify the discrete
+/// state only, and unrestricted update events may modify any state. The
+/// event handlers do not apply state updates to the Context directly. Instead,
+/// they write the updates into a separate buffer that the Simulator provides.
 
 template <typename T>
 struct DiscreteEvent {
@@ -299,6 +295,11 @@ class System {
     const int64_t discrete_state_dim = state->get_discrete_state()->size();
     const int64_t abstract_state_dim = state->get_abstract_state()->size();
     DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
+
+    // Copy current state to the passed-in state, as specified in the
+    // documentation for DoEvalUnrestrictedUpdate().
+    state->CopyFrom(context.get_state());
+
     if (event.do_unrestricted_update == nullptr) {
       DoEvalUnrestrictedUpdate(context, state);
     } else {
@@ -666,6 +667,8 @@ class System {
   /// abstract variables or generally make changes to state that cannot be
   /// made using EvalDiscreteVariableUpdates() or via integration of continuous
   /// variables.
+  /// @p[in,out] state the current state of the system on input; the desired
+  ///            state of the system on return.
   virtual void DoEvalUnrestrictedUpdate(const Context<T>& context,
                                         State<T>* state) const {}
 

@@ -258,11 +258,11 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   EXPECT_EQ(spring_mass.get_update_count(), 30);
 }
 
-// A mock System that requests a single publication at a prespecified time. 
+// A mock System that requests a single publication at a prespecified time.
 namespace {
 class UnrestrictedUpdater : public LeafSystem<double> {
  public:
-  UnrestrictedUpdater(double upd_t) : upd_t_(upd_t) {
+  explicit UnrestrictedUpdater(double upd_t) : upd_t_(upd_t) {
   }
 
   ~UnrestrictedUpdater() override {}
@@ -273,7 +273,7 @@ class UnrestrictedUpdater : public LeafSystem<double> {
                   SystemOutput<double>* output) const override {}
 
   void DoCalcNextUpdateTime(const systems::Context<double>& context,
-                            systems::UpdateActions<double>* actions) 
+                            systems::UpdateActions<double>* actions)
                               const override {
     const double inf = std::numeric_limits<double>::infinity();
     actions->time = (context.get_time() < upd_t_) ? upd_t_ : inf;
@@ -285,7 +285,7 @@ class UnrestrictedUpdater : public LeafSystem<double> {
   void DoEvalUnrestrictedUpdate(
       const drake::systems::Context<double>& context,
       drake::systems::State<double>* state) const override {
-    if (unrestricted_update_callback_ != nullptr) 
+    if (unrestricted_update_callback_ != nullptr)
       unrestricted_update_callback_(context, state);
   }
 
@@ -307,17 +307,16 @@ class UnrestrictedUpdater : public LeafSystem<double> {
 
  private:
   const double upd_t_{0.0};
-  std::function<void(const Context<double>&, State<double>*)> 
+  std::function<void(const Context<double>&, State<double>*)>
                                       unrestricted_update_callback_{nullptr};
   std::function<void(const Context<double>&)> derivatives_callback_{nullptr};
 };
-} // (anonymous)
+}  // namespace
 
 // Tests that the simulator captures an unrestricted update at the exact time
 // (i.e., without accumulating floating point error).
 GTEST_TEST(SimulatorTest, ExactUpdateTime) {
-
-  // Create the UnrestrictedUpdater system 
+  // Create the UnrestrictedUpdater system.
   const double upd_t = 1e-10;                // Inexact floating point rep.
   UnrestrictedUpdater unrest_upd(upd_t);
   Simulator<double> simulator(unrest_upd);  // Use default Context.
@@ -326,18 +325,18 @@ GTEST_TEST(SimulatorTest, ExactUpdateTime) {
   // be much smaller in magnitude than the time, hence the negative time.
   simulator.get_mutable_context()->set_time(-1.0/1024);
 
-  // Capture the time at which an update is done using a callback function. 
+  // Capture the time at which an update is done using a callback function.
   std::vector<double> updates;
   unrest_upd.set_unrestricted_update_callback(
       [&updates](const Context<double>& context, State<double>* state) {
     updates.push_back(context.get_time());
   });
 
-  // Simulate forward. 
+  // Simulate forward.
   simulator.Initialize();
   simulator.StepTo(1.);
 
-  // Check that the update occurs at exactly the desired time. 
+  // Check that the update occurs at exactly the desired time.
   EXPECT_EQ(updates.size(), 1);
   EXPECT_EQ(updates.front(), upd_t);
 }
