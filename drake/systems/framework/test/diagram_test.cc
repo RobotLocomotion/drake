@@ -680,8 +680,7 @@ GTEST_TEST(SecondOrderStateTest, MapVelocityToQDot) {
   BasicVector<double> qdot(2);
   const VectorBase<double>& v = context->get_continuous_state()->
                                          get_generalized_velocity();
-  diagram.MapVelocityToQDot(*context, v,
-                            &qdot);
+  diagram.MapVelocityToQDot(*context, v, &qdot);
 
   // The order of these derivatives is arbitrary, so this test is brittle.
   // TODO(david-german-tri): Use UnorderedElementsAre once gmock is available
@@ -694,8 +693,8 @@ GTEST_TEST(SecondOrderStateTest, MapVelocityToQDot) {
   // here too.
   BasicVector<double> vmutable(v.size());
   diagram.MapQDotToVelocity(*context, qdot, &vmutable);
-  EXPECT_EQ(vmut.GetAtIndex(0), 17);
-  EXPECT_EQ(vmut.GetAtIndex(1), 13);
+  EXPECT_EQ(vmutable.GetAtIndex(0), 17);
+  EXPECT_EQ(vmutable.GetAtIndex(1), 13);
 }
 
 // Test for GetSystems.
