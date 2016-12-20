@@ -13,7 +13,7 @@ namespace drake {
 namespace maliput {
 namespace monolane {
 
-/// A simple RoadGeometry implementation that only supports a single
+/// A simple api::RoadGeometry implementation that only supports a single
 /// lane per segment.  Use the Builder interface to actually assemble
 /// a sensible road network.
 class RoadGeometry : public api::RoadGeometry {

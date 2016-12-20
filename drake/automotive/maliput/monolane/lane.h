@@ -115,7 +115,7 @@ class CubicPolynomial {
 };
 
 
-/// Base class for the monolane implementation of Lane.
+/// Base class for the monolane implementation of api::Lane.
 class Lane : public api::Lane {
  public:
   /// Constructs a Lane.

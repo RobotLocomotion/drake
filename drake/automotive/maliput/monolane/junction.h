@@ -14,7 +14,7 @@ namespace monolane {
 
 class RoadGeometry;
 
-/// A Junction implementation.
+/// An api::Junction implementation.
 class Junction : public api::Junction {
  public:
   /// Constructs an empty Junction.

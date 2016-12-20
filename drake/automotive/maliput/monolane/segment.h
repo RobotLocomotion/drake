@@ -15,13 +15,14 @@ class Junction;
 class ArcLane;
 class LineLane;
 
+/// An api::Segment implementation.
 class Segment : public api::Segment {
  public:
   /// Constructs a new Segment.
   ///
   /// The Segment is not fully initialized until one of NewLineLane()
-  /// or NewArcLane() is called.  @p junction must remain valid for the
-  /// lifetime of this class.
+  /// or NewArcLane() is called exactly once.  @p junction must remain
+  /// valid for the lifetime of this class.
   Segment(const api::SegmentId& id, Junction* junction)
       : id_(id), junction_(junction) {}
 

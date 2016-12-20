@@ -89,7 +89,7 @@ class EndpointXy {
 ///  - z_dot: grade (rate of change of elevation with respect to
 ///           arc length of the reference path)
 ///  - theta: superelevation (rotation of road surface around r = 0 centerline;
-///           theta > 0 --> elevation at r > 0 is above elevation at r < 0)
+///           when theta > 0, elevation at r > 0 is above elevation at r < 0)
 ///  - theta_dot: rate of change of superelevation with respect to arc length
 ///               of the reference path
 class EndpointZ {
@@ -152,14 +152,14 @@ class Endpoint {
 
 
 /// Specification for path offset along a circular arc.
-///  - radius: radius of the arc, which must be non-negative
-///  - d_theta:  angle of arc segment (Δθ)
-///              d_theta > 0 is counterclockwise ('veer to left')
-///              d_theta < 0 is clockwise ('veer to right')
+///  * radius: radius of the arc, which must be non-negative
+///  * d_theta:  angle of arc segment (Δθ)
+///    * d_theta > 0 is counterclockwise ('veer to left')
+///    * d_theta < 0 is clockwise ('veer to right')
 struct ArcOffset {
   ArcOffset() {}
 
-  ArcOffset(const double aradius, const double ad_theta)
+  ArcOffset(double aradius, double ad_theta)
       : radius(aradius), d_theta(ad_theta) {
     DRAKE_DEMAND(radius > 0.);
   }
@@ -186,7 +186,7 @@ class Connection {
   /// Possible connection geometries:  line- or arc-segment.
   enum Type { kLine, kArc };
 
-  /// Construct a line-segment connection joining @p start to @p end.
+  /// Constructs a line-segment connection joining @p start to @p end.
   Connection(const std::string& id,
              const Endpoint& start, const Endpoint& end)
       : type_(kLine), id_(id), start_(start), end_(end) {}
@@ -306,10 +306,10 @@ class Group {
 /// monolane road network.
 class Builder {
  public:
-  /// Construct a Builder which can be used to specify and assemble an
-  /// instance of an api::RoadGeometry.
+  /// Constructs a Builder which can be used to specify and assemble a
+  /// monolane implementation of an api::RoadGeometry.
   ///
-  /// Bounds @p lane_bounds and @p driveable_bounds are applied uniformly
+  /// The bounds @p lane_bounds and @p driveable_bounds are applied uniformly
   /// to the single lanes of every segment; @p lane_bounds must be a subset
   /// of @p driveable_bounds.  @p linear_tolerance and @p angular_tolerance
   /// specify the respective tolerances for the resulting RoadGeometry.
@@ -318,7 +318,7 @@ class Builder {
           const double linear_tolerance,
           const double angular_tolerance);
 
-  /// Connect @p start to an end-point linearly displaced from @p start.
+  /// Connects @p start to an end-point linearly displaced from @p start.
   /// @p length specifies the length of displacement (in the direction of the
   /// heading of @p start).  @p z_end specifies the elevation characteristics
   /// at the end-point.
@@ -328,7 +328,7 @@ class Builder {
       const double length,
       const EndpointZ& z_end);
 
-  /// Connect @p start to an end-point displaced from @p start via an arc.
+  /// Connects @p start to an end-point displaced from @p start via an arc.
   /// @p arc specifies the shape of the arc.  @p z_end specifies the
   /// elevation characteristics at the end-point.
   const Connection* Connect(
@@ -337,7 +337,7 @@ class Builder {
       const ArcOffset& arc,
       const EndpointZ& z_end);
 
-  /// Set the default branch for one end of a connection.
+  /// Sets the default branch for one end of a connection.
   ///
   /// The default branch for the @p in_end of connection @p in will set to be
   /// @p out_end of connection @p out.  The specified connections must
@@ -348,15 +348,15 @@ class Builder {
       const Connection* in, const api::LaneEnd::Which in_end,
       const Connection* out, const api::LaneEnd::Which out_end);
 
-  /// Create a new empty connection group with ID string @p id.
+  /// Creates a new empty connection group with ID string @p id.
   Group* MakeGroup(const std::string& id);
 
-  /// Create a new connection group with ID @p id, populated with the
+  /// Creates a new connection group with ID @p id, populated with the
   /// given @p connections.
   Group* MakeGroup(const std::string& id,
                    const std::vector<const Connection*>& connections);
 
-  /// Produce a RoadGeometry, with the ID @p id.
+  /// Produces a RoadGeometry, with the ID @p id.
   std::unique_ptr<const api::RoadGeometry> Build(
       const api::RoadGeometryId& id) const;
 

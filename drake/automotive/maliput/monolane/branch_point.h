@@ -33,7 +33,7 @@ class LaneEndSet : public api::LaneEndSet {
 };
 
 
-/// An implementation of BranchPoint.
+/// An implementation of api::BranchPoint.
 class BranchPoint : public api::BranchPoint {
  public:
   /// Constructs an empty BranchPoint.
