@@ -263,15 +263,6 @@ TEST_F(LeafContextTest, Clone) {
   clone->get_mutable_abstract_state<int>(0) = 2048;
   EXPECT_EQ(42, context_.get_abstract_state<int>(0));
 
-  // Verify that get_discrete_state() and get_abstract_state() works as
-  // desired.
-  EXPECT_EQ(context_.get_discrete_state(0)->GetAtIndex(0),
-            context_.get_discrete_state()->
-                get_discrete_state(0)->GetAtIndex(0));
-  EXPECT_EQ(context_.get_abstract_state<int>(0),
-            context_.get_abstract_state()->
-                get_abstract_state(0).GetValue<int>());
-
   // Verify that the parameters were copied.
   LeafContext<double>* leaf_clone =
       dynamic_cast<LeafContext<double>*>(clone.get());
