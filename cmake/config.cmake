@@ -284,6 +284,12 @@ macro(drake_setup_superbuild)
 
   # Drake itself does not contain Fortran code.
   drake_setup_fortran()
+
+  # Add homebrew path for VTK
+  if(APPLE)
+    list(APPEND CMAKE_PREFIX_PATH /usr/local/opt/vtk5)
+  endif()
+
 endmacro()
 
 ###############################################################################
