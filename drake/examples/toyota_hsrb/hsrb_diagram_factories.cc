@@ -95,8 +95,7 @@ std::unique_ptr<Diagram<double>> BuildConstantSourceToPlantDiagram(
   constant_vector.setZero();
   auto constant_zero_source =
       builder.template AddSystem<ConstantVectorSource<double>>(constant_vector);
-  builder.Connect(constant_zero_source->get_output_port(),
-                  plant_diagram_ptr->get_input_port(0));
+  builder.Cascade(*constant_zero_source, *plant_diagram_ptr);
 
   // Exports all of the RigidBodyPlant's output ports.
   for (int i = 0; i < plant_diagram_ptr->get_num_output_ports(); ++i) {
