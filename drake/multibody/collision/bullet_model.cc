@@ -291,15 +291,18 @@ void BulletModel::DoAddElement(const Element& element) {
         // back to a convex hull (with notification), the better solution would
         // be to give the system the ability to triangulate on the fly.
         bool success = false;
-        if (elements[id]->is_anchored()) {  // An anchored mesh representation.
-          try {
-            bt_shape = newBulletStaticMeshShape(mesh, true);
-            bt_shape_no_margin = newBulletStaticMeshShape(mesh, false);
-            success = true;
-          } catch (std::exception &e) {
-            drake::log()->log(spdlog::level::warn, e.what());
-          }
-        }
+        // TODO(SeanCurtis-TRI): This code is disabled because the collision
+        // detection code is not yet in a state that can handle non-convex
+        // meshes.  See issue 4548.
+//        if (elements[id]->is_anchored()) {  // An anchored mesh representation.
+//          try {
+//            bt_shape = newBulletStaticMeshShape(mesh, true);
+//            bt_shape_no_margin = newBulletStaticMeshShape(mesh, false);
+//            success = true;
+//          } catch (std::exception &e) {
+//            drake::log()->log(spdlog::level::warn, e.what());
+//          }
+//        }
         if (!success) {  // A convex hull representation of the mesh points.
           bt_shape = newBulletMeshShape(mesh, true);
           bt_shape_no_margin = newBulletMeshShape(mesh, false);
