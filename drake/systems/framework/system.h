@@ -205,9 +205,8 @@ class System {
   /// @see CalcPotentialEnergy()
   const T& EvalPotentialEnergy(const Context<T>& context) const {
     // TODO(sherm1) Replace with an actual cache entry.
-    static T fake_cache_entry;
-    fake_cache_entry = CalcPotentialEnergy(context);
-    return fake_cache_entry;
+    fake_cache_pe_ = CalcPotentialEnergy(context);
+    return fake_cache_pe_;
   }
 
   /// Returns a reference to the cached value of the kinetic energy. If
@@ -215,9 +214,8 @@ class System {
   /// @see CalcKineticEnergy()
   const T& EvalKineticEnergy(const Context<T>& context) const {
     // TODO(sherm1) Replace with an actual cache entry.
-    static T fake_cache_entry;
-    fake_cache_entry = CalcKineticEnergy(context);
-    return fake_cache_entry;
+    fake_cache_ke_ = CalcKineticEnergy(context);
+    return fake_cache_ke_;
   }
 
   /// Returns a reference to the cached value of the conservative power. If
@@ -225,9 +223,8 @@ class System {
   /// @see CalcConservativePower()
   const T& EvalConservativePower(const Context<T>& context) const {
     // TODO(sherm1) Replace with an actual cache entry.
-    static T fake_cache_entry;
-    fake_cache_entry = CalcConservativePower(context);
-    return fake_cache_entry;
+    fake_cache_conservative_power_ = CalcConservativePower(context);
+    return fake_cache_conservative_power_;
   }
 
   /// Returns a reference to the cached value of the non-conservative power. If
@@ -236,9 +233,8 @@ class System {
   /// @see CalcNonConservativePower()
   const T& EvalNonConservativePower(const Context<T>& context) const {
     // TODO(sherm1) Replace with an actual cache entry.
-    static T fake_cache_entry;
-    fake_cache_entry = CalcNonConservativePower(context);
-    return fake_cache_entry;
+    fake_cache_nonconservative_power_ = CalcNonConservativePower(context);
+    return fake_cache_nonconservative_power_;
   }
 
   /// Causes the vector-valued input port with the given `port_index` to become
@@ -958,6 +954,13 @@ class System {
   std::vector<SystemPortDescriptor<T>> input_ports_;
   std::vector<SystemPortDescriptor<T>> output_ports_;
   const detail::InputPortEvaluatorInterface<T>* parent_{nullptr};
+
+  // TODO(sherm1) Replace these fake cache entries with real cache asap.
+  // These are temporaries and hence uninitialized.
+  mutable T fake_cache_pe_;
+  mutable T fake_cache_ke_;
+  mutable T fake_cache_conservative_power_;
+  mutable T fake_cache_nonconservative_power_;
 };
 
 }  // namespace systems
