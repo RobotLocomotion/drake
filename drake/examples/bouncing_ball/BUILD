@@ -1,6 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_googletest")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -33,22 +35,16 @@ cc_library(
 
 # === test/ ===
 
-cc_test(
+cc_googletest(
     name = "ball_test",
-    size = "small",
-    srcs = ["test/ball_test.cc"],
     deps = [
         ":ball",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "bouncing_ball_test",
-    size = "small",
-    srcs = ["test/bouncing_ball_test.cc"],
     deps = [
         ":bouncing_ball",
-        "@gtest//:main",
     ],
 )

@@ -1,6 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_googletest")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -190,95 +192,68 @@ filegroup(
 
 # === test/ ===
 
-cc_test(
+cc_googletest(
     name = "automotive_simulator_test",
-    size = "small",
-    srcs = ["test/automotive_simulator_test.cc"],
     data = ["//drake/automotive:models"],
     local = 1,
     deps = [
         "//drake/automotive:automotive_simulator",
         "//drake/lcm:mock",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "curve2_test",
-    size = "small",
-    srcs = ["test/curve2_test.cc"],
     deps = [
         "//drake/automotive:curve2",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "simple_car_test",
-    size = "small",
-    srcs = ["test/simple_car_test.cc"],
     deps = [
         "//drake/automotive:simple_car",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "idm_planner_test",
-    size = "small",
-    srcs = ["test/idm_planner_test.cc"],
     deps = [
         "//drake/automotive:idm_planner",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "linear_car_test",
-    size = "small",
-    srcs = ["test/linear_car_test.cc"],
     deps = [
         "//drake/automotive:linear_car",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "simple_car_to_euler_floating_joint_test",
-    size = "small",
-    srcs = ["test/simple_car_to_euler_floating_joint_test.cc"],
     deps = [
         "//drake/automotive:simple_car",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "single_lane_ego_and_agent_test",
-    size = "small",
-    srcs = ["test/single_lane_ego_and_agent_test.cc"],
     deps = [
         "//drake/automotive:single_lane_ego_and_agent",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "trajectory_car_test",
-    size = "small",
-    srcs = ["test/trajectory_car_test.cc"],
     deps = [
         "//drake/automotive:trajectory_car",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "simple_car_state_translator_test",
-    size = "small",
-    srcs = ["test/simple_car_state_translator_test.cc"],
     deps = [
         "//drake/automotive:generated_translators",
-        "@gtest//:main",
     ],
 )
