@@ -156,16 +156,23 @@ class Endpoint {
 ///  * d_theta:  angle of arc segment (Δθ)
 ///    * d_theta > 0 is counterclockwise ('veer to left')
 ///    * d_theta < 0 is clockwise ('veer to right')
-struct ArcOffset {
+class ArcOffset {
+ public:
+  /// Constructs an ArcOffset with all zero parameters.
   ArcOffset() {}
 
-  ArcOffset(double aradius, double ad_theta)
-      : radius(aradius), d_theta(ad_theta) {
-    DRAKE_DEMAND(radius > 0.);
+  ArcOffset(double radius, double d_theta)
+      : radius_(radius), d_theta_(d_theta) {
+    DRAKE_DEMAND(radius_ > 0.);
   }
 
-  double radius{};
-  double d_theta{};
+  double radius() const { return radius_; }
+
+  double d_theta() const { return d_theta_; }
+
+ private:
+  double radius_{};
+  double d_theta_{};
 };
 
 

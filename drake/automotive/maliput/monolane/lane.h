@@ -133,8 +133,8 @@ class Lane : public api::Lane {
   ///
   /// This is the base class for subclasses, each of which describe a
   /// primitive reference curve in the xy ground-plane of the world frame.
-  /// The specific curve is expressed by the virtual functions; see the
-  /// method xy_of_p().
+  /// The specific curve is expressed by a subclass's implementations of
+  /// private virtual functions; see the private method xy_of_p().
   ///
   /// @p elevation and @p superelevation are cubic-polynomial functions which
   /// define the elevation and superelevation as a function of position along

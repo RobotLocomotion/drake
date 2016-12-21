@@ -49,19 +49,19 @@ const Connection* Builder::Connect(
     const ArcOffset& arc,
     const EndpointZ& z_end) {
   const double alpha = start.xy().heading();
-  const double theta0 = alpha - std::copysign(M_PI / 2., arc.d_theta);
-  const double theta1 = theta0 + arc.d_theta;
+  const double theta0 = alpha - std::copysign(M_PI / 2., arc.d_theta());
+  const double theta1 = theta0 + arc.d_theta();
 
-  const double cx = start.xy().x() - (arc.radius * std::cos(theta0));
-  const double cy = start.xy().y() - (arc.radius * std::sin(theta0));
+  const double cx = start.xy().x() - (arc.radius() * std::cos(theta0));
+  const double cy = start.xy().y() - (arc.radius() * std::sin(theta0));
 
-  const Endpoint end(EndpointXy(cx + (arc.radius * std::cos(theta1)),
-                                cy + (arc.radius * std::sin(theta1)),
-                                alpha + arc.d_theta),
+  const Endpoint end(EndpointXy(cx + (arc.radius() * std::cos(theta1)),
+                                cy + (arc.radius() * std::sin(theta1)),
+                                alpha + arc.d_theta()),
                      z_end);
 
   connections_.push_back(std::make_unique<Connection>(
-      id, start, end, cx, cy, arc.radius, arc.d_theta));
+      id, start, end, cx, cy, arc.radius(), arc.d_theta()));
   return connections_.back().get();
 }
 
