@@ -3,13 +3,19 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("//tools:lcm.bzl", "lcm_cc_library")
+load("//tools:lcm.bzl", "lcm_cc_library", "lcm_py_library")
 
 lcm_cc_library(
     name = "drake_signal",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_drake_signal.lcm"],
     linkstatic = 1,
+)
+
+lcm_py_library(
+    name = "py_drake_signal",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_drake_signal.lcm"],
 )
 
 lcm_cc_library(
@@ -35,6 +41,17 @@ lcm_cc_library(
         "lcmt_simple_car_state_t.lcm",
     ],
     linkstatic = 1,
+)
+
+lcm_py_library(
+    name = "py_automotive",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_driving_command_t.lcm",
+        "lcmt_euler_floating_joint_state_t.lcm",
+        "lcmt_simple_car_config_t.lcm",
+        "lcmt_simple_car_state_t.lcm",
+    ],
 )
 
 lcm_cc_library(
