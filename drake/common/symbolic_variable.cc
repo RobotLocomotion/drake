@@ -3,8 +3,8 @@
 #include <memory>
 #include <ostream>
 #include <sstream>
-#include <string>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/symbolic_indeterminate.h"
 #include "drake/common/symbolic_variable_cell.h"
 
