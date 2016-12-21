@@ -318,7 +318,8 @@ class Context {
   void VerifyInputPort(const SystemPortDescriptor<T>& descriptor) const {
     const int i = descriptor.get_index();
     const InputPort* port = GetInputPort(i);
-    DRAKE_THROW_UNLESS(port != nullptr);
+    // If the port isn't connected, we don't have anything else to check.
+    if (port == nullptr) { return; }
     // TODO(david-german-tri, sherm1): Consider checking sampling here.
 
     // In the vector-valued case, check the size.
