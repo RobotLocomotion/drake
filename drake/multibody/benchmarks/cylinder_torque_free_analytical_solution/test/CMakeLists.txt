@@ -1,3 +1,4 @@
-drake_add_cc_test(cylinder_torque_free_analytical_solution)
-target_link_libraries(cylinder_torque_free_analytical_solution drakeRigidBodyPlant drakeMultibodyParsers)
-
+if (Bullet_FOUND)
+  drake_add_cc_test(cylinder_torque_free_analytical_solution)
+  target_link_libraries(cylinder_torque_free_analytical_solution drakeRigidBodyPlant drakeMultibodyParsers)
+endif()

@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "drake/system1/System.h"
-#include "drake/system1/vector.h"
+#include "drake/multibody/rigid_body_system1/System.h"
+#include "drake/multibody/rigid_body_system1/vector.h"
 
 namespace drake {
 
