@@ -262,7 +262,7 @@ GTEST_TEST(SimulatorTest, SpringMass) {
 namespace {
 class UnrestrictedUpdater : public LeafSystem<double> {
  public:
-  explicit UnrestrictedUpdater(double upd_t) : upd_t_(upd_t) {
+  explicit UnrestrictedUpdater(double t_upd) : t_upd_(t_upd) {
   }
 
   ~UnrestrictedUpdater() override {}
@@ -274,7 +274,7 @@ class UnrestrictedUpdater : public LeafSystem<double> {
                             systems::UpdateActions<double>* actions)
                               const override {
     const double inf = std::numeric_limits<double>::infinity();
-    actions->time = (context.get_time() < upd_t_) ? upd_t_ : inf;
+    actions->time = (context.get_time() < t_upd_) ? t_upd_ : inf;
     actions->events.push_back(systems::DiscreteEvent<double>());
     actions->events.back().action = systems::DiscreteEvent<double>::
                                                kUnrestrictedUpdateAction;
@@ -304,7 +304,7 @@ class UnrestrictedUpdater : public LeafSystem<double> {
   }
 
  private:
-  const double upd_t_{0.0};
+  const double t_upd_{0.0};
   std::function<void(const Context<double>&, State<double>*)>
                                       unrestricted_update_callback_{nullptr};
   std::function<void(const Context<double>&)> derivatives_callback_{nullptr};
@@ -315,11 +315,11 @@ class UnrestrictedUpdater : public LeafSystem<double> {
 // (i.e., without accumulating floating point error).
 GTEST_TEST(SimulatorTest, ExactUpdateTime) {
   // Create the UnrestrictedUpdater system.
-  const double upd_t = 1e-10;                // Inexact floating point rep.
-  UnrestrictedUpdater unrest_upd(upd_t);
+  const double t_upd = 1e-10;                // Inexact floating point rep.
+  UnrestrictedUpdater unrest_upd(t_upd);
   Simulator<double> simulator(unrest_upd);  // Use default Context.
 
-  // Set time to an exact floating point representation; we want upd_t to
+  // Set time to an exact floating point representation; we want t_upd to
   // be much smaller in magnitude than the time, hence the negative time.
   simulator.get_mutable_context()->set_time(-1.0/1024);
 
@@ -336,7 +336,7 @@ GTEST_TEST(SimulatorTest, ExactUpdateTime) {
 
   // Check that the update occurs at exactly the desired time.
   EXPECT_EQ(updates.size(), 1);
-  EXPECT_EQ(updates.front(), upd_t);
+  EXPECT_EQ(updates.front(), t_upd);
 }
 
 // Tests Simulator for a Diagram system consisting of a tree of systems.

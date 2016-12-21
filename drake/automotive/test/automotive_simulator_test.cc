@@ -91,8 +91,12 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   mock_lcm->InduceSubscriberCallback(kCommandChannelName, &message_bytes[0],
                                      message_bytes.size());
 
-  // Shortly after starting, we should have not have moved much.
-  simulator->StepBy(0.01);
+  // Shortly after starting, we should have not have moved much. Take two
+  // small steps so that we get a publish a small time after zero (publish
+  // occurs at the beginning of a step unless specific publishing times are
+  // set).
+  simulator->StepBy(0.005);
+  simulator->StepBy(0.005);
   EulerFloatingJointState<double> joint_value;
   GetLastPublishedJointValue(kJointStateChannelName, state_pub.get_translator(),
                              mock_lcm, &joint_value);

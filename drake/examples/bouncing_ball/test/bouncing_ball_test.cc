@@ -33,7 +33,7 @@ std::pair<double, double> CalcClosedFormHeightAndVelocity(double g,
     // problem.
     if (tf < drop_time) {
       // In a ballistic phase.
-      return std::make_pair(g*tf*tf*0.5 + x0, g*tf);
+      return std::make_pair(g*tf*tf/2 + x0, g*tf);
     } else {
       // Ball has hit the ground.
       return std::make_pair(0.0, 0.0);
@@ -49,11 +49,11 @@ std::pair<double, double> CalcClosedFormHeightAndVelocity(double g,
       // Even phases mean that the ball is falling, odd phases mean that it is
       // rising.
       if ((num_phases & 1) == 0) {
-        return std::make_pair(g*t*t*0.5 + x0, g*t);
+        return std::make_pair(g*t*t/2 + x0, g*t);
       } else {
         // Get the ball velocity at the time of impact.
         const double vf = g*drop_time;
-        return std::make_pair(g*t*t*0.5 - vf*t, g*t - vf);
+        return std::make_pair(g*t*t/2 - vf*t, g*t - vf);
       }
     } else {
       throw std::logic_error("Invalid restitution coefficient!");
