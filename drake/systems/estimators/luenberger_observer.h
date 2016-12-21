@@ -64,9 +64,6 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override;
 
-  std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
-      const override;
-
   const std::unique_ptr<systems::System<T>> observed_system_;
   const Eigen::MatrixXd observer_gain_;  // Gain matrix (often called "L").
 
@@ -76,6 +73,8 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
   // evaluation.
   const std::unique_ptr<systems::Context<T>> observed_system_context_;
   const std::unique_ptr<systems::SystemOutput<T>> observed_system_output_;
+  const std::unique_ptr<systems::ContinuousState<T>>
+  observed_system_derivatives_;
 };
 
 }  // namespace estimators
