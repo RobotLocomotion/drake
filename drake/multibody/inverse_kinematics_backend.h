@@ -6,7 +6,6 @@
 #include <Eigen/Dense>
 
 #include "drake/solvers/decision_variable.h"
-#include "drake/solvers/solution_result.h"
 #include "drake/multibody/constraint_wrappers.h"
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -66,7 +65,7 @@ void inverseKinTrajBackend(
 /// Translate a solver result into something expected for the info
 /// output parameter.
 int GetIKSolverInfo(const drake::solvers::MathematicalProgram& prog,
-                    drake::solvers::SolutionResult result);
+                    drake::solvers::SolutionSummary result);
 
 /// Set solver options based on IK options.
 void SetIKSolverOptions(const IKoptions& ikoptions,

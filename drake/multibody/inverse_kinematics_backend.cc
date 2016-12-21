@@ -28,7 +28,7 @@ using drake::math::autoDiffToValueMatrix;
 using drake::solvers::Constraint;
 using drake::solvers::DecisionVariableMatrixX;
 using drake::solvers::MathematicalProgram;
-using drake::solvers::SolutionResult;
+using drake::solvers::SolutionSummary;
 
 /// NOTE: The contents of this class are for the most part direct ports of
 /// drake/systems/plants/@RigidBodyManipulator/inverseKinBackend.m from Matlab
@@ -39,7 +39,7 @@ namespace drake {
 namespace systems {
 namespace plants {
 
-int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
+int GetIKSolverInfo(const MathematicalProgram& prog, SolutionSummary result) {
   std::string solver_name;
   int solver_result = 0;
   prog.GetSolverResult(&solver_name, &solver_result);
@@ -51,16 +51,16 @@ int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
 
   // Make a SNOPT-like return code out of the generic result.
   switch (result) {
-    case SolutionResult::kSolutionFound: {
+    case SolutionSummary::kSolutionFound: {
       return 1;
     }
-    case SolutionResult::kInvalidInput: {
+    case SolutionSummary::kInvalidInput: {
       return 91;
     }
-    case SolutionResult::kInfeasibleConstraints: {
+    case SolutionSummary::kInfeasibleConstraints: {
       return 13;
     }
-    case SolutionResult::kUnknownError: {
+    case SolutionSummary::kUnknownError: {
       return 100;  // Not a real SNOPT error.
     }
   }
@@ -282,7 +282,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
       prog.SetInitialGuess(vars, q_sol->col(t_index - 1));
     }
 
-    SolutionResult result = prog.Solve();
+    SolutionSummary result = prog.Solve();
     const VectorXd& vars_value =
         drake::solvers::GetSolution(vars);
     q_sol->col(t_index) = vars_value;

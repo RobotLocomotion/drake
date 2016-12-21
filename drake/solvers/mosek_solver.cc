@@ -566,10 +566,11 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
 }
 }  // anonymous namespace
 
-bool MosekSolver::available() const { return true; }
+bool MosekSolver::available_impl() const { return true; }
 
-SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
-  const int num_vars = prog.num_vars();
+MosekSolverResult* MosekSolver::Solve_impl(
+    MathematicalProgram* const prog) const {
+  const int num_vars = prog->num_vars();
   MSKenv_t env = nullptr;
   MSKtask_t task = nullptr;
   MSKrescodee rescode;
@@ -595,75 +596,80 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   }
   // Add costs
   if (rescode == MSK_RES_OK) {
-    rescode = AddCosts(prog, &task);
+    rescode = AddCosts(*prog, &task);
   }
   // Add bounding box constraints on decision variables.
   if (rescode == MSK_RES_OK) {
-    rescode = AddBoundingBoxConstraints(prog, &task);
+    rescode = AddBoundingBoxConstraints(*prog, &task);
   }
   // Specify binary variables.
   bool with_integer_or_binary_variable = false;
   if (rescode == MSK_RES_OK) {
     rescode =
-        SpecifyVariableType(prog, &task, &with_integer_or_binary_variable);
+        SpecifyVariableType(*prog, &task, &with_integer_or_binary_variable);
   }
   // Add linear constraints.
   if (rescode == MSK_RES_OK) {
-    rescode = AddLinearConstraints(prog, &task);
+    rescode = AddLinearConstraints(*prog, &task);
   }
 
   // Add Lorentz cone constraints.
   if (rescode == MSK_RES_OK) {
-    rescode = AddSecondOrderConeConstraints(prog.lorentz_cone_constraints(),
+    rescode = AddSecondOrderConeConstraints(prog->lorentz_cone_constraints(),
                                             false, &task, &is_new_variable);
   }
 
   // Add rotated Lorentz cone constraints.
   if (rescode == MSK_RES_OK) {
-    rescode = AddSecondOrderConeConstraints(
-        prog.rotated_lorentz_cone_constraints(), true, &task, &is_new_variable);
+    rescode =
+        AddSecondOrderConeConstraints(prog->rotated_lorentz_cone_constraints(),
+                                      true, &task, &is_new_variable);
   }
 
   // Add positive semidefinite constraints.
   if (rescode == MSK_RES_OK) {
-    rescode = AddPositiveSemidefiniteConstraints(prog, &task);
+    rescode = AddPositiveSemidefiniteConstraints(*prog, &task);
   }
 
   // Add linear matrix inequality constraints.
   if (rescode == MSK_RES_OK) {
-    rescode = AddLinearMatrixInequalityConstraint(prog, &task);
+    rescode = AddLinearMatrixInequalityConstraint(*prog, &task);
   }
 
-  SolutionResult result = SolutionResult::kUnknownError;
+  SolutionSummary solution_summary = SolutionSummary::kUnknownError;
   // Run optimizer.
   if (rescode == MSK_RES_OK) {
-    // TODO(hongkai.dai@tri.global): add trmcode to the returned struct.
     MSKrescodee trmcode;  // termination code
     rescode = MSK_optimizetrm(task, &trmcode);
   }
 
   // Determines the solution type.
-  // TODO(hongkai.dai@tri.global) : add the integer solution type. And test
-  // the non-default optimizer.
+  // TODO(hongkai.dai@tri.global) : And tests for the non-default optimizer.
   MSKsoltypee solution_type;
   if (with_integer_or_binary_variable) {
     solution_type = MSK_SOL_ITG;
-  } else if (prog.quadratic_costs().empty() &&
-             prog.lorentz_cone_constraints().empty() &&
-             prog.rotated_lorentz_cone_constraints().empty() &&
-             prog.positive_semidefinite_constraints().empty() &&
-             prog.linear_matrix_inequality_constraints().empty()) {
+  } else if (prog->quadratic_costs().empty() &&
+             prog->lorentz_cone_constraints().empty() &&
+             prog->rotated_lorentz_cone_constraints().empty() &&
+             prog->positive_semidefinite_constraints().empty() &&
+             prog->linear_matrix_inequality_constraints().empty()) {
     solution_type = MSK_SOL_BAS;
   } else {
     solution_type = MSK_SOL_ITR;
   }
 
+  double primal_objective = NAN;
+  double dual_objective = NAN;
+  MSKprostae problem_status = MSK_PRO_STA_UNKNOWN;
+  MSKsolstae solution_status = MSK_SOL_STA_UNKNOWN;
   // TODO(hongkai.dai@tri.global) : Add MOSEK paramaters.
   // Mosek parameter are added by enum, not by string.
   if (rescode == MSK_RES_OK) {
-    MSKsolstae solution_status;
     if (rescode == MSK_RES_OK) {
       rescode = MSK_getsolsta(task, solution_type, &solution_status);
+    }
+    if (rescode == MSK_RES_OK) {
+      rescode = MSK_getprosta(task, solution_type, &problem_status);
     }
     if (rescode == MSK_RES_OK) {
       switch (solution_status) {
@@ -671,13 +677,21 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
         case MSK_SOL_STA_NEAR_OPTIMAL:
         case MSK_SOL_STA_INTEGER_OPTIMAL:
         case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL: {
-          result = SolutionResult::kSolutionFound;
+          rescode = MSK_getprimalobj(task, solution_type, &primal_objective);
+          if (rescode == MSK_RES_OK) {
+            if (solution_type != MSK_SOL_ITG) {
+              rescode = MSK_getdualobj(task, solution_type, &dual_objective);
+            }
+          }
+          solution_summary = SolutionSummary::kSolutionFound;
           MSKint32t num_mosek_vars;
-          rescode = MSK_getnumvar(task, &num_mosek_vars);
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
+          if (rescode == MSK_RES_OK) {
+            rescode = MSK_getnumvar(task, &num_mosek_vars);
+          }
           Eigen::VectorXd mosek_sol_vector(num_mosek_vars);
-          rescode = MSK_getxx(task, solution_type, mosek_sol_vector.data());
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
+          if (rescode == MSK_RES_OK) {
+            rescode = MSK_getxx(task, solution_type, mosek_sol_vector.data());
+          }
           Eigen::VectorXd sol_vector(num_vars);
           int var_count = 0;
           for (int i = 0; i < num_mosek_vars; ++i) {
@@ -687,7 +701,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
             }
           }
           if (rescode == MSK_RES_OK) {
-            prog.SetDecisionVariableValues(sol_vector);
+            prog->SetDecisionVariableValues(sol_vector);
           }
           break;
         }
@@ -695,25 +709,27 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
         case MSK_SOL_STA_PRIM_INFEAS_CER:
         case MSK_SOL_STA_NEAR_DUAL_FEAS:
         case MSK_SOL_STA_NEAR_PRIM_INFEAS_CER: {
-          result = SolutionResult::kInfeasibleConstraints;
+          solution_summary = SolutionSummary::kInfeasibleConstraints;
           break;
         }
         default: {
-          result = SolutionResult::kUnknownError;
+          solution_summary = SolutionSummary::kUnknownError;
           break;
         }
       }
     }
   }
 
-  prog.SetSolverResult(SolverName(), result);
+  prog->SetSolverResult(SolverName(), solution_summary);
   if (rescode != MSK_RES_OK) {
-    result = SolutionResult::kUnknownError;
+    solution_summary = SolutionSummary::kUnknownError;
   }
 
   MSK_deletetask(&task);
   MSK_deleteenv(&env);
-  return result;
+  return new MosekSolverResult(solution_summary, primal_objective,
+                               dual_objective, problem_status, solution_status,
+                               rescode);
 }
 
 }  // namespace solvers

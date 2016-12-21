@@ -6,11 +6,10 @@
 namespace drake {
 namespace solvers {
 
-bool IpoptSolver::available() const {
-  return false;
-}
+bool IpoptSolver::available_impl() const { return false; }
 
-SolutionResult IpoptSolver::Solve(MathematicalProgram &prog) const {
+IpoptSolverResult* IpoptSolver::Solve_impl(
+    MathematicalProgram* const prog) const {
   throw std::runtime_error(
       "The IPOPT bindings were not compiled.  You'll need to use a different "
       "solver.");

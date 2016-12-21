@@ -174,7 +174,7 @@ struct ResultCache {
 class IpoptSolver_NLP : public Ipopt::TNLP {
  public:
   explicit IpoptSolver_NLP(MathematicalProgram* problem)
-      : problem_(problem), result_(SolutionResult::kUnknownError) {}
+      : problem_(problem), result_(SolutionSummary::kUnknownError) {}
 
   virtual ~IpoptSolver_NLP() {}
 
@@ -395,15 +395,15 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
     switch (status) {
       case Ipopt::SUCCESS: {
-        result_ = SolutionResult::kSolutionFound;
+        result_ = SolutionSummary::kSolutionFound;
         break;
       }
       case Ipopt::LOCAL_INFEASIBILITY: {
-        result_ = SolutionResult::kInfeasibleConstraints;
+        result_ = SolutionSummary::kInfeasibleConstraints;
         break;
       }
       default: {
-        result_ = SolutionResult::kUnknownError;
+        result_ = SolutionSummary::kUnknownError;
         break;
       }
     }
@@ -415,7 +415,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     problem_->SetDecisionVariableValues(solution);
   }
 
-  SolutionResult result() const { return result_; }
+  SolutionSummary result() const { return result_; }
 
  private:
   void EvaluateCosts(Index n, const Number* x) {
@@ -493,15 +493,16 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   MathematicalProgram* const problem_;
   std::unique_ptr<ResultCache> cost_cache_;
   std::unique_ptr<ResultCache> constraint_cache_;
-  SolutionResult result_;
+  SolutionSummary result_;
 };
 
 }  // namespace
 
-bool IpoptSolver::available() const { return true; }
+bool IpoptSolver::available_impl() const { return true; }
 
-SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
-  DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
+IpoptSolverResult* IpoptSolver::Solve_impl(
+    MathematicalProgram* const prog) const {
+  DRAKE_ASSERT(prog->linear_complementarity_constraints().empty());
 
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);
@@ -516,27 +517,27 @@ SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   app->Options()->SetStringValue("hessian_approximation", "limited-memory");
   app->Options()->SetIntegerValue("print_level", 2);
 
-  for (const auto& it : prog.GetSolverOptionsDouble("IPOPT")) {
+  for (const auto& it : prog->GetSolverOptionsDouble("IPOPT")) {
     app->Options()->SetNumericValue(it.first, it.second);
   }
 
-  for (const auto& it : prog.GetSolverOptionsInt("IPOPT")) {
+  for (const auto& it : prog->GetSolverOptionsInt("IPOPT")) {
     app->Options()->SetIntegerValue(it.first, it.second);
   }
 
-  for (const auto& it : prog.GetSolverOptionsStr("IPOPT")) {
+  for (const auto& it : prog->GetSolverOptionsStr("IPOPT")) {
     app->Options()->SetStringValue(it.first, it.second);
   }
 
   Ipopt::ApplicationReturnStatus status = app->Initialize();
   if (status != Ipopt::Solve_Succeeded) {
-    return SolutionResult::kInvalidInput;
+    return new IpoptSolverResult(SolutionSummary::kInvalidInput);
   }
 
-  Ipopt::SmartPtr<IpoptSolver_NLP> nlp = new IpoptSolver_NLP(&prog);
+  Ipopt::SmartPtr<IpoptSolver_NLP> nlp = new IpoptSolver_NLP(prog);
   status = app->OptimizeTNLP(nlp);
 
-  return nlp->result();
+  return new IpoptSolverResult(nlp->result());
 }
 
 }  // namespace solvers

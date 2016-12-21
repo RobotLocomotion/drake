@@ -190,7 +190,7 @@ class DirectTrajectoryOptimization {
    * input. The number of rows for each segment in @p traj_init_x must
    * be equal to num_states (the second param of the constructor).
    */
-  solvers::SolutionResult SolveTraj(
+  solvers::SolutionSummary SolveTraj(
       double timespan_init, const PiecewisePolynomial<double>& traj_init_u,
       const PiecewisePolynomial<double>& traj_init_x);
   // TODO(Lucy-tri) If timespan_init has any relationship to

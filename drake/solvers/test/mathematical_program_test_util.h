@@ -16,20 +16,20 @@ namespace test {
 void RunSolver(MathematicalProgram* prog,
                const MathematicalProgramSolverInterface& solver) {
   if (solver.available()) {
-    SolutionResult result = solver.Solve(*prog);
+    auto result = solver.Solve(prog);
     std::string solver_name;
     int solver_status;
     prog->GetSolverResult(&solver_name, &solver_status);
-    EXPECT_EQ(result, SolutionResult::kSolutionFound)
+    EXPECT_EQ(result->summary(), SolutionSummary::kSolutionFound)
         << "Solver " << solver_name << " fails to find the solution."
         << std::endl;
   }
 }
 
 void AddSolverIfAvailable(
-    const std::string &solver_name,
-    std::list<std::unique_ptr<MathematicalProgramSolverInterface>> *
-    solver_list) {
+    const std::string& solver_name,
+    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>*
+        solver_list) {
   std::list<std::unique_ptr<MathematicalProgramSolverInterface>> all_solvers;
   auto gurobi_solver = std::make_unique<GurobiSolver>();
   all_solvers.push_back(std::move(gurobi_solver));

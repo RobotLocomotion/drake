@@ -299,15 +299,16 @@ void WrapConstraint(const _Binding& binding, double constraint_tol,
 
 }  // anonymous namespace
 
-bool NloptSolver::available() const { return true; }
+bool NloptSolver::available_impl() const { return true; }
 
-SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
-  int nx = prog.num_vars();
+NloptSolverResult* NloptSolver::Solve_impl(
+    MathematicalProgram* const prog) const {
+  int nx = prog->num_vars();
 
   // Load the algo to use and the size.
   nlopt::opt opt(nlopt::LD_SLSQP, nx);
 
-  const Eigen::VectorXd& initial_guess = prog.initial_guess();
+  const Eigen::VectorXd& initial_guess = prog->initial_guess();
   std::vector<double> x(initial_guess.size());
   for (size_t i = 0; i < x.size(); i++) {
     x[i] = initial_guess[i];
@@ -316,7 +317,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   std::vector<double> xlow(nx, -std::numeric_limits<double>::infinity());
   std::vector<double> xupp(nx, std::numeric_limits<double>::infinity());
 
-  for (auto const& binding : prog.bounding_box_constraints()) {
+  for (auto const& binding : prog->bounding_box_constraints()) {
     const auto& c = binding.constraint();
     const auto& lower_bound = c->lower_bound();
     const auto& upper_bound = c->upper_bound();
@@ -342,7 +343,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   opt.set_lower_bounds(xlow);
   opt.set_upper_bounds(xupp);
 
-  opt.set_min_objective(EvaluateCosts, &prog);
+  opt.set_min_objective(EvaluateCosts, prog);
 
   // TODO(sam.creasey): All hardcoded tolerances in this function
   // should be made configurable when #1879 is fixed.
@@ -354,46 +355,46 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
 
   // TODO(sam.creasey): Missing test coverage for generic constraints
   // with >1 output.
-  for (const auto& c : prog.generic_constraints()) {
+  for (const auto& c : prog->generic_constraints()) {
     WrapConstraint(c, constraint_tol, &opt, &wrapped_vector);
   }
 
-  for (const auto& c : prog.lorentz_cone_constraints()) {
+  for (const auto& c : prog->lorentz_cone_constraints()) {
     WrapConstraint(c, constraint_tol, &opt, &wrapped_vector);
   }
 
-  for (const auto& c : prog.rotated_lorentz_cone_constraints()) {
+  for (const auto& c : prog->rotated_lorentz_cone_constraints()) {
     WrapConstraint(c, constraint_tol, &opt, &wrapped_vector);
   }
 
-  for (const auto& c : prog.linear_equality_constraints()) {
+  for (const auto& c : prog->linear_equality_constraints()) {
     WrapConstraint(c, constraint_tol, &opt, &wrapped_vector);
   }
 
   // TODO(sam.creasey): Missing test coverage for linear constraints
   // with >1 output.
-  for (const auto& c : prog.linear_constraints()) {
+  for (const auto& c : prog->linear_constraints()) {
     WrapConstraint(c, constraint_tol, &opt, &wrapped_vector);
   }
 
   opt.set_xtol_rel(xtol_rel);
   opt.set_xtol_abs(xtol_abs);
 
-  SolutionResult result = SolutionResult::kSolutionFound;
+  SolutionSummary result = SolutionSummary::kSolutionFound;
   nlopt::result nlopt_result = nlopt::FAILURE;
   try {
     double minf = 0;
     nlopt_result = opt.optimize(x, minf);
   } catch (std::invalid_argument&) {
-    result = SolutionResult::kInvalidInput;
+    result = SolutionSummary::kInvalidInput;
   } catch (std::bad_alloc&) {
-    result = SolutionResult::kUnknownError;
+    result = SolutionSummary::kUnknownError;
   } catch (nlopt::roundoff_limited) {
-    result = SolutionResult::kUnknownError;
+    result = SolutionSummary::kUnknownError;
   } catch (nlopt::forced_stop) {
-    result = SolutionResult::kUnknownError;
+    result = SolutionSummary::kUnknownError;
   } catch (std::runtime_error&) {
-    result = SolutionResult::kUnknownError;
+    result = SolutionSummary::kUnknownError;
   }
 
   Eigen::VectorXd sol(x.size());
@@ -401,9 +402,9 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
     sol(i) = x[i];
   }
 
-  prog.SetDecisionVariableValues(sol);
-  prog.SetSolverResult(SolverName(), nlopt_result);
-  return result;
+  prog->SetDecisionVariableValues(sol);
+  prog->SetSolverResult(SolverName(), nlopt_result);
+  return new NloptSolverResult(result);
 }
 
 }  // namespace solvers

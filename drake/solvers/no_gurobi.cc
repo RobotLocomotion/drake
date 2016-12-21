@@ -5,14 +5,13 @@
 namespace drake {
 namespace solvers {
 
-bool GurobiSolver::available() const {
-  return false;
-}
+bool GurobiSolver::available_impl() const { return false; }
 
-SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
+GurobiSolverResult* GurobiSolver::Solve_impl(
+    MathematicalProgram* const prog) const {
   throw std::runtime_error(
       "The Gurobi bindings were not compiled.  You'll need to use a different "
-          "solver.");
+      "solver.");
 }
 
 }  // end namespace solvers

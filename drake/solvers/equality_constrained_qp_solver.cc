@@ -11,10 +11,10 @@
 namespace drake {
 namespace solvers {
 
-bool EqualityConstrainedQPSolver::available() const { return true; }
+bool EqualityConstrainedQPSolver::available_impl() const { return true; }
 
-SolutionResult EqualityConstrainedQPSolver::Solve(
-    MathematicalProgram& prog) const {
+EqualityConstrainedQPSolverResult* EqualityConstrainedQPSolver::Solve_impl(
+    MathematicalProgram* prog) const {
   // There are three ways to solve the KKT subproblem for convex QPs.
   // Formally, we want to solve:
   // | G  A' | | x | = | -c |
@@ -43,21 +43,21 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // code have a solid understanding of equality constrained quadratic
   // programming before proceeding.
   // - J. Nocedal and S. Wright. Numerical Optimization. Springer, 1999.
-  DRAKE_ASSERT(prog.generic_constraints().empty());
-  DRAKE_ASSERT(prog.generic_costs().empty());
-  DRAKE_ASSERT(prog.linear_constraints().empty());
-  DRAKE_ASSERT(prog.bounding_box_constraints().empty());
-  DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
+  DRAKE_ASSERT(prog->generic_constraints().empty());
+  DRAKE_ASSERT(prog->generic_costs().empty());
+  DRAKE_ASSERT(prog->linear_constraints().empty());
+  DRAKE_ASSERT(prog->bounding_box_constraints().empty());
+  DRAKE_ASSERT(prog->linear_complementarity_constraints().empty());
 
   size_t num_constraints = 0;
-  for (auto const& binding : prog.linear_equality_constraints()) {
+  for (auto const& binding : prog->linear_equality_constraints()) {
     num_constraints += binding.constraint()->A().rows();
   }
 
   // Setup the quadratic cost matrix and linear cost vector.
-  Eigen::MatrixXd G = Eigen::MatrixXd::Zero(prog.num_vars(), prog.num_vars());
-  Eigen::VectorXd c = Eigen::VectorXd::Zero(prog.num_vars());
-  for (auto const& binding : prog.quadratic_costs()) {
+  Eigen::MatrixXd G = Eigen::MatrixXd::Zero(prog->num_vars(), prog->num_vars());
+  Eigen::VectorXd c = Eigen::VectorXd::Zero(prog->num_vars());
+  for (auto const& binding : prog->quadratic_costs()) {
     size_t index = 0;
     const auto& Q = binding.constraint()->Q();
     const auto& b = binding.constraint()->b();
@@ -75,10 +75,10 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   }
 
   // Setup the linear constraints.
-  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_constraints, prog.num_vars());
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_constraints, prog->num_vars());
   Eigen::VectorXd b = Eigen::VectorXd::Zero(num_constraints);
   int constraint_index = 0;
-  for (auto const& binding : prog.linear_equality_constraints()) {
+  for (auto const& binding : prog->linear_equality_constraints()) {
     auto const& bc = binding.constraint();
     size_t n = bc->A().rows();
     size_t var_index = 0;
@@ -111,9 +111,10 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     Eigen::VectorXd lambda = qr.solve(AiG_T.transpose() * c + b);
 
     // Solve G*x = A'y - c
-    prog.SetDecisionVariableValues(llt.solve(A.transpose() * lambda - c));
-    prog.SetSolverResult("Equality Constrained QP Solver", 0);
-    return SolutionResult::kSolutionFound;
+    prog->SetDecisionVariableValues(llt.solve(A.transpose() * lambda - c));
+    prog->SetSolverResult("Equality Constrained QP Solver", 0);
+    return new EqualityConstrainedQPSolverResult(
+        SolutionSummary::kSolutionFound);
   }
 
   // The following code assumes that the Hessian is not positive definite.
@@ -123,7 +124,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
 
   // The expanded problem introduces a Lagrangian multiplier for each
   // linear equality constraint.
-  size_t num_full_vars = prog.num_vars() + num_constraints;
+  size_t num_full_vars = prog->num_vars() + num_constraints;
   Eigen::MatrixXd A_full(num_full_vars, num_full_vars);
   Eigen::VectorXd b_full(num_full_vars);
 
@@ -140,10 +141,10 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // Compute the least-squares solution.
   Eigen::VectorXd sol =
       A_full.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b_full);
-  prog.SetDecisionVariableValues(sol.segment(0, prog.num_vars()));
+  prog->SetDecisionVariableValues(sol.segment(0, prog->num_vars()));
 
-  prog.SetSolverResult(SolverName(), 0);
-  return SolutionResult::kSolutionFound;
+  prog->SetSolverResult(SolverName(), 0);
+  return new EqualityConstrainedQPSolverResult(SolutionSummary::kSolutionFound);
 }
 
 }  // namespace solvers

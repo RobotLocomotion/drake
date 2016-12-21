@@ -361,18 +361,19 @@ void UpdateConstraintBoundsAndGradients(
 
 }  // anon namespace
 
-bool SnoptSolver::available() const { return true; }
+bool SnoptSolver::available_impl() const { return true; }
 
-SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
-  auto d = prog.GetSolverData<SNOPTData>();
-  SNOPTRun cur(*d, &prog);
+SnoptSolverResult* SnoptSolver::Solve_impl(
+    MathematicalProgram* const prog) const {
+  auto d = prog->GetSolverData<SNOPTData>();
+  SNOPTRun cur(*d, prog);
 
-  snopt::integer nx = prog.num_vars();
+  snopt::integer nx = prog->num_vars();
   d->min_alloc_x(nx);
   snopt::doublereal* x = d->x.data();
   snopt::doublereal* xlow = d->xlow.data();
   snopt::doublereal* xupp = d->xupp.data();
-  const Eigen::VectorXd x_initial_guess = prog.initial_guess();
+  const Eigen::VectorXd x_initial_guess = prog->initial_guess();
   for (int i = 0; i < nx; i++) {
     x[i] = static_cast<snopt::doublereal>(x_initial_guess(i));
     xlow[i] = static_cast<snopt::doublereal>(
@@ -380,7 +381,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     xupp[i] = static_cast<snopt::doublereal>(  // BR
         std::numeric_limits<double>::infinity());
   }
-  for (auto const& binding : prog.bounding_box_constraints()) {
+  for (auto const& binding : prog->bounding_box_constraints()) {
     const auto& c = binding.constraint();
     const auto& lb = c->lower_bound();
     const auto& ub = c->upper_bound();
@@ -401,18 +402,18 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   }
 
   size_t num_nonlinear_constraints = 0, max_num_gradients = nx;
-  UpdateNumNonlinearConstraintsAndGradients(prog.generic_constraints(),
+  UpdateNumNonlinearConstraintsAndGradients(prog->generic_constraints(),
                                             &num_nonlinear_constraints,
                                             &max_num_gradients);
-  UpdateNumNonlinearConstraintsAndGradients(prog.lorentz_cone_constraints(),
+  UpdateNumNonlinearConstraintsAndGradients(prog->lorentz_cone_constraints(),
                                             &num_nonlinear_constraints,
                                             &max_num_gradients);
   UpdateNumNonlinearConstraintsAndGradients(
-      prog.rotated_lorentz_cone_constraints(), &num_nonlinear_constraints,
+      prog->rotated_lorentz_cone_constraints(), &num_nonlinear_constraints,
       &max_num_gradients);
 
   size_t num_linear_constraints = 0;
-  const auto linear_constraints = prog.GetAllLinearConstraints();
+  const auto linear_constraints = prog->GetAllLinearConstraints();
   for (auto const& binding : linear_constraints) {
     num_linear_constraints += binding.constraint()->num_constraints();
   }
@@ -438,20 +439,20 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   size_t constraint_index = 1, grad_index = nx;  // constraint index starts at 1
                                                  // because the cost is the
                                                  // first row
-  UpdateConstraintBoundsAndGradients(prog.generic_constraints(), Flow, Fupp,
+  UpdateConstraintBoundsAndGradients(prog->generic_constraints(), Flow, Fupp,
                                      iGfun, jGvar, &constraint_index,
                                      &grad_index);
-  UpdateConstraintBoundsAndGradients(prog.lorentz_cone_constraints(), Flow,
+  UpdateConstraintBoundsAndGradients(prog->lorentz_cone_constraints(), Flow,
                                      Fupp, iGfun, jGvar, &constraint_index,
                                      &grad_index);
-  UpdateConstraintBoundsAndGradients(prog.rotated_lorentz_cone_constraints(),
+  UpdateConstraintBoundsAndGradients(prog->rotated_lorentz_cone_constraints(),
                                      Flow, Fupp, iGfun, jGvar,
                                      &constraint_index, &grad_index);
 
   // http://eigen.tuxfamily.org/dox/group__TutorialSparse.html
   typedef Eigen::Triplet<double> T;
   std::vector<T> tripletList;
-  tripletList.reserve(num_linear_constraints * prog.num_vars());
+  tripletList.reserve(num_linear_constraints * prog->num_vars());
 
   size_t linear_constraint_index = 0;
   for (auto const& binding : linear_constraints) {
@@ -534,11 +535,11 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   snopt::doublereal ObjAdd = 0.0;
   snopt::integer ObjRow = 1;  // feasibility problem (for now)
 
-  for (const auto it : prog.GetSolverOptionsDouble("SNOPT")) {
+  for (const auto it : prog->GetSolverOptionsDouble("SNOPT")) {
     cur.snSetr(it.first, it.second);
   }
 
-  for (const auto it : prog.GetSolverOptionsInt("SNOPT")) {
+  for (const auto it : prog->GetSolverOptionsInt("SNOPT")) {
     cur.snSeti(it.first, it.second);
   }
 
@@ -558,19 +559,23 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   for (int i = 0; i < nx; i++) {
     sol(i) = static_cast<double>(x[i]);
   }
-  prog.SetDecisionVariableValues(sol);
-  prog.SetSolverResult(SolverName(), info);
+  prog->SetDecisionVariableValues(sol);
+  prog->SetSolverResult(SolverName(), info);
 
   // todo: extract the other useful quantities, too.
 
+  SolutionSummary solution_summary = kUnknownError;
   if (info >= 1 && info <= 6) {
-    return SolutionResult::kSolutionFound;
+    solution_summary = SolutionSummary::kSolutionFound;
   } else if (info >= 11 && info <= 16) {
-    return SolutionResult::kInfeasibleConstraints;
+    solution_summary = SolutionSummary::kInfeasibleConstraints;
   } else if (info == 91) {
-    return SolutionResult::kInvalidInput;
+    solution_summary = SolutionSummary::kInvalidInput;
+  } else {
+    solution_summary = SolutionSummary::kUnknownError;
   }
-  return SolutionResult::kUnknownError;
+
+  return new SnoptSolverResult(solution_summary, info, F[0]);
 }
 
 }  // namespace solvers

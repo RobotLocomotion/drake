@@ -9,27 +9,29 @@
 namespace drake {
 namespace solvers {
 
-bool LinearSystemSolver::available() const { return true; }
+bool LinearSystemSolver::available_impl() const { return true; }
 
-SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
+MathematicalProgramSolverResult* LinearSystemSolver::Solve_impl(
+    MathematicalProgram* const prog) const {
   size_t num_constraints = 0;
-  for (auto const& binding : prog.linear_equality_constraints()) {
+  for (auto const& binding : prog->linear_equality_constraints()) {
     num_constraints += binding.constraint()->A().rows();
   }
 
-  DRAKE_ASSERT(prog.generic_constraints().empty());
-  DRAKE_ASSERT(prog.generic_costs().empty());
-  DRAKE_ASSERT(prog.quadratic_costs().empty());
-  DRAKE_ASSERT(prog.linear_constraints().empty());
-  DRAKE_ASSERT(prog.bounding_box_constraints().empty());
-  DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
+  DRAKE_ASSERT(prog->generic_constraints().empty());
+  DRAKE_ASSERT(prog->generic_costs().empty());
+  DRAKE_ASSERT(prog->quadratic_costs().empty());
+  DRAKE_ASSERT(prog->linear_constraints().empty());
+  DRAKE_ASSERT(prog->bounding_box_constraints().empty());
+  DRAKE_ASSERT(prog->linear_complementarity_constraints().empty());
 
-  Eigen::MatrixXd Aeq = Eigen::MatrixXd::Zero(num_constraints, prog.num_vars());
+  Eigen::MatrixXd Aeq =
+      Eigen::MatrixXd::Zero(num_constraints, prog->num_vars());
   // TODO(naveenoid) : use a sparse matrix here?
   Eigen::VectorXd beq(num_constraints);
 
   size_t constraint_index = 0;
-  for (auto const& binding : prog.linear_equality_constraints()) {
+  for (auto const& binding : prog->linear_equality_constraints()) {
     auto const& c = binding.constraint();
     size_t n = c->A().rows();
     size_t var_index = 0;
@@ -49,11 +51,11 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   }
 
   // least-squares solution
-  prog.SetDecisionVariableValues(
+  prog->SetDecisionVariableValues(
       Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
 
-  prog.SetSolverResult(SolverName(), 0);
-  return SolutionResult::kSolutionFound;
+  prog->SetSolverResult(SolverName(), 0);
+  return new MathematicalProgramSolverResult(SolutionSummary::kSolutionFound);
 }
 
 }  // namespace solvers

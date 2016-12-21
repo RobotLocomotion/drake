@@ -6,11 +6,10 @@
 namespace drake {
 namespace solvers {
 
-bool SnoptSolver::available() const {
-  return false;
-}
+bool SnoptSolver::available_impl() const { return false; }
 
-SolutionResult SnoptSolver::Solve(MathematicalProgram &prog) const {
+SnoptSolverResult* SnoptSolver::Solve_impl(
+    MathematicalProgram* const prog) const {
   throw std::runtime_error(
       "The SNOPT bindings were not compiled.  You'll need to use a different "
       "solver.");

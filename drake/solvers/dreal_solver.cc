@@ -7,12 +7,13 @@
 
 namespace drake {
 namespace solvers {
-bool DrealSolver::available() const {
+bool DrealSolver::available_impl() const {
   // It returns false for now, because nothing is implemented yet.
   return false;
 }
 
-SolutionResult DrealSolver::Solve(MathematicalProgram& prog) const {
+DrealSolverResult* DrealSolver::Solve_impl(
+    MathematicalProgram* const prog) const {
   throw std::runtime_error("not implemented yet");
 }
 }  // namespace solvers

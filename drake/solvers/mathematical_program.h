@@ -19,8 +19,7 @@
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/function.h"
-#include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/solution_result.h"
+#include "drake/solvers/mathematical_program_solver_interface.h"
 
 namespace drake {
 namespace solvers {
@@ -156,8 +155,6 @@ namespace solvers {
  * @}
  */
 
-class MathematicalProgram;
-
 enum ProgramAttributes {
   kNoCapabilities = 0,
   kError = 1 << 0,  ///< Do not use, to avoid & vs. && typos.
@@ -175,25 +172,6 @@ enum ProgramAttributes {
   kBinaryVariable = 1 << 12
 };
 typedef uint32_t AttributesSet;
-
-/// Interface used by implementations of individual solvers.
-class MathematicalProgramSolverInterface {
- public:
-  virtual ~MathematicalProgramSolverInterface() = default;
-
-  /// Returns true iff this solver was enabled at compile-time.
-  virtual bool available() const = 0;
-
-  /// Returns the name of the solver.
-  virtual std::string SolverName() const = 0;
-
-  /// Sets values for the decision variables on the given MathematicalProgram
-  /// @p prog, or:
-  ///  * If no solver is available, throws std::runtime_error
-  ///  * If the solver returns an error, returns a nonzero SolutionResult.
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual SolutionResult Solve(MathematicalProgram& prog) const = 0;
-};
 
 class MathematicalProgram {
   /**
@@ -1337,16 +1315,15 @@ class MathematicalProgram {
   /**
    * Solve the MathematicalProgram.
    *
-   * @return SolutionResult indicating if the solution was successful.
+   * @return SolutionSummary indicating if the solution was successful.
    */
-  SolutionResult Solve();
+  SolutionSummary Solve();
   // TODO(naveenoid) : add argument for options
 
   //    template <typename Derived>
   //    bool solve(const Eigen::MatrixBase<Derived>& x0);
 
   //    getCostValue();
-  //    getExitFlag();
   //    getInfeasibleConstraintNames();
 
   void PrintSolution() {

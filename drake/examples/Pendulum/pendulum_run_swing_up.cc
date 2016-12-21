@@ -17,7 +17,7 @@
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
 #include "drake/util/drakeAppUtil.h"
 
-using drake::solvers::SolutionResult;
+using drake::solvers::SolutionSummary;
 using drake::MatrixCompareType;
 
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
@@ -68,9 +68,9 @@ int do_main(int argc, char* argv[]) {
   const double timespan_init = 4;
   auto traj_init_x =
       PiecewisePolynomialType::FirstOrderHold({0, timespan_init}, {x0, xG});
-  SolutionResult result = dircol_traj.SolveTraj(
+  SolutionSummary result = dircol_traj.SolveTraj(
       timespan_init, PiecewisePolynomialType(), traj_init_x);
-  if (result != SolutionResult::kSolutionFound) {
+  if (result != SolutionSummary::kSolutionFound) {
     std::cerr << "Result is an Error" << std::endl;
     return 1;
   }

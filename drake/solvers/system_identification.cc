@@ -312,7 +312,7 @@ SystemIdentification<T>::EstimateParameters(
       { error_variables });
 
   // Solve the problem and copy out the result.
-  SolutionResult solution_result = problem.Solve();
+  SolutionSummary solution_result = problem.Solve();
   if (solution_result != kSolutionFound) {
     throw std::runtime_error(
         "Solution failed: " + std::to_string(solution_result));
