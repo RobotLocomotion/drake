@@ -51,9 +51,9 @@ class SimpleCar : public systems::LeafSystem<T> {
  public:
   // System<T> overrides
   bool has_any_direct_feedthrough() const override;
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
-  void EvalTimeDerivatives(
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
+  void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
@@ -65,9 +65,10 @@ class SimpleCar : public systems::LeafSystem<T> {
       const systems::SystemPortDescriptor<T>& descriptor) const override;
 
  private:
-  void DoEvalOutput(const SimpleCarState<T>&, SimpleCarState<T>*) const;
-  void DoEvalTimeDerivatives(const SimpleCarState<T>&, const DrivingCommand<T>&,
-                             SimpleCarState<T>*) const;
+  void ImplCalcOutput(const SimpleCarState<T>&, SimpleCarState<T>*) const;
+  void ImplCalcTimeDerivatives(const SimpleCarState<T>&,
+                               const DrivingCommand<T>&,
+                               SimpleCarState<T>*) const;
 
   const SimpleCarConfig<T> config_;
 };

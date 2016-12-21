@@ -57,8 +57,8 @@ RobotStateEncoder::RobotStateEncoder(
 
 RobotStateEncoder::~RobotStateEncoder() {}
 
-void RobotStateEncoder::EvalOutput(const Context<double>& context,
-                                   SystemOutput<double>* output) const {
+void RobotStateEncoder::DoCalcOutput(const Context<double>& context,
+                                     SystemOutput<double>* output) const {
   auto& message = output->GetMutableData(lcm_message_port_index_)
                       ->GetMutableValue<robot_state_t>();
   message.utime = static_cast<int64_t>(context.get_time() * 1e6);

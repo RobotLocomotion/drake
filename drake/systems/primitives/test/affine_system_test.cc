@@ -54,7 +54,7 @@ TEST_F(AffineSystemTest, Derivatives) {
   state_->SetFromVector(x);
 
   EXPECT_NE(derivatives_, nullptr);
-  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
 
   Eigen::VectorXd expected_derivatives(2);
   expected_derivatives = A_ * x + B_ * u + f0_;
@@ -80,7 +80,7 @@ TEST_F(AffineSystemTest, Output) {
   Eigen::Vector2d x(0.8, -22.1);
   state_->SetFromVector(x);
 
-  dut_->EvalOutput(*context_, system_output_.get());
+  dut_->CalcOutput(*context_, system_output_.get());
 
   Eigen::VectorXd expected_output(2);
 
@@ -164,7 +164,7 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
   DiscreteEvent<double> update_event;
   update_event.action = DiscreteEvent<double>::kUpdateAction;
 
-  system.EvalDiscreteVariableUpdates(*context, update_event, update.get());
+  system.CalcDiscreteVariableUpdates(*context, update_event, update.get());
 
   EXPECT_TRUE(CompareMatrices(update->get_discrete_state(0)->CopyToVector(),
                               A * x0 + B * u0 + f0));

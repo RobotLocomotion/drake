@@ -53,7 +53,7 @@ ValkyriePDAndFeedForwardController::ValkyriePDAndFeedForwardController(
   set_name("pd_and_ff_controller_for_val");
 }
 
-void ValkyriePDAndFeedForwardController::EvalOutput(
+void ValkyriePDAndFeedForwardController::DoCalcOutput(
                   const Context<double>& context,
                   SystemOutput<double>* output) const {
   // State input

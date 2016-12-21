@@ -59,7 +59,7 @@ TEST_F(AdderTest, AddTwoVectors) {
   context_->FixInputPort(0, std::move(input0_));
   context_->FixInputPort(1, std::move(input1_));
 
-  adder_->EvalOutput(*context_, output_.get());
+  adder_->CalcOutput(*context_, output_.get());
 
   ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_port = output_->get_vector_data(0);

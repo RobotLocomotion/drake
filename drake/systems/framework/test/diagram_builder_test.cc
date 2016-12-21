@@ -81,7 +81,7 @@ template <typename T>
 class Sink : public LeafSystem<T> {
  public:
   Sink() { this->DeclareInputPort(kVectorValued, 1); }
-  void EvalOutput(const Context<T>&, SystemOutput<T>*) const override {}
+  void DoCalcOutput(const Context<T>&, SystemOutput<T>*) const override {}
 };
 
 // Tests the sole-port based overload of Connect().

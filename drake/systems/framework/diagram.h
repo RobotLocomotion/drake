@@ -247,8 +247,8 @@ class Diagram : public System<T>,
     return std::unique_ptr<SystemOutput<T>>(output.release());
   }
 
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override {
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override {
     // Down-cast the context and output to DiagramContext and DiagramOutput.
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
@@ -256,7 +256,7 @@ class Diagram : public System<T>,
     DRAKE_DEMAND(diagram_output != nullptr);
 
     // Populate the output with pointers to the appropriate subsystem outputs
-    // in the DiagramContext. We do this on every call to EvalOutput, so
+    // in the DiagramContext. We do this on every call to CalcOutput, so
     // that the diagram_context and diagram_output are not tightly coupled.
     ExposeSubsystemOutputs(*diagram_context, diagram_output);
 
@@ -292,8 +292,8 @@ class Diagram : public System<T>,
             std::move(sub_differences)));
   }
 
-  void EvalTimeDerivatives(const Context<T>& context,
-                           ContinuousState<T>* derivatives) const override {
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
@@ -308,7 +308,7 @@ class Diagram : public System<T>,
       const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
       ContinuousState<T>* subderivatives =
           diagram_derivatives->get_mutable_substate(i);
-      sorted_systems_[i]->EvalTimeDerivatives(*subcontext, subderivatives);
+      sorted_systems_[i]->CalcTimeDerivatives(*subcontext, subderivatives);
     }
   }
 
@@ -705,10 +705,10 @@ class Diagram : public System<T>,
     if (!updaters.empty()) {
       DiscreteEvent<T1> event;
       event.action = DiscreteEvent<T1>::kUpdateAction;
-      event.do_update = std::bind(&Diagram<T1>::HandleUpdate, this,
-                                  std::placeholders::_1, /* context */
-                                  std::placeholders::_2, /* difference state */
-                                  updaters);
+      event.do_calc_update = std::bind(
+          &Diagram<T1>::HandleUpdate, this, std::placeholders::_1, /* context */
+          std::placeholders::_2, /* difference state */
+          updaters);
       actions->events.push_back(event);
     }
   }
@@ -848,7 +848,7 @@ class Diagram : public System<T>,
     SystemOutput<T>* subsystem_output = context.GetSubsystemOutput(i);
     // TODO(david-german-tri): Once #2890 is resolved, only evaluate the
     // particular port specified in id.second.
-    system->EvalOutput(*subsystem_context, subsystem_output);
+    system->CalcOutput(*subsystem_context, subsystem_output);
   }
 
   // Returns the index of the given @p sys in the sorted order of this diagram,
@@ -999,7 +999,7 @@ class Diagram : public System<T>,
     }
   }
 
-  /// Handles Update calbacks that were registered in DoCalcNextUpdateTime.
+  /// Handles Update callbacks that were registered in DoCalcNextUpdateTime.
   /// Dispatches the Publish events to the subsystems that requested them.
   void HandleUpdate(
       const Context<T>& context, DiscreteState<T>* update,
@@ -1035,7 +1035,7 @@ class Diagram : public System<T>,
       // Do that system's update actions.
       for (const DiscreteEvent<T>& event : action_details.events) {
         if (event.action == DiscreteEvent<T>::kUpdateAction) {
-          sorted_systems_[index]->EvalDiscreteVariableUpdates(*subcontext,
+          sorted_systems_[index]->CalcDiscreteVariableUpdates(*subcontext,
                                                               event,
                                                               subdifference);
         }

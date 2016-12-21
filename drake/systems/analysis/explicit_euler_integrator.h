@@ -68,7 +68,7 @@ void ExplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
 
   // TODO(sherm1) This should be calculating into the cache so that
   // Publish() doesn't have to recalculate if it wants to output derivatives.
-  IntegratorBase<T>::get_system().EvalTimeDerivatives(
+  IntegratorBase<T>::get_system().CalcTimeDerivatives(
       IntegratorBase<T>::get_context(), derivs_.get());
 
   // Compute derivative and update configuration and velocity.

@@ -92,7 +92,7 @@ GTEST_TEST(TrajectoryCarTest, SegmentTest) {
       const double kMaxErrorRad = 1e-6;
 
       context->set_time(time);
-      car_dut.EvalOutput(*context, all_output.get());
+      car_dut.CalcOutput(*context, all_output.get());
 
       ASSERT_EQ(1, all_output->get_num_ports());
       const SimpleCarState<double>* output =

@@ -57,8 +57,8 @@ const SystemPortDescriptor<T>& Gain<T>::get_output_port() const {
 }
 
 template <typename T>
-void Gain<T>::EvalOutput(const Context<T>& context,
-                         SystemOutput<T>* output) const {
+void Gain<T>::DoCalcOutput(const Context<T>& context,
+                           SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 

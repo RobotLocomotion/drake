@@ -42,10 +42,10 @@ class RosClockPublisher : public LeafSystem<double> {
       override;
 
   /**
-   * This System has no output ports. Thus, EvalOutput() does nothing.
+   * This System has no output ports. Thus, DoCalcOutput() does nothing.
    */
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const
       override {}
 
   /**

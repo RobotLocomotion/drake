@@ -46,7 +46,7 @@ TEST_F(DemultiplexerTest, DemultiplexVector) {
   // Hook input of the expected size.
   context_->FixInputPort(0, std::move(input_));
 
-  demux_->EvalOutput(*context_, output_.get());
+  demux_->CalcOutput(*context_, output_.get());
 
   // Checks that the number of output ports in the system and in the
   // output are consistent.
@@ -89,7 +89,7 @@ GTEST_TEST(OutputSize, SizeDifferentFromOne) {
   // Hook input of the expected size.
   context->FixInputPort(0, std::move(input));
 
-  demux->EvalOutput(*context, output.get());
+  demux->CalcOutput(*context, output.get());
 
   // Checks that the number of output ports in the system and in the
   // SystemOutput<T> output are consistent.

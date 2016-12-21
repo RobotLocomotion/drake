@@ -32,8 +32,8 @@ const SystemPortDescriptor<T>& ConstantVectorSource<T>::get_output_port()
 }
 
 template <typename T>
-void ConstantVectorSource<T>::EvalOutput(const Context<T>& context,
-                                         SystemOutput<T>* output) const {
+void ConstantVectorSource<T>::DoCalcOutput(const Context<T>& context,
+                                           SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   System<T>::GetMutableOutputVector(output, 0) = source_value_;

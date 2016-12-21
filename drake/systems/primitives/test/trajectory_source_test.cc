@@ -44,7 +44,7 @@ TEST_F(TrajectorySourceTest, OutputTest) {
   const double kTestTime = 1.75;
   context_->set_time(kTestTime);
 
-  source_->EvalOutput(*context_, output_.get());
+  source_->CalcOutput(*context_, output_.get());
 
   const BasicVector<double>* output_vector = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_vector);
