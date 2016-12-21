@@ -2,12 +2,14 @@
 
 #include <iostream>
 #include <string>
+#include <unistd.h>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/thirdParty/bsd/spruce/spruce.hh"
 
 namespace drake {
 namespace systems {
@@ -24,14 +26,29 @@ using drake::multibody::joints::kQuaternion;
 char* model_file_1 = nullptr;
 char* model_file_2 = nullptr;
 
+// Given a file that is assumed to be in the current working directory, this
+// method obtains the full path to the file.
+std::string GetFullPath(const std::string& model_file) {
+  std::string result = model_file;
+  char cwd[1024];
+  if (getcwd(cwd, sizeof(cwd)) != NULL) {
+    spruce::path path(cwd);
+    path.append(model_file);
+    if (path.isFile()) {
+      result = path.getStr();
+    }
+  }
+  return result;
+}
+
 GTEST_TEST(CompareRigidBodySystemsTest, TestAll) {
   // Creates a rigid body system using the first model.
   auto r1 = make_shared<RigidBodySystem>();
-  r1->AddModelInstanceFromFile(model_file_1, kQuaternion);
+  r1->AddModelInstanceFromFile(GetFullPath(model_file_1), kQuaternion);
 
   // Creates a rigid body system using the second model.
   auto r2 = make_shared<RigidBodySystem>();
-  r2->AddModelInstanceFromFile(model_file_2, kQuaternion);
+  r2->AddModelInstanceFromFile(GetFullPath(model_file_2), kQuaternion);
 
   // for debugging:
   // r1->getRigidBodyTree()->drawKinematicTree("/tmp/r1.dot");
