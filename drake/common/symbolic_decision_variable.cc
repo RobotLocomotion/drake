@@ -3,6 +3,7 @@
 #include <ostream>
 #include <string>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/symbolic_variable_cell.h"
 
 using std::string;
