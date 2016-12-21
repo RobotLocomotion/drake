@@ -13,6 +13,7 @@
 #include "drake/common/constants.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_stl_types.h"
+#include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/force_torque_measurement.h"
 #include "drake/multibody/kinematic_path.h"
@@ -26,6 +27,7 @@
 #include "drake/multibody/rigid_body_actuator.h"
 #include "drake/multibody/rigid_body_loop.h"
 #include "drake/multibody/shapes/drake_shapes.h"
+
 
 #define BASIS_VECTOR_HALF_COUNT \
   2  // number of basis vectors over 2 (i.e. 4 basis vectors in this case)
@@ -280,9 +282,154 @@ class RigidBodyTree {
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1> centerOfMass(
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      KinematicsCache<Scalar>& cache,
+      const KinematicsCache<Scalar>& cache,
       const std::set<int>& model_instance_id_set =
           default_model_instance_id_set) const;
+
+  /// Returns the pose of frame A in the world frame, where A is a frame
+  /// rigidly attached to `body` with `local_offset`.
+  template <typename Scalar>
+  drake::Isometry3<Scalar> CalcPoseInWorld(
+      const KinematicsCache<Scalar>& cache,
+      const RigidBody<T>& body,
+      const drake::Isometry3<Scalar>& local_offset = drake::Isometry3<Scalar>::Identity()) const {
+    return CalcPoseInWorld(cache, body.get_body_index(), local_offset);
+  }
+
+  /// Returns the twist of frame A with respect to the world expresed in the
+  /// world frame, where A is a frame rigidly attached to `body` with
+  /// `local_offset`.
+  template <typename Scalar>
+  drake::TwistVector<Scalar> CalcTwistInWorld(
+      const KinematicsCache<Scalar>& cache,
+      const RigidBody<T>& body,
+      const drake::Isometry3<Scalar>& local_offset = drake::Isometry3<Scalar>::Identity()) const {
+    return CalcTwistInWorld(cache, body.get_body_index(), local_offset);
+  }
+
+  /// Returns the twist of frame A with respect to the world expresed in
+  /// frame B, where A is a frame rigidly attached to `body` with
+  /// `local_offset`, and B has the same orientation as the world but located
+  /// at the origin of frame A.
+  template <typename Scalar>
+  drake::TwistVector<Scalar> CalcTwistInWorldAlignedBody(
+      const KinematicsCache<Scalar>& cache,
+      const RigidBody<T>& body,
+      const drake::Isometry3<Scalar>& local_offset = drake::Isometry3<Scalar>::Identity()) const {
+    return CalcTwistInWorldAlignedBody(cache,
+        body.get_body_index(), local_offset);
+  }
+
+  /// Returns the pose of frame A in the world frame, where A is a frame
+  /// rigidly attached to `frame` with `local_offset`.
+  template <typename Scalar>
+  drake::Isometry3<Scalar> CalcPoseInWorld(
+      const KinematicsCache<Scalar>& cache,
+      const RigidBodyFrame<T>& frame,
+      const drake::Isometry3<Scalar>& local_offset = drake::Isometry3<Scalar>::Identity()) const {
+    return CalcPoseInWorld(cache, frame.get_frame_index(), local_offset);
+  }
+
+  /// Returns the twist of frame A with respect to the world expresed in
+  /// world frame, where A is a frame rigidly attached to `frame` with
+  /// `local_offset`.
+  template <typename Scalar>
+  drake::TwistVector<Scalar> CalcTwistInWorld(
+      const KinematicsCache<Scalar>& cache,
+      const RigidBodyFrame<T>& frame,
+      const drake::Isometry3<Scalar>& local_offset = drake::Isometry3<Scalar>::Identity()) const {
+    return CalcTwistInWorld(cache, frame.get_frame_index(), local_offset);
+  }
+
+  /// Returns the twist of frame A with respect to the world expresed in
+  /// frame B, where A is a frame rigidly attached to `frame` with
+  /// `local_offset`, and B has the same orientation as the world but located
+  /// at the origin of frame A.
+  template <typename Scalar>
+  drake::TwistVector<Scalar> CalcTwistInWorldAlignedBody(
+      const KinematicsCache<Scalar>& cache,
+      const RigidBodyFrame<T>& frame,
+      const drake::Isometry3<Scalar>& local_offset = drake::Isometry3<Scalar>::Identity()) const {
+    return CalcTwistInWorldAlignedBody(
+        cache, frame.get_frame_index(), local_offset);
+  }
+
+  /// Returns the Jacobian \f$ J \f$ of frame A with respect to the world frame
+  /// expressed in frame B, where A is a frame rigidly attached to `body` with
+  /// `local_offset`, and B has the same orientation as the world but located
+  /// at the origin of frame A.
+  /// Let \f$ \dot{x} \f$ be the twist of frame A w.r.t the world expressed in
+  /// B, then \f$ \dot{x} = J v \f$.
+  /// @param cache, Reference to KinematicsCache.
+  /// @param body, Reference to the body.
+  /// @param local_offset, A's offset from the `body`.
+  /// @return \f$ J \f$
+  template <typename Scalar>
+  drake::MatrixX<Scalar> CalcJacobianForWorldAlignedBody(
+      const KinematicsCache<Scalar>& cache,
+      const RigidBody<T>& body,
+      const drake::Isometry3<Scalar>& local_offset = drake::Isometry3<Scalar>::Identity()) const {
+    return CalcJacobianForWorldAlignedBody(
+        cache, body.get_body_index(), local_offset);
+  }
+
+  /// Let \f$ J \f$ be the Jacobian of frame A with respect to the world frame
+  /// expressed in frame B, where A is a frame rigidly attached to `body` with
+  /// `local_offset`, and B has the same orientation as the world but located
+  /// at the origin of frame A. This function returns \f$ \dot{J} v \f$.
+  /// Let \f$ \dot{x} \f$ be the twist of frame A w.r.t the world expressed in
+  /// B, then \f$ \ddot{x} = J \dot{v} + \dot{J} v \f$.
+  /// @param cache, Reference to KinematicsCache.
+  /// @param body, Reference to the body.
+  /// @param local_offset, A's offset from the `body`.
+  /// @return \f$ \dot{J} v \f$
+  template <typename Scalar>
+  drake::TwistVector<Scalar> CalcJacobianDotTimesVForWorldAlignedBody(
+      const KinematicsCache<Scalar>& cache,
+      const RigidBody<T>& body,
+      const drake::Isometry3<Scalar>& local_offset = drake::Isometry3<Scalar>::Identity()) const {
+    return CalcJacobianDotTimesVForWorldAlignedBody(
+        cache, body.get_body_index(), local_offset);
+  }
+
+  /// Returns the Jacobian \f$ J \f$ of frame A with respect to the world frame
+  /// expressed in frame B, where A is a frame rigidly attached to `frame` with
+  /// `local_offset`, and B has the same orientation as the world but located
+  /// at the origin of frame A.
+  /// Let \f$ \dot{x} \f$ be the twist of frame A w.r.t the world expressed in
+  /// B, then \f$ \dot{x} = J v \f$.
+  /// @param cache, Reference to KinematicsCache.
+  /// @param frame, Reference to the frame.
+  /// @param local_offset, A's offset from the `frame`.
+  /// @return \f$ J \f$
+  template <typename Scalar>
+  drake::MatrixX<Scalar> CalcJacobianForWorldAlignedBody(
+      const KinematicsCache<Scalar>& cache,
+      const RigidBodyFrame<T>& frame,
+      const drake::Isometry3<Scalar>& local_offset = drake::Isometry3<Scalar>::Identity()) const {
+    return CalcJacobianForWorldAlignedBody(
+        cache, frame.get_frame_index(), local_offset);
+  }
+
+  /// Let \f$ J \f$ be the Jacobian of frame A with respect to the world frame
+  /// expressed in frame B, where A is a frame rigidly attached to `frame` with
+  /// `local_offset`, and B has the same orientation as the world but located
+  /// at the origin of frame A. This function returns \f$ \dot{J} v \f$.
+  /// Let \f$ \dot{x} \f$ be the twist of frame A w.r.t the world expressed in
+  /// B, then \f$ \ddot{x} = J \dot{v} + \dot{J} v \f$.
+  /// @param cache, Reference to KinematicsCache.
+  /// @param frame, Reference to the frame.
+  /// @param local_offset, A's offset from `frame`.
+  /// @return \f$ \dot{J} v \f$
+  template <typename Scalar>
+  drake::TwistVector<Scalar> CalcJacobianDotTimesVForWorldAlignedBody(
+      const KinematicsCache<Scalar>& cache,
+      const RigidBodyFrame<T>& frame,
+      const drake::Isometry3<Scalar>& local_offset = drake::Isometry3<Scalar>::Identity()) const {
+    return CalcJacobianDotTimesVForWorldAlignedBody(
+        cache, frame.get_frame_index(), local_offset);
+  }
+
 
   /**
    * Converts a matrix B, which transforms generalized velocities (v) to an
@@ -1211,6 +1358,41 @@ class RigidBodyTree {
       std::vector<size_t> const& cindB,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
+
+  template <typename Scalar>
+  // Same function as above except `index` can be either body or frame's index.
+  drake::Isometry3<Scalar> CalcPoseInWorld(
+      const KinematicsCache<Scalar>& cache,
+      int index,
+      const drake::Isometry3<Scalar>& local_offset = drake::Isometry3<Scalar>::Identity()) const;
+
+  template <typename Scalar>
+  // Same function as above except `index` can be either body or frame's index.
+  drake::TwistVector<Scalar> CalcTwistInWorld(
+      const KinematicsCache<Scalar>& cache,
+      int index,
+      const drake::Isometry3<Scalar>& local_offset = drake::Isometry3<Scalar>::Identity()) const;
+
+  template <typename Scalar>
+  // Same function as above except `index` can be either body or frame's index.
+  drake::TwistVector<Scalar> CalcTwistInWorldAlignedBody(
+      const KinematicsCache<Scalar>& cache,
+      int index,
+      const drake::Isometry3<Scalar>& local_offset = drake::Isometry3<Scalar>::Identity()) const;
+
+  template <typename Scalar>
+  // Same function as above except `index` can be either body or frame's index.
+  drake::MatrixX<Scalar> CalcJacobianForWorldAlignedBody(
+      const KinematicsCache<Scalar>& cache,
+      int index,
+      const drake::Isometry3<Scalar>& local_offset = drake::Isometry3<Scalar>::Identity()) const;
+
+  template <typename Scalar>
+  // Same function as above except `index` can be either body or frame's index.
+  drake::TwistVector<Scalar> CalcJacobianDotTimesVForWorldAlignedBody(
+      const KinematicsCache<Scalar>& cache,
+      int index,
+      const drake::Isometry3<Scalar>& local_offset = drake::Isometry3<Scalar>::Identity()) const;
 
   template <typename Scalar>
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
