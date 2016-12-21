@@ -38,7 +38,7 @@ GTEST_TEST(TestEncoders, QuantizeOnly) {
     }
 
     context->FixInputPort(0, angle);
-    encoders.EvalOutput(*context, output.get());
+    encoders.CalcOutput(*context, output.get());
 
     EXPECT_TRUE(CompareMatrices(desired_measurement,
                                 measurement->CopyToVector(), tol,
@@ -68,7 +68,7 @@ GTEST_TEST(TestEncoders, SelectorOnly) {
     desired_measurement = angle.segment(1, 2);
 
     context->FixInputPort(0, angle);
-    encoders.EvalOutput(*context, output.get());
+    encoders.CalcOutput(*context, output.get());
 
     EXPECT_TRUE(CompareMatrices(desired_measurement,
                                 measurement->CopyToVector(), tol,
@@ -108,7 +108,7 @@ GTEST_TEST(TestEncoders, QuantizationAndSelector) {
           floor(angle(indices[j]) * ticks_per_radian(j)) / ticks_per_radian(j);
     }
 
-    encoders.EvalOutput(*context, output.get());
+    encoders.CalcOutput(*context, output.get());
 
     EXPECT_TRUE(CompareMatrices(desired_measurement,
                                 measurement->CopyToVector(), tol,
@@ -152,7 +152,7 @@ GTEST_TEST(TestEncoders, CalibrationOffsets) {
           floor(angle(j) * ticks_per_radian(j)) / ticks_per_radian(j);
     }
 
-    encoders.EvalOutput(*context, output.get());
+    encoders.CalcOutput(*context, output.get());
 
     EXPECT_TRUE(CompareMatrices(desired_measurement,
                                 measurement->CopyToVector(), tol,

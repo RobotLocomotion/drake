@@ -37,7 +37,7 @@ class BouncingBall : public Ball<T> {
   void DoCalcNextUpdateTime(const systems::Context<T>& context,
                             systems::UpdateActions<T>* actions) const override;
 
-  void DoEvalUnrestrictedUpdate(const systems::Context<T>& context,
+  void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
                                 systems::State<T>* state) const override;
 
   /// TODO(jadecastro): This is a prototype implementation to be overridden from

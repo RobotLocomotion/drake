@@ -103,7 +103,7 @@ void BouncingBall<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
 }
 
 template <typename T>
-void BouncingBall<T>::DoEvalUnrestrictedUpdate(const systems::Context<T>&
+void BouncingBall<T>::DoCalcUnrestrictedUpdate(const systems::Context<T>&
                                                context, systems::State<T>*
                                                next_state) const {
   systems::VectorBase<T>* next_cstate = next_state->

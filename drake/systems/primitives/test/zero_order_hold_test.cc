@@ -58,7 +58,7 @@ TEST_F(ZeroOrderHoldTest, Output) {
       context_->get_mutable_discrete_state(0));
   xd->get_mutable_value() << 1.0, 3.14, 2.18;
 
-  hold_->EvalOutput(*context_, output_.get());
+  hold_->CalcOutput(*context_, output_.get());
 
   const BasicVector<double>* output_vector = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_vector);
@@ -111,7 +111,7 @@ TEST_F(ZeroOrderHoldTest, Update) {
 
   std::unique_ptr<DiscreteState<double>> update =
       hold_->AllocateDiscreteVariables();
-  hold_->EvalDiscreteVariableUpdates(*context_, {update_event}, update.get());
+  hold_->CalcDiscreteVariableUpdates(*context_, {update_event}, update.get());
 
   // Check that the state has been updated to the input.
   const VectorBase<double>* xd = update->get_discrete_state(0);

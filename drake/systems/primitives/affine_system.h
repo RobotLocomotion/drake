@@ -68,16 +68,6 @@ class AffineSystem : public LeafSystem<T> {
   /// Returns the port containing the output state.
   const SystemPortDescriptor<T>& get_output_port() const;
 
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override;
-
-  void EvalTimeDerivatives(const Context<T>& context,
-                           ContinuousState<T>* derivatives) const override;
-
-  void DoEvalDiscreteVariableUpdates(
-      const drake::systems::Context<T>& context,
-      drake::systems::DiscreteState<T>* updates) const override;
-
   // Helper getter methods.
   const Eigen::MatrixXd& A() const { return A_; }
   const Eigen::MatrixXd& B() const { return B_; }
@@ -88,6 +78,16 @@ class AffineSystem : public LeafSystem<T> {
   double time_period() const { return time_period_; }
 
  private:
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override;
+
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override;
+
+  void DoCalcDiscreteVariableUpdates(
+      const drake::systems::Context<T>& context,
+      drake::systems::DiscreteState<T>* updates) const override;
+
   // System<T> override.
   AffineSystem<AutoDiffXd>* DoToAutoDiffXd() const override;
 

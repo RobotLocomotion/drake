@@ -176,7 +176,7 @@ std::unique_ptr<ContinuousState<T>> RigidBodyPlant<T>::AllocateContinuousState()
 }
 
 template <typename T>
-void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
+void RigidBodyPlant<T>::DoCalcOutput(const Context<T>& context,
                                    SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
@@ -208,7 +208,7 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
  * https://github.com/RobotLocomotion/drake/issues/4267.
  */
 template <typename T>
-void RigidBodyPlant<T>::EvalTimeDerivatives(
+void RigidBodyPlant<T>::DoCalcTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
   static_assert(std::is_same<double, T>::value,
                 "Only support templating on double for now");

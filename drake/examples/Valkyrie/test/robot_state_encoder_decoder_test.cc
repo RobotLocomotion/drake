@@ -218,7 +218,7 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
 
   auto context = diagram->CreateDefaultContext();
   auto output = diagram->AllocateOutput(*context);
-  diagram->EvalOutput(*context, output.get());
+  diagram->CalcOutput(*context, output.get());
 
   // TODO(tkoolen): magic numbers.
   auto cache_output = output->get_data(0)->GetValue<KinematicsCache<double>>();

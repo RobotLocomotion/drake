@@ -45,11 +45,6 @@ class PendulumPlant : public systems::LeafSystem<T> {
     get_mutable_state(context)->set_thetadot(thetadot);
   }
 
-  void EvalOutput(const MyContext& context, MyOutput* output) const override;
-
-  void EvalTimeDerivatives(const MyContext& context,
-                           MyContinuousState* derivatives) const override;
-
   /// Pendulum mass in kg
   T m() const { return m_; }
   /// Pendulum length in meters
@@ -76,6 +71,11 @@ class PendulumPlant : public systems::LeafSystem<T> {
   PendulumPlant<AutoDiffXd>* DoToAutoDiffXd() const override;
 
  private:
+  void DoCalcOutput(const MyContext& context, MyOutput* output) const override;
+
+  void DoCalcTimeDerivatives(const MyContext& context,
+                             MyContinuousState* derivatives) const override;
+
   T get_tau(const MyContext& context) const {
     return this->EvalVectorInput(context, 0)->GetAtIndex(0);
   }

@@ -267,10 +267,8 @@ class UnrestrictedUpdater : public LeafSystem<double> {
 
   ~UnrestrictedUpdater() override {}
 
-  std::string get_name() const override { return "UnrestrictedUpdater"; }
-
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {}
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
 
   void DoCalcNextUpdateTime(const systems::Context<double>& context,
                             systems::UpdateActions<double>* actions)
@@ -282,14 +280,14 @@ class UnrestrictedUpdater : public LeafSystem<double> {
                                                kUnrestrictedUpdateAction;
   }
 
-  void DoEvalUnrestrictedUpdate(
+  void DoCalcUnrestrictedUpdate(
       const drake::systems::Context<double>& context,
       drake::systems::State<double>* state) const override {
     if (unrestricted_update_callback_ != nullptr)
       unrestricted_update_callback_(context, state);
   }
 
-  void EvalTimeDerivatives(
+  void DoCalcTimeDerivatives(
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {
     if (derivatives_callback_ != nullptr) derivatives_callback_(context);
@@ -437,7 +435,7 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 
 // A mock System that requests discrete update at 1 kHz, and publishes at 400
 // Hz. Calls user-configured callbacks on DoPublish,
-// DoEvalDiscreteVariableUpdates, and EvalTimeDerivatives.
+// DoCalcDiscreteVariableUpdates, and EvalTimeDerivatives.
 class DiscreteSystem : public LeafSystem<double> {
  public:
   DiscreteSystem() {
@@ -446,16 +444,16 @@ class DiscreteSystem : public LeafSystem<double> {
     const double offset = 0.0;
     this->DeclarePeriodicUpdate(kUpdatePeriod, offset);
     this->DeclarePublishPeriodSec(kPublishPeriod);
+
+    set_name("TestSystem");
   }
 
   ~DiscreteSystem() override {}
 
-  std::string get_name() const override { return "TestSystem"; }
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {}
-
-  void DoEvalDiscreteVariableUpdates(
+  void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
       drake::systems::DiscreteState<double>* updates) const override {
     if (update_callback_ != nullptr) update_callback_(context);
@@ -466,7 +464,7 @@ class DiscreteSystem : public LeafSystem<double> {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
 
-  void EvalTimeDerivatives(
+  void DoCalcTimeDerivatives(
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {
     if (derivatives_callback_ != nullptr) derivatives_callback_(context);

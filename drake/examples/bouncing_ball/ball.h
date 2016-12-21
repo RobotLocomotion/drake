@@ -33,18 +33,18 @@ class Ball : public systems::LeafSystem<T> {
   // Constructor for the Ball system.
   Ball();
 
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
-
-  void EvalTimeDerivatives(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const override;
-
   /// Gets the signed acceleration due to gravity. Since initial positions
   /// correspond to heights, acceleration should be negative.
   double get_gravitational_acceleration() const { return -9.81; }
 
  protected:
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
+
+  void DoCalcTimeDerivatives(
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const override;
+
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 };

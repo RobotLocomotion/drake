@@ -417,7 +417,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
           State<T>* x = context_->get_mutable_state();
           DRAKE_DEMAND(x != nullptr);
           // First, compute the unrestricted updates into a temporary buffer.
-          system_.EvalUnrestrictedUpdate(*context_, event,
+          system_.CalcUnrestrictedUpdate(*context_, event,
                                          unrestricted_updates_.get());
           // TODO(edrumwri): simply swap the states for additional speed.
           // Now write the update back into the context.
@@ -437,7 +437,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
           // Systems with discrete update events must have discrete state.
           DRAKE_DEMAND(xd != nullptr);
           // First, compute the discrete updates into a temporary buffer.
-          system_.EvalDiscreteVariableUpdates(*context_, event,
+          system_.CalcDiscreteVariableUpdates(*context_, event,
                                               discrete_updates_.get());
           // Then, write them back into the context.
           xd->CopyFrom(*discrete_updates_);

@@ -40,9 +40,6 @@ class RobotStateEncoder final : public LeafSystem<double> {
 
   RobotStateEncoder& operator=(const RobotStateEncoder&) = delete;
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override;
-
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override;
 
@@ -60,6 +57,9 @@ class RobotStateEncoder final : public LeafSystem<double> {
       const RigidBodyActuator& actuator) const;
 
  private:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override;
+
   std::map<const RigidBodyActuator*, int> DeclareEffortInputPorts();
 
   std::map<Side, int> DeclareWrenchInputPorts();

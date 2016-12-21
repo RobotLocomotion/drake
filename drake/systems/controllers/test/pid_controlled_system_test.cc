@@ -48,8 +48,8 @@ class TestPlantWithMinOutputs : public TestPlant {
     DeclareOutputPort(kVectorValued, 2);
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     auto output_vector = GetMutableOutputVector(output, 0);
     output_vector[0] = 1.;
     output_vector[1] = 0.1;
@@ -83,8 +83,8 @@ class TestPlantWithMoreOutputs : public TestPlant {
     DeclareOutputPort(kVectorValued, 6);
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     auto output_vector = GetMutableOutputVector(output, 0);
     output_vector[0] = 1.;
     output_vector[1] = 0.1;
@@ -130,7 +130,7 @@ void DoPidControlledSystemTest(std::unique_ptr<TestPlant> plant,
       controller->GetMutableSubsystemContext(
           controller_context, controller->plant());
 
-  diagram->EvalOutput(*context, output.get());
+  diagram->CalcOutput(*context, output.get());
   const BasicVector<double>* output_vec = output->get_vector_data(0);
   const double pid_input =
       dynamic_cast<TestPlant*>(controller->plant())->GetInputValue(

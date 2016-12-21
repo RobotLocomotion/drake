@@ -20,11 +20,8 @@ Ball<T>::Ball() {
 }
 
 template <typename T>
-void Ball<T>::EvalOutput(const systems::Context<T>& context,
-                         systems::SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-
+void Ball<T>::DoCalcOutput(const systems::Context<T>& context,
+                           systems::SystemOutput<T>* output) const {
   // Obtain the structure we need to write into.
   systems::BasicVector<T>* const output_vector =
       output->GetMutableVectorData(0);
@@ -35,11 +32,9 @@ void Ball<T>::EvalOutput(const systems::Context<T>& context,
 }
 
 template <typename T>
-void Ball<T>::EvalTimeDerivatives(
+void Ball<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-
   // Obtain the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
 

@@ -41,7 +41,7 @@ TEST_F(ConstantVectorSourceTest, OutputTest) {
   // source_->num_of_output_ports() after #3097.
   ASSERT_EQ(output_->get_num_ports(), 1);
 
-  source_->EvalOutput(*context_, output_.get());
+  source_->CalcOutput(*context_, output_.get());
 
   // TODO(amcastro-tri): Solve #3140 so that the next line reads:
   // auto& source_->get_output_vector(context, 0);

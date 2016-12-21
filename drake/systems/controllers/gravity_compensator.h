@@ -31,12 +31,12 @@ class GravityCompensator : public LeafSystem<T> {
   /// abort.
   explicit GravityCompensator(const RigidBodyTree<T>& tree);
 
-  /// Sets the output port value to the generalized gravity forces
-  /// corresponding to a joint configuration as specified in the input.
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override;
-
  private:
+  // Sets the output port value to the generalized gravity forces
+  // corresponding to a joint configuration as specified in the input.
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override;
+
   const RigidBodyTree<T>& tree_;
 };
 

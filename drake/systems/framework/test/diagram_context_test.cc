@@ -36,8 +36,8 @@ class AbstractStateSystem : public LeafSystem<double> {
     return std::make_unique<AbstractState>(std::move(values));
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {}
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
 };
 
 class DiagramContextTest : public ::testing::Test {
@@ -250,8 +250,8 @@ TEST_F(DiagramContextTest, CloneState) {
   // Verify that changes to the state do not write through to the original
   // context.
   (*state->get_mutable_continuous_state())[1] = 1024.0;
-  EXPECT_EQ(1024.0, (*state->get_continuous_state())[0]);
-  EXPECT_EQ(43.0, (*context_->get_continuous_state())[0]);
+  EXPECT_EQ(1024.0, (*state->get_continuous_state())[1]);
+  EXPECT_EQ(43.0, (*context_->get_continuous_state())[1]);
 }
 
 }  // namespace

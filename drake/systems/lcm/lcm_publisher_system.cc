@@ -42,6 +42,8 @@ LcmPublisherSystem::LcmPublisherSystem(
   } else {
     DeclareAbstractInputPort();
   }
+
+  set_name(make_name(channel_));
 }
 
 LcmPublisherSystem::LcmPublisherSystem(
@@ -67,11 +69,7 @@ LcmPublisherSystem::LcmPublisherSystem(
 
 LcmPublisherSystem::~LcmPublisherSystem() {}
 
-std::string LcmPublisherSystem::get_name() const {
-  return get_name(channel_);
-}
-
-std::string LcmPublisherSystem::get_name(const std::string& channel) {
+std::string LcmPublisherSystem::make_name(const std::string& channel) {
   return "LcmPublisherSystem(" + channel + ")";
 }
 

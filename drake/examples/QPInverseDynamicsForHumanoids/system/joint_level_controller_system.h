@@ -55,8 +55,8 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
     ff_const_ = VectorX<double>::Zero(act_size);
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     // Inputs
     const QPOutput* qp_output =
         EvalInputValue<QPOutput>(context, in_port_idx_qp_output_);

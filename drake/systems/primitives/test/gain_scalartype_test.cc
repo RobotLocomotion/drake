@@ -58,7 +58,7 @@ GTEST_TEST(GainScalarTypeTest, AutoDiff) {
 
   context->FixInputPort(0, std::move(input));
 
-  gain->EvalOutput(*context, output.get());
+  gain->CalcOutput(*context, output.get());
 
   ASSERT_EQ(1, output->get_num_ports());
   const auto& output_vector = output->get_vector_data(0)->get_value();
@@ -113,7 +113,7 @@ TEST_F(SymbolicGainTest, VectorThroughGainSystem) {
 
   // Hook input of the expected size.
   context_->FixInputPort(0, move(input0_));
-  gain_->EvalOutput(*context_, output_.get());
+  gain_->CalcOutput(*context_, output_.get());
 
   // Checks that the number of output ports in the Gain system and the
   // SystemOutput are consistent.

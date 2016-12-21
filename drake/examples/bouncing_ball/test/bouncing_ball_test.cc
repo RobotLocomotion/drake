@@ -113,7 +113,7 @@ TEST_F(BouncingBallTest, Reset) {
 
   // Perform a reset at the initial state.
   dut_->PerformReset(context_.get());
-  dut_->EvalOutput(*context_, output_.get());
+  dut_->CalcOutput(*context_, output_.get());
   EXPECT_EQ(10.0, result->GetAtIndex(0));
   EXPECT_EQ(0.0, result->GetAtIndex(1));
 
@@ -121,7 +121,7 @@ TEST_F(BouncingBallTest, Reset) {
   continuous_state()->SetAtIndex(0, 0.0);
   continuous_state()->SetAtIndex(1, -5.7);
   dut_->PerformReset(context_.get());
-  dut_->EvalOutput(*context_, output_.get());
+  dut_->CalcOutput(*context_, output_.get());
   EXPECT_EQ(0.0, result->GetAtIndex(0));
   EXPECT_NEAR(-5.7 * -1 * dut_->get_restitution_coef(),
               result->GetAtIndex(1), 1e-14);

@@ -22,10 +22,10 @@ namespace {
 template<typename T>
 class TestSystem : public LeafSystem<T> {
  public:
-  TestSystem() {}
+  TestSystem() {
+    this->set_name("TestSystem");
+  }
   ~TestSystem() override {}
-
-  std::string get_name() const override { return "TestSystem"; }
 
   void AddPeriodicUpdate() {
     const double period = 10.0;
@@ -50,10 +50,10 @@ class TestSystem : public LeafSystem<T> {
     this->DeclareContinuousState(std::move(vec), 4, 3, 2);
   }
 
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override {}
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override {}
 
-  void EvalTimeDerivatives(
+  void DoCalcTimeDerivatives(
       const Context<T>& context,
       ContinuousState<T>* derivatives) const override {}
 
@@ -284,7 +284,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   };
 
   // Verify no exception is thrown.
-  EXPECT_NO_THROW(system_.EvalUnrestrictedUpdate(*context, event, x.get()));
+  EXPECT_NO_THROW(system_.CalcUnrestrictedUpdate(*context, event, x.get()));
 
   // Change the function to change the continuous state dimension.
   // Call the unrestricted update function again, now verifying that an
@@ -299,7 +299,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
 
   // Call the unrestricted update function, verifying that an exception
   // is thrown
-  EXPECT_THROW(system_.EvalUnrestrictedUpdate(*context, event, x.get()),
+  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, event, x.get()),
                std::logic_error);
 
   // Restore the continuous state (size).
@@ -320,7 +320,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
 
   // Call the unrestricted update function again, again verifying that an
   // exception is thrown.
-  EXPECT_THROW(system_.EvalUnrestrictedUpdate(*context, event, x.get()),
+  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, event, x.get()),
                std::logic_error);
 
   // Restore the discrete state (size).
@@ -337,7 +337,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
 
   // Call the unrestricted update function again, again verifying that an
   // exception is thrown.
-  EXPECT_THROW(system_.EvalUnrestrictedUpdate(*context, event, x.get()),
+  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, event, x.get()),
                std::logic_error);
 }
 
