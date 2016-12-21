@@ -35,14 +35,14 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   /// The input force to this system is not direct feedthrough.
   bool has_any_direct_feedthrough() const override { return false; }
 
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
+ private:
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
 
-  void EvalTimeDerivatives(
+  void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
- private:
   // LeafSystem<T> override.
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
       const override;

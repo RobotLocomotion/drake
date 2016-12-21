@@ -54,7 +54,7 @@ TEST_F(MatrixGainTest, Derivatives) {
 
   derivatives_ = dut_->AllocateTimeDerivatives();
   EXPECT_NE(derivatives_, nullptr);
-  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
 
   // We expect the derivatives to be a vector of length zero.
   Eigen::VectorXd expected_derivatives = VectorX<double>::Zero(kNumStates);
@@ -68,7 +68,7 @@ TEST_F(MatrixGainTest, Output) {
   Eigen::Vector2d u(2.17, 5.99);
   SetInput(u);
 
-  dut_->EvalOutput(*context_, system_output_.get());
+  dut_->CalcOutput(*context_, system_output_.get());
 
   Eigen::VectorXd expected_output(2);
   expected_output = D_ * u;

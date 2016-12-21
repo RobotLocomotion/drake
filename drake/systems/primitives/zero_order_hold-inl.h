@@ -31,8 +31,8 @@ ZeroOrderHold<T>::ZeroOrderHold(const T& period_sec, int size) {
 }
 
 template <typename T>
-void ZeroOrderHold<T>::EvalOutput(const Context<T>& context,
-                                  SystemOutput<T>* output) const {
+void ZeroOrderHold<T>::DoCalcOutput(const Context<T>& context,
+                                    SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
@@ -41,7 +41,7 @@ void ZeroOrderHold<T>::EvalOutput(const Context<T>& context,
 }
 
 template <typename T>
-void ZeroOrderHold<T>::DoEvalDiscreteVariableUpdates(
+void ZeroOrderHold<T>::DoCalcDiscreteVariableUpdates(
     const Context<T>& context, DiscreteState<T>* discrete_state) const {
   DRAKE_DEMAND(discrete_state->size() == 1);
   discrete_state->get_mutable_discrete_state(0)->SetFromVector(

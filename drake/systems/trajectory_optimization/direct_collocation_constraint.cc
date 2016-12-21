@@ -93,11 +93,11 @@ SystemDirectCollocationConstraint::SystemDirectCollocationConstraint(
 SystemDirectCollocationConstraint::~SystemDirectCollocationConstraint() {}
 
 void SystemDirectCollocationConstraint::dynamics(const TaylorVecXd& state,
-                                                  const TaylorVecXd& input,
-                                                  TaylorVecXd* xdot) const {
+                                                 const TaylorVecXd& input,
+                                                 TaylorVecXd* xdot) const {
   input_port_->GetMutableVectorData<AutoDiffXd>()->SetFromVector(input);
   context_->get_mutable_continuous_state()->SetFromVector(state);
-  system_->EvalTimeDerivatives(*context_, derivatives_.get());
+  system_->CalcTimeDerivatives(*context_, derivatives_.get());
   *xdot = derivatives_->CopyToVector();
 }
 

@@ -17,7 +17,7 @@ ActuatorEffortToRigidBodyPlantInputConverter<T>::
 }
 
 template <typename T>
-void ActuatorEffortToRigidBodyPlantInputConverter<T>::EvalOutput(
+void ActuatorEffortToRigidBodyPlantInputConverter<T>::DoCalcOutput(
     const Context<T>& context, SystemOutput<T>* output) const {
   int index = 0;
   for (const auto& actuator : ordered_actuators_) {

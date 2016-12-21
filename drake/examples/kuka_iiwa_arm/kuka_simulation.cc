@@ -75,7 +75,7 @@ class SimulatedKuka : public systems::Diagram<T> {
       auto rigid_body_tree = std::make_unique<RigidBodyTree<double>>();
       drake::parsers::urdf::AddModelInstanceFromUrdfFile(
           drake::GetDrakePath() +
-          "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf",
+          "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf",
           drake::multibody::joints::kFixed,
           nullptr /* weld to frame */, rigid_body_tree.get());
 

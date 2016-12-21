@@ -51,7 +51,7 @@ TEST_F(SpringMassSystemTest, EvalOutput) {
   model_->set_velocity(model_context_.get(), v0);
 
   ASSERT_EQ(1, output_->get_num_ports());
-  model_->EvalOutput(*model_context_, output_.get());
+  model_->CalcOutput(*model_context_, output_.get());
 
   // Output equals the state of the spring-mass plant being controlled which
   // consists of position, velocity and energy.
@@ -74,7 +74,7 @@ TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
 
   std::unique_ptr<ContinuousState<double>> derivatives =
       model_->AllocateTimeDerivatives();
-  model_->EvalTimeDerivatives(*model_context_, derivatives.get());
+  model_->CalcTimeDerivatives(*model_context_, derivatives.get());
 
   // The spring-mass plant has a state vector of size 3. One position, one
   // velocity and one miscellaneous state (energy). Moreover, the model has an

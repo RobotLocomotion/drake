@@ -17,7 +17,7 @@
 //
 //  Thus, a rigid body tree is created with a known configuration such that the
 //  contacts and corresponding contact forces are known.  The RigidBodyPlant's
-//  EvalOutput is invoked on the ContactResult port and the ContactResult
+//  CalcOutput is invoked on the ContactResult port and the ContactResult
 //  contents are evaluated to see if they contain the expected results.
 
 using Eigen::Isometry3d;
@@ -87,7 +87,7 @@ class ContactResultTest : public ::testing::Test {
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
     context_->FixInputPort(0, make_unique<BasicVector<double>>(0));
-    plant_->EvalOutput(*context_.get(), output_.get());
+    plant_->CalcOutput(*context_.get(), output_.get());
 
     // TODO(SeanCurtis-TRI): This hard-coded value is unfortunate. However,
     //  there is no mechanism for finding out the port id for a known port

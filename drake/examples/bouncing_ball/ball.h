@@ -33,14 +33,14 @@ class Ball : public systems::LeafSystem<T> {
   // Constructor for the Ball system.
   Ball();
 
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
+ protected:
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
 
-  void EvalTimeDerivatives(
+  void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
- protected:
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 };

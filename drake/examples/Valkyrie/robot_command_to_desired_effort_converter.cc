@@ -13,7 +13,7 @@ RobotCommandToDesiredEffortConverter::RobotCommandToDesiredEffortConverter(
   set_name("RobotCommandToDesiredEffortConverter");
 }
 
-void RobotCommandToDesiredEffortConverter::EvalOutput(
+void RobotCommandToDesiredEffortConverter::DoCalcOutput(
     const systems::Context<double>& context,
     systems::SystemOutput<double>* output) const {
   using bot_core::atlas_command_t;

@@ -43,8 +43,6 @@ class IdmPlanner : public systems::LeafSystem<T> {
   // The output of this system is an algebraic relation of its inputs.
   bool has_any_direct_feedthrough() const override { return true; }
 
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
 
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
 
@@ -58,6 +56,9 @@ class IdmPlanner : public systems::LeafSystem<T> {
   IdmPlanner& operator=(IdmPlanner<T>&&) = delete;
 
  private:
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
+
   const T v_ref_;  // Desired vehicle velocity.
 };
 

@@ -38,14 +38,15 @@ class ConstantVectorSource : public LeafSystem<T> {
   /// `y = source_value` at all times.
   explicit ConstantVectorSource(const T& source_value);
 
-  /// Outputs a signal with a fixed value as specified by the user.
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override;
 
   /// Returns the output port to the constant source.
   const SystemPortDescriptor<T>& get_output_port() const;
 
  private:
+  // Outputs a signal with a fixed value as specified by the user.
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override;
+
   // TODO(amcastro-tri): move source_value_ to the system's parameters.
   const VectorX<T> source_value_;
 };

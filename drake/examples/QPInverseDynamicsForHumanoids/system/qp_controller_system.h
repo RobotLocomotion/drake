@@ -31,8 +31,8 @@ class QPControllerSystem : public systems::LeafSystem<double> {
     set_name("qp_controller");
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     // Inputs:
     const HumanoidStatus* rs = EvalInputValue<HumanoidStatus>(
         context, input_port_index_humanoid_status_);
@@ -90,7 +90,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
   const RigidBodyTree<double>& robot_;
 
   // TODO(siyuan.feng): This is a bad temporary hack to the const constraint for
-  // EvalOutput. It is because qp controller needs to allocate mutable workspace
+  // CalcOutput. It is because qp controller needs to allocate mutable workspace
   // (MathematicalProgram, temporary matrices for doing math, etc),
   // and I want to avoid allocating these repeatedly.
   // This should be taken care of with the new system2 cache.

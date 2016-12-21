@@ -363,16 +363,16 @@ class DiscreteSystem : public LeafSystem<double> {
     const double offset = 0.0;
     this->DeclarePeriodicUpdate(kUpdatePeriod, offset);
     this->DeclarePublishPeriodSec(kPublishPeriod);
+
+    set_name("TestSystem");
   }
 
   ~DiscreteSystem() override {}
 
-  std::string get_name() const override { return "TestSystem"; }
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {}
-
-  void DoEvalDiscreteVariableUpdates(
+  void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
       drake::systems::DiscreteState<double>* updates) const override {
     if (update_callback_ != nullptr) update_callback_(context);
@@ -383,7 +383,7 @@ class DiscreteSystem : public LeafSystem<double> {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
 
-  void EvalTimeDerivatives(
+  void DoCalcTimeDerivatives(
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {
     if (derivatives_callback_ != nullptr) derivatives_callback_(context);

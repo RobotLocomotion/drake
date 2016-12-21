@@ -40,9 +40,9 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   const std::string kCommandChannelName = "DRIVING_COMMAND";
 
   const std::string driving_command_name =
-      systems::lcm::LcmSubscriberSystem::get_name(kCommandChannelName);
+      systems::lcm::LcmSubscriberSystem::make_name(kCommandChannelName);
   const std::string joint_state_name =
-      systems::lcm::LcmPublisherSystem::get_name(kJointStateChannelName);
+      systems::lcm::LcmPublisherSystem::make_name(kJointStateChannelName);
 
   // Set up a basic simulation with just SimpleCar and its hangers-on.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
