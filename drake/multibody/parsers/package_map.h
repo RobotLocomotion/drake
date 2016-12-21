@@ -62,7 +62,8 @@ class PackageMap {
   /// search for `package.xml` files. This file must be an SDF or URDF file.
   void PopulateUpstreamToDrake(const std::string& model_file);
 
-  friend std::ostream& operator<<(std::ostream& out, const PackageMap& point);
+  friend std::ostream& operator<<(std::ostream& out,
+                                  const PackageMap& package_map);
 
  private:
   // Recursively crawls through @p path looking for package.xml files. Adds
