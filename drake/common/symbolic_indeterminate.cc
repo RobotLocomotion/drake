@@ -1,9 +1,10 @@
 #include "drake/common/symbolic_indeterminate.h"
 
-#include <functional>
 #include <ostream>
 #include <string>
 
+#include "drake/common/drake_assert.h"
+#include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variable_cell.h"
 
 using std::ostream;
