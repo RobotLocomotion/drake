@@ -197,5 +197,15 @@ void PackageMap::CrawlForPackages(const string& path) {
   }
 }
 
+std::ostream& operator<<(std::ostream& out, const PackageMap& package_map) {
+    out << "PackageMap:" << std::endl;
+    if (package_map.size() == 0)
+      out << "  [EMPTY!]" << std::endl;
+    for (const auto& entry : package_map.map_) {
+      out << "  - " << entry.first << ": " << entry.second << std::endl;
+    }
+    return out;
+}
+
 }  // namespace parsers
 }  // namespace drake
