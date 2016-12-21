@@ -198,11 +198,11 @@ void PackageMap::CrawlForPackages(const string& path) {
 }
 
 std::ostream& operator<<(std::ostream& out, const PackageMap& package_map) {
-    out << "PackageMap:" << std::endl;
+    out << "PackageMap:\n";
     if (package_map.size() == 0)
-      out << "  [EMPTY!]" << std::endl;
+      out << "  [EMPTY!]\n";
     for (const auto& entry : package_map.map_) {
-      out << "  - " << entry.first << ": " << entry.second << std::endl;
+      out << "  - " << entry.first << ": " << entry.second << "\n";
     }
     return out;
 }
