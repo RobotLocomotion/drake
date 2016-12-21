@@ -60,6 +60,12 @@ class LeafSystem : public System<T> {
     context->set_abstract_state(this->AllocateAbstractState());
     // Reserve parameters via delegation to subclass.
     context->set_parameters(this->AllocateParameters());
+
+    // Enforce some requirements on the fully-assembled Context.
+    // -- The ContinuousState must be contiguous.
+    VectorBase<T>* xc_vec = context->get_mutable_continuous_state_vector();
+    DRAKE_DEMAND(dynamic_cast<BasicVector<T>*>(xc_vec) != nullptr);
+
     return std::unique_ptr<Context<T>>(context.release());
   }
 
@@ -164,7 +170,8 @@ class LeafSystem : public System<T> {
   /// Returns a ContinuousState used to implement both CreateDefaultContext and
   /// AllocateTimeDerivatives. Allocates the state configured with
   /// DeclareContinuousState, or none by default. Systems with continuous state
-  /// variables may override.
+  /// variables may override, but must ensure the ContinuousState vector is
+  /// a subclass of BasicVector.
   virtual std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const {
     if (model_continuous_state_vector_ != nullptr) {
       return std::make_unique<ContinuousState<T>>(
