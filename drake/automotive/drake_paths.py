@@ -6,6 +6,11 @@
 import os
 import sys
 
+# TODO(jwnimmer-tri) Burninate this whole file.  At a minimum, replace the
+# "what is the FOO path" data strings with "find me this file" functions,
+# because the latter can become more flexible over time.  But really, this file
+# is only used by hand-run CMake-based demos, so will die soon anyway.
+
 _THIS_FILE = os.path.abspath(__file__)
 _THIS_DIR = os.path.dirname(_THIS_FILE)
 DRAKE_DIR = os.path.dirname(_THIS_DIR)
@@ -16,7 +21,11 @@ DRAKE_DIST_BUILD_DIR = os.getenv(
 DRAKE_INSTALL_BIN_DIR = os.path.join(DRAKE_DIST_BUILD_DIR, "install", "bin")
 
 if not os.path.exists(DRAKE_INSTALL_BIN_DIR):
-    raise RuntimeError(
+    # This is non-fatal.  The only thing we do with these variables is compute
+    # more variables, and add stuff to search paths.  Possibly some downstream
+    # uses will fail if they needed the path, but Bazel-based demos will not,
+    # because their path-correctness is built-in.
+    print >>sys.stderr, (
         "cannot find DRAKE_DIST_BUILD_DIR at " + DRAKE_DIST_BUILD_DIR)
 
 DRAKE_DRAKE_BUILD_DIR = os.path.join(DRAKE_DIST_BUILD_DIR, "drake")
