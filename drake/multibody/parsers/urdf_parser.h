@@ -232,7 +232,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * meet these requirements should instead use
  * AddModelInstanceFromUrdfFileSearchingInRosPackages().
  *
- * @param[in] urdf_filename The full path to the file containing the URDF model.
+ * @param[in] urdf_filename The name of the file containing the URDF model.
  *
  * @param[out] tree The `RigidBodyTree` to which to add the model instance.
  * This parameter must not be `nullptr`.
@@ -264,7 +264,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * meet these requirements should instead use
  * AddModelInstanceFromUrdfFileSearchingInRosPackages().
  *
- * @param[in] urdf_filename The full path to the file containing a URDF
+ * @param[in] urdf_filename The name of the file containing a URDF
  * description of the model. An instance of this model will be added to
  * @p tree.
  *
@@ -307,7 +307,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * meet these requirements should instead use
  * AddModelInstanceFromUrdfFileSearchingInRosPackages().
  *
- * @param[in] urdf_filename The full path to the file containing the URDF model.
+ * @param[in] urdf_filename The name of the file containing the URDF model.
  * A new instance of this model is created and added to @p tree.
  *
  * @param[in] floating_base_type The type of joint that connects the model
@@ -343,7 +343,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * `package://`, the URDF could instead be loaded using
  * AddModelInstanceFromUrdfFile().
  *
- * @param[in] urdf_filename The full path of the file containing the URDF model.
+ * @param[in] urdf_filename The name of the file containing the URDF model.
  * An instance of this model will be added to @p tree.
  *
  * @param[in] package_map A map of ROS package names to their paths. These
