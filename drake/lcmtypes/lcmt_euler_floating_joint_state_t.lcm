@@ -7,10 +7,10 @@ struct lcmt_euler_floating_joint_state_t {
   // The timestamp in milliseconds.
   int64_t timestamp;
 
-  double x;
-  double y;
-  double z;
-  double roll;
-  double pitch;
-  double yaw;
+  double x;  // x
+  double y;  // y
+  double z;  // z
+  double roll;  // roll
+  double pitch;  // pitch
+  double yaw;  // yaw
 }

@@ -38,19 +38,19 @@ class DrivingCommand : public systems::BasicVector<T> {
 
   /// @name Getters and Setters
   //@{
-  // steering_angle
+  /// The desired steering angle, positive is to the left.
   const T& steering_angle() const {
     return this->GetAtIndex(K::kSteeringAngle);
   }
   void set_steering_angle(const T& steering_angle) {
     this->SetAtIndex(K::kSteeringAngle, steering_angle);
   }
-  // throttle
+  /// The normalized desired acceleration.
   const T& throttle() const { return this->GetAtIndex(K::kThrottle); }
   void set_throttle(const T& throttle) {
     this->SetAtIndex(K::kThrottle, throttle);
   }
-  // brake
+  /// The normalized desired deceleration.
   const T& brake() const { return this->GetAtIndex(K::kBrake); }
   void set_brake(const T& brake) { this->SetAtIndex(K::kBrake, brake); }
   //@}

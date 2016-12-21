@@ -1,0 +1,10 @@
+---
+-
+     name: steering_angle
+     doc: The desired steering angle, positive is to the left.
+-
+     name: throttle
+     doc: The normalized desired acceleration.
+-
+     name: brake
+     doc: The normalized desired deceleration.
