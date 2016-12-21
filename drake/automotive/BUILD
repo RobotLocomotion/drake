@@ -134,10 +134,6 @@ cc_library(
         "//drake/systems/lcm",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:multiplexer",
-
-        # TODO(rpoyner-tri): This only exists to get the yaml_cpp external to
-        # build; remove once maliput (the eventual consumer) is integrated.
-        "@yaml_cpp//:lib",
     ],
 )
 
@@ -169,6 +165,21 @@ cc_binary(
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/rigid_body_plant",
         "//drake/systems/controllers:pid_controlled_system",
+    ],
+)
+
+py_library(
+    name = "drake_paths",
+    srcs = ["drake_paths.py"],
+)
+
+py_binary(
+    name = "steering_command_driver",
+    srcs = ["steering_command_driver.py"],
+    deps = [
+        ":drake_paths",
+        "//drake/lcmtypes:py_automotive",
+        "@lcm//:lcm-python",
     ],
 )
 
