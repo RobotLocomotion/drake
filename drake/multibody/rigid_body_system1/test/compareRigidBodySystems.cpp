@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <string>
-#include <unistd.h>
 
 #include <gtest/gtest.h>
 
@@ -26,18 +25,23 @@ using drake::multibody::joints::kQuaternion;
 char* model_file_1 = nullptr;
 char* model_file_2 = nullptr;
 
+// TODO(liang.fok): Once the rule-of-three is met, move this into a more general
+// location so it can be shared.
+//
 // Given a file that is assumed to be in the current working directory, this
-// method obtains the full path to the file.
+// method obtains the full path to the file if it is able to (1) get the current
+// working directory and (2) verify that the derived full file path exists. If
+// either of the aforementioned conditions fail, this method simply returns
+// @p model_file.
 std::string GetFullPath(const std::string& model_file) {
   std::string result = model_file;
-  char cwd[1024];
-  if (getcwd(cwd, sizeof(cwd)) != NULL) {
-    spruce::path path(cwd);
-    path.append(model_file);
-    if (path.isFile()) {
-      result = path.getStr();
-    }
+  spruce::path::path path(".");
+  path.setAsCurrent();
+  path.append(model_file);
+  if (path.isFile()) {
+    result = path.getStr();
   }
+
   return result;
 }
 

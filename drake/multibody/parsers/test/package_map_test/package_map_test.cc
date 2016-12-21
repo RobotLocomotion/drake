@@ -31,7 +31,7 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
   };
 
   PackageMap package_map;
-  for (auto const& it : expected_packages) {
+  for (const auto& it : expected_packages) {
     package_map.Add(it.first, it.second);
   }
 
@@ -113,7 +113,7 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
   };
 
   PackageMap package_map;
-  for (auto const& it : expected_packages) {
+  for (const auto& it : expected_packages) {
     package_map.Add(it.first, it.second);
   }
 
@@ -124,7 +124,7 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
   // The following simply tests that the package names and their relative
   // paths exist in the resulting string. It does not check GetDrakePath() since
   // that's system dependent or the actual formatting of the text.
-  for (auto const& it : expected_packages) {
+  for (const auto& it : expected_packages) {
     EXPECT_NE(resulting_string.find(it.first), std::string::npos);
     EXPECT_NE(resulting_string.find(it.second), std::string::npos);
   }

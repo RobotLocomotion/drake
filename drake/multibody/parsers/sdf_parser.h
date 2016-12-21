@@ -25,7 +25,7 @@ namespace sdf {
  * meet these requirements should instead use
  * AddModelInstancesFromSdfFileToWorldSearchingInRosPackages().
  *
- * @param[in] filename The name of the SDF file containing the model to be
+ * @param[in] filename The full path to the SDF file containing the model to be
  * added.
  *
  * @param[in] floating_base_type The type of joint that connects the model's
@@ -55,7 +55,7 @@ AddModelInstancesFromSdfFileToWorld(
  * tree, the SDF could instead be loaded using
  * AddModelInstancesFromSdfFileToWorld().
  *
- * @param[in] filename The name of the SDF file containing the model to be
+ * @param[in] filename The full path to the SDF file containing the model to be
  * added.
  *
  * @param[in] package_map A map of ROS package names to their paths. These are
@@ -87,7 +87,7 @@ AddModelInstancesFromSdfFileToWorldSearchingInRosPackages(
  * meet these requirements should instead use
  * AddModelInstancesFromSdfFileSearchingInRosPackages().
  *
- * @param[in] filename The name of the SDF file containing the model to be
+ * @param[in] filename The full path to the SDF file containing the model to be
  * added.
  *
  * @param[in] floating_base_type The type of joint that connects the model's
@@ -118,7 +118,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
  * tree, the SDF could instead be loaded using
  * AddModelInstancesFromSdfFile().
  *
- * @param[in] filename The name of the SDF file containing the model to be
+ * @param[in] filename The full path to the SDF file containing the model to be
  * added.
  *
  * @param[in] package_map A map of ROS package names to their paths. These are
