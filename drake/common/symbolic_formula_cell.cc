@@ -132,10 +132,7 @@ bool FormulaTrue::Less(const FormulaCell& f) const {
 
 bool FormulaTrue::Evaluate(const Environment& env) const { return true; }
 
-ostream& FormulaTrue::Display(ostream& os) const {
-  os << "True";
-  return os;
-}
+ostream& FormulaTrue::Display(ostream& os) const { return os << "True"; }
 
 FormulaFalse::FormulaFalse()
     : FormulaCell{FormulaKind::False, hash<string>{}("False")} {}
@@ -159,10 +156,7 @@ bool FormulaFalse::Less(const FormulaCell& f) const {
 
 bool FormulaFalse::Evaluate(const Environment& env) const { return false; }
 
-ostream& FormulaFalse::Display(ostream& os) const {
-  os << "False";
-  return os;
-}
+ostream& FormulaFalse::Display(ostream& os) const { return os << "False"; }
 
 FormulaEq::FormulaEq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Eq, e1, e2} {}
@@ -173,8 +167,8 @@ bool FormulaEq::Evaluate(const Environment& env) const {
 }
 
 ostream& FormulaEq::Display(ostream& os) const {
-  os << "(" << get_1st_expression() << " = " << get_2nd_expression() << ")";
-  return os;
+  return os << "(" << get_1st_expression() << " = " << get_2nd_expression()
+            << ")";
 }
 
 FormulaNeq::FormulaNeq(const Expression& e1, const Expression& e2)
@@ -186,8 +180,8 @@ bool FormulaNeq::Evaluate(const Environment& env) const {
 }
 
 ostream& FormulaNeq::Display(ostream& os) const {
-  os << "(" << get_1st_expression() << " != " << get_2nd_expression() << ")";
-  return os;
+  return os << "(" << get_1st_expression() << " != " << get_2nd_expression()
+            << ")";
 }
 
 FormulaGt::FormulaGt(const Expression& e1, const Expression& e2)
@@ -199,8 +193,8 @@ bool FormulaGt::Evaluate(const Environment& env) const {
 }
 
 ostream& FormulaGt::Display(ostream& os) const {
-  os << "(" << get_1st_expression() << " > " << get_2nd_expression() << ")";
-  return os;
+  return os << "(" << get_1st_expression() << " > " << get_2nd_expression()
+            << ")";
 }
 
 FormulaGeq::FormulaGeq(const Expression& e1, const Expression& e2)
@@ -212,8 +206,8 @@ bool FormulaGeq::Evaluate(const Environment& env) const {
 }
 
 ostream& FormulaGeq::Display(ostream& os) const {
-  os << "(" << get_1st_expression() << " >= " << get_2nd_expression() << ")";
-  return os;
+  return os << "(" << get_1st_expression() << " >= " << get_2nd_expression()
+            << ")";
 }
 
 FormulaLt::FormulaLt(const Expression& e1, const Expression& e2)
@@ -225,8 +219,8 @@ bool FormulaLt::Evaluate(const Environment& env) const {
 }
 
 ostream& FormulaLt::Display(ostream& os) const {
-  os << "(" << get_1st_expression() << " < " << get_2nd_expression() << ")";
-  return os;
+  return os << "(" << get_1st_expression() << " < " << get_2nd_expression()
+            << ")";
 }
 
 FormulaLeq::FormulaLeq(const Expression& e1, const Expression& e2)
@@ -238,8 +232,8 @@ bool FormulaLeq::Evaluate(const Environment& env) const {
 }
 
 ostream& FormulaLeq::Display(ostream& os) const {
-  os << "(" << get_1st_expression() << " <= " << get_2nd_expression() << ")";
-  return os;
+  return os << "(" << get_1st_expression() << " <= " << get_2nd_expression()
+            << ")";
 }
 
 FormulaAnd::FormulaAnd(const set<Formula>& formulas)
@@ -310,8 +304,7 @@ bool FormulaNot::Evaluate(const Environment& env) const {
 }
 
 ostream& FormulaNot::Display(ostream& os) const {
-  os << "!(" << f_ << ")";
-  return os;
+  return os << "!(" << f_ << ")";
 }
 
 FormulaForall::FormulaForall(const Variables& vars, const Formula& f)
@@ -352,8 +345,7 @@ bool FormulaForall::Evaluate(const Environment& env) const {
 }
 
 ostream& FormulaForall::Display(ostream& os) const {
-  os << "forall(" << vars_ << ". " << f_ << ")";
-  return os;
+  return os << "forall(" << vars_ << ". " << f_ << ")";
 }
 }  // namespace symbolic
 }  // namespace drake
