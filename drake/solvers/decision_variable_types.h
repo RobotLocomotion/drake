@@ -1,12 +1,9 @@
 #pragma once
 
-#include <cstddef>
-#include <list>
-#include <memory>
-#include <string>
-#include <type_traits>
-#include <unordered_set>
-#include <vector>
+#include <cstddef>        // for size_t
+#include <list>           // for list
+#include <type_traits>    // for is_same
+#include <unordered_set>  // for unordered_set
 
 #include <Eigen/Core>
 
