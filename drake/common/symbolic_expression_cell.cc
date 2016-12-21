@@ -2,12 +2,14 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <iomanip>
-#include <iostream>
 #include <limits>
 #include <map>
 #include <memory>
 #include <numeric>
+#include <ostream>
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 

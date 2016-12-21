@@ -7,6 +7,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 #include <Eigen/Core>
