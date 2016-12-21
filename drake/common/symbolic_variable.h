@@ -16,7 +16,9 @@ enum class VariableKind { Indeterminate, DecisionVariableScalar };
 /** Total ordering between VariableKind. */
 bool operator<(VariableKind k1, VariableKind k2);
 
-class VariableCell;  // In drake/common/symbolic_variable_cell.h file.
+class VariableCell;            // In drake/common/symbolic_variable_cell.h file.
+class Indeterminate;           // In drake/common/symbolic_indeterminate.h
+class DecisionVariableScalar;  // In drake/common/symbolic_decision_variable.h
 
 /** Represents a symbolic variable.
  *
@@ -90,6 +92,9 @@ class Variable {
   bool less(const Variable& var) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Variable& var);
+  friend Indeterminate get_indeterminate(const Variable& var);
+  friend DecisionVariableScalar get_decision_variable_scalar(
+      const Variable& var);
 
  private:
   const std::shared_ptr<VariableCell> ptr_;
@@ -102,6 +107,15 @@ bool operator<(const Variable& lhs, const Variable& rhs);
 
 /// Checks equality of two variables.
 bool operator==(const Variable& lhs, const Variable& rhs);
+
+/// Checks if @p var is an indeterminate variable. */
+bool is_indeterminate(const Variable& var);
+/// Checks if @p var is a decision variable scalar. */
+bool is_decision_variable_scalar(const Variable& var);
+/// Returns the indeterminate embedded in @p var. */
+Indeterminate get_indeterminate(const Variable& var);
+/// Returns the decision variable scalar embedded in @p var. */
+DecisionVariableScalar get_decision_variable_scalar(const Variable& var);
 
 }  // namespace symbolic
 
