@@ -83,6 +83,7 @@ Cheat sheet for operating on specific portions of the project::
   bazel test common:polynomial_test                    # Run one test.
   bazel test -c dbg common:polynomial_test             # Run one test in debug mode.
   bazel test --config=memcheck common:polynomial_test  # Run one test under memcheck (valgrind).
+  bazel test --config=fastmemcheck common:*            # Run common's tests under memcheck, with minimal recompiling.
   bazel test --config=asan common:polynomial_test      # Run one test under AddressSanitizer.
   bazel build -c dbg common:polynomial_test && \
     gdb ../bazel-bin/drake/common/polynomial_test      # Run one test under gdb.
@@ -93,6 +94,7 @@ Cheat sheet for operating on specific portions of the project::
 - Note that the configuration switches (``-c`` and ``--config``) influence the
   entire command.  For example, running a test in ``dbg`` mode means that its
   prerequisite libraries are also compiled and linked in ``dbg`` mode.
+- For the definitions of the "``--config``" options see ``drake-distro/tools/bazel.rc``.
 
 Updating BUILD files
 ====================
