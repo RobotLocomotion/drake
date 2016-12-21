@@ -13,15 +13,22 @@
 #include <Eigen/Core>
 
 namespace drake {
+
 namespace solvers {
+// Forward declaration of drake::solvers::MathematicalProgram. We have it here
+// because of the two reasons:
+// 1. To avoid mutual dependencies between drake/common:symbolic and
+//    drake/solvers:mathematical_program.
+// 2. To specify drake::solvers::MathematicalProgram as a friend class of
+//    drake::symbolic::DecisionVariableScalar which is defined below.
 class MathematicalProgram;  // In drake/solvers/mathematical_program.h
 }  // namespace solvers
+
 namespace symbolic {
 /**
- * This class stores the type, name, value, and index of a
- * decision variable in an optimization program.
- * The DecisionVariable created by MathematicalProgram should not outlive
- * its creator MathematicalProgram object.
+ * This class stores the type, name, value, and index of a decision variable in
+ * an optimization program. The DecisionVariable created by MathematicalProgram
+ * should not outlive its creator MathematicalProgram object.
  */
 class DecisionVariableScalar : public VariableCell {
  public:
@@ -61,8 +68,11 @@ class DecisionVariableScalar : public VariableCell {
   DecisionVariableScalar()
       : DecisionVariableScalar{VarType::CONTINUOUS, "", nullptr, 0} {}
 
+  /** Checks equality. */
   bool equal_to(const VariableCell& var) const override;
+  /** Checks total ordering. */
   bool less(const VariableCell& var) const override;
+  /** Outputs its string representation to @p os. */
   std::ostream& Display(std::ostream& os) const override;
 
   /** @return The type of the variable. */
@@ -126,7 +136,6 @@ std::ostream& operator<<(std::ostream& os, const DecisionVariableScalar& var);
 }  // namespace drake
 
 namespace Eigen {
-
 /// Eigen scalar type traits for Matrix<DecisionVariableScalar>.
 template <>
 
