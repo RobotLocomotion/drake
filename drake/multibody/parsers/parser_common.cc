@@ -2,8 +2,6 @@
 
 #include <string>
 
-#include "spruce.hh"
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/multibody/joints/drake_joint.h"
@@ -11,6 +9,7 @@
 #include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/thirdParty/bsd/spruce/spruce.hh"
 
 using std::runtime_error;
 using std::string;
@@ -25,6 +24,16 @@ using drake::multibody::joints::kFixed;
 using drake::multibody::joints::kRollPitchYaw;
 using drake::multibody::joints::kQuaternion;
 
+std::string GetFullPath(const std::string& file_name) {
+  std::string result = file_name;
+  spruce::path path(".");
+  path.setAsCurrent();
+  path.append(file_name);
+  if (path.isFile()) {
+    result = path.getStr();
+  }
+  return result;
+}
 
 namespace {
 // Searches for key p package in package_map. If the key exists, this saves the

@@ -8,9 +8,20 @@
 #include "drake/multibody/parsers/package_map.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/thirdParty/bsd/spruce/spruce.hh"
 
 namespace drake {
 namespace parsers {
+
+// TODO(liang.fok): Once the rule-of-three is met, move this into a more general
+// location so it can be shared.
+//
+// Given a file that is assumed to be in the current working directory, this
+// method obtains the full path to the file if it is able to (1) get the current
+// working directory and (2) verify that the derived full file path exists. If
+// either of the aforementioned conditions fail, this method simply returns
+// @p file_name.
+std::string GetFullPath(const std::string& file_name);
 
 /// Resolves the fully-qualified name of a file. If @p filename starts with
 /// "package:", the ROS packages specified in @p package_map are searched.
