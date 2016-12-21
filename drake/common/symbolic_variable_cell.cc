@@ -1,14 +1,11 @@
 #include "drake/common/symbolic_variable_cell.h"
 
 #include <cstddef>
-#include <functional>
 #include <ostream>
 #include <string>
 
-#include "drake/common/drake_assert.h"
 #include "drake/common/hash.h"
 
-using std::ostream;
 using std::string;
 
 namespace drake {
