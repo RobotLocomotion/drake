@@ -84,7 +84,7 @@ and  ``WITH_GFLAGS``, which should be set to ``ON``.
 | Operating System             | Build Systems    | Compilers          | Superbuild Deps   | Build   |
 +==============================+==================+====================+===================+=========+
 | Ubuntu 14.04 LTS ("Trusty")  | CMake 3.5        | | GCC 4.9          | Minimal           | Debug   |
-|                              |                  | | Java 1.7         |                   +---------+
+|                              |                  | | Java 1.8         |                   +---------+
 |                              |                  |                    |                   | Release |
 |                              |                  |                    +-------------------+---------+
 |                              |                  |                    | Default           | Debug   |
