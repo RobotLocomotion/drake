@@ -1,16 +1,17 @@
 #include "drake/common/symbolic_expression.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <iostream>
 #include <map>
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression_cell.h"
+#include "drake/common/symbolic_formula.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
 
