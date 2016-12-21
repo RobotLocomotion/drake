@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/symbolic_decision_variable.h"
 #include "drake/common/symbolic_indeterminate.h"
 #include "drake/common/symbolic_variable_cell.h"
 
@@ -12,6 +13,7 @@ using std::make_shared;
 using std::ostream;
 using std::ostringstream;
 using std::shared_ptr;
+using std::static_pointer_cast;
 using std::string;
 
 namespace drake {
@@ -94,5 +96,24 @@ bool operator<(const Variable& lhs, const Variable& rhs) {
 bool operator==(const Variable& lhs, const Variable& rhs) {
   return lhs.equal_to(rhs);
 }
+
+bool is_indeterminate(const Variable& var) {
+  return var.kind() == VariableKind::Indeterminate;
+}
+
+bool is_decision_variable_scalar(const Variable& var) {
+  return var.kind() == VariableKind::DecisionVariableScalar;
+}
+
+Indeterminate get_indeterminate(const Variable& var) {
+  DRAKE_ASSERT(is_indeterminate(var));
+  return *(static_pointer_cast<Indeterminate>(var.ptr_));
+}
+
+DecisionVariableScalar get_decision_variable_scalar(const Variable& var) {
+  DRAKE_ASSERT(is_decision_variable_scalar(var));
+  return *(static_pointer_cast<DecisionVariableScalar>(var.ptr_));
+}
+
 }  // namespace symbolic
 }  // namespace drake
