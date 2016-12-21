@@ -143,6 +143,7 @@ cc_test(
     data = [
         ":test_models",
         "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/multibody:test_models",
     ],
     linkstatic = 1,
     deps = [
