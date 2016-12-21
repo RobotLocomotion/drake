@@ -13,8 +13,11 @@ class MySpringMassSystem : public SpringMassSystem<T> {
  public:
   // Pass through to SpringMassSystem, except add update rate
   MySpringMassSystem(double stiffness, double mass, double update_rate)
-      : SpringMassSystem<T>(stiffness, mass, false /*no input force*/),
-        update_rate_(update_rate) {}
+      : SpringMassSystem<T>(stiffness, mass, false /*no input force*/) {
+    if (update_rate > 0.0) {
+      this->DeclareUpdatePeriodSec(1.0 / update_rate);
+    }
+  }
 
   int get_publish_count() const { return publish_count_; }
 
@@ -43,35 +46,6 @@ class MySpringMassSystem : public SpringMassSystem<T> {
     const override {
     ++update_count_;
   }
-
-  // Force a update at the next multiple of the sample rate. If current
-  // time is exactly at a update time, we assume the update has been
-  // done and return the following update time. That means we don't get a
-  // sample at 0 but will get one at the end.
-  void DoCalcNextUpdateTime(const Context<T>& context,
-                            UpdateActions<T>* actions) const override {
-    if (update_rate_ <= 0.) {
-      actions->time = std::numeric_limits<double>::infinity();
-      return;
-    }
-
-    // For reliable behavior, convert floating point times into integer
-    // sample counts. We want the ceiling unless same as the floor.
-    const int prev =
-        static_cast<int>(std::floor(context.get_time() * update_rate_));
-    const int next =
-        static_cast<int>(std::ceil(context.get_time() * update_rate_));
-    const int which = next == prev ? next + 1 : next;
-
-    // Convert the next update count back to a time to return.
-    const double next_update = which / update_rate_;
-    actions->time = next_update;
-    actions->events.clear();
-    actions->events.push_back(DiscreteEvent<T>());
-    actions->events.back().action = DiscreteEvent<T>::kUpdateAction;
-  }
-
-  double update_rate_{0.};  // Default is "don't update".
 
   mutable int publish_count_{0};
   mutable int update_count_{0};
