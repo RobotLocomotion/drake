@@ -48,15 +48,6 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
   /// This system is not direct feedthrough.
   bool has_any_direct_feedthrough() const override { return false; }
 
-  /// Advance the state estimate using forward dynamics and the observer gains.
-  void EvalTimeDerivatives(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const override;
-
-  /// Outputs the estimated state.
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
-
   /// Provides access to the observer gain.
   const Eigen::MatrixXd& observer_gain() { return observer_gain_; }
 
@@ -64,6 +55,15 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
   const Eigen::MatrixXd& L() { return observer_gain_; }
 
  private:
+  // Advance the state estimate using forward dynamics and the observer gains.
+  void DoCalcTimeDerivatives(
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const override;
+
+  // Outputs the estimated state.
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
+
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
       const override;
 

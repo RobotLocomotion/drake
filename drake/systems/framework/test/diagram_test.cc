@@ -208,20 +208,20 @@ TEST_F(DiagramTest, GetMutableSubsystemState) {
   EXPECT_EQ(27, xc[2]);
 }
 // Tests that the diagram computes the correct sum.
-TEST_F(DiagramTest, EvalOutput) {
+TEST_F(DiagramTest, CalcOutput) {
   AttachInputs();
-  diagram_->EvalOutput(*context_, output_.get());
+  diagram_->CalcOutput(*context_, output_.get());
 
   ASSERT_EQ(kSize, output_->get_num_ports());
   ExpectDefaultOutputs();
 }
 
-TEST_F(DiagramTest, EvalTimeDerivatives) {
+TEST_F(DiagramTest, CalcTimeDerivatives) {
   AttachInputs();
   std::unique_ptr<ContinuousState<double>> derivatives =
       diagram_->AllocateTimeDerivatives();
 
-  diagram_->EvalTimeDerivatives(*context_, derivatives.get());
+  diagram_->CalcTimeDerivatives(*context_, derivatives.get());
 
   ASSERT_EQ(6, derivatives->size());
   ASSERT_EQ(0, derivatives->get_generalized_position().size());
@@ -275,7 +275,7 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
   context->FixInputPort(1, std::move(input1));
   context->FixInputPort(2, std::move(input2));
 
-  ad_diagram->EvalOutput(*context, output.get());
+  ad_diagram->CalcOutput(*context, output.get());
   ASSERT_EQ(kSize, output->get_num_ports());
 
   // Spot-check some values and gradients.
@@ -314,7 +314,7 @@ TEST_F(DiagramTest, Clone) {
   context_->FixInputPort(2, std::move(input2_));
 
   // Compute the output with the default inputs and sanity-check it.
-  diagram_->EvalOutput(*context_, output_.get());
+  diagram_->CalcOutput(*context_, output_.get());
   ExpectDefaultOutputs();
 
   // Create a clone of the context and change an input.
@@ -325,7 +325,7 @@ TEST_F(DiagramTest, Clone) {
   clone->FixInputPort(0, std::move(next_input_0));
 
   // Recompute the output and check the values.
-  diagram_->EvalOutput(*clone, output_.get());
+  diagram_->CalcOutput(*clone, output_.get());
 
   Eigen::Vector3d expected_output0;
   expected_output0 << 3 + 8 + 64, 6 + 16 + 128, 9 + 32 + 256;  // B
@@ -345,7 +345,7 @@ TEST_F(DiagramTest, Clone) {
   EXPECT_EQ(expected_output1[2], output1->get_value()[2]);
 
   // Check that the context that was cloned is unaffected.
-  diagram_->EvalOutput(*context_, output_.get());
+  diagram_->CalcOutput(*context_, output_.get());
   ExpectDefaultOutputs();
 }
 
@@ -432,7 +432,7 @@ class DiagramOfDiagramsTest : public ::testing::Test {
 
 // Tests that a diagram composed of diagrams can be evaluated.
 TEST_F(DiagramOfDiagramsTest, EvalOutput) {
-  diagram_->EvalOutput(*context_, output_.get());
+  diagram_->CalcOutput(*context_, output_.get());
   // The outputs of subsystem0_ are:
   //   output0 = 8 + 64 + 512 = 584
   //   output1 = output0 + 8 + 64 = 656
@@ -478,7 +478,7 @@ GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
   vec->get_mutable_value() << 12.0;
   context->FixInputPort(0, std::move(vec));
 
-  plus_seven.EvalOutput(*context, output.get());
+  plus_seven.CalcOutput(*context, output.get());
 
   ASSERT_EQ(1, output->get_num_ports());
   const BasicVector<double>* output_vector = output->get_vector_data(0);
@@ -495,10 +495,10 @@ class PublishingSystem : public LeafSystem<double> {
     this->DeclareInputPort(kVectorValued, 1);
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {}
-
  protected:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+
   void DoPublish(const Context<double>& context) const override {
     CheckValidContext(context);
     callback_(this->EvalVectorInput(context, 0)->get_value()[0]);
@@ -605,15 +605,15 @@ class SecondOrderStateSystem : public LeafSystem<double> {
  public:
   SecondOrderStateSystem() { DeclareInputPort(kVectorValued, 1); }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {}
-
   SecondOrderStateVector* x(Context<double>* context) const {
     return dynamic_cast<SecondOrderStateVector*>(
         context->get_mutable_continuous_state_vector());
   }
 
  protected:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+
   std::unique_ptr<ContinuousState<double>> AllocateContinuousState()
       const override {
     return std::make_unique<ContinuousState<double>>(
@@ -717,12 +717,13 @@ class TestPublishingSystem : public LeafSystem<double> {
 
   ~TestPublishingSystem() override {}
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {}
 
   bool published() { return published_; }
 
  protected:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+
   void DoPublish(const Context<double>& context) const override {
     published_ = true;
   }
@@ -818,7 +819,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 
   // Fast forward to 9.0 sec and do the update.
   context_->set_time(9.0);
-  diagram_.EvalDiscreteVariableUpdates(*context_,
+  diagram_.CalcDiscreteVariableUpdates(*context_,
                                        actions.events[0],
                                        updates.get());
   context_->get_mutable_discrete_state()->SetFrom(*updates);
@@ -837,7 +838,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 
   // Fast forward to 12.0 sec and do the update again.
   context_->set_time(12.0);
-  diagram_.EvalDiscreteVariableUpdates(*context_,
+  diagram_.CalcDiscreteVariableUpdates(*context_,
                                        actions.events[0],
                                        updates.get());
   context_->get_mutable_discrete_state()->SetFrom(*updates);

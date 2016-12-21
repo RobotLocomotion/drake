@@ -50,14 +50,14 @@ PendulumPlant<T>::AllocateContinuousState() const {
 }
 
 template <typename T>
-void PendulumPlant<T>::EvalOutput(const systems::Context<T>& context,
-                                   systems::SystemOutput<T>* output) const {
+void PendulumPlant<T>::DoCalcOutput(const systems::Context<T>& context,
+                                    systems::SystemOutput<T>* output) const {
   get_mutable_output(output)->set_value(get_state(context).get_value());
 }
 
 // Compute the actual physics.
 template <typename T>
-void PendulumPlant<T>::EvalTimeDerivatives(
+void PendulumPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));

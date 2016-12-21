@@ -31,12 +31,12 @@ class TrajectorySource : public LeafSystem<T> {
   /// system.
   explicit TrajectorySource(const Trajectory& trajectory);
 
-  /// Outputs a signal using the time-varying trajectory specified in the
-  /// constructor.
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override;
-
  private:
+  // Outputs a signal using the time-varying trajectory specified in the
+  // constructor.
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override;
+
   const Trajectory& trajectory_;
 };
 

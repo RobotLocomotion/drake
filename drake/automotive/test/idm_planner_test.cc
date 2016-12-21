@@ -65,7 +65,7 @@ TEST_F(IdmPlannerTest, Topology) {
 // Set the initial states such that the agent and ego start at the
 // headway distance, both at the desired speed.
 TEST_F(IdmPlannerTest, SameSpeedAtHeadwayDistance) {
-  // Define a pointer to where the EvalOutput results are stored.
+  // Define a pointer to where the CalcOutput results are stored.
   const auto result = output_->get_vector_data(0);
   ASSERT_NE(nullptr, result);
 
@@ -76,7 +76,7 @@ TEST_F(IdmPlannerTest, SameSpeedAtHeadwayDistance) {
                                IdmPlannerTest::get_v_0()};
   // Set the inputs to IdmPlanner.
   SetInputValue(state);
-  dut_->EvalOutput(*context_, output_.get());
+  dut_->CalcOutput(*context_, output_.get());
   // Expect there to be no acceleration or deceleration.
   EXPECT_NEAR(result->GetAtIndex(0), 0.0, 1e-2);
 }
@@ -84,7 +84,7 @@ TEST_F(IdmPlannerTest, SameSpeedAtHeadwayDistance) {
 // Set the initial states such that the agent and ego start within the
 // headway distance, both at the desired speed.
 TEST_F(IdmPlannerTest, SameSpeedBelowHeadwayDistance) {
-  // Define a pointer to where the EvalOutput results are stored.
+  // Define a pointer to where the CalcOutput results are stored.
   const auto result = output_->get_vector_data(0);
   ASSERT_NE(nullptr, result);
 
@@ -92,7 +92,7 @@ TEST_F(IdmPlannerTest, SameSpeedBelowHeadwayDistance) {
                                IdmPlannerTest::get_v_0()};
   // Set the inputs to IdmPlanner.
   SetInputValue(state);
-  dut_->EvalOutput(*context_, output_.get());
+  dut_->CalcOutput(*context_, output_.get());
   // Expect the car to decelerate.
   EXPECT_LE(result->GetAtIndex(0), -1e-2);
 }
@@ -100,14 +100,14 @@ TEST_F(IdmPlannerTest, SameSpeedBelowHeadwayDistance) {
 // Set the initial states such that the agent and ego start close
 // together at different speeds.
 TEST_F(IdmPlannerTest, DifferentSpeedsBelowHeadwayDistance) {
-  // Define a pointer to where the EvalOutput results are stored.
+  // Define a pointer to where the CalcOutput results are stored.
   const auto result = output_->get_vector_data(0);
   ASSERT_NE(nullptr, result);
 
   std::vector<double> state = {0.0, 7.0, 6.0, 4.0};
   // Set the inputs to IdmPlanner.
   SetInputValue(state);
-  dut_->EvalOutput(*context_, output_.get());
+  dut_->CalcOutput(*context_, output_.get());
   // Expect the car to decelerate.
   EXPECT_LE(result->GetAtIndex(0), -1e-2);
 }
@@ -115,14 +115,14 @@ TEST_F(IdmPlannerTest, DifferentSpeedsBelowHeadwayDistance) {
 // Set the agent and ego sufficiently far apart from one another, with
 // the ego car initially at the desired speed.  set-point.
 TEST_F(IdmPlannerTest, EgoAtDesiredSpeed) {
-  // Define a pointer to where the EvalOutput results are stored.
+  // Define a pointer to where the CalcOutput results are stored.
   const auto result = output_->get_vector_data(0);
   ASSERT_NE(nullptr, result);
 
   std::vector<double> state = {0.0, IdmPlannerTest::get_v_0(), 1e6, 0.0};
   // Set the inputs to IdmPlanner.
   SetInputValue(state);
-  dut_->EvalOutput(*context_, output_.get());
+  dut_->CalcOutput(*context_, output_.get());
   // Expect there to be no acceleration or deceleration.
   EXPECT_NEAR(result->GetAtIndex(0), 0.0, 1e-2);
 }
@@ -130,14 +130,14 @@ TEST_F(IdmPlannerTest, EgoAtDesiredSpeed) {
 // Set the agent and ego sufficiently far apart from one another, with
 // the ego car speed initially zero.  set-point.
 TEST_F(IdmPlannerTest, EgoStartFromRest) {
-  // Define a pointer to where the EvalOutput results are stored.
+  // Define a pointer to where the CalcOutput results are stored.
   const auto result = output_->get_vector_data(0);
   ASSERT_NE(nullptr, result);
 
   std::vector<double> state = {0.0, 0.0, 1e6, 0.0};
   // Set the inputs to IdmPlanner.
   SetInputValue(state);
-  dut_->EvalOutput(*context_, output_.get());
+  dut_->CalcOutput(*context_, output_.get());
   // Expect the car to accelerate.
   EXPECT_GE(result->GetAtIndex(0), 1e-2);
 }

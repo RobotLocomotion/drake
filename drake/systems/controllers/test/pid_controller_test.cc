@@ -78,12 +78,12 @@ TEST_F(PidControllerTest, GetterVectors) {
 }
 
 // Evaluates the output and asserts correctness.
-TEST_F(PidControllerTest, EvalOutput) {
+TEST_F(PidControllerTest, CalcOutput) {
   ASSERT_NE(nullptr, context_);
   ASSERT_NE(nullptr, output_);
 
   // Evaluates the output.
-  controller_.EvalOutput(*context_, output_.get());
+  controller_.CalcOutput(*context_, output_.get());
   ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_vector = output_->get_vector_data(0);
   EXPECT_EQ(3, output_vector->size());
@@ -95,7 +95,7 @@ TEST_F(PidControllerTest, EvalOutput) {
   VectorX<double> integral_value(port_size_);
   integral_value << 3.0, 2.0, 1.0;
   controller_.set_integral_value(context_.get(), integral_value);
-  controller_.EvalOutput(*context_, output_.get());
+  controller_.CalcOutput(*context_, output_.get());
   EXPECT_EQ(
       (kp_.array() * error_signal_.array() +
        ki_.array() * integral_value.array() +
@@ -104,12 +104,12 @@ TEST_F(PidControllerTest, EvalOutput) {
 }
 
 // Evaluates derivatives and asserts correctness.
-TEST_F(PidControllerTest, EvalTimeDerivatives) {
+TEST_F(PidControllerTest, CalcTimeDerivatives) {
   ASSERT_NE(nullptr, context_);
   ASSERT_NE(nullptr, derivatives_);
 
   // Evaluates the derivatives.
-  controller_.EvalTimeDerivatives(*context_, derivatives_.get());
+  controller_.CalcTimeDerivatives(*context_, derivatives_.get());
   ASSERT_EQ(3, derivatives_->size());
   ASSERT_EQ(0, derivatives_->get_generalized_position().size());
   ASSERT_EQ(0, derivatives_->get_generalized_velocity().size());

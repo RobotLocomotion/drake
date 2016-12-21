@@ -183,7 +183,7 @@ void VerifyDiagram(const Diagram<double>& dut, const VectorXd& desired_state,
   const BasicVector<double>* output_state = output->get_vector_data(0);
   ASSERT_NE(nullptr, output_state);
 
-  dut.EvalOutput(*context, output.get());
+  dut.CalcOutput(*context, output.get());
   dut.Publish(*context);
 
   // Asserts the output equals the state.

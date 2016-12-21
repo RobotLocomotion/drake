@@ -57,7 +57,7 @@ TEST_F(LinearSystemTest, Derivatives) {
   state_->SetFromVector(x);
 
   EXPECT_NE(derivatives_, nullptr);
-  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
 
   Eigen::VectorXd expected_derivatives(2);
   expected_derivatives = A_ * x + B_ * u;
@@ -75,7 +75,7 @@ TEST_F(LinearSystemTest, Output) {
   Eigen::Vector2d x(0.8, -22.1);
   state_->SetFromVector(x);
 
-  dut_->EvalOutput(*context_, system_output_.get());
+  dut_->CalcOutput(*context_, system_output_.get());
 
   Eigen::VectorXd expected_output(2);
 

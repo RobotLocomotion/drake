@@ -163,7 +163,7 @@ class SpringMassSystem : public LeafSystem<T> {
   ///            = -f v.
   /// @endverbatim
   /// Energy is in joules J (N-m).
-  T EvalPotentialEnergy(const MyContext& context) const override;
+  T DoCalcPotentialEnergy(const MyContext& context) const override;
 
   /// Returns the current kinetic energy of the moving mass in the given
   /// Context. This is `ke = m v^2 / 2` for this system. The rate of change of
@@ -177,7 +177,7 @@ class SpringMassSystem : public LeafSystem<T> {
   /// @endverbatim
   /// (assuming the only force is due to the spring). Energy is in joules.
   /// @see EvalSpringForce(), EvalPotentialEnergy()
-  T EvalKineticEnergy(const MyContext& context) const override;
+  T DoCalcKineticEnergy(const MyContext& context) const override;
 
   /// Returns the rate at which mechanical energy is being converted from
   /// potential energy in the spring to kinetic energy of the mass by this
@@ -189,7 +189,7 @@ class SpringMassSystem : public LeafSystem<T> {
   /// @endverbatim
   /// This quantity is positive when the spring is accelerating the mass and
   /// negative when the spring is decelerating the mass.
-  T EvalConservativePower(const MyContext& context) const override;
+  T DoCalcConservativePower(const MyContext& context) const override;
 
   // TODO(sherm1) Currently this is a conservative system so there is no power
   // generated or consumed. Add some kind of dissipation and/or actuation to
@@ -198,16 +198,17 @@ class SpringMassSystem : public LeafSystem<T> {
 
   /// Returns power that doesn't involve the conservative spring element. (There
   /// is none in this system.)
-  T EvalNonConservativePower(const MyContext& context) const override;
+  T DoCalcNonConservativePower(const MyContext& context) const override;
 
   // System<T> overrides.
   /// Allocates a single output port of type SpringMassStateVector<T>.
   std::unique_ptr<MyOutput> AllocateOutput(
       const MyContext& context) const override;
-  void EvalOutput(const MyContext& context, MyOutput* output) const override;
 
-  void EvalTimeDerivatives(const MyContext& context,
-                           MyContinuousState* derivatives) const override;
+  void DoCalcOutput(const MyContext& context, MyOutput* output) const override;
+
+  void DoCalcTimeDerivatives(const MyContext& context,
+                             MyContinuousState* derivatives) const override;
 
  protected:
   // LeafSystem<T> override.

@@ -75,8 +75,8 @@ const SystemPortDescriptor<T>& AffineSystem<T>::get_output_port() const {
 }
 
 template <typename T>
-void AffineSystem<T>::EvalOutput(const Context<T>& context,
-                                 SystemOutput<T>* output) const {
+void AffineSystem<T>::DoCalcOutput(const Context<T>& context,
+                                   SystemOutput<T>* output) const {
   if (num_outputs_ == 0) return;
 
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
@@ -101,7 +101,7 @@ void AffineSystem<T>::EvalOutput(const Context<T>& context,
 }
 
 template <typename T>
-void AffineSystem<T>::EvalTimeDerivatives(
+void AffineSystem<T>::DoCalcTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
   if (num_states_ == 0 || time_period_ > 0.0) return;
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
@@ -123,7 +123,7 @@ void AffineSystem<T>::EvalTimeDerivatives(
 }
 
 template <typename T>
-void AffineSystem<T>::DoEvalDiscreteVariableUpdates(
+void AffineSystem<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context,
     drake::systems::DiscreteState<T>* updates) const {
   if (num_states_ == 0 || time_period_ == 0.0) return;

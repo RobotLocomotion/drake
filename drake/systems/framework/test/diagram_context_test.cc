@@ -36,8 +36,8 @@ class AbstractStateSystem : public LeafSystem<double> {
     return std::make_unique<AbstractState>(std::move(values));
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {}
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
 };
 
 class DiagramContextTest : public ::testing::Test {

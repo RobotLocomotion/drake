@@ -44,13 +44,6 @@ class LinearCar : public systems::LeafSystem<T> {
   // Declare that the outputs are all algebraically isolated from the input.
   bool has_any_direct_feedthrough() const override { return false; }
 
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
-
-  void EvalTimeDerivatives(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const override;
-
   // Disable copy and assignment.
   LinearCar(const LinearCar<T>&) = delete;
   LinearCar& operator=(const LinearCar<T>&) = delete;
@@ -58,6 +51,13 @@ class LinearCar : public systems::LeafSystem<T> {
   LinearCar& operator=(LinearCar<T>&&) = delete;
 
  private:
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
+
+  void DoCalcTimeDerivatives(
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const override;
+
   const T x_init_;
   const T v_init_;
 };

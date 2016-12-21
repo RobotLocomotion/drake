@@ -56,13 +56,12 @@ class DrakeVisualizer : public LeafSystem<double> {
   DrakeVisualizer(const RigidBodyTree<double>& tree,
       drake::lcm::DrakeLcmInterface* lcm);
 
-  void EvalOutput(const systems::Context<double>& context,
-                  systems::SystemOutput<double>* output) const override {}
+ private:
+  void DoCalcOutput(const systems::Context<double>& context,
+                    systems::SystemOutput<double>* output) const override {}
 
- protected:
   void DoPublish(const systems::Context<double>& context) const override;
 
- private:
   // Returns a partially-initialized lcmt_viewer_load_robot message. After this
   // method is called, all dynamically-sized member variables are correctly
   // sized, and the names and model instance IDs of the rigid bodies are set

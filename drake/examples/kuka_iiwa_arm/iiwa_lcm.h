@@ -17,8 +17,8 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
  public:
   IiwaCommandReceiver();
 
-  void EvalOutput(const systems::Context<double>& context,
-                  systems::SystemOutput<double>* output) const override;
+  void DoCalcOutput(const systems::Context<double>& context,
+                    systems::SystemOutput<double>* output) const override;
 };
 
 /// Sends lcmt_iiwa_status messages.  This system has two input ports,
@@ -41,8 +41,8 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
   std::unique_ptr<systems::SystemOutput<double>> AllocateOutput(
       const systems::Context<double>& context) const override;
 
-  void EvalOutput(const systems::Context<double>& context,
-                  systems::SystemOutput<double>* output) const override;
+  void DoCalcOutput(const systems::Context<double>& context,
+                    systems::SystemOutput<double>* output) const override;
 };
 
 }  // namespace kuka_iiwa_arm

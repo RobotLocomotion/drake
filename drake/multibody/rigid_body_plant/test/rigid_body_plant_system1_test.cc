@@ -99,7 +99,7 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   // Computes time derivatives to compare against rbs1 dynamics.
   //////////////////////////////////////////////////////////////////////////////
   auto rbs1_xdot = rbs1->dynamics(0.0, x0, u);
-  rbs2->EvalTimeDerivatives(*context, derivatives.get());
+  rbs2->CalcTimeDerivatives(*context, derivatives.get());
   auto rbs2_xdot = derivatives->CopyToVector();
 
   //////////////////////////////////////////////////////////////////////////////

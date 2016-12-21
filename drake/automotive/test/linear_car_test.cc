@@ -57,18 +57,18 @@ TEST_F(LinearCarTest, Output) {
   input_->get_mutable_value() << 1.7;
   context_->FixInputPort(0, std::move(input_));
 
-  // Define a pointer to where the EvalOutput results end up.
+  // Define a pointer to where the CalcOutput results end up.
   auto result = output_->get_vector_data(0);
 
   // Expect the state and output vectors are all zeros initially.
-  dut_->EvalOutput(*context_, output_.get());
+  dut_->CalcOutput(*context_, output_.get());
   EXPECT_EQ(0.0, result->GetAtIndex(0));
   EXPECT_EQ(0.0, result->GetAtIndex(1));
 
   // New state propagates to the output.
   (*continuous_state()->get_mutable_generalized_position())[0] = 1.0;
   (*continuous_state()->get_mutable_generalized_velocity())[0] = 2.0;
-  dut_->EvalOutput(*context_, output_.get());
+  dut_->CalcOutput(*context_, output_.get());
   EXPECT_EQ(1.0, result->GetAtIndex(0));
   EXPECT_EQ(2.0, result->GetAtIndex(1));
 }
@@ -82,14 +82,14 @@ TEST_F(LinearCarTest, Derivatives) {
   auto result = derivatives_->get_mutable_vector();
 
   // Starting derivatives are almost all zeros, except for ego car velocity.
-  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(0.0, result->GetAtIndex(0));
   EXPECT_EQ(7.4, result->GetAtIndex(1));
 
   // Test at a nontrivial initial condition.
   (*continuous_state()->get_mutable_generalized_position())[0] = 4.2;
   (*continuous_state()->get_mutable_generalized_velocity())[0] = 5.3;
-  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(5.3, result->GetAtIndex(0));
   EXPECT_EQ(7.4, result->GetAtIndex(1));
 }

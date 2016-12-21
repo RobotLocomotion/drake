@@ -40,15 +40,15 @@ class RobotCommandToDesiredEffortConverter
   RobotCommandToDesiredEffortConverter& operator=(
       const RobotCommandToDesiredEffortConverter&) = delete;
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override;
-
   /// Descriptor of output port that presents desired effort for @param
   /// actuator.
   const SystemPortDescriptor<double>& desired_effort_output_port(
       const RigidBodyActuator& actuator) const;
 
  private:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override;
+
   int robot_command_port_index_;
   const std::map<const RigidBodyActuator*, int> desired_effort_port_indices_;
   const std::map<std::string, const RigidBodyActuator*> name_to_actuator_;
