@@ -2,12 +2,10 @@
 
 #include <algorithm>  // for cpplint only
 #include <cstddef>
-#include <functional>
 #include <map>
 #include <memory>
 #include <ostream>
 #include <string>
-#include <utility>
 
 #include <Eigen/Core>
 

@@ -1,22 +1,20 @@
 #pragma once
 
 #include <cstddef>
-#include <list>
-#include <memory>
+#include <functional>
 #include <ostream>
 #include <string>
-#include <type_traits>
-#include <unordered_set>
-#include <vector>
 
+#include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
+#include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variable_cell.h"
 
 #include <Eigen/Core>
 
 namespace drake {
 namespace solvers {
-class MathematicalProgram;
+class MathematicalProgram;  // In drake/solvers/mathematical_program.h
 }  // namespace solvers
 namespace symbolic {
 /**
