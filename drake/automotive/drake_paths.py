@@ -16,7 +16,7 @@ DRAKE_DIST_BUILD_DIR = os.getenv(
 DRAKE_INSTALL_BIN_DIR = os.path.join(DRAKE_DIST_BUILD_DIR, "install", "bin")
 
 if not os.path.exists(DRAKE_INSTALL_BIN_DIR):
-    raise RuntimeError(
+    print >>sys.stderr, (
         "cannot find DRAKE_DIST_BUILD_DIR at " + DRAKE_DIST_BUILD_DIR)
 
 DRAKE_DRAKE_BUILD_DIR = os.path.join(DRAKE_DIST_BUILD_DIR, "drake")
