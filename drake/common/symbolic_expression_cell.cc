@@ -146,10 +146,7 @@ double ExpressionVar::Evaluate(const Environment& env) const {
   }
 }
 
-ostream& ExpressionVar::Display(ostream& os) const {
-  os << var_;
-  return os;
-}
+ostream& ExpressionVar::Display(ostream& os) const { return os << var_; }
 
 ExpressionConstant::ExpressionConstant(const double v)
     : ExpressionCell{ExpressionKind::Constant, hash<double>{}(v)}, v_{v} {
@@ -178,16 +175,14 @@ double ExpressionConstant::Evaluate(const Environment& env) const {
 ostream& ExpressionConstant::Display(ostream& os) const {
   ostringstream oss;
   oss << setprecision(numeric_limits<double>::max_digits10) << v_;
-  os << oss.str();
-  return os;
+  return os << oss.str();
 }
 
 ExpressionNeg::ExpressionNeg(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Neg, e} {}
 
 ostream& ExpressionNeg::Display(ostream& os) const {
-  os << "-(" << get_argument() << ")";
-  return os;
+  return os << "-(" << get_argument() << ")";
 }
 
 double ExpressionNeg::DoEvaluate(const double v) const { return -v; }
@@ -617,8 +612,8 @@ ExpressionDiv::ExpressionDiv(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Div, e1, e2} {}
 
 ostream& ExpressionDiv::Display(ostream& os) const {
-  os << "(" << get_first_argument() << " / " << get_second_argument() << ")";
-  return os;
+  return os << "(" << get_first_argument() << " / " << get_second_argument()
+            << ")";
 }
 
 double ExpressionDiv::DoEvaluate(const double v1, const double v2) const {
@@ -644,8 +639,7 @@ void ExpressionLog::check_domain(const double v) {
 }
 
 ostream& ExpressionLog::Display(ostream& os) const {
-  os << "log(" << get_argument() << ")";
-  return os;
+  return os << "log(" << get_argument() << ")";
 }
 
 double ExpressionLog::DoEvaluate(const double v) const {
@@ -657,8 +651,7 @@ ExpressionAbs::ExpressionAbs(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Abs, e} {}
 
 ostream& ExpressionAbs::Display(ostream& os) const {
-  os << "abs(" << get_argument() << ")";
-  return os;
+  return os << "abs(" << get_argument() << ")";
 }
 
 double ExpressionAbs::DoEvaluate(const double v) const { return std::fabs(v); }
@@ -667,8 +660,7 @@ ExpressionExp::ExpressionExp(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Exp, e} {}
 
 ostream& ExpressionExp::Display(ostream& os) const {
-  os << "exp(" << get_argument() << ")";
-  return os;
+  return os << "exp(" << get_argument() << ")";
 }
 
 double ExpressionExp::DoEvaluate(const double v) const { return std::exp(v); }
@@ -686,8 +678,7 @@ void ExpressionSqrt::check_domain(const double v) {
 }
 
 ostream& ExpressionSqrt::Display(ostream& os) const {
-  os << "sqrt(" << get_argument() << ")";
-  return os;
+  return os << "sqrt(" << get_argument() << ")";
 }
 
 double ExpressionSqrt::DoEvaluate(const double v) const {
@@ -715,8 +706,8 @@ void ExpressionPow::check_domain(const double v1, const double v2) {
 }
 
 ostream& ExpressionPow::Display(ostream& os) const {
-  os << "pow(" << get_first_argument() << ", " << get_second_argument() << ")";
-  return os;
+  return os << "pow(" << get_first_argument() << ", " << get_second_argument()
+            << ")";
 }
 
 double ExpressionPow::DoEvaluate(const double v1, const double v2) const {
@@ -728,8 +719,7 @@ ExpressionSin::ExpressionSin(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Sin, e} {}
 
 ostream& ExpressionSin::Display(ostream& os) const {
-  os << "sin(" << get_argument() << ")";
-  return os;
+  return os << "sin(" << get_argument() << ")";
 }
 
 double ExpressionSin::DoEvaluate(const double v) const { return std::sin(v); }
@@ -738,8 +728,7 @@ ExpressionCos::ExpressionCos(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Cos, e} {}
 
 ostream& ExpressionCos::Display(ostream& os) const {
-  os << "cos(" << get_argument() << ")";
-  return os;
+  return os << "cos(" << get_argument() << ")";
 }
 
 double ExpressionCos::DoEvaluate(const double v) const { return std::cos(v); }
@@ -748,8 +737,7 @@ ExpressionTan::ExpressionTan(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Tan, e} {}
 
 ostream& ExpressionTan::Display(ostream& os) const {
-  os << "tan(" << get_argument() << ")";
-  return os;
+  return os << "tan(" << get_argument() << ")";
 }
 
 double ExpressionTan::DoEvaluate(const double v) const { return std::tan(v); }
@@ -767,8 +755,7 @@ void ExpressionAsin::check_domain(const double v) {
 }
 
 ostream& ExpressionAsin::Display(ostream& os) const {
-  os << "asin(" << get_argument() << ")";
-  return os;
+  return os << "asin(" << get_argument() << ")";
 }
 
 double ExpressionAsin::DoEvaluate(const double v) const {
@@ -789,8 +776,7 @@ void ExpressionAcos::check_domain(const double v) {
 }
 
 ostream& ExpressionAcos::Display(ostream& os) const {
-  os << "acos(" << get_argument() << ")";
-  return os;
+  return os << "acos(" << get_argument() << ")";
 }
 
 double ExpressionAcos::DoEvaluate(const double v) const {
@@ -802,8 +788,7 @@ ExpressionAtan::ExpressionAtan(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Atan, e} {}
 
 ostream& ExpressionAtan::Display(ostream& os) const {
-  os << "atan(" << get_argument() << ")";
-  return os;
+  return os << "atan(" << get_argument() << ")";
 }
 
 double ExpressionAtan::DoEvaluate(const double v) const { return std::atan(v); }
@@ -812,9 +797,8 @@ ExpressionAtan2::ExpressionAtan2(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Atan2, e1, e2} {}
 
 ostream& ExpressionAtan2::Display(ostream& os) const {
-  os << "atan2(" << get_first_argument() << ", " << get_second_argument()
-     << ")";
-  return os;
+  return os << "atan2(" << get_first_argument() << ", " << get_second_argument()
+            << ")";
 }
 
 double ExpressionAtan2::DoEvaluate(const double v1, const double v2) const {
@@ -825,8 +809,7 @@ ExpressionSinh::ExpressionSinh(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Sinh, e} {}
 
 ostream& ExpressionSinh::Display(ostream& os) const {
-  os << "sinh(" << get_argument() << ")";
-  return os;
+  return os << "sinh(" << get_argument() << ")";
 }
 
 double ExpressionSinh::DoEvaluate(const double v) const { return std::sinh(v); }
@@ -835,8 +818,7 @@ ExpressionCosh::ExpressionCosh(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Cosh, e} {}
 
 ostream& ExpressionCosh::Display(ostream& os) const {
-  os << "cosh(" << get_argument() << ")";
-  return os;
+  return os << "cosh(" << get_argument() << ")";
 }
 
 double ExpressionCosh::DoEvaluate(const double v) const { return std::cosh(v); }
@@ -845,8 +827,7 @@ ExpressionTanh::ExpressionTanh(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Tanh, e} {}
 
 ostream& ExpressionTanh::Display(ostream& os) const {
-  os << "tanh(" << get_argument() << ")";
-  return os;
+  return os << "tanh(" << get_argument() << ")";
 }
 
 double ExpressionTanh::DoEvaluate(const double v) const { return std::tanh(v); }
@@ -855,8 +836,8 @@ ExpressionMin::ExpressionMin(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Min, e1, e2} {}
 
 ostream& ExpressionMin::Display(ostream& os) const {
-  os << "min(" << get_first_argument() << ", " << get_second_argument() << ")";
-  return os;
+  return os << "min(" << get_first_argument() << ", " << get_second_argument()
+            << ")";
 }
 
 double ExpressionMin::DoEvaluate(const double v1, const double v2) const {
@@ -867,8 +848,8 @@ ExpressionMax::ExpressionMax(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Max, e1, e2} {}
 
 ostream& ExpressionMax::Display(ostream& os) const {
-  os << "max(" << get_first_argument() << ", " << get_second_argument() << ")";
-  return os;
+  return os << "max(" << get_first_argument() << ", " << get_second_argument()
+            << ")";
 }
 
 double ExpressionMax::DoEvaluate(const double v1, const double v2) const {
@@ -932,8 +913,8 @@ double ExpressionIfThenElse::Evaluate(const Environment& env) const {
 }
 
 ostream& ExpressionIfThenElse::Display(ostream& os) const {
-  os << "(if " << f_cond_ << " then " << e_then_ << " else " << e_else_ << ")";
-  return os;
+  return os << "(if " << f_cond_ << " then " << e_then_ << " else " << e_else_
+            << ")";
 }
 
 bool is_constant(const ExpressionCell& c) {
