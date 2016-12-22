@@ -21,136 +21,160 @@ namespace utility {
 
 namespace {
 
-template <class T> struct LocalHash;
-
-template <class T>
-class IndexMap {
+template <class T, class Hash, class KeyEqual>
+class UniqueIndexer {
  public:
-  IndexMap() {}
+  UniqueIndexer() {}
 
   int push_back(const T& thing) {
     auto mi = map_.find(thing);
     if (mi != map_.end()) {
       return mi->second;
     }
-    int index = vec_.size();
-    map_[thing] = index;
-    vec_.push_back(thing);
+    const int index = vector_.size();
+    auto it = map_.emplace(thing, index).first;
+    vector_.push_back(&(it->first));
     return index;
   }
 
-  const std::vector<T>& vector() const { return vec_; }
+  const std::vector<const T*>& vector() const { return vector_; }
 
  private:
-  std::unordered_map<T, int, LocalHash<T>> map_;
-  std::vector<T> vec_;
+  std::unordered_map<T, int, Hash, KeyEqual> map_;
+  std::vector<const T*> vector_;
 };
 
-struct GeoVertex {
+
+// A GEO-space (world-frame) vertex.
+class GeoVertex {
+ public:
+  struct Hash {
+    size_t operator()(const GeoVertex& gv) const {
+      const size_t hx(std::hash<double>()(gv.v().x));
+      const size_t hy(std::hash<double>()(gv.v().y));
+      const size_t hz(std::hash<double>()(gv.v().z));
+      return hx ^ (hy << 1) ^ (hz << 2);
+    }
+  };
+
+  struct Equiv {
+    bool operator()(const GeoVertex& lhs, const GeoVertex& rhs) const {
+      return ((lhs.v().x == rhs.v().x) &&
+              (lhs.v().y == rhs.v().y) &&
+              (lhs.v().z == rhs.v().z));
+    }
+  };
+
   GeoVertex() {}
 
-  explicit GeoVertex(const api::GeoPosition& _v) : v(_v) {}
+  explicit GeoVertex(const api::GeoPosition& v) : v_(v) {}
 
-  api::GeoPosition v;
+  const api::GeoPosition& v() const { return v_; }
+
+ private:
+  api::GeoPosition v_;
 };
 
-bool operator==(const GeoVertex& lhs, const GeoVertex& rhs) {
-  return ((lhs.v.x == rhs.v.x) &&
-          (lhs.v.y == rhs.v.y) &&
-          (lhs.v.z == rhs.v.z));
-}
 
+// A GEO-space (world-frame) normal vector.
+class GeoNormal {
+ public:
+  struct Hash {
+    size_t operator()(const GeoNormal& gn) const {
+      const size_t hx(std::hash<double>()(gn.n().x));
+      const size_t hy(std::hash<double>()(gn.n().y));
+      const size_t hz(std::hash<double>()(gn.n().z));
+      return hx ^ (hy << 1) ^ (hz << 2);
+    }
+  };
 
+  struct Equiv {
+    bool operator()(const GeoNormal& lhs, const GeoNormal& rhs) const {
+      return ((lhs.n().x == rhs.n().x) &&
+              (lhs.n().y == rhs.n().y) &&
+              (lhs.n().z == rhs.n().z));
+    }
+  };
 
-struct GeoNormal {
   GeoNormal() {}
 
   GeoNormal(const api::GeoPosition& v0, const api::GeoPosition& v1)
-      : n({v1.x - v0.x, v1.y - v0.y, v1.z - v0.z}) {}
+      : n_({v1.x - v0.x, v1.y - v0.y, v1.z - v0.z}) {}
 
-  api::GeoPosition n;
-};
+  const api::GeoPosition& n() const { return n_; }
 
-bool operator==(const GeoNormal& lhs, const GeoNormal& rhs) {
-  return ((lhs.n.x == rhs.n.x) &&
-          (lhs.n.y == rhs.n.y) &&
-          (lhs.n.z == rhs.n.z));
-}
-
-
-
-
-template<> struct LocalHash<GeoVertex> {
-  typedef GeoVertex argument_type;
-  typedef size_t result_type;
-  result_type operator()(const argument_type& gv) const {
-    const result_type hx(std::hash<double>()(gv.v.x));
-    const result_type hy(std::hash<double>()(gv.v.y));
-    const result_type hz(std::hash<double>()(gv.v.z));
-    return hx ^ (hy << 1) ^ (hz << 2);
-  }
-};
-template<> struct LocalHash<GeoNormal> {
-  typedef GeoNormal argument_type;
-  typedef size_t result_type;
-  result_type operator()(const argument_type& gn) const {
-    const result_type hx(std::hash<double>()(gn.n.x));
-    const result_type hy(std::hash<double>()(gn.n.y));
-    const result_type hz(std::hash<double>()(gn.n.z));
-    return hx ^ (hy << 1) ^ (hz << 2);
-  }
+ private:
+  api::GeoPosition n_;
 };
 
 
-struct GeoFace {
+// A GEO-space (world-frame) face.
+class GeoFace {
+ public:
   GeoFace() {}
 
-  GeoFace(const std::vector<GeoVertex>& avs,
-          const std::vector<GeoNormal>& ans)
-      : vs(avs), ns(ans) {
-    DRAKE_DEMAND(vs.size() == ns.size());
+  GeoFace(const std::vector<GeoVertex>& vertices,
+          const std::vector<GeoNormal>& normals)
+      : vertices_(vertices), normals_(normals) {
+    DRAKE_DEMAND(vertices.size() == normals.size());
   }
 
-  std::vector<GeoVertex> vs;
-  std::vector<GeoNormal> ns;
+  void push_vn(const GeoVertex& vertex, const GeoNormal& normal) {
+    vertices_.push_back(vertex);
+    normals_.push_back(normal);
+  }
+
+  const std::vector<GeoVertex>& vertices() const { return vertices_; }
+
+  const std::vector<GeoNormal>& normals() const { return normals_; }
+
+ private:
+  std::vector<GeoVertex> vertices_;
+  std::vector<GeoNormal> normals_;
 };
 
 
-
-
-struct IndexVertexWithNormal {
-  int vertex_index{};
-  int normal_index{};
-};
-
-struct IndexFace {
-  std::vector<IndexVertexWithNormal> vns;
-};
-
-
-class ObjData {
+class IndexFace {
  public:
-  ObjData() {}
+  struct Vertex {
+    int vertex_index{};
+    int normal_index{};
+  };
+
+  void push_vertex(Vertex vertex) { vertices_.push_back(vertex); }
+
+  const std::vector<Vertex>& vertices() const { return vertices_; }
+
+ private:
+  std::vector<Vertex> vertices_;
+};
+
+
+class GeoMesh {
+ public:
+  GeoMesh() {}
 
   void PushFace(const GeoFace& geo_face) {
     IndexFace face;
-    for (size_t gi = 0; gi < geo_face.vs.size(); ++gi) {
-      int vi = vertices_.push_back(geo_face.vs[gi]);
-      int ni = normals_.push_back(geo_face.ns[gi]);
-      face.vns.push_back({vi, ni});
+    for (size_t gi = 0; gi < geo_face.vertices().size(); ++gi) {
+      int vi = vertices_.push_back(geo_face.vertices()[gi]);
+      int ni = normals_.push_back(geo_face.normals()[gi]);
+      face.push_vertex({vi, ni});
     }
     faces_.push_back(face);
   }
 
 
-  void Dump(std::ostream& os, const std::string& material) {
+  std::tuple<int, int>
+  DumpObj(std::ostream& os, const std::string& material,
+          int vertex_index_offset, int normal_index_offset) {
     os << "# Vertices\n";
-    for (const GeoVertex& gv : vertices_.vector()) {
-      os << "v " << gv.v.x << " " << gv.v.y << " " << gv.v.z << "\n";
+    for (const GeoVertex* gv : vertices_.vector()) {
+      os << "v " << gv->v().x << " " << gv->v().y << " " << gv->v().z << "\n";
     }
     os << "# Normals\n";
-    for (const GeoNormal& gn : normals_.vector()) {
-      os << "vn " << gn.n.x << " " << gn.n.y << " " << gn.n.z << "\n";
+    for (const GeoNormal* gn : normals_.vector()) {
+      os << "vn " << gn->n().x << " " << gn->n().y << " " << gn->n().z << "\n";
     }
     os << "\n"
        << "# Faces\n";
@@ -159,48 +183,45 @@ class ObjData {
     }
     for (const IndexFace& f : faces_) {
       os << "f";
-      for (const IndexVertexWithNormal& ivwn : f.vns) {
-        os << " " << (ivwn.vertex_index + 1) << "//" << (ivwn.normal_index + 1);
+      for (const IndexFace::Vertex& ifv : f.vertices()) {
+        os << " " << (ifv.vertex_index + 1 + vertex_index_offset)
+           << "//" << (ifv.normal_index + 1 + normal_index_offset);
       }
       os << "\n";
     }
+    return std::make_tuple(vertex_index_offset + vertices_.vector().size(),
+                           normal_index_offset + normals_.vector().size());
   }
 
  private:
-  IndexMap<GeoVertex> vertices_;
-  IndexMap<GeoNormal> normals_;
+  UniqueIndexer<GeoVertex, GeoVertex::Hash, GeoVertex::Equiv> vertices_;
+  UniqueIndexer<GeoNormal, GeoNormal::Hash, GeoNormal::Equiv> normals_;
   std::vector<IndexFace> faces_;
 };
 
 
-struct SRPos {
-  SRPos(const double as, const double ar) : s(as), r(ar) {}
+class SrhFace {
+ public:
+  SrhFace(const std::initializer_list<api::LanePosition> srh) : v_(srh) {}
 
-  double s{};
-  double r{};
-};
+  const std::vector<api::LanePosition>& v() const { return v_; }
 
-
-struct SRFace {
-  SRFace(const std::initializer_list<SRPos> asr) : sr(asr) {}
-
-  std::vector<SRPos> sr;
-};
-
-
-void PushFace(ObjData* obj, const api::Lane* lane, const SRFace srface) {
-  GeoFace geoface;
-  for (const SRPos& sr : srface.sr) {
-    api::GeoPosition v0(lane->ToGeoPosition({sr.s, sr.r, 0.}));
-    api::GeoPosition v1(lane->ToGeoPosition({sr.s, sr.r, 1.}));
-    geoface.vs.push_back(GeoVertex(v0));
-    geoface.ns.push_back(GeoNormal(v0, v1));
+  GeoFace ToGeoFace(const api::Lane* lane) const {
+    GeoFace geo_face;
+    for (const api::LanePosition& srh : v_) {
+      api::GeoPosition v0(lane->ToGeoPosition(srh));
+      api::GeoPosition v1(lane->ToGeoPosition({srh.s, srh.r, srh.h + 1.}));
+      geo_face.push_vn(GeoVertex(v0), GeoNormal(v0, v1));
+    }
+    return geo_face;
   }
-  obj->PushFace(geoface);
-}
+
+ private:
+  std::vector<api::LanePosition> v_;
+};
 
 
-void CoverLaneWithQuads(ObjData* obj, const api::Lane* lane,
+void CoverLaneWithQuads(GeoMesh* mesh, const api::Lane* lane,
                         const double grid_unit) {
   const double s_max = lane->length();
   for (double s0 = 0; s0 < s_max; s0 += grid_unit) {
@@ -227,7 +248,9 @@ void CoverLaneWithQuads(ObjData* obj, const api::Lane* lane,
         if (r01 > rb0.r_max) { r01 = rb0.r_max; }
         if (r11 > rb1.r_max) { r11 = rb0.r_max; }
 
-        PushFace(obj, lane, {{s0, r00}, {s1, r10}, {s1, r11}, {s0, r01}});
+        SrhFace srh_face(
+            {{s0, r00, 0.}, {s1, r10, 0.}, {s1, r11, 0.}, {s0, r01, 0.}});
+        mesh->PushFace(srh_face.ToGeoFace(lane));
 
         r00 += grid_unit;
         r10 += grid_unit;
@@ -246,11 +269,50 @@ void CoverLaneWithQuads(ObjData* obj, const api::Lane* lane,
         if (r01 < rb0.r_min) { r01 = rb0.r_min; }
         if (r11 < rb1.r_min) { r11 = rb0.r_min; }
 
-        PushFace(obj, lane, {{s0, r00}, {s0, r01}, {s1, r11}, {s1, r10}});
+        SrhFace srh_face(
+                 {{s0, r00, 0.}, {s0, r01, 0.}, {s1, r11, 0.}, {s1, r10, 0.}});
+        mesh->PushFace(srh_face.ToGeoFace(lane));
 
         r00 -= grid_unit;
         r10 -= grid_unit;
       }
+    }
+  }
+}
+
+
+void StripeLaneBounds(GeoMesh* mesh, const api::Lane* lane,
+                      const double grid_unit) {
+  const double kStripeWidth = 0.25;
+  const double kStripeElevation = 0.02;
+
+  const double half_stripe = 0.5 * kStripeWidth;
+
+  const double s_max = lane->length();
+  for (double s0 = 0; s0 < s_max; s0 += grid_unit) {
+    double s1 = s0 + grid_unit;
+    if (s1 > s_max) { s1 = s_max; }
+
+    api::RBounds rb0 = lane->lane_bounds(s0);
+    api::RBounds rb1 = lane->lane_bounds(s1);
+
+    // Left side of lane.
+    {
+      SrhFace srh_face({
+          {s0, rb0.r_max - half_stripe, kStripeElevation},
+          {s1, rb1.r_max - half_stripe, kStripeElevation},
+          {s1, rb1.r_max + half_stripe, kStripeElevation},
+          {s0, rb0.r_max + half_stripe, kStripeElevation}});
+      mesh->PushFace(srh_face.ToGeoFace(lane));
+    }
+    // Right side of lane.
+    {
+      SrhFace srh_face({
+          {s0, rb0.r_min - half_stripe, kStripeElevation},
+          {s1, rb1.r_min - half_stripe, kStripeElevation},
+          {s1, rb1.r_min + half_stripe, kStripeElevation},
+          {s0, rb0.r_min + half_stripe, kStripeElevation}});
+      mesh->PushFace(srh_face.ToGeoFace(lane));
     }
   }
 }
@@ -262,7 +324,8 @@ void GenerateObjFile(const api::RoadGeometry* rg,
                      const std::string& dirpath,
                      const std::string& fileroot,
                      const double grid_unit) {
-  ObjData obj;
+  GeoMesh asphalt_mesh;
+  GeoMesh stripe_mesh;
 
   // Walk the network.
   for (int ji = 0; ji < rg->num_junctions(); ++ji) {
@@ -274,7 +337,8 @@ void GenerateObjFile(const api::RoadGeometry* rg,
       //              going back and using lane-bounds to paint stripes.
       for (int li = 0; li < segment->num_lanes(); ++li) {
         const api::Lane* lane = segment->lane(li);
-        CoverLaneWithQuads(&obj, lane, grid_unit);
+        CoverLaneWithQuads(&asphalt_mesh, lane, grid_unit);
+        StripeLaneBounds(&stripe_mesh, lane, grid_unit);
       }
     }
   }
@@ -294,7 +358,14 @@ void GenerateObjFile(const api::RoadGeometry* rg,
        << "\n"
        << "mtllib " << mtl_filename << "\n"
        << "\n";
-    obj.Dump(os, kBlandAsphalt);
+    int vertex_index_offset = 0;
+    int normal_index_offset = 0;
+    std::tie(vertex_index_offset, normal_index_offset) =
+        asphalt_mesh.DumpObj(os, kBlandAsphalt,
+                             vertex_index_offset, normal_index_offset);
+    std::tie(vertex_index_offset, normal_index_offset) =
+        stripe_mesh.DumpObj(os, kYellowPaint,
+                            vertex_index_offset, normal_index_offset);
   }
 
   // Create the MTL file referenced by the OBJ file.
