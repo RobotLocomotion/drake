@@ -247,7 +247,7 @@ class LeafSystem : public System<T> {
     PeriodicEvent<T> event;
     event.period_sec = period_sec;
     event.offset_sec = offset_sec;
-    event.event.action = DiscreteEvent<T>::kUpdateAction;
+    event.event.action = DiscreteEvent<T>::kDiscreteUpdateAction;
     periodic_events_.push_back(event);
   }
 

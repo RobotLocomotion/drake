@@ -58,9 +58,13 @@ class IntegratorBase {
      * User requested control whenever an internal step is successful.
      */
     kTimeHasAdvanced = 4,
+    /**
+     * Reached the desired integration time without reaching an update time.
+     */
+    kReachedBoundaryTime = 5,
     /** Took maximum number of steps without finishing integrating over the
      * interval. */
-    kReachedStepLimit = 5,
+    kReachedStepLimit = 6,
   };
 
   /**
@@ -341,12 +345,17 @@ class IntegratorBase {
    *        if this is not the case) at which the next publish will occur.
    * @param update_dt The step size, >= 0.0 (exception will be thrown
    *        if this is not the case) at which the next update will occur.
+   * @param boundary_dt The step size, >= 0.0 (exception will be thrown
+   *        if this is not the case) marking the end of the user-designated
+   *        simulated interval.
    * @throws std::logic_error If the integrator has not been initialized or one
-   *                          of publish_dt or update_dt is negative.
+   *                          of publish_dt, update_dt, or boundary_dt is
+   *                          negative.
    * @return The reason for the integration step ending.
    */
   // TODO(edrumwri): Make the stretch size configurable.
-  StepResult StepOnceAtMost(const T& publish_dt, const T& update_dt);
+  StepResult StepOnceAtMost(const T& publish_dt, const T& update_dt,
+                            const T& boundary_dt);
 
   /**
    * @name Integrator statistics methods.
@@ -1198,39 +1207,95 @@ std::pair<bool, T> IntegratorBase<T>::DoStepOnceAtMost(const T& max_dt) {
 
 template <class T>
 typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
-    const T& publish_dt, const T& update_dt) {
+    const T& publish_dt, const T& update_dt, const T& boundary_dt) {
   if (!IntegratorBase<T>::is_initialized())
     throw std::logic_error("Integrator not initialized.");
 
+  // Verify that update dt is positive
+  DRAKE_DEMAND(update_dt > 0.0);
+
+  // Verify that other dt's are non-negative
+  DRAKE_DEMAND(publish_dt >= 0.0);
+  DRAKE_DEMAND(boundary_dt >= 0.0);
+
   // The size of the integration step is the minimum of the time until the next
-  // update event, the time until the next publish event, and the maximum step
-  // size (which may stretch slightly to hit a discrete event).
+  // update event, the time until the next publish event, the boundary time
+  // (i.e., the maximum time that the user wished to step to), and the maximum
+  // step size (which may stretch slightly to hit a discrete event).
 
   // We report to the caller which event ultimately constrained the step size.
   // If multiple events constrained it equally, we prefer to report update
-  // events over publish events, and publish events over maximum step size
-  // limits. In such cases, the caller has to figure out for itself what other
-  // event times may have arrived simultaneously, by inspecting the time.
-  // TODO(edrumwri): This should be further clarified or cleaned up, see #4335.
+  // events over publish events, publish events over boundary step limits,
+  // and boundary limits over maximum step size limits. The caller must
+  // determine event simultaneity by inspecting the time.
+
+  // The maintainer of this code is advised to consider that, while updates
+  // and boundary times, may both conceptually be deemed events, the distinction
+  // is made for a reason. If both an update and a boundary time occur
+  // simultaneously, the following behavior should result:
+  // (1) kReachedUpdateTime is returned, (2) Simulator::StepTo() performs the
+  // necessary update, (3) StepOnceAtMost() is called with boundary_dt=0 and
+  // returns kReachedBoundaryTime, and (4) the simulation terminates. This
+  // sequence of operations will ensure that the simulation state is valid if
+  // Simulator::StepTo() is called again to advance time further.
+
+  // We now analyze the following simultaneous cases with respect to Simulator:
+  //
+  // { publish, update }
+  // kReachedUpdateTime will be returned, an update will be followed by a
+  // publish.
+  //
+  // { publish, update, max step }
+  // kReachedUpdateTime will be returned, an update will be followed by a
+  // publish.
+  //
+  // { publish, boundary time, max step }
+  // kReachedPublishTime will be returned, a publish will be performed followed
+  // by another call to this function, which should return kReachedBoundaryTime
+  // (followed in rapid succession by StepTo(.) return).
+  //
+  // { publish, boundary time, max step }
+  // kReachedPublishTime will be returned, a publish will be performed followed
+  // by another call to this function, which should return kReachedBoundaryTime
+  // (followed in rapid succession by StepTo(.) return).
+  //
+  // { publish, update, boundary time, maximum step size }
+  // kUpdateTimeReached will be returned, an update followed by a publish
+  // will then be performed followed by another call to this function, which
+  // should return kReachedBoundaryTime (followed in rapid succession by
+  // StepTo(.) return).
 
   // By default, the candidate dt is the next discrete update event.
-  StepResult candidate_dt = IntegratorBase<T>::kReachedUpdateTime;
+  StepResult candidate_result = IntegratorBase<T>::kReachedUpdateTime;
   T dt = update_dt;
 
   // If the next discrete publish event is sooner than the next discrete update
   // event, the publish event becomes the candidate dt
   if (publish_dt < update_dt) {
-    candidate_dt = IntegratorBase<T>::kReachedPublishTime;
+    candidate_result = IntegratorBase<T>::kReachedPublishTime;
     dt = publish_dt;
   }
 
-  // If all discrete events are farther in the future than the maximum step
+  // If the stop time (boundary time) is sooner than the candidate, use it
+  // instead.
+  if (boundary_dt < dt) {
+    candidate_result = IntegratorBase<T>::kReachedBoundaryTime;
+    dt = boundary_dt;
+  }
+
+  // If all events are farther into the future than the maximum step
   // size times a stretch factor of 1.01, the maximum step size becomes the
-  // candidate dt.
+  // candidate dt. Put another way, if the maximum step occurs right before
+  // an update or a publish, the update or publish is done instead. In contrast,
+  // we never step past boundary_dt, even if doing so would allow hitting a
+  // publish or an update.
+  const bool reached_boundary =
+      (candidate_result == IntegratorBase<T>::kReachedBoundaryTime);
   static constexpr double kMaxStretch = 1.01;  // Allow 1% step size stretch.
   const T& max_dt = IntegratorBase<T>::get_maximum_step_size();
-  if (max_dt * kMaxStretch < dt) {
-    candidate_dt = IntegratorBase<T>::kTimeHasAdvanced;
+  if ((reached_boundary && max_dt < dt) ||
+      (!reached_boundary && max_dt * kMaxStretch < dt)) {
+    candidate_result = IntegratorBase<T>::kTimeHasAdvanced;
     dt = max_dt;
   }
 
@@ -1246,7 +1311,7 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
     // If the integrator took the entire maximum step size we allowed above,
     // we report to the caller that a step constraint was hit, which may
     // indicate a discrete event has arrived.
-    return candidate_dt;
+    return candidate_result;
   } else {
     // Otherwise, we report to the caller that time has advanced, but no
     // discrete event has arrived.
