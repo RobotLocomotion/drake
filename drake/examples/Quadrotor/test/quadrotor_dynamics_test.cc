@@ -19,6 +19,7 @@
 namespace drake {
 namespace examples {
 namespace quadrotor {
+namespace {
 
 // The models are integrated and compared for the duration specified by the
 // following constant.
@@ -26,8 +27,8 @@ const double kSimulationDuration = 0.1;
 
 // A Generic Quadrotor Plant Diagram with the plant created from
 // QuadrotorPlant.
-template <typename T>
-class GenericQuadrotor : public systems::Diagram<T> {
+template<typename T>
+class GenericQuadrotor: public systems::Diagram<T> {
  public:
   GenericQuadrotor() {
     this->set_name("QuadrotorTest");
@@ -38,7 +39,7 @@ class GenericQuadrotor : public systems::Diagram<T> {
 
     VectorX<T> hover_input(plant_->get_input_size());
     hover_input.setZero();
-    systems::ConstantVectorSource<T>* source =
+    systems::ConstantVectorSource<T> *source =
         builder.template AddSystem<systems::ConstantVectorSource<T>>(
             hover_input);
 
@@ -47,20 +48,20 @@ class GenericQuadrotor : public systems::Diagram<T> {
     builder.BuildInto(this);
   }
 
-  void SetState(systems::Context<T>* context, VectorX<T> x) const {
-    systems::Context<T>* plant_context =
+  void SetState(systems::Context<T> *context, VectorX<T> x) const {
+    systems::Context<T> *plant_context =
         this->GetMutableSubsystemContext(context, plant_);
     plant_->set_state(plant_context, x);
   }
 
  private:
-  QuadrotorPlant<T>* plant_{};
+  QuadrotorPlant<T> *plant_{};
 };
 
 //  A Quadrotor as a RigidBodyPlant that is created from a model
 // specified in a URDF file.
-template <typename T>
-class RigidBodyQuadrotor : public systems::Diagram<T> {
+template<typename T>
+class RigidBodyQuadrotor: public systems::Diagram<T> {
  public:
   RigidBodyQuadrotor() {
     this->set_name("Quadrotor");
@@ -78,7 +79,7 @@ class RigidBodyQuadrotor : public systems::Diagram<T> {
 
     VectorX<T> hover_input(plant_->get_input_size());
     hover_input.setZero();
-    systems::ConstantVectorSource<T>* source =
+    systems::ConstantVectorSource<T> *source =
         builder.template AddSystem<systems::ConstantVectorSource<T>>(
             hover_input);
 
@@ -87,20 +88,20 @@ class RigidBodyQuadrotor : public systems::Diagram<T> {
     builder.BuildInto(this);
   }
 
-  void SetState(systems::Context<T>* context, VectorX<T> x) const {
-    systems::Context<T>* plant_context =
+  void SetState(systems::Context<T> *context, VectorX<T> x) const {
+    systems::Context<T> *plant_context =
         this->GetMutableSubsystemContext(context, plant_);
     plant_->set_state_vector(plant_context, x);
   }
 
  private:
-  systems::RigidBodyPlant<T>* plant_{};
+  systems::RigidBodyPlant<T> *plant_{};
 };
 
 //  Combines test setup for both kinds of plants:
 //  ge_model_:  GenericQuadrotor
 //  rb_model_:  RigidBodyPlant
-class QuadrotorTest : public ::testing::Test {
+class QuadrotorTest: public ::testing::Test {
  public:
   QuadrotorTest() {
     ge_model_ = std::make_unique<GenericQuadrotor<double>>();
@@ -140,7 +141,7 @@ class QuadrotorTest : public ::testing::Test {
     rb_simulator_->StepTo(t);
   }
 
-  VectorX<double> GetState(systems::Simulator<double>* simulator) {
+  VectorX<double> GetState(systems::Simulator<double> *simulator) {
     return simulator->get_context()
         .get_continuous_state_vector()
         .CopyToVector();
@@ -150,11 +151,11 @@ class QuadrotorTest : public ::testing::Test {
     SetState(x0);
     Simulate(kSimulationDuration);
     VectorX<double> my_state = ge_simulator_->get_context()
-                                   .get_continuous_state_vector()
-                                   .CopyToVector();
+        .get_continuous_state_vector()
+        .CopyToVector();
     VectorX<double> rb_state = rb_simulator_->get_context()
-                                   .get_continuous_state_vector()
-                                   .CopyToVector();
+        .get_continuous_state_vector()
+        .CopyToVector();
     double tol = 1e-10;
     EXPECT_TRUE(
         CompareMatrices(my_state, rb_state, tol, MatrixCompareType::absolute));
@@ -178,8 +179,8 @@ TEST_F(QuadrotorTest, derivatives) {
   VectorX<double> x0 = VectorX<double>::Ones(12);  // Set state to ones.
   SetState(x0);
 
-  ge_model_->EvalTimeDerivatives(*ge_context_, ge_derivatives_.get());
-  rb_model_->EvalTimeDerivatives(*rb_context_, rb_derivatives_.get());
+  ge_model_->CalcTimeDerivatives(*ge_context_, ge_derivatives_.get());
+  rb_model_->CalcTimeDerivatives(*rb_context_, rb_derivatives_.get());
 
   VectorX<double> my_derivative_vector = ge_derivatives_->CopyToVector();
   VectorX<double> rb_derivative_vector = rb_derivatives_->CopyToVector();
@@ -223,6 +224,7 @@ TEST_F(QuadrotorTest, drop_from_arbitrary_state) {
   PassiveBehaviorTest(x0);
 }
 
+}  // namespace
 }  // namespace quadrotor
 }  // namespace examples
 }  // namespace drake

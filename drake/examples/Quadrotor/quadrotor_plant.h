@@ -26,29 +26,21 @@ class QuadrotorPlant : public systems::LeafSystem<T> {
 
   QuadrotorPlant<AutoDiffXd>* DoToAutoDiffXd() const override;
 
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
-
-  void EvalTimeDerivatives(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const override;
-
   int get_input_size() const { return kInputDimension; }
 
   int get_num_states() const { return kStateDimension; }
 
-  void set_state(systems::Context<T>* context, const VectorX<T> x) const {
+  void set_state(systems::Context<T>* context, const VectorX<T>& x) const {
     context->get_mutable_continuous_state_vector()->SetFromVector(x);
   }
 
  protected:
-  // LeafSystem<T> override.
-  std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
-      const override;
+  void DoCalcOutput(const systems::Context<T> &context,
+                    systems::SystemOutput<T> *output) const override;
 
-  // LeafSystem<T> override.
-  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override;
+  void DoCalcTimeDerivatives(
+      const systems::Context<T> &context,
+      systems::ContinuousState<T> *derivatives) const override;
 
   // TODO(naveenoid): Declare these as parameters in the context.
  private:
