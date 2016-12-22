@@ -6,7 +6,6 @@
 #include <Eigen/Dense>
 
 #include "drake/solvers/decision_variable.h"
-#include "drake/solvers/solution_result.h"
 #include "drake/multibody/constraint_wrappers.h"
 #include "drake/multibody/rigid_body_tree.h"
 

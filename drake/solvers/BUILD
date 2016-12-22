@@ -1,6 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_googletest")
+
 package(default_visibility = ["//visibility:public"])
 
 # TODO(jwnimmer-tri) This BUILD file only compiles the in-tree solvers.
@@ -48,7 +50,7 @@ cc_library(
         "decision_variable.h",
         "function.h",
         "mathematical_program.h",
-        "solution_result.h",
+        "mathematical_program_solver_interface.h",
     ],
     linkstatic = 1,
     deps = [
@@ -76,21 +78,17 @@ cc_library(
 
 # === test/ ===
 
-cc_test(
+cc_googletest(
     name = "constraint_test",
-    size = "small",
-    srcs = ["test/constraint_test.cc"],
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
         "//drake/math:gradient",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "convex_optimization_test",
-    size = "small",
     srcs = [
         "test/convex_optimization_test.cc",
         "test/mathematical_program_test_util.h",
@@ -98,24 +96,19 @@ cc_test(
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "decision_variable_test",
-    size = "small",
-    srcs = ["test/decision_variable_test.cc"],
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "mathematical_program_test",
-    size = "small",
     srcs = [
         "test/mathematical_program_test.cc",
         "test/mathematical_program_test_util.h",
@@ -123,13 +116,11 @@ cc_test(
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "mixed_integer_optimization_test",
-    size = "small",
     srcs = [
         "test/mathematical_program_test_util.h",
         "test/mixed_integer_optimization_test.cc",
@@ -137,28 +128,21 @@ cc_test(
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "moby_lcp_solver_test",
-    size = "small",
-    srcs = ["test/moby_lcp_solver_test.cc"],
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "system_identification_test",
-    size = "medium",
-    srcs = ["test/system_identification_test.cc"],
     deps = [
         ":system_identification",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )

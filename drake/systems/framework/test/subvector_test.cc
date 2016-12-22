@@ -67,6 +67,15 @@ TEST_F(SubvectorTest, Mutation) {
   EXPECT_EQ(4, vector_->GetAtIndex(3));
 }
 
+// Tests that a subvector can be SetFrom another VectorBase.
+TEST_F(SubvectorTest, SetFrom) {
+  Subvector<int> subvec(vector_.get(), 1, kSubVectorLength);
+  auto next_value = BasicVector<int>::Make({7, 8});
+  subvec.SetFrom(*next_value);
+  EXPECT_EQ(7, subvec.GetAtIndex(0));
+  EXPECT_EQ(8, subvec.GetAtIndex(1));
+}
+
 // Tests that the Subvector can be addressed as an array.
 TEST_F(SubvectorTest, ArrayOperator) {
   Subvector<int> subvec(vector_.get(), 1, kSubVectorLength);
