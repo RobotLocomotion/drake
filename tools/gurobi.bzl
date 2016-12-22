@@ -12,8 +12,10 @@ def _gurobi_impl(repository_ctx):
                                "BUILD")
 
 gurobi_repository = repository_rule(
-    attrs = {"build_file": attr.string(mandatory = True),
-             "workspace_dir": attr.string(mandatory = True)},
+    attrs = {
+        "build_file": attr.string(mandatory = True),
+        "workspace_dir": attr.string(mandatory = True),
+    },
     local = True,
     implementation = _gurobi_impl,
 )
