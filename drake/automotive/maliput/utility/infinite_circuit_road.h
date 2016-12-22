@@ -18,83 +18,81 @@ namespace drake {
 namespace maliput {
 namespace utility {
 
-/// A toy adapter class that makes a RoadGeometry look like it has a single
-/// inifinitely long Lane.  Its primary (and perhaps only) purpose is to
-/// facilitate demos until proper hybrid system support is available.
+/// A toy adapter class that makes an api::RoadGeometry look like it has
+/// a single inifinitely long Lane.  Its primary (and perhaps only) purpose
+/// is to facilitate demos until proper hybrid system support is available
+/// in drake.
 ///
 /// Caveats:
 ///  * Only works with a RoadGeometry that has one-lane-per-segment.
-///  * Source RoadGeometry must have no dead-ends.
+///  * If no path for the circuit is specified, then the source
+///    api::RoadGeometry must have no dead-ends.
 class InfiniteCircuitRoad : public api::RoadGeometry {
- private:
-  class Lane;
-
  public:
+  /// An element of the circuitous path traversed by an InfiniteCircuitRoad.
   struct Record {
+    /// A pointer to an api::Lane in the wrapped api::RoadGeometry.
     const api::Lane* lane{};
+    /// Where along the path-length of the circuit this element begins.
     double start_circuit_s{};
+    // TODO(maddog)  Ditch this (always == start + lane->length()).
+    /// Where along the path-length of the circuit this element ends.
     double end_circuit_s{};
+    /// True if the lane should be traversed in the reverse direction, i.e.,
+    /// starting at s = lane->length() instead of s = 0.
     bool is_reversed{};
   };
 
-  /// Construct an InfiniteCircuitRoad based on @param source, using
-  /// @param start as the starting point in the search for a closed circuit.
-  ///
-  /// NB:  All the real construction work happens in the constructor for
-  /// InfiniteCircuitRoad::Lane.
-  InfiniteCircuitRoad(const api::RoadGeometryId& id,
-                      const api::RoadGeometry* source,
-                      const api::LaneEnd& start,
-                      const std::vector<const api::Lane*>& path);
 
-  virtual ~InfiniteCircuitRoad();
+  /// InfiniteCircuitRoad's implementation of api::Junction.
+  class Junction : public api::Junction {
+   public:
+    Junction(const api::JunctionId& id, const InfiniteCircuitRoad* road);
+    virtual ~Junction() {}
 
-  /// @returns the sole Lane component emulated by this RoadGeometry.
-  const Lane* lane() const { return &lane_; }
+   private:
+    const api::JunctionId do_id() const override;
+    const api::RoadGeometry* do_road_geometry() const override;
+    int do_num_segments() const override;
+    const api::Segment* do_segment(int index) const override;
 
-  /// @returns the actual length of a single cycle (despite the illusion that
-  /// the road is infinitely long).
-  double cycle_length() const { return lane_.cycle_length(); }
+    const api::JunctionId id_;
+    const InfiniteCircuitRoad* const road_{};
+  };
 
-  /// @returns a pointer to the underlying source RoadGeometry.
-  const api::RoadGeometry* source() const { return source_; }
 
-  int num_path_records() const { return lane_.num_path_records(); }
+  /// InfiniteCircuitRoad's implementation of api::Segment.
+  class Segment : public api::Segment {
+   public:
+    Segment(const api::SegmentId& id, const InfiniteCircuitRoad* road);
+    virtual ~Segment() {}
 
-  const Record path_record(int i) const { return lane_.path_record(i); }
+   private:
+    const api::SegmentId do_id() const override;
+    const api::Junction* do_junction() const override;
+    int do_num_lanes() const override;
+    const api::Lane* do_lane(int index) const;
 
-  int GetPathIndex(double s) const { return lane_.GetPathIndex(s); }
+    api::SegmentId id_;
+    const InfiniteCircuitRoad* const road_{};
+  };
 
-  /// Project the given LanePosition @param lane_pos on the "infinite Lane"
-  /// back to a RoadPosition in the source RoadGeometry.
-  ///
-  /// @returns a pair of:
-  /// - RoadPosition indicating the source Lane and position on that Lane;
-  /// - bool indicating travel should be reversed in the source Lane with
-  ///   respect to +s travel in the Infinite Lane --- e.g., if true, then
-  ///   +s motion in the Infinite Lane corresponds to -s motion in the
-  ///   source Lane.
-  std::pair<api::RoadPosition, bool> ProjectToSourceRoad(
-      const api::LanePosition& lane_pos) const {
-    return lane_.ProjectToSourceRoad(lane_pos);
-  }
 
- private:
-  class Junction;
-  class Segment;
-
+  /// InfiniteCircuitRoad's implementation of api::Lane.
   class Lane : public api::Lane {
    public:
-    Lane(const api::LaneId& id, const Segment* segment,
+    Lane(const api::LaneId& id, const InfiniteCircuitRoad* road,
          const api::RoadGeometry* source,
          const api::LaneEnd& start,
          const std::vector<const api::Lane*>& path);
 
-    virtual ~Lane();
+    virtual ~Lane() {}
 
+    /// Returns the actual length of a single cycle (despite the illusion that
+    /// the road is infinitely long).
     double cycle_length() const { return cycle_length_; }
 
-    /// @returns the position within the fixed-length circuit of the given
+    /// Returns the position within the fixed-length circuit of the given
     /// longitudinal position in the emulated 'infinite lane'.
     double circuit_s(const double s) const {
       // TODO(maddog@tri.global)  Yes, this has precision problems as
@@ -109,58 +107,42 @@ class InfiniteCircuitRoad : public api::RoadGeometry {
 
     int GetPathIndex(double s) const;
 
+    /// Projects the given LanePosition @param lane_pos on the "infinite Lane"
+    /// back to a RoadPosition in the source RoadGeometry.
+    ///
+    /// @returns a pair of:
+    /// - RoadPosition indicating the source Lane and position on that Lane;
+    /// - bool indicating travel should be reversed in the source Lane with
+    ///   respect to +s travel in the Infinite Lane --- e.g., if true, then
+    ///   +s motion in the Infinite Lane corresponds to -s motion in the
+    ///   source Lane.
     std::pair<api::RoadPosition, bool> ProjectToSourceRoad(
         const api::LanePosition& lane_pos) const;
 
    private:
-    const api::LaneId do_id() const override { return id_; }
-
-    const api::Segment* do_segment() const override { return segment_; }
-
-    int do_index() const override { return 0; }  // Only one lane per segment!
-
-    const api::Lane* do_to_left() const override { return nullptr; }
-
-    const api::Lane* do_to_right() const override { return nullptr; }
-
+    const api::LaneId do_id() const override;
+    const api::Segment* do_segment() const override;
+    int do_index() const override;
+    const api::Lane* do_to_left() const override;
+    const api::Lane* do_to_right() const override;
     const api::BranchPoint* DoGetBranchPoint(
-        const api::LaneEnd::Which which_end) const override {
-      DRAKE_ABORT();
-    }
-
+        const api::LaneEnd::Which which_end) const override;
     const api::LaneEndSet* DoGetConfluentBranches(
-        const api::LaneEnd::Which which_end) const override {
-      DRAKE_ABORT();
-    }
-
+        const api::LaneEnd::Which which_end) const override;
     const api::LaneEndSet* DoGetOngoingBranches(
-        const api::LaneEnd::Which which_end) const override {
-      DRAKE_ABORT();
-    }
-
+        const api::LaneEnd::Which which_end) const override;
     std::unique_ptr<api::LaneEnd> DoGetDefaultBranch(
-        const api::LaneEnd::Which which_end) const override {
-      DRAKE_ABORT();
-    }
-
+        const api::LaneEnd::Which which_end) const override;
     double do_length() const override;
-
-    api::RBounds do_lane_bounds(double) const override { return lane_bounds_; }
-
-    api::RBounds do_driveable_bounds(double) const override {
-      return driveable_bounds_;
-    }
-
+    api::RBounds do_lane_bounds(double) const override;
+    api::RBounds do_driveable_bounds(double) const override;
     api::GeoPosition DoToGeoPosition(
         const api::LanePosition& lane_pos) const override;
-
     api::Rotation DoGetOrientation(
         const api::LanePosition& lane_pos) const override;
-
     api::LanePosition DoEvalMotionDerivatives(
         const api::LanePosition& position,
         const api::IsoLaneVelocity& velocity) const override;
-
     api::LanePosition DoToLanePosition(
         const api::GeoPosition&) const override {
       // TODO(maddog@tri.global) Implement when someone needs this.
@@ -168,95 +150,44 @@ class InfiniteCircuitRoad : public api::RoadGeometry {
     }
 
     const api::LaneId id_;
-    const Segment* segment_{};
-
+    const InfiniteCircuitRoad* road_{};
     api::RBounds lane_bounds_;
     api::RBounds driveable_bounds_;
-
-
     std::vector<Record> records_;
     double cycle_length_{};
   };
 
 
-  class Segment : public api::Segment {
-   public:
-    Segment(const api::SegmentId& id,
-            const Junction* junction, const Lane* lane)
-        : id_(id), junction_(junction), lane_(lane) {}
 
-    virtual ~Segment() {}
+  /// Constructs an InfiniteCircuitRoad wrapping @p source, using
+  /// @p start as the starting point in the search for a closed circuit.
+  ///
+  /// NB:  All the real construction work happens in the constructor for
+  /// InfiniteCircuitRoad::Lane.
+  InfiniteCircuitRoad(const api::RoadGeometryId& id,
+                      const api::RoadGeometry* source,
+                      const api::LaneEnd& start,
+                      const std::vector<const api::Lane*>& path);
 
-   private:
-    const api::SegmentId do_id() const override { return id_; }
+  virtual ~InfiniteCircuitRoad();
 
-    const api::Junction* do_junction() const override { return junction_; }
+  /// Returns the sole Lane component emulated by this api::RoadGeometry.
+  const Lane* lane() const { return &lane_; }
 
-    int do_num_lanes() const override { return 1; }
+  /// Returns a pointer to the underlying source RoadGeometry.
+  const api::RoadGeometry* source() const { return source_; }
 
-    const api::Lane* do_lane(int index) const override { return lane_; }
-
-    api::SegmentId id_;
-    const Junction* junction_{};
-    const Lane* lane_{};
-  };
-
-
-  class Junction : public api::Junction {
-   public:
-    Junction(const api::JunctionId& id,
-             const RoadGeometry* rg, const Segment* segment)
-        : id_(id), road_geometry_(rg), segment_(segment) {}
-
-    virtual ~Junction() {}
-
-   private:
-    const api::JunctionId do_id() const override { return id_; }
-
-    const api::RoadGeometry* do_road_geometry() const override {
-      return road_geometry_;
-    }
-
-    int do_num_segments() const override { return 1; }
-
-    const api::Segment* do_segment(int index) const override {
-      return segment_;
-    }
-
-    api::JunctionId id_;
-    const RoadGeometry* road_geometry_{};
-    const Segment* segment_{};
-  };
-
-
-  const api::RoadGeometryId do_id() const override { return id_; }
-
-  int do_num_junctions() const override { return 1; }
-
-  const api::Junction* do_junction(int index) const override {
-    return &junction_;
-  }
-
-  int do_num_branch_points() const override { return 0; }
-
-  const api::BranchPoint* do_branch_point(int index) const override {
-    DRAKE_ABORT();
-  }
-
+ private:
+  const api::RoadGeometryId do_id() const override;
+  int do_num_junctions() const override;
+  const api::Junction* do_junction(int index) const override;
+  int do_num_branch_points() const override;
+  const api::BranchPoint* do_branch_point(int index) const override;
   api::RoadPosition DoToRoadPosition(
       const api::GeoPosition& geo_pos,
-      const api::RoadPosition& hint) const override {
-    // TODO(maddog@tri.global) Implement when someone needs this.
-    DRAKE_ABORT();
-  }
-
-  double do_linear_tolerance() const override {
-    return source_->linear_tolerance();
-  }
-
-  double do_angular_tolerance() const override {
-    return source_->angular_tolerance();
-  }
+      const api::RoadPosition& hint) const override;
+  double do_linear_tolerance() const override;
+  double do_angular_tolerance() const override;
 
   const api::RoadGeometryId id_;
   const api::RoadGeometry* const source_{};

@@ -10,6 +10,7 @@ namespace drake {
 namespace maliput {
 namespace utility {
 
+
 InfiniteCircuitRoad::InfiniteCircuitRoad(
     const api::RoadGeometryId& id,
     const api::RoadGeometry* source,
@@ -17,22 +18,92 @@ InfiniteCircuitRoad::InfiniteCircuitRoad(
     const std::vector<const api::Lane*>& path)
     : id_(id),
       source_(source),
-      junction_({id.id + ".junction"}, this, &segment_),
-      segment_({id.id + ".segment"}, &junction_, &lane_),
-      lane_({id.id + ".lane"}, &segment_, source, start, path) {}
+      junction_({id.id + ".junction"}, this),
+      segment_({id.id + ".segment"}, this),
+      lane_({id.id + ".lane"}, this, source, start, path) {}
 
 
 InfiniteCircuitRoad::~InfiniteCircuitRoad() {}
 
+const api::RoadGeometryId
+InfiniteCircuitRoad::do_id() const { return id_; }
+
+int
+InfiniteCircuitRoad::do_num_junctions() const { return 1; }
+
+const api::Junction*
+InfiniteCircuitRoad::do_junction(int index) const { return &junction_; }
+
+int
+InfiniteCircuitRoad::do_num_branch_points() const { return 0; }
+
+const api::BranchPoint*
+InfiniteCircuitRoad::do_branch_point(int index) const { DRAKE_ABORT(); }
+
+// TODO(maddog@tri.global) Implement when someone needs this.
+api::RoadPosition
+InfiniteCircuitRoad::DoToRoadPosition(
+    const api::GeoPosition& geo_pos,
+    const api::RoadPosition& hint) const { DRAKE_ABORT(); }
+
+double
+InfiniteCircuitRoad::do_linear_tolerance() const {
+  return source_->linear_tolerance();
+}
+
+double
+InfiniteCircuitRoad::do_angular_tolerance() const {
+  return source_->angular_tolerance();
+}
+
+
+InfiniteCircuitRoad::Junction::Junction(const api::JunctionId& id,
+                                        const InfiniteCircuitRoad* road)
+    : id_(id), road_(road) {}
+
+const api::JunctionId
+InfiniteCircuitRoad::Junction::do_id() const { return id_; }
+
+const api::RoadGeometry*
+InfiniteCircuitRoad::Junction::do_road_geometry() const { return road_; }
+
+int
+InfiniteCircuitRoad::Junction::do_num_segments() const { return 1; }
+
+const api::Segment*
+InfiniteCircuitRoad::Junction::do_segment(int index) const {
+  DRAKE_DEMAND(index == 0);
+  return &road_->segment_;
+}
+
+
+InfiniteCircuitRoad::Segment::Segment(const api::SegmentId& id,
+                                      const InfiniteCircuitRoad* road)
+    : id_(id), road_(road) {}
+
+const api::SegmentId
+InfiniteCircuitRoad::Segment::do_id() const { return id_; }
+
+const api::Junction*
+InfiniteCircuitRoad::Segment::do_junction() const { return &road_->junction_; }
+
+int
+InfiniteCircuitRoad::Segment::do_num_lanes() const { return 1; }
+
+const api::Lane*
+InfiniteCircuitRoad::Segment::do_lane(int index) const {
+  DRAKE_DEMAND(index == 0);
+  return &road_->lane_;
+}
 
 
 InfiniteCircuitRoad::Lane::Lane(const api::LaneId& id,
-                                const Segment* segment,
+                                const InfiniteCircuitRoad* road,
                                 const api::RoadGeometry* source,
                                 const api::LaneEnd& start,
                                 const std::vector<const api::Lane*>& path)
     : id_(id),
-      segment_(segment) {
+      road_(road) {
   // Starting at start, walk source's Lane/BranchPoint graph.  We
   // assume (demand!) that there are no dead-end branch-points, so we
   // will eventually encounter a LaneEnd that we have seen before, at
@@ -115,12 +186,61 @@ InfiniteCircuitRoad::Lane::Lane(const api::LaneId& id,
 }
 
 
-InfiniteCircuitRoad::Lane::~Lane() {}
+const api::LaneId
+InfiniteCircuitRoad::Lane::do_id() const { return id_; }
 
+const api::Segment*
+InfiniteCircuitRoad::Lane::do_segment() const { return &road_->segment_; }
 
-double InfiniteCircuitRoad::Lane::do_length() const {
-  return INFINITY;
+// Only one lane per segment!
+int
+InfiniteCircuitRoad::Lane::do_index() const { return 0; }
+
+const api::Lane*
+InfiniteCircuitRoad::Lane::do_to_left() const { return nullptr; }
+
+const api::Lane*
+InfiniteCircuitRoad::Lane::do_to_right() const { return nullptr; }
+
+// An infinite lane has no branch-points....
+const api::BranchPoint*
+InfiniteCircuitRoad::Lane::DoGetBranchPoint(api::LaneEnd::Which) const {
+  DRAKE_ABORT();
 }
+
+const api::LaneEndSet*
+InfiniteCircuitRoad::Lane::DoGetConfluentBranches(api::LaneEnd::Which) const {
+  DRAKE_ABORT();
+}
+
+const api::LaneEndSet*
+InfiniteCircuitRoad::Lane::DoGetOngoingBranches(api::LaneEnd::Which) const {
+  DRAKE_ABORT();
+}
+
+std::unique_ptr<api::LaneEnd>
+InfiniteCircuitRoad::Lane::DoGetDefaultBranch(api::LaneEnd::Which) const {
+  DRAKE_ABORT();
+}
+
+
+double InfiniteCircuitRoad::Lane::do_length() const { return INFINITY; }
+
+
+// TODO(maddog)  Bounds should recurse to the appropriate source lane.
+//               Flip bounds/signs appropriately if lane is reversed!
+api::RBounds
+InfiniteCircuitRoad::Lane::do_lane_bounds(double) const {
+  return lane_bounds_; }
+
+
+// TODO(maddog)  Bounds should recurse to the appropriate source lane.
+//               Flip bounds/signs appropriately if lane is reversed!
+api::RBounds
+InfiniteCircuitRoad::Lane::do_driveable_bounds(double) const {
+  return driveable_bounds_;
+}
+
 
 api::GeoPosition
 InfiniteCircuitRoad::Lane::DoToGeoPosition(
