@@ -96,9 +96,7 @@ class DrakeJoint {
              const Eigen::Isometry3d& transform_to_parent_body,
              int num_positions, int num_velocities);
 
-  /**
-   /// The destructor.
-   */
+  /// The destructor.
   virtual ~DrakeJoint();
 
   /// Returns the transform `X_PF` giving the pose of the joint's inboard frame
