@@ -307,39 +307,29 @@ class RigidBody {
    */
   void set_contact_points(const Eigen::Matrix3Xd& contact_points);
 
-  /**
-   * Sets the mass of this rigid body.
-   */
+  /// Sets the mass of this rigid body.
   void set_mass(double mass);
 
-  /**
-   * Returns the mass of this rigid body.
-   */
+  /// Returns the mass of this rigid body.
   double get_mass() const;
 
-  /**
-   * Sets the center of mass of this rigid body. The center of mass is expressed
-   * in this body's frame.
-   */
-  void set_center_of_mass(const Eigen::Vector3d& center_of_mass);
+  /// Sets the center of mass of this rigid body. The center of mass is
+  /// expressed in the outboard frame M of the joint mobilizing this body.
+  void set_center_of_mass_in_M(const Eigen::Vector3d &center_of_mass);
 
-  /**
-   * Gets the center of mass of this rigid body. The center of mass is expressed
-   * in this body's frame.
-   */
+  /// Gets the center of mass of this rigid body. The center of mass is
+  /// expressed in the outboard frame M of the joint mobilizing this body.
   const Eigen::Vector3d& get_center_of_mass() const;
 
-  /**
-   * Sets the spatial inertia of this rigid body.
-   */
-  void set_spatial_inertia(const drake::SquareTwistMatrix<double>&
-      inertia_matrix);
+  /// Sets the spatial inertia expressed in the joint outboard frame M.
+  /// @param inertia_matrix_M the spatial inertia matrix expressed in the
+  /// mobilized frame M.
+  void set_spatial_inertia_in_M(
+      const drake::SquareTwistMatrix<double> &inertia_matrix_M);
 
-  /**
-   * Returns the spatial inertia of this rigid body.
-   */
-  const drake::SquareTwistMatrix<double>& get_spatial_inertia()
-      const;
+  /// Returns the spatial inertia of this rigid body expressed in the
+  /// joint outboard frame M.
+  const drake::SquareTwistMatrix<double>& get_spatial_inertia_in_M() const;
 
   /**
    * Transforms all of the visual, collision, and inertial elements associated
@@ -449,7 +439,7 @@ class RigidBody {
   // The center of mass of this rigid body.
   Eigen::Vector3d center_of_mass_;
 
-  // The spatial inertia of this rigid body.
+  // The spatial inertia of this rigid body expressed in the mobilized frame M.
   drake::SquareTwistMatrix<double> spatial_inertia_;
 
   // TODO(SeanCurtis-TRI): This data is only used in the compilation of the

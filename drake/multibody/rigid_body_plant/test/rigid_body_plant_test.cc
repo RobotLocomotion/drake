@@ -82,7 +82,7 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
   // Sets body to have a non-zero spatial inertia. Otherwise the body gets
   // welded by a fixed joint to the world by RigidBodyTree::compile().
   body->set_mass(1.0);
-  body->set_spatial_inertia(Matrix6<double>::Identity());
+  body->set_spatial_inertia_in_M(Matrix6<double>::Identity());
 
   body->add_joint(&tree->world(), make_unique<QuaternionFloatingJoint>(
                                       "base", Isometry3d::Identity()));

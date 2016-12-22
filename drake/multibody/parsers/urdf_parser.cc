@@ -46,11 +46,48 @@ using drake::multibody::joints::kRollPitchYaw;
 
 namespace {
 
+// Parses the `<inertial/>` element within a `<link/>` element describing a
+// RigidBody in a RigidBodyTree.
+//
+// <inertial>
+// The inertia properties of the body described in its body frame B.
+//   <origin> (optional: defaults to identity if not specified)
+//     This is the pose of the body frame B relative to the joint outboard
+//     frame M (the mobilized frame). Fame M is rigidly attached to the body
+//     and is mobilized by the outboard frame of the joint attached to this
+//     body.
+//     Therefore <origin> specifies the transformation X_MB. In other words,
+//     the pose of the mobilized frame in the body frame, X_BM, is X_BM =
+//     X_MB.inverse().
+//     The position of the inertial frame B specifies the position of the
+//     center of mass as measured in M.
+//     The axes of the body frame B do not need to be aligned with the
+//     principal axes of inertia.
+//     xyz (optional: defaults to zero vector):
+//       Specifies the center of mass expressed in the mobilized frame M.
+//     rpy (optional: defaults to identity if not specified)
+//       Specifies the orientation of the body frame B with respect
+//       to the mobilized frame M represented by roll, pitch and yaw angles in
+//       radians.
+//   <mass> The mass of the body specified by the value attribute of this
+//     element.
+//   <inertia>
+//     The 3x3 inertia matrix, expressed in the body frame B.
+//     Since the inertia matrix is symmetric, only 6 above-diagonal
+//     elements of this matrix are only needed, using the attributes ixx,
+//     ixy, ixz, iyy, iyz, izz which are optional and default to zero.
+//
+// In the URDF specification (http://wiki.ros.org/urdf/XML/link) the
+// mobilized frame M is referred as the "link reference frame", while the body
+// frame B is referred as the "inertial frame".
 void ParseInertial(RigidBody<double>* body, XMLElement* node) {
-  Isometry3d T = Isometry3d::Identity();
+  // M: Joint outboard frame or, mobilized frame.
+  // B: Body frame.
+  // By default X_MB is the identity transform.
+  Isometry3d X_MB = Isometry3d::Identity();
 
   XMLElement* origin = node->FirstChildElement("origin");
-  if (origin) originAttributesToTransform(origin, T);
+  if (origin) originAttributesToTransform(origin, X_MB);
 
   XMLElement* mass = node->FirstChildElement("mass");
   if (mass) {
@@ -59,27 +96,33 @@ void ParseInertial(RigidBody<double>* body, XMLElement* node) {
     body->set_mass(body_mass);
   }
 
-  Eigen::Vector3d com;
-  com << T(0, 3), T(1, 3), T(2, 3);
-  body->set_center_of_mass(com);
+  // Center of mass expressed in the mobilized frame M.
+  Eigen::Vector3d com_M;
+  com_M << X_MB(0, 3), X_MB(1, 3), X_MB(2, 3);
+  body->set_center_of_mass_in_M(com_M);
 
-  drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
-  I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
+  drake::SquareTwistMatrix<double> SpatialInertia_B =
+      drake::SquareTwistMatrix<double>::Zero();
+  SpatialInertia_B.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
 
+  // Inertia matrix expressed in the body frame B.
   XMLElement* inertia = node->FirstChildElement("inertia");
   if (inertia) {
-    parseScalarAttribute(inertia, "ixx", I(0, 0));
-    parseScalarAttribute(inertia, "ixy", I(0, 1));
-    I(1, 0) = I(0, 1);
-    parseScalarAttribute(inertia, "ixz", I(0, 2));
-    I(2, 0) = I(0, 2);
-    parseScalarAttribute(inertia, "iyy", I(1, 1));
-    parseScalarAttribute(inertia, "iyz", I(1, 2));
-    I(2, 1) = I(1, 2);
-    parseScalarAttribute(inertia, "izz", I(2, 2));
+    parseScalarAttribute(inertia, "ixx", SpatialInertia_B(0, 0));
+    parseScalarAttribute(inertia, "ixy", SpatialInertia_B(0, 1));
+    SpatialInertia_B(1, 0) = SpatialInertia_B(0, 1);
+    parseScalarAttribute(inertia, "ixz", SpatialInertia_B(0, 2));
+    SpatialInertia_B(2, 0) = SpatialInertia_B(0, 2);
+    parseScalarAttribute(inertia, "iyy", SpatialInertia_B(1, 1));
+    parseScalarAttribute(inertia, "iyz", SpatialInertia_B(1, 2));
+    SpatialInertia_B(2, 1) = SpatialInertia_B(1, 2);
+    parseScalarAttribute(inertia, "izz", SpatialInertia_B(2, 2));
   }
 
-  body->set_spatial_inertia(transformSpatialInertia(T, I));
+  // Sets the body spatial inertia to the converted spatial inertia matrix to
+  // be expressed in the mobilized frame M.
+  body->set_spatial_inertia_in_M(transformSpatialInertia(X_MB,
+                                                         SpatialInertia_B));
 }
 
 // Adds a material to the supplied @materials map. Currently, only simple colors

@@ -33,6 +33,36 @@
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
+/// @defgroup rigid_body_tree_frames Bodies, Frames, Notation and Conventions.
+/// @{
+/// @brief Description of the reference frames used by the multibody
+/// dynamics engine.
+///
+/// To add a RigidBody B to a RigidBodyTree the following information must be
+/// provided:
+/// - The parent body P and its associated frame P.
+/// - A DrakeJoint connecting body B to its parent body P.
+/// - A fixed frame F rigidly attached to body P which describes the position
+///   of the joint in the parent frame. This is also referred to as the
+///   joint's inboard frame. This frame is provided as a transform X_PF which
+///   can be requested with DrakeJoint::get_transform_to_parent_body().
+/// - An outboard joint frame M, or moving frame, is implicitly defined when
+///   adding a joint. This frame is described by the joint's state dependent
+///   transformation `X_FM(q)` with `q` here representing the generalized
+///   coordinates introduced by this joint. `X_FM(q)` is computed by
+///   DrakeJoint::jointTransform().
+/// - The body frame B located at the body's center of mass but not
+///   necessarily oriented to be aligned with the principal axes of inertia.
+///   For example, if defining a rigid body using the URDF specification,
+///   this frame is defined with the `<origin>` element within the `<link>`
+///   element in the form of a transform `X_MB`.
+/// - The inertial properties of the body. Where the center of mass is
+///   measured and expressed in M and corresponds to `X_MB.translation()`.
+///   The moments of inertia are specified in the frame of the body B.
+///
+/// @ingroup multibody_dynamics
+/// @}
+
 /**
  * Maintains a vector of RigidBody objects that are arranged into a kinematic
  * tree via DrakeJoint objects. It provides various utility methods for
@@ -69,6 +99,7 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  * index to get its index in the RigidBodyTree's full state vector.
  *
  * @tparam T The scalar type. Must be a valid Eigen scalar.
+ * @ingroup multibody_dynamics
  */
 template <typename T>
 class RigidBodyTree {

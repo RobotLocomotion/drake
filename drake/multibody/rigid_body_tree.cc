@@ -394,7 +394,7 @@ void RigidBodyTree<T>::drawKinematicTree(
     dotfile << "mass=" << body->get_mass()
             << ", com=" << body->get_center_of_mass().transpose() << endl;
     dotfile << "spatial inertia=" << endl
-            << body->get_spatial_inertia() << endl;
+            << body->get_spatial_inertia_in_M() << endl;
     dotfile << "\"];" << endl;
     if (body->has_parent_body()) {
       const auto& joint = body->getJoint();
@@ -1028,7 +1028,7 @@ void RigidBodyTree<T>::updateCompositeRigidBodyInertias(
       auto element = cache.get_mutable_element(body.get_body_index());
       element->inertia_in_world = transformSpatialInertia(
           element->transform_to_world,
-          body.get_spatial_inertia().template cast<Scalar>());
+          body.get_spatial_inertia_in_M().template cast<Scalar>());
       element->crb_in_world = element->inertia_in_world;
     }
 
