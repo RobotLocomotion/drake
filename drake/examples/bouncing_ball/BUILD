@@ -46,5 +46,6 @@ cc_googletest(
     name = "bouncing_ball_test",
     deps = [
         ":bouncing_ball",
+        "//drake/systems/analysis",
     ],
 )

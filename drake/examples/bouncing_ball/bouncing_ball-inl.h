@@ -11,7 +11,6 @@
 #include <limits>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/extract_double.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
