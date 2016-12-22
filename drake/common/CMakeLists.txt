@@ -21,11 +21,14 @@ set(sources
   symbolic_environment.cc
   symbolic_expression.cc
   symbolic_expression_cell.cc
+  symbolic_expression_cell.h
   symbolic_formula.cc
   symbolic_formula_cell.cc
+  symbolic_formula_cell.h
   symbolic_indeterminate.cc
   symbolic_variable.cc
   symbolic_variable_cell.cc
+  symbolic_variable_cell.h
   symbolic_variables.cc
   text_logging.cc
   )
