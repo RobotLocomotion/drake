@@ -2,6 +2,7 @@
 
 #include "drake/math/gradient.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
@@ -99,6 +100,33 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
 
 template class QuadrotorPlant<double>;
 template class QuadrotorPlant<AutoDiffXd>;
+
+std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
+    const QuadrotorPlant<double>* quad, Eigen::Vector3d nominal_position) {
+  auto quad_context_goal = quad->CreateDefaultContext();
+
+  // Steady state hover input.
+  quad_context_goal->FixInputPort(0, Eigen::VectorXd::Zero(4));
+
+  Eigen::VectorXd x0 = Eigen::VectorXd::Zero(12);
+  x0.topRows(3) = nominal_position;
+
+  Eigen::VectorXd u0 = Eigen::VectorXd::Ones(4);
+
+  // Nominal input corresponds to a hover.
+  u0 *= quad->get_m() * quad->get_g() / 4;
+
+  quad_context_goal->FixInputPort(0, u0);
+  quad->set_state(quad_context_goal.get(), x0);
+
+  // Setup LQR Cost matrices (penalize position error 10x more than velocity.
+  Eigen::MatrixXd Q = Eigen::MatrixXd::Identity(12, 12);
+  Q *= 10;
+
+  Eigen::Matrix4d R = Eigen::Matrix4d::Identity();
+
+  return systems::LinearQuadraticRegulator(*quad, *quad_context_goal, Q, R);
+}
 
 }  // namespace quadrotor
 }  // namespace examples

@@ -4,6 +4,7 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/primitives/affine_system.h"
 
 namespace drake {
 namespace examples {
@@ -34,6 +35,9 @@ class QuadrotorPlant : public systems::LeafSystem<T> {
     context->get_mutable_continuous_state_vector()->SetFromVector(x);
   }
 
+  double get_m() const { return m; }
+  double get_g() const { return g; }
+
  protected:
   void DoCalcOutput(const systems::Context<T> &context,
                     systems::SystemOutput<T> *output) const override;
@@ -52,8 +56,14 @@ class QuadrotorPlant : public systems::LeafSystem<T> {
   int kStateDimension{12}, kInputDimension{4};
   const Matrix3<T> I{
       ((Eigen::Matrix3d() << 0.0023, 0, 0, 0, 0.0023, 0, 0, 0, 0.0040)
-           .finished())};  // Momment of Inertia about the Center of Mass
+           .finished())};  // Moment of Inertia about the Center of Mass
 };
+
+/// Generates an LQR controller to move to @p nominal_position. Internally
+/// computes the nominal input corresponding to a hover at position @p x0.
+/// @see systems::LinearQuadraticRegulator.
+std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
+    const QuadrotorPlant<double>* acrobot, Eigen::Vector3d nominal_position);
 
 }  // namespace quadrotor
 }  // namespace examples
