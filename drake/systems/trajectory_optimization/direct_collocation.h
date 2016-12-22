@@ -47,10 +47,9 @@ class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
   void AddRunningCost(std::shared_ptr<solvers::Constraint> constraint) override;
 
   PiecewisePolynomialTrajectory ReconstructStateTrajectory() const override;
-  // TODO(Lucy-tri) According to @siyuanfeng-tri, the calculation of
+  // TODO(Lucy-tri) According to @siyuanfeng-tri, the current calculation of
   // derivatives is not correct for floating base joints. More strongly, we
-  // can't just do independent spline for any joints that coupled degrees of
-  // freedom.
+  // can't use independent splines for joints with coupled degrees of freedom.
 
   // Disable copy and assign.
   DircolTrajectoryOptimization(const DircolTrajectoryOptimization&) = delete;
