@@ -7,8 +7,6 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_assert.h"
-#include "drake/common/number_traits.h"
 #include "drake/common/symbolic_decision_variable.h"
 
 namespace drake {
@@ -106,8 +104,8 @@ class VariableList {
 
  private:
   std::list<DecisionVariableMatrixX> variables_;
-  size_t size_;
-  bool column_vectors_only_;
+  size_t size_{};
+  bool column_vectors_only_{};
   std::unordered_set<DecisionVariableScalar, DecisionVariableScalarHash>
       unique_variable_indices_;
 };

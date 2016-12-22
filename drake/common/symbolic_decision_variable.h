@@ -121,9 +121,9 @@ class DecisionVariableScalar : public VariableCell {
         index_{index} {}
 
   void set_value(double new_value) { *value_ = new_value; }
-  VarType type_;
-  double* value_;
-  size_t index_;
+  VarType type_{};
+  double* value_{nullptr};
+  size_t index_{};
 };
 
 /**

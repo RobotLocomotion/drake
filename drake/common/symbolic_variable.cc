@@ -19,7 +19,6 @@ using std::string;
 namespace drake {
 namespace symbolic {
 
-/** Total ordering between VariableKind. */
 bool operator<(const VariableKind k1, const VariableKind k2) {
   return static_cast<size_t>(k1) < static_cast<size_t>(k2);
 }
