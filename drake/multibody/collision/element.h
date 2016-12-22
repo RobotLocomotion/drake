@@ -90,7 +90,7 @@ class Element : public DrakeShapes::Element {
    * allows the collision engine to perform certain optimizations not
    * generally possible for moving objects.
    */
-  bool is_anchored() { return is_anchored_; }
+  bool is_anchored() const { return is_anchored_; }
 
   /**
    * Returns true if this element should be checked for collisions

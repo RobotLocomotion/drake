@@ -129,21 +129,19 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   DrakeShapes::Box geometry_1(Vector3d(1, 1, 1));
   DrakeShapes::Sphere geometry_2(0.5);
   DrakeShapes::Sphere geometry_3(0.5);
-  auto element_1 = make_unique<Element>(geometry_1);
-  ElementId id1 = element_1->getId();
-  auto element_2 = make_unique<Element>(geometry_2, T_elem2_to_body);
-  ElementId id2 = element_2->getId();
-  auto element_3 = make_unique<Element>(geometry_3);
-  ElementId id3 = element_3->getId();
 
   // Populate the model.
   std::shared_ptr<Model> model = newModel();
-  model->AddElement(move(element_1));
-  model->AddElement(move(element_2));
-  model->AddElement(move(element_3));
-  model->updateElementWorldTransform(id1, T_body1_to_world);
-  model->updateElementWorldTransform(id2, T_body2_to_world);
-  model->updateElementWorldTransform(id3, T_body3_to_world);
+  auto element_1 = model->AddElement(unique_ptr<Element>(new Element(geometry_1)));
+  auto element_2 =
+      model->AddElement(unique_ptr<Element>(new Element(geometry_2, T_elem2_to_body)));
+  auto element_3 = model->AddElement(unique_ptr<Element>(new Element(geometry_3)));
+  ElementId id1 = element_1->getId();
+  ElementId id2 = element_2->getId();
+  ElementId id3 = element_3->getId();
+  model->updateElementWorldTransform(element_1->getId(), T_body1_to_world);
+  model->updateElementWorldTransform(element_2->getId(), T_body2_to_world);
+  model->updateElementWorldTransform(element_3->getId(), T_body3_to_world);
 
   // Compute the closest points.
   const std::vector<ElementId> ids_to_check = {id1, id2, id3};
@@ -268,10 +266,8 @@ class BoxVsSphereTest : public ::testing::Test {
 
     // Populate the model.
     model_ = newModel();
-    unique_ptr<Element> colliding_box(box_ = new Element(box));
-    unique_ptr<Element> colliding_sphere(sphere_ = new Element(sphere));
-    model_->AddElement(move(colliding_box));
-    model_->AddElement(move(colliding_sphere));
+    box_ = model_->AddElement(make_unique<Element>(box));
+    sphere_ = model_->AddElement(make_unique<Element>(sphere));
 
     // Access the analytical solution to the contact point on the surface of
     // each collision element by element id.
@@ -425,12 +421,8 @@ class SmallBoxSittingOnLargeBox: public ::testing::Test {
 
     // Populate the model.
     model_ = newModel();
-    unique_ptr<Element> colliding_large_box(large_box_ =
-                                                new Element(large_box));
-    unique_ptr<Element> colliding_small_box(small_box_ =
-                                                new Element(small_box));
-    model_->AddElement(move(colliding_large_box));
-    model_->AddElement(move(colliding_small_box));
+    large_box_ = model_->AddElement(make_unique<Element>(large_box));
+    small_box_ = model_->AddElement(make_unique<Element>(small_box));
 
     // Access the analytical solution to the contact point on the surface of
     // each collision element by element id.
@@ -583,10 +575,8 @@ class NonAlignedBoxes: public ::testing::Test {
 
     // Populate the model.
     model_ = newModel();
-    unique_ptr<Element> colliding_box1(box1_ = new Element(box1));
-    unique_ptr<Element> colliding_box2(box2_ = new Element(box2));
-    model_->AddElement(move(colliding_box1));
-    model_->AddElement(move(colliding_box2));
+    box1_ = model_->AddElement(make_unique<Element>(box1));
+    box2_ = model_->AddElement(make_unique<Element>(box2));
 
     // Access the analytical solution to the contact point on the surface of
     // each collision element by element id.
@@ -778,6 +768,9 @@ GTEST_TEST(ModelTest, AnchoredElements) {
   // on the *elements* themselves.  This confirms that this information is
   // properly inherited by the underlying collision model
   // Flags ball1 and ball4 to be anchored.
+
+  // NOTE: These elements are being instantiated here so that their anchored
+  // state can be set *before* adding to the collision model.
   auto ball1 = make_unique<Element>(sphere);
   ball1->set_anchored();
   pose.translation() = Vector3d(0.45, 0.45, 0.0);
@@ -828,6 +821,9 @@ GTEST_TEST(ModelTest, AnchoredMeshes) {
   // Creates collision elements.
   // Flag cap_element to be anchored. If not, Drake will create a convex hull
   // for dynamic collision elements out of the points in the mesh.
+
+  // NOTE: The elements are being instantiated here so that the anchored state
+  // can be set *before* registering with the collision model.
   auto sphere_element = make_unique<Element>(sphere_shape);
   Element* sphere = sphere_element.get();
   auto cap_element = make_unique<Element>(cap_shape);
