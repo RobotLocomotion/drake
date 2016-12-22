@@ -123,7 +123,15 @@ class RobotPlanRunner {
           continue;
         }
         // Treat the matrix at knots[i] as a column vector.
-        knots[i](name_to_idx[state.joint_name[j]], 0) = state.joint_position[j];
+        if (i == 0) {
+          // Always start moving from the position which we're
+          // currently commanding.
+          knots[i](name_to_idx[state.joint_name[j]], 0) =
+              iiwa_status_.joint_position_commanded[j];
+        } else {
+          knots[i](name_to_idx[state.joint_name[j]], 0) =
+              state.joint_position[j];
+        }
       }
     }
 
