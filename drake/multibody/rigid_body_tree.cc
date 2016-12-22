@@ -129,7 +129,7 @@ bool RigidBodyTree<T>::transformCollisionFrame(
   auto map_itr = body_collision_map_.find(body);
   if (map_itr != body_collision_map_.end()) {
     BodyCollisions& collision_items = map_itr->second;
-    for (auto& item : collision_items) {
+    for (const auto& item : collision_items) {
       element_order_[item.element]->SetLocalTransform(
           displace_transform *
           element_order_[item.element]->getLocalTransform());
@@ -298,10 +298,10 @@ template <typename T>
 void RigidBodyTree<T>::CompileCollisionState() {
   // Identifies and processes collision elements that should be marked
   // "anchored".
-  for (auto& pair : body_collision_map_) {
+  for (const auto& pair : body_collision_map_) {
     RigidBody<T>* body = pair.first;
     if (body->IsRigidlyFixedToWorld()) {
-      BodyCollisions& elements = pair.second;
+      const BodyCollisions& elements = pair.second;
       for (const auto& collision_item : elements) {
         element_order_[collision_item.element]->set_anchored();
         element_order_[collision_item.element]->updateWorldTransform(
@@ -371,6 +371,10 @@ void RigidBodyTree<T>::CreateCollisionCliques() {
   }
 
   // Collision elements on "adjacent" bodies belong in the same clique.
+  // This allows coarse link collision geometry. This coarse geometry might
+  // superficially collide, but not represent a *physical* collision.  Instead,
+  // it is assumed that constraints on the relative poses of adjacent links is
+  // determined by joint limits.
   // This is an O(N^2) loop -- but only happens at initialization.
   // If this proves to be too expensive, walking the tree would be O(N)
   // and still capture all of the adjacency.
@@ -384,11 +388,11 @@ void RigidBodyTree<T>::CreateCollisionCliques() {
       // cliques.  In the future, don't collapse these.
       if (!body_i->CanCollideWith(*body_j)) {
         BodyCollisions& elements_i =  body_collision_map_[body_i];
-        for (auto& item : elements_i) {
+        for (const auto& item : elements_i) {
           element_order_[item.element]->AddToCollisionClique(clique_id);
         }
         BodyCollisions& elements_j =  body_collision_map_[body_j];
-        for (auto& item : elements_j) {
+        for (const auto& item : elements_j) {
           element_order_[item.element]->AddToCollisionClique(clique_id);
         }
         clique_id = get_next_clique_id();
