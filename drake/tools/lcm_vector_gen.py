@@ -369,7 +369,8 @@ def generate_code(args):
             print "generating %s" % lcm.name
             put(lcm, LCMTYPE_PREAMBLE % context, 2)
             for field in fields:
-                put(lcm, "  double {};  // {}".format(field['name'], field['doc']), 1)
+                put(lcm, "  double {};  // {}".format(field['name'],
+                                                      field['doc']), 1)
             put(lcm, LCMTYPE_POSTAMBLE % context, 1)
 
 
