@@ -13,3 +13,6 @@ To specify a different version, execute:
     $ env CLANG_FORMAT=clang-format-x.x ./simple_car_gen.sh
 
 where `x.x` matches the version of your choice.
+
+Note that clang-format 3.7.1 will not correctly alphabetize the `#include`
+section. Please use at least clang-format 3.8.0.
