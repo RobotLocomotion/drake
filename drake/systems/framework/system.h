@@ -19,29 +19,55 @@ namespace drake {
 namespace systems {
 
 /// A description of a discrete-time event, which is passed from the Simulator
-/// to the recipient System's appropriate event handler method.
+/// to the recipient System's appropriate event handling method. Different
+/// DiscreteEvent ActionTypes trigger different event handlers, which are
+/// permitted to modify different state fields. For instance, publish events may
+/// not modify any state at all, discrete update events may modify the discrete
+/// state only, and unrestricted update events may modify any state. The
+/// event handlers do not apply state updates to the Context directly. Instead,
+/// they write the updates into a separate buffer that the Simulator provides.
+
 template <typename T>
 struct DiscreteEvent {
   typedef std::function<void(const Context<T>&)> PublishCallback;
   typedef std::function<void(const Context<T>&, DiscreteState<T>*)>
-      CalcUpdateCallback;
+      DiscreteUpdateCallback;
+  typedef std::function<void(const Context<T>&, State<T>*)>
+      UnrestrictedUpdateCallback;
 
+  /// These enumerations represent an indication of the type of event that
+  /// triggered the event handler, toward obviating the need to redetermine
+  /// the reason that the event handler is called.
   enum ActionType {
-    kUnknownAction = 0,  // A default value that causes the handler to abort.
-    kPublishAction = 1,  // On a publish action, state does not change.
-    kUpdateAction = 2,   // On an update action, discrete state may change.
+    /// A default value that causes the handler to abort.
+    kUnknownAction = 0,
+
+    /// On publish actions, state does not change.
+    kPublishAction = 1,
+
+    /// On discrete updates, discrete state may change.
+    kDiscreteUpdateAction = 2,
+
+    /// On unrestricted updates, the state variables may change arbitrarily.
+    kUnrestrictedUpdateAction = 3,
   };
 
   /// The type of action the system must take in response to the event.
   ActionType action{kUnknownAction};
 
   /// An optional callback, supplied by the recipient, to carry out a
-  /// kPublishAction. If nullptr, Publish will be used.
+  /// kPublishAction. If nullptr, Publish() will be used.
   PublishCallback do_publish{nullptr};
 
   /// An optional callback, supplied by the recipient, to carry out a
-  /// kUpdateAction. If nullptr, DoCalcDiscreteVariableUpdates() will be used.
-  CalcUpdateCallback do_calc_update{nullptr};
+  /// kDiscreteUpdateAction. If nullptr, DoCalcDiscreteVariableUpdates() will
+  /// be used.
+  DiscreteUpdateCallback do_calc_discrete_variable_update{nullptr};
+
+  /// An optional callback, supplied by the recipient, to carry out a
+  /// kUpdateUnrestrictedAction. If nullptr, DoCalcUnrestrictedUpdate() will be
+  /// used.
+  UnrestrictedUpdateCallback do_unrestricted_update{nullptr};
 };
 
 /// A token that identifies the next sample time at which a System must
@@ -195,27 +221,36 @@ class System {
   /// appropriate subsystem evaluate the source output port.
   //@{
 
-  // TODO(sherm1) EvalTimeDerivatives(), EvalDiscreteVariableUpdates(),
-  //              EvalUnrestrictedUpdate() PR #4382, EvalOutputPort().
+  /// This method is called to update *any* state variables in the @p context
+  /// because the given @p event has arrived. Dispatches to
+  /// DoCalcUnrestrictedUpdate() by default, or to
+  /// `event.do_unrestricted_update` if provided. Does not allow the
+  /// dimensionality of the state variables to change.
+  /// @throws std::logic_error if the dimensionality of the state variables
+  ///         changes in the callback.
+  void CalcUnrestrictedUpdate(const Context<T>& context,
+                              const DiscreteEvent<T>& event,
+                              State<T>* state) const {
+    const int64_t continuous_state_dim =
+                       state->get_continuous_state()->size();
+    const int64_t discrete_state_dim = state->get_discrete_state()->size();
+    const int64_t abstract_state_dim = state->get_abstract_state()->size();
+    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
 
-  // These are here as models of API-to-be.
+    // Copy current state to the passed-in state, as specified in the
+    // documentation for DoCalclUnrestrictedUpdate().
+    state->CopyFrom(context.get_state());
 
-  /// Returns a reference to the cached value of the potential energy. If
-  /// necessary the cache will be updated first using CalcPotentialEnergy().
-  /// @see CalcPotentialEnergy()
-  const T& EvalPotentialEnergy(const Context<T>& context) const {
-    // TODO(sherm1) Replace with an actual cache entry.
-    fake_cache_pe_ = CalcPotentialEnergy(context);
-    return fake_cache_pe_;
-  }
-
-  /// Returns a reference to the cached value of the kinetic energy. If
-  /// necessary the cache will be updated first using CalcKineticEnergy().
-  /// @see CalcKineticEnergy()
-  const T& EvalKineticEnergy(const Context<T>& context) const {
-    // TODO(sherm1) Replace with an actual cache entry.
-    fake_cache_ke_ = CalcKineticEnergy(context);
-    return fake_cache_ke_;
+    if (event.do_unrestricted_update == nullptr) {
+      DoCalcUnrestrictedUpdate(context, state);
+    } else {
+      event.do_unrestricted_update(context, state);
+    }
+    if (continuous_state_dim != state->get_continuous_state()->size() ||
+        discrete_state_dim != state->get_discrete_state()->size() ||
+        abstract_state_dim != state->get_abstract_state()->size())
+      throw std::logic_error("State variable dimensions cannot be changed "
+                               "in CalcUnrestrictedUpdate().");
   }
 
   /// Returns a reference to the cached value of the conservative power. If
@@ -325,11 +360,11 @@ class System {
                                    const DiscreteEvent<T> &event,
                                    DiscreteState<T> *discrete_state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUpdateAction);
-    if (event.do_calc_update == nullptr) {
+    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kDiscreteUpdateAction);
+    if (event.do_calc_discrete_variable_update == nullptr) {
       DoCalcDiscreteVariableUpdates(context, discrete_state);
     } else {
-      event.do_calc_update(context, discrete_state);
+      event.do_calc_discrete_variable_update(context, discrete_state);
     }
   }
 
@@ -764,19 +799,21 @@ class System {
   /// been validated before it is passed to you here.
   virtual void DoPublish(const Context<T>& context) const {}
 
-  /// Given a Context containing current values for discrete variables `xd`,
-  /// this method should calculate new values that `xd` should have after the
-  /// update is complete. You should override it, along with
-  /// DoCalcNextUpdateTime() if you want your discrete
-  /// variables updated by a Simulator call to EvalDiscreteVariableUpdates().
-  ///
-  /// `discrete_state` is not a pointer into `context`. It is a separate
-  /// buffer, which the Simulator is responsible for writing back to
-  /// `context` later. That ensures that all simultaneous subsystem updates see
-  /// the same values in `context` when computing the updated values for their
+  /// Updates the @p discrete_state on sample events.
+  /// Override it, along with DoCalcNextUpdateTime, if your System has any
   /// discrete variables.
   virtual void DoCalcDiscreteVariableUpdates(
       const Context<T>& context, DiscreteState<T>* discrete_state) const {}
+
+  /// Updates the @p state *in an unrestricted fashion* on unrestricted update
+  /// events. Override this function if you need your System to update
+  /// abstract variables or generally make changes to state that cannot be
+  /// made using CalcDiscreteVariableUpdates() or via integration of continuous
+  /// variables.
+  /// @param[in,out] state the current state of the system on input; the desired
+  ///            state of the system on return.
+  virtual void DoCalcUnrestrictedUpdate(const Context<T>& context,
+                                        State<T>* state) const {}
 
   /// Computes the next time at which this System must perform a discrete
   /// action.

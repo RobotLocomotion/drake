@@ -213,10 +213,10 @@ TEST_F(SpringMassSystemTest, ForceEnergyAndPower) {
   const double v = system_->get_velocity(*context_);
   const double w_c = system_->get_conservative_work(*context_);
   const double f = system_->EvalSpringForce(*context_);
-  const double pe = system_->EvalPotentialEnergy(*context_);
-  const double ke = system_->EvalKineticEnergy(*context_);
-  const double power_c = system_->EvalConservativePower(*context_);
-  const double power_nc = system_->EvalNonConservativePower(*context_);
+  const double pe = system_->CalcPotentialEnergy(*context_);
+  const double ke = system_->CalcKineticEnergy(*context_);
+  const double power_c = system_->CalcConservativePower(*context_);
+  const double power_nc = system_->CalcNonConservativePower(*context_);
 
   EXPECT_EQ(q, 1.0);
   EXPECT_EQ(v, 2.0);
@@ -461,8 +461,8 @@ TEST_F(SpringMassSystemTest, IntegrateConservativePower) {
   system_->set_conservative_work(context.get(), 0.);  // W(0)=0
 
   // Save the initial energy.
-  const double pe0 = system_->EvalPotentialEnergy(*context);
-  const double ke0 = system_->EvalKineticEnergy(*context);
+  const double pe0 = system_->CalcPotentialEnergy(*context);
+  const double ke0 = system_->CalcKineticEnergy(*context);
   const double e0 = pe0 + ke0;
 
   while (true) {
@@ -473,8 +473,8 @@ TEST_F(SpringMassSystemTest, IntegrateConservativePower) {
 
     if (t >= kTfinal) break;
 
-    const double pe = system_->EvalPotentialEnergy(*context);
-    const double ke = system_->EvalKineticEnergy(*context);
+    const double pe = system_->CalcPotentialEnergy(*context);
+    const double ke = system_->CalcKineticEnergy(*context);
     const double e = pe + ke;
     EXPECT_NEAR(e, e0, 1e-3);
 

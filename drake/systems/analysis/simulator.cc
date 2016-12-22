@@ -36,7 +36,8 @@ template <typename T>
 void Simulator<T>::ResetStatistics() {
   integrator_->ResetStatistics();
   num_steps_taken_ = 0;
-  num_updates_ = 0;
+  num_discrete_updates_ = 0;
+  num_unrestricted_updates_ = 0;
   num_publishes_ = 0;
 
   initial_simtime_ = ExtractDoubleOrThrow(get_context().get_time());
