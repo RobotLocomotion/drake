@@ -187,7 +187,7 @@ void RigidBodyTree<T>::compile(void) {
   //   from the root towards the last leaf.
   for (size_t i = 0; i < bodies.size(); ++i) {
     if (bodies[i]->has_parent_body() &&
-        bodies[i]->get_spatial_inertia().isConstant(0)) {
+        bodies[i]->get_spatial_inertia_in_M().isConstant(0)) {
       bool hasChild = false;
       for (size_t j = i + 1; j < bodies.size(); ++j) {
         if (bodies[j]->has_as_parent(*bodies[i])) {
