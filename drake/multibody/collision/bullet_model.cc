@@ -267,28 +267,28 @@ void BulletModel::DoAddElement(const Element& element) {
   if (id != 0) {
     std::unique_ptr<btCollisionShape> bt_shape;
     std::unique_ptr<btCollisionShape> bt_shape_no_margin;
-    switch (elements[id]->getShape()) {
+    switch (element.getShape()) {
       case DrakeShapes::BOX: {
         const auto box =
-            static_cast<const DrakeShapes::Box&>(elements[id]->getGeometry());
+            static_cast<const DrakeShapes::Box&>(element.getGeometry());
         bt_shape = newBulletBoxShape(box, true);
         bt_shape_no_margin = newBulletBoxShape(box, false);
       } break;
       case DrakeShapes::SPHERE: {
         const auto sphere = static_cast<const DrakeShapes::Sphere&>(
-            elements[id]->getGeometry());
+            element.getGeometry());
         bt_shape = newBulletSphereShape(sphere, true);
         bt_shape_no_margin = newBulletSphereShape(sphere, false);
       } break;
       case DrakeShapes::CYLINDER: {
         const auto cylinder = static_cast<const DrakeShapes::Cylinder&>(
-            elements[id]->getGeometry());
+            element.getGeometry());
         bt_shape = newBulletCylinderShape(cylinder, true);
         bt_shape_no_margin = newBulletCylinderShape(cylinder, false);
       } break;
       case DrakeShapes::MESH: {
         const auto mesh =
-            static_cast<const DrakeShapes::Mesh&>(elements[id]->getGeometry());
+            static_cast<const DrakeShapes::Mesh&>(element.getGeometry());
         // TODO(SeanCurtis-TRI): Rather than catching the exception and falling
         // back to a convex hull (with notification), the better solution would
         // be to give the system the ability to triangulate on the fly.
@@ -296,7 +296,7 @@ void BulletModel::DoAddElement(const Element& element) {
         // TODO(SeanCurtis-TRI): This code is disabled because the collision
         // detection code is not yet in a state that can handle non-convex
         // meshes.  See issue 4548.
-//        if (elements[id]->is_anchored()) {
+//        if (element.is_anchored()) {
 //          try {
 //            bt_shape = newBulletStaticMeshShape(mesh, true);
 //            bt_shape_no_margin = newBulletStaticMeshShape(mesh, false);
@@ -312,20 +312,20 @@ void BulletModel::DoAddElement(const Element& element) {
       } break;
       case DrakeShapes::MESH_POINTS: {
         const auto mesh = static_cast<const DrakeShapes::MeshPoints&>(
-            elements[id]->getGeometry());
+            element.getGeometry());
         bt_shape = newBulletMeshPointsShape(mesh, true);
         bt_shape_no_margin = newBulletMeshPointsShape(mesh, false);
       } break;
       case DrakeShapes::CAPSULE: {
         const auto capsule = static_cast<const DrakeShapes::Capsule&>(
-            elements[id]->getGeometry());
+            element.getGeometry());
         bt_shape = newBulletCapsuleShape(capsule, true);
         bt_shape_no_margin = newBulletCapsuleShape(capsule, false);
       } break;
       default:
         std::cerr << "Warning: Collision elements[id] has an unknown type "
-                  << elements[id]->getShape() << std::endl;
-        throw UnknownShapeException(elements[id]->getShape());
+                  << element.getShape() << std::endl;
+        throw UnknownShapeException(element.getShape());
         break;
     }
     if (bt_shape) {
@@ -370,7 +370,7 @@ void BulletModel::DoAddElement(const Element& element) {
       //   2. The exclusive or operator (^) is an easy way to turn on/off
       //      specific bits (since A^0 = A and A^1 = ~A).
 
-      bool is_dynamic = !elements[id]->is_anchored();
+      bool is_dynamic = !element.is_anchored();
       short collision_filter_group =  is_dynamic?    // NOLINT(runtime/int)
           // NOLINTNEXTLINE(runtime/int)
           static_cast<short>(btBroadphaseProxy::DefaultFilter) :
@@ -944,7 +944,8 @@ BulletCollisionWorldWrapper& BulletModel::getBulletWorld(bool use_margins) {
   }
 }
 
-UnknownShapeException::UnknownShapeException(DrakeShapes::Shape shape) {
+UnknownShapeException::UnknownShapeException(DrakeShapes::Shape shape)
+    : runtime_error("") {
   std::ostringstream ostr;
   ostr << shape;
   this->shape_name_ = ostr.str();

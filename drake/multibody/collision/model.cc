@@ -9,15 +9,19 @@ using std::vector;
 
 namespace DrakeCollision {
 
-bool Model::AddElement(std::unique_ptr<Element> element) {
+Element* Model::AddElement(std::unique_ptr<Element> element) {
   ElementId id = element->getId();
   const auto& itr = elements.find(id);
   if (itr == elements.end()) {
     elements.insert(make_pair(id, move(element)));
-    DoAddElement(*elements[id].get());
-    return true;
+    Element* raw_element = elements[id].get();
+    DoAddElement(*raw_element);
+    return raw_element;
   }
-  return false;
+  throw std::runtime_error(
+      "Attempting to add an element with a duplicate"
+      "id: " +
+      std::to_string(id));
 }
 
 bool Model::removeElement(ElementId id) {

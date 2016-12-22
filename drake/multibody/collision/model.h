@@ -19,12 +19,13 @@ class Model {
 
   virtual ~Model() {}
 
-  /** Adds a collision element to this model.  It only adds the provided element
-   * if the given @p element has a unique identifier.
+  /** Adds a collision element to this model.
    * @param element the element to add.
-   * @returns true if the element was added successfully.
+   * @returns a pointer to the added element.
+   * @throws a runtime_error if there was a problem (e.g., duplicate element id,
+   * error configuring collision  model, etc.)
    */
-  bool AddElement(std::unique_ptr<Element> element);
+  Element* AddElement(std::unique_ptr<Element> element);
 
   bool removeElement(ElementId id);
 
@@ -244,7 +245,7 @@ class Model {
   /** Allows sub-classes to do additional processing on elements added to the
    * collision model.  This is called each time Model::AddElement is called.
    * @param element the element that has been added.
-   * @returns true for successful processing.
+   * @throws std::runtime_error if there was a problem processing the element.
    */
   virtual void DoAddElement(const Element& element) {}
 

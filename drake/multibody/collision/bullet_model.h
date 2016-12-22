@@ -40,7 +40,7 @@ struct BulletCollisionWorldWrapper {
   std::unique_ptr<btCollisionWorld> bt_collision_world;
 };
 
-class UnknownShapeException : public std::exception {
+class UnknownShapeException : public std::runtime_error {
  public:
   explicit UnknownShapeException(DrakeShapes::Shape shape);
   virtual const char* what() const throw();
