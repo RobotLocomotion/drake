@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
+#include "drake/common/text_logging.h"
 #include "drake/multibody/collision/drake_collision.h"
 
 using Eigen::Isometry3d;
@@ -24,6 +25,20 @@ Eigen::Map<const Vector3d> toVector3d(const btVector3& bt_vec) {
 
 static const int kPerturbationIterations = 8;
 static const int kMinimumPointsPerturbationThreshold = 8;
+
+// Converts between two representations of a pose.
+btTransform convert(const Isometry3d& T) {
+  btTransform btT;
+  btMatrix3x3 rot;
+  btVector3 pos;
+
+  rot.setValue(T(0, 0), T(0, 1), T(0, 2), T(1, 0), T(1, 1), T(1, 2), T(2, 0),
+               T(2, 1), T(2, 2));
+  btT.setBasis(rot);
+  pos.setValue(T(0, 3), T(1, 3), T(2, 3));
+  btT.setOrigin(pos);
+  return btT;
+}
 
 struct BinaryContactResultCallback
     : public btCollisionWorld::ContactResultCallback {
@@ -243,8 +258,8 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletMeshPointsShape(
   return bt_shape;
 }
 
-ElementId BulletModel::addElement(const Element& element) {
-  ElementId id = Model::addElement(element);
+void BulletModel::DoAddElement(const Element& element) {
+  ElementId id = element.getId();
 
   if (id != 0) {
     std::unique_ptr<btCollisionShape> bt_shape;
@@ -271,10 +286,23 @@ ElementId BulletModel::addElement(const Element& element) {
       case DrakeShapes::MESH: {
         const auto mesh =
             static_cast<const DrakeShapes::Mesh&>(elements[id]->getGeometry());
-        if (elements[id]->is_static()) {  // A static mesh representation.
-          bt_shape = newBulletStaticMeshShape(mesh, true);
-          bt_shape_no_margin = newBulletStaticMeshShape(mesh, false);
-        } else {  // A convex hull representation of the mesh points.
+        // TODO(SeanCurtis-TRI): Rather than catching the exception and falling
+        // back to a convex hull (with notification), the better solution would
+        // be to give the system the ability to triangulate on the fly.
+        bool success = false;
+        // TODO(SeanCurtis-TRI): This code is disabled because the collision
+        // detection code is not yet in a state that can handle non-convex
+        // meshes.  See issue 4548.
+//        if (elements[id]->is_anchored()) {
+//          try {
+//            bt_shape = newBulletStaticMeshShape(mesh, true);
+//            bt_shape_no_margin = newBulletStaticMeshShape(mesh, false);
+//            success = true;
+//          } catch (std::exception &e) {
+//            drake::log()->log(spdlog::level::warn, e.what());
+//          }
+//        }
+        if (!success) {  // A convex hull representation of the mesh points.
           bt_shape = newBulletMeshShape(mesh, true);
           bt_shape_no_margin = newBulletMeshShape(mesh, false);
         }
@@ -339,7 +367,7 @@ ElementId BulletModel::addElement(const Element& element) {
       //   2. The exclusive or operator (^) is an easy way to turn on/off
       //      specific bits (since A^0 = A and A^1 = ~A).
 
-      bool is_dynamic = !elements[id]->is_static();
+      bool is_dynamic = !elements[id]->is_anchored();
       short collision_filter_group =  is_dynamic?    // NOLINT(runtime/int)
           // NOLINTNEXTLINE(runtime/int)
           static_cast<short>(btBroadphaseProxy::DefaultFilter) :
@@ -354,12 +382,21 @@ ElementId BulletModel::addElement(const Element& element) {
           static_cast<short>(
              btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
 
+      // NOTE: This is the *only* chance for the transform to be set on anchored
+      // geometry.  It is assumed that by the time the collision element has
+      // been added, its transforms have been properly set.  This does not
+      // preclude the possibility of *actively* moving it later and updating
+      // its world transform.
+      btTransform btT = convert(element.getWorldTransform());
+      bt_obj->setWorldTransform(btT);
+      bt_obj_no_margin->setWorldTransform(btT);
       bullet_world_.bt_collision_world->
           addCollisionObject(bt_obj.get(),
                              collision_filter_group, collision_filter_mask);
-      bullet_world_no_margin_.bt_collision_world->
-          addCollisionObject(bt_obj_no_margin.get(),
-                             collision_filter_group, collision_filter_mask);
+
+      bullet_world_no_margin_.bt_collision_world->addCollisionObject(
+          bt_obj_no_margin.get(), collision_filter_group,
+          collision_filter_mask);
 
       // Take ownership of the Bullet collision objects.
       bullet_world_.bt_collision_objects.insert(
@@ -373,7 +410,6 @@ ElementId BulletModel::addElement(const Element& element) {
       bt_collision_shapes_.push_back(move(bt_shape_no_margin));
     }
   }
-  return id;
 }
 
 std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
@@ -521,16 +557,7 @@ bool BulletModel::updateElementWorldTransform(
   const bool element_exists(
       Model::updateElementWorldTransform(id, T_local_to_world));
   if (element_exists) {
-    const Isometry3d& T = elements[id]->getWorldTransform();
-    btMatrix3x3 rot;
-    btVector3 pos;
-    btTransform btT;
-
-    rot.setValue(T(0, 0), T(0, 1), T(0, 2), T(1, 0), T(1, 1), T(1, 2), T(2, 0),
-                 T(2, 1), T(2, 2));
-    btT.setBasis(rot);
-    pos.setValue(T(0, 3), T(1, 3), T(2, 3));
-    btT.setOrigin(pos);
+    btTransform btT = convert(elements[id]->getWorldTransform());
 
     auto bt_obj_iter = bullet_world_.bt_collision_objects.find(id);
     auto bt_obj_no_margin_iter =
@@ -692,7 +719,7 @@ void BulletModel::collisionDetectFromPoints(
       btGjkPairDetector convexConvex(&shapeA, shapeB, &sGjkSimplexSolver, &epa);
 
       input.m_transformA =
-          btTransform(btQuaternion(1, 0, 0, 0),
+          btTransform(btQuaternion(0, 0, 0, 1),
                       btVector3(points(0, i), points(1, i), points(2, i)));
       input.m_transformB = bt_objB->getWorldTransform();
 

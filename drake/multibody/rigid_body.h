@@ -15,6 +15,8 @@
 #include "drake/multibody/collision/drake_collision.h"
 #include "drake/multibody/joints/drake_joint.h"
 
+using Eigen::Isometry3d;
+
 template <typename T>
 class RigidBody {
  public:
@@ -189,16 +191,11 @@ class RigidBody {
 
   const DrakeShapes::VectorOfVisualElements& get_visual_elements() const;
 
-  /**
-   * Sets the rigid body's self-collision logic.
-   *
-   * The body may or may not require a self-collision clique. If not, the
-   * provided clique id will remain unused.
-   * @param[in] clique_id  An available clique id.
-   * @returns true if the clique id was used.
-   */
-  bool SetSelfCollisionClique(int clique_id);
-
+  // TODO(SeanCurtis-TRI): This shouldn't be called publicly. Collision elements
+  // have to be processed in the context of the rigid body tree.  Long term,
+  // this will be displaced into GeometryWorld.  Short term, just don't call it.
+  // If you need to add a collision element to a body, add it through
+  // RigidBodyTree::addCollisionElement.
   /**
    * Adds the given collision @p element to the body with the given group name.
    * @param[in] group_name The collision element's group name.
@@ -236,6 +233,25 @@ class RigidBody {
   std::map<std::string, std::vector<DrakeCollision::ElementId>>&
     get_mutable_group_to_collision_ids_map();
 
+  /**
+   * Reports if there is a path in this tree from this body to the world where
+   * all joints are *fixed*. This requires that the RigidBody be properly
+   * connected into a RigidBodyTree in that the only RigidBody that doesn't have
+   * a parent body is the world body.  Furthermore, every RigidBody is connected
+   * to its parent body through a valid DrakeJoint.
+   */
+  bool IsRigidlyFixedToWorld() const;
+
+  /**
+   * Reports the transform from this body to the world frame based on the
+   * *rigid* pose. The rigid pose is the pose defined at instantiation; based
+   * purely on the transforms that map parent joints to parent frames.
+   * This can only be invoked on a body that is rigidly fixed to
+   * the world (@see IsRigidlyFixedToWorld).  If the body is not rigidly fixed
+   * to the world, an exception will be thrown.
+   * @return The world transform between this body and the world frame.
+   */
+  Isometry3d ComputeWorldPose() const;
 
   void setCollisionFilter(const DrakeCollision::bitmask& group,
                           const DrakeCollision::bitmask& ignores);
@@ -354,15 +370,6 @@ class RigidBody {
   void ApplyTransformToJointFrame(
       const Eigen::Isometry3d& transform_body_to_joint);
 
-  /** Adds body to a given collision clique by clique id.
-   *
-   * This call adds each of the collision elements in this body to the provided
-   * collision clique.
-   * @param[in] clique_id Collision clique id.
-   * @see Element::AddToCollisionClique.
-   */
-  void AddCollisionElementsToClique(int clique_id);
-
  public:
   friend std::ostream& operator<<(
       std::ostream& out, const RigidBody<double>& b);
@@ -371,6 +378,17 @@ class RigidBody {
 #ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
+
+  typedef std::vector<DrakeCollision::Element*> CollisionElementsVector;
+  typedef typename CollisionElementsVector::iterator CollisionElementsIterator;
+
+  CollisionElementsIterator collision_elements_begin() {
+    return collision_elements_.begin();
+  }
+
+  CollisionElementsIterator collision_elements_end() {
+    return collision_elements_.end();
+  }
 
  private:
   // TODO(tkoolen): It's very ugly, but parent, dofnum, and pitch also exist
@@ -428,17 +446,6 @@ class RigidBody {
   // anything in terms of how the collision elements relate to each other.
   std::map<std::string, std::vector<DrakeCollision::ElementId>>
       collision_element_groups_;
-
-  typedef std::vector<DrakeCollision::Element*> CollisionElementsVector;
-  typedef typename CollisionElementsVector::iterator CollisionElementsIterator;
-
-  CollisionElementsIterator collision_elements_begin() {
-    return collision_elements_.begin();
-  }
-
-  CollisionElementsIterator collision_elements_end() {
-    return collision_elements_.end();
-  }
 
   // The contact points this rigid body has with its environment.
   Eigen::Matrix3Xd contact_points_;

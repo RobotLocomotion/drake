@@ -1,0 +1,33 @@
+<robot name="contact_point_generator">
+  <link name="body">
+
+    <collision group="zero">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+         <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+
+    <collision group="one">
+      <origin xyz="1 0 0" rpy="0 0 0"/>
+      <geometry>
+         <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+
+    <collision group="two">
+      <origin xyz="2 0 0" rpy="0 0 0"/>
+      <geometry>
+         <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+
+    <collision group="two">
+      <origin xyz="3 0 0" rpy="0 0 0"/>
+      <geometry>
+         <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+
+  </link>
+</robot>

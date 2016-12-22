@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../../doc/drakeURDF.xsd" name="FallingBrick">
+  <link name="brick">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="2" iyz="0" izz="2"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <box size="2 .5 1" />
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="2 .5 1" />
+      </geometry>
+    </collision>
+  </link>
+</robot>
+
