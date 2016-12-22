@@ -27,8 +27,9 @@ Eigen::Map<const Vector3d> toVector3d(const btVector3& bt_vec) {
 static const int kPerturbationIterations = 8;
 static const int kMinimumPointsPerturbationThreshold = 8;
 
+namespace {
 // Converts between two representations of a pose.
-btTransform convert(const Isometry3d& T) {
+btTransform convert(const Isometry3d &T) {
   btTransform btT;
   btMatrix3x3 rot;
   btVector3 pos;
@@ -39,6 +40,7 @@ btTransform convert(const Isometry3d& T) {
   pos.setValue(T(0, 3), T(1, 3), T(2, 3));
   btT.setOrigin(pos);
   return btT;
+}
 }
 
 struct BinaryContactResultCallback
@@ -383,11 +385,11 @@ void BulletModel::DoAddElement(const Element& element) {
           static_cast<short>(
              btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
 
-      // NOTE: This is the *only* chance for the transform to be set on anchored
-      // geometry.  It is assumed that by the time the collision element has
-      // been added, its transforms have been properly set.  This does not
-      // preclude the possibility of *actively* moving it later and updating
-      // its world transform.
+      // NOTE: The bullet collision object is assigned the Drake element's
+      // world transform.  This will be the *only* time that anchored collision
+      // objects will have their world transform set.  This code assumes that
+      // the world transform on the corresponding input Drake element has
+      // already been properly set. (See RigidBodyTree::CompileCollisionState.)
       btTransform btT = convert(element.getWorldTransform());
       bt_obj->setWorldTransform(btT);
       bt_obj_no_margin->setWorldTransform(btT);
