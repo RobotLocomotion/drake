@@ -335,17 +335,22 @@ class RigidBody {
   const drake::SquareTwistMatrix<double>& get_spatial_inertia_in_M() const;
 
   /**
-   * Transforms all of the visual, collision, and inertial elements associated
+   * Transforms all of the visual and inertial elements associated
    * with this body to the proper joint frame.  This is necessary, for instance,
    * to support SDF loading where the child frame can be specified independently
    * from the joint frame. In our RigidBodyTree classes, the body frame IS the
    * joint frame.
    *
-   * @param transform_body_to_joint The transform from this body's frame to the
+   * @param X_MB The transform from this body's frame to the
    * joint's frame.
    */
+  // TODO(liang.fok): Remove this method. It is a bad idea to use RBT as an
+  // intermediate representation to save IB_B and then convert it later to
+  // IM_M. The real problem here is exposing this to users who should be very
+  // specific about what inertias they are working with.
+  // Move this method to sdf_parser.cc, the only place that uses it.
   void ApplyTransformToJointFrame(
-      const Eigen::Isometry3d& transform_body_to_joint);
+      const Eigen::Isometry3d& X_MB);
 
   /** Adds body to a given collision clique by clique id.
    *

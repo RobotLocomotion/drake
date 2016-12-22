@@ -242,12 +242,11 @@ bool RigidBody<T>::appendCollisionElementIdsFromThisBody(
 }
 
 template <typename T>
-void RigidBody<T>::ApplyTransformToJointFrame(
-    const Eigen::Isometry3d& transform_body_to_joint) {
-  spatial_inertia_ = transformSpatialInertia(transform_body_to_joint,
-      spatial_inertia_);
+void RigidBody<T>::ApplyTransformToJointFrame(const Eigen::Isometry3d& X_MB) {
+  spatial_inertia_M_ =
+      transformSpatialInertia(X_MB, spatial_inertia_M_);
   for (auto& v : visual_elements_) {
-    v.SetLocalTransform(transform_body_to_joint * v.getLocalTransform());
+    v.SetLocalTransform(X_MB * v.getLocalTransform());
   }
 }
 
