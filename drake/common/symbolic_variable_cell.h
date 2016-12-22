@@ -13,8 +13,8 @@ namespace symbolic {
  * symbolic::DecisionVariableScalar classes. */
 class VariableCell {
  public:
-  /** Default constructor. */
-  VariableCell() = default;
+  /** Default constructor (DELETED). */
+  VariableCell() = delete;
   /** Constructs a variable with kind and string. */
   VariableCell(VariableKind kind, const std::string& name);
   /** Constructs a variable with kind, string, and hash. */

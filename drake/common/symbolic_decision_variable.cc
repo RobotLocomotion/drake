@@ -51,11 +51,24 @@ bool DecisionVariableScalar::less(const VariableCell& var) const {
   if (dvs.type_ < type_) {
     return false;
   }
-  if (value_ < dvs.value_) {
-    return true;
-  }
-  if (dvs.value_ < value_) {
-    return false;
+  if (value_ || dvs.value_) {
+    if (value_ == nullptr) {
+      // nullptr < non-nullptr
+      return true;
+    }
+    if (dvs.value_ == nullptr) {
+      // non-nullptr > nullptr
+      return false;
+    }
+    if (*value_ < *dvs.value_) {
+      return true;
+    }
+    if (*dvs.value_ < *value_) {
+      return false;
+    }
+  } else {
+    // Both of value_ and dvs.value_ are null-pointers, move on to the next
+    // member, index_.
   }
   return index_ < dvs.index_;
 }

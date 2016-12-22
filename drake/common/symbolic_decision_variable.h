@@ -5,12 +5,13 @@
 #include <ostream>
 #include <string>
 
+#include <Eigen/Core>
+
+#include "drake/common/drake_assert.h"
 #include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variable_cell.h"
-
-#include <Eigen/Core>
 
 namespace drake {
 
@@ -84,6 +85,7 @@ class DecisionVariableScalar : public VariableCell {
    */
   double value() const {
     // TODO(hongkai.dai): check if Solve() has been called.
+    DRAKE_DEMAND(value_);
     return *value_;
   }
 
@@ -120,10 +122,13 @@ class DecisionVariableScalar : public VariableCell {
         value_{value},
         index_{index} {}
 
-  void set_value(double new_value) { *value_ = new_value; }
-  VarType type_;
-  double* value_;
-  size_t index_;
+  void set_value(double new_value) {
+    DRAKE_DEMAND(value_);
+    *value_ = new_value;
+  }
+  VarType type_{VarType::CONTINUOUS};
+  double* value_{nullptr};
+  size_t index_{};
 };
 
 /**
@@ -138,7 +143,6 @@ std::ostream& operator<<(std::ostream& os, const DecisionVariableScalar& var);
 namespace Eigen {
 /// Eigen scalar type traits for Matrix<DecisionVariableScalar>.
 template <>
-
 struct NumTraits<drake::symbolic::DecisionVariableScalar> {
   static inline int digits10() { return 0; }
   enum {

@@ -30,7 +30,7 @@ class DecisionVariableScalar;  // In drake/common/symbolic_decision_variable.h
  *        | const std::shared_ptr<VariableCell> ptr_; |
  *        +-------------------------------------------+
  *
- * Variafble is a simple wrapper including a shared pointer to VariableCell
+ * Variable is a simple wrapper including a shared pointer to VariableCell
  * class, which is the base-class of different kinds of symbolic variables
  * (Indeterminate and DecisionVariableScalar). See the following inheritance
  * diagram.
@@ -102,19 +102,23 @@ class Variable {
 
 std::ostream& operator<<(std::ostream& os, const Variable& var);
 
-/// Checks total ordering between the two variables.
+/** Checks total ordering between the two variables. */
 bool operator<(const Variable& lhs, const Variable& rhs);
 
-/// Checks equality of two variables.
+/** Checks equality of two variables. */
 bool operator==(const Variable& lhs, const Variable& rhs);
 
-/// Checks if @p var is an indeterminate variable. */
+/** Checks if @p var is an indeterminate variable. */
 bool is_indeterminate(const Variable& var);
-/// Checks if @p var is a decision variable scalar. */
+/** Checks if @p var is a decision variable scalar. */
 bool is_decision_variable_scalar(const Variable& var);
-/// Returns the indeterminate embedded in @p var. */
+/** Returns the indeterminate embedded in @p var.
+ *  \pre{@c *(var.ptr_) is of @c Indeterminate.}
+ */
 Indeterminate get_indeterminate(const Variable& var);
-/// Returns the decision variable scalar embedded in @p var. */
+/** Returns the decision variable scalar embedded in @p var.
+ *  \pre{@c *(var.ptr_) is of @c DecisionVariableScalar.}
+ */
 DecisionVariableScalar get_decision_variable_scalar(const Variable& var);
 
 }  // namespace symbolic
