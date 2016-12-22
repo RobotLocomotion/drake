@@ -45,7 +45,11 @@ class KinematicsCacheElement {
   Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, 0,
                 DrakeJoint::MAX_NUM_POSITIONS,
                 DrakeJoint::MAX_NUM_VELOCITIES> v_to_qdot;
+  // Spatial inertia computed about the world's origin and expressed in the
+  // world's frame, i.e. I(W)_W
   drake::SquareTwistMatrix<T> inertia_in_world;
+  // Composite rigid body inertia computed about the world's origin and
+  // expressed in the world's frame, i.e. Icrb(W)_w.
   drake::SquareTwistMatrix<T> crb_in_world;
 
   /*
