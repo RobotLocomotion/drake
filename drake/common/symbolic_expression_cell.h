@@ -680,52 +680,80 @@ bool is_max(const ExpressionCell& c);
 bool is_if_then_else(const ExpressionCell& c);
 
 /** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
- * shared_ptr<ExpressionConstant>. */
+ *  @c shared_ptr<ExpressionConstant>.
+ *  \pre{@p *exp_ptr is of @c ExpressionConstant.}
+ */
 std::shared_ptr<ExpressionConstant> to_constant(
     const std::shared_ptr<ExpressionCell> exp_ptr);
-/** Casts @p e of Expression to shared_ptr<ExpressionConstant>. */
+/** Casts @p e of Expression to @c shared_ptr<ExpressionConstant>.
+ *  \pre{@p *(e.ptr_) is of @c ExpressionConstant.}
+ */
 std::shared_ptr<ExpressionConstant> to_constant(const Expression& e);
 
 /** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
- * shared_ptr<ExpressionVar>. */
+ *  @c shared_ptr<ExpressionVar>.
+ *  \pre{@p *exp_ptr is of @c ExpressionVar.}
+ */
 std::shared_ptr<ExpressionVar> to_variable(
     const std::shared_ptr<ExpressionCell> exp_ptr);
-/** Casts @p e of Expression to shared_ptr<ExpressionVar>. */
+/** Casts @p e of Expression to @c shared_ptr<ExpressionVar>.
+ *  \pre{@p *(e.ptr_) is of @c ExpressionVar.}
+ */
 std::shared_ptr<ExpressionVar> to_variable(const Expression& e);
 
 /** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
- * shared_ptr<UnaryExpressionCell>. */
+ *  @c shared_ptr<UnaryExpressionCell>.
+ *  \pre{@c *exp_ptr is of @c UnaryExpressionCell.}
+ */
 std::shared_ptr<UnaryExpressionCell> to_unary(
     const std::shared_ptr<ExpressionCell> exp_ptr);
-/** Casts @p e of Expression to shared_ptr<UnaryExpressionCell>. */
+/** Casts @p e of Expression to @c shared_ptr<UnaryExpressionCell>.
+ *  \pre{@c *(e.ptr_) is of @c UnaryExpressionCell.}
+ */
 std::shared_ptr<UnaryExpressionCell> to_unary(const Expression& e);
 
 /** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
- * shared_ptr<BinaryExpressionCell>. */
+ *  @c shared_ptr<BinaryExpressionCell>.
+ *  \pre{@c *exp_ptr is of @c BinaryExpressionCell.}
+ */
 std::shared_ptr<BinaryExpressionCell> to_binary(
     const std::shared_ptr<ExpressionCell> exp_ptr);
-/** Casts @p e of Expression to shared_ptr<BinaryExpressionCell>. */
+/** Casts @p e of Expression to @c shared_ptr<BinaryExpressionCell>.
+ *  \pre{@c *(e.ptr_) is of @c BinaryExpressionCell.}
+ */
 std::shared_ptr<BinaryExpressionCell> to_binary(const Expression& e);
 
 /** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
- * shared_ptr<ExpressionAdd>. */
+ *  @c shared_ptr<ExpressionAdd>.
+ *  \pre{@c *exp_ptr is of @c ExpressionAdd.}
+ */
 std::shared_ptr<ExpressionAdd> to_addition(
     const std::shared_ptr<ExpressionCell> exp_ptr);
-/** Casts @p e of Expression to shared_ptr<ExpressionAdd>. */
+/** Casts @p e of Expression to @c shared_ptr<ExpressionAdd>.
+ *  \pre{@c *(e.ptr_) is of @c ExpressionAdd.}
+ */
 std::shared_ptr<ExpressionAdd> to_addition(const Expression& e);
 
 /** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
- * shared_ptr<ExpressionMul>. */
+ *  @c shared_ptr<ExpressionMul>.
+ *  \pre{@c *exp_ptr is of @c ExpressionConstant.}
+ */
 std::shared_ptr<ExpressionMul> to_multiplication(
     const std::shared_ptr<ExpressionCell> exp_ptr);
-/** Casts @p e of Expression to shared_ptr<ExpressionMul>. */
+/** Casts @p e of Expression to @c shared_ptr<ExpressionMul>.
+ *  \pre{@c *(e.ptr_) is of @c ExpressionConstant.}
+ */
 std::shared_ptr<ExpressionMul> to_multiplication(const Expression& e);
 
 /** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
- * shared_ptr<ExpressionIfThenElse>. */
+ *  @c shared_ptr<ExpressionIfThenElse>.
+ *  \pre{@c *exp_ptr is of @c ExpressionIfThenElse.}
+ */
 std::shared_ptr<ExpressionIfThenElse> to_if_then_else(
     const std::shared_ptr<ExpressionCell> exp_ptr);
-/** Casts @p e of Expression to shared_ptr<ExpressionIfThenElse>. */
+/** Casts @p e of Expression to @c shared_ptr<ExpressionIfThenElse>.
+ *  \pre{@c *(e.ptr_) is of @c ExpressionIfThenElse.}
+ */
 std::shared_ptr<ExpressionIfThenElse> to_if_then_else(const Expression& e);
 
 }  // namespace symbolic
