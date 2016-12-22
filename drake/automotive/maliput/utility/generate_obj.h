@@ -10,7 +10,7 @@ namespace utility {
 
 /// Generates a Wavefront OBJ model of the road surface of an api::RoadGeometry.
 ///
-/// @param rg  the api::RoadGeometry to model
+/// @param road_geometry  the api::RoadGeometry to model
 /// @param dirpath  directory component of the output pathnames
 /// @param fileroot  root of the filename component of the output pathnames
 /// @param grid_unit  distance between vertices in the output mesh
@@ -23,7 +23,7 @@ namespace utility {
 ///
 /// The produced mesh covers the area within the lane-bounds of every
 /// api::Lane in the RoadGeometry.
-void GenerateObjFile(const api::RoadGeometry* rg,
+void GenerateObjFile(const api::RoadGeometry* road_geometry,
                      const std::string& dirpath,
                      const std::string& fileroot,
                      double grid_unit);

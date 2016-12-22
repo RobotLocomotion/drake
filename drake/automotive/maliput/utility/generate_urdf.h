@@ -10,7 +10,7 @@ namespace utility {
 
 /// Generates a URDF file which models the road surface of an api::RoadGeometry.
 ///
-/// @param rg  the api::RoadGeometry to model
+/// @param road_geometry  the api::RoadGeometry to model
 /// @param dirpath  directory component of the output pathnames
 /// @param fileroot  root of the filename component of the output pathnames
 /// @param grid_unit  distance between vertices in the output mesh
@@ -25,9 +25,9 @@ namespace utility {
 ///
 /// The produced mesh covers the area within the lane-bounds of every
 /// api::Lane in the RoadGeometry.
-void GenerateUrdfFile(const std::string& dirname,
+void GenerateUrdfFile(const api::RoadGeometry* road_geometry,
+                      const std::string& dirname,
                       const std::string& fileroot,
-                      const api::RoadGeometry* rg,
                       double grid_unit);
 
 }  // namespace utility

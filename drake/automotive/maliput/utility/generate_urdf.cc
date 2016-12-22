@@ -9,37 +9,37 @@ namespace drake {
 namespace maliput {
 namespace utility {
 
-void GenerateUrdfFile(const std::string& dirname,
+void GenerateUrdfFile(const api::RoadGeometry* road_geometry,
+                      const std::string& dirname,
                       const std::string& fileroot,
-                      const api::RoadGeometry* rg,
                       const double grid_unit) {
-  GenerateObjFile(rg, dirname, fileroot, grid_unit);
+  GenerateObjFile(road_geometry, dirname, fileroot, grid_unit);
 
   const std::string obj_filename = fileroot + ".obj";
+  const std::string urdf_filename = fileroot + ".urdf";
 
-  std::ofstream os(dirname + "/" + fileroot + ".urdf");
-  os << "<?xml version=\"1.0\" ?>" << std::endl;
-  os << "<robot name=\"" << rg->id().id << "\">" << std::endl;
-  os << "  <link name=\"world\"/>" << std::endl;
-  os << std::endl;
-  os << "  <joint name=\"world_to_road_joint\" type=\"continuous\">"
-     << std::endl;
-  os << "    <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>" << std::endl;
-  os << "    <parent link=\"world\"/>" << std::endl;
-  os << "    <child link=\"surface\"/>" << std::endl;
-  os << "  </joint>" << std::endl;
-  os << std::endl;
-  os << "  <link name=\"surface\">" << std::endl;
-  os << "    <inertial/>" << std::endl;
-  os << "    <visual name=\"v1\">" << std::endl;
-  os << "      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>" << std::endl;
-  os << "      <geometry>" << std::endl;
-  os << "        <mesh filename=\"" << obj_filename
-     << "\" scale=\"1.0 1.0 1.0\"/>" << std::endl;
-  os << "      </geometry>" << std::endl;
-  os << "    </visual>" << std::endl;
-  os << "  </link>" << std::endl;
-  os << "</robot>" << std::endl;
+  std::ofstream os(dirname + "/" + urdf_filename, std::ios::binary);
+  os << "<?xml version=\"1.0\" ?>\n"
+     << "<robot name=\"" << road_geometry->id().id << "\">\n"
+     << "  <link name=\"world\"/>\n"
+     << "\n"
+     << "  <joint name=\"world_to_road_joint\" type=\"continuous\">\n"
+     << "    <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>\n"
+     << "    <parent link=\"world\"/>\n"
+     << "    <child link=\"surface\"/>\n"
+     << "  </joint>\n"
+     << "\n"
+     << "  <link name=\"surface\">\n"
+     << "    <inertial/>\n"
+     << "    <visual name=\"v1\">\n"
+     << "      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>\n"
+     << "      <geometry>\n"
+     << "        <mesh filename=\""
+     << obj_filename << "\" scale=\"1.0 1.0 1.0\"/>\n"
+     << "      </geometry>\n"
+     << "    </visual>\n"
+     << "  </link>\n"
+     << "</robot>\n";
 }
 
 
