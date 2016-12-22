@@ -321,14 +321,17 @@ class RigidBody {
   /// expressed in the outboard frame M of the joint mobilizing this body.
   const Eigen::Vector3d& get_center_of_mass() const;
 
-  /// Sets the spatial inertia expressed in the joint outboard frame M.
-  /// @param inertia_matrix_M the spatial inertia matrix expressed in the
-  /// mobilized frame M.
+  /// Sets the spatial inertia of the body computed about the origin
+  /// of frame M and expressed in frame M, where M is the joint outboard
+  /// frame as defined in \ref rigid_body_tree_frames.
+  /// @param IM_M the spatial inertia computed about M's origin and expressed
+  /// in frame M.
   void set_spatial_inertia_in_M(
-      const drake::SquareTwistMatrix<double> &inertia_matrix_M);
+      const drake::SquareTwistMatrix<double> &IM_M);
 
-  /// Returns the spatial inertia of this rigid body expressed in the
-  /// joint outboard frame M.
+  /// Returns the spatial inertia of this rigid body computed about M's
+  /// origin and expressed in M, where M is joint outboard frame M as defined
+  /// in \ref rigid_body_tree_frames.
   const drake::SquareTwistMatrix<double>& get_spatial_inertia_in_M() const;
 
   /**
@@ -439,8 +442,10 @@ class RigidBody {
   // The center of mass of this rigid body.
   Eigen::Vector3d center_of_mass_;
 
-  // The spatial inertia of this rigid body expressed in the mobilized frame M.
-  drake::SquareTwistMatrix<double> spatial_inertia_;
+  // The spatial inertia of this rigid body computed around M's origin and
+  // expressed in M, where M is the mobilized frame or the joints outboard
+  // frame.
+  drake::SquareTwistMatrix<double> spatial_inertia_M_;
 
   // TODO(SeanCurtis-TRI): This data is only used in the compilation of the
   // body.  As such, it should be moved into a factory so that the runtime

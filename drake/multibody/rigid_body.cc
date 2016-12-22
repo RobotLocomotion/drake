@@ -20,7 +20,7 @@ RigidBody<T>::RigidBody()
     : collision_filter_group_(DrakeCollision::DEFAULT_GROUP),
       collision_filter_ignores_(DrakeCollision::NONE_MASK) {
   center_of_mass_ = Vector3d::Zero();
-  spatial_inertia_ << drake::SquareTwistMatrix<double>::Zero();
+  spatial_inertia_M_ << drake::SquareTwistMatrix<double>::Zero();
 }
 
 template <typename T>
@@ -284,14 +284,14 @@ const Eigen::Vector3d& RigidBody<T>::get_center_of_mass() const {
 
 template <typename T>
 void RigidBody<T>::set_spatial_inertia_in_M(
-    const drake::SquareTwistMatrix<double> &inertia_matrix_M) {
-  spatial_inertia_ = inertia_matrix_M;
+    const drake::SquareTwistMatrix<double> &IM_M) {
+  spatial_inertia_M_ = IM_M;
 }
 
 template <typename T>
 const drake::SquareTwistMatrix<double>& RigidBody<T>::get_spatial_inertia_in_M()
     const {
-  return spatial_inertia_;
+  return spatial_inertia_M_;
 }
 
 ostream& operator<<(ostream& out, const RigidBody<double>& b) {

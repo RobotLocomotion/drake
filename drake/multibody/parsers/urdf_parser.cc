@@ -101,11 +101,13 @@ void ParseInertial(RigidBody<double>* body, XMLElement* node) {
   com_M << X_MB(0, 3), X_MB(1, 3), X_MB(2, 3);
   body->set_center_of_mass_in_M(com_M);
 
+  // Spatial inertia computed about the center of mass and expressed in B.
   drake::SquareTwistMatrix<double> SpatialInertia_B =
       drake::SquareTwistMatrix<double>::Zero();
   SpatialInertia_B.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
 
-  // Inertia matrix expressed in the body frame B.
+  // Inertia matrix expressed in the body frame B located at the center of
+  // mass of body B.
   XMLElement* inertia = node->FirstChildElement("inertia");
   if (inertia) {
     parseScalarAttribute(inertia, "ixx", SpatialInertia_B(0, 0));
@@ -119,8 +121,9 @@ void ParseInertial(RigidBody<double>* body, XMLElement* node) {
     parseScalarAttribute(inertia, "izz", SpatialInertia_B(2, 2));
   }
 
-  // Sets the body spatial inertia to the converted spatial inertia matrix to
-  // be expressed in the mobilized frame M.
+  // Converts the spatial inertia so that it is computed around the mobilized
+  // frame M and it is expressed in frame M.
+  // Updates the body spatial inertia.
   body->set_spatial_inertia_in_M(transformSpatialInertia(X_MB,
                                                          SpatialInertia_B));
 }
