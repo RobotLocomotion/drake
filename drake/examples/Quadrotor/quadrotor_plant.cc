@@ -11,6 +11,7 @@ namespace quadrotor {
 template <typename T>
 QuadrotorPlant<T>::QuadrotorPlant() {
   this->DeclareInputPort(systems::kVectorValued, kInputDimension);
+  this->DeclareContinuousState(kStateDimension);
   this->DeclareOutputPort(systems::kVectorValued, kStateDimension);
 }
 
@@ -20,6 +21,7 @@ QuadrotorPlant<T>::QuadrotorPlant(double m_arg, double L_arg,
                                   double kM_arg)
     : m(m_arg), L(L_arg), kF(kF_arg), kM(kM_arg), I(I_arg) {
   this->DeclareInputPort(systems::kVectorValued, kInputDimension);
+  this->DeclareContinuousState(kStateDimension);
   this->DeclareOutputPort(systems::kVectorValued, kStateDimension);
 }
 
