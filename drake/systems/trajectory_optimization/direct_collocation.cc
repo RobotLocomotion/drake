@@ -133,8 +133,6 @@ DircolTrajectoryOptimization::ReconstructStateTrajectory() const {
   for (size_t i = 0; i < input_vec.size(); ++i) {
     input_port_->GetMutableVectorData<double>()->SetFromVector(input_vec[i]);
     context_->get_mutable_continuous_state()->SetFromVector(state_vec[i]);
-    // TODO(Lucy-tri) Replace CalcTimeDerivatives with EvalTimeDerivatives()
-    // when it's available again.
     system_->CalcTimeDerivatives(*context_, continuous_state_.get());
     derivatives.push_back(continuous_state_->CopyToVector());
   }
