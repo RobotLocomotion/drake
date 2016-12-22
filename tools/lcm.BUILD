@@ -96,8 +96,6 @@ cc_binary(
 
 cc_binary(
     name = "_lcm.so",
-    linkstatic = 1,
-    linkshared = 1,
     srcs = [
         "lcm-python/module.c",
         "lcm-python/pyeventlog.c",
@@ -106,12 +104,14 @@ cc_binary(
         "lcm-python/pylcm_subscription.c",
         "lcm-python/pylcm_subscription.h",
     ],
+    copts = LCM_COPTS,
+    linkshared = 1,
+    linkstatic = 1,
+    visibility = [],
     deps = [
         ":lcm",
         "@python2//:lib",
     ],
-    copts = LCM_COPTS,
-    visibility = [],
 )
 
 # Downstream users of lcm-python expect to say "import lcm".  However, in the
@@ -124,7 +124,7 @@ cc_binary(
 # is named "lcm", Bazel's auto-generated empty "lcm/__init__.py" at the root of
 # the sandbox is found first, and prevents the lcm-python subdirectory from
 # ever being found.
-# 
+#
 # To repair this, we provide our own init file at the root of the sandbox that
 # overrides the Bazel empty default.  Its implementation just delegates to the
 # lcm-python init file.
@@ -138,8 +138,8 @@ genrule(
 py_library(
     name = "lcm-python",
     srcs = [
-        "__init__.py",                 # Shim, from the genrule above.
-        "lcm-python/lcm/__init__.py",  # Actual code form upstream.
+        "__init__.py",  # Shim, from the genrule above.
+        "lcm-python/lcm/__init__.py",  # Actual code from upstream.
     ],
     data = [":_lcm.so"],
 )
