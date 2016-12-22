@@ -810,7 +810,7 @@ class System {
   /// abstract variables or generally make changes to state that cannot be
   /// made using CalcDiscreteVariableUpdates() or via integration of continuous
   /// variables.
-  /// @p[in,out] state the current state of the system on input; the desired
+  /// @param[in,out] state the current state of the system on input; the desired
   ///            state of the system on return.
   virtual void DoCalcUnrestrictedUpdate(const Context<T>& context,
                                         State<T>* state) const {}
