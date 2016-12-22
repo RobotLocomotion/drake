@@ -48,10 +48,15 @@ class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
 
   PiecewisePolynomialTrajectory ReconstructStateTrajectory() const override;
 
+  // Disable copy and assign.
+  DircolTrajectoryOptimization(const DircolTrajectoryOptimization&) = delete;
+  DircolTrajectoryOptimization& operator=(const DircolTrajectoryOptimization&) =
+      delete;
+
  private:
-  const System<double>* system_;
-  const std::unique_ptr<Context<double>> context_;
-  const std::unique_ptr<ContinuousState<double>> continuous_state_;
+  const System<double>* system_{nullptr};
+  const std::unique_ptr<Context<double>> context_{nullptr};
+  const std::unique_ptr<ContinuousState<double>> continuous_state_{nullptr};
   FreestandingInputPort* input_port_{nullptr};
 };
 

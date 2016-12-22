@@ -134,6 +134,9 @@ DircolTrajectoryOptimization::ReconstructStateTrajectory() const {
     input_port_->GetMutableVectorData<double>()->SetFromVector(input_vec[i]);
     context_->get_mutable_continuous_state()->SetFromVector(state_vec[i]);
     system_->CalcTimeDerivatives(*context_, continuous_state_.get());
+    // TODO(Lucy-tri) According to @siyuanfeng-tri, this is not correct for
+    // floating base joints. More strongly, we can't just do independent spline
+    // for any joints that coupled degrees of freedom.
     derivatives.push_back(continuous_state_->CopyToVector());
   }
   return PiecewisePolynomialTrajectory(
