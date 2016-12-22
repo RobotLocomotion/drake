@@ -399,27 +399,53 @@ bool isRegularInertiaMatrix(const Eigen::MatrixBase<DerivedI>& I) {
   return ret;
 }
 
+/// Given two frames A and B this method transforms a spatial inertia computed
+/// about the origin of A and expressed in frame A to a spatial inertia
+/// computed about the origin of B an expressed in frame B.
+/// @param X_BA The transformation from frame A to B, expressed in frame B.
+/// @param IA_A Spatial inertia computed about the origin of frame A and
+/// expressed in frame A.
+/// @returns IB_B The spatial inertia now computed about the origin of frame
+/// B and expressed in B.
 template <typename DerivedI>
 drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
     const Eigen::Transform<typename DerivedI::Scalar, drake::kSpaceDimension,
-                           Eigen::Isometry>& T_current_to_new,
-    const Eigen::MatrixBase<DerivedI>& I) {
+                           Eigen::Isometry>& X_BA,
+    const Eigen::MatrixBase<DerivedI>& IA_A) {
   using namespace Eigen;
   using Scalar = typename DerivedI::Scalar;
 
-  if (isRegularInertiaMatrix(I)) {
+  // TODO(amcastro-tri): This check should not happen at run time but only 
+  // once when either setting the inertia matrix or when parsing from a file.
+  if (isRegularInertiaMatrix(IA_A)) {
     // this check is necessary to support the nonstandard inertia matrices
     // resulting from added masses
 
-    // TODO(tkoolen): SpatialInertiaMatrix class that keeps track of whether
-    // matrix is regular or not
-    const auto& R = T_current_to_new.linear();
-    const auto& p = T_current_to_new.translation();
+    // Rotation matrix from A to B.
+    const auto& R_BA = X_BA.linear();
+    // Offset vector from A to B expressed in frame B.
+    const auto& pAB_B = X_BA.translation();
 
-    auto J = I.template topLeftCorner<3, 3>();
-    Matrix<Scalar, 3, 1> c;
-    c << I(2, 4), I(0, 5), I(1, 3);
-    const auto& m = I(3, 3);
+    // Extracts the inertia matrix JA_A computed about the origin of frame A
+    // and expressed in frame A.
+    // Recall the a spatial inertia about a point x has the form:
+    // I(x) =
+    //        |     J(x)     | m * [c(x)] |
+    //        |  -m * [c(x)] | m * Id     |
+    // Where J(x) in R^{3x3} is the inertia matrix about point x, m is the
+    // mass of the body, c(x) is the center of mass offset from point x, [c]
+    // is the skew symmetric matrix equivalent to cross product by c from the
+    // left (i.e [c] * v = c.cross(v)) and Id is the identity matrix in
+    // R^{3x3}.
+
+    // Defines a reference to the moment of inertia computed about A and
+    // expressed in frame A.
+    auto JA_A = IA_A.template topLeftCorner<3, 3>();
+    // Center of mass offset from A to the center of mass C expressed in
+    // frame A, multiplied by the body mass.
+    Matrix<Scalar, 3, 1> mcA_A;
+    mcA_A << IA_A(2, 4), IA_A(0, 5), IA_A(1, 3);
+    const auto& m = IA_A(3, 3);
 
     auto vectorToSkewSymmetricSquared = [](const Matrix<Scalar, 3, 1>& a) {
       Matrix<Scalar, 3, 3> ret;
@@ -441,31 +467,54 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
       return ret;
     };
 
-    drake::SquareTwistMatrix<Scalar> I_new;
-    auto c_new = (R * c).eval();
-    auto J_new = I_new.template topLeftCorner<3, 3>();
+    // Define the spatial inertia computed about the origin of frame B and
+    // expressed in frame B. This is the return from this method.
+    drake::SquareTwistMatrix<Scalar> IB_B;
+    auto mcA_B = (R_BA * mcA_A).eval();
+    // A reference to the moment of inertia computed about B and expressed in
+    // frame B.
+    auto JB_B = IB_B.template topLeftCorner<3, 3>();
 
+    // TODO(amcastro-tri): Rewrite to avoid checking for zero mass. 
+    // Checking for zero mass is not needed since the 
+    // conversion between frames can be performed without even extracting the
+    // mass from the spatial inertia as done here.
+    // See Eq 2.12 in A. Jain's book, p. 20 for a simple alternative using 
+    // the rigid body transformation operator phi. 
     if (m > NumTraits<Scalar>::epsilon()) {
-      J_new = vectorToSkewSymmetricSquared(c_new);
-      c_new.noalias() += m * p;
-      J_new -= vectorToSkewSymmetricSquared(c_new);
-      J_new /= m;
+      JB_B = vectorToSkewSymmetricSquared(mcA_B);
+      // This is misleading but essentially here we compute mcB_B and
+      // overwrite it on mcA_B.
+      mcA_B.noalias() += m * pAB_B;
+      JB_B -= vectorToSkewSymmetricSquared(mcA_B); // Recall this is mcB_B.
+      JB_B /= m;
+      // At this point we have:
+      // JB_B = m * [cA_B]^2 - m * [cB_B]^2
     } else {
-      J_new.setZero();
+      JB_B.setZero();
     }
-    J_new.noalias() += R * J.template selfadjointView<Lower>() * R.transpose();
+    JB_B.noalias() +=
+        R_BA * JA_A.template selfadjointView<Lower>() * R_BA.transpose();
+    // Done with the moment of inertia. Now we have:
+    // JB_B = R_BA * JA_A * R_BA.transpose() + m * [cA_B]^2 - m * [cB_B]^2
+    //      = JA_B + m * [cA_B]^2 - m * [cB_B]^2
+    // This is consistent with Eq. 2.13 in A. Jain's book, p. 20, where:
+    // - point A is y.
+    // - point B is x.
+    // - offset p(x) is c(x).
+    // Also, in A. Jain's book equations are written in frame free form.
 
-    I_new.template topRightCorner<3, 3>() =
-        drake::math::VectorToSkewSymmetric(c_new);
-    I_new.template bottomLeftCorner<3, 3>() =
-        -I_new.template topRightCorner<3, 3>();
-    I_new.template bottomRightCorner<3, 3>() =
-        I.template bottomRightCorner<3, 3>();
+    IB_B.template topRightCorner<3, 3>() =
+        drake::math::VectorToSkewSymmetric(mcA_B);
+    IB_B.template bottomLeftCorner<3, 3>() =
+        -IB_B.template topRightCorner<3, 3>();
+    IB_B.template bottomRightCorner<3, 3>() =
+        IA_A.template bottomRightCorner<3, 3>();
 
-    return I_new;
+    return IB_B;
   } else {
-    auto I_half_transformed = transformSpatialForce(T_current_to_new, I);
-    return transformSpatialForce(T_current_to_new,
+    auto I_half_transformed = transformSpatialForce(X_BA, IA_A);
+    return transformSpatialForce(X_BA,
                                  I_half_transformed.transpose());
   }
 }
