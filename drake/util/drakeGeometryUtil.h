@@ -415,7 +415,7 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
   using namespace Eigen;
   using Scalar = typename DerivedI::Scalar;
 
-  // TODO(amcastro-tri): This check should not happen at run time but only 
+  // TODO(amcastro-tri): This check should not happen at run time but only
   // once when either setting the inertia matrix or when parsing from a file.
   if (isRegularInertiaMatrix(IA_A)) {
     // this check is necessary to support the nonstandard inertia matrices
@@ -475,18 +475,18 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
     // frame B.
     auto JB_B = IB_B.template topLeftCorner<3, 3>();
 
-    // TODO(amcastro-tri): Rewrite to avoid checking for zero mass. 
-    // Checking for zero mass is not needed since the 
+    // TODO(amcastro-tri): Rewrite to avoid checking for zero mass.
+    // Checking for zero mass is not needed since the
     // conversion between frames can be performed without even extracting the
     // mass from the spatial inertia as done here.
-    // See Eq 2.12 in A. Jain's book, p. 20 for a simple alternative using 
-    // the rigid body transformation operator phi. 
+    // See Eq 2.12 in A. Jain's book, p. 20 for a simple alternative using
+    // the rigid body transformation operator phi.
     if (m > NumTraits<Scalar>::epsilon()) {
       JB_B = vectorToSkewSymmetricSquared(mcA_B);
       // This is misleading but essentially here we compute mcB_B and
       // overwrite it on mcA_B.
       mcA_B.noalias() += m * pAB_B;
-      JB_B -= vectorToSkewSymmetricSquared(mcA_B); // Recall this is mcB_B.
+      JB_B -= vectorToSkewSymmetricSquared(mcA_B);  // Recall this is mcB_B.
       JB_B /= m;
       // At this point we have:
       // JB_B = m * [cA_B]^2 - m * [cB_B]^2
