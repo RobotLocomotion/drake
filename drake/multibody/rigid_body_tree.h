@@ -28,7 +28,6 @@
 #include "drake/multibody/rigid_body_loop.h"
 #include "drake/multibody/shapes/drake_shapes.h"
 
-
 #define BASIS_VECTOR_HALF_COUNT \
   2  // number of basis vectors over 2 (i.e. 4 basis vectors in this case)
 #define EPSILON 10e-8
@@ -367,9 +366,10 @@ class RigidBodyTree {
   drake::MatrixX<Scalar> CalcJacobianForWorldAlignedBody(
       const KinematicsCache<Scalar>& cache, const RigidBody<T>& body,
       const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity()) const {
+          drake::Isometry3<Scalar>::Identity(),
+      bool in_terms_of_qdot = false) const {
     return CalcJacobianForWorldAlignedBody(cache, body.get_body_index(),
-                                           local_offset);
+                                           local_offset, in_terms_of_qdot);
   }
 
   /// Let \f$ \dot{x} \f$ be the twist of frame A w.r.t the world expressed in
@@ -404,9 +404,10 @@ class RigidBodyTree {
   drake::MatrixX<Scalar> CalcJacobianForWorldAlignedBody(
       const KinematicsCache<Scalar>& cache, const RigidBodyFrame<T>& frame,
       const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity()) const {
+          drake::Isometry3<Scalar>::Identity(),
+      bool in_terms_of_qdot = false) const {
     return CalcJacobianForWorldAlignedBody(cache, frame.get_frame_index(),
-                                           local_offset);
+                                           local_offset, in_terms_of_qdot);
   }
 
   /// Let \f$ \dot{x} \f$ be the twist of frame A w.r.t the world expressed in
@@ -1382,7 +1383,8 @@ class RigidBodyTree {
   drake::MatrixX<Scalar> CalcJacobianForWorldAlignedBody(
       const KinematicsCache<Scalar>& cache, int index,
       const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity()) const;
+          drake::Isometry3<Scalar>::Identity(),
+      bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   // Same function as above except `index` can be either body or frame's index.

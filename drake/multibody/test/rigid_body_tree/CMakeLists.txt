@@ -9,7 +9,7 @@ endif()
 drake_add_cc_test(NAME rigid_body_tree_test SIZE medium)
 target_link_libraries(rigid_body_tree_test drakeMultibodyParsers drakeRBM)
 
-drake_add_cc_test(NAME rigid_body_tree_kinematics_test SIZE)
+drake_add_cc_test(NAME rigid_body_tree_kinematics_test)
 target_link_libraries(rigid_body_tree_kinematics_test drakeMultibodyParsers drakeRBM)
 
 drake_add_cc_test(rigid_body_tree_inverse_dynamics_test)
