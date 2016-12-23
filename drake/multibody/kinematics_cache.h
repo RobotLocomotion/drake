@@ -48,8 +48,8 @@ class KinematicsCacheElement {
   // Spatial inertia computed about the world's origin and expressed in the
   // world's frame, i.e. I(W)_W
   drake::SquareTwistMatrix<T> inertia_in_world;
-  // Composite rigid body inertia computed about the world's origin and
-  // expressed in the world's frame, i.e. Icrb(W)_w.
+  // Composite body inertia computed about the world's origin and
+  // expressed in the world's frame, i.e. Icrb(W)_W.
   drake::SquareTwistMatrix<T> crb_in_world;
 
   /*

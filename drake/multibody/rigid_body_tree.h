@@ -1243,6 +1243,27 @@ class RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
+  // Computes the Composite Body Inertias (CBI) associated with each body.
+  // The composite rigid body inertia associated with a body is defined as
+  // the effective spatial inertia of the composite body formed by all
+  // bodies outboard of the joint. Results are cached in @p cache.
+  //
+  // For an in depth discussion refer to Section 4.1.2 of A. Jain's
+  // book, p. 59.
+  //
+  // The composite body inertia for the i-th body around its frame origin Boi
+  // is computed as:
+  //   Ri(i) = Ii(i) + \sum_{\forall j\in C(i)} Rj(i)
+  // where C(i) is the set of bodies children of body i. In the
+  // equation above it is implicit that the CBI for body j computed about
+  // body-j's origin (Rj(j)) is translated to body-i's origin Boi so that
+  // the summation is valid. This translation transformation is described by
+  // the parallel axis theorem for spatial inertias (Eq. 2.12 in A. Jain's
+  // book, p. 20).
+  // RigidBodyTree::updateCompositeRigidBodyInertias() first computes all
+  // CBI's about the world's origin and performs the computation above as:
+  //   Ri(w) = Ii(w) + \sum_{\forall j\in C(i)} Rj(w)
+  // This method is O(N) with N the number of bodies in the tree.
   template <typename Scalar>
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void updateCompositeRigidBodyInertias(KinematicsCache<Scalar>& cache) const;

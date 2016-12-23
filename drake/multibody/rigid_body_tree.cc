@@ -1019,26 +1019,47 @@ template <typename Scalar>
 void RigidBodyTree<T>::updateCompositeRigidBodyInertias(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache) const {
-  cache.checkCachedKinematicsSettings(false, false,
+
+  // Checks that position dependent kinematics are cached.
+  // This method needs KinematicsCache::transform_to_world, which is position
+  // dependent, to be already computed in the cache.
+  cache.checkCachedKinematicsSettings(false /* velocity_kinematics_required */,
+                                      false /* jdot_times_v_required */,
                                       "updateCompositeRigidBodyInertias");
 
   if (!cache.areInertiasCached()) {
+    // This loop simply initializes the the Composite Body Inertia (CBI) for
+    // the i-th body Ri(W) to the spatial inertia of that body expressed in
+    // the world frame, i.e. Ri(W)_W = Ii(W)_W.
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
       const RigidBody<T>& body = **it;
       auto element = cache.get_mutable_element(body.get_body_index());
+      // i-th body spatial inertia Ii(W)_W about the world frame W expressed
+      // in W. transformSpatialInertia essentially uses the "parallel axis
+      // theorem" for spatial inertias to transform Ii(M)_M to Ii(W)_W.
       element->inertia_in_world = transformSpatialInertia(
           element->transform_to_world,
           body.get_spatial_inertia_in_M().template cast<Scalar>());
+      // Initializes the composite body inertia for the i-th body Ri(W)_W to
+      // the spatial inertia of that body.
       element->crb_in_world = element->inertia_in_world;
     }
 
-    // N.B. Reverse iteration.
+    // Tip-to-Base recursion.
+    // By definition, the CBI of a body is the composition of its children's
+    // CBI's. Since RigidBodyTree::bodies is sorted by generation, this
+    // reversed loop recursively computes the CBI of a body as the
+    // composition (algebraic summation) of its children's CBI's.
     for (auto it = bodies.rbegin(); it != bodies.rend(); ++it) {
       const RigidBody<T>& body = **it;
       if (body.has_parent_body()) {
         const auto element = cache.get_mutable_element(body.get_body_index());
         auto parent_element = cache.get_mutable_element(
             body.get_parent()->get_body_index());
+        // Spatial inertias about a common point can be added to obtain a
+        // combined inertia. Since all inertias were computed with respect to
+        // a common point, the world's origin, these can be added
+        // algebraically as done below.
         parent_element->crb_in_world += element->crb_in_world;
       }
     }
