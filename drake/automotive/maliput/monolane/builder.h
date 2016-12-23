@@ -22,8 +22,9 @@ class RoadGeometry;
 
 namespace monolane {
 
-/// @file
-/// Builder for monolane road networks.
+/// @class Builder
+/// Convenient builder class which makes it easy to construct a monolane road
+/// network.
 ///
 /// monolane is a simple road-network implementation:
 ///  - single lane per segment;
@@ -309,8 +310,7 @@ class Group {
 };
 
 
-/// Convenient builder class which makes it easy to construct a
-/// monolane road network.
+// N.B. The Builder class overview documentation lives at the top of this file.
 class Builder {
  public:
   /// Constructs a Builder which can be used to specify and assemble a
