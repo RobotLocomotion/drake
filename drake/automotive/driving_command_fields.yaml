@@ -1,0 +1,10 @@
+---
+-
+     name: steering_angle
+     doc: The desired steering angle of a virtual center wheel, positive results in the vehicle turning left.
+-
+     name: throttle
+     doc: The normalized desired acceleration (in the range [0.0..1.0]).
+-
+     name: brake
+     doc: The normalized desired deceleration (in the range [0.0..1.0]).

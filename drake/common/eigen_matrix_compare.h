@@ -29,18 +29,18 @@ enum class MatrixCompareType { absolute, relative };
  * @return true if the two matrices are equal based on the specified tolerance.
  */
 template <typename DerivedA, typename DerivedB>
-bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
-                     const Eigen::MatrixBase<DerivedB>& m2,
-                     double tolerance,
-                     MatrixCompareType compare_type,
-                     std::string* explanation = nullptr) {
+bool CompareMatrices(
+    const Eigen::MatrixBase<DerivedA>& m1,
+    const Eigen::MatrixBase<DerivedB>& m2, double tolerance = 0.0,
+    MatrixCompareType compare_type = MatrixCompareType::absolute,
+    std::string* explanation = nullptr) {
   bool result = true;
   std::string error_message;
 
   if (m1.rows() != m2.rows() || m1.cols() != m2.cols()) {
     std::stringstream msg;
     msg << "Matrix size mismatch: (" << m1.rows() << " x " << m1.cols()
-        << " vs. " << m2.rows() << " x " << m2.rows() << ")";
+        << " vs. " << m2.rows() << " x " << m2.cols() << ")";
     error_message = msg.str();
     result = false;
   }

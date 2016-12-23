@@ -1,5 +1,5 @@
-
 #include <cmath>
+#include <memory>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
@@ -10,6 +10,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
@@ -25,16 +26,15 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
         l_(pendulum.l()),
         b_(pendulum.b()),
         g_(pendulum.g()) {
-    this->DeclareInputPort(
-        systems::kVectorValued, pendulum.get_output_port().get_size(),
-        systems::kContinuousSampling);
-    this->DeclareOutputPort(
-        systems::kVectorValued, pendulum.get_tau_port().get_size(),
-        systems::kContinuousSampling);
+    this->DeclareInputPort(systems::kVectorValued,
+                           pendulum.get_output_port().get_size());
+    this->DeclareOutputPort(systems::kVectorValued,
+                            pendulum.get_tau_port().get_size());
   }
 
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override {
+ private:
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override {
     const PendulumStateVector<T>* const state =
         dynamic_cast<const PendulumStateVector<T>*>(
             this->EvalVectorInput(context, 0));
@@ -50,7 +50,6 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
     output->GetMutableVectorData(0)->SetAtIndex(0, tau);
   }
 
- private:
   const T m_;
   const T l_;
   const T b_;
@@ -59,9 +58,10 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
 
 int do_main(int argc, char* argv[]) {
   lcm::DrakeLcm lcm;
-  RigidBodyTree<double> tree(
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-      multibody::joints::kFixed);
+      multibody::joints::kFixed, tree.get());
 
   systems::DiagramBuilder<double> builder;
   auto pendulum = builder.AddSystem<PendulumPlant>();
@@ -71,7 +71,7 @@ int do_main(int argc, char* argv[]) {
   builder.Connect(controller->get_output_port(0), pendulum->get_tau_port());
 
   auto publisher =
-      builder.AddSystem<systems::DrakeVisualizer>(tree, &lcm);
+      builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   builder.Connect(pendulum->get_output_port(), publisher->get_input_port(0));
 
   auto diagram = builder.Build();

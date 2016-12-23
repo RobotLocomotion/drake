@@ -27,10 +27,8 @@ namespace qp_inverse_dynamics {
 class PlanEvalSystem : public systems::LeafSystem<double> {
  public:
   explicit PlanEvalSystem(const RigidBodyTree<double>& robot) : robot_(robot) {
-    input_port_index_humanoid_status_ =
-        DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
-    output_port_index_qp_input_ =
-        DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
+    input_port_index_humanoid_status_ = DeclareAbstractInputPort().get_index();
+    output_port_index_qp_input_ = DeclareAbstractOutputPort().get_index();
 
     set_name("plan_eval");
 
@@ -50,8 +48,8 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     Kd_joints_.head<6>().setZero();
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     // Input:
     const HumanoidStatus* robot_status = EvalInputValue<HumanoidStatus>(
         context, input_port_index_humanoid_status_);

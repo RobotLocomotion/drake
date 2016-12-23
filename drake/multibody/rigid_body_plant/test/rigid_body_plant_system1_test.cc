@@ -4,7 +4,7 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 
@@ -19,12 +19,6 @@ namespace plants {
 namespace rigid_body_plant {
 namespace test {
 namespace {
-
-template <class T>
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
-}
 
 // Tests RigidBodyPlant<T>::EvalTimeDerivatives() for a Kuka arm model.
 // The test is performed by comparing against the results obtained with an RBS1
@@ -80,10 +74,6 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   arbitrary_angles << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
   x0.head(rbs1->get_num_positions()) += arbitrary_angles;
 
-  // For rbs2:
-  // Zeroes the state.
-  rbs2->SetZeroConfiguration(context.get());
-
   // Sets the state to a non-zero value matching the configuration for rbs1.
   rbs2->set_state_vector(context.get(), x0);
   VectorXd xc = context->get_continuous_state()->CopyToVector();
@@ -103,13 +93,13 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   auto input_vector = std::make_unique<BasicVector<double>>(
       rbs2->get_num_actuators());
   input_vector->set_value(u);
-  context->SetInputPort(0, MakeInput(move(input_vector)));
+  context->FixInputPort(0, move(input_vector));
 
   //////////////////////////////////////////////////////////////////////////////
   // Computes time derivatives to compare against rbs1 dynamics.
   //////////////////////////////////////////////////////////////////////////////
   auto rbs1_xdot = rbs1->dynamics(0.0, x0, u);
-  rbs2->EvalTimeDerivatives(*context, derivatives.get());
+  rbs2->CalcTimeDerivatives(*context, derivatives.get());
   auto rbs2_xdot = derivatives->CopyToVector();
 
   //////////////////////////////////////////////////////////////////////////////

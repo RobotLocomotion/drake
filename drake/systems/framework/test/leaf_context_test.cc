@@ -46,18 +46,18 @@ class LeafContextTest : public ::testing::Test {
         kGeneralizedPositionSize, kGeneralizedVelocitySize,
         kMiscContinuousStateSize));
 
-    // Reserve a difference state with two elements, of size 1 and size 2.
+    // Reserve a discrete state with two elements, of size 1 and size 2.
     std::vector<std::unique_ptr<BasicVector<double>>> xd;
     xd.push_back(BasicVector<double>::Make({128.0}));
     xd.push_back(BasicVector<double>::Make({256.0, 512.0}));
-    context_.set_difference_state(
-        std::make_unique<DifferenceState<double>>(std::move(xd)));
+    context_.set_discrete_state(
+        std::make_unique<DiscreteState<double>>(std::move(xd)));
 
-    // Reserve a modal state with one element, which is not owned.
-    modal_state_ = PackValue(42);
+    // Reserve an abstract state with one element, which is not owned.
+    abstract_state_ = PackValue(42);
     std::vector<AbstractValue*> xm;
-    xm.push_back(modal_state_.get());
-    context_.set_modal_state(std::make_unique<ModalState>(std::move(xm)));
+    xm.push_back(abstract_state_.get());
+    context_.set_abstract_state(std::make_unique<AbstractState>(std::move(xm)));
 
     // Reserve two numeric parameters, of size 3 and size 4.
     std::vector<std::unique_ptr<BasicVector<double>>> params;
@@ -71,8 +71,8 @@ class LeafContextTest : public ::testing::Test {
   // connected to @p context at @p index.
   static const BasicVector<double>* ReadVectorInputPort(
       const Context<double>& context, int index) {
-    SystemPortDescriptor<double> descriptor(
-        nullptr, kInputPort, index, kVectorValued, 0, kInheritedSampling);
+    SystemPortDescriptor<double> descriptor(nullptr, kInputPort, index,
+                                            kVectorValued, 0);
     return context.EvalVectorInput(nullptr, descriptor);
   }
 
@@ -80,8 +80,8 @@ class LeafContextTest : public ::testing::Test {
   // connected to @p context at @p index.
   static const std::string* ReadStringInputPort(
       const Context<double>& context, int index) {
-    SystemPortDescriptor<double> descriptor(
-        nullptr, kInputPort, index, kAbstractValued, 0, kInheritedSampling);
+    SystemPortDescriptor<double> descriptor(nullptr, kInputPort, index,
+                                            kAbstractValued, 0);
     return context.EvalInputValue<std::string>(nullptr, descriptor);
   }
 
@@ -89,14 +89,68 @@ class LeafContextTest : public ::testing::Test {
   // connected to @p context at @p index.
   static const AbstractValue* ReadAbstractInputPort(
       const Context<double>& context, int index) {
-    SystemPortDescriptor<double> descriptor(
-        nullptr, kInputPort, index, kAbstractValued, 0, kInheritedSampling);
+    SystemPortDescriptor<double> descriptor(nullptr, kInputPort, index,
+                                            kAbstractValued, 0);
     return context.EvalAbstractInput(nullptr, descriptor);
   }
 
   LeafContext<double> context_;
-  std::unique_ptr<AbstractValue> modal_state_;
+  std::unique_ptr<AbstractValue> abstract_state_;
 };
+
+// Verifies that @p state is a clone of the state constructed in
+// LeafContextTest::SetUp.
+void VerifyClonedState(const State<double>& clone) {
+  // Verify that the state was copied.
+  const ContinuousState<double>& xc = *clone.get_continuous_state();
+  {
+    VectorX<double> contents = xc.CopyToVector();
+    VectorX<double> expected(kContinuousStateSize);
+    expected << 1.0, 2.0, 3.0, 5.0, 8.0;
+    EXPECT_EQ(expected, contents);
+  }
+
+  EXPECT_EQ(2, clone.get_discrete_state()->size());
+  const BasicVector<double>* xd0 =
+      clone.get_discrete_state()->get_discrete_state(0);
+  const BasicVector<double>* xd1 =
+      clone.get_discrete_state()->get_discrete_state(1);
+  {
+    VectorX<double> contents = xd0->CopyToVector();
+    VectorX<double> expected(1);
+    expected << 128.0;
+    EXPECT_EQ(expected, contents);
+  }
+
+  {
+    VectorX<double> contents = xd1->CopyToVector();
+    VectorX<double> expected(2);
+    expected << 256.0, 512.0;
+    EXPECT_EQ(expected, contents);
+  }
+
+  EXPECT_EQ(1, clone.get_abstract_state()->size());
+  EXPECT_EQ(42,
+            clone.get_abstract_state()->get_abstract_state(0).GetValue<int>());
+
+  // Verify that the state type was preserved.
+  const BasicVector<double>* xc_data =
+      dynamic_cast<const BasicVector<double>*>(&xc.get_vector());
+  ASSERT_NE(nullptr, xc_data);
+  EXPECT_EQ(kContinuousStateSize, xc_data->size());
+
+  // Verify that the second-order structure was preserved.
+  EXPECT_EQ(kGeneralizedPositionSize, xc.get_generalized_position().size());
+  EXPECT_EQ(1.0, xc.get_generalized_position().GetAtIndex(0));
+  EXPECT_EQ(2.0, xc.get_generalized_position().GetAtIndex(1));
+
+  EXPECT_EQ(kGeneralizedVelocitySize, xc.get_generalized_velocity().size());
+  EXPECT_EQ(3.0, xc.get_generalized_velocity().GetAtIndex(0));
+  EXPECT_EQ(5.0, xc.get_generalized_velocity().GetAtIndex(1));
+
+  EXPECT_EQ(kMiscContinuousStateSize, xc.get_misc_continuous_state().size());
+  EXPECT_EQ(8.0, xc.get_misc_continuous_state().GetAtIndex(0));
+}
 
 TEST_F(LeafContextTest, GetNumInputPorts) {
   ASSERT_EQ(kNumInputPorts, context_.get_num_input_ports());
@@ -105,6 +159,34 @@ TEST_F(LeafContextTest, GetNumInputPorts) {
 TEST_F(LeafContextTest, ClearInputPorts) {
   context_.ClearInputPorts();
   EXPECT_EQ(0, context_.get_num_input_ports());
+}
+
+TEST_F(LeafContextTest, GetNumDiscreteStateGroups) {
+  EXPECT_EQ(2, context_.get_num_discrete_state_groups());
+}
+
+TEST_F(LeafContextTest, GetNumAbstractStateGroups) {
+  EXPECT_EQ(1, context_.get_num_abstract_state_groups());
+}
+
+TEST_F(LeafContextTest, IsStateless) {
+  EXPECT_FALSE(context_.is_stateless());
+  LeafContext<double> empty_context;
+  EXPECT_TRUE(empty_context.is_stateless());
+}
+
+TEST_F(LeafContextTest, HasOnlyContinuousState) {
+  EXPECT_FALSE(context_.has_only_continuous_state());
+  context_.set_discrete_state(std::make_unique<DiscreteState<double>>());
+  context_.set_abstract_state(std::make_unique<AbstractState>());
+  EXPECT_TRUE(context_.has_only_continuous_state());
+}
+
+TEST_F(LeafContextTest, HasOnlyDiscreteState) {
+  EXPECT_FALSE(context_.has_only_discrete_state());
+  context_.set_continuous_state(std::make_unique<ContinuousState<double>>());
+  context_.set_abstract_state(std::make_unique<AbstractState>());
+  EXPECT_TRUE(context_.has_only_discrete_state());
 }
 
 TEST_F(LeafContextTest, GetVectorInput) {
@@ -175,65 +257,24 @@ TEST_F(LeafContextTest, Clone) {
   }
 
   // Verify that the state was copied.
-  ContinuousState<double>* xc = clone->get_mutable_continuous_state();
-  {
-    VectorX<double> contents = xc->CopyToVector();
-    VectorX<double> expected(kContinuousStateSize);
-    expected << 1.0, 2.0, 3.0, 5.0, 8.0;
-    EXPECT_EQ(expected, contents);
-  }
-
-  EXPECT_EQ(2, clone->get_mutable_difference_state()->size());
-  BasicVector<double>* xd0 = clone->get_mutable_difference_state(0);
-  BasicVector<double>* xd1 = clone->get_mutable_difference_state(1);
-  {
-    VectorX<double> contents = xd0->CopyToVector();
-    VectorX<double> expected(1);
-    expected << 128.0;
-    EXPECT_EQ(expected, contents);
-  }
-
-  {
-    VectorX<double> contents = xd1->CopyToVector();
-    VectorX<double> expected(2);
-    expected << 256.0, 512.0;
-    EXPECT_EQ(expected, contents);
-  }
-
-  EXPECT_EQ(1, clone->get_mutable_modal_state()->size());
-  EXPECT_EQ(42, clone->get_modal_state<int>(0));
-
-  // Verify that the state type was preserved.
-  BasicVector<double>* xc_data =
-      dynamic_cast<BasicVector<double>*>(xc->get_mutable_vector());
-  ASSERT_NE(nullptr, xc_data);
-  EXPECT_EQ(kContinuousStateSize, xc_data->size());
-
-  // Verify that the second-order structure was preserved.
-  EXPECT_EQ(kGeneralizedPositionSize, xc->get_generalized_position().size());
-  EXPECT_EQ(1.0, xc->get_generalized_position().GetAtIndex(0));
-  EXPECT_EQ(2.0, xc->get_generalized_position().GetAtIndex(1));
-
-  EXPECT_EQ(kGeneralizedVelocitySize, xc->get_generalized_velocity().size());
-  EXPECT_EQ(3.0, xc->get_generalized_velocity().GetAtIndex(0));
-  EXPECT_EQ(5.0, xc->get_generalized_velocity().GetAtIndex(1));
-
-  EXPECT_EQ(kMiscContinuousStateSize, xc->get_misc_continuous_state().size());
-  EXPECT_EQ(8.0, xc->get_misc_continuous_state().GetAtIndex(0));
+  VerifyClonedState(clone->get_state());
 
   // Verify that changes to the cloned state do not affect the original state.
   // -- Continuous
+  ContinuousState<double>* xc = clone->get_mutable_continuous_state();
   xc->get_mutable_generalized_velocity()->SetAtIndex(1, 42.0);
-  EXPECT_EQ(42.0, xc_data->GetAtIndex(3));
+  EXPECT_EQ(42.0, (*xc)[3]);
   EXPECT_EQ(5.0, context_.get_continuous_state_vector().GetAtIndex(3));
 
-  // -- Difference
+  // -- Discrete
+  BasicVector<double>* xd1 = clone->get_mutable_discrete_state(1);
   xd1->SetAtIndex(0, 1024.0);
-  EXPECT_EQ(128.0, context_.get_difference_state(0)->GetAtIndex(0));
+  EXPECT_EQ(1024.0, clone->get_discrete_state(1)->GetAtIndex(0));
+  EXPECT_EQ(256.0, context_.get_discrete_state(1)->GetAtIndex(0));
 
-  // -- Modal (even though it's not owned in context_)
-  clone->get_mutable_modal_state<int>(0) = 2048;
-  EXPECT_EQ(42, context_.get_modal_state<int>(0));
+  // -- Abstract (even though it's not owned in context_)
+  clone->get_mutable_abstract_state<int>(0) = 2048;
+  EXPECT_EQ(42, context_.get_abstract_state<int>(0));
 
   // Verify that the parameters were copied.
   LeafContext<double>* leaf_clone =
@@ -254,6 +295,26 @@ TEST_F(LeafContextTest, Clone) {
   EXPECT_EQ(1.0, context_.get_numeric_parameter(0)->GetAtIndex(0));
 }
 
+// Tests that a LeafContext can provide a clone of its State.
+TEST_F(LeafContextTest, CloneState) {
+  std::unique_ptr<State<double>> clone = context_.CloneState();
+  VerifyClonedState(*clone);
+}
+
+// Tests that the State can be copied from another State.
+TEST_F(LeafContextTest, CopyStateFrom) {
+  std::unique_ptr<Context<double>> clone = context_.Clone();
+  (*clone->get_mutable_continuous_state())[0] = 81.0;
+  (*clone->get_mutable_discrete_state(0))[0] = 243.0;
+  clone->get_mutable_abstract_state<int>(0) = 729;
+
+  context_.get_mutable_state()->CopyFrom(clone->get_state());
+
+  EXPECT_EQ(81.0, (*context_.get_continuous_state())[0]);
+  EXPECT_EQ(243.0, (*context_.get_discrete_state(0))[0]);
+  EXPECT_EQ(729, context_.get_abstract_state<int>(0));
+}
+
 // Tests that a LeafContext<AutoDiffXd> can be initialized from a
 // Leafcontext<double>.
 TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
@@ -269,12 +330,12 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   std::vector<std::unique_ptr<BasicVector<AutoDiffXd>>> xd;
   xd.push_back(std::make_unique<BasicVector<AutoDiffXd>>(1));
   xd.push_back(std::make_unique<BasicVector<AutoDiffXd>>(2));
-  target.set_difference_state(
-      std::make_unique<DifferenceState<AutoDiffXd>>(std::move(xd)));
+  target.set_discrete_state(
+      std::make_unique<DiscreteState<AutoDiffXd>>(std::move(xd)));
 
   std::vector<std::unique_ptr<AbstractValue>> xm;
   xm.push_back(PackValue(76));
-  target.set_modal_state(std::make_unique<ModalState>(std::move(xm)));
+  target.set_abstract_state(std::make_unique<AbstractState>(std::move(xm)));
 
 
   // Set the target from the source.
@@ -287,7 +348,7 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   EXPECT_EQ(kGeneralizedPositionSize, xc.get_generalized_position().size());
   EXPECT_EQ(5.0, xc.get_generalized_velocity()[1].value());
   EXPECT_EQ(0, xc.get_generalized_velocity()[1].derivatives().size());
-  EXPECT_EQ(128.0, target.get_difference_state(0)->GetAtIndex(0));
+  EXPECT_EQ(128.0, target.get_discrete_state(0)->GetAtIndex(0));
 }
 
 }  // namespace systems

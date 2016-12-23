@@ -39,17 +39,17 @@ class SimpleCarState : public systems::BasicVector<T> {
 
   /// @name Getters and Setters
   //@{
-  // x
-  const T x() const { return this->GetAtIndex(K::kX); }
+  /// x
+  const T& x() const { return this->GetAtIndex(K::kX); }
   void set_x(const T& x) { this->SetAtIndex(K::kX, x); }
-  // y
-  const T y() const { return this->GetAtIndex(K::kY); }
+  /// y
+  const T& y() const { return this->GetAtIndex(K::kY); }
   void set_y(const T& y) { this->SetAtIndex(K::kY, y); }
-  // heading
-  const T heading() const { return this->GetAtIndex(K::kHeading); }
+  /// heading
+  const T& heading() const { return this->GetAtIndex(K::kHeading); }
   void set_heading(const T& heading) { this->SetAtIndex(K::kHeading, heading); }
-  // velocity
-  const T velocity() const { return this->GetAtIndex(K::kVelocity); }
+  /// velocity
+  const T& velocity() const { return this->GetAtIndex(K::kVelocity); }
   void set_velocity(const T& velocity) {
     this->SetAtIndex(K::kVelocity, velocity);
   }

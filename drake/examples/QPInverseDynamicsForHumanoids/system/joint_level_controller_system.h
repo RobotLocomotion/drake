@@ -36,14 +36,11 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
  public:
   explicit JointLevelControllerSystem(const RigidBodyTree<double>& robot)
       : robot_(robot) {
-    in_port_idx_qp_output_ =
-        DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
+    in_port_idx_qp_output_ = DeclareAbstractInputPort().get_index();
 
-    in_port_idx_humanoid_status_ =
-        DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
+    in_port_idx_humanoid_status_ = DeclareAbstractInputPort().get_index();
 
-    out_port_index_atlas_cmd_ =
-        DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
+    out_port_index_atlas_cmd_ = DeclareAbstractOutputPort().get_index();
 
     // TODO(siyuan.fent): Load gains from some config.
     int act_size = static_cast<int>(robot_.actuators.size());
@@ -58,8 +55,8 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
     ff_const_ = VectorX<double>::Zero(act_size);
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     // Inputs
     const QPOutput* qp_output =
         EvalInputValue<QPOutput>(context, in_port_idx_qp_output_);

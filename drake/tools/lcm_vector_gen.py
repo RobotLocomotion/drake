@@ -85,8 +85,8 @@ ACCESSOR_BEGIN = """
   //@{
 """
 ACCESSOR = """
-    // %(doc)s
-    const T %(field)s() const { return this->GetAtIndex(K::%(kname)s); }
+    /// %(doc)s
+    const T& %(field)s() const { return this->GetAtIndex(K::%(kname)s); }
     void set_%(field)s(const T& %(field)s) {
       this->SetAtIndex(K::%(kname)s, %(field)s);
     }
@@ -369,7 +369,8 @@ def generate_code(args):
             print "generating %s" % lcm.name
             put(lcm, LCMTYPE_PREAMBLE % context, 2)
             for field in fields:
-                put(lcm, "  double %s;" % field['name'], 1)
+                put(lcm, "  double {};  // {}".format(field['name'],
+                                                      field['doc']), 1)
             put(lcm, LCMTYPE_POSTAMBLE % context, 1)
 
 

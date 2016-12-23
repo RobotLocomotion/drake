@@ -7,14 +7,13 @@ namespace systems {
 
 RobotCommandToDesiredEffortConverter::RobotCommandToDesiredEffortConverter(
     const std::vector<const RigidBodyActuator*>& actuators)
-    : robot_command_port_index_(
-      DeclareAbstractInputPort(kContinuousSampling).get_index()),
+    : robot_command_port_index_(DeclareAbstractInputPort().get_index()),
       desired_effort_port_indices_(DeclareDesiredEffortOutputPorts(actuators)),
       name_to_actuator_(CreateNameToActuatorMap(actuators)) {
   set_name("RobotCommandToDesiredEffortConverter");
 }
 
-void RobotCommandToDesiredEffortConverter::EvalOutput(
+void RobotCommandToDesiredEffortConverter::DoCalcOutput(
     const systems::Context<double>& context,
     systems::SystemOutput<double>* output) const {
   using bot_core::atlas_command_t;
@@ -63,9 +62,8 @@ RobotCommandToDesiredEffortConverter::DeclareDesiredEffortOutputPorts(
   const int desired_effort_length = 1;
   std::map<const RigidBodyActuator*, int> ret;
   for (const auto& actuator : actuators) {
-    ret[actuator] = DeclareOutputPort(kVectorValued, desired_effort_length,
-                                      kContinuousSampling)
-                        .get_index();
+    ret[actuator] =
+        DeclareOutputPort(kVectorValued, desired_effort_length).get_index();
   }
   return ret;
 }

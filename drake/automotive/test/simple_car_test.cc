@@ -48,7 +48,6 @@ TEST_F(SimpleCarTest, Topology) {
   EXPECT_EQ(systems::kInputPort, input_descriptor.get_face());
   EXPECT_EQ(DrivingCommandIndices::kNumCoordinates,
             input_descriptor.get_size());
-  EXPECT_EQ(systems::kContinuousSampling, input_descriptor.get_sampling());
 
   ASSERT_EQ(1, dut_->get_num_output_ports());
   const auto& output_descriptor = dut_->get_output_ports().at(0);
@@ -56,17 +55,16 @@ TEST_F(SimpleCarTest, Topology) {
   EXPECT_EQ(systems::kOutputPort, output_descriptor.get_face());
   EXPECT_EQ(SimpleCarStateIndices::kNumCoordinates,
             output_descriptor.get_size());
-  EXPECT_EQ(systems::kContinuousSampling, output_descriptor.get_sampling());
 }
 
 TEST_F(SimpleCarTest, Output) {
-  // Grab a pointer to where the EvalOutput results end up.
+  // Grab a pointer to where the CalcOutput results end up.
   const SimpleCarState<double>* const result =
       dynamic_cast<const SimpleCarState<double>*>(output_->get_vector_data(0));
   ASSERT_NE(nullptr, result);
 
   // Starting state and output is all zeros.
-  dut_->EvalOutput(*context_, output_.get());
+  dut_->CalcOutput(*context_, output_.get());
   EXPECT_EQ(0.0, result->x());
   EXPECT_EQ(0.0, result->y());
   EXPECT_EQ(0.0, result->heading());
@@ -77,7 +75,7 @@ TEST_F(SimpleCarTest, Output) {
   continuous_state()->set_y(2.0);
   continuous_state()->set_heading(3.0);
   continuous_state()->set_velocity(4.0);
-  dut_->EvalOutput(*context_, output_.get());
+  dut_->CalcOutput(*context_, output_.get());
   EXPECT_EQ(1.0, result->x());
   EXPECT_EQ(2.0, result->y());
   EXPECT_EQ(3.0, result->heading());
@@ -85,7 +83,7 @@ TEST_F(SimpleCarTest, Output) {
 
   // The input doesn't matter.
   SetInputValue(0.3, 0.5, 0.7);
-  dut_->EvalOutput(*context_, output_.get());
+  dut_->CalcOutput(*context_, output_.get());
   EXPECT_EQ(1.0, result->x());
   EXPECT_EQ(2.0, result->y());
   EXPECT_EQ(3.0, result->heading());
@@ -102,7 +100,7 @@ TEST_F(SimpleCarTest, Derivatives) {
   ASSERT_NE(nullptr, result);
 
   // Starting state is all zeros.
-  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(0.0, result->x());
   EXPECT_EQ(0.0, result->y());
   EXPECT_EQ(0.0, result->heading());
@@ -112,7 +110,7 @@ TEST_F(SimpleCarTest, Derivatives) {
   const double max_acceleration =
       SimpleCar<double>::get_default_config().max_acceleration();
   SetInputValue(0.0, 0.5, 0.0);
-  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(0.0, result->x());
   EXPECT_EQ(0.0, result->y());
   EXPECT_EQ(0.0, result->heading());
@@ -122,7 +120,7 @@ TEST_F(SimpleCarTest, Derivatives) {
   continuous_state()->set_velocity(10.0);
   SetInputValue(0.0, 0.0, 0.0);
   // At heading 0, we are moving along +x.
-  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR(10.0, result->x(), kTolerance);
   EXPECT_EQ(0.0, result->y());
   EXPECT_EQ(0.0, result->heading());
@@ -133,13 +131,13 @@ TEST_F(SimpleCarTest, Derivatives) {
   const double wheelbase = SimpleCar<double>::get_default_config().wheelbase();
   const double steering_angle = std::atan(0.01 * wheelbase);
   SetInputValue(steering_angle, 0.0, 0.0);
-  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR(10.0, result->x(), kTolerance);
   EXPECT_EQ(0.0, result->y());
   EXPECT_NEAR(0.1, result->heading(), kTolerance);
   EXPECT_EQ(0.0, result->velocity());
   SetInputValue(-steering_angle, 0.0, 0.0);
-  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR(10.0, result->x(), kTolerance);
   EXPECT_EQ(0.0, result->y());
   EXPECT_NEAR(-0.1, result->heading(), kTolerance);
@@ -147,7 +145,7 @@ TEST_F(SimpleCarTest, Derivatives) {
 
   // Half brake yields half of the max acceleration.
   SetInputValue(0.0, 0.0, 0.5);
-  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR(10.0, result->x(), kTolerance);
   EXPECT_EQ(0.0, result->y());
   EXPECT_EQ(0.0, result->heading());
@@ -157,7 +155,7 @@ TEST_F(SimpleCarTest, Derivatives) {
   // A heading of +90deg points us at +y.
   continuous_state()->set_heading(0.5 * M_PI);
   SetInputValue(0.0, 0.0, 0.0);
-  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR(0.0, result->x(), kTolerance);
   EXPECT_NEAR(10.0, result->y(), kTolerance);
   EXPECT_EQ(0.0, result->heading());

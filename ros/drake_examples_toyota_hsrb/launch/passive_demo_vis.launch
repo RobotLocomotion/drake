@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="use_sim_time" type="bool" value="true"/>
+  <node name="rviz" pkg="rviz" type="rviz"
+        args="-d $(find drake_examples_toyota_hsrb)/rviz/passive_demo.rviz"/>
+</launch>

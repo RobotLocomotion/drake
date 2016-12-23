@@ -1,0 +1,18 @@
+# -*- yaml -*-
+---
+# distances are meters; angles are degrees.
+maliput_monolane_builder:
+  id: ring
+  lane_bounds: [-3, 3]
+  driveable_bounds: [-8, 8]
+  position_precision: .01
+  orientation_precision: 0.5
+  points:
+    start:
+      xypoint: [50, 0, 90]  # x,y, heading
+      zpoint: [0, 0, -30, 0]  # z, zdot, theta (superelevation), thetadot
+  connections:
+    0:
+      start: "points.start"
+      arc: [50, 360]
+      explicit_end: "points.start"

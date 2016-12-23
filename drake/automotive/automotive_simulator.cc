@@ -9,18 +9,18 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/model_instance_id_table.h"
+#include "drake/multibody/parsers/sdf_parser.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/multiplexer.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_model_instance_id_table.h"
-#include "drake/multibody/parser_sdf.h"
-#include "drake/multibody/parser_urdf.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/multiplexer.h"
 
 namespace drake {
 namespace automotive {
@@ -60,15 +60,19 @@ const RigidBodyTree<T>& AutomotiveSimulator<T>::get_rigid_body_tree() {
 }
 
 template <typename T>
-int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
-    const std::string& sdf_filename) {
+int AutomotiveSimulator<T>::AddSimpleCarFromSdf(const std::string& sdf_filename,
+                                                const std::string& name) {
   DRAKE_DEMAND(!started_);
   const int vehicle_number = allocate_vehicle_number();
 
   static const DrivingCommandTranslator driving_command_translator;
+  std::string channel_name = "DRIVING_COMMAND";
+  if (!name.empty()) {
+    channel_name += "_" + name;
+  }
   auto command_subscriber =
       builder_->template AddSystem<systems::lcm::LcmSubscriberSystem>(
-          "DRIVING_COMMAND", driving_command_translator, lcm_.get());
+          channel_name, driving_command_translator, lcm_.get());
   auto simple_car = builder_->template AddSystem<SimpleCar<T>>();
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
@@ -77,7 +81,18 @@ int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
   builder_->Connect(*simple_car, *coord_transform);
   AddPublisher(*simple_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  return AddSdfModel(sdf_filename, coord_transform);
+  int model_instance_id = AddSdfModel(sdf_filename, coord_transform);
+
+  if (!name.empty()) {
+    // TODO(russt): Set the model_name instead, once
+    // https://github.com/RobotLocomotion/drake/issues/3053 is resolved.
+    // For now, only the body names show up in the drake visualizer.
+    const std::vector<int>& body_indices =
+        rigid_body_tree_->FindBaseBodies(model_instance_id);
+    DRAKE_DEMAND(body_indices.size() == 1);
+    rigid_body_tree_->bodies[body_indices.at(0)]->set_name(name);
+  }
+  return model_instance_id;
 }
 
 template <typename T>
@@ -103,7 +118,7 @@ int AutomotiveSimulator<T>::AddSdfModel(
     const std::string& sdf_filename,
     const SimpleCarToEulerFloatingJoint<T>* coord_transform) {
   const parsers::ModelInstanceIdTable table =
-      parsers::sdf::AddModelInstancesFromSdfFileInWorldFrame(
+      parsers::sdf::AddModelInstancesFromSdfFileToWorld(
           sdf_filename, kRollPitchYaw, rigid_body_tree_.get());
 
   // TODO(liang.fok): Add support for SDF files containing more than one model.
@@ -302,10 +317,11 @@ void AutomotiveSimulator<T>::ConnectJointStateSourcesToVisualizer() {
 }
 
 template <typename T>
-void AutomotiveSimulator<T>::Start() {
+void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
   DRAKE_DEMAND(!started_);
-  // By this time, all model instances should have been added to the tree. Thus,
-  // it should be safe to compile the tree.
+  // By this time, all model instances should have been added to the tree.
+  // While the parsers have already called `compile()` on the `RigidBodyTree`,
+  // in an abundance of caution, the following line calls `compile()` again.
   rigid_body_tree_->compile();
 
   ConnectJointStateSourcesToVisualizer();
@@ -314,6 +330,9 @@ void AutomotiveSimulator<T>::Start() {
   simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);
   lcm_->StartReceiveThread();
 
+  simulator_->set_target_realtime_rate(target_realtime_rate);
+  simulator_->get_mutable_integrator()->set_maximum_step_size(0.01);
+  simulator_->get_mutable_integrator()->set_minimum_step_size(0.01);
   simulator_->Initialize();
 
   started_ = true;

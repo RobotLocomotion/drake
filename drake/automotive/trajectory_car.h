@@ -37,29 +37,26 @@ class TrajectoryCar : public systems::LeafSystem<T> {
       throw std::invalid_argument{"empty curve"};
     }
     this->DeclareOutputPort(systems::kVectorValued,
-                            SimpleCarStateIndices::kNumCoordinates,
-                            systems::kContinuousSampling);
+                            SimpleCarStateIndices::kNumCoordinates);
   }
 
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override {
-    DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-    DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
+ protected:
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override {
     SimpleCarState<T>* const output_vector =
         dynamic_cast<SimpleCarState<T>*>(output->GetMutableVectorData(0));
     DRAKE_ASSERT(output_vector);
 
-    DoEvalOutput(context.get_time(), output_vector);
+    ImplCalcOutput(context.get_time(), output_vector);
   }
 
- protected:
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
       const systems::SystemPortDescriptor<T>& descriptor) const override {
     return std::make_unique<SimpleCarState<T>>();
   }
 
  private:
-  void DoEvalOutput(double time, SimpleCarState<T>* output) const {
+  void ImplCalcOutput(double time, SimpleCarState<T>* output) const {
     // Trace the curve at a fixed speed.
     const double distance = speed_ * (time - start_time_);
     const Curve2<double>::PositionResult pose = curve_.GetPosition(distance);

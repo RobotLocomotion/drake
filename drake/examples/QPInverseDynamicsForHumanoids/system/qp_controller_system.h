@@ -21,12 +21,9 @@ class QPControllerSystem : public systems::LeafSystem<double> {
  public:
   explicit QPControllerSystem(const RigidBodyTree<double>& robot)
       : robot_(robot) {
-    input_port_index_humanoid_status_ =
-        DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
-    input_port_index_qp_input_ =
-        DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
-    output_port_index_qp_input_ =
-        DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
+    input_port_index_humanoid_status_ = DeclareAbstractInputPort().get_index();
+    input_port_index_qp_input_ = DeclareAbstractInputPort().get_index();
+    output_port_index_qp_input_ = DeclareAbstractOutputPort().get_index();
 
     DRAKE_ASSERT(this->get_num_input_ports() == 2);
     DRAKE_ASSERT(this->get_num_output_ports() == 1);
@@ -34,8 +31,8 @@ class QPControllerSystem : public systems::LeafSystem<double> {
     set_name("qp_controller");
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     // Inputs:
     const HumanoidStatus* rs = EvalInputValue<HumanoidStatus>(
         context, input_port_index_humanoid_status_);
@@ -54,7 +51,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
       std::cout << rs->position().transpose() << std::endl;
       std::cout << rs->velocity().transpose() << std::endl;
       std::cout << qp_input << std::endl;
-      throw std::runtime_error("System2QP: QP canot solve\n");
+      throw std::runtime_error("System2QP: QP cannot solve\n");
     }
   }
 
@@ -93,7 +90,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
   const RigidBodyTree<double>& robot_;
 
   // TODO(siyuan.feng): This is a bad temporary hack to the const constraint for
-  // EvalOutput. It is because qp controller needs to allocate mutable workspace
+  // CalcOutput. It is because qp controller needs to allocate mutable workspace
   // (MathematicalProgram, temporary matrices for doing math, etc),
   // and I want to avoid allocating these repeatedly.
   // This should be taken care of with the new system2 cache.

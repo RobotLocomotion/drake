@@ -15,7 +15,10 @@ if(Bullet_FOUND)
   target_link_libraries(drakeCollision ${BULLET_LIBRARIES})
   set(bullet_dependent_requires bullet)
 endif()
-target_link_libraries(drakeCollision drakeShapes drakeCommon)
+target_link_libraries(drakeCollision
+  drakeCommon
+  drakeShapes
+  Eigen3::Eigen)
 
 drake_install_libraries(drakeCollision)
 drake_install_headers(drake_collision.h point_pair.h element.h model.h)
@@ -23,8 +26,10 @@ drake_install_pkg_config_file(drake-collision
   TARGET drakeCollision
   LIBS -ldrakeCollision
   REQUIRES
-    ${bullet_dependent_requires}
-    eigen3)
+    drake-common
+    drake-shapes
+    eigen3
+    ${bullet_dependent_requires})
 
 if(BUILD_TESTING)
   add_subdirectory(test)

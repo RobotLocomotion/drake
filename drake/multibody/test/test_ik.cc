@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -7,10 +8,12 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/constraint/rigid_body_constraint.h"
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -20,12 +23,14 @@ namespace drake {
 namespace {
 
 GTEST_TEST(testIK, atlasIK) {
-  RigidBodyTree<double> model(
-      GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  auto model = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
+      drake::multibody::joints::kRollPitchYaw, model.get());
 
   Vector2d tspan;
   tspan << 0, 1;
-  VectorXd q0 = model.getZeroConfiguration();
+  VectorXd q0 = model->getZeroConfiguration();
   // The state frame of cpp model does not match with the state frame of MATLAB
   // model, since the dofname_to_dofnum is different in cpp and MATLAB
   q0(2) = 0.8;
@@ -33,22 +38,23 @@ GTEST_TEST(testIK, atlasIK) {
   Vector3d com_ub = Vector3d::Zero();
   com_lb(2) = 0.9;
   com_ub(2) = 1.0;
-  WorldCoMConstraint com_kc(&model, com_lb, com_ub, tspan);
+  WorldCoMConstraint com_kc(model.get(), com_lb, com_ub, tspan);
 
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&com_kc);
-  IKoptions ikoptions(&model);
-  VectorXd q_sol(model.get_num_positions());
+  IKoptions ikoptions(model.get());
+  VectorXd q_sol(model->get_num_positions());
   q_sol.setZero();
   int info = 0;
   std::vector<std::string> infeasible_constraint;
-  inverseKin(&model, q0, q0, constraint_array.size(), constraint_array.data(),
-             ikoptions, &q_sol, &info, &infeasible_constraint);
+  inverseKin(model.get(), q0, q0, constraint_array.size(),
+             constraint_array.data(), ikoptions, &q_sol, &info,
+             &infeasible_constraint);
   printf("info = %d\n", info);
   EXPECT_EQ(info, 1);
 
-  KinematicsCache<double> cache = model.doKinematics(q_sol);
-  Vector3d com = model.centerOfMass(cache);
+  KinematicsCache<double> cache = model->doKinematics(q_sol);
+  Vector3d com = model->centerOfMass(cache);
   printf("%5.6f\n%5.6f\n%5.6f\n", com(0), com(1), com(2));
   EXPECT_TRUE(
       CompareMatrices(com, Vector3d(0, 0, 1), 1e-6,
@@ -56,8 +62,11 @@ GTEST_TEST(testIK, atlasIK) {
 }
 
 GTEST_TEST(testIK, iiwaIK) {
-  RigidBodyTree<double> model(
-      GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
+  auto model = std::make_unique<RigidBodyTree<double>>();
+
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      drake::multibody::joints::kRollPitchYaw, model.get());
 
   // Create a timespan for the constraints.  It's not particularly
   // meaningful in this test since inverseKin() only tests a single
@@ -67,7 +76,7 @@ GTEST_TEST(testIK, iiwaIK) {
 
   // Start the robot in the zero configuration (all joints zeroed,
   // pointing straight up).
-  VectorXd q0 = model.getZeroConfiguration();
+  VectorXd q0 = model->getZeroConfiguration();
 
   // Constrain iiwa_link_7 (the end effector) to move 0.58 on the X
   // axis and down slightly (to make room for the X axis motion).
@@ -76,12 +85,12 @@ GTEST_TEST(testIK, iiwaIK) {
   const double pos_tol = 0.01;
   Vector3d pos_lb = pos_end - Vector3d::Constant(pos_tol);
   Vector3d pos_ub = pos_end + Vector3d::Constant(pos_tol);
-  const int link_7_idx = model.FindBodyIndex("iiwa_link_7");
-  WorldPositionConstraint wpc(&model, link_7_idx,
+  const int link_7_idx = model->FindBodyIndex("iiwa_link_7");
+  WorldPositionConstraint wpc(model.get(), link_7_idx,
                               Vector3d(0, 0, 0), pos_lb, pos_ub, tspan);
 
   // Constrain iiwa_joint_4 between 0.9 and 1.0.
-  PostureConstraint pc(&model, tspan);
+  PostureConstraint pc(model.get(), tspan);
   drake::Vector1d joint_lb(0.9);
   drake::Vector1d joint_ub(1.0);
 
@@ -89,21 +98,22 @@ GTEST_TEST(testIK, iiwaIK) {
   // the state vector referring to the positions of the joints to be
   // constrained.
   Eigen::VectorXi joint_position_start_idx(1);
-  joint_position_start_idx(0) = model.FindChildBodyOfJoint("iiwa_joint_4")->
+  joint_position_start_idx(0) = model->FindChildBodyOfJoint("iiwa_joint_4")->
       get_position_start_index();
   pc.setJointLimits(joint_position_start_idx, joint_lb, joint_ub);
 
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&wpc);
   constraint_array.push_back(&pc);
-  IKoptions ikoptions(&model);
+  IKoptions ikoptions(model.get());
 
-  VectorXd q_sol(model.get_num_positions());
+  VectorXd q_sol(model->get_num_positions());
   q_sol.setZero();
   int info = 0;
   std::vector<std::string> infeasible_constraint;
-  inverseKin(&model, q0, q0, constraint_array.size(), constraint_array.data(),
-             ikoptions, &q_sol, &info, &infeasible_constraint);
+  inverseKin(model.get(), q0, q0, constraint_array.size(),
+             constraint_array.data(), ikoptions, &q_sol, &info,
+             &infeasible_constraint);
   EXPECT_EQ(info, 1);
 
   // Check that our constrained joint is within where we tried to constrain it.
@@ -111,9 +121,9 @@ GTEST_TEST(testIK, iiwaIK) {
   EXPECT_LE(q_sol(joint_position_start_idx(0)), joint_ub(0));
 
   // Check that the link we were trying to position wound up where we expected.
-  KinematicsCache<double> cache = model.doKinematics(q_sol);
+  KinematicsCache<double> cache = model->doKinematics(q_sol);
   EXPECT_TRUE(CompareMatrices(
-      pos_end, model.relativeTransform(cache, 0, link_7_idx).translation(),
+      pos_end, model->relativeTransform(cache, 0, link_7_idx).translation(),
       pos_tol + 1e-6, MatrixCompareType::absolute));
 }
 

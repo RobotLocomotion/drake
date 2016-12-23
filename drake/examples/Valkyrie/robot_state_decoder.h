@@ -9,8 +9,8 @@
 namespace drake {
 namespace systems {
 
-// TODO(tkoolen): currently doesn't do anything with the efforts or wrenches in
-// the robot_state_t message.
+// TODO(tkoolen): currently doesn't do anything with the efforts or spatial
+// forces in the robot_state_t message.
 
 /**
  * Converts a robot_state_t LCM message into a KinematicsCache object.
@@ -29,13 +29,13 @@ class RobotStateDecoder : public LeafSystem<double> {
 
   RobotStateDecoder& operator=(const RobotStateDecoder&) = delete;
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override;
-
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override;
 
  private:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override;
+
   std::map<std::string, const RigidBody<double>*> CreateJointNameToBodyMap(
       const RigidBodyTree<double>& tree);
 

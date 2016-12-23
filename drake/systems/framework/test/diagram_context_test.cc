@@ -9,19 +9,36 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
-#include "drake/systems/framework/primitives/adder.h"
-#include "drake/systems/framework/primitives/integrator.h"
-#include "drake/systems/framework/primitives/zero_order_hold.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_input.h"
+#include "drake/systems/framework/test_utilities/pack_value.h"
+#include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/integrator.h"
+#include "drake/systems/primitives/zero_order_hold.h"
 
 namespace drake {
 namespace systems {
 namespace {
 
 constexpr int kSize = 1;
-constexpr int kNumSystems = 5;
+constexpr int kNumSystems = 6;
 constexpr double kTime = 12.0;
+
+class AbstractStateSystem : public LeafSystem<double> {
+ public:
+  AbstractStateSystem() {}
+  ~AbstractStateSystem() override {}
+
+  std::unique_ptr<AbstractState> AllocateAbstractState() const override {
+    std::vector<std::unique_ptr<AbstractValue>> values;
+    values.push_back({PackValue(42)});
+    return std::make_unique<AbstractState>(std::move(values));
+  }
+
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+};
 
 class DiagramContextTest : public ::testing::Test {
  protected:
@@ -35,6 +52,8 @@ class DiagramContextTest : public ::testing::Test {
     integrator1_.reset(new Integrator<double>(kSize));
     hold_.reset(new ZeroOrderHold<double>(13.0 /* sec */, kSize));
 
+    abstract_state_system_.reset(new AbstractStateSystem());
+
     context_.reset(new DiagramContext<double>(kNumSystems));
     context_->set_time(kTime);
 
@@ -43,6 +62,7 @@ class DiagramContextTest : public ::testing::Test {
     AddSystem(*integrator0_, 2);
     AddSystem(*integrator1_, 3);
     AddSystem(*hold_, 4);
+    AddSystem(*abstract_state_system_, 5);
 
     context_->ExportInput({0 /* adder0_ */, 1 /* port 1 */});
     context_->ExportInput({1 /* adder1_ */, 0 /* port 0 */});
@@ -52,8 +72,8 @@ class DiagramContextTest : public ::testing::Test {
     xc->get_mutable_vector()->SetAtIndex(0, 42.0);
     xc->get_mutable_vector()->SetAtIndex(1, 43.0);
 
-    DifferenceState<double>* xd = context_->get_mutable_difference_state();
-    xd->get_mutable_difference_state(0)->SetAtIndex(0, 44.0);
+    DiscreteState<double>* xd = context_->get_mutable_discrete_state();
+    xd->get_mutable_discrete_state(0)->SetAtIndex(0, 44.0);
   }
 
   void AddSystem(const System<double>& sys, int index) {
@@ -71,8 +91,8 @@ class DiagramContextTest : public ::testing::Test {
   // connected to @p context at @p index.
   static const BasicVector<double>* ReadVectorInputPort(
       const Context<double>& context, int index) {
-    SystemPortDescriptor<double> descriptor(
-        nullptr, kInputPort, index, kVectorValued, 0, kInheritedSampling);
+    SystemPortDescriptor<double> descriptor(nullptr, kInputPort, index,
+                                            kVectorValued, 0);
     return context.EvalVectorInput(nullptr, descriptor);
   }
 
@@ -82,7 +102,23 @@ class DiagramContextTest : public ::testing::Test {
   std::unique_ptr<Integrator<double>> integrator0_;
   std::unique_ptr<Integrator<double>> integrator1_;
   std::unique_ptr<ZeroOrderHold<double>> hold_;
+  std::unique_ptr<AbstractStateSystem> abstract_state_system_;
 };
+
+// Verifies that @p state is a clone of the state constructed in
+// LeafContextTest::SetUp.
+void VerifyClonedState(const State<double>& clone) {
+  // - Continuous
+  const ContinuousState<double>* xc = clone.get_continuous_state();
+  EXPECT_EQ(42.0, xc->get_vector().GetAtIndex(0));
+  EXPECT_EQ(43.0, xc->get_vector().GetAtIndex(1));
+  // - Discrete
+  const DiscreteState<double>* xd = clone.get_discrete_state();
+  EXPECT_EQ(44.0, xd->get_discrete_state(0)->GetAtIndex(0));
+  // - Abstract
+  const AbstractState* xa = clone.get_abstract_state();
+  EXPECT_EQ(42, xa->get_abstract_state(0).GetValue<int>());
+}
 
 // Tests that subsystems have outputs and contexts in the DiagramContext.
 TEST_F(DiagramContextTest, RetrieveConstituents) {
@@ -118,9 +154,9 @@ TEST_F(DiagramContextTest, State) {
   EXPECT_EQ(2, xc->get_misc_continuous_state().size());
 
   // The zero-order hold has a difference state vector of length 1.
-  DifferenceState<double>* xd = context_->get_mutable_difference_state();
+  DiscreteState<double>* xd = context_->get_mutable_discrete_state();
   EXPECT_EQ(1, xd->size());
-  EXPECT_EQ(1, xd->get_difference_state(0)->size());
+  EXPECT_EQ(1, xd->get_discrete_state(0)->size());
 
   // Changes to the diagram state write through to constituent system states.
   // - Continuous
@@ -130,18 +166,30 @@ TEST_F(DiagramContextTest, State) {
       context_->GetMutableSubsystemContext(3)->get_mutable_continuous_state();
   EXPECT_EQ(42.0, integrator0_xc->get_vector().GetAtIndex(0));
   EXPECT_EQ(43.0, integrator1_xc->get_vector().GetAtIndex(0));
-  // - Difference
-  DifferenceState<double>* hold_xd =
-      context_->GetMutableSubsystemContext(4)->get_mutable_difference_state();
-  EXPECT_EQ(44.0, hold_xd->get_difference_state(0)->GetAtIndex(0));
+  // - Discrete
+  DiscreteState<double>* hold_xd =
+      context_->GetMutableSubsystemContext(4)->get_mutable_discrete_state();
+  EXPECT_EQ(44.0, hold_xd->get_discrete_state(0)->GetAtIndex(0));
 
   // Changes to constituent system states appear in the diagram state.
   // - Continuous
   integrator1_xc->get_mutable_vector()->SetAtIndex(0, 1000.0);
   EXPECT_EQ(1000.0, xc->get_vector().GetAtIndex(1));
-  // - Difference
-  hold_xd->get_mutable_difference_state(0)->SetAtIndex(0, 1001.0);
-  EXPECT_EQ(1001.0, xd->get_difference_state(0)->GetAtIndex(0));
+  // - Discrete
+  hold_xd->get_mutable_discrete_state(0)->SetAtIndex(0, 1001.0);
+  EXPECT_EQ(1001.0, xd->get_discrete_state(0)->GetAtIndex(0));
+}
+
+// Tests that the pointers to substates in the DiagramState are equal to the
+// substates in the subsystem contexts.
+TEST_F(DiagramContextTest, DiagramState) {
+  auto diagram_state = dynamic_cast<DiagramState<double>*>(
+      context_->get_mutable_state());
+  ASSERT_NE(nullptr, diagram_state);
+  for (int i = 0; i < kNumSystems; ++i) {
+    EXPECT_EQ(context_->GetMutableSubsystemContext(i)->get_mutable_state(),
+              diagram_state->get_mutable_substate(i));
+  }
 }
 
 // Tests that no exception is thrown when connecting a valid source
@@ -172,14 +220,14 @@ TEST_F(DiagramContextTest, Clone) {
   // Verify that the time was copied.
   EXPECT_EQ(kTime, clone->get_time());
 
-  // Verify that the state was copied.
-  // - Continuous
-  const ContinuousState<double>* xc = clone->get_continuous_state();
-  EXPECT_EQ(42.0, xc->get_vector().GetAtIndex(0));
-  EXPECT_EQ(43.0, xc->get_vector().GetAtIndex(1));
-  // - Difference
-  const BasicVector<double>* xd_vec = clone->get_difference_state(0);
-  EXPECT_EQ(44.0, xd_vec->GetAtIndex(0));
+  // Verify that the state has the same value.
+  VerifyClonedState(clone->get_state());
+
+  // Verify that changes to the state do not write through to the original
+  // context.
+  clone->get_mutable_continuous_state_vector()->SetAtIndex(0, 1024.0);
+  EXPECT_EQ(1024.0, (*clone->get_continuous_state())[0]);
+  EXPECT_EQ(42.0, (*context_->get_continuous_state())[0]);
 
   // Verify that the cloned input ports contain the same data,
   // but are different pointers.
@@ -191,6 +239,19 @@ TEST_F(DiagramContextTest, Clone) {
     EXPECT_TRUE(CompareMatrices(orig_port->get_value(), clone_port->get_value(),
                                 1e-8, MatrixCompareType::absolute));
   }
+}
+
+TEST_F(DiagramContextTest, CloneState) {
+  std::unique_ptr<State<double>> state = context_->CloneState();
+  // Verify that the state was copied.
+  VerifyClonedState(*state);
+  // Verify that the underlying type was preserved.
+  EXPECT_NE(nullptr, dynamic_cast<DiagramState<double>*>(state.get()));
+  // Verify that changes to the state do not write through to the original
+  // context.
+  (*state->get_mutable_continuous_state())[1] = 1024.0;
+  EXPECT_EQ(1024.0, (*state->get_continuous_state())[1]);
+  EXPECT_EQ(43.0, (*context_->get_continuous_state())[1]);
 }
 
 }  // namespace

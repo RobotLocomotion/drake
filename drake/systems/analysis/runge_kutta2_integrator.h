@@ -11,7 +11,12 @@ namespace systems {
 template <class T>
 class RungeKutta2Integrator : public IntegratorBase<T> {
  public:
-  virtual ~RungeKutta2Integrator() {}
+  ~RungeKutta2Integrator() override = default;
+
+  // Disable copy, assign, and move.
+  RungeKutta2Integrator(const RungeKutta2Integrator<T>& other) = delete;
+  RungeKutta2Integrator& operator=(const RungeKutta2Integrator<T>& other) =
+      delete;
 
   /**
  * Constructs fixed-step integrator for a given system using the given
@@ -33,17 +38,15 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
   }
 
   /**
-   * The RK2 integrator does not support accuracy estimation.
+   * The RK2 integrator does not support error estimation.
    */
-  bool supports_accuracy_estimation() const override { return false; }
+  bool supports_error_estimation() const override { return false; }
 
-  /**
-   * The RK2 integrator does not support error control.
-   */
-  bool supports_error_control() const override { return false; }
+  /// Integrator does not provide an error estimate.
+  int get_error_estimate_order() const override { return 0; }
 
  private:
-  bool DoStep(const T& dt) override;
+  void DoStepOnceFixedSize(const T& dt) override;
 
   // These are pre-allocated temporaries for use by integration
   std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_;
@@ -54,14 +57,14 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
  * by IntegratorBase::Step().
  */
 template <class T>
-bool RungeKutta2Integrator<T>::DoStep(const T& dt) {
+void RungeKutta2Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   // Find the continuous state xc within the Context, just once.
   auto context = IntegratorBase<T>::get_mutable_context();
   VectorBase<T>* xc = context->get_mutable_continuous_state_vector();
 
   // TODO(sherm1) This should be calculating into the cache so that
   // Publish() doesn't have to recalculate if it wants to output derivatives.
-  IntegratorBase<T>::get_system().EvalTimeDerivatives(
+  IntegratorBase<T>::get_system().CalcTimeDerivatives(
       IntegratorBase<T>::get_context(), derivs0_.get());
 
   // First stage is an explicit Euler step:
@@ -72,18 +75,13 @@ bool RungeKutta2Integrator<T>::DoStep(const T& dt) {
   IntegratorBase<T>::get_mutable_context()->set_time(t);
 
   // use derivative at t+dt
-  IntegratorBase<T>::get_system().EvalTimeDerivatives(
+  IntegratorBase<T>::get_system().CalcTimeDerivatives(
       *IntegratorBase<T>::get_mutable_context(), derivs1_.get());
   const auto& xcdot1 = derivs1_->get_vector();
 
   // TODO(sherm1) Use better operators when available.
-  xc->PlusEqScaled(dt * 0.5, xcdot1);
-  xc->PlusEqScaled(-dt * 0.5, xcdot0);
-
-  IntegratorBase<T>::UpdateStatistics(dt);
-
-  // Fixed step integrator always returns true
-  return true;
+  xc->PlusEqScaled(dt / 2, xcdot1);
+  xc->PlusEqScaled(-dt / 2, xcdot0);
 }
 }  // namespace systems
 }  // namespace drake

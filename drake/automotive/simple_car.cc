@@ -21,11 +21,9 @@ template <typename T>
 SimpleCar<T>::SimpleCar(const SimpleCarConfig<T>& config)
     : config_(config) {
   this->DeclareInputPort(systems::kVectorValued,
-                         DrivingCommandIndices::kNumCoordinates,
-                         systems::kContinuousSampling);
+                         DrivingCommandIndices::kNumCoordinates);
   this->DeclareOutputPort(systems::kVectorValued,
-                          SimpleCarStateIndices::kNumCoordinates,
-                          systems::kContinuousSampling);
+                          SimpleCarStateIndices::kNumCoordinates);
 }
 
 template <typename T>
@@ -50,8 +48,8 @@ bool SimpleCar<T>::has_any_direct_feedthrough() const {
 }
 
 template <typename T>
-void SimpleCar<T>::EvalOutput(const systems::Context<T>& context,
-                              systems::SystemOutput<T>* output) const {
+void SimpleCar<T>::DoCalcOutput(const systems::Context<T>& context,
+                                systems::SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
 
@@ -67,17 +65,17 @@ void SimpleCar<T>::EvalOutput(const systems::Context<T>& context,
       dynamic_cast<SimpleCarState<T>*>(output->GetMutableVectorData(0));
   DRAKE_ASSERT(output_vector);
 
-  DoEvalOutput(*state, output_vector);
+  ImplCalcOutput(*state, output_vector);
 }
 
 template <typename T>
-void SimpleCar<T>::DoEvalOutput(const SimpleCarState<T>& state,
-                                SimpleCarState<T>* output) const {
+void SimpleCar<T>::ImplCalcOutput(const SimpleCarState<T>& state,
+                                  SimpleCarState<T>* output) const {
   output->set_value(state.get_value());
 }
 
 template <typename T>
-void SimpleCar<T>::EvalTimeDerivatives(
+void SimpleCar<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
@@ -106,13 +104,13 @@ void SimpleCar<T>::EvalTimeDerivatives(
       dynamic_cast<SimpleCarState<T>*>(vector_derivatives);
   DRAKE_ASSERT(rates);
 
-  DoEvalTimeDerivatives(*state, *input, rates);
+  ImplCalcTimeDerivatives(*state, *input, rates);
 }
 
 template <typename T>
-void SimpleCar<T>::DoEvalTimeDerivatives(const SimpleCarState<T>& state,
-                                         const DrivingCommand<T>& input,
-                                         SimpleCarState<T>* rates) const {
+void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarState<T>& state,
+                                           const DrivingCommand<T>& input,
+                                           SimpleCarState<T>* rates) const {
   using std::max;
   using std::min;
 

@@ -91,8 +91,8 @@ TEST_P(LoadModelTest, TestVerticalOffset) {
     T_model_to_world.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
       nullptr,  // not used since the robot is attached to the world
       T_model_to_world);
 
@@ -156,8 +156,8 @@ TEST_P(LoadModelTest, TestWeld) {
   auto link2_body = rbs.getRigidBodyTree()->FindBody("link2");
   EXPECT_TRUE(link2_body != nullptr);
 
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), "joint2", link2_body,
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "joint2", link2_body,
       T_model2_to_link2);
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() +
@@ -214,8 +214,8 @@ GTEST_TEST(LoadSDFTest, TestDualOffsetSdf1) {
         0, 0, 0, 1;
   }
 
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
       nullptr,  // not used since the robot is attached to the world
       T_model_world_to_drake_world);
 
@@ -258,8 +258,8 @@ GTEST_TEST(LoadSDFTest, TestDualOffsetSdf2) {
         0, 0, 0, 1;
   }
 
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
       nullptr,  // not used since the robot is attached to the world
       T_model_world_to_drake_world);
 
@@ -296,8 +296,8 @@ GTEST_TEST(LoadSDFTest, TestDualOffsetUrdf1) {
         0, 0, 0, 1;
   }
 
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
       nullptr,  // not used since the robot is attached to the world
       T_model_world_to_drake_world);
 
@@ -340,8 +340,8 @@ GTEST_TEST(LoadSDFTest, TestDualOffsetUrdf2) {
         0, 0, 0, 1;
   }
 
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
       nullptr,  // not used since the robot is attached to the world
       T_model_world_to_drake_world);
 

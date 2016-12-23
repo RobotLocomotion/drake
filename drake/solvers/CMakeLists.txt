@@ -1,14 +1,17 @@
 if(gurobi_FOUND)
   add_library_with_exports(LIB_NAME drakeQP SOURCE_FILES qp.cc)
-  target_include_directories(drakeQP PUBLIC ${gurobi_INCLUDE_DIRS})
-  target_link_libraries(drakeQP gurobi)
+  target_link_libraries(drakeQP
+    Eigen3::Eigen
+    gurobi)
 
   drake_install_libraries(drakeQP)
   drake_install_headers(fast_qp.h gurobi_qp.h)
   drake_install_pkg_config_file(drake-qp
     TARGET drakeQP
     LIBS -ldrakeQP
-    REQUIRES gurobi)
+    REQUIRES
+      eigen3
+      gurobi)
 endif()
 
 set(private_headers
@@ -25,19 +28,20 @@ set(optimization_files)
 set(optimization_requires)
 list(APPEND optimization_files
   ${private_headers}
+  constraint.cc
+  decision_variable.cc
   equality_constrained_qp_solver.cc
   linear_system_solver.cc
   mathematical_program.cc
   moby_lcp_solver.cc
   system_identification.cc
   )
-pods_find_pkg_config(ipopt)
-if (ipopt_FOUND)
+if(ipopt_FOUND)
  list(APPEND optimization_files ipopt_solver.cc)
  list(APPEND optimization_requires ipopt)
 else()
   list(APPEND optimization_files no_ipopt.cc)
-endif(ipopt_FOUND)
+endif()
 if(NLopt_FOUND)
   list(APPEND optimization_files nlopt_solver.cc)
   list(APPEND optimization_requires nlopt)
@@ -69,15 +73,16 @@ else()
   list(APPEND optimization_files no_gurobi.cc)
 endif()
 
-
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
-target_link_libraries(drakeOptimization drakeCommon)
+target_link_libraries(drakeOptimization
+  drakeCommon
+  Eigen3::Eigen)
 drake_install_headers(
   constraint.h
   function.h
   mathematical_program.h
+  mathematical_program_solver_interface.h
   decision_variable.h
-  solution_result.h
   system_identification.h
   )
 drake_install_libraries(drakeOptimization)
@@ -85,11 +90,12 @@ drake_install_pkg_config_file(drake-optimization
   TARGET drakeOptimization
   LIBS -ldrakeOptimization
   REQUIRES
+    drake-common
     eigen3
     ${optimization_requires})
 
 if(ipopt_FOUND)
-  pods_use_pkg_config_packages(drakeOptimization ipopt)
+  target_link_libraries(drakeOptimization ipopt)
   # IPOPT builds its own version of BLAS during compilation, and links
   # it into the output library.  On (at least some) ELF systems, you
   # wind up with a symbol name collision between IPOPT's BLAS and
@@ -113,22 +119,19 @@ if(NLopt_FOUND)
   target_link_libraries(drakeOptimization nlopt)
 endif()
 if(dreal_FOUND)
-  pods_use_pkg_config_packages(drakeOptimization dreal)
+  target_link_libraries(drakeOptimization dreal)
 endif()
 if(snopt_FOUND)
   target_link_libraries(drakeOptimization snopt_c)
 endif()
 if(gurobi_FOUND)
-  target_include_directories(drakeOptimization PUBLIC ${gurobi_INCLUDE_DIRS})
   target_link_libraries(drakeOptimization gurobi)
 endif()
 if(mosek_FOUND)
-  target_include_directories(drakeOptimization PUBLIC ${mosek_INCLUDE_DIRS})
-  target_link_libraries(drakeOptimization ${mosek_LIBRARIES})
+  target_link_libraries(drakeOptimization mosek)
 endif()
 
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
-add_subdirectory(trajectory_optimization)

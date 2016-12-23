@@ -3,12 +3,12 @@
 #include <string>
 #include <vector>
 
-#include "drake/multibody/kinematics_cache.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/parsers/model_instance_id_table.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/system1/System.h"
+#include "drake/multibody/rigid_body_system1/System.h"
 
 using drake::multibody::joints::FloatingBaseType;
 using drake::multibody::joints::kQuaternion;
@@ -201,7 +201,7 @@ class RigidBodySystem {
   drake::parsers::ModelInstanceIdTable AddModelInstanceFromUrdfString(
       const std::string& urdf_string, const std::string& root_dir = ".",
       const FloatingBaseType floating_base_type = kRollPitchYaw,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+      std::shared_ptr<RigidBodyFrame<double>> weld_to_frame = nullptr);
 
   /**
    * Reads a model specification from a URDF file and adds an instance of the
@@ -228,7 +228,7 @@ class RigidBodySystem {
   drake::parsers::ModelInstanceIdTable AddModelInstanceFromUrdfFile(
       const std::string& filename,
       const FloatingBaseType floating_base_type = kQuaternion,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+      std::shared_ptr<RigidBodyFrame<double>> weld_to_frame = nullptr);
 
   /**
    * Adds one instance of each model defined within an SDF file to this
@@ -262,7 +262,7 @@ class RigidBodySystem {
   drake::parsers::ModelInstanceIdTable AddModelInstancesFromSdfFile(
       const std::string& filename,
       const FloatingBaseType floating_base_type = kQuaternion,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+      std::shared_ptr<RigidBodyFrame<double>> weld_to_frame = nullptr);
 
   /**
    * Adds one instance of each model defined within an SDF string to this
@@ -297,7 +297,7 @@ class RigidBodySystem {
   drake::parsers::ModelInstanceIdTable AddModelInstancesFromSdfString(
       const std::string& sdf_string,
       const FloatingBaseType floating_base_type = kQuaternion,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+      std::shared_ptr<RigidBodyFrame<double>> weld_to_frame = nullptr);
 
   /**
    * Adds one instance of each model defined within a SDF or URDF file to this
@@ -325,7 +325,7 @@ class RigidBodySystem {
   drake::parsers::ModelInstanceIdTable AddModelInstanceFromFile(
       const std::string& filename,
       const FloatingBaseType floating_base_type = kQuaternion,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+      std::shared_ptr<RigidBodyFrame<double>> weld_to_frame = nullptr);
 
   /**
    * Adds one instance of each model defined within a SDF or URDF string to this
@@ -353,7 +353,7 @@ class RigidBodySystem {
   drake::parsers::ModelInstanceIdTable AddModelInstancesFromString(
       const std::string& string_description,
       const FloatingBaseType floating_base_type = kQuaternion,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+      std::shared_ptr<RigidBodyFrame<double>> weld_to_frame = nullptr);
 
   void addForceElement(std::shared_ptr<RigidBodyForceElement> f) {
     force_elements.push_back(f);
@@ -498,7 +498,8 @@ class RigidBodyForceElement {
 Eigen::VectorXd spatialForceInFrameToJointTorque(
     const RigidBodyTree<double>* tree,
     const KinematicsCache<double>& rigid_body_state,
-    const RigidBodyFrame* frame, const Eigen::Matrix<double, 6, 1>& force);
+    const RigidBodyFrame<double>* frame,
+    const Eigen::Matrix<double, 6, 1>& force);
 
 // todo: insert a RigidBodyForceImpl with CRTP here once I go back and template
 // these methods
@@ -534,7 +535,7 @@ class RigidBodyPropellor : public RigidBodyForceElement {
   }
 
  private:
-  std::shared_ptr<RigidBodyFrame> frame;
+  std::shared_ptr<RigidBodyFrame<double>> frame;
   Eigen::Vector3d axis;
   double scale_factor_thrust;  // scale factor between input and thrust
   double scale_factor_moment;  // scale factor between input and moment due to
@@ -596,7 +597,7 @@ class RigidBodySpringDamper : public RigidBodyForceElement {
   }
 
  private:
-  std::shared_ptr<RigidBodyFrame> frameA, frameB;
+  std::shared_ptr<RigidBodyFrame<double>> frameA, frameB;
   double stiffness;
   double damping;
   double rest_length;
@@ -659,7 +660,7 @@ class RigidBodySensor {
    * to which the sensor is attached.
    */
   RigidBodySensor(const RigidBodySystem& sys, const std::string& name,
-                  std::shared_ptr<RigidBodyFrame> frame)
+                  std::shared_ptr<RigidBodyFrame<double>> frame)
       : sys_(sys), name_(name), frame_(frame) {}
 
   virtual ~RigidBodySensor() {}
@@ -679,7 +680,7 @@ class RigidBodySensor {
   const std::string& get_model_name() const;
 
   /// Returns the frame to which thi sensor is attached.
-  const RigidBodyFrame& get_frame() const;
+  const RigidBodyFrame<double>& get_frame() const;
 
   /// Returns the rigid body system to which this sensor attaches.
   const RigidBodySystem& get_rigid_body_system() const;
@@ -692,7 +693,7 @@ class RigidBodySensor {
   const std::string name_;
 
   /// The frame within the rigid body tree to which this sensor is attached.
-  const std::shared_ptr<RigidBodyFrame> frame_;
+  const std::shared_ptr<RigidBodyFrame<double>> frame_;
 };
 
 /** RigidBodyDepthSensor
@@ -702,11 +703,11 @@ class RigidBodySensor {
 class RigidBodyDepthSensor : public RigidBodySensor {
  public:
   RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name,
-                       const std::shared_ptr<RigidBodyFrame> frame,
+                       const std::shared_ptr<RigidBodyFrame<double>> frame,
                        tinyxml2::XMLElement* node);
 
   RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name,
-                       const std::shared_ptr<RigidBodyFrame> frame,
+                       const std::shared_ptr<RigidBodyFrame<double>> frame,
                        std::size_t samples, double min_angle, double max_angle,
                        double range);
 
@@ -821,7 +822,7 @@ class RigidBodyDepthSensor : public RigidBodySensor {
 class RigidBodyAccelerometer : public RigidBodySensor {
  public:
   RigidBodyAccelerometer(RigidBodySystem const& sys, const std::string& name,
-                         const std::shared_ptr<RigidBodyFrame> frame);
+                         const std::shared_ptr<RigidBodyFrame<double>> frame);
   ~RigidBodyAccelerometer() override {}
 
   size_t getNumOutputs() const override { return 3; }
@@ -849,7 +850,7 @@ class RigidBodyAccelerometer : public RigidBodySensor {
 class RigidBodyGyroscope : public RigidBodySensor {
  public:
   RigidBodyGyroscope(RigidBodySystem const& sys, const std::string& name,
-                     const std::shared_ptr<RigidBodyFrame> frame);
+                     const std::shared_ptr<RigidBodyFrame<double>> frame);
   ~RigidBodyGyroscope() override {}
 
   size_t getNumOutputs() const override { return 3; }
@@ -874,7 +875,7 @@ class RigidBodyMagnetometer : public RigidBodySensor {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   RigidBodyMagnetometer(RigidBodySystem const& sys, const std::string& name,
-                        const std::shared_ptr<RigidBodyFrame> frame,
+                        const std::shared_ptr<RigidBodyFrame<double>> frame,
                         double declination);
   ~RigidBodyMagnetometer() override {}
 

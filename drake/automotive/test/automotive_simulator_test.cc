@@ -7,7 +7,6 @@
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 
 namespace drake {
 namespace automotive {
@@ -41,9 +40,9 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   const std::string kCommandChannelName = "DRIVING_COMMAND";
 
   const std::string driving_command_name =
-      systems::lcm::LcmSubscriberSystem::get_name(kCommandChannelName);
+      systems::lcm::LcmSubscriberSystem::make_name(kCommandChannelName);
   const std::string joint_state_name =
-      systems::lcm::LcmPublisherSystem::get_name(kJointStateChannelName);
+      systems::lcm::LcmPublisherSystem::make_name(kJointStateChannelName);
 
   // Set up a basic simulation with just SimpleCar and its hangers-on.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
@@ -75,7 +74,7 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   // Get the rigid bodies belonging to the vehicle's model instance.
   const std::vector<const RigidBody<double>*> vehicle_bodies =
       tree.FindModelInstanceBodies(model_instance_id);
-  EXPECT_EQ(vehicle_bodies.size(), num_vehicle_bodies);
+  EXPECT_EQ(static_cast<int>(vehicle_bodies.size()), num_vehicle_bodies);
 
   const auto& body = tree.get_body(1);
   EXPECT_EQ(vehicle_bodies.at(0)->get_name(), body.get_name());
@@ -92,8 +91,12 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   mock_lcm->InduceSubscriberCallback(kCommandChannelName, &message_bytes[0],
                                      message_bytes.size());
 
-  // Shortly after starting, we should have not have moved much.
-  simulator->StepBy(0.01);
+  // Shortly after starting, we should have not have moved much. Take two
+  // small steps so that we get a publish a small time after zero (publish
+  // occurs at the beginning of a step unless specific publishing times are
+  // set).
+  simulator->StepBy(0.005);
+  simulator->StepBy(0.005);
   EulerFloatingJointState<double> joint_value;
   GetLastPublishedJointValue(kJointStateChannelName, state_pub.get_translator(),
                              mock_lcm, &joint_value);
@@ -161,7 +164,8 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file_1, int num_bodies_1,
   const Curve2d curve{waypoints};
 
   // Set up a basic simulation with just some TrajectoryCars.
-  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
+      std::make_unique<lcm::DrakeMockLcm>());
   const int model_instance_id_1 =
       simulator->AddTrajectoryCarFromSdf(sdf_file_1, curve, 1.0, 0.0);
   const int model_instance_id_2 =
@@ -174,8 +178,8 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file_1, int num_bodies_1,
   const std::vector<const RigidBody<double>*> vehicle_bodies_2 =
       simulator->get_rigid_body_tree().FindModelInstanceBodies(
           model_instance_id_2);
-  EXPECT_EQ(vehicle_bodies_1.size(), num_bodies_1);
-  EXPECT_EQ(vehicle_bodies_2.size(), num_bodies_2);
+  EXPECT_EQ(static_cast<int>(vehicle_bodies_1.size()), num_bodies_1);
+  EXPECT_EQ(static_cast<int>(vehicle_bodies_2.size()), num_bodies_2);
 
   // Finish all initialization, so that we can test the post-init state.
   simulator->Start();

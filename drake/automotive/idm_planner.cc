@@ -18,18 +18,15 @@ IdmPlanner<T>::IdmPlanner(const T& v_ref) : v_ref_(v_ref) {
   // The reference velocity must be strictly positive.
   DRAKE_ASSERT(v_ref > 0);
 
+  const int kEgoCarOutputVectorSize = 2;
+  const int kAgentCarOutputVectorSize = 2;
+  const int kLinearAccelerationSize = 1;
   // Declare the ego car input port.
-  this->DeclareInputPort(systems::kVectorValued,
-                         2,  // Size of the ego car output vector.
-                         systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, kEgoCarOutputVectorSize);
   // Declare the agent car input port.
-  this->DeclareInputPort(systems::kVectorValued,
-                         2,  // Size of the agent car output vector.
-                         systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, kAgentCarOutputVectorSize);
   // Declare the output port.
-  this->DeclareOutputPort(systems::kVectorValued,
-                          1,  // We have a single linear acceleration value.
-                          systems::kContinuousSampling);
+  this->DeclareOutputPort(systems::kVectorValued, kLinearAccelerationSize);
 }
 
 template <typename T>
@@ -46,11 +43,8 @@ const systems::SystemPortDescriptor<T>& IdmPlanner<T>::get_agent_port() const {
 }
 
 template <typename T>
-void IdmPlanner<T>::EvalOutput(const systems::Context<T>& context,
-                               systems::SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
-
+void IdmPlanner<T>::DoCalcOutput(const systems::Context<T>& context,
+                                 systems::SystemOutput<T>* output) const {
   // Obtain the input/output structures we need to read from and write into.
   const systems::BasicVector<T>* input_ego =
       this->EvalVectorInput(context, this->get_ego_port().get_index());
@@ -96,16 +90,24 @@ void IdmPlanner<T>::EvalOutput(const systems::Context<T>& context,
 template <typename T>
 std::unique_ptr<systems::Parameters<T>> IdmPlanner<T>::AllocateParameters()
     const {
-  // Default values from https://en.wikipedia.org/wiki/Intelligent_driver_model.
   auto params = std::make_unique<IdmPlannerParameters<T>>();
-  params->set_v_ref(v_ref_);         // desired velocity in free traffic.
-  params->set_a(T(1.0));             // max acceleration.
-  params->set_b(T(3.0));             // comfortable braking deceleration.
-  params->set_s_0(T(1.0));           // minimum desired net distance.
-  params->set_time_headway(T(0.1));  // desired time headway to lead vehicle.
-  params->set_delta(T(4.0));  // recommended choice of free-road exponent.
-  params->set_l_a(T(4.5));    // length of leading car.
   return std::make_unique<systems::Parameters<T>>(std::move(params));
+}
+
+template <typename T>
+void IdmPlanner<T>::SetDefaultParameters(const systems::LeafContext<T>& context,
+                                         systems::Parameters<T>* params) const {
+  // Default values from https://en.wikipedia.org/wiki/Intelligent_driver_model.
+  auto idm_params = dynamic_cast<IdmPlannerParameters<T>*>(
+      params->get_mutable_numeric_parameter(0));
+  DRAKE_DEMAND(idm_params != nullptr);
+  idm_params->set_v_ref(v_ref_);         // desired velocity in free traffic.
+  idm_params->set_a(T(1.0));             // max acceleration.
+  idm_params->set_b(T(3.0));             // comfortable braking deceleration.
+  idm_params->set_s_0(T(1.0));           // minimum desired net distance.
+  idm_params->set_time_headway(T(0.1));  // desired headway to lead vehicle.
+  idm_params->set_delta(T(4.0));  // recommended choice of free-road exponent.
+  idm_params->set_l_a(T(4.5));    // length of leading car.
 }
 
 // These instantiations must match the API documentation in

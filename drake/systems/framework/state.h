@@ -2,9 +2,9 @@
 
 #include <vector>
 
+#include "drake/systems/framework/abstract_state.h"
 #include "drake/systems/framework/continuous_state.h"
-#include "drake/systems/framework/difference_state.h"
-#include "drake/systems/framework/modal_state.h"
+#include "drake/systems/framework/discrete_state.h"
 
 namespace drake {
 namespace systems {
@@ -19,9 +19,9 @@ template <typename T>
 class State {
  public:
   State()
-      : continuous_state_(std::make_unique<ContinuousState<T>>()),
-        difference_state_(std::make_unique<DifferenceState<T>>()),
-        modal_state_(std::make_unique<ModalState>()) {}
+      : abstract_state_(std::make_unique<AbstractState>()),
+        continuous_state_(std::make_unique<ContinuousState<T>>()),
+        discrete_state_(std::make_unique<DiscreteState<T>>()) {}
   virtual ~State() {}
 
   void set_continuous_state(std::unique_ptr<ContinuousState<T>> xc) {
@@ -37,36 +37,46 @@ class State {
     return continuous_state_.get();
   }
 
-  void set_difference_state(std::unique_ptr<DifferenceState<T>> xd) {
+  void set_discrete_state(std::unique_ptr<DiscreteState<T>> xd) {
     DRAKE_DEMAND(xd != nullptr);
-    difference_state_ = std::move(xd);
+    discrete_state_ = std::move(xd);
   }
 
-  const DifferenceState<T>* get_difference_state() const {
-    return difference_state_.get();
+  const DiscreteState<T>* get_discrete_state() const {
+    return discrete_state_.get();
   }
 
-  DifferenceState<T>* get_mutable_difference_state() {
-    return difference_state_.get();
+  DiscreteState<T>* get_mutable_discrete_state() {
+    return discrete_state_.get();
   }
 
-  void set_modal_state(std::unique_ptr<ModalState> xm) {
+  void set_abstract_state(std::unique_ptr<AbstractState> xm) {
     DRAKE_DEMAND(xm != nullptr);
-    modal_state_ = std::move(xm);
+    abstract_state_ = std::move(xm);
   }
 
-  const ModalState* get_modal_state() const {
-    return modal_state_.get();
+  const AbstractState* get_abstract_state() const {
+    return abstract_state_.get();
   }
 
-  ModalState* get_mutable_modal_state() {
-    return modal_state_.get();
+  AbstractState* get_mutable_abstract_state() {
+    return abstract_state_.get();
   }
 
+  /// Copies the values from another State of the same scalar type into this
+  /// State.
+  void CopyFrom(const State<T>& other) {
+    continuous_state_->CopyFrom(*other.get_continuous_state());
+    discrete_state_->CopyFrom(*other.get_discrete_state());
+    abstract_state_->CopyFrom(*other.get_abstract_state());
+  }
+
+  /// Initializes this state (regardless of scalar type) from a State<double>.
+  /// All scalar types in Drake must support initialization from doubles.
   void SetFrom(const State<double>& other) {
     continuous_state_->SetFrom(*other.get_continuous_state());
-    difference_state_->SetFrom(*other.get_difference_state());
-    modal_state_->CopyFrom(*other.get_modal_state());
+    discrete_state_->SetFrom(*other.get_discrete_state());
+    abstract_state_->CopyFrom(*other.get_abstract_state());
   }
 
   // State is not copyable or moveable.
@@ -76,9 +86,9 @@ class State {
   State& operator=(State&& other) = delete;
 
  private:
+  std::unique_ptr<AbstractState> abstract_state_;
   std::unique_ptr<ContinuousState<T>> continuous_state_;
-  std::unique_ptr<DifferenceState<T>> difference_state_;
-  std::unique_ptr<ModalState> modal_state_;
+  std::unique_ptr<DiscreteState<T>> discrete_state_;
 };
 
 }  // namespace systems

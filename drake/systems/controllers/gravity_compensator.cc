@@ -9,10 +9,8 @@ namespace systems {
 template <typename T>
 GravityCompensator<T>::GravityCompensator(const RigidBodyTree<T>& tree)
     : tree_(tree) {
-  this->DeclareInputPort(kVectorValued, tree.get_num_positions(),
-                         kContinuousSampling);
-  this->DeclareOutputPort(kVectorValued, tree_.get_num_actuators(),
-                          kContinuousSampling);
+  this->DeclareInputPort(kVectorValued, tree.get_num_positions());
+  this->DeclareOutputPort(kVectorValued, tree_.get_num_actuators());
   if (tree.get_num_positions() != tree_.get_num_actuators()) {
     std::stringstream msg;
     msg << "The model is under-actuated!\n"
@@ -23,8 +21,8 @@ GravityCompensator<T>::GravityCompensator(const RigidBodyTree<T>& tree)
 }
 
 template <typename T>
-void GravityCompensator<T>::EvalOutput(const Context<T>& context,
-                                       SystemOutput<T>* output) const {
+void GravityCompensator<T>::DoCalcOutput(const Context<T>& context,
+                                         SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 

@@ -17,7 +17,7 @@ struct StepInfo {
   /// The time, in seconds. For typical T implementations based on
   /// doubles, time resolution will gradually degrade as time increases.
   // TODO(sherm1): Consider whether this is sufficiently robust.
-  T time_sec{};
+  T time_sec{0.0};
 };
 
 /// Context is an abstract base class template that represents all
@@ -50,6 +50,32 @@ class Context {
   virtual const State<T>& get_state() const = 0;
   virtual State<T>* get_mutable_state() = 0;
 
+  /// Returns true if the Context has no state.
+  bool is_stateless() const {
+    const int nxc = get_continuous_state()->size();
+    const int nxd = get_num_discrete_state_groups();
+    const int nxm = get_num_abstract_state_groups();
+    return nxc == 0 && nxd == 0 && nxm == 0;
+  }
+
+  /// Returns true if the Context has continuous state, but no discrete or
+  /// abstract state.
+  bool has_only_continuous_state() const {
+    const int nxc = get_continuous_state()->size();
+    const int nxd = get_num_discrete_state_groups();
+    const int nxm = get_num_abstract_state_groups();
+    return nxc > 0 && nxd == 0 && nxm == 0;
+  }
+
+  /// Returns true if the Context has discrete state, but no continuous or
+  /// abstract state.
+  bool has_only_discrete_state() const {
+    const int nxc = get_continuous_state()->size();
+    const int nxd = get_num_discrete_state_groups();
+    const int nxm = get_num_abstract_state_groups();
+    return nxd > 0 && nxc == 0 && nxm == 0;
+  }
+
   /// Sets the continuous state to @p xc, deleting whatever was there before.
   void set_continuous_state(std::unique_ptr<ContinuousState<T>> xc) {
     get_mutable_state()->set_continuous_state(std::move(xc));
@@ -79,56 +105,66 @@ class Context {
     return get_continuous_state()->get_vector();
   }
 
-  /// Returns a mutable pointer to the difference component of the state,
-  /// which may be of size zero.
-  DifferenceState<T>* get_mutable_difference_state() {
-    return get_mutable_state()->get_mutable_difference_state();
+  /// Returns the number of elements in the discrete state.
+  int get_num_discrete_state_groups() const {
+    return get_state().get_discrete_state()->size();
   }
 
-  /// Returns a mutable pointer to element @p index of the difference state.
+  /// Returns a mutable pointer to the discrete component of the state,
+  /// which may be of size zero.
+  DiscreteState<T>* get_mutable_discrete_state() {
+    return get_mutable_state()->get_mutable_discrete_state();
+  }
+
+  /// Returns a mutable pointer to element @p index of the discrete state.
   /// Asserts if @p index doesn't exist.
-  BasicVector<T>* get_mutable_difference_state(int index) {
-    DifferenceState<T>* xd = get_mutable_difference_state();
-    return xd->get_mutable_difference_state(index);
+  BasicVector<T>* get_mutable_discrete_state(int index) {
+    DiscreteState<T>* xd = get_mutable_discrete_state();
+    return xd->get_mutable_discrete_state(index);
   }
 
   /// Sets the discrete state to @p xd, deleting whatever was there before.
-  void set_difference_state(std::unique_ptr<DifferenceState<T>> xd) {
-    get_mutable_state()->set_difference_state(std::move(xd));
+  void set_discrete_state(std::unique_ptr<DiscreteState<T>> xd) {
+    get_mutable_state()->set_discrete_state(std::move(xd));
   }
 
-  /// Returns a const pointer to the discrete difference component of the
+  /// Returns a const pointer to the discrete component of the
   /// state at @p index.  Asserts if @p index doesn't exist.
-  const BasicVector<T>* get_difference_state(int index) const {
-    const DifferenceState<T>* xd = get_state().get_difference_state();
-    return xd->get_difference_state(index);
+  const BasicVector<T>* get_discrete_state(int index) const {
+    const DiscreteState<T>* xd = get_state().get_discrete_state();
+    return xd->get_discrete_state(index);
   }
 
-  /// Returns a mutable pointer to the modal component of the state,
+  /// Returns the number of elements in the abstract state.
+  int get_num_abstract_state_groups() const {
+    return get_state().get_abstract_state()->size();
+  }
+
+  /// Returns a mutable pointer to the abstract component of the state,
   /// which may be of size zero.
-  ModalState* get_mutable_modal_state() {
-    return get_mutable_state()->get_mutable_modal_state();
+  AbstractState* get_mutable_abstract_state() {
+    return get_mutable_state()->get_mutable_abstract_state();
   }
 
-  /// Returns a mutable pointer to element @p index of the modal state.
+  /// Returns a mutable pointer to element @p index of the abstract state.
   /// Asserts if @p index doesn't exist.
   template <typename U>
-  U& get_mutable_modal_state(int index) {
-    ModalState* xm = get_mutable_modal_state();
-    return xm->get_mutable_modal_state(index).GetMutableValue<U>();
+  U& get_mutable_abstract_state(int index) {
+    AbstractState* xm = get_mutable_abstract_state();
+    return xm->get_mutable_abstract_state(index).GetMutableValue<U>();
   }
 
-  /// Sets the modal state to @p xm, deleting whatever was there before.
-  void set_modal_state(std::unique_ptr<ModalState> xm) {
-    get_mutable_state()->set_modal_state(std::move(xm));
+  /// Sets the abstractstate to @p xm, deleting whatever was there before.
+  void set_abstract_state(std::unique_ptr<AbstractState> xm) {
+    get_mutable_state()->set_abstract_state(std::move(xm));
   }
 
-  /// Returns a const pointer to the discrete modal component of the
+  /// Returns a const pointer to the abstract component of the
   /// state at @p index.  Asserts if @p index doesn't exist.
   template <typename U>
-  const U& get_modal_state(int index) const {
-    const ModalState* xm = get_state().get_modal_state();
-    return xm->get_modal_state(index).GetValue<U>();
+  const U& get_abstract_state(int index) const {
+    const AbstractState* xm = get_state().get_abstract_state();
+    return xm->get_abstract_state(index).GetValue<U>();
   }
 
   // =========================================================================
@@ -251,6 +287,11 @@ class Context {
     return std::unique_ptr<Context<T>>(DoClone());
   }
 
+  /// Returns a deep copy of this Context's State.
+  std::unique_ptr<State<T>> CloneState() const {
+    return std::unique_ptr<State<T>>(DoCloneState());
+  }
+
   /// Initializes this context's time, state, and parameters from the real
   /// values in @p source, regardless of this context's scalar type.
   /// Requires a constructor T(double).
@@ -277,7 +318,8 @@ class Context {
   void VerifyInputPort(const SystemPortDescriptor<T>& descriptor) const {
     const int i = descriptor.get_index();
     const InputPort* port = GetInputPort(i);
-    DRAKE_THROW_UNLESS(port != nullptr);
+    // If the port isn't connected, we don't have anything else to check.
+    if (port == nullptr) { return; }
     // TODO(david-german-tri, sherm1): Consider checking sampling here.
 
     // In the vector-valued case, check the size.
@@ -292,6 +334,9 @@ class Context {
  protected:
   /// Contains the return-type-covariant implementation of Clone().
   virtual Context<T>* DoClone() const = 0;
+
+  /// Contains the return-type-covariant implementation of CloneState().
+  virtual State<T>* DoCloneState() const = 0;
 
   /// Returns a const reference to current time and step information.
   const StepInfo<T>& get_step_info() const { return step_info_; }

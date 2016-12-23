@@ -6,7 +6,7 @@ if(lcm_FOUND)
 
   drake_add_cc_test(pendulum_dynamic_constraint_test)
   target_link_libraries(pendulum_dynamic_constraint_test
-    drakePendulumPlant drakeDynamicConstraint)
+    drakePendulumPlant drakeTrajectoryOptimization)
 
   drake_add_cc_test(pendulum_plant_test)
   target_link_libraries(pendulum_plant_test drakePendulumPlant)

@@ -13,21 +13,6 @@ class System;
 
 constexpr int kAutoSize = -1;
 
-/// SamplingSpec describes whether a port has inherited, continuous, or
-/// discrete sampling. Since ports in Drake are not actually sampled, this is
-/// only potentially useful for detecting unintended connections at Diagram
-/// connection time.
-// TODO(david-german-tri, sherm1): Consider just getting rid of this.
-typedef enum {
-  kInherited = 0,
-  kContinuous = 1,
-  kDiscrete = 2,
-} SamplingSpec;
-
-constexpr SamplingSpec kInheritedSampling = SamplingSpec::kInherited;
-constexpr SamplingSpec kContinuousSampling = SamplingSpec::kContinuous;
-constexpr SamplingSpec kDiscreteSampling = SamplingSpec::kDiscrete;
-
 // TODO(david-german-tri): Create separate InputPortDescriptor and
 // OutputPortDescriptor, then get rid of this enum.
 typedef enum {
@@ -54,27 +39,24 @@ class SystemPortDescriptor {
   /// @param system The system to which this descriptor belongs.
   /// @param face Whether an input or output port is described.
   /// @param index The index of the port described. Input and output ports
-  ///              are indexed separately.
+  ///              are indexed separately. They both start from zero and
+  ///              increment by one per port.
   /// @param data_type Whether the port described is vector or abstract valued.
   /// @param size If the port described is vector-valued, the number of
   ///             elements, or kAutoSize if determined by connections.
-  /// @param sampling The sampling with which the port described is written or
-  ///                 read.
   SystemPortDescriptor(const System<T>* system, PortFaceType face, int index,
-                       PortDataType data_type, int size, SamplingSpec sampling)
+                       PortDataType data_type, int size)
       : system_(system),
         face_(face),
         index_(index),
         data_type_(data_type),
-        size_(size),
-        sampling_(sampling) {}
+        size_(size) {}
   virtual ~SystemPortDescriptor() {}
 
   const System<T>* get_system() const { return system_; }
   PortFaceType get_face() const { return face_; }
   int get_index() const { return index_; }
   PortDataType get_data_type() const { return data_type_; }
-  const SamplingSpec& get_sampling() const { return sampling_; }
   int get_size() const {
     if (size_ == kAutoSize) {
       DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
@@ -88,7 +70,6 @@ class SystemPortDescriptor {
   const int index_;
   const PortDataType data_type_;
   const int size_;
-  const SamplingSpec sampling_;
 };
 
 }  // namespace systems
