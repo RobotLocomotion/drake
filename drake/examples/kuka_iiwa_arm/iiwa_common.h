@@ -12,21 +12,17 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
-
 /// Verifies that @p tree matches assumptions about joint indices.
 /// Aborts if the tree isn't as expected.
 void VerifyIiwaTree(const RigidBodyTree<double>& tree);
 
 /// This method generates a simple trajectory plan for a robot using Cartesian
-/// (end effector) way points. It assumes that the robot is fixed in the world
-/// at a position specified by @p robot_base_position, and @p
-/// robot_base_orientation.
-/// The robot itself is defined by a URDF file @p robot_urdf_file. The way
-/// points are assumed to be presented in the World Frame. This method wraps a
-/// call to the `inverseKinPointwise` method.
+/// (end effector) way points. The robot is specified by @p tree. The
+/// way-points must be supplied in the world frame.
+/// This method wraps a call to the `inverseKinPointwise` method.
 /// @see inverseKinPointwise.
 std::unique_ptr<PiecewisePolynomialTrajectory> SimpleCartesianWayPointPlanner(
-    RigidBodyTreed* tree, const std::string& link_to_constraint,
+    const RigidBodyTreed& tree, const std::string& link_to_constrain,
     const std::vector<Eigen::Vector3d>& way_point_list,
     const std::vector<double>& time_stamps);
 
