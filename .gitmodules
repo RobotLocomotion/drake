@@ -99,6 +99,9 @@
 [submodule "ros/hsrb_description"]
 	path = ros/hsrb_description
 	url = https://github.com/ToyotaResearchInstitute/hsrb_description.git
+[submodule "externals/fcl"]
+	path = externals/fcl
+	url = https://github.com/flexible-collision-library/fcl.git
 [submodule "externals/tinyobjloader"]
 	path = externals/tinyobjloader
 	url = https://github.com/syoyo/tinyobjloader
