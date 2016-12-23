@@ -108,11 +108,17 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     // unit quaternion and ω is the angular velocity vector defined in the
     // world frame. This equation was taken from:
     // - P. Nikravesh, Computer-Aided Analysis of Mechanical Systems. Prentice
-    //     Hall, New Jersey, 1988. Equation 105.
+    //     Hall, New Jersey, 1988. Equation 108.
     qdot_to_v.block(0, 0, 3, 3).setZero();
+/*
+    // Equation 105, for angular velocity in global frame.
     qdot_to_v.block(0, 3, 3, 4) <<  -qx,  qw, -qz,  qy,
                                     -qy,  qz,  qw, -qx,
                                     -qz, -qy,  qx,  qw;
+*/
+    qdot_to_v.block(0, 3, 3, 4) <<  -qx,  qw,  qz, -qy,
+                                    -qy, -qz,  qw,  qx,
+                                    -qz,  qy, -qx,  qw;
     qdot_to_v.block(0, 3, 3, 4) *= 2.;
 
     // Next three rows correspond to rigid body translation. Transformation
@@ -166,12 +172,19 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     // unit quaternion and ω is the angular velocity vector defined in the
     // world frame. This matrix was taken from:
     // - P. Nikravesh, Computer-Aided Analysis of Mechanical Systems. Prentice
-    //     Hall, New Jersey, 1988. Equation 106.
+    //     Hall, New Jersey, 1988. Equation 109.
     v_to_qdot.block(0, 0, 4, 3).setZero();
+    /*
+    // Equation 106, for angular velocity in the global frame.
     v_to_qdot.block(3, 0, 4, 3) <<  -qx, -qy, -qz,
                                      qw,  qz, -qy,
                                     -qz,  qw,  qx,
                                      qy, -qx,  qw;
+    */
+    v_to_qdot.block(3, 0, 4, 3) <<  -qx, -qy, -qz,
+                                     qw, -qz,  qy,
+                                     qz,  qw, -qx,
+                                    -qy,  qx,  qw;
     v_to_qdot.block(3, 0, 4, 3) *= 0.5;
 
     // Next three columns correspond to rigid body translation. Transformation

@@ -126,39 +126,6 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
   EXPECT_EQ(v0[1], positions_derivatives.GetAtIndex(1));
   EXPECT_EQ(v0[2], positions_derivatives.GetAtIndex(2));
 
-  // Test using example computed from Octave + RPI Matlab simulator.
-
-  // Update the orientation.
-  Quaterniond q(-0.863191, 0.462544, -0.197933, 0.042159);
-
-  // Verify normalization.
-  DRAKE_ASSERT(std::abs(q.norm() - 1.0) < 1e-5);
-
-  // Get the mutable state and set the quaternion orientation
-  VectorBase<double>* xc = context->get_mutable_state()
-                            ->get_mutable_continuous_state()
-                            ->get_mutable_generalized_position();
-  xc->SetAtIndex(3, q.w());
-  xc->SetAtIndex(4, q.x());
-  xc->SetAtIndex(5, q.y());
-  xc->SetAtIndex(6, q.z());
-
-  // Transform the generalized velocities to time derivative of
-  // generalized coordinates.
-  plant.MapVelocityToQDot(*context, generalized_velocities,
-                          &positions_derivatives);
-
-  Quaterniond qdot(positions_derivatives.GetAtIndex(3),
-                   positions_derivatives.GetAtIndex(4),
-                   positions_derivatives.GetAtIndex(5),
-                   positions_derivatives.GetAtIndex(6));
-
-  EXPECT_NEAR(qdot.w(), 1.5464, 1e-4);
-  EXPECT_NEAR(qdot.x(), 1.2380, 1e-4);
-  EXPECT_NEAR(qdot.y(), -3.4613, 1e-4);
-  EXPECT_NEAR(qdot.z(), 1.8291, 1e-4);
-  DRAKE_ASSERT(std::abs(q.dot(qdot)) < 1e-6);
-
   // Loop over roll-pitch-yaw values: this will run approximately 1,000 tests.
   const double kAngleInc = 10.0 * M_PI / 180.0;  // 10 degree increments
   for (double roll = 0; roll <= M_PI_2; roll += kAngleInc) {
@@ -187,9 +154,11 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
                                 &positions_derivatives);
 
         // Test q * qdot near zero.
-         Quaterniond qdot(xc->GetAtIndex(3), xc->GetAtIndex(4),
-                          xc->GetAtIndex(5), xc->GetAtIndex(6));
-        DRAKE_ASSERT(std::abs(q.dot(qdot)) < 1e-14);
+         Quaterniond qdot(positions_derivatives.GetAtIndex(3),
+                          positions_derivatives.GetAtIndex(4),
+                          positions_derivatives.GetAtIndex(5),
+                          positions_derivatives.GetAtIndex(6));
+        DRAKE_ASSERT(std::abs(q.dot(qdot)) < 1e-15);
 
         // Map time derivative of generalized configuration back to generalized
         // velocity.

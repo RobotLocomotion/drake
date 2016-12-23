@@ -371,7 +371,7 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   std::tie(xyz_exact, xyzDt_exact, xyzDDt_exact) =
       CalculateExactTranslationalSolution(t, xyz_initial, v_initial, gravity);
 
-#if 1  // TODO(mitiguy) Remove these debug statements.
+#if 0  // TODO(mitiguy) Remove these debug statements.
   std::cout << "\n\n quat_drake\n"   << quat_drake;
   std::cout << "\n quat_exact\n"     << quat_exact;
   std::cout << "\n\n quatDt_drake\n" << quatDt_drake;
