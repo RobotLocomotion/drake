@@ -26,7 +26,7 @@ class Model {
   */
   virtual ElementId addElement(const Element& element);
 
-  bool removeElement(const ElementId& id);
+  bool removeElement(ElementId id);
 
   /** \brief Get a read-only pointer to a collision element in this model.
    * \param id an ElementId corresponding to the desired collision element
@@ -62,7 +62,7 @@ class Model {
    * transform
    */
   virtual bool updateElementWorldTransform(
-      const ElementId id, const Eigen::Isometry3d& T_local_to_world);
+      ElementId id, const Eigen::Isometry3d& T_local_to_world);
 
   /** \brief Compute the points of closest approach between all eligible
    * pairs of collision elements drawn from a specified set of elements
@@ -76,7 +76,7 @@ class Model {
    * \return true if this method ran successfully
    */
   virtual bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
-                                     const bool use_margins,
+                                     bool use_margins,
                                      std::vector<PointPair>&
                                      closest_points) = 0;
 
@@ -92,7 +92,7 @@ class Model {
    @returns `true` if this method ran successfully and `false` otherwise.
    **/
   virtual bool ComputeMaximumDepthCollisionPoints(
-      const bool use_margins,
+      bool use_margins,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       std::vector<PointPair>& closest_points) = 0;
 
@@ -108,7 +108,7 @@ class Model {
    * \return true if this method ran successfully
    */
   virtual bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                                     const bool use_margins,
+                                     bool use_margins,
                                      std::vector<PointPair>&
                                      closest_points) = 0;
 
