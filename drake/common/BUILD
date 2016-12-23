@@ -1,6 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_googletest")
+
 package(default_visibility = ["//visibility:public"])
 
 # A library of things that EVERYONE should want and MUST EAT.
@@ -79,7 +81,9 @@ cc_library(
     srcs = ["functional_form.cc"],
     hdrs = ["functional_form.h"],
     linkstatic = 1,
-    deps = [":common"],
+    deps = [
+        ":common",
+    ],
 )
 
 cc_library(
@@ -134,7 +138,9 @@ cc_library(
     srcs = ["drake_path.cc"],
     hdrs = ["drake_path.h"],
     linkstatic = 1,
-    deps = [":common"],
+    deps = [
+        ":common",
+    ],
 )
 
 # TODO(jwnimmer-tri) GetDrakePath has a long and storied history (#1471, #2174).
@@ -151,19 +157,25 @@ genrule(
     cmd = "sed 's#@PROJECT_SOURCE_DIR@#drake#g' $< > $@",
 )
 
+# TODO(jwnimmer-tri) Move this header file into test/ subdirectory (and this
+# stanza below the "test/" comment marker).
 cc_library(
     name = "eigen_matrix_compare",
     testonly = 1,
     hdrs = ["eigen_matrix_compare.h"],
     linkstatic = 1,
-    deps = [":common"],
+    deps = [
+        ":common",
+    ],
 )
 
 cc_library(
     name = "is_approx_equal_abstol",
     hdrs = ["is_approx_equal_abstol.h"],
     linkstatic = 1,
-    deps = [":common"],
+    deps = [
+        ":common",
+    ],
 )
 
 cc_library(
@@ -171,14 +183,18 @@ cc_library(
     srcs = ["nice_type_name.cc"],
     hdrs = ["nice_type_name.h"],
     linkstatic = 1,
-    deps = [":common"],
+    deps = [
+        ":common",
+    ],
 )
 
 cc_library(
     name = "sorted_vectors_have_intersection",
     hdrs = ["sorted_vectors_have_intersection.h"],
     linkstatic = 1,
-    deps = [":common"],
+    deps = [
+        ":common",
+    ],
 )
 
 cc_library(
@@ -194,3 +210,197 @@ cc_library(
         "@gflags//:gflags",
     ],
 )
+
+# === test/ ===
+
+cc_library(
+    name = "random_polynomial_matrix",
+    testonly = 1,
+    hdrs = ["test/random_polynomial_matrix.h"],
+    linkstatic = 1,
+    deps = [
+        ":polynomial",
+    ],
+)
+
+cc_library(
+    name = "measure_execution",
+    testonly = 1,
+    hdrs = ["test/measure_execution.h"],
+    linkstatic = 1,
+)
+
+cc_googletest(
+    name = "autodiff_overloads_test",
+    deps = [
+        ":autodiff",
+        ":common",
+        ":eigen_matrix_compare",
+        ":extract_double",
+    ],
+)
+
+cc_googletest(
+    name = "double_overloads_test",
+    deps = [
+        ":common",
+        ":cond",
+        ":double",
+    ],
+)
+
+cc_googletest(
+    name = "drake_assert_test",
+    deps = [
+        ":common",
+    ],
+)
+
+cc_googletest(
+    name = "drake_assert_test_compile",
+    deps = [
+        ":common",
+    ],
+)
+
+cc_googletest(
+    name = "drake_deprecated_test",
+    # Remove spurious warnings from the default build output.
+    copts = ["-Wno-deprecated-declarations"],
+    deps = [
+        ":common",
+    ],
+)
+
+cc_googletest(
+    name = "drake_throw_test",
+    deps = [
+        ":common",
+    ],
+)
+
+cc_googletest(
+    name = "eigen_matrix_compare_test",
+    deps = [
+        ":common",
+        ":eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "eigen_stl_types_test",
+    deps = [
+        ":common",
+    ],
+)
+
+cc_googletest(
+    name = "extract_double_test",
+    deps = [
+        ":common",
+        ":extract_double",
+    ],
+)
+
+cc_googletest(
+    name = "functional_form_test",
+    deps = [
+        ":common",
+        ":functional_form",
+    ],
+)
+
+cc_googletest(
+    name = "is_approx_equal_abstol_test",
+    deps = [
+        ":common",
+        ":is_approx_equal_abstol",
+    ],
+)
+
+cc_googletest(
+    name = "nice_type_name_test",
+    deps = [
+        ":common",
+        ":nice_type_name",
+    ],
+)
+
+cc_googletest(
+    name = "polynomial_test",
+    deps = [
+        ":common",
+        ":eigen_matrix_compare",
+        ":random_polynomial_matrix",
+    ],
+)
+
+cc_googletest(
+    name = "sorted_vectors_have_intersection_test",
+    deps = [
+        ":common",
+        ":sorted_vectors_have_intersection",
+    ],
+)
+
+cc_googletest(
+    name = "symbolic_environment_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+cc_googletest(
+    name = "symbolic_expression_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+cc_googletest(
+    name = "symbolic_formula_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+cc_googletest(
+    name = "symbolic_variable_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+cc_googletest(
+    name = "symbolic_variables_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+cc_googletest(
+    name = "text_logging_test",
+    deps = [
+        ":common",
+    ],
+)
+
+cc_googletest(
+    name = "trig_poly_test",
+    deps = [
+        ":common",
+        ":polynomial",
+    ],
+)
+
+# TODO(jwnimmer-tri) These tests are currently missing...
+# - drake_assert_test in fancy variants
+# - drake_assert_test_compile in fancy variants
+# - text_logging_test in fancy variants
+# - drake_deprecated_test in fancy variants
+# - cpplint_wrapper_test.py

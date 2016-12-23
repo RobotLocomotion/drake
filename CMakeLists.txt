@@ -7,10 +7,12 @@ include(cmake/config.cmake)
 include(cmake/externals.cmake)
 include(cmake/examples.cmake)
 include(cmake/options.cmake)
+include(cmake/tools.cmake)
 include(cmake/git/hooks.cmake)
 
 drake_setup_superbuild()
 drake_setup_platform()
+drake_setup_tools_superbuild()
 drake_setup_git_hooks()
 drake_setup_options()
 
@@ -130,9 +132,10 @@ drake_add_external(sedumi PUBLIC CMAKE MATLAB)
 drake_add_external(snopt CMAKE MATLAB
   CMAKE_ARGS
     -DBUILD_SNOPT_CPP=OFF
-    -DBUILD_SHARED_LIBS=ON
+    -DBUILD_SHARED_LIBS=OFF  # For licensing reasons
     -DBUILD_TESTING=OFF
-    -DBUILD_SNOPT_C_MEX=${Matlab_FOUND})
+    -DBUILD_SNOPT_C_MEX=${Matlab_FOUND}
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON)
 
 # spotless
 drake_add_external(spotless PUBLIC CMAKE MATLAB)
@@ -248,6 +251,11 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     -DWITH_XFOIL:BOOL=${WITH_XFOIL}
     -DWITH_YALMIP:BOOL=${WITH_YALMIP}
     -DWITH_YAML_CPP:BOOL=${WITH_YAML_CPP}
+    -DUSE_CLANG_TIDY:BOOL=${USE_CLANG_TIDY}
+    -DUSE_INCLUDE_WHAT_YOU_USE:BOOL=${USE_INCLUDE_WHAT_YOU_USE}
+    -DUSE_LINK_WHAT_YOU_USE:BOOL=${USE_LINK_WHAT_YOU_USE}
+    -DUSE_SANITIZER:STRING=${USE_SANITIZER}
+    -DUSE_VALGRIND:STRING=${USE_VALGRIND}
   DEPENDS
     avl
     bot_core_lcmtypes

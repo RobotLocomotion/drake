@@ -15,7 +15,6 @@
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/discrete_state.h"
-#include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
@@ -206,25 +205,32 @@ class Diagram : public System<T>,
     return std::unique_ptr<Context<T>>(context.release());
   }
 
-  void SetDefaultState(Context<T>* context) const override {
-    auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
+  void SetDefaultState(const Context<T>& context,
+                       State<T>* state) const override {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
+
+    auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
+    DRAKE_DEMAND(diagram_state != nullptr);
 
     // Set default state of each constituent system.
     for (int i = 0; i < num_subsystems(); ++i) {
-      auto subcontext = diagram_context->GetMutableSubsystemContext(i);
-      sorted_systems_[i]->SetDefaultState(subcontext);
+      auto subcontext = diagram_context->GetSubsystemContext(i);
+      DRAKE_DEMAND(subcontext != nullptr);
+      auto substate = diagram_state->get_mutable_substate(i);
+      DRAKE_DEMAND(substate != nullptr);
+      sorted_systems_[i]->SetDefaultState(*subcontext, substate);
     }
   }
 
-  void SetDefaultParameters(Context<T>* context) const override {
+  void SetDefaults(Context<T>* context) const final {
     auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
-    // Set default state of each constituent system.
+    // Set defaults of each constituent system.
     for (int i = 0; i < num_subsystems(); ++i) {
       auto subcontext = diagram_context->GetMutableSubsystemContext(i);
-      sorted_systems_[i]->SetDefaultParameters(subcontext);
+      sorted_systems_[i]->SetDefaults(subcontext);
     }
   }
 
@@ -241,8 +247,8 @@ class Diagram : public System<T>,
     return std::unique_ptr<SystemOutput<T>>(output.release());
   }
 
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override {
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override {
     // Down-cast the context and output to DiagramContext and DiagramOutput.
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
@@ -250,7 +256,7 @@ class Diagram : public System<T>,
     DRAKE_DEMAND(diagram_output != nullptr);
 
     // Populate the output with pointers to the appropriate subsystem outputs
-    // in the DiagramContext. We do this on every call to EvalOutput, so
+    // in the DiagramContext. We do this on every call to CalcOutput, so
     // that the diagram_context and diagram_output are not tightly coupled.
     ExposeSubsystemOutputs(*diagram_context, diagram_output);
 
@@ -286,8 +292,8 @@ class Diagram : public System<T>,
             std::move(sub_differences)));
   }
 
-  void EvalTimeDerivatives(const Context<T>& context,
-                           ContinuousState<T>* derivatives) const override {
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
@@ -302,7 +308,7 @@ class Diagram : public System<T>,
       const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
       ContinuousState<T>* subderivatives =
           diagram_derivatives->get_mutable_substate(i);
-      sorted_systems_[i]->EvalTimeDerivatives(*subcontext, subderivatives);
+      sorted_systems_[i]->CalcTimeDerivatives(*subcontext, subderivatives);
     }
   }
 
@@ -358,6 +364,17 @@ class Diagram : public System<T>,
                                      const System<T>* subsystem) const {
     Context<T>* subcontext = GetMutableSubsystemContext(context, subsystem);
     return subcontext->get_mutable_state();
+  }
+
+  /// Retrieves the state for a particular subsystem from the @p state for the
+  /// entire diagram. Aborts if @p subsystem is not actually a subsystem of this
+  /// diagram.
+  State<T>* GetMutableSubsystemState(State<T>* state,
+                                     const System<T>* subsystem) const {
+    const int i = GetSystemIndexOrAbort(subsystem);
+    auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
+    DRAKE_DEMAND(diagram_state != nullptr);
+    return diagram_state->get_mutable_substate(i);
   }
 
   /// Returns the full path of this Diagram in the tree of Diagrams. Implemented
@@ -459,6 +476,58 @@ class Diagram : public System<T>,
 
       // Delegate the actual mapping to subsystem i itself.
       sorted_systems_[i]->MapVelocityToQDot(*subcontext, v_slice, &dq_slice);
+
+      // Advance the indices.
+      v_index += num_v;
+      q_index += num_q;
+    }
+  }
+
+  /// The @p generalized_velocity vector must have the same size and ordering as
+  /// the generalized velocity in the ContinuousState that this Diagram reserves
+  /// in its context.
+  void DoMapQDotToVelocity(
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& qdot,
+      VectorBase<T>* generalized_velocity) const override {
+    // Check that the dimensions of the continuous state in the context match
+    // the dimensions of the provided generalized velocity and configuration
+    // derivatives.
+    const ContinuousState<T>* xc = context.get_continuous_state();
+    DRAKE_DEMAND(xc != nullptr);
+    const int nq = xc->get_generalized_position().size();
+    const int nv = xc->get_generalized_velocity().size();
+    DRAKE_DEMAND(nq == qdot.size());
+    DRAKE_DEMAND(nv == generalized_velocity->size());
+
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+
+    // Iterate over the subsystems in sorted order, asking each subsystem to
+    // map its subslice of configuration derivatives to velocity. This approach
+    // is valid because the DiagramContinuousState guarantees that the subsystem
+    // states are concatenated in sorted order.
+    int q_index = 0;  // The next index to read in qdot.
+    int v_index = 0;  // The next index to write in generalized_velocity.
+    for (int i = 0; i < num_subsystems(); ++i) {
+      // Find the continuous state of subsystem i.
+      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+      DRAKE_DEMAND(subcontext != nullptr);
+      const ContinuousState<T>* sub_xc = subcontext->get_continuous_state();
+      // If subsystem i is stateless, skip it.
+      if (sub_xc == nullptr) continue;
+
+      // Select the chunk of qdot belonging to subsystem i.
+      const int num_q = sub_xc->get_generalized_position().size();
+      const Eigen::Ref<const VectorX<T>>& dq_slice =
+        qdot.segment(q_index, num_q);
+
+      // Select the chunk of generalized_velocity belonging to subsystem i.
+      const int num_v = sub_xc->get_generalized_velocity().size();
+      Subvector<T> v_slice(generalized_velocity, v_index, num_v);
+
+      // Delegate the actual mapping to subsystem i itself.
+      sorted_systems_[i]->MapQDotToVelocity(*subcontext, dq_slice, &v_slice);
 
       // Advance the indices.
       v_index += num_v;
@@ -616,7 +685,7 @@ class Diagram : public System<T>,
         publishers.emplace_back(i, sub_actions[i]);
       }
       if (internal::HasEvent(sub_actions[i],
-                             DiscreteEvent<T1>::kUpdateAction)) {
+                             DiscreteEvent<T1>::kDiscreteUpdateAction)) {
         updaters.emplace_back(i, sub_actions[i]);
       }
     }
@@ -635,8 +704,10 @@ class Diagram : public System<T>,
     // Request an update event, if our subsystems want it.
     if (!updaters.empty()) {
       DiscreteEvent<T1> event;
-      event.action = DiscreteEvent<T1>::kUpdateAction;
-      event.do_update = std::bind(&Diagram<T1>::HandleUpdate, this,
+      event.action = DiscreteEvent<T1>::kDiscreteUpdateAction;
+      event.do_calc_discrete_variable_update = std::bind(
+                                  &Diagram<T1>::HandleUpdate,
+                                  this,
                                   std::placeholders::_1, /* context */
                                   std::placeholders::_2, /* difference state */
                                   updaters);
@@ -779,7 +850,7 @@ class Diagram : public System<T>,
     SystemOutput<T>* subsystem_output = context.GetSubsystemOutput(i);
     // TODO(david-german-tri): Once #2890 is resolved, only evaluate the
     // particular port specified in id.second.
-    system->EvalOutput(*subsystem_context, subsystem_output);
+    system->CalcOutput(*subsystem_context, subsystem_output);
   }
 
   // Returns the index of the given @p sys in the sorted order of this diagram,
@@ -930,7 +1001,7 @@ class Diagram : public System<T>,
     }
   }
 
-  /// Handles Update calbacks that were registered in DoCalcNextUpdateTime.
+  /// Handles Update callbacks that were registered in DoCalcNextUpdateTime.
   /// Dispatches the Publish events to the subsystems that requested them.
   void HandleUpdate(
       const Context<T>& context, DiscreteState<T>* update,
@@ -965,8 +1036,8 @@ class Diagram : public System<T>,
 
       // Do that system's update actions.
       for (const DiscreteEvent<T>& event : action_details.events) {
-        if (event.action == DiscreteEvent<T>::kUpdateAction) {
-          sorted_systems_[index]->EvalDiscreteVariableUpdates(*subcontext,
+        if (event.action == DiscreteEvent<T>::kDiscreteUpdateAction) {
+          sorted_systems_[index]->CalcDiscreteVariableUpdates(*subcontext,
                                                               event,
                                                               subdifference);
         }

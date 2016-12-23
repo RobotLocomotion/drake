@@ -71,11 +71,19 @@ set(private_headers
 # Create the library target and note its dependencies.
 add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
-target_link_libraries(drakeCommon gflags Threads::Threads)
+target_link_libraries(drakeCommon
+  Eigen3::Eigen
+  gflags
+  Threads::Threads)
+
+set(drakeCommon_CFLAGS)
+set(drakeCommon_REQUIRES)
 
 if(spdlog_FOUND)
   target_compile_definitions(drakeCommon PUBLIC HAVE_SPDLOG)
   target_link_libraries(drakeCommon spdlog::spdlog)
+  set(drakeCommon_CFLAGS -DHAVE_SPDLOG)
+  set(drakeCommon_REQUIRES spdlog)
 endif()
 
 # Install all externally-visible headers.
@@ -89,7 +97,10 @@ drake_install_pkg_config_file(drake-common
     -ldrakeCommon
     -lgflags
     ${CMAKE_THREAD_LIBS_INIT}
-  REQUIRES eigen3)
+  CFLAGS ${drakeCommon_CFLAGS}
+  REQUIRES
+    eigen3
+    ${drakeCommon_REQUIRES})
 
 if(BUILD_TESTING)
   add_subdirectory(test)

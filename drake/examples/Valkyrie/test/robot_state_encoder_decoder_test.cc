@@ -6,13 +6,13 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/quaternion.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_value_source.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/constant_value_source.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 #include "drake/util/drakeGeometryUtil.h"
 
@@ -218,7 +218,7 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
 
   auto context = diagram->CreateDefaultContext();
   auto output = diagram->AllocateOutput(*context);
-  diagram->EvalOutput(*context, output.get());
+  diagram->CalcOutput(*context, output.get());
 
   // TODO(tkoolen): magic numbers.
   auto cache_output = output->get_data(0)->GetValue<KinematicsCache<double>>();

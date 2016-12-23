@@ -60,30 +60,64 @@ class LeafSystem : public System<T> {
     context->set_abstract_state(this->AllocateAbstractState());
     // Reserve parameters via delegation to subclass.
     context->set_parameters(this->AllocateParameters());
+
+    // Enforce some requirements on the fully-assembled Context.
+    // -- The ContinuousState must be contiguous.
+    VectorBase<T>* xc_vec = context->get_mutable_continuous_state_vector();
+    DRAKE_DEMAND(dynamic_cast<BasicVector<T>*>(xc_vec) != nullptr);
+
     return std::unique_ptr<Context<T>>(context.release());
   }
 
   /// Default implementation: set all continuous and discrete state variables
-  /// to zero.  It makes no attempt to set abstract state values.
-  void SetDefaultState(Context<T>* context) const override {
-    ContinuousState<T>* continuous_state =
-        context->get_mutable_continuous_state();
-    continuous_state->SetFromVector(VectorX<T>::Zero(continuous_state->size()));
-    for (int i = 0; i < context->get_num_discrete_state_groups(); i++) {
-      BasicVector<T>* s = context->get_mutable_discrete_state(i);
+  /// to zero.  It makes no attempt to set abstract state values. Overrides
+  /// must not change the number of state variables.
+  void SetDefaultState(const Context<T>& context,
+                       State<T>* state) const override {
+    DRAKE_DEMAND(state != nullptr);
+    ContinuousState<T>* xc = state->get_mutable_continuous_state();
+    xc->SetFromVector(VectorX<T>::Zero(xc->size()));
+    DiscreteState<T>* xd = state->get_mutable_discrete_state();
+    for (int i = 0; i < xd->size(); i++) {
+      BasicVector<T>* s = xd->get_mutable_discrete_state(i);
       s->SetFromVector(VectorX<T>::Zero(s->size()));
     }
   }
 
   /// Default implementation: set all numeric parameters to one.  It makes no
-  /// attempt to set abstract parameter values.
-  void SetDefaultParameters(Context<T>* context) const override {
-    systems::LeafContext<T>* leaf_context =
-        dynamic_cast<systems::LeafContext<T>*>(context);
-    for (int i = 0; i < leaf_context->num_numeric_parameters(); i++) {
-      BasicVector<T>* p = leaf_context->get_mutable_numeric_parameter(i);
+  /// attempt to set abstract parameter values. Overrides must not change the
+  /// number of parameters.
+  virtual void SetDefaultParameters(const LeafContext<T>& context,
+                                    Parameters<T>* parameters) const {
+    for (int i = 0; i < parameters->num_numeric_parameters(); i++) {
+      BasicVector<T>* p = parameters->get_mutable_numeric_parameter(i);
       p->SetFromVector(VectorX<T>::Constant(p->size(), 1.0));
     }
+  }
+
+  // Sets Context fields to their default values.
+  void SetDefaults(Context<T>* context) const final {
+    systems::LeafContext<T>* leaf_context =
+        dynamic_cast<systems::LeafContext<T>*>(context);
+    DRAKE_DEMAND(leaf_context != nullptr);
+
+    // Set the default state, checking that the number of state variables does
+    // not change.
+    const int n_xc = context->get_continuous_state()->size();
+    const int n_xd = context->get_num_discrete_state_groups();
+    const int n_xm = context->get_num_abstract_state_groups();
+
+    SetDefaultState(*context, context->get_mutable_state());
+
+    DRAKE_DEMAND(n_xc == context->get_continuous_state()->size());
+    DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
+    DRAKE_DEMAND(n_xm == context->get_num_abstract_state_groups());
+
+    // Set the default parameters, checking that the number of parameters does
+    // not change.
+    const int num_params = leaf_context->num_numeric_parameters();
+    SetDefaultParameters(*leaf_context, leaf_context->get_mutable_parameters());
+    DRAKE_DEMAND(num_params == leaf_context->num_numeric_parameters());
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
@@ -136,7 +170,8 @@ class LeafSystem : public System<T> {
   /// Returns a ContinuousState used to implement both CreateDefaultContext and
   /// AllocateTimeDerivatives. Allocates the state configured with
   /// DeclareContinuousState, or none by default. Systems with continuous state
-  /// variables may override.
+  /// variables may override, but must ensure the ContinuousState vector is
+  /// a subclass of BasicVector.
   virtual std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const {
     if (model_continuous_state_vector_ != nullptr) {
       return std::make_unique<ContinuousState<T>>(
@@ -212,7 +247,7 @@ class LeafSystem : public System<T> {
     PeriodicEvent<T> event;
     event.period_sec = period_sec;
     event.offset_sec = offset_sec;
-    event.event.action = DiscreteEvent<T>::kUpdateAction;
+    event.event.action = DiscreteEvent<T>::kDiscreteUpdateAction;
     periodic_events_.push_back(event);
   }
 

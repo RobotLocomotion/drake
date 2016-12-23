@@ -15,9 +15,9 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/framework/diagram.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_input.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 using Eigen::Isometry3d;
 using Eigen::Quaterniond;
@@ -183,7 +183,7 @@ void VerifyDiagram(const Diagram<double>& dut, const VectorXd& desired_state,
   const BasicVector<double>* output_state = output->get_vector_data(0);
   ASSERT_NE(nullptr, output_state);
 
-  dut.EvalOutput(*context, output.get());
+  dut.CalcOutput(*context, output.get());
   dut.Publish(*context);
 
   // Asserts the output equals the state.

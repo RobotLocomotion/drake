@@ -1,3 +1,6 @@
+drake_add_cc_test(piecewise_function_test)
+target_link_libraries(piecewise_function_test drakeTrajectories)
+
 drake_add_cc_test(piecewise_polynomial_test)
 target_link_libraries(piecewise_polynomial_test drakeTrajectories)
 
@@ -9,3 +12,6 @@ target_link_libraries(piecewise_polynomial_trajectory_test drakeTrajectories)
 
 drake_add_cc_test(piecewise_polynomial_generation_test)
 target_link_libraries(piecewise_polynomial_generation_test drakeTrajectories)
+
+drake_add_cc_test(piecewise_quaternion_test)
+target_link_libraries(piecewise_quaternion_test drakeTrajectories drakeGeometryUtil)

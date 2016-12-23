@@ -41,9 +41,6 @@ class RotaryEncoders : public systems::LeafSystem<T> {
   RotaryEncoders(const RotaryEncoders<T>&) = delete;
   RotaryEncoders& operator=(const RotaryEncoders<T>&) = delete;
 
-  /// Outputs the transformed signal.
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
 
   /// Calibration offsets are defined as parameters.
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
@@ -58,7 +55,12 @@ class RotaryEncoders : public systems::LeafSystem<T> {
       const systems::Context<T>& context) const;
 
  private:
-  void SetDefaultParameters(systems::Context<T>* context) const override;
+  // Outputs the transformed signal.
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
+
+  void SetDefaultParameters(const systems::LeafContext<T>& context,
+                            systems::Parameters<T>* params) const override;
 
   // System<T> override.
   RotaryEncoders<AutoDiffXd>* DoToAutoDiffXd() const override;

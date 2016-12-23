@@ -11,11 +11,11 @@
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/constraint_wrappers.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_model_instance_id_table.h"
-#include "drake/multibody/parser_sdf.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/model_instance_id_table.h"
+#include "drake/multibody/parsers/sdf_parser.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/parsers/xml_util.h"
 #include "drake/multibody/pose_map.h"
-#include "drake/multibody/xml_util.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/util/drakeGeometryUtil.h"
 
@@ -38,15 +38,15 @@ using std::runtime_error;
 using std::shared_ptr;
 using std::string;
 
-using drake::math::quatRotateVec;
-using drake::parsers::ModelInstanceIdTable;
-using drake::multibody::joints::FloatingBaseType;
-
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 using tinyxml2::XML_SUCCESS;
 
 namespace drake {
+
+using math::quatRotateVec;
+using multibody::joints::FloatingBaseType;
+using parsers::ModelInstanceIdTable;
 
 size_t RigidBodySystem::getNumStates() const {
   return tree->get_num_positions() + tree->get_num_velocities();
@@ -956,10 +956,10 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfFile(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame) {
   // Adds the robot to the rigid body tree.
   ModelInstanceIdTable model_instance_id_table =
-      drake::parsers::sdf::AddModelInstancesFromSdfFile(
-          filename, floating_base_type, weld_to_frame, tree.get());
+      parsers::sdf::AddModelInstancesFromSdfFile(filename,
+          floating_base_type, weld_to_frame, tree.get());
 
-  // Parses the additional SDF elements that are understood by RigidBodySystem,
+  // Parses the additional SDF elements that are understood by RigidBodySystem
   // namely (actuators, sensors, etc.).
   XMLDocument xml_doc;
   xml_doc.LoadFile(filename.data());
@@ -980,8 +980,8 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfString(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame) {
   // Adds the robot to the rigid body tree.
   ModelInstanceIdTable model_instance_id_table =
-      drake::parsers::sdf::AddModelInstancesFromSdfString(
-          sdf_string, floating_base_type, weld_to_frame, tree.get());
+      parsers::sdf::AddModelInstancesFromSdfString(sdf_string,
+          floating_base_type, weld_to_frame, tree.get());
 
   // Parses the additional SDF elements that are understood by RigidBodySystem,
   // namely (actuators, sensors, etc.).

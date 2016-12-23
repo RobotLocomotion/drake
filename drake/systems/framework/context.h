@@ -287,6 +287,11 @@ class Context {
     return std::unique_ptr<Context<T>>(DoClone());
   }
 
+  /// Returns a deep copy of this Context's State.
+  std::unique_ptr<State<T>> CloneState() const {
+    return std::unique_ptr<State<T>>(DoCloneState());
+  }
+
   /// Initializes this context's time, state, and parameters from the real
   /// values in @p source, regardless of this context's scalar type.
   /// Requires a constructor T(double).
@@ -313,7 +318,8 @@ class Context {
   void VerifyInputPort(const SystemPortDescriptor<T>& descriptor) const {
     const int i = descriptor.get_index();
     const InputPort* port = GetInputPort(i);
-    DRAKE_THROW_UNLESS(port != nullptr);
+    // If the port isn't connected, we don't have anything else to check.
+    if (port == nullptr) { return; }
     // TODO(david-german-tri, sherm1): Consider checking sampling here.
 
     // In the vector-valued case, check the size.
@@ -328,6 +334,9 @@ class Context {
  protected:
   /// Contains the return-type-covariant implementation of Clone().
   virtual Context<T>* DoClone() const = 0;
+
+  /// Contains the return-type-covariant implementation of CloneState().
+  virtual State<T>* DoCloneState() const = 0;
 
   /// Returns a const reference to current time and step information.
   const StepInfo<T>& get_step_info() const { return step_info_; }

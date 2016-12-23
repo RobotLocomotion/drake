@@ -19,8 +19,7 @@
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/function.h"
-#include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/solution_result.h"
+#include "drake/solvers/mathematical_program_solver_interface.h"
 
 namespace drake {
 namespace solvers {
@@ -176,25 +175,6 @@ enum ProgramAttributes {
 };
 typedef uint32_t AttributesSet;
 
-/// Interface used by implementations of individual solvers.
-class MathematicalProgramSolverInterface {
- public:
-  virtual ~MathematicalProgramSolverInterface() = default;
-
-  /// Returns true iff this solver was enabled at compile-time.
-  virtual bool available() const = 0;
-
-  /// Returns the name of the solver.
-  virtual std::string SolverName() const = 0;
-
-  /// Sets values for the decision variables on the given MathematicalProgram
-  /// @p prog, or:
-  ///  * If no solver is available, throws std::runtime_error
-  ///  * If the solver returns an error, returns a nonzero SolutionResult.
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual SolutionResult Solve(MathematicalProgram& prog) const = 0;
-};
-
 class MathematicalProgram {
   /**
    * A binding on constraint type C is a mapping of the decision
@@ -317,6 +297,18 @@ class MathematicalProgram {
 
  public:
   MathematicalProgram();
+
+  /** MathematicalProgram is not copyable. */
+  MathematicalProgram(const MathematicalProgram& rhs) = delete;
+
+  /** MathematicalProgram is not assinable. */
+  MathematicalProgram& operator=(const MathematicalProgram& rhs) = delete;
+
+  /** MathematicalProgram is not movable. */
+  MathematicalProgram(MathematicalProgram&& rhs) = delete;
+
+  /** MathematicalProgram is not move-assignable. */
+  MathematicalProgram& operator=(MathematicalProgram&& rhs) = delete;
 
   /**
    * Adds variables to MathematicalProgram.

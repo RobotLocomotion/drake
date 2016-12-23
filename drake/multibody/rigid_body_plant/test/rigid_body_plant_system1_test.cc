@@ -4,7 +4,7 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 
@@ -99,7 +99,7 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   // Computes time derivatives to compare against rbs1 dynamics.
   //////////////////////////////////////////////////////////////////////////////
   auto rbs1_xdot = rbs1->dynamics(0.0, x0, u);
-  rbs2->EvalTimeDerivatives(*context, derivatives.get());
+  rbs2->CalcTimeDerivatives(*context, derivatives.get());
   auto rbs2_xdot = derivatives->CopyToVector();
 
   //////////////////////////////////////////////////////////////////////////////

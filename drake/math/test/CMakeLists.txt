@@ -5,6 +5,7 @@ drake_add_cc_test(cross_product_test)
 target_link_libraries(cross_product_test drakeCommon)
 
 drake_add_cc_test(eigen_sparse_triplet_test)
+target_link_libraries(eigen_sparse_triplet_test Eigen3::Eigen)
 
 drake_add_cc_test(expmap_test)
 target_link_libraries(expmap_test drakeCommon)

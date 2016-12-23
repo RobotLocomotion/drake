@@ -84,7 +84,7 @@ and  ``WITH_GFLAGS``, which should be set to ``ON``.
 | Operating System             | Build Systems    | Compilers          | Superbuild Deps   | Build   |
 +==============================+==================+====================+===================+=========+
 | Ubuntu 14.04 LTS ("Trusty")  | CMake 3.5        | | GCC 4.9          | Minimal           | Debug   |
-|                              |                  | | Java 1.7         |                   +---------+
+|                              |                  | | Java 1.8         |                   +---------+
 |                              |                  |                    |                   | Release |
 |                              |                  |                    +-------------------+---------+
 |                              |                  |                    | Default           | Debug   |
@@ -201,6 +201,14 @@ Documentation Instructions
     doxygen_instructions
     sphinx_instructions
 
+Dynamic and Static Analysis Tools
+=================================
+.. toctree::
+    :maxdepth: 1
+
+    dynamic_analysis_tools
+    lint_static_analysis_tools
+
 IDE and Text Editor Notes
 =========================
 
@@ -226,6 +234,7 @@ Programming Style Notes
     code_review_checklist
     code_style_guide
     code_style_tools
+    directory_structure
 
 Version Control
 ===============

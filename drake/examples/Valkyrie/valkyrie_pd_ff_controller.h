@@ -14,9 +14,6 @@ class ValkyriePDAndFeedForwardController : public systems::LeafSystem<double> {
                          const VectorX<double>& nominal_torque,
                          const VectorX<double>& Kp, const VectorX<double>& Kd);
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override;
-
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override {
     std::unique_ptr<LeafSystemOutput<double>> output(
@@ -38,6 +35,9 @@ class ValkyriePDAndFeedForwardController : public systems::LeafSystem<double> {
   }
 
  private:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override;
+
   const RigidBodyTree<double>& robot_;
   int input_port_index_kinematics_result_;
   int output_port_index_atlas_command_;

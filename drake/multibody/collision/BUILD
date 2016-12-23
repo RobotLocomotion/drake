@@ -1,6 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:drake.bzl", "cc_googletest")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -25,7 +27,9 @@ cc_library(
 cc_library(
     name = "collision_api",
     hdrs = ["drake_collision.h"],
-    deps = [":model"],
+    deps = [
+        ":model",
+    ],
 )
 
 cc_library(
@@ -55,7 +59,9 @@ cc_library(
     ],
     linkstatic = 1,
     visibility = ["//visibility:private"],
-    deps = [":collision_api"],
+    deps = [
+        ":collision_api",
+    ],
 )
 
 # By default, supply a bullet-only model.  As we gain more collision library
@@ -65,15 +71,12 @@ alias(
     actual = ":bullet_collision",
 )
 
-cc_test(
+cc_googletest(
     name = "model_test",
-    size = "small",
-    srcs = ["test/model_test.cc"],
-    data = ["test_models"],
+    data = [":test_models"],
     deps = [
         ":collision",
         "//drake/common:drake_path",
-        "@gtest//:main",
     ],
 )
 

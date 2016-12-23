@@ -40,9 +40,9 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   const std::string kCommandChannelName = "DRIVING_COMMAND";
 
   const std::string driving_command_name =
-      systems::lcm::LcmSubscriberSystem::get_name(kCommandChannelName);
+      systems::lcm::LcmSubscriberSystem::make_name(kCommandChannelName);
   const std::string joint_state_name =
-      systems::lcm::LcmPublisherSystem::get_name(kJointStateChannelName);
+      systems::lcm::LcmPublisherSystem::make_name(kJointStateChannelName);
 
   // Set up a basic simulation with just SimpleCar and its hangers-on.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
@@ -91,8 +91,12 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   mock_lcm->InduceSubscriberCallback(kCommandChannelName, &message_bytes[0],
                                      message_bytes.size());
 
-  // Shortly after starting, we should have not have moved much.
-  simulator->StepBy(0.01);
+  // Shortly after starting, we should have not have moved much. Take two
+  // small steps so that we get a publish a small time after zero (publish
+  // occurs at the beginning of a step unless specific publishing times are
+  // set).
+  simulator->StepBy(0.005);
+  simulator->StepBy(0.005);
   EulerFloatingJointState<double> joint_value;
   GetLastPublishedJointValue(kJointStateChannelName, state_pub.get_translator(),
                              mock_lcm, &joint_value);

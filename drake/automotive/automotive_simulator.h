@@ -9,10 +9,10 @@
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
 #include "drake/lcm/drake_lcm_interface.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace automotive {
@@ -56,10 +56,14 @@ class AutomotiveSimulator {
   /// model of a vehicle (i.e., a model that's not connected to the world). A
   /// floating joint of type multibody::joints::kRollPitchYaw is added to
   /// connect the vehicle model to the world.
+  /// @param name If this string is non-empty, then the simple car will
+  /// subscribe to a channel DRIVING_COMMAND_[@p name] instead of the default
+  /// DRIVING_COMMAND.
   ///
   /// @return The model instance ID of the SimpleCar that was just added to
   /// the simulation.
-  int AddSimpleCarFromSdf(const std::string& sdf_filename);
+  int AddSimpleCarFromSdf(const std::string& sdf_filename,
+                          const std::string& name = "");
 
   /// Adds a TrajectoryCar system to this simulation, including its
   /// EulerFloatingJoint output.
@@ -122,7 +126,9 @@ class AutomotiveSimulator {
   // TODO(jwnimmer-tri) Perhaps this should be Build(), that returns an
   // AutomotiveSimulator, and our class should be AutomotiveSimulatorBuilder?
   // Port a few more demo programs, then decide what looks best.
-  void Start();
+  // @param target_realtime_rate This value is passed to the
+  // set_target_realtime_rate method of the simulator.
+  void Start(double target_realtime_rate = 0.0);
 
   /// Advance simulated time by the given @p time_step increment in seconds.
   void StepBy(const T& time_step);

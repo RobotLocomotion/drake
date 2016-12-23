@@ -1,5 +1,4 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
-
 #include <algorithm>
 
 #include "drake/common/drake_assert.h"
@@ -278,7 +277,7 @@ void PiecewisePolynomial<CoefficientType>::setPolynomialMatrixBlock(
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::slice(int start_segment_index,
-                                            int num_segments) {
+                                            int num_segments) const {
   segmentNumberRangeCheck(start_segment_index);
   segmentNumberRangeCheck(start_segment_index + num_segments - 1);
 
@@ -286,7 +285,7 @@ PiecewisePolynomial<CoefficientType>::slice(int start_segment_index,
   auto segment_times_slice = vector<double>(
       segment_times_start_it,
       segment_times_start_it + num_segments +
-          1);  // + 1 because there's one more segment times than segments
+          1);  // + 1 because there's one more segment times than segments.
 
   auto polynomials_start_it = polynomials_.begin() + start_segment_index;
   auto polynomials_slice = vector<PolynomialMatrix>(
@@ -373,6 +372,8 @@ PiecewisePolynomial<CoefficientType>::ZeroOrderHold(
 
   std::vector<PolynomialMatrix> polys;
   polys.reserve(breaks.size() - 1);
+  // For each of the breaks, creates a PolynomialMatrix which can contain joint
+  // positions.
   for (int i = 0; i < static_cast<int>(breaks.size()) - 1; ++i) {
     PolynomialMatrix poly_matrix(knots[0].rows(), knots[0].cols());
 
@@ -397,6 +398,8 @@ PiecewisePolynomial<CoefficientType>::FirstOrderHold(
 
   std::vector<PolynomialMatrix> polys;
   polys.reserve(breaks.size() - 1);
+  // For each of the breaks, creates a PolynomialMatrix which can contain joint
+  // positions.
   for (int i = 0; i < static_cast<int>(breaks.size()) - 1; ++i) {
     PolynomialMatrix poly_matrix(knots[0].rows(), knots[0].cols());
 
@@ -675,7 +678,7 @@ PiecewisePolynomial<CoefficientType>::Cubic(
   A.setZero();
   b.setZero();
 
-  // Sets up a linear equation to solve for the coeffectients.
+  // Sets up a linear equation to solve for the coefficients.
   for (int j = 0; j < rows; ++j) {
     for (int k = 0; k < cols; ++k) {
       int row_idx =
@@ -733,7 +736,7 @@ PiecewisePolynomial<CoefficientType>::Cubic(
   A.setZero();
   b.setZero();
 
-  // Sets up a linear equation to solve for the coeffectients.
+  // Sets up a linear equation to solve for the coefficients.
   for (int j = 0; j < rows; ++j) {
     for (int k = 0; k < cols; ++k) {
       int row_idx =

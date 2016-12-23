@@ -43,11 +43,8 @@ const systems::SystemPortDescriptor<T>& IdmPlanner<T>::get_agent_port() const {
 }
 
 template <typename T>
-void IdmPlanner<T>::EvalOutput(const systems::Context<T>& context,
-                               systems::SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
-
+void IdmPlanner<T>::DoCalcOutput(const systems::Context<T>& context,
+                                 systems::SystemOutput<T>* output) const {
   // Obtain the input/output structures we need to read from and write into.
   const systems::BasicVector<T>* input_ego =
       this->EvalVectorInput(context, this->get_ego_port().get_index());
@@ -98,20 +95,19 @@ std::unique_ptr<systems::Parameters<T>> IdmPlanner<T>::AllocateParameters()
 }
 
 template <typename T>
-void IdmPlanner<T>::SetDefaultParameters(systems::Context<T>* context) const {
+void IdmPlanner<T>::SetDefaultParameters(const systems::LeafContext<T>& context,
+                                         systems::Parameters<T>* params) const {
   // Default values from https://en.wikipedia.org/wiki/Intelligent_driver_model.
-  auto leaf_context = dynamic_cast<systems::LeafContext<T>*>(context);
-  DRAKE_DEMAND(leaf_context != nullptr);
-  auto params = dynamic_cast<IdmPlannerParameters<T>*>(
-      leaf_context->get_mutable_numeric_parameter(0));
-  DRAKE_DEMAND(params != nullptr);
-  params->set_v_ref(v_ref_);         // desired velocity in free traffic.
-  params->set_a(T(1.0));             // max acceleration.
-  params->set_b(T(3.0));             // comfortable braking deceleration.
-  params->set_s_0(T(1.0));           // minimum desired net distance.
-  params->set_time_headway(T(0.1));  // desired time headway to lead vehicle.
-  params->set_delta(T(4.0));  // recommended choice of free-road exponent.
-  params->set_l_a(T(4.5));    // length of leading car.
+  auto idm_params = dynamic_cast<IdmPlannerParameters<T>*>(
+      params->get_mutable_numeric_parameter(0));
+  DRAKE_DEMAND(idm_params != nullptr);
+  idm_params->set_v_ref(v_ref_);         // desired velocity in free traffic.
+  idm_params->set_a(T(1.0));             // max acceleration.
+  idm_params->set_b(T(3.0));             // comfortable braking deceleration.
+  idm_params->set_s_0(T(1.0));           // minimum desired net distance.
+  idm_params->set_time_headway(T(0.1));  // desired headway to lead vehicle.
+  idm_params->set_delta(T(4.0));  // recommended choice of free-road exponent.
+  idm_params->set_l_a(T(4.5));    // length of leading car.
 }
 
 // These instantiations must match the API documentation in

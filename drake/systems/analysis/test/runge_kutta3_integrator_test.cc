@@ -4,9 +4,9 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/joints/prismatic_joint.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
-#include "drake/multibody/parser_model_instance_id_table.h"
-#include "drake/multibody/parser_sdf.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/model_instance_id_table.h"
+#include "drake/multibody/parsers/sdf_parser.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -23,7 +23,7 @@ class RK3IntegratorTest : public ::testing::Test {
   RK3IntegratorTest() {
     // Create a mass-spring-system with update rate=0.
     spring_mass_ = std::make_unique<analysis_test::MySpringMassSystem<double>>(
-        kSpring, kMass, 0.);
+        spring_k, mass, 0.);
     context_ = spring_mass_->CreateDefaultContext();
 
     // Create and initialize the integrator.
@@ -34,17 +34,17 @@ class RK3IntegratorTest : public ::testing::Test {
   std::unique_ptr<analysis_test::MySpringMassSystem<double>> spring_mass_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<RungeKutta3Integrator<double>> integrator_;
-  const double kDT = 1e-3;        // Integration step size.
-  const double kBigDT = 1e-1;    // Big integration step size.
-  const double kSpring = 300.0;  // N/m
-  const double kMass = 2.0;      // kg
+  const double dt = 1e-3;        // Integration step size.
+  const double big_dt = 1e-1;    // Big integration step size.
+  const double spring_k = 300.0;  // N/m
+  const double mass = 2.0;      // kg
 };
 
 TEST_F(RK3IntegratorTest, ReqAccuracy) {
   // Set the accuracy.
-  integrator_->request_initial_step_size_target(kDT);
+  integrator_->request_initial_step_size_target(dt);
 
-  EXPECT_EQ(integrator_->get_initial_step_size_target(), kDT);
+  EXPECT_EQ(integrator_->get_initial_step_size_target(), dt);
 }
 
 TEST_F(RK3IntegratorTest, ContextAccess) {
@@ -61,14 +61,14 @@ TEST_F(RK3IntegratorTest, ErrorEstSupport) {
   EXPECT_GE(integrator_->get_error_estimate_order(), 1);
   EXPECT_EQ(integrator_->supports_error_estimation(), true);
   EXPECT_NO_THROW(integrator_->set_target_accuracy(1e-1));
-  EXPECT_NO_THROW(integrator_->request_initial_step_size_target(kDT));
+  EXPECT_NO_THROW(integrator_->request_initial_step_size_target(dt));
 }
 
 // Test scaling vectors
 TEST_F(RK3IntegratorTest, Scaling) {
   // Setting maximum integrator step size is necessary to prevent integrator
   // from throwing an exception.
-  integrator_->set_maximum_step_size(kBigDT);
+  integrator_->set_maximum_step_size(big_dt);
 
   // Initialize the integrator to set weight vector sizes.
   integrator_->Initialize();
@@ -90,19 +90,19 @@ TEST_F(RK3IntegratorTest, Scaling) {
 // integrator properly, will NaN values make it run forever?
 TEST_F(RK3IntegratorTest, BulletProofSetup) {
   // Setup the initial position and initial velocity
-  const double kInitialPosition = 0.1;
-  const double kInitialVelocity = 0.01;
-  const double kOmega = std::sqrt(kSpring / kMass);
+  const double initial_position = 0.1;
+  const double initial_velocity = 0.01;
+  const double omega = std::sqrt(spring_k / mass);
 
   // Set initial condition using the Simulator's internal Context.
   spring_mass_->set_position(integrator_->get_mutable_context(),
-                             kInitialPosition);
+                             initial_position);
   spring_mass_->set_velocity(integrator_->get_mutable_context(),
-                             kInitialVelocity);
+                             initial_velocity);
 
   // Setup c1 and c2 for ODE constants.
-  const double c1 = kInitialPosition;
-  const double c2 = kInitialVelocity / kOmega;
+  const double c1 = initial_position;
+  const double c2 = initial_velocity / omega;
 
   // Attempt to initialize the integrator: should throw logic error because
   // neither maximum step size nor target accuracy has been set.
@@ -110,33 +110,33 @@ TEST_F(RK3IntegratorTest, BulletProofSetup) {
 
   // Attempt to initialize the integrator: should throw logic error because
   // maximum step size smaller than minimum step size.
-  integrator_->set_maximum_step_size(kDT);
-  integrator_->set_minimum_step_size(kBigDT);
+  integrator_->set_maximum_step_size(dt);
+  integrator_->set_minimum_step_size(big_dt);
   EXPECT_THROW(integrator_->Initialize(), std::logic_error);
 
   // Set step sizes to cogent values and try to initialize again but now using
   // bad requested initial step sizes.
   integrator_->set_minimum_step_size(1e-8);
-  integrator_->set_maximum_step_size(kBigDT);
+  integrator_->set_maximum_step_size(big_dt);
   integrator_->request_initial_step_size_target(1e-10);
   EXPECT_THROW(integrator_->Initialize(), std::logic_error);
-  integrator_->request_initial_step_size_target(kBigDT*2.0);
+  integrator_->request_initial_step_size_target(big_dt*2.0);
 
   // Set the accuracy to something too loose, set the maximum step size and
   // try again. Integrator should now silently adjust the target accuracy to
   // the in-use accuracy.
-  integrator_->request_initial_step_size_target(kDT);
+  integrator_->request_initial_step_size_target(dt);
   integrator_->set_target_accuracy(10.0);
   integrator_->Initialize();
   EXPECT_LE(integrator_->get_accuracy_in_use(),
             integrator_->get_target_accuracy());
 
   // Integrate for 1 second using variable stepping.
-  const double kTFinal = 1.0;
-  double t_remaining = kTFinal - context_->get_time();
+  const double t_final = 1.0;
+  double t_remaining = t_final - context_->get_time();
   do {
-    integrator_->StepOnceAtMost(t_remaining, t_remaining);
-    t_remaining = kTFinal - context_->get_time();
+    integrator_->StepOnceAtMost(t_remaining, t_remaining, t_remaining);
+    t_remaining = t_final - context_->get_time();
   } while (t_remaining > 0.0);
 
   // Get the final position.
@@ -146,44 +146,44 @@ TEST_F(RK3IntegratorTest, BulletProofSetup) {
   // Check the solution. We're not really looking for accuracy here, just
   // want to make sure that the value is finite.
   EXPECT_NEAR(
-      c1 * std::cos(kOmega * kTFinal) + c2 * std::sin(kOmega * kTFinal),
+      c1 * std::cos(omega * t_final) + c2 * std::sin(omega * t_final),
       x_final, 1e0);
 }
 
 // Tests the error estimation capabilities.
 TEST_F(RK3IntegratorTest, ErrEst) {
   // Setup the initial position and initial velocity
-  const double kInitialPosition = 0.1;
-  const double kInitialVelocity = 0.01;
-  const double kOmega = std::sqrt(kSpring / kMass);
+  const double initial_position = 0.1;
+  const double initial_velocity = 0.01;
+  const double omega = std::sqrt(spring_k / mass);
 
   // Set initial condition using the Simulator's internal Context.
   spring_mass_->set_position(integrator_->get_mutable_context(),
-                             kInitialPosition);
+                             initial_position);
   spring_mass_->set_velocity(integrator_->get_mutable_context(),
-                             kInitialVelocity);
+                             initial_velocity);
 
   // Setup c1 and c2 for ODE constants.
-  const double c1 = kInitialPosition;
-  const double c2 = kInitialVelocity / kOmega;
+  const double c1 = initial_position;
+  const double c2 = initial_velocity / omega;
 
   // Set integrator parameters: do no error control.
-  integrator_->set_maximum_step_size(kBigDT);
+  integrator_->set_maximum_step_size(big_dt);
   integrator_->set_fixed_step_mode(true);
 
   // Initialize the integrator.
   integrator_->Initialize();
 
-  // Take a single step of size kBigDT.
-  integrator_->StepOnceAtMost(kBigDT, kBigDT);
+  // Take a single step of size big_dt.
+  integrator_->StepOnceAtMost(big_dt, big_dt, big_dt);
 
-  // Verify that a step of kBigDT was taken.
-  EXPECT_NEAR(context_->get_time(), kBigDT,
+  // Verify that a step of big_dt was taken.
+  EXPECT_NEAR(context_->get_time(), big_dt,
               std::numeric_limits<double>::epsilon());
 
   // Get the true solution
-  const double kXTrue =
-      c1 * std::cos(kOmega * kBigDT) + c2 * std::sin(kOmega * kBigDT);
+  const double x_true =
+      c1 * std::cos(omega * big_dt) + c2 * std::sin(omega * big_dt);
 
   // Get the integrator's solution
   const double kXApprox = context_->get_continuous_state_vector().GetAtIndex(0);
@@ -197,7 +197,7 @@ TEST_F(RK3IntegratorTest, ErrEst) {
   // estimate is quite conservative. (That's because we estimate the error in
   // the 2nd order integral but propagate the 3rd order integral which is
   // generally more accurate.)
-  EXPECT_NEAR(kXApprox, kXTrue, err_est * 0.2);
+  EXPECT_NEAR(kXApprox, x_true, err_est * 0.2);
 }
 
 // Integrate a purely continuous system with no sampling using error control.
@@ -208,31 +208,31 @@ TEST_F(RK3IntegratorTest, ErrEst) {
 // for t = 0, x(0) = c1, x'(0) = c2*omega
 TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   // Set integrator parameters: do no error control.
-  integrator_->set_maximum_step_size(kDT);
+  integrator_->set_maximum_step_size(dt);
   integrator_->set_fixed_step_mode(true);
 
   // Initialize the integrator.
   integrator_->Initialize();
 
   // Setup the initial position and initial velocity
-  const double kInitialPosition = 0.1;
-  const double kInitialVelocity = 0.01;
-  const double kOmega = std::sqrt(kSpring / kMass);
+  const double initial_position = 0.1;
+  const double initial_velocity = 0.01;
+  const double omega = std::sqrt(spring_k / mass);
 
   // Set initial condition using the Simulator's internal Context.
   spring_mass_->set_position(integrator_->get_mutable_context(),
-                             kInitialPosition);
+                             initial_position);
   spring_mass_->set_velocity(integrator_->get_mutable_context(),
-                             kInitialVelocity);
+                             initial_velocity);
 
   // Setup c1 and c2 for ODE constants.
-  const double c1 = kInitialPosition;
-  const double c2 = kInitialVelocity / kOmega;
+  const double c1 = initial_position;
+  const double c2 = initial_velocity / omega;
 
   // StepOnceAtFixedSize for 1 second.
-  const double kTFinal = 1.0;
-  for (double t = 0.0; t < kTFinal; t += kDT)
-    integrator_->StepOnceAtMost(kDT, kDT);
+  const double t_final = 1.0;
+  for (double t = 0.0; t < t_final; t += dt)
+    integrator_->StepOnceAtMost(dt, dt, dt);
 
   // Get the final position.
   const double x_final =
@@ -243,7 +243,7 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
 
   // Check the solution.
   EXPECT_NEAR(
-      c1 * std::cos(kOmega * kTFinal) + c2 * std::sin(kOmega * kTFinal),
+      c1 * std::cos(omega * t_final) + c2 * std::sin(omega * t_final),
       x_final, 1e-5);
 
   // Reset the integrator and set reasonable parameters for integration with
@@ -259,20 +259,20 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   // Set initial condition using the Simulator's internal Context.
   integrator_->get_mutable_context()->set_time(0.);
   spring_mass_->set_position(integrator_->get_mutable_context(),
-                             kInitialPosition);
+                             initial_position);
   spring_mass_->set_velocity(integrator_->get_mutable_context(),
-                             kInitialVelocity);
+                             initial_velocity);
 
   // StepOnceAtFixedSize for 1 second.
-  double t_remaining = kTFinal - context_->get_time();
+  double t_remaining = t_final - context_->get_time();
   do {
-    integrator_->StepOnceAtMost(t_remaining, t_remaining);
-    t_remaining = kTFinal - context_->get_time();
+    integrator_->StepOnceAtMost(t_remaining, t_remaining, t_remaining);
+    t_remaining = t_final - context_->get_time();
   } while (t_remaining > 0.0);
 
   // Check the solution.
   EXPECT_NEAR(
-      c1 * std::cos(kOmega * kTFinal) + c2 * std::sin(kOmega * kTFinal),
+      c1 * std::cos(omega * t_final) + c2 * std::sin(omega * t_final),
       x_final, 1e-5);
 
   // Verify that integrator statistics are valid
@@ -290,7 +290,7 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
 // Verifies statistics validity for error controlled integrator.
 TEST_F(RK3IntegratorTest, CheckStat) {
   // Set integrator parameters: do error control.
-  integrator_->set_maximum_step_size(kDT);
+  integrator_->set_maximum_step_size(dt);
   integrator_->set_fixed_step_mode(false);
 
   // Set accuracy to a really small value so that the step is guaranteed to be
@@ -301,22 +301,22 @@ TEST_F(RK3IntegratorTest, CheckStat) {
   integrator_->Initialize();
 
   // Setup the initial position and initial velocity
-  const double kInitialPosition = 0.1;
-  const double kInitialVelocity = 0.01;
+  const double initial_position = 0.1;
+  const double initial_velocity = 0.01;
 
   // Set initial condition using the Simulator's internal Context.
   spring_mass_->set_position(integrator_->get_mutable_context(),
-                             kInitialPosition);
+                             initial_position);
   spring_mass_->set_velocity(integrator_->get_mutable_context(),
-                             kInitialVelocity);
+                             initial_velocity);
 
   // Integrate just one step.
-  integrator_->StepOnceAtMost(kDT, kDT);
+  integrator_->StepOnceAtMost(dt, dt, dt);
 
   // Verify that integrator statistics are valid
   EXPECT_GE(integrator_->get_previous_integration_step_size(), 0.0);
-  EXPECT_LE(integrator_->get_previous_integration_step_size(), kDT);
-  EXPECT_LE(integrator_->get_smallest_adapted_step_size_taken(), kDT);
+  EXPECT_LE(integrator_->get_previous_integration_step_size(), dt);
+  EXPECT_LE(integrator_->get_smallest_adapted_step_size_taken(), dt);
 }
 
 // Tests accuracy when generalized velocity is not the time derivative of
@@ -365,7 +365,7 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   rk2.Initialize();
   const double t_final = 1.0;
   for (double t = 0.0; std::abs(t - t_final) > dt; t += dt)
-    rk2.StepOnceAtMost(inf, inf);  // Steps forward by dt.
+    rk2.StepOnceAtMost(inf, inf, dt);  // Steps forward by dt.
 
   // Get the final state.
   VectorX<double> x_final_rk2 = context->get_continuous_state_vector().
@@ -373,7 +373,7 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
 
   // Re-integrate with RK3
   context->set_time(0.);
-  plant.SetDefaultState(context.get());
+  plant.SetDefaultState(*context, context->get_mutable_state());
   for (int i=0; i< plant.get_num_velocities(); ++i)
     plant.set_velocity(context.get(), i, generalized_velocities[i]);
   RungeKutta3Integrator<double> rk3(plant, context.get());
@@ -384,7 +384,7 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   // StepOnceAtFixedSize for one second.
   double t_remaining = t_final - context->get_time();
   do {
-    rk3.StepOnceAtMost(t_remaining, t_remaining);
+    rk3.StepOnceAtMost(t_remaining, t_remaining, t_remaining);
     t_remaining = t_final - context->get_time();
   } while (t_remaining > 0.0);
 

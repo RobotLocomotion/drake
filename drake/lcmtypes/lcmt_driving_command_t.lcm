@@ -7,7 +7,7 @@ struct lcmt_driving_command_t {
   // The timestamp in milliseconds.
   int64_t timestamp;
 
-  double steering_angle;
-  double throttle;
-  double brake;
+  double steering_angle;  // The desired steering angle of a virtual center wheel, positive results in the vehicle turning left.
+  double throttle;  // The normalized desired acceleration (in the range [0.0..1.0]).
+  double brake;  // The normalized desired deceleration (in the range [0.0..1.0]).
 }

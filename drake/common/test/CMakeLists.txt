@@ -46,6 +46,7 @@ drake_add_cc_test(eigen_matrix_compare_test)
 target_link_libraries(eigen_matrix_compare_test drakeCommon)
 
 drake_add_cc_test(eigen_stl_types_test)
+target_link_libraries(eigen_stl_types_test Eigen3::Eigen)
 
 drake_add_cc_test(drake_throw_test)
 target_link_libraries(drake_throw_test drakeCommon)

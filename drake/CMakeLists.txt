@@ -8,8 +8,10 @@ include(../cmake/config.cmake)
 include(../cmake/install.cmake)
 include(../cmake/packages.cmake)
 include(../cmake/test.cmake)
+include(../cmake/tools.cmake)
 
 drake_setup_platform()
+drake_setup_tools()
 drake_find_packages()
 
 # Create a cache variable that contains the
@@ -156,10 +158,6 @@ drake_install_pkg_config_file(drake-java
   CLASSPATH drake
   REQUIRES ${drake_jar_requires})
 
-include_directories(SYSTEM "${EIGEN3_INCLUDE_DIRS}")
-
-include_directories(thirdParty/bsd/spruce/include)
-
 add_subdirectory(thirdParty/bsd/spruce)
 add_subdirectory(thirdParty/zlib/tinyxml2)
 add_subdirectory(common)
@@ -168,9 +166,10 @@ add_subdirectory(math)
 add_subdirectory(multibody)
 add_subdirectory(util)
 add_subdirectory(solvers)
-add_subdirectory(system1)
 add_subdirectory(systems)
-add_subdirectory(automotive)
+if(yaml-cpp_FOUND)
+  add_subdirectory(automotive)
+endif()
 if(Matlab_FOUND)
   add_subdirectory(thirdParty/bsd/GetFullPath)
   add_subdirectory(matlab)

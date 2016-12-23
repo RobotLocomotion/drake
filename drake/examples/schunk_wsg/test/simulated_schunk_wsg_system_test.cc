@@ -8,11 +8,11 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {
 namespace examples {
@@ -95,7 +95,7 @@ GTEST_TEST(SimulatedSchunkWsgSystemTest, OpenGripper) {
 
   // Verify that the robot starts in the correct (zero) configuration.
   auto initial_output = model->AllocateOutput(simulator.get_context());
-  model->EvalOutput(simulator.get_context(), initial_output.get());
+  model->CalcOutput(simulator.get_context(), initial_output.get());
   const auto initial_output_data =
       initial_output->get_vector_data(0)->get_value();
   EXPECT_EQ(initial_output_data[left_finger_position_index], 0.);
@@ -107,7 +107,7 @@ GTEST_TEST(SimulatedSchunkWsgSystemTest, OpenGripper) {
 
   // Extract and log the final state of the robot.
   auto final_output = model->AllocateOutput(simulator.get_context());
-  model->EvalOutput(simulator.get_context(), final_output.get());
+  model->CalcOutput(simulator.get_context(), final_output.get());
   const auto final_output_data =
       final_output->get_vector_data(0)->get_value();
   drake::log()->debug("Final state:");

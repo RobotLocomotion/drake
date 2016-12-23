@@ -30,8 +30,6 @@ class ActuatorEffortToRigidBodyPlantInputConverter : public LeafSystem<T> {
   ActuatorEffortToRigidBodyPlantInputConverter& operator=(
       const ActuatorEffortToRigidBodyPlantInputConverter&) = delete;
 
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override;
 
   /// Returns the descriptor of the effort input port corresponding for
   /// @param actuator
@@ -39,6 +37,9 @@ class ActuatorEffortToRigidBodyPlantInputConverter : public LeafSystem<T> {
       const RigidBodyActuator& actuator);
 
  private:
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override;
+
   std::vector<const RigidBodyActuator*> ordered_actuators_;
   const std::map<const RigidBodyActuator*, int> effort_ports_indices_;
   int rigid_body_plant_input_port_index_;

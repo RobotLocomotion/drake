@@ -7,7 +7,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
-#include "drake/systems/framework/primitives/linear_system.h"
+#include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
 namespace {
@@ -65,8 +65,8 @@ GTEST_TEST(TestLuenberger, ErrorDynamics) {
   context->FixInputPort(1, u);
   context->get_mutable_continuous_state_vector()->SetFromVector(xhat);
 
-  observer->EvalTimeDerivatives(*context, derivatives.get());
-  observer->EvalOutput(*context, output.get());
+  observer->CalcTimeDerivatives(*context, derivatives.get());
+  observer->CalcOutput(*context, output.get());
 
   double tol = 1e-10;
 

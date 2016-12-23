@@ -38,17 +38,14 @@ const systems::SystemPortDescriptor<T>& LinearCar<T>::get_output_port() const {
 }
 
 template <typename T>
-void LinearCar<T>::EvalOutput(const systems::Context<T>& context,
-                              systems::SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
-
+void LinearCar<T>::DoCalcOutput(const systems::Context<T>& context,
+                                systems::SystemOutput<T>* output) const {
   this->GetMutableOutputVector(output, 0) =
       this->CopyContinuousStateVector(context);
 }
 
 template <typename T>
-void LinearCar<T>::EvalTimeDerivatives(
+void LinearCar<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
@@ -67,15 +64,16 @@ void LinearCar<T>::EvalTimeDerivatives(
 }
 
 template <typename T>
-void LinearCar<T>::SetDefaultState(systems::Context<T>* context) const {
-  // Obtain mutable references to the contexts for each car.
-  DRAKE_DEMAND(context != nullptr);
-  systems::ContinuousState<T>* state = context->get_mutable_continuous_state();
+void LinearCar<T>::SetDefaultState(const systems::Context<T>& context,
+                                   systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
+  // Obtain mutable references to the contexts for each car.
+  systems::ContinuousState<T>* xc = state->get_mutable_continuous_state();
+  DRAKE_DEMAND(xc != nullptr);
 
   // Set the elements of the state vector to pre-defined values.
-  (*state->get_mutable_generalized_position())[0] = x_init_;  // initial x
-  (*state->get_mutable_generalized_velocity())[0] = v_init_;  // initial v
+  (*xc->get_mutable_generalized_position())[0] = x_init_;  // initial x
+  (*xc->get_mutable_generalized_velocity())[0] = v_init_;  // initial v
 }
 
 // These instantiations must match the API documentation in linear_car.h.

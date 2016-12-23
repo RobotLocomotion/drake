@@ -14,21 +14,21 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/parser_urdf.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/gravity_compensator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/demultiplexer.h"
-#include "drake/systems/framework/primitives/multiplexer.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/multiplexer.h"
 
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -75,7 +75,7 @@ class SimulatedKuka : public systems::Diagram<T> {
       auto rigid_body_tree = std::make_unique<RigidBodyTree<double>>();
       drake::parsers::urdf::AddModelInstanceFromUrdfFile(
           drake::GetDrakePath() +
-          "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf",
+          "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf",
           drake::multibody::joints::kFixed,
           nullptr /* weld to frame */, rigid_body_tree.get());
 

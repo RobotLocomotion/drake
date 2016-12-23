@@ -27,7 +27,7 @@ AcrobotPlant<T>::AcrobotPlant() {
 }
 
 template <typename T>
-void AcrobotPlant<T>::EvalOutput(const systems::Context<T>& context,
+void AcrobotPlant<T>::DoCalcOutput(const systems::Context<T>& context,
                                  systems::SystemOutput<T>* output) const {
   output->GetMutableVectorData(0)->set_value(
       dynamic_cast<const AcrobotStateVector<T>&>(
@@ -37,7 +37,7 @@ void AcrobotPlant<T>::EvalOutput(const systems::Context<T>& context,
 
 // Compute the actual physics.
 template <typename T>
-void AcrobotPlant<T>::EvalTimeDerivatives(
+void AcrobotPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));

@@ -48,8 +48,8 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     Kd_joints_.head<6>().setZero();
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     // Input:
     const HumanoidStatus* robot_status = EvalInputValue<HumanoidStatus>(
         context, input_port_index_humanoid_status_);

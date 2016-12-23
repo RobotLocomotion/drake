@@ -60,7 +60,7 @@ std::pair<bool, T> RungeKutta3Integrator<T>::DoStepOnceAtMost(const T& max_dt) {
   // it can be used for efficient guard function zero finding.
   auto& system = this->get_system();
   auto& context = this->get_context();
-  system.EvalTimeDerivatives(context, derivs0_.get());
+  system.CalcTimeDerivatives(context, derivs0_.get());
 
   // Call the generic error controlled stepper unless error control is
   // disabled.
@@ -99,14 +99,14 @@ void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   // Compute the first intermediate state and derivative (at t=0.5, x(0.5)).
   this->get_mutable_context()->set_time(ta + dt * 0.5);
   xc->PlusEqScaled(dt * 0.5, xcdot0);
-  system.EvalTimeDerivatives(context, derivs1_.get());
+  system.CalcTimeDerivatives(context, derivs1_.get());
   const auto& xcdot1 = derivs1_->get_vector();
 
   // Compute the second intermediate state and derivative (at t=1, x(1)).
   this->get_mutable_context()->set_time(tb);
   xc->SetFromVector(x0_);
   xc->PlusEqScaled({{-dt, xcdot0}, {dt * 2, xcdot1}});
-  system.EvalTimeDerivatives(context, derivs2_.get());
+  system.CalcTimeDerivatives(context, derivs2_.get());
   const auto& xcdot2 = derivs2_->get_vector();
 
   // calculate the state at dt.

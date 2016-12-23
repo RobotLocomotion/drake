@@ -7,18 +7,18 @@
 #include "drake/examples/Valkyrie/robot_state_encoder.h"
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/pass_through.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/pass_through.h"
 
 #include "lcmtypes/bot_core/atlas_command_t.hpp"
 #include "lcmtypes/bot_core/robot_state_t.hpp"
@@ -148,7 +148,9 @@ int main(int argc, const char** argv) {
   }
 
   // Plant input to plant.
-  builder.Connect(actuator_effort_to_rigid_body_plant_input_converter, plant);
+  builder.Connect(
+      actuator_effort_to_rigid_body_plant_input_converter.get_output_port(0),
+      plant.get_input_port(0));
 
   // Raw state vector to visualizer.
   builder.Connect(plant.state_output_port(),

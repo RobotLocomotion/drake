@@ -126,7 +126,7 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
 
   EXPECT_NEAR(context->get_time(), 1., 1e-8);
   EXPECT_EQ(simulator.get_num_steps_taken(), 1000);
-  EXPECT_EQ(simulator.get_num_updates(), 0);
+  EXPECT_EQ(simulator.get_num_discrete_updates(), 0);
 
   EXPECT_EQ(spring_mass.get_publish_count(), 1001);
   EXPECT_EQ(spring_mass.get_update_count(), 0);
@@ -249,13 +249,94 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   simulator.StepTo(1.);
 
   EXPECT_GT(simulator.get_num_steps_taken(), 1000);
-  EXPECT_EQ(simulator.get_num_updates(), 30);
+  EXPECT_EQ(simulator.get_num_discrete_updates(), 30);
 
   // We're calling Publish() every step, and extra steps have to be taken
   // since the step size doesn't divide evenly into the sample rate. Shouldn't
   // require more than one extra step per sample though.
   EXPECT_LE(spring_mass.get_publish_count(), 1030);
   EXPECT_EQ(spring_mass.get_update_count(), 30);
+}
+
+// A mock System that requests a single publication at a prespecified time.
+namespace {
+class UnrestrictedUpdater : public LeafSystem<double> {
+ public:
+  explicit UnrestrictedUpdater(double t_upd) : t_upd_(t_upd) {
+  }
+
+  ~UnrestrictedUpdater() override {}
+
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+
+  void DoCalcNextUpdateTime(const systems::Context<double>& context,
+                            systems::UpdateActions<double>* actions)
+                              const override {
+    const double inf = std::numeric_limits<double>::infinity();
+    actions->time = (context.get_time() < t_upd_) ? t_upd_ : inf;
+    actions->events.push_back(systems::DiscreteEvent<double>());
+    actions->events.back().action = systems::DiscreteEvent<double>::
+                                               kUnrestrictedUpdateAction;
+  }
+
+  void DoCalcUnrestrictedUpdate(
+      const drake::systems::Context<double>& context,
+      drake::systems::State<double>* state) const override {
+    if (unrestricted_update_callback_ != nullptr)
+      unrestricted_update_callback_(context, state);
+  }
+
+  void DoCalcTimeDerivatives(
+      const Context<double>& context,
+      ContinuousState<double>* derivatives) const override {
+    if (derivatives_callback_ != nullptr) derivatives_callback_(context);
+  }
+
+  void set_unrestricted_update_callback(
+      std::function<void(const Context<double>&, State<double>*)> callback) {
+    unrestricted_update_callback_ = callback;
+  }
+
+  void set_derivatives_callback(
+      std::function<void(const Context<double>&)> callback) {
+    derivatives_callback_ = callback;
+  }
+
+ private:
+  const double t_upd_{0.0};
+  std::function<void(const Context<double>&, State<double>*)>
+                                      unrestricted_update_callback_{nullptr};
+  std::function<void(const Context<double>&)> derivatives_callback_{nullptr};
+};
+}  // namespace
+
+// Tests that the simulator captures an unrestricted update at the exact time
+// (i.e., without accumulating floating point error).
+GTEST_TEST(SimulatorTest, ExactUpdateTime) {
+  // Create the UnrestrictedUpdater system.
+  const double t_upd = 1e-10;                // Inexact floating point rep.
+  UnrestrictedUpdater unrest_upd(t_upd);
+  Simulator<double> simulator(unrest_upd);  // Use default Context.
+
+  // Set time to an exact floating point representation; we want t_upd to
+  // be much smaller in magnitude than the time, hence the negative time.
+  simulator.get_mutable_context()->set_time(-1.0/1024);
+
+  // Capture the time at which an update is done using a callback function.
+  std::vector<double> updates;
+  unrest_upd.set_unrestricted_update_callback(
+      [&updates](const Context<double>& context, State<double>* state) {
+    updates.push_back(context.get_time());
+  });
+
+  // Simulate forward.
+  simulator.Initialize();
+  simulator.StepTo(1.);
+
+  // Check that the update occurs at exactly the desired time.
+  EXPECT_EQ(updates.size(), 1);
+  EXPECT_EQ(updates.front(), t_upd);
 }
 
 // Tests Simulator for a Diagram system consisting of a tree of systems.
@@ -354,7 +435,7 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 
 // A mock System that requests discrete update at 1 kHz, and publishes at 400
 // Hz. Calls user-configured callbacks on DoPublish,
-// DoEvalDiscreteVariableUpdates, and EvalTimeDerivatives.
+// DoCalcDiscreteVariableUpdates, and EvalTimeDerivatives.
 class DiscreteSystem : public LeafSystem<double> {
  public:
   DiscreteSystem() {
@@ -363,16 +444,16 @@ class DiscreteSystem : public LeafSystem<double> {
     const double offset = 0.0;
     this->DeclarePeriodicUpdate(kUpdatePeriod, offset);
     this->DeclarePublishPeriodSec(kPublishPeriod);
+
+    set_name("TestSystem");
   }
 
   ~DiscreteSystem() override {}
 
-  std::string get_name() const override { return "TestSystem"; }
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {}
-
-  void DoEvalDiscreteVariableUpdates(
+  void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
       drake::systems::DiscreteState<double>* updates) const override {
     if (update_callback_ != nullptr) update_callback_(context);
@@ -383,7 +464,7 @@ class DiscreteSystem : public LeafSystem<double> {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
 
-  void EvalTimeDerivatives(
+  void DoCalcTimeDerivatives(
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {
     if (derivatives_callback_ != nullptr) derivatives_callback_(context);
@@ -428,10 +509,10 @@ bool CheckSampleTime(const Context<double>& context, double period) {
 // updates.
 GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
   DiscreteSystem system;
-  int num_updates = 0;
+  int num_disc_updates = 0;
   system.set_update_callback([&](const Context<double>& context){
     ASSERT_TRUE(CheckSampleTime(context, system.update_period()));
-    num_updates++;
+    num_disc_updates++;
   });
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
@@ -442,7 +523,7 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
   drake::systems::Simulator<double> simulator(system);
   simulator.set_publish_every_time_step(false);
   simulator.StepTo(0.5);
-  EXPECT_EQ(500, num_updates);
+  EXPECT_EQ(500, num_disc_updates);
   // Publication occurs at 400Hz, and also at initialization.
   EXPECT_EQ(200 + 1, num_publishes);
 }
@@ -491,7 +572,7 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   }
 }
 
-// A basic sanity check that AutoDiff works at all.
+// A basic sanity check that AutoDiff works.
 GTEST_TEST(SimulatorTest, AutodiffBasic) {
   SpringMassSystem<AutoDiffXd> spring_mass(1., 1., 0.);
   Simulator<AutoDiffXd> simulator(spring_mass);

@@ -56,8 +56,8 @@ RotaryEncoders<T>::RotaryEncoders(int input_port_size,
 }
 
 template <typename T>
-void RotaryEncoders<T>::EvalOutput(const systems::Context<T>& context,
-                                   systems::SystemOutput<T>* output) const {
+void RotaryEncoders<T>::DoCalcOutput(const systems::Context<T>& context,
+                                     systems::SystemOutput<T>* output) const {
   Eigen::VectorBlock<VectorX<T>> y =
       output->GetMutableVectorData(0)->get_mutable_value();
   const Eigen::VectorBlock<const VectorX<T>>& calibration_offsets =
@@ -91,10 +91,9 @@ std::unique_ptr<systems::Parameters<T>> RotaryEncoders<T>::AllocateParameters()
 
 template <typename T>
 void RotaryEncoders<T>::SetDefaultParameters(
-    systems::Context<T>* context) const {
-  auto leaf_context = dynamic_cast<systems::LeafContext<T>*>(context);
-  DRAKE_DEMAND(leaf_context != nullptr);
-  leaf_context->get_mutable_numeric_parameter(0)->SetZero();
+    const systems::LeafContext<T>& context,
+    systems::Parameters<T>* params) const {
+  params->get_mutable_numeric_parameter(0)->SetZero();
 }
 
 template <typename T>

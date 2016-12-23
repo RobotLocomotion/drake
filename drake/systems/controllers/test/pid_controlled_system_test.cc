@@ -8,9 +8,9 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/gain.h"
-#include "drake/systems/framework/primitives/matrix_gain.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/gain.h"
+#include "drake/systems/primitives/matrix_gain.h"
 
 namespace drake {
 namespace systems {
@@ -48,8 +48,8 @@ class TestPlantWithMinOutputs : public TestPlant {
     DeclareOutputPort(kVectorValued, 2);
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     auto output_vector = GetMutableOutputVector(output, 0);
     output_vector[0] = 1.;
     output_vector[1] = 0.1;
@@ -83,8 +83,8 @@ class TestPlantWithMoreOutputs : public TestPlant {
     DeclareOutputPort(kVectorValued, 6);
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     auto output_vector = GetMutableOutputVector(output, 0);
     output_vector[0] = 1.;
     output_vector[1] = 0.1;
@@ -130,7 +130,7 @@ void DoPidControlledSystemTest(std::unique_ptr<TestPlant> plant,
       controller->GetMutableSubsystemContext(
           controller_context, controller->plant());
 
-  diagram->EvalOutput(*context, output.get());
+  diagram->CalcOutput(*context, output.get());
   const BasicVector<double>* output_vec = output->get_vector_data(0);
   const double pid_input =
       dynamic_cast<TestPlant*>(controller->plant())->GetInputValue(

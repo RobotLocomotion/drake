@@ -63,6 +63,16 @@ class State {
     return abstract_state_.get();
   }
 
+  /// Copies the values from another State of the same scalar type into this
+  /// State.
+  void CopyFrom(const State<T>& other) {
+    continuous_state_->CopyFrom(*other.get_continuous_state());
+    discrete_state_->CopyFrom(*other.get_discrete_state());
+    abstract_state_->CopyFrom(*other.get_abstract_state());
+  }
+
+  /// Initializes this state (regardless of scalar type) from a State<double>.
+  /// All scalar types in Drake must support initialization from doubles.
   void SetFrom(const State<double>& other) {
     continuous_state_->SetFrom(*other.get_continuous_state());
     discrete_state_->SetFrom(*other.get_discrete_state());

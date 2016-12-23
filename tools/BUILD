@@ -9,6 +9,11 @@ sh_binary(
     data = ["valgrind.supp"],
 )
 
+alias(
+    name = "buildifier",
+    actual = "@com_github_bazelbuild_buildifier//buildifier",
+)
+
 cc_toolchain_suite(
     name = "default-toolchain",
     toolchains = {
@@ -33,4 +38,9 @@ cc_toolchain(
     static_runtime_libs = [":empty"],
     strip_files = ":empty",
     supports_param_files = 0,
+)
+
+config_setting(
+    name = "with_gurobi",
+    values = {"define": "WITH_GUROBI=ON"},
 )

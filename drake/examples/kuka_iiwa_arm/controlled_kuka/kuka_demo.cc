@@ -11,7 +11,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -21,10 +21,10 @@
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/demultiplexer.h"
-#include "drake/systems/framework/primitives/multiplexer.h"
-#include "drake/systems/framework/primitives/trajectory_source.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/multiplexer.h"
+#include "drake/systems/primitives/trajectory_source.h"
 
 DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
 
@@ -59,7 +59,7 @@ namespace controlled_kuka {
 namespace {
 
 const char kUrdfPath[] {
-    "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf" };
+    "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf" };
 
 unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   auto tree = make_unique<RigidBodyTree<double>>();
@@ -137,14 +137,21 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
       info_good = false;
     }
   }
-  printf("\n");
 
   if (!info_good) {
     throw std::runtime_error(
         "inverseKinPointwise failed to compute a valid solution.");
   }
 
-  return make_unique<PiecewisePolynomialTrajectory>(q_sol, kTimes);
+  std::vector<MatrixXd> knots(kTimes.size());
+  for (size_t i = 0; i < kTimes.size(); ++i) {
+    // We only use column 0 of the matrix in knots (for joint positions),
+    // so we write a vector.
+    knots[i] = q_sol.col(i);
+  }
+
+  return make_unique<PiecewisePolynomialTrajectory>(
+      PiecewisePolynomial<double>::FirstOrderHold(kTimes, knots));
 }
 
 // A model of a Kuka iiwa arm with position control using gravity compensation
@@ -277,6 +284,7 @@ int DoMain() {
       model.get_kuka_context(context), desired_state);
 
   simulator.Initialize();
+  simulator.set_target_realtime_rate(1.0);
 
   simulator.StepTo(FLAGS_simulation_sec);
 
