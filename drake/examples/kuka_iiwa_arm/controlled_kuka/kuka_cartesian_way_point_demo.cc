@@ -49,7 +49,7 @@ int DoMain() {
   CreateTreedFromFixedModelAtPose(kUrdfPath, &tree);
 
   std::unique_ptr<PiecewisePolynomialTrajectory> cartesian_trajectory =
-      SimpleCartesianWayPointPlanner(&tree, "iiwa_link_ee", way_points,
+      SimpleCartesianWayPointPlanner(tree, "iiwa_link_ee", way_points,
                                      time_stamps);
 
   KukaDemo<double> model(std::move(cartesian_trajectory));

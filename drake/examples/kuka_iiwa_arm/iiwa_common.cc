@@ -51,14 +51,14 @@ void VerifyIiwaTree(const RigidBodyTree<double>& tree) {
 }
 
 std::unique_ptr<PiecewisePolynomialTrajectory> SimpleCartesianWayPointPlanner(
-    RigidBodyTreed* tree, const std::string& link_to_constraint,
+    const RigidBodyTreed& tree, const std::string& link_to_constrain,
     const std::vector<Eigen::Vector3d>& way_point_list,
     const std::vector<double>& time_stamps) {
   DRAKE_DEMAND(way_point_list.size() == time_stamps.size());
 
-  VectorXd zero_conf = tree->getZeroConfiguration();
+  VectorXd zero_conf = tree.getZeroConfiguration();
 
-  MatrixXd q0(tree->get_num_positions(), time_stamps.size());
+  MatrixXd q0(tree.get_num_positions(), time_stamps.size());
   for (size_t i = 0; i < time_stamps.size(); ++i) {
     q0.col(i) = zero_conf;
   }
@@ -68,6 +68,7 @@ std::unique_ptr<PiecewisePolynomialTrajectory> SimpleCartesianWayPointPlanner(
 
   vector<Eigen::Vector2d> time_window_list = TimeWindowBuilder(time_stamps);
 
+  RigidBodyTreed* tree_ptr = const_cast<RigidBodyTreed*>(&tree);
   // Populates constraints.
   for (size_t i = 0; i < way_point_list.size(); ++i) {
     const double kCartesianPositionTolerance = 0.005;
@@ -76,22 +77,26 @@ std::unique_ptr<PiecewisePolynomialTrajectory> SimpleCartesianWayPointPlanner(
     Vector3d pos_ub =
         way_point_list[i] + Vector3d::Constant(kCartesianPositionTolerance);
 
+    // TODO(naveenoid) : WorldPositionConstraint needs fixing to accept a
+    // reference to the RigidBodyTree instead of a pointer.
     unique_ptr<WorldPositionConstraint> wpc =
         make_unique<WorldPositionConstraint>(
-            tree, tree->FindBodyIndex("iiwa_link_ee"), Vector3d::Zero(), pos_lb,
-            pos_ub, time_window_list.at(i));
+            tree_ptr, tree.FindBodyIndex(link_to_constrain), Vector3d::Zero(),
+            pos_lb, pos_ub, time_window_list.at(i));
 
     // Stores the unique_ptr
     constraint_unique_ptr_list.push_back(std::move(wpc));
     constraint_ptr_list.push_back(constraint_unique_ptr_list.at(i).get());
   }
 
-  IKoptions ikoptions(tree);
+  IKoptions ikoptions(tree_ptr);
   vector<int> info(time_stamps.size(), 0);
-  MatrixXd q_sol(tree->get_num_positions(), time_stamps.size());
+  MatrixXd q_sol(tree.get_num_positions(), time_stamps.size());
   vector<string> infeasible_constraint;
 
-  inverseKinPointwise(tree, time_stamps.size(), time_stamps.data(), q0, q0,
+  // TODO(naveenoid) : inverseKinPointwise needs fixing to accept a reference
+  // to the RigidBodyTree instead of a pointer.
+  inverseKinPointwise(tree_ptr, time_stamps.size(), time_stamps.data(), q0, q0,
                       constraint_ptr_list.size(), constraint_ptr_list.data(),
                       ikoptions, &q_sol, info.data(), &infeasible_constraint);
   bool info_good = true;
