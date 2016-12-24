@@ -39,6 +39,8 @@ void Painleve<T>::DoCalcOutput(const systems::Context<T>& context,
 template <typename T>
 void Painleve<T>::HandleImpact(const systems::Context<T>& context,
                                systems::ContinuousState<T>* new_state) const {
+  using std::abs;
+
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
   const T x = state.GetAtIndex(0);
@@ -67,7 +69,7 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
   // Verify that there is an impact.
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const T k = (ctheta < 0.0) ? 1.0 : -1.0;
+  const T k = (stheta > 0.0) ? -1.0 : 1.0;
   const T half_rod_length = rod_length_ * 0.5;
 
   // Compute the velocity at the point of contact
@@ -152,11 +154,8 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
   // velocity (pre-impact), and (hopefully) all other variables are
   // self-explanatory.
   const T mu = mu_;
-  if (std::abs(fF) > mu * fN) {
-    const T ell = rod_length_;
+  if (abs(fF) > mu * fN) {
     const T sgn_xcdot = (xcdot > 0.0) ? 1.0 : -1.0;
-    const T mass = mass_;
-    const T J = J_;
 
     // Compute the normal force.
     fN = (J * mass * (-(ell * k * ctheta * thetadot) / 2. - ydot)) /
@@ -193,6 +192,7 @@ void Painleve<T>::DoCalcTimeDerivatives(
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
   using std::sin;
   using std::cos;
+  using std::abs;
 
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
@@ -231,7 +231,7 @@ void Painleve<T>::DoCalcTimeDerivatives(
   f->SetAtIndex(2, thetadot);
 
   // Case 1: the rod is not touching the ground (located at y=0).
-  if (yc > std::numeric_limits<double>::epsilon()) {
+  if (yc > std::numeric_limits<T>::epsilon()) {
     // Second three derivative components are simple: just add in gravitational
     // acceleration.
     f->SetAtIndex(3, T(0.));
@@ -243,17 +243,17 @@ void Painleve<T>::DoCalcTimeDerivatives(
     // perform no such check in the derivative evaluation.
 
     // Verify that the rod is not impacting and not separating.
-    DRAKE_DEMAND(ycdot > -std::numeric_limits<double>::epsilon() &&
-                 ycdot < std::numeric_limits<double>::epsilon());
+    DRAKE_DEMAND(ycdot > -std::numeric_limits<T>::epsilon() &&
+                 ycdot < std::numeric_limits<T>::epsilon());
 
     // Handle the two contact case specially.
-    if (std::abs(std::sin(theta)) < std::numeric_limits<T>::epsilon()) {
+    if (abs(sin(theta)) < std::numeric_limits<T>::epsilon()) {
       // Verify that the normal velocity is zero.
-      DRAKE_DEMAND(std::abs(ydot) < std::numeric_limits<T>::epsilon() &&
-                   std::abs(thetadot) < std::numeric_limits<T>::epsilon());
+      DRAKE_DEMAND(abs(ydot) < std::numeric_limits<T>::epsilon() &&
+                   abs(thetadot) < std::numeric_limits<T>::epsilon());
 
       // Look to see whether there is sliding velocity.
-      if (std::abs(xdot) < std::numeric_limits<T>::epsilon()) {
+      if (abs(xdot) < std::numeric_limits<T>::epsilon()) {
         // Set the time derivatives to "resting".
         f->SetAtIndex(3, T(0.));
         f->SetAtIndex(4, T(0.));
@@ -270,14 +270,14 @@ void Painleve<T>::DoCalcTimeDerivatives(
 
     // Compute the normal acceleration at the point of contact (yc_ddot),
     // *assuming zero contact force*.
-    const T ycddot = get_gravitational_acceleration() -
-                     k * half_rod_length * stheta * thetadot * thetadot;
+    T ycddot = get_gravitational_acceleration() -
+               k * half_rod_length * stheta * thetadot * thetadot;
 
     // If this derivative is negative, we must compute the normal force
     // necessary to set it to zero.
     if (ycddot < 0.0) {
       // Look for the case where the tangential velocity is zero.
-      if (std::abs(xcdot) < std::numeric_limits<double>::epsilon()) {
+      if (abs(xcdot) < std::numeric_limits<T>::epsilon()) {
         // Solve for the case where xddot = 0. I've computed these
         // equations by issuing the following command in Mathematica:
         // xc[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
@@ -335,15 +335,15 @@ void Painleve<T>::DoCalcTimeDerivatives(
         const T xcddot =
             xddot +
             ell * k * (-stheta * thetaddot - +ctheta * thetadot * thetadot) / 2;
-        const T ycddot =
+        ycddot =
             yddot +
             ell * k * (ctheta * thetaddot - stheta * thetadot * thetadot) / 2;
 
-        DRAKE_DEMAND(std::abs(xcddot) < std::numeric_limits<double>::epsilon());
-        DRAKE_DEMAND(std::abs(ycddot) < std::numeric_limits<double>::epsilon());
+        DRAKE_DEMAND(abs(xcddot) < std::numeric_limits<T>::epsilon());
+        DRAKE_DEMAND(abs(ycddot) < std::numeric_limits<T>::epsilon());
 
         // Constrain F such that it lies on the edge of the friction cone.
-        if (std::abs(fN) > mu * fN) {
+        if (abs(fN) > mu * fN) {
           // Pick the solution that minimizes the tangential acceleration.
           const int d1 = 1;
           const T fN1 =
@@ -375,7 +375,7 @@ void Painleve<T>::DoCalcTimeDerivatives(
                   2;
 
           // Pick the one that is smaller in magnitude.
-          if (std::abs(xcddot1) < std::abs(xcddot2)) {
+          if (abs(xcddot1) < abs(xcddot2)) {
             f->SetAtIndex(3, fF1 / mass_);
             f->SetAtIndex(4, fN1 / mass_ + get_gravitational_acceleration());
             f->SetAtIndex(5, ((xc - x) * fN1 - (yc - y) * fF1) / J);
@@ -426,7 +426,7 @@ void Painleve<T>::DoCalcTimeDerivatives(
         // Compute the normal acceleration at the contact point (a check).
         const T yddot = f->GetAtIndex(4);
         const T thetaddot = f->GetAtIndex(5);
-        const T ycddot =
+        ycddot =
             yddot +
             ell * k * (ctheta * thetaddot - stheta * thetadot * thetadot) / 2;
 
@@ -437,7 +437,7 @@ void Painleve<T>::DoCalcTimeDerivatives(
         //                                        +ctheta*thetadot*thetadot)/2;
 
         // Verify that the normal acceleration is zero.
-        DRAKE_DEMAND(std::abs(ycddot) < std::numeric_limits<T>::epsilon() * 10);
+        DRAKE_DEMAND(abs(ycddot) < std::numeric_limits<T>::epsilon() * 10);
       }
     }
   }

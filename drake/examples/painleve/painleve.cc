@@ -7,7 +7,6 @@ namespace drake {
 namespace painleve {
 
 template class Painleve<double>;
-// template class Painleve<AutoDiffXd>;
 
 }  // namespace painleve
 }  // namespace drake

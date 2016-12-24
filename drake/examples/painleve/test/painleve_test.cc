@@ -107,18 +107,8 @@ TEST_F(PainleveTest, NoFrictionImpactThenNoImpact) {
   // Set the initial state to be impacting
   systems::ContinuousState<double>& v =
       *context_->get_mutable_continuous_state();
-  // TODO(edrumwri): Remove commented code.
-  /*
-    const double half_len = dut_->get_rod_length()/2;
-    v[0] = 0.0;
-    v[1] = half_len;
-    v[2] = M_PI_2;
-  */
   v[3] = -1.0;
-  /*
-    v[4] = -1.0;
-    v[5] = 0.0;
-  */
+
   // Set the coefficient of friction to zero. This forces the Painleve code
   // to go through the second impact path.
   dut_->set_mu_Coulomb(0.0);
@@ -166,7 +156,7 @@ TEST_F(PainleveTest, NoSliding) {
   EXPECT_NO_THROW(dut_->DoCalcTimeDerivatives(*context_, derivatives_.get()));
 }
 
-// Test multiple point contact configurations.
+// Test multiple (two-point) contact configurations.
 TEST_F(PainleveTest, MultiPoint) {
   systems::ContinuousState<double>& v =
       *context_->get_mutable_continuous_state();
