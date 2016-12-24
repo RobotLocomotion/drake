@@ -31,10 +31,10 @@ class LinearCar : public systems::LeafSystem<T> {
   ~LinearCar() override;
 
   /// Returns the input port.
-  const systems::SystemPortDescriptor<T>& get_input_port() const;
+  const systems::InputPortDescriptor<T>& get_input_port() const;
 
   /// Returns the output port.
-  const systems::SystemPortDescriptor<T>& get_output_port() const;
+  const systems::OutputPortDescriptor<T>& get_output_port() const;
 
   /// Sets the continuous states in @p context to default values.
   void SetDefaultState(const systems::Context<T>& context,

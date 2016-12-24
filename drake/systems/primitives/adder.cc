@@ -21,7 +21,7 @@ Adder<T>::Adder(int num_inputs, int size) {
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& Adder<T>::get_output_port() const {
+const OutputPortDescriptor<T>& Adder<T>::get_output_port() const {
   return System<T>::get_output_port(0);
 }
 

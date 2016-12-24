@@ -106,19 +106,19 @@ template <typename T>
 class DiagramDiscreteVariables : public DiscreteState<T> {
  public:
   explicit DiagramDiscreteVariables(
-      std::vector<std::unique_ptr<DiscreteState<T>>>&& subdifferences)
-      : DiscreteState<T>(Flatten(Unpack(subdifferences))),
-        subdifferences_(std::move(subdifferences)) {}
+      std::vector<std::unique_ptr<DiscreteState<T>>>&& subdiscretes)
+      : DiscreteState<T>(Flatten(Unpack(subdiscretes))),
+        subdiscretes_(std::move(subdiscretes)) {}
 
   ~DiagramDiscreteVariables() override {}
 
   int num_subdifferences() const {
-    return static_cast<int>(subdifferences_.size());
+    return static_cast<int>(subdiscretes_.size());
   }
 
   DiscreteState<T>* get_mutable_subdifference(int index) {
     DRAKE_DEMAND(index >= 0 && index < num_subdifferences());
-    return subdifferences_[index].get();
+    return subdiscretes_[index].get();
   }
 
  private:
@@ -132,7 +132,7 @@ class DiagramDiscreteVariables : public DiscreteState<T> {
     return out;
   }
 
-  std::vector<std::unique_ptr<DiscreteState<T>>> subdifferences_;
+  std::vector<std::unique_ptr<DiscreteState<T>>> subdiscretes_;
 };
 
 }  // namespace internal
@@ -391,7 +391,7 @@ class Diagram : public System<T>,
   /// this function.
   void EvaluateSubsystemInputPort(
       const Context<T>* context,
-      const SystemPortDescriptor<T>& descriptor) const override {
+      const InputPortDescriptor<T>& descriptor) const override {
     // Find the output port connected to the given input port.
     const PortIdentifier id{descriptor.get_system(), descriptor.get_index()};
     const auto upstream_it = dependency_graph_.find(id);
@@ -805,8 +805,8 @@ class Diagram : public System<T>,
       throw std::out_of_range("Input port out of range.");
     }
     const auto& subsystem_descriptor = subsystem_ports[port_index];
-    SystemPortDescriptor<T> descriptor(
-        this, kInputPort, this->get_num_input_ports(),
+    InputPortDescriptor<T> descriptor(
+        this, this->get_num_input_ports(),
         subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size());
     this->DeclareInputPort(descriptor);
   }
@@ -825,8 +825,8 @@ class Diagram : public System<T>,
       throw std::out_of_range("Output port out of range.");
     }
     const auto& subsystem_descriptor = subsystem_ports[port_index];
-    SystemPortDescriptor<T> descriptor(
-        this, kOutputPort, this->get_num_output_ports(),
+    OutputPortDescriptor<T> descriptor(
+        this, this->get_num_output_ports(),
         subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size());
     this->DeclareOutputPort(descriptor);
   }

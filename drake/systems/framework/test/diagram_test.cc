@@ -169,7 +169,6 @@ TEST_F(DiagramTest, Topology) {
   for (const auto& descriptor : diagram_->get_input_ports()) {
     EXPECT_EQ(diagram_.get(), descriptor.get_system());
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
-    EXPECT_EQ(kInputPort, descriptor.get_face());
     EXPECT_EQ(kSize, descriptor.get_size());
   }
 
@@ -177,7 +176,6 @@ TEST_F(DiagramTest, Topology) {
   for (const auto& descriptor : diagram_->get_output_ports()) {
     EXPECT_EQ(diagram_.get(), descriptor.get_system());
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
-    EXPECT_EQ(kOutputPort, descriptor.get_face());
     EXPECT_EQ(kSize, descriptor.get_size());
   }
 

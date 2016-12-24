@@ -65,11 +65,11 @@ void PidControlledSystem<T>::Initialize(
 }
 
 template <typename T>
-std::pair<const SystemPortDescriptor<T>,
-          const SystemPortDescriptor<T>>
+std::pair<const InputPortDescriptor<T>,
+          const InputPortDescriptor<T>>
     PidControlledSystem<T>::ConnectController(
-        const SystemPortDescriptor<T>& plant_input,
-        const SystemPortDescriptor<T>& plant_output,
+        const InputPortDescriptor<T>& plant_input,
+        const OutputPortDescriptor<T>& plant_output,
         std::unique_ptr<MatrixGain<T>> feedback_selector,
         const VectorX<T>& Kp, const VectorX<T>& Ki,
         const VectorX<T>& Kd,

@@ -52,13 +52,10 @@ TEST_F(IdmPlannerTest, Topology) {
   const auto& input_agent = dut_->get_agent_port();
   EXPECT_EQ(systems::kVectorValued, input_ego.get_data_type());
   EXPECT_EQ(systems::kVectorValued, input_agent.get_data_type());
-  EXPECT_EQ(systems::kInputPort, input_ego.get_face());
-  EXPECT_EQ(systems::kInputPort, input_agent.get_face());
 
   ASSERT_EQ(1, dut_->get_num_output_ports());
   const auto& output_descriptor = dut_->get_output_ports().at(0);
   EXPECT_EQ(systems::kVectorValued, output_descriptor.get_data_type());
-  EXPECT_EQ(systems::kOutputPort, output_descriptor.get_face());
   EXPECT_EQ(1, output_descriptor.get_size());
 }
 

@@ -92,7 +92,7 @@ AcrobotPlant<T>::AllocateContinuousState() const {
 
 template <typename T>
 std::unique_ptr<systems::BasicVector<T>> AcrobotPlant<T>::AllocateOutputVector(
-    const systems::SystemPortDescriptor<T>& descriptor) const {
+    const systems::OutputPortDescriptor<T>& descriptor) const {
   DRAKE_THROW_UNLESS(descriptor.get_size() == kNumDOF * 2);
   return std::make_unique<AcrobotStateVector<T>>();
 }

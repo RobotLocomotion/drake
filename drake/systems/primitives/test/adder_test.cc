@@ -38,14 +38,12 @@ TEST_F(AdderTest, Topology) {
   ASSERT_EQ(2u, adder_->get_input_ports().size());
   for (const auto& descriptor : adder_->get_input_ports()) {
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
-    EXPECT_EQ(kInputPort, descriptor.get_face());
     EXPECT_EQ(3, descriptor.get_size());
   }
 
   ASSERT_EQ(1u, adder_->get_output_ports().size());
   for (const auto& descriptor : adder_->get_output_ports()) {
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
-    EXPECT_EQ(kOutputPort, descriptor.get_face());
     EXPECT_EQ(3, descriptor.get_size());
   }
 }

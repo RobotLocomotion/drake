@@ -40,7 +40,7 @@ class ConstantVectorSource : public LeafSystem<T> {
 
 
   /// Returns the output port to the constant source.
-  const SystemPortDescriptor<T>& get_output_port() const;
+  const OutputPortDescriptor<T>& get_output_port() const;
 
  private:
   // Outputs a signal with a fixed value as specified by the user.

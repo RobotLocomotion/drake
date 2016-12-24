@@ -32,10 +32,10 @@ class PendulumPlant : public systems::LeafSystem<T> {
   bool has_any_direct_feedthrough() const override { return false; }
 
   /// Returns the input port to the externally applied force.
-  const systems::SystemPortDescriptor<T>& get_tau_port() const;
+  const systems::InputPortDescriptor<T>& get_tau_port() const;
 
   /// Returns the port to output state.
-  const systems::SystemPortDescriptor<T>& get_output_port() const;
+  const systems::OutputPortDescriptor<T>& get_output_port() const;
 
   void set_theta(MyContext* context, const T& theta) const {
     get_mutable_state(context)->set_theta(theta);
@@ -65,7 +65,7 @@ class PendulumPlant : public systems::LeafSystem<T> {
   AllocateContinuousState() const override;
 
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override;
+      const systems::OutputPortDescriptor<T>& descriptor) const override;
 
   // System<T> override.
   PendulumPlant<AutoDiffXd>* DoToAutoDiffXd() const override;

@@ -62,7 +62,7 @@ class SimpleCar : public systems::LeafSystem<T> {
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
       const override;
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override;
+      const systems::OutputPortDescriptor<T>& descriptor) const override;
 
  private:
   void ImplCalcOutput(const SimpleCarState<T>&, SimpleCarState<T>*) const;

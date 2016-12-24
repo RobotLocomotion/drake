@@ -221,38 +221,6 @@ class System {
   /// appropriate subsystem evaluate the source output port.
   //@{
 
-  /// This method is called to update *any* state variables in the @p context
-  /// because the given @p event has arrived. Dispatches to
-  /// DoCalcUnrestrictedUpdate() by default, or to
-  /// `event.do_unrestricted_update` if provided. Does not allow the
-  /// dimensionality of the state variables to change.
-  /// @throws std::logic_error if the dimensionality of the state variables
-  ///         changes in the callback.
-  void CalcUnrestrictedUpdate(const Context<T>& context,
-                              const DiscreteEvent<T>& event,
-                              State<T>* state) const {
-    const int64_t continuous_state_dim =
-                       state->get_continuous_state()->size();
-    const int64_t discrete_state_dim = state->get_discrete_state()->size();
-    const int64_t abstract_state_dim = state->get_abstract_state()->size();
-    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
-
-    // Copy current state to the passed-in state, as specified in the
-    // documentation for DoCalclUnrestrictedUpdate().
-    state->CopyFrom(context.get_state());
-
-    if (event.do_unrestricted_update == nullptr) {
-      DoCalcUnrestrictedUpdate(context, state);
-    } else {
-      event.do_unrestricted_update(context, state);
-    }
-    if (continuous_state_dim != state->get_continuous_state()->size() ||
-        discrete_state_dim != state->get_discrete_state()->size() ||
-        abstract_state_dim != state->get_abstract_state()->size())
-      throw std::logic_error("State variable dimensions cannot be changed "
-                               "in CalcUnrestrictedUpdate().");
-  }
-
   /// Returns a reference to the cached value of the conservative power. If
   /// necessary the cache will be updated first using CalcConservativePower().
   /// @see CalcConservativePower()
@@ -368,7 +336,38 @@ class System {
     }
   }
 
-  // TODO(edrumwri) CalcUnrestrictedUpdate() PR #4382.
+  /// This method is called to update *any* state variables in the @p context
+  /// because the given @p event has arrived. Dispatches to
+  /// DoCalcUnrestrictedUpdate() by default, or to
+  /// `event.do_unrestricted_update` if provided. Does not allow the
+  /// dimensionality of the state variables to change.
+  /// @throws std::logic_error if the dimensionality of the state variables
+  ///         changes in the callback.
+  void CalcUnrestrictedUpdate(const Context<T>& context,
+                              const DiscreteEvent<T>& event,
+                              State<T>* state) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
+    const int continuous_state_dim =
+        state->get_continuous_state()->size();
+    const int discrete_state_dim = state->get_discrete_state()->size();
+    const int abstract_state_dim = state->get_abstract_state()->size();
+
+    // Copy current state to the passed-in state, as specified in the
+    // documentation for DoCalclUnrestrictedUpdate().
+    state->CopyFrom(context.get_state());
+
+    if (event.do_unrestricted_update == nullptr) {
+      DoCalcUnrestrictedUpdate(context, state);
+    } else {
+      event.do_unrestricted_update(context, state);
+    }
+    if (continuous_state_dim != state->get_continuous_state()->size() ||
+        discrete_state_dim != state->get_discrete_state()->size() ||
+        abstract_state_dim != state->get_abstract_state()->size())
+      throw std::logic_error("State variable dimensions cannot be changed "
+                                 "in CalcUnrestrictedUpdate().");
+  }
 
   /// This method is called by a Simulator during its calculation of the size of
   /// the next continuous step to attempt. The System returns the next time at
@@ -547,12 +546,12 @@ class System {
   }
 
   /// Returns descriptors for all the input ports of this system.
-  const std::vector<SystemPortDescriptor<T>>& get_input_ports() const {
+  const std::vector<InputPortDescriptor<T>>& get_input_ports() const {
     return input_ports_;
   }
 
   /// Returns the descriptor of the input port at index @p port_index.
-  const SystemPortDescriptor<T>& get_input_port(int port_index) const {
+  const InputPortDescriptor<T>& get_input_port(int port_index) const {
     if (port_index >= get_num_input_ports()) {
       throw std::out_of_range("port number out of range.");
     }
@@ -560,7 +559,7 @@ class System {
   }
 
   /// Returns the descriptor of the output port at index @p port_index.
-  const SystemPortDescriptor<T>& get_output_port(int port_index) const {
+  const OutputPortDescriptor<T>& get_output_port(int port_index) const {
     if (port_index >= get_num_output_ports()) {
       throw std::out_of_range("port number out of range.");
     }
@@ -568,7 +567,7 @@ class System {
   }
 
   /// Returns descriptors for all the output ports of this system.
-  const std::vector<SystemPortDescriptor<T>>& get_output_ports() const {
+  const std::vector<OutputPortDescriptor<T>>& get_output_ports() const {
     return output_ports_;
   }
 
@@ -697,52 +696,50 @@ class System {
  protected:
   //----------------------------------------------------------------------------
   /// @name                 System construction
-  /// Authors of concrete %Systems can use these methods in the constructor
+  /// Authors of derived %Systems can use these methods in the constructor
   /// for those %Systems.
   //@{
   /// Constructs an empty %System base class object.
   System() {}
 
   /// Adds a port with the specified @p descriptor to the input topology.
-  void DeclareInputPort(const SystemPortDescriptor<T>& descriptor) {
+  void DeclareInputPort(const InputPortDescriptor<T>& descriptor) {
     DRAKE_ASSERT(descriptor.get_index() == get_num_input_ports());
-    DRAKE_ASSERT(descriptor.get_face() == kInputPort);
     input_ports_.emplace_back(descriptor);
   }
 
   /// Adds a port with the specified @p type and @p size to the input topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareInputPort(PortDataType type, int size) {
+  const InputPortDescriptor<T>& DeclareInputPort(PortDataType type, int size) {
     int port_index = get_num_input_ports();
-    input_ports_.emplace_back(this, kInputPort, port_index, type, size);
+    input_ports_.emplace_back(this, port_index, type, size);
     return input_ports_.back();
   }
 
   /// Adds an abstract-valued port to the input topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareAbstractInputPort() {
+  const InputPortDescriptor<T>& DeclareAbstractInputPort() {
     return DeclareInputPort(kAbstractValued, 0 /* size */);
   }
 
   /// Adds a port with the specified @p descriptor to the output topology.
-  void DeclareOutputPort(const SystemPortDescriptor<T>& descriptor) {
+  void DeclareOutputPort(const OutputPortDescriptor<T>& descriptor) {
     DRAKE_ASSERT(descriptor.get_index() == get_num_output_ports());
-    DRAKE_ASSERT(descriptor.get_face() == kOutputPort);
     output_ports_.emplace_back(descriptor);
   }
 
   /// Adds a port with the specified @p type and @p size to the output topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareOutputPort(PortDataType type,
+  const OutputPortDescriptor<T>& DeclareOutputPort(PortDataType type,
                                                    int size) {
     int port_index = get_num_output_ports();
-    output_ports_.emplace_back(this, kOutputPort, port_index, type, size);
+    output_ports_.emplace_back(this, port_index, type, size);
     return output_ports_.back();
   }
 
   /// Adds an abstract-valued port with to the output topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareAbstractOutputPort() {
+  const OutputPortDescriptor<T>& DeclareAbstractOutputPort() {
     return DeclareOutputPort(kAbstractValued, 0 /* size */);
   }
   //@}
@@ -988,8 +985,8 @@ class System {
   System& operator=(System<T>&& other) = delete;
 
   std::string name_;
-  std::vector<SystemPortDescriptor<T>> input_ports_;
-  std::vector<SystemPortDescriptor<T>> output_ports_;
+  std::vector<InputPortDescriptor<T>> input_ports_;
+  std::vector<OutputPortDescriptor<T>> output_ports_;
   const detail::InputPortEvaluatorInterface<T>* parent_{nullptr};
 
   // TODO(sherm1) Replace these fake cache entries with real cache asap.

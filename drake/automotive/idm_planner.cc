@@ -33,12 +33,12 @@ template <typename T>
 IdmPlanner<T>::~IdmPlanner() {}
 
 template <typename T>
-const systems::SystemPortDescriptor<T>& IdmPlanner<T>::get_ego_port() const {
+const systems::InputPortDescriptor<T>& IdmPlanner<T>::get_ego_port() const {
   return systems::System<T>::get_input_port(0);
 }
 
 template <typename T>
-const systems::SystemPortDescriptor<T>& IdmPlanner<T>::get_agent_port() const {
+const systems::InputPortDescriptor<T>& IdmPlanner<T>::get_agent_port() const {
   return systems::System<T>::get_input_port(1);
 }
 
