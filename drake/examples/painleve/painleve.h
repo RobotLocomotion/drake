@@ -39,10 +39,10 @@ class Painleve : public systems::LeafSystem<T> {
   // Constructor for the Painleve' Paradox system.
   Painleve();
 
-  void EvalOutput(const systems::Context<T>& context,
+  void DoCalcOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override;
 
-  void EvalTimeDerivatives(
+  void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
