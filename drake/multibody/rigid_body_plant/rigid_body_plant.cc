@@ -298,7 +298,6 @@ template <typename T>
 void RigidBodyPlant<T>::DoCalcOutput(const Context<T>& context,
                                      SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
-  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   // Evaluates the state output port.
   BasicVector<T>* output_vector =
