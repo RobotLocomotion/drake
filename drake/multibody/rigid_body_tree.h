@@ -460,18 +460,24 @@ class RigidBodyTree {
   KinematicPath findKinematicPath(int start_body_or_frame_idx,
                                   int end_body_or_frame_idx) const;
 
-  /** \brief Compute the positive definite mass (configuration space) matrix \f$
-   *H(q) \f$, defined by \f$T = \frac{1}{2} v^T H(q) v \f$, where \f$ T \f$ is
-   *kinetic energy.
-   *
-   * The mass matrix also appears in the manipulator equations
-   *  \f[
-   *  H(q) \dot{v} + C(q, v, f_\text{ext}) = B(q) u
-   * \f]
-   *
-   * \param cache a KinematicsCache constructed given \f$ q \f$
-   * \return the mass matrix \f$ H(q) \f$
-   */
+  /// Computes the positive definite mass (configuration space) matrix
+  /// \f$H(q)\f$, defined by \f$T = \frac{1}{2} v^T H(q) v \f$, where \f$ T\f$
+  /// is the kinetic energy.
+  ///
+  /// The mass matrix also appears in the manipulator equations
+  ///  \f[
+  ///  H(q) \dot{v} + C(q, v, f_\text{ext}) = B(q) u
+  /// \f]
+  ///
+  /// This method uses a Composite Rigid Body (CRB) method, which being
+  /// O(N^2) in computational complexity, is the most efficient approch for
+  /// computing the mass matrix explicitly.
+  ///
+  /// @param cache a KinematicsCache constructed given \f$ q \f$.
+  /// @returns the mass matrix \f$ H(q) \f$
+  ///
+  /// The @p cache will be updated by a call to
+  /// updateCompositeRigidBodyInertias() and therefore is a non-const parameter.
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -1243,10 +1249,13 @@ class RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
-  // Computes the Composite Body Inertias (CBI) associated with each body.
+  // Computes the Composite Rigid Body (CRB) inertias associated with each body.
   // The composite rigid body inertia associated with a body is defined as
   // the effective spatial inertia of the composite body formed by all
-  // bodies outboard of the joint. Results are cached in @p cache.
+  // bodies outboard of the joint.
+  // After a call to this method the argument cache get updated with entries:
+  // - inertia_in_world, spatial inertia about Wo in W, i.e. Ii(W)_W.
+  // - crb_in_world, CBI about Wo in W, i.e. Icb(W)_W.
   //
   // For an in depth discussion refer to Section 4.1.2 of A. Jain's
   // book, p. 59.
@@ -1255,13 +1264,14 @@ class RigidBodyTree {
   // is computed as:
   //   Ri(i) = Ii(i) + \sum_{\forall j\in C(i)} Rj(i)
   // where C(i) is the set of bodies children of body i. In the
-  // equation above it is implicit that the CBI for body j computed about
-  // body-j's origin (Rj(j)) is translated to body-i's origin Boi so that
+  // equation above it is implicit that the CRB inertia for body j computed
+  // about body-j's origin (Rj(j)) is translated to body-i's origin Boi so that
   // the summation is valid. This translation transformation is described by
   // the parallel axis theorem for spatial inertias (Eq. 2.12 in A. Jain's
   // book, p. 20).
   // RigidBodyTree::updateCompositeRigidBodyInertias() first computes all
-  // CBI's about the world's origin and performs the computation above as:
+  // CRB inertias about the world's origin and performs the computation above
+  // as:
   //   Ri(w) = Ii(w) + \sum_{\forall j\in C(i)} Rj(w)
   // This method is O(N) with N the number of bodies in the tree.
   template <typename Scalar>

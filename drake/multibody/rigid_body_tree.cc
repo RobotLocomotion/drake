@@ -1672,35 +1672,95 @@ template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree<T>::massMatrix(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache) const {
-  cache.checkCachedKinematicsSettings(false, false, "massMatrix");
+
+  // Checks that position dependent kinematics are cached.
+  // This method needs from the KinematicsCache:
+  //   - transform_to_world, as needed by updateCompositeRigidBodyInertias().
+  //   - motion_subspace_in_world, as needed locally in this method.
+  // which are position dependent, to be already computed in the cache.
+  cache.checkCachedKinematicsSettings(false /* velocity_kinematics_required */,
+                                      false /* jdot_times_v_required */,
+                                      "massMatrix");
+
+  // The Composite Rigid Body (CRB) method has a very simple physical
+  // interpretation that allows for a quick derivation.
+  // In the absence of external forces and with vdot = 0, C(q,v) = 0 and hence
+  //   M * vdot = Q
+  // This means we can compute the i-th column in H by setting the i-th
+  // component of vdot to be one, i.e. vdot_p = 1 for p = i ane zero otherwise.
+  // Physically, this means that all bodies outboard from joint i move
+  // rigidly together as a CRB. Hence the force exerted by joint i on its
+  // outboard body i can be computed as
+  //   f(i) = R(i) * alpha(i), since b(i) = 0 for v = 0. (A Jain, Eq. 6.3).
+  // where b(i) contains the Coriolis and centrifugal terms for body i.
+  // Since accelerations are zero for bodies towards the base from joint i
+  // (and velocities are zero), these bodies are instantaneously in static
+  // equilibrium and therefore
+  //   f(pi) = phi(pi, i) * f(i) (A Jain, Eq. 5.1).
+  // with pi representing the parent of body i.
+  // Using inertially fixed velocity frames (or Plucker vectors), the above
+  // is equivalent to
+  //   f(pi)_I = f(i)_I, i.e. Plucker forces are constant from the i-th
+  // joint all the way towards the base.
+  // The j-th component of Q can be computed by simply projecting f(i) onto
+  // the generalized forces as
+  //   Q_j = H(j)_I * f(i)_I, for all j towards the base from i.
+  // From M * vdot = Q this means
+  //   M_ji = H(j)_I * f(i)_I
+  // Notice that if spatial forces are computed about the joint-i outboard
+  // frame, they need to be converted to the parent body frame before projecting
+  //   Q_j = H(j) * f(k), s.t. pk = j.
+  // This leads to the recursive formulation in Algorithm 4.2 in A Jain's
+  // book, p. 64, where X(j) (the spatial force here refered to as f(j)) is
+  // recursively transformed before projecting for the next parent.
+  // The above procedure therefore allows computing the lower-diagonal terms
+  // of M which being symmetric is all we need.
 
   int nv = num_velocities_;
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(nv, nv);
   ret.setZero();
 
+  // The following call updates:
+  // - inertia_in_world, spatial inertia about Wo in W, i.e. Ii(W)_W.
+  // - crb_in_world, CBI about Wo in W, i.e. Icb(W)_W.
   updateCompositeRigidBodyInertias(cache);
 
+  // Loop on the columns of the mass matrix.
   for (size_t i = 0; i < bodies.size(); ++i) {
     RigidBody<T>& body_i = *bodies[i];
     if (body_i.has_parent_body()) {
       const auto& element_i = cache.get_element(i);
       int v_start_i = body_i.get_velocity_start_index();
       int nv_i = body_i.getJoint().get_num_velocities();
+      // This is the force exerted by the i-th joint on its outboard body.
+      // It is computed using the i-th CRB as f(i) = R(i) * alpha(i).
+      // For vdot with vdot_i = 1 and zero otherwise, the spatial
+      // acceleration is simply alpha_i = Ht_I (A Jain, Eq. 5.57, p. 95).
+      // where Ht is here the motion_subspace_in_world for body i.
       auto F =
           (element_i.crb_in_world * element_i.motion_subspace_in_world).eval();
 
-      // Hii
+      // Hii, project force for the i-th joint using H or equivalently, the
+      // transpose of motion_subspace_in_world.
       ret.block(v_start_i, v_start_i, nv_i, nv_i).noalias() =
           (element_i.motion_subspace_in_world.transpose() * F).eval();
 
-      // Hij
+      // Computes off-diagonal elements in H.
+      // Recursion on body-j (spanning rows in H) moving towards the base
+      // from body-i's parent (spanning columns in H).
       const RigidBody<T>* body_j(body_i.get_parent());
       while (body_j->has_parent_body()) {
         const auto& element_j = cache.get_element(body_j->get_body_index());
         int v_start_j = body_j->get_velocity_start_index();
         int nv_j = body_j->getJoint().get_num_velocities();
+        // Computes the lower-triangular mass matrix elements by projecting
+        // onto the generalized forces for joint-j. F is constant when
+        // described as a Plucker spatial force. A recursive transformation
+        // is required when expressed in the local frame as in Algorithm 4.2 in
+        // A Jain's book, p. 64
         auto Hji = (element_j.motion_subspace_in_world.transpose() * F).eval();
         ret.block(v_start_j, v_start_i, nv_j, nv_i) = Hji;
+        // The upper-triangular are obtained using the fact that H is symmetric.
         ret.block(v_start_i, v_start_j, nv_i, nv_j) = Hji.transpose();
 
         body_j = body_j->get_parent();
