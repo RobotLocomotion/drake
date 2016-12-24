@@ -314,28 +314,29 @@ class RigidBody {
   double get_mass() const;
 
   /// Sets the center of mass of this rigid body. The center of mass is
-  /// expressed in the outboard frame M of the joint mobilizing this body as
-  /// defined in @ref rigid_body_tree_frames.
-  void set_center_of_mass_in_M(const Eigen::Vector3d &center_of_mass);
+  /// measured and expressed in the body frame B as defined in
+  /// @ref rigid_body_tree_frames.
+  void set_center_of_mass_in_B(const Eigen::Vector3d &center_of_mass);
 
   /// Gets the center of mass of this rigid body. The center of mass is
-  /// measured and expressed in the outboard frame M, where M is the outboard
-  /// frame of this body's inboard joint as defined in
+  /// measured and expressed in the body frame B as defined in
   /// @ref rigid_body_tree_frames.
-  const Eigen::Vector3d& get_center_of_mass() const;
+  const Eigen::Vector3d& get_center_of_mass_in_B() const;
 
-  /// Sets the spatial inertia of the body computed about the origin
-  /// of frame M and expressed in frame M, where M is the outboard frame of
-  /// this body's inboard joint as defined in @ref rigid_body_tree_frames.
-  /// @param IMo_M the spatial inertia computed about M's origin Mo and
-  /// expressed in frame M.
-  void set_spatial_inertia_in_M(
-      const drake::SquareTwistMatrix<double>& IMo_M);
+  /// Sets the spatial inertia of the body computed about the origin of body
+  /// frame B, Bo, and expressed in B.
+  /// Refer to @ref rigid_body_tree_frames for the definition of frames used
+  /// in Drake.
+  /// @param IBo_B the spatial inertia computed about B's origin Bo and
+  /// expressed in frame B.
+  void set_spatial_inertia_in_B(
+      const drake::SquareTwistMatrix<double> &IBo_B);
 
-  /// Returns the spatial inertia of this rigid body computed about M's
-  /// origin and expressed in M, where M is joint outboard frame M as defined
-  /// in @ref rigid_body_tree_frames.
-  const drake::SquareTwistMatrix<double>& get_spatial_inertia_in_M() const;
+  /// Returns the spatial inertia of this rigid body computed computed about
+  /// the origin of body frame B, Bo, and expressed in B.
+  /// Refer to @ref rigid_body_tree_frames for the definition of frames used
+  /// in Drake.
+  const drake::SquareTwistMatrix<double>& get_spatial_inertia_in_B() const;
 
   /**
    * Transforms all of the visual and inertial elements associated
@@ -344,16 +345,17 @@ class RigidBody {
    * from the joint frame. In our RigidBodyTree classes, the body frame IS the
    * joint frame.
    *
-   * @param X_MB The transform from this body's frame to the
+   * @param X_BI The transform from this body's frame to the
    * joint's frame.
    */
   // TODO(liang.fok): Remove this method. It is a bad idea to use RBT as an
-  // intermediate representation to save IB_B and then convert it later to
-  // IM_M. The real problem here is exposing this to users who should be very
+  // intermediate representation to save IIo_I (with `I` the "inertial" frame
+  // defined in the urdf format) and then convert it later to IBo_B. The real
+  // problem here is exposing this to users who should be very
   // specific about what inertias they are working with.
   // Move this method to sdf_parser.cc, the only place that uses it.
   void ApplyTransformToJointFrame(
-      const Eigen::Isometry3d& X_MB);
+      const Eigen::Isometry3d& X_BI);
 
   /** Adds body to a given collision clique by clique id.
    *
@@ -450,10 +452,12 @@ class RigidBody {
   // The center of mass of this rigid body.
   Eigen::Vector3d center_of_mass_;
 
-  // The spatial inertia of this rigid body computed around M's origin Mo and
-  // expressed in M where M is the outboard frame of this body's inboard joint.
+  // The spatial inertia of this rigid body computed around B's origin Bo and
+  // expressed in B where B is the body's frame not necessarily at the center
+  // of mass of the body or even aligned with the body's principal axes of
+  // inertia.
   // See Doxygen group rigid_body_tree_frames for more information on frames.
-  drake::SquareTwistMatrix<double> spatial_inertia_M_;
+  drake::SquareTwistMatrix<double> spatial_inertia_B_;
 
   // TODO(SeanCurtis-TRI): This data is only used in the compilation of the
   // body.  As such, it should be moved into a factory so that the runtime

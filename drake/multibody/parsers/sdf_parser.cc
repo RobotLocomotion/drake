@@ -72,7 +72,7 @@ void ParseSdfInertial(
 
   Eigen::Vector3d com;
   com = T_link.inverse() * T.translation();
-  body->set_center_of_mass_in_M(com);
+  body->set_center_of_mass_in_B(com);
 
   drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
   I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
@@ -90,7 +90,7 @@ void ParseSdfInertial(
     parseScalarValue(inertia, "izz", I(2, 2));
   }
 
-  body->set_spatial_inertia_in_M(transformSpatialInertia(
+  body->set_spatial_inertia_in_B(transformSpatialInertia(
       T_link.inverse() * T, I));
 }
 

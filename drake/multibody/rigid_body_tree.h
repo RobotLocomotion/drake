@@ -58,22 +58,28 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 ///   adding a joint. The effect of the joint's generalized coordinates `q` is
 ///   to position the `M` frame with respect to the `F` frame by generating the
 ///   transform `X_FM(q)`.
-///   `X_FM(q)` is computed by DrakeJoint::jointTransform().
-/// - The body frame B located at the body's center of mass but not
-///   necessarily oriented to be aligned with the principal axes of inertia.
-///   For example, if defining a rigid body using the URDF specification,
-///   this frame is defined with the `<origin>` element within the `<link>`
-///   element in the form of a transform `X_MB`.
+/// - Without loss of generality Drake takes the body reference frame B to be
+///   coincident with the outboard frame M of its inboard joint.
+///   Therefore `B = M` and `X_FB(q) = X_FM(q)` which is computed by
+///   DrakeJoint::jointTransform().
+///   Therefore, once a RigidBodyTree is constructed, Drake's formulations do
+///   not make use of frame M. However, it is useful to think about it when
+///   adding a new RigidBody to the RigidBodyTree.
 /// - The inertial properties of the body, where the center of mass is
-///   measured and expressed in `M` and corresponds to `X_MB.translation()`.
-///   The moments of inertia are taken about Bcm and are expressed in the frame
-///   of the body `B`.
+///   measured and expressed in `B`.
+///   The moments of inertia are specified about Bo and are expressed in the
+///   frame of the body `B`.
 ///
 /// <b>Notes on the URDF specification:</b>
 ///
-/// In the URDF specification (http://wiki.ros.org/urdf/XML/link) the
-/// mobilized frame `M` is referred as the "link reference frame", while the
-/// body frame `B` is referred as the "inertial frame".
+/// The URDF specification (http://wiki.ros.org/urdf/XML/link) defines an
+/// additional inertial frame `I` rigidly attached to `B`.
+/// The origin of the inertial frame is at the body's center of mass and thus
+/// `Io = Bcm` but `I` is not necessarily aligned with the principal axes of
+/// `B`. `<origin>` defines the inertial frame measured and expressed in body
+/// frame `B`. The moments of inertia are specified about the center of mass
+/// and expressed in `I`. Therefore the user supplies `JIo_I`.
+///
 ///
 /// @ingroup multibody_dynamics
 /// @}
@@ -1269,8 +1275,8 @@ class RigidBodyTree {
   // the effective spatial inertia of the composite body formed by all
   // bodies outboard of the joint.
   // After a call to this method the argument cache get updated with entries:
-  // - inertia_in_world, spatial inertia about Wo in W, i.e. Ii(W)_W.
-  // - crb_in_world, CBI about Wo in W, i.e. Icb(W)_W.
+  // - inertia_in_world, spatial inertia about Wo in W, i.e. Ii(Wo)_W.
+  // - crb_in_world, CBI about Wo in W, i.e. Icb(Wo)_W.
   //
   // For an in depth discussion refer to Section 4.1.2 of A. Jain's
   // book, p. 59.
@@ -1287,7 +1293,7 @@ class RigidBodyTree {
   // RigidBodyTree::updateCompositeRigidBodyInertias() first computes all
   // CRB inertias about the world's origin and performs the computation above
   // as:
-  //   Ri(w) = Ii(w) + \sum_{\forall j\in C(i)} Rj(w)
+  //   Ri(Wo) = Ii(Wo) + \sum_{\forall j\in C(i)} Rj(Wo)
   // This method is O(N) with N the number of bodies in the tree.
   template <typename Scalar>
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).

@@ -392,9 +392,9 @@ void RigidBodyTree<T>::drawKinematicTree(
     dotfile << "  " << body->get_name() << " [label=\"" << body->get_name()
             << endl;
     dotfile << "mass=" << body->get_mass()
-            << ", com=" << body->get_center_of_mass().transpose() << endl;
+            << ", com=" << body->get_center_of_mass_in_B().transpose() << endl;
     dotfile << "spatial inertia=" << endl
-            << body->get_spatial_inertia_in_M() << endl;
+            << body->get_spatial_inertia_in_B() << endl;
     dotfile << "\"];" << endl;
     if (body->has_parent_body()) {
       const auto& joint = body->getJoint();
@@ -1028,28 +1028,30 @@ void RigidBodyTree<T>::updateCompositeRigidBodyInertias(
                                       "updateCompositeRigidBodyInertias");
 
   if (!cache.areInertiasCached()) {
-    // This loop simply initializes the the Composite Body Inertia (CBI) for
-    // the i-th body Ri(W) to the spatial inertia of that body expressed in
-    // the world frame, i.e. Ri(W)_W = Ii(W)_W.
+    // This loop simply initializes the the Composite Rigid Body (CRB) inertia
+    // for the i-th body Ri(Wo) to the spatial inertia of that body expressed in
+    // the world frame, i.e. Ri(Wo)_W = Ii(Wo)_W.
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
       const RigidBody<T>& body = **it;
       auto element = cache.get_mutable_element(body.get_body_index());
-      // i-th body spatial inertia Ii(W)_W about the world frame W expressed
-      // in W. transformSpatialInertia essentially uses the "parallel axis
-      // theorem" for spatial inertias to transform Ii(M)_M to Ii(W)_W.
+      // i-th body spatial inertia Ii(Wo)_W about the world frame's origin Wo
+      // expressed in W. transformSpatialInertia essentially uses the
+      // "parallel axis theorem" for spatial inertias to transform Ii(Bo)_B to
+      // Ii(Wo)_W.
       element->inertia_in_world = transformSpatialInertia(
           element->transform_to_world,
-          body.get_spatial_inertia_in_M().template cast<Scalar>());
-      // Initializes the composite body inertia for the i-th body Ri(W)_W to
+          body.get_spatial_inertia_in_B().template cast<Scalar>());
+      // Initializes the composite body inertia for the i-th body Ri(Wo)_W to
       // the spatial inertia of that body.
       element->crb_in_world = element->inertia_in_world;
     }
 
     // Tip-to-Base recursion.
-    // By definition, the CBI of a body is the composition of its children's
-    // CBI's. Since RigidBodyTree::bodies is sorted by generation, this
-    // reversed loop recursively computes the CBI of a body as the
-    // composition (algebraic summation) of its children's CBI's.
+    // By definition, the CRB inertia of a body is the composition of its
+    // children's CRB inertias. Since RigidBodyTree::bodies is sorted by
+    // generation, this reversed loop recursively computes the CRB inertia of a
+    // body as the composition (algebraic summation) of its children's CRB
+    // inertias.
     for (auto it = bodies.rbegin(); it != bodies.rend(); ++it) {
       const RigidBody<T>& body = **it;
       if (body.has_parent_body()) {
@@ -1237,7 +1239,7 @@ const {
             body.get_mass() *
                 transformPoints(
                         cache,
-                        body.get_center_of_mass().template cast<Scalar>(),
+                        body.get_center_of_mass_in_B().template cast<Scalar>(),
                         i, 0);
       }
       m += body.get_mass();
@@ -1721,8 +1723,8 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree<T>::massMatrix(
   ret.setZero();
 
   // The following call updates:
-  // - inertia_in_world, spatial inertia about Wo in W, i.e. Ii(W)_W.
-  // - crb_in_world, CBI about Wo in W, i.e. Icb(W)_W.
+  // - inertia_in_world, spatial inertia about Wo in W, i.e. Ii(Wo)_W.
+  // - crb_in_world, CRB inertia about Wo in W, i.e. Icb(Wo)_W.
   updateCompositeRigidBodyInertias(cache);
 
   // Loop on the columns of the mass matrix.

@@ -50,44 +50,47 @@ namespace {
 // RigidBody in a RigidBodyTree.
 //
 // <inertial>
-// The inertia properties of the body described in its body frame B.
-//   <origin> (optional: defaults to identity if not specified)
-//     This is the pose of the body frame B relative to the joint outboard
-//     frame M (the mobilized frame). Fame M is rigidly attached to the body
-//     and is mobilized by the outboard frame of the joint attached to this
-//     body.
-//     Therefore <origin> specifies the transformation X_MB. In other words,
-//     the pose of the mobilized frame in the body frame, X_BM, is X_BM =
-//     X_MB.inverse().
-//     The position of the inertial frame B specifies the position of the
-//     center of mass as measured in M.
-//     The axes of the body frame B do not need to be aligned with the
-//     principal axes of inertia.
+// The inertia properties of the body described in a body inertial frame I
+// defined by the entries below. For more information on the frames used in
+// Drake refer to @ref rigid_body_tree_frames.
+//   <origin> (optional: defaults to zero if not specified)
+//     This is the pose of the inertial frame I measured and expressed in
+//     the body frame B. The origin of the inertial frame needs to be at the
+//     center of mass and thus Io = Bcm. The axes of the body inertial frame I
+//     do not need to be aligned with the principal axes of inertia.
+//     In Drake the body frame B coincides with the outboard frame M of the
+//     body's inboard joint, i.e. B = M.
+//     In summary, <origin> specifies the transformation X_BI.
+//
 //     xyz (optional: defaults to zero vector):
-//       Specifies the center of mass expressed in the mobilized frame M.
+//       Specifies the center of mass measured and expressed in the body
+//       frame B.
 //     rpy (optional: defaults to identity if not specified)
-//       Specifies the orientation of the body frame B with respect
-//       to the mobilized frame M represented by roll, pitch and yaw angles in
+//       Specifies the orientation of the inertial frame I with respect
+//       to the body frame B represented by roll, pitch and yaw angles in
 //       radians.
 //   <mass> The mass of the body specified by the value attribute of this
 //     element.
 //   <inertia>
-//     The 3x3 inertia matrix, expressed in the body frame B.
+//     The 3x3 inertia matrix, expressed in the inertial frame I.
 //     Since the inertia matrix is symmetric, only 6 above-diagonal
 //     elements of this matrix are only needed, using the attributes ixx,
 //     ixy, ixz, iyy, iyz, izz which are optional and default to zero.
 //
 // In the URDF specification (http://wiki.ros.org/urdf/XML/link) the
-// mobilized frame M is referred as the "link reference frame", while the body
-// frame B is referred as the "inertial frame".
+// mobilized frame M (in Drake coincident with B) is referred as the "link
+// reference frame". Drake does not define an "inertial frame" but measures
+// COM and inertias in the body frame B. For more on frames and conventions
+// used by Drake see @ref rigid_body_tree_frames.
 void ParseInertial(RigidBody<double>* body, XMLElement* node) {
-  // M: Joint outboard frame or, mobilized frame.
   // B: Body frame.
-  // By default X_MB is the identity transform.
-  Isometry3d X_MB = Isometry3d::Identity();
+  // I: Inertial frame specified from the urdf. Io = Bcm and moments of
+  // inertia are expressed in I and about Io.
+  // By default X_BI is the identity transform.
+  Isometry3d X_BI = Isometry3d::Identity();
 
   XMLElement* origin = node->FirstChildElement("origin");
-  if (origin) originAttributesToTransform(origin, X_MB);
+  if (origin) originAttributesToTransform(origin, X_BI);
 
   XMLElement* mass = node->FirstChildElement("mass");
   if (mass) {
@@ -96,36 +99,35 @@ void ParseInertial(RigidBody<double>* body, XMLElement* node) {
     body->set_mass(body_mass);
   }
 
-  // Center of mass expressed in the mobilized frame M.
-  Eigen::Vector3d com_M;
-  com_M << X_MB(0, 3), X_MB(1, 3), X_MB(2, 3);
-  body->set_center_of_mass_in_M(com_M);
+  // Center of mass expressed in the body frame B.
+  Eigen::Vector3d com_B;
+  com_B << X_BI(0, 3), X_BI(1, 3), X_BI(2, 3);
+  body->set_center_of_mass_in_B(com_B);
 
-  // Spatial inertia computed about the center of mass and expressed in B.
-  drake::SquareTwistMatrix<double> SpatialInertia_B =
+  // Spatial inertia computed about the center of mass (recall Io = Bcm) and
+  // expressed in I.
+  drake::SquareTwistMatrix<double> I_Io_I =
       drake::SquareTwistMatrix<double>::Zero();
-  SpatialInertia_B.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
+  I_Io_I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
 
-  // Inertia matrix expressed in the body frame B located at the center of
-  // mass of body B.
   XMLElement* inertia = node->FirstChildElement("inertia");
   if (inertia) {
-    parseScalarAttribute(inertia, "ixx", SpatialInertia_B(0, 0));
-    parseScalarAttribute(inertia, "ixy", SpatialInertia_B(0, 1));
-    SpatialInertia_B(1, 0) = SpatialInertia_B(0, 1);
-    parseScalarAttribute(inertia, "ixz", SpatialInertia_B(0, 2));
-    SpatialInertia_B(2, 0) = SpatialInertia_B(0, 2);
-    parseScalarAttribute(inertia, "iyy", SpatialInertia_B(1, 1));
-    parseScalarAttribute(inertia, "iyz", SpatialInertia_B(1, 2));
-    SpatialInertia_B(2, 1) = SpatialInertia_B(1, 2);
-    parseScalarAttribute(inertia, "izz", SpatialInertia_B(2, 2));
+    parseScalarAttribute(inertia, "ixx", I_Io_I(0, 0));
+    parseScalarAttribute(inertia, "ixy", I_Io_I(0, 1));
+    I_Io_I(1, 0) = I_Io_I(0, 1);
+    parseScalarAttribute(inertia, "ixz", I_Io_I(0, 2));
+    I_Io_I(2, 0) = I_Io_I(0, 2);
+    parseScalarAttribute(inertia, "iyy", I_Io_I(1, 1));
+    parseScalarAttribute(inertia, "iyz", I_Io_I(1, 2));
+    I_Io_I(2, 1) = I_Io_I(1, 2);
+    parseScalarAttribute(inertia, "izz", I_Io_I(2, 2));
   }
 
-  // Converts the spatial inertia so that it is computed around the mobilized
-  // frame M and it is expressed in frame M.
-  // Updates the body spatial inertia.
-  body->set_spatial_inertia_in_M(transformSpatialInertia(X_MB,
-                                                         SpatialInertia_B));
+  // Converts the spatial inertia so that it is computed around the body
+  // frame B and it is expressed in frame B before updating the body's
+  // spatial inertia to I_Bo_B.
+  body->set_spatial_inertia_in_B(transformSpatialInertia(X_BI,
+                                                         I_Io_I));
 }
 
 // Adds a material to the supplied @materials map. Currently, only simple colors

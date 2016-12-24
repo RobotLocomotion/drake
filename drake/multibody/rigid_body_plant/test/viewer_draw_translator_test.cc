@@ -34,7 +34,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
     // The inertia model must be set to prevent RigidBodyTree::compile() from
     // replacing the body's joint with a FixedJoint.
     body->set_mass(1.0);
-    body->set_spatial_inertia_in_M(Matrix6<double>::Identity());
+    body->set_spatial_inertia_in_B(Matrix6<double>::Identity());
 
     auto joint = make_unique<RollPitchYawFloatingJoint>(
         "Joint" + std::to_string(i), Eigen::Isometry3d::Identity());
