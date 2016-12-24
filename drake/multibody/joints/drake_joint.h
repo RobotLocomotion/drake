@@ -102,7 +102,8 @@ class DrakeJoint {
   /// Returns the transform `X_PF` giving the pose of the joint's inboard frame
   /// F (or fixed frame) rigidly attached to its parent body with frame `P`.
   /// Therefore `X_PF` is the pose of the joint inboard frame F measured and
-  /// expressed in the parent frame P. Its position in frame P is given by
+  /// expressed in the parent frame P. Frame F's position, by which we mean the
+  /// position of its origin Fo measured and expressed in frame P is given by
   /// `X_PF.translation()` and its orientation in frame P is given by
   /// `X_PF.linear()`. Thus `X_PF` is not configuration dependent.
   ///

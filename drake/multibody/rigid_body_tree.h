@@ -35,30 +35,45 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
 /// @defgroup rigid_body_tree_frames Bodies, Frames, Notation and Conventions.
 /// @{
-/// @brief Description of the reference frames used by the multibody
-/// dynamics engine.
+/// Description of the reference frames used by the multibody dynamics engine.
+///
+/// <b> Note: </b>
+/// We are using <em>parent</em> here in the graph theory sense to mean
+/// exclusively an inboard body, that is, <em>closer to World, the root of
+/// the tree</em>. That is not necessarily the same as the meaning of
+/// <em>parent</em> in an external description files like urdf or sdf where
+/// the term defines the sense of the joint but doesn't necessarily denote an
+/// inboard body.
 ///
 /// To add a RigidBody B to a RigidBodyTree the following information must be
 /// provided:
-/// - The parent body P and its associated frame P.
-/// - A DrakeJoint connecting body B to its parent body P.
-/// - A fixed frame F rigidly attached to body P which describes the position
+/// - The parent body P with its body frame, also denoted P.
+/// - A DrakeJoint connecting body B to its parent body P which we refer to as
+///   <em>body B's inboard joint</em>.
+/// - A "fixed" frame F rigidly attached to body P which describes the position
 ///   of the joint in the parent frame. This is also referred to as the
 ///   joint's inboard frame. This frame is provided as a transform X_PF which
 ///   can be requested with DrakeJoint::get_transform_to_parent_body().
-/// - An outboard joint frame M, or moving frame, is implicitly defined when
-///   adding a joint. This frame is described by the joint's state dependent
-///   transformation `X_FM(q)` with `q` here representing the generalized
-///   coordinates introduced by this joint. `X_FM(q)` is computed by
-///   DrakeJoint::jointTransform().
+/// - An outboard joint frame M, or "moving" frame, is implicitly defined when
+///   adding a joint. The effect of the joint's generalized coordinates `q` is
+///   to position the `M` frame with respect to the `F` frame by generating the
+///   transform `X_FM(q)`.
+///   `X_FM(q)` is computed by DrakeJoint::jointTransform().
 /// - The body frame B located at the body's center of mass but not
 ///   necessarily oriented to be aligned with the principal axes of inertia.
 ///   For example, if defining a rigid body using the URDF specification,
 ///   this frame is defined with the `<origin>` element within the `<link>`
 ///   element in the form of a transform `X_MB`.
-/// - The inertial properties of the body. Where the center of mass is
-///   measured and expressed in M and corresponds to `X_MB.translation()`.
-///   The moments of inertia are specified in the frame of the body B.
+/// - The inertial properties of the body, where the center of mass is
+///   measured and expressed in `M` and corresponds to `X_MB.translation()`.
+///   The moments of inertia are taken about Bcm and are expressed in the frame
+///   of the body `B`.
+///
+/// <b>Notes on the URDF specification:</b>
+///
+/// In the URDF specification (http://wiki.ros.org/urdf/XML/link) the
+/// mobilized frame `M` is referred as the "link reference frame", while the
+/// body frame `B` is referred as the "inertial frame".
 ///
 /// @ingroup multibody_dynamics
 /// @}

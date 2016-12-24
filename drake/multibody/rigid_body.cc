@@ -283,8 +283,8 @@ const Eigen::Vector3d& RigidBody<T>::get_center_of_mass() const {
 
 template <typename T>
 void RigidBody<T>::set_spatial_inertia_in_M(
-    const drake::SquareTwistMatrix<double> &IM_M) {
-  spatial_inertia_M_ = IM_M;
+    const drake::SquareTwistMatrix<double>& IMo_M) {
+  spatial_inertia_M_ = IMo_M;
 }
 
 template <typename T>

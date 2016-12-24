@@ -399,32 +399,33 @@ bool isRegularInertiaMatrix(const Eigen::MatrixBase<DerivedI>& I) {
   return ret;
 }
 
-/// Given two frames A and B this method transforms a spatial inertia computed
-/// about the origin of A and expressed in frame A to a spatial inertia
-/// computed about the origin of B an expressed in frame B.
+/// Given two frames A and B this method transforms a spatial inertia IAo_A
+/// computed about the origin Ao of a frame A and expressed in frame A to a
+/// spatial inertia IBo_B computed about the origin Bo of a frame B and
+/// expressed in frame B.
 /// @param X_BA The transformation from frame A to B, expressed in frame B.
-/// @param IA_A Spatial inertia computed about the origin of frame A and
+/// @param IAo_A Spatial inertia computed about the origin of frame A and
 /// expressed in frame A.
-/// @returns IB_B The spatial inertia now computed about the origin of frame
+/// @returns IBo_B The spatial inertia now computed about the origin Bo of frame
 /// B and expressed in B.
 template <typename DerivedI>
 drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
     const Eigen::Transform<typename DerivedI::Scalar, drake::kSpaceDimension,
                            Eigen::Isometry>& X_BA,
-    const Eigen::MatrixBase<DerivedI>& IA_A) {
+    const Eigen::MatrixBase<DerivedI>& IAo_A) {
   using namespace Eigen;
   using Scalar = typename DerivedI::Scalar;
 
   // TODO(amcastro-tri): This check should not happen at run time but only
   // once when either setting the inertia matrix or when parsing from a file.
-  if (isRegularInertiaMatrix(IA_A)) {
+  if (isRegularInertiaMatrix(IAo_A)) {
     // this check is necessary to support the nonstandard inertia matrices
     // resulting from added masses
 
     // Rotation matrix from A to B.
     const auto& R_BA = X_BA.linear();
-    // Offset vector from A to B expressed in frame B.
-    const auto& pAB_B = X_BA.translation();
+    // Offset vector from B to A expressed in frame B.
+    const auto& pBA_B = X_BA.translation();
 
     // Extracts the inertia matrix JA_A computed about the origin of frame A
     // and expressed in frame A.
@@ -436,16 +437,16 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
     // mass of the body, c(x) is the center of mass offset from point x, [c]
     // is the skew symmetric matrix equivalent to cross product by c from the
     // left (i.e [c] * v = c.cross(v)) and Id is the identity matrix in
-    // R^{3x3}.
+    // R^{3x3}. `J` and `c` must be expressed in a common frame.
 
     // Defines a reference to the moment of inertia computed about A and
     // expressed in frame A.
-    auto JA_A = IA_A.template topLeftCorner<3, 3>();
+    auto JA_A = IAo_A.template topLeftCorner<3, 3>();
     // Center of mass offset from A to the center of mass C expressed in
     // frame A, multiplied by the body mass.
-    Matrix<Scalar, 3, 1> mcA_A;
-    mcA_A << IA_A(2, 4), IA_A(0, 5), IA_A(1, 3);
-    const auto& m = IA_A(3, 3);
+    drake::Vector3<Scalar> mp_AoC_A;
+    mp_AoC_A << IAo_A(2, 4), IAo_A(0, 5), IAo_A(1, 3);
+    const auto& m = IAo_A(3, 3);
 
     auto vectorToSkewSymmetricSquared = [](const Matrix<Scalar, 3, 1>& a) {
       Matrix<Scalar, 3, 3> ret;
@@ -469,11 +470,11 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
 
     // Define the spatial inertia computed about the origin of frame B and
     // expressed in frame B. This is the return from this method.
-    drake::SquareTwistMatrix<Scalar> IB_B;
-    auto mcA_B = (R_BA * mcA_A).eval();
+    drake::SquareTwistMatrix<Scalar> IBo_B;
+    auto mp_AoC_B = (R_BA * mp_AoC_A).eval();
     // A reference to the moment of inertia computed about B and expressed in
     // frame B.
-    auto JB_B = IB_B.template topLeftCorner<3, 3>();
+    auto JB_B = IBo_B.template topLeftCorner<3, 3>();
 
     // TODO(amcastro-tri): Rewrite to avoid checking for zero mass.
     // Checking for zero mass is not needed since the
@@ -482,11 +483,12 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
     // See Eq 2.12 in A. Jain's book, p. 20 for a simple alternative using
     // the rigid body transformation operator phi.
     if (m > NumTraits<Scalar>::epsilon()) {
-      JB_B = vectorToSkewSymmetricSquared(mcA_B);
-      // This is misleading but essentially here we compute mcB_B and
-      // overwrite it on mcA_B.
-      mcA_B.noalias() += m * pAB_B;
-      JB_B -= vectorToSkewSymmetricSquared(mcA_B);  // Recall this is mcB_B.
+      JB_B = vectorToSkewSymmetricSquared(mp_AoC_B);
+      // This is misleading but essentially here we compute mp_BoC_B and
+      // overwrite it on mp_AoC_B.
+      mp_AoC_B.noalias() += m * pBA_B;
+      JB_B -=
+          vectorToSkewSymmetricSquared(mp_AoC_B);  // Recall this is mp_BoC_B.
       JB_B /= m;
       // At this point we have:
       // JB_B = m * [cA_B]^2 - m * [cB_B]^2
@@ -504,16 +506,16 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
     // - offset p(x) is c(x).
     // Also, in A. Jain's book equations are written in frame free form.
 
-    IB_B.template topRightCorner<3, 3>() =
-        drake::math::VectorToSkewSymmetric(mcA_B);
-    IB_B.template bottomLeftCorner<3, 3>() =
-        -IB_B.template topRightCorner<3, 3>();
-    IB_B.template bottomRightCorner<3, 3>() =
-        IA_A.template bottomRightCorner<3, 3>();
+    IBo_B.template topRightCorner<3, 3>() =
+        drake::math::VectorToSkewSymmetric(mp_AoC_B);
+    IBo_B.template bottomLeftCorner<3, 3>() =
+        -IBo_B.template topRightCorner<3, 3>();
+    IBo_B.template bottomRightCorner<3, 3>() =
+        IAo_A.template bottomRightCorner<3, 3>();
 
-    return IB_B;
+    return IBo_B;
   } else {
-    auto I_half_transformed = transformSpatialForce(X_BA, IA_A);
+    auto I_half_transformed = transformSpatialForce(X_BA, IAo_A);
     return transformSpatialForce(X_BA,
                                  I_half_transformed.transpose());
   }

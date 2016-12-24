@@ -314,24 +314,27 @@ class RigidBody {
   double get_mass() const;
 
   /// Sets the center of mass of this rigid body. The center of mass is
-  /// expressed in the outboard frame M of the joint mobilizing this body.
+  /// expressed in the outboard frame M of the joint mobilizing this body as
+  /// defined in @ref rigid_body_tree_frames.
   void set_center_of_mass_in_M(const Eigen::Vector3d &center_of_mass);
 
   /// Gets the center of mass of this rigid body. The center of mass is
-  /// expressed in the outboard frame M of the joint mobilizing this body.
+  /// measured and expressed in the outboard frame M, where M is the outboard
+  /// frame of this body's inboard joint as defined in
+  /// @ref rigid_body_tree_frames.
   const Eigen::Vector3d& get_center_of_mass() const;
 
   /// Sets the spatial inertia of the body computed about the origin
-  /// of frame M and expressed in frame M, where M is the joint outboard
-  /// frame as defined in \ref rigid_body_tree_frames.
-  /// @param IM_M the spatial inertia computed about M's origin and expressed
-  /// in frame M.
+  /// of frame M and expressed in frame M, where M is the outboard frame of
+  /// this body's inboard joint as defined in @ref rigid_body_tree_frames.
+  /// @param IMo_M the spatial inertia computed about M's origin Mo and
+  /// expressed in frame M.
   void set_spatial_inertia_in_M(
-      const drake::SquareTwistMatrix<double> &IM_M);
+      const drake::SquareTwistMatrix<double>& IMo_M);
 
   /// Returns the spatial inertia of this rigid body computed about M's
   /// origin and expressed in M, where M is joint outboard frame M as defined
-  /// in \ref rigid_body_tree_frames.
+  /// in @ref rigid_body_tree_frames.
   const drake::SquareTwistMatrix<double>& get_spatial_inertia_in_M() const;
 
   /**
@@ -447,9 +450,9 @@ class RigidBody {
   // The center of mass of this rigid body.
   Eigen::Vector3d center_of_mass_;
 
-  // The spatial inertia of this rigid body computed around M's origin and
-  // expressed in M, where M is the mobilized frame or the joints outboard
-  // frame.
+  // The spatial inertia of this rigid body computed around M's origin Mo and
+  // expressed in M where M is the outboard frame of this body's inboard joint.
+  // See Doxygen group rigid_body_tree_frames for more information on frames.
   drake::SquareTwistMatrix<double> spatial_inertia_M_;
 
   // TODO(SeanCurtis-TRI): This data is only used in the compilation of the
