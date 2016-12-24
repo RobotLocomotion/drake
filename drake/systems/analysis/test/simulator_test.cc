@@ -335,7 +335,7 @@ GTEST_TEST(SimulatorTest, ExactUpdateTime) {
   simulator.StepTo(1.);
 
   // Check that the update occurs at exactly the desired time.
-  EXPECT_EQ(updates.size(), 1);
+  EXPECT_EQ(updates.size(), 1u);
   EXPECT_EQ(updates.front(), t_upd);
 }
 
