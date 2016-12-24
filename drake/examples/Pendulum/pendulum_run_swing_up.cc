@@ -60,7 +60,7 @@ int do_main(int argc, char* argv[]) {
   auto context = pendulum->CreateDefaultContext();
 
   systems::DircolTrajectoryOptimization dircol_traj(
-      *pendulum, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
+      pendulum, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
       kTrajectoryTimeUpperBound);
   drake::examples::pendulum::AddSwingUpTrajectoryParams(kNumTimeSamples, x0, xG,
                                                         &dircol_traj);

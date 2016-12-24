@@ -1,5 +1,6 @@
 drake_add_cc_test(ball_test)
-target_link_libraries(ball_test drakeBouncingBall)
+target_link_libraries(ball_test drakeBouncingBall )
 
 drake_add_cc_test(bouncing_ball_test)
-target_link_libraries(bouncing_ball_test drakeBouncingBall)
+target_link_libraries(bouncing_ball_test drakeBouncingBall
+        drakeSystemAnalysis drakeSystemFramework drakeCommon)

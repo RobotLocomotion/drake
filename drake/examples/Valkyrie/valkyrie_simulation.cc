@@ -148,7 +148,9 @@ int main(int argc, const char** argv) {
   }
 
   // Plant input to plant.
-  builder.Connect(actuator_effort_to_rigid_body_plant_input_converter, plant);
+  builder.Connect(
+      actuator_effort_to_rigid_body_plant_input_converter.get_output_port(0),
+      plant.get_input_port(0));
 
   // Raw state vector to visualizer.
   builder.Connect(plant.state_output_port(),

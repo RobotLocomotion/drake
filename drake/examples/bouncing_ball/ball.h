@@ -33,6 +33,10 @@ class Ball : public systems::LeafSystem<T> {
   // Constructor for the Ball system.
   Ball();
 
+  /// Gets the signed acceleration due to gravity. Since initial positions
+  /// correspond to heights, acceleration should be negative.
+  double get_gravitational_acceleration() const { return -9.81; }
+
  protected:
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override;

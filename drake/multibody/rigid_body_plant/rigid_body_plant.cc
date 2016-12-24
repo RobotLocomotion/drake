@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -22,23 +23,103 @@ using DrakeCollision::ElementId;
 
 namespace drake {
 namespace systems {
+namespace {
+// Constant used to indicate that a model instance doesn't have an
+// input/output port associated with it.
+const int kInvalidPortIdentifier = -1;
+}  // namespace
 
 template <typename T>
 RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree)
     : tree_(move(tree)) {
   DRAKE_DEMAND(tree_ != nullptr);
 
-  // The input to this system are the generalized forces commanded on the
-  // actuators.
-  // TODO(amcastro-tri): add separate input ports for each model_instance_id.
+  // The first input to this system is a vector containing the
+  // generalized forces commanded on the actuators.
   System<T>::DeclareInputPort(kVectorValued, get_num_actuators());
-  // The output of the system is the state vector.
-  // TODO(amcastro-tri): add separate output ports for each model_id.
+  // The first output of the system is the state vector.
   state_output_port_id_ =
       this->DeclareOutputPort(kVectorValued, get_num_states()).get_index();
   // Declares an abstract valued port for kinematics results.
   kinematics_output_port_id_ = this->DeclareAbstractOutputPort().get_index();
   contact_output_port_id_ = this->DeclareAbstractOutputPort().get_index();
+
+  const int num_instances = tree_->get_num_model_instances();
+  const std::pair<int, int> default_entry =
+      std::pair<int, int>(kInvalidPortIdentifier, 0);
+  input_map_.resize(num_instances, kInvalidPortIdentifier);
+  actuator_map_.resize(num_instances, default_entry);
+  output_map_.resize(num_instances, kInvalidPortIdentifier);
+  position_map_.resize(num_instances, default_entry);
+  velocity_map_.resize(num_instances, default_entry);
+
+  if (num_instances != 0) {
+    // Figure out which actuators belong to which model instance, and
+    // create the appropriate maps and input ports.  We demand that
+    // the tree be constructed such that all actuator, positions, and
+    // velocity indices are contiguous for each model instance.
+    for (int actuator_index = 0; actuator_index < tree_->get_num_actuators();
+         ++actuator_index) {
+      const RigidBody<double>* body = tree_->actuators[actuator_index].body_;
+      const int instance_id = body->get_model_instance_id();
+      if (actuator_map_[instance_id].first == kInvalidPortIdentifier) {
+        actuator_map_[instance_id] = std::pair<int, int>(actuator_index, 1);
+      } else {
+        std::pair<int, int> map_entry = actuator_map_[instance_id];
+        DRAKE_DEMAND(actuator_index == map_entry.first + map_entry.second);
+        ++map_entry.second;
+        actuator_map_[instance_id] = map_entry;
+      }
+    }
+
+    for (int i = 0; i < num_instances; ++i) {
+      if (get_num_actuators(i) == 0) { continue; }
+      input_map_[i] = this->DeclareInputPort(
+          kVectorValued, actuator_map_[i].second).get_index();
+    }
+
+    // Now create the appropriate maps for the position and velocity
+    // components.
+    for (const auto& body : tree_->bodies) {
+      if (!body->has_parent_body()) { continue; }
+      const int instance_id = body->get_model_instance_id();
+      const int position_start_index = body->get_position_start_index();
+      const int num_positions = body->getJoint().get_num_positions();
+      if (num_positions) {
+        if (position_map_[instance_id].first == kInvalidPortIdentifier) {
+          position_map_[instance_id] =
+              std::pair<int, int>(position_start_index, num_positions);
+        } else {
+          std::pair<int, int> map_entry = position_map_[instance_id];
+          DRAKE_DEMAND(position_start_index ==
+                       map_entry.first + map_entry.second);
+          map_entry.second += num_positions;
+          position_map_[instance_id] = map_entry;
+        }
+      }
+
+      const int velocity_start_index = body->get_velocity_start_index();
+      const int num_velocities = body->getJoint().get_num_velocities();
+      if (num_velocities) {
+        if (velocity_map_[instance_id].first == kInvalidPortIdentifier) {
+          velocity_map_[instance_id] =
+              std::pair<int, int>(velocity_start_index, num_velocities);
+        } else {
+          std::pair<int, int> map_entry = velocity_map_[instance_id];
+          DRAKE_DEMAND(velocity_start_index ==
+                       map_entry.first + map_entry.second);
+          map_entry.second += num_velocities;
+          velocity_map_[instance_id] = map_entry;
+        }
+      }
+    }
+
+    for (int i = 0; i < num_instances; ++i) {
+      if (get_num_states(i) == 0) { continue; }
+      output_map_[i] = this->DeclareOutputPort(
+          kVectorValued, get_num_states(i)).get_index();
+    }
+  }
 }
 
 template <typename T>
@@ -76,8 +157,20 @@ int RigidBodyPlant<T>::get_num_positions() const {
 }
 
 template <typename T>
+int RigidBodyPlant<T>::get_num_positions(int model_instance_id) const {
+  DRAKE_ASSERT(get_num_model_instances() > model_instance_id);
+  return position_map_[model_instance_id].second;
+}
+
+template <typename T>
 int RigidBodyPlant<T>::get_num_velocities() const {
   return tree_->get_num_velocities();
+}
+
+template <typename T>
+int RigidBodyPlant<T>::get_num_velocities(int model_instance_id) const {
+  DRAKE_ASSERT(get_num_model_instances() > model_instance_id);
+  return velocity_map_[model_instance_id].second;
 }
 
 template <typename T>
@@ -86,8 +179,25 @@ int RigidBodyPlant<T>::get_num_states() const {
 }
 
 template <typename T>
+int RigidBodyPlant<T>::get_num_states(int model_instance_id) const {
+  return get_num_positions(model_instance_id) +
+      get_num_velocities(model_instance_id);
+}
+
+template <typename T>
 int RigidBodyPlant<T>::get_num_actuators() const {
-  return tree_->actuators.size();
+  return tree_->get_num_actuators();
+}
+
+template <typename T>
+int RigidBodyPlant<T>::get_num_actuators(int model_instance_id) const {
+  DRAKE_ASSERT(get_num_model_instances() > model_instance_id);
+  return actuator_map_[model_instance_id].second;
+}
+
+template <typename T>
+int RigidBodyPlant<T>::get_num_model_instances() const {
+  return tree_->get_num_model_instances();
 }
 
 template <typename T>
@@ -160,6 +270,15 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
     output->add_port(move(contact_results));
   }
 
+  // Allocates an output for each of the per-instance output ports.
+  for (int instance_id = 0;
+       instance_id < get_num_model_instances(); ++instance_id) {
+    if (output_map_[instance_id] == kInvalidPortIdentifier) { continue; }
+    auto data = make_unique<BasicVector<T>>(get_num_states(instance_id));
+    auto port = make_unique<OutputPort>(move(data));
+    output->get_mutable_ports()->push_back(move(port));
+  }
+
   return std::unique_ptr<SystemOutput<T>>(output.release());
 }
 
@@ -177,7 +296,7 @@ std::unique_ptr<ContinuousState<T>> RigidBodyPlant<T>::AllocateContinuousState()
 
 template <typename T>
 void RigidBodyPlant<T>::DoCalcOutput(const Context<T>& context,
-                                   SystemOutput<T>* output) const {
+                                     SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
@@ -188,6 +307,24 @@ void RigidBodyPlant<T>::DoCalcOutput(const Context<T>& context,
   // mere pointers to state variables (or cache lines).
   output_vector->get_mutable_value() =
       context.get_continuous_state()->CopyToVector();
+  const auto state_vector = output_vector->get_value();
+
+  for (int instance_id = 0;
+       instance_id < get_num_model_instances(); ++instance_id) {
+    if (output_map_[instance_id] == kInvalidPortIdentifier) { continue; }
+    BasicVector<T>* instance_output =
+        output->GetMutableVectorData(output_map_[instance_id]);
+    auto values = instance_output->get_mutable_value();
+    const auto& instance_positions = position_map_[instance_id];
+    values.head(instance_positions.second) =
+        state_vector.segment(instance_positions.first,
+                             instance_positions.second);
+
+    const auto& instance_velocities = velocity_map_[instance_id];
+    values.tail(instance_velocities.second) =
+        state_vector.segment(instance_velocities.first + get_num_positions(),
+                             instance_velocities.second);
+  }
 
   // Evaluates the kinematics results output port.
   auto& kinematics_results =
@@ -214,11 +351,34 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
                 "Only support templating on double for now");
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   DRAKE_DEMAND(derivatives != nullptr);
-  const BasicVector<T>* input = this->EvalVectorInput(context, 0);
-  DRAKE_DEMAND(input);
 
   // The input vector of actuation values.
-  auto u = input->get_value();
+  VectorX<T> u;
+  const BasicVector<T>* input = this->EvalVectorInput(context, 0);
+  if (input != nullptr) {
+    for (int instance_id = 0;
+         instance_id < get_num_model_instances(); ++instance_id) {
+      if (input_map_[instance_id] == kInvalidPortIdentifier) { continue; }
+      DRAKE_ASSERT(
+          this->EvalVectorInput(context, input_map_[instance_id]) == nullptr);
+    }
+    u = input->get_value();
+  } else {
+    u.resize(get_num_actuators());
+    u.fill(0.);
+    for (int instance_id = 0;
+         instance_id < get_num_model_instances(); ++instance_id) {
+      if (input_map_[instance_id] == kInvalidPortIdentifier) { continue; }
+      const BasicVector<T>* instance_input =
+          this->EvalVectorInput(context, input_map_[instance_id]);
+      if (instance_input == nullptr) { continue; }
+
+      const auto& instance_actuators = actuator_map_[instance_id];
+      DRAKE_ASSERT(instance_actuators.first != kInvalidPortIdentifier);
+      u.segment(instance_actuators.first, instance_actuators.second) =
+          instance_input->get_value();
+    }
+  }
 
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
@@ -319,6 +479,19 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
       kinsol, MatrixX<T>::Identity(nq, nq).eval()) * v, vdot_value;
 
   derivatives->SetFromVector(xdot);
+}
+
+template <typename T>
+int RigidBodyPlant<T>::FindInstancePositionIndexFromWorldIndex(
+    int model_instance_id, int world_position_index) {
+  DRAKE_ASSERT(get_num_model_instances() > model_instance_id);
+  const auto& instance_positions = position_map_[model_instance_id];
+  if (world_position_index >=
+      (instance_positions.first + instance_positions.second)) {
+    throw std::runtime_error(
+        "Unable to find position index in model instance.");
+  }
+  return world_position_index - instance_positions.first;
 }
 
 template <typename T>

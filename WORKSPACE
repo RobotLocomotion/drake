@@ -7,6 +7,16 @@ workspace(name = "drake")
 
 load("//tools/third_party/kythe/tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 
+pkg_config_package(
+    name = "glib",
+    modname = "glib-2.0",
+)
+
+pkg_config_package(
+    name = "python2",
+    modname = "python2",
+)
+
 new_http_archive(
     name = "gtest",
     url = "https://github.com/google/googletest/archive/release-1.7.0.zip",
@@ -42,11 +52,6 @@ new_git_repository(
     build_file = "tools/lcm.BUILD",
 )
 
-pkg_config_package(
-    name = "glib",
-    modname = "glib-2.0",
-)
-
 new_git_repository(
     name = "bullet",
     remote = "https://github.com/RobotLocomotion/bullet3.git",
@@ -80,3 +85,11 @@ new_git_repository(
     commit = "85af926ddc5f3c8fb438001743e65ec3a039ceec",
     build_file = "tools/yaml_cpp.BUILD",
 )
+
+load("//tools:gurobi.bzl", "gurobi_repository")
+gurobi_repository(
+    name = "gurobi",
+    workspace_dir = __workspace_dir__,
+    build_file = "tools/gurobi.BUILD",
+)
+
