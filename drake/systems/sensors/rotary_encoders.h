@@ -10,7 +10,7 @@ namespace systems {
 namespace sensors {
 
 /// Simple model to capture the quantization and calibration offset effects
-/// of a rotary encoder.  Consider combining this with a zero-order hold system
+/// of a rotary encoder.  Consider combining this with a ZeroOrderHold system
 /// to capture the sampled-data effects.
 ///
 /// The inputs to this system are assumed to be in radians, and the outputs of
