@@ -152,7 +152,6 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
                             DrakeJoint::MAX_NUM_VELOCITIES>& v_to_qdot,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dv_to_qdot) const {
-    typedef typename DerivedQ::Scalar Scalar;
     v_to_qdot.resize(get_num_positions(), get_num_velocities());
 
     if (dv_to_qdot) {
