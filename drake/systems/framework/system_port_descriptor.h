@@ -37,21 +37,17 @@ class InputPortDescriptor {
   ///             elements, or kAutoSize if determined by connections.
   InputPortDescriptor(const System<T>* system, int index,
                       PortDataType data_type, int size)
-      : system_(system),
-        index_(index),
-        data_type_(data_type),
-        size_(size) {}
+      : system_(system), index_(index), data_type_(data_type), size_(size) {
+    if (size_ == kAutoSize) {
+      DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
+    }
+  }
   virtual ~InputPortDescriptor() {}
 
   const System<T>* get_system() const { return system_; }
   int get_index() const { return index_; }
   PortDataType get_data_type() const { return data_type_; }
-  int get_size() const {
-    if (size_ == kAutoSize) {
-      DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
-    }
-    return size_;
-  }
+  int size() const { return size_; }
 
  private:
   const System<T>* const system_;
@@ -59,7 +55,6 @@ class InputPortDescriptor {
   const PortDataType data_type_;
   const int size_;
 };
-
 
 /// OutputPortDescriptor is a notation for specifying the kind of output a
 /// System produces, on a given port. It is not a mechanism for handling any
@@ -78,21 +73,17 @@ class OutputPortDescriptor {
   ///             elements, or kAutoSize if determined by connections.
   OutputPortDescriptor(const System<T>* system, int index,
                        PortDataType data_type, int size)
-      : system_(system),
-        index_(index),
-        data_type_(data_type),
-        size_(size) {}
+      : system_(system), index_(index), data_type_(data_type), size_(size) {
+    if (size_ == kAutoSize) {
+      DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
+    }
+  }
   virtual ~OutputPortDescriptor() {}
 
   const System<T>* get_system() const { return system_; }
   int get_index() const { return index_; }
   PortDataType get_data_type() const { return data_type_; }
-  int get_size() const {
-    if (size_ == kAutoSize) {
-      DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
-    }
-    return size_;
-  }
+  int size() const { return size_; }
 
  private:
   const System<T>* const system_;

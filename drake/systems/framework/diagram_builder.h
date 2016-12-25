@@ -113,7 +113,7 @@ class DiagramBuilder {
   /// Declares that input port @p dest is connected to output port @p src.
   void Connect(const OutputPortDescriptor<T>& src,
                const InputPortDescriptor<T>& dest) {
-    DRAKE_DEMAND(src.get_size() == dest.get_size());
+    DRAKE_DEMAND(src.size() == dest.size());
     PortIdentifier dest_id{dest.get_system(), dest.get_index()};
     PortIdentifier src_id{src.get_system(), src.get_index()};
     ThrowIfInputAlreadyWired(dest_id);

@@ -326,7 +326,7 @@ class Context {
     if (descriptor.get_data_type() == kVectorValued) {
       const BasicVector<T>* input_vector = port->template get_vector_data<T>();
       DRAKE_THROW_UNLESS(input_vector != nullptr);
-      DRAKE_THROW_UNLESS(input_vector->size() == descriptor.get_size());
+      DRAKE_THROW_UNLESS(input_vector->size() == descriptor.size());
     }
     // In the abstract-valued case, there is nothing else to check.
   }

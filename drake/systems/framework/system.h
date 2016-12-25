@@ -259,7 +259,7 @@ class System {
       const Context<T>& context, int port_index) const {
     const BasicVector<T>* input_vector = EvalVectorInput(context, port_index);
     DRAKE_ASSERT(input_vector != nullptr);
-    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).get_size());
+    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).size());
     return input_vector->get_value();
   }
 
@@ -575,7 +575,7 @@ class System {
   /// muxed).
   int get_num_total_inputs() const {
     int count = 0;
-    for (const auto& in : input_ports_) count += in.get_size();
+    for (const auto& in : input_ports_) count += in.size();
     return count;
   }
 
@@ -583,7 +583,7 @@ class System {
   /// muxed).
   int get_num_total_outputs() const {
     int count = 0;
-    for (const auto& out : output_ports_) count += out.get_size();
+    for (const auto& out : output_ports_) count += out.size();
     return count;
   }
 
@@ -605,7 +605,7 @@ class System {
         const VectorBase<T>* output_vector = output->get_vector_data(i);
         DRAKE_THROW_UNLESS(output_vector != nullptr);
         DRAKE_THROW_UNLESS(output_vector->size() ==
-            get_output_port(i).get_size());
+            get_output_port(i).size());
       }
     }
   }
@@ -962,7 +962,7 @@ class System {
     BasicVector<T>* output_vector = output->GetMutableVectorData(port_index);
     DRAKE_ASSERT(output_vector != nullptr);
     DRAKE_ASSERT(output_vector->size() ==
-        get_output_port(port_index).get_size());
+        get_output_port(port_index).size());
 
     return output_vector->get_mutable_value();
   }

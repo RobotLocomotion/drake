@@ -27,11 +27,11 @@ PidControlledSystem<T>::PidControlledSystem(
     std::unique_ptr<MatrixGain<T>> feedback_selector,
     const T& Kp, const T& Ki, const T& Kd) {
   const VectorX<T> Kp_v =
-      VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Kp;
+      VectorX<T>::Ones(plant->get_input_port(0).size()) * Kp;
   const VectorX<T> Ki_v =
-      VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Ki;
+      VectorX<T>::Ones(plant->get_input_port(0).size()) * Ki;
   const VectorX<T> Kd_v =
-      VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Kd;
+      VectorX<T>::Ones(plant->get_input_port(0).size()) * Kd;
   Initialize(std::move(plant), std::move(feedback_selector), Kp_v, Ki_v, Kd_v);
 }
 
@@ -79,17 +79,17 @@ std::pair<const InputPortDescriptor<T>,
     // identity matrix, which results in every element of the plant's output
     // port zero being used as the feedback signal to the PID controller.
     feedback_selector =
-        std::make_unique<MatrixGain<T>>(plant_output.get_size());
+        std::make_unique<MatrixGain<T>>(plant_output.size());
   }
   auto feedback_selector_p =
       builder->template AddSystem(std::move(feedback_selector));
 
-  DRAKE_ASSERT(plant_output.get_size() ==
-               feedback_selector_p->get_input_port().get_size());
-  const int num_effort_commands = plant_input.get_size();
+  DRAKE_ASSERT(plant_output.size() ==
+               feedback_selector_p->get_input_port().size());
+  const int num_effort_commands = plant_input.size();
   const int num_states = num_effort_commands * 2;
 
-  DRAKE_ASSERT(feedback_selector_p->get_output_port().get_size() == num_states);
+  DRAKE_ASSERT(feedback_selector_p->get_output_port().size() == num_states);
 
   auto state_minus_target = builder->template AddSystem<Adder<T>>(
       2, num_states);

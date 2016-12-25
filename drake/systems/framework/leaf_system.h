@@ -209,7 +209,7 @@ class LeafSystem : public System<T> {
   /// descriptor must match a port declared via DeclareOutputPort.
   virtual std::unique_ptr<BasicVector<T>> AllocateOutputVector(
       const OutputPortDescriptor<T>& descriptor) const {
-    return std::make_unique<BasicVector<T>>(descriptor.get_size());
+    return std::make_unique<BasicVector<T>>(descriptor.size());
   }
 
   // =========================================================================

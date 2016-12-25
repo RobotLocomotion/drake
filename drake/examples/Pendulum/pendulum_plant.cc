@@ -36,7 +36,7 @@ template <typename T>
 std::unique_ptr<systems::BasicVector<T>>
 PendulumPlant<T>::AllocateOutputVector(
     const systems::OutputPortDescriptor<T>& descriptor) const {
-  DRAKE_THROW_UNLESS(descriptor.get_size() == kStateSize);
+  DRAKE_THROW_UNLESS(descriptor.size() == kStateSize);
   return std::make_unique<PendulumStateVector<T>>();
 }
 
