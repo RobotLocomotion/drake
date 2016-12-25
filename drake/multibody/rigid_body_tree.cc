@@ -1227,6 +1227,51 @@ const {
   return com;
 }
 
+/**
+ * Converts a vector of generalized velocities (v) to the time
+ * derivative of generalized coordinates (qdot).
+ * @param v, a `nv` dimensional vector, where `nv` is the dimension of the
+ *      generalized velocities.
+ * @retval qdot a `nq` dimensional vector, where `nq` is the dimension of the
+ *      generalized coordinates.
+ * @sa transformQDotToVelocity()
+ */
+template <typename T>
+VectorX<T> RigidBodyTree<T>::transformVelocityToQDot(
+    const KinematicsCache<T>& cache,
+    const VectorX<T>& v) {
+  VectorX<T> qdot(cache.get_num_positions());
+  int qdot_start = 0;
+  int v_start = 0;
+  for (int body_id = 0; body_id < cache.get_num_cache_elements(); ++body_id) {
+    const auto& element = cache.get_element(body_id);
+    qdot.segment(qdot_start, element.get_num_positions()).noalias() =
+        element.v_to_qdot * v.segment(v_start, element.get_num_velocities());
+    qdot_start += element.get_num_positions();
+    v_start += element.get_num_velocities();
+  }
+  return qdot;
+}
+
+template <typename T>
+VectorX<T> RigidBodyTree<T>::transformQDotToVelocity(
+    const KinematicsCache<T>& cache,
+    const VectorX<T>& qdot) {
+  VectorX<T> v(cache.get_num_velocities());
+  int qdot_start = 0;
+  int v_start = 0;
+  for (int body_id = 0; body_id < cache.get_num_cache_elements(); ++body_id) {
+    const auto& element = cache.get_element(body_id);
+    v.segment(v_start, element.get_num_velocities()).noalias() =
+        element.qdot_to_v *
+            qdot.segment(qdot_start,
+                                         element.get_num_positions());
+    qdot_start += element.get_num_positions();
+    v_start += element.get_num_velocities();
+  }
+  return v;
+}
+
 template <typename T>
 template <typename Derived>
 MatrixX<typename Derived::Scalar>
@@ -1241,11 +1286,11 @@ RigidBodyTree<T>::transformVelocityMappingToQDotMapping(
   int Av_col_start = 0;
   for (int body_id = 0; body_id < cache.get_num_cache_elements(); ++body_id) {
     const auto& element = cache.get_element(body_id);
-    Ap.middleCols(Ap_col_start, element.get_num_positions()).noalias() =
-        Av.middleCols(Av_col_start, element.get_num_velocities()) *
-            element.qdot_to_v;
-    Ap_col_start += element.get_num_positions();
-    Av_col_start += element.get_num_velocities();
+    Ap.middleCols(Ap_col_start, cache.get_num_positions()).noalias() =
+            Av.middleCols(Av_col_start, cache.get_num_velocities()) *
+                element.qdot_to_v;
+    Ap_col_start += cache.get_num_positions();
+    Av_col_start += cache.get_num_velocities();
   }
   return Ap;
 }
@@ -1264,11 +1309,11 @@ RigidBodyTree<T>::transformQDotMappingToVelocityMapping(
   int Ap_col_start = 0;
   for (int body_id = 0; body_id < cache.get_num_cache_elements(); ++body_id) {
     const auto& element = cache.get_element(body_id);
-    Av.middleCols(Av_col_start, element.get_num_velocities()).noalias() =
-        Ap.middleCols(Ap_col_start, element.get_num_positions()) *
+    Av.middleCols(Av_col_start, cache.get_num_velocities()).noalias() =
+        Ap.middleCols(Ap_col_start, cache.get_num_positions()) *
             element.v_to_qdot;
-    Av_col_start += element.get_num_velocities();
-    Ap_col_start += element.get_num_positions();
+    Av_col_start += cache.get_num_velocities();
+    Ap_col_start += cache.get_num_positions();
   }
   return Av;
 }
@@ -2948,6 +2993,14 @@ RigidBodyTree<double>::resolveCenterOfPressure<Vector3d, Vector3d>(
     vector<ForceTorqueMeasurement, allocator<ForceTorqueMeasurement>> const&,
     Eigen::MatrixBase<Vector3d> const&,
     Eigen::MatrixBase<Vector3d> const&) const;
+
+// Explicit template instantiations for transformVelocityToQDot().
+template VectorX<double> RigidBodyTree<double>::transformQDotToVelocity(
+    const KinematicsCache<double>& cache, const VectorX<double>& qdot);
+
+// Explicit template instantiations for transformQDotToVelocity().
+template VectorX<double> RigidBodyTree<double>::transformVelocityToQDot(
+    const KinematicsCache<double>& cache, const VectorX<double>& v);
 
 // Explicit template instantiations for transformVelocityMappingToQDotMapping.
 template MatrixX<double>
