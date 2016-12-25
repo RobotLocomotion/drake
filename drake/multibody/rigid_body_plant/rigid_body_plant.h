@@ -194,17 +194,17 @@ class RigidBodyPlant : public LeafSystem<T> {
   static T JointLimitForce(const DrakeJoint& joint,
                            const T& position, const T& velocity);
 
-  /// Returns a descriptor of state output port.
+  /// Returns a descriptor of the state output port.
   const OutputPortDescriptor<T>& state_output_port() const {
     return System<T>::get_output_port(state_output_port_id_);
   }
 
-  /// Returns a descriptor of KinematicsResults output port.
+  /// Returns a descriptor of the KinematicsResults output port.
   const OutputPortDescriptor<T>& kinematics_results_output_port() const {
     return System<T>::get_output_port(kinematics_output_port_id_);
   }
 
-  /// Returns a descriptor of ContactResults output port.
+  /// Returns a descriptor of the ContactResults output port.
   const OutputPortDescriptor<T>& contact_results_output_port() const {
     return System<T>::get_output_port(contact_output_port_id_);
   }
