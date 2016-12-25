@@ -57,10 +57,8 @@ TEST_F(SingleLaneEgoAndAgentTest, Topology) {
 
   EXPECT_EQ(systems::kVectorValued, output_ego_car_pos.get_data_type());
   EXPECT_EQ(systems::kVectorValued, output_agent_car_pos.get_data_type());
-  EXPECT_EQ(systems::kOutputPort, output_ego_car_pos.get_face());
-  EXPECT_EQ(systems::kOutputPort, output_agent_car_pos.get_face());
-  EXPECT_EQ(2 /* two outputs: x, v */, output_ego_car_pos.get_size());
-  EXPECT_EQ(2 /* two outputs: x, v */, output_agent_car_pos.get_size());
+  EXPECT_EQ(2 /* two outputs: x, v */, output_ego_car_pos.size());
+  EXPECT_EQ(2 /* two outputs: x, v */, output_agent_car_pos.size());
 }
 
 TEST_F(SingleLaneEgoAndAgentTest, EvalOutput) {

@@ -34,7 +34,7 @@ class Adder : public LeafSystem<T> {
   bool has_any_direct_feedthrough() const override { return true; }
 
   /// Returns the output port.
-  const SystemPortDescriptor<T>& get_output_port() const;
+  const OutputPortDescriptor<T>& get_output_port() const;
 
   /// Returns an Adder<AutoDiffXd> with the same dimensions as this Adder.
   std::unique_ptr<Adder<AutoDiffXd>> ToAutoDiffXd() const {

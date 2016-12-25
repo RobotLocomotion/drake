@@ -181,7 +181,7 @@ class KukaDemo : public systems::Diagram<T> {
         make_unique<RigidBodyPlant<T>>(move(tree));
     plant_ = plant.get();
 
-    DRAKE_ASSERT(plant_->get_input_port(0).get_size() ==
+    DRAKE_ASSERT(plant_->get_input_port(0).size() ==
                  plant_->get_num_positions());
 
     // Create and add PID controller.

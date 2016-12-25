@@ -45,16 +45,14 @@ TEST_F(SimpleCarTest, Topology) {
   ASSERT_EQ(1, dut_->get_num_input_ports());
   const auto& input_descriptor = dut_->get_input_ports().at(0);
   EXPECT_EQ(systems::kVectorValued, input_descriptor.get_data_type());
-  EXPECT_EQ(systems::kInputPort, input_descriptor.get_face());
   EXPECT_EQ(DrivingCommandIndices::kNumCoordinates,
-            input_descriptor.get_size());
+            input_descriptor.size());
 
   ASSERT_EQ(1, dut_->get_num_output_ports());
   const auto& output_descriptor = dut_->get_output_ports().at(0);
   EXPECT_EQ(systems::kVectorValued, output_descriptor.get_data_type());
-  EXPECT_EQ(systems::kOutputPort, output_descriptor.get_face());
   EXPECT_EQ(SimpleCarStateIndices::kNumCoordinates,
-            output_descriptor.get_size());
+            output_descriptor.size());
 }
 
 TEST_F(SimpleCarTest, Output) {

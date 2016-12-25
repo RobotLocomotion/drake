@@ -17,7 +17,6 @@ namespace schunk_wsg {
 using systems::Context;
 using systems::DiscreteState;
 using systems::SystemOutput;
-using systems::SystemPortDescriptor;
 
 SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(
     int input_size, int position_index)

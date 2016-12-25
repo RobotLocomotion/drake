@@ -63,10 +63,10 @@ class AffineSystem : public LeafSystem<T> {
   bool has_any_direct_feedthrough() const override { return !D_.isZero(0.0); }
 
   /// Returns the input port containing the externally applied input.
-  const SystemPortDescriptor<T>& get_input_port() const;
+  const InputPortDescriptor<T>& get_input_port() const;
 
   /// Returns the port containing the output state.
-  const SystemPortDescriptor<T>& get_output_port() const;
+  const OutputPortDescriptor<T>& get_output_port() const;
 
   // Helper getter methods.
   const Eigen::MatrixXd& A() const { return A_; }
