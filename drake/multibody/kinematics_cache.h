@@ -63,8 +63,8 @@ class KinematicsCacheElement {
  public:
   KinematicsCacheElement(int num_positions_joint, int num_velocities_joint);
 
-  int get_num_positions() const { return v_to_qdot.rows(); }
-  int get_num_velocities() const { return v_to_qdot.cols(); }
+  int get_num_positions() const { return static_cast<int>(v_to_qdot.rows()); }
+  int get_num_velocities() const { return static_cast<int>(v_to_qdot.cols()); }
 
  public:
 #ifndef SWIG

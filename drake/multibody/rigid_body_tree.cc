@@ -924,7 +924,7 @@ void RigidBodyTree<T>::doKinematics(KinematicsCache<Scalar>& cache,
   // Required in call to geometricJacobian below.
   cache.setPositionKinematicsCached();
 
-  for (size_t i = 0; i < bodies.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(bodies.size()); ++i) {
     RigidBody<T>& body = *bodies[i];
     KinematicsCacheElement<Scalar>& element = *cache.get_mutable_element(i);
 
@@ -1659,7 +1659,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree<T>::massMatrix(
 
   updateCompositeRigidBodyInertias(cache);
 
-  for (size_t i = 0; i < bodies.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(bodies.size()); ++i) {
     RigidBody<T>& body_i = *bodies[i];
     if (body_i.has_parent_body()) {
       const auto& element_i = cache.get_element(i);
@@ -1730,7 +1730,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::inverseDynamics(
   // TODO(tkoolen) should preallocate:
   Matrix6X<Scalar> body_accelerations(kTwistSize, bodies.size());
   Matrix6X<Scalar> net_wrenches(kTwistSize, bodies.size());
-  for (size_t i = 0; i < bodies.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(bodies.size()); ++i) {
     const RigidBody<T>& body = *bodies[i];
     if (body.has_parent_body()) {
       const RigidBody<T>& parent_body = *(body.get_parent());
@@ -1853,7 +1853,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::inverseDynamics(
   const auto& joint_wrenches_const = net_wrenches;
 
   VectorX<Scalar> torques(num_velocities_, 1);
-  for (ptrdiff_t i = bodies.size() - 1; i >= 0; --i) {
+  for (int i = static_cast<int>(bodies.size()) - 1; i >= 0; --i) {
     RigidBody<T>& body = *bodies[i];
     if (body.has_parent_body()) {
       const auto& cache_element = cache.get_element(i);
