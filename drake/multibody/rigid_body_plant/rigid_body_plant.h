@@ -178,8 +178,8 @@ class RigidBodyPlant : public LeafSystem<T> {
   }
 
   // System<T> overrides.
-  /// Allocates two output ports, one for the RigidBodyPlant state and one for
-  /// KinematicsResults.
+  /// Allocates the output ports. See this class' description for details of
+  /// these ports.
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const override;
 
@@ -231,9 +231,10 @@ class RigidBodyPlant : public LeafSystem<T> {
       int model_instance_id, int world_position_index);
 
   /// Creates a right-handed local basis from a z-axis. Defines an arbitrary x-
-  /// and y-axis such that the basis is orthonormal.  The basis is R_WL, where W
+  /// and y-axis such that the basis is orthonormal. The basis is R_WL, where W
   /// is the frame in which the z-axis is expressed and L is a local basis such
   /// that v_W = R_WL * v_L.
+  ///
   /// @param[in] z_axis_W   The vector defining the basis's z-axis expressed
   ///                       in frame W.
   /// @retval R_WL          The computed basis.
