@@ -21,7 +21,7 @@ class IdmPlannerTest : public ::testing::Test {
 
   void SetInputValue(const std::vector<double>& state) {
     int state_size =
-        dut_->get_ego_port().get_size() + dut_->get_ego_port().get_size();
+        dut_->get_ego_port().size() + dut_->get_ego_port().size();
     DRAKE_DEMAND(state_size == (int) state.size());
     // Get the state values.
     const double x_ego = state[0];
@@ -52,14 +52,11 @@ TEST_F(IdmPlannerTest, Topology) {
   const auto& input_agent = dut_->get_agent_port();
   EXPECT_EQ(systems::kVectorValued, input_ego.get_data_type());
   EXPECT_EQ(systems::kVectorValued, input_agent.get_data_type());
-  EXPECT_EQ(systems::kInputPort, input_ego.get_face());
-  EXPECT_EQ(systems::kInputPort, input_agent.get_face());
 
   ASSERT_EQ(1, dut_->get_num_output_ports());
   const auto& output_descriptor = dut_->get_output_ports().at(0);
   EXPECT_EQ(systems::kVectorValued, output_descriptor.get_data_type());
-  EXPECT_EQ(systems::kOutputPort, output_descriptor.get_face());
-  EXPECT_EQ(1, output_descriptor.get_size());
+  EXPECT_EQ(1, output_descriptor.size());
 }
 
 // Set the initial states such that the agent and ego start at the

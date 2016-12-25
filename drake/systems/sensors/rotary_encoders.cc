@@ -115,7 +115,7 @@ Eigen::VectorBlock<const VectorX<T>> RotaryEncoders<T>::get_calibration_offsets(
 
 template <typename T>
 RotaryEncoders<AutoDiffXd>* RotaryEncoders<T>::DoToAutoDiffXd() const {
-  return new RotaryEncoders<AutoDiffXd>(this->get_input_port(0).get_size(),
+  return new RotaryEncoders<AutoDiffXd>(this->get_input_port(0).size(),
                                         indices_, ticks_per_revolution_);
 }
 

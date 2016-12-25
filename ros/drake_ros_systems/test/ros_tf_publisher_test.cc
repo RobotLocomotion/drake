@@ -38,7 +38,7 @@ GTEST_TEST(RosTfPublisherTest, TestRosTfPublisher) {
 
   EXPECT_EQ(publisher->get_num_output_ports(), 0);
   EXPECT_EQ(input->size(), 4);
-  EXPECT_EQ(publisher->get_input_port(0).get_size(), input->size());
+  EXPECT_EQ(publisher->get_input_port(0).size(), input->size());
 
   Eigen::VectorXd robot_position = Eigen::VectorXd::Zero(input->size());
   robot_position << 1.0, -0.5, 0, 0;

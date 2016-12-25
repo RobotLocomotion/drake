@@ -30,11 +30,11 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
  public:
   IiwaStatusSender();
 
-  const systems::SystemPortDescriptor<double>& get_command_input_port() const {
+  const systems::InputPortDescriptor<double>& get_command_input_port() const {
     return this->get_input_port(0);
   }
 
-  const systems::SystemPortDescriptor<double>& get_state_input_port() const {
+  const systems::InputPortDescriptor<double>& get_state_input_port() const {
     return this->get_input_port(1);
   }
 

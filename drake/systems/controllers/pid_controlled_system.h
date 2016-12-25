@@ -131,12 +131,12 @@ class PidControlledSystem : public Diagram<T> {
   System<T>* plant() { return plant_; }
 
   /// @return the input port for the feed forward control input.
-  const SystemPortDescriptor<T>& get_control_input_port() const {
+  const InputPortDescriptor<T>& get_control_input_port() const {
     return this->get_input_port(0);
   }
 
   /// @return the input port for the desired position/velocity state.
-  const SystemPortDescriptor<T>& get_state_input_port() const {
+  const InputPortDescriptor<T>& get_state_input_port() const {
     return this->get_input_port(1);
   }
 
@@ -147,10 +147,10 @@ class PidControlledSystem : public Diagram<T> {
   /// feed forward control input, the second is the feedback state
   /// input.  @p controller will be populated with a pointer to the
   /// newly created PidController.
-  static std::pair<const SystemPortDescriptor<T>,
-                   const SystemPortDescriptor<T>> ConnectController(
-                       const SystemPortDescriptor<T>& plant_input,
-                       const SystemPortDescriptor<T>& plant_output,
+  static std::pair<const InputPortDescriptor<T>,
+                   const InputPortDescriptor<T>> ConnectController(
+                       const InputPortDescriptor<T>& plant_input,
+                       const OutputPortDescriptor<T>& plant_output,
                        std::unique_ptr<MatrixGain<T>> feedback_selector,
                        const VectorX<T>& Kp, const VectorX<T>& Ki,
                        const VectorX<T>& Kd,

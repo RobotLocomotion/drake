@@ -29,7 +29,7 @@ void Demultiplexer<T>::DoCalcOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   // All output ports have the same size as defined in the constructor.
-  const int out_size = this->get_output_port(0).get_size();
+  const int out_size = this->get_output_port(0).size();
 
   // TODO(amcastro-tri): the output should simply reference the input port's
   // value to avoid copy.

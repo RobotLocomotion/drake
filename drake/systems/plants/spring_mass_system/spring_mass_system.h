@@ -94,10 +94,10 @@ class SpringMassSystem : public LeafSystem<T> {
   // Provide methods specific to this System.
 
   /// Returns the input port to the externally applied force.
-  const SystemPortDescriptor<T>& get_force_port() const;
+  const InputPortDescriptor<T>& get_force_port() const;
 
   /// Returns the port to output state.
-  const SystemPortDescriptor<T>& get_output_port() const;
+  const OutputPortDescriptor<T>& get_output_port() const;
 
   /// Returns the spring constant k that was provided at construction, in N/m.
   const T& get_spring_constant() const { return spring_constant_N_per_m_; }

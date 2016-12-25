@@ -27,9 +27,9 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
         b_(pendulum.b()),
         g_(pendulum.g()) {
     this->DeclareInputPort(systems::kVectorValued,
-                           pendulum.get_output_port().get_size());
+                           pendulum.get_output_port().size());
     this->DeclareOutputPort(systems::kVectorValued,
-                            pendulum.get_tau_port().get_size());
+                            pendulum.get_tau_port().size());
   }
 
  private:

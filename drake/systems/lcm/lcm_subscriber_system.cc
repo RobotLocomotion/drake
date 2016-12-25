@@ -116,7 +116,7 @@ LcmSubscriberSystem::AllocateOutput(const Context<double>& context) const {
 
 // This is only called if our output port is vector-valued.
 std::unique_ptr<BasicVector<double>> LcmSubscriberSystem::AllocateOutputVector(
-    const SystemPortDescriptor<double>& descriptor) const {
+    const OutputPortDescriptor<double>& descriptor) const {
   DRAKE_DEMAND(descriptor.get_index() == 0);
   DRAKE_DEMAND(translator_ != nullptr);
   DRAKE_DEMAND(serializer_.get() == nullptr);

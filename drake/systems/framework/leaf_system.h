@@ -208,8 +208,8 @@ class LeafSystem : public System<T> {
   /// override to use output vector types other than BasicVector.  The
   /// descriptor must match a port declared via DeclareOutputPort.
   virtual std::unique_ptr<BasicVector<T>> AllocateOutputVector(
-      const SystemPortDescriptor<T>& descriptor) const {
-    return std::make_unique<BasicVector<T>>(descriptor.get_size());
+      const OutputPortDescriptor<T>& descriptor) const {
+    return std::make_unique<BasicVector<T>>(descriptor.size());
   }
 
   // =========================================================================

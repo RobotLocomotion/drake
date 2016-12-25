@@ -195,30 +195,30 @@ class RigidBodyPlant : public LeafSystem<T> {
                            const T& position, const T& velocity);
 
   /// Returns a descriptor of the state output port.
-  const SystemPortDescriptor<T>& state_output_port() const {
+  const OutputPortDescriptor<T>& state_output_port() const {
     return System<T>::get_output_port(state_output_port_id_);
   }
 
   /// Returns a descriptor of the KinematicsResults output port.
-  const SystemPortDescriptor<T>& kinematics_results_output_port() const {
+  const OutputPortDescriptor<T>& kinematics_results_output_port() const {
     return System<T>::get_output_port(kinematics_output_port_id_);
   }
 
   /// Returns a descriptor of the ContactResults output port.
-  const SystemPortDescriptor<T>& contact_results_output_port() const {
+  const OutputPortDescriptor<T>& contact_results_output_port() const {
     return System<T>::get_output_port(contact_output_port_id_);
   }
 
   /// Returns a descriptor of the input port for a specific model
   /// instance.
-  const SystemPortDescriptor<T>& model_input_port(
+  const InputPortDescriptor<T>& model_input_port(
       int model_instance_id) const {
     return System<T>::get_input_port(input_map_.at(model_instance_id));
   }
 
   /// Returns a descriptor of the output port for a specific model
   /// instance.
-  const SystemPortDescriptor<T>& model_state_output_port(
+  const OutputPortDescriptor<T>& model_state_output_port(
       int model_instance_id) const {
     return System<T>::get_output_port(output_map_.at(model_instance_id));
   }

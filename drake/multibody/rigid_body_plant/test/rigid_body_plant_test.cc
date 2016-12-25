@@ -262,8 +262,8 @@ TEST_F(KukaArmTest, EvalOutput) {
   ASSERT_EQ(kNumStates_, kuka_plant_->get_num_states(0));
   ASSERT_EQ(kNumActuators_, kuka_plant_->get_num_actuators());
   ASSERT_EQ(kNumActuators_, kuka_plant_->get_num_actuators(0));
-  ASSERT_EQ(kNumActuators_, kuka_plant_->get_input_port(0).get_size());
-  ASSERT_EQ(kNumActuators_, kuka_plant_->model_input_port(0).get_size());
+  ASSERT_EQ(kNumActuators_, kuka_plant_->get_input_port(0).size());
+  ASSERT_EQ(kNumActuators_, kuka_plant_->model_input_port(0).size());
 
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have

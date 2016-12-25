@@ -44,7 +44,7 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
 
  protected:
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override {
+      const systems::OutputPortDescriptor<T>& descriptor) const override {
     return std::make_unique<EulerFloatingJointState<T>>();
   }
 };

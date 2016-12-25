@@ -31,7 +31,7 @@ class InputPortEvaluatorInterface {
   /// The subsystem having the input port must be owned by this Diagram.
   /// Aborts if @p context is nullptr and there is any evaluation to do.
   virtual void EvaluateSubsystemInputPort(
-      const Context<T>* context, const SystemPortDescriptor<T>& id) const = 0;
+      const Context<T>* context, const InputPortDescriptor<T>& id) const = 0;
 
   /// Writes the full path of the evaluator in the tree of Systems to @p output.
   /// The path has the form (::ancestor_system_name)*::this_system_name.

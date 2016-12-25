@@ -91,7 +91,7 @@ std::unique_ptr<Diagram<double>> BuildConstantSourceToPlantDiagram(
   Diagram<double>* plant_diagram_ptr =
       builder.AddSystem(std::move(plant_diagram));
   VectorX<double> constant_vector(
-      plant_diagram_ptr->get_input_port(0).get_size());
+      plant_diagram_ptr->get_input_port(0).size());
   constant_vector.setZero();
   auto constant_zero_source =
       builder.template AddSystem<ConstantVectorSource<double>>(constant_vector);

@@ -42,7 +42,7 @@ class RobotCommandToDesiredEffortConverter
 
   /// Descriptor of output port that presents desired effort for @param
   /// actuator.
-  const SystemPortDescriptor<double>& desired_effort_output_port(
+  const OutputPortDescriptor<double>& desired_effort_output_port(
       const RigidBodyActuator& actuator) const;
 
  private:
