@@ -4,9 +4,9 @@
 //          Euler parameters for an axis-symmetric rigid body B, when the moment
 //          of forces on B about Bcm (B's center of mass) is zero (torque-free).
 //-----------------------------------------------------------------------------
+#include <gtest/gtest.h>
 #include <cmath>
 #include <tuple>
-#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
@@ -17,7 +17,6 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-
 
 namespace drake {
 namespace benchmarks {
@@ -46,20 +45,19 @@ using Eigen::Quaterniond;
  */
 // TODO(mitiguy) Move this and related methods (make unit test) to quaternion.h.
 // TODO(mitiguy and Dai)  Create QuaternionDt class and update Doxygen.
-template<typename T>
+template <typename T>
 Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
-    const Eigen::Quaternion<T>& quat,  const Vector3<T>& w_B ) {
+    const Eigen::Quaternion<T>& quat, const Vector3<T>& w_B) {
   const T e0 = quat.w(), e1 = quat.x(), e2 = quat.y(), e3 = quat.z();
   const T wx = w_B[0], wy = w_B[1], wz = w_B[2];
 
-  const T e0Dt = 0.5*(-e1*wx - e2*wy - e3*wz);
-  const T e1Dt = 0.5*(+e0*wx - e3*wy + e2*wz);
-  const T e2Dt = 0.5*(+e3*wx + e0*wy - e1*wz);
-  const T e3Dt = 0.5*(-e2*wx + e1*wy + e0*wz);
+  const T e0Dt = 0.5 * (-e1 * wx - e2 * wy - e3 * wz);
+  const T e1Dt = 0.5 * (+e0 * wx - e3 * wy + e2 * wz);
+  const T e2Dt = 0.5 * (+e3 * wx + e0 * wy - e1 * wz);
+  const T e3Dt = 0.5 * (-e2 * wx + e1 * wy + e0 * wz);
 
   return Vector4<T>(e0Dt, e1Dt, e2Dt, e3Dt);
 }
-
 
 /** Calculate angular velocity from quaternion and quaternion's time derivative.
  * Algorithm from [Kane, 1983] Section 1.13, pages 58-59.
@@ -84,12 +82,12 @@ template <typename T>
 Vector3<T> CalculateAngularVelocityExpressedInBFromQuaternionDtExpressedInB(
     const Eigen::Quaternion<T>& quat, const Vector4<T>& quatDt) {
   const T e0 = quat.w(), e1 = quat.x(), e2 = quat.y(), e3 = quat.z();
-  const T e0Dt = quatDt[0], e1Dt = quatDt[1],
-          e2Dt = quatDt[2], e3Dt = quatDt[3];
+  const T e0Dt = quatDt[0], e1Dt = quatDt[1], e2Dt = quatDt[2],
+          e3Dt = quatDt[3];
 
-  const T wx = 2*(-e1*e0Dt + e0*e1Dt + e3*e2Dt - e2*e3Dt);
-  const T wy = 2*(-e2*e0Dt - e3*e1Dt + e0*e2Dt + e1*e3Dt);
-  const T wz = 2*(-e3*e0Dt + e2*e1Dt - e1*e2Dt + e0*e3Dt);
+  const T wx = 2 * (-e1 * e0Dt + e0 * e1Dt + e3 * e2Dt - e2 * e3Dt);
+  const T wy = 2 * (-e2 * e0Dt - e3 * e1Dt + e0 * e2Dt + e1 * e3Dt);
+  const T wz = 2 * (-e3 * e0Dt + e2 * e1Dt - e1 * e2Dt + e0 * e3Dt);
 
   return Vector3<T>(wx, wy, wz);
 }
@@ -150,13 +148,13 @@ CalculateExactRotationalSolution(const double t, const Vector3d& w_initial) {
   // Analytical solution for quaternion (Euler parameters) e0(t), ... e3(t).
   const double e1 = spt2 / p * (wx0 * cst2 + wy0 * sst2);
   const double e2 = spt2 / p * (-wx0 * sst2 + wy0 * cst2);
-  const double e3 =  coef * spt2 * cst2 + cpt2 * sst2;
+  const double e3 = coef * spt2 * cst2 + cpt2 * sst2;
   const double e0 = -coef * spt2 * sst2 + cpt2 * cst2;
 
   // Analytical solution for wx(t), wy(t), wz(t).
-  const double wx =  wx0 * cos(s * t) + wy0 * sin(s * t);
+  const double wx = wx0 * cos(s * t) + wy0 * sin(s * t);
   const double wy = -wx0 * sin(s * t) + wy0 * cos(s * t);
-  const double wz =  wz0;
+  const double wz = wz0;
 
   // Analytical solution for time-derivative quaternion.
   const Vector4d eDt = CalculateQuaternionDtFromAngularVelocityExpressedInB(
@@ -167,22 +165,22 @@ CalculateExactRotationalSolution(const double t, const Vector3d& w_initial) {
   const double e3Dt = eDt[3];
 
   // Analytical solution for time-derivatives of wx, wy, wz.
-  const double wxDt =  (1 - J / I) * wy * wz;
+  const double wxDt = (1 - J / I) * wy * wz;
   const double wyDt = (-1 + J / I) * wx * wz;
   const double wzDt = 0.0;
 
   // Create a tuple to package for returning.
   std::tuple<Vector4d, Vector4d, Vector3d, Vector3d> returned_tuple;
-  Vector4d& quat   = std::get<0>(returned_tuple);
+  Vector4d& quat = std::get<0>(returned_tuple);
   Vector4d& quatDt = std::get<1>(returned_tuple);
-  Vector3d& w      = std::get<2>(returned_tuple);
-  Vector3d& wDt    = std::get<3>(returned_tuple);
+  Vector3d& w = std::get<2>(returned_tuple);
+  Vector3d& wDt = std::get<3>(returned_tuple);
 
   // Fill returned_tuple with rotation results.
-  quat   << e0, e1, e2, e3;
+  quat << e0, e1, e2, e3;
   quatDt << e0Dt, e1Dt, e2Dt, e3Dt;
-  w      << wx, wy, wz;
-  wDt    << wxDt, wyDt, wzDt;
+  w << wx, wy, wz;
+  wDt << wxDt, wyDt, wzDt;
 
   return returned_tuple;
 }
@@ -204,11 +202,9 @@ CalculateExactRotationalSolution(const double t, const Vector3d& w_initial) {
  * xyzDt      | Vector3d with first-time-derivative of x, y, z.
  * xyzDDt     | Vector3D with second-time-derivative of x, y, z.
  */
-std::tuple<Vector3d, Vector3d, Vector3d>
-    CalculateExactTranslationalSolution(const double t,
-                                        const Vector3d& xyz_initial,
-                                        const Vector3d& xyzDt_initial,
-                                        const Vector3d& gravity) {
+std::tuple<Vector3d, Vector3d, Vector3d> CalculateExactTranslationalSolution(
+    const double t, const Vector3d& xyz_initial, const Vector3d& xyzDt_initial,
+    const Vector3d& gravity) {
   // Initial values of x, y, z and x', y', z'.
   const double x0 = xyz_initial[0];
   const double y0 = xyz_initial[1];
@@ -228,19 +224,19 @@ std::tuple<Vector3d, Vector3d, Vector3d>
   const double zDt = zDt0 + z_acceleration * t;
 
   // Analytical solution for x, y, z (constant acceleration).
-  const double x = x0 + xDt0*t + 0.5 * x_acceleration * t * t;
-  const double y = y0 + yDt0*t + 0.5 * y_acceleration * t * t;
-  const double z = z0 + zDt0*t + 0.5 * z_acceleration * t * t;
+  const double x = x0 + xDt0 * t + 0.5 * x_acceleration * t * t;
+  const double y = y0 + yDt0 * t + 0.5 * y_acceleration * t * t;
+  const double z = z0 + zDt0 * t + 0.5 * z_acceleration * t * t;
 
   // Create a tuple to package for returning.
   std::tuple<Vector3d, Vector3d, Vector3d> returned_tuple;
-  Vector3d& xyz    = std::get<0>(returned_tuple);
-  Vector3d& xyzDt  = std::get<1>(returned_tuple);
+  Vector3d& xyz = std::get<0>(returned_tuple);
+  Vector3d& xyzDt = std::get<1>(returned_tuple);
   Vector3d& xyzDDt = std::get<2>(returned_tuple);
 
   // Fill returned_tuple with rotation results.
-  xyz    << x, y, z;
-  xyzDt  << xDt, yDt, zDt;
+  xyz << x, y, z;
+  xyzDt << xDt, yDt, zDt;
   xyzDDt << x_acceleration, y_acceleration, z_acceleration;
 
   return returned_tuple;
@@ -252,7 +248,8 @@ std::tuple<Vector3d, Vector3d, Vector3d>
 GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // Create path to .urdf file containing mass/inertia and geometry properties.
   const std::string urdf_name = "uniform_solid_cylinder.urdf";
-  const std::string urdf_dir = "/multibody/benchmarks/"
+  const std::string urdf_dir =
+      "/multibody/benchmarks/"
       "cylinder_torque_free_analytical_solution/";
   const std::string urdf_dir_file_name = GetDrakePath() + urdf_dir + urdf_name;
 
@@ -346,16 +343,16 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
 
   // Get the state (defined above) and state time-derivatives for comparison.
   const VectorXd state_as_vector = state_drake.CopyToVector();
-  const Vector3d xyz_drake   = state_as_vector.segment<3>(0);
-  const Vector4d quat_drake  = state_as_vector.segment<4>(3);
-  const Vector3d w_drake     = state_as_vector.segment<3>(7);
-  const Vector3d v_drake     = state_as_vector.segment<3>(10);
+  const Vector3d xyz_drake = state_as_vector.segment<3>(0);
+  const Vector4d quat_drake = state_as_vector.segment<4>(3);
+  const Vector3d w_drake = state_as_vector.segment<3>(7);
+  const Vector3d v_drake = state_as_vector.segment<3>(10);
 
   const VectorXd stateDt_as_vector = stateDt_drake->CopyToVector();
-  const Vector3d xyzDt_drake  = stateDt_as_vector.segment<3>(0);
+  const Vector3d xyzDt_drake = stateDt_as_vector.segment<3>(0);
   const Vector4d quatDt_drake = stateDt_as_vector.segment<4>(3);
-  const Vector3d wDt_drake    = stateDt_as_vector.segment<3>(7);
-  const Vector3d vDt_drake    = stateDt_as_vector.segment<3>(10);
+  const Vector3d wDt_drake = stateDt_as_vector.segment<3>(7);
+  const Vector3d vDt_drake = stateDt_as_vector.segment<3>(10);
 
   // Reserve space for values returned by calculating exact solution.
   Vector4d quat_exact, quatDt_exact;
@@ -414,9 +411,9 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   EXPECT_TRUE(CompareMatrices(w_from_quatDt_exact, w_exact, 10 * epsilon));
 
   // Compare remaining drake and exact results.
-  EXPECT_TRUE(CompareMatrices(w_drake,         w_exact, 10 * epsilon));
-  EXPECT_TRUE(CompareMatrices(wDt_drake,     wDt_exact, 10 * epsilon));
-  EXPECT_TRUE(CompareMatrices(xyz_drake,     xyz_exact, 10 * epsilon));
+  EXPECT_TRUE(CompareMatrices(w_drake, w_exact, 10 * epsilon));
+  EXPECT_TRUE(CompareMatrices(wDt_drake, wDt_exact, 10 * epsilon));
+  EXPECT_TRUE(CompareMatrices(xyz_drake, xyz_exact, 10 * epsilon));
   EXPECT_TRUE(CompareMatrices(xyzDt_drake, xyzDt_exact, 10 * epsilon));
 
   // Compensate for definition of vDt.
@@ -427,10 +424,10 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
 
   //--------------------------------------------------------------
   // EXTRA: Test MapQDotToVelocity and MapVelocityToQDot for Evan.
-  // TODO(Mitiguy and Drumwright), lose BadFix.
+  // TODO(mitiguy/edrumwri) lose BadFix.
   //--------------------------------------------------------------
-  const double BadFix = 1.0E-5; // 1.0E16;
-#define Test_MapQDotToVelocity_1_or_MapVelocityToQDotFalse_0    0
+  const double BadFix = 1.0E-5;  // 1.0E16;
+#define Test_MapQDotToVelocity_1_or_MapVelocityToQDotFalse_0 0
 #if Test_MapQDotToVelocity_1_or_MapVelocityToQDotFalse_0
   // Form matrix of time-derivative of coordinates.
   Eigen::VectorXd coordinatesDt(7);
@@ -439,9 +436,9 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // Test if MapQDotToVelocity accurately converts time-derivative of
   // coordinates to motion variables.
   systems::BasicVector<double> wv_from_map(6);
-  rigid_body_plant.MapQDotToVelocity( *context, coordinatesDt, &wv_from_map );
-  const Vector3d w_map( wv_from_map[0], wv_from_map[1], wv_from_map[2] );
-  const Vector3d v_map( wv_from_map[3], wv_from_map[4], wv_from_map[5] );
+  rigid_body_plant.MapQDotToVelocity(*context, coordinatesDt, &wv_from_map);
+  const Vector3d w_map(wv_from_map[0], wv_from_map[1], wv_from_map[2]);
+  const Vector3d v_map(wv_from_map[3], wv_from_map[4], wv_from_map[5]);
   std::cout << "\n\n--------------------------------------------------";
   std::cout << "\n---------- TestA: MapQDotToVelocity --------------";
   std::cout << "\n--------------------------------------------------";
@@ -450,8 +447,8 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   std::cout << "\n\nv from map = \n" << v_map;
   std::cout << "\nv accurate (drake) = \n" << v_drake;
   std::cout << "\n--------------------------------------------------\n";
-  EXPECT_TRUE(CompareMatrices(w_map, w_exact, BadFix*10 * epsilon));
-  EXPECT_TRUE(CompareMatrices(v_map, v_drake, BadFix*10 * epsilon));
+  EXPECT_TRUE(CompareMatrices(w_map, w_exact, BadFix * 10 * epsilon));
+  EXPECT_TRUE(CompareMatrices(v_map, v_drake, BadFix * 10 * epsilon));
 #else
 
   // Form matrix of motion variables.
@@ -461,8 +458,8 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // Test if MapVelocityToQDot accurately converts motion variables to
   // time-derivatives of coordinates.
   systems::BasicVector<double> coordinatesDt_from_map(7);
-  rigid_body_plant.MapVelocityToQDot( *context, motion_variables,
-                                       &coordinatesDt_from_map );
+  rigid_body_plant.MapVelocityToQDot(*context, motion_variables,
+                                     &coordinatesDt_from_map);
   const double xDt_map = coordinatesDt_from_map[0];
   const double yDt_map = coordinatesDt_from_map[1];
   const double zDt_map = coordinatesDt_from_map[2];
@@ -470,8 +467,8 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   const double q1Dt_map = coordinatesDt_from_map[4];
   const double q2Dt_map = coordinatesDt_from_map[5];
   const double q3Dt_map = coordinatesDt_from_map[6];
-  const Vector3d xyzDt_map( xDt_map, yDt_map, zDt_map );
-  const Vector4d quatDt_map( q0Dt_map, q1Dt_map, q2Dt_map, q3Dt_map );
+  const Vector3d xyzDt_map(xDt_map, yDt_map, zDt_map);
+  const Vector4d quatDt_map(q0Dt_map, q1Dt_map, q2Dt_map, q3Dt_map);
   std::cout << "\n\n--------------------------------------------------";
   std::cout << "\n---------- TestB: MapVelocityToQDot --------------";
   std::cout << "\n--------------------------------------------------";
@@ -480,8 +477,8 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   std::cout << "\n\nquatDt from map = \n" << quatDt_map;
   std::cout << "\nquatDt exact = \n" << quatDt_exact;
   std::cout << "\n--------------------------------------------------\n";
-  EXPECT_TRUE(CompareMatrices(xyzDt_map,   xyzDt_exact, BadFix*10 * epsilon));
-  EXPECT_TRUE(CompareMatrices(quatDt_map, quatDt_exact, BadFix*10 * epsilon));
+  EXPECT_TRUE(CompareMatrices(xyzDt_map, xyzDt_exact, BadFix * 10 * epsilon));
+  EXPECT_TRUE(CompareMatrices(quatDt_map, quatDt_exact, BadFix * 10 * epsilon));
 #endif
 }
 
