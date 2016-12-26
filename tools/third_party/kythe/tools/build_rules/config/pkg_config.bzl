@@ -82,7 +82,14 @@ def _linkopts(repo_ctx, pc_args):
   if result.return_code != 0:
     return _fail(repo_ctx, "Unable to determine linkopts", result.stderr)
   stdout = result.stdout
-  return success([arg for arg in stdout.strip().split(" ") if arg])
+  args = [arg for arg in stdout.strip().split(" ") if arg]
+  # TODO(jwnimmer-tri) Hack to fix python2 CoreFoundation on OSX.
+  # Fix #4593 for real in a follow-up PR.
+  if "-framework" in args:
+    index = args.index("-framework")
+    args.pop(index)
+    args.pop(index)
+  return success(args)
 
 def _extract_prefix(flags, prefix):
   stripped, remain = [], []
