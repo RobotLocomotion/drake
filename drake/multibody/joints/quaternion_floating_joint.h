@@ -106,26 +106,26 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     // The first four rows correspond to the "G" matrix in the equation:
     // 2 G de/dt = ω, where e = [ qw qx qy qz ] are the values of the
     // unit quaternion and ω is the angular velocity vector defined in the
-    // world frame. This equation was taken from:
+    // inboard link body frame. This equation was taken from:
     // - P. Nikravesh, Computer-Aided Analysis of Mechanical Systems. Prentice
     //     Hall, New Jersey, 1988. Equation 108.
-    qdot_to_v.block(0, 0, 3, 3).setZero();
+    qdot_to_v.template block<3, 3>(0, 0).setZero();
+    qdot_to_v.template block<3, 4>(0, 3) <<  -qx,  qw,  qz, -qy,
+                                    -qy, -qz,  qw,  qx,
+                                    -qz,  qy, -qx,  qw;
 /*
     // Equation 105, for angular velocity in global frame.
     qdot_to_v.block(0, 3, 3, 4) <<  -qx,  qw, -qz,  qy,
                                     -qy,  qz,  qw, -qx,
                                     -qz, -qy,  qx,  qw;
 */
-    qdot_to_v.block(0, 3, 3, 4) <<  -qx,  qw,  qz, -qy,
-                                    -qy, -qz,  qw,  qx,
-                                    -qz,  qy, -qx,  qw;
-    qdot_to_v.block(0, 3, 3, 4) *= 2.;
+    qdot_to_v.template block<3, 4>(0, 3) *= 2.;
 
     // Next three rows correspond to rigid body translation. Transformation
     // from time derivative of generalized position to generalized velocity
     // is just the identity matrix.
-    qdot_to_v.block(3, 0, 3, 3).setIdentity();
-    qdot_to_v.block(3, 3, 3, 4).setZero();
+    qdot_to_v.template block<3, 3>(3, 0).setIdentity();
+    qdot_to_v.template block<3, 4>(3, 3).setZero();
   }
 
   /**
@@ -170,10 +170,14 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     // used in qdot2v(). Specifically, this matrix serves the function:
     // de/dt = 1/2 G' ω, where e = [ qw qx qy qz ] are the values of the
     // unit quaternion and ω is the angular velocity vector defined in the
-    // world frame. This matrix was taken from:
+    // parent link body frame. This matrix was taken from:
     // - P. Nikravesh, Computer-Aided Analysis of Mechanical Systems. Prentice
     //     Hall, New Jersey, 1988. Equation 109.
-    v_to_qdot.block(0, 0, 4, 3).setZero();
+    v_to_qdot.template block<4, 3>(0, 0).setZero();
+    v_to_qdot.template block<4, 3>(3, 0) <<  -qx, -qy, -qz,
+                                     qw, -qz,  qy,
+                                     qz,  qw, -qx,
+                                    -qy,  qx,  qw;
     /*
     // Equation 106, for angular velocity in the global frame.
     v_to_qdot.block(3, 0, 4, 3) <<  -qx, -qy, -qz,
@@ -181,17 +185,13 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
                                     -qz,  qw,  qx,
                                      qy, -qx,  qw;
     */
-    v_to_qdot.block(3, 0, 4, 3) <<  -qx, -qy, -qz,
-                                     qw, -qz,  qy,
-                                     qz,  qw, -qx,
-                                    -qy,  qx,  qw;
-    v_to_qdot.block(3, 0, 4, 3) *= 0.5;
+    v_to_qdot.template block<4, 3>(3, 0) *= 0.5;
 
     // Next three columns correspond to rigid body translation. Transformation
     // from generalized velocity to time derivative of generalized coordinates
     // is just the identity matrix.
-    v_to_qdot.block(0, 3, 3, 3).setIdentity();
-    v_to_qdot.block(3, 3, 3, 3).setZero();
+    v_to_qdot.template block<3, 3>(0, 3).setIdentity();
+    v_to_qdot.template block<3, 3>(3, 3).setZero();
   }
 
   template <typename DerivedV>
