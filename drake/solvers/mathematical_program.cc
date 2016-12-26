@@ -90,7 +90,7 @@ DecisionVariableVectorX MathematicalProgram::AddContinuousVariables(
   return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, names);
 }
 
-const DecisionVariableMatrixX MathematicalProgram::AddContinuousVariables(
+DecisionVariableMatrixX MathematicalProgram::AddContinuousVariables(
     std::size_t rows, std::size_t cols, const std::vector<std::string>& names) {
   return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, cols,
                       false, names);
@@ -105,7 +105,7 @@ DecisionVariableVectorX MathematicalProgram::AddContinuousVariables(
   return AddContinuousVariables(rows, names);
 }
 
-const DecisionVariableMatrixX MathematicalProgram::AddContinuousVariables(
+DecisionVariableMatrixX MathematicalProgram::AddContinuousVariables(
     std::size_t rows, std::size_t cols, const std::string& name) {
   std::vector<std::string> names(rows * cols);
   int count = 0;
