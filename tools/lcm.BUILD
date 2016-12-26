@@ -73,7 +73,7 @@ cc_library(
 )
 
 cc_binary(
-    name = "lcmgen",
+    name = "lcm-gen",
     srcs = [
         "lcmgen/emit_c.c",
         "lcmgen/emit_cpp.c",
