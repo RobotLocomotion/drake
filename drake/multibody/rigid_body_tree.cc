@@ -2994,14 +2994,6 @@ RigidBodyTree<double>::resolveCenterOfPressure<Vector3d, Vector3d>(
     Eigen::MatrixBase<Vector3d> const&,
     Eigen::MatrixBase<Vector3d> const&) const;
 
-// Explicit template instantiations for transformVelocityToQDot().
-template VectorX<double> RigidBodyTree<double>::transformQDotToVelocity(
-    const KinematicsCache<double>& cache, const VectorX<double>& qdot);
-
-// Explicit template instantiations for transformQDotToVelocity().
-template VectorX<double> RigidBodyTree<double>::transformVelocityToQDot(
-    const KinematicsCache<double>& cache, const VectorX<double>& v);
-
 // Explicit template instantiations for transformVelocityMappingToQDotMapping.
 template MatrixX<double>
 RigidBodyTree<double>::transformVelocityMappingToQDotMapping<VectorXd>(
