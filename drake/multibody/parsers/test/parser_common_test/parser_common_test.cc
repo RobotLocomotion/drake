@@ -62,7 +62,6 @@ GTEST_TEST(ParserCommonTest, TestGetFullPath_Absolute) {
       "/multibody/parsers/test/parser_common_test/test_file.txt";
   string full_path;
   full_path = GetFullPath(original_path);
-  // ASSERT_NO_THROW(full_path = GetFullPath(original_path));
   EXPECT_EQ(original_path, full_path);
 }
 

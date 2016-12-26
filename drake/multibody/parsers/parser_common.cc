@@ -27,9 +27,9 @@ using drake::multibody::joints::kQuaternion;
 
 std::string GetFullPath(const std::string& file_name) {
   std::string result = file_name;
-  if (result.size() == 0) {
+  if (result.empty()) {
     throw std::runtime_error("drake::parsers::GetFullPath: ERROR: file_name is "
-                             "size zero.");
+                             "empty.");
   }
 
   const std::string prefix = "/";
@@ -41,17 +41,13 @@ std::string GetFullPath(const std::string& file_name) {
       throw std::runtime_error("drake::parsers::GetFullPath: ERROR: "
           "file_name \"" + file_name + "\" is not a file.");
     }
-    if (!path.exists()) {
-      throw std::runtime_error("drake::parsers::GetFullPath: ERROR: "
-          "file_name \"" + file_name + "\" does not exist.");
-    }
   } else {
     // The specified file is a relative path. The following code obtains the
     // full path and verifies that the file exists.
     spruce::path path(".");
     path.setAsCurrent();
     path.append(file_name);
-    if (path.isFile() && path.exists()) {
+    if (path.isFile()) {
       result = path.getStr();
     } else {
       throw std::runtime_error("drake::parsers::GetFullPath: ERROR: "
