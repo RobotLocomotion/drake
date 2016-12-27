@@ -38,6 +38,16 @@ Eigen::Translation3d PoseEstimationTranslationOnly(
   std::cout << "Attempting to estimate the pose of a box w/ vertices:"
             << std::endl
             << vertices << std::endl;
+  
+  // Hard-code faces.
+  // TODO(russt/SeanCurtis-TRI): Move into the DrakeShapes::Geometry API.
+  Eigen::MatrixXi faces(4,6);
+  faces.col(0) << 1,2,5,6;  // +X
+  faces.col(1) << 0,3,4,7;  // -X
+  faces.col(2) << 0,1,2,3;  // +Y
+  faces.col(3) << 4,5,6,7;  // -Y
+  faces.col(4) << 0,1,6,7;  // +Z
+  faces.col(5) << 2,3,4,5;  // -Z
 
   drake::solvers::MathematicalProgram prog;
   auto t = prog.AddContinuousVariables<3>("t");
@@ -62,8 +72,40 @@ Eigen::Translation3d PoseEstimationTranslationOnly(
     }
   }
 
-  std::cout << "Beginning solve." << std::endl;
-  prog.Solve();
+  { // W(i,k) = 0 or W(j,k) = 0 if i,j are not on the same face.
+    Eigen::RowVectorXd A = Eigen::RowVectorXd::Ones(1+faces.cols());
+    A(0) = -1;
+    
+    drake::solvers::DecisionVariableVectorX vars(1+faces.cols());
+    
+    // Binary variables B(i,j) = 1 iff point j is on face i.
+    auto B = prog.AddBinaryVariables(faces.cols(),points.cols(),"B");
+    for (int k = 0; k < points.cols(); k++) {
+      // Sum_i B(i,k) = 1 (each point must be assigned to exactly one face).
+      prog.AddLinearConstraint(Eigen::RowVectorXd::Ones(faces.cols()), drake::Vector1d::Ones(), drake::Vector1d::Ones(),{B.col(k)});
+
+      // W(v,k) < sum_j B(j,k) for all faces j that contain vertex v.
+      for (int v = 0; v < vertices.cols(); v++) {
+        vars(0) = W(v,k);
+        for (int j = 0; j < faces.cols(); j++) {
+          vars(1+j) = B(j,k);
+          bool contains_vertex = false;
+          for (int i=0; i < faces.rows(); i++) {
+            if (faces(i,j)==v) { contains_vertex = true; }
+          }
+          A(1+j) = contains_vertex ? 1.0 : 0.0;
+        }
+        prog.AddLinearConstraint(A,drake::Vector1d::Zero(),drake::Vector1d::Ones(),{vars});
+      }
+    }
+  }
+
+  std::cout << "Beginning solve... ";
+  auto r = prog.Solve();
+  std::string solver_name;
+  int solver_result;
+  prog.GetSolverResult(&solver_name, &solver_result);
+  std::cout << "Finished. (" << solver_name << " exit code = " << static_cast<int>(r) << ")." << std::endl;
   prog.PrintSolution();
   return Eigen::Translation3d(GetSolution(t));
 }
