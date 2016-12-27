@@ -45,40 +45,106 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 /// the term defines the sense of the joint but doesn't necessarily denote an
 /// inboard body.
 ///
-/// To add a RigidBody B to a RigidBodyTree the following information must be
-/// provided:
-/// - The parent body P with its body frame, also denoted P.
-/// - A DrakeJoint connecting body B to its parent body P which we refer to as
-///   <em>body B's inboard joint</em>.
-/// - A "fixed" frame F rigidly attached to body P which describes the position
-///   of the joint in the parent frame. This is also referred to as the
-///   joint's inboard frame. This frame is provided as a transform X_PF which
-///   can be requested with DrakeJoint::get_transform_to_parent_body().
-/// - An outboard joint frame M, or "moving" frame, is implicitly defined when
-///   adding a joint. The effect of the joint's generalized coordinates `q` is
-///   to position the `M` frame with respect to the `F` frame by generating the
-///   transform `X_FM(q)`.
-/// - Without loss of generality Drake takes the body reference frame B to be
-///   coincident with the outboard frame M of its inboard joint.
-///   Therefore `B = M` and `X_FB(q) = X_FM(q)` which is computed by
-///   DrakeJoint::jointTransform().
-///   Therefore, once a RigidBodyTree is constructed, Drake's formulations do
-///   not make use of frame M. However, it is useful to think about it when
-///   adding a new RigidBody to the RigidBodyTree.
-/// - The inertial properties of the body, where the center of mass is
-///   measured and expressed in `B`.
-///   The moments of inertia are specified about Bo and are expressed in the
-///   frame of the body `B`.
+/// @section drakes_frames Drake's Frames
 ///
-/// <b>Notes on the URDF specification:</b>
+/// In the general case, when specifying a joint between the
+/// joint's inboard body P (the parent) and the joint's outboard body B (the
+/// child), The following frames are defined:
+/// - A frame on the parent body, also referred as P.
+/// - A frame on the child body, also referred as B.
+/// - A frame F rigidly attached to body P.
+/// - A frame M rigidly attached to body B.
 ///
-/// The URDF specification (http://wiki.ros.org/urdf/XML/link) defines an
-/// additional inertial frame `I` rigidly attached to `B`.
-/// The origin of the inertial frame is at the body's center of mass and thus
-/// `Io = Bcm` but `I` is not necessarily aligned with the principal axes of
-/// `B`. `<origin>` defines the inertial frame measured and expressed in body
-/// frame `B`. The moments of inertia are specified about the center of mass
-/// and expressed in `I`. Therefore the user supplies `JIo_I`.
+/// The joint desdribes the motion of frame M (the mobilized frame) measured
+/// in F (the "fixed" frame) by means of a state dependent trasnformation
+/// `X_FM(q)` with `q` the state of the joint (angle, displacement, etc.).
+/// To properly describe the configuration of this joint we need to supply:
+/// - `X_PF`, the pose of the joint's inboard frame F measured in the parent
+///   body frame P.
+/// - `X_BM`, the pose of the joint's outboard frame measured in the child body
+///   frame B.
+///
+/// Notice that it was never assumed that neither of the frames' origins is
+/// located at the center of mass of their respective bodies. In general,
+/// they will not be located at the center of mass.
+///
+/// In general, a body frame can be arbitrarily placed anywhere. A common
+/// choise, and used by Drake without loss of generality, is to make `B = M`,
+/// and thus the body frame is defined to coincide with the outboard frame of
+/// its inboard joint. Therefore in Drake we never need to specify the
+/// joint's outboard frame M. The state dependent joint's transform then
+/// becomes `X_FB(q)`, i.e. describes the configuration of the joint's
+/// outboard body frame `B` with respect to the joint's inboard frame `F`.
+///
+/// This choice of frames in Drake implies that:
+/// - Body frame `B` is <b>not</b> necessarily located at the body's center
+///   of mass, i.e. in general `Bo != Bcm`.
+/// - Spatial inertia is defined about `Bo` which in general is not the
+///   center of mass.
+/// - Center of mass is measured with respect to `B` and thus in general it
+///   is not zero.
+///
+/// In addition to measure center of mass and spatial inertias in `B`, Drake
+/// expresses them in `B`. This choice of frames implies that when defining a
+/// rigid body from inertial properties defined in a frame located at the
+/// center of mass (and probably aligned with the body's principal axes), the
+/// user will need to perform the necessary transformations to the `B` frame
+/// <b>before</b> creating the body.
+///
+/// Drake allows to access some of these transforms with:
+/// - DrakeJoint::get_transform_to_parent_body(): returns the state
+///   indpendent `X_PF`, the pose of the joint's inboard frame F measured and
+///   expressed in the parent body frame `P`.
+/// - DrakeJoint::jointTransform(): `X_FB(q)` the state dependent pose of the
+///   body frame `B` measured and expressed in `F` (recall that in Drake B = M).
+///
+/// @section urdf_frames Notes on URDF specific frames
+///
+/// The URDF specification (http://wiki.ros.org/urdf/XML/link) describes the
+/// inertia properties of a rigid body in an inertial frame `I` which is
+/// measured with respect to the outbard frame
+/// `M` of the body's inboard joint.
+/// This inertial frame is specified by an `<inertial>` element within
+/// `<link>`. Some details regarding the frames used are given here:
+///
+/// <b><inertial></b>
+///
+/// The inertia properties of the body described in a body inertial frame `I`
+/// defined by the entries below. For more information on the frames used in
+/// Drake refer to @ref drakes_frames
+///
+/// <dl>
+///   <dt>&lt;origin&gt;
+///   (optional: defaults to the identity if not specified):</dt>
+///   <dd>This is the pose `X_BI` of the inertial frame `I` measured and
+///     expressed in the body frame `B`. The origin of the inertial frame needs
+///     to be at the center of mass and thus `Io = Bcm`. The axes of the body
+///     inertial frame `I` do not need to be aligned with the principal axes
+///     of inertia.
+///     In Drake the body frame `B` coincides with the outboard frame `M` of the
+///     body's inboard joint, i.e. `B = M`.
+///   <dl>
+///     <dt>xyz (optional: defaults to the zero vector):</dt>
+///       <dd>Specifies the center of mass measured and expressed in the body
+///       frame `B`, i.e. `com_B`.</dd>
+///     <dt>rpy (optional: defaults to identity if not specified):</dt>
+///       <dd>Specifies the orientation of the inertial frame `I` with respect
+///       to the body frame `B` represented by roll, pitch and yaw angles in
+///       radians. In other words, this entry specifies the rotation matrix
+///       `R_BI`.</dd>
+///   </dl>
+///   <dt>&lt;mass&gt;</dt>
+///     <dd>The mass of the body specified by the value attribute of
+///     this element.</dd>
+///   <dt>&lt;inertia&gt;</dt>
+///     <dd>The 3x3 inertia matrix J_Io_I about the center of gravity `Io = Bcm`
+///     expressed in the inertial frame `I`.
+///     Since the inertia matrix is symmetric, only 6 above-diagonal
+///     elements of this matrix are only needed, using the attributes ixx,
+///     ixy, ixz, iyy, iyz, izz which are optional and default to zero.</dd>
+/// </dl>
+///
+/// @section sdf_frames Notes on SDF specific frames
 ///
 ///
 /// @ingroup multibody_dynamics
