@@ -122,7 +122,7 @@ class DoublePendulumFramesTest : public ::testing::Test {
 
     for (int i = 2; i < tree_->get_num_bodies(); ++i) {
       auto Bo_W = tree_->transformPoints(cache, Vector3d::Zero(), i, 0);
-      auto Bcm_B = tree_->get_body(i).get_center_of_mass_in_B();
+      auto Bcm_B = tree_->get_body(i).get_center_of_mass();
       auto Bcm_W = tree_->transformPoints(cache, Bcm_B, i, 0);
 
       PRINT_VAR(tree_->get_body(i).get_name());
