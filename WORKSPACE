@@ -59,6 +59,27 @@ new_git_repository(
     build_file = "tools/bullet.BUILD",
 )
 
+new_git_repository(
+    name = "ccd",
+    remote = "https://github.com/danfis/libccd.git",
+    commit = "16b9379fb6e8610566fe5e1396166daf7106f165",
+    build_file = "tools/ccd.BUILD",
+)
+
+new_git_repository(
+    name = "octomap",
+    remote = "https://github.com/OctoMap/octomap.git",
+    commit = "6d7c31ae4df2c93cb8a954e44d442338b58d3558",
+    build_file = "tools/octomap.BUILD",
+)
+
+new_git_repository(
+    name = "fcl",
+    remote = "https://github.com/flexible-collision-library/fcl.git",
+    commit = "06d48b3b6f3605b8caf119d5208d8156eb64fe0d",
+    build_file = "tools/fcl.BUILD",
+)
+
 # Necessary for buildifier.
 http_archive(
     name = "io_bazel_rules_go",

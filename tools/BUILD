@@ -9,6 +9,11 @@ sh_binary(
     data = ["valgrind.supp"],
 )
 
+py_binary(
+    name = "cmake_configure_file",
+    srcs = ["cmake_configure_file.py"],
+)
+
 alias(
     name = "buildifier",
     actual = "@com_github_bazelbuild_buildifier//buildifier",
