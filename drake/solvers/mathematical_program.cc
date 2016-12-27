@@ -128,8 +128,13 @@ DecisionVariableMatrixX MathematicalProgram::AddBinaryVariables(
 DecisionVariableMatrixX MathematicalProgram::AddBinaryVariables(
     size_t rows, size_t cols, const std::string& name) {
   std::vector<std::string> names = std::vector<std::string>(rows * cols);
-  for (int i = 0; i < static_cast<int>(names.size()); ++i) {
-    names[i] = name + std::to_string(i);
+  int count = 0;
+  for (int j = 0; j < static_cast<int>(cols); ++j) {
+    for (int i = 0; i < static_cast<int>(rows); ++i) {
+      names[count] =
+          name + "(" + std::to_string(i) + "," + std::to_string(j) + ")";
+      ++count;
+    }
   }
   return AddBinaryVariables(rows, cols, names);
 }
