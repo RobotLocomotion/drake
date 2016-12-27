@@ -1,3 +1,6 @@
+drake_add_cc_test(parsers_frames_test)
+target_link_libraries(parsers_frames_test drakeMultibodyParsers drakeRBM)
+
 add_executable(urdf_kinematics_test urdf_kinematics_test.cc)
 target_link_libraries(urdf_kinematics_test
     drakeMultibodyParsers

@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="SimpleDoublePendulum">
+
+  <link name="base">
+      <inertial>
+        <origin xyz="0 0.0 0" rpy="0 0 0" />
+        <mass value="1" />
+        <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+      </inertial>
+  </link>
+
+  <link name="upper_arm">
+    <inertial> 
+      <origin xyz="0 -0.5 0" rpy="0 0 0" />
+      <mass value="1" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/> 
+    </inertial>
+  </link>
+
+  <link name="lower_arm">
+      <inertial>
+        <origin xyz="0 -0.5 0" rpy="0 0 0" />
+        <mass value="1" />
+        <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+      </inertial>
+    </link>
+
+  <joint name="shaft1" type="continuous">
+    <parent link="base"/>
+    <child link="upper_arm"/>
+    <origin xyz="0 0.0 0" rpy="0 0 0" />
+    <axis xyz="0 0 1" />
+    <dynamics damping="0.1" />
+  </joint>
+
+  <joint name="shaft2" type="continuous">
+      <parent link="upper_arm"/>
+      <child link="lower_arm"/>
+      <origin xyz="0 -1.0 0" rpy="0 0 0" />
+      <axis xyz="0 0 1" />
+      <dynamics damping="0.1" />
+  </joint>
+</robot>
