@@ -6,5 +6,5 @@ target_link_libraries(parser_common_test
 drake_add_test(
     NAME parser_common_test
     COMMAND parser_common_test
-    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/multibody/parsers/test/parser_common_test")
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/../")
 

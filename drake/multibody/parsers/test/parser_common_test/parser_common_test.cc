@@ -3,6 +3,7 @@
 #include <string>
 
 #include <gtest/gtest.h>
+#include "spruce.hh"
 
 #include "drake/common/drake_path.h"
 
@@ -12,65 +13,37 @@ namespace drake {
 namespace parsers {
 namespace {
 
-// Verifies that GetFullPath() is able to obtain the full path given a relative
-// path to a file in the current working directory.
+// Verifies that GetFullPath() promotes a relative path to an absolute path,
+// and leaves already-absolute paths alone.
 GTEST_TEST(ParserCommonTest, TestGetFullPath_Relative) {
-  const string relative_path = "test_file.txt";
+  const string relative_path =
+      "drake/multibody/parsers/test/parser_common_test/test_file.txt";
+
+  // Relative path -> absolute path.
   string full_path;
   ASSERT_NO_THROW(full_path = GetFullPath(relative_path));
-  const string expected_full_path = GetDrakePath() +
-      "/multibody/parsers/test/parser_common_test/test_file.txt";
-  EXPECT_EQ(full_path, expected_full_path);
+  ASSERT_TRUE(!full_path.empty());
+  EXPECT_EQ(full_path[0], '/');
+  spruce::path spruce_full_path(full_path);
+  EXPECT_TRUE(spruce_full_path.exists());
+
+  // Absolute path unchanged.
+  string full_path_idempotent;
+  ASSERT_NO_THROW(full_path_idempotent = GetFullPath(full_path));
+  EXPECT_EQ(full_path_idempotent, full_path);
 }
 
-// Verifies that GetFullPath() throws an exception if it is given a relative
-// path to a non-existent file in the current working directory.
-GTEST_TEST(ParserCommonTest, TestGetFullPathToNonexistentRelativeFile) {
-  const string relative_path = "nonexistent_file.txt";
-  EXPECT_THROW(GetFullPath(relative_path), std::runtime_error);
-}
-
-// Verifies that GetFullPath() is able to obtain the full path given a relative
-// path to a file in a subdirectory within the current working directory.
-GTEST_TEST(ParserCommonTest, TestGetFullPath_RelativeSubdir) {
-  const string relative_path = "subdirectory/nested_file.txt";
-  string full_path;
-  ASSERT_NO_THROW(full_path = GetFullPath(relative_path));
-  const string expected_full_path = GetDrakePath() +
-      "/multibody/parsers/test/parser_common_test/subdirectory/nested_file.txt";
-  EXPECT_EQ(full_path, expected_full_path);
-}
-
-// Verifies that GetFullPath() throws an exception if it is given a relative
-// path to a non-existent file in subdirectory within the current working
-// directory.
-GTEST_TEST(ParserCommonTest, TestGetFullPathToNonexistentRelativeSubdirFile) {
-  const string relative_path = "subdirectory/nonexistent_file.txt";
-  EXPECT_THROW(GetFullPath(relative_path), std::runtime_error);
-}
-
-// Verifies that GetFullPath() throws an exception if it is given a relative
-// path of "".
+// Verifies that GetFullPath() throws when given a relative path to a
+// non-existent file.
 GTEST_TEST(ParserCommonTest, TestGetFullPathToNonexistentFile) {
+  const string relative_path =
+      "drake/multibody/parsers/test/parser_common_test/nonexistent_file.txt";
+  EXPECT_THROW(GetFullPath(relative_path), std::runtime_error);
+}
+
+// Verifies that GetFullPath() throws when given an empty path.
+GTEST_TEST(ParserCommonTest, TestGetFullPathOfEmptyPath) {
   EXPECT_THROW(GetFullPath(""), std::runtime_error);
-}
-
-// Verifies that GetFullPath() leaves the path alone if it is already a valid
-// full path.
-GTEST_TEST(ParserCommonTest, TestGetFullPath_Absolute) {
-  const string original_path = GetDrakePath() +
-      "/multibody/parsers/test/parser_common_test/test_file.txt";
-  string full_path;
-  full_path = GetFullPath(original_path);
-  EXPECT_EQ(original_path, full_path);
-}
-
-// Verifies that GetFullPath() throws an exception if it is given a relative
-// path to a non-existent file.
-GTEST_TEST(ParserCommonTest, TestGetFullPathToNonexistentAbsoluteFile) {
-  const string original_path = GetDrakePath() +
-      "/multibody/parsers/test/parser_common_test/nonexistent_file.txt";
-  EXPECT_THROW(GetFullPath(original_path), std::runtime_error);
 }
 
 }  // namespace
