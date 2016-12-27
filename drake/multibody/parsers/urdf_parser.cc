@@ -1167,13 +1167,13 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
 
 ModelInstanceIdTable AddModelInstanceFromUrdfFileWithRpyJointToWorld(
     const string& filename, RigidBodyTree<double>* tree) {
-  // Aborts if any of the output parameter pointers are invalid.
-  DRAKE_DEMAND(tree);
+  DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
+  const string full_path_filename = GetFullPath(filename);
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(filename);
+  package_map.PopulateUpstreamToDrake(full_path_filename);
   return AddModelInstanceFromUrdfFileSearchingInRosPackages(
-      filename, package_map, kRollPitchYaw, nullptr /* weld_to_frame */,
-      tree);
+      full_path_filename, package_map, kRollPitchYaw,
+      nullptr /* weld_to_frame */, tree);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
@@ -1185,13 +1185,13 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(const string& filename,
 ModelInstanceIdTable AddModelInstanceFromUrdfFileToWorld(
     const string& filename, const FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree) {
-  // Aborts if any of the output parameter pointers are invalid.
-  DRAKE_DEMAND(tree);
+  DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
+  const string full_path_filename = GetFullPath(filename);
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(filename);
+  package_map.PopulateUpstreamToDrake(full_path_filename);
   return AddModelInstanceFromUrdfFileSearchingInRosPackages(
-      filename, package_map, floating_base_type, nullptr /*weld_to_frame*/,
-      tree);
+      full_path_filename, package_map, floating_base_type,
+      nullptr /*weld_to_frame*/, tree);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
@@ -1206,12 +1206,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const string& filename, const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
-  // Aborts if any of the output parameter pointers are invalid.
-  DRAKE_DEMAND(tree);
+  DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
+  const string full_path_filename = GetFullPath(filename);
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(filename);
+  package_map.PopulateUpstreamToDrake(full_path_filename);
   return AddModelInstanceFromUrdfFileSearchingInRosPackages(
-      filename, package_map, floating_base_type, weld_to_frame, tree);
+      full_path_filename, package_map, floating_base_type, weld_to_frame, tree);
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
@@ -1219,8 +1219,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
-  // Aborts if any of the output parameter pointers are invalid.
-  DRAKE_DEMAND(tree);
+  DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
 
   // Opens the URDF file and feeds it into the XML parser.
   XMLDocument xml_doc;

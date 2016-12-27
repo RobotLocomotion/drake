@@ -861,9 +861,10 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileToWorld(
     const string& filename, const FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree) {
   DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
+  const string full_path_filename = GetFullPath(filename);
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(filename);
-  return AddModelInstancesFromSdfFileSearchingInRosPackages(filename,
+  package_map.PopulateUpstreamToDrake(full_path_filename);
+  return AddModelInstancesFromSdfFileSearchingInRosPackages(full_path_filename,
       package_map, floating_base_type, nullptr /* weld_to_frame */, tree);
 }
 
@@ -882,9 +883,10 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
   DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
+  const string full_path_filename = GetFullPath(filename);
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(filename);
-  return AddModelInstancesFromSdfFileSearchingInRosPackages(filename,
+  package_map.PopulateUpstreamToDrake(full_path_filename);
+  return AddModelInstancesFromSdfFileSearchingInRosPackages(full_path_filename,
       package_map, floating_base_type, weld_to_frame, tree);
 }
 

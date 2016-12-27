@@ -307,8 +307,8 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * meet these requirements should instead use
  * AddModelInstanceFromUrdfFileSearchingInRosPackages().
  *
- * @param[in] urdf_filename The name of the file containing the URDF model. A
- * new instance of this model is created and added to @p tree.
+ * @param[in] urdf_filename The name of the file containing the URDF model.
+ * A new instance of this model is created and added to @p tree.
  *
  * @param[in] floating_base_type The type of joint that connects the model
  * instance's root to the @p tree.
