@@ -190,9 +190,15 @@ TEST_F(DoublePendulumFramesTest, SDFTestWhereLequalsB) {
   RunTest(12.0, -18.0);
 }
 
+// The following tests are commented out since they fail to pass even when
+// Drake sdf parser is supposed to handle these cases well.
 #if 0
-TEST_F(DoublePendulumFramesTest, SDFTesSpecifyFinDframe) {
-  LoadTreeFrom("simple_pendulum_SpecifyFinDframe.sdf");
+// In this case the frame L for the lower arm is specified to be half way
+// through between the body frame B and the inertial frame I.
+// Since the link inboard frame is specified in the link's frame L, the
+// <pose> entry for joint "shaft2" must be specified accordingly.
+TEST_F(DoublePendulumFramesTest, SDFTestLbetweenBandI) {
+  LoadTreeFrom("simple_pendulum_LbetweenBandI.sdf");
 
   EXPECT_EQ(tree_->get_num_bodies(), 4);
   EXPECT_EQ(tree_->get_num_positions(), 2);
@@ -200,9 +206,9 @@ TEST_F(DoublePendulumFramesTest, SDFTesSpecifyFinDframe) {
 
   // Expected poses for the zero state configuration.
   RunTest(0.0, 0.0);
-  //RunTest(0.0, 45.0);
-  //RunTest(45.0, 0.0);
-  //RunTest(12.0, -18.0);
+  RunTest(0.0, 45.0);
+  RunTest(45.0, 0.0);
+  RunTest(12.0, -18.0);
 }
 #endif
 
