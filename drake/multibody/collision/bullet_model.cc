@@ -190,8 +190,8 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletStaticMeshShape(
   btTriangleMesh* mesh_interface = new btTriangleMesh();
 
   // Preallocates memory.
-  int num_triangles = triangles.size();
-  int num_vertices = vertices.size();
+  int num_triangles = static_cast<int>(triangles.size());
+  int num_vertices = static_cast<int>(vertices.size());
 
   mesh_interface->preallocateIndices(num_triangles);
   mesh_interface->preallocateVertices(num_vertices);
@@ -392,10 +392,10 @@ std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
       kPerturbationIterations, kMinimumPointsPerturbationThreshold);
   std::vector<PointPair> point_pairs;
   bt_world.bt_collision_world->performDiscreteCollisionDetection();
-  size_t numManifolds =
+  int numManifolds =
       bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
 
-  for (size_t i = 0; i < numManifolds; i++) {
+  for (int i = 0; i < numManifolds; i++) {
     btPersistentManifold* contact_manifold =
         bt_world.bt_collision_world->getDispatcher()
             ->getManifoldByIndexInternal(i);
@@ -420,9 +420,9 @@ std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
     if (shapeB == DrakeShapes::MESH || shapeB == DrakeShapes::BOX) {
       marginB = obB->getCollisionShape()->getMargin();
     }
-    size_t num_contacts = contact_manifold->getNumContacts();
+    int num_contacts = contact_manifold->getNumContacts();
 
-    for (size_t j = 0; j < num_contacts; j++) {
+    for (int j = 0; j < num_contacts; j++) {
       btManifoldPoint& pt = contact_manifold->getContactPoint(j);
       const btVector3& normal_on_B = pt.m_normalWorldOnB;
       const btVector3& point_on_A_in_world =
