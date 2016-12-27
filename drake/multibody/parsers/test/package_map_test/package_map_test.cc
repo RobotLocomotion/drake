@@ -1,5 +1,7 @@
 #include "drake/multibody/parsers/package_map.h"
 
+#include <algorithm>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
