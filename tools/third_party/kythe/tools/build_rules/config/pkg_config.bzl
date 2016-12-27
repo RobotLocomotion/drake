@@ -82,7 +82,23 @@ def _linkopts(repo_ctx, pc_args):
   if result.return_code != 0:
     return _fail(repo_ctx, "Unable to determine linkopts", result.stderr)
   stdout = result.stdout
-  return success([arg for arg in stdout.strip().split(" ") if arg])
+  args = [arg for arg in stdout.strip().split(" ") if arg]
+  # Bazel "linkopts=" must be either switches ("-foo"), variables ("$(FOO)"),
+  # or labels ("foo").  We should only get switches from `pkg-config --libs`.
+  # However, sometimes it produces "-framework CoreFoundation" or similar,
+  # which is *supposed* to be a single switch, but our split heuristic chopped
+  # it up.  We recombine non-switch args with their preceeding arg as a repair.
+  # We process args in reserve order to keep our loop index unchanged by a pop.
+  for i in reversed(range(len(args))):
+    # Switches stay put.
+    if args[i].startswith("-"):
+      continue
+    # A non-switch arg should be recombined with the preceding arg.
+    non_switch_arg = args.pop(i)
+    if i == 0:
+      _fail()
+    args[i - 1] += " " + non_switch_arg
+  return success(args)
 
 def _extract_prefix(flags, prefix):
   stripped, remain = [], []
