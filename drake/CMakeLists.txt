@@ -125,17 +125,15 @@ if(lcm_FOUND)
   list(APPEND drake_jar_requires lcm-java lcmtypes_drake-java)
 
   # add lcmgl
-  # annoyingly, libbot does not define a classpath variable. there might be a cleaner way to do this
-  execute_process(COMMAND pkg-config --variable=prefix bot2-lcmgl-client OUTPUT_VARIABLE LCMGL_BUILD_DIR)
-  if(NOT LCMGL_BUILD_DIR)
+  # libbot does not define a classpath variable. there might be a cleaner way to do this
+  if(NOT bot2-lcmgl-client_PREFIX)  # Set by drake_find_package(... PKG_CONFIG)
     message("
   --------------------------------------------------------------------------------
     *** IMPORTANT: bot2-lcmgl build directory not found. ***
   --------------------------------------------------------------------------------
     ")
   else()
-    string(STRIP ${LCMGL_BUILD_DIR} LCMGL_BUILD_DIR)
-    find_jar(LCMGL_JAR_FILE bot2-lcmgl PATHS "${LCMGL_BUILD_DIR}/share/java/")
+    find_jar(LCMGL_JAR_FILE bot2-lcmgl PATHS "${bot2-lcmgl-client_PREFIX}/share/java/")
     if(NOT LCMGL_JAR_FILE)
       message(FATAL_ERROR "
   --------------------------------------------------------------------------------
