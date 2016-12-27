@@ -128,11 +128,16 @@ void PackageMap::AddPackageIfNew(const string& package_name,
   }
 }
 
+namespace {
+
 // Returns true if and only if string @p a ends with string @p b.
 bool StringEndsWith(const std::string& a, const std::string& b) {
   if (b.size() > a.size()) return false;
   return std::equal(a.begin() + a.size() - b.size(), a.end(), b.begin());
 }
+
+}  // namespace
+
 void PackageMap::PopulateUpstreamToDrakeHelper(const string& directory) {
   DRAKE_DEMAND(!directory.empty());
   if (HasPackageXmlFile(directory)) {
