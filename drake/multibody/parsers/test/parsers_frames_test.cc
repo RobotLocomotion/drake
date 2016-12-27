@@ -163,7 +163,7 @@ TEST_F(DoublePendulumFramesTest, URDFTest) {
   EXPECT_EQ(tree_->get_num_positions(), 2);
   EXPECT_EQ(tree_->get_num_velocities(), 2);
 
-  // Expected poses for the zero state configuration.
+  // Runs a number of tests for different joint angles in degrees.
   RunTest(0.0, 0.0);
   RunTest(0.0, 45.0);
   RunTest(45.0, 0.0);
@@ -183,7 +183,26 @@ TEST_F(DoublePendulumFramesTest, SDFTestWhereLequalsB) {
   EXPECT_EQ(tree_->get_num_positions(), 2);
   EXPECT_EQ(tree_->get_num_velocities(), 2);
 
-  // Expected poses for the zero state configuration.
+  // Runs a number of tests for different joint angles in degrees.
+  RunTest(0.0, 0.0);
+  RunTest(0.0, 45.0);
+  RunTest(45.0, 0.0);
+  RunTest(12.0, -18.0);
+}
+
+// In this case the link frame L for "lower_arm" is not specified (no
+// <pose> entry is given for this link).
+// Therefore the parser makes L = F where frame F is specified by a <pose> in
+// the joint "shaft2" expressed in the model frame D, i.e. <pose> is giving
+// X_DF for "shaft2".
+TEST_F(DoublePendulumFramesTest, SDFTestLisNotSpecified) {
+  LoadTreeFrom("simple_pendulum_LisNotSpecified.sdf");
+
+  EXPECT_EQ(tree_->get_num_bodies(), 4);
+  EXPECT_EQ(tree_->get_num_positions(), 2);
+  EXPECT_EQ(tree_->get_num_velocities(), 2);
+
+  // Runs a number of tests for different joint angles in degrees.
   RunTest(0.0, 0.0);
   RunTest(0.0, 45.0);
   RunTest(45.0, 0.0);
@@ -204,7 +223,7 @@ TEST_F(DoublePendulumFramesTest, SDFTestLbetweenBandI) {
   EXPECT_EQ(tree_->get_num_positions(), 2);
   EXPECT_EQ(tree_->get_num_velocities(), 2);
 
-  // Expected poses for the zero state configuration.
+  // Runs a number of tests for different joint angles in degrees.
   RunTest(0.0, 0.0);
   RunTest(0.0, 45.0);
   RunTest(45.0, 0.0);
@@ -224,7 +243,7 @@ TEST_F(DoublePendulumFramesTest, SDFTestLequalsI) {
   EXPECT_EQ(tree_->get_num_positions(), 2);
   EXPECT_EQ(tree_->get_num_velocities(), 2);
 
-  // Expected poses for the zero state configuration.
+  // Runs a number of tests for different joint angles in degrees.
   RunTest(0.0, 0.0);
   RunTest(0.0, 45.0);
   RunTest(45.0, 0.0);

@@ -1,0 +1,92 @@
+<sdf version='1.5'>
+  <model name='SimpleDoublePendulum'>
+    <!-- This specifies the model frame D expressed in W, i.e. X_WD -->
+    <pose frame=''>0 0 0 0 0 0</pose>
+
+    <link name='base'>
+      <!-- This specifies X_DL. -->
+      <pose frame=''>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 0 0</pose>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0</iyy>
+          <iyz>0</iyz>
+          <izz>0</izz>
+        </inertia>
+      </inertial>
+    </link>
+
+    <link name='upper_arm'>
+      <!-- This specifies X_DL.
+           Explicitly make it to be at Bo.-->
+      <pose frame=''>0 0.0 0 0 0 0</pose>
+      <inertial>
+        <!-- This specifies X_LI. -->
+        <pose frame=''>0 -0.5 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0</iyy>
+          <iyz>0</iyz>
+          <izz>0</izz>
+        </inertia>
+      </inertial>
+    </link>
+
+    <link name='lower_arm'>
+      <!-- This specifies X_DL. When L is not specified, the parsers makes L = F
+       when parsing the joint. The parser will then expect F to be expressed in
+       the model frame D-->
+      <!-- <pose>0 0 0 0 0 0</pose> -->
+      <inertial>
+        <!-- This specifies X_LI. -->
+        <pose frame=''>0 -0.5 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0</iyy>
+          <iyz>0</iyz>
+          <izz>0</izz>
+        </inertia>
+      </inertial>
+    </link>
+
+    <joint name='shaft1' type='revolute'>
+      <parent>base</parent>
+      <child>upper_arm</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <!-- The default is the axis expressed in the inboard frame F. -->
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+
+    <joint name='shaft2' type='revolute'>
+      <parent>upper_arm</parent>
+      <child>lower_arm</child>
+      <!-- Pose of the link frame F -->
+      <!-- When its outboard link frame L was defined by the
+           corresponding <link>, F is expressed in L, i.e. <pose> specifies
+           X_LF.
+           When its outboard frame link L was NOT specified, F is expressed
+           in the model frame D, i.e. <pose> specifies X_DF. -->
+      <!-- In this case the outboard link frame L was not specified and
+      therefore <pose> is giving X_DF -->
+      <pose>0 -1.0 0 0 0 0</pose>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <!-- The default is the axis expressed in the inboard frame F. -->
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+
+  </model>
+</sdf>
