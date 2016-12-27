@@ -163,5 +163,5 @@ void originAttributesToTransform(
 void poseValueToTransform(
     tinyxml2::XMLElement* node, const PoseMap& pose_map,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    Eigen::Isometry3d& T,
-    const Eigen::Isometry3d& T_default_frame = Eigen::Isometry3d::Identity());
+    Eigen::Isometry3d& X_AB,
+    const Eigen::Isometry3d& X_CA = Eigen::Isometry3d::Identity());

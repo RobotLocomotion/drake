@@ -694,21 +694,25 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
         std::to_string(model_instance_id) + ".");
   }
 
-  Isometry3d transform_to_parent_body = Isometry3d::Identity();
+  // Obtain pose of the joint's inboard frame F measured and expressed in the
+  // parent body's frame P.
+  Isometry3d X_PF = Isometry3d::Identity();
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin) {
-    originAttributesToTransform(origin, transform_to_parent_body);
+    originAttributesToTransform(origin, X_PF);
   }
 
-  Vector3d axis;
-  axis << 1, 0, 0;
+  // Joint's axis expressed in the join's inboard frame F. In this frame the
+  // axis is constant.
+  Vector3d axis_F;
+  axis_F << 1, 0, 0;
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && type.compare("fixed") != 0 &&
       type.compare("floating") != 0) {
-    parseVectorAttribute(axis_node, "xyz", axis);
-    if (axis.norm() < 1e-8)
+    parseVectorAttribute(axis_node, "xyz", axis_F);
+    if (axis_F.norm() < 1e-8)
       throw runtime_error("ERROR: axis is zero.  don't do that");
-    axis.normalize();
+    axis_F.normalize();
   }
 
   // now construct the actual joint (based on its type)
@@ -716,20 +720,20 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
 
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
     FixedAxisOneDoFJoint<RevoluteJoint>* fjoint =
-        new RevoluteJoint(name, transform_to_parent_body, axis);
+        new RevoluteJoint(name, X_PF, axis_F);
     SetDynamics(node, fjoint);
     SetLimits(node, fjoint);
     joint = fjoint;
   } else if (type.compare("fixed") == 0) {
-    joint = new FixedJoint(name, transform_to_parent_body);
+    joint = new FixedJoint(name, X_PF);
   } else if (type.compare("prismatic") == 0) {
     FixedAxisOneDoFJoint<PrismaticJoint>* fjoint =
-        new PrismaticJoint(name, transform_to_parent_body, axis);
+        new PrismaticJoint(name, X_PF, axis_F);
     SetDynamics(node, fjoint);
     SetLimits(node, fjoint);
     joint = fjoint;
   } else if (type.compare("floating") == 0) {
-    joint = new RollPitchYawFloatingJoint(name, transform_to_parent_body);
+    joint = new RollPitchYawFloatingJoint(name, X_PF);
   } else {
     throw runtime_error("ERROR: Unrecognized joint type: " + type);
   }

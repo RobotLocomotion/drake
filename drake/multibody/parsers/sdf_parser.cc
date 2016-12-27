@@ -61,37 +61,59 @@ void ParseSdfInertial(
     RigidBody<double>* body, XMLElement* node, RigidBodyTree<double>* model,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     PoseMap& pose_map,
-    const Isometry3d& T_link) {
-  Isometry3d T = T_link;
+    const Isometry3d& X_DL) {
+  // <pose> within <inertial> defines the inertial frame I measured and
+  // expressed in the link frame L by the transform X_LI.
+  // The inertial frame pose in D is given by X_DI = X_DL * X_LI.
+  // If no <pose> is found within <inertial>, by default X_LI = Id is assumed
+  // (i.e. X_DI = X_DL).
+  Isometry3d X_DI = X_DL;
   XMLElement* pose = node->FirstChildElement("pose");
-  if (pose) poseValueToTransform(pose, pose_map, T, T_link);
+  // pose_map is not used in the call below since logic to parse attribute
+  // "frame" from <pose> in poseValueToTransform() is dead code.
+  // This call to poseValueToTransform() parses X_LI from <pose>
+  // within <inertial> and makes X_DI = X_DL * X_LI.
+  if (pose) poseValueToTransform(pose, pose_map, X_DI, X_DL);
 
   double mass = {0};
   parseScalarValue(node, "mass", mass);
   body->set_mass(mass);
 
-  Eigen::Vector3d com;
-  com = T_link.inverse() * T.translation();
-  body->set_center_of_mass_in_B(com);
+  Eigen::Vector3d com_L;
+  // com_D = X_DI.translation() since Io = Bcm.
+  // Therefore, com_L = X_LD * com_D = X_DL.inverse() * com_D.
+  com_L = X_DL.inverse() * X_DI.translation();
+  // TODO(amcastro-tri): We are using here RigidBody as an IR to save the com
+  // in the link's frame L as a com in the B frame. The conversion to the
+  // actual B frame happens later in ParseSdfJoint() when the joint frames are
+  // available.
+  body->set_center_of_mass_in_B(com_L);
 
-  drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
-  I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
+  // Spatial inertia about Io expressed in I.
+  drake::SquareTwistMatrix<double> I_Io_I =
+      drake::SquareTwistMatrix<double>::Zero();
+  I_Io_I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
 
   XMLElement* inertia = node->FirstChildElement("inertia");
   if (inertia) {
-    parseScalarValue(inertia, "ixx", I(0, 0));
-    parseScalarValue(inertia, "ixy", I(0, 1));
-    I(1, 0) = I(0, 1);
-    parseScalarValue(inertia, "ixz", I(0, 2));
-    I(2, 0) = I(0, 2);
-    parseScalarValue(inertia, "iyy", I(1, 1));
-    parseScalarValue(inertia, "iyz", I(1, 2));
-    I(2, 1) = I(1, 2);
-    parseScalarValue(inertia, "izz", I(2, 2));
+    parseScalarValue(inertia, "ixx", I_Io_I(0, 0));
+    parseScalarValue(inertia, "ixy", I_Io_I(0, 1));
+    I_Io_I(1, 0) = I_Io_I(0, 1);
+    parseScalarValue(inertia, "ixz", I_Io_I(0, 2));
+    I_Io_I(2, 0) = I_Io_I(0, 2);
+    parseScalarValue(inertia, "iyy", I_Io_I(1, 1));
+    parseScalarValue(inertia, "iyz", I_Io_I(1, 2));
+    I_Io_I(2, 1) = I_Io_I(1, 2);
+    parseScalarValue(inertia, "izz", I_Io_I(2, 2));
   }
 
+  // Transforms I_Io_I to I_Lo_L.
+  // TODO(amcastro-tri): We are using here RigidBody as an IR to save the
+  // spatial inertia in the link's frame L as a spatial inertia in the B frame.
+  // The conversion to the actual B frame happens later in ParseSdfJoint()
+  // when the joint frames are available.
   body->set_spatial_inertia_in_B(transformSpatialInertia(
-      T_link.inverse() * T, I));
+      X_DL.inverse() * X_DI, I_Io_I));
 }
 
 bool ParseSdfGeometry(XMLElement* node, const PackageMap& package_map,
@@ -327,29 +349,34 @@ bool ParseSdfLink(RigidBodyTree<double>* model, string model_name,
         ": ERROR: Do not name a link 'world' because it is a reserved name.");
   }
 
-  Isometry3d transform_to_model = Isometry3d::Identity();
+  // Pose of the link measured and expressed in the model's frame D.
+  // Frame L is not located at a joint outboard frame M nor located at the
+  // center of mass Bcm.
+  Isometry3d X_DL = Isometry3d::Identity();
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose) {
-    poseValueToTransform(pose, pose_map, transform_to_model);
+    poseValueToTransform(pose, pose_map, X_DL);
     pose_map.insert(
-        std::pair<string, Isometry3d>(body->get_name(), transform_to_model));
+        std::pair<string, Isometry3d>(body->get_name(), X_DL));
   }
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
   if (inertial_node)
-    ParseSdfInertial(body, inertial_node, model, pose_map, transform_to_model);
+    // Note: pose_map is not used in this call due to some dead code in
+    // poseValueToTransform().
+    ParseSdfInertial(body, inertial_node, model, pose_map, X_DL);
 
   for (XMLElement* visual_node = node->FirstChildElement("visual"); visual_node;
        visual_node = visual_node->NextSiblingElement("visual")) {
     ParseSdfVisual(body, visual_node, model, package_map, root_dir, pose_map,
-                   transform_to_model);
+                   X_DL);
   }
 
   for (XMLElement* collision_node = node->FirstChildElement("collision");
        collision_node;
        collision_node = collision_node->NextSiblingElement("collision")) {
     ParseSdfCollision(body, collision_node, model, package_map, root_dir,
-                      pose_map, transform_to_model);
+                      pose_map, X_DL);
   }
 
   model->add_rigid_body(std::move(owned_body));
@@ -492,63 +519,74 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
                         child_name + ".");
   }
 
-  Isometry3d transform_child_to_model = Isometry3d::Identity(),
-             transform_parent_to_model = Isometry3d::Identity();
+  // Pose of the link frame L in expressed in the model frame D.
+  Isometry3d X_DL = Isometry3d::Identity(),
+             X_DLp = Isometry3d::Identity();
 
-  // Obtain the child-to-model frame transformation.
+  // Obtain the pose of the child link frame L in the model frame D.
+  // This was saved by the call to ParseSdfLink().
   if (pose_map.find(child_name) != pose_map.end())
-    transform_child_to_model = pose_map.at(child_name);
+    X_DL = pose_map.at(child_name);
 
-  // Obtain the parent-to-model frame transformation.
+  // Obtain the pose of the parent link frame Lp in the model frame D.
+  // This was saved by the call to ParseSdfLink().
   if (pose_map.find(parent_name) != pose_map.end())
-    transform_parent_to_model = pose_map.at(parent_name);
+    X_DLp = pose_map.at(parent_name);
 
-  // By default, a joint is defined in the child's coordinate frame.
+  // By default, the joint inboard frame F is assumed to be the child link
+  // frame L, i.e. F = L.
   // This was determined by studying valid SDF files available at:
   // https://bitbucket.org/osrf/gazebo_models/src
-  Isometry3d transform_to_model = transform_child_to_model;
+  Isometry3d X_DF = X_DL;
 
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose) {
-    // Read the joint's pose using the child link's coordinate frame by default.
-    poseValueToTransform(pose, pose_map, transform_to_model,
-                         transform_child_to_model);
+    // Read the pose of the joint inboard frame F measured and expressed in
+    // the link's frame L. By means of the supplied pose of L in D,
+    // poseValueToTransform() expresses F in D as: X_DF = X_DL * X_LF.
+    poseValueToTransform(pose, pose_map, X_DF, X_DL);
   }
 
   if (pose_map.find(child_name) == pose_map.end()) {
     // The child link is not in the pose map. Thus, this joint actually defines
     // the pose of a previously-unspecified link frame. Adds this link's
     // transform to the model coordinate frame to the pose map.
-    pose_map.insert(pair<string, Isometry3d>(child_name, transform_to_model));
+    // In other words, here we assume L = F.
+    pose_map.insert(pair<string, Isometry3d>(child_name, X_DF));
   }
 
-  Vector3d axis;
-  axis << 1, 0, 0;
+  Vector3d axis_F;
+  axis_F << 1, 0, 0;
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && type.compare("fixed") != 0 &&
       type.compare("floating") != 0) {
-    parseVectorValue(axis_node, "xyz", axis);
-    if (axis.norm() < 1e-8) {
+    parseVectorValue(axis_node, "xyz", axis_F);
+    if (axis_F.norm() < 1e-8) {
       throw runtime_error(string(__FILE__) + ": " + __func__ +
                           ": ERROR: No axis specified.");
     }
-    axis.normalize();
+    axis_F.normalize();
     double in_parent_model_frame;
     if (parseScalarValue(axis_node, "use_parent_model_frame",
                          in_parent_model_frame) &&
         in_parent_model_frame > 0.0) {
       // The joint's axis of rotation should be interpreted as being in the
-      // model coordinate frame. To be compatible with Drake, the joint's axis
-      // must be defined in the joint's coordinate frame. Since we are
+      // model coordinate frame D. To be compatible with Drake, the joint's axis
+      // must be defined in the joint's inboard frame F. Since we are
       // transforming the frame of an axis and not a point, we only want to
-      // use the linear (rotational) part of the transform_to_model matrix.
-      axis = transform_to_model.linear().inverse() * axis;
+      // use the linear (rotational) part of the X_DF matrix.
+      axis_F = X_DF.linear().inverse() * axis_F;
     }
   }
 
   // Obtain the transform from the joint frame to the parent link's frame.
-  Isometry3d transform_to_parent_body =
-      transform_parent_to_model.inverse() * transform_to_model;
+  // TODO(liang-fok): Fix this bug. Here we are assuming Lp = P when in
+  // reality the paren't link frame does not necessarily coincide with tha
+  // actual parent frame. In Drake a body frame coincides with the outboard
+  // frame M of its inboard joint.
+  // Does the SDF parser work when L is not specified to be at the joint
+  // frame F?
+  Isometry3d X_LpF = X_DLp.inverse() * X_DF;
 
   if (child->has_parent_body()) {
     // ... then implement it as a loop joint.
@@ -572,10 +610,10 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
 
     // Get the loop point in the parent's reference frame.
     Eigen::Vector3d loop_point_model =
-        transform_child_to_model * loop_point_child;
+        X_DL * loop_point_child;
 
     Eigen::Vector3d loop_point_parent =
-        transform_parent_to_model.inverse() * loop_point_model;
+        X_DLp.inverse() * loop_point_model;
 
     auto frameA = allocate_shared<RigidBodyFrame<double>>(
         Eigen::aligned_allocator<RigidBodyFrame<double>>(),
@@ -589,21 +627,25 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
 
     model->addFrame(frameA);
     model->addFrame(frameB);
-    RigidBodyLoop<double> l(frameA, frameB, axis);
+    RigidBodyLoop<double> l(frameA, frameB, axis_F);
     model->loops.push_back(l);
 
     // This log statement is required for users to work around #3673, and can
     // be removed when that issue is resolved.
     drake::log()->info("Made joint {} a loop joint.", name);
   } else {
-    // Update the reference frames of the child link's inertia, visual,
-    // and collision elements to be this joint's frame.
-    child->ApplyTransformToJointFrame(transform_to_model.inverse() *
-                                      transform_child_to_model);
+    // Update the reference frames of the child link's inertia and visual
+    // elements to be this joint's frame.
+    // Method ParseSdfLink() saved com and spatial inertia measured and
+    // expressed in the link frame L. Therefore we need to transform to the
+    // body frame B (B = M) using transform
+    // X_BL = X_BD * X_DL = X_DF.inverse() * X_DL, where we used the fact
+    // that at the zero configuration B = M = F.
+    child->ApplyTransformToJointFrame(X_DF.inverse() * X_DL);
 
     for (const auto& c : child->get_collision_element_ids()) {
       if (!model->transformCollisionFrame(
-              c, transform_to_model.inverse() * transform_child_to_model)) {
+              c, X_DF.inverse() * X_DL)) {
         stringstream ss;
         ss << string(__FILE__) << ": " << __func__
            << ": ERROR: Collision element with ID " << c
@@ -617,13 +659,15 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
 
     // Update pose_map with child's new frame, which is now the same as this
     // joint's frame.
+    // TODO(liang-fok): this code does not seem right. Is it assuming that
+    // joints in the file are specified in a tree order? what if they are not?
     auto it = pose_map.find(child_name);
     if (it != pose_map.end()) {
-      it->second = transform_to_model;
+      it->second = X_DF;
     } else {
       throw runtime_error(
           string(__FILE__) + ": " + __func__ +
-          ": ERROR: Unable to update transform_to_model of link " + child_name +
+          ": ERROR: Unable to update X_DF of link " + child_name +
           ".");
     }
 
@@ -632,7 +676,7 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
 
     if (type.compare("revolute") == 0 || type.compare("gearbox") == 0) {
       FixedAxisOneDoFJoint<RevoluteJoint>* fjoint =
-          new RevoluteJoint(name, transform_to_parent_body, axis);
+          new RevoluteJoint(name, X_LpF, axis_F);
       if (axis_node) {
         setSDFDynamics(model, axis_node, fjoint);
         setSDFLimits(axis_node, fjoint);
@@ -652,10 +696,10 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
       joint = fjoint;
 
     } else if (type.compare("fixed") == 0) {
-      joint = new FixedJoint(name, transform_to_parent_body);
+      joint = new FixedJoint(name, X_LpF);
     } else if (type.compare("prismatic") == 0) {
       FixedAxisOneDoFJoint<PrismaticJoint>* fjoint =
-          new PrismaticJoint(name, transform_to_parent_body, axis);
+          new PrismaticJoint(name, X_LpF, axis_F);
       if (axis_node) {
         setSDFDynamics(model, axis_node, fjoint);
         setSDFLimits(axis_node, fjoint);
@@ -670,7 +714,7 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
         model->actuators.push_back(actuator);
       }
     } else if (type.compare("floating") == 0) {
-      joint = new RollPitchYawFloatingJoint(name, transform_to_parent_body);
+      joint = new RollPitchYawFloatingJoint(name, X_LpF);
     } else {
       throw runtime_error(string(__FILE__) + ": " + __func__ +
                           ": ERROR: Unrecognized joint type: " + type + ".");
