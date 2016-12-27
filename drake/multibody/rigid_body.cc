@@ -272,7 +272,7 @@ double RigidBody<T>::get_mass() const {
 
 template <typename T>
 void RigidBody<T>::set_center_of_mass_in_B(
-    const Eigen::Vector3d &center_of_mass) {
+    const Eigen::Vector3d& center_of_mass) {
   center_of_mass_ = center_of_mass;
 }
 

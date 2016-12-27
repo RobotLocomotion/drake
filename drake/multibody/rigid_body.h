@@ -316,7 +316,7 @@ class RigidBody {
   /// Sets the center of mass of this rigid body. The center of mass is
   /// measured and expressed in the body frame B as defined in
   /// @ref rigid_body_tree_frames.
-  void set_center_of_mass_in_B(const Eigen::Vector3d &center_of_mass);
+  void set_center_of_mass_in_B(const Eigen::Vector3d& center_of_mass);
 
   /// Gets the center of mass of this rigid body. The center of mass is
   /// measured and expressed in the body frame B as defined in
