@@ -128,6 +128,11 @@ void PackageMap::AddPackageIfNew(const string& package_name,
   }
 }
 
+// Returns true if and only if string @p a ends with string @p b.
+bool StringEndsWith(const std::string& a, const std::string& b) {
+  if (b.size() > a.size()) return false;
+  return std::equal(a.begin() + a.size() - b.size(), a.end(), b.begin());
+}
 void PackageMap::PopulateUpstreamToDrakeHelper(const string& directory) {
   DRAKE_DEMAND(!directory.empty());
   if (HasPackageXmlFile(directory)) {
@@ -136,7 +141,11 @@ void PackageMap::PopulateUpstreamToDrakeHelper(const string& directory) {
     const string package_name = GetPackageName(spruce_path.getStr());
     AddPackageIfNew(package_name, directory);
   }
-  if (directory != "/" && directory != GetDrakePath())
+
+  // The following if condition uses StringEndsWith() because when Drake is
+  // built using Bazel, GetDrakePath() returns a relative string rather than an
+  // absolute string.
+  if (directory != "/" && !StringEndsWith(directory, GetDrakePath()))
     PopulateUpstreamToDrakeHelper(GetParentDirectory(directory));
 }
 
@@ -152,6 +161,7 @@ void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
   std::transform(extension.begin(), extension.end(), extension.begin(),
                  ::tolower);
   DRAKE_DEMAND(extension == ".urdf" || extension == ".sdf");
+
   PopulateUpstreamToDrakeHelper(spruce_path.root());
 }
 
