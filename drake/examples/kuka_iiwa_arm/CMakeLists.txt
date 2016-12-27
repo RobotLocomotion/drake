@@ -3,8 +3,10 @@ if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeKukaIiwaArmCommon SOURCE_FILES
       iiwa_common.cc iiwa_lcm.cc)
   target_link_libraries(drakeKukaIiwaArmCommon
+    drakeIK
     drakeLCMSystem2
-    drakeRBM)
+    drakeRBM
+    drakeMultibodyParsers)
   drake_install_libraries(drakeKukaIiwaArmCommon)
   drake_install_headers(
       iiwa_common.h iiwa_lcm.h)
