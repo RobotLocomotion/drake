@@ -144,6 +144,27 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 ///     ixy, ixz, iyy, iyz, izz which are optional and default to zero.</dd>
 /// </dl>
 ///
+/// Joints are specified as:
+///
+/// <b><joint></b>
+///
+/// <dl>
+///   <dt>&lt;origin&gt;
+///   (optional: defaults to the identity if not specified):</dt>
+///   <dd> This is the pose `X_PF` of the link's inboard frame `F`
+///   expressed in the inboard body frame `P`.</dd>
+///   <dl>
+///     <dt>xyz (optional: defaults to the zero vector):</dt>
+///     <dd> Specifies the location `Fo` of frame `F` measured and expressed
+///     in `P`.</dd>
+///     <dt>rpy</dt>
+///     <dd> Specifies the orientation of frame `F` with respect to the
+///     inboard body frame `P`.<dd>
+///   </dl>
+///   <dt>&lt;parent&gt;</dt> Specifies the inboard body.
+///   <dt>&lt;child&gt;</dt> Specifies the outboard body.
+/// </dl>
+///
 /// @section sdf_frames Notes on SDF Specific Frames
 ///
 /// In addition to defining an inertial frame `I` as with URDF files, SDF
