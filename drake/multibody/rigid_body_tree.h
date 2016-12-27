@@ -159,9 +159,14 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 /// In addition, the user can specify a "link" frame `L`, not necessarily at
 /// the center of gravity of the body and not even at the inboard joint frame M.
 ///
-/// In the SDF format a link is specified by the entries below:
+/// <b>Important Limitation for Drake's SDF's:</b> Currently Drake only
+/// supports the case when `L = B` that is, the link frame `L` must be
+/// located at the body frame which in Drake is located at the outbard frame
+/// `M` of the body's inboard joint.
 ///
-/// <b><link</b>
+/// In the SDF format links are specified as:
+///
+/// <b><link></b>
 ///
 /// <dl>
 ///   <dt>&lt;pose&gt;
@@ -170,9 +175,11 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 ///   Specifies the pose `X_DL` of link frame `L` measured and
 ///   expressed in the model's frame `D`. In general frame `L` is not located
 ///   at a joint outboard frame `M` nor located at the center of mass `Bcm`.
-///   If `X_DL` is not provided the frame `L` is assumed to be coincident
-///   with the body frame `B`, or equivalently, the inboard joint's outbard
-///   frame.</dd>
+///
+///   <b>Limitation of Drake's SDF parser:</b> The link frame `L` must be
+///   coincident with the body frame `B` which in drake is the outboard frame
+///   of the body's inboard joint.
+///   </dd>
 ///   <dt>&lt;inertial&gt;</dt>
 ///   <dd> </dd>
 ///   <dl>
@@ -196,6 +203,26 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 ///   </dl>
 /// </dl>
 ///
+/// Joints are specified as:
+///
+/// <b><joint></b>
+///
+/// <dl>
+///   <dt>&lt;parent&gt;</dt> <dd>Specifies the inboard body.</dd>
+///   <dt>&lt;child&gt;</dt> <dd>Specifies the outboard body.</dd>
+///   <dt>&lt;pose&gt;</dt> <dd>For the one case supported by Drake (`L = B`)
+///   this entry can be left out.</dd>
+///   <dt>&lt;axis&gt;</dt> <dd></dd>
+///   <dl>
+///     <dt>&lt;xyz&gt;</dt>
+///     <dd> The joint axis. Expressed in either the `F` frame or the `D`
+///     frame accoring to entry `use_parent_model_frame`.</dd>
+///     <dt>&lt;use_parent_model_frame&gt;</dt>
+///     <dd> If `1` (true) the axis is assumed to be expressed in the model
+///     frame `D`. If negative or not provided, the axis is assumed to be
+///     expressed in the joint's inboard frame `F`.</dd>
+///   </dl>
+/// </dl>
 ///
 /// @ingroup multibody_dynamics
 /// @}
