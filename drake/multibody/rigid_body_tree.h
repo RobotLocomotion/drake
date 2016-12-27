@@ -98,7 +98,7 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 /// - DrakeJoint::jointTransform(): `X_FB(q)` the state dependent pose of the
 ///   body frame `B` measured and expressed in `F` (recall that in Drake B = M).
 ///
-/// @section urdf_frames Notes on URDF specific frames
+/// @section urdf_frames Notes on URDF Specific Frames
 ///
 /// The URDF specification (http://wiki.ros.org/urdf/XML/link) describes the
 /// inertia properties of a rigid body in an inertial frame `I` which is
@@ -144,7 +144,57 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 ///     ixy, ixz, iyy, iyz, izz which are optional and default to zero.</dd>
 /// </dl>
 ///
-/// @section sdf_frames Notes on SDF specific frames
+/// @section sdf_frames Notes on SDF Specific Frames
+///
+/// In addition to defining an inertial frame `I` as with URDF files, SDF
+/// also defines a "model" frame here referred as `D`. Many SDF components
+/// need to be expressed in this model frame `D` while some others are
+/// expected to be in some local frame.
+/// There is an implicit "world" frame here referred as `W`.
+///
+/// Frames are specified with `<pose>` elements. The pose of the model `X_WD`
+/// measured and expressed in the world frame `W` is specified by a `<pose>`
+/// element within the specific `<model>`.
+///
+/// In addition, the user can specify a "link" frame `L`, not necessarily at
+/// the center of gravity of the body and not even at the inboard joint frame M.
+///
+/// In the SDF format a link is specified by the entries below:
+///
+/// <b><link</b>
+///
+/// <dl>
+///   <dt>&lt;pose&gt;
+///   (optional: see details below:)</dt>
+///   <dd>
+///   Specifies the pose `X_DL` of link frame `L` measured and
+///   expressed in the model's frame `D`. In general frame `L` is not located
+///   at a joint outboard frame `M` nor located at the center of mass `Bcm`.
+///   If `X_DL` is not provided the frame `L` is assumed to be coincident
+///   with the body frame `B`, or equivalently, the inboard joint's outbard
+///   frame.</dd>
+///   <dt>&lt;inertial&gt;</dt>
+///   <dd> </dd>
+///   <dl>
+///     <dt>&lt;pose&gt;
+///     (optional: defaults to the identity if not specified):</dt>
+///     <dd> Defines an inertial frame `I` at the center of mass of the body
+///     (`Io = Bcm`) by specifying its pose `X_LI` measured and expressed in
+///     `L`. The moments of inertia are then expected to be about `Io`
+///     and expressed in `I`. The center of mass of the body measured and
+///     expressed in `L` corresponds to the translational part of `X_LI`.</dd>
+///   </dl>
+///   <dl>
+///     <dt>&lt;inertia&gt;</dt>
+///     <dd>The 3x3 inertia matrix J_Io_I about the center of gravity `Io = Bcm`
+///     expressed in the inertial frame `I`.
+///     Since the inertia matrix is symmetric, only 6 above-diagonal
+///     elements of this matrix are only needed, using the attributes ixx,
+///     ixy, ixz, iyy, iyz, izz which are optional and default to zero.</dd>
+///     <dt>&lt;mass&gt;</dt>
+///     <dd>The mass of the body.</dd>
+///   </dl>
+/// </dl>
 ///
 ///
 /// @ingroup multibody_dynamics

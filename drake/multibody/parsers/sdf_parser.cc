@@ -525,6 +525,11 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
 
   // Obtain the pose of the child link frame L in the model frame D.
   // This was saved by the call to ParseSdfLink().
+  // TODO(liank-fok): what happens when `L` was not supplied? does the logic
+  // in this method still work? Why is it that we need to use X_DL = Id when
+  // L is not defined in the code below? if that is the case then it'd seem
+  // all transformations are local to L and therefore D should not even appear.
+  // More unit testing is required to cover these cases.
   if (pose_map.find(child_name) != pose_map.end())
     X_DL = pose_map.at(child_name);
 
