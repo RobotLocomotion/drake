@@ -125,7 +125,6 @@ class DoublePendulumFramesTest : public ::testing::Test {
       auto Bcm_B = tree_->get_body(i).get_center_of_mass_in_B();
       auto Bcm_W = tree_->transformPoints(cache, Bcm_B, i, 0);
 
-#if 0
       PRINT_VAR(tree_->get_body(i).get_name());
       PRINT_VAR(Bo_W.transpose());
       PRINT_VAR(expected_Bo_W[i].transpose());
@@ -135,7 +134,6 @@ class DoublePendulumFramesTest : public ::testing::Test {
 
       PRINT_VAR(Bcm_W.transpose());
       PRINT_VAR(expected_Bcm_W[i].transpose());
-#endif
 
       EXPECT_TRUE(Bo_W.isApprox(expected_Bo_W[i]));
       EXPECT_TRUE(Bcm_B.isApprox(expected_Bcm_B[i]));
@@ -178,7 +176,7 @@ TEST_F(DoublePendulumFramesTest, URDFTest) {
 // In this case, <joint> does not need to specify its pose with respect to
 // the parent body, i.e. X_PF is not specified, no <pose> given in <joint>.
 // Therefore the inertial frames I need to be specified as doen in URDF files.
-TEST_F(DoublePendulumFramesTest, SDFTest) {
+TEST_F(DoublePendulumFramesTest, SDFTestWhereLequalsB) {
   LoadTreeFrom("simple_pendulum_LequalsB.sdf");
 
   EXPECT_EQ(tree_->get_num_bodies(), 4);
@@ -191,6 +189,42 @@ TEST_F(DoublePendulumFramesTest, SDFTest) {
   RunTest(45.0, 0.0);
   RunTest(12.0, -18.0);
 }
+
+#if 0
+TEST_F(DoublePendulumFramesTest, SDFTesSpecifyFinDframe) {
+  LoadTreeFrom("simple_pendulum_SpecifyFinDframe.sdf");
+
+  EXPECT_EQ(tree_->get_num_bodies(), 4);
+  EXPECT_EQ(tree_->get_num_positions(), 2);
+  EXPECT_EQ(tree_->get_num_velocities(), 2);
+
+  // Expected poses for the zero state configuration.
+  RunTest(0.0, 0.0);
+  //RunTest(0.0, 45.0);
+  //RunTest(45.0, 0.0);
+  //RunTest(12.0, -18.0);
+}
+#endif
+
+#if 0
+// In this case the link frame L for the lower arm is defined to be
+// coincident with the inertial frame I of the link.
+// Since the pose of the joints are given in the outboard link frame, we need
+// to specify the joint pose accordingly as well.
+TEST_F(DoublePendulumFramesTest, SDFTestLequalsI) {
+  LoadTreeFrom("simple_pendulum_LequalsI.sdf");
+
+  EXPECT_EQ(tree_->get_num_bodies(), 4);
+  EXPECT_EQ(tree_->get_num_positions(), 2);
+  EXPECT_EQ(tree_->get_num_velocities(), 2);
+
+  // Expected poses for the zero state configuration.
+  RunTest(0.0, 0.0);
+  RunTest(0.0, 45.0);
+  RunTest(45.0, 0.0);
+  RunTest(12.0, -18.0);
+}
+#endif
 
 }  // namespace
 }  // namespace parsers
