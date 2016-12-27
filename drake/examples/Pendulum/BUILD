@@ -65,4 +65,12 @@ cc_googletest(
     ],
 )
 
+filegroup(
+    name = "models",
+    visibility = ["//visibility:public"],
+    srcs = glob([
+        "Pendulum.urdf",
+    ]),
+)
+
 cpplint()
