@@ -105,7 +105,7 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 /// measured with respect to the outbard frame
 /// `M` of the body's inboard joint.
 /// This inertial frame is specified by an `<inertial>` element within
-/// `<link>`. Some details regarding the frames used are given here:
+/// `<link>`. Some details per URDF entry are given here:
 ///
 /// <b><inertial></b>
 ///
