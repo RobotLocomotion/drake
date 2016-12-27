@@ -52,6 +52,17 @@ void CreateTreedFromFixedModelAtPose(
     const Eigen::Vector3d& position = Eigen::Vector3d::Zero(),
     const Eigen::Vector3d& orientation = Eigen::Vector3d::Zero());
 
+/// Used to set the feedback gains for the simulated position controlled KUKA.
+void SetPositionControlledIIWAGains(Eigen::Ref<Eigen::VectorXd> Kp,
+                                    Eigen::Ref<Eigen::VectorXd> Ki,
+                                    Eigen::Ref<Eigen::VectorXd> Kd) {
+  Kp << 100, 100, 100, 20, 10, 20, 1;
+  for (int i = 0; i < Kp.size(); i++) {
+    Kd[i] = std::sqrt(Kp[i]);
+  }
+  Ki = Eigen::VectorXd::Zero(7);
+}
+
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
