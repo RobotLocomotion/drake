@@ -38,31 +38,6 @@ using parsers::urdf::AddModelInstanceFromUrdfString;
 namespace parsers {
 namespace {
 
-void TestPosesForAGivenState(
-    const RigidBodyTree<double> &tree, const VectorXd &q,
-    const vector<Vector3d> &expected_Bo_W,
-    const vector<Vector3d> &expected_Bcm_B,
-    const vector<Vector3d> &expected_Bcm_W) {
-  VectorXd v = VectorXd::Zero(tree.get_num_velocities());
-
-  KinematicsCache<double> cache = tree.doKinematics(q, v);
-
-  for (int i = 2; i < tree.get_num_bodies(); ++i) {
-    auto Bo_W = tree.transformPoints(cache, Vector3d::Zero(), i, 0);
-    auto Bcm_B = tree.get_body(i).get_center_of_mass_in_B();
-    auto Bcm_W = tree.transformPoints(cache, Bcm_B, i, 0);
-
-    PRINT_VAR(tree.get_body(i).get_name());
-    PRINT_VAR(Bo_W.transpose());
-    PRINT_VAR(Bcm_B.transpose());
-    PRINT_VAR(Bcm_W.transpose());
-
-    EXPECT_TRUE(Bo_W.isApprox(expected_Bo_W[i]));
-    EXPECT_TRUE(Bcm_B.isApprox(expected_Bcm_B[i]));
-    EXPECT_TRUE(Bcm_W.isApprox(expected_Bcm_W[i]));
-  }
-}
-
 class DoublePendulumFramesTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -102,6 +77,58 @@ class DoublePendulumFramesTest : public ::testing::Test {
     expected_Bcm_W_[base_id_] = Vector3d(0.0, 0.0, 0.0);
   }
 
+  void SetState(double theta1, double theta2) {
+    const double deg_to_rad = M_PI / 180.0;
+    q(axis1_index_) = theta1 * deg_to_rad;
+    q(axis2_index_) = theta2 * deg_to_rad;
+  }
+
+  void ComputeAnalyticalSolution() {
+    double theta1 = q(axis1_index_);
+    double theta2 = q(axis2_index_);
+    // Body "upper_arm".
+    expected_Bo_W_[upper_arm_id_] = Vector3d(0.0, 0.0, 0.0);
+    expected_Bcm_B_[upper_arm_id_] = Vector3d(0.0, -0.5, 0.0);
+    expected_Bcm_W_[upper_arm_id_] =
+        0.5 * Vector3d(sin(theta1), -cos(theta1), 0.0);
+    // Body "lower_arm".
+    expected_Bo_W_[lower_arm_id_] = Vector3d(sin(theta1), -cos(theta1), 0.0);
+    expected_Bcm_B_[lower_arm_id_] = Vector3d(0.0, -0.5, 0.0);
+    expected_Bcm_W_[lower_arm_id_] =
+        0.5 * Vector3d(sin(theta1 + theta2), -cos(theta1 + theta2), 0.0) +
+        expected_Bo_W_[lower_arm_id_];
+  }
+
+  void TestPoses(
+      const vector<Vector3d> &expected_Bo_W,
+      const vector<Vector3d> &expected_Bcm_B,
+      const vector<Vector3d> &expected_Bcm_W) {
+    VectorXd v = VectorXd::Zero(tree_->get_num_velocities());
+
+    KinematicsCache<double> cache = tree_->doKinematics(q, v);
+
+    for (int i = 2; i < tree_->get_num_bodies(); ++i) {
+      auto Bo_W = tree_->transformPoints(cache, Vector3d::Zero(), i, 0);
+      auto Bcm_B = tree_->get_body(i).get_center_of_mass_in_B();
+      auto Bcm_W = tree_->transformPoints(cache, Bcm_B, i, 0);
+
+      PRINT_VAR(tree_->get_body(i).get_name());
+      PRINT_VAR(Bo_W.transpose());
+      PRINT_VAR(Bcm_B.transpose());
+      PRINT_VAR(Bcm_W.transpose());
+
+      EXPECT_TRUE(Bo_W.isApprox(expected_Bo_W[i]));
+      EXPECT_TRUE(Bcm_B.isApprox(expected_Bcm_B[i]));
+      EXPECT_TRUE(Bcm_W.isApprox(expected_Bcm_W[i]));
+    }
+  }
+
+  void RunTest(double theta1, double theta2) {
+    SetState(theta1, theta2);
+    ComputeAnalyticalSolution();
+    TestPoses(expected_Bo_W_, expected_Bcm_B_, expected_Bcm_W_);
+  }
+
   unique_ptr<RigidBodyTree<double>> tree_;
   int world_id_, base_id_, upper_arm_id_, lower_arm_id_;
   int axis1_index_, axis2_index_;
@@ -119,33 +146,10 @@ TEST_F(DoublePendulumFramesTest, URDFTest) {
   EXPECT_EQ(tree_->get_num_velocities(), 2);
 
   // Expected poses for the zero state configuration.
-  q = tree_->getZeroConfiguration();
-  // Body "upper_arm".
-  expected_Bo_W_[upper_arm_id_] = Vector3d(0.0, 0.0, 0.0);
-  expected_Bcm_B_[upper_arm_id_] = Vector3d(0.0, -0.5, 0.0);
-  expected_Bcm_W_[upper_arm_id_] = Vector3d(0.0, -0.5, 0.0);
-  // Body "lower_arm".
-  expected_Bo_W_[lower_arm_id_] = Vector3d(0.0, -1.0, 0.0);
-  expected_Bcm_B_[lower_arm_id_] = Vector3d(0.0, -0.5, 0.0);
-  expected_Bcm_W_[lower_arm_id_] = Vector3d(0.0, -1.5, 0.0);
-  TestPosesForAGivenState(*tree_, q,
-                          expected_Bo_W_, expected_Bcm_B_, expected_Bcm_W_);
-
-  const double deg_to_rad = M_PI / 180.0;
-  // Expected poses when the lower joint angle is 45 degrees.
-  double theta2 = 45 * deg_to_rad;
-  q(axis2_index_) = theta2;
-  // Body "upper_arm".
-  expected_Bo_W_[upper_arm_id_] = Vector3d(0.0, 0.0, 0.0);
-  expected_Bcm_B_[upper_arm_id_] = Vector3d(0.0, -0.5, 0.0);
-  expected_Bcm_W_[upper_arm_id_] = Vector3d(0.0, -0.5, 0.0);
-  // Body "lower_arm".
-  expected_Bo_W_[lower_arm_id_] = Vector3d(0.0, -1.0, 0.0);
-  expected_Bcm_B_[lower_arm_id_] = Vector3d(0.0, -0.5, 0.0);
-  expected_Bcm_W_[lower_arm_id_] =
-      0.5 * Vector3d(sin(theta2), -cos(theta2), 0.0) + Vector3d(0.0, -1.0, 0.0);
-  TestPosesForAGivenState(*tree_, q,
-                          expected_Bo_W_, expected_Bcm_B_, expected_Bcm_W_);
+  RunTest(0.0, 0.0);
+  RunTest(0.0, 45.0);
+  RunTest(45.0, 0.0);
+  RunTest(12.0, -18.0);
 }
 
 }  // namespace
