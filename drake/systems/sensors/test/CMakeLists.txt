@@ -10,6 +10,10 @@ if(Bullet_FOUND)
       drakeSensors)
 endif()
 
+if(BUILD_TESTING)
+  add_subdirectory(accelerometer_test)
+endif()
+
 if(VTK_FOUND)
   drake_add_cc_test(rgbd_camera_test)
   target_link_libraries(rgbd_camera_test drakeSensors)
