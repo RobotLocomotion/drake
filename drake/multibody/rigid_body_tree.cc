@@ -548,6 +548,8 @@ void RigidBodyTree<T>::addCollisionElement(
     const string& group_name) {
   auto itr = body_collision_map_.find(&body);
   if (itr == body_collision_map_.end()) {
+    // NOTE: we do this instead of map[key] = value because we want an iterator
+    // to the newly inserted list for use in the remainder of the function.
     bool success;
     std::tie(itr, success) =
         body_collision_map_.insert(std::make_pair(&body, BodyCollisions()));

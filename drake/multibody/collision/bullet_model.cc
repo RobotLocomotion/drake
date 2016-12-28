@@ -41,7 +41,7 @@ btTransform convert(const Isometry3d &T) {
   btT.setOrigin(pos);
   return btT;
 }
-}
+}  // namespace
 
 struct BinaryContactResultCallback
     : public btCollisionWorld::ContactResultCallback {
