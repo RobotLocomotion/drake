@@ -67,7 +67,7 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
  * @param quat  Quaternion e0, e1, e2, e3 that relates two right-handed
  *   orthogonal unitary bases e.g., ax, ay, az (A) to bx, by, bz (B).
  *   The quaternion `quat` easily converts to the rotation matrix R_AB
- * @param quatDt  time-derivative of `quat`, ordered e0', e1', e2', e3'.
+ * @param quatDt  time-derivative in B of `quat`, ordered e0', e1', e2', e3'.
  * @retval w_B  B's angular velocity in A, expressed in B (bx, by, bz).
  *
  * @note Eigen's internal ordering for its Quaternion class should be
@@ -81,7 +81,7 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
 // TODO(mitiguy) Move this and related methods (make unit test) to quaternion.h.
 // TODO(mitiguy and Dai)  Create QuaternionDt class and update Doxygen.
 template <typename T>
-Vector3<T> CalculateAngularVelocityExpressedInBFromQuaternion(
+Vector3<T> CalculateAngularVelocityExpressedInBFromQuaternionDtExpressedInB(
     const Eigen::Quaternion<T>& quat, const Vector4<T>& quatDt) {
   const T e0 = quat.w(), e1 = quat.x(), e2 = quat.y(), e3 = quat.z();
   const T e0Dt = quatDt[0], e1Dt = quatDt[1],
@@ -374,6 +374,8 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
 #if 0  // TODO(mitiguy) Remove these debug statements.
   std::cout << "\n\n quat_drake\n"   << quat_drake;
   std::cout << "\n quat_exact\n"     << quat_exact;
+  std::cout << "\n\n quatDt_drake\n" << quatDt_drake;
+  std::cout << "\n\n quatDt_exact\n" << quatDt_exact;
   std::cout << "\n\n w_drake\n"      << w_drake;
   std::cout << "\n w_exact\n"        << w_exact;
   std::cout << "\n\n wDt_drake\n"    << wDt_drake;
@@ -382,6 +384,7 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   std::cout << "\n xyz_exact\n"      << xyz_exact;
   std::cout << "\n\n v_drake\n"      << v_drake;
   std::cout << "\n xyzDt_exact\n"    << xyzDt_exact;
+  std::cout << "\n xyzDt_drake\n"    << xyzDt_drake;
   std::cout << "\n\n vDt_drake\n"    << vDt_drake;
   std::cout << "\n\n xyzDDt_exact\n" << xyzDDt_exact << "\n\n";
 #endif
@@ -401,12 +404,12 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // same angular velocity, convert to angular velocity to compare results.
   Quaterniond quaternion_drake = math::quat2eigenQuaternion(quat_drake);
   const Vector3d w_from_quatDt_drake =
-      CalculateAngularVelocityExpressedInBFromQuaternion(quaternion_drake,
-                                                         quatDt_drake);
+      CalculateAngularVelocityExpressedInBFromQuaternionDtExpressedInB(
+          quaternion_drake, quatDt_drake);
   Quaterniond quatd_exact = math::quat2eigenQuaternion(quat_exact);
   const Vector3d w_from_quatDt_exact =
-      CalculateAngularVelocityExpressedInBFromQuaternion(quatd_exact,
-                                                         quatDt_exact);
+      CalculateAngularVelocityExpressedInBFromQuaternionDtExpressedInB(
+          quatd_exact, quatDt_exact);
   EXPECT_TRUE(CompareMatrices(w_from_quatDt_drake, w_drake, 10 * epsilon));
   EXPECT_TRUE(CompareMatrices(w_from_quatDt_exact, w_exact, 10 * epsilon));
 
@@ -421,6 +424,65 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   const Vector3d acceleration_difference = w_drake.cross(v_drake);
   const Vector3d vDt_test = xyzDDt_exact - acceleration_difference;
   EXPECT_TRUE(CompareMatrices(vDt_drake, vDt_test, 10 * epsilon));
+
+  //--------------------------------------------------------------
+  // EXTRA: Test MapQDotToVelocity and MapVelocityToQDot for Evan.
+  // TODO(Mitiguy and Drumwright), lose BadFix.
+  //--------------------------------------------------------------
+  const double BadFix = 1.0E-5; // 1.0E16;
+#define Test_MapQDotToVelocity_1_or_MapVelocityToQDotFalse_0    0
+#if Test_MapQDotToVelocity_1_or_MapVelocityToQDotFalse_0
+  // Form matrix of time-derivative of coordinates.
+  Eigen::VectorXd coordinatesDt(7);
+  coordinatesDt << xyzDt_drake, quatDt_drake;
+
+  // Test if MapQDotToVelocity accurately converts time-derivative of
+  // coordinates to motion variables.
+  systems::BasicVector<double> wv_from_map(6);
+  rigid_body_plant.MapQDotToVelocity( *context, coordinatesDt, &wv_from_map );
+  const Vector3d w_map( wv_from_map[0], wv_from_map[1], wv_from_map[2] );
+  const Vector3d v_map( wv_from_map[3], wv_from_map[4], wv_from_map[5] );
+  std::cout << "\n\n--------------------------------------------------";
+  std::cout << "\n---------- TestA: MapQDotToVelocity --------------";
+  std::cout << "\n--------------------------------------------------";
+  std::cout << "\nw from map = \n" << w_map;
+  std::cout << "\nw exact = \n" << w_exact;
+  std::cout << "\n\nv from map = \n" << v_map;
+  std::cout << "\nv accurate (drake) = \n" << v_drake;
+  std::cout << "\n--------------------------------------------------\n";
+  EXPECT_TRUE(CompareMatrices(w_map, w_exact, BadFix*10 * epsilon));
+  EXPECT_TRUE(CompareMatrices(v_map, v_drake, BadFix*10 * epsilon));
+#else
+
+  // Form matrix of motion variables.
+  Eigen::VectorXd motion_variables(6);
+  motion_variables << w_drake, v_drake;
+
+  // Test if MapVelocityToQDot accurately converts motion variables to
+  // time-derivatives of coordinates.
+  systems::BasicVector<double> coordinatesDt_from_map(7);
+  rigid_body_plant.MapVelocityToQDot( *context, motion_variables,
+                                       &coordinatesDt_from_map );
+  const double xDt_map = coordinatesDt_from_map[0];
+  const double yDt_map = coordinatesDt_from_map[1];
+  const double zDt_map = coordinatesDt_from_map[2];
+  const double q0Dt_map = coordinatesDt_from_map[3];
+  const double q1Dt_map = coordinatesDt_from_map[4];
+  const double q2Dt_map = coordinatesDt_from_map[5];
+  const double q3Dt_map = coordinatesDt_from_map[6];
+  const Vector3d xyzDt_map( xDt_map, yDt_map, zDt_map );
+  const Vector4d quatDt_map( q0Dt_map, q1Dt_map, q2Dt_map, q3Dt_map );
+  std::cout << "\n\n--------------------------------------------------";
+  std::cout << "\n---------- TestB: MapVelocityToQDot --------------";
+  std::cout << "\n--------------------------------------------------";
+  std::cout << "\nxyzDt from map = \n" << xyzDt_map;
+  std::cout << "\nxyzDt exact = \n" << xyzDt_exact;
+  std::cout << "\n\nquatDt from map = \n" << quatDt_map;
+  std::cout << "\nquatDt exact = \n" << quatDt_exact;
+  std::cout << "\n--------------------------------------------------\n";
+  EXPECT_TRUE(CompareMatrices(xyzDt_map,   xyzDt_exact, BadFix*10 * epsilon));
+  EXPECT_TRUE(CompareMatrices(quatDt_map, quatDt_exact, BadFix*10 * epsilon));
+#endif
 }
 
 }  // namespace cylinder_torque_free_analytical_solution

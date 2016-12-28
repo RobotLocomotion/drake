@@ -464,20 +464,8 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
   prog.Solve();
 
   VectorX<T> xdot(get_num_states());
-
-  /*
-   * TODO(hongkai.dai): This only works for templates on double, it does not
-   * work for autodiff yet, I will add the code to compute the gradient of vdot
-   * w.r.t. q and v. See issue
-   * https://github.com/RobotLocomotion/drake/issues/4267.
-   */
-  // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
-  // templatized.
-  const auto& vdot_value =
-      drake::solvers::GetSolution(vdot);
-  xdot << tree_->transformQDotMappingToVelocityMapping(
-      kinsol, MatrixX<T>::Identity(nq, nq).eval()) * v, vdot_value;
-
+  const auto& vdot_value = drake::solvers::GetSolution(vdot);
+  xdot << tree_->transformVelocityToQDot(kinsol, v), vdot_value;
   derivatives->SetFromVector(xdot);
 }
 
@@ -497,7 +485,7 @@ int RigidBodyPlant<T>::FindInstancePositionIndexFromWorldIndex(
 template <typename T>
 void RigidBodyPlant<T>::DoMapQDotToVelocity(
     const Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& configuration_dot,
+    const Eigen::Ref<const VectorX<T>>& qdot,
     VectorBase<T>* generalized_velocity) const {
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
@@ -509,7 +497,7 @@ void RigidBodyPlant<T>::DoMapQDotToVelocity(
   const int nv = get_num_velocities();
   const int nstates = get_num_states();
 
-  DRAKE_ASSERT(configuration_dot.size() == nq);
+  DRAKE_ASSERT(qdot.size() == nq);
   DRAKE_ASSERT(generalized_velocity->size() == nv);
   DRAKE_ASSERT(x.size() == nstates);
 
@@ -522,11 +510,8 @@ void RigidBodyPlant<T>::DoMapQDotToVelocity(
   // reused.
   auto kinsol = tree_->doKinematics(q);
 
-  // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
-  // templatized.
   generalized_velocity->SetFromVector(
-      tree_->transformQDotMappingToVelocityMapping(
-          kinsol, configuration_dot.transpose().eval()).transpose());
+      tree_->transformQDotToVelocity(kinsol, qdot));
 }
 
 template <typename T>
@@ -558,11 +543,7 @@ void RigidBodyPlant<T>::DoMapVelocityToQDot(
   // reused.
   auto kinsol = tree_->doKinematics(q, v);
 
-  // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
-  // templatized.
-  configuration_dot->SetFromVector(
-      tree_->transformVelocityMappingToQDotMapping(
-          kinsol, v.transpose().eval()).transpose());
+  configuration_dot->SetFromVector(tree_->transformVelocityToQDot(kinsol, v));
 }
 
 template <typename T>

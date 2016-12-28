@@ -66,6 +66,21 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     }
   }
 
+  /**
+   * Computes a matrix that transforms the time derivative of generalized 
+   * configuration to generalized velocity _for given configuration @p q_.
+   * @param q the generalized configuration 
+   * @warning The first three values of generalized configuration are position
+   *          and the next four values are unit quaternion orientation. The
+   *          first three values of generalized velocity are angular velocity
+   *          and the second three values are linear velocity. This 
+   *          transformation accounts for this disparity.
+   * @param qdot_to_v a nv × nq sized matrix, where nv is the dimension of
+   *        generalized velocities and nq is the dimension of generalized
+   *        coordinates, that converts time derivatives of generalized
+   *        coordinates to generalized velocities _for given configuration 
+   *        @p q_.
+   */
   template <typename DerivedQ>
   void qdot2v(const Eigen::MatrixBase<DerivedQ>& q,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
@@ -79,24 +94,56 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     }
 
     qdot_to_v.resize(get_num_velocities(), get_num_positions());
-    typedef typename DerivedQ::Scalar Scalar;
+
+    // Get the quaternion values.
     auto quat =
         q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
-    auto R = drake::math::quat2rotmat(quat);
+    const auto& qw = quat[0];
+    const auto& qx = quat[1];
+    const auto& qy = quat[2];
+    const auto& qz = quat[3];
 
-    Eigen::Matrix<Scalar, 4, 1> quattilde;
-    typename drake::math::Gradient<Eigen::Matrix<Scalar, 4, 1>,
-                                   drake::kQuaternionSize,
-                                   1>::type dquattildedquat;
-    drake::math::NormalizeVector(quat, quattilde, &dquattildedquat);
-    auto RTransposeM = (R.transpose() * quatdot2angularvelMatrix(quat)).eval();
-    qdot_to_v.template block<3, 3>(0, 0).setZero();
-    qdot_to_v.template block<3, 4>(0, 3).noalias() =
-        RTransposeM * dquattildedquat;
-    qdot_to_v.template block<3, 3>(3, 0) = R.transpose();
-    qdot_to_v.template block<3, 4>(3, 3).setZero();
+    // The first four rows correspond to the "G" matrix in the equation:
+    // 2 G de/dt = ω, where e = [ qw qx qy qz ] are the values of the
+    // unit quaternion and ω is the angular velocity vector defined in the
+    // world frame. This equation was taken from:
+    // - P. Nikravesh, Computer-Aided Analysis of Mechanical Systems. Prentice
+    //     Hall, New Jersey, 1988. Equation 108.
+    qdot_to_v.block(0, 0, 3, 3).setZero();
+/*
+    // Equation 105, for angular velocity in global frame.
+    qdot_to_v.block(0, 3, 3, 4) <<  -qx,  qw, -qz,  qy,
+                                    -qy,  qz,  qw, -qx,
+                                    -qz, -qy,  qx,  qw;
+*/
+    qdot_to_v.block(0, 3, 3, 4) <<  -qx,  qw,  qz, -qy,
+                                    -qy, -qz,  qw,  qx,
+                                    -qz,  qy, -qx,  qw;
+    qdot_to_v.block(0, 3, 3, 4) *= 2.;
+
+    // Next three rows correspond to rigid body translation. Transformation
+    // from time derivative of generalized position to generalized velocity
+    // is just the identity matrix.
+    qdot_to_v.block(3, 0, 3, 3).setIdentity();
+    qdot_to_v.block(3, 3, 3, 4).setZero();
   }
 
+  /**
+   * Computes a matrix that transforms the generalized velocity to the time 
+   * derivative of generalized configuration to generalized velocity _for given 
+   * configuration @p q_.
+   * @param q the generalized configuration 
+   * @warning The first three values of generalized configuration are position
+   *          and the next four values are unit quaternion orientation. The
+   *          first three values of generalized velocity are angular velocity
+   *          and the second three values are linear velocity. This 
+   *          transformation accounts for this disparity.
+   * @param v_to_qdoc a nq × nv sized matrix, where nv is the dimension of
+   *        generalized velocities and nq is the dimension of generalized
+   *        coordinates, that converts generalized velocities to time 
+   *        derivatives of generalized coordinates _for given configuration 
+   *        @p q_.
+   */
   template <typename DerivedQ>
   void v2qdot(const Eigen::MatrixBase<DerivedQ>& q,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
@@ -105,40 +152,46 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
                             DrakeJoint::MAX_NUM_VELOCITIES>& v_to_qdot,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dv_to_qdot) const {
-    typedef typename DerivedQ::Scalar Scalar;
     v_to_qdot.resize(get_num_positions(), get_num_velocities());
 
-    auto quat =
-        q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
-    auto R = drake::math::quat2rotmat(quat);
-
-    Eigen::Matrix<Scalar, drake::kQuaternionSize, drake::kSpaceDimension> M;
     if (dv_to_qdot) {
-      auto dR = drake::math::dquat2rotmat(quat);
-      typename drake::math::Gradient<decltype(M), drake::kQuaternionSize,
-                                     1>::type dM;
-      angularvel2quatdotMatrix(quat, M, &dM);
-
-      dv_to_qdot->setZero(v_to_qdot.size(), get_num_positions());
-
-      using drake::math::setSubMatrixGradient;
-      using drake::math::intRange;
-      setSubMatrixGradient<4>(*dv_to_qdot, dR, intRange<3>(0), intRange<3>(3),
-                              v_to_qdot.rows(), 3);
-      auto dMR = drake::math::matGradMultMat(M, R, dM, dR);
-      setSubMatrixGradient<4>(*dv_to_qdot, dMR, intRange<4>(3), intRange<3>(0),
-                              v_to_qdot.rows(), 3);
-    } else {
-      angularvel2quatdotMatrix(
-          quat, M,
-          (typename drake::math::Gradient<decltype(M), drake::kQuaternionSize,
-                                          1>::type*)nullptr);
+      throw std::runtime_error("no longer supported");
     }
 
-    v_to_qdot.template block<3, 3>(0, 0).setZero();
-    v_to_qdot.template block<3, 3>(0, 3) = R;
-    v_to_qdot.template block<4, 3>(3, 0).noalias() = M * R;
-    v_to_qdot.template block<4, 3>(3, 3).setZero();
+    // Get the quaternion values.
+    auto quat =
+        q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
+    const auto& qw = quat[0];
+    const auto& qx = quat[1];
+    const auto& qy = quat[2];
+    const auto& qz = quat[3];
+
+    // The first four columns correspond to the transpose of the "G" matrix
+    // used in qdot2v(). Specifically, this matrix serves the function:
+    // de/dt = 1/2 G' ω, where e = [ qw qx qy qz ] are the values of the
+    // unit quaternion and ω is the angular velocity vector defined in the
+    // world frame. This matrix was taken from:
+    // - P. Nikravesh, Computer-Aided Analysis of Mechanical Systems. Prentice
+    //     Hall, New Jersey, 1988. Equation 109.
+    v_to_qdot.block(0, 0, 4, 3).setZero();
+    /*
+    // Equation 106, for angular velocity in the global frame.
+    v_to_qdot.block(3, 0, 4, 3) <<  -qx, -qy, -qz,
+                                     qw,  qz, -qy,
+                                    -qz,  qw,  qx,
+                                     qy, -qx,  qw;
+    */
+    v_to_qdot.block(3, 0, 4, 3) <<  -qx, -qy, -qz,
+                                     qw, -qz,  qy,
+                                     qz,  qw, -qx,
+                                    -qy,  qx,  qw;
+    v_to_qdot.block(3, 0, 4, 3) *= 0.5;
+
+    // Next three columns correspond to rigid body translation. Transformation
+    // from generalized velocity to time derivative of generalized coordinates
+    // is just the identity matrix.
+    v_to_qdot.block(0, 3, 3, 3).setIdentity();
+    v_to_qdot.block(3, 3, 3, 3).setZero();
   }
 
   template <typename DerivedV>
