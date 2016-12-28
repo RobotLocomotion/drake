@@ -14,7 +14,7 @@ namespace solvers {
  */
 GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   MathematicalProgram prog;
-  auto X1 = prog.AddContinuousVariables(2, 3, "X");
+  auto X1 = prog.NewContinuousVariables(2, 3, "X");
   static_assert(decltype(X1)::RowsAtCompileTime == Eigen::Dynamic &&
                     decltype(X1)::ColsAtCompileTime == Eigen::Dynamic,
                 "should be a dynamic sized matrix");
@@ -23,7 +23,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_EQ(msg_buff1.str(), "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
   EXPECT_EQ(prog.num_vars(), 6u);
   EXPECT_FALSE(math::IsSymmetric(X1));
-  auto S1 = prog.AddSymmetricContinuousVariables(3, "S");
+  auto S1 = prog.NewSymmetricContinuousVariables(3, "S");
   static_assert(decltype(S1)::RowsAtCompileTime == Eigen::Dynamic &&
                     decltype(S1)::ColsAtCompileTime == Eigen::Dynamic,
                 "should be a dynamic sized matrix");
@@ -34,7 +34,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
       "S(0,0) S(1,0) S(2,0)\nS(1,0) S(1,1) S(2,1)\nS(2,0) S(2,1) S(2,2)\n");
   EXPECT_EQ(prog.num_vars(), 12u);
   EXPECT_TRUE(math::IsSymmetric(S1));
-  auto x1 = prog.AddContinuousVariables(6, "x");
+  auto x1 = prog.NewContinuousVariables(6, "x");
   static_assert(decltype(x1)::RowsAtCompileTime == Eigen::Dynamic &&
                     decltype(x1)::ColsAtCompileTime == 1,
                 "should be a dynamic sized matrix");
@@ -44,7 +44,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_EQ(prog.num_vars(), 18u);
   EXPECT_FALSE(math::IsSymmetric(x1));
   std::array<std::string, 6> X_name = {{"X1", "X2", "X3", "X4", "X5", "X6"}};
-  auto X2 = prog.AddContinuousVariables<2, 3>(X_name);
+  auto X2 = prog.NewContinuousVariables<2, 3>(X_name);
   std::stringstream msg_buff4;
   msg_buff4 << X2 << std::endl;
   EXPECT_EQ(msg_buff4.str(), "X1 X3 X5\nX2 X4 X6\n");
