@@ -122,9 +122,11 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     qdot_to_v.template block<3, 4>(0, 3) *= 2.;
 
     // Next three rows correspond to rigid body translation. Transformation
-    // from time derivative of generalized position to generalized velocity
-    // is just the identity matrix.
-    qdot_to_v.template block<3, 3>(3, 0).setIdentity();
+    // from time derivative of unit quaternions to angular velocity in the
+    // parent body frame is the inverse rotation matrix of the parent
+    // (equivalent to the transpose, since this matrix is orthogonal).
+    auto R = drake::math::quat2rotmat(quat);
+    qdot_to_v.template block<3, 3>(3, 0) = R.transpose();
     qdot_to_v.template block<3, 4>(3, 3).setZero();
   }
 
@@ -188,9 +190,9 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     v_to_qdot.template block<4, 3>(3, 0) *= 0.5;
 
     // Next three columns correspond to rigid body translation. Transformation
-    // from generalized velocity to time derivative of generalized coordinates
-    // is just the identity matrix.
-    v_to_qdot.template block<3, 3>(0, 3).setIdentity();
+    // from angular velocity (in parent body frame) to time derivative of
+    // unit quaternions is the parent rotation matrix.
+    v_to_qdot.template block<3, 3>(0, 3) = drake::math::quat2rotmat(quat);
     v_to_qdot.template block<3, 3>(3, 3).setZero();
   }
 
