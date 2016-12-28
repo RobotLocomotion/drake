@@ -808,7 +808,7 @@ class Diagram : public System<T>,
     InputPortDescriptor<T> descriptor(
         this, this->get_num_input_ports(),
         subsystem_descriptor.get_data_type(), subsystem_descriptor.size());
-    this->DeclareInputPort(descriptor);
+    this->DeclareInputPort(std::move(descriptor));
   }
 
   // Exposes the given port as an output of the Diagram.
@@ -828,7 +828,7 @@ class Diagram : public System<T>,
     OutputPortDescriptor<T> descriptor(
         this, this->get_num_output_ports(),
         subsystem_descriptor.get_data_type(), subsystem_descriptor.size());
-    this->DeclareOutputPort(descriptor);
+    this->DeclareOutputPort(std::move(descriptor));
   }
 
   // Evaluates the value of the output port with the given @p id in the given

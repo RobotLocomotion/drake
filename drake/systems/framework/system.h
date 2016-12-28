@@ -703,9 +703,10 @@ class System {
   System() {}
 
   /// Adds a port with the specified @p descriptor to the input topology.
-  void DeclareInputPort(const InputPortDescriptor<T>& descriptor) {
-    DRAKE_ASSERT(descriptor.get_index() == get_num_input_ports());
-    input_ports_.emplace_back(descriptor);
+  void DeclareInputPort(InputPortDescriptor<T>&& descriptor) {
+    DRAKE_DEMAND(descriptor.get_system() == this);
+    DRAKE_DEMAND(descriptor.get_index() == get_num_input_ports());
+    input_ports_.emplace_back(std::move(descriptor));
   }
 
   /// Adds a port with the specified @p type and @p size to the input topology.
@@ -723,9 +724,10 @@ class System {
   }
 
   /// Adds a port with the specified @p descriptor to the output topology.
-  void DeclareOutputPort(const OutputPortDescriptor<T>& descriptor) {
-    DRAKE_ASSERT(descriptor.get_index() == get_num_output_ports());
-    output_ports_.emplace_back(descriptor);
+  void DeclareOutputPort(OutputPortDescriptor<T>&& descriptor) {
+    DRAKE_DEMAND(descriptor.get_system() == this);
+    DRAKE_DEMAND(descriptor.get_index() == get_num_output_ports());
+    output_ports_.emplace_back(std::move(descriptor));
   }
 
   /// Adds a port with the specified @p type and @p size to the output topology.
