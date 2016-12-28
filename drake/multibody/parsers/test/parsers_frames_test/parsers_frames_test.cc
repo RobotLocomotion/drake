@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <fstream>
 #include <memory>
@@ -157,7 +156,7 @@ class DoublePendulumFramesTest : public ::testing::Test {
 };
 
 TEST_F(DoublePendulumFramesTest, URDFTest) {
-  LoadTreeFrom("simple_pendulum.urdf");
+  LoadTreeFrom("simple_double_pendulum_urdf/simple_double_pendulum.urdf");
 
   EXPECT_EQ(tree_->get_num_bodies(), 4);
   EXPECT_EQ(tree_->get_num_positions(), 2);
@@ -177,7 +176,7 @@ TEST_F(DoublePendulumFramesTest, URDFTest) {
 // the parent body, i.e. X_PF is not specified, no <pose> given in <joint>.
 // Therefore the inertial frames I need to be specified as doen in URDF files.
 TEST_F(DoublePendulumFramesTest, SDFTestWhereLequalsB) {
-  LoadTreeFrom("simple_pendulum_LequalsB.sdf");
+  LoadTreeFrom("simple_double_pendulum_LequalsB.sdf");
 
   EXPECT_EQ(tree_->get_num_bodies(), 4);
   EXPECT_EQ(tree_->get_num_positions(), 2);
@@ -196,7 +195,7 @@ TEST_F(DoublePendulumFramesTest, SDFTestWhereLequalsB) {
 // the joint "shaft2" expressed in the model frame D, i.e. <pose> is giving
 // X_DF for "shaft2".
 TEST_F(DoublePendulumFramesTest, SDFTestLisNotSpecified) {
-  LoadTreeFrom("simple_pendulum_LisNotSpecified.sdf");
+  LoadTreeFrom("simple_double_pendulum_LisNotSpecified.sdf");
 
   EXPECT_EQ(tree_->get_num_bodies(), 4);
   EXPECT_EQ(tree_->get_num_positions(), 2);

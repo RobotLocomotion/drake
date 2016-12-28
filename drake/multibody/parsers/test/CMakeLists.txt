@@ -1,6 +1,3 @@
-drake_add_cc_test(parsers_frames_test)
-target_link_libraries(parsers_frames_test drakeMultibodyParsers drakeRBM)
-
 add_executable(urdf_kinematics_test urdf_kinematics_test.cc)
 target_link_libraries(urdf_kinematics_test
     drakeMultibodyParsers
@@ -20,4 +17,5 @@ target_link_libraries(xml_util_test drakeMultibodyParsers)
 
 add_subdirectory(package_map_test)
 add_subdirectory(parser_common_test)
+add_subdirectory(parsers_frames_test)
 add_subdirectory(urdf_parser_test)

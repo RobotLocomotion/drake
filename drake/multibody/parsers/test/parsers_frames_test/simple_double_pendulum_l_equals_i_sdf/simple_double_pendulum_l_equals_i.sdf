@@ -1,12 +1,19 @@
 <sdf version='1.5'>
-  <model name='SimpleDoublePendulum'>
-    <!-- This specifies the model frame D expressed in W, i.e. X_WD -->
+  <!-- TODO(liang.fok): The color specifications used for the links in this SDF
+  are custom to the Gazebo simulator. Consider modifying Drake to support them.
+  -->
+  <model name='Simple_Double_Pendulum_L_Equals_I'>
+    <!-- Specifies X_WD, which is the model frame, D, expressed in the world
+    frame, W. -->
     <pose frame=''>0 0 0 0 0 0</pose>
 
     <link name='base'>
-      <!-- This specifies X_DL. -->
+      <!-- Specifies X_DL, which is the link frame, L, expressed in the model
+      frame, D. -->
       <pose frame=''>0 0 0 0 0 0</pose>
       <inertial>
+        <!-- Specifies X_IL, the inertial frame, I, expressed in the link frame,
+        L. -->
         <pose frame=''>0 0 0 0 0 0</pose>
         <mass>1.0</mass>
         <inertia>
@@ -18,8 +25,21 @@
           <izz>0</izz>
         </inertia>
       </inertial>
+      <visual name='base_visual'>
+        <pose frame=''>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1 0.2 1</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Red</name>
+          </script>
+        </material>
+      </visual>
     </link>
-
     <link name='upper_arm'>
       <!-- This specifies X_DL.
            Explicitly make it to be at Bo.-->
@@ -37,8 +57,22 @@
           <izz>0</izz>
         </inertia>
       </inertial>
+      <visual name='upper_arm_visual'>
+        <pose frame=''>0 -0.5 0 1.57079632679 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>1</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Green</name>
+          </script>
+        </material>
+      </visual>
     </link>
-
     <link name='lower_arm'>
       <!-- This specifies X_DL.
            In this case make L = I. -->
@@ -56,9 +90,25 @@
           <izz>0</izz>
         </inertia>
       </inertial>
+      <visual name='lower_arm_visual'>
+        <!-- This specifies X_LV. -->
+        <pose frame=''>0 0 0 1.57079632679 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>1</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Blue</name>
+          </script>
+        </material>
+      </visual>
     </link>
 
-    <joint name='shaft1' type='revolute'>
+    <joint name='joint1' type='revolute'>
       <parent>base</parent>
       <child>upper_arm</child>
       <axis>
@@ -68,7 +118,7 @@
       </axis>
     </joint>
 
-    <joint name='shaft2' type='revolute'>
+    <joint name='joint2' type='revolute'>
       <parent>upper_arm</parent>
       <child>lower_arm</child>
       <!-- Pose of the link frame F expressed in L, i.e. X_LF. -->
