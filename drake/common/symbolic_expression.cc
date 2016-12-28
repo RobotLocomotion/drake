@@ -413,6 +413,54 @@ ostream& operator<<(ostream& os, const Expression& e) {
   return e.ptr_->Display(os);
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator+=(Expression& lhs, const Variable& rhs) {
+  return lhs += Expression{rhs};
+}
+Expression operator+(const Variable& lhs, const Variable& rhs) {
+  return Expression{lhs} + Expression{rhs};
+}
+Expression operator+(Expression lhs, const Variable& rhs) { return lhs += rhs; }
+Expression operator+(const Variable& lhs, Expression rhs) { return rhs += lhs; }
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator-=(Expression& lhs, const Variable& rhs) {
+  return lhs -= Expression{rhs};
+}
+Expression operator-(const Variable& lhs, const Variable& rhs) {
+  return Expression{lhs} - Expression{rhs};
+}
+Expression operator-(Expression lhs, const Variable& rhs) { return lhs -= rhs; }
+Expression operator-(const Variable& lhs, Expression rhs) {
+  rhs -= lhs;   // rhs - lhs
+  return -rhs;  // lhs - rhs
+}
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator*=(Expression& lhs, const Variable& rhs) {
+  return lhs *= Expression{rhs};
+}
+Expression operator*(const Variable& lhs, const Variable& rhs) {
+  return Expression{lhs} * Expression{rhs};
+}
+Expression operator*(Expression lhs, const Variable& rhs) { return lhs *= rhs; }
+Expression operator*(const Variable& lhs, Expression rhs) { return rhs *= lhs; }
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator/=(Expression& lhs, const Variable& rhs) {
+  return lhs /= Expression{rhs};
+}
+Expression operator/(const Variable& lhs, const Variable& rhs) {
+  return Expression{lhs} / Expression{rhs};
+}
+Expression operator/(Expression lhs, const Variable& rhs) { return lhs /= rhs; }
+Expression operator/(const Variable& lhs, const Expression& rhs) {
+  return Expression(lhs) / rhs;
+}
+
+Expression operator+(const Variable& var) { return Expression{var}; }
+Expression operator-(const Variable& var) { return -Expression{var}; }
+
 Expression log(const Expression& e) {
   // Simplification: constant folding.
   if (e.get_kind() == ExpressionKind::Constant) {

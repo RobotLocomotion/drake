@@ -286,6 +286,34 @@ Expression& operator*=(Expression& lhs, const Expression& rhs);
 Expression operator/(Expression lhs, const Expression& rhs);
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator/=(Expression& lhs, const Expression& rhs);
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator+=(Expression& lhs, const Variable& rhs);
+Expression operator+(const Variable& lhs, const Variable& rhs);
+Expression operator+(Expression lhs, const Variable& rhs);
+Expression operator+(const Variable& lhs, Expression rhs);
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator-=(Expression& lhs, const Variable& rhs);
+Expression operator-(const Variable& lhs, const Variable& rhs);
+Expression operator-(Expression lhs, const Variable& rhs);
+Expression operator-(const Variable& lhs, Expression rhs);
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator*=(Expression& lhs, const Variable& rhs);
+Expression operator*(const Variable& lhs, const Variable& rhs);
+Expression operator*(Expression lhs, const Variable& rhs);
+Expression operator*(const Variable& lhs, Expression rhs);
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator/=(Expression& lhs, const Variable& rhs);
+Expression operator/(const Variable& lhs, const Variable& rhs);
+Expression operator/(Expression lhs, const Variable& rhs);
+Expression operator/(const Variable& lhs, const Expression& rhs);
+
+Expression operator+(const Variable& var);
+Expression operator-(const Variable& var);
+
 Expression log(const Expression& e);
 Expression abs(const Expression& e);
 Expression exp(const Expression& e);
@@ -450,6 +478,39 @@ struct NumTraits<drake::symbolic::Expression>
   struct Div {
     enum { Cost = 1 };
   };
+};
+
+// Informs Eigen that Variable op Variable gets Expression.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<drake::symbolic::Variable,
+                            drake::symbolic::Variable, BinaryOp> {
+  typedef drake::symbolic::Expression ReturnType;
+};
+
+// Informs Eigen that Variable op Expression gets Expression.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<drake::symbolic::Variable,
+                            drake::symbolic::Expression, BinaryOp> {
+  typedef drake::symbolic::Expression ReturnType;
+};
+
+// Informs Eigen that Expression op Variable gets Expression.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<drake::symbolic::Expression,
+                            drake::symbolic::Variable, BinaryOp> {
+  typedef drake::symbolic::Expression ReturnType;
+};
+
+// Informs Eigen that Variable op double gets Expression.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<drake::symbolic::Variable, double, BinaryOp> {
+  typedef drake::symbolic::Expression ReturnType;
+};
+
+// Informs Eigen that double op Variable gets Expression.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<double, drake::symbolic::Variable, BinaryOp> {
+  typedef drake::symbolic::Expression ReturnType;
 };
 
 namespace internal {
