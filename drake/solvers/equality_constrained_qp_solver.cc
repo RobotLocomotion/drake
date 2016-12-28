@@ -64,11 +64,15 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     for (const auto& v : binding.variable_list().variables()) {
       int num_v_variables = v.rows();
       DRAKE_ASSERT(v.cols() == 1);
+      std::vector<size_t> v_index(num_v_variables);
+      for (int i = 0; i < num_v_variables; ++i) {
+        v_index[i] = prog.decision_variable_index(v(i, 0));
+      }
       for (int i = 0; i < num_v_variables; ++i) {
         for (int j = 0; j < num_v_variables; ++j) {
-          G(v(i, 0).index(), v(j, 0).index()) += Q(index + i, index + j);
+          G(v_index[i], v_index[j]) += Q(index + i, index + j);
         }
-        c(v(i, 0).index()) += b(index + i);
+        c(v_index[i]) += b(index + i);
       }
       index += num_v_variables;
     }
@@ -86,7 +90,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       DRAKE_ASSERT(v.cols() == 1);
       int num_v_variables = v.rows();
       for (int i = 0; i < num_v_variables; ++i) {
-        A.block(constraint_index, v(i, 0).index(), n, 1) =
+        A.block(constraint_index, prog.decision_variable_index(v(i, 0)), n, 1) =
             bc->A().col(var_index + i);
       }
       var_index += num_v_variables;

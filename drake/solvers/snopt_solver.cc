@@ -196,7 +196,7 @@ struct SNOPTRun {
  * variable.
  */
 template <typename Binding>
-void EvaluateNonlinearConstraints(
+void EvaluateNonlinearConstraints(const MathematicalProgram& prog,
     const std::vector<Binding>& constraint_list, snopt::doublereal F[],
     snopt::doublereal G[], size_t* constraint_index, size_t* grad_index,
     const math::AutoDiffMatrixType<Eigen::VectorXd, Eigen::Dynamic>& tx) {
@@ -210,7 +210,7 @@ void EvaluateNonlinearConstraints(
       int num_v_variables = v.size();
       this_x.conservativeResize(index + num_v_variables);
       for (int i = 0; i < num_v_variables; ++i) {
-        this_x(index + i) = tx(v(i, 0).index());
+        this_x(index + i) = tx(prog.decision_variable_index(v(i, 0)));
       }
       index += num_v_variables;
     }
@@ -230,7 +230,7 @@ void EvaluateNonlinearConstraints(
            i < static_cast<snopt::integer>(num_constraints); i++) {
         for (int j = 0; j < v.size(); ++j) {
           G[(*grad_index)++] = static_cast<snopt::doublereal>(
-              ty(i).derivatives()(v(j, 0).index()));
+              ty(i).derivatives()(prog.decision_variable_index(v(j, 0))));
         }
       }
     }
@@ -275,7 +275,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
       int num_v_variables = v.size();
       this_x.conservativeResize(index + num_v_variables);
       for (int j = 0; j < num_v_variables; ++j) {
-        this_x(index + j) = tx(v(j, 0).index());
+        this_x(index + j) = tx(current_problem->decision_variable_index(v(j, 0)));
       }
       index += num_v_variables;
     }
@@ -286,8 +286,9 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
     for (const DecisionVariableMatrixX& v :
          binding.variable_list().variables()) {
       for (int j = 0; j < v.size(); ++j) {
-        G[v(j, 0).index()] += static_cast<snopt::doublereal>(
-            ty(0).derivatives()(v(j, 0).index()));
+        size_t vj_index = current_problem->decision_variable_index(v(j, 0));
+        G[vj_index] += static_cast<snopt::doublereal>(
+            ty(0).derivatives()(vj_index));
       }
     }
   }
@@ -297,11 +298,11 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   size_t constraint_index = 1;
   // The gradient_index also starts after the cost.
   size_t grad_index = *n;
-  EvaluateNonlinearConstraints(current_problem->generic_constraints(), F, G,
+  EvaluateNonlinearConstraints(*current_problem, current_problem->generic_constraints(), F, G,
                                &constraint_index, &grad_index, tx);
-  EvaluateNonlinearConstraints(current_problem->lorentz_cone_constraints(), F,
+  EvaluateNonlinearConstraints(*current_problem, current_problem->lorentz_cone_constraints(), F,
                                G, &constraint_index, &grad_index, tx);
-  EvaluateNonlinearConstraints(
+  EvaluateNonlinearConstraints(*current_problem,
       current_problem->rotated_lorentz_cone_constraints(), F, G,
       &constraint_index, &grad_index, tx);
 
@@ -330,7 +331,7 @@ void UpdateNumNonlinearConstraintsAndGradients(
 }
 
 template <typename Binding>
-void UpdateConstraintBoundsAndGradients(
+void UpdateConstraintBoundsAndGradients(const MathematicalProgram& prog,
     const std::vector<Binding>& constraint_list, snopt::doublereal* Flow,
     snopt::doublereal* Fupp, snopt::integer* iGfun, snopt::integer* jGvar,
     size_t* constraint_index, size_t* grad_index) {
@@ -350,7 +351,7 @@ void UpdateConstraintBoundsAndGradients(
       for (size_t i = 0; i < n; i++) {
         for (int j = 0; j < v.size(); ++j) {
           iGfun[*grad_index] = *constraint_index + i + 1;  // row order
-          jGvar[*grad_index] = v(j, 0).index() + 1;
+          jGvar[*grad_index] = prog.decision_variable_index(v(j, 0)) + 1;
           (*grad_index)++;
         }
       }
@@ -389,12 +390,13 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
          binding.variable_list().variables()) {
       DRAKE_ASSERT(v.cols() == 1);
       for (int k = 0; k < v.size(); ++k) {
-        xlow[v(k, 0).index()] = std::max<snopt::doublereal>(
+        size_t vk_index = prog.decision_variable_index(v(k, 0));
+        xlow[vk_index] = std::max<snopt::doublereal>(
             static_cast<snopt::doublereal>(lb(var_count)),
-            xlow[v(k, 0).index()]);
-        xupp[v(k, 0).index()] = std::min<snopt::doublereal>(
+            xlow[vk_index]);
+        xupp[vk_index] = std::min<snopt::doublereal>(
             static_cast<snopt::doublereal>(ub(var_count)),
-            xupp[v(k, 0).index()]);
+            xupp[vk_index]);
         ++var_count;
       }
     }
@@ -438,13 +440,13 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   size_t constraint_index = 1, grad_index = nx;  // constraint index starts at 1
                                                  // because the cost is the
                                                  // first row
-  UpdateConstraintBoundsAndGradients(prog.generic_constraints(), Flow, Fupp,
+  UpdateConstraintBoundsAndGradients(prog, prog.generic_constraints(), Flow, Fupp,
                                      iGfun, jGvar, &constraint_index,
                                      &grad_index);
-  UpdateConstraintBoundsAndGradients(prog.lorentz_cone_constraints(), Flow,
+  UpdateConstraintBoundsAndGradients(prog, prog.lorentz_cone_constraints(), Flow,
                                      Fupp, iGfun, jGvar, &constraint_index,
                                      &grad_index);
-  UpdateConstraintBoundsAndGradients(prog.rotated_lorentz_cone_constraints(),
+  UpdateConstraintBoundsAndGradients(prog, prog.rotated_lorentz_cone_constraints(),
                                      Flow, Fupp, iGfun, jGvar,
                                      &constraint_index, &grad_index);
 
@@ -467,7 +469,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
                                                            var_index + k);
              it; ++it) {
           tripletList.push_back(T(linear_constraint_index + it.row(),
-                                  v(k, 0).index(), it.value()));
+                                  prog.decision_variable_index(v(k, 0)), it.value()));
         }
       }
       var_index += v.size();
