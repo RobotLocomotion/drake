@@ -273,6 +273,8 @@ void RigidBodyTree<T>::compile(void) {
     body.set_contact_points(contact_points);
   }
 
+  ConfirmCompleteTree();
+
   CreateCollisionCliques();
 
   initialized_ = true;
@@ -1044,6 +1046,52 @@ void RigidBodyTree<T>::updateCompositeRigidBodyInertias(
     }
   }
   cache.setInertiasCached();
+}
+
+template <typename T>
+void RigidBodyTree<T>::ConfirmCompleteTree() const {
+  std::set<int> bodies_with_paths;
+  bodies_with_paths.insert(0);  // Adds the world node by default.
+
+  for (const auto& body : bodies) {
+    TestConnectedToWorld(*body, &bodies_with_paths);
+  }
+}
+
+template <typename T>
+void RigidBodyTree<T>::TestConnectedToWorld(const RigidBody<T>& body,
+                                            std::set<int>* connected) const {
+  DRAKE_ASSERT(connected->find(0) != connected->end() &&
+    "The connected set should always include the world node: 0.");
+  int id = body.get_body_index();
+  if (connected->find(id) == connected->end()) {
+    if (!body.has_joint()) {
+      // NOTE: This test is redundant if it is called during
+      // RigidBodyTree::compile because two previous operations will catch
+      // the missing joint error.  However, for the sake of completeness
+      // and because the cost of the redundancy is negligible, the joint
+      // test is also included.
+      throw runtime_error(
+          "ERROR: RigidBodyTree::TestConnectedToWorld(): "
+              "Rigid body \"" +
+              body.get_name() + "\" in model " + body.get_model_name() +
+              " has no joint!");
+    }
+    const RigidBody<T>* parent = body.get_parent();
+    if (parent == nullptr) {
+      // We know this is *not* the world node because the world node is in the
+      // connected set.
+      throw runtime_error(
+          "ERROR: RigidBodyTree::TestConnectedToWorld(): "
+          "Rigid body \"" +
+          body.get_name() + "\" in model " + body.get_model_name() +
+          " is not connected to the world!");
+    }
+    TestConnectedToWorld(*parent, connected);
+    // No ancestor of this body threw an exception, so it must have a path.
+    // Add it to the set of known connected nodes.
+    connected->insert(id);
+  }
 }
 
 template <typename T>
