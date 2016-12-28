@@ -22,6 +22,7 @@ cc_library(
         "drake_throw.h",
         "eigen_stl_types.h",
         "eigen_types.h",
+        "never_destroyed.h",
         "text_logging.h",
     ],
     linkstatic = 1,
@@ -315,6 +316,13 @@ cc_googletest(
     deps = [
         ":common",
         ":is_approx_equal_abstol",
+    ],
+)
+
+cc_googletest(
+    name = "never_destroyed_test",
+    deps = [
+        ":common",
     ],
 )
 
