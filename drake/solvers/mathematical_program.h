@@ -342,7 +342,7 @@ class MathematicalProgram {
    */
   template <int rows, int cols>
   DecisionVariableMatrix<rows, cols> AddVariables(
-      DecisionVariableScalar::VarType type,
+      VarType type,
       const std::array<std::string, rows * cols>& names) {
     DecisionVariableMatrix<rows, cols> decision_variable_matrix;
     AddVariables_impl(type, names, false, decision_variable_matrix);
@@ -354,7 +354,7 @@ class MathematicalProgram {
    */
   template <int rows>
   DecisionVariableVector<rows> AddVariables(
-      DecisionVariableScalar::VarType type,
+      VarType type,
       const std::array<std::string, rows>& names) {
     return AddVariables<rows, 1>(type, names);
   }
@@ -368,7 +368,7 @@ class MathematicalProgram {
    */
   template <int rows>
   DecisionVariableMatrix<rows, rows> AddSymmetricVariables(
-      DecisionVariableScalar::VarType type,
+      VarType type,
       const std::array<std::string, rows*(rows + 1) / 2>& names) {
     DecisionVariableMatrix<rows, rows> decision_variable_matrix;
     AddVariables_impl(type, names, true, decision_variable_matrix);
@@ -460,7 +460,7 @@ class MathematicalProgram {
   template <int rows, int cols>
   DecisionVariableMatrix<rows, cols> AddContinuousVariables(
       const std::array<std::string, rows * cols>& names) {
-    return AddVariables<rows, cols>(DecisionVariableScalar::VarType::CONTINUOUS,
+    return AddVariables<rows, cols>(VarType::CONTINUOUS,
                                     names);
   }
 
@@ -498,7 +498,7 @@ class MathematicalProgram {
             name + "(" + std::to_string(i) + "," + std::to_string(j) + ")";
       }
     }
-    return AddVariables<rows, cols>(DecisionVariableScalar::VarType::CONTINUOUS,
+    return AddVariables<rows, cols>(VarType::CONTINUOUS,
                                     names);
   }
 
@@ -577,7 +577,7 @@ class MathematicalProgram {
   template <int rows, int cols>
   DecisionVariableMatrix<rows, cols> AddBinaryVariables(
       const std::array<std::string, rows * cols>& names) {
-    return AddVariables<rows, cols>(DecisionVariableScalar::VarType::BINARY,
+    return AddVariables<rows, cols>(VarType::BINARY,
                                     names);
   }
 
@@ -723,7 +723,7 @@ class MathematicalProgram {
       }
     }
     return AddSymmetricVariables<rows>(
-        DecisionVariableScalar::VarType::CONTINUOUS, names);
+        VarType::CONTINUOUS, names);
   }
 
   /**
@@ -1593,13 +1593,8 @@ class MathematicalProgram {
    * of x(i) in the MathematicalProgram, where x is the vector containing all
    * decision variables.
    */
-  std::vector<DecisionVariableScalar::VarType> VariableTypes() const {
-    std::vector<DecisionVariableScalar::VarType> variable_type;
-    variable_type.resize(num_vars());
-    for (int i = 0; i < static_cast<int>(num_vars_); ++i) {
-      variable_type[variables_(i).index()] = variables_(i).type();
-    }
-    return variable_type;
+  const std::vector<VarType>& DecisionVariableTypes() const {
+    return decision_variable_type_;
   }
 
   /** Getter for the initial guess */
@@ -1638,7 +1633,9 @@ class MathematicalProgram {
 
  private:
   std::map<symbolic::Variable, size_t> decision_variable_index_;
-  std::map<symbolic::Variable, VarType> decision_variable_type_;
+  std::vector<VarType> decision_variable_type_; // decision_variable_type_[i]
+                                                // stores the type of the
+                                                // variable with index i.
 
   DecisionVariableVectorX variables_;
   std::vector<Binding<Constraint>> generic_costs_;
@@ -1688,12 +1685,12 @@ class MathematicalProgram {
 
   template <typename T>
   void AddVariables_impl(
-      DecisionVariableScalar::VarType type, const T& names, bool is_symmetric,
+      VarType type, const T& names, bool is_symmetric,
       Eigen::Ref<DecisionVariableMatrixX> decision_variable_matrix) {
     switch (type) {
-      case DecisionVariableScalar::VarType::CONTINUOUS:
+      case VarType::CONTINUOUS:
         break;
-      case DecisionVariableScalar::VarType::BINARY:
+      case VarType::BINARY:
         required_capabilities_ |= kBinaryVariable;
         break;
       default:
@@ -1746,11 +1743,11 @@ class MathematicalProgram {
     x_initial_guess_.tail(num_new_vars) = Eigen::VectorXd::Zero(num_new_vars);
   }
 
-  DecisionVariableMatrixX AddVariables(DecisionVariableScalar::VarType type,
+  DecisionVariableMatrixX AddVariables(VarType type,
                                        int rows, int cols, bool is_symmetric,
                                        const std::vector<std::string>& names);
 
-  DecisionVariableVectorX AddVariables(DecisionVariableScalar::VarType type,
+  DecisionVariableVectorX AddVariables(VarType type,
                                        int rows,
                                        const std::vector<std::string>& names);
 };

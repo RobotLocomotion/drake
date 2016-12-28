@@ -72,7 +72,7 @@ MathematicalProgram::MathematicalProgram()
       mosek_solver_(new MosekSolver()) {}
 
 DecisionVariableMatrixX MathematicalProgram::AddVariables(
-    DecisionVariableScalar::VarType type, int rows, int cols, bool is_symmetric,
+    VarType type, int rows, int cols, bool is_symmetric,
     const std::vector<std::string>& names) {
   DecisionVariableMatrixX decision_variable_matrix(rows, cols);
   AddVariables_impl(type, names, is_symmetric, decision_variable_matrix);
@@ -80,19 +80,19 @@ DecisionVariableMatrixX MathematicalProgram::AddVariables(
 }
 
 DecisionVariableVectorX MathematicalProgram::AddVariables(
-    DecisionVariableScalar::VarType type, int rows,
+    VarType type, int rows,
     const std::vector<std::string>& names) {
   return AddVariables(type, rows, 1, false, names);
 }
 
 DecisionVariableVectorX MathematicalProgram::AddContinuousVariables(
     std::size_t rows, const std::vector<std::string>& names) {
-  return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, names);
+  return AddVariables(VarType::CONTINUOUS, rows, names);
 }
 
 DecisionVariableMatrixX MathematicalProgram::AddContinuousVariables(
     std::size_t rows, std::size_t cols, const std::vector<std::string>& names) {
-  return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, cols,
+  return AddVariables(VarType::CONTINUOUS, rows, cols,
                       false, names);
 }
 
@@ -121,7 +121,7 @@ DecisionVariableMatrixX MathematicalProgram::AddContinuousVariables(
 
 DecisionVariableMatrixX MathematicalProgram::AddBinaryVariables(
     size_t rows, size_t cols, const std::vector<std::string>& names) {
-  return AddVariables(DecisionVariableScalar::VarType::BINARY, rows, cols,
+  return AddVariables(VarType::BINARY, rows, cols,
                       false, names);
 }
 
@@ -141,7 +141,7 @@ DecisionVariableMatrixX MathematicalProgram::AddBinaryVariables(
 
 DecisionVariableMatrixX MathematicalProgram::AddSymmetricContinuousVariables(
     size_t rows, const std::vector<std::string>& names) {
-  return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, rows,
+  return AddVariables(VarType::CONTINUOUS, rows, rows,
                       true, names);
 }
 
@@ -156,7 +156,7 @@ DecisionVariableMatrixX MathematicalProgram::AddSymmetricContinuousVariables(
       ++count;
     }
   }
-  return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, rows,
+  return AddVariables(VarType::CONTINUOUS, rows, rows,
                       true, names);
 }
 
@@ -166,7 +166,7 @@ DecisionVariableVectorX MathematicalProgram::AddBinaryVariables(
   for (int i = 0; i < static_cast<int>(rows); ++i) {
     names[i] = name + std::to_string(i);
   }
-  return AddVariables(DecisionVariableScalar::VarType::BINARY, rows, names);
+  return AddVariables(VarType::BINARY, rows, names);
 }
 
 void MathematicalProgram::AddCost(const std::shared_ptr<Constraint>& obj,
@@ -364,7 +364,7 @@ size_t MathematicalProgram::decision_variable_index(const symbolic::Variable &va
 }
 
 VarType MathematicalProgram::decision_variable_type(const symbolic::Variable &var) const {
-  return decision_variable_type_[var];
+  return decision_variable_type_[decision_variable_index_[var]];
 }
 
 SolutionResult MathematicalProgram::Solve() {

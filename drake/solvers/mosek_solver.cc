@@ -537,7 +537,7 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
   MSKrescodee rescode = MSK_RES_OK;
   int num_vars = prog.num_vars();
   const std::vector<DecisionVariableScalar::VarType>& var_type =
-      prog.VariableTypes();
+      prog.DecisionVariableTypes();
   for (int i = 0; i < num_vars && rescode == MSK_RES_OK; ++i) {
     if (var_type[i] == DecisionVariableScalar::VarType::INTEGER) {
       rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
