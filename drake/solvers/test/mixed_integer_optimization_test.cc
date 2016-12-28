@@ -29,7 +29,7 @@ GTEST_TEST(TestMixedIntegerOptimization, TestMixedIntegerLinearProgram1) {
   GetMixedIntegerLinearProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     MathematicalProgram prog;
-    auto x = prog.AddBinaryVariables(3, "x");
+    auto x = prog.NewBinaryVariables(3, "x");
     Eigen::Vector3d c(-1, -1, -2);
     prog.AddLinearCost(c);
     Eigen::RowVector3d a1(1, 2, 3);
@@ -58,7 +58,7 @@ GTEST_TEST(TestMixedIntegerOptimization, TestMixedIntegerLinearProgram2) {
   GetMixedIntegerLinearProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     MathematicalProgram prog;
-    auto x = prog.AddBinaryVariables<3>("x");
+    auto x = prog.NewBinaryVariables<3>("x");
     Eigen::Vector3d c(2, 1, -2);
     prog.AddLinearCost(c);
     Eigen::RowVector3d a1(0.7, 0.5, 1);

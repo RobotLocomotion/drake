@@ -108,8 +108,8 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   // The order of insertion is important, the rest of the program assumes this
   // layout.
   prog_.reset(new solvers::MathematicalProgram());
-  vd_ = prog_->AddContinuousVariables(num_vd_, "vd");
-  basis_ = prog_->AddContinuousVariables(num_basis_, "basis");
+  vd_ = prog_->NewContinuousVariables(num_vd_, "vd");
+  basis_ = prog_->NewContinuousVariables(num_basis_, "basis");
 
   // Allocate various matrices and vectors.
   stacked_contact_jacobians_.resize(3 * num_point_force_, num_vd_);
@@ -536,7 +536,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // should return the cost directly.
   for (auto& cost_b : costs) {
     solvers::Constraint* cost = cost_b.constraint().get();
-    cost->Eval(cost_b.VariableListToVectorXd(), tmp_vec);
+    cost->Eval(cost_b.VariableListToVectorXd(*prog_), tmp_vec);
     output->mutable_cost(ctr).first = cost->get_description();
     output->mutable_cost(ctr).second = tmp_vec(0);
     ctr++;
@@ -544,13 +544,13 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
 
   for (auto& eq_b : eqs) {
     solvers::LinearEqualityConstraint* eq = eq_b.constraint().get();
-    DRAKE_ASSERT((eq->A() * eq_b.VariableListToVectorXd() - eq->lower_bound())
+    DRAKE_ASSERT((eq->A() * eq_b.VariableListToVectorXd(*prog_) - eq->lower_bound())
                      .isZero(1e-6));
   }
 
   for (auto& ineq_b : ineqs) {
     solvers::LinearConstraint* ineq = ineq_b.constraint().get();
-    tmp_vec = ineq->A() * ineq_b.VariableListToVectorXd();
+    tmp_vec = ineq->A() * ineq_b.VariableListToVectorXd(*prog_);
     for (int i = 0; i < tmp_vec.size(); ++i) {
       DRAKE_ASSERT(tmp_vec[i] >= ineq->lower_bound()[i] - 1e-6 &&
                    tmp_vec[i] <= ineq->upper_bound()[i] + 1e-6);

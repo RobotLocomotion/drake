@@ -49,7 +49,7 @@ void GetSemidefiniteProgramSolvers(
 void TestLinearProgramFeasibility(
     const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<3>();
+  auto x = prog.NewContinuousVariables<3>();
   Eigen::Matrix<double, 3, 3> A;
   A << 1, 2, 3, 0, 1, -2, 0, 0, 0;
   Eigen::Vector3d b_lb(0, -std::numeric_limits<double>::infinity(), -1);
@@ -85,7 +85,7 @@ void TestLinearProgramFeasibility(
 // The optimal solution is x0 = 1, x1 = 2
 void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<2>();
+  auto x = prog.NewContinuousVariables<2>();
 
   prog.AddLinearCost(Eigen::Vector2d(2.0, 1.0));
   Eigen::Matrix<double, 3, 2> A;
@@ -119,7 +119,7 @@ void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
 // The optimal solution is (0, 4)
 void TestLinearProgram1(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<2>();
+  auto x = prog.NewContinuousVariables<2>();
   prog.AddLinearCost(Eigen::Vector2d(1.0, -2.0));
   prog.AddBoundingBoxConstraint(Eigen::Vector2d(0, -1), Eigen::Vector2d(2, 4));
 
@@ -147,7 +147,7 @@ void TestLinearProgram1(const MathematicalProgramSolverInterface& solver) {
 // The optimal solution is at (0, 0, 15, 25/3)
 void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<4>();
+  auto x = prog.NewContinuousVariables<4>();
   // We deliberately break the cost to c1' * [x0;x1;x2] + c2'*[x2;x3] here
   // to test adding multiple costs.
   Eigen::Vector3d c1(-3, -1, -4);
@@ -199,7 +199,7 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
  */
 void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<2>();
+  auto x = prog.NewContinuousVariables<2>();
 
   // Deliberately add the cost as the sum of a quadratic cost
   // 2x1^2 + x2^2 + x1x2 + x1
@@ -247,7 +247,7 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
 //   The optimal solution is (0, 1, 2/3)
 void TestQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(3);
+  auto x = prog.NewContinuousVariables(3);
 
   Eigen::MatrixXd Q = 2 * Eigen::Matrix<double, 3, 3>::Identity();
   Q(0, 1) = 1;
@@ -299,7 +299,7 @@ void TestQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
 // matrix Q has off-diagonal terms.
 void TestQuadraticProgram2(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<5>();
+  auto x = prog.NewContinuousVariables<5>();
   Eigen::MatrixXd Q = Eigen::MatrixXd::Constant(5, 5, 0.0);
   Eigen::VectorXd Qdiag = Eigen::VectorXd::Constant(5, 0.0);
   Qdiag << 5.5, 6.5, 6.0, 5.3, 7.5;
@@ -339,7 +339,7 @@ void TestQuadraticProgram2(const MathematicalProgramSolverInterface& solver) {
 // this case, the quadratic costs on x(2), x(3) are added for twice).
 void TestQuadraticProgram3(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<6>();
+  auto x = prog.NewContinuousVariables<6>();
   Eigen::MatrixXd Q1 = Eigen::MatrixXd::Constant(4, 4, 0.0);
   Eigen::VectorXd Q1diag = Eigen::VectorXd::Constant(4, 0.0);
   Q1diag << 5.5, 6.5, 6.0, 7.0;
@@ -391,7 +391,7 @@ void TestQuadraticProgram3(const MathematicalProgramSolverInterface& solver) {
 // x(0) = 4/5, x(1) = 1/5, x(2) = 3/5
 void TestQuadraticProgram4(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(3);
+  auto x = prog.NewContinuousVariables(3);
 
   Eigen::Matrix3d Q = Eigen::Matrix3d::Identity();
   Q(2, 2) = 2.0;
@@ -418,7 +418,7 @@ void TestQuadraticProgram4(const MathematicalProgramSolverInterface& solver) {
 /// active set moves along 4 faces of the L1 ball.
 void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(2);
+  auto x = prog.NewContinuousVariables(2);
 
   Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
   Eigen::Vector2d x_desired;
@@ -528,12 +528,12 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
 
   MathematicalProgram prog;
   const int kXdim = x1.rows();
-  auto t = prog.AddContinuousVariables(2, "t");
-  auto a = prog.AddContinuousVariables(kXdim, "a");
+  auto t = prog.NewContinuousVariables(2, "t");
+  auto a = prog.NewContinuousVariables(kXdim, "a");
   // R1a = R1' * a
   // R2a = R2' * a
-  auto R1a = prog.AddContinuousVariables(R1.cols(), "R1a");
-  auto R2a = prog.AddContinuousVariables(R2.cols(), "R2a");
+  auto R1a = prog.NewContinuousVariables(R1.cols(), "R1a");
+  auto R2a = prog.NewContinuousVariables(R2.cols(), "R2a");
   Eigen::MatrixXd R1_transpose = R1.transpose();
   Eigen::MatrixXd R2_transpose = R2.transpose();
   Eigen::MatrixXd A_R1a(R1.cols(), R1.cols() + R1.rows());
@@ -601,11 +601,11 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
     // 1 >= |u1|
     // 1 >= |u2|
     MathematicalProgram prog_intersect;
-    auto u1 = prog_intersect.AddContinuousVariables(R1.cols(), "u1");
-    auto u2 = prog_intersect.AddContinuousVariables(R2.cols(), "u2");
-    auto y = prog_intersect.AddContinuousVariables(kXdim, "y");
+    auto u1 = prog_intersect.NewContinuousVariables(R1.cols(), "u1");
+    auto u2 = prog_intersect.NewContinuousVariables(R2.cols(), "u2");
+    auto y = prog_intersect.NewContinuousVariables(kXdim, "y");
 
-    auto slack = prog_intersect.AddContinuousVariables<1>("slack");
+    auto slack = prog_intersect.NewContinuousVariables<1>("slack");
     prog_intersect.AddBoundingBoxConstraint(1, 1, slack(0));
 
     prog_intersect.AddLorentzConeConstraint({slack, u1});
@@ -680,10 +680,10 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
 
   MathematicalProgram prog_socp;
 
-  auto x_socp = prog_socp.AddContinuousVariables(kXdim, "x");
-  auto y = prog_socp.AddContinuousVariables<1>("y");
-  auto z = prog_socp.AddContinuousVariables<1>("z");
-  auto w = prog_socp.AddContinuousVariables(kXdim, "w");
+  auto x_socp = prog_socp.NewContinuousVariables(kXdim, "x");
+  auto y = prog_socp.NewContinuousVariables<1>("y");
+  auto z = prog_socp.NewContinuousVariables<1>("z");
+  auto w = prog_socp.NewContinuousVariables(kXdim, "w");
 
   prog_socp.AddBoundingBoxConstraint(2.0, 2.0, z(0));
   prog_socp.AddRotatedLorentzConeConstraint({y, z, w});
@@ -717,7 +717,7 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
 
   // Now solve the problem as a QP.
   MathematicalProgram prog_qp;
-  auto x_qp = prog_qp.AddContinuousVariables(kXdim, "x");
+  auto x_qp = prog_qp.NewContinuousVariables(kXdim, "x");
   prog_qp.AddQuadraticCost(Q, c, {x_qp});
   prog_qp.AddLinearConstraint(A, b_lb, b_ub, {x_qp});
   RunSolver(&prog_qp, solver);
@@ -807,9 +807,9 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
                            const MathematicalProgramSolverInterface& solver) {
   int num_nodes = weight.rows();
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(num_nodes, "x");
-  auto y = prog.AddContinuousVariables(num_nodes, "y");
-  auto t = prog.AddContinuousVariables(num_nodes - 1, "t");
+  auto x = prog.NewContinuousVariables(num_nodes, "x");
+  auto y = prog.NewContinuousVariables(num_nodes, "y");
+  auto t = prog.NewContinuousVariables(num_nodes - 1, "t");
   prog.AddBoundingBoxConstraint(end_pos1, end_pos1, {x.head<1>(), y.head<1>()});
   prog.AddBoundingBoxConstraint(
       end_pos2, end_pos2,
@@ -819,7 +819,7 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
       Eigen::VectorXd::Constant(num_nodes - 1,
                                 std::numeric_limits<double>::infinity()),
       {t});
-  auto t_plus_l0 = prog.AddContinuousVariables(
+  auto t_plus_l0 = prog.NewContinuousVariables(
       num_nodes - 1,
       "t_plus_l0");  // The slack variable equals to t_i + spring_rest_length
   Eigen::MatrixXd A1(num_nodes - 1, 2 * (num_nodes - 1));
@@ -830,8 +830,8 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
       {t_plus_l0, t});
   // x_diff(i) = x(i+1) - x(i)
   // y_diff(i) = y(i+1) - y(i)
-  auto x_diff = prog.AddContinuousVariables(num_nodes - 1, "xd");
-  auto y_diff = prog.AddContinuousVariables(num_nodes - 1, "yd");
+  auto x_diff = prog.NewContinuousVariables(num_nodes - 1, "xd");
+  auto y_diff = prog.NewContinuousVariables(num_nodes - 1, "yd");
   Eigen::MatrixXd A2(num_nodes - 1, 2 * num_nodes - 1);
   A2.setZero();
   A2.block(0, 0, num_nodes - 1, num_nodes - 1) =
@@ -852,7 +852,7 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
   }
 
   // Add constraint z >= t_1^2 + .. + t_(N-1)^2
-  auto z = prog.AddContinuousVariables(2, "z");
+  auto z = prog.NewContinuousVariables(2, "z");
   prog.AddBoundingBoxConstraint(1, 1, z(0));
   prog.AddRotatedLorentzConeConstraint({z, t});
 
@@ -1051,9 +1051,9 @@ GTEST_TEST(TestConvexOptimization, TestQuadraticProgram5) {
   bool get_solution = false;
   for (const auto& solver : solvers) {
     MathematicalProgram prog;
-    auto x = prog.AddContinuousVariables(2, "x");
-    auto z = prog.AddContinuousVariables(2, "z");
-    auto y = prog.AddContinuousVariables(2, "y");
+    auto x = prog.NewContinuousVariables(2, "x");
+    auto z = prog.NewContinuousVariables(2, "z");
+    auto y = prog.NewContinuousVariables(2, "y");
 
     // Randomly generated vector.
     Eigen::Matrix<double, 2, 4> CE_xy;
@@ -1190,7 +1190,7 @@ GTEST_TEST(TestConvexOptimization, TestTrivialSDP) {
   for (const auto& solver : solvers) {
     MathematicalProgram prog;
 
-    auto S = prog.AddSymmetricContinuousVariables<2>("S");
+    auto S = prog.NewSymmetricContinuousVariables<2>("S");
 
     prog.AddPositiveSemidefiniteConstraint(S);
 
@@ -1214,7 +1214,7 @@ template <int x_dim>
 DecisionVariableMatrix<x_dim, x_dim> AddLyapunovCondition(
     const Eigen::Matrix<double, x_dim, x_dim>& A,
     const DecisionVariableMatrix<x_dim, x_dim>& P, MathematicalProgram* prog) {
-  const auto Q = prog->AddSymmetricContinuousVariables<x_dim>();
+  const auto Q = prog->NewSymmetricContinuousVariables<x_dim>();
   prog->AddPositiveSemidefiniteConstraint(Q);
   // TODO(hongkai.dai): Use symbolic variable to compute the expression
   // A' * P + P * A + Q.
@@ -1258,7 +1258,7 @@ GTEST_TEST(TestConvexOptimization, TestCommonLyapunov) {
   GetSemidefiniteProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     MathematicalProgram prog;
-    auto P = prog.AddSymmetricContinuousVariables<3>("P");
+    auto P = prog.NewSymmetricContinuousVariables<3>("P");
     prog.AddPositiveSemidefiniteConstraint(P);
     Eigen::Matrix3d A1;
     // clang-format off
@@ -1312,7 +1312,7 @@ GTEST_TEST(TestConvexOptimization, TestEigenvalueProblem) {
   GetSemidefiniteProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     MathematicalProgram prog;
-    auto x = prog.AddContinuousVariables<2>("x");
+    auto x = prog.NewContinuousVariables<2>("x");
     Eigen::Matrix3d F1;
     // clang-format off
     F1 << 1, 0.2, 0.3,
@@ -1325,7 +1325,7 @@ GTEST_TEST(TestConvexOptimization, TestEigenvalueProblem) {
          0.4, -1, 0.1,
          0.7, 0.1, 5;
     // clang-format on
-    auto z = prog.AddContinuousVariables<1>("z");
+    auto z = prog.NewContinuousVariables<1>("z");
     prog.AddLinearMatrixInequalityConstraint(
         {Eigen::Matrix3d::Zero(), Eigen::Matrix3d::Identity(), -F1, -F2},
         {z, x});
