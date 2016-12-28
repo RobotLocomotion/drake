@@ -6,6 +6,7 @@
 
 #include "lcm/lcm-cpp.hpp"
 
+#include "drake/common/never_destroyed.h"
 #include "drake/lcmt_call_matlab.hpp"
 #include "drake/lcmt_matlab_array.hpp"
 
@@ -63,15 +64,11 @@ void ToLcmMatlabArray(const std::string& str,
 }
 
 void internal::PublishLcmCallMatlab(const drake::lcmt_call_matlab& msg) {
-  // Keep a local instance of LCM here for publishing.
-  // Per the style guide, must use a raw pointer (who's destructor will never be
-  // called).
-  // https://google.github.io/styleguide/cppguide.html#Static_and_Global_Variables
-  static ::lcm::LCM* lcm = new ::lcm::LCM();
+  static never_destroyed<::lcm::LCM> lcm;
 
-  if (!lcm->good()) return;
+  if (!lcm.access().good()) return;
 
-  lcm->publish("LCM_CALL_MATLAB", &msg);
+  lcm.access().publish("LCM_CALL_MATLAB", &msg);
 }
 
 }  // namespace lcm
