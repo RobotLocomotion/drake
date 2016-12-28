@@ -8,9 +8,8 @@ namespace DrakeCollision {
 
 // TODO(jamiesnape): Implement the model.
 
-ElementId FCLModel::addElement(const Element& element) {
+void FCLModel::DoAddElement(const Element& element) {
   DRAKE_ABORT_MSG("Not implemented.");
-  return Model::addElement(element);
 }
 
 void FCLModel::updateModel() {
