@@ -87,7 +87,7 @@ void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables<2>();
 
-  prog.AddLinearCost(Eigen::RowVector2d(2.0, 1.0));
+  prog.AddLinearCost(Eigen::Vector2d(2.0, 1.0));
   Eigen::Matrix<double, 3, 2> A;
   A << -1, 1, 1, 1, 1, -2;
   Eigen::Vector3d b_lb(-std::numeric_limits<double>::infinity(), 2.0,
@@ -120,7 +120,7 @@ void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
 void TestLinearProgram1(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables<2>();
-  prog.AddLinearCost(Eigen::RowVector2d(1.0, -2.0));
+  prog.AddLinearCost(Eigen::Vector2d(1.0, -2.0));
   prog.AddBoundingBoxConstraint(Eigen::Vector2d(0, -1), Eigen::Vector2d(2, 4));
 
   if (solver.SolverName() == "SNOPT") {
@@ -150,8 +150,8 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
   auto x = prog.AddContinuousVariables<4>();
   // We deliberately break the cost to c1' * [x0;x1;x2] + c2'*[x2;x3] here
   // to test adding multiple costs.
-  Eigen::RowVector3d c1(-3, -1, -4);
-  Eigen::RowVector2d c2(-1, -1);
+  Eigen::Vector3d c1(-3, -1, -4);
+  Eigen::Vector2d c2(-1, -1);
 
   prog.AddLinearCost(c1, {x.head<3>()});
   prog.AddLinearCost(c2, {x.tail<2>()});
@@ -553,7 +553,7 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   prog.AddLinearEqualityConstraint((x2 - x1).transpose(), 1.0, {a});
 
   // Add cost
-  auto cost = prog.AddLinearCost(Eigen::RowVector2d(1.0, 1.0), {t});
+  auto cost = prog.AddLinearCost(Eigen::Vector2d(1.0, 1.0), {t});
 
   // Add Lorentz cones
   auto lorentz_cone1 = prog.AddLorentzConeConstraint({t.segment<1>(0), R1a});
@@ -857,7 +857,7 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
   prog.AddRotatedLorentzConeConstraint({z, t});
 
   prog.AddLinearCost(drake::Vector1d(spring_stiffness / 2), {z.segment<1>(1)});
-  prog.AddLinearCost(weight.transpose(), {y});
+  prog.AddLinearCost(weight, {y});
 
   RunSolver(&prog, solver);
 
@@ -1160,7 +1160,7 @@ GTEST_TEST(TestConvexOptimization, TestTrivialSDP) {
 
     prog.AddBoundingBoxConstraint(1, 1, S(1, 0));
 
-    prog.AddLinearCost(Eigen::RowVector2d(1, 1), {S.diagonal()});
+    prog.AddLinearCost(Eigen::Vector2d(1, 1), {S.diagonal()});
 
     RunSolver(&prog, *solver);
 
