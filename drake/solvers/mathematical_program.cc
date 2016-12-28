@@ -365,8 +365,12 @@ size_t MathematicalProgram::decision_variable_index(const symbolic::Variable &va
   return it->second;
 }
 
-VarType MathematicalProgram::decision_variable_type(const symbolic::Variable &var) const {
+MathematicalProgram::VarType MathematicalProgram::decision_variable_type(const symbolic::Variable &var) const {
   return decision_variable_type_[decision_variable_index(var)];
+}
+
+double MathematicalProgram::GetSolution(const symbolic::Variable& var) const {
+  return *(x_values_[decision_variable_index(var)]);
 }
 
 SolutionResult MathematicalProgram::Solve() {

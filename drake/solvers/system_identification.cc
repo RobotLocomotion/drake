@@ -8,6 +8,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/solvers/mathematical_program.h"
 
+using std::pow;
+
 namespace drake {
 namespace solvers {
 
@@ -320,11 +322,11 @@ SystemIdentification<T>::EstimateParameters(
   PartialEvalType estimates;
   for (int i = 0; i < num_to_estimate; i++) {
     VarType var = vars_to_estimate[i];
-    estimates[var] = parameter_variables(i).value();
+    estimates[var] = problem.GetSolution(parameter_variables(i));
   }
   T error_squared = 0;
   for (int i = 0; i < num_err_terms; i++) {
-    error_squared += error_variables(i).value() * error_variables(i).value();
+    error_squared += pow(problem.GetSolution(error_variables(i)), 2);
   }
 
   return std::make_pair(estimates, std::sqrt(error_squared / num_err_terms));

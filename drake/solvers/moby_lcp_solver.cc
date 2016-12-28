@@ -137,7 +137,7 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
   for (size_t i = 0; i < prog.num_vars(); i++) {
     int coverings = 0;
     for (const auto& binding : bindings) {
-      if (binding.ContainsVariableIndex(i)) {
+      if (binding.ContainsVariableIndex(prog, i)) {
         coverings++;
       }
     }
@@ -170,7 +170,7 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
     if (!solved) {
       return SolutionResult::kUnknownError;
     }
-    binding.WriteThrough(constraint_solution, &solution);
+    binding.WriteThrough(constraint_solution, prog, &solution);
   }
   prog.SetDecisionVariableValues(solution);
   return SolutionResult::kSolutionFound;

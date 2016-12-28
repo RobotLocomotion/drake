@@ -8,6 +8,20 @@
 
 namespace drake {
 namespace solvers {
+namespace {
+template <typename Derived>
+bool DecisionVariableMatrixContainsIndex(const MathematicalProgram& prog, const Eigen::MatrixBase<Derived>& v, size_t index) {
+  static_assert(std::is_same<typename Derived::Scalar, symbolic::Variable>::value, "The input should be a matrix of symbolic::Variable.");
+  for (int i = 0; i < v.rows(); ++i) {
+    for (int j = 0; j < v.cols(); ++j) {
+      if (prog.decision_variable_index(v(i, j)) == index) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+}
 /*
  * Test adding decision variables, constructing VariableList, together with
  * functions in DecisionVariableScalar and VariableList.
@@ -66,13 +80,13 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   X_expected.resize(2, 3);
 
   // Test if the values in the decision variables are correct.
-  EXPECT_TRUE(CompareMatrices(GetSolution(X1), X_expected, 1E-14,
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(X1), X_expected, 1E-14,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(GetSolution(S1), S_expected, 1E-14,
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(S1), S_expected, 1E-14,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(GetSolution(x1), x_value, 1E-14,
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x1), x_value, 1E-14,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(GetSolution(X2), X_expected, 1E-14,
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(X2), X_expected, 1E-14,
                               MatrixCompareType::absolute));
 
   // Test constructing VariableList.
@@ -81,10 +95,10 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   VariableList var_list2({x1});
   EXPECT_TRUE(var_list2.column_vectors_only());
   for (int i = 0; i < 6; ++i) {
-    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(X1, i));
-    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(S1, i + 6));
-    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(x1, i + 12));
-    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(X2, i + 18));
+    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(prog, X1, i));
+    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(prog, S1, i + 6));
+    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(prog, x1, i + 12));
+    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(prog, X2, i + 18));
   }
 
   for (int i = 0; i < 6; ++i) {
@@ -96,7 +110,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   X_assembled << X1, X2;
   Eigen::Matrix<double, 2, 6> X_assembled_expected;
   X_assembled_expected << X_expected, X_expected;
-  EXPECT_TRUE(CompareMatrices(GetSolution(X_assembled), X_assembled_expected,
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(X_assembled), X_assembled_expected,
                               1E-10, MatrixCompareType::absolute));
 
   for (int i = 0; i < 2; ++i) {
@@ -114,7 +128,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_EQ(VariableList({X1, X1.row(1)}).num_unique_variables(), 6u);
   EXPECT_EQ(VariableList({X1, X1.row(1)}).size(), 9u);
 
-  std::unordered_set<DecisionVariableScalar, DecisionVariableScalarHash>
+  std::unordered_set<symbolic::Variable, drake::hash_value<symbolic::Variable>>
       X1_unique_variables_expected;
   for (int i = 0; i < 2; ++i) {
     for (int j = 0; j < 3; ++j) {

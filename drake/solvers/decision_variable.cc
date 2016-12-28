@@ -2,20 +2,6 @@
 
 namespace drake {
 namespace solvers {
-bool DecisionVariableScalar::operator==(
-    const DecisionVariableScalar& rhs) const {
-  return index_ == rhs.index();
-}
-
-size_t DecisionVariableScalarHash::operator()(
-    const DecisionVariableScalar& var) const {
-  return var.index();
-}
-
-std::ostream& operator<<(std::ostream& os, const DecisionVariableScalar& var) {
-  return os << var.name();
-}
-
 VariableList::VariableList(const VariableListRef& variable_list) {
   variables_.resize(variable_list.size());
   size_ = 0;

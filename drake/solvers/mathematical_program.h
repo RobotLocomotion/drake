@@ -221,10 +221,14 @@ class MathematicalProgram {
     /**
      * Returns true iff the given @p index of the enclosing
      * MathematicalProgram is included in this Binding.*/
-    bool ContainsVariableIndex(size_t index) const {
-      for (const auto& view : variable_list_.variables()) {
-        if (DecisionVariableMatrixContainsIndex(view, index)) {
-          return true;
+    bool ContainsVariableIndex(const MathematicalProgram& prog, size_t index) const {
+      for (const auto& v : variable_list_.variables()) {
+        for (int i = 0; i < v.rows(); ++i) {
+          for (int j = 0; j < v.cols(); ++j) {
+            if (prog.decision_variable_index(v(i, j)) == index) {
+              return true;
+            }
+          }
         }
       }
       return false;
@@ -240,7 +244,7 @@ class MathematicalProgram {
      * Writes the elements of @p solution to the bound elements of
      * the @p output vector.
      */
-    void WriteThrough(const Eigen::VectorXd& solution,
+    void WriteThrough(const Eigen::VectorXd& solution, const MathematicalProgram& prog,
                       Eigen::VectorXd* output) const {
       DRAKE_ASSERT(static_cast<size_t>(solution.rows()) == GetNumElements());
       size_t solution_index = 0;
@@ -248,7 +252,7 @@ class MathematicalProgram {
         DRAKE_ASSERT(var.cols() == 1);
         const auto& solution_segment =
             solution.segment(solution_index, var.rows());
-        output->segment(var(0).index(), var.rows()) = solution_segment;
+        output->segment(prog.decision_variable_index(var(0)), var.rows()) = solution_segment;
         solution_index += var.rows();
       }
     }
@@ -1107,7 +1111,7 @@ class MathematicalProgram {
    * @param var The decision variable.
    */
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
-      double lb, double ub, const DecisionVariableScalar& var) {
+      double lb, double ub, const symbolic::Variable& var) {
     DecisionVariableMatrix<1, 1> var_matrix(var);
     return AddBoundingBoxConstraint(drake::Vector1d(lb), drake::Vector1d(ub),
                                     {var_matrix});
@@ -1349,7 +1353,7 @@ class MathematicalProgram {
     DRAKE_ASSERT(decision_variable_mat.cols() == x0.cols());
     for (int i = 0; i < decision_variable_mat.rows(); ++i) {
       for (int j = 0; j < decision_variable_mat.cols(); ++j) {
-        x_initial_guess_(decision_variable_mat(i, j).index()) = x0(i, j);
+        x_initial_guess_(decision_variable_index(decision_variable_mat(i, j))) = x0(i, j);
       }
     }
   }
@@ -1381,7 +1385,7 @@ class MathematicalProgram {
 
   void PrintSolution() {
     for (int i = 0; i < static_cast<int>(num_vars_); ++i) {
-      std::cout << variables_(i).name() << " = " << variables_(i).value()
+      std::cout << variables_(i).get_name() << " = " << GetSolution(variables_(i))
                 << std::endl;
     }
   }
@@ -1390,7 +1394,7 @@ class MathematicalProgram {
   void SetDecisionVariableValues(const Eigen::MatrixBase<Derived>& x) {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == num_vars_);
     for (int i = 0; i < static_cast<int>(num_vars_); ++i) {
-      variables_(i).set_value(x(variables_(i).index()));
+      *(x_values_[i]) = x(i);
     }
   }
 
@@ -1619,6 +1623,12 @@ class MathematicalProgram {
   VarType decision_variable_type(const symbolic::Variable& var) const;
 
 
+  /**
+   * Get the solution of an Eigen matrix of decision variables.
+   * @tparam Derived An Eigen matrix containing symbolic::Variable.
+   * @param var The decision variables.
+   * @return The value of the decision variable after solving the problem.
+   */
   template<typename Derived>
   Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> GetSolution(const Eigen::MatrixBase<Derived>& var) const {
     static_assert(std::is_same<typename Derived::Scalar, symbolic::Variable>::value, "The input should be an Eigen matrix of symbolic::Variable object.");
@@ -1630,7 +1640,13 @@ class MathematicalProgram {
         value(i, j) = *(x_values_[it->second]);
       }
     }
-  };
+    return value;
+  }
+
+  /**
+   * Get the value of a single decision variable.
+   */
+  double GetSolution(const symbolic::Variable& var) const;
 
  private:
   std::map<symbolic::Variable, size_t> decision_variable_index_;
@@ -1709,13 +1725,15 @@ class MathematicalProgram {
     DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
     variables_.conservativeResize(num_vars_ + num_new_vars, Eigen::NoChange);
     x_values_.reserve(num_vars_ + num_new_vars);
+    decision_variable_type_.reserve(num_vars_ + num_new_vars);
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
       auto x_new_value = std::make_unique<double>(0);
       x_values_.push_back(std::move(x_new_value));
-      variables_(num_vars_ + i) = DecisionVariableScalar(
-          type, names[i], x_values_.back().get(), num_vars_ + i);
+      variables_(num_vars_ + i) = symbolic::Variable(names[i]);
+      decision_variable_index_.insert(std::pair<symbolic::Variable, size_t>(variables_(num_vars_ + i), num_vars_ + i));
+      decision_variable_type_[num_vars_ + i] = type;
       decision_variable_matrix(row_index, col_index) =
           variables_(num_vars_ + i);
       if (!is_symmetric) {
