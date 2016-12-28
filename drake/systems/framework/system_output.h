@@ -176,7 +176,9 @@ class SystemOutput {
 /// @tparam T The type of the output data. Must be a valid Eigen scalar.
 template <typename T>
 struct LeafSystemOutput : public SystemOutput<T> {
-  LeafSystemOutput() {}
+  LeafSystemOutput() = default;
+  LeafSystemOutput(const LeafSystemOutput&) = delete;
+  LeafSystemOutput& operator=(const LeafSystemOutput&) = delete;
   ~LeafSystemOutput() override {}
 
   int get_num_ports() const override { return static_cast<int>(ports_.size()); }

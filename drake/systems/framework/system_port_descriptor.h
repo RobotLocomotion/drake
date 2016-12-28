@@ -24,6 +24,8 @@ typedef enum {
 /// System accepts, on a given port. It is not a mechanism for handling any
 /// actual input data.
 ///
+/// This class is `CopyConstructible` but not `CopyAssignable`.
+///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
 template <typename T>
@@ -42,7 +44,8 @@ class InputPortDescriptor {
       DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
     }
   }
-  virtual ~InputPortDescriptor() {}
+
+  InputPortDescriptor(const InputPortDescriptor&) = default;
 
   const System<T>* get_system() const { return system_; }
   int get_index() const { return index_; }
@@ -59,6 +62,8 @@ class InputPortDescriptor {
 /// OutputPortDescriptor is a notation for specifying the kind of output a
 /// System produces, on a given port. It is not a mechanism for handling any
 /// actual output data.
+///
+/// This class is `CopyConstructible` but not `CopyAssignable`.
 ///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
@@ -78,7 +83,8 @@ class OutputPortDescriptor {
       DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
     }
   }
-  virtual ~OutputPortDescriptor() {}
+
+  OutputPortDescriptor(const OutputPortDescriptor&) = default;
 
   const System<T>* get_system() const { return system_; }
   int get_index() const { return index_; }
