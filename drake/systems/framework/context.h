@@ -33,6 +33,10 @@ class Context {
  public:
   virtual ~Context() {}
 
+  Context() = default;
+  Context(const Context&) = delete;
+  Context& operator=(const Context&) = delete;
+
   // =========================================================================
   // Accessors and Mutators for Time.
 
