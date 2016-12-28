@@ -24,8 +24,6 @@ typedef enum {
 /// System accepts, on a given port. It is not a mechanism for handling any
 /// actual input data.
 ///
-/// This class is `CopyConstructible` but not `CopyAssignable`.
-///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
 template <typename T>
@@ -45,7 +43,26 @@ class InputPortDescriptor {
     }
   }
 
-  InputPortDescriptor(const InputPortDescriptor&) = default;
+  /// @name Basic Concepts
+  /// MoveConstructible only; not CopyConstructible; not Copy/Move-Assignable.
+  /// @{
+  //
+  // Implementation note: This class aliases a pointer to the system that
+  // contains it and captures its own index within that system's port vector,
+  // so we must be careful not to allow C++ copying to extend the lifetime of
+  // the system alias or duplicate our claim to the index.  Thus, this class is
+  // `MoveConstructible` but neither copyable nor assignable: it supports move
+  // to populate a vector, but is non-copyable in order remain the "one true
+  // descriptor" after construction and non-assignable in order to remain
+  // const.  Code that wishes to refer to this descriptor after insertion into
+  // the vector should use a reference (not copy) of this descriptor.
+  InputPortDescriptor() = delete;
+  InputPortDescriptor(InputPortDescriptor&& other) = default;
+  InputPortDescriptor(const InputPortDescriptor&) = delete;
+  InputPortDescriptor& operator=(InputPortDescriptor&&) = delete;
+  InputPortDescriptor& operator=(const InputPortDescriptor&) = delete;
+  ~InputPortDescriptor() = default;
+  /// @}
 
   const System<T>* get_system() const { return system_; }
   int get_index() const { return index_; }
@@ -62,8 +79,6 @@ class InputPortDescriptor {
 /// OutputPortDescriptor is a notation for specifying the kind of output a
 /// System produces, on a given port. It is not a mechanism for handling any
 /// actual output data.
-///
-/// This class is `CopyConstructible` but not `CopyAssignable`.
 ///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
@@ -83,8 +98,17 @@ class OutputPortDescriptor {
       DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
     }
   }
-
-  OutputPortDescriptor(const OutputPortDescriptor&) = default;
+  /// @name Basic Concepts
+  /// MoveConstructible only; not CopyConstructible; not Copy/Move-Assignable.
+  /// @{
+  // See InputPortDescriptor doc for implementation note and justification.
+  OutputPortDescriptor() = delete;
+  OutputPortDescriptor(OutputPortDescriptor&&) = default;
+  OutputPortDescriptor(const OutputPortDescriptor&) = delete;
+  OutputPortDescriptor& operator=(OutputPortDescriptor&&) = default;
+  OutputPortDescriptor& operator=(const OutputPortDescriptor&) = delete;
+  ~OutputPortDescriptor() = default;
+  /// @}
 
   const System<T>* get_system() const { return system_; }
   int get_index() const { return index_; }

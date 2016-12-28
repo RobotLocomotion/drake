@@ -805,10 +805,8 @@ class Diagram : public System<T>,
       throw std::out_of_range("Input port out of range.");
     }
     const auto& subsystem_descriptor = subsystem_ports[port_index];
-    InputPortDescriptor<T> descriptor(
-        this, this->get_num_input_ports(),
-        subsystem_descriptor.get_data_type(), subsystem_descriptor.size());
-    this->DeclareInputPort(descriptor);
+    this->DeclareInputPort(subsystem_descriptor.get_data_type(),
+                           subsystem_descriptor.size());
   }
 
   // Exposes the given port as an output of the Diagram.
@@ -825,10 +823,8 @@ class Diagram : public System<T>,
       throw std::out_of_range("Output port out of range.");
     }
     const auto& subsystem_descriptor = subsystem_ports[port_index];
-    OutputPortDescriptor<T> descriptor(
-        this, this->get_num_output_ports(),
-        subsystem_descriptor.get_data_type(), subsystem_descriptor.size());
-    this->DeclareOutputPort(descriptor);
+    this->DeclareOutputPort(subsystem_descriptor.get_data_type(),
+                            subsystem_descriptor.size());
   }
 
   // Evaluates the value of the output port with the given @p id in the given
