@@ -125,7 +125,10 @@ double BinaryExpressionCell::Evaluate(const Environment& env) const {
 }
 
 ExpressionVar::ExpressionVar(const Variable& v)
-    : ExpressionCell{ExpressionKind::Var, hash_value<Variable>{}(v)}, var_{v} {}
+    : ExpressionCell{ExpressionKind::Var, hash_value<Variable>{}(v)}, var_{v} {
+  // Variable shouldn't be constructed by the default constructor.
+  DRAKE_DEMAND(var_.get_id() > 0);
+}
 
 Variables ExpressionVar::GetVariables() const { return {get_variable()}; }
 
