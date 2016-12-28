@@ -15,6 +15,9 @@ target_link_libraries(functional_form_test drakeCommon)
 drake_add_cc_test(is_approx_equal_abstol_test)
 target_link_libraries(is_approx_equal_abstol_test drakeCommon)
 
+drake_add_cc_test(never_destroyed_test)
+target_link_libraries(never_destroyed_test drakeCommon)
+
 drake_add_cc_test(nice_type_name_test)
 target_link_libraries(nice_type_name_test drakeCommon)
 

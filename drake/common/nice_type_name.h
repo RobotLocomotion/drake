@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/never_destroyed.h"
+
 namespace drake {
 
 /** @brief Obtains canonicalized, platform-independent, human-readable names for
@@ -44,9 +46,9 @@ class NiceTypeName {
   program termination. **/
   template <typename T>
   static const std::string& Get() {
-    static const std::string* canonical =  // never deleted
-        new std::string(Canonicalize(Demangle(typeid(T).name())));
-    return *canonical;
+    static const never_destroyed<std::string> canonical(
+        Canonicalize(Demangle(typeid(T).name())));
+    return canonical.access();
   }
 
   /** Using the algorithm appropriate to the current compiler, demangles a type
