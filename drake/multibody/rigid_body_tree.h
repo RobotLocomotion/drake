@@ -1318,7 +1318,7 @@ class RigidBodyTree {
     BodyCollisionItem(const std::string& group_name,
                       size_t element) {
       this->group_name = group_name;
-      this->element = std::move(element);
+      this->element = element;
     }
     std::string group_name;
     size_t element;

@@ -132,16 +132,18 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
 
   // Populate the model.
   std::shared_ptr<Model> model = newModel();
-  auto element_1 = model->AddElement(unique_ptr<Element>(new Element(geometry_1)));
-  auto element_2 =
-      model->AddElement(unique_ptr<Element>(new Element(geometry_2, T_elem2_to_body)));
-  auto element_3 = model->AddElement(unique_ptr<Element>(new Element(geometry_3)));
+  auto element_1 =
+      model->AddElement(unique_ptr<Element>(new Element(geometry_1)));
+  auto element_2 = model->AddElement(
+      unique_ptr<Element>(new Element(geometry_2, T_elem2_to_body)));
+  auto element_3 =
+      model->AddElement(unique_ptr<Element>(new Element(geometry_3)));
   ElementId id1 = element_1->getId();
   ElementId id2 = element_2->getId();
   ElementId id3 = element_3->getId();
-  model->updateElementWorldTransform(element_1->getId(), T_body1_to_world);
-  model->updateElementWorldTransform(element_2->getId(), T_body2_to_world);
-  model->updateElementWorldTransform(element_3->getId(), T_body3_to_world);
+  model->updateElementWorldTransform(id1, T_body1_to_world);
+  model->updateElementWorldTransform(id2, T_body2_to_world);
+  model->updateElementWorldTransform(id3, T_body3_to_world);
 
   // Compute the closest points.
   const std::vector<ElementId> ids_to_check = {id1, id2, id3};
