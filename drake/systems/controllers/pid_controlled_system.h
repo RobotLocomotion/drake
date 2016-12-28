@@ -140,21 +140,25 @@ class PidControlledSystem : public Diagram<T> {
     return this->get_input_port(1);
   }
 
-  /// Creates a PidController and uses @p builder to connect
-  /// @plant_input and @p plant_output from an existing plant, adding
-  /// additional systems (adders, multiplexers, gains, etc.) as
-  /// needed.  Returns a pair of port descriptors.  The first is the
-  /// feed forward control input, the second is the feedback state
-  /// input.  @p controller will be populated with a pointer to the
-  /// newly created PidController.
-  static std::pair<const InputPortDescriptor<T>,
-                   const InputPortDescriptor<T>> ConnectController(
-                       const InputPortDescriptor<T>& plant_input,
-                       const OutputPortDescriptor<T>& plant_output,
-                       std::unique_ptr<MatrixGain<T>> feedback_selector,
-                       const VectorX<T>& Kp, const VectorX<T>& Ki,
-                       const VectorX<T>& Kd,
-                       DiagramBuilder<T>* builder);
+  /// The return type of ConnectController.
+  struct ConnectResult {
+    /// The feed forward control input.
+    const InputPortDescriptor<T>& control_input_port;
+    /// The feedback state input.
+    const InputPortDescriptor<T>& state_input_port;
+  };
+
+  /// Creates a PidController and uses @p builder to connect @p plant_input and
+  /// @p plant_output from an existing plant, adding additional systems
+  /// (adders, multiplexers, gains, etc.) as needed.
+  static ConnectResult ConnectController(
+      const InputPortDescriptor<T>& plant_input,
+      const OutputPortDescriptor<T>& plant_output,
+      std::unique_ptr<MatrixGain<T>> feedback_selector,
+      const VectorX<T>& Kp,
+      const VectorX<T>& Ki,
+      const VectorX<T>& Kd,
+      DiagramBuilder<T>* builder);
 
  private:
   // A helper function for the constructors. This is necessary to avoid seg

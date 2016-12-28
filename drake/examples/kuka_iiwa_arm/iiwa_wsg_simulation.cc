@@ -161,11 +161,9 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
       iiwa_kd[i] = std::sqrt(iiwa_kp[i]);
     }
 
-    auto iiwa_ports = PidControlledSystem<T>::ConnectController(
+    auto iiwa_pid_ports = PidControlledSystem<T>::ConnectController(
         iiwa_input_port, iiwa_output_port, nullptr /* feedback */,
         iiwa_kp, iiwa_ki, iiwa_kd, &builder);
-    const InputPortDescriptor<T>  iiwa_control_port = iiwa_ports.first;
-    const InputPortDescriptor<T> iiwa_state_port = iiwa_ports.second;
 
     const RigidBodyTree<T>& tree = plant_->get_rigid_body_tree();
     const std::map<std::string, int> index_map =
@@ -196,12 +194,10 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     const T wsg_ki = 0.0;
     const T wsg_kd = 5.0;
     const VectorX<T> wsg_v = VectorX<T>::Ones(wsg_input_port.size());
-    auto wsg_ports = PidControlledSystem<T>::ConnectController(
+    auto wsg_pid_ports = PidControlledSystem<T>::ConnectController(
         wsg_input_port, wsg_output_port, std::move(feedback_selector),
         wsg_v * wsg_kp, wsg_v * wsg_ki, wsg_v * wsg_kd,
         &builder);
-    const InputPortDescriptor<T> wsg_control_port = wsg_ports.first;
-    const InputPortDescriptor<T> wsg_state_port = wsg_ports.second;
 
     // Create a tree containing only the iiwa to use with the gravity
     // compensator.
@@ -217,7 +213,8 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     auto input_mux = builder.template AddSystem<Multiplexer<T>>(
         std::vector<int>{iiwa_tree_.get_num_positions(),
               iiwa_tree_.get_num_velocities()});
-    builder.Connect(input_mux->get_output_port(0), iiwa_state_port);
+    builder.Connect(input_mux->get_output_port(0),
+                    iiwa_pid_ports.state_input_port);
 
     // The iiwa's control protocol doesn't have any way to express the
     // desired velocity for the arm, so this simulation doesn't take
@@ -248,7 +245,8 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     // Connects the gravity compensator to the output generalized positions.
     builder.Connect(rbp_state_demux->get_output_port(0),
                     gravity_compensator->get_input_port(0));
-    builder.Connect(gravity_compensator->get_output_port(0), iiwa_control_port);
+    builder.Connect(gravity_compensator->get_output_port(0),
+                    iiwa_pid_ports.control_input_port);
 
     builder.ExportInput(input_mux->get_input_port(0));
     builder.ExportOutput(iiwa_output_port);
@@ -259,8 +257,9 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     // express external commanded force to the PidControlledSystem.
     auto wsg_zero_source = builder.template AddSystem<ConstantVectorSource<T>>(
         Eigen::VectorXd::Zero(1));
-    builder.Connect(wsg_zero_source->get_output_port(), wsg_control_port);
-    builder.ExportInput(wsg_state_port);
+    builder.Connect(wsg_zero_source->get_output_port(),
+                    wsg_pid_ports.control_input_port);
+    builder.ExportInput(wsg_pid_ports.state_input_port);
     builder.ExportOutput(wsg_output_port);
 
     builder.ExportOutput(plant_->get_output_port(0));
