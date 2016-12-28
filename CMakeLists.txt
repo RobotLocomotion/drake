@@ -209,6 +209,10 @@ drake_add_external(bot_core_lcmtypes PUBLIC CMAKE PYTHON
 drake_add_external(robotlocomotion_lcmtypes PUBLIC CMAKE PYTHON
   DEPENDS bot_core_lcmtypes lcm)
 
+# signalscope
+drake_add_external(signalscope PUBLIC CMAKE PYTHON QT
+  DEPENDS ctk_python_console lcm pythonqt)
+
 # Option to skip building drake proper via the superbuild. This allows the
 # superbuild to build everything BUT drake, which can still be built separately
 # from its build directory. This is used by the dashboards to make separate
@@ -315,10 +319,6 @@ drake_add_external(director PUBLIC CMAKE TEST PYTHON QT VTK
     pythonqt
     qt_property_browser
 )
-
-# signalscope
-drake_add_external(signalscope PUBLIC CMAKE PYTHON
-  DEPENDS director)
 
 # END external projects
 ###############################################################################
