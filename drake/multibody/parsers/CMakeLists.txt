@@ -4,13 +4,15 @@ add_library_with_exports(LIB_NAME drakeMultibodyParsers SOURCE_FILES
     parser_common.cc
     sdf_parser.cc
     urdf_parser.cc
-    xml_util.cc)
+    xml_util.cc
+    rigid_body_tree_kinematic_property.cc)
 target_link_libraries(drakeMultibodyParsers
     drakeCommon
     drakeRBM
     Eigen3::Eigen
     spruce
-    tinyxml2)
+    tinyxml2
+    yaml-cpp)
 drake_install_libraries(drakeMultibodyParsers)
 drake_install_headers(
     model_instance_id_table.h
@@ -18,7 +20,8 @@ drake_install_headers(
     parser_common.h
     sdf_parser.h
     urdf_parser.h
-    xml_util.h)
+    xml_util.h
+    rigid_body_tree_kinematic_property.h)
 drake_install_pkg_config_file(drake-multibody-parsers
     TARGET drakeMultibodyParsers
     LIBS -ldrakeMultibodyParsers
@@ -26,7 +29,8 @@ drake_install_pkg_config_file(drake-multibody-parsers
         drake-rbm
         eigen3
         spruce
-        tinyxml2)
+        tinyxml2
+        yaml-cpp)
 
 if(BUILD_TESTING)
   add_subdirectory(test)
