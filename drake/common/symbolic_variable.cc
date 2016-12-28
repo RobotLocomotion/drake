@@ -19,7 +19,8 @@ size_t Variable::get_next_id() {
   return (*next_id)++;
 }
 
-Variable::Variable(const string& name) : id_(get_next_id()), name_(name) {}
+Variable::Variable() : Variable{""} {}
+Variable::Variable(const string& name) : id_{get_next_id()}, name_{name} {}
 size_t Variable::get_id() const { return id_; }
 string Variable::get_name() const { return name_; }
 string Variable::to_string() const {
