@@ -66,7 +66,7 @@ GTEST_TEST(RigidBodyPlantTest, TestLoadUrdf) {
 // Tests the generalized velocities to generalized coordinates time
 // derivatives for a free body with a quaternion base.
 GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
-  const double kTol = 5e-13;     // Loosest tolerance that all tests succeed.
+  const double kTol = 5e-12;     // Loosest tolerance that all tests succeed.
   const int kNumPositions = 7;   // One quaternion + 3d position.
   const int kNumVelocities = 6;  // Angular velocity + linear velocity.
   const int kNumStates = kNumPositions + kNumVelocities;
