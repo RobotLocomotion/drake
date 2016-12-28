@@ -210,15 +210,6 @@ Formula operator==(const Expression& e1, const Expression& e2) {
   return Formula{make_shared<FormulaEq>(e1, e2)};
 }
 
-Formula operator==(const double v1, const Expression& e2) {
-  // Uses () to avoid a conflict between cpplint and clang-format.
-  return (Expression{v1}) == e2;
-}
-
-Formula operator==(const Expression& e1, const double v2) {
-  return e1 == Expression{v2};
-}
-
 Formula operator!=(const Expression& e1, const Expression& e2) {
   // Simplification: E1 - E2 != 0  =>  True
   const Expression diff{e1 - e2};
@@ -226,13 +217,6 @@ Formula operator!=(const Expression& e1, const Expression& e2) {
     return diff.Evaluate() != 0.0 ? Formula::True() : Formula::False();
   }
   return Formula{make_shared<FormulaNeq>(e1, e2)};
-}
-Formula operator!=(const double v1, const Expression& e2) {
-  // Uses () to avoid a conflict between cpplint and clang-format.
-  return (Expression{v1}) != e2;
-}
-Formula operator!=(const Expression& e1, const double v2) {
-  return e1 != Expression{v2};
 }
 
 Formula operator<(const Expression& e1, const Expression& e2) {
@@ -243,12 +227,6 @@ Formula operator<(const Expression& e1, const Expression& e2) {
   }
   return Formula{make_shared<FormulaLt>(e1, e2)};
 }
-Formula operator<(const double v1, const Expression& e2) {
-  return Expression{v1} < e2;
-}
-Formula operator<(const Expression& e1, const double v2) {
-  return e1 < Expression{v2};
-}
 
 Formula operator<=(const Expression& e1, const Expression& e2) {
   // Simplification: E1 - E2 <= 0  =>  True
@@ -257,12 +235,6 @@ Formula operator<=(const Expression& e1, const Expression& e2) {
     return diff.Evaluate() <= 0 ? Formula::True() : Formula::False();
   }
   return Formula{make_shared<FormulaLeq>(e1, e2)};
-}
-Formula operator<=(const double v1, const Expression& e2) {
-  return Expression{v1} <= e2;
-}
-Formula operator<=(const Expression& e1, const double v2) {
-  return e1 <= Expression{v2};
 }
 
 Formula operator>(const Expression& e1, const Expression& e2) {
@@ -273,12 +245,6 @@ Formula operator>(const Expression& e1, const Expression& e2) {
   }
   return Formula{make_shared<FormulaGt>(e1, e2)};
 }
-Formula operator>(const double v1, const Expression& e2) {
-  return Expression{v1} > e2;
-}
-Formula operator>(const Expression& e1, const double v2) {
-  return e1 > Expression{v2};
-}
 
 Formula operator>=(const Expression& e1, const Expression& e2) {
   // Simplification: E1 - E2 >= 0  =>  True
@@ -287,12 +253,6 @@ Formula operator>=(const Expression& e1, const Expression& e2) {
     return diff.Evaluate() >= 0 ? Formula::True() : Formula::False();
   }
   return Formula{make_shared<FormulaGeq>(e1, e2)};
-}
-Formula operator>=(const double v1, const Expression& e2) {
-  return Expression{v1} >= e2;
-}
-Formula operator>=(const Expression& e1, const double v2) {
-  return e1 >= Expression{v2};
 }
 }  // namespace symbolic
 }  // namespace drake

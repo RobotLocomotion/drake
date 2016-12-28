@@ -27,7 +27,7 @@ using std::static_pointer_cast;
 using std::string;
 
 FormulaCell::FormulaCell(const FormulaKind k, const size_t hash)
-    : kind_{k}, hash_{hash_combine(static_cast<size_t>(kind_), hash)} {}
+    : kind_{k}, hash_{hash_combine(hash, static_cast<size_t>(kind_))} {}
 
 RelationalFormulaCell::RelationalFormulaCell(const FormulaKind k,
                                              const Expression& e1,
@@ -41,23 +41,16 @@ Variables RelationalFormulaCell::GetFreeVariables() const {
 }
 
 bool RelationalFormulaCell::EqualTo(const FormulaCell& f) const {
-  if (get_kind() != f.get_kind()) {
-    return false;
-  }
+  // Formula::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
   const RelationalFormulaCell& rel_f{
       static_cast<const RelationalFormulaCell&>(f)};
   return e1_.EqualTo(rel_f.e1_) && e2_.EqualTo(rel_f.e2_);
 }
 
 bool RelationalFormulaCell::Less(const FormulaCell& f) const {
-  const FormulaKind k1{get_kind()};
-  const FormulaKind k2{f.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
+  // Formula::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
   const RelationalFormulaCell& rel_f{
       static_cast<const RelationalFormulaCell&>(f)};
   if (e1_.Less(rel_f.e1_)) {
@@ -83,9 +76,8 @@ Variables NaryFormulaCell::GetFreeVariables() const {
 }
 
 bool NaryFormulaCell::EqualTo(const FormulaCell& f) const {
-  if (get_kind() != f.get_kind()) {
-    return false;
-  }
+  // Formula::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
   const NaryFormulaCell& nary_f{static_cast<const NaryFormulaCell&>(f)};
   return equal(
       formulas_.cbegin(), formulas_.cend(), nary_f.formulas_.cbegin(),
@@ -94,14 +86,8 @@ bool NaryFormulaCell::EqualTo(const FormulaCell& f) const {
 }
 
 bool NaryFormulaCell::Less(const FormulaCell& f) const {
-  const FormulaKind k1{get_kind()};
-  const FormulaKind k2{f.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
+  // Formula::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
   const NaryFormulaCell& nary_f{static_cast<const NaryFormulaCell&>(f)};
   return lexicographical_compare(
       formulas_.cbegin(), formulas_.cend(), nary_f.formulas_.cbegin(),
@@ -132,28 +118,21 @@ symbolic::Variables FormulaTrue::GetFreeVariables() const {
 }
 
 bool FormulaTrue::EqualTo(const FormulaCell& f) const {
-  return f.get_kind() == f.get_kind();
+  // Formula::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
+  return true;  // There is only one instance of this kind.
 }
 
 bool FormulaTrue::Less(const FormulaCell& f) const {
-  const FormulaKind k1{get_kind()};
-  const FormulaKind k2{f.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
+  // Formula::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
   // True < True ==> false
   return false;
 }
 
 bool FormulaTrue::Evaluate(const Environment& env) const { return true; }
 
-ostream& FormulaTrue::Display(ostream& os) const {
-  os << "True";
-  return os;
-}
+ostream& FormulaTrue::Display(ostream& os) const { return os << "True"; }
 
 FormulaFalse::FormulaFalse()
     : FormulaCell{FormulaKind::False, hash<string>{}("False")} {}
@@ -163,28 +142,21 @@ symbolic::Variables FormulaFalse::GetFreeVariables() const {
 }
 
 bool FormulaFalse::EqualTo(const FormulaCell& f) const {
-  return get_kind() == f.get_kind();
+  // Formula::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
+  return true;  // There is only one instance of this kind.
 }
 
 bool FormulaFalse::Less(const FormulaCell& f) const {
-  const FormulaKind k1{get_kind()};
-  const FormulaKind k2{f.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
+  // Formula::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
   // False < False ==> false
   return false;
 }
 
 bool FormulaFalse::Evaluate(const Environment& env) const { return false; }
 
-ostream& FormulaFalse::Display(ostream& os) const {
-  os << "False";
-  return os;
-}
+ostream& FormulaFalse::Display(ostream& os) const { return os << "False"; }
 
 FormulaEq::FormulaEq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Eq, e1, e2} {}
@@ -195,8 +167,8 @@ bool FormulaEq::Evaluate(const Environment& env) const {
 }
 
 ostream& FormulaEq::Display(ostream& os) const {
-  os << "(" << get_1st_expression() << " = " << get_2nd_expression() << ")";
-  return os;
+  return os << "(" << get_1st_expression() << " = " << get_2nd_expression()
+            << ")";
 }
 
 FormulaNeq::FormulaNeq(const Expression& e1, const Expression& e2)
@@ -208,8 +180,8 @@ bool FormulaNeq::Evaluate(const Environment& env) const {
 }
 
 ostream& FormulaNeq::Display(ostream& os) const {
-  os << "(" << get_1st_expression() << " != " << get_2nd_expression() << ")";
-  return os;
+  return os << "(" << get_1st_expression() << " != " << get_2nd_expression()
+            << ")";
 }
 
 FormulaGt::FormulaGt(const Expression& e1, const Expression& e2)
@@ -221,8 +193,8 @@ bool FormulaGt::Evaluate(const Environment& env) const {
 }
 
 ostream& FormulaGt::Display(ostream& os) const {
-  os << "(" << get_1st_expression() << " > " << get_2nd_expression() << ")";
-  return os;
+  return os << "(" << get_1st_expression() << " > " << get_2nd_expression()
+            << ")";
 }
 
 FormulaGeq::FormulaGeq(const Expression& e1, const Expression& e2)
@@ -234,8 +206,8 @@ bool FormulaGeq::Evaluate(const Environment& env) const {
 }
 
 ostream& FormulaGeq::Display(ostream& os) const {
-  os << "(" << get_1st_expression() << " >= " << get_2nd_expression() << ")";
-  return os;
+  return os << "(" << get_1st_expression() << " >= " << get_2nd_expression()
+            << ")";
 }
 
 FormulaLt::FormulaLt(const Expression& e1, const Expression& e2)
@@ -247,8 +219,8 @@ bool FormulaLt::Evaluate(const Environment& env) const {
 }
 
 ostream& FormulaLt::Display(ostream& os) const {
-  os << "(" << get_1st_expression() << " < " << get_2nd_expression() << ")";
-  return os;
+  return os << "(" << get_1st_expression() << " < " << get_2nd_expression()
+            << ")";
 }
 
 FormulaLeq::FormulaLeq(const Expression& e1, const Expression& e2)
@@ -260,8 +232,8 @@ bool FormulaLeq::Evaluate(const Environment& env) const {
 }
 
 ostream& FormulaLeq::Display(ostream& os) const {
-  os << "(" << get_1st_expression() << " <= " << get_2nd_expression() << ")";
-  return os;
+  return os << "(" << get_1st_expression() << " <= " << get_2nd_expression()
+            << ")";
 }
 
 FormulaAnd::FormulaAnd(const set<Formula>& formulas)
@@ -314,22 +286,15 @@ symbolic::Variables FormulaNot::GetFreeVariables() const {
 }
 
 bool FormulaNot::EqualTo(const FormulaCell& f) const {
-  if (get_kind() != f.get_kind()) {
-    return false;
-  }
+  // Formula::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
   const FormulaNot& f_not{static_cast<const FormulaNot&>(f)};
   return f_.EqualTo(f_not.f_);
 }
 
 bool FormulaNot::Less(const FormulaCell& f) const {
-  const FormulaKind k1{get_kind()};
-  const FormulaKind k2{f.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
+  // Formula::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
   const FormulaNot& not_f{static_cast<const FormulaNot&>(f)};
   return f_.Less(not_f.f_);
 }
@@ -339,8 +304,7 @@ bool FormulaNot::Evaluate(const Environment& env) const {
 }
 
 ostream& FormulaNot::Display(ostream& os) const {
-  os << "!(" << f_ << ")";
-  return os;
+  return os << "!(" << f_ << ")";
 }
 
 FormulaForall::FormulaForall(const Variables& vars, const Formula& f)
@@ -353,22 +317,15 @@ symbolic::Variables FormulaForall::GetFreeVariables() const {
 }
 
 bool FormulaForall::EqualTo(const FormulaCell& f) const {
-  if (get_kind() != f.get_kind()) {
-    return false;
-  }
+  // Formula::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
   const FormulaForall& f_forall{static_cast<const FormulaForall&>(f)};
   return vars_ == f_forall.vars_ && f_.EqualTo(f_forall.f_);
 }
 
 bool FormulaForall::Less(const FormulaCell& f) const {
-  const FormulaKind k1{get_kind()};
-  const FormulaKind k2{f.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
+  // Formula::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
   const FormulaForall& forall_f{static_cast<const FormulaForall&>(f)};
   if (vars_ < forall_f.vars_) {
     return true;
@@ -388,8 +345,7 @@ bool FormulaForall::Evaluate(const Environment& env) const {
 }
 
 ostream& FormulaForall::Display(ostream& os) const {
-  os << "forall(" << vars_ << ". " << f_ << ")";
-  return os;
+  return os << "forall(" << vars_ << ". " << f_ << ")";
 }
 }  // namespace symbolic
 }  // namespace drake
