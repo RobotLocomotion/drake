@@ -17,6 +17,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/symbolic_variable.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/function.h"
@@ -297,6 +298,8 @@ class MathematicalProgram {
   };
 
  public:
+  enum class VarType { CONTINUOUS, INTEGER, BINARY };
+
   MathematicalProgram();
 
   /** MathematicalProgram is not copyable. */
@@ -1611,7 +1614,32 @@ class MathematicalProgram {
     return GetSolution(variables_);
   }
 
+  /** Return the index of the decision variable. Internally the solvers think
+   * all variables are stored in an array, and it access each individual
+   * variable using its index. This index is used when adding constraints
+   * and costs for each solver.
+   */
+  size_t decision_variable_index(const symbolic::Variable& var) const;
+
+  /** Return the type of the decision variable. */
+  VarType decision_variable_type(const symbolic::Variable& var) const;
+
+
+  template<typename Derived>
+  Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> GetSolution(const Eigen::MatrixBase<Derived>& var) {
+    static_assert(std::is_same<typename Derived::Scalar, symbolic::Variable>::value, "The input should be an Eigen matrix of symbolic::Variable object.");
+    Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> value(var.rows(), var.cols());
+    for (int i = 0; i < var.rows(); ++i) {
+      for (int j = 0; j < var.cols(); ++j) {
+        value(i, j) = *(x_values_[decision_variable_index_[var(i, j)]]);
+      }
+    }
+  };
+
  private:
+  std::map<symbolic::Variable, size_t> decision_variable_index_;
+  std::map<symbolic::Variable, VarType> decision_variable_type_;
+
   DecisionVariableVectorX variables_;
   std::vector<Binding<Constraint>> generic_costs_;
   std::vector<Binding<Constraint>> generic_constraints_;

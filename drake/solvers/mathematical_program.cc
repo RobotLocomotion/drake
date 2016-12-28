@@ -359,6 +359,14 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
   return constraint;
 }
 
+size_t MathematicalProgram::decision_variable_index(const symbolic::Variable &var) const {
+  return decision_variable_index_[var];
+}
+
+VarType MathematicalProgram::decision_variable_type(const symbolic::Variable &var) const {
+  return decision_variable_type_[var];
+}
+
 SolutionResult MathematicalProgram::Solve() {
   // This implementation is simply copypasta for now; in the future we will
   // want to tweak the order of preference of solvers based on the types of
