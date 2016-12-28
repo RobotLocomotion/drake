@@ -71,42 +71,42 @@ MathematicalProgram::MathematicalProgram()
       gurobi_solver_(new GurobiSolver()),
       mosek_solver_(new MosekSolver()) {}
 
-DecisionVariableMatrixX MathematicalProgram::AddVariables(
+DecisionVariableMatrixX MathematicalProgram::NewVariables(
     VarType type, int rows, int cols, bool is_symmetric,
-    const std::vector<std::string>& names) {
+    const std::vector<std::string> &names) {
   DecisionVariableMatrixX decision_variable_matrix(rows, cols);
-  AddVariables_impl(type, names, is_symmetric, decision_variable_matrix);
+  NewVariables_impl(type, names, is_symmetric, decision_variable_matrix);
   return decision_variable_matrix;
 }
 
-DecisionVariableVectorX MathematicalProgram::AddVariables(
+DecisionVariableVectorX MathematicalProgram::NewVariables(
     VarType type, int rows,
-    const std::vector<std::string>& names) {
-  return AddVariables(type, rows, 1, false, names);
+    const std::vector<std::string> &names) {
+  return NewVariables(type, rows, 1, false, names);
 }
 
-DecisionVariableVectorX MathematicalProgram::AddContinuousVariables(
-    std::size_t rows, const std::vector<std::string>& names) {
-  return AddVariables(VarType::CONTINUOUS, rows, names);
+DecisionVariableVectorX MathematicalProgram::NewContinuousVariables(
+    std::size_t rows, const std::vector<std::string> &names) {
+  return NewVariables(VarType::CONTINUOUS, rows, names);
 }
 
-const DecisionVariableMatrixX MathematicalProgram::AddContinuousVariables(
-    std::size_t rows, std::size_t cols, const std::vector<std::string>& names) {
-  return AddVariables(VarType::CONTINUOUS, rows, cols,
+const DecisionVariableMatrixX MathematicalProgram::NewContinuousVariables(
+    std::size_t rows, std::size_t cols, const std::vector<std::string> &names) {
+  return NewVariables(VarType::CONTINUOUS, rows, cols,
                       false, names);
 }
 
-DecisionVariableVectorX MathematicalProgram::AddContinuousVariables(
-    std::size_t rows, const std::string& name) {
+DecisionVariableVectorX MathematicalProgram::NewContinuousVariables(
+    std::size_t rows, const std::string &name) {
   std::vector<std::string> names(rows);
   for (int i = 0; i < static_cast<int>(rows); ++i) {
     names[i] = name + std::to_string(i);
   }
-  return AddContinuousVariables(rows, names);
+  return NewContinuousVariables(rows, names);
 }
 
-const DecisionVariableMatrixX MathematicalProgram::AddContinuousVariables(
-    std::size_t rows, std::size_t cols, const std::string& name) {
+const DecisionVariableMatrixX MathematicalProgram::NewContinuousVariables(
+    std::size_t rows, std::size_t cols, const std::string &name) {
   std::vector<std::string> names(rows * cols);
   int count = 0;
   for (int j = 0; j < static_cast<int>(cols); ++j) {
@@ -116,32 +116,32 @@ const DecisionVariableMatrixX MathematicalProgram::AddContinuousVariables(
       ++count;
     }
   }
-  return AddContinuousVariables(rows, cols, names);
+  return NewContinuousVariables(rows, cols, names);
 }
 
-DecisionVariableMatrixX MathematicalProgram::AddBinaryVariables(
-    size_t rows, size_t cols, const std::vector<std::string>& names) {
-  return AddVariables(VarType::BINARY, rows, cols,
+DecisionVariableMatrixX MathematicalProgram::NewBinaryVariables(
+    size_t rows, size_t cols, const std::vector<std::string> &names) {
+  return NewVariables(VarType::BINARY, rows, cols,
                       false, names);
 }
 
-DecisionVariableMatrixX MathematicalProgram::AddBinaryVariables(
-    size_t rows, size_t cols, const std::string& name) {
+DecisionVariableMatrixX MathematicalProgram::NewBinaryVariables(
+    size_t rows, size_t cols, const std::string &name) {
   std::vector<std::string> names = std::vector<std::string>(rows * cols);
   for (int i = 0; i < static_cast<int>(names.size()); ++i) {
     names[i] = name + std::to_string(i);
   }
-  return AddBinaryVariables(rows, cols, names);
+  return NewBinaryVariables(rows, cols, names);
 }
 
-DecisionVariableMatrixX MathematicalProgram::AddSymmetricContinuousVariables(
-    size_t rows, const std::vector<std::string>& names) {
-  return AddVariables(VarType::CONTINUOUS, rows, rows,
+DecisionVariableMatrixX MathematicalProgram::NewSymmetricContinuousVariables(
+    size_t rows, const std::vector<std::string> &names) {
+  return NewVariables(VarType::CONTINUOUS, rows, rows,
                       true, names);
 }
 
-DecisionVariableMatrixX MathematicalProgram::AddSymmetricContinuousVariables(
-    size_t rows, const std::string& name) {
+DecisionVariableMatrixX MathematicalProgram::NewSymmetricContinuousVariables(
+    size_t rows, const std::string &name) {
   std::vector<std::string> names(rows * (rows + 1) / 2);
   int count = 0;
   for (int j = 0; j < static_cast<int>(rows); ++j) {
@@ -151,17 +151,17 @@ DecisionVariableMatrixX MathematicalProgram::AddSymmetricContinuousVariables(
       ++count;
     }
   }
-  return AddVariables(VarType::CONTINUOUS, rows, rows,
+  return NewVariables(VarType::CONTINUOUS, rows, rows,
                       true, names);
 }
 
-DecisionVariableVectorX MathematicalProgram::AddBinaryVariables(
-    size_t rows, const std::string& name) {
+DecisionVariableVectorX MathematicalProgram::NewBinaryVariables(
+    size_t rows, const std::string &name) {
   std::vector<std::string> names = std::vector<std::string>(rows);
   for (int i = 0; i < static_cast<int>(rows); ++i) {
     names[i] = name + std::to_string(i);
   }
-  return AddVariables(VarType::BINARY, rows, names);
+  return NewVariables(VarType::BINARY, rows, names);
 }
 
 void MathematicalProgram::AddCost(const std::shared_ptr<Constraint>& obj,
@@ -355,11 +355,13 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
 }
 
 size_t MathematicalProgram::decision_variable_index(const symbolic::Variable &var) const {
-  return decision_variable_index_[var];
+  auto it = decision_variable_index_.find(var);
+  DRAKE_ASSERT(it != decision_variable_index_.end());
+  return it->second;
 }
 
 VarType MathematicalProgram::decision_variable_type(const symbolic::Variable &var) const {
-  return decision_variable_type_[decision_variable_index_[var]];
+  return decision_variable_type_[decision_variable_index(var)];
 }
 
 SolutionResult MathematicalProgram::Solve() {

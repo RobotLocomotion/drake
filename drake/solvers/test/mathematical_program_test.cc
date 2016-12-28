@@ -62,7 +62,7 @@ struct Unique {
 
 GTEST_TEST(testMathematicalProgram, testAddFunction) {
   MathematicalProgram prog;
-  prog.AddContinuousVariables<1>();
+  prog.NewContinuousVariables<1>();
 
   Movable movable;
   prog.AddCost(std::move(movable));
@@ -115,7 +115,7 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
   // A simple test program to test if the bounding box constraints are added
   // correctly.
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(4);
+  auto x = prog.NewContinuousVariables(4);
 
   // Deliberately add two constraints on overlapped decision variables.
   // For x(1), the lower bound of the second constraint are used; while
@@ -143,7 +143,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
 
   // First, add four variables set equal by four equations
   // to equal a random vector
-  auto x = prog.AddContinuousVariables<4>();
+  auto x = prog.NewContinuousVariables<4>();
 
   auto x2 = x(2);
   auto xhead = x.head(3);
@@ -168,7 +168,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
 
   // Add two more variables with a very slightly more complicated
   // constraint and solve again. Should still be a linear system.
-  auto y = prog.AddContinuousVariables<2>();
+  auto y = prog.NewContinuousVariables<2>();
   prog.AddLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
   prog.Solve();
   const auto& y_value = GetSolution(y);
@@ -205,7 +205,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
 GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
   MathematicalProgram prog;
 
-  auto vars = prog.AddContinuousVariables<2>();
+  auto vars = prog.NewContinuousVariables<2>();
 
   // Use a non-square matrix to catch row/column mistakes in the solvers.
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(0, 1),
@@ -223,7 +223,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
 // The optimal solution is -inverse(Q)*b
 GTEST_TEST(testMathematicalProgram, QuadraticCost) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<4>();
+  auto x = prog.NewContinuousVariables<4>();
 
   Vector4d Qdiag(1.0, 2.0, 3.0, 4.0);
   Matrix4d Q = Qdiag.asDiagonal();
@@ -266,7 +266,7 @@ class TestProblem1Cost {
 
 GTEST_TEST(testMathematicalProgram, testProblem1) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<5>();
+  auto x = prog.NewContinuousVariables<5>();
   prog.AddCost(TestProblem1Cost());
   VectorXd constraint(5);
   constraint << 20, 12, 11, 7, 4;
@@ -294,7 +294,7 @@ GTEST_TEST(testMathematicalProgram, testProblem1) {
 // framed as a QP instead.
 GTEST_TEST(testMathematicalProgram, testProblem1AsQP) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<5>();
+  auto x = prog.NewContinuousVariables<5>();
 
   Eigen::MatrixXd Q = -100 * Eigen::Matrix<double, 5, 5>::Identity();
   Eigen::VectorXd c(5);
@@ -343,7 +343,7 @@ class TestProblem2Cost {
 
 GTEST_TEST(testMathematicalProgram, testProblem2) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<6>();
+  auto x = prog.NewContinuousVariables<6>();
   prog.AddCost(TestProblem2Cost());
   VectorXd constraint1(6), constraint2(6);
   constraint1 << 6, 3, 3, 2, 1, 0;
@@ -379,7 +379,7 @@ GTEST_TEST(testMathematicalProgram, testProblem2) {
 // framed as a QP instead.
 GTEST_TEST(testMathematicalProgram, testProblem2AsQP) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<6>();
+  auto x = prog.NewContinuousVariables<6>();
   MatrixXd Q = -100.0 * MatrixXd::Identity(6, 6);
   Q(5, 5) = 0.0;
   VectorXd c(6);
@@ -468,7 +468,7 @@ class LowerBoundTestConstraint : public Constraint {
 
 GTEST_TEST(testMathematicalProgram, lowerBoundTest) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(6);
+  auto x = prog.NewContinuousVariables(6);
   prog.AddCost(LowerBoundTestCost());
   std::shared_ptr<Constraint> con1(new LowerBoundTestConstraint(2, 3));
   prog.AddConstraint(con1);
@@ -540,7 +540,7 @@ class SixHumpCamelCost {
 
 GTEST_TEST(testMathematicalProgram, sixHumpCamel) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(2);
+  auto x = prog.NewContinuousVariables(2);
   auto cost = prog.AddCost(SixHumpCamelCost());
 
   prog.SetInitialGuess(x, Vector2d::Random());
@@ -612,8 +612,8 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
   // This test is run twice on different collections of continuous
   // variables to make sure that the solvers correctly handle mapping
   // variables to constraints/costs.
-  auto x = prog.AddContinuousVariables(3);
-  auto y = prog.AddContinuousVariables(3);
+  auto x = prog.NewContinuousVariables(3);
+  auto y = prog.NewContinuousVariables(3);
   prog.AddCost(GloptipolyConstrainedExampleCost(), {x});
   prog.AddCost(GloptipolyConstrainedExampleCost(), {y});
   std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
@@ -693,7 +693,7 @@ GTEST_TEST(testMathematicalProgram, simpleLCP) {
 
   Eigen::Vector2d q(-16, -15);
 
-  auto x = prog.AddContinuousVariables<2>();
+  auto x = prog.NewContinuousVariables<2>();
 
   prog.AddLinearComplementarityConstraint(M, q, {x});
   EXPECT_NO_THROW(prog.Solve());
@@ -716,8 +716,8 @@ GTEST_TEST(testMathematicalProgram, multiLCP) {
 
   Eigen::Vector2d q(-16, -15);
 
-  auto x = prog.AddContinuousVariables<2>();
-  auto y = prog.AddContinuousVariables<2>();
+  auto x = prog.NewContinuousVariables<2>();
+  auto y = prog.NewContinuousVariables<2>();
 
   prog.AddLinearComplementarityConstraint(M, q, {x});
   prog.AddLinearComplementarityConstraint(M, q, {y});
@@ -737,7 +737,7 @@ GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
   const Polynomiald x("x");
   MathematicalProgram problem;
   static const double kEpsilon = 1e-7;
-  const auto x_var = problem.AddContinuousVariables(1);
+  const auto x_var = problem.NewContinuousVariables(1);
   const std::vector<Polynomiald::VarType> var_mapping = {x.GetSimpleVariable()};
   std::shared_ptr<Constraint> resulting_constraint =
       problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
@@ -771,7 +771,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   {
     const Polynomiald x("x");
     MathematicalProgram problem;
-    const auto x_var = problem.AddContinuousVariables(1);
+    const auto x_var = problem.NewContinuousVariables(1);
     const std::vector<Polynomiald::VarType> var_mapping = {
         x.GetSimpleVariable()};
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
@@ -790,7 +790,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     const Polynomiald x("x");
     const Polynomiald poly = (x - 1) * (x - 1);
     MathematicalProgram problem;
-    const auto x_var = problem.AddContinuousVariables(1);
+    const auto x_var = problem.NewContinuousVariables(1);
     const std::vector<Polynomiald::VarType> var_mapping = {
         x.GetSimpleVariable()};
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
@@ -809,7 +809,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     const Polynomiald y("y");
     const Polynomiald poly = (x - 1) * (x - 1) + (y + 2) * (y + 2);
     MathematicalProgram problem;
-    const auto xy_var = problem.AddContinuousVariables(2);
+    const auto xy_var = problem.NewContinuousVariables(2);
     const std::vector<Polynomiald::VarType> var_mapping = {
         x.GetSimpleVariable(), y.GetSimpleVariable()};
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
@@ -833,7 +833,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     const Polynomiald x("x");
     const Polynomiald poly = x * x * x * x - x * x + 0.2;
     MathematicalProgram problem;
-    const auto x_var = problem.AddContinuousVariables(1);
+    const auto x_var = problem.NewContinuousVariables(1);
     problem.SetInitialGuess(x_var, Vector1d::Constant(-0.1));
     const std::vector<Polynomiald::VarType> var_mapping = {
         x.GetSimpleVariable()};
@@ -862,7 +862,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
 // umbrella of the Equality Constrained QP Solver.
 GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<2>();
+  auto x = prog.NewContinuousVariables<2>();
   MatrixXd Q(2, 2);
   // clang-format off
   Q << 1.0, 0.0,
@@ -886,7 +886,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   CheckSolverType(prog, "Equality Constrained QP Solver");
 
   // Add one more variable and constrain a view into them.
-  auto y = prog.AddContinuousVariables<1>("y");
+  auto y = prog.NewContinuousVariables<1>("y");
   Q << 2.0, 0.0, 0.0, 2.0;
   c << -5.0, -2.0;
   VariableListRef vars;
@@ -920,7 +920,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
 //     (x1=0.5, x2=0.5, x3=1.0)
 GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(2);
+  auto x = prog.NewContinuousVariables(2);
   MatrixXd Q(2, 2);
   Q << 1, 0.0, 0.0, 1.0;
   VectorXd c(2);
@@ -947,7 +947,7 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   CheckSolverType(prog, "Equality Constrained QP Solver");
 
   // Add one more variable and constrain it in a different way
-  auto y = prog.AddContinuousVariables(1);
+  auto y = prog.NewContinuousVariables(1);
   Vector2d constraint2(2);
   constraint2 << 2., -1.;
   // 2*x1 - x3 = 0, so x3 should wind up as 1.0
@@ -993,8 +993,8 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   DRAKE_ASSERT(A.rows() == b.rows());
   const int xDim = A.cols();
   MathematicalProgram prog_lorentz;
-  auto t_lorentz = prog_lorentz.AddContinuousVariables(1, "t");
-  auto x_lorentz = prog_lorentz.AddContinuousVariables(xDim, "x");
+  auto t_lorentz = prog_lorentz.NewContinuousVariables(1, "t");
+  auto x_lorentz = prog_lorentz.NewContinuousVariables(xDim, "x");
   prog_lorentz.AddLorentzConeConstraint({t_lorentz, x_lorentz});
   prog_lorentz.AddLinearEqualityConstraint(A, b, {x_lorentz});
   prog_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_lorentz});
@@ -1029,11 +1029,11 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   });
 
   MathematicalProgram prog_rotated_lorentz;
-  auto t_rotated_lorentz = prog_rotated_lorentz.AddContinuousVariables(1, "t");
+  auto t_rotated_lorentz = prog_rotated_lorentz.NewContinuousVariables(1, "t");
   auto x_rotated_lorentz =
-      prog_rotated_lorentz.AddContinuousVariables(xDim, "x");
+      prog_rotated_lorentz.NewContinuousVariables(xDim, "x");
   auto slack_rotated_lorentz =
-      prog_rotated_lorentz.AddContinuousVariables<1>("slack");
+      prog_rotated_lorentz.NewContinuousVariables<1>("slack");
   prog_rotated_lorentz.AddRotatedLorentzConeConstraint(
       {t_rotated_lorentz, slack_rotated_lorentz, x_rotated_lorentz});
   prog_rotated_lorentz.AddLinearEqualityConstraint(A, b, {x_rotated_lorentz});

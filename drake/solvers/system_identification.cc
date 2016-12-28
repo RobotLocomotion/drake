@@ -267,9 +267,9 @@ SystemIdentification<T>::EstimateParameters(
   // Build up our optimization problem's decision variables.
   MathematicalProgram problem;
   DecisionVariableVectorX parameter_variables =
-      problem.AddContinuousVariables(num_to_estimate, "param");
+      problem.NewContinuousVariables(num_to_estimate, "param");
   DecisionVariableVectorX error_variables =
-      problem.AddContinuousVariables(num_err_terms, "error");
+      problem.NewContinuousVariables(num_err_terms, "error");
 
   // Create any necessary VarType IDs.  We build up two lists of VarType:
   //  * problem_vartypes holds a VarType for each decision variable.  This

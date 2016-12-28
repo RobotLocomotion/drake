@@ -30,9 +30,9 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
     : num_inputs_(num_inputs),
       num_states_(num_states),
       N_(num_time_samples),
-      h_vars_(opt_problem_.AddContinuousVariables(N_ - 1, "h")),
-      u_vars_(opt_problem_.AddContinuousVariables(num_inputs_ * N_, "u")),
-      x_vars_(opt_problem_.AddContinuousVariables(num_states_ * N_, "x")) {
+      h_vars_(opt_problem_.NewContinuousVariables(N_ - 1, "h")),
+      u_vars_(opt_problem_.NewContinuousVariables(num_inputs_ * N_, "u")),
+      x_vars_(opt_problem_.NewContinuousVariables(num_states_ * N_, "x")) {
   DRAKE_ASSERT(num_inputs_ > 0);
   DRAKE_ASSERT(num_states_ > 0);
   DRAKE_ASSERT(num_time_samples > 1);
