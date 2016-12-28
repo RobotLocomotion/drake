@@ -5,6 +5,8 @@
 #include <utility>
 #include <vector>
 
+#include <Eigen/Core>
+
 #include "gtest/gtest.h"
 
 namespace drake {
@@ -118,6 +120,18 @@ TEST_F(SymbolicVariableTest, CompatibleWithUnorderedMap) {
 TEST_F(SymbolicVariableTest, CompatibleWithVector) {
   vector<Variable> vec;
   vec.push_back(x_);
+}
+
+TEST_F(SymbolicVariableTest, EigenTest) {
+  Eigen::Matrix<symbolic::Variable, 2, 2> m;
+  m(0, 0) = x_;
+  m(0, 1) = y_;
+  m(1, 0) = z_;
+  m(1, 1) = w_;
+  EXPECT_EQ(m(0, 0), x_);
+  EXPECT_EQ(m(0, 1), y_);
+  EXPECT_EQ(m(1, 0), z_);
+  EXPECT_EQ(m(1, 1), w_);
 }
 }  // namespace
 }  // namespace symbolic
