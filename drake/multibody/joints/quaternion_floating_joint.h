@@ -111,8 +111,8 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     //     Hall, New Jersey, 1988. Equation 108.
     qdot_to_v.template block<3, 3>(0, 0).setZero();
     qdot_to_v.template block<3, 4>(0, 3) <<  -qx,  qw,  qz, -qy,
-                                    -qy, -qz,  qw,  qx,
-                                    -qz,  qy, -qx,  qw;
+                                             -qy, -qz,  qw,  qx,
+                                             -qz,  qy, -qx,  qw;
 /*
     // Equation 105, for angular velocity in global frame.
     qdot_to_v.block(0, 3, 3, 4) <<  -qx,  qw, -qz,  qy,
