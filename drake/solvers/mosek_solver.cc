@@ -462,13 +462,18 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
       for (int j = 0; j < i; ++j) {
         const double Qij = (Q(i, j) + Q(j, i)) / 2;
         if (std::abs(Qij) > Eigen::NumTraits<double>::epsilon()) {
-          Q_lower_triplets.push_back(
+          if (var_index_i > var_indices[j]) {
+            Q_lower_triplets.push_back(
               Eigen::Triplet<double>(var_index_i, var_indices[j], Qij));
+          } else {
+            Q_lower_triplets.push_back(
+              Eigen::Triplet<double>(var_indices[j], var_index_i, Qij));
+          }
         }
       }
       if (std::abs(Q(i, i)) > Eigen::NumTraits<double>::epsilon()) {
         Q_lower_triplets.push_back(
-            Eigen::Triplet<double>(var_index_i, var_indices[i], Q(i, i)));
+            Eigen::Triplet<double>(var_index_i, var_index_i, Q(i, i)));
       }
       if (std::abs(b(i)) > Eigen::NumTraits<double>::epsilon()) {
         linear_term_triplets.push_back(
