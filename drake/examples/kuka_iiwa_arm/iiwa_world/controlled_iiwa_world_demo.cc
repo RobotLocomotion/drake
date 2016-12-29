@@ -7,9 +7,8 @@
 /// cylinders being knocked off the table.
 
 #include <gflags/gflags.h>
-#include <chrono>
-#include <thread>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
@@ -47,7 +46,6 @@ int DoMain() {
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world. kRobotName alone is declared independently
   // since it is needed again later.
-  // const string kRobotName = "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf";
   const string kRobotName =
       "/examples/kuka_iiwa_arm/urdf/"
       "iiwa14_simplified_collision.urdf";
@@ -60,8 +58,6 @@ int DoMain() {
   world_sim_tree_builder->StoreModel(
       "cylinder",
       "/examples/kuka_iiwa_arm/models/objects/simple_cylinder.urdf");
-  world_sim_tree_builder->StoreModel(
-      "cuboid", "/examples/kuka_iiwa_arm/models/objects/simple_cuboid.urdf");
 
   world_sim_tree_builder->AddFixedModelInstance(
       "table", Eigen::Vector3d::Zero() /* xyz */,
@@ -139,15 +135,15 @@ int DoMain() {
   RigidBodyTreed robot_tree;
   CreateTreedFromFixedModelAtPose(kRobotName, &robot_tree, kRobotBase);
 
-  unique_ptr<PiecewisePolynomialTrajectory> ppt =
+  unique_ptr<PiecewisePolynomialTrajectory> polynomial_trajectory =
       SimpleCartesianWayPointPlanner(robot_tree, "iiwa_link_ee",
                                      target_position_vector,
                                      target_time_vector);
 
   lcm::DrakeLcm lcm;
   auto demo_plant = std::make_unique<PositionControlledPlantWithRobot<double>>(
-      world_sim_tree_builder->Build(), std::move(ppt), robot_model_instance,
-      robot_tree, 3000 /* penetration_stiffness */,
+      world_sim_tree_builder->Build(), std::move(polynomial_trajectory),
+      robot_model_instance, robot_tree, 3000 /* penetration_stiffness */,
       10.0 /* penetration_damping */, 10.0 /* contact friction */, &lcm);
 
   auto simulator = std::make_unique<systems::Simulator<double>>(*demo_plant);
