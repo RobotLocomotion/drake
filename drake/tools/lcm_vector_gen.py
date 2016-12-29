@@ -156,6 +156,7 @@ TRANSLATOR_HH_PREAMBLE = """
 
 %(generated_code_warning)s
 
+#include <memory>
 #include <vector>
 
 #include "%(relative_cxx_dir)s/%(snake)s.h"
