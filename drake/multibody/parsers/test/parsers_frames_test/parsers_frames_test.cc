@@ -1,5 +1,5 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <string>
 
@@ -33,8 +33,8 @@ using multibody::joints::kQuaternion;
 
 namespace parsers {
 
-using urdf::AddModelInstanceFromUrdfFileToWorld;
 using sdf::AddModelInstancesFromSdfFileToWorld;
+using urdf::AddModelInstanceFromUrdfFileToWorld;
 
 namespace {
 
@@ -50,7 +50,7 @@ class DoublePendulumFramesTest : public ::testing::Test {
 
   void LoadTreeFrom(const string& file_name) {
     const string full_name = GetDrakePath() +
-        "/multibody/parsers/test/" + file_name;
+        "/multibody/parsers/test/parsers_frames_test/" + file_name;
 
     tree_ = std::make_unique<RigidBodyTree<double>>();
 
@@ -89,10 +89,11 @@ class DoublePendulumFramesTest : public ::testing::Test {
     expected_Bcm_W_[base_id_] = Vector3d(0.0, 0.0, 0.0);
   }
 
-  void SetState(double theta1, double theta2) {
+  // Note that the input parameters must be in degree units!
+  void SetState(double theta1_degrees, double theta2_degrees) {
     const double deg_to_rad = M_PI / 180.0;
-    q(axis1_index_) = theta1 * deg_to_rad;
-    q(axis2_index_) = theta2 * deg_to_rad;
+    q(axis1_index_) = theta1_degrees * deg_to_rad;
+    q(axis2_index_) = theta2_degrees * deg_to_rad;
   }
 
   void ComputeAnalyticalSolution() {
@@ -155,7 +156,7 @@ class DoublePendulumFramesTest : public ::testing::Test {
   VectorXd q;
 };
 
-TEST_F(DoublePendulumFramesTest, URDFTest) {
+TEST_F(DoublePendulumFramesTest, UrdfTest) {
   LoadTreeFrom("simple_double_pendulum_urdf/simple_double_pendulum.urdf");
 
   EXPECT_EQ(tree_->get_num_bodies(), 4);
@@ -175,8 +176,9 @@ TEST_F(DoublePendulumFramesTest, URDFTest) {
 // In this case, <joint> does not need to specify its pose with respect to
 // the parent body, i.e. X_PF is not specified, no <pose> given in <joint>.
 // Therefore the inertial frames I need to be specified as doen in URDF files.
-TEST_F(DoublePendulumFramesTest, SDFTestWhereLequalsB) {
-  LoadTreeFrom("simple_double_pendulum_LequalsB.sdf");
+TEST_F(DoublePendulumFramesTest, SdfTestWhereLequalsB) {
+  LoadTreeFrom("simple_double_pendulum_l_equals_b_sdf/"
+               "simple_double_pendulum_l_equals_b.sdf");
 
   EXPECT_EQ(tree_->get_num_bodies(), 4);
   EXPECT_EQ(tree_->get_num_positions(), 2);
@@ -194,8 +196,9 @@ TEST_F(DoublePendulumFramesTest, SDFTestWhereLequalsB) {
 // Therefore the parser makes L = F where frame F is specified by a <pose> in
 // the joint "shaft2" expressed in the model frame D, i.e. <pose> is giving
 // X_DF for "shaft2".
-TEST_F(DoublePendulumFramesTest, SDFTestLisNotSpecified) {
-  LoadTreeFrom("simple_double_pendulum_LisNotSpecified.sdf");
+TEST_F(DoublePendulumFramesTest, SdfTestLisNotSpecified) {
+  LoadTreeFrom("simple_double_pendulum_l_is_not_specified_sdf/"
+               "simple_double_pendulum_l_is_not_specified.sdf");
 
   EXPECT_EQ(tree_->get_num_bodies(), 4);
   EXPECT_EQ(tree_->get_num_positions(), 2);
@@ -209,14 +212,17 @@ TEST_F(DoublePendulumFramesTest, SDFTestLisNotSpecified) {
 }
 
 // The following tests are commented out since they fail to pass even when
-// Drake sdf parser is supposed to handle these cases well.
-#if 0
+// Drake sdf parser is supposed to handle these cases well. See #4641.
+
+// TODO(liang.fok) Enable this test once #4641 is resolved.
+//
 // In this case the frame L for the lower arm is specified to be half way
 // through between the body frame B and the inertial frame I.
 // Since the link inboard frame is specified in the link's frame L, the
 // <pose> entry for joint "shaft2" must be specified accordingly.
-TEST_F(DoublePendulumFramesTest, SDFTestLbetweenBandI) {
-  LoadTreeFrom("simple_pendulum_LbetweenBandI.sdf");
+TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLBetweenBandI) {
+  LoadTreeFrom("simple_double_pendulum_l_between_b_and_i_sdf/"
+               "simple_double_pendulum_l_between_b_and_i.sdf");
 
   EXPECT_EQ(tree_->get_num_bodies(), 4);
   EXPECT_EQ(tree_->get_num_positions(), 2);
@@ -228,15 +234,16 @@ TEST_F(DoublePendulumFramesTest, SDFTestLbetweenBandI) {
   RunTest(45.0, 0.0);
   RunTest(12.0, -18.0);
 }
-#endif
 
-#if 0
+// TODO(liang.fok) Enable this test once #4641 is resolved.
+//
 // In this case the link frame L for the lower arm is defined to be
 // coincident with the inertial frame I of the link.
 // Since the pose of the joints are given in the outboard link frame, we need
 // to specify the joint pose accordingly as well.
-TEST_F(DoublePendulumFramesTest, SDFTestLequalsI) {
-  LoadTreeFrom("simple_pendulum_LequalsI.sdf");
+TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLequalsI) {
+  LoadTreeFrom("simple_double_pendulum_l_equals_i_sdf/"
+               "simple_double_pendulum_l_equals_i.sdf");
 
   EXPECT_EQ(tree_->get_num_bodies(), 4);
   EXPECT_EQ(tree_->get_num_positions(), 2);
@@ -248,7 +255,6 @@ TEST_F(DoublePendulumFramesTest, SDFTestLequalsI) {
   RunTest(45.0, 0.0);
   RunTest(12.0, -18.0);
 }
-#endif
 
 }  // namespace
 }  // namespace parsers

@@ -1,4 +1,8 @@
 <sdf version='1.5'>
+  <!-- TODO(liang.fok): The color specifications used for the links in this SDF
+  are custom to the Gazebo simulator. Consider modifying Drake to support them.
+  Maybe this can be done in conjunction with the switch to OSRF's SDF parser,
+  see #4337. -->
   <model name='Simple_Double_Pendulum_L_Is_Not_Specified'>
     <!-- Specifies X_WD, which is the model frame, D, expressed in the world
     frame, W. -->
