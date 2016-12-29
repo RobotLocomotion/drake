@@ -42,10 +42,11 @@ class DoublePendulumFramesTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // One entry per body in the tree.
-    expected_Bo_W_.resize(4);
-    expected_Bcm_B_.resize(4);
-    expected_Bcm_W_.resize(4);
-    q.resize(4);
+    const int kNumBodiesInTree = 4;
+    expected_Bo_W_.resize(kNumBodiesInTree);
+    expected_Bcm_B_.resize(kNumBodiesInTree);
+    expected_Bcm_W_.resize(kNumBodiesInTree);
+    q.resize(kNumBodiesInTree);
   }
 
   void LoadTreeFrom(const string& file_name) {
