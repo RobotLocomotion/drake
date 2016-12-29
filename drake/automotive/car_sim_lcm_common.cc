@@ -1,5 +1,7 @@
 #include "drake/automotive/car_sim_lcm_common.h"
 
+#include <utility>
+
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/controllers/pid_controlled_system.h"

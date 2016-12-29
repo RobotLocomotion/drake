@@ -1,6 +1,7 @@
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
 
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "drake/systems/trajectory_optimization/direct_collocation_constraint.h"

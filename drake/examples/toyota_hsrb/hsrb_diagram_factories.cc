@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"

@@ -3,6 +3,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"

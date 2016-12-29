@@ -3,6 +3,7 @@
 #include <memory>
 #include <set>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"

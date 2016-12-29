@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <Eigen/Dense>
 
 #include "drake/multibody/rigid_body_frame.h"

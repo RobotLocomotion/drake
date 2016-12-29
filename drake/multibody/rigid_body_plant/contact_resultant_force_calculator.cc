@@ -1,6 +1,8 @@
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/multibody/rigid_body_plant/point_contact_detail.h"
 
+#include <utility>
+
 namespace drake {
 namespace systems {
 

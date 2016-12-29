@@ -3,6 +3,8 @@
 /// @file This file contains classes dealing with sending/receiving
 /// LCM messages related to the iiwa arm.
 
+#include <memory>
+
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {

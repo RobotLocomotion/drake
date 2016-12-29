@@ -1,6 +1,7 @@
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
 #include <iostream>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
