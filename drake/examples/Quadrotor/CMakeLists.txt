@@ -38,7 +38,8 @@ if(lcm_FOUND)
       drakeSystemAnalysis
       drakeSystemPrimitives
       gflags)
-  drake_add_test(NAME run_quadrotor_lqr COMMAND run_quadrotor_lqr -simulation_trials 2)
+  drake_add_test(NAME run_quadrotor_lqr
+      COMMAND run_quadrotor_lqr -simulation_trials 2 -simulation_real_time_rate 0.0)
 endif()
 
 # drake_add_matlab_test(NAME examples/Quadrotor/Quadrotor.runOpenLoop COMMAND Quadrotor.runOpenLoop)  # FIXME: see #3313

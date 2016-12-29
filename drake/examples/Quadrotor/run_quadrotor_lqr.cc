@@ -1,8 +1,7 @@
 /// @file
 ///
 /// This demo sets up a controlled Quadrotor that uses a Linear Quadratic
-/// Regulator to fly towards a pre-defined target from random chosen initial
-/// conditions.
+/// Regulator to (locally) stabilize a nominal hover.
 
 #include <memory>
 
@@ -11,6 +10,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/examples/Quadrotor/quadrotor_plant.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -22,12 +22,14 @@
 
 DEFINE_int32(simulation_trials, 10, "Number of trials to simulate.");
 DEFINE_double(simulation_real_time_rate, 1.0, "Real time rate");
-DEFINE_double(trial_duration, 4.0, "Duration of execution of each trial");
+DEFINE_double(trial_duration, 7.0, "Duration of execution of each trial");
 
 namespace drake {
 using systems::DiagramBuilder;
 using systems::Simulator;
 using systems::Context;
+using systems::ContinuousState;
+using systems::VectorBase;
 
 namespace examples {
 namespace quadrotor {
@@ -43,9 +45,13 @@ int do_main(int argc, char* argv[]) {
       GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
       multibody::joints::kRollPitchYaw, tree.get());
 
+  // The nominal hover position is at (0, 0, 1.0) in world coordinates.
+  const Eigen::Vector3d kNominalPosition{((Eigen::Vector3d() << 0.0, 0.0, 1.0).
+      finished())};
+
   auto quadrotor = builder.AddSystem<QuadrotorPlant<double>>();
   auto controller = builder.AddSystem(StabilizingLQRController(
-      quadrotor, Eigen::Vector3d::Zero() /* nominal position */));
+      quadrotor, kNominalPosition));
   auto visualizer =
       builder.AddSystem<drake::systems::DrakeVisualizer>(*tree, &lcm);
 
@@ -56,6 +62,9 @@ int do_main(int argc, char* argv[]) {
   auto diagram = builder.Build();
   Simulator<double> simulator(*diagram);
   VectorX<double> x0 = VectorX<double>::Zero(12);
+
+  const VectorX<double> kNominalState{((Eigen::VectorXd(12) << kNominalPosition,
+  Eigen::VectorXd::Zero(9)).finished())};
 
   srand(42);
 
@@ -70,6 +79,15 @@ int do_main(int argc, char* argv[]) {
     simulator.Initialize();
     simulator.set_target_realtime_rate(FLAGS_simulation_real_time_rate);
     simulator.StepTo(FLAGS_trial_duration);
+
+    // Goal state verification.
+    const Context<double>& context = simulator.get_context();
+    const ContinuousState<double>* state = context.get_continuous_state();
+    const VectorX<double>& position_vector = state->CopyToVector();
+
+    if (!CompareMatrices(position_vector, kNominalState, 1e-4)) {
+      throw std::runtime_error("Target state is not achieved.");
+    }
 
     simulator.reset_context(std::move(diagram_context));
   }

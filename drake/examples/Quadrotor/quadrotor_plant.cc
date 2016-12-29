@@ -20,7 +20,7 @@ template <typename T>
 QuadrotorPlant<T>::QuadrotorPlant(double m_arg, double L_arg,
                                   const Matrix3<T>& I_arg, double kF_arg,
                                   double kM_arg)
-    : m(m_arg), L(L_arg), kF(kF_arg), kM(kM_arg), I(I_arg) {
+    : m_(m_arg), L_(L_arg), kF_(kF_arg), kM_(kM_arg), I_(I_arg) {
   this->DeclareInputPort(systems::kVectorValued, kInputDimension);
   this->DeclareContinuousState(kStateDimension);
   this->DeclareOutputPort(systems::kVectorValued, kStateDimension);
@@ -31,7 +31,7 @@ QuadrotorPlant<T>::~QuadrotorPlant() {}
 
 template <typename T>
 QuadrotorPlant<AutoDiffXd>* QuadrotorPlant<T>::DoToAutoDiffXd() const {
-  return new QuadrotorPlant<AutoDiffXd>(m, L, I, kF, kM);
+  return new QuadrotorPlant<AutoDiffXd>(m_, L_, I_, kF_, kM_);
 }
 
 template <typename T>
@@ -59,23 +59,23 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   Matrix3<T> R = drake::math::rpy2rotmat(rpy);
 
   // Computing the net input forces and moments.
-  VectorX<T> uF = kF * u;
-  VectorX<T> uM = kM * u;
+  VectorX<T> uF = kF_ * u;
+  VectorX<T> uM = kM_ * u;
 
-  Vector3<T> Fg(0, 0, -m * g);
+  Vector3<T> Fg(0, 0, -m_ * g_);
   Vector3<T> F(0, 0, uF.sum());
-  Vector3<T> M(L * (uF(1) - uF(3)), L * (uF(2) - uF(0)),
+  Vector3<T> M(L_ * (uF(1) - uF(3)), L_ * (uF(2) - uF(0)),
                uM(0) - uM(1) + uM(2) - uM(3));
 
   // Computing the resultant linear acceleration due to the forces.
-  Vector3<T> xyz_ddot = (1.0 / m) * (Fg + R * F);
+  Vector3<T> xyz_ddot = (1.0 / m_) * (Fg + R * F);
 
   Vector3<T> pqr;
   rpydot2angularvel(rpy, rpy_dot, pqr);
   pqr = R.adjoint() * pqr;
 
   // Computing the resultant angular acceleration due to the moments.
-  Vector3<T> pqr_dot = I.ldlt().solve(M - pqr.cross(I * pqr));
+  Vector3<T> pqr_dot = I_.ldlt().solve(M - pqr.cross(I_ * pqr));
   Matrix3<T> Phi;
   typename drake::math::Gradient<Matrix3<T>, 3>::type dPhi;
   typename drake::math::Gradient<Matrix3<T>, 3, 2>::type* ddPhi = nullptr;
@@ -105,23 +105,19 @@ std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
     const QuadrotorPlant<double>* quad, Eigen::Vector3d nominal_position) {
   auto quad_context_goal = quad->CreateDefaultContext();
 
-  // Steady state hover input.
-  quad_context_goal->FixInputPort(0, Eigen::VectorXd::Zero(4));
-
   Eigen::VectorXd x0 = Eigen::VectorXd::Zero(12);
   x0.topRows(3) = nominal_position;
 
-  Eigen::VectorXd u0 = Eigen::VectorXd::Ones(4);
-
   // Nominal input corresponds to a hover.
-  u0 *= quad->get_m() * quad->get_g() / 4;
+  Eigen::VectorXd u0 = Eigen::VectorXd::Constant(
+      4, quad->m() * quad->g() / 4);
 
   quad_context_goal->FixInputPort(0, u0);
   quad->set_state(quad_context_goal.get(), x0);
 
   // Setup LQR Cost matrices (penalize position error 10x more than velocity.
   Eigen::MatrixXd Q = Eigen::MatrixXd::Identity(12, 12);
-  Q *= 10;
+  Q.topLeftCorner<6,6>() = 10 * Eigen::MatrixXd::Identity(6, 16);
 
   Eigen::Matrix4d R = Eigen::Matrix4d::Identity();
 
