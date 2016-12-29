@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/multibody/rigid_body_plant/contact_detail.h"
 
 namespace drake {

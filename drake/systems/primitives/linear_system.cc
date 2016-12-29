@@ -1,5 +1,7 @@
 #include "drake/systems/primitives/linear_system.h"
 
+#include <utility>
+
 #include <Eigen/Dense>
 #include <Eigen/LU>
 

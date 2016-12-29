@@ -1,6 +1,7 @@
 #include "drake/automotive/maliput/monolane/builder.h"
 
 #include <cmath>
+#include <utility>
 
 #include "drake/automotive/maliput/monolane/arc_lane.h"
 #include "drake/automotive/maliput/monolane/branch_point.h"

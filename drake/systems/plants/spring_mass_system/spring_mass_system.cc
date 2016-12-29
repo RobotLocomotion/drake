@@ -1,5 +1,7 @@
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
+#include <utility>
+
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/basic_vector.h"

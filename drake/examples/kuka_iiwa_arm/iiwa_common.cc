@@ -3,6 +3,7 @@
 #include <memory.h>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"

@@ -1,7 +1,9 @@
 #pragma once
 
+#include <memory>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/common/eigen_types.h"

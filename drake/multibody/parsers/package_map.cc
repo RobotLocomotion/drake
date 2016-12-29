@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 #include "spruce.hh"

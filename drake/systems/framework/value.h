@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <typeinfo>
+#include <utility>
 
 #include "drake/systems/framework/basic_vector.h"
 

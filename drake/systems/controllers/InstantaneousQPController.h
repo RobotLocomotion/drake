@@ -2,6 +2,8 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 #include "QPCommon.h"
 #include "drake/common/eigen_stl_types.h"
