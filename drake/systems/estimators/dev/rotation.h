@@ -8,11 +8,12 @@
 namespace drake {
 namespace solvers {
 
+/// Add constraint (10) from https://arxiv.org/pdf/1403.4914.pdf ,
+/// which exactly represents the convex hull of all rotation matrices in 3D.
 DecisionVariableMatrixX AddRotationMatrixSpectrahedralSdpRelaxation(
     MathematicalProgram* prog, const std::string& name = "R") {
   DecisionVariableMatrixX R = prog->AddContinuousVariables<3, 3>(name);
 
-  // Add constraint (10) from https://arxiv.org/pdf/1403.4914.pdf .
   // TODO(russt): Clean this up using symbolic expressions!
   Eigen::Matrix4d F0 = Eigen::Matrix4d::Identity();
   Eigen::Matrix4d F11 = Eigen::Matrix4d::Zero();

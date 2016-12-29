@@ -385,8 +385,8 @@ class MathematicalProgram {
    * @see AddContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  DecisionVariableVectorX AddContinuousVariables(std::size_t rows,
-                                                 const std::string& name = "x");
+  DecisionVariableVectorX AddContinuousVariables(
+      std::size_t rows, const std::string& name = "x");
 
   /// Adds continuous variables to this MathematicalProgram.
   /**
@@ -530,15 +530,15 @@ class MathematicalProgram {
 
   /**
    * Adds continuous variables to the program.
-   * The name for all newly added variables are set to "name". The default name
+   * The name for all newly added variables are set to @p name. The default name
    * is "x"
    * @see AddContinuousVariables(const std::array<std::string, rows>& names)
    */
   template <int rows>
   DecisionVariableVector<rows> AddContinuousVariables(
-      const std::string& name = "var") {
+      const std::string& name = "x") {
     std::array<std::string, rows> names;
-    int offset = (name.compare("var") == 0) ? num_vars_ : 0;
+    int offset = (name.compare("x") == 0) ? num_vars_ : 0;
     for (int i = 0; i < rows; ++i) {
       names[i] = name + std::to_string(offset + i);
     }
@@ -598,9 +598,9 @@ class MathematicalProgram {
    */
   template <int rows>
   DecisionVariableVector<rows> AddBinaryVariables(
-      const std::string& name = "var") {
+      const std::string& name = "b") {
     std::array<std::string, rows> names;
-    int offset = (name.compare("var") == 0) ? num_vars_ : 0;
+    int offset = (name.compare("b") == 0) ? num_vars_ : 0;
     for (int i = 0; i < rows; ++i) {
       names[i] = name + std::to_string(offset + i);
     }
