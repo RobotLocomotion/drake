@@ -97,7 +97,8 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
 
     // Get the quaternion values.
     auto quat =
-        q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension).normalized();
+        q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension).
+            normalized();
     const auto& qw = quat[0];
     const auto& qx = quat[1];
     const auto& qy = quat[2];
@@ -162,7 +163,8 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
 
     // Get the quaternion values.
     auto quat =
-        q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension).normalized();
+        q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension).
+            normalized();
     const auto& qw = quat[0];
     const auto& qx = quat[1];
     const auto& qy = quat[2];
