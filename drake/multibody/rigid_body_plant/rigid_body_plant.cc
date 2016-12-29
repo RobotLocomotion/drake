@@ -473,8 +473,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
    */
   // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
   // templatized.
-  const auto& vdot_value =
-      drake::solvers::GetSolution(vdot);
+  const auto& vdot_value = prog.GetSolution(vdot);
   xdot << tree_->transformQDotMappingToVelocityMapping(
       kinsol, MatrixX<T>::Identity(nq, nq).eval()) * v, vdot_value;
 

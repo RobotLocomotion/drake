@@ -41,7 +41,7 @@ GTEST_TEST(TestMixedIntegerOptimization, TestMixedIntegerLinearProgram1) {
     RunSolver(&prog, *solver);
 
     Eigen::Vector3d x_expected(1, 0, 1);
-    const auto& x_value = GetSolution(x);
+    const auto& x_value = prog.GetSolution(x);
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
                                 MatrixCompareType::absolute));
   }
@@ -67,7 +67,7 @@ GTEST_TEST(TestMixedIntegerOptimization, TestMixedIntegerLinearProgram2) {
     RunSolver(&prog, *solver);
 
     Eigen::Vector3d x_expected(1, 1, 1);
-    const auto& x_value = GetSolution(x);
+    const auto& x_value = prog.GetSolution(x);
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
                                 MatrixCompareType::absolute));
   }

@@ -270,8 +270,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
 
   // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
   // templatized.
-  Eigen::VectorXd vdot_value =
-      drake::solvers::GetSolution(vdot);
+  Eigen::VectorXd vdot_value = prog.GetSolution(vdot);
   dot << tree->transformQDotMappingToVelocityMapping(kinsol,
              Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Identity(
                  nq, nq).eval()) *
@@ -358,8 +357,7 @@ RigidBodySystem::StateVector<double> getInitialState(
     prog.AddQuadraticCost(MatrixXd::Identity(nq, nq), q_guess);
     prog.Solve();
 
-    const VectorXd& qvar_value =
-        drake::solvers::GetSolution(qvar);
+    const VectorXd& qvar_value = prog.GetSolution(qvar);
     x0 << qvar_value, VectorXd::Zero(sys.tree->get_num_velocities());
   }
   return x0;
