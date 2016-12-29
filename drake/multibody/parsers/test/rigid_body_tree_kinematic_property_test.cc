@@ -25,8 +25,10 @@ namespace parsers {
 //    j_group2:
 //      [base, joint1]
 void TestKinematicsProperty(multibody::joints::FloatingBaseType type) {
-  std::string urdf = drake::GetDrakePath() + "/multibody/test/rigid_body_tree/" + "two_dof_robot.urdf";
-  std::string config = drake::GetDrakePath() + "/multibody/parsers/test/" + "rigid_body_tree_kinematic_property_test.config";
+  std::string urdf = drake::GetDrakePath() +
+                     "/multibody/test/rigid_body_tree/" + "two_dof_robot.urdf";
+  std::string config = drake::GetDrakePath() + "/multibody/parsers/test/" +
+                       "rigid_body_tree_kinematic_property_test.config";
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf, type, robot.get());
@@ -63,8 +65,10 @@ void TestKinematicsProperty(multibody::joints::FloatingBaseType type) {
   EXPECT_EQ(kin_prop.get_joint_group("j_group2")[0]->get_name(), "base");
   EXPECT_EQ(kin_prop.get_joint_group("j_group2")[1]->get_name(), "joint1");
 
-  const std::vector<int>& q_indices = kin_prop.get_generalized_position_group("j_group2");
-  const std::vector<int>& v_indices = kin_prop.get_generalized_velocity_group("j_group2");
+  const std::vector<int>& q_indices =
+      kin_prop.get_generalized_position_group("j_group2");
+  const std::vector<int>& v_indices =
+      kin_prop.get_generalized_velocity_group("j_group2");
   switch (type) {
     case drake::multibody::joints::kQuaternion:
       EXPECT_EQ(q_indices.size(), 8);

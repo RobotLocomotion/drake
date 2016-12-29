@@ -1,25 +1,20 @@
 #include "drake/multibody/parsers/rigid_body_tree_kinematic_property.h"
 
-#include <string>
-#include <vector>
-
 namespace drake {
 namespace parsers {
 
 template <typename T>
-const std::string RigidBodyTreeKinematicProperty<T>::kBodyGroupKeyWord = "body_groups";
-
+constexpr char RigidBodyTreeKinematicProperty<T>::kBodyGroupKeyWord[];
 template <typename T>
-const std::string RigidBodyTreeKinematicProperty<T>::kJointGroupKeyWord = "joint_groups";
+constexpr char RigidBodyTreeKinematicProperty<T>::kJointGroupKeyWord[];
 
 template <typename T>
 void RigidBodyTreeKinematicProperty<T>::AddBodyGroup(
-    const std::string& group_name,
-    const std::vector<std::string>& body_names) {
+    const std::string& group_name, const std::vector<std::string>& body_names) {
   std::vector<const RigidBody<T>*> bodies;
   bodies.reserve(body_names.size());
   for (const std::string& name : body_names) {
-    bodies.push_back(robot_->FindBody(name));
+    bodies.push_back(tree_->FindBody(name));
   }
   body_groups_[group_name] = bodies;
 }
@@ -28,7 +23,6 @@ template <typename T>
 void RigidBodyTreeKinematicProperty<T>::AddJointGroup(
     const std::string& group_name,
     const std::vector<std::string>& joint_names) {
-
   std::vector<const RigidBody<T>*> bodies;
   std::vector<const DrakeJoint*> joints;
   bodies.reserve(joint_names.size());
@@ -36,7 +30,7 @@ void RigidBodyTreeKinematicProperty<T>::AddJointGroup(
   int q_size = 0;
   int v_size = 0;
   for (const std::string& name : joint_names) {
-    bodies.push_back(robot_->FindChildBodyOfJoint(name));
+    bodies.push_back(tree_->FindChildBodyOfJoint(name));
     joints.push_back(&(bodies.back()->getJoint()));
 
     q_size += bodies.back()->getJoint().get_num_positions();
@@ -63,8 +57,8 @@ void RigidBodyTreeKinematicProperty<T>::AddJointGroup(
 }
 
 template <typename T>
-void RigidBodyTreeKinematicProperty<T>::LoadFromYAMLFile(const YAML::Node& config) {
-
+void RigidBodyTreeKinematicProperty<T>::LoadFromYAMLFile(
+    const YAML::Node& config) {
   // Parse body groups.
   YAML::Node body_groups = config[kBodyGroupKeyWord];
   for (auto group_it = body_groups.begin(); group_it != body_groups.end();

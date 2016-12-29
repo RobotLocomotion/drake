@@ -1,39 +1,59 @@
 #pragma once
 
+#include <map>
 #include <string>
+#include <vector>
 
 #include "drake/multibody/rigid_body_tree.h"
-
 #include "yaml-cpp/yaml.h"
 
 namespace drake {
 namespace parsers {
 
-template <typename T> class RigidBodyTreeKinematicProperty {
+template <typename T>
+class RigidBodyTreeKinematicProperty {
  public:
-  static const std::string kBodyGroupKeyWord;
-  static const std::string kJointGroupKeyWord;
+  static constexpr char kBodyGroupKeyWord[] = "body_groups";
+  static constexpr char kJointGroupKeyWord[] = "joint_groups";
 
-  RigidBodyTreeKinematicProperty(const RigidBodyTree<T>& robot)
-    : robot_(&robot) {}
+  /**
+   * Constructor for RigidBodyTreeKinematicProperty.
+   * @param tree, Reference for the RigidBodyTree.
+   * A pointer is stored internally, so `tree` needs to outlive this object.
+   */
+  explicit RigidBodyTreeKinematicProperty(const RigidBodyTree<T>& tree)
+      : tree_(&tree) {}
 
+  /**
+   * Parse joint groups and body groups from the config file.
+   * This function looks for top level key word kBodyGroupKeyWord and
+   * kJointGroupKeyWord in `config`.
+   * An example config file looks like:
+   * <pre>
+   * ...
+   * body_groups:
+   *   group_name1:
+   *     [body_name1, body_name2, ...]
+   *   group_name2:
+   *     [body_name1, body_name3, ...]
+   *   ...
+   * ...
+   * joint_groups:
+   *   group_name1:
+   *     [joint_name1, joint_name2, ...]
+   *   group_name2:
+   *     [joint_name1, joint_name3, ...]
+   *   ...
+   * ...
+   * </pre>
+   * body_namei and joint_namei need to match some link's name and joint's
+   * name in the RigidBodyTree tree_.
+   * @param config, YAML node specifying joint and body groups.
+   *
+   * @throws std::logic_error if cannot find body_namei or joint_namei in
+   * tree_.
+   */
   void LoadFromYAMLFile(const YAML::Node& config);
-
-  const std::vector<const RigidBody<T>*>& get_body_group(
-      const std::string& group_name) const { return body_groups_.at(group_name); }
-
-  const std::vector<const DrakeJoint*>& get_joint_group(
-      const std::string& group_name) const { return joint_groups_.at(group_name); }
-
-  const std::vector<int> get_generalized_position_group(
-      const std::string& group_name) const {
-    return generalized_position_groups_.at(group_name);
-  }
-
-  const std::vector<int> get_generalized_velocity_group(
-      const std::string& group_name) const {
-    return generalized_velocity_groups_.at(group_name);
-  }
 
   bool has_body_group(const std::string& group_name) const {
     return body_groups_.find(group_name) != body_groups_.end();
@@ -44,79 +64,87 @@ template <typename T> class RigidBodyTreeKinematicProperty {
   }
 
   bool has_generalized_position_group(const std::string& group_name) const {
-    return generalized_position_groups_.find(group_name) != generalized_position_groups_.end();
+    return generalized_position_groups_.find(group_name) !=
+           generalized_position_groups_.end();
   }
 
   bool has_generalized_velocity_group(const std::string& group_name) const {
-    return generalized_velocity_groups_.find(group_name) != generalized_velocity_groups_.end();
+    return generalized_velocity_groups_.find(group_name) !=
+           generalized_velocity_groups_.end();
+  }
+
+  /**
+   * Returns the body group identified by `group_name`.
+   *
+   * @throws std::out_of_range if `group_name` is not found.
+   */
+  const std::vector<const RigidBody<T>*>& get_body_group(
+      const std::string& group_name) const {
+    return body_groups_.at(group_name);
+  }
+
+  /**
+   * Returns the joint group identified by `group_name`.
+   *
+   * @throws std::out_of_range if `group_name` is not found.
+   */
+  const std::vector<const DrakeJoint*>& get_joint_group(
+      const std::string& group_name) const {
+    return joint_groups_.at(group_name);
+  }
+
+  /**
+   * Returns the generalized position indices associated with the joint group
+   * identified by `group_name`.
+   *
+   * @throws std::out_of_range if `group_name` is not found.
+   */
+  const std::vector<int>& get_generalized_position_group(
+      const std::string& group_name) const {
+    return generalized_position_groups_.at(group_name);
+  }
+
+  /**
+   * Returns the generalized velocity indices associated with the joint group
+   * identified by `group_name`.
+   *
+   * @throws std::out_of_range if `group_name` is not found.
+   */
+  const std::vector<int>& get_generalized_velocity_group(
+      const std::string& group_name) const {
+    return generalized_velocity_groups_.at(group_name);
   }
 
   const std::map<std::string, std::vector<const RigidBody<T>*>>&
-      get_body_groups() const { return body_groups_; }
+  get_body_groups() const {
+    return body_groups_;
+  }
 
   const std::map<std::string, std::vector<const DrakeJoint*>>&
-      get_joint_groups() const { return joint_groups_; }
+  get_joint_groups() const {
+    return joint_groups_;
+  }
 
-  const std::map<std::string, std::vector<int>>
-      get_generalized_position_groups() const { return generalized_position_groups_; }
+  const std::map<std::string, std::vector<int>>&
+  get_generalized_position_groups() const {
+    return generalized_position_groups_;
+  }
 
-  const std::map<std::string, std::vector<int>>
-      get_generalized_velocity_groups() const { return generalized_velocity_groups_; }
+  const std::map<std::string, std::vector<int>>&
+  get_generalized_velocity_groups() const {
+    return generalized_velocity_groups_;
+  }
+
+  const RigidBodyTree<T>& get_tree() const { return *tree_; }
 
  private:
-  const RigidBodyTree<T>* robot_;
+  const RigidBodyTree<T>* tree_;
 
-  /**
-   * Parse @p robot's body groups specified by @p metadata, which is loaded from
-   * a YAML file.
-   *
-   * The config file is assumed to be formatted as:
-   * <pre>
-   * ...
-   * body_groups:
-   *   group_name1:
-   *     [body_name1, body_name2, ...]
-   *   group_name2:
-   *     [body_name1, body_name3, ...]
-   *   ...
-   * ...
-   * </pre>
-   * This function is looking for a top level keyword kBodyGroupKeyWord,
-   * which contains individual groups consists of a vector of body names.
-   * The result is stored in @p robot, and can be accessed by calling
-   * RigidBodyTree::get_body_group.
-   *
-   * @param metadata, YAML node representing the config file.
-   * @param robot, Pointer to the RigidBodyTree.
-   */
   void AddBodyGroup(const std::string& group_name,
                     const std::vector<std::string>& body_names);
 
-  /**
-   * Parse @p robot's joint groups specified by @p metadata, which is loaded from
-   * a YAML file.
-   *
-   * The config file is assumed to be formatted as:
-   * <pre>
-   * ...
-   * joint_groups:
-   *   group_name1:
-   *     [joint_name1, joint_name2, ...]
-   *   group_name2:
-   *     [joint_name1, joint_name3, ...]
-   *   ...
-   * ...
-   * </pre>
-   * This function is looking for a top level keyword kJointGroupKeyWord
-   * which contains individual groups consists of a vector of joint names.
-   * The result is stored in @p robot, and can be accessed by calling
-   * RigidBodyTree::get_position_group and RigidBodyTree::get_velocity_group.
-   *
-   * @param metadata, YAML node representing the config file.
-   * @param robot, Pointer to the RigidBodyTree.
-   */
   void AddJointGroup(const std::string& group_name,
-                    const std::vector<std::string>& joint_names);
+                     const std::vector<std::string>& joint_names);
 
   std::map<std::string, std::vector<const RigidBody<T>*>> body_groups_;
   std::map<std::string, std::vector<const DrakeJoint*>> joint_groups_;

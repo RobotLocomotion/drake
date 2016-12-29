@@ -17,7 +17,9 @@ target_link_libraries(xml_util_test drakeMultibodyParsers)
 
 if (yaml-cpp_FOUND)
   drake_add_cc_test(rigid_body_tree_kinematic_property_test)
-  target_link_libraries(rigid_body_tree_kinematic_property_test drakeMultibodyParsers)
+  target_link_libraries(rigid_body_tree_kinematic_property_test
+    drakeMultibodyParsers
+    drakeRigidBodyKinematicProperty)
 endif()
 
 add_subdirectory(package_map_test)
