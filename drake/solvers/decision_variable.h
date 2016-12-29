@@ -29,6 +29,9 @@ using VariableListRef = std::list<Eigen::Ref<const DecisionVariableMatrixX>>;
  * This class stores a list of DecisionVariableMatrix objects. An instance
  * of this class is going to be bound to a constraint, indicating that a
  * constraint is imposed on one or several DecisionVariableMatrix objects.
+ * TODO(hongkai.dai) : replace this class with symbolic::List, or rename it as
+ * using Arguments = std::vector<DecisionVariableMatrixX>;
+ *
  */
 class VariableList {
  public:
