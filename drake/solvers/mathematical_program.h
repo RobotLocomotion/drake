@@ -1394,7 +1394,7 @@ class MathematicalProgram {
   void SetDecisionVariableValues(const Eigen::MatrixBase<Derived>& x) {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == num_vars_);
     for (int i = 0; i < static_cast<int>(num_vars_); ++i) {
-      *(x_values_[i]) = x(i);
+      x_values_[i] = x(i);
     }
   }
 
@@ -1600,6 +1600,9 @@ class MathematicalProgram {
     return decision_variable_type_;
   }
 
+  /** Return the type of the decision variable. */
+  VarType DecisionVariableType(const symbolic::Variable& var) const;
+
   /** Getter for the initial guess */
   const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
 
@@ -1619,9 +1622,6 @@ class MathematicalProgram {
    */
   size_t decision_variable_index(const symbolic::Variable& var) const;
 
-  /** Return the type of the decision variable. */
-  VarType decision_variable_type(const symbolic::Variable& var) const;
-
 
   /**
    * Get the solution of an Eigen matrix of decision variables.
@@ -1637,7 +1637,7 @@ class MathematicalProgram {
       for (int j = 0; j < var.cols(); ++j) {
         auto it = decision_variable_index_.find(var(i, j));
         DRAKE_ASSERT(it != decision_variable_index_.end());
-        value(i, j) = *(x_values_[it->second]);
+        value(i, j) = x_values_[it->second];
       }
     }
     return value;
@@ -1680,7 +1680,7 @@ class MathematicalProgram {
 
   size_t num_vars_;
   Eigen::VectorXd x_initial_guess_;
-  std::vector<std::unique_ptr<double>> x_values_;
+  std::vector<double> x_values_;
   std::shared_ptr<SolverData> solver_data_;
   std::string solver_name_;
   int solver_result_;
@@ -1725,15 +1725,15 @@ class MathematicalProgram {
     DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
     variables_.conservativeResize(num_vars_ + num_new_vars, Eigen::NoChange);
     x_values_.reserve(num_vars_ + num_new_vars);
-    decision_variable_type_.reserve(num_vars_ + num_new_vars);
+    decision_variable_type_.resize(num_vars_ + num_new_vars);
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
-      auto x_new_value = std::make_unique<double>(0);
-      x_values_.push_back(std::move(x_new_value));
+      x_values_.push_back(0);
       variables_(num_vars_ + i) = symbolic::Variable(names[i]);
-      decision_variable_index_.insert(std::pair<symbolic::Variable, size_t>(variables_(num_vars_ + i), num_vars_ + i));
-      decision_variable_type_[num_vars_ + i] = type;
+      size_t new_var_index = num_vars_ + i;
+      decision_variable_index_.insert(std::pair<symbolic::Variable, size_t>(variables_(new_var_index), new_var_index));
+      decision_variable_type_[new_var_index] = type;
       decision_variable_matrix(row_index, col_index) =
           variables_(num_vars_ + i);
       if (!is_symmetric) {

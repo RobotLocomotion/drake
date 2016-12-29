@@ -21,7 +21,22 @@ bool DecisionVariableMatrixContainsIndex(const MathematicalProgram& prog, const 
   }
   return false;
 }
+
+template<typename Derived>
+bool CheckDecisionVariableType(const MathematicalProgram& prog, const Eigen::MatrixBase<Derived>& var, MathematicalProgram::VarType type_expected) {
+  const auto& variable_types = prog.DecisionVariableTypes();
+  for (int i = 0; i < var.rows(); ++i) {
+    for (int j = 0; j < var.cols(); ++j) {
+
+      if ((variable_types[prog.decision_variable_index(var(i, j))] != type_expected) ||
+          (prog.DecisionVariableType(var(i, j)) != type_expected)) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
+}  // namespace anonymous
 /*
  * Test adding decision variables, constructing VariableList, together with
  * functions in DecisionVariableScalar and VariableList.
@@ -37,6 +52,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_EQ(msg_buff1.str(), "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
   EXPECT_EQ(prog.num_vars(), 6u);
   EXPECT_FALSE(math::IsSymmetric(X1));
+
   auto S1 = prog.NewSymmetricContinuousVariables(3, "S");
   static_assert(decltype(S1)::RowsAtCompileTime == Eigen::Dynamic &&
                     decltype(S1)::ColsAtCompileTime == Eigen::Dynamic,
@@ -67,17 +83,25 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
                 "should be a static matrix of type 2 x 3");
   EXPECT_EQ(prog.num_vars(), 24u);
   EXPECT_FALSE(math::IsSymmetric(X2));
+  auto b1 = prog.NewBinaryVariables(6, "b1");
+  std::stringstream msg_buff5;
+  msg_buff5 << b1 << std::endl;
+  EXPECT_EQ(msg_buff5.str(), "b10\nb11\nb12\nb13\nb14\nb15\n");
+
   Eigen::Matrix<double, 6, 1> x_value;
   x_value << 0, 2, 4, 6, 8, 10;
   Eigen::Matrix<double, 6, 1> s_value;
   s_value << 0, -2, -4, -6, -8, -10;
   Eigen::Matrix<double, 3, 3> S_expected;
   S_expected << 0, -2, -4, -2, -6, -8, -4, -8, -10;
-  Eigen::Matrix<double, 24, 1> var_values;
-  var_values << x_value, s_value, x_value, x_value;
+  Eigen::Matrix<double, 6, 1> b_value;
+  b_value<< 0, 1, 1, 1, 0, 0;
+  Eigen::Matrix<double, 30, 1> var_values;
+  var_values << x_value, s_value, x_value, x_value, b_value;
   prog.SetDecisionVariableValues(var_values);
   Eigen::MatrixXd X_expected = x_value;
   X_expected.resize(2, 3);
+  Eigen::MatrixXd b_expected = b_value;
 
   // Test if the values in the decision variables are correct.
   EXPECT_TRUE(CompareMatrices(prog.GetSolution(X1), X_expected, 1E-14,
@@ -88,6 +112,15 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
                               MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(prog.GetSolution(X2), X_expected, 1E-14,
                               MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(b1), b_expected, 1E-14,
+                              MatrixCompareType::absolute));
+
+  // Test if the variable type is correct
+  EXPECT_TRUE(CheckDecisionVariableType(prog, X1, MathematicalProgram::VarType::CONTINUOUS));
+  EXPECT_TRUE(CheckDecisionVariableType(prog, S1, MathematicalProgram::VarType::CONTINUOUS));
+  EXPECT_TRUE(CheckDecisionVariableType(prog, x1, MathematicalProgram::VarType::CONTINUOUS));
+  EXPECT_TRUE(CheckDecisionVariableType(prog, X2, MathematicalProgram::VarType::CONTINUOUS));
+  EXPECT_TRUE(CheckDecisionVariableType(prog, b1, MathematicalProgram::VarType::BINARY));
 
   // Test constructing VariableList.
   VariableList var_list1({X1, S1});
