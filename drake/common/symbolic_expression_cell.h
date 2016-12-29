@@ -2,12 +2,10 @@
 
 #include <algorithm>  // for cpplint only
 #include <cstddef>
-#include <functional>
 #include <map>
 #include <memory>
 #include <ostream>
 #include <string>
-#include <utility>
 
 #include <Eigen/Core>
 
@@ -73,8 +71,8 @@ class UnaryExpressionCell : public ExpressionCell {
   bool Less(const ExpressionCell& c) const override;
   /** Evaluates expression under a given environment @p env. */
   double Evaluate(const Environment& env) const override;
-  /** Returns the nested expression. */
-  const Expression& get_expression() const { return e_; }
+  /** Returns the argument. */
+  const Expression& get_argument() const { return e_; }
 
  protected:
   /** Default constructor (DELETED). */
@@ -108,10 +106,10 @@ class BinaryExpressionCell : public ExpressionCell {
   bool Less(const ExpressionCell& c) const override;
   /** Evaluates expression under a given environment @p env. */
   double Evaluate(const Environment& env) const override;
-  /** Returns the first expression. */
-  const Expression& get_first_expression() const { return e1_; }
-  /** Returns the second expression. */
-  const Expression& get_second_expression() const { return e2_; }
+  /** Returns the first argument. */
+  const Expression& get_first_argument() const { return e1_; }
+  /** Returns the second argument. */
+  const Expression& get_second_argument() const { return e2_; }
 
  protected:
   /** Default constructor (DELETED). */
@@ -140,7 +138,7 @@ class BinaryExpressionCell : public ExpressionCell {
 class ExpressionVar : public ExpressionCell {
  public:
   explicit ExpressionVar(const Variable& v);
-  Variable get_variable() const { return var_; }
+  const Variable& get_variable() const { return var_; }
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
@@ -354,7 +352,7 @@ class ExpressionMulFactory {
                        const std::map<Expression, Expression>& term_to_exp_map);
 
   /** Constructs ExpressionMulFactory from @p ptr. */
-  explicit ExpressionMulFactory(std::shared_ptr<const ExpressionAdd> ptr);
+  explicit ExpressionMulFactory(std::shared_ptr<const ExpressionMul> ptr);
 
   /** Adds @p e to this factory. */
   void AddExpression(const Expression& e);
@@ -362,6 +360,12 @@ class ExpressionMulFactory {
   void Add(std::shared_ptr<const ExpressionMul> ptr);
   /** Assigns a factory from a shared pointer to ExpressionMul.  */
   ExpressionMulFactory& operator=(std::shared_ptr<ExpressionMul> ptr);
+  /** Negates the expressions in factory.
+   * If it represents c0 * p1 * ... * pn,
+   * this method flips it into -c0 * p1 * ... * pn.
+   * @returns *this.
+   */
+  ExpressionMulFactory& Negate();
   /** Returns a symbolic expression. */
   Expression GetExpression() const;
 
@@ -549,7 +553,6 @@ class ExpressionAtan2 : public BinaryExpressionCell {
 class ExpressionSinh : public UnaryExpressionCell {
  public:
   explicit ExpressionSinh(const Expression& e);
-  double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -626,6 +629,132 @@ class ExpressionIfThenElse : public ExpressionCell {
   const Expression e_then_;
   const Expression e_else_;
 };
+
+/** Checks if @p exp_ptr is a constant expression. */
+bool is_constant(const ExpressionCell& c);
+/** Checks if @p exp_ptr is a variable expression. */
+bool is_variable(const ExpressionCell& c);
+/** Checks if @p exp_ptr is a unary-minus expression. */
+bool is_unary_minus(const ExpressionCell& c);
+/** Checks if @p exp_ptr is an addition expression. */
+bool is_addition(const ExpressionCell& c);
+/** Checks if @p exp_ptr is an multiplication expression. */
+bool is_multiplication(const ExpressionCell& c);
+/** Checks if @p exp_ptr is a division expression. */
+bool is_division(const ExpressionCell& c);
+/** Checks if @p exp_ptr is a log expression. */
+bool is_log(const ExpressionCell& c);
+/** Checks if @p exp_ptr is an absolute-value-function expression. */
+bool is_abs(const ExpressionCell& c);
+/** Checks if @p exp_ptr is an exp expression. */
+bool is_exp(const ExpressionCell& c);
+/** Checks if @p exp_ptr is a square-root expression. */
+bool is_sqrt(const ExpressionCell& c);
+/** Checks if @p exp_ptr is a power-function expression. */
+bool is_pow(const ExpressionCell& c);
+/** Checks if @p exp_ptr is a sine expression. */
+bool is_sin(const ExpressionCell& c);
+/** Checks if @p exp_ptr is a cosine expression. */
+bool is_cos(const ExpressionCell& c);
+/** Checks if @p exp_ptr is a tangent expression. */
+bool is_tan(const ExpressionCell& c);
+/** Checks if @p exp_ptr is an arcsine expression. */
+bool is_asin(const ExpressionCell& c);
+/** Checks if @p exp_ptr is an arccosine expression. */
+bool is_acos(const ExpressionCell& c);
+/** Checks if @p exp_ptr is an arctangent expression. */
+bool is_atan(const ExpressionCell& c);
+/** Checks if @p exp_ptr is a arctangent2  expression. */
+bool is_atan2(const ExpressionCell& c);
+/** Checks if @p exp_ptr is a hyperbolic-sine expression. */
+bool is_sinh(const ExpressionCell& c);
+/** Checks if @p exp_ptr is a hyperbolic-cosine expression. */
+bool is_cosh(const ExpressionCell& c);
+/** Checks if @p exp_ptr is a hyperbolic-tangent expression. */
+bool is_tanh(const ExpressionCell& c);
+/** Checks if @p exp_ptr is a min expression. */
+bool is_min(const ExpressionCell& c);
+/** Checks if @p exp_ptr is a max expression. */
+bool is_max(const ExpressionCell& c);
+/** Checks if @p exp_ptr is an if-then-else expression. */
+bool is_if_then_else(const ExpressionCell& c);
+
+/** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
+ *  @c shared_ptr<ExpressionConstant>.
+ *  \pre{@p *exp_ptr is of @c ExpressionConstant.}
+ */
+std::shared_ptr<ExpressionConstant> to_constant(
+    const std::shared_ptr<ExpressionCell> exp_ptr);
+/** Casts @p e of Expression to @c shared_ptr<ExpressionConstant>.
+ *  \pre{@p *(e.ptr_) is of @c ExpressionConstant.}
+ */
+std::shared_ptr<ExpressionConstant> to_constant(const Expression& e);
+
+/** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
+ *  @c shared_ptr<ExpressionVar>.
+ *  \pre{@p *exp_ptr is of @c ExpressionVar.}
+ */
+std::shared_ptr<ExpressionVar> to_variable(
+    const std::shared_ptr<ExpressionCell> exp_ptr);
+/** Casts @p e of Expression to @c shared_ptr<ExpressionVar>.
+ *  \pre{@p *(e.ptr_) is of @c ExpressionVar.}
+ */
+std::shared_ptr<ExpressionVar> to_variable(const Expression& e);
+
+/** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
+ *  @c shared_ptr<UnaryExpressionCell>.
+ *  \pre{@c *exp_ptr is of @c UnaryExpressionCell.}
+ */
+std::shared_ptr<UnaryExpressionCell> to_unary(
+    const std::shared_ptr<ExpressionCell> exp_ptr);
+/** Casts @p e of Expression to @c shared_ptr<UnaryExpressionCell>.
+ *  \pre{@c *(e.ptr_) is of @c UnaryExpressionCell.}
+ */
+std::shared_ptr<UnaryExpressionCell> to_unary(const Expression& e);
+
+/** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
+ *  @c shared_ptr<BinaryExpressionCell>.
+ *  \pre{@c *exp_ptr is of @c BinaryExpressionCell.}
+ */
+std::shared_ptr<BinaryExpressionCell> to_binary(
+    const std::shared_ptr<ExpressionCell> exp_ptr);
+/** Casts @p e of Expression to @c shared_ptr<BinaryExpressionCell>.
+ *  \pre{@c *(e.ptr_) is of @c BinaryExpressionCell.}
+ */
+std::shared_ptr<BinaryExpressionCell> to_binary(const Expression& e);
+
+/** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
+ *  @c shared_ptr<ExpressionAdd>.
+ *  \pre{@c *exp_ptr is of @c ExpressionAdd.}
+ */
+std::shared_ptr<ExpressionAdd> to_addition(
+    const std::shared_ptr<ExpressionCell> exp_ptr);
+/** Casts @p e of Expression to @c shared_ptr<ExpressionAdd>.
+ *  \pre{@c *(e.ptr_) is of @c ExpressionAdd.}
+ */
+std::shared_ptr<ExpressionAdd> to_addition(const Expression& e);
+
+/** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
+ *  @c shared_ptr<ExpressionMul>.
+ *  \pre{@c *exp_ptr is of @c ExpressionConstant.}
+ */
+std::shared_ptr<ExpressionMul> to_multiplication(
+    const std::shared_ptr<ExpressionCell> exp_ptr);
+/** Casts @p e of Expression to @c shared_ptr<ExpressionMul>.
+ *  \pre{@c *(e.ptr_) is of @c ExpressionConstant.}
+ */
+std::shared_ptr<ExpressionMul> to_multiplication(const Expression& e);
+
+/** Casts @p exp_ptr of shared_ptr<ExpressionCell> to
+ *  @c shared_ptr<ExpressionIfThenElse>.
+ *  \pre{@c *exp_ptr is of @c ExpressionIfThenElse.}
+ */
+std::shared_ptr<ExpressionIfThenElse> to_if_then_else(
+    const std::shared_ptr<ExpressionCell> exp_ptr);
+/** Casts @p e of Expression to @c shared_ptr<ExpressionIfThenElse>.
+ *  \pre{@c *(e.ptr_) is of @c ExpressionIfThenElse.}
+ */
+std::shared_ptr<ExpressionIfThenElse> to_if_then_else(const Expression& e);
 
 }  // namespace symbolic
 }  // namespace drake
