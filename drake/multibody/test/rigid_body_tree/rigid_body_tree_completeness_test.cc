@@ -134,7 +134,8 @@ GTEST_TEST(RigidBodyTreeCompleteness, MissingJointConfigurationError) {
 
   // Using try/catch to test the exception message, confirming that the right
   // information is being returned about the error.
-  // NOTE: This error message arises from the
+  // NOTE: This error message arises from the process of creating the
+  // configuration vector.
   try {
     tree.compile();
     GTEST_FAIL();

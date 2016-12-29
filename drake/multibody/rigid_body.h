@@ -100,7 +100,7 @@ class RigidBody {
   const DrakeJoint& getJoint() const;
 
   /**
-   * Reports if the body has a joint.
+   * Reports if the body has a parent joint.
    */
   bool has_joint() const { return joint_ != nullptr; }
 
