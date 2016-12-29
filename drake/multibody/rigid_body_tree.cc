@@ -8,6 +8,7 @@
 #include <memory>
 #include <numeric>
 #include <string>
+#include <unordered_map>
 
 #include "drake/common/constants.h"
 #include "drake/common/eigen_autodiff_types.h"

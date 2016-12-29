@@ -1,5 +1,7 @@
 #include "drake/systems/trajectory_optimization/direct_collocation_constraint.h"
 
+#include <utility>
+
 #include "drake/common/drake_throw.h"
 #include "drake/math/autodiff.h"
 

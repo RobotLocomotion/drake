@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+
 #include "drake/systems/framework/leaf_system.h"
 
 #include "gtest/gtest.h"

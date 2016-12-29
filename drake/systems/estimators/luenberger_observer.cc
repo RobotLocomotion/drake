@@ -1,6 +1,7 @@
 #include "drake/systems/estimators/luenberger_observer.h"
 
 #include <cmath>
+#include <utility>
 
 namespace drake {
 namespace systems {

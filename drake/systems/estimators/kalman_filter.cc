@@ -1,5 +1,7 @@
 #include "drake/systems/estimators/kalman_filter.h"
 
+#include <utility>
+
 #include "drake/common/drake_assert.h"
 #include "drake/math/continuous_algebraic_ricatti_equation.h"
 #include "drake/systems/estimators/luenberger_observer.h"

@@ -4,6 +4,7 @@
 /// A benchmarking helper.
 
 #include <chrono>
+#include <utility>
 
 namespace drake {
 namespace common {

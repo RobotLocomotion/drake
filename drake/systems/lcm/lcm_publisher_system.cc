@@ -1,6 +1,7 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "drake/common/text_logging.h"

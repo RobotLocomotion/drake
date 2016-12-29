@@ -1,5 +1,6 @@
 #include "drake/multibody/inverse_kinematics_backend.h"
 
+#include <memory>
 #include <stdexcept>
 #include <vector>
 

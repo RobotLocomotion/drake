@@ -1,3 +1,5 @@
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include "drake/systems/framework/continuous_state.h"

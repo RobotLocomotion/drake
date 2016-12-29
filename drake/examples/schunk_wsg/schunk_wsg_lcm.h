@@ -3,6 +3,8 @@
 /// @file This file contains classes dealing with sending/receiving
 /// LCM messages related to the Schunk WSG gripper.
 
+#include <memory>
+
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/examples/schunk_wsg/gen/schunk_wsg_trajectory_generator_state_vector.h"
 #include "drake/systems/framework/leaf_system.h"

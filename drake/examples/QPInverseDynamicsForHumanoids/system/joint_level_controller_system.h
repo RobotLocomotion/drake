@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+
 #include "bot_core/atlas_command_t.hpp"
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"

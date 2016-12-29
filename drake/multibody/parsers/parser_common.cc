@@ -1,6 +1,7 @@
 #include "drake/multibody/parsers/parser_common.h"
 
 #include <string>
+#include <utility>
 
 #include "spruce.hh"
 

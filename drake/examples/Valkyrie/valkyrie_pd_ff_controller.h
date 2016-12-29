@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+
 #include "lcmtypes/bot_core/atlas_command_t.hpp"
 
 #include "drake/systems/framework/leaf_system.h"
