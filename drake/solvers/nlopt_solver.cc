@@ -25,7 +25,8 @@ Eigen::VectorXd MakeEigenVector(const std::vector<double>& x) {
   return xvec;
 }
 
-TaylorVecXd MakeInputTaylorVec(const MathematicalProgram& prog, Eigen::VectorXd& xvec,
+TaylorVecXd MakeInputTaylorVec(const MathematicalProgram& prog,
+                               const Eigen::VectorXd& xvec,
                                const VariableList& variable_list) {
   size_t var_count = variable_list.size();
 
@@ -182,7 +183,8 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   DRAKE_ASSERT(wrapped->active_constraints.size() == m);
 
   TaylorVecXd ty(num_constraints);
-  TaylorVecXd this_x = MakeInputTaylorVec(*(wrapped->prog), xvec, *(wrapped->variable_list));
+  TaylorVecXd this_x =
+      MakeInputTaylorVec(*(wrapped->prog), xvec, *(wrapped->variable_list));
   c->Eval(this_x, ty);
 
   const Eigen::VectorXd& lower_bound = c->lower_bound();
@@ -245,8 +247,8 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
 // We can't declare a variable of type OptimizationProblem::Binding,
 // since that's private and clang gets annoyed.
 template <typename _Binding>
-void WrapConstraint(const MathematicalProgram& prog, const _Binding& binding, double constraint_tol,
-                    nlopt::opt* opt,
+void WrapConstraint(const MathematicalProgram& prog, const _Binding& binding,
+                    double constraint_tol, nlopt::opt* opt,
                     std::list<WrappedConstraint>* wrapped_list) {
   // Version of the wrapped constraint which refers only to equality
   // constraints (if any), and will be used with

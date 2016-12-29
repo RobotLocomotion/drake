@@ -95,7 +95,8 @@ class VariableList {
   /**
    * @return The all unique variables stored in the class.
    */
-  const std::unordered_set<drake::symbolic::Variable, drake::hash_value<symbolic::Variable>>&
+  const std::unordered_set<drake::symbolic::Variable,
+                           drake::hash_value<symbolic::Variable>>&
   unique_variables() const {
     return unique_variable_indices_;
   }
@@ -104,7 +105,8 @@ class VariableList {
   std::list<DecisionVariableMatrixX> variables_;
   size_t size_;
   bool column_vectors_only_;
-  std::unordered_set<drake::symbolic::Variable, drake::hash_value<symbolic::Variable>>
+  std::unordered_set<drake::symbolic::Variable,
+                     drake::hash_value<symbolic::Variable>>
       unique_variable_indices_;
 };
 }  // end namespace solvers

@@ -130,7 +130,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   eq_dynamics_ =
       prog_
           ->AddLinearEqualityConstraint(MatrixX<double>::Zero(6, num_variable_),
-                                       Vector6<double>::Zero(), {vd_, basis_})
+                                        Vector6<double>::Zero(), {vd_, basis_})
           .get();
   eq_dynamics_->set_description("dynamics eq");
 
@@ -246,7 +246,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   cost_basis_reg_ =
       prog_
           ->AddQuadraticCost(MatrixX<double>::Identity(num_basis_, num_basis_),
-                            VectorX<double>::Zero(num_basis_), {basis_})
+                             VectorX<double>::Zero(num_basis_), {basis_})
           .get();
   cost_basis_reg_->set_description("basis reg cost");
   basis_reg_mat_ = MatrixX<double>::Identity(num_basis_, num_basis_);
@@ -337,12 +337,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // tau = M_l * vd + h_l - (J^T * basis)_l * Beta
   // tau = torque_linear_ * X + torque_constant_
   for (int i = 0; i < num_vd_; ++i) {
-    torque_linear_.block(0, prog_->decision_variable_index(vd_(i)), num_torque_, 1) =
-        rs.M().bottomRows(num_torque_).col(i);
+    torque_linear_.block(0, prog_->decision_variable_index(vd_(i)), num_torque_,
+                         1) = rs.M().bottomRows(num_torque_).col(i);
   }
   for (int i = 0; i < num_basis_; ++i) {
-    torque_linear_.block(0, prog_->decision_variable_index(basis_(i)), num_torque_, 1) =
-        -JB_.bottomRows(num_torque_).col(i);
+    torque_linear_.block(0, prog_->decision_variable_index(basis_(i)),
+                         num_torque_, 1) = -JB_.bottomRows(num_torque_).col(i);
   }
   torque_constant_ = rs.bias_term().tail(num_torque_);
 
@@ -350,10 +350,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // Equality constraints:
   // Equations of motion part, 6 rows
   for (int i = 0; i < num_vd_; ++i) {
-    dynamics_linear_.block(0, prog_->decision_variable_index(vd_(i)), 6, 1) = rs.M().topRows(6).col(i);
+    dynamics_linear_.block(0, prog_->decision_variable_index(vd_(i)), 6, 1) =
+        rs.M().topRows(6).col(i);
   }
   for (int i = 0; i < num_basis_; ++i) {
-    dynamics_linear_.block(0, prog_->decision_variable_index(basis_(i)), 6, 1) = -JB_.topRows(6).col(i);
+    dynamics_linear_.block(0, prog_->decision_variable_index(basis_(i)), 6, 1) =
+        -JB_.topRows(6).col(i);
   }
   dynamics_constant_ = -rs.bias_term().head<6>();
   eq_dynamics_->UpdateConstraint(dynamics_linear_, dynamics_constant_);
@@ -544,8 +546,9 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
 
   for (auto& eq_b : eqs) {
     solvers::LinearEqualityConstraint* eq = eq_b.constraint().get();
-    DRAKE_ASSERT((eq->A() * eq_b.VariableListToVectorXd(*prog_) - eq->lower_bound())
-                     .isZero(1e-6));
+    DRAKE_ASSERT(
+        (eq->A() * eq_b.VariableListToVectorXd(*prog_) - eq->lower_bound())
+            .isZero(1e-6));
   }
 
   for (auto& ineq_b : ineqs) {
@@ -607,15 +610,14 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     }
 
     // Compute acceleration for contact body.
-    MatrixX<double> J_body = GetTaskSpaceJacobian(
-        rs.robot(), rs.cache(), resolved_contact.body(),
-        Vector3<double>::Zero());
+    MatrixX<double> J_body =
+        GetTaskSpaceJacobian(rs.robot(), rs.cache(), resolved_contact.body(),
+                             Vector3<double>::Zero());
     Vector6<double> Jdv_body = GetTaskSpaceJacobianDotTimesV(
         rs.robot(), rs.cache(), resolved_contact.body(),
         Vector3<double>::Zero());
 
-    resolved_contact.mutable_body_acceleration() =
-        J_body * vd_value + Jdv_body;
+    resolved_contact.mutable_body_acceleration() = J_body * vd_value + Jdv_body;
   }
 
   // Set output accelerations.
@@ -763,8 +765,8 @@ std::ostream& operator<<(std::ostream& out, const ResolvedContact& contact) {
     out << contact.point_forces().col(j).transpose() << std::endl;
   out << "equivalent wrench in world aligned body frame: "
       << contact.equivalent_wrench().transpose() << std::endl;
-  out << "body acceleration: "
-      << contact.body_acceleration().transpose() << std::endl;
+  out << "body acceleration: " << contact.body_acceleration().transpose()
+      << std::endl;
   out << "reference point in world frame: " << contact.reference_point()
       << std::endl;
   return out;
