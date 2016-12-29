@@ -968,6 +968,37 @@ GTEST_TEST(TestConvexOptimization, TestQuadraticProgram0) {
   }
 }
 
+GTEST_TEST(TestConvexOptimization, TestL2NormCost) {
+  MathematicalProgram prog;
+  auto x = prog.AddContinuousVariables<2>();
+
+  // |Ax - b|^2 = (x-xd)'Q(x-xd) => Q = A'*A and b = A*xd.
+  Eigen::Matrix2d A;
+  A << 1, 2, 3, 4;
+  Eigen::Matrix2d Q = A.transpose() * A;
+  Eigen::Vector2d x_desired;
+  x_desired << 5, 6;
+  Eigen::Vector2d b = A * x_desired;
+
+  std::shared_ptr<QuadraticConstraint> obj1 =
+      prog.AddQuadraticErrorCost(Q, x_desired, {x});
+  std::shared_ptr<QuadraticConstraint> obj2 = prog.AddL2NormCost(A, b, {x});
+
+  // Test the objective at an arbitrary x.
+  Eigen::Vector2d x0;
+  x0 << 7, 8;
+
+  Eigen::VectorXd y1, y2;
+  obj1->Eval(x0, y1);
+  obj2->Eval(x0, y2);
+
+  EXPECT_TRUE(CompareMatrices(y1, y2));
+  EXPECT_TRUE(CompareMatrices(
+      y2, (A * x0 - b).transpose() * (A * x0 - b) - b.transpose() * b));
+  // Note: Currently have to subtract out the constant term (b'*b) due to issue
+  // #3500.
+}
+
 GTEST_TEST(TestConvexOptimization, TestQuadraticProgram1) {
   std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetQuadraticProgramSolvers(&solvers);

@@ -138,6 +138,29 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
   });
 }
 
+GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
+  // Test the scalar version of the bounding box constraint methods.
+
+  MathematicalProgram prog;
+  auto x = prog.AddContinuousVariables<2, 2>();
+
+  // Three different ways to construct an equivalent constraint.
+  auto constraint1 = prog.AddBoundingBoxConstraint(0, 1, {x});
+  auto constraint2 = prog.AddBoundingBoxConstraint(0, 1, {x.col(0), x.col(1)});
+  auto constraint3 = prog.AddBoundingBoxConstraint(Eigen::Vector4d::Zero(),
+                                                   Eigen::Vector4d::Ones());
+
+  EXPECT_TRUE(
+      CompareMatrices(constraint1->lower_bound(), constraint2->lower_bound()));
+  EXPECT_TRUE(
+      CompareMatrices(constraint2->lower_bound(), constraint3->lower_bound()));
+
+  EXPECT_TRUE(
+      CompareMatrices(constraint1->upper_bound(), constraint2->upper_bound()));
+  EXPECT_TRUE(
+      CompareMatrices(constraint2->upper_bound(), constraint3->upper_bound()));
+}
+
 GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   MathematicalProgram prog;
 
@@ -181,11 +204,10 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   // Now modify the original constraint by its handle
   con->UpdateConstraint(3 * Matrix4d::Identity(), b);
   prog.Solve();
-  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2,
-                              GetSolution(y), 1e-10,
+  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, GetSolution(y), 1e-10,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(b / 3, GetSolution(x),
-                              1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(b / 3, GetSolution(x), 1e-10,
+                              MatrixCompareType::absolute));
   CheckSolverType(prog, "Linear System Solver");
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
@@ -194,11 +216,10 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
 
   // Now solve as a nonlinear program.
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2,
-                                GetSolution(y), 1e-10,
+    EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, GetSolution(y), 1e-10,
                                 MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(b / 3, GetSolution(x),
-                                1e-10, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(b / 3, GetSolution(x), 1e-10,
+                                MatrixCompareType::absolute));
   });
 }
 
@@ -1019,12 +1040,10 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   VectorXd x_lorentz_guess = x_expected + 0.1 * VectorXd::Ones(xDim);
   prog_lorentz.SetInitialGuess(x_lorentz, x_lorentz_guess);
   RunNonlinearProgram(prog_lorentz, [&]() {
-    const auto& x_lorentz_value =
-        GetSolution(x_lorentz);
+    const auto& x_lorentz_value = GetSolution(x_lorentz);
     EXPECT_TRUE(CompareMatrices(x_lorentz_value, x_expected, 1E-5,
                                 MatrixCompareType::absolute));
-    const auto& t_lorentz_value =
-        GetSolution(t_lorentz);
+    const auto& t_lorentz_value = GetSolution(t_lorentz);
     EXPECT_NEAR(cost_expected_lorentz, t_lorentz_value(0), 1E-3);
   });
 
@@ -1052,12 +1071,10 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   prog_rotated_lorentz.SetInitialGuess(x_rotated_lorentz,
                                        x_rotated_lorentz_guess);
   RunNonlinearProgram(prog_rotated_lorentz, [&]() {
-    const auto& x_rotated_lorentz_value =
-        GetSolution(x_rotated_lorentz);
+    const auto& x_rotated_lorentz_value = GetSolution(x_rotated_lorentz);
     EXPECT_TRUE(CompareMatrices(x_rotated_lorentz_value, x_expected, 1E-5,
                                 MatrixCompareType::absolute));
-    const auto& t_rotated_lorentz_value =
-        GetSolution(t_rotated_lorentz);
+    const auto& t_rotated_lorentz_value = GetSolution(t_rotated_lorentz);
     EXPECT_NEAR(cost_expected_rotated_lorentz, t_rotated_lorentz_value(0),
                 1E-3);
   });
@@ -1073,23 +1090,19 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
 
   prog_lorentz.AddConstraint(quadratic_constraint, {x_lorentz});
   RunNonlinearProgram(prog_lorentz, [&]() {
-    const auto& x_lorentz_value =
-        GetSolution(x_lorentz);
+    const auto& x_lorentz_value = GetSolution(x_lorentz);
     EXPECT_TRUE(CompareMatrices(x_lorentz_value, x_expected, 1E-5,
                                 MatrixCompareType::absolute));
-    const auto& t_lorentz_value =
-        GetSolution(t_lorentz);
+    const auto& t_lorentz_value = GetSolution(t_lorentz);
     EXPECT_NEAR(cost_expected_lorentz, t_lorentz_value(0), 1E-3);
   });
 
   prog_rotated_lorentz.AddConstraint(quadratic_constraint, {x_rotated_lorentz});
   RunNonlinearProgram(prog_rotated_lorentz, [&]() {
-    const auto& x_rotated_lorentz_value =
-        GetSolution(x_rotated_lorentz);
+    const auto& x_rotated_lorentz_value = GetSolution(x_rotated_lorentz);
     EXPECT_TRUE(CompareMatrices(x_rotated_lorentz_value, x_expected, 1E-5,
                                 MatrixCompareType::absolute));
-    const auto& t_rotated_lorentz_value =
-        GetSolution(t_rotated_lorentz);
+    const auto& t_rotated_lorentz_value = GetSolution(t_rotated_lorentz);
     EXPECT_NEAR(cost_expected_rotated_lorentz, t_rotated_lorentz_value(0),
                 1E-3);
   });
