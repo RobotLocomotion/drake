@@ -24,8 +24,11 @@ using std::vector;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
-#include <iostream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+// Enable the following macro and disable the subsequent one for debugging
+// purposes.
+//
+// #define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+#define PRINT_VAR(x)
 
 namespace drake {
 
@@ -61,7 +64,7 @@ class DoublePendulumFramesTest : public ::testing::Test {
         extension.begin(), extension.end(), extension.begin(), ::tolower);
     DRAKE_DEMAND(extension == ".urdf" || extension == ".sdf");
 
-    if(extension == ".urdf") {
+    if (extension == ".urdf") {
       AddModelInstanceFromUrdfFileToWorld(
           full_name, drake::multibody::joints::kFixed, tree_.get());
     } else {
