@@ -22,7 +22,7 @@
 //  min_R,t,W sum_k | R*points.col(k) + t - vertices*W.col(k) |^2
 //   subject to 0 <= W(i,j) <= 1, sum_j W(j,k)=1
 //              W(i,k) = 0 or W(j,k) = 0 if i,j are not on the same face,
-//              and an approximation of RR^{-1}=I, det(R)=1.
+//              and an approximation of R'=R^{-1}, det(R)=1.
 Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
                                  const Eigen::Ref<Eigen::Matrix3Xd>& points) {
   // Extract collision element from first non-world body.
@@ -41,7 +41,8 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
             << std::endl
             << vertices << std::endl;
 
-  // Hard-code faces.
+  // Hard-code faces. Column i contains the indices of the vertices on the ith
+  // face.
   // TODO(russt/SeanCurtis-TRI): Move into the DrakeShapes::Geometry API.
   Eigen::MatrixXi faces(4, 6);
   faces.col(0) << 1, 2, 5, 6;  // +X
@@ -61,9 +62,8 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
   // Forall k, sum_j W(j,k) = 1.
   // Note: Adding constraints one at a time because W is not a column vector.
   for (int k = 0; k < points.cols(); k++) {
-    prog.AddLinearConstraint(Eigen::MatrixXd::Ones(1, vertices.cols()),
-                             drake::Vector1d::Ones(), drake::Vector1d::Ones(),
-                             {W.col(k)});
+    prog.AddLinearEqualityConstraint(Eigen::MatrixXd::Ones(1, vertices.cols()),
+                                     1, {W.col(k)});
   }
 
   enum RotationType {
@@ -102,6 +102,10 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
       //   s.t. zk = Ak * x, sigma_k >= sqrt(z0^2 + ... z2^2)
       // This differs (by a sqrt) from the original objective, but should
       // be as good.
+      // Note: If we really want the original objective, we can use the
+      // rotated Lorentz cone
+      //   sigma_k * dummy >= z0^2 + ... z2^2
+      //   dummy = 1
       //
       // Note: Could have alternatively written the objective as
       //   x'Qx where Q = sum_k Ak'Ak, then used
@@ -118,18 +122,20 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
           -vertices, -Eigen::Matrix3d::Identity();
       for (int k = 0; k < points.cols(); k++) {
         A(0, 0) = points(0, k);
-        A(0, 3) = points(1, k);
-        A(0, 6) = points(2, k);
         A(1, 1) = points(0, k);
-        A(1, 4) = points(1, k);
-        A(1, 7) = points(2, k);
         A(2, 2) = points(0, k);
+
+        A(0, 3) = points(1, k);
+        A(1, 4) = points(1, k);
         A(2, 5) = points(1, k);
+
+        A(0, 6) = points(2, k);
+        A(1, 7) = points(2, k);
         A(2, 8) = points(2, k);
 
         // z.col(k) = R*points.col(k) + t + vertices*W.col(k)
-        prog.AddLinearConstraint(
-            A, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
+        prog.AddLinearEqualityConstraint(
+            A, Eigen::Vector3d::Zero(),
             {R.col(0), R.col(1), R.col(2), t, W.col(k), Z.col(k)});
 
         // sigma(k) > sqrt(z(0,k)^2 + z(1,k)^2 + z(2,k)^2)
@@ -149,12 +155,11 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
     auto B = prog.AddBinaryVariables(faces.cols(), points.cols(), "B");
     for (int k = 0; k < points.cols(); k++) {
       // Sum_i B(i,k) = 1 (each point must be assigned to exactly one face).
-      prog.AddLinearConstraint(Eigen::RowVectorXd::Ones(faces.cols()),
-                               drake::Vector1d::Ones(), drake::Vector1d::Ones(),
-                               {B.col(k)});
+      prog.AddLinearEqualityConstraint(Eigen::RowVectorXd::Ones(faces.cols()),
+                                       1, {B.col(k)});
     }
 
-    // W(v,k) < sum_j B(j,k) for all faces j that contain vertex v.
+    // W(v,k) <= sum_j B(j,k) for all faces j that contain vertex v.
     Eigen::RowVectorXd A = Eigen::RowVectorXd::Ones(1 + faces.cols());
     A(0) = -1;
     for (int v = 0; v < vertices.cols(); v++) {
@@ -168,9 +173,7 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
         A(1 + j) = contains_vertex ? 1.0 : 0.0;
       }
       for (int k = 0; k < points.cols(); k++) {
-        prog.AddLinearConstraint(A, drake::Vector1d::Zero(),
-                                 drake::Vector1d::Ones(),
-                                 {W.block<1, 1>(v, k), B.col(k)});
+        prog.AddLinearConstraint(A, 0, 1, {W.block<1, 1>(v, k), B.col(k)});
       }
     }
   }
