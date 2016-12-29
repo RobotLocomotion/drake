@@ -1,14 +1,13 @@
 #pragma once
 
-#include <algorithm>
 #include <array>
-#include <initializer_list>
 #include <iostream>
 #include <limits>
 #include <list>
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -1598,7 +1597,7 @@ class MathematicalProgram {
     return decision_variable_type_;
   }
 
-  /** Return the type of the decision variable. */
+  /** Returns the type of the decision variable. */
   VarType DecisionVariableType(const symbolic::Variable& var) const;
 
   /** Getter for the initial guess */
@@ -1613,15 +1612,15 @@ class MathematicalProgram {
     return GetSolution(variables_);
   }
 
-  /** Return the index of the decision variable. Internally the solvers think
-   * all variables are stored in an array, and it access each individual
+  /** Returns the index of the decision variable. Internally the solvers thinks
+   * all variables are stored in an array, and it accesess each individual
    * variable using its index. This index is used when adding constraints
    * and costs for each solver.
    */
   size_t decision_variable_index(const symbolic::Variable& var) const;
 
   /**
-   * Get the solution of an Eigen matrix of decision variables.
+   * Gets the solution of an Eigen matrix of decision variables.
    * @tparam Derived An Eigen matrix containing symbolic::Variable.
    * @param var The decision variables.
    * @return The value of the decision variable after solving the problem.
@@ -1637,7 +1636,7 @@ class MathematicalProgram {
         value(var.rows(), var.cols());
     for (int i = 0; i < var.rows(); ++i) {
       for (int j = 0; j < var.cols(); ++j) {
-        auto it = decision_variable_index_.find(var(i, j));
+        auto it = decision_variable_index_.find(var(i, j).get_id());
         DRAKE_ASSERT(it != decision_variable_index_.end());
         value(i, j) = x_values_[it->second];
       }
@@ -1646,12 +1645,15 @@ class MathematicalProgram {
   }
 
   /**
-   * Get the value of a single decision variable.
+   * Gets the value of a single decision variable.
    */
   double GetSolution(const symbolic::Variable& var) const;
 
  private:
-  std::map<symbolic::Variable, size_t> decision_variable_index_;
+  // maps the ID of a symbolic variable to the index of the variable stored in
+  // the optimization program.
+  std::unordered_map<size_t, size_t> decision_variable_index_{};
+
   std::vector<VarType> decision_variable_type_;  // decision_variable_type_[i]
                                                  // stores the type of the
                                                  // variable with index i.
@@ -1726,19 +1728,20 @@ class MathematicalProgram {
     }
     DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
     variables_.conservativeResize(num_vars_ + num_new_vars, Eigen::NoChange);
-    x_values_.reserve(num_vars_ + num_new_vars);
+    x_values_.resize(num_vars_ + num_new_vars, NAN);
     decision_variable_type_.resize(num_vars_ + num_new_vars);
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
-      x_values_.push_back(0);
       variables_(num_vars_ + i) = symbolic::Variable(names[i]);
-      size_t new_var_index = num_vars_ + i;
-      decision_variable_index_.insert(std::pair<symbolic::Variable, size_t>(
-          variables_(new_var_index), new_var_index));
+      const size_t new_var_index = num_vars_ + i;
+      decision_variable_index_.insert(std::pair<size_t, size_t>(
+          variables_(new_var_index).get_id(), new_var_index));
       decision_variable_type_[new_var_index] = type;
       decision_variable_matrix(row_index, col_index) =
           variables_(num_vars_ + i);
+      // If the matrix is not symmetric, then store the variable in the column
+      // major.
       if (!is_symmetric) {
         if (row_index + 1 < rows) {
           ++row_index;
@@ -1747,6 +1750,8 @@ class MathematicalProgram {
           row_index = 0;
         }
       } else {
+        // If the matrix is symmetric, then the decision variables are the lower
+        // triangular part of the symmetric matrix, also stored in column major.
         if (row_index != col_index) {
           decision_variable_matrix(col_index, row_index) =
               decision_variable_matrix(row_index, col_index);

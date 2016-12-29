@@ -1,5 +1,7 @@
 #include "drake/solvers/mathematical_program.h"
 
+#include <algorithm>
+
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -357,7 +359,7 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
 
 size_t MathematicalProgram::decision_variable_index(
     const symbolic::Variable& var) const {
-  auto it = decision_variable_index_.find(var);
+  auto it = decision_variable_index_.find(var.get_id());
   DRAKE_ASSERT(it != decision_variable_index_.end());
   return it->second;
 }

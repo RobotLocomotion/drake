@@ -4,8 +4,6 @@ namespace drake {
 namespace solvers {
 VariableList::VariableList(const VariableListRef& variable_list) {
   variables_.resize(variable_list.size());
-  size_ = 0;
-  column_vectors_only_ = true;
   auto variable_list_it = variable_list.begin();
   for (auto& var : variables_) {
     var = *variable_list_it;
