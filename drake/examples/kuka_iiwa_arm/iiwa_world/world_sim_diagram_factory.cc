@@ -152,8 +152,6 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   auto pid_controller = PidControlledSystem<T>::ConnectController(
       robot_input_port, robot_output_port, nullptr /* feedback */, kp, ki, kd,
       &builder);
-  const InputPortDescriptor<T> iiwa_control_port = pid_controller.first;
-  const InputPortDescriptor<T> iiwa_state_port = pid_controller.second;
 
   // Create a multiplexer to handle the fact that we'll be getting
   // the input state for the positions and velocities from different
@@ -175,7 +173,8 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   builder.Connect(zero_source->get_output_port(),
                   input_mux_->get_input_port(1));
 
-  builder.Connect(input_mux_->get_output_port(0), iiwa_state_port);
+  builder.Connect(input_mux_->get_output_port(0),
+                  pid_controller.state_input_port);
 
   gravity_compensator_ =
       builder.template AddSystem<systems::GravityCompensator<T>>(robot_tree);
@@ -194,7 +193,8 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   // corresponding to the robot.
   builder.Connect(rbp_state_demux->get_output_port(0),
                   gravity_compensator_->get_input_port(0));
-  builder.Connect(gravity_compensator_->get_output_port(0), iiwa_control_port);
+  builder.Connect(gravity_compensator_->get_output_port(0),
+                  pid_controller.control_input_port);
 
   // Connects the plant to the publisher for visualization.
   builder.Connect(plant_output_port, drake_visualizer_->get_input_port(0));
