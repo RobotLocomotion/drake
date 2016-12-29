@@ -10,8 +10,12 @@ namespace drake {
 namespace solvers {
 namespace {
 template <typename Derived>
-bool DecisionVariableMatrixContainsIndex(const MathematicalProgram& prog, const Eigen::MatrixBase<Derived>& v, size_t index) {
-  static_assert(std::is_same<typename Derived::Scalar, symbolic::Variable>::value, "The input should be a matrix of symbolic::Variable.");
+bool DecisionVariableMatrixContainsIndex(const MathematicalProgram& prog,
+                                         const Eigen::MatrixBase<Derived>& v,
+                                         size_t index) {
+  static_assert(
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+      "The input should be a matrix of symbolic::Variable.");
   for (int i = 0; i < v.rows(); ++i) {
     for (int j = 0; j < v.cols(); ++j) {
       if (prog.decision_variable_index(v(i, j)) == index) {
@@ -22,13 +26,15 @@ bool DecisionVariableMatrixContainsIndex(const MathematicalProgram& prog, const 
   return false;
 }
 
-template<typename Derived>
-bool CheckDecisionVariableType(const MathematicalProgram& prog, const Eigen::MatrixBase<Derived>& var, MathematicalProgram::VarType type_expected) {
+template <typename Derived>
+bool CheckDecisionVariableType(const MathematicalProgram& prog,
+                               const Eigen::MatrixBase<Derived>& var,
+                               MathematicalProgram::VarType type_expected) {
   const auto& variable_types = prog.DecisionVariableTypes();
   for (int i = 0; i < var.rows(); ++i) {
     for (int j = 0; j < var.cols(); ++j) {
-
-      if ((variable_types[prog.decision_variable_index(var(i, j))] != type_expected) ||
+      if ((variable_types[prog.decision_variable_index(var(i, j))] !=
+           type_expected) ||
           (prog.DecisionVariableType(var(i, j)) != type_expected)) {
         return false;
       }
@@ -36,11 +42,12 @@ bool CheckDecisionVariableType(const MathematicalProgram& prog, const Eigen::Mat
   }
   return true;
 }
-}  // namespace anonymous
+}  // namespace
+
 /*
- * Test adding decision variables, constructing VariableList, together with
- * functions in DecisionVariableScalar and VariableList.
- */
+* Test adding decision variables, constructing VariableList, together with
+* functions in DecisionVariableScalar and VariableList.
+*/
 GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   MathematicalProgram prog;
   auto X1 = prog.NewContinuousVariables(2, 3, "X");
@@ -95,7 +102,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   Eigen::Matrix<double, 3, 3> S_expected;
   S_expected << 0, -2, -4, -2, -6, -8, -4, -8, -10;
   Eigen::Matrix<double, 6, 1> b_value;
-  b_value<< 0, 1, 1, 1, 0, 0;
+  b_value << 0, 1, 1, 1, 0, 0;
   Eigen::Matrix<double, 30, 1> var_values;
   var_values << x_value, s_value, x_value, x_value, b_value;
   prog.SetDecisionVariableValues(var_values);
@@ -116,11 +123,16 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
                               MatrixCompareType::absolute));
 
   // Test if the variable type is correct
-  EXPECT_TRUE(CheckDecisionVariableType(prog, X1, MathematicalProgram::VarType::CONTINUOUS));
-  EXPECT_TRUE(CheckDecisionVariableType(prog, S1, MathematicalProgram::VarType::CONTINUOUS));
-  EXPECT_TRUE(CheckDecisionVariableType(prog, x1, MathematicalProgram::VarType::CONTINUOUS));
-  EXPECT_TRUE(CheckDecisionVariableType(prog, X2, MathematicalProgram::VarType::CONTINUOUS));
-  EXPECT_TRUE(CheckDecisionVariableType(prog, b1, MathematicalProgram::VarType::BINARY));
+  EXPECT_TRUE(CheckDecisionVariableType(
+      prog, X1, MathematicalProgram::VarType::CONTINUOUS));
+  EXPECT_TRUE(CheckDecisionVariableType(
+      prog, S1, MathematicalProgram::VarType::CONTINUOUS));
+  EXPECT_TRUE(CheckDecisionVariableType(
+      prog, x1, MathematicalProgram::VarType::CONTINUOUS));
+  EXPECT_TRUE(CheckDecisionVariableType(
+      prog, X2, MathematicalProgram::VarType::CONTINUOUS));
+  EXPECT_TRUE(CheckDecisionVariableType(prog, b1,
+                                        MathematicalProgram::VarType::BINARY));
 
   // Test constructing VariableList.
   VariableList var_list1({X1, S1});
@@ -143,8 +155,9 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   X_assembled << X1, X2;
   Eigen::Matrix<double, 2, 6> X_assembled_expected;
   X_assembled_expected << X_expected, X_expected;
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(X_assembled), X_assembled_expected,
-                              1E-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(X_assembled),
+                              X_assembled_expected, 1E-10,
+                              MatrixCompareType::absolute));
 
   for (int i = 0; i < 2; ++i) {
     for (int j = 0; j < 3; ++j) {

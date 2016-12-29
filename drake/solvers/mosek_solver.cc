@@ -71,7 +71,8 @@ MSKrescodee AddLinearConstraintsFromBindings(
         DRAKE_ASSERT(var.cols() == 1);
         for (int k = 0; k < static_cast<int>(var.rows()); ++k) {
           if (std::abs(A(i, A_col_idx)) > Eigen::NumTraits<double>::epsilon()) {
-            A_nonzero_col_idx.push_back(prog.decision_variable_index(var(k, 0)));
+            A_nonzero_col_idx.push_back(
+                prog.decision_variable_index(var(k, 0)));
             A_nonzero_val.push_back(A(i, A_col_idx));
           }
           ++A_col_idx;
@@ -94,8 +95,8 @@ MSKrescodee AddLinearConstraints(const MathematicalProgram& prog,
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
-  rescode =
-      AddLinearConstraintsFromBindings(task, prog.linear_constraints(), false, prog);
+  rescode = AddLinearConstraintsFromBindings(task, prog.linear_constraints(),
+                                             false, prog);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
@@ -165,7 +166,8 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
  * MosekSolver::Solve() function
  */
 template <typename Bindings>
-MSKrescodee AddSecondOrderConeConstraints(const MathematicalProgram& prog,
+MSKrescodee AddSecondOrderConeConstraints(
+    const MathematicalProgram& prog,
     const std::vector<Bindings>& second_order_cone_constraints,
     bool is_rotated_cone, MSKtask_t* task, std::vector<bool>* is_new_variable) {
   MSKrescodee rescode = MSK_RES_OK;
@@ -355,7 +357,8 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
         int linear_constraint_index =
             num_linear_constraint + new_linear_constraint_count;
         double symmetric_matrix_val = 1.0;
-        MSKint32t symmetric_matrix_var_ij_index = prog.decision_variable_index(symmetric_matrix_variable(i, j));
+        MSKint32t symmetric_matrix_var_ij_index =
+            prog.decision_variable_index(symmetric_matrix_variable(i, j));
         rescode =
             MSK_putarow(*task, linear_constraint_index, 1,
                         &symmetric_matrix_var_ij_index, &symmetric_matrix_val);
@@ -412,7 +415,8 @@ MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog,
         A_row.reserve(binding.variable_list().size());
         for (const auto& var : binding.variable_list().variables()) {
           for (int k = 0; k < static_cast<int>(var.rows()); ++k) {
-            A_row.coeffRef(prog.decision_variable_index(var(k, 0))) += (*F_it)(i, j);
+            A_row.coeffRef(prog.decision_variable_index(var(k, 0))) +=
+                (*F_it)(i, j);
             ++F_it;
           }
         }
@@ -488,8 +492,8 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         if (std::abs(c(var_count)) > Eigen::NumTraits<double>::epsilon()) {
-          linear_term_triplets.push_back(
-              Eigen::Triplet<double>(prog.decision_variable_index(var(i, 0)), 0, c(var_count)));
+          linear_term_triplets.push_back(Eigen::Triplet<double>(
+              prog.decision_variable_index(var(i, 0)), 0, c(var_count)));
         }
         var_count++;
       }
@@ -618,13 +622,15 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
 
   // Add Lorentz cone constraints.
   if (rescode == MSK_RES_OK) {
-    rescode = AddSecondOrderConeConstraints(prog, prog.lorentz_cone_constraints(),
-                                            false, &task, &is_new_variable);
+    rescode = AddSecondOrderConeConstraints(
+        prog, prog.lorentz_cone_constraints(), false, &task, &is_new_variable);
   }
 
   // Add rotated Lorentz cone constraints.
   if (rescode == MSK_RES_OK) {
-    rescode = AddSecondOrderConeConstraints(prog, prog.rotated_lorentz_cone_constraints(), true, &task, &is_new_variable);
+    rescode = AddSecondOrderConeConstraints(
+        prog, prog.rotated_lorentz_cone_constraints(), true, &task,
+        &is_new_variable);
   }
 
   // Add positive semidefinite constraints.

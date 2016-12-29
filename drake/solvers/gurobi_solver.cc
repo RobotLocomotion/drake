@@ -71,7 +71,8 @@ int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
  * x(0) >= 0, z(1) >= 0
  */
 template <typename Binding>
-int AddSecondOrderConeConstraints(const MathematicalProgram& prog,
+int AddSecondOrderConeConstraints(
+    const MathematicalProgram& prog,
     const std::vector<Binding>& second_order_cone_constraints,
     bool is_rotated_cone, GRBmodel* model) {
   for (const auto& binding : second_order_cone_constraints) {
@@ -82,7 +83,8 @@ int AddSecondOrderConeConstraints(const MathematicalProgram& prog,
     for (const DecisionVariableMatrixX& var : variable_list.variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        variable_indices.push_back(static_cast<int>(prog.decision_variable_index(var(i, 0))));
+        variable_indices.push_back(
+            static_cast<int>(prog.decision_variable_index(var(i, 0))));
       }
     }
     int num_x = static_cast<int>(variable_indices.size());
@@ -95,8 +97,8 @@ int AddSecondOrderConeConstraints(const MathematicalProgram& prog,
         GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, variable_indices[0], 0.0);
     if (error) return error;
     if (is_rotated_cone) {
-      error = GRBsetdblattrelement(model, GRB_DBL_ATTR_LB,
-                                       variable_indices[1], 0.0);
+      error = GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, variable_indices[1],
+                                   0.0);
       if (error) return error;
     }
 
@@ -218,8 +220,9 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
          binding.variable_list().variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        b_nonzero_coefs.push_back(Eigen::Triplet<double>(
-            prog.decision_variable_index(var(i, 0)), 0, c(constraint_variable_count)));
+        b_nonzero_coefs.push_back(
+            Eigen::Triplet<double>(prog.decision_variable_index(var(i, 0)), 0,
+                                   c(constraint_variable_count)));
         constraint_variable_count++;
       }
     }
@@ -430,9 +433,8 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   // Add rotated Lorentz cone constraints.
   if (!error) {
-    error =
-        AddSecondOrderConeConstraints(prog, prog.rotated_lorentz_cone_constraints(),
-                                      true, model);
+    error = AddSecondOrderConeConstraints(
+        prog, prog.rotated_lorentz_cone_constraints(), true, model);
   }
 
   SolutionResult result = SolutionResult::kUnknownError;

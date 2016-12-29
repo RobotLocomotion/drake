@@ -704,7 +704,8 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
   prog_socp.AddLinearCost(drake::Vector1d(1.0), {y});
   RunSolver(&prog_socp, solver);
   const auto& x_socp_value = prog_socp.GetSolution(x_socp);
-  double objective_value_socp = c.transpose() * x_socp_value + prog_socp.GetSolution(y(0));
+  double objective_value_socp =
+      c.transpose() * x_socp_value + prog_socp.GetSolution(y(0));
 
   // Check the solution
   const auto& w_value = prog_socp.GetSolution(w);
@@ -877,16 +878,17 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
       EXPECT_LE(prog.GetSolution(t(i)), 1E-3);
       EXPECT_GE(prog.GetSolution(t(i)), 0 - 1E-10);
     } else {
-      EXPECT_TRUE(std::abs(spring.norm() - spring_rest_length - prog.GetSolution(t(i))) <
-                  1E-3);
+      EXPECT_TRUE(std::abs(spring.norm() - spring_rest_length -
+                           prog.GetSolution(t(i))) < 1E-3);
     }
   }
   const auto& t_value = prog.GetSolution(t);
   EXPECT_TRUE(std::abs(prog.GetSolution(z(1)) - t_value.squaredNorm()) < 1E-3);
   // Now test equilibrium.
   for (int i = 1; i < num_nodes - 1; i++) {
-    Eigen::Vector2d left_spring(prog.GetSolution(x(i - 1)) - prog.GetSolution(x(i)),
-                                prog.GetSolution(y(i - 1)) - prog.GetSolution(y(i)));
+    Eigen::Vector2d left_spring(
+        prog.GetSolution(x(i - 1)) - prog.GetSolution(x(i)),
+        prog.GetSolution(y(i - 1)) - prog.GetSolution(y(i)));
     Eigen::Vector2d left_spring_force;
     double left_spring_length = left_spring.norm();
     if (left_spring_length < spring_rest_length) {
@@ -895,8 +897,9 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
       left_spring_force = (left_spring_length - spring_rest_length) *
                           spring_stiffness * left_spring / left_spring_length;
     }
-    Eigen::Vector2d right_spring(prog.GetSolution(x(i + 1)) - prog.GetSolution(x(i)),
-                                 prog.GetSolution(y(i + 1)) - prog.GetSolution(y(i)));
+    Eigen::Vector2d right_spring(
+        prog.GetSolution(x(i + 1)) - prog.GetSolution(x(i)),
+        prog.GetSolution(y(i + 1)) - prog.GetSolution(y(i)));
     Eigen::Vector2d right_spring_force;
     double right_spring_length = right_spring.norm();
     if (right_spring_length < spring_rest_length) {
@@ -1225,13 +1228,13 @@ DecisionVariableMatrix<x_dim, x_dim> AddLyapunovCondition(
   for (int j = 0; j < static_cast<int>(x_dim); ++j) {
     for (int i = j; i < static_cast<int>(x_dim); ++i) {
       for (int k = 0; k < static_cast<int>(x_dim); ++k) {
-        lin_eq_triplets.push_back(
-            Eigen::Triplet<double>(lin_eq_idx, prog->decision_variable_index(P(k, j)), A(k, i)));
-        lin_eq_triplets.push_back(
-            Eigen::Triplet<double>(lin_eq_idx, prog->decision_variable_index(P(i, k)), A(k, j)));
+        lin_eq_triplets.push_back(Eigen::Triplet<double>(
+            lin_eq_idx, prog->decision_variable_index(P(k, j)), A(k, i)));
+        lin_eq_triplets.push_back(Eigen::Triplet<double>(
+            lin_eq_idx, prog->decision_variable_index(P(i, k)), A(k, j)));
       }
-      lin_eq_triplets.push_back(
-          Eigen::Triplet<double>(lin_eq_idx, prog->decision_variable_index(Q(i, j)), 1.0));
+      lin_eq_triplets.push_back(Eigen::Triplet<double>(
+          lin_eq_idx, prog->decision_variable_index(Q(i, j)), 1.0));
       ++lin_eq_idx;
     }
   }

@@ -204,11 +204,10 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   // Now modify the original constraint by its handle
   con->UpdateConstraint(3 * Matrix4d::Identity(), b);
   prog.Solve();
-  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2,
-                              prog.GetSolution(y), 1e-10,
+  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, prog.GetSolution(y), 1e-10,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(b / 3, prog.GetSolution(x),
-                              1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(b / 3, prog.GetSolution(x), 1e-10,
+                              MatrixCompareType::absolute));
   CheckSolverType(prog, "Linear System Solver");
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
@@ -217,11 +216,10 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
 
   // Now solve as a nonlinear program.
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2,
-                                prog.GetSolution(y), 1e-10,
+    EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, prog.GetSolution(y), 1e-10,
                                 MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(b / 3, prog.GetSolution(x),
-                                1e-10, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(b / 3, prog.GetSolution(x), 1e-10,
+                                MatrixCompareType::absolute));
   });
 }
 
@@ -771,8 +769,9 @@ GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
             nullptr);
   // Check that it gives the correct answer as well.
   problem.SetInitialGuessForAllVariables(drake::Vector1d(0));
-  RunNonlinearProgram(problem,
-                      [&]() { EXPECT_NEAR(problem.GetSolution(x_var(0)), 2, kEpsilon); });
+  RunNonlinearProgram(problem, [&]() {
+    EXPECT_NEAR(problem.GetSolution(x_var(0)), 2, kEpsilon);
+  });
 }
 
 // The current windows CI build has no solver for generic constraints.  The
@@ -822,7 +821,8 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
     RunNonlinearProgram(problem, [&]() {
       EXPECT_NEAR(problem.GetSolution(x_var(0)), 1, 0.2);
-      EXPECT_LE(poly.EvaluateUnivariate(problem.GetSolution(x_var(0))), kEpsilon);
+      EXPECT_LE(poly.EvaluateUnivariate(problem.GetSolution(x_var(0))),
+                kEpsilon);
     });
   }
 
@@ -867,7 +867,8 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
                                     Eigen::VectorXd::Zero(2));
     RunNonlinearProgram(problem, [&]() {
       EXPECT_NEAR(problem.GetSolution(x_var(0)), -0.7, 0.2);
-      EXPECT_LE(poly.EvaluateUnivariate(problem.GetSolution(x_var(0))), kEpsilon);
+      EXPECT_LE(poly.EvaluateUnivariate(problem.GetSolution(x_var(0))),
+                kEpsilon);
     });
   }
 }
@@ -1042,12 +1043,10 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   VectorXd x_lorentz_guess = x_expected + 0.1 * VectorXd::Ones(xDim);
   prog_lorentz.SetInitialGuess(x_lorentz, x_lorentz_guess);
   RunNonlinearProgram(prog_lorentz, [&]() {
-    const auto& x_lorentz_value =
-        prog_lorentz.GetSolution(x_lorentz);
+    const auto& x_lorentz_value = prog_lorentz.GetSolution(x_lorentz);
     EXPECT_TRUE(CompareMatrices(x_lorentz_value, x_expected, 1E-5,
                                 MatrixCompareType::absolute));
-    const auto& t_lorentz_value =
-        prog_lorentz.GetSolution(t_lorentz);
+    const auto& t_lorentz_value = prog_lorentz.GetSolution(t_lorentz);
     EXPECT_NEAR(cost_expected_lorentz, t_lorentz_value(0), 1E-3);
   });
 
@@ -1096,12 +1095,10 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
 
   prog_lorentz.AddConstraint(quadratic_constraint, {x_lorentz});
   RunNonlinearProgram(prog_lorentz, [&]() {
-    const auto& x_lorentz_value =
-        prog_lorentz.GetSolution(x_lorentz);
+    const auto& x_lorentz_value = prog_lorentz.GetSolution(x_lorentz);
     EXPECT_TRUE(CompareMatrices(x_lorentz_value, x_expected, 1E-5,
                                 MatrixCompareType::absolute));
-    const auto& t_lorentz_value =
-        prog_lorentz.GetSolution(t_lorentz);
+    const auto& t_lorentz_value = prog_lorentz.GetSolution(t_lorentz);
     EXPECT_NEAR(cost_expected_lorentz, t_lorentz_value(0), 1E-3);
   });
 
