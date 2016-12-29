@@ -33,18 +33,18 @@ namespace drake {
 using lcm::DrakeLcmInterface;
 using systems::ConstantVectorSource;
 using systems::Context;
+using systems::Demultiplexer;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::DrakeVisualizer;
+using systems::InputPortDescriptor;
+using systems::MatrixGain;
+using systems::Multiplexer;
+using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
 using systems::Simulator;
 using systems::System;
 using systems::TrajectorySource;
-using systems::MatrixGain;
-using systems::Multiplexer;
-using systems::Demultiplexer;
-using systems::PidControlledSystem;
-using systems::InputPortDescriptor;
 
 namespace examples {
 namespace kuka_iiwa_arm {
@@ -155,6 +155,13 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   const InputPortDescriptor<T> iiwa_control_port = pid_controller.first;
   const InputPortDescriptor<T> iiwa_state_port = pid_controller.second;
 
+  // Create a multiplexer to handle the fact that we'll be getting
+  // the input state for the positions and velocities from different
+  // sources.  Port 0 (positions) will be exported as an input to
+  // the diagram.  Port 1 (velocities) is connected below).
+  input_mux_ = builder.template AddSystem<Multiplexer<T>>(
+      std::vector<int>{num_robot_positions, num_robot_velocities});
+
   // The iiwa's control protocol doesn't have any way to express the
   // desired velocity for the arm, so this simulation doesn't take
   // target velocities as an input.  The PidControlledSystem does
@@ -164,9 +171,6 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   // position) and feed a desired velocity vector of zero.
   auto zero_source = builder.template AddSystem<ConstantVectorSource<T>>(
       VectorX<T>::Zero(num_robot_velocities));
-
-  input_mux_ = builder.template AddSystem<Multiplexer<T>>(
-      std::vector<int>{num_robot_positions, num_robot_velocities});
 
   builder.Connect(zero_source->get_output_port(),
                   input_mux_->get_input_port(1));

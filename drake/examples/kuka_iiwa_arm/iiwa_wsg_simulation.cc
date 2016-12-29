@@ -207,7 +207,7 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
         nullptr /* weld to frame */, &iiwa_tree_);
 
     // Create a multiplexer to handle the fact that we'll be getting
-    // the input state for the positions and velocites from different
+    // the input state for the positions and velocities from different
     // sources.  Port 0 (positions) will be exported as an input to
     // the diagram.  Port 1 (velocities) is connected below).
     auto input_mux = builder.template AddSystem<Multiplexer<T>>(
