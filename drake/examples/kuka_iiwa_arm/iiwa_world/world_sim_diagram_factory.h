@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"

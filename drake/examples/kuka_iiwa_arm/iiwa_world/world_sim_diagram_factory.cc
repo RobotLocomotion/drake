@@ -1,3 +1,5 @@
+#include <memory>
+
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_diagram_factory.h"
 
 #include <utility>
