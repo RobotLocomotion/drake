@@ -337,11 +337,11 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // tau = M_l * vd + h_l - (J^T * basis)_l * Beta
   // tau = torque_linear_ * X + torque_constant_
   for (int i = 0; i < num_vd_; ++i) {
-    torque_linear_.block(0, vd_(i).index(), num_torque_, 1) =
+    torque_linear_.block(0, prog_->decision_variable_index(vd_(i)), num_torque_, 1) =
         rs.M().bottomRows(num_torque_).col(i);
   }
   for (int i = 0; i < num_basis_; ++i) {
-    torque_linear_.block(0, basis_(i).index(), num_torque_, 1) =
+    torque_linear_.block(0, prog_->decision_variable_index(basis_(i)), num_torque_, 1) =
         -JB_.bottomRows(num_torque_).col(i);
   }
   torque_constant_ = rs.bias_term().tail(num_torque_);
@@ -350,10 +350,10 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // Equality constraints:
   // Equations of motion part, 6 rows
   for (int i = 0; i < num_vd_; ++i) {
-    dynamics_linear_.block(0, vd_(i).index(), 6, 1) = rs.M().topRows(6).col(i);
+    dynamics_linear_.block(0, prog_->decision_variable_index(vd_(i)), 6, 1) = rs.M().topRows(6).col(i);
   }
   for (int i = 0; i < num_basis_; ++i) {
-    dynamics_linear_.block(0, basis_(i).index(), 6, 1) = -JB_.topRows(6).col(i);
+    dynamics_linear_.block(0, prog_->decision_variable_index(basis_(i)), 6, 1) = -JB_.topRows(6).col(i);
   }
   dynamics_constant_ = -rs.bias_term().head<6>();
   eq_dynamics_->UpdateConstraint(dynamics_linear_, dynamics_constant_);
@@ -562,12 +562,10 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // Compute resulting contact wrenches.
   int basis_index = 0;
   int point_force_index = 0;
-  const auto& basis_value =
-      drake::solvers::GetSolution(basis_);
+  const auto& basis_value = prog_->GetSolution(basis_);
   point_forces_ = basis_to_force_matrix_ * basis_value;
 
-  const auto& vd_value =
-      drake::solvers::GetSolution(vd_);
+  const auto& vd_value = prog_->GetSolution(vd_);
   for (const auto& contact_pair : input.contact_information()) {
     const ContactInformation& contact = contact_pair.second;
     if (output->mutable_resolved_contacts().find(contact.body_name()) ==
