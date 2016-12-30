@@ -202,14 +202,12 @@ class MathematicalProgram {
     const VariableList& variable_list() const { return variable_list_; }
 
     /**
-     * Returns true iff the given @p index of the enclosing
-     * MathematicalProgram is included in this Binding.*/
-    bool ContainsVariableIndex(const MathematicalProgram& prog,
-                               size_t index) const {
+     * Returns true iff the given @p var is included in this Binding.*/
+    bool ContainsVariable(const symbolic::Variable& var) const {
       for (const auto& v : variable_list_.variables()) {
         for (int i = 0; i < v.rows(); ++i) {
           for (int j = 0; j < v.cols(); ++j) {
-            if (prog.FindDecisionVariableIndex(v(i, j)) == index) {
+            if (v(i, j) == var) {
               return true;
             }
           }
@@ -722,7 +720,7 @@ class MathematicalProgram {
    */
   template <typename ConstraintT>
   void AddCost(std::shared_ptr<ConstraintT> constraint) {
-    AddCost(constraint, {variables_});
+    AddCost(constraint, {decision_variables_});
   }
 
   template <typename F>
@@ -747,7 +745,7 @@ class MathematicalProgram {
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
   AddCost(F&& f) {
-    return AddCost(std::forward<F>(f), {variables_});
+    return AddCost(std::forward<F>(f), {decision_variables_});
   }
 
   // libstdc++ 4.9 evaluates
@@ -765,7 +763,7 @@ class MathematicalProgram {
   }
   template <typename F>
   std::shared_ptr<Constraint> AddCost(std::unique_ptr<F>&& f) {
-    return AddCost(std::forward<std::unique_ptr<F>>(f), {variables_});
+    return AddCost(std::forward<std::unique_ptr<F>>(f), {decision_variables_});
   }
 
   /**
@@ -803,7 +801,7 @@ class MathematicalProgram {
   template <typename DerivedC>
   std::shared_ptr<LinearConstraint> AddLinearCost(
       const Eigen::MatrixBase<DerivedC>& c) {
-    return AddLinearCost(c, {variables_});
+    return AddLinearCost(c, {decision_variables_});
   }
 
   /**
@@ -837,7 +835,7 @@ class MathematicalProgram {
   std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired) {
-    return AddQuadraticErrorCost(Q, x_desired, {variables_});
+    return AddQuadraticErrorCost(Q, x_desired, {decision_variables_});
   }
 
   /**
@@ -874,7 +872,7 @@ class MathematicalProgram {
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& b) {
-    return AddQuadraticCost(Q, b, {variables_});
+    return AddQuadraticCost(Q, b, {decision_variables_});
   }
 
   /**
@@ -883,7 +881,7 @@ class MathematicalProgram {
    */
   template <typename ConstraintT>
   void AddConstraint(std::shared_ptr<ConstraintT> constraint) {
-    AddConstraint(constraint, {variables_});
+    AddConstraint(constraint, {decision_variables_});
   }
 
   /**
@@ -925,7 +923,7 @@ class MathematicalProgram {
       const Eigen::MatrixBase<DerivedA>& A,
       const Eigen::MatrixBase<DerivedLB>& lb,
       const Eigen::MatrixBase<DerivedUB>& ub) {
-    return AddLinearConstraint(A, lb, ub, {variables_});
+    return AddLinearConstraint(A, lb, ub, {decision_variables_});
   }
 
   /**
@@ -960,7 +958,7 @@ class MathematicalProgram {
       const Eigen::MatrixBase<DerivedA>& a, double lb, double ub) {
     DRAKE_ASSERT(a.rows() == 1);
     return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
-                               {variables_});
+                               {decision_variables_});
   }
 
   /**
@@ -1007,7 +1005,7 @@ class MathematicalProgram {
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::MatrixBase<DerivedA>& Aeq,
       const Eigen::MatrixBase<DerivedB>& beq) {
-    return AddLinearEqualityConstraint(Aeq, beq, {variables_});
+    return AddLinearEqualityConstraint(Aeq, beq, {decision_variables_});
   }
 
   /**
@@ -1041,7 +1039,8 @@ class MathematicalProgram {
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::MatrixBase<DerivedA>& a, double beq) {
     DRAKE_ASSERT(a.rows() == 1);
-    return AddLinearEqualityConstraint(a, drake::Vector1d(beq), {variables_});
+    return AddLinearEqualityConstraint(a, drake::Vector1d(beq),
+                                       {decision_variables_});
   }
   /**
    * Adds bounding box constraints referencing potentially a subset of
@@ -1080,7 +1079,7 @@ class MathematicalProgram {
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       const Eigen::MatrixBase<DerivedLB>& lb,
       const Eigen::MatrixBase<DerivedUB>& ub) {
-    return AddBoundingBoxConstraint(lb, ub, {variables_});
+    return AddBoundingBoxConstraint(lb, ub, {decision_variables_});
   }
 
   /**
@@ -1166,7 +1165,7 @@ class MathematicalProgram {
    * @f]
    */
   std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint() {
-    return AddLorentzConeConstraint({variables_});
+    return AddLorentzConeConstraint({decision_variables_});
   }
 
   /**
@@ -1215,7 +1214,7 @@ class MathematicalProgram {
    */
   std::shared_ptr<RotatedLorentzConeConstraint>
   AddRotatedLorentzConeConstraint() {
-    return AddRotatedLorentzConeConstraint({variables_});
+    return AddRotatedLorentzConeConstraint({decision_variables_});
   }
 
   /**
@@ -1259,7 +1258,7 @@ class MathematicalProgram {
   std::shared_ptr<LinearComplementarityConstraint>
   AddLinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                      const Eigen::MatrixBase<Derivedq>& q) {
-    return AddLinearComplementarityConstraint(M, q, {variables_});
+    return AddLinearComplementarityConstraint(M, q, {decision_variables_});
   }
 
   /**
@@ -1281,7 +1280,7 @@ class MathematicalProgram {
       const std::vector<Polynomiald::VarType>& poly_vars,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
     return AddPolynomialConstraint(polynomials, poly_vars, lb, ub,
-                                   {variables_});
+                                   {decision_variables_});
   }
 
   /**
@@ -1365,8 +1364,8 @@ class MathematicalProgram {
 
   void PrintSolution() {
     for (int i = 0; i < static_cast<int>(num_vars_); ++i) {
-      std::cout << variables_(i).get_name() << " = "
-                << GetSolution(variables_(i)) << std::endl;
+      std::cout << decision_variables_(i).get_name() << " = "
+                << GetSolution(decision_variables_(i)) << std::endl;
     }
   }
 
@@ -1592,7 +1591,7 @@ class MathematicalProgram {
    * @return a flat Eigen vector that represents the solution.
    */
   const Eigen::VectorXd GetSolutionVectorValues() const {
-    return GetSolution(variables_);
+    return GetSolution(decision_variables_);
   }
 
   /** Returns the index of the decision variable. Internally the solvers thinks
@@ -1652,6 +1651,11 @@ class MathematicalProgram {
     return val;
   }
 
+  /** Getter for all decision variables in the program. */
+  const DecisionVariableVectorX& decision_variables() const {
+    return decision_variables_;
+  }
+
  private:
   // maps the ID of a symbolic variable to the index of the variable stored in
   // the optimization program.
@@ -1661,7 +1665,7 @@ class MathematicalProgram {
                                                  // stores the type of the
                                                  // variable with index i.
 
-  DecisionVariableVectorX variables_;
+  DecisionVariableVectorX decision_variables_;
   std::vector<Binding<Constraint>> generic_costs_;
   std::vector<Binding<Constraint>> generic_constraints_;
   std::vector<Binding<QuadraticConstraint>> quadratic_costs_;
@@ -1730,19 +1734,20 @@ class MathematicalProgram {
       num_new_vars = rows * (rows + 1) / 2;
     }
     DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
-    variables_.conservativeResize(num_vars_ + num_new_vars, Eigen::NoChange);
+    decision_variables_.conservativeResize(num_vars_ + num_new_vars,
+                                           Eigen::NoChange);
     x_values_.resize(num_vars_ + num_new_vars, NAN);
     decision_variable_type_.resize(num_vars_ + num_new_vars);
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
-      variables_(num_vars_ + i) = symbolic::Variable(names[i]);
+      decision_variables_(num_vars_ + i) = symbolic::Variable(names[i]);
       const size_t new_var_index = num_vars_ + i;
       decision_variable_index_.insert(std::pair<size_t, size_t>(
-          variables_(new_var_index).get_id(), new_var_index));
+          decision_variables_(new_var_index).get_id(), new_var_index));
       decision_variable_type_[new_var_index] = type;
       decision_variable_matrix(row_index, col_index) =
-          variables_(num_vars_ + i);
+          decision_variables_(num_vars_ + i);
       // If the matrix is not symmetric, then store the variable in the column
       // major.
       if (!is_symmetric) {

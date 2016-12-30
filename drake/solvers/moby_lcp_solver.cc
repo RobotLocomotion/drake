@@ -134,10 +134,10 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
 
   // Assert that the available LCPs cover the program and no two LCPs cover
   // the same variable.
-  for (size_t i = 0; i < prog.num_vars(); i++) {
+  for (int i = 0; i < static_cast<int>(prog.num_vars()); ++i) {
     int coverings = 0;
     for (const auto& binding : bindings) {
-      if (binding.ContainsVariableIndex(prog, i)) {
+      if (binding.ContainsVariable(prog.decision_variables()(i))) {
         coverings++;
       }
     }
