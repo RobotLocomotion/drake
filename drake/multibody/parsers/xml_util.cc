@@ -199,7 +199,7 @@ void originAttributesToTransform(
   T.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
 }
 
-// Parses the contests of a <pose> element specifying X_AB, the pose of frame
+// Parses the contents of a <pose> element specifying X_AB, the pose of frame
 // B measured and expressed in the frame A. By means of the supplied
 // pose X_CA of frame A in a third frame C, the pose of B is expressed in
 // frame C, i.e X_CB.

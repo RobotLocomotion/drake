@@ -429,7 +429,8 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
 
     // Extracts the inertia matrix JAo_A computed about the origin of frame A
     // and expressed in frame A.
-    // Recall the a spatial inertia about a point x has the form:
+    // Recall that it was assumed that the spatial inertia about a point x takes
+    // the form:
     // I(x) =
     //        |     J(x)     | m * [c(x)] |
     //        |  -m * [c(x)] | m * Id     |
@@ -442,8 +443,8 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
     // Defines a reference to the moment of inertia computed about A and
     // expressed in frame A.
     auto JAo_A = IAo_A.template topLeftCorner<3, 3>();
-    // Center of mass offset from A to the center of mass C expressed in
-    // frame A, multiplied by the body mass.
+    // Center of mass offset from the origin Ao of frame A to the center of
+    // mass C expressed in frame A, multiplied by the body mass.
     drake::Vector3<Scalar> mp_AoC_A;
     mp_AoC_A << IAo_A(2, 4), IAo_A(0, 5), IAo_A(1, 3);
     const auto& m = IAo_A(3, 3);
@@ -485,7 +486,10 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
     if (m > NumTraits<Scalar>::epsilon()) {
       JBo_B = vectorToSkewSymmetricSquared(mp_AoC_B);
       // This is misleading but essentially here we compute mp_BoC_B and
-      // overwrite it on mp_AoC_B.
+      // overwrite it on mp_AoC_B. Where mp_AoC_B is the center of mass offset
+      // from the origin Ao of frame A to the center of mass C expressed in
+      // frame B, multiplied by the body mass. Similarly for mp_BoC_B but
+      // from Bo to C.
       mp_AoC_B.noalias() += m * pBA_B;
       JBo_B -=
           vectorToSkewSymmetricSquared(mp_AoC_B);  // Recall this is mp_BoC_B.
@@ -497,7 +501,7 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
     }
     JBo_B.noalias() +=
         R_BA * JAo_A.template selfadjointView<Lower>() * R_BA.transpose();
-    // Done with the moment of inertia. Now we have:
+    // Done with the inertia matrix. Now we have:
     // JBo_B = R_BA * JAo_A * R_BA.transpose() + m * [cA_B]^2 - m * [cB_B]^2
     //      = JA_B + m * [cA_B]^2 - m * [cB_B]^2
     // This is consistent with Eq. 2.13 in A. Jain's book, p. 20, where:

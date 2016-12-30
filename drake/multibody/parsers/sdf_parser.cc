@@ -65,8 +65,8 @@ void ParseSdfInertial(
   // <pose> within <inertial> defines the inertial frame I measured and
   // expressed in the link frame L by the transform X_LI.
   // The inertial frame pose in D is given by X_DI = X_DL * X_LI.
-  // If no <pose> is found within <inertial>, by default X_LI = Id is assumed
-  // (i.e. X_DI = X_DL).
+  // If no <pose> is found within <inertial>, by default it is assumed that X_LI
+  // is the identity transformation (i.e. X_DI = X_DL).
   Isometry3d X_DI = X_DL;
   XMLElement* pose = node->FirstChildElement("pose");
   // pose_map is not used in the call below since logic to parse attribute
@@ -83,10 +83,10 @@ void ParseSdfInertial(
   // com_D = X_DI.translation() since Io = Bcm.
   // Therefore, com_L = X_LD * com_D = X_DL.inverse() * com_D.
   com_L = X_DL.inverse() * X_DI.translation();
-  // TODO(amcastro-tri): We are using here RigidBody as an IR to save the com
-  // in the link's frame L as a com in the B frame. The conversion to the
-  // actual B frame happens later in ParseSdfJoint() when the joint frames are
-  // available.
+  // TODO(amcastro-tri): We are using here RigidBody as an intermediate
+  // representation (IR) to save the com in the link's frame L as a com in
+  // the B frame. The conversion to the actual B frame happens later in
+  // ParseSdfJoint() when the joint frames are available.
   body->set_center_of_mass_in_B(com_L);
 
   // Spatial inertia about Io expressed in I.
@@ -108,10 +108,10 @@ void ParseSdfInertial(
   }
 
   // Transforms I_Io_I to I_Lo_L.
-  // TODO(amcastro-tri): We are using here RigidBody as an IR to save the
-  // spatial inertia in the link's frame L as a spatial inertia in the B frame.
-  // The conversion to the actual B frame happens later in ParseSdfJoint()
-  // when the joint frames are available.
+  // TODO(amcastro-tri): We are using here RigidBody as an intermediate
+  // representation (IR) to save the spatial inertia in the link's frame L as
+  // a spatial inertia in the B frame. The conversion to the actual B frame
+  // happens later in ParseSdfJoint() when the joint frames are available.
   body->set_spatial_inertia_in_B(transformSpatialInertia(
       X_DL.inverse() * X_DI, I_Io_I));
 }

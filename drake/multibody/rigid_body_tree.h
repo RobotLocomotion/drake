@@ -49,7 +49,7 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 ///
 /// In the general case, when specifying a joint between the
 /// joint's inboard body P (the parent) and the joint's outboard body B (the
-/// child), The following frames are defined:
+/// child), the following frames are defined:
 /// - A frame on the parent body, also referred to as `P`.
 /// - A frame on the child body, also referred to as `B`.
 /// - A frame `F` rigidly attached to body `P`.
@@ -58,19 +58,19 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 /// The joint describes the motion of frame `M` (the "mobilized" frame) measured
 /// in `F` (the "fixed" frame with respect to the `P` frame) by means of a
 /// state dependent transformation `X_FM(q)` with `q` the state of the joint
-/// (angle, displacement, etc.). Notice the naming "fixed" and "mobilized"
-/// used for these frames, formally the joint inboard and outboard frames
-/// respectively, is used to describe them as if they were described in the
-/// parent body frame `P. Generally both `F` and `M` move.
+/// (angle, displacement, etc.). Note that the names "fixed" (inboard link) and
+/// "mobilized" (outboard link) indicate that the frames are stationary
+/// (movable, respectively) related to the parent body frame `P`.
+/// Generally both `F` and `M` move.
 /// To properly describe the configuration of this joint we need to supply:
 /// - `X_PF`, the pose of the joint's inboard frame F measured in the parent
 ///   body frame P.
 /// - `X_BM`, the pose of the joint's outboard frame measured in the child body
 ///   frame `B`.
 ///
-/// Notice that it is never assumed that either of the frames' origins is
+/// Notice that it is never assumed that body frames' origins are
 /// located at the center of mass of their respective bodies. In general,
-/// they will not be located at the center of mass.
+/// a body frame will not be located at a body's center of mass.
 ///
 /// In general, a body frame can be arbitrarily placed. A common
 /// choice, and used by Drake without loss of generality, is to make `B = M`,
@@ -95,9 +95,9 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 /// principal axes), the user will need to perform the necessary transformations
 /// to the `B` frame <b>before</b> creating the body.
 ///
-/// Drake allows to access some of these transforms with:
+/// Drake allows accessing some of these transforms with:
 /// - DrakeJoint::get_transform_to_parent_body(): returns the state
-///   indpendent `X_PF`, the pose of the joint's inboard frame F measured and
+///   independent `X_PF`, the pose of the joint's inboard frame F measured and
 ///   expressed in the parent body frame `P`.
 /// - DrakeJoint::jointTransform(): `X_FB(q)` the state dependent pose of the
 ///   body frame `B` measured and expressed in `F` (recall that in Drake B = M).
@@ -106,7 +106,7 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 ///
 /// The URDF specification (http://wiki.ros.org/urdf/XML/link) describes the
 /// inertia properties of a rigid body in an inertial frame `I` which is
-/// measured with respect to the outbard frame
+/// measured with respect to the outboard frame
 /// `M` of the body's inboard joint.
 /// This inertial frame is specified by an `<inertial>` element within
 /// `<link>`. Some details per URDF entry are given here:
@@ -172,10 +172,10 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 /// @section sdf_frames Notes on SDF Specific Frames
 ///
 /// In addition to defining an inertial frame `I` as with URDF files, SDF
-/// also defines a "model" frame here referred as `D`. Many SDF components
+/// also defines a "model" frame referred to here as `D`. Many SDF components
 /// need to be expressed in this model frame `D` while some others are
 /// expected to be in some local frame.
-/// There is an implicit "world" frame here referred as `W`.
+/// SDF uses an implicit "world" frame, which we refer to hereafter as `W`.
 ///
 /// Frames are specified with `<pose>` elements. The pose of the model `X_WD`
 /// measured and expressed in the world frame `W` is specified by a `<pose>`
@@ -186,7 +186,7 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 ///
 /// <b>Important Limitation for Drake's SDF's:</b> Currently Drake only
 /// supports the case when `L = B` that is, the link frame `L` must be
-/// located at the body frame which in Drake is located at the outbard frame
+/// located at the body frame which in Drake is located at the outboard frame
 /// `M` of the body's inboard joint.
 ///
 /// In the SDF format links are specified as:
@@ -198,8 +198,8 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 ///   (optional: see details below:)</dt>
 ///   <dd>
 ///   Specifies the pose `X_DL` of link frame `L` measured and
-///   expressed in the model's frame `D`. In general frame `L` is not located
-///   at a joint outboard frame `M` nor located at the center of mass `Bcm`.
+///   expressed in the model's frame `D`. In general, frame `L` is located
+///   neither at a joint outboard frame `M` nor at the center of mass `Bcm`.
 ///
 ///   <b>Limitation of Drake's SDF parser:</b> The link frame `L` must be
 ///   coincident with the body frame `B` which in drake is the outboard frame
@@ -649,16 +649,16 @@ class RigidBodyTree {
   KinematicPath findKinematicPath(int start_body_or_frame_idx,
                                   int end_body_or_frame_idx) const;
 
-  /// Computes the positive definite mass matrix of the multibody system
-  /// \f$H(q)\f$, defined by \f$T = \frac{1}{2} v^T H(q) v \f$, where \f$ T\f$
-  /// is the kinetic energy.
+  /// Computes the positive definite mass matrix of the multibody system in
+  /// quasi-coordinates \f$H(q)\f$, defined by
+  /// \f$T = \frac{1}{2} v^T H(q) v\f$, where \f$ T\f$ is the kinetic energy.
   ///
   /// The mass matrix also appears in the manipulator equations
   ///  \f[
   ///  H(q) \dot{v} + C(q, v, f_\text{ext}) = B(q) u
   /// \f]
   ///
-  /// This method uses a Composite Rigid Body (CRB) method, which being
+  /// This method uses The Composite Rigid Body (CRB) method, which being
   /// O(N^2) in computational complexity, is the most efficient approch for
   /// computing the mass matrix explicitly.
   ///

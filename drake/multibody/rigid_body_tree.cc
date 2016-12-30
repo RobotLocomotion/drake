@@ -1686,18 +1686,18 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree<T>::massMatrix(
 
   // The Composite Rigid Body (CRB) method has a very simple physical
   // interpretation that allows for a quick derivation.
-  // In the absence of external forces and with vdot = 0, C(q,v) = 0 and hence
-  //   M * vdot = Q
+  // In the absence of external forces and with vdot = 0, The velocity dependent
+  // Coriolis and gyroscopic forces C(q,v) are zero and hence M * vdot = Q.
   // This means we can compute the i-th column in H by setting the i-th
-  // component of vdot to be one, i.e. vdot_p = 1 for p = i ane zero otherwise.
+  // component of vdot to be one, i.e. vdot_p = 1 for p = i and zero otherwise.
   // Physically, this means that all bodies outboard from joint i move
   // rigidly together as a CRB. Hence the force exerted by joint i on its
   // outboard body i can be computed as
   //   f(i) = R(i) * alpha(i), since b(i) = 0 for v = 0. (A Jain, Eq. 6.3).
   // where b(i) contains the Coriolis and centrifugal terms for body i.
-  // Since accelerations are zero for bodies towards the base from joint i
+  // Since accelerations are zero for bodies toward the base from joint i
   // (and velocities are zero), these bodies are instantaneously in static
-  // equilibrium and therefore
+  // equilibrium, and therefore
   //   f(pi) = phi(pi, i) * f(i) (A Jain, Eq. 5.1).
   // with pi representing the parent of body i.
   // Using inertially fixed velocity frames (or Plucker vectors), the above
@@ -1707,16 +1707,16 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree<T>::massMatrix(
   // The j-th component of Q can be computed by simply projecting f(i) onto
   // the generalized forces as
   //   Q_j = H(j)_I * f(i)_I, for all j towards the base from i.
-  // From M * vdot = Q this means
+  // From M * vdot = Q, this means
   //   M_ji = H(j)_I * f(i)_I
   // Notice that if spatial forces are computed about the joint-i outboard
   // frame, they need to be converted to the parent body frame before projecting
   //   Q_j = H(j) * f(k), s.t. pk = j.
   // This leads to the recursive formulation in Algorithm 4.2 in A Jain's
-  // book, p. 64, where X(j) (the spatial force here refered to as f(j)) is
+  // book, p. 64, where X(j) (the spatial force here referred to as f(j)) is
   // recursively transformed before projecting for the next parent.
   // The above procedure therefore allows computing the lower-diagonal terms
-  // of M which being symmetric is all we need.
+  // of M, which is all we need, since the matrix is symmetric.
 
   int nv = num_velocities_;
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(nv, nv);
@@ -1727,7 +1727,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree<T>::massMatrix(
   // - crb_in_world, CRB inertia about Wo in W, i.e. Icb(Wo)_W.
   updateCompositeRigidBodyInertias(cache);
 
-  // Loop on the columns of the mass matrix.
+  // Loop over the columns of the mass matrix.
   for (size_t i = 0; i < bodies.size(); ++i) {
     RigidBody<T>& body_i = *bodies[i];
     if (body_i.has_parent_body()) {
