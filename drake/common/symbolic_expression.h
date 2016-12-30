@@ -545,28 +545,7 @@ namespace Eigen {
 template <>
 struct NumTraits<drake::symbolic::Expression>
     : GenericNumTraits<drake::symbolic::Expression> {
-  typedef drake::symbolic::Expression Real;
-  typedef drake::symbolic::Expression NonInteger;
-  typedef drake::symbolic::Expression Nested;
-  typedef drake::symbolic::Expression Literal;
-  static inline Real epsilon() { return drake::symbolic::Expression::Zero(); }
-  static inline Real dummy_precision() {
-    return drake::symbolic::Expression::Zero();
-  }
   static inline int digits10() { return 0; }
-  enum {
-    IsComplex = 0,
-    IsInteger = 0,
-    IsSigned = 1,
-    RequireInitialization = 1,
-    ReadCost = 1,
-    AddCost = 1,
-    MulCost = 1
-  };
-  template <bool Vectorized>
-  struct Div {
-    enum { Cost = 1 };
-  };
 };
 
 // Informs Eigen that Variable op Variable gets Expression.
@@ -601,17 +580,5 @@ template <typename BinaryOp>
 struct ScalarBinaryOpTraits<double, drake::symbolic::Variable, BinaryOp> {
   typedef drake::symbolic::Expression ReturnType;
 };
-
-namespace internal {
-// Eigen component-wise Matrix<Expression>::isConstant(Expression).
-template <>
-struct scalar_fuzzy_impl<drake::symbolic::Expression> {
-  static inline bool isApprox(drake::symbolic::Expression x,
-                              drake::symbolic::Expression y,
-                              drake::symbolic::Expression) {
-    return x.EqualTo(y);
-  }
-};
-}  // namespace internal
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
