@@ -272,11 +272,14 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   // templatized.
   Eigen::VectorXd vdot_value =
       drake::solvers::GetSolution(vdot);
+  /*
   dot << tree->transformQDotMappingToVelocityMapping(kinsol,
              Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Identity(
                  nq, nq).eval()) *
              v,
       vdot_value;
+      */
+  dot << tree->transformVelocityToQDot(kinsol, v), vdot_value;
   return dot;
 }
 

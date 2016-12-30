@@ -368,7 +368,7 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
 
   // Integrate for ten thousand steps using a RK2 integrator with
   // small step size.
-  const double dt = 1e-7;
+  const double dt = 5e-5;
   const double inf = std::numeric_limits<double>::infinity();
   RungeKutta2Integrator<double> rk2(plant, dt, context.get());
   rk2.Initialize();

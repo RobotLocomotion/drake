@@ -104,22 +104,21 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     const auto& qy = quat[2];
     const auto& qz = quat[3];
 
-    // The first four rows correspond to the "G" matrix in the equation:
+    // The first three rows correspond to the zero matrix (first three columns)
+    // and the "G" matrix (next four columns) in the equation:
     // 2 G de/dt = ω, where e = [ qw qx qy qz ] are the values of the
     // unit quaternion and ω is the angular velocity vector defined in the
     // inboard link body frame. This equation was taken from:
     // - P. Nikravesh, Computer-Aided Analysis of Mechanical Systems. Prentice
     //     Hall, New Jersey, 1988. Equation 108.
+    // NOTE: the torque-free, cylindrical solid unit test successfully detects
+    //       when this matrix (incorrectly) is set to that which transforms
+    //       unit quaternion time derivatives to angular velocities in the
+    //       global frame.
     qdot_to_v.template block<3, 3>(0, 0).setZero();
     qdot_to_v.template block<3, 4>(0, 3) <<  -qx,  qw,  qz, -qy,
                                              -qy, -qz,  qw,  qx,
                                              -qz,  qy, -qx,  qw;
-/*
-    // Equation 105, for angular velocity in global frame.
-    qdot_to_v.block(0, 3, 3, 4) <<  -qx,  qw, -qz,  qy,
-                                    -qy,  qz,  qw, -qx,
-                                    -qz, -qy,  qx,  qw;
-*/
     qdot_to_v.template block<3, 4>(0, 3) *= 2.;
 
     // Next three rows correspond to rigid body translation. Transformation
@@ -141,7 +140,7 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
    *          first three values of generalized velocity are angular velocity
    *          and the second three values are linear velocity. This 
    *          transformation accounts for this disparity.
-   * @param v_to_qdoc a nq × nv sized matrix, where nv is the dimension of
+   * @param v_to_qdot a nq × nv sized matrix, where nv is the dimension of
    *        generalized velocities and nq is the dimension of generalized
    *        coordinates, that converts generalized velocities to time 
    *        derivatives of generalized coordinates _for given configuration 
@@ -170,8 +169,9 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     const auto& qy = quat[2];
     const auto& qz = quat[3];
 
-    // The first four columns correspond to the transpose of the "G" matrix
-    // used in qdot2v(). Specifically, this matrix serves the function:
+    // The first three columns correspond to the zero matrix (top three rows)
+    // and the transpose of the "G" matrix used in qdot2v() (bottom four rows).
+    // Specifically, this matrix serves the function:
     // de/dt = 1/2 G' ω, where e = [ qw qx qy qz ] are the values of the
     // unit quaternion and ω is the angular velocity vector defined in the
     // parent link body frame. This matrix was taken from:
@@ -182,20 +182,13 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
                                      qw, -qz,  qy,
                                      qz,  qw, -qx,
                                     -qy,  qx,  qw;
-    /*
-    // Equation 106, for angular velocity in the global frame.
-    v_to_qdot.block(3, 0, 4, 3) <<  -qx, -qy, -qz,
-                                     qw,  qz, -qy,
-                                    -qz,  qw,  qx,
-                                     qy, -qx,  qw;
-    */
     v_to_qdot.template block<4, 3>(3, 0) *= 0.5;
 
     // Next three columns correspond to rigid body translation. Transformation
     // from angular velocity (in parent body frame) to time derivative of
     // unit quaternions is the parent rotation matrix.
     v_to_qdot.template block<3, 3>(0, 3) = drake::math::quat2rotmat(quat);
-    v_to_qdot.template block<3, 3>(3, 3).setZero();
+    v_to_qdot.template block<4, 3>(3, 3).setZero();
   }
 
   template <typename DerivedV>
