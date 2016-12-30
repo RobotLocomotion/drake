@@ -71,8 +71,6 @@ namespace Eigen {
 // Eigen scalar type traits for Matrix<drake::symbolic::Variable>.
 template <>
 struct NumTraits<drake::symbolic::Variable>
-    : GenericNumTraits<drake::symbolic::Variable> {
-  static inline int digits10() { return 0; }
-};
+    : GenericNumTraits<drake::symbolic::Variable> {};
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
