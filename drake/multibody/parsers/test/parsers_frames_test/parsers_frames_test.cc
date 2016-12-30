@@ -80,7 +80,7 @@ class DoublePendulumFramesTest : public ::testing::Test {
     expected_Bcm_B_[world_id_] = Vector3d(0.0, 0.0, 0.0);
     expected_Bcm_W_[world_id_] = Vector3d(0.0, 0.0, 0.0);
 
-    // Body "base" is fixed to the world. Located at the origin.
+    // Body "base" is fixed to the world and located at the origin.
     expected_Bo_W_[base_id_] = Vector3d(0.0, 0.0, 0.0);
     expected_Bcm_B_[base_id_] = Vector3d(0.0, 0.0, 0.0);
     expected_Bcm_W_[base_id_] = Vector3d(0.0, 0.0, 0.0);
