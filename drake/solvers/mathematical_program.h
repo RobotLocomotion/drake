@@ -202,23 +202,6 @@ class MathematicalProgram {
     const VariableList& variable_list() const { return variable_list_; }
 
     /**
-     * Get an Eigen vector containing all variable values. This only works if
-     * every element in variable_list_ is a column vector.
-     * @return A Eigen::VectorXd for all the variables in the variable vector.
-     */
-    Eigen::VectorXd VariableListToVectorXd(
-        const MathematicalProgram& prog) const {
-      size_t dim = 0;
-      Eigen::VectorXd X(GetNumElements());
-      for (const auto& var : variable_list_.variables()) {
-        DRAKE_ASSERT(var.cols() == 1);
-        X.segment(dim, var.rows()) = prog.GetSolution(var);
-        dim += var.rows();
-      }
-      return X;
-    }
-
-    /**
      * Returns true iff the given @p index of the enclosing
      * MathematicalProgram is included in this Binding.*/
     bool ContainsVariableIndex(const MathematicalProgram& prog,
@@ -226,7 +209,7 @@ class MathematicalProgram {
       for (const auto& v : variable_list_.variables()) {
         for (int i = 0; i < v.rows(); ++i) {
           for (int j = 0; j < v.cols(); ++j) {
-            if (prog.decision_variable_index(v(i, j)) == index) {
+            if (prog.FindDecisionVariableIndex(v(i, j)) == index) {
               return true;
             }
           }
@@ -254,7 +237,7 @@ class MathematicalProgram {
         DRAKE_ASSERT(var.cols() == 1);
         const auto& solution_segment =
             solution.segment(solution_index, var.rows());
-        output->segment(prog.decision_variable_index(var(0)), var.rows()) =
+        output->segment(prog.FindDecisionVariableIndex(var(0)), var.rows()) =
             solution_segment;
         solution_index += var.rows();
       }
@@ -339,7 +322,7 @@ class MathematicalProgram {
    * Example:
    * @code{.cc}
    * MathematicalProgram prog;
-   * auto x = prog.AddVariables<2, 3>(
+   * auto x = prog.NewVariables<2, 3>(
    *      VarType::CONTINUOUS,
    *      {"x1", "x2", "x3", "x4", "x5", "x6"});
    * @endcode
@@ -381,7 +364,7 @@ class MathematicalProgram {
 
   /**
    * Adds continuous variables to this MathematicalProgram.
-   * @see AddContinuousVariables(size_t rows, size_t cols, const
+   * @see NewContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
   DecisionVariableVectorX NewContinuousVariables(
@@ -390,7 +373,7 @@ class MathematicalProgram {
   /**
    * Adds continuous variables to this MathematicalProgram, with default name
    * "x".
-   * @see AddContinuousVariables(size_t rows, size_t cols, const
+   * @see NewContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
   DecisionVariableVectorX NewContinuousVariables(std::size_t rows,
@@ -414,7 +397,7 @@ class MathematicalProgram {
    * Example:
    * @code{.cc}
    * MathematicalProgram prog;
-   * auto x = prog.AddContinuousVariables(2, 3, {"x1", "x2", "x3", "x4", "x5",
+   * auto x = prog.NewContinuousVariables(2, 3, {"x1", "x2", "x3", "x4", "x5",
    * "x6"});
    * @endcode
    * This adds a 2 x 3 matrix decision variables into the program.
@@ -429,7 +412,7 @@ class MathematicalProgram {
    * Adds continuous variables to this MathematicalProgram, with default name
    * "X". The new variables are returned and viewed as a matrix, with size
    * @p rows x @p cols.
-   * @see AddContinuousVariables(size_t rows, size_t cols, const
+   * @see NewContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
   DecisionVariableMatrixX NewContinuousVariables(
@@ -454,7 +437,7 @@ class MathematicalProgram {
    * @code{.cc}
    * MathematicalProgram prog;
    * std::array<std::string, 6> names = {"x1", "x2", "x3", "x4", "x5", "x6"};
-   * auto x = prog.AddContinuousVariables<2, 3>(names);
+   * auto x = prog.NewContinuousVariables<2, 3>(names);
    * @endcode
    * This adds a 2 x 3 matrix decision variables into the program.
    *
@@ -484,7 +467,7 @@ class MathematicalProgram {
    * Example:
    * @code{.cc}
    * MathematicalProgram prog;
-   * auto x = prog.AddContinuousVariables<2, 3>("X");
+   * auto x = prog.NewContinuousVariables<2, 3>("X");
    * @endcode
    * This adds a 2 x 3 matrix decision variables into the program.
    *
@@ -521,7 +504,7 @@ class MathematicalProgram {
    * @code{.cc}
    * MathematicalProgram prog;
    * std::array<std::string, 2> names = {"x1", "x2"};
-   * auto x = prog.AddContinuousVariables<2>(names);
+   * auto x = prog.NewContinuousVariables<2>(names);
    * @endcode
    * This adds a 2 x 1 vector containing decision variables into the program.
    *
@@ -537,7 +520,7 @@ class MathematicalProgram {
    * Adds continuous variables to the program.
    * The name for all newly added variables are set to @p name. The default name
    * is "x"
-   * @see AddContinuousVariables(const std::array<std::string, rows>& names)
+   * @see NewContinuousVariables(const std::array<std::string, rows>& names)
    */
   template <int rows>
   DecisionVariableVector<rows> NewContinuousVariables(
@@ -569,7 +552,7 @@ class MathematicalProgram {
    * @code{.cc}
    * MathematicalProgram prog;
    * std::array<std::string, 6> names = {"b1", "b2", "b3", "b4", "b5", "b6"};
-   * auto b = prog.AddBinaryVariables<2, 3>(names);
+   * auto b = prog.NewBinaryVariables<2, 3>(names);
    * @endcode
    * This adds a 2 x 3 matrix decision variables into the program.
    *
@@ -629,7 +612,7 @@ class MathematicalProgram {
    * Example:
    * @code{.cc}
    * MathematicalProgram prog;
-   * auto b = prog.AddBinaryVariables(2, 3, {"b1", "b2", "b3", "b4", "b5",
+   * auto b = prog.NewBinaryVariables(2, 3, {"b1", "b2", "b3", "b4", "b5",
    * "b6");
    * @endcode
    * This adds a 2 x 3 matrix decision variables into the program.
@@ -643,7 +626,7 @@ class MathematicalProgram {
    * Adds binary variables to this MathematicalProgram, with default name "b".
    * The new variables are returned and viewed as a matrix, with size
    * \param rows x \param cols.
-   * @see AddBinaryVariables(size_t rows, size_t cols, const
+   * @see NewBinaryVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
   DecisionVariableMatrixX NewBinaryVariables(size_t rows, size_t cols,
@@ -652,7 +635,7 @@ class MathematicalProgram {
   /**
    * Adds binary variables to this MathematicalProgram. The new variables are
    * viewed as a column vector, with size @p rows x 1.
-   * @see AddBinaryVariables(size_t rows, size_t cols, const
+   * @see NewBinaryVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
   DecisionVariableVectorX NewBinaryVariables(size_t rows,
@@ -1349,8 +1332,8 @@ class MathematicalProgram {
     DRAKE_ASSERT(decision_variable_mat.cols() == x0.cols());
     for (int i = 0; i < decision_variable_mat.rows(); ++i) {
       for (int j = 0; j < decision_variable_mat.cols(); ++j) {
-        x_initial_guess_(decision_variable_index(decision_variable_mat(i, j))) =
-            x0(i, j);
+        x_initial_guess_(
+            FindDecisionVariableIndex(decision_variable_mat(i, j))) = x0(i, j);
       }
     }
   }
@@ -1617,7 +1600,7 @@ class MathematicalProgram {
    * variable using its index. This index is used when adding constraints
    * and costs for each solver.
    */
-  size_t decision_variable_index(const symbolic::Variable& var) const;
+  size_t FindDecisionVariableIndex(const symbolic::Variable& var) const;
 
   /**
    * Gets the solution of an Eigen matrix of decision variables.
@@ -1648,6 +1631,26 @@ class MathematicalProgram {
    * Gets the value of a single decision variable.
    */
   double GetSolution(const symbolic::Variable& var) const;
+
+  /**
+   * Evaluate the constraint in the Binding at the solution value.
+   * @return The value of the constraint in the binding.
+   * TODO(hongkai.dai): Do not use teample function, when the Binding is moved
+   * to a public class.
+   */
+  template <typename _Binding>
+  Eigen::VectorXd EvalBindingAtSolution(const _Binding& binding) const {
+    Eigen::VectorXd val(binding.constraint()->num_constraints());
+    size_t dim = 0;
+    Eigen::VectorXd flat_solution(binding.GetNumElements());
+    for (const auto& var : binding.variable_list().variables()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      flat_solution.segment(dim, var.rows()) = GetSolution(var);
+      dim += var.rows();
+    }
+    binding.constraint()->Eval(flat_solution, val);
+    return val;
+  }
 
  private:
   // maps the ID of a symbolic variable to the index of the variable stored in

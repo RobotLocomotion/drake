@@ -72,7 +72,7 @@ size_t GetGradientMatrix(const MathematicalProgram& prog, const Constraint& c,
     for (int i = 0; i < static_cast<int>(m); ++i) {
       for (int j = 0; j < v.size(); ++j) {
         iRow[grad_index] = constraint_idx + i;
-        jCol[grad_index] = prog.decision_variable_index(v(j, 0));
+        jCol[grad_index] = prog.FindDecisionVariableIndex(v(j, 0));
         grad_index++;
       }
     }
@@ -114,7 +114,7 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
     DRAKE_ASSERT(v.cols() == 1);
     int num_v_variables = v.size();
     for (int i = 0; i < num_v_variables; ++i) {
-      this_x(index + i) = tx(prog.decision_variable_index(v(i, 0)));
+      this_x(index + i) = tx(prog.FindDecisionVariableIndex(v(i, 0)));
     }
     index += num_v_variables;
   }
@@ -137,7 +137,7 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
     DRAKE_ASSERT(v.cols() == 1);
     std::vector<size_t> v_index(v.rows());
     for (int i = 0; i < v.rows(); ++i) {
-      v_index[i] = prog.decision_variable_index(v(i, 0));
+      v_index[i] = prog.FindDecisionVariableIndex(v(i, 0));
     }
     for (size_t i = 0; i < c.num_constraints(); i++) {
       for (int j = 0; j < v.size(); j++) {
@@ -245,7 +245,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
            binding.variable_list().variables()) {
         DRAKE_ASSERT(v.cols() == 1);
         for (int k = 0; k < v.size(); ++k) {
-          const int idx = problem_->decision_variable_index(v(k, 0));
+          const int idx = problem_->FindDecisionVariableIndex(v(k, 0));
           x_l[idx] = std::max(lower_bound(var_count), x_l[idx]);
           x_u[idx] = std::min(upper_bound(var_count), x_u[idx]);
           ++var_count;
@@ -443,7 +443,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
         int num_v_variables = v.size();
         this_x.conservativeResize(index + num_v_variables);
         for (int i = 0; i < num_v_variables; ++i) {
-          this_x(index + i) = tx(problem_->decision_variable_index(v(i, 0)));
+          this_x(index + i) = tx(problem_->FindDecisionVariableIndex(v(i, 0)));
         }
         index += num_v_variables;
       }
@@ -455,7 +455,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
            binding.variable_list().variables()) {
         DRAKE_ASSERT(v.cols() == 1);
         for (int j = 0; j < v.size(); ++j) {
-          size_t vj_index = problem_->decision_variable_index(v(j, 0));
+          size_t vj_index = problem_->FindDecisionVariableIndex(v(j, 0));
           cost_cache_->grad[vj_index] += ty(0).derivatives()(vj_index);
         }
       }

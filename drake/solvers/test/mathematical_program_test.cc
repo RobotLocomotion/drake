@@ -263,6 +263,11 @@ GTEST_TEST(testMathematicalProgram, QuadraticCost) {
     const auto& x_value = prog.GetSolution(x);
     EXPECT_TRUE(
         CompareMatrices(x_value, expected, 1e-6, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(
+        prog.EvalBindingAtSolution(prog.quadratic_costs().front()),
+        0.5 * x_value.transpose() * Q_symmetric * x_value +
+            b.transpose() * x_value,
+        1E-14, MatrixCompareType::absolute));
   });
 }
 

@@ -18,7 +18,7 @@ bool DecisionVariableMatrixContainsIndex(const MathematicalProgram& prog,
       "The input should be a matrix of symbolic::Variable.");
   for (int i = 0; i < v.rows(); ++i) {
     for (int j = 0; j < v.cols(); ++j) {
-      if (prog.decision_variable_index(v(i, j)) == index) {
+      if (prog.FindDecisionVariableIndex(v(i, j)) == index) {
         return true;
       }
     }
@@ -33,7 +33,7 @@ bool CheckDecisionVariableType(const MathematicalProgram& prog,
   const auto& variable_types = prog.DecisionVariableTypes();
   for (int i = 0; i < var.rows(); ++i) {
     for (int j = 0; j < var.cols(); ++j) {
-      if ((variable_types[prog.decision_variable_index(var(i, j))] !=
+      if ((variable_types[prog.FindDecisionVariableIndex(var(i, j))] !=
            type_expected) ||
           (prog.DecisionVariableType(var(i, j)) != type_expected)) {
         return false;

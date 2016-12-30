@@ -1229,12 +1229,12 @@ DecisionVariableMatrix<x_dim, x_dim> AddLyapunovCondition(
     for (int i = j; i < static_cast<int>(x_dim); ++i) {
       for (int k = 0; k < static_cast<int>(x_dim); ++k) {
         lin_eq_triplets.push_back(Eigen::Triplet<double>(
-            lin_eq_idx, prog->decision_variable_index(P(k, j)), A(k, i)));
+            lin_eq_idx, prog->FindDecisionVariableIndex(P(k, j)), A(k, i)));
         lin_eq_triplets.push_back(Eigen::Triplet<double>(
-            lin_eq_idx, prog->decision_variable_index(P(i, k)), A(k, j)));
+            lin_eq_idx, prog->FindDecisionVariableIndex(P(i, k)), A(k, j)));
       }
       lin_eq_triplets.push_back(Eigen::Triplet<double>(
-          lin_eq_idx, prog->decision_variable_index(Q(i, j)), 1.0));
+          lin_eq_idx, prog->FindDecisionVariableIndex(Q(i, j)), 1.0));
       ++lin_eq_idx;
     }
   }

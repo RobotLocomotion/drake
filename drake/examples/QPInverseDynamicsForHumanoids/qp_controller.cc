@@ -337,11 +337,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // tau = M_l * vd + h_l - (J^T * basis)_l * Beta
   // tau = torque_linear_ * X + torque_constant_
   for (int i = 0; i < num_vd_; ++i) {
-    torque_linear_.block(0, prog_->decision_variable_index(vd_(i)), num_torque_,
-                         1) = rs.M().bottomRows(num_torque_).col(i);
+    torque_linear_.block(0, prog_->FindDecisionVariableIndex(vd_(i)),
+                         num_torque_, 1) =
+        rs.M().bottomRows(num_torque_).col(i);
   }
   for (int i = 0; i < num_basis_; ++i) {
-    torque_linear_.block(0, prog_->decision_variable_index(basis_(i)),
+    torque_linear_.block(0, prog_->FindDecisionVariableIndex(basis_(i)),
                          num_torque_, 1) = -JB_.bottomRows(num_torque_).col(i);
   }
   torque_constant_ = rs.bias_term().tail(num_torque_);
@@ -350,12 +351,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // Equality constraints:
   // Equations of motion part, 6 rows
   for (int i = 0; i < num_vd_; ++i) {
-    dynamics_linear_.block(0, prog_->decision_variable_index(vd_(i)), 6, 1) =
+    dynamics_linear_.block(0, prog_->FindDecisionVariableIndex(vd_(i)), 6, 1) =
         rs.M().topRows(6).col(i);
   }
   for (int i = 0; i < num_basis_; ++i) {
-    dynamics_linear_.block(0, prog_->decision_variable_index(basis_(i)), 6, 1) =
-        -JB_.topRows(6).col(i);
+    dynamics_linear_.block(0, prog_->FindDecisionVariableIndex(basis_(i)), 6,
+                           1) = -JB_.topRows(6).col(i);
   }
   dynamics_constant_ = -rs.bias_term().head<6>();
   eq_dynamics_->UpdateConstraint(dynamics_linear_, dynamics_constant_);
@@ -537,23 +538,21 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // TODO(hongkai.dai): Solve() function in GurobiSolver or MosekSolver
   // should return the cost directly.
   for (auto& cost_b : costs) {
-    solvers::Constraint* cost = cost_b.constraint().get();
-    cost->Eval(cost_b.VariableListToVectorXd(*prog_), tmp_vec);
-    output->mutable_cost(ctr).first = cost->get_description();
+    tmp_vec = prog_->EvalBindingAtSolution(cost_b);
+    output->mutable_cost(ctr).first = cost_b.constraint()->get_description();
     output->mutable_cost(ctr).second = tmp_vec(0);
     ctr++;
   }
 
   for (auto& eq_b : eqs) {
-    solvers::LinearEqualityConstraint* eq = eq_b.constraint().get();
     DRAKE_ASSERT(
-        (eq->A() * eq_b.VariableListToVectorXd(*prog_) - eq->lower_bound())
+        (prog_->EvalBindingAtSolution(eq_b) - eq_b.constraint()->lower_bound())
             .isZero(1e-6));
   }
 
   for (auto& ineq_b : ineqs) {
     solvers::LinearConstraint* ineq = ineq_b.constraint().get();
-    tmp_vec = ineq->A() * ineq_b.VariableListToVectorXd(*prog_);
+    tmp_vec = prog_->EvalBindingAtSolution(ineq_b);
     for (int i = 0; i < tmp_vec.size(); ++i) {
       DRAKE_ASSERT(tmp_vec[i] >= ineq->lower_bound()[i] - 1e-6 &&
                    tmp_vec[i] <= ineq->upper_bound()[i] + 1e-6);

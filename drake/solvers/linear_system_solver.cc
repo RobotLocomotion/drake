@@ -37,7 +37,7 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
       DRAKE_ASSERT(v.cols() == 1);
       int num_v_variables = v.rows();
       for (int i = 0; i < num_v_variables; ++i) {
-        Aeq.block(constraint_index, prog.decision_variable_index(v(i, 0)), n,
+        Aeq.block(constraint_index, prog.FindDecisionVariableIndex(v(i, 0)), n,
                   1) = c->A().col(var_index);
         ++var_index;
       }

@@ -72,7 +72,7 @@ MSKrescodee AddLinearConstraintsFromBindings(
         for (int k = 0; k < static_cast<int>(var.rows()); ++k) {
           if (std::abs(A(i, A_col_idx)) > Eigen::NumTraits<double>::epsilon()) {
             A_nonzero_col_idx.push_back(
-                prog.decision_variable_index(var(k, 0)));
+                prog.FindDecisionVariableIndex(var(k, 0)));
             A_nonzero_val.push_back(A(i, A_col_idx));
           }
           ++A_col_idx;
@@ -118,7 +118,7 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
          binding.variable_list().variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        size_t x_idx = prog.decision_variable_index(var(i, 0));
+        size_t x_idx = prog.FindDecisionVariableIndex(var(i, 0));
         x_lb[x_idx] = std::max(x_lb[x_idx], lower_bound[var_count]);
         x_ub[x_idx] = std::min(x_ub[x_idx], upper_bound[var_count]);
         var_count++;
@@ -179,7 +179,7 @@ MSKrescodee AddSecondOrderConeConstraints(
          binding.variable_list().variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        cone_var_indices[var_count] = prog.decision_variable_index(var(i, 0));
+        cone_var_indices[var_count] = prog.FindDecisionVariableIndex(var(i, 0));
         ++var_count;
       }
     }
@@ -358,7 +358,7 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
             num_linear_constraint + new_linear_constraint_count;
         double symmetric_matrix_val = 1.0;
         MSKint32t symmetric_matrix_var_ij_index =
-            prog.decision_variable_index(symmetric_matrix_variable(i, j));
+            prog.FindDecisionVariableIndex(symmetric_matrix_variable(i, j));
         rescode =
             MSK_putarow(*task, linear_constraint_index, 1,
                         &symmetric_matrix_var_ij_index, &symmetric_matrix_val);
@@ -415,7 +415,7 @@ MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog,
         A_row.reserve(binding.variable_list().size());
         for (const auto& var : binding.variable_list().variables()) {
           for (int k = 0; k < static_cast<int>(var.rows()); ++k) {
-            A_row.coeffRef(prog.decision_variable_index(var(k, 0))) +=
+            A_row.coeffRef(prog.FindDecisionVariableIndex(var(k, 0))) +=
                 (*F_it)(i, j);
             ++F_it;
           }
@@ -455,7 +455,7 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
       for (const auto& var : binding.variable_list().variables()) {
         DRAKE_ASSERT(var.cols() == 1);
         for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-          var_indices[var_count] = prog.decision_variable_index(var(i, 0));
+          var_indices[var_count] = prog.FindDecisionVariableIndex(var(i, 0));
           ++var_count;
         }
       }
@@ -493,7 +493,7 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         if (std::abs(c(var_count)) > Eigen::NumTraits<double>::epsilon()) {
           linear_term_triplets.push_back(Eigen::Triplet<double>(
-              prog.decision_variable_index(var(i, 0)), 0, c(var_count)));
+              prog.FindDecisionVariableIndex(var(i, 0)), 0, c(var_count)));
         }
         var_count++;
       }

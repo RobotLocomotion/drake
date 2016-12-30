@@ -357,7 +357,7 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
   return constraint;
 }
 
-size_t MathematicalProgram::decision_variable_index(
+size_t MathematicalProgram::FindDecisionVariableIndex(
     const symbolic::Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
   DRAKE_ASSERT(it != decision_variable_index_.end());
@@ -366,11 +366,11 @@ size_t MathematicalProgram::decision_variable_index(
 
 MathematicalProgram::VarType MathematicalProgram::DecisionVariableType(
     const symbolic::Variable& var) const {
-  return decision_variable_type_[decision_variable_index(var)];
+  return decision_variable_type_[FindDecisionVariableIndex(var)];
 }
 
 double MathematicalProgram::GetSolution(const symbolic::Variable& var) const {
-  return x_values_[decision_variable_index(var)];
+  return x_values_[FindDecisionVariableIndex(var)];
 }
 
 SolutionResult MathematicalProgram::Solve() {
