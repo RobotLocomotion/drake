@@ -169,6 +169,9 @@ class QuadraticConstraint : public Constraint {
 
   virtual const Eigen::VectorXd& b() const { return b_; }
 
+  /** Getter for the constant term. */
+  double constant_term() const {return c_;}
+
   /**
    * Updates the quadratic and linear term of the constraint. The new
    * matrices need to have the same dimension as before.
