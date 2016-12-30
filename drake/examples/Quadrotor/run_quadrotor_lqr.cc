@@ -10,7 +10,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/examples/Quadrotor/quadrotor_plant.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/is_approx_equal_abstol.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -85,7 +85,8 @@ int do_main(int argc, char* argv[]) {
     const ContinuousState<double>* state = context.get_continuous_state();
     const VectorX<double>& position_vector = state->CopyToVector();
 
-    if (!CompareMatrices(position_vector, kNominalState, 1e-4)) {
+    if (!is_approx_equal_abstol(
+        position_vector, kNominalState, 1e-4)) {
       throw std::runtime_error("Target state is not achieved.");
     }
 

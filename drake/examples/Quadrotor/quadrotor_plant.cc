@@ -1,5 +1,7 @@
 #include "drake/examples/Quadrotor/quadrotor_plant.h"
 
+#include <memory>
+
 #include "drake/math/gradient.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
@@ -117,7 +119,7 @@ std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
 
   // Setup LQR Cost matrices (penalize position error 10x more than velocity.
   Eigen::MatrixXd Q = Eigen::MatrixXd::Identity(12, 12);
-  Q.topLeftCorner<6,6>() = 10 * Eigen::MatrixXd::Identity(6, 16);
+  Q.topLeftCorner<6, 6>() = 10 * Eigen::MatrixXd::Identity(6, 6);
 
   Eigen::Matrix4d R = Eigen::Matrix4d::Identity();
 
