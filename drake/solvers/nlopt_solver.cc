@@ -35,7 +35,7 @@ TaylorVecXd MakeInputTaylorVec(const MathematicalProgram& prog,
   size_t index = 0;
   for (const DecisionVariableMatrixX& v : variable_list.variables()) {
     DRAKE_ASSERT(v.cols() == 1);
-    int num_v_variables = v.size();
+    const int num_v_variables = v.size();
     for (int i = 0; i < num_v_variables; ++i) {
       this_x(index + i) = tx(prog.FindDecisionVariableIndex(v(i, 0)));
     }

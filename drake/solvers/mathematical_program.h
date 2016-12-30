@@ -976,7 +976,7 @@ class MathematicalProgram {
    * Example: to add two equality constraints which only depend on two of the
    * elements of x, you could use
    * @code{.cc}
-   *   auto x = prog.AddContinuousDecisionVariable(6,"myvar");
+   *   auto x = prog.NewContinuousDecisionVariable(6,"myvar");
    *   Eigen::Matrix2d Aeq;
    *   Aeq << -1, 2,
    *           1, 1;
@@ -1195,7 +1195,7 @@ class MathematicalProgram {
    * @f[ x_0\ge 0, x_1\ge 0 @f]
    * you can call
    * @code{.cc}
-   *   auto x = prog.AddContinuousVariables(N,'x');
+   *   auto x = prog.NewContinuousVariables(N,'x');
    *   auto con = prog.AddRotatedLorentzConeConstraint(x);
    * @endcode
    */
@@ -1654,6 +1654,11 @@ class MathematicalProgram {
   /** Getter for all decision variables in the program. */
   const DecisionVariableVectorX& decision_variables() const {
     return decision_variables_;
+  }
+
+  /** Getter for the decision variable with index @p i in the program. */
+  const symbolic::Variable& decision_variable(int i) const {
+    return decision_variables_(i);
   }
 
  private:

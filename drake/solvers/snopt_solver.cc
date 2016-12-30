@@ -395,7 +395,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
          binding.variable_list().variables()) {
       DRAKE_ASSERT(v.cols() == 1);
       for (int k = 0; k < v.size(); ++k) {
-        size_t vk_index = prog.FindDecisionVariableIndex(v(k, 0));
+        const size_t vk_index = prog.FindDecisionVariableIndex(v(k, 0));
         xlow[vk_index] = std::max<snopt::doublereal>(
             static_cast<snopt::doublereal>(lb(var_count)), xlow[vk_index]);
         xupp[vk_index] = std::min<snopt::doublereal>(
