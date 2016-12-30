@@ -83,7 +83,7 @@ class PositionControlledPlantWithRobot : public systems::Diagram<T> {
   systems::TrajectorySource<T>* desired_plan_{nullptr};
   systems::DrakeVisualizer* drake_visualizer_{nullptr};
   systems::RigidBodyPlant<T>* rigid_body_plant_{nullptr};
-  std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory_;
+  std::unique_ptr<const PiecewisePolynomialTrajectory> poly_trajectory_;
 };
 
 }  // namespace kuka_iiwa_arm

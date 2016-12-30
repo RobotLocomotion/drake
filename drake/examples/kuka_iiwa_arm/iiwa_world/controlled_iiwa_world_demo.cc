@@ -21,9 +21,6 @@
 
 DEFINE_double(simulation_sec, 4.5, "Number of seconds to simulate.");
 
-using Eigen::Vector3d;
-using std::make_unique;
-using std::move;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -107,7 +104,7 @@ int DoMain() {
 
   world_sim_tree_builder->AddFloatingModelInstance(
       "cylinder", 0.5 * (kCylinderCorner1Base + kCylinderCorner2Base));
-  vector<Vector3d> target_position_vector;
+  vector<Eigen::Vector3d> target_position_vector;
 
   // The following desired trajectory was hand crafted in order for the
   // KUKA iiwa arm to knock over each of the cylinders in sequence.

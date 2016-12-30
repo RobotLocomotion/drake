@@ -39,8 +39,6 @@ using systems::Demultiplexer;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::DrakeVisualizer;
-using systems::InputPortDescriptor;
-using systems::MatrixGain;
 using systems::Multiplexer;
 using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
