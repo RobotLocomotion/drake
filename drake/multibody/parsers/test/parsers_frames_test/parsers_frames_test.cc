@@ -1,5 +1,3 @@
-#include <fstream>
-#include <iostream>
 #include <memory>
 #include <string>
 
@@ -42,7 +40,7 @@ class DoublePendulumFramesTest : public ::testing::Test {
     expected_Bcm_W_.resize(kNumBodiesInTree);
   }
 
-  void LoadTreeFrom(const string& file_name) {
+  void LoadAndRunTests(const string& file_name) {
     const string full_name = GetDrakePath() +
                              "/multibody/parsers/test/parsers_frames_test/" +
                              file_name;
@@ -86,6 +84,13 @@ class DoublePendulumFramesTest : public ::testing::Test {
     expected_Bo_W_[base_id_] = Vector3d(0.0, 0.0, 0.0);
     expected_Bcm_B_[base_id_] = Vector3d(0.0, 0.0, 0.0);
     expected_Bcm_W_[base_id_] = Vector3d(0.0, 0.0, 0.0);
+
+    // Runs a number of tests for different joint angles. The joint angles are
+    // in units of degrees.
+    RunTest(0.0, 0.0);
+    RunTest(0.0, 45.0);
+    RunTest(45.0, 0.0);
+    RunTest(12.0, -18.0);
   }
 
   // Note that the input parameters must be in degree units!
@@ -144,13 +149,7 @@ class DoublePendulumFramesTest : public ::testing::Test {
 };
 
 TEST_F(DoublePendulumFramesTest, UrdfTest) {
-  LoadTreeFrom("simple_double_pendulum_urdf/simple_double_pendulum.urdf");
-
-  // Runs a number of tests for different joint angles in degrees.
-  RunTest(0.0, 0.0);
-  RunTest(0.0, 45.0);
-  RunTest(45.0, 0.0);
-  RunTest(12.0, -18.0);
+  LoadAndRunTests("simple_double_pendulum_urdf/simple_double_pendulum.urdf");
 }
 
 // In this case the simple double pendulum model is loaded from an SDF file
@@ -160,16 +159,9 @@ TEST_F(DoublePendulumFramesTest, UrdfTest) {
 // given in <joint>. Therefore the inertial frames I need to be specified as
 // done in URDF files.
 TEST_F(DoublePendulumFramesTest, SdfTestWhereLequalsB) {
-  LoadTreeFrom(
+  LoadAndRunTests(
       "simple_double_pendulum_l_equals_b_sdf/"
       "simple_double_pendulum_l_equals_b.sdf");
-
-  // Runs a number of tests for different joint angles. The joint angles are
-  // in units of degrees.
-  RunTest(0.0, 0.0);
-  RunTest(0.0, 45.0);
-  RunTest(45.0, 0.0);
-  RunTest(12.0, -18.0);
 }
 
 // In this case the link frame L for "lower_arm" is not specified (no
@@ -178,16 +170,9 @@ TEST_F(DoublePendulumFramesTest, SdfTestWhereLequalsB) {
 // the joint "shaft2" expressed in the model frame D, i.e. <pose> is giving
 // X_DF for "shaft2".
 TEST_F(DoublePendulumFramesTest, SdfTestLisNotSpecified) {
-  LoadTreeFrom(
+  LoadAndRunTests(
       "simple_double_pendulum_l_is_not_specified_sdf/"
       "simple_double_pendulum_l_is_not_specified.sdf");
-
-  // Runs a number of tests for different joint angles. The joint angles are
-  // in units of degrees.
-  RunTest(0.0, 0.0);
-  RunTest(0.0, 45.0);
-  RunTest(45.0, 0.0);
-  RunTest(12.0, -18.0);
 }
 
 // The following tests are disabled because they fail to pass. See #4641.
@@ -199,16 +184,9 @@ TEST_F(DoublePendulumFramesTest, SdfTestLisNotSpecified) {
 // inboard frame is specified in the link's frame L, the <pose> entry for joint
 // "shaft2" must be specified accordingly.
 TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLBetweenBandI) {
-  LoadTreeFrom(
+  LoadAndRunTests(
       "simple_double_pendulum_l_between_b_and_i_sdf/"
       "simple_double_pendulum_l_between_b_and_i.sdf");
-
-  // Runs a number of tests for different joint angles. The joint angles are
-  // in units of degrees.
-  RunTest(0.0, 0.0);
-  RunTest(0.0, 45.0);
-  RunTest(45.0, 0.0);
-  RunTest(12.0, -18.0);
 }
 
 // TODO(liang.fok) Enable this test once #4641 is resolved.
@@ -218,16 +196,9 @@ TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLBetweenBandI) {
 // in the outboard link frame, we need to specify the joint pose accordingly as
 // well.
 TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLequalsI) {
-  LoadTreeFrom(
+  LoadAndRunTests(
       "simple_double_pendulum_l_equals_i_sdf/"
       "simple_double_pendulum_l_equals_i.sdf");
-
-  // Runs a number of tests for different joint angles. The joint angles are
-  // in units of degrees.
-  RunTest(0.0, 0.0);
-  RunTest(0.0, 45.0);
-  RunTest(45.0, 0.0);
-  RunTest(12.0, -18.0);
 }
 
 }  // namespace
