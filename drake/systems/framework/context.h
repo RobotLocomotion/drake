@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/state.h"
@@ -32,6 +35,10 @@ template <typename T>
 class Context {
  public:
   virtual ~Context() {}
+
+  Context() = default;
+  Context(const Context&) = delete;
+  Context& operator=(const Context&) = delete;
 
   // =========================================================================
   // Accessors and Mutators for Time.

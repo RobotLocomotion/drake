@@ -22,6 +22,7 @@ cc_library(
         "drake_throw.h",
         "eigen_stl_types.h",
         "eigen_types.h",
+        "never_destroyed.h",
         "text_logging.h",
     ],
     linkstatic = 1,
@@ -106,8 +107,10 @@ cc_library(
         "symbolic_environment.cc",
         "symbolic_expression.cc",
         "symbolic_expression_cell.cc",
+        "symbolic_expression_cell.h",
         "symbolic_formula.cc",
         "symbolic_formula_cell.cc",
+        "symbolic_formula_cell.h",
         "symbolic_variable.cc",
         "symbolic_variables.cc",
     ],
@@ -115,9 +118,7 @@ cc_library(
         "hash.h",
         "symbolic_environment.h",
         "symbolic_expression.h",
-        "symbolic_expression_cell.h",
         "symbolic_formula.h",
-        "symbolic_formula_cell.h",
         "symbolic_variable.h",
         "symbolic_variables.h",
     ],
@@ -315,6 +316,13 @@ cc_googletest(
     deps = [
         ":common",
         ":is_approx_equal_abstol",
+    ],
+)
+
+cc_googletest(
+    name = "never_destroyed_test",
+    deps = [
+        ":common",
     ],
 )
 

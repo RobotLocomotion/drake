@@ -3,9 +3,11 @@
 #include <algorithm>  // for cpplint only
 #include <cstddef>
 #include <functional>
+#include <map>
 #include <memory>
 #include <ostream>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 #include <Eigen/Core>
@@ -53,8 +55,15 @@ enum class ExpressionKind {
 /** Total ordering between ExpressionKinds. */
 bool operator<(ExpressionKind k1, ExpressionKind k2);
 
-class ExpressionCell;  // In drake/common/symbolic_expression_cell.h
-class Formula;         // In drake/common/symbolic_formula.h
+class ExpressionCell;        // In drake/common/symbolic_expression_cell.h
+class ExpressionConstant;    // In drake/common/symbolic_expression_cell.h
+class ExpressionVar;         // In drake/common/symbolic_expression_cell.h
+class UnaryExpressionCell;   // In drake/common/symbolic_expression_cell.h
+class BinaryExpressionCell;  // In drake/common/symbolic_expression_cell.h
+class ExpressionAdd;         // In drake/common/symbolic_expression_cell.h
+class ExpressionMul;         // In drake/common/symbolic_expression_cell.h
+class ExpressionIfThenElse;  // In drake/common/symbolic_expression_cell.h
+class Formula;               // In drake/common/symbolic_formula.h
 
 /** Represents a symbolic form of an expression.
 
@@ -140,8 +149,8 @@ class Expression {
   /** Constructs a constant. */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Expression(double d);
-  /** Constructs a variable. */
-  explicit Expression(const Variable& name);
+  /** Constructs a variable expression from symbolic::Variable. */
+  explicit Expression(const Variable& var);
   /** Returns expression kind. */
   ExpressionKind get_kind() const;
   /** Returns hash value. */
@@ -260,6 +269,45 @@ class Expression {
 
   friend std::ostream& operator<<(std::ostream& os, const Expression& e);
   friend void swap(Expression& a, Expression& b) { std::swap(a.ptr_, b.ptr_); }
+
+  friend bool is_constant(const Expression& e);
+  friend bool is_variable(const Expression& e);
+  friend bool is_unary_minus(const Expression& e);
+  friend bool is_addition(const Expression& e);
+  friend bool is_multiplication(const Expression& e);
+  friend bool is_division(const Expression& e);
+  friend bool is_log(const Expression& e);
+  friend bool is_abs(const Expression& e);
+  friend bool is_exp(const Expression& e);
+  friend bool is_sqrt(const Expression& e);
+  friend bool is_pow(const Expression& e);
+  friend bool is_sin(const Expression& e);
+  friend bool is_cos(const Expression& e);
+  friend bool is_tan(const Expression& e);
+  friend bool is_asin(const Expression& e);
+  friend bool is_acos(const Expression& e);
+  friend bool is_atan(const Expression& e);
+  friend bool is_atan2(const Expression& e);
+  friend bool is_sinh(const Expression& e);
+  friend bool is_cosh(const Expression& e);
+  friend bool is_tanh(const Expression& e);
+  friend bool is_min(const Expression& e);
+  friend bool is_max(const Expression& e);
+  friend bool is_if_then_else(const Expression& e);
+
+  // Note that the following cast functions are only for low-level operations
+  // and not exposed to the user of drake/common/symbolic_expression.h
+  // header. These functions are declared in
+  // drake/common/symbolic_expression_cell.h header.
+  friend std::shared_ptr<ExpressionConstant> to_constant(const Expression& e);
+  friend std::shared_ptr<ExpressionVar> to_variable(const Expression& e);
+  friend std::shared_ptr<UnaryExpressionCell> to_unary(const Expression& e);
+  friend std::shared_ptr<BinaryExpressionCell> to_binary(const Expression& e);
+  friend std::shared_ptr<ExpressionAdd> to_addition(const Expression& e);
+  friend std::shared_ptr<ExpressionMul> to_multiplication(const Expression& e);
+  friend std::shared_ptr<ExpressionIfThenElse> to_if_then_else(
+      const Expression& e);
+
   friend class ExpressionAddFactory;
   friend class ExpressionMulFactory;
 
@@ -286,6 +334,34 @@ Expression& operator*=(Expression& lhs, const Expression& rhs);
 Expression operator/(Expression lhs, const Expression& rhs);
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator/=(Expression& lhs, const Expression& rhs);
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator+=(Expression& lhs, const Variable& rhs);
+Expression operator+(const Variable& lhs, const Variable& rhs);
+Expression operator+(Expression lhs, const Variable& rhs);
+Expression operator+(const Variable& lhs, Expression rhs);
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator-=(Expression& lhs, const Variable& rhs);
+Expression operator-(const Variable& lhs, const Variable& rhs);
+Expression operator-(Expression lhs, const Variable& rhs);
+Expression operator-(const Variable& lhs, Expression rhs);
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator*=(Expression& lhs, const Variable& rhs);
+Expression operator*(const Variable& lhs, const Variable& rhs);
+Expression operator*(Expression lhs, const Variable& rhs);
+Expression operator*(const Variable& lhs, Expression rhs);
+
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+Expression& operator/=(Expression& lhs, const Variable& rhs);
+Expression operator/(const Variable& lhs, const Variable& rhs);
+Expression operator/(Expression lhs, const Variable& rhs);
+Expression operator/(const Variable& lhs, const Expression& rhs);
+
+Expression operator+(const Variable& var);
+Expression operator-(const Variable& var);
+
 Expression log(const Expression& e);
 Expression abs(const Expression& e);
 Expression exp(const Expression& e);
@@ -309,9 +385,115 @@ void swap(Expression& a, Expression& b);
 
 std::ostream& operator<<(std::ostream& os, const Expression& e);
 
+/** Checks if @p e is a constant expression. */
+bool is_constant(const Expression& e);
+/** Checks if @p e is a constant expression representing @p v. */
+bool is_constant(const Expression& e, double v);
+/** Checks if @p e is 0.0. */
+bool is_zero(const Expression& e);
+/** Checks if @p e is 1.0. */
+bool is_one(const Expression& e);
+/** Checks if @p e is -1.0. */
+bool is_neg_one(const Expression& e);
+/** Checks if @p e is 2.0. */
+bool is_two(const Expression& e);
+/** Checks if @p e is a variable expression. */
+bool is_variable(const Expression& e);
+/** Checks if @p e is a unary-minus expression. */
+bool is_unary_minus(const Expression& e);
+/** Checks if @p e is an addition expression. */
+bool is_addition(const Expression& e);
+/** Checks if @p e is a multiplication expression. */
+bool is_multiplication(const Expression& e);
+/** Checks if @p e is a division expression. */
+bool is_division(const Expression& e);
+/** Checks if @p e is a log expression. */
+bool is_log(const Expression& e);
+/** Checks if @p e is an abs expression. */
+bool is_abs(const Expression& e);
+/** Checks if @p e is an exp expression. */
+bool is_exp(const Expression& e);
+/** Checks if @p e is a square-root expression. */
+bool is_sqrt(const Expression& e);
+/** Checks if @p e is a power-function expression. */
+bool is_pow(const Expression& e);
+/** Checks if @p e is a sine expression. */
+bool is_sin(const Expression& e);
+/** Checks if @p e is a cosine expression. */
+bool is_cos(const Expression& e);
+/** Checks if @p e is a tangent expression. */
+bool is_tan(const Expression& e);
+/** Checks if @p e is an arcsine expression. */
+bool is_asin(const Expression& e);
+/** Checks if @p e is an arccosine expression. */
+bool is_acos(const Expression& e);
+/** Checks if @p e is an arctangent expression. */
+bool is_atan(const Expression& e);
+/** Checks if @p e is an arctangent2 expression. */
+bool is_atan2(const Expression& e);
+/** Checks if @p e is a hyperbolic-sine expression. */
+bool is_sinh(const Expression& e);
+/** Checks if @p e is a hyperbolic-cosine expression. */
+bool is_cosh(const Expression& e);
+/** Checks if @p e is a hyperbolic-tangent expression. */
+bool is_tanh(const Expression& e);
+/** Checks if @p e is a min expression. */
+bool is_min(const Expression& e);
+/** Checks if @p e is a max expression. */
+bool is_max(const Expression& e);
+/** Checks if @p e is an if-then-else expression. */
+bool is_if_then_else(const Expression& e);
+
+/** Returns the constant value of the constant expression @p e.
+ *  \pre{@e is a constant expression.}
+ */
+double get_constant_value(const Expression& e);
+/** Returns the embedded symbolic variable in the variable expression @p e.
+ *  \pre{@e is a variable expression.}
+ */
+const Variable& get_variable(const Expression& e);
+/** Returns the argument in the unary expression @p e.
+ *  \pre{@e is a unary expression.}
+*/
+const Expression& get_argument(const Expression& e);
+/** Returns the first argument of the binary expression @p e.
+ *  \pre{@e is a binary expression.}
+*/
+const Expression& get_first_argument(const Expression& e);
+/** Returns the second argument of the binary expression @p e.
+ *  \pre{@e is a binary expression.}
+*/
+const Expression& get_second_argument(const Expression& e);
+/** Returns the constant term in the addition expression @p e. For instance,
+ *  given 7 + 2 * x + 3 * y, it returns 7.
+ *  \pre{@e is an addition expression.}
+*/
+double get_constant_term_in_addition(const Expression& e);
+/** Returns the terms in the expression @p e. @note This function assumes that
+ *  @p e is an addition expression. The return value is a std::map from a
+ *  symbolic expression to its coefficient in the summation. For instance, given
+ *  7 + 2 * x + 3 * y, the return value maps 'x' to 2 and 'y' to 3.
+ *  \pre{@e is an addition expression.}
+*/
+const std::map<Expression, double>& get_terms_in_addition(const Expression& e);
+/** Returns the constant factor in the multiplication expression @p e. For
+ *  instance, given 7 * x^2 * y^3, it returns 7.
+ *  \pre{@e is a multiplication expression.}
+*/
+double get_constant_factor_in_multiplication(const Expression& e);
+/** Returns the products in the expression @p e. @note This function assumes
+ *  that @p e is a multiplication expression. The return value is a std::map
+ *  from a base (symbolic expression) to its exponent (symbolic expression) in
+ *  the product. For instance, given 7 * x^2 * y^3, the return value maps 'x' to
+ *  2 and 'y' to 3.
+ *  \pre{@e is a multiplication expression.}
+*/
+const std::map<Expression, Expression>& get_products_in_multiplication(
+    const Expression& e);
+
 /** @relates Expression
- * Return a copy of @p lhs updated to record component-wise multiplication by a
- * constant @p rhs.
+ *  Return a copy of @p lhs updated to record component-wise multiplication by a
+ *  constant @p rhs.
  */
 template <typename MatrixL>
 typename std::enable_if<
@@ -323,8 +505,8 @@ operator*(const MatrixL& lhs, double rhs) {
 }
 
 /** @relates Expression
- * Return a copy of @p rhs updated to record component-wise multiplication by a
- * constant @p rhs.
+ *  Return a copy of @p rhs updated to record component-wise multiplication by a
+ *  constant @p rhs.
  */
 template <typename MatrixR>
 typename std::enable_if<
@@ -450,6 +632,39 @@ struct NumTraits<drake::symbolic::Expression>
   struct Div {
     enum { Cost = 1 };
   };
+};
+
+// Informs Eigen that Variable op Variable gets Expression.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<drake::symbolic::Variable,
+                            drake::symbolic::Variable, BinaryOp> {
+  typedef drake::symbolic::Expression ReturnType;
+};
+
+// Informs Eigen that Variable op Expression gets Expression.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<drake::symbolic::Variable,
+                            drake::symbolic::Expression, BinaryOp> {
+  typedef drake::symbolic::Expression ReturnType;
+};
+
+// Informs Eigen that Expression op Variable gets Expression.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<drake::symbolic::Expression,
+                            drake::symbolic::Variable, BinaryOp> {
+  typedef drake::symbolic::Expression ReturnType;
+};
+
+// Informs Eigen that Variable op double gets Expression.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<drake::symbolic::Variable, double, BinaryOp> {
+  typedef drake::symbolic::Expression ReturnType;
+};
+
+// Informs Eigen that double op Variable gets Expression.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<double, drake::symbolic::Variable, BinaryOp> {
+  typedef drake::symbolic::Expression ReturnType;
 };
 
 namespace internal {

@@ -58,22 +58,21 @@ void PidControlledSystem<T>::Initialize(
       plant_->get_input_port(0), plant_->get_output_port(0),
       std::move(feedback_selector), Kp, Ki, Kd, &builder);
 
-  builder.ExportInput(input_ports.first);
-  builder.ExportInput(input_ports.second);
+  builder.ExportInput(input_ports.control_input_port);
+  builder.ExportInput(input_ports.state_input_port);
   builder.ExportOutput(plant_->get_output_port(0));
   builder.BuildInto(this);
 }
 
 template <typename T>
-std::pair<const InputPortDescriptor<T>,
-          const InputPortDescriptor<T>>
-    PidControlledSystem<T>::ConnectController(
-        const InputPortDescriptor<T>& plant_input,
-        const OutputPortDescriptor<T>& plant_output,
-        std::unique_ptr<MatrixGain<T>> feedback_selector,
-        const VectorX<T>& Kp, const VectorX<T>& Ki,
-        const VectorX<T>& Kd,
-        DiagramBuilder<T>* builder) {
+typename PidControlledSystem<T>::ConnectResult
+PidControlledSystem<T>::ConnectController(
+    const InputPortDescriptor<T>& plant_input,
+    const OutputPortDescriptor<T>& plant_output,
+    std::unique_ptr<MatrixGain<T>> feedback_selector,
+    const VectorX<T>& Kp, const VectorX<T>& Ki,
+    const VectorX<T>& Kd,
+    DiagramBuilder<T>* builder) {
   if (feedback_selector == nullptr) {
     // No feedback selector was provided. Create a GainMatrix containing an
     // identity matrix, which results in every element of the plant's output
@@ -136,8 +135,10 @@ std::pair<const InputPortDescriptor<T>,
   builder->Connect(plant_input_adder->get_output_port(),
                    plant_input);
 
-  return std::make_pair(plant_input_adder->get_input_port(1),
-                        error_inverter->get_input_port());
+  return ConnectResult{
+    plant_input_adder->get_input_port(1),
+    error_inverter->get_input_port(),
+  };
 }
 
 template <typename T>

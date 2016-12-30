@@ -1,6 +1,8 @@
 #pragma once
 
 #include <iostream>
+#include <memory>
+#include <utility>
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"

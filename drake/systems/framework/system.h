@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <limits>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -702,12 +703,6 @@ class System {
   /// Constructs an empty %System base class object.
   System() {}
 
-  /// Adds a port with the specified @p descriptor to the input topology.
-  void DeclareInputPort(const InputPortDescriptor<T>& descriptor) {
-    DRAKE_ASSERT(descriptor.get_index() == get_num_input_ports());
-    input_ports_.emplace_back(descriptor);
-  }
-
   /// Adds a port with the specified @p type and @p size to the input topology.
   /// @return descriptor of declared port.
   const InputPortDescriptor<T>& DeclareInputPort(PortDataType type, int size) {
@@ -720,12 +715,6 @@ class System {
   /// @return descriptor of declared port.
   const InputPortDescriptor<T>& DeclareAbstractInputPort() {
     return DeclareInputPort(kAbstractValued, 0 /* size */);
-  }
-
-  /// Adds a port with the specified @p descriptor to the output topology.
-  void DeclareOutputPort(const OutputPortDescriptor<T>& descriptor) {
-    DRAKE_ASSERT(descriptor.get_index() == get_num_output_ports());
-    output_ports_.emplace_back(descriptor);
   }
 
   /// Adds a port with the specified @p type and @p size to the output topology.

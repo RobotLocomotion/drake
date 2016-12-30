@@ -11,5 +11,5 @@ if(PYTHON_EXECUTABLE)
     NAME yaml_load_test
     COMMAND ${PYTHON_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/yaml_load_test.py
-    ${CMAKE_CURRENT_BINARY_DIR}/yaml_load)
+    $<TARGET_FILE:yaml_load>)
 endif()

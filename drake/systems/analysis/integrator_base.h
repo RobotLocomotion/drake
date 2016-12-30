@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <memory>
 #include <utility>
 
 #include "drake/common/drake_assert.h"

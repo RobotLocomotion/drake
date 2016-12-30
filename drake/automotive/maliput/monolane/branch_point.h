@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <vector>
 
 #include "drake/automotive/maliput/api/branch_point.h"

@@ -308,7 +308,7 @@ drake_add_external(director PUBLIC CMAKE TEST PYTHON
   DEPENDS bot_core_lcmtypes drake lcm libbot)
 
 # signalscope
-drake_add_external(signalscope PUBLIC
+drake_add_external(signalscope PUBLIC CMAKE PYTHON
   DEPENDS director)
 
 # END external projects

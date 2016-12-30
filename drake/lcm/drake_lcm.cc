@@ -1,5 +1,7 @@
 #include "drake/lcm/drake_lcm.h"
 
+#include <utility>
+
 #include "drake/common/drake_assert.h"
 
 namespace drake {

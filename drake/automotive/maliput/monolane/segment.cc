@@ -1,5 +1,7 @@
 #include "drake/automotive/maliput/monolane/segment.h"
 
+#include <utility>
+
 #include "drake/automotive/maliput/monolane/arc_lane.h"
 #include "drake/automotive/maliput/monolane/junction.h"
 #include "drake/automotive/maliput/monolane/lane.h"

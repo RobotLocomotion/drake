@@ -5,6 +5,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -98,6 +99,11 @@ class RigidBody {
    * @return The parent joint of this rigid body.
    */
   const DrakeJoint& getJoint() const;
+
+  /**
+   * Reports if the body has a parent joint.
+   */
+  bool has_joint() const { return joint_ != nullptr; }
 
   /**
    * Sets the parent rigid body. This is the rigid body that is connected to

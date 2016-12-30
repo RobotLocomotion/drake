@@ -11,6 +11,7 @@
 #if __cplusplus <= 201103L  // If C++11 or earlier, we need our own make_unique.
 
 #include <memory>
+#include <utility>
 
 namespace std {
 template<typename T, typename... Args>

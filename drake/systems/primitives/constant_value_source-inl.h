@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+
 /// @file
 /// Template method implementations for constant_value_source.h.
 /// Most users should only include that file, not this one.
