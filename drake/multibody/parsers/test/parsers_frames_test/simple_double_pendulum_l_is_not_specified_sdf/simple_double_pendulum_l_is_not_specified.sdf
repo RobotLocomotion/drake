@@ -120,18 +120,18 @@
     <joint name="joint2" type="revolute">
       <parent>upper_arm</parent>
       <child>lower_arm</child>
-      <!-- Pose of the link frame F -->
+      <!-- Pose of the joint outboard frame M -->
       <!-- When its outboard link frame L was defined by the
-           corresponding <link>, F is expressed in L, i.e. <pose>specifies
-           X_LF.
-           When its outboard frame link L was NOT specified, F is expressed
-           in the model frame D, i.e. <pose>specifies X_DF. -->
+           corresponding <link>, M is expressed in L, i.e. <pose> specifies
+           X_LM.
+           When its outboard frame link L was NOT specified, M is expressed
+           in the model frame D, i.e. <pose> specifies X_DM. -->
       <!-- In this case the outboard link frame L was not specified and
-      therefore <pose>is giving X_DF -->
+      therefore <pose> is giving X_DM -->
       <pose>0 -1.0 0 0 0 0</pose>
       <axis>
         <xyz>0 0 1</xyz>
-        <!-- The default is the axis expressed in the inboard frame F. -->
+        <!-- The default is the axis expressed in the joint inboard frame F. -->
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
