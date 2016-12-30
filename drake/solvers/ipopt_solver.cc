@@ -455,7 +455,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
            binding.variable_list().variables()) {
         DRAKE_ASSERT(v.cols() == 1);
         for (int j = 0; j < v.size(); ++j) {
-          size_t vj_index = problem_->FindDecisionVariableIndex(v(j, 0));
+          const size_t vj_index = problem_->FindDecisionVariableIndex(v(j, 0));
           cost_cache_->grad[vj_index] += ty(0).derivatives()(vj_index);
         }
       }

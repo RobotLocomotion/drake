@@ -534,7 +534,7 @@ class PositiveSemidefiniteConstraint : public Constraint {
    *
    * // Add a 2 x 2 symmetric matrix S to optimization program as new decision
    * // variables.
-   * auto S = prog.AddSymmetricContinuousVariables<2>("S");
+   * auto S = prog.NewSymmetricContinuousVariables<2>("S");
    *
    * // Impose a positive semidefinite constraint on S.
    * std::shared_ptr<PositiveSemidefiniteConstraint> psd_constraint =

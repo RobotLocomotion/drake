@@ -53,7 +53,7 @@ class VariableList {
    * MathematicalProgram prog;
    *
    * // Add a vector containing 4 decision variables.
-   * auto x = prog.AddContinuousVariables<4>();
+   * auto x = prog.NewContinuousVariables<4>();
    *
    * // x1 contains x(0), x(1), x(2).
    * DecisionVariableVector<3> x1 = x.head<3>();
