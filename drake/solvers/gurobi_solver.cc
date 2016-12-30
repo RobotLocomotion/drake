@@ -161,6 +161,11 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
              double sparseness_threshold) {
   // Aggregates the quadratic costs and linear costs in the form
   // 0.5 * x' * Q_all * x + linear_term' * x.
+  //
+  // Note: Gurobi does not accept constant term in its objective function.
+  // On the other hand, our quadratic cost can accept a constant term
+  // (@see AddQuadraticErrorCost). So the objective value computed from Gurobi
+  // can be different from the original optimization problem by a constant.
   using std::abs;
   // record the non-zero entries in the cost 0.5*x'*Q*x + b'*x.
   std::vector<Eigen::Triplet<double>> Q_nonzero_coefs;

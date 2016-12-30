@@ -136,8 +136,13 @@ class QuadraticConstraint : public Constraint {
   static const int kNumConstraints = 1;
 
   QuadraticConstraint(const Eigen::Ref<const Eigen::MatrixXd>& Q,
-                      const Eigen::Ref<const Eigen::VectorXd>& b,
-                      double c, double lb, double ub) : Constraint(kNumConstraints, drake::Vector1d::Constant(lb), drake::Vector1d::Constant(ub)), Q_(Q), b_(b), c_(c) {
+                      const Eigen::Ref<const Eigen::VectorXd>& b, double c,
+                      double lb, double ub)
+      : Constraint(kNumConstraints, drake::Vector1d::Constant(lb),
+                   drake::Vector1d::Constant(ub)),
+        Q_(Q),
+        b_(b),
+        c_(c) {
     DRAKE_ASSERT(Q_.rows() == Q_.cols());
     DRAKE_ASSERT(Q_.cols() == b_.rows());
   }
@@ -170,7 +175,7 @@ class QuadraticConstraint : public Constraint {
   virtual const Eigen::VectorXd& b() const { return b_; }
 
   /** Getter for the constant term. */
-  double constant_term() const {return c_;}
+  double constant_term() const { return c_; }
 
   /**
    * Updates the quadratic and linear term of the constraint. The new

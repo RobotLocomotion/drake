@@ -834,11 +834,8 @@ class MathematicalProgram {
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired,
       const VariableListRef& vars) {
-    auto cost = std::make_shared<QuadraticConstraint>(
-        2 * Q, -2 * Q * x_desired, -std::numeric_limits<double>::infinity(),
-        std::numeric_limits<double>::infinity());
-    AddCost(cost, vars);
-    return cost;
+    return AddQuadraticCost(2 * Q, -2 * Q * x_desired,
+                            (x_desired.transpose() * Q * x_desired)(0), vars);
   }
 
   /**
@@ -860,8 +857,20 @@ class MathematicalProgram {
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& b, const VariableListRef& vars) {
+    return AddQuadraticCost(Q, b, 0, vars);
+  }
+
+  /**
+   * Adds a cost term of the form 0.5*x'*Q*x + b'x + c
+   * Applied to subset of the variables.
+   */
+  template <typename DerivedQ, typename Derivedb>
+  std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
+      const Eigen::MatrixBase<DerivedQ>& Q,
+      const Eigen::MatrixBase<Derivedb>& b, double c,
+      const VariableListRef& vars) {
     auto cost = std::make_shared<QuadraticConstraint>(
-        Q, b, -std::numeric_limits<double>::infinity(),
+        Q, b, c, -std::numeric_limits<double>::infinity(),
         std::numeric_limits<double>::infinity());
     AddCost(cost, vars);
     return cost;

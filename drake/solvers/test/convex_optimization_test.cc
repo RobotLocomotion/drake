@@ -465,6 +465,12 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
 
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-4,
                                 MatrixCompareType::absolute));
+    Eigen::VectorXd objective_value;
+    objective->Eval(x_value, objective_value);
+    EXPECT_TRUE(CompareMatrices(
+        objective_value,
+        (x_value - x_desired).transpose() * Q * (x_value - x_desired), 1E-14,
+        MatrixCompareType::absolute));
   }
 
   // provide some test coverage for changing Q
