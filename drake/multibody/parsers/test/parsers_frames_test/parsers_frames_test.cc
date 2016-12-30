@@ -9,8 +9,8 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/parsers/sdf_parser.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 using std::endl;
@@ -23,12 +23,6 @@ using std::vector;
 
 using Eigen::Vector3d;
 using Eigen::VectorXd;
-
-// Enable the following macro and disable the subsequent one for debugging
-// purposes.
-//
-// #define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-#define PRINT_VAR(x)
 
 namespace drake {
 
@@ -49,7 +43,6 @@ class DoublePendulumFramesTest : public ::testing::Test {
     expected_Bo_W_.resize(kNumBodiesInTree);
     expected_Bcm_B_.resize(kNumBodiesInTree);
     expected_Bcm_W_.resize(kNumBodiesInTree);
-    q.resize(kNumBodiesInTree);
   }
 
   void LoadTreeFrom(const string& file_name) {
@@ -71,6 +64,9 @@ class DoublePendulumFramesTest : public ::testing::Test {
       AddModelInstancesFromSdfFileToWorld(
           full_name, drake::multibody::joints::kFixed, tree_.get());
     }
+
+    DRAKE_DEMAND(tree_->get_num_positions() == 2);
+    q_ = VectorXd::Zero(tree_->get_num_positions());
 
     world_id_ = tree_->FindBody("world")->get_body_index();
     base_id_ = tree_->FindBody("base")->get_body_index();
@@ -96,13 +92,13 @@ class DoublePendulumFramesTest : public ::testing::Test {
   // Note that the input parameters must be in degree units!
   void SetState(double theta1_degrees, double theta2_degrees) {
     const double deg_to_rad = M_PI / 180.0;
-    q(axis1_index_) = theta1_degrees * deg_to_rad;
-    q(axis2_index_) = theta2_degrees * deg_to_rad;
+    q_(axis1_index_) = theta1_degrees * deg_to_rad;
+    q_(axis2_index_) = theta2_degrees * deg_to_rad;
   }
 
   void ComputeAnalyticalSolution() {
-    double theta1 = q(axis1_index_);
-    double theta2 = q(axis2_index_);
+    double theta1 = q_(axis1_index_);
+    double theta2 = q_(axis2_index_);
     // Body "upper_arm".
     expected_Bo_W_[upper_arm_id_] = Vector3d(0.0, 0.0, 0.0);
     expected_Bcm_B_[upper_arm_id_] = Vector3d(0.0, -0.5, 0.0);
@@ -121,23 +117,12 @@ class DoublePendulumFramesTest : public ::testing::Test {
       const vector<Vector3d> &expected_Bcm_B,
       const vector<Vector3d> &expected_Bcm_W) {
     VectorXd v = VectorXd::Zero(tree_->get_num_velocities());
-
-    KinematicsCache<double> cache = tree_->doKinematics(q, v);
+    KinematicsCache<double> cache = tree_->doKinematics(q_, v);
 
     for (int i = 2; i < tree_->get_num_bodies(); ++i) {
       auto Bo_W = tree_->transformPoints(cache, Vector3d::Zero(), i, 0);
       auto Bcm_B = tree_->get_body(i).get_center_of_mass();
       auto Bcm_W = tree_->transformPoints(cache, Bcm_B, i, 0);
-
-      PRINT_VAR(tree_->get_body(i).get_name());
-      PRINT_VAR(Bo_W.transpose());
-      PRINT_VAR(expected_Bo_W[i].transpose());
-
-      PRINT_VAR(Bcm_B.transpose());
-      PRINT_VAR(expected_Bcm_B[i].transpose());
-
-      PRINT_VAR(Bcm_W.transpose());
-      PRINT_VAR(expected_Bcm_W[i].transpose());
 
       EXPECT_TRUE(Bo_W.isApprox(expected_Bo_W[i]));
       EXPECT_TRUE(Bcm_B.isApprox(expected_Bcm_B[i]));
@@ -157,7 +142,7 @@ class DoublePendulumFramesTest : public ::testing::Test {
   vector<Vector3d> expected_Bo_W_;
   vector<Vector3d> expected_Bcm_B_;
   vector<Vector3d> expected_Bcm_W_;
-  VectorXd q;
+  VectorXd q_;
 };
 
 TEST_F(DoublePendulumFramesTest, UrdfTest) {
@@ -174,12 +159,12 @@ TEST_F(DoublePendulumFramesTest, UrdfTest) {
   RunTest(12.0, -18.0);
 }
 
-// In this case the simple pendulum model is loaded form an SDF file
+// In this case the simple double pendulum model is loaded from an SDF file
 // explicitly specifying the link frames L to be located at the mobile frames
-// B (recall B = M in Drake).
-// In this case, <joint> does not need to specify its pose with respect to
-// the parent body, i.e. X_PF is not specified, no <pose> given in <joint>.
-// Therefore the inertial frames I need to be specified as doen in URDF files.
+// B (recall B = M in Drake). In this case, <joint> does not need to specify its
+// pose with respect to the parent body, i.e., X_PF is not specified, no <pose>
+// given in <joint>. Therefore the inertial frames I need to be specified as
+// done in URDF files.
 TEST_F(DoublePendulumFramesTest, SdfTestWhereLequalsB) {
   LoadTreeFrom("simple_double_pendulum_l_equals_b_sdf/"
                "simple_double_pendulum_l_equals_b.sdf");
@@ -188,7 +173,8 @@ TEST_F(DoublePendulumFramesTest, SdfTestWhereLequalsB) {
   EXPECT_EQ(tree_->get_num_positions(), 2);
   EXPECT_EQ(tree_->get_num_velocities(), 2);
 
-  // Runs a number of tests for different joint angles in degrees.
+  // Runs a number of tests for different joint angles. The joint angles are
+  // in units of degrees.
   RunTest(0.0, 0.0);
   RunTest(0.0, 45.0);
   RunTest(45.0, 0.0);
@@ -208,22 +194,22 @@ TEST_F(DoublePendulumFramesTest, SdfTestLisNotSpecified) {
   EXPECT_EQ(tree_->get_num_positions(), 2);
   EXPECT_EQ(tree_->get_num_velocities(), 2);
 
-  // Runs a number of tests for different joint angles in degrees.
+  // Runs a number of tests for different joint angles. The joint angles are
+  // in units of degrees.
   RunTest(0.0, 0.0);
   RunTest(0.0, 45.0);
   RunTest(45.0, 0.0);
   RunTest(12.0, -18.0);
 }
 
-// The following tests are commented out since they fail to pass even when
-// Drake sdf parser is supposed to handle these cases well. See #4641.
+// The following tests are disabled because they fail to pass. See #4641.
 
 // TODO(liang.fok) Enable this test once #4641 is resolved.
 //
 // In this case the frame L for the lower arm is specified to be half way
-// through between the body frame B and the inertial frame I.
-// Since the link inboard frame is specified in the link's frame L, the
-// <pose> entry for joint "shaft2" must be specified accordingly.
+// through between the body frame B and the inertial frame I. Since the link
+// inboard frame is specified in the link's frame L, the <pose> entry for joint
+// "shaft2" must be specified accordingly.
 TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLBetweenBandI) {
   LoadTreeFrom("simple_double_pendulum_l_between_b_and_i_sdf/"
                "simple_double_pendulum_l_between_b_and_i.sdf");
@@ -232,7 +218,8 @@ TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLBetweenBandI) {
   EXPECT_EQ(tree_->get_num_positions(), 2);
   EXPECT_EQ(tree_->get_num_velocities(), 2);
 
-  // Runs a number of tests for different joint angles in degrees.
+  // Runs a number of tests for different joint angles. The joint angles are
+  // in units of degrees.
   RunTest(0.0, 0.0);
   RunTest(0.0, 45.0);
   RunTest(45.0, 0.0);
@@ -241,10 +228,10 @@ TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLBetweenBandI) {
 
 // TODO(liang.fok) Enable this test once #4641 is resolved.
 //
-// In this case the link frame L for the lower arm is defined to be
-// coincident with the inertial frame I of the link.
-// Since the pose of the joints are given in the outboard link frame, we need
-// to specify the joint pose accordingly as well.
+// In this case the link frame L of the lower arm is defined to be coincident
+// with the inertial frame I of the link. Since the pose of the joints are given
+// in the outboard link frame, we need to specify the joint pose accordingly as
+// well.
 TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLequalsI) {
   LoadTreeFrom("simple_double_pendulum_l_equals_i_sdf/"
                "simple_double_pendulum_l_equals_i.sdf");
@@ -253,7 +240,8 @@ TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLequalsI) {
   EXPECT_EQ(tree_->get_num_positions(), 2);
   EXPECT_EQ(tree_->get_num_velocities(), 2);
 
-  // Runs a number of tests for different joint angles in degrees.
+  // Runs a number of tests for different joint angles. The joint angles are
+  // in units of degrees.
   RunTest(0.0, 0.0);
   RunTest(0.0, 45.0);
   RunTest(45.0, 0.0);

@@ -1,8 +1,8 @@
-To load these models into Gazebo, first update the `GAZEBO_MODEL_PATH`
-environment variable:
+To load these models into Gazebo, first update environment variable
+`GAZEBO_MODEL_PATH` by executing the following command:
 
-    cd drake-distro/drake/multibody/parsers/test/parsers_frames_test
     export GAZEBO_MODEL_PATH=`pwd`:$GAZEBO_MODEL_PATH
 
-Then, launch `gazebo` and then import the models by clicking and dragging on the
-model's name into the simulation.
+Then launch `gazebo`, switch to the "Insert" tab on the left hand side of
+Gazebo's GUI, and import the desired model by clicking and dragging it into the
+simulation.
