@@ -37,7 +37,7 @@ TaylorVecXd MakeInputTaylorVec(const MathematicalProgram& prog,
     DRAKE_ASSERT(v.cols() == 1);
     int num_v_variables = v.size();
     for (int i = 0; i < num_v_variables; ++i) {
-      this_x(index + i) = tx(prog.decision_variable_index(v(i, 0)));
+      this_x(index + i) = tx(prog.FindDecisionVariableIndex(v(i, 0)));
     }
     index += num_v_variables;
   }
@@ -74,7 +74,7 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
       int num_v_variables = v.size();
       this_x.conservativeResize(index + num_v_variables);
       for (int i = 0; i < num_v_variables; ++i) {
-        this_x(index + i) = tx(prog->decision_variable_index(v(i, 0)));
+        this_x(index + i) = tx(prog->FindDecisionVariableIndex(v(i, 0)));
       }
       index += num_v_variables;
     }
@@ -87,7 +87,7 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
            binding.variable_list().variables()) {
         DRAKE_ASSERT(v.cols() == 1);
         for (int j = 0; j < v.size(); ++j) {
-          size_t vj_index = prog->decision_variable_index(v(j, 0));
+          size_t vj_index = prog->FindDecisionVariableIndex(v(j, 0));
           grad[vj_index] += ty(0).derivatives()(vj_index);
         }
       }
@@ -219,7 +219,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
       int num_v_variable = v.size();
       std::vector<size_t> v_index(num_v_variable);
       for (int i = 0; i < num_v_variable; ++i) {
-        v_index[i] = wrapped->prog->decision_variable_index(v(i, 0));
+        v_index[i] = wrapped->prog->FindDecisionVariableIndex(v(i, 0));
       }
       for (size_t i = 0; i < num_constraints; i++) {
         if (!wrapped->active_constraints.count(i)) {
@@ -336,7 +336,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
          binding.variable_list().variables()) {
       DRAKE_ASSERT(v.cols() == 1);
       for (int k = 0; k < v.size(); ++k) {
-        const size_t idx = prog.decision_variable_index(v(k, 0));
+        const size_t idx = prog.FindDecisionVariableIndex(v(k, 0));
         xlow[idx] = std::max(lower_bound(var_count), xlow[idx]);
         xupp[idx] = std::min(upper_bound(var_count), xupp[idx]);
         if (x[idx] < xlow[idx]) {

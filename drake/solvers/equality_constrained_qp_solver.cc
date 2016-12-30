@@ -66,7 +66,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       DRAKE_ASSERT(v.cols() == 1);
       std::vector<size_t> v_index(num_v_variables);
       for (int i = 0; i < num_v_variables; ++i) {
-        v_index[i] = prog.decision_variable_index(v(i, 0));
+        v_index[i] = prog.FindDecisionVariableIndex(v(i, 0));
       }
       for (int i = 0; i < num_v_variables; ++i) {
         for (int j = 0; j < num_v_variables; ++j) {
@@ -90,8 +90,8 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       DRAKE_ASSERT(v.cols() == 1);
       int num_v_variables = v.rows();
       for (int i = 0; i < num_v_variables; ++i) {
-        A.block(constraint_index, prog.decision_variable_index(v(i, 0)), n, 1) =
-            bc->A().col(var_index + i);
+        A.block(constraint_index, prog.FindDecisionVariableIndex(v(i, 0)), n,
+                1) = bc->A().col(var_index + i);
       }
       var_index += num_v_variables;
     }

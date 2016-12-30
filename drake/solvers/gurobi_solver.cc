@@ -84,7 +84,7 @@ int AddSecondOrderConeConstraints(
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         variable_indices.push_back(
-            static_cast<int>(prog.decision_variable_index(var(i, 0))));
+            static_cast<int>(prog.FindDecisionVariableIndex(var(i, 0))));
       }
     }
     int num_x = static_cast<int>(variable_indices.size());
@@ -176,7 +176,7 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
     DRAKE_ASSERT(Q.rows() == constraint_variable_dimension);
 
     // constraint_variable_index[i] is the index of the i'th decision variable
-    // binding.VariableListToVectorXd(i).
+    // binding.GetFlattendSolution(i).
     std::vector<int> constraint_variable_index(constraint_variable_dimension);
     int constraint_variable_count = 0;
     for (const DecisionVariableMatrixX& var :
@@ -184,7 +184,7 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         constraint_variable_index[constraint_variable_count] =
-            prog.decision_variable_index(var(i, 0));
+            prog.FindDecisionVariableIndex(var(i, 0));
         constraint_variable_count++;
       }
     }
@@ -221,7 +221,7 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         b_nonzero_coefs.push_back(
-            Eigen::Triplet<double>(prog.decision_variable_index(var(i, 0)), 0,
+            Eigen::Triplet<double>(prog.FindDecisionVariableIndex(var(i, 0)), 0,
                                    c(constraint_variable_count)));
         constraint_variable_count++;
       }
@@ -289,7 +289,7 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
          binding.variable_list().variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        variable_indices.push_back(prog.decision_variable_index(var(i, 0)));
+        variable_indices.push_back(prog.FindDecisionVariableIndex(var(i, 0)));
       }
     }
     const int error =
@@ -310,7 +310,7 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
          binding.variable_list().variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        variable_indices.push_back(prog.decision_variable_index(var(i, 0)));
+        variable_indices.push_back(prog.FindDecisionVariableIndex(var(i, 0)));
       }
     }
     const Eigen::MatrixXd& A = constraint->A();
@@ -404,7 +404,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
          binding.variable_list().variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int k = 0; k < var.rows(); ++k) {
-        const int idx = prog.decision_variable_index(var(k, 0));
+        const int idx = prog.FindDecisionVariableIndex(var(k, 0));
         xlow[idx] = std::max(lower_bound(var_idx), xlow[idx]);
         xupp[idx] = std::min(upper_bound(var_idx), xupp[idx]);
         var_idx++;
