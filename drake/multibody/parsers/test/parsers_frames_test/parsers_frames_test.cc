@@ -148,27 +148,27 @@ class DoublePendulumFramesTest : public ::testing::Test {
   VectorXd q_;
 };
 
+// In this test the simple double pendulum model is loaded from a URDF file.
 TEST_F(DoublePendulumFramesTest, UrdfTest) {
   LoadAndRunTests("simple_double_pendulum_urdf/simple_double_pendulum.urdf");
 }
 
-// In this case the simple double pendulum model is loaded from an SDF file
+// In this test the simple double pendulum model is loaded from an SDF file
 // explicitly specifying the link frames L to be located at the mobile frames
 // B (recall B = M in Drake). In this case, <joint> does not need to specify its
-// pose with respect to the parent body, i.e., X_PF is not specified, no <pose>
-// given in <joint>. Therefore the inertial frames I need to be specified as
-// done in URDF files.
+// pose with respect to the parent body, i.e., X_PF is not specified and no
+// <pose> is given in <joint>. Therefore the inertial frames, I, need to be
+// specified as done in URDF files.
 TEST_F(DoublePendulumFramesTest, SdfTestWhereLequalsB) {
   LoadAndRunTests(
       "simple_double_pendulum_l_equals_b_sdf/"
       "simple_double_pendulum_l_equals_b.sdf");
 }
 
-// In this case the link frame L for "lower_arm" is not specified (no
-// <pose> entry is given for this link).
-// Therefore the parser makes L = F where frame F is specified by a <pose> in
-// the joint "shaft2" expressed in the model frame D, i.e. <pose> is giving
-// X_DF for "shaft2".
+// In this test the link frame L for "lower_arm" is not specified (no
+// <pose> entry is given for this link). Therefore the parser makes L = F where
+// F is a frame specified by a <pose> in the joint "joint2" expressed in the
+// model frame, D, i.e., <pose> is giving X_DF for "joint2".
 TEST_F(DoublePendulumFramesTest, SdfTestLisNotSpecified) {
   LoadAndRunTests(
       "simple_double_pendulum_l_is_not_specified_sdf/"
@@ -179,10 +179,10 @@ TEST_F(DoublePendulumFramesTest, SdfTestLisNotSpecified) {
 
 // TODO(liang.fok) Enable this test once #4641 is resolved.
 //
-// In this case the frame L for the lower arm is specified to be half way
-// through between the body frame B and the inertial frame I. Since the link
-// inboard frame is specified in the link's frame L, the <pose> entry for joint
-// "shaft2" must be specified accordingly.
+// In this test the frame L for the lower arm is specified to be half way
+// between the body frame B and the inertial frame I. Since the link inboard
+// frame is specified in the link's frame L, the <pose> entry for joint "joint2"
+// must be specified accordingly.
 TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLBetweenBandI) {
   LoadAndRunTests(
       "simple_double_pendulum_l_between_b_and_i_sdf/"
@@ -191,7 +191,7 @@ TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLBetweenBandI) {
 
 // TODO(liang.fok) Enable this test once #4641 is resolved.
 //
-// In this case the link frame L of the lower arm is defined to be coincident
+// In this test the link frame L of the lower arm is defined to be coincident
 // with the inertial frame I of the link. Since the pose of the joints are given
 // in the outboard link frame, we need to specify the joint pose accordingly as
 // well.
