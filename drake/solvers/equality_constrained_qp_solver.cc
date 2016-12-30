@@ -21,7 +21,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // | A  0  | | y | = |  b |
   // for problem variables x and Lagrange multiplier variables y. This
   // corresponds to the QP:
-  // minimize 1/2 x'*G*x + c'*x
+  // minimize 1/2 x'*G*x + c'*x + d
   // s.t.:    A*x = b
   // Approach 1: Solve the full linear system above.
   // Approach 2: Use the Schur complement ("range space" approach).
