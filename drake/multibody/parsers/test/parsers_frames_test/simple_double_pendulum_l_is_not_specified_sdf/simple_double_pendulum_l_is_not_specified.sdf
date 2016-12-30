@@ -1,21 +1,20 @@
-<sdf version='1.5'>
+<sdf version="1.5">
   <!-- TODO(liang.fok): The color specifications used for the links in this SDF
   are custom to the Gazebo simulator. Consider modifying Drake to support them.
   Maybe this can be done in conjunction with the switch to OSRF's SDF parser,
   see #4337. -->
-  <model name='Simple_Double_Pendulum_L_Is_Not_Specified'>
+  <model name="Simple_Double_Pendulum_L_Is_Not_Specified">
     <!-- Specifies X_WD, which is the model frame, D, expressed in the world
     frame, W. -->
-    <pose frame=''>0 0 0 0 0 0</pose>
-
-    <link name='base'>
+    <pose frame="">0 0 0 0 0 0</pose>
+    <link name="base">
       <!-- Specifies X_DL, which is the link frame, L, expressed in the model
       frame, D. -->
-      <pose frame=''>0 0 0 0 0 0</pose>
+      <pose frame="">0 0 0 0 0 0</pose>
       <inertial>
         <!-- Specifies X_IL, the inertial frame, I, expressed in the link frame,
         L. -->
-        <pose frame=''>0 0 0 0 0 0</pose>
+        <pose frame="">0 0 0 0 0 0</pose>
         <mass>1.0</mass>
         <inertia>
           <ixx>0</ixx>
@@ -26,8 +25,8 @@
           <izz>0</izz>
         </inertia>
       </inertial>
-      <visual name='base_visual'>
-        <pose frame=''>0 0 0 0 0 0</pose>
+      <visual name="base_visual">
+        <pose frame="">0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>1 0.2 1</size>
@@ -41,14 +40,13 @@
         </material>
       </visual>
     </link>
-
-<link name='upper_arm'>
+    <link name="upper_arm">
       <!-- This specifies X_DL.
            Explicitly make it to be at Bo.-->
-      <pose frame=''>0 0 0 0 0 0</pose>
+      <pose frame="">0 0 0 0 0 0</pose>
       <inertial>
         <!-- This specifies X_LI. -->
-        <pose frame=''>0 -0.5 0 0 0 0</pose>
+        <pose frame="">0 -0.5 0 0 0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0</ixx>
@@ -59,8 +57,8 @@
           <izz>0</izz>
         </inertia>
       </inertial>
-      <visual name='upper_arm_visual'>
-        <pose frame=''>0 -0.5 0 1.57079632679 0 0</pose>
+      <visual name="upper_arm_visual">
+        <pose frame="">0 -0.5 0 1.57079632679 0 0</pose>
         <geometry>
           <cylinder>
             <length>1</length>
@@ -75,15 +73,14 @@
         </material>
       </visual>
     </link>
-
-    <link name='lower_arm'>
+    <link name="lower_arm">
       <!-- This specifies X_DL. When L is not specified, the parsers makes L = F
        when parsing the joint. The parser will then expect F to be expressed in
        the model frame D-->
-      <!-- <pose>0 0 0 0 0 0</pose> -->
+      <!-- <pose>0 0 0 0 0 0</pose>-->
       <inertial>
         <!-- This specifies X_LI. -->
-        <pose frame=''>0 -0.5 0 0 0 0</pose>
+        <pose frame="">0 -0.5 0 0 0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0</ixx>
@@ -94,9 +91,9 @@
           <izz>0</izz>
         </inertia>
       </inertial>
-      <visual name='lower_arm_visual'>
+      <visual name="lower_arm_visual">
         <!-- This specifies X_LV. -->
-        <pose frame=''>0 -0.5 0 1.57079632679 0 0</pose>
+        <pose frame="">0 -0.5 0 1.57079632679 0 0</pose>
         <geometry>
           <cylinder>
             <length>1</length>
@@ -111,8 +108,7 @@
         </material>
       </visual>
     </link>
-
-    <joint name='joint1' type='revolute'>
+    <joint name="joint1" type="revolute">
       <parent>base</parent>
       <child>upper_arm</child>
       <axis>
@@ -121,18 +117,17 @@
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-
-    <joint name='joint2' type='revolute'>
+    <joint name="joint2" type="revolute">
       <parent>upper_arm</parent>
       <child>lower_arm</child>
       <!-- Pose of the link frame F -->
       <!-- When its outboard link frame L was defined by the
-           corresponding <link>, F is expressed in L, i.e. <pose> specifies
+           corresponding <link>, F is expressed in L, i.e. <pose>specifies
            X_LF.
            When its outboard frame link L was NOT specified, F is expressed
-           in the model frame D, i.e. <pose> specifies X_DF. -->
+           in the model frame D, i.e. <pose>specifies X_DF. -->
       <!-- In this case the outboard link frame L was not specified and
-      therefore <pose> is giving X_DF -->
+      therefore <pose>is giving X_DF -->
       <pose>0 -1.0 0 0 0 0</pose>
       <axis>
         <xyz>0 0 1</xyz>
@@ -140,6 +135,5 @@
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-
   </model>
 </sdf>

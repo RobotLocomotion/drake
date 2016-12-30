@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <robot name="SimpleDoublePendulum">
-
   <!-- Defines some colors to distinguish between the links. -->
   <material name="Red">
     <color rgba="1 0 0 1"/>
@@ -11,7 +10,6 @@
   <material name="Blue">
     <color rgba="0 0 1 1"/>
   </material>
-
   <!-- The base link (i.e., the link that is not a child of any joint) is
   defined in the world frame. -->
   <link name="base">
@@ -82,7 +80,6 @@
     <axis xyz="0 0 1"/>
     <dynamics damping="0.1"/>
   </joint>
-
   <!-- The following are color specifications for use by the Gazebo simulator.
   They are needed to visualize link colors in Gazebo. -->
   <gazebo reference="base">
