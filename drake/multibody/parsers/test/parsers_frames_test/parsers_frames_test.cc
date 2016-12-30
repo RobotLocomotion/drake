@@ -93,13 +93,17 @@ class DoublePendulumFramesTest : public ::testing::Test {
     RunTest(12.0, -18.0);
   }
 
-  // Note that the input parameters must be in degree units!
+  // Sets the state of the double pendulum model described by its joint
+  // angles theta1 (joint1 dof) and theta2 (joint2 dof).
+  // Input angles are in degrees.
   void SetState(double theta1_degrees, double theta2_degrees) {
     const double deg_to_rad = M_PI / 180.0;
     q_(axis1_index_) = theta1_degrees * deg_to_rad;
     q_(axis2_index_) = theta2_degrees * deg_to_rad;
   }
 
+  // Analytically computes the pose of the frame of each link in the double
+  // pendulum model for the state set with SetState().
   void ComputeAnalyticalSolution() {
     double theta1 = q_(axis1_index_);
     double theta2 = q_(axis2_index_);
@@ -116,6 +120,9 @@ class DoublePendulumFramesTest : public ::testing::Test {
         expected_Bo_W_[lower_arm_id_];
   }
 
+  // Compares the analytical solution obtained with
+  // ComputeAnalyticalSolution() with the poses computed with a RigidBodyTree
+  // model constructed by parsing a URDF or SDF file.
   void TestPoses(const vector<Vector3d>& expected_Bo_W,
                  const vector<Vector3d>& expected_Bcm_B,
                  const vector<Vector3d>& expected_Bcm_W) {
@@ -133,8 +140,8 @@ class DoublePendulumFramesTest : public ::testing::Test {
     }
   }
 
-  void RunTest(double theta1, double theta2) {
-    SetState(theta1, theta2);
+  void RunTest(double theta1_deg, double theta2_deg) {
+    SetState(theta1_deg, theta2_deg);
     ComputeAnalyticalSolution();
     TestPoses(expected_Bo_W_, expected_Bcm_B_, expected_Bcm_W_);
   }
@@ -148,7 +155,10 @@ class DoublePendulumFramesTest : public ::testing::Test {
   VectorXd q_;
 };
 
-// In this test the simple double pendulum model is loaded from a URDF file.
+// In this test the simple double pendulum model is loaded from a URDF file
+// into a RigidBodyTree.
+// The correctness in the position of each body frame as computed with the
+// RigidBodyTree model is then verified against an analytical solution.
 TEST_F(DoublePendulumFramesTest, UrdfTest) {
   LoadAndRunTests("simple_double_pendulum_urdf/simple_double_pendulum.urdf");
 }
@@ -156,9 +166,10 @@ TEST_F(DoublePendulumFramesTest, UrdfTest) {
 // In this test the simple double pendulum model is loaded from an SDF file
 // explicitly specifying the link frames L to be located at the mobile frames
 // B (recall B = M in Drake). In this case, <joint> does not need to specify its
-// pose with respect to the parent body, i.e., X_PF is not specified and no
-// <pose> is given in <joint>. Therefore the inertial frames, I, need to be
-// specified as done in URDF files.
+// pose with respect to the parent body, i.e. no <pose> is given in <joint>.
+// The SDF parser determines X_PF by assuming F = B for the initial
+// configuration (q = 0).
+// Inertial frames, I, need to be specified as done in URDF files.
 TEST_F(DoublePendulumFramesTest, SdfTestWhereLequalsB) {
   LoadAndRunTests(
       "simple_double_pendulum_l_equals_b_sdf/"
@@ -166,9 +177,10 @@ TEST_F(DoublePendulumFramesTest, SdfTestWhereLequalsB) {
 }
 
 // In this test the link frame L for "lower_arm" is not specified (no
-// <pose> entry is given for this link). Therefore the parser makes L = F where
-// F is a frame specified by a <pose> in the joint "joint2" expressed in the
-// model frame, D, i.e., <pose> is giving X_DF for "joint2".
+// <pose> entry is given for this link). Therefore the parser makes L = M where
+// M is the joint inboard frame specified by a <pose> entry for joint
+// "joint2" in the file. The pose of frame M is expressed in
+// the model frame, D, i.e., <pose> is giving X_DM for "joint2".
 TEST_F(DoublePendulumFramesTest, SdfTestLisNotSpecified) {
   LoadAndRunTests(
       "simple_double_pendulum_l_is_not_specified_sdf/"
@@ -181,8 +193,9 @@ TEST_F(DoublePendulumFramesTest, SdfTestLisNotSpecified) {
 //
 // In this test the frame L for the lower arm is specified to be half way
 // between the body frame B and the inertial frame I. Since the link inboard
-// frame is specified in the link's frame L, the <pose> entry for joint "joint2"
-// must be specified accordingly.
+// frame L was specified, the <pose> entry for joint "joint2"
+// specifies X_LM, and therefore the pose of the joint outboard frame M is
+// measured and expressed in the link frame L
 TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLBetweenBandI) {
   LoadAndRunTests(
       "simple_double_pendulum_l_between_b_and_i_sdf/"
@@ -192,9 +205,9 @@ TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLBetweenBandI) {
 // TODO(liang.fok) Enable this test once #4641 is resolved.
 //
 // In this test the link frame L of the lower arm is defined to be coincident
-// with the inertial frame I of the link. Since the pose of the joints are given
-// in the outboard link frame, we need to specify the joint pose accordingly as
-// well.
+// with the inertial frame I of the link. The <pose> entry for joint "joint2"
+// specifies X_LM, and therefore the pose of the joint outboard frame M is
+// measured and expressed in the link frame L.
 TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLequalsI) {
   LoadAndRunTests(
       "simple_double_pendulum_l_equals_i_sdf/"
