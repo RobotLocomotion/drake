@@ -13,11 +13,8 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
-using std::endl;
-using std::ifstream;
 using std::make_unique;
 using std::string;
-using std::stringstream;
 using std::unique_ptr;
 using std::vector;
 
@@ -50,7 +47,7 @@ class DoublePendulumFramesTest : public ::testing::Test {
                              "/multibody/parsers/test/parsers_frames_test/" +
                              file_name;
 
-    tree_ = std::make_unique<RigidBodyTree<double>>();
+    tree_ = make_unique<RigidBodyTree<double>>();
 
     spruce::path spruce_path(file_name);
     auto extension = spruce_path.extension();
@@ -66,7 +63,10 @@ class DoublePendulumFramesTest : public ::testing::Test {
           full_name, drake::multibody::joints::kFixed, tree_.get());
     }
 
-    DRAKE_DEMAND(tree_->get_num_positions() == 2);
+    ASSERT_EQ(tree_->get_num_bodies(), 4);
+    ASSERT_EQ(tree_->get_num_positions(), 2);
+    ASSERT_EQ(tree_->get_num_velocities(), 2);
+
     q_ = VectorXd::Zero(tree_->get_num_positions());
 
     world_id_ = tree_->FindBody("world")->get_body_index();
@@ -146,10 +146,6 @@ class DoublePendulumFramesTest : public ::testing::Test {
 TEST_F(DoublePendulumFramesTest, UrdfTest) {
   LoadTreeFrom("simple_double_pendulum_urdf/simple_double_pendulum.urdf");
 
-  EXPECT_EQ(tree_->get_num_bodies(), 4);
-  EXPECT_EQ(tree_->get_num_positions(), 2);
-  EXPECT_EQ(tree_->get_num_velocities(), 2);
-
   // Runs a number of tests for different joint angles in degrees.
   RunTest(0.0, 0.0);
   RunTest(0.0, 45.0);
@@ -168,10 +164,6 @@ TEST_F(DoublePendulumFramesTest, SdfTestWhereLequalsB) {
       "simple_double_pendulum_l_equals_b_sdf/"
       "simple_double_pendulum_l_equals_b.sdf");
 
-  EXPECT_EQ(tree_->get_num_bodies(), 4);
-  EXPECT_EQ(tree_->get_num_positions(), 2);
-  EXPECT_EQ(tree_->get_num_velocities(), 2);
-
   // Runs a number of tests for different joint angles. The joint angles are
   // in units of degrees.
   RunTest(0.0, 0.0);
@@ -189,10 +181,6 @@ TEST_F(DoublePendulumFramesTest, SdfTestLisNotSpecified) {
   LoadTreeFrom(
       "simple_double_pendulum_l_is_not_specified_sdf/"
       "simple_double_pendulum_l_is_not_specified.sdf");
-
-  EXPECT_EQ(tree_->get_num_bodies(), 4);
-  EXPECT_EQ(tree_->get_num_positions(), 2);
-  EXPECT_EQ(tree_->get_num_velocities(), 2);
 
   // Runs a number of tests for different joint angles. The joint angles are
   // in units of degrees.
@@ -215,10 +203,6 @@ TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLBetweenBandI) {
       "simple_double_pendulum_l_between_b_and_i_sdf/"
       "simple_double_pendulum_l_between_b_and_i.sdf");
 
-  EXPECT_EQ(tree_->get_num_bodies(), 4);
-  EXPECT_EQ(tree_->get_num_positions(), 2);
-  EXPECT_EQ(tree_->get_num_velocities(), 2);
-
   // Runs a number of tests for different joint angles. The joint angles are
   // in units of degrees.
   RunTest(0.0, 0.0);
@@ -237,10 +221,6 @@ TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLequalsI) {
   LoadTreeFrom(
       "simple_double_pendulum_l_equals_i_sdf/"
       "simple_double_pendulum_l_equals_i.sdf");
-
-  EXPECT_EQ(tree_->get_num_bodies(), 4);
-  EXPECT_EQ(tree_->get_num_positions(), 2);
-  EXPECT_EQ(tree_->get_num_velocities(), 2);
 
   // Runs a number of tests for different joint angles. The joint angles are
   // in units of degrees.
