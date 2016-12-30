@@ -1686,7 +1686,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree<T>::massMatrix(
 
   // The Composite Rigid Body (CRB) method has a very simple physical
   // interpretation that allows for a quick derivation.
-  // In the absence of external forces and with vdot = 0, The velocity dependent
+  // In the absence of external forces and with vdot = 0, the velocity dependent
   // Coriolis and gyroscopic forces C(q,v) are zero and hence M * vdot = Q.
   // This means we can compute the i-th column in H by setting the i-th
   // component of vdot to be one, i.e. vdot_p = 1 for p = i and zero otherwise.

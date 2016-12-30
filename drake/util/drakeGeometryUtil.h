@@ -486,7 +486,7 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
     if (m > NumTraits<Scalar>::epsilon()) {
       JBo_B = vectorToSkewSymmetricSquared(mp_AoC_B);
       // This is misleading but essentially here we compute mp_BoC_B and
-      // overwrite it on mp_AoC_B. Where mp_AoC_B is the center of mass offset
+      // overwrite it on mp_AoC_B, where mp_AoC_B is the center of mass offset
       // from the origin Ao of frame A to the center of mass C expressed in
       // frame B, multiplied by the body mass. Similarly for mp_BoC_B but
       // from Bo to C.
