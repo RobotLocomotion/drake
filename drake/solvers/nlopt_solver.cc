@@ -71,7 +71,7 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
     for (const DecisionVariableMatrixX& v :
          binding.variable_list().variables()) {
       DRAKE_ASSERT(v.cols() == 1);
-      int num_v_variables = v.size();
+      const int num_v_variables = v.size();
       this_x.conservativeResize(index + num_v_variables);
       for (int i = 0; i < num_v_variables; ++i) {
         this_x(index + i) = tx(prog->FindDecisionVariableIndex(v(i, 0)));
@@ -216,7 +216,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
     for (const DecisionVariableMatrixX& v :
          wrapped->variable_list->variables()) {
       result_idx = 0;
-      int num_v_variable = v.size();
+      const int num_v_variable = v.size();
       std::vector<size_t> v_index(num_v_variable);
       for (int i = 0; i < num_v_variable; ++i) {
         v_index[i] = wrapped->prog->FindDecisionVariableIndex(v(i, 0));
@@ -313,7 +313,7 @@ void WrapConstraint(const MathematicalProgram& prog, const _Binding& binding,
 bool NloptSolver::available() const { return true; }
 
 SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
-  int nx = prog.num_vars();
+  const int nx = prog.num_vars();
 
   // Load the algo to use and the size.
   nlopt::opt opt(nlopt::LD_SLSQP, nx);
