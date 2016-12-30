@@ -47,14 +47,15 @@ class DoublePendulumFramesTest : public ::testing::Test {
 
   void LoadTreeFrom(const string& file_name) {
     const string full_name = GetDrakePath() +
-        "/multibody/parsers/test/parsers_frames_test/" + file_name;
+                             "/multibody/parsers/test/parsers_frames_test/" +
+                             file_name;
 
     tree_ = std::make_unique<RigidBodyTree<double>>();
 
     spruce::path spruce_path(file_name);
     auto extension = spruce_path.extension();
-    std::transform(
-        extension.begin(), extension.end(), extension.begin(), ::tolower);
+    std::transform(extension.begin(), extension.end(), extension.begin(),
+                   ::tolower);
     DRAKE_DEMAND(extension == ".urdf" || extension == ".sdf");
 
     if (extension == ".urdf") {
@@ -73,10 +74,8 @@ class DoublePendulumFramesTest : public ::testing::Test {
     upper_arm_id_ = tree_->FindBody("upper_arm")->get_body_index();
     lower_arm_id_ = tree_->FindBody("lower_arm")->get_body_index();
 
-    axis1_index_ =
-        tree_->FindBody("upper_arm")->get_position_start_index();
-    axis2_index_ =
-        tree_->FindBody("lower_arm")->get_position_start_index();
+    axis1_index_ = tree_->FindBody("upper_arm")->get_position_start_index();
+    axis2_index_ = tree_->FindBody("lower_arm")->get_position_start_index();
 
     // Body "world" is always at the origin.
     expected_Bo_W_[world_id_] = Vector3d(0.0, 0.0, 0.0);
@@ -112,10 +111,9 @@ class DoublePendulumFramesTest : public ::testing::Test {
         expected_Bo_W_[lower_arm_id_];
   }
 
-  void TestPoses(
-      const vector<Vector3d> &expected_Bo_W,
-      const vector<Vector3d> &expected_Bcm_B,
-      const vector<Vector3d> &expected_Bcm_W) {
+  void TestPoses(const vector<Vector3d>& expected_Bo_W,
+                 const vector<Vector3d>& expected_Bcm_B,
+                 const vector<Vector3d>& expected_Bcm_W) {
     VectorXd v = VectorXd::Zero(tree_->get_num_velocities());
     KinematicsCache<double> cache = tree_->doKinematics(q_, v);
 
@@ -166,8 +164,9 @@ TEST_F(DoublePendulumFramesTest, UrdfTest) {
 // given in <joint>. Therefore the inertial frames I need to be specified as
 // done in URDF files.
 TEST_F(DoublePendulumFramesTest, SdfTestWhereLequalsB) {
-  LoadTreeFrom("simple_double_pendulum_l_equals_b_sdf/"
-               "simple_double_pendulum_l_equals_b.sdf");
+  LoadTreeFrom(
+      "simple_double_pendulum_l_equals_b_sdf/"
+      "simple_double_pendulum_l_equals_b.sdf");
 
   EXPECT_EQ(tree_->get_num_bodies(), 4);
   EXPECT_EQ(tree_->get_num_positions(), 2);
@@ -187,8 +186,9 @@ TEST_F(DoublePendulumFramesTest, SdfTestWhereLequalsB) {
 // the joint "shaft2" expressed in the model frame D, i.e. <pose> is giving
 // X_DF for "shaft2".
 TEST_F(DoublePendulumFramesTest, SdfTestLisNotSpecified) {
-  LoadTreeFrom("simple_double_pendulum_l_is_not_specified_sdf/"
-               "simple_double_pendulum_l_is_not_specified.sdf");
+  LoadTreeFrom(
+      "simple_double_pendulum_l_is_not_specified_sdf/"
+      "simple_double_pendulum_l_is_not_specified.sdf");
 
   EXPECT_EQ(tree_->get_num_bodies(), 4);
   EXPECT_EQ(tree_->get_num_positions(), 2);
@@ -211,8 +211,9 @@ TEST_F(DoublePendulumFramesTest, SdfTestLisNotSpecified) {
 // inboard frame is specified in the link's frame L, the <pose> entry for joint
 // "shaft2" must be specified accordingly.
 TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLBetweenBandI) {
-  LoadTreeFrom("simple_double_pendulum_l_between_b_and_i_sdf/"
-               "simple_double_pendulum_l_between_b_and_i.sdf");
+  LoadTreeFrom(
+      "simple_double_pendulum_l_between_b_and_i_sdf/"
+      "simple_double_pendulum_l_between_b_and_i.sdf");
 
   EXPECT_EQ(tree_->get_num_bodies(), 4);
   EXPECT_EQ(tree_->get_num_positions(), 2);
@@ -233,8 +234,9 @@ TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLBetweenBandI) {
 // in the outboard link frame, we need to specify the joint pose accordingly as
 // well.
 TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLequalsI) {
-  LoadTreeFrom("simple_double_pendulum_l_equals_i_sdf/"
-               "simple_double_pendulum_l_equals_i.sdf");
+  LoadTreeFrom(
+      "simple_double_pendulum_l_equals_i_sdf/"
+      "simple_double_pendulum_l_equals_i.sdf");
 
   EXPECT_EQ(tree_->get_num_bodies(), 4);
   EXPECT_EQ(tree_->get_num_positions(), 2);
