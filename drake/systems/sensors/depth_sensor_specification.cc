@@ -26,11 +26,10 @@ double CalculateIncrementSize(const double max_angle, const double min_angle,
 }  // namespace
 
 DepthSensorSpecification::DepthSensorSpecification(
-    const std::string& frame_id, double min_yaw, double max_yaw,
+    double min_yaw, double max_yaw,
     double min_pitch, double max_pitch, int num_yaw_values,
     int num_pitch_values, double min_range, double max_range)
-    : frame_id_(frame_id),
-      min_yaw_(min_yaw),
+    : min_yaw_(min_yaw),
       max_yaw_(max_yaw),
       min_pitch_(min_pitch),
       max_pitch_(max_pitch),
@@ -42,18 +41,6 @@ DepthSensorSpecification::DepthSensorSpecification(
       yaw_increment_(CalculateIncrementSize(max_yaw, min_yaw, num_yaw_values)),
       pitch_increment_(
           CalculateIncrementSize(max_pitch, min_pitch, num_pitch_values)) {}
-
-DepthSensorSpecification::DepthSensorSpecification(
-    double min_yaw, double max_yaw, double min_pitch, double max_pitch,
-    int num_yaw_values, int num_pitch_values, double min_range,
-    double max_range)
-    : DepthSensorSpecification("", min_yaw, max_yaw, min_pitch, max_pitch,
-                               num_yaw_values, num_pitch_values, min_range,
-                               max_range) {}
-
-void DepthSensorSpecification::set_frame_id(std::string frame_id) {
-  frame_id_ = frame_id;
-}
 
 void DepthSensorSpecification::set_min_yaw(double min_yaw) {
   min_yaw_ = min_yaw;

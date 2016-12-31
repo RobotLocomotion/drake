@@ -38,7 +38,7 @@ DepthSensor::DepthSensor(const std::string& name,
                          double min_range, double max_range)
     : DepthSensor(name, tree, frame,
                   DepthSensorSpecification(
-                      frame.get_name(), min_yaw, max_yaw, min_pitch, max_pitch,
+                      min_yaw, max_yaw, min_pitch, max_pitch,
                       num_yaw_values, num_pitch_values, min_range, max_range)) {
 }
 
@@ -51,7 +51,6 @@ DepthSensor::DepthSensor(const std::string& name,
       frame_(frame),
       specification_(specification),
       raycast_endpoints_(std::make_unique<Matrix3Xd>()) {
-  DRAKE_DEMAND(specification_.frame_id() == frame.get_name());
   DRAKE_DEMAND(specification_.min_yaw() <= specification_.max_yaw() &&
                "min_yaw must be less than or equal to max_yaw.");
   DRAKE_DEMAND(specification_.min_pitch() <= specification_.max_pitch() &&

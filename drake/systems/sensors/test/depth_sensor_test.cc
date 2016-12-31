@@ -32,7 +32,7 @@ GTEST_TEST(TestDepthSensor, AccessorsAndToStringTest) {
 
   // Defines the Device Under Test (DUT).
   const DepthSensorSpecification& specification =
-      DepthSensorSpecification::get_octant_1_spec("foo frame");
+      DepthSensorSpecification::get_octant_1_spec();
   DepthSensor dut(kSensorName, tree, frame, specification);
   EXPECT_EQ(dut.get_specification(), specification);
 
@@ -82,20 +82,20 @@ void DoEmptyWorldTest(const char* const name,
 // Tests the ability to scan the sensor's X,Y plane (i.e., pitch = 0).
 GTEST_TEST(TestDepthSensor, XyEmptyWorldTest) {
   DoEmptyWorldTest("foo depth sensor",
-                   DepthSensorSpecification::get_xy_planar_spec("foo frame"));
+                   DepthSensorSpecification::get_xy_planar_spec());
 }
 
 // Tests the ability to scan the sensor's X,Z plane (i.e., yaw = 0).
 GTEST_TEST(TestDepthSensor, XzEmptyWorldTest) {
   DoEmptyWorldTest("foo depth sensor",
-                   DepthSensorSpecification::get_xz_planar_spec("foo frame"));
+                   DepthSensorSpecification::get_xz_planar_spec());
 }
 
 // Tests the ability to scan the sensor's surrounding X,Y,Z volume.
 GTEST_TEST(TestDepthSensor, XyzEmptyWorldTest) {
   DoEmptyWorldTest(
       "foo depth sensor",
-      DepthSensorSpecification::get_xyz_spherical_spec("foo frame"));
+      DepthSensorSpecification::get_xyz_spherical_spec());
 }
 
 const double kBoxWidth{0.1};
@@ -161,7 +161,7 @@ std::pair<VectorX<double>, Eigen::Matrix3Xd> DoBoxOcclusionTest(
 // [-M_PI / 2, M_PI / 2]) in a world containing a box at (0.5, 0, 0).
 GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
   DepthSensorSpecification specification =
-      DepthSensorSpecification::get_xy_planar_spec("foo frame");
+      DepthSensorSpecification::get_xy_planar_spec();
 
   // Adjusts the min / max yaw range to ensure the sensor is able to obtain
   // four depth measurements of the box's sensor-facing surface.
@@ -209,7 +209,7 @@ GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
 // frame's -Y axis.
 GTEST_TEST(TestDepthSensor, XzBoxInWorldTest) {
   DepthSensorSpecification specification =
-      DepthSensorSpecification::get_xz_planar_spec("foo frame");
+      DepthSensorSpecification::get_xz_planar_spec();
 
   const Vector3d box_xyz(0, 0, 0.5);  // x, y, z location of box.
   const std::pair<VectorX<double>, Eigen::Matrix3Xd> result =
@@ -246,7 +246,7 @@ GTEST_TEST(TestDepthSensor, TestTooClose) {
   const std::pair<VectorX<double>, Eigen::Matrix3Xd> result =
       DoBoxOcclusionTest(
           "foo depth sensor",
-          DepthSensorSpecification::get_x_linear_spec("foo frame"), box_xyz);
+          DepthSensorSpecification::get_x_linear_spec(), box_xyz);
   const VectorX<double> depth_measurements = std::get<0>(result);
 
   EXPECT_EQ(depth_measurements.size(), 1);
