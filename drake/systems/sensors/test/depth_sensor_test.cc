@@ -2,8 +2,6 @@
 
 #include "gtest/gtest.h"
 
-#include "bot_core/pointcloud_t.hpp"
-
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -107,7 +105,7 @@ const double kBoxWidth{0.1};
 // (@p box_x, @p box_y, @p box_z) in the world frame. This is useful for
 // verifying that the sensor can detect the box. The return value is a vector of
 // depth measurements.
-std::pair<VectorX<double>, bot_core::pointcloud_t> DoBoxOcclusionTest(
+std::pair<VectorX<double>, Eigen::Matrix3Xd> DoBoxOcclusionTest(
     const char* const name, const DepthSensorSpecification& specification,
     const Vector3d& box_xyz) {
   RigidBodyTree<double> tree;
@@ -172,7 +170,7 @@ GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
 
   const Vector3d box_xyz(0.5, 0, 0);  // x, y, z location of box.
 
-  const std::pair<VectorX<double>, bot_core::pointcloud_t> result =
+  const std::pair<VectorX<double>, Eigen::Matrix3Xd> result =
       DoBoxOcclusionTest("foo depth sensor", specification, box_xyz);
   const VectorX<double> depth_measurements = std::get<0>(result);
 
@@ -194,19 +192,14 @@ GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
                               MatrixCompareType::absolute, &message))
       << message;
 
-  const bot_core::pointcloud_t point_cloud = std::get<1>(result);
-  EXPECT_EQ(point_cloud.utime, 0);
-  EXPECT_EQ(point_cloud.seq, 0);
-  EXPECT_EQ(point_cloud.frame_id, "foo frame");
-  EXPECT_EQ(point_cloud.n_points, 4);
-  EXPECT_EQ(point_cloud.n_channels, 1);
+  const Eigen::Matrix3Xd point_cloud = std::get<1>(result);
 
   // TODO(liang.fok) Remove this debugging code. Add machine-checkable logic.
-  for (int i = 0; i < point_cloud.n_points; ++i) {
+  for (int i = 0; i < point_cloud.cols(); ++i) {
     std::cout << "Point cloud point " << i << ": ("
-              << point_cloud.points.at(i).at(0) << ", "
-              << point_cloud.points.at(i).at(1) << ", "
-              << point_cloud.points.at(i).at(2) << ")" << std::endl;
+              << point_cloud(0, i) << ", "
+              << point_cloud(1, i) << ", "
+              << point_cloud(2, i) << ")" << std::endl;
   }
 }
 
@@ -219,7 +212,7 @@ GTEST_TEST(TestDepthSensor, XzBoxInWorldTest) {
       DepthSensorSpecification::get_xz_planar_spec("foo frame");
 
   const Vector3d box_xyz(0, 0, 0.5);  // x, y, z location of box.
-  const std::pair<VectorX<double>, bot_core::pointcloud_t> result =
+  const std::pair<VectorX<double>, Eigen::Matrix3Xd> result =
       DoBoxOcclusionTest("foo depth sensor", specification, box_xyz);
   const VectorX<double> depth_measurements = std::get<0>(result);
 
@@ -250,7 +243,7 @@ GTEST_TEST(TestDepthSensor, TestTooClose) {
   // Note that the minimum sensing distance is 1m but the box is placed 0.5m in
   // front of the sensor.
   const Vector3d box_xyz(0.5, 0, 0);  // x, y, z location of box.
-  const std::pair<VectorX<double>, bot_core::pointcloud_t> result =
+  const std::pair<VectorX<double>, Eigen::Matrix3Xd> result =
       DoBoxOcclusionTest(
           "foo depth sensor",
           DepthSensorSpecification::get_x_linear_spec("foo frame"), box_xyz);

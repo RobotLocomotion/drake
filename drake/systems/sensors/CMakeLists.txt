@@ -3,13 +3,9 @@ add_library_with_exports(LIB_NAME drakeSensors SOURCE_FILES
     depth_sensor_output.cc
     depth_sensor_specification.cc
     rotary_encoders.cc)
-
-# TODO(liang.fok): Determine whether "robotlocomotion-lcmtypes-cpp" is correct
-# and why it cannot be replaced with "bot2core".
 target_link_libraries(drakeSensors
     drakeRBM
-    drakeSystemFramework
-    robotlocomotion-lcmtypes-cpp)
+    drakeSystemFramework)
 
 drake_install_libraries(drakeSensors)
 drake_install_headers(

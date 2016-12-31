@@ -1,7 +1,5 @@
 #pragma once
 
-#include "bot_core/pointcloud_t.hpp"
-
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
 
@@ -42,25 +40,23 @@ class DepthSensorOutput : public BasicVector<T> {
   /// @throws std::runtime_error if @p yaw_index or @p pitch_index is invalid.
   double GetDistance(int yaw_index, int pitch_index) const;
 
+  /// Returns the number of valid distance measurements within this output. This
+  /// excludes the following depth values:
+  ///
+  ///   - DepthSensor::kError
+  ///   - DepthSensor::kTooFar
+  ///   - DepthSensor::kTooClose
+  ///
+  int GetNumValidDistanceMeasurements() const;
+
   /// Returns a point cloud in the sensor's base frame based on the depth image
   /// contained within this output.
-  const bot_core::pointcloud_t& GetPointCloud() const;
+  Eigen::Matrix3Xd GetPointCloud() const;
 
   //@}
 
-  /// This method first calls the parent class' BasicVector::SetFromVector()
-  /// and then computes a point cloud based on the distance measurements and the
-  /// depth sensor's specifications. The resulting point cloud is in the
-  /// sensor's frame and can be obtained by calling
-  /// GetPointCloudInSensorFrame().
-  void SetDistances(double time, const Eigen::Ref<const VectorX<T>>& value);
-
  private:
   const DepthSensorSpecification& spec_;
-
-  // The point cloud in the sensor's frame.
-  bot_core::pointcloud_t point_cloud_;
-  int point_cloud_seq_{0};
 };
 
 }  // namespace sensors

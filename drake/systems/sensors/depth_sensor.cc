@@ -204,12 +204,10 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
   }
 
   // Evaluates the state output port.
-  DepthSensorOutput<double>* output_vector =
-      dynamic_cast<DepthSensorOutput<double>*>(
-          output->GetMutableVectorData(state_output_port_id_));
-  DRAKE_DEMAND(output_vector != nullptr);
-
-  output_vector->SetDistances(context.get_time(), distances);
+  BasicVector<double>* output_vector =
+      output->GetMutableVectorData(state_output_port_id_);
+  DRAKE_ASSERT(output_vector != nullptr);
+  output_vector->SetFromVector(distances);
 }
 
 std::ostream& operator<<(std::ostream& out, const DepthSensor& sensor) {
