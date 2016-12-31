@@ -169,18 +169,14 @@ GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
       VectorXd::Constant(depth_measurements.size(), DepthSensor::kTooFar);
 
   const double box_distance = box_xyz(0) - kBoxWidth / 2;
-  expected_output(23) =
-      box_distance /
-      cos(specification.min_yaw() + 23 * specification.yaw_increment());
-  expected_output(24) =
-      box_distance /
-      cos(specification.min_yaw() + 24 * specification.yaw_increment());
-  expected_output(25) =
-      box_distance /
-      cos(specification.min_yaw() + 25 * specification.yaw_increment());
-  expected_output(26) =
-      box_distance /
-      cos(specification.min_yaw() + 26 * specification.yaw_increment());
+  expected_output(23) = box_distance / cos(specification.min_yaw() +
+                                           23 * specification.yaw_increment());
+  expected_output(24) = box_distance / cos(specification.min_yaw() +
+                                           24 * specification.yaw_increment());
+  expected_output(25) = box_distance / cos(specification.min_yaw() +
+                                           25 * specification.yaw_increment());
+  expected_output(26) = box_distance / cos(specification.min_yaw() +
+                                           26 * specification.yaw_increment());
 
   std::string message;
   EXPECT_TRUE(CompareMatrices(depth_measurements, expected_output, 1e-8,
@@ -188,10 +184,10 @@ GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
       << message;
 }
 
-// Tests the ability to scan the sensor's X,Z plane (i.e., pitch in [0, M_PI / 2],
-// yaw = 0) in a world containing a box at (0, 0, 0.5). This also verifies
-// that pitch rotates the sensor's optical frame around the sensor's base frame's
-// -Y axis.
+// Tests the ability to scan the sensor's X,Z plane (i.e., pitch in [0, M_PI /
+// 2], yaw = 0) in a world containing a box at (0, 0, 0.5). This also verifies
+// that pitch rotates the sensor's optical frame around the sensor's base
+// frame's -Y axis.
 GTEST_TEST(TestDepthSensor, XzBoxInWorldTest) {
   DepthSensorSpecification specification =
       DepthSensorSpecification::get_xz_planar_spec();
@@ -207,10 +203,12 @@ GTEST_TEST(TestDepthSensor, XzBoxInWorldTest) {
   // sin() is used below because pitch is the angle between the sensor's base
   // frame's +X axis and its ray whereas box_distance is measured along the
   // sensor's base frame's +Z axis.
-  expected_output(48) = box_distance / sin(specification.min_pitch() +
-                                           48 * specification.pitch_increment());
-  expected_output(49) = box_distance / sin(specification.min_pitch() +
-                                           49 * specification.pitch_increment());
+  expected_output(48) =
+      box_distance /
+      sin(specification.min_pitch() + 48 * specification.pitch_increment());
+  expected_output(49) =
+      box_distance /
+      sin(specification.min_pitch() + 49 * specification.pitch_increment());
 
   std::string message;
   EXPECT_TRUE(CompareMatrices(depth_measurements, expected_output, 1e-8,

@@ -27,63 +27,64 @@ namespace sensors {
 /// time. Thus, this sensor does *not* model aliasing effects due to the time
 /// spent scanning vertically and horizontally.
 ///
-/// There are two frames associated with a sensor: its base frame and its
-/// optical frame. The sensor's specification and configuration are defined in
-/// terms of the sensor's base frame. The base frame's origin defines the point
-/// from which the sensor's ray casts originate. Its +X, +Y, and +Z axes are
-/// pointing towards the sensor's "forward," "left", and "up" directions,
+/// There are two frames associated with this sensor: its base frame and its
+/// optical frame. This sensor's specification and configuration are defined in
+/// terms of this sensor's base frame. The base frame's origin defines the point
+/// from which this sensor's ray casts originate. Its +X, +Y, and +Z axes are
+/// pointing towards this sensor's "forward," "left", and "up" directions,
 /// respectively.
 ///
-/// The sensor's optical frame's origin is the same as the base frame's origin.
+/// This sensor's optical frame's origin is the same as the base frame's origin.
 /// Its +X axis defines where a particular ray cast is pointing. There are two
 /// angles associated with a depth measurement, as described below. Both angles
 /// are defined in terms of the sensor's base frame. Together they define a
 /// transform between the base frame and optical frame.
 ///
-///   1. yaw   - The horizontal scan angle that rotates about the sensor's base
+///   1. yaw   - The horizontal scan angle that rotates about this sensor's base
 ///              frame's +Z axis using the right-hand rule. When the pitch is
-///              zero, a yaw of zero results in the sensor measuring down the
-///              sensor base frame's +X axis.
-///   2. pitch - The vertical scan angle that rotates about the sensor's base
+///              zero, a yaw of zero results in this sensor measuring down the
+///              base frame's +X axis.
+///   2. pitch - The vertical scan angle that rotates about this sensor's base
 ///              frames's -Y axis using using the right-hand rule. In other
-///              words, when the pitch increases from zero to PI / 2, the
+///              words, when the pitch increases from zero to PI / 2, this
 ///              sensor's optical frame is tilted to point upward. When the yaw
-///              is zero, a pitch of zero results in the sensor measuring down
-///              the sensor base frame's +X axis.
+///              is zero, a pitch of zero results in this sensor measuring down
+///              the base frame's +X axis.
 ///
-/// To summarize, the location from which the sensor's rays emanate is (0, 0, 0)
-/// in the sensor's base frame. When both yaw and pitch are zero, the sensor's
-/// base and optical frames are identical. The yaw causes the optical frame to
-/// rotate about the base frame's +Z axis, while the pitch causes it to rotate
-/// about the sensor's -Y axis.
+/// To summarize, the location from which this sensor's rays emanate is
+/// (0, 0, 0) in the base frame. When both the yaw and pitch are zero, this
+/// sensor's base and optical frames are identical. The yaw causes the optical
+/// frame to rotate about the base frame's +Z axis, while the pitch causes it to
+/// rotate about this sensor's -Y axis.
 ///
 /// This system has one output port containing the sensed values. It is a
-/// vector representation of a depth image. For each pitch, there are a certain
-/// number of yaw values. Each of these groups of yaw values that share the same
-/// pitch are contiguous in the output vector. In other words:
+/// vector representation of a depth image. For each pitch, there is a fixed
+/// number of yaw values as specified as num_pixel_cols(). Each of these vector
+/// of yaw values that share the same pitch are contiguous in the output vector.
+/// In other words, here is some pseudocode describing this sensor's output
+/// vector:
 ///
+/// <pre>
 ///  for i in 0 to num_pixel_rows():
-///    for j in 0 to num_pixel_columns():
-///      output_vector[i * num_pixel_columns() + j] ==
-///          [depth value at yaw = min_yaw() + j * yaw_increment() and
-///           pitch = min_pitch() + i * pitch_increment()]
-///    }
-///  }
+///    for j in 0 to num_pixel_cols():
+///      output_vector[i * num_pixel_cols() + j] ==
+///          [depth value when yaw   = min_yaw()   + j * yaw_increment() and
+///                            pitch = min_pitch() + i * pitch_increment()]
+/// </pre>
 ///
 /// If nothing is detected in between min_range and max_range, an invalid value
 /// of DepthSensor::kTooFar is provided. Is something is detected but the
 /// distance is less than  the sensor's minimum sensing range, a value of
 /// DepthSensor::kTooClose is provided.
 ///
-/// DepthSensor::kError is defined for use when sensing error occurs. It is not
-/// used in DepthSensor because this class models an ideal sensors in which
-/// sensing errors do not occur. It is provided for use by non-ideal depth
-/// sensors.
+/// DepthSensor::kError is defined for use when a sensing error occurs. It is
+/// not used in this class because it models an ideal sensor in which sensing
+/// errors do not occur. It is provided for use by non-ideal depth sensors.
 ///
 /// @ingroup sensor_systems
 ///
-/// @see DepthSensorOutput.
-/// @see DepthSensorSpecification.
+/// @see DepthSensorOutput
+/// @see DepthSensorSpecification
 ///
 class DepthSensor : public systems::LeafSystem<double> {
  public:
