@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <limits>
+#include <string>
 
 namespace drake {
 namespace systems {
@@ -12,7 +13,43 @@ namespace sensors {
 /// @see DepthSensor.
 class DepthSensorSpecification {
  public:
-  /// Constructs a %DepthSensorSpecification.
+  /// Constructs a fully-defined %DepthSensorSpecification.
+  ///
+  /// @param[in] frame_id The ID of the sensor's frame.
+  ///
+  /// @param[in] min_yaw The minimum horizontal scan angle in the sensor's
+  /// base frame. The horizontal scan angle is about the +Z axis. A zero angle
+  /// is the +X axis.
+  ///
+  /// @param[in] max_yaw The maximum horizontal scan angle in the sensor's
+  /// base frame.
+  ///
+  /// @param[in] min_pitch The minimum vertical scan angle in the sensor's base
+  /// frame.
+  ///
+  /// @param[in] max_pitch The maximum vertical scan angle in the sensor's base
+  /// frame.
+  ///
+  /// @param[in] num_yaw_values The number of yaw values at which depth
+  /// measurements are taken. These measurements are evenly spread between
+  /// @p min_yaw and @p max_yaw. This value must be greater than or equal to
+  /// 1, which occurs when @p min_yaw equals @p max_yaw.
+  ///
+  /// @param[in] num_pitch_values The number of yaw values at which depth
+  /// measurements are taken. These measurements are evenly spread between
+  /// @p min_pitch and @p max_pitch. This value must be greater than or equal to
+  /// 1, which occurs when @p min_pitch equals @p max_pitch.
+  ///
+  /// @param[in] min_range The minimum sensing range.
+  ///
+  /// @param[in] max_range The maximum sensing range.
+  DepthSensorSpecification(const std::string& frame_id, double min_yaw,
+                           double max_yaw, double min_pitch, double max_pitch,
+                           int num_yaw_values, int num_pitch_values,
+                           double min_range, double max_range);
+
+  /// Constructs a partially-defined %DepthSensorSpecification. It is missing
+  /// the sensor frame's ID, which can later be set using set_frame_id().
   ///
   /// @param[in] min_yaw The minimum horizontal scan angle in the sensor's
   /// base frame. The horizontal scan angle is about the +Z axis. A zero angle
@@ -51,6 +88,7 @@ class DepthSensorSpecification {
   /// specified. They appear as input parameters of the constructor, and
   /// mutator methods in this class.
   ///@{
+  const std::string& frame_id() const { return frame_id_; }
   double min_yaw() const { return min_yaw_; }
   double max_yaw() const { return max_yaw_; }
   double min_pitch() const { return min_pitch_; }
@@ -71,6 +109,7 @@ class DepthSensorSpecification {
   double pitch_increment() const { return pitch_increment_; }
   ///@}
 
+  void set_frame_id(std::string frame_id);
   void set_min_yaw(double min_yaw);
   void set_max_yaw(double max_yaw);
   void set_num_yaw_values(double num_yaw_values);
@@ -95,8 +134,10 @@ class DepthSensorSpecification {
   ///  - min_range = 0
   ///  - max_range = 1
   ///
-  static const DepthSensorSpecification& get_octant_1_spec() {
-    static const DepthSensorSpecification spec(0,         // min_yaw
+  static const DepthSensorSpecification& get_octant_1_spec(
+      const std::string& frame_id = "") {
+    static const DepthSensorSpecification spec(frame_id,
+                                               0,         // min_yaw
                                                M_PI / 2,  // max_yaw
                                                0,         // min_pitch
                                                M_PI / 2,  // max_pitch
@@ -119,8 +160,10 @@ class DepthSensorSpecification {
   ///  - min_range = 0
   ///  - max_range = 1
   ///
-  static const DepthSensorSpecification& get_xy_planar_spec() {
-    static const DepthSensorSpecification spec(-M_PI,  // min_yaw
+  static const DepthSensorSpecification& get_xy_planar_spec(
+      const std::string& frame_id = "") {
+    static const DepthSensorSpecification spec(frame_id,
+                                               -M_PI,  // min_yaw
                                                M_PI,   // max_yaw
                                                0,      // min_pitch
                                                0,      // max_pitch
@@ -143,8 +186,10 @@ class DepthSensorSpecification {
   ///  - min_range = 0
   ///  - max_range = 1
   ///
-  static const DepthSensorSpecification& get_xz_planar_spec() {
-    static const DepthSensorSpecification spec(0,          // min_yaw
+  static const DepthSensorSpecification& get_xz_planar_spec(
+      const std::string& frame_id = "") {
+    static const DepthSensorSpecification spec(frame_id,
+                                               0,          // min_yaw
                                                0,          // max_yaw
                                                -M_PI / 2,  // min_pitch
                                                M_PI / 2,   // max_pitch
@@ -170,8 +215,11 @@ class DepthSensorSpecification {
   ///  - max_range = 1
   ///
   /// Note that since min_range is 0, the sensed sphere is actually solid.
-  static const DepthSensorSpecification& get_xyz_spherical_spec() {
-    static const DepthSensorSpecification spec(-M_PI,      // min_yaw
+  ///
+  static const DepthSensorSpecification& get_xyz_spherical_spec(
+      const std::string& frame_id = "") {
+    static const DepthSensorSpecification spec(frame_id,
+                                               -M_PI,      // min_yaw
                                                M_PI,       // max_yaw
                                                -M_PI / 2,  // min_pitch
                                                M_PI / 2,   // max_pitch
@@ -195,8 +243,10 @@ class DepthSensorSpecification {
   ///  - min_range = 1
   ///  - max_range = 2
   ///
-  static const DepthSensorSpecification& get_x_linear_spec() {
-    static const DepthSensorSpecification spec(0,   // min_yaw
+  static const DepthSensorSpecification& get_x_linear_spec(
+      const std::string& frame_id = "") {
+    static const DepthSensorSpecification spec(frame_id,
+                                               0,   // min_yaw
                                                0,   // max_yaw
                                                0,   // min_pitch
                                                0,   // max_pitch
@@ -212,6 +262,7 @@ class DepthSensorSpecification {
   void update_yaw_increment();
   void update_pitch_increment();
 
+  std::string frame_id_;
   double min_yaw_{};
   double max_yaw_{};
   double min_pitch_{};

@@ -78,8 +78,9 @@ namespace sensors {
 /// DepthSensor::kTooClose is provided.
 ///
 /// DepthSensor::kError is defined for use when a sensing error occurs. It is
-/// not used in this class because it models an ideal sensor in which sensing
-/// errors do not occur. It is provided for use by non-ideal depth sensors.
+/// not expected to occur in this system's output because it models an ideal
+/// sensor in which sensing errors do not occur. It is expected to be used by
+/// non-ideal depth sensors.
 ///
 /// @ingroup sensor_systems
 ///
@@ -159,7 +160,8 @@ class DepthSensor : public systems::LeafSystem<double> {
   /// @param[in] frame The frame to which this depth sensor is attached.
   ///
   /// @param[in] specs The specifications of this sensor. A copy of these
-  /// specifications is stored as a class member variable.
+  /// specifications is stored as a class member variable. The frame ID within
+  /// this specification must equal the name of @p frame.
   ///
   DepthSensor(const std::string& name, const RigidBodyTree<double>& tree,
               const RigidBodyFrame<double>& frame,
@@ -211,8 +213,6 @@ class DepthSensor : public systems::LeafSystem<double> {
   /// sensed values.
   const OutputPortDescriptor<double>& get_sensor_state_output_port() const;
 
-  // System<double> overrides.
-
   /// Allocates the output port. See this class' description for details of this
   /// port.
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
@@ -228,19 +228,11 @@ class DepthSensor : public systems::LeafSystem<double> {
 
  private:
   // The depth sensor will cast a ray with its start point at (0,0,0) in the
-  // sensor's frame (as defined by RigidBodyTreeSensor::get_frame()). Its end,
-  // in the sensor's frame, is computed by this method and stored in member
+  // sensor's base frame (as defined by RigidBodyTreeSensor::get_frame()). Its
+  // end, in the sensor's frame, is computed by this method and stored in member
   // variable raycast_endpoints_ at the time of construction. raycast_endpoints_
   // is only computed once at construction since the end points are constant in
-  // the sensor's frame.
-  //
-  // TODO(liang.fok): fix the documentation below -- it doesn't make sense why
-  // it's focused on the yaw or pitch direction.
-  //
-  // The end points are computed by scanning in the yaw (pitch) direction
-  // discretizing the yaw (pitch) range in num_pixel_cols (num_pixel_rows).
-  // The final 3D end point then corresponds to a ray that starts at zero, with
-  // length max_range, at the specific yaw (pitch) angle.
+  // the sensor's base frame.
   void CacheRaycastEndpoints();
 
   const std::string name_;

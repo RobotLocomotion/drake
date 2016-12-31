@@ -2,11 +2,14 @@
 
 #include "gtest/gtest.h"
 
+#include "bot_core/pointcloud_t.hpp"
+
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system_output.h"
+#include "drake/systems/sensors/depth_sensor_output.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
 
 using Eigen::Vector3d;
@@ -31,7 +34,7 @@ GTEST_TEST(TestDepthSensor, AccessorsAndToStringTest) {
 
   // Defines the Device Under Test (DUT).
   const DepthSensorSpecification& specification =
-      DepthSensorSpecification::get_octant_1_spec();
+      DepthSensorSpecification::get_octant_1_spec("foo frame");
   DepthSensor dut(kSensorName, tree, frame, specification);
   EXPECT_EQ(dut.get_specification(), specification);
 
@@ -81,29 +84,30 @@ void DoEmptyWorldTest(const char* const name,
 // Tests the ability to scan the sensor's X,Y plane (i.e., pitch = 0).
 GTEST_TEST(TestDepthSensor, XyEmptyWorldTest) {
   DoEmptyWorldTest("foo depth sensor",
-                   DepthSensorSpecification::get_xy_planar_spec());
+                   DepthSensorSpecification::get_xy_planar_spec("foo frame"));
 }
 
 // Tests the ability to scan the sensor's X,Z plane (i.e., yaw = 0).
 GTEST_TEST(TestDepthSensor, XzEmptyWorldTest) {
   DoEmptyWorldTest("foo depth sensor",
-                   DepthSensorSpecification::get_xz_planar_spec());
+                   DepthSensorSpecification::get_xz_planar_spec("foo frame"));
 }
 
 // Tests the ability to scan the sensor's surrounding X,Y,Z volume.
 GTEST_TEST(TestDepthSensor, XyzEmptyWorldTest) {
-  DoEmptyWorldTest("foo depth sensor",
-                   DepthSensorSpecification::get_xyz_spherical_spec());
+  DoEmptyWorldTest(
+      "foo depth sensor",
+      DepthSensorSpecification::get_xyz_spherical_spec("foo frame"));
 }
 
 const double kBoxWidth{0.1};
 
-// A helper method that evaluates a scenario containing of a sensor in the
-// world's origin with a 0.1 x 0.1 x 0.1 meter box located at position
+// A helper method that evaluates a scenario containing a depth sensor in the
+// world's origin and a 0.1 x 0.1 x 0.1 meter box located at position
 // (@p box_x, @p box_y, @p box_z) in the world frame. This is useful for
 // verifying that the sensor can detect the box. The return value is a vector of
 // depth measurements.
-VectorX<double> DoBoxOcclusionTest(
+std::pair<VectorX<double>, bot_core::pointcloud_t> DoBoxOcclusionTest(
     const char* const name, const DepthSensorSpecification& specification,
     const Vector3d& box_xyz) {
   RigidBodyTree<double> tree;
@@ -147,14 +151,19 @@ VectorX<double> DoBoxOcclusionTest(
 
   int output_port_index = dut.get_sensor_state_output_port().get_index();
 
-  return output->get_vector_data(output_port_index)->get_value();
+  const DepthSensorOutput<double>* depth_sensor_output =
+      dynamic_cast<const DepthSensorOutput<double>*>(
+          output->get_vector_data(output_port_index));
+  DRAKE_DEMAND(depth_sensor_output != nullptr);
+  return std::make_pair(depth_sensor_output->get_value(),
+                        depth_sensor_output->GetPointCloud());
 }
 
 // Tests the ability to scan the sensor's X,Y plane (i.e., pitch = 0, yaw in
 // [-M_PI / 2, M_PI / 2]) in a world containing a box at (0.5, 0, 0).
 GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
   DepthSensorSpecification specification =
-      DepthSensorSpecification::get_xy_planar_spec();
+      DepthSensorSpecification::get_xy_planar_spec("foo frame");
 
   // Adjusts the min / max yaw range to ensure the sensor is able to obtain
   // four depth measurements of the box's sensor-facing surface.
@@ -162,8 +171,10 @@ GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
   specification.set_max_yaw(M_PI / 2);
 
   const Vector3d box_xyz(0.5, 0, 0);  // x, y, z location of box.
-  const VectorX<double> depth_measurements =
+
+  const std::pair<VectorX<double>, bot_core::pointcloud_t> result =
       DoBoxOcclusionTest("foo depth sensor", specification, box_xyz);
+  const VectorX<double> depth_measurements = std::get<0>(result);
 
   Eigen::VectorXd expected_output =
       VectorXd::Constant(depth_measurements.size(), DepthSensor::kTooFar);
@@ -182,6 +193,21 @@ GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
   EXPECT_TRUE(CompareMatrices(depth_measurements, expected_output, 1e-8,
                               MatrixCompareType::absolute, &message))
       << message;
+
+  const bot_core::pointcloud_t point_cloud = std::get<1>(result);
+  EXPECT_EQ(point_cloud.utime, 0);
+  EXPECT_EQ(point_cloud.seq, 0);
+  EXPECT_EQ(point_cloud.frame_id, "foo frame");
+  EXPECT_EQ(point_cloud.n_points, 4);
+  EXPECT_EQ(point_cloud.n_channels, 1);
+
+  // TODO(liang.fok) Remove this debugging code. Add machine-checkable logic.
+  for (int i = 0; i < point_cloud.n_points; ++i) {
+    std::cout << "Point cloud point " << i << ": ("
+              << point_cloud.points.at(i).at(0) << ", "
+              << point_cloud.points.at(i).at(1) << ", "
+              << point_cloud.points.at(i).at(2) << ")" << std::endl;
+  }
 }
 
 // Tests the ability to scan the sensor's X,Z plane (i.e., pitch in [0, M_PI /
@@ -190,11 +216,12 @@ GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
 // frame's -Y axis.
 GTEST_TEST(TestDepthSensor, XzBoxInWorldTest) {
   DepthSensorSpecification specification =
-      DepthSensorSpecification::get_xz_planar_spec();
+      DepthSensorSpecification::get_xz_planar_spec("foo frame");
 
   const Vector3d box_xyz(0, 0, 0.5);  // x, y, z location of box.
-  const VectorX<double> depth_measurements =
+  const std::pair<VectorX<double>, bot_core::pointcloud_t> result =
       DoBoxOcclusionTest("foo depth sensor", specification, box_xyz);
+  const VectorX<double> depth_measurements = std::get<0>(result);
 
   Eigen::VectorXd expected_output =
       VectorXd::Constant(depth_measurements.size(), DepthSensor::kTooFar);
@@ -223,9 +250,11 @@ GTEST_TEST(TestDepthSensor, TestTooClose) {
   // Note that the minimum sensing distance is 1m but the box is placed 0.5m in
   // front of the sensor.
   const Vector3d box_xyz(0.5, 0, 0);  // x, y, z location of box.
-  const VectorX<double> depth_measurements = DoBoxOcclusionTest(
-      "foo depth sensor", DepthSensorSpecification::get_x_linear_spec(),
-      box_xyz);
+  const std::pair<VectorX<double>, bot_core::pointcloud_t> result =
+      DoBoxOcclusionTest(
+          "foo depth sensor",
+          DepthSensorSpecification::get_x_linear_spec("foo frame"), box_xyz);
+  const VectorX<double> depth_measurements = std::get<0>(result);
 
   EXPECT_EQ(depth_measurements.size(), 1);
   Eigen::VectorXd expected_output =

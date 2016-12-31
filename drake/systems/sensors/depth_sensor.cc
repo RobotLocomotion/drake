@@ -38,8 +38,9 @@ DepthSensor::DepthSensor(const std::string& name,
                          double min_range, double max_range)
     : DepthSensor(name, tree, frame,
                   DepthSensorSpecification(
-                      min_yaw, max_yaw, min_pitch, max_pitch, num_yaw_values,
-                      num_pitch_values, min_range, max_range)) {}
+                      frame.get_name(), min_yaw, max_yaw, min_pitch, max_pitch,
+                      num_yaw_values, num_pitch_values, min_range, max_range)) {
+}
 
 DepthSensor::DepthSensor(const std::string& name,
                          const RigidBodyTree<double>& tree,
@@ -50,6 +51,7 @@ DepthSensor::DepthSensor(const std::string& name,
       frame_(frame),
       specification_(specification),
       raycast_endpoints_(std::make_unique<Matrix3Xd>()) {
+  DRAKE_DEMAND(specification_.frame_id() == frame.get_name());
   DRAKE_DEMAND(specification_.min_yaw() <= specification_.max_yaw() &&
                "min_yaw must be less than or equal to max_yaw.");
   DRAKE_DEMAND(specification_.min_pitch() <= specification_.max_pitch() &&
@@ -137,9 +139,9 @@ const OutputPortDescriptor<double>& DepthSensor::get_sensor_state_output_port()
 
 std::unique_ptr<SystemOutput<double>> DepthSensor::AllocateOutput(
     const Context<double>& context) const {
-  auto output = make_unique<LeafSystemOutput<double>>();
   auto data = make_unique<DepthSensorOutput<double>>(specification_);
   auto port = make_unique<OutputPort>(move(data));
+  auto output = make_unique<LeafSystemOutput<double>>();
   output->get_mutable_ports()->push_back(move(port));
   return std::unique_ptr<SystemOutput<double>>(output.release());
 }
@@ -202,10 +204,12 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
   }
 
   // Evaluates the state output port.
-  BasicVector<double>* output_vector =
-      output->GetMutableVectorData(state_output_port_id_);
+  DepthSensorOutput<double>* output_vector =
+      dynamic_cast<DepthSensorOutput<double>*>(
+          output->GetMutableVectorData(state_output_port_id_));
+  DRAKE_DEMAND(output_vector != nullptr);
 
-  output_vector->SetFromVector(distances);
+  output_vector->SetDistances(context.get_time(), distances);
 }
 
 std::ostream& operator<<(std::ostream& out, const DepthSensor& sensor) {
