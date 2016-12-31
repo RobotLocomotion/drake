@@ -23,23 +23,22 @@ class DepthSensorOutput : public BasicVector<T> {
 
   /// @name Getters and Setters
   //@{
-  /// Returns the measured distance when the sensor is in the provided @p theta
-  /// and @p phi configuration.
+
+  /// Returns the measured distance within the depth image at @p yaw_index and
+  /// @p pitch_index.
   ///
-  /// @param[in] theta The theta angle of the sensor in the sensor's frame. This
-  /// is the rotation about the +Z axis (right-hand rule), zero points down the
-  /// +X axis.
+  /// @param[in] yaw_index The index of the depth image pixel column containing
+  /// the depth is to be returned. This value must be between zero and
+  /// DepthSensor::get_num_pixel_cols().
   ///
-  /// @param[in] phi The phi angle of the sensor in the sensor's frame. This is
-  /// the rotation about the +Y axis (right-hand rule). A value of zero points
-  /// down the +X axis. A value of M_PI / 2 points down the -Z axis.
+  /// @param[in] pitch_index The index of the depth image pixel row containing
+  /// the depth to be returned. This value must be between zero and
+  /// DepthSensor::get_num_pixel_rows().
   ///
-  /// @return The measured distance when the sensor is at @p theta and @p phi.
+  /// @return The measured distance at @p yaw_index and @p pitch_index.
   ///
-  /// @throws std::runtime_error if @p theta or @p phi are invalid, which occurs
-  /// when they fall out of the sensor's min / max rotation range or if no
-  /// measurement was taken at the specified sensor angles.
-  double GetDistance(double theta, double phi) const;
+  /// @throws std::runtime_error if @p yaw_index or @p pitch_index is invalid.
+  double GetDistance(int yaw_index, int pitch_index) const;
 
   //@}
 

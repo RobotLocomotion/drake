@@ -26,56 +26,55 @@ double CalculateIncrementSize(const double max_angle, const double min_angle,
 }  // namespace
 
 DepthSensorSpecification::DepthSensorSpecification(
-    double min_theta, double max_theta, double min_phi, double max_phi,
-    int num_theta_values, int num_phi_values, double min_range,
+    double min_yaw, double max_yaw, double min_pitch, double max_pitch,
+    int num_yaw_values, int num_pitch_values, double min_range,
     double max_range)
-    : min_theta_(min_theta),
-      max_theta_(max_theta),
-      min_phi_(min_phi),
-      max_phi_(max_phi),
-      num_theta_values_(num_theta_values),
-      num_phi_values_(num_phi_values),
-      num_depth_readings_(num_theta_values * num_phi_values),
+    : min_yaw_(min_yaw),
+      max_yaw_(max_yaw),
+      min_pitch_(min_pitch),
+      max_pitch_(max_pitch),
+      num_yaw_values_(num_yaw_values),
+      num_pitch_values_(num_pitch_values),
+      num_depth_readings_(num_yaw_values * num_pitch_values),
       min_range_(min_range),
       max_range_(max_range),
-      theta_increment_(
-          CalculateIncrementSize(max_theta, min_theta, num_theta_values)),
-      phi_increment_(CalculateIncrementSize(max_phi, min_phi, num_phi_values)) {
+      yaw_increment_(CalculateIncrementSize(max_yaw, min_yaw, num_yaw_values)),
+      pitch_increment_(
+          CalculateIncrementSize(max_pitch, min_pitch, num_pitch_values)) {}
+
+void DepthSensorSpecification::set_min_yaw(double min_yaw) {
+  min_yaw_ = min_yaw;
+  update_yaw_increment();
 }
 
-void DepthSensorSpecification::set_min_theta(double min_theta) {
-  min_theta_ = min_theta;
-  update_theta_increment();
+void DepthSensorSpecification::set_max_yaw(double max_yaw) {
+  max_yaw_ = max_yaw;
+  update_yaw_increment();
 }
 
-void DepthSensorSpecification::set_max_theta(double max_theta) {
-  max_theta_ = max_theta;
-  update_theta_increment();
-}
-
-void DepthSensorSpecification::set_num_theta_values(double num_theta_values) {
-  num_theta_values_ = num_theta_values;
+void DepthSensorSpecification::set_num_yaw_values(double num_yaw_values) {
+  num_yaw_values_ = num_yaw_values;
   update_num_depth_readings();
-  update_theta_increment();
+  update_yaw_increment();
 }
 
-void DepthSensorSpecification::set_num_phi_values(double num_phi_values) {
-  num_phi_values_ = num_phi_values;
+void DepthSensorSpecification::set_num_pitch_values(double num_pitch_values) {
+  num_pitch_values_ = num_pitch_values;
   update_num_depth_readings();
-  update_phi_increment();
+  update_pitch_increment();
 }
 
 void DepthSensorSpecification::update_num_depth_readings() {
-  num_depth_readings_ = num_theta_values_ * num_phi_values_;
+  num_depth_readings_ = num_yaw_values_ * num_pitch_values_;
 }
 
-void DepthSensorSpecification::update_theta_increment() {
-  theta_increment_ =
-      CalculateIncrementSize(max_theta_, min_theta_, num_theta_values_);
+void DepthSensorSpecification::update_yaw_increment() {
+  yaw_increment_ = CalculateIncrementSize(max_yaw_, min_yaw_, num_yaw_values_);
 }
 
-void DepthSensorSpecification::update_phi_increment() {
-  phi_increment_ = CalculateIncrementSize(max_phi_, min_phi_, num_phi_values_);
+void DepthSensorSpecification::update_pitch_increment() {
+  pitch_increment_ =
+      CalculateIncrementSize(max_pitch_, min_pitch_, num_pitch_values_);
 }
 
 }  // namespace sensors

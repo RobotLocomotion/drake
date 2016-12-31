@@ -2,6 +2,9 @@
 
 #include <cmath>
 
+using std::runtime_error;
+using std::to_string;
+
 namespace drake {
 namespace systems {
 namespace sensors {
@@ -13,37 +16,36 @@ DepthSensorOutput<T>::DepthSensorOutput(const DepthSensorSpecification& spec)
 }
 
 template <typename T>
-double DepthSensorOutput<T>::GetDistance(double theta, double phi) const {
-  if (phi < spec_.min_phi())
-    throw std::runtime_error("phi is less than minimum phi.");
-
-  if (phi > spec_.max_phi())
-    throw std::runtime_error("phi is greater than maximum phi.");
-
-  if (theta < spec_.min_theta())
-    throw std::runtime_error("theta is less than minimum theta.");
-
-  if (theta > spec_.max_theta())
-    throw std::runtime_error("theta is greater than maximum theta.");
-
-  double r = remainder((phi - spec_.min_phi()), spec_.phi_increment());
-  if (r > 1e-10) {
-    throw std::runtime_error("No measurement at phi = " + std::to_string(phi) +
-                             " was taken, remainder = " + std::to_string(r));
+double DepthSensorOutput<T>::GetDistance(int yaw_index, int pitch_index) const {
+  if (yaw_index < 0) {
+    throw runtime_error("DepthSensorOutput: GetDistance: yaw_index (" +
+                        to_string(yaw_index) +
+                        ") must be greater than or equal to zero.");
   }
-  int phi_index =
-      static_cast<int>((phi - spec_.min_phi()) / spec_.phi_increment());
 
-  r = remainder(theta - spec_.min_theta(), spec_.theta_increment());
-  if (r > 1e-10) {
-    throw std::runtime_error("No measurement at theta = " +
-                             std::to_string(theta) +
-                             " was taken, remainder = " + std::to_string(r));
+  if (yaw_index >= spec_.num_yaw_values()) {
+    throw runtime_error("DepthSensorOutput: GetDistance: yaw_index (" +
+                        to_string(yaw_index) +
+                        ") must be less than the number of columns in the "
+                        "depth image (" +
+                        to_string(spec_.num_yaw_values()) + ").");
   }
-  int theta_index =
-      static_cast<int>((theta - spec_.min_theta()) / spec_.phi_increment());
 
-  return this->GetAtIndex(phi_index * spec_.num_phi_values() + theta_index);
+  if (pitch_index < 0) {
+    throw runtime_error("DepthSensorOutput: GetDistance: pitch_index (" +
+                        to_string(pitch_index) +
+                        ") must be greater than or equal to zero.");
+  }
+
+  if (pitch_index >= spec_.num_pitch_values()) {
+    throw runtime_error(
+        "DepthSensorOutput: GetDistance: pitch_index (" +
+        to_string(pitch_index) +
+        ") must be less than the number of rows in the depth image (" +
+        to_string(spec_.num_pitch_values()) + ").");
+  }
+
+  return this->GetAtIndex(pitch_index * spec_.num_yaw_values() + yaw_index);
 }
 
 template class DepthSensorOutput<double>;

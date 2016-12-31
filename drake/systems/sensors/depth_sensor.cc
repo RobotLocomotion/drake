@@ -31,14 +31,14 @@ constexpr double DepthSensor::kTooClose;
 
 DepthSensor::DepthSensor(const std::string& name,
                          const RigidBodyTree<double>& tree,
-                         const RigidBodyFrame<double>& frame, double min_theta,
-                         double max_theta, double min_phi, double max_phi,
-                         int num_theta_values, int num_phi_values,
+                         const RigidBodyFrame<double>& frame, double min_yaw,
+                         double max_yaw, double min_pitch, double max_pitch,
+                         int num_yaw_values, int num_pitch_values,
                          double min_range, double max_range)
     : DepthSensor(name, tree, frame,
                   DepthSensorSpecification(
-                      min_theta, max_theta, min_phi, max_phi, num_theta_values,
-                      num_phi_values, min_range, max_range)) {}
+                      min_yaw, max_yaw, min_pitch, max_pitch, num_yaw_values,
+                      num_pitch_values, min_range, max_range)) {}
 
 DepthSensor::DepthSensor(const std::string& name,
                          const RigidBodyTree<double>& tree,
@@ -49,27 +49,23 @@ DepthSensor::DepthSensor(const std::string& name,
       frame_(frame),
       specification_(specification),
       raycast_endpoints_(std::make_unique<Matrix3Xd>()) {
-  DRAKE_DEMAND(specification_.min_theta() <= specification_.max_theta() &&
-               "min_theta must be less than or equal to max_theta.");
-  DRAKE_DEMAND(specification_.min_phi() <= specification_.max_phi() &&
-               "min_phi must be less than or equal to max_phi.");
-  DRAKE_DEMAND(specification_.min_phi() >= -M_PI / 2 &&
-               "min_phi must be greater than or equal to -M_PI/2.");
-  DRAKE_DEMAND(specification_.max_phi() <= M_PI / 2 &&
-               "min_phi must be less than or equal to M_PI/2.");
-  if (specification_.min_theta() == specification_.max_theta()) {
-    DRAKE_DEMAND(specification_.num_theta_values() == 1 &&
-                 "num_theta_values must equal 1.");
+  DRAKE_DEMAND(specification_.min_yaw() <= specification_.max_yaw() &&
+               "min_yaw must be less than or equal to max_yaw.");
+  DRAKE_DEMAND(specification_.min_pitch() <= specification_.max_pitch() &&
+               "min_pitch must be less than or equal to max_pitch.");
+  if (specification_.min_yaw() == specification_.max_yaw()) {
+    DRAKE_DEMAND(specification_.num_yaw_values() == 1 &&
+                 "num_yaw_values must equal 1.");
   } else {
-    DRAKE_DEMAND(specification_.num_theta_values() >= 2 &&
-                 "num_theta_values must be greater than or equal to 2.");
+    DRAKE_DEMAND(specification_.num_yaw_values() >= 2 &&
+                 "num_yaw_values must be greater than or equal to 2.");
   }
-  if (specification_.min_phi() == specification_.max_phi()) {
-    DRAKE_DEMAND(specification_.num_phi_values() == 1 &&
-                 "num_phi_values must equal 1.");
+  if (specification_.min_pitch() == specification_.max_pitch()) {
+    DRAKE_DEMAND(specification_.num_pitch_values() == 1 &&
+                 "num_pitch_values must equal 1.");
   } else {
-    DRAKE_DEMAND(specification_.num_phi_values() >= 2 &&
-                 "num_phi_values must be greater than or equal to 2.");
+    DRAKE_DEMAND(specification_.num_pitch_values() >= 2 &&
+                 "num_pitch_values must be greater than or equal to 2.");
   }
   DRAKE_DEMAND(specification_.min_range() <= specification_.max_range() &&
                "min_range must be less than or equal to max_range");
@@ -86,31 +82,37 @@ void DepthSensor::CacheRaycastEndpoints() {
   raycast_endpoints_->resize(3, get_num_depth_readings());
 
   // TODO(liang.fok) Optimize the following code by eliminating duplicate end
-  // points. Currently, identical end points can occur when phi = PI / 2 or
-  // -PI / 2 or when theta > 2 * PI.
+  // points. Currently, identical raycast end points can occur when:
+  //
+  // (1) pitch = PI / 2
+  // (2) pitch = -PI / 2
+  // (3) pitch = PI and and pitch = -PI for a given yaw
+  // (3) yaw > 2 * PI
+  //
   for (int i = 0; i < get_num_pixel_rows(); ++i) {
-    double phi = specification_.min_phi() + i * specification_.phi_increment();
+    double pitch =
+        specification_.min_pitch() + i * specification_.pitch_increment();
 
-    // If this is the top-most row, set the phi equal to max_phi_. This is
+    // If this is the top-most row, set the pitch equal to max_pitch_. This is
     // necessary to account for small inaccuracies due to floating point
     // arithmetic.
-    if (i == get_num_pixel_rows() - 1) phi = specification_.max_phi();
+    if (i == get_num_pixel_rows() - 1) pitch = specification_.max_pitch();
 
     for (int j = 0; j < get_num_pixel_cols(); ++j) {
-      double theta =
-          specification_.min_theta() + j * specification_.theta_increment();
+      double yaw =
+          specification_.min_yaw() + j * specification_.yaw_increment();
 
-      // If this is the right-most column, set the theta equal to max_theta_.
+      // If this is the right-most column, set the yaw equal to max_yaw_.
       // This is necessary to account for small inaccuracies due to floating
       // point arithmetic.
-      if (j == get_num_pixel_cols() - 1) theta = specification_.max_theta();
+      if (j == get_num_pixel_cols() - 1) yaw = specification_.max_yaw();
 
       // Compute the location of the raycast end point assuming a max sensing
       // range of one and no occlusions. This is done using the same equations
       // that convert from spherical coordinates to Cartesian coordinates.
-      double x = cos(phi) * cos(theta);
-      double y = cos(phi) * sin(theta);
-      double z = sin(phi);
+      double x = cos(pitch) * cos(yaw);
+      double y = cos(pitch) * sin(yaw);
+      double z = sin(pitch);
 
       // The max range is increased by 10% (i.e., multiplied by 1.1) to ensure
       // the range cast end point exceeds the maximum range of the sensor. This
@@ -123,14 +125,12 @@ void DepthSensor::CacheRaycastEndpoints() {
 }
 
 const InputPortDescriptor<double>&
-    DepthSensor::get_rigid_body_tree_state_input_port() const {
+DepthSensor::get_rigid_body_tree_state_input_port() const {
   return this->get_input_port(state_input_port_id_);
 }
 
-/// Returns a descriptor of the state output port, which contains the sensor's
-/// sensed values.
-const OutputPortDescriptor<double>&
-    DepthSensor::get_sensor_state_output_port() const {
+const OutputPortDescriptor<double>& DepthSensor::get_sensor_state_output_port()
+    const {
   return System<double>::get_output_port(state_output_port_id_);
 }
 
@@ -185,8 +185,7 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
   // range.
   for (int i = 0; i < distances.size(); ++i) {
     if (distances[i] < 0) {
-      // Through experimentation, Liang determined that infinity distance
-      // measurements show up as -1.
+      // Infinity distance measurements show up as -1.
       if (distances[i] == -1) {
         distances[i] = kTooFar;
       } else {

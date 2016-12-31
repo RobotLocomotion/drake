@@ -78,13 +78,13 @@ void DoEmptyWorldTest(const char* const name,
       1e-10));
 }
 
-// Tests the ability to scan the sensor's X,Y plane (i.e., phi = 0).
+// Tests the ability to scan the sensor's X,Y plane (i.e., pitch = 0).
 GTEST_TEST(TestDepthSensor, XyEmptyWorldTest) {
   DoEmptyWorldTest("foo depth sensor",
                    DepthSensorSpecification::get_xy_planar_spec());
 }
 
-// Tests the ability to scan the sensor's X,Z plane (i.e., theta = 0).
+// Tests the ability to scan the sensor's X,Z plane (i.e., yaw = 0).
 GTEST_TEST(TestDepthSensor, XzEmptyWorldTest) {
   DoEmptyWorldTest("foo depth sensor",
                    DepthSensorSpecification::get_xz_planar_spec());
@@ -150,16 +150,16 @@ VectorX<double> DoBoxOcclusionTest(
   return output->get_vector_data(output_port_index)->get_value();
 }
 
-// Tests the ability to scan the sensor's X,Y plane (i.e., phi = 0, theta in
+// Tests the ability to scan the sensor's X,Y plane (i.e., pitch = 0, yaw in
 // [-M_PI / 2, M_PI / 2]) in a world containing a box at (0.5, 0, 0).
 GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
   DepthSensorSpecification specification =
       DepthSensorSpecification::get_xy_planar_spec();
 
-  // Adjusts the min / max theta range to ensure the sensor is able to obtain
+  // Adjusts the min / max yaw range to ensure the sensor is able to obtain
   // four depth measurements of the box's sensor-facing surface.
-  specification.set_min_theta(-M_PI / 2);
-  specification.set_max_theta(M_PI / 2);
+  specification.set_min_yaw(-M_PI / 2);
+  specification.set_max_yaw(M_PI / 2);
 
   const Vector3d box_xyz(0.5, 0, 0);  // x, y, z location of box.
   const VectorX<double> depth_measurements =
@@ -171,16 +171,16 @@ GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
   const double box_distance = box_xyz(0) - kBoxWidth / 2;
   expected_output(23) =
       box_distance /
-      cos(specification.min_theta() + 23 * specification.theta_increment());
+      cos(specification.min_yaw() + 23 * specification.yaw_increment());
   expected_output(24) =
       box_distance /
-      cos(specification.min_theta() + 24 * specification.theta_increment());
+      cos(specification.min_yaw() + 24 * specification.yaw_increment());
   expected_output(25) =
       box_distance /
-      cos(specification.min_theta() + 25 * specification.theta_increment());
+      cos(specification.min_yaw() + 25 * specification.yaw_increment());
   expected_output(26) =
       box_distance /
-      cos(specification.min_theta() + 26 * specification.theta_increment());
+      cos(specification.min_yaw() + 26 * specification.yaw_increment());
 
   std::string message;
   EXPECT_TRUE(CompareMatrices(depth_measurements, expected_output, 1e-8,
@@ -188,9 +188,9 @@ GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
       << message;
 }
 
-// Tests the ability to scan the sensor's X,Z plane (i.e., phi in [0, M_PI / 2],
-// theta = 0) in a world containing a box at (0, 0, 0.5). This also verifies
-// that phi rotates the sensor's optical frame around the sensor's base frame's
+// Tests the ability to scan the sensor's X,Z plane (i.e., pitch in [0, M_PI / 2],
+// yaw = 0) in a world containing a box at (0, 0, 0.5). This also verifies
+// that pitch rotates the sensor's optical frame around the sensor's base frame's
 // -Y axis.
 GTEST_TEST(TestDepthSensor, XzBoxInWorldTest) {
   DepthSensorSpecification specification =
@@ -204,13 +204,13 @@ GTEST_TEST(TestDepthSensor, XzBoxInWorldTest) {
       VectorXd::Constant(depth_measurements.size(), DepthSensor::kTooFar);
 
   const double box_distance = box_xyz(2) - kBoxWidth / 2;
-  // sin() is used below because phi is the angle between the sensor's base
+  // sin() is used below because pitch is the angle between the sensor's base
   // frame's +X axis and its ray whereas box_distance is measured along the
   // sensor's base frame's +Z axis.
-  expected_output(48) = box_distance / sin(specification.min_phi() +
-                                           48 * specification.phi_increment());
-  expected_output(49) = box_distance / sin(specification.min_phi() +
-                                           49 * specification.phi_increment());
+  expected_output(48) = box_distance / sin(specification.min_pitch() +
+                                           48 * specification.pitch_increment());
+  expected_output(49) = box_distance / sin(specification.min_pitch() +
+                                           49 * specification.pitch_increment());
 
   std::string message;
   EXPECT_TRUE(CompareMatrices(depth_measurements, expected_output, 1e-8,
@@ -220,7 +220,7 @@ GTEST_TEST(TestDepthSensor, XzBoxInWorldTest) {
 
 // Tests that the sensor will return negative infinity when the object is less
 // than the minimum sensing distance. This also covers the scenario where
-// min_theta = max_theta = min_phi = max_phi = 0.
+// min_yaw = max_yaw = min_pitch = max_pitch = 0.
 GTEST_TEST(TestDepthSensor, TestTooClose) {
   // Note that the minimum sensing distance is 1m but the box is placed 0.5m in
   // front of the sensor.
