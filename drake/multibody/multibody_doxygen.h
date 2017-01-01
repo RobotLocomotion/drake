@@ -73,11 +73,11 @@ letters to denote frames, such as A and B. Given a frame B, we denote its origin
 as @f$B_O@f$ or `Bo` in code, and its axes as @f$B_x@f$ (`Bx`) etc. There is a
 unique inertial frame commonly called the _World_ frame W, sometimes called
 _Ground_ G or the _Newtonian Frame_ N. Any frame rigidly fixed to World is also
-an inertial frame. (_Inertial_ here means non-accelerating.) Drake supports the
-notion of a _Model_ frame, which has a fixed location with respect to World,
-so that a simulation may be built up from multiple independent models each
-defined with respect to its own Model frame. This corresponds to the `<model>`
-tag in an `.sdf` file.
+an inertial frame. (_Inertial_ here means not rotating and not accelerating.)
+Drake supports the notion of a _Model_ frame, which has a fixed location with
+respect to World, so that a simulation may be built up from multiple independent
+models each defined with respect to its own Model frame. This corresponds to the
+`<model>` tag in an `.sdf` file.
 
 To simplify notation, we allow a frame to be specified in unambiguous contexts
 where only a point or a basis is required. In those cases, either the frame
