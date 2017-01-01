@@ -10,6 +10,7 @@
 #include "drake/systems/sensors/depth_sensor_output.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
 
+using Eigen::Matrix3Xd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
@@ -93,9 +94,8 @@ GTEST_TEST(TestDepthSensor, XzEmptyWorldTest) {
 
 // Tests the ability to scan the sensor's surrounding X,Y,Z volume.
 GTEST_TEST(TestDepthSensor, XyzEmptyWorldTest) {
-  DoEmptyWorldTest(
-      "foo depth sensor",
-      DepthSensorSpecification::get_xyz_spherical_spec());
+  DoEmptyWorldTest("foo depth sensor",
+                   DepthSensorSpecification::get_xyz_spherical_spec());
 }
 
 const double kBoxWidth{0.1};
@@ -105,7 +105,7 @@ const double kBoxWidth{0.1};
 // (@p box_x, @p box_y, @p box_z) in the world frame. This is useful for
 // verifying that the sensor can detect the box. The return value is a vector of
 // depth measurements.
-std::pair<VectorX<double>, Eigen::Matrix3Xd> DoBoxOcclusionTest(
+std::pair<VectorX<double>, Matrix3Xd> DoBoxOcclusionTest(
     const char* const name, const DepthSensorSpecification& specification,
     const Vector3d& box_xyz) {
   RigidBodyTree<double> tree;
@@ -158,7 +158,8 @@ std::pair<VectorX<double>, Eigen::Matrix3Xd> DoBoxOcclusionTest(
 }
 
 // Tests the ability to scan the sensor's X,Y plane (i.e., pitch = 0, yaw in
-// [-M_PI / 2, M_PI / 2]) in a world containing a box at (0.5, 0, 0).
+// [-M_PI / 2, M_PI / 2]) in a world containing a box at (0.5, 0, 0). This
+// checks both the depth image and the point cloud.
 GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
   DepthSensorSpecification specification =
       DepthSensorSpecification::get_xy_planar_spec();
@@ -170,37 +171,51 @@ GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
 
   const Vector3d box_xyz(0.5, 0, 0);  // x, y, z location of box.
 
-  const std::pair<VectorX<double>, Eigen::Matrix3Xd> result =
+  const std::pair<VectorX<double>, Matrix3Xd> result =
       DoBoxOcclusionTest("foo depth sensor", specification, box_xyz);
   const VectorX<double> depth_measurements = std::get<0>(result);
 
-  Eigen::VectorXd expected_output =
+  Eigen::VectorXd expected_depths =
       VectorXd::Constant(depth_measurements.size(), DepthSensor::kTooFar);
 
   const double box_distance = box_xyz(0) - kBoxWidth / 2;
-  expected_output(23) = box_distance / cos(specification.min_yaw() +
+  expected_depths(23) = box_distance / cos(specification.min_yaw() +
                                            23 * specification.yaw_increment());
-  expected_output(24) = box_distance / cos(specification.min_yaw() +
+  expected_depths(24) = box_distance / cos(specification.min_yaw() +
                                            24 * specification.yaw_increment());
-  expected_output(25) = box_distance / cos(specification.min_yaw() +
+  expected_depths(25) = box_distance / cos(specification.min_yaw() +
                                            25 * specification.yaw_increment());
-  expected_output(26) = box_distance / cos(specification.min_yaw() +
+  expected_depths(26) = box_distance / cos(specification.min_yaw() +
                                            26 * specification.yaw_increment());
 
   std::string message;
-  EXPECT_TRUE(CompareMatrices(depth_measurements, expected_output, 1e-8,
+  EXPECT_TRUE(CompareMatrices(depth_measurements, expected_depths, 1e-8,
                               MatrixCompareType::absolute, &message))
       << message;
 
-  const Eigen::Matrix3Xd point_cloud = std::get<1>(result);
+  std::cout << depth_measurements << std::endl;
+  const Matrix3Xd point_cloud = std::get<1>(result);
 
-  // TODO(liang.fok) Remove this debugging code. Add machine-checkable logic.
-  for (int i = 0; i < point_cloud.cols(); ++i) {
-    std::cout << "Point cloud point " << i << ": ("
-              << point_cloud(0, i) << ", "
-              << point_cloud(1, i) << ", "
-              << point_cloud(2, i) << ")" << std::endl;
-  }
+  const int kExpectedPointCloudSize = 4;
+  Matrix3Xd expected_point_cloud = Matrix3Xd::Zero(3, kExpectedPointCloudSize);
+  const double yaw_23 =
+      specification.min_yaw() + 23 * specification.yaw_increment();
+  const double yaw_24 =
+      specification.min_yaw() + 24 * specification.yaw_increment();
+  const double yaw_25 =
+      specification.min_yaw() + 25 * specification.yaw_increment();
+  const double yaw_26 =
+      specification.min_yaw() + 26 * specification.yaw_increment();
+  expected_point_cloud(0, 0) = expected_depths(23) * cos(yaw_23);
+  expected_point_cloud(1, 0) = expected_depths(23) * sin(yaw_23);
+  expected_point_cloud(0, 1) = expected_depths(24) * cos(yaw_24);
+  expected_point_cloud(1, 1) = expected_depths(24) * sin(yaw_24);
+  expected_point_cloud(0, 2) = expected_depths(25) * cos(yaw_25);
+  expected_point_cloud(1, 2) = expected_depths(25) * sin(yaw_25);
+  expected_point_cloud(0, 3) = expected_depths(26) * cos(yaw_26);
+  expected_point_cloud(1, 3) = expected_depths(26) * sin(yaw_26);
+
+  EXPECT_TRUE(CompareMatrices(point_cloud, expected_point_cloud, 1e-8));
 }
 
 // Tests the ability to scan the sensor's X,Z plane (i.e., pitch in [0, M_PI /
@@ -212,7 +227,7 @@ GTEST_TEST(TestDepthSensor, XzBoxInWorldTest) {
       DepthSensorSpecification::get_xz_planar_spec();
 
   const Vector3d box_xyz(0, 0, 0.5);  // x, y, z location of box.
-  const std::pair<VectorX<double>, Eigen::Matrix3Xd> result =
+  const std::pair<VectorX<double>, Matrix3Xd> result =
       DoBoxOcclusionTest("foo depth sensor", specification, box_xyz);
   const VectorX<double> depth_measurements = std::get<0>(result);
 
@@ -243,10 +258,9 @@ GTEST_TEST(TestDepthSensor, TestTooClose) {
   // Note that the minimum sensing distance is 1m but the box is placed 0.5m in
   // front of the sensor.
   const Vector3d box_xyz(0.5, 0, 0);  // x, y, z location of box.
-  const std::pair<VectorX<double>, Eigen::Matrix3Xd> result =
-      DoBoxOcclusionTest(
-          "foo depth sensor",
-          DepthSensorSpecification::get_x_linear_spec(), box_xyz);
+  const std::pair<VectorX<double>, Matrix3Xd> result = DoBoxOcclusionTest(
+      "foo depth sensor", DepthSensorSpecification::get_x_linear_spec(),
+      box_xyz);
   const VectorX<double> depth_measurements = std::get<0>(result);
 
   EXPECT_EQ(depth_measurements.size(), 1);
@@ -257,6 +271,9 @@ GTEST_TEST(TestDepthSensor, TestTooClose) {
   EXPECT_TRUE(CompareMatrices(depth_measurements, expected_output, 1e-8,
                               MatrixCompareType::absolute, &message))
       << message;
+
+  const Matrix3Xd point_cloud = std::get<1>(result);
+  EXPECT_EQ(point_cloud.cols(), 0);
 }
 
 }  // namespace

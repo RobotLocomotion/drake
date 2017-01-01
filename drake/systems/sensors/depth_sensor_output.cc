@@ -85,9 +85,9 @@ Matrix3Xd DepthSensorOutput<T>::GetPointCloud() const {
         // Compute the Cartesian location of the collision. This is done using
         // the same equations that convert from spherical coordinates to
         // Cartesian coordinates.
-        double x = cos(pitch) * cos(yaw);
-        double y = cos(pitch) * sin(yaw);
-        double z = sin(pitch);
+        double x = distance * cos(pitch) * cos(yaw);
+        double y = distance * cos(pitch) * sin(yaw);
+        double z = distance * sin(pitch);
 
         DRAKE_ASSERT(point_cloud_index < num_depth_measurements);
         result(0, point_cloud_index) = x;
