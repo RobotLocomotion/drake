@@ -96,7 +96,7 @@ measured with respect to the body frame.
 When a user initially specifies a body, such as in a `<link>` tag of an `.sdf`
 or `.urdf` file, there is a link frame L that may be distinct from the body
 frame B that is used by Drake internally for computation. However, frames L and
-B are always related by a constant transform that does not changing during a
+B are always related by a constant transform that does not change during a
 simulation. User-supplied information such as mass properties, visual geometry,
 and collision geometry are given with respect to frame L; Drake transforms those
 internally so that they are maintained with respect to B instead.
