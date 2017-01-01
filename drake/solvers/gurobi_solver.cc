@@ -88,7 +88,9 @@ template <typename Binding>
 int AddSecondOrderConeConstraints(
     const std::vector<Binding>& second_order_cone_constraints,
     bool is_rotated_cone, double sparseness_threshold, GRBmodel* model,
-    std::vector<bool>* is_new_variable) {
+    const std::vector<std::vector<int>>& second_order_cone_new_variable_indices) {
+  DRAKE_ASSERT(second_order_cone_constraints.size() == second_order_cone_new_variable_indices.size());
+  int second_order_cone_count = 0;
   for (const auto& binding : second_order_cone_constraints) {
     int num_constraint_variable = static_cast<int>(binding.GetNumElements());
     std::vector<int> variable_indices;
@@ -104,35 +106,20 @@ int AddSecondOrderConeConstraints(
 
     const auto& A = binding.constraint()->A();
     const auto& b = binding.constraint()->b();
-    int num_total_variables = is_new_variable->size();
-    // First add new decision variables z, with the constraints z - A*x = b
+
+
     int num_z = A.rows();
-    std::vector<char> new_variable_types(num_z, GRB_CONTINUOUS);
-    std::vector<double> new_variable_lb(
-        num_z, -std::numeric_limits<double>::infinity());
-    new_variable_lb[0] = 0.0;
-    if (is_rotated_cone) {
-      new_variable_lb[1] = 0.0;
-    }
-    int error = GRBaddvars(model, A.rows(), 0, nullptr, nullptr, nullptr,
-                           nullptr, new_variable_lb.data(), nullptr,
-                           new_variable_types.data(), nullptr);
-    if (error) {
-      return error;
-    }
-    // Append the newly added variable indices to variable_indices.
-    variable_indices.reserve(variable_indices.size() + num_z);
-    is_new_variable->reserve(is_new_variable->size() + num_z);
-    for (int i = 0; i < num_z; ++i) {
-      variable_indices.push_back(num_total_variables + i);
-      is_new_variable->push_back(true);
-    }
-    DRAKE_ASSERT(IsNumberOfVariablesAsExpected(model, is_new_variable->size()));
+
+    // Append the indices for variable z to variable_indices
+    variable_indices.insert(variable_indices.end(), second_order_cone_new_variable_indices[second_order_cone_count].begin(), second_order_cone_new_variable_indices[second_order_cone_count].end());
+
     // TODO(hongkai.dai): Use a sparse A_lorentz matrix.
     Eigen::MatrixXd A_lorentz(num_z, num_x + num_z);
     A_lorentz << -A, Eigen::MatrixXd::Identity(A.rows(), A.rows());
-    error = AddLinearConstraint(model, A_lorentz, b, variable_indices,
+    int error = AddLinearConstraint(model, A_lorentz, b, variable_indices,
                                 GRB_EQUAL, sparseness_threshold);
+
+    if (error) {return error;}
 
     // Gurobi uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
     // cone constraint.
@@ -185,6 +172,7 @@ int AddSecondOrderConeConstraints(
     if (error) {
       return error;
     }
+    ++second_order_cone_count;
   }
   return 0;
 }
@@ -389,6 +377,59 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
   // If loop completes, no errors exist so the value '0' must be returned.
   return 0;
 }
+
+// For Lorentz and rotated Lorentz cone constraints
+// Ax + b in (rotated) Lorentz cone, we will introduce new variables z as
+// z = Ax+b
+// z in (rotated) Lorentz cone.
+// So add the new varaible z before constructing the Gurobi model, as
+// recommended by the Gurobi manual, to add all decision variables at once
+// when constructing the problem.
+// @param second_order_cone_variable_indices second_order_cone_variable_indices[i]
+// contains the indices of the newly added variable z for the i'th second order cone
+// in @p second_order_cones[i].
+template <typename _Binding>
+void AddSecondOrderConeVariables(const std::vector<_Binding>& second_order_cones,
+                                 bool is_rotated_lorentz_cone,
+                                 std::vector<bool>* is_new_variable,
+                                 int* num_gurobi_vars,
+                                 std::vector<std::vector<int>>* second_order_cone_variable_indices,
+                                 std::vector<char>* gurobi_var_type,
+                                 std::vector<double>* xlow,
+                                 std::vector<double>* xupp) {
+  int num_new_second_order_cone_var = 0;
+  second_order_cone_variable_indices->resize(second_order_cones.size());
+
+  // The newly added variable z for the Lorentz cone constraint is appended
+  // to the existing variables. So increment the variable indices
+  // accordingly.
+  int lorentz_cone_count = 0;
+  for (const auto &binding : second_order_cones) {
+    int num_new_lorentz_cone_var_i = binding.constraint()->A().rows();
+    (*second_order_cone_variable_indices)[lorentz_cone_count].resize(num_new_lorentz_cone_var_i);
+    for (int i = 0; i < num_new_lorentz_cone_var_i; ++i) {
+      (*second_order_cone_variable_indices)[lorentz_cone_count][i] = *num_gurobi_vars + num_new_second_order_cone_var + i;
+    }
+    num_new_second_order_cone_var += num_new_lorentz_cone_var_i;
+    ++lorentz_cone_count;
+  }
+  *num_gurobi_vars += num_new_second_order_cone_var;
+  is_new_variable->resize(*num_gurobi_vars, true);
+
+  // Newly added variable z is continuous variable.
+  gurobi_var_type->resize(*num_gurobi_vars, GRB_CONTINUOUS);
+
+  // For Lorentz cone constraint, z(0) >= 0.
+  // For rotated Lorentz cone constraint, z(0) >= 0, z(1) >= 0.
+  xlow->resize(*num_gurobi_vars, -std::numeric_limits<double>::infinity());
+  xupp->resize(*num_gurobi_vars, std::numeric_limits<double>::infinity());
+  for (int i = 0; i < static_cast<int>(second_order_cones.size()); ++i) {
+    xlow->at((*second_order_cone_variable_indices)[i][0]) = 0;
+    if (is_rotated_lorentz_cone) {
+      xlow->at((*second_order_cone_variable_indices)[i][1]) = 0;
+    }
+  }
+}
 }  // close namespace
 
 bool GurobiSolver::available() const { return true; }
@@ -406,6 +447,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   DRAKE_ASSERT(prog.generic_constraints().empty());
 
   const int num_prog_vars = prog.num_vars();
+  int num_gurobi_vars = num_prog_vars;
 
   // Potentially Gurobi can add variables on top of the variables in
   // MathematicalProgram prog.
@@ -460,8 +502,26 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
+  // Our second order cone constraints imposes A*x+b lies within the (rotated)
+  // Lorentz cone. Unfortunately Gurobi only supports a vector z lying within
+  // the (rotated) Lorentz cone. So we create new variable z, with the
+  // constraint z - A*x = b and z being within the (rotated) Lorentz cone.
+  // Here lorentz_cone_new_varaible_indices and rotated_lorentz_cone_new_variable_indices
+  // record the indices of the newly created variable z in the Gurobi program.
+  std::vector<std::vector<int>> lorentz_cone_new_variable_indices;
+  AddSecondOrderConeVariables(prog.lorentz_cone_constraints(), false,
+                              &is_new_variable, &num_gurobi_vars,
+                              &lorentz_cone_new_variable_indices,
+                              &gurobi_var_type, &xlow, &xupp);
+
+  std::vector<std::vector<int>> rotated_lorentz_cone_new_variable_indices;
+  AddSecondOrderConeVariables(prog.rotated_lorentz_cone_constraints(), true,
+                              &is_new_variable, &num_gurobi_vars,
+                              &rotated_lorentz_cone_new_variable_indices,
+                              &gurobi_var_type, &xlow, &xupp);
+
   GRBmodel* model = nullptr;
-  GRBnewmodel(env, &model, "gurobi_model", num_prog_vars, nullptr, &xlow[0],
+  GRBnewmodel(env, &model, "gurobi_model", num_gurobi_vars, nullptr, &xlow[0],
               &xupp[0], gurobi_var_type.data(), nullptr);
 
   int error = 0;
@@ -477,14 +537,14 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   if (!error) {
     error = AddSecondOrderConeConstraints(prog.lorentz_cone_constraints(),
                                           false, sparseness_threshold, model,
-                                          &is_new_variable);
+                                          lorentz_cone_new_variable_indices);
   }
 
   // Add rotated Lorentz cone constraints.
   if (!error) {
     error = AddSecondOrderConeConstraints(
         prog.rotated_lorentz_cone_constraints(), true, sparseness_threshold,
-        model, &is_new_variable);
+        model, rotated_lorentz_cone_new_variable_indices);
   }
 
   DRAKE_ASSERT(IsNumberOfVariablesAsExpected(model, is_new_variable.size()));
