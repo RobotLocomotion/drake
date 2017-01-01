@@ -69,7 +69,7 @@ The most fundamental object in multibody mechanics is the _coordinate frame_, or
 just _frame_. Unless specified otherwise, all frames we use are right-handed
 Cartesian frames with orthogonal unit-vector axes x, y, and z forming a _basis_,
 and an origin point O serving as the location of the frame. We use capital
-letters to denote frames, such as A and B.Given a frame B, we denote its origin
+letters to denote frames, such as A and B. Given a frame B, we denote its origin
 as @f$B_O@f$ or `Bo` in code, and its axes as @f$B_x@f$ (`Bx`) etc. There is a
 unique inertial frame commonly called the _World_ frame W, sometimes called
 _Ground_ G or the _Newtonian Frame_ N. Any frame rigidly fixed to World is also
