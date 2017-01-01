@@ -195,14 +195,14 @@ class QuadraticConstraint : public Constraint {
 };
 
 /**
- This constraint taks a vector @f$ x\in\mathbb{R}^m @f$, defines a
- linear expression \f$ z\equiv Ax+b \f$, and imposes that
- @f$ z @f$ is in the Lorentz cone.
- Namely
+ Constraining the linear expression \f$ Ax+b \f$ lies within the Lorentz cone.
+ A vector \f$ z \in \mathbb{R}^n \f$ lies within Lorentz cone if
  @f[
- z = Ax+b\\
  z_1 \ge \sqrt{z_2^2+...+z_n^2}
  @f]
+ <!-->
+ z1 >= sqrt(z2^2 + ... + zn^2)
+ <-->
  where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^{n}@f$ are given matrices.
  Ideally this constraint should be handled by a second-order cone solver.
  In case the user wants to enforce this constraint through general nonlinear
@@ -212,7 +212,7 @@ class QuadraticConstraint : public Constraint {
  a_1^Tx+b_1\ge 0\\
  (a_1^Tx+b_1)^2-(a_2^Tx+b_2)^2-...-(a_n^Tx+b_n)^2 \ge 0
  @f]
- where @f$ a_i@f$ is the i'th row of matrix @f$ A@f$. @f$ b_i @f$ is the i'th
+ where @f$ a_i^T@f$ is the i'th row of matrix @f$ A@f$. @f$ b_i @f$ is the i'th
  entry of vector @f$ b @f$.
 
  For more information and visualization, please refer to
@@ -220,9 +220,8 @@ class QuadraticConstraint : public Constraint {
  */
 class LorentzConeConstraint : public Constraint {
  public:
-  template <typename DerivedA, typename DerivedB>
-  LorentzConeConstraint(const Eigen::MatrixBase<DerivedA>& A,
-                        const Eigen::MatrixBase<DerivedB>& b)
+  LorentzConeConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                        const Eigen::Ref<const Eigen::VectorXd>& b)
       : Constraint(
             2, Eigen::Vector2d::Constant(0.0),
             Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())),
@@ -255,24 +254,20 @@ class LorentzConeConstraint : public Constraint {
             TaylorVecXd& y) const override;
 
  private:
-  Eigen::MatrixXd A_;
-  Eigen::VectorXd b_;
+  const Eigen::MatrixXd A_;
+  const Eigen::VectorXd b_;
 };
 
 /**
- * This constraint taks a vector @f$ x\in\mathbb{R}^m @f$, defines a
- * linear expression @f$ z\equiv Ax+b @f$, and imposes that
- * @f$ z @f$ is in the rotated Lorentz cone.
- * Namely
+ * Constraining that the linear expression \f$ Ax+b \f$ lies within rotated Lorentz cone.
+ * A vector \f$ z \in\mathbb{R}^n \f$ lies within rotated Lorentz cone, if
  * @f[
- * z = Ax+b\\
  * z_1 \ge 0\\
  * z_2 \ge 0\\
  * z_1  z_2 \ge z_3^2 + z_4^2 + ... + z_n^2
  * @f]
  * where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^n@f$ are given matrices.
  * <!-->
- * z = A*x+b
  * z1 >= 0
  * z2 >= 0
  * z1 * z2 >= z3^2 + z4^2 + ... + zn^2
@@ -282,9 +277,8 @@ class LorentzConeConstraint : public Constraint {
  */
 class RotatedLorentzConeConstraint : public Constraint {
  public:
-  template <typename DerivedA, typename DerivedB>
-  RotatedLorentzConeConstraint(const Eigen::MatrixBase<DerivedA>& A,
-                               const Eigen::MatrixBase<DerivedB>& b)
+  RotatedLorentzConeConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                               const Eigen::Ref<const Eigen::VectorXd>& b)
       : Constraint(
             3, Eigen::Vector3d::Constant(0.0),
             Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity())),
@@ -320,8 +314,8 @@ class RotatedLorentzConeConstraint : public Constraint {
             TaylorVecXd& y) const override;
 
  private:
-  Eigen::MatrixXd A_;
-  Eigen::VectorXd b_;
+  const Eigen::MatrixXd A_;
+  const Eigen::VectorXd b_;
 };
 
 /**
