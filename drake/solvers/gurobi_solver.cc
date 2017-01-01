@@ -155,13 +155,17 @@ int AddSecondOrderConeConstraints(
     std::vector<int> qcol(num_Q_nonzero);
     std::vector<double> qval(num_Q_nonzero);
     for (int i = 0; i < num_z - 2; ++i) {
-      int zi_index = second_order_cone_new_variable_indices[second_order_cone_count][i + 2];
+      int zi_index =
+          second_order_cone_new_variable_indices[second_order_cone_count]
+                                                [i + 2];
       qrow[i] = zi_index;
       qcol[i] = zi_index;
       qval[i] = 1.0;
     }
-    int z0_index = second_order_cone_new_variable_indices[second_order_cone_count][0];
-    int z1_index = second_order_cone_new_variable_indices[second_order_cone_count][1];
+    int z0_index =
+        second_order_cone_new_variable_indices[second_order_cone_count][0];
+    int z1_index =
+        second_order_cone_new_variable_indices[second_order_cone_count][1];
     if (is_rotated_cone) {
       qrow[num_z - 2] = z0_index;
       qcol[num_z - 2] = z1_index;
