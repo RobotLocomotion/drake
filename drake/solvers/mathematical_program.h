@@ -1212,7 +1212,7 @@ class MathematicalProgram {
    * you can call
    * @code{.cc}
    *   auto x = prog.AddContinuousVariables(N,'x');
-   *   auto con = prog.AddRotatedLorentzConeConstraint(x);
+   *   auto con = prog.AddRotatedLorentzConeConstraint({x});
    * @endcode
    */
   std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(

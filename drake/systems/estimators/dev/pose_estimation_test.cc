@@ -14,7 +14,7 @@
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/systems/estimators/dev/rotation.h"
+#include "drake/solvers/rotation.h"
 
 // Note: Currently assumes that the tree has only the world plus a single body,
 // with a single collision element, which is a box.  Hey, it's a start.
@@ -91,7 +91,7 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
       // Note: Without the integer constraints, this problem has a trivial
       // solution with R = 0, t = 0, and W = 0.125.
 
-      R = drake::solvers::AddRotationMatrixSpectrahedralSdpRelaxation(&prog,
+      R = drake::solvers::NewRotationMatrixSpectrahedralSdpRelaxation(&prog,
                                                                       "R");
 
       // min sum_k | R*points.col(k) + t - vertices*W.col(k) |^2
