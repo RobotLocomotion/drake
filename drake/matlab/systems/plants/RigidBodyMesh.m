@@ -83,7 +83,7 @@ classdef RigidBodyMesh < RigidBodyGeometry
       [path,name,ext] = fileparts(geom.filename);
       if ~strcmpi(ext,'.obj') && ~exist(fullfile(path,[name,'.obj']),'file')
         exe = ''; if ispc, exe = '.exe'; end
-        converter = fullfile(pods_get_bin_path,['convert_to_obj',exe]);
+        converter = fullfile(drake_get_bin_path,['convert_to_obj',exe]);
         if exist(converter)
           systemWCMakeEnv([converter,' ',geom.filename]);
         else

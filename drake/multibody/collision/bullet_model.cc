@@ -2,6 +2,7 @@
 #include "drake/common/drake_assert.h"
 
 #include <iostream>
+#include <utility>
 
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 #include "drake/multibody/collision/drake_collision.h"
@@ -190,8 +191,8 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletStaticMeshShape(
   btTriangleMesh* mesh_interface = new btTriangleMesh();
 
   // Preallocates memory.
-  int num_triangles = triangles.size();
-  int num_vertices = vertices.size();
+  int num_triangles = static_cast<int>(triangles.size());
+  int num_vertices = static_cast<int>(vertices.size());
 
   mesh_interface->preallocateIndices(num_triangles);
   mesh_interface->preallocateVertices(num_vertices);
@@ -392,10 +393,10 @@ std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
       kPerturbationIterations, kMinimumPointsPerturbationThreshold);
   std::vector<PointPair> point_pairs;
   bt_world.bt_collision_world->performDiscreteCollisionDetection();
-  size_t numManifolds =
+  int numManifolds =
       bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
 
-  for (size_t i = 0; i < numManifolds; i++) {
+  for (int i = 0; i < numManifolds; i++) {
     btPersistentManifold* contact_manifold =
         bt_world.bt_collision_world->getDispatcher()
             ->getManifoldByIndexInternal(i);
@@ -420,9 +421,9 @@ std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
     if (shapeB == DrakeShapes::MESH || shapeB == DrakeShapes::BOX) {
       marginB = obB->getCollisionShape()->getMargin();
     }
-    size_t num_contacts = contact_manifold->getNumContacts();
+    int num_contacts = contact_manifold->getNumContacts();
 
-    for (size_t j = 0; j < num_contacts; j++) {
+    for (int j = 0; j < num_contacts; j++) {
       btManifoldPoint& pt = contact_manifold->getContactPoint(j);
       const btVector3& normal_on_B = pt.m_normalWorldOnB;
       const btVector3& point_on_A_in_world =
@@ -517,7 +518,7 @@ std::vector<size_t> BulletModel::collidingPoints(
 }
 
 bool BulletModel::updateElementWorldTransform(
-    const ElementId id, const Isometry3d& T_local_to_world) {
+    ElementId id, const Isometry3d& T_local_to_world) {
   const bool element_exists(
       Model::updateElementWorldTransform(id, T_local_to_world));
   if (element_exists) {
@@ -554,7 +555,7 @@ void BulletModel::updateModel() {
 }
 
 PointPair BulletModel::findClosestPointsBetweenElements(
-    const ElementId idA, const ElementId idB, const bool use_margins) {
+    ElementId idA, ElementId idB, bool use_margins) {
   // special case: two spheres (because we need to handle the zero-radius sphere
   // case)
   if (elements[idA]->getShape() == DrakeShapes::SPHERE &&
@@ -801,7 +802,7 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
 }
 
 bool BulletModel::closestPointsAllToAll(
-    const std::vector<ElementId>& ids_to_check, const bool use_margins,
+    const std::vector<ElementId>& ids_to_check, bool use_margins,
     std::vector<PointPair>& closest_points) {
   if (dispatch_method_in_use_ == kNotYetDecided)
     dispatch_method_in_use_ = kClosestPointsAllToAll;
@@ -824,7 +825,7 @@ bool BulletModel::closestPointsAllToAll(
 }
 
 bool BulletModel::closestPointsPairwise(
-    const std::vector<ElementIdPair>& id_pairs, const bool use_margins,
+    const std::vector<ElementIdPair>& id_pairs, bool use_margins,
     std::vector<PointPair>& closest_points) {
   closest_points.clear();
   for (const ElementIdPair& pair : id_pairs) {
@@ -835,7 +836,7 @@ bool BulletModel::closestPointsPairwise(
 }
 
 bool BulletModel::ComputeMaximumDepthCollisionPoints(
-    const bool use_margins, std::vector<PointPair> &collision_points) {
+    bool use_margins, std::vector<PointPair> &collision_points) {
   if (dispatch_method_in_use_ == kNotYetDecided)
     dispatch_method_in_use_ = kCollisionPointsAllToAll;
 

@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+
+<robot name="conflicting_materials">
+  <material name="brown">
+    <color rgba="0.93333333333 0.79607843137 0.67843137254 1"/>
+  </material>
+  <material name="brown">
+    <color rgba="0.93333333333 0.2 0.2 1"/>
+  </material>
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size=".2 .2 .2" />
+      </geometry>
+      <material name="green">
+        <color rgba="0 1 0 1" />
+      </material>
+    </visual>
+  </link>
+</robot>

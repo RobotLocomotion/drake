@@ -70,23 +70,10 @@ else % then try to evaluate the dependency now...
     case 'lcm'
       conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
       if (~conf.lcm_enabled)
-        lcm_java_classpath = getCMakeParam('lcm_java_classpath');
-        if ~isempty(lcm_java_classpath)
-          javaaddpathProtectGlobals(lcm_java_classpath);
-          disp(' Added the lcm jar to your javaclasspath (found via cmake)');
-          conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
-        end
-
-        if (~conf.lcm_enabled)
-          [retval,cp] = system(['export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:',fullfile(getCMakeParam('CMAKE_INSTALL_PREFIX'),'lib','pkgconfig'),' && pkg-config --variable=classpath lcm-java']);
-          if (retval==0 && ~isempty(cp))
-            disp(' Added the lcm jar to your javaclasspath (found via pkg-config)');
-            javaaddpathProtectGlobals(strtrim(cp));
-          end
-
-          conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
-        end
-
+        lcm_java_classpath = getCMakeParam('LCM_JAR_FILE');
+        javaaddpathProtectGlobals(lcm_java_classpath);
+        disp(' Added the lcm jar to your javaclasspath (found via cmake)');
+        conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
         if (conf.lcm_enabled)
           [retval,info] = systemWCMakeEnv(fullfile(getDrakePath(),'matlab','util','check_multicast_is_loopback.sh'));
           if (retval)
@@ -97,8 +84,8 @@ else % then try to evaluate the dependency now...
         elseif nargout<1
           disp(' ');
           disp(' LCM not found.  LCM support will be disabled.');
-          disp(' To re-enable, add lcm-###.jar to your matlab classpath');
-          disp(' (e.g., by putting javaaddpath(''/usr/local/share/java/lcm-0.9.2.jar'') into your startup.m .');
+          disp(' To re-enable, add lcm.jar to your matlab classpath');
+          disp(' (e.g., by putting javaaddpath(''/usr/local/share/java/lcm.jar'') into your startup.m .');
           disp(' ');
         end
       end
@@ -115,8 +102,8 @@ else % then try to evaluate the dependency now...
 
       if (lcm_enabled && ~conf.lcmgl_enabled)
         try % try to add bot2-lcmgl.jar
-          lcm_java_classpath = getCMakeParam('LCMGL_JAR_FILE');
-          javaaddpathProtectGlobals(lcm_java_classpath);
+          lcmgl_java_classpath = getCMakeParam('LCMGL_JAR_FILE');
+          javaaddpathProtectGlobals(lcmgl_java_classpath);
           disp(' Added the lcmgl jar to your javaclasspath (found via cmake)');
         catch err
           if strcmp(err.identifier, 'Drake:CannotClearJava')
@@ -349,6 +336,22 @@ else % then try to evaluate the dependency now...
         end
       end
       conf.avl_enabled = ~isempty(conf.avl);
+
+    case 'ffmpeg'
+      if ~isfield(conf,'ffmpeg') || isempty(conf.ffmpeg)
+        path_to_ffmpeg = getCMakeParam('FFMPEG_EXECUTABLE');
+        if isempty(path_to_ffmpeg) || strcmp(path_to_ffmpeg,'FFMPEG_EXECUTABLE-NOTFOUND')
+          if nargout<1
+            disp(' ');
+            disp(' FFmpeg support is disabled.  To enable it, install FFmpeg or Libav, then re-run CMake.');
+            disp(' ');
+          end
+          conf.ffmpeg = '';
+        else
+          conf.ffmpeg = path_to_ffmpeg;
+        end
+      end
+      conf.ffmpeg_enabled = ~isempty(conf.ffmpeg);
 
     case 'xfoil'
       if ~isfield(conf,'xfoil') || isempty(conf.xfoil)

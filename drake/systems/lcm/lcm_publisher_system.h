@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "drake/lcm/drake_lcm_interface.h"
@@ -96,12 +97,10 @@ class LcmPublisherSystem : public LeafSystem<double> {
   LcmPublisherSystem(const LcmPublisherSystem&) = delete;
   LcmPublisherSystem& operator=(const LcmPublisherSystem&) = delete;
 
-  std::string get_name() const override;
-
   const std::string& get_channel_name() const;
 
   /// Returns the default name for a system that publishes @p channel.
-  static std::string get_name(const std::string& channel);
+  static std::string make_name(const std::string& channel);
 
   /**
    * Takes the VectorBase from the input port of the context and publishes
@@ -110,10 +109,10 @@ class LcmPublisherSystem : public LeafSystem<double> {
   void DoPublish(const Context<double>& context) const override;
 
   /**
-   * This System has no output ports so EvalOutput() does nothing.
+   * This System has no output ports so CalcOutput() does nothing.
    */
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {}
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
 
   /**
    * Returns the translator used by this publisher. This can be used to convert

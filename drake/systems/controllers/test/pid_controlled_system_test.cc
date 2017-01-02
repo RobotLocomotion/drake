@@ -8,9 +8,9 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/gain.h"
-#include "drake/systems/framework/primitives/matrix_gain.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/gain.h"
+#include "drake/systems/primitives/matrix_gain.h"
 
 namespace drake {
 namespace systems {
@@ -44,12 +44,12 @@ class TestPlant : public LeafSystem<double> {
 class TestPlantWithMinOutputs : public TestPlant {
  public:
   TestPlantWithMinOutputs() {
-    DeclareInputPort(kVectorValued, 1, kContinuousSampling);
-    DeclareOutputPort(kVectorValued, 2, kContinuousSampling);
+    DeclareInputPort(kVectorValued, 1);
+    DeclareOutputPort(kVectorValued, 2);
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     auto output_vector = GetMutableOutputVector(output, 0);
     output_vector[0] = 1.;
     output_vector[1] = 0.1;
@@ -79,12 +79,12 @@ class TestPlantWithMinOutputs : public TestPlant {
 class TestPlantWithMoreOutputs : public TestPlant {
  public:
   TestPlantWithMoreOutputs() {
-    DeclareInputPort(kVectorValued, 1, kContinuousSampling);
-    DeclareOutputPort(kVectorValued, 6, kContinuousSampling);
+    DeclareInputPort(kVectorValued, 1);
+    DeclareOutputPort(kVectorValued, 6);
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     auto output_vector = GetMutableOutputVector(output, 0);
     output_vector[0] = 1.;
     output_vector[1] = 0.1;
@@ -126,12 +126,11 @@ void DoPidControlledSystemTest(std::unique_ptr<TestPlant> plant,
 
   systems::Context<double>* controller_context =
       diagram->GetMutableSubsystemContext(context.get(), controller);
-  controller->SetDefaultState(controller_context);
   systems::Context<double>* plant_context =
       controller->GetMutableSubsystemContext(
           controller_context, controller->plant());
 
-  diagram->EvalOutput(*context, output.get());
+  diagram->CalcOutput(*context, output.get());
   const BasicVector<double>* output_vec = output->get_vector_data(0);
   const double pid_input =
       dynamic_cast<TestPlant*>(controller->plant())->GetInputValue(
@@ -149,7 +148,7 @@ GTEST_TEST(PidControlledSystemTest, SimplePidControlledSystem) {
   auto plant = std::make_unique<TestPlantWithMinOutputs>();
   auto feedback_selector =
       std::make_unique<MatrixGain<double>>(
-          plant->get_output_port(0).get_size());
+          plant->get_output_port(0).size());
   DoPidControlledSystemTest(std::move(plant), std::move(feedback_selector));
 }
 
@@ -158,8 +157,8 @@ GTEST_TEST(PidControlledSystemTest, SimplePidControlledSystem) {
 // of input port zero.
 GTEST_TEST(PidControlledSystemTest, PlantWithMoreOutputs) {
   auto plant = std::make_unique<TestPlantWithMoreOutputs>();
-  const int plant_output_size = plant->get_output_port(0).get_size();
-  const int controller_feedback_size = plant->get_input_port(0).get_size() * 2;
+  const int plant_output_size = plant->get_output_port(0).size();
+  const int controller_feedback_size = plant->get_input_port(0).size() * 2;
 
   // Selects the first two signals from the plant's output port zero as the
   // feedback for the controller.

@@ -3,17 +3,23 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/parser_sdf.h"
-#include "drake/multibody/parser_urdf.h"
-#include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/multibody/parsers/sdf_parser.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {
+
+using multibody::joints::kFixed;
+using multibody::joints::kRollPitchYaw;
+using parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
+using parsers::sdf::AddModelInstancesFromSdfFile;
+
 namespace examples {
 namespace quadrotor {
 namespace {
@@ -27,14 +33,13 @@ class Quadrotor : public systems::Diagram<T> {
     this->set_name("Quadrotor");
 
     auto tree = std::make_unique<RigidBodyTree<T>>();
-
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+    AddModelInstanceFromUrdfFileToWorld(
         drake::GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
-        multibody::joints::kRollPitchYaw, nullptr, tree.get());
+        kRollPitchYaw, tree.get());
 
-    drake::parsers::sdf::AddModelInstancesFromSdfFile(
+    AddModelInstancesFromSdfFile(
         drake::GetDrakePath() + "/examples/Quadrotor/warehouse.sdf",
-        multibody::joints::kFixed, nullptr, tree.get());
+        kFixed, nullptr /* weld to frame */, tree.get());
 
     drake::multibody::AddFlatTerrainToWorld(tree.get());
 
@@ -59,9 +64,12 @@ class Quadrotor : public systems::Diagram<T> {
     builder.BuildInto(this);
   }
 
-  void SetDefaultState(systems::Context<T>* context) const {
-    systems::Context<T>* plant_context =
-        this->GetMutableSubsystemContext(context, plant_);
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override {
+    DRAKE_DEMAND(state != nullptr);
+    systems::Diagram<T>::SetDefaultState(context, state);
+    systems::State<T>* plant_state =
+        this->GetMutableSubsystemState(state, plant_);
     VectorX<T> x0(plant_->get_num_states());
     x0.setZero();
     /* x0 is the initial state where
@@ -69,7 +77,7 @@ class Quadrotor : public systems::Diagram<T> {
      * x0(3), x0(4), x0(5) are the quedrotor's Euler angles phi, theta, psi
      */
     x0(2) = 0.2;  // setting arbitrary z-position
-    plant_->set_state_vector(plant_context, x0);
+    plant_->set_state_vector(plant_state, x0);
   }
 
  private:
@@ -82,8 +90,6 @@ int do_main(int argc, char* argv[]) {
 
   Quadrotor<double> model;
   systems::Simulator<double> simulator(model);
-
-  model.SetDefaultState(simulator.get_mutable_context());
 
   simulator.Initialize();
   simulator.StepTo(FLAGS_duration);

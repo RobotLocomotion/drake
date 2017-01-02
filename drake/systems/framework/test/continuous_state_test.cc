@@ -91,6 +91,19 @@ TEST_F(ContinuousStateTest, MoreVelocityThanPositionVariables) {
       std::out_of_range);
 }
 
+TEST_F(ContinuousStateTest, CopyFrom) {
+  // Create a zero-initialized continuous state, with the same dimensions as
+  // the continuous state in the fixture.
+  ContinuousState<int> next_state(BasicVector<int>::Make({0, 0, 0, 0}),
+                                  kPositionLength, kVelocityLength,
+                                  kMiscLength);
+  next_state.CopyFrom(*continuous_state_);
+  EXPECT_EQ(1, next_state[0]);
+  EXPECT_EQ(2, next_state[1]);
+  EXPECT_EQ(3, next_state[2]);
+  EXPECT_EQ(4, next_state[3]);
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

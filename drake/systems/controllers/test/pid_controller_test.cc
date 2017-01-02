@@ -16,14 +16,6 @@ namespace {
 
 typedef Eigen::Matrix<double, 3, 1, Eigen::DontAlign> Vector3d;
 
-// TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
-// the input of the Gain system.
-template <class T>
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
-}
-
 class PidControllerTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -34,12 +26,12 @@ class PidControllerTest : public ::testing::Test {
     // Error signal input port.
     auto vec0 = std::make_unique<BasicVector<double>>(port_size_);
     vec0->get_mutable_value() << error_signal_;
-    context_->SetInputPort(0, MakeInput(std::move(vec0)));
+    context_->FixInputPort(0, std::move(vec0));
 
     // Error signal rate input port.
     auto vec1 = std::make_unique<BasicVector<double>>(port_size_);
     vec1->get_mutable_value() << error_rate_signal_;
-    context_->SetInputPort(1, MakeInput(std::move(vec1)));
+    context_->FixInputPort(1, std::move(vec1));
   }
 
   const int port_size_{3};
@@ -86,14 +78,12 @@ TEST_F(PidControllerTest, GetterVectors) {
 }
 
 // Evaluates the output and asserts correctness.
-TEST_F(PidControllerTest, EvalOutput) {
+TEST_F(PidControllerTest, CalcOutput) {
   ASSERT_NE(nullptr, context_);
   ASSERT_NE(nullptr, output_);
 
-  // Initializes the controllers' context to the default value in which the
-  // integral is zero and evaluates the output.
-  controller_.SetDefaultState(context_.get());
-  controller_.EvalOutput(*context_, output_.get());
+  // Evaluates the output.
+  controller_.CalcOutput(*context_, output_.get());
   ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_vector = output_->get_vector_data(0);
   EXPECT_EQ(3, output_vector->size());
@@ -105,7 +95,7 @@ TEST_F(PidControllerTest, EvalOutput) {
   VectorX<double> integral_value(port_size_);
   integral_value << 3.0, 2.0, 1.0;
   controller_.set_integral_value(context_.get(), integral_value);
-  controller_.EvalOutput(*context_, output_.get());
+  controller_.CalcOutput(*context_, output_.get());
   EXPECT_EQ(
       (kp_.array() * error_signal_.array() +
        ki_.array() * integral_value.array() +
@@ -114,15 +104,12 @@ TEST_F(PidControllerTest, EvalOutput) {
 }
 
 // Evaluates derivatives and asserts correctness.
-TEST_F(PidControllerTest, EvalTimeDerivatives) {
+TEST_F(PidControllerTest, CalcTimeDerivatives) {
   ASSERT_NE(nullptr, context_);
   ASSERT_NE(nullptr, derivatives_);
 
-  // Initializes the controllers' context to the default value in which the
-  // integral is zero and evaluates the derivatives.
-  controller_.SetDefaultState(context_.get());
-
-  controller_.EvalTimeDerivatives(*context_, derivatives_.get());
+  // Evaluates the derivatives.
+  controller_.CalcTimeDerivatives(*context_, derivatives_.get());
   ASSERT_EQ(3, derivatives_->size());
   ASSERT_EQ(0, derivatives_->get_generalized_position().size());
   ASSERT_EQ(0, derivatives_->get_generalized_velocity().size());

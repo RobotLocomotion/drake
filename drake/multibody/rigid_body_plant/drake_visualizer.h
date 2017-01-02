@@ -56,27 +56,12 @@ class DrakeVisualizer : public LeafSystem<double> {
   DrakeVisualizer(const RigidBodyTree<double>& tree,
       drake::lcm::DrakeLcmInterface* lcm);
 
-  void EvalOutput(const systems::Context<double>& context,
-                  systems::SystemOutput<double>* output) const override {}
+ private:
+  void DoCalcOutput(const systems::Context<double>& context,
+                    systems::SystemOutput<double>* output) const override {}
 
-  /**
-   * Returns a reference to the lcmt_viewer_load_robot message that was
-   * transmitted by this system. This is intended to be for unit testing
-   * purposes only.
-   */
-  const lcmt_viewer_load_robot& get_load_message() const;
-
-  /**
-   * Returns a reference to the bytes of the most recently transmitted
-   * lcmt_viewer_draw message. This is intended to be for unit testing purposes
-   * only.
-   */
-  const std::vector<uint8_t>& get_draw_message_bytes() const;
-
- protected:
   void DoPublish(const systems::Context<double>& context) const override;
 
- private:
   // Returns a partially-initialized lcmt_viewer_load_robot message. After this
   // method is called, all dynamically-sized member variables are correctly
   // sized, and the names and model instance IDs of the rigid bodies are set
@@ -102,12 +87,6 @@ class DrakeVisualizer : public LeafSystem<double> {
   // The translator that converts from the RigidBodyTree's generalized state
   // vector to a lcmt_viewer_draw message.
   const ViewerDrawTranslator draw_message_translator_;
-
-  // TODO(liang.fok) Remove this once this class is updated to support LCM mock
-  // interfaces and dependency injection. See #3546.
-  //
-  // Using 'mutable' here is OK since it's only used for unit test checking.
-  mutable std::vector<uint8_t> draw_message_bytes_;
 };
 
 }  // namespace systems

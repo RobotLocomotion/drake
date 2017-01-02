@@ -2,12 +2,14 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <iomanip>
-#include <iostream>
 #include <limits>
 #include <map>
 #include <memory>
 #include <numeric>
+#include <ostream>
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 
@@ -50,23 +52,16 @@ Variables UnaryExpressionCell::GetVariables() const {
 }
 
 bool UnaryExpressionCell::EqualTo(const ExpressionCell& e) const {
-  if (get_kind() != e.get_kind()) {
-    return false;
-  }
+  // Expression::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const UnaryExpressionCell& unary_e{
       static_cast<const UnaryExpressionCell&>(e)};
   return e_.EqualTo(unary_e.e_);
 }
 
 bool UnaryExpressionCell::Less(const ExpressionCell& e) const {
-  const ExpressionKind k1{get_kind()};
-  const ExpressionKind k2{e.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
+  // Expression::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const UnaryExpressionCell& unary_e{
       static_cast<const UnaryExpressionCell&>(e)};
   return e_.Less(unary_e.e_);
@@ -89,23 +84,16 @@ Variables BinaryExpressionCell::GetVariables() const {
 }
 
 bool BinaryExpressionCell::EqualTo(const ExpressionCell& e) const {
-  if (get_kind() != e.get_kind()) {
-    return false;
-  }
+  // Expression::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const BinaryExpressionCell& binary_e{
       static_cast<const BinaryExpressionCell&>(e)};
   return e1_.EqualTo(binary_e.e1_) && e2_.EqualTo(binary_e.e2_);
 }
 
 bool BinaryExpressionCell::Less(const ExpressionCell& e) const {
-  const ExpressionKind k1{get_kind()};
-  const ExpressionKind k2{e.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
+  // Expression::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const BinaryExpressionCell& binary_e{
       static_cast<const BinaryExpressionCell&>(e)};
   if (e1_.Less(binary_e.e1_)) {
@@ -125,26 +113,22 @@ double BinaryExpressionCell::Evaluate(const Environment& env) const {
 }
 
 ExpressionVar::ExpressionVar(const Variable& v)
-    : ExpressionCell{ExpressionKind::Var, hash_value<Variable>{}(v)}, var_{v} {}
+    : ExpressionCell{ExpressionKind::Var, hash_value<Variable>{}(v)}, var_{v} {
+  // Variable shouldn't be constructed by the default constructor.
+  DRAKE_DEMAND(var_.get_id() > 0);
+}
 
 Variables ExpressionVar::GetVariables() const { return {get_variable()}; }
 
 bool ExpressionVar::EqualTo(const ExpressionCell& e) const {
-  if (e.get_kind() != ExpressionKind::Var) {
-    return false;
-  }
+  // Expression::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   return var_ == static_cast<const ExpressionVar&>(e).var_;
 }
 
 bool ExpressionVar::Less(const ExpressionCell& e) const {
-  const ExpressionKind k1{get_kind()};
-  const ExpressionKind k2{e.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
+  // Expression::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   // Note the below is using the overloaded operator< between ExpressionVar
   // which is based on variable IDs.
   return var_ < static_cast<const ExpressionVar&>(e).var_;
@@ -165,10 +149,7 @@ double ExpressionVar::Evaluate(const Environment& env) const {
   }
 }
 
-ostream& ExpressionVar::Display(ostream& os) const {
-  os << var_;
-  return os;
-}
+ostream& ExpressionVar::Display(ostream& os) const { return os << var_; }
 
 ExpressionConstant::ExpressionConstant(const double v)
     : ExpressionCell{ExpressionKind::Constant, hash<double>{}(v)}, v_{v} {
@@ -178,21 +159,14 @@ ExpressionConstant::ExpressionConstant(const double v)
 Variables ExpressionConstant::GetVariables() const { return Variables{}; }
 
 bool ExpressionConstant::EqualTo(const ExpressionCell& e) const {
-  if (e.get_kind() != ExpressionKind::Constant) {
-    return false;
-  }
+  // Expression::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   return v_ == static_cast<const ExpressionConstant&>(e).v_;
 }
 
 bool ExpressionConstant::Less(const ExpressionCell& e) const {
-  const ExpressionKind k1{get_kind()};
-  const ExpressionKind k2{e.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
+  // Expression::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   return v_ < static_cast<const ExpressionConstant&>(e).v_;
 }
 
@@ -204,16 +178,14 @@ double ExpressionConstant::Evaluate(const Environment& env) const {
 ostream& ExpressionConstant::Display(ostream& os) const {
   ostringstream oss;
   oss << setprecision(numeric_limits<double>::max_digits10) << v_;
-  os << oss.str();
-  return os;
+  return os << oss.str();
 }
 
 ExpressionNeg::ExpressionNeg(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Neg, e} {}
 
 ostream& ExpressionNeg::Display(ostream& os) const {
-  os << "-(" << get_expression() << ")";
-  return os;
+  return os << "-(" << get_argument() << ")";
 }
 
 double ExpressionNeg::DoEvaluate(const double v) const { return -v; }
@@ -237,9 +209,8 @@ Variables ExpressionAdd::GetVariables() const {
 }
 
 bool ExpressionAdd::EqualTo(const ExpressionCell& e) const {
-  if (get_kind() != e.get_kind()) {
-    return false;
-  }
+  // Expression::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionAdd& add_e{static_cast<const ExpressionAdd&>(e)};
   // Compare constant_term.
   if (constant_term_ != add_e.constant_term_) {
@@ -255,15 +226,8 @@ bool ExpressionAdd::EqualTo(const ExpressionCell& e) const {
 }
 
 bool ExpressionAdd::Less(const ExpressionCell& e) const {
-  const ExpressionKind k1{get_kind()};
-  const ExpressionKind k2{e.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
-  DRAKE_ASSERT(e.get_kind() == ExpressionKind::Add);
+  // Expression::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionAdd& add_e{static_cast<const ExpressionAdd&>(e)};
   // Compare the constant_terms.
   if (constant_term_ < add_e.constant_term_) {
@@ -278,17 +242,17 @@ bool ExpressionAdd::Less(const ExpressionCell& e) const {
       add_e.term_to_coeff_map_.cbegin(), add_e.term_to_coeff_map_.cend(),
       [](const pair<Expression, double>& p1,
          const pair<Expression, double>& p2) {
-        const double coeff1{p1.second};
-        const double coeff2{p2.second};
-        if (coeff1 < coeff2) {
-          return true;
-        }
-        if (coeff2 < coeff1) {
-          return false;
-        }
         const Expression& term1{p1.first};
         const Expression& term2{p2.first};
-        return term1.Less(term2);
+        if (term1.Less(term2)) {
+          return true;
+        }
+        if (term2.Less(term1)) {
+          return false;
+        }
+        const double coeff1{p1.second};
+        const double coeff2{p2.second};
+        return coeff1 < coeff2;
       });
 }
 
@@ -346,28 +310,27 @@ ExpressionAddFactory::ExpressionAddFactory(
 
 ExpressionAddFactory::ExpressionAddFactory(
     const shared_ptr<const ExpressionAdd> ptr)
-    : constant_term_{ptr->get_constant_term()},
-      term_to_coeff_map_{ptr->get_term_to_coeff_map()} {}
+    : ExpressionAddFactory{ptr->get_constant_term(),
+                           ptr->get_term_to_coeff_map()} {}
 
 void ExpressionAddFactory::AddExpression(const Expression& e) {
-  if (e.get_kind() == ExpressionKind::Constant) {
-    const double v{
-        static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
+  if (is_constant(e)) {
+    const double v{get_constant_value(e)};
     return AddConstant(v);
   }
-  if (e.get_kind() == ExpressionKind::Add) {
+  if (is_addition(e)) {
     // Flattening
-    return Add(static_pointer_cast<ExpressionAdd>(e.ptr_));
+    return Add(to_addition(e));
   }
-  if (e.get_kind() == ExpressionKind::Mul) {
-    const auto ptr(static_pointer_cast<ExpressionMul>(e.ptr_));
-    const double constant_factor{ptr->get_constant_factor()};
+  if (is_multiplication(e)) {
+    const double constant_factor{get_constant_factor_in_multiplication(e)};
     if (constant_factor != 1.0) {
       // Instead of adding (1.0 * (constant_factor * b1^t1 ... bn^tn)),
       // add (constant_factor, 1.0 * b1^t1 ... bn^tn).
-      return AddTerm(constant_factor,
-                     ExpressionMulFactory(1.0, ptr->get_term_to_exp_map())
-                         .GetExpression());
+      return AddTerm(
+          constant_factor,
+          ExpressionMulFactory(1.0, get_products_in_multiplication(e))
+              .GetExpression());
     }
   }
   return AddTerm(1.0, e);
@@ -411,13 +374,11 @@ void ExpressionAddFactory::AddConstant(const double constant_term) {
 }
 
 void ExpressionAddFactory::AddTerm(const double coeff, const Expression& term) {
-  DRAKE_ASSERT(term.get_kind() != ExpressionKind::Constant);
+  DRAKE_ASSERT(!is_constant(term));
 
   // If (term, coeff) = (-E, coeff), add (E, -coeff) by recursive call.
-  if (term.get_kind() == ExpressionKind::Neg) {
-    return AddTerm(
-        -coeff,
-        static_pointer_cast<ExpressionNeg>(term.ptr_)->get_expression());
+  if (is_unary_minus(term)) {
+    return AddTerm(-coeff, get_argument(term));
   }
 
   const auto it(term_to_coeff_map_.find(term));
@@ -465,9 +426,8 @@ Variables ExpressionMul::GetVariables() const {
 }
 
 bool ExpressionMul::EqualTo(const ExpressionCell& e) const {
-  if (get_kind() != e.get_kind()) {
-    return false;
-  }
+  // Expression::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionMul& mul_e{static_cast<const ExpressionMul&>(e)};
   // Compare constant_factor.
   if (constant_factor_ != mul_e.constant_factor_) {
@@ -484,15 +444,8 @@ bool ExpressionMul::EqualTo(const ExpressionCell& e) const {
 }
 
 bool ExpressionMul::Less(const ExpressionCell& e) const {
-  const ExpressionKind k1{get_kind()};
-  const ExpressionKind k2{e.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
-  DRAKE_ASSERT(e.get_kind() == ExpressionKind::Mul);
+  // Expression::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionMul& mul_e{static_cast<const ExpressionMul&>(e)};
   // Compare the constant_factors.
   if (constant_factor_ < mul_e.constant_factor_) {
@@ -554,7 +507,7 @@ ostream& ExpressionMul::DisplayTerm(ostream& os, const bool print_mul,
   if (print_mul) {
     os << " * ";
   }
-  if (exponent.EqualTo(Expression::One())) {
+  if (is_one(exponent)) {
     os << base;
   } else {
     os << "pow(" << base << ", " << exponent << ")";
@@ -567,15 +520,18 @@ ExpressionMulFactory::ExpressionMulFactory(
     const map<Expression, Expression>& term_to_exp_map)
     : constant_factor_{constant_factor}, term_to_exp_map_{term_to_exp_map} {}
 
+ExpressionMulFactory::ExpressionMulFactory(
+    const shared_ptr<const ExpressionMul> ptr)
+    : ExpressionMulFactory{ptr->get_constant_factor(),
+                           ptr->get_term_to_exp_map()} {}
+
 void ExpressionMulFactory::AddExpression(const Expression& e) {
-  if (e.get_kind() == ExpressionKind::Constant) {
-    const double v{
-        static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
-    return AddConstant(v);
+  if (is_constant(e)) {
+    return AddConstant(get_constant_value(e));
   }
-  if (e.get_kind() == ExpressionKind::Mul) {
+  if (is_multiplication(e)) {
     // Flattening
-    return Add(static_pointer_cast<ExpressionMul>(e.ptr_));
+    return Add(to_multiplication(e));
   }
   // Add e^1
   return AddTerm(e, Expression{1.0});
@@ -590,6 +546,11 @@ ExpressionMulFactory& ExpressionMulFactory::operator=(
     const shared_ptr<ExpressionMul> ptr) {
   constant_factor_ = ptr->get_constant_factor();
   term_to_exp_map_ = ptr->get_term_to_exp_map();
+  return *this;
+}
+
+ExpressionMulFactory& ExpressionMulFactory::Negate() {
+  constant_factor_ = -constant_factor_;
   return *this;
 }
 
@@ -612,14 +573,9 @@ void ExpressionMulFactory::AddConstant(const double constant_factor) {
 
 void ExpressionMulFactory::AddTerm(const Expression& base,
                                    const Expression& exponent) {
-  // Case: both of base and exponent are constant, multiply this by pow(base,
-  // exponent).
-  // Example: (4 * x^2) * (3^2) => (4 * (3^2)) * x^2
-  if (base.get_kind() == ExpressionKind::Constant &&
-      exponent.get_kind() == ExpressionKind::Constant) {
-    constant_factor_ *= pow(base, exponent).Evaluate();
-    return;
-  }
+  // The following assertion holds because of
+  // ExpressionMulFactory::AddExpression.
+  DRAKE_ASSERT(!(is_constant(base) && is_constant(exponent)));
   const auto it(term_to_exp_map_.find(base));
   if (it != term_to_exp_map_.end()) {
     // base is already in map.
@@ -628,7 +584,7 @@ void ExpressionMulFactory::AddTerm(const Expression& base,
     // Example: x^3 * x^2 => x^5
     Expression& this_exponent{it->second};
     this_exponent += exponent;
-    if (this_exponent.EqualTo(Expression::Zero())) {
+    if (is_zero(this_exponent)) {
       // If it ends up with base^0 (= 1.0) then remove this entry from the map.
       // TODO(soonho-tri): The following operation is not sound since it can
       // cancels `base` which might include 0/0 problems.
@@ -636,15 +592,12 @@ void ExpressionMulFactory::AddTerm(const Expression& base,
     }
   } else {
     // Product is not found in term_to_exp_map_. Add the entry (base, exponent).
-    if (base.get_kind() == ExpressionKind::Pow) {
+    if (is_pow(base)) {
       // If (base, exponent) = (pow(e1, e2), exponent)), then add (e1, e2 *
       // exponent)
       // Example: (x^2)^3 => x^(2 * 3)
-      const Expression& e1{static_pointer_cast<ExpressionPow>(base.ptr_)
-                               ->get_first_expression()};
-      const Expression& e2{static_pointer_cast<ExpressionPow>(base.ptr_)
-                               ->get_second_expression()};
-      term_to_exp_map_.emplace(e1, e2 * exponent);
+      term_to_exp_map_.emplace(get_first_argument(base),
+                               get_second_argument(base) * exponent);
     } else {
       term_to_exp_map_.emplace(base, exponent);
     }
@@ -662,9 +615,8 @@ ExpressionDiv::ExpressionDiv(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Div, e1, e2} {}
 
 ostream& ExpressionDiv::Display(ostream& os) const {
-  os << "(" << get_first_expression() << " / " << get_second_expression()
-     << ")";
-  return os;
+  return os << "(" << get_first_argument() << " / " << get_second_argument()
+            << ")";
 }
 
 double ExpressionDiv::DoEvaluate(const double v1, const double v2) const {
@@ -690,8 +642,7 @@ void ExpressionLog::check_domain(const double v) {
 }
 
 ostream& ExpressionLog::Display(ostream& os) const {
-  os << "log(" << get_expression() << ")";
-  return os;
+  return os << "log(" << get_argument() << ")";
 }
 
 double ExpressionLog::DoEvaluate(const double v) const {
@@ -703,8 +654,7 @@ ExpressionAbs::ExpressionAbs(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Abs, e} {}
 
 ostream& ExpressionAbs::Display(ostream& os) const {
-  os << "abs(" << get_expression() << ")";
-  return os;
+  return os << "abs(" << get_argument() << ")";
 }
 
 double ExpressionAbs::DoEvaluate(const double v) const { return std::fabs(v); }
@@ -713,8 +663,7 @@ ExpressionExp::ExpressionExp(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Exp, e} {}
 
 ostream& ExpressionExp::Display(ostream& os) const {
-  os << "exp(" << get_expression() << ")";
-  return os;
+  return os << "exp(" << get_argument() << ")";
 }
 
 double ExpressionExp::DoEvaluate(const double v) const { return std::exp(v); }
@@ -732,8 +681,7 @@ void ExpressionSqrt::check_domain(const double v) {
 }
 
 ostream& ExpressionSqrt::Display(ostream& os) const {
-  os << "sqrt(" << get_expression() << ")";
-  return os;
+  return os << "sqrt(" << get_argument() << ")";
 }
 
 double ExpressionSqrt::DoEvaluate(const double v) const {
@@ -761,9 +709,8 @@ void ExpressionPow::check_domain(const double v1, const double v2) {
 }
 
 ostream& ExpressionPow::Display(ostream& os) const {
-  os << "pow(" << get_first_expression() << ", " << get_second_expression()
-     << ")";
-  return os;
+  return os << "pow(" << get_first_argument() << ", " << get_second_argument()
+            << ")";
 }
 
 double ExpressionPow::DoEvaluate(const double v1, const double v2) const {
@@ -775,8 +722,7 @@ ExpressionSin::ExpressionSin(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Sin, e} {}
 
 ostream& ExpressionSin::Display(ostream& os) const {
-  os << "sin(" << get_expression() << ")";
-  return os;
+  return os << "sin(" << get_argument() << ")";
 }
 
 double ExpressionSin::DoEvaluate(const double v) const { return std::sin(v); }
@@ -785,8 +731,7 @@ ExpressionCos::ExpressionCos(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Cos, e} {}
 
 ostream& ExpressionCos::Display(ostream& os) const {
-  os << "cos(" << get_expression() << ")";
-  return os;
+  return os << "cos(" << get_argument() << ")";
 }
 
 double ExpressionCos::DoEvaluate(const double v) const { return std::cos(v); }
@@ -795,8 +740,7 @@ ExpressionTan::ExpressionTan(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Tan, e} {}
 
 ostream& ExpressionTan::Display(ostream& os) const {
-  os << "tan(" << get_expression() << ")";
-  return os;
+  return os << "tan(" << get_argument() << ")";
 }
 
 double ExpressionTan::DoEvaluate(const double v) const { return std::tan(v); }
@@ -814,8 +758,7 @@ void ExpressionAsin::check_domain(const double v) {
 }
 
 ostream& ExpressionAsin::Display(ostream& os) const {
-  os << "asin(" << get_expression() << ")";
-  return os;
+  return os << "asin(" << get_argument() << ")";
 }
 
 double ExpressionAsin::DoEvaluate(const double v) const {
@@ -836,8 +779,7 @@ void ExpressionAcos::check_domain(const double v) {
 }
 
 ostream& ExpressionAcos::Display(ostream& os) const {
-  os << "acos(" << get_expression() << ")";
-  return os;
+  return os << "acos(" << get_argument() << ")";
 }
 
 double ExpressionAcos::DoEvaluate(const double v) const {
@@ -849,8 +791,7 @@ ExpressionAtan::ExpressionAtan(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Atan, e} {}
 
 ostream& ExpressionAtan::Display(ostream& os) const {
-  os << "atan(" << get_expression() << ")";
-  return os;
+  return os << "atan(" << get_argument() << ")";
 }
 
 double ExpressionAtan::DoEvaluate(const double v) const { return std::atan(v); }
@@ -859,9 +800,8 @@ ExpressionAtan2::ExpressionAtan2(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Atan2, e1, e2} {}
 
 ostream& ExpressionAtan2::Display(ostream& os) const {
-  os << "atan2(" << get_first_expression() << ", " << get_second_expression()
-     << ")";
-  return os;
+  return os << "atan2(" << get_first_argument() << ", " << get_second_argument()
+            << ")";
 }
 
 double ExpressionAtan2::DoEvaluate(const double v1, const double v2) const {
@@ -871,13 +811,8 @@ double ExpressionAtan2::DoEvaluate(const double v1, const double v2) const {
 ExpressionSinh::ExpressionSinh(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Sinh, e} {}
 
-double ExpressionSinh::Evaluate(const Environment& env) const {
-  return std::sinh(get_expression().Evaluate(env));
-}
-
 ostream& ExpressionSinh::Display(ostream& os) const {
-  os << "sinh(" << get_expression() << ")";
-  return os;
+  return os << "sinh(" << get_argument() << ")";
 }
 
 double ExpressionSinh::DoEvaluate(const double v) const { return std::sinh(v); }
@@ -886,8 +821,7 @@ ExpressionCosh::ExpressionCosh(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Cosh, e} {}
 
 ostream& ExpressionCosh::Display(ostream& os) const {
-  os << "cosh(" << get_expression() << ")";
-  return os;
+  return os << "cosh(" << get_argument() << ")";
 }
 
 double ExpressionCosh::DoEvaluate(const double v) const { return std::cosh(v); }
@@ -896,8 +830,7 @@ ExpressionTanh::ExpressionTanh(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Tanh, e} {}
 
 ostream& ExpressionTanh::Display(ostream& os) const {
-  os << "tanh(" << get_expression() << ")";
-  return os;
+  return os << "tanh(" << get_argument() << ")";
 }
 
 double ExpressionTanh::DoEvaluate(const double v) const { return std::tanh(v); }
@@ -906,9 +839,8 @@ ExpressionMin::ExpressionMin(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Min, e1, e2} {}
 
 ostream& ExpressionMin::Display(ostream& os) const {
-  os << "min(" << get_first_expression() << ", " << get_second_expression()
-     << ")";
-  return os;
+  return os << "min(" << get_first_argument() << ", " << get_second_argument()
+            << ")";
 }
 
 double ExpressionMin::DoEvaluate(const double v1, const double v2) const {
@@ -919,9 +851,8 @@ ExpressionMax::ExpressionMax(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Max, e1, e2} {}
 
 ostream& ExpressionMax::Display(ostream& os) const {
-  os << "max(" << get_first_expression() << ", " << get_second_expression()
-     << ")";
-  return os;
+  return os << "max(" << get_first_argument() << ", " << get_second_argument()
+            << ")";
 }
 
 double ExpressionMax::DoEvaluate(const double v1, const double v2) const {
@@ -948,9 +879,8 @@ Variables ExpressionIfThenElse::GetVariables() const {
 }
 
 bool ExpressionIfThenElse::EqualTo(const ExpressionCell& e) const {
-  if (get_kind() != e.get_kind()) {
-    return false;
-  }
+  // Expression::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionIfThenElse& ite_e{
       static_cast<const ExpressionIfThenElse&>(e)};
   return f_cond_.EqualTo(ite_e.f_cond_) && e_then_.EqualTo(ite_e.e_then_) &&
@@ -958,14 +888,8 @@ bool ExpressionIfThenElse::EqualTo(const ExpressionCell& e) const {
 }
 
 bool ExpressionIfThenElse::Less(const ExpressionCell& e) const {
-  const ExpressionKind k1{get_kind()};
-  const ExpressionKind k2{e.get_kind()};
-  if (k1 < k2) {
-    return true;
-  }
-  if (k2 < k1) {
-    return false;
-  }
+  // Expression::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionIfThenElse& ite_e{
       static_cast<const ExpressionIfThenElse&>(e)};
   if (f_cond_.Less(ite_e.f_cond_)) {
@@ -992,8 +916,149 @@ double ExpressionIfThenElse::Evaluate(const Environment& env) const {
 }
 
 ostream& ExpressionIfThenElse::Display(ostream& os) const {
-  os << "(if " << f_cond_ << " then " << e_then_ << " else " << e_else_ << ")";
-  return os;
+  return os << "(if " << f_cond_ << " then " << e_then_ << " else " << e_else_
+            << ")";
+}
+
+bool is_constant(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Constant;
+}
+bool is_variable(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Var;
+}
+bool is_unary_minus(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Neg;
+}
+bool is_addition(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Add;
+}
+bool is_multiplication(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Mul;
+}
+bool is_division(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Div;
+}
+bool is_log(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Log;
+}
+bool is_abs(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Abs;
+}
+bool is_exp(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Exp;
+}
+bool is_sqrt(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Sqrt;
+}
+bool is_pow(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Pow;
+}
+bool is_sin(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Sin;
+}
+bool is_cos(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Cos;
+}
+bool is_tan(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Tan;
+}
+bool is_asin(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Asin;
+}
+bool is_acos(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Acos;
+}
+bool is_atan(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Atan;
+}
+bool is_atan2(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Atan2;
+}
+bool is_sinh(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Sinh;
+}
+bool is_cosh(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Cosh;
+}
+bool is_tanh(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Tanh;
+}
+bool is_min(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Min;
+}
+bool is_max(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Max;
+}
+bool is_if_then_else(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::IfThenElse;
+}
+
+shared_ptr<ExpressionConstant> to_constant(
+    const shared_ptr<ExpressionCell> exp_ptr) {
+  DRAKE_ASSERT(is_constant(*exp_ptr));
+  return static_pointer_cast<ExpressionConstant>(exp_ptr);
+}
+shared_ptr<ExpressionConstant> to_constant(const Expression& e) {
+  return to_constant(e.ptr_);
+}
+
+shared_ptr<ExpressionVar> to_variable(
+    const shared_ptr<ExpressionCell> exp_ptr) {
+  DRAKE_ASSERT(is_variable(*exp_ptr));
+  return static_pointer_cast<ExpressionVar>(exp_ptr);
+}
+shared_ptr<ExpressionVar> to_variable(const Expression& e) {
+  return to_variable(e.ptr_);
+}
+
+shared_ptr<UnaryExpressionCell> to_unary(
+    const shared_ptr<ExpressionCell> exp_ptr) {
+  DRAKE_ASSERT(is_unary_minus(*exp_ptr) || is_log(*exp_ptr) ||
+               is_abs(*exp_ptr) || is_exp(*exp_ptr) || is_sqrt(*exp_ptr) ||
+               is_sin(*exp_ptr) || is_cos(*exp_ptr) || is_tan(*exp_ptr) ||
+               is_asin(*exp_ptr) || is_acos(*exp_ptr) || is_atan(*exp_ptr) ||
+               is_sinh(*exp_ptr) || is_cosh(*exp_ptr) || is_tanh(*exp_ptr));
+  return static_pointer_cast<UnaryExpressionCell>(exp_ptr);
+}
+shared_ptr<UnaryExpressionCell> to_unary(const Expression& e) {
+  return to_unary(e.ptr_);
+}
+
+shared_ptr<BinaryExpressionCell> to_binary(
+    const shared_ptr<ExpressionCell> exp_ptr) {
+  DRAKE_ASSERT(is_division(*exp_ptr) || is_pow(*exp_ptr) ||
+               is_atan2(*exp_ptr) || is_min(*exp_ptr) || is_max(*exp_ptr));
+  return static_pointer_cast<BinaryExpressionCell>(exp_ptr);
+}
+shared_ptr<BinaryExpressionCell> to_binary(const Expression& e) {
+  return to_binary(e.ptr_);
+}
+
+shared_ptr<ExpressionAdd> to_addition(
+    const shared_ptr<ExpressionCell> exp_ptr) {
+  DRAKE_ASSERT(is_addition(*exp_ptr));
+  return static_pointer_cast<ExpressionAdd>(exp_ptr);
+}
+shared_ptr<ExpressionAdd> to_addition(const Expression& e) {
+  return to_addition(e.ptr_);
+}
+
+shared_ptr<ExpressionMul> to_multiplication(
+    const shared_ptr<ExpressionCell> exp_ptr) {
+  DRAKE_ASSERT(is_multiplication(*exp_ptr));
+  return static_pointer_cast<ExpressionMul>(exp_ptr);
+}
+shared_ptr<ExpressionMul> to_multiplication(const Expression& e) {
+  return to_multiplication(e.ptr_);
+}
+
+shared_ptr<ExpressionIfThenElse> to_if_then_else(
+    const shared_ptr<ExpressionCell> exp_ptr) {
+  DRAKE_ASSERT(is_if_then_else(*exp_ptr));
+  return static_pointer_cast<ExpressionIfThenElse>(exp_ptr);
+}
+shared_ptr<ExpressionIfThenElse> to_if_then_else(const Expression& e) {
+  return to_if_then_else(e.ptr_);
 }
 
 }  // namespace symbolic

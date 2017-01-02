@@ -1,6 +1,7 @@
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
 #include <iostream>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
@@ -36,11 +37,12 @@ LcmSubscriberSystem::LcmSubscriberSystem(
 
   lcm->Subscribe(channel_, this);
   if (translator_ != nullptr) {
-    DeclareOutputPort(kVectorValued, translator_->get_vector_size(),
-                      kContinuousSampling);
+    DeclareOutputPort(kVectorValued, translator_->get_vector_size());
   } else {
-    DeclareAbstractOutputPort(kContinuousSampling);
+    DeclareAbstractOutputPort();
   }
+
+  set_name(make_name(channel_));
 }
 
 LcmSubscriberSystem::LcmSubscriberSystem(
@@ -63,11 +65,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
 
 LcmSubscriberSystem::~LcmSubscriberSystem() {}
 
-std::string LcmSubscriberSystem::get_name() const {
-  return get_name(channel_);
-}
-
-std::string LcmSubscriberSystem::get_name(const std::string& channel) {
+std::string LcmSubscriberSystem::make_name(const std::string& channel) {
   return "LcmSubscriberSystem(" + channel + ")";
 }
 
@@ -75,8 +73,8 @@ const std::string& LcmSubscriberSystem::get_channel_name() const {
   return channel_;
 }
 
-void LcmSubscriberSystem::EvalOutput(const Context<double>&,
-                                     SystemOutput<double>* output) const {
+void LcmSubscriberSystem::DoCalcOutput(const Context<double>&,
+                                       SystemOutput<double>* output) const {
   DRAKE_ASSERT((translator_ != nullptr) != (serializer_.get() != nullptr));
 
   if (translator_ != nullptr) {
@@ -119,7 +117,7 @@ LcmSubscriberSystem::AllocateOutput(const Context<double>& context) const {
 
 // This is only called if our output port is vector-valued.
 std::unique_ptr<BasicVector<double>> LcmSubscriberSystem::AllocateOutputVector(
-    const SystemPortDescriptor<double>& descriptor) const {
+    const OutputPortDescriptor<double>& descriptor) const {
   DRAKE_DEMAND(descriptor.get_index() == 0);
   DRAKE_DEMAND(translator_ != nullptr);
   DRAKE_DEMAND(serializer_.get() == nullptr);

@@ -6,7 +6,6 @@
 #include <Eigen/Dense>
 
 #include "drake/solvers/decision_variable.h"
-#include "drake/solvers/solution_result.h"
 #include "drake/multibody/constraint_wrappers.h"
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -77,7 +76,7 @@ void SetIKSolverOptions(const IKoptions& ikoptions,
 /// underlying model.
 void AddSingleTimeLinearPostureConstraint(
     const double *t, const RigidBodyConstraint*, int nq,
-    const drake::solvers::DecisionVariableView& vars,
+    const drake::solvers::DecisionVariableMatrixX& vars,
     drake::solvers::MathematicalProgram* prog);
 
 /// Add a single time linear posture constraint to @p prog at time @p
@@ -86,7 +85,7 @@ void AddSingleTimeLinearPostureConstraint(
 void AddQuasiStaticConstraint(
     const double *t, const RigidBodyConstraint*,
     KinematicsCacheHelper<double>* kin_helper,
-    const drake::solvers::DecisionVariableView& vars,
+    const drake::solvers::DecisionVariableMatrixX& vars,
     drake::solvers::MathematicalProgram* prog);
 
 }  // namespace plants

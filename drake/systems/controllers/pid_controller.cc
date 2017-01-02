@@ -90,27 +90,21 @@ bool PidController<T>::has_any_direct_feedthrough() const {
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& PidController<T>::get_error_port() const {
+const InputPortDescriptor<T>& PidController<T>::get_error_port() const {
   return Diagram<T>::get_input_port(0);
 }
 
 template <typename T>
-const SystemPortDescriptor<T>&
+const InputPortDescriptor<T>&
 PidController<T>::get_error_derivative_port() const {
   return Diagram<T>::get_input_port(1);
 }
 
 
 template <typename T>
-const SystemPortDescriptor<T>&
+const OutputPortDescriptor<T>&
 PidController<T>::get_control_output_port() const {
   return System<T>::get_output_port(0);
-}
-
-template <typename T>
-void PidController<T>::SetDefaultState(Context<T>* context) const {
-  const int size = Diagram<T>::get_input_port(0).get_size();
-  set_integral_value(context, VectorX<T>::Zero(size));
 }
 
 template <typename T>

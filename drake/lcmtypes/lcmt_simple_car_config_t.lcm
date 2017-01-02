@@ -7,11 +7,11 @@ struct lcmt_simple_car_config_t {
   // The timestamp in milliseconds.
   int64_t timestamp;
 
-  double wheelbase;
-  double track;
-  double max_abs_steering_angle;
-  double max_velocity;
-  double max_acceleration;
-  double velocity_lookahead_time;
-  double velocity_kp;
+  double wheelbase;  // wheelbase
+  double track;  // track
+  double max_abs_steering_angle;  // max_abs_steering_angle
+  double max_velocity;  // max_velocity
+  double max_acceleration;  // max_acceleration
+  double velocity_lookahead_time;  // velocity_lookahead_time
+  double velocity_kp;  // velocity_kp
 }

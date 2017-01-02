@@ -1,5 +1,11 @@
-#include "drake/matlab/util/drakeMexUtil.h"
+#include <memory>
+
 #include "drake/examples/Atlas/atlasUtil.h"
+#include "drake/examples/examples_package_map.h"
+#include "drake/matlab/util/drakeMexUtil.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/parser_common.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/controllers/InstantaneousQPController.h"
 
 using namespace Eigen;
@@ -32,9 +38,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   std::cout << "urdf_filename: " << urdf_filename << std::endl;
   std::string control_config_filename = mxGetStdString(prhs[narg++]);
   std::cout << "control config: " << control_config_filename << std::endl;
-  std::unique_ptr<RigidBodyTree<double>> robot =
-      std::unique_ptr<RigidBodyTree<double>>(
-          new RigidBodyTree<double>(urdf_filename));
+  auto robot = std::make_unique<RigidBodyTree<double>>();
+  drake::parsers::PackageMap package_map;
+  drake::examples::AddExamplePackages(&package_map);
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
+      urdf_filename, package_map, drake::multibody::joints::kRollPitchYaw,
+      nullptr /* weld to frame */, robot.get());
 
   if (nrhs >= 3) {
     std::string urdf_modifications_filename = mxGetStdString(prhs[narg++]);

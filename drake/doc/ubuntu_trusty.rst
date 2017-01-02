@@ -1,3 +1,5 @@
+.. _build_from_source_trusty:
+
 *************************
 Ubuntu 14.04 LTS (Trusty)
 *************************
@@ -50,6 +52,15 @@ modifies `~/.bashrc` with the new ``PATH`` environment variable::
 
 .. _`CMake Download Page`: https://cmake.org/download/
 
+JDK 8
+-----
+As OpenJDK 8 is not available on Trusty, install Oracle JDK 8::
+
+    sudo add-apt-repository ppa:webupd8team/java
+    sudo apt-get update
+    sudo apt-get install oracle-java8-installer
+
+
 Other Prerequisites
 -------------------
 
@@ -57,7 +68,7 @@ Other prerequisites may be installed as follows::
 
     sudo apt-get update
     sudo apt-get install --no-install-recommends autoconf automake bison \
-      default-jdk doxygen freeglut3-dev git graphviz libgtk2.0-dev \
+      doxygen freeglut3-dev git graphviz libgtk2.0-dev \
       libhtml-form-perl libjpeg-dev libmpfr-dev libpng-dev libqt4-dev \
       libqt4-opengl-dev libqwt-dev libterm-readkey-perl libtool libvtk-java \
       libvtk5-dev libvtk5-qt4-dev libwww-perl make ninja-build perl pkg-config \
@@ -66,9 +77,6 @@ Other prerequisites may be installed as follows::
 
 Environment
 -----------
-
-There are up to two important environment variables to set depending on which
-version of Ubuntu is being used.
 
 Compiler Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

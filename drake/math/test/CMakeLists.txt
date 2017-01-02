@@ -8,6 +8,7 @@ drake_add_cc_test(discrete_algebraic_ricatti_equation_test)
 target_link_libraries(discrete_algebraic_ricatti_equation_test drakeCommon)
 
 drake_add_cc_test(eigen_sparse_triplet_test)
+target_link_libraries(eigen_sparse_triplet_test Eigen3::Eigen)
 
 drake_add_cc_test(expmap_test)
 target_link_libraries(expmap_test drakeCommon)
@@ -23,3 +24,6 @@ target_link_libraries(normalize_vector_test drakeCommon)
 
 drake_add_cc_test(jacobian_test)
 target_link_libraries(jacobian_test drakeCommon)
+
+drake_add_cc_test(matrix_util_test)
+target_linK_libraries(matrix_util_test drakeCommon)

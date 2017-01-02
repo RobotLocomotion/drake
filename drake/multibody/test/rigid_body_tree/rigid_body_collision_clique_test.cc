@@ -3,9 +3,11 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/parser_common.h"
-#include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/joints/fixed_joint.h"
+#include "drake/multibody/joints/quaternion_floating_joint.h"
+#include "drake/multibody/parsers/model_instance_id_table.h"
+#include "drake/multibody/parsers/parser_common.h"
+
 
 namespace drake {
 namespace systems {
@@ -28,14 +30,15 @@ class RigidBodyTreeCollisionCliqueTest : public ::testing::Test {
   void SetUp() override {
     tree_ = make_unique<RigidBodyTree<double>>();
 
+    RigidBody<double>& world = tree_->world();
+
     drake::SquareTwistMatrix<double> I =
         drake::SquareTwistMatrix<double>::Zero();
     I.block(3, 3, 3, 3) << Matrix3d::Identity();
 
     // This body requires a self-collision clique
-    RigidBody<double>* temp_body;
-    tree_->add_rigid_body(
-        unique_ptr<RigidBody<double>>(temp_body = new RigidBody<double>()));
+    RigidBody<double>* temp_body = tree_->add_rigid_body(
+        make_unique<RigidBody<double>>());
     temp_body->set_model_name("robot1");
     temp_body->set_name("body1");
     temp_body->set_spatial_inertia(I);
@@ -43,6 +46,10 @@ class RigidBodyTreeCollisionCliqueTest : public ::testing::Test {
     body1_collision_element_2_ = make_unique<Element>();
     temp_body->AddCollisionElement("default", body1_collision_element_1_.get());
     temp_body->AddCollisionElement("default", body1_collision_element_2_.get());
+    unique_ptr<DrakeJoint> j(
+        new QuaternionFloatingJoint("j1", Isometry3d::Identity()));
+    temp_body->setJoint(move(j));
+    temp_body->set_parent(&world);
 
     // These next bodies will *not* require self-collision clique
     tree_->add_rigid_body(
@@ -52,12 +59,18 @@ class RigidBodyTreeCollisionCliqueTest : public ::testing::Test {
     body2_->set_spatial_inertia(I);
     body2_collision_element_ = make_unique<Element>();
     body2_->AddCollisionElement("default", body2_collision_element_.get());
+    j.reset(new QuaternionFloatingJoint("j1", Isometry3d::Identity()));
+    body2_->setJoint(move(j));
+    body2_->set_parent(&world);
 
     tree_->add_rigid_body(
         unique_ptr<RigidBody<double>>(body3_ = new RigidBody<double>()));
     body3_->set_model_name("robot3");
     body3_->set_name("body3");
     body3_->set_spatial_inertia(I);
+    j.reset(new QuaternionFloatingJoint("j1", Isometry3d::Identity()));
+    body3_->setJoint(move(j));
+    body3_->set_parent(&world);
   }
 
  protected:

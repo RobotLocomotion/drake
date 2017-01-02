@@ -5,6 +5,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -100,6 +101,11 @@ class RigidBody {
   const DrakeJoint& getJoint() const;
 
   /**
+   * Reports if the body has a parent joint.
+   */
+  bool has_joint() const { return joint_ != nullptr; }
+
+  /**
    * Sets the parent rigid body. This is the rigid body that is connected to
    * this rigid body's joint.
    *
@@ -139,11 +145,12 @@ class RigidBody {
     return parent_ == &other;
   }
 
-  /**
-   * Sets the "body index" of this `RigidBody`. The "body index" is the index of
-   * this `RigidBody` within the vector of `RigidBody` objects within the
-   * `RigidBodyTree`.
-   */
+
+  /// Sets the "body index" of this `RigidBody`. The "body index" is the
+  /// index of this `RigidBody` within the vector of `RigidBody` objects
+  /// within the `RigidBodyTree`.
+  /// Users should NOT call this method. It is only here to be used
+  /// internally by RigidBodyTree.
   void set_body_index(int body_index);
 
   /**

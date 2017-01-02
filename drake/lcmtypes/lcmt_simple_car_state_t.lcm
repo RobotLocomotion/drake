@@ -7,8 +7,8 @@ struct lcmt_simple_car_state_t {
   // The timestamp in milliseconds.
   int64_t timestamp;
 
-  double x;
-  double y;
-  double heading;
-  double velocity;
+  double x;  // x
+  double y;  // y
+  double heading;  // heading
+  double velocity;  // velocity
 }

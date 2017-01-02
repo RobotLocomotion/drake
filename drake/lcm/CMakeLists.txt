@@ -3,7 +3,9 @@
 set(lcm_independent_header_files
     drake_lcm_interface.h
     drake_lcm_message_handler_interface.h
-    drake_mock_lcm.h)
+    drake_mock_lcm.h
+    lcm_call_matlab.h
+    )
 
 set(lcm_independent_source_files
     drake_mock_lcm.cc)
@@ -25,6 +27,7 @@ set(lcm_dependent_source_files)
 if (lcm_FOUND)
   set(lcm_dependent_source_files
       drake_lcm.cc
+      lcm_call_matlab.cc
       lcm_receive_thread.cc
       lcmt_drake_signal_utils.cc)
 endif()

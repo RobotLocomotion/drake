@@ -2,10 +2,94 @@
 # Default to an optimized build.
 build -c opt
 
-# Build options.
+# Default build options.
 build --strip=never
 build --copt -Werror=all
 build --cxxopt -std=c++1y
 
-# Test options.
+# Default test options.
 test --test_output=errors
+
+# By default, disable targets that require proprietary software.
+# -- Any targets that require Gurobi must have the tag "gurobi".
+build --build_tag_filters=-gurobi
+test --test_tag_filters=-gurobi
+
+### A configuration that enables Gurobi. ###
+# -- To use this config, the GUROBI_PATH environment variable must be the
+# -- linux64 directory in the Gurobi 6.0.5 release.
+#
+# -- Gurobi checks a license file, and may need to contact a license server to
+# -- check out a license. Therefore, tests that use Gurobi must have the tag
+# -- "local", because they are non-hermetic. For the moment, we also require
+# -- the tag "exclusive", to rate-limit license servers with a small number of
+# -- licenses.
+# -- TODO(david-german-tri): Find a better fix for the license server problem.
+build:gurobi --define=WITH_GUROBI=ON
+# -- By default, Gurobi looks for the license file in the homedir.
+test:gurobi --test_env=HOME
+# -- If set, the GRB_LICENSE_FILE path takes precedence.
+test:gurobi --test_env=GRB_LICENSE_FILE
+# -- This configuration runs only tests that require Gurobi.
+test:gurobi --test_tag_filters=gurobi
+
+### A configuration that enables all optional dependencies. ###
+# This is probably only useful for CI.
+test:everything --test_tag_filters=
+
+# -- Options for Gurobi.
+build:everything --define=WITH_GUROBI=ON
+test:everything --test_env=HOME
+test:everything --test_env=GRB_LICENSE_FILE
+
+### Clang. ###
+build:clang --compiler=clang-3.9
+build:clang --crosstool_top=//tools:default-toolchain
+
+### Coverage build. ###
+build:coverage --copt -g
+build:coverage --copt -fprofile-arcs -ftest-coverage
+build:coverage --linkopt -fprofile-arcs -ftest-coverage
+
+### ASan build. ###
+build:asan --action_env=ASAN_OPTIONS
+build:asan --copt -fsanitize=address
+build:asan --copt -O1
+build:asan --copt -fno-omit-frame-pointer
+build:asan --linkopt -fsanitize=address
+
+### LSan build. ###
+build:lsan --action_env=LSAN_OPTIONS
+build:lsan --copt -fsanitize=leak
+build:lsan --copt -O1
+build:lsan --copt -fno-omit-frame-pointer
+build:lsan --linkopt -fsanitize=leak
+
+### TSan build. ###
+build:tsan --action_env=TSAN_OPTIONS
+build:tsan --copt -fsanitize=thread
+build:tsan --copt -O1
+build:tsan --copt -fno-omit-frame-pointer
+build:tsan --linkopt -fsanitize=thread
+
+### UBSan build. ###
+build:ubsan --action_env=UBSAN_OPTIONS
+build:ubsan --copt -fsanitize=undefined
+build:ubsan --copt -O1
+build:ubsan --copt -fno-omit-frame-pointer
+build:ubsan --linkopt -fsanitize=undefined
+
+### Memcheck build. ###
+build:memcheck --copt -g
+build:memcheck --run_under=//tools:valgrind
+
+# Fast memcheck.
+#
+# This build runs tests under valgrind, but (unlike `--config memcheck`) does
+# not alter the compile flags.  Thus, the already-cached compilation results
+# from a `bazel build` or `bazel test` can be reused.  This is useful to scan a
+# local build for memory errors quickly.  For more specific error reporting
+# when errors are found, try `-c dbg --config fastmemcheck` or `--config
+# memcheck` to recompile with line numbers and lower optimization levels.
+#
+build:fastmemcheck --run_under=//tools:valgrind

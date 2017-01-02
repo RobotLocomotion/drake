@@ -1,6 +1,8 @@
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/multibody/rigid_body_plant/point_contact_detail.h"
 
+#include <utility>
+
 namespace drake {
 namespace systems {
 
@@ -158,6 +160,36 @@ ContactForce<T> ContactResultantForceCalculator<T>::ComputeResultant() const {
     result_torque += arm.cross(force.get_force());
   }
   return ContactForce<T>(min_point, normal,
+                         normal_component_sum + tangent_component_sum,
+                         result_torque);
+}
+
+template <typename T>
+ContactForce<T> ContactResultantForceCalculator<T>::ComputeResultant(
+    const Vector3<T>& reference_point) const {
+  Vector3<T> result_torque = Vector3<T>::Zero();
+  Vector3<T> tangent_component_sum = Vector3<T>::Zero();
+  Vector3<T> normal_component_sum = Vector3<T>::Zero();
+  Vector3<T> arm;
+
+  for (const auto& force : forces_) {
+    normal_component_sum += force.get_normal_force();
+    result_torque += force.get_torque();
+    tangent_component_sum += force.get_tangent_force();
+
+    arm = force.get_application_point() - reference_point;
+    result_torque += arm.cross(force.get_force());
+  }
+
+  Vector3<T> normal;
+  T denom = normal_component_sum.squaredNorm();
+  if (denom > Eigen::NumTraits<T>::dummy_precision()) {
+    normal = normal_component_sum.normalized();
+  } else {
+    normal << 0, 0, 1;
+  }
+
+  return ContactForce<T>(reference_point, normal,
                          normal_component_sum + tangent_component_sum,
                          result_torque);
 }

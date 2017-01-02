@@ -62,107 +62,91 @@ int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
 }
 
 /*
- * Add Lorentz cone constraints.
- * A Lorentz cone constraint is the convex conic constraint
+ * Add (rotated) Lorentz cone constraints, that A*x+b is in the (rotated)
+ * Lorentz cone.
+ * A vector x is in the Lorentz cone, if
  * x(0) >= sqrt(x(1)^2 + ... + x(N-1)^2)
+ * A vector x is in the rotated Lorentz cone, if
+ * x(0)*x(1) >= x(2)^2 + ... + x(N-1)^2
+ * x(0) >= 0, z(1) >= 0
  */
-int AddLorentzConeConstraints(GRBmodel* model,
-                              const MathematicalProgram& prog) {
-  for (const auto& binding : prog.lorentz_cone_constraints()) {
+template <typename Binding>
+int AddSecondOrderConeConstraints(
+    const std::vector<Binding>& second_order_cone_constraints,
+    bool is_rotated_cone, GRBmodel* model) {
+  for (const auto& binding : second_order_cone_constraints) {
     int num_constraint_variable = static_cast<int>(binding.GetNumElements());
     std::vector<int> variable_indices;
     variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
-    auto variable_list = binding.variable_list();
-    for (const DecisionVariableView& var : variable_list) {
-      for (int i = 0; i < static_cast<int>(var.size()); i++) {
-        variable_indices.push_back(static_cast<int>(var.index()) + i);
+    const auto& variable_list = binding.variable_list();
+    for (const DecisionVariableMatrixX& var : variable_list.variables()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
+        variable_indices.push_back(static_cast<int>(var(i, 0).index()));
       }
     }
-    // We will build a matrix Q = diag([-1;1;1;...;1;], and we will use
-    // qrow to store the row    indices of the non-zero entries of Q.
-    // qcol to store the column indices of the non-zero entries of Q.
-    // qval to store the value          of the non-zero entries of Q.
-    std::vector<int> qrow;
-    std::vector<int> qcol;
-    std::vector<double> qval;
-    qrow.reserve(static_cast<size_t>(num_constraint_variable));
-    qcol.reserve(static_cast<size_t>(num_constraint_variable));
-    qval.reserve(static_cast<size_t>(num_constraint_variable));
-    qrow.push_back(variable_indices[0]);
-    qcol.push_back(variable_indices[0]);
-    qval.push_back(-1.0);
-    for (int i = 1; i < num_constraint_variable; i++) {
-      qrow.push_back(variable_indices[i]);
-      qcol.push_back(variable_indices[i]);
-      qval.push_back(1.0);
-    }
+    int num_x = static_cast<int>(variable_indices.size());
+    DRAKE_DEMAND(num_x >= (is_rotated_cone ? 3 : 2));
+
+    // Set the lower bound for the second order conic variables.
+    // If using Lorentz cone, x(0) >= 0
+    // If using rotated Lorentz cone, x(0) >= 0, x(1) >=0
     int error =
         GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, variable_indices[0], 0.0);
-    if (error) {
-      return error;
+    if (error) return error;
+    if (is_rotated_cone) {
+      error = GRBsetdblattrelement(model, GRB_DBL_ATTR_LB,
+                                       variable_indices[1], 0.0);
+      if (error) return error;
     }
-    error = GRBaddqconstr(model, 0, nullptr, nullptr, num_constraint_variable,
-                          qrow.data(), qcol.data(), qval.data(), GRB_LESS_EQUAL,
-                          0.0, NULL);
-    if (error) {
-      return error;
-    }
-  }
-  return 0;
-}
 
-/*
- * Add the rotated lorentz cone constraint.
- * x(0) * x(1) >= x(2)^2 + .. x(N-1)^2
- * x(0) >= 0, x(1) >= 0
- */
-int AddRotatedLorentzConeConstraint(GRBmodel* model,
-                                    const MathematicalProgram& prog) {
-  for (const auto& binding : prog.rotated_lorentz_cone_constraints()) {
-    int num_constraint_variable = static_cast<int>(binding.GetNumElements());
-    std::vector<int> variable_indices;
-    variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
-    auto variable_list = binding.variable_list();
-    for (const DecisionVariableView& var : variable_list) {
-      for (int i = 0; i < static_cast<int>(var.size()); i++) {
-        variable_indices.push_back(static_cast<int>(var.index()) + i);
-      }
+    // Gurobi uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
+    // cone constraint.
+    // https://www.gurobi.com/documentation/7.0/refman/c_grbaddqconstr.html
+    // For Lorentz cone constraint,
+    // Q = [-1 0 0 ... 0]
+    //     [ 0 1 0 ... 0]
+    //     [ 0 0 1 ... 0]
+    //          ...
+    //     [ 0 0 0 ... 1]
+    // namely Q = diag([-1; 1; 1; ...; 1], so
+    // x' * Q * x = x(1)^2 + ... + x(n-1)^2 - x(0)^2.
+    // For rotated Lorentz cone constraint
+    // Q = [0 -1 0 0 ... 0]
+    //     [0  0 0 0 ... 0]
+    //     [0  0 1 0 ... 0]
+    //     [0  0 0 1 ... 0]
+    //           ...
+    //     [0  0 0 0 ... 1]
+    // so x' * Q * x = x(2)^2 + ... + x(n-1)^2 - x(0) * x(1).
+    // We will store Q in a sparse format.
+    // qrow stores the row    indices of the non-zero entries of Q.
+    // qcol stores the column indices of the non-zero entries of Q.
+    // qval stores the value          of the non-zero entries of Q.
+    size_t num_Q_nonzero = is_rotated_cone ? num_x - 1 : num_x;
+    std::vector<int> qrow(num_Q_nonzero);
+    std::vector<int> qcol(num_Q_nonzero);
+    std::vector<double> qval(num_Q_nonzero);
+    for (int i = 0; i < num_x - 2; ++i) {
+      qrow[i] = variable_indices[i + 2];
+      qcol[i] = variable_indices[i + 2];
+      qval[i] = 1.0;
     }
-    // Build a matrix Q = [0 -1 0 0 ... 0]
-    //                    [0  0 0 0 ... 0]
-    //                    [0  0 1 0 ... 0]
-    //                    [0  0 0 1 ... 0]
-    //                        ...
-    //                    [0  0 0 0 ... 1]
-    // qrow to store the row    indices of the non-zero entries of Q.
-    // qcol to store the column indices of the non-zero entries of Q.
-    // qval to store the value          of the non-zero entries of Q.
-    std::vector<int> qrow;
-    std::vector<int> qcol;
-    std::vector<double> qval;
-    qrow.reserve(static_cast<size_t>(num_constraint_variable) - 1);
-    qcol.reserve(static_cast<size_t>(num_constraint_variable) - 1);
-    qval.reserve(static_cast<size_t>(num_constraint_variable) - 1);
-    qrow.push_back(variable_indices[0]);
-    qcol.push_back(variable_indices[1]);
-    qval.push_back(-1.0);
-    for (int i = 2; i < num_constraint_variable; i++) {
-      qrow.push_back(variable_indices[i]);
-      qcol.push_back(variable_indices[i]);
-      qval.push_back(1.0);
+    if (is_rotated_cone) {
+      qrow[num_x - 2] = variable_indices[0];
+      qcol[num_x - 2] = variable_indices[1];
+      qval[num_x - 2] = -1;
+    } else {
+      qrow[num_x - 2] = variable_indices[0];
+      qcol[num_x - 2] = variable_indices[0];
+      qval[num_x - 2] = -1;
+      qrow[num_x - 1] = variable_indices[1];
+      qcol[num_x - 1] = variable_indices[1];
+      qval[num_x - 1] = 1;
     }
-    // x[0] >= 0, x[1] >= 0
-    int error;
-    for (int i = 0; i < 2; i++) {
-      error = GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, variable_indices[i],
-                                   0.0);
-      if (error) {
-        return error;
-      }
-    }
-    error = GRBaddqconstr(model, 0, nullptr, nullptr,
-                          num_constraint_variable - 1, qrow.data(), qcol.data(),
-                          qval.data(), GRB_LESS_EQUAL, 0.0, NULL);
+    error =
+        GRBaddqconstr(model, 0, nullptr, nullptr, num_Q_nonzero, qrow.data(),
+                      qcol.data(), qval.data(), GRB_LESS_EQUAL, 0.0, NULL);
     if (error) {
       return error;
     }
@@ -193,9 +177,12 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
     // binding.VariableListToVectorXd(i).
     std::vector<int> constraint_variable_index(constraint_variable_dimension);
     int constraint_variable_count = 0;
-    for (const DecisionVariableView& var : binding.variable_list()) {
-      for (int i = 0; i < static_cast<int>(var.size()); i++) {
-        constraint_variable_index[constraint_variable_count] = var.index() + i;
+    for (const DecisionVariableMatrixX& var :
+         binding.variable_list().variables()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
+        constraint_variable_index[constraint_variable_count] =
+            var(i, 0).index();
         constraint_variable_count++;
       }
     }
@@ -227,10 +214,12 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
     const auto& constraint = binding.constraint();
     Eigen::RowVectorXd c = constraint->A();
     int constraint_variable_count = 0;
-    for (const DecisionVariableView& var : binding.variable_list()) {
-      for (int i = 0; i < static_cast<int>(var.size()); i++) {
+    for (const DecisionVariableMatrixX& var :
+         binding.variable_list().variables()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         b_nonzero_coefs.push_back(Eigen::Triplet<double>(
-            var.index() + i, 0, c(constraint_variable_count)));
+            var(i, 0).index(), 0, c(constraint_variable_count)));
         constraint_variable_count++;
       }
     }
@@ -293,9 +282,11 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
     // variable_indices[i] is the index of the i'th variable.
     std::vector<int> variable_indices;
     variable_indices.reserve(var_dim);
-    for (const DecisionVariableView& var : binding.variable_list()) {
-      for (int i = 0; i < static_cast<int>(var.size()); i++) {
-        variable_indices.push_back(var.index() + i);
+    for (const DecisionVariableMatrixX& var :
+         binding.variable_list().variables()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
+        variable_indices.push_back(var(i, 0).index());
       }
     }
     const int error =
@@ -312,9 +303,11 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
     // variable_indices[i] is the index of the i'th variable
     std::vector<int> variable_indices;
     variable_indices.reserve(var_dim);
-    for (const DecisionVariableView& var : binding.variable_list()) {
-      for (int i = 0; i < static_cast<int>(var.size()); i++) {
-        variable_indices.push_back(var.index() + i);
+    for (const DecisionVariableMatrixX& var :
+         binding.variable_list().variables()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
+        variable_indices.push_back(var(i, 0).index());
       }
     }
     const Eigen::MatrixXd& A = constraint->A();
@@ -382,18 +375,19 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   std::vector<double> xlow(num_vars, -std::numeric_limits<double>::infinity());
   std::vector<double> xupp(num_vars, std::numeric_limits<double>::infinity());
 
-  const std::vector<DecisionVariable::VarType>& var_type = prog.VariableTypes();
+  const std::vector<DecisionVariableScalar::VarType>& var_type =
+      prog.VariableTypes();
 
   std::vector<char> gurobi_var_type(num_vars);
   for (int i = 0; i < num_vars; ++i) {
     switch (var_type[i]) {
-      case DecisionVariable::VarType::CONTINUOUS:
+      case DecisionVariableScalar::VarType::CONTINUOUS:
         gurobi_var_type[i] = GRB_CONTINUOUS;
         break;
-      case DecisionVariable::VarType::BINARY:
+      case DecisionVariableScalar::VarType::BINARY:
         gurobi_var_type[i] = GRB_BINARY;
         break;
-      case DecisionVariable::VarType::INTEGER:
+      case DecisionVariableScalar::VarType::INTEGER:
         gurobi_var_type[i] = GRB_INTEGER;
     }
   }
@@ -403,10 +397,11 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
     int var_idx = 0;
-    for (const DecisionVariableView& decision_variable_view :
-         binding.variable_list()) {
-      for (size_t k = 0; k < decision_variable_view.size(); k++) {
-        const int idx = decision_variable_view.index() + k;
+    for (const DecisionVariableMatrixX& var :
+         binding.variable_list().variables()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      for (int k = 0; k < var.rows(); ++k) {
+        const int idx = var(k, 0).index();
         xlow[idx] = std::max(lower_bound(var_idx), xlow[idx]);
         xupp[idx] = std::min(upper_bound(var_idx), xupp[idx]);
         var_idx++;
@@ -429,12 +424,15 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   // Add Lorentz cone constraints.
   if (!error) {
-    error = AddLorentzConeConstraints(model, prog);
+    error = AddSecondOrderConeConstraints(prog.lorentz_cone_constraints(),
+                                          false, model);
   }
 
   // Add rotated Lorentz cone constraints.
   if (!error) {
-    error = AddRotatedLorentzConeConstraint(model, prog);
+    error =
+        AddSecondOrderConeConstraints(prog.rotated_lorentz_cone_constraints(),
+                                      true, model);
   }
 
   SolutionResult result = SolutionResult::kUnknownError;
@@ -482,7 +480,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverResult("Gurobi", error);
+  prog.SetSolverResult(SolverName(), error);
 
   GRBfreemodel(model);
   GRBfreeenv(env);

@@ -39,10 +39,10 @@ class AcrobotOutputVector : public systems::BasicVector<T> {
   /// @name Getters and Setters
   //@{
   // theta1
-  const T theta1() const { return this->GetAtIndex(K::kTheta1); }
+  const T& theta1() const { return this->GetAtIndex(K::kTheta1); }
   void set_theta1(const T& theta1) { this->SetAtIndex(K::kTheta1, theta1); }
   // theta2
-  const T theta2() const { return this->GetAtIndex(K::kTheta2); }
+  const T& theta2() const { return this->GetAtIndex(K::kTheta2); }
   void set_theta2(const T& theta2) { this->SetAtIndex(K::kTheta2, theta2); }
   //@}
 };

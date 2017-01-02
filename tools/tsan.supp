@@ -1,0 +1,5 @@
+# unlock of an unlocked mutex (libmosek64.*) in l_mt_unlock
+mutex:l_mt_unlock
+
+# thread leak (libiomp5.*) in __kmp_create_worker
+thread:__kmp_create_worker

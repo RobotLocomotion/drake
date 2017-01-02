@@ -55,11 +55,13 @@ if $install_cmake; then
 fi
 
 # Install the APT dependencies.
+apt update -y
 # TODO(david-german-tri): Can we remove libvtk-java?
 apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
 autoconf
 automake
+bash-completion
 bison
 default-jdk
 doxygen
@@ -100,9 +102,22 @@ python-vtk
 python-yaml
 unzip
 valgrind
+zip
+zlib1g-dev
 
 EOF
     )
+
+# Install Bazel.
+wget -O /tmp/bazel_0.4.2-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.4.2/bazel_0.4.2-linux-x86_64.deb
+if echo "de12abbf8bf1b5ec5f7676afb32019e10e144fe986fb170ebb7d976bb2229539 /tmp/bazel_0.4.2-linux-x86_64.deb" | sha256sum -c -; then
+  dpkg -i /tmp/bazel_0.4.2-linux-x86_64.deb
+else
+  echo "The Bazel deb does not have the expected SHA256.  Not installing Bazel."
+  exit 1
+fi
+
+rm /tmp/bazel_0.4.2-linux-x86_64.deb
 
 # TODO(david-german-tri): Do we need to munge the MATLAB C++ libraries?
 # http://drake.mit.edu/ubuntu.html#matlab

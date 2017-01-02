@@ -47,6 +47,25 @@ gen_lcm_and_vector () {
     $CLANG_FORMAT --style=file -i "$mydir"/gen/$snake*.h "$mydir"/gen/$snake*.cc
 }
 
+# Call the code generator to produce an LCM message, a translator, and
+# a Drake BasicVector based on specifications contained within a YAML file.
+#
+# @param1 title -- used to create class/type names
+# @param2 yaml_file --- the YAML specification of vector fields
+gen_lcm_and_vector_from_yaml () {
+    title="$1"
+    yaml_file="$2"
+    snake=$(echo "$title" | tr " " _)
+    shift
+    $drake/tools/lcm_vector_gen.py \
+        --lcmtype-dir=$drake/lcmtypes \
+        --cxx-dir=$mydir/gen \
+        --namespace="$namespace" \
+        --title="$title"  \
+        --yaml_file="$yaml_file"
+    $CLANG_FORMAT --style=file -i "$mydir"/gen/$snake*.h "$mydir"/gen/$snake*.cc
+}
+
 # Call the code generator to produce just a Drake BasicVector.
 #
 # @param1 title -- used to create class/type names

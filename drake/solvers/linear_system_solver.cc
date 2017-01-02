@@ -11,8 +11,7 @@ namespace solvers {
 
 bool LinearSystemSolver::available() const { return true; }
 
-SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog)
-     const {
+SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
     num_constraints += binding.constraint()->A().rows();
@@ -34,10 +33,14 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog)
     auto const& c = binding.constraint();
     size_t n = c->A().rows();
     size_t var_index = 0;
-    for (const DecisionVariableView& v : binding.variable_list()) {
-      Aeq.block(constraint_index, v.index(), n, v.size()) =
-          c->A().middleCols(var_index, v.size());
-      var_index += v.size();
+    for (const auto& v : binding.variable_list().variables()) {
+      DRAKE_ASSERT(v.cols() == 1);
+      int num_v_variables = v.rows();
+      for (int i = 0; i < num_v_variables; ++i) {
+        Aeq.block(constraint_index, v(i, 0).index(), n, 1) =
+            c->A().col(var_index);
+        ++var_index;
+      }
     }
     beq.segment(constraint_index, n) =
         c->lower_bound();  // = c->upper_bound() since it's an equality
@@ -49,7 +52,7 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog)
   prog.SetDecisionVariableValues(
       Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
 
-  prog.SetSolverResult("Linear System Solver", 0);
+  prog.SetSolverResult(SolverName(), 0);
   return SolutionResult::kSolutionFound;
 }
 

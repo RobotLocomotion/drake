@@ -54,14 +54,6 @@ class SpringMassSystemTest : public ::testing::Test {
     state_->set_conservative_work(0);
   }
 
-  // Helper method to create input ports (free standing input ports) that are
-  // not connected to any other output port in the system.
-  // Used to test standalone systems not part of a Diagram.
-  static std::unique_ptr<FreestandingInputPort> MakeInput(
-      std::unique_ptr<BasicVector<double>> data) {
-    return make_unique<FreestandingInputPort>(std::move(data));
-  }
-
  protected:
   std::unique_ptr<SpringMassSystem<double>> system_;
   std::unique_ptr<Context<double>> context_;
@@ -99,7 +91,7 @@ TEST_F(SpringMassSystemTest, CloneState) {
 
 TEST_F(SpringMassSystemTest, CloneOutput) {
   InitializeState(1.0, 2.0);
-  system_->EvalOutput(*context_, system_output_.get());
+  system_->CalcOutput(*context_, system_output_.get());
   std::unique_ptr<BasicVector<double>> clone = output_->Clone();
 
   SpringMassStateVector<double>* typed_clone =
@@ -113,7 +105,7 @@ TEST_F(SpringMassSystemTest, CloneOutput) {
 TEST_F(SpringMassSystemTest, Output) {
   // Displacement 100cm, vel 250cm/s (.25 is exact in binary).
   InitializeState(0.1, 0.25);
-  system_->EvalOutput(*context_, system_output_.get());
+  system_->CalcOutput(*context_, system_output_.get());
   ASSERT_EQ(1, system_output_->get_num_ports());
 
   // Check the output through the application-specific interface.
@@ -161,7 +153,7 @@ TEST_F(SpringMassSystemTest, MapVelocityToConfigurationDerivative) {
 
 TEST_F(SpringMassSystemTest, ForcesPositiveDisplacement) {
   InitializeState(0.1, 0.1);  // Displacement 0.1m, velocity 0.1m/sec.
-  system_->EvalTimeDerivatives(*context_, system_derivatives_.get());
+  system_->CalcTimeDerivatives(*context_, system_derivatives_.get());
 
   ASSERT_EQ(3, derivatives_->size());
   // The derivative of position is velocity.
@@ -172,7 +164,7 @@ TEST_F(SpringMassSystemTest, ForcesPositiveDisplacement) {
 
 TEST_F(SpringMassSystemTest, ForcesNegativeDisplacement) {
   InitializeState(-0.1, 0.2);  // Displacement -0.1m, velocity 0.2m/sec.
-  system_->EvalTimeDerivatives(*context_, system_derivatives_.get());
+  system_->CalcTimeDerivatives(*context_, system_derivatives_.get());
 
   ASSERT_EQ(3, derivatives_->size());
   // The derivative of position is velocity.
@@ -197,10 +189,10 @@ TEST_F(SpringMassSystemTest, DynamicsWithExternalForce) {
   // Creates a free standing input port not actually connected to the output of
   // another system but that has its own data in force_vector.
   // This is done in order to be able to test this system standalone.
-  context_->SetInputPort(0, MakeInput(std::move(force_vector)));
+  context_->FixInputPort(0, std::move(force_vector));
 
   InitializeState(0.1, 0.1);  // Displacement 0.1m, velocity 0.1m/sec.
-  system_->EvalTimeDerivatives(*context_, system_derivatives_.get());
+  system_->CalcTimeDerivatives(*context_, system_derivatives_.get());
 
   ASSERT_EQ(3, derivatives_->size());
   // The derivative of position is velocity.
@@ -221,10 +213,10 @@ TEST_F(SpringMassSystemTest, ForceEnergyAndPower) {
   const double v = system_->get_velocity(*context_);
   const double w_c = system_->get_conservative_work(*context_);
   const double f = system_->EvalSpringForce(*context_);
-  const double pe = system_->EvalPotentialEnergy(*context_);
-  const double ke = system_->EvalKineticEnergy(*context_);
-  const double power_c = system_->EvalConservativePower(*context_);
-  const double power_nc = system_->EvalNonConservativePower(*context_);
+  const double pe = system_->CalcPotentialEnergy(*context_);
+  const double ke = system_->CalcKineticEnergy(*context_);
+  const double power_c = system_->CalcConservativePower(*context_);
+  const double power_nc = system_->CalcNonConservativePower(*context_);
 
   EXPECT_EQ(q, 1.0);
   EXPECT_EQ(v, 2.0);
@@ -251,7 +243,7 @@ MatrixX<double> CalcDxdotDx(const System<double>& system,
                             const Context<double>& context) {
   const double perturb = 1e-7;  // roughly sqrt(precision)
   auto derivs0 = system.AllocateTimeDerivatives();
-  system.EvalTimeDerivatives(context, derivs0.get());
+  system.CalcTimeDerivatives(context, derivs0.get());
   const int nx = derivs0->size();
   const VectorX<double> xdot0 = derivs0->CopyToVector();
   MatrixX<double> d_xdot_dx(nx, nx);
@@ -265,7 +257,7 @@ MatrixX<double> CalcDxdotDx(const System<double>& system,
   for (int i = 0; i < x->size(); ++i) {
     const double xi = x->GetAtIndex(i);
     x->SetAtIndex(i, xi + perturb);
-    system.EvalTimeDerivatives(*temp_context, derivs.get());
+    system.CalcTimeDerivatives(*temp_context, derivs.get());
     d_xdot_dx.col(i) = (derivs->CopyToVector() - xdot0) / perturb;
     x->SetAtIndex(i, xi);  // repair Context
   }
@@ -349,7 +341,7 @@ void StepImplicitEuler(
   // Would normally iterate until convergence of dx norm as shown above.
   // Here I'm just iterating a fixed number of time that I know is plenty!
   for (int i = 0; i < 6; ++i) {
-    system.EvalTimeDerivatives(context, &derivs);
+    system.CalcTimeDerivatives(context, &derivs);
     const auto& dx1 = derivs.get_vector();
     const auto vx1 = x1->CopyToVector();
     const auto vdx1 = dx1.CopyToVector();
@@ -366,8 +358,8 @@ void StepImplicitEuler(
 TODO(sherm1): assuming there is only KE and PE to worry about. */
 double CalcEnergy(const SpringMassSystem<double>& system,
                   const Context<double>& context) {
-  return system.EvalPotentialEnergy(context) +
-         system.EvalKineticEnergy(context);
+  return system.CalcPotentialEnergy(context) +
+         system.CalcKineticEnergy(context);
 }
 
 /* This test simulates the spring-mass system simultaneously using three first-
@@ -420,8 +412,8 @@ TEST_F(SpringMassSystemTest, Integrate) {
     both regression test form and as friendlier examples. */
 
     for (int i = 0; i < kNumIntegrators; ++i) {
-      system_->EvalTimeDerivatives(*contexts[i], derivs[i].get());
-      system_->EvalOutput(*contexts[i], outputs[i].get());
+      system_->CalcTimeDerivatives(*contexts[i], derivs[i].get());
+      system_->CalcOutput(*contexts[i], outputs[i].get());
     }
 
     // Semi-explicit Euler should keep energy roughly constant every step.
@@ -469,20 +461,20 @@ TEST_F(SpringMassSystemTest, IntegrateConservativePower) {
   system_->set_conservative_work(context.get(), 0.);  // W(0)=0
 
   // Save the initial energy.
-  const double pe0 = system_->EvalPotentialEnergy(*context);
-  const double ke0 = system_->EvalKineticEnergy(*context);
+  const double pe0 = system_->CalcPotentialEnergy(*context);
+  const double ke0 = system_->CalcKineticEnergy(*context);
   const double e0 = pe0 + ke0;
 
   while (true) {
     const auto t = context->get_time();
 
     // Evaluate derivatives at the beginning of a step. We don't need outputs.
-    system_->EvalTimeDerivatives(*context, derivs.get());
+    system_->CalcTimeDerivatives(*context, derivs.get());
 
     if (t >= kTfinal) break;
 
-    const double pe = system_->EvalPotentialEnergy(*context);
-    const double ke = system_->EvalKineticEnergy(*context);
+    const double pe = system_->CalcPotentialEnergy(*context);
+    const double ke = system_->CalcKineticEnergy(*context);
     const double e = pe + ke;
     EXPECT_NEAR(e, e0, 1e-3);
 

@@ -33,7 +33,7 @@
 	url = https://github.com/RobotLocomotion/gurobi.git
 [submodule "externals/mosek"]
 	path = externals/mosek
-	url = https://github.com/rdeits/mosek-pod.git
+	url = https://github.com/RobotLocomotion/mosek.git
 [submodule "externals/iris"]
 	path = externals/iris
 	url = https://github.com/rdeits/iris-distro.git
@@ -73,7 +73,7 @@
 	ignore = untracked
 [submodule "externals/google_styleguide"]
 	path = externals/google_styleguide
-	url = https://github.com/mwoehlke-kitware/styleguide.git
+	url = https://github.com/google/styleguide.git
 [submodule "externals/spdlog"]
 	path = externals/spdlog
 	url = https://github.com/gabime/spdlog.git
@@ -99,3 +99,6 @@
 [submodule "ros/hsrb_description"]
 	path = ros/hsrb_description
 	url = https://github.com/ToyotaResearchInstitute/hsrb_description.git
+[submodule "externals/fcl"]
+	path = externals/fcl
+	url = https://github.com/flexible-collision-library/fcl.git

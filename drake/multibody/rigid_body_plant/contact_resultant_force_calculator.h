@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "drake/multibody/rigid_body_plant/contact_force.h"
@@ -226,6 +227,19 @@ class ContactResultantForceCalculator {
    which the moment would be induced.
    */
   ContactForce<T> ComputeResultant() const;
+
+  /**
+   Computes the resultant contact spatial force with respect to a given
+   reference point.
+
+   The force part is the summation of all f_i, where f_i is the individual
+   force.
+   The torque part is the summation of all tau_i + (p_i - r) X f_i, where
+   tau_i is the ith pure torque, f_i is applied at p_i, and r is the given
+   reference point.
+   @param reference_point is in the same frame as all the individual forces.
+   */
+  ContactForce<T> ComputeResultant(const Vector3<T>& reference_point) const;
 
   // Neither movable or copyable.
   ContactResultantForceCalculator(

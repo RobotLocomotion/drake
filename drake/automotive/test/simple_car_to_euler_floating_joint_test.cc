@@ -22,14 +22,14 @@ GTEST_TEST(SimpleCarToEulerFloatingJointTest, BasicTest) {
   context->SetInputPort(
       0, std::make_unique<systems::FreestandingInputPort>(std::move(value)));
 
-  // Grab a pointer to where the EvalOutput results end up.
+  // Grab a pointer to where the CalcOutput results end up.
   const EulerFloatingJointState<double>* const result =
       dynamic_cast<const EulerFloatingJointState<double>*>(
           output->get_vector_data(0));
   ASSERT_NE(nullptr, result);
 
   // Output matches the input.
-  dut->EvalOutput(*context, output.get());
+  dut->CalcOutput(*context, output.get());
   EXPECT_EQ(11.0, result->x());
   EXPECT_EQ(22.0, result->y());
   EXPECT_EQ(0.0, result->z());

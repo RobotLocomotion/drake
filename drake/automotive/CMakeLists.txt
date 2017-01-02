@@ -1,4 +1,5 @@
 add_subdirectory(gen)
+add_subdirectory(maliput)
 
 if(BUILD_TESTING)
   add_subdirectory(test)
@@ -14,6 +15,16 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/simple_car_state.cc
   idm_planner.cc
   linear_car.cc
+  maliput/api/road_geometry.cc
+  maliput/monolane/arc_lane.cc
+  maliput/monolane/branch_point.cc
+  maliput/monolane/builder.cc
+  maliput/monolane/junction.cc
+  maliput/monolane/lane.cc
+  maliput/monolane/line_lane.cc
+  maliput/monolane/loader.cc
+  maliput/monolane/road_geometry.cc
+  maliput/monolane/segment.cc
   simple_car.cc
   single_lane_ego_and_agent.cc
   trajectory_car.cc
@@ -22,6 +33,9 @@ target_link_libraries(drakeAutomotive
   drakeCommon
   drakeSystemAnalysis
   drakeSystemFramework
+  drakeSystemPrimitives
+  Eigen3::Eigen
+  yaml-cpp
   )
 drake_install_libraries(drakeAutomotive)
 drake_install_headers(
@@ -44,6 +58,7 @@ drake_install_pkg_config_file(drake-automotive
     drake-shapes
     drake-system-analysis
     drake-system-framework
+    drake-system-primitives
     eigen3)
 
 if(lcm_FOUND)
@@ -58,6 +73,7 @@ if(lcm_FOUND)
     )
   target_link_libraries(drakeAutomotiveLcm
     drakeAutomotive
+    drakeMultibodyParsers
     drakeRigidBodyPlant
     )
   drake_install_libraries(drakeAutomotiveLcm)
@@ -75,13 +91,17 @@ if(lcm_FOUND)
   add_executable(automotive_demo automotive_demo.cc)
   target_link_libraries(automotive_demo drakeAutomotiveLcm drakeLCMTypes)
 
-  add_executable(car_sim_lcm car_sim_lcm.cc)
+  add_executable(car_sim_lcm car_sim_lcm.cc car_sim_lcm_common.cc)
   target_link_libraries(car_sim_lcm
       drakeAutomotiveLcm
       drakeRigidBodyPlant
       drakeSystemAnalysis
       drakeSystemControllers
       drakeLCMSystem2)
+  drake_add_test(NAME car_sim_lcm COMMAND car_sim_lcm --simulation_sec 0.1)
 
-  add_test(NAME car_sim_lcm COMMAND car_sim_lcm -simulation_sec 0.1)
+  # TODO(liang.fok) Enable the following unit test once the build system is able
+  # to automatically generate the speed_bump.obj file from the speed_bump.yaml
+  # file.
+  # drake_add_test(NAME car_sim_lcm COMMAND car_sim_lcm --with_speed_bump true --simulation_sec 0.1)
 endif()

@@ -4,12 +4,12 @@
 #include "gtest/gtest.h"
 
 #include "drake/systems/framework/diagram.h"
-#include "drake/systems/framework/primitives/adder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/demultiplexer.h"
-#include "drake/systems/framework/primitives/gain.h"
-#include "drake/systems/framework/primitives/integrator.h"
 #include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/gain.h"
+#include "drake/systems/primitives/integrator.h"
 
 namespace drake {
 namespace systems {
@@ -80,8 +80,8 @@ GTEST_TEST(DiagramBuilderTest, SystemsThatAreNotAddedThrow) {
 template <typename T>
 class Sink : public LeafSystem<T> {
  public:
-  Sink() { this->DeclareInputPort(kVectorValued, 1, kContinuousSampling); }
-  void EvalOutput(const Context<T>&, SystemOutput<T>*) const override {}
+  Sink() { this->DeclareInputPort(kVectorValued, 1); }
+  void DoCalcOutput(const Context<T>&, SystemOutput<T>*) const override {}
 };
 
 // Tests the sole-port based overload of Connect().

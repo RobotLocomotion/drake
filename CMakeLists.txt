@@ -7,10 +7,12 @@ include(cmake/config.cmake)
 include(cmake/externals.cmake)
 include(cmake/examples.cmake)
 include(cmake/options.cmake)
+include(cmake/tools.cmake)
 include(cmake/git/hooks.cmake)
 
 drake_setup_superbuild()
 drake_setup_platform()
+drake_setup_tools_superbuild()
 drake_setup_git_hooks()
 drake_setup_options()
 
@@ -20,7 +22,6 @@ drake_setup_options()
 # External projects in order of dependencies; 'trivial' ones first
 drake_add_external(eigen PUBLIC CMAKE)
 drake_add_external(meshconverters PUBLIC CMAKE)
-drake_add_external(mosek PUBLIC MATLAB)
 drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(swigmake PUBLIC CMAKE MATLAB PYTHON)
 drake_add_external(yalmip PUBLIC CMAKE MATLAB)
@@ -106,6 +107,13 @@ drake_add_external(ipopt PUBLIC AUTOTOOLS FORTRAN
     --with-lapack=BUILD
     --with-pic)
 
+# mosek
+drake_add_external(mosek PUBLIC CMAKE MATLAB
+  CMAKE_ARGS
+    -DBUILD_TESTING=OFF
+    -DWITH_MATLAB=${Matlab_FOUND}
+    -DWITH_PYTHON=OFF)
+
 # nlopt
 drake_add_external(nlopt PUBLIC CMAKE
   CMAKE_ARGS
@@ -124,9 +132,10 @@ drake_add_external(sedumi PUBLIC CMAKE MATLAB)
 drake_add_external(snopt CMAKE MATLAB
   CMAKE_ARGS
     -DBUILD_SNOPT_CPP=OFF
-    -DBUILD_SHARED_LIBS=ON
+    -DBUILD_SHARED_LIBS=OFF  # For licensing reasons
     -DBUILD_TESTING=OFF
-    -DBUILD_SNOPT_C_MEX=${Matlab_FOUND})
+    -DBUILD_SNOPT_C_MEX=${Matlab_FOUND}
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON)
 
 # spotless
 drake_add_external(spotless PUBLIC CMAKE MATLAB)
@@ -137,6 +146,11 @@ drake_add_external(octomap PUBLIC CMAKE
     -DBUILD_TESTING=OFF
     -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
   SOURCE_SUBDIR octomap)
+
+# fcl
+drake_add_external(fcl PUBLIC CMAKE
+  CMAKE_ARGS -DFCL_BUILD_TESTS=OFF
+  DEPENDS ccd eigen octomap)
 
 # swig_matlab
 drake_add_external(swig_matlab PUBLIC AUTOTOOLS
@@ -202,11 +216,14 @@ option(SKIP_DRAKE_BUILD "Build external projects but not drake itself" OFF)
 # drake: For drake, list both compilation AND RUNTIME dependencies. Runtime
 # dependencies are needed because the drake project must configure only after
 # any dependencies used by MATLAB have been installed.
-drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS TEST MATLAB PYTHON
+# TODO: re-add TEST to drake flags when subprojects arrive
+drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake
   BINARY_DIR ${PROJECT_BINARY_DIR}/drake
   CMAKE_ARGS
     -DDISABLE_MATLAB:BOOL=${DISABLE_MATLAB}
+    -DDISABLE_PYTHON:BOOL=${DISABLE_PYTHON}
+    -DDISABLE_FORTRAN:BOOL=${DISABLE_FORTRAN}
     -DWITH_AVL:BOOL=${WITH_AVL}
     -DWITH_BOT_CORE_LCMTYPES:BOOL=${WITH_BOT_CORE_LCMTYPES}
     -DWITH_BULLET:BOOL=${WITH_BULLET}
@@ -214,10 +231,12 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS TEST MATLAB PYTHON
     -DWITH_DIRECTOR:BOOL=${WITH_DIRECTOR}
     -DWITH_DREAL:BOOL=${WITH_DREAL}
     -DWITH_EIGEN3:BOOL=${WITH_EIGEN}  # TODO(jamiesnape): Fix naming inconsistency
+    -DWITH_FCL:BOOL=${WITH_FCL}
     -DWITH_GFLAGS:BOOL=${WITH_GFLAGS}
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
     -DWITH_GTEST:BOOL=${WITH_GOOGLETEST}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_GUROBI:BOOL=${WITH_GUROBI}
+    -DWITH_HSRB_DESCRIPTION:BOOL=${WITH_HSRB_DESCRIPTION}
     -DWITH_IPOPT:BOOL=${WITH_IPOPT}
     -DWITH_IRIS:BOOL=${WITH_IRIS}
     -DWITH_LCM:BOOL=${WITH_LCM}
@@ -238,6 +257,11 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS TEST MATLAB PYTHON
     -DWITH_XFOIL:BOOL=${WITH_XFOIL}
     -DWITH_YALMIP:BOOL=${WITH_YALMIP}
     -DWITH_YAML_CPP:BOOL=${WITH_YAML_CPP}
+    -DUSE_CLANG_TIDY:BOOL=${USE_CLANG_TIDY}
+    -DUSE_INCLUDE_WHAT_YOU_USE:BOOL=${USE_INCLUDE_WHAT_YOU_USE}
+    -DUSE_LINK_WHAT_YOU_USE:BOOL=${USE_LINK_WHAT_YOU_USE}
+    -DUSE_SANITIZER:STRING=${USE_SANITIZER}
+    -DUSE_VALGRIND:STRING=${USE_VALGRIND}
   DEPENDS
     avl
     bot_core_lcmtypes
@@ -245,6 +269,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS TEST MATLAB PYTHON
     ccd
     dreal
     eigen
+    fcl
     gflags
     google_styleguide
     googletest
@@ -283,7 +308,7 @@ drake_add_external(director PUBLIC CMAKE TEST PYTHON
   DEPENDS bot_core_lcmtypes drake lcm libbot)
 
 # signalscope
-drake_add_external(signalscope PUBLIC
+drake_add_external(signalscope PUBLIC CMAKE PYTHON
   DEPENDS director)
 
 # END external projects

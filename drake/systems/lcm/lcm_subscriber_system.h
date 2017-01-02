@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -95,18 +96,13 @@ class LcmSubscriberSystem : public LeafSystem<double>,
 
   ~LcmSubscriberSystem() override;
 
-  std::string get_name() const override;
-
   /// Returns the default name for a system that subscribes to @p channel.
-  static std::string get_name(const std::string& channel);
+  static std::string make_name(const std::string& channel);
 
   const std::string& get_channel_name() const;
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override;
-
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override;
 
   /**
    * Returns the translator used by this subscriber. This translator can be used
@@ -122,8 +118,11 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   LcmSubscriberSystem& operator=(const LcmSubscriberSystem&) = delete;
 
  protected:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override;
+
   std::unique_ptr<BasicVector<double>> AllocateOutputVector(
-      const SystemPortDescriptor<double>& descriptor) const override;
+      const OutputPortDescriptor<double>& descriptor) const override;
 
  private:
   // All constructors delegate to here.

@@ -16,16 +16,16 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
   SpringMassSystem<AScalar> spring_mass_ad(1., 1., 0.);
 
   // Setup the integration step size.
-  const double DT = 1e-3;
+  const double dt = 1e-3;
 
   // Create a context.
   auto context_dbl = spring_mass_dbl.CreateDefaultContext();
   auto context_ad = spring_mass_ad.CreateDefaultContext();
 
   // Create the integrator as a double and as an autodiff type
-  ExplicitEulerIntegrator<double> int_dbl(spring_mass_dbl, DT,
+  ExplicitEulerIntegrator<double> int_dbl(spring_mass_dbl, dt,
                                           context_dbl.get());
-  ExplicitEulerIntegrator<AScalar> int_ad(spring_mass_ad, DT, context_ad.get());
+  ExplicitEulerIntegrator<AScalar> int_ad(spring_mass_ad, dt, context_ad.get());
 
   // Test that setting the target accuracy or initial step size target fails.
   EXPECT_THROW(int_dbl.set_target_accuracy(1.0), std::logic_error);
@@ -37,21 +37,37 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   SpringMassSystem<double> spring_mass(1., 1., 0.);
 
   // Setup the integration step size.
-  const double DT = 1e-3;
+  const double dt = 1e-3;
 
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
 
   // Create the integrator.
   ExplicitEulerIntegrator<double> integrator(
-      spring_mass, DT, context.get());  // Use default Context.
+      spring_mass, dt, context.get());  // Use default Context.
 
   integrator.get_mutable_context()->set_time(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
   EXPECT_EQ(context->get_time(), 3.);\
   integrator.reset_context(nullptr);
   EXPECT_THROW(integrator.Initialize(), std::logic_error);
-  EXPECT_THROW(integrator.Step(DT, DT), std::logic_error);
+  EXPECT_THROW(integrator.StepOnceAtMost(dt, dt, dt), std::logic_error);
+}
+
+/// Verifies error estimation is unsupported.
+GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
+  // Spring-mass system is necessary only to setup the problem.
+  SpringMassSystem<double> spring_mass(1., 1., 0.);
+  const double dt = 1e-3;
+  auto context = spring_mass.CreateDefaultContext();
+  ExplicitEulerIntegrator<double> integrator(
+      spring_mass, dt, context.get());
+
+  EXPECT_EQ(integrator.get_error_estimate_order(), 0);
+  EXPECT_EQ(integrator.supports_error_estimation(), false);
+  EXPECT_THROW(integrator.set_target_accuracy(1e-1), std::logic_error);
+  EXPECT_THROW(integrator.request_initial_step_size_target(dt),
+               std::logic_error);
 }
 
 // Try a purely continuous system with no sampling.
@@ -61,52 +77,152 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
 // x'(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
 // for t = 0, x(0) = c1, x'(0) = c2*omega
 GTEST_TEST(IntegratorTest, SpringMassStep) {
-  const double kSpring = 300.0;  // N/m
-  const double kMass = 2.0;      // kg
+  const double spring_k = 300.0;  // N/m
+  const double mass = 2.0;      // kg
 
   // Create the spring-mass system.
-  SpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
+  SpringMassSystem<double> spring_mass(spring_k, mass, 0.);
 
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
 
   // Setup the integration size and infinity.
-  const double DT = 1e-6;
-  const double INF = std::numeric_limits<double>::infinity();
+  const double dt = 1e-6;
+  const double inf = std::numeric_limits<double>::infinity();
 
   // Create the integrator.
   ExplicitEulerIntegrator<double> integrator(
-      spring_mass, DT, context.get());  // Use default Context.
+      spring_mass, dt, context.get());  // Use default Context.
 
   // Setup the initial position and initial velocity.
-  const double kInitialPosition = 0.1;
-  const double kInitialVelocity = 0.0;
-  const double kOmega = std::sqrt(kSpring / kMass);
+  const double initial_position = 0.1;
+  const double initial_velocity = 0.01;
+  const double omega = std::sqrt(spring_k / mass);
 
   // Set initial condition.
-  spring_mass.set_position(context.get(), kInitialPosition);
+  spring_mass.set_position(context.get(), initial_position);
 
   // Take all the defaults.
   integrator.Initialize();
 
   // Setup c1 and c2 for ODE constants.
-  const double C1 = kInitialPosition;
-  const double C2 = kInitialVelocity / kOmega;
+  const double c1 = initial_position;
+  const double c2 = initial_velocity / omega;
 
   // Integrate for 1 second.
-  const double T_FINAL = 1.0;
+  const double t_final = 1.0;
   double t;
-  for (t = 0.0; std::abs(t - T_FINAL) > DT; t += DT) integrator.Step(INF, INF);
+  for (t = 0.0; std::abs(t - t_final) > dt; t += dt)
+    integrator.StepOnceAtMost(inf, inf, dt);
 
-  EXPECT_NEAR(context->get_time(), t, DT);  // Should be exact.
+  EXPECT_NEAR(context->get_time(), t, dt);  // Should be exact.
 
   // Get the final position.
-  const double kXFinal =
-      context->get_continuous_state_vector().GetAtIndex(0);
+  const double x_final =
+      context->get_continuous_state()->get_vector().GetAtIndex(0);
 
   // Check the solution.
-  EXPECT_NEAR(C1 * std::cos(kOmega * t) + C2 * std::sin(kOmega * t), kXFinal,
-              1e-5);
+  EXPECT_NEAR(c1 * std::cos(omega * t) + c2 * std::sin(omega * t), x_final,
+              5e-3);
+
+  // Verify that integrator statistics are valid
+  EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
+  EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
+  EXPECT_GE(integrator.get_num_steps_taken(), 0);
+  EXPECT_EQ(integrator.get_error_estimate(), nullptr);
+}
+
+GTEST_TEST(IntegratorTest, StepSize) {
+  const double infinity = std::numeric_limits<double>::infinity();
+
+  // Create the mass spring system.
+  SpringMassSystem<double> spring_mass(1., 1., 0.);
+  // Set the maximum step size.
+  const double max_dt = .01;
+  // Create a context.
+  auto context = spring_mass.CreateDefaultContext();
+  context->set_time(0.0);
+  double t = 0.0;
+  // Create the integrator.
+  ExplicitEulerIntegrator<double> integrator(
+      spring_mass, max_dt, context.get());
+  integrator.Initialize();
+
+  // The step ends on the next publish time.
+  {
+    const double publish_dt = 0.005;
+    const double update_dt = 0.007;
+    typename IntegratorBase<double>::StepResult result =
+        integrator.StepOnceAtMost(publish_dt, update_dt, infinity);
+    EXPECT_EQ(IntegratorBase<double>::kReachedPublishTime, result);
+    EXPECT_EQ(publish_dt, context->get_time());
+    t = context->get_time();
+  }
+
+  // The step ends on the next update time.
+  {
+    const double publish_dt = 0.0013;
+    const double update_dt = 0.0011;
+    typename IntegratorBase<double>::StepResult result =
+        integrator.StepOnceAtMost(publish_dt, update_dt, infinity);
+    EXPECT_EQ(IntegratorBase<double>::kReachedUpdateTime, result);
+    EXPECT_EQ(t + update_dt, context->get_time());
+    t = context->get_time();
+  }
+
+  // The step ends on the max step time, because both the publish and update
+  // times are too far in the future.
+  {
+    const double publish_dt = 0.17;
+    const double update_dt = 0.19;
+    typename IntegratorBase<double>::StepResult result =
+        integrator.StepOnceAtMost(publish_dt, update_dt, infinity);
+    EXPECT_EQ(IntegratorBase<double>::kTimeHasAdvanced, result);
+    EXPECT_EQ(t + max_dt, context->get_time());
+    t = context->get_time();
+  }
+
+  // The step ends on the next update time, even though it's a little larger
+  // than the max step time, because the max step time stretches.
+  // TODO(edrumwri): This test is brittle because it assumes that the stretch
+  //                 "factor" is 1%. Update when stretch is programmatically
+  //                 settable.
+  {
+    const double publish_dt = 42.0;
+    const double update_dt = 0.01001;
+    typename IntegratorBase<double>::StepResult result =
+        integrator.StepOnceAtMost(publish_dt, update_dt, infinity);
+    EXPECT_EQ(IntegratorBase<double>::kReachedUpdateTime, result);
+    EXPECT_EQ(t + update_dt, context->get_time());
+    t = context->get_time();
+  }
+
+  // The step ends on the simulation end time because it's shortest.
+  {
+    const double publish_dt = 0.0013;
+    const double update_dt = 0.0011;
+    const double boundary_dt = 0.0009;
+    typename IntegratorBase<double>::StepResult result =
+        integrator.StepOnceAtMost(publish_dt, update_dt, boundary_dt);
+    EXPECT_EQ(IntegratorBase<double>::kReachedBoundaryTime, result);
+    EXPECT_EQ(t + boundary_dt, context->get_time());
+    t = context->get_time();
+  }
+
+  // The step must still end on the desired step end time. This tests that
+  // no stretching to update_dt is done.
+  // TODO(edrumwri): This test is brittle because it assumes that the stretch
+  //                 "factor" is 1%. Update when stretch is programmatically
+  //                 settable.
+  {
+    const double publish_dt = 42.0;
+    const double update_dt = 0.01001;
+    const double boundary_dt = 0.01;
+    typename IntegratorBase<double>::StepResult result =
+        integrator.StepOnceAtMost(publish_dt, update_dt, boundary_dt);
+    EXPECT_EQ(IntegratorBase<double>::kReachedBoundaryTime, result);
+    EXPECT_EQ(t + boundary_dt, context->get_time());
+  }
 }
 
 }  // namespace

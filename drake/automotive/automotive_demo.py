@@ -22,7 +22,7 @@ import sys
 import time
 
 from drake_paths import (add_module_search_paths, DRAKE_DIST_BUILD_DIR,
-                         DRAKE_INSTALL_BIN_DIR, DRAKE_DRAKE_BIN_DIR)
+                         DRAKE_INSTALL_BIN_DIR, DRAKE_DRAKE_BUILD_DIR)
 
 add_module_search_paths()  # so we can find lcm stuff.
 
@@ -172,8 +172,8 @@ def wait_for_lcm_message_on_channel(channel):
 
 
 def main():
-    demo_name = "automotive_demo"
-    demo_path = os.path.join(DRAKE_DRAKE_BIN_DIR, demo_name)
+    demo_name = "automotive/automotive_demo"
+    demo_path = os.path.join(DRAKE_DRAKE_BUILD_DIR, demo_name)
 
     parser = argparse.ArgumentParser(
         add_help=False, description=__doc__, epilog=_epilog % demo_name,

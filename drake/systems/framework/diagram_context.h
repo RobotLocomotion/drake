@@ -19,6 +19,81 @@
 namespace drake {
 namespace systems {
 
+/// DiagramState is a State, annotated with pointers to all the mutable
+/// substates that it spans.
+template <typename T>
+class DiagramState : public State<T> {
+ public:
+  /// Constructs a DiagramState consisting of @p size substates.
+  explicit DiagramState<T>(int size) :
+      State<T>(),
+      substates_(size),
+      owned_substates_(size) {}
+
+  /// Sets the substate at @p index to @p substate, or aborts if @p index is
+  /// out of bounds. Does not take ownership of @p substate, which must live
+  /// as long as this object.
+  void set_substate(int index, State<T>* substate) {
+    DRAKE_DEMAND(index >= 0 && index < num_substates());
+    substates_[index] = substate;
+  }
+
+  /// Sets the substate at @p index to @p substate, or aborts if @p index is
+  /// out of bounds.
+  void set_and_own_substate(int index, std::unique_ptr<State<T>> substate) {
+    set_substate(index, substate.get());
+    owned_substates_[index] = std::move(substate);
+  }
+
+  /// Returns the substate at @p index.
+  State<T>* get_mutable_substate(int index) {
+    DRAKE_DEMAND(index >= 0 && index < num_substates());
+    return substates_[index];
+  }
+
+  /// Finalizes this state as a span of all the constituent substates.
+  void Finalize() {
+    DRAKE_DEMAND(!finalized_);
+    finalized_ = true;
+    std::vector<ContinuousState<T>*> sub_xcs;
+    sub_xcs.reserve(num_substates());
+    std::vector<BasicVector<T>*> sub_xds;
+    std::vector<AbstractValue*> sub_xms;
+    for (State<T>* substate : substates_) {
+      // Continuous
+      sub_xcs.push_back(substate->get_mutable_continuous_state());
+      // Discrete
+      const std::vector<BasicVector<T>*>& xd_data =
+          substate->get_mutable_discrete_state()->get_data();
+      sub_xds.insert(sub_xds.end(), xd_data.begin(), xd_data.end());
+      // Abstract
+      AbstractState* xm = substate->get_mutable_abstract_state();
+      for (int i_xm = 0; i_xm < xm->size(); ++i_xm) {
+        sub_xms.push_back(&xm->get_mutable_abstract_state(i_xm));
+      }
+    }
+
+    // This State consists of a continuous, discrete, and abstract state, each
+    // of which is a spanning vector over the continuous, discrete, and abstract
+    // parts of the constituent states.  The spanning vectors do not own any
+    // of the actual memory that contains state variables. They just hold
+    // pointers to that memory.
+    this->set_continuous_state(
+        std::make_unique<DiagramContinuousState<T>>(sub_xcs));
+    this->set_discrete_state(std::make_unique<DiscreteState<T>>(sub_xds));
+    this->set_abstract_state(std::make_unique<AbstractState>(sub_xms));
+  }
+
+ private:
+  int num_substates() {
+    return static_cast<int>(substates_.size());
+  }
+
+  bool finalized_{false};
+  std::vector<State<T>*> substates_;
+  std::vector<std::unique_ptr<State<T>>> owned_substates_;
+};
+
 /// The DiagramContext is a container for all of the data necessary to uniquely
 /// determine the computations performed by a Diagram. Specifically, a
 /// DiagramContext contains contexts and outputs for all the constituent
@@ -39,7 +114,8 @@ class DiagramContext : public Context<T> {
   /// Constructs a DiagramContext with the given @p num_subsystems, which is
   /// final: you cannot resize a DiagramContext after construction.
   explicit DiagramContext(const int num_subsystems)
-      : outputs_(num_subsystems), contexts_(num_subsystems) {}
+      : outputs_(num_subsystems), contexts_(num_subsystems),
+        state_(std::make_unique<DiagramState<T>>(num_subsystems)) {}
 
   /// Declares a new subsystem in the DiagramContext. Subsystems are identified
   /// by number. If the subsystem has already been declared, aborts.
@@ -103,27 +179,13 @@ class DiagramContext : public Context<T> {
   /// User code should not call this method. It is for use during Diagram
   /// context allocation only.
   void MakeState() {
-    std::vector<ContinuousState<T>*> sub_xcs;
-    std::vector<BasicVector<T>*> sub_xds;
-    std::vector<AbstractValue*> sub_xms;
-    for (auto& context : contexts_) {
-      // Continuous
-      sub_xcs.push_back(context->get_mutable_continuous_state());
-      // Difference
-      const std::vector<BasicVector<T>*>& xd_data =
-          context->get_mutable_difference_state()->get_data();
-      sub_xds.insert(sub_xds.end(), xd_data.begin(), xd_data.end());
-      // Modal
-      ModalState* xm = context->get_mutable_modal_state();
-      for (int i = 0; i < xm->size(); ++i) {
-        sub_xms.push_back(&xm->get_mutable_modal_state(i));
-      }
+    auto state = std::make_unique<DiagramState<T>>(num_subsystems());
+    for (int i = 0; i < num_subsystems(); ++i) {
+      Context<T> *context = contexts_[i].get();
+      state->set_substate(i, context->get_mutable_state());
     }
-    // The wrapper states do not own the constituent state.
-    this->set_continuous_state(
-        std::make_unique<DiagramContinuousState<T>>(sub_xcs));
-    this->set_difference_state(std::make_unique<DifferenceState<T>>(sub_xds));
-    this->set_modal_state(std::make_unique<ModalState>(sub_xms));
+    state->Finalize();
+    state_ = std::move(state);
   }
 
   /// Returns the output structure for a given constituent system at @p index.
@@ -179,11 +241,12 @@ class DiagramContext : public Context<T> {
     // TODO(david-german-tri): Set invalidation callbacks.
   }
 
-  const State<T>& get_state() const override { return state_; }
+  const State<T>& get_state() const override { return *state_; }
 
-  State<T>* get_mutable_state() override { return &state_; }
+  State<T>* get_mutable_state() override { return state_.get(); }
 
  protected:
+  /// The caller owns the returned memory.
   DiagramContext<T>* DoClone() const override {
     DRAKE_ASSERT(contexts_.size() == outputs_.size());
     DiagramContext<T>* clone = new DiagramContext(num_subsystems());
@@ -220,6 +283,19 @@ class DiagramContext : public Context<T> {
     return clone;
   }
 
+  /// The caller owns the returned memory.
+  State<T>* DoCloneState() const override {
+    DiagramState<T>* clone = new DiagramState<T>(num_subsystems());
+
+    for (int i = 0; i < num_subsystems(); i++) {
+      Context<T>* context = contexts_[i].get();
+      clone->set_and_own_substate(i, context->CloneState());
+    }
+
+    clone->Finalize();
+    return clone;
+  }
+
   /// Returns the input port at the given @p index, which of course belongs
   /// to the subsystem whose input was exposed at that index.
   const InputPort* GetInputPort(int index) const override {
@@ -250,8 +326,8 @@ class DiagramContext : public Context<T> {
   // the systems on which they depend.
   std::map<PortIdentifier, PortIdentifier> dependency_graph_;
 
-  // The internal state of the System.
-  State<T> state_;
+  // The internal state of the Diagram, which includes all its subsystem states.
+  std::unique_ptr<DiagramState<T>> state_;
 };
 
 }  // namespace systems
