@@ -326,7 +326,7 @@ class LeafSystem : public System<T> {
   typename std::enable_if<is_numeric<T1>::value>::type DoCalcNextUpdateTimeImpl(
       const Context<T1>& context, UpdateActions<T1>* actions) const {
     T1 min_time =
-        std::numeric_limits<typename Eigen::NumTraits<T1>::Literal>::infinity();
+        std::numeric_limits<typename Eigen::NumTraits<T1>::Real>::infinity();
     if (periodic_events_.empty()) {
       // No discrete update.
       actions->time = min_time;
