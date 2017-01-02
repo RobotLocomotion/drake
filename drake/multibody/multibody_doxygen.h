@@ -60,10 +60,10 @@ Please note that this compact notation is *not* intended as a substitute for
 clear comments in code. Instead it is intended as an unambiguous specification
 that can be used to compare code with the theory it implements, and to avoid
 many common bugs just by rote pattern-matching of symbols.
+**/
 
-Frames and bodies
------------------
-@anchor multibody_frames_and_bodies
+/** @defgroup multibody_frames_and_bodies Frames and Bodies
+@ingroup multibody_notation
 
 The most fundamental object in multibody mechanics is the _coordinate frame_, or
 just _frame_. Unless specified otherwise, all frames we use are right-handed
@@ -100,10 +100,10 @@ B are always related by a constant transform that does not change during a
 simulation. User-supplied information such as mass properties, visual geometry,
 and collision geometry are given with respect to frame L; Drake transforms those
 internally so that they are maintained with respect to B instead.
+**/
 
-Multibody quantities
---------------------
-@anchor multibody_quantities
+/** @defgroup multibody_quantities Multibody Quantities
+@ingroup multibody_notation
 
 Quantities of interest in multibody dynamics have a particular quantity type,
 which we denote with a single letter. For example, a rotation matrix is
@@ -162,16 +162,16 @@ Multibody dynamics involves both rotational and translational quantities, for
 motion, forces, and mass properties. It is much more effective to group
 related rotational and translational quantities together than to treat them
 independently. We call such groupings *spatial* quantities.
-
-Spatial Pose
-------------
-@anchor multibody_spatial_pose
+ 
+/** @defgroup multibody_spatial_pose Spatial Pose
+@ingroup multibody_spatial_algebra
 
 TODO: Transforms, quaternions, rpy, pseudo-coordinates?
+**/
 
-Spatial Vectors
----------------
-@anchor multibody_spatial_vectors
+/** @defgroup multibody_spatial_vectors Spatial Vectors
+@ingroup multibody_spatial_algebra
+
 Spatial vectors are 6-element quantities that are pairs of ordinary 3-vectors.
 That is, Drake spatial vectors are logically elements of R³×R³, *not* R⁶; that
 is, these are *not* Plücker vectors! However, we can still operate on them as
@@ -229,10 +229,10 @@ In the above table "At" is the point at which the translational activity occurs;
 the expressed-in frame defaults to the reference (left) frame and that the point
 defaults to the target (right) frame origin. You should use fully-expanded
 symbols if there is any chance of confusion.
+**/
 
-Spatial Mass Matrix (Spatial Inertia)
--------------------------------------
-@anchor multibody_spatial_inertia
+/** @defgroup multibody_spatial_inertia Spatial Mass Matrix (Spatial Inertia)
+@ingroup multibody_spatial_algebra
 
 A _Spatial Mass Matrix_ (also called _Spatial Inertia_) M represents the mass,
 center of mass location, and inertia in a single 6×6 symmetric, mass-weighted
