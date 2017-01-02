@@ -1,6 +1,6 @@
+#include <unistd.h>
 #include <random>
 #include <stdexcept>
-#include <unistd.h>
 
 #include <lcm/lcm-cpp.hpp>
 // TODO(russt): Figure out why do I need the lcmtypes here.  Inconsistent with
@@ -17,8 +17,8 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/rotation.h"
-#include "drake/systems/sensors/depth_sensor.h"
-#include "drake/systems/sensors/depth_sensor_specification.h"
+// #include "drake/systems/sensors/depth_sensor.h"
+// #include "drake/systems/sensors/depth_sensor_specification.h"
 
 // Note: Currently assumes that the tree has only the world plus a single body,
 // with a single collision element, which is a box.  Hey, it's a start.
@@ -72,37 +72,48 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
 
   enum RotationType {
     kTranslationOnly,
+    kMiqpRelaxation,
     kSdpRelaxationSpectrahedron,
     kOrthogonalSocpRelaxation
   };
 
   const RotationType rotation_type = kTranslationOnly;
+  // const RotationType rotation_type = kMiqpRelaxation;
   // const RotationType rotation_type = kSdpRelaxationSpectrahedron;
   // const RotationType rotation_type = kOrthogonalSocpRelaxation;
 
   // Create rotation variables and constraints.
   drake::solvers::DecisionVariableMatrixX R;
   switch (rotation_type) {
-    case kTranslationOnly:
-      // Doesn't use R.
-      break;
+    case kTranslationOnly: {
+      // R is constrained to be the identity matrix.
+      R = prog.AddContinuousVariables<3, 3>("R");
+      Eigen::Matrix<double, 9, 1> eye;
+      eye << 1, 0, 0, 0, 1, 0, 0, 0, 1;
+      prog.AddBoundingBoxConstraint(eye, eye, {R.col(0), R.col(1), R.col(2)});
+    } break;
+    case kMiqpRelaxation: {
+      R = drake::solvers::NewRotationMatrixVars(&prog);
+      drake::solvers::AddRotationMatrixL1NormMilpConstraint(&prog, R);
+    } break;
     case kSdpRelaxationSpectrahedron: {
       // Note: Without the integer constraints, this problem has a trivial
       // solution with R = 0, t = 0, and W = 0.125.
 
-      R = drake::solvers::NewRotationMatrixSpectrahedralSdpRelaxation(&prog,
-                                                                      "R");
+      R = drake::solvers::NewRotationMatrixVars(&prog);
+      drake::solvers::AddRotationMatrixSpectrahedralSdpConstraint(&prog, R);
     } break;
     case kOrthogonalSocpRelaxation: {
-      R = drake::solvers::NewRotationMatrixOrthonormalSocpRelaxation(&prog,
-                                                                     "R");
+      R = drake::solvers::NewRotationMatrixVars(&prog);
+      drake::solvers::AddRotationMatrixOrthonormalSocpConstraint(&prog, R);
+      drake::solvers::AddRotationMatrixL1NormMilpConstraint(&prog, R);
     } break;
     default:
       throw std::runtime_error("Unsupported rotation type.");
   }
 
   // Objective.
-  if (rotation_type == kTranslationOnly) {
+  if (rotation_type == kTranslationOnly || rotation_type == kMiqpRelaxation) {
     // Sum_k | points.col(k) + t - vertices*W.col(k) |^2
     Eigen::Matrix3Xd A(3, vertices.cols() + 3);
     A << Eigen::Matrix3d::Identity(), -vertices;
@@ -167,8 +178,9 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
 
   // W(i,k) = 0 or W(j,k) = 0 if i,j are not on the same face.
   drake::solvers::DecisionVariableMatrixX B;
-  const bool use_integer_variables = (rotation_type !=
-      kSdpRelaxationSpectrahedron); // Mosek doesn't support MISDP.  :(
+  const bool use_integer_variables =
+      (rotation_type !=
+       kSdpRelaxationSpectrahedron);  // Mosek doesn't support MISDP.  :(
 
   if (use_integer_variables) {
     // Binary variables B(i,j) = 1 iff point j is on face i.
@@ -211,12 +223,13 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
   std::cout << solver_name << " exit code = " << static_cast<int>(r)
             << std::endl;
   Eigen::Isometry3d T;
-  T.translation() = -GetSolution(t);
+  T.translation() = GetSolution(t);
   if (rotation_type == kTranslationOnly) {
     T.linear() = Eigen::Matrix3d::Identity();
   } else {
-    T.linear() = GetSolution(R).inverse();
+    T.linear() = GetSolution(R);
   }
+  T = T.inverse();
 
   {  // Some helpful Matlab debugging.
     using drake::lcm::LcmCallMatlab;
@@ -227,14 +240,16 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
     auto gca = LcmCallMatlabSingleOutput("gca");
     auto colors = LcmCallMatlabSingleOutput("get", gca, "colororder");
     for (int j = 0; j < faces.cols(); j++) {
-      auto mat_vertices = drake::lcm::LcmNewRemoteVariable(T*vertices);
+      auto mat_vertices = drake::lcm::LcmNewRemoteVariable(T * vertices);
       Eigen::VectorXd face = faces.col(j).cast<double>();
       face = (face.array() + 1.0).matrix();  // matlab indices
-      auto h = LcmCallMatlabSingleOutput("fill3",mat_vertices(1,face),mat_vertices(2,face),mat_vertices(3,face),colors(j+1,":"));
-      LcmCallMatlab("set",h,"FaceAlpha",0.1);
+      auto h = LcmCallMatlabSingleOutput(
+          "fill3", mat_vertices(1, face), mat_vertices(2, face),
+          mat_vertices(3, face), colors(j + 1, ":"));
+      LcmCallMatlab("set", h, "FaceAlpha", 0.1);
       usleep(100000);  // matlab client was not keeping up.
     }
-    
+
     if (use_integer_variables) {
       Eigen::MatrixXd Wsol = GetSolution(W);
       for (int j = 0; j < faces.cols(); j++) {
@@ -259,9 +274,9 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
                     "MarkerSize", 10);
     }
     LcmCallMatlab("axis", "equal");
-    LcmCallMatlab("xlabel","x");
-    LcmCallMatlab("ylabel","y");
-    LcmCallMatlab("zlabel","z");
+    LcmCallMatlab("xlabel", "x");
+    LcmCallMatlab("ylabel", "y");
+    LcmCallMatlab("zlabel", "z");
   }
 
   return T;
@@ -306,7 +321,7 @@ int main(int argc, char** argv) {
     KinematicsCache<double> cache = robot.doKinematics(q0);
     printf("Set up robot with %d positions\n", robot.get_num_positions());
 
-    const int kNumRays = 1000;
+    const int kNumRays = 100;
 
     // Perform a raycast through the origin from in many random directions.
     Eigen::Matrix3Xd origins(3, kNumRays);
@@ -344,54 +359,52 @@ int main(int argc, char** argv) {
       points.col(k) = T * q._transformVector(points.col(k));
     }
   } else {  // Use DepthSensor to generate the points.
-            /*
-                Eigen::Isometry3d sensor_pose = Eigen::Isometry3d::Identity();
-                sensor_pose.translate(Eigen::Vector3d(-10,0,0));
-        
-                auto frame = std::allocate_shared<RigidBodyFrame<double>>(
-                   Eigen::aligned_allocator<RigidBodyFrame<double>>(), "depth sensor
-               frame",
-                   &robot.world(), sensor_pose);
-        
-                robot.compile();
-        
-                const drake::systems::sensors::DepthSensorSpecification spec(
-                                                            -M_PI_2,      // min_theta
-                                                             M_PI_2,       // max_theta
-                                                             -M_PI_2,  // min_phi
-                                                             M_PI_2,   // max_phi
-                                                             50,         //
-               num_theta_values
-                                                             50,         //
-               num_phi_values
-                                                             0,          // min_range
-                                                             20);         // max_range
-        
-                drake::systems::sensors::DepthSensor sensor("depth sensor", robot,
-               *frame, spec);
-        
-                std::unique_ptr<drake::systems::Context<double>> context =
-               sensor.CreateDefaultContext();
-                std::unique_ptr<drake::systems::SystemOutput<double>> output =
-               sensor.AllocateOutput(*context);
-        
-                Eigen::VectorXd x0(robot.get_num_positions() +
-               robot.get_num_velocities());
-                x0 << origin, q.coeffs(),
-               Eigen::VectorXd::Zero(robot.get_num_velocities());
-        
-                int input_port_index =
-               sensor.get_rigid_body_tree_state_input_port().get_index();
-                context->FixInputPort(input_port_index, x0);
-        
-                sensor.CalcOutput(*context, output.get());
-        
-                int output_port_index =
-               sensor.get_sensor_state_output_port().get_index();
-        
-                Eigen::VectorXd depths =
-               output->get_vector_data(output_port_index)->get_value();
-               */
+/*
+    Eigen::Isometry3d sensor_pose = Eigen::Isometry3d::Identity();
+    sensor_pose.translate(Eigen::Vector3d(-10, 0, 0));
+
+    auto frame = std::allocate_shared<RigidBodyFrame<double>>(
+        Eigen::aligned_allocator<RigidBodyFrame<double>>(), "depth sensor
+                                                                frame ",
+                                                                & robot.world(),
+        sensor_pose);
+
+    robot.compile();
+
+    const drake::systems::sensors::DepthSensorSpecification spec(
+        -M_PI_2,  //
+        min_theta M_PI_2,
+        // max_theta
+        -M_PI_2,              //
+        min_phi M_PI_2,       //
+        max_phi 50,           //
+        num_theta_values 50,  //
+        num_phi_values 0,     //
+        min_range 20);        //
+    max_range
+
+        drake::systems::sensors::DepthSensor sensor("depth sensor", robot,
+                                                    *frame, spec);
+
+    std::unique_ptr<drake::systems::Context<double>> context =
+        sensor.CreateDefaultContext();
+    std::unique_ptr<drake::systems::SystemOutput<double>> output =
+        sensor.AllocateOutput(*context);
+
+    Eigen::VectorXd x0(robot.get_num_positions() + robot.get_num_velocities());
+    x0 << origin, q.coeffs(), Eigen::VectorXd::Zero(robot.get_num_velocities());
+
+    int input_port_index =
+        sensor.get_rigid_body_tree_state_input_port().get_index();
+    context->FixInputPort(input_port_index, x0);
+
+    sensor.CalcOutput(*context, output.get());
+
+    int output_port_index = sensor.get_sensor_state_output_port().get_index();
+
+    Eigen::VectorXd depths =
+        output->get_vector_data(output_port_index)->get_value();
+*/ 
   }
 
   Eigen::Isometry3d pose_estimate = PoseEstimation(robot, points);

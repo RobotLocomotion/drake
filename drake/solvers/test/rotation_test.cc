@@ -5,122 +5,171 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
 
-GTEST_TEST(RotationTest, TestRelaxations) {
-  std::mt19937 generator(42);
-  // Random quaternion (algorithm from Eigen::Quaternion::UnitRandom, but using
-  // c++11 rands).
-  std::uniform_real_distribution<> rand(0, 1);
-  const double u1 = rand(generator), u2 = 2 * M_PI * rand(generator),
-               u3 = 2 * M_PI * rand(generator);
-  const double a = sqrt(1 - u1), b = sqrt(u1);
-  Eigen::Quaternion<double> q(a * sin(u2), a * cos(u2), b * sin(u3),
-                              b * cos(u3));
+void AddObjective(MathematicalProgram* prog, const DecisionVariableMatrixX& R,
+                  const Eigen::Ref<const Eigen::Matrix3d>& R_desired) {
+  DecisionVariableMatrix<9, 1> error =
+      prog->AddContinuousVariables<9, 1>("error");
 
-  // Generate a few random points
-  int num_points = 2;
-  std::normal_distribution<double> randn;
-  Eigen::Matrix3Xd points(3, num_points), rotated_points(3, num_points);
+  Eigen::Map<const Eigen::Matrix<double, 9, 1>> vecR_desired(R_desired.data(),
+                                                             R_desired.size());
 
-  for (int k = 0; k < num_points; k++) {
-    for (int j = 0; j < 3; j++) {
-      points(j, k) = randn(generator);
-    }
-    rotated_points.col(k) = q._transformVector(points.col(k));
-    // Add some noise.
-    for (int j = 0; j < 3; j++) {
-      rotated_points(j, k) += .0001 * randn(generator);
-    }
+  // error - vec(R) = vec(R_desired)
+  Eigen::Matrix<double, 9, 18> A;
+  A << Eigen::Matrix<double, 9, 9>::Identity(),
+      -Eigen::Matrix<double, 9, 9>::Identity();
+  prog->AddLinearEqualityConstraint(A, vecR_desired,
+                                    {error, R.col(0), R.col(1), R.col(2)});
+
+  // sigma >= |error|_2
+  DecisionVariableMatrix<1, 1> sigma =
+      prog->AddContinuousVariables<1, 1>("sigma");
+  prog->AddLorentzConeConstraint({sigma, error});
+
+  // min sigma
+  prog->AddLinearCost(Vector1d::Ones(), {sigma});
+}
+
+/*
+void RotationMatrixCheck(const Eigen::Ref<const Eigen::Matrix3d>& R)
+{
+  const double tol = 1e-3;
+  EXPECT_NEAR(R.col(0).lpNorm<2>(),1,tol);
+  EXPECT_NEAR(R.col(1).lpNorm<2>(),1,tol);
+  EXPECT_NEAR(R.col(2).lpNorm<2>(),1,tol);
+  EXPECT_NEAR(R.col(0).dot(R.col(1)),0,tol);
+  EXPECT_NEAR(R.col(0).dot(R.col(2)),0,tol);
+  EXPECT_NEAR(R.col(1).dot(R.col(2)),0,tol);
+
+  const double det = R.determinant();
+  bool is_invertible = std::abs(det)>tol;
+  if (!is_invertible) {
+    std::cout << "R is not invertible:" << std::endl;
+    std::cout << R << std::endl;
   }
+  ASSERT_TRUE(is_invertible);
+  EXPECT_TRUE(CompareMatrices(R.inverse(),R.transpose()));
+  EXPECT_NEAR(det,1,tol);
+}
+*/
 
-  enum RelaxationType { kUnconstrained = 0, kSpectralSdpRelaxation = 1, kOrthogonalSocpRelaxation = 2 };
-
-  for (int relaxation_type = 0; relaxation_type < 2; relaxation_type++) {
+GTEST_TEST(RotationTest, TestRPYLimits) {
+  for (int limits = (1 << 1); limits < (1 << 7); limits += 2) {
     MathematicalProgram prog;
+    auto Rvar = NewRotationMatrixVars(&prog);
+    AddRollPitchYawLimitBoundingBoxConstraints(
+        &prog, Rvar, static_cast<RollPitchYawLimits>(limits));
+    auto bb_constraints = prog.bounding_box_constraints();
 
-    // min_R  sum_k sqrt | R*points.col(k) - rotated_points.col(k) |^2
-    //  s.t.  R is a rotation matrix (approx)
-    // To formulate it as a linear objective (for SDP), we write
-    // min sum_k sigma_k
-    //   s.t. Z.col(k) = R * points.col(k) - rotated_points.col(k),
-    //        sigma_k >= sqrt(z0^2 + ... z2^2)
+    // Bounds are loose, so just test that feasible points are indeed feasible.
+    const double rmin =
+        (limits & kRoll_0_to_PI)
+            ? 0
+            : (limits & kRoll_NegPI_2_to_PI_2) ? -M_PI_2 : -M_PI;
+    const double rmax = (limits & kRoll_NegPI_2_to_PI_2) ? M_PI_2 : M_PI;
+    const double pmin =
+        (limits & kPitch_0_to_PI)
+            ? 0
+            : (limits & kPitch_NegPI_2_to_PI_2) ? -M_PI_2 : -M_PI;
+    const double pmax = (limits & kPitch_NegPI_2_to_PI_2) ? M_PI_2 : M_PI;
+    const double ymin = (limits & kYaw_0_to_PI)
+                            ? 0
+                            : (limits & kYaw_NegPI_2_to_PI_2) ? -M_PI_2 : -M_PI;
+    const double ymax = (limits & kYaw_NegPI_2_to_PI_2) ? M_PI_2 : M_PI;
 
-    DecisionVariableMatrixX R;
-
-    switch (relaxation_type) {
-      case kUnconstrained:
-        R = prog.AddContinuousVariables<3, 3>("R");
-        break;
-      case kSpectralSdpRelaxation:
-        R = NewRotationMatrixSpectrahedralSdpRelaxation(&prog);
-        break;
-      case kOrthogonalSocpRelaxation:
-        R = NewRotationMatrixOrthonormalSocpRelaxation(&prog);
-        break;
-      default:
-        throw std::runtime_error("Bad relaxation_type.");
-    }
-
-    auto Z = prog.AddContinuousVariables(3, points.cols(), "Z");
-    auto sigma = prog.AddContinuousVariables(points.cols(), "sigma");
-
-    Eigen::Matrix3Xd A(3, 9 + 3);
-    A << Eigen::Matrix<double, 3, 9>::Zero(), -Eigen::Matrix3d::Identity();
-    for (int k = 0; k < points.cols(); k++) {
-      A(0, 0) = points(0, k);
-      A(1, 1) = points(0, k);
-      A(2, 2) = points(0, k);
-
-      A(0, 3) = points(1, k);
-      A(1, 4) = points(1, k);
-      A(2, 5) = points(1, k);
-
-      A(0, 6) = points(2, k);
-      A(1, 7) = points(2, k);
-      A(2, 8) = points(2, k);
-
-      // R*points.col(k) - Z.col(k) = rotated_points.col(k).
-      prog.AddLinearEqualityConstraint(
-          A, rotated_points.col(k), {R.col(0), R.col(1), R.col(2), Z.col(k)});
-
-      // sigma(k) > sqrt(z(0,k)^2 + z(1,k)^2 + z(2,k)^2).
-      prog.AddLorentzConeConstraint({sigma.segment<1>(k), Z.col(k)});
-    }
-
-    // min sum_k sigma_k
-    prog.AddLinearCost(Eigen::VectorXd::Ones(points.cols()), {sigma});
-
-    auto r = prog.Solve();
-    //    prog.PrintSolution();
-
-    std::string solver_name;
-    int solver_result;
-    prog.GetSolverResult(&solver_name, &solver_result);
-    std::cout << solver_name << " exit code = " << static_cast<int>(r)
-              << std::endl;
-
-    Eigen::Matrix3d Rmat = GetSolution(R);
-    Eigen::Quaternion<double> q_estimated(Rmat);
-
-    double tol = 1e-2;
-    if (relaxation_type == kUnconstrained) {
-      // The interesting case is when the unconstrained version doesn't actually
-      // find a rotation matrix.
-      EXPECT_FALSE(CompareMatrices(Rmat * Rmat.transpose(),
-                                   Eigen::Matrix3d::Identity(),tol));
-    } else {
-      // Check that the quaternions are the same (up to a negation).
-      EXPECT_NEAR(std::abs(q.coeffs().dot(q_estimated.coeffs())), 1,tol);
-
-      // Check that we actually found a rotation matrix.
-      EXPECT_TRUE(CompareMatrices(Rmat * Rmat.transpose(),
-                                  Eigen::Matrix3d::Identity(),tol));
+    for (double roll = rmin; roll <= rmax; roll += M_PI / 6) {
+      for (double pitch = pmin; pitch <= pmax; pitch += M_PI / 6) {
+        for (double yaw = ymin; yaw <= ymax; yaw += M_PI / 6) {
+          Eigen::Matrix3d R =
+              drake::math::rpy2rotmat(Eigen::Vector3d(roll, pitch, yaw));
+          Eigen::Map<Eigen::Matrix<double, 9, 1>> vecR(R.data(), R.size());
+          prog.SetDecisionVariableValues(vecR);
+          for (const auto& b : bb_constraints) {
+            Eigen::VectorXd x = b.VariableListToVectorXd();
+            const Eigen::VectorXd& lb = b.constraint()->lower_bound();
+            const Eigen::VectorXd& ub = b.constraint()->upper_bound();
+            for (int i = 0; i < x.size(); i++) {
+              EXPECT_GE(x(i), lb(i));
+              EXPECT_LE(x(i), ub(i));
+            }
+          }
+        }
+      }
     }
   }
+}
+
+GTEST_TEST(RotationTest, TestSpectralPsd) {
+  MathematicalProgram prog;
+  auto Rvar = NewRotationMatrixVars(&prog);
+
+  // R_desired is outside the unit ball.
+  AddObjective(&prog, Rvar, 2 * Eigen::Matrix<double, 3, 3>::Ones());
+  AddRotationMatrixSpectrahedralSdpConstraint(&prog, Rvar);
+  ASSERT_EQ(prog.Solve(), kSolutionFound);
+
+  Eigen::Matrix3d R = GetSolution(Rvar);
+
+  // Check eq 10 in https://arxiv.org/pdf/1403.4914.pdf
+  Eigen::Matrix4d U;
+  // clang-format off
+  // NOLINTNEXTLINE(whitespace/comma)
+  U << 1-R(0,0)-R(1,1)+R(2,2), R(0,2)+R(2,0), R(0,1)-R(1,0), R(1,2)+R(2,1),
+  // NOLINTNEXTLINE(whitespace/comma)
+       R(0,2)+R(2,0), 1+R(0,0)-R(1,1)-R(2,2), R(1,2)-R(2,1), R(0,1)+R(1,0),
+  // NOLINTNEXTLINE(whitespace/comma)
+       R(0,1)-R(1,0), R(1,2)-R(2,1), 1+R(0,0)+R(1,1)+R(2,2), R(2,0)-R(0,2),
+  // NOLINTNEXTLINE(whitespace/comma)
+       R(1,2)+R(2,1), R(0,1)+R(1,0), R(2,0)-R(0,2), 1-R(0,0)+R(1,1)-R(2,2);
+  // clang-format on
+
+  auto lambda_mag = U.eigenvalues().array().abs();
+  for (int i = 0; i < 4; i++) EXPECT_GE(lambda_mag(i), 0);
+}
+
+GTEST_TEST(RotationTest, TestOrthonormal) {
+  MathematicalProgram prog;
+  auto Rvar = NewRotationMatrixVars(&prog);
+
+  // R_desired is outside the unit ball.
+  AddObjective(&prog, Rvar, 2 * Eigen::Matrix<double, 3, 3>::Ones());
+  AddRotationMatrixOrthonormalSocpConstraint(&prog, Rvar);
+  ASSERT_EQ(prog.Solve(), kSolutionFound);
+
+  Eigen::Matrix3d R = GetSolution(Rvar);
+
+  double tol = 1e-4;
+  EXPECT_LE(R.col(0).lpNorm<2>(), 1 + tol);
+  EXPECT_LE(R.col(1).lpNorm<2>(), 1 + tol);
+  EXPECT_LE(R.col(2).lpNorm<2>(), 1 + tol);
+  EXPECT_LE(std::abs(R.col(0).dot(R.col(1))),
+            2 - R.col(0).lpNorm<2>() - R.col(1).lpNorm<2>() + tol);
+  EXPECT_LE(std::abs(R.col(1).dot(R.col(2))),
+            2 - R.col(1).lpNorm<2>() - R.col(2).lpNorm<2>() + tol);
+  EXPECT_LE(std::abs(R.col(0).dot(R.col(2))),
+            2 - R.col(0).lpNorm<2>() - R.col(2).lpNorm<2>() + tol);
+}
+
+GTEST_TEST(RotationTest, TestL1Norm) {
+  MathematicalProgram prog;
+  auto Rvar = NewRotationMatrixVars(&prog);
+
+  // R_desired is inside the unit ball.
+  AddObjective(&prog, Rvar, .1 * Eigen::Matrix<double, 3, 3>::Ones());
+  AddRotationMatrixL1NormMilpConstraint(&prog, Rvar);
+  ASSERT_EQ(prog.Solve(), kSolutionFound);
+
+  Eigen::Matrix3d R = GetSolution(Rvar);
+
+  double tol = 1e-4;
+  EXPECT_GE(R.col(0).lpNorm<1>(), 1 - tol);
+  EXPECT_GE(R.col(1).lpNorm<1>(), 1 - tol);
+  EXPECT_GE(R.col(2).lpNorm<1>(), 1 - tol);
 }
 
 }  // namespace solvers
