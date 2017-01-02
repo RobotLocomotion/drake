@@ -49,7 +49,11 @@ to generate them.</em>
 /** @defgroup multibody_notation Terminology and Notation
 @ingroup multibody_concepts
 
-The mathematics for multibody dynamics is complicated enough when typeset but
+Drake uses consistent terminology and notation for multibody mechanics that is
+designed to provide clear, unambiguous documentation and a direct mapping
+between typeset equations and their implementation in code.
+
+The mathematics for multibody mechanics is complicated enough when typeset but
 is particularly difficult to express in the restricted formatting permitted
 in C++ variable names. We use a particular notation in code, called *Monogram
 Notation*, that can be derived directly from the typeset equations that code is
@@ -105,7 +109,7 @@ internally so that they are maintained with respect to B instead.
 /** @defgroup multibody_quantities Multibody Quantities
 @ingroup multibody_notation
 
-Quantities of interest in multibody dynamics have a particular quantity type,
+Quantities of interest in multibody dynamics have distinct types,
 which we denote with a single letter. For example, a rotation matrix is
 denoted with `R` and a position vector with `p`. Most quantities have a
 _reference_ and _target_, either of which may be a frame, basis, or point, that
@@ -162,7 +166,12 @@ Multibody dynamics involves both rotational and translational quantities, for
 motion, forces, and mass properties. It is much more effective to group
 related rotational and translational quantities together than to treat them
 independently. We call such groupings *spatial* quantities.
- 
+
+Here we describe the important spatial quantities used in Drake's multibody
+mechanics implementation, the terminology and notation we use to document them,
+and their physical representations in code, typically as %Eigen objects.
+**/
+
 /** @defgroup multibody_spatial_pose Spatial Pose
 @ingroup multibody_spatial_algebra
 
@@ -214,7 +223,7 @@ whole, the translational component refers to a particular point on that same
 body. When assigned numerical values for computation, both subvectors must be
 expressed in the same frame, which may be that body's frame or any other
 specified frame. Thus, unambiguous notation for spatial vectors must specify
-both a point and an expressed-in frame. Motion quantities must also express the
+both a point and an expressed-in frame. Motion quantities must also state the
 reference frame with respect to which the motion is measured.
 
 Example spatial quantity      |At |Exp|      Typeset       |   Code  | Expanded
