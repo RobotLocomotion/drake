@@ -4,6 +4,9 @@ target_link_libraries(autodiff_test drakeCommon)
 drake_add_cc_test(cross_product_test)
 target_link_libraries(cross_product_test drakeCommon)
 
+drake_add_cc_test(discrete_algebraic_ricatti_equation_test)
+target_link_libraries(discrete_algebraic_ricatti_equation_test drakeCommon)
+
 drake_add_cc_test(eigen_sparse_triplet_test)
 
 drake_add_cc_test(expmap_test)
