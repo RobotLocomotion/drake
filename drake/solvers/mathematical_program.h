@@ -386,8 +386,8 @@ class MathematicalProgram {
    * @see AddContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  DecisionVariableVectorX AddContinuousVariables(std::size_t rows,
-                                                 const std::string& name = "x");
+  DecisionVariableVectorX AddContinuousVariables(
+      std::size_t rows, const std::string& name = "x");
 
   /// Adds continuous variables to this MathematicalProgram.
   /**
@@ -414,7 +414,7 @@ class MathematicalProgram {
    *
    * The name of the variable is only used for the user for understand.
    */
-  const DecisionVariableMatrixX AddContinuousVariables(
+  DecisionVariableMatrixX AddContinuousVariables(
       std::size_t rows, std::size_t cols,
       const std::vector<std::string>& names);
 
@@ -425,8 +425,9 @@ class MathematicalProgram {
    * @see AddContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  const DecisionVariableMatrixX AddContinuousVariables(
-      std::size_t rows, std::size_t cols, const std::string& name = "X");
+  DecisionVariableMatrixX AddContinuousVariables(std::size_t rows,
+                                                 std::size_t cols,
+                                                 const std::string& name = "X");
 
   /// Adds continuous variables to this MathematicalProgram.
   /**
@@ -530,7 +531,7 @@ class MathematicalProgram {
 
   /**
    * Adds continuous variables to the program.
-   * The name for all newly added variables are set to "name". The default name
+   * The name for all newly added variables are set to @p name. The default name
    * is "x"
    * @see AddContinuousVariables(const std::array<std::string, rows>& names)
    */
@@ -538,8 +539,9 @@ class MathematicalProgram {
   DecisionVariableVector<rows> AddContinuousVariables(
       const std::string& name = "x") {
     std::array<std::string, rows> names;
+    int offset = (name.compare("x") == 0) ? num_vars_ : 0;
     for (int i = 0; i < rows; ++i) {
-      names[i] = name + std::to_string(num_vars_);
+      names[i] = name + std::to_string(offset + i);
     }
     return AddContinuousVariables<rows>(names);
   }
@@ -599,8 +601,9 @@ class MathematicalProgram {
   DecisionVariableVector<rows> AddBinaryVariables(
       const std::string& name = "b") {
     std::array<std::string, rows> names;
+    int offset = (name.compare("b") == 0) ? num_vars_ : 0;
     for (int i = 0; i < rows; ++i) {
-      names[i] = name + std::to_string(i);
+      names[i] = name + std::to_string(offset + i);
     }
     return AddBinaryVariables<rows, 1>(names);
   }
@@ -798,8 +801,8 @@ class MathematicalProgram {
       const Eigen::MatrixBase<DerivedC>& c, const VariableListRef& vars) {
     using Scalar = typename DerivedC::Scalar;
     auto cost = std::make_shared<LinearConstraint>(
-        c, drake::Vector1<Scalar>::Constant(
-               -std::numeric_limits<Scalar>::infinity()),
+        c.transpose(), drake::Vector1<Scalar>::Constant(
+                           -std::numeric_limits<Scalar>::infinity()),
         drake::Vector1<Scalar>::Constant(
             std::numeric_limits<Scalar>::infinity()));
     AddCost(cost, vars);
@@ -850,6 +853,17 @@ class MathematicalProgram {
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired) {
     return AddQuadraticErrorCost(Q, x_desired, {variables_});
+  }
+
+  /**
+   * Adds a cost term of the form | Ax - b |^2.
+   */
+  template <typename DerivedA, typename Derivedb>
+  std::shared_ptr<QuadraticConstraint> AddL2NormCost(
+      const Eigen::MatrixBase<DerivedA>& A,
+      const Eigen::MatrixBase<Derivedb>& b, const VariableListRef& vars) {
+    return AddQuadraticCost(2 * A.transpose() * A, -2 * A.transpose() * b,
+                            vars);
   }
 
   /**
@@ -1095,6 +1109,39 @@ class MathematicalProgram {
     DecisionVariableMatrix<1, 1> var_matrix(var);
     return AddBoundingBoxConstraint(drake::Vector1d(lb), drake::Vector1d(ub),
                                     {var_matrix});
+  }
+
+  /**
+   * Adds the same scalar lower and upper bound to every variable in the list.
+   * @param lb Lower bound.
+   * @param ub Upper bound.
+   * @param vars The decision variables.
+   *
+   * Note: This version of the interface *does* accept references to
+   * non-column-vector decision variable matrices.
+   */
+  std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
+      double lb, double ub, const VariableListRef& vars) {
+    VariableList var_list(vars);
+    int var_dim = var_list.size();
+    if (var_list.column_vectors_only()) {
+      return AddBoundingBoxConstraint(Eigen::VectorXd::Constant(var_dim, lb),
+                                      Eigen::VectorXd::Constant(var_dim, ub),
+                                      vars);
+    } else {  // Support non-column-vector decision variable matrices.
+      VariableListRef flattened_vars;
+      for (const auto& v : vars) {
+        if (v.cols() == 1) {
+          flattened_vars.push_back(v);
+        } else {
+          Eigen::Map<const DecisionVariableVectorX> vec(v.data(), v.size());
+          flattened_vars.push_back(vec);
+        }
+      }
+      return AddBoundingBoxConstraint(Eigen::VectorXd::Constant(var_dim, lb),
+                                      Eigen::VectorXd::Constant(var_dim, ub),
+                                      flattened_vars);
+    }
   }
 
   /**
