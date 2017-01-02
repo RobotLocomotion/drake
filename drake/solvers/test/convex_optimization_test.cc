@@ -857,7 +857,7 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
   prog.AddRotatedLorentzConeConstraint(A_lorentz2, b_lorentz2, {z, t});
 
   prog.AddLinearCost(drake::Vector1d(spring_stiffness / 2), {z});
-  prog.AddLinearCost(weight.transpose(), {y});
+  prog.AddLinearCost(weight, {y});
 
   RunSolver(&prog, solver);
 
