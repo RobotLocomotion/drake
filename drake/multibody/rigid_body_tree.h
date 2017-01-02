@@ -33,9 +33,12 @@
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
-/// @defgroup rigid_body_tree_frames Bodies, Frames, Notation and Conventions.
+/// @defgroup rigid_body_tree_frames Frames Used to Define a Model
 /// @{
-/// Description of the reference frames used by the multibody dynamics engine.
+/// This section defines the frames used in Drake when creating a multibody
+/// model. Additional frames and conventions used when defining models using
+/// URDF and SDF specifications are also given. For a detailed description on
+/// general terminology and notation please refer to @ref multibody_notation
 ///
 /// <b> Note: </b>
 /// We are using <em>parent</em> here in the graph theory sense to mean
