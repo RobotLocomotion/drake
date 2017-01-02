@@ -1,4 +1,8 @@
 <?xml version="1.0"?>
+<!-- Comments in this file use frames definitions as introduced in the C++
+Doxygen module "Frames and Bodies". In particular, this file refers to the link
+frame L, the body frame B, the inertia frame I and the joint inboard
+frame F. -->
 <robot name="SimpleDoublePendulum">
   <!-- Defines some colors to distinguish between the links. -->
   <material name="Red">

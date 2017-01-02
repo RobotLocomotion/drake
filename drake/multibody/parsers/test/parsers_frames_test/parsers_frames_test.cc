@@ -121,11 +121,10 @@ class DoublePendulumFramesTest : public ::testing::Test {
   }
 
   // Compares the analytical solution obtained with
-  // ComputeAnalyticalSolution() with the poses computed with a RigidBodyTree
-  // model constructed by parsing a URDF or SDF file.
-  void TestPoses(const vector<Vector3d>& expected_Bo_W,
-                 const vector<Vector3d>& expected_Bcm_B,
-                 const vector<Vector3d>& expected_Bcm_W) {
+  // DoublePendulumFramesTest::ComputeAnalyticalSolution(), and saved as
+  // DoublePendulumFramesTest members, with the poses computed with a
+  // RigidBodyTree model constructed by parsing a URDF or SDF file.
+  void TestPoses() {
     VectorXd v = VectorXd::Zero(tree_->get_num_velocities());
     KinematicsCache<double> cache = tree_->doKinematics(q_, v);
 
@@ -134,16 +133,16 @@ class DoublePendulumFramesTest : public ::testing::Test {
       auto Bcm_B = tree_->get_body(i).get_center_of_mass();
       auto Bcm_W = tree_->transformPoints(cache, Bcm_B, i, 0);
 
-      EXPECT_TRUE(Bo_W.isApprox(expected_Bo_W[i]));
-      EXPECT_TRUE(Bcm_B.isApprox(expected_Bcm_B[i]));
-      EXPECT_TRUE(Bcm_W.isApprox(expected_Bcm_W[i]));
+      EXPECT_TRUE(Bo_W.isApprox(expected_Bo_W_[i]));
+      EXPECT_TRUE(Bcm_B.isApprox(expected_Bcm_B_[i]));
+      EXPECT_TRUE(Bcm_W.isApprox(expected_Bcm_W_[i]));
     }
   }
 
   void RunTest(double theta1_deg, double theta2_deg) {
     SetState(theta1_deg, theta2_deg);
     ComputeAnalyticalSolution();
-    TestPoses(expected_Bo_W_, expected_Bcm_B_, expected_Bcm_W_);
+    TestPoses();
   }
 
   unique_ptr<RigidBodyTree<double>> tree_;
@@ -156,9 +155,9 @@ class DoublePendulumFramesTest : public ::testing::Test {
 };
 
 // In this test the simple double pendulum model is loaded from a URDF file
-// into a RigidBodyTree.
-// The correctness in the position of each body frame as computed with the
-// RigidBodyTree model is then verified against an analytical solution.
+// into a RigidBodyTree. The correctness in the position of each body frame
+// as computed with the RigidBodyTree model is then verified against an
+// analytical solution.
 TEST_F(DoublePendulumFramesTest, UrdfTest) {
   LoadAndRunTests("simple_double_pendulum_urdf/simple_double_pendulum.urdf");
 }
@@ -176,11 +175,11 @@ TEST_F(DoublePendulumFramesTest, SdfTestWhereLequalsB) {
       "simple_double_pendulum_l_equals_b.sdf");
 }
 
-// In this test the link frame L for "lower_arm" is not specified (no
-// <pose> entry is given for this link). Therefore the parser makes L = M where
-// M is the joint inboard frame specified by a <pose> entry for joint
-// "joint2" in the file. The pose of frame M is expressed in
-// the model frame, D, i.e., <pose> is giving X_DM for "joint2".
+// In this test, the lower_arm's link frame L is not specified  (no <pose>
+// entry is given for this link). Therefore the parser makes L = M where M is
+// the joint's inboard frame specified by a <pose> entry for joint "joint2" in
+// the file. The pose of frame M is expressed in the model frame, D, i.e.,
+// <pose> is giving X_DM for "joint2".
 TEST_F(DoublePendulumFramesTest, SdfTestLisNotSpecified) {
   LoadAndRunTests(
       "simple_double_pendulum_l_is_not_specified_sdf/"
@@ -192,10 +191,10 @@ TEST_F(DoublePendulumFramesTest, SdfTestLisNotSpecified) {
 // TODO(liang.fok) Enable this test once #4641 is resolved.
 //
 // In this test the frame L for the lower arm is specified to be half way
-// between the body frame B and the inertial frame I. Since the link inboard
-// frame L was specified, the <pose> entry for joint "joint2"
-// specifies X_LM, and therefore the pose of the joint outboard frame M is
-// measured and expressed in the link frame L
+// between the body frame B and the inertial frame I. Since the link frame L was
+// specified, the <pose> entry for joint "joint2" specifies X_LM, and therefore
+// the pose of the joint outboard frame M is measured and expressed in the link
+// frame L.
 TEST_F(DoublePendulumFramesTest, DISABLED_SdfTestLBetweenBandI) {
   LoadAndRunTests(
       "simple_double_pendulum_l_between_b_and_i_sdf/"
