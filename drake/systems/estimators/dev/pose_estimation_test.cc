@@ -107,7 +107,7 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
     Eigen::Matrix3Xd A(3, vertices.cols() + 3);
     A << Eigen::Matrix3d::Identity(), -vertices;
     for (int k = 0; k < points.cols(); k++) {
-      prog.AddL2NormCost(A, points.col(k), {t, W.col(k)});
+      prog.AddL2NormCost(A, -points.col(k), {t, W.col(k)});
     }
   } else {
     // min sum_k | R*points.col(k) + t - vertices*W.col(k) |^2
@@ -188,6 +188,7 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
         for (int i = 0; i < faces.rows(); i++) {
           if (faces(i, j) == v) {
             contains_vertex = true;
+            break;
           }
         }
         A(1 + j) = contains_vertex ? 1.0 : 0.0;
@@ -210,11 +211,11 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
   std::cout << solver_name << " exit code = " << static_cast<int>(r)
             << std::endl;
   Eigen::Isometry3d T;
-  T.translation() = GetSolution(t);
+  T.translation() = -GetSolution(t);
   if (rotation_type == kTranslationOnly) {
     T.linear() = Eigen::Matrix3d::Identity();
   } else {
-    T.linear() = GetSolution(R);
+    T.linear() = GetSolution(R).inverse();
   }
 
   {  // Some helpful Matlab debugging.
@@ -225,17 +226,18 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
 
     auto gca = LcmCallMatlabSingleOutput("gca");
     auto colors = LcmCallMatlabSingleOutput("get", gca, "colororder");
-    for (int j = 0; j < 1; j++) { //faces.cols(); j++) {
+    for (int j = 0; j < faces.cols(); j++) {
       auto mat_vertices = drake::lcm::LcmNewRemoteVariable(T*vertices);
       Eigen::VectorXd face = faces.col(j).cast<double>();
       face = (face.array() + 1.0).matrix();  // matlab indices
       auto h = LcmCallMatlabSingleOutput("fill3",mat_vertices(1,face),mat_vertices(2,face),mat_vertices(3,face),colors(j+1,":"));
-      LcmCallMatlab("set",h,"FaceAlpha",0.3);
+      LcmCallMatlab("set",h,"FaceAlpha",0.1);
       usleep(100000);  // matlab client was not keeping up.
     }
     
     if (use_integer_variables) {
-      for (int j = 0; j < 1; j++) { //faces.cols(); j++) {
+      Eigen::MatrixXd Wsol = GetSolution(W);
+      for (int j = 0; j < faces.cols(); j++) {
         Eigen::Matrix3Xd points_assigned_to_this_face(3, points.cols());
         int num_points = 0;
         for (int k = 0; k < points.cols(); k++) {
@@ -257,6 +259,9 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
                     "MarkerSize", 10);
     }
     LcmCallMatlab("axis", "equal");
+    LcmCallMatlab("xlabel","x");
+    LcmCallMatlab("ylabel","y");
+    LcmCallMatlab("zlabel","z");
   }
 
   return T;
