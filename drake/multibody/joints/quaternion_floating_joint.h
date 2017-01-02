@@ -69,15 +69,15 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
   /**
    * Computes a matrix that transforms the time derivative of generalized 
    * configuration to generalized velocity _for given configuration @p q_.
-   * @param q the generalized configuration 
+   * @param q the 7-dimensional generalized configuration (see warning below)
    * @warning The first three values of generalized configuration are position
-   *          and the next four values are unit quaternion orientation. The
-   *          first three values of generalized velocity are angular velocity
-   *          and the second three values are linear velocity. This 
-   *          transformation accounts for this disparity.
-   * @param qdot_to_v a nv × nq sized matrix, where nv is the dimension of
-   *        generalized velocities and nq is the dimension of generalized
-   *        coordinates, that converts time derivatives of generalized
+   *          (x,y,z) and the next four values are unit quaternion orientation
+   *          (qw, qx, qy, qz). The first three values of generalized velocity
+   *          are angular velocity (ωx, ωy, ωz) and the second three values are
+   *          linear velocity (dx/dt, dy/dt, dz/dt).
+   * @param[out] qdot_to_v a nv × nq sized matrix, where nv is the dimension of
+   *        generalized velocities (6) and nq is the dimension of generalized
+   *        coordinates (7), that converts time derivatives of generalized
    *        coordinates to generalized velocities _for given configuration 
    *        @p q_.
    */
@@ -97,8 +97,7 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
 
     // Get the quaternion values.
     auto quat =
-        q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension).
-            normalized();
+        q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
     const auto& qw = quat[0];
     const auto& qx = quat[1];
     const auto& qy = quat[2];
@@ -134,15 +133,15 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
    * Computes a matrix that transforms the generalized velocity to the time 
    * derivative of generalized configuration to generalized velocity _for given 
    * configuration @p q_.
-   * @param q the generalized configuration 
+   * @param q the 7-dimensional generalized configuration (see warning below)
    * @warning The first three values of generalized configuration are position
-   *          and the next four values are unit quaternion orientation. The
-   *          first three values of generalized velocity are angular velocity
-   *          and the second three values are linear velocity. This 
-   *          transformation accounts for this disparity.
-   * @param v_to_qdot a nq × nv sized matrix, where nv is the dimension of
-   *        generalized velocities and nq is the dimension of generalized
-   *        coordinates, that converts generalized velocities to time 
+   *          (x,y,z) and the next four values are unit quaternion orientation
+   *          (qw, qx, qy, qz). The first three values of generalized velocity
+   *          are angular velocity (ωx, ωy, ωz) and the second three values are
+   *          linear velocity (dx/dt, dy/dt, dz/dt).
+   * @param[out] v_to_qdot a nq × nv sized matrix, where nv is the dimension of
+   *        generalized velocities (6) and nq is the dimension of generalized
+   *        coordinates (7), that converts generalized velocities to time
    *        derivatives of generalized coordinates _for given configuration 
    *        @p q_.
    */
@@ -162,8 +161,7 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
 
     // Get the quaternion values.
     auto quat =
-        q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension).
-            normalized();
+        q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
     const auto& qw = quat[0];
     const auto& qx = quat[1];
     const auto& qy = quat[2];
@@ -172,7 +170,7 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     // The first three columns correspond to the zero matrix (top three rows)
     // and the transpose of the "G" matrix used in qdot2v() (bottom four rows).
     // Specifically, this matrix serves the function:
-    // de/dt = 1/2 G' ω, where e = [ qw qx qy qz ] are the values of the
+    // de/dt = 1/2 G^T ω, where e = [ qw qx qy qz ] are the values of the
     // unit quaternion and ω is the angular velocity vector defined in the
     // parent link body frame. This matrix was taken from:
     // - P. Nikravesh, Computer-Aided Analysis of Mechanical Systems. Prentice

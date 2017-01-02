@@ -357,13 +357,13 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   for (int i=0; i< plant.get_num_velocities(); ++i)
     plant.set_velocity(context.get(), i, generalized_velocities[i]);
 
-  // Set a non-identity orientation.
-  plant.set_position(context.get(), 0, 1.0);
+  // Set a non-identity position and orientation.
+  plant.set_position(context.get(), 0, 1.0);  // Set position to (1,1,1)
   plant.set_position(context.get(), 1, 2.0);
   plant.set_position(context.get(), 2, 3.0);
-  plant.set_position(context.get(), 3, std::sqrt(2)/2);
-  plant.set_position(context.get(), 4, 0.0);
-  plant.set_position(context.get(), 5, std::sqrt(2)/2);
+  plant.set_position(context.get(), 3, std::sqrt(2)/2);  // Set orientation to
+  plant.set_position(context.get(), 4, 0.0);             // 90 degree rotation
+  plant.set_position(context.get(), 5, std::sqrt(2)/2);  // about y-axis.
   plant.set_position(context.get(), 6, 0.0);
 
   // Integrate for ten thousand steps using a RK2 integrator with
@@ -385,12 +385,13 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   plant.SetDefaultState(*context, context->get_mutable_state());
   for (int i=0; i< plant.get_num_velocities(); ++i)
     plant.set_velocity(context.get(), i, generalized_velocities[i]);
-  plant.set_position(context.get(), 0, 1.0);
+  // Reset the non-identity position and orientation.
+  plant.set_position(context.get(), 0, 1.0);  // Set position to (1,1,1)
   plant.set_position(context.get(), 1, 2.0);
   plant.set_position(context.get(), 2, 3.0);
-  plant.set_position(context.get(), 3, std::sqrt(2)/2);
-  plant.set_position(context.get(), 4, 0.0);
-  plant.set_position(context.get(), 5, std::sqrt(2)/2);
+  plant.set_position(context.get(), 3, std::sqrt(2)/2);  // Set orientation to
+  plant.set_position(context.get(), 4, 0.0);             // 90 degree rotation
+  plant.set_position(context.get(), 5, std::sqrt(2)/2);  // about y-axis.
   plant.set_position(context.get(), 6, 0.0);
   RungeKutta3Integrator<double> rk3(plant, context.get());
   rk3.set_maximum_step_size(0.1);
