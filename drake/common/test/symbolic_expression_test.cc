@@ -6,6 +6,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <sstream>
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
@@ -23,6 +24,7 @@ using std::count_if;
 using std::domain_error;
 using std::equal_to;
 using std::map;
+using std::ostringstream;
 using std::runtime_error;
 using std::set;
 using std::unordered_map;
@@ -2015,6 +2017,17 @@ TEST_F(SymbolicVariableTest, OperatorOverloadingEigenDivideVariable) {
   EXPECT_PRED2(ExprEqual, m2(0, 1), y_ / (x_ + y_));
   EXPECT_PRED2(ExprEqual, m2(1, 0), z_ / (x_ + y_));
   EXPECT_PRED2(ExprEqual, m2(1, 1), w_ / (x_ + y_));
+}
+
+TEST_F(SymbolicVariableTest, EigenExpressionMatrixOutput) {
+  ostringstream oss1;
+  oss1 << expr_mat_;
+
+  ostringstream oss2;
+  oss2 << "      (x + z)       (x + w)\n"
+       << "      (y + z)       (y + w)";
+
+  EXPECT_EQ(oss1.str(), oss2.str());
 }
 
 }  // namespace
