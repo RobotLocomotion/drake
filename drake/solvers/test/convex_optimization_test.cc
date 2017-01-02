@@ -973,7 +973,7 @@ GTEST_TEST(TestConvexOptimization, TestQuadraticProgram0) {
 
 GTEST_TEST(TestConvexOptimization, TestL2NormCost) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<2>();
+  auto x = prog.NewContinuousVariables<2>();
 
   // |Ax - b|^2 = (x-xd)'Q(x-xd) => Q = A'*A and b = A*xd.
   Eigen::Matrix2d A;

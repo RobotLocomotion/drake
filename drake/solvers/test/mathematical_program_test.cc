@@ -142,7 +142,7 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
   // Test the scalar version of the bounding box constraint methods.
 
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<2, 2>();
+  auto x = prog.NewContinuousVariables<2, 2>();
 
   // Three different ways to construct an equivalent constraint.
   auto constraint1 = prog.AddBoundingBoxConstraint(0, 1, {x});

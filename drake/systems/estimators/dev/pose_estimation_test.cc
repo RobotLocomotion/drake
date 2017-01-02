@@ -53,8 +53,8 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
   faces.col(5) << 2, 3, 4, 5;  // -Z
 
   drake::solvers::MathematicalProgram prog;
-  auto t = prog.AddContinuousVariables<3>("t");
-  auto W = prog.AddContinuousVariables(vertices.cols(), points.cols(), "W");
+  auto t = prog.NewContinuousVariables<3>("t");
+  auto W = prog.NewContinuousVariables(vertices.cols(), points.cols(), "W");
 
   // Forall i,j, 0 <= W(i,j) <= 1.
   prog.AddBoundingBoxConstraint(0, 1, {W});
@@ -114,8 +114,8 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
       // (this would add one big SOC constraint instead of many 3d constraints,
       // and would actually add more decision variables).
 
-      auto Z = prog.AddContinuousVariables(3, points.cols(), "Z");
-      auto sigma = prog.AddContinuousVariables(points.cols(), "sigma");
+      auto Z = prog.NewContinuousVariables(3, points.cols(), "Z");
+      auto sigma = prog.NewContinuousVariables(points.cols(), "sigma");
 
       Eigen::Matrix3Xd A(3, 9 + 3 + vertices.cols() + 3);
       A << Eigen::Matrix<double, 3, 9>::Zero(), Eigen::Matrix3d::Identity(),
@@ -152,7 +152,7 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
   // W(i,k) = 0 or W(j,k) = 0 if i,j are not on the same face.
   if (rotation_type == kTranslationOnly) {  // Mosek doesn't support MISDP.  :(
     // Binary variables B(i,j) = 1 iff point j is on face i.
-    auto B = prog.AddBinaryVariables(faces.cols(), points.cols(), "B");
+    auto B = prog.NewBinaryVariables(faces.cols(), points.cols(), "B");
     for (int k = 0; k < points.cols(); k++) {
       // Sum_i B(i,k) = 1 (each point must be assigned to exactly one face).
       prog.AddLinearEqualityConstraint(Eigen::RowVectorXd::Ones(faces.cols()),
@@ -190,11 +190,11 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
   std::cout << solver_name << " exit code = " << static_cast<int>(r)
             << std::endl;
   Eigen::Isometry3d T;
-  T.translation() = GetSolution(t);
+  T.translation() = prog.GetSolution(t);
   if (rotation_type == kTranslationOnly) {
     T.linear() = Eigen::Matrix3d::Identity();
   } else {
-    T.linear() = GetSolution(R);
+    T.linear() = prog.GetSolution(R);
   }
   return T;
 }
