@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/automotive/gen/euler_floating_joint_state.h"
 #include "drake/automotive/gen/simple_car_state.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -44,7 +46,7 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
 
  protected:
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override {
+      const systems::OutputPortDescriptor<T>& descriptor) const override {
     return std::make_unique<EulerFloatingJointState<T>>();
   }
 };

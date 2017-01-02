@@ -385,6 +385,7 @@ cc_googletest(
     deps = [
         ":leaf_system",
         "//drake/common",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 

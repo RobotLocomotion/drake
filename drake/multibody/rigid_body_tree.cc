@@ -8,6 +8,7 @@
 #include <memory>
 #include <numeric>
 #include <string>
+#include <unordered_map>
 
 #include "drake/common/constants.h"
 #include "drake/common/eigen_autodiff_types.h"
@@ -272,6 +273,8 @@ void RigidBodyTree<T>::compile(void) {
     getTerrainContactPoints(body, &contact_points);
     body.set_contact_points(contact_points);
   }
+
+  ConfirmCompleteTree();
 
   CreateCollisionCliques();
 
@@ -924,7 +927,7 @@ void RigidBodyTree<T>::doKinematics(KinematicsCache<Scalar>& cache,
   // Required in call to geometricJacobian below.
   cache.setPositionKinematicsCached();
 
-  for (size_t i = 0; i < bodies.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(bodies.size()); ++i) {
     RigidBody<T>& body = *bodies[i];
     KinematicsCacheElement<Scalar>& element = *cache.get_mutable_element(i);
 
@@ -1067,6 +1070,52 @@ void RigidBodyTree<T>::updateCompositeRigidBodyInertias(
     }
   }
   cache.setInertiasCached();
+}
+
+template <typename T>
+void RigidBodyTree<T>::ConfirmCompleteTree() const {
+  std::set<int> bodies_with_paths;
+  bodies_with_paths.insert(0);  // Adds the world node by default.
+
+  for (const auto& body : bodies) {
+    TestConnectedToWorld(*body, &bodies_with_paths);
+  }
+}
+
+template <typename T>
+void RigidBodyTree<T>::TestConnectedToWorld(const RigidBody<T>& body,
+                                            std::set<int>* connected) const {
+  DRAKE_ASSERT(connected->find(0) != connected->end() &&
+    "The connected set should always include the world node: 0.");
+  int id = body.get_body_index();
+  if (connected->find(id) == connected->end()) {
+    if (!body.has_joint()) {
+      // NOTE: This test is redundant if it is called during
+      // RigidBodyTree::compile because two previous operations will catch
+      // the missing joint error.  However, for the sake of completeness
+      // and because the cost of the redundancy is negligible, the joint
+      // test is also included.
+      throw runtime_error(
+          "ERROR: RigidBodyTree::TestConnectedToWorld(): "
+              "Rigid body \"" +
+              body.get_name() + "\" in model " + body.get_model_name() +
+              " has no joint!");
+    }
+    const RigidBody<T>* parent = body.get_parent();
+    if (parent == nullptr) {
+      // We know this is *not* the world node because the world node is in the
+      // connected set.
+      throw runtime_error(
+          "ERROR: RigidBodyTree::TestConnectedToWorld(): "
+          "Rigid body \"" +
+          body.get_name() + "\" in model " + body.get_model_name() +
+          " is not connected to the world!");
+    }
+    TestConnectedToWorld(*parent, connected);
+    // No ancestor of this body threw an exception, so it must have a path.
+    // Add it to the set of known connected nodes.
+    connected->insert(id);
+  }
 }
 
 template <typename T>
@@ -1728,7 +1777,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree<T>::massMatrix(
   updateCompositeRigidBodyInertias(cache);
 
   // Loop over the columns of the mass matrix.
-  for (size_t i = 0; i < bodies.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(bodies.size()); ++i) {
     RigidBody<T>& body_i = *bodies[i];
     if (body_i.has_parent_body()) {
       const auto& element_i = cache.get_element(i);
@@ -1813,7 +1862,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::inverseDynamics(
   // TODO(tkoolen) should preallocate:
   Matrix6X<Scalar> body_accelerations(kTwistSize, bodies.size());
   Matrix6X<Scalar> net_wrenches(kTwistSize, bodies.size());
-  for (size_t i = 0; i < bodies.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(bodies.size()); ++i) {
     const RigidBody<T>& body = *bodies[i];
     if (body.has_parent_body()) {
       const RigidBody<T>& parent_body = *(body.get_parent());
@@ -1936,7 +1985,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::inverseDynamics(
   const auto& joint_wrenches_const = net_wrenches;
 
   VectorX<Scalar> torques(num_velocities_, 1);
-  for (ptrdiff_t i = bodies.size() - 1; i >= 0; --i) {
+  for (int i = static_cast<int>(bodies.size()) - 1; i >= 0; --i) {
     RigidBody<T>& body = *bodies[i];
     if (body.has_parent_body()) {
       const auto& cache_element = cache.get_element(i);

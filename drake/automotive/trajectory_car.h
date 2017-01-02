@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <stdexcept>
 
 #include "drake/automotive/curve2.h"
@@ -51,7 +52,7 @@ class TrajectoryCar : public systems::LeafSystem<T> {
   }
 
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override {
+      const systems::OutputPortDescriptor<T>& descriptor) const override {
     return std::make_unique<SimpleCarState<T>>();
   }
 

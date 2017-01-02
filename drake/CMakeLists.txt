@@ -88,8 +88,10 @@ set(CXX_FLAGS_NO_ERROR_SHADOW -Wno-error=shadow -Wno-shadow)
 set(CXX_FLAGS_NO_SIGN_COMPARE -Wno-sign-compare)
 if(CMAKE_GENERATOR STREQUAL "Xcode")
   # TODO(jamiesnape): Remove when the Xcode CMake generator supports
-  # include_directories(SYSTEM) or when the warning is fixed in Eigen.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-delete-non-virtual-dtor")
+  # include_directories(SYSTEM) or when the warnings are fixed in Eigen, FCL,
+  # and OctoMap.
+  set(CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -Wno-delete-non-virtual-dtor -Wno-shadow")
 endif()
 
 # set up matlab build
@@ -123,17 +125,15 @@ if(lcm_FOUND)
   list(APPEND drake_jar_requires lcm-java lcmtypes_drake-java)
 
   # add lcmgl
-  # annoyingly, libbot does not define a classpath variable. there might be a cleaner way to do this
-  execute_process(COMMAND pkg-config --variable=prefix bot2-lcmgl-client OUTPUT_VARIABLE LCMGL_BUILD_DIR)
-  if(NOT LCMGL_BUILD_DIR)
+  # libbot does not define a classpath variable. there might be a cleaner way to do this
+  if(NOT bot2-lcmgl-client_PREFIX)  # Set by drake_find_package(... PKG_CONFIG)
     message("
   --------------------------------------------------------------------------------
     *** IMPORTANT: bot2-lcmgl build directory not found. ***
   --------------------------------------------------------------------------------
     ")
   else()
-    string(STRIP ${LCMGL_BUILD_DIR} LCMGL_BUILD_DIR)
-    find_jar(LCMGL_JAR_FILE bot2-lcmgl PATHS "${LCMGL_BUILD_DIR}/share/java/")
+    find_jar(LCMGL_JAR_FILE bot2-lcmgl PATHS "${bot2-lcmgl-client_PREFIX}/share/java/")
     if(NOT LCMGL_JAR_FILE)
       message(FATAL_ERROR "
   --------------------------------------------------------------------------------

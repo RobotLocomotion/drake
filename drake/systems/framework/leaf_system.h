@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "drake/common/autodiff_overloads.h"
@@ -60,6 +61,12 @@ class LeafSystem : public System<T> {
     context->set_abstract_state(this->AllocateAbstractState());
     // Reserve parameters via delegation to subclass.
     context->set_parameters(this->AllocateParameters());
+
+    // Enforce some requirements on the fully-assembled Context.
+    // -- The ContinuousState must be contiguous.
+    VectorBase<T>* xc_vec = context->get_mutable_continuous_state_vector();
+    DRAKE_DEMAND(dynamic_cast<BasicVector<T>*>(xc_vec) != nullptr);
+
     return std::unique_ptr<Context<T>>(context.release());
   }
 
@@ -164,7 +171,8 @@ class LeafSystem : public System<T> {
   /// Returns a ContinuousState used to implement both CreateDefaultContext and
   /// AllocateTimeDerivatives. Allocates the state configured with
   /// DeclareContinuousState, or none by default. Systems with continuous state
-  /// variables may override.
+  /// variables may override, but must ensure the ContinuousState vector is
+  /// a subclass of BasicVector.
   virtual std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const {
     if (model_continuous_state_vector_ != nullptr) {
       return std::make_unique<ContinuousState<T>>(
@@ -201,8 +209,8 @@ class LeafSystem : public System<T> {
   /// override to use output vector types other than BasicVector.  The
   /// descriptor must match a port declared via DeclareOutputPort.
   virtual std::unique_ptr<BasicVector<T>> AllocateOutputVector(
-      const SystemPortDescriptor<T>& descriptor) const {
-    return std::make_unique<BasicVector<T>>(descriptor.get_size());
+      const OutputPortDescriptor<T>& descriptor) const {
+    return std::make_unique<BasicVector<T>>(descriptor.size());
   }
 
   // =========================================================================
@@ -240,7 +248,7 @@ class LeafSystem : public System<T> {
     PeriodicEvent<T> event;
     event.period_sec = period_sec;
     event.offset_sec = offset_sec;
-    event.event.action = DiscreteEvent<T>::kUpdateAction;
+    event.event.action = DiscreteEvent<T>::kDiscreteUpdateAction;
     periodic_events_.push_back(event);
   }
 

@@ -1,5 +1,7 @@
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
 
+#include <utility>
+
 namespace drake {
 namespace systems {
 namespace lcm {

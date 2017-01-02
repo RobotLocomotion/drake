@@ -118,10 +118,10 @@ int main(int argc, const char** argv) {
 
   for (const auto& actuator : actuators) {
     // Desired effort inputs to actuator dynamics.
-    auto desired_effort_output =
+    const auto& desired_effort_output =
         robot_command_to_desired_effort_converter.desired_effort_output_port(
             *actuator);
-    auto desired_effort_input =
+    const auto& desired_effort_input =
         actuator_dynamics.at(actuator)->get_input_port(0);
     builder.Connect(desired_effort_output, desired_effort_input);
 
@@ -148,7 +148,9 @@ int main(int argc, const char** argv) {
   }
 
   // Plant input to plant.
-  builder.Connect(actuator_effort_to_rigid_body_plant_input_converter, plant);
+  builder.Connect(
+      actuator_effort_to_rigid_body_plant_input_converter.get_output_port(0),
+      plant.get_input_port(0));
 
   // Raw state vector to visualizer.
   builder.Connect(plant.state_output_port(),

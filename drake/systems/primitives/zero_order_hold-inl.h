@@ -10,6 +10,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -53,8 +54,8 @@ std::unique_ptr<DiscreteState<T>> ZeroOrderHold<T>::AllocateDiscreteState()
     const {
   // The zero-order hold's state is first-order. Its state vector size is the
   // same as the input (and output) vector size.
-  const int size = System<T>::get_output_port(0).get_size();
-  DRAKE_DEMAND(System<T>::get_input_port(0).get_size() == size);
+  const int size = System<T>::get_output_port(0).size();
+  DRAKE_DEMAND(System<T>::get_input_port(0).size() == size);
   std::vector<std::unique_ptr<BasicVector<T>>> xd;
   xd.push_back(std::make_unique<BasicVector<T>>(size));
   return std::make_unique<DiscreteState<T>>(std::move(xd));

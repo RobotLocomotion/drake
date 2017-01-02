@@ -184,7 +184,8 @@ void VerifyLoadMessage(const std::vector<uint8_t>& message_bytes) {
   }
 
   // Ensures both messages have the same length.
-  EXPECT_EQ(expected_message.getEncodedSize(), message_bytes.size());
+  EXPECT_EQ(expected_message.getEncodedSize(),
+      static_cast<int>(message_bytes.size()));
   int byte_count = expected_message.getEncodedSize();
 
   // Serialize the expected message.

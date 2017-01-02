@@ -1,5 +1,7 @@
 #include "drake/systems/framework/abstract_state.h"
 
+#include <utility>
+
 #include "drake/common/eigen_autodiff_types.h"
 
 namespace drake {

@@ -73,7 +73,7 @@ void Element::AddToCollisionClique(int clique_id) {
 }
 
 int Element::get_num_cliques() const {
-  return collision_cliques_.size();
+  return static_cast<int>(collision_cliques_.size());
 }
 
 const std::vector<int>& Element::collision_cliques() const {

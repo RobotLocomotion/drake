@@ -1,6 +1,7 @@
 #include "drake/multibody/parsers/parser_common.h"
 
 #include <string>
+#include <utility>
 
 #include "spruce.hh"
 
@@ -25,6 +26,37 @@ using drake::multibody::joints::kFixed;
 using drake::multibody::joints::kRollPitchYaw;
 using drake::multibody::joints::kQuaternion;
 
+std::string GetFullPath(const std::string& file_name) {
+  std::string result = file_name;
+  if (result.empty()) {
+    throw std::runtime_error("drake::parsers::GetFullPath: ERROR: file_name is "
+                             "empty.");
+  }
+
+  const std::string prefix = "/";
+  if (result.substr(0, prefix.size()) == prefix) {
+    // The specified file is already an absolute path. The following code
+    // verifies that the file exists.
+    spruce::path path(file_name);
+    if (!path.isFile()) {
+      throw std::runtime_error("drake::parsers::GetFullPath: ERROR: "
+          "file_name \"" + file_name + "\" is not a file.");
+    }
+  } else {
+    // The specified file is a relative path. The following code obtains the
+    // full path and verifies that the file exists.
+    spruce::path path(".");
+    path.setAsCurrent();
+    path.append(file_name);
+    if (path.isFile()) {
+      result = path.getStr();
+    } else {
+      throw std::runtime_error("drake::parsers::GetFullPath: ERROR: "
+          "file_name \"" + file_name + "\" is not a file or does not exist.");
+    }
+  }
+  return result;
+}
 
 namespace {
 // Searches for key p package in package_map. If the key exists, this saves the
@@ -44,7 +76,7 @@ bool GetPackagePath(const string& package, const PackageMap& package_map,
 }  // anonymous namespace
 
 // The unit test that most directly covers this method is:
-// drake-distro/drake/multibody/test/parser_urdf_test/parser_urdf_test.cc.
+// drake/multibody/parsers/test/urdf_parser_test/urdf_parser_test.cc.
 string ResolveFilename(const string& filename, const PackageMap& package_map,
                        const string& root_dir) {
   spruce::path mesh_filename_spruce;

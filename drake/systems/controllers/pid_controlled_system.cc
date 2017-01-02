@@ -27,11 +27,11 @@ PidControlledSystem<T>::PidControlledSystem(
     std::unique_ptr<MatrixGain<T>> feedback_selector,
     const T& Kp, const T& Ki, const T& Kd) {
   const VectorX<T> Kp_v =
-      VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Kp;
+      VectorX<T>::Ones(plant->get_input_port(0).size()) * Kp;
   const VectorX<T> Ki_v =
-      VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Ki;
+      VectorX<T>::Ones(plant->get_input_port(0).size()) * Ki;
   const VectorX<T> Kd_v =
-      VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Kd;
+      VectorX<T>::Ones(plant->get_input_port(0).size()) * Kd;
   Initialize(std::move(plant), std::move(feedback_selector), Kp_v, Ki_v, Kd_v);
 }
 
@@ -58,38 +58,37 @@ void PidControlledSystem<T>::Initialize(
       plant_->get_input_port(0), plant_->get_output_port(0),
       std::move(feedback_selector), Kp, Ki, Kd, &builder);
 
-  builder.ExportInput(input_ports.first);
-  builder.ExportInput(input_ports.second);
+  builder.ExportInput(input_ports.control_input_port);
+  builder.ExportInput(input_ports.state_input_port);
   builder.ExportOutput(plant_->get_output_port(0));
   builder.BuildInto(this);
 }
 
 template <typename T>
-std::pair<const SystemPortDescriptor<T>,
-          const SystemPortDescriptor<T>>
-    PidControlledSystem<T>::ConnectController(
-        const SystemPortDescriptor<T>& plant_input,
-        const SystemPortDescriptor<T>& plant_output,
-        std::unique_ptr<MatrixGain<T>> feedback_selector,
-        const VectorX<T>& Kp, const VectorX<T>& Ki,
-        const VectorX<T>& Kd,
-        DiagramBuilder<T>* builder) {
+typename PidControlledSystem<T>::ConnectResult
+PidControlledSystem<T>::ConnectController(
+    const InputPortDescriptor<T>& plant_input,
+    const OutputPortDescriptor<T>& plant_output,
+    std::unique_ptr<MatrixGain<T>> feedback_selector,
+    const VectorX<T>& Kp, const VectorX<T>& Ki,
+    const VectorX<T>& Kd,
+    DiagramBuilder<T>* builder) {
   if (feedback_selector == nullptr) {
     // No feedback selector was provided. Create a GainMatrix containing an
     // identity matrix, which results in every element of the plant's output
     // port zero being used as the feedback signal to the PID controller.
     feedback_selector =
-        std::make_unique<MatrixGain<T>>(plant_output.get_size());
+        std::make_unique<MatrixGain<T>>(plant_output.size());
   }
   auto feedback_selector_p =
       builder->template AddSystem(std::move(feedback_selector));
 
-  DRAKE_ASSERT(plant_output.get_size() ==
-               feedback_selector_p->get_input_port().get_size());
-  const int num_effort_commands = plant_input.get_size();
+  DRAKE_ASSERT(plant_output.size() ==
+               feedback_selector_p->get_input_port().size());
+  const int num_effort_commands = plant_input.size();
   const int num_states = num_effort_commands * 2;
 
-  DRAKE_ASSERT(feedback_selector_p->get_output_port().get_size() == num_states);
+  DRAKE_ASSERT(feedback_selector_p->get_output_port().size() == num_states);
 
   auto state_minus_target = builder->template AddSystem<Adder<T>>(
       2, num_states);
@@ -136,8 +135,10 @@ std::pair<const SystemPortDescriptor<T>,
   builder->Connect(plant_input_adder->get_output_port(),
                    plant_input);
 
-  return std::make_pair(plant_input_adder->get_input_port(1),
-                        error_inverter->get_input_port());
+  return ConnectResult{
+    plant_input_adder->get_input_port(1),
+    error_inverter->get_input_port(),
+  };
 }
 
 template <typename T>

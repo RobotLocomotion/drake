@@ -9,6 +9,11 @@ sh_binary(
     data = ["valgrind.supp"],
 )
 
+py_binary(
+    name = "cmake_configure_file",
+    srcs = ["cmake_configure_file.py"],
+)
+
 alias(
     name = "buildifier",
     actual = "@com_github_bazelbuild_buildifier//buildifier",
@@ -38,4 +43,9 @@ cc_toolchain(
     static_runtime_libs = [":empty"],
     strip_files = ":empty",
     supports_param_files = 0,
+)
+
+config_setting(
+    name = "with_gurobi",
+    values = {"define": "WITH_GUROBI=ON"},
 )

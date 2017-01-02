@@ -232,7 +232,7 @@ TEST_F(ToyotaHsrbTests, TestBuildPlantAndVisualizerDiagram) {
   ASSERT_EQ(plant_->get_num_velocities(), kNumVelocities);
   ASSERT_EQ(plant_->get_num_states(), kNumStates);
   ASSERT_EQ(plant_->get_num_actuators(), kNumActuators);
-  ASSERT_EQ(dut->get_input_port(0).get_size(), kNumActuators);
+  ASSERT_EQ(dut->get_input_port(0).size(), kNumActuators);
 
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
@@ -267,7 +267,7 @@ TEST_F(ToyotaHsrbTests, TestBuildConstantSourceToPlantDiagram) {
   EXPECT_EQ(dut->get_num_input_ports(), 0);
   EXPECT_EQ(dut->get_num_output_ports(), plant_->get_num_output_ports());
 
-  EXPECT_EQ(dut->get_output_port(0).get_size(), kNumStates);
+  EXPECT_EQ(dut->get_output_port(0).size(), kNumStates);
 
   // Verifies all expected systems exist.
   std::vector<const System<double>*> systems = dut->GetSystems();

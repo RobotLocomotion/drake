@@ -147,6 +147,11 @@ drake_add_external(octomap PUBLIC CMAKE
     -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
   SOURCE_SUBDIR octomap)
 
+# fcl
+drake_add_external(fcl PUBLIC CMAKE
+  CMAKE_ARGS -DFCL_BUILD_TESTS=OFF
+  DEPENDS ccd eigen octomap)
+
 # swig_matlab
 drake_add_external(swig_matlab PUBLIC AUTOTOOLS
   PATCH_COMMAND ./autogen.sh
@@ -226,6 +231,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     -DWITH_DIRECTOR:BOOL=${WITH_DIRECTOR}
     -DWITH_DREAL:BOOL=${WITH_DREAL}
     -DWITH_EIGEN3:BOOL=${WITH_EIGEN}  # TODO(jamiesnape): Fix naming inconsistency
+    -DWITH_FCL:BOOL=${WITH_FCL}
     -DWITH_GFLAGS:BOOL=${WITH_GFLAGS}
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
     -DWITH_GTEST:BOOL=${WITH_GOOGLETEST}  # TODO(jamiesnape): Fix naming inconsistency
@@ -263,6 +269,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     ccd
     dreal
     eigen
+    fcl
     gflags
     google_styleguide
     googletest
@@ -301,7 +308,7 @@ drake_add_external(director PUBLIC CMAKE TEST PYTHON
   DEPENDS bot_core_lcmtypes drake lcm libbot)
 
 # signalscope
-drake_add_external(signalscope PUBLIC
+drake_add_external(signalscope PUBLIC CMAKE PYTHON
   DEPENDS director)
 
 # END external projects

@@ -1,5 +1,7 @@
 #include "drake/systems/trajectory_optimization/direct_collocation_constraint.h"
 
+#include <utility>
+
 #include "drake/common/drake_throw.h"
 #include "drake/math/autodiff.h"
 
@@ -72,7 +74,7 @@ SystemDirectCollocationConstraint::SystemDirectCollocationConstraint(
     const systems::System<double>& system,
     const systems::Context<double>& context)
     : DirectCollocationConstraint(context.get_continuous_state()->size(),
-                                  system.get_input_port(0).get_size()),
+                                  system.get_input_port(0).size()),
       system_(systems::System<double>::ToAutoDiffXd(system)),
       context_(system_->CreateDefaultContext()),
       // Don't allocate the input port until we're past the point
@@ -85,7 +87,7 @@ SystemDirectCollocationConstraint::SystemDirectCollocationConstraint(
   // Allocate the input port and keep an alias around.
   input_port_ =
       new FreestandingInputPort(std::make_unique<BasicVector<AutoDiffXd>>(
-          system_->get_input_port(0).get_size()));
+          system_->get_input_port(0).size()));
   std::unique_ptr<InputPort> input_port(input_port_);
   context_->SetInputPort(0, std::move(input_port));
 }

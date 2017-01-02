@@ -1,6 +1,8 @@
 #pragma once
 
+#include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "btBulletCollisionCommon.h"
@@ -59,7 +61,7 @@ class BulletModel : public Model {
   ElementId addElement(const Element& element) override;
 
   bool updateElementWorldTransform(
-      const ElementId, const Eigen::Isometry3d& T_local_to_world) override;
+      ElementId, const Eigen::Isometry3d& T_local_to_world) override;
 
   /**
    * Finds the points where each pair of the elements in ids_to_check are
@@ -68,11 +70,11 @@ class BulletModel : public Model {
    * \return true if any points are found.
    */
   bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
-                             const bool use_margins,
+                             bool use_margins,
                              std::vector<PointPair>& closest_points) override;
 
   bool ComputeMaximumDepthCollisionPoints(
-      const bool use_margins, std::vector<PointPair>& points) override;
+      bool use_margins, std::vector<PointPair>& points) override;
 
   /**
    * Finds the points where each pair of elements in id_pairs are
@@ -81,7 +83,7 @@ class BulletModel : public Model {
    * \return true if any points are found.
    */
   bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                             const bool use_margins,
+                             bool use_margins,
                              std::vector<PointPair>& closest_points) override;
 
   void collisionDetectFromPoints(
@@ -150,7 +152,7 @@ class BulletModel : public Model {
    * returns false.
    */
   virtual PointPair findClosestPointsBetweenElements(
-      const ElementId idA, const ElementId idB, const bool use_margins);
+      ElementId idA, ElementId idB, bool use_margins);
 
   BulletCollisionWorldWrapper& getBulletWorld(bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletBoxShape(

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+
 #include "bot_core/atlas_command_t.hpp"
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
@@ -12,7 +15,8 @@ namespace qp_inverse_dynamics {
 
 using systems::Context;
 using systems::SystemOutput;
-using systems::SystemPortDescriptor;
+using systems::InputPortDescriptor;
+using systems::OutputPortDescriptor;
 using systems::LeafSystemOutput;
 using systems::AbstractValue;
 using systems::BasicVector;
@@ -127,7 +131,7 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
   /**
    * @return Port for the input: HumanoidStatus.
    */
-  inline const SystemPortDescriptor<double>& get_input_port_humanoid_status()
+  inline const InputPortDescriptor<double>& get_input_port_humanoid_status()
       const {
     return get_input_port(in_port_idx_humanoid_status_);
   }
@@ -135,14 +139,14 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
   /**
    * @return Port for the input: QPOutput.
    */
-  inline const SystemPortDescriptor<double>& get_input_port_qp_output() const {
+  inline const InputPortDescriptor<double>& get_input_port_qp_output() const {
     return get_input_port(in_port_idx_qp_output_);
   }
 
   /**
    * @return Port for the output: bot_core::atlas_command_t message
    */
-  inline const SystemPortDescriptor<double>& get_output_port_atlas_command()
+  inline const OutputPortDescriptor<double>& get_output_port_atlas_command()
       const {
     return get_output_port(out_port_index_atlas_cmd_);
   }

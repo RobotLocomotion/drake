@@ -21,13 +21,13 @@ template <typename T>
 PendulumPlant<T>::~PendulumPlant() {}
 
 template <typename T>
-const systems::SystemPortDescriptor<T>&
+const systems::InputPortDescriptor<T>&
 PendulumPlant<T>::get_tau_port() const {
   return this->get_input_port(0);
 }
 
 template <typename T>
-const systems::SystemPortDescriptor<T>&
+const systems::OutputPortDescriptor<T>&
 PendulumPlant<T>::get_output_port() const {
   return systems::System<T>::get_output_port(0);
 }
@@ -35,8 +35,8 @@ PendulumPlant<T>::get_output_port() const {
 template <typename T>
 std::unique_ptr<systems::BasicVector<T>>
 PendulumPlant<T>::AllocateOutputVector(
-    const systems::SystemPortDescriptor<T>& descriptor) const {
-  DRAKE_THROW_UNLESS(descriptor.get_size() == kStateSize);
+    const systems::OutputPortDescriptor<T>& descriptor) const {
+  DRAKE_THROW_UNLESS(descriptor.size() == kStateSize);
   return std::make_unique<PendulumStateVector<T>>();
 }
 

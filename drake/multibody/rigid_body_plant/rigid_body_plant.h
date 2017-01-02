@@ -178,8 +178,8 @@ class RigidBodyPlant : public LeafSystem<T> {
   }
 
   // System<T> overrides.
-  /// Allocates two output ports, one for the RigidBodyPlant state and one for
-  /// KinematicsResults.
+  /// Allocates the output ports. See this class' description for details of
+  /// these ports.
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const override;
 
@@ -194,31 +194,31 @@ class RigidBodyPlant : public LeafSystem<T> {
   static T JointLimitForce(const DrakeJoint& joint,
                            const T& position, const T& velocity);
 
-  /// Returns a descriptor of state output port.
-  const SystemPortDescriptor<T>& state_output_port() const {
+  /// Returns a descriptor of the state output port.
+  const OutputPortDescriptor<T>& state_output_port() const {
     return System<T>::get_output_port(state_output_port_id_);
   }
 
-  /// Returns a descriptor of KinematicsResults output port.
-  const SystemPortDescriptor<T>& kinematics_results_output_port() const {
+  /// Returns a descriptor of the KinematicsResults output port.
+  const OutputPortDescriptor<T>& kinematics_results_output_port() const {
     return System<T>::get_output_port(kinematics_output_port_id_);
   }
 
-  /// Returns a descriptor of ContactResults output port.
-  const SystemPortDescriptor<T>& contact_results_output_port() const {
+  /// Returns a descriptor of the ContactResults output port.
+  const OutputPortDescriptor<T>& contact_results_output_port() const {
     return System<T>::get_output_port(contact_output_port_id_);
   }
 
   /// Returns a descriptor of the input port for a specific model
   /// instance.
-  const SystemPortDescriptor<T>& model_input_port(
+  const InputPortDescriptor<T>& model_input_port(
       int model_instance_id) const {
     return System<T>::get_input_port(input_map_.at(model_instance_id));
   }
 
   /// Returns a descriptor of the output port for a specific model
   /// instance.
-  const SystemPortDescriptor<T>& model_state_output_port(
+  const OutputPortDescriptor<T>& model_state_output_port(
       int model_instance_id) const {
     return System<T>::get_output_port(output_map_.at(model_instance_id));
   }
@@ -231,9 +231,10 @@ class RigidBodyPlant : public LeafSystem<T> {
       int model_instance_id, int world_position_index);
 
   /// Creates a right-handed local basis from a z-axis. Defines an arbitrary x-
-  /// and y-axis such that the basis is orthonormal.  The basis is R_WL, where W
+  /// and y-axis such that the basis is orthonormal. The basis is R_WL, where W
   /// is the frame in which the z-axis is expressed and L is a local basis such
   /// that v_W = R_WL * v_L.
+  ///
   /// @param[in] z_axis_W   The vector defining the basis's z-axis expressed
   ///                       in frame W.
   /// @retval R_WL          The computed basis.

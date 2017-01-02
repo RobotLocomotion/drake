@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -121,7 +122,7 @@ class LcmSubscriberSystem : public LeafSystem<double>,
                     SystemOutput<double>* output) const override;
 
   std::unique_ptr<BasicVector<double>> AllocateOutputVector(
-      const SystemPortDescriptor<double>& descriptor) const override;
+      const OutputPortDescriptor<double>& descriptor) const override;
 
  private:
   // All constructors delegate to here.

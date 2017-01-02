@@ -243,6 +243,11 @@ macro(drake_setup_options)
   drake_optional_external(OCTOMAP ON
     "3D occupancy mapping library\; provides oct-tree data structures")
 
+  # Needs to be below ccd and octomap.
+  drake_optional_external(FCL ON
+    DEPENDS "WITH_CCD\;WITH_OCTOMAP"
+    "Flexible collision detection library")
+
   drake_optional_external(SPDLOG ON
     "Fast C++ text logging facility\; disabling will turn off text logging")
 

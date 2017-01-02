@@ -18,7 +18,7 @@ class PiecewiseFunctionTester : public PiecewiseFunction {
 void TestPiecewiseFunctionTimeRelatedGetters(
     const PiecewiseFunctionTester& traj,
     const std::vector<double>& time) {
-  EXPECT_EQ(traj.getNumberOfSegments(), time.size() - 1);
+  EXPECT_EQ(traj.getNumberOfSegments(), static_cast<int>(time.size()) - 1);
 
   EXPECT_EQ(traj.getStartTime(), time.front());
   EXPECT_EQ(traj.getEndTime(), time.back());

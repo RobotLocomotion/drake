@@ -1,5 +1,7 @@
 #include "drake/systems/primitives/linear_system.h"
 
+#include <utility>
+
 #include <Eigen/Dense>
 #include <Eigen/LU>
 
@@ -38,10 +40,10 @@ std::unique_ptr<LinearSystem<double>> Linearize(
   DRAKE_DEMAND(system.get_num_output_ports() <= 1);
 
   const int num_inputs = (system.get_num_input_ports() > 0)
-                             ? system.get_input_port(0).get_size()
+                             ? system.get_input_port(0).size()
                              : 0,
             num_outputs = (system.get_num_output_ports() > 0)
-                              ? system.get_output_port(0).get_size()
+                              ? system.get_output_port(0).size()
                               : 0;
 
   // Create an autodiff version of the system.

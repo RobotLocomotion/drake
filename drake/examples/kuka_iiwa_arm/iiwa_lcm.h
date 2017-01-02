@@ -3,6 +3,8 @@
 /// @file This file contains classes dealing with sending/receiving
 /// LCM messages related to the iiwa arm.
 
+#include <memory>
+
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -30,11 +32,11 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
  public:
   IiwaStatusSender();
 
-  const systems::SystemPortDescriptor<double>& get_command_input_port() const {
+  const systems::InputPortDescriptor<double>& get_command_input_port() const {
     return this->get_input_port(0);
   }
 
-  const systems::SystemPortDescriptor<double>& get_state_input_port() const {
+  const systems::InputPortDescriptor<double>& get_state_input_port() const {
     return this->get_input_port(1);
   }
 

@@ -1,5 +1,6 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_diagram_factory.h"
 
+#include <utility>
 #include <vector>
 
 #include "drake/lcm/drake_lcm.h"
@@ -68,7 +69,7 @@ PassiveVisualizedPlant<T>::PassiveVisualizedPlant(
   // Sets up a builder for the demo.
   DiagramBuilder<T> builder;
 
-  const int num_inputs = visualized_plant->get_input_port(0).get_size();
+  const int num_inputs = visualized_plant->get_input_port(0).size();
   visualized_plant_ = builder.template AddSystem<VisualizedPlant<T>>(
       std::move(visualized_plant));
 

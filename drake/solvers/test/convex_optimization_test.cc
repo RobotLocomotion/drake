@@ -87,7 +87,7 @@ void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables<2>();
 
-  prog.AddLinearCost(Eigen::RowVector2d(2.0, 1.0));
+  prog.AddLinearCost(Eigen::Vector2d(2.0, 1.0));
   Eigen::Matrix<double, 3, 2> A;
   A << -1, 1, 1, 1, 1, -2;
   Eigen::Vector3d b_lb(-std::numeric_limits<double>::infinity(), 2.0,
@@ -120,7 +120,7 @@ void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
 void TestLinearProgram1(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables<2>();
-  prog.AddLinearCost(Eigen::RowVector2d(1.0, -2.0));
+  prog.AddLinearCost(Eigen::Vector2d(1.0, -2.0));
   prog.AddBoundingBoxConstraint(Eigen::Vector2d(0, -1), Eigen::Vector2d(2, 4));
 
   if (solver.SolverName() == "SNOPT") {
@@ -150,8 +150,8 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
   auto x = prog.AddContinuousVariables<4>();
   // We deliberately break the cost to c1' * [x0;x1;x2] + c2'*[x2;x3] here
   // to test adding multiple costs.
-  Eigen::RowVector3d c1(-3, -1, -4);
-  Eigen::RowVector2d c2(-1, -1);
+  Eigen::Vector3d c1(-3, -1, -4);
+  Eigen::Vector2d c2(-1, -1);
 
   prog.AddLinearCost(c1, {x.head<3>()});
   prog.AddLinearCost(c2, {x.tail<2>()});
@@ -553,7 +553,7 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   prog.AddLinearEqualityConstraint((x2 - x1).transpose(), 1.0, {a});
 
   // Add cost
-  auto cost = prog.AddLinearCost(Eigen::RowVector2d(1.0, 1.0), {t});
+  auto cost = prog.AddLinearCost(Eigen::Vector2d(1.0, 1.0), {t});
 
   // Add Lorentz cones
   auto lorentz_cone1 = prog.AddLorentzConeConstraint({t.segment<1>(0), R1a});
@@ -857,7 +857,7 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
   prog.AddRotatedLorentzConeConstraint({z, t});
 
   prog.AddLinearCost(drake::Vector1d(spring_stiffness / 2), {z.segment<1>(1)});
-  prog.AddLinearCost(weight.transpose(), {y});
+  prog.AddLinearCost(weight, {y});
 
   RunSolver(&prog, solver);
 
@@ -965,6 +965,42 @@ GTEST_TEST(TestConvexOptimization, TestQuadraticProgram0) {
   GetQuadraticProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     TestQuadraticProgram0(*solver);
+  }
+}
+
+GTEST_TEST(TestConvexOptimization, TestL2NormCost) {
+  MathematicalProgram prog;
+  auto x = prog.AddContinuousVariables<2>();
+
+  // |Ax - b|^2 = (x-xd)'Q(x-xd) => Q = A'*A and b = A*xd.
+  Eigen::Matrix2d A;
+  A << 1, 2, 3, 4;
+  Eigen::Matrix2d Q = A.transpose() * A;
+  Eigen::Vector2d x_desired;
+  x_desired << 5, 6;
+  Eigen::Vector2d b = A * x_desired;
+
+  std::shared_ptr<QuadraticConstraint> obj1 =
+      prog.AddQuadraticErrorCost(Q, x_desired, {x});
+  std::shared_ptr<QuadraticConstraint> obj2 = prog.AddL2NormCost(A, b, {x});
+
+  // Test the objective at a 6 arbitrary values (to guarantee correctness
+  // of the six-parameter quadratic form.
+  Eigen::Vector2d x0;
+  Eigen::VectorXd y1, y2;
+  x0 << 7, 8;
+
+  for (int i = 0; i < 6; i++) {
+    obj1->Eval(x0, y1);
+    obj2->Eval(x0, y2);
+
+    EXPECT_TRUE(CompareMatrices(y1, y2));
+    EXPECT_TRUE(CompareMatrices(
+        y2, (A * x0 - b).transpose() * (A * x0 - b) - b.transpose() * b));
+    // Note: Currently have to subtract out the constant term (b'*b) due to
+    // issue #3500.
+
+    x0 += Eigen::Vector2d::Constant(2);
   }
 }
 
@@ -1160,7 +1196,7 @@ GTEST_TEST(TestConvexOptimization, TestTrivialSDP) {
 
     prog.AddBoundingBoxConstraint(1, 1, S(1, 0));
 
-    prog.AddLinearCost(Eigen::RowVector2d(1, 1), {S.diagonal()});
+    prog.AddLinearCost(Eigen::Vector2d(1, 1), {S.diagonal()});
 
     RunSolver(&prog, *solver);
 

@@ -869,6 +869,15 @@ class RigidBodyTree {
       RigidBody<T>& body,
       const std::string& group_name);
 
+  /// Retrieve a (const) pointer to an element of the collision model.
+  /// Note: The use of Find (instead of get) and the use of CamelCase both
+  /// imply a potential runtime cost are carried over from the collision model
+  /// accessor method.
+  const DrakeCollision::Element* FindCollisionElement(
+      const DrakeCollision::ElementId& id) const {
+    return collision_model_->FindElement(id);
+  }
+
   template <class UnaryPredicate>
   void removeCollisionGroupsIf(UnaryPredicate test) {
     for (const auto& body_ptr : bodies) {
@@ -1473,6 +1482,23 @@ class RigidBodyTree {
   template <typename Scalar>
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void updateCompositeRigidBodyInertias(KinematicsCache<Scalar>& cache) const;
+
+  // Examines the state of the tree, and confirms that all nodes (i.e,
+  // RigidBody instances) have a kinematics path to the root.  In other words,
+  // there should only be a single body that has no parent: the world.
+  // Throws an exception if it is *not* a complete tree.
+  void ConfirmCompleteTree() const;
+
+  // Given the body, tests to see if it has a kinematic path to the world node.
+  // Uses a cache of known "connected" bodies to accelerate the computation.
+  // The connected set consist of the body indices (see
+  // RigidBody::get_body_index) which are known to be connected to the world.
+  // This function has a side-effect of updating the set of known connected.
+  // This assumes that the connected set has been initialized with the value
+  // 0 (the world body).
+  // If not connected, throws an exception.
+  void TestConnectedToWorld(const RigidBody<T>& body,
+                            std::set<int>* connected) const;
 
   // Reorder body list to ensure parents are before children in the list
   // RigidBodyTree::bodies.

@@ -1,5 +1,7 @@
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
+#include <utility>
+
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -75,7 +77,7 @@ SpringMassSystem<T>::SpringMassSystem(const T& spring_constant_N_per_m,
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& SpringMassSystem<T>::get_force_port() const {
+const InputPortDescriptor<T>& SpringMassSystem<T>::get_force_port() const {
   if (system_is_forced_) {
     return this->get_input_port(0);
   } else {
@@ -86,7 +88,7 @@ const SystemPortDescriptor<T>& SpringMassSystem<T>::get_force_port() const {
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& SpringMassSystem<T>::get_output_port() const {
+const OutputPortDescriptor<T>& SpringMassSystem<T>::get_output_port() const {
   return System<T>::get_output_port(0);
 }
 

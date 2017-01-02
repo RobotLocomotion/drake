@@ -63,13 +63,13 @@ AffineSystem<AutoDiffXd>* AffineSystem<T>::DoToAutoDiffXd() const {
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& AffineSystem<T>::get_input_port() const {
+const InputPortDescriptor<T>& AffineSystem<T>::get_input_port() const {
   DRAKE_DEMAND(num_inputs_ > 0);
   return System<T>::get_input_port(0);
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& AffineSystem<T>::get_output_port() const {
+const OutputPortDescriptor<T>& AffineSystem<T>::get_output_port() const {
   DRAKE_DEMAND(num_outputs_ > 0);
   return System<T>::get_output_port(0);
 }

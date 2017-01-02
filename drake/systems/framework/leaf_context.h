@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <set>
+#include <utility>
 #include <vector>
 
 #include "drake/systems/framework/basic_vector.h"

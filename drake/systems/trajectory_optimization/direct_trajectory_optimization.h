@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Core>
@@ -219,7 +221,7 @@ class DirectTrajectoryOptimization {
   /**
    * Get the state trajectory as a PiecewisePolynomialTrajectory
    */
-  PiecewisePolynomialTrajectory ReconstructStateTrajectory() const;
+  virtual PiecewisePolynomialTrajectory ReconstructStateTrajectory() const;
 
  protected:
   /**

@@ -286,7 +286,7 @@ template <typename T>
 std::unique_ptr<ContinuousState<T>> RigidBodyPlant<T>::AllocateContinuousState()
     const {
   // The state is second-order.
-  DRAKE_ASSERT(System<T>::get_input_port(0).get_size() == get_num_actuators());
+  DRAKE_ASSERT(System<T>::get_input_port(0).size() == get_num_actuators());
   // TODO(amcastro-tri): add z state to track energy conservation.
   return std::make_unique<ContinuousState<T>>(
       std::make_unique<BasicVector<T>>(get_num_states()),

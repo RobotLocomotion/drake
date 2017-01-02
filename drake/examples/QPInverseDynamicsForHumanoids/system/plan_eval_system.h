@@ -1,6 +1,8 @@
 #pragma once
 
+#include <memory>
 #include <string>
+#include <utility>
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/example_qp_input_for_valkyrie.h"
@@ -112,7 +114,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   /**
    * @return Port for the input: HumanoidStatus.
    */
-  inline const SystemPortDescriptor<double>& get_input_port_humanoid_status()
+  inline const InputPortDescriptor<double>& get_input_port_humanoid_status()
       const {
     return get_input_port(input_port_index_humanoid_status_);
   }
@@ -120,7 +122,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   /**
    * @return Port for the output: QPInput.
    */
-  inline const SystemPortDescriptor<double>& get_output_port_qp_input() const {
+  inline const OutputPortDescriptor<double>& get_output_port_qp_input() const {
     return get_output_port(output_port_index_qp_input_);
   }
 
