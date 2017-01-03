@@ -129,12 +129,24 @@ class KinematicsCache {
                                      bool jdot_times_v_required,
                                      const std::string& method_name) const;
 
+  /// Returns `q`, the generalized position vector of the RigidBodyTree that was
+  /// used to compute this KinematicsCache.
   const Eigen::Matrix<T, Eigen::Dynamic, 1>& getQ() const;
 
+  /// Returns `v`, the generalized velocity vector of the RigidBodyTree that was
+  /// used to compute this KinematicsCache.
   const Eigen::Matrix<T, Eigen::Dynamic, 1>& getV() const;
 
+  /// Returns `x`, the state vector of the RigidBodyTree that was used to
+  /// compute this KinematicsCache. This is the concatenation of `q`, the
+  /// RigidBodyTree's generalized position vector, and `v` the RigidBodyTree's
+  /// generalized velocity vector into a single vector. Within `x`, `q` precedes
+  /// `v`.
   Eigen::Matrix<T, Eigen::Dynamic, 1> getX() const;
 
+  /// Returns `true` if this KinematicsCache object has a valid `v` vector. `v`
+  /// is the generalized velocity vector of the RigidBodyTree that was used to
+  /// compute this KinematicsCache.
   bool hasV() const;
 
   void setInertiasCached();
