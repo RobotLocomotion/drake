@@ -191,7 +191,6 @@ macro(drake_setup_options)
 
   drake_system_dependency(
     LCM OPTIONAL REQUIRES lcm
-    DEPENDS "NOT USE_SANITIZER"
     "Lightweight Communications and Marshaling IPC suite")
 
   drake_system_dependency(
