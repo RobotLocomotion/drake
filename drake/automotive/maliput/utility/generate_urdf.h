@@ -3,6 +3,7 @@
 #include <string>
 
 #include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/maliput/utility/generate_obj.h"
 
 namespace drake {
 namespace maliput {
@@ -13,7 +14,7 @@ namespace utility {
 /// @param road_geometry  the api::RoadGeometry to model
 /// @param dirpath  directory component of the output pathnames
 /// @param fileroot  root of the filename component of the output pathnames
-/// @param grid_unit  distance between vertices in the output mesh
+/// @param features  parameters for constructing the mesh
 ///
 /// GenerateUrdfFile() actually produces three files:
 ///  - [@p dirpath]/[@p fileroot].urdf the URDF file, which is little more
@@ -28,7 +29,7 @@ namespace utility {
 void GenerateUrdfFile(const api::RoadGeometry* road_geometry,
                       const std::string& dirname,
                       const std::string& fileroot,
-                      double grid_unit);
+                      const ObjFeatures& features);
 
 }  // namespace utility
 }  // namespace maliput

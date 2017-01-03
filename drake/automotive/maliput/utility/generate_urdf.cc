@@ -12,8 +12,8 @@ namespace utility {
 void GenerateUrdfFile(const api::RoadGeometry* road_geometry,
                       const std::string& dirname,
                       const std::string& fileroot,
-                      const double grid_unit) {
-  GenerateObjFile(road_geometry, dirname, fileroot, grid_unit);
+                      const ObjFeatures& features) {
+  GenerateObjFile(road_geometry, dirname, fileroot, features);
 
   const std::string obj_filename = fileroot + ".obj";
   const std::string urdf_filename = fileroot + ".urdf";

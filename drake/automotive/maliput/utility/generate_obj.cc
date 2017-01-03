@@ -540,22 +540,29 @@ void MarkLaneEnds(GeoMesh* mesh, const api::Lane* lane, double grid_unit,
                 lane->length() - finish_s_size, finish_s_size, h_offset);
 }
 
+
+// Calculates an appropriate grid-unit size for @p lane.
+double PickGridUnit(const api::Lane* lane,
+                    double max_size, double min_resolution) {
+  double result = max_size;
+  const api::RBounds rb0 = lane->lane_bounds(0.);
+  const api::RBounds rb1 = lane->lane_bounds(lane->length());
+  result = std::min(result, (rb0.r_max - rb0.r_min) / min_resolution);
+  result = std::min(result, (rb1.r_max - rb1.r_min) / min_resolution);
+  result = std::min(result, lane->length() / min_resolution);
+  return result;
+}
+
 }  // namespace
 
 
 void GenerateObjFile(const api::RoadGeometry* rg,
                      const std::string& dirpath,
                      const std::string& fileroot,
-                     const double grid_unit) {
-  const double kMarkerElevation = 0.05;
-  const double kStripeElevation = 0.05;
-  const double kLaneHazeElevation = 0.02;
-
-  const double kStripeWidth = 0.25;
-
+                     const ObjFeatures& features) {
   GeoMesh asphalt_mesh;
   GeoMesh lane_mesh;
-  GeoMesh stripe_mesh;
+  GeoMesh marker_mesh;
 
   // Walk the network.
   for (int ji = 0; ji < rg->num_junctions(); ++ji) {
@@ -563,15 +570,30 @@ void GenerateObjFile(const api::RoadGeometry* rg,
     for (int si = 0; si < junction->num_segments(); ++si) {
       const api::Segment* segment = junction->segment(si);
       // Lane 0 should be as good as any other for driveable-bounds.
-      CoverLaneWithQuads(&asphalt_mesh, segment->lane(0), grid_unit,
+      CoverLaneWithQuads(&asphalt_mesh, segment->lane(0),
+                         PickGridUnit(segment->lane(0),
+                                      features.max_grid_unit,
+                                      features.min_grid_resolution),
                          true, 0.);
       for (int li = 0; li < segment->num_lanes(); ++li) {
         const api::Lane* lane = segment->lane(li);
-        CoverLaneWithQuads(&lane_mesh, segment->lane(0), grid_unit,
-                           false, kLaneHazeElevation);
-        StripeLaneBounds(&stripe_mesh, lane, grid_unit,
-                         kStripeElevation, kStripeWidth);
-        MarkLaneEnds(&stripe_mesh, lane, grid_unit, kMarkerElevation);
+        const double grid_unit = PickGridUnit(lane,
+                                              features.max_grid_unit,
+                                              features.min_grid_resolution);
+        if (features.draw_lane_haze) {
+          CoverLaneWithQuads(&lane_mesh, segment->lane(0), grid_unit,
+                             false,
+                             features.lane_haze_elevation);
+        }
+        if (features.draw_stripes) {
+          StripeLaneBounds(&marker_mesh, lane, grid_unit,
+                           features.stripe_elevation,
+                           features.stripe_width);
+        }
+        if (features.draw_arrows) {
+          MarkLaneEnds(&marker_mesh, lane, grid_unit,
+                       features.arrow_elevation);
+        }
       }
     }
   }
@@ -601,7 +623,7 @@ void GenerateObjFile(const api::RoadGeometry* rg,
         lane_mesh.EmitObj(os, kLaneHaze,
                           vertex_index_offset, normal_index_offset);
     std::tie(vertex_index_offset, normal_index_offset) =
-        stripe_mesh.EmitObj(os, kMarkerPaint,
+        marker_mesh.EmitObj(os, kMarkerPaint,
                             vertex_index_offset, normal_index_offset);
   }
 
