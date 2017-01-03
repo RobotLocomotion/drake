@@ -124,8 +124,9 @@ RigidBodyTree<T>::~RigidBodyTree(void) {}
 template <typename T>
 bool RigidBodyTree<T>::transformCollisionFrame(
     RigidBody<T>* body, const Eigen::Isometry3d& displace_transform) {
-  // Collision elements in the body-collision map can simply be modified in
-  // place.  The collision model doesn't know about them yet.
+  // Collision elements in the body-collision map have *not* been registered
+  // with the collision engine yet and can simply be modified in
+  // place.
   auto map_itr = body_collision_map_.find(body);
   if (map_itr != body_collision_map_.end()) {
     BodyCollisions& collision_items = map_itr->second;
@@ -136,11 +137,18 @@ bool RigidBodyTree<T>::transformCollisionFrame(
     }
   }
 
-  // TODO(SeanCurtis-TRI): Collision elements attached to the body have been
+  // TODO(SeanCurtis-TRI): These Collision elements have *already* been
   // registered with the collision model; they must be moved through the
-  // collision model interface. We need to decide if a method that is intended
+  // collision model's interface. We need to decide if a method that is intended
   // to be called as part of *construction* should modify collision elements
-  // already registered with the collision engine.  I suspect not.
+  // already registered with the collision engine. In other words, do we allow
+  // the following work flow:
+  //   1) Add body to tree.
+  //   2) Add collision element to body.
+  //   3) transform the collision frame.
+  //   4) *compile*
+  //   5) repeate steps 2-4.
+  // I suspect this should *not* be considered a valid workflow.  This needs
   for (auto body_itr = body->collision_elements_begin();
        body_itr != body->collision_elements_end(); ++body_itr) {
     DrakeCollision::Element* element = *body_itr;
@@ -555,7 +563,7 @@ void RigidBodyTree<T>::addCollisionElement(
         body_collision_map_.insert(std::make_pair(&body, BodyCollisions()));
 
     if (!success) {
-      throw std::logic_error(
+      throw std::runtime_error(
           "Unable to add the collision element to the "
           "body: " +
           body.get_name() + ".");

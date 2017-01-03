@@ -248,14 +248,29 @@ class RigidBody {
   bool IsRigidlyFixedToWorld() const;
 
   /**
-   * Reports the pose of this body in the world frame based on the *rigid* pose.
-   * The rigid pose is only defined for bodies that are rigidly fixed to the
-   * world (@see IsRigidlyFixedToWorld). It is the concatenation of the poses
-   * of this body with its rigidly-fixed inboard ancestors all the way back to
+   * Reports `X_WBₙ`, the pose of this body, `Bₙ`, in the world frame based on
+   * the *rigid* kinematic path from `Bₙ` to `W`.  As such,
+   * the world-fixed pose is only defined for bodies that are rigidly fixed to
    * the world.
    *
+   * For this body, with depth `n` in the tree, `Bₙ`, `X_WBₙ` is defined as:
+   *
+   * `X_WBₙ ≡ X_WB₁ * X_B₁B₂ * ... * X_Bₙ₋₂Bₙ₋₁ * X_Bₙ₋₁Bₙ`
+   *
+   * `X_Bₖ₋₁Bₖ` represents the transform from one body's frame
+   * (`Bₖ`) to its parent's frame (Bₖ₋₁). By construction, body `Bₖ` has a
+   * single inboard joint. This joint defines several frames, discussed in
+   * @ref rigid_body_tree_frames, including its parent frame: `Pₖ ≡ Bₖ₋₁`. This
+   * allows us to compute `X_Bₖ₋₁Bₖ` as follows:
+   * - `X_Bₖ₋₁Bₖ = X_PₖBₖ` because `Pₖ ≡ Bₖ₋₁`
+   * - `X_PₖBₖ ≡ X_PₖFₖ * X_FₖMₖ(q) * X_MₖBₖ`, where:
+   *    - `X_MₖBₖ = I` in Drake's implementation.
+   *    - `X_FₖMₖ(q) = I` because we only follow FixedJoint instances.
+   *
+   *
    * If the body is not rigidly fixed to the world, an exception will be thrown.
-   * @return The world transform between this body and the world frame.
+   * @return `X_WBₙ`.
+   * @see IsRigidlyFixedToWorld
    */
   Eigen::Isometry3d ComputeWorldFixedPose() const;
 

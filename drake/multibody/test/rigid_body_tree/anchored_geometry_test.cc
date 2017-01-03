@@ -11,8 +11,7 @@
 // correct collision elements have been flagged as anchored.
 
 namespace drake {
-namespace systems {
-namespace plants {
+namespace multibody {
 namespace test {
 namespace rigid_body_tree {
 namespace {
@@ -169,6 +168,5 @@ GTEST_TEST(ByHandAnchoredGeometry, WorldCollisionElementIsAnchored) {
 }  // namespace
 }  // namespace rigid_body_tree
 }  // namespace test
-}  // namespace plants
-}  // namespace systems
+}  // namespace multibody
 }  // namespace drake

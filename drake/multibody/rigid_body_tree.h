@@ -1336,6 +1336,7 @@ class RigidBodyTree {
   // elements are added. This queues the collision elements in the added order
   // so that when actually registered with the collision engine, they'll be
   // submitted in the invocation order.
+  // See https://github.com/bulletphysics/bullet3/issues/888
   std::vector< std::unique_ptr<DrakeCollision::Element>> element_order_;
 };
 

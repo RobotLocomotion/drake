@@ -172,12 +172,9 @@ Isometry3d RigidBody<T>::ComputeWorldFixedPose() const {
     return Isometry3d::Identity();
   }
 
-  if (joint_ == nullptr) {
-    throw std::runtime_error(
-        "Trying to compute world pose for body with no "
-        "parent joint:  " +
-        name_);
-  }
+  // RigidBodyTree::compile should enforce this property.
+  DRAKE_ASSERT(joint_ != nullptr);
+
   if (!joint_->is_fixed()) {
     throw std::runtime_error(
         "Trying to compute world pose for a body with a "
