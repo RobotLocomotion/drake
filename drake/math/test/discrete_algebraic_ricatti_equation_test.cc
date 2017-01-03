@@ -12,12 +12,19 @@ void test1(const Eigen::Ref<const MatrixXd>& A,
            const Eigen::Ref<const MatrixXd>& Q,
            const Eigen::Ref<const MatrixXd>& R) {
   MatrixXd X = DiscreteAlgebraicRiccatiEquation(A, B, Q, R);
+  // check that X is positive semi-definite
+  EXPECT_TRUE(
+      CompareMatrices(X, X.transpose(), 1E-10, MatrixCompareType::absolute));
+  int n = X.rows();
+  EigenSolver<MatrixXd> es(X);
+  for (int i = 0; i < n; i++) {
+    EXPECT_GE(es.eigenvalues()[i].real(), 0);
+  }
+  // check that X is the solution to the discrete time ARE
   MatrixXd Y = A.transpose() * X * A - X -
                A.transpose() * X * B * (B.transpose() * X * B + R).inverse() *
                    B.transpose() * X * A +
                Q;
-  int n = X.rows();
-
   EXPECT_TRUE(CompareMatrices(Y, MatrixXd::Zero(n, n), 1E-10,
                               MatrixCompareType::absolute));
 }
