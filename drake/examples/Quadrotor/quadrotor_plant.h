@@ -1,9 +1,11 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <memory>
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/primitives/affine_system.h"
 
 namespace drake {
 namespace examples {
@@ -34,6 +36,9 @@ class QuadrotorPlant : public systems::LeafSystem<T> {
     context->get_mutable_continuous_state_vector()->SetFromVector(x);
   }
 
+  T  m() const { return m_; }
+  T  g() const { return g_; }
+
  protected:
   void DoCalcOutput(const systems::Context<T> &context,
                     systems::SystemOutput<T> *output) const override;
@@ -44,16 +49,23 @@ class QuadrotorPlant : public systems::LeafSystem<T> {
 
   // TODO(naveenoid): Declare these as parameters in the context.
  private:
-  const double g{9.81},  // Gravitational acceleration (m/s^2).
-      m{0.5},            // Mass of the robot (kg).
-      L{0.175},          // Length of the arms (m).
-      kF{1.0},           // Force input constant.
-      kM{0.0245};        // Momment input constant.
+  const double g_{9.81},  // Gravitational acceleration (m/s^2).
+      m_{0.5},            // Mass of the robot (kg).
+      L_{0.175},          // Length of the arms (m).
+      kF_{1.0},           // Force input constant.
+      kM_{0.0245};        // Moment input constant.
   int kStateDimension{12}, kInputDimension{4};
-  const Matrix3<T> I{
+  const Matrix3<T> I_{
       ((Eigen::Matrix3d() << 0.0023, 0, 0, 0, 0.0023, 0, 0, 0, 0.0040)
-           .finished())};  // Momment of Inertia about the Center of Mass
+           .finished())};  // Moment of Inertia about the Center of Mass
 };
+
+/// Generates an LQR controller to move to @p nominal_position. Internally
+/// computes the nominal input corresponding to a hover at position @p x0.
+/// @see systems::LinearQuadraticRegulator.
+std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
+    const QuadrotorPlant<double>* quadrotor_plant,
+    Eigen::Vector3d nominal_position);
 
 }  // namespace quadrotor
 }  // namespace examples
