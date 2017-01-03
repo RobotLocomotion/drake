@@ -30,7 +30,7 @@ Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R) {
   int n = B.rows(), m = B.cols();
-  
+
   DRAKE_DEMAND(m <= n);
   DRAKE_DEMAND(A.rows() == n && A.cols() == n);
   DRAKE_DEMAND(Q.rows() == n && Q.cols() == n);
