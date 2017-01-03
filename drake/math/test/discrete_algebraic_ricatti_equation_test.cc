@@ -7,8 +7,10 @@ using Eigen::MatrixXd;
 namespace drake {
 namespace math {
 namespace {
-void test1(const Eigen::Ref<const MatrixXd>& A, const Eigen::Ref<const MatrixXd>& B,
-           const Eigen::Ref<const MatrixXd>& Q, const Eigen::Ref<const MatrixXd>& R) {
+void test1(const Eigen::Ref<const MatrixXd>& A,
+           const Eigen::Ref<const MatrixXd>& B,
+           const Eigen::Ref<const MatrixXd>& Q,
+           const Eigen::Ref<const MatrixXd>& R) {
   MatrixXd X = DiscreteAlgebraicRiccatiEquation(A, B, Q, R);
   MatrixXd Y = A.transpose() * X * A - X -
                A.transpose() * X * B * (B.transpose() * X * B + R).inverse() *
