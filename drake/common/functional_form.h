@@ -11,6 +11,8 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/dummy_value.h"
+
 namespace drake {
 
 /** Represent an abstract form of a function of zero or more variables.
@@ -713,6 +715,12 @@ typename std::enable_if<
 operator/=(MatrixL& lhs, double rhs) {
   return lhs /= FunctionalForm(rhs);
 }
+
+template <>
+struct dummy_value<FunctionalForm> {
+  // The default constructor provides an "Undefined" placeholder.
+  static FunctionalForm get() { return FunctionalForm(); }
+};
 
 }  // namespace drake
 
