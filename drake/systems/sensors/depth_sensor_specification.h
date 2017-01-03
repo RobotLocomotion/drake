@@ -88,9 +88,9 @@ class DepthSensorSpecification {
   /// base frame. It contains the following specifications:
   ///
   ///  - min_yaw = 0
-  ///  - max_yaw = M_PI / 2
+  ///  - max_yaw = M_PI_2
   ///  - min_pitch = 0
-  ///  - max_pitch = M_PI / 2
+  ///  - max_pitch = M_PI_2
   ///  - num_yaw_values = 10
   ///  - num_pitch_values = 5
   ///  - min_range = 0
@@ -98,9 +98,9 @@ class DepthSensorSpecification {
   ///
   static const DepthSensorSpecification& get_octant_1_spec() {
     static const DepthSensorSpecification spec(0,         // min_yaw
-                                               M_PI / 2,  // max_yaw
+                                               M_PI_2,    // max_yaw
                                                0,         // min_pitch
-                                               M_PI / 2,  // max_pitch
+                                               M_PI_2,    // max_pitch
                                                10,        // num_yaw_values
                                                5,         // num_pitch_values
                                                0,         // min_range
@@ -137,8 +137,8 @@ class DepthSensorSpecification {
   ///
   ///  - min_yaw = 0
   ///  - max_yaw = 0
-  ///  - min_pitch = -M_PI / 2
-  ///  - max_pitch = M_PI / 2
+  ///  - min_pitch = -M_PI_2
+  ///  - max_pitch = M_PI_2
   ///  - num_yaw_values = 1
   ///  - num_pitch_values = 50
   ///  - min_range = 0
@@ -147,8 +147,8 @@ class DepthSensorSpecification {
   static const DepthSensorSpecification& get_xz_planar_spec() {
     static const DepthSensorSpecification spec(0,          // min_yaw
                                                0,          // max_yaw
-                                               -M_PI / 2,  // min_pitch
-                                               M_PI / 2,   // max_pitch
+                                               -M_PI_2,    // min_pitch
+                                               M_PI_2,     // max_pitch
                                                1,          // num_yaw_values
                                                50,         // num_pitch_values
                                                0,          // min_range
@@ -163,8 +163,8 @@ class DepthSensorSpecification {
   ///
   ///  - min_yaw = -M_PI
   ///  - max_yaw = M_PI
-  ///  - min_pitch = -M_PI / 2
-  ///  - max_pitch = M_PI / 2
+  ///  - min_pitch = -M_PI_2
+  ///  - max_pitch = M_PI_2
   ///  - num_yaw_values = 50
   ///  - num_pitch_values = 50
   ///  - min_range = 0
@@ -175,8 +175,8 @@ class DepthSensorSpecification {
   static const DepthSensorSpecification& get_xyz_spherical_spec() {
     static const DepthSensorSpecification spec(-M_PI,      // min_yaw
                                                M_PI,       // max_yaw
-                                               -M_PI / 2,  // min_pitch
-                                               M_PI / 2,   // max_pitch
+                                               -M_PI_2,    // min_pitch
+                                               M_PI_2,     // max_pitch
                                                50,         // num_yaw_values
                                                50,         // num_pitch_values
                                                0,          // min_range

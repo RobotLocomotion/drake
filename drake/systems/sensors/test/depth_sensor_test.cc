@@ -158,16 +158,16 @@ std::pair<VectorX<double>, Matrix3Xd> DoBoxOcclusionTest(
 }
 
 // Tests the ability to scan the sensor's X,Y plane (i.e., pitch = 0, yaw in
-// [-M_PI / 2, M_PI / 2]) in a world containing a box at (0.5, 0, 0). This
-// checks both the depth image and the point cloud.
+// [-M_PI_2, M_PI_2]) in a world containing a box at (0.5, 0, 0). This checks
+// both the depth image and the point cloud.
 GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
   DepthSensorSpecification specification =
       DepthSensorSpecification::get_xy_planar_spec();
 
   // Adjusts the min / max yaw range to ensure the sensor is able to obtain
   // four depth measurements of the box's sensor-facing surface.
-  specification.set_min_yaw(-M_PI / 2);
-  specification.set_max_yaw(M_PI / 2);
+  specification.set_min_yaw(-M_PI_2);
+  specification.set_max_yaw(M_PI_2);
 
   const Vector3d box_xyz(0.5, 0, 0);  // x, y, z location of box.
 
@@ -193,7 +193,6 @@ GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
                               MatrixCompareType::absolute, &message))
       << message;
 
-  std::cout << depth_measurements << std::endl;
   const Matrix3Xd point_cloud = std::get<1>(result);
 
   const int kExpectedPointCloudSize = 4;
