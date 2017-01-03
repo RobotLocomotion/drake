@@ -42,6 +42,19 @@ class AcrobotPlant : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
+  T EvalEnergy(const systems::Context<T>& context) const;
+
+  T getm1() const {return m1;}
+  T getm2() const {return m2;}
+  T getl1() const {return l1;}
+  T getl2() const {return l2;}
+  T getlc1() const {return lc1;}
+  T getlc2() const {return lc2;}
+  T getIc1() const {return Ic1;}
+  T getIc2() const {return Ic2;}
+  T getb1() const {return b1;}
+  T getb2() const {return b2;}
+  T getg() const {return g;}
  private:
   // LeafSystem<T> override.
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
@@ -90,6 +103,9 @@ class AcrobotWEncoder : public systems::Diagram<T> {
 /// Constructs the LQR controller for stabilizing the upright fixed point using
 /// default LQR cost matrices which have been tested for this system.
 std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
+    const AcrobotPlant<double>* acrobot);
+
+std::unique_ptr<systems::AffineSystem<double>> SwingUpController(
     const AcrobotPlant<double>* acrobot);
 
 }  // namespace acrobot

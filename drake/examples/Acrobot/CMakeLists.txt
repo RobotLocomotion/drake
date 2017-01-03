@@ -32,6 +32,14 @@ if(lcm_FOUND)
       drakeSystemAnalysis)
   add_test(NAME acrobot_run_lqr_w_estimator COMMAND acrobot_run_lqr_w_estimator -realtime_factor 0.0)
 
+  add_executable(acrobot_run_swing_up acrobot_run_swing_up.cc)
+  target_link_libraries(acrobot_run_swing_up
+          drakeAcrobotPlant
+          drakeMultibodyParsers
+          drakeRigidBodyPlant
+          drakeSystemAnalysis
+          drakeLinearControl)
+
 endif(lcm_FOUND)
 
 drake_add_matlab_test(NAME examples/Acrobot/runLQR COMMAND runLQR)
