@@ -1,4 +1,5 @@
 #include "drake/math/discrete_algebraic_ricatti_equation.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/is_approx_equal_abstol.h"
 
@@ -294,13 +295,11 @@ Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
   DRAKE_DEMAND(is_approx_equal_abstol(Q, Q.transpose(), 1e-10));
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(Q);
   for (int i = 0; i < n; i++) {
-    if (es.eigenvalues()[i] < 0)
-      throw std::runtime_error("Q must be positive semi-definite");
+    DRAKE_THROW_UNLESS(es.eigenvalues()[i] >= 0);
   }
   DRAKE_DEMAND(is_approx_equal_abstol(R, R.transpose(), 1e-10));
   Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
-  if (R_cholesky.info() != Eigen::Success)
-    throw std::runtime_error("R must be positive definite");
+  DRAKE_THROW_UNLESS(R_cholesky.info() == Eigen::Success);
 
   Eigen::MatrixXd M(2 * n, 2 * n), L(2 * n, 2 * n);
   M << A, Eigen::MatrixXd::Zero(n, n), -Q, Eigen::MatrixXd::Identity(n, n);
