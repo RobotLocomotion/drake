@@ -15,19 +15,21 @@ namespace parsers {
  * This class provides a way to create aliases to groups of RigidBody or
  * DrakeJoint objects. The creation of these groups can be done either
  * programmatically or via a YAML file.
- * For example, suppose we have a RigidBodyTree with 6 links named
- * [link0 ~ link5], and 6 joints [base, joint0 ~ joint4].
- * We can "rename" `link0` to be `robot_base` by creating a body group named
- * `robot_base` with one entry `link0`, and accessing the first element in this
- * body group. Alias names for joints can also be similarly created.
- * Furthermore, the corresponding indices to the generalized position and
- * velocity are computed and accessible through an instance of this class.
  *
- * The elements within each body group or joint group are not guaranteed to be
- * unique. Body groups and joint groups are independent, so a body group can
- * have the same name of a joint group. However, all body groups have unique
- * group names, and so do all joint groups. When adding new members to an
- * existing group, the new members will be appended to the existing group.
+ * For example, suppose we have a RigidBodyTree with 6 links named
+ * [link0 ~ link5], and 6 joints [base, joint0 ~ joint4]. We can "rename"
+ * `link0` to be `robot_base` by creating a body group named `robot_base`
+ * with one entry `link0`, and accessing the first element in this body group.
+ * Alias names for joints can also be similarly created. Furthermore, the
+ * corresponding indices to the generalized position and velocity are computed
+ * and accessible through an instance of this class.
+ *
+ * Body groups and joint groups are independent, so a body group can have the
+ * same name of a joint group. However, all body groups have unique group
+ * names, and so do all joint groups. For each body or joint group, its
+ * memebers are unique. A body or joint can belong to many groups. When adding
+ * new members to an existing group, the new members will be appended to the
+ * existing group.
  */
 template <typename T>
 class RigidBodyTreeAliasGroups {
@@ -37,8 +39,8 @@ class RigidBodyTreeAliasGroups {
 
   /**
    * Constructor for RigidBodyTreeAliasGroups.
-   * @param tree Reference to the RigidBodyTree. A pointer is stored, so `tree`
-   * needs to outlive this object.
+   * @param tree Reference to the RigidBodyTree. A pointer to this RigidBodyTree
+   * is stored, so @p tree needs to outlive this object.
    */
   explicit RigidBodyTreeAliasGroups(const RigidBodyTree<T>& tree)
       : tree_(&tree) {}
@@ -46,7 +48,7 @@ class RigidBodyTreeAliasGroups {
   /**
    * Parses body groups and joint groups from a config file.
    * This function looks for optional top level keywords kBodyGroupsKeyword and
-   * kJointGroupsKeyword in `config`.
+   * kJointGroupsKeyword in @p config.
    * An example config file looks like:
    * <pre>
    * ...
@@ -77,8 +79,9 @@ class RigidBodyTreeAliasGroups {
    * name respectively in the RigidBodyTree provided at construction time.
    * body_namei and joint_namei can appear in multiple groups. Multiple body
    * groups with the same group name will be merged, and the same applies to
-   * joint groups. body_groups or joint_groups can be absent or empty.
-   * The above example shows all valid formats for the body names and joint
+   * joint groups. For each group, there will be no duplicated elements.
+   * body_groups or joint_groups can be absent or empty.
+   * The above example shows all valid formats for specifying body and joint
    * names.
    *
    * @param config YAML node specifying joint and body groups.
@@ -91,34 +94,32 @@ class RigidBodyTreeAliasGroups {
   void LoadFromYAMLFile(const YAML::Node& config);
 
   /**
-   * Creates a body group named `group_name` whose elements have names from
-   * `body_names`.
-   * If a group named `group_name` already exists, `body_names` is appended to
+   * Creates a body group named @p group_name whose elements have names from
+   * @p body_names.
+   * If a group named @p group_name already exists, @p body_names is appended to
    * the end of the existing group.
-   * If `body_names` have repeated names, the resulting body group will contain
-   * multiple instances of the same body.
+   * The resulting group will not have duplicated elements.
    * @param group_name Name of the body group, can be arbitrary.
    * @param body_names Vector of body names, must be present in the
    * RigidBodyTree passed to the constructor.
    *
-   * @throws std::logic_error if elements in `body_names` cannot be found in
+   * @throws std::logic_error if elements in @p body_names cannot be found in
    * the RigidBodyTree referenced at construction time.
    */
   void AddBodyGroup(const std::string& group_name,
                     const std::vector<std::string>& body_names);
 
   /**
-   * Creates a joint group named `group_name` whose elements have names from
-   * `joint_names`.
-   * If a group named `group_name` already exists, `joint_names` is appended to
+   * Creates a joint group named @p group_name whose elements have names from
+   * @p joint_names.
+   * If a group named @p group_name already exists, @p joint_names is appended to
    * the end of the existing group.
-   * If `joint_names` have repeated names, the resulting joint group will
-   * contain multiple instances of the same joint.
+   * The resulting group will not have duplicated elements.
    * @param group_name Name of the joint group, can be arbitrary.
    * @param joint_names Vector of joint names, must be present in the
    * RigidBodyTree passed to the constructor.
    *
-   * @throws std::logic_error if elements in `joint_names` cannot be found in
+   * @throws std::logic_error if elements in @p joint_names cannot be found in
    * the RigidBodyTree referenced at construction time.
    */
   void AddJointGroup(const std::string& group_name,
@@ -143,9 +144,9 @@ class RigidBodyTreeAliasGroups {
   }
 
   /**
-   * Returns the body group identified by `group_name`.
+   * Returns the body group identified by @p group_name.
    *
-   * @throws std::out_of_range if `group_name` is not found.
+   * @throws std::out_of_range if @p group_name is not found.
    */
   const std::vector<const RigidBody<T>*>& get_body_group(
       const std::string& group_name) const {
@@ -153,9 +154,9 @@ class RigidBodyTreeAliasGroups {
   }
 
   /**
-   * Returns the joint group identified by `group_name`.
+   * Returns the joint group identified by @p group_name.
    *
-   * @throws std::out_of_range if `group_name` is not found.
+   * @throws std::out_of_range if @p group_name is not found.
    */
   const std::vector<const DrakeJoint*>& get_joint_group(
       const std::string& group_name) const {
@@ -164,9 +165,9 @@ class RigidBodyTreeAliasGroups {
 
   /**
    * Returns the generalized position indices associated with the joint group
-   * identified by `group_name`.
+   * identified by @p group_name.
    *
-   * @throws std::out_of_range if `group_name` is not found.
+   * @throws std::out_of_range if @p group_name is not found.
    */
   const std::vector<int>& get_position_group(
       const std::string& group_name) const {
@@ -175,9 +176,9 @@ class RigidBodyTreeAliasGroups {
 
   /**
    * Returns the generalized velocity indices associated with the joint group
-   * identified by `group_name`.
+   * identified by @p group_name.
    *
-   * @throws std::out_of_range if `group_name` is not found.
+   * @throws std::out_of_range if @p group_name is not found.
    */
   const std::vector<int>& get_velocity_group(
       const std::string& group_name) const {

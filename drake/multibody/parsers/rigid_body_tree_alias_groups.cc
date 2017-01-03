@@ -1,3 +1,5 @@
+#include <set>
+
 #include "drake/multibody/parsers/rigid_body_tree_alias_groups.h"
 
 namespace drake {
@@ -9,22 +11,41 @@ template <typename T>
 constexpr char RigidBodyTreeAliasGroups<T>::kJointGroupsKeyword[];
 
 namespace {
+// Insert the @p vec into @p map if @p key does not exist, or append @p vec
+// to the existing vector in @p map. This function also guarantees the newly
+// inserted elements do no introduce duplicates.
 template <typename Type>
-void InsertOrMergeVector(const std::string key, const std::vector<Type>& vec,
+void InsertOrMergeVectorWithoutDuplicates(const std::string key,
+    const std::vector<Type>& vec,
     std::map<std::string, std::vector<Type>>* map) {
   DRAKE_DEMAND(map);
+  std::set<Type> inserted;
+
   typename std::map<std::string, std::vector<Type>>::iterator it =
       map->find(key);
+  if (it != map->end()) {
+    inserted = std::set<Type>(it->second.begin(), it->second.end());
+  }
+
+  std::vector<Type> unique_vec;
+  unique_vec.reserve(vec.size());
+  for (auto const& element : vec) {
+    if (inserted.find(element) == inserted.end()) {
+      unique_vec.push_back(element);
+      inserted.emplace(element);
+    }
+  }
+
   if (it == map->end()) {
-    map->emplace(key, vec);
+    map->emplace(key, unique_vec);
   } else {
-    it->second.insert(it->second.end(), vec.begin(), vec.end());
+    it->second.insert(it->second.end(), unique_vec.begin(), unique_vec.end());
   }
 }
 
-// Return a std::vector of a YAML::Node. This function trys to cast the node
-// as a std::vector<Type> or as a single Type. If both cast fails, it throws
-// exceptions.
+// Returns a std::vector representation of a YAML::Node. This function tries to
+// cast the node as a std::vector<Type> or as a single Type. If both cast
+// fail, it throws an exception.
 template <typename Type>
 std::vector<Type> ParseYAMLNodeAsVector(const YAML::Node& node) {
   std::vector<Type> values;
@@ -32,15 +53,15 @@ std::vector<Type> ParseYAMLNodeAsVector(const YAML::Node& node) {
   if (node.IsNull())
     return values;
 
-  // Try cast as a vector of strings
+  // Tries to cast the YAML node as a vector of strings.
   try {
     values = node.as<std::vector<Type>>();
   } catch (std::runtime_error e) {
-    // If not, try cast as a single string
+    // If fails, tries to cast it as a single string.
     try {
       values.push_back(node.as<Type>());
     } catch (std::runtime_error e1) {
-      // Throws if cannot be parsed.
+      // Throws if both attempts fail.
       throw e1;
     }
   }
@@ -58,7 +79,7 @@ void RigidBodyTreeAliasGroups<T>::AddBodyGroup(
     bodies.push_back(tree_->FindBody(name));
   }
 
-  InsertOrMergeVector(group_name, bodies, &body_groups_);
+  InsertOrMergeVectorWithoutDuplicates(group_name, bodies, &body_groups_);
 }
 
 template <typename T>
@@ -79,7 +100,7 @@ void RigidBodyTreeAliasGroups<T>::AddJointGroup(
     v_size += joints.back()->get_num_velocities();
   }
 
-  InsertOrMergeVector(group_name, joints, &joint_groups_);
+  InsertOrMergeVectorWithoutDuplicates(group_name, joints, &joint_groups_);
 
   std::vector<int> q_indices, v_indices;
   q_indices.reserve(q_size);
@@ -95,8 +116,10 @@ void RigidBodyTreeAliasGroups<T>::AddJointGroup(
     for (int i = v_start; i < v_end; ++i) v_indices.push_back(i);
   }
 
-  InsertOrMergeVector(group_name, q_indices, &position_groups_);
-  InsertOrMergeVector(group_name, v_indices, &velocity_groups_);
+  InsertOrMergeVectorWithoutDuplicates(
+      group_name, q_indices, &position_groups_);
+  InsertOrMergeVectorWithoutDuplicates(
+      group_name, v_indices, &velocity_groups_);
 }
 
 template <typename T>

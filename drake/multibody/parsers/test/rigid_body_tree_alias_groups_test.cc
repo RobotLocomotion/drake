@@ -214,10 +214,9 @@ void TestNoJointGroupsConfig(multibody::joints::FloatingBaseType type) {
   EXPECT_FALSE(kin_prop.has_body_group("b_non_existant_group"));
 
   EXPECT_EQ(kin_prop.get_body_group("b_group1").size(), 0);
-  EXPECT_EQ(kin_prop.get_body_group("b_group2").size(), 3);
+  EXPECT_EQ(kin_prop.get_body_group("b_group2").size(), 2);
   EXPECT_EQ(kin_prop.get_body_group("b_group2")[0]->get_name(), "link3");
   EXPECT_EQ(kin_prop.get_body_group("b_group2")[1]->get_name(), "link2");
-  EXPECT_EQ(kin_prop.get_body_group("b_group2")[2]->get_name(), "link3");
   EXPECT_EQ(kin_prop.get_body_group("b_group3").size(), 1);
   EXPECT_EQ(kin_prop.get_body_group("b_group3")[0]->get_name(), "link1");
 }
