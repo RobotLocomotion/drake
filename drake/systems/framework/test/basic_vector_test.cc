@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/eigen_matrix_compare.h"
@@ -43,11 +44,11 @@ GTEST_TEST(BasicVectorTest, AutodiffInitiallyNaN) {
   EXPECT_TRUE(std::isnan(vec.GetAtIndex(2).value()));
 }
 
-// Tests that the BasicVector<int> is initialized to zero.
+// Tests that the BasicVector<int> is initialized to dummy.
 GTEST_TEST(BasicVectorTest, IntInitiallyZero) {
   BasicVector<int> vec(3);
   Eigen::Vector3i expected;
-  expected << 0, 0, 0;
+  expected << -572662307, -572662307, -572662307;
   EXPECT_EQ(expected, vec.get_value());
 }
 
