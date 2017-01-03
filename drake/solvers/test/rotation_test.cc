@@ -170,6 +170,12 @@ GTEST_TEST(RotationTest, TestL1Norm) {
   EXPECT_GE(R.col(0).lpNorm<1>(), 1 - tol);
   EXPECT_GE(R.col(1).lpNorm<1>(), 1 - tol);
   EXPECT_GE(R.col(2).lpNorm<1>(), 1 - tol);
+
+  // Check that the orthant of R2 matches the cross product.
+  Eigen::Vector3d R2 = R.col(0).cross(R.col(1));
+  EXPECT_GE(R2(0) * R(0, 2), 0);
+  EXPECT_GE(R2(1) * R(1, 2), 0);
+  EXPECT_GE(R2(2) * R(2, 2), 0);
 }
 
 }  // namespace solvers

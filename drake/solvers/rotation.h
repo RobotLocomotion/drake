@@ -55,18 +55,19 @@ void AddRotationMatrixOrthonormalSocpConstraint(
     MathematicalProgram* prog, const DecisionVariableMatrixX& R);
 
 /// Adds the non-convex constraint that the L1 norm each column Ri is *greater*
-/// than 1, e.g. forall i |R1i|+|R2i|+|R3i|>=1, as an MILP.
+/// than 1, e.g. forall i |R0i|+|R1i|+|R2i|>=1, as an MILP.  Also constrains
+/// that R1 cannot lie in the same orthant as R0 nor -R0, and that R2 is in the
+/// orthant implied by R2 = cross(R0,R1).
+///
 /// Note: Creates binary variables "bR*".
 /// Note: Consider calling this method twice (once on R and once on R^T).
 ///
 /// TODO(russt): Take in RPY limits (to avoid allocating those binary
 /// variables).
-/// TODO(russt): Take advantage of R3 = cross(R1,R2).
 /// TODO(russt): Support tighter constraints -- simply rotate by e.g. PI/4 and
 ///   apply the constraint again (but it will make a lot of faces!).
 void AddRotationMatrixL1NormMilpConstraint(
-    MathematicalProgram* prog, const DecisionVariableMatrixX& R,
-    RollPitchYawLimits limits = kNoLimits);
+    MathematicalProgram* prog, const DecisionVariableMatrixX& R);
 
 }  // namespace solvers
 }  // namespace drake

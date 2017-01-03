@@ -327,11 +327,11 @@ int main(int argc, char** argv) {
     Eigen::Matrix3Xd origins(3, kNumRays);
     Eigen::Matrix3Xd endpoints(3, kNumRays);
     Eigen::VectorXd distances(kNumRays);
-    std::uniform_real_distribution<> rand(-100, 100);
+    std::uniform_real_distribution<> bigrand(-100, 100);
     for (int k = 0; k < kNumRays; k++) {
-      origins(0, k) = rand(generator);
-      origins(1, k) = rand(generator);
-      origins(2, k) = rand(generator);
+      origins(0, k) = bigrand(generator);
+      origins(1, k) = bigrand(generator);
+      origins(2, k) = bigrand(generator);
 
       endpoints(0, k) = -origins(0, k);
       endpoints(1, k) = -origins(1, k);
