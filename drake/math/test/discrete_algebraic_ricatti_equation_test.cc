@@ -7,7 +7,7 @@ using Eigen::MatrixXd;
 namespace drake {
 namespace math {
 namespace {
-void test1(const Eigen::Ref<const MatrixXd>& A,
+void SolveDAREandVerify(const Eigen::Ref<const MatrixXd>& A,
            const Eigen::Ref<const MatrixXd>& B,
            const Eigen::Ref<const MatrixXd>& Q,
            const Eigen::Ref<const MatrixXd>& R) {
@@ -29,7 +29,7 @@ void test1(const Eigen::Ref<const MatrixXd>& A,
                               MatrixCompareType::absolute));
 }
 
-GTEST_TEST(DARE, test1) {
+GTEST_TEST(DARE, SolveDAREandVerify) {
   int n = 10, m = 8;
   MatrixXd A(n, n), B(n, m), Q(n, n), R(m, m);
   A << -0.896782893602661, 0.853429693528722, 0.223407245035421,
@@ -142,7 +142,7 @@ GTEST_TEST(DARE, test1) {
       -0.645703422930910, -3.90461010828642, 5.96115177935686,
       -0.582523471417543, -2.65942256500625, 3.58272876703554, 10.8343988668446;
 
-  test1(A, B, Q, R);
+  SolveDAREandVerify(A, B, Q, R);
 }
 }  // namespace
 }  // namespace math

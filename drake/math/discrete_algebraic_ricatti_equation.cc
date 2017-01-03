@@ -4,187 +4,7 @@
 
 namespace drake {
 namespace math {
-
-/**
- * DiscreteAlgebraicRiccatiEquation function
- * computes the unique stabilizing solution X to the discrete-time algebraic
- * Riccati equation:
- * \f[
- * A'XA - X - A'XB(B'XB+R)^{-1}B'XA + Q = 0
- * \f]
- *
- * @throws std::runtime_error if Q is not positive semi-definite.
- * @throws std::runtime_error if R is not positive definite.
- *
- * Based on the Schur Vector approach outlined in this paper:
- * "On the Numerical Solution of the Discrete-Time Algebraic Riccati Equation"
- * by Thrasyvoulos Pappas, Alan J. Laub, and Nils R. Sandell
- */
-
-void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
-                   Eigen::Ref<Eigen::MatrixXd> Z);
-
-Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
-    const Eigen::Ref<const Eigen::MatrixXd>& A,
-    const Eigen::Ref<const Eigen::MatrixXd>& B,
-    const Eigen::Ref<const Eigen::MatrixXd>& Q,
-    const Eigen::Ref<const Eigen::MatrixXd>& R) {
-  int n = B.rows(), m = B.cols();
-
-  DRAKE_DEMAND(m <= n);
-  DRAKE_DEMAND(A.rows() == n && A.cols() == n);
-  DRAKE_DEMAND(Q.rows() == n && Q.cols() == n);
-  DRAKE_DEMAND(R.rows() == m && R.cols() == m);
-  DRAKE_DEMAND(is_approx_equal_abstol(Q, Q.transpose(), 1e-10));
-  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(Q);
-  for (int i = 0; i < n; i++) {
-    if (es.eigenvalues()[i] < 0)
-      throw std::runtime_error("Q must be positive semi-definite");
-  }
-  DRAKE_DEMAND(is_approx_equal_abstol(R, R.transpose(), 1e-10));
-  Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
-  if (R_cholesky.info() != Eigen::Success)
-    throw std::runtime_error("R must be positive definite");
-
-  Eigen::MatrixXd M(2 * n, 2 * n), L(2 * n, 2 * n);
-  M << A, Eigen::MatrixXd::Zero(n, n), -Q, Eigen::MatrixXd::Identity(n, n);
-  L << Eigen::MatrixXd::Identity(n, n), B * R.inverse() * B.transpose(),
-      Eigen::MatrixXd::Zero(n, n), A.transpose();
-
-  // QZ decomposition of M and L
-  // QMZ = S, QLZ = T
-  // where Q and Z are real orthogonal matrixes
-  // T is upper-triangular matrix, and S is upper quasi-triangular matrix
-  Eigen::RealQZ<Eigen::MatrixXd> qz(2 * n);
-  qz.compute(M, L);  // M = Q S Z,  L = Q T Z (Q and Z computed by Eigen package
-                     // are adjoints of Q and Z above)
-  Eigen::MatrixXd S = qz.matrixS(), T = qz.matrixT(),
-                  Z = qz.matrixZ().adjoint();
-
-  // reorder the generalized eigenvalues of (S,T)
-  Eigen::MatrixXd Z2 = Eigen::MatrixXd::Identity(2 * n, 2 * n);
-  reorder_eigen(S, T, Z2);
-  Z = (Z * Z2).eval();
-
-  // the first n columns of Z is ( U1 )
-  //                             ( U2 )
-  //            -1
-  // X = U2 * U1   is a solution of the discrete time Riccati equation
-  Eigen::MatrixXd U1 = Z.block(0, 0, n, n), U2 = Z.block(n, 0, n, n);
-  Eigen::MatrixXd X = U2 * U1.inverse();
-  X = (X + X.adjoint().eval()) / 2.0;
-  return X;
-}
-
-/**
- * Functionality of "reorder_eigen" function:
- * Reorder the eigenvalues of (S,T) such that the top-left n by n matrix has
- * stable eigenvalues
- * by multiplying Q's and Z's on the left and the right, respectively.
- * Stable eigenvalues are inside the unit disk.
- *
- * Algorithm:
- * Go along the diagonals of (S,T) from the top left to the bottom right.
- * Once find a stable eigenvalue, push it to top left.
- * In implementation, use two pointers, p and q.
- * p points to the current block (1x1 or 2x2) and q points to the block with the
- * stable eigenvalue(s).
- * Push the block pointed by q to the position pointed by p.
- * Finish when n stable eigenvalues are placed at the top-left n by n matrix.
- * The algorithm for swaping blocks is described in the paper
- * "A generalized eigenvalue approach for solving Riccati equations" by P. Van
- * Dooren, 1981.
- */
-void swap_block(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
-                Eigen::Ref<Eigen::MatrixXd> Z, int p, int q, int q_block_size);
-
-void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
-                   Eigen::Ref<Eigen::MatrixXd> Z) {
-  double eps = 1e-10;  // abs(a) < eps => a = 0
-  int n2 = S.rows();
-  int n = n2 / 2, p = 0, q = 0;
-  while (p < n && q < n2) {
-    // update q
-    int q_block_size;
-    while (q < n2) {
-      if (q == n2 - 1 || fabs(S(q + 1, q)) < eps) {  // block size = 1
-        if (fabs(T(q, q)) > eps && fabs(S(q, q)) <= fabs(T(q, q))) {
-          q_block_size = 1;
-          break;
-        }
-        q++;
-      } else {  // block size = 2
-        double det_S = S(q, q) * S(q + 1, q + 1) - S(q + 1, q) * S(q, q + 1);
-        double det_T = T(q, q) * T(q + 1, q + 1) - T(q + 1, q) * T(q, q + 1);
-        if (fabs(det_T) > eps && fabs(det_S) <= fabs(det_T)) {
-          q_block_size = 2;
-          break;
-        }
-        q += 2;
-      }
-    }
-    if (q >= n2)
-      throw std::runtime_error("fail to find enough stable eigenvalues");
-    // swap blocks pointed by p and q
-    if (p != q) {
-      swap_block(S, T, Z, p, q, q_block_size);
-      p += q_block_size;
-      q += q_block_size;
-    }
-  }
-  if (p < n && q >= n2)
-    throw std::runtime_error("fail to find enough stable eigenvalues");
-}
-
-/**
- * Functionality of "swap_block" function:
- * swap the 1x1 or 2x2 blocks pointed by p and q.
- * There are four cases: swaping 1x1 and 1x1 matrices, swaping 2x2 and 1x1
- * matrices,
- * swaping 1x1 and 2x2 matrices, and swaping 2x2 and 2x2 matrices.
- * Algorithms are described in the paper
- * "A generalized eigenvalue approach for solving Riccati equations" by P. Van
- * Dooren, 1981.
- */
-void swap_block_11(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
-                   Eigen::Ref<Eigen::MatrixXd> Z, int p);
-void swap_block_21(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
-                   Eigen::Ref<Eigen::MatrixXd> Z, int p);
-void swap_block_12(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
-                   Eigen::Ref<Eigen::MatrixXd> Z, int p);
-void swap_block_22(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
-                   Eigen::Ref<Eigen::MatrixXd> Z, int p);
-
-void swap_block(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
-                Eigen::Ref<Eigen::MatrixXd> Z, int p, int q, int q_block_size) {
-  double eps = 1e-10;
-  int n2 = S.rows();
-  int p_tmp = q, p_block_size;
-  while (p_tmp-- > p) {
-    p_block_size = 1;
-    if (p_tmp >= 1 && fabs(S(p_tmp, p_tmp - 1)) > eps) {
-      p_block_size = 2;
-      p_tmp--;
-    }
-    Eigen::MatrixXd Z_tmp = Eigen::MatrixXd::Identity(n2, n2);
-    switch (p_block_size * 10 + q_block_size) {
-      case 11:
-        swap_block_11(S, T, Z_tmp, p_tmp);
-        break;
-      case 21:
-        swap_block_21(S, T, Z_tmp, p_tmp);
-        break;
-      case 12:
-        swap_block_12(S, T, Z_tmp, p_tmp);
-        break;
-      case 22:
-        swap_block_22(S, T, Z_tmp, p_tmp);
-        break;
-    }
-    Z = (Z * Z_tmp).eval();
-  }
-}
-
+namespace {
 /* helper functions */
 template <typename T>
 int sgn(T val) {
@@ -338,6 +158,178 @@ void swap_block_22(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
   S(p + 2, p) = S(p + 2, p + 1) = S(p + 3, p) = S(p + 3, p + 1) = T(p + 1, p) =
       T(p + 2, p) = T(p + 2, p + 1) = T(p + 3, p) = T(p + 3, p + 1) =
           T(p + 3, p + 2) = 0;
+}
+
+/**
+ * Functionality of "swap_block" function:
+ * swap the 1x1 or 2x2 blocks pointed by p and q.
+ * There are four cases: swaping 1x1 and 1x1 matrices, swaping 2x2 and 1x1
+ * matrices,
+ * swaping 1x1 and 2x2 matrices, and swaping 2x2 and 2x2 matrices.
+ * Algorithms are described in the paper
+ * "A generalized eigenvalue approach for solving Riccati equations" by P. Van
+ * Dooren, 1981.
+ */
+void swap_block(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
+                Eigen::Ref<Eigen::MatrixXd> Z, int p, int q, int q_block_size) {
+  double eps = 1e-10;
+  int n2 = S.rows();
+  int p_tmp = q, p_block_size;
+  while (p_tmp-- > p) {
+    p_block_size = 1;
+    if (p_tmp >= 1 && fabs(S(p_tmp, p_tmp - 1)) > eps) {
+      p_block_size = 2;
+      p_tmp--;
+    }
+    Eigen::MatrixXd Z_tmp = Eigen::MatrixXd::Identity(n2, n2);
+    switch (p_block_size * 10 + q_block_size) {
+      case 11:
+        swap_block_11(S, T, Z_tmp, p_tmp);
+        break;
+      case 21:
+        swap_block_21(S, T, Z_tmp, p_tmp);
+        break;
+      case 12:
+        swap_block_12(S, T, Z_tmp, p_tmp);
+        break;
+      case 22:
+        swap_block_22(S, T, Z_tmp, p_tmp);
+        break;
+    }
+    Z = (Z * Z_tmp).eval();
+  }
+}
+
+/**
+ * Functionality of "reorder_eigen" function:
+ * Reorder the eigenvalues of (S,T) such that the top-left n by n matrix has
+ * stable eigenvalues
+ * by multiplying Q's and Z's on the left and the right, respectively.
+ * Stable eigenvalues are inside the unit disk.
+ *
+ * Algorithm:
+ * Go along the diagonals of (S,T) from the top left to the bottom right.
+ * Once find a stable eigenvalue, push it to top left.
+ * In implementation, use two pointers, p and q.
+ * p points to the current block (1x1 or 2x2) and q points to the block with the
+ * stable eigenvalue(s).
+ * Push the block pointed by q to the position pointed by p.
+ * Finish when n stable eigenvalues are placed at the top-left n by n matrix.
+ * The algorithm for swaping blocks is described in the paper
+ * "A generalized eigenvalue approach for solving Riccati equations" by P. Van
+ * Dooren, 1981.
+ */
+void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
+                   Eigen::Ref<Eigen::MatrixXd> Z) {
+  double eps = 1e-10;  // abs(a) < eps => a = 0
+  int n2 = S.rows();
+  int n = n2 / 2, p = 0, q = 0;
+  while (p < n && q < n2) {
+    // update q
+    int q_block_size;
+    while (q < n2) {
+      if (q == n2 - 1 || fabs(S(q + 1, q)) < eps) {  // block size = 1
+        if (fabs(T(q, q)) > eps && fabs(S(q, q)) <= fabs(T(q, q))) {
+          q_block_size = 1;
+          break;
+        }
+        q++;
+      } else {  // block size = 2
+        double det_S = S(q, q) * S(q + 1, q + 1) - S(q + 1, q) * S(q, q + 1);
+        double det_T = T(q, q) * T(q + 1, q + 1) - T(q + 1, q) * T(q, q + 1);
+        if (fabs(det_T) > eps && fabs(det_S) <= fabs(det_T)) {
+          q_block_size = 2;
+          break;
+        }
+        q += 2;
+      }
+    }
+    if (q >= n2)
+      throw std::runtime_error("fail to find enough stable eigenvalues");
+    // swap blocks pointed by p and q
+    if (p != q) {
+      swap_block(S, T, Z, p, q, q_block_size);
+      p += q_block_size;
+      q += q_block_size;
+    }
+  }
+  if (p < n && q >= n2)
+    throw std::runtime_error("fail to find enough stable eigenvalues");
+}
+}  // namespace
+
+/**
+ * DiscreteAlgebraicRiccatiEquation function
+ * computes the unique stabilizing solution X to the discrete-time algebraic
+ * Riccati equation:
+ * \f[
+ * A'XA - X - A'XB(B'XB+R)^{-1}B'XA + Q = 0
+ * \f]
+ *
+ * @throws std::runtime_error if Q is not positive semi-definite.
+ * @throws std::runtime_error if R is not positive definite.
+ *
+ * Based on the Schur Vector approach outlined in this paper:
+ * "On the Numerical Solution of the Discrete-Time Algebraic Riccati Equation"
+ * by Thrasyvoulos Pappas, Alan J. Laub, and Nils R. Sandell
+ *
+ * Note: When, for example, n = 100, m = 80, and entries of A, B, Q_half,
+ * R_half are sampled from standard normal distributions, where
+ * Q = Q_half'*Q_half and similar for R, the absolute error of the solution
+ * is 10^{-6}, while the absolute error of the solution computed by Matlab is
+ * 10^{-8}.
+ */
+
+Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::MatrixXd>& B,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R) {
+  int n = B.rows(), m = B.cols();
+
+  DRAKE_DEMAND(m <= n);
+  DRAKE_DEMAND(A.rows() == n && A.cols() == n);
+  DRAKE_DEMAND(Q.rows() == n && Q.cols() == n);
+  DRAKE_DEMAND(R.rows() == m && R.cols() == m);
+  DRAKE_DEMAND(is_approx_equal_abstol(Q, Q.transpose(), 1e-10));
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(Q);
+  for (int i = 0; i < n; i++) {
+    if (es.eigenvalues()[i] < 0)
+      throw std::runtime_error("Q must be positive semi-definite");
+  }
+  DRAKE_DEMAND(is_approx_equal_abstol(R, R.transpose(), 1e-10));
+  Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
+  if (R_cholesky.info() != Eigen::Success)
+    throw std::runtime_error("R must be positive definite");
+
+  Eigen::MatrixXd M(2 * n, 2 * n), L(2 * n, 2 * n);
+  M << A, Eigen::MatrixXd::Zero(n, n), -Q, Eigen::MatrixXd::Identity(n, n);
+  L << Eigen::MatrixXd::Identity(n, n), B * R.inverse() * B.transpose(),
+      Eigen::MatrixXd::Zero(n, n), A.transpose();
+
+  // QZ decomposition of M and L
+  // QMZ = S, QLZ = T
+  // where Q and Z are real orthogonal matrixes
+  // T is upper-triangular matrix, and S is upper quasi-triangular matrix
+  Eigen::RealQZ<Eigen::MatrixXd> qz(2 * n);
+  qz.compute(M, L);  // M = Q S Z,  L = Q T Z (Q and Z computed by Eigen package
+                     // are adjoints of Q and Z above)
+  Eigen::MatrixXd S = qz.matrixS(), T = qz.matrixT(),
+                  Z = qz.matrixZ().adjoint();
+
+  // reorder the generalized eigenvalues of (S,T)
+  Eigen::MatrixXd Z2 = Eigen::MatrixXd::Identity(2 * n, 2 * n);
+  reorder_eigen(S, T, Z2);
+  Z = (Z * Z2).eval();
+
+  // the first n columns of Z is ( U1 )
+  //                             ( U2 )
+  //            -1
+  // X = U2 * U1   is a solution of the discrete time Riccati equation
+  Eigen::MatrixXd U1 = Z.block(0, 0, n, n), U2 = Z.block(n, 0, n, n);
+  Eigen::MatrixXd X = U2 * U1.inverse();
+  X = (X + X.adjoint().eval()) / 2.0;
+  return X;
 }
 
 }  // namespace math
