@@ -16,10 +16,10 @@ drake_add_cc_test(xml_util_test)
 target_link_libraries(xml_util_test drakeMultibodyParsers)
 
 if (yaml-cpp_FOUND)
-  drake_add_cc_test(rigid_body_tree_kinematic_property_test)
-  target_link_libraries(rigid_body_tree_kinematic_property_test
+  drake_add_cc_test(rigid_body_tree_alias_groups_test)
+  target_link_libraries(rigid_body_tree_alias_groups_test
     drakeMultibodyParsers
-    drakeRigidBodyKinematicProperty)
+    drakeRigidBodyAliasGroups)
 endif()
 
 add_subdirectory(package_map_test)

@@ -29,16 +29,16 @@ drake_install_pkg_config_file(drake-multibody-parsers
         tinyxml2)
 
 if (yaml-cpp_FOUND)
-  add_library_with_exports(LIB_NAME drakeRigidBodyKinematicProperty SOURCE_FILES
-    rigid_body_tree_kinematic_property.cc)
-  target_link_libraries(drakeRigidBodyKinematicProperty
+  add_library_with_exports(LIB_NAME drakeRigidBodyAliasGroups SOURCE_FILES
+    rigid_body_tree_alias_groups.cc)
+  target_link_libraries(drakeRigidBodyAliasGroups
     drakeRBM
     yaml-cpp)
-  drake_install_libraries(drakeRigidBodyKinematicProperty)
-  drake_install_headers(rigid_body_tree_kinematic_property.h)
+  drake_install_libraries(drakeRigidBodyAliasGroups)
+  drake_install_headers(rigid_body_tree_alias_groups.h)
   drake_install_pkg_config_file(drake-rigidbody-kinematic-property
-    TARGET drakeRigidBodyKinematicProperty
-    LIBS -ldrakeRigidBodyKinematicProperty
+    TARGET drakeRigidBodyAliasGroups
+    LIBS -ldrakeRigidBodyAliasGroups
     REQUIRES
         drakeRBM
         yaml-cpp)

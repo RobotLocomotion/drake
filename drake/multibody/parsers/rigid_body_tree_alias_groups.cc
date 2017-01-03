@@ -1,13 +1,14 @@
-#include "drake/multibody/parsers/rigid_body_tree_kinematic_property.h"
+#include "drake/multibody/parsers/rigid_body_tree_alias_groups.h"
 
 namespace drake {
 namespace parsers {
 
 template <typename T>
-constexpr char RigidBodyTreeKinematicProperty<T>::kBodyGroupsKeyword[];
+constexpr char RigidBodyTreeAliasGroups<T>::kBodyGroupsKeyword[];
 template <typename T>
-constexpr char RigidBodyTreeKinematicProperty<T>::kJointGroupsKeyword[];
+constexpr char RigidBodyTreeAliasGroups<T>::kJointGroupsKeyword[];
 
+namespace {
 template <typename Type>
 void InsertOrMergeVector(const std::string key, const std::vector<Type>& vec,
     std::map<std::string, std::vector<Type>>* map) {
@@ -21,8 +22,35 @@ void InsertOrMergeVector(const std::string key, const std::vector<Type>& vec,
   }
 }
 
+// Return a std::vector of a YAML::Node. This function trys to cast the node
+// as a std::vector<Type> or as a single Type. If both cast fails, it throws
+// exceptions.
+template <typename Type>
+std::vector<Type> ParseYAMLNodeAsVector(const YAML::Node& node) {
+  std::vector<Type> values;
+
+  if (node.IsNull())
+    return values;
+
+  // Try cast as a vector of strings
+  try {
+    values = node.as<std::vector<Type>>();
+  } catch (std::runtime_error e) {
+    // If not, try cast as a single string
+    try {
+      values.push_back(node.as<Type>());
+    } catch (std::runtime_error e1) {
+      // Throws if cannot be parsed.
+      throw e1;
+    }
+  }
+
+  return values;
+}
+}  // namespace
+
 template <typename T>
-void RigidBodyTreeKinematicProperty<T>::AddBodyGroup(
+void RigidBodyTreeAliasGroups<T>::AddBodyGroup(
     const std::string& group_name, const std::vector<std::string>& body_names) {
   std::vector<const RigidBody<T>*> bodies;
   bodies.reserve(body_names.size());
@@ -34,7 +62,7 @@ void RigidBodyTreeKinematicProperty<T>::AddBodyGroup(
 }
 
 template <typename T>
-void RigidBodyTreeKinematicProperty<T>::AddJointGroup(
+void RigidBodyTreeAliasGroups<T>::AddJointGroup(
     const std::string& group_name,
     const std::vector<std::string>& joint_names) {
   std::vector<const RigidBody<T>*> bodies;
@@ -72,7 +100,7 @@ void RigidBodyTreeKinematicProperty<T>::AddJointGroup(
 }
 
 template <typename T>
-void RigidBodyTreeKinematicProperty<T>::LoadFromYAMLFile(
+void RigidBodyTreeAliasGroups<T>::LoadFromYAMLFile(
     const YAML::Node& config) {
   // Parse body groups.
   YAML::Node body_groups = config[kBodyGroupsKeyword];
@@ -80,7 +108,7 @@ void RigidBodyTreeKinematicProperty<T>::LoadFromYAMLFile(
        ++group_it) {
     std::string group_name = group_it->first.as<std::string>();
     std::vector<std::string> body_names =
-        group_it->second.as<std::vector<std::string>>();
+        ParseYAMLNodeAsVector<std::string>(group_it->second);
 
     AddBodyGroup(group_name, body_names);
   }
@@ -91,13 +119,13 @@ void RigidBodyTreeKinematicProperty<T>::LoadFromYAMLFile(
        ++group_it) {
     std::string group_name = group_it->first.as<std::string>();
     std::vector<std::string> joint_names =
-        group_it->second.as<std::vector<std::string>>();
+        ParseYAMLNodeAsVector<std::string>(group_it->second);
 
     AddJointGroup(group_name, joint_names);
   }
 }
 
-template class RigidBodyTreeKinematicProperty<double>;
+template class RigidBodyTreeAliasGroups<double>;
 
 }  // namespace parsers
 }  // namespace drake
