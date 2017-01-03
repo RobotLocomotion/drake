@@ -32,7 +32,7 @@ Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
     const Eigen::Ref<const Eigen::MatrixXd>& R) {
 
 
-    int n = B.rows(), m = B.cols();
+    int n = B.rows();
     
     DRAKE_DEMAND(A.rows() == n && A.cols() == n);
     DRAKE_DEMAND(Q.rows() == n && Q.cols() == n);
@@ -98,7 +98,7 @@ void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S,
     int n = n2/2, p = 0, q = 0;
     while(p<n && q<n2){
         // update q
-        int p_block_size, q_block_size;
+        int q_block_size;
         while(q<n2){
             if(q==n2-1 || fabs(S(q+1,q)) < eps) {// block size = 1
                 if(fabs(T(q,q)) > eps && fabs(S(q,q)) <= fabs(T(q,q))){
