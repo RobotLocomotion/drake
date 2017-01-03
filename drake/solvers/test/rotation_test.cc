@@ -156,20 +156,52 @@ GTEST_TEST(RotationTest, TestOrthonormal) {
 }
 
 GTEST_TEST(RotationTest, TestL1Norm) {
-  MathematicalProgram prog;
-  auto Rvar = NewRotationMatrixVars(&prog);
+  std::mt19937 generator(42);
+  std::normal_distribution<double> randn;
 
-  // R_desired is inside the unit ball.
-  AddObjective(&prog, Rvar, .1 * Eigen::Matrix<double, 3, 3>::Ones());
-  AddRotationMatrixL1NormMilpConstraint(&prog, Rvar);
-  ASSERT_EQ(prog.Solve(), kSolutionFound);
+  for (int i = 0; i < 20; i++) {
+    MathematicalProgram prog;
+    auto Rvar = NewRotationMatrixVars(&prog);
+    Eigen::Matrix3d R_desired;
+    R_desired << randn(generator), randn(generator), randn(generator),
+        randn(generator), randn(generator), randn(generator), randn(generator),
+        randn(generator), randn(generator);
 
-  Eigen::Matrix3d R = GetSolution(Rvar);
+    AddObjective(&prog, Rvar, R_desired);
+    AddRotationMatrixOrthantMilpConstraints(&prog, Rvar);
+    ASSERT_EQ(prog.Solve(), kSolutionFound);
 
-  double tol = 1e-4;
-  EXPECT_GE(R.col(0).lpNorm<1>(), 1 - tol);
-  EXPECT_GE(R.col(1).lpNorm<1>(), 1 - tol);
-  EXPECT_GE(R.col(2).lpNorm<1>(), 1 - tol);
+    Eigen::Matrix3d R = GetSolution(Rvar);
+
+    double tol = 1e-4;
+    // Check the L1 norm.
+    EXPECT_GE(R.col(0).lpNorm<1>(), 1 - tol);
+    EXPECT_LE(R.col(0).lpNorm<1>(), std::sqrt(3) + tol);
+    EXPECT_GE(R.col(1).lpNorm<1>(), 1 - tol);
+    EXPECT_LE(R.col(1).lpNorm<1>(), std::sqrt(3) + tol);
+    EXPECT_GE(R.col(2).lpNorm<1>(), 1 - tol);
+    EXPECT_LE(R.col(1).lpNorm<1>(), std::sqrt(3) + tol);
+
+    // Check the Linf norm.
+    EXPECT_LE(R.col(0).lpNorm<Eigen::Infinity>(), 1 + tol);
+    EXPECT_LE(R.col(1).lpNorm<Eigen::Infinity>(), 1 + tol);
+    EXPECT_LE(R.col(2).lpNorm<Eigen::Infinity>(), 1 + tol);
+
+    // Check that R1 is not in the same orthant as R0.
+    EXPECT_TRUE((R(0, 0) * R(0, 1) <= tol) || (R(1, 0) * R(1, 1) <= tol) ||
+                (R(2, 0) * R(2, 1) <= tol));
+    // Check that R1 is not in the same orthant as -R0.
+    EXPECT_TRUE((-R(0, 0) * R(0, 1) <= tol) || (-R(1, 0) * R(1, 1) <= tol) ||
+                (-R(2, 0) * R(2, 1) <= tol));
+
+    // Check that the R2 differs from the orthant of the true cross product in
+    // most one direction (note that under the imposed constraints, it *can*
+    // be more than 90 deg from the true cross product).
+    Eigen::Vector3d R2 = R.col(0).cross(R.col(1));
+    int num_differences = 0;
+    for (int j = 0; j < 3; j++) num_differences += (R2(j) * R(j, 2) < -tol);
+    EXPECT_LE(num_differences, 1);
+  }
 }
 
 }  // namespace solvers

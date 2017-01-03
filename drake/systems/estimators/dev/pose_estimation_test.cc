@@ -1,4 +1,5 @@
 #include <unistd.h>
+
 #include <random>
 #include <stdexcept>
 
@@ -94,7 +95,7 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
     } break;
     case kMiqpRelaxation: {
       R = drake::solvers::NewRotationMatrixVars(&prog);
-      drake::solvers::AddRotationMatrixL1NormMilpConstraint(&prog, R);
+      drake::solvers::AddRotationMatrixOrthantMilpConstraints(&prog, R);
     } break;
     case kSdpRelaxationSpectrahedron: {
       // Note: Without the integer constraints, this problem has a trivial
@@ -106,7 +107,11 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
     case kOrthogonalSocpRelaxation: {
       R = drake::solvers::NewRotationMatrixVars(&prog);
       drake::solvers::AddRotationMatrixOrthonormalSocpConstraint(&prog, R);
-      drake::solvers::AddRotationMatrixL1NormMilpConstraint(&prog, R);
+      drake::solvers::AddRotationMatrixOrthonormalSocpConstraint(&prog,
+                                                                 R.transpose());
+      drake::solvers::AddRotationMatrixOrthantMilpConstraints(&prog, R);
+      drake::solvers::AddRotationMatrixOrthantMilpConstraints(&prog,
+                                                              R.transpose());
     } break;
     default:
       throw std::runtime_error("Unsupported rotation type.");
@@ -327,11 +332,11 @@ int main(int argc, char** argv) {
     Eigen::Matrix3Xd origins(3, kNumRays);
     Eigen::Matrix3Xd endpoints(3, kNumRays);
     Eigen::VectorXd distances(kNumRays);
-    std::uniform_real_distribution<> rand(-100, 100);
+    std::uniform_real_distribution<> bigrand(-100, 100);
     for (int k = 0; k < kNumRays; k++) {
-      origins(0, k) = rand(generator);
-      origins(1, k) = rand(generator);
-      origins(2, k) = rand(generator);
+      origins(0, k) = bigrand(generator);
+      origins(1, k) = bigrand(generator);
+      origins(2, k) = bigrand(generator);
 
       endpoints(0, k) = -origins(0, k);
       endpoints(1, k) = -origins(1, k);
@@ -359,52 +364,56 @@ int main(int argc, char** argv) {
       points.col(k) = T * q._transformVector(points.col(k));
     }
   } else {  // Use DepthSensor to generate the points.
-/*
-    Eigen::Isometry3d sensor_pose = Eigen::Isometry3d::Identity();
-    sensor_pose.translate(Eigen::Vector3d(-10, 0, 0));
-
-    auto frame = std::allocate_shared<RigidBodyFrame<double>>(
-        Eigen::aligned_allocator<RigidBodyFrame<double>>(), "depth sensor
-                                                                frame ",
-                                                                & robot.world(),
-        sensor_pose);
-
-    robot.compile();
-
-    const drake::systems::sensors::DepthSensorSpecification spec(
-        -M_PI_2,  //
-        min_theta M_PI_2,
-        // max_theta
-        -M_PI_2,              //
-        min_phi M_PI_2,       //
-        max_phi 50,           //
-        num_theta_values 50,  //
-        num_phi_values 0,     //
-        min_range 20);        //
-    max_range
-
-        drake::systems::sensors::DepthSensor sensor("depth sensor", robot,
-                                                    *frame, spec);
-
-    std::unique_ptr<drake::systems::Context<double>> context =
-        sensor.CreateDefaultContext();
-    std::unique_ptr<drake::systems::SystemOutput<double>> output =
-        sensor.AllocateOutput(*context);
-
-    Eigen::VectorXd x0(robot.get_num_positions() + robot.get_num_velocities());
-    x0 << origin, q.coeffs(), Eigen::VectorXd::Zero(robot.get_num_velocities());
-
-    int input_port_index =
-        sensor.get_rigid_body_tree_state_input_port().get_index();
-    context->FixInputPort(input_port_index, x0);
-
-    sensor.CalcOutput(*context, output.get());
-
-    int output_port_index = sensor.get_sensor_state_output_port().get_index();
-
-    Eigen::VectorXd depths =
-        output->get_vector_data(output_port_index)->get_value();
-*/ 
+            /*
+                Eigen::Isometry3d sensor_pose = Eigen::Isometry3d::Identity();
+                sensor_pose.translate(Eigen::Vector3d(-10, 0, 0));
+        
+                auto frame = std::allocate_shared<RigidBodyFrame<double>>(
+                    Eigen::aligned_allocator<RigidBodyFrame<double>>(), "depth sensor
+                                                                            frame ",
+                                                                            &
+               robot.world(),
+                    sensor_pose);
+        
+                robot.compile();
+        
+                const drake::systems::sensors::DepthSensorSpecification spec(
+                    -M_PI_2,  //
+                    min_theta M_PI_2,
+                    // max_theta
+                    -M_PI_2,              //
+                    min_phi M_PI_2,       //
+                    max_phi 50,           //
+                    num_theta_values 50,  //
+                    num_phi_values 0,     //
+                    min_range 20);        //
+                max_range
+        
+                    drake::systems::sensors::DepthSensor sensor("depth sensor", robot,
+                                                                *frame, spec);
+        
+                std::unique_ptr<drake::systems::Context<double>> context =
+                    sensor.CreateDefaultContext();
+                std::unique_ptr<drake::systems::SystemOutput<double>> output =
+                    sensor.AllocateOutput(*context);
+        
+                Eigen::VectorXd x0(robot.get_num_positions() +
+               robot.get_num_velocities());
+                x0 << origin, q.coeffs(),
+               Eigen::VectorXd::Zero(robot.get_num_velocities());
+        
+                int input_port_index =
+                    sensor.get_rigid_body_tree_state_input_port().get_index();
+                context->FixInputPort(input_port_index, x0);
+        
+                sensor.CalcOutput(*context, output.get());
+        
+                int output_port_index =
+               sensor.get_sensor_state_output_port().get_index();
+        
+                Eigen::VectorXd depths =
+                    output->get_vector_data(output_port_index)->get_value();
+            */
   }
 
   Eigen::Isometry3d pose_estimate = PoseEstimation(robot, points);

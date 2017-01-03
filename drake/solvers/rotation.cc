@@ -3,15 +3,16 @@
 namespace drake {
 namespace solvers {
 
-DecisionVariableMatrixX NewRotationMatrixVars(MathematicalProgram* prog,
-                                              const std::string& name) {
+DecisionVariableMatrix<3, 3> NewRotationMatrixVars(MathematicalProgram* prog,
+                                                   const std::string& name) {
   DecisionVariableMatrixX R = prog->AddContinuousVariables<3, 3>(name);
   prog->AddBoundingBoxConstraint(-1, 1, {R});
   return R;
 }
 
 void AddRollPitchYawLimitBoundingBoxConstraints(
-    MathematicalProgram* prog, const DecisionVariableMatrixX& R,
+    MathematicalProgram* prog,
+    const Eigen::Ref<const DecisionVariableMatrix<3, 3>>& R,
     RollPitchYawLimits limits) {
   // Based on the RPY to Rotation Matrix conversion:
   // [ cp*cy, cy*sp*sr - cr*sy, sr*sy + cr*cy*sp]
@@ -51,7 +52,8 @@ void AddRollPitchYawLimitBoundingBoxConstraints(
 }
 
 void AddRotationMatrixSpectrahedralSdpConstraint(
-    MathematicalProgram* prog, const DecisionVariableMatrixX& R) {
+    MathematicalProgram* prog,
+    const Eigen::Ref<const DecisionVariableMatrix<3, 3>>& R) {
   // TODO(russt): Clean this up using symbolic expressions!
   Eigen::Matrix4d F0 = Eigen::Matrix4d::Identity();
   Eigen::Matrix4d F11 = Eigen::Matrix4d::Zero();
@@ -114,6 +116,13 @@ void AddOrthogonalConstraint(MathematicalProgram* prog,
   //   t_minus >= |v1-v2|^2 = v1'v1 - 2v1'v2 + v2'v2 <= 2
   // This is tight when v1'v1 = 1 and v2'v2 = 1.
 
+  // TODO(russt): Consider generalizing this to |v1+alpha*v2|^2 <= 1+\alpha^2,
+  // for any real-valued alpha.  When |R1|<|R2|<=1 or |R2|<|R1|<=1,
+  // different alphas represent different constraints.
+
+  // TODO(hongkai.dai): Rewrite this using the generalized Lorenz cone once
+  // PR #4650 lands.
+
   auto v1_plus_v2 = prog->AddContinuousVariables<3>("v1_plus_v2");
   auto v1_minus_v2 = prog->AddContinuousVariables<3>("v1_minus_v2");
 
@@ -137,7 +146,8 @@ void AddOrthogonalConstraint(MathematicalProgram* prog,
 }
 
 void AddRotationMatrixOrthonormalSocpConstraint(
-    MathematicalProgram* prog, const DecisionVariableMatrixX& R) {
+    MathematicalProgram* prog,
+    const Eigen::Ref<const DecisionVariableMatrix<3, 3>>& R) {
   auto one = prog->AddContinuousVariables<1, 1>("one");
   prog->AddBoundingBoxConstraint(1, 1, one(0, 0));
 
@@ -146,59 +156,154 @@ void AddRotationMatrixOrthonormalSocpConstraint(
     prog->AddLorentzConeConstraint({one, R.col(i)});
   }
 
-  AddOrthogonalConstraint(prog, R.col(0), R.col(1), one);  // R1'*R2 = 0.
-  AddOrthogonalConstraint(prog, R.col(1), R.col(2), one);  // R2'*R3 = 0.
-  AddOrthogonalConstraint(prog, R.col(0), R.col(2), one);  // R1'*R3 = 0.
+  AddOrthogonalConstraint(prog, R.col(0), R.col(1), one);  // R0'*R1 = 0.
+  AddOrthogonalConstraint(prog, R.col(1), R.col(2), one);  // R1'*R2 = 0.
+  AddOrthogonalConstraint(prog, R.col(0), R.col(2), one);  // R0'*R2 = 0.
 }
 
-void AddVectorL1NormConstraint(MathematicalProgram* prog,
-                               const DecisionVariableVector<3>& v,
-                               const std::string& suffix = "") {
-  // Declare a binary variable for every orthant of R(3),
-  // B(0) = B---, B(1) = B--+, ..., B(7) = B+++.
+DecisionVariableVector<8> AddVectorL1NormConstraint(
+    MathematicalProgram* prog, const DecisionVariableVector<3>& v,
+    const std::string& suffix = "") {
+  // Declare a binary variable for every orthant of R^3,
+  // B(0) = B---, B(1) = B--+, ..., B(7) = B+++,
+  // where --- is in the order xyz.
   auto B = prog->AddBinaryVariables<8>("bR" + suffix);
 
   // Sum B = 1 (can only be in one orthant).
-  prog->AddLinearEqualityConstraint(Eigen::RowVectorXd::Ones(1, 8), 1, {B});
+  prog->AddLinearEqualityConstraint(Eigen::Matrix<double, 1, 8>::Ones(), 1,
+                                    {B});
 
-  {  // v(0) >= 0 iff at least one B+** is true, written as
+  {  // v(0) >= 0 iff at least one B+** is true, exploiting that |v(0)|<=1,
+    // can be written as
     // -B--- - B--+ - B-+- - B-++ <= v(0) <= B+++ + B+-+ + B+-+ + B+--, etc.
-    Eigen::Matrix<double, 1, 9> a;
-    a << 1, 1, 1, 1, 1, -1, -1, -1, -1;
-    prog->AddLinearEqualityConstraint(a, 0, {v.segment<1>(0), B});
+    Eigen::Matrix<double, 1, 5> aneg = Eigen::Matrix<double, 1, 5>::Ones();
+    Eigen::Matrix<double, 1, 5> apos;
+    apos << 1, -1, -1, -1, -1;
+    prog->AddLinearConstraint(aneg, 0, 1, {v.segment<1>(0), B.segment<4>(0)});
+    prog->AddLinearConstraint(apos, -1, 0, {v.segment<1>(0), B.segment<4>(4)});
 
     // -B--- - B--+ - B+-- - B+-+ <= v(1) <= B+++ + B++- + B-++ + B-+-, etc.
-    a << 1, 1, 1, -1, -1, 1, 1, -1, -1;
-    prog->AddLinearEqualityConstraint(a, 0, {v.segment<1>(1), B});
+    prog->AddLinearConstraint(
+        aneg, 0, 1, {v.segment<1>(1), B.segment<2>(0), B.segment<2>(4)});
+    prog->AddLinearConstraint(
+        apos, -1, 0, {v.segment<1>(1), B.segment<2>(2), B.segment<2>(6)});
 
     // -B--- - B-+- - B+-- - B++- <= v(2) <= B+++ + B+-+ + B-++ + B--+, etc.
-    a << 1, 1, -1, 1, -1, 1, -1, 1, -1;
-    prog->AddLinearEqualityConstraint(a, 0, {v.segment<1>(2), B});
+    prog->AddLinearConstraint(
+        aneg, 0, 1, {v.segment<1>(2), B.segment<1>(0), B.segment<1>(2),
+                     B.segment<1>(4), B.segment<1>(6)});
+    prog->AddLinearConstraint(
+        apos, -1, 0, {v.segment<1>(2), B.segment<1>(1), B.segment<1>(3),
+                      B.segment<1>(5), B.segment<1>(7)});
   }
 
-  {  // |x|+|y|+|z|>=1, written as
-    //    -2+3*B+++ <=  x + y + z <= 2-3*B---
+  {  // 1 <= |x|+|y|+|z| <= sqrt(3), written as
+    //    -sqrt(3)+(1+sqrt(3))*B+++ <=  x + y + z <= sqrt(3)-(1+sqrt(3))*B---
+    // or -sqrt(3) <= x+y+z - (1+sqrt(3))*B+++ + (1-sqrt(3))*B-- <= sqrt(3), and
+    //    -sqrt(3) <= x+y+z <= sqrt(3)
+    const double s3 = std::sqrt(3);
     Eigen::Matrix<double, 1, 5> a;
-    a << 1, 1, 1, -3, 3;
-    prog->AddLinearConstraint(a, -2, 2, {v, B.segment<1>(7), B.segment<1>(0)});
-    //    -2+3*B++- <=  x + y - z <= 2-3*B--+
-    a << 1, 1, -1, -3, 3;
-    prog->AddLinearConstraint(a, -2, 2, {v, B.segment<1>(6), B.segment<1>(1)});
-    //    -2+3*B+-+ <=  x - y + z <= 2-3*B-+-
-    a << 1, -1, 1, -3, 3;
-    prog->AddLinearConstraint(a, -2, 2, {v, B.segment<1>(5), B.segment<1>(2)});
-    //    -2+3*B-++ <= -x + y + z <= 2-3*B+--
-    a << -1, 1, 1, -3, 3;
-    prog->AddLinearConstraint(a, -2, 2, {v, B.segment<1>(3), B.segment<1>(4)});
+    a << 1, 1, 1, -(1 + s3), (1 + s3);
+    prog->AddLinearConstraint(a, -s3, s3,
+                              {v, B.segment<1>(7), B.segment<1>(0)});
+    prog->AddLinearConstraint(a.head<3>(), -s3, s3, {v});
+
+    //    -s3+(1+s3)*B++- <=  x + y - z <= s3-(1+s3)*B--+
+    a << 1, 1, -1, -(1 + s3), (1 + s3);
+    prog->AddLinearConstraint(a, -s3, s3,
+                              {v, B.segment<1>(6), B.segment<1>(1)});
+    prog->AddLinearConstraint(a.head<3>(), -s3, s3, {v});
+
+    //    -s3+(1+s3)*B+-+ <=  x - y + z <= s3-(1+s3)*B-+-
+    a << 1, -1, 1, -(1 + s3), (1 + s3);
+    prog->AddLinearConstraint(a, -s3, s3,
+                              {v, B.segment<1>(5), B.segment<1>(2)});
+    prog->AddLinearConstraint(a.head<3>(), -s3, s3, {v});
+
+    //    -s3+(1+s3)*B-++ <= -x + y + z <= s3-(1+s3)*B+--
+    a << -1, 1, 1, -(1 + s3), (1 + s3);
+    prog->AddLinearConstraint(a, -s3, s3,
+                              {v, B.segment<1>(3), B.segment<1>(4)});
+    prog->AddLinearConstraint(a.head<3>(), -s3, s3, {v});
   }
+
+  return B;
 }
 
-void AddRotationMatrixL1NormMilpConstraint(MathematicalProgram* prog,
-                                           const DecisionVariableMatrixX& R,
-                                           RollPitchYawLimits limits) {
-  AddVectorL1NormConstraint(prog, R.col(0), "0");
-  AddVectorL1NormConstraint(prog, R.col(1), "1");
-  AddVectorL1NormConstraint(prog, R.col(2), "2");
+int orthantIndex(bool positive_x, bool positive_y, bool positive_z) {
+  return (static_cast<int>(positive_x) << 2) +
+         (static_cast<int>(positive_y) << 1) + static_cast<int>(positive_z);
+}
+
+void AddCrossProductConstraint(MathematicalProgram* prog,
+                               const DecisionVariableVector<8>& b0,
+                               const DecisionVariableVector<8>& b1,
+                               const DecisionVariableVector<8>& b2,
+                               int i,  // the orthant index of R0
+                               int j   // the orthant index of R1
+                               ) {
+  // Use the following trick to discover the two orthants that are possible for
+  // R2 given the orthant of R0 and R1:  Take the vectors (+/-1,+/-1,+/-1) for
+  // R0 and R1 in their respective orthants.  Their cross product will have
+  // exactly one zero (denoting the coordinate that can be either positive or
+  // negative).
+
+  const Eigen::Vector3d R0(i & (1 << 2) ? 1 : -1, i & (1 << 1) ? 1 : -1,
+                           i & (1 << 0) ? 1 : -1);
+  const Eigen::Vector3d R1(j & (1 << 2) ? 1 : -1, j & (1 << 1) ? 1 : -1,
+                           j & (1 << 0) ? 1 : -1);
+  const Eigen::Vector3d R2 = R0.cross(R1);
+
+  // positive if >0, negative if <0, positive if ==0.
+  const int k = orthantIndex(R2(0) >= 0, R2(1) >= 0, R2(2) >= 0);
+  // positive if >0, negative if <0, negative if ==0.
+  const int l = orthantIndex(R2(0) > 0, R2(1) > 0, R2(2) > 0);
+  DRAKE_DEMAND(k != l);  // Check that the assumption held (numerically).
+
+  // b2(k) + b2(l) >= -1 + b0(i) + b1(j), aka -1 <= b0(i)+b1(j)-b2(k)-b2(l)
+  prog->AddLinearConstraint(
+      Eigen::RowVector4d(1, 1, -1, -1), -1, 1,
+      {b0.segment<1>(i), b1.segment<1>(j), b2.segment<1>(k), b2.segment<1>(l)});
+}
+
+void AddRotationMatrixOrthantMilpConstraints(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const DecisionVariableMatrix<3, 3>>& R) {
+  auto b0 = AddVectorL1NormConstraint(prog, R.col(0), "0");
+  auto b1 = AddVectorL1NormConstraint(prog, R.col(1), "1");
+  auto b2 = AddVectorL1NormConstraint(prog, R.col(2), "2");
+
+  for (int i = 0; i < 8; i++) {
+    bool positive_x = i & (1 << 2), positive_y = i & (1 << 1),
+         positive_z = i & (1 << 0);
+    // R1 cannot lie in the same orthant as R0 nor -R0.
+    // b0(i) + b1(i) + b1(j) <= 1, where j is the index representing -R0.
+    prog->AddLinearConstraint(
+        Eigen::RowVector3d::Ones(), 0, 1,
+        {b0.segment<1>(i), b1.segment<1>(i),
+         b1.segment<1>(orthantIndex(!positive_x, !positive_y, !positive_z))});
+
+    // R2 = cross(R0,R1), which can be written as
+    //    b0(i) && b1(j) => b2(k) || b2(l), via  b2(k)+b2(l)>=-1+b0(i)+b1(j)
+    // where k,l are the two orthants implied by the cross product of vectors in
+    // orthants i and j.  We need to write this constraint for every viable
+    // i,j combination (e.g. those with 1 or 2 signs flipped).
+    AddCrossProductConstraint(
+        prog, b0, b1, b2, i, orthantIndex(positive_x, positive_y, !positive_z));
+    AddCrossProductConstraint(
+        prog, b0, b1, b2, i, orthantIndex(positive_x, !positive_y, positive_z));
+    AddCrossProductConstraint(
+        prog, b0, b1, b2, i, orthantIndex(!positive_x, positive_y, positive_z));
+    AddCrossProductConstraint(
+        prog, b0, b1, b2, i,
+        orthantIndex(positive_x, !positive_y, !positive_z));
+    AddCrossProductConstraint(
+        prog, b0, b1, b2, i,
+        orthantIndex(!positive_x, positive_y, !positive_z));
+    AddCrossProductConstraint(
+        prog, b0, b1, b2, i,
+        orthantIndex(!positive_x, !positive_y, positive_z));
+  }
 }
 
 }  // namespace solvers

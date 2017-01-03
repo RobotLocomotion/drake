@@ -87,7 +87,7 @@ struct LcmMatlabRemoteVariable {
 
   const int64_t uid_{};
 
-  /// Create a new remote variable that contains the data at the prescribed
+  /// Creates a new remote variable that contains the data at the prescribed
   /// index.  Supported calls are, for instance:
   ///   var(1)      // Access the first element.
   ///   var(1,2)    // Access row 1, column 2.
@@ -106,7 +106,7 @@ struct LcmMatlabRemoteVariable {
     return LcmCallMatlabSingleOutput("subsref", *this, s);
   }
 
-  /// Create a new remote variable that contains the data at the prescribed
+  /// Creates a new remote variable that contains the data at the prescribed
   /// index.  Supported calls are, for instance:
   ///   var.subsasgn(val,1)               // Set the first element to val.
   ///   var.subsasgn(val,1,2)             // Set row 1, column 2.
