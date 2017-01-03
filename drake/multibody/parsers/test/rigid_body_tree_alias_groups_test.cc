@@ -34,7 +34,7 @@ void TestFullConfig(multibody::joints::FloatingBaseType type) {
   std::string urdf = drake::GetDrakePath() +
                      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
   std::string config = drake::GetDrakePath() + "/multibody/parsers/test/" +
-                       "rigid_body_tree_alias_group_config/full.config";
+                       "rigid_body_tree_alias_group_config/full.yaml";
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf, type, robot.get());
@@ -139,7 +139,7 @@ void TestNoBodyGroupsConfig(multibody::joints::FloatingBaseType type) {
                      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
   std::string config = drake::GetDrakePath() + "/multibody/parsers/test/" +
                        "rigid_body_tree_alias_group_config/" +
-                       "no_body_groups.config";
+                       "no_body_groups.yaml";
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf, type, robot.get());
@@ -198,7 +198,7 @@ void TestNoJointGroupsConfig(multibody::joints::FloatingBaseType type) {
                      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
   std::string config = drake::GetDrakePath() + "/multibody/parsers/test/" +
                        "rigid_body_tree_alias_group_config/" +
-                       "no_joint_groups.config";
+                       "no_joint_groups.yaml";
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf, type, robot.get());
@@ -244,7 +244,7 @@ GTEST_TEST(RigidBodyTreeYAMLParsingTest, TestParseException) {
                      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
   std::string config = drake::GetDrakePath() + "/multibody/parsers/test/" +
                        "rigid_body_tree_alias_group_config/" +
-                       "parse_fails.config";
+                       "parse_fails.yaml";
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf,

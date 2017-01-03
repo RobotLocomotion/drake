@@ -57,7 +57,7 @@ std::vector<Type> ParseYAMLNodeAsVector(const YAML::Node& node) {
   try {
     values = node.as<std::vector<Type>>();
   } catch (std::runtime_error e) {
-    // If casting to vector of strings fails, tries to cast it as a single
+    // If casting to a vector of strings fails, tries to cast it as a single
     // string.
     try {
       values.push_back(node.as<Type>());
