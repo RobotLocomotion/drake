@@ -123,7 +123,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   // tested thoroughly yet)
   drake::solvers::MathematicalProgram prog;
   drake::solvers::DecisionVariableVectorX vdot =
-      prog.AddContinuousVariables(nv, "vdot");
+      prog.NewContinuousVariables(nv, "vdot");
 
   auto H = tree->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
@@ -242,7 +242,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     const double alpha = 5.0;  // 1/time constant of position constraint
                                // satisfaction (see my latex rigid body notes)
 
-    prog.AddContinuousVariables(
+    prog.NewContinuousVariables(
         nc, "position constraint force");  // don't actually need to use the
                                            // decision variable reference that
                                            // would be returned...
@@ -270,8 +270,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
 
   // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
   // templatized.
-  Eigen::VectorXd vdot_value =
-      drake::solvers::GetSolution(vdot);
+  Eigen::VectorXd vdot_value = prog.GetSolution(vdot);
   dot << tree->transformQDotMappingToVelocityMapping(kinsol,
              Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Identity(
                  nq, nq).eval()) *
@@ -326,7 +325,7 @@ RigidBodySystem::StateVector<double> getInitialState(
         loops = sys.tree->loops;
 
     int nq = sys.tree->get_num_positions();
-    auto qvar = prog.AddContinuousVariables(nq);
+    auto qvar = prog.NewContinuousVariables(nq);
 
     Matrix<double, 7, 1> bTbp = Matrix<double, 7, 1>::Zero();
     bTbp(3) = 1.0;
@@ -358,8 +357,7 @@ RigidBodySystem::StateVector<double> getInitialState(
     prog.AddQuadraticCost(MatrixXd::Identity(nq, nq), q_guess);
     prog.Solve();
 
-    const VectorXd& qvar_value =
-        drake::solvers::GetSolution(qvar);
+    const VectorXd& qvar_value = prog.GetSolution(qvar);
     x0 << qvar_value, VectorXd::Zero(sys.tree->get_num_velocities());
   }
   return x0;

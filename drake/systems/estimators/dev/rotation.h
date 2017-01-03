@@ -12,7 +12,7 @@ namespace solvers {
 /// which exactly represents the convex hull of all rotation matrices in 3D.
 DecisionVariableMatrixX AddRotationMatrixSpectrahedralSdpRelaxation(
     MathematicalProgram* prog, const std::string& name = "R") {
-  DecisionVariableMatrixX R = prog->AddContinuousVariables<3, 3>(name);
+  DecisionVariableMatrixX R = prog->NewContinuousVariables<3, 3>(name);
 
   // TODO(russt): Clean this up using symbolic expressions!
   Eigen::Matrix4d F0 = Eigen::Matrix4d::Identity();

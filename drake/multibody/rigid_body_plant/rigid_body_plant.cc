@@ -403,7 +403,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
   // How to place something like this in the context?
   drake::solvers::MathematicalProgram prog;
   drake::solvers::DecisionVariableVectorX vdot =
-      prog.AddContinuousVariables(nv, "vdot");
+      prog.NewContinuousVariables(nv, "vdot");
 
   auto H = tree_->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
@@ -443,7 +443,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
     // 1/time constant of position constraint satisfaction.
     const T alpha = 5.0;
 
-    prog.AddContinuousVariables(nc, "position constraint force");
+    prog.NewContinuousVariables(nc, "position constraint force");
 
     auto phi = tree_->positionConstraints(kinsol);
     auto J = tree_->positionConstraintsJacobian(kinsol, false);
@@ -473,8 +473,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
    */
   // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
   // templatized.
-  const auto& vdot_value =
-      drake::solvers::GetSolution(vdot);
+  const auto& vdot_value = prog.GetSolution(vdot);
   xdot << tree_->transformQDotMappingToVelocityMapping(
       kinsol, MatrixX<T>::Identity(nq, nq).eval()) * v, vdot_value;
 
