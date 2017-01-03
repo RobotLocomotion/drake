@@ -288,7 +288,7 @@ macro(drake_setup_valgrind)
 
         if(_use_valgrind_lower STREQUAL "memcheck")
           set(VALGRIND_COMMAND_OPTIONS
-            "${VALGRIND_COMMAND} --show-leak-kinds=definite,possible")
+            "${VALGRIND_COMMAND_OPTIONS} --leak-check=full --show-leak-kinds=definite,possible")
         endif()
 
         # TODO(jamiesnape): Use common Valgrind suppressions for Bazel and CMake.
