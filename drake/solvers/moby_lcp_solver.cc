@@ -134,10 +134,10 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
 
   // Assert that the available LCPs cover the program and no two LCPs cover
   // the same variable.
-  for (size_t i = 0; i < prog.num_vars(); i++) {
+  for (int i = 0; i < static_cast<int>(prog.num_vars()); ++i) {
     int coverings = 0;
     for (const auto& binding : bindings) {
-      if (binding.ContainsVariableIndex(i)) {
+      if (binding.ContainsVariable(prog.decision_variable(i))) {
         coverings++;
       }
     }
@@ -170,7 +170,7 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
     if (!solved) {
       return SolutionResult::kUnknownError;
     }
-    binding.WriteThrough(constraint_solution, &solution);
+    binding.WriteThrough(constraint_solution, prog, &solution);
   }
   prog.SetDecisionVariableValues(solution);
   return SolutionResult::kSolutionFound;

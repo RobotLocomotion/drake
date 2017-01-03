@@ -26,8 +26,8 @@ extern Eigen::Vector2d default_tspan;
  */
 class RigidBodyConstraint {
  public:
-  /* In each category, constraint classes share the same function interface, this
-   * value needs to be in consistent with that in MATLAB*/
+  /* In each category, constraint classes share the same function interface,
+   * this value needs to be in consistent with that in MATLAB*/
   static const int SingleTimeKinematicConstraintCategory = -1;
   static const int MultipleTimeKinematicConstraintCategory = -2;
   static const int QuasiStaticConstraintCategory = -3;
@@ -353,8 +353,8 @@ class MultipleTimeKinematicConstraint : public RigidBodyConstraint {
 class PositionConstraint : public SingleTimeKinematicConstraint {
  public:
   PositionConstraint(
-      RigidBodyTree<double>* model, const Eigen::Matrix3Xd& pts, Eigen::MatrixXd lb,
-      Eigen::MatrixXd ub,
+      RigidBodyTree<double>* model, const Eigen::Matrix3Xd& pts,
+      Eigen::MatrixXd lb, Eigen::MatrixXd ub,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~PositionConstraint(void) {}
   virtual void eval(const double* t, KinematicsCache<double>& cache,
@@ -423,9 +423,10 @@ class WorldCoMConstraint : public PositionConstraint {
   std::set<int> m_model_instance_id_;
 };
 
-class RelativePositionConstraint: public PositionConstraint {
+class RelativePositionConstraint : public PositionConstraint {
  public:
-  RelativePositionConstraint(RigidBodyTree<double>* model, const Eigen::Matrix3Xd& pts,
+  RelativePositionConstraint(RigidBodyTree<double>* model,
+                             const Eigen::Matrix3Xd& pts,
                              const Eigen::MatrixXd& lb,
                              const Eigen::MatrixXd& ub, int bodyA_idx,
                              int bodyB_idx,
@@ -462,6 +463,7 @@ class QuatConstraint : public SingleTimeKinematicConstraint {
   virtual void evalOrientationProduct(const KinematicsCache<double>& cache,
                                       double& prod,
                                       Eigen::MatrixXd& dprod) const = 0;
+
  private:
   double tol_{};
 };
@@ -479,6 +481,7 @@ class WorldQuatConstraint : public QuatConstraint {
   virtual void evalOrientationProduct(const KinematicsCache<double>& cache,
                                       double& prod,
                                       Eigen::MatrixXd& dprod) const;
+
  private:
   int body_{};
   std::string body_name_;
@@ -503,6 +506,7 @@ class RelativeQuatConstraint : public QuatConstraint {
   virtual void evalOrientationProduct(const KinematicsCache<double>& cache,
                                       double& prod,
                                       Eigen::MatrixXd& dprod) const;
+
  private:
   int bodyA_idx_{};
   int bodyB_idx_{};
@@ -596,6 +600,7 @@ class GazeOrientConstraint : public GazeConstraint {
   virtual void evalOrientation(const KinematicsCache<double>& cache,
                                Eigen::Vector4d& quat,
                                Eigen::MatrixXd& dquat_dq) const = 0;
+
  private:
   double threshold_{};
   Eigen::Vector4d quat_des_;
@@ -619,6 +624,7 @@ class WorldGazeOrientConstraint : public GazeOrientConstraint {
   virtual void evalOrientation(const KinematicsCache<double>& cache,
                                Eigen::Vector4d& quat,
                                Eigen::MatrixXd& dquat_dq) const;
+
  private:
   int body_{};
   std::string body_name_;
@@ -745,9 +751,9 @@ class RelativeGazeDirConstraint : public GazeDirConstraint {
 class Point2PointDistanceConstraint : public SingleTimeKinematicConstraint {
  public:
   Point2PointDistanceConstraint(
-      RigidBodyTree<double>* model, int bodyA, int bodyB, const Eigen::Matrix3Xd& ptA,
-      const Eigen::Matrix3Xd& ptB, const Eigen::VectorXd& lb,
-      const Eigen::VectorXd& ub,
+      RigidBodyTree<double>* model, int bodyA, int bodyB,
+      const Eigen::Matrix3Xd& ptA, const Eigen::Matrix3Xd& ptB,
+      const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~Point2PointDistanceConstraint(void) {}
   virtual void eval(const double* t, KinematicsCache<double>& cache,
@@ -953,7 +959,8 @@ class PostureChangeConstraint : public MultipleTimeLinearPostureConstraint {
   Eigen::VectorXd ub_change_;
 };
 
-class GravityCompensationTorqueConstraint : public SingleTimeKinematicConstraint {
+class GravityCompensationTorqueConstraint
+    : public SingleTimeKinematicConstraint {
  public:
   GravityCompensationTorqueConstraint(
       RigidBodyTree<double>* model, const Eigen::VectorXi& joint_indices,

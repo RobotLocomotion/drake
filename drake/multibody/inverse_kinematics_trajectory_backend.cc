@@ -372,9 +372,9 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
   // Create our decision variables.  "q" represents all positions of
   // the model at each timestep in nT.  "qdot0" and "qdotf" are qdot
   // at the initial and final timestep.
-  DecisionVariableVectorX q = prog.AddContinuousVariables(nT * nq, "q");
-  DecisionVariableVectorX qdot0 = prog.AddContinuousVariables(nq, "qdot0");
-  DecisionVariableVectorX qdotf = prog.AddContinuousVariables(nq, "qdotf");
+  DecisionVariableVectorX q = prog.NewContinuousVariables(nT * nq, "q");
+  DecisionVariableVectorX qdot0 = prog.NewContinuousVariables(nq, "qdot0");
+  DecisionVariableVectorX qdotf = prog.NewContinuousVariables(nq, "qdotf");
 
   std::shared_ptr<drake::solvers::Constraint> cost =
       std::make_shared<IKTrajectoryCost>(helper, q_nom);
@@ -526,17 +526,15 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
   *info = GetIKSolverInfo(prog, result);
 
   // Populate the output arguments.
-  const auto q_value = drake::solvers::GetSolution(q);
+  const auto q_value = prog.GetSolution(q);
   q_sol->resize(nq, nT);
   for (int i = 0; i < nT; i++) {
     q_sol->col(i) = q_value.block(i * nq, 0, nq, 1);
   }
 
   qdot_sol->resize(nq, nT);
-  const VectorXd& qdot0_value =
-      drake::solvers::GetSolution(qdot0);
-  const VectorXd& qdotf_value =
-      drake::solvers::GetSolution(qdotf);
+  const VectorXd& qdot0_value = prog.GetSolution(qdot0);
+  const VectorXd& qdotf_value = prog.GetSolution(qdotf);
   qdot_sol->block(0, 0, nq, 1) = qdot0_value;
   qdot_sol->block(0, nT - 1, nq, 1) = qdotf_value;
   MatrixXd q_sol_tmp = *q_sol;

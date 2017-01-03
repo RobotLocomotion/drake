@@ -25,7 +25,8 @@ Eigen::VectorXd MakeEigenVector(const std::vector<double>& x) {
   return xvec;
 }
 
-TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
+TaylorVecXd MakeInputTaylorVec(const MathematicalProgram& prog,
+                               const Eigen::VectorXd& xvec,
                                const VariableList& variable_list) {
   size_t var_count = variable_list.size();
 
@@ -34,9 +35,9 @@ TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
   size_t index = 0;
   for (const DecisionVariableMatrixX& v : variable_list.variables()) {
     DRAKE_ASSERT(v.cols() == 1);
-    int num_v_variables = v.size();
+    const int num_v_variables = v.size();
     for (int i = 0; i < num_v_variables; ++i) {
-      this_x(index + i) = tx(v(i, 0).index());
+      this_x(index + i) = tx(prog.FindDecisionVariableIndex(v(i, 0)));
     }
     index += num_v_variables;
   }
@@ -70,10 +71,10 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
     for (const DecisionVariableMatrixX& v :
          binding.variable_list().variables()) {
       DRAKE_ASSERT(v.cols() == 1);
-      int num_v_variables = v.size();
+      const int num_v_variables = v.size();
       this_x.conservativeResize(index + num_v_variables);
       for (int i = 0; i < num_v_variables; ++i) {
-        this_x(index + i) = tx(v(i, 0).index());
+        this_x(index + i) = tx(prog->FindDecisionVariableIndex(v(i, 0)));
       }
       index += num_v_variables;
     }
@@ -86,7 +87,8 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
            binding.variable_list().variables()) {
         DRAKE_ASSERT(v.cols() == 1);
         for (int j = 0; j < v.size(); ++j) {
-          grad[v(j, 0).index()] += ty(0).derivatives()(v(j, 0).index());
+          size_t vj_index = prog->FindDecisionVariableIndex(v(j, 0));
+          grad[vj_index] += ty(0).derivatives()(vj_index);
         }
       }
     }
@@ -99,14 +101,17 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
 /// which take only a single pointer argument.
 struct WrappedConstraint {
   WrappedConstraint(const Constraint* constraint_in,
-                    const VariableList* variable_list_in)
+                    const VariableList* variable_list_in,
+                    const MathematicalProgram* prog_in)
       : constraint(constraint_in),
         variable_list(variable_list_in),
+        prog(prog_in),
         force_bounds(false),
         force_upper(false) {}
 
   const Constraint* constraint;
   const VariableList* variable_list;
+  const MathematicalProgram* prog;
   bool force_bounds;  ///< force usage of only upper or lower bounds
   bool force_upper;   ///< Only used if force_bounds is set.  Selects
                       ///< which bounds are being tested (lower bound
@@ -178,7 +183,8 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   DRAKE_ASSERT(wrapped->active_constraints.size() == m);
 
   TaylorVecXd ty(num_constraints);
-  TaylorVecXd this_x = MakeInputTaylorVec(xvec, *(wrapped->variable_list));
+  TaylorVecXd this_x =
+      MakeInputTaylorVec(*(wrapped->prog), xvec, *(wrapped->variable_list));
   c->Eval(this_x, ty);
 
   const Eigen::VectorXd& lower_bound = c->lower_bound();
@@ -210,6 +216,11 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
     for (const DecisionVariableMatrixX& v :
          wrapped->variable_list->variables()) {
       result_idx = 0;
+      const int num_v_variable = v.size();
+      std::vector<size_t> v_index(num_v_variable);
+      for (int i = 0; i < num_v_variable; ++i) {
+        v_index[i] = wrapped->prog->FindDecisionVariableIndex(v(i, 0));
+      }
       for (size_t i = 0; i < num_constraints; i++) {
         if (!wrapped->active_constraints.count(i)) {
           continue;
@@ -222,8 +233,8 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
         }
         DRAKE_ASSERT(v.cols() == 1);
         for (int j = 0; j < v.size(); ++j) {
-          grad[(result_idx * n) + v(j, 0).index()] =
-              ty(i).derivatives()(v(j, 0).index()) * grad_sign;
+          grad[(result_idx * n) + v_index[j]] =
+              ty(i).derivatives()(v_index[j]) * grad_sign;
         }
         result_idx++;
         DRAKE_ASSERT(result_idx <= m);
@@ -236,20 +247,20 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
 // We can't declare a variable of type OptimizationProblem::Binding,
 // since that's private and clang gets annoyed.
 template <typename _Binding>
-void WrapConstraint(const _Binding& binding, double constraint_tol,
-                    nlopt::opt* opt,
+void WrapConstraint(const MathematicalProgram& prog, const _Binding& binding,
+                    double constraint_tol, nlopt::opt* opt,
                     std::list<WrappedConstraint>* wrapped_list) {
   // Version of the wrapped constraint which refers only to equality
   // constraints (if any), and will be used with
   // add_equality_mconstraint.
   WrappedConstraint wrapped_eq(binding.constraint().get(),
-                               &binding.variable_list());
+                               &binding.variable_list(), &prog);
 
   // Version of the wrapped constraint which refers only to inequality
   // constraints (if any), and will be used with
   // add_equality_mconstraint.
   WrappedConstraint wrapped_in(binding.constraint().get(),
-                               &binding.variable_list());
+                               &binding.variable_list(), &prog);
 
   bool is_pure_inequality = true;
   const Eigen::VectorXd& lower_bound = binding.constraint()->lower_bound();
@@ -302,7 +313,7 @@ void WrapConstraint(const _Binding& binding, double constraint_tol,
 bool NloptSolver::available() const { return true; }
 
 SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
-  int nx = prog.num_vars();
+  const int nx = prog.num_vars();
 
   // Load the algo to use and the size.
   nlopt::opt opt(nlopt::LD_SLSQP, nx);
@@ -325,7 +336,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
          binding.variable_list().variables()) {
       DRAKE_ASSERT(v.cols() == 1);
       for (int k = 0; k < v.size(); ++k) {
-        const int idx = v(k, 0).index();
+        const size_t idx = prog.FindDecisionVariableIndex(v(k, 0));
         xlow[idx] = std::max(lower_bound(var_count), xlow[idx]);
         xupp[idx] = std::min(upper_bound(var_count), xupp[idx]);
         if (x[idx] < xlow[idx]) {
@@ -355,25 +366,25 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   // TODO(sam.creasey): Missing test coverage for generic constraints
   // with >1 output.
   for (const auto& c : prog.generic_constraints()) {
-    WrapConstraint(c, constraint_tol, &opt, &wrapped_vector);
+    WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
   }
 
   for (const auto& c : prog.lorentz_cone_constraints()) {
-    WrapConstraint(c, constraint_tol, &opt, &wrapped_vector);
+    WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
   }
 
   for (const auto& c : prog.rotated_lorentz_cone_constraints()) {
-    WrapConstraint(c, constraint_tol, &opt, &wrapped_vector);
+    WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
   }
 
   for (const auto& c : prog.linear_equality_constraints()) {
-    WrapConstraint(c, constraint_tol, &opt, &wrapped_vector);
+    WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
   }
 
   // TODO(sam.creasey): Missing test coverage for linear constraints
   // with >1 output.
   for (const auto& c : prog.linear_constraints()) {
-    WrapConstraint(c, constraint_tol, &opt, &wrapped_vector);
+    WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
   }
 
   opt.set_xtol_rel(xtol_rel);
