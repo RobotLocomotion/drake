@@ -1753,7 +1753,7 @@ class MathematicalProgram {
       decision_variable_type_[new_var_index] = type;
       decision_variable_matrix(row_index, col_index) =
           decision_variables_(num_vars_ + i);
-      // If the matrix is not symmetric, then store the variable in the column
+      // If the matrix is not symmetric, then store the variable in column
       // major.
       if (!is_symmetric) {
         if (row_index + 1 < rows) {
