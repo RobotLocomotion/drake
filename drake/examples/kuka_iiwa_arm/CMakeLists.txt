@@ -67,7 +67,7 @@ if(lcm_FOUND)
     drakeSystemAnalysis
     drakeSystemControllers)
   drake_add_test(
-      NAME iiwa_wsg_simulation COMMAND iiwa_wsg_simulation -simulation_sec 0.1)
+      NAME iiwa_wsg_simulation COMMAND iiwa_wsg_simulation -simulation_sec 0.01)
 
 endif()
 
