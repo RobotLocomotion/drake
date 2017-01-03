@@ -1,10 +1,13 @@
 #include "drake/automotive/maliput/utility/generate_obj.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <fstream>
 #include <functional>
 #include <initializer_list>
 #include <iostream>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
@@ -21,11 +24,23 @@ namespace utility {
 
 namespace {
 
+// A container for a set of unique objects of which keeps track of the original
+// insertion order.  Its primary purpose is to assign a stable unique index
+// to each element at time of insertion.
+//
+// @tparam T  the inserted element type
+// @tparam Hash  a hasher suitable for std::unordered_map (e.g., std::hash)
+// @tparam KeyEqual  an equivalence relation suitable for std::unordered_map
+//                   (e.g., std::equal_to)
 template <class T, class Hash, class KeyEqual>
 class UniqueIndexer {
  public:
+  // Creates an empty UniqueIndexer.
   UniqueIndexer() {}
 
+  // Pushes @p thing onto the back of the container, and returns the unique
+  // index for @p thing.  If @p thing has already been added to the container,
+  // then this simply returns the original index for @p thing.
   int push_back(const T& thing) {
     auto mi = map_.find(thing);
     if (mi != map_.end()) {
@@ -37,6 +52,9 @@ class UniqueIndexer {
     return index;
   }
 
+  // Returns a vector of all elements added to this container.  The index of
+  // any element in the vector equals the index generated when the element
+  // was added to the container.
   const std::vector<const T*>& vector() const { return vector_; }
 
  private:
@@ -48,6 +66,7 @@ class UniqueIndexer {
 // A GEO-space (world-frame) vertex.
 class GeoVertex {
  public:
+  // A hasher operation suitable for std::unordered_map.
   struct Hash {
     size_t operator()(const GeoVertex& gv) const {
       const size_t hx(std::hash<double>()(gv.v().x));
@@ -57,6 +76,7 @@ class GeoVertex {
     }
   };
 
+  // An equivalence operation suitable for std::unordered_map.
   struct Equiv {
     bool operator()(const GeoVertex& lhs, const GeoVertex& rhs) const {
       return ((lhs.v().x == rhs.v().x) &&
@@ -79,6 +99,7 @@ class GeoVertex {
 // A GEO-space (world-frame) normal vector.
 class GeoNormal {
  public:
+  // A hasher operation suitable for std::unordered_map.
   struct Hash {
     size_t operator()(const GeoNormal& gn) const {
       const size_t hx(std::hash<double>()(gn.n().x));
@@ -88,6 +109,7 @@ class GeoNormal {
     }
   };
 
+  // An equivalence operation suitable for std::unordered_map.
   struct Equiv {
     bool operator()(const GeoNormal& lhs, const GeoNormal& rhs) const {
       return ((lhs.n().x == rhs.n().x) &&
@@ -98,6 +120,7 @@ class GeoNormal {
 
   GeoNormal() {}
 
+  // Construct a GeoNormal as the vector from @p v0 to @p v1.
   GeoNormal(const api::GeoPosition& v0, const api::GeoPosition& v1)
       : n_({v1.x - v0.x, v1.y - v0.y, v1.z - v0.z}) {}
 
@@ -108,7 +131,8 @@ class GeoNormal {
 };
 
 
-// A GEO-space (world-frame) face.
+// A GEO-space (world-frame) face:  a sequence of vertices with corresponding
+// normals.
 class GeoFace {
  public:
   GeoFace() {}
@@ -134,6 +158,9 @@ class GeoFace {
 };
 
 
+// A face --- a sequence of vertices with normals --- in which the
+// vertices and normals are represented by integer indices into some
+// other container/dictionary.
 class IndexFace {
  public:
   struct Vertex {
@@ -150,6 +177,7 @@ class IndexFace {
 };
 
 
+// A GEO-space (world-frame) mesh:  a collection of GeoFaces.
 class GeoMesh {
  public:
   GeoMesh() {}
@@ -164,9 +192,17 @@ class GeoMesh {
     faces_.push_back(face);
   }
 
-
+  // Emits the mesh as a Wavefront OBJ elements to @p os.  @p material is the
+  // name of an MTL-defined material to ascribe to the mesh.
+  //
+  // If other meshes have already been emitted to stream @p os, then
+  // @p vertex_index_offset and @p normal_index_offset must correspond to the
+  // number of previously emitted vertices and normals respectively.
+  // Conveniently, EmitObj() returns a tuple of (vertex_index_offset,
+  // normal_index_offset) which can be chained into a succeeding call to
+  // EmitObj().
   std::tuple<int, int>
-  DumpObj(std::ostream& os, const std::string& material,
+  EmitObj(std::ostream& os, const std::string& material,
           int vertex_index_offset, int normal_index_offset) {
     os << "# Vertices\n";
     for (const GeoVertex* gv : vertices_.vector()) {
@@ -200,12 +236,23 @@ class GeoMesh {
 };
 
 
+// A LANE-space face: a sequence of vertices expressed in the (s,r,h)
+// coordinates of an api::Lane (which is not referenced here).  Each
+// vertex has an implicit unit-length normal vector in the +h
+// direction normal to the road surface.
 class SrhFace {
  public:
-  SrhFace(const std::initializer_list<api::LanePosition> srh) : v_(srh) {}
+  SrhFace(const std::initializer_list<api::LanePosition> srh) : v_(srh) {
+    // TODO(maddog@tri.global) Provide for explicit normals if we ever
+    // consider faces which are not parallel to the road surface.
+    for (const api::LanePosition& srh : v_) {
+      DRAKE_DEMAND(srh.h == v_[0].h);
+    }
+  }
 
   const std::vector<api::LanePosition>& v() const { return v_; }
 
+  // Given a @p lane, calculates the corresponding GeoFace.
   GeoFace ToGeoFace(const api::Lane* lane) const {
     GeoFace geo_face;
     for (const api::LanePosition& srh : v_) {
@@ -221,56 +268,83 @@ class SrhFace {
 };
 
 
+// Traverses @p lane, generating a cover of the surface with with quads
+// (4-vertex faces) which are added to @p mesh.  The quads are squares in
+// the (s,r) space of the lane.
+//
+// @param mesh  the GeoMesh which will receive the quads
+// @param lane  the api::Lane to cover with quads
+// @param grid_unit  size of each quad (length of edge in s and r dimensions)
+// @param use_driveable_bounds  if true, use the lane's driveable_bounds()
+//        to determine the lateral extent of the coverage; otherwise, use
+//        lane_bounds()
+// @param h_offset  h value of each vertex (height above road surface)
 void CoverLaneWithQuads(GeoMesh* mesh, const api::Lane* lane,
-                        const double grid_unit) {
+                        double grid_unit,
+                        bool use_driveable_bounds,
+                        double h_offset) {
   const double s_max = lane->length();
   for (double s0 = 0; s0 < s_max; s0 += grid_unit) {
     double s1 = s0 + grid_unit;
     if (s1 > s_max) { s1 = s_max; }
 
-    api::RBounds rb0 = lane->lane_bounds(s0);
-    api::RBounds rb1 = lane->lane_bounds(s1);
+    const api::RBounds rb0 = use_driveable_bounds ?
+        lane->driveable_bounds(s0) : lane->lane_bounds(s0);
+    const api::RBounds rb1 = use_driveable_bounds ?
+        lane->driveable_bounds(s1) : lane->lane_bounds(s1);
 
-    // TODO(maddog)  Go back to api::RoadGeometry and assert that lane-bounds
+    // TODO(maddog)  Go back to api::RoadGeometry and assert that RBounds
     //               always straddle r=0.  E.g., it should be nonsense if
     //               the r=0 centerline is not within the bounds of the lane.
+    DRAKE_DEMAND(rb0.r_min <= 0.);
+    DRAKE_DEMAND(rb0.r_max >= 0.);
+    DRAKE_DEMAND(rb0.r_min < rb0.r_max);
+    DRAKE_DEMAND(rb1.r_min <= 0.);
+    DRAKE_DEMAND(rb1.r_max >= 0.);
+    DRAKE_DEMAND(rb1.r_min < rb1.r_max);
 
-    // Left side of lane.
+    // Left side of lane (r >= 0).
     {
       double r00 = 0.;
       double r10 = 0.;
-      DRAKE_DEMAND(rb0.r_min <= r00);
-      DRAKE_DEMAND(rb1.r_min <= r10);
       while ((r00 < rb0.r_max) && (r10 < rb1.r_max)) {
-        double r01 = r00 + grid_unit;
-        double r11 = r10 + grid_unit;
-
-        if (r01 > rb0.r_max) { r01 = rb0.r_max; }
-        if (r11 > rb1.r_max) { r11 = rb0.r_max; }
-
-        SrhFace srh_face(
-            {{s0, r00, 0.}, {s1, r10, 0.}, {s1, r11, 0.}, {s0, r01, 0.}});
+        const double r01 = std::min(r00 + grid_unit, rb0.r_max);
+        const double r11 = std::min(r10 + grid_unit, rb1.r_max);
+        //
+        // (s1,r11) o <-- o (s1,r10)       ^ +s
+        //          |     ^                |
+        //          v     |          +r <--o
+        // (s0,r01) o --> * (s0,r00)
+        //
+        SrhFace srh_face({
+            {s0, r00, h_offset},
+            {s1, r10, h_offset},
+            {s1, r11, h_offset},
+            {s0, r01, h_offset}});
         mesh->PushFace(srh_face.ToGeoFace(lane));
 
         r00 += grid_unit;
         r10 += grid_unit;
       }
     }
-    // Right side of lane.
+    // Right side of lane (r <= 0).
     {
       double r00 = 0.;
       double r10 = 0.;
-      DRAKE_DEMAND(rb0.r_max >= r00);
-      DRAKE_DEMAND(rb1.r_max >= r10);
       while ((r00 > rb0.r_min) && (r10 > rb1.r_min)) {
-        double r01 = r00 - grid_unit;
-        double r11 = r10 - grid_unit;
-
-        if (r01 < rb0.r_min) { r01 = rb0.r_min; }
-        if (r11 < rb1.r_min) { r11 = rb0.r_min; }
-
-        SrhFace srh_face(
-                 {{s0, r00, 0.}, {s0, r01, 0.}, {s1, r11, 0.}, {s1, r10, 0.}});
+        const double r01 = std::max(r00 - grid_unit, rb0.r_min);
+        const double r11 = std::max(r10 - grid_unit, rb1.r_min);
+        //
+        // (s1,r10) o <-- o (s1,r11)  ^ +s
+        //          |     ^           |
+        //          v     |           o--> -r
+        // (s0,r00) * --> o (s0,r01)
+        //
+        SrhFace srh_face({
+            {s0, r00, h_offset},
+            {s0, r01, h_offset},
+            {s1, r11, h_offset},
+            {s1, r10, h_offset}});
         mesh->PushFace(srh_face.ToGeoFace(lane));
 
         r00 -= grid_unit;
@@ -281,12 +355,18 @@ void CoverLaneWithQuads(GeoMesh* mesh, const api::Lane* lane,
 }
 
 
+// Adds faces to @p mesh which draw stripes along the lane_bounds() of
+// @p lane.
+//
+// @param mesh  the GeoMesh which will receive the faces
+// @param lane  the api::Lane to provide the bounds and surface
+// @param grid_unit  longitudinal size (s dimension) of each face
+// @param h_offset  h value of each vertex (height above road surface)
+// @param stripe_width  width (r dimension) of each stripe
 void StripeLaneBounds(GeoMesh* mesh, const api::Lane* lane,
-                      const double grid_unit) {
-  const double kStripeWidth = 0.25;
-  const double kStripeElevation = 0.02;
-
-  const double half_stripe = 0.5 * kStripeWidth;
+                      double grid_unit, double h_offset,
+                      double stripe_width) {
+  const double half_stripe = 0.5 * stripe_width;
 
   const double s_max = lane->length();
   for (double s0 = 0; s0 < s_max; s0 += grid_unit) {
@@ -299,22 +379,165 @@ void StripeLaneBounds(GeoMesh* mesh, const api::Lane* lane,
     // Left side of lane.
     {
       SrhFace srh_face({
-          {s0, rb0.r_max - half_stripe, kStripeElevation},
-          {s1, rb1.r_max - half_stripe, kStripeElevation},
-          {s1, rb1.r_max + half_stripe, kStripeElevation},
-          {s0, rb0.r_max + half_stripe, kStripeElevation}});
+          {s0, rb0.r_max - half_stripe, h_offset},
+          {s1, rb1.r_max - half_stripe, h_offset},
+          {s1, rb1.r_max + half_stripe, h_offset},
+          {s0, rb0.r_max + half_stripe, h_offset}});
       mesh->PushFace(srh_face.ToGeoFace(lane));
     }
     // Right side of lane.
     {
       SrhFace srh_face({
-          {s0, rb0.r_min - half_stripe, kStripeElevation},
-          {s1, rb1.r_min - half_stripe, kStripeElevation},
-          {s1, rb1.r_min + half_stripe, kStripeElevation},
-          {s0, rb0.r_min + half_stripe, kStripeElevation}});
+          {s0, rb0.r_min - half_stripe, h_offset},
+          {s1, rb1.r_min - half_stripe, h_offset},
+          {s1, rb1.r_min + half_stripe, h_offset},
+          {s0, rb0.r_min + half_stripe, h_offset}});
       mesh->PushFace(srh_face.ToGeoFace(lane));
     }
   }
+}
+
+
+// Adds faces to @p mesh which draw a simple triangular arrow in the
+// LANE-space of @p lane.  The width of the arrow is fixed at 80% of
+// the lane_bounds() of @p lane at the base of the arrow.
+//
+// @param mesh  the GeoMesh which will receive the faces
+// @param lane  the api::Lane to provide the bounds and surface
+// @param grid_unit  size of each quad (length of edge in s and r dimensions)
+// @param s_offset  longitudinal offset of the base of the arrow from the
+//                  beginning (s = 0) of @p lane
+// @param s_size  length of the arrow from base to tip
+// @param h_offset  h value of each vertex (height above road surface)
+void DrawLaneArrow(GeoMesh* mesh, const api::Lane* lane, double grid_unit,
+                   double s_offset, double s_size, double h_offset) {
+  DRAKE_DEMAND(s_offset >= 0.);
+  DRAKE_DEMAND((s_offset + s_size) <= lane->length());
+  const double kRelativeWidth = 0.8;
+
+  const api::RBounds rb0 = lane->lane_bounds(s_offset);
+  // TODO(maddog)  Go back to api::RoadGeometry and assert that RBounds
+  //               always straddle r=0.  E.g., it should be nonsense if
+  //               the r=0 centerline is not within the bounds of the lane.
+  DRAKE_DEMAND(rb0.r_min <= 0.);
+  DRAKE_DEMAND(rb0.r_max >= 0.);
+  DRAKE_DEMAND(rb0.r_min < rb0.r_max);
+
+  const int max_num_s_units = static_cast<int>(std::ceil(s_size / grid_unit));
+
+  const double rl_size = rb0.r_max * kRelativeWidth;
+  const double rr_size = -rb0.r_min * kRelativeWidth;
+  const int max_num_rl_units = static_cast<int>(std::ceil(rl_size / grid_unit));
+  const int max_num_rr_units = static_cast<int>(std::ceil(rr_size / grid_unit));
+
+  const int num_units = std::max(max_num_s_units,
+                                 std::max(max_num_rl_units,
+                                          max_num_rr_units));
+  DRAKE_DEMAND(num_units >= 1);
+  const double s_unit = s_size / num_units;
+  const double rl_unit = rl_size / num_units;
+  const double rr_unit = rr_size / num_units;
+
+  int num_r_units = num_units;
+  for (int si = 0; si < num_units; ++si) {
+    double s0 = s_offset + (si * s_unit);
+    double s1 = s_offset + ((si + 1.) * s_unit);
+    // Left side of lane.
+    {
+      double r00 = 0.;
+      double r10 = 0.;
+      for (int ri = 0; ri < (num_r_units - 1); ++ri) {
+        const double r01 = r00 + rl_unit;
+        const double r11 = r10 + rl_unit;
+        //
+        // (s1,r11) o <-- o (s1,r10)       ^ +s
+        //          |     ^                |
+        //          v     |          +r <--o
+        // (s0,r01) o --> * (s0,r00)
+        //
+        SrhFace srh_face({
+            {s0, r00, h_offset},
+            {s1, r10, h_offset},
+            {s1, r11, h_offset},
+            {s0, r01, h_offset}});
+        mesh->PushFace(srh_face.ToGeoFace(lane));
+
+        r00 += rl_unit;
+        r10 += rl_unit;
+      }
+      //                o (s1,r10)       ^ +s
+      //              / ^                |
+      //            /   |          +r <--o
+      // (s0,r01) o --> * (s0,r00)
+      SrhFace srh_face({
+          {s0, r00, h_offset},
+          {s1, r10, h_offset},
+          {s0, r00 + rl_unit, h_offset}});
+      mesh->PushFace(srh_face.ToGeoFace(lane));
+    }
+    // Right side of lane.
+    {
+      double r00 = 0.;
+      double r10 = 0.;
+      for (int ri = 0; ri < (num_r_units - 1); ++ri) {
+        const double r01 = r00 - rr_unit;
+        const double r11 = r10 - rr_unit;
+        //
+        // (s1,r10) o <-- o (s1,r11)  ^ +s
+        //          |     ^           |
+        //          v     |           o--> -r
+        // (s0,r00) * --> o (s0,r01)
+        //
+        SrhFace srh_face({
+            {s0, r00, h_offset},
+            {s0, r01, h_offset},
+            {s1, r11, h_offset},
+            {s1, r10, h_offset}});
+        mesh->PushFace(srh_face.ToGeoFace(lane));
+
+        r00 -= rr_unit;
+        r10 -= rr_unit;
+      }
+      //
+      // (s1,r10) o                 ^ +s
+      //          | \               |
+      //          v   \             o--> -r
+      // (s0,r00) * --> o (s0,r01)
+      //
+      SrhFace srh_face({
+          {s0, r00, h_offset},
+          {s0, r00 - rr_unit, h_offset},
+          {s1, r10, h_offset}});
+      mesh->PushFace(srh_face.ToGeoFace(lane));
+    }
+
+    num_r_units -= 1;
+  }
+}
+
+
+// Marks the start and finish ends of @p lane with arrows, rendered into
+// @p mesh.
+//
+// @param mesh  the GeoMesh which will receive the arrows
+// @param lane  the api::Lane to provide the surface
+// @param grid_unit  size of each quad (length of edge in s and r dimensions)
+// @param h_offset  h value of each vertex (height above road surface)
+void MarkLaneEnds(GeoMesh* mesh, const api::Lane* lane, double grid_unit,
+                  double h_offset) {
+  const double max_length = 0.3 * lane->length();
+  // Arrows are sized relative to their respective ends.
+  const api::RBounds start_rb = lane->lane_bounds(0.);
+  const double start_s_size = std::min(max_length,
+                                       (start_rb.r_max - start_rb.r_min));
+
+  const api::RBounds finish_rb = lane->lane_bounds(lane->length());
+  const double finish_s_size = std::min(max_length,
+                                        (finish_rb.r_max - finish_rb.r_min));
+
+  DrawLaneArrow(mesh, lane, grid_unit, 0., start_s_size, h_offset);
+  DrawLaneArrow(mesh, lane, grid_unit,
+                lane->length() - finish_s_size, finish_s_size, h_offset);
 }
 
 }  // namespace
@@ -324,7 +547,14 @@ void GenerateObjFile(const api::RoadGeometry* rg,
                      const std::string& dirpath,
                      const std::string& fileroot,
                      const double grid_unit) {
+  const double kMarkerElevation = 0.05;
+  const double kStripeElevation = 0.05;
+  const double kLaneHazeElevation = 0.02;
+
+  const double kStripeWidth = 0.25;
+
   GeoMesh asphalt_mesh;
+  GeoMesh lane_mesh;
   GeoMesh stripe_mesh;
 
   // Walk the network.
@@ -332,18 +562,22 @@ void GenerateObjFile(const api::RoadGeometry* rg,
     const api::Junction* junction = rg->junction(ji);
     for (int si = 0; si < junction->num_segments(); ++si) {
       const api::Segment* segment = junction->segment(si);
-      // TODO(maddog) We should be doing "cover segment with quads" instead,
-      //              using the driveable-bounds from any lane, and then
-      //              going back and using lane-bounds to paint stripes.
+      // Lane 0 should be as good as any other for driveable-bounds.
+      CoverLaneWithQuads(&asphalt_mesh, segment->lane(0), grid_unit,
+                         true, 0.);
       for (int li = 0; li < segment->num_lanes(); ++li) {
         const api::Lane* lane = segment->lane(li);
-        CoverLaneWithQuads(&asphalt_mesh, lane, grid_unit);
-        StripeLaneBounds(&stripe_mesh, lane, grid_unit);
+        CoverLaneWithQuads(&lane_mesh, segment->lane(0), grid_unit,
+                           false, kLaneHazeElevation);
+        StripeLaneBounds(&stripe_mesh, lane, grid_unit,
+                         kStripeElevation, kStripeWidth);
+        MarkLaneEnds(&stripe_mesh, lane, grid_unit, kMarkerElevation);
       }
     }
   }
 
-  const std::string kYellowPaint("yellow_paint");
+  const std::string kLaneHaze("lane_haze");
+  const std::string kMarkerPaint("marker_paint");
   const std::string kBlandAsphalt("bland_asphalt");
 
   const std::string obj_filename = fileroot + ".obj";
@@ -361,10 +595,13 @@ void GenerateObjFile(const api::RoadGeometry* rg,
     int vertex_index_offset = 0;
     int normal_index_offset = 0;
     std::tie(vertex_index_offset, normal_index_offset) =
-        asphalt_mesh.DumpObj(os, kBlandAsphalt,
+        asphalt_mesh.EmitObj(os, kBlandAsphalt,
                              vertex_index_offset, normal_index_offset);
     std::tie(vertex_index_offset, normal_index_offset) =
-        stripe_mesh.DumpObj(os, kYellowPaint,
+        lane_mesh.EmitObj(os, kLaneHaze,
+                          vertex_index_offset, normal_index_offset);
+    std::tie(vertex_index_offset, normal_index_offset) =
+        stripe_mesh.EmitObj(os, kMarkerPaint,
                             vertex_index_offset, normal_index_offset);
   }
 
@@ -375,20 +612,30 @@ void GenerateObjFile(const api::RoadGeometry* rg,
        << "#\n"
        << "# DON'T BE A HERO.  Do not edit by hand.\n"
        << "\n"
-       << "newmtl " << kYellowPaint << "\n"
+       << "newmtl " << kMarkerPaint << "\n"
        << "Ka 0.8 0.8 0.0\n"
        << "Kd 1.0 1.0 0.0\n"
        << "Ks 1.0 1.0 0.5\n"
        << "Ns 10.0\n"
        << "illum 2\n"
+       << "d 0.5\n"
        << "\n"
        << "\n"
        << "newmtl " << kBlandAsphalt << "\n"
        << "Ka 0.1 0.1 0.1\n"
-       << "Kd 0.1 0.1 0.1\n"
-       << "Ks 0.5 0.5 0.5\n"
+       << "Kd 0.2 0.2 0.2\n"
+       << "Ks 0.3 0.3 0.3\n"
        << "Ns 10.0\n"
-       << "illum 2\n";
+       << "illum 2\n"
+       << "\n"
+       << "\n"
+       << "newmtl " << kLaneHaze << "\n"
+       << "Ka 0.9 0.9 0.9\n"
+       << "Kd 0.9 0.9 0.9\n"
+       << "Ks 0.9 0.9 0.9\n"
+       << "Ns 10.0\n"
+       << "illum 2\n"
+       << "d 0.20\n";
   }
 }
 
