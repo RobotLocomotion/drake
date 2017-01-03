@@ -18,7 +18,7 @@ void test1(const Eigen::Ref<const MatrixXd>& A,
   int n = X.rows();
   Eigen::SelfAdjointEigenSolver<MatrixXd> es(X);
   for (int i = 0; i < n; i++) {
-    EXPECT_GE(es.eigenvalues()[i].real(), 0);
+    EXPECT_GE(es.eigenvalues()[i], 0);
   }
   // check that X is the solution to the discrete time ARE
   MatrixXd Y = A.transpose() * X * A - X -
