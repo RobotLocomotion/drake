@@ -144,6 +144,11 @@ class SymbolicExpressionTest : public ::testing::Test {
       e_sinh_,     e_cosh_, e_tanh_, e_min_,  e_max_,  e_ite_};
 };
 
+TEST_F(SymbolicExpressionTest, Dummy) {
+  // TODO(jwnimmer-tri) We'd prefer 'undefined' instead of zero.
+  EXPECT_TRUE(is_zero(dummy_value<Expression>::get()));
+}
+
 TEST_F(SymbolicExpressionTest, IsConstant1) {
   EXPECT_TRUE(is_constant(e_constant_));
   const vector<Expression>::difference_type cnt{
