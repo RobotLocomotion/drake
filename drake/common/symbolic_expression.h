@@ -13,6 +13,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/cond.h"
+#include "drake/common/dummy_value.h"
 #include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic_environment.h"
@@ -502,6 +503,16 @@ symbolic::Expression cond(const symbolic::Formula& f_cond, double v_then,
                           Rest... rest) {
   return if_then_else(f_cond, symbolic::Expression{v_then}, cond(rest...));
 }
+
+/// Specializes common/dummy_value.h.
+template <>
+struct dummy_value<symbolic::Expression> {
+  static symbolic::Expression get() {
+    // TODO(jwnimmer-tri) It would be nice to have a Cell type like 'undefined'
+    // (or null) here, so that we could fail-faster.
+    return symbolic::Expression{};
+  }
+};
 
 /** Computes the hash value of a symbolic expression. */
 template <>

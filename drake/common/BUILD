@@ -40,6 +40,12 @@ cc_library(
 )
 
 cc_library(
+    name = "dummy_value",
+    hdrs = ["dummy_value.h"],
+    linkstatic = 1,
+)
+
+cc_library(
     name = "number_traits",
     hdrs = ["number_traits.h"],
     linkstatic = 1,
@@ -63,6 +69,7 @@ cc_library(
     deps = [
         ":common",
         ":cond",
+        ":dummy_value",
     ],
 )
 
@@ -84,6 +91,7 @@ cc_library(
     linkstatic = 1,
     deps = [
         ":common",
+        ":dummy_value",
     ],
 )
 
@@ -126,6 +134,7 @@ cc_library(
     deps = [
         ":common",
         ":cond",
+        ":dummy_value",
         ":number_traits",
     ],
 )
@@ -277,6 +286,13 @@ cc_googletest(
     name = "drake_throw_test",
     deps = [
         ":common",
+    ],
+)
+
+cc_googletest(
+    name = "dummy_value_test",
+    deps = [
+        ":dummy_value",
     ],
 )
 
