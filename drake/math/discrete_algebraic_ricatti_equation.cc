@@ -13,6 +13,7 @@ namespace math {
  * A'XA - X - A'XB(B'XB+R)^{-1}B'XA + Q = 0
  * \f]
  *
+ * @throws std::runtime_error if Q is not positive semi-definite.
  * @throws std::runtime_error if R is not positive definite.
  *
  * Based on the Schur Vector approach outlined in this paper:
@@ -28,12 +29,19 @@ Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
     const Eigen::Ref<const Eigen::MatrixXd>& B,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R) {
-  int n = B.rows();
-
+  int n = B.rows(), m = B.cols();
+  
+  DRAKE_DEMAND(m <= n);
   DRAKE_DEMAND(A.rows() == n && A.cols() == n);
   DRAKE_DEMAND(Q.rows() == n && Q.cols() == n);
-  DRAKE_DEMAND(is_approx_equal_abstol(R, R.transpose(), 1e-10));
+  DRAKE_DEMAND(R.rows() == m && R.cols() == m);
   DRAKE_DEMAND(is_approx_equal_abstol(Q, Q.transpose(), 1e-10));
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(Q);
+  for (int i = 0; i < n; i++) {
+    if (es.eigenvalues()[i] < 0)
+      throw std::runtime_error("Q must be positive semi-definite");
+  }
+  DRAKE_DEMAND(is_approx_equal_abstol(R, R.transpose(), 1e-10));
   Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
   if (R_cholesky.info() != Eigen::Success)
     throw std::runtime_error("R must be positive definite");
@@ -76,7 +84,7 @@ Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
  * Stable eigenvalues are inside the unit disk.
  *
  * Algorithm:
- * Go along the diagonal from the top left to the bottom right.
+ * Go along the diagonals of (S,T) from the top left to the bottom right.
  * Once find a stable eigenvalue, push it to top left.
  * In implementation, use two pointers, p and q.
  * p points to the current block (1x1 or 2x2) and q points to the block with the
