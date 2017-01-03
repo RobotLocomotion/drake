@@ -1223,7 +1223,7 @@ class MathematicalProgram {
 
   /**
    * Adds a rotated Lorentz cone constraint referencing potentially a subset
-   * of decision variables, The linear expression @f$ Ax+b @f$ is in rotated
+   * of decision variables, The linear expression @f$ z=Ax+b @f$ is in rotated
    * Lorentz cone.
    * A vector \f$ z \in\mathbb{R}^n \f$ is in the rotated Lorentz cone, if
    * <!--
