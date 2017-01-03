@@ -175,7 +175,7 @@ TEST_F(DoublePendulumFramesTest, SdfTestWhereLequalsB) {
       "simple_double_pendulum_l_equals_b.sdf");
 }
 
-// In this test, the lower_arm's link frame L is not specified  (no <pose>
+// In this test, the lower_arm's link frame L is not specified (no <pose>
 // entry is given for this link). Therefore the parser makes L = M where M is
 // the joint's inboard frame specified by a <pose> entry for joint "joint2" in
 // the file. The pose of frame M is expressed in the model frame, D, i.e.,
