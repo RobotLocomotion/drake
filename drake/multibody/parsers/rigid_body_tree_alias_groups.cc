@@ -11,7 +11,7 @@ template <typename T>
 constexpr char RigidBodyTreeAliasGroups<T>::kJointGroupsKeyword[];
 
 namespace {
-// Insert the @p vec into @p map if @p key does not exist, or append @p vec
+// Inserts @p vec into @p map if @p key does not exist, or append @p vec
 // to the existing vector in @p map. This function also guarantees the newly
 // inserted elements do no introduce duplicates.
 template <typename Type>
@@ -44,7 +44,7 @@ void InsertOrMergeVectorWithoutDuplicates(const std::string key,
 }
 
 // Returns a std::vector representation of a YAML::Node. This function tries to
-// cast the node as a std::vector<Type> or as a single Type. If both cast
+// cast the node as a std::vector<Type> or as a single Type. If both casts
 // fail, it throws an exception.
 template <typename Type>
 std::vector<Type> ParseYAMLNodeAsVector(const YAML::Node& node) {
@@ -57,7 +57,8 @@ std::vector<Type> ParseYAMLNodeAsVector(const YAML::Node& node) {
   try {
     values = node.as<std::vector<Type>>();
   } catch (std::runtime_error e) {
-    // If fails, tries to cast it as a single string.
+    // If casting to vector of strings fails, tries to cast it as a single
+    // string.
     try {
       values.push_back(node.as<Type>());
     } catch (std::runtime_error e1) {

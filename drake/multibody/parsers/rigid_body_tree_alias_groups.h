@@ -20,14 +20,14 @@ namespace parsers {
  * [link0 ~ link5], and 6 joints [base, joint0 ~ joint4]. We can "rename"
  * `link0` to be `robot_base` by creating a body group named `robot_base`
  * with one entry `link0`, and accessing the first element in this body group.
- * Alias names for joints can also be similarly created. Furthermore, the
- * corresponding indices to the generalized position and velocity are computed
- * and accessible through an instance of this class.
+ * Alias names for groups of joints can also be similarly created. Furthermore,
+ * the corresponding indices to the generalized position and velocity are
+ * computed and accessible through an instance of this class.
  *
  * Body groups and joint groups are independent, so a body group can have the
  * same name of a joint group. However, all body groups have unique group
  * names, and so do all joint groups. For each body or joint group, its
- * memebers are unique. A body or joint can belong to many groups. When adding
+ * members are unique. A body or joint can belong to many groups. When adding
  * new members to an existing group, the new members will be appended to the
  * existing group.
  */
@@ -95,10 +95,9 @@ class RigidBodyTreeAliasGroups {
 
   /**
    * Creates a body group named @p group_name whose elements have names from
-   * @p body_names.
-   * If a group named @p group_name already exists, @p body_names is appended to
-   * the end of the existing group.
-   * The resulting group will not have duplicated elements.
+   * @p body_names. If a group named @p group_name already exists, @p body_names
+   * is appended to the end of the existing group. The resulting group will not
+   * have duplicated elements.
    * @param group_name Name of the body group, can be arbitrary.
    * @param body_names Vector of body names, must be present in the
    * RigidBodyTree passed to the constructor.
@@ -111,10 +110,9 @@ class RigidBodyTreeAliasGroups {
 
   /**
    * Creates a joint group named @p group_name whose elements have names from
-   * @p joint_names.
-   * If a group named @p group_name already exists, @p joint_names is appended to
-   * the end of the existing group.
-   * The resulting group will not have duplicated elements.
+   * @p joint_names. If a group named @p group_name already exists,
+   * @p joint_names is appended to the end of the existing group. The resulting
+   * group will not have duplicated elements.
    * @param group_name Name of the joint group, can be arbitrary.
    * @param joint_names Vector of joint names, must be present in the
    * RigidBodyTree passed to the constructor.

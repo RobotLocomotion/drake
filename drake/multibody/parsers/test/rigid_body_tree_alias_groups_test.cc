@@ -239,6 +239,23 @@ GTEST_TEST(RigidBodyTreeYAMLParsingTest, TestNoBody) {
   TestNoBodyGroupsConfig(multibody::joints::kFixed);
 }
 
+GTEST_TEST(RigidBodyTreeYAMLParsingTest, TestParseException) {
+  std::string urdf = drake::GetDrakePath() +
+                     "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+  std::string config = drake::GetDrakePath() + "/multibody/parsers/test/" +
+                       "rigid_body_tree_alias_group_config/" +
+                       "parse_fails.config";
+
+  auto robot = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf,
+      multibody::joints::kQuaternion, robot.get());
+
+  RigidBodyTreeAliasGroups<double> kin_prop(*robot);
+
+  YAML::Node file = YAML::LoadFile(config);
+  EXPECT_THROW(kin_prop.LoadFromYAMLFile(file), std::runtime_error);
+}
+
 }  // namespace parsers
 }  // namespace drake
 
