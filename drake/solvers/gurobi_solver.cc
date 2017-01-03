@@ -22,7 +22,7 @@ namespace {
 // (Gurobi typically adopts lazy update, where it does not update the model
 // until calling the optimize function).
 [[maybe_unused]] bool HasCorrectNumberOfVariables(GRBmodel* model,
-                                        int num_vars_expected) {
+                                                  int num_vars_expected) {
   int error = GRBupdatemodel(model);
   if (error) return false;
   int num_vars;
@@ -87,6 +87,7 @@ int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
  */
 template <typename Binding>
 int AddSecondOrderConeConstraints(
+    const MathematicalProgram& prog,
     const std::vector<Binding>& second_order_cone_constraints,
     bool is_rotated_cone, double sparseness_threshold, GRBmodel* model,
     const std::vector<std::vector<int>>&
@@ -102,7 +103,8 @@ int AddSecondOrderConeConstraints(
     for (const DecisionVariableMatrixX& var : variable_list.variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        variable_indices.push_back(static_cast<int>(var(i, 0).index()));
+        variable_indices.push_back(
+            static_cast<int>(prog.FindDecisionVariableIndex(var(i, 0))));
       }
     }
     int num_x = static_cast<int>(variable_indices.size());
@@ -551,7 +553,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   // Add Lorentz cone constraints.
   if (!error) {
-    error = AddSecondOrderConeConstraints(prog.lorentz_cone_constraints(),
+    error = AddSecondOrderConeConstraints(prog, prog.lorentz_cone_constraints(),
                                           false, sparseness_threshold, model,
                                           lorentz_cone_new_variable_indices);
   }
@@ -559,8 +561,8 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // Add rotated Lorentz cone constraints.
   if (!error) {
     error = AddSecondOrderConeConstraints(
-        prog.rotated_lorentz_cone_constraints(), true, sparseness_threshold,
-        model, rotated_lorentz_cone_new_variable_indices);
+        prog, prog.rotated_lorentz_cone_constraints(), true,
+        sparseness_threshold, model, rotated_lorentz_cone_new_variable_indices);
   }
 
   DRAKE_ASSERT(HasCorrectNumberOfVariables(model, is_new_variable.size()));

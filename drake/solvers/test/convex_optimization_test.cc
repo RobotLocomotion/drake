@@ -526,7 +526,7 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
 
   MathematicalProgram prog;
   const int kXdim = x1.rows();
-  auto t = prog.NewContinuousVariables(2, "t");
+  auto t = prog.NewContinuousVariables<2>("t");
   auto a = prog.NewContinuousVariables(kXdim, "a");
 
   // Add Lorentz cone constraints
@@ -568,8 +568,8 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   const auto& a_value = prog.GetSolution(a);
   const auto& R1a_value = R1.transpose() * a_value;
   const auto& R2a_value = R2.transpose() * a_value;
-  EXPECT_NEAR(t(0).value(), R1a_value.norm(), 1e-6);
-  EXPECT_NEAR(t(1).value(), R2a_value.norm(), 1e-6);
+  EXPECT_NEAR(prog.GetSolution((t(0))), R1a_value.norm(), 1e-6);
+  EXPECT_NEAR(prog.GetSolution((t(1))), R2a_value.norm(), 1e-6);
   EXPECT_TRUE(CompareMatrices((x2 - x1).transpose() * a_value,
                               drake::Vector1d(1.0), 1e-8,
                               MatrixCompareType::absolute));
@@ -882,7 +882,7 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
     }
   }
   const auto& t_value = prog.GetSolution(t);
-  EXPECT_TRUE(std::abs(z(0).value() - t_value.squaredNorm()) < 1E-3);
+  EXPECT_TRUE(std::abs(prog.GetSolution(z(0)) - t_value.squaredNorm()) < 1E-3);
   // Now test equilibrium.
   for (int i = 1; i < num_nodes - 1; i++) {
     Eigen::Vector2d left_spring(
