@@ -37,8 +37,8 @@ class RigidBodyTreeAliasGroups {
 
   /**
    * Constructor for RigidBodyTreeAliasGroups.
-   * @param tree Reference to the RigidBodyTree.
-   * A pointer is stored internally, so `tree` needs to outlive this object.
+   * @param tree Reference to the RigidBodyTree. A pointer is stored, so `tree`
+   * needs to outlive this object.
    */
   explicit RigidBodyTreeAliasGroups(const RigidBodyTree<T>& tree)
       : tree_(&tree) {}

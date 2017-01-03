@@ -130,6 +130,9 @@ void TestFullConfig(multibody::joints::FloatingBaseType type) {
 //
 //      j_group3:
 //
+//      j_group2:
+//        [joint2]
+//
 // Please refer to the full config file for more details.
 void TestNoBodyGroupsConfig(multibody::joints::FloatingBaseType type) {
   std::string urdf = drake::GetDrakePath() +
@@ -157,19 +160,24 @@ void TestNoBodyGroupsConfig(multibody::joints::FloatingBaseType type) {
 
   EXPECT_EQ(kin_prop.get_position_group("j_group1").size(), 0);
   EXPECT_EQ(kin_prop.get_velocity_group("j_group1").size(), 0);
-  EXPECT_EQ(kin_prop.get_position_group("j_group2").size(), 1);
-  EXPECT_EQ(kin_prop.get_velocity_group("j_group2").size(), 1);
+  EXPECT_EQ(kin_prop.get_position_group("j_group2").size(), 2);
+  EXPECT_EQ(kin_prop.get_velocity_group("j_group2").size(), 2);
   EXPECT_EQ(kin_prop.get_position_group("j_group3").size(), 0);
   EXPECT_EQ(kin_prop.get_velocity_group("j_group3").size(), 0);
 
-  EXPECT_EQ(kin_prop.get_joint_group("j_group1").size(), 0);
-  EXPECT_EQ(kin_prop.get_joint_group("j_group2").size(), 1);
-  EXPECT_EQ(kin_prop.get_joint_group("j_group2")[0]->get_name(), "joint1");
-
   EXPECT_EQ(robot->get_position_name(
-        kin_prop.get_position_group("j_group2").front()), "joint1");
+        kin_prop.get_position_group("j_group2")[0]), "joint1");
   EXPECT_EQ(robot->get_velocity_name(
-        kin_prop.get_velocity_group("j_group2").front()), "joint1dot");
+        kin_prop.get_velocity_group("j_group2")[0]), "joint1dot");
+  EXPECT_EQ(robot->get_position_name(
+        kin_prop.get_position_group("j_group2")[1]), "joint2");
+  EXPECT_EQ(robot->get_velocity_name(
+        kin_prop.get_velocity_group("j_group2")[1]), "joint2dot");
+
+  EXPECT_EQ(kin_prop.get_joint_group("j_group1").size(), 0);
+  EXPECT_EQ(kin_prop.get_joint_group("j_group2").size(), 2);
+  EXPECT_EQ(kin_prop.get_joint_group("j_group2")[0]->get_name(), "joint1");
+  EXPECT_EQ(kin_prop.get_joint_group("j_group2")[1]->get_name(), "joint2");
 }
 
 // The test YAML config looks like this:
@@ -206,8 +214,10 @@ void TestNoJointGroupsConfig(multibody::joints::FloatingBaseType type) {
   EXPECT_FALSE(kin_prop.has_body_group("b_non_existant_group"));
 
   EXPECT_EQ(kin_prop.get_body_group("b_group1").size(), 0);
-  EXPECT_EQ(kin_prop.get_body_group("b_group2").size(), 1);
+  EXPECT_EQ(kin_prop.get_body_group("b_group2").size(), 3);
   EXPECT_EQ(kin_prop.get_body_group("b_group2")[0]->get_name(), "link3");
+  EXPECT_EQ(kin_prop.get_body_group("b_group2")[1]->get_name(), "link2");
+  EXPECT_EQ(kin_prop.get_body_group("b_group2")[2]->get_name(), "link3");
   EXPECT_EQ(kin_prop.get_body_group("b_group3").size(), 1);
   EXPECT_EQ(kin_prop.get_body_group("b_group3")[0]->get_name(), "link1");
 }
