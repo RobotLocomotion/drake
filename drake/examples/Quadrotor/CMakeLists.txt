@@ -5,6 +5,7 @@ if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeQuadrotorCommon SOURCE_FILES
       quadrotor_plant.cc)
   target_link_libraries(drakeQuadrotorCommon
+      drakeLinearControl
       drakeLCMSystem2
       drakeRBM)
   drake_install_libraries(drakeQuadrotorCommon)
@@ -13,7 +14,10 @@ if(lcm_FOUND)
   drake_install_pkg_config_file(drake-quadrotor-common
       TARGET drakeQuadrotorCommon
       LIBS -ldrakeQuadrotorCommon
-      REQUIRES drake-lcm-system drake-lcmtypes-cpp drake-rbm)
+      REQUIRES drake-lcm-system
+      drake-linear-controller
+      drake-lcmtypes-cpp
+      drake-rbm)
 
   add_executable(run_quadrotor_dynamics run_quadrotor_dynamics.cc)
   target_link_libraries(run_quadrotor_dynamics
@@ -24,6 +28,18 @@ if(lcm_FOUND)
       drakeSystemPrimitives
       gflags)
   drake_add_test(NAME run_quadrotor_dynamics COMMAND run_quadrotor_dynamics --duration=1.0 SIZE medium)
+
+  add_executable(run_quadrotor_lqr run_quadrotor_lqr.cc)
+  target_link_libraries(run_quadrotor_lqr
+      drakeQuadrotorCommon
+      drakeLCMSystem2
+      drakeMultibodyParsers
+      drakeRigidBodyPlant
+      drakeSystemAnalysis
+      drakeSystemPrimitives
+      gflags)
+  drake_add_test(NAME run_quadrotor_lqr
+      COMMAND run_quadrotor_lqr -simulation_trials 2 -simulation_real_time_rate 0.0)
 endif()
 
 # drake_add_matlab_test(NAME examples/Quadrotor/Quadrotor.runOpenLoop COMMAND Quadrotor.runOpenLoop)  # FIXME: see #3313
