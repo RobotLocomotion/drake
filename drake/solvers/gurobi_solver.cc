@@ -21,7 +21,7 @@ namespace {
 // operation can be EXPENSIVE, since it requires calling GRBupdatemodel
 // (Gurobi typically adopts lazy update, where it does not update the model
 // until calling the optimize function).
-static bool HasCorrectNumberOfVariables(GRBmodel* model,
+inline bool HasCorrectNumberOfVariables(GRBmodel* model,
                                         int num_vars_expected) {
   int error = GRBupdatemodel(model);
   if (error) return false;
