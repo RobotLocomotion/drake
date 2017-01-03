@@ -7,13 +7,17 @@
 namespace drake {
 namespace parsers {
 
-// The yaml config file looks like this:
+// The test YAML config looks like this:
+//
 // body_groups:
 //    b_group1:
 //      []
 //
 //    b_group2:
-//      [link1, link3]
+//      [link1]
+//
+//    b_group2:
+//      [link3]
 //
 //    b_group3:
 //      [world]
@@ -24,9 +28,11 @@ namespace parsers {
 //
 //    j_group2:
 //      [base, joint1]
+//
+// Please refer to the full config file for more details.
 void TestKinematicsProperty(multibody::joints::FloatingBaseType type) {
   std::string urdf = drake::GetDrakePath() +
-                     "/multibody/test/rigid_body_tree/" + "two_dof_robot.urdf";
+                     "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
   std::string config = drake::GetDrakePath() + "/multibody/parsers/test/" +
                        "rigid_body_tree_kinematic_property_test.config";
 
@@ -38,20 +44,20 @@ void TestKinematicsProperty(multibody::joints::FloatingBaseType type) {
   YAML::Node file = YAML::LoadFile(config);
   kin_prop.LoadFromYAMLFile(file);
 
-  EXPECT_TRUE(kin_prop.has_generalized_position_group("j_group1"));
-  EXPECT_TRUE(kin_prop.has_generalized_position_group("j_group2"));
-  EXPECT_TRUE(kin_prop.has_generalized_velocity_group("j_group1"));
-  EXPECT_TRUE(kin_prop.has_generalized_velocity_group("j_group2"));
-  EXPECT_FALSE(kin_prop.has_generalized_position_group("j_group33"));
-  EXPECT_FALSE(kin_prop.has_generalized_velocity_group("j_group33"));
+  EXPECT_TRUE(kin_prop.has_position_group("j_group1"));
+  EXPECT_TRUE(kin_prop.has_position_group("j_group2"));
+  EXPECT_TRUE(kin_prop.has_velocity_group("j_group1"));
+  EXPECT_TRUE(kin_prop.has_velocity_group("j_group2"));
+  EXPECT_FALSE(kin_prop.has_position_group("j_group33"));
+  EXPECT_FALSE(kin_prop.has_velocity_group("j_group33"));
 
   EXPECT_TRUE(kin_prop.has_body_group("b_group1"));
   EXPECT_TRUE(kin_prop.has_body_group("b_group2"));
   EXPECT_TRUE(kin_prop.has_body_group("b_group3"));
   EXPECT_FALSE(kin_prop.has_body_group("b_group55"));
 
-  EXPECT_EQ(kin_prop.get_generalized_position_group("j_group1").size(), 0);
-  EXPECT_EQ(kin_prop.get_generalized_velocity_group("j_group1").size(), 0);
+  EXPECT_EQ(kin_prop.get_position_group("j_group1").size(), 0);
+  EXPECT_EQ(kin_prop.get_velocity_group("j_group1").size(), 0);
 
   EXPECT_EQ(kin_prop.get_body_group("b_group1").size(), 0);
   EXPECT_EQ(kin_prop.get_body_group("b_group2").size(), 2);
@@ -65,10 +71,8 @@ void TestKinematicsProperty(multibody::joints::FloatingBaseType type) {
   EXPECT_EQ(kin_prop.get_joint_group("j_group2")[0]->get_name(), "base");
   EXPECT_EQ(kin_prop.get_joint_group("j_group2")[1]->get_name(), "joint1");
 
-  const std::vector<int>& q_indices =
-      kin_prop.get_generalized_position_group("j_group2");
-  const std::vector<int>& v_indices =
-      kin_prop.get_generalized_velocity_group("j_group2");
+  const std::vector<int>& q_indices = kin_prop.get_position_group("j_group2");
+  const std::vector<int>& v_indices = kin_prop.get_velocity_group("j_group2");
   switch (type) {
     case drake::multibody::joints::kQuaternion:
       EXPECT_EQ(q_indices.size(), 8);
