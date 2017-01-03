@@ -728,7 +728,7 @@ int DoMain() {
   std::vector<std::string> infeasible_constraint;
 
   int nT_s = 2;  // s stands for standing
-  const int kN_per_traj = 20;
+  const int kN_per_traj = 10;
 
   const std::vector<double> t_s = {0, 5};
   MatrixXd q_sol_s(tree->get_num_positions(), nT_s);
@@ -776,7 +776,6 @@ int DoMain() {
   //   cout << "info_s_ptwise" << i << ": "  << info_s_pointwise[i] << endl;
   // cout << q_sol_s_pointwise << endl;
 
-  const int kN_per_step = 2;
   /*
   // foot contact changes from toes only to entire sole
   int nT1 = kN_per_step + 1;
@@ -821,9 +820,10 @@ int DoMain() {
   constraint_array.pop_back();  // kc_lfoot_pos
   double lambda_l = 0.2;
   double lambda_r = 0.2;
-  int nTi = kN_per_step;
+  int nTi = 3;
+  int nTi_traj = nTi + 1;
 
-  MatrixXd q_sol_i(tree->get_num_positions(), nTi);
+  MatrixXd q_sol_i(tree->get_num_positions(), nTi_traj);
   q_sol_i.rightCols(1) = prone_pose_2;
 
   std::vector<MatrixXd> q_sols;
@@ -848,6 +848,7 @@ int DoMain() {
     Vector3d rfoot_origin_current =
         tree->transformPoints(cache, origin, r_foot, 0);
 
+    //TODO: the following description is outdated.
     // constraints always active:
     // - arm posture constraint
     // - arm position constraint
@@ -857,15 +858,22 @@ int DoMain() {
     // - left(right) foot fixed
     // - right(left) foot moving "forward"
 
-    std::vector<double> ti;
-    for (int i = 0; i < nTi; i++)
-      ti.push_back(t_length / kN_per_step * (i + 1));
+    // portion of each step during which both feet are on the ground while CG
+    // is shifted
+    const double fixed = 0.2;
+    const double mid_swing = (1-fixed)/2 + fixed;
     Vector2d tspani(0, t_length);
-    Vector2d tspani1(0, 0.5 * t_length);
-    Vector2d tspani2(0.5 * t_length, t_length);
+    Vector2d tspani1(0, fixed * t_length);
+    Vector2d tspani2(fixed * t_length, t_length);
     Vector2d tspani3(t_length, t_length);
-    Vector2d tspani4(0.5*t_length, 0.5*t_length);
+    Vector2d tspani4(mid_swing, mid_swing);
     const double foot_height = 0.06;
+
+    std::vector<double> ti;
+    ti.push_back(fixed*t_length);
+    ti.push_back(mid_swing*t_length);
+    ti.push_back(t_length);
+
     QuasiStaticConstraint kc_quasi_3pts_i(tree.get(), tspani2);
     QuasiStaticConstraint kc_quasi_4pts_i(tree.get(), tspani1);
 
@@ -890,21 +898,22 @@ int DoMain() {
     lambda_r += 0.2;
     cout << "rfoot_origin_next " << endl << rfoot_origin_next << endl;
     Vector3d rfoot_origin_next_lb = rfoot_origin_next;
-    rfoot_origin_next_lb(0) -= 0.05;
-    rfoot_origin_next_lb(1) -= 0.05;
+    rfoot_origin_next_lb(0) -= 0.01;
+    rfoot_origin_next_lb(1) -= 0.01;
     Vector3d rfoot_origin_next_ub = rfoot_origin_next;
-    rfoot_origin_next_ub(0) += 0.05;
-    rfoot_origin_next_ub(1) += 0.05;
+    rfoot_origin_next_ub(0) += 0.01;
+    rfoot_origin_next_ub(1) += 0.01;
     WorldPositionConstraint kc_rfoot_forward(tree.get(), r_foot, origin,
                                              rfoot_origin_next_lb,
                                              rfoot_origin_next_ub, tspani3);
     // right foot above ground
-    Vector3d rfoot_origin_above_ground_lb = GetFootPosition
-        (rfoot_origin_current, rfoot_origin_next, foot_height, 0.5);
+    Vector3d rfoot_origin_above_ground_lb = GetFootPosition(
+        rfoot_origin_current, rfoot_origin_next, foot_height, 0.5);
     Vector3d rfoot_origin_above_ground_ub = rfoot_origin_above_ground_lb;
     WorldPositionConstraint kc_rfoot_above_ground(
         tree.get(), r_foot, origin, rfoot_origin_above_ground_lb,
         rfoot_origin_above_ground_ub, tspani4);
+
     // move left foot forward
     Vector3d lfoot_origin_next;
     lfoot_origin_next << convex_combination(left_start.head(2),
@@ -913,17 +922,17 @@ int DoMain() {
     lambda_l += 0.2;
     cout << "lfoot_origin_next " << endl << lfoot_origin_next << endl;
     Vector3d lfoot_origin_next_lb = lfoot_origin_next;
-    lfoot_origin_next_lb(0) -= 0.05;
-    lfoot_origin_next_lb(1) -= 0.05;
+    lfoot_origin_next_lb(0) -= 0.01;
+    lfoot_origin_next_lb(1) -= 0.01;
     Vector3d lfoot_origin_next_ub = lfoot_origin_next;
-    lfoot_origin_next_ub(0) += 0.05;
-    lfoot_origin_next_ub(1) += 0.05;
+    lfoot_origin_next_ub(0) += 0.01;
+    lfoot_origin_next_ub(1) += 0.01;
     WorldPositionConstraint kc_lfoot_forward(tree.get(), l_foot, origin,
                                              lfoot_origin_next_lb,
                                              lfoot_origin_next_ub, tspani3);
     // left foot above ground
-    Vector3d lfoot_origin_above_ground_lb = GetFootPosition
-        (lfoot_origin_current, lfoot_origin_next, foot_height, 0.5);
+    Vector3d lfoot_origin_above_ground_lb = GetFootPosition(
+        lfoot_origin_current, lfoot_origin_next, foot_height, 0.5);
     Vector3d lfoot_origin_above_ground_ub = lfoot_origin_above_ground_lb;
     WorldPositionConstraint kc_lfoot_above_ground(
         tree.get(), l_foot, origin, lfoot_origin_above_ground_lb,
@@ -937,6 +946,9 @@ int DoMain() {
     WorldPositionConstraint kc_rfoot_fixed(tree.get(), r_foot, origin,
                                            rfoot_origin_fixed_lb,
                                            rfoot_origin_fixed_ub, tspani);
+    WorldPositionConstraint kc_rfoot_fixed_short(tree.get(), r_foot, origin,
+                                           rfoot_origin_fixed_lb,
+                                           rfoot_origin_fixed_ub, tspani1);
     // fix left foot
     Vector3d lfoot_origin_fixed =
         tree->transformPoints(cache, origin, l_foot, 0);
@@ -945,7 +957,9 @@ int DoMain() {
     WorldPositionConstraint kc_lfoot_fixed(tree.get(), l_foot, origin,
                                            lfoot_origin_fixed_lb,
                                            lfoot_origin_fixed_ub, tspani);
-
+    WorldPositionConstraint kc_lfoot_fixed_short(tree.get(), l_foot, origin,
+                                           lfoot_origin_fixed_lb,
+                                           lfoot_origin_fixed_ub, tspani1);
     // do this only for first loop
     if (count == 0) constraint_array.push_back(&kc_quasi_4pts_i);
 
@@ -957,6 +971,8 @@ int DoMain() {
       // fix left foot
       constraint_array.push_back(&kc_lfoot_fixed);
       kc_quasi_3pts_i.addContact(1, &l_foot, &l_foot_pts);
+      // fix right foot when CG is shifted
+      constraint_array.push_back(&kc_rfoot_fixed_short);
     } else {
       // move left foot
       constraint_array.push_back(&kc_lfoot_forward);
@@ -964,8 +980,33 @@ int DoMain() {
       // fix right foot
       constraint_array.push_back(&kc_rfoot_fixed);
       kc_quasi_3pts_i.addContact(1, &r_foot, &r_foot_pts);
+      // fix left foot when CG is shifted
+      constraint_array.push_back(&kc_lfoot_fixed_short);
     }
     constraint_array.push_back(&kc_quasi_3pts_i);
+
+    // solve by inverseKinTraj
+    int info_i = 0;
+    VectorXd qdot0_i = VectorXd::Zero(tree->get_num_velocities());
+    MatrixXd qdot_sol_i(tree->get_num_velocities(), nTi_traj);
+    MatrixXd qddot_sol_i(tree->get_num_positions(), nTi_traj);
+
+    std::vector<double> ti1 = {0};
+    ti1.insert(ti1.end(), ti.begin(), ti.end());
+
+    MatrixXd q_seed_i = q_start.replicate(1, nTi_traj);
+
+    Eigen::MatrixXd q_nom_i(tree->get_num_positions(), nTi_traj);
+    q_nom_i = squat_pose_2.replicate(1, nTi_traj);
+
+    inverseKinTraj(tree.get(), nTi_traj, ti1.data(), qdot0_i, q_seed_i, q_nom_i,
+                   constraint_array.size(), constraint_array.data(), ikoptions,
+                   &q_sol_i, &qdot_sol_i, &qddot_sol_i, &info_i,
+                   &infeasible_constraint);
+    cout << "info " << count << " is " << info_i << endl;
+
+    // solve by inverseKinPointwise
+    /*
     std::vector<int> info_i(nTi, 0);
     MatrixXd q_seed_i = q_start.replicate(1, nTi);
 
@@ -980,14 +1021,13 @@ int DoMain() {
     for (int i = 0; i < int(info_i.size()); i++) {
       cout << "info_i" << count << " " << i << ": " << info_i[i] << endl;
     }
+    */
 
-    MatrixXd q_sol_i1(q_sol_i.rows(), q_sol_i.cols() + 1);
-    q_sol_i1 << q_start, q_sol_i;
-    std::vector<double> ti1 = {0};
-    ti1.insert(ti1.end(), ti.begin(), ti.end());
+    // MatrixXd q_sol_i1(q_sol_i.rows(), q_sol_i.cols() + 1);
+    // q_sol_i1 << q_start, q_sol_i;
 
     std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory_i =
-        std::make_unique<PiecewisePolynomialTrajectory>(q_sol_i1, ti1);
+        std::make_unique<PiecewisePolynomialTrajectory>(q_sol_i, ti1);
 
     int nT_i_pointwise = kN_per_count;
     MatrixXd q_sol_i_pointwise(tree->get_num_positions(), nT_i_pointwise);
@@ -997,41 +1037,44 @@ int DoMain() {
     MatrixXd q_nom_i_pointwise(tree->get_num_positions(), nT_i_pointwise);
     // q_nom_i_pointwise.leftCols(1)=prone_pose_2;
 
-
     std::vector<WorldPositionConstraint> constraint_array_pointwise;
+    int num_trajectory_constraint = 0;
     for (int i = 0; i < kN_per_count; i++) {
       double t_current = t_length / kN_per_count * (i + 1);
       t_i_pointwise.push_back(t_current);
       q_nom_i_pointwise.col(i) = poly_trajectory_i->value(t_current);
 
-      double lambda = t_current/t_length;
-      Vector2d tspan_pointwise(t_current-0.001, t_current+0.001);
-      if (count % 2) {
-        //move right foot
-        Vector3d rfoot_origin_trajectory_lb = GetFootPosition
-            (rfoot_origin_current, rfoot_origin_next, foot_height, lambda);
-        Vector3d rfoot_origin_trajectory_ub = rfoot_origin_trajectory_lb;
-        WorldPositionConstraint kc_rfoot_trajectory(
-            tree.get(), r_foot, origin, rfoot_origin_trajectory_lb,
-            rfoot_origin_trajectory_ub, tspan_pointwise);
-        constraint_array_pointwise.push_back(kc_rfoot_trajectory);
-      } else {
-        //move left foot
-        Vector3d lfoot_origin_trajectory_lb = GetFootPosition
-            (lfoot_origin_current, lfoot_origin_next, foot_height, lambda);
-        Vector3d lfoot_origin_trajectory_ub = lfoot_origin_trajectory_lb;
-        WorldPositionConstraint kc_lfoot_trajectory(
-            tree.get(), l_foot, origin, lfoot_origin_trajectory_lb,
-            lfoot_origin_trajectory_ub, tspan_pointwise);
-        constraint_array_pointwise.push_back(kc_lfoot_trajectory);
+      Vector2d tspan_pointwise(t_current - 0.001, t_current + 0.001);
+      if(t_current > fixed*t_length + 1e-5) {
+        num_trajectory_constraint += 1;
+        double lambda = (t_current / t_length - fixed)/(1-fixed);
+        if (count % 2) {
+          // move right foot
+          Vector3d rfoot_origin_trajectory_lb = GetFootPosition(
+              rfoot_origin_current, rfoot_origin_next, foot_height, lambda);
+          Vector3d rfoot_origin_trajectory_ub = rfoot_origin_trajectory_lb;
+          WorldPositionConstraint kc_rfoot_trajectory(
+              tree.get(), r_foot, origin, rfoot_origin_trajectory_lb,
+              rfoot_origin_trajectory_ub, tspan_pointwise);
+          constraint_array_pointwise.push_back(kc_rfoot_trajectory);
+        } else {
+          // move left foot
+          Vector3d lfoot_origin_trajectory_lb = GetFootPosition(
+              lfoot_origin_current, lfoot_origin_next, foot_height, lambda);
+          Vector3d lfoot_origin_trajectory_ub = lfoot_origin_trajectory_lb;
+          WorldPositionConstraint kc_lfoot_trajectory(
+              tree.get(), l_foot, origin, lfoot_origin_trajectory_lb,
+              lfoot_origin_trajectory_ub, tspan_pointwise);
+          constraint_array_pointwise.push_back(kc_lfoot_trajectory);
+        }
       }
     }
 
-    for (int i = 0; i < kN_per_count; i++) {
+    for (int i = 0; i < num_trajectory_constraint; i++) {
       constraint_array.push_back(&(constraint_array_pointwise[i]));
     }
 
-      std::vector<int> info_i_pointwise(nT_i_pointwise, 0);
+    std::vector<int> info_i_pointwise(nT_i_pointwise, 0);
 
     inverseKinPointwise(tree.get(), nT_i_pointwise, t_i_pointwise.data(),
                         q_nom_i_pointwise, q_nom_i_pointwise,
@@ -1047,14 +1090,18 @@ int DoMain() {
     q_sols.push_back(q_sol_i_pointwise);
     // clean up
     count++;
-    for (int i = 0; i < kN_per_count; i++) constraint_array.pop_back();
+    for (int i = 0; i < num_trajectory_constraint; i++) {
+      constraint_array.pop_back();
+    }
     constraint_array.pop_back();  // kc_kuqsi_3pts_i
+    constraint_array.pop_back();  // kc_l/rfoot_fixed_short
     constraint_array.pop_back();  // kc_rfoot_fixed/forward
     constraint_array.pop_back();  // l/r foot above ground
     constraint_array.pop_back();  // kc_lfoot_fixed/forward
-  }
 
-  // cout << "constraint_array_size = " << constraint_array.size() << endl;
+    cout << "constraint_array_size = " << constraint_array.size() << endl;
+
+  }
 
   std::vector<double> t1 = {0};
   int nT1 = t1.size();
