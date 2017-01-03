@@ -43,6 +43,7 @@ cc_library(
     linkstatic = 1,
     deps = [
         "//drake/common",
+        "//drake/common:dummy_value",
     ],
 )
 

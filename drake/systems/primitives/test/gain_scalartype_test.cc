@@ -4,8 +4,8 @@
 #include <stdexcept>
 #include <string>
 
-#include <unsupported/Eigen/AutoDiff>
-
+#include "drake/common/autodiff_overloads.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/systems/framework/basic_vector.h"
