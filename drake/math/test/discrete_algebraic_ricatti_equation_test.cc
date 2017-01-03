@@ -16,7 +16,7 @@ void test1(const Eigen::Ref<const MatrixXd>& A,
   EXPECT_TRUE(
       CompareMatrices(X, X.transpose(), 1E-10, MatrixCompareType::absolute));
   int n = X.rows();
-  EigenSolver<MatrixXd> es(X);
+  SelfAdjointEigenSolver<MatrixXd> es(X);
   for (int i = 0; i < n; i++) {
     EXPECT_GE(es.eigenvalues()[i].real(), 0);
   }
