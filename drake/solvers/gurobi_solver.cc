@@ -17,11 +17,12 @@
 namespace drake {
 namespace solvers {
 namespace {
-/// Check is the number of variables in the Gurobi model is as expected. This
-/// operation can be EXPENSIVE, since it requires calling GRBupdatemodel
-/// (Gurobi typically adopts lazy update, that it does not update the model
-/// until calling optimize function).
-bool IsNumberOfVariablesAsExpected(GRBmodel* model, int num_vars_expected) {
+// Checks if the number of variables in the Gurobi model is as expected. This
+// operation can be EXPENSIVE, since it requires calling GRBupdatemodel
+// (Gurobi typically adopts lazy update, where it does not update the model
+// until calling the optimize function).
+static bool HasCorrectNumberOfVariables(GRBmodel* model,
+                                        int num_vars_expected) {
   int error = GRBupdatemodel(model);
   if (error) return false;
   int num_vars;
@@ -76,7 +77,7 @@ int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
 }
 
 /*
- * Add (rotated) Lorentz cone constraints, that A*x+b is in the (rotated)
+ * Add (rotated) Lorentz cone constraints, that z = A*x+b is in the (rotated)
  * Lorentz cone.
  * A vector z is in the Lorentz cone, if
  * z(0) >= sqrt(z(1)^2 + ... + z(N-1)^2)
@@ -394,7 +395,7 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
 // Ax + b in (rotated) Lorentz cone, we will introduce new variables z as
 // z = Ax+b
 // z in (rotated) Lorentz cone.
-// So add the new varaible z before constructing the Gurobi model, as
+// So add the new variable z before constructing the Gurobi model, as
 // recommended by the Gurobi manual, to add all decision variables at once
 // when constructing the problem.
 // @param second_order_cone_variable_indices
@@ -473,7 +474,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // The size of is_new_variable should increase if we add new decision
   // variables to Gurobi model.
   // The invariant is
-  // EXPECT_TRUE(IsNumberOfVariablesAsExpected(model, is_new_variables.size()))
+  // EXPECT_TRUE(HasCorrectNumberOfVariables(model, is_new_variables.size()))
   std::vector<bool> is_new_variable(num_prog_vars, false);
 
   // Bound constraints.
@@ -562,7 +563,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
         model, rotated_lorentz_cone_new_variable_indices);
   }
 
-  DRAKE_ASSERT(IsNumberOfVariablesAsExpected(model, is_new_variable.size()));
+  DRAKE_ASSERT(HasCorrectNumberOfVariables(model, is_new_variable.size()));
 
   if (!error) {
     for (const auto it : prog.GetSolverOptionsDouble("GUROBI")) {

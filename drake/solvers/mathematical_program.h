@@ -1131,7 +1131,7 @@ class MathematicalProgram {
   /**
    * Adds Lorentz cone constraint referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
-   * The linear expression @f$ Ax+b @f$ is in the Lorentz cone.
+   * The linear expression @f$ z=Ax+b @f$ is in the Lorentz cone.
    * A vector \f$ z \in\mathbb{R}^n \f$ is in the Lorentz cone, if
    * <!--
    * z(0) >= sqrt{z(1)^2 + ... + z(n-1)^2}
@@ -1146,7 +1146,7 @@ class MathematicalProgram {
   /**
    * Adds Lorentz cone constraint referencing potentially a subset of the
    * decision variables (defined in the vars parameter).
-   * The linear expression @f$ Ax+b @f$ is in the Lorentz cone.
+   * The linear expression @f$ z=Ax+b @f$ is in the Lorentz cone.
    * A vector \f$ z \in\mathbb{R}^n \f$ is in the Lorentz cone, if
    * <!--
    * z(0) >= sqrt{z(1)^2 + ... + z(n-1)^2}
@@ -1172,7 +1172,7 @@ class MathematicalProgram {
   /**
    * Adds Lorentz cone constraint to the program for all
    * (currently existing) variables.
-   * The linear expression @f$ Ax+b @f$ is in the Lorentz cone.
+   * The linear expression @f$ z=Ax+b @f$ is in the Lorentz cone.
    * A vector \f$ z \in\mathbb{R}^n \f$ is in the Lorentz cone, if
    * <!--
    * z(0) >= sqrt{z(1)^2 + ... + z(n-1)^2}
@@ -1206,7 +1206,7 @@ class MathematicalProgram {
 
   /**
    * Adds a rotated Lorentz cone constraint referencing potentially a subset
-   * of decision variables. The linear expression @f$ Ax+b @f$ is in rotated the Lorentz cone.
+   * of decision variables. The linear expression @f$ z=Ax+b @f$ is in rotated the Lorentz cone.
    * A vector \f$ z \in\mathbb{R}^n \f$ is in the rotated Lorentz cone, if
    * <!--
    * z(0)*z(1) >= z(2)^2 + ... + z(n-1)^2
@@ -1222,7 +1222,8 @@ class MathematicalProgram {
 
   /**
    * Adds a rotated Lorentz cone constraint referencing potentially a subset
-   * of decision variables, The linear expression @f$ Ax+b @f$ is in rotated the Lorentz cone.
+   * of decision variables, The linear expression @f$ Ax+b @f$ is in rotated
+   * Lorentz cone.
    * A vector \f$ z \in\mathbb{R}^n \f$ is in the rotated Lorentz cone, if
    * <!--
    * z(0)*z(1) >= z(2)^2 + ... + z(n-1)^2
@@ -1256,7 +1257,8 @@ class MathematicalProgram {
 
   /**
    * Adds a rotated Lorentz constraint to the program for all
-   * (currently existing) variables, the linear expression @f$ Ax+b @f$ is in rotated the Lorentz cone.
+   * (currently existing) variables, the linear expression @f$ z=Ax+b @f$ is in
+   * rotated Lorentz cone.
    * A vector \f$ z \in\mathbb{R}^n \f$ is in the rotated Lorentz cone, if
    * <!--
    * z(0)*z(1) >= z(2)^2 + ... + z(n-1)^2

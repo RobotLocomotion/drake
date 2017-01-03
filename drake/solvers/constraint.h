@@ -195,13 +195,13 @@ class QuadraticConstraint : public Constraint {
 };
 
 /**
- Constraining the linear expression \f$ Ax+b \f$ lies within the Lorentz cone.
+ Constraining the linear expression \f$ z=Ax+b \f$ lies within the Lorentz cone.
  A vector \f$ z \in \mathbb{R}^n \f$ lies within Lorentz cone if
  @f[
- z_1 \ge \sqrt{z_2^2+...+z_n^2}
+ z_0 \ge \sqrt{z_1^2+...+z_{n-1}^2}
  @f]
  <!-->
- z1 >= sqrt(z2^2 + ... + zn^2)
+ z(0) >= sqrt(z(1)^2 + ... + z(n-1)^2)
  <-->
  where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^{n}@f$ are given matrices.
  Ideally this constraint should be handled by a second-order cone solver.
@@ -209,8 +209,8 @@ class QuadraticConstraint : public Constraint {
  optimization, with smooth gradient, we alternatively impose the following
  constraint, with smooth gradient everywhere
  @f[
- a_1^Tx+b_1\ge 0\\
- (a_1^Tx+b_1)^2-(a_2^Tx+b_2)^2-...-(a_n^Tx+b_n)^2 \ge 0
+ a_0^Tx+b_0\ge 0\\
+ (a_0^Tx+b_0)^2-(a_1^Tx+b_1)^2-...-(a_{n-1}^Tx+b_{n-1})^2 \ge 0
  @f]
  where @f$ a_i^T@f$ is the i'th row of matrix @f$ A@f$. @f$ b_i @f$ is the i'th
  entry of vector @f$ b @f$.
@@ -259,18 +259,18 @@ class LorentzConeConstraint : public Constraint {
 };
 
 /**
- * Constraining that the linear expression \f$ Ax+b \f$ lies within rotated Lorentz cone.
+ * Constraining that the linear expression \f$ z=Ax+b \f$ lies within rotated Lorentz cone.
  * A vector \f$ z \in\mathbb{R}^n \f$ lies within rotated Lorentz cone, if
  * @f[
+ * z_0 \ge 0\\
  * z_1 \ge 0\\
- * z_2 \ge 0\\
- * z_1  z_2 \ge z_3^2 + z_4^2 + ... + z_n^2
+ * z_0  z_1 \ge z_2^2 + z_3^2 + ... + z_{n-1}^2
  * @f]
  * where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^n@f$ are given matrices.
  * <!-->
- * z1 >= 0
- * z2 >= 0
- * z1 * z2 >= z3^2 + z4^2 + ... + zn^2
+ * z(0) >= 0
+ * z(1) >= 0
+ * z(0) * z(1) >= z(2)^2 + z(3)^2 + ... + z(n-1)^2
  * <-->
  * For more information and visualization, please refer to
  * https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
