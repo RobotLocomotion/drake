@@ -126,7 +126,7 @@ GTEST_TEST(RigidBodyTreeCompleteness, MissingJointConfigurationError) {
   rb3->set_name("body3");
   rb3->set_model_name("robot");
   rb3->set_parent(rb2.get());
-  rb3->set_spatial_inertia(SquareTwistMatrix<double>::Identity());
+  rb3->set_spatial_inertia_in_B(SquareTwistMatrix<double>::Identity());
 
   tree.add_rigid_body(move(rb1));
   tree.add_rigid_body(move(rb2));
