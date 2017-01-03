@@ -1,0 +1,5 @@
+# Sanitizer special case list
+# http://clang.llvm.org/docs/SanitizerSpecialCaseList.html
+
+# AddressSanitizer: global-buffer-overflow (libsnopt_c.*) in lc_auth_data
+fun:snprnt_
