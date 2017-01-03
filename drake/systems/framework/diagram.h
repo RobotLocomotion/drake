@@ -550,10 +550,13 @@ class Diagram : public System<T>,
   /// more specific covariant type.
   /// This is the NVI implementation of ToAutoDiffXd.
   Diagram<AutoDiffXd>* DoToAutoDiffXd() const override {
-    return ConvertScalarType<AutoDiffXd>([](const System<double>& subsystem) {
-             return subsystem.ToAutoDiffXd();
-           })
-        .release();
+    using FromType = System<double>;
+    using ToType = std::unique_ptr<System<AutoDiffXd>>;
+    std::function<ToType(const FromType&)> subsystem_converter{
+      [](const FromType& subsystem) {
+        return subsystem.ToAutoDiffXd();
+      }};
+    return ConvertScalarType<AutoDiffXd>(subsystem_converter).release();
   }
 
  private:
