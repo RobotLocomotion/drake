@@ -464,10 +464,10 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
         if (std::abs(Qij) > Eigen::NumTraits<double>::epsilon()) {
           if (var_index_i > var_indices[j]) {
             Q_lower_triplets.push_back(
-              Eigen::Triplet<double>(var_index_i, var_indices[j], Qij));
+                Eigen::Triplet<double>(var_index_i, var_indices[j], Qij));
           } else {
             Q_lower_triplets.push_back(
-              Eigen::Triplet<double>(var_indices[j], var_index_i, Qij));
+                Eigen::Triplet<double>(var_indices[j], var_index_i, Qij));
           }
         }
       }
@@ -641,9 +641,9 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
 
   SolutionResult result = SolutionResult::kUnknownError;
   // Run optimizer.
+  // TODO(hongkai.dai@tri.global): add trmcode to the returned struct.
+  MSKrescodee trmcode;  // termination code
   if (rescode == MSK_RES_OK) {
-    // TODO(hongkai.dai@tri.global): add trmcode to the returned struct.
-    MSKrescodee trmcode;  // termination code
     rescode = MSK_optimizetrm(task, &trmcode);
   }
 
@@ -663,50 +663,57 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     solution_type = MSK_SOL_ITR;
   }
 
-  // TODO(hongkai.dai@tri.global) : Add MOSEK paramaters.
+  // TODO(hongkai.dai@tri.global) : Add MOSEK parameters.
   // Mosek parameter are added by enum, not by string.
+  MSKsolstae solution_status;
+
   if (rescode == MSK_RES_OK) {
-    MSKsolstae solution_status;
-    if (rescode == MSK_RES_OK) {
-      rescode = MSK_getsolsta(task, solution_type, &solution_status);
-    }
-    if (rescode == MSK_RES_OK) {
-      switch (solution_status) {
-        case MSK_SOL_STA_OPTIMAL:
-        case MSK_SOL_STA_NEAR_OPTIMAL:
-        case MSK_SOL_STA_INTEGER_OPTIMAL:
-        case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL: {
-          result = SolutionResult::kSolutionFound;
-          MSKint32t num_mosek_vars;
-          rescode = MSK_getnumvar(task, &num_mosek_vars);
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          Eigen::VectorXd mosek_sol_vector(num_mosek_vars);
-          rescode = MSK_getxx(task, solution_type, mosek_sol_vector.data());
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          Eigen::VectorXd sol_vector(num_vars);
-          int var_count = 0;
-          for (int i = 0; i < num_mosek_vars; ++i) {
-            if (!is_new_variable[i]) {
-              sol_vector(var_count) = mosek_sol_vector(i);
-              var_count++;
-            }
+    rescode = MSK_getsolsta(task, solution_type, &solution_status);
+  }
+
+  if (rescode == MSK_RES_OK) {
+    switch (solution_status) {
+      case MSK_SOL_STA_OPTIMAL:
+      case MSK_SOL_STA_NEAR_OPTIMAL:
+      case MSK_SOL_STA_INTEGER_OPTIMAL:
+      case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL: {
+        result = SolutionResult::kSolutionFound;
+        MSKint32t num_mosek_vars;
+        rescode = MSK_getnumvar(task, &num_mosek_vars);
+        DRAKE_ASSERT(rescode == MSK_RES_OK);
+        Eigen::VectorXd mosek_sol_vector(num_mosek_vars);
+        rescode = MSK_getxx(task, solution_type, mosek_sol_vector.data());
+        DRAKE_ASSERT(rescode == MSK_RES_OK);
+        Eigen::VectorXd sol_vector(num_vars);
+        int var_count = 0;
+        for (int i = 0; i < num_mosek_vars; ++i) {
+          if (!is_new_variable[i]) {
+            sol_vector(var_count) = mosek_sol_vector(i);
+            var_count++;
           }
-          if (rescode == MSK_RES_OK) {
-            prog.SetDecisionVariableValues(sol_vector);
-          }
-          break;
         }
-        case MSK_SOL_STA_DUAL_INFEAS_CER:
-        case MSK_SOL_STA_PRIM_INFEAS_CER:
-        case MSK_SOL_STA_NEAR_DUAL_FEAS:
-        case MSK_SOL_STA_NEAR_PRIM_INFEAS_CER: {
-          result = SolutionResult::kInfeasibleConstraints;
-          break;
+
+        // TODO(russt): Put this objective value somewhere (accessing it here
+        // to at least facilitate debugging).
+        MSKrealt objective_value;
+        rescode = MSK_getprimalobj(task, solution_type, &objective_value);
+        DRAKE_ASSERT(rescode == MSK_RES_OK);
+
+        if (rescode == MSK_RES_OK) {
+          prog.SetDecisionVariableValues(sol_vector);
         }
-        default: {
-          result = SolutionResult::kUnknownError;
-          break;
-        }
+        break;
+      }
+      case MSK_SOL_STA_DUAL_INFEAS_CER:
+      case MSK_SOL_STA_PRIM_INFEAS_CER:
+      case MSK_SOL_STA_NEAR_DUAL_FEAS:
+      case MSK_SOL_STA_NEAR_PRIM_INFEAS_CER: {
+        result = SolutionResult::kInfeasibleConstraints;
+        break;
+      }
+      default: {
+        result = SolutionResult::kUnknownError;
+        break;
       }
     }
   }

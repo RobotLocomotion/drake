@@ -23,3 +23,8 @@ if(dreal_FOUND)
   drake_add_cc_test(dreal_solver_test)
   target_link_libraries(dreal_solver_test drakeOptimization)
 endif()
+
+if (mosek_FOUND)
+  drake_add_cc_test(rotation_test rotation_test.cc)
+  target_link_libraries(rotation_test drakeOptimization)
+endif(mosek_FOUND)
