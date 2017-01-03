@@ -104,18 +104,19 @@ template class QuadrotorPlant<double>;
 template class QuadrotorPlant<AutoDiffXd>;
 
 std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
-    const QuadrotorPlant<double>* quad, Eigen::Vector3d nominal_position) {
-  auto quad_context_goal = quad->CreateDefaultContext();
+    const QuadrotorPlant<double>* quadrotor_plant,
+    Eigen::Vector3d nominal_position) {
+  auto quad_context_goal = quadrotor_plant->CreateDefaultContext();
 
   Eigen::VectorXd x0 = Eigen::VectorXd::Zero(12);
   x0.topRows(3) = nominal_position;
 
   // Nominal input corresponds to a hover.
   Eigen::VectorXd u0 = Eigen::VectorXd::Constant(
-      4, quad->m() * quad->g() / 4);
+      4, quadrotor_plant->m() * quadrotor_plant->g() / 4);
 
   quad_context_goal->FixInputPort(0, u0);
-  quad->set_state(quad_context_goal.get(), x0);
+  quadrotor_plant->set_state(quad_context_goal.get(), x0);
 
   // Setup LQR Cost matrices (penalize position error 10x more than velocity.
   Eigen::MatrixXd Q = Eigen::MatrixXd::Identity(12, 12);
@@ -123,7 +124,8 @@ std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
 
   Eigen::Matrix4d R = Eigen::Matrix4d::Identity();
 
-  return systems::LinearQuadraticRegulator(*quad, *quad_context_goal, Q, R);
+  return systems::LinearQuadraticRegulator(*quadrotor_plant,
+                                           *quad_context_goal, Q, R);
 }
 
 }  // namespace quadrotor

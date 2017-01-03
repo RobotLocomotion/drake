@@ -53,7 +53,7 @@ class QuadrotorPlant : public systems::LeafSystem<T> {
       m_{0.5},            // Mass of the robot (kg).
       L_{0.175},          // Length of the arms (m).
       kF_{1.0},           // Force input constant.
-      kM_{0.0245};        // Momment input constant.
+      kM_{0.0245};        // Moment input constant.
   int kStateDimension{12}, kInputDimension{4};
   const Matrix3<T> I_{
       ((Eigen::Matrix3d() << 0.0023, 0, 0, 0, 0.0023, 0, 0, 0, 0.0040)
@@ -64,7 +64,8 @@ class QuadrotorPlant : public systems::LeafSystem<T> {
 /// computes the nominal input corresponding to a hover at position @p x0.
 /// @see systems::LinearQuadraticRegulator.
 std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
-    const QuadrotorPlant<double>* acrobot, Eigen::Vector3d nominal_position);
+    const QuadrotorPlant<double>* quadrotor_plant,
+    Eigen::Vector3d nominal_position);
 
 }  // namespace quadrotor
 }  // namespace examples
