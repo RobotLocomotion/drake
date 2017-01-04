@@ -127,16 +127,9 @@ T SpringMassSystem<T>::DoCalcNonConservativePower(const MyContext&) const {
 }
 
 template <typename T>
-std::unique_ptr<SystemOutput<T>> SpringMassSystem<T>::AllocateOutput(
-    const Context<T>& context) const {
-  std::unique_ptr<LeafSystemOutput<T>> output(
-      new LeafSystemOutput<T>);
-  {
-    std::unique_ptr<BasicVector<T>> data(new SpringMassStateVector<T>());
-    std::unique_ptr<OutputPort> port(new OutputPort(std::move(data)));
-    output->get_mutable_ports()->push_back(std::move(port));
-  }
-  return std::unique_ptr<SystemOutput<T>>(output.release());
+std::unique_ptr<BasicVector<T>> SpringMassSystem<T>::AllocateOutputVector(
+    const OutputPortDescriptor<T>& descriptor) const {
+  return std::make_unique<SpringMassStateVector<T>>();
 }
 
 template <typename T>

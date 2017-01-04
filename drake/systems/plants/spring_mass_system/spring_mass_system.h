@@ -201,9 +201,9 @@ class SpringMassSystem : public LeafSystem<T> {
   T DoCalcNonConservativePower(const MyContext& context) const override;
 
   // System<T> overrides.
-  /// Allocates a single output port of type SpringMassStateVector<T>.
-  std::unique_ptr<MyOutput> AllocateOutput(
-      const MyContext& context) const override;
+  /// Allocates an output vector of type SpringMassStateVector<T>.
+  std::unique_ptr<BasicVector<T>> AllocateOutputVector(
+      const OutputPortDescriptor<T>& descriptor) const override;
 
   void DoCalcOutput(const MyContext& context, MyOutput* output) const override;
 
