@@ -1,7 +1,15 @@
 #include "drake/solvers/mathematical_program.h"
 
 #include <algorithm>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
+#include "drake/common/symbolic_expression.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -14,6 +22,14 @@
 
 namespace drake {
 namespace solvers {
+
+using std::map;
+using std::ostringstream;
+using std::runtime_error;
+using std::shared_ptr;
+using std::string;
+using std::unordered_map;
+using std::vector;
 
 namespace {
 
@@ -243,6 +259,94 @@ std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
 void MathematicalProgram::AddConstraint(const Binding<Constraint>& binding) {
   required_capabilities_ |= kGenericConstraint;
   generic_constraints_.push_back(binding);
+}
+
+namespace {
+class symbolic_error : public runtime_error {
+ public:
+  symbolic_error(const symbolic::Expression& e, const string& msg)
+      : runtime_error{make_string(e, msg)} {}
+  symbolic_error(const symbolic::Expression& e, const double lb,
+                 const double ub, const string& msg)
+      : runtime_error{make_string(e, lb, ub, msg)} {}
+
+ private:
+  static string make_string(const symbolic::Expression& e, const string& msg) {
+    ostringstream oss;
+    oss << "Constraint " << e << " is " << msg << ".";
+    return oss.str();
+  }
+  static string make_string(const symbolic::Expression& e, const double lb,
+                            const double ub, const string& msg) {
+    ostringstream oss;
+    oss << "Constraint " << lb << " <= " << e << " <= " << ub << " is " << msg
+        << ".";
+    return oss.str();
+  }
+};
+}  // anonymous namespace
+
+Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
+    const symbolic::Expression& e, const double lb, const double ub) {
+  return AddLinearConstraint(drake::Vector1<symbolic::Expression>(e),
+                             drake::Vector1<double>(lb),
+                             drake::Vector1<double>(ub));
+}
+
+Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
+    const Eigen::Ref<const drake::VectorX<symbolic::Expression>>& v,
+    const Eigen::Ref<const Eigen::VectorXd>& lb,
+    const Eigen::Ref<const Eigen::VectorXd>& ub) {
+  DRAKE_ASSERT(v.rows() == lb.rows() && v.rows() == ub.rows());
+
+  // 0. Setup map_var_to_index and var_vec.
+  unordered_map<size_t, int> map_var_to_index;
+  vector<symbolic::Variable> var_vec;
+  int idx{0};
+  for (int i{0}; i < v.size(); ++i) {
+    for (const symbolic::Variable& var : v(i).GetVariables()) {
+      if (map_var_to_index.find(var.get_id()) == map_var_to_index.end()) {
+        map_var_to_index.emplace(var.get_id(), idx++);
+        var_vec.push_back(var);
+      }
+    }
+  }
+
+  // 1. Construct vars using var_vec.
+  VectorXDecisionVariable vars{var_vec.size()};
+  for (int i{0}; i < vars.size(); ++i) {
+    vars(i) = var_vec[i];
+  }
+
+  // 2. Construct A, new_lb, new_ub. map_var_to_index is used here.
+  Eigen::MatrixXd A{Eigen::MatrixXd::Zero(v.size(), vars.size())};
+  Eigen::VectorXd new_lb{v.size()};
+  Eigen::VectorXd new_ub{v.size()};
+  for (int i{0}; i < v.size(); ++i) {
+    const symbolic::Expression& e_i{v(i)};
+    const double lb_i{lb(i)};
+    const double ub_i{ub(i)};
+    if (is_addition(e_i)) {
+      double constant_term{0.0};
+      DecomposeLinearExpression(e_i, map_var_to_index, A.row(i),
+                                &constant_term);
+      new_lb(i) = lb(i) - constant_term;
+      new_ub(i) = ub(i) - constant_term;
+    } else if (is_variable(e_i)) {
+      throw symbolic_error(e_i, lb_i, ub_i, "a box constraint");
+    } else if (is_constant(e_i)) {
+      const double c_i{get_constant_value(e_i)};
+      if (lb_i <= c_i && c_i <= ub_i) {
+        throw symbolic_error(e_i, lb_i, ub_i, "trivial");
+      } else {
+        throw symbolic_error(e_i, lb_i, ub_i, "unsatisfiable");
+      }
+    } else {
+      throw symbolic_error(e_i, lb_i, ub_i, "non-linear");
+    }
+  }
+  return Binding<LinearConstraint>{AddLinearConstraint(A, new_lb, new_ub, vars),
+                                   vars};
 }
 
 void MathematicalProgram::AddConstraint(
@@ -599,7 +703,7 @@ SolutionResult MathematicalProgram::Solve() {
              nlopt_solver_->available()) {
     return nlopt_solver_->Solve(*this);
   } else {
-    throw std::runtime_error(
+    throw runtime_error(
         "MathematicalProgram::Solve: "
         "No solver available for the given optimization problem!");
   }
