@@ -1,7 +1,13 @@
 #include "drake/solvers/mathematical_program.h"
 
 #include <algorithm>
+#include <map>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
+#include "drake/common/symbolic_expression.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -14,6 +20,12 @@
 
 namespace drake {
 namespace solvers {
+
+using std::map;
+using std::ostringstream;
+using std::pair;
+using std::runtime_error;
+using std::string;
 
 namespace {
 
@@ -93,8 +105,7 @@ DecisionVariableVectorX MathematicalProgram::NewContinuousVariables(
 
 DecisionVariableMatrixX MathematicalProgram::NewContinuousVariables(
     std::size_t rows, std::size_t cols, const std::vector<std::string>& names) {
-  return NewVariables(VarType::CONTINUOUS, rows, cols,
-                      false, names);
+  return NewVariables(VarType::CONTINUOUS, rows, cols, false, names);
 }
 
 DecisionVariableVectorX MathematicalProgram::NewContinuousVariables(
@@ -194,6 +205,72 @@ void MathematicalProgram::AddCost(
   int var_dim = var_list.size();
   DRAKE_ASSERT(obj->Q().rows() == var_dim && obj->b().rows() == var_dim);
   quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, var_list));
+}
+
+namespace {
+void throw_runtime_error(const symbolic::Expression& e, const double lb,
+                         const double ub, const string& msg) {
+  ostringstream oss;
+  oss << "Constraint " << lb << " <= " << e << " <= " << ub << " is " << msg
+      << ".";
+  throw runtime_error(oss.str());
+}
+}  // anonymous namespace
+
+void MathematicalProgram::AddLinearConstraint(const symbolic::Expression& e,
+                                              const double lb,
+                                              const double ub) {
+  if (is_variable(e)) {
+    const VariableListRef var_list{
+        DecisionVariableMatrix<1, 1>{get_variable(e)}};
+    AddLinearConstraint(Vector1d::Constant(1.0), lb, ub, var_list);
+    return;
+  }
+  if (is_constant(e)) {
+    const double c{get_constant_value(e)};
+    if (lb <= c && c <= ub) {
+      // nothing to add.
+      return;
+    } else {
+      throw_runtime_error(e, lb, ub, "unsatisfiable");
+    }
+  }
+  if (is_addition(e)) {
+    // Decompose a linear combination c0 + c1 * v1 + ... cn * vn into the
+    // followings:
+    //    constant term      : c0
+    //    coefficient vector : [c1, ..., cn]
+    //    variable vector    : [v1, ..., vn]
+    const double constant_term{get_constant_term_in_addition(e)};
+    const map<symbolic::Expression, double>& term_to_coeff_map{
+        get_terms_in_addition(e)};
+    Eigen::RowVectorXd coeffs(term_to_coeff_map.size());
+    DecisionVariableVectorX vars(term_to_coeff_map.size());
+    int i{0};
+    for (const pair<symbolic::Expression, double>& p : term_to_coeff_map) {
+      if (is_variable(p.first)) {
+        vars(i) = get_variable(p.first);
+        coeffs(i++) = p.second;
+      } else {
+        throw_runtime_error(e, lb, ub, "non-linear");
+      }
+    }
+    // Call non-symbolic version of AddLinearConstraint method.
+    AddLinearConstraint(coeffs, lb - constant_term, ub - constant_term,
+                        VariableListRef{vars});
+    return;
+  }
+  throw_runtime_error(e, lb, ub, "non-linear");
+}
+
+void MathematicalProgram::AddLinearConstraint(
+    const Eigen::Ref<const drake::VectorX<symbolic::Expression>>& v,
+    const Eigen::Ref<const Eigen::VectorXd>& lb,
+    const Eigen::Ref<const Eigen::VectorXd>& ub) {
+  DRAKE_ASSERT(v.rows() == lb.rows() && v.rows() == ub.rows());
+  for (int i{0}; i < v.rows(); ++i) {
+    AddLinearConstraint(v(i), lb(i), ub(i));
+  }
 }
 
 void MathematicalProgram::AddConstraint(std::shared_ptr<Constraint> con,
@@ -418,7 +495,7 @@ SolutionResult MathematicalProgram::Solve() {
              nlopt_solver_->available()) {
     return nlopt_solver_->Solve(*this);
   } else {
-    throw std::runtime_error(
+    throw runtime_error(
         "MathematicalProgram::Solve: "
         "No solver available for the given optimization problem!");
   }
