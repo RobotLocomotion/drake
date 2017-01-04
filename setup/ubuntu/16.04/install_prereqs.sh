@@ -74,6 +74,7 @@ gfortran
 gfortran-5
 git
 graphviz
+lcov
 libgtk2.0-dev
 libhtml-form-perl
 libmpfr-dev

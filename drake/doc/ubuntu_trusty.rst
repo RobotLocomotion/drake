@@ -68,7 +68,7 @@ Other prerequisites may be installed as follows::
 
     sudo apt-get update
     sudo apt-get install --no-install-recommends autoconf automake bison \
-      doxygen freeglut3-dev git graphviz libgtk2.0-dev \
+      doxygen freeglut3-dev git graphviz lcov libgtk2.0-dev \
       libhtml-form-perl libjpeg-dev libmpfr-dev libpng-dev libqt4-dev \
       libqt4-opengl-dev libqwt-dev libterm-readkey-perl libtool libvtk-java \
       libvtk5-dev libvtk5-qt4-dev libwww-perl make ninja-build perl pkg-config \
