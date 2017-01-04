@@ -6,12 +6,14 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/collision/drake_collision.h"
 #include "drake/multibody/collision/model.h"
 
+using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
-using Eigen::AngleAxisd;
+using Eigen::Matrix3Xd;
 using std::make_unique;
 using std::move;
 using std::unique_ptr;
@@ -807,15 +809,30 @@ GTEST_TEST(ModelTest, AnchoredElements) {
   ASSERT_EQ(3u, points.size());
 }
 
+/*
+ This tests a sphere against a non-convex mesh
+
+      ______         \    /        _____    <---- z = 0.2
+     /      \         \__/        /     \   <---- z = 0.1
+    /        \_________/\________/       \
+   /                                      \
+
+ The sphere is positioned such that it should collide with the inner spike
+ at a height of z = 0.1.  If the mesh is rendered as a convex hull, it
+ would intersect with the hull at z = 0.2.
+ This tests confirms two things:
+  1) The non-convex mesh is being instantiated (and *not* a convex hull).
+  2) Collision with the non-convex mesh is producing the expected answer.
+ */
 GTEST_TEST(ModelTest, AnchoredMeshes) {
   // Numerical precision tolerance to perform floating point comparisons.
-  const double tolerance = 1.0e-8;
+  const double tolerance = 1.0e-9;
 
   DrakeShapes::Sphere sphere_shape(0.5);
   Isometry3d pose = Isometry3d::Identity();
 
   std::string file_name = drake::GetDrakePath() +
-      "/multibody/collision/test/spherical_cap.obj";
+      "/multibody/collision/test/ripple_cap.obj";
   DrakeShapes::Mesh cap_shape(file_name, file_name);
 
   // Creates collision elements.
@@ -825,9 +842,9 @@ GTEST_TEST(ModelTest, AnchoredMeshes) {
   // NOTE: The elements are being instantiated here so that the anchored state
   // can be set *before* registering with the collision model.
   auto sphere_element = make_unique<Element>(sphere_shape);
-  Element* sphere = sphere_element.get();
+  Element *sphere = sphere_element.get();
   auto cap_element = make_unique<Element>(cap_shape);
-  Element* cap = cap_element.get();
+  Element *cap = cap_element.get();
   cap_element->set_anchored();
 
   // Populate the model.
@@ -840,11 +857,11 @@ GTEST_TEST(ModelTest, AnchoredMeshes) {
   // Solutions are expressed in world and body frames.
   ElementToSurfacePointMap solution = {
       /*           world frame     , body frame  */
-      {sphere, {{0.0, 0.0, 0.1}, {0.0,  0.0, -0.5}}},
-      {cap   , {{0.0, 0.0, 0.2}, {0.0, -0.5,  0.2}}}};
+      {sphere, {{0.0, 0.0, 0.09}, {0.0, 0.0, -0.5}}},
+      {cap, {{0.0, 0.0, 0.1}, {0.0, 0.0, 0.1}}}};
 
   // Sets the collision elements' pose.
-  pose.translation() = Vector3d(0.0, 0.0, 0.6);
+  pose.translation() = Vector3d(0.0, 0.0, 0.59);
   model->updateElementWorldTransform(sphere->getId(), pose);
 
   pose.translation() = Vector3d(0.0, 0.0, 0.0);
@@ -859,15 +876,89 @@ GTEST_TEST(ModelTest, AnchoredMeshes) {
   // Expects one collision point for this test.
   ASSERT_EQ(1u, points.size());
 
-  EXPECT_NEAR(-0.1, points[0].distance, tolerance);
+  EXPECT_NEAR(-0.01, points[0].distance, tolerance);
 
   EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0, 0, 1), tolerance));
 
   EXPECT_TRUE(points[0].ptA.isApprox(
       solution[points[0].elementA].world_frame, tolerance));
 
-  EXPECT_TRUE(points[0].ptB.isApprox(
-      solution[points[0].elementB].world_frame, tolerance));
+  EXPECT_TRUE(CompareMatrices(points[0].ptB,
+                              solution[points[0].elementB].world_frame,
+                              tolerance, drake::MatrixCompareType::absolute));
+}
+
+// This test confirms that point queries against non-convex objects (e.g.,
+// a static mesh) will *not* produce distance values.
+GTEST_TEST(ModelTest, PointDistanceToNonConvex) {
+  std::string file_name = drake::GetDrakePath() +
+      "/multibody/collision/test/ripple_cap.obj";
+  DrakeShapes::Mesh cap_shape(file_name, file_name);
+
+  // NOTE: The elements are being instantiated here so that the anchored state
+  // can be set *before* registering with the collision model.
+  auto cap_element = make_unique<Element>(cap_shape);
+  cap_element->set_anchored();
+
+  // Populate the model.
+  auto model = newModel();
+  model->AddElement(move(cap_element));
+
+  const int kPointCount = 4;
+  Eigen::RowVectorXd cx(kPointCount), cy(kPointCount), cz(kPointCount);
+
+  // A collection of points -- all should be at infinite distance.
+  cx << 0, 0, 0, 1;
+  cy << 0.2499, 0, -0.25, -0.25;
+  cz << 1, 1, 1, 1.75;
+  Matrix3Xd points;
+  points.resize(Eigen::NoChange, kPointCount);
+  points << cx, cy, cz;
+
+  std::vector<PointPair> results;
+  model->collisionDetectFromPoints(points, false, results);
+
+  ASSERT_EQ(results.size(), 4);
+  const double inf = std::numeric_limits<double>::infinity();
+  for (auto& pair : results) {
+    EXPECT_EQ(pair.distance, inf);
+    EXPECT_EQ(pair.elementA, nullptr);
+    EXPECT_EQ(pair.elementB, nullptr);
+    EXPECT_EQ(pair.normal, Vector3d(0, 0, 1));
+    EXPECT_EQ(pair.ptA, Vector3d(0, 0, inf));
+    EXPECT_EQ(pair.ptB, Vector3d(0, 0, inf));
+  }
+}
+
+// This test confirms that point queries against an empty world will produce
+// infinite values.
+GTEST_TEST(ModelTest, PointDistanceToEmptyWorld) {
+  auto model = newModel();
+
+  const int kPointCount = 4;
+  Eigen::RowVectorXd cx(kPointCount), cy(kPointCount), cz(kPointCount);
+
+  // A collection of points -- none of which should produce results.
+  cx << 0, 0, 0, 1;
+  cy << 0.2499, 0, -0.25, -0.25;
+  cz << 1, 1, 1, 1.75;
+  Matrix3Xd points;
+  points.resize(Eigen::NoChange, kPointCount);
+  points << cx, cy, cz;
+
+  std::vector<PointPair> results;
+  model->collisionDetectFromPoints(points, false, results);
+
+  ASSERT_EQ(results.size(), 4);
+  const double inf = std::numeric_limits<double>::infinity();
+  for (auto& pair : results) {
+    EXPECT_EQ(pair.distance, inf);
+    EXPECT_EQ(pair.elementA, nullptr);
+    EXPECT_EQ(pair.elementB, nullptr);
+    EXPECT_EQ(pair.normal, Vector3d(0, 0, 1));
+    EXPECT_EQ(pair.ptA, Vector3d(0, 0, inf));
+    EXPECT_EQ(pair.ptB, Vector3d(0, 0, inf));
+  }
 }
 
 }  // namespace

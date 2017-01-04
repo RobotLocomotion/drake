@@ -293,18 +293,15 @@ void BulletModel::DoAddElement(const Element& element) {
         // back to a convex hull (with notification), the better solution would
         // be to give the system the ability to triangulate on the fly.
         bool success = false;
-        // TODO(SeanCurtis-TRI): This code is disabled because the collision
-        // detection code is not yet in a state that can handle non-convex
-        // meshes.  See issue 4548.
-//        if (element.is_anchored()) {
-//          try {
-//            bt_shape = newBulletStaticMeshShape(mesh, true);
-//            bt_shape_no_margin = newBulletStaticMeshShape(mesh, false);
-//            success = true;
-//          } catch (std::exception &e) {
-//            drake::log()->log(spdlog::level::warn, e.what());
-//          }
-//        }
+        if (element.is_anchored()) {
+          try {
+            bt_shape = newBulletStaticMeshShape(mesh, true);
+            bt_shape_no_margin = newBulletStaticMeshShape(mesh, false);
+            success = true;
+          } catch (std::exception &e) {
+            drake::log()->log(spdlog::level::warn, e.what());
+          }
+        }
         if (!success) {  // A convex hull representation of the mesh points.
           bt_shape = newBulletMeshShape(mesh, true);
           bt_shape_no_margin = newBulletMeshShape(mesh, false);
@@ -716,35 +713,62 @@ void BulletModel::collisionDetectFromPoints(
 
       shapeB = dynamic_cast<btConvexShape*>(bt_objB->getCollisionShape());
 
-      btGjkEpaPenetrationDepthSolver epa;
-      btVoronoiSimplexSolver sGjkSimplexSolver;
-      sGjkSimplexSolver.setEqualVertexThreshold(0.f);
-      btGjkPairDetector convexConvex(&shapeA, shapeB, &sGjkSimplexSolver, &epa);
+      if (shapeB == nullptr) {
+        // TODO(SeanCurtis-TRI): Eventually implement a solution to this for
+        //  non-convex geometry.
+        // This passes 0 as a dummy argument to disambiguate the overloaded
+        // info logging method.
+        drake::log()->info(
+            "Attempting to compute distance between a point and a non-convex "
+            "shape.", 0);
+        continue;
+      } else {
+        btGjkEpaPenetrationDepthSolver epa;
+        btVoronoiSimplexSolver sGjkSimplexSolver;
+        sGjkSimplexSolver.setEqualVertexThreshold(0.f);
+        btGjkPairDetector
+            convexConvex(&shapeA, shapeB, &sGjkSimplexSolver, &epa);
 
-      input.m_transformA =
-          btTransform(btQuaternion(0, 0, 0, 1),
-                      btVector3(points(0, i), points(1, i), points(2, i)));
-      input.m_transformB = bt_objB->getWorldTransform();
+        input.m_transformA =
+            btTransform(btQuaternion(0, 0, 0, 1),
+                        btVector3(points(0, i), points(1, i), points(2, i)));
+        input.m_transformB = bt_objB->getWorldTransform();
 
-      convexConvex.getClosestPoints(input, gjkOutput, 0);
+        convexConvex.getClosestPoints(input, gjkOutput, 0);
 
-      btVector3 pointOnAinWorld(points(0, i), points(1, i), points(2, i));
-      btVector3 pointOnBinWorld = gjkOutput.m_pointInWorld;
+        btVector3 pointOnAinWorld(points(0, i), points(1, i), points(2, i));
+        btVector3 pointOnBinWorld = gjkOutput.m_pointInWorld;
 
-      btScalar distance =
-          gjkOutput.m_normalOnBInWorld.dot(pointOnAinWorld - pointOnBinWorld);
+        btScalar distance =
+            gjkOutput.m_normalOnBInWorld.dot(pointOnAinWorld - pointOnBinWorld);
 
-      if (gjkOutput.m_hasResult && (!got_one || distance < phi[i])) {
-        btVector3 pointOnElemB = input.m_transformB.invXform(pointOnBinWorld);
-        phi[i] = distance;
-        got_one = true;
-        Element* collision_element =
-            static_cast<Element*>(bt_objB->getUserPointer());
-        closest_points[i] =
-            PointPair(collision_element, collision_element,
-                      toVector3d(pointOnElemB), toVector3d(pointOnBinWorld),
-                      toVector3d(gjkOutput.m_normalOnBInWorld), distance);
+        if (gjkOutput.m_hasResult && (!got_one || distance < phi[i])) {
+          btVector3 pointOnElemB = input.m_transformB.invXform(pointOnBinWorld);
+          phi[i] = distance;
+          got_one = true;
+          Element *collision_element =
+              static_cast<Element *>(bt_objB->getUserPointer());
+          closest_points[i] =
+              PointPair(collision_element, collision_element,
+                        toVector3d(pointOnElemB), toVector3d(pointOnBinWorld),
+                        toVector3d(gjkOutput.m_normalOnBInWorld), distance);
+        }
       }
+    }
+    if (!got_one) {
+      // Values used in the degenerate case of no closest points.
+      constexpr double inf = std::numeric_limits<double>::infinity();
+      const Vector3d inf_vector(0, 0, inf);
+      const Vector3d default_norm(0, 0, 1);
+
+      // In case there are no other objects found, we report a null object
+      // infinitely far away.
+      phi[i] = inf;
+      closest_points[i] = PointPair();
+      closest_points[i].distance = inf;
+      closest_points[i].normal = default_norm;
+      closest_points[i].ptA = inf_vector;
+      closest_points[i].ptB = inf_vector;
     }
   }
 }

@@ -22,8 +22,7 @@
 // archaeology.
 
 namespace drake {
-namespace systems {
-namespace plants {
+namespace multibody {
 namespace test {
 namespace rigid_body_tree {
 namespace {
@@ -118,6 +117,5 @@ GTEST_TEST(PointCollisionDetection, PointsWithMultiBodies) {
 }  // namespace
 }  // namespace rigid_body_tree
 }  // namespace test
-}  // namespace plants
-}  // namespace systems
+}  // namespace multibody
 }  // namespace drake
