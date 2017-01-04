@@ -128,7 +128,7 @@ class RigidBodyTree {
    * displacing them from their current configurations.  These new poses
    * will be considered the elements' pose with respect to the body.
    *
-   * This is important to the parsing code to maintain an Drake RigidBodyTree
+   * This is important to the parsing code to maintain a Drake RigidBodyTree
    * invariant.  RigidBody instances do not maintain their own pose relative
    * to their in-board joint.  The joint's space is considered to be the body's
    * space.  So, if a urdf/sdf file defines the body with a non-identity pose

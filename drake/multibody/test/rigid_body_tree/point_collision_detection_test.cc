@@ -16,6 +16,10 @@
 // This omits the timed stress testing of the original matlab test and only
 // considers the deterministic result of testing points against a posed
 // rigid body tree.
+// TODO(SeanCurtis-TRI): Kill this matlab tombstone by fully analyzing the test
+// and confirming what it's specific purpose is and confirming that it includes
+// only what is strictly necessary to achieve that person: requires code
+// archaeology.
 
 namespace drake {
 namespace systems {

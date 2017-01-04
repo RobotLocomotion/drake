@@ -131,7 +131,7 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   DrakeShapes::Sphere geometry_3(0.5);
 
   // Populate the model.
-  std::shared_ptr<Model> model = newModel();
+  auto model = newModel();
   auto element_1 = model->AddElement(make_unique<Element>(geometry_1));
   auto element_2 = model->AddElement(
       make_unique<Element>(geometry_2, T_elem2_to_body));
@@ -790,7 +790,7 @@ GTEST_TEST(ModelTest, AnchoredElements) {
   ball4->updateWorldTransform(pose);
 
   // Populate the model.
-  std::shared_ptr<Model> model = newModel();
+  auto model = newModel();
   model->AddElement(move(ball1));
   model->AddElement(move(ball2));
   model->AddElement(move(ball3));
@@ -831,7 +831,7 @@ GTEST_TEST(ModelTest, AnchoredMeshes) {
   cap_element->set_anchored();
 
   // Populate the model.
-  std::shared_ptr<Model> model = newModel();
+  auto model = newModel();
   model->AddElement(move(sphere_element));
   model->AddElement(move(cap_element));
 

@@ -108,11 +108,8 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   //////////////////////////////////////////////////////////////////////////////
   EXPECT_TRUE(rbs1->get_num_positions() == rbs2->get_num_positions());
   EXPECT_TRUE(rbs1->get_num_velocities() == rbs2->get_num_velocities());
-  std::cout << std::setprecision(14);
-  std::cout << "RBS2 xdot: " << rbs2_xdot << "\n";
-  std::cout << "RBS1 xdot: " << rbs1_xdot << "\n";
   EXPECT_TRUE(CompareMatrices(rbs2_xdot, rbs1_xdot, 1e-14,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute)) ;
 }
 
 }  // namespace

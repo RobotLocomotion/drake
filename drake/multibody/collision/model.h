@@ -20,6 +20,13 @@ class Model {
   virtual ~Model() {}
 
   /** Adds a collision element to this model.
+   *
+   * This concept is frequently referred to as "registering" the collision
+   * element.  This is the process by which a fully-realized Drake collision
+   * element is fed to a specific DrakeCollision::Model implementation.  Prior
+   * to this *registration*, the collision model knows nothing of the collision
+   * element.  After registration, it owns the collision element.
+   *
    * @param element the element to add.
    * @returns a pointer to the added element.
    * @throws a runtime_error if there was a problem (e.g., duplicate element id,

@@ -13,8 +13,7 @@
 // assume correct parsing and simply evaluate the final state of the body
 // contact points, confirming they are correctly evaluated.
 namespace drake {
-namespace systems {
-namespace plants {
+namespace multibody {
 namespace test {
 namespace rigid_body_tree {
 namespace {
@@ -25,6 +24,7 @@ class RBTContactPointsTest : public ::testing::Test {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+ protected:
   // Populates an ordered set of expected contact points.  The number and order
   // of the values are directly related to the structure of the URDF.  A change
   // in the URDF *may* require a change in these values.
@@ -33,7 +33,6 @@ class RBTContactPointsTest : public ::testing::Test {
   // Returns the drake-relative path to the test urdf file.
   virtual std::string get_urdf_file() const = 0;
 
- protected:
   void SetUp() override {
     initialize_expected_points();
     drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -58,7 +57,7 @@ class ContactGenerationTest : public RBTContactPointsTest {
     expected_points_.resize(Eigen::NoChange, kPointCount);
     Eigen::RowVectorXd cx(kPointCount), cy(kPointCount), cz(kPointCount);
     // The first eight columns represent the box's corners, the ninth is the
-    // sphere.
+    // sphere with radius < 1e-6.
     cx << -1, 1, 1, -1, -1, 1, 1, -1, -1;
     cy << 1, 1, 1, 1, -1, -1, -1, -1, 0;
     cz << 1, 1, -1, -1, -1, -1, 1, 1, 0;
@@ -86,7 +85,7 @@ class ContactGroupNameTest : public RBTContactPointsTest {
     const int kPointCount = 4;
     expected_points_.resize(Eigen::NoChange, kPointCount);
     Eigen::RowVectorXd cx(kPointCount), cy(kPointCount), cz(kPointCount);
-    // There are four spheres place along the x-axis at 0, 1, 2, & 3,
+    // There are four spheres placed along the x-axis at 0, 1, 2, & 3,
     // respectively.  The first is in group "zero", the second in "one", and
     // the last *two* in "two".
     cx << 0, 1, 2, 3;
@@ -124,6 +123,5 @@ TEST_F(ContactGroupNameTest, GroupNameContactPointsTest) {
 }  // namespace
 }  // namespace rigid_body_tree
 }  // namespace test
-}  // namespace plants
-}  // namespace systems
+}  // namespace multibody
 }  // namespace drake

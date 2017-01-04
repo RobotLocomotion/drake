@@ -93,23 +93,20 @@ void ExpectCliqueCount(RigidBody<double>* body, int count) {
 
 // Adds a floating joint between the specified parent and child bodies.
 void JoinBodies(const FloatingBaseType floating_base_type,
-                RigidBody<double>* parent,
-RigidBody<double>* child) {
+                RigidBody<double>* parent, RigidBody<double>* child) {
   unique_ptr<DrakeJoint> joint{};
   Eigen::Isometry3d transform_to_world;
   std::string joint_name("joint_" + child->get_name());
   switch (floating_base_type) {
     case kFixed: {
-      joint.reset(new FixedJoint(
-          joint_name, transform_to_world));
+      joint.reset(new FixedJoint(joint_name, transform_to_world));
     } break;
     case kRollPitchYaw: {
-      joint.reset(new RollPitchYawFloatingJoint(
-          joint_name, transform_to_world));
+      joint.reset(
+          new RollPitchYawFloatingJoint(joint_name, transform_to_world));
     } break;
     case kQuaternion: {
-      joint.reset(new QuaternionFloatingJoint(
-          joint_name, transform_to_world));
+      joint.reset(new QuaternionFloatingJoint(joint_name, transform_to_world));
     } break;
     default:
       throw std::runtime_error("unknown floating base type");

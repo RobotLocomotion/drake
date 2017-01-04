@@ -11,6 +11,9 @@
     <collision>
       <origin xyz="-1 0 0" rpy="0 0 0"/>
       <geometry>
+        <!-- This should generate a contact point; DrakeShapes::Sphere has
+            a threshold of 1e-6.  Only spheres with a radius *strictly less*
+            than the threshold will generate contact points. -->
          <sphere radius="0.9999e-6"/>
       </geometry>
     </collision>

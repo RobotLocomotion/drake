@@ -147,8 +147,9 @@ bool RigidBodyTree<T>::transformCollisionFrame(
   //   2) Add collision element to body.
   //   3) transform the collision frame.
   //   4) *compile*
-  //   5) repeate steps 2-4.
-  // I suspect this should *not* be considered a valid workflow.  This needs
+  //   5) repeate steps 2-4 on that same body.
+  // I suspect this should *not* be considered a valid workflow but still needs
+  // to be officially decided.
   for (auto body_itr = body->collision_elements_begin();
        body_itr != body->collision_elements_end(); ++body_itr) {
     DrakeCollision::Element* element = *body_itr;
@@ -341,8 +342,7 @@ void RigidBodyTree<T>::CompileCollisionState() {
     body->set_contact_points(contact_points);
   }
 
-  // Assigns finished collision elements to their corresponding rigid bodies and
-  // registers the geometry with the collision model.
+  // Assigns finished collision elements to their corresponding rigid bodies.
   for (auto& pair : body_collision_map_) {
     RigidBody<T>* body = pair.first;
     BodyCollisions& elements = pair.second;
@@ -353,7 +353,7 @@ void RigidBodyTree<T>::CompileCollisionState() {
   }
 
   // Registers collision elements in the instantiation order to guarantee
-  // deterministic results.
+  // deterministic results. See Model::AddElement for details.
   // NOTE: Do *not* attempt to use the elements in the body_collision_map after
   // this loop; the collision elements will have been moved into the collision
   // model.
