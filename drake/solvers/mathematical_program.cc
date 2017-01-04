@@ -101,7 +101,7 @@ DecisionVariableVectorX MathematicalProgram::NewContinuousVariables(
     std::size_t rows, const std::string& name) {
   std::vector<std::string> names(rows);
   for (int i = 0; i < static_cast<int>(rows); ++i) {
-    names[i] = name + std::to_string(i);
+    names[i] = name + "(" + std::to_string(i) + ")";
   }
   return NewContinuousVariables(rows, names);
 }
@@ -162,7 +162,7 @@ DecisionVariableVectorX MathematicalProgram::NewBinaryVariables(
     size_t rows, const std::string& name) {
   std::vector<std::string> names = std::vector<std::string>(rows);
   for (int i = 0; i < static_cast<int>(rows); ++i) {
-    names[i] = name + std::to_string(i);
+    names[i] = name + "(" + std::to_string(i) + ")";
   }
   return NewVariables(VarType::BINARY, rows, names);
 }
