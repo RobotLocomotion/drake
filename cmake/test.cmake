@@ -2,8 +2,8 @@ option(CHECK_DEPENDENCY_STRICT
   "Fail the test if a MATLAB dependency check fails" OFF)
 mark_as_advanced(CHECK_DEPENDENCY_STRICT)
 
-set(TEST_TIMEOUT_MULTIPLIER CACHE STRING
-  "Positive integer by which to multiply test timeouts" 1)
+set(TEST_TIMEOUT_MULTIPLIER 1 CACHE STRING
+  "Positive integer by which to multiply test timeouts")
 mark_as_advanced(TEST_TIMEOUT_MULTIPLIER)
 
 
