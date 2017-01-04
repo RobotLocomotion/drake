@@ -73,6 +73,26 @@ cc_library(
 )
 
 cc_binary(
+    name = "lcm-logger",
+    srcs = [
+        "lcm-logger/lcm_logger.c",
+        "lcm-logger/glib_util.c",
+        "lcm-logger/glib_util.h",
+    ],
+    copts = LCM_COPTS,
+    deps = [":lcm"],
+)
+
+cc_binary(
+    name = "lcm-logplayer",
+    srcs = [
+        "lcm-logger/lcm_logplayer.c",
+    ],
+    copts = LCM_COPTS,
+    deps = [":lcm"],
+)
+
+cc_binary(
     name = "lcmgen",
     srcs = [
         "lcmgen/emit_c.c",
