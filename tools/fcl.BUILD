@@ -47,11 +47,11 @@ genrule(
     name = "fclh_genrule",
     srcs = glob(["include/**/*.h"]),
     outs = ["include/fcl/fcl.h"],
-    cmd =  r"(" + (
-        r"echo '#pragma once' && " +
-        r"echo '$(SRCS)' | tr ' ' '\n' | " +
-        r"sed 's|.*include/\(.*\)|#include \"\1\"|g'"
-        ) + r") > '$@'",
+    cmd = "(" + (
+        "echo '#pragma once' && " +
+        "echo '$(SRCS)' | tr ' ' '\\n' | " +
+        "sed 's|.*include/\(.*\)|#include \\\"\\1\\\"|g'"
+    ) + ") > '$@'",
     visibility = [],
 )
 
