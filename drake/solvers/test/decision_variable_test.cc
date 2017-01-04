@@ -77,7 +77,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
                 "should be a dynamic sized matrix");
   std::stringstream msg_buff3;
   msg_buff3 << x1 << std::endl;
-  EXPECT_EQ(msg_buff3.str(), "x0\nx1\nx2\nx3\nx4\nx5\n");
+  EXPECT_EQ(msg_buff3.str(), "x(0)\nx(1)\nx(2)\nx(3)\nx(4)\nx(5)\n");
   EXPECT_EQ(prog.num_vars(), 18u);
   EXPECT_FALSE(math::IsSymmetric(x1));
   std::array<std::string, 6> X_name = {{"X1", "X2", "X3", "X4", "X5", "X6"}};
@@ -93,7 +93,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   auto b1 = prog.NewBinaryVariables(6, "b1");
   std::stringstream msg_buff5;
   msg_buff5 << b1 << std::endl;
-  EXPECT_EQ(msg_buff5.str(), "b10\nb11\nb12\nb13\nb14\nb15\n");
+  EXPECT_EQ(msg_buff5.str(), "b1(0)\nb1(1)\nb1(2)\nb1(3)\nb1(4)\nb1(5)\n");
 
   Eigen::Matrix<double, 6, 1> x_value;
   x_value << 0, 2, 4, 6, 8, 10;
