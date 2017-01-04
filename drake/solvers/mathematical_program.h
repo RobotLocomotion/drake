@@ -222,25 +222,6 @@ class MathematicalProgram {
       return variable_list_.size();
     }
 
-    /**
-     * Writes the elements of @p solution to the bound elements of
-     * the @p output vector.
-     */
-    void WriteThrough(const Eigen::VectorXd& solution,
-                      const MathematicalProgram& prog,
-                      Eigen::VectorXd* output) const {
-      DRAKE_ASSERT(static_cast<size_t>(solution.rows()) == GetNumElements());
-      size_t solution_index = 0;
-      for (const auto& var : variable_list_.variables()) {
-        DRAKE_ASSERT(var.cols() == 1);
-        const auto& solution_segment =
-            solution.segment(solution_index, var.rows());
-        output->segment(prog.FindDecisionVariableIndex(var(0)), var.rows()) =
-            solution_segment;
-        solution_index += var.rows();
-      }
-    }
-
    private:
     std::shared_ptr<C> constraint_;
     VariableList variable_list_;
@@ -413,8 +394,9 @@ class MathematicalProgram {
    * @see NewContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  DecisionVariableMatrixX NewContinuousVariables(
-      std::size_t rows, std::size_t cols, const std::string& name = "X");
+  DecisionVariableMatrixX NewContinuousVariables(std::size_t rows,
+                                                 std::size_t cols,
+                                                 const std::string& name = "X");
 
   /// Adds continuous variables to this MathematicalProgram.
   /**
@@ -1649,6 +1631,31 @@ class MathematicalProgram {
     }
     binding.constraint()->Eval(flat_solution, val);
     return val;
+  }
+
+  /**
+   * Set the values of the decision variables, bound by the elements in @p
+   * binding.
+   * @tparam _Binding should be MathematicalProgram::Binding class
+   * @param binding_solution The value of the variables bound in the @p binding.
+   * @param binding
+   */
+  template <typename _Binding>
+  void SetSolutionFromBinding(
+      const Eigen::Ref<const Eigen::VectorXd>& binding_solution,
+      const _Binding& binding) {
+    DRAKE_ASSERT(static_cast<size_t>(binding_solution.rows()) ==
+                 binding.GetNumElements());
+
+    size_t solution_index = 0;
+    for (const auto& var : binding.variable_list().variables()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      for (int i = 0; i < var.rows(); ++i) {
+        x_values_[FindDecisionVariableIndex(var(i))] =
+            binding_solution(solution_index + i);
+      }
+      solution_index += var.rows();
+    }
   }
 
   /** Getter for all decision variables in the program. */
