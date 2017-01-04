@@ -104,12 +104,19 @@ InfiniteCircuitRoad::Lane::Lane(const api::LaneId& id,
                                 const std::vector<const api::Lane*>& path)
     : id_(id),
       road_(road) {
-  // Starting at start, walk source's Lane/BranchPoint graph.  We
-  // assume (demand!) that there are no dead-end branch-points, so we
-  // will eventually encounter a LaneEnd that we have seen before, at
-  // which point we know that we have found a cycle.  Along the way,
-  // we will keep track of accumulated s-length over the sequence of
-  // lanes.
+  // Starting at start, walk source's Lane/BranchPoint graph.
+  //
+  // If path is non-empty, use that to guide us at each branch-point,
+  // and stop when we get to the end of path.
+  //
+  // If path is empty, we find our own way by simply picking the first
+  // ongoing branch at each branch-point.  We assume (demand!) that
+  // there are no dead-end branch-points encountered along the way, so
+  // we will eventually encounter a LaneEnd that we have seen before,
+  // at which point we know that we have found a cycle.
+  //
+  // In either case, along the way, we will keep track of accumulated
+  // s-length over the sequence of lanes.
 
   // Starting-ends of recorded lane traversals, mapped to index in sequence.
   std::map<api::LaneEnd, int, api::LaneEnd::StrictOrder> seen_records;
@@ -118,11 +125,6 @@ InfiniteCircuitRoad::Lane::Lane(const api::LaneId& id,
   auto path_it = path.begin();
 
   while (true) {
-    if ((path.size() == 0) && (seen_records.count(current))) {
-      break;
-    } else if ((path.size() > 0) && (path_it == path.end())) {
-      break;
-    }
 
     std::cerr << "walk lane " << current.lane->id().id
               << "  end " << current.end
@@ -131,6 +133,12 @@ InfiniteCircuitRoad::Lane::Lane(const api::LaneId& id,
     seen_records[current] = records_.size();
     records_.push_back(Record {
         current.lane, start_s, end_s, (current.end == api::LaneEnd::kFinish)});
+    start_s = end_s;
+
+    // If a path was specified, and we've reached its end, then we are done.
+    if ((path.size() > 0) && (path_it == path.end())) {
+      break;
+    }
 
     api::LaneEnd::Which other_end =
         (current.end == api::LaneEnd::kStart) ?
@@ -166,11 +174,17 @@ InfiniteCircuitRoad::Lane::Lane(const api::LaneId& id,
               << ", end " << current.end
               << std::endl;
 
-    start_s = end_s;
+    // If no path was specified and we are about to start at a lane-end that
+    // we have already seen, then we are done.
+    if ((path.size() == 0) && (seen_records.count(current))) {
+      break;
+    }
   }
 
+  // If we forged out own path, and our last lane-end is not the same as our
+  // first lane-end (i.e., its index is not zero), then we need to trim
+  // records from the beginning (since they are not part of the circuit).
   if ((path.size() == 0) && (seen_records[current] > 0)) {
-    // We're not back at the start; need to trim records from the beginning.
     records_.erase(records_.begin(),
                    records_.begin() + seen_records[current]);
     // Need to re-measure all the start/end offsets, too.
@@ -293,7 +307,7 @@ int InfiniteCircuitRoad::Lane::GetPathIndex(const double s) const {
       return i;
     }
   }
-  DRAKE_ABORT(); // I.e., how did we fall off the end?
+  DRAKE_ABORT();  // I.e., how did we fall off the end?
 }
 
 
@@ -325,9 +339,9 @@ InfiniteCircuitRoad::Lane::ProjectToSourceRoad(
             << "   cycle " << cycle_length_
             << "   last " << records_.back().end_circuit_s
             << std::endl;
-  DRAKE_ABORT(); // I.e., how did we fall off the end?
+  DRAKE_ABORT();  // I.e., how did we fall off the end?
 }
 
-}  // namespace monolane
+}  // namespace utility
 }  // namespace maliput
 }  // namespace drake

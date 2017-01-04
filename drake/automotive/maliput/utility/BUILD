@@ -47,8 +47,20 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "infinite_circuit_road_test",
+    size = "small",
+    srcs = ["test/infinite_circuit_road_test.cc"],
+    deps = [
+        ":utility",
+        "//drake/automotive/maliput/monolane",
+        "@gtest//:main",
+    ],
+)
+
 py_test(
     name = "yaml_to_obj_test",
+    size = "small",
     srcs = ["test/yaml_to_obj_test.py"],
     args = ["drake/automotive/maliput/utility/yaml_to_obj"],
     data = [

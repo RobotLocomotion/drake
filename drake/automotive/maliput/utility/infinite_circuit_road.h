@@ -81,6 +81,10 @@ class InfiniteCircuitRoad : public api::RoadGeometry {
   /// InfiniteCircuitRoad's implementation of api::Lane.
   class Lane : public api::Lane {
    public:
+    /// Constructs an InfiniteCircuitRoad::Lane.
+    ///
+    /// Typically only used by InfiniteCircuitRoad's constructor; see
+    /// InfiniteCircuitRoad() for details on the parameters.
     Lane(const api::LaneId& id, const InfiniteCircuitRoad* road,
          const api::RoadGeometry* source,
          const api::LaneEnd& start,
@@ -158,12 +162,28 @@ class InfiniteCircuitRoad : public api::RoadGeometry {
   };
 
 
-
-  /// Constructs an InfiniteCircuitRoad wrapping @p source, using
-  /// @p start as the starting point in the search for a closed circuit.
+  /// Constructs an InfiniteCircuitRoad which makes a circuit around @p source
+  /// look like a road network with a single infinitely long lane.
   ///
-  /// NB:  All the real construction work happens in the constructor for
-  /// InfiniteCircuitRoad::Lane.
+  /// @param id  id for the InfiniteCircuitRoad
+  /// @param source  the source api::RoadGeometry
+  /// @param start  the starting point for the circuit traversed by the
+  ///               InfiniteCircuitRoad
+  /// @param path  the path through the @p source road network for the circuit
+  ///
+  /// @p start specifies the starting point of the circuit --- the given end
+  /// of the given lane --- and implies traversal of @p start.lane to its other
+  /// end.  @p path is a sequence of lane's, indicating which ongoing lane
+  /// to continue into at every subsequent branch-point.  No check is made
+  /// that the end of @p path is actually connected to @p start.
+  ///
+  /// If @p path is empty, then a closed circuit will be automatically
+  /// and deterministically discovered by traversing the network
+  /// beginning at @p start.  In this case, since the algorithm is
+  /// rather simple, @p source must have no 'dead ends' in its
+  /// network.  Also, note that @p start will not be the start of the
+  /// circuit, or even on the circuit, if the traversal encounters the
+  /// same lane twice before returning to @p start.
   InfiniteCircuitRoad(const api::RoadGeometryId& id,
                       const api::RoadGeometry* source,
                       const api::LaneEnd& start,
