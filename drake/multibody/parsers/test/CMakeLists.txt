@@ -17,4 +17,5 @@ target_link_libraries(xml_util_test drakeMultibodyParsers)
 
 add_subdirectory(package_map_test)
 add_subdirectory(parser_common_test)
+add_subdirectory(parsers_frames_test)
 add_subdirectory(urdf_parser_test)

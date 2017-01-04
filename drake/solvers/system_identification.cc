@@ -8,6 +8,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/solvers/mathematical_program.h"
 
+using std::pow;
+
 namespace drake {
 namespace solvers {
 
@@ -267,9 +269,9 @@ SystemIdentification<T>::EstimateParameters(
   // Build up our optimization problem's decision variables.
   MathematicalProgram problem;
   DecisionVariableVectorX parameter_variables =
-      problem.AddContinuousVariables(num_to_estimate, "param");
+      problem.NewContinuousVariables(num_to_estimate, "param");
   DecisionVariableVectorX error_variables =
-      problem.AddContinuousVariables(num_err_terms, "error");
+      problem.NewContinuousVariables(num_err_terms, "error");
 
   // Create any necessary VarType IDs.  We build up two lists of VarType:
   //  * problem_vartypes holds a VarType for each decision variable.  This
@@ -320,11 +322,11 @@ SystemIdentification<T>::EstimateParameters(
   PartialEvalType estimates;
   for (int i = 0; i < num_to_estimate; i++) {
     VarType var = vars_to_estimate[i];
-    estimates[var] = parameter_variables(i).value();
+    estimates[var] = problem.GetSolution(parameter_variables(i));
   }
   T error_squared = 0;
   for (int i = 0; i < num_err_terms; i++) {
-    error_squared += error_variables(i).value() * error_variables(i).value();
+    error_squared += pow(problem.GetSolution(error_variables(i)), 2);
   }
 
   return std::make_pair(estimates, std::sqrt(error_squared / num_err_terms));

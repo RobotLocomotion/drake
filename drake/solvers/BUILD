@@ -26,6 +26,7 @@ cc_library(
     deps = [
         "//drake/common",
         "//drake/common:number_traits",
+        "//drake/common:symbolic",
     ],
 )
 
@@ -89,6 +90,7 @@ cc_library(
         "//drake/common:autodiff",
         "//drake/common:number_traits",
         "//drake/common:polynomial",
+        "//drake/common:symbolic",
         "//drake/math:matrix_util",
     ],
 )

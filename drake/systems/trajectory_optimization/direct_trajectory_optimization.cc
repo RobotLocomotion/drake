@@ -30,9 +30,9 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
     : num_inputs_(num_inputs),
       num_states_(num_states),
       N_(num_time_samples),
-      h_vars_(opt_problem_.AddContinuousVariables(N_ - 1, "h")),
-      u_vars_(opt_problem_.AddContinuousVariables(num_inputs_ * N_, "u")),
-      x_vars_(opt_problem_.AddContinuousVariables(num_states_ * N_, "x")) {
+      h_vars_(opt_problem_.NewContinuousVariables(N_ - 1, "h")),
+      u_vars_(opt_problem_.NewContinuousVariables(num_inputs_ * N_, "u")),
+      x_vars_(opt_problem_.NewContinuousVariables(num_states_ * N_, "x")) {
   DRAKE_ASSERT(num_inputs_ > 0);
   DRAKE_ASSERT(num_states_ > 0);
   DRAKE_ASSERT(num_time_samples > 1);
@@ -189,7 +189,7 @@ std::vector<double> DirectTrajectoryOptimization::GetTimeVector() const {
   std::vector<double> times;
   times.resize(N_, 0);
 
-  const auto h_values = GetSolution(h_vars_);
+  const auto h_values = opt_problem_.GetSolution(h_vars_);
   for (int i = 1; i < N_; i++) {
     times[i] = times[i - 1] + h_values(i - 1);
   }
@@ -201,7 +201,7 @@ std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetInputVector()
   std::vector<Eigen::MatrixXd> inputs;
   inputs.reserve(N_);
 
-  const auto u_values = GetSolution(u_vars_);
+  const auto u_values = opt_problem_.GetSolution(u_vars_);
 
   for (int i = 0; i < N_; i++) {
     inputs.push_back(u_values.segment(i * num_inputs_, num_inputs_));
@@ -214,7 +214,7 @@ std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetStateVector()
   std::vector<Eigen::MatrixXd> states;
   states.reserve(N_);
 
-  const auto x_values = GetSolution(x_vars_);
+  const auto x_values = opt_problem_.GetSolution(x_vars_);
 
   for (int i = 0; i < N_; i++) {
     states.push_back(x_values.segment(i * num_states_, num_states_));
@@ -233,8 +233,8 @@ void DirectTrajectoryOptimization::GetResultSamples(
   states->resize(num_states_, N_);
   states->fill(0);
 
-  const auto& u_values = GetSolution(u_vars_);
-  const auto& x_values = GetSolution(x_vars_);
+  const auto& u_values = opt_problem_.GetSolution(u_vars_);
+  const auto& x_values = opt_problem_.GetSolution(x_vars_);
 
   for (int i = 0; i < N_; i++) {
     inputs->col(i) = u_values.segment(i * num_inputs_, num_inputs_);
