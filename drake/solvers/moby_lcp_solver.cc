@@ -156,7 +156,6 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
   // Ms and qs into the appropriate places.  That would be equivalent to this
   // implementation but might perform better if the solver were to parallelize
   // internally.
-  Eigen::VectorXd solution(prog.num_vars());
 
   // We don't actually indicate different results.
   prog.SetSolverResult(SolverName(), 0);
@@ -170,13 +169,12 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
     if (!solved) {
       return SolutionResult::kUnknownError;
     }
-    binding.WriteThrough(constraint_solution, prog, &solution);
+    prog.SetDecisionVariableValueFromBinding(constraint_solution, binding);
   }
-  prog.SetDecisionVariableValues(solution);
   return SolutionResult::kSolutionFound;
 }
 
-/// Fast pivoting algorithm for denerate, monotone LCPs with few nonzero,
+/// Fast pivoting algorithm for degenerate, monotone LCPs with few nonzero,
 /// nonbasic variables
 bool MobyLCPSolver::SolveLcpFast(const Eigen::MatrixXd& M,
                                  const Eigen::VectorXd& q, Eigen::VectorXd* z,
