@@ -13,8 +13,8 @@ namespace sensors {
 /// @see DepthSensor.
 class DepthSensorSpecification {
  public:
-  /// Constructions a %DepthsensorSpecification with all default values.
-  DepthSensorSpecification() { }
+  /// Constructs a %DepthsensorSpecification with all default values.
+  DepthSensorSpecification() {}
 
   /// Constructs a fully-defined %DepthSensorSpecification.
   ///
@@ -75,8 +75,8 @@ class DepthSensorSpecification {
 
   /// @name Accessors to automatically derived parameters.
   ///
-  /// The following methos are for values that are derived based on the
-  /// manually specified parameters.
+  /// The following methods return values that are derived based on the manually
+  /// specified parameters.
   ///@{
   int num_depth_readings() const;
   double yaw_increment() const;
@@ -95,8 +95,9 @@ class DepthSensorSpecification {
   /// @name Methods for the convenient initialization of commonly-used
   /// DepthSensorSpecification specifications.
   ///
-  /// The following accessors provide frequently used DepthSensorSpecification
-  /// settings that can be used directly or as templates for customization.
+  /// The following methods provide frequently used DepthSensorSpecification
+  /// specifications that can be used directly or as templates for
+  /// fine-tuning.
   ///@{
 
   /// Sets @p spec to specify a sensor that  covers octant 1 of the sensor's
@@ -236,8 +237,8 @@ class DepthSensorSpecification {
   double max_yaw_{};
   double min_pitch_{};
   double max_pitch_{};
-  int num_yaw_values_{};
-  int num_pitch_values_{};
+  int num_yaw_values_{1};
+  int num_pitch_values_{1};
   double min_range_{0};
   double max_range_{std::numeric_limits<double>::max()};
 };

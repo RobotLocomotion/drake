@@ -104,8 +104,7 @@ class DepthSensor : public systems::LeafSystem<double> {
   /// writing bad code.
   static constexpr double kTooClose{0};
 
-  /// A %DepthSensor constructor that initializes the sensor by computing all of
-  /// the raycast endpoints in the sensor's base frame.
+  /// A %DepthSensor constructor.
   ///
   /// @param[in] name The name of the depth sensor. This can be any value, but
   /// should typically be unique among all sensors attached to a particular
@@ -118,7 +117,7 @@ class DepthSensor : public systems::LeafSystem<double> {
   /// @param[in] frame The frame to which this depth sensor is attached.
   ///
   /// @param[in] specification The specifications of this sensor. An alias of
-  /// this specification is stored as a class memer variable, meaning its
+  /// this specification is stored as a class member variable, meaning its
   /// lifetime must exceed the lifetime of the %DepthSensor object created by
   /// this constructor.
   ///
@@ -173,7 +172,7 @@ class DepthSensor : public systems::LeafSystem<double> {
   const OutputPortDescriptor<double>& get_sensor_state_output_port() const;
 
   /// Allocates the output vector. See this class' description for details of
-  /// this port.
+  /// this output vector.
   std::unique_ptr<BasicVector<double>> AllocateOutputVector(
       const OutputPortDescriptor<double>& descriptor) const override;
 
