@@ -148,20 +148,15 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
 /*
  * This is the helper function to add two types of second order cone
  * constraints:
- * A Lorentz cone constraint: x0 >= sqrt(x1^2 + .. xN^2)
- * A rotated Lorentz cone constraint: x0*x1 >= x2^2 + .. + xN^2, x0 >= 0, x1 >=0
+ * 1. A Lorentz cone constraint:
+ *    z = A*x+b
+ *    z0 >= sqrt(z1^2 + .. zN^2)
+ * 2. A rotated Lorentz cone constraint:
+ *    z = A*x+b
+ *    z0*z1 >= z2^2 + .. + zN^2,
+ *    z0 >= 0, z1 >=0
  * Mosek does not allow two cones to share variables. To overcome this,
- * for every lorentz cone x0 >= sqrt(x1^2 + ... + xN^2),
- * we will add a new set of variable (y0, ..., yN), with the constraint
- * y0 >= sqrt(y1^2 + ... + yN^2)
- * y0 = x0, ..., yN = xN
- * for every rotated lorentz
- * cone x0 * x1>= x2^2 + ... + xN^2, x0 >= 0, x1 >=0
- * we will add a new set of variable (y0, ..., yN), with the constraint
- * 2*y0*y1 >= y2^2 + ... + yN^2, y0 >= 0, y1 >=0
- * y0 = x0 / 2, y1 = x1, ..., yN = xN
- * The reason for a factor of 2 in y0 is because Mosek's rotated lorentz cone is
- * 2*y0*y1 >= y2^2 + ... + yN^2, y0 >= 0, y1 >=0
+ * we will add a new set of variable (z0, ..., zN)
  * @param is_new_variable  Refer to the documentation on is_new_variable in
  * MosekSolver::Solve() function
  */
@@ -171,9 +166,8 @@ MSKrescodee AddSecondOrderConeConstraints(
     const std::vector<Bindings>& second_order_cone_constraints,
     bool is_rotated_cone, MSKtask_t* task, std::vector<bool>* is_new_variable) {
   MSKrescodee rescode = MSK_RES_OK;
-
   for (auto const& binding : second_order_cone_constraints) {
-    std::vector<int> cone_var_indices(binding.GetNumElements());
+    std::vector<MSKint32t> cone_var_indices(binding.GetNumElements());
     int var_count = 0;
     for (const DecisionVariableMatrixX& var :
          binding.variable_list().variables()) {
@@ -183,80 +177,94 @@ MSKrescodee AddSecondOrderConeConstraints(
         ++var_count;
       }
     }
-    const int num_cone_vars = static_cast<int>(cone_var_indices.size());
+
+    const auto& A = binding.constraint()->A();
+    const auto& b = binding.constraint()->b();
+    const int num_z = A.rows();
     MSKint32t num_total_vars = 0;
     rescode = MSK_getnumvar(*task, &num_total_vars);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    rescode = MSK_appendvars(*task, num_cone_vars);
+    rescode = MSK_appendvars(*task, num_z);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    is_new_variable->resize(num_total_vars + num_cone_vars);
-    std::vector<MSKint32t> new_cone_var_indices(num_cone_vars);
-    for (int i = 0; i < num_cone_vars; ++i) {
+    is_new_variable->resize(num_total_vars + num_z);
+    std::vector<MSKint32t> new_var_indices(num_z);
+    for (int i = 0; i < num_z; ++i) {
       is_new_variable->at(num_total_vars + i) = true;
-      new_cone_var_indices[i] = num_total_vars + i;
-      rescode = MSK_putvarbound(*task, new_cone_var_indices[i], MSK_BK_FR,
+      new_var_indices[i] = num_total_vars + i;
+      rescode = MSK_putvarbound(*task, new_var_indices[i], MSK_BK_FR,
                                 -MSK_INFINITY, MSK_INFINITY);
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
     }
     MSKconetypee cone_type = is_rotated_cone ? MSK_CT_RQUAD : MSK_CT_QUAD;
-    rescode = MSK_appendcone(*task, cone_type, 0.0, cone_var_indices.size(),
-                             new_cone_var_indices.data());
+    rescode =
+        MSK_appendcone(*task, cone_type, 0.0, num_z, new_var_indices.data());
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
 
+    // Add the linear constraint
+    // z = A*x+b
     // Unfortunately Mosek's definition of rotated Lorentz cone is different
     // from ours. The rotated Lorentz cone in Mosek is defined as
-    // 2*y(0) * y(1) >= y(2)^2 + ... + y(n-1)^2
+    // 2*z(0) * z(1) >= z(2)^2 + ... + z(n-1)^2
     // Our definition of rotated Lorentz cone is
-    //   y(0) * y(1) >= y(2)^2 + ... + y(n-1)^2
+    //   z(0) * z(1) >= z(2)^2 + ... + z(n-1)^2
     // So there is a factor of 2 for rotated Lorentz cone.
-    // With this difference in rotated Lorentz cone,
-    // if using Lorentz cone, adds the linear constraint
-    //   y(0)   = x(0),
-    //   y(1)   = x(1),
-    //        ...
-    //   y(n-1) = x(n-1)
+    // With this difference in rotated Lorentz cone, the first row of constraint
+    // z = A * x + b needs special treatment.
+    // If using Lorentz cone,
+    // Add the linear constraint
+    //   z0 = a0^T * x + b0;
     // If using rotated Lorentz cone, add the linear constraint
-    // 2*y(0)   = x(0),
-    //   y(1)   = x(1),
-    //     ...
-    //   y(n-1) = x(n-1)
+    // 2*z0 = a0^T * x + b0
     int num_lin_cons;
     rescode = MSK_getnumcon(*task, &num_lin_cons);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    rescode = MSK_appendcons(*task, num_cone_vars);
+    rescode = MSK_appendcons(*task, num_z);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    MSKint32t var_indices0[2] = {cone_var_indices[0], new_cone_var_indices[0]};
+    std::vector<MSKint32t> var_indices(cone_var_indices);
+    var_indices.push_back(new_var_indices[0]);
     double y0_factor = is_rotated_cone ? -2 : -1;
-    double val0[2] = {1, y0_factor};
-    rescode = MSK_putarow(*task, num_lin_cons, 2, var_indices0, val0);
+    Eigen::RowVectorXd val0(1 + cone_var_indices.size());
+    val0.head(cone_var_indices.size()) = A.row(0);
+    val0(cone_var_indices.size()) = y0_factor;
+    rescode = MSK_putarow(*task, num_lin_cons, 1 + cone_var_indices.size(),
+                          var_indices.data(), val0.data());
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    rescode = MSK_putconbound(*task, num_lin_cons, MSK_BK_FX, 0.0, 0.0);
+    rescode = MSK_putconbound(*task, num_lin_cons, MSK_BK_FX, -b(0), -b(0));
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    for (int i = 1; i < num_cone_vars; ++i) {
-      MSKint32t var_indices_i[2] = {cone_var_indices[i],
-                                    new_cone_var_indices[i]};
-      double val_i[2] = {1, -1};
-      rescode = MSK_putarow(*task, num_lin_cons + i, 2, var_indices_i, val_i);
+    for (int i = 1; i < num_z; ++i) {
+      // In row i of the linear constraint z = A*x+b, the decision variables are
+      // [x z(i)]. So compared to the previous row of the constraint, the only
+      // changed decision variable is z(i). We can thus pop the last variable
+      // (z(i-1)), and push back z(i).
+      var_indices.pop_back();
+      var_indices.push_back(new_var_indices[i]);
+      Eigen::RowVectorXd val(1 + cone_var_indices.size());
+      val.head(cone_var_indices.size()) = A.row(i);
+      val(cone_var_indices.size()) = -1;
+      rescode =
+          MSK_putarow(*task, num_lin_cons + i, 1 + cone_var_indices.size(),
+                      var_indices.data(), val.data());
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
-      rescode = MSK_putconbound(*task, num_lin_cons + i, MSK_BK_FX, 0.0, 0.0);
+      rescode =
+          MSK_putconbound(*task, num_lin_cons + i, MSK_BK_FX, -b(i), -b(i));
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
@@ -467,10 +475,10 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
         if (std::abs(Qij) > Eigen::NumTraits<double>::epsilon()) {
           if (var_index_i > var_indices[j]) {
             Q_lower_triplets.push_back(
-              Eigen::Triplet<double>(var_index_i, var_indices[j], Qij));
+                Eigen::Triplet<double>(var_index_i, var_indices[j], Qij));
           } else {
             Q_lower_triplets.push_back(
-              Eigen::Triplet<double>(var_indices[j], var_index_i, Qij));
+                Eigen::Triplet<double>(var_indices[j], var_index_i, Qij));
           }
         }
       }

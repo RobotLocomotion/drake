@@ -1113,11 +1113,13 @@ class MathematicalProgram {
   /**
    * Adds Lorentz cone constraint referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
+   * The linear expression @f$ z=Ax+b @f$ is in the Lorentz cone.
+   * A vector \f$ z \in\mathbb{R}^n \f$ is in the Lorentz cone, if
    * <!--
-   * x(0) >= sqrt{x(1)^2 + ... + x(N-1)^2}
+   * z(0) >= sqrt{z(1)^2 + ... + z(n-1)^2}
    * -->
    * @f[
-   * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
+   * z_0 \ge \sqrt{z_1^2 + ... + z_{n-1}^2}
    * @f]
    */
   void AddConstraint(std::shared_ptr<LorentzConeConstraint> con,
@@ -1126,39 +1128,75 @@ class MathematicalProgram {
   /**
    * Adds Lorentz cone constraint referencing potentially a subset of the
    * decision variables (defined in the vars parameter).
+   * The linear expression @f$ z=Ax+b @f$ is in the Lorentz cone.
+   * A vector \f$ z \in\mathbb{R}^n \f$ is in the Lorentz cone, if
    * <!--
-   * x(0) >= sqrt{x(1)^2 + ... + x(N-1)^2}
+   * z(0) >= sqrt{z(1)^2 + ... + z(n-1)^2}
    * -->
    * @f[
-   * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
+   * z_0 \ge \sqrt{z_1^2 + ... + z_{n-1}^2}
    * @f]
+   * @param A A @f$\mathbb{R}^{n\times m}@f$ matrix, whose number of columns
+   * equals to the size of the decision variables.
+   * @param b A @f$\mathbb{R}^n@f$ vector, whose number of rows equals to the
+   * size of the decision variables.
+   * @param vars The list of containing @f$ m @f$ decision variables.
+   * @return The newly added Lorentz cone constraint.
+   */
+  std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableListRef& vars) {
+    auto constraint = std::make_shared<LorentzConeConstraint>(A, b);
+    AddConstraint(constraint, vars);
+    return constraint;
+  }
+
+  /**
+   * Adds Lorentz cone constraint to the program for all
+   * (currently existing) variables.
+   * The linear expression @f$ z=Ax+b @f$ is in the Lorentz cone.
+   * A vector \f$ z \in\mathbb{R}^n \f$ is in the Lorentz cone, if
+   * <!--
+   * z(0) >= sqrt{z(1)^2 + ... + z(n-1)^2}
+   * -->
+   * @f[
+   * z_0 \ge \sqrt{z_1^2 + ... + z_{n-1}^2}
+   * @f]
+   * @param A A @f$\mathbb{R}^{n \times m}@f$ matrix.
+   * @param b A @f$ \mathbb{R}^{n} @f$ vector.
+   * @return The newly added Lorentz cone constraint.
+   */
+  std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b) {
+    return AddLorentzConeConstraint(A, b, {decision_variables_});
+  }
+
+  /**
+   * Imposes that a vector @f$ x\in\mathbb{R}^m @f$ lies in Lorentz cone. Namely
+   * @f[
+   * x_0 \ge \sqrt{x_1^2 + .. + x_{m-1}^2}
+   * @f]
+   * <!-->
+   * x(0) >= sqrt(x(1)^2 + ... + x(m-1)^2)
+   * <-->
+   * @param vars The stacked column of vars should lie within the Lorentz cone.
+   * @return The newly added Lorentz cone constraint.
    */
   std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint(
       const VariableListRef& vars);
 
   /**
-   * Adds Lorentz cone constraint to the program for all
-   * (currently existing) variables
+   * Adds a rotated Lorentz cone constraint referencing potentially a subset
+   * of decision variables. The linear expression @f$ z=Ax+b @f$ is in rotated
+   * Lorentz cone.
+   * A vector \f$ z \in\mathbb{R}^n \f$ is in the rotated Lorentz cone, if
    * <!--
-   * x(0) >= sqrt{x(1)^2 + ... + x(N-1)^2}
+   * z(0)*z(1) >= z(2)^2 + ... + z(n-1)^2
    * -->
    * @f[
-   * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
+   * z_0z_1 \ge z_2^2 + ... + z_{n-1}^2
    * @f]
-   */
-  std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint() {
-    return AddLorentzConeConstraint({decision_variables_});
-  }
-
-  /**
-   * Adds a rotated Lorentz cone constraint referencing potentially a subset
-   * of decision variables, such that
-   * <!--
-   * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
-   * x(0) >= 0, x(1) >= 0
-   * -->
-   * @f[ x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2 @f]
-   * @f[ x_0\ge 0, x_1\ge 0 @f]
    * @param con A pointer to a RotatedLorentzConeConstraint object.
    * @param vars The decision variables on which the constraint is imposed.
    */
@@ -1166,38 +1204,80 @@ class MathematicalProgram {
                      const VariableListRef& vars);
 
   /**
-   * @param vars The decision variables on which the constraint is imposed.
-   * Each DecisionVariableMatrix object should have only one column.
-   * Example: if you want to add the rotated Lorentz cone constraint
+   * Adds a rotated Lorentz cone constraint referencing potentially a subset
+   * of decision variables, The linear expression @f$ z=Ax+b @f$ is in rotated
+   * Lorentz cone.
+   * A vector \f$ z \in\mathbb{R}^n \f$ is in the rotated Lorentz cone, if
    * <!--
-   * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
-   * x(0) >= 0, x(1) >= 0
+   * z(0)*z(1) >= z(2)^2 + ... + z(n-1)^2
    * -->
-   * @f[ x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2 @f]
-   * @f[ x_0\ge 0, x_1\ge 0 @f]
+   * @f[
+   * z_0z_1 \ge z_2^2 + ... + z_{n-1}^2
+   * @f]
+   * where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^n@f$ are given
+   * matrices.
+   *
    * you can call
    * @code{.cc}
-   *   auto x = prog.NewContinuousVariables(N,'x');
-   *   auto con = prog.AddRotatedLorentzConeConstraint(x);
+   *   auto x = prog.NewContinuousVariables(n,'x');
+   *   auto con = prog.AddRotatedLorentzConeConstraint(A, b, {x});
    * @endcode
+   *
+   * @param A A matrix whose number of columns equals to the size of the
+   * decision variables.
+   * @param b A vector whose number of rows equals to the size fo the decision
+   * variables.
+   * @param vars The decision variables on which the constraint is imposed.
+   * Each DecisionVariableMatrix object should have only one column.
    */
   std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
-      const VariableListRef& vars);
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableListRef& vars) {
+    auto constraint = std::make_shared<RotatedLorentzConeConstraint>(A, b);
+    AddConstraint(constraint, vars);
+    return constraint;
+  }
 
   /**
    * Adds a rotated Lorentz constraint to the program for all
-   * (currently existing) variables.
+   * (currently existing) variables, the linear expression @f$ z=Ax+b @f$ is in
+   * rotated Lorentz cone.
+   * A vector \f$ z \in\mathbb{R}^n \f$ is in the rotated Lorentz cone, if
    * <!--
-   * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
-   * x(0) >= 0, x(1) >= 0
+   * z(0)*z(1) >= z(2)^2 + ... + z(n-1)^2
    * -->
-   * @f[ x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2 @f]
-   * @f[ x_0\ge 0, x_1\ge 0 @f]
+   * @f[
+   * z_0z_1 \ge z_2^2 + ... + z_{n-1}^2
+   * @f]
+   * where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^n@f$ are given
+   * matrices.
+   * @param A A matrix whose number of columns equals to the size of the
+   * decision variables.
+   * @param b A vector whose number of rows equals to the size fo the decision
+   * variables.
    */
-  std::shared_ptr<RotatedLorentzConeConstraint>
-  AddRotatedLorentzConeConstraint() {
-    return AddRotatedLorentzConeConstraint({decision_variables_});
+  std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b) {
+    return AddRotatedLorentzConeConstraint(A, b, {decision_variables_});
   }
+
+  /**
+   * Impose that a vector @f$ x\in\mathbb{R}^m @f$ is in rotated Lorentz cone.
+   * Namely
+   * @f[
+   * x_0 x_1 \ge x_2^2 + ... + x_{m-1}^2\\
+   * x_0 \ge 0, x_1 \ge 0
+   * @f]
+   * <!-->
+   * x(0)*x(1) >= x(2)^2 + ... x(m-1)^2
+   * x(0) >= 0, x(1) >= 0
+   * <-->
+   * @param vars The stacked column of vars lies in the rotated Lorentz cone.
+   * @return The newly added rotated Lorentz cone constraint.
+   */
+  std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
+      const VariableListRef& vars);
 
   /**
    * Adds a linear complementarity constraints referencing a subset of
