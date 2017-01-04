@@ -6,7 +6,9 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -16,6 +18,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
@@ -1068,6 +1071,31 @@ class MathematicalProgram {
     return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
                                decision_variables_);
   }
+
+  /**
+   * Adds one row of linear constraint lb <= e <= ub where @p e is a symbolic
+   * expression. Throws an exception if
+   *  1. @p e is a non-linear expression.
+   *  2. <tt>lb <= e <= ub</tt> is a trivial constraint such as 1 <= 2 <= 3.
+   *  3. <tt>lb <= e <= ub</tt> is unsatisfiable such as 1 <= -5 <= 3
+   *
+   * @param e A linear symbolic expression in the form of <tt>c0 + c1 * v1 +
+   * ... + cn * vn</tt> where @c c_i is a constant and @v_i is a variable.
+   * @param lb A scalar, the lower bound.
+   * @param ub A scalar, the upper bound.
+   */
+  Binding<LinearConstraint> AddLinearConstraint(const symbolic::Expression& e,
+                                                double lb, double ub);
+
+  /**
+   * Adds linear constraints represented by symbolic expressions to the
+   * program. It throws if @v includes a non-linear expression or <tt>lb <= v <=
+   * ub</tt> includes trivial/unsatisfiable constraints.
+   */
+  Binding<LinearConstraint> AddLinearConstraint(
+      const Eigen::Ref<const drake::VectorX<symbolic::Expression>>& v,
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub);
 
   /**
    * Adds linear equality constraints referencing potentially a
@@ -2312,6 +2340,48 @@ class MathematicalProgram {
 
   VectorXDecisionVariable NewVariables(VarType type, int rows,
                                        const std::vector<std::string>& names);
+
+  /** Decomposes a linear combination @p e = c0 + c1 * v1 + ... cn * vn into
+   *  the followings:
+   *
+   *     constant term      : c0
+   *     coefficient vector : [c1, ..., cn]
+   *     variable vector    : [v1, ..., vn]
+   *
+   *  Then, it returns a pair (c0, [c1, ..., cn]). A map from variable ID to
+   *  int, @p map_var_to_index, is used to decide a variable's index in a linear
+   *  combination.
+   *
+   *  \pre{1. @c coeffs is a row vector of double, whose length matches with the
+   *          size of @c map_var_to_index.
+   *       2. @c e is an addition symbolic-expression.}
+   */
+  template <typename Derived>
+  void DecomposeLinearExpression(
+      const symbolic::Expression& e,
+      const std::unordered_map<size_t, int>& map_var_to_index,
+      const Eigen::MatrixBase<Derived>& coeffs, double* constant_term) {
+    static_assert(std::is_same<typename Derived::Scalar, double>::value,
+                  "coeffs must be a matrix of double.");
+    DRAKE_DEMAND(coeffs.rows() == 1);
+    DRAKE_DEMAND(static_cast<size_t>(coeffs.cols()) == map_var_to_index.size());
+    DRAKE_ASSERT(is_addition(e));
+    *constant_term = get_constant_term_in_addition(e);
+    const std::map<symbolic::Expression, double>& term_to_coeff_map{
+        get_terms_in_addition(e)};
+    for (const std::pair<symbolic::Expression, double>& p : term_to_coeff_map) {
+      if (is_variable(p.first)) {
+        const symbolic::Variable& var{get_variable(p.first)};
+        const double coeff{p.second};
+        const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
+            0, map_var_to_index.at(var.get_id())) = coeff;
+      } else {
+        std::ostringstream oss;
+        oss << "Expression " << e << " is non-linear.";
+        throw std::runtime_error(oss.str());
+      }
+    }
+  }
 };
 }  // namespace solvers
 }  // namespace drake
