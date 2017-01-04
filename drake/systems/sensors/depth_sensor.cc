@@ -58,11 +58,11 @@ DepthSensor::DepthSensor(const std::string& name,
   }
   DRAKE_DEMAND(specification_.min_range() <= specification_.max_range() &&
                "min_range must be less than or equal to max_range");
-  state_input_port_id_ =
+  input_port_index_ =
       DeclareInputPort(kVectorValued,
                        tree.get_num_positions() + tree.get_num_velocities())
           .get_index();
-  state_output_port_id_ =
+  output_port_index_ =
       DeclareOutputPort(kVectorValued, get_num_depth_readings()).get_index();
   PrecomputeRaycastEndpoints();
 }
@@ -115,12 +115,12 @@ void DepthSensor::PrecomputeRaycastEndpoints() {
 
 const InputPortDescriptor<double>&
 DepthSensor::get_rigid_body_tree_state_input_port() const {
-  return this->get_input_port(state_input_port_id_);
+  return this->get_input_port(input_port_index_);
 }
 
 const OutputPortDescriptor<double>& DepthSensor::get_sensor_state_output_port()
     const {
-  return System<double>::get_output_port(state_output_port_id_);
+  return System<double>::get_output_port(output_port_index_);
 }
 
 std::unique_ptr<BasicVector<double>> DepthSensor::AllocateOutputVector(
@@ -189,7 +189,7 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
 
   // Evaluates the state output port.
   BasicVector<double>* output_vector =
-      output->GetMutableVectorData(state_output_port_id_);
+      output->GetMutableVectorData(output_port_index_);
   DRAKE_ASSERT(output_vector != nullptr);
   output_vector->SetFromVector(distances);
 }

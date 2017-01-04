@@ -198,8 +198,8 @@ class DepthSensor : public systems::LeafSystem<double> {
   const RigidBodyTree<double>& tree_;
   const RigidBodyFrame<double> frame_;
   const DepthSensorSpecification& specification_;
-  int state_input_port_id_{};
-  int state_output_port_id_{};
+  int input_port_index_{};
+  int output_port_index_{};
 
   // A cache of where a depth measurement ray endpoint would be if the maximum
   // range were achieved. This is cached to avoid repeated allocation.
