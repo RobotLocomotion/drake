@@ -23,7 +23,8 @@ namespace {
 // operation can be EXPENSIVE, since it requires calling GRBupdatemodel
 // (Gurobi typically adopts lazy update, where it does not update the model
 // until calling the optimize function).
-#ifdef DRAKE_ASSERT_IS_ARMED
+// This function should only be used in the DEBUG mode as a sanity check.
+__attribute((unused))
 bool HasCorrectNumberOfVariables(GRBmodel* model, int num_vars_expected) {
   int error = GRBupdatemodel(model);
   if (error) return false;
@@ -32,7 +33,6 @@ bool HasCorrectNumberOfVariables(GRBmodel* model, int num_vars_expected) {
   if (error) return false;
   return (num_vars == num_vars_expected);
 }
-#endif
 
 /**
  * Adds a constraint of one of the following forms :
@@ -598,9 +598,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
         sparseness_threshold, rotated_lorentz_cone_new_variable_indices, model);
   }
 
-  #ifdef DRAKE_ASSERT_IS_ARMED
   DRAKE_ASSERT(HasCorrectNumberOfVariables(model, is_new_variable.size()));
-  #endif
 
   if (!error) {
     for (const auto it : prog.GetSolverOptionsDouble("GUROBI")) {
