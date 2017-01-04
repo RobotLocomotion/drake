@@ -1,11 +1,5 @@
 # -*- python -*-
 
-# This file contains rules for the Bazel build system.
-# See http://bazel.io/ .
-
-# In particular, this is a Skylark extension:
-# https://bazel.build/versions/master/docs/skylark/concepts.html
-
 def _lcm_srcs_to_outs(lcm_package, lcm_srcs, extension):
     """Return the list of filenames (prefixed by the package directory and
     switched to a new extension), based on the lcm_package= and lcm_srcs=
