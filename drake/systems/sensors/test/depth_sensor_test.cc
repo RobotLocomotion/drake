@@ -32,8 +32,9 @@ GTEST_TEST(TestDepthSensor, AccessorsAndToStringTest) {
                                Eigen::Isometry3d::Identity());
 
   // Defines the Device Under Test (DUT).
-  const DepthSensorSpecification& specification =
-      DepthSensorSpecification::get_octant_1_spec();
+  DepthSensorSpecification specification;
+  DepthSensorSpecification::set_octant_1_spec(&specification);
+
   DepthSensor dut(kSensorName, tree, frame, specification);
   EXPECT_EQ(dut.get_specification(), specification);
 
@@ -82,20 +83,23 @@ void DoEmptyWorldTest(const char* const name,
 
 // Tests the ability to scan the sensor's X,Y plane (i.e., pitch = 0).
 GTEST_TEST(TestDepthSensor, XyEmptyWorldTest) {
-  DoEmptyWorldTest("foo depth sensor",
-                   DepthSensorSpecification::get_xy_planar_spec());
+  DepthSensorSpecification specification;
+  DepthSensorSpecification::set_xy_planar_spec(&specification);
+  DoEmptyWorldTest("foo depth sensor", specification);
 }
 
 // Tests the ability to scan the sensor's X,Z plane (i.e., yaw = 0).
 GTEST_TEST(TestDepthSensor, XzEmptyWorldTest) {
-  DoEmptyWorldTest("foo depth sensor",
-                   DepthSensorSpecification::get_xz_planar_spec());
+  DepthSensorSpecification specification;
+  DepthSensorSpecification::set_xz_planar_spec(&specification);
+  DoEmptyWorldTest("foo depth sensor", specification);
 }
 
 // Tests the ability to scan the sensor's surrounding X,Y,Z volume.
 GTEST_TEST(TestDepthSensor, XyzEmptyWorldTest) {
-  DoEmptyWorldTest("foo depth sensor",
-                   DepthSensorSpecification::get_xyz_spherical_spec());
+  DepthSensorSpecification specification;
+  DepthSensorSpecification::set_xyz_spherical_spec(&specification);
+  DoEmptyWorldTest("foo depth sensor", specification);
 }
 
 const double kBoxWidth{0.1};
@@ -161,8 +165,8 @@ std::pair<VectorX<double>, Matrix3Xd> DoBoxOcclusionTest(
 // [-M_PI_2, M_PI_2]) in a world containing a box at (0.5, 0, 0). This checks
 // both the depth image and the point cloud.
 GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
-  DepthSensorSpecification specification =
-      DepthSensorSpecification::get_xy_planar_spec();
+  DepthSensorSpecification specification;
+  DepthSensorSpecification::set_xy_planar_spec(&specification);
 
   // Adjusts the min / max yaw range to ensure the sensor is able to obtain
   // four depth measurements of the box's sensor-facing surface.
@@ -222,8 +226,8 @@ GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
 // that pitch rotates the sensor's optical frame around the sensor's base
 // frame's -Y axis.
 GTEST_TEST(TestDepthSensor, XzBoxInWorldTest) {
-  DepthSensorSpecification specification =
-      DepthSensorSpecification::get_xz_planar_spec();
+  DepthSensorSpecification specification;
+  DepthSensorSpecification::set_xz_planar_spec(&specification);
 
   const Vector3d box_xyz(0, 0, 0.5);  // x, y, z location of box.
   const std::pair<VectorX<double>, Matrix3Xd> result =
@@ -254,12 +258,14 @@ GTEST_TEST(TestDepthSensor, XzBoxInWorldTest) {
 // than the minimum sensing distance. This also covers the scenario where
 // min_yaw = max_yaw = min_pitch = max_pitch = 0.
 GTEST_TEST(TestDepthSensor, TestTooClose) {
+  DepthSensorSpecification specification;
+  DepthSensorSpecification::set_x_linear_spec(&specification);
+
   // Note that the minimum sensing distance is 1m but the box is placed 0.5m in
   // front of the sensor.
   const Vector3d box_xyz(0.5, 0, 0);  // x, y, z location of box.
   const std::pair<VectorX<double>, Matrix3Xd> result = DoBoxOcclusionTest(
-      "foo depth sensor", DepthSensorSpecification::get_x_linear_spec(),
-      box_xyz);
+      "foo depth sensor", specification, box_xyz);
   const VectorX<double> depth_measurements = std::get<0>(result);
 
   EXPECT_EQ(depth_measurements.size(), 1);

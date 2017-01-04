@@ -8,11 +8,14 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/// Holds a DepthSensor's specifications.
+/// Holds a DepthSensor's specification.
 ///
 /// @see DepthSensor.
 class DepthSensorSpecification {
  public:
+  /// Constructions a %DepthsensorSpecification with all default values.
+  DepthSensorSpecification() { }
+
   /// Constructs a fully-defined %DepthSensorSpecification.
   ///
   /// @param[in] min_yaw The minimum horizontal scan angle in the sensor's
@@ -46,6 +49,14 @@ class DepthSensorSpecification {
                            int num_yaw_values, int num_pitch_values,
                            double min_range, double max_range);
 
+  // Non-copyable.
+  /// @name Deleted Copy/Move Operations
+  /// DepthSensorSpecification is neither copyable nor moveable.
+  ///@{
+  explicit DepthSensorSpecification(const DepthSensorSpecification&) = delete;
+  DepthSensorSpecification& operator=(const DepthSensorSpecification&) = delete;
+  ///@}
+
   /// @name Accessors to manually specified parameters.
   ///
   /// The following accessors are for parameter values that are manually
@@ -58,33 +69,37 @@ class DepthSensorSpecification {
   double max_pitch() const { return max_pitch_; }
   int num_yaw_values() const { return num_yaw_values_; }
   int num_pitch_values() const { return num_pitch_values_; }
-  int num_depth_readings() const { return num_depth_readings_; }
   double min_range() const { return min_range_; }
   double max_range() const { return max_range_; }
   ///@}
 
-  /// @name Accessor to automatically derived parameters.
+  /// @name Accessors to automatically derived parameters.
   ///
-  /// The following accessors are for values that are derived based on the
+  /// The following methos are for values that are derived based on the
   /// manually specified parameters.
   ///@{
-  double yaw_increment() const { return yaw_increment_; }
-  double pitch_increment() const { return pitch_increment_; }
+  int num_depth_readings() const;
+  double yaw_increment() const;
+  double pitch_increment() const;
   ///@}
 
   void set_min_yaw(double min_yaw);
   void set_max_yaw(double max_yaw);
+  void set_min_pitch(double min_pitch);
+  void set_max_pitch(double max_pitch);
   void set_num_yaw_values(double num_yaw_values);
   void set_num_pitch_values(double num_yaw_values);
+  void set_min_range(double min_range);
+  void set_max_range(double max_range);
 
-  /// @name Convenient Instantiations of DepthSensorSpecification.
+  /// @name Methods for the convenient initialization of commonly-used
+  /// DepthSensorSpecification specifications.
   ///
-  /// The following accessors provide instantiations of frequently used
-  /// DepthSensorSpecification objects that can be used directly or as templates
-  /// for customization.
+  /// The following accessors provide frequently used DepthSensorSpecification
+  /// settings that can be used directly or as templates for customization.
   ///@{
 
-  /// Returns a DepthSensorSpecification that covers octant 1 of the sensor's
+  /// Sets @p spec to specify a sensor that  covers octant 1 of the sensor's
   /// base frame. It contains the following specifications:
   ///
   ///  - min_yaw = 0
@@ -96,19 +111,18 @@ class DepthSensorSpecification {
   ///  - min_range = 0
   ///  - max_range = 1
   ///
-  static const DepthSensorSpecification& get_octant_1_spec() {
-    static const DepthSensorSpecification spec(0,         // min_yaw
-                                               M_PI_2,    // max_yaw
-                                               0,         // min_pitch
-                                               M_PI_2,    // max_pitch
-                                               10,        // num_yaw_values
-                                               5,         // num_pitch_values
-                                               0,         // min_range
-                                               1);        // max_range
-    return spec;
+  static void set_octant_1_spec(DepthSensorSpecification* spec) {
+    spec->set_min_yaw(0);
+    spec->set_max_yaw(M_PI_2);
+    spec->set_min_pitch(0);
+    spec->set_max_pitch(M_PI_2);
+    spec->set_num_yaw_values(10);
+    spec->set_num_pitch_values(5);
+    spec->set_min_range(0);
+    spec->set_max_range(1);
   }
 
-  /// Returns a DepthSensorSpecification that covers the sensor's base frame's
+  /// Sets @p spec to specify a sensor that covers the sensor's base frame's
   /// X/Y plane. It contains the following specifications:
   ///
   ///  - min_yaw = -M_PI
@@ -120,19 +134,23 @@ class DepthSensorSpecification {
   ///  - min_range = 0
   ///  - max_range = 1
   ///
-  static const DepthSensorSpecification& get_xy_planar_spec() {
-    static const DepthSensorSpecification spec(-M_PI,  // min_yaw
-                                               M_PI,   // max_yaw
-                                               0,      // min_pitch
-                                               0,      // max_pitch
-                                               50,     // num_yaw_values
-                                               1,      // num_pitch_values
-                                               0,      // min_range
-                                               1);     // max_range
-    return spec;
+  /// The specification describes a "planar" depth sensor in the sense that
+  /// `min_pitch` and `max_pitch` are both zero whereas the yaw range is
+  /// non-zero. Thus, it scans in the yaw direction, which is in the plane
+  /// formed by the X and Y axes of the sensor's base frame. Example depth
+  /// sensors that fit this description include those made by Hokuyo and SICK.
+  static void set_xy_planar_spec(DepthSensorSpecification* spec) {
+    spec->set_min_yaw(-M_PI);
+    spec->set_max_yaw(M_PI);
+    spec->set_min_pitch(0);
+    spec->set_max_pitch(0);
+    spec->set_num_yaw_values(50);
+    spec->set_num_pitch_values(1);
+    spec->set_min_range(0);
+    spec->set_max_range(1);
   }
 
-  /// Returns a DepthSensorSpecification that covers the sensor's base frame's
+  /// Sets @p spec to specify a sensor that covers the sensor's base frame's
   /// X/Z plane. It contains the following specifications:
   ///
   ///  - min_yaw = 0
@@ -144,22 +162,24 @@ class DepthSensorSpecification {
   ///  - min_range = 0
   ///  - max_range = 1
   ///
-  static const DepthSensorSpecification& get_xz_planar_spec() {
-    static const DepthSensorSpecification spec(0,          // min_yaw
-                                               0,          // max_yaw
-                                               -M_PI_2,    // min_pitch
-                                               M_PI_2,     // max_pitch
-                                               1,          // num_yaw_values
-                                               50,         // num_pitch_values
-                                               0,          // min_range
-                                               1);         // max_range
-    return spec;
+  /// See the description of get_xy_planar_spec() for an explanation on why the
+  /// returned specification describes a "planar" depth sensor. In this case,
+  /// `min_yaw` and `max_yaw` are both equal to zero whereas the pitch range is
+  /// not zero, meaning the described sensor scans its X / Z plane.
+  static void set_xz_planar_spec(DepthSensorSpecification* spec) {
+    spec->set_min_yaw(0);
+    spec->set_max_yaw(0);
+    spec->set_min_pitch(-M_PI_2);
+    spec->set_max_pitch(M_PI_2);
+    spec->set_num_yaw_values(1);
+    spec->set_num_pitch_values(50);
+    spec->set_min_range(0);
+    spec->set_max_range(1);
   }
 
-  /// Returns a DepthSensorSpecification that covers all 8 octants of the
-  /// sensor's base frame. The sensed region is in the shape of a hollow
-  /// sphere with a radius between min_range and max_range. It contains the
-  /// following specifications:
+  /// Sets @p spec to specify a sensor that covers all 8 octants of the sensor's
+  /// base frame. The sensed region is in the shape of a sphere with a radius
+  /// between min_range and max_range. It contains the following specifications:
   ///
   ///  - min_yaw = -M_PI
   ///  - max_yaw = M_PI
@@ -170,23 +190,22 @@ class DepthSensorSpecification {
   ///  - min_range = 0
   ///  - max_range = 1
   ///
-  /// Note that since min_range is 0, the sensed sphere is actually solid.
+  /// Note that since min_range is 0, the sensed sphere is solid.
   ///
-  static const DepthSensorSpecification& get_xyz_spherical_spec() {
-    static const DepthSensorSpecification spec(-M_PI,      // min_yaw
-                                               M_PI,       // max_yaw
-                                               -M_PI_2,    // min_pitch
-                                               M_PI_2,     // max_pitch
-                                               50,         // num_yaw_values
-                                               50,         // num_pitch_values
-                                               0,          // min_range
-                                               1);         // max_range
-    return spec;
+  static void set_xyz_spherical_spec(DepthSensorSpecification* spec) {
+    spec->set_min_yaw(-M_PI);
+    spec->set_max_yaw(M_PI);
+    spec->set_min_pitch(-M_PI_2);
+    spec->set_max_pitch(M_PI_2);
+    spec->set_num_yaw_values(50);
+    spec->set_num_pitch_values(50);
+    spec->set_min_range(0);
+    spec->set_max_range(1);
   }
 
-  /// Returns a DepthSensorSpecification that consists of a single depth
-  /// measurement along the sensor's base frame's +X axis between 1 meter and 2
-  /// meters. It contains the following specifications:
+  /// Sets @p spec to specify a sensor with a single depth measurement along the
+  /// sensor's base frame's +X axis between 1 meter and 2 meters. It contains
+  /// the following specifications:
   ///
   ///  - min_yaw = 0
   ///  - max_yaw = 0
@@ -197,16 +216,15 @@ class DepthSensorSpecification {
   ///  - min_range = 1
   ///  - max_range = 2
   ///
-  static const DepthSensorSpecification& get_x_linear_spec() {
-    static const DepthSensorSpecification spec(0,   // min_yaw
-                                               0,   // max_yaw
-                                               0,   // min_pitch
-                                               0,   // max_pitch
-                                               1,   // num_yaw_values
-                                               1,   // num_pitch_values
-                                               1,   // min_range
-                                               2);  // max_range
-    return spec;
+  static void set_x_linear_spec(DepthSensorSpecification* spec) {
+    spec->set_min_yaw(0);
+    spec->set_max_yaw(0);
+    spec->set_min_pitch(0);
+    spec->set_max_pitch(0);
+    spec->set_num_yaw_values(1);
+    spec->set_num_pitch_values(1);
+    spec->set_min_range(1);
+    spec->set_max_range(2);
   }
   ///@}
  private:
@@ -220,13 +238,8 @@ class DepthSensorSpecification {
   double max_pitch_{};
   int num_yaw_values_{};
   int num_pitch_values_{};
-  int num_depth_readings_{};
   double min_range_{0};
   double max_range_{std::numeric_limits<double>::max()};
-
-  // The following variables are computed based on the above variables.
-  double yaw_increment_{};
-  double pitch_increment_{};
 };
 
 inline bool operator==(const DepthSensorSpecification& lhs,

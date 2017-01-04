@@ -104,50 +104,8 @@ class DepthSensor : public systems::LeafSystem<double> {
   /// writing bad code.
   static constexpr double kTooClose{0};
 
-  /// A constructor that initializes a DepthSensor using a separate input
-  /// parameter for each dimension within the sensor specification.
-  ///
-  /// @param[in] name The name of the depth sensor. This can be any value but
-  /// should typically be unique among all sensors attached to a particular
-  /// model instance.
-  ///
-  /// @param[in] tree The RigidBodyTree containing the geometric configuration
-  /// of the world. This parameter is aliased by a class member variable. Thus,
-  /// its lifespan must exceed this class'.
-  ///
-  /// @param[in] frame The frame to which this depth sensor is attached. A copy
-  /// of this frame is stored as a class member variable.
-  ///
-  /// @param[in] min_yaw The minimum horizontal (in @p frame) scan angle.
-  ///
-  /// @param[in] max_yaw The maximum horizontal (in @p frame) scan angle.
-  ///
-  /// @param[in] min_pitch The minimum vertical (in @p frame) scan angle.
-  ///
-  /// @param[in] max_pitch The maximum vertical (in @p frame) scan angle.
-  ///
-  /// @param[in] num_yaw_values The number of yaw values at which depth
-  /// measurements are taken. These measurements are evenly spread between
-  /// @p min_yaw and @p max_yaw. This value must be greater than or equal to
-  /// 1, which occurs when @p min_yaw equals @p max_yaw.
-  ///
-  /// @param[in] num_pitch_values The number of yaw values at which depth
-  /// measurements are taken. These measurements are evenly spread between
-  /// @p min_pitch and @p max_pitch. This value must be greater than or equal to
-  /// 1, which occurs when @p min_pitch equals @p max_pitch.
-  ///
-  /// @param[in] min_range The minimum sensing range.
-  ///
-  /// @param[in] max_range The maximum sensing range.
-  ///
-  DepthSensor(const std::string& name, const RigidBodyTree<double>& tree,
-              const RigidBodyFrame<double>& frame, double min_yaw,
-              double max_yaw, double min_pitch, double max_pitch,
-              int num_yaw_values, int num_pitch_values, double min_range,
-              double max_range);
-
-  /// A constructor that initializes a DepthSensor using an
-  /// DepthSensorSpecification.
+  /// A %DepthSensor constructor that initializes the sensor by computing all of
+  /// the raycast endpoints in the sensor's base frame.
   ///
   /// @param[in] name The name of the depth sensor. This can be any value, but
   /// should typically be unique among all sensors attached to a particular
@@ -159,13 +117,14 @@ class DepthSensor : public systems::LeafSystem<double> {
   ///
   /// @param[in] frame The frame to which this depth sensor is attached.
   ///
-  /// @param[in] specs The specifications of this sensor. A copy of these
-  /// specifications is stored as a class member variable. The frame ID within
-  /// this specification must equal the name of @p frame.
+  /// @param[in] specification The specifications of this sensor. An alias of
+  /// this specification is stored as a class memer variable, meaning its
+  /// lifetime must exceed the lifetime of the %DepthSensor object created by
+  /// this constructor.
   ///
   DepthSensor(const std::string& name, const RigidBodyTree<double>& tree,
               const RigidBodyFrame<double>& frame,
-              const DepthSensorSpecification& specs);
+              const DepthSensorSpecification& specification);
 
   // Non-copyable.
   /// @name Deleted Copy/Move Operations
@@ -213,10 +172,10 @@ class DepthSensor : public systems::LeafSystem<double> {
   /// sensed values.
   const OutputPortDescriptor<double>& get_sensor_state_output_port() const;
 
-  /// Allocates the output port. See this class' description for details of this
-  /// port.
-  std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const Context<double>& context) const override;
+  /// Allocates the output vector. See this class' description for details of
+  /// this port.
+  std::unique_ptr<BasicVector<double>> AllocateOutputVector(
+      const OutputPortDescriptor<double>& descriptor) const override;
 
   friend std::ostream& operator<<(std::ostream& out,
                                   const DepthSensor& depth_sensor);
@@ -228,23 +187,23 @@ class DepthSensor : public systems::LeafSystem<double> {
 
  private:
   // The depth sensor will cast a ray with its start point at (0,0,0) in the
-  // sensor's base frame (as defined by RigidBodyTreeSensor::get_frame()). Its
-  // end, in the sensor's frame, is computed by this method and stored in member
-  // variable raycast_endpoints_ at the time of construction. raycast_endpoints_
-  // is only computed once at construction since the end points are constant in
-  // the sensor's base frame.
-  void CacheRaycastEndpoints();
+  // sensor's base frame (as defined by get_frame()). Its end, also in the
+  // sensor's base frame, is computed by this method and stored in
+  // raycast_endpoints_ at the time of construction. raycast_endpoints_ is only
+  // computed once at the time of construction since the end points are constant
+  // in the sensor's base frame.
+  void PrecomputeRaycastEndpoints();
 
   const std::string name_;
   const RigidBodyTree<double>& tree_;
   const RigidBodyFrame<double> frame_;
-  const DepthSensorSpecification specification_;
+  const DepthSensorSpecification& specification_;
   int state_input_port_id_{};
   int state_output_port_id_{};
 
   // A cache of where a depth measurement ray endpoint would be if the maximum
   // range were achieved. This is cached to avoid repeated allocation.
-  std::unique_ptr<Eigen::Matrix3Xd> raycast_endpoints_;
+  Eigen::Matrix3Xd raycast_endpoints_;
 };
 
 }  // namespace sensors

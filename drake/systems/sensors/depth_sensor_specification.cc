@@ -35,46 +35,51 @@ DepthSensorSpecification::DepthSensorSpecification(
       max_pitch_(max_pitch),
       num_yaw_values_(num_yaw_values),
       num_pitch_values_(num_pitch_values),
-      num_depth_readings_(num_yaw_values * num_pitch_values),
       min_range_(min_range),
-      max_range_(max_range),
-      yaw_increment_(CalculateIncrementSize(max_yaw, min_yaw, num_yaw_values)),
-      pitch_increment_(
-          CalculateIncrementSize(max_pitch, min_pitch, num_pitch_values)) {}
+      max_range_(max_range) {}
+
+int DepthSensorSpecification::num_depth_readings() const {
+  return num_yaw_values_ * num_pitch_values_;
+}
+
+double DepthSensorSpecification::yaw_increment() const {
+  return CalculateIncrementSize(max_yaw_, min_yaw_, num_yaw_values_);
+}
+
+double DepthSensorSpecification::pitch_increment() const {
+  return CalculateIncrementSize(max_pitch_, min_pitch_, num_pitch_values_);
+}
 
 void DepthSensorSpecification::set_min_yaw(double min_yaw) {
   min_yaw_ = min_yaw;
-  update_yaw_increment();
 }
 
 void DepthSensorSpecification::set_max_yaw(double max_yaw) {
   max_yaw_ = max_yaw;
-  update_yaw_increment();
+}
+
+void DepthSensorSpecification::set_min_pitch(double min_pitch) {
+  min_pitch_ = min_pitch;
+}
+
+void DepthSensorSpecification::set_max_pitch(double max_pitch) {
+  max_pitch_ = max_pitch;
 }
 
 void DepthSensorSpecification::set_num_yaw_values(double num_yaw_values) {
   num_yaw_values_ = num_yaw_values;
-  update_num_depth_readings();
-  update_yaw_increment();
 }
 
 void DepthSensorSpecification::set_num_pitch_values(double num_pitch_values) {
   num_pitch_values_ = num_pitch_values;
-  update_num_depth_readings();
-  update_pitch_increment();
 }
 
-void DepthSensorSpecification::update_num_depth_readings() {
-  num_depth_readings_ = num_yaw_values_ * num_pitch_values_;
+void DepthSensorSpecification::set_min_range(double min_range) {
+  min_range_ = min_range;
 }
 
-void DepthSensorSpecification::update_yaw_increment() {
-  yaw_increment_ = CalculateIncrementSize(max_yaw_, min_yaw_, num_yaw_values_);
-}
-
-void DepthSensorSpecification::update_pitch_increment() {
-  pitch_increment_ =
-      CalculateIncrementSize(max_pitch_, min_pitch_, num_pitch_values_);
+void DepthSensorSpecification::set_max_range(double max_range) {
+  max_range_ = max_range;
 }
 
 }  // namespace sensors

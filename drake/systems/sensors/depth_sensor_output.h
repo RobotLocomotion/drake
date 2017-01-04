@@ -21,6 +21,14 @@ class DepthSensorOutput : public BasicVector<T> {
   /// lifespan of this class' instance.
   explicit DepthSensorOutput(const DepthSensorSpecification& spec);
 
+  // Non-copyable.
+  /// @name Deleted Copy/Move Operations
+  /// DepthSensorOutput is neither copyable nor moveable.
+  ///@{
+  explicit DepthSensorOutput(const DepthSensorOutput&) = delete;
+  DepthSensorOutput& operator=(const DepthSensorOutput&) = delete;
+  ///@}
+
   /// @name Getters and Setters
   //@{
 
@@ -49,8 +57,9 @@ class DepthSensorOutput : public BasicVector<T> {
   ///
   int GetNumValidDistanceMeasurements() const;
 
-  /// Returns a point cloud in the sensor's base frame based on the depth image
-  /// contained within this output.
+  /// Returns a point cloud based on the depth image contained within this
+  /// output. Both the depth image and resulting point cloud are defined in the
+  /// sensor's base frame.
   Eigen::Matrix3Xd GetPointCloud() const;
 
   //@}

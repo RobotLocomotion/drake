@@ -32,25 +32,12 @@ constexpr double DepthSensor::kTooClose;
 
 DepthSensor::DepthSensor(const std::string& name,
                          const RigidBodyTree<double>& tree,
-                         const RigidBodyFrame<double>& frame, double min_yaw,
-                         double max_yaw, double min_pitch, double max_pitch,
-                         int num_yaw_values, int num_pitch_values,
-                         double min_range, double max_range)
-    : DepthSensor(name, tree, frame,
-                  DepthSensorSpecification(
-                      min_yaw, max_yaw, min_pitch, max_pitch,
-                      num_yaw_values, num_pitch_values, min_range, max_range)) {
-}
-
-DepthSensor::DepthSensor(const std::string& name,
-                         const RigidBodyTree<double>& tree,
                          const RigidBodyFrame<double>& frame,
                          const DepthSensorSpecification& specification)
     : name_(name),
       tree_(tree),
       frame_(frame),
-      specification_(specification),
-      raycast_endpoints_(std::make_unique<Matrix3Xd>()) {
+      specification_(specification) {
   DRAKE_DEMAND(specification_.min_yaw() <= specification_.max_yaw() &&
                "min_yaw must be less than or equal to max_yaw.");
   DRAKE_DEMAND(specification_.min_pitch() <= specification_.max_pitch() &&
@@ -77,11 +64,11 @@ DepthSensor::DepthSensor(const std::string& name,
           .get_index();
   state_output_port_id_ =
       DeclareOutputPort(kVectorValued, get_num_depth_readings()).get_index();
-  CacheRaycastEndpoints();
+  PrecomputeRaycastEndpoints();
 }
 
-void DepthSensor::CacheRaycastEndpoints() {
-  raycast_endpoints_->resize(3, get_num_depth_readings());
+void DepthSensor::PrecomputeRaycastEndpoints() {
+  raycast_endpoints_.resize(3, get_num_depth_readings());
 
   // TODO(liang.fok) Optimize the following code by eliminating duplicate end
   // points. Currently, identical raycast end points can occur when:
@@ -112,15 +99,15 @@ void DepthSensor::CacheRaycastEndpoints() {
       // Compute the location of the raycast end point assuming a max sensing
       // range of one and no occlusions. This is done using the same equations
       // that convert from spherical coordinates to Cartesian coordinates.
-      double x = cos(pitch) * cos(yaw);
-      double y = cos(pitch) * sin(yaw);
-      double z = sin(pitch);
+      const double x = cos(pitch) * cos(yaw);
+      const double y = cos(pitch) * sin(yaw);
+      const double z = sin(pitch);
 
       // The max range is increased by 10% (i.e., multiplied by 1.1) to ensure
       // the range cast end point exceeds the maximum range of the sensor. This
       // is so we can detect when an object is sensed at precisely the maximum
       // range of the sensor.
-      raycast_endpoints_->col(i * get_num_pixel_cols() + j) =
+      raycast_endpoints_.col(i * get_num_pixel_cols() + j) =
           1.1 * specification_.max_range() * Vector3<double>(x, y, z);
     }
   }
@@ -136,13 +123,10 @@ const OutputPortDescriptor<double>& DepthSensor::get_sensor_state_output_port()
   return System<double>::get_output_port(state_output_port_id_);
 }
 
-std::unique_ptr<SystemOutput<double>> DepthSensor::AllocateOutput(
-    const Context<double>& context) const {
-  auto data = make_unique<DepthSensorOutput<double>>(specification_);
-  auto port = make_unique<OutputPort>(move(data));
-  auto output = make_unique<LeafSystemOutput<double>>();
-  output->get_mutable_ports()->push_back(move(port));
-  return std::unique_ptr<SystemOutput<double>>(output.release());
+std::unique_ptr<BasicVector<double>> DepthSensor::AllocateOutputVector(
+    const OutputPortDescriptor<double>& descriptor) const {
+  DRAKE_DEMAND(descriptor.size() == specification_.num_depth_readings());
+  return std::make_unique<DepthSensorOutput<double>>(specification_);
 }
 
 void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
@@ -170,13 +154,14 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
   // holds this sensor. Only re-compute the ends of the casted rays in the world
   // frame if this configuration has changed.
   Matrix3Xd raycast_endpoints_world =
-      tree_.transformPoints(kinematics_cache, *raycast_endpoints_, frame_index,
+      tree_.transformPoints(kinematics_cache, raycast_endpoints_, frame_index,
                             0 /* to_body_or_frame_ind */);
 
   VectorX<double> distances(get_num_depth_readings());
 
-  // TODO(liang.fok) Remove the need for const_cast once
-  // RigidBodyTree::collisionRaycast() is made const, see #4592.
+  // TODO(liang.fok) Remove the need for const_cast once GeometryWorld and
+  // GeometryQuery are introduced. See:
+  // https://github.com/RobotLocomotion/drake/issues/4592#issuecomment-269491752
   const_cast<RigidBodyTree<double>&>(tree_).collisionRaycast(
       kinematics_cache, origin, raycast_endpoints_world, distances);
 
@@ -214,15 +199,15 @@ std::ostream& operator<<(std::ostream& out, const DepthSensor& sensor) {
   x_buff << "x = [";
   y_buff << "y = [";
   z_buff << "z = [";
-  for (int i = 0; i < sensor.raycast_endpoints_->cols(); ++i) {
+  for (int i = 0; i < sensor.raycast_endpoints_.cols(); ++i) {
     if (i != 0) {
       x_buff << ", ";
       y_buff << ", ";
       z_buff << ", ";
     }
-    x_buff << (*sensor.raycast_endpoints_)(0, i);
-    y_buff << (*sensor.raycast_endpoints_)(1, i);
-    z_buff << (*sensor.raycast_endpoints_)(2, i);
+    x_buff << sensor.raycast_endpoints_(0, i);
+    y_buff << sensor.raycast_endpoints_(1, i);
+    z_buff << sensor.raycast_endpoints_(2, i);
   }
   x_buff << "]\n";
   y_buff << "]\n";

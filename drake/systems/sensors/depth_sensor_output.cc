@@ -57,7 +57,7 @@ template <typename T>
 int DepthSensorOutput<T>::GetNumValidDistanceMeasurements() const {
   int result = 0;
   for (int i = 0; i < spec_.num_depth_readings(); ++i) {
-    double distance = BasicVector<T>::GetAtIndex(i);
+    const double distance = BasicVector<T>::GetAtIndex(i);
     if (distance != DepthSensor::kError && distance != DepthSensor::kTooFar &&
         distance != DepthSensor::kTooClose) {
       ++result;
@@ -68,26 +68,26 @@ int DepthSensorOutput<T>::GetNumValidDistanceMeasurements() const {
 
 template <typename T>
 Matrix3Xd DepthSensorOutput<T>::GetPointCloud() const {
-  int num_depth_measurements = GetNumValidDistanceMeasurements();
+  const int num_depth_measurements = GetNumValidDistanceMeasurements();
   Matrix3Xd result = Matrix3Xd::Zero(3, num_depth_measurements);
 
   int point_cloud_index = 0;
   for (int yaw_index = 0; yaw_index < spec_.num_yaw_values(); ++yaw_index) {
     for (int pitch_index = 0; pitch_index < spec_.num_pitch_values();
          ++pitch_index) {
-      double distance = GetDistance(yaw_index, pitch_index);
+      const double distance = GetDistance(yaw_index, pitch_index);
       if (distance != DepthSensor::kError && distance != DepthSensor::kTooFar &&
           distance != DepthSensor::kTooClose) {
-        double yaw = spec_.min_yaw() + yaw_index * spec_.yaw_increment();
-        double pitch =
+        const double yaw = spec_.min_yaw() + yaw_index * spec_.yaw_increment();
+        const double pitch =
             spec_.min_pitch() + pitch_index * spec_.pitch_increment();
 
         // Compute the Cartesian location of the collision. This is done using
         // the same equations that convert from spherical coordinates to
         // Cartesian coordinates.
-        double x = distance * cos(pitch) * cos(yaw);
-        double y = distance * cos(pitch) * sin(yaw);
-        double z = distance * sin(pitch);
+        const double x = distance * cos(pitch) * cos(yaw);
+        const double y = distance * cos(pitch) * sin(yaw);
+        const double z = distance * sin(pitch);
 
         DRAKE_ASSERT(point_cloud_index < num_depth_measurements);
         result(0, point_cloud_index) = x;
