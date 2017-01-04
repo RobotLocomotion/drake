@@ -32,6 +32,13 @@ git_repository(
 )
 
 new_git_repository(
+    name = "google_styleguide",
+    remote = "https://github.com/google/styleguide.git",
+    commit = "159b4c81bbca97a9ca00f1195a37174388398a67",
+    build_file = "tools/google_styleguide.BUILD",
+)
+
+new_git_repository(
     name = "eigen",
     remote = "https://github.com/RobotLocomotion/eigen-mirror.git",
     commit = "d3ee2bc648be3d8be8c596a9a0aefef656ff8637",
