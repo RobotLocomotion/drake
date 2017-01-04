@@ -195,27 +195,41 @@ class QuadraticConstraint : public Constraint {
 };
 
 /**
- A LorentzConeConstraint that takes a n x 1 vector x, and imposes constraint
- \f[
- x_1 >= \sqrt{x_2^2+...+x_n^2}
- \f]
+ Constraining the linear expression \f$ z=Ax+b \f$ lies within the Lorentz cone.
+ A vector \f$ z \in \mathbb{R}^n \f$ lies within Lorentz cone if
+ @f[
+ z_0 \ge \sqrt{z_1^2+...+z_{n-1}^2}
+ @f]
+ <!-->
+ z(0) >= sqrt(z(1)^2 + ... + z(n-1)^2)
+ <-->
+ where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^{n}@f$ are given matrices.
  Ideally this constraint should be handled by a second-order cone solver.
  In case the user wants to enforce this constraint through general nonlinear
  optimization, with smooth gradient, we alternatively impose the following
  constraint, with smooth gradient everywhere
- \f[
- x_1 >= 0 \\
- x_1^2-x_2^2-...-x_n^2 >= 0
- \f]
+ @f[
+ a_0^Tx+b_0\ge 0\\
+ (a_0^Tx+b_0)^2-(a_1^Tx+b_1)^2-...-(a_{n-1}^Tx+b_{n-1})^2 \ge 0
+ @f]
+ where @f$ a_i^T@f$ is the i'th row of matrix @f$ A@f$. @f$ b_i @f$ is the i'th
+ entry of vector @f$ b @f$.
+
  For more information and visualization, please refer to
  https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
  */
 class LorentzConeConstraint : public Constraint {
  public:
-  LorentzConeConstraint()
-      : Constraint(2, Eigen::Vector2d::Constant(0.0),
-                   Eigen::Vector2d::Constant(
-                       std::numeric_limits<double>::infinity())) {}
+  LorentzConeConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                        const Eigen::Ref<const Eigen::VectorXd>& b)
+      : Constraint(
+            2, Eigen::Vector2d::Constant(0.0),
+            Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())),
+        A_(A),
+        b_(b) {
+    DRAKE_DEMAND(A_.rows() >= 2);
+    DRAKE_ASSERT(A_.rows() == b_.rows());
+  }
 
   LorentzConeConstraint(const LorentzConeConstraint& rhs) = delete;
 
@@ -227,30 +241,58 @@ class LorentzConeConstraint : public Constraint {
 
   ~LorentzConeConstraint() override {}
 
+  /// Getter for A.
+  const Eigen::MatrixXd& A() const { return A_; }
+
+  /// Getter for b.
+  const Eigen::VectorXd& b() const { return b_; }
+
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override;
 
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override;
+
+ private:
+  const Eigen::MatrixXd A_;
+  const Eigen::VectorXd b_;
 };
 
 /**
- * A rotated Lorentz cone constraint that taks a n x 1 vector x, and imposes
- * constraint
- * \f[
- * x_1 >= 0
- * x_2 >= 0
- * x_1 * x_2 >= x_3^2 + x_4^2 + ... + x_n^2
- * \f]
+ * Constraining that the linear expression \f$ z=Ax+b \f$ lies within rotated Lorentz cone.
+ * A vector \f$ z \in\mathbb{R}^n \f$ lies within rotated Lorentz cone, if
+ * @f[
+ * z_0 \ge 0\\
+ * z_1 \ge 0\\
+ * z_0  z_1 \ge z_2^2 + z_3^2 + ... + z_{n-1}^2
+ * @f]
+ * where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^n@f$ are given matrices.
+ * <!-->
+ * z(0) >= 0
+ * z(1) >= 0
+ * z(0) * z(1) >= z(2)^2 + z(3)^2 + ... + z(n-1)^2
+ * <-->
  * For more information and visualization, please refer to
  * https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
  */
 class RotatedLorentzConeConstraint : public Constraint {
  public:
-  RotatedLorentzConeConstraint()
-      : Constraint(3, Eigen::Vector3d::Constant(0.0),
-                   Eigen::Vector3d::Constant(
-                       std::numeric_limits<double>::infinity())) {}
+  RotatedLorentzConeConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                               const Eigen::Ref<const Eigen::VectorXd>& b)
+      : Constraint(
+            3, Eigen::Vector3d::Constant(0.0),
+            Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity())),
+        A_(A),
+        b_(b) {
+    DRAKE_DEMAND(A_.rows() >= 3);
+    DRAKE_ASSERT(A_.rows() == b_.rows());
+  }
+
+  /// Getter for A.
+  const Eigen::MatrixXd& A() const { return A_; }
+
+  /// Getter for b.
+  const Eigen::VectorXd& b() const { return b_; }
 
   RotatedLorentzConeConstraint(const RotatedLorentzConeConstraint& rhs) =
       delete;
@@ -270,6 +312,10 @@ class RotatedLorentzConeConstraint : public Constraint {
 
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override;
+
+ private:
+  const Eigen::MatrixXd A_;
+  const Eigen::VectorXd b_;
 };
 
 /**
