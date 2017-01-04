@@ -287,6 +287,22 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   EXPECT_LT(integrator_->get_num_steps_taken(), fixed_steps);
 }
 
+// Verify that attempting to take a single fixed step throws an exception.
+TEST_F(RK3IntegratorTest, IllegalFixedStep) {
+  // Set integrator parameters: do error control.
+  integrator_->set_maximum_step_size(dt);
+  integrator_->set_fixed_step_mode(false);
+
+  // Set accuracy to a really small value so that the step is guaranteed to be
+  // small.
+  integrator_->set_target_accuracy(1e-8);
+
+  // Initialize the integrator.
+  integrator_->Initialize();
+
+  EXPECT_THROW(integrator_->StepOnceExactly(1e-8), std::logic_error);
+}
+
 // Verifies statistics validity for error controlled integrator.
 TEST_F(RK3IntegratorTest, CheckStat) {
   // Set integrator parameters: do error control.

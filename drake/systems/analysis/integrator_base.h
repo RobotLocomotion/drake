@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <limits>
-#include <memory>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -266,7 +265,6 @@ class IntegratorBase {
       throw std::logic_error("Integrator maximum step size is less than the "
                              "minimum step size");
     }
-
     if (req_initial_step_size_ > max_step_size_) {
       throw std::logic_error("Requested integrator initial step size is larger "
                              "than the maximum step size.");
@@ -363,15 +361,22 @@ class IntegratorBase {
                             const T& boundary_dt);
 
   /// Stepping function for integrators operating outside of simulation
-  /// circumstances. This method simply calls
-  /// `StepOnceAtMost(inf, inf, boundary_dt)` and is designed for integrator
+  /// circumstances. This method is designed for integrator
   /// users that do not wish to consider publishing or discontinuous,
   /// mid-interval updates. One such example application is that of direct
-  /// collocation for trajectory optimization.
-  /// @warning Users
+  /// collocation for trajectory optimization. In keeping with the naming
+  /// semantics of this function, error controlled integration is not supported
+  /// (though error estimates will be computed for integrators that support that
+  /// feature).
+  /// @warning Users should simulate systems using `Simulator::StepTo()` in
+  ///          place of this function (which was created for off-simulation
+  ///          purposes), generally.
   /// @throws std::logic_error If the integrator has not been initialized or
-  ///                          boundary_dt is negative.
+  ///                          boundary_dt is negative **or** if the integrator
+  ///                          is not operating in fixed step mode.
   void StepOnceExactly(const T& boundary_dt) {
+    if (!this->get_fixed_step_mode())
+      throw std::logic_error("StepOnceExactly() requires fixed stepping.");
     const T inf = std::numeric_limits<T>::infinity();
     StepOnceAtMost(inf, inf, boundary_dt);
   }
