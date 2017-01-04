@@ -353,10 +353,28 @@ class IntegratorBase {
    *                          of publish_dt, update_dt, or boundary_dt is
    *                          negative.
    * @return The reason for the integration step ending.
+   * @warning Users should generally not call this function directly; within
+   *          simulation circumstances, users will typically call
+   *          `Simulator::StepTo()`. In other circumstances, users will
+   *          typically call `IntegratorBase::StepOnceExactly()`.
    */
   // TODO(edrumwri): Make the stretch size configurable.
   StepResult StepOnceAtMost(const T& publish_dt, const T& update_dt,
                             const T& boundary_dt);
+
+  /// Stepping function for integrators operating outside of simulation
+  /// circumstances. This method simply calls
+  /// `StepOnceAtMost(inf, inf, boundary_dt)` and is designed for integrator
+  /// users that do not wish to consider publishing or discontinuous,
+  /// mid-interval updates. One such example application is that of direct
+  /// collocation for trajectory optimization.
+  /// @warning Users
+  /// @throws std::logic_error If the integrator has not been initialized or
+  ///                          boundary_dt is negative.
+  void StepOnceExactly(const T& boundary_dt) {
+    const T inf = std::numeric_limits<T>::infinity();
+    StepOnceAtMost(inf, inf, boundary_dt);
+  }
 
   /**
    * @name Integrator statistics methods.
