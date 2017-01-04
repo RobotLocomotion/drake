@@ -119,11 +119,15 @@ GTEST_TEST(testMathematicalProgram, SetSolutionFromBindingTest) {
 
   // TODO(hongkai.dai): rewrite this test when Binding class is moved out from
   // MathematicalProgram class
+  // Tests when the bounded variables in each Binding object are not contiguous
+  // variables in MathematicalProgram.
+  DecisionVariableVector<2> var1;
+  var1 << x(0), y(1);
   prog.AddBoundingBoxConstraint(Eigen::Vector2d(0, 0), Eigen::Vector2d(1, 1),
-                                {x.segment<1>(0), y.segment<1>(1)});
-  prog.AddLinearEqualityConstraint(
-      Eigen::RowVector3d(1, 2, 3), 1,
-      {y.segment<1>(2), y.segment<1>(0), x.segment<1>(1)});
+                                {var1});
+  DecisionVariableVector<3> var2;
+  var2 << y(2), y(0), x(1);
+  prog.AddLinearEqualityConstraint(Eigen::RowVector3d(1, 2, 3), 1, {var2});
 
   Eigen::Vector2d x_expected(0.1, 0.3);
   Eigen::Vector3d y_expected(0.2, 0.7, -1);
