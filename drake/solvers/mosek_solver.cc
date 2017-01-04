@@ -202,8 +202,8 @@ MSKrescodee AddSecondOrderConeConstraints(
       }
     }
     MSKconetypee cone_type = is_rotated_cone ? MSK_CT_RQUAD : MSK_CT_QUAD;
-    rescode = MSK_appendcone(*task, cone_type, 0.0, num_z,
-                             new_var_indices.data());
+    rescode =
+        MSK_appendcone(*task, cone_type, 0.0, num_z, new_var_indices.data());
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
@@ -248,9 +248,10 @@ MSKrescodee AddSecondOrderConeConstraints(
       return rescode;
     }
     for (int i = 1; i < num_z; ++i) {
-      // In every row of the linear constraint z = A*x+b, the only changed
-      // decision variable is z(i), so pop the last variable (z(i-1)), and
-      // push back z(i)
+      // In row i of the linear constraint z = A*x+b, the decision variables are
+      // [x z(i)]. So compared to the previous row of the constraint, the only
+      // changed decision variable is z(i). We can thus pop the last variable
+      // (z(i-1)), and push back z(i).
       var_indices.pop_back();
       var_indices.push_back(new_var_indices[i]);
       Eigen::RowVectorXd val(1 + cone_var_indices.size());
@@ -474,10 +475,10 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
         if (std::abs(Qij) > Eigen::NumTraits<double>::epsilon()) {
           if (var_index_i > var_indices[j]) {
             Q_lower_triplets.push_back(
-              Eigen::Triplet<double>(var_index_i, var_indices[j], Qij));
+                Eigen::Triplet<double>(var_index_i, var_indices[j], Qij));
           } else {
             Q_lower_triplets.push_back(
-              Eigen::Triplet<double>(var_indices[j], var_index_i, Qij));
+                Eigen::Triplet<double>(var_indices[j], var_index_i, Qij));
           }
         }
       }

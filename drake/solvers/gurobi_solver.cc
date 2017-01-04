@@ -14,6 +14,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/math/eigen_sparse_triplet.h"
 
+// TODO(hongkai.dai): GurobiSolver class should store data member such as
+// GRB_model, GRB_env, is_new_variables, etc.
 namespace drake {
 namespace solvers {
 namespace {
@@ -25,7 +27,7 @@ namespace {
                                                   int num_vars_expected) {
   int error = GRBupdatemodel(model);
   if (error) return false;
-  int num_vars;
+  int num_vars{};
   error = GRBgetintattr(model, "NumVars", &num_vars);
   if (error) return false;
   return (num_vars == num_vars_expected);
@@ -84,14 +86,27 @@ int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
  * A vector z is in the rotated Lorentz cone, if
  * z(0)*z(1) >= z(2)^2 + ... + z(N-1)^2
  * z(0) >= 0, z(1) >= 0
+ * @tparam Binding  A Binding class. TODO(hongkai.dai): change this function to
+ * non-templated function, when Binding class is moved out from
+ * MathematicalProgram class.
+ * @param second_order_cone_constraints  A vector of Binding objects, containing
+ * either Lorentz cone constraints, or rotated Lorentz cone constraints.
+ * @param is_rotated_cone. True if @p second_order_cone_constraints only
+ * contains rotated Lorentz cone constraints. False otherwise.
+ * @param sparseness_threshold. If the absolute value of an entry in A, b
+ * matrices inside (rotated) Lorentz cone constraint is smaller than
+ * \p sparseness_threshold, that entry is ignored.
+ * @param second_order_cone_new_variable_indices. The indices of variable z in
+ * the Gurobi model.
+ * @param model The Gurobi model.
  */
 template <typename Binding>
 int AddSecondOrderConeConstraints(
     const MathematicalProgram& prog,
     const std::vector<Binding>& second_order_cone_constraints,
-    bool is_rotated_cone, double sparseness_threshold, GRBmodel* model,
-    const std::vector<std::vector<int>>&
-        second_order_cone_new_variable_indices) {
+    bool is_rotated_cone, double sparseness_threshold,
+    const std::vector<std::vector<int>>& second_order_cone_new_variable_indices,
+    GRBmodel* model) {
   DRAKE_ASSERT(second_order_cone_constraints.size() ==
                second_order_cone_new_variable_indices.size());
   int second_order_cone_count = 0;
@@ -404,6 +419,23 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
 // second_order_cone_variable_indices[i]
 // contains the indices of the newly added variable z for the i'th second order
 // cone in @p second_order_cones[i].
+// @p tparam _Binding A MathematicalProgram::Binding class.
+// TODO(hongkai.dai): rewrite this function not templated on Binding, when
+// Binding class is moved out from MathematicalProgram as a public class.
+// @param second_order_cones A vector of bindings, containing either Lorentz
+// cone constraint, or rotated Lorentz cone constraint.
+// @param is_roated_lorentz_cone True if second_order_cones are rotated Lorentz
+// cone, false otherwise.
+// @param is_new_variable is_new_variable[i] is true if the i'th variable in
+// Gurobi model is not included in MathematicalProgram.
+// @param num_gurobi_vars Number of variables in Gurobi model.
+// @param second_order_cone_variable_indices
+// second_order_cone_variable_indices[i]
+// contains the indices of variable z stored in Gurobi model, in \p
+// second_order_cones[i].
+// @param gurobi_var_type. The type of the Gurobi variables.
+// @param xlow The lower bound of the Gurobi variables.
+// @param xupp The upper bound of the Gurobi variables.
 template <typename _Binding>
 void AddSecondOrderConeVariables(
     const std::vector<_Binding>& second_order_cones,
@@ -553,16 +585,16 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   // Add Lorentz cone constraints.
   if (!error) {
-    error = AddSecondOrderConeConstraints(prog, prog.lorentz_cone_constraints(),
-                                          false, sparseness_threshold, model,
-                                          lorentz_cone_new_variable_indices);
+    error = AddSecondOrderConeConstraints(
+        prog, prog.lorentz_cone_constraints(), false, sparseness_threshold,
+        lorentz_cone_new_variable_indices, model);
   }
 
   // Add rotated Lorentz cone constraints.
   if (!error) {
     error = AddSecondOrderConeConstraints(
         prog, prog.rotated_lorentz_cone_constraints(), true,
-        sparseness_threshold, model, rotated_lorentz_cone_new_variable_indices);
+        sparseness_threshold, rotated_lorentz_cone_new_variable_indices, model);
   }
 
   DRAKE_ASSERT(HasCorrectNumberOfVariables(model, is_new_variable.size()));
@@ -608,6 +640,12 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     } else {
       result = SolutionResult::kSolutionFound;
       int num_total_variables = is_new_variable.size();
+      // Gurobi has solved not only for the decision variables in
+      // MathematicalProgram prog, but also for any extra decision variables
+      // that this GurobiSolver injected to craft certain constraints, such as
+      // Lorentz cones.  We therefore filter out the optimized values for
+      // injected variables, and report back values for the MathematicalProgram
+      // variables only.
       // solver_sol_vector includes the potentially newly added variables, i.e.,
       // variables not in MathematicalProgram prog, but added to Gurobi by
       // GurobiSolver.
