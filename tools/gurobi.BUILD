@@ -1,3 +1,5 @@
+# -*- python -*-
+
 # TODO(david-german-tri): Add support for OS X.
 cc_library(
     name = "lib",
