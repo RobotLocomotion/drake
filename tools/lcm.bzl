@@ -116,15 +116,14 @@ def lcm_py_library(
         name,
         lcm_package=None,
         lcm_srcs=None,
-        deps=None,
         imports=None,
         **kwargs):
     """Declares a py_library target based on python message classes generated
     from `*.lcm` files.  The lcm_src= list parameter specifies the `*.lcm`
     sources.  The lcm_package= string parameter must match the `package ...;`
     statement in all of the `*.lcm` files in lcm_srcs.  The Bazel-standard
-    deps= and imports= parameters are passed through to py_library after
-    adding the items required by the generated code.
+    imports= parameter is passed through to py_library after adding the items
+    required by the generated code.
 
     """
     if lcm_package == None:
@@ -140,11 +139,6 @@ def lcm_py_library(
         lcm_srcs=lcm_srcs,
         outs=outs)
 
-    newdep = "@lcm//:lcm-python"
-    deps = list(deps or [])
-    if newdep not in deps:
-        deps.append(newdep)
-
     newimport = "."
     imports = list(imports or [])
     if newimport not in imports:
@@ -153,6 +147,5 @@ def lcm_py_library(
     native.py_library(
         name=name,
         srcs=outs,
-        deps=deps,
         imports=imports,
         **kwargs)
