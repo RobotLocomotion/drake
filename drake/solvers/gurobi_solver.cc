@@ -23,8 +23,9 @@ namespace {
 // operation can be EXPENSIVE, since it requires calling GRBupdatemodel
 // (Gurobi typically adopts lazy update, where it does not update the model
 // until calling the optimize function).
-[[maybe_unused]] bool HasCorrectNumberOfVariables(GRBmodel* model,
-                                                  int num_vars_expected) {
+// This function should only be used in DEBUG mode as a sanity check.
+__attribute__((unused))
+bool HasCorrectNumberOfVariables(GRBmodel* model, int num_vars_expected) {
   int error = GRBupdatemodel(model);
   if (error) return false;
   int num_vars{};
