@@ -197,6 +197,14 @@ GTEST_TEST(IntegratorTest, StepSize) {
     t = context->get_time();
   }
 
+  // The step ends on the simulation end time.
+  {
+    const double boundary_dt = 0.0009;
+    integrator.StepOnceExactly(boundary_dt);
+    EXPECT_EQ(t + boundary_dt, context->get_time());
+    t = context->get_time();
+  }
+
   // The step ends on the simulation end time because it's shortest.
   {
     const double publish_dt = 0.0013;
