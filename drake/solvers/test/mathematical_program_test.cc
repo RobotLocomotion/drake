@@ -112,7 +112,7 @@ void RunNonlinearProgram(MathematicalProgram& prog,
 }
 
 GTEST_TEST(testMathematicalProgram, SetSolutionFromBindingTest) {
-  // Test if SetSolutionFromBinding sets the solution correctly.
+  // Test if SetDecisionVariableValueFromBinding sets correct solution.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   auto y = prog.NewContinuousVariables<3>("y");
@@ -131,9 +131,10 @@ GTEST_TEST(testMathematicalProgram, SetSolutionFromBindingTest) {
 
   Eigen::Vector2d x_expected(0.1, 0.3);
   Eigen::Vector3d y_expected(0.2, 0.7, -1);
-  prog.SetSolutionFromBinding(Eigen::Vector2d(x_expected(0), y_expected(1)),
-                              prog.bounding_box_constraints().front());
-  prog.SetSolutionFromBinding(
+  prog.SetDecisionVariableValueFromBinding(
+      Eigen::Vector2d(x_expected(0), y_expected(1)),
+      prog.bounding_box_constraints().front());
+  prog.SetDecisionVariableValueFromBinding(
       Eigen::Vector3d(y_expected(2), y_expected(0), x_expected(1)),
       prog.linear_equality_constraints().front());
 

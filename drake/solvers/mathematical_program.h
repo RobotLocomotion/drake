@@ -1634,16 +1634,17 @@ class MathematicalProgram {
   }
 
   /**
-   * Set the values of the decision variables, bound by the elements in @p
+   * Sets the values of the decision variables, bound by the elements in @p
    * binding.
    * @tparam _Binding should be MathematicalProgram::Binding class
    * @param binding_solution The value of the variables bound in the @p binding.
-   * @param binding
+   * @param binding A binding containing the constraint and bound variables.
+   * The value of the bound variable will be changed by calling this function.
    */
   template <typename _Binding>
-  void SetSolutionFromBinding(
-      const Eigen::Ref<const Eigen::VectorXd>& binding_solution,
-      const _Binding& binding) {
+  void SetDecisionVariableValueFromBinding(
+      const Eigen::Ref<const Eigen::VectorXd> &binding_solution,
+      const _Binding &binding) {
     DRAKE_ASSERT(static_cast<size_t>(binding_solution.rows()) ==
                  binding.GetNumElements());
 
