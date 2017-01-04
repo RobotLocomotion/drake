@@ -45,7 +45,7 @@ You can check whether you've installed it correctly by executing::
     clang-format --help
 
 Usage
-^^^^^^^^^
+^^^^^
 
 To run clang-format::
 
@@ -54,11 +54,28 @@ To run clang-format::
 cpplint
 -------
 
-Usage
-^^^^^
-
 `cpplint <https://github.com/google/styleguide/tree/gh-pages/cpplint>`_
-is a tool for finding compliance violations. Here is the command::
+is a tool for finding compliance violations.
+
+Using via Bazel
+^^^^^^^^^^^^^^^
+
+When using the Bazel build system, cpplint is run by default during ``bazel
+test`` and its results are cached so that only edited files are re-checked.
+In other words, no special action is required to use the tool.
+However, you may still invoke cpplint directly if desired, as follows::
+
+  cd /path/to/drake-distro
+  bazel test --config cpplint ...                  # Only run cpplint; don't build or test anything else.
+  bazel test --config cpplint //drake/common/...   # Check common/ and its child subdirectories.
+
+  cd drake/systems/framework
+  bazel test --config cpplint ...                  # Check systems/framework/ and its child subdirectories.
+
+Using without Bazel
+^^^^^^^^^^^^^^^^^^^
+
+Here is the command::
 
     drake-distro/drake/common/test/cpplint_wrapper.py
 
