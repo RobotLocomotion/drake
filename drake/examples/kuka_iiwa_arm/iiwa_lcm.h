@@ -23,11 +23,21 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
                     systems::SystemOutput<double>* output) const override;
 };
 
-/// Sends lcmt_iiwa_status messages.  This system has two input ports,
-/// one for the current state of the plant and one for the most
-/// recently received command.  The input port for the state of the
-/// plant will be twice the size of the command (position and velocity
-/// state for each joint vs. commanded position for each joint).
+/// Creates and outputs lcmt_iiwa_status messages.
+///
+/// This system has two vector-valued input ports, one for the plant's current
+/// state and one for the most recently received command. The input port
+/// containing the plant's state must be twice the size of the input port
+/// containing the most recently received command. This is because there should
+/// be a joint position state and velocity state for each commanded joint.
+///
+/// This system has one abstract valued output port that contains a
+/// systems::Value object templated on type `lcmt_iiwa_status`. Note that this
+/// system does not actually send this message on an LCM channel. To send the
+/// message, the output of this system should be connected to an input port of
+/// a systems::lcm::LcmPublisherSystem that accepts a
+/// systems::Value object templated on type `lcmt_iiwa_status`. For an example
+/// of this, see iiwa_swg_simulation.cc.
 class IiwaStatusSender : public systems::LeafSystem<double> {
  public:
   IiwaStatusSender();
