@@ -112,7 +112,7 @@ void RunNonlinearProgram(MathematicalProgram& prog,
 }
 
 GTEST_TEST(testMathematicalProgram, SetSolutionFromBindingTest) {
-  // Test if SetDecisionVariableValueFromBinding sets correct solution.
+  // Test if SetDecisionVariableValueFromBinding sets the correct solution.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   auto y = prog.NewContinuousVariables<3>("y");
