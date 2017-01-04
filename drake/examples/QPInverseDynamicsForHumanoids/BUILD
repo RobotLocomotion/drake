@@ -1,3 +1,8 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load("//tools:cpplint.bzl", "cpplint")
+
 cc_library(
     name = "control_utils",
     srcs = [],
@@ -55,7 +60,8 @@ cc_library(
     ],
 )
 
-#test/
+# === test/ ===
+
 cc_test(
     name = "valkyrie_balancing_test",
     srcs = ["test/valkyrie_balancing_test.cc"],
@@ -76,3 +82,5 @@ cc_test(
         "@gtest//:main",
     ],
 )
+
+cpplint()
