@@ -12,7 +12,7 @@
 	url = https://github.com/mwoehlke-kitware/bot_core_lcmtypes
 [submodule "externals/libbot"]
 	path = externals/libbot
-	url = https://github.com/RobotLocomotion/libbot.git
+	url = https://github.com/RobotLocomotion/libbot2.git
 [submodule "externals/spotless"]
 	path = externals/spotless
 	url = https://github.com/RobotLocomotion/spotless-pod.git
