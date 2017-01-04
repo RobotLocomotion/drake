@@ -53,6 +53,20 @@ new_git_repository(
 )
 
 new_git_repository(
+    name = "bot_core_lcmtypes",
+    remote = "https://github.com/RussTedrake/bot_core_lcmtypes",
+    commit = "58d335c6e4c07766e0016a9d4ee3f30fc10fb3f3",
+    build_file = "tools/bot_core_lcmtypes.BUILD",
+)
+
+new_git_repository(
+    name = "robotlocomotion_lcmtypes",
+    remote = "https://github.com/RobotLocomotion/lcmtypes",
+    commit = "b9ce3faa864ce98c496a1581c9157de6d27f33eb",
+    build_file = "tools/robotlocomotion_lcmtypes.BUILD",
+)
+
+new_git_repository(
     name = "bullet",
     remote = "https://github.com/RobotLocomotion/bullet3.git",
     commit = "ae2c4ca0618d55c6a29900aed75b958604149fdb",
@@ -113,4 +127,3 @@ gurobi_repository(
     workspace_dir = __workspace_dir__,
     build_file = "tools/gurobi.BUILD",
 )
-

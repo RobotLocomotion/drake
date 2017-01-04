@@ -33,7 +33,7 @@ else
        \( -name BUILD -o \
           -name '*.BUILD' -o \
           -name '*.bzl' \) -print |
-      xargs --verbose "$buildifier" -mode=fix
+      xargs "$buildifier" -mode=fix
 fi
 
 echo "... done"
