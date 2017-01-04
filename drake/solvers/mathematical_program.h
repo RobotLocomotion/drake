@@ -16,6 +16,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
@@ -1068,6 +1069,30 @@ class MathematicalProgram {
     return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
                                decision_variables_);
   }
+
+  /**
+   * Adds one row of linear constraint represented by a linear
+   * symbolic-expression @p e. Throws an exception if @p e is a non-linear
+   * expression.
+   *
+   * lb <= e <= ub
+   *
+   * @param e A linear symbolic expression in the form of <tt>c0 + c1 * v1 +
+   * ... + cn * vn</tt> where @c c_i is a constant and @v_i is a variable.
+   * @param lb A scalar, the lower bound.
+   * @param ub A scalar, the upper bound.
+   */
+  Binding<LinearConstraint> AddLinearConstraint(const symbolic::Expression& e,
+                                                double lb, double ub);
+
+  /**
+   * Adds linear constraints represented by symbolic expressions to the
+   program.
+   */
+  Binding<LinearConstraint> AddLinearConstraint(
+      const Eigen::Ref<const drake::VectorX<symbolic::Expression>>& v,
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub);
 
   /**
    * Adds linear equality constraints referencing potentially a
@@ -2312,6 +2337,21 @@ class MathematicalProgram {
 
   VectorXDecisionVariable NewVariables(VarType type, int rows,
                                        const std::vector<std::string>& names);
+
+  /** Decomposes a linear combination @p e = c0 + c1 * v1 + ... cn * vn into
+   *  the followings:
+   *
+   *     constant term      : c0
+   *     coefficient vector : [c1, ..., cn]
+   *     variable vector    : [v1, ..., vn]
+   *
+   *  Then, it returns a pair (c0, [c1, ..., cn]). A map from variable ID to
+   *  int, @p map_var_to_index, is used to decide a variable's index in a linear
+   *  combination.
+   */
+  std::pair<double, Eigen::RowVectorXd> DecomposeLinearExpression(
+      const symbolic::Expression& e,
+      const std::unordered_map<size_t, int>& map_var_to_index);
 };
 }  // namespace solvers
 }  // namespace drake
