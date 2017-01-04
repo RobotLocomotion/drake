@@ -526,7 +526,7 @@ class MathematicalProgram {
     std::array<std::string, rows> names;
     int offset = (name.compare("x") == 0) ? num_vars_ : 0;
     for (int i = 0; i < rows; ++i) {
-      names[i] = name + std::to_string(offset + i);
+      names[i] = name + "(" + std::to_string(offset + i) + ")";
     }
     return NewContinuousVariables<rows>(names);
   }
@@ -587,7 +587,7 @@ class MathematicalProgram {
     std::array<std::string, rows> names;
     int offset = (name.compare("b") == 0) ? num_vars_ : 0;
     for (int i = 0; i < rows; ++i) {
-      names[i] = name + std::to_string(offset + i);
+      names[i] = name + "(" + std::to_string(offset + i) + ")";
     }
     return NewBinaryVariables<rows, 1>(names);
   }
