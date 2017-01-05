@@ -175,23 +175,18 @@ void MathematicalProgram::AddCost(const std::shared_ptr<Constraint>& obj,
 
 void MathematicalProgram::AddCost(const std::shared_ptr<LinearConstraint>& obj,
                                   const VariableListRef& vars) {
-  VariableList var_list(vars);
-  DRAKE_ASSERT(var_list.column_vectors_only());
   required_capabilities_ |= kLinearCost;
-  int var_dim = var_list.size();
-  DRAKE_ASSERT(obj->A().rows() == 1 && obj->A().cols() == var_dim);
-  linear_costs_.push_back(Binding<LinearConstraint>(obj, var_list));
+  linear_costs_.push_back(Binding<LinearConstraint>(obj, vars));
+  DRAKE_ASSERT(obj->A().rows() == 1 && obj->A().cols() == linear_costs_.back().variables().rows());
 }
 
 void MathematicalProgram::AddCost(
     const std::shared_ptr<QuadraticConstraint>& obj,
     const VariableListRef& vars) {
-  VariableList var_list(vars);
-  DRAKE_ASSERT(var_list.column_vectors_only());
   required_capabilities_ |= kQuadraticCost;
-  int var_dim = var_list.size();
+  quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, vars));
+  int var_dim = quadratic_costs_.back().variables().rows();
   DRAKE_ASSERT(obj->Q().rows() == var_dim && obj->b().rows() == var_dim);
-  quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, var_list));
 }
 
 void MathematicalProgram::AddConstraint(std::shared_ptr<Constraint> con,
@@ -202,34 +197,26 @@ void MathematicalProgram::AddConstraint(std::shared_ptr<Constraint> con,
 
 void MathematicalProgram::AddConstraint(std::shared_ptr<LinearConstraint> con,
                                         const VariableListRef& vars) {
-  VariableList var_list(vars);
-  DRAKE_ASSERT(var_list.column_vectors_only());
   required_capabilities_ |= kLinearConstraint;
-  int var_dim = var_list.size();
-  DRAKE_ASSERT(con->A().cols() == var_dim);
-  linear_constraints_.push_back(Binding<LinearConstraint>(con, var_list));
+  linear_constraints_.push_back(Binding<LinearConstraint>(con, vars));
+  DRAKE_ASSERT(con->A().cols() == linear_constraints_.back().variables().rows());
 }
 
 void MathematicalProgram::AddConstraint(
     std::shared_ptr<LinearEqualityConstraint> con,
     const VariableListRef& vars) {
-  VariableList var_list(vars);
-  DRAKE_ASSERT(var_list.column_vectors_only());
   required_capabilities_ |= kLinearEqualityConstraint;
-  int var_dim = var_list.size();
-  DRAKE_ASSERT(con->A().cols() == var_dim);
   linear_equality_constraints_.push_back(
-      Binding<LinearEqualityConstraint>(con, var_list));
+      Binding<LinearEqualityConstraint>(con, vars));
+  DRAKE_ASSERT(con->A().cols() == linear_equality_constraints_.back().variables().rows());
 }
 
 void MathematicalProgram::AddConstraint(
     std::shared_ptr<LorentzConeConstraint> con, const VariableListRef& vars) {
-  VariableList var_list(vars);
-  DRAKE_ASSERT(var_list.column_vectors_only());
-  DRAKE_ASSERT(var_list.size() >= 2);
   required_capabilities_ |= kLorentzConeConstraint;
   lorentz_cone_constraint_.push_back(
-      Binding<LorentzConeConstraint>(con, var_list));
+      Binding<LorentzConeConstraint>(con, vars));
+  DRAKE_ASSERT(lorentz_cone_constraint_.back().variables().rows() >= 2);
 }
 
 std::shared_ptr<LorentzConeConstraint>
@@ -246,12 +233,10 @@ MathematicalProgram::AddLorentzConeConstraint(const VariableListRef& vars) {
 void MathematicalProgram::AddConstraint(
     std::shared_ptr<RotatedLorentzConeConstraint> con,
     const VariableListRef& vars) {
-  VariableList var_list(vars);
-  DRAKE_ASSERT(var_list.column_vectors_only());
-  DRAKE_ASSERT(var_list.size() >= 3);
   required_capabilities_ |= kRotatedLorentzConeConstraint;
   rotated_lorentz_cone_constraint_.push_back(
-      Binding<RotatedLorentzConeConstraint>(con, var_list));
+      Binding<RotatedLorentzConeConstraint>(con, vars));
+  DRAKE_ASSERT(rotated_lorentz_cone_constraint_.back().variables().rows() >= 3);
 }
 
 std::shared_ptr<RotatedLorentzConeConstraint>
@@ -275,8 +260,6 @@ std::shared_ptr<Constraint> MathematicalProgram::AddPolynomialConstraint(
   // constant) can be special-cased.  Other polynomials are treated as
   // generic for now.
   // TODO(ggould-tri) There may be other such special easy cases.
-  VariableList var_list(vars);
-  DRAKE_ASSERT(var_list.column_vectors_only());
   bool all_affine = true;
   for (int i = 0; i < polynomials.rows(); i++) {
     if (!polynomials[i].IsAffine()) {
@@ -327,16 +310,22 @@ std::shared_ptr<Constraint> MathematicalProgram::AddPolynomialConstraint(
 
 void MathematicalProgram::AddConstraint(
     std::shared_ptr<PositiveSemidefiniteConstraint> con,
-    const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var) {
+    const Eigen::Ref<const DecisionVariableMatrixX>& symmetric_matrix_var) {
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
   DRAKE_ASSERT(drake::math::IsSymmetric(symmetric_matrix_var));
+  int num_rows = symmetric_matrix_var.rows();
+  // TODO(hongkai.dai): this dynamic memory allocation/copying is ugly.
+  DecisionVariableVectorX flat_symmetric_matrix_var(num_rows * num_rows);
+  for (int i = 0; i < num_rows; ++i) {
+    flat_symmetric_matrix_var.segment(i * num_rows, num_rows) = symmetric_matrix_var.col(i);
+  }
   positive_semidefinite_constraint_.push_back(
-      Binding<PositiveSemidefiniteConstraint>(con, {symmetric_matrix_var}));
+      Binding<PositiveSemidefiniteConstraint>(con, flat_symmetric_matrix_var));
 }
 
 std::shared_ptr<PositiveSemidefiniteConstraint>
 MathematicalProgram::AddPositiveSemidefiniteConstraint(
-    const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var) {
+    const Eigen::Ref<const DecisionVariableMatrixX>& symmetric_matrix_var) {
   auto constraint = std::make_shared<PositiveSemidefiniteConstraint>(
       symmetric_matrix_var.rows());
   AddConstraint(constraint, symmetric_matrix_var);
@@ -347,11 +336,9 @@ void MathematicalProgram::AddConstraint(
     std::shared_ptr<LinearMatrixInequalityConstraint> con,
     const VariableListRef& vars) {
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
-  VariableList var_list(vars);
-  DRAKE_ASSERT(var_list.column_vectors_only());
-  DRAKE_ASSERT(con->F().size() == var_list.size() + 1);
   linear_matrix_inequality_constraint_.push_back(
-      Binding<LinearMatrixInequalityConstraint>(con, var_list));
+      Binding<LinearMatrixInequalityConstraint>(con, vars));
+  DRAKE_ASSERT(con->F().size() == linear_matrix_inequality_constraint_.back().variables().rows() + 1);
 }
 
 std::shared_ptr<LinearMatrixInequalityConstraint>
@@ -377,6 +364,21 @@ MathematicalProgram::VarType MathematicalProgram::DecisionVariableType(
 
 double MathematicalProgram::GetSolution(const symbolic::Variable& var) const {
   return x_values_[FindDecisionVariableIndex(var)];
+}
+
+void MathematicalProgram::SetDecisionVariableValues(const Eigen::Ref<const Eigen::VectorXd> &values) {
+  SetDecisionVariableValues(decision_variables_, values);
+}
+
+void MathematicalProgram::SetDecisionVariableValues(const Eigen::Ref<const DecisionVariableVectorX>& variables, const Eigen::Ref<const Eigen::VectorXd>& values) {
+  DRAKE_ASSERT(values.rows() == variables.rows());
+  for (int i = 0; i < values.rows(); ++i) {
+    x_values_[FindDecisionVariableIndex(variables(i))] = values(i);
+  }
+}
+
+void MathematicalProgram::SetDecisionVariableValue(const symbolic::Variable& var, double value) {
+  x_values_[FindDecisionVariableIndex(var)] = value;
 }
 
 SolutionResult MathematicalProgram::Solve() {

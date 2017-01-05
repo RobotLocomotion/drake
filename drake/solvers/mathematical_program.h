@@ -1284,7 +1284,7 @@ class MathematicalProgram {
    */
   void AddConstraint(
       std::shared_ptr<PositiveSemidefiniteConstraint> con,
-      const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var);
+      const Eigen::Ref<const DecisionVariableMatrixX>& symmetric_matrix_var);
 
   /**
    * Adds a positive semidefinite constraint on a symmetric matrix.
@@ -1294,7 +1294,7 @@ class MathematicalProgram {
    */
   std::shared_ptr<PositiveSemidefiniteConstraint>
   AddPositiveSemidefiniteConstraint(
-      const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var);
+      const Eigen::Ref<const DecisionVariableMatrixX>& symmetric_matrix_var);
 
   /**
    * Adds a linear matrix inequality constraint to the program.
@@ -1364,13 +1364,28 @@ class MathematicalProgram {
     }
   }
 
-  template <typename Derived>
-  void SetDecisionVariableValues(const Eigen::MatrixBase<Derived>& x) {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == num_vars_);
-    for (int i = 0; i < static_cast<int>(num_vars_); ++i) {
-      x_values_[i] = x(i);
-    }
-  }
+  /**
+   * Sets the values of all decision variables, such that the value of
+   * \p decision_variables_(i) is \p values(i).
+   * @param values The values set to all the decision variables.
+   */
+  void SetDecisionVariableValues(const Eigen::Ref<const Eigen::VectorXd>& values);
+
+  /**
+   * Sets the value of some decision variables, such that the value of
+   * \p variables(i) is \p values(i).
+   * @param variables The value of these decision variables will be set.
+   * @param values The values set to the decision variables.
+   */
+  void SetDecisionVariableValues(const Eigen::Ref<const DecisionVariableVectorX>& variables,
+                                 const Eigen::Ref<const Eigen::VectorXd>& values);
+
+  /**
+   * Sets the value of a single decision variable in the optimization program.
+   * @param var A decision variable in the program.
+   * @param value The value of that decision variable.
+   */
+  void SetDecisionVariableValue(const symbolic::Variable& var, double value);
 
   /**
    * Set an option for a particular solver.  This interface does not
@@ -1644,32 +1659,6 @@ class MathematicalProgram {
     }
     binding.constraint()->Eval(flat_solution, val);
     return val;
-  }
-
-  /**
-   * Sets the values of the decision variables, bound by the elements in @p
-   * binding.
-   * @tparam _Binding should be MathematicalProgram::Binding class
-   * @param binding_solution The value of the variables bound in the @p binding.
-   * @param binding A binding containing the constraint and bound variables.
-   * The value of the bound variable will be changed by calling this function.
-   */
-  template <typename _Binding>
-  void SetDecisionVariableValueFromBinding(
-      const Eigen::Ref<const Eigen::VectorXd> &binding_solution,
-      const _Binding &binding) {
-    DRAKE_ASSERT(static_cast<size_t>(binding_solution.rows()) ==
-                 binding.GetNumElements());
-
-    size_t solution_index = 0;
-    for (const auto& var : binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < var.rows(); ++i) {
-        x_values_[FindDecisionVariableIndex(var(i))] =
-            binding_solution(solution_index + i);
-      }
-      solution_index += var.rows();
-    }
   }
 
   /** Getter for all decision variables in the program. */

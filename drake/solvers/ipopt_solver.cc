@@ -90,11 +90,12 @@ Eigen::VectorXd MakeEigenVector(Index n, const Number* x) {
 /// matrix data for which the structure was defined in
 /// GetGradientMatrix.
 ///
-/// @return number of gradient entries populated
+/// @return number of gradient entries populated.
+template<typename Derived>
 size_t EvaluateConstraint(const MathematicalProgram& prog,
                           const Eigen::VectorXd& xvec, const Constraint& c,
-                          const Eigen::Ref<DecisionVariableVectorX>& variables, Number* result,
-                          Number* grad) {
+                          const Eigen::MatrixBase<Derived>& variables,
+                          Number* result, Number* grad) {
   // For constraints which don't use all of the variables in the X
   // input, extract a subset into the TaylorVecXd this_x to evaluate
   // the constraint (we actually do this for all constraints.  One
@@ -102,6 +103,9 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   // the correct geometry (e.g. the constraint uses all decision
   // variables in the same order they appear in xvec), but this is not
   // currently done).
+  static_assert(std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+                "Input should be a vector of symbolic variables");
+  DRAKE_ASSERT(variables.cols() == 1);
   int num_v_variables = variables.rows();
   auto tx = math::initializeAutoDiff(xvec);
   TaylorVecXd this_x(num_v_variables);
@@ -120,9 +124,7 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   }
 
   // Extract the appropriate derivatives from our result into the
-  // gradient array.  Like above, we need to use variable_list to
-  // figure out where the derivatives we actually care about are
-  // located.
+  // gradient array.
   size_t grad_idx = 0;
 
   std::vector<size_t> v_index(variables.rows());
@@ -130,7 +132,7 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
     v_index[i] = prog.FindDecisionVariableIndex(variables(i));
   }
   for (size_t i = 0; i < c.num_constraints(); i++) {
-    for (int j = 0; j < v.size(); j++) {
+    for (int j = 0; j < variables.rows(); j++) {
       grad[grad_idx++] = ty(i).derivatives()(v_index[j]);
     }
   }
@@ -230,16 +232,10 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       const auto& c = binding.constraint();
       const auto& lower_bound = c->lower_bound();
       const auto& upper_bound = c->upper_bound();
-      int var_count = 0;
-      for (const DecisionVariableMatrixX& v :
-           binding.variable_list().variables()) {
-        DRAKE_ASSERT(v.cols() == 1);
-        for (int k = 0; k < v.size(); ++k) {
-          const int idx = problem_->FindDecisionVariableIndex(v(k, 0));
-          x_l[idx] = std::max(lower_bound(var_count), x_l[idx]);
-          x_u[idx] = std::min(upper_bound(var_count), x_u[idx]);
-          ++var_count;
-        }
+      for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
+        const int idx = problem_->FindDecisionVariableIndex(binding.variables()(k));
+        x_l[idx] = std::max(lower_bound(k), x_l[idx]);
+        x_u[idx] = std::min(upper_bound(k), x_u[idx]);
       }
     }
 
@@ -426,28 +422,19 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     cost_cache_->grad.assign(n, 0);
 
     for (auto const& binding : problem_->GetAllCosts()) {
-      int index = 0;
-      for (const DecisionVariableMatrixX& v :
-           binding.variable_list().variables()) {
-        DRAKE_ASSERT(v.cols() == 1);
-        int num_v_variables = v.size();
-        this_x.conservativeResize(index + num_v_variables);
-        for (int i = 0; i < num_v_variables; ++i) {
-          this_x(index + i) = tx(problem_->FindDecisionVariableIndex(v(i, 0)));
-        }
-        index += num_v_variables;
+      int num_v_variables = binding.GetNumElements();
+      this_x.resize(num_v_variables);
+      for (int i = 0; i < num_v_variables; ++i) {
+        this_x(i) = tx(problem_->FindDecisionVariableIndex(binding.variables()(i)));
       }
 
       binding.constraint()->Eval(this_x, ty);
 
       cost_cache_->result[0] += ty(0).value();
-      for (const DecisionVariableMatrixX& v :
-           binding.variable_list().variables()) {
-        DRAKE_ASSERT(v.cols() == 1);
-        for (int j = 0; j < v.size(); ++j) {
-          const size_t vj_index = problem_->FindDecisionVariableIndex(v(j, 0));
-          cost_cache_->grad[vj_index] += ty(0).derivatives()(vj_index);
-        }
+
+      for (int j = 0; j < num_v_variables; ++j) {
+        const size_t vj_index = problem_->FindDecisionVariableIndex(binding.variables()(j));
+        cost_cache_->grad[vj_index] += ty(0).derivatives()(vj_index);
       }
     }
   }
