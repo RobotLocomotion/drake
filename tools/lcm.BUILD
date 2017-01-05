@@ -72,9 +72,9 @@ cc_library(
 cc_binary(
     name = "lcm-logger",
     srcs = [
-        "lcm-logger/lcm_logger.c",
         "lcm-logger/glib_util.c",
         "lcm-logger/glib_util.h",
+        "lcm-logger/lcm_logger.c",
     ],
     copts = LCM_COPTS,
     deps = [":lcm"],

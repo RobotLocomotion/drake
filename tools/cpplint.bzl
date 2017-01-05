@@ -15,8 +15,8 @@ _SOURCE_EXTENSIONS = [source_ext for source_ext in """
 """.split("\n") if len(source_ext)]
 
 # The cpplint.py command-line argument so it doesn't skip our files!
-_EXTENSIONS_ARGS = ["--extensions=" + ",".join([
-  ext[1:] for ext in _SOURCE_EXTENSIONS]
+_EXTENSIONS_ARGS = ["--extensions=" + ",".join(
+    [ext[1:] for ext in _SOURCE_EXTENSIONS],
 )]
 
 # From https://bazel.build/versions/master/docs/be/c-cpp.html#cc_library.srcs
