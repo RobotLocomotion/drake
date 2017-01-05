@@ -252,6 +252,25 @@ MathematicalProgram::AddRotatedLorentzConeConstraint(
 }
 
 std::shared_ptr<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
+    const Eigen::Ref<const Eigen::VectorXd>& lb,
+    const Eigen::Ref<const Eigen::VectorXd>& ub, const VariableListRef& vars) {
+  std::shared_ptr<BoundingBoxConstraint> constraint =
+      std::make_shared<BoundingBoxConstraint>(lb, ub);
+  AddConstraint(Binding<BoundingBoxConstraint>(constraint, vars));
+  return constraint;
+}
+
+std::shared_ptr<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
+    const Eigen::Ref<const Eigen::VectorXd>& lb,
+    const Eigen::Ref<const Eigen::VectorXd>& ub,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  std::shared_ptr<BoundingBoxConstraint> constraint =
+      std::make_shared<BoundingBoxConstraint>(lb, ub);
+  AddConstraint(Binding<BoundingBoxConstraint>(constraint, vars));
+  return constraint;
+}
+
+std::shared_ptr<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
     double lb, double ub, const VariableListRef& vars) {
   int var_dim = 0;
   for (const auto& var : vars) {

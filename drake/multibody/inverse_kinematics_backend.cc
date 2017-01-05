@@ -142,7 +142,7 @@ void AddQuasiStaticConstraint(
       std::make_shared<QuasiStaticConstraintWrapper>(qsc, kin_helper);
   prog->AddConstraint(wrapper, {vars, qsc_vars});
   prog->AddBoundingBoxConstraint(VectorXd::Constant(num_vars, 0.),
-                                 VectorXd::Constant(num_vars, 1.), {qsc_vars});
+                                 VectorXd::Constant(num_vars, 1.), qsc_vars);
   VectorXd constraint_eq(num_vars);
   constraint_eq.fill(1.);
   prog->AddLinearEqualityConstraint(constraint_eq.transpose(),
@@ -246,7 +246,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
         VectorXd lb;
         VectorXd ub;
         pc->bounds(&t[t_index], lb, ub);
-        prog.AddBoundingBoxConstraint(lb, ub, {vars});
+        prog.AddBoundingBoxConstraint(lb, ub, vars);
       } else if (constraint_category ==
                  RigidBodyConstraint::
                      SingleTimeLinearPostureConstraintCategory) {
@@ -272,7 +272,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
 
     // Add a bounding box constraint from the model.
     prog.AddBoundingBoxConstraint(model->joint_limit_min,
-                                  model->joint_limit_max, {vars});
+                                  model->joint_limit_max, vars);
 
     // TODO(sam.creasey) would this be faster if we stored the view
     // instead of copying into a VectorXd?

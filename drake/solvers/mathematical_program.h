@@ -975,41 +975,66 @@ class MathematicalProgram {
     return AddLinearEqualityConstraint(a, drake::Vector1d(beq),
                                        {decision_variables_});
   }
+
   /**
-   * Adds bounding box constraints referencing potentially a subset of
-   * the decision variables.
+   * Adds bounding box constraints referencing potentially a subest of the
+   * decision variables.
+   * @param binding Binds a BoundingBoxConstraint with some decision variables,
+   * such that
+   * binding.constraint()->lower_bound()(i) <= binding.variables()(i)
+   *                   <= binding.constraint().upper_bound()(i)
    */
-  void AddConstraint(std::shared_ptr<BoundingBoxConstraint> con,
-                     const VariableListRef& vars) {
+  void AddConstraint(const Binding<BoundingBoxConstraint>& binding) {
     required_capabilities_ |= kLinearConstraint;
-    bbox_constraints_.push_back(Binding<BoundingBoxConstraint>(con, vars));
-    DRAKE_ASSERT(static_cast<int>(bbox_constraints_.back().constraint()->num_constraints()) == bbox_constraints_.back().variables().rows());
+    DRAKE_ASSERT(binding.constraint()->num_constraints() == binding.GetNumElements());
+    bbox_constraints_.push_back(binding);
   }
+
 
   /** AddBoundingBoxConstraint
    *
    * Adds bounding box constraints referencing potentially a
    * subset of the decision variables (defined in the vars parameter).
+   * Example
+   * \code{.cc}
+   * MathematicalProgram prog;
+   * auto x = prog.NewContinuousDecisionVariables<2>("x");
+   * auto y = prog.NewContinuousDecisionVariables<1>("y");
+   * Eigen::Vector3d lb(0, 1, 2);
+   * Eigen::Vector3d ub(1, 2, 3);
+   * // Imposes the constraint
+   * // 0 ≤ x(0) ≤ 1
+   * // 1 ≤ x(1) ≤ 2
+   * // 2 ≤ y    ≤ 3
+   * prog.AddBoundingBoxConstraint(lb, ub, {x, y});
+   * \endcode
    */
-  template <typename DerivedLB, typename DerivedUB>
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
-      const Eigen::MatrixBase<DerivedLB>& lb,
-      const Eigen::MatrixBase<DerivedUB>& ub, const VariableListRef& vars) {
-    auto constraint = std::make_shared<BoundingBoxConstraint>(lb, ub);
-    AddConstraint(constraint, vars);
-    return constraint;
-  }
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub, const VariableListRef& vars);
+
+  /**
+   * Adds bounding box constraints referencing potentially a subset of the
+   * decision variables.
+   * @param lb The lower bound.
+   * @param ub The upper bound.
+   * @param vars Will imposes constraint lb(i) <= vars(i) <= ub(i).
+   * @return The newly constructed BoundingBoxConstraint.
+   */
+  std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub,
+      const Eigen::Ref<const DecisionVariableVectorX>& vars);
 
   /** AddBoundingBoxConstraint
    *
    * Adds bounding box constraints to the program for all
    * (currently existing) variables.
    */
-  template <typename DerivedLB, typename DerivedUB>
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
-      const Eigen::MatrixBase<DerivedLB>& lb,
-      const Eigen::MatrixBase<DerivedUB>& ub) {
-    return AddBoundingBoxConstraint(lb, ub, {decision_variables_});
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub) {
+    return AddBoundingBoxConstraint(lb, ub, decision_variables_);
   }
 
   /**
@@ -1022,7 +1047,7 @@ class MathematicalProgram {
       double lb, double ub, const symbolic::Variable& var) {
     DecisionVariableMatrix<1, 1> var_matrix(var);
     return AddBoundingBoxConstraint(drake::Vector1d(lb), drake::Vector1d(ub),
-                                    {var_matrix});
+                                    var_matrix);
   }
 
   /**
@@ -1030,26 +1055,30 @@ class MathematicalProgram {
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param vars The decision variables.
-   *
-   * Note: This version of the interface *does* accept references to
-   * non-column-vector decision variable matrices.
    */
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       double lb, double ub, const VariableListRef& vars);
 
 
+  /**
+   * Adds the same scalar lower and upper bound to every variable in the matrix.
+   * @tparam rows The number of rows in the DecisionVariableMatrix.
+   * @tparam cols The number of columns in the DecisionVariableMatrix.
+   * @param lb Lower bound.
+   * @param ub Upper bound.
+   * @param vars A matrix of decision variables.
+   * @return The newly created BoundingBoxConstraint.
+   */
   template <int rows, int cols>
-  std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
-      double lb, double ub, const DecisionVariableMatrix<rows, cols>& vars) {
+  typename std::enable_if<rows != Eigen::Dynamic && cols != Eigen::Dynamic,
+  std::shared_ptr<BoundingBoxConstraint>>::type AddBoundingBoxConstraint(
+      double lb, double ub, const Eigen::MatrixBase<DecisionVariableMatrix<rows, cols>>& vars) {
     DecisionVariableVector<rows * cols> flat_vars;
     for (int j = 0; j < cols; ++j) {
       flat_vars.template segment<cols>(j * rows) = vars.col(j);
     }
-    std::shared_ptr<BoundingBoxConstraint> bbcon =
-        std::make_shared<BoundingBoxConstraint>(Eigen::Matrix<double, rows * cols, 1>::Constant(lb),
-                     Eigen::Matrix<double, rows * cols, 1>::Constant(ub));
-    AddConstraint(bbcon, {flat_vars});
-    return bbcon;
+
+    return AddBoundingBoxConstraint(Eigen::Matrix<double, rows * cols, 1>::Constant(lb), Eigen::Matrix<double, rows * cols, 1>::Constant(ub), flat_vars);
   }
 
   /**

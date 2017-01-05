@@ -99,7 +99,7 @@ void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
       Eigen::Vector2d(0.0, 2.0),
       Eigen::Vector2d(std::numeric_limits<double>::infinity(),
                       std::numeric_limits<double>::infinity()),
-      {x.head<2>()});
+      x.head<2>());
 
   if (solver.SolverName() == "SNOPT") {
     prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
@@ -172,7 +172,7 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
   prog.AddBoundingBoxConstraint(
       Eigen::Vector3d::Zero(),
       Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()),
-      {x.head<3>()});
+      x.head<3>());
 
   if (solver.SolverName() == "SNOPT") {
     prog.SetInitialGuessForAllVariables(Eigen::Vector4d::Zero());
@@ -218,9 +218,8 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
   // to test multiple bounding box constraints.
   prog.AddBoundingBoxConstraint(
       Eigen::Vector2d(0, 0),
-      Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()), {x});
-  prog.AddBoundingBoxConstraint(-1, std::numeric_limits<double>::infinity(),
-                                x(1));
+      Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()), x);
+  prog.AddBoundingBoxConstraint(-1, std::numeric_limits<double>::infinity(), x(1));
 
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1), 1);
 
@@ -828,7 +827,7 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
       Eigen::VectorXd::Zero(num_nodes - 1),
       Eigen::VectorXd::Constant(num_nodes - 1,
                                 std::numeric_limits<double>::infinity()),
-      {t});
+      t);
 
   // sqrt((x(i)-x(i+1))^2 + (y(i) - y(i+1))^2) <= ti + spring_rest_length
   for (int i = 0; i < num_nodes - 1; ++i) {
@@ -1334,7 +1333,7 @@ GTEST_TEST(TestConvexOptimization, TestEigenvalueProblem) {
 
     Eigen::Vector2d x_lb(0.1, 1);
     Eigen::Vector2d x_ub(2, 3);
-    prog.AddBoundingBoxConstraint(x_lb, x_ub, {x});
+    prog.AddBoundingBoxConstraint(x_lb, x_ub, x);
 
     prog.AddLinearCost(drake::Vector1d(1), {z});
 

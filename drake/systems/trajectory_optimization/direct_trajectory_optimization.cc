@@ -56,7 +56,7 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
   VectorXd all_inf(N_ - 1);
   all_inf.fill(std::numeric_limits<double>::infinity());
   opt_problem_.AddBoundingBoxConstraint(MatrixXd::Zero(N_ - 1, 1), all_inf,
-                                        {h_vars_});
+                                        h_vars_);
 }
 
 void DirectTrajectoryOptimization::AddInputBounds(
@@ -70,22 +70,22 @@ void DirectTrajectoryOptimization::AddInputBounds(
     lb_all.segment(num_inputs_ * i, num_inputs_) = lower_bound;
     ub_all.segment(num_inputs_ * i, num_inputs_) = upper_bound;
   }
-  opt_problem_.AddBoundingBoxConstraint(lb_all, ub_all, {u_vars_});
+  opt_problem_.AddBoundingBoxConstraint(lb_all, ub_all, u_vars_);
 }
 
 void DirectTrajectoryOptimization::AddTimeIntervalBounds(
     const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound) {
-  opt_problem_.AddBoundingBoxConstraint(lower_bound, upper_bound, {h_vars_});
+  opt_problem_.AddBoundingBoxConstraint(lower_bound, upper_bound, h_vars_);
 }
 
 void DirectTrajectoryOptimization::AddTimeIntervalBounds(
     const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound,
     const std::vector<int>& interval_indices) {
-  solvers::VariableListRef h_list;
-  for (const auto& idx : interval_indices) {
-    h_list.push_back(h_vars_.segment<1>(idx));
+  solvers::DecisionVariableVectorX h(interval_indices.size());
+  for (int i = 0; i < static_cast<int>(interval_indices.size()); ++i) {
+    h(i) = h_vars_(interval_indices[i]);
   }
-  opt_problem_.AddBoundingBoxConstraint(lower_bound, upper_bound, h_list);
+  opt_problem_.AddBoundingBoxConstraint(lower_bound, upper_bound, h);
 }
 
 namespace {

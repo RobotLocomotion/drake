@@ -122,9 +122,9 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
   // the upper bound of the first variable is used.
   DecisionVariableVector<2> variable_vec(x(1), x(3));
   prog.AddBoundingBoxConstraint(Vector2d(-1, -2), Vector2d(-0.2, -1),
-                                {variable_vec});
+                                variable_vec);
   prog.AddBoundingBoxConstraint(Vector3d(-1, -0.5, -3), Vector3d(2, 1, -0.1),
-                                {x.head(3)});
+                                {x.head<1>(), x.segment<2>(1)});
 
   Vector4d lb(-1, -0.5, -3, -2);
   Vector4d ub(2, -0.2, -0.1, -1);
@@ -210,9 +210,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
                               MatrixCompareType::absolute));
   CheckSolverType(prog, "Linear System Solver");
 
-  std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
-      Vector2d::Constant(-1000.0), Vector2d::Constant(1000.0)));
-  prog.AddConstraint(bbcon, {x.head(2)});
+  prog.AddBoundingBoxConstraint(Vector2d::Constant(-1000), Vector2d::Constant(1000.0), x.head<2>());
 
   // Now solve as a nonlinear program.
   RunNonlinearProgram(prog, [&]() {
@@ -656,10 +654,10 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
                            -std::numeric_limits<double>::infinity(), 6, {y});
   prog.AddBoundingBoxConstraint(
       Vector3d(0, 0, 0),
-      Vector3d(2, std::numeric_limits<double>::infinity(), 3), {x});
+      Vector3d(2, std::numeric_limits<double>::infinity(), 3), x);
   prog.AddBoundingBoxConstraint(
       Vector3d(0, 0, 0),
-      Vector3d(2, std::numeric_limits<double>::infinity(), 3), {y});
+      Vector3d(2, std::numeric_limits<double>::infinity(), 3), y);
 
   // IPOPT has difficulty with this problem depending on the initial
   // conditions, which is why the initial guess varies so little.
