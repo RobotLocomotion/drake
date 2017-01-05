@@ -90,7 +90,7 @@ cc_binary(
 )
 
 cc_binary(
-    name = "lcmgen",
+    name = "lcm-gen",
     srcs = [
         "lcmgen/emit_c.c",
         "lcmgen/emit_cpp.c",
@@ -159,4 +159,29 @@ py_library(
         "lcm-python/lcm/__init__.py",  # Actual code from upstream.
     ],
     data = [":_lcm.so"],
+)
+
+java_library(
+    name = "lcm-java",
+    srcs = glob(["lcm-java/lcm/**/*.java"]),
+    javacopts = [
+        # Suppressed until lcm-proj/lcm#159 is fixed.
+        "-extra_checks:off",
+    ],
+    deps = [
+        "@net_sf_jchart2d_jchart2d//jar",
+    ],
+)
+
+java_binary(
+    name = "lcm-spy",
+    jvm_flags = [
+        # These flags are copied from the lcm/lcm-java/lcm-spy.sh.in.
+        "-Djava.net.preferIPv4Stack=true",
+        "-ea",
+    ],
+    main_class = "lcm.spy.Spy",
+    runtime_deps = [
+        ":lcm-java",
+    ],
 )
