@@ -436,7 +436,6 @@ GTEST_TEST(InfiniteCircuitRoadTest2, Bounds) {
       reverse_dut.lane()->driveable_bounds(0.);
   EXPECT_NEAR(-10., reverse_driveable_actual.r_min, kLinearTolerance);
   EXPECT_NEAR(2., reverse_driveable_actual.r_max, kLinearTolerance);
-
 }
 
 

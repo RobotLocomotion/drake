@@ -125,7 +125,6 @@ InfiniteCircuitRoad::Lane::Lane(const api::LaneId& id,
   auto path_it = path.begin();
 
   while (true) {
-
     std::cerr << "walk lane " << current.lane->id().id
               << "  end " << current.end
               << "   length " << current.lane->length() << std::endl;

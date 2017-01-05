@@ -220,6 +220,6 @@ GTEST_TEST(GenerateObj, Helix) {
 }
 
 
-}  // namespace monolane
+}  // namespace utility
 }  // namespace maliput
 }  // namespace drake
