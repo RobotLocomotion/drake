@@ -12,8 +12,8 @@ cc_library(
     hdrs = [],
     linkstatic = 1,
     deps = [
-        ":rotary_encoders",
         ":depth_sensor",
+        ":rotary_encoders",
     ],
 )
 
@@ -29,16 +29,20 @@ cc_library(
 
 cc_library(
     name = "depth_sensor",
-    srcs = ["depth_sensor.cc",
-            "depth_sensor_output.cc",
-            "depth_sensor_specification.cc"],
-    hdrs = ["depth_sensor.h",
-            "depth_sensor_output.h",
-            "depth_sensor_specification.h"],
+    srcs = [
+        "depth_sensor.cc",
+        "depth_sensor_output.cc",
+        "depth_sensor_specification.cc",
+    ],
+    hdrs = [
+        "depth_sensor.h",
+        "depth_sensor_output.h",
+        "depth_sensor_specification.h",
+    ],
     linkstatic = 1,
     deps = [
+        "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework",
-        "//drake/multibody:rigid_body_tree"
     ],
 )
 
