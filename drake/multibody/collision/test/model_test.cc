@@ -961,5 +961,43 @@ GTEST_TEST(ModelTest, PointDistanceToEmptyWorld) {
   }
 }
 
+// This tests that the query for distance between two objects (where at least
+// one is non-convex) is gracefully handled -- no distance is reported.
+GTEST_TEST(ModelTest, DistanceToNonConvex) {
+  DrakeShapes::Sphere sphere_shape(0.5);
+  Isometry3d pose = Isometry3d::Identity();
+
+  std::string file_name = drake::GetDrakePath() +
+      "/multibody/collision/test/ripple_cap.obj";
+  DrakeShapes::Mesh cap_shape(file_name, file_name);
+
+  // Creates collision elements.
+  // Flag cap_element to be anchored. If not, Drake will create a convex hull
+  // for dynamic collision elements out of the points in the mesh.
+  // NOTE: The elements are being instantiated here so that the anchored state
+  // can be set *before* registering with the collision model.
+  auto cap_element = make_unique<Element>(cap_shape);
+  Element *cap = cap_element.get();
+  cap_element->set_anchored();
+
+  // Populate the model.
+  auto model = newModel();
+  Element *sphere = model->AddElement(make_unique<Element>(sphere_shape));
+  model->AddElement(move(cap_element));
+
+  // Sets the collision elements' pose.
+  pose.translation() = Vector3d(0.0, 0.0, 0.7);
+  model->updateElementWorldTransform(sphere->getId(), pose);
+
+  pose.translation() = Vector3d(0.0, 0.0, 0.0);
+  model->updateElementWorldTransform(cap->getId(), pose);
+
+  std::vector<PointPair> results;
+  std::vector<ElementIdPair> pairs;
+  pairs.emplace_back(sphere->getId(), cap->getId());
+  model->closestPointsPairwise(pairs, true, results);
+  EXPECT_EQ(results.size(), 0);
+}
+
 }  // namespace
 }  // namespace DrakeCollision

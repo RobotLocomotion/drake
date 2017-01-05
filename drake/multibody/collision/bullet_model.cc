@@ -634,6 +634,12 @@ PointPair BulletModel::findClosestPointsBetweenElements(
   shapeA = dynamic_cast<btConvexShape*>(bt_objA->getCollisionShape());
   shapeB = dynamic_cast<btConvexShape*>(bt_objB->getCollisionShape());
 
+  if (shapeA == nullptr || shapeB == nullptr) {
+    throw std::logic_error(
+        "Attempting to compute distance between two collision "
+        "elements, at least one of which is non-convex.");
+  }
+
   btGjkEpaPenetrationDepthSolver epa;
   btVoronoiSimplexSolver sGjkSimplexSolver;
   sGjkSimplexSolver.setEqualVertexThreshold(0.f);
@@ -882,8 +888,12 @@ bool BulletModel::closestPointsPairwise(
     std::vector<PointPair>& closest_points) {
   closest_points.clear();
   for (const ElementIdPair& pair : id_pairs) {
-    closest_points.push_back(
-        findClosestPointsBetweenElements(pair.first, pair.second, use_margins));
+    try {
+      closest_points.push_back(findClosestPointsBetweenElements(
+          pair.first, pair.second, use_margins));
+    } catch (std::logic_error& e) {
+      drake::log()->warn(e.what());
+    }
   }
   return closest_points.size() > 0;
 }
