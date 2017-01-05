@@ -1,10 +1,10 @@
 #include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 
 #include <cmath>
-#include <iostream>
 #include <map>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace maliput {
@@ -125,9 +125,10 @@ InfiniteCircuitRoad::Lane::Lane(const api::LaneId& id,
   auto path_it = path.begin();
 
   while (true) {
-    std::cerr << "walk lane " << current.lane->id().id
-              << "  end " << current.end
-              << "   length " << current.lane->length() << std::endl;
+    drake::log()->debug("walk lane {}  end {}    length {}",
+                        current.lane->id().id,
+                        current.end,
+                        current.lane->length());
     const double end_s = start_s + current.lane->length();
     seen_records[current] = records_.size();
     records_.push_back(Record {
@@ -155,11 +156,11 @@ InfiniteCircuitRoad::Lane::Lane(const api::LaneId& id,
       while (branches->get(bi).lane != specified_lane) {
         ++bi;
         if (bi >= branches->size()) {
-          std::cerr << "OOOPS:  Lane " << specified_lane->id().id
-                    << " was not found at "
-                    << ((current.end == api::LaneEnd::kStart)
-                        ? "start" : "finish")
-                    << " end of lane " << current.lane->id().id << std::endl;
+          drake::log()->error(
+              "OOOPS:  Lane {} was not found at {} end of lane {}.",
+              specified_lane->id().id,
+              ((current.end == api::LaneEnd::kStart) ? "start" : "finish"),
+              current.lane->id().id);
           DRAKE_ABORT();
         }
       }
@@ -168,10 +169,8 @@ InfiniteCircuitRoad::Lane::Lane(const api::LaneId& id,
     } else {
       current = branches->get(0);
     }
-    std::cerr << branches->size() << " branches, "
-              << " 0 ---> lane " << current.lane->id().id
-              << ", end " << current.end
-              << std::endl;
+    drake::log()->debug("{} branches,  0 ---> lane {}, end {}",
+                        branches->size(), current.lane->id().id, current.end);
 
     // If no path was specified and we are about to start at a lane-end that
     // we have already seen, then we are done.
@@ -339,10 +338,9 @@ InfiniteCircuitRoad::Lane::ProjectToSourceRoad(
       }
     }
   }
-  std::cerr << "UH OH " << circuit_s
-            << "   cycle " << cycle_length_
-            << "   last " << records_.back().end_circuit_s
-            << std::endl;
+  drake::log()->error("UH OH {}   cycle {}   last {}",
+                      circuit_s, cycle_length_,
+                      records_.back().end_circuit_s);
   DRAKE_ABORT();  // I.e., how did we fall off the end?
 }
 

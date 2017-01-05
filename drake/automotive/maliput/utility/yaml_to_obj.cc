@@ -2,13 +2,13 @@
 ///
 /// Take a yaml file as input, build the resulting monolane road geometry, and
 /// render the road surface to a WaveFront OBJ output file.
-#include <iostream>
 #include <string>
 
 #include <gflags/gflags.h>
 
 #include "drake/automotive/maliput/monolane/loader.h"
 #include "drake/automotive/maliput/utility/generate_obj.h"
+#include "drake/common/text_logging.h"
 
 namespace mono = drake::maliput::monolane;
 namespace utility = drake::maliput::utility;
@@ -26,18 +26,18 @@ DEFINE_double(min_grid_resolution, utility::ObjFeatures().min_grid_resolution,
               " direction in the rendered mesh covering the road surface");
 
 int main(int argc, char* argv[]) {
-  std::cerr << "main() !\n";
+  drake::log()->debug("main()");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   if (FLAGS_yaml_file.empty()) {
-    std::cerr << "no input file!\n";
+    drake::log()->error("No input file specified.");
     return 1;
   }
   if (FLAGS_obj_file.empty()) {
-    std::cerr << "no output file!\n";
+    drake::log()->error("No output file specified.");
     return 1;
   }
-  std::cerr << "loading road geometry !\n";
+  drake::log()->info("Loading road geometry.");
   auto rg = mono::LoadFile(FLAGS_yaml_file);
 
 
@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
   features.max_grid_unit = FLAGS_max_grid_unit;
   features.min_grid_resolution = FLAGS_min_grid_resolution;
 
-  std::cerr << "generating obj !\n";
+  drake::log()->info("Generating OBJ.");
   utility::GenerateObjFile(rg.get(), FLAGS_obj_dir, FLAGS_obj_file, features);
 
   return 0;
