@@ -335,9 +335,9 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
     // Add S_bar as new variables. Mosek needs to create so called "bar
     // variable"
     // for matrix in positive semidefinite cones.
-    int rows = symmetric_matrix_variable.rows();
+    int matrix_rows = binding.constraint()->matrix_rows();
 
-    AddBarVariable(rows, task);
+    AddBarVariable(matrix_rows, task);
 
     // Add the constraint S = S_bar
     // This linear constraint is imposed as
@@ -349,13 +349,13 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
     int new_linear_constraint_count = 0;
     // It is important to use the same for-loop order as in
     // AddBarVariable().
-    for (int j = 0; j < rows; ++j) {
-      for (int i = j; i < rows; ++i) {
+    for (int j = 0; j < matrix_rows; ++j) {
+      for (int i = j; i < matrix_rows; ++i) {
         int linear_constraint_index =
             num_linear_constraint + new_linear_constraint_count;
         double symmetric_matrix_val = 1.0;
         MSKint32t symmetric_matrix_var_ij_index =
-            prog.FindDecisionVariableIndex(symmetric_matrix_variable(i, j));
+            prog.FindDecisionVariableIndex(symmetric_matrix_variable(j * matrix_rows + i));
         rescode =
             MSK_putarow(*task, linear_constraint_index, 1,
                         &symmetric_matrix_var_ij_index, &symmetric_matrix_val);

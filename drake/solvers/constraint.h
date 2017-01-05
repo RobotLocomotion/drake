@@ -619,7 +619,7 @@ class PositiveSemidefiniteConstraint : public Constraint {
   explicit PositiveSemidefiniteConstraint(int rows)
       : Constraint(rows, Eigen::VectorXd::Zero(rows),
                    Eigen::VectorXd::Constant(
-                       rows, std::numeric_limits<double>::infinity())) {}
+                       rows, std::numeric_limits<double>::infinity())), matrix_rows_(rows) {}
 
   PositiveSemidefiniteConstraint(const PositiveSemidefiniteConstraint& rhs) =
       delete;
@@ -648,6 +648,11 @@ class PositiveSemidefiniteConstraint : public Constraint {
    */
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override;
+
+  int matrix_rows() const {return matrix_rows_;}
+
+ private:
+  int matrix_rows_; // Number of rows in the symmetric matrix being positive semi-definite.
 };
 
 /**
