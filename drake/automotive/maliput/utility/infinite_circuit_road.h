@@ -155,8 +155,6 @@ class InfiniteCircuitRoad : public api::RoadGeometry {
 
     const api::LaneId id_;
     const InfiniteCircuitRoad* road_{};
-    api::RBounds lane_bounds_;
-    api::RBounds driveable_bounds_;
     std::vector<Record> records_;
     double cycle_length_{};
   };

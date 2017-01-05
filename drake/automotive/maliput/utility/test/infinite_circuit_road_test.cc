@@ -186,7 +186,7 @@ TEST_F(InfiniteCircuitRoadTest, Id) {
 }
 
 
-TEST_F(InfiniteCircuitRoadTest, source) {
+TEST_F(InfiniteCircuitRoadTest, Source) {
   EXPECT_EQ(source_.get(), dut_->source());
 }
 
@@ -438,39 +438,6 @@ GTEST_TEST(InfiniteCircuitRoadTest2, Bounds) {
   EXPECT_NEAR(2., reverse_driveable_actual.r_max, kLinearTolerance);
 
 }
-
-
-
-#if 0
-TEST_F(InfiniteCircuitRoadTest, ) {
-
-}
-
-
-TEST_F(InfiniteCircuitRoadTest, ) {
-
-}
-
-
-TEST_F(InfiniteCircuitRoadTest, ) {
-
-}
-
-
-TEST_F(InfiniteCircuitRoadTest, ) {
-
-}
-
-
-TEST_F(InfiniteCircuitRoadTest, ) {
-
-}
-
-
-TEST_F(InfiniteCircuitRoadTest, ) {
-
-}
-#endif
 
 
 }  // namespace

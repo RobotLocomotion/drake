@@ -241,18 +241,23 @@ InfiniteCircuitRoad::Lane::DoGetDefaultBranch(api::LaneEnd::Which) const {
 double InfiniteCircuitRoad::Lane::do_length() const { return INFINITY; }
 
 
-// TODO(maddog)  Bounds should recurse to the appropriate source lane.
-//               Flip bounds/signs appropriately if lane is reversed!
 api::RBounds
-InfiniteCircuitRoad::Lane::do_lane_bounds(double) const {
-  return lane_bounds_; }
+InfiniteCircuitRoad::Lane::do_lane_bounds(const double s) const {
+  api::RoadPosition rp;
+  bool is_reversed;
+  std::tie(rp, is_reversed) = ProjectToSourceRoad({s, 0., 0.});
+  const api::RBounds bounds = rp.lane->lane_bounds(rp.pos.s);
+  return (is_reversed) ? api::RBounds(-bounds.r_max, -bounds.r_min) : bounds;
+}
 
 
-// TODO(maddog)  Bounds should recurse to the appropriate source lane.
-//               Flip bounds/signs appropriately if lane is reversed!
 api::RBounds
-InfiniteCircuitRoad::Lane::do_driveable_bounds(double) const {
-  return driveable_bounds_;
+InfiniteCircuitRoad::Lane::do_driveable_bounds(double s) const {
+  api::RoadPosition rp;
+  bool is_reversed;
+  std::tie(rp, is_reversed) = ProjectToSourceRoad({s, 0., 0.});
+  const api::RBounds bounds = rp.lane->driveable_bounds(rp.pos.s);
+  return (is_reversed) ? api::RBounds(-bounds.r_max, -bounds.r_min) : bounds;
 }
 
 
