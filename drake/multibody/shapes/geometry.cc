@@ -1,5 +1,5 @@
 #include "drake/multibody/shapes/geometry.h"
-#include "tiny_obj_loader.h"
+#include <tinyobjloader/tiny_obj_loader.h>
 
 #include <algorithm>
 #include <cstdio>
