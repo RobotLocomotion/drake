@@ -73,6 +73,7 @@ new_git_repository(
 )
 
 new_git_repository(
+<<<<<<< 5895c9ac4ad8b0456693a24e396eb5f1545a51b8
     name = "bullet",
     remote = "https://github.com/RobotLocomotion/bullet3.git",
     commit = "ae2c4ca0618d55c6a29900aed75b958604149fdb",
@@ -84,6 +85,17 @@ new_git_repository(
     remote = "https://github.com/danfis/libccd.git",
     commit = "16b9379fb6e8610566fe5e1396166daf7106f165",
     build_file = "tools/ccd.BUILD",
+=======
+    name = "tinyobjloader",
+    remote = "https://github.com/syoyo/tinyobjloader.git",
+    commit = "7c3206f9193ca259b73fec6556cdcab45c1f5723",
+    build_file = "tools/tinyobjloader.BUILD",
+)
+
+pkg_config_package(
+    name = "glib",
+    modname = "glib-2.0",
+>>>>>>> Update bazel build
 )
 
 new_git_repository(
