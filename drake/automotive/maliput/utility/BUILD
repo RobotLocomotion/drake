@@ -37,12 +37,13 @@ cc_binary(
 # === test/ ===
 
 cc_test(
-    name = "generate_obj_test",
+    name = "generate_urdf_test",
     size = "small",
-    srcs = ["test/generate_obj_test.cc"],
+    srcs = ["test/generate_urdf_test.cc"],
     deps = [
         ":utility",
         "//drake/automotive/maliput/monolane",
+        "//drake/thirdParty:spruce",
         "@gtest//:main",
     ],
 )
