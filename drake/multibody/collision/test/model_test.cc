@@ -133,7 +133,7 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   DrakeShapes::Sphere geometry_3(0.5);
 
   // Populate the model.
-  auto model = newModel();
+  unique_ptr<Model> model = newModel();
   auto element_1 = model->AddElement(make_unique<Element>(geometry_1));
   auto element_2 = model->AddElement(
       make_unique<Element>(geometry_2, T_elem2_to_body));
@@ -792,7 +792,7 @@ GTEST_TEST(ModelTest, AnchoredElements) {
   ball4->updateWorldTransform(pose);
 
   // Populate the model.
-  auto model = newModel();
+  unique_ptr<Model> model = newModel();
   model->AddElement(move(ball1));
   model->AddElement(move(ball2));
   model->AddElement(move(ball3));
@@ -848,7 +848,7 @@ GTEST_TEST(ModelTest, AnchoredMeshes) {
   cap_element->set_anchored();
 
   // Populate the model.
-  auto model = newModel();
+  unique_ptr<Model> model = newModel();
   model->AddElement(move(sphere_element));
   model->AddElement(move(cap_element));
 
@@ -901,7 +901,7 @@ GTEST_TEST(ModelTest, PointDistanceToNonConvex) {
   cap_element->set_anchored();
 
   // Populate the model.
-  auto model = newModel();
+  unique_ptr<Model> model = newModel();
   model->AddElement(move(cap_element));
 
   const int kPointCount = 4;
@@ -933,7 +933,7 @@ GTEST_TEST(ModelTest, PointDistanceToNonConvex) {
 // This test confirms that point queries against an empty world will produce
 // infinite values.
 GTEST_TEST(ModelTest, PointDistanceToEmptyWorld) {
-  auto model = newModel();
+  unique_ptr<Model> model = newModel();
 
   const int kPointCount = 4;
   Eigen::RowVectorXd cx(kPointCount), cy(kPointCount), cz(kPointCount);
@@ -981,7 +981,7 @@ GTEST_TEST(ModelTest, DistanceToNonConvex) {
   cap_element->set_anchored();
 
   // Populate the model.
-  auto model = newModel();
+  unique_ptr<Model> model = newModel();
   Element *sphere = model->AddElement(make_unique<Element>(sphere_shape));
   model->AddElement(move(cap_element));
 
