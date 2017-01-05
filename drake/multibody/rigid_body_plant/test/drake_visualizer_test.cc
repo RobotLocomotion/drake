@@ -295,7 +295,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     body->set_name("box_body");
     body->set_model_instance_id(tree->add_model_instance());
     body->set_mass(1.0);
-    body->set_spatial_inertia(Matrix6<double>::Identity());
+    body->set_spatial_inertia_in_B(Matrix6<double>::Identity());
 
     Eigen::Vector3d box_size(0.5, 0.5, 0.5);
     Box shape(box_size);
@@ -328,7 +328,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     body->set_name("capsule_body");
     body->set_model_instance_id(tree->add_model_instance());
     body->set_mass(1.0);
-    body->set_spatial_inertia(Matrix6<double>::Identity());
+    body->set_spatial_inertia_in_B(Matrix6<double>::Identity());
 
     Capsule shape(0.1, 0.5);
     Eigen::Vector4d material(0.7, 0.7, 0.7, 1.0);
@@ -360,7 +360,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     body->set_name("cylinder_body");
     body->set_model_instance_id(tree->add_model_instance());
     body->set_mass(1.0);
-    body->set_spatial_inertia(Matrix6<double>::Identity());
+    body->set_spatial_inertia_in_B(Matrix6<double>::Identity());
 
     Cylinder shape(0.2, 0.25);
     Eigen::Vector4d material(0.9, 0.0, 0.7, 1.0);
@@ -393,7 +393,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     body->set_name("mesh_body");
     body->set_model_instance_id(tree->add_model_instance());
     body->set_mass(1.0);
-    body->set_spatial_inertia(Matrix6<double>::Identity());
+    body->set_spatial_inertia_in_B(Matrix6<double>::Identity());
 
     Mesh shape("spherical_cap.obj",
         drake::GetDrakePath() +
@@ -427,7 +427,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     body->set_name("sphere_body");
     body->set_model_instance_id(tree->add_model_instance());
     body->set_mass(1.0);
-    body->set_spatial_inertia(Matrix6<double>::Identity());
+    body->set_spatial_inertia_in_B(Matrix6<double>::Identity());
 
     Sphere shape(0.54);  // The sphere has a radius of 0.54 meters.
     Eigen::Vector4d material(0.8, 0.7, 0.6, 1.0);

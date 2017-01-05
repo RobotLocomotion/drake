@@ -16,16 +16,29 @@ class RevoluteJoint : public FixedAxisOneDoFJoint<RevoluteJoint> {
   // RevoluteJoint& operator=(const RevoluteJoint&) = delete;
 
  private:
+  // Rotation axis expressed in the joint's inboard frame F.
   Eigen::Vector3d rotation_axis;
 
  public:
+  /// RevoluteJoint constructor.
+  /// Pose and axis are measured and expressed in the
+  /// parent body frame P. For more information on frames see
+  /// @ref rigid_body_tree_frames.
+  ///
+  /// @param[in] name The name of this joint.
+  ///
+  /// @param[in] X_PF The pose of the inboard frame F measured and expressed
+  /// in the parent body frame P.
+  ///
+  /// @param[in] translation_axis_F Translation axis expressed in the joint's
+  /// inboard frame F.
   RevoluteJoint(const std::string& name,
-                const Eigen::Isometry3d& transform_to_parent_body,
-                const Eigen::Vector3d& _rotation_axis)
+                const Eigen::Isometry3d& X_PF,
+                const Eigen::Vector3d& rotation_axis_F)
       : FixedAxisOneDoFJoint<RevoluteJoint>(*this, name,
-                                            transform_to_parent_body,
-                                            spatialJointAxis(_rotation_axis)),
-        rotation_axis(_rotation_axis) {
+                                            X_PF,
+                                            spatialJointAxis(rotation_axis_F)),
+        rotation_axis(rotation_axis_F) {
     DRAKE_ASSERT(std::abs(rotation_axis.norm() - 1.0) < 1e-10);
   }
 

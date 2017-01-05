@@ -96,25 +96,25 @@ class DrakeJoint {
              const Eigen::Isometry3d& transform_to_parent_body,
              int num_positions, int num_velocities);
 
-  /**
-   * The destructor.
-   */
+  /// The destructor.
   virtual ~DrakeJoint();
 
-  /**
-   * Returns the transform `T_PF` giving the pose of the joint's "fixed" frame
-   * `F` in its parent body frame `P`. Frame `F` is the joint frame that is
-   * fixed to the parent body; thus `T_PF` is not configuration dependent.
-   *
-   * To clarify the sense of the returned transform `T_PF`, consider the
-   * location of a point `Q` somewhere in space. Let `p_PQ` be point `Q`
-   * measured and expressed in frame `P` and `p_FQ` be point `Q` measured and
-   * expressed in frame `F`. Then `p_PQ` is given by:
-   *
-   * <pre>
-   * p_PQ = T_PF * p_FQ
-   * </pre>
-   */
+  /// Returns the transform `X_PF` giving the pose of the joint's inboard frame
+  /// F (or fixed frame) rigidly attached to its parent body with frame `P`.
+  /// Therefore `X_PF` is the pose of the joint inboard frame F measured and
+  /// expressed in the parent frame P. Frame F's position, by which we mean the
+  /// position of its origin Fo measured and expressed in frame P is given by
+  /// `X_PF.translation()` and its orientation in frame P is given by
+  /// `X_PF.linear()`. Thus `X_PF` is not configuration dependent.
+  ///
+  /// To clarify the sense of the returned transform `X_PF`, consider a
+  /// point `x`. Let `x_P` be point `x` measured and expressed in frame `P`
+  /// and `x_F` be point `x` measured and expressed in frame `F`. Then `x_P`
+  /// is given by:
+  ///
+  /// <pre>
+  /// x_P = X_PF * x_F
+  /// </pre>
   const Eigen::Isometry3d& get_transform_to_parent_body() const;
 
   /**

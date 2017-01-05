@@ -103,7 +103,7 @@ class ContactResultTest : public ::testing::Test {
         unique_ptr<RigidBody<double>>(body = new RigidBody<double>()));
     body->set_name(name);
     body->set_mass(1.0);
-    body->set_spatial_inertia(Matrix6<double>::Identity());
+    body->set_spatial_inertia_in_B(Matrix6<double>::Identity());
     Isometry3d pose = Isometry3d::Identity();
     pose.translate(pos);
     body->add_joint(&tree_->world(),

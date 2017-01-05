@@ -199,10 +199,15 @@ void originAttributesToTransform(
   T.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
 }
 
+// Parses the contents of a <pose> element specifying X_AB, the pose of frame
+// B measured and expressed in the frame A. By means of the supplied
+// pose X_CA of frame A in a third frame C, the pose of B is expressed in
+// frame C, i.e X_CB.
+// Input pose_map is not used.
 void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
                           // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                          Eigen::Isometry3d& T,
-                          const Eigen::Isometry3d& T_default_frame) {
+                          Eigen::Isometry3d& X_AB,
+                          const Eigen::Isometry3d& X_CA) {
   Eigen::Vector3d rpy = Eigen::Vector3d::Zero(), xyz = Eigen::Vector3d::Zero();
   const char* strval = node->FirstChild()->Value();
   if (strval) {
@@ -210,7 +215,8 @@ void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
     s >> xyz(0) >> xyz(1) >> xyz(2) >> rpy(0) >> rpy(1) >> rpy(2);
   }
 
-  T.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+  // Parses pose of frame B measured and expressed in frame A
+  X_AB.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
 
   const char* attr = node->Attribute("frame");
   if (attr && strlen(attr) > 0) {
@@ -223,8 +229,8 @@ void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
     Eigen::Isometry3d T_frame =
         pose_map.at(frame);  // will throw an exception if the frame is not
                              // found.  that is the desired behavior.
-    T = T_frame * T;
+    X_AB = T_frame * X_AB;
   } else {
-    T = T_default_frame * T;
+    X_AB = X_CA * X_AB;
   }
 }

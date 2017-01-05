@@ -17,24 +17,25 @@ class PrismaticJoint : public FixedAxisOneDoFJoint<PrismaticJoint> {
   // PrismaticJoint& operator=(const PrismaticJoint&) = delete;
 
  public:
-  /**
-   * The constructor that intializes the name, position, and axis of motion
-   * of this prismatic joint.
-   *
-   * @param[in] name The name of this joint.
-   *
-   * @param[in] transform_to_parent_body The transform from this joint's frame
-   * to this joint's parent's frame.
-   *
-   * @param[in] translation_axis The axis along which this joint moves.
-   */
+  /// The constructor that intializes the name, position, and axis of motion
+  /// of this prismatic joint. Pose and axis are measured and expressed in the
+  /// parent body frame P. For more information on frames see
+  /// @ref rigid_body_tree_frames.
+  ///
+  /// @param[in] name The name of this joint.
+  ///
+  /// @param[in] X_PF The pose of the inboard frame F measured and expressed
+  /// in the parent body frame P.
+  ///
+  /// @param[in] translation_axis_F Translation axis expressed in the joint's
+  /// inboard frame F.
   PrismaticJoint(const std::string& name,
-                 const Eigen::Isometry3d& transform_to_parent_body,
-                 const Eigen::Vector3d& translation_axis)
+                 const Eigen::Isometry3d& X_PF,
+                 const Eigen::Vector3d& translation_axis_F)
       : FixedAxisOneDoFJoint<PrismaticJoint>(
-            *this, name, transform_to_parent_body,
-            spatialJointAxis(translation_axis)),
-        translation_axis_(translation_axis) {
+            *this, name, X_PF,
+            spatialJointAxis(translation_axis_F)),
+        translation_axis_(translation_axis_F) {
     DRAKE_ASSERT(std::abs(translation_axis_.norm() - 1.0) < 1e-10);
   }
 
@@ -58,6 +59,7 @@ class PrismaticJoint : public FixedAxisOneDoFJoint<PrismaticJoint> {
       const Eigen::Vector3d& translation_axis);
 
  private:
+  // Translation axis expressed in the joint's inboard frame F.
   Eigen::Vector3d translation_axis_;
 };
 #pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual

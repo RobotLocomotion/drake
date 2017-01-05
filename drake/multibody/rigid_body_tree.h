@@ -33,6 +33,228 @@
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
+/// @defgroup rigid_body_tree_frames Frames Used to Define a Model
+/// @{
+/// This section defines the frames used in Drake when creating a multibody
+/// model. Additional frames and conventions used when defining models using
+/// URDF and SDF specifications are also given. For a detailed description on
+/// general terminology and notation please refer to @ref multibody_notation
+///
+/// <b> Note: </b>
+/// We are using <em>parent</em> here in the graph theory sense to mean
+/// exclusively an inboard body, that is, <em>closer to World, the root of
+/// the tree</em>. That is not necessarily the same as the meaning of
+/// <em>parent</em> in an external description files like urdf or sdf where
+/// the term defines the sense of the joint but doesn't necessarily denote an
+/// inboard body.
+///
+/// @section drakes_frames Drake's Frames
+///
+/// In the general case, when specifying a joint between the
+/// joint's inboard body P (the parent) and the joint's outboard body B (the
+/// child), the following frames are defined:
+/// - A frame on the parent body, also referred to as `P`.
+/// - A frame on the child body, also referred to as `B`.
+/// - A frame `F` rigidly attached to body `P`.
+/// - A frame `M` rigidly attached to body `B`.
+///
+/// The joint describes the motion of frame `M` (the "mobilized" frame) measured
+/// in `F` (the "fixed" frame with respect to the `P` frame) by means of a
+/// state dependent transformation `X_FM(q)` with `q` the state of the joint
+/// (angle, displacement, etc.). Note that the names "fixed" (inboard link) and
+/// "mobilized" (outboard link) indicate that the frames are stationary
+/// (movable, respectively) related to the parent body frame `P`.
+/// Generally both `F` and `M` move.
+/// To properly describe the configuration of this joint we need to supply:
+/// - `X_PF`, the pose of the joint's inboard frame F measured in the parent
+///   body frame P.
+/// - `X_BM`, the pose of the joint's outboard frame measured in the child body
+///   frame `B`.
+///
+/// Notice that it is never assumed that body frames' origins are
+/// located at the center of mass of their respective bodies. In general,
+/// a body frame will not be located at a body's center of mass.
+///
+/// In general, a body frame can be arbitrarily placed. A common
+/// choice, and used by Drake without loss of generality, is to make `B = M`,
+/// and thus the body frame is defined to coincide with the outboard frame of
+/// its inboard joint. Therefore in Drake we never need to specify the
+/// joint's outboard frame M. The state dependent joint's transform then
+/// becomes `X_FB(q)`, i.e. describes the configuration of the joint's
+/// outboard body frame `B` with respect to the joint's inboard frame `F`.
+///
+/// This choice of frames in Drake implies that:
+/// - Body frame `B` is <b>not</b> necessarily located at the body's center
+///   of mass, i.e. in general `Bo != Bcm`.
+/// - Spatial inertia is defined about `Bo` which, in general, is not the
+///   center of mass.
+/// - The center of mass is measured with respect to `B` and thus, in
+///   general, it is not zero.
+///
+/// Drake expresses spatial inertias in the `B` frame and the center of mass
+/// is measured and expressed in `B`. This choice of frames implies that
+/// when defining a rigid body from inertial properties defined in a frame
+/// located at the center of mass (and probably aligned with the body's
+/// principal axes), the user will need to perform the necessary transformations
+/// to the `B` frame <b>before</b> creating the body.
+///
+/// Drake allows accessing some of these transforms with:
+/// - DrakeJoint::get_transform_to_parent_body(): returns the state
+///   independent `X_PF`, the pose of the joint's inboard frame F measured and
+///   expressed in the parent body frame `P`.
+/// - DrakeJoint::jointTransform(): `X_FB(q)` the state dependent pose of the
+///   body frame `B` measured and expressed in `F` (recall that in Drake B = M).
+///
+/// @section urdf_frames Notes on URDF Specific Frames
+///
+/// The URDF specification (http://wiki.ros.org/urdf/XML/link) describes the
+/// inertia properties of a rigid body in an inertial frame `I` which is
+/// measured with respect to the outboard frame
+/// `M` of the body's inboard joint.
+/// This inertial frame is specified by an `<inertial>` element within
+/// `<link>`. Some details per URDF entry are given here:
+///
+/// <b><inertial></b>
+///
+/// The inertia properties of the body described in a body inertial frame `I`
+/// defined by the entries below. For more information on the frames used in
+/// Drake refer to @ref drakes_frames
+///
+/// <dl>
+///   <dt>&lt;origin&gt;
+///   (optional: defaults to the identity if not specified):</dt>
+///   <dd>This is the pose `X_BI` of the inertial frame `I` measured and
+///     expressed in the body frame `B`. The origin of the inertial frame needs
+///     to be at the center of mass and thus `Io = Bcm`. The axes of the body
+///     inertial frame `I` do not need to be aligned with the principal axes
+///     of inertia.
+///     In Drake the body frame `B` coincides with the outboard frame `M` of the
+///     body's inboard joint, i.e. `B = M`.
+///   <dl>
+///     <dt>xyz (optional: defaults to the zero vector):</dt>
+///       <dd>Specifies the center of mass measured and expressed in the body
+///       frame `B`, i.e. `com_B`.</dd>
+///     <dt>rpy (optional: defaults to identity if not specified):</dt>
+///       <dd>Specifies the orientation of the inertial frame `I` with respect
+///       to the body frame `B` represented by roll, pitch and yaw angles in
+///       radians. In other words, this entry specifies the rotation matrix
+///       `R_BI`.</dd>
+///   </dl>
+///   <dt>&lt;mass&gt;</dt>
+///     <dd>The mass of the body specified by the value attribute of
+///     this element.</dd>
+///   <dt>&lt;inertia&gt;</dt>
+///     <dd>The 3x3 inertia matrix J_Io_I about the center of mass `Io = Bcm`
+///     expressed in the inertial frame `I`.
+///     Since the inertia matrix is symmetric, only 6 above-diagonal
+///     elements of this matrix are only needed, using the attributes ixx,
+///     ixy, ixz, iyy, iyz, izz which are optional and default to zero.</dd>
+/// </dl>
+///
+/// Joints are specified as:
+///
+/// <b><joint></b>
+///
+/// <dl>
+///   <dt>&lt;origin&gt;
+///   (optional: defaults to the identity if not specified):</dt>
+///   <dd> This is the pose `X_PF` of the link's inboard frame `F`
+///   expressed in the inboard body frame `P`.</dd>
+///   <dl>
+///     <dt>xyz (optional: defaults to the zero vector):</dt>
+///     <dd> Specifies the location `Fo` of frame `F` measured and expressed
+///     in `P`.</dd>
+///     <dt>rpy</dt>
+///     <dd> Specifies the orientation of frame `F` with respect to the
+///     inboard body frame `P`.<dd>
+///   </dl>
+///   <dt>&lt;parent&gt;</dt> Specifies the inboard body.
+///   <dt>&lt;child&gt;</dt> Specifies the outboard body.
+/// </dl>
+///
+/// @section sdf_frames Notes on SDF Specific Frames
+///
+/// In addition to defining an inertial frame `I` as with URDF files, SDF
+/// also defines a "model" frame referred to here as `D`. Many SDF components
+/// need to be expressed in this model frame `D` while some others are
+/// expected to be in some local frame.
+/// SDF uses an implicit "world" frame, which we refer to hereafter as `W`.
+///
+/// Frames are specified with `<pose>` elements. The pose of the model `X_WD`
+/// measured and expressed in the world frame `W` is specified by a `<pose>`
+/// element within the specific `<model>`.
+///
+/// In addition, the user can specify a "link" frame `L`, not necessarily at
+/// the center of mass of the body and not even at the inboard joint frame M.
+///
+/// <b>Important Limitation for Drake's SDF's:</b> Currently Drake only
+/// supports the case when `L = B` that is, the link frame `L` must be
+/// located at the body frame which in Drake is located at the outboard frame
+/// `M` of the body's inboard joint.
+///
+/// In the SDF format links are specified as:
+///
+/// <b><link></b>
+///
+/// <dl>
+///   <dt>&lt;pose&gt;
+///   (optional: see details below:)</dt>
+///   <dd>
+///   Specifies the pose `X_DL` of link frame `L` measured and
+///   expressed in the model's frame `D`. In general, frame `L` is located
+///   neither at a joint outboard frame `M` nor at the center of mass `Bcm`.
+///
+///   <b>Limitation of Drake's SDF parser:</b> The link frame `L` must be
+///   coincident with the body frame `B` which in drake is the outboard frame
+///   of the body's inboard joint.
+///   </dd>
+///   <dt>&lt;inertial&gt;</dt>
+///   <dd> </dd>
+///   <dl>
+///     <dt>&lt;pose&gt;
+///     (optional: defaults to the identity if not specified):</dt>
+///     <dd> Defines an inertial frame `I` at the center of mass of the body
+///     (`Io = Bcm`) by specifying its pose `X_LI` measured and expressed in
+///     `L`. The moments of inertia are then expected to be about `Io`
+///     and expressed in `I`. The center of mass of the body measured and
+///     expressed in `L` corresponds to the translational part of `X_LI`.</dd>
+///   </dl>
+///   <dl>
+///     <dt>&lt;inertia&gt;</dt>
+///     <dd>The 3x3 inertia matrix J_Io_I about the center of mass `Io = Bcm`
+///     expressed in the inertial frame `I`.
+///     Since the inertia matrix is symmetric, only 6 above-diagonal
+///     elements of this matrix are only needed, using the attributes ixx,
+///     ixy, ixz, iyy, iyz, izz which are optional and default to zero.</dd>
+///     <dt>&lt;mass&gt;</dt>
+///     <dd>The mass of the body.</dd>
+///   </dl>
+/// </dl>
+///
+/// Joints are specified as:
+///
+/// <b><joint></b>
+///
+/// <dl>
+///   <dt>&lt;parent&gt;</dt> <dd>Specifies the inboard body.</dd>
+///   <dt>&lt;child&gt;</dt> <dd>Specifies the outboard body.</dd>
+///   <dt>&lt;pose&gt;</dt> <dd>For the one case supported by Drake (`L = B`)
+///   this entry can be left out.</dd>
+///   <dt>&lt;axis&gt;</dt> <dd></dd>
+///   <dl>
+///     <dt>&lt;xyz&gt;</dt>
+///     <dd> The joint axis. Expressed in either the `F` frame or the `D`
+///     frame accoring to entry `use_parent_model_frame`.</dd>
+///     <dt>&lt;use_parent_model_frame&gt;</dt>
+///     <dd> If `1` (true) the axis is assumed to be expressed in the model
+///     frame `D`. If negative or not provided, the axis is assumed to be
+///     expressed in the joint's inboard frame `F`.</dd>
+///   </dl>
+/// </dl>
+///
+/// @ingroup multibody_dynamics
+/// @}
+
 /**
  * Maintains a vector of RigidBody objects that are arranged into a kinematic
  * tree via DrakeJoint objects. It provides various utility methods for
@@ -69,6 +291,7 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  * index to get its index in the RigidBodyTree's full state vector.
  *
  * @tparam T The scalar type. Must be a valid Eigen scalar.
+ * @ingroup multibody_dynamics
  */
 template <typename T>
 class RigidBodyTree {
@@ -429,18 +652,24 @@ class RigidBodyTree {
   KinematicPath findKinematicPath(int start_body_or_frame_idx,
                                   int end_body_or_frame_idx) const;
 
-  /** \brief Compute the positive definite mass (configuration space) matrix \f$
-   *H(q) \f$, defined by \f$T = \frac{1}{2} v^T H(q) v \f$, where \f$ T \f$ is
-   *kinetic energy.
-   *
-   * The mass matrix also appears in the manipulator equations
-   *  \f[
-   *  H(q) \dot{v} + C(q, v, f_\text{ext}) = B(q) u
-   * \f]
-   *
-   * \param cache a KinematicsCache constructed given \f$ q \f$
-   * \return the mass matrix \f$ H(q) \f$
-   */
+  /// Computes the positive definite mass matrix of the multibody system in
+  /// quasi-coordinates \f$H(q)\f$, defined by
+  /// \f$T = \frac{1}{2} v^T H(q) v\f$, where \f$ T\f$ is the kinetic energy.
+  ///
+  /// The mass matrix also appears in the manipulator equations
+  ///  \f[
+  ///  H(q) \dot{v} + C(q, v, f_\text{ext}) = B(q) u
+  /// \f]
+  ///
+  /// This method uses The Composite Rigid Body (CRB) method, which being
+  /// O(N^2) in computational complexity, is the most efficient approch for
+  /// computing the mass matrix explicitly.
+  ///
+  /// @param cache a KinematicsCache constructed given \f$ q \f$.
+  /// @returns the mass matrix \f$ H(q) \f$
+  ///
+  /// The @p cache will be updated by a call to
+  /// updateCompositeRigidBodyInertias() and therefore is a non-const parameter.
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -1221,6 +1450,38 @@ class RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
+  // Computes the Composite Rigid Body (CRB) inertias associated with each body.
+  // The composite rigid body inertia associated with a body is defined as
+  // the effective spatial inertia of the composite body formed by all
+  // bodies outboard of the joint.
+  // After a call to this method the argument cache get updated with entries:
+  // - inertia_in_world, spatial inertia about Wo in W, i.e. Ii(Wo)_W.
+  // - crb_in_world, CBI about Wo in W, i.e. Icb(Wo)_W.
+  //
+  // For an in depth discussion refer to Section 4.1.2 of A. Jain's
+  // book, p. 59.
+  //
+  // The composite body inertia for the i-th body around its frame origin Boi
+  // is computed as:
+  //   Ri(i) = Ii(i) + \sum_{\forall j\in C(i)} Rj(i)
+  // where C(i) is the set of bodies children of body i. In the
+  // equation above it is implicit that the CRB inertia for body j computed
+  // about body-j's origin (Rj(j)) is translated to body-i's origin Boi so that
+  // the summation is valid. This translation transformation is described by
+  // the parallel axis theorem for spatial inertias (Eq. 2.12 in A. Jain's
+  // book, p. 20).
+  // RigidBodyTree::updateCompositeRigidBodyInertias() first computes all
+  // CRB inertias about the world's origin and performs the computation above
+  // as:
+  //   Ri(Wo) = Ii(Wo) + \sum_{\forall j\in C(i)} Rj(Wo)
+  // This method is O(N) with N the number of bodies in the tree.
+  // TODO(amcastro-tri): Computing CRB's about the world's origin might lead
+  // to numerical problems for large offsets from the origin. This might
+  // become more noticeable for instance in car simulations with large
+  // offsets of the many smaller components of a car from the origin.
+  // A better approach is described in Section 4.1.2 of A. Jain's book, p. 59
+  // where the CRB inertia of body k computed about the body frame origin for
+  // body this body k. See issue #4621.
   template <typename Scalar>
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void updateCompositeRigidBodyInertias(KinematicsCache<Scalar>& cache) const;

@@ -21,6 +21,7 @@ drake_install_headers(
     kinematics_cache.h
     kinematics_cache-inl.h
     material_map.h
+    multibody.h
     pose_map.h
     rigid_body.h
     rigid_body_actuator.h

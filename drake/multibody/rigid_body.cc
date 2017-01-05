@@ -20,7 +20,7 @@ RigidBody<T>::RigidBody()
     : collision_filter_group_(DrakeCollision::DEFAULT_GROUP),
       collision_filter_ignores_(DrakeCollision::NONE_MASK) {
   center_of_mass_ = Vector3d::Zero();
-  spatial_inertia_ << drake::SquareTwistMatrix<double>::Zero();
+  spatial_inertia_B_ << drake::SquareTwistMatrix<double>::Zero();
 }
 
 template <typename T>
@@ -242,12 +242,11 @@ bool RigidBody<T>::appendCollisionElementIdsFromThisBody(
 }
 
 template <typename T>
-void RigidBody<T>::ApplyTransformToJointFrame(
-    const Eigen::Isometry3d& transform_body_to_joint) {
-  spatial_inertia_ = transformSpatialInertia(transform_body_to_joint,
-      spatial_inertia_);
+void RigidBody<T>::ApplyTransformToJointFrame(const Eigen::Isometry3d& X_BI) {
+  spatial_inertia_B_ =
+      transformSpatialInertia(X_BI, spatial_inertia_B_);
   for (auto& v : visual_elements_) {
-    v.SetLocalTransform(transform_body_to_joint * v.getLocalTransform());
+    v.SetLocalTransform(X_BI * v.getLocalTransform());
   }
 }
 
@@ -272,25 +271,26 @@ double RigidBody<T>::get_mass() const {
 }
 
 template <typename T>
-void RigidBody<T>::set_center_of_mass(const Eigen::Vector3d& center_of_mass) {
+void RigidBody<T>::set_center_of_mass_in_B(
+    const Eigen::Vector3d& center_of_mass) {
   center_of_mass_ = center_of_mass;
 }
 
 template <typename T>
-const Eigen::Vector3d& RigidBody<T>::get_center_of_mass() const {
+const Eigen::Vector3d& RigidBody<T>::get_center_of_mass_in_B() const {
   return center_of_mass_;
 }
 
 template <typename T>
-void RigidBody<T>::set_spatial_inertia(const drake::SquareTwistMatrix<double>&
-    spatial_inertia) {
-  spatial_inertia_ = spatial_inertia;
+void RigidBody<T>::set_spatial_inertia_in_B(
+    const drake::SquareTwistMatrix<double> &IBo_B) {
+  spatial_inertia_B_ = IBo_B;
 }
 
 template <typename T>
-const drake::SquareTwistMatrix<double>& RigidBody<T>::get_spatial_inertia()
+const drake::SquareTwistMatrix<double>& RigidBody<T>::get_spatial_inertia_in_B()
     const {
-  return spatial_inertia_;
+  return spatial_inertia_B_;
 }
 
 ostream& operator<<(ostream& out, const RigidBody<double>& b) {

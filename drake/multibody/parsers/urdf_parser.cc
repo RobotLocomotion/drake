@@ -47,11 +47,51 @@ using drake::multibody::joints::kRollPitchYaw;
 
 namespace {
 
+// Parses the `<inertial/>` element within a `<link/>` element describing a
+// RigidBody in a RigidBodyTree.
+//
+// <inertial>
+// The inertia properties of the body described in a body inertial frame I
+// defined by the entries below. For more information on the frames used in
+// Drake refer to @ref rigid_body_tree_frames.
+//   <origin> (optional: defaults to zero if not specified)
+//     This is the pose of the inertial frame I measured and expressed in
+//     the body frame B. The origin of the inertial frame needs to be at the
+//     center of mass and thus Io = Bcm. The axes of the body inertial frame I
+//     do not need to be aligned with the principal axes of inertia.
+//     In Drake the body frame B coincides with the outboard frame M of the
+//     body's inboard joint, i.e. B = M.
+//     In summary, <origin> specifies the transformation X_BI.
+//
+//     xyz (optional: defaults to zero vector):
+//       Specifies the center of mass measured and expressed in the body
+//       frame B.
+//     rpy (optional: defaults to identity if not specified)
+//       Specifies the orientation of the inertial frame I with respect
+//       to the body frame B represented by roll, pitch and yaw angles in
+//       radians.
+//   <mass> The mass of the body specified by the value attribute of this
+//     element.
+//   <inertia>
+//     The 3x3 inertia matrix, expressed in the inertial frame I.
+//     Since the inertia matrix is symmetric, only 6 above-diagonal
+//     elements of this matrix are only needed, using the attributes ixx,
+//     ixy, ixz, iyy, iyz, izz which are optional and default to zero.
+//
+// In the URDF specification (http://wiki.ros.org/urdf/XML/link) the
+// mobilized frame M (in Drake coincident with B) is referred as the "link
+// reference frame". Drake does not define an "inertial frame" but measures
+// COM and inertias in the body frame B. For more on frames and conventions
+// used by Drake see @ref rigid_body_tree_frames.
 void ParseInertial(RigidBody<double>* body, XMLElement* node) {
-  Isometry3d T = Isometry3d::Identity();
+  // B: Body frame.
+  // I: Inertial frame specified from the urdf. Io = Bcm and moments of
+  // inertia are expressed in I and about Io.
+  // By default X_BI is the identity transform.
+  Isometry3d X_BI = Isometry3d::Identity();
 
   XMLElement* origin = node->FirstChildElement("origin");
-  if (origin) originAttributesToTransform(origin, T);
+  if (origin) originAttributesToTransform(origin, X_BI);
 
   XMLElement* mass = node->FirstChildElement("mass");
   if (mass) {
@@ -60,27 +100,35 @@ void ParseInertial(RigidBody<double>* body, XMLElement* node) {
     body->set_mass(body_mass);
   }
 
-  Eigen::Vector3d com;
-  com << T(0, 3), T(1, 3), T(2, 3);
-  body->set_center_of_mass(com);
+  // Center of mass expressed in the body frame B.
+  Eigen::Vector3d com_B;
+  com_B << X_BI(0, 3), X_BI(1, 3), X_BI(2, 3);
+  body->set_center_of_mass_in_B(com_B);
 
-  drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
-  I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
+  // Spatial inertia computed about the center of mass (recall Io = Bcm) and
+  // expressed in I.
+  drake::SquareTwistMatrix<double> I_Io_I =
+      drake::SquareTwistMatrix<double>::Zero();
+  I_Io_I.block(3, 3, 3, 3) << body->get_mass() * Matrix3d::Identity();
 
   XMLElement* inertia = node->FirstChildElement("inertia");
   if (inertia) {
-    parseScalarAttribute(inertia, "ixx", I(0, 0));
-    parseScalarAttribute(inertia, "ixy", I(0, 1));
-    I(1, 0) = I(0, 1);
-    parseScalarAttribute(inertia, "ixz", I(0, 2));
-    I(2, 0) = I(0, 2);
-    parseScalarAttribute(inertia, "iyy", I(1, 1));
-    parseScalarAttribute(inertia, "iyz", I(1, 2));
-    I(2, 1) = I(1, 2);
-    parseScalarAttribute(inertia, "izz", I(2, 2));
+    parseScalarAttribute(inertia, "ixx", I_Io_I(0, 0));
+    parseScalarAttribute(inertia, "ixy", I_Io_I(0, 1));
+    I_Io_I(1, 0) = I_Io_I(0, 1);
+    parseScalarAttribute(inertia, "ixz", I_Io_I(0, 2));
+    I_Io_I(2, 0) = I_Io_I(0, 2);
+    parseScalarAttribute(inertia, "iyy", I_Io_I(1, 1));
+    parseScalarAttribute(inertia, "iyz", I_Io_I(1, 2));
+    I_Io_I(2, 1) = I_Io_I(1, 2);
+    parseScalarAttribute(inertia, "izz", I_Io_I(2, 2));
   }
 
-  body->set_spatial_inertia(transformSpatialInertia(T, I));
+  // Converts the spatial inertia so that it is computed around the body
+  // frame B and it is expressed in frame B before updating the body's
+  // spatial inertia to I_Bo_B.
+  body->set_spatial_inertia_in_B(transformSpatialInertia(X_BI,
+                                                         I_Io_I));
 }
 
 // Adds a material to the supplied @materials map. Currently, only simple colors
@@ -647,21 +695,25 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
         std::to_string(model_instance_id) + ".");
   }
 
-  Isometry3d transform_to_parent_body = Isometry3d::Identity();
+  // Obtain pose of the joint's inboard frame F measured and expressed in the
+  // parent body's frame P.
+  Isometry3d X_PF = Isometry3d::Identity();
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin) {
-    originAttributesToTransform(origin, transform_to_parent_body);
+    originAttributesToTransform(origin, X_PF);
   }
 
-  Vector3d axis;
-  axis << 1, 0, 0;
+  // Joint's axis expressed in the join's inboard frame F. In this frame the
+  // axis is constant.
+  Vector3d axis_F;
+  axis_F << 1, 0, 0;
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && type.compare("fixed") != 0 &&
       type.compare("floating") != 0) {
-    parseVectorAttribute(axis_node, "xyz", axis);
-    if (axis.norm() < 1e-8)
+    parseVectorAttribute(axis_node, "xyz", axis_F);
+    if (axis_F.norm() < 1e-8)
       throw runtime_error("ERROR: axis is zero.  don't do that");
-    axis.normalize();
+    axis_F.normalize();
   }
 
   // now construct the actual joint (based on its type)
@@ -669,20 +721,20 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
 
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
     FixedAxisOneDoFJoint<RevoluteJoint>* fjoint =
-        new RevoluteJoint(name, transform_to_parent_body, axis);
+        new RevoluteJoint(name, X_PF, axis_F);
     SetDynamics(node, fjoint);
     SetLimits(node, fjoint);
     joint = fjoint;
   } else if (type.compare("fixed") == 0) {
-    joint = new FixedJoint(name, transform_to_parent_body);
+    joint = new FixedJoint(name, X_PF);
   } else if (type.compare("prismatic") == 0) {
     FixedAxisOneDoFJoint<PrismaticJoint>* fjoint =
-        new PrismaticJoint(name, transform_to_parent_body, axis);
+        new PrismaticJoint(name, X_PF, axis_F);
     SetDynamics(node, fjoint);
     SetLimits(node, fjoint);
     joint = fjoint;
   } else if (type.compare("floating") == 0) {
-    joint = new RollPitchYawFloatingJoint(name, transform_to_parent_body);
+    joint = new RollPitchYawFloatingJoint(name, X_PF);
   } else {
     throw runtime_error("ERROR: Unrecognized joint type: " + type);
   }

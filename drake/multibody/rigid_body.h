@@ -313,52 +313,55 @@ class RigidBody {
    */
   void set_contact_points(const Eigen::Matrix3Xd& contact_points);
 
-  /**
-   * Sets the mass of this rigid body.
-   */
+  /// Sets the mass of this rigid body.
   void set_mass(double mass);
 
-  /**
-   * Returns the mass of this rigid body.
-   */
+  /// Returns the mass of this rigid body.
   double get_mass() const;
 
-  /**
-   * Sets the center of mass of this rigid body. The center of mass is expressed
-   * in this body's frame.
-   */
-  void set_center_of_mass(const Eigen::Vector3d& center_of_mass);
+  /// Sets the center of mass of this rigid body. The center of mass is
+  /// measured and expressed in the body frame B as defined in
+  /// @ref rigid_body_tree_frames.
+  void set_center_of_mass_in_B(const Eigen::Vector3d& center_of_mass);
+
+  /// Gets the center of mass of this rigid body. The center of mass is
+  /// measured and expressed in the body frame B as defined in
+  /// @ref rigid_body_tree_frames.
+  const Eigen::Vector3d& get_center_of_mass_in_B() const;
+
+  /// Sets the spatial inertia of the body computed about the origin of body
+  /// frame B, Bo, and expressed in B.
+  /// Refer to @ref rigid_body_tree_frames for the definition of frames used
+  /// in Drake.
+  /// @param IBo_B the spatial inertia computed about B's origin Bo and
+  /// expressed in frame B.
+  void set_spatial_inertia_in_B(
+      const drake::SquareTwistMatrix<double> &IBo_B);
+
+  /// Returns the spatial inertia of this rigid body computed computed about
+  /// the origin of body frame B, Bo, and expressed in B.
+  /// Refer to @ref rigid_body_tree_frames for the definition of frames used
+  /// in Drake.
+  const drake::SquareTwistMatrix<double>& get_spatial_inertia_in_B() const;
 
   /**
-   * Gets the center of mass of this rigid body. The center of mass is expressed
-   * in this body's frame.
-   */
-  const Eigen::Vector3d& get_center_of_mass() const;
-
-  /**
-   * Sets the spatial inertia of this rigid body.
-   */
-  void set_spatial_inertia(const drake::SquareTwistMatrix<double>&
-      inertia_matrix);
-
-  /**
-   * Returns the spatial inertia of this rigid body.
-   */
-  const drake::SquareTwistMatrix<double>& get_spatial_inertia()
-      const;
-
-  /**
-   * Transforms all of the visual, collision, and inertial elements associated
+   * Transforms all of the visual and inertial elements associated
    * with this body to the proper joint frame.  This is necessary, for instance,
    * to support SDF loading where the child frame can be specified independently
    * from the joint frame. In our RigidBodyTree classes, the body frame IS the
    * joint frame.
    *
-   * @param transform_body_to_joint The transform from this body's frame to the
+   * @param X_BI The transform from this body's frame to the
    * joint's frame.
    */
+  // TODO(liang.fok): Remove this method. It is a bad idea to use RBT as an
+  // intermediate representation to save IIo_I (with `I` the "inertial" frame
+  // defined in the urdf format) and then convert it later to IBo_B. The real
+  // problem here is exposing this to users who should be very
+  // specific about what inertias they are working with.
+  // Move this method to sdf_parser.cc, the only place that uses it.
   void ApplyTransformToJointFrame(
-      const Eigen::Isometry3d& transform_body_to_joint);
+      const Eigen::Isometry3d& X_BI);
 
   /** Adds body to a given collision clique by clique id.
    *
@@ -455,8 +458,12 @@ class RigidBody {
   // The center of mass of this rigid body.
   Eigen::Vector3d center_of_mass_;
 
-  // The spatial inertia of this rigid body.
-  drake::SquareTwistMatrix<double> spatial_inertia_;
+  // The spatial inertia of this rigid body computed around B's origin Bo and
+  // expressed in B where B is the body's frame not necessarily at the center
+  // of mass of the body or even aligned with the body's principal axes of
+  // inertia.
+  // See Doxygen group rigid_body_tree_frames for more information on frames.
+  drake::SquareTwistMatrix<double> spatial_inertia_B_;
 
   // TODO(SeanCurtis-TRI): This data is only used in the compilation of the
   // body.  As such, it should be moved into a factory so that the runtime
