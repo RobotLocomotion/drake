@@ -269,30 +269,25 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
 
   for (auto const& binding : current_problem->GetAllCosts()) {
     auto const& obj = binding.constraint();
-    size_t index = 0;
-    for (const DecisionVariableMatrixX& v :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(v.cols() == 1);
-      int num_v_variables = v.size();
-      this_x.conservativeResize(index + num_v_variables);
-      for (int j = 0; j < num_v_variables; ++j) {
-        this_x(index + j) =
-            tx(current_problem->FindDecisionVariableIndex(v(j, 0)));
-      }
-      index += num_v_variables;
+
+    int num_v_variables = binding.variables().rows();
+    this_x.resize(num_v_variables);
+    for (int j = 0; j < num_v_variables; ++j) {
+      this_x(j) =
+          tx(current_problem->FindDecisionVariableIndex(binding.variables()(j)));
     }
+
     obj->Eval(this_x, ty);
 
     F[0] += static_cast<snopt::doublereal>(ty(0).value());
 
-    for (const DecisionVariableMatrixX& v :
-         binding.variable_list().variables()) {
-      for (int j = 0; j < v.size(); ++j) {
-        size_t vj_index = current_problem->FindDecisionVariableIndex(v(j, 0));
-        G[vj_index] +=
-            static_cast<snopt::doublereal>(ty(0).derivatives()(vj_index));
-      }
+
+    for (int j = 0; j < binding.variables().rows(); ++j) {
+      size_t vj_index = current_problem->FindDecisionVariableIndex(binding.variables()(j));
+      G[vj_index] +=
+          static_cast<snopt::doublereal>(ty(0).derivatives()(vj_index));
     }
+
   }
 
   // The constraint index starts at 1 because the cost is the

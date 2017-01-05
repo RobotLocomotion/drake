@@ -17,6 +17,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_variable.h"
+#include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/function.h"
@@ -177,68 +178,6 @@ enum ProgramAttributes {
 typedef uint32_t AttributesSet;
 
 class MathematicalProgram {
-  /**
-   * A binding on constraint type C is a mapping of the decision
-   * variables onto the inputs of C.  This allows the constraint to operate
-   * on a vector made up of different elements of the decision variables.
-   */
-  template <typename C>
-  class Binding {
-   public:
-    Binding(const std::shared_ptr<C>& c, const Eigen::Ref<const DecisionVariableVectorX>& v)
-        : constraint_(c), vars_(v) {}
-
-    /**
-     * Concatenates each DecisionVariableVector object in @p v into a single
-     * column vector, binds this column vector of decision variables with
-     * the constraint @p c.
-     */
-    Binding(const std::shared_ptr<C>& c, const VariableListRef& v) :
-        constraint_(c) {
-      int var_size = 0;
-      for (const auto& vi : v) {
-        var_size += vi.size();
-      }
-      vars_.resize(var_size);
-      int var_count = 0;
-      for (const auto& vi : v) {
-        vars_.segment(var_count, vi.size()) = vi;
-      }
-    }
-
-    template <typename U>
-    Binding(
-        const Binding<U>& b,
-        typename std::enable_if<std::is_convertible<
-            std::shared_ptr<U>, std::shared_ptr<C>>::value>::type* = nullptr)
-        : Binding(b.constraint(), b.variables()) {}
-
-    const std::shared_ptr<C>& constraint() const { return constraint_; }
-
-    const DecisionVariableVectorX& variables() const { return vars_; }
-
-    /**
-     * Returns true iff the given @p var is included in this Binding.*/
-    bool ContainsVariable(const symbolic::Variable& var) const {
-      for (int i = 0; i < vars_.rows(); ++i) {
-        if (vars_(i) == var) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    size_t GetNumElements() const {
-      // TODO(ggould-tri) assumes that no index appears more than once in the
-      // view, which is nowhere asserted (but seems assumed elsewhere).
-      return vars_.size();
-    }
-
-   private:
-    std::shared_ptr<C> constraint_;
-    DecisionVariableVectorX vars_;
-  };
-
   template <typename F>
   class ConstraintImpl : public Constraint {
     F const f_;
@@ -1042,12 +981,9 @@ class MathematicalProgram {
    */
   void AddConstraint(std::shared_ptr<BoundingBoxConstraint> con,
                      const VariableListRef& vars) {
-    VariableList var_list(vars);
-    DRAKE_ASSERT(var_list.column_vectors_only());
     required_capabilities_ |= kLinearConstraint;
-    int var_dim = var_list.size();
-    DRAKE_ASSERT(con->num_constraints() == static_cast<size_t>(var_dim));
-    bbox_constraints_.push_back(Binding<BoundingBoxConstraint>(con, var_list));
+    bbox_constraints_.push_back(Binding<BoundingBoxConstraint>(con, vars));
+    DRAKE_ASSERT(static_cast<int>(bbox_constraints_.back().constraint()->num_constraints()) == bbox_constraints_.back().variables().rows());
   }
 
   /** AddBoundingBoxConstraint
@@ -1100,26 +1036,13 @@ class MathematicalProgram {
    */
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       double lb, double ub, const VariableListRef& vars) {
-    VariableList var_list(vars);
-    int var_dim = var_list.size();
-    if (var_list.column_vectors_only()) {
-      return AddBoundingBoxConstraint(Eigen::VectorXd::Constant(var_dim, lb),
-                                      Eigen::VectorXd::Constant(var_dim, ub),
-                                      vars);
-    } else {  // Support non-column-vector decision variable matrices.
-      VariableListRef flattened_vars;
-      for (const auto& v : vars) {
-        if (v.cols() == 1) {
-          flattened_vars.push_back(v);
-        } else {
-          Eigen::Map<const DecisionVariableVectorX> vec(v.data(), v.size());
-          flattened_vars.push_back(vec);
-        }
-      }
-      return AddBoundingBoxConstraint(Eigen::VectorXd::Constant(var_dim, lb),
-                                      Eigen::VectorXd::Constant(var_dim, ub),
-                                      flattened_vars);
+    int var_dim = 0;
+    for (const auto& var : vars) {
+      var_dim += var.size();
     }
+    return AddBoundingBoxConstraint(Eigen::VectorXd::Constant(var_dim, lb),
+                                    Eigen::VectorXd::Constant(var_dim, ub),
+                                    vars);
   }
 
   /**
@@ -1300,8 +1223,6 @@ class MathematicalProgram {
   AddLinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                      const Eigen::MatrixBase<Derivedq>& q,
                                      const VariableListRef& vars) {
-    VariableList var_list(vars);
-    DRAKE_ASSERT(var_list.column_vectors_only());
     required_capabilities_ |= kLinearComplementarityConstraint;
 
     // Linear Complementarity Constraint cannot currently coexist with any
@@ -1320,7 +1241,7 @@ class MathematicalProgram {
 
     auto constraint = std::make_shared<LinearComplementarityConstraint>(M, q);
     linear_complementarity_constraints_.push_back(
-        Binding<LinearComplementarityConstraint>(constraint, var_list));
+        Binding<LinearComplementarityConstraint>(constraint, vars));
     return constraint;
   }
 

@@ -21,7 +21,7 @@ cc_library(
 
 cc_library(
     name = "decision_variable",
-    srcs = ["decision_variable.cc"],
+    srcs = [],
     hdrs = ["decision_variable.h"],
     linkstatic = 1,
     deps = [
@@ -58,6 +58,7 @@ cc_library(
 cc_library(
     name = "mathematical_program",
     srcs = [
+        "binding.h"
         "dreal_solver.h",
         "equality_constrained_qp_solver.cc",
         "equality_constrained_qp_solver.h",

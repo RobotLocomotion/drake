@@ -169,10 +169,8 @@ DecisionVariableVectorX MathematicalProgram::NewBinaryVariables(
 
 void MathematicalProgram::AddCost(const std::shared_ptr<Constraint>& obj,
                                   const VariableListRef& vars) {
-  VariableList var_list(vars);
-  DRAKE_ASSERT(var_list.column_vectors_only());
   required_capabilities_ |= kGenericCost;
-  generic_costs_.push_back(Binding<Constraint>(obj, var_list));
+  generic_costs_.push_back(Binding<Constraint>(obj, vars));
 }
 
 void MathematicalProgram::AddCost(const std::shared_ptr<LinearConstraint>& obj,
