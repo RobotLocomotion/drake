@@ -2,6 +2,7 @@
 #include "drake/common/drake_assert.h"
 
 #include <iostream>
+#include <limits>
 #include <utility>
 
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"

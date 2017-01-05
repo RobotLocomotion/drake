@@ -109,7 +109,7 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   EXPECT_TRUE(rbs1->get_num_positions() == rbs2->get_num_positions());
   EXPECT_TRUE(rbs1->get_num_velocities() == rbs2->get_num_velocities());
   EXPECT_TRUE(CompareMatrices(rbs2_xdot, rbs1_xdot, 1e-14,
-                              MatrixCompareType::absolute)) ;
+                              MatrixCompareType::absolute));
 }
 
 }  // namespace
