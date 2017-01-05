@@ -873,15 +873,19 @@ KinematicsCache<CacheT>
 RigidBodyTree<T>::CreateKinematicsCacheWithType() const {
   DRAKE_DEMAND(initialized_ && "This RigidBodyTree was not initialized."
       " RigidBodyTree::compile() must be called first.");
-  KinematicsCache<CacheT> cache(get_num_positions(), get_num_velocities());
+  std::vector<int> num_joint_positions;
+  std::vector<int> num_joint_velocities;
   for (const auto& body_unique_ptr : bodies) {
     const RigidBody<T>& body = *body_unique_ptr;
-    int num_positions_joint =
+    int num_positions =
         body.has_parent_body() ? body.getJoint().get_num_positions() : 0;
-    int num_velocities_joint =
+    int num_velocities =
         body.has_parent_body() ? body.getJoint().get_num_velocities() : 0;
-    cache.CreateCacheElement(num_positions_joint, num_velocities_joint);
+    num_joint_positions.push_back(num_positions);
+    num_joint_velocities.push_back(num_velocities);
   }
+  KinematicsCache<CacheT> cache(get_num_positions(), get_num_velocities(),
+      num_joint_positions, num_joint_velocities);
   return cache;
 }
 
@@ -926,6 +930,13 @@ void RigidBodyTree<T>::doKinematics(KinematicsCache<Scalar>& cache,
   compute_JdotV = compute_JdotV && cache.hasV();
   // Required in call to geometricJacobian below.
   cache.setPositionKinematicsCached();
+
+  if (cache.get_num_cache_elements() != static_cast<int>(bodies.size())) {
+    throw std::runtime_error("RigidBodyTree: doKinematics: Number of cache "
+        "elements (" + std::to_string(cache.get_num_cache_elements()) + ") "
+        "does not equal the number of bodies in the RigidBodyTree (" +
+        std::to_string(bodies.size()) + ")");
+  }
 
   for (int i = 0; i < static_cast<int>(bodies.size()); ++i) {
     RigidBody<T>& body = *bodies[i];

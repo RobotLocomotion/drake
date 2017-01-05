@@ -87,8 +87,6 @@ class KinematicsCache {
   bool inertias_cached;
 
  public:
-  KinematicsCache(int num_positions, int num_velocities);
-
   /// Constructor for a KinematicsCache given the number of positions and
   /// velocities per body in the vectors @p num_joint_positions and
   /// @p num_joint_velocities, respectively.
@@ -97,6 +95,16 @@ class KinematicsCache {
   /// and `num_joint_velocities` are vectors of size `nbodies` containing in
   /// the i-th entry the number of positions and the number of velocities for
   /// the i-th RigidBody in the RigidBodyTree.
+  ///
+  /// Note that you will typically not create a KinematicsCache object using
+  /// this constructor. Instead, you usually obtain a KinematicsCache object
+  /// by calling RigidBodyTree::CreateKinematicsCache() or
+  /// RigidBodyTree::CreateKinematicsCacheWithType(). The second option is
+  /// useful if you need a particular type for your cache like
+  /// Eigen::AutoDiffScalar.
+  ///
+  /// For examples on how to create and use the KinematicsCache, see
+  /// rigid_body_tree_inverse_dynamics_test.cc.
   ///
   /// @param num_positions Total number of positions in the RigidBodyTree.
   /// @param num_velocities Total number of velocities in the RigidBodyTree.
