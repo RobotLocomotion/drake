@@ -15,7 +15,7 @@ class FCLModel : public Model {
   FCLModel() {}
   virtual ~FCLModel() {}
 
-  void DoAddElement(const Element& element) override;
+  ElementId addElement(const Element& element) override;
   bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
                              bool use_margins,
                              std::vector<PointPair>& closest_points) override;
