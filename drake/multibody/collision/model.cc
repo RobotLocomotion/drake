@@ -8,11 +8,20 @@ using std::unique_ptr;
 using std::vector;
 
 namespace DrakeCollision {
-ElementId Model::addElement(const Element& element) {
-  unique_ptr<Element> element_local(element.clone());
-  ElementId id = element_local->getId();
-  this->elements.insert(make_pair(id, move(element_local)));
-  return id;
+
+Element* Model::AddElement(std::unique_ptr<Element> element) {
+  ElementId id = element->getId();
+  const auto& itr = elements.find(id);
+  if (itr == elements.end()) {
+    elements.insert(make_pair(id, move(element)));
+    Element* raw_element = elements[id].get();
+    DoAddElement(*raw_element);
+    return raw_element;
+  }
+  throw std::runtime_error(
+      "Attempting to add an element with a duplicate"
+      "id: " +
+      std::to_string(id));
 }
 
 bool Model::removeElement(ElementId id) {

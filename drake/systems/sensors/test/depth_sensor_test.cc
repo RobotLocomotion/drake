@@ -130,7 +130,7 @@ std::pair<VectorX<double>, Matrix3Xd> DoBoxOcclusionTest(
   tree.addCollisionElement(
       DrakeCollision::Element(geom, T_element_to_link, &world), world,
       "terrain");
-  tree.updateStaticCollisionElements();
+  tree.compile();
 
   auto frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "foo frame",

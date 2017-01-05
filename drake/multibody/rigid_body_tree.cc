@@ -123,10 +123,42 @@ RigidBodyTree<T>::~RigidBodyTree(void) {}
 
 template <typename T>
 bool RigidBodyTree<T>::transformCollisionFrame(
-    const DrakeCollision::ElementId& eid,
-    const Eigen::Isometry3d& transform_body_to_joint) {
-  return collision_model_->transformCollisionFrame(eid,
-                                                   transform_body_to_joint);
+    RigidBody<T>* body, const Eigen::Isometry3d& displace_transform) {
+  // Collision elements in the body-collision map have *not* been registered
+  // with the collision engine yet and can simply be modified in
+  // place.
+  auto map_itr = body_collision_map_.find(body);
+  if (map_itr != body_collision_map_.end()) {
+    BodyCollisions& collision_items = map_itr->second;
+    for (const auto& item : collision_items) {
+      element_order_[item.element]->SetLocalTransform(
+          displace_transform *
+          element_order_[item.element]->getLocalTransform());
+    }
+  }
+
+  // TODO(SeanCurtis-TRI): These Collision elements have *already* been
+  // registered with the collision model; they must be moved through the
+  // collision model's interface. We need to decide if a method that is intended
+  // to be called as part of *construction* should modify collision elements
+  // already registered with the collision engine. In other words, do we allow
+  // the following work flow:
+  //   1) Add body to tree.
+  //   2) Add collision element to body.
+  //   3) transform the collision frame.
+  //   4) *compile*
+  //   5) repeate steps 2-4 on that same body.
+  // I suspect this should *not* be considered a valid workflow but still needs
+  // to be officially decided.
+  for (auto body_itr = body->collision_elements_begin();
+       body_itr != body->collision_elements_end(); ++body_itr) {
+    DrakeCollision::Element* element = *body_itr;
+    if (!collision_model_->transformCollisionFrame(element->getId(),
+                                                   displace_transform)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // TODO(amcastro-tri): This implementation is very inefficient since member
@@ -264,43 +296,113 @@ void RigidBodyTree<T>::compile(void) {
     }
   }
 
-  // Updates the static collision elements and terrain contact points.
-  updateStaticCollisionElements();
-
-  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-    RigidBody<T>& body = **it;
-    Eigen::Matrix3Xd contact_points;
-    getTerrainContactPoints(body, &contact_points);
-    body.set_contact_points(contact_points);
-  }
-
   ConfirmCompleteTree();
 
-  CreateCollisionCliques();
+  CompileCollisionState();
 
   initialized_ = true;
 }
 
 template <typename T>
+void RigidBodyTree<T>::CompileCollisionState() {
+  // Identifies and processes collision elements that should be marked
+  // "anchored".
+  for (const auto& pair : body_collision_map_) {
+    RigidBody<T>* body = pair.first;
+    if (body->IsRigidlyFixedToWorld()) {
+      const BodyCollisions& elements = pair.second;
+      for (const auto& collision_item : elements) {
+        element_order_[collision_item.element]->set_anchored();
+        element_order_[collision_item.element]->updateWorldTransform(
+            body->ComputeWorldFixedPose());
+      }
+    }
+  }
+
+  // Builds cliques for collision filtering.
+  CreateCollisionCliques();
+
+  // Computes the contact points for a body.
+  for (auto& pair : body_collision_map_) {
+    RigidBody<T>* body = pair.first;
+    Eigen::Matrix3Xd contact_points;
+    BodyCollisions& elements = pair.second;
+    int num_points = 0;
+    // Note: contact points does *not* rely on collision element group names.
+    for (const auto& collision_item : elements) {
+      Matrix3Xd element_points;
+      element_order_[collision_item.element]->getTerrainContactPoints(
+          element_points);
+      contact_points.conservativeResize(
+          Eigen::NoChange, contact_points.cols() + element_points.cols());
+      contact_points.block(0, num_points, contact_points.rows(),
+                           element_points.cols()) = element_points;
+      num_points += element_points.cols();
+    }
+    body->set_contact_points(contact_points);
+  }
+
+  // Assigns finished collision elements to their corresponding rigid bodies.
+  for (auto& pair : body_collision_map_) {
+    RigidBody<T>* body = pair.first;
+    BodyCollisions& elements = pair.second;
+    for (const auto& collision_item : elements) {
+      body->AddCollisionElement(collision_item.group_name,
+                                element_order_[collision_item.element].get());
+    }
+  }
+
+  // Registers collision elements in the instantiation order to guarantee
+  // deterministic results. See Model::AddElement for details.
+  // NOTE: Do *not* attempt to use the elements in the body_collision_map after
+  // this loop; the collision elements will have been moved into the collision
+  // model.
+  for (size_t i = 0; i < element_order_.size(); ++i) {
+    collision_model_->AddElement(std::move(element_order_[i]));
+  }
+  body_collision_map_.clear();
+  element_order_.clear();
+}
+
+template <typename T>
 void RigidBodyTree<T>::CreateCollisionCliques() {
   int clique_id = get_next_clique_id();
-  // 1) For collision elements in the same body
-  for (auto& body : bodies) {
-    if (body->SetSelfCollisionClique(clique_id)) {
+  // Marks collision elements in the same body to be in the same clique.
+  for (auto& pair : body_collision_map_) {
+    BodyCollisions& collision_items = pair.second;
+    if ( collision_items.size() > 1 ) {
+      for (auto& item : collision_items) {
+        element_order_[item.element]->AddToCollisionClique(clique_id);
+      }
       clique_id = get_next_clique_id();
     }
   }
 
-  // 2) For collision elements in different bodies
+  // Collision elements on "adjacent" bodies belong in the same clique.
+  // This allows coarse link collision geometry. This coarse geometry might
+  // superficially collide, but not represent a *physical* collision.  Instead,
+  // it is assumed that constraints on the relative poses of adjacent links is
+  // determined by joint limits.
   // This is an O(N^2) loop -- but only happens at initialization.
-  //
   // If this proves to be too expensive, walking the tree would be O(N)
   // and still capture all of the adjacency.
+  // TODO(SeanCurtis-TRI): If compile gets called multiple times this will end
+  // up encoding redundant cliques.
   for (size_t i = 0; i < bodies.size(); ++i) {
+    RigidBody<T>* body_i = bodies[i].get();
     for (size_t j = i + 1; j < bodies.size(); ++j) {
-      if (!bodies[i]->CanCollideWith(*bodies[j])) {
-        bodies[i]->AddCollisionElementsToClique(clique_id);
-        bodies[j]->AddCollisionElementsToClique(clique_id);
+      RigidBody<T>* body_j = bodies[j].get();
+      // TODO(SeanCurtis-TRI): This translates collision filter information into
+      // cliques.  In the future, don't collapse these.
+      if (!body_i->CanCollideWith(*body_j)) {
+        BodyCollisions& elements_i =  body_collision_map_[body_i];
+        for (const auto& item : elements_i) {
+          element_order_[item.element]->AddToCollisionClique(clique_id);
+        }
+        BodyCollisions& elements_j =  body_collision_map_[body_j];
+        for (const auto& item : elements_j) {
+          element_order_[item.element]->AddToCollisionClique(clique_id);
+        }
         clique_id = get_next_clique_id();
       }
     }
@@ -448,16 +550,30 @@ map<string, int> RigidBodyTree<T>::computePositionNameToIndexMap() const {
 }
 
 template <typename T>
-DrakeCollision::ElementId RigidBodyTree<T>::addCollisionElement(
+void RigidBodyTree<T>::addCollisionElement(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     const DrakeCollision::Element& element, RigidBody<T>& body,
     const string& group_name) {
-  DrakeCollision::ElementId id = collision_model_->addElement(element);
-  if (id != 0) {
-    body.AddCollisionElement(group_name,
-                             collision_model_->FindMutableElement(id));
+  auto itr = body_collision_map_.find(&body);
+  if (itr == body_collision_map_.end()) {
+    // NOTE: we do this instead of map[key] = value because we want an iterator
+    // to the newly inserted list for use in the remainder of the function.
+    bool success;
+    std::tie(itr, success) =
+        body_collision_map_.insert(std::make_pair(&body, BodyCollisions()));
+
+    if (!success) {
+      throw std::runtime_error(
+          "Unable to add the collision element to the "
+          "body: " +
+          body.get_name() + ".");
+    }
   }
-  return id;
+  BodyCollisions& body_collisions = itr->second;
+  size_t id = element_order_.size();
+  element_order_.emplace_back(
+      std::unique_ptr<DrakeCollision::Element>(element.clone()));
+  body_collisions.emplace_back(group_name, id);
 }
 
 template <typename T>
@@ -467,16 +583,6 @@ void RigidBodyTree<T>::updateCollisionElements(
   for (auto id_iter = body.get_collision_element_ids().begin();
        id_iter != body.get_collision_element_ids().end(); ++id_iter) {
     collision_model_->updateElementWorldTransform(*id_iter, transform_to_world);
-  }
-}
-
-template <typename T>
-void RigidBodyTree<T>::updateStaticCollisionElements() {
-  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-    RigidBody<T>& body = **it;
-    if (!body.has_parent_body()) {
-      updateCollisionElements(body, Isometry3d::Identity());
-    }
   }
 }
 
@@ -762,18 +868,9 @@ RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
   vector<DrakeCollision::PointPair> contact_points;
   collision_model_->ComputeMaximumDepthCollisionPoints(use_margins,
                                                        contact_points);
-  size_t num_contact_points = contact_points.size();
-
-  // TODO(SeanCurtis-TRI): Once the bullet collision detection *properly* takes
-  // the Element::CanCollideWith method into account, this can be removed.
-  // But, for now, ComputeMaximumDepthCollisionPoints may produce collision
-  // information for pairs that shouldn't be considered. This code filters the
-  // results into `valid_pairs` with the expectation of removal after drake
-  // collision filters are fully integrated into the collision model.
-  // See issue #4204 (https://github.com/RobotLocomotion/drake/issues/4204).
-  std::vector<DrakeCollision::PointPair> valid_pairs;
-  valid_pairs.reserve(contact_points.size());
-  for (size_t i = 0; i < num_contact_points; ++i) {
+  // For each contact pair, map contact point from world frame to each body's
+  // frame.
+  for (size_t i = 0; i < contact_points.size(); ++i) {
     auto& pair = contact_points[i];
     if (pair.elementA->CanCollideWith(pair.elementB)) {
       // Get bodies' transforms.
@@ -790,10 +887,9 @@ RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
       // Eigen assumes aliasing by default and therefore this operation is safe.
       pair.ptA = TA.inverse() * contact_points[i].ptA;
       pair.ptB = TB.inverse() * contact_points[i].ptB;
-      valid_pairs.push_back(pair);
     }
   }
-  return valid_pairs;
+  return contact_points;
 }
 
 template <typename T>
