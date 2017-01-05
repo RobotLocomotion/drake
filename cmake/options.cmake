@@ -206,6 +206,9 @@ macro(drake_setup_options)
   drake_system_dependency(YAML_CPP OPTIONAL REQUIRES yaml-cpp
     "C++ library for reading and writing YAML configuration files")
 
+  drake_system_dependency(TINYOBJLOADER OPTIONAL REQUIRES tinyobjloader
+    "library for reading wavefront mesh files")
+
   # END "system" dependencies
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # BEGIN external projects that are ON by default
