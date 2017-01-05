@@ -82,7 +82,22 @@ class Painleve : public systems::LeafSystem<T> {
                        systems::State<T>* state) const override;
 
  private:
-  double mass_{1.0};        // The mass of the rod.
+  Vector2<T> CalcStickingImpactImpulse(const systems::Context<T>& context)
+    const;
+  Vector2<T> CalcFConeImpactImpulse(const systems::Context<T>& context) const;
+  void DoCalcTimeDerivativesTwoContact(const systems::Context<T>& context,
+                                       systems::ContinuousState<T>* derivatives)
+                                         const;
+  void DoCalcTimeDerivativesOneContactNoSliding(
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const;
+  void SetVelocityDerivatives(const systems::Context<T>& context,
+                              systems::VectorBase<T>* const f,
+                              T fN, T fF, T xc, T yc) const;
+  Vector2<T> CalcStickingContactForces(
+      const systems::Context<T>& context) const;
+
+    double mass_{1.0};        // The mass of the rod.
   double rod_length_{1.0};  // The length of the rod.
   double mu_{1000.0};       // The coefficient of friction.
   double g_{-9.81};         // The acceleration due to gravity.
