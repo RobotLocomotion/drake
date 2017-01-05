@@ -104,4 +104,4 @@
 	url = https://github.com/flexible-collision-library/fcl.git
 [submodule "externals/tinyobjloader"]
 	path = externals/tinyobjloader
-	url = https://github.com/syoyo/tinyobjloader
+	url = https://github.com/syoyo/tinyobjloader.git
