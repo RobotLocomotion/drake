@@ -18,7 +18,7 @@
 // rigid body tree.
 // TODO(SeanCurtis-TRI): Kill this matlab tombstone by fully analyzing the test
 // and confirming what it's specific purpose is and confirming that it includes
-// only what is strictly necessary to achieve that person: requires code
+// only what is strictly necessary to achieve that purpose; requires code
 // archaeology.
 
 namespace drake {
