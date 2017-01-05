@@ -15,11 +15,9 @@ namespace painleve {
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
 /// this class, please refer to http://drake.mit.edu/cxx_inl.html.
 ///
+/// @tparam T The vector element type, which must be a valid Eigen scalar.
 /// Instantiated templates for the following scalar types @p T are provided:
 /// - double
-/// - AutoDiffXd
-///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// They are already available to link against in drakePainleve.
 ///
@@ -29,14 +27,10 @@ namespace painleve {
 ///         scalar angular velocity (state index 5) in units of m, radians,
 ///         m/s, and rad/s, respectively. Orientation is measured counter-
 ///         clockwise with respect to the x-axis.
-/// Outputs: planar position (state indices 0 and 1) and orientation (state
-///          index 2), and planar linear velocity (state indices 3 and 4) and
-///          scalar angular velocity (state index 5) in units of m, radians,
-///          m/s, and rad/s, respectively.
+/// Outputs: same as state.
 template <typename T>
 class Painleve : public systems::LeafSystem<T> {
  public:
-  // Constructor for the Painleve' Paradox system.
   Painleve();
 
   void DoCalcOutput(const systems::Context<T>& context,
@@ -46,40 +40,53 @@ class Painleve : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
+  /// Models impact using an inelastic impact model with friction.
   void HandleImpact(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* new_state) const;
 
-  /// Gets the acceleration due to gravity.
-  T get_gravitational_acceleration() const { return g_; }
+  /// Sets the acceleration (with respect to the positive y-axis) due to
+  /// gravity (i.e., this number should generally be negative).
+  void set_gravitational_acceleration(double g) { g_ = g; }
+
+  /// Gets the acceleration (with respect to the positive y-axis) due to
+  /// gravity (i.e., this number should generally be negative).
+  double get_gravitational_acceleration() const { return g_; }
 
   /// Gets the coefficient of dynamic (sliding) Coulomb friction.
-  T get_mu_Coulomb() const { return mu_; }
+  double get_mu_coulomb() const { return mu_; }
 
   /// Sets the coefficient of dynamic (sliding) Coulomb friction.
-  void set_mu_Coulomb(T mu) { mu_ = mu; }
+  void set_mu_coulomb(double mu) { mu_ = mu; }
 
   /// Gets the mass of the rod.
-  T get_rod_mass() const { return mass_; }
+  double get_rod_mass() const { return mass_; }
+
+  /// Sets the mass of the rod.
+  void set_rod_mass(double mass) { mass_ = mass; }
 
   /// Gets the length of the rod.
-  T get_rod_length() const { return rod_length_; }
+  double get_rod_length() const { return rod_length_; }
+
+  /// Sets the length of the rod.
+  void set_rod_length(double rod_length) { rod_length_ = rod_length; }
 
   /// Gets the rod moment of inertia.
-  T get_rod_moment_of_inertia() const { return J_; }
+  double get_rod_moment_of_inertia() const { return J_; }
+
+  /// Sets the rod moment of inertia.
+  void set_rod_moment_of_inertia(double J) { J_ = J; }
 
  protected:
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 
  private:
-  static T sqr(const T& x) { return x*x; }
-
-  T mass_{1.0};        // The mass of the rod.
-  T rod_length_{1.0};  // The length of the rod.
-  T mu_{1000.0};       // The coefficient of friction.
-  T g_{-9.81};         // The acceleration due to gravity.
-  T J_{1.0};           // The moment of the inertia of the rod.
+  double mass_{1.0};        // The mass of the rod.
+  double rod_length_{1.0};  // The length of the rod.
+  double mu_{1000.0};       // The coefficient of friction.
+  double g_{-9.81};         // The acceleration due to gravity.
+  double J_{1.0};           // The moment of the inertia of the rod.
 };
 
 }  // namespace painleve

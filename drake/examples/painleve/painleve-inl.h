@@ -35,7 +35,6 @@ void Painleve<T>::DoCalcOutput(const systems::Context<T>& context,
       context.get_continuous_state()->CopyToVector();
 }
 
-/// Models impact using an inelastic impact model with friction.
 template <typename T>
 void Painleve<T>::HandleImpact(const systems::Context<T>& context,
                                systems::ContinuousState<T>* new_state) const {
@@ -69,8 +68,8 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
   // Verify that there is an impact.
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const T k = (stheta > 0.0) ? -1.0 : 1.0;
-  const T half_rod_length = rod_length_ / 2;
+  const int k = (stheta > 0) ? -1 : 1;
+  const double half_rod_length = rod_length_ / 2;
 
   // Compute the velocity at the point of contact
   const T xc = x + k * ctheta * half_rod_length;
@@ -110,9 +109,9 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
   // the contact impulses. The sixth and seventh equations specify that the
   // post-impact velocity in the horizontal and vertical directions at the
   // point of contact be zero.
-  const T ell = rod_length_;
-  const T mass = mass_;
-  const T J = J_;
+  const double ell = rod_length_;
+  const double mass = mass_;
+  const double J = J_;
   T fN = (2 * (-(ell * J * k * mass * ctheta * thetadot) +
                ell * k * mass * mass * y * ctheta * xdot -
                ell * k * mass * mass * yc * ctheta * xdot -
@@ -168,9 +167,9 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
   // velocity in the vertical direction be zero. The last equation corresponds
   // to the relationship between normal and frictional impulses (dictated by the
   // Coulomb friction model).
-  const T mu = mu_;
+  const double mu = mu_;
   if (abs(fF) > mu * fN) {
-    const T sgn_xcdot = (xcdot > 0) ? 1 : -1;
+    const int sgn_xcdot = (xcdot > 0) ? 1 : -1;
 
     // Compute the normal force.
     fN = (J * mass * (-(ell * k * ctheta * thetadot) / 2 - ydot)) /
@@ -229,10 +228,10 @@ void Painleve<T>::DoCalcTimeDerivatives(
   //            | sin(theta)  cos(theta) |
   // and l is designated as the rod endpoint. Thus, the vertical positions of
   // the rod endpoints are located at y + sin(theta)*l/2 and y - sin(theta)*l/2.
-  const T half_rod_length = rod_length_ / 2;
+  const double half_rod_length = rod_length_ / 2;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const T k = (stheta > 0) ? -1 : 1;
+  const int k = (stheta > 0) ? -1 : 1;
   const T xc = x + k * ctheta * half_rod_length;
   const T yc = y + k * stheta * half_rod_length;
 
@@ -314,11 +313,11 @@ void Painleve<T>::DoCalcTimeDerivatives(
         // of mass of the rod. The sixth equation yields the moment from
         // the contact forces. The last equation specifies that the horizontal
         // acceleration at the point of contact be zero.
-        const T mu = mu_;
-        const T mass = mass_;
-        const T ell = rod_length_;
-        const T g = get_gravitational_acceleration();
-        const T J = J_;
+        const double mu = mu_;
+        const double mass = mass_;
+        const double ell = rod_length_;
+        const double g = get_gravitational_acceleration();
+        const double J = J_;
         const T fN =
             (mass *
              (-8 * g * J - 2 * ell * ell * g * k * k * mass * stheta * stheta +
@@ -430,12 +429,12 @@ void Painleve<T>::DoCalcTimeDerivatives(
         // the contact forces. The last equation corresponds to the relationship
         // between normal and frictional forces (dictated by the Coulomb
         // friction model).
-        const T J = J_;
-        const T mass = mass_;
-        const T mu = mu_;
-        const T sgn_xcdot = (xcdot > 0) ? 1 : -1;
-        const T g = get_gravitational_acceleration();
-        const T ell = rod_length_;
+        const double J = J_;
+        const double mass = mass_;
+        const double mu = mu_;
+        const int sgn_xcdot = (xcdot > 0) ? 1 : -1;
+        const double g = get_gravitational_acceleration();
+        const double ell = rod_length_;
         T fN = (2 * mass *
                 (-2 * g * J + ell * J * k * stheta * thetadot * thetadot)) /
                (4 * J + ell * ell * k * k * mass * ctheta * ctheta +
@@ -477,9 +476,9 @@ void Painleve<T>::SetDefaultState(const systems::Context<T>& context,
   using std::sqrt;
 
   // Initial state corresponds to an inconsistent configuration.
-  const T half_len = get_rod_length() / 2;
+  const double half_len = get_rod_length() / 2;
   VectorX<T> x0(6);
-  const T r22 = sqrt(2) / 2;
+  const double r22 = sqrt(2) / 2;
   x0 << half_len * r22, half_len * r22, M_PI / 4.0, -1, 0, 0;  // Initial state.
   state->get_mutable_continuous_state()->SetFromVector(x0);
 }

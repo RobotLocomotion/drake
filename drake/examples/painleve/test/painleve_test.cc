@@ -43,6 +43,26 @@ class PainleveTest : public ::testing::Test {
   std::unique_ptr<systems::ContinuousState<double>> derivatives_;
 };
 
+/// Tests parameter getting and setting.
+TEST_F(PainleveTest, Parameters) {
+  // Set parameters to non-default values.
+  const double g = -1.0;
+  const double mass = 0.125;
+  const double mu = 0.5;
+  const double ell = 0.0625;
+  const double J = 0.25;
+  dut_->set_gravitational_acceleration(g);
+  dut_->set_rod_mass(mass);
+  dut_->set_mu_coulomb(mu);
+  dut_->set_rod_length(ell);
+  dut_->set_rod_moment_of_inertia(J);
+  EXPECT_EQ(dut_->get_gravitational_acceleration(), g);
+  EXPECT_EQ(dut_->get_rod_mass(), mass);
+  EXPECT_EQ(dut_->get_mu_coulomb(), mu);
+  EXPECT_EQ(dut_->get_rod_length(), ell);
+  EXPECT_EQ(dut_->get_rod_moment_of_inertia(), J);
+}
+
 /// Verify the Painleve configuration occurs.
 TEST_F(PainleveTest, Inconsistent) {
   EXPECT_THROW(dut_->DoCalcTimeDerivatives(*context_, derivatives_.get()),
@@ -81,7 +101,7 @@ TEST_F(PainleveTest, InfFrictionImpactThenNoImpact) {
 
   // Set the coefficient of friction to infinite. This forces the Painleve code
   // to go through the first impact path.
-  dut_->set_mu_Coulomb(std::numeric_limits<double>::infinity());
+  dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
 
   // Handle the impact and copy the result to the context.
   dut_->HandleImpact(*context_, &new_cstate);
@@ -111,7 +131,7 @@ TEST_F(PainleveTest, NoFrictionImpactThenNoImpact) {
 
   // Set the coefficient of friction to zero. This forces the Painleve code
   // to go through the second impact path.
-  dut_->set_mu_Coulomb(0.0);
+  dut_->set_mu_coulomb(0.0);
 
   // Handle the impact and copy the result to the context.
   dut_->HandleImpact(*context_, &new_cstate);
@@ -135,7 +155,7 @@ TEST_F(PainleveTest, NoSliding) {
 
   // Set the coefficient of friction to zero (triggering the case on the
   // edge of the friction cone).
-  dut_->set_mu_Coulomb(0.0);
+  dut_->set_mu_coulomb(0.0);
 
   // This configuration has no sliding velocity.
   v[0] = -half_len * r22;
@@ -150,7 +170,7 @@ TEST_F(PainleveTest, NoSliding) {
 
   // Set the coefficient of friction to effective no-slip (triggering the
   // case strictly inside the friction cone).
-  dut_->set_mu_Coulomb(std::numeric_limits<double>::infinity());
+  dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
 
   // No exceptions should be thrown.
   EXPECT_NO_THROW(dut_->DoCalcTimeDerivatives(*context_, derivatives_.get()));
@@ -209,7 +229,7 @@ TEST_F(PainleveTest, InfFrictionImpactThenNoImpact2) {
 
   // Set the coefficient of friction to infinite. This forces the Painleve code
   // to go through the first impact path.
-  dut_->set_mu_Coulomb(std::numeric_limits<double>::infinity());
+  dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
 
   // Handle the impact and copy the result to the context.
   dut_->HandleImpact(*context_, &new_cstate);
@@ -239,7 +259,7 @@ TEST_F(PainleveTest, NoFrictionImpactThenNoImpact2) {
 
   // Set the coefficient of friction to zero. This forces the Painleve code
   // to go through the second impact path.
-  dut_->set_mu_Coulomb(0.0);
+  dut_->set_mu_coulomb(0.0);
 
   // Handle the impact and copy the result to the context.
   dut_->HandleImpact(*context_, &new_cstate);
