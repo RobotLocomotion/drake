@@ -36,44 +36,62 @@ bool HasCorrectNumberOfVariables(GRBmodel* model, int num_vars_expected) {
 
 /**
  * Adds a constraint of one of the following forms :
- * Ax>=b, Ax<=b, or Ax==b,
+ * lb ≤ A*x ≤ ub
+ * or
+ * A*x == lb
  * where the character variable @p constraint_sense specifies the type.
  * x in this case is the full dimensional variable being optimised.
  *
- * @param[in] constraint_sense a character variable specifying the
- * sense on the constraint. The Gurobi macros maybe used to specify the
- * constraint sense.
- *  i.e.
- *  GRB_LESS_EQUAL    : '<'
- *  GRB_GREATER_EQUAL : '>'
- *  GRB_EQUAL         : '='
- *
+ * @param is_equality True if the imposed constraint is
+ * A*x == lb, false otherwise.
  * @return error as an integer. The full set of error values are
  * described here :
  * http://www.gurobi.com/documentation/6.5/refman/error_codes.html#sec:ErrorCodes
  *
  * TODO(hongkai.dai): Use a sparse matrix A.
  */
-template <typename DerivedA, typename DerivedB>
-int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
-                        const Eigen::MatrixBase<DerivedB>& b,
-                        const std::vector<int>& variable_indices,
-                        char constraint_sense, double sparseness_threshold) {
+template <typename DerivedA, typename DerivedLB, typename DerivedUB>
+int AddLinearConstraint(const MathematicalProgram& prog, GRBmodel* model,
+                        const Eigen::MatrixBase<DerivedA>& A,
+                        const Eigen::MatrixBase<DerivedLB>& lb,
+                        const Eigen::MatrixBase<DerivedUB>& ub,
+                        const Eigen::Ref<const DecisionVariableVectorX>& vars,
+                        bool is_equality, double sparseness_threshold) {
   for (int i = 0; i < A.rows(); i++) {
-    int non_zeros_index = 0;
-    std::vector<int> constraint_index(A.cols(), 0);
-    std::vector<double> constraint_value(A.cols(), 0.0);
+    int nonzero_coeff_count = 0;
+    std::vector<int> nonzero_var_index(A.cols(), 0);
+    std::vector<double> nonzero_coeff(A.cols(), 0.0);
 
     for (int j = 0; j < A.cols(); j++) {
       if (std::abs(A(i, j)) > sparseness_threshold) {
-        constraint_value[non_zeros_index] = A(i, j);
-        constraint_index[non_zeros_index++] = variable_indices[j];
+        nonzero_coeff[nonzero_coeff_count] = A(i, j);
+        nonzero_var_index[nonzero_coeff_count++] = prog.FindDecisionVariableIndex(vars(j));
       }
     }
-    int error =
-        GRBaddconstr(model, non_zeros_index, &constraint_index[0],
-                     &constraint_value[0], constraint_sense, b(i), nullptr);
-    if (error) return error;
+    // The sense of the constraint could be ==, <= or >=
+    int error = 0;
+    if (is_equality) {
+      // Adds equality constraint.
+      error = GRBaddconstr(model, nonzero_coeff_count, &nonzero_var_index[0],  &nonzero_coeff[0], GRB_EQUAL, lb(i), nullptr);
+      DRAKE_ASSERT(!error);
+      if (error) return error;
+    }
+    else {
+      if (!std::isinf(ub(i)) || !std::isinf(lb(i))) {
+        if (!std::isinf(lb(i))) {
+          // Adds A.row(i)*x >= lb(i).
+          error = GRBaddconstr(model, nonzero_coeff_count, &nonzero_var_index[0],  &nonzero_coeff[0], GRB_GREATER_EQUAL, lb(i), nullptr);
+          DRAKE_ASSERT(!error);
+          if (error) return error;
+        }
+        if (!std::isinf(ub(i))) {
+          // Adds A.row(i)*x <= ub(i).
+          error = GRBaddconstr(model, nonzero_coeff_count, &nonzero_var_index[0],  &nonzero_coeff[0], GRB_LESS_EQUAL, ub(i), nullptr);
+          DRAKE_ASSERT(!error);
+          if (error) return error;
+        }
+      }
+    }
   }
   // If loop completes, no errors exist so the value '0' must be returned.
   return 0;
@@ -115,37 +133,29 @@ int AddSecondOrderConeConstraints(
                second_order_cone_new_variable_indices.size());
   int second_order_cone_count = 0;
   for (const auto& binding : second_order_cone_constraints) {
-    int num_constraint_variable = static_cast<int>(binding.GetNumElements());
-    std::vector<int> variable_indices;
-    variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
-
-    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
-      variable_indices.push_back(
-          static_cast<int>(prog.FindDecisionVariableIndex(binding.variables()(i))));
-    }
-
-    int num_x = static_cast<int>(variable_indices.size());
-
     const auto& A = binding.constraint()->A();
     const auto& b = binding.constraint()->b();
 
+    int num_x = A.cols();
     int num_z = A.rows();
 
-    // Append the indices for variable z to variable_indices
-    variable_indices.insert(
-        variable_indices.end(),
-        second_order_cone_new_variable_indices[second_order_cone_count].begin(),
-        second_order_cone_new_variable_indices[second_order_cone_count].end());
-
-    // TODO(hongkai.dai): Use a sparse A_lorentz matrix.
-    Eigen::MatrixXd A_lorentz(num_z, num_x + num_z);
-    A_lorentz << -A, Eigen::MatrixXd::Identity(A.rows(), A.rows());
-    int error = AddLinearConstraint(model, A_lorentz, b, variable_indices,
-                                    GRB_EQUAL, sparseness_threshold);
-
-    if (error) {
-      return error;
+    // Add the constraint z - A*x = b
+    std::vector<int> xz_indices(num_x + 1, 0); // Records the indices of [x;z(i)],
+                                            // Namely the variables in the i'th
+                                            // row of z - A*x = b
+    for (int i = 0; i < num_x; ++i) {
+      xz_indices[i] = prog.FindDecisionVariableIndex(binding.variables()(i));
     }
+    Eigen::RowVectorXd coeff_i(num_x + 1); // Records the coefficients of the
+                                           // i'th row in z - A*x = b
+    for (int i = 0; i < num_z; ++i) {
+      coeff_i << -A.row(i), 1;
+      xz_indices[num_x] = second_order_cone_new_variable_indices[second_order_cone_count][i]; // index of z(i)
+      int error = GRBaddconstr(model, num_x + 1, xz_indices.data(),  coeff_i.data(), GRB_EQUAL, b(i), nullptr);
+      DRAKE_ASSERT(!error);
+      if (error) return error;
+    }
+
 
     // Gurobi uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
     // cone constraint.
@@ -198,7 +208,7 @@ int AddSecondOrderConeConstraints(
       qcol[num_z - 1] = z1_index;
       qval[num_z - 1] = 1;
     }
-    error =
+    int error =
         GRBaddqconstr(model, 0, nullptr, nullptr, num_Q_nonzero, qrow.data(),
                       qcol.data(), qval.data(), GRB_LESS_EQUAL, 0.0, NULL);
     if (error) {
@@ -324,18 +334,12 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
   // TODO(naveenoid) : needs test coverage.
   for (const auto& binding : prog.linear_equality_constraints()) {
     const auto& constraint = binding.constraint();
-    int var_dim = binding.GetNumElements();
-    // variable_indices[i] is the index of the i'th variable.
-    std::vector<int> variable_indices;
-    variable_indices.reserve(var_dim);
-
-    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
-      variable_indices.push_back(prog.FindDecisionVariableIndex(binding.variables()(i)));
-    }
 
     const int error =
-        AddLinearConstraint(model, constraint->A(), constraint->lower_bound(),
-                            variable_indices, GRB_EQUAL, sparseness_threshold);
+        AddLinearConstraint(prog, model, constraint->A(),
+                            constraint->lower_bound(),
+                            constraint->upper_bound(),
+                            binding.variables(), true, sparseness_threshold);
     if (error) {
       return error;
     }
@@ -343,48 +347,17 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
 
   for (const auto& binding : prog.linear_constraints()) {
     const auto& constraint = binding.constraint();
-    int var_dim = binding.GetNumElements();
 
-    const Eigen::MatrixXd& A = constraint->A();
-    const Eigen::VectorXd& lb = constraint->lower_bound();
-    const Eigen::VectorXd& ub = constraint->upper_bound();
-
-    // Go through the matrix A row by row to determine whether to add it as
-    // a less than or greater than constraint, or both.
-    for (int i = 0; i < static_cast<int>(A.rows()); i++) {
-      // In each row, we find out the non-zero entries in A.row(i), such that
-      // the linear constraint is
-      // lb(i) <= sum_j linear_coeff_row_i[j] * x[j] <= ub(i)
-      // where x is the aggregated decision variable for the entire optimization
-      // problem.
-      std::vector<int> variable_indices_row_i;
-      std::vector<double> linear_coeff_row_i;
-      variable_indices_row_i.reserve(var_dim);
-      linear_coeff_row_i.reserve(var_dim);
-      for (int j = 0; j < var_dim; j++) {
-        if (std::abs(A(i, j)) > sparseness_threshold) {
-          variable_indices_row_i.push_back(prog.FindDecisionVariableIndex(binding.variables()(i)));
-          linear_coeff_row_i.push_back(A(i, j));
-        }
-      }
-      if (!std::isinf(lb(i))) {
-        int error = GRBaddconstr(
-            model, variable_indices_row_i.size(), variable_indices_row_i.data(),
-            linear_coeff_row_i.data(), GRB_GREATER_EQUAL, lb(i), nullptr);
-        if (error) {
-          return error;
-        }
-      }
-      if (!std::isinf(ub(i))) {
-        int error = GRBaddconstr(
-            model, variable_indices_row_i.size(), variable_indices_row_i.data(),
-            linear_coeff_row_i.data(), GRB_LESS_EQUAL, ub(i), nullptr);
-        if (error) {
-          return error;
-        }
-      }
+    const int error =
+        AddLinearConstraint(prog, model, constraint->A(),
+                            constraint->lower_bound(),
+                            constraint->upper_bound(),
+                            binding.variables(), false, sparseness_threshold);
+    if (error) {
+      return error;
     }
   }
+
   // If loop completes, no errors exist so the value '0' must be returned.
   return 0;
 }
