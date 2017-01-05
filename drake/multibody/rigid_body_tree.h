@@ -1315,10 +1315,10 @@ class RigidBodyTree {
  private:
   // Utility class for storing body collision data during RBT instantiation.
   struct BodyCollisionItem {
-    BodyCollisionItem(const std::string& group_name,
-                      size_t element) {
-      this->group_name = group_name;
-      this->element = element;
+    BodyCollisionItem(const std::string& grp_name,
+                      size_t element_index) {
+      group_name = grp_name;
+      element = element_index;
     }
     std::string group_name;
     size_t element;
