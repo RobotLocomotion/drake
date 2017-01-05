@@ -101,4 +101,4 @@
 	url = https://github.com/ToyotaResearchInstitute/hsrb_description.git
 [submodule "externals/tinyobjloader"]
 	path = externals/tinyobjloader
-	url = https://github.com/syoyo/tinyobjloader
+	url = https://github.com/syoyo/tinyobjloader.git
