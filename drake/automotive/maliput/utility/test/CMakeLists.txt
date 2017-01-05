@@ -1,5 +1,5 @@
-drake_add_cc_test(generate_obj_test)
-target_link_libraries(generate_obj_test drakeAutomotive)
+drake_add_cc_test(generate_urdf_test)
+target_link_libraries(generate_urdf_test drakeAutomotive spruce)
 
 if(PYTHON_EXECUTABLE)
   drake_add_test(
