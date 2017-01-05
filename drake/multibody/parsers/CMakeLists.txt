@@ -28,22 +28,6 @@ drake_install_pkg_config_file(drake-multibody-parsers
         spruce
         tinyxml2)
 
-if (yaml-cpp_FOUND)
-  add_library_with_exports(LIB_NAME drakeRigidBodyAliasGroups SOURCE_FILES
-    rigid_body_tree_alias_groups.cc)
-  target_link_libraries(drakeRigidBodyAliasGroups
-    drakeRBM
-    yaml-cpp)
-  drake_install_libraries(drakeRigidBodyAliasGroups)
-  drake_install_headers(rigid_body_tree_alias_groups.h)
-  drake_install_pkg_config_file(drake-rigidbody-kinematic-property
-    TARGET drakeRigidBodyAliasGroups
-    LIBS -ldrakeRigidBodyAliasGroups
-    REQUIRES
-        drakeRBM
-        yaml-cpp)
-endif()
-
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()

@@ -9,7 +9,9 @@
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
-namespace parsers {
+namespace examples {
+namespace qp_inverse_dynamics {
+namespace param_parser {
 
 /**
  * This class provides a way to create aliases to groups of RigidBody or
@@ -215,5 +217,7 @@ class RigidBodyTreeAliasGroups {
   std::map<std::string, std::vector<int>> velocity_groups_;
 };
 
-}  // namespace parsers
+}  // namespace param_parser
+}  // namespace qp_inverse_dynamics
+}  // namespace examples
 }  // namespace drake

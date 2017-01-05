@@ -1,9 +1,11 @@
+#include "drake/examples/QPInverseDynamicsForHumanoids/param_parser/rigid_body_tree_alias_groups.h"
+
 #include <set>
 
-#include "drake/multibody/parsers/rigid_body_tree_alias_groups.h"
-
 namespace drake {
-namespace parsers {
+namespace examples {
+namespace qp_inverse_dynamics {
+namespace param_parser {
 
 template <typename T>
 constexpr char RigidBodyTreeAliasGroups<T>::kBodyGroupsKeyword[];
@@ -17,13 +19,13 @@ namespace {
 template <typename Type>
 void InsertOrMergeVectorWithoutDuplicates(const std::string key,
     const std::vector<Type>& vec,
-    std::map<std::string, std::vector<Type>>* map) {
-  DRAKE_DEMAND(map);
+    std::map<std::string, std::vector<Type>>* mapping) {
+  DRAKE_DEMAND(mapping);
   std::set<Type> inserted;
 
   typename std::map<std::string, std::vector<Type>>::iterator it =
-      map->find(key);
-  if (it != map->end()) {
+      mapping->find(key);
+  if (it != mapping->end()) {
     inserted = std::set<Type>(it->second.begin(), it->second.end());
   }
 
@@ -36,8 +38,8 @@ void InsertOrMergeVectorWithoutDuplicates(const std::string key,
     }
   }
 
-  if (it == map->end()) {
-    map->emplace(key, unique_vec);
+  if (it == mapping->end()) {
+    mapping->emplace(key, unique_vec);
   } else {
     it->second.insert(it->second.end(), unique_vec.begin(), unique_vec.end());
   }
@@ -151,5 +153,7 @@ void RigidBodyTreeAliasGroups<T>::LoadFromYAMLFile(
 
 template class RigidBodyTreeAliasGroups<double>;
 
-}  // namespace parsers
+}  // namespace param_parser
+}  // namespace qp_inverse_dynamics
+}  // namespace examples
 }  // namespace drake

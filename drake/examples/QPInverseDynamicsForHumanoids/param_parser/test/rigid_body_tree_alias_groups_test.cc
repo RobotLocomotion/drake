@@ -1,11 +1,13 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
-#include "drake/multibody/parsers/rigid_body_tree_alias_groups.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/param_parser/rigid_body_tree_alias_groups.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
 namespace drake {
-namespace parsers {
+namespace examples {
+namespace qp_inverse_dynamics {
+namespace param_parser {
 
 // The test YAML config looks like this:
 //
@@ -31,48 +33,49 @@ namespace parsers {
 //
 // Please refer to the full config file for more details.
 void TestFullConfig(multibody::joints::FloatingBaseType type) {
-  std::string urdf = drake::GetDrakePath() +
-                     "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
-  std::string config = drake::GetDrakePath() + "/multibody/parsers/test/" +
-                       "rigid_body_tree_alias_group_config/full.yaml";
+  std::string urdf = drake::GetDrakePath()
+      + "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+  std::string config = drake::GetDrakePath()
+      + "/examples/QPInverseDynamicsForHumanoids/param_parser/test"
+      + "/rigid_body_tree_alias_group_config/full.yaml";
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf, type, robot.get());
 
-  RigidBodyTreeAliasGroups<double> kin_prop(*robot);
+  RigidBodyTreeAliasGroups<double> rbt_alias(*robot);
 
   YAML::Node file = YAML::LoadFile(config);
-  kin_prop.LoadFromYAMLFile(file);
+  rbt_alias.LoadFromYAMLFile(file);
 
-  EXPECT_TRUE(kin_prop.has_position_group("j_group1"));
-  EXPECT_TRUE(kin_prop.has_position_group("j_group2"));
-  EXPECT_TRUE(kin_prop.has_velocity_group("j_group1"));
-  EXPECT_TRUE(kin_prop.has_velocity_group("j_group2"));
-  EXPECT_FALSE(kin_prop.has_position_group("j_non_existant_group"));
-  EXPECT_FALSE(kin_prop.has_velocity_group("j_non_existant_group"));
+  EXPECT_TRUE(rbt_alias.has_position_group("j_group1"));
+  EXPECT_TRUE(rbt_alias.has_position_group("j_group2"));
+  EXPECT_TRUE(rbt_alias.has_velocity_group("j_group1"));
+  EXPECT_TRUE(rbt_alias.has_velocity_group("j_group2"));
+  EXPECT_FALSE(rbt_alias.has_position_group("j_non_existant_group"));
+  EXPECT_FALSE(rbt_alias.has_velocity_group("j_non_existant_group"));
 
-  EXPECT_TRUE(kin_prop.has_body_group("b_group1"));
-  EXPECT_TRUE(kin_prop.has_body_group("b_group2"));
-  EXPECT_TRUE(kin_prop.has_body_group("b_group3"));
-  EXPECT_FALSE(kin_prop.has_body_group("b_non_existant_group"));
+  EXPECT_TRUE(rbt_alias.has_body_group("b_group1"));
+  EXPECT_TRUE(rbt_alias.has_body_group("b_group2"));
+  EXPECT_TRUE(rbt_alias.has_body_group("b_group3"));
+  EXPECT_FALSE(rbt_alias.has_body_group("b_non_existant_group"));
 
-  EXPECT_EQ(kin_prop.get_position_group("j_group1").size(), 0);
-  EXPECT_EQ(kin_prop.get_velocity_group("j_group1").size(), 0);
+  EXPECT_EQ(rbt_alias.get_position_group("j_group1").size(), 0);
+  EXPECT_EQ(rbt_alias.get_velocity_group("j_group1").size(), 0);
 
-  EXPECT_EQ(kin_prop.get_body_group("b_group1").size(), 0);
-  EXPECT_EQ(kin_prop.get_body_group("b_group2").size(), 2);
-  EXPECT_EQ(kin_prop.get_body_group("b_group2")[0]->get_name(), "link1");
-  EXPECT_EQ(kin_prop.get_body_group("b_group2")[1]->get_name(), "link3");
-  EXPECT_EQ(kin_prop.get_body_group("b_group3").size(), 1);
-  EXPECT_EQ(kin_prop.get_body_group("b_group3")[0]->get_name(), "world");
+  EXPECT_EQ(rbt_alias.get_body_group("b_group1").size(), 0);
+  EXPECT_EQ(rbt_alias.get_body_group("b_group2").size(), 2);
+  EXPECT_EQ(rbt_alias.get_body_group("b_group2")[0]->get_name(), "link1");
+  EXPECT_EQ(rbt_alias.get_body_group("b_group2")[1]->get_name(), "link3");
+  EXPECT_EQ(rbt_alias.get_body_group("b_group3").size(), 1);
+  EXPECT_EQ(rbt_alias.get_body_group("b_group3")[0]->get_name(), "world");
 
-  EXPECT_EQ(kin_prop.get_joint_group("j_group1").size(), 0);
-  EXPECT_EQ(kin_prop.get_joint_group("j_group2").size(), 2);
-  EXPECT_EQ(kin_prop.get_joint_group("j_group2")[0]->get_name(), "base");
-  EXPECT_EQ(kin_prop.get_joint_group("j_group2")[1]->get_name(), "joint1");
+  EXPECT_EQ(rbt_alias.get_joint_group("j_group1").size(), 0);
+  EXPECT_EQ(rbt_alias.get_joint_group("j_group2").size(), 2);
+  EXPECT_EQ(rbt_alias.get_joint_group("j_group2")[0]->get_name(), "base");
+  EXPECT_EQ(rbt_alias.get_joint_group("j_group2")[1]->get_name(), "joint1");
 
-  const std::vector<int>& q_indices = kin_prop.get_position_group("j_group2");
-  const std::vector<int>& v_indices = kin_prop.get_velocity_group("j_group2");
+  const std::vector<int>& q_indices = rbt_alias.get_position_group("j_group2");
+  const std::vector<int>& v_indices = rbt_alias.get_velocity_group("j_group2");
   switch (type) {
     case drake::multibody::joints::kQuaternion:
       EXPECT_EQ(q_indices.size(), 8);
@@ -137,47 +140,47 @@ void TestFullConfig(multibody::joints::FloatingBaseType type) {
 void TestNoBodyGroupsConfig(multibody::joints::FloatingBaseType type) {
   std::string urdf = drake::GetDrakePath() +
                      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
-  std::string config = drake::GetDrakePath() + "/multibody/parsers/test/" +
-                       "rigid_body_tree_alias_group_config/" +
-                       "no_body_groups.yaml";
+  std::string config = drake::GetDrakePath()
+      + "/examples/QPInverseDynamicsForHumanoids/param_parser/test"
+      + "/rigid_body_tree_alias_group_config/no_body_groups.yaml";
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf, type, robot.get());
 
-  RigidBodyTreeAliasGroups<double> kin_prop(*robot);
+  RigidBodyTreeAliasGroups<double> rbt_alias(*robot);
 
   YAML::Node file = YAML::LoadFile(config);
-  kin_prop.LoadFromYAMLFile(file);
+  rbt_alias.LoadFromYAMLFile(file);
 
-  EXPECT_TRUE(kin_prop.has_position_group("j_group1"));
-  EXPECT_TRUE(kin_prop.has_velocity_group("j_group1"));
-  EXPECT_TRUE(kin_prop.has_position_group("j_group2"));
-  EXPECT_TRUE(kin_prop.has_velocity_group("j_group2"));
-  EXPECT_TRUE(kin_prop.has_position_group("j_group3"));
-  EXPECT_TRUE(kin_prop.has_velocity_group("j_group3"));
-  EXPECT_FALSE(kin_prop.has_position_group("j_non_existant_group"));
-  EXPECT_FALSE(kin_prop.has_velocity_group("j_non_existant_group"));
+  EXPECT_TRUE(rbt_alias.has_position_group("j_group1"));
+  EXPECT_TRUE(rbt_alias.has_velocity_group("j_group1"));
+  EXPECT_TRUE(rbt_alias.has_position_group("j_group2"));
+  EXPECT_TRUE(rbt_alias.has_velocity_group("j_group2"));
+  EXPECT_TRUE(rbt_alias.has_position_group("j_group3"));
+  EXPECT_TRUE(rbt_alias.has_velocity_group("j_group3"));
+  EXPECT_FALSE(rbt_alias.has_position_group("j_non_existant_group"));
+  EXPECT_FALSE(rbt_alias.has_velocity_group("j_non_existant_group"));
 
-  EXPECT_EQ(kin_prop.get_position_group("j_group1").size(), 0);
-  EXPECT_EQ(kin_prop.get_velocity_group("j_group1").size(), 0);
-  EXPECT_EQ(kin_prop.get_position_group("j_group2").size(), 2);
-  EXPECT_EQ(kin_prop.get_velocity_group("j_group2").size(), 2);
-  EXPECT_EQ(kin_prop.get_position_group("j_group3").size(), 0);
-  EXPECT_EQ(kin_prop.get_velocity_group("j_group3").size(), 0);
+  EXPECT_EQ(rbt_alias.get_position_group("j_group1").size(), 0);
+  EXPECT_EQ(rbt_alias.get_velocity_group("j_group1").size(), 0);
+  EXPECT_EQ(rbt_alias.get_position_group("j_group2").size(), 2);
+  EXPECT_EQ(rbt_alias.get_velocity_group("j_group2").size(), 2);
+  EXPECT_EQ(rbt_alias.get_position_group("j_group3").size(), 0);
+  EXPECT_EQ(rbt_alias.get_velocity_group("j_group3").size(), 0);
 
   EXPECT_EQ(robot->get_position_name(
-        kin_prop.get_position_group("j_group2")[0]), "joint1");
+        rbt_alias.get_position_group("j_group2")[0]), "joint1");
   EXPECT_EQ(robot->get_velocity_name(
-        kin_prop.get_velocity_group("j_group2")[0]), "joint1dot");
+        rbt_alias.get_velocity_group("j_group2")[0]), "joint1dot");
   EXPECT_EQ(robot->get_position_name(
-        kin_prop.get_position_group("j_group2")[1]), "joint2");
+        rbt_alias.get_position_group("j_group2")[1]), "joint2");
   EXPECT_EQ(robot->get_velocity_name(
-        kin_prop.get_velocity_group("j_group2")[1]), "joint2dot");
+        rbt_alias.get_velocity_group("j_group2")[1]), "joint2dot");
 
-  EXPECT_EQ(kin_prop.get_joint_group("j_group1").size(), 0);
-  EXPECT_EQ(kin_prop.get_joint_group("j_group2").size(), 2);
-  EXPECT_EQ(kin_prop.get_joint_group("j_group2")[0]->get_name(), "joint1");
-  EXPECT_EQ(kin_prop.get_joint_group("j_group2")[1]->get_name(), "joint2");
+  EXPECT_EQ(rbt_alias.get_joint_group("j_group1").size(), 0);
+  EXPECT_EQ(rbt_alias.get_joint_group("j_group2").size(), 2);
+  EXPECT_EQ(rbt_alias.get_joint_group("j_group2")[0]->get_name(), "joint1");
+  EXPECT_EQ(rbt_alias.get_joint_group("j_group2")[1]->get_name(), "joint2");
 }
 
 // The test YAML config looks like this:
@@ -196,29 +199,29 @@ void TestNoBodyGroupsConfig(multibody::joints::FloatingBaseType type) {
 void TestNoJointGroupsConfig(multibody::joints::FloatingBaseType type) {
   std::string urdf = drake::GetDrakePath() +
                      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
-  std::string config = drake::GetDrakePath() + "/multibody/parsers/test/" +
-                       "rigid_body_tree_alias_group_config/" +
-                       "no_joint_groups.yaml";
+  std::string config = drake::GetDrakePath()
+      + "/examples/QPInverseDynamicsForHumanoids/param_parser/test"
+      + "/rigid_body_tree_alias_group_config/no_joint_groups.yaml";
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf, type, robot.get());
 
-  RigidBodyTreeAliasGroups<double> kin_prop(*robot);
+  RigidBodyTreeAliasGroups<double> rbt_alias(*robot);
 
   YAML::Node file = YAML::LoadFile(config);
-  kin_prop.LoadFromYAMLFile(file);
+  rbt_alias.LoadFromYAMLFile(file);
 
-  EXPECT_TRUE(kin_prop.has_body_group("b_group1"));
-  EXPECT_TRUE(kin_prop.has_body_group("b_group2"));
-  EXPECT_TRUE(kin_prop.has_body_group("b_group3"));
-  EXPECT_FALSE(kin_prop.has_body_group("b_non_existant_group"));
+  EXPECT_TRUE(rbt_alias.has_body_group("b_group1"));
+  EXPECT_TRUE(rbt_alias.has_body_group("b_group2"));
+  EXPECT_TRUE(rbt_alias.has_body_group("b_group3"));
+  EXPECT_FALSE(rbt_alias.has_body_group("b_non_existant_group"));
 
-  EXPECT_EQ(kin_prop.get_body_group("b_group1").size(), 0);
-  EXPECT_EQ(kin_prop.get_body_group("b_group2").size(), 2);
-  EXPECT_EQ(kin_prop.get_body_group("b_group2")[0]->get_name(), "link3");
-  EXPECT_EQ(kin_prop.get_body_group("b_group2")[1]->get_name(), "link2");
-  EXPECT_EQ(kin_prop.get_body_group("b_group3").size(), 1);
-  EXPECT_EQ(kin_prop.get_body_group("b_group3")[0]->get_name(), "link1");
+  EXPECT_EQ(rbt_alias.get_body_group("b_group1").size(), 0);
+  EXPECT_EQ(rbt_alias.get_body_group("b_group2").size(), 2);
+  EXPECT_EQ(rbt_alias.get_body_group("b_group2")[0]->get_name(), "link3");
+  EXPECT_EQ(rbt_alias.get_body_group("b_group2")[1]->get_name(), "link2");
+  EXPECT_EQ(rbt_alias.get_body_group("b_group3").size(), 1);
+  EXPECT_EQ(rbt_alias.get_body_group("b_group3")[0]->get_name(), "link1");
 }
 
 GTEST_TEST(RigidBodyTreeYAMLParsingTest, TestFull) {
@@ -242,20 +245,21 @@ GTEST_TEST(RigidBodyTreeYAMLParsingTest, TestNoBody) {
 GTEST_TEST(RigidBodyTreeYAMLParsingTest, TestParseException) {
   std::string urdf = drake::GetDrakePath() +
                      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
-  std::string config = drake::GetDrakePath() + "/multibody/parsers/test/" +
-                       "rigid_body_tree_alias_group_config/" +
-                       "parse_fails.yaml";
+  std::string config = drake::GetDrakePath()
+      + "/examples/QPInverseDynamicsForHumanoids/param_parser/test"
+      + "/rigid_body_tree_alias_group_config/parse_fails.yaml";
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf,
       multibody::joints::kQuaternion, robot.get());
 
-  RigidBodyTreeAliasGroups<double> kin_prop(*robot);
+  RigidBodyTreeAliasGroups<double> rbt_alias(*robot);
 
   YAML::Node file = YAML::LoadFile(config);
-  EXPECT_THROW(kin_prop.LoadFromYAMLFile(file), std::runtime_error);
+  EXPECT_THROW(rbt_alias.LoadFromYAMLFile(file), std::runtime_error);
 }
 
-}  // namespace parsers
+}  // namespace param_parser
+}  // namespace qp_inverse_dynamics
+}  // namespace examples
 }  // namespace drake
-
