@@ -20,6 +20,7 @@
 #include "drake/multibody/kinematics_cache-inl.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_frame.h"
+#include "drake/multibody/collision/collision_filter.h"
 #include "drake/multibody/collision/drake_collision.h"
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -1180,6 +1181,39 @@ class RigidBodyTree {
   RigidBody<T>* add_rigid_body(std::unique_ptr<RigidBody<T>> body);
 
   /**
+   * Attempts to define a new collision filter group.  The given name *must*
+   * be unique.  Duplicate names will lead to failure.
+   * @param name        The unique name of the new group.
+   * @param model_id    The model instance id to associate with this group.
+   * @return            True to indicate successful addition.
+   */
+  bool DefineCollisionFilterGroup(const std::string& name, int model_id);
+
+  /**
+   * Adds a RigidBody to a collision filter group.  The RigidBody is referenced
+   * by name.  The process will fail if the body cannot be found (with the
+   * previously provided model instance id) or if the group cannot be found.
+   * An exception is thrown in the event of failure.
+   * @param group_name      The collision filter group name to add the body to.
+   * @param body_name       The name of the body to add (as a member of the
+   *                        group's model instance id.
+   */
+  void AddCollisionFilterGroupMember(const std::string& group_name,
+                                     const std::string& body_name);
+
+  /**
+   * Adds a collision group to the set of groups ignored by the specified
+   * collision filter group.  Will fail if the specified specified group name
+   * does not refer to an existing collision filter group.  (Although, the
+   * target group name need not exist at this time.)  An exception is thrown
+   * upon failure.
+   * @param group_name
+   * @param target_group_name
+   */
+  void AddCollisionFilterIgnoreTarget(const std::string& group_name,
+                                      const std::string& target_group_name);
+
+  /**
    * @brief Returns a mutable reference to the RigidBody associated with the
    * world in the model. This is the root of the RigidBodyTree.
    */
@@ -1335,6 +1369,10 @@ class RigidBodyTree {
   int next_available_clique_ = 0;
 
  private:
+  // Map between group names and specification of its collision filter group.
+  std::unordered_map<std::string, DrakeCollision::CollisionFilterGroup<T>>
+      collision_filter_groups_;
+
   // Utility class for storing body collision data during RBT instantiation.
   struct BodyCollisionItem {
     BodyCollisionItem(const std::string& grp_name,

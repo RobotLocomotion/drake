@@ -59,6 +59,8 @@ using drake::math::gradientMatrixToAutoDiff;
 using drake::math::Gradient;
 using drake::multibody::joints::FloatingBaseType;
 
+using DrakeCollision::CollisionFilterGroup;
+
 using std::allocator;
 using std::cerr;
 using std::cout;
@@ -199,6 +201,44 @@ const RigidBodyActuator& RigidBodyTree<T>::GetActuator(
   }
   throw std::invalid_argument("ERROR: Could not find actuator named \"" + name +
       "\"");
+}
+
+template <typename T>
+bool RigidBodyTree<T>::DefineCollisionFilterGroup(const std::string& name, int model_id) {
+  auto itr = collision_filter_groups_.find(name);
+  if (itr == collision_filter_groups_.end()) {
+    collision_filter_groups_[name] = CollisionFilterGroup<T>(name, model_id);
+    return true;
+  }
+  return false;
+}
+
+template <typename T>
+void RigidBodyTree<T>::AddCollisionFilterGroupMember(
+    const std::string& group_name, const std::string& body_name) {
+  auto itr = collision_filter_groups_.find(group_name);
+  if (itr == collision_filter_groups_.end()) {
+    throw std::runtime_error(
+        "Attempting to add a link to an undefined collision filter group: "
+        "Adding " + body_name + " to " + group_name + ".");
+  }
+  CollisionFilterGroup<T>& group = itr->second;
+  int body_index = FindBodyIndex(body_name, group.get_model_id());
+  RigidBody<T>* body = bodies[body_index].get();
+  group.add_body(body);
+}
+
+template <typename T>
+void RigidBodyTree<T>::AddCollisionFilterIgnoreTarget(
+    const std::string& group_name, const std::string& target_group_name) {
+  auto itr = collision_filter_groups_.find(group_name);
+  if (itr == collision_filter_groups_.end()) {
+    throw std::runtime_error(
+        "Attempting to add an ignored collision filter group to an undefined "
+        "collision filter group: Ignoring " +
+        target_group_name + " by " + group_name + ".");
+    itr->second.add_ignore_group(target_group_name);
+  }
 }
 
 template <typename T>
