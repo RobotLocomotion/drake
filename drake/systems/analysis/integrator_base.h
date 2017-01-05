@@ -378,7 +378,7 @@ class IntegratorBase {
   void StepOnceExactly(const T& boundary_dt) {
     if (!this->get_fixed_step_mode())
       throw std::logic_error("StepOnceExactly() requires fixed stepping.");
-    const T inf = std::numeric_limits<T>::infinity();
+    const T inf = std::numeric_limits<double>::infinity();
     StepOnceAtMost(inf, inf, boundary_dt);
   }
 
