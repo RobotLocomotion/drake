@@ -14,15 +14,15 @@ namespace solvers {
 GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   MathematicalProgram prog;
   auto X1 = prog.AddContinuousVariables(2, 3, std::vector<std::string>(6, "X"));
-  EXPECT_EQ(prog.num_vars(), 6);
+  EXPECT_EQ(prog.num_vars(), 6u);
   auto S1 =
       prog.AddSymmetricContinuousVariables(3, std::vector<std::string>(6, "S"));
-  EXPECT_EQ(prog.num_vars(), 12);
+  EXPECT_EQ(prog.num_vars(), 12u);
   auto x1 = prog.AddContinuousVariables(6, "x");
-  EXPECT_EQ(prog.num_vars(), 18);
+  EXPECT_EQ(prog.num_vars(), 18u);
   std::array<std::string, 6> X_name = {{"X", "X", "X", "X", "X", "X"}};
   auto X2 = prog.AddContinuousVariables<2, 3>(X_name);
-  EXPECT_EQ(prog.num_vars(), 24);
+  EXPECT_EQ(prog.num_vars(), 24u);
   Eigen::Matrix<double, 6, 1> x_value;
   x_value << 0, 2, 4, 6, 8, 10;
   Eigen::Matrix<double, 6, 1> s_value;
@@ -78,12 +78,12 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   }
 
   // Test size() and num_unique_variables() functions of VariableList.
-  EXPECT_EQ(VariableList({X1}).num_unique_variables(), 6);
-  EXPECT_EQ(VariableList({X1}).size(), 6);
+  EXPECT_EQ(VariableList({X1}).num_unique_variables(), 6u);
+  EXPECT_EQ(VariableList({X1}).size(), 6u);
   EXPECT_EQ(VariableList({X1, X1}).num_unique_variables(), 6);
-  EXPECT_EQ(VariableList({X1, X1}).size(), 12);
+  EXPECT_EQ(VariableList({X1, X1}).size(), 12u);
   EXPECT_EQ(VariableList({X1, X1.row(1)}).num_unique_variables(), 6);
-  EXPECT_EQ(VariableList({X1, X1.row(1)}).size(), 9);
+  EXPECT_EQ(VariableList({X1, X1.row(1)}).size(), 9u);
 
   std::unordered_set<DecisionVariableScalar, DecisionVariableScalarHash>
       X1_unique_variables_expected;
