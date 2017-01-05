@@ -467,24 +467,6 @@ void ParseCollision(RigidBody<double>* body, XMLElement* node,
                         " has a collision element without geometry");
 
   DrakeCollision::Element element(T_element_to_link, body);
-  // By default all collision elements added to the world from an URDF file are
-  // flagged as static.
-  // We would also like to flag as static bodies connected to the world with a
-  // FloatingBaseType::kFixed joint.
-  // However this is not possible at this stage since joints were not parsed
-  // yet.
-  // Solutions to this problem would be:
-  //  1. To load the model with DrakeCollision::Element's here but flag them as
-  //     static later at a the compile stage. This means that Bullet objects are
-  //     not created here (with addCollisionElement) but later on with the call
-  //     to RBT::compile when all the connectivity information is available.
-  //  2. Load collision elements on a separate pass after links and joints were
-  //     already loaded.
-  //  Issue 2661 was created to track this problem.
-  // TODO(amcastro-tri): fix the above issue tracked by 2661.  Similarly for
-  // parseSDFCollision in RigidBodyTreeSDF.cpp.
-  if (body->get_name().compare(string(RigidBodyTree<double>::kWorldName)) == 0)
-    element.set_static();
   if (!ParseGeometry(geometry_node, package_map, root_dir, element))
     throw runtime_error("ERROR: Failed to parse collision element in link " +
                         body->get_name() + ".");

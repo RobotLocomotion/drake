@@ -93,6 +93,7 @@ cc_googletest(
     deps = [
         ":collision",
         "//drake/common:drake_path",
+        "//drake/common:eigen_matrix_compare"
     ],
 )
 
