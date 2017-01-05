@@ -30,6 +30,7 @@ class Binding {
     int var_count = 0;
     for (const auto& vi : v) {
       vars_.segment(var_count, vi.size()) = vi;
+      var_count += vi.size();
     }
   }
 

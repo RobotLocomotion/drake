@@ -91,10 +91,9 @@ Eigen::VectorXd MakeEigenVector(Index n, const Number* x) {
 /// GetGradientMatrix.
 ///
 /// @return number of gradient entries populated.
-template<typename Derived>
 size_t EvaluateConstraint(const MathematicalProgram& prog,
                           const Eigen::VectorXd& xvec, const Constraint& c,
-                          const Eigen::MatrixBase<Derived>& variables,
+                          const DecisionVariableVectorX& variables,
                           Number* result, Number* grad) {
   // For constraints which don't use all of the variables in the X
   // input, extract a subset into the TaylorVecXd this_x to evaluate
@@ -103,9 +102,6 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   // the correct geometry (e.g. the constraint uses all decision
   // variables in the same order they appear in xvec), but this is not
   // currently done).
-  static_assert(std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
-                "Input should be a vector of symbolic variables");
-  DRAKE_ASSERT(variables.cols() == 1);
   int num_v_variables = variables.rows();
   auto tx = math::initializeAutoDiff(xvec);
   TaylorVecXd this_x(num_v_variables);

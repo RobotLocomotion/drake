@@ -1035,14 +1035,21 @@ class MathematicalProgram {
    * non-column-vector decision variable matrices.
    */
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
-      double lb, double ub, const VariableListRef& vars) {
-    int var_dim = 0;
-    for (const auto& var : vars) {
-      var_dim += var.size();
+      double lb, double ub, const VariableListRef& vars);
+
+
+  template <int rows, int cols>
+  std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
+      double lb, double ub, const DecisionVariableMatrix<rows, cols>& vars) {
+    DecisionVariableVector<rows * cols> flat_vars;
+    for (int j = 0; j < cols; ++j) {
+      flat_vars.template segment<cols>(j * rows) = vars.col(j);
     }
-    return AddBoundingBoxConstraint(Eigen::VectorXd::Constant(var_dim, lb),
-                                    Eigen::VectorXd::Constant(var_dim, ub),
-                                    vars);
+    std::shared_ptr<BoundingBoxConstraint> bbcon =
+        std::make_shared<BoundingBoxConstraint>(Eigen::Matrix<double, rows * cols, 1>::Constant(lb),
+                     Eigen::Matrix<double, rows * cols, 1>::Constant(ub));
+    AddConstraint(bbcon, {flat_vars});
+    return bbcon;
   }
 
   /**
@@ -1647,17 +1654,11 @@ class MathematicalProgram {
    * TODO(hongkai.dai): Do not use teample function, when the Binding is moved
    * to a public class.
    */
-  template <typename _Binding>
-  Eigen::VectorXd EvalBindingAtSolution(const _Binding& binding) const {
+  template <typename C>
+  Eigen::VectorXd EvalBindingAtSolution(const Binding<C>& binding) const {
     Eigen::VectorXd val(binding.constraint()->num_constraints());
-    size_t dim = 0;
-    Eigen::VectorXd flat_solution(binding.GetNumElements());
-    for (const auto& var : binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      flat_solution.segment(dim, var.rows()) = GetSolution(var);
-      dim += var.rows();
-    }
-    binding.constraint()->Eval(flat_solution, val);
+    Eigen::VectorXd binding_var_vals = GetSolution(binding.variables());
+    binding.constraint()->Eval(binding_var_vals, val);
     return val;
   }
 

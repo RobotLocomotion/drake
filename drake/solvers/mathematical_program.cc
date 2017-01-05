@@ -251,6 +251,16 @@ MathematicalProgram::AddRotatedLorentzConeConstraint(
   return AddRotatedLorentzConeConstraint(A, b, vars);
 }
 
+std::shared_ptr<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
+    double lb, double ub, const VariableListRef& vars) {
+  int var_dim = 0;
+  for (const auto& var : vars) {
+    var_dim += var.size();
+  }
+  return AddBoundingBoxConstraint(Eigen::VectorXd::Constant(var_dim, lb),
+                                  Eigen::VectorXd::Constant(var_dim, ub),
+                                  vars);
+}
 std::shared_ptr<Constraint> MathematicalProgram::AddPolynomialConstraint(
     const VectorXPoly& polynomials,
     const std::vector<Polynomiald::VarType>& poly_vars,
@@ -338,7 +348,7 @@ void MathematicalProgram::AddConstraint(
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
   linear_matrix_inequality_constraint_.push_back(
       Binding<LinearMatrixInequalityConstraint>(con, vars));
-  DRAKE_ASSERT(con->F().size() == linear_matrix_inequality_constraint_.back().variables().rows() + 1);
+  DRAKE_ASSERT(static_cast<int>(con->F().size()) == linear_matrix_inequality_constraint_.back().variables().rows() + 1);
 }
 
 std::shared_ptr<LinearMatrixInequalityConstraint>

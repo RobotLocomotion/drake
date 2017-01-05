@@ -87,9 +87,7 @@ int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
  * A vector z is in the rotated Lorentz cone, if
  * z(0)*z(1) >= z(2)^2 + ... + z(N-1)^2
  * z(0) >= 0, z(1) >= 0
- * @tparam Binding  A Binding class. TODO(hongkai.dai): change this function to
- * non-templated function, when Binding class is moved out from
- * MathematicalProgram class.
+ * @tparam C  A constraint type, either LorentzConeConstraint or RotatedLorentzConeConstraint.
  * @param second_order_cone_constraints  A vector of Binding objects, containing
  * either Lorentz cone constraints, or rotated Lorentz cone constraints.
  * @param is_rotated_cone. True if @p second_order_cone_constraints only
@@ -101,13 +99,18 @@ int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
  * the Gurobi model.
  * @param model The Gurobi model.
  */
-template <typename Binding>
+template <typename C>
 int AddSecondOrderConeConstraints(
     const MathematicalProgram& prog,
-    const std::vector<Binding>& second_order_cone_constraints,
-    bool is_rotated_cone, double sparseness_threshold,
+    const std::vector<Binding<C>>& second_order_cone_constraints,
+    double sparseness_threshold,
     const std::vector<std::vector<int>>& second_order_cone_new_variable_indices,
     GRBmodel* model) {
+  static_assert(std::is_same<C, LorentzConeConstraint>::value ||
+  std::is_same<C, RotatedLorentzConeConstraint>::value,
+                "Expects either LorentzConeConstraint or RotatedLorentzConeConstraint");
+  bool is_rotated_cone = std::is_same<C, RotatedLorentzConeConstraint>::value;
+
   DRAKE_ASSERT(second_order_cone_constraints.size() ==
                second_order_cone_new_variable_indices.size());
   int second_order_cone_count = 0;
@@ -115,14 +118,12 @@ int AddSecondOrderConeConstraints(
     int num_constraint_variable = static_cast<int>(binding.GetNumElements());
     std::vector<int> variable_indices;
     variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
-    const auto& variable_list = binding.variable_list();
-    for (const DecisionVariableMatrixX& var : variable_list.variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        variable_indices.push_back(
-            static_cast<int>(prog.FindDecisionVariableIndex(var(i, 0))));
-      }
+
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      variable_indices.push_back(
+          static_cast<int>(prog.FindDecisionVariableIndex(binding.variables()(i))));
     }
+
     int num_x = static_cast<int>(variable_indices.size());
 
     const auto& A = binding.constraint()->A();
@@ -230,16 +231,12 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
     // constraint_variable_index[i] is the index of the i'th decision variable
     // binding.GetFlattendSolution(i).
     std::vector<int> constraint_variable_index(constraint_variable_dimension);
-    int constraint_variable_count = 0;
-    for (const DecisionVariableMatrixX& var :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        constraint_variable_index[constraint_variable_count] =
-            prog.FindDecisionVariableIndex(var(i, 0));
-        constraint_variable_count++;
-      }
+
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      constraint_variable_index[i] =
+          prog.FindDecisionVariableIndex(binding.variables()(i));
     }
+
     for (int i = 0; i < Q.rows(); i++) {
       const double Qii = 0.5 * Q(i, i);
       if (abs(Qii) > sparseness_threshold) {
@@ -267,17 +264,11 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
   for (const auto& binding : prog.linear_costs()) {
     const auto& constraint = binding.constraint();
     Eigen::RowVectorXd c = constraint->A();
-    int constraint_variable_count = 0;
-    for (const DecisionVariableMatrixX& var :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        b_nonzero_coefs.push_back(
-            Eigen::Triplet<double>(prog.FindDecisionVariableIndex(var(i, 0)), 0,
-                                   c(constraint_variable_count)));
-        constraint_variable_count++;
-      }
+
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      b_nonzero_coefs.push_back(Eigen::Triplet<double>(prog.FindDecisionVariableIndex(binding.variables()(i)), 0, c(i)));
     }
+
   }
 
   Eigen::SparseMatrix<double> Q_all(prog.num_vars(), prog.num_vars());
@@ -337,13 +328,11 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
     // variable_indices[i] is the index of the i'th variable.
     std::vector<int> variable_indices;
     variable_indices.reserve(var_dim);
-    for (const DecisionVariableMatrixX& var :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        variable_indices.push_back(prog.FindDecisionVariableIndex(var(i, 0)));
-      }
+
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      variable_indices.push_back(prog.FindDecisionVariableIndex(binding.variables()(i)));
     }
+
     const int error =
         AddLinearConstraint(model, constraint->A(), constraint->lower_bound(),
                             variable_indices, GRB_EQUAL, sparseness_threshold);
@@ -355,16 +344,7 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
   for (const auto& binding : prog.linear_constraints()) {
     const auto& constraint = binding.constraint();
     int var_dim = binding.GetNumElements();
-    // variable_indices[i] is the index of the i'th variable
-    std::vector<int> variable_indices;
-    variable_indices.reserve(var_dim);
-    for (const DecisionVariableMatrixX& var :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        variable_indices.push_back(prog.FindDecisionVariableIndex(var(i, 0)));
-      }
-    }
+
     const Eigen::MatrixXd& A = constraint->A();
     const Eigen::VectorXd& lb = constraint->lower_bound();
     const Eigen::VectorXd& ub = constraint->upper_bound();
@@ -383,7 +363,7 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
       linear_coeff_row_i.reserve(var_dim);
       for (int j = 0; j < var_dim; j++) {
         if (std::abs(A(i, j)) > sparseness_threshold) {
-          variable_indices_row_i.push_back(variable_indices[j]);
+          variable_indices_row_i.push_back(prog.FindDecisionVariableIndex(binding.variables()(i)));
           linear_coeff_row_i.push_back(A(i, j));
         }
       }
@@ -420,7 +400,7 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
 // second_order_cone_variable_indices[i]
 // contains the indices of the newly added variable z for the i'th second order
 // cone in @p second_order_cones[i].
-// @p tparam _Binding A MathematicalProgram::Binding class.
+// @p tparam C Either LorentzConeConstraint or RotatedLorentzConeConstraint.
 // TODO(hongkai.dai): rewrite this function not templated on Binding, when
 // Binding class is moved out from MathematicalProgram as a public class.
 // @param second_order_cones A vector of bindings, containing either Lorentz
@@ -437,14 +417,19 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
 // @param gurobi_var_type. The type of the Gurobi variables.
 // @param xlow The lower bound of the Gurobi variables.
 // @param xupp The upper bound of the Gurobi variables.
-template <typename _Binding>
+template <typename C>
 void AddSecondOrderConeVariables(
-    const std::vector<_Binding>& second_order_cones,
-    bool is_rotated_lorentz_cone, std::vector<bool>* is_new_variable,
+    const std::vector<Binding<C>>& second_order_cones,
+    std::vector<bool>* is_new_variable,
     int* num_gurobi_vars,
     std::vector<std::vector<int>>* second_order_cone_variable_indices,
     std::vector<char>* gurobi_var_type, std::vector<double>* xlow,
     std::vector<double>* xupp) {
+  static_assert(std::is_same<C, LorentzConeConstraint>::value ||
+  std::is_same<C, RotatedLorentzConeConstraint>::value,
+  "Expects LorentzConeConstraint and RotatedLorentzConeConstraint.");
+  bool is_rotated_cone = std::is_same<C, RotatedLorentzConeConstraint>::value;
+
   int num_new_second_order_cone_var = 0;
   second_order_cone_variable_indices->resize(second_order_cones.size());
 
@@ -475,7 +460,7 @@ void AddSecondOrderConeVariables(
   xupp->resize(*num_gurobi_vars, std::numeric_limits<double>::infinity());
   for (int i = 0; i < static_cast<int>(second_order_cones.size()); ++i) {
     xlow->at((*second_order_cone_variable_indices)[i][0]) = 0;
-    if (is_rotated_lorentz_cone) {
+    if (is_rotated_cone) {
       xlow->at((*second_order_cone_variable_indices)[i][1]) = 0;
     }
   }
@@ -539,16 +524,11 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     const auto& constraint = binding.constraint();
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
-    int var_idx = 0;
-    for (const DecisionVariableMatrixX& var :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int k = 0; k < var.rows(); ++k) {
-        const int idx = prog.FindDecisionVariableIndex(var(k, 0));
-        xlow[idx] = std::max(lower_bound(var_idx), xlow[idx]);
-        xupp[idx] = std::min(upper_bound(var_idx), xupp[idx]);
-        var_idx++;
-      }
+
+    for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
+      const int idx = prog.FindDecisionVariableIndex(binding.variables()(k));
+      xlow[idx] = std::max(lower_bound(k), xlow[idx]);
+      xupp[idx] = std::min(upper_bound(k), xupp[idx]);
     }
   }
 
@@ -560,13 +540,13 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // rotated_lorentz_cone_new_variable_indices
   // record the indices of the newly created variable z in the Gurobi program.
   std::vector<std::vector<int>> lorentz_cone_new_variable_indices;
-  AddSecondOrderConeVariables(prog.lorentz_cone_constraints(), false,
+  AddSecondOrderConeVariables(prog.lorentz_cone_constraints(),
                               &is_new_variable, &num_gurobi_vars,
                               &lorentz_cone_new_variable_indices,
                               &gurobi_var_type, &xlow, &xupp);
 
   std::vector<std::vector<int>> rotated_lorentz_cone_new_variable_indices;
-  AddSecondOrderConeVariables(prog.rotated_lorentz_cone_constraints(), true,
+  AddSecondOrderConeVariables(prog.rotated_lorentz_cone_constraints(),
                               &is_new_variable, &num_gurobi_vars,
                               &rotated_lorentz_cone_new_variable_indices,
                               &gurobi_var_type, &xlow, &xupp);
@@ -587,14 +567,14 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // Add Lorentz cone constraints.
   if (!error) {
     error = AddSecondOrderConeConstraints(
-        prog, prog.lorentz_cone_constraints(), false, sparseness_threshold,
+        prog, prog.lorentz_cone_constraints(), sparseness_threshold,
         lorentz_cone_new_variable_indices, model);
   }
 
   // Add rotated Lorentz cone constraints.
   if (!error) {
     error = AddSecondOrderConeConstraints(
-        prog, prog.rotated_lorentz_cone_constraints(), true,
+        prog, prog.rotated_lorentz_cone_constraints(),
         sparseness_threshold, rotated_lorentz_cone_new_variable_indices, model);
   }
 

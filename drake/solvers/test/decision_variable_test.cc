@@ -45,8 +45,7 @@ bool CheckDecisionVariableType(const MathematicalProgram& prog,
 }  // namespace
 
 /*
-* Test adding decision variables, constructing VariableList, together with
-* functions in DecisionVariableScalar and VariableList.
+* Test adding decision variables.
 */
 GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   MathematicalProgram prog;
@@ -95,6 +94,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   msg_buff5 << b1 << std::endl;
   EXPECT_EQ(msg_buff5.str(), "b1(0)\nb1(1)\nb1(2)\nb1(3)\nb1(4)\nb1(5)\n");
 
+  // Tests setting values fo the decision variables.
   Eigen::Matrix<double, 6, 1> x_value;
   x_value << 0, 2, 4, 6, 8, 10;
   Eigen::Matrix<double, 6, 1> s_value;
@@ -110,7 +110,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   X_expected.resize(2, 3);
   Eigen::MatrixXd b_expected = b_value;
 
-  // Test if the values in the decision variables are correct.
+  // Tests if the values in the decision variables are correct.
   EXPECT_TRUE(CompareMatrices(prog.GetSolution(X1), X_expected, 1E-14,
                               MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(prog.GetSolution(S1), S_expected, 1E-14,
@@ -122,7 +122,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_TRUE(CompareMatrices(prog.GetSolution(b1), b_expected, 1E-14,
                               MatrixCompareType::absolute));
 
-  // Test if the variable type is correct
+  // Tests if the variable type is correct.
   EXPECT_TRUE(CheckDecisionVariableType(
       prog, X1, MathematicalProgram::VarType::CONTINUOUS));
   EXPECT_TRUE(CheckDecisionVariableType(
@@ -134,11 +134,6 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_TRUE(CheckDecisionVariableType(prog, b1,
                                         MathematicalProgram::VarType::BINARY));
 
-  // Test constructing VariableList.
-  VariableList var_list1({X1, S1});
-  EXPECT_FALSE(var_list1.column_vectors_only());
-  VariableList var_list2({x1});
-  EXPECT_TRUE(var_list2.column_vectors_only());
   for (int i = 0; i < 6; ++i) {
     EXPECT_TRUE(DecisionVariableMatrixContainsIndex(prog, X1, i));
     EXPECT_TRUE(DecisionVariableMatrixContainsIndex(prog, S1, i + 6));
@@ -146,11 +141,14 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
     EXPECT_TRUE(DecisionVariableMatrixContainsIndex(prog, X2, i + 18));
   }
 
+  // Tests if all entries in x1 are unique, that x1(i) = x1(j) iff i = j.
   for (int i = 0; i < 6; ++i) {
     for (int j = 0; j < 6; ++j) {
       EXPECT_EQ(x1(i) == x1(j), i == j);
     }
   }
+
+  // Tests concatenating two Eigen matrices of symbolic variables.
   DecisionVariableMatrix<2, 6> X_assembled;
   X_assembled << X1, X2;
   Eigen::Matrix<double, 2, 6> X_assembled_expected;
@@ -166,13 +164,6 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
     }
   }
 
-  // Test size() and num_unique_variables() functions of VariableList.
-  EXPECT_EQ(VariableList({X1}).num_unique_variables(), 6u);
-  EXPECT_EQ(VariableList({X1}).size(), 6u);
-  EXPECT_EQ(VariableList({X1, X1}).num_unique_variables(), 6u);
-  EXPECT_EQ(VariableList({X1, X1}).size(), 12u);
-  EXPECT_EQ(VariableList({X1, X1.row(1)}).num_unique_variables(), 6u);
-  EXPECT_EQ(VariableList({X1, X1.row(1)}).size(), 9u);
 
   std::unordered_set<symbolic::Variable, drake::hash_value<symbolic::Variable>>
       X1_unique_variables_expected;
@@ -181,10 +172,6 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
       X1_unique_variables_expected.insert(X1(i, j));
     }
   }
-  EXPECT_EQ(VariableList({X1}).unique_variables(),
-            X1_unique_variables_expected);
-  EXPECT_EQ(VariableList({X1, X1.row(1)}).unique_variables(),
-            X1_unique_variables_expected);
 }
 }  // namespace solvers
 }  // namespace drake

@@ -2,6 +2,8 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/solvers/constraint.h"
+
 namespace drake {
 namespace solvers {
 namespace test {
@@ -12,10 +14,11 @@ GTEST_TEST(TestBinding, constructBinding) {
   auto bb_con = std::make_shared<BoundingBoxConstraint>(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
 
   // Checks if the bound variables are stored in the right order.
-  Binding binding1(bb_con, {DecisionVariableVector<2>(x3, x1), x2});
+  Binding<BoundingBoxConstraint> binding1(bb_con, {DecisionVariableVector<2>(x3, x1), DecisionVariableVector<1>(x2)});
+  EXPECT_EQ(binding1.GetNumElements(), 3);
   DecisionVariableVector<3> var1_expected(x3, x1, x2);
   for (int i = 0; i < 3; ++i) {
-    DRAKE_ASSERT(binding1.variables()(i) == var1_expected(i));
+    EXPECT_EQ(binding1.variables()(i), var1_expected(i));
   }
 }
 }  // namespace test
