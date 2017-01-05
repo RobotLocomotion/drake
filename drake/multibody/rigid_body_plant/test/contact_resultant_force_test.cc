@@ -128,7 +128,7 @@ GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
     ContactResultantForceCalculator<double> calc(&details);
     ContactForce<double> cforce(pos, normal, force, torque);
     calc.AddForce(cforce);
-    EXPECT_EQ(details.size(), 1);
+    EXPECT_EQ(details.size(), 1u);
     PointContactDetail<double>* detail =
         dynamic_cast<PointContactDetail<double>*>(details[0].get());
     ASSERT_NE(detail, nullptr);
@@ -144,7 +144,7 @@ GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
     std::vector<unique_ptr<ContactDetail<double>>> details;
     ContactResultantForceCalculator<double> calc(&details);
     calc.AddForce(pos, normal, force);
-    EXPECT_EQ(details.size(), 1);
+    EXPECT_EQ(details.size(), 1u);
     PointContactDetail<double>* detail =
         dynamic_cast<PointContactDetail<double>*>(details[0].get());
     ASSERT_NE(detail, nullptr);
@@ -160,7 +160,7 @@ GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
     std::vector<unique_ptr<ContactDetail<double>>> details;
     ContactResultantForceCalculator<double> calc(&details);
     calc.AddForce(pos, normal, force, torque);
-    EXPECT_EQ(details.size(), 1);
+    EXPECT_EQ(details.size(), 1u);
     PointContactDetail<double>* detail =
         dynamic_cast<PointContactDetail<double>*>(details[0].get());
     ASSERT_NE(detail, nullptr);
@@ -179,7 +179,7 @@ GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
     unique_ptr<ContactDetail<double>> input_detail(
         new PointContactDetail<double>(cforce));
     calc.AddForce(move(input_detail));
-    EXPECT_EQ(details.size(), 1);
+    EXPECT_EQ(details.size(), 1u);
     PointContactDetail<double>* detail =
         dynamic_cast<PointContactDetail<double>*>(details[0].get());
     ASSERT_NE(detail, nullptr);

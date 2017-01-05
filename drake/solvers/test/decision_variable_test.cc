@@ -80,9 +80,9 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   // Test size() and num_unique_variables() functions of VariableList.
   EXPECT_EQ(VariableList({X1}).num_unique_variables(), 6u);
   EXPECT_EQ(VariableList({X1}).size(), 6u);
-  EXPECT_EQ(VariableList({X1, X1}).num_unique_variables(), 6);
+  EXPECT_EQ(VariableList({X1, X1}).num_unique_variables(), 6u);
   EXPECT_EQ(VariableList({X1, X1}).size(), 12u);
-  EXPECT_EQ(VariableList({X1, X1.row(1)}).num_unique_variables(), 6);
+  EXPECT_EQ(VariableList({X1, X1.row(1)}).num_unique_variables(), 6u);
   EXPECT_EQ(VariableList({X1, X1.row(1)}).size(), 9u);
 
   std::unordered_set<DecisionVariableScalar, DecisionVariableScalarHash>
