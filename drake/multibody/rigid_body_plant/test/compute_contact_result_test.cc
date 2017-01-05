@@ -144,14 +144,8 @@ TEST_F(ContactResultTest, SingleCollision) {
   const RigidBody<double>* b1 = tree_->FindBody(e1);
   const RigidBody<double>* b2 = tree_->FindBody(e2);
   ASSERT_NE(e1, e2);
-  ASSERT_TRUE((b1 == body1_ && b2 == body2_) || (b1 == body2_ && b2 == body1_));
-
-  // The direction of the force depends on which body is 1 and which is 2. We
-  // assume b1 is body1_, if not, we reverse the sign of the force.
-  double force_sign = -1;
-  if (b2 == body1_) {
-    force_sign = 1;
-  }
+  ASSERT_TRUE(b1 == body1_ || b1 == body2_);
+  ASSERT_TRUE(b2 == body1_ || b2 == body2_);
 
   // Confirms the contact details are as expected.
   const auto& resultant = info.get_resultant_force();
@@ -161,7 +155,7 @@ TEST_F(ContactResultTest, SingleCollision) {
   //  be set in some other manner, then this test may fail.
   const double stiffness = 150.0;
   double force = stiffness * offset * 2;
-  expected_spatial_force << 0, 0, 0, force_sign * force, 0, 0;
+  expected_spatial_force << 0, 0, 0, -force, 0, 0;
   ASSERT_TRUE(
       CompareMatrices(resultant.get_spatial_force(), expected_spatial_force));
 

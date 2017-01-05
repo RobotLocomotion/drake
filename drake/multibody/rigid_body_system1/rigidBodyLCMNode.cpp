@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
     tree->addCollisionElement(
         DrakeCollision::Element(geom, T_element_to_link, &world), world,
         "terrain");
-    tree->compile();
+    tree->updateStaticCollisionElements();
   }
 
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
