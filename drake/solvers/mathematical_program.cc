@@ -210,6 +210,14 @@ void MathematicalProgram::AddConstraint(const Binding<LinearConstraint>& binding
   linear_constraints_.push_back(binding);
 }
 
+void MathematicalProgram::AddConstraint(std::shared_ptr<LinearConstraint> con, const VariableListRef& vars) {
+  AddConstraint(Binding<LinearConstraint>(con, vars));
+}
+
+void MathematicalProgram::AddConstraint(std::shared_ptr<LinearConstraint> con, const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  AddConstraint(Binding<LinearConstraint>(con, vars));
+}
+
 std::shared_ptr<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
@@ -235,6 +243,14 @@ void MathematicalProgram::AddConstraint(const Binding<LinearEqualityConstraint>&
   linear_equality_constraints_.push_back(binding);
 }
 
+void MathematicalProgram::AddConstraint(std::shared_ptr<LinearEqualityConstraint> con, const VariableListRef& vars) {
+  return AddConstraint(Binding<LinearEqualityConstraint>(con, vars));
+}
+
+void MathematicalProgram::AddConstraint(std::shared_ptr<LinearEqualityConstraint> con, const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  return AddConstraint(Binding<LinearEqualityConstraint>(con, vars));
+}
+
 std::shared_ptr<LinearEqualityConstraint> MathematicalProgram::AddLinearEqualityConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
     const Eigen::Ref<const Eigen::VectorXd>& beq, const VariableListRef& vars) {
@@ -252,10 +268,32 @@ std::shared_ptr<LinearEqualityConstraint> MathematicalProgram::AddLinearEquality
   return constraint;
 }
 
+void MathematicalProgram::AddConstraint(const Binding<BoundingBoxConstraint>& binding) {
+  required_capabilities_ |= kLinearConstraint;
+  DRAKE_ASSERT(binding.constraint()->num_constraints() == binding.GetNumElements());
+  bbox_constraints_.push_back(binding);
+}
+
+void MathematicalProgram::AddConstraint(std::shared_ptr<BoundingBoxConstraint> con, const VariableListRef& vars) {
+  AddConstraint(Binding<BoundingBoxConstraint>(con, vars));
+}
+
+void MathematicalProgram::AddConstraint(std::shared_ptr<BoundingBoxConstraint> con, const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  AddConstraint(Binding<BoundingBoxConstraint>(con, vars));
+}
+
 void MathematicalProgram::AddConstraint(const Binding<LorentzConeConstraint>& binding) {
   required_capabilities_ |= kLorentzConeConstraint;
   DRAKE_ASSERT(binding.GetNumElements() >= 2);
   lorentz_cone_constraint_.push_back(binding);
+}
+
+void MathematicalProgram::AddConstraint(std::shared_ptr<LorentzConeConstraint> con, const VariableListRef& vars) {
+  return AddConstraint(Binding<LorentzConeConstraint>(con, vars));
+}
+
+void MathematicalProgram::AddConstraint(std::shared_ptr<LorentzConeConstraint> con, const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  return AddConstraint(Binding<LorentzConeConstraint>(con, vars));
 }
 
 std::shared_ptr<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
@@ -287,12 +325,40 @@ MathematicalProgram::AddLorentzConeConstraint(const VariableListRef& vars) {
 }
 
 void MathematicalProgram::AddConstraint(
+    const Binding<RotatedLorentzConeConstraint>& binding) {
+  required_capabilities_ |= kRotatedLorentzConeConstraint;
+  DRAKE_ASSERT(binding.GetNumElements() >= 3);
+  rotated_lorentz_cone_constraint_.push_back(
+      binding);
+}
+
+void MathematicalProgram::AddConstraint(
     std::shared_ptr<RotatedLorentzConeConstraint> con,
     const VariableListRef& vars) {
-  required_capabilities_ |= kRotatedLorentzConeConstraint;
-  rotated_lorentz_cone_constraint_.push_back(
-      Binding<RotatedLorentzConeConstraint>(con, vars));
-  DRAKE_ASSERT(rotated_lorentz_cone_constraint_.back().variables().rows() >= 3);
+  AddConstraint(Binding<RotatedLorentzConeConstraint>(con, vars));
+}
+
+void MathematicalProgram::AddConstraint(
+    std::shared_ptr<RotatedLorentzConeConstraint> con,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  AddConstraint(Binding<RotatedLorentzConeConstraint>(con, vars));
+}
+
+std::shared_ptr<RotatedLorentzConeConstraint> MathematicalProgram::AddRotatedLorentzConeConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b, const VariableListRef& vars) {
+  std::shared_ptr<RotatedLorentzConeConstraint> constraint = std::make_shared<RotatedLorentzConeConstraint>(A, b);
+  AddConstraint(constraint, vars);
+  return constraint;
+}
+
+std::shared_ptr<RotatedLorentzConeConstraint> MathematicalProgram::AddRotatedLorentzConeConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  std::shared_ptr<RotatedLorentzConeConstraint> constraint = std::make_shared<RotatedLorentzConeConstraint>(A, b);
+  AddConstraint(constraint, vars);
+  return constraint;
 }
 
 std::shared_ptr<RotatedLorentzConeConstraint>

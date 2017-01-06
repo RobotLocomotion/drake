@@ -853,6 +853,18 @@ class MathematicalProgram {
    * Adds linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
    */
+  void AddConstraint(std::shared_ptr<LinearConstraint> con, const VariableListRef& vars);
+
+  /**
+   * Adds linear constraints referencing potentially a subset
+   * of the decision variables (defined in the vars parameter).
+   */
+  void AddConstraint(std::shared_ptr<LinearConstraint> con, const Eigen::Ref<const DecisionVariableVectorX>& vars);
+
+  /**
+   * Adds linear constraints referencing potentially a subset
+   * of the decision variables (defined in the vars parameter).
+   */
   std::shared_ptr<LinearConstraint> AddLinearConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
       const Eigen::Ref<const Eigen::VectorXd>& lb,
@@ -931,6 +943,18 @@ class MathematicalProgram {
    * subset of the decision variables.
    */
   void AddConstraint(const Binding<LinearEqualityConstraint>& binding);
+
+  /**
+   * Adds linear equality constraints referencing potentially a
+   * subset of the decision variables.
+   */
+  void AddConstraint(std::shared_ptr<LinearEqualityConstraint> con, const VariableListRef& vars);
+
+  /**
+   * Adds linear equality constraints referencing potentially a
+   * subset of the decision variables.
+   */
+  void AddConstraint(std::shared_ptr<LinearEqualityConstraint> con, const Eigen::Ref<const DecisionVariableVectorX>& vars);
 
   /** AddLinearEqualityConstraint
    *
@@ -1047,12 +1071,19 @@ class MathematicalProgram {
    * binding.constraint()->lower_bound()(i) <= binding.variables()(i)
    *                   <= binding.constraint().upper_bound()(i)
    */
-  void AddConstraint(const Binding<BoundingBoxConstraint>& binding) {
-    required_capabilities_ |= kLinearConstraint;
-    DRAKE_ASSERT(binding.constraint()->num_constraints() == binding.GetNumElements());
-    bbox_constraints_.push_back(binding);
-  }
+  void AddConstraint(const Binding<BoundingBoxConstraint>& binding);
 
+  /**
+   * Adds bounding box constraints referencing potentially a subest of the
+   * decision variables.
+   */
+  void AddConstraint(std::shared_ptr<BoundingBoxConstraint> con, const VariableListRef& vars);
+
+  /**
+   * Adds bounding box constraints referencing potentially a subest of the
+   * decision variables.
+   */
+  void AddConstraint(std::shared_ptr<BoundingBoxConstraint> con, const Eigen::Ref<const DecisionVariableVectorX>& vars);
 
   /** AddBoundingBoxConstraint
    *
@@ -1122,9 +1153,44 @@ class MathematicalProgram {
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       double lb, double ub, const VariableListRef& vars);
 
+  /**
+   * Adds the same scalar lower and upper bound to every variable in the matrix.
+   * This method is used for a static-sized matrix of decision variables.
+   * @tparam rows The number of rows in the DecisionVariableMatrix.
+   * @param lb Lower bound.
+   * @param ub Upper bound.
+   * @param vars A vector of decision variables.
+   * @return The newly created BoundingBoxConstraint.
+   */
+  template <int rows>
+  typename std::enable_if<rows != Eigen::Dynamic,
+                          std::shared_ptr<BoundingBoxConstraint>>::type AddBoundingBoxConstraint(
+      double lb, double ub, const Eigen::MatrixBase<DecisionVariableVector<rows>>& vars) {
+    return AddBoundingBoxConstraint(Eigen::Matrix<double, rows, 1>::Constant(lb), Eigen::Matrix<double, rows, 1>::Constant(ub), vars);
+  }
 
   /**
    * Adds the same scalar lower and upper bound to every variable in the matrix.
+   * This method is used for a dynamic-sized matrix od decision variables.
+   * @tparam rows The number of rows in the DecisionVariableMatrix.
+   * @tparam cols The number of columns in the DecisionVariableMatrix.
+   * @param lb Lower bound.
+   * @param ub Upper bound.
+   * @param vars A vector of decision variables.
+   * @return The newly created BoundingBoxConstraint.
+   */
+  template <int rows, int cols>
+  typename std::enable_if<rows == Eigen::Dynamic,
+                          std::shared_ptr<BoundingBoxConstraint>>::type AddBoundingBoxConstraint(
+      double lb, double ub, const Eigen::MatrixBase<DecisionVariableVector<rows>>& vars) {
+    return AddBoundingBoxConstraint(Eigen::VectorXd::Constant(vars.size(), lb),
+                                    Eigen::VectorXd::Constant(vars.size(), ub),
+                                    vars);
+  }
+
+  /**
+   * Adds the same scalar lower and upper bound to every variable in the matrix.
+   * This method is used for a static-sized matrix of decision variables.
    * @tparam rows The number of rows in the DecisionVariableMatrix.
    * @tparam cols The number of columns in the DecisionVariableMatrix.
    * @param lb Lower bound.
@@ -1146,6 +1212,7 @@ class MathematicalProgram {
 
   /**
    * Adds the same scalar lower and upper bound to every variable in the matrix.
+   * This method is used for a dynamic-sized matrix od decision variables.
    * @tparam rows The number of rows in the DecisionVariableMatrix.
    * @tparam cols The number of columns in the DecisionVariableMatrix.
    * @param lb Lower bound.
@@ -1166,14 +1233,13 @@ class MathematicalProgram {
     flat_vars);
   }
 
-
   /**
    * Adds Lorentz cone constraint referencing potentially a subset
    * of the decision variables.
    * The linear expression @f$ z=Ax+b @f$ is in the Lorentz cone.
    * A vector \f$ z \in\mathbb{R}^n \f$ is in the Lorentz cone, if
    * <!--
-   * z(0) >= sqrt{z(1)^2 + ... + z(n-1)^2}
+   * z(0) >= sqrt{z(1)² + ... + z(n-1)²}
    * -->
    * @f[
    * z_0 \ge \sqrt{z_1^2 + ... + z_{n-1}^2}
@@ -1182,12 +1248,24 @@ class MathematicalProgram {
   void AddConstraint(const Binding<LorentzConeConstraint>& binding);
 
   /**
+   * Adds Lorentz cone constraint referencing potentially a subset
+   * of the decision variables.
+   */
+  void AddConstraint(std::shared_ptr<LorentzConeConstraint> con, const VariableListRef& vars);
+
+  /**
+   * Adds Lorentz cone constraint referencing potentially a subset
+   * of the decision variables.
+   */
+  void AddConstraint(std::shared_ptr<LorentzConeConstraint> con, const Eigen::Ref<const DecisionVariableVectorX>& vars);
+
+  /**
    * Adds Lorentz cone constraint referencing potentially a subset of the
    * decision variables (defined in the vars parameter).
    * The linear expression @f$ z=Ax+b @f$ is in the Lorentz cone.
    * A vector \f$ z \in\mathbb{R}^n \f$ is in the Lorentz cone, if
    * <!--
-   * z(0) >= sqrt{z(1)^2 + ... + z(n-1)^2}
+   * z(0) >= sqrt{z(1)² + ... + z(n-1)²}
    * -->
    * @f[
    * z_0 \ge \sqrt{z_1^2 + ... + z_{n-1}^2}
@@ -1209,7 +1287,7 @@ class MathematicalProgram {
    * The linear expression @f$ z=Ax+b @f$ is in the Lorentz cone.
    * A vector \f$ z \in\mathbb{R}^n \f$ is in the Lorentz cone, if
    * <!--
-   * z(0) >= sqrt{z(1)^2 + ... + z(n-1)^2}
+   * z(0) >= sqrt{z(1)² + ... + z(n-1)²}
    * -->
    * @f[
    * z_0 \ge \sqrt{z_1^2 + ... + z_{n-1}^2}
@@ -1232,7 +1310,7 @@ class MathematicalProgram {
    * The linear expression @f$ z=Ax+b @f$ is in the Lorentz cone.
    * A vector \f$ z \in\mathbb{R}^n \f$ is in the Lorentz cone, if
    * <!--
-   * z(0) >= sqrt{z(1)^2 + ... + z(n-1)^2}
+   * z(0) >= sqrt{z(1)² + ... + z(n-1)²}
    * -->
    * @f[
    * z_0 \ge \sqrt{z_1^2 + ... + z_{n-1}^2}
@@ -1253,7 +1331,7 @@ class MathematicalProgram {
    * x_0 \ge \sqrt{x_1^2 + .. + x_{m-1}^2}
    * @f]
    * <!-->
-   * x(0) >= sqrt(x(1)^2 + ... + x(m-1)^2)
+   * x(0) >= sqrt(x(1)² + ... + x(m-1)²)
    * <-->
    * @param vars The stacked column of vars should lie within the Lorentz cone.
    * @return The newly added Lorentz cone constraint.
@@ -1267,7 +1345,7 @@ class MathematicalProgram {
    * x_0 \ge \sqrt{x_1^2 + .. + x_{m-1}^2}
    * @f]
    * <!-->
-   * x(0) >= sqrt(x(1)^2 + ... + x(m-1)^2)
+   * x(0) >= sqrt(x(1)² + ... + x(m-1)²)
    * <-->
    * @param vars The stacked column of vars should lie within the Lorentz cone.
    * @return The newly added Lorentz cone constraint.
@@ -1288,16 +1366,29 @@ class MathematicalProgram {
    * Lorentz cone.
    * A vector \f$ z \in\mathbb{R}^n \f$ is in the rotated Lorentz cone, if
    * <!--
-   * z(0)*z(1) >= z(2)^2 + ... + z(n-1)^2
+   * z(0)*z(1) >= z(2)² + ... + z(n-1)²
    * -->
    * @f[
    * z_0z_1 \ge z_2^2 + ... + z_{n-1}^2
    * @f]
-   * @param con A pointer to a RotatedLorentzConeConstraint object.
-   * @param vars The decision variables on which the constraint is imposed.
+   */
+  void AddConstraint(const Binding<RotatedLorentzConeConstraint>& binding);
+
+  /**
+   * Adds a rotated Lorentz cone constraint referencing potentially a subset
+   * of decision variables. The linear expression @f$ z=Ax+b @f$ is in rotated
+   * Lorentz cone.
    */
   void AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con,
                      const VariableListRef& vars);
+
+  /**
+   * Adds a rotated Lorentz cone constraint referencing potentially a subset
+   * of decision variables. The linear expression @f$ z=Ax+b @f$ is in rotated
+   * Lorentz cone.
+   */
+  void AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con,
+                     const Eigen::Ref<const DecisionVariableVectorX>& vars);
 
   /**
    * Adds a rotated Lorentz cone constraint referencing potentially a subset
@@ -1305,34 +1396,45 @@ class MathematicalProgram {
    * Lorentz cone.
    * A vector \f$ z \in\mathbb{R}^n \f$ is in the rotated Lorentz cone, if
    * <!--
-   * z(0)*z(1) >= z(2)^2 + ... + z(n-1)^2
+   * z(0)*z(1) >= z(2)² + ... + z(n-1)²
    * -->
    * @f[
    * z_0z_1 \ge z_2^2 + ... + z_{n-1}^2
    * @f]
    * where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^n@f$ are given
    * matrices.
-   *
-   * you can call
-   * @code{.cc}
-   *   auto x = prog.NewContinuousVariables(n,'x');
-   *   auto con = prog.AddRotatedLorentzConeConstraint(A, b, {x});
-   * @endcode
-   *
    * @param A A matrix whose number of columns equals to the size of the
    * decision variables.
    * @param b A vector whose number of rows equals to the size fo the decision
    * variables.
    * @param vars The decision variables on which the constraint is imposed.
-   * Each DecisionVariableMatrix object should have only one column.
    */
   std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableListRef& vars) {
-    auto constraint = std::make_shared<RotatedLorentzConeConstraint>(A, b);
-    AddConstraint(constraint, vars);
-    return constraint;
-  }
+      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableListRef& vars);
+
+  /**
+   * Adds a rotated Lorentz cone constraint referencing potentially a subset
+   * of decision variables, The linear expression @f$ z=Ax+b @f$ is in rotated
+   * Lorentz cone.
+   * A vector \f$ z \in\mathbb{R}^n \f$ is in the rotated Lorentz cone, if
+   * <!--
+   * z(0)*z(1) >= z(2)² + ... + z(n-1)²
+   * -->
+   * @f[
+   * z_0z_1 \ge z_2^2 + ... + z_{n-1}^2
+   * @f]
+   * where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^n@f$ are given
+   * matrices.
+   * @param A A matrix whose number of columns equals to the size of the
+   * decision variables.
+   * @param b A vector whose number of rows equals to the size fo the decision
+   * variables.
+   * @param vars The decision variables on which the constraint is imposed.
+   */
+  std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b, const Eigen::Ref<const DecisionVariableVectorX>& vars);
 
   /**
    * Adds a rotated Lorentz constraint to the program for all
@@ -1355,7 +1457,7 @@ class MathematicalProgram {
   std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
       const Eigen::Ref<const Eigen::VectorXd>& b) {
-    return AddRotatedLorentzConeConstraint(A, b, {decision_variables_});
+    return AddRotatedLorentzConeConstraint(A, b, decision_variables_);
   }
 
   /**
@@ -1374,6 +1476,30 @@ class MathematicalProgram {
    */
   std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
       const VariableListRef& vars);
+
+  /**
+   * Impose that a vector @f$ x\in\mathbb{R}^m @f$ is in rotated Lorentz cone.
+   * Namely
+   * @f[
+   * x_0 x_1 \ge x_2^2 + ... + x_{m-1}^2\\
+   * x_0 \ge 0, x_1 \ge 0
+   * @f]
+   * <!-->
+   * x(0)*x(1) >= x(2)^2 + ... x(m-1)^2
+   * x(0) >= 0, x(1) >= 0
+   * <-->
+   * @param vars The stacked column of vars lies in the rotated Lorentz cone.
+   * @return The newly added rotated Lorentz cone constraint.
+   */
+  template <int rows>
+  std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
+      const Eigen::MatrixBase<DecisionVariableVector<rows>>& vars) {
+    Eigen::Matrix<double, rows, rows> A(vars.rows(), vars.rows());
+    A.setIdentity();
+    Eigen::Matrix<double, rows, 1> b(vars.rows());
+    b.setZero();
+    return AddRotatedLorentzConeConstraint(A, b, vars);
+  }
 
   /**
    * Adds a linear complementarity constraints referencing a subset of
