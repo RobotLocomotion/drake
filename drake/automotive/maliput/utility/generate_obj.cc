@@ -167,7 +167,7 @@ class IndexFace {
     int normal_index{};
   };
 
-  void push_vertex(Vertex vertex) { vertices_.push_back(vertex); }
+  void push_vertex(const Vertex& vertex) { vertices_.push_back(vertex); }
 
   const std::vector<Vertex>& vertices() const { return vertices_; }
 
