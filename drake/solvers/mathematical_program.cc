@@ -206,7 +206,7 @@ void MathematicalProgram::AddConstraint(std::shared_ptr<Constraint> con,
 
 void MathematicalProgram::AddConstraint(const Binding<LinearConstraint>& binding) {
   required_capabilities_ |= kLinearConstraint;
-  DRAKE_ASSERT(binding.constraint()->A().cols() == binding.GetNumElements());
+  DRAKE_ASSERT(binding.constraint()->A().cols() == static_cast<int>(binding.GetNumElements()));
   linear_constraints_.push_back(binding);
 }
 

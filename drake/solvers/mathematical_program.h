@@ -886,15 +886,27 @@ class MathematicalProgram {
    * @param a A row vector.
    * @param lb A scalar, the lower bound.
    * @param ub A scalar, the upper bound.
-   * @param vars Each element in the container
-   * is a DecisionVariableMatrix object, which contains
-   * a matrix of decision variables.
+   * @param vars The decision variables on which to impose the linear constraint.
    */
-  template <typename DerivedA>
   std::shared_ptr<LinearConstraint> AddLinearConstraint(
-      const Eigen::MatrixBase<DerivedA>& a, double lb, double ub,
+      const Eigen::Ref<const Eigen::RowVectorXd>& a, double lb, double ub,
       const VariableListRef& vars) {
-    DRAKE_ASSERT(a.rows() == 1);
+    return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
+                               vars);
+  }
+
+  /**
+   * Adds one row of linear constraint referencing potentially a
+   * subset of the decision variables (defined in the vars parameter).
+   * lb <= a*vars <= ub
+   * @param a A row vector.
+   * @param lb A scalar, the lower bound.
+   * @param ub A scalar, the upper bound.
+   * @param vars The decision variables on which to impose the linear constraint.
+   */
+  std::shared_ptr<LinearConstraint> AddLinearConstraint(
+      const Eigen::Ref<const Eigen::RowVectorXd>& a, double lb, double ub,
+      const Eigen::Ref<const DecisionVariableVectorX>& vars) {
     return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
                                vars);
   }

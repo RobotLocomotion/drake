@@ -50,7 +50,7 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
   lower << trajectory_time_lower_bound, MatrixXd::Zero(N_ - 2, 1);
   VectorXd upper(N_ - 1);
   upper << trajectory_time_upper_bound, MatrixXd::Zero(N_ - 2, 1);
-  opt_problem_.AddLinearConstraint(a_time, lower, upper, {h_vars_});
+  opt_problem_.AddLinearConstraint(a_time, lower, upper, h_vars_);
 
   // Ensure that all h values are non-negative.
   VectorXd all_inf(N_ - 1);

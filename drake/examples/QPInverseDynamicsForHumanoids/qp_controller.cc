@@ -167,7 +167,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
                 VectorX<double>::Zero(num_basis_),
                 VectorX<double>::Constant(num_basis_,
                                           kUpperBoundForContactBasis),
-                {basis_})
+                basis_)
             .get();
     ineq_contact_wrench_->set_description("contact force basis ineq");
   } else {
