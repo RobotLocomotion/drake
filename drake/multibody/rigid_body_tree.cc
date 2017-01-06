@@ -362,7 +362,7 @@ void RigidBodyTree<T>::CompileCollisionState() {
       // No body can ignore collision filter groups without belonging to one.
       DrakeCollision::bitmask ignore =
           collision_group_manager_.get_ignore_mask(*body);
-      body->setCollisionFilter(group, ignore);
+      body->set_collision_filter(group, ignore);
     }
   }
   collision_group_manager_.Clear();
@@ -370,8 +370,9 @@ void RigidBodyTree<T>::CompileCollisionState() {
     RigidBody<T>* body = pair.first;
     BodyCollisions& elements = pair.second;
     for (const auto& collision_item : elements) {
-      element_order_[collision_item.element]->setCollisionFilter(
-          body->getCollisionFilterGroup(), body->getCollisionFilterIgnores());
+      element_order_[collision_item.element]->set_collision_filter(
+          body->get_collision_filter_group(),
+          body->get_collision_filter_ignores());
     }
   }
 

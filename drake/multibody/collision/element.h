@@ -130,15 +130,10 @@ class Element : public DrakeShapes::Element {
   /** Sets the `RigidBody` this collision element is attached to. **/
   void set_body(const RigidBody<double> *body);
 
-  /** Sets the collision filter state of the element. */
-  void setCollisionFilter(const DrakeCollision::bitmask& group,
-                          const DrakeCollision::bitmask& ignores);
-
-  /** Sets the groups that this element belongs to. */
-  void setCollisionFilterGroup(const DrakeCollision::bitmask& group);
-
-  /** Sets the groups that this element ignores. */
-  void setCollisionFilterIgnores(const DrakeCollision::bitmask& ignores);
+  /** Sets the collision filter state of the element: the groups to which this
+   * element belongs and the groups that it should ignore. */
+  void set_collision_filter(const DrakeCollision::bitmask &group,
+                            const DrakeCollision::bitmask &ignores);
 
   /**
    * A toString method for this class.

@@ -100,18 +100,9 @@ const std::vector<int>& Element::collision_cliques() const {
   return collision_cliques_;
 }
 
-void Element::setCollisionFilter(const DrakeCollision::bitmask& group,
-                                 const DrakeCollision::bitmask& ignores) {
-  setCollisionFilterGroup(group);
-  setCollisionFilterIgnores(ignores);
-}
-
-void Element::setCollisionFilterGroup(const DrakeCollision::bitmask& group) {
+void Element::set_collision_filter(const DrakeCollision::bitmask &group,
+                                   const DrakeCollision::bitmask &ignores) {
   collision_filter_group_ = group;
-}
-
-void Element::setCollisionFilterIgnores(
-    const DrakeCollision::bitmask& ignores) {
   collision_filter_ignores_ = ignores;
 }
 

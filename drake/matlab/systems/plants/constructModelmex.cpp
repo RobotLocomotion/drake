@@ -311,7 +311,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
           mask.set(j);
         }
       }
-      b->setCollisionFilter(group, mask);
+      b->set_collision_filter(group, mask);
     }
 
     model->bodies.push_back(std::move(b));

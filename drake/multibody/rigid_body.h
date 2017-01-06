@@ -274,22 +274,24 @@ class RigidBody {
    */
   Eigen::Isometry3d ComputeWorldFixedPose() const;
 
-  void setCollisionFilter(const DrakeCollision::bitmask& group,
-                          const DrakeCollision::bitmask& ignores);
+  void set_collision_filter(const DrakeCollision::bitmask &group,
+                            const DrakeCollision::bitmask &ignores);
 
-  const DrakeCollision::bitmask& getCollisionFilterGroup() const;
+  const DrakeCollision::bitmask& get_collision_filter_group() const;
 
-  void setCollisionFilterGroup(const DrakeCollision::bitmask& group);
+  void set_collision_filter_group(const DrakeCollision::bitmask &group);
 
-  const DrakeCollision::bitmask& getCollisionFilterIgnores() const;
+  const DrakeCollision::bitmask& get_collision_filter_ignores() const;
 
-  void setCollisionFilterIgnores(const DrakeCollision::bitmask& ignores);
+  void set_collision_filter_ignores(const DrakeCollision::bitmask &ignores);
 
-  void addToCollisionFilterGroup(const DrakeCollision::bitmask& group);
+  // TODO(SeanCurtis-TRI): Consider deleting these three methods.
+  void add_to_collision_filter_group(const DrakeCollision::bitmask& group);
 
-  void ignoreCollisionFilterGroup(const DrakeCollision::bitmask& group);
+  void ignore_collision_filter_group(const DrakeCollision::bitmask& group);
 
-  void collideWithCollisionFilterGroup(const DrakeCollision::bitmask& group);
+  void collides_with_collision_filter_groups(
+      const DrakeCollision::bitmask& group);
 
   // TODO(amcastro-tri): Change to is_adjacent_to().
   // TODO(SeanCurtis-TRI): This method is only used by the collision clique
