@@ -737,7 +737,7 @@ GTEST_TEST(testMathematicalProgram, simpleLCP) {
 
   auto x = prog.NewContinuousVariables<2>();
 
-  prog.AddLinearComplementarityConstraint(M, q, {x});
+  prog.AddLinearComplementarityConstraint(M, q, x);
   EXPECT_NO_THROW(prog.Solve());
   const auto& x_value = prog.GetSolution(x);
   EXPECT_TRUE(CompareMatrices(x_value, Vector2d(16, 0), 1e-4,
@@ -761,8 +761,8 @@ GTEST_TEST(testMathematicalProgram, multiLCP) {
   auto x = prog.NewContinuousVariables<2>();
   auto y = prog.NewContinuousVariables<2>();
 
-  prog.AddLinearComplementarityConstraint(M, q, {x});
-  prog.AddLinearComplementarityConstraint(M, q, {y});
+  prog.AddLinearComplementarityConstraint(M, q, x);
+  prog.AddLinearComplementarityConstraint(M, q, y);
   EXPECT_NO_THROW(prog.Solve());
   const auto& x_value = prog.GetSolution(x);
   const auto& y_value = prog.GetSolution(y);

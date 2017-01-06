@@ -402,6 +402,53 @@ std::shared_ptr<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstr
                                   Eigen::VectorXd::Constant(var_dim, ub),
                                   vars);
 }
+
+void MathematicalProgram::AddConstraint(const Binding<LinearComplementarityConstraint>& binding) {
+  required_capabilities_ |= kLinearComplementarityConstraint;
+
+  // Linear Complementarity Constraint cannot currently coexist with any
+  // other types of constraint or cost.
+  // (TODO(ggould-tri) relax this to non-overlapping bindings, possibly by
+  // calling multiple solvers.)
+  DRAKE_ASSERT(generic_constraints_.empty());
+  DRAKE_ASSERT(generic_costs_.empty());
+  DRAKE_ASSERT(quadratic_costs_.empty());
+  DRAKE_ASSERT(linear_costs_.empty());
+  DRAKE_ASSERT(linear_constraints_.empty());
+  DRAKE_ASSERT(linear_equality_constraints_.empty());
+  DRAKE_ASSERT(bbox_constraints_.empty());
+  DRAKE_ASSERT(lorentz_cone_constraint_.empty());
+  DRAKE_ASSERT(rotated_lorentz_cone_constraint_.empty());
+
+  linear_complementarity_constraints_.push_back(binding);
+}
+
+void MathematicalProgram::AddConstraint(std::shared_ptr<LinearComplementarityConstraint> con, const VariableListRef& vars) {
+  AddConstraint(Binding<LinearComplementarityConstraint>(con, vars));
+}
+
+void MathematicalProgram::AddConstraint(std::shared_ptr<LinearComplementarityConstraint> con, const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  AddConstraint(Binding<LinearComplementarityConstraint>(con, vars));
+}
+
+std::shared_ptr<LinearComplementarityConstraint>
+MathematicalProgram::AddLinearComplementarityConstraint(const Eigen::Ref<const Eigen::MatrixXd>& M,
+                                   const Eigen::Ref<const Eigen::VectorXd>& q,
+                                   const VariableListRef& vars) {
+  std::shared_ptr<LinearComplementarityConstraint> constraint = std::make_shared<LinearComplementarityConstraint>(M, q);
+  AddConstraint(constraint, vars);
+  return constraint;
+}
+
+std::shared_ptr<LinearComplementarityConstraint>
+MathematicalProgram::AddLinearComplementarityConstraint(const Eigen::Ref<const Eigen::MatrixXd>& M,
+                                                        const Eigen::Ref<const Eigen::VectorXd>& q,
+                                                        const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  std::shared_ptr<LinearComplementarityConstraint> constraint = std::make_shared<LinearComplementarityConstraint>(M, q);
+  AddConstraint(constraint, vars);
+  return constraint;
+}
+
 std::shared_ptr<Constraint> MathematicalProgram::AddPolynomialConstraint(
     const VectorXPoly& polynomials,
     const std::vector<Polynomiald::VarType>& poly_vars,

@@ -1505,42 +1505,46 @@ class MathematicalProgram {
    * Adds a linear complementarity constraints referencing a subset of
    * the decision variables.
    */
-  template <typename DerivedM, typename Derivedq>
+  void AddConstraint(const Binding<LinearComplementarityConstraint>& binding);
+
+  /**
+   * Adds a linear complementarity constraints referencing a subset of
+   * the decision variables.
+   */
+  void AddConstraint(std::shared_ptr<LinearComplementarityConstraint> con, const VariableListRef& vars);
+
+  /**
+   * Adds a linear complementarity constraints referencing a subset of
+   * the decision variables.
+   */
+  void AddConstraint(std::shared_ptr<LinearComplementarityConstraint> con, const Eigen::Ref<const DecisionVariableVectorX>& vars);
+
+  /**
+   * Adds a linear complementarity constraints referencing a subset of
+   * the decision variables.
+   */
   std::shared_ptr<LinearComplementarityConstraint>
-  AddLinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
-                                     const Eigen::MatrixBase<Derivedq>& q,
-                                     const VariableListRef& vars) {
-    required_capabilities_ |= kLinearComplementarityConstraint;
+  AddLinearComplementarityConstraint(const Eigen::Ref<const Eigen::MatrixXd>& M,
+                                     const Eigen::Ref<const Eigen::VectorXd>& q,
+                                     const VariableListRef& vars);
 
-    // Linear Complementarity Constraint cannot currently coexist with any
-    // other types of constraint or cost.
-    // (TODO(ggould-tri) relax this to non-overlapping bindings, possibly by
-    // calling multiple solvers.)
-    DRAKE_ASSERT(generic_constraints_.empty());
-    DRAKE_ASSERT(generic_costs_.empty());
-    DRAKE_ASSERT(quadratic_costs_.empty());
-    DRAKE_ASSERT(linear_costs_.empty());
-    DRAKE_ASSERT(linear_constraints_.empty());
-    DRAKE_ASSERT(linear_equality_constraints_.empty());
-    DRAKE_ASSERT(bbox_constraints_.empty());
-    DRAKE_ASSERT(lorentz_cone_constraint_.empty());
-    DRAKE_ASSERT(rotated_lorentz_cone_constraint_.empty());
-
-    auto constraint = std::make_shared<LinearComplementarityConstraint>(M, q);
-    linear_complementarity_constraints_.push_back(
-        Binding<LinearComplementarityConstraint>(constraint, vars));
-    return constraint;
-  }
+  /**
+   * Adds a linear complementarity constraints referencing a subset of
+   * the decision variables.
+   */
+  std::shared_ptr<LinearComplementarityConstraint>
+  AddLinearComplementarityConstraint(const Eigen::Ref<const Eigen::MatrixXd>& M,
+                                     const Eigen::Ref<const Eigen::VectorXd>& q,
+                                     const Eigen::Ref<const DecisionVariableVectorX>& vars);
 
   /**
    * Adds a linear complementarity constraint to the program for all
    * (currently existing) variables.
    */
-  template <typename DerivedM, typename Derivedq>
   std::shared_ptr<LinearComplementarityConstraint>
-  AddLinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
-                                     const Eigen::MatrixBase<Derivedq>& q) {
-    return AddLinearComplementarityConstraint(M, q, {decision_variables_});
+  AddLinearComplementarityConstraint(const Eigen::Ref<const Eigen::MatrixXd>& M,
+                                     const Eigen::Ref<const Eigen::VectorXd>& q) {
+    return AddLinearComplementarityConstraint(M, q, decision_variables_);
   }
 
   /**
