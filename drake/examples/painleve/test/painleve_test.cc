@@ -45,11 +45,34 @@ class PainleveTest : public ::testing::Test {
     v[5] = 0.0;
   }
 
+  // Sets the rod to an arbitrary initially impacting state.
+  void SetImpactingState() {
+    const double half_len = dut_->get_rod_length() / 2;
+    const double r22 = std::sqrt(2) / 2;
+    systems::ContinuousState<double>& v =
+        *context_->get_mutable_continuous_state();
+
+    // This configuration is symmetric to the default Painleve configuration.
+    v[0] = -half_len * r22;
+    v[1] = half_len * r22;
+    v[2] = 3 * M_PI / 4.0;
+    v[3] = 1.0;
+    v[4] = -1.0;
+    v[5] = 0.0;
+  }
+
   std::unique_ptr<Painleve<double>> dut_;  //< The device under test.
   std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
   std::unique_ptr<systems::ContinuousState<double>> derivatives_;
 };
+
+/// Verifies that setting dut to an impacting state actually results in an
+/// impacting state.
+TEST_F(PainleveTest, ImpactingState) {
+  SetImpactingState();
+  EXPECT_TRUE(dut_->IsImpacting(*context_));
+}
 
 /// Tests parameter getting and setting.
 TEST_F(PainleveTest, Parameters) {
@@ -103,8 +126,7 @@ TEST_F(PainleveTest, InfFrictionImpactThenNoImpact) {
       CreateNewContinuousState();
 
   // Cause the initial state to be impacting.
-  (*context_->get_mutable_continuous_state())[4] = -1.0;
-  EXPECT_TRUE(dut_->IsImpacting(*context_));
+  SetImpactingState();
 
   // Set the coefficient of friction to infinite. This forces the Painleve code
   // to go through the first impact path.
@@ -125,21 +147,16 @@ TEST_F(PainleveTest, InfFrictionImpactThenNoImpact) {
 
 /// Verify that impacting configuration results in non-impacting configuration.
 TEST_F(PainleveTest, NoFrictionImpactThenNoImpact) {
-  // Setup writable state.
-  std::unique_ptr<systems::ContinuousState<double>> new_cstate =
-      CreateNewContinuousState();
-
   // Set the initial state to be impacting.
-  systems::ContinuousState<double>& v =
-      *context_->get_mutable_continuous_state();
-  v[4] = -1.0;
-  EXPECT_TRUE(dut_->IsImpacting(*context_));
+  SetImpactingState();
 
   // Set the coefficient of friction to zero. This forces the Painleve code
   // to go through the second impact path.
   dut_->set_mu_coulomb(0.0);
 
   // Handle the impact and copy the result to the context.
+  std::unique_ptr<systems::ContinuousState<double>> new_cstate =
+      CreateNewContinuousState();
   dut_->HandleImpact(*context_, new_cstate.get());
   context_->get_mutable_continuous_state()->SetFrom(*new_cstate);
   EXPECT_FALSE(dut_->IsImpacting(*context_));
@@ -241,8 +258,7 @@ TEST_F(PainleveTest, InfFrictionImpactThenNoImpact2) {
       CreateNewContinuousState();
 
   // Cause the initial state to be impacting.
-  (*context_->get_mutable_continuous_state())[4] = -1.0;
-  EXPECT_TRUE(dut_->IsImpacting(*context_));
+  SetImpactingState();
 
   // Set the coefficient of friction to infinite. This forces the Painleve code
   // to go through the first impact path.
@@ -272,8 +288,7 @@ TEST_F(PainleveTest, NoFrictionImpactThenNoImpact2) {
       CreateNewContinuousState();
 
   // Cause the initial state to be impacting.
-  (*context_->get_mutable_continuous_state())[4] = -1.0;
-  EXPECT_TRUE(dut_->IsImpacting(*context_));
+  SetImpactingState();
 
   // Set the coefficient of friction to zero. This forces the Painleve code
   // to go through the second impact path.
