@@ -100,7 +100,7 @@ class Painleve : public systems::LeafSystem<T> {
   Vector2<T> CalcStickingContactForces(
       const systems::Context<T>& context) const;
 
-    double mass_{1.0};        // The mass of the rod.
+  double mass_{1.0};        // The mass of the rod.
   double rod_length_{1.0};  // The length of the rod.
   double mu_{1000.0};       // The coefficient of friction.
   double g_{-9.81};         // The acceleration due to gravity.

@@ -640,10 +640,10 @@ void Painleve<T>::DoCalcTimeDerivatives(
         const int sgn_xcdot = (xcdot > 0) ? 1 : -1;
         const double g = get_gravitational_acceleration();
         const double ell = rod_length_;
-        T fN = (2 * mass *
-                (-2 * g * J + ell * J * k * stheta * thetadot * thetadot)) /
-               (4 * J + ell * ell * k * k * mass * ctheta * ctheta +
-                ell * ell * k * k * mass * mu * ctheta * sgn_xcdot * stheta);
+        const T fN = (2 * mass *
+                   (-2 * g * J + ell * J * k * stheta * thetadot * thetadot)) /
+                  (4 * J + ell * ell * k * k * mass * ctheta * ctheta +
+                   ell * ell * k * k * mass * mu * ctheta * sgn_xcdot * stheta);
 
         // Check for inconsistent configuration.
         if (fN < 0)
