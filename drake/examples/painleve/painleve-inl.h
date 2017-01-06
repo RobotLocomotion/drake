@@ -433,6 +433,9 @@ void Painleve<T>::DoCalcTimeDerivativesOneContactNoSliding(
   // Constrain F such that it lies on the edge of the friction cone.
   const double mu = get_mu_coulomb();
   if (abs(fF) > mu * fN) {
+    // TODO(edrumwri): Test this once inputs have been added to the system
+    //                 in a future PR.
+
     // Set named Mathematica constants.
     const double mass = get_rod_mass();
     const double ell = get_rod_length();
