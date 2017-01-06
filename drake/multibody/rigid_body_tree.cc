@@ -353,6 +353,28 @@ void RigidBodyTree<T>::CompileCollisionState() {
     }
   }
 
+  // Process collision filter groups
+  collision_group_manager_.CompileGroups();
+  for (auto& body : bodies) {
+    DrakeCollision::bitmask group =
+        collision_group_manager_.get_group_mask(*body);
+    if (group.any()) {
+      // No body can ignore collision filter groups without belonging to one.
+      DrakeCollision::bitmask ignore =
+          collision_group_manager_.get_ignore_mask(*body);
+      body->setCollisionFilter(group, ignore);
+    }
+  }
+  collision_group_manager_.Clear();
+  for (auto& pair : body_collision_map_) {
+    RigidBody<T>* body = pair.first;
+    BodyCollisions& elements = pair.second;
+    for (const auto& collision_item : elements) {
+      element_order_[collision_item.element]->setCollisionFilter(
+          body->getCollisionFilterGroup(), body->getCollisionFilterIgnores());
+    }
+  }
+
   // Builds cliques for collision filtering.
   CreateCollisionCliques();
 

@@ -42,12 +42,21 @@ class CollisionFilterGroup {
    @param name          The name for the collision filter group.
    @param model_id      The identifier of the model with which this group is
                         associated.
+   @param id            The bit id for this collision filter group.
    */
-  CollisionFilterGroup(const std::string& name, int model_id);
+  CollisionFilterGroup(const std::string& name, int model_id, int id);
 
   int get_model_id() const { return model_id_; }
 
+  int get_mask_id() const { return mask_id_; }
+
   void add_body(RigidBody<T>* body) { bodies_.push_back(body); }
+
+  std::vector<RigidBody<T>*> get_bodies() { return bodies_; }
+
+  const std::vector<std::string>& get_ignore_groups() const {
+    return ignore_groups_;
+  }
 
   void add_ignore_group(const std::string& group_name) {
     ignore_groups_.push_back(group_name);
@@ -56,6 +65,7 @@ class CollisionFilterGroup {
  private:
   std::string name_{};
   int model_id_{};
+  int mask_id_{};
   std::vector<RigidBody<T>*> bodies_{};
   std::vector<std::string> ignore_groups_{};
 };
@@ -71,6 +81,11 @@ class CollisionFilterGroupManager {
  public:
   /** Default constructor. */
   CollisionFilterGroupManager() {}
+
+  /** Based on the current specification, builds the appropriate collision
+   filter bitmasks and assigns them to the specified rigid bodies.
+   */
+  void CompileGroups();
 
   /**
    Attempts to define a new collision filter group.  The given name *must*
@@ -107,15 +122,53 @@ class CollisionFilterGroupManager {
 
   /**
    Reports the model instance id associated with the given group name.  If the
-   group is undefined, a negative number is returned.
+   group is undefined, a negative number is returned.  Note: unlike the other
+   methods in this class, this returns an error code instead of throwing an
+   exception; that is so the caller can provide an intelligent message for
+   failure based on information not available to this invocation.
    @param group_name    The name of the collision filter group.
    @returns             The named group's model instance id.
    */
   int GetGroupModelInstanceId(const std::string& group_name);
 
+  /**
+   Returns the group membership bitmask for the given @p body.  If there is
+   no information for this body, the zero bitmask will be returned.
+   */
+  bitmask get_group_mask(const RigidBody<T>& body);
+
+  /**
+   Returns the ignored group bitmask for the given @p body.  If there is
+   no information for this body, the zero bitmask will be returned.
+   */
+  bitmask get_ignore_mask(const RigidBody<T>& body);
+
+  /**
+   Clears the cached collision filter group specification data.  It does *not*
+   reset the counter for available collision filter groups.  This allows the
+   accumulation of unique collision filter groups for a single instance of
+   the manager.
+   */
+   void Clear();
+
  private:
+  /**
+   Acquires the next available collision filter group id.  If no id is
+   available, an exception is thrown.
+   @returns    The next available id.
+   */
+  int acquire_next_group_id();
+
+  // The next available collision filter group identifier.
+  int next_id_{0};
+
   // Map between group names and specification of its collision filter group.
   std::unordered_map<std::string, DrakeCollision::CollisionFilterGroup<T>>
       collision_filter_groups_{};
+
+  // Mappings between a RigidBody and the bitmasks that define its group
+  // membership and the groups it ignores.  This is populated during
+  // CompileGroups.  The pair is: (group mask, ignore mask).
+  std::unordered_map<const RigidBody<T>*, std::pair<bitmask, bitmask>> body_groups_;
 };
 }  // namespace DrakeCollision
