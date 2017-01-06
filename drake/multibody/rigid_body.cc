@@ -106,13 +106,6 @@ void RigidBody<T>::AddVisualElement(const DrakeShapes::VisualElement& element) {
 }
 
 template <typename T>
-void RigidBody<T>::AddCollisionElementsToClique(int clique_id) {
-  for (const auto& element : collision_elements_) {
-    element->AddToCollisionClique(clique_id);
-  }
-}
-
-template <typename T>
 const DrakeShapes::VectorOfVisualElements& RigidBody<T>::get_visual_elements()
     const {
   return visual_elements_;
@@ -149,6 +142,47 @@ template <typename T>
 std::map<std::string, std::vector<DrakeCollision::ElementId>>&
     RigidBody<T>::get_mutable_group_to_collision_ids_map() {
   return collision_element_groups_;
+}
+
+template <typename T>
+bool RigidBody<T>::IsRigidlyFixedToWorld() const {
+  if (parent_ == nullptr) {
+    // We assume that the world frame is the root of the tree, and, as such, the
+    // first body in the vector of bodies.  The body_index_ member is defined
+    // to be that position in the vector.
+    if (body_index_ != 0) {
+      throw std::runtime_error(
+          "Found a rigid body without a parent that is "
+          "not the world frame: " +
+          name_);
+    }
+    return true;
+  }
+  if (joint_ == nullptr) {
+    throw std::runtime_error("Found a rigid body without a parent joint:  " +
+                              name_);
+  }
+  if (joint_->is_fixed()) return parent_->IsRigidlyFixedToWorld();
+  return false;
+}
+
+template <typename T>
+Isometry3d RigidBody<T>::ComputeWorldFixedPose() const {
+  if (parent_ == nullptr) {
+    return Isometry3d::Identity();
+  }
+
+  // RigidBodyTree::compile should enforce this property.
+  DRAKE_ASSERT(joint_ != nullptr);
+
+  if (!joint_->is_fixed()) {
+    throw std::runtime_error(
+        "Trying to compute world pose for a body with a "
+        "non-fixed parent joint:  " +
+        name_);
+  }
+  return parent_->ComputeWorldFixedPose() *
+         joint_->get_transform_to_parent_body();
 }
 
 template <typename T>
@@ -312,15 +346,6 @@ ostream& operator<<(ostream& out, const RigidBody<double>& b) {
       << "  - Collision elements IDs: " << collision_element_str.str();
 
   return out;
-}
-
-template <typename T>
-bool RigidBody<T>::SetSelfCollisionClique(int clique_id) {
-  if (collision_elements_.size() > 1) {
-    AddCollisionElementsToClique(clique_id);
-    return true;
-  }
-  return false;
 }
 
 // Explicitly instantiates on the most common scalar types.

@@ -42,7 +42,6 @@ drake_add_matlab_test(NAME systems/plants/test/testCOM OPTIONAL bullet COMMAND t
 drake_add_matlab_test(NAME systems/plants/test/testCenterOfMassJacobianDotTimesV OPTIONAL bullet COMMAND testCenterOfMassJacobianDotTimesV)
 drake_add_matlab_test(NAME systems/plants/test/testCentroidalMomentumMatrix OPTIONAL bullet COMMAND testCentroidalMomentumMatrix)
 drake_add_matlab_test(NAME systems/plants/test/testCentroidalMomentumMatrixDotTimesV OPTIONAL bullet COMMAND testCentroidalMomentumMatrixDotTimesV)
-drake_add_matlab_test(NAME systems/plants/test/testCollisionDetectFromPoints REQUIRES bullet snopt OPTIONAL gurobi COMMAND testCollisionDetectFromPoints)
 drake_add_matlab_test(NAME systems/plants/test/testCollisionFilterGroups OPTIONAL bullet COMMAND testCollisionFilterGroups)
 drake_add_matlab_test(NAME systems/plants/test/testContactConstraintsMex REQUIRES bullet COMMAND testContactConstraintsMex)
 drake_add_matlab_test(NAME systems/plants/test/testFindAncestorBodies OPTIONAL bullet COMMAND testFindAncestorBodies)
