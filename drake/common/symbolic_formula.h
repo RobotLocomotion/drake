@@ -123,6 +123,9 @@ class Formula {
   static Formula True();
   static Formula False();
 
+  /** Conversion to bool. */
+  explicit operator bool() const { return Evaluate(); }
+
   friend Formula operator&&(const Formula& f1, const Formula& f2);
   friend Formula operator||(const Formula& f1, const Formula& f2);
   friend Formula operator!(const Formula& f);
