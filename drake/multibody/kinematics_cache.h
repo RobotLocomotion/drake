@@ -104,7 +104,7 @@ class KinematicsCache {
   /// Eigen::AutoDiffScalar.
   ///
   /// For examples on how to create and use the KinematicsCache, see
-  /// rigid_body_tree_inverse_dynamics_test.cc.
+  /// rigid_body_tree_dynamics_test.cc and rigid_body_tree_kinematics_test.cc.
   ///
   /// @param num_positions Total number of positions in the RigidBodyTree.
   /// @param num_velocities Total number of velocities in the RigidBodyTree.
