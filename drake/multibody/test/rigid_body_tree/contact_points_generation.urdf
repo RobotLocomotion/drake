@@ -54,7 +54,7 @@
       <!-- This should *not* generate a contact points. -->
       <origin xyz="0 0 5" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="/tet.obj"/>
+        <mesh filename="tet.obj"/>
       </geometry>
 
     </collision>
