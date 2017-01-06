@@ -16,7 +16,7 @@ namespace {
 class RigidBodyTreeKinematicsTests : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    tree_.reset(new RigidBodyTree<double>());
+    tree_ = make_unique<RigidBodyTree<double>();
   }
 
   std::unique_ptr<RigidBodyTree<double>> tree_;

@@ -951,7 +951,7 @@ template <typename Scalar>
 void RigidBodyTree<T>::CheckCacheValidity(
     const KinematicsCache<Scalar>& cache) const {
   if (cache.get_num_cache_elements() != static_cast<int>(bodies.size())) {
-    throw std::runtime_error("RigidBodyTree: CheckCacheValidity: Number of "
+    throw std::runtime_error("RigidBodyTree::CheckCacheValidity: Number of "
         "cache elements (" + std::to_string(cache.get_num_cache_elements())
         + ") does not equal the number of bodies in the RigidBodyTree (" +
         std::to_string(bodies.size()) + ")");
@@ -964,7 +964,7 @@ void RigidBodyTree<T>::CheckCacheValidity(
           cache.get_element(i);
       if (cache_element.get_num_positions() != joint.get_num_positions() ||
           cache_element.get_num_velocities() != joint.get_num_velocities()) {
-        throw std::runtime_error("RigidBodyTree: CheckCacheValidity: Cache "
+        throw std::runtime_error("RigidBodyTree::CheckCacheValidity: Cache "
             "element " + std::to_string(i) + " for joint " + joint.get_name() +
             " has incorrect number of joint positions or velocities.\n" +
             "  - num positions: cache has " +
