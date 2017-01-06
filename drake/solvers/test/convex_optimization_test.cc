@@ -619,8 +619,8 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
         Eigen::MatrixXd::Identity(R2.cols(), R1.cols());
     b_lorentz3 << 1, Eigen::VectorXd::Zero(R1.cols());
     b_lorentz4 << 1, Eigen::VectorXd::Zero(R2.cols());
-    prog_intersect.AddLorentzConeConstraint(A_lorentz3, b_lorentz3, {u1});
-    prog_intersect.AddLorentzConeConstraint(A_lorentz4, b_lorentz4, {u2});
+    prog_intersect.AddLorentzConeConstraint(A_lorentz3, b_lorentz3, u1);
+    prog_intersect.AddLorentzConeConstraint(A_lorentz4, b_lorentz4, u2);
 
     // Add constraint y = x1 + R1*u1
     //                y = x2 + R2*u2

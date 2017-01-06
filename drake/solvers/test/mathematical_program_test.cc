@@ -155,6 +155,15 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
   auto constraint4 = prog.AddBoundingBoxConstraint(Eigen::Vector4d::Zero(),
                                                    Eigen::Vector4d::Ones());
 
+  // Check the bound variables are correct.
+  for (const auto& binding : prog.bounding_box_constraints()) {
+    EXPECT_EQ(binding.GetNumElements(), 4);
+    DecisionVariableVector<4> x_expected;
+    x_expected << x1(0, 0), x1(1, 0), x1(0, 1), x1(1, 1);
+    for (int i = 0; i < 4; ++i) {
+      EXPECT_EQ(binding.variables()(i), x_expected(i));
+    }
+  }
   EXPECT_TRUE(
       CompareMatrices(constraint1->lower_bound(), constraint2->lower_bound()));
   EXPECT_TRUE(
