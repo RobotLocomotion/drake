@@ -399,6 +399,7 @@ template <class T>
 void Painleve<T>::DoCalcTimeDerivativesOneContactNoSliding(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
+  using std::abs;
 
   // Obtain the structure we need to write into.
   DRAKE_ASSERT(derivatives != nullptr);
@@ -442,13 +443,13 @@ void Painleve<T>::DoCalcTimeDerivativesOneContactNoSliding(
     // with the frictional force pointing either possible direction
     // (positive x-axis and negative x-axis).
     auto calc_force = [=](int d) {
-      const T fN =
+      const T N =
           (2 * mass *
               (-2 * g * J + ell * J * k * stheta * thetadot * thetadot)) /
               (4 * J + ell * ell * k * k * mass * ctheta * ctheta +
                   ell * ell * k * k * mass * mu * ctheta * d * stheta);
-      const T fF = -d * mu * fN;
-      return Vector2<T>(fN, fF);
+      const T F = -d * mu * N;
+      return Vector2<T>(N, F);
     };
     Vector2<T> s1 = calc_force(+1);
     Vector2<T> s2 = calc_force(-1);
@@ -460,9 +461,9 @@ void Painleve<T>::DoCalcTimeDerivativesOneContactNoSliding(
     const T fF2 = s2(1);
 
     // Calculate candidate tangential accelerations.
-    auto calc_tan_accel = [=](int d, const T fN, const T fF) {
-      const T thetaddot = ((xc - x) * fN - (yc - y) * fF) / J;
-      return fF / mass +
+    auto calc_tan_accel = [=](int d, const T N, const T F) {
+      const T thetaddot = ((xc - x) * N - (yc - y) * F) / J;
+      return F / mass +
           ell * k * (-stheta * thetaddot - ctheta * thetadot * thetadot) / 2;
     };
 
