@@ -418,7 +418,7 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   context->FixInputPort(0, VectorXd::Zero(num_actuators));
 
   // Evaluate the time-derivatives of the state.
-  rigid_body_plant.EvalTimeDerivatives(*context, stateDt_drake.get());
+  rigid_body_plant.DoCalcTimeDerivatives(*context, stateDt_drake.get());
 
   // TODO(mitiguy) Add simulation and check numerical integrator.
 
