@@ -17,6 +17,14 @@ class PainleveTest : public ::testing::Test {
     derivatives_ = dut_->AllocateTimeDerivatives();
   }
 
+  std::unique_ptr<systems::ContinuousState<double>> CreateNewContinuousState()
+                                                                         const {
+    const int state_dim = 6;
+    auto cstate_vec = std::make_unique<systems::BasicVector<double>>(state_dim);
+    return std::make_unique<systems::ContinuousState<double>>(
+        std::move(cstate_vec), state_dim / 2, state_dim / 2, 0);
+  }
+
   systems::VectorBase<double>* continuous_state() {
     return context_->get_mutable_continuous_state_vector();
   }
@@ -80,70 +88,69 @@ TEST_F(PainleveTest, Inconsistent2) {
 // state change.
 TEST_F(PainleveTest, ImpactNoChange) {
   // Setup state.
-  const int state_dim = 6;
-  auto cstate_vec = std::make_unique<systems::BasicVector<double>>(state_dim);
-  systems::ContinuousState<double> new_cstate(std::move(cstate_vec));
-  dut_->HandleImpact(*context_, &new_cstate);
-  for (int i = 0; i < state_dim; ++i)
-    EXPECT_EQ(new_cstate[i], (*context_->get_continuous_state())[i]);
+  std::unique_ptr<systems::ContinuousState<double>> new_cstate =
+      CreateNewContinuousState();
+  EXPECT_FALSE(dut_->IsImpacting(*context_));
+  dut_->HandleImpact(*context_, new_cstate.get());
+  for (int i = 0; i < new_cstate->size(); ++i)
+    EXPECT_EQ((*new_cstate)[i], (*context_->get_continuous_state())[i]);
 }
 
 /// Verify that impacting configuration results in non-impacting configuration.
 TEST_F(PainleveTest, InfFrictionImpactThenNoImpact) {
   // Setup writable state.
-  const int state_dim = 6;
-  auto cstate_vec = std::make_unique<systems::BasicVector<double>>(state_dim);
-  systems::ContinuousState<double> new_cstate(std::move(cstate_vec),
-                                              state_dim / 2, state_dim / 2, 0);
+  std::unique_ptr<systems::ContinuousState<double>> new_cstate =
+      CreateNewContinuousState();
 
-  // Cause the initial state to be impacting
+  // Cause the initial state to be impacting.
   (*context_->get_mutable_continuous_state())[4] = -1.0;
+  EXPECT_TRUE(dut_->IsImpacting(*context_));
 
   // Set the coefficient of friction to infinite. This forces the Painleve code
   // to go through the first impact path.
   dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
 
   // Handle the impact and copy the result to the context.
-  dut_->HandleImpact(*context_, &new_cstate);
-  context_->get_mutable_continuous_state()->SetFrom(new_cstate);
+  dut_->HandleImpact(*context_, new_cstate.get());
+  context_->get_mutable_continuous_state()->SetFrom(*new_cstate);
+  EXPECT_FALSE(dut_->IsImpacting(*context_));
 
   // Do one more impact- there should now be no change.
-  dut_->HandleImpact(*context_, &new_cstate);
-
-  // Verify that there is no further change from *another* impact.
-  for (int i = 0; i < state_dim; ++i)
-    EXPECT_NEAR(new_cstate[i], (*context_->get_continuous_state())[i],
+  dut_->HandleImpact(*context_, new_cstate.get());
+  for (int i = 0; i < new_cstate->size(); ++i) {
+    EXPECT_NEAR((*new_cstate)[i], (*context_->get_continuous_state())[i],
                 std::numeric_limits<double>::epsilon());
+  }
 }
 
 /// Verify that impacting configuration results in non-impacting configuration.
 TEST_F(PainleveTest, NoFrictionImpactThenNoImpact) {
   // Setup writable state.
-  const int state_dim = 6;
-  auto cstate_vec = std::make_unique<systems::BasicVector<double>>(state_dim);
-  systems::ContinuousState<double> new_cstate(std::move(cstate_vec),
-                                              state_dim / 2, state_dim / 2, 0);
+  std::unique_ptr<systems::ContinuousState<double>> new_cstate =
+      CreateNewContinuousState();
 
-  // Set the initial state to be impacting
+  // Set the initial state to be impacting.
   systems::ContinuousState<double>& v =
       *context_->get_mutable_continuous_state();
-  v[3] = -1.0;
+  v[4] = -1.0;
+  EXPECT_TRUE(dut_->IsImpacting(*context_));
 
   // Set the coefficient of friction to zero. This forces the Painleve code
   // to go through the second impact path.
   dut_->set_mu_coulomb(0.0);
 
   // Handle the impact and copy the result to the context.
-  dut_->HandleImpact(*context_, &new_cstate);
-  context_->get_mutable_continuous_state()->SetFrom(new_cstate);
+  dut_->HandleImpact(*context_, new_cstate.get());
+  context_->get_mutable_continuous_state()->SetFrom(*new_cstate);
+  EXPECT_FALSE(dut_->IsImpacting(*context_));
 
   // Do one more impact- there should now be no change.
-  dut_->HandleImpact(*context_, &new_cstate);
-
-  // Verify that there is no further change from *another* impact.
-  for (int i = 0; i < state_dim; ++i)
-    EXPECT_NEAR(new_cstate[i], (*context_->get_continuous_state())[i],
+  // Verify that there is no further change from this second impact.
+  dut_->HandleImpact(*context_, new_cstate.get());
+  for (int i = 0; i < new_cstate->size(); ++i) {
+    EXPECT_NEAR((*new_cstate)[i], (*context_->get_continuous_state())[i],
                 std::numeric_limits<double>::epsilon());
+  }
 }
 
 // Verify that no exceptions thrown for a non-sliding configuration.
@@ -164,6 +171,9 @@ TEST_F(PainleveTest, NoSliding) {
   v[3] = 0.0;
   v[4] = 0.0;
   v[5] = 0.0;
+
+  // Verify no impact.
+  EXPECT_FALSE(dut_->IsImpacting(*context_));
 
   // No exceptions should be thrown.
   EXPECT_NO_THROW(dut_->DoCalcTimeDerivatives(*context_, derivatives_.get()));
@@ -190,6 +200,9 @@ TEST_F(PainleveTest, MultiPoint) {
   v[5] = 0.0;
   EXPECT_NO_THROW(dut_->DoCalcTimeDerivatives(*context_, derivatives_.get()));
 
+  // Verify no impact.
+  EXPECT_FALSE(dut_->IsImpacting(*context_));
+
   // This configuration has sliding velocity. It should throw an exception.
   v[0] = 0;
   v[1] = 0;
@@ -199,19 +212,24 @@ TEST_F(PainleveTest, MultiPoint) {
   v[5] = 0.0;
   EXPECT_THROW(dut_->DoCalcTimeDerivatives(*context_, derivatives_.get()),
                std::logic_error);
+
+  // Verify no impact.
+  EXPECT_FALSE(dut_->IsImpacting(*context_));
 }
 
 /// Verify that Painleve configuration does not result in a state change.
 TEST_F(PainleveTest, ImpactNoChange2) {
   SetSecondInitialConfig();
 
-  // Setup state.
-  const int state_dim = 6;
-  auto cstate_vec = std::make_unique<systems::BasicVector<double>>(state_dim);
-  systems::ContinuousState<double> new_cstate(std::move(cstate_vec));
-  dut_->HandleImpact(*context_, &new_cstate);
-  for (int i = 0; i < state_dim; ++i)
-    EXPECT_EQ(new_cstate[i], (*context_->get_continuous_state())[i]);
+  // Verify no impact.
+  EXPECT_FALSE(dut_->IsImpacting(*context_));
+
+  // Setup writable state.
+  std::unique_ptr<systems::ContinuousState<double>> new_cstate =
+      CreateNewContinuousState();
+  dut_->HandleImpact(*context_, new_cstate.get());
+  for (int i = 0; i < new_cstate->size(); ++i)
+    EXPECT_EQ((*new_cstate)[i], (*context_->get_continuous_state())[i]);
 }
 
 /// Verify that impacting configuration results in non-impacting configuration.
@@ -219,29 +237,30 @@ TEST_F(PainleveTest, InfFrictionImpactThenNoImpact2) {
   SetSecondInitialConfig();
 
   // Setup writable state.
-  const int state_dim = 6;
-  auto cstate_vec = std::make_unique<systems::BasicVector<double>>(state_dim);
-  systems::ContinuousState<double> new_cstate(std::move(cstate_vec),
-                                              state_dim / 2, state_dim / 2, 0);
+  std::unique_ptr<systems::ContinuousState<double>> new_cstate =
+      CreateNewContinuousState();
 
-  // Cause the initial state to be impacting
+  // Cause the initial state to be impacting.
   (*context_->get_mutable_continuous_state())[4] = -1.0;
+  EXPECT_TRUE(dut_->IsImpacting(*context_));
 
   // Set the coefficient of friction to infinite. This forces the Painleve code
   // to go through the first impact path.
   dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
 
   // Handle the impact and copy the result to the context.
-  dut_->HandleImpact(*context_, &new_cstate);
-  context_->get_mutable_continuous_state()->SetFrom(new_cstate);
+  dut_->HandleImpact(*context_, new_cstate.get());
+  context_->get_mutable_continuous_state()->SetFrom(*new_cstate);
+
+  // Verify the state no longer corresponds to an impact.
+  EXPECT_FALSE(dut_->IsImpacting(*context_));
 
   // Do one more impact- there should now be no change.
-  dut_->HandleImpact(*context_, &new_cstate);
-
-  // Verify that there is no further change from *another* impact.
-  for (int i = 0; i < state_dim; ++i)
-    EXPECT_NEAR(new_cstate[i], (*context_->get_continuous_state())[i],
+  dut_->HandleImpact(*context_, new_cstate.get());
+  for (int i = 0; i < new_cstate->size(); ++i) {
+    EXPECT_NEAR((*new_cstate)[i], (*context_->get_continuous_state())[i],
                 std::numeric_limits<double>::epsilon());
+  }
 }
 
 /// Verify that impacting configuration results in non-impacting configuration.
@@ -249,29 +268,28 @@ TEST_F(PainleveTest, NoFrictionImpactThenNoImpact2) {
   SetSecondInitialConfig();
 
   // Setup writable state.
-  const int state_dim = 6;
-  auto cstate_vec = std::make_unique<systems::BasicVector<double>>(state_dim);
-  systems::ContinuousState<double> new_cstate(std::move(cstate_vec),
-                                              state_dim / 2, state_dim / 2, 0);
+  std::unique_ptr<systems::ContinuousState<double>> new_cstate =
+      CreateNewContinuousState();
 
-  // Cause the initial state to be impacting
+  // Cause the initial state to be impacting.
   (*context_->get_mutable_continuous_state())[4] = -1.0;
+  EXPECT_TRUE(dut_->IsImpacting(*context_));
 
   // Set the coefficient of friction to zero. This forces the Painleve code
   // to go through the second impact path.
   dut_->set_mu_coulomb(0.0);
 
   // Handle the impact and copy the result to the context.
-  dut_->HandleImpact(*context_, &new_cstate);
-  context_->get_mutable_continuous_state()->SetFrom(new_cstate);
+  dut_->HandleImpact(*context_, new_cstate.get());
+  context_->get_mutable_continuous_state()->SetFrom(*new_cstate);
+  EXPECT_FALSE(dut_->IsImpacting(*context_));
 
   // Do one more impact- there should now be no change.
-  dut_->HandleImpact(*context_, &new_cstate);
-
-  // Verify that there is no further change from *another* impact.
-  for (int i = 0; i < state_dim; ++i)
-    EXPECT_NEAR(new_cstate[i], (*context_->get_continuous_state())[i],
+  dut_->HandleImpact(*context_, new_cstate.get());
+  for (int i = 0; i < new_cstate->size(); ++i) {
+    EXPECT_NEAR((*new_cstate)[i], (*context_->get_continuous_state())[i],
                 std::numeric_limits<double>::epsilon());
+  }
 }
 
 }  // namespace

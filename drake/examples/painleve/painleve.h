@@ -77,6 +77,9 @@ class Painleve : public systems::LeafSystem<T> {
   /// Sets the rod moment of inertia.
   void set_rod_moment_of_inertia(double J) { J_ = J; }
 
+  /// Checks whether the system is in an impacting configuration.
+  bool IsImpacting(const systems::Context<T>& context) const;
+
  protected:
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
