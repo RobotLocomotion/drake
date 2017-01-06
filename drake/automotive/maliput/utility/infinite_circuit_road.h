@@ -71,7 +71,7 @@ class InfiniteCircuitRoad : public api::RoadGeometry {
     const api::SegmentId do_id() const override;
     const api::Junction* do_junction() const override;
     int do_num_lanes() const override;
-    const api::Lane* do_lane(int index) const;
+    const api::Lane* do_lane(int index) const override;
 
     api::SegmentId id_;
     const InfiniteCircuitRoad* const road_{};

@@ -244,8 +244,8 @@ class SrhFace {
   SrhFace(const std::initializer_list<api::LanePosition> srh) : v_(srh) {
     // TODO(maddog@tri.global) Provide for explicit normals if we ever
     // consider faces which are not parallel to the road surface.
-    for (const api::LanePosition& srh : v_) {
-      DRAKE_DEMAND(srh.h == v_[0].h);
+    for (const api::LanePosition& vertex : v_) {
+      DRAKE_DEMAND(vertex.h == v_[0].h);
     }
   }
 
