@@ -173,5 +173,23 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
     }
   }
 }
+
+GTEST_TEST(TestDecisionVariable, TestVariableListRef) {
+  symbolic::Variable x1("x1");
+  symbolic::Variable x2("x2");
+  symbolic::Variable x3("x3");
+  symbolic::Variable x4("x4");
+
+  VariableListRef var_list;
+  var_list.push_back(DecisionVariableVector<2>(x3, x1));
+  var_list.push_back(DecisionVariableVector<2>(x2, x4));
+
+  DecisionVariableVectorX stacked_vars = ConcatenateVariableListRef(var_list);
+  EXPECT_EQ(stacked_vars.rows(), 4);
+  EXPECT_EQ(stacked_vars(0), x3);
+  EXPECT_EQ(stacked_vars(1), x1);
+  EXPECT_EQ(stacked_vars(2), x2);
+  EXPECT_EQ(stacked_vars(3), x4);
+}
 }  // namespace solvers
 }  // namespace drake

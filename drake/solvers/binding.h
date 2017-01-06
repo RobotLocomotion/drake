@@ -22,16 +22,7 @@ class Binding {
    */
   Binding(const std::shared_ptr<C>& c, const VariableListRef& v) :
       constraint_(c) {
-    int var_size = 0;
-    for (const auto& vi : v) {
-      var_size += vi.size();
-    }
-    vars_.resize(var_size);
-    int var_count = 0;
-    for (const auto& vi : v) {
-      vars_.segment(var_count, vi.size()) = vi;
-      var_count += vi.size();
-    }
+    vars_ = ConcatenateVariableListRef(v);
   }
 
   template <typename U>
