@@ -142,7 +142,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
     const ContactInformation& contact = contact_pair.second;
     if (contact.acceleration_constraint_type() == ConstraintType::Soft) {
       cost_contacts_[cost_ctr++] =
-          prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd_}).get();
+          prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, vd_).get();
     } else {
       // Either hard or soft because contact constraint can't be skipped.
       eq_contacts_[eq_ctr++] =
@@ -190,7 +190,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   // Set up cost / eq constraints for centroidal momentum change.
   if (num_cen_mom_dot_as_cost_) {
     cost_cen_mom_dot_ =
-        prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd_}).get();
+        prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, vd_).get();
     cost_cen_mom_dot_->set_description("centroidal momentum change cost");
   } else {
     cost_cen_mom_dot_ = nullptr;
@@ -213,7 +213,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   eq_body_motion_.resize(num_body_motion_as_eq_);
   for (int i = 0; i < num_body_motion_as_cost_; ++i) {
     cost_body_motion_[i] =
-        prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd_}).get();
+        prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, vd_).get();
   }
   for (int i = 0; i < num_body_motion_as_eq_; ++i) {
     // Dimension doesn't matter for equality constraints,
@@ -226,7 +226,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   // Set up cost / eq constraints for dof motion.
   if (num_dof_motion_as_cost_ > 0) {
     cost_dof_motion_ =
-        prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd_}).get();
+        prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, vd_).get();
     cost_dof_motion_->set_description("vd cost");
   } else {
     cost_dof_motion_ = nullptr;
@@ -246,7 +246,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   cost_basis_reg_ =
       prog_
           ->AddQuadraticCost(MatrixX<double>::Identity(num_basis_, num_basis_),
-                             VectorX<double>::Zero(num_basis_), {basis_})
+                             VectorX<double>::Zero(num_basis_), basis_)
           .get();
   cost_basis_reg_->set_description("basis reg cost");
   basis_reg_mat_ = MatrixX<double>::Identity(num_basis_, num_basis_);

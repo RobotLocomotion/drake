@@ -220,13 +220,66 @@ std::shared_ptr<LinearConstraint> MathematicalProgram::AddLinearCost(
   return cost;
 }
 
+void MathematicalProgram::AddCost(const Binding<QuadraticConstraint>& binding) {
+required_capabilities_ |= kQuadraticCost;
+DRAKE_ASSERT(binding.constraint()->Q().rows() == static_cast<int>(binding.GetNumElements()) &&
+binding.constraint()->b().rows() == static_cast<int>(binding.GetNumElements()));
+quadratic_costs_.push_back(binding);
+}
+
 void MathematicalProgram::AddCost(
     const std::shared_ptr<QuadraticConstraint>& obj,
     const VariableListRef& vars) {
-  required_capabilities_ |= kQuadraticCost;
-  quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, vars));
-  int var_dim = quadratic_costs_.back().variables().rows();
-  DRAKE_ASSERT(obj->Q().rows() == var_dim && obj->b().rows() == var_dim);
+  AddCost(Binding<QuadraticConstraint>(obj, vars));
+}
+
+void MathematicalProgram::AddCost(
+    const std::shared_ptr<QuadraticConstraint>& obj,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  AddCost(Binding<QuadraticConstraint>(obj, vars));
+}
+
+std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticErrorCost(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& x_desired,
+    const VariableListRef& vars) {
+  auto cost = std::make_shared<QuadraticConstraint>(
+      2 * Q, -2 * Q * x_desired, -std::numeric_limits<double>::infinity(),
+      std::numeric_limits<double>::infinity());
+  AddCost(cost, vars);
+  return cost;
+}
+
+std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticErrorCost(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& x_desired,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  auto cost = std::make_shared<QuadraticConstraint>(
+      2 * Q, -2 * Q * x_desired, -std::numeric_limits<double>::infinity(),
+      std::numeric_limits<double>::infinity());
+  AddCost(cost, vars);
+  return cost;
+}
+
+std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& b, const VariableListRef& vars) {
+  auto cost = std::make_shared<QuadraticConstraint>(
+      Q, b, -std::numeric_limits<double>::infinity(),
+      std::numeric_limits<double>::infinity());
+  AddCost(cost, vars);
+  return cost;
+}
+
+std::shared_ptr<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& b,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  auto cost = std::make_shared<QuadraticConstraint>(
+      Q, b, -std::numeric_limits<double>::infinity(),
+      std::numeric_limits<double>::infinity());
+  AddCost(cost, vars);
+  return cost;
 }
 
 void MathematicalProgram::AddConstraint(const Binding<Constraint>& binding) {

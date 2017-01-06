@@ -208,7 +208,7 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
   // The quadratic cost is 0.5*x'*Q*x+b'*x.
   Q << 4, 2, 0, 2;
   Eigen::Vector2d b(1, 0);
-  prog.AddQuadraticCost(Q, b, {x});
+  prog.AddQuadraticCost(Q, b, x);
   prog.AddLinearCost(drake::Vector1d(1.0), x.segment<1>(1));
 
   // Deliberately add two bounding box constraints
@@ -730,7 +730,7 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
   // Now solve the problem as a QP.
   MathematicalProgram prog_qp;
   auto x_qp = prog_qp.NewContinuousVariables(kXdim, "x");
-  prog_qp.AddQuadraticCost(Q, c, {x_qp});
+  prog_qp.AddQuadraticCost(Q, c, x_qp);
   prog_qp.AddLinearConstraint(A, b_lb, b_ub, x_qp);
   RunSolver(&prog_qp, solver);
   const auto& x_qp_value = prog_qp.GetSolution(x_qp);
@@ -982,8 +982,8 @@ GTEST_TEST(TestConvexOptimization, TestL2NormCost) {
   Eigen::Vector2d b = A * x_desired;
 
   std::shared_ptr<QuadraticConstraint> obj1 =
-      prog.AddQuadraticErrorCost(Q, x_desired, {x});
-  std::shared_ptr<QuadraticConstraint> obj2 = prog.AddL2NormCost(A, b, {x});
+      prog.AddQuadraticErrorCost(Q, x_desired, x);
+  std::shared_ptr<QuadraticConstraint> obj2 = prog.AddL2NormCost(A, b, x);
 
   // Test the objective at a 6 arbitrary values (to guarantee correctness
   // of the six-parameter quadratic form.

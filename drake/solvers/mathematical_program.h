@@ -793,42 +793,67 @@ class MathematicalProgram {
    * Applied to subset of the variables and pushes onto
    * the quadratic cost data structure.
    */
+  void AddCost(const Binding<QuadraticConstraint>& binding);
+
+  /**
+   * Adds a cost term of the form 0.5*x'*Q*x + b'x.
+   * Applied to subset of the variables and pushes onto
+   * the quadratic cost data structure.
+   */
   void AddCost(const std::shared_ptr<QuadraticConstraint>& obj,
                const VariableListRef& vars);
 
   /**
+   * Adds a cost term of the form 0.5*x'*Q*x + b'x.
+   * Applied to subset of the variables and pushes onto
+   * the quadratic cost data structure.
+   */
+  void AddCost(const std::shared_ptr<QuadraticConstraint>& obj,
+               const Eigen::Ref<const DecisionVariableVectorX>& vars);
+
+  /**
    * Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
    */
-  template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
-      const Eigen::MatrixBase<DerivedQ>& Q,
-      const Eigen::MatrixBase<Derivedb>& x_desired,
-      const VariableListRef& vars) {
-    auto cost = std::make_shared<QuadraticConstraint>(
-        2 * Q, -2 * Q * x_desired, -std::numeric_limits<double>::infinity(),
-        std::numeric_limits<double>::infinity());
-    AddCost(cost, vars);
-    return cost;
-  }
+      const Eigen::Ref<const Eigen::MatrixXd>& Q,
+      const Eigen::Ref<const Eigen::VectorXd>& x_desired,
+      const VariableListRef& vars);
+
+  /**
+   * Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
+   */
+  std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
+      const Eigen::Ref<const Eigen::MatrixXd>& Q,
+      const Eigen::Ref<const Eigen::VectorXd>& x_desired,
+      const Eigen::Ref<const DecisionVariableVectorX>& vars);
 
   /**
    * Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
    * Applied to all (currently existing) variables.
    */
-  template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
-      const Eigen::MatrixBase<DerivedQ>& Q,
-      const Eigen::MatrixBase<Derivedb>& x_desired) {
-    return AddQuadraticErrorCost(Q, x_desired, {decision_variables_});
+      const Eigen::Ref<const Eigen::MatrixXd>& Q,
+      const Eigen::Ref<const Eigen::VectorXd>& x_desired) {
+    return AddQuadraticErrorCost(Q, x_desired, decision_variables_);
   }
 
   /**
    * Adds a cost term of the form | Ax - b |^2.
    */
-  template <typename DerivedA, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddL2NormCost(
-      const Eigen::MatrixBase<DerivedA>& A,
-      const Eigen::MatrixBase<Derivedb>& b, const VariableListRef& vars) {
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableListRef& vars) {
+    return AddQuadraticCost(2 * A.transpose() * A, -2 * A.transpose() * b,
+                            vars);
+  }
+
+  /**
+   * Adds a cost term of the form | Ax - b |^2.
+   */
+  std::shared_ptr<QuadraticConstraint> AddL2NormCost(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b,
+      const Eigen::Ref<const DecisionVariableVectorX>& vars) {
     return AddQuadraticCost(2 * A.transpose() * A, -2 * A.transpose() * b,
                             vars);
   }
@@ -837,26 +862,27 @@ class MathematicalProgram {
    * Adds a cost term of the form 0.5*x'*Q*x + b'x
    * Applied to subset of the variables.
    */
-  template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
-      const Eigen::MatrixBase<DerivedQ>& Q,
-      const Eigen::MatrixBase<Derivedb>& b, const VariableListRef& vars) {
-    auto cost = std::make_shared<QuadraticConstraint>(
-        Q, b, -std::numeric_limits<double>::infinity(),
-        std::numeric_limits<double>::infinity());
-    AddCost(cost, vars);
-    return cost;
-  }
+      const Eigen::Ref<const Eigen::MatrixXd>& Q,
+      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableListRef& vars);
+
+  /**
+   * Adds a cost term of the form 0.5*x'*Q*x + b'x
+   * Applied to subset of the variables.
+   */
+  std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
+      const Eigen::Ref<const Eigen::MatrixXd>& Q,
+      const Eigen::Ref<const Eigen::VectorXd>& b,
+      const Eigen::Ref<const DecisionVariableVectorX>& vars);
 
   /**
    * Adds a cost term of the form 0.5*x'*Q*x + b'x.
    * Applies to all (currently existing) variables.
    */
-  template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
-      const Eigen::MatrixBase<DerivedQ>& Q,
-      const Eigen::MatrixBase<Derivedb>& b) {
-    return AddQuadraticCost(Q, b, {decision_variables_});
+      const Eigen::Ref<const Eigen::MatrixXd>& Q,
+      const Eigen::Ref<const Eigen::VectorXd>& b) {
+    return AddQuadraticCost(Q, b, decision_variables_);
   }
 
   /**

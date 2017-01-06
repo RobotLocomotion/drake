@@ -311,7 +311,7 @@ SystemIdentification<T>::EstimateParameters(
   auto cost = problem.AddQuadraticCost(
       Eigen::MatrixXd::Identity(num_err_terms, num_err_terms),
       Eigen::VectorXd::Zero(num_err_terms),
-      { error_variables });
+      error_variables );
 
   // Solve the problem and copy out the result.
   SolutionResult solution_result = problem.Solve();
