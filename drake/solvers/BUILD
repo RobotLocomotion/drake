@@ -21,7 +21,7 @@ cc_library(
 
 cc_library(
     name = "decision_variable",
-    srcs = [decision_variable.cc],
+    srcs = ["decision_variable.cc"],
     hdrs = ["decision_variable.h"],
     linkstatic = 1,
     deps = [
