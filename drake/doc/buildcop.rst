@@ -159,14 +159,13 @@ click on the build that is yellow or red in Jenkins, then click on the first
 breaking change in the Build History. You will see a list of the new commits
 in that particular run.
 
-Determine if an open Github Drake issue describes the
-situation. For example, some tests are flaky for reasons that have no known
-resolution, but are described by Drake issues. If you find that your broken
-build is described by such an issue, consider adding the build information to
-the issue for future analysis. The `build cop review and
-retrospective
+Determine if an open Github Drake issue describes the situation. For example,
+some tests are flaky for reasons that have no known resolution, but are
+described by Drake issues. If you find that your broken build is described by
+such an issue, consider adding the build information to the issue for future
+analysis. The `build cop review and retrospective
 <https://docs.google.com/document/d/120AOAaamIMO-SM1UaJ6vfzpA15LnXHexDF4a7MLAS3o/edit#heading=h.sxk1djc2v0yg>`_
-also describes current build issues. 
+also describes current build issues.
 
 Broken Compile or Test
 **********************
