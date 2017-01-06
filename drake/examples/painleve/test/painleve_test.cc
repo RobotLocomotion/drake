@@ -67,6 +67,16 @@ class PainleveTest : public ::testing::Test {
   std::unique_ptr<systems::ContinuousState<double>> derivatives_;
 };
 
+/// Checks output is as expected.
+TEST_F(PainleveTest, Output) {
+  const systems::ContinuousState<double>& v = *context_->get_continuous_state();
+  std::unique_ptr<systems::SystemOutput<double>> output =
+      dut_->AllocateOutput(*context_);
+  dut_->DoCalcOutput(*context_, output.get());
+  for (int i=0; i< v.size(); ++i)
+    EXPECT_EQ(v[i], output->get_vector_data(0)->get_value()(i));
+}
+
 /// Verifies that setting dut to an impacting state actually results in an
 /// impacting state.
 TEST_F(PainleveTest, ImpactingState) {
@@ -92,6 +102,107 @@ TEST_F(PainleveTest, Parameters) {
   EXPECT_EQ(dut_->get_mu_coulomb(), mu);
   EXPECT_EQ(dut_->get_rod_length(), ell);
   EXPECT_EQ(dut_->get_rod_moment_of_inertia(), J);
+}
+
+/// Verify that impact handling works as expected.
+TEST_F(PainleveTest, ImpactWorks) {
+  // Setup writable state.
+  std::unique_ptr<systems::ContinuousState<double>> new_cstate =
+      CreateNewContinuousState();
+
+  // Cause the initial state to be impacting, with center of mass directly
+  // over the point of contact.
+  const double half_len = dut_->get_rod_length() / 2;
+  systems::ContinuousState<double>& v =
+      *context_->get_mutable_continuous_state();
+  v[0] = 0.0;
+  v[1] = half_len;
+  v[2] = M_PI_2;
+  v[3] = 0.0;
+  v[4] = -1.0;
+  v[5] = 0.0;
+  EXPECT_TRUE(dut_->IsImpacting(*context_));
+
+  // Handle the impact.
+  dut_->HandleImpact(*context_, new_cstate.get());
+  context_->get_mutable_continuous_state()->SetFrom(*new_cstate);
+
+  // Verify that the state is as we expect (v should be updated with the new
+  // values).
+  const double tol = std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR(v[0], 0.0, tol);
+  EXPECT_NEAR(v[1], half_len, tol);
+  EXPECT_NEAR(v[2], M_PI_2, tol);
+  EXPECT_NEAR(v[3], 0.0, tol);
+  EXPECT_NEAR(v[4], 0.0, tol);
+  EXPECT_NEAR(v[5], 0.0, tol);
+}
+
+/// Verify that derivatives match what we from a non-inconsistent configuration.
+TEST_F(PainleveTest, ConsistentDerivativesBallistic) {
+  // Set the initial state to ballistic motion.
+  const double half_len = dut_->get_rod_length() / 2;
+  systems::ContinuousState<double>& v =
+      *context_->get_mutable_continuous_state();
+  v[0] = 0.0;
+  v[1] = 10*half_len;
+  v[2] = M_PI_2;
+  v[3] = 1.0;
+  v[4] = 2.0;
+  v[5] = 3.0;
+
+  // Calculate the derivatives.
+  dut_->DoCalcTimeDerivatives(*context_, derivatives_.get());
+
+  // Verify that the derivatives match what we expect.
+  const double tol = std::numeric_limits<double>::epsilon();
+  const double g = dut_->get_gravitational_acceleration();
+  EXPECT_NEAR((*derivatives_)[0], v[3], tol);
+  EXPECT_NEAR((*derivatives_)[1], v[4], tol);
+  EXPECT_NEAR((*derivatives_)[2], v[5], tol);
+  EXPECT_NEAR((*derivatives_)[3], 0.0, tol);  // Zero horizontal acceleration.
+  EXPECT_NEAR((*derivatives_)[4], g, tol);    // Gravitational acceleration.
+  EXPECT_NEAR((*derivatives_)[5], 0.0, tol);  // Zero rotational acceleration.
+}
+
+/// Verify that derivatives match what we expect from a non-inconsistent
+/// contacting configuration.
+TEST_F(PainleveTest, ConsistentDerivativesContacting) {
+  // Set the initial state to sustained contact with zero tangential velocity
+  // at the point of contact.
+  const double half_len = dut_->get_rod_length() / 2;
+  systems::ContinuousState<double>& v =
+      *context_->get_mutable_continuous_state();
+  v[0] = 0.0;
+  v[1] = half_len;
+  v[2] = M_PI_2;
+  v[3] = 0.0;
+  v[4] = 0.0;
+  v[5] = 0.0;
+
+  // Calculate the derivatives.
+  dut_->DoCalcTimeDerivatives(*context_, derivatives_.get());
+
+  // Verify that the derivatives match what we expect.
+  const double tol = std::numeric_limits<double>::epsilon() * 10;
+  EXPECT_NEAR((*derivatives_)[0], v[3], tol);
+  EXPECT_NEAR((*derivatives_)[1], v[4], tol);
+  EXPECT_NEAR((*derivatives_)[2], v[5], tol);
+  EXPECT_NEAR((*derivatives_)[3], 0.0, tol);
+  EXPECT_NEAR((*derivatives_)[4], 0.0, tol);
+  EXPECT_NEAR((*derivatives_)[5], 0.0, tol);
+
+  // Set the coefficient of friction to zero, update the sliding velocity,
+  // and try again. Derivatives should be exactly the same.
+  v[3] = -1.0;
+  dut_->set_mu_coulomb(0.0);
+  dut_->DoCalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_NEAR((*derivatives_)[0], v[3], tol);
+  EXPECT_NEAR((*derivatives_)[1], v[4], tol);
+  EXPECT_NEAR((*derivatives_)[2], v[5], tol);
+  EXPECT_NEAR((*derivatives_)[3], 0.0, tol);
+  EXPECT_NEAR((*derivatives_)[4], 0.0, tol);
+  EXPECT_NEAR((*derivatives_)[5], 0.0, tol);
 }
 
 /// Verify the Painleve configuration occurs.
@@ -209,13 +320,16 @@ TEST_F(PainleveTest, MultiPoint) {
       *context_->get_mutable_continuous_state();
 
   // This configuration has no sliding velocity. It should throw no exceptions.
-  v[0] = 0;
-  v[1] = 0;
-  v[2] = 0;
+  const double tol = std::numeric_limits<double>::epsilon();
+  v[0] = 0.0;
+  v[1] = 0.0;
+  v[2] = 0.0;
   v[3] = 0.0;
   v[4] = 0.0;
   v[5] = 0.0;
-  EXPECT_NO_THROW(dut_->DoCalcTimeDerivatives(*context_, derivatives_.get()));
+  dut_->DoCalcTimeDerivatives(*context_, derivatives_.get());
+  for (int i=0; i< derivatives_->size(); ++i)
+    EXPECT_NEAR((*derivatives_)[i], 0.0, tol);
 
   // Verify no impact.
   EXPECT_FALSE(dut_->IsImpacting(*context_));

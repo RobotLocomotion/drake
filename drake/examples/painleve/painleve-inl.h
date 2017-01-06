@@ -1,8 +1,8 @@
 
-/// @file
-/// Template method implementations for painleve.h.
-/// Most users should only include that file, not this one.
-/// For background, see http://drake.mit.edu/cxx_inl.html.
+// @file
+// Template method implementations for painleve.h.
+// Most users should only include that file, not this one.
+// For background, see http://drake.mit.edu/cxx_inl.html.
 
 #include <limits>
 
@@ -111,36 +111,40 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
   new_statev->SetAtIndex(5, thetadot + delta_thetadot);
 }
 
-/// Computes the impulses such that the vertical velocity at the contact point
-/// is zero and the frictional impulse lies exactly on the friction cone.
-/// These equations were determined by issuing the
-/// following commands in Mathematica:
-///
-/// xc[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
-/// yc[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
-/// Solve[{mass*delta_xdot == fF,
-///        mass*delta_ydot == fN,
-///        J*delta_thetadot == (xc[t] - x)*fN - (yc - y)*fF,
-///        0 == (D[y[t], t] + delta_ydot) +
-///              k*(ell/2) *Cos[theta[t]]*(D[theta[t], t] + delta_thetadot),
-///        fF == mu*fN *-sgn_xcdot},
-///       {delta_xdot, delta_ydot, delta_thetadot, fN, fF}]
-/// where theta is the counter-clockwise angle the rod makes with the x-axis,
-/// fN and fF are contact normal and frictional forces; delta_xdot,
-/// delta_ydot, and delta_thetadot represent the changes in velocity,
-/// ell is the length of the rod, sgn_xdot is the sign of the tangent
-/// velocity (pre-impact), and (hopefully) all other variables are
-/// self-explanatory.
-///
-/// The first two equations above are the formula
-/// for the location of the point of contact. The next two equations
-/// describe the relationship between the horizontal/vertical change in
-/// momenta at the center of mass of the rod and the frictional/normal
-/// contact impulses. The fifth equation yields the moment from
-/// the contact impulses. The sixth equation specifies that the post-impact
-/// velocity in the vertical direction be zero. The last equation corresponds
-/// to the relationship between normal and frictional impulses (dictated by the
-/// Coulomb friction model).
+// Computes the impulses such that the vertical velocity at the contact point
+// is zero and the frictional impulse lies exactly on the friction cone.
+// These equations were determined by issuing the
+// following commands in Mathematica:
+//
+// xc[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
+// yc[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
+// Solve[{mass*delta_xdot == fF,
+//        mass*delta_ydot == fN,
+//        J*delta_thetadot == (xc[t] - x)*fN - (yc - y)*fF,
+//        0 == (D[y[t], t] + delta_ydot) +
+//              k*(ell/2) *Cos[theta[t]]*(D[theta[t], t] + delta_thetadot),
+//        fF == mu*fN *-sgn_xcdot},
+//       {delta_xdot, delta_ydot, delta_thetadot, fN, fF}]
+// where theta is the counter-clockwise angle the rod makes with the x-axis,
+// fN and fF are contact normal and frictional forces; delta_xdot,
+// delta_ydot, and delta_thetadot represent the changes in velocity,
+// ell is the length of the rod, sgn_xdot is the sign of the tangent
+// velocity (pre-impact), and (hopefully) all other variables are
+// self-explanatory.
+//
+// The first two equations above are the formula
+// for the location of the point of contact. The next two equations
+// describe the relationship between the horizontal/vertical change in
+// momenta at the center of mass of the rod and the frictional/normal
+// contact impulses. The fifth equation yields the moment from
+// the contact impulses. The sixth equation specifies that the post-impact
+// velocity in the vertical direction be zero. The last equation corresponds
+// to the relationship between normal and frictional impulses (dictated by the
+// Coulomb friction model).
+// @returns a Vector2, with the first element corresponding to the impulse in
+//          the normal direction (positive y-axis) and the second element
+//          corresponding to the impulse in the tangential direction (positive
+//          x-axis).
 template <class T>
 Vector2<T> Painleve<T>::CalcFConeImpactImpulse(
     const systems::Context<T>& context) const {
@@ -186,37 +190,37 @@ Vector2<T> Painleve<T>::CalcFConeImpactImpulse(
   return Vector2<T>(fN, fF);
 }
 
-/// Computes the impulses such that the velocity at the contact point is zero.
-/// These equations were determined by issuing the following commands in
-/// Mathematica:
-///
-/// xc[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
-/// yc[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
-/// Solve[{mass*delta_xdot == fF, mass*delta_ydot == fN,
-///        J*delta_thetadot == (xc[t] - x)*fN - (yc - y)*fF,
-///        0 == (D[y[t], t] + delta_ydot) +
-///             k*(ell/2) *Cos[theta[t]]*(D[theta[t], t] + delta_thetadot),
-///        0 == (D[x[t], t] + delta_xdot) +
-///             k*(ell/2)*-Cos[theta[t]]*(D[theta[t], t] + delta_thetadot)},
-///       {delta_xdot, delta_ydot, delta_thetadot, fN, fF}]
-/// which computes the change in velocity and frictional (fF) and normal (fN)
-/// impulses necessary to bring the system to rest at the point of contact,
-/// 'ell' is the rod length, theta is the counter-clockwise angle measured
-/// with respect to the x-axis; delta_xdot, delta_ydot, and delta_thetadot
-/// are the changes in velocity.
-///
-/// The first two equations above are the formula
-/// for the location of the point of contact. The next two equations
-/// describe the relationship between the horizontal/vertical change in
-/// momenta at the center of mass of the rod and the frictional/normal
-/// contact impulses. The fifth equation yields the moment from
-/// the contact impulses. The sixth and seventh equations specify that the
-/// post-impact velocity in the horizontal and vertical directions at the
-/// point of contact be zero.
-/// @returns a Vector2, with the first element corresponding to the impulse in
-///          the normal direction (positive y-axis) and the second element
-///          corresponding to the impulse in the tangential direction (positive
-///          x-axis).
+// Computes the impulses such that the velocity at the contact point is zero.
+// These equations were determined by issuing the following commands in
+// Mathematica:
+//
+// xc[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
+// yc[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
+// Solve[{mass*delta_xdot == fF, mass*delta_ydot == fN,
+//        J*delta_thetadot == (xc[t] - x)*fN - (yc - y)*fF,
+//        0 == (D[y[t], t] + delta_ydot) +
+//             k*(ell/2) *Cos[theta[t]]*(D[theta[t], t] + delta_thetadot),
+//        0 == (D[x[t], t] + delta_xdot) +
+//             k*(ell/2)*-Cos[theta[t]]*(D[theta[t], t] + delta_thetadot)},
+//       {delta_xdot, delta_ydot, delta_thetadot, fN, fF}]
+// which computes the change in velocity and frictional (fF) and normal (fN)
+// impulses necessary to bring the system to rest at the point of contact,
+// 'ell' is the rod length, theta is the counter-clockwise angle measured
+// with respect to the x-axis; delta_xdot, delta_ydot, and delta_thetadot
+// are the changes in velocity.
+//
+// The first two equations above are the formula
+// for the location of the point of contact. The next two equations
+// describe the relationship between the horizontal/vertical change in
+// momenta at the center of mass of the rod and the frictional/normal
+// contact impulses. The fifth equation yields the moment from
+// the contact impulses. The sixth and seventh equations specify that the
+// post-impact velocity in the horizontal and vertical directions at the
+// point of contact be zero.
+// @returns a Vector2, with the first element corresponding to the impulse in
+//          the normal direction (positive y-axis) and the second element
+//          corresponding to the impulse in the tangential direction (positive
+//          x-axis).
 template <class T>
 Vector2<T> Painleve<T>::CalcStickingImpactImpulse(
     const systems::Context<T>& context) const {
@@ -319,35 +323,35 @@ void Painleve<T>::SetVelocityDerivatives(const systems::Context<T>& context,
   }
 }
 
-/// Computes the contact forces for the case of zero sliding velocity, assuming
-/// that the tangential acceleration at the point of contact will be zero
-/// (i.e., xcddot = 0). This function solves for these forces.
-///
-/// Equations were determined by issuing the following command in Mathematica:
-/// xc[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
-/// yc[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
-/// Solve[{0 == D[D[yc[t], t], t],
-///        D[D[y[t], t], t] == fN/mass + g,
-///        D[D[x[t], t], t] == fF/mass,
-///        J*D[D[theta[t], t], t] == (xc[t]-x[t])*fN - (yc[t]-y[t])*fF,
-///        0 == D[D[xc[t], t], t]},
-///       { fN, fF, D[D[y[t], t], t], D[D[x[t], t], t],
-///          D[D[theta[t], t], t] } ]
-/// where theta is the counter-clockwise angle the rod makes with the
-/// x-axis, fN and fF are contact normal and frictional forces, g is the
-/// acceleration due to gravity, and (hopefully) all other variables are
-/// self-explanatory.
-///
-/// The first two equations above are the formula
-/// for the point of contact. The next equation requires that the
-/// vertical acceleration be zero. The fourth and fifth equations
-/// describe the horizontal and vertical accelerations at the center
-/// of mass of the rod. The sixth equation yields the moment from
-/// the contact forces. The last equation specifies that the horizontal
-/// acceleration at the point of contact be zero.
-/// @returns a Vector2 with the first element giving the normal force (along
-///          the positive y-direction) and the second element giving the
-///          tangential force (along the positive x-direction).
+// Computes the contact forces for the case of zero sliding velocity, assuming
+// that the tangential acceleration at the point of contact will be zero
+// (i.e., xcddot = 0). This function solves for these forces.
+//
+// Equations were determined by issuing the following command in Mathematica:
+// xc[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
+// yc[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
+// Solve[{0 == D[D[yc[t], t], t],
+//        D[D[y[t], t], t] == fN/mass + g,
+//        D[D[x[t], t], t] == fF/mass,
+//        J*D[D[theta[t], t], t] == (xc[t]-x[t])*fN - (yc[t]-y[t])*fF,
+//        0 == D[D[xc[t], t], t]},
+//       { fN, fF, D[D[y[t], t], t], D[D[x[t], t], t],
+//          D[D[theta[t], t], t] } ]
+// where theta is the counter-clockwise angle the rod makes with the
+// x-axis, fN and fF are contact normal and frictional forces, g is the
+// acceleration due to gravity, and (hopefully) all other variables are
+// self-explanatory.
+//
+// The first two equations above are the formula
+// for the point of contact. The next equation requires that the
+// vertical acceleration be zero. The fourth and fifth equations
+// describe the horizontal and vertical accelerations at the center
+// of mass of the rod. The sixth equation yields the moment from
+// the contact forces. The last equation specifies that the horizontal
+// acceleration at the point of contact be zero.
+// @returns a Vector2 with the first element giving the normal force (along
+//          the positive y-direction) and the second element giving the
+//          tangential force (along the positive x-direction).
 template <class T>
 Vector2<T> Painleve<T>::CalcStickingContactForces(
     const systems::Context<T>& context) const {
