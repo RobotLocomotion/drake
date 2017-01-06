@@ -14,6 +14,7 @@
 
 #include "drake/common/cond.h"
 #include "drake/common/dummy_value.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic_environment.h"
@@ -491,6 +492,85 @@ double get_constant_factor_in_multiplication(const Expression& e);
 */
 const std::map<Expression, Expression>& get_products_in_multiplication(
     const Expression& e);
+
+// MatrixBase<Expression> * Matrix<Variable> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, Expression>::value &&
+        std::is_same<typename MatrixR::Scalar, Variable>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime> >::type
+operator*(MatrixL const& lhs, MatrixR const& rhs) {
+  return lhs * rhs.template cast<Expression>();
+}
+
+// MatrixBase<Variable> * Matrix<Expression> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, Variable>::value &&
+        std::is_same<typename MatrixR::Scalar, Expression>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime> >::type
+operator*(MatrixL const& lhs, MatrixR const& rhs) {
+  return lhs.template cast<Expression>() * rhs;
+}
+
+// MatrixBase<Expression> * Matrix<double> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, Expression>::value &&
+        std::is_same<typename MatrixR::Scalar, double>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime> >::type
+operator*(MatrixL const& lhs, MatrixR const& rhs) {
+  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+}
+
+// MatrixBase<double> * Matrix<Expression> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, double>::value &&
+        std::is_same<typename MatrixR::Scalar, Expression>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime> >::type
+operator*(MatrixL const& lhs, MatrixR const& rhs) {
+  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+}
+
+// MatrixBase<Variable> * Matrix<double> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, Variable>::value &&
+        std::is_same<typename MatrixR::Scalar, double>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime> >::type
+operator*(MatrixL const& lhs, MatrixR const& rhs) {
+  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+}
+
+// MatrixBase<double> * Matrix<Variable> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, double>::value &&
+        std::is_same<typename MatrixR::Scalar, Variable>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime> >::type
+operator*(MatrixL const& lhs, MatrixR const& rhs) {
+  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+}
+
 }  // namespace symbolic
 
 /** Provides specialization of @c cond function defined in drake/common/cond.h
@@ -563,6 +643,7 @@ struct NumTraits<drake::symbolic::Expression>
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<drake::symbolic::Variable,
                             drake::symbolic::Variable, BinaryOp> {
+  enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
 
@@ -570,6 +651,7 @@ struct ScalarBinaryOpTraits<drake::symbolic::Variable,
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<drake::symbolic::Variable,
                             drake::symbolic::Expression, BinaryOp> {
+  enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
 
@@ -577,19 +659,37 @@ struct ScalarBinaryOpTraits<drake::symbolic::Variable,
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<drake::symbolic::Expression,
                             drake::symbolic::Variable, BinaryOp> {
+  enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
 
 // Informs Eigen that Variable op double gets Expression.
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<drake::symbolic::Variable, double, BinaryOp> {
+  enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
 
 // Informs Eigen that double op Variable gets Expression.
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<double, drake::symbolic::Variable, BinaryOp> {
+  enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
+
+// Informs Eigen that Expression op double gets Expression.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<drake::symbolic::Expression, double, BinaryOp> {
+  enum { Defined = 1 };
+  typedef drake::symbolic::Expression ReturnType;
+};
+
+// Informs Eigen that double op Expression gets Expression.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<double, drake::symbolic::Expression, BinaryOp> {
+  enum { Defined = 1 };
+  typedef drake::symbolic::Expression ReturnType;
+};
+
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
