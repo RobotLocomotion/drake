@@ -641,6 +641,11 @@ class MathematicalProgram {
 
   /**
    * Adds a generic cost to the optimization program.
+   */
+  void AddCost(const Binding<Constraint>& binding);
+
+  /**
+   * Adds a generic cost to the optimization program.
    * @param obj The added objective.
    * @param vars The decision variables on which the cost depend.
    */
@@ -648,12 +653,20 @@ class MathematicalProgram {
                const VariableListRef& vars);
 
   /**
+   * Adds a generic cost to the optimization program.
+   * @param obj The added objective.
+   * @param vars The decision variables on which the cost depend.
+   */
+  void AddCost(const std::shared_ptr<Constraint>& obj,
+               const Eigen::Ref<const DecisionVariableVectorX>& vars);
+
+  /**
    * Adds a cost to the problem which covers all decision
    * variables created at the time the cost was added.
    */
   template <typename ConstraintT>
   void AddCost(std::shared_ptr<ConstraintT> constraint) {
-    AddCost(constraint, {decision_variables_});
+    AddCost(constraint, decision_variables_);
   }
 
   template <typename F>
@@ -665,7 +678,7 @@ class MathematicalProgram {
 
   template <typename F>
   typename std::enable_if<
-      !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
+      (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) && (!std::is_convertible<F, Binding<Constraint>>::value),
       std::shared_ptr<Constraint>>::type
   AddCost(F&& f, const VariableListRef& vars) {
     auto c = MakeCost(std::forward<F>(f));
@@ -675,10 +688,20 @@ class MathematicalProgram {
 
   template <typename F>
   typename std::enable_if<
-      !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
+      (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) && (!std::is_convertible<F, Binding<Constraint>>::value),
+      std::shared_ptr<Constraint>>::type
+  AddCost(F&& f, const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+    auto c = MakeCost(std::forward<F>(f));
+    AddCost(c, vars);
+    return c;
+  }
+
+  template <typename F>
+  typename std::enable_if<
+      (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) && (!std::is_convertible<F, Binding<Constraint>>::value),
       std::shared_ptr<Constraint>>::type
   AddCost(F&& f) {
-    return AddCost(std::forward<F>(f), {decision_variables_});
+    return AddCost(std::forward<F>(f), decision_variables_);
   }
 
   // libstdc++ 4.9 evaluates
@@ -687,17 +710,40 @@ class MathematicalProgram {
   // incorrectly as `true` so our enable_if overload is not used.
   // Provide an explicit alternative for this case.
   template <typename F>
-  std::shared_ptr<Constraint> AddCost(std::unique_ptr<F>&& f,
+  typename std::enable_if<
+      (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) && (!std::is_convertible<F, Binding<Constraint>>::value),
+      std::shared_ptr<Constraint>>::type AddCost(std::unique_ptr<F>&& f,
                                       const VariableListRef& vars) {
     auto c = std::make_shared<ConstraintImpl<std::unique_ptr<F>>>(
         std::forward<std::unique_ptr<F>>(f));
     AddCost(c, vars);
     return c;
   }
+
   template <typename F>
-  std::shared_ptr<Constraint> AddCost(std::unique_ptr<F>&& f) {
-    return AddCost(std::forward<std::unique_ptr<F>>(f), {decision_variables_});
+  typename std::enable_if<
+      (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) && (!std::is_convertible<F, Binding<Constraint>>::value),
+      std::shared_ptr<Constraint>>::type AddCost(std::unique_ptr<F>&& f,
+                                                 const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+    auto c = std::make_shared<ConstraintImpl<std::unique_ptr<F>>>(
+        std::forward<std::unique_ptr<F>>(f));
+    AddCost(c, vars);
+    return c;
   }
+
+  template <typename F>
+  typename std::enable_if<
+      (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) && (!std::is_convertible<F, Binding<Constraint>>::value),
+      std::shared_ptr<Constraint>>::type AddCost(std::unique_ptr<F>&& f) {
+    return AddCost(std::forward<std::unique_ptr<F>>(f), decision_variables_);
+  }
+
+  /**
+   * Adds a cost term of the form c'*x.
+   * Applied to a subset of the variables and pushes onto
+   * the linear cost data structure.
+   */
+  void AddCost(const Binding<LinearConstraint>& binding);
 
   /**
    * Adds a cost term of the form c'*x.
@@ -708,22 +754,28 @@ class MathematicalProgram {
                const VariableListRef& vars);
 
   /**
+   * Adds a cost term of the form c'*x.
+   * Applied to a subset of the variables and pushes onto
+   * the linear cost data structure.
+   */
+  void AddCost(const std::shared_ptr<LinearConstraint>& obj,
+               const Eigen::Ref<const DecisionVariableVectorX>& vars);
+
+  /**
    * Adds a linear cost term of the form c'*x.
    * Applied to a subset of the variables and pushes onto
    * the linear cost data structure.
    */
-  template <typename DerivedC>
   std::shared_ptr<LinearConstraint> AddLinearCost(
-      const Eigen::MatrixBase<DerivedC>& c, const VariableListRef& vars) {
-    using Scalar = typename DerivedC::Scalar;
-    auto cost = std::make_shared<LinearConstraint>(
-        c.transpose(), drake::Vector1<Scalar>::Constant(
-                           -std::numeric_limits<Scalar>::infinity()),
-        drake::Vector1<Scalar>::Constant(
-            std::numeric_limits<Scalar>::infinity()));
-    AddCost(cost, vars);
-    return cost;
-  }
+      const Eigen::Ref<const Eigen::VectorXd>& c, const VariableListRef& vars);
+
+  /**
+   * Adds a linear cost term of the form c'*x.
+   * Applied to a subset of the variables and pushes onto
+   * the linear cost data structure.
+   */
+  std::shared_ptr<LinearConstraint> AddLinearCost(
+      const Eigen::Ref<const Eigen::VectorXd>& c, const Eigen::Ref<const DecisionVariableVectorX>& vars);
 
   /**
    * Adds a linear cost term of the form c'*x.
@@ -731,10 +783,9 @@ class MathematicalProgram {
    * the cost is added, and pushes onto
    * the linear cost data structure.
    */
-  template <typename DerivedC>
   std::shared_ptr<LinearConstraint> AddLinearCost(
-      const Eigen::MatrixBase<DerivedC>& c) {
-    return AddLinearCost(c, {decision_variables_});
+      const Eigen::Ref<const Eigen::VectorXd>& c) {
+    return AddLinearCost(c, decision_variables_);
   }
 
   /**

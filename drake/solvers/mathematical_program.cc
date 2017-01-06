@@ -167,17 +167,57 @@ DecisionVariableVectorX MathematicalProgram::NewBinaryVariables(
   return NewVariables(VarType::BINARY, rows, names);
 }
 
+void MathematicalProgram::AddCost(const Binding<Constraint>& binding) {
+  required_capabilities_ |= kGenericCost;
+  generic_costs_.push_back(binding);
+}
+
 void MathematicalProgram::AddCost(const std::shared_ptr<Constraint>& obj,
                                   const VariableListRef& vars) {
-  required_capabilities_ |= kGenericCost;
-  generic_costs_.push_back(Binding<Constraint>(obj, vars));
+  AddCost(Binding<Constraint>(obj, vars));
+}
+
+void MathematicalProgram::AddCost(const std::shared_ptr<Constraint>& obj,
+                                  const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  AddCost(Binding<Constraint>(obj, vars));
+}
+
+void MathematicalProgram::AddCost(const Binding<LinearConstraint>& binding) {
+  required_capabilities_ |= kLinearCost;
+  DRAKE_ASSERT(binding.constraint()->num_constraints() == 1 && binding.constraint()->A().cols() == static_cast<int>(binding.GetNumElements()));
+  linear_costs_.push_back(binding);
 }
 
 void MathematicalProgram::AddCost(const std::shared_ptr<LinearConstraint>& obj,
                                   const VariableListRef& vars) {
-  required_capabilities_ |= kLinearCost;
-  linear_costs_.push_back(Binding<LinearConstraint>(obj, vars));
-  DRAKE_ASSERT(obj->A().rows() == 1 && obj->A().cols() == linear_costs_.back().variables().rows());
+  AddCost(Binding<LinearConstraint>(obj, vars));
+}
+
+void MathematicalProgram::AddCost(const std::shared_ptr<LinearConstraint>& obj,
+                                  const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  AddCost(Binding<LinearConstraint>(obj, vars));
+}
+
+std::shared_ptr<LinearConstraint> MathematicalProgram::AddLinearCost(
+    const Eigen::Ref<const Eigen::VectorXd>& c, const VariableListRef& vars) {
+  auto cost = std::make_shared<LinearConstraint>(
+      c.transpose(), drake::Vector1<double>::Constant(
+          -std::numeric_limits<double>::infinity()),
+      drake::Vector1<double>::Constant(
+          std::numeric_limits<double>::infinity()));
+  AddCost(cost, vars);
+  return cost;
+}
+
+std::shared_ptr<LinearConstraint> MathematicalProgram::AddLinearCost(
+    const Eigen::Ref<const Eigen::VectorXd>& c, const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  auto cost = std::make_shared<LinearConstraint>(
+      c.transpose(), drake::Vector1<double>::Constant(
+          -std::numeric_limits<double>::infinity()),
+      drake::Vector1<double>::Constant(
+          std::numeric_limits<double>::infinity()));
+  AddCost(cost, vars);
+  return cost;
 }
 
 void MathematicalProgram::AddCost(

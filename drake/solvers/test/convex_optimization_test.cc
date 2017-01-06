@@ -154,8 +154,8 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
   Eigen::Vector3d c1(-3, -1, -4);
   Eigen::Vector2d c2(-1, -1);
 
-  prog.AddLinearCost(c1, {x.head<3>()});
-  prog.AddLinearCost(c2, {x.tail<2>()});
+  prog.AddLinearCost(c1, x.head<3>());
+  prog.AddLinearCost(c2, x.tail<2>());
 
   Eigen::RowVector3d a1(3, 1, 2);
   prog.AddLinearEqualityConstraint(a1, 30, x.head<3>());
@@ -209,7 +209,7 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
   Q << 4, 2, 0, 2;
   Eigen::Vector2d b(1, 0);
   prog.AddQuadraticCost(Q, b, {x});
-  prog.AddLinearCost(drake::Vector1d(1.0), {x.segment<1>(1)});
+  prog.AddLinearCost(drake::Vector1d(1.0), x.segment<1>(1));
 
   // Deliberately add two bounding box constraints
   // (x1, x2) >= (0, 0)
@@ -558,7 +558,7 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   prog.AddLinearEqualityConstraint((x2 - x1).transpose(), 1.0, a);
 
   // Add cost
-  auto cost = prog.AddLinearCost(Eigen::Vector2d(1.0, 1.0), {t});
+  auto cost = prog.AddLinearCost(Eigen::Vector2d(1.0, 1.0), t);
 
   RunSolver(&prog, solver);
 
@@ -711,8 +711,8 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
   std::shared_ptr<LinearConstraint> cost_socp1(new LinearConstraint(
       c.transpose(), drake::Vector1d(-std::numeric_limits<double>::infinity()),
       drake::Vector1d(std::numeric_limits<double>::infinity())));
-  prog_socp.AddCost(cost_socp1, {x_socp});
-  prog_socp.AddLinearCost(drake::Vector1d(1.0), {y});
+  prog_socp.AddCost(cost_socp1, x_socp);
+  prog_socp.AddLinearCost(drake::Vector1d(1.0), y);
   RunSolver(&prog_socp, solver);
   const auto& x_socp_value = prog_socp.GetSolution(x_socp);
   double objective_value_socp =
@@ -855,8 +855,8 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
   b_lorentz2 << 1, Eigen::VectorXd::Zero(num_nodes);
   prog.AddRotatedLorentzConeConstraint(A_lorentz2, b_lorentz2, {z, t});
 
-  prog.AddLinearCost(drake::Vector1d(spring_stiffness / 2), {z});
-  prog.AddLinearCost(weight, {y});
+  prog.AddLinearCost(drake::Vector1d(spring_stiffness / 2), z);
+  prog.AddLinearCost(weight, y);
 
   RunSolver(&prog, solver);
 
@@ -1197,7 +1197,7 @@ GTEST_TEST(TestConvexOptimization, TestTrivialSDP) {
 
     prog.AddBoundingBoxConstraint(1, 1, S(1, 0));
 
-    prog.AddLinearCost(Eigen::Vector2d(1, 1), {S.diagonal()});
+    prog.AddLinearCost(Eigen::Vector2d(1, 1), S.diagonal());
 
     RunSolver(&prog, *solver);
 
@@ -1335,7 +1335,7 @@ GTEST_TEST(TestConvexOptimization, TestEigenvalueProblem) {
     Eigen::Vector2d x_ub(2, 3);
     prog.AddBoundingBoxConstraint(x_lb, x_ub, x);
 
-    prog.AddLinearCost(drake::Vector1d(1), {z});
+    prog.AddLinearCost(drake::Vector1d(1), z);
 
     RunSolver(&prog, *solver);
 

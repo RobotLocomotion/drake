@@ -134,7 +134,7 @@ class DirectTrajectoryOptimization {
    */
   template <typename ConstraintT>
   void AddInitialCost(std::shared_ptr<ConstraintT> constraint) {
-    opt_problem_.AddCost(constraint, {x_vars_.head(num_states_)});
+    opt_problem_.AddCost(constraint, x_vars_.head(num_states_));
   }
 
   /**

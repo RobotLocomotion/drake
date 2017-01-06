@@ -179,6 +179,41 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
       CompareMatrices(constraint3->upper_bound(), constraint4->upper_bound()));
 }
 
+class GenericTrivialCost {
+ public:
+  static size_t numInputs() { return 2; }
+  static size_t numOutputs() { return 1; }
+
+  template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
+    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
+    y(0) = x(0) * x(0) - x(1) * x(1) + 2;
+  }
+};
+
+GTEST_TEST(testMathematicalProgram, AddCostTest) {
+  // Test if the costs are added correctly.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  auto y = prog.NewContinuousVariables<2>("y");
+  // No cost yet.
+  EXPECT_EQ(prog.generic_costs().size(), 0);
+  EXPECT_EQ(prog.linear_costs().size(), 0);
+
+  GenericTrivialCost generic_trivial_cost;
+  prog.AddCost(generic_trivial_cost, {x.head<1>(), y.tail<1>()});
+  // Expect one generic cost
+  EXPECT_EQ(prog.generic_costs().size(), 1);
+  EXPECT_EQ(prog.linear_costs().size(), 0);
+  Eigen::VectorXd generic_cost(1), generic_cost_expected(1);
+  Eigen::Vector2d generic_cost_x(1, 2);
+  prog.generic_costs().back().constraint()->Eval(generic_cost_x, generic_cost);
+  generic_trivial_cost.eval<double>(generic_cost_x, generic_cost_expected);
+  EXPECT_TRUE(CompareMatrices(generic_cost, generic_cost_expected));
+}
+
 GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   MathematicalProgram prog;
 
@@ -656,8 +691,8 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
   // variables to constraints/costs.
   auto x = prog.NewContinuousVariables(3);
   auto y = prog.NewContinuousVariables(3);
-  prog.AddCost(GloptipolyConstrainedExampleCost(), {x});
-  prog.AddCost(GloptipolyConstrainedExampleCost(), {y});
+  prog.AddCost(GloptipolyConstrainedExampleCost(), x);
+  prog.AddCost(GloptipolyConstrainedExampleCost(), y);
   std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
       new GloptipolyConstrainedExampleConstraint());
   prog.AddConstraint(qp_con, x);
@@ -1042,7 +1077,7 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   auto x_lorentz = prog_lorentz.NewContinuousVariables(xDim, "x");
   prog_lorentz.AddLorentzConeConstraint({t_lorentz, x_lorentz});
   prog_lorentz.AddLinearEqualityConstraint(A, b, x_lorentz);
-  prog_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_lorentz});
+  prog_lorentz.AddLinearCost(drake::Vector1d(1.0), t_lorentz);
 
   // A_hat = [A 0; 2*I A']
   MatrixXd A_hat(A.rows() + A.cols(), A.rows() + A.cols());
@@ -1082,7 +1117,7 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   prog_rotated_lorentz.AddLinearEqualityConstraint(A, b, x_rotated_lorentz);
   prog_rotated_lorentz.AddBoundingBoxConstraint(1.0, 1.0,
                                                 slack_rotated_lorentz(0));
-  prog_rotated_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_rotated_lorentz});
+  prog_rotated_lorentz.AddLinearCost(drake::Vector1d(1.0), t_rotated_lorentz);
 
   double cost_expected_rotated_lorentz = x_expected.squaredNorm();
   // NLopt needs a really good starting point to solve SOCP, while SNOPT and

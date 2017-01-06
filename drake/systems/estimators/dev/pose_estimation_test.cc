@@ -143,7 +143,7 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
       }
 
       // min sum_k sigma_k
-      prog.AddLinearCost(Eigen::VectorXd::Ones(points.cols()), {sigma});
+      prog.AddLinearCost(Eigen::VectorXd::Ones(points.cols()), sigma);
     } break;
     default:
       throw std::runtime_error("Unsupported rotation type.");

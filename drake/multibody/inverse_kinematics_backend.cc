@@ -221,7 +221,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
     MatrixXd Q;
     ikoptions.getQ(Q);
     auto objective = std::make_shared<InverseKinObjective>(model, Q);
-    prog.AddCost(objective, {vars});
+    prog.AddCost(objective, vars);
 
     for (int i = 0; i < num_constraints; i++) {
       const RigidBodyConstraint* constraint = constraint_array[i];
