@@ -519,6 +519,30 @@ class RigidBodyTree {
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorques(
       Eigen::MatrixBase<DerivedV> const& v) const;
 
+  /// Given a set of points in the frame referenced by
+  /// @p from_body_or_frame_ind this methods returns the same set of points
+  /// described in the frame referenced by @p to_body_or_frame_ind.
+  ///
+  /// The frames referenced by `from_body_or_frame_ind` and
+  /// `to_body_or_frame_ind` are always attached to a RigidBody either
+  /// because they are a RigidBody id (i.e. the result from
+  /// RigidBody::get_index()) or because they are a RigidBodyFrame id (i.e.
+  /// the result from `RigidBodyFrame::get_frame_index()`. Therefore the
+  /// result is state dependent, which gets reflected in the fact that his
+  /// method takes a KinematicsCache `cache` objects as an input.
+  ///
+  /// @param[in] cache KinematicsCache object.
+  /// @param[in] points A matrix in R^{3 x n} containing n 3D column vectors
+  /// for each point to be transformed.
+  /// @param[in] from_body_or_frame_ind Frame identifier on which input points
+  /// are described.
+  /// @param[in] to_body_or_frame_ind Frame identifier on which output points
+  /// are described.
+  /// @returns The input set of points described in the frame referenced by
+  /// @p to_body_or_frame_ind.
+  // TODO(amcastro-tri): write similar C++ test to the one in
+  // drake/bindings/python/pydrake/test/testPR2IK.py showing the use of
+  // RigidBodyFrame.
   template <
       typename Scalar,
       typename DerivedPoints>  // not necessarily any relation between the two;
@@ -556,6 +580,60 @@ class RigidBodyTree {
             .linear());
   }
 
+  /// Given a set of `n` points provided as column entries in @p points in
+  /// `R^{3 x n}` this method computes a Jacobian matrix that relates each
+  /// point's velocity with either the time derivatives of generalized
+  /// coordinates (`in_terms_of_qdot = true`) or the generalized velocities
+  /// (`in_terms_of_qdot = false`).
+  ///
+  /// The frames referenced by `from_body_or_frame_ind` and
+  /// `to_body_or_frame_ind` are always attached to a RigidBody either
+  /// because they are a RigidBody id (i.e. the result from
+  /// RigidBody::get_index()) or because they are a RigidBodyFrame id (i.e.
+  /// the result from `RigidBodyFrame::get_frame_index()`. Therefore the
+  /// result is state dependent, which gets reflected in the fact that his
+  /// method takes a KinematicsCache `cache` objects as an input.
+  ///
+  /// Defining:
+  ///   `ndof = nq` if `in_terms_of_qdot = true` or
+  ///   `ndof = nv` if `in_terms_of_qdot = false`,
+  ///   `O`: the frame referenced by from_body_or_frame_ind.
+  ///   `B`: the frame referenced by to_body_or_frame_ind.
+  ///   `vi`: The linear velocity of the i-th point in `points`.
+  ///
+  /// The Jacobian matrix lives in `R^{3*n x ndof}` and relates to the linear
+  /// velocity of the i-th point expressed in frame `O` `vi_O` by:
+  ///   `vi_O = [J * v].segment<3>(i)` (in terms of generalized velocites)
+  ///   `vi_O = [J * qdot].segment<3>(i)` (in terms of generalized coordinates
+  ///                                     time derivatives)
+  ///
+  /// Note: Many entries in this matrix may be zero for non-participating
+  /// degrees of freedom. This might have an impact on the efficiency of your
+  /// particular computation.
+  ///
+  /// @param[in] cache KinematicsCache object.
+  /// @param[in] points A matrix in R^{3 x n} containing n 3D column vectors
+  /// for each point to be transformed.
+  /// @param[in] from_body_or_frame_ind Frame identifier on which input points
+  /// are described.
+  /// @param[in] to_body_or_frame_ind Frame identifier on which velocities
+  /// computed with this Jacobian are described i.e. `v_i`'s are described in
+  /// to_body_or_frame_ind.
+  /// @param[in] in_terms_of_qdot if `true` the returned Jacobian allows to
+  /// compute velocities as `v = J * qdot` or if `false`, it allows to compute
+  /// velocities as `v = J * v`.
+  ///
+  /// @returns A Jacobian matrix `J` in `R^{3*n x ndof}` with `ndof = nq` if
+  /// `in_terms_of_qdot = true` or `ndof = nv` if `in_terms_of_qdot = false`.
+  ///
+  /// @see transformPoints() to transform positions instead of velocities.
+  ///
+  /// The Jacobian returned consists only of the partial derivatives of the
+  /// input points computed with respect to the degrees of freedom. It does not
+  /// compute the partial derivatives of a frame orientation with respect to
+  /// the degrees of freedom. @see geometricJacobian() to obtain the Jacobian
+  /// relating generalized velocities (or generalized coordinates time
+  /// derivatives) to Plucker vector representations of spatial velocities.
   template <typename Scalar, typename DerivedPoints>
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> transformPointsJacobian(
       const KinematicsCache<Scalar>& cache,
@@ -600,6 +678,51 @@ class RigidBodyTree {
                                         int from_body_or_frame_ind,
                                         int to_body_or_frame_ind) const;
 
+  /// Computes a Jacobian matrix that relates the Plucker vector
+  /// representation of the spatial velocity `V_OB_E` of frame `B` with
+  /// respect to frame `O` exressed in frame `E`.
+  /// The Jacobian can be computed in terms of generalized
+  /// coordinates time derivatives (i.e. `V_OB_E = Jg * qdot`) or in terms of
+  /// generalized velocities (i.e. `V_OB_E = Jg * v`).
+  ///
+  /// Defining:
+  ///   `ndof = nq` if `in_terms_of_qdot = true` or
+  ///   `ndof = nv` if `in_terms_of_qdot = false`,
+  ///   `O`: the frame referenced by base_body_or_frame_ind.
+  ///   `B`: the frame referenced by end_effector_body_or_frame_ind.
+  ///   `E`: the frame referenced by expressed_in_body_or_frame_ind.
+  ///
+  /// The Jacobian matrix `Jg` lives in `R^{6 x ndof}` and relates to the
+  /// Plucker vector represenation of the spatial velocity `V_OB` by:
+  ///   `V_OB_E = Jg * v` (in terms of generalized velocites)
+  ///   `V_OB_E = Jg * qdot` (in terms of generalized coordinates
+  ///                         time derivatives)
+  ///
+  /// Note: Many entries in this matrix may be zero for non-participating
+  /// degrees of freedom. This might have an impact in the efficiency of your
+  /// particular computation.
+  ///
+  /// @param[in] cache KinematicsCache object.
+  /// @param[in] base_body_or_frame_ind Frame identifier for frame O.
+  /// @param[in] end_effector_body_or_frame_ind Frame identifier for frame B.
+  /// @param[in] expressed_in_body_or_frame_ind Frame identifier for frame E.
+  /// @param[in] in_terms_of_qdot if `true` the returned Jacobian is in terms
+  /// of generalized coordinates time derivatives or if `false`, it is in
+  /// terms of generalized velocities.
+  ///
+  /// @returns The Jacobian matrix `Jg` in `R^{6 x ndof}`.
+  ///
+  /// @see transformPoints() to transform positions instead of velocities.
+  /// @see transformPointsJacobian() to obtain a Jacobian matrix relating
+  /// generalized velocities to linear velocity of a particular set of points.
+  ///
+  /// A. Jain introduces a "Jacobian operator" J which relates generalized
+  /// velocities to spatial velocites (not Plucker vectors) in Section 3.6 of
+  /// of his book (see Eq. 3.53, p. 55).
+  /// A. Jain mentions the notion of "Inertially Fixed Velocity Reference
+  /// Frame" which is the equivalent of Plucker vectors in Section 2.5, p.31.
+  /// Velocity recursion using these frames is discussed as part of
+  /// Exercise 3.4, p. 47.
   template <typename Scalar>
   drake::TwistMatrix<Scalar> geometricJacobian(
       const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind,
@@ -1083,11 +1206,32 @@ class RigidBodyTree {
    */
   const RigidBodyActuator& GetActuator(const std::string& name) const;
 
+  /// Returns the index of the RigidBody associated with the frame
+  /// represented by body_or_frame_id. Therefore, this method always returns
+  /// the index of a RigidBody.
+  ///
+  /// If body_or_frame_id corresponds to a RigidBody index, this method
+  /// returns that index and sets `T_BF` to the identity.
+  /// If body_or_frame_id corresponds to a RigidBodyFrame `F`, this method
+  /// returns the index of the RigidBody associated with that frame and sets
+  /// set `T_BF` to the transormation from `F` to the frame `B` of the
+  /// RigidBody to which the frame is attached.
+
+  /// @param[in] body_or_frame_id the index representing the frame we are
+  /// referring to.
+  /// @param[out] T_BF The trasformation between `frame body_or_frame_id` (the
+  /// identity is this frame is a body) and the body to which that frame is
+  /// attached.
+  /// @returns The index of the RigidBody to which the frame is attached (or
+  /// the input frame id if it corresponds to a RigidBody).
   // TODO(tkoolen): remove parseBodyOrFrameID methods
+  // TODO(amcastro-tri): Provide (faster/cleaner) API's for methods now
+  // taking indexes that instead takes RigidBodyFrame's (which immediately
+  // gives access to RigidBody and transform).
   template <typename Scalar>
   int parseBodyOrFrameID(
       const int body_or_frame_id,
-      Eigen::Transform<Scalar, 3, Eigen::Isometry>* Tframe) const;
+      Eigen::Transform<Scalar, 3, Eigen::Isometry>* T_BF) const;
   int parseBodyOrFrameID(const int body_or_frame_id) const;
 
   template <typename Scalar>
