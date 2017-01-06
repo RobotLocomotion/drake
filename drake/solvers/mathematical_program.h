@@ -1082,6 +1082,29 @@ class MathematicalProgram {
   }
 
   /**
+   * Adds the same scalar lower and upper bound to every variable in the matrix.
+   * @tparam rows The number of rows in the DecisionVariableMatrix.
+   * @tparam cols The number of columns in the DecisionVariableMatrix.
+   * @param lb Lower bound.
+   * @param ub Upper bound.
+   * @param vars A matrix of decision variables.
+   * @return The newly created BoundingBoxConstraint.
+   */
+  template <int rows, int cols>
+  typename std::enable_if<rows == Eigen::Dynamic || cols == Eigen::Dynamic,
+      std::shared_ptr<BoundingBoxConstraint>>::type AddBoundingBoxConstraint(
+      double lb, double ub, const Eigen::MatrixBase<DecisionVariableMatrix<rows, cols>>& vars) {
+    DecisionVariableVectorX flat_vars(vars.size());
+    for (int j = 0; j < cols; ++j) {
+      flat_vars.segment(j * vars.rows(), vars.cols()) = vars.col(j);
+    }
+    return AddBoundingBoxConstraint(Eigen::VectorXd::Constant(vars.size(), lb),
+    Eigen::VectorXd::Constant(vars.size(), ub),
+    flat_vars);
+  }
+
+
+  /**
    * Adds Lorentz cone constraint referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
    * The linear expression @f$ z=Ax+b @f$ is in the Lorentz cone.

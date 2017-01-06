@@ -57,7 +57,7 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
   auto W = prog.NewContinuousVariables(vertices.cols(), points.cols(), "W");
 
   // Forall i,j, 0 <= W(i,j) <= 1.
-  prog.AddBoundingBoxConstraint(0, 1, {W});
+  prog.AddBoundingBoxConstraint(0, 1, W);
 
   // Forall k, sum_j W(j,k) = 1.
   // Note: Adding constraints one at a time because W is not a column vector.

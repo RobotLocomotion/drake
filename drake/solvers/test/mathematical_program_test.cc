@@ -142,23 +142,32 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
   // Test the scalar version of the bounding box constraint methods.
 
   MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<2, 2>();
-
+  auto x1 = prog.NewContinuousVariables<2, 2>("x1");
+  DecisionVariableMatrixX x2(2, 2);
+  x2 = x1;
   // Three different ways to construct an equivalent constraint.
-  auto constraint1 = prog.AddBoundingBoxConstraint(0, 1, x);
-  auto constraint2 = prog.AddBoundingBoxConstraint(0, 1, {x.col(0), x.col(1)});
-  auto constraint3 = prog.AddBoundingBoxConstraint(Eigen::Vector4d::Zero(),
+  // 1. Imposes constraint on a static-sized matrix of decision variables.
+  // 2. Imposes constraint on a list of vectors of decision variables.
+  // 3. Imposes constraint on a dynamic-sized matrix of decision variables.
+  auto constraint1 = prog.AddBoundingBoxConstraint(0, 1, x1);
+  auto constraint2 = prog.AddBoundingBoxConstraint(0, 1, {x1.col(0), x1.col(1)});
+  auto constraint3 = prog.AddBoundingBoxConstraint(0, 1, x2);
+  auto constraint4 = prog.AddBoundingBoxConstraint(Eigen::Vector4d::Zero(),
                                                    Eigen::Vector4d::Ones());
 
   EXPECT_TRUE(
       CompareMatrices(constraint1->lower_bound(), constraint2->lower_bound()));
   EXPECT_TRUE(
       CompareMatrices(constraint2->lower_bound(), constraint3->lower_bound()));
+  EXPECT_TRUE(
+      CompareMatrices(constraint3->lower_bound(), constraint4->lower_bound()));
 
   EXPECT_TRUE(
       CompareMatrices(constraint1->upper_bound(), constraint2->upper_bound()));
   EXPECT_TRUE(
       CompareMatrices(constraint2->upper_bound(), constraint3->upper_bound()));
+  EXPECT_TRUE(
+      CompareMatrices(constraint3->upper_bound(), constraint4->upper_bound()));
 }
 
 GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
