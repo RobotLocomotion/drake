@@ -1369,9 +1369,6 @@ class RigidBodyTree {
   int next_available_clique_ = 0;
 
  private:
-  // Map between group names and specification of its collision filter group.
-  std::unordered_map<std::string, DrakeCollision::CollisionFilterGroup<T>>
-      collision_filter_groups_;
 
   // Utility class for storing body collision data during RBT instantiation.
   struct BodyCollisionItem {
@@ -1392,12 +1389,16 @@ class RigidBodyTree {
   // proper, intermediate representation.
   std::unordered_map<RigidBody<T>*, BodyCollisions>
       body_collision_map_;
+
   // Bullet's collision results are affected by the order in which the collision
   // elements are added. This queues the collision elements in the added order
   // so that when actually registered with the collision engine, they'll be
   // submitted in the invocation order.
   // See https://github.com/bulletphysics/bullet3/issues/888
   std::vector< std::unique_ptr<DrakeCollision::Element>> element_order_;
+
+  // Manager for instantiating and managing collision filter groups.
+  DrakeCollision::CollisionFilterGroupManager<T> collision_group_manager_{};
 };
 
 typedef RigidBodyTree<double> RigidBodyTreed;

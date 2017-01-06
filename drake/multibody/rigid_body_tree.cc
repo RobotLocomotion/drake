@@ -204,41 +204,37 @@ const RigidBodyActuator& RigidBodyTree<T>::GetActuator(
 }
 
 template <typename T>
-bool RigidBodyTree<T>::DefineCollisionFilterGroup(const std::string& name, int model_id) {
-  auto itr = collision_filter_groups_.find(name);
-  if (itr == collision_filter_groups_.end()) {
-    collision_filter_groups_[name] = CollisionFilterGroup<T>(name, model_id);
-    return true;
-  }
-  return false;
+bool RigidBodyTree<T>::DefineCollisionFilterGroup(const std::string& name,
+                                                  int model_id) {
+  return collision_group_manager_.DefineCollisionFilterGroup(name, model_id);
 }
 
 template <typename T>
 void RigidBodyTree<T>::AddCollisionFilterGroupMember(
     const std::string& group_name, const std::string& body_name) {
-  auto itr = collision_filter_groups_.find(group_name);
-  if (itr == collision_filter_groups_.end()) {
+  int model_id = collision_group_manager_.GetGroupModelInstanceId(group_name);
+  if (model_id < 0) {
     throw std::runtime_error(
         "Attempting to add a link to an undefined collision filter group: "
-        "Adding " + body_name + " to " + group_name + ".");
+        "Adding " +
+        body_name + " to " + group_name + ".");
   }
-  CollisionFilterGroup<T>& group = itr->second;
-  int body_index = FindBodyIndex(body_name, group.get_model_id());
+  int body_index = FindBodyIndex(body_name, model_id);
   RigidBody<T>* body = bodies[body_index].get();
-  group.add_body(body);
+  if (!collision_group_manager_.AddCollisionFilterGroupMember(group_name,
+                                                              body)) {
+    throw std::runtime_error(
+        "Attempting to add a link to an undefined collision filter group: "
+        "Adding " +
+        body->get_name() + " to " + group_name + ".");
+  }
 }
 
 template <typename T>
 void RigidBodyTree<T>::AddCollisionFilterIgnoreTarget(
     const std::string& group_name, const std::string& target_group_name) {
-  auto itr = collision_filter_groups_.find(group_name);
-  if (itr == collision_filter_groups_.end()) {
-    throw std::runtime_error(
-        "Attempting to add an ignored collision filter group to an undefined "
-        "collision filter group: Ignoring " +
-        target_group_name + " by " + group_name + ".");
-    itr->second.add_ignore_group(target_group_name);
-  }
+  collision_group_manager_.AddCollisionFilterIgnoreTarget(group_name,
+                                                          target_group_name);
 }
 
 template <typename T>
