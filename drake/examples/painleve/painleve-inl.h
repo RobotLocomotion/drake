@@ -1,3 +1,4 @@
+#pragma once
 
 // @file
 // Template method implementations for painleve.h.
