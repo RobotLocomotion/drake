@@ -235,7 +235,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
         }
         auto wrapper = std::make_shared<SingleTimeKinematicConstraintWrapper>(
             stc, &kin_helper);
-        prog.AddConstraint(wrapper, {vars});
+        prog.AddConstraint(wrapper, vars);
       } else if (constraint_category ==
                  RigidBodyConstraint::PostureConstraintCategory) {
         const PostureConstraint* pc =

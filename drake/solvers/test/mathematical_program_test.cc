@@ -651,8 +651,8 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
   prog.AddCost(GloptipolyConstrainedExampleCost(), {y});
   std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
       new GloptipolyConstrainedExampleConstraint());
-  prog.AddConstraint(qp_con, {x});
-  prog.AddConstraint(qp_con, {y});
+  prog.AddConstraint(qp_con, x);
+  prog.AddConstraint(qp_con, y);
   prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
                            -std::numeric_limits<double>::infinity(), 4, {x});
   prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
@@ -1105,7 +1105,7 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
                               VectorXd::Zero(xDim), 0,
                               x_expected.squaredNorm()));
 
-  prog_lorentz.AddConstraint(quadratic_constraint, {x_lorentz});
+  prog_lorentz.AddConstraint(quadratic_constraint, x_lorentz);
   RunNonlinearProgram(prog_lorentz, [&]() {
     const auto& x_lorentz_value = prog_lorentz.GetSolution(x_lorentz);
     EXPECT_TRUE(CompareMatrices(x_lorentz_value, x_expected, 1E-5,
@@ -1114,7 +1114,7 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
     EXPECT_NEAR(cost_expected_lorentz, t_lorentz_value(0), 1E-3);
   });
 
-  prog_rotated_lorentz.AddConstraint(quadratic_constraint, {x_rotated_lorentz});
+  prog_rotated_lorentz.AddConstraint(quadratic_constraint, x_rotated_lorentz);
   RunNonlinearProgram(prog_rotated_lorentz, [&]() {
     const auto& x_rotated_lorentz_value =
         prog_rotated_lorentz.GetSolution(x_rotated_lorentz);

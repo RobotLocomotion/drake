@@ -814,8 +814,16 @@ class MathematicalProgram {
    */
   template <typename ConstraintT>
   void AddConstraint(std::shared_ptr<ConstraintT> constraint) {
-    AddConstraint(constraint, {decision_variables_});
+    AddConstraint(constraint, decision_variables_);
   }
+
+  /**
+   * Adds a generic constraint to the program.  This should
+   * only be used if a more specific type of constraint is not
+   * available, as it may require the use of a significantly more
+   * expensive solver.
+   */
+  void AddConstraint(const Binding<Constraint>& binding);
 
   /**
    * Adds a generic constraint to the program.  This should
@@ -825,6 +833,15 @@ class MathematicalProgram {
    */
   void AddConstraint(std::shared_ptr<Constraint> con,
                      const VariableListRef& vars);
+
+  /**
+   * Adds a generic constraint to the program.  This should
+   * only be used if a more specific type of constraint is not
+   * available, as it may require the use of a significantly more
+   * expensive solver.
+   */
+  void AddConstraint(std::shared_ptr<Constraint> con,
+                     const Eigen::Ref<const DecisionVariableVectorX>& vars);
 
   /**
    * Adds linear constraints referencing potentially a subset

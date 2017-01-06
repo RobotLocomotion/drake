@@ -457,7 +457,7 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
         if (!stc->isTimeValid(&t[t_index])) {
           continue;
         }
-        prog.AddConstraint(wrapper, {q.segment(nq * t_index, nq)});
+        prog.AddConstraint(wrapper, q.segment(nq * t_index, nq));
       }
     } else if (constraint_category ==
                RigidBodyConstraint::PostureConstraintCategory) {

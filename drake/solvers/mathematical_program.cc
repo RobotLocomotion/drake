@@ -189,10 +189,19 @@ void MathematicalProgram::AddCost(
   DRAKE_ASSERT(obj->Q().rows() == var_dim && obj->b().rows() == var_dim);
 }
 
-void MathematicalProgram::AddConstraint(std::shared_ptr<Constraint> con,
-                                        const VariableListRef& vars) {
+void MathematicalProgram::AddConstraint(const Binding<Constraint>& binding) {
   required_capabilities_ |= kGenericConstraint;
-  generic_constraints_.push_back(Binding<Constraint>(con, vars));
+  generic_constraints_.push_back(binding);
+}
+
+void MathematicalProgram::AddConstraint(std::shared_ptr<Constraint> con,
+                                        const VariableListRef &vars) {
+  AddConstraint(Binding<Constraint>(con, vars));
+}
+
+void MathematicalProgram::AddConstraint(std::shared_ptr<Constraint> con,
+                                        const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  AddConstraint(Binding<Constraint>(con, vars));
 }
 
 void MathematicalProgram::AddConstraint(std::shared_ptr<LinearConstraint> con,
