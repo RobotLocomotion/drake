@@ -44,14 +44,15 @@ fix the failure within 60 minutes, the build cop will merge the pull request to
 revert the commits and verify that the continuous builds triggered by that merge
 pass.
 
-The build cop can use the `DrakeDevelopers' Slack channel
+Use the `DrakeDevelopers Slack channel
 #buildcop <https://drakedevelopers.slack.com/messages/buildcop/details/>`_
-to communicate with your partner build cop and discuss issues.
+to discuss build issues with your partner build cop and other Drake
+contributors.
 
 At the end of each rotation, the build cop should complete the
 `build cop review and retrospective
 <https://docs.google.com/document/d/120AOAaamIMO-SM1UaJ6vfzpA15LnXHexDF4a7MLAS3o/edit#heading=h.sxk1djc2v0yg>`_,
-and should notify the next build cop on the `DrakeDevelopers' Slack channel
+and should notify the next build cop on the `DrakeDevelopers Slack channel
 #buildcop <https://drakedevelopers.slack.com/messages/buildcop/details/>`_.
 
 .. _revert_template:
@@ -153,7 +154,12 @@ recommended responses. However, build cops often have to address unexpected
 circumstances. Do not expect this list to be complete, and always apply your
 own judgment.
 
-The first step is to determine if an open Github Drake issue describes the
+In almost any build breakage, the first information-gathering step is to
+click on the build that is yellow or red in Jenkins, then click on the first
+breaking change in the Build History. You will see a list of the new commits
+in that particular run.
+
+Determine if an open Github Drake issue describes the
 situation. For example, some tests are flaky for reasons that have no known
 resolution, but are described by Drake issues. If you find that your broken
 build is described by such an issue, consider adding the build information to
@@ -161,11 +167,6 @@ the issue for future analysis. The `build cop review and
 retrospective
 <https://docs.google.com/document/d/120AOAaamIMO-SM1UaJ6vfzpA15LnXHexDF4a7MLAS3o/edit#heading=h.sxk1djc2v0yg>`_
 also describes current build issues. 
-
-If no Drake issue is describing your break, the next step is to
-click on the build that is yellow or red in Jenkins, then click on the first
-breaking change in the Build History. You will see a list of the new commits
-in that particular run.
 
 Broken Compile or Test
 **********************
@@ -231,7 +232,7 @@ required. If you believe the rate of a particular infrastructure flake has
 increased, alert Kitware by assigning a GitHub issue to both @BetsyMcPhail and
 @jamiesnape.
 
-If you see "All nodes of label 'mac' are offline", this should disappear
+If you see "All nodes of label <label> are offline", this should disappear
 eventually and the build should run, once Jenkins gets a node booted up.
 
 Infrastructure Collapse
