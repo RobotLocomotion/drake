@@ -163,11 +163,16 @@ class GeoFace {
 class IndexFace {
  public:
   struct Vertex {
+    Vertex(int vertex_index_in, int normal_index_in)
+        : vertex_index(vertex_index_in),
+          normal_index(normal_index_in) {}
+
     int vertex_index{};
     int normal_index{};
   };
 
-  void push_vertex(const Vertex& vertex) { vertices_.push_back(vertex); }
+  void push_vertex(int vertex_index, int normal_index) {
+    vertices_.emplace_back(vertex_index, normal_index); }
 
   const std::vector<Vertex>& vertices() const { return vertices_; }
 
@@ -186,7 +191,7 @@ class GeoMesh {
     for (size_t gi = 0; gi < geo_face.vertices().size(); ++gi) {
       int vi = vertices_.push_back(geo_face.vertices()[gi]);
       int ni = normals_.push_back(geo_face.normals()[gi]);
-      face.push_vertex({vi, ni});
+      face.push_vertex(vi, ni);
     }
     faces_.push_back(face);
   }
