@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <map>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -31,13 +32,16 @@ class InfiniteCircuitRoad : public api::RoadGeometry {
  public:
   /// An element of the circuitous path traversed by an InfiniteCircuitRoad.
   struct Record {
+    Record(const api::Lane* lane_in, double start_circuit_s_in,
+           bool is_reversed_in)
+        : lane(lane_in),
+          start_circuit_s(start_circuit_s_in),
+          is_reversed(is_reversed_in) {}
+
     /// A pointer to an api::Lane in the wrapped api::RoadGeometry.
     const api::Lane* lane{};
     /// Where along the path-length of the circuit this element begins.
     double start_circuit_s{};
-    // TODO(maddog)  Ditch this (always == start + lane->length()).
-    /// Where along the path-length of the circuit this element ends.
-    double end_circuit_s{};
     /// True if the lane should be traversed in the reverse direction, i.e.,
     /// starting at s = lane->length() instead of s = 0.
     bool is_reversed{};
@@ -156,6 +160,7 @@ class InfiniteCircuitRoad : public api::RoadGeometry {
     const api::LaneId id_;
     const InfiniteCircuitRoad* road_{};
     std::vector<Record> records_;
+    std::map<double, int> record_map_;
     double cycle_length_{};
   };
 

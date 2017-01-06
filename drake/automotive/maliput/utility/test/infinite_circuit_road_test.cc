@@ -223,7 +223,6 @@ TEST_F(InfiniteCircuitRoadTest, PathRecords) {
     const InfiniteCircuitRoad::Record& rec = dut_->lane()->path_record(i);
     EXPECT_EQ(path_[i], rec.lane);
     EXPECT_EQ(cumulative_length, rec.start_circuit_s);
-    EXPECT_EQ(cumulative_length + path_[i]->length(), rec.end_circuit_s);
     EXPECT_EQ((reversed_set_.count(i) > 0), rec.is_reversed);
 
     const double s = cumulative_length + (0.25 * path_[i]->length());

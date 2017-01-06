@@ -131,8 +131,9 @@ InfiniteCircuitRoad::Lane::Lane(const api::LaneId& id,
                         current.lane->length());
     const double end_s = start_s + current.lane->length();
     seen_records[current] = records_.size();
-    records_.push_back(Record {
-        current.lane, start_s, end_s, (current.end == api::LaneEnd::kFinish)});
+    record_map_.emplace(end_s, records_.size());
+    records_.emplace_back(current.lane, start_s,
+                          (current.end == api::LaneEnd::kFinish));
     start_s = end_s;
 
     // If a path was specified, and we've reached its end, then we are done.
@@ -179,18 +180,21 @@ InfiniteCircuitRoad::Lane::Lane(const api::LaneId& id,
     }
   }
 
-  // If we forged out own path, and our last lane-end is not the same as our
+  // If we forged our own path, and our last lane-end is not the same as our
   // first lane-end (i.e., its index is not zero), then we need to trim
   // records from the beginning (since they are not part of the circuit).
   if ((path.size() == 0) && (seen_records[current] > 0)) {
     records_.erase(records_.begin(),
                    records_.begin() + seen_records[current]);
     // Need to re-measure all the start/end offsets, too.
+    record_map_.clear();
     start_s = 0;
+    int index = 0;
     for (Record& r : records_) {
       r.start_circuit_s = start_s;
       start_s += r.lane->length();
-      r.end_circuit_s = start_s;
+      record_map_.emplace(start_s, index);
+      ++index;
     }
   }
 
@@ -304,12 +308,14 @@ api::LanePosition InfiniteCircuitRoad::Lane::DoEvalMotionDerivatives(
 
 int InfiniteCircuitRoad::Lane::GetPathIndex(const double s) const {
   double circuit_s = this->circuit_s(s);
-  for (size_t i = 0; i < records_.size(); ++i) {
-    const Record& r = records_[i];
-    if (circuit_s < r.end_circuit_s) {
-      return i;
-    }
+  auto bound = record_map_.upper_bound(circuit_s);
+  if (bound != record_map_.end()) {
+    return bound->second;
   }
+  drake::log()->error("UH OH {}   cycle {}   last {}",
+                      circuit_s, cycle_length_,
+                      records_.back().start_circuit_s +
+                      records_.back().lane->length());
   DRAKE_ABORT();  // I.e., how did we fall off the end?
 }
 
@@ -318,30 +324,23 @@ std::pair<api::RoadPosition, bool>
 InfiniteCircuitRoad::Lane::ProjectToSourceRoad(
     const api::LanePosition& lane_pos) const {
   double circuit_s = this->circuit_s(lane_pos.s);
-  for (const Record& r : records_) {
-    if (circuit_s < r.end_circuit_s) {
-      const double s_offset = circuit_s - r.start_circuit_s;
-      if (r.is_reversed) {
-        // If this Lane is connected "backwards", then we have to measure s
-        // from the end, and flip the sign of r.
-        return std::make_pair(
-            api::RoadPosition(
-                r.lane, api::LanePosition(r.lane->length() - s_offset,
-                                          -lane_pos.r,
-                                          lane_pos.h)),
-            true /*reversed*/);
-      } else {
-        return std::make_pair(
-            api::RoadPosition(
-                r.lane, api::LanePosition(s_offset, lane_pos.r, lane_pos.h)),
-            false /*not reversed*/);
-      }
-    }
+  const Record& r = records_[GetPathIndex(circuit_s)];
+  const double s_offset = circuit_s - r.start_circuit_s;
+  if (r.is_reversed) {
+    // If this Lane is connected "backwards", then we have to measure s
+    // from the end, and flip the sign of r.
+    return std::make_pair(
+        api::RoadPosition(
+            r.lane, api::LanePosition(r.lane->length() - s_offset,
+                                      -lane_pos.r,
+                                      lane_pos.h)),
+        true /*reversed*/);
+  } else {
+    return std::make_pair(
+        api::RoadPosition(
+            r.lane, api::LanePosition(s_offset, lane_pos.r, lane_pos.h)),
+        false /*not reversed*/);
   }
-  drake::log()->error("UH OH {}   cycle {}   last {}",
-                      circuit_s, cycle_length_,
-                      records_.back().end_circuit_s);
-  DRAKE_ABORT();  // I.e., how did we fall off the end?
 }
 
 }  // namespace utility
