@@ -15,14 +15,14 @@ CollisionFilterGroup<T>::CollisionFilterGroup(const std::string& name,
     : name_(name), model_id_(model_id) {}
 
 template <typename T>
-bool CollisionFilterGroupManager<T>::DefineCollisionFilterGroup(
+void CollisionFilterGroupManager<T>::DefineCollisionFilterGroup(
     const std::string& name, int model_id) {
   auto itr = collision_filter_groups_.find(name);
   if (itr == collision_filter_groups_.end()) {
     collision_filter_groups_[name] = CollisionFilterGroup<T>(name, model_id);
-    return true;
   }
-  return false;
+  throw std::runtime_error(
+      "Attempting to create duplicate collision filter group: " + name);
 }
 
 template <typename T>

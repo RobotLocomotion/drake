@@ -74,12 +74,13 @@ class CollisionFilterGroupManager {
 
   /**
    Attempts to define a new collision filter group.  The given name *must*
-   be unique.  Duplicate names will lead to failure.
+   be unique.  Duplicate names or attempting to add more
+   collision filter groups than the system can handle will lead to failure. In
+   the event of failure, an exception is thrown.
    @param name        The unique name of the new group.
    @param model_id    The model instance id to associate with this group.
-   @returns           True to indicate successful addition.
    */
-  bool DefineCollisionFilterGroup(const std::string& name, int model_id);
+  void DefineCollisionFilterGroup(const std::string& name, int model_id);
 
   /**
    Adds a RigidBody to a collision filter group.  The process will fail if the

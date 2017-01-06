@@ -561,11 +561,7 @@ void ParseCollisionFilterGroup(RigidBodyTree<double>* tree, XMLElement* node,
         "Collision filter group specification missing name attribute.");
   string group_name(attr);
 
-  if (!tree->DefineCollisionFilterGroup(group_name, model_instance_id)) {
-    throw runtime_error(
-        "Attempting to add a collision filter group that already exists: " +
-        group_name + ".");
-  }
+  tree->DefineCollisionFilterGroup(group_name, model_instance_id);
 
   for (XMLElement* member_node = node->FirstChildElement("member"); member_node;
        member_node =
@@ -587,6 +583,7 @@ void ParseCollisionFilterGroup(RigidBodyTree<double>* tree, XMLElement* node,
       throw runtime_error(
           "Collision filter group provides a tag specifying a group to ignore "
           "without specifying the \"collision_filter_group\".");
+
     tree->AddCollisionFilterIgnoreTarget(group_name, target_name);
   }
 }

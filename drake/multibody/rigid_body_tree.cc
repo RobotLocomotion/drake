@@ -204,9 +204,9 @@ const RigidBodyActuator& RigidBodyTree<T>::GetActuator(
 }
 
 template <typename T>
-bool RigidBodyTree<T>::DefineCollisionFilterGroup(const std::string& name,
+void RigidBodyTree<T>::DefineCollisionFilterGroup(const std::string& name,
                                                   int model_id) {
-  return collision_group_manager_.DefineCollisionFilterGroup(name, model_id);
+  collision_group_manager_.DefineCollisionFilterGroup(name, model_id);
 }
 
 template <typename T>
