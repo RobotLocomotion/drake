@@ -44,24 +44,24 @@ class EndlessRoadOracle : public systems::LeafSystem<T> {
 
  public:
   // System<T> overrides
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
 
  protected:
   // LeafSystem<T> overrides
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override;
+      const systems::OutputPortDescriptor<T>& descriptor) const override;
 
  private:
-  void DoEvalOutput(
+  void ImplCalcOutput(
       const std::vector<const EndlessRoadCarState<T>*>& car_inputs,
       std::vector<EndlessRoadOracleOutput<T>*>& oracle_outputs) const;
 
   const maliput::utility::InfiniteCircuitRoad* road_;
   const int num_cars_;
-  // TODO(maddog)  Do we need to keep track of these here?
-  std::vector<systems::SystemPortDescriptor<T>> inports_;
-  std::vector<systems::SystemPortDescriptor<T>> outports_;
+//XXX  // TODO(maddog)  Do we need to keep track of these here?
+//XXX  std::vector<systems::InputPortDescriptor<T>> inports_;
+//XXX  std::vector<systems::OutputPortDescriptor<T>> outports_;
 
 };
 

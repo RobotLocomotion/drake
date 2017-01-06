@@ -56,11 +56,9 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
  public:
   // System<T> overrides
   bool has_any_direct_feedthrough() const override;
-
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
-
-  void EvalTimeDerivatives(
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
+  void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
@@ -68,9 +66,8 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
   // LeafSystem<T> overrides
   std::unique_ptr<systems::ContinuousState<T>
                   > AllocateContinuousState() const override;
-
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override;
+      const systems::OutputPortDescriptor<T>& descriptor) const override;
 
  private:
   struct Accelerations {
@@ -81,8 +78,8 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
     T lateral;
   };
 
-  void DoEvalOutput(const EndlessRoadCarState<T>&,
-                    EndlessRoadCarState<T>*) const;
+  void ImplCalcOutput(const EndlessRoadCarState<T>&,
+                      EndlessRoadCarState<T>*) const;
 
   Accelerations ComputeUserAccelerations(
       const EndlessRoadCarState<T>& state,
@@ -92,10 +89,9 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
       const EndlessRoadCarState<T>& state,
       const EndlessRoadOracleOutput<T>& input) const;
 
-
-  void DoEvalTimeDerivatives(const EndlessRoadCarState<T>&,
-                             const Accelerations& accelerations,
-                             EndlessRoadCarState<T>*) const;
+  void ImplCalcTimeDerivatives(const EndlessRoadCarState<T>&,
+                               const Accelerations& accelerations,
+                               EndlessRoadCarState<T>*) const;
 
   const std::string id_;
   const maliput::utility::InfiniteCircuitRoad* road_;

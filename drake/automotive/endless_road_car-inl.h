@@ -31,21 +31,18 @@ EndlessRoadCar<T>::EndlessRoadCar(
     case kNone: { break; }
     case kUser: {
       this->DeclareInputPort(systems::kVectorValued,
-                             DrivingCommandIndices::kNumCoordinates,
-                             systems::kContinuousSampling);
+                             DrivingCommandIndices::kNumCoordinates);
       break;
     }
     case kIdm: {
       this->DeclareInputPort(systems::kVectorValued,
-                             EndlessRoadOracleOutputIndices::kNumCoordinates,
-                             systems::kContinuousSampling);
+                             EndlessRoadOracleOutputIndices::kNumCoordinates);
       break;
     }
     default: { DRAKE_ABORT(); }
   };
   this->DeclareOutputPort(systems::kVectorValued,
-                          EndlessRoadCarStateIndices::kNumCoordinates,
-                          systems::kContinuousSampling);
+                          EndlessRoadCarStateIndices::kNumCoordinates);
 }
 
 
@@ -73,8 +70,8 @@ bool EndlessRoadCar<T>::has_any_direct_feedthrough() const {
 
 
 template <typename T>
-void EndlessRoadCar<T>::EvalOutput(const systems::Context<T>& context,
-                                   systems::SystemOutput<T>* output) const {
+void EndlessRoadCar<T>::DoCalcOutput(const systems::Context<T>& context,
+                                     systems::SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
 
@@ -91,13 +88,13 @@ void EndlessRoadCar<T>::EvalOutput(const systems::Context<T>& context,
       dynamic_cast<EndlessRoadCarState<T>*>(output->GetMutableVectorData(0));
   DRAKE_ASSERT(output_vector);
 
-  DoEvalOutput(*state, output_vector);
+  ImplCalcOutput(*state, output_vector);
 }
 
 
 template <typename T>
-void EndlessRoadCar<T>::DoEvalOutput(const EndlessRoadCarState<T>& state,
-                                     EndlessRoadCarState<T>* output) const {
+void EndlessRoadCar<T>::ImplCalcOutput(const EndlessRoadCarState<T>& state,
+                                       EndlessRoadCarState<T>* output) const {
   output->set_value(state.get_value());
   // TODO(maddog)  Until we have a way to express this constraint to the
   //               simulator, forbid exposing negative speeds.
@@ -108,7 +105,7 @@ void EndlessRoadCar<T>::DoEvalOutput(const EndlessRoadCarState<T>& state,
 
 
 template <typename T>
-void EndlessRoadCar<T>::EvalTimeDerivatives(
+void EndlessRoadCar<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
@@ -158,7 +155,7 @@ void EndlessRoadCar<T>::EvalTimeDerivatives(
     };
   }();
 
-  DoEvalTimeDerivatives(*state, accelerations, rates);
+  ImplCalcTimeDerivatives(*state, accelerations, rates);
 }
 
 
@@ -249,7 +246,7 @@ typename EndlessRoadCar<T>::Accelerations EndlessRoadCar<T>::ComputeIdmAccelerat
 
 
 template <typename T>
-void EndlessRoadCar<T>::DoEvalTimeDerivatives(
+void EndlessRoadCar<T>::ImplCalcTimeDerivatives(
     const EndlessRoadCarState<T>& state,
     const Accelerations& accelerations,
     EndlessRoadCarState<T>* rates) const {
@@ -285,8 +282,9 @@ EndlessRoadCar<T>::AllocateContinuousState() const {
 
 
 template <typename T>
-std::unique_ptr<systems::BasicVector<T>> EndlessRoadCar<T>::AllocateOutputVector(
-    const systems::SystemPortDescriptor<T>& descriptor) const {
+std::unique_ptr<systems::BasicVector<T>>
+EndlessRoadCar<T>::AllocateOutputVector(
+    const systems::OutputPortDescriptor<T>& descriptor) const {
   return std::make_unique<EndlessRoadCarState<T>>();
 }
 
