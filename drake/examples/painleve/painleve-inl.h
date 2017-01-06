@@ -1,4 +1,3 @@
-#pragma once
 
 /// @file
 /// Template method implementations for painleve.h.
@@ -57,6 +56,14 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
   new_statev->SetAtIndex(1, y);
   new_statev->SetAtIndex(2, theta);
 
+  // If there is no impact, quit now.
+  if (!IsImpacting(context)) {
+    new_statev->SetAtIndex(3, xdot);
+    new_statev->SetAtIndex(4, ydot);
+    new_statev->SetAtIndex(5, thetadot);
+    return;
+  }
+
   // The two points of the rod are located at (x,y) + R(theta)*[0,ell/2] and
   // (x,y) + R(theta)*[0,-ell/2], where
   // R(theta) = | cos(theta) -sin(theta) |
@@ -74,14 +81,6 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
   // Compute the velocity at the point of contact (xc,yc).
   const T xc = x + k * ctheta * half_rod_length;
   const T yc = y + k * stheta * half_rod_length;
-
-  // If there is no impact, quit now.
-  if (!IsImpacting(context)) {
-    new_statev->SetAtIndex(3, xdot);
-    new_statev->SetAtIndex(4, ydot);
-    new_statev->SetAtIndex(5, thetadot);
-    return;
-  }
 
   // Compute the sticking impact impulses.
   const Vector2<T> f_sticking = CalcStickingImpactImpulse(context);
@@ -508,8 +507,6 @@ void Painleve<T>::DoCalcTimeDerivativesTwoContact(
     // assumption has been neither proven nor rigorously validated.
     throw std::logic_error("Sliding detected with non-point contact.");
   }
-
-  return;
 }
 
 template <class T>
