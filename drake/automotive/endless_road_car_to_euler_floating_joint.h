@@ -22,11 +22,9 @@ class EndlessRoadCarToEulerFloatingJoint : public systems::LeafSystem<T> {
       : road_(road) {
     this->set_name("EndlessRoadCarToEulerFloatingJoint");
     this->DeclareInputPort(systems::kVectorValued,
-                           EndlessRoadCarStateIndices::kNumCoordinates,
-                           systems::kContinuousSampling);
+                           EndlessRoadCarStateIndices::kNumCoordinates);
     this->DeclareOutputPort(systems::kVectorValued,
-                            EulerFloatingJointStateIndices::kNumCoordinates,
-                            systems::kContinuousSampling);
+                            EulerFloatingJointStateIndices::kNumCoordinates);
   }
 
   void EvalOutput(const systems::Context<T>& context,

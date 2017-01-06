@@ -28,21 +28,21 @@ EndlessRoadOracle<T>::EndlessRoadOracle(
     : road_(road), num_cars_(num_cars) {
   // Declare an input and output for each car.
   for (int i = 0; i < num_cars; ++i) {
-    inports_.push_back(
+//XXX    inports_.push_back(
         this->DeclareInputPort(systems::kVectorValued,
-                               EndlessRoadCarStateIndices::kNumCoordinates,
-                               systems::kContinuousSampling));
-    outports_.push_back(
-        this->DeclareOutputPort(systems::kVectorValued,
-                                EndlessRoadOracleOutputIndices::kNumCoordinates,
-                                systems::kContinuousSampling));
+                               EndlessRoadCarStateIndices::kNumCoordinates);//);
+//XXX    outports_.push_back(
+        this->DeclareOutputPort(
+            systems::kVectorValued,
+            EndlessRoadOracleOutputIndices::kNumCoordinates);//);
   }
 }
 
 
 template <typename T>
-void EndlessRoadOracle<T>::EvalOutput(const systems::Context<T>& context,
-                                      systems::SystemOutput<T>* output) const {
+void EndlessRoadOracle<T>::DoCalcOutput(
+    const systems::Context<T>& context,
+    systems::SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
 
@@ -70,7 +70,7 @@ void EndlessRoadOracle<T>::EvalOutput(const systems::Context<T>& context,
     oracle_outputs.push_back(output_vector);
   }
 
-  DoEvalOutput(car_inputs, oracle_outputs);
+  ImplCalcOutput(car_inputs, oracle_outputs);
 }
 
 
@@ -108,7 +108,7 @@ void UnwrapEndlessRoadCarState(
   for (size_t i = 0; i < car_inputs.size(); ++i) {
     const EndlessRoadCarState<double>* self = car_inputs[i];
 
-    const maliput::api::RoadPosition rp = road->ProjectToSourceRoad(
+    const maliput::api::RoadPosition rp = road->lane()->ProjectToSourceRoad(
         {self->s(), 0., 0.}).first;
     // TODO(maddog)  Until we deal with cars going the wrong way.
     DRAKE_DEMAND(std::cos(self->heading()) >= 0.);
@@ -119,27 +119,29 @@ void UnwrapEndlessRoadCarState(
 
     const double horizon_meters = longitudinal_speed * horizon_seconds;
     // TODO(maddog)  Is this < constraint relevant anymore???
-    DRAKE_DEMAND(horizon_meters < (0.5 * road->cycle_length()));
+    DRAKE_DEMAND(horizon_meters < (0.5 * road->lane()->cycle_length()));
     DRAKE_DEMAND(horizon_meters >= 0.);
     const double circuit_s0 = road->lane()->circuit_s(self->s());
 
     paths->emplace_back();  // Add empty path-vector to paths vector.
 
-    int path_index = road->GetPathIndex(circuit_s0);
+    int path_index = road->lane()->GetPathIndex(circuit_s0);
     maliput::utility::InfiniteCircuitRoad::Record path_record =
-        road->path_record(path_index);
+        road->lane()->path_record(path_index);
     double circuit_s_in = circuit_s0;
     while (circuit_s_in <= (circuit_s0 + horizon_meters)) {
       (*paths)[i].push_back({path_record.lane, path_record.is_reversed});
 
       // TODO(maddog) Index should decrement for s_dot < 0.
-      if (++path_index >= road->num_path_records()) {
+      if (++path_index >= road->lane()->num_path_records()) {
         path_index = 0;
       }
-      path_record = road->path_record(path_index);
+      path_record = road->lane()->path_record(path_index);
       circuit_s_in = path_record.start_circuit_s;
       // Handle wrap-around of "circuit s" values.
-      if (circuit_s_in < circuit_s0) { circuit_s_in += road->cycle_length(); }
+      if (circuit_s_in < circuit_s0) {
+        circuit_s_in += road->lane()->cycle_length();
+      }
     }
     DRAKE_DEMAND(!(*paths)[i].empty());
   }
@@ -489,7 +491,7 @@ void AssessIntersections(
 
 
 template <typename T>
-void EndlessRoadOracle<T>::DoEvalOutput(
+void EndlessRoadOracle<T>::ImplCalcOutput(
     const std::vector<const EndlessRoadCarState<T>*>& car_inputs,
     std::vector<EndlessRoadOracleOutput<T>*>& oracle_outputs) const {
   // The goal here is, for each car, to calculate the distance and
@@ -532,7 +534,7 @@ void EndlessRoadOracle<T>::DoEvalOutput(
 template <typename T>
 std::unique_ptr<systems::BasicVector<T>
                 > EndlessRoadOracle<T>::AllocateOutputVector(
-    const systems::SystemPortDescriptor<T>& descriptor) const {
+    const systems::OutputPortDescriptor<T>& descriptor) const {
   return std::make_unique<EndlessRoadOracleOutput<T>>();
 }
 
