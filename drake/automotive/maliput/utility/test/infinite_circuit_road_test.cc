@@ -13,7 +13,7 @@ namespace {
 
 namespace mono = monolane;
 
-class InfiniteCircuitRoadTest : public ::testing::Test {
+class InfiniteCircuitRoadTestBase : public ::testing::Test {
  protected:
   const double kLinearTolerance {1e-6};
   const double kAngularTolerance {1e-6 * M_PI};
@@ -33,7 +33,11 @@ class InfiniteCircuitRoadTest : public ::testing::Test {
     }
     DRAKE_ABORT();
   }
+};
 
+
+class InfiniteCircuitRoadTest : public InfiniteCircuitRoadTestBase {
+ protected:
   void SetUp() override {
     const api::RBounds kLaneBounds(-2., 2.);
     const api::RBounds kDriveableBounds(-4., 4.);
@@ -391,10 +395,8 @@ TEST_F(InfiniteCircuitRoadTest, EvalMotionDerivatives) {
 
 
 
-GTEST_TEST(InfiniteCircuitRoadTest2, Bounds) {
+TEST_F(InfiniteCircuitRoadTestBase, Bounds) {
   // Construct single-lane ring road with asymmetric bounds.
-  const double kLinearTolerance {1e-6};
-  const double kAngularTolerance {1e-6 * M_PI};
   const api::RBounds kLaneBounds(-1., 7.);
   const api::RBounds kDriveableBounds(-2., 10.);
   mono::Builder b(kLaneBounds, kDriveableBounds,
@@ -434,6 +436,39 @@ GTEST_TEST(InfiniteCircuitRoadTest2, Bounds) {
       reverse_dut.lane()->driveable_bounds(0.);
   EXPECT_NEAR(-10., reverse_driveable_actual.r_min, kLinearTolerance);
   EXPECT_NEAR(2., reverse_driveable_actual.r_max, kLinearTolerance);
+}
+
+
+TEST_F(InfiniteCircuitRoadTestBase, CircuitFinding) {
+  // To exercise the "find a circuit if path is not specified" behavior,
+  // craft a source road which has a spur which merges into a ring.
+  // ('cause the trick is find the circuit around the ring, and discard
+  // the spur.)
+  const api::RBounds kLaneBounds(-1., 1.);
+  const api::RBounds kDriveableBounds(-2., 2.);
+  mono::Builder b(kLaneBounds, kDriveableBounds,
+                  kLinearTolerance, kAngularTolerance);
+
+  const double kSpurLength = 100.;
+  const double kRingRadius = 50.;
+  const mono::EndpointZ kZeroZ {0., 0., 0., 0.};
+  const mono::Endpoint start {{0., 0., 0.}, kZeroZ};
+  auto c0 = b.Connect("spur", start, kSpurLength, kZeroZ);
+  b.Connect("ring", c0->end(), mono::ArcOffset(kRingRadius, 2. * M_PI), kZeroZ);
+  auto source = b.Build({"source"});
+
+  InfiniteCircuitRoad dut(
+      {"dut"}, source.get(),
+      api::LaneEnd(FindLane(source.get(), "l:spur"), api::LaneEnd::kStart),
+      std::vector<const api::Lane*>());
+
+  EXPECT_TRUE(dut.CheckInvariants().empty());
+  EXPECT_NEAR(kRingRadius * 2. * M_PI, dut.lane()->cycle_length(),
+              kLinearTolerance);
+  EXPECT_EQ(1, dut.lane()->num_path_records());
+  EXPECT_EQ(FindLane(source.get(), "l:ring"), dut.lane()->path_record(0).lane);
+  EXPECT_NEAR(0., dut.lane()->path_record(0).start_circuit_s,
+              kLinearTolerance);
 }
 
 
