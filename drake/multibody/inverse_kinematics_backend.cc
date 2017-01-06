@@ -116,7 +116,7 @@ void AddSingleTimeLinearPostureConstraint(
 
   Eigen::SparseMatrix<double> A_sparse(st_lpc->getNumConstraint(t), nq);
   A_sparse.setFromTriplets(triplet_list.begin(), triplet_list.end());
-  prog->AddLinearConstraint(MatrixXd(A_sparse), lb, ub, {vars});
+  prog->AddLinearConstraint(MatrixXd(A_sparse), lb, ub, vars);
 }
 
 /// Add a single time linear posture constraint to @p prog at time @p

@@ -654,13 +654,13 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
   prog.AddConstraint(qp_con, x);
   prog.AddConstraint(qp_con, y);
   prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
-                           -std::numeric_limits<double>::infinity(), 4, {x});
+                           -std::numeric_limits<double>::infinity(), 4, x);
   prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
-                           -std::numeric_limits<double>::infinity(), 4, {y});
+                           -std::numeric_limits<double>::infinity(), 4, y);
   prog.AddLinearConstraint(Vector3d(0, 3, 1).transpose(),
-                           -std::numeric_limits<double>::infinity(), 6, {x});
+                           -std::numeric_limits<double>::infinity(), 6, x);
   prog.AddLinearConstraint(Vector3d(0, 3, 1).transpose(),
-                           -std::numeric_limits<double>::infinity(), 6, {y});
+                           -std::numeric_limits<double>::infinity(), 6, y);
   prog.AddBoundingBoxConstraint(
       Vector3d(0, 0, 0),
       Vector3d(2, std::numeric_limits<double>::infinity(), 3), x);

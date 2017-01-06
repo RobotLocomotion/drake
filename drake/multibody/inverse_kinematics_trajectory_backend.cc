@@ -509,7 +509,7 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
       }
       Eigen::SparseMatrix<double> A_sparse(num_constraint, nq * nT);
       A_sparse.setFromTriplets(triplet_list.begin(), triplet_list.end());
-      prog.AddLinearConstraint(MatrixXd(A_sparse), lb, ub, {q});
+      prog.AddLinearConstraint(MatrixXd(A_sparse), lb, ub, q);
     }
   }
 

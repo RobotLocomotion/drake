@@ -204,11 +204,29 @@ void MathematicalProgram::AddConstraint(std::shared_ptr<Constraint> con,
   AddConstraint(Binding<Constraint>(con, vars));
 }
 
-void MathematicalProgram::AddConstraint(std::shared_ptr<LinearConstraint> con,
-                                        const VariableListRef& vars) {
+void MathematicalProgram::AddConstraint(const Binding<LinearConstraint>& binding) {
   required_capabilities_ |= kLinearConstraint;
-  linear_constraints_.push_back(Binding<LinearConstraint>(con, vars));
-  DRAKE_ASSERT(con->A().cols() == linear_constraints_.back().variables().rows());
+  DRAKE_ASSERT(binding.constraint()->A().cols() == binding.GetNumElements());
+  linear_constraints_.push_back(binding);
+}
+
+std::shared_ptr<LinearConstraint> MathematicalProgram::AddLinearConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& lb,
+    const Eigen::Ref<const Eigen::VectorXd>& ub, const VariableListRef& vars) {
+  std::shared_ptr<LinearConstraint> con = std::make_shared<LinearConstraint>(A, lb, ub);
+  AddConstraint(Binding<LinearConstraint>(con, vars));
+  return con;
+}
+
+std::shared_ptr<LinearConstraint> MathematicalProgram::AddLinearConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& lb,
+    const Eigen::Ref<const Eigen::VectorXd>& ub,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  std::shared_ptr<LinearConstraint> con = std::make_shared<LinearConstraint>(A, lb, ub);
+  AddConstraint(Binding<LinearConstraint>(con, vars));
+  return con;
 }
 
 void MathematicalProgram::AddConstraint(

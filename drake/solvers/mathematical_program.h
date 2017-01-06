@@ -847,33 +847,36 @@ class MathematicalProgram {
    * Adds linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
    */
-  void AddConstraint(std::shared_ptr<LinearConstraint> con,
-                     const VariableListRef& vars);
+  void AddConstraint(const Binding<LinearConstraint>& binding);
 
   /**
    * Adds linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
    */
-  template <typename DerivedA, typename DerivedLB, typename DerivedUB>
   std::shared_ptr<LinearConstraint> AddLinearConstraint(
-      const Eigen::MatrixBase<DerivedA>& A,
-      const Eigen::MatrixBase<DerivedLB>& lb,
-      const Eigen::MatrixBase<DerivedUB>& ub, const VariableListRef& vars) {
-    auto constraint = std::make_shared<LinearConstraint>(A, lb, ub);
-    AddConstraint(constraint, vars);
-    return constraint;
-  }
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub, const VariableListRef& vars);
+
+  /**
+   * Adds linear constraints referencing potentially a subset
+   * of the decision variables (defined in the vars parameter).
+   */
+  std::shared_ptr<LinearConstraint> AddLinearConstraint(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub,
+      const Eigen::Ref<const DecisionVariableVectorX>& vars);
 
   /**
    * Adds linear constraints to the program for all (currently existing)
    * variables.
    */
-  template <typename DerivedA, typename DerivedLB, typename DerivedUB>
   std::shared_ptr<LinearConstraint> AddLinearConstraint(
-      const Eigen::MatrixBase<DerivedA>& A,
-      const Eigen::MatrixBase<DerivedLB>& lb,
-      const Eigen::MatrixBase<DerivedUB>& ub) {
-    return AddLinearConstraint(A, lb, ub, {decision_variables_});
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub) {
+    return AddLinearConstraint(A, lb, ub, decision_variables_);
   }
 
   /**
@@ -908,7 +911,7 @@ class MathematicalProgram {
       const Eigen::MatrixBase<DerivedA>& a, double lb, double ub) {
     DRAKE_ASSERT(a.rows() == 1);
     return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
-                               {decision_variables_});
+                               decision_variables_);
   }
 
   /**

@@ -706,7 +706,7 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
   prog_socp.AddLinearEqualityConstraint(A_w, Eigen::VectorXd::Zero(kXdim),
                                         {w, x_socp});
 
-  prog_socp.AddLinearConstraint(A, b_lb, b_ub, {x_socp});
+  prog_socp.AddLinearConstraint(A, b_lb, b_ub, x_socp);
 
   std::shared_ptr<LinearConstraint> cost_socp1(new LinearConstraint(
       c.transpose(), drake::Vector1d(-std::numeric_limits<double>::infinity()),
@@ -731,7 +731,7 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
   MathematicalProgram prog_qp;
   auto x_qp = prog_qp.NewContinuousVariables(kXdim, "x");
   prog_qp.AddQuadraticCost(Q, c, {x_qp});
-  prog_qp.AddLinearConstraint(A, b_lb, b_ub, {x_qp});
+  prog_qp.AddLinearConstraint(A, b_lb, b_ub, x_qp);
   RunSolver(&prog_qp, solver);
   const auto& x_qp_value = prog_qp.GetSolution(x_qp);
   Eigen::RowVectorXd x_qp_transpose = x_qp_value.transpose();
@@ -1088,7 +1088,7 @@ GTEST_TEST(TestConvexOptimization, TestQuadraticProgram5) {
     prog.AddQuadraticCost(G, g0, {x, z, y});
     prog.AddLinearEqualityConstraint(CE_xy, ce0_xy, {x, y});
     prog.AddLinearConstraint(CI_xy, ci_xy_lower, ci_xy_upper, {x, y});
-    prog.AddLinearConstraint(CI_z, ci_z_lower, ci_z_upper, {z});
+    prog.AddLinearConstraint(CI_z, ci_z_lower, ci_z_upper, z);
 
     if (solver->SolverName() == "SNOPT") {
       prog.SetInitialGuessForAllVariables(drake::Vector6<double>::Zero());
