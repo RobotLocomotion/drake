@@ -950,11 +950,11 @@ template <typename T>
 template <typename Scalar>
 void RigidBodyTree<T>::CheckCacheValidity(
     const KinematicsCache<Scalar>& cache) const {
-  if (cache.get_num_cache_elements() != static_cast<int>(bodies.size())) {
+  if (cache.get_num_cache_elements() != get_num_bodies()) {
     throw std::runtime_error("RigidBodyTree::CheckCacheValidity: Number of "
         "cache elements (" + std::to_string(cache.get_num_cache_elements())
         + ") does not equal the number of bodies in the RigidBodyTree (" +
-        std::to_string(bodies.size()) + ")");
+        std::to_string(get_num_bodies()) + ")");
   }
   for (int i = 0; i < get_num_bodies(); ++i) {
     const RigidBody<T>& body = get_body(i);

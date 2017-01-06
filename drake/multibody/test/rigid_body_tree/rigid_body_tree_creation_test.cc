@@ -28,7 +28,7 @@ using Eigen::VectorXd;
 class RigidBodyTreeTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    tree_ = make_unique<RigidBodyTree<double>();
+    tree_ = std::make_unique<RigidBodyTree<double>>();
 
     // Defines four rigid bodies.
     r1b1_ = std::make_unique<RigidBody<double>>();
