@@ -74,7 +74,8 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
     cost += ty(0).value();
     if (!grad.empty()) {
       for (int j = 0; j < num_vars; ++j) {
-        size_t vj_index = prog->FindDecisionVariableIndex(binding.variables()(j));
+        size_t vj_index =
+            prog->FindDecisionVariableIndex(binding.variables()(j));
         grad[vj_index] += ty(0).derivatives()(vj_index);
       }
     }
@@ -203,7 +204,8 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
     const int num_v_variable = wrapped->vars->rows();
     std::vector<size_t> v_index(num_v_variable);
     for (int i = 0; i < num_v_variable; ++i) {
-      v_index[i] = wrapped->prog->FindDecisionVariableIndex((*wrapped->vars)(i));
+      v_index[i] =
+          wrapped->prog->FindDecisionVariableIndex((*wrapped->vars)(i));
     }
     for (size_t i = 0; i < num_constraints; i++) {
       if (!wrapped->active_constraints.count(i)) {
@@ -234,14 +236,14 @@ void WrapConstraint(const MathematicalProgram& prog, const Binding<C>& binding,
   // Version of the wrapped constraint which refers only to equality
   // constraints (if any), and will be used with
   // add_equality_mconstraint.
-  WrappedConstraint wrapped_eq(binding.constraint().get(),
-                               &binding.variables(), &prog);
+  WrappedConstraint wrapped_eq(binding.constraint().get(), &binding.variables(),
+                               &prog);
 
   // Version of the wrapped constraint which refers only to inequality
   // constraints (if any), and will be used with
   // add_equality_mconstraint.
-  WrappedConstraint wrapped_in(binding.constraint().get(),
-                               &binding.variables(), &prog);
+  WrappedConstraint wrapped_in(binding.constraint().get(), &binding.variables(),
+                               &prog);
 
   bool is_pure_inequality = true;
   const Eigen::VectorXd& lower_bound = binding.constraint()->lower_bound();
@@ -324,7 +326,6 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
         x[idx] = xupp[idx];
       }
     }
-
   }
 
   opt.set_lower_bounds(xlow);

@@ -85,8 +85,9 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
 
     int num_v_variables = binding.variables().rows();
     for (int i = 0; i < num_v_variables; ++i) {
-      A.block(constraint_index, prog.FindDecisionVariableIndex(binding.variables()(i)), n,
-              1) = bc->A().col(i);
+      A.block(constraint_index,
+              prog.FindDecisionVariableIndex(binding.variables()(i)), n, 1) =
+          bc->A().col(i);
     }
 
     b.segment(constraint_index, n) =

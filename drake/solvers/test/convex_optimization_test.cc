@@ -219,7 +219,8 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
   prog.AddBoundingBoxConstraint(
       Eigen::Vector2d(0, 0),
       Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()), x);
-  prog.AddBoundingBoxConstraint(-1, std::numeric_limits<double>::infinity(), x(1));
+  prog.AddBoundingBoxConstraint(-1, std::numeric_limits<double>::infinity(),
+                                x(1));
 
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1), 1);
 

@@ -150,7 +150,8 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
   // 2. Imposes constraint on a list of vectors of decision variables.
   // 3. Imposes constraint on a dynamic-sized matrix of decision variables.
   auto constraint1 = prog.AddBoundingBoxConstraint(0, 1, x1);
-  auto constraint2 = prog.AddBoundingBoxConstraint(0, 1, {x1.col(0), x1.col(1)});
+  auto constraint2 =
+      prog.AddBoundingBoxConstraint(0, 1, {x1.col(0), x1.col(1)});
   auto constraint3 = prog.AddBoundingBoxConstraint(0, 1, x2);
   auto constraint4 = prog.AddBoundingBoxConstraint(Eigen::Vector4d::Zero(),
                                                    Eigen::Vector4d::Ones());
@@ -263,7 +264,8 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
                               MatrixCompareType::absolute));
   CheckSolverType(prog, "Linear System Solver");
 
-  prog.AddBoundingBoxConstraint(Vector2d::Constant(-1000), Vector2d::Constant(1000.0), x.head<2>());
+  prog.AddBoundingBoxConstraint(Vector2d::Constant(-1000),
+                                Vector2d::Constant(1000.0), x.head<2>());
 
   // Now solve as a nonlinear program.
   RunNonlinearProgram(prog, [&]() {

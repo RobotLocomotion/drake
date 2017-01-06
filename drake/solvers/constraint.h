@@ -259,7 +259,8 @@ class LorentzConeConstraint : public Constraint {
 };
 
 /**
- * Constraining that the linear expression \f$ z=Ax+b \f$ lies within rotated Lorentz cone.
+ * Constraining that the linear expression \f$ z=Ax+b \f$ lies within rotated
+ * Lorentz cone.
  * A vector \f$ z \in\mathbb{R}^n \f$ lies within rotated Lorentz cone, if
  * @f[
  * z_0 \ge 0\\
@@ -619,7 +620,8 @@ class PositiveSemidefiniteConstraint : public Constraint {
   explicit PositiveSemidefiniteConstraint(int rows)
       : Constraint(rows, Eigen::VectorXd::Zero(rows),
                    Eigen::VectorXd::Constant(
-                       rows, std::numeric_limits<double>::infinity())), matrix_rows_(rows) {}
+                       rows, std::numeric_limits<double>::infinity())),
+        matrix_rows_(rows) {}
 
   PositiveSemidefiniteConstraint(const PositiveSemidefiniteConstraint& rhs) =
       delete;
@@ -649,10 +651,11 @@ class PositiveSemidefiniteConstraint : public Constraint {
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override;
 
-  int matrix_rows() const {return matrix_rows_;}
+  int matrix_rows() const { return matrix_rows_; }
 
  private:
-  int matrix_rows_; // Number of rows in the symmetric matrix being positive semi-definite.
+  int matrix_rows_;  // Number of rows in the symmetric matrix being positive
+                     // semi-definite.
 };
 
 /**

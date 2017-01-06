@@ -40,9 +40,7 @@ size_t GetConstraintBounds(const Constraint& c, Number* lb, Number* ub) {
 
 /// @param[out] num_grad number of gradients
 /// @return number of constraints
-size_t GetNumGradients(const Constraint& c, int var_count,
-                       Index* num_grad) {
-
+size_t GetNumGradients(const Constraint& c, int var_count, Index* num_grad) {
   const size_t num_constraints = c.num_constraints();
   *num_grad = num_constraints * var_count;
   return num_constraints;
@@ -60,9 +58,10 @@ size_t GetNumGradients(const Constraint& c, int var_count,
 /// http://www.coin-or.org/Ipopt/documentation/node38.html#app.triplet
 ///
 /// @return the number of row/column pairs filled in.
-size_t GetGradientMatrix(const MathematicalProgram& prog, const Constraint& c,
-                         const Eigen::Ref<const DecisionVariableVectorX>& variables,
-                         Index constraint_idx, Index* iRow, Index* jCol) {
+size_t GetGradientMatrix(
+    const MathematicalProgram& prog, const Constraint& c,
+    const Eigen::Ref<const DecisionVariableVectorX>& variables,
+    Index constraint_idx, Index* iRow, Index* jCol) {
   const size_t m = c.num_constraints();
   size_t grad_index = 0;
 
@@ -229,7 +228,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       const auto& lower_bound = c->lower_bound();
       const auto& upper_bound = c->upper_bound();
       for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
-        const int idx = problem_->FindDecisionVariableIndex(binding.variables()(k));
+        const int idx =
+            problem_->FindDecisionVariableIndex(binding.variables()(k));
         x_l[idx] = std::max(lower_bound(k), x_l[idx]);
         x_u[idx] = std::min(upper_bound(k), x_u[idx]);
       }
@@ -421,7 +421,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       int num_v_variables = binding.GetNumElements();
       this_x.resize(num_v_variables);
       for (int i = 0; i < num_v_variables; ++i) {
-        this_x(i) = tx(problem_->FindDecisionVariableIndex(binding.variables()(i)));
+        this_x(i) =
+            tx(problem_->FindDecisionVariableIndex(binding.variables()(i)));
       }
 
       binding.constraint()->Eval(this_x, ty);
@@ -429,7 +430,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       cost_cache_->result[0] += ty(0).value();
 
       for (int j = 0; j < num_v_variables; ++j) {
-        const size_t vj_index = problem_->FindDecisionVariableIndex(binding.variables()(j));
+        const size_t vj_index =
+            problem_->FindDecisionVariableIndex(binding.variables()(j));
         cost_cache_->grad[vj_index] += ty(0).derivatives()(vj_index);
       }
     }

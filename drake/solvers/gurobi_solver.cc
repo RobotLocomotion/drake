@@ -24,8 +24,8 @@ namespace {
 // (Gurobi typically adopts lazy update, where it does not update the model
 // until calling the optimize function).
 // This function should only be used in DEBUG mode as a sanity check.
-__attribute__((unused))
-bool HasCorrectNumberOfVariables(GRBmodel* model, int num_vars_expected) {
+__attribute__((unused)) bool HasCorrectNumberOfVariables(
+    GRBmodel* model, int num_vars_expected) {
   int error = GRBupdatemodel(model);
   if (error) return false;
   int num_vars{};
@@ -65,28 +65,33 @@ int AddLinearConstraint(const MathematicalProgram& prog, GRBmodel* model,
     for (int j = 0; j < A.cols(); j++) {
       if (std::abs(A(i, j)) > sparseness_threshold) {
         nonzero_coeff[nonzero_coeff_count] = A(i, j);
-        nonzero_var_index[nonzero_coeff_count++] = prog.FindDecisionVariableIndex(vars(j));
+        nonzero_var_index[nonzero_coeff_count++] =
+            prog.FindDecisionVariableIndex(vars(j));
       }
     }
     // The sense of the constraint could be ==, <= or >=
     int error = 0;
     if (is_equality) {
       // Adds equality constraint.
-      error = GRBaddconstr(model, nonzero_coeff_count, &nonzero_var_index[0],  &nonzero_coeff[0], GRB_EQUAL, lb(i), nullptr);
+      error = GRBaddconstr(model, nonzero_coeff_count, &nonzero_var_index[0],
+                           &nonzero_coeff[0], GRB_EQUAL, lb(i), nullptr);
       DRAKE_ASSERT(!error);
       if (error) return error;
-    }
-    else {
+    } else {
       if (!std::isinf(ub(i)) || !std::isinf(lb(i))) {
         if (!std::isinf(lb(i))) {
           // Adds A.row(i)*x >= lb(i).
-          error = GRBaddconstr(model, nonzero_coeff_count, &nonzero_var_index[0],  &nonzero_coeff[0], GRB_GREATER_EQUAL, lb(i), nullptr);
+          error = GRBaddconstr(model, nonzero_coeff_count,
+                               &nonzero_var_index[0], &nonzero_coeff[0],
+                               GRB_GREATER_EQUAL, lb(i), nullptr);
           DRAKE_ASSERT(!error);
           if (error) return error;
         }
         if (!std::isinf(ub(i))) {
           // Adds A.row(i)*x <= ub(i).
-          error = GRBaddconstr(model, nonzero_coeff_count, &nonzero_var_index[0],  &nonzero_coeff[0], GRB_LESS_EQUAL, ub(i), nullptr);
+          error =
+              GRBaddconstr(model, nonzero_coeff_count, &nonzero_var_index[0],
+                           &nonzero_coeff[0], GRB_LESS_EQUAL, ub(i), nullptr);
           DRAKE_ASSERT(!error);
           if (error) return error;
         }
@@ -105,7 +110,8 @@ int AddLinearConstraint(const MathematicalProgram& prog, GRBmodel* model,
  * A vector z is in the rotated Lorentz cone, if
  * z(0)*z(1) >= z(2)^2 + ... + z(N-1)^2
  * z(0) >= 0, z(1) >= 0
- * @tparam C  A constraint type, either LorentzConeConstraint or RotatedLorentzConeConstraint.
+ * @tparam C  A constraint type, either LorentzConeConstraint or
+ * RotatedLorentzConeConstraint.
  * @param second_order_cone_constraints  A vector of Binding objects, containing
  * either Lorentz cone constraints, or rotated Lorentz cone constraints.
  * @param is_rotated_cone. True if @p second_order_cone_constraints only
@@ -124,9 +130,10 @@ int AddSecondOrderConeConstraints(
     double sparseness_threshold,
     const std::vector<std::vector<int>>& second_order_cone_new_variable_indices,
     GRBmodel* model) {
-  static_assert(std::is_same<C, LorentzConeConstraint>::value ||
-  std::is_same<C, RotatedLorentzConeConstraint>::value,
-                "Expects either LorentzConeConstraint or RotatedLorentzConeConstraint");
+  static_assert(
+      std::is_same<C, LorentzConeConstraint>::value ||
+          std::is_same<C, RotatedLorentzConeConstraint>::value,
+      "Expects either LorentzConeConstraint or RotatedLorentzConeConstraint");
   bool is_rotated_cone = std::is_same<C, RotatedLorentzConeConstraint>::value;
 
   DRAKE_ASSERT(second_order_cone_constraints.size() ==
@@ -140,22 +147,25 @@ int AddSecondOrderConeConstraints(
     int num_z = A.rows();
 
     // Add the constraint z - A*x = b
-    std::vector<int> xz_indices(num_x + 1, 0); // Records the indices of [x;z(i)],
-                                            // Namely the variables in the i'th
-                                            // row of z - A*x = b
+    std::vector<int> xz_indices(num_x + 1,
+                                0);  // Records the indices of [x;z(i)],
+                                     // Namely the variables in the i'th
+                                     // row of z - A*x = b
     for (int i = 0; i < num_x; ++i) {
       xz_indices[i] = prog.FindDecisionVariableIndex(binding.variables()(i));
     }
-    Eigen::RowVectorXd coeff_i(num_x + 1); // Records the coefficients of the
-                                           // i'th row in z - A*x = b
+    Eigen::RowVectorXd coeff_i(num_x + 1);  // Records the coefficients of the
+                                            // i'th row in z - A*x = b
     for (int i = 0; i < num_z; ++i) {
       coeff_i << -A.row(i), 1;
-      xz_indices[num_x] = second_order_cone_new_variable_indices[second_order_cone_count][i]; // index of z(i)
-      int error = GRBaddconstr(model, num_x + 1, xz_indices.data(),  coeff_i.data(), GRB_EQUAL, b(i), nullptr);
+      xz_indices[num_x] =
+          second_order_cone_new_variable_indices[second_order_cone_count]
+                                                [i];  // index of z(i)
+      int error = GRBaddconstr(model, num_x + 1, xz_indices.data(),
+                               coeff_i.data(), GRB_EQUAL, b(i), nullptr);
       DRAKE_ASSERT(!error);
       if (error) return error;
     }
-
 
     // Gurobi uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
     // cone constraint.
@@ -276,9 +286,9 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
     Eigen::RowVectorXd c = constraint->A();
 
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
-      b_nonzero_coefs.push_back(Eigen::Triplet<double>(prog.FindDecisionVariableIndex(binding.variables()(i)), 0, c(i)));
+      b_nonzero_coefs.push_back(Eigen::Triplet<double>(
+          prog.FindDecisionVariableIndex(binding.variables()(i)), 0, c(i)));
     }
-
   }
 
   Eigen::SparseMatrix<double> Q_all(prog.num_vars(), prog.num_vars());
@@ -335,11 +345,10 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
   for (const auto& binding : prog.linear_equality_constraints()) {
     const auto& constraint = binding.constraint();
 
-    const int error =
-        AddLinearConstraint(prog, model, constraint->A(),
-                            constraint->lower_bound(),
-                            constraint->upper_bound(),
-                            binding.variables(), true, sparseness_threshold);
+    const int error = AddLinearConstraint(
+        prog, model, constraint->A(), constraint->lower_bound(),
+        constraint->upper_bound(), binding.variables(), true,
+        sparseness_threshold);
     if (error) {
       return error;
     }
@@ -348,11 +357,10 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
   for (const auto& binding : prog.linear_constraints()) {
     const auto& constraint = binding.constraint();
 
-    const int error =
-        AddLinearConstraint(prog, model, constraint->A(),
-                            constraint->lower_bound(),
-                            constraint->upper_bound(),
-                            binding.variables(), false, sparseness_threshold);
+    const int error = AddLinearConstraint(
+        prog, model, constraint->A(), constraint->lower_bound(),
+        constraint->upper_bound(), binding.variables(), false,
+        sparseness_threshold);
     if (error) {
       return error;
     }
@@ -393,14 +401,14 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
 template <typename C>
 void AddSecondOrderConeVariables(
     const std::vector<Binding<C>>& second_order_cones,
-    std::vector<bool>* is_new_variable,
-    int* num_gurobi_vars,
+    std::vector<bool>* is_new_variable, int* num_gurobi_vars,
     std::vector<std::vector<int>>* second_order_cone_variable_indices,
     std::vector<char>* gurobi_var_type, std::vector<double>* xlow,
     std::vector<double>* xupp) {
-  static_assert(std::is_same<C, LorentzConeConstraint>::value ||
-  std::is_same<C, RotatedLorentzConeConstraint>::value,
-  "Expects LorentzConeConstraint and RotatedLorentzConeConstraint.");
+  static_assert(
+      std::is_same<C, LorentzConeConstraint>::value ||
+          std::is_same<C, RotatedLorentzConeConstraint>::value,
+      "Expects LorentzConeConstraint and RotatedLorentzConeConstraint.");
   bool is_rotated_cone = std::is_same<C, RotatedLorentzConeConstraint>::value;
 
   int num_new_second_order_cone_var = 0;
@@ -513,10 +521,9 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // rotated_lorentz_cone_new_variable_indices
   // record the indices of the newly created variable z in the Gurobi program.
   std::vector<std::vector<int>> lorentz_cone_new_variable_indices;
-  AddSecondOrderConeVariables(prog.lorentz_cone_constraints(),
-                              &is_new_variable, &num_gurobi_vars,
-                              &lorentz_cone_new_variable_indices,
-                              &gurobi_var_type, &xlow, &xupp);
+  AddSecondOrderConeVariables(
+      prog.lorentz_cone_constraints(), &is_new_variable, &num_gurobi_vars,
+      &lorentz_cone_new_variable_indices, &gurobi_var_type, &xlow, &xupp);
 
   std::vector<std::vector<int>> rotated_lorentz_cone_new_variable_indices;
   AddSecondOrderConeVariables(prog.rotated_lorentz_cone_constraints(),
@@ -547,8 +554,8 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // Add rotated Lorentz cone constraints.
   if (!error) {
     error = AddSecondOrderConeConstraints(
-        prog, prog.rotated_lorentz_cone_constraints(),
-        sparseness_threshold, rotated_lorentz_cone_new_variable_indices, model);
+        prog, prog.rotated_lorentz_cone_constraints(), sparseness_threshold,
+        rotated_lorentz_cone_new_variable_indices, model);
   }
 
   DRAKE_ASSERT(HasCorrectNumberOfVariables(model, is_new_variable.size()));

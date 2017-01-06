@@ -221,11 +221,11 @@ void EvaluateNonlinearConstraints(
       F[(*constraint_index)++] = static_cast<snopt::doublereal>(ty(i).value());
     }
 
-    for (snopt::integer i = 0;
-         i < static_cast<snopt::integer>(num_constraints); i++) {
+    for (snopt::integer i = 0; i < static_cast<snopt::integer>(num_constraints);
+         i++) {
       for (int j = 0; j < num_v_variables; ++j) {
-        G[(*grad_index)++] = static_cast<snopt::doublereal>(
-            ty(i).derivatives()(prog.FindDecisionVariableIndex(binding.variables()(j))));
+        G[(*grad_index)++] = static_cast<snopt::doublereal>(ty(i).derivatives()(
+            prog.FindDecisionVariableIndex(binding.variables()(j))));
       }
     }
   }
@@ -266,21 +266,20 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
     int num_v_variables = binding.variables().rows();
     this_x.resize(num_v_variables);
     for (int j = 0; j < num_v_variables; ++j) {
-      this_x(j) =
-          tx(current_problem->FindDecisionVariableIndex(binding.variables()(j)));
+      this_x(j) = tx(
+          current_problem->FindDecisionVariableIndex(binding.variables()(j)));
     }
 
     obj->Eval(this_x, ty);
 
     F[0] += static_cast<snopt::doublereal>(ty(0).value());
 
-
     for (int j = 0; j < binding.variables().rows(); ++j) {
-      size_t vj_index = current_problem->FindDecisionVariableIndex(binding.variables()(j));
+      size_t vj_index =
+          current_problem->FindDecisionVariableIndex(binding.variables()(j));
       G[vj_index] +=
           static_cast<snopt::doublereal>(ty(0).derivatives()(vj_index));
     }
-
   }
 
   // The constraint index starts at 1 because the cost is the
@@ -338,7 +337,8 @@ void UpdateConstraintBoundsAndGradients(
     for (size_t i = 0; i < n; i++) {
       for (int j = 0; j < static_cast<int>(binding.GetNumElements()); ++j) {
         iGfun[*grad_index] = *constraint_index + i + 1;  // row order
-        jGvar[*grad_index] = prog.FindDecisionVariableIndex(binding.variables()(j)) + 1;
+        jGvar[*grad_index] =
+            prog.FindDecisionVariableIndex(binding.variables()(j)) + 1;
         (*grad_index)++;
       }
     }
@@ -374,7 +374,8 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     const auto& ub = c->upper_bound();
 
     for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
-      const size_t vk_index = prog.FindDecisionVariableIndex(binding.variables()(k));
+      const size_t vk_index =
+          prog.FindDecisionVariableIndex(binding.variables()(k));
       xlow[vk_index] = std::max<snopt::doublereal>(
           static_cast<snopt::doublereal>(lb(k)), xlow[vk_index]);
       xupp[vk_index] = std::min<snopt::doublereal>(
@@ -443,11 +444,12 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     Eigen::SparseMatrix<double> A_constraint = c->GetSparseMatrix();
 
     for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
-      for (Eigen::SparseMatrix<double>::InnerIterator it(A_constraint, k);
-           it; ++it) {
-        tripletList.push_back(T(linear_constraint_index + it.row(),
-                                prog.FindDecisionVariableIndex(binding.variables()(k)),
-                                it.value()));
+      for (Eigen::SparseMatrix<double>::InnerIterator it(A_constraint, k); it;
+           ++it) {
+        tripletList.push_back(
+            T(linear_constraint_index + it.row(),
+              prog.FindDecisionVariableIndex(binding.variables()(k)),
+              it.value()));
       }
     }
 

@@ -2,7 +2,8 @@
 
 namespace drake {
 namespace solvers {
-DecisionVariableVectorX  ConcatenateVariableListRef(const VariableListRef& var_list) {
+DecisionVariableVectorX ConcatenateVariableListRef(
+    const VariableListRef& var_list) {
   int dim = 0;
   for (const auto& var : var_list) {
     dim += var.size();

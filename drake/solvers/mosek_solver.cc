@@ -157,15 +157,17 @@ MSKrescodee AddSecondOrderConeConstraints(
     const std::vector<Binding<C>>& second_order_cone_constraints,
     MSKtask_t* task, std::vector<bool>* is_new_variable) {
   static_assert(std::is_same<C, LorentzConeConstraint>::value ||
-      std::is_same<C, RotatedLorentzConeConstraint>::value,
-                "Should be either Lorentz cone constraint or rotated Lorentz cone constraint");
+                    std::is_same<C, RotatedLorentzConeConstraint>::value,
+                "Should be either Lorentz cone constraint or rotated Lorentz "
+                "cone constraint");
   bool is_rotated_cone = std::is_same<C, RotatedLorentzConeConstraint>::value;
   MSKrescodee rescode = MSK_RES_OK;
   for (auto const& binding : second_order_cone_constraints) {
     std::vector<MSKint32t> cone_var_indices(binding.GetNumElements());
 
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
-      cone_var_indices[i] = prog.FindDecisionVariableIndex(binding.variables()(i));
+      cone_var_indices[i] =
+          prog.FindDecisionVariableIndex(binding.variables()(i));
     }
 
     const auto& A = binding.constraint()->A();
@@ -324,8 +326,7 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
                                                MSKtask_t* task) {
   MSKrescodee rescode = MSK_RES_OK;
   for (const auto& binding : prog.positive_semidefinite_constraints()) {
-    const auto& symmetric_matrix_variable =
-        binding.variables();
+    const auto& symmetric_matrix_variable = binding.variables();
 
     int num_linear_constraint = 0;
     rescode = MSK_getnumcon(*task, &num_linear_constraint);
@@ -355,7 +356,8 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
             num_linear_constraint + new_linear_constraint_count;
         double symmetric_matrix_val = 1.0;
         MSKint32t symmetric_matrix_var_ij_index =
-            prog.FindDecisionVariableIndex(symmetric_matrix_variable(j * matrix_rows + i));
+            prog.FindDecisionVariableIndex(
+                symmetric_matrix_variable(j * matrix_rows + i));
         rescode =
             MSK_putarow(*task, linear_constraint_index, 1,
                         &symmetric_matrix_var_ij_index, &symmetric_matrix_val);
@@ -412,8 +414,8 @@ MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog,
         A_row.reserve(binding.GetNumElements());
 
         for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
-          A_row.coeffRef(prog.FindDecisionVariableIndex(binding.variables()(k))) +=
-              (*F_it)(i, j);
+          A_row.coeffRef(prog.FindDecisionVariableIndex(
+              binding.variables()(k))) += (*F_it)(i, j);
           ++F_it;
         }
 
@@ -614,8 +616,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   // Add rotated Lorentz cone constraints.
   if (rescode == MSK_RES_OK) {
     rescode = AddSecondOrderConeConstraints(
-        prog, prog.rotated_lorentz_cone_constraints(), &task,
-        &is_new_variable);
+        prog, prog.rotated_lorentz_cone_constraints(), &task, &is_new_variable);
   }
 
   // Add positive semidefinite constraints.

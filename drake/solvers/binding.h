@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/solvers/decision_variable.h"
 
 namespace drake {
@@ -12,7 +14,8 @@ namespace solvers {
 template <typename C>
 class Binding {
  public:
-  Binding(const std::shared_ptr<C>& c, const Eigen::Ref<const DecisionVariableVectorX>& v)
+  Binding(const std::shared_ptr<C>& c,
+          const Eigen::Ref<const DecisionVariableVectorX>& v)
       : constraint_(c), vars_(v) {}
 
   /**
@@ -20,17 +23,16 @@ class Binding {
    * column vector, binds this column vector of decision variables with
    * the constraint @p c.
    */
-  Binding(const std::shared_ptr<C>& c, const VariableListRef& v) :
-      constraint_(c) {
+  Binding(const std::shared_ptr<C>& c, const VariableListRef& v)
+      : constraint_(c) {
     vars_ = ConcatenateVariableListRef(v);
   }
 
   template <typename U>
-  Binding(
-      const Binding<U>& b,
-      typename std::enable_if<std::is_convertible<
-          std::shared_ptr<U>, std::shared_ptr<C>>::value>::type* = nullptr)
-  : Binding(b.constraint(), b.variables()) {}
+  Binding(const Binding<U>& b,
+          typename std::enable_if<std::is_convertible<
+              std::shared_ptr<U>, std::shared_ptr<C>>::value>::type* = nullptr)
+      : Binding(b.constraint(), b.variables()) {}
 
   const std::shared_ptr<C>& constraint() const { return constraint_; }
 

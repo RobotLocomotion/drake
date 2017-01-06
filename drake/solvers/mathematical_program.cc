@@ -93,8 +93,7 @@ DecisionVariableVectorX MathematicalProgram::NewContinuousVariables(
 
 DecisionVariableMatrixX MathematicalProgram::NewContinuousVariables(
     std::size_t rows, std::size_t cols, const std::vector<std::string>& names) {
-  return NewVariables(VarType::CONTINUOUS, rows, cols,
-                      false, names);
+  return NewVariables(VarType::CONTINUOUS, rows, cols, false, names);
 }
 
 DecisionVariableVectorX MathematicalProgram::NewContinuousVariables(
@@ -172,27 +171,32 @@ void MathematicalProgram::AddCost(const Binding<Constraint>& binding) {
   generic_costs_.push_back(binding);
 }
 
-void MathematicalProgram::AddCost(const std::shared_ptr<Constraint>& obj,
-                                  const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+void MathematicalProgram::AddCost(
+    const std::shared_ptr<Constraint>& obj,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
   AddCost(Binding<Constraint>(obj, vars));
 }
 
 void MathematicalProgram::AddCost(const Binding<LinearConstraint>& binding) {
   required_capabilities_ |= kLinearCost;
-  DRAKE_ASSERT(binding.constraint()->num_constraints() == 1 && binding.constraint()->A().cols() == static_cast<int>(binding.GetNumElements()));
+  DRAKE_ASSERT(binding.constraint()->num_constraints() == 1 &&
+               binding.constraint()->A().cols() ==
+                   static_cast<int>(binding.GetNumElements()));
   linear_costs_.push_back(binding);
 }
 
-void MathematicalProgram::AddCost(const std::shared_ptr<LinearConstraint>& obj,
-                                  const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+void MathematicalProgram::AddCost(
+    const std::shared_ptr<LinearConstraint>& obj,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
   AddCost(Binding<LinearConstraint>(obj, vars));
 }
 
 std::shared_ptr<LinearConstraint> MathematicalProgram::AddLinearCost(
-    const Eigen::Ref<const Eigen::VectorXd>& c, const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+    const Eigen::Ref<const Eigen::VectorXd>& c,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
   auto cost = std::make_shared<LinearConstraint>(
       c.transpose(), drake::Vector1<double>::Constant(
-          -std::numeric_limits<double>::infinity()),
+                         -std::numeric_limits<double>::infinity()),
       drake::Vector1<double>::Constant(
           std::numeric_limits<double>::infinity()));
   AddCost(cost, vars);
@@ -200,10 +204,12 @@ std::shared_ptr<LinearConstraint> MathematicalProgram::AddLinearCost(
 }
 
 void MathematicalProgram::AddCost(const Binding<QuadraticConstraint>& binding) {
-required_capabilities_ |= kQuadraticCost;
-DRAKE_ASSERT(binding.constraint()->Q().rows() == static_cast<int>(binding.GetNumElements()) &&
-binding.constraint()->b().rows() == static_cast<int>(binding.GetNumElements()));
-quadratic_costs_.push_back(binding);
+  required_capabilities_ |= kQuadraticCost;
+  DRAKE_ASSERT(binding.constraint()->Q().rows() ==
+                   static_cast<int>(binding.GetNumElements()) &&
+               binding.constraint()->b().rows() ==
+                   static_cast<int>(binding.GetNumElements()));
+  quadratic_costs_.push_back(binding);
 }
 
 void MathematicalProgram::AddCost(
@@ -239,18 +245,23 @@ void MathematicalProgram::AddConstraint(const Binding<Constraint>& binding) {
   generic_constraints_.push_back(binding);
 }
 
-void MathematicalProgram::AddConstraint(std::shared_ptr<Constraint> con,
-                                        const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+void MathematicalProgram::AddConstraint(
+    std::shared_ptr<Constraint> con,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
   AddConstraint(Binding<Constraint>(con, vars));
 }
 
-void MathematicalProgram::AddConstraint(const Binding<LinearConstraint>& binding) {
+void MathematicalProgram::AddConstraint(
+    const Binding<LinearConstraint>& binding) {
   required_capabilities_ |= kLinearConstraint;
-  DRAKE_ASSERT(binding.constraint()->A().cols() == static_cast<int>(binding.GetNumElements()));
+  DRAKE_ASSERT(binding.constraint()->A().cols() ==
+               static_cast<int>(binding.GetNumElements()));
   linear_constraints_.push_back(binding);
 }
 
-void MathematicalProgram::AddConstraint(std::shared_ptr<LinearConstraint> con, const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+void MathematicalProgram::AddConstraint(
+    std::shared_ptr<LinearConstraint> con,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
   AddConstraint(Binding<LinearConstraint>(con, vars));
 }
 
@@ -259,55 +270,71 @@ std::shared_ptr<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub,
     const Eigen::Ref<const DecisionVariableVectorX>& vars) {
-  std::shared_ptr<LinearConstraint> con = std::make_shared<LinearConstraint>(A, lb, ub);
+  std::shared_ptr<LinearConstraint> con =
+      std::make_shared<LinearConstraint>(A, lb, ub);
   AddConstraint(Binding<LinearConstraint>(con, vars));
   return con;
 }
 
-void MathematicalProgram::AddConstraint(const Binding<LinearEqualityConstraint>& binding) {
+void MathematicalProgram::AddConstraint(
+    const Binding<LinearEqualityConstraint>& binding) {
   required_capabilities_ |= kLinearEqualityConstraint;
-  DRAKE_ASSERT(binding.constraint()->A().cols() == static_cast<int>(binding.GetNumElements()));
+  DRAKE_ASSERT(binding.constraint()->A().cols() ==
+               static_cast<int>(binding.GetNumElements()));
   linear_equality_constraints_.push_back(binding);
 }
 
-void MathematicalProgram::AddConstraint(std::shared_ptr<LinearEqualityConstraint> con, const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+void MathematicalProgram::AddConstraint(
+    std::shared_ptr<LinearEqualityConstraint> con,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
   return AddConstraint(Binding<LinearEqualityConstraint>(con, vars));
 }
 
-std::shared_ptr<LinearEqualityConstraint> MathematicalProgram::AddLinearEqualityConstraint(
+std::shared_ptr<LinearEqualityConstraint>
+MathematicalProgram::AddLinearEqualityConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
     const Eigen::Ref<const Eigen::VectorXd>& beq,
     const Eigen::Ref<const DecisionVariableVectorX>& vars) {
-  std::shared_ptr<LinearEqualityConstraint> constraint = std::make_shared<LinearEqualityConstraint>(Aeq, beq);
+  std::shared_ptr<LinearEqualityConstraint> constraint =
+      std::make_shared<LinearEqualityConstraint>(Aeq, beq);
   AddConstraint(Binding<LinearEqualityConstraint>(constraint, vars));
   return constraint;
 }
 
-void MathematicalProgram::AddConstraint(const Binding<BoundingBoxConstraint>& binding) {
+void MathematicalProgram::AddConstraint(
+    const Binding<BoundingBoxConstraint>& binding) {
   required_capabilities_ |= kLinearConstraint;
-  DRAKE_ASSERT(binding.constraint()->num_constraints() == binding.GetNumElements());
+  DRAKE_ASSERT(binding.constraint()->num_constraints() ==
+               binding.GetNumElements());
   bbox_constraints_.push_back(binding);
 }
 
-void MathematicalProgram::AddConstraint(std::shared_ptr<BoundingBoxConstraint> con, const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+void MathematicalProgram::AddConstraint(
+    std::shared_ptr<BoundingBoxConstraint> con,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
   AddConstraint(Binding<BoundingBoxConstraint>(con, vars));
 }
 
-void MathematicalProgram::AddConstraint(const Binding<LorentzConeConstraint>& binding) {
+void MathematicalProgram::AddConstraint(
+    const Binding<LorentzConeConstraint>& binding) {
   required_capabilities_ |= kLorentzConeConstraint;
   DRAKE_ASSERT(binding.GetNumElements() >= 2);
   lorentz_cone_constraint_.push_back(binding);
 }
 
-void MathematicalProgram::AddConstraint(std::shared_ptr<LorentzConeConstraint> con, const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+void MathematicalProgram::AddConstraint(
+    std::shared_ptr<LorentzConeConstraint> con,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
   return AddConstraint(Binding<LorentzConeConstraint>(con, vars));
 }
 
-std::shared_ptr<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
+std::shared_ptr<LorentzConeConstraint>
+MathematicalProgram::AddLorentzConeConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b,
     const Eigen::Ref<const DecisionVariableVectorX>& vars) {
-  std::shared_ptr<LorentzConeConstraint> constraint = std::make_shared<LorentzConeConstraint>(A, b);
+  std::shared_ptr<LorentzConeConstraint> constraint =
+      std::make_shared<LorentzConeConstraint>(A, b);
   AddConstraint(Binding<LorentzConeConstraint>(constraint, vars));
   return constraint;
 }
@@ -316,8 +343,7 @@ void MathematicalProgram::AddConstraint(
     const Binding<RotatedLorentzConeConstraint>& binding) {
   required_capabilities_ |= kRotatedLorentzConeConstraint;
   DRAKE_ASSERT(binding.GetNumElements() >= 3);
-  rotated_lorentz_cone_constraint_.push_back(
-      binding);
+  rotated_lorentz_cone_constraint_.push_back(binding);
 }
 
 void MathematicalProgram::AddConstraint(
@@ -326,16 +352,19 @@ void MathematicalProgram::AddConstraint(
   AddConstraint(Binding<RotatedLorentzConeConstraint>(con, vars));
 }
 
-std::shared_ptr<RotatedLorentzConeConstraint> MathematicalProgram::AddRotatedLorentzConeConstraint(
+std::shared_ptr<RotatedLorentzConeConstraint>
+MathematicalProgram::AddRotatedLorentzConeConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b,
     const Eigen::Ref<const DecisionVariableVectorX>& vars) {
-  std::shared_ptr<RotatedLorentzConeConstraint> constraint = std::make_shared<RotatedLorentzConeConstraint>(A, b);
+  std::shared_ptr<RotatedLorentzConeConstraint> constraint =
+      std::make_shared<RotatedLorentzConeConstraint>(A, b);
   AddConstraint(constraint, vars);
   return constraint;
 }
 
-std::shared_ptr<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
+std::shared_ptr<BoundingBoxConstraint>
+MathematicalProgram::AddBoundingBoxConstraint(
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub,
     const Eigen::Ref<const DecisionVariableVectorX>& vars) {
@@ -345,7 +374,8 @@ std::shared_ptr<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstr
   return constraint;
 }
 
-void MathematicalProgram::AddConstraint(const Binding<LinearComplementarityConstraint>& binding) {
+void MathematicalProgram::AddConstraint(
+    const Binding<LinearComplementarityConstraint>& binding) {
   required_capabilities_ |= kLinearComplementarityConstraint;
 
   // Linear Complementarity Constraint cannot currently coexist with any
@@ -365,15 +395,19 @@ void MathematicalProgram::AddConstraint(const Binding<LinearComplementarityConst
   linear_complementarity_constraints_.push_back(binding);
 }
 
-void MathematicalProgram::AddConstraint(std::shared_ptr<LinearComplementarityConstraint> con, const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+void MathematicalProgram::AddConstraint(
+    std::shared_ptr<LinearComplementarityConstraint> con,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
   AddConstraint(Binding<LinearComplementarityConstraint>(con, vars));
 }
 
 std::shared_ptr<LinearComplementarityConstraint>
-MathematicalProgram::AddLinearComplementarityConstraint(const Eigen::Ref<const Eigen::MatrixXd>& M,
-                                                        const Eigen::Ref<const Eigen::VectorXd>& q,
-                                                        const Eigen::Ref<const DecisionVariableVectorX>& vars) {
-  std::shared_ptr<LinearComplementarityConstraint> constraint = std::make_shared<LinearComplementarityConstraint>(M, q);
+MathematicalProgram::AddLinearComplementarityConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& M,
+    const Eigen::Ref<const Eigen::VectorXd>& q,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  std::shared_ptr<LinearComplementarityConstraint> constraint =
+      std::make_shared<LinearComplementarityConstraint>(M, q);
   AddConstraint(constraint, vars);
   return constraint;
 }
@@ -435,9 +469,13 @@ std::shared_ptr<Constraint> MathematicalProgram::AddPolynomialConstraint(
   }
 }
 
-void MathematicalProgram::AddConstraint(const Binding<PositiveSemidefiniteConstraint>& binding) {
+void MathematicalProgram::AddConstraint(
+    const Binding<PositiveSemidefiniteConstraint>& binding) {
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
-  DRAKE_ASSERT(drake::math::IsSymmetric(Eigen::Map<const DecisionVariableMatrixX>(binding.variables().data(), binding.constraint()->matrix_rows(), binding.constraint()->matrix_rows())));
+  DRAKE_ASSERT(
+      drake::math::IsSymmetric(Eigen::Map<const DecisionVariableMatrixX>(
+          binding.variables().data(), binding.constraint()->matrix_rows(),
+          binding.constraint()->matrix_rows())));
   positive_semidefinite_constraint_.push_back(binding);
 }
 
@@ -450,7 +488,8 @@ void MathematicalProgram::AddConstraint(
   // TODO(hongkai.dai): this dynamic memory allocation/copying is ugly.
   DecisionVariableVectorX flat_symmetric_matrix_var(num_rows * num_rows);
   for (int i = 0; i < num_rows; ++i) {
-    flat_symmetric_matrix_var.segment(i * num_rows, num_rows) = symmetric_matrix_var.col(i);
+    flat_symmetric_matrix_var.segment(i * num_rows, num_rows) =
+        symmetric_matrix_var.col(i);
   }
   positive_semidefinite_constraint_.push_back(
       Binding<PositiveSemidefiniteConstraint>(con, flat_symmetric_matrix_var));
@@ -465,16 +504,18 @@ MathematicalProgram::AddPositiveSemidefiniteConstraint(
   return constraint;
 }
 
-void MathematicalProgram::AddConstraint(const Binding<LinearMatrixInequalityConstraint>& binding) {
+void MathematicalProgram::AddConstraint(
+    const Binding<LinearMatrixInequalityConstraint>& binding) {
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
-  DRAKE_ASSERT(static_cast<int>(binding.constraint()->F().size()) == static_cast<int>(binding.GetNumElements()) + 1);
+  DRAKE_ASSERT(static_cast<int>(binding.constraint()->F().size()) ==
+               static_cast<int>(binding.GetNumElements()) + 1);
   linear_matrix_inequality_constraint_.push_back(binding);
 }
 
 void MathematicalProgram::AddConstraint(
     std::shared_ptr<LinearMatrixInequalityConstraint> con,
     const Eigen::Ref<const DecisionVariableVectorX>& vars) {
- AddConstraint(Binding<LinearMatrixInequalityConstraint>(con, vars));
+  AddConstraint(Binding<LinearMatrixInequalityConstraint>(con, vars));
 }
 
 std::shared_ptr<LinearMatrixInequalityConstraint>
@@ -502,18 +543,22 @@ double MathematicalProgram::GetSolution(const symbolic::Variable& var) const {
   return x_values_[FindDecisionVariableIndex(var)];
 }
 
-void MathematicalProgram::SetDecisionVariableValues(const Eigen::Ref<const Eigen::VectorXd> &values) {
+void MathematicalProgram::SetDecisionVariableValues(
+    const Eigen::Ref<const Eigen::VectorXd>& values) {
   SetDecisionVariableValues(decision_variables_, values);
 }
 
-void MathematicalProgram::SetDecisionVariableValues(const Eigen::Ref<const DecisionVariableVectorX>& variables, const Eigen::Ref<const Eigen::VectorXd>& values) {
+void MathematicalProgram::SetDecisionVariableValues(
+    const Eigen::Ref<const DecisionVariableVectorX>& variables,
+    const Eigen::Ref<const Eigen::VectorXd>& values) {
   DRAKE_ASSERT(values.rows() == variables.rows());
   for (int i = 0; i < values.rows(); ++i) {
     x_values_[FindDecisionVariableIndex(variables(i))] = values(i);
   }
 }
 
-void MathematicalProgram::SetDecisionVariableValue(const symbolic::Variable& var, double value) {
+void MathematicalProgram::SetDecisionVariableValue(
+    const symbolic::Variable& var, double value) {
   x_values_[FindDecisionVariableIndex(var)] = value;
 }
 
