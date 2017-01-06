@@ -346,7 +346,7 @@ Expression operator+(const Variable& lhs, Expression rhs);
 Expression& operator-=(Expression& lhs, const Variable& rhs);
 Expression operator-(const Variable& lhs, const Variable& rhs);
 Expression operator-(Expression lhs, const Variable& rhs);
-Expression operator-(const Variable& lhs, Expression rhs);
+Expression operator-(const Variable& lhs, const Expression& rhs);
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator*=(Expression& lhs, const Variable& rhs);
