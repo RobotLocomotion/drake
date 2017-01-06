@@ -58,7 +58,7 @@ cc_library(
 cc_library(
     name = "mathematical_program",
     srcs = [
-        "binding.h"
+        "binding.h",
         "dreal_solver.h",
         "equality_constrained_qp_solver.cc",
         "equality_constrained_qp_solver.h",
@@ -164,6 +164,13 @@ cc_library(
 )
 
 # === test/ ===
+cc_googletest(
+    name = "binding_test",
+    srcs = [
+        "test/binding_test.cc"
+    ],
+    deps = [":mathematical_program"],
+)
 
 cc_googletest(
     name = "constraint_test",
