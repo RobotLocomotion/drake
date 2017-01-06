@@ -194,21 +194,6 @@ class RigidBodyPlant : public LeafSystem<T> {
   static T JointLimitForce(const DrakeJoint& joint,
                            const T& position, const T& velocity);
 
-  /// Returns a descriptor of the state output port.
-  const OutputPortDescriptor<T>& state_output_port() const {
-    return System<T>::get_output_port(state_output_port_id_);
-  }
-
-  /// Returns a descriptor of the KinematicsResults output port.
-  const OutputPortDescriptor<T>& kinematics_results_output_port() const {
-    return System<T>::get_output_port(kinematics_output_port_id_);
-  }
-
-  /// Returns a descriptor of the ContactResults output port.
-  const OutputPortDescriptor<T>& contact_results_output_port() const {
-    return System<T>::get_output_port(contact_output_port_id_);
-  }
-
   /// Returns a descriptor of the input port for a specific model
   /// instance.
   const InputPortDescriptor<T>& model_input_port(
@@ -216,12 +201,7 @@ class RigidBodyPlant : public LeafSystem<T> {
     return System<T>::get_input_port(input_map_.at(model_instance_id));
   }
 
-  /// Returns a descriptor of the output port for a specific model
-  /// instance.
-  const OutputPortDescriptor<T>& model_state_output_port(
-      int model_instance_id) const {
-    return System<T>::get_output_port(output_map_.at(model_instance_id));
-  }
+
 
   /// Returns the index into the output port for @p model_instance_id
   /// which corresponds to the world position index of @p
@@ -239,6 +219,42 @@ class RigidBodyPlant : public LeafSystem<T> {
   ///                       in frame W.
   /// @retval R_WL          The computed basis.
   static Matrix3<T> ComputeBasisFromZ(const Vector3<T>& z_axis_W);
+
+  /// @name System output port descriptor accessors.
+  /// These are accessor methods for obtaining descriptors of this
+  /// RigidBodyPlant's output ports. See this class's description for details
+  /// about these ports.
+  ///@{
+
+  /// Returns a descriptor of the state output port.
+  const OutputPortDescriptor<T>& state_output_port() const {
+    return System<T>::get_output_port(state_output_port_id_);
+  }
+
+  /// Returns a descriptor of the KinematicsResults output port.
+  const OutputPortDescriptor<T>& kinematics_results_output_port() const {
+    return System<T>::get_output_port(kinematics_output_port_id_);
+  }
+
+  /// Returns a descriptor of the ContactResults output port.
+  const OutputPortDescriptor<T>& contact_results_output_port() const {
+    return System<T>::get_output_port(contact_output_port_id_);
+  }
+
+  /// Returns a descriptor of the output port containing the state of a
+  /// particular model with instance ID equal to @p model_instance_id. Throws a
+  /// std::runtime_error if @p model_instance_id does not exist.
+  const OutputPortDescriptor<T>& model_state_output_port(
+      int model_instance_id) const {
+    if (model_instance_id >= static_cast<int>(output_map_.size())) {
+      throw std::runtime_error("RigidBodyPlant: model_state_output_port: "
+          "ERROR: Model instance ID " + std::to_string(model_instance_id) +
+          " does not exist! Maximum ID is " +
+          std::to_string(output_map_.size() - 1) + ".");
+    }
+    return System<T>::get_output_port(output_map_.at(model_instance_id));
+  }
+  ///@}
 
  protected:
   // LeafSystem<T> override.

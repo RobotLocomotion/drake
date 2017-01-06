@@ -469,7 +469,8 @@ GTEST_TEST(rigid_body_plant_test, TestContactFrameCreation) {
   EXPECT_EQ(z, R_WL.col(2));
 }
 
-GTEST_TEST(RigidBodyPlanTest, InstancePortTest) {
+// Verifies that various model-instance-specific accessor methods work.
+GTEST_TEST(RigidBodyPlantTest, InstancePortTest) {
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       drake::GetDrakePath() +
@@ -500,8 +501,11 @@ GTEST_TEST(RigidBodyPlanTest, InstancePortTest) {
   EXPECT_EQ(plant.get_num_velocities(1), 4);
   EXPECT_EQ(plant.get_num_states(1), 8);
 
+  // TODO(liang.fok) The following has a bug, see #4697.
   const RigidBodyTree<double>& tree = plant.get_rigid_body_tree();
-  const int joint4_world = tree.computePositionNameToIndexMap()["joint4"];
+  const std::map<std::string, int> position_name_to_index_map =
+      tree.computePositionNameToIndexMap();
+  const int joint4_world = position_name_to_index_map.at("joint4");
   ASSERT_EQ(joint4_world, 6);
   const int joint4_instance = plant.FindInstancePositionIndexFromWorldIndex(
       1, joint4_world);
