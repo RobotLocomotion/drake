@@ -20,7 +20,6 @@ namespace {
 
 using drake::parsers::ModelInstanceIdTable;
 using drake::parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld;
-using drake::multibody::joints::kQuaternion;
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -436,25 +435,6 @@ TEST_F(RigidBodyTreeTest, TestGetNumActuators) {
   AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename_4dof_robot,
                                                     tree_.get());
   EXPECT_EQ(tree_->get_num_actuators(), 4);
-}
-
-// Tests that RigidBodyTree::doKinematics() will throw an exception if provided
-// an invalid KinematicsCache. In this case, the cache is not valid because the
-// number of KinematicCacheElement objects within it does not equal the number
-// of RigidBody objects within the RigidBodyTree.
-TEST_F(RigidBodyTreeTest, TestDoKinematicWithBadCache) {
-  const std::string filename =
-      drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
-  AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename, tree_.get());
-  const std::vector<int> num_joint_positions;
-  const std::vector<int> num_joint_velocities;
-  KinematicsCache<double> cache(tree_->get_num_positions(),
-                                tree_->get_num_velocities(),
-                                num_joint_positions, num_joint_velocities);
-  VectorXd q = Eigen::VectorXd::Zero(tree_->get_num_positions());
-  cache.initialize(q);
-  EXPECT_THROW(tree_->doKinematics(cache), std::runtime_error);
 }
 
 }  // namespace

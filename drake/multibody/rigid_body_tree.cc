@@ -483,6 +483,7 @@ void RigidBodyTree<T>::updateStaticCollisionElements() {
 template <typename T>
 void RigidBodyTree<T>::updateDynamicCollisionElements(
     const KinematicsCache<double>& cache) {
+  CheckCacheValidity(cache);
   // todo: this is currently getting called many times with the same cache
   // object.  and it's presumably somewhat expensive.
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
@@ -639,6 +640,7 @@ bool RigidBodyTree<T>::collisionDetect(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<int>& bodyB_idx, const vector<int>& bodies_idx,
     const set<string>& active_element_groups, bool use_margins) {
+  CheckCacheValidity(cache);
   vector<DrakeCollision::ElementId> ids_to_check;
   for (const int& body_idx : bodies_idx) {
     if (body_idx >= 0 && body_idx < static_cast<int>(bodies.size())) {
@@ -660,6 +662,7 @@ bool RigidBodyTree<T>::collisionDetect(
     Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<int>& bodyB_idx, const vector<int>& bodies_idx, bool use_margins) {
+  CheckCacheValidity(cache);
   vector<DrakeCollision::ElementId> ids_to_check;
   for (const int& body_idx : bodies_idx) {
     if (body_idx >= 0 && body_idx < static_cast<int>(bodies.size())) {
@@ -683,6 +686,7 @@ bool RigidBodyTree<T>::collisionDetect(
     vector<int>& bodyB_idx,
     const set<string>& active_element_groups,
     bool use_margins) {
+  CheckCacheValidity(cache);
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
@@ -707,6 +711,7 @@ bool RigidBodyTree<T>::collisionDetect(
     vector<int>& bodyA_idx,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<int>& bodyB_idx, bool use_margins) {
+  CheckCacheValidity(cache);
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
@@ -846,6 +851,38 @@ bool RigidBodyTree<T>::allCollisions(
 }
 
 template <typename T>
+template <typename Scalar>
+void RigidBodyTree<T>::CheckCacheValidity(
+    const KinematicsCache<Scalar>& cache) const {
+  if (cache.get_num_cache_elements() != static_cast<int>(bodies.size())) {
+    throw std::runtime_error("RigidBodyTree: CheckCacheValidity: Number of "
+        "cache elements (" + std::to_string(cache.get_num_cache_elements())
+        + ") does not equal the number of bodies in the RigidBodyTree (" +
+        std::to_string(bodies.size()) + ")");
+  }
+  for (int i = 0; i < get_num_bodies(); ++i) {
+    const RigidBody<T>& body = get_body(i);
+    if (body.has_joint()) {
+      const DrakeJoint& joint = body.getJoint();
+      const KinematicsCacheElement<Scalar>& cache_element =
+          cache.get_element(i);
+      if (cache_element.get_num_positions() != joint.get_num_positions() ||
+          cache_element.get_num_velocities() != joint.get_num_velocities()) {
+        throw std::runtime_error("RigidBodyTree: CheckCacheValidity: Cache "
+            "element " + std::to_string(i) + " for joint " + joint.get_name() +
+            " has incorrect number of joint positions or velocities.\n" +
+            "  - num positions: cache has " +
+            std::to_string(cache_element.get_num_positions()) +
+            ", joint has " + std::to_string(joint.get_num_positions()) + "\n"
+            "  - num velocities: cache has " +
+            std::to_string(cache.get_num_velocities()) + ", joint has " +
+            std::to_string(joint.get_num_velocities()));
+      }
+    }
+  }
+}
+
+template <typename T>
 KinematicsCache<T>
 RigidBodyTree<T>::CreateKinematicsCacheFromBodiesVector(
     const std::vector<std::unique_ptr<RigidBody<T>>>& bodies) {
@@ -922,6 +959,7 @@ template <typename Scalar>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void RigidBodyTree<T>::doKinematics(KinematicsCache<Scalar>& cache,
                                     bool compute_JdotV) const {
+  CheckCacheValidity(cache);
   const auto& q = cache.getQ();
   if (!initialized_)
     throw runtime_error("RigidBodyTree::doKinematics: call compile first.");
@@ -930,13 +968,6 @@ void RigidBodyTree<T>::doKinematics(KinematicsCache<Scalar>& cache,
   compute_JdotV = compute_JdotV && cache.hasV();
   // Required in call to geometricJacobian below.
   cache.setPositionKinematicsCached();
-
-  if (cache.get_num_cache_elements() != static_cast<int>(bodies.size())) {
-    throw std::runtime_error("RigidBodyTree: doKinematics: Number of cache "
-        "elements (" + std::to_string(cache.get_num_cache_elements()) + ") "
-        "does not equal the number of bodies in the RigidBodyTree (" +
-        std::to_string(bodies.size()) + ")");
-  }
 
   for (int i = 0; i < static_cast<int>(bodies.size()); ++i) {
     RigidBody<T>& body = *bodies[i];
@@ -1033,6 +1064,7 @@ template <typename Scalar>
 void RigidBodyTree<T>::updateCompositeRigidBodyInertias(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(false, false,
                                       "updateCompositeRigidBodyInertias");
 
@@ -1112,6 +1144,7 @@ TwistMatrix<Scalar> RigidBodyTree<T>::worldMomentumMatrix(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set,
     bool in_terms_of_qdot) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(false, false, "worldMomentumMatrix");
   updateCompositeRigidBodyInertias(cache);
 
@@ -1155,6 +1188,7 @@ TwistVector<Scalar> RigidBodyTree<T>::worldMomentumMatrixDotTimesV(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set)
 const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(true, true,
                                       "worldMomentumMatrixDotTimesV");
   updateCompositeRigidBodyInertias(cache);
@@ -1185,6 +1219,7 @@ TwistMatrix<Scalar> RigidBodyTree<T>::centroidalMomentumMatrix(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set,
     bool in_terms_of_qdot) const {
+  CheckCacheValidity(cache);
   // kinematics cache checks already being done in worldMomentumMatrix.
   auto ret = worldMomentumMatrix(cache, model_instance_id_set,
                                  in_terms_of_qdot);
@@ -1209,6 +1244,7 @@ TwistVector<Scalar> RigidBodyTree<T>::centroidalMomentumMatrixDotTimesV(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set)
 const {
+  CheckCacheValidity(cache);
   // kinematics cache checks already being done in worldMomentumMatrixDotTimesV
   auto ret = worldMomentumMatrixDotTimesV(cache, model_instance_id_set);
 
@@ -1262,6 +1298,7 @@ Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree<T>::centerOfMass(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set)
 const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(false, false, "centerOfMass");
 
   Eigen::Matrix<Scalar, kSpaceDimension, 1> com;
@@ -1337,7 +1374,7 @@ template <typename T>
 template <typename Scalar>
 MatrixX<Scalar> RigidBodyTree<T>::GetVelocityToQDotMapping(
         const KinematicsCache<Scalar>& cache) {
-    return transformQDotMappingToVelocityMapping(
+  return transformQDotMappingToVelocityMapping(
       cache,
       MatrixX<Scalar>::Identity(cache.get_num_positions(),
                                 cache.get_num_positions()));
@@ -1361,6 +1398,7 @@ RigidBodyTree<T>::centerOfMassJacobian(
     KinematicsCache<Scalar>& cache,
     const std::set<int>& model_instance_id_set,
     bool in_terms_of_qdot) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(false, false, "centerOfMassJacobian");
   auto A = worldMomentumMatrix(cache, model_instance_id_set, in_terms_of_qdot);
   double total_mass = getMass(model_instance_id_set);
@@ -1374,6 +1412,7 @@ RigidBodyTree<T>::centerOfMassJacobianDotTimesV(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache,
     const std::set<int>& model_instance_id_set) const {
+  CheckCacheValidity(cache);
   // kinematics cache checks are already being done in
   // centroidalMomentumMatrixDotTimesV
   auto cmm_dot_times_v =
@@ -1389,6 +1428,7 @@ std::pair<Eigen::Vector3d, double> RigidBodyTree<T>::resolveCenterOfPressure(
     const std::vector<ForceTorqueMeasurement>& force_torque_measurements,
     const Eigen::MatrixBase<DerivedNormal>& normal,
     const Eigen::MatrixBase<DerivedPoint>& point_on_contact_plane) const {
+  CheckCacheValidity(cache);
   // kinematics cache checks are already being done in relativeTransform
   typedef typename DerivedNormal::Scalar Scalar;
   TwistVector<Scalar> total_wrench = TwistVector<Scalar>::Zero();
@@ -1544,6 +1584,7 @@ TwistMatrix<Scalar> RigidBodyTree<T>::geometricJacobian(
     const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind,
     int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind,
     bool in_terms_of_qdot, std::vector<int>* v_or_qdot_indices) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(false, false, "geometricJacobian");
 
   KinematicPath kinematic_path =
@@ -1612,6 +1653,7 @@ TwistVector<Scalar> RigidBodyTree<T>::geometricJacobianDotTimesV(
     const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind,
     int end_effector_body_or_frame_ind,
     int expressed_in_body_or_frame_ind) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(true, true, "geometricJacobianDotTimesV");
 
   TwistVector<Scalar> ret(kTwistSize, 1);
@@ -1638,6 +1680,7 @@ template <typename Scalar>
 TwistVector<Scalar> RigidBodyTree<T>::relativeTwist(
     const KinematicsCache<Scalar>& cache, int base_or_frame_ind,
     int body_or_frame_ind, int expressed_in_body_or_frame_ind) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(true, false, "relativeTwist");
 
   int base_ind = parseBodyOrFrameID(base_or_frame_ind);
@@ -1659,6 +1702,7 @@ TwistVector<Scalar> RigidBodyTree<T>::transformSpatialAcceleration(
     const TwistVector<Scalar>& spatial_acceleration, int base_ind, int body_ind,
     int old_expressed_in_body_or_frame_ind,
     int new_expressed_in_body_or_frame_ind) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(true, true,
                                       "transformSpatialAcceleration");
 
@@ -1687,6 +1731,7 @@ template <typename Scalar>
 Transform<Scalar, 3, Isometry> RigidBodyTree<T>::relativeTransform(
     const KinematicsCache<Scalar>& cache, int base_or_frame_ind,
     int body_or_frame_ind) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(false, false, "relativeTransform");
 
   Transform<Scalar, 3, Isometry> Tbase_frame;
@@ -1711,6 +1756,7 @@ template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree<T>::massMatrix(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(false, false, "massMatrix");
 
   int nv = num_velocities_;
@@ -1758,6 +1804,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::dynamicsBiasTerm(
     const drake::eigen_aligned_std_unordered_map<
         RigidBody<T> const*, WrenchVector<Scalar>>& external_wrenches,
     bool include_velocity_terms) const {
+  CheckCacheValidity(cache);
   Matrix<Scalar, Eigen::Dynamic, 1> vd(num_velocities_, 1);
   vd.setZero();
   return inverseDynamics(cache, external_wrenches, vd, include_velocity_terms);
@@ -1772,6 +1819,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::inverseDynamics(
         RigidBody<T> const*, WrenchVector<Scalar>>& external_wrenches,
     const Matrix<Scalar, Eigen::Dynamic, 1>& vd,
     bool include_velocity_terms) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(
       include_velocity_terms, include_velocity_terms, "inverseDynamics");
 
@@ -1981,6 +2029,7 @@ RigidBodyTree<T>::transformPointsJacobian(
     const KinematicsCache<Scalar>& cache,
     const Eigen::MatrixBase<DerivedPoints>& points, int from_body_or_frame_ind,
     int to_body_or_frame_ind, bool in_terms_of_qdot) const {
+  CheckCacheValidity(cache);
   int cols = in_terms_of_qdot ? num_positions_ : num_velocities_;
   int npoints = static_cast<int>(points.cols());
 
@@ -2025,6 +2074,7 @@ RigidBodyTree<T>::relativeQuaternionJacobian(
     const KinematicsCache<Scalar>& cache,
     int from_body_or_frame_ind, int to_body_or_frame_ind,
     bool in_terms_of_qdot) const {
+  CheckCacheValidity(cache);
   int body_ind = parseBodyOrFrameID(from_body_or_frame_ind);
   int base_ind = parseBodyOrFrameID(to_body_or_frame_ind);
   KinematicPath kinematic_path = findKinematicPath(base_ind, body_ind);
@@ -2047,6 +2097,7 @@ Eigen::Matrix<Scalar, kRpySize, Eigen::Dynamic>
 RigidBodyTree<T>::relativeRollPitchYawJacobian(
     const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
     int to_body_or_frame_ind, bool in_terms_of_qdot) const {
+  CheckCacheValidity(cache);
   int body_ind = parseBodyOrFrameID(from_body_or_frame_ind);
   int base_ind = parseBodyOrFrameID(to_body_or_frame_ind);
   KinematicPath kinematic_path = findKinematicPath(base_ind, body_ind);
@@ -2071,6 +2122,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
 RigidBodyTree<T>::forwardKinPositionGradient(
     const KinematicsCache<Scalar>& cache,
     int npoints, int from_body_or_frame_ind, int to_body_or_frame_ind) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(false, false,
                                       "forwardKinPositionGradient");
 
@@ -2093,6 +2145,7 @@ RigidBodyTree<T>::transformPointsJacobianDotTimesV(
     const KinematicsCache<Scalar>& cache,
     const Eigen::MatrixBase<DerivedPoints>& points, int from_body_or_frame_ind,
     int to_body_or_frame_ind) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(true, true,
                                       "transformPointsJacobianDotTimesV");
 
@@ -2128,6 +2181,7 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
 RigidBodyTree<T>::relativeQuaternionJacobianDotTimesV(
     const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
     int to_body_or_frame_ind) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(true, true,
                                       "relativeQuaternionJacobianDotTimesV");
 
@@ -2175,6 +2229,7 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
 RigidBodyTree<T>::relativeRollPitchYawJacobianDotTimesV(
     const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
     int to_body_or_frame_ind) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(true, true,
                                       "relativeRollPitchYawJacobianDotTimesV");
 
@@ -2557,6 +2612,7 @@ template <typename T>
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::positionConstraints(
     const KinematicsCache<Scalar>& cache) const {
+  CheckCacheValidity(cache);
   Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
   for (size_t i = 0; i < loops.size(); ++i) {
     {  // position constraint
@@ -2580,6 +2636,7 @@ template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
 RigidBodyTree<T>::positionConstraintsJacobian(
     const KinematicsCache<Scalar>& cache, bool in_terms_of_qdot) const {
+  CheckCacheValidity(cache);
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(
       6 * loops.size(), in_terms_of_qdot ? num_positions_ : num_velocities_);
 
@@ -2601,6 +2658,7 @@ template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1>
 RigidBodyTree<T>::positionConstraintsJacDotTimesV(
     const KinematicsCache<Scalar>& cache) const {
+  CheckCacheValidity(cache);
   Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
 
   for (size_t i = 0; i < loops.size(); ++i) {
@@ -3154,6 +3212,14 @@ RigidBodyTree<double>::relativeQuaternionJacobianDotTimesV<AutoDiffUpTo73d>(
 template VectorX<AutoDiffXd>
 RigidBodyTree<double>::relativeQuaternionJacobianDotTimesV<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int) const;
+
+// Explicit template instantiations for CheckCacheValidity(cache).
+template void RigidBodyTree<double>::CheckCacheValidity(
+    const KinematicsCache<double>&) const;
+template void RigidBodyTree<double>::CheckCacheValidity(
+    const KinematicsCache<AutoDiffXd>&) const;
+template void RigidBodyTree<double>::CheckCacheValidity(
+    const KinematicsCache<AutoDiffUpTo73d>&) const;
 
 // Explicit template instantiations for doKinematics(cache).
 template void RigidBodyTree<double>::doKinematics(

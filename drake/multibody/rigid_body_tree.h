@@ -182,6 +182,11 @@ class RigidBodyTree {
 
   void drawKinematicTree(std::string graphviz_dotfile_filename) const;
 
+  /// Checks whether @p cache is valid for use with this RigidBodyTree. Throws
+  /// a std::runtime_error exception if it is not valid.
+  template <typename Scalar>
+  void CheckCacheValidity(const KinematicsCache<Scalar>& cache) const;
+
   /// Creates a KinematicsCache to perform computations with this RigidBodyTree.
   /// The returned KinematicsCache is consistently templated on the scalar type
   /// for this RigidBodyTree instance.
