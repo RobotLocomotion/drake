@@ -413,9 +413,8 @@ Expression operator-(const Variable& lhs, const Variable& rhs) {
   return Expression{lhs} - Expression{rhs};
 }
 Expression operator-(Expression lhs, const Variable& rhs) { return lhs -= rhs; }
-Expression operator-(const Variable& lhs, Expression rhs) {
-  rhs -= lhs;   // rhs - lhs
-  return -rhs;  // lhs - rhs
+Expression operator-(const Variable& lhs, const Expression& rhs) {
+  return Expression(lhs) - rhs;
 }
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
