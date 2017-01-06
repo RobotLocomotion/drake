@@ -65,6 +65,15 @@ The following simple simplifications are implemented:
     F1 ∧ F2        ->  False   (if either F1 or F2 is False)
     F1 ∨ F2        ->  True    (if either F1 or F2 is True)
 \endverbatim
+
+\note Formula class has an explicit conversion operator to bool. It evaluates a
+symbolic formula under an empty environment. If a symbolic formula includes
+symbolic variables, the conversion operator throws an exception. This operator
+is only intended for third-party code doing things like
+<tt>(imag(SymbolicExpression(0)) == SymbolicExpression(0)) { ... };<tt> that we
+found in Eigen3 codebase. In general, a user of this class should explicitly
+call \c Evaluate from within Drake for readability.
+
 */
 class Formula {
  public:

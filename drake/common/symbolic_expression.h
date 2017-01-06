@@ -491,6 +491,85 @@ double get_constant_factor_in_multiplication(const Expression& e);
 */
 const std::map<Expression, Expression>& get_products_in_multiplication(
     const Expression& e);
+
+// Matrix<Expression> * Matrix<Variable> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, Expression>::value &&
+        std::is_same<typename MatrixR::Scalar, Variable>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime> >::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs * rhs.template cast<Expression>();
+}
+
+// Matrix<Variable> * Matrix<Expression> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, Variable>::value &&
+        std::is_same<typename MatrixR::Scalar, Expression>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime> >::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs.template cast<Expression>() * rhs;
+}
+
+// Matrix<Expression> * Matrix<double> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, Expression>::value &&
+        std::is_same<typename MatrixR::Scalar, double>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime> >::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+}
+
+// Matrix<double> * Matrix<Expression> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, double>::value &&
+        std::is_same<typename MatrixR::Scalar, Expression>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime> >::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+}
+
+// Matrix<Variable> * Matrix<double> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, Variable>::value &&
+        std::is_same<typename MatrixR::Scalar, double>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime> >::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+}
+
+// Matrix<double> * Matrix<Variable> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, double>::value &&
+        std::is_same<typename MatrixR::Scalar, Variable>::value,
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime> >::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+}
+
 }  // namespace symbolic
 
 /** Provides specialization of @c cond function defined in drake/common/cond.h
@@ -563,6 +642,7 @@ struct NumTraits<drake::symbolic::Expression>
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<drake::symbolic::Variable,
                             drake::symbolic::Variable, BinaryOp> {
+  enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
 
@@ -570,6 +650,7 @@ struct ScalarBinaryOpTraits<drake::symbolic::Variable,
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<drake::symbolic::Variable,
                             drake::symbolic::Expression, BinaryOp> {
+  enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
 
@@ -577,19 +658,37 @@ struct ScalarBinaryOpTraits<drake::symbolic::Variable,
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<drake::symbolic::Expression,
                             drake::symbolic::Variable, BinaryOp> {
+  enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
 
 // Informs Eigen that Variable op double gets Expression.
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<drake::symbolic::Variable, double, BinaryOp> {
+  enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
 
 // Informs Eigen that double op Variable gets Expression.
 template <typename BinaryOp>
 struct ScalarBinaryOpTraits<double, drake::symbolic::Variable, BinaryOp> {
+  enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
+
+// Informs Eigen that Expression op double gets Expression.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<drake::symbolic::Expression, double, BinaryOp> {
+  enum { Defined = 1 };
+  typedef drake::symbolic::Expression ReturnType;
+};
+
+// Informs Eigen that double op Expression gets Expression.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<double, drake::symbolic::Expression, BinaryOp> {
+  enum { Defined = 1 };
+  typedef drake::symbolic::Expression ReturnType;
+};
+
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
