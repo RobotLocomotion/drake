@@ -452,7 +452,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
     // Critically damped stabilization term.
     // phiddot = -2 * alpha * phidot - alpha^2 * phi.
     prog.AddLinearEqualityConstraint(
-        J, -(Jdotv + 2 * alpha * J * v + alpha * alpha * phi), {vdot});
+        J, -(Jdotv + 2 * alpha * J * v + alpha * alpha * phi), vdot);
     H_and_neg_JT.conservativeResize(Eigen::NoChange,
                                     H_and_neg_JT.cols() + J.rows());
     H_and_neg_JT.rightCols(J.rows()) = -J.transpose();

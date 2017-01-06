@@ -255,7 +255,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     // phiddot = -2 alpha phidot - alpha^2 phi  (0 + critically damped
     // stabilization term)
     prog.AddLinearEqualityConstraint(
-        J, -(Jdotv + 2 * alpha * J * v + alpha * alpha * phi), {vdot});
+        J, -(Jdotv + 2 * alpha * J * v + alpha * alpha * phi), vdot);
     H_and_neg_JT.conservativeResize(NoChange, H_and_neg_JT.cols() + J.rows());
     H_and_neg_JT.rightCols(J.rows()) = -J.transpose();
   }

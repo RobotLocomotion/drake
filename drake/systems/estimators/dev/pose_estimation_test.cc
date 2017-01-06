@@ -63,7 +63,7 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
   // Note: Adding constraints one at a time because W is not a column vector.
   for (int k = 0; k < points.cols(); k++) {
     prog.AddLinearEqualityConstraint(Eigen::MatrixXd::Ones(1, vertices.cols()),
-                                     1, {W.col(k)});
+                                     1, W.col(k));
   }
 
   enum RotationType {
@@ -156,7 +156,7 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
     for (int k = 0; k < points.cols(); k++) {
       // Sum_i B(i,k) = 1 (each point must be assigned to exactly one face).
       prog.AddLinearEqualityConstraint(Eigen::RowVectorXd::Ones(faces.cols()),
-                                       1, {B.col(k)});
+                                       1, B.col(k));
     }
 
     // W(v,k) <= sum_j B(j,k) for all faces j that contain vertex v.

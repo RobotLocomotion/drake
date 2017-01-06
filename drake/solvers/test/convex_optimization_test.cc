@@ -158,7 +158,7 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
   prog.AddLinearCost(c2, {x.tail<2>()});
 
   Eigen::RowVector3d a1(3, 1, 2);
-  prog.AddLinearEqualityConstraint(a1, 30, {x.head<3>()});
+  prog.AddLinearEqualityConstraint(a1, 30, x.head<3>());
 
   Eigen::Matrix<double, 4, 4> A;
   A << 2, 1, 3, 1, 0, 2, 0, 3, 1, 2, 0, 1, 1, 0, 2, 0;
@@ -396,7 +396,7 @@ void TestQuadraticProgram4(const MathematicalProgramSolverInterface& solver) {
   Eigen::Vector3d b = Eigen::Vector3d::Zero();
   prog.AddQuadraticCost(Q, b);
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1),
-                                   Vector1d::Constant(1), {x.head<2>()});
+                                   Vector1d::Constant(1), x.head<2>());
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 2),
                                    Vector1d::Constant(2),
                                    {x.segment<1>(0), x.segment<1>(2)});
@@ -555,7 +555,7 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   auto lorentz_cone2 = prog.AddLorentzConeConstraint(A_lorentz2, b_lorentz2,
                                                      {t.segment<1>(1), a});
   // a'*(x2 - x1) = 1
-  prog.AddLinearEqualityConstraint((x2 - x1).transpose(), 1.0, {a});
+  prog.AddLinearEqualityConstraint((x2 - x1).transpose(), 1.0, a);
 
   // Add cost
   auto cost = prog.AddLinearCost(Eigen::Vector2d(1.0, 1.0), {t});

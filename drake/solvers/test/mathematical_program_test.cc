@@ -181,7 +181,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   auto xhead = x.head(3);
 
   Vector4d b = Vector4d::Random();
-  auto con = prog.AddLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
+  auto con = prog.AddLinearEqualityConstraint(Matrix4d::Identity(), b, x);
 
   prog.SetInitialGuessForAllVariables(Vector4d::Zero());
   prog.Solve();
@@ -201,7 +201,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   // Add two more variables with a very slightly more complicated
   // constraint and solve again. Should still be a linear system.
   auto y = prog.NewContinuousVariables<2>();
-  prog.AddLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
+  prog.AddLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), y);
   prog.Solve();
   const auto& y_value = prog.GetSolution(y);
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y_value, 1e-10,
@@ -1032,7 +1032,7 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   auto t_lorentz = prog_lorentz.NewContinuousVariables(1, "t");
   auto x_lorentz = prog_lorentz.NewContinuousVariables(xDim, "x");
   prog_lorentz.AddLorentzConeConstraint({t_lorentz, x_lorentz});
-  prog_lorentz.AddLinearEqualityConstraint(A, b, {x_lorentz});
+  prog_lorentz.AddLinearEqualityConstraint(A, b, x_lorentz);
   prog_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_lorentz});
 
   // A_hat = [A 0; 2*I A']
@@ -1070,7 +1070,7 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
       prog_rotated_lorentz.NewContinuousVariables<1>("slack");
   prog_rotated_lorentz.AddRotatedLorentzConeConstraint(
       {t_rotated_lorentz, slack_rotated_lorentz, x_rotated_lorentz});
-  prog_rotated_lorentz.AddLinearEqualityConstraint(A, b, {x_rotated_lorentz});
+  prog_rotated_lorentz.AddLinearEqualityConstraint(A, b, x_rotated_lorentz);
   prog_rotated_lorentz.AddBoundingBoxConstraint(1.0, 1.0,
                                                 slack_rotated_lorentz(0));
   prog_rotated_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_rotated_lorentz});

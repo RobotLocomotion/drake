@@ -146,7 +146,7 @@ void AddQuasiStaticConstraint(
   VectorXd constraint_eq(num_vars);
   constraint_eq.fill(1.);
   prog->AddLinearEqualityConstraint(constraint_eq.transpose(),
-                                    Vector1d::Constant(1.), {qsc_vars});
+                                    Vector1d::Constant(1.), qsc_vars);
   prog->SetInitialGuess(qsc_vars, VectorXd::Constant(num_vars, 1.0 / num_vars));
 }
 

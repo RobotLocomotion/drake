@@ -229,13 +229,27 @@ std::shared_ptr<LinearConstraint> MathematicalProgram::AddLinearConstraint(
   return con;
 }
 
-void MathematicalProgram::AddConstraint(
-    std::shared_ptr<LinearEqualityConstraint> con,
-    const VariableListRef& vars) {
+void MathematicalProgram::AddConstraint(const Binding<LinearEqualityConstraint>& binding) {
   required_capabilities_ |= kLinearEqualityConstraint;
-  linear_equality_constraints_.push_back(
-      Binding<LinearEqualityConstraint>(con, vars));
-  DRAKE_ASSERT(con->A().cols() == linear_equality_constraints_.back().variables().rows());
+  DRAKE_ASSERT(binding.constraint()->A().cols() == static_cast<int>(binding.GetNumElements()));
+  linear_equality_constraints_.push_back(binding);
+}
+
+std::shared_ptr<LinearEqualityConstraint> MathematicalProgram::AddLinearEqualityConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
+    const Eigen::Ref<const Eigen::VectorXd>& beq, const VariableListRef& vars) {
+  std::shared_ptr<LinearEqualityConstraint> constraint = std::make_shared<LinearEqualityConstraint>(Aeq, beq);
+  AddConstraint(Binding<LinearEqualityConstraint>(constraint, vars));
+  return constraint;
+}
+
+std::shared_ptr<LinearEqualityConstraint> MathematicalProgram::AddLinearEqualityConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
+    const Eigen::Ref<const Eigen::VectorXd>& beq,
+    const Eigen::Ref<const DecisionVariableVectorX>& vars) {
+  std::shared_ptr<LinearEqualityConstraint> constraint = std::make_shared<LinearEqualityConstraint>(Aeq, beq);
+  AddConstraint(Binding<LinearEqualityConstraint>(constraint, vars));
+  return constraint;
 }
 
 void MathematicalProgram::AddConstraint(

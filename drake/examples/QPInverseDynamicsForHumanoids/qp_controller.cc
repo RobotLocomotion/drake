@@ -151,7 +151,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
                   MatrixX<double>::Zero(3 * contact.num_contact_points(),
                                         num_vd_),
                   VectorX<double>::Zero(3 * contact.num_contact_points()),
-                  {vd_})
+                  vd_)
               .get();
     }
   }
@@ -199,7 +199,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
     // Dimension doesn't matter for equality constraints,
     // will be reset when updating the constraint.
     eq_cen_mom_dot_ =
-        prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, {vd_})
+        prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, vd_)
             .get();
     eq_cen_mom_dot_->set_description("centroidal momentum change eq");
   } else {
@@ -219,7 +219,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
     // Dimension doesn't matter for equality constraints,
     // will be reset when updating the constraint.
     eq_body_motion_[i] =
-        prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, {vd_})
+        prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, vd_)
             .get();
   }
 
@@ -235,7 +235,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
     // Dimension doesn't matter for equality constraints,
     // will be reset when updating the constraint.
     eq_dof_motion_ =
-        prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, {vd_})
+        prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, vd_)
             .get();
     eq_dof_motion_->set_description("vd eq");
   } else {

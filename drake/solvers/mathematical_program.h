@@ -928,10 +928,9 @@ class MathematicalProgram {
 
   /**
    * Adds linear equality constraints referencing potentially a
-   * subset of the decision variables (defined in the vars parameter).
+   * subset of the decision variables.
    */
-  void AddConstraint(std::shared_ptr<LinearEqualityConstraint> con,
-                     const VariableListRef& vars);
+  void AddConstraint(const Binding<LinearEqualityConstraint>& binding);
 
   /** AddLinearEqualityConstraint
    *
@@ -952,14 +951,34 @@ class MathematicalProgram {
    * @f[-x(2) + 2x(5) = 1 @f]
    * @f[ x(2) +  x(5) = 3 @f]
    */
-  template <typename DerivedA, typename DerivedB>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
-      const Eigen::MatrixBase<DerivedA>& Aeq,
-      const Eigen::MatrixBase<DerivedB>& beq, const VariableListRef& vars) {
-    auto constraint = std::make_shared<LinearEqualityConstraint>(Aeq, beq);
-    AddConstraint(constraint, vars);
-    return constraint;
-  }
+      const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
+      const Eigen::Ref<const Eigen::VectorXd>& beq,
+      const VariableListRef& vars);
+
+  /** AddLinearEqualityConstraint
+   *
+   * Adds linear equality constraints referencing potentially a subset of
+   * the decision variables.
+   *
+   * Example: to add two equality constraints which only depend on two of the
+   * elements of x, you could use
+   * @code{.cc}
+   *   auto x = prog.NewContinuousDecisionVariable(6,"myvar");
+   *   Eigen::Matrix2d Aeq;
+   *   Aeq << -1, 2,
+   *           1, 1;
+   *   Eigen::Vector2d beq(1, 3);
+   *   // Imposes constraint
+   *   // -x(0) + 2x(1) = 1
+   *   //  x(0) +  x(1) = 3
+   *   prog.AddLinearEqualityConstraint(Aeq, beq, x.head<2>());
+   * @endcode
+   */
+  std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
+      const Eigen::Ref<const Eigen::VectorXd>& beq,
+      const Eigen::Ref<const DecisionVariableVectorX>& vars);
 
   /** AddLinearEqualityConstraint
    *
@@ -970,7 +989,7 @@ class MathematicalProgram {
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::MatrixBase<DerivedA>& Aeq,
       const Eigen::MatrixBase<DerivedB>& beq) {
-    return AddLinearEqualityConstraint(Aeq, beq, {decision_variables_});
+    return AddLinearEqualityConstraint(Aeq, beq, decision_variables_);
   }
 
   /**
@@ -983,11 +1002,25 @@ class MathematicalProgram {
    * @param beq A scalar.
    * @param vars The decision variables on which the constraint is imposed.
    */
-  template <typename DerivedA>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
-      const Eigen::MatrixBase<DerivedA>& a, double beq,
+      const Eigen::Ref<const Eigen::RowVectorXd>& a, double beq,
       const VariableListRef& vars) {
-    DRAKE_ASSERT(a.rows() == 1);
+    return AddLinearEqualityConstraint(a, drake::Vector1d(beq), vars);
+  }
+
+  /**
+   * Adds one row of linear equality constraint referencing potentially a subset
+   * of decision variables.
+   * @f[
+   * ax = beq
+   * @f]
+   * @param a A row vector.
+   * @param beq A scalar.
+   * @param vars The decision variables on which the constraint is imposed.
+   */
+  std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::Ref<const Eigen::RowVectorXd>& a, double beq,
+      const Eigen::Ref<const DecisionVariableVectorX>& vars) {
     return AddLinearEqualityConstraint(a, drake::Vector1d(beq), vars);
   }
 
@@ -1000,12 +1033,10 @@ class MathematicalProgram {
    * @param a A row vector.
    * @param beq A scalar.
    */
-  template <typename DerivedA>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
-      const Eigen::MatrixBase<DerivedA>& a, double beq) {
-    DRAKE_ASSERT(a.rows() == 1);
+      const Eigen::Ref<const Eigen::RowVectorXd>& a, double beq) {
     return AddLinearEqualityConstraint(a, drake::Vector1d(beq),
-                                       {decision_variables_});
+                                       decision_variables_);
   }
 
   /**
