@@ -8,12 +8,14 @@
 #include <set>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_formula.h"
@@ -27,6 +29,7 @@ using std::map;
 using std::ostringstream;
 using std::runtime_error;
 using std::set;
+using std::string;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
@@ -2033,6 +2036,545 @@ TEST_F(SymbolicVariableTest, EigenExpressionMatrixOutput) {
        << "      (y + z)       (y + w)";
 
   EXPECT_EQ(oss1.str(), oss2.str());
+}
+
+class SymbolicMixingScalarTypesTest : public ::testing::Test {
+ protected:
+  const Variable var_x_{"x"};
+  const Variable var_y_{"y"};
+  const Variable var_z_{"z"};
+  const Variable var_w_{"w"};
+  const Expression x_{var_x_};
+  const Expression y_{var_y_};
+  const Expression z_{var_z_};
+  const Expression w_{var_w_};
+
+  Matrix2<Expression> M_expr_fixed;
+  MatrixX<Expression> M_expr_dyn{2, 2};
+  Vector2<Expression> V_expr_fixed;
+  VectorX<Expression> V_expr_dyn{2};
+
+  Matrix2<Variable> M_var_fixed;
+  MatrixX<Variable> M_var_dyn{2, 2};
+  Vector2<Variable> V_var_fixed;
+  VectorX<Variable> V_var_dyn{2};
+
+  Matrix2<double> M_double_fixed;
+  MatrixX<double> M_double_dyn{2, 2};
+  Vector2<double> V_double_fixed;
+  VectorX<double> V_double_dyn{2};
+
+  void SetUp() override {
+    // clang-format off
+    M_expr_fixed << x_, y_,
+                    z_, w_;
+    M_expr_dyn   << x_, y_,
+                    z_, w_;
+    V_expr_fixed << x_,
+                    y_;
+    V_expr_dyn   << x_,
+                    y_;
+    // clang-format on
+
+    // clang-format off
+    M_var_fixed << var_x_, var_y_,
+                   var_z_, var_w_;
+    M_var_dyn   << var_x_, var_y_,
+                   var_z_, var_w_;
+    V_var_fixed << var_x_,
+                   var_y_;
+    V_var_dyn   << var_x_,
+                   var_y_;
+    // clang-format on
+
+    // clang-format off
+    M_double_fixed << 1, 2,
+                      3, 4;
+    M_double_dyn   << 1, 2,
+                      3, 4;
+    V_double_fixed << 1,
+                      2;
+    V_double_dyn   << 1,
+                      2;
+    // clang-format on
+  }
+
+  template <typename Scalar>
+  string to_string(const Eigen::MatrixBase<Scalar>& m) {
+    ostringstream oss;
+    oss << m;
+    return oss.str();
+  }
+};
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixAdditionExprVar) {
+  const auto M1{M_expr_fixed + M_var_fixed};
+  const auto M2{M_expr_fixed + M_var_dyn};
+  const auto M3{M_expr_dyn + M_var_fixed};
+  const auto M4{M_expr_dyn + M_var_dyn};
+  const string expected{
+      "      (2 * x)       (2 * y)\n      (2 * z)       (2 * w)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixAdditionExprDouble) {
+  const auto M1{M_expr_fixed + M_double_fixed};
+  const auto M2{M_expr_fixed + M_double_dyn};
+  const auto M3{M_expr_dyn + M_double_fixed};
+  const auto M4{M_expr_dyn + M_double_dyn};
+  const string expected{
+      "      (1 + x)       (2 + y)\n      (3 + z)       (4 + w)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixAdditionVarExpr) {
+  const auto M1{M_var_fixed + M_expr_fixed};
+  const auto M2{M_var_fixed + M_expr_dyn};
+  const auto M3{M_var_dyn + M_expr_fixed};
+  const auto M4{M_var_dyn + M_expr_dyn};
+  const string expected{
+      "      (2 * x)       (2 * y)\n      (2 * z)       (2 * w)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixAdditionVarDouble) {
+  const auto M1{M_var_fixed + M_double_fixed};
+  const auto M2{M_var_fixed + M_double_dyn};
+  const auto M3{M_var_dyn + M_double_fixed};
+  const auto M4{M_var_dyn + M_double_dyn};
+  const string expected{
+      "      (1 + x)       (2 + y)\n      (3 + z)       (4 + w)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixAdditionDoubleExpr) {
+  const auto M1{M_double_fixed + M_expr_fixed};
+  const auto M2{M_double_fixed + M_expr_dyn};
+  const auto M3{M_double_dyn + M_expr_fixed};
+  const auto M4{M_double_dyn + M_expr_dyn};
+  const string expected{
+      "      (1 + x)       (2 + y)\n      (3 + z)       (4 + w)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixAdditionDoubleVar) {
+  const auto M1{M_double_fixed + M_var_fixed};
+  const auto M2{M_double_fixed + M_var_dyn};
+  const auto M3{M_double_dyn + M_var_fixed};
+  const auto M4{M_double_dyn + M_var_dyn};
+  const string expected{
+      "      (1 + x)       (2 + y)\n      (3 + z)       (4 + w)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixSubtractionExprVar) {
+  const auto M1{M_expr_fixed - M_var_fixed};
+  const auto M2{M_expr_fixed - M_var_dyn};
+  const auto M3{M_expr_dyn - M_var_fixed};
+  const auto M4{M_expr_dyn - M_var_dyn};
+  const string expected{"0 0\n0 0"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixSubtractionExprDouble) {
+  const auto M1{M_expr_fixed - M_double_fixed};
+  const auto M2{M_expr_fixed - M_double_dyn};
+  const auto M3{M_expr_dyn - M_double_fixed};
+  const auto M4{M_expr_dyn - M_double_dyn};
+  const string expected{
+      "       (-1 + x)        (-2 + y)\n       (-3 + z)        (-4 + w)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixSubtractionVarExpr) {
+  const auto M1{M_var_fixed - M_expr_fixed};
+  const auto M2{M_var_fixed - M_expr_dyn};
+  const auto M3{M_var_dyn - M_expr_fixed};
+  const auto M4{M_var_dyn - M_expr_dyn};
+  const string expected{"0 0\n0 0"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixSubtractionVarDouble) {
+  const auto M1{M_var_fixed - M_double_fixed};
+  const auto M2{M_var_fixed - M_double_dyn};
+  const auto M3{M_var_dyn - M_double_fixed};
+  const auto M4{M_var_dyn - M_double_dyn};
+  const string expected{
+      "       (-1 + x)        (-2 + y)\n       (-3 + z)        (-4 + w)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixSubtractionDoubleExpr) {
+  const auto M1{M_double_fixed - M_expr_fixed};
+  const auto M2{M_double_fixed - M_expr_dyn};
+  const auto M3{M_double_dyn - M_expr_fixed};
+  const auto M4{M_double_dyn - M_expr_dyn};
+  const string expected{
+      "      (1 - x)       (2 - y)\n      (3 - z)       (4 - w)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixSubtractionDoubleVar) {
+  const auto M1{M_double_fixed - M_var_fixed};
+  const auto M2{M_double_fixed - M_var_dyn};
+  const auto M3{M_double_dyn - M_var_fixed};
+  const auto M4{M_double_dyn - M_var_dyn};
+  const string expected{
+      "      (1 - x)       (2 - y)\n      (3 - z)       (4 - w)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixMatrixMultiplicationExprVar) {
+  const auto M1{M_expr_fixed * M_var_fixed};
+  const auto M2{M_expr_fixed * M_var_dyn};
+  const auto M3{M_expr_dyn * M_var_fixed};
+  const auto M4{M_expr_dyn * M_var_dyn};
+  const string expected{
+      "                    ((y * z) + pow(x, 2))"
+      "                     ((x * y) + (y * w))\n"
+      "                    ((x * z) + (z * w))"
+      "                     ((y * z) + pow(w, 2))"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixVectorMultiplicationExprVar) {
+  const auto M1{M_expr_fixed * V_var_fixed};
+  const auto M2{M_expr_fixed * V_var_dyn};
+  const auto M3{M_expr_dyn * V_var_fixed};
+  const auto M4{M_expr_dyn * V_var_dyn};
+  const string expected{
+      "                      (pow(x, 2) + pow(y, 2))\n"
+      "                      ((x * z) + (y * w))"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, VectorMatrixMultiplicationExprVar) {
+  const auto M1{V_expr_fixed.transpose() * M_var_fixed};
+  const auto M2{V_expr_fixed.transpose() * M_var_dyn};
+  const auto M3{V_expr_dyn.transpose() * M_var_fixed};
+  const auto M4{V_expr_dyn.transpose() * M_var_dyn};
+  const string expected{
+      "                    ((y * z) + pow(x, 2))"
+      "                     ((x * y) + (y * w))"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, VectorVectorMultiplicationExprVar) {
+  const auto M1{V_expr_fixed.transpose() * V_var_fixed};
+  const auto M2{V_expr_fixed.transpose() * V_var_dyn};
+  const auto M3{V_expr_dyn.transpose() * V_var_fixed};
+  const auto M4{V_expr_dyn.transpose() * V_var_dyn};
+  const string expected{"                      (pow(x, 2) + pow(y, 2))"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixMatrixMultiplicationVarExpr) {
+  const auto M1{M_var_fixed * M_expr_fixed};
+  const auto M2{M_var_fixed * M_expr_dyn};
+  const auto M3{M_var_dyn * M_expr_fixed};
+  const auto M4{M_var_dyn * M_expr_dyn};
+  const string expected{
+      "                    ((y * z) + pow(x, 2))"
+      "                     ((x * y) + (y * w))\n"
+      "                    ((x * z) + (z * w))"
+      "                     ((y * z) + pow(w, 2))"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixVectorMultiplicationVarExpr) {
+  const auto M1{M_var_fixed * V_expr_fixed};
+  const auto M2{M_var_fixed * V_expr_dyn};
+  const auto M3{M_var_dyn * V_expr_fixed};
+  const auto M4{M_var_dyn * V_expr_dyn};
+  const string expected{
+      "                      (pow(x, 2) + pow(y, 2))\n"
+      "                      ((x * z) + (y * w))"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, VectorMatrixMultiplicationVarExpr) {
+  const auto M1{V_var_fixed.transpose() * M_expr_fixed};
+  const auto M2{V_var_fixed.transpose() * M_expr_dyn};
+  const auto M3{V_var_dyn.transpose() * M_expr_fixed};
+  const auto M4{V_var_dyn.transpose() * M_expr_dyn};
+  const string expected{
+      "                    ((y * z) + pow(x, 2))"
+      "                     ((x * y) + (y * w))"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, VectorVectorMultiplicationVarExpr) {
+  const auto M1{V_var_fixed.transpose() * V_expr_fixed};
+  const auto M2{V_var_fixed.transpose() * V_expr_dyn};
+  const auto M3{V_var_dyn.transpose() * V_expr_fixed};
+  const auto M4{V_var_dyn.transpose() * V_expr_dyn};
+  const string expected{"                      (pow(x, 2) + pow(y, 2))"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixMatrixMultiplicationExprDouble) {
+  const auto M1{M_expr_fixed * M_double_fixed};
+  const auto M2{M_expr_fixed * M_double_dyn};
+  const auto M3{M_expr_dyn * M_double_fixed};
+  const auto M4{M_expr_dyn * M_double_dyn};
+  const string expected{
+      "              (x + 3 * y)"
+      "               (2 * x + 4 * y)\n"
+      "              (z + 3 * w)"
+      "               (2 * z + 4 * w)"};
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixVectorMultiplicationExprDouble) {
+  const auto M1{M_expr_fixed * V_double_fixed};
+  const auto M2{M_expr_fixed * V_double_dyn};
+  const auto M3{M_expr_dyn * V_double_fixed};
+  const auto M4{M_expr_dyn * V_double_dyn};
+  const string expected{"          (x + 2 * y)\n          (z + 2 * w)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, VectorMatrixMultiplicationExprDouble) {
+  const auto M1{V_expr_fixed.transpose() * M_double_fixed};
+  const auto M2{V_expr_fixed.transpose() * M_double_dyn};
+  const auto M3{V_expr_dyn.transpose() * M_double_fixed};
+  const auto M4{V_expr_dyn.transpose() * M_double_dyn};
+  const string expected{
+      "              (x + 3 * y)               (2 * x + 4 * y)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, VectorVectorMultiplicationExprDouble) {
+  const auto M1{V_expr_fixed.transpose() * V_double_fixed};
+  const auto M2{V_expr_fixed.transpose() * V_double_dyn};
+  const auto M3{V_expr_dyn.transpose() * V_double_fixed};
+  const auto M4{V_expr_dyn.transpose() * V_double_dyn};
+  const string expected{"          (x + 2 * y)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixMatrixMultiplicationDoubleExpr) {
+  const auto M1{M_double_fixed * M_expr_fixed};
+  const auto M2{M_double_fixed * M_expr_dyn};
+  const auto M3{M_double_dyn * M_expr_fixed};
+  const auto M4{M_double_dyn * M_expr_dyn};
+  const string expected{
+      "              (x + 2 * z)"
+      "               (y + 2 * w)\n"
+      "              (3 * x + 4 * z)"
+      "               (3 * y + 4 * w)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixVectorMultiplicationDoubleExpr) {
+  const auto M1{M_double_fixed * V_expr_fixed};
+  const auto M2{M_double_fixed * V_expr_dyn};
+  const auto M3{M_double_dyn * V_expr_fixed};
+  const auto M4{M_double_dyn * V_expr_dyn};
+  const string expected{
+      "              (x + 2 * y)\n              (3 * x + 4 * y)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, VectorMatrixMultiplicationDoubleExpr) {
+  const auto M1{V_double_fixed.transpose() * M_expr_fixed};
+  const auto M2{V_double_fixed.transpose() * M_expr_dyn};
+  const auto M3{V_double_dyn.transpose() * M_expr_fixed};
+  const auto M4{V_double_dyn.transpose() * M_expr_dyn};
+  const string expected{"          (x + 2 * z)           (y + 2 * w)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, VectorVectorMultiplicationDoubleExpr) {
+  const auto M1{V_double_fixed.transpose() * V_expr_fixed};
+  const auto M2{V_double_fixed.transpose() * V_expr_dyn};
+  const auto M3{V_double_dyn.transpose() * V_expr_fixed};
+  const auto M4{V_double_dyn.transpose() * V_expr_dyn};
+  const string expected{"          (x + 2 * y)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixMatrixMultiplicationVarDouble) {
+  const auto M1{M_var_fixed * M_double_fixed};
+  const auto M2{M_var_fixed * M_double_dyn};
+  const auto M3{M_var_dyn * M_double_fixed};
+  const auto M4{M_var_dyn * M_double_dyn};
+  const string expected{
+      "              (x + 3 * y)"
+      "               (2 * x + 4 * y)\n"
+      "              (z + 3 * w)"
+      "               (2 * z + 4 * w)"};
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixVectorMultiplicationVarDouble) {
+  const auto M1{M_var_fixed * V_double_fixed};
+  const auto M2{M_var_fixed * V_double_dyn};
+  const auto M3{M_var_dyn * V_double_fixed};
+  const auto M4{M_var_dyn * V_double_dyn};
+  const string expected{"          (x + 2 * y)\n          (z + 2 * w)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, VectorMatrixMultiplicationVarDouble) {
+  const auto M1{V_var_fixed.transpose() * M_double_fixed};
+  const auto M2{V_var_fixed.transpose() * M_double_dyn};
+  const auto M3{V_var_dyn.transpose() * M_double_fixed};
+  const auto M4{V_var_dyn.transpose() * M_double_dyn};
+  const string expected{
+      "              (x + 3 * y)               (2 * x + 4 * y)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, VectorVectorMultiplicationVarDouble) {
+  const auto M1{V_var_fixed.transpose() * V_double_fixed};
+  const auto M2{V_var_fixed.transpose() * V_double_dyn};
+  const auto M3{V_var_dyn.transpose() * V_double_fixed};
+  const auto M4{V_var_dyn.transpose() * V_double_dyn};
+  const string expected{"          (x + 2 * y)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixMatrixMultiplicationDoubleVar) {
+  const auto M1{M_double_fixed * M_var_fixed};
+  const auto M2{M_double_fixed * M_var_dyn};
+  const auto M3{M_double_dyn * M_var_fixed};
+  const auto M4{M_double_dyn * M_var_dyn};
+  const string expected{
+      "              (x + 2 * z)"
+      "               (y + 2 * w)\n"
+      "              (3 * x + 4 * z)"
+      "               (3 * y + 4 * w)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixVectorMultiplicationDoubleVar) {
+  const auto M1{M_double_fixed * V_var_fixed};
+  const auto M2{M_double_fixed * V_var_dyn};
+  const auto M3{M_double_dyn * V_var_fixed};
+  const auto M4{M_double_dyn * V_var_dyn};
+  const string expected{
+      "              (x + 2 * y)\n              (3 * x + 4 * y)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, VectorMatrixMultiplicationDoubleVar) {
+  const auto M1{V_double_fixed.transpose() * M_var_fixed};
+  const auto M2{V_double_fixed.transpose() * M_var_dyn};
+  const auto M3{V_double_dyn.transpose() * M_var_fixed};
+  const auto M4{V_double_dyn.transpose() * M_var_dyn};
+  const string expected{"          (x + 2 * z)           (y + 2 * w)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, VectorVectorMultiplicationDoubleVar) {
+  const auto M1{V_double_fixed.transpose() * V_var_fixed};
+  const auto M2{V_double_fixed.transpose() * V_var_dyn};
+  const auto M3{V_double_dyn.transpose() * V_var_fixed};
+  const auto M4{V_double_dyn.transpose() * V_var_dyn};
+  const string expected{"          (x + 2 * y)"};
+  EXPECT_EQ(to_string(M1), expected);
+  EXPECT_EQ(to_string(M2), expected);
+  EXPECT_EQ(to_string(M3), expected);
+  EXPECT_EQ(to_string(M4), expected);
 }
 
 }  // namespace
