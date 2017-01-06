@@ -292,16 +292,6 @@ void CoverLaneWithQuads(GeoMesh* mesh, const api::Lane* lane,
     const api::RBounds rb1 = use_driveable_bounds ?
         lane->driveable_bounds(s1) : lane->lane_bounds(s1);
 
-    // TODO(maddog)  Go back to api::RoadGeometry and assert that RBounds
-    //               always straddle r=0.  E.g., it should be nonsense if
-    //               the r=0 centerline is not within the bounds of the lane.
-    DRAKE_DEMAND(rb0.r_min <= 0.);
-    DRAKE_DEMAND(rb0.r_max >= 0.);
-    DRAKE_DEMAND(rb0.r_min < rb0.r_max);
-    DRAKE_DEMAND(rb1.r_min <= 0.);
-    DRAKE_DEMAND(rb1.r_max >= 0.);
-    DRAKE_DEMAND(rb1.r_min < rb1.r_max);
-
     // Left side of lane (r >= 0).
     {
       double r00 = 0.;
@@ -415,12 +405,6 @@ void DrawLaneArrow(GeoMesh* mesh, const api::Lane* lane, double grid_unit,
   const double kRelativeWidth = 0.8;
 
   const api::RBounds rb0 = lane->lane_bounds(s_offset);
-  // TODO(maddog)  Go back to api::RoadGeometry and assert that RBounds
-  //               always straddle r=0.  E.g., it should be nonsense if
-  //               the r=0 centerline is not within the bounds of the lane.
-  DRAKE_DEMAND(rb0.r_min <= 0.);
-  DRAKE_DEMAND(rb0.r_max >= 0.);
-  DRAKE_DEMAND(rb0.r_min < rb0.r_max);
 
   const int max_num_s_units = static_cast<int>(std::ceil(s_size / grid_unit));
 
