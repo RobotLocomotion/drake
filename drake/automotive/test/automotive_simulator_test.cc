@@ -74,7 +74,7 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   // Get the rigid bodies belonging to the vehicle's model instance.
   const std::vector<const RigidBody<double>*> vehicle_bodies =
       tree.FindModelInstanceBodies(model_instance_id);
-  EXPECT_EQ(vehicle_bodies.size(), static_cast<size_t>(num_vehicle_bodies));
+  EXPECT_EQ(static_cast<int>(vehicle_bodies.size()), num_vehicle_bodies);
 
   const auto& body = tree.get_body(1);
   EXPECT_EQ(vehicle_bodies.at(0)->get_name(), body.get_name());
@@ -174,8 +174,8 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file_1, int num_bodies_1,
   const std::vector<const RigidBody<double>*> vehicle_bodies_2 =
       simulator->get_rigid_body_tree().FindModelInstanceBodies(
           model_instance_id_2);
-  EXPECT_EQ(vehicle_bodies_1.size(), static_cast<size_t>(num_bodies_1));
-  EXPECT_EQ(vehicle_bodies_2.size(), static_cast<size_t>(num_bodies_2));
+  EXPECT_EQ(static_cast<int>(vehicle_bodies_1.size()), num_bodies_1);
+  EXPECT_EQ(static_cast<int>(vehicle_bodies_2.size()), num_bodies_2);
 
   // Finish all initialization, so that we can test the post-init state.
   simulator->Start();
