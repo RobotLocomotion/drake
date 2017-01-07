@@ -180,9 +180,9 @@ GTEST_TEST(TestDecisionVariable, TestVariableListRef) {
   symbolic::Variable x3("x3");
   symbolic::Variable x4("x4");
 
-  VariableListRef var_list;
-  var_list.push_back(DecisionVariableVector<2>(x3, x1));
-  var_list.push_back(DecisionVariableVector<2>(x2, x4));
+  DecisionVariableVector<2> x_vec1(x3, x1);
+  DecisionVariableVector<2> x_vec2(x2, x4);
+  VariableListRef var_list{x_vec1, x_vec2};
 
   DecisionVariableVectorX stacked_vars = ConcatenateVariableListRef(var_list);
   EXPECT_EQ(stacked_vars.rows(), 4);

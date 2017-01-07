@@ -7,6 +7,17 @@ load("//tools:drake.bzl", "cc_googletest")
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
+    name = "binding",
+    srcs = [],
+    hdrs = ["binding.h"],
+    linkstatic = 1,
+    deps = [
+        ":constraint",
+        ":decision_variable",
+    ],
+)
+
+cc_library(
     name = "constraint",
     srcs = ["constraint.cc"],
     hdrs = ["constraint.h"],
@@ -58,7 +69,6 @@ cc_library(
 cc_library(
     name = "mathematical_program",
     srcs = [
-        "binding.h",
         "dreal_solver.h",
         "equality_constrained_qp_solver.cc",
         "equality_constrained_qp_solver.h",
@@ -78,12 +88,14 @@ cc_library(
         "snopt_solver.h",
     ],
     hdrs = [
+        "binding.h",
         "constraint.h",
         "mathematical_program.h",
         "mathematical_program_solver_interface.h",
     ],
     linkstatic = 1,
     deps = [
+        ":binding",
         ":constraint",
         ":decision_variable",
         ":function",
@@ -127,6 +139,7 @@ cc_library(
     linkstatic = 1,
     visibility = ["//visibility:private"],
     deps = [
+        ":binding",
         ":constraint",
         ":decision_variable",
         ":function",
