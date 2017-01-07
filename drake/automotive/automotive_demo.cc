@@ -16,6 +16,8 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging_gflags.h"
 
+// "Ego car" in this instance means "controlled by something smarter than
+// this demo code".
 DEFINE_bool(use_ego_car, true,
             "Provide one or more user-controlled vehicles.  To get more than "
             "one, see ego_car_names parameter.");
@@ -24,11 +26,10 @@ DEFINE_string(ego_car_names, "",
               "3 ego-cars subscribed to DRIVING_COMMAND_Abel, "
               "DRIVING_COMMAND_Bacon, and DRIVING_COMMAND_Cara.  A non-empty "
               "value implies use_ego_car=true.");
-//XXXDEFINE_string(simple_car_names, "",
-//XXX              "A comma-separated list (e.g. 'Russ,Jeremy,Liang' would spawn 3 "
-//XXX              "cars subscribed to DRIVING_COMMAND_Russ, "
-//XXX              "DRIVING_COMMAND_Jeremy, and DRIVING_COMMAND_Liang)");
-//XXXDEFINE_int32(num_trajectory_car, 1, "Number of TrajectoryCar vehicles");
+DEFINE_int32(num_ado_car, 1,
+             "Number of vehicles controlled by a "
+             "(possibly trivial) traffic model");
+
 DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
@@ -44,12 +45,6 @@ DEFINE_string(road_path, "",
               "indicating at which end of the first lane to begin the "
               "circuit.  If the string is empty, a default path will "
               "be selected.");
-// "Ego car" in this instance means "controlled by something smarter than
-// this demo code".
-//XXXDEFINE_int32(num_ego_car, 1, "Number of user-controlled vehicles");
-DEFINE_int32(num_ado_car, 1,
-             "Number of vehicles controlled by a "
-             "(possibly trivial) traffic model");
 DEFINE_bool(use_idm, false, "Use IDM to control ado cars on roads.");
 
 namespace drake {
@@ -75,6 +70,15 @@ const maliput::api::Lane* FindLaneByIdOrDie(
 }
 
 
+std::string MakeChannelName(const std::string& name) {
+  static const std::string kDrivingCommandChannelName {"DRIVING_COMMAND"};
+  if (name.empty()) {
+    return kDrivingCommandChannelName;
+  }
+  return kDrivingCommandChannelName + "_" + name;
+}
+
+
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
@@ -88,58 +92,36 @@ int main(int argc, char* argv[]) {
       GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf";
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
 
-//XXX  if (FLAGS_simple_car_names.empty()) {
-//XXX    std::cout << "Adding simple car subscribed to DRIVING_COMMAND" << std::endl;
-//XXX    simulator->AddSimpleCarFromSdf(kSdfFile);
-//XXX  } else {
-//XXX    std::istringstream simple_car_name_stream(FLAGS_simple_car_names);
-//XXX    std::string name;
-//XXX    while (getline(simple_car_name_stream, name, ',')) {
-//XXX      if (name.empty()) {
-//XXX        std::cout << "Adding simple car subscribed to DRIVING_COMMAND"
-//XXX                  << std::endl;
-//XXX      } else {
-//XXX        std::cout << "Adding simple car subscribed to DRIVING_COMMAND_" << name
-//XXX                  << std::endl;
-//XXX      }
-//XXX      simulator->AddSimpleCarFromSdf(kSdfFile, name);
-//XXX    }
-//XXX  }
-//XXX
-//XXX  for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
-//XXX    const auto& params = CreateTrajectoryParams(i);
-//XXX    simulator->AddTrajectoryCarFromSdf(kSdfFile, std::get<0>(params),
-//XXX                                       std::get<1>(params),
-//XXX                                       std::get<2>(params));
-//XXX  }
-
-
+  // Parse FLAGS_use_ego_car and FLAGS_ego_car_names into a vector of
+  // name-strings.  One ego car will be provisioned for each name, and
+  // the names will be appended to driving-command subscription name for
+  // each car.  An empty name-string results in the default subscription
+  // name.  An empty vector results in no ego cars.
+  std::vector<std::string> ego_car_names;
+  if (FLAGS_use_ego_car && FLAGS_ego_car_names.empty()) {
+    ego_car_names.push_back("");
+  } else if (!FLAGS_ego_car_names.empty()) {
+    std::istringstream name_stream(FLAGS_ego_car_names);
+    std::string name;
+    while (getline(name_stream, name, ',')) {
+      if (name.empty()) {
+        ego_car_names.push_back("");
+      } else {
+        ego_car_names.push_back(name);
+      }
+    }
+  }
 
   if (FLAGS_road_file.empty()) {
     // No road description has been specified.  So, we will run in
     // "free-for-all on the xy-plane" mode.
 
     // User-controlled vehicles are SimpleCars.
-//XXX    for (int i = 0; i < FLAGS_num_ego_car; ++i) {
-//XXX      simulator->AddSimpleCarFromSdf(kSdfFile);
-//XXX    }
-    if (FLAGS_use_ego_car && FLAGS_ego_car_names.empty()) {
-      std::cout << "Adding ego car subscribed to DRIVING_COMMAND" << std::endl;
-      // TODO(maddog)  Default parameters are bad.
-      simulator->AddSimpleCarFromSdf(kSdfFile);
-    } else if (!FLAGS_ego_car_names.empty()) {
-      std::istringstream name_stream(FLAGS_ego_car_names);
-      std::string name;
-      while (getline(name_stream, name, ',')) {
-        if (name.empty()) {
-          std::cout << "Adding ego car subscribed to DRIVING_COMMAND"
-                    << std::endl;
-        } else {
-          std::cout << "Adding ego car subscribed to DRIVING_COMMAND_" << name
-                    << std::endl;
-        }
-        simulator->AddSimpleCarFromSdf(kSdfFile, name);
-      }
+    for (const std::string& name : ego_car_names) {
+      const std::string& channel_name = MakeChannelName(name);
+      std::cout << "Adding ego car subscribed to "
+                << channel_name << "." << std::endl;
+      simulator->AddSimpleCarFromSdf(kSdfFile, name, channel_name);
     }
 
     // "Traffic model" is "drive in a figure-8".
@@ -150,6 +132,7 @@ int main(int argc, char* argv[]) {
                                          std::get<1>(params),
                                          std::get<2>(params));
     }
+
   } else {
     // A road description has been specified.  All vehicles will be constrained
     // to drive on the specified road surface.
@@ -187,29 +170,31 @@ int main(int argc, char* argv[]) {
         simulator->SetRoadGeometry(&base_road, start, path);
 
     // User-controlled vehicles are EndlessRoadCars with DrivingCommand input.
-//XXX    for (int i = 0; i < FLAGS_num_ego_car; ++i) {
-    if (FLAGS_use_ego_car) {
-      int num_ego_cars = 1;
-      int i = 0;
-
+    for (size_t i = 0; i < ego_car_names.size(); ++i) {
       const double kConstantSpeed = 10.0;
       const double kLateralOffsetUnit = -2.0;
 
       const double longitudinal_start =
           endless_road->lane()->cycle_length() *
-          ((1.0 * (i / 2) / num_ego_cars) + 0.5);
+          ((1.0 * (i / 2) / ego_car_names.size()) + 0.5);
       const double lateral_offset =
-          (((i % 2) * 2) - 1) * kLateralOffsetUnit;
+          (((i % 2) * 2.0) - 1.0) * kLateralOffsetUnit;
+      const std::string& given_name = ego_car_names[i];
+      const std::string& model_name =
+          given_name.empty() ? ("User-" + std::to_string(i)) : given_name;
+      const std::string& channel_name = MakeChannelName(given_name);
+      std::cout << "Adding ego car '" << model_name << "' subscribed to "
+                << channel_name << "." << std::endl;
       simulator->AddEndlessRoadCar(
-          "User-" + std::to_string(i),
+          model_name,
           kSdfFile,
           longitudinal_start, lateral_offset, kConstantSpeed,
-          EndlessRoadCar<double>::kUser);
+          EndlessRoadCar<double>::kUser, channel_name);
     }
 
-    // "Traffic model" is "drive at a constant LANE-space velocity".
-    // TODO(maddog) Implement traffic models other than "just drive at
-    // constant speed".
+    // "Traffic model" is either clever (car-following, oracular awareness
+    // of merging/intersecting vehicles) or dumb ("drive at a constant
+    // LANE-space velocity").
     if (FLAGS_use_idm) {
       const double kInitialSpeed = 30.0;
       const double kLateralOffsetUnit = 0.0;
@@ -221,7 +206,7 @@ int main(int argc, char* argv[]) {
             "IDM-" + std::to_string(i),
             kSdfFile,
             longitudinal_start, lateral_offset, kInitialSpeed,
-            EndlessRoadCar<double>::kIdm);
+            EndlessRoadCar<double>::kIdm, "");
       }
     } else {
       const double kConstantSpeed = 10.0;
@@ -235,15 +220,10 @@ int main(int argc, char* argv[]) {
             "CV-" + std::to_string(i),
             kSdfFile,
             longitudinal_start, lateral_offset, kConstantSpeed,
-            EndlessRoadCar<double>::kNone);
+            EndlessRoadCar<double>::kNone, "");
       }
     }
   }
-
-
-
-
-
 
   simulator->Start(FLAGS_target_realtime_rate);
   simulator->StepBy(FLAGS_simulation_sec);
