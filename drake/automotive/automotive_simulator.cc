@@ -70,16 +70,14 @@ const RigidBodyTree<T>& AutomotiveSimulator<T>::get_rigid_body_tree() {
 }
 
 template <typename T>
-int AutomotiveSimulator<T>::AddSimpleCarFromSdf(const std::string& sdf_filename,
-                                                const std::string& name) {
+int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
+    const std::string& sdf_filename,
+    const std::string& model_name, const std::string& channel_name) {
   DRAKE_DEMAND(!started_);
   const int vehicle_number = allocate_vehicle_number();
 
   static const DrivingCommandTranslator driving_command_translator;
-  std::string channel_name = "DRIVING_COMMAND";
-  if (!name.empty()) {
-    channel_name += "_" + name;
-  }
+  DRAKE_DEMAND(!channel_name.empty());
   auto command_subscriber =
       builder_->template AddSystem<systems::lcm::LcmSubscriberSystem>(
           channel_name, driving_command_translator, lcm_.get());
@@ -93,14 +91,14 @@ int AutomotiveSimulator<T>::AddSimpleCarFromSdf(const std::string& sdf_filename,
   AddPublisher(*coord_transform, vehicle_number);
   int model_instance_id = AddSdfModel(sdf_filename, coord_transform);
 
-  if (!name.empty()) {
+  if (!model_name.empty()) {
     // TODO(russt): Set the model_name instead, once
     // https://github.com/RobotLocomotion/drake/issues/3053 is resolved.
     // For now, only the body names show up in the drake visualizer.
     const std::vector<int>& body_indices =
         rigid_body_tree_->FindBaseBodies(model_instance_id);
     DRAKE_DEMAND(body_indices.size() == 1);
-    rigid_body_tree_->bodies[body_indices.at(0)]->set_name(name);
+    rigid_body_tree_->bodies[body_indices.at(0)]->set_name(model_name);
   }
   return model_instance_id;
 }
@@ -133,7 +131,8 @@ int AutomotiveSimulator<T>::AddEndlessRoadCar(
     double longitudinal_start,
     double lateral_offset,
     double speed,
-    typename EndlessRoadCar<T>::ControlType control_type) {
+    typename EndlessRoadCar<T>::ControlType control_type,
+    const std::string& channel_name) {
   DRAKE_DEMAND(!started_);
   DRAKE_DEMAND((bool)endless_road_);
   const int vehicle_number = allocate_vehicle_number();
@@ -157,10 +156,11 @@ int AutomotiveSimulator<T>::AddEndlessRoadCar(
       break;
     }
     case EndlessRoadCar<T>::kUser: {
+      DRAKE_DEMAND(!channel_name.empty());
       static const DrivingCommandTranslator driving_command_translator;
       auto command_subscriber =
           builder_->template AddSystem<systems::lcm::LcmSubscriberSystem>(
-              "DRIVING_COMMAND", driving_command_translator, lcm_.get());
+              channel_name, driving_command_translator, lcm_.get());
       builder_->Connect(*command_subscriber, *endless_road_car);
       break;
     }
@@ -175,7 +175,7 @@ int AutomotiveSimulator<T>::AddEndlessRoadCar(
   builder_->Connect(*endless_road_car, *coord_transform);
   AddPublisher(*endless_road_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  return AddSdfModel(sdf_filename, coord_transform);
+  return AddSdfModel(sdf_filename, coord_transform, id);
 }
 
 template <typename T>
@@ -213,7 +213,8 @@ int AutomotiveSimulator<T>::AddSdfModel(
 template <typename T>
 int AutomotiveSimulator<T>::AddSdfModel(
     const std::string& sdf_filename,
-    const EndlessRoadCarToEulerFloatingJoint<T>* coord_transform) {
+    const EndlessRoadCarToEulerFloatingJoint<T>* coord_transform,
+    const std::string& model_name) {
   const parsers::ModelInstanceIdTable table =
       parsers::sdf::AddModelInstancesFromSdfFileToWorld(
           sdf_filename, kRollPitchYaw, rigid_body_tree_.get());
@@ -224,6 +225,17 @@ int AutomotiveSimulator<T>::AddSdfModel(
   const int model_instance_id = table.begin()->second;
   rigid_body_tree_publisher_inputs_.push_back(
       std::make_pair(model_instance_id, coord_transform));
+
+  if (!model_name.empty()) {
+    // TODO(russt): Set the model_name instead, once
+    // https://github.com/RobotLocomotion/drake/issues/3053 is resolved.
+    // For now, only the body names show up in the drake visualizer.
+    const std::vector<int>& body_indices =
+        rigid_body_tree_->FindBaseBodies(model_instance_id);
+    DRAKE_DEMAND(body_indices.size() == 1);
+    rigid_body_tree_->bodies[body_indices.at(0)]->set_name(model_name);
+  }
+
   return model_instance_id;
 }
 
