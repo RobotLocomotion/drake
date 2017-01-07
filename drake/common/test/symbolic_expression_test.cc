@@ -1626,9 +1626,9 @@ class SymbolicExpressionMatrixTest : public ::testing::Test {
   const Expression neg_pi_{-3.141592};
   const Expression e_{2.718};
 
-  Eigen::Matrix<Expression, 3, 2> A_;
-  Eigen::Matrix<Expression, 2, 3> B_;
-  Eigen::Matrix<Expression, 3, 2> C_;
+  Eigen::Matrix<Expression, 3, 2, Eigen::DontAlign> A_;
+  Eigen::Matrix<Expression, 2, 3, Eigen::DontAlign> B_;
+  Eigen::Matrix<Expression, 3, 2, Eigen::DontAlign> C_;
 
   void SetUp() override {
     // clang-format off
@@ -1739,9 +1739,9 @@ class SymbolicVariableTest : public ::testing::Test {
   const Variable z_{"z"};
   const Variable w_{"w"};
 
-  Eigen::Matrix<double, 2, 2> double_mat_;
-  Eigen::Matrix<symbolic::Variable, 2, 2> var_mat_;
-  Eigen::Matrix<symbolic::Expression, 2, 2> expr_mat_;
+  Eigen::Matrix<double, 2, 2, Eigen::DontAlign> double_mat_;
+  Eigen::Matrix<symbolic::Variable, 2, 2, Eigen::DontAlign> var_mat_;
+  Eigen::Matrix<symbolic::Expression, 2, 2, Eigen::DontAlign> expr_mat_;
 
   void SetUp() override {
     // clang-format off
@@ -2039,6 +2039,11 @@ TEST_F(SymbolicVariableTest, EigenExpressionMatrixOutput) {
 }
 
 class SymbolicMixingScalarTypesTest : public ::testing::Test {
+  template <typename Scalar>
+  using Matrix2DontAlign = Eigen::Matrix<Scalar, 2, 2, Eigen::DontAlign>;
+  template <typename Scalar>
+  using Vector2DontAlign = Eigen::Matrix<Scalar, 2, 1, Eigen::DontAlign>;
+
  protected:
   const Variable var_x_{"x"};
   const Variable var_y_{"y"};
@@ -2049,19 +2054,19 @@ class SymbolicMixingScalarTypesTest : public ::testing::Test {
   const Expression z_{var_z_};
   const Expression w_{var_w_};
 
-  Matrix2<Expression> M_expr_fixed_;
+  Matrix2DontAlign<Expression> M_expr_fixed_;
   MatrixX<Expression> M_expr_dyn_{2, 2};
-  Vector2<Expression> V_expr_fixed_;
+  Vector2DontAlign<Expression> V_expr_fixed_;
   VectorX<Expression> V_expr_dyn_{2};
 
-  Matrix2<Variable> M_var_fixed_;
+  Matrix2DontAlign<Variable> M_var_fixed_;
   MatrixX<Variable> M_var_dyn_{2, 2};
-  Vector2<Variable> V_var_fixed_;
+  Vector2DontAlign<Variable> V_var_fixed_;
   VectorX<Variable> V_var_dyn_{2};
 
-  Matrix2<double> M_double_fixed_;
+  Matrix2DontAlign<double> M_double_fixed_;
   MatrixX<double> M_double_dyn_{2, 2};
-  Vector2<double> V_double_fixed_;
+  Vector2DontAlign<double> V_double_fixed_;
   VectorX<double> V_double_dyn_{2};
 
   void SetUp() override {

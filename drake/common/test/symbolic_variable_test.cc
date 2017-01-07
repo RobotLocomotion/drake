@@ -27,7 +27,7 @@ class SymbolicVariableTest : public ::testing::Test {
   const Variable y_{"y"};
   const Variable z_{"z"};
   const Variable w_{"w"};
-  Eigen::Matrix<symbolic::Variable, 2, 2> M_;
+  Eigen::Matrix<symbolic::Variable, 2, 2, Eigen::DontAlign> M_;
 
   void SetUp() override {
     // clang-format off
