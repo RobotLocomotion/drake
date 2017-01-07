@@ -27,8 +27,8 @@ class EndlessRoadCarToEulerFloatingJoint : public systems::LeafSystem<T> {
                             EulerFloatingJointStateIndices::kNumCoordinates);
   }
 
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override {
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override {
     DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
     DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
 
@@ -84,7 +84,7 @@ class EndlessRoadCarToEulerFloatingJoint : public systems::LeafSystem<T> {
 
  protected:
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override {
+      const systems::OutputPortDescriptor<T>& descriptor) const override {
     return std::make_unique<EulerFloatingJointState<T>>();
   }
 

@@ -1,8 +1,18 @@
 #include "drake/automotive/automotive_simulator.h"
 
+#include <limits>
+
+#include <lcm/lcm-cpp.hpp>
+
+#include "drake/automotive/endless_road_car.h"
+#include "drake/automotive/endless_road_car_to_euler_floating_joint.h"
+#include "drake/automotive/endless_road_oracle.h"
 #include "drake/automotive/gen/driving_command_translator.h"
+#include "drake/automotive/gen/endless_road_car_state_translator.h"
 #include "drake/automotive/gen/euler_floating_joint_state_translator.h"
 #include "drake/automotive/gen/simple_car_state_translator.h"
+#include "drake/automotive/maliput/utility/generate_urdf.h"
+#include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
@@ -115,10 +125,95 @@ int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(
   return AddSdfModel(sdf_filename, coord_transform);
 }
 
+
+template <typename T>
+int AutomotiveSimulator<T>::AddEndlessRoadCar(
+    const std::string& id,
+    const std::string& sdf_filename,
+    double longitudinal_start,
+    double lateral_offset,
+    double speed,
+    typename EndlessRoadCar<T>::ControlType control_type) {
+  DRAKE_DEMAND(!started_);
+  DRAKE_DEMAND((bool)endless_road_);
+  const int vehicle_number = allocate_vehicle_number();
+
+  auto endless_road_car = builder_->template AddSystem<EndlessRoadCar<T>>(
+      id, endless_road_.get(), control_type);
+  auto coord_transform =
+      builder_->template AddSystem<EndlessRoadCarToEulerFloatingJoint<T>>(
+          endless_road_.get());
+
+  // Save the desired initial state in order to initialize the Simulator later,
+  // when we have a Simulator to initialize.
+  EndlessRoadCarState<T>& initial_state = endless_road_cars_[endless_road_car];
+  initial_state.set_s(longitudinal_start);
+  initial_state.set_r(lateral_offset);
+  initial_state.set_speed(speed);
+  initial_state.set_heading(0.);
+
+  switch (control_type) {
+    case EndlessRoadCar<T>::kNone: {
+      break;
+    }
+    case EndlessRoadCar<T>::kUser: {
+      static const DrivingCommandTranslator driving_command_translator;
+      auto command_subscriber =
+          builder_->template AddSystem<systems::lcm::LcmSubscriberSystem>(
+              "DRIVING_COMMAND", driving_command_translator, lcm_.get());
+      builder_->Connect(*command_subscriber, *endless_road_car);
+      break;
+    }
+    case EndlessRoadCar<T>::kIdm: {
+      // Nothing to do here.  At Start(), we will construct the central
+      // EndlessRoadOracle and attach it to endless_road_cars_ as needed.
+      break;
+    }
+    default: { DRAKE_ABORT(); }
+  };
+
+  builder_->Connect(*endless_road_car, *coord_transform);
+  AddPublisher(*endless_road_car, vehicle_number);
+  AddPublisher(*coord_transform, vehicle_number);
+  return AddSdfModel(sdf_filename, coord_transform);
+}
+
+template <typename T>
+const maliput::utility::InfiniteCircuitRoad*
+AutomotiveSimulator<T>::SetRoadGeometry(
+    std::unique_ptr<const maliput::api::RoadGeometry>* road,
+    const maliput::api::LaneEnd& start,
+    const std::vector<const maliput::api::Lane*>& path) {
+  DRAKE_DEMAND(!started_);
+  road_ = std::move(*road);
+  endless_road_ = std::make_unique<maliput::utility::InfiniteCircuitRoad>(
+      maliput::api::RoadGeometryId({"ForeverRoad"}),
+      road_.get(), start, path);
+  return endless_road_.get();
+}
+
+
 template <typename T>
 int AutomotiveSimulator<T>::AddSdfModel(
     const std::string& sdf_filename,
     const SimpleCarToEulerFloatingJoint<T>* coord_transform) {
+  const parsers::ModelInstanceIdTable table =
+      parsers::sdf::AddModelInstancesFromSdfFileToWorld(
+          sdf_filename, kRollPitchYaw, rigid_body_tree_.get());
+
+  // TODO(liang.fok): Add support for SDF files containing more than one model.
+  DRAKE_DEMAND(table.size() == 1);
+
+  const int model_instance_id = table.begin()->second;
+  rigid_body_tree_publisher_inputs_.push_back(
+      std::make_pair(model_instance_id, coord_transform));
+  return model_instance_id;
+}
+
+template <typename T>
+int AutomotiveSimulator<T>::AddSdfModel(
+    const std::string& sdf_filename,
+    const EndlessRoadCarToEulerFloatingJoint<T>* coord_transform) {
   const parsers::ModelInstanceIdTable table =
       parsers::sdf::AddModelInstancesFromSdfFileToWorld(
           sdf_filename, kRollPitchYaw, rigid_body_tree_.get());
@@ -153,6 +248,31 @@ void AutomotiveSimulator<T>::AddPublisher(const TrajectoryCar<T>& system,
       builder_->template AddSystem<systems::lcm::LcmPublisherSystem>(
           std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE", translator,
           lcm_.get());
+  builder_->Connect(system, *publisher);
+}
+
+template <typename T>
+void AutomotiveSimulator<T>::AddPublisher(const EndlessRoadCar<T>& system,
+                                          int vehicle_number) {
+  DRAKE_DEMAND(!started_);
+  static const EndlessRoadCarStateTranslator translator;
+  auto publisher =
+      builder_->template AddSystem<systems::lcm::LcmPublisherSystem>(
+          std::to_string(vehicle_number) + "_ENDLESS_ROAD_CAR_STATE",
+          translator, lcm_.get());
+  builder_->Connect(system, *publisher);
+}
+
+template <typename T>
+void AutomotiveSimulator<T>::AddPublisher(
+    const EndlessRoadCarToEulerFloatingJoint<T>& system,
+    int vehicle_number) {
+  DRAKE_DEMAND(!started_);
+  static const EulerFloatingJointStateTranslator translator;
+  auto publisher =
+      builder_->template AddSystem<systems::lcm::LcmPublisherSystem>(
+          std::to_string(vehicle_number) + "_FLOATING_JOINT_STATE",
+          translator, lcm_.get());
   builder_->Connect(system, *publisher);
 }
 
@@ -321,6 +441,21 @@ void AutomotiveSimulator<T>::ConnectJointStateSourcesToVisualizer() {
 template <typename T>
 void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
   DRAKE_DEMAND(!started_);
+  // TODO(maddog)  This seems like hackery.
+  // After all the moving parts (boxcars) have been added finally add
+  // the static road (if any) to the RBT (otherwise the naive multiplexing
+  // gets mucked up?).
+  if (road_) {
+    maliput::utility::GenerateUrdfFile(road_.get(),
+                                       "/tmp", road_->id().id,
+                                       maliput::utility::ObjFeatures());
+    std::string urdf_filepath = std::string("/tmp/") + road_->id().id + ".urdf";
+    parsers::urdf::AddModelInstanceFromUrdfFile(urdf_filepath,
+                                                rigid_body_tree_.get());
+    // NB: The road doesn't move, so we don't need to connect anything
+    // to its joint.
+  }
+
   // By this time, all model instances should have been added to the tree.
   // While the parsers have already called `compile()` on the `RigidBodyTree`,
   // in an abundance of caution, the following line calls `compile()` again.
@@ -328,8 +463,57 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
 
   ConnectJointStateSourcesToVisualizer();
 
+  if (endless_road_) {
+    // Now that we have all the cars, construct an appropriately tentacled
+    // EndlessRoadOracle and hook everything up.
+    const int num_cars = endless_road_cars_.size();
+
+    auto oracle = builder_->template AddSystem<EndlessRoadOracle<T>>(
+        endless_road_.get(), num_cars);
+    int i = 0;
+    for (const auto& item: endless_road_cars_) {
+      EndlessRoadCar<T>* car = item.first;
+
+      // Every car is visible to the Oracle...
+      builder_->Connect(car->get_output_port(0), oracle->get_input_port(i));
+      // ...however, only IDM-controlled cars care about Oracle output.
+      // TODO(maddog)  Optimization:  Oracle should not bother to compute
+      //               output for cars which will ignore it.
+      switch (car->control_type()) {
+        case EndlessRoadCar<T>::kNone: {
+          break;  // No input.
+        }
+        case EndlessRoadCar<T>::kUser: {
+          break;  // Already connected to controls.
+        }
+        case EndlessRoadCar<T>::kIdm: {
+          builder_->Connect(oracle->get_output_port(i), car->get_input_port(0));
+          break;
+        }
+        default: { DRAKE_ABORT(); }
+      }
+      ++i;
+    }
+  }
+
   diagram_ = builder_->Build();
   simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);
+
+  // Initialize the state of the EndlessRoadCars.
+  for (auto& pair : endless_road_cars_) {
+    systems::Context<T>* context =
+        diagram_->GetMutableSubsystemContext(simulator_->get_mutable_context(),
+                                             pair.first);
+    systems::VectorBase<T>* context_state =
+        context->get_mutable_continuous_state()->get_mutable_vector();
+    EndlessRoadCarState<T>* const state =
+        dynamic_cast<EndlessRoadCarState<T>*>(context_state);
+    DRAKE_ASSERT(state);
+    // TODO(maddog)  Is there a better way to copy all the fields?
+    //               (I.e., until lcm_vector_gen.py makes an operator=()....)
+    state->set_value(pair.second.get_value());
+  }
+
   lcm_->StartReceiveThread();
 
   simulator_->set_target_realtime_rate(target_realtime_rate);

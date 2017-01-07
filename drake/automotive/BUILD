@@ -77,7 +77,11 @@ drake_cc_library(
 drake_cc_library(
     name = "endless_road_car",
     srcs = ["endless_road_car.cc"],
-    hdrs = ["endless_road_car.h", "endless_road_car-inl.h"],
+    hdrs = [
+        "endless_road_car.h",
+        "endless_road_car-inl.h",
+        "endless_road_car_to_euler_floating_joint.h",
+    ],
     linkstatic = 1,
     deps = [
         ":generated_vectors",
