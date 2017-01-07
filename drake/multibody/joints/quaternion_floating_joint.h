@@ -72,7 +72,7 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
    * @param q the 7-dimensional generalized configuration (see warning below)
    * @warning The first three values of generalized configuration are position
    *          (x,y,z) and the next four values are unit quaternion orientation
-   *          (qw, qx, qy, qz). The first three values of generalized velocity
+   *          (ew, ex, ey, ez). The first three values of generalized velocity
    *          are angular velocity (ωx, ωy, ωz) and the second three values are
    *          linear velocity (dx/dt, dy/dt, dz/dt).
    * @param[out] qdot_to_v a nv × nq sized matrix, where nv is the dimension of
@@ -80,6 +80,13 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
    *        coordinates (7), that converts time derivatives of generalized
    *        coordinates to generalized velocities _for given configuration 
    *        @p q_.
+   * @warning If the norm of the quaternion values used for orientation in @p q
+   *          is equal to `s ≠ 1`, applying @p qdot_to_v to unscaled time
+   *          derivatives of the quaternion values will yield an angular
+   *          velocity vector scaled by `s` as well. This method neither
+   *          performs a normalization check nor normalizes the quaternion
+   *          orientation parameters, as implications for integration
+   *          techniques must be carefully considered.
    */
   template <typename DerivedQ>
   void qdot2v(const Eigen::MatrixBase<DerivedQ>& q,
@@ -98,14 +105,14 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     // Get the quaternion values.
     auto quat =
         q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
-    const auto& qw = quat[0];
-    const auto& qx = quat[1];
-    const auto& qy = quat[2];
-    const auto& qz = quat[3];
+    const auto& ew = quat[0];
+    const auto& ex = quat[1];
+    const auto& ey = quat[2];
+    const auto& ez = quat[3];
 
     // The first three rows correspond to the zero matrix (first three columns)
     // and the "G" matrix (next four columns) in the equation:
-    // 2 G de/dt = ω, where e = [ qw qx qy qz ] are the values of the
+    // 2 G de/dt = ω, where e = [ ew ex ey ez ] are the values of the
     // unit quaternion and ω is the angular velocity vector defined in the
     // inboard link body frame. This equation was taken from:
     // - P. Nikravesh, Computer-Aided Analysis of Mechanical Systems. Prentice
@@ -115,9 +122,9 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     //       unit quaternion time derivatives to angular velocities in the
     //       global frame.
     qdot_to_v.template block<3, 3>(0, 0).setZero();
-    qdot_to_v.template block<3, 4>(0, 3) <<  -qx,  qw,  qz, -qy,
-                                             -qy, -qz,  qw,  qx,
-                                             -qz,  qy, -qx,  qw;
+    qdot_to_v.template block<3, 4>(0, 3) <<  -ex,  ew,  ez, -ey,
+                                             -ey, -ez,  ew,  ex,
+                                             -ez,  ey, -ex,  ew;
     qdot_to_v.template block<3, 4>(0, 3) *= 2.;
 
     // Next three rows correspond to rigid body translation. Transformation
@@ -136,7 +143,7 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
    * @param q the 7-dimensional generalized configuration (see warning below)
    * @warning The first three values of generalized configuration are position
    *          (x,y,z) and the next four values are unit quaternion orientation
-   *          (qw, qx, qy, qz). The first three values of generalized velocity
+   *          (ew, ex, ey, ez). The first three values of generalized velocity
    *          are angular velocity (ωx, ωy, ωz) and the second three values are
    *          linear velocity (dx/dt, dy/dt, dz/dt).
    * @param[out] v_to_qdot a nq × nv sized matrix, where nv is the dimension of
@@ -144,6 +151,13 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
    *        coordinates (7), that converts generalized velocities to time
    *        derivatives of generalized coordinates _for given configuration 
    *        @p q_.
+   * @warning If the norm of the quaternion values used for orientation in @p q
+   *          is equal to `s ≠ 1`, applying @p v_to_qdot to unscaled angular
+   *          velocity vector will yeild time derivatives of the quaternion
+   *          values scaled by `s` as well. This method neither
+   *          performs a normalization check nor normalizes the quaternion
+   *          orientation parameters, as implications for integration
+   *          techniques must be carefully considered.
    */
   template <typename DerivedQ>
   void v2qdot(const Eigen::MatrixBase<DerivedQ>& q,
@@ -162,10 +176,10 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     // Get the quaternion values.
     auto quat =
         q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
-    const auto& qw = quat[0];
-    const auto& qx = quat[1];
-    const auto& qy = quat[2];
-    const auto& qz = quat[3];
+    const auto& ew = quat[0];
+    const auto& ex = quat[1];
+    const auto& ey = quat[2];
+    const auto& ez = quat[3];
 
     // The first three columns correspond to the zero matrix (top three rows)
     // and the transpose of the "G" matrix used in qdot2v() (bottom four rows).
@@ -176,10 +190,10 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     // - P. Nikravesh, Computer-Aided Analysis of Mechanical Systems. Prentice
     //     Hall, New Jersey, 1988. Equation 109.
     v_to_qdot.template block<4, 3>(0, 0).setZero();
-    v_to_qdot.template block<4, 3>(3, 0) <<  -qx, -qy, -qz,
-                                     qw, -qz,  qy,
-                                     qz,  qw, -qx,
-                                    -qy,  qx,  qw;
+    v_to_qdot.template block<4, 3>(3, 0) <<  -ex, -ey, -ez,
+                                              ew, -ez,  ey,
+                                              ez,  ew, -ex,
+                                             -ey,  ex,  ew;
     v_to_qdot.template block<4, 3>(3, 0) *= 0.5;
 
     // Next three columns correspond to rigid body translation. Transformation
