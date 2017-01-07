@@ -260,6 +260,14 @@ void EndlessRoadCar<T>::ImplCalcTimeDerivatives(
   maliput::api::LanePosition derivatives =
       road_->lane()->EvalMotionDerivatives(lane_position, lane_velocity);
 
+  // Magic Guard Rail:  If car is at driveable bounds, clamp r-derivative.
+  maliput::api::RBounds bounds = road_->lane()->driveable_bounds(state.s());
+  if (state.r() <= bounds.r_min) {
+    derivatives.r = std::max(0., derivatives.r);
+  } else if (state.r() >= bounds.r_max) {
+    derivatives.r = std::min(0., derivatives.r);
+  }
+
   rates->set_s(derivatives.s);
   rates->set_r(derivatives.r);
   // Ignore derivatives.h_, which should be zero anyhow.
