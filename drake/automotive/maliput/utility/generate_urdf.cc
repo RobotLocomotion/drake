@@ -5,6 +5,8 @@
 #include "drake/automotive/maliput/utility/generate_obj.h"
 #include "drake/common/drake_assert.h"
 
+#include "spdlog/fmt/ostr.h"
+
 namespace drake {
 namespace maliput {
 namespace utility {
@@ -19,27 +21,30 @@ void GenerateUrdfFile(const api::RoadGeometry* road_geometry,
   const std::string urdf_filename = fileroot + ".urdf";
 
   std::ofstream os(dirname + "/" + urdf_filename, std::ios::binary);
-  os << "<?xml version=\"1.0\" ?>\n"
-     << "<robot name=\"" << road_geometry->id().id << "\">\n"
-     << "  <link name=\"world\"/>\n"
-     << "\n"
-     << "  <joint name=\"world_to_road_joint\" type=\"continuous\">\n"
-     << "    <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>\n"
-     << "    <parent link=\"world\"/>\n"
-     << "    <child link=\"surface\"/>\n"
-     << "  </joint>\n"
-     << "\n"
-     << "  <link name=\"surface\">\n"
-     << "    <inertial/>\n"
-     << "    <visual name=\"v1\">\n"
-     << "      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>\n"
-     << "      <geometry>\n"
-     << "        <mesh filename=\""
-     << obj_filename << "\" scale=\"1.0 1.0 1.0\"/>\n"
-     << "      </geometry>\n"
-     << "    </visual>\n"
-     << "  </link>\n"
-     << "</robot>\n";
+  fmt::print(os,
+             R"X(<?xml version="1.0" ?>
+<robot name="{0}">
+  <link name="world"/>
+
+  <joint name="world_to_road_joint" type="continuous">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="world"/>
+    <child link="surface"/>
+  </joint>
+
+  <link name="surface">
+    <inertial/>
+    <visual name="v1">
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="{1}" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </visual>
+  </link>
+</robot>
+)X",
+             road_geometry->id().id,
+             obj_filename);
 }
 
 

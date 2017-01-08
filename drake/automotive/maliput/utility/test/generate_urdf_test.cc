@@ -10,6 +10,7 @@
 #include "drake/automotive/maliput/monolane/segment.h"
 
 #include <cmath>
+#include <fstream>
 
 #include "gtest/gtest.h"
 #include "spruce.hh"
@@ -68,6 +69,44 @@ TEST_F(GenerateUrdfTest, AtLeastRunIt) {
   spruce::path expected_mtl(directory_);
   expected_mtl.append(kJunkBasename + ".mtl");
   EXPECT_TRUE(expected_mtl.isFile());
+
+  // Quick regression test on the URDF, which is mostly static content.
+  std::string actual_urdf_contents;
+  // TODO(maddog@tri.global)  spruce is lame.  file::readAsString() does not
+  //                          handle EOF correctly.  File a bug upstream.
+  //spruce::file::readAsString(expected_urdf, actual_urdf_contents);
+  {
+    std::ifstream is(expected_urdf.getStr());
+    std::stringstream ss;
+    ASSERT_TRUE(is.is_open());
+    while (true) {
+      char c = is.get();
+      if (is.eof()) { break; }
+      ss << c;
+    }
+    actual_urdf_contents = ss.str();
+  }
+  EXPECT_EQ(R"R(<?xml version="1.0" ?>
+<robot name="dut">
+  <link name="world"/>
+
+  <joint name="world_to_road_joint" type="continuous">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="world"/>
+    <child link="surface"/>
+  </joint>
+
+  <link name="surface">
+    <inertial/>
+    <visual name="v1">
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="junk.obj" scale="1.0 1.0 1.0"/>
+      </geometry>
+    </visual>
+  </link>
+</robot>
+)R", actual_urdf_contents);
 
   // spruce is retarded: it has no functionality for reading/walking a
   // directory, so we have to delete all our files individually here where
