@@ -143,7 +143,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
   // Will be non-null iff our input port is abstract-valued.
   std::unique_ptr<SerializerInterface> serializer_;
 
-  // A pointer to the LCM subsystem.
+  // A const pointer to an LCM subsystem. Note that while the pointer is const,
+  // the LCM subsystem is not const.
   drake::lcm::DrakeLcmInterface* const lcm_{};
 };
 
