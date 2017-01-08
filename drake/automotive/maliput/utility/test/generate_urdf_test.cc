@@ -10,7 +10,6 @@
 #include "drake/automotive/maliput/monolane/segment.h"
 
 #include <cmath>
-#include <iostream>
 
 #include "gtest/gtest.h"
 #include "spruce.hh"
