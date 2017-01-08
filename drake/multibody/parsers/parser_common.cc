@@ -13,6 +13,14 @@
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/floating_base_types.h"
 
+// This forward declaration supresses the following compiler warning:
+//
+//     warning: instantiation of variable 'RigidBodyTree<double>::kWorldName'
+//     required here, but no definition is available [-Wundefined-var-template]
+//
+// See #4169.
+extern template class RigidBodyTree<double>;
+
 using std::runtime_error;
 using std::string;
 using std::unique_ptr;

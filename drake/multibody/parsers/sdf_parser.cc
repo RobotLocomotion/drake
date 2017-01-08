@@ -30,6 +30,14 @@
 #define PCLOSE pclose
 #endif
 
+// This forward declaration supresses the following compiler warning:
+//
+//     warning: instantiation of variable 'RigidBodyTree<double>::kWorldName'
+//     required here, but no definition is available [-Wundefined-var-template]
+//
+// See #4169.
+extern template class RigidBodyTree<double>;
+
 namespace drake {
 namespace parsers {
 namespace sdf {

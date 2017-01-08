@@ -16,6 +16,14 @@
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/xml_util.h"
 
+// This forward declaration supresses the following compiler warning:
+//
+//     warning: instantiation of variable 'RigidBodyTree<double>::kWorldName'
+//     required here, but no definition is available [-Wundefined-var-template]
+//
+// See #4169.
+extern template class RigidBodyTree<double>;
+
 namespace drake {
 namespace parsers {
 namespace urdf {

@@ -33,6 +33,14 @@ using drake::math::initializeAutoDiffTuple;
 using drake::math::quatDiff;
 using drake::math::quatDiffAxisInvar;
 
+// This forward declaration supresses the following compiler warning:
+//
+//     warning: instantiation of variable 'RigidBodyTree<double>::kWorldName'
+//     required here, but no definition is available [-Wundefined-var-template]
+//
+// See #4169.
+extern template class RigidBodyTree<double>;
+
 namespace DrakeRigidBodyConstraint {
 Vector2d default_tspan(-std::numeric_limits<double>::infinity(),
                        std::numeric_limits<double>::infinity());

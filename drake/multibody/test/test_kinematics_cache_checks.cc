@@ -61,10 +61,11 @@ void performChecks(RigidBodyTree<double>& model, KinematicsCache<double>& cache,
   drake::TwistVector<double> spatial_acceleration;
   spatial_acceleration.setRandom();
   const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
+  const std::set<int> model_instance_id_set = {0};
 
   checkForErrors(settings.expect_error_on_configuration_methods, model,
                  &RigidBodyTree<double>::centerOfMass<double>, cache,
-                 RigidBodyTree<double>::default_model_instance_id_set);
+                 model_instance_id_set);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
                  &RigidBodyTree<double>::transformPoints<double, PointsType>,
                  cache, points, body_or_frame_ind, base_or_frame_ind);
@@ -76,16 +77,13 @@ void performChecks(RigidBodyTree<double>& model, KinematicsCache<double>& cache,
                  body_or_frame_ind, base_or_frame_ind);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
                  &RigidBodyTree<double>::worldMomentumMatrix<double>, cache,
-                 RigidBodyTree<double>::default_model_instance_id_set,
-                 in_terms_of_qdot);
+                 model_instance_id_set, in_terms_of_qdot);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
                  &RigidBodyTree<double>::centroidalMomentumMatrix<double>,
-                 cache, RigidBodyTree<double>::default_model_instance_id_set,
-                 in_terms_of_qdot);
+                 cache, model_instance_id_set, in_terms_of_qdot);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
                  &RigidBodyTree<double>::centerOfMassJacobian<double>, cache,
-                 RigidBodyTree<double>::default_model_instance_id_set,
-                 in_terms_of_qdot);
+                 model_instance_id_set, in_terms_of_qdot);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
                  &RigidBodyTree<double>::geometricJacobian<double>, cache,
                  base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind,
@@ -119,14 +117,14 @@ void performChecks(RigidBodyTree<double>& model, KinematicsCache<double>& cache,
                  expressed_in_frame_ind);
   checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
                  &RigidBodyTree<double>::worldMomentumMatrixDotTimesV<double>,
-                 cache, RigidBodyTree<double>::default_model_instance_id_set);
+                 cache, model_instance_id_set);
   checkForErrors(
       settings.expect_error_on_jdot_times_v_methods, model,
       &RigidBodyTree<double>::centroidalMomentumMatrixDotTimesV<double>, cache,
-      RigidBodyTree<double>::default_model_instance_id_set);
+      model_instance_id_set);
   checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
                  &RigidBodyTree<double>::centerOfMassJacobianDotTimesV<double>,
-                 cache, RigidBodyTree<double>::default_model_instance_id_set);
+                 cache, model_instance_id_set);
   checkForErrors(
       settings.expect_error_on_jdot_times_v_methods, model,
       &RigidBodyTree<double>::transformPointsJacobianDotTimesV<double,
