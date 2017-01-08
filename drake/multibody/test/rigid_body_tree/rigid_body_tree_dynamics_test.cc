@@ -213,7 +213,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
 
   auto gravitational_acceleration = tree->a_grav.tail<3>();
   auto gravitational_force =
-      (gravitational_acceleration * tree->getMass()).eval();
+      (gravitational_acceleration * tree->getMass(
+          {0} /* model instance ID set */)).eval();
   auto q_to_gravitational_potential_energy = [&](const auto& q_arg) {
     using Scalar =
         typename std::remove_reference<decltype(q_arg)>::type::Scalar;
@@ -221,7 +222,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
         tree->CreateKinematicsCacheWithType<Scalar>();
     kinematics_cache_2.initialize(q_arg);
     tree->doKinematics(kinematics_cache_2);
-    auto center_of_mass = tree->centerOfMass(kinematics_cache_2);
+    auto center_of_mass = tree->centerOfMass(kinematics_cache_2,
+        {0} /* model instance ID set */);
     Scalar gravitational_potential_energy =
         -center_of_mass.dot(gravitational_force.cast<Scalar>().eval());
     // The jacobian function expects a Matrix as output, so:
@@ -289,10 +291,12 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   // Compute gravitational wrench W_g.
   // Gravitational force can be thought of as acting at center of mass. Change
   // to world frame.
-  auto gravitational_wrench_centroidal = (tree.a_grav * tree.getMass()).eval();
+  auto gravitational_wrench_centroidal = (tree.a_grav * tree.getMass(
+    {0} /* model instance ID set */)).eval();
   Eigen::Isometry3d centroidal_to_world;
   centroidal_to_world.setIdentity();
-  centroidal_to_world.translation() = tree.centerOfMass(kinematics_cache);
+  centroidal_to_world.translation() = tree.centerOfMass(kinematics_cache,
+      {0} /* model instance ID set */);
   auto gravitational_wrench_world = transformSpatialForce(
       centroidal_to_world, gravitational_wrench_centroidal);
 
@@ -334,7 +338,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   kinematics_cache_autodiff.initialize(q_time_autodiff, v_time_autodiff);
   tree.doKinematics(kinematics_cache_autodiff);
   auto momentum_matrix_time_autodiff =
-      tree.worldMomentumMatrix(kinematics_cache_autodiff);
+      tree.worldMomentumMatrix(kinematics_cache_autodiff,
+      {0} /* model instance ID set */);
   auto momentum_world_time_autodiff =
       momentum_matrix_time_autodiff * v_time_autodiff;
   auto momentum_rate = autoDiffToGradientMatrix(momentum_world_time_autodiff);

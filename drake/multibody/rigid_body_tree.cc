@@ -79,8 +79,6 @@ using std::vector;
 using std::endl;
 
 template <typename T>
-const set<int> RigidBodyTree<T>::default_model_instance_id_set = {0};
-template <typename T>
 const char* const RigidBodyTree<T>::kWorldName = "world";
 template <typename T>
 const int RigidBodyTree<T>::kWorldBodyIndex = 0;

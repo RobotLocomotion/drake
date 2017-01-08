@@ -10,6 +10,14 @@
 #include "drake/systems/sensors/depth_sensor_output.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
 
+// This forward declaration supresses the following compiler warning:
+//
+//     warning: instantiation of variable 'RigidBodyTree<double>::kWorldName'
+//     required here, but no definition is available [-Wundefined-var-template]
+//
+// See #4169.
+extern template class RigidBodyTree<double>;
+
 using Eigen::Matrix3Xd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
