@@ -19,6 +19,9 @@ if(lcm_FOUND)
     lcmtypes_bot2-core-cpp)
 endif()
 
+add_subdirectory(param_parsers)
+
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
+
