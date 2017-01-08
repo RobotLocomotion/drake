@@ -32,7 +32,7 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   for (auto const& binding : prog.linear_equality_constraints()) {
     auto const& c = binding.constraint();
     size_t n = c->A().rows();
-    for (int i = 0; i < binding.variables().rows(); ++i) {
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
       Aeq.block(constraint_index,
                 prog.FindDecisionVariableIndex(binding.variables()(i)), n, 1) =
           c->A().col(i);

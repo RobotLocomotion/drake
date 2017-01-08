@@ -263,7 +263,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   for (auto const& binding : current_problem->GetAllCosts()) {
     auto const& obj = binding.constraint();
 
-    int num_v_variables = binding.variables().rows();
+    int num_v_variables = binding.GetNumElements();
     this_x.resize(num_v_variables);
     for (int j = 0; j < num_v_variables; ++j) {
       this_x(j) = tx(
@@ -274,7 +274,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
 
     F[0] += static_cast<snopt::doublereal>(ty(0).value());
 
-    for (int j = 0; j < binding.variables().rows(); ++j) {
+    for (int j = 0; j < static_cast<int>(binding.GetNumElements()); ++j) {
       size_t vj_index =
           current_problem->FindDecisionVariableIndex(binding.variables()(j));
       G[vj_index] +=
