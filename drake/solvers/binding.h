@@ -7,10 +7,10 @@
 namespace drake {
 namespace solvers {
 /**
-   * A binding on constraint type C is a mapping of the decision
-   * variables onto the inputs of C.  This allows the constraint to operate
-   * on a vector made up of different elements of the decision variables.
-   */
+ * A binding on constraint type C is a mapping of the decision
+ * variables onto the inputs of C.  This allows the constraint to operate
+ * on a vector made up of different elements of the decision variables.
+ */
 template <typename C>
 class Binding {
  public:

@@ -94,7 +94,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   msg_buff5 << b1 << std::endl;
   EXPECT_EQ(msg_buff5.str(), "b1(0)\nb1(1)\nb1(2)\nb1(3)\nb1(4)\nb1(5)\n");
 
-  // Tests setting values fo the decision variables.
+  // Tests setting values for the decision variables.
   Eigen::Matrix<double, 6, 1> x_value;
   x_value << 0, 2, 4, 6, 8, 10;
   Eigen::Matrix<double, 6, 1> s_value;

@@ -24,7 +24,7 @@ GTEST_TEST(TestBinding, constructBinding) {
     EXPECT_EQ(binding1.variables()(i), var1_expected(i));
   }
 
-  // Create a binding with a single DecisionVariableVector
+  // Creates a binding with a single DecisionVariableVector.
   Binding<BoundingBoxConstraint> binding2(
       bb_con, DecisionVariableVector<3>(x3, x1, x2));
   EXPECT_EQ(binding2.GetNumElements(), 3);

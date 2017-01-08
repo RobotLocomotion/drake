@@ -156,7 +156,7 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
   auto constraint4 = prog.AddBoundingBoxConstraint(Eigen::Vector4d::Zero(),
                                                    Eigen::Vector4d::Ones());
 
-  // Check the bound variables are correct.
+  // Checks that the bound variables are correct.
   for (const auto& binding : prog.bounding_box_constraints()) {
     EXPECT_EQ(binding.GetNumElements(), 4);
     DecisionVariableVector<4> x_expected;
