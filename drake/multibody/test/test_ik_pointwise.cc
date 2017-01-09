@@ -70,7 +70,7 @@ WorldCoMConstraint com_kc_final(tree.get(), com_lb, com_ub, tspan_end);
   const Vector3d expected_final(0, 0, 0.9);
   for (int i = 0; i < nT; i++) {
     KinematicsCache<double> cache = tree->doKinematics(q_sol.col(i));
-    Vector3d com = tree->centerOfMass(cache, {0} /* model instance ID set */);
+    Vector3d com = tree->centerOfMass(cache);
     printf("t %d: %5.6f\n%5.6f\n%5.6f\n", i, com(0), com(1), com(2));
     if (i < (nT - 1)) {
       // SNOPT and IPOPT diverge slightly in their output, so reduce

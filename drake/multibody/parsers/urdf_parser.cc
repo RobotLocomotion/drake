@@ -16,14 +16,6 @@
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/xml_util.h"
 
-// This forward declaration supresses the following compiler warning:
-//
-//     warning: instantiation of variable 'RigidBodyTree<double>::kWorldName'
-//     required here, but no definition is available [-Wundefined-var-template]
-//
-// See #4169.
-extern template class RigidBodyTree<double>;
-
 namespace drake {
 namespace parsers {
 namespace urdf {
@@ -500,7 +492,7 @@ bool ParseBody(RigidBodyTree<double>* tree, string robot_name, XMLElement* node,
 
   // World links are handled by ParseWorldJoint().
   body->set_name(attr);
-  if (body->get_name() == string(RigidBodyTree<double>::kWorldName))
+  if (body->get_name() == string(RigidBodyTreeConstants::kWorldName))
     return false;
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
@@ -617,7 +609,7 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
   // Checks if this joint connects to the world and, if so, terminates this
   // method call. This is because joints that connect to the world are processed
   // separately.
-  if (parent_name == string(RigidBodyTree<double>::kWorldName)) return;
+  if (parent_name == string(RigidBodyTreeConstants::kWorldName)) return;
 
   int parent_index = tree->FindBodyIndex(parent_name, model_instance_id);
   if (parent_index < 0) {
@@ -918,7 +910,7 @@ void ParseWorldJoint(XMLElement* node,
     ParseJointKeyParams(joint_node, joint_name, joint_type, parent_name,
                         child_name);
 
-    if (parent_name == string(RigidBodyTree<double>::kWorldName)) {
+    if (parent_name == string(RigidBodyTreeConstants::kWorldName)) {
       // Ensures only one joint connects the model to the world.
       if (found_world_joint)
         throw runtime_error(
@@ -939,7 +931,7 @@ void ParseWorldJoint(XMLElement* node,
       if (weld_to_frame == nullptr)
         weld_to_frame.reset(new RigidBodyFrame<double>());
 
-      weld_to_frame->set_name(string(RigidBodyTree<double>::kWorldName));
+      weld_to_frame->set_name(string(RigidBodyTreeConstants::kWorldName));
       weld_to_frame->set_transform_to_body(
           weld_to_frame->get_transform_to_body() * transform_to_parent_body);
 
@@ -1016,7 +1008,7 @@ ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
       if (!name_attr)
         throw runtime_error("ERROR: link tag is missing name attribute");
 
-      if (string(name_attr) == string(RigidBodyTree<double>::kWorldName)) {
+      if (string(name_attr) == string(RigidBodyTreeConstants::kWorldName)) {
         // Since a world link was specified within the URDF, there must be
         // a  joint that connects the world to the robot's root node. The
         // following method parses the information contained within this

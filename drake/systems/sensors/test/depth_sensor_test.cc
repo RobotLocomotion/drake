@@ -10,14 +10,6 @@
 #include "drake/systems/sensors/depth_sensor_output.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
 
-// This forward declaration supresses the following compiler warning:
-//
-//     warning: instantiation of variable 'RigidBodyTree<double>::kWorldName'
-//     required here, but no definition is available [-Wundefined-var-template]
-//
-// See #4169.
-extern template class RigidBodyTree<double>;
-
 using Eigen::Matrix3Xd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -125,7 +117,7 @@ std::pair<VectorX<double>, Matrix3Xd> DoBoxOcclusionTest(
   // Adds a box to the world at the specified location.
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(),
-      RigidBodyTree<double>::kWorldName, nullptr, box_xyz,
+      RigidBodyTreeConstants::kWorldName, nullptr, box_xyz,
       Vector3d::Zero() /* rpy */);
 
   DrakeShapes::Box geom(Eigen::Vector3d(kBoxWidth, kBoxWidth, kBoxWidth));

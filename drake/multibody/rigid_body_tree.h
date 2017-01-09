@@ -35,6 +35,29 @@
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
 /**
+ * Defines RigidBodyTree constants.
+ */
+struct RigidBodyTreeConstants {
+  /**
+   * Defines the name of the RigidBody within a RigidBodyTree that represents
+   * the world.
+   */
+  static const char* const kWorldName;
+
+  /**
+   * Defines the index of the RigidBody that represents the world within a
+   * RigidBodyTree.
+   */
+  static const int kWorldBodyIndex;
+
+  /**
+   * Defines the default model instance ID set. This is a set containing the
+   * model instance ID of the first model instance that is added to the tree.
+   */
+  static const std::set<int> default_model_instance_id_set;
+};
+
+/**
  * Maintains a vector of RigidBody objects that are arranged into a kinematic
  * tree via DrakeJoint objects. It provides various utility methods for
  * computing kinematic and dynamics properties of the RigidBodyTree.
@@ -74,18 +97,6 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 template <typename T>
 class RigidBodyTree {
  public:
-  /**
-   * Defines the name of the rigid body within a rigid body tree that represents
-   * the world.
-   */
-  static const char* const kWorldName;
-
-  /**
-   * Defines the index of the body that represents the world within a
-   * RigidBodyTree.
-   */
-  static const int kWorldBodyIndex;
-
   /// A constructor that initializes the gravity vector to be [0, 0, -9.81] and
   /// a single RigidBody named "world". This RigidBody can be accessed by
   /// calling RigidBodyTree::world().
@@ -287,13 +298,15 @@ class RigidBodyTree {
    * @returns The total combined mass of the model instances in
    * @p model_instance_id_set.
    */
-  double getMass(const std::set<int>& model_instance_id_set) const;
+  double getMass(const std::set<int>& model_instance_id_set =
+      RigidBodyTreeConstants::default_model_instance_id_set) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1> centerOfMass(
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& model_instance_id_set) const;
+      const std::set<int>& model_instance_id_set =
+          RigidBodyTreeConstants::default_model_instance_id_set) const;
 
   /**
    * Converts a matrix B, which transforms generalized velocities (v) to an
@@ -352,41 +365,47 @@ class RigidBodyTree {
   drake::TwistMatrix<Scalar> worldMomentumMatrix(
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& model_instance_id_set,
+      const std::set<int>& model_instance_id_set =
+          RigidBodyTreeConstants::default_model_instance_id_set,
       bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   drake::TwistVector<Scalar> worldMomentumMatrixDotTimesV(
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& model_instance_id_set) const;
+      const std::set<int>& model_instance_id_set  =
+          RigidBodyTreeConstants::default_model_instance_id_set) const;
 
   template <typename Scalar>
   drake::TwistMatrix<Scalar> centroidalMomentumMatrix(
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& model_instance_id_set,
+      const std::set<int>& model_instance_id_set =
+          RigidBodyTreeConstants::default_model_instance_id_set,
       bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   drake::TwistVector<Scalar> centroidalMomentumMatrixDotTimesV(
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& model_instance_id_set) const;
+      const std::set<int>& model_instance_id_set =
+          RigidBodyTreeConstants::default_model_instance_id_set) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, Eigen::Dynamic>
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   centerOfMassJacobian(KinematicsCache<Scalar>& cache,
-                       const std::set<int>& model_instance_id_set,
-                       bool in_terms_of_qdot = false) const;
+      const std::set<int>& model_instance_id_set =
+          RigidBodyTreeConstants::default_model_instance_id_set,
+      bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1>
   centerOfMassJacobianDotTimesV(
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       KinematicsCache<Scalar>& cache,
-      const std::set<int>& model_instance_id_set) const;
+      const std::set<int>& model_instance_id_set =
+          RigidBodyTreeConstants::default_model_instance_id_set) const;
 
   template <typename DerivedA, typename DerivedB, typename DerivedC>
   void jointLimitConstraints(

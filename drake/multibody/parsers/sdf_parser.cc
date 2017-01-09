@@ -30,14 +30,6 @@
 #define PCLOSE pclose
 #endif
 
-// This forward declaration supresses the following compiler warning:
-//
-//     warning: instantiation of variable 'RigidBodyTree<double>::kWorldName'
-//     required here, but no definition is available [-Wundefined-var-template]
-//
-// See #4169.
-extern template class RigidBodyTree<double>;
-
 namespace drake {
 namespace parsers {
 namespace sdf {
@@ -309,7 +301,7 @@ bool ParseSdfLink(RigidBodyTree<double>* model, string model_name,
   }
   body->set_name(string(attr));
 
-  if (body->get_name() == string(RigidBodyTree<double>::kWorldName)) {
+  if (body->get_name() == string(RigidBodyTreeConstants::kWorldName)) {
     throw runtime_error(
         string(__FILE__) + ": " + __func__ +
         ": ERROR: Do not name a link 'world' because it is a reserved name.");
@@ -771,7 +763,7 @@ void ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
     if (weld_to_frame == nullptr) {
       weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
           Eigen::aligned_allocator<RigidBodyFrame<double>>(),
-          string(RigidBodyTree<double>::kWorldName),
+          string(RigidBodyTreeConstants::kWorldName),
           nullptr,  // Valid since the robot is attached to the world.
           Eigen::Isometry3d::Identity());
     }
@@ -822,11 +814,11 @@ ModelInstanceIdTable ParseSdf(XMLDocument* xml_doc,
 
   // Loads the world if it is defined.
   XMLElement* world_node =
-      node->FirstChildElement(RigidBodyTree<double>::kWorldName);
+      node->FirstChildElement(RigidBodyTreeConstants::kWorldName);
   if (world_node) {
     // If we have more than one world, it is ambiguous which one the user
     // wishes to use.
-    if (world_node->NextSiblingElement(RigidBodyTree<double>::kWorldName)) {
+    if (world_node->NextSiblingElement(RigidBodyTreeConstants::kWorldName)) {
       throw runtime_error(string(__FILE__) + ": " + __func__ +
                           ": ERROR: Multiple worlds in one file.");
     }
