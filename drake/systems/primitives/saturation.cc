@@ -15,17 +15,18 @@ Saturation<T>::Saturation(const Eigen::Ref<const VectorX<T>>& u_min,
                           const Eigen::Ref<const VectorX<T>>& u_max)
     : u_min_(u_min), u_max_(u_max) {
   DRAKE_DEMAND(u_min_.size() == u_max_.size());
+  const int vector_size = u_min_size();
 
   // Ensures that the lower limits are smaller than the upper limits.
-  for (int i = 0; i < u_min_.size(); ++i) {
+  for (int i = 0; i < vector_size; ++i) {
     DRAKE_DEMAND(u_min_(i) <= u_max_(i));
   }
 
   // Input and outputs are of same dimension.
   input_port_index_ =
-      this->DeclareInputPort(kVectorValued, u_min_.size()).get_index();
+      this->DeclareInputPort(kVectorValued, vector_size).get_index();
   output_port_index_ =
-      this->DeclareOutputPort(kVectorValued, u_min_.size()).get_index();
+      this->DeclareOutputPort(kVectorValued, vector_size).get_index();
 }
 
 template <typename T>

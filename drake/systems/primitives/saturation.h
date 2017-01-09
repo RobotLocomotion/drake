@@ -39,6 +39,7 @@ class Saturation : public LeafSystem<T> {
   /// saturation.
   /// @param[in] u_max the upper (scalar) limit to the
   /// saturation.
+  ///
   /// Please consult this class' description for the requirements of
   /// @p u_min and @p u_max.
   Saturation(const T& u_min, const T& u_max);
@@ -50,6 +51,7 @@ class Saturation : public LeafSystem<T> {
   /// saturation.
   /// @param[in] u_max the upper (vector) limit to the
   /// saturation.
+  ///
   /// Please consult this class' description for the requirements of
   /// @p u_min and @p u_max.
   explicit Saturation(const Eigen::Ref<const VectorX<T>>& u_min,

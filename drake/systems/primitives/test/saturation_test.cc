@@ -1,11 +1,13 @@
-#include "gtest/gtest.h"
+#include "drake/systems/primitives/saturation.h"
 
 #include <memory>
+
+#include "gtest/gtest.h"
 
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
-#include "drake/systems/primitives/saturation.h"
+
 
 namespace drake {
 namespace systems {
@@ -55,7 +57,7 @@ void TestSaturationSystem(const Saturation<T>& saturation_system,
 
 // Tests the ability to use doubles as the saturation limits.
 GTEST_TEST(SaturationTest, SaturationScalarTest) {
-  // Test for death of an incorrectly initialised Saturation (u_min > u_max).
+  // Test for death of an incorrectly initialized Saturation (u_min > u_max).
   EXPECT_DEATH(
       std::make_unique<Saturation<double>>(1.0 /* u_min */, -0.9 /* u_max */),
       "");
@@ -98,7 +100,7 @@ GTEST_TEST(SaturationTest, SaturationScalarTest) {
 
 // Tests the ability to use vectors for the lower and upper saturation limits.
 GTEST_TEST(SaturationTest, SaturationVectorTest) {
-  // Test for death of an incorrectly initialised Saturation. (u_min and
+  // Test for death of an incorrectly initialized Saturation. (u_min and
   // u_max are of incorrect length).
   EXPECT_DEATH(std::make_unique<Saturation<double>>(
                    Vector3<double>(1.0, -4.5, -2.5) /* u_min */,
