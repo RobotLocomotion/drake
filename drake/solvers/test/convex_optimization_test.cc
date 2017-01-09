@@ -1213,9 +1213,9 @@ namespace {
 // Add condition A' * P + P * A + Q = 0
 //               Q is p.s.d
 template <int x_dim>
-DecisionVariableMatrix<x_dim, x_dim> AddLyapunovCondition(
+MatrixDecisionVariable<x_dim, x_dim> AddLyapunovCondition(
     const Eigen::Matrix<double, x_dim, x_dim>& A,
-    const DecisionVariableMatrix<x_dim, x_dim>& P, MathematicalProgram* prog) {
+    const MatrixDecisionVariable<x_dim, x_dim>& P, MathematicalProgram* prog) {
   const auto Q = prog->NewSymmetricContinuousVariables<x_dim>();
   prog->AddPositiveSemidefiniteConstraint(Q);
   // TODO(hongkai.dai): Use symbolic variable to compute the expression

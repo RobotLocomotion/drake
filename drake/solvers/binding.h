@@ -15,7 +15,7 @@ template <typename C>
 class Binding {
  public:
   Binding(const std::shared_ptr<C>& c,
-          const Eigen::Ref<const DecisionVariableVectorX>& v)
+          const Eigen::Ref<const VectorXDecisionVariable>& v)
       : constraint_(c), vars_(v) {}
 
   /**
@@ -36,7 +36,7 @@ class Binding {
 
   const std::shared_ptr<C>& constraint() const { return constraint_; }
 
-  const DecisionVariableVectorX& variables() const { return vars_; }
+  const VectorXDecisionVariable& variables() const { return vars_; }
 
   /**
    * Returns true iff the given @p var is included in this Binding.*/
@@ -57,7 +57,7 @@ class Binding {
 
  private:
   std::shared_ptr<C> constraint_;
-  DecisionVariableVectorX vars_;
+  VectorXDecisionVariable vars_;
 };
 }  // namespace solvers
 }  // namespace drake

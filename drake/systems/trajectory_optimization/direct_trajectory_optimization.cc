@@ -81,7 +81,7 @@ void DirectTrajectoryOptimization::AddTimeIntervalBounds(
 void DirectTrajectoryOptimization::AddTimeIntervalBounds(
     const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound,
     const std::vector<int>& interval_indices) {
-  solvers::DecisionVariableVectorX h(interval_indices.size());
+  solvers::VectorXDecisionVariable h(interval_indices.size());
   for (int i = 0; i < static_cast<int>(interval_indices.size()); ++i) {
     h(i) = h_vars_(interval_indices[i]);
   }

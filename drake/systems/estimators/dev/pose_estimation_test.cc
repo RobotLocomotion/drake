@@ -74,7 +74,7 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
 
   const RotationType rotation_type = kTranslationOnly;
   //  const RotationType rotation_type = kSdpRelaxationSpectrahedron;
-  drake::solvers::DecisionVariableMatrixX R;
+  drake::solvers::MatrixXDecisionVariable R;
 
   switch (rotation_type) {
     case kTranslationOnly: {

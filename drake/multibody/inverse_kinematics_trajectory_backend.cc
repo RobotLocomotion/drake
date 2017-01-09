@@ -22,8 +22,8 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::VectorXi;
 
-using drake::solvers::DecisionVariableMatrixX;
-using drake::solvers::DecisionVariableVectorX;
+using drake::solvers::MatrixXDecisionVariable;
+using drake::solvers::VectorXDecisionVariable;
 using drake::solvers::SolutionResult;
 using drake::solvers::MathematicalProgram;
 
@@ -372,9 +372,9 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
   // Create our decision variables.  "q" represents all positions of
   // the model at each timestep in nT.  "qdot0" and "qdotf" are qdot
   // at the initial and final timestep.
-  DecisionVariableVectorX q = prog.NewContinuousVariables(nT * nq, "q");
-  DecisionVariableVectorX qdot0 = prog.NewContinuousVariables(nq, "qdot0");
-  DecisionVariableVectorX qdotf = prog.NewContinuousVariables(nq, "qdotf");
+  VectorXDecisionVariable q = prog.NewContinuousVariables(nT * nq, "q");
+  VectorXDecisionVariable qdot0 = prog.NewContinuousVariables(nq, "qdot0");
+  VectorXDecisionVariable qdotf = prog.NewContinuousVariables(nq, "qdotf");
 
   std::shared_ptr<drake::solvers::Constraint> cost =
       std::make_shared<IKTrajectoryCost>(helper, q_nom);

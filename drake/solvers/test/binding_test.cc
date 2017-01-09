@@ -17,16 +17,16 @@ GTEST_TEST(TestBinding, constructBinding) {
   // Checks if the bound variables are stored in the right order.
   Binding<BoundingBoxConstraint> binding1(
       bb_con,
-      {DecisionVariableVector<2>(x3, x1), DecisionVariableVector<1>(x2)});
+      {VectorDecisionVariable<2>(x3, x1), VectorDecisionVariable<1>(x2)});
   EXPECT_EQ(binding1.GetNumElements(), 3);
-  DecisionVariableVector<3> var1_expected(x3, x1, x2);
+  VectorDecisionVariable<3> var1_expected(x3, x1, x2);
   for (int i = 0; i < 3; ++i) {
     EXPECT_EQ(binding1.variables()(i), var1_expected(i));
   }
 
-  // Creates a binding with a single DecisionVariableVector.
+  // Creates a binding with a single VectorDecisionVariable.
   Binding<BoundingBoxConstraint> binding2(
-      bb_con, DecisionVariableVector<3>(x3, x1, x2));
+      bb_con, VectorDecisionVariable<3>(x3, x1, x2));
   EXPECT_EQ(binding2.GetNumElements(), 3);
   for (int i = 0; i < 3; ++i) {
     EXPECT_EQ(binding2.variables()(i), var1_expected(i));

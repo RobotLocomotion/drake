@@ -149,7 +149,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   }
 
   // Tests concatenating two Eigen matrices of symbolic variables.
-  DecisionVariableMatrix<2, 6> X_assembled;
+  MatrixDecisionVariable<2, 6> X_assembled;
   X_assembled << X1, X2;
   Eigen::Matrix<double, 2, 6> X_assembled_expected;
   X_assembled_expected << X_expected, X_expected;
@@ -180,11 +180,11 @@ GTEST_TEST(TestDecisionVariable, TestVariableListRef) {
   symbolic::Variable x3("x3");
   symbolic::Variable x4("x4");
 
-  DecisionVariableVector<2> x_vec1(x3, x1);
-  DecisionVariableVector<2> x_vec2(x2, x4);
+  VectorDecisionVariable<2> x_vec1(x3, x1);
+  VectorDecisionVariable<2> x_vec2(x2, x4);
   VariableRefList var_list{x_vec1, x_vec2};
 
-  DecisionVariableVectorX stacked_vars = ConcatenateVariableRefList(var_list);
+  VectorXDecisionVariable stacked_vars = ConcatenateVariableRefList(var_list);
   EXPECT_EQ(stacked_vars.rows(), 4);
   EXPECT_EQ(stacked_vars(0), x3);
   EXPECT_EQ(stacked_vars(1), x1);

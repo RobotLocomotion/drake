@@ -120,7 +120,7 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
   // Deliberately add two constraints on overlapped decision variables.
   // For x(1), the lower bound of the second constraint are used; while
   // the upper bound of the first variable is used.
-  DecisionVariableVector<2> variable_vec(x(1), x(3));
+  VectorDecisionVariable<2> variable_vec(x(1), x(3));
   prog.AddBoundingBoxConstraint(Vector2d(-1, -2), Vector2d(-0.2, -1),
                                 variable_vec);
   prog.AddBoundingBoxConstraint(Vector3d(-1, -0.5, -3), Vector3d(2, 1, -0.1),
@@ -143,7 +143,7 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
 
   MathematicalProgram prog;
   auto x1 = prog.NewContinuousVariables<2, 2>("x1");
-  DecisionVariableMatrixX x2(2, 2);
+  MatrixXDecisionVariable x2(2, 2);
   x2 = x1;
   // Three different ways to construct an equivalent constraint.
   // 1. Imposes constraint on a static-sized matrix of decision variables.
@@ -159,7 +159,7 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
   // Checks that the bound variables are correct.
   for (const auto& binding : prog.bounding_box_constraints()) {
     EXPECT_EQ(binding.GetNumElements(), 4);
-    DecisionVariableVector<4> x_expected;
+    VectorDecisionVariable<4> x_expected;
     x_expected << x1(0, 0), x1(1, 0), x1(0, 1), x1(1, 1);
     for (int i = 0; i < 4; ++i) {
       EXPECT_EQ(binding.variables()(i), x_expected(i));

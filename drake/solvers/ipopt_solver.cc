@@ -60,7 +60,7 @@ size_t GetNumGradients(const Constraint& c, int var_count, Index* num_grad) {
 /// @return the number of row/column pairs filled in.
 size_t GetGradientMatrix(
     const MathematicalProgram& prog, const Constraint& c,
-    const Eigen::Ref<const DecisionVariableVectorX>& variables,
+    const Eigen::Ref<const VectorXDecisionVariable>& variables,
     Index constraint_idx, Index* iRow, Index* jCol) {
   const size_t m = c.num_constraints();
   size_t grad_index = 0;
@@ -92,7 +92,7 @@ Eigen::VectorXd MakeEigenVector(Index n, const Number* x) {
 /// @return number of gradient entries populated.
 size_t EvaluateConstraint(const MathematicalProgram& prog,
                           const Eigen::VectorXd& xvec, const Constraint& c,
-                          const DecisionVariableVectorX& variables,
+                          const VectorXDecisionVariable& variables,
                           Number* result, Number* grad) {
   // For constraints which don't use all of the variables in the X
   // input, extract a subset into the TaylorVecXd this_x to evaluate

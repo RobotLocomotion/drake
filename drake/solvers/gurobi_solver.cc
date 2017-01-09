@@ -55,7 +55,7 @@ int AddLinearConstraint(const MathematicalProgram& prog, GRBmodel* model,
                         const Eigen::MatrixBase<DerivedA>& A,
                         const Eigen::MatrixBase<DerivedLB>& lb,
                         const Eigen::MatrixBase<DerivedUB>& ub,
-                        const Eigen::Ref<const DecisionVariableVectorX>& vars,
+                        const Eigen::Ref<const VectorXDecisionVariable>& vars,
                         bool is_equality, double sparseness_threshold) {
   for (int i = 0; i < A.rows(); i++) {
     int nonzero_coeff_count = 0;

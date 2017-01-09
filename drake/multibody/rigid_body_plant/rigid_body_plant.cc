@@ -402,7 +402,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
   // and simply update them then solve on each function eval.
   // How to place something like this in the context?
   drake::solvers::MathematicalProgram prog;
-  drake::solvers::DecisionVariableVectorX vdot =
+  drake::solvers::VectorXDecisionVariable vdot =
       prog.NewContinuousVariables(nv, "vdot");
 
   auto H = tree_->massMatrix(kinsol);

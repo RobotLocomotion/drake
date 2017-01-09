@@ -270,9 +270,9 @@ class DirectTrajectoryOptimization {
   int num_states() const { return num_states_; }
   int N() const { return N_; }
   solvers::MathematicalProgram* opt_problem() { return &opt_problem_; }
-  const solvers::DecisionVariableVectorX& h_vars() const { return h_vars_; }
-  const solvers::DecisionVariableVectorX& u_vars() const { return u_vars_; }
-  const solvers::DecisionVariableVectorX& x_vars() const { return x_vars_; }
+  const solvers::VectorXDecisionVariable& h_vars() const { return h_vars_; }
+  const solvers::VectorXDecisionVariable& u_vars() const { return u_vars_; }
+  const solvers::VectorXDecisionVariable& x_vars() const { return x_vars_; }
 
  private:
   /**
@@ -298,10 +298,10 @@ class DirectTrajectoryOptimization {
   const int N_;  // Number of time samples
 
   solvers::MathematicalProgram opt_problem_;
-  solvers::DecisionVariableVectorX h_vars_;  // Time deltas between each
+  solvers::VectorXDecisionVariable h_vars_;  // Time deltas between each
                                              // input/state sample.
-  solvers::DecisionVariableVectorX u_vars_;
-  solvers::DecisionVariableVectorX x_vars_;
+  solvers::VectorXDecisionVariable u_vars_;
+  solvers::VectorXDecisionVariable x_vars_;
 };
 
 }  // namespace systems
