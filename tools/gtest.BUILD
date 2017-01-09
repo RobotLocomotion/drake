@@ -10,7 +10,10 @@ cc_library(
         "include/**/*.h",
         "src/*.h",
     ]),
-    copts = ["-Wno-unused-const-variable"],
+    copts = [
+        "-Wno-unused-const-variable",
+        "-Wno-missing-field-initializers",
+    ],
     defines = [
         "GTEST_DONT_DEFINE_FAIL=1",
         "GTEST_DONT_DEFINE_SUCCEED=1",
