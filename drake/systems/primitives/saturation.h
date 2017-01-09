@@ -9,8 +9,8 @@ namespace drake {
 namespace systems {
 
 /// An element-wise hard saturation block with input `u` and output
-/// `y ` with lower and upper saturation limit values `u_{min}`, and
-/// `u_{max}` respectively as in:
+/// `y ` with lower and upper saturation limit values @f$ u_{min} @f$, and
+/// @f$ u_{max} @f$ respectively as in:
 ///
 ///   @f[ y = u, u_{min} < u < u_{min} @f]
 ///   @f[ y = u_{min}, u \le u_{min} @f]
@@ -24,8 +24,9 @@ namespace systems {
 ///
 /// They are already available to link against in drakeSystemFramework.
 ///
-/// Note that `u_{min}`, and `u_{max}`, and `u` are all vectors of same
-/// dimension, and the following condition holds along each dimension:
+/// Note that @f$ u_{min} @f$, and @f$ u_{max} @f$, and @f$ u @f$ are all
+/// vectors of same dimension, and the following condition holds along each
+/// dimension:
 /// @f[ u_{min} <=  u_{max} @f]
 ///
 /// @ingroup primitive_systems

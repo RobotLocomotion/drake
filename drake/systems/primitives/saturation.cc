@@ -18,9 +18,8 @@ Saturation<T>::Saturation(const Eigen::Ref<const VectorX<T>>& u_min,
   const int vector_size = u_min_.size();
 
   // Ensures that the lower limits are smaller than the upper limits.
-  for (int i = 0; i < vector_size; ++i) {
-    DRAKE_THROW_UNLESS(u_min_(i) <= u_max_(i));
-  }
+  DRAKE_THROW_UNLESS((u_min_.array() <= u_max_.array()).all());
+
 
   // Input and outputs are of same dimension.
   input_port_index_ =
