@@ -1191,8 +1191,11 @@ class RigidBodyTree {
 
   /**
    * Adds a RigidBody to a collision filter group.  The RigidBody is referenced
-   * by name.  The process will fail if the body cannot be found (with the
-   * previously provided model instance id) or if the group cannot be found.
+   * by name and model instance id. The process will fail if the body cannot be
+   * found (with the previously provided model instance id), or if the group
+   * cannot be found, or if the indicated boy already has *registered*
+   * collision elements (i.e., it has previously been compiled with collision
+   * elements).
    * An exception is thrown in the event of failure.
    * @param group_name      The collision filter group name to add the body to.
    * @param body_name       The name of the body to add (as a member of the
