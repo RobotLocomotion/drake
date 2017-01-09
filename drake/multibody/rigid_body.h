@@ -413,6 +413,14 @@ class RigidBody {
     return collision_elements_.end();
   }
 
+  /**
+   * Reports the total number of *registered* collision elements attached to
+   * this body.
+   */
+  int get_num_collision_element() const {
+    return static_cast<int>(collision_elements_.size());
+  }
+
  private:
   // TODO(tkoolen): It's very ugly, but parent, dofnum, and pitch also exist
   // currently (independently) at the RigidBodyTree level to represent the

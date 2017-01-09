@@ -1,7 +1,9 @@
 #pragma once
 
 #include <bitset>
+#include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 static const int MAX_NUM_COLLISION_FILTER_GROUPS = 128;
@@ -40,13 +42,9 @@ class CollisionFilterGroup {
 
   /**
    @param name          The name for the collision filter group.
-   @param model_id      The identifier of the model with which this group is
-                        associated.
    @param id            The bit id for this collision filter group.
    */
-  CollisionFilterGroup(const std::string& name, int model_id, int id);
-
-  int get_model_id() const { return model_id_; }
+  CollisionFilterGroup(const std::string& name, int id);
 
   int get_mask_id() const { return mask_id_; }
 
@@ -64,15 +62,46 @@ class CollisionFilterGroup {
 
  private:
   std::string name_{};
-  int model_id_{};
   int mask_id_{};
   std::vector<const RigidBody<T>*> bodies_{};
   std::vector<std::string> ignore_groups_{};
 };
 
 /**
- This class provides management utilities for the creation of RigidBodyTree
- instances.
+ This class provides management utilities for the collision filter groups for
+ RigidBodyTree instances.
+
+ The intent of the manager is to serve as an accumulator during the *parsing*
+ process.  It serves as an intermediate representation of the collision filter
+ group semantics. A unique instance should be owned by each RigidBodyTree
+ instance.
+
+ The manager is used in parsing *sessions*.  By design, one session maps to
+ parsing a single file.  The session ends with a call to Clear (called in
+ RigidBodyTree::compile).  Multiple sessions can be run on a single manager
+ (this naturally arises from parsing multiple files).  Collision filter groups
+ defined during a single session must all have unique group *names*. Names
+ used in different sessions are treated as being *different* collision filter
+ groups.  The names of the groups is only maintained during parsing.  At
+ runtime, the names are replaced with integer identifiers.
+
+ The group manager can handle a finite number of groups
+ (MAX_NUM_COLLISION_FILTER_GROUPS).  Each session contributes towards reaching
+ that total.  If the maximum number of groups has been defined, subsequent
+ efforts to define a new collision filter group will cause exceptions to be
+ thrown.
+
+ There are several implications of this design:
+
+    - Collision filter groups have a scope limited to a single URDF file. That
+      means a collision filter group *cannot* be configured between bodies
+      defined in different URDF files.
+    - Even if the same file is parsed multiple times, leading to collision
+      filter groups with identical names in each session, the groups will be
+      considered different.  Bodies from one parsing of the file will not be
+      in groups visible to another parsing.
+    - A user cannot change the collision filter groups a body belongs to or
+      which groups it ignores outside of the URDF specification.
 
  @tparam  T  A valid Eigen scalar type.
  */
@@ -82,8 +111,9 @@ class CollisionFilterGroupManager {
   /** Default constructor. */
   CollisionFilterGroupManager() {}
 
-  /** Based on the current specification, builds the appropriate collision
-   filter bitmasks and assigns them to the specified rigid bodies.
+  /**
+   Based on the current specification, builds the appropriate collision filter
+   bitmasks and assigns them to the specified rigid bodies.
    */
   void CompileGroups();
 
@@ -93,10 +123,15 @@ class CollisionFilterGroupManager {
    collision filter groups than the system can handle will lead to failure. In
    the event of failure, an exception is thrown.
    @param name        The unique name of the new group.
-   @param model_id    The model instance id to associate with this group.
    */
-  void DefineCollisionFilterGroup(const std::string& name, int model_id);
+  void DefineCollisionFilterGroup(const std::string& name);
 
+  // Note: unlike the other public methods of this class, this method does *not*
+  // throw an exception upon failure.  The reason is two-fold:
+  //  1) This method a a single fail condition (which can be succinctly
+  //     communicated with a boolean.)
+  //  2) The caller has more context to why this was called and is better able
+  //     to provide a meaningful error message.
   /**
    Adds a RigidBody to a collision filter group.  The process will fail if the
    group cannot be found.
@@ -114,22 +149,18 @@ class CollisionFilterGroupManager {
    does not refer to an existing collision filter group.  (Although, the
    target group name need not exist at this time.)  An exception is thrown
    upon failure.
-   @param group_name
-   @param target_group_name
+   @param group_name            The name of the group to modify.
+   @param target_group_name     The name of the group to ignore.
    */
   void AddCollisionFilterIgnoreTarget(const std::string& group_name,
                                       const std::string& target_group_name);
 
   /**
-   Reports the model instance id associated with the given group name.  If the
-   group is undefined, a negative number is returned.  Note: unlike the other
-   methods in this class, this returns an error code instead of throwing an
-   exception; that is so the caller can provide an intelligent message for
-   failure based on information not available to this invocation.
-   @param group_name    The name of the collision filter group.
-   @returns             The named group's model instance id.
+   Reports the collision filter group assigned to the given group name.
+   @param group_name    The group name to query.
+   @returns the assigned group name (-1 if in valid group name).
    */
-  int GetGroupModelInstanceId(const std::string& group_name);
+  int GetGroupId(const std::string& group_name);
 
   /**
    Returns the group membership bitmask for the given @p body.  If there is
@@ -149,14 +180,11 @@ class CollisionFilterGroupManager {
    accumulation of unique collision filter groups for a single instance of
    the manager.
    */
-   void Clear();
+  void Clear();
 
  private:
-  /**
-   Acquires the next available collision filter group id.  If no id is
-   available, an exception is thrown.
-   @returns    The next available id.
-   */
+  // Attempts to provision a group id for the next group.  Throws an exception
+  // if this manager is out of ids.
   int acquire_next_group_id();
 
   // The next available collision filter group identifier.
@@ -169,6 +197,7 @@ class CollisionFilterGroupManager {
   // Mappings between a RigidBody and the bitmasks that define its group
   // membership and the groups it ignores.  This is populated during
   // CompileGroups.  The pair is: (group mask, ignore mask).
-  std::unordered_map<const RigidBody<T>*, std::pair<bitmask, bitmask>> body_groups_;
+  std::unordered_map<const RigidBody<T>*, std::pair<bitmask, bitmask>>
+      body_groups_;
 };
 }  // namespace DrakeCollision

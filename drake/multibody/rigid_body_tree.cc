@@ -204,23 +204,23 @@ const RigidBodyActuator& RigidBodyTree<T>::GetActuator(
 }
 
 template <typename T>
-void RigidBodyTree<T>::DefineCollisionFilterGroup(const std::string& name,
-                                                  int model_id) {
-  collision_group_manager_.DefineCollisionFilterGroup(name, model_id);
+void RigidBodyTree<T>::DefineCollisionFilterGroup(const std::string& name) {
+  collision_group_manager_.DefineCollisionFilterGroup(name);
 }
 
 template <typename T>
 void RigidBodyTree<T>::AddCollisionFilterGroupMember(
-    const std::string& group_name, const std::string& body_name) {
-  int model_id = collision_group_manager_.GetGroupModelInstanceId(group_name);
-  if (model_id < 0) {
-    throw std::runtime_error(
-        "Attempting to add a link to an undefined collision filter group: "
-        "Adding " +
-        body_name + " to " + group_name + ".");
-  }
+    const std::string& group_name, const std::string& body_name, int model_id) {
   int body_index = FindBodyIndex(body_name, model_id);
   RigidBody<T>* body = bodies[body_index].get();
+  if (body->get_num_collision_element() > 0) {
+    throw std::runtime_error("Attempting to add a body, '" + body->get_name() +
+                             "', to a collision "
+                             "group, '" +
+                             group_name +
+                             "' that has already been compiled with "
+                             "collision elements.");
+  }
   if (!collision_group_manager_.AddCollisionFilterGroupMember(group_name,
                                                               *body)) {
     throw std::runtime_error(
@@ -367,7 +367,9 @@ void RigidBodyTree<T>::CompileCollisionState() {
     }
   }
 
-  // Set the collision filter data on the body's elements.
+  // Set the collision filter data on the body's elements.  Note: this does
+  // *not* update the collision elements that may have already been registered
+  // with the collision model.
   collision_group_manager_.Clear();
   for (auto& pair : body_collision_map_) {
     RigidBody<T>* body = pair.first;
@@ -452,8 +454,6 @@ void RigidBodyTree<T>::CreateCollisionCliques() {
     RigidBody<T>* body_i = bodies[i].get();
     for (size_t j = i + 1; j < bodies.size(); ++j) {
       RigidBody<T>* body_j = bodies[j].get();
-      // TODO(SeanCurtis-TRI): This translates collision filter information into
-      // cliques.  In the future, don't collapse these.
       if (!body_i->CanCollideWith(*body_j)) {
         BodyCollisions& elements_i =  body_collision_map_[body_i];
         for (const auto& item : elements_i) {

@@ -1182,13 +1182,12 @@ class RigidBodyTree {
 
   /**
    * Attempts to define a new collision filter group.  The given name *must*
-   * be unique.  Duplicate names or attempting to add more
-   * collision filter groups than the system can handle will lead to failure. In
-   * the event of failure, an exception is thrown.
+   * be unique.  Duplicate names or attempting to add more collision filter
+   * groups than the system can handle will lead to failure. In the event of
+   * failure, an exception is thrown.
    * @param name        The unique name of the new group.
-   * @param model_id    The model instance id to associate with this group.
    */
-  void DefineCollisionFilterGroup(const std::string& name, int model_id);
+  void DefineCollisionFilterGroup(const std::string& name);
 
   /**
    * Adds a RigidBody to a collision filter group.  The RigidBody is referenced
@@ -1198,9 +1197,12 @@ class RigidBodyTree {
    * @param group_name      The collision filter group name to add the body to.
    * @param body_name       The name of the body to add (as a member of the
    *                        group's model instance id.
+   * @param model_id        The id of the model instance to which this body
+   *                        belongs.
    */
   void AddCollisionFilterGroupMember(const std::string& group_name,
-                                     const std::string& body_name);
+                                     const std::string& body_name,
+                                     int model_id);
 
   /**
    * Adds a collision group to the set of groups ignored by the specified
@@ -1370,7 +1372,6 @@ class RigidBodyTree {
   int next_available_clique_ = 0;
 
  private:
-
   // Utility class for storing body collision data during RBT instantiation.
   struct BodyCollisionItem {
     BodyCollisionItem(const std::string& grp_name,

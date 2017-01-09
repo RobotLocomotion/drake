@@ -561,7 +561,7 @@ void ParseCollisionFilterGroup(RigidBodyTree<double>* tree, XMLElement* node,
         "Collision filter group specification missing name attribute.");
   string group_name(attr);
 
-  tree->DefineCollisionFilterGroup(group_name, model_instance_id);
+  tree->DefineCollisionFilterGroup(group_name);
 
   for (XMLElement* member_node = node->FirstChildElement("member"); member_node;
        member_node =
@@ -571,7 +571,8 @@ void ParseCollisionFilterGroup(RigidBodyTree<double>* tree, XMLElement* node,
       throw runtime_error(
           "Collision filter group provides a member tag without specifying the "
           "\"link\".");
-    tree->AddCollisionFilterGroupMember(group_name, link_name);
+    tree->AddCollisionFilterGroupMember(group_name, link_name,
+                                        model_instance_id);
   }
 
   for (XMLElement* ignore_node =

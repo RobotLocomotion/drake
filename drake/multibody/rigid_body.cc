@@ -244,10 +244,7 @@ bool RigidBody<T>::adjacentTo(const RigidBody& other) const {
 
 template <typename T>
 bool RigidBody<T>::CanCollideWith(const RigidBody& other) const {
-  bool ignored =
-      this == &other || adjacentTo(other) ||
-      (collision_filter_group_ & other.get_collision_filter_ignores()).any() ||
-      (other.get_collision_filter_group() & collision_filter_ignores_).any();
+  bool ignored = this == &other || adjacentTo(other);
   return !ignored;
 }
 

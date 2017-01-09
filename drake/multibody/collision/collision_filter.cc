@@ -4,31 +4,33 @@
 #include <drake/common/text_logging.h>
 #include "drake/common/eigen_autodiff_types.h"
 
+#include <string>
+#include <utility>
+
 namespace DrakeCollision {
 
 using drake::AutoDiffXd;
 
 template <typename T>
-CollisionFilterGroup<T>::CollisionFilterGroup() : name_(""), model_id_(-1) {}
+CollisionFilterGroup<T>::CollisionFilterGroup() : name_(""), mask_id_(-1) {}
 
 template <typename T>
-CollisionFilterGroup<T>::CollisionFilterGroup(const std::string& name,
-                                              int model_id, int id)
-    : name_(name), model_id_(model_id), mask_id_(id) {
+CollisionFilterGroup<T>::CollisionFilterGroup(const std::string& name, int id)
+    : name_(name), mask_id_(id) {
   DRAKE_ASSERT(mask_id_ >= 0 && mask_id_ < MAX_NUM_COLLISION_FILTER_GROUPS);
 }
 
 template <typename T>
 void CollisionFilterGroupManager<T>::DefineCollisionFilterGroup(
-    const std::string& name, int model_id) {
+    const std::string& name) {
   auto itr = collision_filter_groups_.find(name);
   if (itr == collision_filter_groups_.end()) {
     int id = acquire_next_group_id();
-    collision_filter_groups_[name] =
-        CollisionFilterGroup<T>(name, model_id, id);
+    collision_filter_groups_[name] = CollisionFilterGroup<T>(name, id);
+  } else {
+    throw std::runtime_error(
+        "Attempting to create duplicate collision filter group: " + name);
   }
-  throw std::runtime_error(
-      "Attempting to create duplicate collision filter group: " + name);
 }
 
 template <typename T>
@@ -54,7 +56,7 @@ void CollisionFilterGroupManager<T>::CompileGroups() {
         body_groups_[body] = std::make_pair(group_mask, ignore_mask);
       } else {
         body_groups_[body].first |= group_mask;
-        body_groups_[body].second |= group_mask;
+        body_groups_[body].second |= ignore_mask;
       }
     }
   }
@@ -86,13 +88,12 @@ void CollisionFilterGroupManager<T>::AddCollisionFilterIgnoreTarget(
 }
 
 template <typename T>
-int CollisionFilterGroupManager<T>::GetGroupModelInstanceId(
-    const std::string& group_name) {
+int CollisionFilterGroupManager<T>::GetGroupId(const std::string& group_name) {
   auto itr = collision_filter_groups_.find(group_name);
   if (itr == collision_filter_groups_.end()) {
     return -1;
   }
-  return itr->second.get_model_id();
+  return itr->second.get_mask_id();
 }
 
 template <typename T>
