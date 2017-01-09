@@ -57,10 +57,10 @@ void TestSaturationSystem(const Saturation<T>& saturation_system,
 
 // Tests the ability to use doubles as the saturation limits.
 GTEST_TEST(SaturationTest, SaturationScalarTest) {
-  // Test for death of an incorrectly initialized Saturation (u_min > u_max).
-  EXPECT_DEATH(
-      std::make_unique<Saturation<double>>(1.0 /* u_min */, -0.9 /* u_max */),
-      "");
+  // Tests for error thrown due to incorrectly initialized Saturation
+  // (u_min > u_max).
+  EXPECT_ANY_THROW(
+      std::make_unique<Saturation<double>>(1.0 /* u_min */, -0.9 /* u_max */));
 
   const double kUMin = -0.4;
   const double kUMax = 1.8;
@@ -100,12 +100,11 @@ GTEST_TEST(SaturationTest, SaturationScalarTest) {
 
 // Tests the ability to use vectors for the lower and upper saturation limits.
 GTEST_TEST(SaturationTest, SaturationVectorTest) {
-  // Test for death of an incorrectly initialized Saturation. (u_min and
-  // u_max are of incorrect length).
-  EXPECT_DEATH(std::make_unique<Saturation<double>>(
+  // Tests for error thrown due to incorrectly initialized Saturation. (u_min
+  // and u_max have unequal lengths).
+  EXPECT_ANY_THROW(std::make_unique<Saturation<double>>(
                    Vector3<double>(1.0, -4.5, -2.5) /* u_min */,
-                   Vector2<double>(3.0, 5.0) /* u_max */),
-               "");
+                   Vector2<double>(3.0, 5.0) /* u_max */));
 
   // Arbitrary choice of limits for the test.
   const Vector4<double> kUMin(1.0, 2.5, 3.3, 2.5);
@@ -114,9 +113,9 @@ GTEST_TEST(SaturationTest, SaturationVectorTest) {
   const auto saturation_system =
       std::make_unique<Saturation<double>>(kUMax, kUMin);
 
-  // Test for the death due to calling the scalar getters.
-  EXPECT_DEATH(saturation_system->get_u_max(), "");
-  EXPECT_DEATH(saturation_system->get_u_min(), "");
+  // Tests for error thrown due to calling the scalar getters.
+  EXPECT_ANY_THROW(saturation_system->get_u_max());
+  EXPECT_ANY_THROW(saturation_system->get_u_min());
 
   const int kNumPoints = 20;
 

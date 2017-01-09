@@ -14,12 +14,12 @@ template <typename T>
 Saturation<T>::Saturation(const Eigen::Ref<const VectorX<T>>& u_min,
                           const Eigen::Ref<const VectorX<T>>& u_max)
     : u_min_(u_min), u_max_(u_max) {
-  DRAKE_DEMAND(u_min_.size() == u_max_.size());
-  const int vector_size = u_min_size();
+  DRAKE_THROW_UNLESS(u_min_.size() == u_max_.size());
+  const int vector_size = u_min_.size();
 
   // Ensures that the lower limits are smaller than the upper limits.
   for (int i = 0; i < vector_size; ++i) {
-    DRAKE_DEMAND(u_min_(i) <= u_max_(i));
+    DRAKE_THROW_UNLESS(u_min_(i) <= u_max_(i));
   }
 
   // Input and outputs are of same dimension.
@@ -69,25 +69,15 @@ const OutputPortDescriptor<T>& Saturation<T>::get_output_port() const {
 
 template <typename T>
 const T& Saturation<T>::get_u_max() const {
-  if (!u_max_.isConstant(u_max_[0])) {
-    std::stringstream s;
-    s << "The sigma upper vector, [" << u_max_
-      << "], cannot be represented as a scalar value. Please use "
-         "drake::systems::Saturation::get_u_max_vector() instead.";
-    DRAKE_ABORT_MSG(s.str().c_str());
-  }
+  // Throws an error if the vector cannot be representable as a scalar.
+  DRAKE_THROW_UNLESS(u_max_.isConstant(u_max_[0]));
   return u_max_[0];
 }
 
 template <typename T>
 const T& Saturation<T>::get_u_min() const {
-  if (!u_min_.isConstant(u_min_[0])) {
-    std::stringstream s;
-    s << "The sigma lower vector, [" << u_min_
-      << "], cannot be represented as a scalar value. Please use "
-         "drake::systems::Saturation::get_u_min_vector() instead.";
-    DRAKE_ABORT_MSG(s.str().c_str());
-  }
+  // Throws an error if the vector cannot be representable as a scalar.
+  DRAKE_THROW_UNLESS(u_min_.isConstant(u_min_[0]));
   return u_min_[0];
 }
 
