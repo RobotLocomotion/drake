@@ -4,8 +4,15 @@ build -c opt
 
 # Default build options.
 build --strip=never
+build --crosstool_top=//external:drake_toolchain
+
+# Compilation flags that apply on all supported compilers. Flags that are
+# specific to a particular compiler should go in tools/gcc_options.txt or
+# tools/clang_options.txt.
 build --copt -Werror=all
 build --cxxopt -std=c++1y
+build --cxxopt -Werror=ignored-qualifiers
+build --cxxopt -Werror=overloaded-virtual
 
 # Default test options.
 test --test_output=errors
