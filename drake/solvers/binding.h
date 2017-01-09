@@ -23,9 +23,9 @@ class Binding {
    * column vector, binds this column vector of decision variables with
    * the constraint @p c.
    */
-  Binding(const std::shared_ptr<C>& c, const VariableListRef& v)
+  Binding(const std::shared_ptr<C>& c, const VariableRefList& v)
       : constraint_(c) {
-    vars_ = ConcatenateVariableListRef(v);
+    vars_ = ConcatenateVariableRefList(v);
   }
 
   template <typename U>

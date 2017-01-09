@@ -658,8 +658,8 @@ class MathematicalProgram {
    * @param vars The decision variables on which the cost depend.
    */
   void AddCost(const std::shared_ptr<Constraint>& obj,
-               const VariableListRef& vars) {
-    AddCost(obj, ConcatenateVariableListRef(vars));
+               const VariableRefList& vars) {
+    AddCost(obj, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -683,8 +683,8 @@ class MathematicalProgram {
       (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) &&
           (!std::is_convertible<F, Binding<Constraint>>::value),
       std::shared_ptr<Constraint>>::type
-  AddCost(F&& f, const VariableListRef& vars) {
-    return AddCost(f, ConcatenateVariableListRef(vars));
+  AddCost(F&& f, const VariableRefList& vars) {
+    return AddCost(f, ConcatenateVariableRefList(vars));
   }
 
   template <typename F>
@@ -717,8 +717,8 @@ class MathematicalProgram {
       (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) &&
           (!std::is_convertible<F, Binding<Constraint>>::value),
       std::shared_ptr<Constraint>>::type
-  AddCost(std::unique_ptr<F>&& f, const VariableListRef& vars) {
-    return AddCost(f, ConcatenateVariableListRef(vars));
+  AddCost(std::unique_ptr<F>&& f, const VariableRefList& vars) {
+    return AddCost(f, ConcatenateVariableRefList(vars));
   }
 
   template <typename F>
@@ -756,8 +756,8 @@ class MathematicalProgram {
    * the linear cost data structure.
    */
   void AddCost(const std::shared_ptr<LinearConstraint>& obj,
-               const VariableListRef& vars) {
-    AddCost(obj, ConcatenateVariableListRef(vars));
+               const VariableRefList& vars) {
+    AddCost(obj, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -774,8 +774,8 @@ class MathematicalProgram {
    * the linear cost data structure.
    */
   std::shared_ptr<LinearConstraint> AddLinearCost(
-      const Eigen::Ref<const Eigen::VectorXd>& c, const VariableListRef& vars) {
-    return AddLinearCost(c, ConcatenateVariableListRef((vars)));
+      const Eigen::Ref<const Eigen::VectorXd>& c, const VariableRefList& vars) {
+    return AddLinearCost(c, ConcatenateVariableRefList((vars)));
   }
 
   /**
@@ -811,8 +811,8 @@ class MathematicalProgram {
    * the quadratic cost data structure.
    */
   void AddCost(const std::shared_ptr<QuadraticConstraint>& obj,
-               const VariableListRef& vars) {
-    AddCost(obj, ConcatenateVariableListRef(vars));
+               const VariableRefList& vars) {
+    AddCost(obj, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -829,9 +829,9 @@ class MathematicalProgram {
   std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& x_desired,
-      const VariableListRef& vars) {
+      const VariableRefList& vars) {
     return AddQuadraticErrorCost(Q, x_desired,
-                                 ConcatenateVariableListRef(vars));
+                                 ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -857,8 +857,8 @@ class MathematicalProgram {
    */
   std::shared_ptr<QuadraticConstraint> AddL2NormCost(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableListRef& vars) {
-    return AddL2NormCost(A, b, ConcatenateVariableListRef(vars));
+      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableRefList& vars) {
+    return AddL2NormCost(A, b, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -878,8 +878,8 @@ class MathematicalProgram {
    */
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
-      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableListRef& vars) {
-    return AddQuadraticCost(Q, b, ConcatenateVariableListRef(vars));
+      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableRefList& vars) {
+    return AddQuadraticCost(Q, b, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -925,8 +925,8 @@ class MathematicalProgram {
    * expensive solver.
    */
   void AddConstraint(std::shared_ptr<Constraint> con,
-                     const VariableListRef& vars) {
-    AddConstraint(con, ConcatenateVariableListRef(vars));
+                     const VariableRefList& vars) {
+    AddConstraint(con, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -949,8 +949,8 @@ class MathematicalProgram {
    * of the decision variables (defined in the vars parameter).
    */
   void AddConstraint(std::shared_ptr<LinearConstraint> con,
-                     const VariableListRef& vars) {
-    AddConstraint(con, ConcatenateVariableListRef(vars));
+                     const VariableRefList& vars) {
+    AddConstraint(con, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -968,8 +968,8 @@ class MathematicalProgram {
       const Eigen::Ref<const Eigen::MatrixXd>& A,
       const Eigen::Ref<const Eigen::VectorXd>& lb,
       const Eigen::Ref<const Eigen::VectorXd>& ub,
-      const VariableListRef& vars) {
-    return AddLinearConstraint(A, lb, ub, ConcatenateVariableListRef(vars));
+      const VariableRefList& vars) {
+    return AddLinearConstraint(A, lb, ub, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1005,8 +1005,8 @@ class MathematicalProgram {
    */
   std::shared_ptr<LinearConstraint> AddLinearConstraint(
       const Eigen::Ref<const Eigen::RowVectorXd>& a, double lb, double ub,
-      const VariableListRef& vars) {
-    return AddLinearConstraint(a, lb, ub, ConcatenateVariableListRef(vars));
+      const VariableRefList& vars) {
+    return AddLinearConstraint(a, lb, ub, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1052,8 +1052,8 @@ class MathematicalProgram {
    * subset of the decision variables.
    */
   void AddConstraint(std::shared_ptr<LinearEqualityConstraint> con,
-                     const VariableListRef& vars) {
-    AddConstraint(con, ConcatenateVariableListRef(vars));
+                     const VariableRefList& vars) {
+    AddConstraint(con, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1085,9 +1085,9 @@ class MathematicalProgram {
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
       const Eigen::Ref<const Eigen::VectorXd>& beq,
-      const VariableListRef& vars) {
+      const VariableRefList& vars) {
     return AddLinearEqualityConstraint(Aeq, beq,
-                                       ConcatenateVariableListRef(vars));
+                                       ConcatenateVariableRefList(vars));
   }
 
   /** AddLinearEqualityConstraint
@@ -1138,9 +1138,9 @@ class MathematicalProgram {
    */
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::RowVectorXd>& a, double beq,
-      const VariableListRef& vars) {
+      const VariableRefList& vars) {
     return AddLinearEqualityConstraint(a, beq,
-                                       ConcatenateVariableListRef(vars));
+                                       ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1189,8 +1189,8 @@ class MathematicalProgram {
    * decision variables.
    */
   void AddConstraint(std::shared_ptr<BoundingBoxConstraint> con,
-                     const VariableListRef& vars) {
-    AddConstraint(con, ConcatenateVariableListRef(vars));
+                     const VariableRefList& vars) {
+    AddConstraint(con, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1221,8 +1221,8 @@ class MathematicalProgram {
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       const Eigen::Ref<const Eigen::VectorXd>& lb,
       const Eigen::Ref<const Eigen::VectorXd>& ub,
-      const VariableListRef& vars) {
-    return AddBoundingBoxConstraint(lb, ub, ConcatenateVariableListRef(vars));
+      const VariableRefList& vars) {
+    return AddBoundingBoxConstraint(lb, ub, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1269,8 +1269,8 @@ class MathematicalProgram {
    * @param vars The decision variables.
    */
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
-      double lb, double ub, const VariableListRef& vars) {
-    return AddBoundingBoxConstraint(lb, ub, ConcatenateVariableListRef(vars));
+      double lb, double ub, const VariableRefList& vars) {
+    return AddBoundingBoxConstraint(lb, ub, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1384,8 +1384,8 @@ class MathematicalProgram {
    * of the decision variables.
    */
   void AddConstraint(std::shared_ptr<LorentzConeConstraint> con,
-                     const VariableListRef& vars) {
-    return AddConstraint(con, ConcatenateVariableListRef(vars));
+                     const VariableRefList& vars) {
+    return AddConstraint(con, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1415,8 +1415,8 @@ class MathematicalProgram {
    */
   std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableListRef& vars) {
-    return AddLorentzConeConstraint(A, b, ConcatenateVariableListRef(vars));
+      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableRefList& vars) {
+    return AddLorentzConeConstraint(A, b, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1475,8 +1475,8 @@ class MathematicalProgram {
    * @return The newly added Lorentz cone constraint.
    */
   std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint(
-      const VariableListRef& vars) {
-    return AddLorentzConeConstraint(ConcatenateVariableListRef(vars));
+      const VariableRefList& vars) {
+    return AddLorentzConeConstraint(ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1520,8 +1520,8 @@ class MathematicalProgram {
    * Lorentz cone.
    */
   void AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con,
-                     const VariableListRef& vars) {
-    AddConstraint(con, ConcatenateVariableListRef(vars));
+                     const VariableRefList& vars) {
+    AddConstraint(con, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1553,9 +1553,9 @@ class MathematicalProgram {
    */
   std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableListRef& vars) {
+      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableRefList& vars) {
     return AddRotatedLorentzConeConstraint(A, b,
-                                           ConcatenateVariableListRef(vars));
+                                           ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1621,8 +1621,8 @@ class MathematicalProgram {
    * @return The newly added rotated Lorentz cone constraint.
    */
   std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
-      const VariableListRef& vars) {
-    return AddRotatedLorentzConeConstraint(ConcatenateVariableListRef(vars));
+      const VariableRefList& vars) {
+    return AddRotatedLorentzConeConstraint(ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1660,8 +1660,8 @@ class MathematicalProgram {
    * the decision variables.
    */
   void AddConstraint(std::shared_ptr<LinearComplementarityConstraint> con,
-                     const VariableListRef& vars) {
-    AddConstraint(con, ConcatenateVariableListRef(vars));
+                     const VariableRefList& vars) {
+    AddConstraint(con, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1678,9 +1678,9 @@ class MathematicalProgram {
   std::shared_ptr<LinearComplementarityConstraint>
   AddLinearComplementarityConstraint(const Eigen::Ref<const Eigen::MatrixXd>& M,
                                      const Eigen::Ref<const Eigen::VectorXd>& q,
-                                     const VariableListRef& vars) {
+                                     const VariableRefList& vars) {
     return AddLinearComplementarityConstraint(M, q,
-                                              ConcatenateVariableListRef(vars));
+                                              ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1712,9 +1712,9 @@ class MathematicalProgram {
       const VectorXPoly& polynomials,
       const std::vector<Polynomiald::VarType>& poly_vars,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
-      const VariableListRef& vars) {
+      const VariableRefList& vars) {
     return AddPolynomialConstraint(polynomials, poly_vars, lb, ub,
-                                   ConcatenateVariableListRef(vars));
+                                   ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1770,8 +1770,8 @@ class MathematicalProgram {
    * Adds a linear matrix inequality constraint to the program.
    */
   void AddConstraint(std::shared_ptr<LinearMatrixInequalityConstraint> con,
-                     const VariableListRef& vars) {
-    AddConstraint(con, ConcatenateVariableListRef(vars));
+                     const VariableRefList& vars) {
+    AddConstraint(con, ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1786,9 +1786,9 @@ class MathematicalProgram {
   std::shared_ptr<LinearMatrixInequalityConstraint>
   AddLinearMatrixInequalityConstraint(
       const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
-      const VariableListRef& vars) {
+      const VariableRefList& vars) {
     return AddLinearMatrixInequalityConstraint(
-        F, ConcatenateVariableListRef(vars));
+        F, ConcatenateVariableRefList(vars));
   }
 
   /**

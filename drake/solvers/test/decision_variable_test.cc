@@ -182,9 +182,9 @@ GTEST_TEST(TestDecisionVariable, TestVariableListRef) {
 
   DecisionVariableVector<2> x_vec1(x3, x1);
   DecisionVariableVector<2> x_vec2(x2, x4);
-  VariableListRef var_list{x_vec1, x_vec2};
+  VariableRefList var_list{x_vec1, x_vec2};
 
-  DecisionVariableVectorX stacked_vars = ConcatenateVariableListRef(var_list);
+  DecisionVariableVectorX stacked_vars = ConcatenateVariableRefList(var_list);
   EXPECT_EQ(stacked_vars.rows(), 4);
   EXPECT_EQ(stacked_vars(0), x3);
   EXPECT_EQ(stacked_vars(1), x1);

@@ -971,7 +971,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   auto y = prog.NewContinuousVariables<1>("y");
   Q << 2.0, 0.0, 0.0, 2.0;
   c << -5.0, -2.0;
-  VariableListRef vars;
+  VariableRefList vars;
   vars.push_back(x.segment<1>(1));
   vars.push_back(y);
 
@@ -1033,7 +1033,7 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   Vector2d constraint2(2);
   constraint2 << 2., -1.;
   // 2*x1 - x3 = 0, so x3 should wind up as 1.0
-  VariableListRef vars;
+  VariableRefList vars;
   vars.push_back(x.segment(0, 1));
   vars.push_back(y);
 

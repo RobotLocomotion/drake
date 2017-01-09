@@ -23,13 +23,13 @@ using DecisionVariableMatrixX =
     DecisionVariableMatrix<Eigen::Dynamic, Eigen::Dynamic>;
 using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
 
-using VariableListRef = std::list<Eigen::Ref<const DecisionVariableVectorX>>;
+using VariableRefList = std::list<Eigen::Ref<const DecisionVariableVectorX>>;
 
 /**
  * Concatenates each element in \p var_list into a single Eigen vector of
- * decision variables, returns the this concatenated vector.
+ * decision variables, returns this concatenated vector.
  */
-DecisionVariableVectorX ConcatenateVariableListRef(
-    const VariableListRef& var_list);
+DecisionVariableVectorX ConcatenateVariableRefList(
+    const VariableRefList &var_list);
 }  // end namespace solvers
 }  // end namespace drake
