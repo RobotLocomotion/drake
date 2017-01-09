@@ -2887,23 +2887,23 @@ int RigidBodyTree<T>::get_number_of_model_instances() const {
 
 template <typename T>
 Isometry3<T> RigidBodyTree<T>::CalcFramePoseInWorldFrame(
-    const KinematicsCache<T>& cache, const RigidBody<T>& B,
+    const KinematicsCache<T>& cache, const RigidBody<T>& body,
     const drake::Isometry3<T>& X_BF) const {
   cache.checkCachedKinematicsSettings(
       false, false, "CalcFramePoseInWorldFrame");
 
-  const auto& body_element = cache.get_element(B.get_body_index());
+  const auto& body_element = cache.get_element(body.get_body_index());
   const Isometry3<T> X_WB = body_element.transform_to_world;
   return X_WB * X_BF;
 }
 
 template <typename T>
 Vector6<T> RigidBodyTree<T>::CalcBodySpatialVelocityInWorldFrame(
-    const KinematicsCache<T>& cache, const RigidBody<T>& B) const {
+    const KinematicsCache<T>& cache, const RigidBody<T>& body) const {
   cache.checkCachedKinematicsSettings(
       true, false, "CalcBodySpatialVelocityInWorldFrame");
 
-  const auto& body_element = cache.get_element(B.get_body_index());
+  const auto& body_element = cache.get_element(body.get_body_index());
 
   // Plucker velocity vector of body B with respect to the world W, expressed in
   // the world frame W.
@@ -2925,12 +2925,12 @@ Vector6<T> RigidBodyTree<T>::CalcBodySpatialVelocityInWorldFrame(
 
 template <typename T>
 drake::Vector6<T> RigidBodyTree<T>::CalcFrameSpatialVelocityInWorldFrame(
-    const KinematicsCache<T>& cache, const RigidBody<T>& B,
+    const KinematicsCache<T>& cache, const RigidBody<T>& body,
     const drake::Isometry3<T>& X_BF) const {
   // Spatial velocity of body B with respect to the world W, expressed in
   // the world frame W.
   Vector6<T> V_WB_W =
-      CalcBodySpatialVelocityInWorldFrame(cache, B);
+      CalcBodySpatialVelocityInWorldFrame(cache, body);
 
   // Angular velocity of frame B with respect to W, expressed in W.
   const auto& w_WB_W = V_WB_W.template topRows<3>();
@@ -2938,7 +2938,7 @@ drake::Vector6<T> RigidBodyTree<T>::CalcFrameSpatialVelocityInWorldFrame(
   const auto& v_WB_W = V_WB_W.template bottomRows<3>();
 
   // Body pose measured and expressed in the world frame.
-  Isometry3<T> X_WB = CalcBodyPoseInWorldFrame(cache, B);
+  Isometry3<T> X_WB = CalcBodyPoseInWorldFrame(cache, body);
   // Vector from Bo to Fo expressed in B.
   Vector3<T> p_BF_B = X_BF.template cast<T>().translation();
   // Vector from Bo to Fo expressed in W.
@@ -2960,15 +2960,15 @@ drake::Vector6<T> RigidBodyTree<T>::CalcFrameSpatialVelocityInWorldFrame(
 
 template <typename T> drake::Matrix6X<T>
 RigidBodyTree<T>::CalcFrameSpatialVeclocityJacobianInWorldFrame(
-    const KinematicsCache<T>& cache, const RigidBody<T>& B,
+    const KinematicsCache<T>& cache, const RigidBody<T>& body,
     const drake::Isometry3<T>& X_BF, bool in_terms_of_qdot) const {
   int world_index = world().get_body_index();
-  drake::Vector3<T> p = CalcFramePoseInWorldFrame(cache, B, X_BF).
+  drake::Vector3<T> p = CalcFramePoseInWorldFrame(cache, body, X_BF).
       template cast<T>().translation();
 
   std::vector<int> v_or_q_indices;
   drake::MatrixX<T> J_body = geometricJacobian(
-      cache, world_index, B.get_body_index(), world_index, in_terms_of_qdot,
+      cache, world_index, body.get_body_index(), world_index, in_terms_of_qdot,
       &v_or_q_indices);
 
   int col = 0;
@@ -2987,11 +2987,11 @@ RigidBodyTree<T>::CalcFrameSpatialVeclocityJacobianInWorldFrame(
 
 template <typename T> drake::Vector6<T>
 RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
-      const KinematicsCache<T>& cache, const RigidBody<T>& B,
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
       const drake::Isometry3<T>& X_BF) const {
   int world_index = world().get_body_index();
-  int body_index = B.get_body_index();
-  drake::Vector3<T> p = CalcFramePoseInWorldFrame(cache, B, X_BF).
+  int body_index = body.get_body_index();
+  drake::Vector3<T> p = CalcFramePoseInWorldFrame(cache, body, X_BF).
       template cast<T>().translation();
 
   TwistVector<T> twist =

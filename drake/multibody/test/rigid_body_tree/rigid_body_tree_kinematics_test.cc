@@ -81,7 +81,8 @@ class AcrobotTests : public ::testing::Test {
  protected:
   void SetUp() {
     std::string file_name =
-        GetDrakePath() + "/multibody/test/rigid_body_tree/double_pendulum.urdf";
+        drake::GetDrakePath() +
+        "/multibody/test/rigid_body_tree/double_pendulum.urdf";
     robot_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         file_name, multibody::joints::kFixed, robot_.get());

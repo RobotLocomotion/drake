@@ -298,14 +298,12 @@ class RigidBodyTree {
       const std::set<int>& model_instance_id_set =
           default_model_instance_id_set) const;
 
-  /// Computes the pose of body `B` measured and expressed in the world frame
-  /// `W`.
-  /// @returns `X_WB` the pose of body `B` measured and expressed in the world
-  /// frame `W`.
+  /// Returns the pose of @p body's body frame `B` measured and expressed
+  /// in the world frame `W`.
   drake::Isometry3<T> CalcBodyPoseInWorldFrame(
-      const KinematicsCache<T>& cache, const RigidBody<T>& B) const {
+      const KinematicsCache<T>& cache, const RigidBody<T>& body) const {
     return CalcFramePoseInWorldFrame(
-        cache, B, drake::Isometry3<T>::Identity());
+        cache, body, drake::Isometry3<T>::Identity());
   }
 
   /// Computes the pose of the rigid body frame `F` measured and expressed in
@@ -324,20 +322,18 @@ class RigidBodyTree {
   }
 
   /// Computes the pose of the rigid body frame `F` measured and expressed in
-  /// the world frame `W`. Frame F is attached to RigidBody @p B.
-  /// @param B RigidBody reference.
+  /// the world frame `W`. Frame F is attached to RigidBody @p body.
+  /// @param body RigidBody reference.
   /// @returns `X_WF` the pose of frame F measured and expressed in the world
   /// frame `W`.
   drake::Isometry3<T> CalcFramePoseInWorldFrame(
-      const KinematicsCache<T>& cache, const RigidBody<T>& B,
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
       const drake::Isometry3<T>& X_BF) const;
 
-  /// Computes the spatial velocity `V_WB` of the body frame `B` with respect
-  /// to the world frame `W` and expresses it in the world frame.
-  /// @returns `V_WB_W` The spatial velocity of the body frame `B` with respect
-  /// to the world frame `W`, expressed in the world frame.
+  /// Returns the spatial velocity `V_WB` of @p body's body frame `B` with
+  /// respect to the world frame `W` and expresses it in the world frame.
   drake::Vector6<T> CalcBodySpatialVelocityInWorldFrame(
-      const KinematicsCache<T>& cache, const RigidBody<T>& B) const;
+      const KinematicsCache<T>& cache, const RigidBody<T>& body) const;
 
   /// Computes the spatial velocity `V_WF` of the rigid body frame `F` with
   /// respect to the world frame `W` and expresses it in the world frame.
@@ -358,22 +354,22 @@ class RigidBodyTree {
 
   /// Computes the spatial velocity `V_WF` of the rigid body frame `F` with
   /// respect to the world frame `W` and expresses it in the world frame.
-  /// Frame F is attached to rigid body @p B.
+  /// Frame F is attached to rigid body @p body.
   /// @param cache KinematicsCache.
-  /// @param B Reference to the RigidBody.
-  /// @param X_BF Transformation from frame F to body frame B.
+  /// @param body Reference to the RigidBody.
+  /// @param X_BF Transformation from frame F to @p body's body frame.
   /// @returns `V_WF_W` The spatial velocity of the rigid body frame `F` with
   /// respect to the world frame `W`, expressed in the world frame.
   drake::Vector6<T> CalcFrameSpatialVelocityInWorldFrame(
-      const KinematicsCache<T>& cache, const RigidBody<T>& B,
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
       const drake::Isometry3<T>& X_BF) const;
 
   /// This function returns the Jacobian of the spatial velocity of frame `F`
   /// measured and expressed in the world frame s.t. `V_WF = J * v`,
   /// where `V_WF` is the spatial velocity of frame `F` measured and expressed
-  /// in the world frame `W`. Frame `F` is attached to rigid body @p B,
-  /// and @p X_BF is the transformation from frame `F` to body frame `B`
-  /// measured and expressed in body frame `B`.
+  /// in the world frame `W`. Frame `F` is attached to rigid body @p body,
+  /// and @p X_BF is the transformation from frame `F` to @p body's body frame
+  /// `B` measured and expressed in body frame `B`.
   /// @param cache Reference to KinematicsCache.
   /// @param B Reference to the body.
   /// @param X_BF Transformation from frame `F` to body frame `B` measured and
@@ -381,7 +377,7 @@ class RigidBodyTree {
   /// @param in_terms_of_qdot True for `J` w.r.t qdot, false for `J` w.r.t v.
   /// @return `J`
   drake::Matrix6X<T> CalcFrameSpatialVeclocityJacobianInWorldFrame(
-      const KinematicsCache<T>& cache, const RigidBody<T>& B,
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
       const drake::Isometry3<T>& X_BF,
       bool in_terms_of_qdot = false) const;
 
@@ -401,33 +397,32 @@ class RigidBodyTree {
         F.get_transform_to_body().template cast<T>(), in_terms_of_qdot);
   }
 
-  /// This function returns the Jacobian of the spatial velocity of rigid body
-  /// `B` measured and expressed in the world frame s.t. `V_WB = J * v`, where
-  /// `V_WB` is the spatial velocity of body `B` measured and expressed in the
-  /// world frame `W`.
+  /// This function returns the Jacobian of the spatial velocity `V_WB` of
+  /// rigid body @p body's body frame `B` measured and expressed in the world
+  /// frame s.t. `V_WB = J * v`.
   /// @param cache Reference to the KinematicsCache.
-  /// @param B Reference to the body.
+  /// @param body Reference to the body.
   /// @param in_terms_of_qdot True for `J` w.r.t qdot, false for `J` w.r.t v.
   /// @return `J`
   drake::Matrix6X<T> CalcBodySpatialVeclocityJacobianInWorldFrame(
-      const KinematicsCache<T>& cache, const RigidBody<T>& B,
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
       bool in_terms_of_qdot = false) const {
     return CalcFrameSpatialVeclocityJacobianInWorldFrame(
-        cache, B, drake::Isometry3<T>::Identity(), in_terms_of_qdot);
+        cache, body, drake::Isometry3<T>::Identity(), in_terms_of_qdot);
   }
 
   /// This function returns `Jdot * v`, where `J` is the Jacobian of spatial
   /// velocity, `V_WF`, of frame `F` measured and expressed in the world
-  /// frame `W`. Frame `F` is attached to RigidBody @p `B`, and @p X_BF is the
-  /// transformation from frame `F` to body frame `B` measured and expressed in
-  /// body frame `B`.
+  /// frame `W`. Frame `F` is attached to RigidBody @p `body`, and @p X_BF is
+  /// the transformation from frame `F` to body frame `B` measured and
+  /// expressed in body frame `B`.
   /// @param cache Reference to KinematicsCache.
-  /// @param B Reference to the body.
+  /// @param body Reference to the body.
   /// @param X_BF Transformation from frame `F` to body frame `B` measured and
   /// expressed in body frame `B`.
   /// @return `Jdot * v`
   drake::Vector6<T> CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
-      const KinematicsCache<T>& cache, const RigidBody<T>& B,
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
       const drake::Isometry3<T>& X_BF) const;
 
   /// This function returns `Jdot * v`, where `J` is the Jacobian of spatial
@@ -443,16 +438,16 @@ class RigidBodyTree {
         F.get_transform_to_body().template cast<T>());
   }
 
-  /// This function returns `Jdot * v`, where `J` is the Jacobian of spatial
-  /// velocity, `V_WB`, of body frame `B` measured and expressed in the world
-  /// frame `W`.
+  /// This function returns `Jdot * v`, where `J` is the Jacobian of the
+  /// spatial velocity `V_WB` of @p body's body frame `B` measured and
+  /// expressed in the world frame `W`.
   /// @param cache Reference to the KinematicsCache.
-  /// @param B Reference to the RigidBody.
+  /// @param body Reference to the RigidBody.
   /// @return `Jdot * v`
   drake::Vector6<T> CalcBodySpatialVelocityJacobianDotTimesVInWorldFrame(
-      const KinematicsCache<T>& cache, const RigidBody<T>& B) const {
+      const KinematicsCache<T>& cache, const RigidBody<T>& body) const {
     return CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
-        cache, B, drake::Isometry3<T>::Identity());
+        cache, body, drake::Isometry3<T>::Identity());
   }
 
   /**
