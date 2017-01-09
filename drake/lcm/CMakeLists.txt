@@ -37,9 +37,9 @@ set(lcm_dependent_libs)
 set(lcm_dependent_requires)
 if (lcm_FOUND)
   set(lcm_dependent_link_libraries
-      ${CMAKE_THREAD_LIBS_INIT}
       drakeLCMTypes
-      lcm)
+      lcm
+      Threads::Threads)
   set(lcm_dependent_libs ${CMAKE_THREAD_LIBS_INIT})
   set(lcm_dependent_requires drake-lcmtypes-cpp lcm)
 endif()
