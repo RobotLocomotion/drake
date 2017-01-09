@@ -316,9 +316,11 @@ class ContactInformation {
       const RigidBodyTree<double>& robot,
       const KinematicsCache<double>& cache) const {
     MatrixX<double> J(3 * contact_points_.cols(), robot.get_num_velocities());
+    Isometry3<double> offset(Isometry3<double>::Identity());
     for (int i = 0; i < contact_points_.cols(); ++i) {
+      offset.translation() = contact_points_.col(i);
       J.block(3 * i, 0, 3, robot.get_num_velocities()) =
-          GetTaskSpaceJacobian(robot, cache, *body_, contact_points_.col(i))
+          robot.CalcJacobianForWorldAlignedBody(cache, *body_, offset)
               .bottomRows<3>();
     }
     return J;
@@ -336,10 +338,11 @@ class ContactInformation {
       const RigidBodyTree<double>& robot,
       const KinematicsCache<double>& cache) const {
     VectorX<double> Jdv(3 * contact_points_.cols());
+    Isometry3<double> offset(Isometry3<double>::Identity());
     for (int i = 0; i < contact_points_.cols(); ++i) {
-      Jdv.segment<3>(3 * i) =
-          GetTaskSpaceJacobianDotTimesV(robot, cache, *body_,
-                                        contact_points_.col(i)).bottomRows<3>();
+      offset.translation() = contact_points_.col(i);
+      Jdv.segment<3>(3 * i) = robot.CalcJacobianDotTimesVForWorldAlignedBody(
+          cache, *body_, offset).bottomRows<3>();
     }
     return Jdv;
   }
@@ -355,10 +358,11 @@ class ContactInformation {
       const RigidBodyTree<double>& robot,
       const KinematicsCache<double>& cache) const {
     VectorX<double> vel(3 * contact_points_.cols());
+    Isometry3<double> offset(Isometry3<double>::Identity());
     for (int i = 0; i < contact_points_.cols(); ++i) {
-      vel.segment<3>(3 * i) =
-          GetTaskSpaceVel(robot, cache, *body_, contact_points_.col(i))
-              .bottomRows<3>();
+      offset.translation() = contact_points_.col(i);
+      vel.segment<3>(3 * i) = robot.CalcTwistInWorldAlignedBody(
+          cache, *body_, offset).bottomRows<3>();
     }
     return vel;
   }
