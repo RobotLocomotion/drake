@@ -7,24 +7,25 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Saturation<T>::Saturation(const T& sigma_lower, const T& sigma_upper)
-    : Saturation(sigma_lower * VectorX<T>::Ones(1),
-                 sigma_upper * VectorX<T>::Ones(1)) {}
+Saturation<T>::Saturation(const T& u_min, const T& u_max)
+    : Saturation(u_min * VectorX<T>::Ones(1), u_max * VectorX<T>::Ones(1)) {}
 
 template <typename T>
-Saturation<T>::Saturation(const Eigen::Ref<const VectorX<T>>& sigma_lower,
-                          const Eigen::Ref<const VectorX<T>>& sigma_upper)
-    : kSigmaLower(sigma_lower), kSigmaUpper(sigma_upper) {
-  DRAKE_DEMAND(kSigmaLower.size() == kSigmaUpper.size());
+Saturation<T>::Saturation(const Eigen::Ref<const VectorX<T>>& u_min,
+                          const Eigen::Ref<const VectorX<T>>& u_max)
+    : u_min_(u_min), u_max_(u_max) {
+  DRAKE_DEMAND(u_min_.size() == u_max_.size());
 
-  // Check for lower limits being smaller in magnitude than upper limits.
-  for (int i = 0; i < kSigmaLower.size(); ++i) {
-    DRAKE_DEMAND(kSigmaLower(i) < kSigmaUpper(i));
+  // Ensures that the lower limits are smaller than the upper limits.
+  for (int i = 0; i < u_min_.size(); ++i) {
+    DRAKE_DEMAND(u_min_(i) <= u_max_(i));
   }
 
   // Input and outputs are of same dimension.
-  this->DeclareInputPort(kVectorValued, kSigmaLower.size());
-  this->DeclareOutputPort(kVectorValued, kSigmaLower.size());
+  input_port_index_ =
+      this->DeclareInputPort(kVectorValued, u_min_.size()).get_index();
+  output_port_index_ =
+      this->DeclareOutputPort(kVectorValued, u_min_.size()).get_index();
 }
 
 template <typename T>
@@ -34,59 +35,59 @@ void Saturation<T>::DoCalcOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   // Evaluates the state output port.
-  BasicVector<T>* output_vector = output->GetMutableVectorData(0);
+  BasicVector<T>* output_vector =
+      output->GetMutableVectorData(output_port_index_);
   auto y = output_vector->get_mutable_value();
 
-  const BasicVector<T>* input_vector = this->EvalVectorInput(context, 0);
+  const BasicVector<T>* input_vector =
+      this->EvalVectorInput(context, input_port_index_);
   DRAKE_DEMAND(input_vector);
   const auto& u = input_vector->get_value();
 
-  y = u;
-
   // Loop through and set the saturation values.
-  for (int i = 0; i < kSigmaLower.size(); ++i) {
-    if (u[i] < kSigmaLower[i]) {
-      y[i] = kSigmaLower[i];
-    } else if (u[i] > kSigmaUpper[i]) {
-      y[i] = kSigmaUpper[i];
+  for (int i = 0; i < u_min_.size(); ++i) {
+    if (u[i] < u_min_[i]) {
+      y[i] = u_min_[i];
+    } else if (u[i] > u_max_[i]) {
+      y[i] = u_max_[i];
+    } else {
+      y[i] = u[i];
     }
   }
 }
 
 template <typename T>
 const InputPortDescriptor<T>& Saturation<T>::get_input_port() const {
-  return System<T>::get_input_port(0);
+  return System<T>::get_input_port(input_port_index_);
 }
 
 template <typename T>
 const OutputPortDescriptor<T>& Saturation<T>::get_output_port() const {
-  return System<T>::get_output_port(0);
+  return System<T>::get_output_port(output_port_index_);
 }
 
 template <typename T>
-const T& Saturation<T>::get_sigma_upper() const {
-  if (!kSigmaUpper.isConstant(kSigmaUpper[0])) {
+const T& Saturation<T>::get_u_max() const {
+  if (!u_max_.isConstant(u_max_[0])) {
     std::stringstream s;
-    s << "The sigma upper vector, [" << kSigmaUpper
-      << "], cannot be "
-         "represented as a scalar value. Please use "
-         "drake::systems::Saturation::get_sigma_upper_vector() instead.";
+    s << "The sigma upper vector, [" << u_max_
+      << "], cannot be represented as a scalar value. Please use "
+         "drake::systems::Saturation::get_u_max_vector() instead.";
     DRAKE_ABORT_MSG(s.str().c_str());
   }
-  return kSigmaUpper[0];
+  return u_max_[0];
 }
 
 template <typename T>
-const T& Saturation<T>::get_sigma_lower() const {
-  if (!kSigmaLower.isConstant(kSigmaLower[0])) {
+const T& Saturation<T>::get_u_min() const {
+  if (!u_min_.isConstant(u_min_[0])) {
     std::stringstream s;
-    s << "The sigma lower vector, [" << kSigmaLower
-      << "], cannot be "
-         "represented as a scalar value. Please use "
-         "drake::systems::Saturation::get_sigma_lower_vector() instead.";
+    s << "The sigma lower vector, [" << u_min_
+      << "], cannot be represented as a scalar value. Please use "
+         "drake::systems::Saturation::get_u_min_vector() instead.";
     DRAKE_ABORT_MSG(s.str().c_str());
   }
-  return kSigmaLower[0];
+  return u_min_[0];
 }
 
 template class Saturation<double>;

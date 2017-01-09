@@ -9,12 +9,12 @@ namespace drake {
 namespace systems {
 
 /// An element-wise hard saturation block with input `u` and output
-/// `y ` with lower and upper saturation limit values `\sigma_l`, and
-/// `\sigma_u` respectively as in :
+/// `y ` with lower and upper saturation limit values `u_{min}`, and
+/// `u_{max}` respectively as in:
 ///
-///   @f[ y = u, \sigma_l < u < \sigma_u @f]
-///   @f[ y = \sigma_l, u \le \sigma_l @f]
-///   @f[ y = \sigma_u, u \ge \sigma_u  @f]
+///   @f[ y = u, u_{min} < u < u_{min} @f]
+///   @f[ y = u_{min}, u \le u_{min} @f]
+///   @f[ y = u_{max}, u \ge u_{max}  @f]
 ///
 /// The input to this system directly feeds through to its output.
 ///
@@ -24,12 +24,9 @@ namespace systems {
 ///
 /// They are already available to link against in drakeSystemFramework.
 ///
-/// @param `\sigma_l` the lower saturation limit.
-/// @param `\sigma_u` the lower saturation limit.
-///
-/// Note that `\sigma_l`, and `\sigma_u`, and `u` are all of same dimension,
-/// and the following condition holds along each dimension :
-/// @f[ \sigma_l <  \sigma_u @f]
+/// Note that `u_{min}`, and `u_{max}`, and `u` are all vectors of same
+/// dimension, and the following condition holds along each dimension:
+/// @f[ u_{min} <=  u_{max} @f]
 ///
 /// @ingroup primitive_systems
 template <typename T>
@@ -38,17 +35,25 @@ class Saturation : public LeafSystem<T> {
   /// Constructs a %Saturation system where the upper and lower values are
   /// represented by scalars.
   ///
-  /// @param[in] sigma_lower the lower (scalar) limit to the saturation.
-  /// @param[in] sigma_upper the upper (scalar) limit to the saturation.
-  Saturation(const T& sigma_lower, const T& sigma_upper);
+  /// @param[in] u_min the lower (scalar) limit to the
+  /// saturation.
+  /// @param[in] u_max the upper (scalar) limit to the
+  /// saturation.
+  /// Please consult this class' description for the requirements of
+  /// @p u_min and @p u_max.
+  Saturation(const T& u_min, const T& u_max);
 
   /// Constructs a %Saturation system where the upper and lower values are
   /// represented by vectors of identical size.
   ///
-  /// @param[in] sigma_lower the lower (vector) limit to the saturation.
-  /// @param[in] sigma_upper the upper (vector) limit to the saturation.
-  explicit Saturation(const Eigen::Ref<const VectorX<T>>& sigma_lower,
-                      const Eigen::Ref<const VectorX<T>>& sigma_upper);
+  /// @param[in] u_min the lower (vector) limit to the
+  /// saturation.
+  /// @param[in] u_max the upper (vector) limit to the
+  /// saturation.
+  /// Please consult this class' description for the requirements of
+  /// @p u_min and @p u_max.
+  explicit Saturation(const Eigen::Ref<const VectorX<T>>& u_min,
+                      const Eigen::Ref<const VectorX<T>>& u_max);
 
   /// Returns the input port.
   const InputPortDescriptor<T>& get_input_port() const;
@@ -56,28 +61,32 @@ class Saturation : public LeafSystem<T> {
   /// Returns the output port.
   const OutputPortDescriptor<T>& get_output_port() const;
 
-  /// A scalar valued getter for the lower limit of the `Saturation` block.
-  /// Throws
-  /// an error in case the `Saturation` block is initialised with vector limits.
-  const T& get_sigma_lower() const;
+  /// Returns the lower limit `u_{min}` as a scalar value. Aborts if the lower
+  /// limit cannot be represented by a single scalar value. This can occur if
+  /// the lower limit is a vector containing more than one value.
+  const T& get_u_min() const;
 
-  /// A scalar valued getter for the upper limit of the `Saturation` block.
-  /// Throws
-  /// an error in case the `Saturation` block is initialised with vector limits.
-  const T& get_sigma_upper() const;
+  /// Returns the upper limit `u_{max}` as a scalar value. Aborts if the upper
+  /// limit cannot be represented by a single scalar value. This can occur if
+  /// the upper limit is a vector containing more than one value.
+  const T& get_u_max() const;
 
-  /// A vector getter for the lower limit of the `Saturation` block.
-  const VectorX<T>& get_sigma_lower_vector() const { return kSigmaLower; }
+  /// Returns the lower limit `u_{min}` as a vector value.
+  const VectorX<T>& get_u_min_vector() const { return u_min_; }
 
-  /// A vector getter for the upper limit of the `Saturation` block.
-  const VectorX<T>& get_sigma_upper_vector() const { return kSigmaUpper; }
+  /// Returns the upper limit `u_{max}` as a vector value.
+  const VectorX<T>& get_u_max_vector() const { return u_max_; }
 
  protected:
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override;
 
-  const VectorX<T> kSigmaLower;
-  const VectorX<T> kSigmaUpper;
+  const VectorX<T> u_min_;
+  const VectorX<T> u_max_;
+
+ private:
+  int input_port_index_{};
+  int output_port_index_{};
 };
 
 }  // namespace systems

@@ -1,12 +1,11 @@
-#include "drake/systems/primitives/saturation.h"
+#include "gtest/gtest.h"
 
 #include <memory>
 
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
-
-#include "gtest/gtest.h"
+#include "drake/systems/primitives/saturation.h"
 
 namespace drake {
 namespace systems {
@@ -19,15 +18,15 @@ void TestSaturationSystem(const Saturation<T>& saturation_system,
   auto context = saturation_system.CreateDefaultContext();
 
   // Verifies that Saturation allocates no state variables in the context.
-  EXPECT_EQ(0, context->get_continuous_state()->size());
+  EXPECT_EQ(context->get_continuous_state()->size(), 0);
   auto output = saturation_system.AllocateOutput(*context);
   auto input = std::make_unique<BasicVector<double>>(
-      saturation_system.get_sigma_lower_vector().size());
+      saturation_system.get_u_min_vector().size());
 
   // Checks that the number of input ports in the Saturation system and the
   // Context are consistent.
-  ASSERT_EQ(1, saturation_system.get_num_input_ports());
-  ASSERT_EQ(1, context->get_num_input_ports());
+  ASSERT_EQ(saturation_system.get_num_input_ports(), 1);
+  ASSERT_EQ(context->get_num_input_ports(), 1);
 
   input->get_mutable_value() << input_vector;
 
@@ -38,11 +37,11 @@ void TestSaturationSystem(const Saturation<T>& saturation_system,
 
   // Checks that the number of output ports in the Saturation system and the
   // SystemOutput are consistent.
-  ASSERT_EQ(1, output->get_num_ports());
-  ASSERT_EQ(1, saturation_system.get_num_output_ports());
+  ASSERT_EQ(output->get_num_ports(), 1);
+  ASSERT_EQ(saturation_system.get_num_output_ports(), 1);
   const BasicVector<double>* output_vector = output->get_vector_data(0);
-  ASSERT_NE(nullptr, output_vector);
-  EXPECT_EQ(expected_output, output_vector->get_value());
+  ASSERT_NE(output_vector, nullptr);
+  EXPECT_EQ(output_vector->get_value(), expected_output);
 }
 
 template <typename T>
@@ -56,20 +55,26 @@ void TestSaturationSystem(const Saturation<T>& saturation_system,
 
 // Tests the ability to use doubles as the saturation limits.
 GTEST_TEST(SaturationTest, SaturationScalarTest) {
-  const double kSigma_l = -0.4;
-  const double kSigma_u = 1.8;
+  // Test for death of an incorrectly initialised Saturation (u_min > u_max).
+  EXPECT_DEATH(
+      std::make_unique<Saturation<double>>(1.0 /* u_min */, -0.9 /* u_max */),
+      "");
+
+  const double kUMin = -0.4;
+  const double kUMax = 1.8;
   const auto saturation_system =
-      std::make_unique<Saturation<double>>(kSigma_l, kSigma_u);
+      std::make_unique<Saturation<double>>(kUMin, kUMax);
 
   // Checks the getters.
-  EXPECT_EQ(kSigma_l, saturation_system->get_sigma_lower());
-  EXPECT_EQ(kSigma_u, saturation_system->get_sigma_upper());
+  EXPECT_EQ(kUMin, saturation_system->get_u_min());
+  EXPECT_EQ(kUMax, saturation_system->get_u_max());
 
   const int kNumPoints = 20;
 
-  // Obtains a range of linear spaced input values.
+  // Obtains a range of linear spaced input values. This results in a total of
+  // kNumPoints test cases.
   Eigen::VectorXd input_eigen_vector_range = Eigen::VectorXd::LinSpaced(
-      kNumPoints /* size */, -2.5 /* lower limit */, +2.5 /* upper limit */);
+      kNumPoints /* size */, -2.5 /* lower limit */, 2.5 /* upper limit */);
 
   // Converts range of inputs into a vector of doubles.
   std::vector<double> input_vector_range(input_eigen_vector_range.size());
@@ -80,10 +85,10 @@ GTEST_TEST(SaturationTest, SaturationScalarTest) {
   for (int i = 0; i < kNumPoints; ++i) {
     double expected = input_vector_range.at(i);
 
-    if (expected < kSigma_l) {
-      expected = kSigma_l;
-    } else if (expected > kSigma_u) {
-      expected = kSigma_u;
+    if (expected < kUMin) {
+      expected = kUMin;
+    } else if (expected > kUMax) {
+      expected = kUMax;
     }
 
     EXPECT_NO_THROW(TestSaturationSystem<double>(
@@ -93,16 +98,31 @@ GTEST_TEST(SaturationTest, SaturationScalarTest) {
 
 // Tests the ability to use vectors for the lower and upper saturation limits.
 GTEST_TEST(SaturationTest, SaturationVectorTest) {
+  // Test for death of an incorrectly initialised Saturation. (u_min and
+  // u_max are of incorrect length).
+  EXPECT_DEATH(std::make_unique<Saturation<double>>(
+                   Vector3<double>(1.0, -4.5, -2.5) /* u_min */,
+                   Vector2<double>(3.0, 5.0) /* u_max */),
+               "");
+
   // Arbitrary choice of limits for the test.
-  const Vector4<double> sigma_upper(1.0, 2.5, 3.3, 2.5);
-  const Vector4<double> sigma_lower(-0.3, 0.0, 1.3, -4.0);
+  const Vector4<double> kUMin(1.0, 2.5, 3.3, 2.5);
+  const Vector4<double> kUMax(-0.3, 0.0, 1.3, -4.0);
 
   const auto saturation_system =
-      std::make_unique<Saturation<double>>(sigma_lower, sigma_upper);
+      std::make_unique<Saturation<double>>(kUMax, kUMin);
+
+  // Test for the death due to calling the scalar getters.
+  EXPECT_DEATH(saturation_system->get_u_max(), "");
+  EXPECT_DEATH(saturation_system->get_u_min(), "");
 
   const int kNumPoints = 20;
 
-  // Creates a range of inputs that is replicated across all four dimensions.
+  // Since kUMin and kUMax are of dimension 4 for this test, the inputs to be
+  // tested must be of dimension 4. Similar to the SaturationScalarTest, the
+  // following logic creates a uniformly spaced range of input values
+  // replicated across each of the four dimensions. This leads to a total of
+  // kNumPoints test cases.
   Eigen::MatrixXd input_vector_range =
       Eigen::VectorXd::LinSpaced(kNumPoints, -5.0 /* lower limit */,
                                  5.0 /* upper limit */)
@@ -113,10 +133,10 @@ GTEST_TEST(SaturationTest, SaturationVectorTest) {
     Vector4<double> expected = input_vector_range.col(i);
 
     for (int j = 0; j < 4; ++j) {
-      if (expected[j] < sigma_lower[j]) {
-        expected[j] = sigma_lower[j];
-      } else if (expected[j] > sigma_upper[j]) {
-        expected[j] = sigma_upper[j];
+      if (expected[j] < kUMax[j]) {
+        expected[j] = kUMax[j];
+      } else if (expected[j] > kUMin[j]) {
+        expected[j] = kUMin[j];
       }
     }
 
