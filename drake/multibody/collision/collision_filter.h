@@ -50,9 +50,9 @@ class CollisionFilterGroup {
 
   int get_mask_id() const { return mask_id_; }
 
-  void add_body(RigidBody<T>* body) { bodies_.push_back(body); }
+  void add_body(const RigidBody<T>& body) { bodies_.push_back(&body); }
 
-  std::vector<RigidBody<T>*> get_bodies() { return bodies_; }
+  std::vector<const RigidBody<T>*> get_bodies() { return bodies_; }
 
   const std::vector<std::string>& get_ignore_groups() const {
     return ignore_groups_;
@@ -66,7 +66,7 @@ class CollisionFilterGroup {
   std::string name_{};
   int model_id_{};
   int mask_id_{};
-  std::vector<RigidBody<T>*> bodies_{};
+  std::vector<const RigidBody<T>*> bodies_{};
   std::vector<std::string> ignore_groups_{};
 };
 
@@ -106,7 +106,7 @@ class CollisionFilterGroupManager {
    @returns False if the group could not be found.
    */
   bool AddCollisionFilterGroupMember(const std::string& group_name,
-                                     RigidBody<T>* body);
+                                     const RigidBody<T>& body);
 
   /**
    Adds a collision group to the set of groups ignored by the specified

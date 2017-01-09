@@ -62,7 +62,7 @@ void CollisionFilterGroupManager<T>::CompileGroups() {
 
 template <typename T>
 bool CollisionFilterGroupManager<T>::AddCollisionFilterGroupMember(
-    const std::string& group_name, RigidBody<T>* body) {
+    const std::string& group_name, const RigidBody<T>& body) {
   auto itr = collision_filter_groups_.find(group_name);
   if (itr == collision_filter_groups_.end()) {
     return false;

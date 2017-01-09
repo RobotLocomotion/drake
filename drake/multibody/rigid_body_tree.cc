@@ -222,7 +222,7 @@ void RigidBodyTree<T>::AddCollisionFilterGroupMember(
   int body_index = FindBodyIndex(body_name, model_id);
   RigidBody<T>* body = bodies[body_index].get();
   if (!collision_group_manager_.AddCollisionFilterGroupMember(group_name,
-                                                              body)) {
+                                                              *body)) {
     throw std::runtime_error(
         "Attempting to add a link to an undefined collision filter group: "
         "Adding " +
@@ -355,6 +355,7 @@ void RigidBodyTree<T>::CompileCollisionState() {
 
   // Process collision filter groups
   collision_group_manager_.CompileGroups();
+  // Set the collision filter data on the body.
   for (auto& body : bodies) {
     DrakeCollision::bitmask group =
         collision_group_manager_.get_group_mask(*body);
@@ -365,6 +366,8 @@ void RigidBodyTree<T>::CompileCollisionState() {
       body->set_collision_filter(group, ignore);
     }
   }
+
+  // Set the collision filter data on the body's elements.
   collision_group_manager_.Clear();
   for (auto& pair : body_collision_map_) {
     RigidBody<T>* body = pair.first;
