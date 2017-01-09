@@ -9,6 +9,7 @@
 #include <string>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression_cell.h"
 #include "drake/common/symbolic_formula.h"
@@ -30,10 +31,25 @@ bool operator<(ExpressionKind k1, ExpressionKind k2) {
   return static_cast<int>(k1) < static_cast<int>(k2);
 }
 
+namespace {
+// This function is used in Expression(const double d) constructor. It turns out
+// a ternary expression "std::isnan(d) ? make_shared<ExpressionNaN>() :
+// make_shared<ExpressionConstant>()" does not work due to C++'s type-system.
+// It throws "Incompatible operand types when using ternary conditional
+// operator" error. Related S&O entry:
+// http://stackoverflow.com/questions/29842095/incompatible-operand-types-when-using-ternary-conditional-operator.
+shared_ptr<ExpressionCell> make_cell(const double d) {
+  if (std::isnan(d)) {
+    return make_shared<ExpressionNaN>();
+  } else {
+    return make_shared<ExpressionConstant>(d);
+  }
+}
+}  // anonymous namespace
+
 Expression::Expression(const Variable& var)
     : ptr_{make_shared<ExpressionVar>(var)} {}
-Expression::Expression(const double d)
-    : ptr_{make_shared<ExpressionConstant>(d)} {}
+Expression::Expression(const double d) : ptr_{make_cell(d)} {}
 Expression::Expression(const shared_ptr<ExpressionCell> ptr) : ptr_{ptr} {}
 
 ExpressionKind Expression::get_kind() const {
@@ -46,23 +62,29 @@ size_t Expression::get_hash() const {
 }
 
 Expression Expression::Zero() {
-  static const Expression zero{0.0};
-  return zero;
+  static const never_destroyed<Expression> zero{0.0};
+  return zero.access();
 }
 
 Expression Expression::One() {
-  static const Expression one{1.0};
-  return one;
+  static const never_destroyed<Expression> one{1.0};
+  return one.access();
 }
 
 Expression Expression::Pi() {
-  static const Expression pi{M_PI};
-  return pi;
+  static const never_destroyed<Expression> pi{M_PI};
+  return pi.access();
 }
 
 Expression Expression::E() {
-  static const Expression e{M_E};
-  return e;
+  static const never_destroyed<Expression> e{M_E};
+  return e.access();
+}
+
+Expression Expression::NaN() {
+  static const never_destroyed<Expression> nan{
+      Expression{make_shared<ExpressionNaN>()}};
+  return nan.access();
 }
 
 Variables Expression::GetVariables() const {
@@ -107,9 +129,7 @@ bool Expression::Less(const Expression& e) const {
 
 double Expression::Evaluate(const Environment& env) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  const double res{ptr_->Evaluate(env)};
-  check_nan(res);
-  return res;
+  return ptr_->Evaluate(env);
 }
 
 string Expression::to_string() const {
@@ -384,12 +404,6 @@ Expression& operator/=(Expression& lhs, const Expression& rhs) {
   return lhs;
 }
 
-void Expression::check_nan(const double v) {
-  if (std::isnan(v)) {
-    throw runtime_error("NaN is detected during Symbolic computation.");
-  }
-}
-
 ostream& operator<<(ostream& os, const Expression& e) {
   DRAKE_ASSERT(e.ptr_ != nullptr);
   return e.ptr_->Display(os);
@@ -645,6 +659,7 @@ bool is_zero(const Expression& e) { return is_constant(e, 0.0); }
 bool is_one(const Expression& e) { return is_constant(e, 1.0); }
 bool is_neg_one(const Expression& e) { return is_constant(e, -1.0); }
 bool is_two(const Expression& e) { return is_constant(e, 2.0); }
+bool is_nan(const Expression& e) { return e.get_kind() == ExpressionKind::NaN; }
 bool is_variable(const Expression& e) { return is_variable(*e.ptr_); }
 bool is_unary_minus(const Expression& e) { return is_unary_minus(*e.ptr_); }
 bool is_addition(const Expression& e) { return is_addition(*e.ptr_); }

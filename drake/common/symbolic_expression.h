@@ -50,6 +50,7 @@ enum class ExpressionKind {
   Min,         ///< min
   Max,         ///< max
   IfThenElse,  ///< if then else
+  NaN,         ///< NaN
   // TODO(soonho): add Integral
 };
 
@@ -74,7 +75,7 @@ Its syntax tree is as follows:
     E := Var | Constant | - E | E + ... + E | E * ... * E | E / E | log(E)
        | abs(E) | exp(E) | sqrt(E) | pow(E, E) | sin(E) | cos(E) | tan(E)
        | asin(E) | acos(E) | atan(E) | atan2(E, E) | sinh(E) | cosh(E) | tanh(E)
-       | min(E, E) | max(E, E) | if_then_else(F, E, E)
+       | min(E, E) | max(E, E) | if_then_else(F, E, E) | NaN
 @endverbatim
 
 In the implementation, Expression is a simple wrapper including a shared pointer
@@ -166,7 +167,9 @@ class Expression {
       set<Expression> via std::less<drake::symbolic::Expression>. */
   bool Less(const Expression& e) const;
 
-  /** Evaluates under a given environment (by default, an empty environment). */
+  /** Evaluates under a given environment (by default, an empty environment).
+      It throws a std::runtime exception if NaN is detected during evaluation.
+  */
   double Evaluate(const Environment& env = Environment{}) const;
 
   /** Returns string representation of Expression. */
@@ -180,6 +183,8 @@ class Expression {
   static Expression Pi();
   /** Return e, the base of natural logarithms. */
   static Expression E();
+  /** Returns NaN (Not-a-Number). */
+  static Expression NaN();
 
   friend Expression operator+(Expression lhs, const Expression& rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
@@ -312,10 +317,6 @@ class Expression {
   friend class ExpressionAddFactory;
   friend class ExpressionMulFactory;
 
-  /** Checks whether @p v is NaN or not. If @p is NaN, it throws a std::runtime
-   * exception. */
-  static void check_nan(double v);
-
  private:
   explicit Expression(const std::shared_ptr<ExpressionCell> ptr);
 
@@ -398,6 +399,8 @@ bool is_one(const Expression& e);
 bool is_neg_one(const Expression& e);
 /** Checks if @p e is 2.0. */
 bool is_two(const Expression& e);
+/** Checks if @p e is NaN. */
+bool is_nan(const Expression& e);
 /** Checks if @p e is a variable expression. */
 bool is_variable(const Expression& e);
 /** Checks if @p e is a unary-minus expression. */
@@ -586,11 +589,7 @@ symbolic::Expression cond(const symbolic::Formula& f_cond, double v_then,
 /// Specializes common/dummy_value.h.
 template <>
 struct dummy_value<symbolic::Expression> {
-  static symbolic::Expression get() {
-    // TODO(jwnimmer-tri) It would be nice to have a Cell type like 'undefined'
-    // (or null) here, so that we could fail-faster.
-    return symbolic::Expression{};
-  }
+  static symbolic::Expression get() { return symbolic::Expression::NaN(); }
 };
 
 /** Computes the hash value of a symbolic expression. */

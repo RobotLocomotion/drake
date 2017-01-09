@@ -164,6 +164,17 @@ class ExpressionConstant : public ExpressionCell {
   const double v_{};
 };
 
+/** Symbolic expression representing NaN (not-a-number). */
+class ExpressionNaN : public ExpressionCell {
+ public:
+  ExpressionNaN();
+  Variables GetVariables() const override;
+  bool EqualTo(const ExpressionCell& e) const override;
+  bool Less(const ExpressionCell& e) const override;
+  double Evaluate(const Environment& env) const override;
+  std::ostream& Display(std::ostream& os) const override;
+};
+
 /** Symbolic expression representing unary minus. */
 class ExpressionNeg : public UnaryExpressionCell {
  public:
