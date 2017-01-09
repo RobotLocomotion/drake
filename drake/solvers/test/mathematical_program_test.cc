@@ -5,6 +5,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_variable.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mathematical_program.h"
@@ -24,6 +26,8 @@ using Eigen::VectorXd;
 
 using drake::solvers::detail::VecIn;
 using drake::solvers::detail::VecOut;
+
+using std::numeric_limits;
 
 namespace drake {
 namespace solvers {
@@ -455,8 +459,35 @@ GTEST_TEST(testMathematicalProgram, testProblem1) {
   constraint << 20, 12, 11, 7, 4;
   prog.AddLinearConstraint(
       constraint.transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Vector1d::Constant(-numeric_limits<double>::infinity()),
       Vector1d::Constant(40));
+  prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
+                                MatrixXd::Constant(5, 1, 1));
+  VectorXd expected(5);
+  expected << 1, 1, 0, 1, 0;
+
+  // IPOPT has difficulty with this problem depending on the initial
+  // conditions, which is why the initial guess varies so little.
+  std::srand(0);
+  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(5));
+  RunNonlinearProgram(prog, [&]() {
+    const auto& x_value = prog.GetSolution(x);
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-9, MatrixCompareType::absolute));
+  });
+}
+
+// This test is semantically equivalent with the above testProgram1 test, but it
+// uses the symbolic version of AddLinearConstraint method in
+// MathematicalProgram class.
+GTEST_TEST(testMathematicalProgram, testProblem1Symbolic) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<5>();
+  const auto constraint =
+      20 * x(0) + 12 * x(1) + 11 * x(2) + 7 * x(3) + 4 * x(4);
+  prog.AddCost(TestProblem1Cost());
+  prog.AddLinearConstraint(constraint, -numeric_limits<double>::infinity(),
+                           40.0);
   prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
                                 MatrixXd::Constant(5, 1, 1));
   VectorXd expected(5);
@@ -488,7 +519,39 @@ GTEST_TEST(testMathematicalProgram, testProblem1AsQP) {
   VectorXd constraint(5);
   constraint << 20, 12, 11, 7, 4;
   prog.AddLinearConstraint(constraint.transpose(),
-                           -std::numeric_limits<double>::infinity(), 40);
+                           -numeric_limits<double>::infinity(), 40);
+  EXPECT_EQ(prog.linear_constraints().size(), 1u);
+  EXPECT_EQ(prog.generic_constraints().size(), 0u);
+
+  prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
+                                MatrixXd::Constant(5, 1, 1));
+  VectorXd expected(5);
+  expected << 1, 1, 0, 1, 0;
+  std::srand(0);
+  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(5));
+  RunNonlinearProgram(prog, [&]() {
+    const auto& x_value = prog.GetSolution(x);
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-9, MatrixCompareType::absolute));
+  });
+}
+
+// This test is semantically equivalent with the above testProgram1AsQp test,
+// but it uses the symbolic version of AddLinearConstraint method in
+// MathematicalProgram class.
+GTEST_TEST(testMathematicalProgram, testProblem1AsQPSymbolic) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<5>();
+
+  Eigen::MatrixXd Q{-100 * Eigen::Matrix<double, 5, 5>::Identity()};
+  Eigen::VectorXd c(5);
+  c << 42, 44, 45, 47, 47.5;
+
+  prog.AddQuadraticCost(Q, c);
+
+  const symbolic::Expression constraint{20 * x(0) + 12 * x(1) + 11 * x(2) +
+                                        7 * x(3) + 4 * x(4)};
+  prog.AddLinearConstraint(constraint, -numeric_limits<double>::infinity(), 40);
   EXPECT_EQ(prog.linear_constraints().size(), 1u);
   EXPECT_EQ(prog.generic_constraints().size(), 0u);
 
@@ -532,17 +595,50 @@ GTEST_TEST(testMathematicalProgram, testProblem2) {
   constraint1 << 6, 3, 3, 2, 1, 0;
   prog.AddLinearConstraint(
       constraint1.transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Vector1d::Constant(-numeric_limits<double>::infinity()),
       Vector1d::Constant(6.5));
   constraint2 << 10, 0, 10, 0, 0, 1;
   prog.AddLinearConstraint(
       constraint2.transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Vector1d::Constant(-numeric_limits<double>::infinity()),
       Vector1d::Constant(20));
   Eigen::VectorXd lower(6);
   lower << 0, 0, 0, 0, 0, 0;
   Eigen::VectorXd upper(6);
-  upper << 1, 1, 1, 1, 1, std::numeric_limits<double>::infinity();
+  upper << 1, 1, 1, 1, 1, numeric_limits<double>::infinity();
+  prog.AddBoundingBoxConstraint(lower, upper);
+  VectorXd expected(6);
+  expected << 0, 1, 0, 1, 1, 20;
+  std::srand(0);
+  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(6));
+  // This test seems to be fairly sensitive to how much the randomness
+  // causes the initial guess to deviate, so the tolerance is a bit
+  // larger than others.  IPOPT is particularly sensitive here.
+  RunNonlinearProgram(prog, [&]() {
+    const auto& x_value = prog.GetSolution(x);
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-3, MatrixCompareType::absolute));
+  });
+}
+
+// This test is semantically equivalent with the above testProgram2 test,
+// but it uses the symbolic version of AddLinearConstraint method in
+// MathematicalProgram class.
+GTEST_TEST(testMathematicalProgram, testProblem2Symbolic) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<6>();
+  prog.AddCost(TestProblem2Cost());
+  const symbolic::Expression constraint1{6 * x(0) + 3 * x(1) + 3 * x(2) +
+                                         2 * x(3) + x(4)};
+  prog.AddLinearConstraint(constraint1, -numeric_limits<double>::infinity(),
+                           6.5);
+  const symbolic::Expression constraint2{10 * x(0) + 10 * x(2) + x(5)};
+  prog.AddLinearConstraint(constraint2, -numeric_limits<double>::infinity(),
+                           20);
+  VectorXd lower(6);
+  lower << 0, 0, 0, 0, 0, 0;
+  VectorXd upper(6);
+  upper << 1, 1, 1, 1, 1, numeric_limits<double>::infinity();
   prog.AddBoundingBoxConstraint(lower, upper);
   VectorXd expected(6);
   expected << 0, 1, 0, 1, 1, 20;
@@ -573,15 +669,57 @@ GTEST_TEST(testMathematicalProgram, testProblem2AsQP) {
   VectorXd constraint1(6), constraint2(6);
   constraint1 << 6, 3, 3, 2, 1, 0;
   prog.AddLinearConstraint(constraint1.transpose(),
-                           -std::numeric_limits<double>::infinity(), 6.5);
+                           -numeric_limits<double>::infinity(), 6.5);
   constraint2 << 10, 0, 10, 0, 0, 1;
   prog.AddLinearConstraint(constraint2.transpose(),
-                           -std::numeric_limits<double>::infinity(), 20);
+                           -numeric_limits<double>::infinity(), 20);
 
   Eigen::VectorXd lower(6);
   lower << 0, 0, 0, 0, 0, 0;
   Eigen::VectorXd upper(6);
-  upper << 1, 1, 1, 1, 1, std::numeric_limits<double>::infinity();
+  upper << 1, 1, 1, 1, 1, numeric_limits<double>::infinity();
+  prog.AddBoundingBoxConstraint(lower, upper);
+
+  VectorXd expected(6);
+  expected << 0, 1, 0, 1, 1, 20;
+  std::srand(0);
+  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(6));
+
+  // This test seems to be fairly sensitive to how much the randomness
+  // causes the initial guess to deviate, so the tolerance is a bit
+  // larger than others.  IPOPT is particularly sensitive here.
+  RunNonlinearProgram(prog, [&]() {
+    const auto& x_value = prog.GetSolution(x);
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-3, MatrixCompareType::absolute));
+  });
+}
+
+// This test is semantically equivalent with the above testProgram2AsQP test,
+// but it uses the symbolic version of AddLinearConstraint method in
+// MathematicalProgram class.
+GTEST_TEST(testMathematicalProgram, testProblem2AsQPSymbolic) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<6>();
+  MatrixXd Q{-100.0 * MatrixXd::Identity(6, 6)};
+  Q(5, 5) = 0.0;
+  VectorXd c(6);
+  c << -10.5, -7.5, -3.5, -2.5, -1.5, -10.0;
+
+  prog.AddQuadraticCost(Q, c);
+
+  const symbolic::Expression constraint1{6 * x(0) + 3 * x(1) + 3 * x(2) +
+                                         2 * x(3) + x(4)};
+  prog.AddLinearConstraint(constraint1, -numeric_limits<double>::infinity(),
+                           6.5);
+  const symbolic::Expression constraint2{10 * x(0) + 10 * x(2) + x(5)};
+  prog.AddLinearConstraint(constraint2, -numeric_limits<double>::infinity(),
+                           20);
+
+  VectorXd lower(6);
+  lower << 0, 0, 0, 0, 0, 0;
+  VectorXd upper(6);
+  upper << 1, 1, 1, 1, 1, numeric_limits<double>::infinity();
   prog.AddBoundingBoxConstraint(lower, upper);
 
   VectorXd expected(6);
@@ -621,7 +759,7 @@ class LowerBoundTestConstraint : public Constraint {
  public:
   LowerBoundTestConstraint(int i1, int i2)
       : Constraint(1, Vector1d::Constant(4),
-                   Vector1d::Constant(std::numeric_limits<double>::infinity())),
+                   Vector1d::Constant(numeric_limits<double>::infinity())),
         i1_(i1),
         i2_(i2) {}
 
@@ -661,14 +799,12 @@ GTEST_TEST(testMathematicalProgram, lowerBoundTest) {
   Eigen::VectorXd c1(6);
   c1 << 1, -3, 0, 0, 0, 0;
   prog.AddLinearConstraint(
-      c1.transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      c1.transpose(), Vector1d::Constant(-numeric_limits<double>::infinity()),
       Vector1d::Constant(2));
   Eigen::VectorXd c2(6);
   c2 << -1, 1, 0, 0, 0, 0;
   prog.AddLinearConstraint(
-      c2.transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      c2.transpose(), Vector1d::Constant(-numeric_limits<double>::infinity()),
       Vector1d::Constant(2));
   Eigen::VectorXd c3(6);
   c3 << 1, 1, 0, 0, 0, 0;
@@ -677,14 +813,63 @@ GTEST_TEST(testMathematicalProgram, lowerBoundTest) {
   Eigen::VectorXd lower(6);
   lower << 0, 0, 1, 0, 1, 0;
   Eigen::VectorXd upper(6);
-  upper << std::numeric_limits<double>::infinity(),
-      std::numeric_limits<double>::infinity(), 5, 6, 5, 10;
+  upper << numeric_limits<double>::infinity(),
+      numeric_limits<double>::infinity(), 5, 6, 5, 10;
   prog.AddBoundingBoxConstraint(lower, upper);
 
   Eigen::VectorXd expected(6);
   expected << 5, 1, 5, 0, 5, 10;
   std::srand(0);
   Eigen::VectorXd delta = .05 * Eigen::VectorXd::Random(6);
+  prog.SetInitialGuess(x, expected + delta);
+
+  // This test seems to be fairly sensitive to how much the randomness
+  // causes the initial guess to deviate, so the tolerance is a bit
+  // larger than others.  IPOPT is particularly sensitive here.
+  RunNonlinearProgram(prog, [&]() {
+    const auto& x_value = prog.GetSolution(x);
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-3, MatrixCompareType::absolute));
+  });
+
+  // Try again with the offsets in the opposite direction.
+  prog.SetInitialGuess(x, expected - delta);
+  RunNonlinearProgram(prog, [&]() {
+    const auto& x_value = prog.GetSolution(x);
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-3, MatrixCompareType::absolute));
+  });
+}
+
+// This test is semantically equivalent with the above lowerBoundTest test,
+// but it uses the symbolic version of AddLinearConstraint method in
+// MathematicalProgram class.
+GTEST_TEST(testMathematicalProgram, lowerBoundTestSymbolic) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(6);
+  prog.AddCost(LowerBoundTestCost());
+  std::shared_ptr<Constraint> con1(new LowerBoundTestConstraint(2, 3));
+  prog.AddConstraint(con1);
+  std::shared_ptr<Constraint> con2(new LowerBoundTestConstraint(4, 5));
+  prog.AddConstraint(con2);
+
+  prog.AddLinearConstraint(x(0) - 3 * x(1), -numeric_limits<double>::infinity(),
+                           2);
+  prog.AddLinearConstraint(-x(0) + x(1), -numeric_limits<double>::infinity(),
+                           2);
+  prog.AddLinearConstraint(x(0) + x(1), -numeric_limits<double>::infinity(), 6);
+
+  VectorXd lower(6);
+  lower << 0, 0, 1, 0, 1, 0;
+  VectorXd upper(6);
+  upper << numeric_limits<double>::infinity(),
+      numeric_limits<double>::infinity(), 5, 6, 5, 10;
+  prog.AddBoundingBoxConstraint(lower, upper);
+
+  VectorXd expected(6);
+  expected << 5, 1, 5, 0, 5, 10;
+  std::srand(0);
+  VectorXd delta{.05 * VectorXd::Random(6)};
   prog.SetInitialGuess(x, expected + delta);
 
   // This test seems to be fairly sensitive to how much the randomness
@@ -758,9 +943,8 @@ class GloptipolyConstrainedExampleConstraint
                            // constraint without going through drake::Function
  public:
   GloptipolyConstrainedExampleConstraint()
-      : Constraint(
-            1, Vector1d::Constant(0),
-            Vector1d::Constant(std::numeric_limits<double>::infinity())) {}
+      : Constraint(1, Vector1d::Constant(0),
+                   Vector1d::Constant(numeric_limits<double>::infinity())) {}
 
   // for just these two types, implementing this locally is almost cleaner...
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -804,23 +988,67 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
   prog.AddConstraint(qp_con, x);
   prog.AddConstraint(qp_con, y);
   prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
-                           -std::numeric_limits<double>::infinity(), 4, x);
+                           -numeric_limits<double>::infinity(), 4, x);
   prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
-                           -std::numeric_limits<double>::infinity(), 4, y);
+                           -numeric_limits<double>::infinity(), 4, y);
   prog.AddLinearConstraint(Vector3d(0, 3, 1).transpose(),
-                           -std::numeric_limits<double>::infinity(), 6, x);
+                           -numeric_limits<double>::infinity(), 6, x);
   prog.AddLinearConstraint(Vector3d(0, 3, 1).transpose(),
-                           -std::numeric_limits<double>::infinity(), 6, y);
+                           -numeric_limits<double>::infinity(), 6, y);
   prog.AddBoundingBoxConstraint(
-      Vector3d(0, 0, 0),
-      Vector3d(2, std::numeric_limits<double>::infinity(), 3), x);
+      Vector3d(0, 0, 0), Vector3d(2, numeric_limits<double>::infinity(), 3), x);
   prog.AddBoundingBoxConstraint(
-      Vector3d(0, 0, 0),
-      Vector3d(2, std::numeric_limits<double>::infinity(), 3), y);
+      Vector3d(0, 0, 0), Vector3d(2, numeric_limits<double>::infinity(), 3), y);
 
   // IPOPT has difficulty with this problem depending on the initial
   // conditions, which is why the initial guess varies so little.
   Vector3d initial_guess = Vector3d(.5, 0, 3) + .01 * Vector3d::Random();
+  prog.SetInitialGuess(x, initial_guess);
+  prog.SetInitialGuess(y, initial_guess);
+  RunNonlinearProgram(prog, [&]() {
+    const auto& x_value = prog.GetSolution(x);
+    const auto& y_value = prog.GetSolution(y);
+    EXPECT_TRUE(CompareMatrices(x_value, Vector3d(0.5, 0, 3), 1e-4,
+                                MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(y_value, Vector3d(0.5, 0, 3), 1e-4,
+                                MatrixCompareType::absolute));
+  });
+}
+
+// This test is semantically equivalent with the above
+// gloptipolyConstrainedMinimization test, but it uses the symbolic version of
+// AddLinearConstraint method in MathematicalProgram class.
+GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimizationSymbolic) {
+  MathematicalProgram prog;
+
+  // This test is run twice on different collections of continuous
+  // variables to make sure that the solvers correctly handle mapping
+  // variables to constraints/costs.
+  auto x = prog.NewContinuousVariables(3);
+  auto y = prog.NewContinuousVariables(3);
+  prog.AddCost(GloptipolyConstrainedExampleCost(), x);
+  prog.AddCost(GloptipolyConstrainedExampleCost(), y);
+  std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
+      new GloptipolyConstrainedExampleConstraint());
+  prog.AddConstraint(qp_con, x);
+  prog.AddConstraint(qp_con, y);
+
+  prog.AddLinearConstraint(x(0) + x(1) + x(2),
+                           -numeric_limits<double>::infinity(), 4);
+  prog.AddLinearConstraint(y(0) + y(1) + y(2),
+                           -numeric_limits<double>::infinity(), 4);
+  prog.AddLinearConstraint(3 * x(1) + x(2), -numeric_limits<double>::infinity(),
+                           6);
+  prog.AddLinearConstraint(3 * y(1) + y(2), -numeric_limits<double>::infinity(),
+                           6);
+  prog.AddBoundingBoxConstraint(
+      Vector3d(0, 0, 0), Vector3d(2, numeric_limits<double>::infinity(), 3), x);
+  prog.AddBoundingBoxConstraint(
+      Vector3d(0, 0, 0), Vector3d(2, numeric_limits<double>::infinity(), 3), y);
+
+  // IPOPT has difficulty with this problem depending on the initial
+  // conditions, which is why the initial guess varies so little.
+  Vector3d initial_guess{Vector3d(.5, 0, 3) + .01 * Vector3d::Random()};
   prog.SetInitialGuess(x, initial_guess);
   prog.SetInitialGuess(y, initial_guess);
   RunNonlinearProgram(prog, [&]() {
@@ -947,7 +1175,7 @@ GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
 
 // Simple test of polynomial constraints.
 GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
-  static const double kInf = std::numeric_limits<double>::infinity();
+  static const double kInf = numeric_limits<double>::infinity();
   // Generic constraints in nlopt require a very generous epsilon.
   static const double kEpsilon = 1e-4;
 
@@ -1287,6 +1515,98 @@ GTEST_TEST(testMathematicalProgram, testSolveSOCPasNLP) {
   b = Vector2d(1.0, 3.0);
   MinDistanceFromPlaneToOrigin(A, b);
 }
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
+  // Add Linear Constraint: -10 <= 3 - 5*x0 + 10*x2 - 7*y1 <= 10
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  const symbolic::Expression e{3 - 5 * x(0) + 10 * x(2) - 7 * y(1)};
+  const double lb{-10};
+  const double ub{+10};
+  const auto binding = prog.AddLinearConstraint(e, lb, ub);
+
+  // Check if the binding includes the correct linear constraint.
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 1);
+  const symbolic::Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
+  const symbolic::Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
+  const symbolic::Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
+  EXPECT_TRUE((e - lb).EqualTo(Ax - lb_in_ctr));
+  EXPECT_TRUE((e - ub).EqualTo(Ax - ub_in_ctr));
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
+  // Add Linear Constraint: -10 <= x0 <= 10
+  // Note that this constraint is a bounding-box constraint which is a sub-class
+  // of linear-constraint.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  const symbolic::Expression e{x(0)};
+  const auto binding = prog.AddLinearConstraint(e, -10, 10);
+
+  // Check that the constraint in the binding is of BoundingBoxConstraint by
+  // using dynamic_pointer_cast.
+  const std::shared_ptr<BoundingBoxConstraint> constraint_ptr{
+      std::dynamic_pointer_cast<BoundingBoxConstraint>(binding.constraint())};
+  EXPECT_TRUE(constraint_ptr != nullptr);
+  EXPECT_EQ(constraint_ptr->num_constraints(), 1);
+
+  // Check if the binding includes the correct linear constraint.
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const symbolic::Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
+  const symbolic::Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
+  const symbolic::Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
+  EXPECT_TRUE((e - -10).EqualTo(Ax - lb_in_ctr));
+  EXPECT_TRUE((e - 10).EqualTo(Ax - ub_in_ctr));
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
+  // Add Linear Constraints
+  //     3 <=  3 - 5*x0 +      + 10*x2        - 7*y1        <= 9
+  //   -10 <=                       x2                      <= 10
+  //    -7 <= -5 + 2*x0 + 3*x2         + 3*y0 - 2*y1 + 6*y2 <= 12
+  //
+  // Note: the second constraint, -10 <= x2 <= 10 is actually a bounding-box
+  // constraint but We still process the three symbolic-constraints into a
+  // single linear-constraint whose coefficient matrix is the following.
+  //
+  //         [-5 0 10 0 -7 0]
+  //         [ 0 0  1 0  0 0]
+  //         [ 2 3  0 3 -2 6]
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  Matrix<symbolic::Expression, 3, 1> M_e;
+  Vector3d M_lb;
+  Vector3d M_ub;
+
+  // clang-format off
+  M_e  <<  3 - 5 * x(0) + 10 * x(2) - 7 * y(1),
+          +x(2),
+          -5 + 2 * x(0) + 3 * x(2) + 3 * y(0) - 2 * y(1) + 6 * y(2);
+  M_lb <<  3,
+         -10,
+           7;
+  M_ub << -7,
+          10,
+          12;
+  // clang-format on
+
+  // Check if the binding includes the correct linear constraint.
+  const auto binding = prog.AddLinearConstraint(M_e, M_lb, M_ub);
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 3);
+  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto lb_in_ctr = constraint_ptr->lower_bound();
+  const auto ub_in_ctr = constraint_ptr->upper_bound();
+
+  EXPECT_EQ(M_e - M_lb, Ax - lb_in_ctr);
+  EXPECT_EQ(M_e - M_ub, Ax - ub_in_ctr);
+}
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
