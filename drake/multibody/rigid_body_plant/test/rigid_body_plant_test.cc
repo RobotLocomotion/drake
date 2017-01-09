@@ -1,3 +1,5 @@
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+
 #include <iostream>
 #include <memory>
 
@@ -12,7 +14,6 @@
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 
 using Eigen::Isometry3d;
 using Eigen::Quaterniond;
