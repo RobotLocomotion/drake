@@ -8,7 +8,6 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "direct_collocation",
-    testonly = 1,
     srcs = [
         "direct_collocation.cc",
         "direct_collocation_constraint.cc",
@@ -26,7 +25,6 @@ cc_library(
 
 cc_library(
     name = "direct_trajectory_optimization",
-    testonly = 1,
     srcs = ["direct_trajectory_optimization.cc"],
     hdrs = ["direct_trajectory_optimization.h"],
     linkstatic = 1,
