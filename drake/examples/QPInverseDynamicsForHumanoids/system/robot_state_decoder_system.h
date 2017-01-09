@@ -73,7 +73,7 @@ class RobotStateDecoderSystem : public systems::LeafSystem<double> {
   /**
    * @return Port for the input: lcm message bot_core::robot_state_t
    */
-  inline const InputPortDescriptor<double>& get_input_port_robot_state_msg()
+  InputPortDescriptor<double> get_input_port_robot_state_msg()
       const {
     return get_input_port(input_port_index_lcm_msg_);
   }
@@ -81,7 +81,7 @@ class RobotStateDecoderSystem : public systems::LeafSystem<double> {
   /**
    * @return Port for the output: HumanoidStatus.
    */
-  inline const OutputPortDescriptor<double>& get_output_port_humanoid_status()
+  OutputPortDescriptor<double> get_output_port_humanoid_status()
       const {
     return get_output_port(output_port_index_humanoid_status_);
   }

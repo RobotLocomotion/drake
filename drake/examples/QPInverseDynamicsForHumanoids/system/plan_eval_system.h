@@ -114,7 +114,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   /**
    * @return Port for the input: HumanoidStatus.
    */
-  inline const InputPortDescriptor<double>& get_input_port_humanoid_status()
+  InputPortDescriptor<double> get_input_port_humanoid_status()
       const {
     return get_input_port(input_port_index_humanoid_status_);
   }
@@ -122,7 +122,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   /**
    * @return Port for the output: QPInput.
    */
-  inline const OutputPortDescriptor<double>& get_output_port_qp_input() const {
+  OutputPortDescriptor<double> get_output_port_qp_input() const {
     return get_output_port(output_port_index_qp_input_);
   }
 

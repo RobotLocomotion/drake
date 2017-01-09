@@ -45,16 +45,16 @@ class RobotStateEncoder final : public LeafSystem<double> {
       const Context<double>& context) const override;
 
   /// Returns descriptor of output port on which the LCM message is presented.
-  const OutputPortDescriptor<double>& lcm_message_port() const;
+  OutputPortDescriptor<double> lcm_message_port() const;
 
   /// Returns descriptor of kinematics result input port.
-  const InputPortDescriptor<double>& kinematics_results_port() const;
+  InputPortDescriptor<double> kinematics_results_port() const;
 
   /// Returns descriptor of contact results input port.
-  const InputPortDescriptor<double>& contact_results_port() const;
+  InputPortDescriptor<double> contact_results_port() const;
 
   /// Returns descriptor of effort input port corresponding to @param actuator.
-  const InputPortDescriptor<double>& effort_port(
+  InputPortDescriptor<double> effort_port(
       const RigidBodyActuator& actuator) const;
 
  private:

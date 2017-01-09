@@ -131,7 +131,7 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
   /**
    * @return Port for the input: HumanoidStatus.
    */
-  inline const InputPortDescriptor<double>& get_input_port_humanoid_status()
+  InputPortDescriptor<double> get_input_port_humanoid_status()
       const {
     return get_input_port(in_port_idx_humanoid_status_);
   }
@@ -139,14 +139,14 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
   /**
    * @return Port for the input: QPOutput.
    */
-  inline const InputPortDescriptor<double>& get_input_port_qp_output() const {
+  InputPortDescriptor<double> get_input_port_qp_output() const {
     return get_input_port(in_port_idx_qp_output_);
   }
 
   /**
    * @return Port for the output: bot_core::atlas_command_t message
    */
-  inline const OutputPortDescriptor<double>& get_output_port_atlas_command()
+  OutputPortDescriptor<double> get_output_port_atlas_command()
       const {
     return get_output_port(out_port_index_atlas_cmd_);
   }

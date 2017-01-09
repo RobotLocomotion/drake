@@ -53,10 +53,10 @@ class Gain : public LeafSystem<T> {
 
 
   /// Returns the input port.
-  const InputPortDescriptor<T>& get_input_port() const;
+  InputPortDescriptor<T> get_input_port() const;
 
   /// Returns the output port.
-  const OutputPortDescriptor<T>& get_output_port() const;
+  OutputPortDescriptor<T> get_output_port() const;
 
  private:
   // Sets the output port value to the product of the gain and the input port

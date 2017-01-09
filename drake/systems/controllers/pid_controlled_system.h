@@ -131,12 +131,12 @@ class PidControlledSystem : public Diagram<T> {
   System<T>* plant() { return plant_; }
 
   /// @return the input port for the feed forward control input.
-  const InputPortDescriptor<T>& get_control_input_port() const {
+  InputPortDescriptor<T> get_control_input_port() const {
     return this->get_input_port(0);
   }
 
   /// @return the input port for the desired position/velocity state.
-  const InputPortDescriptor<T>& get_state_input_port() const {
+  InputPortDescriptor<T> get_state_input_port() const {
     return this->get_input_port(1);
   }
 

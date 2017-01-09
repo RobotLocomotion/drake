@@ -96,13 +96,13 @@ class PidController : public Diagram<T> {
                           const Eigen::Ref<const VectorX<T>>& value) const;
 
   /// Returns the input port to the error signal.
-  const InputPortDescriptor<T>& get_error_port() const;
+  InputPortDescriptor<T> get_error_port() const;
 
   /// Returns the input port to the time derivative or rate of the error signal.
-  const InputPortDescriptor<T>& get_error_derivative_port() const;
+  InputPortDescriptor<T> get_error_derivative_port() const;
 
   /// Returns the output port to the control output.
-  const OutputPortDescriptor<T>& get_control_output_port() const;
+  OutputPortDescriptor<T> get_control_output_port() const;
 
  private:
   Adder<T>* adder_ = nullptr;

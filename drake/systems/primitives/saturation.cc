@@ -52,12 +52,12 @@ void Saturation<T>::DoCalcOutput(const Context<T>& context,
 }
 
 template <typename T>
-const InputPortDescriptor<T>& Saturation<T>::get_input_port() const {
+InputPortDescriptor<T> Saturation<T>::get_input_port() const {
   return System<T>::get_input_port(input_port_index_);
 }
 
 template <typename T>
-const OutputPortDescriptor<T>& Saturation<T>::get_output_port() const {
+OutputPortDescriptor<T> Saturation<T>::get_output_port() const {
   return System<T>::get_output_port(output_port_index_);
 }
 

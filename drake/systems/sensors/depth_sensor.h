@@ -164,12 +164,12 @@ class DepthSensor : public systems::LeafSystem<double> {
 
   /// Returns a descriptor of the input port containing the generalized state of
   /// the RigidBodyTree.
-  const InputPortDescriptor<double>& get_rigid_body_tree_state_input_port()
+  InputPortDescriptor<double> get_rigid_body_tree_state_input_port()
       const;
 
   /// Returns a descriptor of the state output port, which contains the sensor's
   /// sensed values.
-  const OutputPortDescriptor<double>& get_sensor_state_output_port() const;
+  OutputPortDescriptor<double> get_sensor_state_output_port() const;
 
   /// Allocates the output vector. See this class' description for details of
   /// this output vector.
