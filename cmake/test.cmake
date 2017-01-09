@@ -6,7 +6,6 @@ set(TEST_TIMEOUT_MULTIPLIER 1 CACHE STRING
   "Positive integer by which to multiply test timeouts")
 mark_as_advanced(TEST_TIMEOUT_MULTIPLIER)
 
-
 #------------------------------------------------------------------------------
 # Compute the timeout of a test given its size.
 #
