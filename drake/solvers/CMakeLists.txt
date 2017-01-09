@@ -15,7 +15,6 @@ if(gurobi_FOUND)
 endif()
 
 set(private_headers
-  binding.h
   dreal_solver.h
   gurobi_solver.h
   ipopt_solver.h

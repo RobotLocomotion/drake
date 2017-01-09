@@ -303,8 +303,10 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
 /*
  * Updates the number of nonlinear constraints and the number of gradients by
  * looping through the constraint list
- * Derived is supposed to be
- * MathematicalProgram::Binding<SOME_TYPE_OF_NONLINEAR_CONSTRAINTS>
+ * @tparam C A Constraint type. Note that some derived classes of Constraint
+ * is regarded as generic constraint by SNOPT solver, such as
+ * LorentzConeConstraint and RotatedLorentzConeConstraint, so @tparam C can also
+ * be these derived classes.
  */
 template <typename C>
 void UpdateNumNonlinearConstraintsAndGradients(

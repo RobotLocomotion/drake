@@ -39,8 +39,6 @@ __attribute__((unused)) bool HasCorrectNumberOfVariables(
  * lb ≤ A*x ≤ ub
  * or
  * A*x == lb
- * where the character variable @p constraint_sense specifies the type.
- * x in this case is the full dimensional variable being optimised.
  *
  * @param is_equality True if the imposed constraint is
  * A*x == lb, false otherwise.
@@ -114,8 +112,6 @@ int AddLinearConstraint(const MathematicalProgram& prog, GRBmodel* model,
  * RotatedLorentzConeConstraint.
  * @param second_order_cone_constraints  A vector of Binding objects, containing
  * either Lorentz cone constraints, or rotated Lorentz cone constraints.
- * @param is_rotated_cone. True if @p second_order_cone_constraints only
- * contains rotated Lorentz cone constraints. False otherwise.
  * @param sparseness_threshold. If the absolute value of an entry in A, b
  * matrices inside (rotated) Lorentz cone constraint is smaller than
  * \p sparseness_threshold, that entry is ignored.
@@ -386,8 +382,6 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
 // Binding class is moved out from MathematicalProgram as a public class.
 // @param second_order_cones A vector of bindings, containing either Lorentz
 // cone constraint, or rotated Lorentz cone constraint.
-// @param is_roated_lorentz_cone True if second_order_cones are rotated Lorentz
-// cone, false otherwise.
 // @param is_new_variable is_new_variable[i] is true if the i'th variable in
 // Gurobi model is not included in MathematicalProgram.
 // @param num_gurobi_vars Number of variables in Gurobi model.

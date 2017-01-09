@@ -10,9 +10,12 @@ namespace drake {
 namespace solvers {
 namespace {
 template <typename Derived>
-bool DecisionVariableMatrixContainsIndex(const MathematicalProgram& prog,
-                                         const Eigen::MatrixBase<Derived>& v,
-                                         size_t index) {
+typename std::enable_if<
+    std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+    bool>::type
+MatrixDecisionVariableContainsIndex(const MathematicalProgram& prog,
+                                    const Eigen::MatrixBase<Derived>& v,
+                                    size_t index) {
   static_assert(
       std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
       "The input should be a matrix of symbolic::Variable.");
@@ -135,10 +138,10 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
                                         MathematicalProgram::VarType::BINARY));
 
   for (int i = 0; i < 6; ++i) {
-    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(prog, X1, i));
-    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(prog, S1, i + 6));
-    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(prog, x1, i + 12));
-    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(prog, X2, i + 18));
+    EXPECT_TRUE(MatrixDecisionVariableContainsIndex(prog, X1, i));
+    EXPECT_TRUE(MatrixDecisionVariableContainsIndex(prog, S1, i + 6));
+    EXPECT_TRUE(MatrixDecisionVariableContainsIndex(prog, x1, i + 12));
+    EXPECT_TRUE(MatrixDecisionVariableContainsIndex(prog, X2, i + 18));
   }
 
   // Tests if all entries in x1 are unique, that x1(i) = x1(j) iff i = j.
@@ -163,7 +166,6 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
       EXPECT_TRUE(X_assembled(i, j + 3) == X2(i, j));
     }
   }
-
 
   std::unordered_set<symbolic::Variable, drake::hash_value<symbolic::Variable>>
       X1_unique_variables_expected;

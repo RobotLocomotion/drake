@@ -19,7 +19,7 @@ class Binding {
       : constraint_(c), vars_(v) {}
 
   /**
-   * Concatenates each DecisionVariableVector object in @p v into a single
+   * Concatenates each VectorDecisionVariable object in @p v into a single
    * column vector, binds this column vector of decision variables with
    * the constraint @p c.
    */

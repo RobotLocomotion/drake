@@ -145,10 +145,12 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
   auto x1 = prog.NewContinuousVariables<2, 2>("x1");
   MatrixXDecisionVariable x2(2, 2);
   x2 = x1;
-  // Three different ways to construct an equivalent constraint.
+  // Four different ways to construct an equivalent constraint.
   // 1. Imposes constraint on a static-sized matrix of decision variables.
   // 2. Imposes constraint on a list of vectors of decision variables.
   // 3. Imposes constraint on a dynamic-sized matrix of decision variables.
+  // 4. Imposes constraint using a vector of lower/upper bound, as compared
+  //    to the previous three cases which use a scalar lower/upper bound.
   auto constraint1 = prog.AddBoundingBoxConstraint(0, 1, x1);
   auto constraint2 =
       prog.AddBoundingBoxConstraint(0, 1, {x1.col(0), x1.col(1)});

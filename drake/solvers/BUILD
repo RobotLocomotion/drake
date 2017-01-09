@@ -12,7 +12,6 @@ cc_library(
     hdrs = ["binding.h"],
     linkstatic = 1,
     deps = [
-        ":constraint",
         ":decision_variable",
     ],
 )
@@ -88,8 +87,6 @@ cc_library(
         "snopt_solver.h",
     ],
     hdrs = [
-        "binding.h",
-        "constraint.h",
         "mathematical_program.h",
         "mathematical_program_solver_interface.h",
     ],
@@ -182,7 +179,9 @@ cc_googletest(
     srcs = [
         "test/binding_test.cc"
     ],
-    deps = [":mathematical_program"],
+    deps = [":binding",
+            ":constraint"
+    ],
 )
 
 cc_googletest(

@@ -68,7 +68,7 @@ size_t GetGradientMatrix(
   for (int i = 0; i < static_cast<int>(m); ++i) {
     for (int j = 0; j < variables.rows(); ++j) {
       iRow[grad_index] = constraint_idx + i;
-      jCol[grad_index] = prog.FindDecisionVariableIndex(variables(j, 0));
+      jCol[grad_index] = prog.FindDecisionVariableIndex(variables(j));
       grad_index++;
     }
   }

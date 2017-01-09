@@ -245,7 +245,7 @@ class MathematicalProgram {
    * @tparam rows Number of rows in the variables.
    * @tparam cols Number of cols in the variables.
    * @param name An array containing the name of each variable.
-   * @return The DecisionVariableMatrix<rows, cols> containing rows * cols new
+   * @return The MatrixDecisionVariable<rows, cols> containing rows * cols new
    * variables (not
    * all the variables stored in MathematicalProgram).
    *
@@ -321,7 +321,7 @@ class MathematicalProgram {
    * @param rows  The number of rows in the new variables.
    * @param cols  The number of columns in the new variables.
    * @param names A vector of strings containing the name for each variable.
-   * @return The DecisionVariableMatrix of size rows x cols, containing the new
+   * @return The MatrixDecisionVariable of size rows x cols, containing the new
    * vars (not all the vars stored).
    *
    * Example:
@@ -361,7 +361,7 @@ class MathematicalProgram {
    * @tparam rows  The number of rows in the new variables.
    * @tparam cols  The number of columns in the new variables.
    * @param names An array of strings containing the name for each variable.
-   * @return The DecisionVariableMatrix of size rows x cols, containing the new
+   * @return The MatrixDecisionVariable of size rows x cols, containing the new
    * vars (not all the vars stored).
    *
    * Example:
@@ -392,7 +392,7 @@ class MathematicalProgram {
    * @tparam rows  The number of rows in the new variables.
    * @tparam cols  The number of columns in the new variables.
    * @param name All variables will share the same name, but different index.
-   * @return The DecisionVariableMatrix of size rows x cols, containing the new
+   * @return The MatrixDecisionVariable of size rows x cols, containing the new
    * vars (not all the vars stored).
    *
    * Example:
@@ -428,7 +428,7 @@ class MathematicalProgram {
    * SetInitialGuess() or SetInitialGuessForAllVariables().
    * @tparam rows  The number of rows in the new variables.
    * @param names An array of strings containing the name for each variable.
-   * @return The DecisionVariableMatrix of size rows x cols, containing the new
+   * @return The MatrixDecisionVariable of size rows x cols, containing the new
    * vars (not all the vars stored).
    *
    * Example:
@@ -476,7 +476,7 @@ class MathematicalProgram {
    * @tparam rows  The number of rows in the new variables.
    * @tparam cols  The number of columns in the new variables.
    * @param names An array of strings containing the name for each variable.
-   * @return The DecisionVariableMatrix of size rows x cols, containing the new
+   * @return The MatrixDecisionVariable of size rows x cols, containing the new
    * vars (not all the vars stored).
    *
    * Example:
@@ -537,7 +537,7 @@ class MathematicalProgram {
    * @param rows  The number of rows in the new variables.
    * @param cols  The number of columns in the new variables.
    * @param names A vector of strings containing the name for each variable.
-   * @return The DecisionVariableMatrix of size rows x cols, containing the new
+   * @return The MatrixDecisionVariable of size rows x cols, containing the new
    * vars (not all the vars stored).
    *
    * Example:
@@ -1276,7 +1276,7 @@ class MathematicalProgram {
   /**
    * Adds the same scalar lower and upper bound to every variable in the matrix.
    * This method is used for a static-sized matrix of decision variables.
-   * @tparam rows The number of rows in the DecisionVariableMatrix.
+   * @tparam rows The number of rows in the MatrixDecisionVariable.
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param vars A vector of decision variables.
@@ -1296,8 +1296,8 @@ class MathematicalProgram {
   /**
    * Adds the same scalar lower and upper bound to every variable in the matrix.
    * This method is used for a dynamic-sized matrix od decision variables.
-   * @tparam rows The number of rows in the DecisionVariableMatrix.
-   * @tparam cols The number of columns in the DecisionVariableMatrix.
+   * @tparam rows The number of rows in the MatrixDecisionVariable.
+   * @tparam cols The number of columns in the MatrixDecisionVariable.
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param vars A vector of decision variables.
@@ -1317,8 +1317,8 @@ class MathematicalProgram {
   /**
    * Adds the same scalar lower and upper bound to every variable in the matrix.
    * This method is used for a static-sized matrix of decision variables.
-   * @tparam rows The number of rows in the DecisionVariableMatrix.
-   * @tparam cols The number of columns in the DecisionVariableMatrix.
+   * @tparam rows The number of rows in the MatrixDecisionVariable.
+   * @tparam cols The number of columns in the MatrixDecisionVariable.
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param vars A matrix of decision variables.
@@ -1343,8 +1343,8 @@ class MathematicalProgram {
   /**
    * Adds the same scalar lower and upper bound to every variable in the matrix.
    * This method is used for a dynamic-sized matrix od decision variables.
-   * @tparam rows The number of rows in the DecisionVariableMatrix.
-   * @tparam cols The number of columns in the DecisionVariableMatrix.
+   * @tparam rows The number of rows in the MatrixDecisionVariable.
+   * @tparam cols The number of columns in the MatrixDecisionVariable.
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param vars A matrix of decision variables.
@@ -1745,7 +1745,7 @@ class MathematicalProgram {
 
   /**
    * Adds a positive semidefinite constraint on a symmetric matrix.
-   * @param symmetric_matrix_var A symmetric DecisionVariableMatrix object.
+   * @param symmetric_matrix_var A symmetric MatrixDecisionVariable object.
    */
   void AddConstraint(
       std::shared_ptr<PositiveSemidefiniteConstraint> con,
@@ -1755,7 +1755,7 @@ class MathematicalProgram {
    * Adds a positive semidefinite constraint on a symmetric matrix.
    * In Debug mode, @throws error if
    * @p symmetric_matrix_var is not symmetric.
-   * @param symmetric_matrix_var A symmetric DecisionVariableMatrix object.
+   * @param symmetric_matrix_var A symmetric MatrixDecisionVariable object.
    */
   std::shared_ptr<PositiveSemidefiniteConstraint>
   AddPositiveSemidefiniteConstraint(
