@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/rigid_body_tree_utils.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/robotInterfaces/Side.h"
 
 namespace drake {
@@ -29,7 +29,10 @@ class BodyOfInterest {
    */
   BodyOfInterest(const std::string& name, const RigidBody<double>& body,
                  const Vector3<double>& off)
-      : name_(name), body_(&body), offset_(off) {}
+      : name_(name), body_(&body) {
+    offset_ = Isometry3<double>::Identity();
+    offset_.translation() = off;
+  }
 
   /**
    * Updates pose, velocity, Jacobian, Jacobian_dot_times_v based on @p robot
@@ -39,14 +42,11 @@ class BodyOfInterest {
    */
   void Update(const RigidBodyTree<double>& robot,
               const KinematicsCache<double>& cache) {
-    pose_.translation() = offset_;
-    pose_.linear().setIdentity();
-    pose_ = robot.relativeTransform(cache, 0, body_->get_body_index()) * pose_;
-
-    vel_ = GetTaskSpaceVel(robot, cache, *body_, offset_);
-    J_ = GetTaskSpaceJacobian(robot, cache, *body_, offset_);
-    Jdot_times_v_ =
-        GetTaskSpaceJacobianDotTimesV(robot, cache, *body_, offset_);
+    pose_ = robot.CalcPoseInWorld(cache, *body_, offset_);
+    vel_ = robot.CalcTwistInWorldAlignedBody(cache, *body_, offset_);
+    J_ = robot.CalcJacobianForWorldAlignedBody(cache, *body_, offset_);
+    Jdot_times_v_ = robot.CalcJacobianDotTimesVForWorldAlignedBody(
+        cache, *body_, offset_);
   }
 
   inline const std::string& name() const { return name_; }
@@ -64,7 +64,7 @@ class BodyOfInterest {
   // The link which this BOI is attached to
   const RigidBody<double>* body_;
   // Offset is specified in the body frame.
-  Vector3<double> offset_;
+  Isometry3<double> offset_;
 
   Isometry3<double> pose_;
   // This is the task space velocity, or twist of a frame that has the same
