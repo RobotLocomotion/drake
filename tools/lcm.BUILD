@@ -21,6 +21,7 @@ LCM_COPTS = [
     "-Wno-all",
     "-Wno-deprecated-declarations",
     "-Wno-format-zero-length",
+    "-Wno-sign-compare",
     "-std=gnu11",
 ]
 

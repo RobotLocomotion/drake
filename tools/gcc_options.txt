@@ -1,0 +1,4 @@
+-Werror=extra
+-Werror=return-local-addr
+-Wno-unused-parameter
+-Wno-missing-field-initializers

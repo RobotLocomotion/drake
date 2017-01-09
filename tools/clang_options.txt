@@ -1,0 +1,3 @@
+-Werror=inconsistent-missing-override
+-Werror=sign-compare
+-Werror=return-stack-address

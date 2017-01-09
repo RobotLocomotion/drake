@@ -130,3 +130,6 @@ soft_failure_binary_repository(
     name = "drake_visualizer",
     local_path = __workspace_dir__ + "/build/install/bin/drake-visualizer",
 )
+
+load("//tools:toolchain.bzl", "drake_toolchain")
+drake_toolchain()
