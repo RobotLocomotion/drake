@@ -274,25 +274,6 @@ class RigidBody {
    */
   Eigen::Isometry3d ComputeWorldFixedPose() const;
 
-  void set_collision_filter(const DrakeCollision::bitmask &group,
-                            const DrakeCollision::bitmask &ignores);
-
-  const DrakeCollision::bitmask& get_collision_filter_group() const;
-
-  void set_collision_filter_group(const DrakeCollision::bitmask &group);
-
-  const DrakeCollision::bitmask& get_collision_filter_ignores() const;
-
-  void set_collision_filter_ignores(const DrakeCollision::bitmask &ignores);
-
-  // TODO(SeanCurtis-TRI): Consider deleting these three methods.
-  void add_to_collision_filter_group(const DrakeCollision::bitmask& group);
-
-  void ignore_collision_filter_group(const DrakeCollision::bitmask& group);
-
-  void collides_with_collision_filter_groups(
-      const DrakeCollision::bitmask& group);
-
   // TODO(amcastro-tri): Change to is_adjacent_to().
   // TODO(SeanCurtis-TRI): This method is only used by the collision clique
   // calculation.  Maybe it would be better if the name reflected this: e.g.,
@@ -429,23 +410,6 @@ class RigidBody {
   // The "parent" joint of this rigid body. This is the joint through which this
   // rigid body connects to the rest of the rigid body tree.
   std::unique_ptr<DrakeJoint> joint_;
-
-  // A bitmask that determines the collision groups that this rigid body is part
-  // of. If the i-th bit is set this rigid body belongs to the i-th collision
-  // group. A rigid body can belong to several collision groups.
-  //
-  // This data structure does not *directly* contribute to collision filter.
-  // The body stores this data because collision filter groups are defined
-  // with respect to bodies.  However, the collision filtering functionality
-  // belongs to the DrakeCollision::Element.  If a new Element gets added to
-  // a body, it learns its collision filter groups from this cached data.
-  // Same for RigidBody::collision_filter_ignores_.
-  DrakeCollision::bitmask collision_filter_group_;
-
-  // A bitmask that determines which collision groups this rigid body does not
-  // collide with. Thus, if the i-th bit is set this rigid body is not checked
-  // for collisions with bodies in the i-th group.
-  DrakeCollision::bitmask collision_filter_ignores_;
 
   // The name of this rigid body.
   std::string name_;

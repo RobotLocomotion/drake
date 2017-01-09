@@ -16,9 +16,7 @@ using std::stringstream;
 using std::vector;
 
 template <typename T>
-RigidBody<T>::RigidBody()
-    : collision_filter_group_(DrakeCollision::DEFAULT_GROUP),
-      collision_filter_ignores_(DrakeCollision::NONE_MASK) {
+RigidBody<T>::RigidBody() {
   center_of_mass_ = Vector3d::Zero();
   spatial_inertia_ << drake::SquareTwistMatrix<double>::Zero();
 }
@@ -183,56 +181,6 @@ Isometry3d RigidBody<T>::ComputeWorldFixedPose() const {
   }
   return parent_->ComputeWorldFixedPose() *
          joint_->get_transform_to_parent_body();
-}
-
-template <typename T>
-void RigidBody<T>::set_collision_filter(
-    const DrakeCollision::bitmask& group,
-    const DrakeCollision::bitmask& ignores) {
-  set_collision_filter_group(group);
-  set_collision_filter_ignores(ignores);
-}
-
-template <typename T>
-const DrakeCollision::bitmask& RigidBody<T>::get_collision_filter_group()
-    const {
-  return collision_filter_group_;
-}
-
-template <typename T>
-void RigidBody<T>::set_collision_filter_group(
-    const DrakeCollision::bitmask& group) {
-  collision_filter_group_ = group;
-}
-
-template <typename T>
-const DrakeCollision::bitmask& RigidBody<T>::get_collision_filter_ignores()
-    const {
-  return collision_filter_ignores_;
-}
-
-template <typename T>
-void RigidBody<T>::set_collision_filter_ignores(
-    const DrakeCollision::bitmask& ignores) {
-  collision_filter_ignores_ = ignores;
-}
-
-template <typename T>
-void RigidBody<T>::add_to_collision_filter_group(
-    const DrakeCollision::bitmask& group) {
-  collision_filter_group_ |= group;
-}
-
-template <typename T>
-void RigidBody<T>::ignore_collision_filter_group(
-    const DrakeCollision::bitmask& group) {
-  collision_filter_ignores_ |= group;
-}
-
-template <typename T>
-void RigidBody<T>::collides_with_collision_filter_groups(
-    const DrakeCollision::bitmask& group) {
-  collision_filter_ignores_ &= ~group;
 }
 
 template <typename T>
