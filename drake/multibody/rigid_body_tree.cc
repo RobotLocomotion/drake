@@ -2886,35 +2886,22 @@ int RigidBodyTree<T>::get_number_of_model_instances() const {
 }
 
 template <typename T>
-Isometry3<T> RigidBodyTree<T>::CalcBodyPoseInWorldFrame(
-    const KinematicsCache<T>& cache, const RigidBody<T>& B) const {
-  cache.checkCachedKinematicsSettings(
-      false, false, "CalcBodyPoseInWorldFrame");
-
-  const auto& body_element =
-      cache.get_element(B.get_body_index());
-
-  return body_element.transform_to_world;
-}
-
-template <typename T>
 Isometry3<T> RigidBodyTree<T>::CalcFramePoseInWorldFrame(
-    const KinematicsCache<T>& cache, const RigidBodyFrame<T>& F) const {
+    const KinematicsCache<T>& cache, const RigidBody<T>& B,
+    const drake::Isometry3<T>& X_BF) const {
   cache.checkCachedKinematicsSettings(
       false, false, "CalcFramePoseInWorldFrame");
 
-  const Isometry3<T>& X_BF = F.get_transform_to_body().template cast<T>();
-  const Isometry3<T> X_WB =
-      CalcBodyPoseInWorldFrame(cache, F.get_rigid_body());
+  const auto& body_element = cache.get_element(B.get_body_index());
+  const Isometry3<T> X_WB = body_element.transform_to_world;
   return X_WB * X_BF;
 }
 
 template <typename T>
-Vector6<T> RigidBodyTree<T>::CalcBodyFrameSpatialVelocityInWorldFrame(
-    const KinematicsCache<T>& cache, const RigidBody<T>& B) const
-{
+Vector6<T> RigidBodyTree<T>::CalcBodySpatialVelocityInWorldFrame(
+    const KinematicsCache<T>& cache, const RigidBody<T>& B) const {
   cache.checkCachedKinematicsSettings(
-      true, false, "CalcBodyFrameSpatialVelocityInWorldFrame");
+      true, false, "CalcBodySpatialVelocityInWorldFrame");
 
   const auto& body_element = cache.get_element(B.get_body_index());
 
@@ -2937,13 +2924,13 @@ Vector6<T> RigidBodyTree<T>::CalcBodyFrameSpatialVelocityInWorldFrame(
 }
 
 template <typename T>
-Vector6<T> RigidBodyTree<T>::CalcFrameSpatialVelocityInWorldFrame(
-    const KinematicsCache<T>& cache, const RigidBodyFrame<T>& F) const
-{
+drake::Vector6<T> RigidBodyTree<T>::CalcFrameSpatialVelocityInWorldFrame(
+    const KinematicsCache<T>& cache, const RigidBody<T>& B,
+    const drake::Isometry3<T>& X_BF) const {
   // Spatial velocity of body B with respect to the world W, expressed in
   // the world frame W.
   Vector6<T> V_WB_W =
-      CalcBodyFrameSpatialVelocityInWorldFrame(cache, F.get_rigid_body());
+      CalcBodySpatialVelocityInWorldFrame(cache, B);
 
   // Angular velocity of frame B with respect to W, expressed in W.
   const auto& w_WB_W = V_WB_W.template topRows<3>();
@@ -2951,9 +2938,7 @@ Vector6<T> RigidBodyTree<T>::CalcFrameSpatialVelocityInWorldFrame(
   const auto& v_WB_W = V_WB_W.template bottomRows<3>();
 
   // Body pose measured and expressed in the world frame.
-  Isometry3<T> X_WB = CalcBodyPoseInWorldFrame(cache, F.get_rigid_body());
-  // Frame pose measured and expressedin the body frame B.
-  Isometry3<T> X_BF = F.get_transform_to_body().template cast<T>();
+  Isometry3<T> X_WB = CalcBodyPoseInWorldFrame(cache, B);
   // Vector from Bo to Fo expressed in B.
   Vector3<T> p_BF_B = X_BF.template cast<T>().translation();
   // Vector from Bo to Fo expressed in W.
@@ -2973,84 +2958,48 @@ Vector6<T> RigidBodyTree<T>::CalcFrameSpatialVelocityInWorldFrame(
   return V_WF_W;
 }
 
-template <typename T>
-template <typename Scalar>
-Isometry3<Scalar> RigidBodyTree<T>::CalcPoseInWorld(
-    const KinematicsCache<Scalar>& cache, int index,
-    const Isometry3<Scalar>& local_offset) const {
-  return relativeTransform(cache, world().get_body_index(), index) *
-         local_offset;
-}
-
-template <typename T>
-template <typename Scalar>
-TwistVector<Scalar> RigidBodyTree<T>::CalcTwistInWorld(
-    const KinematicsCache<Scalar>& cache, int index,
-    const Isometry3<Scalar>& local_offset) const {
+template <typename T> drake::Matrix6X<T>
+RigidBodyTree<T>::CalcFrameSpatialVeclocityJacobianInWorldFrame(
+    const KinematicsCache<T>& cache, const RigidBody<T>& B,
+    const drake::Isometry3<T>& X_BF, bool in_terms_of_qdot) const {
   int world_index = world().get_body_index();
-  // Since there is no relaitve motion between body and the fixed frame.
-  // The twist of the offseted frame is just the twist of the body.
-  return relativeTwist(cache, world_index, index, world_index);
-}
-
-template <typename T>
-template <typename Scalar>
-TwistVector<Scalar> RigidBodyTree<T>::CalcTwistInWorldAlignedBody(
-    const KinematicsCache<Scalar>& cache, int index,
-    const Isometry3<Scalar>& local_offset) const {
-  TwistVector<Scalar> twist_in_world =
-      CalcTwistInWorld(cache, index, local_offset);
-  Isometry3<Scalar> body_to_world = CalcPoseInWorld(cache, index, local_offset);
-  Isometry3<Scalar> world_to_world_aligned_body(Isometry3<Scalar>::Identity());
-  world_to_world_aligned_body.translation() = -body_to_world.translation();
-  return transformSpatialMotion(world_to_world_aligned_body, twist_in_world);
-}
-
-template <typename T>
-template <typename Scalar>
-MatrixX<Scalar> RigidBodyTree<T>::CalcJacobianForWorldAlignedBody(
-    const KinematicsCache<Scalar>& cache, int index,
-    const Isometry3<Scalar>& local_offset,
-    bool in_terms_of_qdot) const {
-  int world_index = world().get_body_index();
-
-  Vector3<Scalar> p =
-      transformPoints(cache, local_offset.translation(), index, world_index);
+  drake::Vector3<T> p = CalcFramePoseInWorldFrame(cache, B, X_BF).
+      template cast<T>().translation();
 
   std::vector<int> v_or_q_indices;
-  MatrixX<Scalar> J_body = geometricJacobian(
-      cache, world_index, index, world_index, in_terms_of_qdot,
+  drake::MatrixX<T> J_body = geometricJacobian(
+      cache, world_index, B.get_body_index(), world_index, in_terms_of_qdot,
       &v_or_q_indices);
 
   int col = 0;
   int num_col = in_terms_of_qdot ? get_num_positions() : get_num_velocities();
-  MatrixX<Scalar> J = MatrixX<Scalar>::Zero(kTwistSize, num_col);
+  drake::Matrix6X<T> J = MatrixX<T>::Zero(6, num_col);
   for (int idx : v_or_q_indices) {
     // Angular velocity stays the same.
     J.col(idx) = J_body.col(col);
     // Linear velocity needs an additional cross product term.
-    J.col(idx).template tail<kSpaceDimension>() +=
-        J_body.col(col).template head<kSpaceDimension>().cross(p);
+    J.col(idx).template tail<3>() +=
+        J_body.col(col).template head<3>().cross(p);
     col++;
   }
   return J;
 }
 
-template <typename T>
-template <typename Scalar>
-TwistVector<Scalar> RigidBodyTree<T>::CalcJacobianDotTimesVForWorldAlignedBody(
-    const KinematicsCache<Scalar>& cache, int index,
-    const Isometry3<Scalar>& local_offset) const {
+template <typename T> drake::Vector6<T>
+RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& B,
+      const drake::Isometry3<T>& X_BF) const {
   int world_index = world().get_body_index();
+  int body_index = B.get_body_index();
+  drake::Vector3<T> p = CalcFramePoseInWorldFrame(cache, B, X_BF).
+      template cast<T>().translation();
 
-  Vector3<Scalar> p =
-      transformPoints(cache, local_offset.translation(), index, world_index);
-  TwistVector<Scalar> twist =
-      relativeTwist(cache, world_index, index, world_index);
-  TwistVector<Scalar> J_body_dot_times_v =
-      geometricJacobianDotTimesV(cache, world_index, index, world_index);
+  TwistVector<T> twist =
+      relativeTwist(cache, world_index, body_index, world_index);
+  TwistVector<T> J_body_dot_times_v =
+      geometricJacobianDotTimesV(cache, world_index, body_index, world_index);
 
-  Vector3<Scalar> pdot =
+  Vector3<T> pdot =
       twist.template head<3>().cross(p) + twist.template tail<3>();
 
   // Define J and Jg as follows:
@@ -3064,196 +3013,11 @@ TwistVector<Scalar> RigidBodyTree<T>::CalcJacobianDotTimesVForWorldAlignedBody(
   //  = [\dot{Jg_lin} + \dot{Jg_ang}.cross(p) + Jg_ang.cross(\dot{p})] * v
   //  = [liner part of JgdotV + angular of JgdotV.cross(p) +
   //     omega.cross(\dot{p})]
-  TwistVector<Scalar> Jdv = J_body_dot_times_v;
+  TwistVector<T> Jdv = J_body_dot_times_v;
   Jdv.template tail<3>() += twist.template head<3>().cross(pdot) +
                             J_body_dot_times_v.template head<3>().cross(p);
   return Jdv;
 }
-
-// Explicit template instantiations for CalcPoseInWorld.
-template Isometry3<AutoDiffUpTo73d> RigidBodyTree<double>::CalcPoseInWorld<
-    AutoDiffUpTo73d>(const KinematicsCache<AutoDiffUpTo73d>&, int,
-                     const Isometry3<AutoDiffUpTo73d>&) const;
-template Isometry3<AutoDiffXd> RigidBodyTree<double>::CalcPoseInWorld<
-    AutoDiffXd>(const KinematicsCache<AutoDiffXd>&, int,
-                const Isometry3<AutoDiffXd>&) const;
-template Isometry3<double> RigidBodyTree<double>::CalcPoseInWorld<double>(
-    const KinematicsCache<double>&, int, const Isometry3<double>&) const;
-
-template Isometry3<AutoDiffUpTo73d> RigidBodyTree<double>::CalcPoseInWorld<
-    AutoDiffUpTo73d>(const KinematicsCache<AutoDiffUpTo73d>&,
-                     const RigidBody<double>&,
-                     const Isometry3<AutoDiffUpTo73d>&) const;
-template Isometry3<AutoDiffXd> RigidBodyTree<double>::CalcPoseInWorld<
-    AutoDiffXd>(const KinematicsCache<AutoDiffXd>&, const RigidBody<double>&,
-                const Isometry3<AutoDiffXd>&) const;
-template Isometry3<double> RigidBodyTree<double>::CalcPoseInWorld<double>(
-    const KinematicsCache<double>&, const RigidBody<double>&,
-    const Isometry3<double>&) const;
-
-template Isometry3<AutoDiffUpTo73d> RigidBodyTree<double>::CalcPoseInWorld<
-    AutoDiffUpTo73d>(const KinematicsCache<AutoDiffUpTo73d>&,
-                     const RigidBodyFrame<double>&,
-                     const Isometry3<AutoDiffUpTo73d>&) const;
-template Isometry3<AutoDiffXd> RigidBodyTree<double>::CalcPoseInWorld<
-    AutoDiffXd>(const KinematicsCache<AutoDiffXd>&,
-                const RigidBodyFrame<double>&,
-                const Isometry3<AutoDiffXd>&) const;
-template Isometry3<double> RigidBodyTree<double>::CalcPoseInWorld<double>(
-    const KinematicsCache<double>&, const RigidBodyFrame<double>&,
-    const Isometry3<double>&) const;
-
-// Explicit template instantiations for CalcTwistInWorld.
-template TwistVector<AutoDiffUpTo73d> RigidBodyTree<double>::CalcTwistInWorld<
-    AutoDiffUpTo73d>(const KinematicsCache<AutoDiffUpTo73d>&, int,
-                     const Isometry3<AutoDiffUpTo73d>&) const;
-template TwistVector<AutoDiffXd> RigidBodyTree<double>::CalcTwistInWorld<
-    AutoDiffXd>(const KinematicsCache<AutoDiffXd>&, int,
-                const Isometry3<AutoDiffXd>&) const;
-template TwistVector<double> RigidBodyTree<double>::CalcTwistInWorld<double>(
-    const KinematicsCache<double>&, int, const Isometry3<double>&) const;
-
-template TwistVector<AutoDiffUpTo73d> RigidBodyTree<double>::CalcTwistInWorld<
-    AutoDiffUpTo73d>(const KinematicsCache<AutoDiffUpTo73d>&,
-                     const RigidBody<double>&,
-                     const Isometry3<AutoDiffUpTo73d>&) const;
-template TwistVector<AutoDiffXd> RigidBodyTree<double>::CalcTwistInWorld<
-    AutoDiffXd>(const KinematicsCache<AutoDiffXd>&, const RigidBody<double>&,
-                const Isometry3<AutoDiffXd>&) const;
-template TwistVector<double> RigidBodyTree<double>::CalcTwistInWorld<double>(
-    const KinematicsCache<double>&, const RigidBody<double>&,
-    const Isometry3<double>&) const;
-
-template TwistVector<AutoDiffUpTo73d> RigidBodyTree<double>::CalcTwistInWorld<
-    AutoDiffUpTo73d>(const KinematicsCache<AutoDiffUpTo73d>&,
-                     const RigidBodyFrame<double>&,
-                     const Isometry3<AutoDiffUpTo73d>&) const;
-template TwistVector<AutoDiffXd> RigidBodyTree<double>::CalcTwistInWorld<
-    AutoDiffXd>(const KinematicsCache<AutoDiffXd>&,
-                const RigidBodyFrame<double>&,
-                const Isometry3<AutoDiffXd>&) const;
-template TwistVector<double> RigidBodyTree<double>::CalcTwistInWorld<double>(
-    const KinematicsCache<double>&, const RigidBodyFrame<double>&,
-    const Isometry3<double>&) const;
-
-// Explicit template instantiations for CalcTwistInWorldAlignedBody.
-template TwistVector<AutoDiffUpTo73d>
-RigidBodyTree<double>::CalcTwistInWorldAlignedBody<AutoDiffUpTo73d>(
-    const KinematicsCache<AutoDiffUpTo73d>&, int,
-    const Isometry3<AutoDiffUpTo73d>&) const;
-template TwistVector<AutoDiffXd>
-RigidBodyTree<double>::CalcTwistInWorldAlignedBody<AutoDiffXd>(
-    const KinematicsCache<AutoDiffXd>&, int,
-    const Isometry3<AutoDiffXd>&) const;
-template TwistVector<double>
-RigidBodyTree<double>::CalcTwistInWorldAlignedBody<double>(
-    const KinematicsCache<double>&, int, const Isometry3<double>&) const;
-
-template TwistVector<AutoDiffUpTo73d>
-RigidBodyTree<double>::CalcTwistInWorldAlignedBody<AutoDiffUpTo73d>(
-    const KinematicsCache<AutoDiffUpTo73d>&, const RigidBody<double>&,
-    const Isometry3<AutoDiffUpTo73d>&) const;
-template TwistVector<AutoDiffXd>
-RigidBodyTree<double>::CalcTwistInWorldAlignedBody<AutoDiffXd>(
-    const KinematicsCache<AutoDiffXd>&, const RigidBody<double>&,
-    const Isometry3<AutoDiffXd>&) const;
-template TwistVector<double> RigidBodyTree<double>::CalcTwistInWorldAlignedBody<
-    double>(const KinematicsCache<double>&, const RigidBody<double>&,
-            const Isometry3<double>&) const;
-
-template TwistVector<AutoDiffUpTo73d>
-RigidBodyTree<double>::CalcTwistInWorldAlignedBody<AutoDiffUpTo73d>(
-    const KinematicsCache<AutoDiffUpTo73d>&, const RigidBodyFrame<double>&,
-    const Isometry3<AutoDiffUpTo73d>&) const;
-template TwistVector<AutoDiffXd>
-RigidBodyTree<double>::CalcTwistInWorldAlignedBody<AutoDiffXd>(
-    const KinematicsCache<AutoDiffXd>&, const RigidBodyFrame<double>&,
-    const Isometry3<AutoDiffXd>&) const;
-template TwistVector<double> RigidBodyTree<double>::CalcTwistInWorldAlignedBody<
-    double>(const KinematicsCache<double>&, const RigidBodyFrame<double>&,
-            const Isometry3<double>&) const;
-
-// Explicit template instantiations for CalcJacobianForWorldAlignedBody.
-template MatrixX<AutoDiffUpTo73d>
-RigidBodyTree<double>::CalcJacobianForWorldAlignedBody<AutoDiffUpTo73d>(
-    const KinematicsCache<AutoDiffUpTo73d>&, int,
-    const Isometry3<AutoDiffUpTo73d>&, bool) const;
-template MatrixX<AutoDiffXd>
-RigidBodyTree<double>::CalcJacobianForWorldAlignedBody<AutoDiffXd>(
-    const KinematicsCache<AutoDiffXd>&, int,
-    const Isometry3<AutoDiffXd>&, bool) const;
-template MatrixX<double>
-RigidBodyTree<double>::CalcJacobianForWorldAlignedBody<double>(
-    const KinematicsCache<double>&, int,
-    const Isometry3<double>&, bool) const;
-
-template MatrixX<AutoDiffUpTo73d>
-RigidBodyTree<double>::CalcJacobianForWorldAlignedBody<AutoDiffUpTo73d>(
-    const KinematicsCache<AutoDiffUpTo73d>&, const RigidBody<double>&,
-    const Isometry3<AutoDiffUpTo73d>&, bool) const;
-template MatrixX<AutoDiffXd>
-RigidBodyTree<double>::CalcJacobianForWorldAlignedBody<AutoDiffXd>(
-    const KinematicsCache<AutoDiffXd>&, const RigidBody<double>&,
-    const Isometry3<AutoDiffXd>&, bool) const;
-template MatrixX<double>
-RigidBodyTree<double>::CalcJacobianForWorldAlignedBody<double>(
-    const KinematicsCache<double>&, const RigidBody<double>&,
-    const Isometry3<double>&, bool) const;
-
-template MatrixX<AutoDiffUpTo73d>
-RigidBodyTree<double>::CalcJacobianForWorldAlignedBody<AutoDiffUpTo73d>(
-    const KinematicsCache<AutoDiffUpTo73d>&, const RigidBodyFrame<double>&,
-    const Isometry3<AutoDiffUpTo73d>&, bool) const;
-template MatrixX<AutoDiffXd>
-RigidBodyTree<double>::CalcJacobianForWorldAlignedBody<AutoDiffXd>(
-    const KinematicsCache<AutoDiffXd>&, const RigidBodyFrame<double>&,
-    const Isometry3<AutoDiffXd>&, bool) const;
-template MatrixX<double>
-RigidBodyTree<double>::CalcJacobianForWorldAlignedBody<double>(
-    const KinematicsCache<double>&, const RigidBodyFrame<double>&,
-    const Isometry3<double>&, bool) const;
-
-// Explicit template instantiations for
-// CalcJacobianDotTimesVForWorldAlignedBody.
-template TwistVector<AutoDiffUpTo73d>
-RigidBodyTree<double>::CalcJacobianDotTimesVForWorldAlignedBody<
-    AutoDiffUpTo73d>(const KinematicsCache<AutoDiffUpTo73d>&, int,
-                     const Isometry3<AutoDiffUpTo73d>&) const;
-template TwistVector<AutoDiffXd>
-RigidBodyTree<double>::CalcJacobianDotTimesVForWorldAlignedBody<AutoDiffXd>(
-    const KinematicsCache<AutoDiffXd>&, int,
-    const Isometry3<AutoDiffXd>&) const;
-template TwistVector<double>
-RigidBodyTree<double>::CalcJacobianDotTimesVForWorldAlignedBody<double>(
-    const KinematicsCache<double>&, int, const Isometry3<double>&) const;
-
-template TwistVector<AutoDiffUpTo73d>
-RigidBodyTree<double>::CalcJacobianDotTimesVForWorldAlignedBody<
-    AutoDiffUpTo73d>(const KinematicsCache<AutoDiffUpTo73d>&,
-                     const RigidBody<double>&,
-                     const Isometry3<AutoDiffUpTo73d>&) const;
-template TwistVector<AutoDiffXd>
-RigidBodyTree<double>::CalcJacobianDotTimesVForWorldAlignedBody<AutoDiffXd>(
-    const KinematicsCache<AutoDiffXd>&, const RigidBody<double>&,
-    const Isometry3<AutoDiffXd>&) const;
-template TwistVector<double>
-RigidBodyTree<double>::CalcJacobianDotTimesVForWorldAlignedBody<double>(
-    const KinematicsCache<double>&, const RigidBody<double>&,
-    const Isometry3<double>&) const;
-
-template TwistVector<AutoDiffUpTo73d>
-RigidBodyTree<double>::CalcJacobianDotTimesVForWorldAlignedBody<
-    AutoDiffUpTo73d>(const KinematicsCache<AutoDiffUpTo73d>&,
-                     const RigidBodyFrame<double>&,
-                     const Isometry3<AutoDiffUpTo73d>&) const;
-template TwistVector<AutoDiffXd>
-RigidBodyTree<double>::CalcJacobianDotTimesVForWorldAlignedBody<AutoDiffXd>(
-    const KinematicsCache<AutoDiffXd>&, const RigidBodyFrame<double>&,
-    const Isometry3<AutoDiffXd>&) const;
-template TwistVector<double>
-RigidBodyTree<double>::CalcJacobianDotTimesVForWorldAlignedBody<double>(
-    const KinematicsCache<double>&, const RigidBodyFrame<double>&,
-    const Isometry3<double>&) const;
 
 // Explicit template instantiations for massMatrix.
 template MatrixX<AutoDiffUpTo73d>
