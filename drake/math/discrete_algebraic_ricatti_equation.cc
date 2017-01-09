@@ -1,6 +1,6 @@
 #include "drake/math/discrete_algebraic_ricatti_equation.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/is_approx_equal_abstol.h"
 
 namespace drake {
@@ -11,15 +11,61 @@ template <typename T>
 int sgn(T val) {
   return (T(0) < val) - (val < T(0));
 }
-
+void check_stabilizable(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                        const Eigen::Ref<const Eigen::MatrixXd>& B) {
+  // This function checks if (A,B) is a stabilizable pair.
+  // (A,B) is stabilizable if and only if the uncontrollable eigenvalues of
+  // A, if any, have absolute values less than one, where an eigenvalue is
+  // uncontrollable if Rank[lambda * I - A, B] < n.
+  int n = B.rows(), m = B.cols();
+  Eigen::EigenSolver<Eigen::MatrixXd> es(A);
+  for (int i = 0; i < n; i++) {
+    if (es.eigenvalues()[i].real() * es.eigenvalues()[i].real() +
+            es.eigenvalues()[i].imag() * es.eigenvalues()[i].imag() <
+        1)
+      continue;
+    Eigen::MatrixXcd E(n, n + m);
+    E << es.eigenvalues()[i] * Eigen::MatrixXcd::Identity(n, n) - A, B;
+    Eigen::ColPivHouseholderQR<Eigen::MatrixXcd> qr(E);
+    DRAKE_THROW_UNLESS(qr.rank() == n);
+  }
+}
+void check_detectable(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                      const Eigen::Ref<const Eigen::MatrixXd>& Q) {
+  // This function check if (A,C) is a detectable pair, where Q = C' * C.
+  // (A,C) is detectable if and only if the unobservable eigenvalues of A,
+  // if any, have absolute values less than one, where an eigenvalue is
+  // unobservable if Rank[lambda * I - A; C] < n.
+  int n = A.rows();
+  Eigen::LDLT<Eigen::MatrixXd> ldlt(Q);
+  Eigen::MatrixXd L = ldlt.matrixL();
+  Eigen::MatrixXd D = ldlt.vectorD();
+  Eigen::MatrixXd D_sqrt = Eigen::MatrixXd::Zero(n, n);
+  for (int i = 0; i < n; i++) {
+    D_sqrt(i, i) = sqrt(D(i));
+  }
+  Eigen::MatrixXd C = L * D_sqrt;
+  Eigen::EigenSolver<Eigen::MatrixXd> es(A);
+  for (int i = 0; i < n; i++) {
+    if (es.eigenvalues()[i].real() * es.eigenvalues()[i].real() +
+            es.eigenvalues()[i].imag() * es.eigenvalues()[i].imag() <
+        1)
+      continue;
+    Eigen::MatrixXcd E(n + n, n);
+    E << es.eigenvalues()[i] * Eigen::MatrixXcd::Identity(n, n) - A, C;
+    Eigen::ColPivHouseholderQR<Eigen::MatrixXcd> qr(E);
+    DRAKE_THROW_UNLESS(qr.rank() == n);
+  }
+}
 /**
  * "Givens rotation" computes an orthogonal 2x2 matrix R such that
  * it eliminates the 2nd coordinate of the vector [a,b]', i.e.,
  * R * [ a ] = [ a_hat ]
  *     [ b ]   [   0   ]
  */
-void Givens_rotation(double a, double b, Eigen::Ref<Eigen::MatrixXd> R) {
-  double c, s, eps = 1e-10;
+void Givens_rotation(double a, double b, Eigen::Ref<Eigen::MatrixXd> R,
+                     double eps = 1e-10) {
+  double c, s;
   if (fabs(b) < eps) {
     c = (a < -eps ? -1 : 1);
     s = 0;
@@ -43,10 +89,11 @@ void Givens_rotation(double a, double b, Eigen::Ref<Eigen::MatrixXd> R) {
 void swap_block_11(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                    Eigen::Ref<Eigen::MatrixXd> Z, int p) {
   int n2 = S.rows();
-  Eigen::MatrixXd A = S.block<2, 2>(p, p), B = T.block<2, 2>(p, p);
+  Eigen::MatrixXd A = S.block<2, 2>(p, p), B = T.block<2, 2>(p, p),
+                  Z1 = Eigen::MatrixXd::Identity(n2, n2);
   Eigen::MatrixXd H = A(1, 1) * B - B(1, 1) * A;
-  Givens_rotation(H(0, 1), H(0, 0), Z.block<2, 2>(p, p));
-  S = (S * Z).eval(), T = (T * Z).eval();
+  Givens_rotation(H(0, 1), H(0, 0), Z1.block<2, 2>(p, p));
+  S = (S * Z1).eval(), T = (T * Z1).eval(), Z = (Z * Z1).eval();
   Eigen::MatrixXd Q = Eigen::MatrixXd::Identity(n2, n2);
   Givens_rotation(T(p, p), T(p + 1, p), Q.block<2, 2>(p, p));
   S = (Q * S).eval(), T = (Q * T).eval();
@@ -55,9 +102,9 @@ void swap_block_11(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
 void swap_block_21(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                    Eigen::Ref<Eigen::MatrixXd> Z, int p) {
   int n2 = S.rows();
-  Eigen::MatrixXd A = S.block<3, 3>(p, p), B = T.block<3, 3>(p, p);
-  Eigen::MatrixXd H = A(2, 2) * B - B(2, 2) * A;
-  Eigen::MatrixXd R = Eigen::MatrixXd::Identity(3, 3);
+  Eigen::Matrix3d A = S.block<3, 3>(p, p), B = T.block<3, 3>(p, p);
+  Eigen::Matrix3d H = A(2, 2) * B - B(2, 2) * A;
+  Eigen::Matrix3d R = Eigen::MatrixXd::Identity(3, 3);
   Givens_rotation(H(0, 0), H(1, 0), R.block<2, 2>(0, 0));
   H = (R * H).eval();
   Eigen::MatrixXd Z1, Z2, Q1, Q2;
@@ -83,10 +130,10 @@ void swap_block_12(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
   Givens_rotation(S(p + 1, p + 1), S(p + 2, p + 1),
                   Q0.block<2, 2>(p + 1, p + 1));
   S = (Q0 * S).eval(), T = (Q0 * T).eval();
-  Eigen::MatrixXd A = S.block<3, 3>(p, p), B = T.block<3, 3>(p, p);
+  Eigen::Matrix3d A = S.block<3, 3>(p, p), B = T.block<3, 3>(p, p);
   // compute H and eliminate H(2,1) by row op
-  Eigen::MatrixXd H = B(0, 0) * A - A(0, 0) * B;
-  Eigen::MatrixXd R = Eigen::MatrixXd::Identity(3, 3);
+  Eigen::Matrix3d H = B(0, 0) * A - A(0, 0) * B;
+  Eigen::Matrix3d R = Eigen::MatrixXd::Identity(3, 3);
   Givens_rotation(H(2, 2), H(2, 1), R.block<2, 2>(1, 1));
   H = (H * R).eval();
   // compute Q1, Q2, Z1, Z2
@@ -121,7 +168,8 @@ void swap_block_22(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
   // A11 * X - Y A22 = A12
   // B11 * X - Y B22 = B12
   // reduce to solve Cx=D, where x=[x1;...;x4;y1;...;y4]
-  Eigen::MatrixXd C = Eigen::MatrixXd::Zero(8, 8), D(8, 1);
+  Eigen::Matrix<double, 8, 8> C = Eigen::Matrix<double, 8, 8>::Zero();
+  Eigen::Matrix<double, 8, 1> D;
   C(0, 0) = A(0, 0), C(0, 2) = A(0, 1), C(0, 4) = -A(2, 2), C(0, 5) = -A(3, 2),
        C(1, 1) = A(0, 0), C(1, 3) = A(0, 1), C(1, 4) = -A(2, 3),
        C(1, 5) = -A(3, 3), C(2, 0) = A(1, 0), C(2, 2) = A(1, 1),
@@ -137,16 +185,17 @@ void swap_block_22(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
   Eigen::MatrixXd x = C.colPivHouseholderQr().solve(D);
   // Q * [ -Y ] = [ R_Y ] ,  Z' * [ -X ] = [ R_X ] .
   //     [ I  ]   [  0  ]         [ I  ] = [  0  ]
-  Eigen::MatrixXd X(4, 2), Y(4, 2);
-  X << -x(0, 0), -x(1, 0), -x(2, 0), -x(3, 0), Eigen::MatrixXd::Identity(2, 2);
-  Y << -x(4, 0), -x(5, 0), -x(6, 0), -x(7, 0), Eigen::MatrixXd::Identity(2, 2);
-  Eigen::MatrixXd Q = Eigen::MatrixXd::Identity(n2, n2);
+  Eigen::Matrix<double, 4, 2> X, Y;
+  X << -x(0, 0), -x(1, 0), -x(2, 0), -x(3, 0), Eigen::Matrix2d::Identity();
+  Y << -x(4, 0), -x(5, 0), -x(6, 0), -x(7, 0), Eigen::Matrix2d::Identity();
+  Eigen::MatrixXd Q1, Z1;
+  Q1 = Z1 = Eigen::MatrixXd::Identity(n2, n2);
   Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr1(X);
-  Z.block<4, 4>(p, p) = qr1.householderQ();
+  Z1.block<4, 4>(p, p) = qr1.householderQ();
   Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr2(Y);
-  Q.block<4, 4>(p, p) = qr2.householderQ().adjoint();
-  // apply transform Q * (S,T) * Z
-  S = (Q * S * Z).eval(), T = (Q * T * Z).eval();
+  Q1.block<4, 4>(p, p) = qr2.householderQ().adjoint();
+  // apply transform Q1 * (S,T) * Z1
+  S = (Q1 * S * Z1).eval(), T = (Q1 * T * Z1).eval(), Z = (Z * Z1).eval();
   // eliminate the T(p+3,p+2) entry
   Eigen::MatrixXd Q2 = Eigen::MatrixXd::Identity(n2, n2);
   Givens_rotation(T(p + 2, p + 2), T(p + 3, p + 2),
@@ -172,9 +221,8 @@ void swap_block_22(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
  * Dooren, 1981.
  */
 void swap_block(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
-                Eigen::Ref<Eigen::MatrixXd> Z, int p, int q, int q_block_size) {
-  double eps = 1e-10;
-  int n2 = S.rows();
+                Eigen::Ref<Eigen::MatrixXd> Z, int p, int q, int q_block_size,
+                double eps = 1e-10) {
   int p_tmp = q, p_block_size;
   while (p_tmp-- > p) {
     p_block_size = 1;
@@ -182,22 +230,20 @@ void swap_block(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
       p_block_size = 2;
       p_tmp--;
     }
-    Eigen::MatrixXd Z_tmp = Eigen::MatrixXd::Identity(n2, n2);
     switch (p_block_size * 10 + q_block_size) {
       case 11:
-        swap_block_11(S, T, Z_tmp, p_tmp);
+        swap_block_11(S, T, Z, p_tmp);
         break;
       case 21:
-        swap_block_21(S, T, Z_tmp, p_tmp);
+        swap_block_21(S, T, Z, p_tmp);
         break;
       case 12:
-        swap_block_12(S, T, Z_tmp, p_tmp);
+        swap_block_12(S, T, Z, p_tmp);
         break;
       case 22:
-        swap_block_22(S, T, Z_tmp, p_tmp);
+        swap_block_22(S, T, Z, p_tmp);
         break;
     }
-    Z = (Z * Z_tmp).eval();
   }
 }
 
@@ -221,8 +267,8 @@ void swap_block(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
  * Dooren, 1981.
  */
 void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
-                   Eigen::Ref<Eigen::MatrixXd> Z) {
-  double eps = 1e-10;  // abs(a) < eps => a = 0
+                   Eigen::Ref<Eigen::MatrixXd> Z, double eps = 1e-10) {
+  // abs(a) < eps => a = 0
   int n2 = S.rows();
   int n = n2 / 2, p = 0, q = 0;
   while (p < n && q < n2) {
@@ -300,6 +346,8 @@ Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
   DRAKE_DEMAND(is_approx_equal_abstol(R, R.transpose(), 1e-10));
   Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
   DRAKE_THROW_UNLESS(R_cholesky.info() == Eigen::Success);
+  check_stabilizable(A, B);
+  check_detectable(A, Q);
 
   Eigen::MatrixXd M(2 * n, 2 * n), L(2 * n, 2 * n);
   M << A, Eigen::MatrixXd::Zero(n, n), -Q, Eigen::MatrixXd::Identity(n, n);
