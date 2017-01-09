@@ -7,15 +7,14 @@
 #include "drake/multibody/rigid_body_tree.h"
 
 using Eigen::Vector3d;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace multibody {
 
 class RigidBodyTreeKinematicsTests : public ::testing::Test {
  protected:
-  virtual void SetUp() {
-    tree_ = std::make_unique<RigidBodyTree<double>>();
-  }
+  virtual void SetUp() { tree_ = std::make_unique<RigidBodyTree<double>>(); }
 
   std::unique_ptr<RigidBodyTree<double>> tree_;
 };
@@ -26,7 +25,8 @@ TEST_F(RigidBodyTreeKinematicsTests, TestDoKinematicWithValidCache) {
   const std::string filename =
       drake::GetDrakePath() +
       "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
-  AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename, tree_.get());
+  parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename,
+                                                                 tree_.get());
   KinematicsCache<double> cache = tree_->CreateKinematicsCache();
   const VectorXd q = Eigen::VectorXd::Zero(tree_->get_num_positions());
   cache.initialize(q);
@@ -41,7 +41,8 @@ TEST_F(RigidBodyTreeKinematicsTests, TestDoKinematicWithBadCache1) {
   const std::string filename =
       drake::GetDrakePath() +
       "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
-  AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename, tree_.get());
+  parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename,
+                                                                 tree_.get());
   const std::vector<int> num_joint_positions;
   const std::vector<int> num_joint_velocities;
   KinematicsCache<double> cache(tree_->get_num_positions(),
@@ -60,7 +61,8 @@ TEST_F(RigidBodyTreeKinematicsTests, TestDoKinematicWithBadCache2) {
   const std::string filename =
       drake::GetDrakePath() +
       "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
-  AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename, tree_.get());
+  parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename,
+                                                                 tree_.get());
   std::vector<int> num_joint_positions;
   std::vector<int> num_joint_velocities;
   for (int i = 0; i < tree_->get_num_bodies(); ++i) {
@@ -98,10 +100,8 @@ class AcrobotTests : public ::testing::Test {
     link1_id_ = link1_->get_body_index();
     link2_id_ = link2_->get_body_index();
 
-    axis1_index_ =
-        link1_->get_position_start_index();
-    axis2_index_ =
-        link2_->get_position_start_index();
+    axis1_index_ = link1_->get_position_start_index();
+    axis2_index_ = link2_->get_position_start_index();
 
     q_.resize(robot_->get_num_positions());
     v_.resize(robot_->get_num_velocities());
@@ -118,8 +118,8 @@ class AcrobotTests : public ::testing::Test {
 
   // Sets the state of the acrobot given by its joint angles measured in
   // degrees and its joint angular velocities measured in radians per second.
-  void SetState(double theta1_rad, double theta2_rad,
-                double theta1dot, double theta2dot) {
+  void SetState(double theta1_rad, double theta2_rad, double theta1dot,
+                double theta2dot) {
     q_(axis1_index_) = theta1_rad;
     q_(axis2_index_) = theta2_rad;
     v_(axis1_index_) = theta1dot;
@@ -140,14 +140,14 @@ class AcrobotTests : public ::testing::Test {
         robot_->CalcFramePoseInWorldFrame(*cache_, *link1_com_);
     Isometry3<double> X_WL1cm_exact =
         acrobot_benchmark_.CalcLink1PoseInWorldFrame(theta1_rad, theta2_rad);
-    EXPECT_TRUE(X_WL1cm.isApprox(X_WL1cm_exact,
-                                 Eigen::NumTraits<double>::epsilon()));
+    EXPECT_TRUE(
+        X_WL1cm.isApprox(X_WL1cm_exact, Eigen::NumTraits<double>::epsilon()));
     Isometry3<double> X_WL2cm =
         robot_->CalcFramePoseInWorldFrame(*cache_, *link2_com_);
     Isometry3<double> X_WL2cm_exact =
         acrobot_benchmark_.CalcLink2PoseInWorldFrame(theta1_rad, theta2_rad);
-    EXPECT_TRUE(X_WL2cm.isApprox(X_WL2cm_exact,
-                                 Eigen::NumTraits<double>::epsilon()));
+    EXPECT_TRUE(
+        X_WL2cm.isApprox(X_WL2cm_exact, Eigen::NumTraits<double>::epsilon()));
   }
 
   void RunSpatialVelocityTest(double theta1_deg, double theta2_deg,
@@ -159,15 +159,15 @@ class AcrobotTests : public ::testing::Test {
 
     Vector6<double> V_WL1cm =
         robot_->CalcFrameSpatialVelocityInWorldFrame(*cache_, *link1_com_);
-    Vector6 <double> V_WL1cm_exact =
+    Vector6<double> V_WL1cm_exact =
         acrobot_benchmark_.CalcLink1SpatialVelocityInWorldFrame(
             theta1_rad, theta2_rad, theta1dot, theta2dot);
-    EXPECT_TRUE(V_WL1cm.isApprox(V_WL1cm_exact,
-                                Eigen::NumTraits<double>::epsilon()));
+    EXPECT_TRUE(
+        V_WL1cm.isApprox(V_WL1cm_exact, Eigen::NumTraits<double>::epsilon()));
 
     Vector6<double> V_WL2cm =
         robot_->CalcFrameSpatialVelocityInWorldFrame(*cache_, *link2_com_);
-    Vector6 <double> V_WL2cm_exact =
+    Vector6<double> V_WL2cm_exact =
         acrobot_benchmark_.CalcLink2SpatialVelocityInWorldFrame(
             theta1_rad, theta2_rad, theta1dot, theta2dot);
     EXPECT_TRUE(V_WL2cm.isApprox(V_WL2cm_exact,
@@ -220,11 +220,10 @@ TEST_F(AcrobotTests, SpatialVelocityTests) {
 
 // Test the following utility functions assuming their underlying functions
 // are correct:
-// CalcPoseInWorld,
-// CalcTwistInWorld,
-// CalcTwistInWorldAlignedBody,
-// CalcTwistInWorldAlignedBody,
-// CalcJacobianDotTimesVForWorldAlignedBody.
+// CalcFramePoseInWorldFrame,
+// CalcFrameSpatialVelocityInWorldFrame,
+// CalcFrameSpatialVeclocityJacobianInWorldFrame,
+// CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame
 //
 // A fixed frame named "test_frame" is added to
 // "multibody/test/rigid_body_tree/two_dof_robot.urdf".
@@ -258,13 +257,15 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
     robot_->doKinematics(*cache_, true);
   }
 
-  // Tests CalcPoseInWorld(body, offset) == CalcPoseInWorld(frame),
+  // Tests:
+  // CalcFramePoseInWorldFrame(body, offset) ==
+  // CalcFramePoseInWorldFrame(frame),
   // assuming the underlying function relativeTransform is correct.
   void TestPose() {
     Isometry3<double> pose =
-        robot_->CalcPoseInWorld(*cache_, *body_ptr_, offset_);
+        robot_->CalcFramePoseInWorldFrame(*cache_, *body_ptr_, offset_);
     Isometry3<double> pose_as_frame =
-        robot_->CalcPoseInWorld(*cache_, *frame_ptr_);
+        robot_->CalcFramePoseInWorldFrame(*cache_, *frame_ptr_);
 
     EXPECT_TRUE(drake::CompareMatrices(pose.linear(), pose_as_frame.linear(),
                                        1e-14,
@@ -275,38 +276,26 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
                                        drake::MatrixCompareType::absolute));
   }
 
-  // Tests CalcTwistInWorld(body, offset) == CalcTwistInWorld(frame),
-  // assuming the underlying function relativeTwist is correct.
-  void TestTwistInWorld() {
-    TwistVector<double> twist =
-        robot_->CalcTwistInWorld(*cache_, *body_ptr_, offset_);
-    TwistVector<double> twist_as_frame =
-        robot_->CalcTwistInWorld(*cache_, *frame_ptr_);
-
-    EXPECT_TRUE(drake::CompareMatrices(twist, twist_as_frame, 1e-14,
-                                       drake::MatrixCompareType::absolute));
-  }
-
-  // Tests
-  // CalcTwistInWorldAlignedBody(body, offset) ==
-  // CalcTwistInWorldAlignedBody(frame),
+  // Tests:
+  // CalcFrameSpatialVelocityInWorldFrame(body, offset) ==
+  // CalcFrameSpatialVelocityInWorldFrame(frame),
   // and
-  // CalcTwistInWorldAlignedBody(frame) ==
+  // CalcFrameSpatialVelocityInWorldFrame(frame) ==
   // [R, 0; 0, R] * relativeTwist(world, frame, frame), where R is the rotation
   // from frame to world.
-  // This assumes relativeTwist and CalcPoseInWorld are correct.
-  void TestTwistInWorldAlignedBody() {
-    TwistVector<double> xdot =
-        robot_->CalcTwistInWorldAlignedBody(*cache_, *body_ptr_, offset_);
+  void TestSpatialVelocity() {
+    TwistVector<double> xdot = robot_->CalcFrameSpatialVelocityInWorldFrame(
+        *cache_, *body_ptr_, offset_);
     TwistVector<double> xdot_as_frame =
-        robot_->CalcTwistInWorldAlignedBody(*cache_, *frame_ptr_);
+        robot_->CalcFrameSpatialVelocityInWorldFrame(*cache_, *frame_ptr_);
 
     EXPECT_TRUE(drake::CompareMatrices(xdot, xdot_as_frame, 1e-14,
                                        drake::MatrixCompareType::absolute));
 
     TwistVector<double> xdot_b = robot_->relativeTwist(
         *cache_, robot_->world().get_body_index(), frame_id_, frame_id_);
-    Isometry3<double> pose = robot_->CalcPoseInWorld(*cache_, *frame_ptr_);
+    Isometry3<double> pose =
+        robot_->CalcFramePoseInWorldFrame(*cache_, *frame_ptr_);
     TwistVector<double> xdot_w;
     xdot_w.head<3>() = pose.linear() * xdot_b.head<3>();
     xdot_w.tail<3>() = pose.linear() * xdot_b.tail<3>();
@@ -315,22 +304,22 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
                                        drake::MatrixCompareType::absolute));
   }
 
-  // Tests
-  // CalcTwistInWorldAlignedBody(body, offset) ==
-  // CalcTwistInWorldAlignedBody(frame),
+  // Tests:
+  // CalcFrameSpatialVelocityInWorldFrame(body, offset) ==
+  // CalcFrameSpatialVelocityInWorldFrame(frame),
   // and
-  // CalcTwistInWorldAlignedBody(frame) * v ==
-  // CalcTwistInWorldAlignedBody(frame),
+  // CalcFrameSpatialVelocityInWorldFrame(frame) * v ==
+  // CalcFrameSpatialVelocityInWorldFrame(frame),
   // [R, 0; 0, R] * geometricJacobian(world, frame, frame) ==
-  // CalcTwistInWorldAlignedBody(frame)
-  // assuming geometricJacobian and CalcTwistInWorldAlignedBody are correct.
-  void TestWorldAlignedJacobian(bool use_qdot) {
-    TwistVector<double> xdot =
-        robot_->CalcTwistInWorldAlignedBody(*cache_, *body_ptr_, offset_);
-    MatrixX<double> J = robot_->CalcJacobianForWorldAlignedBody(
+  // CalcFrameSpatialVelocityInWorldFrame(frame)
+  void TestSpatialVelocityJacobian(bool use_qdot) {
+    TwistVector<double> xdot = robot_->CalcFrameSpatialVelocityInWorldFrame(
+        *cache_, *body_ptr_, offset_);
+    MatrixX<double> J = robot_->CalcFrameSpatialVeclocityJacobianInWorldFrame(
         *cache_, *body_ptr_, offset_, use_qdot);
-    MatrixX<double> J_as_frame = robot_->CalcJacobianForWorldAlignedBody(
-        *cache_, *frame_ptr_, Isometry3<double>::Identity(), use_qdot);
+    MatrixX<double> J_as_frame =
+        robot_->CalcFrameSpatialVeclocityJacobianInWorldFrame(
+            *cache_, *frame_ptr_, use_qdot);
 
     EXPECT_TRUE(drake::CompareMatrices(J, J_as_frame, 1e-14,
                                        drake::MatrixCompareType::absolute));
@@ -344,7 +333,8 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
                                          drake::MatrixCompareType::absolute));
     }
 
-    Isometry3<double> pose = robot_->CalcPoseInWorld(*cache_, *frame_ptr_);
+    Isometry3<double> pose =
+        robot_->CalcFramePoseInWorldFrame(*cache_, *frame_ptr_);
     KinematicPath kinematic_path = robot_->findKinematicPath(
         robot_->world().get_body_index(), frame_ptr_->get_frame_index());
     MatrixX<double> Jg = robot_->geometricJacobian(
@@ -358,19 +348,19 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
                                        drake::MatrixCompareType::absolute));
   }
 
-  // Tests
-  // CalcJacobianDotTimesVForWorldAlignedBody(body, offset) ==
-  // CalcJacobianDotTimesVForWorldAlignedBody(frame),
+  // Tests:
+  // CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(body, offset) ==
+  // CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(frame),
   // and
-  // CalcJacobianDotTimesVForWorldAlignedBody(frame) ==
+  // CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(frame).tail<3> ==
   // transformPointsJacobianDotTimesV(Vec3::Zero, frame, world),
-  // assuming geometricJacobianDotTimesV and transformPointsJacobianDotTimesV
-  // are correct.
-  void TestWorldAlignedJacobianDotTimesV() {
-    TwistVector<double> Jdv = robot_->CalcJacobianDotTimesVForWorldAlignedBody(
-        *cache_, *body_ptr_, offset_);
+  void TestSpatialVelocityJacobianDotTimesV() {
+    TwistVector<double> Jdv =
+        robot_->CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+            *cache_, *body_ptr_, offset_);
     TwistVector<double> Jdv_as_frame =
-        robot_->CalcJacobianDotTimesVForWorldAlignedBody(*cache_, *frame_ptr_);
+        robot_->CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+            *cache_, *frame_ptr_);
     EXPECT_TRUE(drake::CompareMatrices(Jdv, Jdv_as_frame, 1e-14,
                                        drake::MatrixCompareType::absolute));
 
@@ -405,25 +395,20 @@ TEST_F(RBTDifferentialKinematicsHelperTest, RPYPoseTest) {
   TestPose();
 }
 
-TEST_F(RBTDifferentialKinematicsHelperTest, RPYTwistInWorldTest) {
-  SetUpWithType(multibody::joints::kRollPitchYaw);
-  TestTwistInWorld();
-}
-
 TEST_F(RBTDifferentialKinematicsHelperTest, RPYTwistInWorldAlignedBodyTest) {
   SetUpWithType(multibody::joints::kRollPitchYaw);
-  TestTwistInWorldAlignedBody();
+  TestSpatialVelocity();
 }
 
 TEST_F(RBTDifferentialKinematicsHelperTest, RPYJacobianTest) {
   SetUpWithType(multibody::joints::kRollPitchYaw);
-  TestWorldAlignedJacobian(true);
-  TestWorldAlignedJacobian(false);
+  TestSpatialVelocityJacobian(true);
+  TestSpatialVelocityJacobian(false);
 }
 
 TEST_F(RBTDifferentialKinematicsHelperTest, RPYJacobianDotTimeVTest) {
   SetUpWithType(multibody::joints::kRollPitchYaw);
-  TestWorldAlignedJacobianDotTimesV();
+  TestSpatialVelocityJacobianDotTimesV();
 }
 
 TEST_F(RBTDifferentialKinematicsHelperTest, QuatPoseTest) {
@@ -431,26 +416,21 @@ TEST_F(RBTDifferentialKinematicsHelperTest, QuatPoseTest) {
   TestPose();
 }
 
-TEST_F(RBTDifferentialKinematicsHelperTest, QuatTwistInWorldTest) {
-  SetUpWithType(multibody::joints::kQuaternion);
-  TestTwistInWorld();
-}
-
 TEST_F(RBTDifferentialKinematicsHelperTest, QuatTwistInWorldAlignedBodyTest) {
   SetUpWithType(multibody::joints::kQuaternion);
-  TestTwistInWorldAlignedBody();
+  TestSpatialVelocity();
 }
 
 TEST_F(RBTDifferentialKinematicsHelperTest, QuatJacobianTest) {
   SetUpWithType(multibody::joints::kQuaternion);
-  TestWorldAlignedJacobian(true);
-  TestWorldAlignedJacobian(false);
+  TestSpatialVelocityJacobian(true);
+  TestSpatialVelocityJacobian(false);
 }
 
 TEST_F(RBTDifferentialKinematicsHelperTest, QuatJacobianDotTimeVTest) {
   SetUpWithType(multibody::joints::kQuaternion);
-  TestWorldAlignedJacobianDotTimesV();
+  TestSpatialVelocityJacobianDotTimesV();
 }
+
 }  // namespace multibody
->>>>>>> add diff kinematics related util function. alejandro  added tests
 }  // namespace drake

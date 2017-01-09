@@ -29,10 +29,7 @@ class BodyOfInterest {
    */
   BodyOfInterest(const std::string& name, const RigidBody<double>& body,
                  const Vector3<double>& off)
-      : name_(name), body_(&body) {
-    offset_ = Isometry3<double>::Identity();
-    offset_.translation() = off;
-  }
+      : name_(name), body_(&body), offset_(Eigen::Translation3d(off)) {}
 
   /**
    * Updates pose, velocity, Jacobian, Jacobian_dot_times_v based on @p robot
@@ -42,10 +39,11 @@ class BodyOfInterest {
    */
   void Update(const RigidBodyTree<double>& robot,
               const KinematicsCache<double>& cache) {
-    pose_ = robot.CalcPoseInWorld(cache, *body_, offset_);
-    vel_ = robot.CalcTwistInWorldAlignedBody(cache, *body_, offset_);
-    J_ = robot.CalcJacobianForWorldAlignedBody(cache, *body_, offset_);
-    Jdot_times_v_ = robot.CalcJacobianDotTimesVForWorldAlignedBody(
+    pose_ = robot.CalcFramePoseInWorldFrame(cache, *body_, offset_);
+    vel_ = robot.CalcFrameSpatialVelocityInWorldFrame(cache, *body_, offset_);
+    J_ = robot.CalcFrameSpatialVeclocityJacobianInWorldFrame(
+        cache, *body_, offset_);
+    Jdot_times_v_ = robot.CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
         cache, *body_, offset_);
   }
 

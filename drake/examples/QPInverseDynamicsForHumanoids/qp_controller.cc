@@ -446,10 +446,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   cost_ctr = eq_ctr = 0;
   for (const auto& pair : input.desired_body_motions()) {
     const DesiredBodyMotion& body_motion_d = pair.second;
-    body_J_[body_ctr] = rs.robot().CalcJacobianForWorldAlignedBody(
-        rs.cache(), body_motion_d.body());
-    body_Jdv_[body_ctr] = rs.robot().CalcJacobianDotTimesVForWorldAlignedBody(
-        rs.cache(), body_motion_d.body());
+    body_J_[body_ctr] =
+        rs.robot().CalcBodySpatialVeclocityJacobianInWorldFrame(rs.cache(),
+            body_motion_d.body());
+    body_Jdv_[body_ctr] =
+        rs.robot().CalcBodySpatialVelocityJacobianDotTimesVInWorldFrame(
+            rs.cache(), body_motion_d.body());
     linear_term = body_Jdv_[body_ctr] - body_motion_d.values();
 
     // Find the rows that correspond to cost and equality constraints.
@@ -609,10 +611,11 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     }
 
     // Compute acceleration for contact body.
-    MatrixX<double> J_body = rs.robot().CalcJacobianForWorldAlignedBody(
-        rs.cache(), resolved_contact.body());
+    Matrix6X<double> J_body =
+        rs.robot().CalcBodySpatialVeclocityJacobianInWorldFrame(rs.cache(),
+            resolved_contact.body());
     Vector6<double> Jdv_body =
-        rs.robot().CalcJacobianDotTimesVForWorldAlignedBody(
+        rs.robot().CalcBodySpatialVelocityJacobianDotTimesVInWorldFrame(
             rs.cache(), resolved_contact.body());
 
     resolved_contact.mutable_body_acceleration() = J_body * vd_value + Jdv_body;

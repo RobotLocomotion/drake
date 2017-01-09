@@ -283,14 +283,14 @@ class ContactInformation {
    * @param referece_point the reference point for the equivalent wrench.
    * @return The matrix that converts point forces to an equivalent wrench.
    */
-  MatrixX<double> ComputeWrenchMatrix(
+  Matrix6X<double> ComputeWrenchMatrix(
       const Matrix3X<double>& contact_points,
       const Vector3<double>& reference_point) const {
     if (contact_points.cols() != contact_points_.cols())
       throw std::runtime_error("contact points size mismatch");
 
-    MatrixX<double> force_to_wrench =
-        MatrixX<double>::Zero(6, 3 * contact_points.cols());
+    Matrix6X<double> force_to_wrench =
+        Matrix6X<double>::Zero(6, 3 * contact_points.cols());
     int col_idx = 0;
     for (int i = 0; i < contact_points.cols(); ++i) {
       // Force part: just sum up all the point forces, so these are I
@@ -320,8 +320,8 @@ class ContactInformation {
     for (int i = 0; i < contact_points_.cols(); ++i) {
       offset.translation() = contact_points_.col(i);
       J.block(3 * i, 0, 3, robot.get_num_velocities()) =
-          robot.CalcJacobianForWorldAlignedBody(cache, *body_, offset)
-              .bottomRows<3>();
+          robot.CalcFrameSpatialVeclocityJacobianInWorldFrame(
+              cache, *body_, offset).bottomRows<3>();
     }
     return J;
   }
@@ -341,8 +341,9 @@ class ContactInformation {
     Isometry3<double> offset(Isometry3<double>::Identity());
     for (int i = 0; i < contact_points_.cols(); ++i) {
       offset.translation() = contact_points_.col(i);
-      Jdv.segment<3>(3 * i) = robot.CalcJacobianDotTimesVForWorldAlignedBody(
-          cache, *body_, offset).bottomRows<3>();
+      Jdv.segment<3>(3 * i) =
+          robot.CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+              cache, *body_, offset).bottomRows<3>();
     }
     return Jdv;
   }
@@ -361,7 +362,7 @@ class ContactInformation {
     Isometry3<double> offset(Isometry3<double>::Identity());
     for (int i = 0; i < contact_points_.cols(); ++i) {
       offset.translation() = contact_points_.col(i);
-      vel.segment<3>(3 * i) = robot.CalcTwistInWorldAlignedBody(
+      vel.segment<3>(3 * i) = robot.CalcFrameSpatialVelocityInWorldFrame(
           cache, *body_, offset).bottomRows<3>();
     }
     return vel;
@@ -1135,15 +1136,15 @@ class QPController {
   MatrixX<double> mass_matrix_;
   VectorX<double> dynamics_bias_;
 
-  MatrixX<double> J_com_;
+  Matrix3X<double> J_com_;
   VectorX<double> J_dot_times_v_com_;
-  MatrixX<double> centroidal_momentum_matrix_;
+  Matrix6X<double> centroidal_momentum_matrix_;
   VectorX<double> centroidal_momentum_matrix_dot_times_v_;
 
   VectorX<double> solution_;
 
-  std::vector<MatrixX<double>> body_J_;
-  std::vector<VectorX<double>> body_Jdv_;
+  std::vector<Matrix6X<double>> body_J_;
+  std::vector<Vector6<double>> body_Jdv_;
 
   // These determines the size of the QP. These are set in ResizeQP
   int num_contact_body_{0};

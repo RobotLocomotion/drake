@@ -303,7 +303,10 @@ class RigidBodyTree {
   /// @returns `X_WB` the pose of body `B` measured and expressed in the world
   /// frame `W`.
   drake::Isometry3<T> CalcBodyPoseInWorldFrame(
-      const KinematicsCache<T>& cache, const RigidBody<T>& B) const;
+      const KinematicsCache<T>& cache, const RigidBody<T>& B) const {
+    return CalcFramePoseInWorldFrame(
+        cache, B, drake::Isometry3<T>::Identity());
+  }
 
   /// Computes the pose of the rigid body frame `F` measured and expressed in
   /// the world frame `W`.
@@ -315,13 +318,25 @@ class RigidBodyTree {
   /// @returns `X_WF` the pose of frame F measured and expressed in the world
   /// frame `W`.
   drake::Isometry3<T> CalcFramePoseInWorldFrame(
-      const KinematicsCache<T>& cache, const RigidBodyFrame<T>& F) const;
+      const KinematicsCache<T>& cache, const RigidBodyFrame<T>& F) const {
+    return CalcFramePoseInWorldFrame(cache, F.get_rigid_body(),
+        F.get_transform_to_body().template cast<T>());
+  }
+
+  /// Computes the pose of the rigid body frame `F` measured and expressed in
+  /// the world frame `W`. Frame F is attached to RigidBody @p B.
+  /// @param B RigidBody reference.
+  /// @returns `X_WF` the pose of frame F measured and expressed in the world
+  /// frame `W`.
+  drake::Isometry3<T> CalcFramePoseInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& B,
+      const drake::Isometry3<T>& X_BF) const;
 
   /// Computes the spatial velocity `V_WB` of the body frame `B` with respect
   /// to the world frame `W` and expresses it in the world frame.
   /// @returns `V_WB_W` The spatial velocity of the body frame `B` with respect
   /// to the world frame `W`, expressed in the world frame.
-  drake::Vector6<T> CalcBodyFrameSpatialVelocityInWorldFrame(
+  drake::Vector6<T> CalcBodySpatialVelocityInWorldFrame(
       const KinematicsCache<T>& cache, const RigidBody<T>& B) const;
 
   /// Computes the spatial velocity `V_WF` of the rigid body frame `F` with
@@ -330,154 +345,114 @@ class RigidBodyTree {
   /// Frame @p F does not necessarily need to be owned by this RigidBodyTree.
   /// However, it is a prerequisit that the rigid body to which frame @p `F`
   /// attaches to is owned by this RigidBodyTree.
-  ///
+  /// @param cache KinematicsCache.
+  /// @param F Reference to the RigidBodyFrame.
   /// @returns `V_WF_W` The spatial velocity of the rigid body frame `F` with
   /// respect to the world frame `W`, expressed in the world frame.
   drake::Vector6<T> CalcFrameSpatialVelocityInWorldFrame(
-      const KinematicsCache<T>& cache, const RigidBodyFrame<T>& F) const;
-
-  /// Returns the pose of frame A in the world frame, where A is a frame
-  /// rigidly attached to `body` with `local_offset`.
-  template <typename Scalar>
-  drake::Isometry3<Scalar> CalcPoseInWorld(
-      const KinematicsCache<Scalar>& cache, const RigidBody<T>& body,
-      const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity()) const {
-    return CalcPoseInWorld(cache, body.get_body_index(), local_offset);
+      const KinematicsCache<T>& cache, const RigidBodyFrame<T>& F) const {
+    return CalcFrameSpatialVelocityInWorldFrame(
+        cache, F.get_rigid_body(),
+        F.get_transform_to_body().template cast<T>());
   }
 
-  /// Returns the twist of frame A with respect to the world expresed in the
-  /// world frame, where A is a frame rigidly attached to `body` with
-  /// `local_offset`.
-  template <typename Scalar>
-  drake::TwistVector<Scalar> CalcTwistInWorld(
-      const KinematicsCache<Scalar>& cache, const RigidBody<T>& body,
-      const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity()) const {
-    return CalcTwistInWorld(cache, body.get_body_index(), local_offset);
-  }
+  /// Computes the spatial velocity `V_WF` of the rigid body frame `F` with
+  /// respect to the world frame `W` and expresses it in the world frame.
+  /// Frame F is attached to rigid body @p B.
+  /// @param cache KinematicsCache.
+  /// @param B Reference to the RigidBody.
+  /// @param X_BF Transformation from frame F to body frame B.
+  /// @returns `V_WF_W` The spatial velocity of the rigid body frame `F` with
+  /// respect to the world frame `W`, expressed in the world frame.
+  drake::Vector6<T> CalcFrameSpatialVelocityInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& B,
+      const drake::Isometry3<T>& X_BF) const;
 
-  /// Returns the twist of frame A with respect to the world expresed in
-  /// frame B, where A is a frame rigidly attached to `body` with
-  /// `local_offset`, and B has the same orientation as the world but located
-  /// at the origin of frame A.
-  template <typename Scalar>
-  drake::TwistVector<Scalar> CalcTwistInWorldAlignedBody(
-      const KinematicsCache<Scalar>& cache, const RigidBody<T>& body,
-      const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity()) const {
-    return CalcTwistInWorldAlignedBody(cache, body.get_body_index(),
-                                       local_offset);
-  }
+  /// This function returns the Jacobian of the spatial velocity of frame `F`
+  /// measured and expressed in the world frame s.t. `V_WF = J * v`,
+  /// where `V_WF` is the spatial velocity of frame `F` measured and expressed
+  /// in the world frame `W`. Frame `F` is attached to rigid body @p B,
+  /// and @p X_BF is the transformation from frame `F` to body frame `B`
+  /// measured and expressed in body frame `B`.
+  /// @param cache Reference to KinematicsCache.
+  /// @param B Reference to the body.
+  /// @param X_BF Transformation from frame `F` to body frame `B` measured and
+  /// expressed in body frame `B`.
+  /// @param in_terms_of_qdot True for `J` w.r.t qdot, false for `J` w.r.t v.
+  /// @return `J`
+  drake::Matrix6X<T> CalcFrameSpatialVeclocityJacobianInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& B,
+      const drake::Isometry3<T>& X_BF,
+      bool in_terms_of_qdot = false) const;
 
-  /// Returns the pose of frame A in the world frame, where A is a frame
-  /// rigidly attached to `frame` with `local_offset`.
-  template <typename Scalar>
-  drake::Isometry3<Scalar> CalcPoseInWorld(
-      const KinematicsCache<Scalar>& cache, const RigidBodyFrame<T>& frame,
-      const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity()) const {
-    return CalcPoseInWorld(cache, frame.get_frame_index(), local_offset);
-  }
-
-  /// Returns the twist of frame A with respect to the world expresed in
-  /// world frame, where A is a frame rigidly attached to `frame` with
-  /// `local_offset`.
-  template <typename Scalar>
-  drake::TwistVector<Scalar> CalcTwistInWorld(
-      const KinematicsCache<Scalar>& cache, const RigidBodyFrame<T>& frame,
-      const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity()) const {
-    return CalcTwistInWorld(cache, frame.get_frame_index(), local_offset);
-  }
-
-  /// Returns the twist of frame A with respect to the world expresed in
-  /// frame B, where A is a frame rigidly attached to `frame` with
-  /// `local_offset`, and B has the same orientation as the world but located
-  /// at the origin of frame A.
-  template <typename Scalar>
-  drake::TwistVector<Scalar> CalcTwistInWorldAlignedBody(
-      const KinematicsCache<Scalar>& cache, const RigidBodyFrame<T>& frame,
-      const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity()) const {
-    return CalcTwistInWorldAlignedBody(cache, frame.get_frame_index(),
-                                       local_offset);
-  }
-
-  /// Let \f$ \dot{x} \f$ be the twist of frame A w.r.t the world expressed in
-  /// frame B, where A is a frame rigidly attached to `body` with
-  /// `local_offset`, and B has the same orientation as the world but located
-  /// at the origin of frame A.
-  /// This function returns the Jacobian s.t. \f$ \dot{x} = J v \f$.
-  /// @param cache, Reference to KinematicsCache.
-  /// @param body, Reference to the body.
-  /// @param local_offset, A's offset from the `body`.
-  /// @return \f$ J \f$
-  template <typename Scalar>
-  drake::MatrixX<Scalar> CalcJacobianForWorldAlignedBody(
-      const KinematicsCache<Scalar>& cache, const RigidBody<T>& body,
-      const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity(),
+  /// This function returns the Jacobian of the spatial velocity of frame `F`
+  /// measured and expressed in the world frame s.t. `V_WF = J * v`, where
+  /// `V_WF` is the spatial velocity of frame `F` measured and expressed in
+  /// the world frame `W`.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param F Reference to the RigidBodyFrame.
+  /// @param in_terms_of_qdot True for `J` w.r.t qdot, false for `J` w.r.t v.
+  /// @return `J`
+  drake::Matrix6X<T> CalcFrameSpatialVeclocityJacobianInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBodyFrame<T>& F,
       bool in_terms_of_qdot = false) const {
-    return CalcJacobianForWorldAlignedBody(cache, body.get_body_index(),
-                                           local_offset, in_terms_of_qdot);
+    return CalcFrameSpatialVeclocityJacobianInWorldFrame(
+        cache, F.get_rigid_body(),
+        F.get_transform_to_body().template cast<T>(), in_terms_of_qdot);
   }
 
-  /// Let \f$ \dot{x} \f$ be the twist of frame A w.r.t the world expressed in
-  /// frame B, where A is a frame rigidly attached to `body` with
-  /// `local_offset`, and B has the same orientation as the world but located
-  /// at the origin of frame A.
-  /// Let \f$ J \f$ be the Jacobian s.t. \f$ \dot{x} = J v \f$,
-  /// This function returns \f$ \dot{J} v \f$.
-  /// @param cache, Reference to KinematicsCache.
-  /// @param body, Reference to the body.
-  /// @param local_offset, A's offset from the `body`.
-  /// @return \f$ \dot{J} v \f$
-  template <typename Scalar>
-  drake::TwistVector<Scalar> CalcJacobianDotTimesVForWorldAlignedBody(
-      const KinematicsCache<Scalar>& cache, const RigidBody<T>& body,
-      const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity()) const {
-    return CalcJacobianDotTimesVForWorldAlignedBody(
-        cache, body.get_body_index(), local_offset);
-  }
-
-  /// Let \f$ \dot{x} \f$ be the twist of frame A w.r.t the world expressed in
-  /// frame B, where A is a frame rigidly attached to `frame` with
-  /// `local_offset`, and B has the same orientation as the world but located
-  /// at the origin of frame A.
-  /// This function returns the Jacobian s.t. \f$ \dot{x} = J v \f$.
-  /// @param cache, Reference to KinematicsCache.
-  /// @param frame, Reference to the frame.
-  /// @param local_offset, A's offset from the `frame`.
-  /// @return \f$ J \f$
-  template <typename Scalar>
-  drake::MatrixX<Scalar> CalcJacobianForWorldAlignedBody(
-      const KinematicsCache<Scalar>& cache, const RigidBodyFrame<T>& frame,
-      const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity(),
+  /// This function returns the Jacobian of the spatial velocity of rigid body
+  /// `B` measured and expressed in the world frame s.t. `V_WB = J * v`, where
+  /// `V_WB` is the spatial velocity of body `B` measured and expressed in the
+  /// world frame `W`.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param B Reference to the body.
+  /// @param in_terms_of_qdot True for `J` w.r.t qdot, false for `J` w.r.t v.
+  /// @return `J`
+  drake::Matrix6X<T> CalcBodySpatialVeclocityJacobianInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& B,
       bool in_terms_of_qdot = false) const {
-    return CalcJacobianForWorldAlignedBody(cache, frame.get_frame_index(),
-                                           local_offset, in_terms_of_qdot);
+    return CalcFrameSpatialVeclocityJacobianInWorldFrame(
+        cache, B, drake::Isometry3<T>::Identity(), in_terms_of_qdot);
   }
 
-  /// Let \f$ \dot{x} \f$ be the twist of frame A w.r.t the world expressed in
-  /// frame B, where A is a frame rigidly attached to `frame` with
-  /// `local_offset`, and B has the same orientation as the world but located
-  /// at the origin of frame A.
-  /// Let \f$ J \f$ be the Jacobian s.t. \f$ \dot{x} = J v \f$,
-  /// This function returns \f$ \dot{J} v \f$.
-  /// @param cache, Reference to KinematicsCache.
-  /// @param frame, Reference to the frame.
-  /// @param local_offset, A's offset from the `frame`.
-  /// @return \f$ \dot{J} v \f$
-  template <typename Scalar>
-  drake::TwistVector<Scalar> CalcJacobianDotTimesVForWorldAlignedBody(
-      const KinematicsCache<Scalar>& cache, const RigidBodyFrame<T>& frame,
-      const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity()) const {
-    return CalcJacobianDotTimesVForWorldAlignedBody(
-        cache, frame.get_frame_index(), local_offset);
+  /// This function returns `Jdot * v`, where `J` is the Jacobian of spatial
+  /// velocity, `V_WF`, of frame `F` measured and expressed in the world
+  /// frame `W`. Frame `F` is attached to RigidBody @p `B`, and @p X_BF is the
+  /// transformation from frame `F` to body frame `B` measured and expressed in
+  /// body frame `B`.
+  /// @param cache Reference to KinematicsCache.
+  /// @param B Reference to the body.
+  /// @param X_BF Transformation from frame `F` to body frame `B` measured and
+  /// expressed in body frame `B`.
+  /// @return `Jdot * v`
+  drake::Vector6<T> CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& B,
+      const drake::Isometry3<T>& X_BF) const;
+
+  /// This function returns `Jdot * v`, where `J` is the Jacobian of spatial
+  /// velocity, `V_WF`, of frame `F` measured and expressed in the world
+  /// frame `W`.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param F Reference to the RigidBodyFrame.
+  /// @return `Jdot * v`
+  drake::Vector6<T> CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBodyFrame<T>& F) const {
+    return CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+        cache, F.get_rigid_body(),
+        F.get_transform_to_body().template cast<T>());
+  }
+
+  /// This function returns `Jdot * v`, where `J` is the Jacobian of spatial
+  /// velocity, `V_WB`, of body frame `B` measured and expressed in the world
+  /// frame `W`.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param B Reference to the RigidBody.
+  /// @return `Jdot * v`
+  drake::Vector6<T> CalcBodySpatialVelocityJacobianDotTimesVInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& B) const {
+    return CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+        cache, B, drake::Isometry3<T>::Identity());
   }
 
   /**
@@ -1424,42 +1399,6 @@ class RigidBodyTree {
       std::vector<size_t> const& cindB,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
-
-  template <typename Scalar>
-  // Same function as above except `index` can be either body or frame's index.
-  drake::Isometry3<Scalar> CalcPoseInWorld(
-      const KinematicsCache<Scalar>& cache, int index,
-      const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity()) const;
-
-  template <typename Scalar>
-  // Same function as above except `index` can be either body or frame's index.
-  drake::TwistVector<Scalar> CalcTwistInWorld(
-      const KinematicsCache<Scalar>& cache, int index,
-      const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity()) const;
-
-  template <typename Scalar>
-  // Same function as above except `index` can be either body or frame's index.
-  drake::TwistVector<Scalar> CalcTwistInWorldAlignedBody(
-      const KinematicsCache<Scalar>& cache, int index,
-      const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity()) const;
-
-  template <typename Scalar>
-  // Same function as above except `index` can be either body or frame's index.
-  drake::MatrixX<Scalar> CalcJacobianForWorldAlignedBody(
-      const KinematicsCache<Scalar>& cache, int index,
-      const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity(),
-      bool in_terms_of_qdot = false) const;
-
-  template <typename Scalar>
-  // Same function as above except `index` can be either body or frame's index.
-  drake::TwistVector<Scalar> CalcJacobianDotTimesVForWorldAlignedBody(
-      const KinematicsCache<Scalar>& cache, int index,
-      const drake::Isometry3<Scalar>& local_offset =
-          drake::Isometry3<Scalar>::Identity()) const;
 
   template <typename Scalar>
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
