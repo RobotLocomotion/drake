@@ -77,6 +77,14 @@ class Launcher(object):
         fcntl.fcntl(process.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
         self.children.append(TrackedProcess(label, process))
 
+        # Fail-fast on infant mortality.
+        time.sleep(0.05)
+        self._poll()
+        if self.returncode is not None:
+            print process.stdout.read(),
+            print "[%s] %s failed to launch" % (self.name, label)
+            sys.exit(self.returncode or 1)
+
     def _poll(self):
         for child in self.children:
             ret = child.process.poll()
@@ -160,9 +168,13 @@ def wait_for_lcm_message_on_channel(channel):
         raise StopIteration()
 
     sub = m.subscribe(channel, receive)
+    start_time = time.time()
     try:
         while True:
-            rlist, _, _ = select.select([m], [], [])
+            if time.time() - start_time > 10.:
+                raise RuntimeError(
+                    "Timeout waiting for channel %s" % channel)
+            rlist, _, _ = select.select([m], [], [], 0.1)
             if m in rlist:
                 m.handle()
     except StopIteration:
