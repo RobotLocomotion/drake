@@ -579,10 +579,12 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // TODO(naveenoid) : This needs access externally.
   double sparseness_threshold = 1e-14;
   error = AddCosts(model, prog, sparseness_threshold);
+  DRAKE_ASSERT(!error);
 
   if (!error) {
     error = ProcessLinearConstraints(model, prog, sparseness_threshold);
   }
+  DRAKE_ASSERT(!error);
 
   // Add Lorentz cone constraints.
   if (!error) {
@@ -590,6 +592,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
         prog, prog.lorentz_cone_constraints(), false, sparseness_threshold,
         lorentz_cone_new_variable_indices, model);
   }
+  DRAKE_ASSERT(!error);
 
   // Add rotated Lorentz cone constraints.
   if (!error) {
@@ -597,12 +600,14 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
         prog, prog.rotated_lorentz_cone_constraints(), true,
         sparseness_threshold, rotated_lorentz_cone_new_variable_indices, model);
   }
+  DRAKE_ASSERT(!error);
 
   DRAKE_ASSERT(HasCorrectNumberOfVariables(model, is_new_variable.size()));
 
   if (!error) {
     for (const auto it : prog.GetSolverOptionsDouble("GUROBI")) {
       error = GRBsetdblparam(env, it.first.c_str(), it.second);
+      DRAKE_ASSERT(!error);
       if (error) {
         continue;
       }
@@ -611,6 +616,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   if (!error) {
     for (const auto it : prog.GetSolverOptionsInt("GUROBI")) {
       error = GRBsetintparam(env, it.first.c_str(), it.second);
+      DRAKE_ASSERT(!error);
       if (error) {
         continue;
       }
@@ -620,6 +626,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   if (!error) {
     error = GRBoptimize(model);
   }
+  DRAKE_ASSERT(!error);
 
   SolutionResult result = SolutionResult::kUnknownError;
 
@@ -635,7 +642,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
 
     if (optimstatus != GRB_OPTIMAL && optimstatus != GRB_SUBOPTIMAL) {
-      if (optimstatus == GRB_INF_OR_UNBD) {
+      if (optimstatus == GRB_INF_OR_UNBD || optimstatus == GRB_INFEASIBLE) {
         result = SolutionResult::kInfeasibleConstraints;
       }
     } else {
