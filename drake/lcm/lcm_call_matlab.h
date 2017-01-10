@@ -40,8 +40,8 @@ void ToLcmMatlabArray(const LcmMatlabRemoteVariable& var,
 void ToLcmMatlabArray(double scalar, drake::lcmt_matlab_array* matlab_array);
 
 void ToLcmMatlabArray(
-    const Eigen::Ref <
-        const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>>& mat,
+    const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>>&
+        mat,
     drake::lcmt_matlab_array* matlab_array);
 
 void ToLcmMatlabArray(const Eigen::Ref<const Eigen::MatrixXd>& mat,
@@ -170,7 +170,7 @@ class LcmMatlabRemoteVariable {
     return LcmCallMatlabSingleOutput("substruct", "()", temp_cell);
   }
 
-private:
+ private:
   const int64_t uid_{};
 };
 
