@@ -126,6 +126,9 @@ class Constraint {
   Eigen::VectorXd lower_bound_;
   Eigen::VectorXd upper_bound_;
   std::string description_;
+  // TODO(hongkai.dai) : Add a field for the acceptable dimension of Eval. Note
+  // that LorentzConeConstraint and RotatedLorentzConeConstraint can have
+  // dynamic dimension, so we can use Eigen::Dynamic instead.
 };
 
 /**

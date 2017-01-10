@@ -182,6 +182,10 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
       CompareMatrices(constraint3->upper_bound(), constraint4->upper_bound()));
 }
 
+/* A generic cost derived from Constraint class. This is meant for testing
+ * adding a cost to optimization program, and the cost is in the form of a
+ * derived class of Constraint.
+ */
 class GenericTrivialCost1 : public Constraint {
  public:
   GenericTrivialCost1()
@@ -205,6 +209,11 @@ class GenericTrivialCost1 : public Constraint {
   double private_val_{0};
 };
 
+/* A generic cost. This class is meant for testing adding a cost to the
+ * optimization program, by calling `MathematicalProgram::MakeCost` to
+ * convert this class to a ConstraintImpl object.
+ *
+ */
 class GenericTrivialCost2 {
  public:
   static size_t numInputs() { return 2; }
@@ -219,6 +228,9 @@ class GenericTrivialCost2 {
   }
 };
 
+// Verifies if the added cost evaluates the same as the original cost.
+// This function is supposed to test these costs added as a derived class
+// from Constraint.
 void VerifyAddedCost1(const MathematicalProgram& prog,
                       const std::shared_ptr<Constraint>& cost,
                       const Eigen::Ref<const Eigen::VectorXd>& x_value,
@@ -230,6 +242,9 @@ void VerifyAddedCost1(const MathematicalProgram& prog,
   EXPECT_TRUE(CompareMatrices(y, y_expected));
 }
 
+// Verifies if the added cost evaluates the same as the original cost.
+// This function is supposed to test these costs added by converting
+// a class to ConstraintImpl through MakeCost.
 void VerifyAddedCost2(const MathematicalProgram& prog,
                       const GenericTrivialCost2& cost,
                       const std::shared_ptr<Constraint>& returned_cost,

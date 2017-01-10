@@ -670,6 +670,12 @@ class MathematicalProgram {
     AddCost(obj, decision_variables_);
   }
 
+  /**
+   * Convert an input of type @tparam F to a ConstraintImpl object.
+   * @tparam F This should be the
+   * @param f
+   * @return
+   */
   template <typename F>
   static std::shared_ptr<Constraint> MakeCost(F&& f) {
     return std::make_shared<
@@ -677,6 +683,11 @@ class MathematicalProgram {
         std::forward<F>(f));
   }
 
+  /**
+   * Add costs to the optimization program on a list of variables.
+   * @tparam F it should define functions numInputs, numOutputs and eval. Check
+   * drake::solvers::detail::FunctionTraits for more detail.
+   */
   template <typename F>
   typename std::enable_if<
       (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) &&
@@ -686,6 +697,12 @@ class MathematicalProgram {
     return AddCost(f, ConcatenateVariableRefList(vars));
   }
 
+  /**
+   * Adds a cost to the optimization program on an Eigen::Vector containing
+   * decision variables.
+   * @tparam F it should define functions numInputs, numOutputs and eval. Check
+   * drake::solvers::detail::FunctionTraits for more detail.
+   */
   template <typename F>
   typename std::enable_if<
       (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) &&
@@ -697,6 +714,11 @@ class MathematicalProgram {
     return c;
   }
 
+  /**
+   * Adds a cost to the optimization program on all decision variables.
+   * @tparam F it should define functions numInputs, numOutputs and eval. Check
+   * drake::solvers::detail::FunctionTraits for more detail.
+   */
   template <typename F>
   typename std::enable_if<
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value &&
@@ -717,6 +739,12 @@ class MathematicalProgram {
     return AddCost(f, ConcatenateVariableRefList(vars));
   }
 
+  /**
+   * Adds a cost to the optimization program on an Eigen::Vector containing
+   * decision variables.
+   * @tparam F it should define functions numInputs, numOutputs and eval. Check
+   * drake::solvers::detail::FunctionTraits for more detail.
+   */
   template <typename F>
   typename std::enable_if<
       (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) &&
@@ -730,6 +758,11 @@ class MathematicalProgram {
     return c;
   }
 
+  /**
+   * Adds a cost to the optimization program on all decision variables.
+   * @tparam F it should define functions numInputs, numOutputs and eval. Check
+   * drake::solvers::detail::FunctionTraits for more detail.
+   */
   template <typename F>
   typename std::enable_if<
       (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) &&

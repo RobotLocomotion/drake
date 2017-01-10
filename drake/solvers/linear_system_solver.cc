@@ -33,9 +33,9 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
     auto const& c = binding.constraint();
     size_t n = c->A().rows();
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
-      Aeq.block(constraint_index,
-                prog.FindDecisionVariableIndex(binding.variables()(i)), n, 1) =
-          c->A().col(i);
+      size_t variable_index =
+          prog.FindDecisionVariableIndex(binding.variables()(i));
+      Aeq.block(constraint_index, variable_index, n, 1) = c->A().col(i);
     }
     beq.segment(constraint_index, n) =
         c->lower_bound();  // = c->upper_bound() since it's an equality
