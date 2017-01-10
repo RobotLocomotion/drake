@@ -1,0 +1,15 @@
+// GENERATED FILE DO NOT EDIT
+// See drake/tools/lcm_vector_gen.py.
+
+package drake;
+
+struct lcmt_endless_road_car_config_t {
+  // The timestamp in milliseconds.
+  int64_t timestamp;
+
+  double wheelbase;  // wheelbase
+  double max_abs_steering_angle;  // max_abs_steering_angle
+  double max_velocity;  // max_velocity
+  double max_acceleration;  // max_acceleration
+  double max_deceleration;  // max_deceleration
+}

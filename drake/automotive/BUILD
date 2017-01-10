@@ -15,6 +15,7 @@ drake_cc_library(
     name = "generated_vectors",
     srcs = [
         "gen/driving_command.cc",
+        "gen/endless_road_car_config.cc",
         "gen/endless_road_car_state.cc",
         "gen/endless_road_oracle_output.cc",
         "gen/euler_floating_joint_state.cc",
@@ -24,6 +25,7 @@ drake_cc_library(
     ],
     hdrs = [
         "gen/driving_command.h",
+        "gen/endless_road_car_config.h",
         "gen/endless_road_car_state.h",
         "gen/endless_road_oracle_output.h",
         "gen/euler_floating_joint_state.h",
@@ -41,6 +43,7 @@ drake_cc_library(
     name = "generated_translators",
     srcs = [
         "gen/driving_command_translator.cc",
+        "gen/endless_road_car_config_translator.cc",
         "gen/endless_road_car_state_translator.cc",
         "gen/endless_road_oracle_output_translator.cc",
         "gen/euler_floating_joint_state_translator.cc",
@@ -49,6 +52,7 @@ drake_cc_library(
     ],
     hdrs = [
         "gen/driving_command_translator.h",
+        "gen/endless_road_car_config_translator.h",
         "gen/endless_road_car_state_translator.h",
         "gen/endless_road_oracle_output_translator.h",
         "gen/euler_floating_joint_state_translator.h",
