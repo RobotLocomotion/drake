@@ -11,6 +11,7 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   endless_road_car.cc
   endless_road_oracle.cc
   gen/driving_command.cc
+  gen/endless_road_car_config.cc
   gen/endless_road_car_state.cc
   gen/endless_road_oracle_output.cc
   gen/euler_floating_joint_state.cc
@@ -76,6 +77,7 @@ if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeAutomotiveLcm SOURCE_FILES
     automotive_simulator.cc
     gen/driving_command_translator.cc
+    gen/endless_road_car_config_translator.cc
     gen/endless_road_car_state_translator.cc
     gen/endless_road_oracle_output_translator.cc
     gen/euler_floating_joint_state_translator.cc

@@ -12,6 +12,9 @@ namespace="drake::automotive"
 source $drake/tools/lcm_vector_gen.sh
 
 gen_lcm_and_vector_from_proto "driving command" $drake/automotive/driving_command_fields.named_vector
+gen_lcm_and_vector "endless road car config" \
+    wheelbase max_abs_steering_angle max_velocity \
+    max_acceleration max_deceleration
 gen_lcm_and_vector "endless road car state" s r heading speed
 gen_lcm_and_vector "endless road oracle output" net_delta_sigma delta_sigma_dot
 gen_lcm_and_vector_from_proto "euler floating joint state" $drake/automotive/euler_floating_joint_state.named_vector

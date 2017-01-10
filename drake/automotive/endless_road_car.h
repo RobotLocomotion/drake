@@ -6,9 +6,9 @@
 #include <utility>
 
 #include "drake/automotive/gen/driving_command.h"
+#include "drake/automotive/gen/endless_road_car_config.h"
 #include "drake/automotive/gen/endless_road_car_state.h"
 #include "drake/automotive/gen/endless_road_oracle_output.h"
-#include "drake/automotive/gen/simple_car_config.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -27,18 +27,16 @@ namespace automotive {
 ///
 /// (Elevation-above-road 'h' is implicitly zero, too.)
 ///
-/// configuration
-/// * see lcmt_SimpleCarConfig_t
+/// configuration:  EndlessRoadCarConfig
 ///
-/// state vector
+/// state vector:  EndlessRoadCarState
 /// * planar LANE-space position:  (s, r)
-/// * planar isometric LANE-space velocity:  (sigma, rho)-dot
+/// * planar heading and speed (isometric LANE-space forward velocity)
 ///
-/// input vector:
-/// * Currently:  none (accelerations are just zero)
-/// * Later:  planar isometric LANE-space acceleration: (sigma, rho)-ddot
+/// input vector:  Depends on @p control_type specified at construction;
+/// see EndlessRoadCar() constructor for details.
 ///
-/// output vector: same as state vector
+/// output vector: EndlessRoadCarState (same as state vector)
 ///
 /// @tparam T must support certain arithmetic operations.
 ///
@@ -57,17 +55,30 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
     kIdm,   // IDM controller using input from EndlessRoadOracle
   };
 
+  /// Construct an EndlessRoadCar.
+  ///
+  /// @param id  ID string, helpful for logging and visualization
+  /// @param road  the maliput::api::RoadGeometry on which this car will
+  ///              be driving
+  /// @param control_type  how the car will be controlled
+  /// @param config  configurable parameters of the car
+  ///
+  /// @p control_type affects the number and type of input ports:
+  /// * `kNone`:  no input ports (accelerations are just zero)
+  /// * `kUser`:  single port accepting DrivingCommand
+  /// * `kIdm`:   single port accepting EndlessRoadOracleOutput
   EndlessRoadCar(const std::string& id,
                  const maliput::utility::InfiniteCircuitRoad* road,
                  const ControlType control_type,
-                 const SimpleCarConfig<T>& config = get_default_config());
-  // TODO(maddog) How is configuration used, if at all?
+                 const EndlessRoadCarConfig<T>& config = get_default_config());
+
+  const std::string& id() const { return id_; }
 
   ControlType control_type() const { return control_type_; }
 
-  static SimpleCarConfig<T> get_default_config();
+  static EndlessRoadCarConfig<T> get_default_config();
 
-  const SimpleCarConfig<T>& config() const { return config_; }
+  const EndlessRoadCarConfig<T>& config() const { return config_; }
 
  public:
   // System<T> overrides
@@ -112,7 +123,7 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
   const std::string id_;
   const maliput::utility::InfiniteCircuitRoad* road_;
   const ControlType control_type_;
-  const SimpleCarConfig<T> config_;
+  const EndlessRoadCarConfig<T> config_;
 };
 
 }  // namespace automotive

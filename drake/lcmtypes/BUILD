@@ -41,6 +41,7 @@ lcm_java_library(
 
 _AUTOMOTIVE_LCM_SRCS = [
     "lcmt_driving_command_t.lcm",
+    "lcmt_endless_road_car_config_t.lcm",
     "lcmt_endless_road_car_state_t.lcm",
     "lcmt_endless_road_oracle_output_t.lcm",
     "lcmt_euler_floating_joint_state_t.lcm",
