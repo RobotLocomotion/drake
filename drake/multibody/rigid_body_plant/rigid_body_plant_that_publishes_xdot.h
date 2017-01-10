@@ -21,7 +21,7 @@ namespace systems {
 /// derivative of RBPlant's state vector `x`, on an LCM channel encoded as an
 /// `lcmt_drake_signal` message.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// @tparam T The scalar type. Currently, the only supported type is `double`.
 /// @ingroup rigid_body_systems
 template <typename T>
 class RigidBodyPlantThatPublishesXdot : public RigidBodyPlant<T> {
@@ -42,10 +42,10 @@ class RigidBodyPlantThatPublishesXdot : public RigidBodyPlant<T> {
   ~RigidBodyPlantThatPublishesXdot() override;
 
  private:
-  /// Publishes `xdot`, the derivative of `x`, which is this system's
-  /// generalized state vector. This vector contains the derivatives of the
-  /// RigidBodyTree's joint's positions and velocities. Thus, the units are
-  /// velocities and accelerations.
+  // Publishes `xdot`, the derivative of `x`, which is this system's generalized
+  // state vector. This vector contains the derivatives of the RigidBodyTree's
+  // joint's positions and velocities. Thus, the units are velocities and
+  // accelerations.
   void DoPublish(const Context<T>& context) const override;
 
   // A const pointer to an LCM subsystem. Note that while the pointer is const,
@@ -55,7 +55,8 @@ class RigidBodyPlantThatPublishesXdot : public RigidBodyPlant<T> {
   // The LCM message upon which to publish `xdot`.
   const std::string channel_;
 
-  // Variables for holding the `xdot` and the LCM message that holds `xdot`.
+  // A variable and LCM message for holding the `xdot`. These class member
+  // variables exist to avoid repeated memory reallocation and deallocation.
   std::unique_ptr<ContinuousState<double>> derivatives_;
   mutable lcmt_drake_signal message_;
 };
