@@ -7,6 +7,46 @@ target_link_libraries(drakeAcrobotPlant
     drakeSystemFramework)
 
 if(lcm_FOUND)
+  add_library_with_exports(LIB_NAME drakeAcrobotLcm SOURCE_FILES
+          acrobot_lcm.cc)
+  target_link_libraries(drakeAcrobotLcm
+          drakeLCMSystem2)
+  drake_install_libraries(drakeAcrobotLcm)
+  drake_install_headers(
+          acrobot_lcm.h)
+  drake_install_pkg_config_file(drake-acrobot-lcm
+          TARGET drakeAcrobotLcm
+          LIBS -drakeAcrobotLcm
+          REQUIRES drake-lcm-system drake-lcmtypes-cpp)
+
+  add_executable(acrobot_lcm_msg_generator acrobot_lcm_msg_generator.cpp)
+  target_link_libraries(acrobot_lcm_msg_generator
+            drakeLCMTypes
+            drakeLcm)
+
+  add_executable(acrobot_plant_w_lcm acrobot_plant_w_lcm.cc)
+  target_link_libraries(acrobot_plant_w_lcm
+          drakeSystemAnalysis
+          drakeLCMSystem2
+          drakeAcrobotLcm
+          drakeAcrobotPlant
+          drakeMultibodyParsers
+          drakeRigidBodyPlant
+          drakeSystemAnalysis
+          drakeLinearControl)
+
+  add_executable(acrobot_energy_shaping_controller_w_lcm
+          acrobot_energy_shaping_controller_w_lcm.cc)
+  target_link_libraries(acrobot_energy_shaping_controller_w_lcm
+          drakeSystemAnalysis
+          drakeLCMSystem2
+          drakeAcrobotLcm
+          drakeAcrobotPlant
+          drakeMultibodyParsers
+          drakeRigidBodyPlant
+          drakeSystemAnalysis
+          drakeLinearControl)
+
   add_executable(acrobot_run_passive acrobot_run_passive.cc)
   target_link_libraries(acrobot_run_passive
       drakeAcrobotPlant

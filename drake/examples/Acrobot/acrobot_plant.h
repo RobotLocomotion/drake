@@ -74,7 +74,8 @@ class AcrobotPlant : public systems::LeafSystem<T> {
       l2{2.0},           // Length of link 2 (m).
       lc1{0.5},  // Vertical distance from shoulder joint to center of mass of
                  // link 1 (m).
-      lc2{1.0},  // Vertical distance from elbox joint to center of mass of link
+      lc2{1.0},  // Vertical distance from elbox joint to center of mass of
+  // link
                  // 2 (m).
       Ic1{.083},  // Inertia of link 1 about the center of mass of link 1
                   // (kg*m^2).
@@ -83,6 +84,23 @@ class AcrobotPlant : public systems::LeafSystem<T> {
       b1{0.1},    // Damping coefficient of the shoulder joint (kg*m^2/s).
       b2{0.1},    // Damping coefficient of the elbow joint (kg*m^2/s).
       g{9.81};    // Gravitational constant (m/s^2).
+
+  //const double m1{2.4367},  // Mass of link 1 (kg).
+  //    m2{0.6178},           // Mass of link 2 (kg).
+  //    l1{0.5263},           // Length of link 1 (m).
+  //    l2{0},           // Length of link 2 (m).
+  //    lc1{1.6738},  // Vertical distance from shoulder joint to center of
+  // mass of
+                // link 1 (m).
+  //    lc2{1.5651},  // Vertical distance from elbox joint to center of mass of
+                  //link 2 (m).
+  //    Ic1{-4.7443},  // Inertia of link 1 about the center of mass of link 1
+                // (kg*m^2).
+  //    Ic2{-1.0068},   // Inertia of link 2 about the center of mass of link 2
+  // (kg*m^2).
+  //    b1{0.0320},    // Damping coefficient of the shoulder joint (kg*m^2/s).
+  //    b2{0.0413},    // Damping coefficient of the elbow joint (kg*m^2/s).
+  //    g{9.81};    // Gravitational constant (m/s^2).
 };
 
 /// Constructs the Acrobot with (only) encoder outputs.
