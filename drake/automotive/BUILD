@@ -294,6 +294,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "endless_road_car_to_euler_floating_joint_test",
+    deps = [
+        "//drake/automotive:endless_road_car",
+        "//drake/automotive/maliput/monolane:builder",
+    ],
+)
+
+drake_cc_googletest(
     name = "simple_car_test",
     deps = [
         "//drake/automotive:simple_car",
