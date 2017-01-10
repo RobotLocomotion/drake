@@ -74,7 +74,7 @@ TEST_F(GenerateUrdfTest, AtLeastRunIt) {
   std::string actual_urdf_contents;
   // TODO(maddog@tri.global)  spruce is lame.  file::readAsString() does not
   //                          handle EOF correctly.  File a bug upstream.
-  //spruce::file::readAsString(expected_urdf, actual_urdf_contents);
+  // RE: spruce::file::readAsString(expected_urdf, actual_urdf_contents);
   {
     std::ifstream is(expected_urdf.getStr());
     std::stringstream ss;
