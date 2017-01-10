@@ -21,15 +21,16 @@ using lcm::CompareLcmtDrakeSignalMessages;
 using lcm::DrakeMockLcm;
 using multibody::joints::kQuaternion;
 using parsers::urdf::AddModelInstanceFromUrdfFile;
+using systems::Context;
+using systems::RigidBodyPlantThatPublishesXdot;
 
-namespace systems {
-namespace plants {
+namespace multibody {
 namespace rigid_body_plant {
 namespace test {
 namespace {
 
-// Tests that RigidBodyPlantThatOutputsXdot actually publishes LCM messages when
-// DoPublish() is called.
+// Tests that RigidBodyPlantThatPublishesXdot actually publishes LCM messages
+// when DoPublish() is called.
 GTEST_TEST(RigidBodyPlantThatOutputsXdotTest, TestPublishLcmMessage) {
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
   AddModelInstanceFromUrdfFile(
@@ -56,6 +57,7 @@ GTEST_TEST(RigidBodyPlantThatOutputsXdotTest, TestPublishLcmMessage) {
       lcm.get_last_published_message(kChannelName);
 
   lcmt_drake_signal transmitted_message;
+  // Decodes message and checks that the correct number of bytes was processed.
   EXPECT_EQ(transmitted_message.decode(transmitted_message_bytes.data(), 0,
                            transmitted_message_bytes.size()),
             transmitted_message_bytes.size());
@@ -68,6 +70,7 @@ GTEST_TEST(RigidBodyPlantThatOutputsXdotTest, TestPublishLcmMessage) {
                             "base_wz", "base_vx", "base_vy", "base_vz"};
   expected_message.timestamp = 0;
 
+  // Compares the previously decoded message entry by entry.
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(
     transmitted_message, expected_message));
 }
@@ -75,6 +78,5 @@ GTEST_TEST(RigidBodyPlantThatOutputsXdotTest, TestPublishLcmMessage) {
 }  // namespace
 }  // namespace test
 }  // namespace rigid_body_plant
-}  // namespace plants
-}  // namespace systems
+}  // namespace multibody
 }  // namespace drake

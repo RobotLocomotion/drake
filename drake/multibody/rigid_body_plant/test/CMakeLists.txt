@@ -14,8 +14,8 @@ if(Bullet_FOUND)
   target_link_libraries(compute_contact_result_test drakeRigidBodyPlant drakeRBSystem)
 
   if (lcm_FOUND)
-    drake_add_cc_test(rigid_body_plant_that_outputs_xdot_test)
-    target_link_libraries(rigid_body_plant_that_outputs_xdot_test
+    drake_add_cc_test(rigid_body_plant_that_publishes_xdot_test)
+    target_link_libraries(rigid_body_plant_that_publishes_xdot_test
         drakeLcm
         drakeMultibodyParsers
         drakeRigidBodyPlant)

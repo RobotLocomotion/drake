@@ -7,7 +7,6 @@
 
 #include <Eigen/Geometry>
 
-
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcmt_drake_signal.hpp"
 #include "drake/multibody/rigid_body_tree.h"

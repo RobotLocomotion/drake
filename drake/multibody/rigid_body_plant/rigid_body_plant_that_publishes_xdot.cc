@@ -1,6 +1,10 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant_that_publishes_xdot.h"
 
+#include <Eigen/Dense>
+
 #include "drake/common/drake_assert.h"
+
+using Eigen::VectorXd;
 
 namespace drake {
 namespace systems {
@@ -14,8 +18,7 @@ RigidBodyPlantThatPublishesXdot<T>::RigidBodyPlantThatPublishesXdot(
   derivatives_ = LeafSystem<T>::AllocateTimeDerivatives();
   const RigidBodyTree<T>& rigid_body_tree =
       RigidBodyPlant<T>::get_rigid_body_tree();
-  const int num_states = rigid_body_tree.get_num_positions() +
-                         rigid_body_tree.get_num_velocities();
+  const int num_states = RigidBodyPlant<T>::get_num_states();
   message_.dim = num_states;
   message_.val.resize(num_states, 0);  // Initializes vector to contain zeros.
   for (int i = 0; i < rigid_body_tree.get_num_positions(); ++i) {
@@ -38,16 +41,10 @@ void RigidBodyPlantThatPublishesXdot<T>::DoPublish(const Context<T>& context)
     const {
   RigidBodyPlant<T>::CalcTimeDerivatives(context, derivatives_.get());
   const auto xdot = derivatives_->CopyToVector();
-
-  const RigidBodyTree<T>& rigid_body_tree =
-      RigidBodyPlant<T>::get_rigid_body_tree();
-  const int num_states = rigid_body_tree.get_num_positions() +
-                         rigid_body_tree.get_num_velocities();
+  const int num_states = RigidBodyPlant<T>::get_num_states();
 
   DRAKE_DEMAND(xdot.size() == num_states);
-  for (int i = 0; i < num_states; ++i) {
-    message_.val[i] = xdot(i);
-  }
+  VectorXd::Map(message_.val.data(), xdot.size()) = xdot;
 
   // Saves the timestamp in milliseconds. This matches the behavior in
   // LcmtDrakeSignalTranslator::Serialize().
