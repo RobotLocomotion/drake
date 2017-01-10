@@ -33,7 +33,7 @@ namespace lcm {
 /// To support a calling lcm_call_matlab for a new data type, simply implement
 //  another one of these methods.
 
-struct LcmMatlabRemoteVariable;
+class LcmMatlabRemoteVariable;
 void ToLcmMatlabArray(const LcmMatlabRemoteVariable& var,
                       drake::lcmt_matlab_array* matlab_array);
 
@@ -79,13 +79,13 @@ LcmMatlabRemoteVariable LcmCallMatlabSingleOutput(
 
 /// Holds a reference to a return variable stored on the matlab client, which
 /// can be passed back into a future lcm_call_matlab call.
-struct LcmMatlabRemoteVariable {
+class LcmMatlabRemoteVariable {
  public:
   LcmMatlabRemoteVariable();
   //  ~LcmMatlabRemoteVariable(); // TODO(russt): send a destroy message on
   //  deletion
 
-  const int64_t uid_{};
+  int64_t uid() const { return uid_; }
 
   /// Create a new remote variable that contains the data at the prescribed
   /// index.  Supported calls are, for instance:
@@ -169,6 +169,9 @@ struct LcmMatlabRemoteVariable {
     // create the substruct
     return LcmCallMatlabSingleOutput("substruct", "()", temp_cell);
   }
+
+private:
+  const int64_t uid_{};
 };
 
 /// Invokes a mexCallMATLAB call on the remote client.
@@ -196,7 +199,7 @@ std::vector<LcmMatlabRemoteVariable> LcmCallMatlab(
   msg.nlhs = num_outputs;
   msg.lhs.resize(num_outputs);
   for (int i = 0; i < num_outputs; i++) {
-    msg.lhs[i] = remote_vars[i].uid_;
+    msg.lhs[i] = remote_vars[i].uid();
   }
 
   int index = 0;

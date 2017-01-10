@@ -32,7 +32,8 @@ void ToLcmMatlabArray(const LcmMatlabRemoteVariable& var,
   matlab_array->cols = 1;
   matlab_array->num_bytes = sizeof(int64_t);
   matlab_array->data.resize(matlab_array->num_bytes);
-  memcpy(matlab_array->data.data(), &var.uid_, matlab_array->num_bytes);
+  int64_t uid = var.uid();
+  memcpy(matlab_array->data.data(), &uid, matlab_array->num_bytes);
 }
 
 void ToLcmMatlabArray(double var, drake::lcmt_matlab_array* matlab_array) {
