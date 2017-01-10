@@ -672,7 +672,8 @@ class MathematicalProgram {
 
   /**
    * Convert an input of type @tparam F to a ConstraintImpl object.
-   * @tparam F This should be the
+   * @tparam F This class should have functions numInputs(), numOutputs and
+   * eval(x, y). Check drake::solvrs::detail::FunctionTraits for more details.
    * @param f
    * @return
    */
@@ -701,7 +702,7 @@ class MathematicalProgram {
    * Adds a cost to the optimization program on an Eigen::Vector containing
    * decision variables.
    * @tparam F it should define functions numInputs, numOutputs and eval. Check
-   * drake::solvers::detail::FunctionTraits for more detail.
+   * drake::solvers::detail::FunctionTraits for more details.
    */
   template <typename F>
   typename std::enable_if<
