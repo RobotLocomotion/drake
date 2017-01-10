@@ -36,6 +36,7 @@ void check_detectable(const Eigen::Ref<const Eigen::MatrixXd>& A,
   // (A,C) is detectable if and only if the unobservable eigenvalues of A,
   // if any, have absolute values less than one, where an eigenvalue is
   // unobservable if Rank[lambda * I - A; C] < n.
+  // Also, (A,C) is detectable if and only if (A',C') is stabilizable.
   int n = A.rows();
   Eigen::LDLT<Eigen::MatrixXd> ldlt(Q);
   Eigen::MatrixXd L = ldlt.matrixL();
@@ -45,17 +46,7 @@ void check_detectable(const Eigen::Ref<const Eigen::MatrixXd>& A,
     D_sqrt(i, i) = sqrt(D(i));
   }
   Eigen::MatrixXd C = L * D_sqrt;
-  Eigen::EigenSolver<Eigen::MatrixXd> es(A);
-  for (int i = 0; i < n; i++) {
-    if (es.eigenvalues()[i].real() * es.eigenvalues()[i].real() +
-            es.eigenvalues()[i].imag() * es.eigenvalues()[i].imag() <
-        1)
-      continue;
-    Eigen::MatrixXcd E(n + n, n);
-    E << es.eigenvalues()[i] * Eigen::MatrixXcd::Identity(n, n) - A, C;
-    Eigen::ColPivHouseholderQR<Eigen::MatrixXcd> qr(E);
-    DRAKE_THROW_UNLESS(qr.rank() == n);
-  }
+  check_stabilizable(A.transpose(), C.transpose());
 }
 /**
  * "Givens rotation" computes an orthogonal 2x2 matrix R such that
@@ -88,6 +79,7 @@ void Givens_rotation(double a, double b, Eigen::Ref<Eigen::MatrixXd> R,
 
 void swap_block_11(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                    Eigen::Ref<Eigen::MatrixXd> Z, int p) {
+  // Dooren, Case I, p124-125
   int n2 = S.rows();
   Eigen::MatrixXd A = S.block<2, 2>(p, p), B = T.block<2, 2>(p, p),
                   Z1 = Eigen::MatrixXd::Identity(n2, n2);
@@ -101,6 +93,7 @@ void swap_block_11(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
 }
 void swap_block_21(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                    Eigen::Ref<Eigen::MatrixXd> Z, int p) {
+  // Dooren, Case II, p126-127
   int n2 = S.rows();
   Eigen::Matrix3d A = S.block<3, 3>(p, p), B = T.block<3, 3>(p, p);
   Eigen::Matrix3d H = A(2, 2) * B - B(2, 2) * A;
@@ -158,10 +151,11 @@ void swap_block_12(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
 void swap_block_22(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                    Eigen::Ref<Eigen::MatrixXd> Z, int p) {
   // direct swapping algorithm
-  // "On Swapping Diagonal Blocks in Real Schur Form" by Zhaojun Bai and James
-  // W. Demmelt;
   // "Numerical Methods for General and Structured Eigenvalue Problems" by
   // Daniel Kressner, p108-111.
+  // Also relevant but not applicable here:
+  // "On Swapping Diagonal Blocks in Real Schur Form" by Zhaojun Bai and James
+  // W. Demmelt;
   int n2 = S.rows();
   Eigen::MatrixXd A = S.block<4, 4>(p, p), B = T.block<4, 4>(p, p);
   // solve
@@ -190,9 +184,9 @@ void swap_block_22(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
   Y << -x(4, 0), -x(5, 0), -x(6, 0), -x(7, 0), Eigen::Matrix2d::Identity();
   Eigen::MatrixXd Q1, Z1;
   Q1 = Z1 = Eigen::MatrixXd::Identity(n2, n2);
-  Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr1(X);
+  Eigen::ColPivHouseholderQR<Eigen::Matrix<double, 4, 2> > qr1(X);
   Z1.block<4, 4>(p, p) = qr1.householderQ();
-  Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr2(Y);
+  Eigen::ColPivHouseholderQR<Eigen::Matrix<double, 4, 2> > qr2(Y);
   Q1.block<4, 4>(p, p) = qr2.householderQ().adjoint();
   // apply transform Q1 * (S,T) * Z1
   S = (Q1 * S * Z1).eval(), T = (Q1 * T * Z1).eval(), Z = (Z * Z1).eval();
@@ -216,9 +210,10 @@ void swap_block_22(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
  * There are four cases: swaping 1x1 and 1x1 matrices, swaping 2x2 and 1x1
  * matrices,
  * swaping 1x1 and 2x2 matrices, and swaping 2x2 and 2x2 matrices.
- * Algorithms are described in the paper
+ * Algorithms are described in the papers
  * "A generalized eigenvalue approach for solving Riccati equations" by P. Van
- * Dooren, 1981.
+ * Dooren, 1981, and "Numerical Methods for General and Structured Eigenvalue
+ * Problems" by Daniel Kressner, 2005.
  */
 void swap_block(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                 Eigen::Ref<Eigen::MatrixXd> Z, int p, int q, int q_block_size,
@@ -262,9 +257,10 @@ void swap_block(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
  * stable eigenvalue(s).
  * Push the block pointed by q to the position pointed by p.
  * Finish when n stable eigenvalues are placed at the top-left n by n matrix.
- * The algorithm for swaping blocks is described in the paper
+ * The algorithm for swaping blocks is described in the papers
  * "A generalized eigenvalue approach for solving Riccati equations" by P. Van
- * Dooren, 1981.
+ * Dooren, 1981, and "Numerical Methods for General and Structured Eigenvalue
+ * Problems" by Daniel Kressner, 2005.
  */
 void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                    Eigen::Ref<Eigen::MatrixXd> Z, double eps = 1e-10) {
@@ -325,6 +321,9 @@ void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
  * Q = Q_half'*Q_half and similar for R, the absolute error of the solution
  * is 10^{-6}, while the absolute error of the solution computed by Matlab is
  * 10^{-8}.
+ *
+ * TODO(weiqiao.han): I may add an refinement procedure to improve the accuracy,
+ * together with more thorough tests.
  */
 
 Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
