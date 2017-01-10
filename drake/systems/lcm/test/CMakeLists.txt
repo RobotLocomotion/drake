@@ -7,7 +7,7 @@ if(lcm_FOUND)
   target_link_libraries(lcm_publisher_system_test
       drakeLCMSystem2)
 
-  drake_add_cc_test(NAME lcm_translator_dictionary_test)
+  drake_add_cc_test(lcm_translator_dictionary_test)
   target_link_libraries(lcm_translator_dictionary_test
       drakeLCMSystem2)
 

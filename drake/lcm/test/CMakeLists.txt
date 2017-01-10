@@ -9,7 +9,7 @@ if(lcm_FOUND)
       drakeLCMTypes
       drakeLcm)
 
-  drake_add_cc_test(lcm_call_matlab_test lcm_call_matlab_test.cc)
+  drake_add_cc_test(lcm_call_matlab_test)
   target_link_libraries(lcm_call_matlab_test drakeLCMTypes drakeLcm)
 endif()
 
