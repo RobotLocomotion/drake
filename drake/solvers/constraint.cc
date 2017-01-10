@@ -7,14 +7,16 @@ namespace solvers {
 void QuadraticConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                Eigen::VectorXd& y) const {
   y.resize(num_constraints());
-  y = .5 * x.transpose() * Q_ * x + b_.transpose() * x;
+  y = .5 * x.transpose() * Q_ * x + b_.transpose() * x +
+      drake::Vector1d::Constant(c_);
 }
 
 void QuadraticConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
                                TaylorVecXd& y) const {
   y.resize(num_constraints());
   y = .5 * x.transpose() * Q_.cast<TaylorVarXd>() * x +
-      b_.cast<TaylorVarXd>().transpose() * x;
+      b_.cast<TaylorVarXd>().transpose() * x +
+      drake::Vector1d::Constant(c_).cast<TaylorVarXd>();
 }
 
 void LorentzConeConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,

@@ -129,23 +129,30 @@ class Constraint {
 };
 
 /**
- * lb <= .5 x'Qx + b'x <= ub
+ * lb <= .5 x'Qx + b'x + c <= ub
  */
 class QuadraticConstraint : public Constraint {
  public:
   static const int kNumConstraints = 1;
 
-  template <typename DerivedQ, typename Derivedb>
-  QuadraticConstraint(const Eigen::MatrixBase<DerivedQ>& Q,
-                      const Eigen::MatrixBase<Derivedb>& b, double lb,
-                      double ub)
+  QuadraticConstraint(const Eigen::Ref<const Eigen::MatrixXd>& Q,
+                      const Eigen::Ref<const Eigen::VectorXd>& b, double c,
+                      double lb, double ub)
       : Constraint(kNumConstraints, drake::Vector1d::Constant(lb),
                    drake::Vector1d::Constant(ub)),
         Q_(Q),
-        b_(b) {
+        b_(b),
+        c_(c) {
     DRAKE_ASSERT(Q_.rows() == Q_.cols());
     DRAKE_ASSERT(Q_.cols() == b_.rows());
   }
+  /**
+   * lb <= 0.5 x'Qx + b'x <= ub
+   */
+  QuadraticConstraint(const Eigen::Ref<const Eigen::MatrixXd>& Q,
+                      const Eigen::Ref<const Eigen::VectorXd>& b, double lb,
+                      double ub)
+      : QuadraticConstraint(Q, b, 0, lb, ub) {}
 
   QuadraticConstraint(const QuadraticConstraint& rhs) = delete;
 
@@ -166,6 +173,9 @@ class QuadraticConstraint : public Constraint {
   virtual const Eigen::MatrixXd& Q() const { return Q_; }
 
   virtual const Eigen::VectorXd& b() const { return b_; }
+
+  /** Getter for the constant term. */
+  double constant_term() const { return c_; }
 
   /**
    * Updates the quadratic and linear term of the constraint. The new
@@ -192,6 +202,7 @@ class QuadraticConstraint : public Constraint {
  private:
   Eigen::MatrixXd Q_;
   Eigen::VectorXd b_;
+  double c_;
 };
 
 /**
