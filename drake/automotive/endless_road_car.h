@@ -1,6 +1,9 @@
 #pragma once
 
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
 
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/endless_road_car_state.h"

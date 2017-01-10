@@ -170,7 +170,7 @@ int AutomotiveSimulator<T>::AddEndlessRoadCar(
       break;
     }
     default: { DRAKE_ABORT(); }
-  };
+  }
 
   builder_->Connect(*endless_road_car, *coord_transform);
   AddPublisher(*endless_road_car, vehicle_number);
@@ -483,7 +483,7 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
     auto oracle = builder_->template AddSystem<EndlessRoadOracle<T>>(
         endless_road_.get(), num_cars);
     int i = 0;
-    for (const auto& item: endless_road_cars_) {
+    for (const auto& item : endless_road_cars_) {
       EndlessRoadCar<T>* car = item.first;
 
       // Every car is visible to the Oracle...

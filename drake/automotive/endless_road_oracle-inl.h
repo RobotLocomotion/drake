@@ -5,11 +5,14 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
-#include "endless_road_oracle.h"
+#include "drake/automotive/endless_road_oracle.h"
 
 #include <algorithm>
 #include <cmath>
 #include <iterator>
+#include <map>
+#include <memory>
+#include <vector>
 
 #include <Eigen/Geometry>
 
@@ -346,7 +349,7 @@ void AssessIntersections(
 
     double sum = 0.;
     bool is_first = true;
-    for (const PathRecord& section: paths[i]) {
+    for (const PathRecord& section : paths[i]) {
       double lane_length{};
       if (!section.is_reversed) {
         const double s0 = (is_first) ? self.rp.pos.s : 0.;
@@ -383,15 +386,13 @@ void AssessIntersections(
   // same time as this car.  We only want to pay attention to cars coming
   // from the right, and ultimately only care about the nearest such car.
   for (size_t i = 0; i < source_states.size(); ++i) {
-
     double might_collide_at = kEnormousDistance;
     double maybe_diff_vel{};
 
     // Iterate over the junctions which car 'i' participates in.
     for (const auto& junction : junctions_by_car[i]) {
-
       // Find the TimeBox for this car.
-      const TimeBox self_box = [&](){
+      const TimeBox self_box = [&]() {
         // TODO(maddog)  Linear search is dumb.
         for (const TimeBox& box : boxes_by_junction[junction]) {
           if (box.car_index == i) { return box; }
@@ -486,7 +487,7 @@ void AssessIntersections(
 }
 
 
-}
+}  // namespace
 
 
 

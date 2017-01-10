@@ -1,6 +1,8 @@
 #pragma once
 
+#include <memory>
 #include <stdexcept>
+#include <vector>
 
 #include <boost/optional.hpp>
 
@@ -62,7 +64,6 @@ class EndlessRoadOracle : public systems::LeafSystem<T> {
 //XXX  // TODO(maddog)  Do we need to keep track of these here?
 //XXX  std::vector<systems::InputPortDescriptor<T>> inports_;
 //XXX  std::vector<systems::OutputPortDescriptor<T>> outports_;
-
 };
 
 }  // namespace automotive
