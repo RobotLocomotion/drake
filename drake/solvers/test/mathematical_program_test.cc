@@ -182,7 +182,30 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
       CompareMatrices(constraint3->upper_bound(), constraint4->upper_bound()));
 }
 
-class GenericTrivialCost {
+class GenericTrivialCost1 : public Constraint {
+ public:
+  GenericTrivialCost1()
+      : Constraint(1, Vector1d(std::numeric_limits<double>::infinity()),
+                   Vector1d(std::numeric_limits<double>::infinity())),
+        private_val_(2) {}
+
+  void Eval(const Ref<const Eigen::VectorXd>& x, VectorXd& y) const override {
+    y.resize(1);
+    y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+  }
+
+  void Eval(const Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override {
+    y.resize(1);
+    y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+  }
+
+ private:
+  // Add a private data member to make sure no slicing on this class, derived
+  // from Constraint.
+  double private_val_{0};
+};
+
+class GenericTrivialCost2 {
  public:
   static size_t numInputs() { return 2; }
   static size_t numOutputs() { return 1; }
@@ -196,25 +219,89 @@ class GenericTrivialCost {
   }
 };
 
+void VerifyAddedCost1(const MathematicalProgram& prog,
+                      const std::shared_ptr<Constraint>& cost,
+                      const Eigen::Ref<const Eigen::VectorXd>& x_value,
+                      int num_generic_costs_expected) {
+  EXPECT_EQ(prog.generic_costs().size(), num_generic_costs_expected);
+  Eigen::VectorXd y, y_expected;
+  prog.generic_costs().back().constraint()->Eval(x_value, y);
+  cost->Eval(x_value, y_expected);
+  EXPECT_TRUE(CompareMatrices(y, y_expected));
+}
+
+void VerifyAddedCost2(const MathematicalProgram& prog,
+                      const GenericTrivialCost2& cost,
+                      const std::shared_ptr<Constraint>& returned_cost,
+                      const Eigen::Ref<const Eigen::Vector2d>& x_value,
+                      int num_generic_costs_expected) {
+  EXPECT_EQ(prog.generic_costs().size(), num_generic_costs_expected);
+  Eigen::VectorXd y(1), y_expected(1), y_returned;
+  prog.generic_costs().back().constraint()->Eval(x_value, y);
+  cost.eval<double>(x_value, y_expected);
+  EXPECT_TRUE(CompareMatrices(y, y_expected));
+  returned_cost->Eval(x_value, y_returned);
+  EXPECT_TRUE(CompareMatrices(y, y_returned));
+}
+
 GTEST_TEST(testMathematicalProgram, AddCostTest) {
   // Test if the costs are added correctly.
+
+  // There are ways to add a generic cost
+  // 1. Add Binding<Constraint>
+  // 2. Add shared_ptr<Constraint> on a VectorDecisionVariable object.
+  // 3. Add shared_ptr<Constraint> on a VariableRefList.
+  // 4. Add a ConstraintImpl object on a VectorDecisionVariable object.
+  // 4. Add a ConstraintImpl object on a VariableRefList object.
+  // 5. Add a unique_ptr of object that can be converted to a ConstraintImpl
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   auto y = prog.NewContinuousVariables<2>("y");
   // No cost yet.
-  EXPECT_EQ(prog.generic_costs().size(), 0);
+  int num_generic_costs = 0;
+  EXPECT_EQ(prog.generic_costs().size(), num_generic_costs);
   EXPECT_EQ(prog.linear_costs().size(), 0);
 
-  GenericTrivialCost generic_trivial_cost;
-  prog.AddCost(generic_trivial_cost, {x.head<1>(), y.tail<1>()});
-  // Expect one generic cost
-  EXPECT_EQ(prog.generic_costs().size(), 1);
-  EXPECT_EQ(prog.linear_costs().size(), 0);
-  Eigen::VectorXd generic_cost(1), generic_cost_expected(1);
-  Eigen::Vector2d generic_cost_x(1, 2);
-  prog.generic_costs().back().constraint()->Eval(generic_cost_x, generic_cost);
-  generic_trivial_cost.eval<double>(generic_cost_x, generic_cost_expected);
-  EXPECT_TRUE(CompareMatrices(generic_cost, generic_cost_expected));
+  std::shared_ptr<Constraint> generic_trivial_cost1 =
+      std::make_shared<GenericTrivialCost1>();
+
+  // Adds Binding<Constraint>
+  prog.AddCost(Binding<Constraint>(
+      generic_trivial_cost1, VectorDecisionVariable<3>(x(0), x(1), y(1))));
+  ++num_generic_costs;
+  VerifyAddedCost1(prog, generic_trivial_cost1, Eigen::Vector3d(1, 3, 5),
+                   num_generic_costs);
+
+  // Adds a std::shared_ptr<Constraint> on a VectorDecisionVariable object.
+  prog.AddCost(generic_trivial_cost1,
+               VectorDecisionVariable<3>(x(0), x(1), y(1)));
+  ++num_generic_costs;
+  VerifyAddedCost1(prog, generic_trivial_cost1, Eigen::Vector3d(1, 2, 3),
+                   num_generic_costs);
+
+  // Adds a std::shared_ptr<Constraint> on a VariableRefList object.
+  prog.AddCost(generic_trivial_cost1, {x, y.tail<1>()});
+  ++num_generic_costs;
+  VerifyAddedCost1(prog, generic_trivial_cost1, Eigen::Vector3d(2, 3, 4),
+                   num_generic_costs);
+
+  GenericTrivialCost2 generic_trivial_cost2;
+
+  // Add an object that can be converted to a ConstraintImpl object on a
+  // VectorDecisionVariable object.
+  auto returned_cost3 = prog.AddCost(generic_trivial_cost2,
+                                     VectorDecisionVariable<2>(x(0), y(1)));
+  ++num_generic_costs;
+  VerifyAddedCost2(prog, generic_trivial_cost2, returned_cost3,
+                   Eigen::Vector2d(1, 2), num_generic_costs);
+
+  // Add an object that can be converted to a ConstraintImpl object on a
+  // VariableRefList object.
+  auto returned_cost4 =
+      prog.AddCost(generic_trivial_cost2, {x.head<1>(), y.tail<1>()});
+  ++num_generic_costs;
+  VerifyAddedCost2(prog, generic_trivial_cost2, returned_cost4,
+                   Eigen::Vector2d(1, 2), num_generic_costs);
 }
 
 GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {

@@ -666,9 +666,8 @@ class MathematicalProgram {
    * Adds a cost to the problem which covers all decision
    * variables created at the time the cost was added.
    */
-  template <typename ConstraintT>
-  void AddCost(std::shared_ptr<ConstraintT> constraint) {
-    AddCost(constraint, decision_variables_);
+  void AddCost(std::shared_ptr<Constraint> obj) {
+    AddCost(obj, decision_variables_);
   }
 
   template <typename F>
@@ -700,8 +699,8 @@ class MathematicalProgram {
 
   template <typename F>
   typename std::enable_if<
-      (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) &&
-          (!std::is_convertible<F, Binding<Constraint>>::value),
+      !std::is_convertible<F, std::shared_ptr<Constraint>>::value &&
+          !std::is_convertible<F, Binding<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
   AddCost(F&& f) {
     return AddCost(std::forward<F>(f), decision_variables_);
@@ -713,11 +712,8 @@ class MathematicalProgram {
   // incorrectly as `true` so our enable_if overload is not used.
   // Provide an explicit alternative for this case.
   template <typename F>
-  typename std::enable_if<
-      (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) &&
-          (!std::is_convertible<F, Binding<Constraint>>::value),
-      std::shared_ptr<Constraint>>::type
-  AddCost(std::unique_ptr<F>&& f, const VariableRefList& vars) {
+  std::shared_ptr<Constraint> AddCost(std::unique_ptr<F>&& f,
+                                      const VariableRefList& vars) {
     return AddCost(f, ConcatenateVariableRefList(vars));
   }
 
