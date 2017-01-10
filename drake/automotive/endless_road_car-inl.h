@@ -5,10 +5,12 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
-#include "endless_road_car.h"
+#include "drake/automotive/endless_road_car.h"
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
+#include <string>
 
 #include <Eigen/Geometry>
 
@@ -40,7 +42,7 @@ EndlessRoadCar<T>::EndlessRoadCar(
       break;
     }
     default: { DRAKE_ABORT(); }
-  };
+  }
   this->DeclareOutputPort(systems::kVectorValued,
                           EndlessRoadCarStateIndices::kNumCoordinates);
 }
@@ -128,7 +130,7 @@ void EndlessRoadCar<T>::DoCalcTimeDerivatives(
       dynamic_cast<EndlessRoadCarState<T>*>(vector_derivatives);
   DRAKE_ASSERT(rates);
 
-  const Accelerations accelerations = [&](){
+  const Accelerations accelerations = [&]() {
     switch (control_type_) {
       case kNone: { return Accelerations(0., 0.); }
       case kUser: {
@@ -152,7 +154,7 @@ void EndlessRoadCar<T>::DoCalcTimeDerivatives(
         return ComputeIdmAccelerations(*state, *input);
       }
       default: { DRAKE_ABORT(); }
-    };
+    }
   }();
 
   ImplCalcTimeDerivatives(*state, accelerations, rates);
@@ -160,7 +162,8 @@ void EndlessRoadCar<T>::DoCalcTimeDerivatives(
 
 
 template <typename T>
-typename EndlessRoadCar<T>::Accelerations EndlessRoadCar<T>::ComputeUserAccelerations(
+typename EndlessRoadCar<T>::Accelerations
+EndlessRoadCar<T>::ComputeUserAccelerations(
     const EndlessRoadCarState<T>& state,
     const DrivingCommand<T>& input) const {
 
@@ -185,7 +188,8 @@ typename EndlessRoadCar<T>::Accelerations EndlessRoadCar<T>::ComputeUserAccelera
 
 
 template <typename T>
-typename EndlessRoadCar<T>::Accelerations EndlessRoadCar<T>::ComputeIdmAccelerations(
+typename EndlessRoadCar<T>::Accelerations
+EndlessRoadCar<T>::ComputeIdmAccelerations(
     const EndlessRoadCarState<T>& state,
     const EndlessRoadOracleOutput<T>& input) const {
 

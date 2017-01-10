@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
         maliput::api::LaneEnd::kStart);
     std::vector<const maliput::api::Lane*> path;
 
-    if (! FLAGS_road_path.empty()) {
+    if (!FLAGS_road_path.empty()) {
       std::string end;
       std::string lane_id;
       std::stringstream ss(FLAGS_road_path);

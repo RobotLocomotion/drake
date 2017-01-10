@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/automotive/gen/euler_floating_joint_state.h"
 #include "drake/automotive/gen/endless_road_car_state.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
