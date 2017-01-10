@@ -141,15 +141,15 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Expression e_ite_{if_then_else(x_ < y_, x_, y_)};
 
   const vector<Expression> collection_{
-      e_constant_, e_var_,  e_neg_,  e_add_,  e_mul_,  e_div_,
-      e_log_,      e_abs_,  e_exp_,  e_sqrt_, e_pow_,  e_sin_,
-      e_cos_,      e_tan_,  e_asin_, e_acos_, e_atan_, e_atan2_,
-      e_sinh_,     e_cosh_, e_tanh_, e_min_,  e_max_,  e_ite_};
+      e_constant_, e_var_,  e_neg_,   e_add_,  e_mul_,
+      e_div_,      e_log_,  e_abs_,   e_exp_,  e_sqrt_,
+      e_pow_,      e_sin_,  e_cos_,   e_tan_,  e_asin_,
+      e_acos_,     e_atan_, e_atan2_, e_sinh_, e_cosh_,
+      e_tanh_,     e_min_,  e_max_,   e_ite_,  Expression::NaN()};
 };
 
 TEST_F(SymbolicExpressionTest, Dummy) {
-  // TODO(jwnimmer-tri) We'd prefer 'undefined' instead of zero.
-  EXPECT_TRUE(is_zero(dummy_value<Expression>::get()));
+  EXPECT_TRUE(is_nan(dummy_value<Expression>::get()));
 }
 
 TEST_F(SymbolicExpressionTest, IsConstant1) {
@@ -177,6 +177,19 @@ TEST_F(SymbolicExpressionTest, IsOne) {
 }
 TEST_F(SymbolicExpressionTest, IsNegOne) { EXPECT_TRUE(is_neg_one(neg_one_)); }
 TEST_F(SymbolicExpressionTest, IsTwo) { EXPECT_TRUE(is_two(two_)); }
+
+TEST_F(SymbolicExpressionTest, NaN) {
+  // It's OK to have NaN expression.
+  const Expression nan{NAN};
+  EXPECT_TRUE(is_nan(nan));
+  EXPECT_TRUE(nan.EqualTo(Expression::NaN()));
+  // It's OK to have an expression including NaN inside.
+  const Expression e1{1.0 + nan};
+  // It's OK to display an expression including NaN inside.
+  EXPECT_EQ(e1.to_string(), "(1 + NaN)");
+  // It throws when we evaluate an expression including NaN.
+  EXPECT_THROW(e1.Evaluate(), runtime_error);
+}
 
 TEST_F(SymbolicExpressionTest, IsVariable) {
   EXPECT_TRUE(is_variable(e_var_));
@@ -438,10 +451,11 @@ TEST_F(SymbolicExpressionTest, GetProductsInMultiplication) {
 }
 
 TEST_F(SymbolicExpressionTest, LessKind) {
-  CheckOrdering({e_constant_, e_var_,  e_neg_,  e_add_,  e_mul_,  e_div_,
-                 e_log_,      e_abs_,  e_exp_,  e_sqrt_, e_pow_,  e_sin_,
-                 e_cos_,      e_tan_,  e_asin_, e_acos_, e_atan_, e_atan2_,
-                 e_sinh_,     e_cosh_, e_tanh_, e_min_,  e_max_,  e_ite_});
+  CheckOrdering({e_constant_, e_var_,  e_neg_,   e_add_,  e_mul_,
+                 e_div_,      e_log_,  e_abs_,   e_exp_,  e_sqrt_,
+                 e_pow_,      e_sin_,  e_cos_,   e_tan_,  e_asin_,
+                 e_acos_,     e_atan_, e_atan2_, e_sinh_, e_cosh_,
+                 e_tanh_,     e_min_,  e_max_,   e_ite_,  Expression::NaN()});
 }
 
 TEST_F(SymbolicExpressionTest, LessConstant) { CheckOrdering({c1_, c2_, c3_}); }
@@ -659,7 +673,7 @@ TEST_F(SymbolicExpressionTest, Constant) {
   EXPECT_EQ(c2_.Evaluate(), 1);
   EXPECT_EQ(c3_.Evaluate(), 3.14159);
   EXPECT_EQ(c4_.Evaluate(), -2.718);
-  EXPECT_THROW(Expression{NAN}, runtime_error);
+  EXPECT_THROW(Expression{NAN}.Evaluate(), runtime_error);
 }
 
 TEST_F(SymbolicExpressionTest, StaticConstant) {
