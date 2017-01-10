@@ -36,7 +36,7 @@ RigidBodyPlantThatPublishesXdot<T>::~RigidBodyPlantThatPublishesXdot() {}
 template <typename T>
 void RigidBodyPlantThatPublishesXdot<T>::DoPublish(const Context<T>& context)
     const {
-  RigidBodyPlant<T>::DoCalcTimeDerivatives(context, derivatives_.get());
+  RigidBodyPlant<T>::CalcTimeDerivatives(context, derivatives_.get());
   const auto xdot = derivatives_->CopyToVector();
 
   const RigidBodyTree<T>& rigid_body_tree =
@@ -48,6 +48,9 @@ void RigidBodyPlantThatPublishesXdot<T>::DoPublish(const Context<T>& context)
   for (int i = 0; i < num_states; ++i) {
     message_.val[i] = xdot(i);
   }
+
+  // Saves the timestamp in milliseconds. This matches the behavior in
+  // LcmtDrakeSignalTranslator::Serialize().
   message_.timestamp = static_cast<int64_t>(context.get_time() * 1000);
 
   const int num_bytes = message_.getEncodedSize();

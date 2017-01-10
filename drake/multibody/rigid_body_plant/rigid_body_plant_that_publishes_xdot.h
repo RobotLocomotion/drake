@@ -17,8 +17,9 @@
 namespace drake {
 namespace systems {
 
-/// This is a child class of RigidBodyPlant that publishes `xdot`, the
-/// derivative of x, which is the RigidBodyPlant's output state vector.
+/// This is a child class of RigidBodyPlant that publishes `xdot`, time
+/// derivative of RBPlant's state vector `x`, on an LCM channel encoded as an
+/// `lcmt_drake_signal` message.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 /// @ingroup rigid_body_systems
@@ -40,14 +41,13 @@ class RigidBodyPlantThatPublishesXdot : public RigidBodyPlant<T> {
 
   ~RigidBodyPlantThatPublishesXdot() override;
 
- protected:
+ private:
   /// Publishes `xdot`, the derivative of `x`, which is this system's
   /// generalized state vector. This vector contains the derivatives of the
   /// RigidBodyTree's joint's positions and velocities. Thus, the units are
   /// velocities and accelerations.
   void DoPublish(const Context<T>& context) const override;
 
- private:
   // A const pointer to an LCM subsystem. Note that while the pointer is const,
   // the LCM subsystem is not const.
   lcm::DrakeLcmInterface* const lcm_{};
