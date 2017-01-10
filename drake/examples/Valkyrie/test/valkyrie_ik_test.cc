@@ -15,7 +15,6 @@
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -31,10 +30,6 @@ using Eigen::VectorXd;
 using Eigen::Matrix3Xd;
 
 namespace drake {
-
-using parsers::ModelInstanceIdTable;
-using parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
-
 namespace examples {
 namespace valkyrie {
 namespace {
@@ -73,11 +68,11 @@ void FindJointAndInsert(const RigidBodyTreed* model, const std::string& name,
 
 GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
-  const ModelInstanceIdTable id_table = AddModelInstanceFromUrdfFileToWorld(
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
       multibody::joints::kRollPitchYaw, tree.get());
-  const int model_instance_id = id_table.at("valkyrie");
+
   // Setting up constraints, based on testIKMoreConstraints.cpp and
   // director-generated M-file.
   double inf = std::numeric_limits<double>::infinity();
@@ -263,7 +258,7 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
              &infeasible_constraint);
 
   // After solving
-  Vector3d com = tree->centerOfMass(cache, {model_instance_id});
+  Vector3d com = tree->centerOfMass(cache);
   EXPECT_EQ(info, 1);
   EXPECT_GT(com(2), 0);
 

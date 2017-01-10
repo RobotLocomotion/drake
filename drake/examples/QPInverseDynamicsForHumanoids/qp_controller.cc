@@ -655,8 +655,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // Net external wrench = centroidal_matrix * vd + centroidal_matrix_dot * v
   Vector6<double> Ld = rs.centroidal_momentum_matrix() * output->vd() +
                        rs.centroidal_momentum_matrix_dot_times_v();
-  Vector6<double> net_wrench =
-      rs.robot().getMass() * rs.robot().a_grav;
+  Vector6<double> net_wrench = rs.robot().getMass() * rs.robot().a_grav;
   for (const auto& resolved_contact_pair : output->resolved_contacts()) {
     const ResolvedContact& resolved_contact = resolved_contact_pair.second;
     const Vector6<double>& contact_wrench =

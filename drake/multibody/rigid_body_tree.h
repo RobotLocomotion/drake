@@ -45,8 +45,8 @@ struct RigidBodyTreeConstants {
   static const char* const kWorldName;
 
   /**
-   * Defines the index of the RigidBody that represents the world within a
-   * RigidBodyTree.
+   * Defines the index of the RigidBody within a RigidBodyTree that represents
+   * the world.
    */
   static const int kWorldBodyIndex;
 
