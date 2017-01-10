@@ -20,8 +20,6 @@ class InfiniteCircuitRoad;
 
 namespace automotive {
 
-
-
 /// An oracular simulated sensor for perceiving features of EndlessRoadCars
 /// with state expressed in LANE-space on an InfiniteCircuitRoad,
 /// i.e., a maliput road network that only has a single Lane and infinite
@@ -30,7 +28,7 @@ namespace automotive {
 /// (Elevation-above-road 'h' is implicitly zero, too.)
 ///
 /// state vector
-/// * planar LANE-space position:  s, r
+/// * planar LANE-space position:  (s, r)
 /// * planar isometric LANE-space velocity:  (sigma, rho)-dot
 ///
 /// input vector:
@@ -38,6 +36,15 @@ namespace automotive {
 /// * Later:  planar isometric LANE-space acceleration: (sigma, rho)-ddot
 ///
 /// output vector: same as state vector
+///
+/// @tparam T must support certain arithmetic operations.
+///
+/// Instantiated templates for the following ScalarTypes are provided:
+/// - double
+///
+/// They are already available to link against in libdrakeAutomotive.
+///
+/// @ingroup automotive_systems
 template <typename T>
 class EndlessRoadOracle : public systems::LeafSystem<T> {
  public:

@@ -49,9 +49,7 @@ drake_install_headers(
   create_trajectory_params.h
   curve2.h
   endless_road_car.h
-  endless_road_car-inl.h
   endless_road_oracle.h
-  endless_road_oracle-inl.h
   idm_planner.h
   linear_car.h
   simple_car.h

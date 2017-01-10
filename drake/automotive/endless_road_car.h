@@ -27,8 +27,11 @@ namespace automotive {
 ///
 /// (Elevation-above-road 'h' is implicitly zero, too.)
 ///
+/// configuration
+/// * see lcmt_SimpleCarConfig_t
+///
 /// state vector
-/// * planar LANE-space position:  s, r
+/// * planar LANE-space position:  (s, r)
 /// * planar isometric LANE-space velocity:  (sigma, rho)-dot
 ///
 /// input vector:
@@ -36,6 +39,15 @@ namespace automotive {
 /// * Later:  planar isometric LANE-space acceleration: (sigma, rho)-ddot
 ///
 /// output vector: same as state vector
+///
+/// @tparam T must support certain arithmetic operations.
+///
+/// Instantiated templates for the following ScalarTypes are provided:
+/// - double
+///
+/// They are already available to link against in libdrakeAutomotive.
+///
+/// @ingroup automotive_systems
 template <typename T>
 class EndlessRoadCar : public systems::LeafSystem<T> {
  public:
@@ -49,6 +61,7 @@ class EndlessRoadCar : public systems::LeafSystem<T> {
                  const maliput::utility::InfiniteCircuitRoad* road,
                  const ControlType control_type,
                  const SimpleCarConfig<T>& config = get_default_config());
+  // TODO(maddog) How is configuration used, if at all?
 
   ControlType control_type() const { return control_type_; }
 
