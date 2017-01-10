@@ -10,6 +10,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "spdlog/fmt/ostr.h"
+
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
@@ -17,15 +19,13 @@
 
 #include "drake/common/drake_assert.h"
 
-#include "spdlog/fmt/ostr.h"
-
 namespace drake {
 namespace maliput {
 namespace utility {
 
 namespace {
 
-// A container for a set of unique objects of which keeps track of the original
+// A container for a set of unique objects which keeps track of the original
 // insertion order.  Its primary purpose is to assign a stable unique index
 // to each element at time of insertion.
 //
@@ -39,7 +39,7 @@ class UniqueIndexer {
   // Creates an empty UniqueIndexer.
   UniqueIndexer() {}
 
-  // Pushes @p thing onto the back of the container, and returns the unique
+  // Pushes @p thing onto the back of this container, and returns the unique
   // index for @p thing.  If @p thing has already been added to the container,
   // then this simply returns the original index for @p thing.
   int push_back(const T& thing) {
@@ -198,8 +198,8 @@ class GeoMesh {
     faces_.push_back(face);
   }
 
-  // Emits the mesh as a Wavefront OBJ elements to @p os.  @p material is the
-  // name of an MTL-defined material to ascribe to the mesh.
+  // Emits the mesh as Wavefront OBJ elements to @p os.  @p material is the
+  // name of an MTL-defined material to describe visual properties of the mesh.
   //
   // If other meshes have already been emitted to stream @p os, then
   // @p vertex_index_offset and @p normal_index_offset must correspond to the

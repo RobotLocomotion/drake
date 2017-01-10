@@ -24,6 +24,8 @@ class TestYamlObjing(unittest.TestCase):
                         self.YAML_TO_OBJ + " not found")
 
         yaml_files = glob.glob(os.path.join(yaml_dir, '*.yaml'))
+        # NB:  Blacklist is empty now, but still here in case it is needed
+        # again in the future.
         blacklist = []
         test_yaml_files = [f for f in yaml_files
                            if not any([b in f for b in blacklist])]

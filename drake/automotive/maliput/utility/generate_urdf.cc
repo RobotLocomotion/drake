@@ -2,10 +2,10 @@
 
 #include <fstream>
 
+#include "spdlog/fmt/ostr.h"
+
 #include "drake/automotive/maliput/utility/generate_obj.h"
 #include "drake/common/drake_assert.h"
-
-#include "spdlog/fmt/ostr.h"
 
 namespace drake {
 namespace maliput {
