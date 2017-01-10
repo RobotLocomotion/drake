@@ -120,7 +120,7 @@ class RigidBodyTree {
    * Returns a map from DOF position name to DOF index within the output vector
    * of this RigidBodyTree.
    *
-   * WARNING: There is a known bug in this method, see: #4697.
+   * <b>WARNING:</b> There is a known bug in this method, see: #4697.
    */
   std::map<std::string, int> computePositionNameToIndexMap() const;
 
