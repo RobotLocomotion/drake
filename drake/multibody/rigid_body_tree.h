@@ -35,7 +35,9 @@
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
 /**
- * Defines RigidBodyTree constants.
+ * Defines RigidBodyTree constants. A separate struct is necessary to avoid
+ * having these constants being templated on `<T>`. For more details about the
+ * problem with having these templated on `<T>`, see #4169.
  */
 struct RigidBodyTreeConstants {
   /**
