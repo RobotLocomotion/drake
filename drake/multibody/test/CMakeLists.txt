@@ -29,7 +29,6 @@ endmacro()
 macro(add_ik_gtest)
   drake_add_cc_test(${ARGV})
   target_link_libraries(${ARGV}
-    GTest::GTest GTest::Main
     drakeIK
     drakeMultibodyParsers
     drakeRigidBodyConstraint)

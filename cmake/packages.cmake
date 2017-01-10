@@ -128,7 +128,14 @@ macro(drake_find_packages)
   drake_find_package(Eigen3 CONFIG REQUIRED)
   add_definitions(-DEIGEN_MPL2_ONLY)  # Per #4065.
   drake_find_package(gflags CONFIG REQUIRED)
+
+  set(GTEST_DEFINITIONS
+    GTEST_DONT_DEFINE_FAIL=1
+    GTEST_DONT_DEFINE_SUCCEED=1
+    GTEST_DONT_DEFINE_TEST=1)
   drake_find_package(GTest MODULE REQUIRED)
+  set_property(TARGET GTest::GTest APPEND PROPERTY
+    INTERFACE_COMPILE_DEFINITIONS ${GTEST_DEFINITIONS})
 
   # END required packages
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
