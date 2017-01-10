@@ -1,5 +1,4 @@
 #include <cmath>
-#include <unistd.h>
 
 #include "gtest/gtest.h"
 
@@ -33,22 +32,17 @@ GTEST_TEST(TestLcmCallMatlab, RemoteVarTest) {
   LcmCallMatlab("disp",magic(3,2));
   LcmCallMatlab("disp","elements (1:2) are");
   LcmCallMatlab("disp",magic(Eigen::Vector2d(1,2)));
-  usleep(1000);  // matlab started having trouble keeping up.
   LcmCallMatlab("disp","row 3 is ");
   LcmCallMatlab("disp",magic(3,":"));
   LcmCallMatlab("disp","elements (1:5) are");
   LcmCallMatlab("disp",magic(Eigen::VectorXd::LinSpaced(5,1,5)));
 
-  usleep(1000);  // matlab started having trouble keeping up.
   LcmCallMatlab("disp","row 2 (accessed via logicals) is");
   LcmCallMatlab("disp",magic(Eigen::Matrix<bool,4,1>(false,true,false,false),":"));
 
-  usleep(1000);  // matlab started having trouble keeping up.
   LcmCallMatlab("disp","Second column should now be 1,2,3,4: ");
   auto n = magic.subsasgn(Eigen::Vector4d(1,2,3,4),":",2);
   LcmCallMatlab("disp",n);
-
-  usleep(1000);  // matlab started having trouble keeping up.
 }
 
 GTEST_TEST(TestLcmCallMatlab, SimplePlot) {
