@@ -24,13 +24,10 @@ EndlessRoadOracle<T>::EndlessRoadOracle(
     : road_(road), num_cars_(num_cars) {
   // Declare an input and output for each car.
   for (int i = 0; i < num_cars; ++i) {
-//XXX    inports_.push_back(
-        this->DeclareInputPort(systems::kVectorValued,
-                               EndlessRoadCarStateIndices::kNumCoordinates);//);
-//XXX    outports_.push_back(
-        this->DeclareOutputPort(
-            systems::kVectorValued,
-            EndlessRoadOracleOutputIndices::kNumCoordinates);//);
+    this->DeclareInputPort(systems::kVectorValued,
+                           EndlessRoadCarStateIndices::kNumCoordinates);
+    this->DeclareOutputPort(systems::kVectorValued,
+                            EndlessRoadOracleOutputIndices::kNumCoordinates);
   }
 }
 
@@ -41,8 +38,6 @@ void EndlessRoadOracle<T>::DoCalcOutput(
     systems::SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
-
-//DBG  std::cerr << "EvalOutput()  ORACLE " << std::endl;
 
   // Obtain the inputs.
   std::vector<const EndlessRoadCarState<T>*> car_inputs;
@@ -147,7 +142,7 @@ void UnwrapEndlessRoadCarState(
 void AssessLongitudinal(
     const std::vector<SourceState>& source_states,
     const std::vector<std::vector<PathRecord>>& paths,
-    std::vector<EndlessRoadOracleOutput<double>*>& oracle_outputs) {
+    const std::vector<EndlessRoadOracleOutput<double>*>& oracle_outputs) {
 
   // Calculate longitudinal position of each car in the circuit.
   // Sort cars by longitudinal position:  use an ordered multimap that
@@ -319,7 +314,7 @@ LaneRelation DetermineLaneRelation(const PathRecord& pra,
 void AssessIntersections(
     const std::vector<SourceState>& source_states,
     const std::vector<std::vector<PathRecord>>& paths,
-    std::vector<EndlessRoadOracleOutput<double>*>& oracle_outputs) {
+    const std::vector<EndlessRoadOracleOutput<double>*>& oracle_outputs) {
 
   // Indexing Phase.
   // For each car, measure/record the 'time-in' and 'time-out' to all junctions
@@ -329,8 +324,8 @@ void AssessIntersections(
     PathRecord pr;
     double time_in;
     double time_out;
-    double s_in;  // Distance to entry from current position.
-    double s_out; // Distance to exit from current position.
+    double s_in;   // Distance to entry from current position.
+    double s_out;  // Distance to exit from current position.
   };
   std::map<const maliput::api::Junction*,
            std::vector<TimeBox>> boxes_by_junction;
@@ -487,7 +482,7 @@ void AssessIntersections(
 template <typename T>
 void EndlessRoadOracle<T>::ImplCalcOutput(
     const std::vector<const EndlessRoadCarState<T>*>& car_inputs,
-    std::vector<EndlessRoadOracleOutput<T>*>& oracle_outputs) const {
+    const std::vector<EndlessRoadOracleOutput<T>*>& oracle_outputs) const {
   // The goal here is, for each car, to calculate the distance and
   // differential velocity to the nearest other car/obstacle ahead.
   // We consider a couple of different varieties of "car/obstacle ahead":
