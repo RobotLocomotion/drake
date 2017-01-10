@@ -1,12 +1,13 @@
-#include <mex.h>
 #include <cstring>
 #include <iostream>
 #include <map>
 #include <mutex>
-#include <thread>
 #include <queue>
+#include <thread>
 #include <vector>
 
+#include <mex.h>
+#include <signal.h>
 #include <sys/select.h>
 
 #include "lcm/lcm-cpp.hpp"
@@ -34,8 +35,9 @@ namespace {
 void FlushMatlabEventBuffer(void) {
   // An ugly hack.  drawnow used to work, but the internet confirms that it
   // stopped working around R2015.
-  static mxArray* time = mxCreateDoubleScalar(0.001);
-  mexCallMATLAB(0, nullptr, 1, &time, "pause");
+  mxArray* time = mxCreateDoubleScalar(0.001);
+  mexCallMATLABsafe(0, nullptr, 1, &time, "pause");
+  mxDestroyArray(time);
 }
 
 // Per discussion at https://github.com/RobotLocomotion/drake/pull/4256 ,
@@ -46,7 +48,7 @@ void CheckIfLcmWillExplode() {
   mxArray* prhs[2];
 
   // Only known to fail on unix.
-  mexCallMATLAB(1, plhs, 0, nullptr, "isunix");
+  mexCallMATLABsafe(1, plhs, 0, nullptr, "isunix");
   bool is_unix = mxIsLogicalScalarTrue(plhs[0]);
   mxDestroyArray(plhs[0]);
   if (!is_unix) return;
@@ -54,7 +56,7 @@ void CheckIfLcmWillExplode() {
   // Fails on MATLAB > 2014a
   prhs[0] = mxCreateString("matlab");
   prhs[1] = mxCreateString("2014b");
-  mexCallMATLAB(1, plhs, 2, prhs, "verLessThan");
+  mexCallMATLABsafe(1, plhs, 2, prhs, "verLessThan");
   bool is_safe_matlab_version = mxIsLogicalScalarTrue(plhs[0]);
   mxDestroyArray(plhs[0]);
   mxDestroyArray(prhs[0]);
@@ -68,12 +70,14 @@ void CheckIfLcmWillExplode() {
 
 class LCMLoop {
  public:
-  explicit LCMLoop(lcm::LCM& lcm) : lcm_(lcm) {}
+  explicit LCMLoop(lcm::LCM* lcm) : lcm_(lcm), stop_(false) {}
+
+  void Stop() { stop_ = true; }
 
   void LoopWithSelect() {
     const double timeoutInSeconds = 0.3;
 
-    int lcm_file_descriptor = lcm_.getFileno();
+    int lcm_file_descriptor = lcm_->getFileno();
 
     struct timeval tv;
     tv.tv_sec = 0;
@@ -81,7 +85,7 @@ class LCMLoop {
 
     fd_set fds;
 
-    while (true) {
+    while (!stop_) {
       FD_ZERO(&fds);
       FD_SET(lcm_file_descriptor, &fds);
       int status = select(lcm_file_descriptor + 1, &fds, 0, 0, &tv);
@@ -94,7 +98,7 @@ class LCMLoop {
         break;
       }
       if (status > 0 && FD_ISSET(lcm_file_descriptor, &fds)) {
-        if (lcm_.handle() != 0) {
+        if (lcm_->handle() != 0) {
           std::cout << "lcm->handle() returned non-zero" << std::endl;
           break;
         }
@@ -103,16 +107,17 @@ class LCMLoop {
   }
 
  private:
-  lcm::LCM& lcm_;
+  lcm::LCM* lcm_;
+  bool stop_{false};
 };
 
 class Handler {
  public:
   Handler(std::queue<std::unique_ptr<drake::lcmt_call_matlab>>* message_queue,
           std::mutex* message_mutex)
-      : message_queue_(message_queue), message_mutex_(message_mutex){};
-  ~Handler() {}  // Note: could mxDestroyArray the client_vars_, but this method
-                 // will never actually be called.
+      : message_queue_(message_queue), message_mutex_(message_mutex) {}
+
+  ~Handler() {}
 
   void HandleMessage(const lcm::ReceiveBuffer* rbuf, const std::string& chan) {
     std::lock_guard<std::mutex> lock(*message_mutex_);
@@ -125,7 +130,14 @@ class Handler {
   std::mutex* message_mutex_;
 };
 
-}  // end namespace
+}  // namespace
+
+bool stop = false;
+
+void signal_handler(int sig) {
+  stop = true;
+  mexPrintf("Ctrl-C pressed\n");
+}
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   CheckIfLcmWillExplode();  // Run-time compatibility check.
@@ -142,8 +154,13 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   Handler handler_object(&message_queue, &message_mutex);
   lcm.subscribe(channel, &Handler::HandleMessage, &handler_object);
 
-  LCMLoop lcm_loop(lcm);
+  LCMLoop lcm_loop(&lcm);
   std::thread lcm_thread(&LCMLoop::LoopWithSelect, &lcm_loop);
+
+  // Sets up signal handling for ctrl-C.
+  struct sigaction act, oact;
+  act.sa_handler = signal_handler;
+  sigaction(SIGINT, &act, &oact);
 
   mexPrintf("Listening for messages on LCM_CALL_MATLAB...\n");
 
@@ -151,17 +168,19 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
   std::map<int64_t, mxArray*> client_vars_;
 
-  while (1) {
-    message_mutex.lock();
-    if (message_queue.empty()) {
-      message_mutex.unlock();
-      // No messages this time, let matlab refresh.
-      FlushMatlabEventBuffer();
-    } else {
-      std::unique_ptr<drake::lcmt_call_matlab> msg = std::move(message_queue.front());
-      message_queue.pop();
-      message_mutex.unlock();
-      
+  stop = false;
+  while (!stop) {
+    std::unique_ptr<drake::lcmt_call_matlab> msg(nullptr);
+
+    {
+      std::lock_guard<std::mutex> lock(message_mutex);
+      if (!message_queue.empty()) {
+        msg = std::move(message_queue.front());
+        message_queue.pop();
+      }
+    }
+
+    if (msg) {
       int i;
       std::vector<mxArray *> lhs(msg->nlhs), rhs(msg->nrhs);
 
@@ -198,8 +217,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             break;
           }
           case drake::lcmt_matlab_array::DOUBLE: {
-            rhs[i] =
-                mxCreateDoubleMatrix(msg->rhs[i].rows, msg->rhs[i].cols, mxREAL);
+            rhs[i] = mxCreateDoubleMatrix(msg->rhs[i].rows, msg->rhs[i].cols,
+                                          mxREAL);
             DRAKE_DEMAND(static_cast<int>(sizeof(double)) * msg->rhs[i].rows *
                              msg->rhs[i].cols ==
                          msg->rhs[i].num_bytes);
@@ -227,7 +246,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                          static_cast<int>(msg->rhs[i].data.size()));
             mxLogical* logical_data =
                 static_cast<mxLogical*>(mxGetData(rhs[i]));
-            for (int j = 0; j < static_cast<int>(msg->rhs[i].data.size()); j++) {
+            for (int j = 0; j < static_cast<int>(msg->rhs[i].data.size());
+                 j++) {
               logical_data[j] = static_cast<mxLogical>(msg->rhs[i].data[j]);
             }
             break;
@@ -263,8 +283,24 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             drake::lcmt_matlab_array::REMOTE_VARIABLE_REFERENCE)
           mxDestroyArray(rhs[i]);
       }
+
+      if (trapped_error) {
+        break;
+      }
+    } else {
+      // No messages this time, let matlab refresh.
+      FlushMatlabEventBuffer();
     }
   }
 
-  mexPrintf("Cleaning up.\n");  // Note: Expect to never get here.
+  // Clean up remaining memory.
+  for (const auto& iter : client_vars_) {
+    mxDestroyArray(iter.second);
+  }
+
+  lcm_loop.Stop();
+  lcm_thread.join();
+
+  // Resets original signal handler.
+  sigaction(SIGINT, &oact, &act);
 }

@@ -40,8 +40,8 @@ void ToLcmMatlabArray(const LcmMatlabRemoteVariable& var,
 void ToLcmMatlabArray(double scalar, drake::lcmt_matlab_array* matlab_array);
 
 void ToLcmMatlabArray(
-    const Eigen::Ref <
-        const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>>& mat,
+    const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>>&
+        mat,
     drake::lcmt_matlab_array* matlab_array);
 
 void ToLcmMatlabArray(const Eigen::Ref<const Eigen::MatrixXd>& mat,
@@ -77,28 +77,34 @@ template <typename... Types>
 LcmMatlabRemoteVariable LcmCallMatlabSingleOutput(
     const std::string& function_name, Types... args);
 
-/// Holds a reference to a return variable stored on the matlab client, which
-/// can be passed back into a future lcm_call_matlab call.
+/// Holds a reference to a variable stored on the matlab client, which can be
+/// passed back into a future lcm_call_matlab call.
 class LcmMatlabRemoteVariable {
  public:
   LcmMatlabRemoteVariable();
   //  ~LcmMatlabRemoteVariable(); // TODO(russt): send a destroy message on
   //  deletion
 
-  int64_t uid() const { return uid_; }
+  int64_t unique_id() const { return unique_id_; }
 
-  /// Create a new remote variable that contains the data at the prescribed
+  /// Creates a new remote variable that contains the data at the prescribed
   /// index.  Supported calls are, for instance:
+  /// <pre>
   ///   var(1)      // Access the first element.
   ///   var(1,2)    // Access row 1, column 2.
   ///   var(3,":")  // Access the entire third row.
   ///   var(Eigen::Vector2d(1,2),":")   // Access the first and second rows.
+  /// </pre>
   ///
   /// Note that a tempting use case which is NOT supported (directly) is
+  /// <pre>
   ///   var("1:10")  // ERROR!
+  /// </pre>
   /// Matlab doesn't work that way.  Instead use, e.g.
+  /// <pre>
   ///   var(Eigen::VectorXd::LinSpaced(10,1,10))  // Access elements 1:10.
-  ///
+  /// <pre>
+  /// Note: yes, vector indices in Matlab are doubles.
   template <typename... Types>
   LcmMatlabRemoteVariable operator()(Types... args) const {
     LcmMatlabRemoteVariable s = AssembleSubstruct(args...);
@@ -106,18 +112,24 @@ class LcmMatlabRemoteVariable {
     return LcmCallMatlabSingleOutput("subsref", *this, s);
   }
 
-  /// Create a new remote variable that contains the data at the prescribed
+  /// Creates a new remote variable that contains the data at the prescribed
   /// index.  Supported calls are, for instance:
+  /// <pre>
   ///   var.subsasgn(val,1)               // Set the first element to val.
   ///   var.subsasgn(val,1,2)             // Set row 1, column 2.
   ///   var.subsasgn(val,3,":")           // Set the entire third row.
   ///   var(val,Eigen::Vector2d(1,2),":") // Set the first and second rows.
+  /// </pre>
   ///
   /// Note that a tempting use case which is NOT supported (directly) is
+  /// <pre>
   ///   var(val,"1:10")  // ERROR!
+  /// </pre>
   /// Matlab doesn't work that way.  Instead use, e.g.
+  /// <pre>
   ///   var(val, Eigen::VectorXd::LinSpaced(10,1,10)) // Set elements 1:10.
-  ///
+  /// <pre>
+  /// Note: yes, vector indices in Matlab are doubles.
   template <typename T, typename... Types>
   LcmMatlabRemoteVariable subsasgn(T val, Types... args) const {
     LcmMatlabRemoteVariable s = AssembleSubstruct(args...);
@@ -153,7 +165,7 @@ class LcmMatlabRemoteVariable {
       drake::lcmt_call_matlab msg;
       msg.nlhs = 1;
       msg.lhs.resize(1);
-      msg.lhs[0] = temp_struct.uid_;
+      msg.lhs[0] = temp_struct.unique_id_;
 
       int index = 0;
       msg.nrhs = 2 * num_inputs;
@@ -170,8 +182,8 @@ class LcmMatlabRemoteVariable {
     return LcmCallMatlabSingleOutput("substruct", "()", temp_cell);
   }
 
-private:
-  const int64_t uid_{};
+ private:
+  const int64_t unique_id_{};
 };
 
 /// Invokes a mexCallMATLAB call on the remote client.
@@ -199,7 +211,7 @@ std::vector<LcmMatlabRemoteVariable> LcmCallMatlab(
   msg.nlhs = num_outputs;
   msg.lhs.resize(num_outputs);
   for (int i = 0; i < num_outputs; i++) {
-    msg.lhs[i] = remote_vars[i].uid();
+    msg.lhs[i] = remote_vars[i].unique_id();
   }
 
   int index = 0;
@@ -212,13 +224,13 @@ std::vector<LcmMatlabRemoteVariable> LcmCallMatlab(
   return remote_vars;
 }
 
-/// Special case the call with zero outputs, since it's so common.
+/// Special cases the call with zero outputs, since it's so common.
 template <typename... Types>
 void LcmCallMatlab(const std::string& function_name, Types... args) {
   LcmCallMatlab(0, function_name, args...);
 }
 
-/// Special case the call with one output.
+/// Special cases the call with one output.
 template <typename... Types>
 LcmMatlabRemoteVariable LcmCallMatlabSingleOutput(
     const std::string& function_name, Types... args) {

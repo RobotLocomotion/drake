@@ -6,7 +6,6 @@
 
 #include "lcm/lcm-cpp.hpp"
 
-#include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/lcmt_call_matlab.hpp"
 #include "drake/lcmt_matlab_array.hpp"
@@ -14,10 +13,10 @@
 namespace drake {
 namespace lcm {
 
-static int g_uid = 0;
+static int globally_unique_id = 0;
 
 LcmMatlabRemoteVariable::LcmMatlabRemoteVariable()
-    : uid_(g_uid++)
+    : unique_id_(globally_unique_id++)
 // TODO(russt): replace this with a random int64_t, e.g.
 // http://stackoverflow.com/questions/7114043/random-number-generation-in-c11-how-to-generate-how-do-they-work
 // TODO(russt): david-german-tri recommended a more robust (but more complex)
@@ -32,7 +31,7 @@ void ToLcmMatlabArray(const LcmMatlabRemoteVariable& var,
   matlab_array->cols = 1;
   matlab_array->num_bytes = sizeof(int64_t);
   matlab_array->data.resize(matlab_array->num_bytes);
-  int64_t uid = var.uid();
+  int64_t uid = var.unique_id();
   memcpy(matlab_array->data.data(), &uid, matlab_array->num_bytes);
 }
 
