@@ -7,6 +7,11 @@ if(lcm_FOUND)
   target_link_libraries(lcm_publisher_system_test
       drakeLCMSystem2)
 
+  drake_add_cc_test(lcm_publisher_system_publish_rate_test)
+  target_link_libraries(lcm_publisher_system_publish_rate_test
+      drakeLCMSystem2
+      drakeSystemAnalysis)
+
   drake_add_cc_test(lcm_translator_dictionary_test)
   target_link_libraries(lcm_translator_dictionary_test
       drakeLCMSystem2)

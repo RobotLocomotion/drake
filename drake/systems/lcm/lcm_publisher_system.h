@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -15,33 +16,37 @@ namespace systems {
 namespace lcm {
 
 /**
- * Publishes an LCM message containing information from its input port.
+ * Publishes an LCM message containing information from its input port. The
+ * default behavior of this system is to publish at every major simulation
+ * timestep. To tune the publishing period, use set_publish_period().
  */
 class LcmPublisherSystem : public LeafSystem<double> {
  public:
   /**
-   * Factory method that returns a publisher System that takes
+   * A factory method that returns an LcmPublisherSystem that takes
    * Value<LcmMessage> message objects on its sole abstract-valued input port.
+   * The returned LcmPublisherSystem publishes every major timestep of the
+   * simulation.
    *
    * @tparam LcmMessage message type to serialize, e.g., lcmt_drake_signal.
    *
    * @param[in] channel The LCM channel on which to publish.
    *
-   * @param lcm A non-null pointer to the LCM subsystem to publish on.
-   * The pointer must remain valid for the lifetime of this object.
+   * @param lcm A non-null pointer to the LCM subsystem. The pointer must remain
+   * valid for the lifetime of this object.
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmPublisherSystem> Make(
-      const std::string& channel,
-      drake::lcm::DrakeLcmInterface* lcm) {
+      const std::string& channel, drake::lcm::DrakeLcmInterface* lcm) {
     return std::make_unique<LcmPublisherSystem>(
         channel, std::make_unique<Serializer<LcmMessage>>(), lcm);
   }
 
   /**
-   * Constructor that returns a publisher System that takes message objects
-   * on its sole abstract-valued input port.  The type of the message object is
-   * determined by the @p serializer.
+   * Constructor that returns an LcmPublisherSystem that takes message objects
+   * on its sole abstract-valued input port and publishes at every major
+   * timestep of the simulation. The type of the message object is determined by
+   * the provided `serializer`.
    *
    * @param[in] channel The LCM channel on which to publish.
    *
@@ -56,9 +61,10 @@ class LcmPublisherSystem : public LeafSystem<double> {
                      drake::lcm::DrakeLcmInterface* lcm);
 
   /**
-   * Constructor that returns a publisher System that takes vector data on
-   * its sole vector-valued input port.  The vector data are mapped to
-   * message contents by the @p translator.
+   * Constructor that returns an LcmPublisherSystem that takes vector data on
+   * its sole vector-valued input port and publishes at every major timestep of
+   * the simulaton.  The vector data are mapped to message contents by the
+   * provided `translator`.
    *
    * @param[in] channel The LCM channel on which to publish.
    *
@@ -76,8 +82,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
 
   /**
    * Constructor that returns a publisher System that takes vector data on
-   * its sole vector-valued input port.  The vector data are mapped to
-   * message contents by the translator found in the @p translator_dictionary.
+   * its sole vector-valued input port and publishes at every major timestep of
+   * the simulation. The vector data are mapped to message contents by the
+   * `translator` found in the provided `translator_dictionary`.
    *
    * @param[in] channel The LCM channel on which to publish.
    *
@@ -98,6 +105,18 @@ class LcmPublisherSystem : public LeafSystem<double> {
   LcmPublisherSystem& operator=(const LcmPublisherSystem&) = delete;
 
   const std::string& get_channel_name() const;
+
+  // Sets the publishing period of this system. The publishing period is the
+  // amount of simulation time that elapses between successive publish
+  // operations. A value of infinity results in this system publishing at every
+  // major timestep of the simulation.
+  void set_publish_period(double period) { period_ = period; }
+
+  // Returns the publishing period of this system. The publishing period is the
+  // amount of simulation time that elapses between successive publish
+  // operations. A value of infinity means this system publishes at every major
+  // timestep of the simulation.
+  double get_publish_period() const { return period_; }
 
   /// Returns the default name for a system that publishes @p channel.
   static std::string make_name(const std::string& channel);
@@ -126,14 +145,23 @@ class LcmPublisherSystem : public LeafSystem<double> {
 
  private:
   // All constructors delegate to here.
-  LcmPublisherSystem(
-      const std::string& channel,
-      const LcmAndVectorBaseTranslator* translator,
-      std::unique_ptr<SerializerInterface> serializer,
-      drake::lcm::DrakeLcmInterface* lcm);
+  LcmPublisherSystem(const std::string& channel,
+                     const LcmAndVectorBaseTranslator* translator,
+                     std::unique_ptr<SerializerInterface> serializer,
+                     drake::lcm::DrakeLcmInterface* lcm);
+
+  void DoCalcNextUpdateTime(const Context<double>& context,
+                            UpdateActions<double>* actions) const override;
 
   // The channel on which to publish LCM messages.
   const std::string channel_;
+
+  // The simulation time period at which to publish. It is initialized to
+  // infinity, which means publish at every major timestep of the simulation.
+  double period_{std::numeric_limits<double>::infinity()};
+
+  // Last publish time.
+  mutable double last_publish_time_{};
 
   // Converts VectorBase objects into LCM message bytes.
   // Will be non-null iff our input port is vector-valued.

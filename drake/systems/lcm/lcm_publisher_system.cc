@@ -78,6 +78,19 @@ const std::string& LcmPublisherSystem::get_channel_name() const {
   return channel_;
 }
 
+void LcmPublisherSystem::DoCalcNextUpdateTime(const Context<double>& context,
+    UpdateActions<double>* actions) const {
+
+  double next_publish_time = last_publish_time_ + period_;
+  if (next_publish_time < context.get_time())
+    next_publish_time = context.get_time();
+  actions->time = next_publish_time;
+
+  DiscreteEvent<double> publish_event;
+  publish_event.action = DiscreteEvent<double>::kPublishAction;
+  actions->events.push_back(publish_event);
+}
+
 void LcmPublisherSystem::DoPublish(const Context<double>& context) const {
   SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
   DRAKE_ASSERT((translator_ != nullptr) != (serializer_.get() != nullptr));
@@ -98,6 +111,7 @@ void LcmPublisherSystem::DoPublish(const Context<double>& context) const {
 
   // Publishes onto the specified LCM channel.
   lcm_->Publish(channel_, message_bytes.data(), message_bytes.size());
+  last_publish_time_ = context.get_time();
 }
 
 const LcmAndVectorBaseTranslator& LcmPublisherSystem::get_translator() const {
