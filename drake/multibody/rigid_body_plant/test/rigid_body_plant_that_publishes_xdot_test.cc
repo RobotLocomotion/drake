@@ -31,7 +31,7 @@ namespace {
 
 // Tests that RigidBodyPlantThatPublishesXdot actually publishes LCM messages
 // when DoPublish() is called.
-GTEST_TEST(RigidBodyPlantThatOutputsXdotTest, TestPublishLcmMessage) {
+GTEST_TEST(RigidBodyPlantThatPublishesXdotTest, TestPublishLcmMessage) {
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
   AddModelInstanceFromUrdfFile(
       drake::GetDrakePath() + "/multibody/models/box.urdf",
