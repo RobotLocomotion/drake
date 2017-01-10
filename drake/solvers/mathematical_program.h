@@ -674,8 +674,6 @@ class MathematicalProgram {
    * Convert an input of type @tparam F to a ConstraintImpl object.
    * @tparam F This class should have functions numInputs(), numOutputs and
    * eval(x, y). Check drake::solvrs::detail::FunctionTraits for more details.
-   * @param f
-   * @return
    */
   template <typename F>
   static std::shared_ptr<Constraint> MakeCost(F&& f) {
