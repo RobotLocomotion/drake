@@ -10,7 +10,7 @@ if(lcm_FOUND)
     drakeSystemFramework
     drakeLCMTypes
     drakeLcm
-    ${CMAKE_THREAD_LIBS_INIT})
+    Threads::Threads)
 
   drake_install_libraries(drakeLCMSystem2)
   drake_install_headers(
@@ -22,7 +22,7 @@ if(lcm_FOUND)
     serializer.h)
   drake_install_pkg_config_file(drake-lcm-system2
     TARGET drakeLCMSystem2
-    LIBS -ldrakeLCMSystem2
+    LIBS -ldrakeLCMSystem2 ${CMAKE_THREAD_LIBS_INIT}
     REQUIRES
       drake-lcm
       drake-lcmtypes-cpp
