@@ -63,6 +63,7 @@ autoconf
 automake
 bash-completion
 bison
+clang-format
 default-jdk
 doxygen
 flex
