@@ -156,7 +156,7 @@ maliput_monolane_builder:
     Express_ES_b:
       start: "connections.Express_ES_a.end"
       arc: [60, -45]
-      z_end: [0, 0, 20, 0]
+      z_end: [0, 0, 0, 0]
     Express_S1:
       start: "connections.Express_ES_b.end"
       length: 120
