@@ -359,7 +359,6 @@ void RigidBodyTree<T>::CompileCollisionState() {
   // Set the collision filter data on the body's elements.  Note: this does
   // *not* update the collision elements that may have already been registered
   // with the collision model.
-  collision_group_manager_.Clear();
   for (auto& pair : body_collision_map_) {
     RigidBody<T>* body = pair.first;
     DrakeCollision::bitmask group =
@@ -368,7 +367,6 @@ void RigidBodyTree<T>::CompileCollisionState() {
       // No body can ignore collision filter groups without belonging to one.
       DrakeCollision::bitmask ignore =
           collision_group_manager_.get_ignore_mask(*body);
-
       BodyCollisions &elements = pair.second;
       for (const auto &collision_item : elements) {
         element_order_[collision_item.element]->set_collision_filter(group,
@@ -376,6 +374,7 @@ void RigidBodyTree<T>::CompileCollisionState() {
       }
     }
   }
+  collision_group_manager_.Clear();
 
   // Builds cliques for collision filtering.
   CreateCollisionCliques();
