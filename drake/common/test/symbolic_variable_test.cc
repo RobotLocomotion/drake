@@ -1,9 +1,12 @@
 #include "drake/common/symbolic_variable.h"
 
+#include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include <Eigen/Core>
 
 #include "gtest/gtest.h"
 
@@ -12,6 +15,7 @@ namespace symbolic {
 namespace {
 
 using std::move;
+using std::ostringstream;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
@@ -23,6 +27,14 @@ class SymbolicVariableTest : public ::testing::Test {
   const Variable y_{"y"};
   const Variable z_{"z"};
   const Variable w_{"w"};
+  Eigen::Matrix<symbolic::Variable, 2, 2> M_;
+
+  void SetUp() override {
+    // clang-format off
+      M_ << x_, y_,
+            z_, w_;
+    // clang-format on
+  }
 };
 
 TEST_F(SymbolicVariableTest, GetId) {
@@ -119,6 +131,25 @@ TEST_F(SymbolicVariableTest, CompatibleWithVector) {
   vector<Variable> vec;
   vec.push_back(x_);
 }
+
+TEST_F(SymbolicVariableTest, EigenVariableMatrix) {
+  EXPECT_EQ(M_(0, 0), x_);
+  EXPECT_EQ(M_(0, 1), y_);
+  EXPECT_EQ(M_(1, 0), z_);
+  EXPECT_EQ(M_(1, 1), w_);
+}
+TEST_F(SymbolicVariableTest, EigenVariableMatrixOutput) {
+  ostringstream oss1;
+  oss1 << M_;
+
+  ostringstream oss2;
+  oss2 << "x y"
+       << "\n"
+       << "z w";
+
+  EXPECT_EQ(oss1.str(), oss2.str());
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

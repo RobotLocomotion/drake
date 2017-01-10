@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "drake/systems/framework/basic_vector.h"

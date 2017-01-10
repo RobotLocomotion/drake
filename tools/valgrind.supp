@@ -1,0 +1,14 @@
+# This is the valgrind.supp used by `bazel test --config memcheck`.
+
+# LCM (via glib) leaks a few hundred bytes in some global handler allocation.
+{
+   lcm_glib_leak
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   fun:g_slice_alloc
+   ...
+   fun:g_static_rec_mutex_lock
+   fun:lcm_handle
+   ...
+}

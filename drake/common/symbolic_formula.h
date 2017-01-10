@@ -65,6 +65,15 @@ The following simple simplifications are implemented:
     F1 ∧ F2        ->  False   (if either F1 or F2 is False)
     F1 ∨ F2        ->  True    (if either F1 or F2 is True)
 \endverbatim
+
+\note Formula class has an explicit conversion operator to bool. It evaluates a
+symbolic formula under an empty environment. If a symbolic formula includes
+symbolic variables, the conversion operator throws an exception. This operator
+is only intended for third-party code doing things like
+<tt>(imag(SymbolicExpression(0)) == SymbolicExpression(0)) { ... };<tt> that we
+found in Eigen3 codebase. In general, a user of this class should explicitly
+call \c Evaluate from within Drake for readability.
+
 */
 class Formula {
  public:
@@ -123,27 +132,18 @@ class Formula {
   static Formula True();
   static Formula False();
 
+  /** Conversion to bool. */
+  explicit operator bool() const { return Evaluate(); }
+
   friend Formula operator&&(const Formula& f1, const Formula& f2);
   friend Formula operator||(const Formula& f1, const Formula& f2);
   friend Formula operator!(const Formula& f);
   friend Formula operator==(const Expression& e1, const Expression& e2);
-  friend Formula operator==(double v1, const Expression& e2);
-  friend Formula operator==(const Expression& e1, double v2);
   friend Formula operator!=(const Expression& e1, const Expression& e2);
-  friend Formula operator!=(double v1, const Expression& e2);
-  friend Formula operator!=(const Expression& e1, double v2);
   friend Formula operator<(const Expression& e1, const Expression& e2);
-  friend Formula operator<(double v1, const Expression& e2);
-  friend Formula operator<(const Expression& e1, double v2);
   friend Formula operator<=(const Expression& e1, const Expression& e2);
-  friend Formula operator<=(double v1, const Expression& e2);
-  friend Formula operator<=(const Expression& e1, double v2);
   friend Formula operator>(const Expression& e1, const Expression& e2);
-  friend Formula operator>(double v1, const Expression& e2);
-  friend Formula operator>(const Expression& e1, double v2);
   friend Formula operator>=(const Expression& e1, const Expression& e2);
-  friend Formula operator>=(double v1, const Expression& e2);
-  friend Formula operator>=(const Expression& e1, double v2);
 
   friend std::ostream& operator<<(std::ostream& os, const Formula& f);
   friend void swap(Formula& a, Formula& b) { std::swap(a.ptr_, b.ptr_); }
@@ -159,23 +159,11 @@ Formula operator&&(const Formula& f1, const Formula& f2);
 Formula operator||(const Formula& f1, const Formula& f2);
 Formula operator!(const Formula& f);
 Formula operator==(const Expression& e1, const Expression& e2);
-Formula operator==(double v1, const Expression& e2);
-Formula operator==(const Expression& e1, double v2);
 Formula operator!=(const Expression& e1, const Expression& e2);
-Formula operator!=(double v1, const Expression& e2);
-Formula operator!=(const Expression& e1, double v2);
 Formula operator<(const Expression& e1, const Expression& e2);
-Formula operator<(double v1, const Expression& e2);
-Formula operator<(const Expression& e1, double v2);
 Formula operator<=(const Expression& e1, const Expression& e2);
-Formula operator<=(double v1, const Expression& e2);
-Formula operator<=(const Expression& e1, double v2);
 Formula operator>(const Expression& e1, const Expression& e2);
-Formula operator>(double v1, const Expression& e2);
-Formula operator>(const Expression& e1, double v2);
 Formula operator>=(const Expression& e1, const Expression& e2);
-Formula operator>=(double v1, const Expression& e2);
-Formula operator>=(const Expression& e1, double v2);
 
 std::ostream& operator<<(std::ostream& os, const Formula& e);
 

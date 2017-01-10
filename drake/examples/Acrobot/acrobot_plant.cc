@@ -1,11 +1,15 @@
 #include "drake/examples/Acrobot/acrobot_plant.h"
 
 #include <cmath>
+#include <vector>
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
-#include "drake/systems/controllers/linear_optimal_control.h"
+#include "drake/systems/controllers/linear_quadratic_regulator.h"
+#include "drake/systems/framework/diagram.h"
+#include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/sensors/rotary_encoders.h"
 
 namespace drake {
 namespace examples {
@@ -17,15 +21,13 @@ constexpr int kNumDOF = 2;  // theta1 + theta2.
 
 template <typename T>
 AcrobotPlant<T>::AcrobotPlant() {
-  this->DeclareInputPort(systems::kVectorValued, 1,
-                         systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, 1);
   this->DeclareContinuousState(kNumDOF * 2);  // Position + velocity.
-  this->DeclareOutputPort(systems::kVectorValued, kNumDOF * 2,
-                          systems::kContinuousSampling);
+  this->DeclareOutputPort(systems::kVectorValued, kNumDOF * 2);
 }
 
 template <typename T>
-void AcrobotPlant<T>::EvalOutput(const systems::Context<T>& context,
+void AcrobotPlant<T>::DoCalcOutput(const systems::Context<T>& context,
                                  systems::SystemOutput<T>* output) const {
   output->GetMutableVectorData(0)->set_value(
       dynamic_cast<const AcrobotStateVector<T>&>(
@@ -35,7 +37,7 @@ void AcrobotPlant<T>::EvalOutput(const systems::Context<T>& context,
 
 // Compute the actual physics.
 template <typename T>
-void AcrobotPlant<T>::EvalTimeDerivatives(
+void AcrobotPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
@@ -90,8 +92,8 @@ AcrobotPlant<T>::AllocateContinuousState() const {
 
 template <typename T>
 std::unique_ptr<systems::BasicVector<T>> AcrobotPlant<T>::AllocateOutputVector(
-    const systems::SystemPortDescriptor<T>& descriptor) const {
-  DRAKE_THROW_UNLESS(descriptor.get_size() == kNumDOF * 2);
+    const systems::OutputPortDescriptor<T>& descriptor) const {
+  DRAKE_THROW_UNLESS(descriptor.size() == kNumDOF * 2);
   return std::make_unique<AcrobotStateVector<T>>();
 }
 
@@ -100,6 +102,39 @@ template <typename T>
 AcrobotPlant<AutoDiffXd>* AcrobotPlant<T>::DoToAutoDiffXd() const {
   return new AcrobotPlant<AutoDiffXd>();
 }
+
+template class AcrobotPlant<double>;
+template class AcrobotPlant<AutoDiffXd>;
+
+template <typename T>
+AcrobotWEncoder<T>::AcrobotWEncoder(bool acrobot_state_as_second_output) {
+  systems::DiagramBuilder<T> builder;
+
+  acrobot_plant_ = builder.template AddSystem<AcrobotPlant<T>>();
+  auto encoder =
+      builder.template AddSystem<systems::sensors::RotaryEncoders<T>>(
+          4, std::vector<int>{0, 1});
+  builder.Cascade(*acrobot_plant_, *encoder);
+  builder.ExportInput(acrobot_plant_->get_input_port(0));
+  builder.ExportOutput(encoder->get_output_port(0));
+  if (acrobot_state_as_second_output)
+    builder.ExportOutput(acrobot_plant_->get_output_port(0));
+
+  builder.BuildInto(this);
+}
+
+template <typename T>
+AcrobotStateVector<T>* AcrobotWEncoder<T>::get_mutable_acrobot_state(
+    systems::Context<T>* context) const {
+  AcrobotStateVector<T>* x = dynamic_cast<AcrobotStateVector<T>*>(
+      this->GetMutableSubsystemContext(context, acrobot_plant_)
+          ->get_mutable_continuous_state_vector());
+  DRAKE_DEMAND(x != nullptr);
+  return x;
+}
+
+template class AcrobotWEncoder<double>;
+template class AcrobotWEncoder<AutoDiffXd>;
 
 std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
     const AcrobotPlant<double>* acrobot) {
@@ -117,8 +152,9 @@ std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
   x->set_theta1dot(0.0);
   x->set_theta2dot(0.0);
 
-  // Setup LQR Cost matrices (penalize position error 10x more than velocity to
-  // roughly address difference in units, using sqrt(g/l) as the time constant.
+  // Setup LQR Cost matrices (penalize position error 10x more than velocity
+  // to roughly address difference in units, using sqrt(g/l) as the time
+  // constant.
   Eigen::Matrix4d Q = Eigen::Matrix4d::Identity();
   Q(0, 0) = 10;
   Q(1, 1) = 10;
@@ -126,9 +162,6 @@ std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
 
   return systems::LinearQuadraticRegulator(*acrobot, *context, Q, R);
 }
-
-template class AcrobotPlant<double>;
-template class AcrobotPlant<AutoDiffXd>;
 
 }  // namespace acrobot
 }  // namespace examples

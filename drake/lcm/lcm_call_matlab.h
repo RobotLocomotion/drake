@@ -37,7 +37,7 @@ struct LcmMatlabRemoteVariable {
   //  ~LcmMatlabRemoteVariable(); // TODO(russt): send a destroy message on
   //  deletion
 
-  const int64_t uid;
+  const int64_t uid_{};
 };
 
 /// Serialize our favorite data types into the lcm_matlab_array structure.
@@ -50,7 +50,7 @@ void ToLcmMatlabArray(const LcmMatlabRemoteVariable& var,
 void ToLcmMatlabArray(double scalar,
                              drake::lcmt_matlab_array* matlab_array);
 
-void ToLcmMatlabArray(const Eigen::Ref<Eigen::MatrixXd>& mat,
+void ToLcmMatlabArray(const Eigen::Ref<const Eigen::MatrixXd>& mat,
                              drake::lcmt_matlab_array* matlab_array);
 
 void ToLcmMatlabArray(const std::string& str,
@@ -58,8 +58,8 @@ void ToLcmMatlabArray(const std::string& str,
 
 // Helper methods for variadic template call in CallMatlab.
 namespace internal {
-void AssembleLcmCallMatlabMsg(drake::lcmt_call_matlab* msg,
-                              int* index) {
+inline void AssembleLcmCallMatlabMsg(drake::lcmt_call_matlab* msg,
+                                     int* index) {
   // Intentionally left blank.  Base case for template recursion.
 }
 
@@ -104,7 +104,7 @@ std::vector<LcmMatlabRemoteVariable> LcmCallMatlab(
   msg.nlhs = num_outputs;
   msg.lhs.resize(num_outputs);
   for (int i = 0; i < num_outputs; i++) {
-    msg.lhs[i] = remote_vars[i].uid;
+    msg.lhs[i] = remote_vars[i].uid_;
   }
 
   int index = 0;

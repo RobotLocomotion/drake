@@ -40,7 +40,7 @@ Element::Element(const Element& other)
       // In addition casting to an int is a bad idea.
       // Issue #2662 tracks the resolution of these problems.
       id(reinterpret_cast<ElementId>(this)),
-      is_static_(other.is_static_),
+      is_anchored_(other.is_anchored_),
       body_(other.body_),
       collision_cliques_(other.collision_cliques_) {}
 
@@ -73,7 +73,7 @@ void Element::AddToCollisionClique(int clique_id) {
 }
 
 int Element::get_num_cliques() const {
-  return collision_cliques_.size();
+  return static_cast<int>(collision_cliques_.size());
 }
 
 const std::vector<int>& Element::collision_cliques() const {

@@ -6,9 +6,9 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_value_source.h"
+#include "drake/systems/primitives/constant_value_source.h"
 
 namespace drake {
 namespace systems {
@@ -50,7 +50,7 @@ void TestCommandToDesiredEffortConverter(
 
   auto context = diagram->CreateDefaultContext();
   auto output = diagram->AllocateOutput(*context);
-  diagram->EvalOutput(*context, output.get());
+  diagram->CalcOutput(*context, output.get());
 
   // TODO(tkoolen): assumption about ordering of exported output ports.
   int output_port_id = 0;

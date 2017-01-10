@@ -6,7 +6,10 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
+#include "drake/common/autodiff_overloads.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/functional_form.h"
 
 namespace drake {
@@ -33,12 +36,25 @@ GTEST_TEST(BasicVectorTest, DoubleInitiallyNaN) {
                               MatrixCompareType::absolute));
 }
 
-// Tests that the BasicVector<int> is initialized to zero.
-GTEST_TEST(BasicVectorTest, IntInitiallyZero) {
+// Tests that the BasicVector<AutoDiffXd> is initialized to NaN.
+GTEST_TEST(BasicVectorTest, AutodiffInitiallyNaN) {
+  BasicVector<AutoDiffXd> vec(3);
+  EXPECT_TRUE(std::isnan(vec.GetAtIndex(0).value()));
+  EXPECT_TRUE(std::isnan(vec.GetAtIndex(1).value()));
+  EXPECT_TRUE(std::isnan(vec.GetAtIndex(2).value()));
+}
+
+// Tests that the BasicVector<int> is initialized to non-zero dummy that is the
+// same for all elements.
+GTEST_TEST(BasicVectorTest, IntInitiallyDummy) {
   BasicVector<int> vec(3);
-  Eigen::Vector3i expected;
-  expected << 0, 0, 0;
-  EXPECT_EQ(expected, vec.get_value());
+
+  EXPECT_NE(vec.GetAtIndex(0), 0);
+  EXPECT_NE(vec.GetAtIndex(1), 0);
+  EXPECT_NE(vec.GetAtIndex(2), 0);
+
+  EXPECT_EQ(vec.GetAtIndex(0), vec.GetAtIndex(1));
+  EXPECT_EQ(vec.GetAtIndex(0), vec.GetAtIndex(2));
 }
 
 // Tests that the BasicVector<FunctionalForm> is initialized to undefined.

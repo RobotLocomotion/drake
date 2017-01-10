@@ -46,6 +46,7 @@ drake.jar
 *.out
 pod-build
 build
+cmake-build-*
 mlint_output.html
 .#*
 VALGRIND_OUTPUT.xml
@@ -57,3 +58,4 @@ drake/doc/DoxygenCPP
 Pendulum.pmd
 drake/doc/_build
 bazel-*
+xcode

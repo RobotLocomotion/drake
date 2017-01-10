@@ -5,13 +5,14 @@
 if(Matlab_FOUND)
   drake_add_mex(rbmMexFunctions rigidBodyTreeMexFunctions.cpp)
   drake_install_libraries(rbmMexFunctions)
-  target_link_libraries(rbmMexFunctions drakeRBM drakeMexUtil)
+  target_link_libraries(rbmMexFunctions drakeMexUtil drakeMultibodyParsers drakeRBM)
   # These warnings are not worth fixing.
   target_compile_options(rbmMexFunctions PRIVATE ${CXX_FLAGS_NO_SIGN_COMPARE})
 
   macro(add_rbm_mex)
     drake_add_mex(${ARGV} ${ARGV}.cpp)
-    target_link_libraries(${ARGV} rbmMexFunctions)
+    target_link_libraries(${ARGV}
+        rbmMexFunctions)
     # These warnings are not worth fixing.
     target_compile_options(${ARGV} PRIVATE ${CXX_FLAGS_NO_SIGN_COMPARE})
   endmacro()

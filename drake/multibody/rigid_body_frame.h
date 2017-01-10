@@ -6,10 +6,26 @@
 
 #include "drake/multibody/rigid_body.h"
 
+// TODO(amcastro-tri): There should be no tinyxml2 dependence in this file.
 namespace tinyxml2 {
 class XMLElement;
 }
 
+/// Multibody systems typically have distinguished frames of interest that
+/// need to be monitored. A frame is fully described by the body it is rigidly
+/// attached to and the pose of this frame with respect to that body.
+/// RigidBodyFrame provides an abstraction to describe these frames.
+///
+/// @tparam T The type being integrated. Must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+/// - AutoDiffUpTo73d
+///
+/// They are already available to link against in drakeRBM.
+/// No other values for T are currently supported.
+template <typename T>
 class RigidBodyFrame {
  public:
   /**
@@ -17,20 +33,27 @@ class RigidBodyFrame {
    * Eigen::Isometry3d matrix.
    *
    */
-  RigidBodyFrame(const std::string& name, RigidBody<double>* body,
+  // TODO(amcastro-tri): Remove this constructor. The appropriate signature
+  // is described in #4407.
+  RigidBodyFrame(const std::string& name, RigidBody<T>* body,
                  const Eigen::Isometry3d& transform_to_body);
 
   /**
    * A constructor where the transform-to-body is specified using
    * Euler angles.
    */
-  RigidBodyFrame(const std::string& name, RigidBody<double>* body,
+  // TODO(amcastro-tri): Remove this constructor. The appropriate signature
+  // is described in #4407.
+  RigidBodyFrame(const std::string& name, RigidBody<T>* body,
                  const Eigen::Vector3d& xyz = Eigen::Vector3d::Zero(),
                  const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
 
   /**
    * The default constructor.
    */
+  // TODO(amcastro-tri): Remove this constructor. The frame concept does not
+  // make sense without referencing a RigidBody. The appropriate signature is
+  // described in #4407.
   RigidBodyFrame()
       : RigidBodyFrame("", nullptr, Eigen::Isometry3d::Identity()) {}
 
@@ -48,12 +71,16 @@ class RigidBodyFrame {
   /**
    * Returns the rigid body to which this frame is attached.
    */
-  const RigidBody<double>& get_rigid_body() const;
+  const RigidBody<T>& get_rigid_body() const;
 
   /**
    * Returns the rigid body to which this frame is attached.
    */
-  RigidBody<double>* get_mutable_rigid_body();
+  // TODO(amcastro-tri): Users should not be accessing mutable references to
+  // a RigidBody with this class.
+  // Mutable references can be requested with
+  // RigidBodyTree::get_mutable_body(int body_id).
+  RigidBody<T>* get_mutable_rigid_body();
 
   /**
    * Returns the transform between the coordinate frame that belongs to this
@@ -78,6 +105,8 @@ class RigidBodyFrame {
 
   // TODO(liang.fok) Remove this method once it's no longer needed by
   // drake-distro/drake/systems/plants/constructModelmex.cpp.
+  // Frames' poses should only be specified at construction as described in
+  // #4407.
   /**
    * Returns the transform between the coordinate frame that belongs to this
    * `RigidBodyFrame` and the coordinate frame that belongs to the `RigidBody`
@@ -101,17 +130,26 @@ class RigidBodyFrame {
    * @p rigid_body must remain valid for the lifetime of this `RigidBodyFrame`
    * object.
    */
-  void set_rigid_body(RigidBody<double>* rigid_body);
+  // TODO(amcastro-tri): Remove this method. The rigid body to which this
+  // frame is attached should only be specified at construction as described
+  // in #4407.
+  void set_rigid_body(RigidBody<T>* rigid_body);
 
   /**
    * Returns true if this frame's rigid body is equal to the @p rigid_body.
    */
-  bool has_as_rigid_body(RigidBody<double>* rigid_body);
+  // TODO(amcastro-tri): Remove this method once parsers are fixed.
+  // Change to: bool is_attached_to(const RigidBody<T>& body).
+  bool has_as_rigid_body(RigidBody<T>* rigid_body);
 
   /**
    * Sets the index of this frame. This is the index in the vector of
    * `RigidBodyFrames` within the `RigidBodyTree`.
    */
+  // TODO(amcastro-tri): Remove this method. Fix use cases to call
+  // RBT::add_frame(RigidBodyFrame("the_frame_name", the_body, the_pose)).
+  // The horrible idexing of frames can be fixed on a later PR, but at least
+  // it would only live in one single place, RBT::add_frame().
   void set_frame_index(int frame_index);
 
   /**
@@ -120,6 +158,8 @@ class RigidBodyFrame {
    *
    * @see RigidBodyFrame::get_transform_to_body
    */
+  // Frames' poses should only be specified at construction as described in
+  // #4407. Fix parsers to use construtor instead.
   void set_transform_to_body(const Eigen::Isometry3d& transform_to_body);
 
 #ifndef SWIG
@@ -128,7 +168,9 @@ class RigidBodyFrame {
 
  private:
   std::string name_;
-  RigidBody<double>* body_{nullptr};
+  // TODO(amcastro-tri): make this a RigidBody<T>&. RigidBodyFrames ALWAYS
+  // are attached to a body, see #4407.
+  RigidBody<T>* body_{nullptr};
   Eigen::Isometry3d transform_to_body_;
   int frame_index_ = 0;  // this will be negative, but will also be gone soon!
 };

@@ -2,11 +2,15 @@
 
 #include <cmath>
 #include <iostream>
+#include <memory>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/examples/examples_package_map.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/parser_common.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace Eigen;
@@ -52,8 +56,12 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         "Drake:compareParsersmex:BadInputs",
         "Unknown floating base type.  must be 'fixed', 'rpy', or 'quat'");
 
-  RigidBodyTree<double>* cpp_model =
-      new RigidBodyTree<double>(urdf_file, floating_base_type);
+  auto cpp_model = std::make_unique<RigidBodyTree<double>>();
+  drake::parsers::PackageMap package_map;
+  drake::examples::AddExamplePackages(&package_map);
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
+      urdf_file, package_map, floating_base_type, nullptr /* weld to frame */,
+      cpp_model.get());
 
   // Compute coordinate transform between the two models (in case they are not
   // identical)
@@ -185,6 +193,4 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       }
     }
   }
-
-  delete cpp_model;
 }

@@ -9,10 +9,8 @@ namespace systems {
 template <typename T>
 GravityCompensator<T>::GravityCompensator(const RigidBodyTree<T>& tree)
     : tree_(tree) {
-  this->DeclareInputPort(kVectorValued, tree.get_num_positions(),
-                         kContinuousSampling);
-  this->DeclareOutputPort(kVectorValued, tree_.get_num_actuators(),
-                          kContinuousSampling);
+  this->DeclareInputPort(kVectorValued, tree.get_num_positions());
+  this->DeclareOutputPort(kVectorValued, tree_.get_num_actuators());
   if (tree.get_num_positions() != tree_.get_num_actuators()) {
     std::stringstream msg;
     msg << "The model is under-actuated!\n"
@@ -23,8 +21,8 @@ GravityCompensator<T>::GravityCompensator(const RigidBodyTree<T>& tree)
 }
 
 template <typename T>
-void GravityCompensator<T>::EvalOutput(const Context<T>& context,
-                                       SystemOutput<T>* output) const {
+void GravityCompensator<T>::DoCalcOutput(const Context<T>& context,
+                                         SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
@@ -38,7 +36,7 @@ void GravityCompensator<T>::EvalOutput(const Context<T>& context,
   Eigen::VectorXd g = tree_.dynamicsBiasTerm(
       cache, f_ext, false /* include velocity terms */);
 
-  DRAKE_ASSERT(g.size() == System<T>::get_output_port(0).get_size());
+  DRAKE_ASSERT(g.size() == System<T>::get_output_port(0).size());
   System<T>::GetMutableOutputVector(output, 0) = g;
 }
 

@@ -1,3 +1,6 @@
+drake_install_headers(
+    examples_package_map.h)
+
 drake_add_matlab_test(NAME examples/CubicPolynomialExample.findFixedPointTest OPTIONAL snopt COMMAND CubicPolynomialExample.findFixedPointTest)
 drake_add_matlab_test(NAME examples/CubicPolynomialExample.animate COMMAND CubicPolynomialExample.animate)
 drake_add_matlab_test(NAME examples/CubicPolynomialExample.sosExample REQUIRES mosek spotless COMMAND CubicPolynomialExample.sosExample)

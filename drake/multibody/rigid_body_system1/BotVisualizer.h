@@ -2,6 +2,7 @@
 // it are gone. It is being replaced by rigid_body_tree_visualizer_lcm.h.
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -9,9 +10,10 @@
 #include <Eigen/Dense>
 
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/system1/System.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/rigid_body_system1/System.h"
 
 #include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/lcmt_viewer_draw.hpp"
@@ -49,8 +51,9 @@ class BotVisualizer {
                 const std::string& urdf_filename,
                 const drake::multibody::joints::FloatingBaseType
                     floating_base_type)
-      : tree_(new RigidBodyTree<double>(
-      urdf_filename, floating_base_type)), lcm_(lcm) {
+      : tree_(new RigidBodyTree<double>()), lcm_(lcm) {
+    parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+        urdf_filename, floating_base_type, tree_.get());
     init();
   }
 

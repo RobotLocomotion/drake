@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -10,7 +13,8 @@ namespace qp_inverse_dynamics {
 
 using systems::Context;
 using systems::SystemOutput;
-using systems::SystemPortDescriptor;
+using systems::InputPortDescriptor;
+using systems::OutputPortDescriptor;
 using systems::LeafSystemOutput;
 using systems::AbstractValue;
 using systems::Value;
@@ -25,14 +29,13 @@ class RobotStateDecoderSystem : public systems::LeafSystem<double> {
  public:
   explicit RobotStateDecoderSystem(const RigidBodyTree<double>& robot)
       : robot_(robot) {
-    input_port_index_lcm_msg_ =
-        DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
+    input_port_index_lcm_msg_ = DeclareAbstractInputPort().get_index();
     output_port_index_humanoid_status_ =
-        DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
+        DeclareAbstractOutputPort().get_index();
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     // Input:
     const bot_core::robot_state_t* msg =
         EvalInputValue<bot_core::robot_state_t>(context,
@@ -70,7 +73,7 @@ class RobotStateDecoderSystem : public systems::LeafSystem<double> {
   /**
    * @return Port for the input: lcm message bot_core::robot_state_t
    */
-  inline const SystemPortDescriptor<double>& get_input_port_robot_state_msg()
+  inline const InputPortDescriptor<double>& get_input_port_robot_state_msg()
       const {
     return get_input_port(input_port_index_lcm_msg_);
   }
@@ -78,7 +81,7 @@ class RobotStateDecoderSystem : public systems::LeafSystem<double> {
   /**
    * @return Port for the output: HumanoidStatus.
    */
-  inline const SystemPortDescriptor<double>& get_output_port_humanoid_status()
+  inline const OutputPortDescriptor<double>& get_output_port_humanoid_status()
       const {
     return get_output_port(output_port_index_humanoid_status_);
   }

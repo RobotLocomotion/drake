@@ -1,6 +1,8 @@
 #pragma once
 
+#include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "btBulletCollisionCommon.h"
@@ -38,7 +40,7 @@ struct BulletCollisionWorldWrapper {
   std::unique_ptr<btCollisionWorld> bt_collision_world;
 };
 
-class UnknownShapeException : public std::exception {
+class UnknownShapeException : public std::runtime_error {
  public:
   explicit UnknownShapeException(DrakeShapes::Shape shape);
   virtual const char* what() const throw();
@@ -56,10 +58,10 @@ class BulletModel : public Model {
 
   void updateModel() override;
 
-  ElementId addElement(const Element& element) override;
+  void DoAddElement(const Element& element) override;
 
   bool updateElementWorldTransform(
-      const ElementId, const Eigen::Isometry3d& T_local_to_world) override;
+      ElementId, const Eigen::Isometry3d& T_local_to_world) override;
 
   /**
    * Finds the points where each pair of the elements in ids_to_check are
@@ -68,11 +70,11 @@ class BulletModel : public Model {
    * \return true if any points are found.
    */
   bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
-                             const bool use_margins,
+                             bool use_margins,
                              std::vector<PointPair>& closest_points) override;
 
   bool ComputeMaximumDepthCollisionPoints(
-      const bool use_margins, std::vector<PointPair>& points) override;
+      bool use_margins, std::vector<PointPair>& points) override;
 
   /**
    * Finds the points where each pair of elements in id_pairs are
@@ -81,9 +83,38 @@ class BulletModel : public Model {
    * \return true if any points are found.
    */
   bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                             const bool use_margins,
+                             bool use_margins,
                              std::vector<PointPair>& closest_points) override;
 
+  /**
+   * Computes the closest point in the collision world to each of a set of
+   * points. For each query point, a PointPair instance, `p`, is returned with
+   * the following semantics:
+   *    - p.elementA = p.elementB = pointer to the closest element.
+   *    - p.idA = p.idB = ElementId of closest element.
+   *    - p.ptA = the point on the closest element's surface expressed and
+   *        measured in the element's local frame.
+   *    - p.ptB = the point on the closest element's surface expressed and
+   *        measured in the world frame.
+   *    - p.normal = the normal direction from the nearest object to the query
+   *        point, expressed in the world frame.
+   *    - p.distance = The *signed* distance between the query point and the
+   *        nearest point.  Negative values indicate penetration.
+   * If there are no objects in the scene, then the pointers will be nullptr,
+   * the ids, 0, the distance infinite, and the nearest points, infinitely far
+   * away.
+   *
+   * This query will *not* determine the distance to non-convex geometry.
+   * A scene with only non-convex geometry is effectively empty to this
+   * method.
+   *
+   * @param points                  A set of points measured and expressed in
+   *                                the world frame.  One per column.
+   * @param use_margins             Determines whether margins are used (true)
+   *                                or not.
+   * @param[out] closest_points     The vector for which all the closest point
+   *                                data will be returned.
+   */
   void collisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
       std::vector<PointPair>& closest_points) override;
@@ -150,7 +181,7 @@ class BulletModel : public Model {
    * returns false.
    */
   virtual PointPair findClosestPointsBetweenElements(
-      const ElementId idA, const ElementId idB, const bool use_margins);
+      ElementId idA, ElementId idB, bool use_margins);
 
   BulletCollisionWorldWrapper& getBulletWorld(bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletBoxShape(

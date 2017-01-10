@@ -1,4 +1,4 @@
-# -*- python -*
+# -*- python -*-
 
 # This file contains rules for the Bazel build system.
 # See http://bazel.io/ .
@@ -7,9 +7,9 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "spruce",
-    srcs = ["bsd/spruce/src/spruce.cc"],
-    hdrs = ["bsd/spruce/include/spruce.hh"],
-    includes = ["bsd/spruce/include"],
+    srcs = ["bsd/spruce/spruce.cc"],
+    hdrs = ["bsd/spruce/spruce.hh"],
+    includes = ["bsd/spruce"],
     linkstatic = 1,
 )
 

@@ -13,23 +13,21 @@ constexpr int kStateSize = 2;  // position, velocity
 
 template <typename T>
 PendulumPlant<T>::PendulumPlant() {
-  this->DeclareInputPort(
-      systems::kVectorValued, 1, systems::kContinuousSampling);
-  this->DeclareOutputPort(
-      systems::kVectorValued, kStateSize, systems::kContinuousSampling);
+  this->DeclareInputPort(systems::kVectorValued, 1);
+  this->DeclareOutputPort(systems::kVectorValued, kStateSize);
 }
 
 template <typename T>
 PendulumPlant<T>::~PendulumPlant() {}
 
 template <typename T>
-const systems::SystemPortDescriptor<T>&
+const systems::InputPortDescriptor<T>&
 PendulumPlant<T>::get_tau_port() const {
   return this->get_input_port(0);
 }
 
 template <typename T>
-const systems::SystemPortDescriptor<T>&
+const systems::OutputPortDescriptor<T>&
 PendulumPlant<T>::get_output_port() const {
   return systems::System<T>::get_output_port(0);
 }
@@ -37,8 +35,8 @@ PendulumPlant<T>::get_output_port() const {
 template <typename T>
 std::unique_ptr<systems::BasicVector<T>>
 PendulumPlant<T>::AllocateOutputVector(
-    const systems::SystemPortDescriptor<T>& descriptor) const {
-  DRAKE_THROW_UNLESS(descriptor.get_size() == kStateSize);
+    const systems::OutputPortDescriptor<T>& descriptor) const {
+  DRAKE_THROW_UNLESS(descriptor.size() == kStateSize);
   return std::make_unique<PendulumStateVector<T>>();
 }
 
@@ -52,14 +50,14 @@ PendulumPlant<T>::AllocateContinuousState() const {
 }
 
 template <typename T>
-void PendulumPlant<T>::EvalOutput(const systems::Context<T>& context,
-                                   systems::SystemOutput<T>* output) const {
+void PendulumPlant<T>::DoCalcOutput(const systems::Context<T>& context,
+                                    systems::SystemOutput<T>* output) const {
   get_mutable_output(output)->set_value(get_state(context).get_value());
 }
 
 // Compute the actual physics.
 template <typename T>
-void PendulumPlant<T>::EvalTimeDerivatives(
+void PendulumPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));

@@ -1,0 +1,9 @@
+<launch>
+  <include file="$(find drake_examples_toyota_hsrb)/launch/load_model.launch" />
+  <group ns="drake">
+    <param name="enable_tf_publisher" type="bool" value="false" />
+    <test pkg="drake_examples_toyota_hsrb"
+          test-name="passive_demo_test"
+          type="passive_demo_test" />
+  </group>
+</launch>

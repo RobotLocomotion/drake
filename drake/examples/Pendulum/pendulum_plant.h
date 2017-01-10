@@ -32,10 +32,10 @@ class PendulumPlant : public systems::LeafSystem<T> {
   bool has_any_direct_feedthrough() const override { return false; }
 
   /// Returns the input port to the externally applied force.
-  const systems::SystemPortDescriptor<T>& get_tau_port() const;
+  const systems::InputPortDescriptor<T>& get_tau_port() const;
 
   /// Returns the port to output state.
-  const systems::SystemPortDescriptor<T>& get_output_port() const;
+  const systems::OutputPortDescriptor<T>& get_output_port() const;
 
   void set_theta(MyContext* context, const T& theta) const {
     get_mutable_state(context)->set_theta(theta);
@@ -44,11 +44,6 @@ class PendulumPlant : public systems::LeafSystem<T> {
   void set_thetadot(MyContext* context, const T& thetadot) const {
     get_mutable_state(context)->set_thetadot(thetadot);
   }
-
-  void EvalOutput(const MyContext& context, MyOutput* output) const override;
-
-  void EvalTimeDerivatives(const MyContext& context,
-                           MyContinuousState* derivatives) const override;
 
   /// Pendulum mass in kg
   T m() const { return m_; }
@@ -70,12 +65,17 @@ class PendulumPlant : public systems::LeafSystem<T> {
   AllocateContinuousState() const override;
 
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override;
+      const systems::OutputPortDescriptor<T>& descriptor) const override;
 
   // System<T> override.
   PendulumPlant<AutoDiffXd>* DoToAutoDiffXd() const override;
 
  private:
+  void DoCalcOutput(const MyContext& context, MyOutput* output) const override;
+
+  void DoCalcTimeDerivatives(const MyContext& context,
+                             MyContinuousState* derivatives) const override;
+
   T get_tau(const MyContext& context) const {
     return this->EvalVectorInput(context, 0)->GetAtIndex(0);
   }

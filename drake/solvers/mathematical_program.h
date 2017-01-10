@@ -1,14 +1,14 @@
 #pragma once
 
-#include <algorithm>
 #include <array>
-#include <initializer_list>
 #include <iostream>
 #include <limits>
 #include <list>
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Core>
@@ -16,11 +16,11 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/symbolic_variable.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/function.h"
-#include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/solution_result.h"
+#include "drake/solvers/mathematical_program_solver_interface.h"
 
 namespace drake {
 namespace solvers {
@@ -171,32 +171,14 @@ enum ProgramAttributes {
   kLinearComplementarityConstraint = 1 << 8,
   kLorentzConeConstraint = 1 << 9,
   kRotatedLorentzConeConstraint = 1 << 10,
-  kBinaryVariable = 1 << 11
+  kPositiveSemidefiniteConstraint = 1 << 11,
+  kBinaryVariable = 1 << 12
 };
 typedef uint32_t AttributesSet;
 
-/// Interface used by implementations of individual solvers.
-class MathematicalProgramSolverInterface {
- public:
-  virtual ~MathematicalProgramSolverInterface() = default;
-
-  /// Returns true iff this solver was enabled at compile-time.
-  virtual bool available() const = 0;
-
-  /// Returns the name of the solver.
-  virtual std::string SolverName() const = 0;
-
-  /// Sets values for the decision variables on the given MathematicalProgram
-  /// @p prog, or:
-  ///  * If no solver is available, throws std::runtime_error
-  ///  * If the solver returns an error, returns a nonzero SolutionResult.
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual SolutionResult Solve(MathematicalProgram& prog) const = 0;
-};
-
 class MathematicalProgram {
-  /** Binding
-   * @brief A binding on constraint type C is a mapping of the decision
+  /**
+   * A binding on constraint type C is a mapping of the decision
    * variables onto the inputs of C.  This allows the constraint to operate
    * on a vector made up of different elements of the decision variables.
    */
@@ -220,28 +202,15 @@ class MathematicalProgram {
     const VariableList& variable_list() const { return variable_list_; }
 
     /**
-     * Get an Eigen vector containing all variable values. This only works if
-     * every element in variable_list_ is a column vector.
-     * @return A Eigen::VectorXd for all the variables in the variable vector.
-     */
-    Eigen::VectorXd VariableListToVectorXd() const {
-      size_t dim = 0;
-      Eigen::VectorXd X(GetNumElements());
-      for (const auto& var : variable_list_.variables()) {
-        DRAKE_ASSERT(var.cols() == 1);
-        X.segment(dim, var.rows()) = GetSolution(var);
-        dim += var.rows();
-      }
-      return X;
-    }
-
-    /**
-     * @brief returns true iff the given @p index of the enclosing
-     * MathematicalProgram is included in this Binding.*/
-    bool ContainsVariableIndex(size_t index) const {
-      for (const auto& view : variable_list_.variables()) {
-        if (DecisionVariableMatrixContainsIndex(view, index)) {
-          return true;
+     * Returns true iff the given @p var is included in this Binding.*/
+    bool ContainsVariable(const symbolic::Variable& var) const {
+      for (const auto& v : variable_list_.variables()) {
+        for (int i = 0; i < v.rows(); ++i) {
+          for (int j = 0; j < v.cols(); ++j) {
+            if (v(i, j) == var) {
+              return true;
+            }
+          }
         }
       }
       return false;
@@ -251,23 +220,6 @@ class MathematicalProgram {
       // TODO(ggould-tri) assumes that no index appears more than once in the
       // view, which is nowhere asserted (but seems assumed elsewhere).
       return variable_list_.size();
-    }
-
-    /** WriteThrough()
-     * @brief Writes the elements of @p solution to the bound elements of
-     * the @p output vector.
-     */
-    void WriteThrough(const Eigen::VectorXd& solution,
-                      Eigen::VectorXd* output) const {
-      DRAKE_ASSERT(static_cast<size_t>(solution.rows()) == GetNumElements());
-      size_t solution_index = 0;
-      for (const auto& var : variable_list_.variables()) {
-        DRAKE_ASSERT(var.cols() == 1);
-        const auto& solution_segment =
-            solution.segment(solution_index, var.rows());
-        output->segment(var(0).index(), var.rows()) = solution_segment;
-        solution_index += var.rows();
-      }
     }
 
    private:
@@ -315,10 +267,24 @@ class MathematicalProgram {
   };
 
  public:
+  enum class VarType { CONTINUOUS, INTEGER, BINARY };
+
   MathematicalProgram();
 
+  /** MathematicalProgram is not copyable. */
+  MathematicalProgram(const MathematicalProgram& rhs) = delete;
+
+  /** MathematicalProgram is not assinable. */
+  MathematicalProgram& operator=(const MathematicalProgram& rhs) = delete;
+
+  /** MathematicalProgram is not movable. */
+  MathematicalProgram(MathematicalProgram&& rhs) = delete;
+
+  /** MathematicalProgram is not move-assignable. */
+  MathematicalProgram& operator=(MathematicalProgram&& rhs) = delete;
+
   /**
-   * Add variables to MathematicalProgram.
+   * Adds new variables to MathematicalProgram.
    * Appending new variables to an internal vector of any existing vars.
    * The new variables are initialized to zero.
    * Callers are expected to add costs
@@ -335,83 +301,66 @@ class MathematicalProgram {
    * Example:
    * @code{.cc}
    * MathematicalProgram prog;
-   * auto x = prog.AddVariables<2, 3>(
-   *      DecisionVariableScalar::VarType::CONTINUOUS,
+   * auto x = prog.NewVariables<2, 3>(
+   *      VarType::CONTINUOUS,
    *      {"x1", "x2", "x3", "x4", "x5", "x6"});
    * @endcode
    * This adds a matrix of size 2 x 3 as new variables into the optimization
    * program.
    * The name of the variable is only used for the user to understand.
    */
-  template <Eigen::Index rows, Eigen::Index cols>
-  DecisionVariableMatrix<rows, cols> AddVariables(
-      DecisionVariableScalar::VarType type,
-      const std::array<std::string, rows * cols>& names) {
+  template <int rows, int cols>
+  DecisionVariableMatrix<rows, cols> NewVariables(
+      VarType type, const std::array<std::string, rows * cols>& names) {
     DecisionVariableMatrix<rows, cols> decision_variable_matrix;
-    AddVariables_impl(type, names, false, decision_variable_matrix);
+    NewVariables_impl(type, names, false, decision_variable_matrix);
     return decision_variable_matrix;
   }
 
-  template <Eigen::Index rows>
-  DecisionVariableMatrix<rows, rows> AddSymmetricVariables(
-      DecisionVariableScalar::VarType type,
-      const std::array<std::string, rows * rows>& names) {
+  /**
+   * Adds column vector variables to the optimization program.
+   */
+  template <int rows>
+  DecisionVariableVector<rows> NewVariables(
+      VarType type, const std::array<std::string, rows>& names) {
+    return NewVariables<rows, 1>(type, names);
+  }
+
+  /**
+   * Adds symmetric matrix variables to optimization program. Only the lower
+   * triangular
+   * part of the matrix is used as decision variables.
+   * @param names The names of the stacked columns of the lower triangular part
+   * of the matrix.
+   */
+  template <int rows>
+  DecisionVariableMatrix<rows, rows> NewSymmetricVariables(
+      VarType type, const std::array<std::string, rows*(rows + 1) / 2>& names) {
     DecisionVariableMatrix<rows, rows> decision_variable_matrix;
-    AddVariables_impl(type, names, true, decision_variable_matrix);
+    NewVariables_impl(type, names, true, decision_variable_matrix);
     return decision_variable_matrix;
-  }
-
-  template <Eigen::Index rows>
-  DecisionVariableVector<rows> AddVariables(
-      DecisionVariableScalar::VarType type,
-      const std::array<std::string, rows>& names) {
-    return AddVariables<rows, 1>(type, names);
-  }
-
-  DecisionVariableMatrixX AddVariables(DecisionVariableScalar::VarType type,
-                                       Eigen::Index rows, Eigen::Index cols,
-                                       bool is_symmetric,
-                                       const std::vector<std::string>& names) {
-    DecisionVariableMatrixX decision_variable_matrix(rows, cols);
-    AddVariables_impl(type, names, is_symmetric, decision_variable_matrix);
-    return decision_variable_matrix;
-  }
-
-  DecisionVariableVectorX AddVariables(DecisionVariableScalar::VarType type,
-                                       Eigen::Index rows,
-                                       const std::vector<std::string>& names) {
-    return AddVariables(type, rows, 1, false, names);
   }
 
   /**
-   * Add continuous variables to this MathematicalProgram.
-   * @see AddContinuousVariables(size_t rows, size_t cols, const
+   * Adds continuous variables to this MathematicalProgram.
+   * @see NewContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  DecisionVariableVectorX AddContinuousVariables(
-      std::size_t rows, const std::vector<std::string>& names) {
-    return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows,
-                        names);
-  }
+  DecisionVariableVectorX NewContinuousVariables(
+      std::size_t rows, const std::vector<std::string>& names);
 
   /**
-   * Add continuous variables to this MathematicalProgram, with default name
+   * Adds continuous variables to this MathematicalProgram, with default name
    * "x".
-   * @see AddContinuousVariables(size_t rows, size_t cols, const
+   * @see NewContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  DecisionVariableVectorX AddContinuousVariables(
-      std::size_t rows, const std::string& name = "x") {
-    std::vector<std::string> names(rows);
-    for (int i = 0; i < static_cast<int>(rows); ++i) {
-      names[i] = name + std::to_string(num_vars_ + i);
-    }
-    return AddContinuousVariables(rows, names);
-  }
+  DecisionVariableVectorX NewContinuousVariables(std::size_t rows,
+                                                 const std::string& name = "x");
 
-  /// Add continuous variables to this MathematicalProgram.
+  /// Adds continuous variables to this MathematicalProgram.
   /**
-   * Add continuous variables, appending them to an internal vector of any
+   * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
    * The new variables are initialized to zero.
    * Callers are expected to add costs
@@ -427,38 +376,31 @@ class MathematicalProgram {
    * Example:
    * @code{.cc}
    * MathematicalProgram prog;
-   * auto x = prog.AddContinuousVariables(2, 3, {"x1", "x2", "x3", "x4", "x5",
+   * auto x = prog.NewContinuousVariables(2, 3, {"x1", "x2", "x3", "x4", "x5",
    * "x6"});
    * @endcode
    * This adds a 2 x 3 matrix decision variables into the program.
    *
    * The name of the variable is only used for the user for understand.
    */
-  const DecisionVariableMatrixX AddContinuousVariables(
+  DecisionVariableMatrixX NewContinuousVariables(
       std::size_t rows, std::size_t cols,
-      const std::vector<std::string>& names) {
-    return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, cols,
-                        false, names);
-  }
+      const std::vector<std::string>& names);
 
   /**
-   * Add continuous variables to this MathematicalProgram, with default name
-   * "x". The new variables are returned and viewed as a matrix, with size
+   * Adds continuous variables to this MathematicalProgram, with default name
+   * "X". The new variables are returned and viewed as a matrix, with size
    * @p rows x @p cols.
-   * @see AddContinuousVariables(size_t rows, size_t cols, const
+   * @see NewContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  const DecisionVariableMatrixX AddContinuousVariables(
-      std::size_t rows, std::size_t cols, const std::string& name = "x") {
-    std::vector<std::string> names(rows * cols);
-    for (int i = 0; i < static_cast<int>(names.size()); ++i) {
-      names[i] = name + std::to_string(num_vars_ + i);
-    }
-    return AddContinuousVariables(rows, cols, names);
-  }
-  /// Add continuous variables to this MathematicalProgram.
+  DecisionVariableMatrixX NewContinuousVariables(std::size_t rows,
+                                                 std::size_t cols,
+                                                 const std::string& name = "X");
+
+  /// Adds continuous variables to this MathematicalProgram.
   /**
-   * Add continuous variables, appending them to an internal vector of any
+   * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
    * The new variables are initialized to zero.
    * Callers are expected to add costs
@@ -475,22 +417,58 @@ class MathematicalProgram {
    * @code{.cc}
    * MathematicalProgram prog;
    * std::array<std::string, 6> names = {"x1", "x2", "x3", "x4", "x5", "x6"};
-   * auto x = prog.AddContinuousVariables<2, 3>(names);
+   * auto x = prog.NewContinuousVariables<2, 3>(names);
    * @endcode
    * This adds a 2 x 3 matrix decision variables into the program.
    *
    * The name of the variable is only used for the user for understand.
    */
-  template <Eigen::Index rows, Eigen::Index cols>
-  DecisionVariableMatrix<rows, cols> AddContinuousVariables(
+  template <int rows, int cols>
+  DecisionVariableMatrix<rows, cols> NewContinuousVariables(
       const std::array<std::string, rows * cols>& names) {
-    return AddVariables<rows, cols>(DecisionVariableScalar::VarType::CONTINUOUS,
-                                    names);
+    return NewVariables<rows, cols>(VarType::CONTINUOUS, names);
   }
 
-  /// Add continuous variables to this MathematicalProgram.
+  /// Adds continuous variables to this MathematicalProgram.
   /**
-   * Add continuous variables, appending them to an internal vector of any
+   * Adds continuous variables, appending them to an internal vector of any
+   * existing vars.
+   * The new variables are initialized to zero.
+   * Callers are expected to add costs
+   * and/or constraints to have any effect during optimization.
+   * Callers can also set the initial guess of the decision variables through
+   * SetInitialGuess() or SetInitialGuessForAllVariables().
+   * @tparam rows  The number of rows in the new variables.
+   * @tparam cols  The number of columns in the new variables.
+   * @param name All variables will share the same name, but different index.
+   * @return The DecisionVariableMatrix of size rows x cols, containing the new
+   * vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto x = prog.NewContinuousVariables<2, 3>("X");
+   * @endcode
+   * This adds a 2 x 3 matrix decision variables into the program.
+   *
+   * The name of the variable is only used for the user for understand.
+   */
+  template <int rows, int cols>
+  DecisionVariableMatrix<rows, cols> NewContinuousVariables(
+      const std::string& name = "X") {
+    std::array<std::string, rows * cols> names;
+    for (int j = 0; j < cols; ++j) {
+      for (int i = 0; i < rows; ++i) {
+        names[j * rows + i] =
+            name + "(" + std::to_string(i) + "," + std::to_string(j) + ")";
+      }
+    }
+    return NewVariables<rows, cols>(VarType::CONTINUOUS, names);
+  }
+
+  /// Adds continuous variables to this MathematicalProgram.
+  /**
+   * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
    * The new variables are initialized to zero.
    * Callers are expected to add costs
@@ -506,37 +484,38 @@ class MathematicalProgram {
    * @code{.cc}
    * MathematicalProgram prog;
    * std::array<std::string, 2> names = {"x1", "x2"};
-   * auto x = prog.AddContinuousVariables<2>(names);
+   * auto x = prog.NewContinuousVariables<2>(names);
    * @endcode
    * This adds a 2 x 1 vector containing decision variables into the program.
    *
    * The name of the variable is only used for the user for understand.
    */
-  template <Eigen::Index rows>
-  DecisionVariableVector<rows> AddContinuousVariables(
+  template <int rows>
+  DecisionVariableVector<rows> NewContinuousVariables(
       const std::array<std::string, rows>& names) {
-    return AddContinuousVariables<rows, 1>(names);
+    return NewContinuousVariables<rows, 1>(names);
   }
 
   /**
-   * Add continuous variables to the program.
-   * The name for all newly added variables are set to "name". The default name
+   * Adds continuous variables to the program.
+   * The name for all newly added variables are set to @p name. The default name
    * is "x"
-   * @see AddContinuousVariables(const std::array<std::string, rows>& names)
+   * @see NewContinuousVariables(const std::array<std::string, rows>& names)
    */
-  template <Eigen::Index rows>
-  DecisionVariableVector<rows> AddContinuousVariables(
+  template <int rows>
+  DecisionVariableVector<rows> NewContinuousVariables(
       const std::string& name = "x") {
     std::array<std::string, rows> names;
+    int offset = (name.compare("x") == 0) ? num_vars_ : 0;
     for (int i = 0; i < rows; ++i) {
-      names[i] = name + std::to_string(num_vars_);
+      names[i] = name + "(" + std::to_string(offset + i) + ")";
     }
-    return AddContinuousVariables<rows>(names);
+    return NewContinuousVariables<rows>(names);
   }
 
-  /// Add binary variables to this MathematicalProgram.
+  /// Adds binary variables to this MathematicalProgram.
   /**
-   * Add binary variables, appending them to an internal vector of any
+   * Adds binary variables, appending them to an internal vector of any
    * existing vars.
    * The new variables are initialized to zero.
    * Callers are expected to add costs
@@ -553,17 +532,16 @@ class MathematicalProgram {
    * @code{.cc}
    * MathematicalProgram prog;
    * std::array<std::string, 6> names = {"b1", "b2", "b3", "b4", "b5", "b6"};
-   * auto b = prog.AddBinaryVariables<2, 3>(names);
+   * auto b = prog.NewBinaryVariables<2, 3>(names);
    * @endcode
    * This adds a 2 x 3 matrix decision variables into the program.
    *
    * The name of the variable is only used for the user for understand.
    */
-  template <Eigen::Index rows, Eigen::Index cols>
-  DecisionVariableMatrix<rows, cols> AddBinaryVariables(
+  template <int rows, int cols>
+  DecisionVariableMatrix<rows, cols> NewBinaryVariables(
       const std::array<std::string, rows * cols>& names) {
-    return AddVariables<rows, cols>(DecisionVariableScalar::VarType::BINARY,
-                                    names);
+    return NewVariables<rows, cols>(VarType::BINARY, names);
   }
 
   /**
@@ -572,10 +550,10 @@ class MathematicalProgram {
    * @param names An array of strings containing the name of each variable.
    * @return A vector containing the newly added variables.
    */
-  template <Eigen::Index rows>
-  DecisionVariableVector<rows> AddBinaryVariables(
+  template <int rows>
+  DecisionVariableVector<rows> NewBinaryVariables(
       const std::array<std::string, rows>& names) {
-    return AddBinaryVariables<rows, 1>(names);
+    return NewBinaryVariables<rows, 1>(names);
   }
 
   /**
@@ -585,19 +563,20 @@ class MathematicalProgram {
    * default name is "b".
    * @return A vector containing the newly added variables.
    */
-  template <Eigen::Index rows>
-  DecisionVariableVector<rows> AddBinaryVariables(
+  template <int rows>
+  DecisionVariableVector<rows> NewBinaryVariables(
       const std::string& name = "b") {
     std::array<std::string, rows> names;
+    int offset = (name.compare("b") == 0) ? num_vars_ : 0;
     for (int i = 0; i < rows; ++i) {
-      names[i] = name + std::to_string(num_vars_ + i);
+      names[i] = name + "(" + std::to_string(offset + i) + ")";
     }
-    return AddBinaryVariables<rows, 1>(names);
+    return NewBinaryVariables<rows, 1>(names);
   }
 
-  /// Add binary variables to this MathematicalProgram.
+  /// Adds binary variables to this MathematicalProgram.
   /**
-   * Add binary variables, appending them to an internal vector of any
+   * Adds binary variables, appending them to an internal vector of any
    * existing vars.
    * The new variables are initialized to zero.
    * Callers are expected to add costs
@@ -613,76 +592,109 @@ class MathematicalProgram {
    * Example:
    * @code{.cc}
    * MathematicalProgram prog;
-   * auto b = prog.AddBinaryVariables(2, 3, {"b1", "b2", "b3", "b4", "b5",
+   * auto b = prog.NewBinaryVariables(2, 3, {"b1", "b2", "b3", "b4", "b5",
    * "b6");
    * @endcode
    * This adds a 2 x 3 matrix decision variables into the program.
    *
    * The name of the variable is only used for the user for understand.
    */
-  DecisionVariableMatrixX AddBinaryVariables(
-      size_t rows, size_t cols, const std::vector<std::string>& names) {
-    return AddVariables(DecisionVariableScalar::VarType::BINARY, rows, cols,
-                        false, names);
-  }
+  DecisionVariableMatrixX NewBinaryVariables(
+      size_t rows, size_t cols, const std::vector<std::string>& names);
 
   /**
-   * Add binary variables to this MathematicalProgram, with default name "b".
+   * Adds binary variables to this MathematicalProgram, with default name "b".
    * The new variables are returned and viewed as a matrix, with size
    * \param rows x \param cols.
-   * @see AddBinaryVariables(size_t rows, size_t cols, const
+   * @see NewBinaryVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  DecisionVariableMatrixX AddBinaryVariables(size_t rows, size_t cols,
-                                             const std::string& name = "b") {
-    std::vector<std::string> names = std::vector<std::string>(rows * cols);
-    for (int i = 0; i < static_cast<int>(names.size()); ++i) {
-      names[i] = name + std::to_string(num_vars_ + i);
-    }
-    return AddBinaryVariables(rows, cols, names);
-  }
+  DecisionVariableMatrixX NewBinaryVariables(size_t rows, size_t cols,
+                                             const std::string& name = "b");
 
   /**
-   * Add binary variables to this MathematicalProgram. The new variables are
+   * Adds binary variables to this MathematicalProgram. The new variables are
    * viewed as a column vector, with size @p rows x 1.
-   * @see AddBinaryVariables(size_t rows, size_t cols, const
+   * @see NewBinaryVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  DecisionVariableVectorX AddBinaryVariables(size_t rows,
-                                             const std::string& name = "b") {
-    std::vector<std::string> names = std::vector<std::string>(rows);
-    for (int i = 0; i < static_cast<int>(rows); ++i) {
-      names[i] = name + std::to_string(num_vars_ + i);
-    }
-    return AddVariables(DecisionVariableScalar::VarType::BINARY, rows, names);
-  }
+  DecisionVariableVectorX NewBinaryVariables(size_t rows,
+                                             const std::string& name = "b");
 
   /**
-   * Add a symmetric matrix as decision variables to this MathematicalProgram.
+   * Adds a symmetric matrix as decision variables to this MathematicalProgram.
    * The optimization will only use the stacked columns of the
    * lower triangular part of the symmetric matrix as decision variables.
+   * @param rows The rows of the symmetric matrix.
    * @param names A std::vector containing the names of each entry in the lower
    * triagular part of the symmetric matrix. The length of @p names is
    * @p rows * (rows+1) / 2.
+   * @return The newly added decision variables.
    */
-  DecisionVariableMatrixX AddSymmetricContinuousVariables(
-      size_t rows, const std::vector<std::string>& names) {
-    return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, rows,
-                        true, names);
+  DecisionVariableMatrixX NewSymmetricContinuousVariables(
+      size_t rows, const std::vector<std::string>& names);
+
+  /**
+   * Adds a runtime sized symmetric matrix as decision variables to
+   * this MathematicalProgram.
+   * The optimization will only use the stacked columns of the
+   * lower triangular part of the symmetric matrix as decision variables.
+   * @param rows The number of rows in the symmetric matrix.
+   * @param name The name of the matrix. It is only used the for user to
+   * understand the optimization program. The default name is "Symmetric", and
+   * each variable will be named as
+   * <pre>
+   * Symmetric(0, 0)     Symmetric(1, 0)     ... Symmetric(rows-1, 0)
+   * Symmetric(1, 0)     Symmetric(1, 1)     ... Symmetric(rows-1, 1)
+   *            ...
+   * Symmetric(rows-1,0) Symmetric(rows-1,1) ... Symmetric(rows-1, rows-1)
+   * </pre>
+   * Notice that the (i,j)'th entry and (j,i)'th entry has the same name.
+   * @return The newly added decision variables.
+   */
+  DecisionVariableMatrixX NewSymmetricContinuousVariables(
+      size_t rows, const std::string& name = "Symmetric");
+
+  /**
+   * Adds a static sized symmetric matrix as decision variables to
+   * this MathematicalProgram.
+   * The optimization will only use the stacked columns of the
+   * lower triangular part of the symmetric matrix as decision variables.
+   * @tparam rows The number of rows in the symmetric matrix.
+   * @param name The name of the matrix. It is only used the for user to
+   * understand the optimization program. The default name is "Symmetric", and
+   * each variable will be named as
+   * <pre>
+   * Symmetric(0, 0)     Symmetric(1, 0)     ... Symmetric(rows-1, 0)
+   * Symmetric(1, 0)     Symmetric(1, 1)     ... Symmetric(rows-1, 1)
+   *            ...
+   * Symmetric(rows-1,0) Symmetric(rows-1,1) ... Symmetric(rows-1, rows-1)
+   * </pre>
+   * Notice that the (i,j)'th entry and (j,i)'th entry has the same name.
+   * @return The newly added decision variables.
+   */
+  template <int rows>
+  DecisionVariableMatrix<rows, rows> NewSymmetricContinuousVariables(
+      const std::string& name = "Symmetric") {
+    std::array<std::string, rows*(rows + 1) / 2> names;
+    int var_count = 0;
+    for (int j = 0; j < static_cast<int>(rows); ++j) {
+      for (int i = j; i < static_cast<int>(rows); ++i) {
+        names[var_count] =
+            name + "(" + std::to_string(i) + "," + std::to_string(j) + ")";
+        ++var_count;
+      }
+    }
+    return NewSymmetricVariables<rows>(VarType::CONTINUOUS, names);
   }
 
   /**
-   * Add a generic cost to the optimization program.
+   * Adds a generic cost to the optimization program.
    * @param obj The added objective.
    * @param vars The decision variables on which the cost depend.
    */
   void AddCost(const std::shared_ptr<Constraint>& obj,
-               const VariableListRef& vars) {
-    VariableList var_list(vars);
-    DRAKE_ASSERT(var_list.column_vectors_only());
-    required_capabilities_ |= kGenericCost;
-    generic_costs_.push_back(Binding<Constraint>(obj, var_list));
-  }
+               const VariableListRef& vars);
 
   /**
    * Adds a cost to the problem which covers all decision
@@ -690,7 +702,7 @@ class MathematicalProgram {
    */
   template <typename ConstraintT>
   void AddCost(std::shared_ptr<ConstraintT> constraint) {
-    AddCost(constraint, {variables_});
+    AddCost(constraint, {decision_variables_});
   }
 
   template <typename F>
@@ -715,7 +727,7 @@ class MathematicalProgram {
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
   AddCost(F&& f) {
-    return AddCost(std::forward<F>(f), {variables_});
+    return AddCost(std::forward<F>(f), {decision_variables_});
   }
 
   // libstdc++ 4.9 evaluates
@@ -733,7 +745,7 @@ class MathematicalProgram {
   }
   template <typename F>
   std::shared_ptr<Constraint> AddCost(std::unique_ptr<F>&& f) {
-    return AddCost(std::forward<std::unique_ptr<F>>(f), {variables_});
+    return AddCost(std::forward<std::unique_ptr<F>>(f), {decision_variables_});
   }
 
   /**
@@ -742,14 +754,7 @@ class MathematicalProgram {
    * the linear cost data structure.
    */
   void AddCost(const std::shared_ptr<LinearConstraint>& obj,
-               const VariableListRef& vars) {
-    VariableList var_list(vars);
-    DRAKE_ASSERT(var_list.column_vectors_only());
-    required_capabilities_ |= kLinearCost;
-    int var_dim = var_list.size();
-    DRAKE_ASSERT(obj->A().rows() == 1 && obj->A().cols() == var_dim);
-    linear_costs_.push_back(Binding<LinearConstraint>(obj, var_list));
-  }
+               const VariableListRef& vars);
 
   /**
    * Adds a linear cost term of the form c'*x.
@@ -761,8 +766,8 @@ class MathematicalProgram {
       const Eigen::MatrixBase<DerivedC>& c, const VariableListRef& vars) {
     using Scalar = typename DerivedC::Scalar;
     auto cost = std::make_shared<LinearConstraint>(
-        c, drake::Vector1<Scalar>::Constant(
-               -std::numeric_limits<Scalar>::infinity()),
+        c.transpose(), drake::Vector1<Scalar>::Constant(
+                           -std::numeric_limits<Scalar>::infinity()),
         drake::Vector1<Scalar>::Constant(
             std::numeric_limits<Scalar>::infinity()));
     AddCost(cost, vars);
@@ -778,7 +783,7 @@ class MathematicalProgram {
   template <typename DerivedC>
   std::shared_ptr<LinearConstraint> AddLinearCost(
       const Eigen::MatrixBase<DerivedC>& c) {
-    return AddLinearCost(c, {variables_});
+    return AddLinearCost(c, {decision_variables_});
   }
 
   /**
@@ -787,14 +792,7 @@ class MathematicalProgram {
    * the quadratic cost data structure.
    */
   void AddCost(const std::shared_ptr<QuadraticConstraint>& obj,
-               const VariableListRef& vars) {
-    VariableList var_list(vars);
-    DRAKE_ASSERT(var_list.column_vectors_only());
-    required_capabilities_ |= kQuadraticCost;
-    int var_dim = var_list.size();
-    DRAKE_ASSERT(obj->Q().rows() == var_dim && obj->b().rows() == var_dim);
-    quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, var_list));
-  }
+               const VariableListRef& vars);
 
   /**
    * Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
@@ -819,7 +817,18 @@ class MathematicalProgram {
   std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired) {
-    return AddQuadraticErrorCost(Q, x_desired, {variables_});
+    return AddQuadraticErrorCost(Q, x_desired, {decision_variables_});
+  }
+
+  /**
+   * Adds a cost term of the form | Ax - b |^2.
+   */
+  template <typename DerivedA, typename Derivedb>
+  std::shared_ptr<QuadraticConstraint> AddL2NormCost(
+      const Eigen::MatrixBase<DerivedA>& A,
+      const Eigen::MatrixBase<Derivedb>& b, const VariableListRef& vars) {
+    return AddQuadraticCost(2 * A.transpose() * A, -2 * A.transpose() * b,
+                            vars);
   }
 
   /**
@@ -845,7 +854,7 @@ class MathematicalProgram {
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& b) {
-    return AddQuadraticCost(Q, b, {variables_});
+    return AddQuadraticCost(Q, b, {decision_variables_});
   }
 
   /**
@@ -854,34 +863,24 @@ class MathematicalProgram {
    */
   template <typename ConstraintT>
   void AddConstraint(std::shared_ptr<ConstraintT> constraint) {
-    AddConstraint(constraint, {variables_});
+    AddConstraint(constraint, {decision_variables_});
   }
 
   /**
-   * @brief Adds a generic constraint to the program.  This should
+   * Adds a generic constraint to the program.  This should
    * only be used if a more specific type of constraint is not
    * available, as it may require the use of a significantly more
    * expensive solver.
    */
   void AddConstraint(std::shared_ptr<Constraint> con,
-                     const VariableListRef& vars) {
-    required_capabilities_ |= kGenericConstraint;
-    generic_constraints_.push_back(Binding<Constraint>(con, vars));
-  }
+                     const VariableListRef& vars);
 
   /**
-   * @brief Adds linear constraints referencing potentially a subset
+   * Adds linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
    */
   void AddConstraint(std::shared_ptr<LinearConstraint> con,
-                     const VariableListRef& vars) {
-    VariableList var_list(vars);
-    DRAKE_ASSERT(var_list.column_vectors_only());
-    required_capabilities_ |= kLinearConstraint;
-    int var_dim = var_list.size();
-    DRAKE_ASSERT(con->A().cols() == var_dim);
-    linear_constraints_.push_back(Binding<LinearConstraint>(con, var_list));
-  }
+                     const VariableListRef& vars);
 
   /**
    * Adds linear constraints referencing potentially a subset
@@ -906,11 +905,11 @@ class MathematicalProgram {
       const Eigen::MatrixBase<DerivedA>& A,
       const Eigen::MatrixBase<DerivedLB>& lb,
       const Eigen::MatrixBase<DerivedUB>& ub) {
-    return AddLinearConstraint(A, lb, ub, {variables_});
+    return AddLinearConstraint(A, lb, ub, {decision_variables_});
   }
 
   /**
-   * Add one row of linear constraint referencing potentially a
+   * Adds one row of linear constraint referencing potentially a
    * subset of the decision variables (defined in the vars parameter).
    * lb <= a*vars <= ub
    * @param a A row vector.
@@ -930,7 +929,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Add one row of linear constraint on all variables.
+   * Adds one row of linear constraint on all variables.
    * lb <= a*vars <= ub
    * @param a A row vector.
    * @param lb A scalar, the lower bound.
@@ -941,33 +940,25 @@ class MathematicalProgram {
       const Eigen::MatrixBase<DerivedA>& a, double lb, double ub) {
     DRAKE_ASSERT(a.rows() == 1);
     return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
-                               {variables_});
+                               {decision_variables_});
   }
 
   /**
-   * @brief Adds linear equality constraints referencing potentially a
+   * Adds linear equality constraints referencing potentially a
    * subset of the decision variables (defined in the vars parameter).
    */
   void AddConstraint(std::shared_ptr<LinearEqualityConstraint> con,
-                     const VariableListRef& vars) {
-    VariableList var_list(vars);
-    DRAKE_ASSERT(var_list.column_vectors_only());
-    required_capabilities_ |= kLinearEqualityConstraint;
-    int var_dim = var_list.size();
-    DRAKE_ASSERT(con->A().cols() == var_dim);
-    linear_equality_constraints_.push_back(
-        Binding<LinearEqualityConstraint>(con, var_list));
-  }
+                     const VariableListRef& vars);
 
   /** AddLinearEqualityConstraint
    *
-   * @brief Adds linear equality constraints referencing potentially a subset of
+   * Adds linear equality constraints referencing potentially a subset of
    * the decision variables.
    *
    * Example: to add two equality constraints which only depend on two of the
    * elements of x, you could use
    * @code{.cc}
-   *   auto x = prog.AddContinuousDecisionVariable(6,"myvar");
+   *   auto x = prog.NewContinuousDecisionVariable(6,"myvar");
    *   Eigen::Matrix2d Aeq;
    *   Aeq << -1, 2,
    *           1, 1;
@@ -989,18 +980,18 @@ class MathematicalProgram {
 
   /** AddLinearEqualityConstraint
    *
-   * @brief Adds linear equality constraints to the program for all
+   * Adds linear equality constraints to the program for all
    * (currently existing) variables.
    */
   template <typename DerivedA, typename DerivedB>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::MatrixBase<DerivedA>& Aeq,
       const Eigen::MatrixBase<DerivedB>& beq) {
-    return AddLinearEqualityConstraint(Aeq, beq, {variables_});
+    return AddLinearEqualityConstraint(Aeq, beq, {decision_variables_});
   }
 
   /**
-   * Add one row of linear equality constraint referencing potentially a subset
+   * Adds one row of linear equality constraint referencing potentially a subset
    * of decision variables.
    * @f[
    * ax = beq
@@ -1018,7 +1009,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Add one row of linear equality constraint referencing all
+   * Adds one row of linear equality constraint referencing all
    * decision variables.
    * @f[
    * ax = beq
@@ -1030,10 +1021,11 @@ class MathematicalProgram {
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::MatrixBase<DerivedA>& a, double beq) {
     DRAKE_ASSERT(a.rows() == 1);
-    return AddLinearEqualityConstraint(a, drake::Vector1d(beq), {variables_});
+    return AddLinearEqualityConstraint(a, drake::Vector1d(beq),
+                                       {decision_variables_});
   }
   /**
-   * @brief Adds bounding box constraints referencing potentially a subset of
+   * Adds bounding box constraints referencing potentially a subset of
    * the decision variables.
    */
   void AddConstraint(std::shared_ptr<BoundingBoxConstraint> con,
@@ -1048,7 +1040,7 @@ class MathematicalProgram {
 
   /** AddBoundingBoxConstraint
    *
-   * @brief Adds bounding box constraints referencing potentially a
+   * Adds bounding box constraints referencing potentially a
    * subset of the decision variables (defined in the vars parameter).
    */
   template <typename DerivedLB, typename DerivedUB>
@@ -1062,141 +1054,233 @@ class MathematicalProgram {
 
   /** AddBoundingBoxConstraint
    *
-   * @brief Adds bounding box constraints to the program for all
+   * Adds bounding box constraints to the program for all
    * (currently existing) variables.
    */
   template <typename DerivedLB, typename DerivedUB>
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       const Eigen::MatrixBase<DerivedLB>& lb,
       const Eigen::MatrixBase<DerivedUB>& ub) {
-    return AddBoundingBoxConstraint(lb, ub, {variables_});
+    return AddBoundingBoxConstraint(lb, ub, {decision_variables_});
   }
 
   /**
-   * Add bounds for a single variable.
+   * Adds bounds for a single variable.
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param var The decision variable.
    */
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
-      double lb, double ub, const DecisionVariableScalar& var) {
+      double lb, double ub, const symbolic::Variable& var) {
     DecisionVariableMatrix<1, 1> var_matrix(var);
     return AddBoundingBoxConstraint(drake::Vector1d(lb), drake::Vector1d(ub),
                                     {var_matrix});
   }
 
   /**
+   * Adds the same scalar lower and upper bound to every variable in the list.
+   * @param lb Lower bound.
+   * @param ub Upper bound.
+   * @param vars The decision variables.
+   *
+   * Note: This version of the interface *does* accept references to
+   * non-column-vector decision variable matrices.
+   */
+  std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
+      double lb, double ub, const VariableListRef& vars) {
+    VariableList var_list(vars);
+    int var_dim = var_list.size();
+    if (var_list.column_vectors_only()) {
+      return AddBoundingBoxConstraint(Eigen::VectorXd::Constant(var_dim, lb),
+                                      Eigen::VectorXd::Constant(var_dim, ub),
+                                      vars);
+    } else {  // Support non-column-vector decision variable matrices.
+      VariableListRef flattened_vars;
+      for (const auto& v : vars) {
+        if (v.cols() == 1) {
+          flattened_vars.push_back(v);
+        } else {
+          Eigen::Map<const DecisionVariableVectorX> vec(v.data(), v.size());
+          flattened_vars.push_back(vec);
+        }
+      }
+      return AddBoundingBoxConstraint(Eigen::VectorXd::Constant(var_dim, lb),
+                                      Eigen::VectorXd::Constant(var_dim, ub),
+                                      flattened_vars);
+    }
+  }
+
+  /**
    * Adds Lorentz cone constraint referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
+   * The linear expression @f$ z=Ax+b @f$ is in the Lorentz cone.
+   * A vector \f$ z \in\mathbb{R}^n \f$ is in the Lorentz cone, if
    * <!--
-   * x(0) >= sqrt{x(1)^2 + ... + x(N-1)^2}
+   * z(0) >= sqrt{z(1)^2 + ... + z(n-1)^2}
    * -->
    * @f[
-   * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
+   * z_0 \ge \sqrt{z_1^2 + ... + z_{n-1}^2}
    * @f]
    */
   void AddConstraint(std::shared_ptr<LorentzConeConstraint> con,
-                     const VariableListRef& vars) {
-    VariableList var_list(vars);
-    DRAKE_ASSERT(var_list.column_vectors_only());
-    required_capabilities_ |= kLorentzConeConstraint;
-    lorentz_cone_constraint_.push_back(
-        Binding<LorentzConeConstraint>(con, var_list));
-  }
+                     const VariableListRef& vars);
 
   /**
    * Adds Lorentz cone constraint referencing potentially a subset of the
    * decision variables (defined in the vars parameter).
+   * The linear expression @f$ z=Ax+b @f$ is in the Lorentz cone.
+   * A vector \f$ z \in\mathbb{R}^n \f$ is in the Lorentz cone, if
    * <!--
-   * x(0) >= sqrt{x(1)^2 + ... + x(N-1)^2}
+   * z(0) >= sqrt{z(1)^2 + ... + z(n-1)^2}
    * -->
    * @f[
-   * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
+   * z_0 \ge \sqrt{z_1^2 + ... + z_{n-1}^2}
    * @f]
+   * @param A A @f$\mathbb{R}^{n\times m}@f$ matrix, whose number of columns
+   * equals to the size of the decision variables.
+   * @param b A @f$\mathbb{R}^n@f$ vector, whose number of rows equals to the
+   * size of the decision variables.
+   * @param vars The list of containing @f$ m @f$ decision variables.
+   * @return The newly added Lorentz cone constraint.
    */
   std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint(
-      const VariableListRef& vars) {
-    auto constraint = std::make_shared<LorentzConeConstraint>();
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableListRef& vars) {
+    auto constraint = std::make_shared<LorentzConeConstraint>(A, b);
     AddConstraint(constraint, vars);
     return constraint;
   }
 
   /**
    * Adds Lorentz cone constraint to the program for all
-   * (currently existing) variables
+   * (currently existing) variables.
+   * The linear expression @f$ z=Ax+b @f$ is in the Lorentz cone.
+   * A vector \f$ z \in\mathbb{R}^n \f$ is in the Lorentz cone, if
    * <!--
-   * x(0) >= sqrt{x(1)^2 + ... + x(N-1)^2}
+   * z(0) >= sqrt{z(1)^2 + ... + z(n-1)^2}
    * -->
    * @f[
-   * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
+   * z_0 \ge \sqrt{z_1^2 + ... + z_{n-1}^2}
    * @f]
+   * @param A A @f$\mathbb{R}^{n \times m}@f$ matrix.
+   * @param b A @f$ \mathbb{R}^{n} @f$ vector.
+   * @return The newly added Lorentz cone constraint.
    */
-  std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint() {
-    return AddLorentzConeConstraint({variables_});
+  std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b) {
+    return AddLorentzConeConstraint(A, b, {decision_variables_});
   }
 
   /**
+   * Imposes that a vector @f$ x\in\mathbb{R}^m @f$ lies in Lorentz cone. Namely
+   * @f[
+   * x_0 \ge \sqrt{x_1^2 + .. + x_{m-1}^2}
+   * @f]
+   * <!-->
+   * x(0) >= sqrt(x(1)^2 + ... + x(m-1)^2)
+   * <-->
+   * @param vars The stacked column of vars should lie within the Lorentz cone.
+   * @return The newly added Lorentz cone constraint.
+   */
+  std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint(
+      const VariableListRef& vars);
+
+  /**
    * Adds a rotated Lorentz cone constraint referencing potentially a subset
-   * of decision variables, such that
+   * of decision variables. The linear expression @f$ z=Ax+b @f$ is in rotated
+   * Lorentz cone.
+   * A vector \f$ z \in\mathbb{R}^n \f$ is in the rotated Lorentz cone, if
    * <!--
-   * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
-   * x(0) >= 0, x(1) >= 0
+   * z(0)*z(1) >= z(2)^2 + ... + z(n-1)^2
    * -->
-   * @f[ x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2 @f]
-   * @f[ x_0\ge 0, x_1\ge 0 @f]
+   * @f[
+   * z_0z_1 \ge z_2^2 + ... + z_{n-1}^2
+   * @f]
    * @param con A pointer to a RotatedLorentzConeConstraint object.
    * @param vars The decision variables on which the constraint is imposed.
    */
   void AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con,
-                     const VariableListRef& vars) {
-    VariableList var_list(vars);
-    DRAKE_ASSERT(var_list.column_vectors_only());
-    required_capabilities_ |= kRotatedLorentzConeConstraint;
-    rotated_lorentz_cone_constraint_.push_back(
-        Binding<RotatedLorentzConeConstraint>(con, var_list));
-  }
+                     const VariableListRef& vars);
 
   /**
-   * @param vars The decision variables on which the constraint is imposed.
-   * Each DecisionVariableMatrix object should have only one column.
-   * Example: if you want to add the rotated Lorentz cone constraint
+   * Adds a rotated Lorentz cone constraint referencing potentially a subset
+   * of decision variables, The linear expression @f$ z=Ax+b @f$ is in rotated
+   * Lorentz cone.
+   * A vector \f$ z \in\mathbb{R}^n \f$ is in the rotated Lorentz cone, if
    * <!--
-   * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
-   * x(0) >= 0, x(1) >= 0
+   * z(0)*z(1) >= z(2)^2 + ... + z(n-1)^2
    * -->
-   * @f[ x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2 @f]
-   * @f[ x_0\ge 0, x_1\ge 0 @f]
+   * @f[
+   * z_0z_1 \ge z_2^2 + ... + z_{n-1}^2
+   * @f]
+   * where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^n@f$ are given
+   * matrices.
+   *
    * you can call
    * @code{.cc}
-   *   auto x = prog.AddContinuousVariables(N,'x');
-   *   auto con = prog.AddRotatedLorentzConeConstraint(x);
+   *   auto x = prog.NewContinuousVariables(n,'x');
+   *   auto con = prog.AddRotatedLorentzConeConstraint(A, b, {x});
    * @endcode
+   *
+   * @param A A matrix whose number of columns equals to the size of the
+   * decision variables.
+   * @param b A vector whose number of rows equals to the size fo the decision
+   * variables.
+   * @param vars The decision variables on which the constraint is imposed.
+   * Each DecisionVariableMatrix object should have only one column.
    */
   std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
-      const VariableListRef& vars) {
-    auto constraint = std::make_shared<RotatedLorentzConeConstraint>();
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableListRef& vars) {
+    auto constraint = std::make_shared<RotatedLorentzConeConstraint>(A, b);
     AddConstraint(constraint, vars);
     return constraint;
   }
 
   /**
    * Adds a rotated Lorentz constraint to the program for all
-   * (currently existing) variables.
+   * (currently existing) variables, the linear expression @f$ z=Ax+b @f$ is in
+   * rotated Lorentz cone.
+   * A vector \f$ z \in\mathbb{R}^n \f$ is in the rotated Lorentz cone, if
    * <!--
-   * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
-   * x(0) >= 0, x(1) >= 0
+   * z(0)*z(1) >= z(2)^2 + ... + z(n-1)^2
    * -->
-   * @f[ x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2 @f]
-   * @f[ x_0\ge 0, x_1\ge 0 @f]
+   * @f[
+   * z_0z_1 \ge z_2^2 + ... + z_{n-1}^2
+   * @f]
+   * where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^n@f$ are given
+   * matrices.
+   * @param A A matrix whose number of columns equals to the size of the
+   * decision variables.
+   * @param b A vector whose number of rows equals to the size fo the decision
+   * variables.
    */
-  std::shared_ptr<RotatedLorentzConeConstraint>
-  AddRotatedLorentzConeConstraint() {
-    return AddRotatedLorentzConeConstraint({variables_});
+  std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b) {
+    return AddRotatedLorentzConeConstraint(A, b, {decision_variables_});
   }
 
-  /** AddLinearComplementarityConstraint
-   *
-   * @brief Adds a linear complementarity constraints referencing a subset of
+  /**
+   * Impose that a vector @f$ x\in\mathbb{R}^m @f$ is in rotated Lorentz cone.
+   * Namely
+   * @f[
+   * x_0 x_1 \ge x_2^2 + ... + x_{m-1}^2\\
+   * x_0 \ge 0, x_1 \ge 0
+   * @f]
+   * <!-->
+   * x(0)*x(1) >= x(2)^2 + ... x(m-1)^2
+   * x(0) >= 0, x(1) >= 0
+   * <-->
+   * @param vars The stacked column of vars lies in the rotated Lorentz cone.
+   * @return The newly added rotated Lorentz cone constraint.
+   */
+  std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
+      const VariableListRef& vars);
+
+  /**
+   * Adds a linear complementarity constraints referencing a subset of
    * the decision variables.
    */
   template <typename DerivedM, typename Derivedq>
@@ -1228,86 +1312,29 @@ class MathematicalProgram {
     return constraint;
   }
 
-  /** AddLinearComplementarityConstraint
-   *
-   * @brief Adds a linear complementarity constraint to the program for all
+  /**
+   * Adds a linear complementarity constraint to the program for all
    * (currently existing) variables.
    */
   template <typename DerivedM, typename Derivedq>
   std::shared_ptr<LinearComplementarityConstraint>
   AddLinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                      const Eigen::MatrixBase<Derivedq>& q) {
-    return AddLinearComplementarityConstraint(M, q, {variables_});
+    return AddLinearComplementarityConstraint(M, q, {decision_variables_});
   }
 
-  /** AddPolynomialConstraint
-   *
-   * @brief Adds a polynomial constraint to the program referencing a subset
+  /**
+   * Adds a polynomial constraint to the program referencing a subset
    * of the decision variables (defined in the vars parameter).
    */
   std::shared_ptr<Constraint> AddPolynomialConstraint(
       const VectorXPoly& polynomials,
       const std::vector<Polynomiald::VarType>& poly_vars,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
-      const VariableListRef& vars) {
-    // Polynomials that are actually affine (a sum of linear terms + a
-    // constant) can be special-cased.  Other polynomials are treated as
-    // generic for now.
-    // TODO(ggould-tri) There may be other such special easy cases.
-    VariableList var_list(vars);
-    DRAKE_ASSERT(var_list.column_vectors_only());
-    bool all_affine = true;
-    for (int i = 0; i < polynomials.rows(); i++) {
-      if (!polynomials[i].IsAffine()) {
-        all_affine = false;
-        break;
-      }
-    }
-    if (all_affine) {
-      Eigen::MatrixXd linear_constraint_matrix =
-          Eigen::MatrixXd::Zero(polynomials.rows(), poly_vars.size());
-      Eigen::VectorXd linear_constraint_lb = lb;
-      Eigen::VectorXd linear_constraint_ub = ub;
-      for (int poly_num = 0; poly_num < polynomials.rows(); poly_num++) {
-        for (const auto& monomial : polynomials[poly_num].GetMonomials()) {
-          if (monomial.terms.size() == 0) {
-            linear_constraint_lb[poly_num] -= monomial.coefficient;
-            linear_constraint_ub[poly_num] -= monomial.coefficient;
-          } else if (monomial.terms.size() == 1) {
-            const Polynomiald::VarType term_var = monomial.terms[0].var;
-            int var_num =
-                (std::find(poly_vars.begin(), poly_vars.end(), term_var) -
-                 poly_vars.begin());
-            DRAKE_ASSERT(var_num < static_cast<int>(poly_vars.size()));
-            linear_constraint_matrix(poly_num, var_num) = monomial.coefficient;
-          } else {
-            DRAKE_ABORT();  // Can't happen (unless isAffine() lied to us).
-          }
-        }
-      }
-      if (ub == lb) {
-        auto constraint = std::make_shared<LinearEqualityConstraint>(
-            linear_constraint_matrix, linear_constraint_ub);
-        AddConstraint(constraint, vars);
-        return constraint;
-      } else {
-        auto constraint = std::make_shared<LinearConstraint>(
-            linear_constraint_matrix, linear_constraint_lb,
-            linear_constraint_ub);
-        AddConstraint(constraint, vars);
-        return constraint;
-      }
-    } else {
-      auto constraint = std::make_shared<PolynomialConstraint>(
-          polynomials, poly_vars, lb, ub);
-      AddConstraint(constraint, vars);
-      return constraint;
-    }
-  }
+      const VariableListRef& vars);
 
-  /** AddPolynomialConstraint
-   *
-   * @brief Adds a polynomial constraint to the program referencing all of the
+  /**
+   * Adds a polynomial constraint to the program referencing all of the
    * decision variables.
    */
   std::shared_ptr<Constraint> AddPolynomialConstraint(
@@ -1315,8 +1342,40 @@ class MathematicalProgram {
       const std::vector<Polynomiald::VarType>& poly_vars,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
     return AddPolynomialConstraint(polynomials, poly_vars, lb, ub,
-                                   {variables_});
+                                   {decision_variables_});
   }
+
+  /**
+   * Adds a positive semidefinite constraint on a symmetric matrix.
+   * @param symmetric_matrix_var A symmetric DecisionVariableMatrix object.
+   */
+  void AddConstraint(
+      std::shared_ptr<PositiveSemidefiniteConstraint> con,
+      const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var);
+
+  /**
+   * Adds a positive semidefinite constraint on a symmetric matrix.
+   * In Debug mode, @throws error if
+   * @p symmetric_matrix_var is not symmetric.
+   * @param symmetric_matrix_var A symmetric DecisionVariableMatrix object.
+   */
+  std::shared_ptr<PositiveSemidefiniteConstraint>
+  AddPositiveSemidefiniteConstraint(
+      const Eigen::Ref<const DecisionVariableMatrixX> symmetric_matrix_var);
+
+  /**
+   * Adds a linear matrix inequality constraint to the program.
+   */
+  void AddConstraint(std::shared_ptr<LinearMatrixInequalityConstraint> con,
+                     const VariableListRef& vars);
+
+  /**
+   * Adds a linear matrix inequality constraint to the program.
+   */
+  std::shared_ptr<LinearMatrixInequalityConstraint>
+  AddLinearMatrixInequalityConstraint(
+      const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
+      const VariableListRef& vars);
 
   // template <typename FunctionType>
   // void AddCost(std::function..);
@@ -1334,7 +1393,8 @@ class MathematicalProgram {
     DRAKE_ASSERT(decision_variable_mat.cols() == x0.cols());
     for (int i = 0; i < decision_variable_mat.rows(); ++i) {
       for (int j = 0; j < decision_variable_mat.cols(); ++j) {
-        x_initial_guess_(decision_variable_mat(i, j).index()) = x0(i, j);
+        x_initial_guess_(
+            FindDecisionVariableIndex(decision_variable_mat(i, j))) = x0(i, j);
       }
     }
   }
@@ -1366,8 +1426,8 @@ class MathematicalProgram {
 
   void PrintSolution() {
     for (int i = 0; i < static_cast<int>(num_vars_); ++i) {
-      std::cout << variables_(i).name() << " = " << variables_(i).value()
-                << std::endl;
+      std::cout << decision_variables_(i).get_name() << " = "
+                << GetSolution(decision_variables_(i)) << std::endl;
     }
   }
 
@@ -1375,7 +1435,7 @@ class MathematicalProgram {
   void SetDecisionVariableValues(const Eigen::MatrixBase<Derived>& x) {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == num_vars_);
     for (int i = 0; i < static_cast<int>(num_vars_); ++i) {
-      variables_(i).set_value(x(variables_(i).index()));
+      x_values_[i] = x(i);
     }
   }
 
@@ -1449,18 +1509,28 @@ class MathematicalProgram {
     solver_result_ = solver_result;
   }
 
+  /**
+   * Getter for all generic costs.
+   */
   const std::vector<Binding<Constraint>>& generic_costs() const {
     return generic_costs_;
   }  // e.g. for snopt_user_fun
 
+  /**
+   * Getter for all generic constraints
+   */
   const std::vector<Binding<Constraint>>& generic_constraints() const {
     return generic_constraints_;
   }  // e.g. for snopt_user_fun
 
+  /**
+   * Getter for linear equality constraints.
+   */
   const std::vector<Binding<LinearEqualityConstraint>>&
   linear_equality_constraints() const {
     return linear_equality_constraints_;
   }
+
   /** Getter for linear costs. */
   const std::vector<Binding<LinearConstraint>>& linear_costs() const {
     return linear_costs_;
@@ -1471,7 +1541,7 @@ class MathematicalProgram {
     return quadratic_costs_;
   }
 
-  // TODO(naveenoid) : getter for quadratic_constraints
+  /** Getter for linear constraints. */
   const std::vector<Binding<LinearConstraint>>& linear_constraints() const {
     return linear_constraints_;
   }
@@ -1488,9 +1558,20 @@ class MathematicalProgram {
     return rotated_lorentz_cone_constraint_;
   }
 
-  /** GetAllCosts
-   *
-   * @brief Getter returning all costs (for now linear costs appended to
+  /** Getter for positive semidefinite constraint */
+  const std::vector<Binding<PositiveSemidefiniteConstraint>>&
+  positive_semidefinite_constraints() const {
+    return positive_semidefinite_constraint_;
+  }
+
+  /** Getter for linear matrix inequality constraint */
+  const std::vector<Binding<LinearMatrixInequalityConstraint>>&
+  linear_matrix_inequality_constraints() const {
+    return linear_matrix_inequality_constraint_;
+  }
+
+  /**
+   * Getter returning all costs (for now linear costs appended to
    * generic costs, then quadratic costs appended to
    * generic costs).
    */
@@ -1502,16 +1583,24 @@ class MathematicalProgram {
     return costlist;
   }
 
+  /**
+   * Getter returning all linear constraints (both linear equality and
+   * inequality constraints).
+   */
   std::vector<Binding<LinearConstraint>> GetAllLinearConstraints() const {
     std::vector<Binding<LinearConstraint>> conlist = linear_constraints_;
     conlist.insert(conlist.end(), linear_equality_constraints_.begin(),
                    linear_equality_constraints_.end());
     return conlist;
   }
+
+  /** Getter for all bounding box constraints */
   const std::vector<Binding<BoundingBoxConstraint>>& bounding_box_constraints()
       const {
     return bbox_constraints_;
   }
+
+  /** Getter for all linear complementarity constraints.*/
   const std::vector<Binding<LinearComplementarityConstraint>>&
   linear_complementarity_constraints() const {
     return linear_complementarity_constraints_;
@@ -1538,6 +1627,7 @@ class MathematicalProgram {
     return p;
   }
 
+  /** Getter for number of variables in the optimization program */
   size_t num_vars() const { return num_vars_; }
 
   /**
@@ -1547,15 +1637,14 @@ class MathematicalProgram {
    * of x(i) in the MathematicalProgram, where x is the vector containing all
    * decision variables.
    */
-  std::vector<DecisionVariableScalar::VarType> VariableTypes() const {
-    std::vector<DecisionVariableScalar::VarType> variable_type;
-    variable_type.resize(num_vars());
-    for (int i = 0; i < static_cast<int>(num_vars_); ++i) {
-      variable_type[variables_(i).index()] = variables_(i).type();
-    }
-    return variable_type;
+  const std::vector<VarType>& DecisionVariableTypes() const {
+    return decision_variable_type_;
   }
 
+  /** Returns the type of the decision variable. */
+  VarType DecisionVariableType(const symbolic::Variable& var) const;
+
+  /** Getter for the initial guess */
   const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
 
   /**
@@ -1564,11 +1653,112 @@ class MathematicalProgram {
    * @return a flat Eigen vector that represents the solution.
    */
   const Eigen::VectorXd GetSolutionVectorValues() const {
-    return GetSolution(variables_);
+    return GetSolution(decision_variables_);
+  }
+
+  /** Returns the index of the decision variable. Internally the solvers thinks
+   * all variables are stored in an array, and it accesess each individual
+   * variable using its index. This index is used when adding constraints
+   * and costs for each solver.
+   */
+  size_t FindDecisionVariableIndex(const symbolic::Variable& var) const;
+
+  /**
+   * Gets the solution of an Eigen matrix of decision variables.
+   * @tparam Derived An Eigen matrix containing symbolic::Variable.
+   * @param var The decision variables.
+   * @return The value of the decision variable after solving the problem.
+   */
+  template <typename Derived>
+  Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
+  GetSolution(const Eigen::MatrixBase<Derived>& var) const {
+    static_assert(
+        std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+        "The input should be an Eigen matrix of symbolic::Variable object.");
+    Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                  Derived::ColsAtCompileTime>
+        value(var.rows(), var.cols());
+    for (int i = 0; i < var.rows(); ++i) {
+      for (int j = 0; j < var.cols(); ++j) {
+        auto it = decision_variable_index_.find(var(i, j).get_id());
+        DRAKE_ASSERT(it != decision_variable_index_.end());
+        value(i, j) = x_values_[it->second];
+      }
+    }
+    return value;
+  }
+
+  /**
+   * Gets the value of a single decision variable.
+   */
+  double GetSolution(const symbolic::Variable& var) const;
+
+  /**
+   * Evaluate the constraint in the Binding at the solution value.
+   * @return The value of the constraint in the binding.
+   * TODO(hongkai.dai): Do not use teample function, when the Binding is moved
+   * to a public class.
+   */
+  template <typename _Binding>
+  Eigen::VectorXd EvalBindingAtSolution(const _Binding& binding) const {
+    Eigen::VectorXd val(binding.constraint()->num_constraints());
+    size_t dim = 0;
+    Eigen::VectorXd flat_solution(binding.GetNumElements());
+    for (const auto& var : binding.variable_list().variables()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      flat_solution.segment(dim, var.rows()) = GetSolution(var);
+      dim += var.rows();
+    }
+    binding.constraint()->Eval(flat_solution, val);
+    return val;
+  }
+
+  /**
+   * Sets the values of the decision variables, bound by the elements in @p
+   * binding.
+   * @tparam _Binding should be MathematicalProgram::Binding class
+   * @param binding_solution The value of the variables bound in the @p binding.
+   * @param binding A binding containing the constraint and bound variables.
+   * The value of the bound variable will be changed by calling this function.
+   */
+  template <typename _Binding>
+  void SetDecisionVariableValueFromBinding(
+      const Eigen::Ref<const Eigen::VectorXd> &binding_solution,
+      const _Binding &binding) {
+    DRAKE_ASSERT(static_cast<size_t>(binding_solution.rows()) ==
+                 binding.GetNumElements());
+
+    size_t solution_index = 0;
+    for (const auto& var : binding.variable_list().variables()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      for (int i = 0; i < var.rows(); ++i) {
+        x_values_[FindDecisionVariableIndex(var(i))] =
+            binding_solution(solution_index + i);
+      }
+      solution_index += var.rows();
+    }
+  }
+
+  /** Getter for all decision variables in the program. */
+  const DecisionVariableVectorX& decision_variables() const {
+    return decision_variables_;
+  }
+
+  /** Getter for the decision variable with index @p i in the program. */
+  const symbolic::Variable& decision_variable(int i) const {
+    return decision_variables_(i);
   }
 
  private:
-  DecisionVariableVectorX variables_;
+  // maps the ID of a symbolic variable to the index of the variable stored in
+  // the optimization program.
+  std::unordered_map<size_t, size_t> decision_variable_index_{};
+
+  std::vector<VarType> decision_variable_type_;  // decision_variable_type_[i]
+                                                 // stores the type of the
+                                                 // variable with index i.
+
+  DecisionVariableVectorX decision_variables_;
   std::vector<Binding<Constraint>> generic_costs_;
   std::vector<Binding<Constraint>> generic_constraints_;
   std::vector<Binding<QuadraticConstraint>> quadratic_costs_;
@@ -1582,6 +1772,10 @@ class MathematicalProgram {
   std::vector<Binding<LorentzConeConstraint>> lorentz_cone_constraint_;
   std::vector<Binding<RotatedLorentzConeConstraint>>
       rotated_lorentz_cone_constraint_;
+  std::vector<Binding<PositiveSemidefiniteConstraint>>
+      positive_semidefinite_constraint_;
+  std::vector<Binding<LinearMatrixInequalityConstraint>>
+      linear_matrix_inequality_constraint_;
 
   // Invariant:  The bindings in this list must be non-overlapping.
   // TODO(ggould-tri) can this constraint be relaxed?
@@ -1590,7 +1784,7 @@ class MathematicalProgram {
 
   size_t num_vars_;
   Eigen::VectorXd x_initial_guess_;
-  std::vector<std::unique_ptr<double>> x_values_;
+  std::vector<double> x_values_;
   std::shared_ptr<SolverData> solver_data_;
   std::string solver_name_;
   int solver_result_;
@@ -1611,13 +1805,13 @@ class MathematicalProgram {
   std::unique_ptr<MathematicalProgramSolverInterface> mosek_solver_;
 
   template <typename T>
-  void AddVariables_impl(
-      DecisionVariableScalar::VarType type, const T& names, bool is_symmetric,
+  void NewVariables_impl(
+      VarType type, const T& names, bool is_symmetric,
       Eigen::Ref<DecisionVariableMatrixX> decision_variable_matrix) {
     switch (type) {
-      case DecisionVariableScalar::VarType::CONTINUOUS:
+      case VarType::CONTINUOUS:
         break;
-      case DecisionVariableScalar::VarType::BINARY:
+      case VarType::BINARY:
         required_capabilities_ |= kBinaryVariable;
         break;
       default:
@@ -1633,17 +1827,22 @@ class MathematicalProgram {
       num_new_vars = rows * (rows + 1) / 2;
     }
     DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
-    variables_.conservativeResize(num_vars_ + num_new_vars, Eigen::NoChange);
-    x_values_.reserve(num_vars_ + num_new_vars);
+    decision_variables_.conservativeResize(num_vars_ + num_new_vars,
+                                           Eigen::NoChange);
+    x_values_.resize(num_vars_ + num_new_vars, NAN);
+    decision_variable_type_.resize(num_vars_ + num_new_vars);
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
-      auto x_new_value = std::make_unique<double>(0);
-      x_values_.push_back(std::move(x_new_value));
-      variables_(num_vars_ + i) = DecisionVariableScalar(
-          type, names[i], x_values_.back().get(), num_vars_ + i);
+      decision_variables_(num_vars_ + i) = symbolic::Variable(names[i]);
+      const size_t new_var_index = num_vars_ + i;
+      decision_variable_index_.insert(std::pair<size_t, size_t>(
+          decision_variables_(new_var_index).get_id(), new_var_index));
+      decision_variable_type_[new_var_index] = type;
       decision_variable_matrix(row_index, col_index) =
-          variables_(num_vars_ + i);
+          decision_variables_(num_vars_ + i);
+      // If the matrix is not symmetric, then store the variable in column
+      // major.
       if (!is_symmetric) {
         if (row_index + 1 < rows) {
           ++row_index;
@@ -1652,6 +1851,8 @@ class MathematicalProgram {
           row_index = 0;
         }
       } else {
+        // If the matrix is symmetric, then the decision variables are the lower
+        // triangular part of the symmetric matrix, also stored in column major.
         if (row_index != col_index) {
           decision_variable_matrix(col_index, row_index) =
               decision_variable_matrix(row_index, col_index);
@@ -1669,7 +1870,13 @@ class MathematicalProgram {
     x_initial_guess_.conservativeResize(num_vars_);
     x_initial_guess_.tail(num_new_vars) = Eigen::VectorXd::Zero(num_new_vars);
   }
-};
 
+  DecisionVariableMatrixX NewVariables(VarType type, int rows, int cols,
+                                       bool is_symmetric,
+                                       const std::vector<std::string>& names);
+
+  DecisionVariableVectorX NewVariables(VarType type, int rows,
+                                       const std::vector<std::string>& names);
+};
 }  // namespace solvers
 }  // namespace drake

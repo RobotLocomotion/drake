@@ -1,12 +1,15 @@
 #include <memory>
 
 #include "drake/common/drake_path.h"
-#include "drake/multibody/parser_sdf.h"
+#include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
 
 #include "gtest/gtest.h"
-#include "gmock/gmock.h"
+
+using Eigen::Vector3d;
+using Eigen::VectorXd;
+using Eigen::Matrix3Xd;
 
 namespace drake {
 namespace systems {
@@ -15,9 +18,7 @@ namespace test {
 namespace rigid_body_tree {
 namespace {
 
-using Eigen::Vector3d;
-using Eigen::VectorXd;
-using Eigen::Matrix3Xd;
+
 
 // Structure used to hold the analytical solution of the tests.
 // It stores the collision point on the surface of a collision body in both
@@ -47,10 +48,10 @@ class RBTCollisionTest: public ::testing::Test {
 
  protected:
   void SetUp() override {
-    drake::parsers::sdf::AddModelInstancesFromSdfFileInWorldFrame(
-        drake::GetDrakePath() +
-        "/multibody/test/rigid_body_tree/small_sphere_on_large_box.sdf",
-            drake::multibody::joints::kQuaternion, &tree_);
+    parsers::sdf::AddModelInstancesFromSdfFileToWorld(
+        GetDrakePath() +
+            "/multibody/test/rigid_body_tree/small_sphere_on_large_box.sdf",
+        multibody::joints::kQuaternion, &tree_);
 
     small_sphere_ = tree_.FindBody("small_sphere");
     large_box_ = tree_.FindBody("large_box");
@@ -78,7 +79,7 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
   // successfully pass.
-  tolerance_ = 4.0*Eigen::NumTraits<double>::epsilon();
+  tolerance_ = 4.0 * Eigen::NumTraits<double>::epsilon();
 
   int nq = tree_.get_num_positions();
   int nv = tree_.get_num_velocities();
@@ -102,8 +103,16 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
   const RigidBody<double>* bodyA = collision_pairs[0].elementA->get_body();
   const RigidBody<double>* bodyB = collision_pairs[0].elementB->get_body();
 
+  // We expect the normal to be defined for the collision pair:
+  // (small_sphere_1, large_box_) pointing upwards, from box into sphere.
+  // If they are in the reversed order, reverse the normal direction.
+  Vector3d expected_normal(0, 1, 0);
+  if (bodyA == large_box_) {
+    expected_normal *= -1;
+  }
+
   EXPECT_NEAR(-0.1, collision_pairs[0].distance, tolerance_);
-  EXPECT_TRUE(collision_pairs[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_TRUE(collision_pairs[0].normal.isApprox(expected_normal));
 
   // Collision points are reported on each of the respective bodies' frames.
   EXPECT_TRUE(collision_pairs[0].ptA.isApprox(
@@ -131,10 +140,10 @@ class RBTCollisionCliqueTest: public ::testing::Test {
 
  protected:
   void SetUp() override {
-    drake::parsers::sdf::AddModelInstancesFromSdfFileInWorldFrame(
+    parsers::sdf::AddModelInstancesFromSdfFileToWorld(
         drake::GetDrakePath() +
             "/multibody/test/rigid_body_tree/linked_spheres_on_large_box.sdf",
-        drake::multibody::joints::kQuaternion, &tree_);
+        multibody::joints::kQuaternion, &tree_);
 
     small_sphere_1_ = tree_.FindBody("small_sphere_1");
     small_sphere_2_ = tree_.FindBody("small_sphere_2");
@@ -184,11 +193,20 @@ TEST_F(RBTCollisionCliqueTest, ComputeContactPointsWithCliques) {
   // ignored because they are linked by a joint.
   ASSERT_EQ(1u, collision_pairs.size());
 
+
   const RigidBody<double>* bodyA = collision_pairs[0].elementA->get_body();
   const RigidBody<double>* bodyB = collision_pairs[0].elementB->get_body();
 
+  // We expect the normal to be defined for the collision pair:
+  // (small_sphere_1, large_box_) pointing upwards, from box into sphere.
+  // If they are in the reversed order, reverse the normal direction.
+  Vector3d expected_normal(0, 1, 0);
+  if (bodyA == large_box_) {
+    expected_normal *= -1;
+  }
+
   EXPECT_NEAR(-0.1, collision_pairs[0].distance, tolerance_);
-  EXPECT_TRUE(collision_pairs[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_TRUE(collision_pairs[0].normal.isApprox(expected_normal));
 
   // Collision points are reported on each of the respective bodies' frames.
   EXPECT_TRUE(collision_pairs[0].ptA.isApprox(

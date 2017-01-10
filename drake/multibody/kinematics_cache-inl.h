@@ -21,36 +21,40 @@ KinematicsCacheElement<T>::KinematicsCacheElement(
 }
 
 template <typename T>
+void KinematicsCache<T>::CreateCacheElement(
+    int num_positions, int num_velocities) {
+  elements_.emplace_back(num_positions, num_velocities);
+}
+
+template <typename T>
 KinematicsCache<T>::KinematicsCache(
-    const std::vector<std::unique_ptr<RigidBody<double>> >& bodies_in)
-    : num_positions(get_num_positions(bodies_in)),
-      num_velocities(get_num_velocities(bodies_in)),
-      q(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_positions)),
-      v(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_velocities)),
+    int num_positions, int num_velocities,
+    const std::vector<int>& num_joint_positions,
+    const std::vector<int>& num_joint_velocities)
+    : num_positions_(num_positions),
+      num_velocities_(num_velocities),
+      q(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_positions_)),
+      v(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_velocities_)),
       velocity_vector_valid(false) {
-  for (const auto& body_unique_ptr : bodies_in) {
-    const RigidBody<double>& body = *body_unique_ptr;
-    int num_positions_joint =
-        body.has_parent_body() ? body.getJoint().get_num_positions() : 0;
-    int num_velocities_joint =
-        body.has_parent_body() ? body.getJoint().get_num_velocities() : 0;
-    elements.insert({&body, KinematicsCacheElement<T>(
-        num_positions_joint, num_velocities_joint)});
-    bodies.push_back(&body);
+  DRAKE_DEMAND(num_joint_positions.size() == num_joint_velocities.size());
+  for (int body_id = 0;
+       body_id < static_cast<int>(num_joint_positions.size()); ++body_id) {
+    elements_.emplace_back(num_joint_positions[body_id],
+                           num_joint_velocities[body_id]);
   }
   invalidate();
 }
 
 template <typename T>
-KinematicsCacheElement<T>& KinematicsCache<T>::getElement(
-    const RigidBody<double>& body) {
-  return elements.at(&body);
+const KinematicsCacheElement<T>& KinematicsCache<T>::get_element(
+    int body_id) const {
+  return elements_[body_id];
 }
 
 template <typename T>
-const KinematicsCacheElement<T>& KinematicsCache<T>::getElement(
-    const RigidBody<double>& body) const {
-  return elements.at(&body);
+KinematicsCacheElement<T>* KinematicsCache<T>::get_mutable_element(
+    int body_id) {
+  return &elements_[body_id];
 }
 
 template <typename T>
@@ -101,58 +105,6 @@ void KinematicsCache<T>::checkCachedKinematicsSettings(
 }
 
 template <typename T>
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-              Eigen::Dynamic>
-KinematicsCache<T>::transformVelocityMappingToQDotMapping(
-    const Eigen::MatrixBase<Derived>& B) const {
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                Eigen::Dynamic>
-      A(B.rows(), get_num_positions());
-  int A_col_start = 0;
-  int B_col_start = 0;
-  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-    const RigidBody<double>& body = **it;
-    if (body.has_parent_body()) {
-      const DrakeJoint& joint = body.getJoint();
-      const auto& element = getElement(body);
-      A.middleCols(A_col_start, joint.get_num_positions()).noalias() =
-          B.middleCols(B_col_start, joint.get_num_velocities()) *
-              element.qdot_to_v;
-      A_col_start += joint.get_num_positions();
-      B_col_start += joint.get_num_velocities();
-    }
-  }
-  return A;
-}
-
-template <typename T>
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-              Eigen::Dynamic>
-KinematicsCache<T>::transformQDotMappingToVelocityMapping(
-    const Eigen::MatrixBase<Derived>& A) const {
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                Eigen::Dynamic>
-      B(A.rows(), get_num_velocities());
-  int B_col_start = 0;
-  int A_col_start = 0;
-  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-    const RigidBody<double>& body = **it;
-    if (body.has_parent_body()) {
-      const DrakeJoint& joint = body.getJoint();
-      const auto& element = getElement(body);
-      B.middleCols(B_col_start, joint.get_num_velocities()).noalias() =
-          A.middleCols(A_col_start, joint.get_num_positions()) *
-              element.v_to_qdot;
-      B_col_start += joint.get_num_velocities();
-      A_col_start += joint.get_num_positions();
-    }
-  }
-  return B;
-}
-
-template <typename T>
 const Eigen::Matrix<T, Eigen::Dynamic, 1>& KinematicsCache<T>::getQ() const {
   return q;
 }
@@ -198,13 +150,18 @@ void KinematicsCache<T>::setJdotVCached(bool jdotV_cached_in) {
 }
 
 template <typename T>
-int KinematicsCache<T>::get_num_positions() const { return num_positions; }
+int KinematicsCache<T>::get_num_cache_elements() const {
+  return static_cast<int>(elements_.size());
+}
+
+template <typename T>
+int KinematicsCache<T>::get_num_positions() const { return num_positions_; }
 
 template <typename T>
 int KinematicsCache<T>::getNumPositions() const { return get_num_positions(); }
 
 template <typename T>
-int KinematicsCache<T>::get_num_velocities() const { return num_velocities; }
+int KinematicsCache<T>::get_num_velocities() const { return num_velocities_; }
 
 template <typename T>
 int KinematicsCache<T>::getNumVelocities() const {
@@ -216,28 +173,4 @@ void KinematicsCache<T>::invalidate() {
   position_kinematics_cached = false;
   jdotV_cached = false;
   inertias_cached = false;
-}
-
-template <typename T>
-int KinematicsCache<T>::get_num_positions(
-    const std::vector<std::unique_ptr<RigidBody<double>> >& bodies) {
-  auto add_num_positions = [](
-      int result, const std::unique_ptr<RigidBody<double>>& body_ptr) -> int {
-    return body_ptr->has_parent_body()
-           ? result + body_ptr->getJoint().get_num_positions()
-           : result;
-  };
-  return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_positions);
-}
-
-template <typename T>
-int KinematicsCache<T>::get_num_velocities(
-    const std::vector<std::unique_ptr<RigidBody<double>> >& bodies) {
-  auto add_num_velocities = [](
-      int result, const std::unique_ptr<RigidBody<double>>& body_ptr) -> int {
-    return body_ptr->has_parent_body()
-           ? result + body_ptr->getJoint().get_num_velocities()
-           : result;
-  };
-  return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_velocities);
 }

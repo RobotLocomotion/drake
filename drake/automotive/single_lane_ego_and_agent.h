@@ -6,7 +6,7 @@
 #include "drake/automotive/linear_car.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {
 namespace automotive {
@@ -53,9 +53,6 @@ class SingleLaneEgoAndAgent : public systems::Diagram<T> {
                         const T& v_ref, const T& a_agent);
 
   ~SingleLaneEgoAndAgent() override {}
-
-  /// Sets the continuous states in @p context to default values.
-  void SetDefaultState(systems::Context<T>* context) const;
 
   /// Getters for the ego and agent car systems.
   const LinearCar<T>* get_ego_car_system() const { return ego_car_; }

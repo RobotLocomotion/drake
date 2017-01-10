@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/dummy_value.h"
 #include "drake/systems/framework/vector_base.h"
 
 #include <Eigen/Dense>
@@ -18,18 +19,15 @@ namespace systems {
 
 /// BasicVector is a semantics-free wrapper around an Eigen vector that
 /// satisfies VectorBase. Once constructed, its size is fixed.
-/// The BasicVector is initialized to the quiet_NaN of the Eigen scalar.
-/// If numeric_limits is not specialized on the Eigen scalar, the BasicVector
-/// will be initialized with the scalar's default constructor.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
 class BasicVector : public VectorBase<T> {
  public:
+  /// Initializes with the given @p size using the drake::dummy_value<T>, which
+  /// is NaN when T = double.
   explicit BasicVector(int size)
-      : values_(VectorX<T>::Constant(
-            size, std::numeric_limits<
-                      typename Eigen::NumTraits<T>::Real>::quiet_NaN())) {}
+      : values_(VectorX<T>::Constant(size, dummy_value<T>::get())) {}
 
   /// Constructs a BasicVector with the specified @p data.
   explicit BasicVector(const VectorX<T>& data) : values_(data) {}

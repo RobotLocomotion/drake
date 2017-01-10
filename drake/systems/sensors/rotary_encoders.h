@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
@@ -10,7 +11,7 @@ namespace systems {
 namespace sensors {
 
 /// Simple model to capture the quantization and calibration offset effects
-/// of a rotary encoder.  Consider combining this with a zero-order hold system
+/// of a rotary encoder.  Consider combining this with a ZeroOrderHold system
 /// to capture the sampled-data effects.
 ///
 /// The inputs to this system are assumed to be in radians, and the outputs of
@@ -41,9 +42,6 @@ class RotaryEncoders : public systems::LeafSystem<T> {
   RotaryEncoders(const RotaryEncoders<T>&) = delete;
   RotaryEncoders& operator=(const RotaryEncoders<T>&) = delete;
 
-  /// Outputs the transformed signal.
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
 
   /// Calibration offsets are defined as parameters.
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
@@ -58,6 +56,16 @@ class RotaryEncoders : public systems::LeafSystem<T> {
       const systems::Context<T>& context) const;
 
  private:
+  // Outputs the transformed signal.
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
+
+  void SetDefaultParameters(const systems::LeafContext<T>& context,
+                            systems::Parameters<T>* params) const override;
+
+  // System<T> override.
+  RotaryEncoders<AutoDiffXd>* DoToAutoDiffXd() const override;
+
   const int num_encoders_{0};       // Dimension of the output port.
   const std::vector<int> indices_;  // Selects from the input port.
   const std::vector<int> ticks_per_revolution_;  // For quantization.

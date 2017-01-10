@@ -6,16 +6,18 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
+#include "drake/systems/framework/abstract_state.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/continuous_state.h"
-#include "drake/systems/framework/difference_state.h"
+#include "drake/systems/framework/discrete_state.h"
 #include "drake/systems/framework/leaf_context.h"
-#include "drake/systems/framework/modal_state.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/value.h"
@@ -48,18 +50,75 @@ class LeafSystem : public System<T> {
   // =========================================================================
   // Implementations of System<T> methods.
 
-  std::unique_ptr<Context<T>> CreateDefaultContext() const override {
+  std::unique_ptr<Context<T>> AllocateContext() const override {
     std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
     // Reserve inputs that have already been declared.
     context->SetNumInputPorts(this->get_num_input_ports());
     // Reserve continuous state via delegation to subclass.
     context->set_continuous_state(this->AllocateContinuousState());
     // Reserve discrete state via delegation to subclass.
-    context->set_difference_state(this->AllocateDifferenceState());
-    context->set_modal_state(this->AllocateModalState());
+    context->set_discrete_state(this->AllocateDiscreteState());
+    context->set_abstract_state(this->AllocateAbstractState());
     // Reserve parameters via delegation to subclass.
     context->set_parameters(this->AllocateParameters());
+
+    // Enforce some requirements on the fully-assembled Context.
+    // -- The ContinuousState must be contiguous.
+    VectorBase<T>* xc_vec = context->get_mutable_continuous_state_vector();
+    DRAKE_DEMAND(dynamic_cast<BasicVector<T>*>(xc_vec) != nullptr);
+
     return std::unique_ptr<Context<T>>(context.release());
+  }
+
+  /// Default implementation: set all continuous and discrete state variables
+  /// to zero.  It makes no attempt to set abstract state values. Overrides
+  /// must not change the number of state variables.
+  void SetDefaultState(const Context<T>& context,
+                       State<T>* state) const override {
+    DRAKE_DEMAND(state != nullptr);
+    ContinuousState<T>* xc = state->get_mutable_continuous_state();
+    xc->SetFromVector(VectorX<T>::Zero(xc->size()));
+    DiscreteState<T>* xd = state->get_mutable_discrete_state();
+    for (int i = 0; i < xd->size(); i++) {
+      BasicVector<T>* s = xd->get_mutable_discrete_state(i);
+      s->SetFromVector(VectorX<T>::Zero(s->size()));
+    }
+  }
+
+  /// Default implementation: set all numeric parameters to one.  It makes no
+  /// attempt to set abstract parameter values. Overrides must not change the
+  /// number of parameters.
+  virtual void SetDefaultParameters(const LeafContext<T>& context,
+                                    Parameters<T>* parameters) const {
+    for (int i = 0; i < parameters->num_numeric_parameters(); i++) {
+      BasicVector<T>* p = parameters->get_mutable_numeric_parameter(i);
+      p->SetFromVector(VectorX<T>::Constant(p->size(), 1.0));
+    }
+  }
+
+  // Sets Context fields to their default values.
+  void SetDefaults(Context<T>* context) const final {
+    systems::LeafContext<T>* leaf_context =
+        dynamic_cast<systems::LeafContext<T>*>(context);
+    DRAKE_DEMAND(leaf_context != nullptr);
+
+    // Set the default state, checking that the number of state variables does
+    // not change.
+    const int n_xc = context->get_continuous_state()->size();
+    const int n_xd = context->get_num_discrete_state_groups();
+    const int n_xm = context->get_num_abstract_state_groups();
+
+    SetDefaultState(*context, context->get_mutable_state());
+
+    DRAKE_DEMAND(n_xc == context->get_continuous_state()->size());
+    DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
+    DRAKE_DEMAND(n_xm == context->get_num_abstract_state_groups());
+
+    // Set the default parameters, checking that the number of parameters does
+    // not change.
+    const int num_params = leaf_context->num_numeric_parameters();
+    SetDefaultParameters(*leaf_context, leaf_context->get_mutable_parameters());
+    DRAKE_DEMAND(num_params == leaf_context->num_numeric_parameters());
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
@@ -80,10 +139,10 @@ class LeafSystem : public System<T> {
     return AllocateContinuousState();
   }
 
-  /// Returns the AllocateDifferenceState value, which must not be nullptr.
-  std::unique_ptr<DifferenceState<T>> AllocateDifferenceVariables()
+  /// Returns the AllocateDiscreteState value, which must not be nullptr.
+  std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables()
       const override {
-    return AllocateDifferenceState();
+    return AllocateDiscreteState();
   }
 
   // LeafSystem objects are neither copyable nor moveable.
@@ -112,7 +171,8 @@ class LeafSystem : public System<T> {
   /// Returns a ContinuousState used to implement both CreateDefaultContext and
   /// AllocateTimeDerivatives. Allocates the state configured with
   /// DeclareContinuousState, or none by default. Systems with continuous state
-  /// variables may override.
+  /// variables may override, but must ensure the ContinuousState vector is
+  /// a subclass of BasicVector.
   virtual std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const {
     if (model_continuous_state_vector_ != nullptr) {
       return std::make_unique<ContinuousState<T>>(
@@ -122,20 +182,20 @@ class LeafSystem : public System<T> {
     return std::make_unique<ContinuousState<T>>();
   }
 
-  /// Reserves the difference state as required by CreateDefaultContext. By
-  /// default, reserves no state. Systems with difference state should override.
-  virtual std::unique_ptr<DifferenceState<T>> AllocateDifferenceState() const {
-    if (model_difference_state_vector_ != nullptr) {
-      return std::make_unique<DifferenceState<T>>(
-          model_difference_state_vector_->Clone());
+  /// Reserves the discrete state as required by CreateDefaultContext. By
+  /// default, reserves no state. Systems with discrete state should override.
+  virtual std::unique_ptr<DiscreteState<T>> AllocateDiscreteState() const {
+    if (model_discrete_state_vector_ != nullptr) {
+      return std::make_unique<DiscreteState<T>>(
+          model_discrete_state_vector_->Clone());
     }
-    return std::make_unique<DifferenceState<T>>();
+    return std::make_unique<DiscreteState<T>>();
   }
 
-  /// Reserves the modal state as required by CreateDefaultContext. By
-  /// default, reserves no state. Systems with modal state should override.
-  virtual std::unique_ptr<ModalState> AllocateModalState() const {
-    return std::make_unique<ModalState>();
+  /// Reserves the abstract state as required by CreateDefaultContext. By
+  /// default, reserves no state. Systems with abstract state should override.
+  virtual std::unique_ptr<AbstractState> AllocateAbstractState() const {
+    return std::make_unique<AbstractState>();
   }
 
   /// Reserves the parameters as required by CreateDefaultContext. By default,
@@ -149,8 +209,8 @@ class LeafSystem : public System<T> {
   /// override to use output vector types other than BasicVector.  The
   /// descriptor must match a port declared via DeclareOutputPort.
   virtual std::unique_ptr<BasicVector<T>> AllocateOutputVector(
-      const SystemPortDescriptor<T>& descriptor) const {
-    return std::make_unique<BasicVector<T>>(descriptor.get_size());
+      const OutputPortDescriptor<T>& descriptor) const {
+    return std::make_unique<BasicVector<T>>(descriptor.size());
   }
 
   // =========================================================================
@@ -176,8 +236,6 @@ class LeafSystem : public System<T> {
   /// period_sec thereafter. On the discrete tick, the system may update
   /// the discrete state. Clobbers any other periodic behaviors previously
   /// declared.
-  /// TODO(david-german-tri): Add more sophisticated mutators for more complex
-  /// periodic behaviors.
   void DeclareUpdatePeriodSec(const T& period_sec) {
     DeclarePeriodicUpdate(period_sec, 0.0);
   }
@@ -185,27 +243,24 @@ class LeafSystem : public System<T> {
   /// Declares that this System has a simple, fixed-period discrete update.
   /// The first tick will be at t= offset_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may update the
-  /// discrete state. Clobbers any other periodc behaviors previously declared.
+  /// discrete state.
   void DeclarePeriodicUpdate(const T& period_sec, const T& offset_sec) {
     PeriodicEvent<T> event;
     event.period_sec = period_sec;
     event.offset_sec = offset_sec;
-    event.event.action = DiscreteEvent<T>::kUpdateAction;
-    periodic_events_ = {event};
+    event.event.action = DiscreteEvent<T>::kDiscreteUpdateAction;
+    periodic_events_.push_back(event);
   }
 
   /// Declares that this System has a simple, fixed-period publish.
   /// The first tick will be at t = period_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may update
-  /// the discrete state. Clobbers any other periodic behaviors previously
-  /// declared.
-  /// TODO(david-german-tri): Add more sophisticated mutators for more complex
-  /// periodic behaviors.
+  /// the discrete state.
   void DeclarePublishPeriodSec(const T& period_sec) {
     PeriodicEvent<T> event;
     event.period_sec = period_sec;
     event.event.action = DiscreteEvent<T>::kPublishAction;
-    periodic_events_ = {event};
+    periodic_events_.push_back(event);
   }
 
   /// Declares that this System should reserve continuous state with
@@ -241,11 +296,11 @@ class LeafSystem : public System<T> {
     num_misc_continuous_states_ = num_z;
   }
 
-  /// Declares that this System should reserve difference state with
+  /// Declares that this System should reserve discrete state with
   /// @p num_state_variables state variables. Has no effect if
-  /// AllocateDifferenceState is overridden.
-  void DeclareDifferenceState(int num_state_variables) {
-    model_difference_state_vector_ =
+  /// AllocateDiscreteState is overridden.
+  void DeclareDiscreteState(int num_state_variables) {
+    model_discrete_state_vector_ =
         std::make_unique<BasicVector<T>>(num_state_variables);
   }
 
@@ -270,8 +325,7 @@ class LeafSystem : public System<T> {
   template <typename T1 = T>
   typename std::enable_if<is_numeric<T1>::value>::type DoCalcNextUpdateTimeImpl(
       const Context<T1>& context, UpdateActions<T1>* actions) const {
-    T1 min_time =
-        std::numeric_limits<typename Eigen::NumTraits<T1>::Real>::infinity();
+    T1 min_time = std::numeric_limits<double>::infinity();
     if (periodic_events_.empty()) {
       // No discrete update.
       actions->time = min_time;
@@ -315,13 +369,16 @@ class LeafSystem : public System<T> {
     // NOLINTNEXTLINE(build/namespaces): Needed for ADL of floor and ceil.
     using namespace std;
 
-    // Compute the index in the sequence of samples for the next time to sample.
-    // If the current time is exactly a sample time, use the next index.
+    // Compute the index in the sequence of samples for the next time to sample,
+    // which should be greater than the present time.
     const T offset_time = current_time_sec - offset;
-    const int64_t prev_k = static_cast<int64_t>(floor(offset_time / period));
     const int64_t next_k = static_cast<int64_t>(ceil(offset_time / period));
-    const int64_t k = (prev_k == next_k) ? next_k + 1 : next_k;
-    return offset + (k * period);
+    T next_t = offset + next_k * period;
+    if (next_t <= current_time_sec) {
+      next_t = offset + (next_k + 1) * period;
+    }
+    DRAKE_ASSERT(next_t > current_time_sec);
+    return next_t;
   }
 
   // Periodic Update or Publish events registered on this system.
@@ -333,8 +390,8 @@ class LeafSystem : public System<T> {
   int num_generalized_velocities_{0};
   int num_misc_continuous_states_{0};
 
-  // A model difference state to be used in AllocateDefaultContext.
-  std::unique_ptr<BasicVector<T>> model_difference_state_vector_;
+  // A model discrete state to be used in AllocateDefaultContext.
+  std::unique_ptr<BasicVector<T>> model_discrete_state_vector_;
 };
 
 }  // namespace systems

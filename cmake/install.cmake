@@ -1,14 +1,47 @@
+include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
+set(DRAKE_INSTALL_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake")
 set(DRAKE_INSTALL_INCLUDE_DIR "${CMAKE_INSTALL_INCLUDEDIR}")
 set(DRAKE_INSTALL_LIBRARY_DIR "${CMAKE_INSTALL_LIBDIR}")
 set(DRAKE_INSTALL_PKGCONFIG_DIR "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 set(DRAKE_INSTALL_RUNTIME_DIR "${CMAKE_INSTALL_BINDIR}")
+set(DRAKE_INSTALL_DOCUMENTATION_DIR "${CMAKE_INSTALL_DOCDIR}")
 
 set(DRAKE_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/${DRAKE_INSTALL_INCLUDE_DIR}")
 set(DRAKE_LIBRARY_DIR "${CMAKE_INSTALL_PREFIX}/${DRAKE_INSTALL_LIBRARY_DIR}")
-set(DRAKE_PKGCONFIG_DIR "${CMAKE_INSTALL_PREFIX}/${DRAKE_INSTALL_PKGCONFIG_DIR}")
+set(DRAKE_PKGCONFIG_DIR
+  "${CMAKE_INSTALL_PREFIX}/${DRAKE_INSTALL_PKGCONFIG_DIR}")
 set(DRAKE_RUNTIME_DIR "${CMAKE_INSTALL_PREFIX}/${DRAKE_INSTALL_RUNTIME_DIR}")
+set(DRAKE_DOCUMENTATION_DIR "${CMAKE_INSTALL_PREFIX}/${DRAKE_INSTALL_DOCUMENTATION_DIR}")
+
+#------------------------------------------------------------------------------
+# Generate and install the "drake-config.cmake", "drake-config-version.cmake",
+# "drake-targets.cmake", and "drake-targets-*.cmake" files to the "cmake"
+# subdirectory of the library installation directory ("lib", "lib32", or
+# "lib64") of the drake project.
+#
+# See the documentation of the "GNUInstallDirs" module for the rules that are
+# used to choose the library installation directory for a given host operating
+# system.
+#------------------------------------------------------------------------------
+function(drake_install_cmake_package_config_files)
+  configure_package_config_file(
+    ${PROJECT_NAME}-config.cmake.in ${PROJECT_NAME}-config.cmake
+    INSTALL_DESTINATION ${DRAKE_INSTALL_CMAKE_DIR}
+    PATH_VARS DRAKE_INCLUDE_DIR DRAKE_LIBRARY_DIR)
+
+  write_basic_package_version_file(${PROJECT_NAME}-config-version.cmake
+    COMPATIBILITY SameMajorVersion)
+
+  install(EXPORT ${PROJECT_NAME}-targets
+    DESTINATION "${DRAKE_INSTALL_CMAKE_DIR}")
+
+  install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+    DESTINATION ${DRAKE_INSTALL_CMAKE_DIR})
+endfunction()
 
 #------------------------------------------------------------------------------
 # Install a list of runtime targets to the "bin" installation directory of the
@@ -71,12 +104,14 @@ function(drake_install_headers)
     "${CMAKE_CURRENT_SOURCE_DIR}")
 
   install(FILES ${_FILES}
-    DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}/drake/${_relative_path}")
+    DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}/drake/${_relative_path}"
+    ${_UNPARSED_ARGUMENTS})
 endfunction()
 
 #------------------------------------------------------------------------------
 # Install a list of archive or library targets to the library installation
-# directory ("lib", "lib32", or "lib64") of the drake project.
+# directory ("lib", "lib32", or "lib64") of the drake project. Add the library
+# targets to "drake-targets.cmake".
 #
 # drake_install_libraries(<targets...>)
 #
@@ -84,7 +119,7 @@ endfunction()
 #
 # Arguments:
 #   TARGETS <targets...>
-#     List of library targets.
+#     List of library targets to install.
 #
 #   <args...>
 #     Additional arguments to be passed through to install(TARGETS).
@@ -102,9 +137,11 @@ function(drake_install_libraries)
   endif()
 
   install(TARGETS ${_TARGETS}
+    EXPORT ${PROJECT_NAME}-targets
     ARCHIVE DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
     LIBRARY DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
     RUNTIME DESTINATION "${DRAKE_INSTALL_RUNTIME_DIR}"
+    INCLUDES DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}"
     ${_UNPARSED_ARGUMENTS})
 endfunction()
 

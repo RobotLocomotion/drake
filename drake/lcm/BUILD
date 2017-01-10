@@ -1,9 +1,10 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-package(default_visibility = ["//visibility:public"])
+load("//tools:cpplint.bzl", "cpplint")
+load("//tools:drake.bzl", "cc_googletest")
 
-DEPS = ["//drake/common:common"]
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "interface",
@@ -12,7 +13,9 @@ cc_library(
         "drake_lcm_message_handler_interface.h",
     ],
     linkstatic = 1,
-    deps = DEPS,
+    deps = [
+        "//drake/common",
+    ],
 )
 
 cc_library(
@@ -21,7 +24,9 @@ cc_library(
     srcs = ["drake_mock_lcm.cc"],
     hdrs = ["drake_mock_lcm.h"],
     linkstatic = 1,
-    deps = DEPS + [":interface"],
+    deps = [
+        ":interface",
+    ],
 )
 
 cc_library(
@@ -35,8 +40,9 @@ cc_library(
         "lcm_receive_thread.h",
     ],
     linkstatic = 1,
-    deps = DEPS + [
+    deps = [
         ":interface",
+        "//drake/common",
         "@lcm//:lcm",
     ],
 )
@@ -47,5 +53,57 @@ cc_library(
     srcs = ["lcmt_drake_signal_utils.cc"],
     hdrs = ["lcmt_drake_signal_utils.h"],
     linkstatic = 1,
-    deps = DEPS + ["//drake/lcmtypes:drake_signal"],
+    deps = [
+        "//drake/common",
+        "//drake/lcmtypes:drake_signal",
+    ],
 )
+
+cc_library(
+    name = "lcm_call_matlab",
+    testonly = 1,
+    srcs = ["lcm_call_matlab.cc"],
+    hdrs = ["lcm_call_matlab.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/common",
+        "//drake/lcmtypes:call_matlab",
+    ],
+)
+
+# === test/ ===
+
+cc_googletest(
+    name = "drake_lcm_test",
+    local = 1,
+    deps = [
+        ":lcm",
+        ":lcmt_drake_signal_utils",
+    ],
+)
+
+cc_googletest(
+    name = "drake_mock_lcm_test",
+    deps = [
+        ":lcmt_drake_signal_utils",
+        ":mock",
+    ],
+)
+
+cc_googletest(
+    name = "lcmt_drake_signal_utils_test",
+    deps = [
+        ":lcmt_drake_signal_utils",
+    ],
+)
+
+cc_googletest(
+    name = "lcm_call_matlab_test",
+    local = 1,
+    deps = [
+        ":lcm_call_matlab",
+        ":lcmt_drake_signal_utils",
+    ],
+)
+
+cpplint()

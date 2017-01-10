@@ -1,8 +1,10 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -84,62 +86,12 @@ class RigidBodyTree {
    */
   static const int kWorldBodyIndex;
 
-  RigidBodyTree(
-      const std::string& urdf_filename,
-      const drake::multibody::joints::FloatingBaseType
-          floating_base_type = drake::multibody::joints::kRollPitchYaw);
+  /// A constructor that initializes the gravity vector to be [0, 0, -9.81] and
+  /// a single RigidBody named "world". This RigidBody can be accessed by
+  /// calling RigidBodyTree::world().
   RigidBodyTree(void);
+
   virtual ~RigidBodyTree(void);
-
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDFString.")
-#endif
-  void addRobotFromURDFString(
-      const std::string& xml_string, const std::string& root_dir = ".",
-      const drake::multibody::joints::FloatingBaseType
-          floating_base_type = drake::multibody::joints::kRollPitchYaw,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDFString.")
-#endif
-  void addRobotFromURDFString(
-      const std::string& xml_string,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::map<std::string, std::string>& ros_package_map,
-      const std::string& root_dir = ".",
-      const drake::multibody::joints::FloatingBaseType
-          floating_base_type = drake::multibody::joints::kRollPitchYaw,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDF.")
-#endif
-  void addRobotFromURDF(
-      const std::string& urdf_filename,
-      const drake::multibody::joints::FloatingBaseType
-          floating_base_type = drake::multibody::joints::kRollPitchYaw,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstanceFromURDF.")
-#endif
-  void addRobotFromURDF(
-      const std::string& urdf_filename,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::map<std::string, std::string>& ros_package_map,
-      const drake::multibody::joints::FloatingBaseType
-          floating_base_type = drake::multibody::joints::kRollPitchYaw,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstancesFromSdfFile.")
-#endif
-  void addRobotFromSDF(const std::string& sdf_filename,
-                       const drake::multibody::joints::FloatingBaseType
-                           floating_base_type =
-                               drake::multibody::joints::kQuaternion,
-                       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
    * Adds a new model instance to this `RigidBodyTree`. The model instance is
@@ -162,8 +114,14 @@ class RigidBodyTree {
 #endif
   int get_number_of_model_instances() const;
 
-  void addFrame(std::shared_ptr<RigidBodyFrame> frame);
+  void addFrame(std::shared_ptr<RigidBodyFrame<T>> frame);
 
+  /**
+   * Returns a map from DOF position name to DOF index within the output vector
+   * of this RigidBodyTree.
+   *
+   * <b>WARNING:</b> There is a known bug in this method, see: #4697.
+   */
   std::map<std::string, int> computePositionNameToIndexMap() const;
 
   void surfaceTangents(
@@ -171,19 +129,26 @@ class RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       std::vector<Eigen::Map<Eigen::Matrix3Xd>>& tangents) const;
 
-  /*!
-   * Updates the frame of collision elements to be equal to the joint's frame.
+  /**
+   * Applies the given transform to the given @p body's collision elements,
+   * displacing them from their current configurations.  These new poses
+   * will be considered the elements' pose with respect to the body.
    *
-   * @param eid The ID of the collision element to update.
-   * @param transform_body_to_joint The transform from the model's
-   * body frame to the joint frame.
-   * @return true if the collision element was successfully updated.
-   * False can be returned if a collision element with the specified eid
-   * cannot be found.
+   * This is important to the parsing code to maintain a Drake RigidBodyTree
+   * invariant.  RigidBody instances do not maintain their own pose relative
+   * to their in-board joint.  The joint's space is considered to be the body's
+   * space.  So, if a urdf/sdf file defines the body with a non-identity pose
+   * relative to the parent, the parser uses this to move the collision elements
+   * relative to the effective body frame -- that of the parent joint.
+   *
+   * @param body The body whose collision elements will be moved.
+   * @param displace_transform The transform to apply to each collision element.
+   * @param true if the collision element was successfully updated.
+   * @returns true if the @body's elements were successfully transformed.
    */
   bool transformCollisionFrame(
-      const DrakeCollision::ElementId& eid,
-      const Eigen::Isometry3d& transform_body_to_joint);
+      RigidBody<T>* body,
+      const Eigen::Isometry3d& displace_transform);
 
   void compile(void);  // call me after the model is loaded
 
@@ -230,6 +195,57 @@ class RigidBodyTree {
   std::string getStateName(int state_num) const;
 
   void drawKinematicTree(std::string graphviz_dotfile_filename) const;
+
+  /// Checks whether @p cache is valid for use with this RigidBodyTree. Throws
+  /// a std::runtime_error exception if it is not valid.
+  template <typename Scalar>
+  void CheckCacheValidity(const KinematicsCache<Scalar>& cache) const;
+
+  /// Creates a KinematicsCache to perform computations with this RigidBodyTree.
+  /// The returned KinematicsCache is consistently templated on the scalar type
+  /// for this RigidBodyTree instance.
+  /// Aborts if this RigidBodyTree was not previously initialized with a call
+  /// to RigidBodyTree::compile().
+  /// @returns The created KinematicsCache.
+  KinematicsCache<T> CreateKinematicsCache() const;
+
+  /// A helper template method used to create a KinematicsCache templated on
+  /// `CacheT` from a RigidBodyTree templated on `T`, with `CacheT` and `T`
+  /// not necessarily the same scalar type.
+  /// This method is particularly useful in mex files where only a reference
+  /// to a `RigidBodyTree<double>` is available to create kinematics caches
+  /// on different scalar types.
+  /// Aborts if this RigidBodyTree was not previously initialized with a call
+  /// to RigidBodyTree::compile().
+  ///
+  /// Users should not call this method but instead create KinematicsCache
+  /// objects with RigidBodyTree:CreateKinematicsCache().
+  ///
+  /// @tparam CacheT The scalar type for the returned KinematicsCache.
+  /// @returns A KinematicsCache templated on `CacheT` that can be used for
+  /// computations on this RigidBodyTree with methods instantiated on `CacheT`.
+  // TODO(amcastro-tri): Remove this method once older pieces of code such as
+  // createKinematicsCacheAutoDiffmex.cpp are updated to use a RigidBodyTree to
+  // manage cache creation.
+  template <typename CacheT>
+  KinematicsCache<CacheT> CreateKinematicsCacheWithType() const;
+
+  /// Creates a KinematicsCache given a reference to a vector of rigid bodies
+  /// contained within a RigidBodyTree.
+  /// This method is static since all the information to create the
+  /// corresponding KinematicsCache resides in the input parameter vector
+  /// `bodies`.
+  ///
+  /// @param bodies A vector of unique pointers to the rigid bodies of a given
+  /// RigidBodyTree for which a KinematicsCache needs to be created.
+  /// @returns The created KinematicsCache.
+  //
+  // TODO(amcastro-tri): Remove this method once older pieces of code such as
+  // KinematicsCacheHelper are updated to use a RigidBodyTree to manage cache
+  // creation.
+  static KinematicsCache<T>
+  CreateKinematicsCacheFromBodiesVector(
+      const std::vector<std::unique_ptr<RigidBody<T>>>& bodies);
 
   /// Initializes a `KinematicsCache` with the given configuration @p q,
   /// computes the kinematics, and returns the cache.
@@ -286,6 +302,59 @@ class RigidBodyTree {
       KinematicsCache<Scalar>& cache,
       const std::set<int>& model_instance_id_set =
           default_model_instance_id_set) const;
+
+  /**
+   * Converts a matrix B, which transforms generalized velocities (v) to an
+   * output space X, to a matrix A, which transforms the time
+   * derivative of generalized coordinates (qdot) to the same output X. For
+   * example, B could be a Jacobian matrix that transforms generalized
+   * velocities to spatial velocities at the end-effector. Formally, this would
+   * be the matrix of partial derivatives of end-effector configuration computed
+   * with respect to quasi-coordinates (ꝗ). This function would allow
+   * transforming that Jacobian so that all partial derivatives would be
+   * computed with respect to qdot.
+   * @param Av, a `m x nv` sized matrix, where `nv` is the dimension of the
+   *      generalized velocities.
+   * @retval A a `m x nq` sized matrix, where `nq` is the dimension of the
+   *      generalized coordinates.
+   * @sa transformQDotMappingToVelocityMapping()
+   */
+  template <typename Derived>
+  static drake::MatrixX<typename Derived::Scalar>
+  transformVelocityMappingToQDotMapping(
+      const KinematicsCache<typename Derived::Scalar>& cache,
+      const Eigen::MatrixBase<Derived>& Av);
+
+  /**
+   * Converts a matrix A, which transforms the time derivative of generalized
+   * coordinates (qdot) to an output space X, to a matrix B, which transforms
+   * generalized velocities (v) to the same space X. For example, A could be a
+   * Jacobian matrix that transforms qdot to spatial velocities at the end
+   * effector. Formally, this would be the matrix of partial derivatives of
+   * end-effector configuration computed with respect to the generalized
+   * coordinates (q). This function would allow the user to
+   * transform this Jacobian matrix to the more commonly used one: the matrix of
+   * partial derivatives of end-effector configuration computed with respect to
+   * quasi-coordinates (ꝗ).
+   * @param Ap a `m x nq` sized matrix, where `nq` is the dimension of the
+   *      generalized coordinates.
+   * @retval B, a `m x nv` sized matrix, where `nv` is the dimension of the
+   *      generalized velocities.
+   * @sa transformVelocityMappingToQDotMapping()
+   */
+  template <typename Derived>
+  static drake::MatrixX<typename Derived::Scalar>
+  transformQDotMappingToVelocityMapping(
+      const KinematicsCache<typename Derived::Scalar>& cache,
+      const Eigen::MatrixBase<Derived>& Ap);
+
+  template <typename Scalar>
+  static drake::MatrixX<Scalar> GetVelocityToQDotMapping(
+          const KinematicsCache<Scalar>& cache);
+
+  template <typename Scalar>
+  static drake::MatrixX<Scalar> GetQDotToVelocityMapping(
+          const KinematicsCache<Scalar>& cache);
 
   template <typename Scalar>
   drake::TwistMatrix<Scalar> worldMomentumMatrix(
@@ -587,11 +656,30 @@ class RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
-  DrakeCollision::ElementId addCollisionElement(
+  /**
+   * Adds a new collision element to the tree.  The input @p element will be
+   * copied and that copy will be stored in the tree, associated with the
+   * given @p body.  This association is pending.  It is necessary to call
+   * compile() in order for the element to be fully integrated into the
+   * RigidBodyTree.
+   * @param element the element to add.
+   * @param body the body to associate the element with.
+   * @param group_name a group name to tag the associated element with.
+   */
+  void addCollisionElement(
       const DrakeCollision::Element& element,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       RigidBody<T>& body,
       const std::string& group_name);
+
+  /// Retrieve a (const) pointer to an element of the collision model.
+  /// Note: The use of Find (instead of get) and the use of CamelCase both
+  /// imply a potential runtime cost are carried over from the collision model
+  /// accessor method.
+  const DrakeCollision::Element* FindCollisionElement(
+      const DrakeCollision::ElementId& id) const {
+    return collision_model_->FindElement(id);
+  }
 
   template <class UnaryPredicate>
   void removeCollisionGroupsIf(UnaryPredicate test) {
@@ -617,8 +705,6 @@ class RigidBodyTree {
   void updateCollisionElements(
       const RigidBody<T>& body,
       const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world);
-
-  void updateStaticCollisionElements();
 
   void updateDynamicCollisionElements(const KinematicsCache<double>& kin_cache);
 
@@ -972,7 +1058,7 @@ class RigidBodyTree {
    * value is -1, search all models.
    * @throws std::logic_error if multiple matching frames are found.
    */
-  std::shared_ptr<RigidBodyFrame> findFrame(const std::string& frame_name,
+  std::shared_ptr<RigidBodyFrame<T>> findFrame(const std::string& frame_name,
                                             int model_id = -1) const;
 
   /**
@@ -1130,14 +1216,15 @@ class RigidBodyTree {
   std::vector<std::unique_ptr<RigidBody<T>>> bodies;
 
   // Rigid body frames
-  std::vector<std::shared_ptr<RigidBodyFrame>> frames;
+  std::vector<std::shared_ptr<RigidBodyFrame<T>>> frames;
 
   // Rigid body actuators
   std::vector<RigidBodyActuator, Eigen::aligned_allocator<RigidBodyActuator>>
       actuators;
 
   // Rigid body loops
-  std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> loops;
+  std::vector<RigidBodyLoop<T>,
+              Eigen::aligned_allocator<RigidBodyLoop<T>>> loops;
 
   drake::TwistVector<double> a_grav;
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
@@ -1165,11 +1252,32 @@ class RigidBodyTree {
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void updateCompositeRigidBodyInertias(KinematicsCache<Scalar>& cache) const;
 
+  // Examines the state of the tree, and confirms that all nodes (i.e,
+  // RigidBody instances) have a kinematics path to the root.  In other words,
+  // there should only be a single body that has no parent: the world.
+  // Throws an exception if it is *not* a complete tree.
+  void ConfirmCompleteTree() const;
+
+  // Given the body, tests to see if it has a kinematic path to the world node.
+  // Uses a cache of known "connected" bodies to accelerate the computation.
+  // The connected set consist of the body indices (see
+  // RigidBody::get_body_index) which are known to be connected to the world.
+  // This function has a side-effect of updating the set of known connected.
+  // This assumes that the connected set has been initialized with the value
+  // 0 (the world body).
+  // If not connected, throws an exception.
+  void TestConnectedToWorld(const RigidBody<T>& body,
+                            std::set<int>* connected) const;
+
   // Reorder body list to ensure parents are before children in the list
   // RigidBodyTree::bodies.
   //
   // See RigidBodyTree::compile
   void SortTree();
+
+  // Performs the work that is required for the collision state of the
+  // RigidBodyTree to become finalized.
+  void CompileCollisionState();
 
   // Defines a number of collision cliques to be used by DrakeCollision::Model.
   // Collision cliques are defined so that:
@@ -1205,9 +1313,42 @@ class RigidBodyTree {
   RigidBodyTree& operator=(const RigidBodyTree&) { return *this; }
 
   std::set<std::string> already_printed_warnings;
+  // TODO(SeanCurtis-TRI): This isn't properly used.
+  // No query operations should work if it hasn't been
+  // initialized.  Calling compile is the only thing that should set this.
+  // Furthermore, any operation that changes the tree (e.g., adding a body,
+  // collision element, etc.) should clear the bit again, requiring another
+  // call to compile.
   bool initialized_{false};
 
   int next_available_clique_ = 0;
+
+ private:
+  // Utility class for storing body collision data during RBT instantiation.
+  struct BodyCollisionItem {
+    BodyCollisionItem(const std::string& grp_name,
+                      size_t element_index) {
+      group_name = grp_name;
+      element = element_index;
+    }
+    std::string group_name;
+    size_t element;
+  };
+
+  typedef std::vector<BodyCollisionItem> BodyCollisions;
+  // This data structures supports an orderly instantiation of the collision
+  // elements.  It is populated during tree construction, exercised during
+  // RigidBodyTree::compile at the conclusion of which, it is emptied.
+  // It has no run-time value.  This is a hacky alternative to having a
+  // proper, intermediate representation.
+  std::unordered_map<RigidBody<T>*, BodyCollisions>
+      body_collision_map_;
+  // Bullet's collision results are affected by the order in which the collision
+  // elements are added. This queues the collision elements in the added order
+  // so that when actually registered with the collision engine, they'll be
+  // submitted in the invocation order.
+  // See https://github.com/bulletphysics/bullet3/issues/888
+  std::vector< std::unique_ptr<DrakeCollision::Element>> element_order_;
 };
 
 typedef RigidBodyTree<double> RigidBodyTreed;

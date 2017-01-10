@@ -9,7 +9,10 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 using Eigen::VectorXd;
@@ -151,49 +154,49 @@ void performChecks(RigidBodyTree<double>& model, KinematicsCache<double>& cache,
 }
 
 int main() {
-  std::unique_ptr<RigidBodyTree<double>> model(new RigidBodyTree<double>(
-      "examples/Atlas/urdf/atlas_minimal_contact.urdf"));
-  if (model == nullptr) {
-    cerr << "ERROR: Failed to load model" << endl;
-  }
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
+      drake::multibody::joints::kRollPitchYaw, tree.get());
+
   CheckSettings settings;
 
   default_random_engine generator;
-  VectorXd q = model->getRandomConfiguration(generator);
-  VectorXd v = VectorXd::Random(model->get_num_velocities());
+  VectorXd q = tree->getRandomConfiguration(generator);
+  VectorXd v = VectorXd::Random(tree->get_num_velocities());
 
   // check before calling doKinematics
   {
-    KinematicsCache<double> cache(model->bodies);
+    auto cache = tree->CreateKinematicsCache();
     settings.expect_error_on_configuration_methods = true;
     settings.expect_error_on_velocity_methods = true;
     settings.expect_error_on_jdot_times_v_methods = true;
-    performChecks(*model, cache, settings);
+    performChecks(*tree, cache, settings);
   }
 
   // q only, no gradients
   {
-    KinematicsCache<double> cache = model->doKinematics(q);
+    KinematicsCache<double> cache = tree->doKinematics(q);
     settings.expect_error_on_configuration_methods = false;
-    performChecks(*model, cache, settings);
+    performChecks(*tree, cache, settings);
   }
 
   // q and v, no gradients, no jdot_times_v
   {
-    KinematicsCache<double> cache = model->doKinematics(q, v, false);
+    KinematicsCache<double> cache = tree->doKinematics(q, v, false);
     settings.expect_error_on_jdot_times_v_methods = true;
     settings.expect_error_on_configuration_methods = false;
     settings.expect_error_on_velocity_methods = false;
-    performChecks(*model, cache, settings);
+    performChecks(*tree, cache, settings);
   }
 
   // q and v, no gradients, with jdot_times_v
   {
-    KinematicsCache<double> cache = model->doKinematics(q, v, true);
+    KinematicsCache<double> cache = tree->doKinematics(q, v, true);
     settings.expect_error_on_configuration_methods = false;
     settings.expect_error_on_velocity_methods = false;
     settings.expect_error_on_jdot_times_v_methods = false;
-    performChecks(*model, cache, settings);
+    performChecks(*tree, cache, settings);
   }
 
   return 0;

@@ -19,14 +19,22 @@ class Model {
 
   virtual ~Model() {}
 
-  /** \brief Add a collision element to this model.
-  * \param element the collision element to be added to this model
-  * \return an ElementId that uniquely identifies the added element within
-  * this model
-  */
-  virtual ElementId addElement(const Element& element);
+  /** Adds a collision element to this model.
+   *
+   * This concept is frequently referred to as "registering" the collision
+   * element.  This is the process by which a fully-realized Drake collision
+   * element is fed to a specific DrakeCollision::Model implementation.  Prior
+   * to this *registration*, the collision model knows nothing of the collision
+   * element.  After registration, it owns the collision element.
+   *
+   * @param element the element to add.
+   * @returns a pointer to the added element.
+   * @throws a runtime_error if there was a problem (e.g., duplicate element id,
+   * error configuring collision  model, etc.)
+   */
+  Element* AddElement(std::unique_ptr<Element> element);
 
-  bool removeElement(const ElementId& id);
+  bool removeElement(ElementId id);
 
   /** \brief Get a read-only pointer to a collision element in this model.
    * \param id an ElementId corresponding to the desired collision element
@@ -45,6 +53,7 @@ class Model {
    **/
   virtual Element* FindMutableElement(ElementId id);
 
+  // TODO(SeanCurtis-TRI): Why is this virtual?
   virtual void getTerrainContactPoints(
       ElementId id0,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -62,7 +71,7 @@ class Model {
    * transform
    */
   virtual bool updateElementWorldTransform(
-      const ElementId id, const Eigen::Isometry3d& T_local_to_world);
+      ElementId id, const Eigen::Isometry3d& T_local_to_world);
 
   /** \brief Compute the points of closest approach between all eligible
    * pairs of collision elements drawn from a specified set of elements
@@ -76,7 +85,7 @@ class Model {
    * \return true if this method ran successfully
    */
   virtual bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
-                                     const bool use_margins,
+                                     bool use_margins,
                                      std::vector<PointPair>&
                                      closest_points) = 0;
 
@@ -92,7 +101,7 @@ class Model {
    @returns `true` if this method ran successfully and `false` otherwise.
    **/
   virtual bool ComputeMaximumDepthCollisionPoints(
-      const bool use_margins,
+      bool use_margins,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       std::vector<PointPair>& closest_points) = 0;
 
@@ -108,7 +117,7 @@ class Model {
    * \return true if this method ran successfully
    */
   virtual bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                                     const bool use_margins,
+                                     bool use_margins,
                                      std::vector<PointPair>&
                                      closest_points) = 0;
 
@@ -240,6 +249,13 @@ class Model {
   friend std::ostream& operator<<(std::ostream&, const Model&);
 
  protected:
+  /** Allows sub-classes to do additional processing on elements added to the
+   * collision model.  This is called each time Model::AddElement is called.
+   * @param element the element that has been added.
+   * @throws std::runtime_error if there was a problem processing the element.
+   */
+  virtual void DoAddElement(const Element& element) {}
+
   // Protected member variables are forbidden by the style guide.
   // Please do not add new references to this member.  Instead, use
   // the accessors.

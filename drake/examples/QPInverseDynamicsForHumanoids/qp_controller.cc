@@ -107,9 +107,9 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
 
   // The order of insertion is important, the rest of the program assumes this
   // layout.
-  prog_ = solvers::MathematicalProgram();
-  vd_ = prog_.AddContinuousVariables(num_vd_, "vd");
-  basis_ = prog_.AddContinuousVariables(num_basis_, "basis");
+  prog_.reset(new solvers::MathematicalProgram());
+  vd_ = prog_->NewContinuousVariables(num_vd_, "vd");
+  basis_ = prog_->NewContinuousVariables(num_basis_, "basis");
 
   // Allocate various matrices and vectors.
   stacked_contact_jacobians_.resize(3 * num_point_force_, num_vd_);
@@ -129,8 +129,8 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   // Dynamics
   eq_dynamics_ =
       prog_
-          .AddLinearEqualityConstraint(MatrixX<double>::Zero(6, num_variable_),
-                                       Vector6<double>::Zero(), {vd_, basis_})
+          ->AddLinearEqualityConstraint(MatrixX<double>::Zero(6, num_variable_),
+                                        Vector6<double>::Zero(), {vd_, basis_})
           .get();
   eq_dynamics_->set_description("dynamics eq");
 
@@ -142,12 +142,12 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
     const ContactInformation& contact = contact_pair.second;
     if (contact.acceleration_constraint_type() == ConstraintType::Soft) {
       cost_contacts_[cost_ctr++] =
-          prog_.AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd_}).get();
+          prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd_}).get();
     } else {
       // Either hard or soft because contact constraint can't be skipped.
       eq_contacts_[eq_ctr++] =
           prog_
-              .AddLinearEqualityConstraint(
+              ->AddLinearEqualityConstraint(
                   MatrixX<double>::Zero(3 * contact.num_contact_points(),
                                         num_vd_),
                   VectorX<double>::Zero(3 * contact.num_contact_points()),
@@ -162,7 +162,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   if (num_basis_) {
     ineq_contact_wrench_ =
         prog_
-            .AddLinearConstraint(
+            ->AddLinearConstraint(
                 MatrixX<double>::Identity(num_basis_, num_basis_),
                 VectorX<double>::Zero(num_basis_),
                 VectorX<double>::Constant(num_basis_,
@@ -177,7 +177,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   if (num_torque_) {
     ineq_torque_limit_ =
         prog_
-            .AddLinearConstraint(
+            ->AddLinearConstraint(
                 MatrixX<double>::Zero(num_torque_, num_variable_),
                 VectorX<double>::Zero(num_torque_),
                 VectorX<double>::Zero(num_torque_), {vd_, basis_})
@@ -190,7 +190,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   // Set up cost / eq constraints for centroidal momentum change.
   if (num_cen_mom_dot_as_cost_) {
     cost_cen_mom_dot_ =
-        prog_.AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd_}).get();
+        prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd_}).get();
     cost_cen_mom_dot_->set_description("centroidal momentum change cost");
   } else {
     cost_cen_mom_dot_ = nullptr;
@@ -199,7 +199,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
     // Dimension doesn't matter for equality constraints,
     // will be reset when updating the constraint.
     eq_cen_mom_dot_ =
-        prog_.AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, {vd_})
+        prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, {vd_})
             .get();
     eq_cen_mom_dot_->set_description("centroidal momentum change eq");
   } else {
@@ -213,20 +213,20 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   eq_body_motion_.resize(num_body_motion_as_eq_);
   for (int i = 0; i < num_body_motion_as_cost_; ++i) {
     cost_body_motion_[i] =
-        prog_.AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd_}).get();
+        prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd_}).get();
   }
   for (int i = 0; i < num_body_motion_as_eq_; ++i) {
     // Dimension doesn't matter for equality constraints,
     // will be reset when updating the constraint.
     eq_body_motion_[i] =
-        prog_.AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, {vd_})
+        prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, {vd_})
             .get();
   }
 
   // Set up cost / eq constraints for dof motion.
   if (num_dof_motion_as_cost_ > 0) {
     cost_dof_motion_ =
-        prog_.AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd_}).get();
+        prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd_}).get();
     cost_dof_motion_->set_description("vd cost");
   } else {
     cost_dof_motion_ = nullptr;
@@ -235,7 +235,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
     // Dimension doesn't matter for equality constraints,
     // will be reset when updating the constraint.
     eq_dof_motion_ =
-        prog_.AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, {vd_})
+        prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, {vd_})
             .get();
     eq_dof_motion_->set_description("vd eq");
   } else {
@@ -245,8 +245,8 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   // Regularize basis.
   cost_basis_reg_ =
       prog_
-          .AddQuadraticCost(MatrixX<double>::Identity(num_basis_, num_basis_),
-                            VectorX<double>::Zero(num_basis_), {basis_})
+          ->AddQuadraticCost(MatrixX<double>::Identity(num_basis_, num_basis_),
+                             VectorX<double>::Zero(num_basis_), {basis_})
           .get();
   cost_basis_reg_->set_description("basis reg cost");
   basis_reg_mat_ = MatrixX<double>::Identity(num_basis_, num_basis_);
@@ -337,12 +337,13 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // tau = M_l * vd + h_l - (J^T * basis)_l * Beta
   // tau = torque_linear_ * X + torque_constant_
   for (int i = 0; i < num_vd_; ++i) {
-    torque_linear_.block(0, vd_(i).index(), num_torque_, 1) =
+    torque_linear_.block(0, prog_->FindDecisionVariableIndex(vd_(i)),
+                         num_torque_, 1) =
         rs.M().bottomRows(num_torque_).col(i);
   }
   for (int i = 0; i < num_basis_; ++i) {
-    torque_linear_.block(0, basis_(i).index(), num_torque_, 1) =
-        -JB_.bottomRows(num_torque_).col(i);
+    torque_linear_.block(0, prog_->FindDecisionVariableIndex(basis_(i)),
+                         num_torque_, 1) = -JB_.bottomRows(num_torque_).col(i);
   }
   torque_constant_ = rs.bias_term().tail(num_torque_);
 
@@ -350,10 +351,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // Equality constraints:
   // Equations of motion part, 6 rows
   for (int i = 0; i < num_vd_; ++i) {
-    dynamics_linear_.block(0, vd_(i).index(), 6, 1) = rs.M().topRows(6).col(i);
+    dynamics_linear_.block(0, prog_->FindDecisionVariableIndex(vd_(i)), 6, 1) =
+        rs.M().topRows(6).col(i);
   }
   for (int i = 0; i < num_basis_; ++i) {
-    dynamics_linear_.block(0, basis_(i).index(), 6, 1) = -JB_.topRows(6).col(i);
+    dynamics_linear_.block(0, prog_->FindDecisionVariableIndex(basis_(i)), 6,
+                           1) = -JB_.topRows(6).col(i);
   }
   dynamics_constant_ = -rs.bias_term().head<6>();
   eq_dynamics_->UpdateConstraint(dynamics_linear_, dynamics_constant_);
@@ -515,18 +518,18 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     std::cerr << "Solver not available.\n";
     return -1;
   }
-  solvers::SolutionResult result = solver_.Solve(prog_);
+  solvers::SolutionResult result = solver_.Solve(*(prog_.get()));
   if (result != solvers::SolutionResult::kSolutionFound) {
     std::cerr << "solution not found\n";
     return -1;
   }
-  solution_ = prog_.GetSolutionVectorValues();
+  solution_ = prog_->GetSolutionVectorValues();
 
   ////////////////////////////////////////////////////////////////////
   // Examples of inspecting each cost / eq, ineq term
-  auto costs = prog_.quadratic_costs();
-  auto eqs = prog_.linear_equality_constraints();
-  auto ineqs = prog_.linear_constraints();
+  auto costs = prog_->quadratic_costs();
+  auto eqs = prog_->linear_equality_constraints();
+  auto ineqs = prog_->linear_constraints();
 
   output->mutable_costs().resize(costs.size());
   int ctr = 0;
@@ -535,22 +538,21 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // TODO(hongkai.dai): Solve() function in GurobiSolver or MosekSolver
   // should return the cost directly.
   for (auto& cost_b : costs) {
-    solvers::Constraint* cost = cost_b.constraint().get();
-    cost->Eval(cost_b.VariableListToVectorXd(), tmp_vec);
-    output->mutable_cost(ctr).first = cost->get_description();
+    tmp_vec = prog_->EvalBindingAtSolution(cost_b);
+    output->mutable_cost(ctr).first = cost_b.constraint()->get_description();
     output->mutable_cost(ctr).second = tmp_vec(0);
     ctr++;
   }
 
   for (auto& eq_b : eqs) {
-    solvers::LinearEqualityConstraint* eq = eq_b.constraint().get();
-    DRAKE_ASSERT((eq->A() * eq_b.VariableListToVectorXd() - eq->lower_bound())
-                     .isZero(1e-6));
+    DRAKE_ASSERT(
+        (prog_->EvalBindingAtSolution(eq_b) - eq_b.constraint()->lower_bound())
+            .isZero(1e-6));
   }
 
   for (auto& ineq_b : ineqs) {
     solvers::LinearConstraint* ineq = ineq_b.constraint().get();
-    tmp_vec = ineq->A() * ineq_b.VariableListToVectorXd();
+    tmp_vec = prog_->EvalBindingAtSolution(ineq_b);
     for (int i = 0; i < tmp_vec.size(); ++i) {
       DRAKE_ASSERT(tmp_vec[i] >= ineq->lower_bound()[i] - 1e-6 &&
                    tmp_vec[i] <= ineq->upper_bound()[i] + 1e-6);
@@ -562,12 +564,10 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // Compute resulting contact wrenches.
   int basis_index = 0;
   int point_force_index = 0;
-  const auto& basis_value =
-      drake::solvers::GetSolution(basis_);
+  const auto& basis_value = prog_->GetSolution(basis_);
   point_forces_ = basis_to_force_matrix_ * basis_value;
 
-  const auto& vd_value =
-      drake::solvers::GetSolution(vd_);
+  const auto& vd_value = prog_->GetSolution(vd_);
   for (const auto& contact_pair : input.contact_information()) {
     const ContactInformation& contact = contact_pair.second;
     if (output->mutable_resolved_contacts().find(contact.body_name()) ==
@@ -609,15 +609,14 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     }
 
     // Compute acceleration for contact body.
-    MatrixX<double> J_body = GetTaskSpaceJacobian(
-        rs.robot(), rs.cache(), resolved_contact.body(),
-        Vector3<double>::Zero());
+    MatrixX<double> J_body =
+        GetTaskSpaceJacobian(rs.robot(), rs.cache(), resolved_contact.body(),
+                             Vector3<double>::Zero());
     Vector6<double> Jdv_body = GetTaskSpaceJacobianDotTimesV(
         rs.robot(), rs.cache(), resolved_contact.body(),
         Vector3<double>::Zero());
 
-    resolved_contact.mutable_body_acceleration() =
-        J_body * vd_value + Jdv_body;
+    resolved_contact.mutable_body_acceleration() = J_body * vd_value + Jdv_body;
   }
 
   // Set output accelerations.
@@ -765,8 +764,8 @@ std::ostream& operator<<(std::ostream& out, const ResolvedContact& contact) {
     out << contact.point_forces().col(j).transpose() << std::endl;
   out << "equivalent wrench in world aligned body frame: "
       << contact.equivalent_wrench().transpose() << std::endl;
-  out << "body acceleration: "
-      << contact.body_acceleration().transpose() << std::endl;
+  out << "body acceleration: " << contact.body_acceleration().transpose()
+      << std::endl;
   out << "reference point in world frame: " << contact.reference_point()
       << std::endl;
   return out;

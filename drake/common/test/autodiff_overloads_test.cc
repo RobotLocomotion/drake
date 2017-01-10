@@ -1,5 +1,7 @@
 #include "drake/common/autodiff_overloads.h"
 
+#include <type_traits>
+
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
 
@@ -8,6 +10,7 @@
 #include "drake/common/cond.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/extract_double.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -16,7 +19,19 @@ namespace drake {
 namespace common {
 namespace {
 
-// Tests correctness of isinf
+// Tests ExtractDoubleOrThrow on autodiff.
+GTEST_TEST(AutodiffOverloadsTest, ExtractDouble) {
+  // On autodiff.
+  Eigen::AutoDiffScalar<Eigen::Vector2d> x;
+  x.value() = 1.0;
+  EXPECT_EQ(ExtractDoubleOrThrow(x), 1.0);
+
+  // A double still works, too.
+  double y = 1.0;
+  EXPECT_EQ(ExtractDoubleOrThrow(y), 1.0);
+}
+
+// Tests correctness of isinf.
 GTEST_TEST(AutodiffOverloadsTest, IsInf) {
   Eigen::AutoDiffScalar<Eigen::Vector2d> x;
   x.value() = 1.0 / 0.0;
@@ -25,7 +40,7 @@ GTEST_TEST(AutodiffOverloadsTest, IsInf) {
   EXPECT_EQ(isinf(x), false);
 }
 
-// Tests correctness of isnan
+// Tests correctness of isnan.
 GTEST_TEST(AutodiffOverloadsTest, IsNaN) {
   Eigen::AutoDiffScalar<Eigen::Vector2d> x;
   x.value() = 0.0 / 0.0;
@@ -290,6 +305,43 @@ GTEST_TEST(AutodiffOverloadsTest, Cond9) {
   EXPECT_DOUBLE_EQ(z.value(), x.value() * x.value());
   EXPECT_DOUBLE_EQ(z.derivatives()[0], 2 * 2 * x.value());
   EXPECT_DOUBLE_EQ(z.derivatives()[1], 2 * x.value());
+}
+
+// This is just a sanity check to make sure that Eigen::NumTraits::Literal
+// is the right way to dig through an AutoDiffScalar to find the underlying
+// floating point type. If this compiles it succeeds.
+GTEST_TEST(AutodiffOverloadsTest, CheckEigenLiteral) {
+  using DerTyped = Eigen::Vector2d;
+  using DerTypef = Eigen::Vector2f;
+  using Td = Eigen::AutoDiffScalar<DerTyped>;
+  using Tf = Eigen::AutoDiffScalar<DerTypef>;
+
+  using Literald = typename Eigen::NumTraits<Td>::Literal;
+  using Literalf = typename Eigen::NumTraits<Tf>::Literal;
+
+  static_assert(std::is_same<Literald, double>::value &&
+                    std::is_same<Literalf, float>::value,
+                "Eigen::NumTraits<T>::Literal didn't behave as expected.");
+}
+
+GTEST_TEST(AutodiffOverloadsTest, DummyValueX) {
+  using T = Eigen::AutoDiffScalar<Eigen::VectorXd>;
+  const T dummy_xd = dummy_value<T>::get();
+  const double value = dummy_xd.value();
+  EXPECT_TRUE(std::isnan(value));
+  const Eigen::VectorXd derivatives = dummy_xd.derivatives();
+  EXPECT_EQ(derivatives.rows(), 0);
+}
+
+GTEST_TEST(AutodiffOverloadsTest, DummyValue2) {
+  using T = Eigen::AutoDiffScalar<Eigen::Vector2d>;
+  const T dummy_2d = dummy_value<T>::get();
+  const double value = dummy_2d.value();
+  EXPECT_TRUE(std::isnan(value));
+  const Eigen::Vector2d derivatives = dummy_2d.derivatives();
+  EXPECT_EQ(derivatives.rows(), 2);
+  EXPECT_TRUE(std::isnan(derivatives(0)));
+  EXPECT_TRUE(std::isnan(derivatives(1)));
 }
 
 }  // namespace

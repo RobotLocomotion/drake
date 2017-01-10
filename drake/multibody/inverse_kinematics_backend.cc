@@ -1,5 +1,6 @@
 #include "drake/multibody/inverse_kinematics_backend.h"
 
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
@@ -136,7 +137,7 @@ void AddQuasiStaticConstraint(
   }
   int num_vars = qsc->getNumWeights();
   drake::solvers::DecisionVariableVectorX qsc_vars =
-      prog->AddContinuousVariables(num_vars, "qsc");
+      prog->NewContinuousVariables(num_vars, "qsc");
   auto wrapper =
       std::make_shared<QuasiStaticConstraintWrapper>(qsc, kin_helper);
   prog->AddConstraint(wrapper, {vars, qsc_vars});
@@ -215,7 +216,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
     SetIKSolverOptions(ikoptions, &prog);
 
     drake::solvers::DecisionVariableVectorX vars =
-        prog.AddContinuousVariables(model->get_num_positions());
+        prog.NewContinuousVariables(model->get_num_positions());
 
     MatrixXd Q;
     ikoptions.getQ(Q);
@@ -284,7 +285,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
 
     SolutionResult result = prog.Solve();
     const VectorXd& vars_value =
-        drake::solvers::GetSolution(vars);
+        prog.GetSolution(vars);
     q_sol->col(t_index) = vars_value;
     info[t_index] = GetIKSolverInfo(prog, result);
   }

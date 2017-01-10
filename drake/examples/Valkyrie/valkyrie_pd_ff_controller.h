@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+
 #include "lcmtypes/bot_core/atlas_command_t.hpp"
 
 #include "drake/systems/framework/leaf_system.h"
@@ -14,9 +17,6 @@ class ValkyriePDAndFeedForwardController : public systems::LeafSystem<double> {
                          const VectorX<double>& nominal_torque,
                          const VectorX<double>& Kp, const VectorX<double>& Kd);
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override;
-
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override {
     std::unique_ptr<LeafSystemOutput<double>> output(
@@ -27,17 +27,20 @@ class ValkyriePDAndFeedForwardController : public systems::LeafSystem<double> {
     return std::move(output);
   }
 
-  inline const SystemPortDescriptor<double>& get_input_port_kinematics_result()
+  inline const InputPortDescriptor<double>& get_input_port_kinematics_result()
       const {
     return get_input_port(input_port_index_kinematics_result_);
   }
 
-  inline const SystemPortDescriptor<double>& get_output_port_atlas_command()
+  inline const OutputPortDescriptor<double>& get_output_port_atlas_command()
       const {
     return get_output_port(output_port_index_atlas_command_);
   }
 
  private:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override;
+
   const RigidBodyTree<double>& robot_;
   int input_port_index_kinematics_result_;
   int output_port_index_atlas_command_;

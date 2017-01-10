@@ -1,6 +1,8 @@
 #pragma once
 
+#include <memory>
 #include <string>
+#include <utility>
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/example_qp_input_for_valkyrie.h"
@@ -27,10 +29,8 @@ namespace qp_inverse_dynamics {
 class PlanEvalSystem : public systems::LeafSystem<double> {
  public:
   explicit PlanEvalSystem(const RigidBodyTree<double>& robot) : robot_(robot) {
-    input_port_index_humanoid_status_ =
-        DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
-    output_port_index_qp_input_ =
-        DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
+    input_port_index_humanoid_status_ = DeclareAbstractInputPort().get_index();
+    output_port_index_qp_input_ = DeclareAbstractOutputPort().get_index();
 
     set_name("plan_eval");
 
@@ -50,8 +50,8 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     Kd_joints_.head<6>().setZero();
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     // Input:
     const HumanoidStatus* robot_status = EvalInputValue<HumanoidStatus>(
         context, input_port_index_humanoid_status_);
@@ -114,7 +114,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   /**
    * @return Port for the input: HumanoidStatus.
    */
-  inline const SystemPortDescriptor<double>& get_input_port_humanoid_status()
+  inline const InputPortDescriptor<double>& get_input_port_humanoid_status()
       const {
     return get_input_port(input_port_index_humanoid_status_);
   }
@@ -122,7 +122,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   /**
    * @return Port for the output: QPInput.
    */
-  inline const SystemPortDescriptor<double>& get_output_port_qp_input() const {
+  inline const OutputPortDescriptor<double>& get_output_port_qp_input() const {
     return get_output_port(output_port_index_qp_input_);
   }
 

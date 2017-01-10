@@ -4,10 +4,10 @@
 
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
-#include "drake/systems/framework/primitives/adder.h"
-#include "drake/systems/framework/primitives/gain.h"
-#include "drake/systems/framework/primitives/integrator.h"
-#include "drake/systems/framework/primitives/pass_through.h"
+#include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/gain.h"
+#include "drake/systems/primitives/integrator.h"
+#include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
 namespace systems {
@@ -90,23 +90,19 @@ class PidController : public Diagram<T> {
   /// of the error signal when the derivative constant is non-zero.
   bool has_any_direct_feedthrough() const override;
 
-  /// Sets @p context to a default state in which the integral of the error
-  /// signal is zero.
-  void SetDefaultState(Context<T>* context) const;
-
   /// Sets the integral of the %PidController to @p value.
   /// @p value must be a column vector of the appropriate size.
   void set_integral_value(Context<T>* context,
                           const Eigen::Ref<const VectorX<T>>& value) const;
 
   /// Returns the input port to the error signal.
-  const SystemPortDescriptor<T>& get_error_port() const;
+  const InputPortDescriptor<T>& get_error_port() const;
 
   /// Returns the input port to the time derivative or rate of the error signal.
-  const SystemPortDescriptor<T>& get_error_derivative_port() const;
+  const InputPortDescriptor<T>& get_error_derivative_port() const;
 
   /// Returns the output port to the control output.
-  const SystemPortDescriptor<T>& get_control_output_port() const;
+  const OutputPortDescriptor<T>& get_control_output_port() const;
 
  private:
   Adder<T>* adder_ = nullptr;
