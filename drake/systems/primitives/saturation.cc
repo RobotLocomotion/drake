@@ -1,5 +1,7 @@
 #include "drake/systems/primitives/saturation.h"
 
+#include <algorithm>
+
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -20,7 +22,6 @@ Saturation<T>::Saturation(const Eigen::Ref<const VectorX<T>>& u_min,
   // Ensures that the lower limits are smaller than the upper limits.
   DRAKE_THROW_UNLESS((u_min_.array() <= u_max_.array()).all());
 
-
   // Input and outputs are of same dimension.
   input_port_index_ =
       this->DeclareInputPort(kVectorValued, vector_size).get_index();
@@ -31,9 +32,6 @@ Saturation<T>::Saturation(const Eigen::Ref<const VectorX<T>>& u_min,
 template <typename T>
 void Saturation<T>::DoCalcOutput(const Context<T>& context,
                                  SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
-  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
-
   // Evaluates the state output port.
   BasicVector<T>* output_vector =
       output->GetMutableVectorData(output_port_index_);
@@ -44,15 +42,12 @@ void Saturation<T>::DoCalcOutput(const Context<T>& context,
   DRAKE_DEMAND(input_vector);
   const auto& u = input_vector->get_value();
 
+  using std::min;
+  using std::max;
+
   // Loop through and set the saturation values.
   for (int i = 0; i < u_min_.size(); ++i) {
-    if (u[i] < u_min_[i]) {
-      y[i] = u_min_[i];
-    } else if (u[i] > u_max_[i]) {
-      y[i] = u_max_[i];
-    } else {
-      y[i] = u[i];
-    }
+    y[i] = min(max(u[i], u_min_[i]), u_max_[i]);
   }
 }
 
@@ -67,16 +62,16 @@ const OutputPortDescriptor<T>& Saturation<T>::get_output_port() const {
 }
 
 template <typename T>
-const T& Saturation<T>::get_u_max() const {
-  // Throws an error if the vector cannot be representable as a scalar.
-  DRAKE_THROW_UNLESS(u_max_.isConstant(u_max_[0]));
+const T& Saturation<T>::get_u_max_scalar() const {
+  // Throws an error if the vector cannot be represented as a scalar.
+  DRAKE_THROW_UNLESS(u_max_.size() == 1);
   return u_max_[0];
 }
 
 template <typename T>
-const T& Saturation<T>::get_u_min() const {
-  // Throws an error if the vector cannot be representable as a scalar.
-  DRAKE_THROW_UNLESS(u_min_.isConstant(u_min_[0]));
+const T& Saturation<T>::get_u_min_scalar() const {
+  // Throws an error if the vector cannot be represented as a scalar.
+  DRAKE_THROW_UNLESS(u_min_.size() == 1);
   return u_min_[0];
 }
 

@@ -22,12 +22,8 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in drakeSystemFramework.
-///
 /// Note that @f$ u_{min} @f$, and @f$ u_{max} @f$, and @f$ u @f$ are all
-/// vectors of same dimension, and the following condition holds along each
-/// dimension:
-/// @f[ u_{min} <=  u_{max} @f]
+/// vectors of same dimension, and the following condition holds elementwise.
 ///
 /// @ingroup primitive_systems
 template <typename T>
@@ -67,18 +63,21 @@ class Saturation : public LeafSystem<T> {
   /// Returns the lower limit `u_{min}` as a scalar value. Aborts if the lower
   /// limit cannot be represented by a single scalar value. This can occur if
   /// the lower limit is a vector containing more than one value.
-  const T& get_u_min() const;
+  const T& get_u_min_scalar() const;
 
   /// Returns the upper limit `u_{max}` as a scalar value. Aborts if the upper
   /// limit cannot be represented by a single scalar value. This can occur if
   /// the upper limit is a vector containing more than one value.
-  const T& get_u_max() const;
+  const T& get_u_max_scalar() const;
 
   /// Returns the lower limit `u_{min}` as a vector value.
-  const VectorX<T>& get_u_min_vector() const { return u_min_; }
+  const VectorX<T>& u_min() const { return u_min_; }
 
   /// Returns the upper limit `u_{max}` as a vector value.
-  const VectorX<T>& get_u_max_vector() const { return u_max_; }
+  const VectorX<T>& u_max() const { return u_max_; }
+
+  // TODO(naveenoid) : Add a witness function for capturing events when
+  // saturation limits are reached.
 
  protected:
   void DoCalcOutput(const Context<T>& context,

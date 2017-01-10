@@ -15,15 +15,15 @@ namespace {
 
 template <typename T>
 void TestSaturationSystem(const Saturation<T>& saturation_system,
-                          const VectorX<double>& input_vector,
-                          const VectorX<double>& expected_output) {
+                          const VectorX<T>& input_vector,
+                          const VectorX<T>& expected_output) {
   auto context = saturation_system.CreateDefaultContext();
 
   // Verifies that Saturation allocates no state variables in the context.
   EXPECT_EQ(context->get_continuous_state()->size(), 0);
   auto output = saturation_system.AllocateOutput(*context);
-  auto input = std::make_unique<BasicVector<double>>(
-      saturation_system.get_u_min_vector().size());
+  auto input = std::make_unique<BasicVector<T>>(
+      saturation_system.u_min().size());
 
   // Checks that the number of input ports in the Saturation system and the
   // Context are consistent.
@@ -41,35 +41,35 @@ void TestSaturationSystem(const Saturation<T>& saturation_system,
   // SystemOutput are consistent.
   ASSERT_EQ(output->get_num_ports(), 1);
   ASSERT_EQ(saturation_system.get_num_output_ports(), 1);
-  const BasicVector<double>* output_vector = output->get_vector_data(0);
+  const BasicVector<T>* output_vector = output->get_vector_data(0);
   ASSERT_NE(output_vector, nullptr);
   EXPECT_EQ(output_vector->get_value(), expected_output);
 }
 
 template <typename T>
 void TestSaturationSystem(const Saturation<T>& saturation_system,
-                          const double& input_scalar,
-                          const double& expected_scalar) {
-  TestSaturationSystem(saturation_system,
-                       Eigen::VectorXd::Constant(1, input_scalar),
-                       Eigen::VectorXd::Constant(1, expected_scalar));
+                          const T& input_scalar,
+                          const T& expected_scalar) {
+  TestSaturationSystem<T>(saturation_system,
+                       VectorX<T>::Constant(1, input_scalar),
+                          VectorX<T>::Constant(1, expected_scalar));
 }
 
-// Tests the ability to use doubles as the saturation limits.
-GTEST_TEST(SaturationTest, SaturationScalarTest) {
+template <typename T>
+void SaturationScalarTest() {
   // Tests for error thrown due to incorrectly initialized Saturation
   // (u_min > u_max).
   EXPECT_ANY_THROW(
-      std::make_unique<Saturation<double>>(1.0 /* u_min */, -0.9 /* u_max */));
+      std::make_unique<Saturation<T>>(1.0 /* u_min */, -0.9 /* u_max */));
 
   const double kUMin = -0.4;
   const double kUMax = 1.8;
   const auto saturation_system =
-      std::make_unique<Saturation<double>>(kUMin, kUMax);
+      std::make_unique<Saturation<T>>(kUMin, kUMax);
 
   // Checks the getters.
-  EXPECT_EQ(kUMin, saturation_system->get_u_min());
-  EXPECT_EQ(kUMax, saturation_system->get_u_max());
+  EXPECT_EQ(kUMin, saturation_system->get_u_min_scalar());
+  EXPECT_EQ(kUMax, saturation_system->get_u_max_scalar());
 
   const int kNumPoints = 20;
 
@@ -79,13 +79,13 @@ GTEST_TEST(SaturationTest, SaturationScalarTest) {
       kNumPoints /* size */, -2.5 /* lower limit */, 2.5 /* upper limit */);
 
   // Converts range of inputs into a vector of doubles.
-  std::vector<double> input_vector_range(input_eigen_vector_range.size());
-  Eigen::Map<Eigen::VectorXd>(input_vector_range.data(),
+  std::vector<T> input_vector_range(input_eigen_vector_range.size());
+  Eigen::Map<VectorX<T>>(input_vector_range.data(),
                               input_eigen_vector_range.rows()) =
       input_eigen_vector_range;
 
   for (int i = 0; i < kNumPoints; ++i) {
-    double expected = input_vector_range.at(i);
+    T expected = input_vector_range.at(i);
 
     if (expected < kUMin) {
       expected = kUMin;
@@ -93,29 +93,45 @@ GTEST_TEST(SaturationTest, SaturationScalarTest) {
       expected = kUMax;
     }
 
-    EXPECT_NO_THROW(TestSaturationSystem<double>(
+    EXPECT_NO_THROW(TestSaturationSystem<T>(
         *saturation_system, input_vector_range.at(i), expected));
   }
 }
 
-// Tests the ability to use vectors for the lower and upper saturation limits.
-GTEST_TEST(SaturationTest, SaturationVectorTest) {
+// Tests the ability to use Scalar doubles as the saturation limits.
+GTEST_TEST(SaturationTest, SaturationScalarDoubleTest) {
+  EXPECT_NO_FATAL_FAILURE(SaturationScalarTest<double>());
+}
+
+// Tests the ability to use Scalar AutoDiffXd as the saturation limits.
+GTEST_TEST(SaturationTest, SaturationScalarAutoDiffTest) {
+  EXPECT_NO_FATAL_FAILURE(SaturationScalarTest<AutoDiffXd>());
+}
+
+template <typename T>
+void SaturationVectorTest() {
   // Tests for error thrown due to incorrectly initialized Saturation. (u_min
   // and u_max have unequal lengths).
-  EXPECT_ANY_THROW(std::make_unique<Saturation<double>>(
-                   Vector3<double>(1.0, -4.5, -2.5) /* u_min */,
-                   Vector2<double>(3.0, 5.0) /* u_max */));
+  EXPECT_ANY_THROW(std::make_unique<Saturation<T>>(
+      Vector3<T>(1.0, -4.5, -2.5) /* u_min */,
+      Vector2<T>(3.0, 5.0) /* u_max */));
+
+  // Tests for error thrown due to incorrectly initialized Saturation. (u_min
+  // >= u_max along some or all dimensions).
+  EXPECT_ANY_THROW(std::make_unique<Saturation<T>>(
+      Vector3<T>(1.0, -4.5, -2.5) /* u_min */,
+      Vector3<T>(0.75, 5.0, 2.0) /* u_max */));
 
   // Arbitrary choice of limits for the test.
-  const Vector4<double> kUMin(1.0, 2.5, 3.3, 2.5);
-  const Vector4<double> kUMax(-0.3, 0.0, 1.3, -4.0);
+  const Vector4<T> kUMin(1.0, 2.5, 3.3, 2.5);
+  const Vector4<T> kUMax(-0.3, 0.0, 1.3, -4.0);
 
   const auto saturation_system =
-      std::make_unique<Saturation<double>>(kUMax, kUMin);
+      std::make_unique<Saturation<T>>(kUMax, kUMin);
 
   // Tests for error thrown due to calling the scalar getters.
-  EXPECT_ANY_THROW(saturation_system->get_u_max());
-  EXPECT_ANY_THROW(saturation_system->get_u_min());
+  EXPECT_ANY_THROW(saturation_system->get_u_max_scalar());
+  EXPECT_ANY_THROW(saturation_system->get_u_min_scalar());
 
   const int kNumPoints = 20;
 
@@ -131,7 +147,7 @@ GTEST_TEST(SaturationTest, SaturationVectorTest) {
           .transpose();
 
   for (int i = 0; i < kNumPoints; ++i) {
-    Vector4<double> expected = input_vector_range.col(i);
+    Vector4<T> expected = input_vector_range.col(i);
 
     for (int j = 0; j < 4; ++j) {
       if (expected[j] < kUMax[j]) {
@@ -141,9 +157,21 @@ GTEST_TEST(SaturationTest, SaturationVectorTest) {
       }
     }
 
-    EXPECT_NO_THROW(TestSaturationSystem<double>(
+    EXPECT_NO_THROW(TestSaturationSystem<T>(
         *saturation_system, input_vector_range.col(i), expected));
   }
+}
+
+// Tests the ability to use double vectors for the lower and upper
+// saturation limits.
+GTEST_TEST(SaturationTest, SaturationVectorDoubleTest) {
+  EXPECT_NO_FATAL_FAILURE(SaturationVectorTest<double>());
+}
+
+// Tests the ability to use AutoDiffXd vectors for the lower and upper
+// saturation limits.
+GTEST_TEST(SaturationTest, SaturationVectorAutoDiffTest) {
+  EXPECT_NO_FATAL_FAILURE(SaturationVectorTest<AutoDiffXd>());
 }
 
 }  // namespace
