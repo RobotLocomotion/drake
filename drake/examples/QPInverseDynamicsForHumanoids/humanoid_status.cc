@@ -26,19 +26,14 @@ void HumanoidStatus::Update() {
                                          drake::TwistVector<double>> f_ext;
   bias_term_ = robot_->dynamicsBiasTerm(cache_, f_ext);
 
-  // Defines the model instance ID of the humanoid robot.
-  const int kModelInstanceId{0};
-
   // com
-  com_ = robot_->centerOfMass(cache_, {kModelInstanceId});
-  J_com_ = robot_->centerOfMassJacobian(cache_, {kModelInstanceId});
-  Jdot_times_v_com_ = robot_->centerOfMassJacobianDotTimesV(cache_,
-      {kModelInstanceId});
+  com_ = robot_->centerOfMass(cache_);
+  J_com_ = robot_->centerOfMassJacobian(cache_);
+  Jdot_times_v_com_ = robot_->centerOfMassJacobianDotTimesV(cache_);
   comd_ = J_com_ * velocity_;
-  centroidal_momentum_matrix_ = robot_->centroidalMomentumMatrix(cache_,
-      {kModelInstanceId});
+  centroidal_momentum_matrix_ = robot_->centroidalMomentumMatrix(cache_);
   centroidal_momentum_matrix_dot_times_v_ =
-      robot_->centroidalMomentumMatrixDotTimesV(cache_, {kModelInstanceId});
+      robot_->centroidalMomentumMatrixDotTimesV(cache_);
   centroidal_momentum_ = centroidal_momentum_matrix_ * velocity_;
 
   // body parts
