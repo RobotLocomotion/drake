@@ -751,6 +751,12 @@ class System {
 
   /// You must override this method to calculate values for output ports into
   /// the supplied argument, based on the contents of the given Context.
+  ///
+  /// This method is called from the public non-virtual CalcOutput()
+  /// which will already have error-checked the parameters so you don't have to.
+  /// In particular, implementations may assume that the given Context is valid
+  /// for this %System; that the `output` pointer is non-null, and that
+  /// the given `output` argument is valid for this %System.
   virtual void DoCalcOutput(const Context<T>& context,
                             SystemOutput<T>* output) const = 0;
 
@@ -786,8 +792,16 @@ class System {
   virtual void DoPublish(const Context<T>& context) const {}
 
   /// Updates the @p discrete_state on sample events.
-  /// Override it, along with DoCalcNextUpdateTime, if your System has any
+  /// Override it, along with DoCalcNextUpdateTime(), if your System has any
   /// discrete variables.
+  ///
+  /// This method is called from the public non-virtual
+  /// CalcDiscreteVariableUpdates() which will already have error-checked the
+  /// parameters so you don't have to. In particular, implementations may assume
+  /// that the given Context is valid for this %System; that the
+  /// `discrete_state` pointer is non-null, and that the given `discrete_state`
+  /// argument has the same constituent structure as was produced by
+  /// AllocateDiscreteVariables().
   virtual void DoCalcDiscreteVariableUpdates(
       const Context<T>& context, DiscreteState<T>* discrete_state) const {}
 
@@ -796,8 +810,21 @@ class System {
   /// abstract variables or generally make changes to state that cannot be
   /// made using CalcDiscreteVariableUpdates() or via integration of continuous
   /// variables.
-  /// @param[in,out] state the current state of the system on input; the desired
-  ///            state of the system on return.
+  ///
+  /// This method is called from the public non-virtual
+  /// CalcUnrestrictedUpdate() which will already have error-checked the
+  /// parameters so you don't have to. In particular, implementations may assume
+  /// that the given Context is valid for this %System; that the `state` pointer
+  /// is non-null, and that the given `state` argument has the same constituent
+  /// structure as the state in `context`.
+  ///
+  /// @param[in]     context The "before" state that is to be used to calculate
+  ///                        the returned state update.
+  /// @param[in,out] state   The current state of the system on input; the
+  ///                        desired state of the system on return.
+  // TODO(sherm1) Shouldn't require preloading of the output state; better to
+  //              note just the changes since usually only a small subset will
+  //              be changed by this method.
   virtual void DoCalcUnrestrictedUpdate(const Context<T>& context,
                                         State<T>* state) const {}
 
@@ -821,7 +848,8 @@ class System {
   /// Override this method for physical systems to calculate the potential
   /// energy currently stored in the configuration provided in the given
   /// Context. The default implementation returns 0 which is correct for
-  /// non-physical systems.
+  /// non-physical systems. You may assume that `context` has already
+  /// been validated before it is passed to you here.
   virtual T DoCalcPotentialEnergy(const Context<T>& context) const {
     return T(0);
   }
@@ -829,7 +857,8 @@ class System {
   /// Override this method for physical systems to calculate the kinetic
   /// energy currently present in the motion provided in the given
   /// Context. The default implementation returns 0 which is correct for
-  /// non-physical systems.
+  /// non-physical systems. You may assume that `context` has already
+  /// been validated before it is passed to you here.
   virtual T DoCalcKineticEnergy(const Context<T>& context) const {
     return T(0);
   }
@@ -840,6 +869,8 @@ class System {
   /// is *decreasing*. Power is in watts (J/s).
   ///
   /// By default, returns zero. Continuous, physical systems should override.
+  /// You may assume that `context` has already been validated before it is
+  /// passed to you here.
   virtual T DoCalcConservativePower(const Context<T>& context) const {
     return T(0);
   }
@@ -854,6 +885,8 @@ class System {
   /// systems; others return zero.
   ///
   /// By default, returns zero. Continuous, physical systems should override.
+  /// You may assume that `context` has already been validated before it is
+  /// passed to you here.
   virtual T DoCalcNonConservativePower(const Context<T>& context) const {
     return T(0);
   }
