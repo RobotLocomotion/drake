@@ -1,8 +1,13 @@
 #include "drake/multibody/collision/collision_filter.h"
 
+#include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/joints/drake_joints.h"
 
 #include "gtest/gtest.h"
+
+#include <memory>
 
 // This tests the implementation of the `collision_filter_group` information
 // contained in a URDF file.  The full implementation spans multiple drake
@@ -12,6 +17,11 @@
 namespace DrakeCollision {
 namespace test {
 namespace  {
+
+using Eigen::Isometry3d;
+using std::make_unique;
+using std::unique_ptr;
+using std::move;
 
 // Confirms that adding two groups with the same name causes a *meaningful*
 // message to be thrown.
@@ -290,8 +300,148 @@ GTEST_TEST(CollisionFilterGroupCompile, ClearFlushesData) {
 
 //---------------------------------------------------------------------------
 
-GTEST_TEST(CollisionFilterGroupRBT, test) {
+// This tests the functionality of the DrakeCollision::Element::CanCollideWith
+// method.  Assuming the bit masks have been set properly, this confirms they
+// are interpreted properly.
+GTEST_TEST(CollisionFilterGroupElement, ElementCanCollideWithTest) {
+  DrakeCollision::Element e1;
+  DrakeCollision::Element e2;
+
+  // Case 1: By default, elements belong to no group and ignore nothing.
+  EXPECT_EQ(e1.get_collision_filter_group(), NONE_MASK);
+  EXPECT_EQ(e1.get_collision_filter_ignores(), NONE_MAKS);
+
+  // Case 2: Two elements, belonging to the same group (which does *not*
+  // ignore itself) are considered a viable collision pair.
+  e1.set_collision_filter(1, 0);
+  e2.set_collision_filter(1, 0);
+  EXPECT_TRUE(e1.CanCollideWith(&e2));
+  EXPECT_TRUE(e2.CanCollideWith(&e1));
+
+  // Case 3: Two elements, belonging to different groups which don't ignore each
+  // other are considered a viable collision pair.
+  e1.set_collision_filter(1, 0);
+  e2.set_collision_filter(2, 0);
+  EXPECT_TRUE(e1.CanCollideWith(&e2));
+  EXPECT_TRUE(e2.CanCollideWith(&e1));
+
+  // Case 4: Two elements, belonging to different groups, where one group
+  // ignores the other are *not* considered a viable collision pair.
+  e1.set_collision_filter(1, 2);
+  e2.set_collision_filter(2, 0);
+  EXPECT_FALSE(e1.CanCollideWith(&e2));
+  EXPECT_FALSE(e2.CanCollideWith(&e1));
+
+  // Case 5: Two elements, belonging to different groups, which ignore each
+  // other, are *not* considered a viable collision pair.
+  e1.set_collision_filter(1, 2);
+  e2.set_collision_filter(2, 1);
+  EXPECT_FALSE(e1.CanCollideWith(&e2));
+  EXPECT_FALSE(e2.CanCollideWith(&e1));
 }
+//---------------------------------------------------------------------------
+
+// Tests RBT
+//  - Adding a body with registered collision elements throws an exception.
+//  - Adding a body to an undefined group throws a meaningful exception
+//  - Collision elements receive the appropriate bitmasks
+//  -
+
+// This test confirms that when a body is being added to an non-existant
+// group through the RigidBodyTree interface, that a meaningful exception is
+// thrown.
+GTEST_TEST(CollisionFilterGroupRBT, AddBodyToUndefinedGroup) {
+  RigidBodyTree<double> tree;
+  RigidBody<double>* body_ref;
+  unique_ptr<RigidBody<double>> body(body_ref = new RigidBody<double>());
+  body->set_name("body");
+  body->set_model_instance_id(27);
+  tree.add_rigid_body(move(body));
+  std::string group_name = "no-such-group";
+  try {
+    tree.AddCollisionFilterGroupMember(group_name,
+                                       body_ref->get_name(),
+                                       body_ref->get_model_instance_id());
+    GTEST_FAIL();
+  } catch (std::runtime_error& e) {
+    std::string expected_msg =
+        "Attempting to add a link to an undefined collision filter group: "
+        "Adding " +
+            body_ref->get_name() + " to " + group_name + ".";
+    EXPECT_EQ(e.what(), expected_msg);
+  }
+}
+
+// This test confirms that the collision filter groups are set correctly
+// on the collision elements.
+GTEST_TEST(CollisionFilterGroupRBT, CollisionElementSetFilters) {
+  // Builds the tree.
+  RigidBodyTree<double> tree;
+
+  RigidBody<double>* body1;
+  unique_ptr<RigidBody<double>> body(body1 = new RigidBody<double>());
+  body->set_name("body1");
+  body->set_model_instance_id(27);
+  unique_ptr<DrakeJoint> unique_joint(new FixedJoint("joint1", Isometry3d::Identity()));
+  body->setJoint(move(unique_joint));
+  body->set_parent(&tree.world());
+  tree.add_rigid_body(move(body));
+
+  RigidBody<double>* body2;
+  body.reset(body2 = new RigidBody<double>());
+  body->set_name("body2");
+  body->set_model_instance_id(27);
+  unique_joint.reset(new FixedJoint("joint2", Isometry3d::Identity()));
+  body->setJoint(move(unique_joint));
+  body->set_parent(&tree.world());
+  tree.add_rigid_body(move(body));
+
+  // Adds collision elements.
+  Element element(DrakeShapes::Sphere(1.0));
+  tree.addCollisionElement(element, *body1, "");
+  tree.addCollisionElement(element, *body2, "");
+
+  // Sets up collision filter groups.
+  std::string group_name1 = "test-group1";
+  std::string group_name2 = "test-group2";
+  tree.DefineCollisionFilterGroup(group_name1);
+  tree.AddCollisionFilterGroupMember(group_name1,
+                                     body1->get_name(),
+                                     body1->get_model_instance_id());
+  tree.AddCollisionFilterIgnoreTarget(group_name1, group_name2);
+  tree.DefineCollisionFilterGroup(group_name2);
+  tree.AddCollisionFilterGroupMember(group_name2,
+                                     body2->get_name(),
+                                     body2->get_model_instance_id());
+
+  tree.compile();
+  // Tests the state of the collision filters.
+  bitmask expected_group, expected_ignore;
+  expected_group.reset();
+  expected_group.set(0);
+  expected_ignore.reset();
+  expected_ignore.set(1);
+  for (auto itr = body1->collision_elements_begin();
+       itr != body1->collision_elements_end();
+       ++itr) {
+
+    EXPECT_EQ((*itr)->get_collision_filter_group(), expected_group);
+    EXPECT_EQ((*itr)->get_collision_filter_ignores(), expected_ignore);
+  }
+
+  expected_group.reset();
+  expected_group.set(1);
+  expected_ignore.reset();
+  for (auto itr = body2->collision_elements_begin();
+       itr != body2->collision_elements_end();
+       ++itr) {
+    EXPECT_EQ((*itr)->get_collision_filter_group(), expected_group);
+    EXPECT_EQ((*itr)->get_collision_filter_ignores(), expected_ignore);
+  }
+}
+
+// Test parser
+//  -
 }  // namespace
 }  // namespace test
 }  // namespace DrakeCollision

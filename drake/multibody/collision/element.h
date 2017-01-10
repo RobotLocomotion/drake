@@ -132,8 +132,16 @@ class Element : public DrakeShapes::Element {
 
   /** Sets the collision filter state of the element: the groups to which this
    * element belongs and the groups that it should ignore. */
-  void set_collision_filter(const DrakeCollision::bitmask &group,
-                            const DrakeCollision::bitmask &ignores);
+  void set_collision_filter(const bitmask &group,
+                            const bitmask &ignores);
+
+  const bitmask& get_collision_filter_group() const {
+    return collision_filter_group_;
+  }
+
+  const bitmask& get_collision_filter_ignores() const {
+    return collision_filter_ignores_;
+  }
 
   /**
    * A toString method for this class.
