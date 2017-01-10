@@ -21,21 +21,37 @@ class InfiniteCircuitRoad;
 namespace automotive {
 
 /// An oracular simulated sensor for perceiving features of EndlessRoadCars
-/// with state expressed in LANE-space on an InfiniteCircuitRoad,
-/// i.e., a maliput road network that only has a single Lane and infinite
-/// longitudinal extent.
+/// with state expressed in LANE-space on an InfiniteCircuitRoad (a maliput
+/// road network that only has a single Lane and infinite longitudinal extent).
 ///
 /// (Elevation-above-road 'h' is implicitly zero, too.)
 ///
-/// state vector
-/// * planar LANE-space position:  (s, r)
-/// * planar isometric LANE-space velocity:  (sigma, rho)-dot
+/// For each car, the basic sensing performed is to determine:
+///  * the net (bumper-to-bumper) longitudinal distance, and
+///  * the differential longitudinal speed
+/// to the closest car ahead in the lane.  There are a couple of special
+/// enhancements as well:
+///  * Lanes that are merging into a car's current lane (within a horizon)
+///    are inspected as well, to allow a car to coordinate with any merging
+///    cars.
+///  * Intersections which are anticipated to be occupied by a crossing
+///    vehicle will be treated as blocked until clear.
+///
+/// The underlying algorithm is independent for each vehicle, in the sense
+/// that:
+///   Sensor-Output = F(State-of-Sensing-Car, State-of-All-Other-Cars)
+///                   for each Sensing-Car
+/// Even though there are no dependencies between sensor outputs (e.g.,
+/// explicitly mediated turntaking), this class computes the sensor-output for
+/// all cars at once for the sake of efficiency.
+///
+/// state vector:  none; stateless
 ///
 /// input vector:
-/// * Currently:  none (accelerations are just zero)
-/// * Later:  planar isometric LANE-space acceleration: (sigma, rho)-ddot
+/// * an EndlessRoadCarState port for each EndlessRoadCar serviced
 ///
-/// output vector: same as state vector
+/// output vector:
+/// * an EndlessRoadOracleOutput port for each EndlessRoadCar serviced
 ///
 /// @tparam T must support certain arithmetic operations.
 ///
@@ -48,6 +64,13 @@ namespace automotive {
 template <typename T>
 class EndlessRoadOracle : public systems::LeafSystem<T> {
  public:
+  /// Constructor.
+  ///
+  /// @param road  the InfiniteCircuitRoad on which the cars are driving,
+  ///              i.e., on which the EndlessRoadCarState is defined
+  /// @param num_cars  the number of EndlessRoadCars to service, which
+  ///                  determines the number of input and output ports in
+  ///                  this EndlessRoadOracle
   EndlessRoadOracle(const maliput::utility::InfiniteCircuitRoad* road,
                     const int num_cars);
 
@@ -64,13 +87,10 @@ class EndlessRoadOracle : public systems::LeafSystem<T> {
  private:
   void ImplCalcOutput(
       const std::vector<const EndlessRoadCarState<T>*>& car_inputs,
-      std::vector<EndlessRoadOracleOutput<T>*>& oracle_outputs) const;
+      const std::vector<EndlessRoadOracleOutput<T>*>& oracle_outputs) const;
 
   const maliput::utility::InfiniteCircuitRoad* road_;
   const int num_cars_;
-//XXX  // TODO(maddog)  Do we need to keep track of these here?
-//XXX  std::vector<systems::InputPortDescriptor<T>> inports_;
-//XXX  std::vector<systems::OutputPortDescriptor<T>> outports_;
 };
 
 }  // namespace automotive
