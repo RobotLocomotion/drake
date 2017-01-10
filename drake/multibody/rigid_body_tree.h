@@ -116,6 +116,12 @@ class RigidBodyTree {
 
   void addFrame(std::shared_ptr<RigidBodyFrame<T>> frame);
 
+  /**
+   * Returns a map from DOF position name to DOF index within the output vector
+   * of this RigidBodyTree.
+   *
+   * <b>WARNING:</b> There is a known bug in this method, see: #4697.
+   */
   std::map<std::string, int> computePositionNameToIndexMap() const;
 
   void surfaceTangents(
