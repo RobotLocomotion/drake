@@ -86,7 +86,7 @@ def _soft_failure_binary_repository_impl(repository_ctx):
     # target binary's basename (so "/path/to/tool" turns into label ":tool").
     # The sh_binary source code will be one of the two wrapper scripts above.
     BUILD = """
-    data = glob(["{symlink_basename}"]) or print("{warning}")
+    data = glob(["{symlink_basename}"]) or None
     src = "{wrapper_success_basename}" if data else "{wrapper_failure_basename}"
     sh_binary(
         name = "{basename}",
