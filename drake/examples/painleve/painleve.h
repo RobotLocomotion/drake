@@ -51,13 +51,13 @@ class Painleve : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* new_state) const;
 
-  /// Sets the acceleration (with respect to the positive y-axis) due to
-  /// gravity (i.e., this number should generally be negative).
-  void set_gravitational_acceleration(double g) { g_ = g; }
-
   /// Gets the acceleration (with respect to the positive y-axis) due to
   /// gravity (i.e., this number should generally be negative).
   double get_gravitational_acceleration() const { return g_; }
+
+  /// Sets the acceleration (with respect to the positive y-axis) due to
+  /// gravity (i.e., this number should generally be negative).
+  void set_gravitational_acceleration(double g) { g_ = g; }
 
   /// Gets the coefficient of dynamic (sliding) Coulomb friction.
   double get_mu_coulomb() const { return mu_; }
@@ -83,7 +83,12 @@ class Painleve : public systems::LeafSystem<T> {
   /// Sets the rod moment of inertia.
   void set_rod_moment_of_inertia(double J) { J_ = J; }
 
-  /// Checks whether the system is in an impacting configuration.
+  /// Checks whether the system is in an impacting state, meaning that the
+  /// relative velocity along the contact normal between the rod and the
+  /// halfspace is such that the rod will begin interpenetrating the halfspace
+  /// at any time Δt in the future (i.e., Δt > 0). If the context does not
+  /// correspond to a configuration where the rod and halfspace are contacting,
+  /// this method returns `false`.
   bool IsImpacting(const systems::Context<T>& context) const;
 
  protected:
