@@ -98,7 +98,7 @@ T CalculateQuaternionDtConstraintFromQuaternionDt(
  * @param quat  Quaternion e0, e1, e2, e3 that relates two right-handed
  *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
  * @param quatDt  time-derivative of `quat`, i.e., [e0', e1', e2', e3'].
- * @retval true if constraint is reasonably accurate, otherwise false.
+ * @returns true if constraint is reasonably accurate, otherwise false.
  *
  * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
  *   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
@@ -110,7 +110,7 @@ bool TestQuaternionDtConstraintFromQuaternionDt(
     const Eigen::Quaternion<T>& quat, const Vector4<T>& quatDt) {
 
   // For an accurate test, the quaternion should be reasonably accurate.
-  const double double_epsilon = Eigen::NumTraits<double>::epsilon();
+  const double double_epsilon = std::numeric_limits<double>::epsilon();
   const double quat_epsilon = abs(1.0 - quat.norm());
   const bool is_good_quat_norm = (quat_epsilon <= 800 * double_epsilon);
 
@@ -261,7 +261,7 @@ CalculateExactRotationalSolutionABInitiallyAligned(const double t,
  * @param t Current value of time.
  * @param quat_NB_initial Initial value of the quaternion (which should already
  *   be normalized) that relates Nx, Ny, Nz to Bx, By, Bz.
- *   Note: quat_NB_initial is analogous to the initial rotation matrix R_AB.
+ *   Note: quat_NB_initial is analogous to the initial rotation matrix R_NB.
  * @param w_NB_B_initial  B's initial angular velocity in N, expressed in B.
  * @returns Machine-precision values at time t are returned as defined below.
  *
@@ -292,7 +292,10 @@ std::tuple<Quaterniond, Vector4d, Vector3d, Vector3d>
   // matrices R_NA and R_AB to produce the quaternion characterizing R_NB.
   // In other words, account for quat_NB_initial (which is quat_NA) to calculate
   // the quaternion quat_NB that is analogous to the R_NB rotation matrix.
-  const Quaterniond quat_NB = quat_NB_initial * quat_AB;
+
+  // Define A basis as World-fixed basis aligned with B's initial orientation.
+  const Quaterniond& quat_NA = quat_NB_initial;
+  const Quaterniond quat_NB = quat_NA * quat_AB;
 
   // Analytical solution for time-derivative quaternion in B.
   const Vector4d quatDt = CalculateQuaternionDtFromAngularVelocityExpressedInB(
@@ -367,58 +370,18 @@ std::tuple<Vector3d, Vector3d, Vector3d>
   return returned_tuple;
 }
 
+
 //-----------------------------------------------------------------------------
-// Test Drake solution versus closed-form analytical solution.
-// GTEST_TEST: 1st arg is name of test, 2nd arg is name of sub-test.
-GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
-  // Create path to .urdf file containing mass/inertia and geometry properties.
-  const std::string urdf_name = "uniform_solid_cylinder.urdf";
-  const std::string urdf_dir = "/multibody/benchmarks/"
-      "cylinder_torque_free_analytical_solution/";
-  const std::string urdf_dir_file_name = GetDrakePath() + urdf_dir + urdf_name;
-
-  // Create a default RigidBodyTree constructor.
-  std::unique_ptr<RigidBodyTree<double>> tree =
-      std::make_unique<RigidBodyTree<double>>();
-
-  // Populate RigidBodyTree tree by providing path to .urdf file,
-  // second argument is enum FloatingBaseType that specifies the joint
-  // connecting the robot's base link to ground/world. enum values are:
-  // kFixed         welded to ground.
-  // kRollPitchYaw  translates x,y,z and rotates 3D (by SpaceXYZ Euler angles).
-  // kQuaternion    translates x,y,z and rotates 3D (by Euler parameters).
-  const drake::multibody::joints::FloatingBaseType joint_type =
-      drake::multibody::joints::kQuaternion;
-  std::shared_ptr<RigidBodyFrame<double>> weld_to_frame = nullptr;
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      urdf_dir_file_name, joint_type, weld_to_frame, tree.get());
-
-  // Create 4x1 matrix for normalized quaternion e0, e1, e2, e3 (defined below).
-  // Create 3x1 matrix for wx, wy, wz (defined below).
-  // Create 3x1 matrix for x, y, z (defined below).
-  // Create 3x1 matrix for vx, vy, vz (defined below -- not x', y', z').
-  const double theta_initial = 1.0 * M_PI;
-  const double e0_initial = cos(theta_initial/2);
-  const double e1_initial = sin(theta_initial/2) * 1.0;
-  const double e2_initial = sin(theta_initial/2) * 0.0;
-  const double e3_initial = sin(theta_initial/2) * 0.0;
-  Vector4d quat_NB_initial(e0_initial, e1_initial, e2_initial, e3_initial);
-  Vector3d w_NB_B_initial(2.0, 4.0, 6.0);
-  Vector3d xyz_initial(1.0, 2.0, 3.0);
-  Vector3d v_NBo_B_initial(4.0, 5.0, 6.0);
-
-  // Query drake for gravitational acceleration before moving tree.
-  // Note: a_grav is an improperly-named public member of tree class (BAD).
-  const Vector3d gravity = tree->a_grav.tail<3>();
-
-  // Create a RigidBodyPlant which takes ownership of tree.
-  // Note: unique_ptr helps ensure tree is only managed/deleted once.
-  drake::systems::RigidBodyPlant<double> rigid_body_plant(std::move(tree));
-
-  // Create a Context which stores state and extra calculations.
-  std::unique_ptr<systems::Context<double>> context =
-      rigid_body_plant.CreateDefaultContext();
-
+// Test Drake solution versus closed-form solution for specific initial value.
+void  TestDrakeSolutionForSpecificInitialValue(
+    const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
+    const Vector3d& gravity,
+    const Vector4d& quat_NB_initial,
+    const Vector3d& w_NB_B_initial,
+    const Vector3d& xyz_initial,
+    const Vector3d& v_NBo_B_initial,
+    const std::unique_ptr<systems::Context<double>>& context,
+    const std::unique_ptr<systems::ContinuousState<double>>& stateDt_drake) {
   // Get the state portion of the Context. State has weird/inconsistent order.
   // State for joints::kQuaternion   -- x,y,z, e0,e1,e2,e3, wx,wy,wz, vx,vy,vz.
   // State for joints::kRollPitchYaw -- x,y,z, q1,q2,q3, x',y',z', q1',q2',q3'.
@@ -444,26 +407,17 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // TODO(mitiguy) Update comment/code when GitHub issue #4398 is fixed.
   // TODO(mitiguy) kRollPitchYaw is documented here for my sanity/later use.
   // TODO(mitiguy) Confirm above comment about state kRollPitchYaw: x' or vx...?
-  systems::VectorBase<double>& state_drake =
-      *(context->get_mutable_continuous_state_vector());
 
   // Concatenate these 4 Eigen column matrices into one Eigen column matrix.
   // Note: The state has a weird order (see previous comment).
+  // Set state portion of Context from initial state.
   Eigen::Matrix<double, 13, 1> state_initial;
   state_initial << xyz_initial, quat_NB_initial,
                    w_NB_B_initial, v_NBo_B_initial;
-
-  // Set state portion of Context from initial state.
+  // Reserve sufficient room for state portion of Context.
+  systems::VectorBase<double>& state_drake =
+      *(context->get_mutable_continuous_state_vector());
   state_drake.SetFromVector(state_initial);
-
-  // Allocate space to hold time-derivative of state_drake.
-  std::unique_ptr<systems::ContinuousState<double>> stateDt_drake =
-      rigid_body_plant.AllocateTimeDerivatives();
-
-  // Even though there are no actuators here we have to create a zero-length
-  // actuator input port.
-  const int num_actuators = rigid_body_plant.get_num_actuators();
-  context->FixInputPort(0, VectorXd::Zero(num_actuators));
 
   // Evaluate the time-derivatives of the state.
   rigid_body_plant.CalcTimeDerivatives(*context, stateDt_drake.get());
@@ -508,7 +462,7 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // convert quaternions to rotation matrix and compare rotation matrices.
   // Initially, (time=0), these matrices should be close to machine-precision,
   // which is approximately 2.22E-16.
-  const double epsilon = Eigen::NumTraits<double>::epsilon();
+  const double epsilon = std::numeric_limits<double>::epsilon();
   const Eigen::Matrix3d R_NB_drake = math::quat2rotmat(quat_drake);
   const Eigen::Matrix3d R_NB_exact = math::quat2rotmat(quat_exact);
   EXPECT_TRUE(R_NB_drake.isApprox(R_NB_exact, 50 * epsilon));
@@ -545,13 +499,14 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
 #endif
 
   // Compare remaining drake and exact results.
-  EXPECT_TRUE(CompareMatrices(w_drake,           w_exact,   50 * epsilon));
-  EXPECT_TRUE(CompareMatrices(wDt_drake,       wDt_exact, 2000 * epsilon));
-  EXPECT_TRUE(CompareMatrices(xyz_drake,       xyz_exact,   50 * epsilon));
-  EXPECT_TRUE(CompareMatrices(xyzDt_drake,   xyzDt_exact,   50 * epsilon));
-  EXPECT_TRUE(CompareMatrices(xyzDDt_drake, xyzDDt_exact,   50 * epsilon));
-  EXPECT_TRUE(CompareMatrices(v_drake,           v_exact,   50 * epsilon));
-  EXPECT_TRUE(CompareMatrices(vDt_drake,       vDt_exact,   50 * epsilon));
+  const double epsilon_test = 50 * epsilon;
+  EXPECT_TRUE(CompareMatrices(w_drake,           w_exact,        epsilon_test));
+  EXPECT_TRUE(CompareMatrices(wDt_drake,       wDt_exact, 1600 * epsilon_test));
+  EXPECT_TRUE(CompareMatrices(xyz_drake,       xyz_exact,        epsilon_test));
+  EXPECT_TRUE(CompareMatrices(xyzDt_drake,   xyzDt_exact,        epsilon_test));
+  EXPECT_TRUE(CompareMatrices(xyzDDt_drake, xyzDDt_exact,   10 * epsilon_test));
+  EXPECT_TRUE(CompareMatrices(v_drake,           v_exact,        epsilon_test));
+  EXPECT_TRUE(CompareMatrices(vDt_drake,       vDt_exact,   10 * epsilon_test));
 
   // Two-step process to compare time-derivative of Drake quaternion with exact.
   // Since more than one time-derivative of a quaternion is associated with the
@@ -593,8 +548,8 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   std::cout << "\n\nv from map = \n" << v_map;
   std::cout << "\nv accurate (drake) = \n" << v_drake;
   std::cout << "\n--------------------------------------------------\n";
-  EXPECT_TRUE(CompareMatrices(w_map, w_exact, BadFix*10 * epsilon));
-  EXPECT_TRUE(CompareMatrices(v_map, v_drake, BadFix*10 * epsilon));
+  EXPECT_TRUE(CompareMatrices(w_map, w_exact, BadFix * epsilon));
+  EXPECT_TRUE(CompareMatrices(v_map, v_drake, BadFix * epsilon));
 #else
 
   // Form matrix of motion variables.
@@ -623,10 +578,99 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   std::cout << "\n\nquatDt from map = \n" << quatDt_map;
   std::cout << "\nquatDt exact = \n" << quatDt_exact;
   std::cout << "\n--------------------------------------------------\n";
-  EXPECT_TRUE(CompareMatrices(xyzDt_map,   xyzDt_exact, BadFix*10 * epsilon));
-  EXPECT_TRUE(CompareMatrices(quatDt_map, quatDt_exact, BadFix*10 * epsilon));
+  EXPECT_TRUE(CompareMatrices(xyzDt_map,   xyzDt_exact, BadFix * epsilon));
+  EXPECT_TRUE(CompareMatrices(quatDt_map, quatDt_exact, BadFix * epsilon));
 #endif
 #endif
+}
+
+
+//-----------------------------------------------------------------------------
+// Test Drake solution versus closed-form solution for various initial values.
+void  TestDrakeSolutionForVariousInitialValues(
+      const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
+      const Vector3d& gravity,
+      const std::unique_ptr<systems::Context<double>>& context,
+      const std::unique_ptr<systems::ContinuousState<double>>& stateDt_drake) {
+  // Create 3x1 matrix for wx, wy, wz (defined above).
+  // Create 3x1 matrix for x, y, z (defined above).
+  // Create 3x1 matrix for vx, vy, vz (defined above -- not x', y', z').
+  const Vector3d w_NB_B_initial(2.0, 4.0, 6.0);
+  const Vector3d xyz_initial(1.0, 2.0, 3.0);
+  const Vector3d v_NBo_B_initial(4.0, 5.0, 6.0);
+
+  // Create 4x1 matrix for normalized quaternion e0, e1, e2, e3 (defined above).
+  // Iterate through many initial values for quaternion.
+  // Since cylinder B is axis-symmetric for axis Bz, iterate on BodyXY rotation
+  // sequence with 0 <= thetaX <= 2*pi and 0 <= thetaY <= pi.
+  Vector4d quat_NB_initial;
+  for (double thetaX = 0; thetaX <= 2* M_PI; thetaX += 0.01*M_PI) {
+    for (double thetaY = 0; thetaY <= M_PI; thetaY += 0.2*M_PI) {
+      const Vector3<double> spaceXYZ_angles = {thetaX, thetaY, 0};
+      quat_NB_initial = math::rpy2quat(spaceXYZ_angles);
+
+      TestDrakeSolutionForSpecificInitialValue(rigid_body_plant,
+                                               gravity,
+                                               quat_NB_initial,
+                                               w_NB_B_initial,
+                                               xyz_initial,
+                                               v_NBo_B_initial,
+                                               context,
+                                               stateDt_drake);
+    }
+  }
+}
+
+
+//-----------------------------------------------------------------------------
+// Test Drake solution versus closed-form analytical solution.
+// GTEST_TEST: 1st arg is name of test, 2nd arg is name of sub-test.
+GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
+  // Create path to .urdf file containing mass/inertia and geometry properties.
+  const std::string urdf_name = "uniform_solid_cylinder.urdf";
+  const std::string urdf_dir = "/multibody/benchmarks/"
+      "cylinder_torque_free_analytical_solution/";
+  const std::string urdf_dir_file_name = GetDrakePath() + urdf_dir + urdf_name;
+
+  // Create a default RigidBodyTree constructor.
+  std::unique_ptr<RigidBodyTree<double>> tree =
+      std::make_unique<RigidBodyTree<double>>();
+
+  // Populate RigidBodyTree tree by providing path to .urdf file,
+  // second argument is enum FloatingBaseType that specifies the joint
+  // connecting the robot's base link to ground/world. enum values are:
+  // kFixed         welded to ground.
+  // kRollPitchYaw  translates x,y,z and rotates 3D (by SpaceXYZ Euler angles).
+  // kQuaternion    translates x,y,z and rotates 3D (by Euler parameters).
+  const drake::multibody::joints::FloatingBaseType joint_type =
+      drake::multibody::joints::kQuaternion;
+  std::shared_ptr<RigidBodyFrame<double>> weld_to_frame = nullptr;
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      urdf_dir_file_name, joint_type, weld_to_frame, tree.get());
+
+  // Query drake for gravitational acceleration before moving tree.
+  // Note: a_grav is an improperly-named public member of tree class (BAD).
+  const Vector3d gravity = tree->a_grav.tail<3>();
+
+  // Create a RigidBodyPlant which takes ownership of tree.
+  // Note: unique_ptr helps ensure tree is only managed/deleted once.
+  drake::systems::RigidBodyPlant<double> rigid_body_plant(std::move(tree));
+
+  // Create a Context which stores state and extra calculations.
+  std::unique_ptr<systems::Context<double>> context =
+      rigid_body_plant.CreateDefaultContext();
+
+  // Even though there are no actuators here we have to create a zero-length
+  // actuator input port.
+  const int num_actuators = rigid_body_plant.get_num_actuators();
+  context->FixInputPort(0, VectorXd::Zero(num_actuators));
+
+  // Allocate space to hold time-derivative of state_drake.
+  std::unique_ptr<systems::ContinuousState<double>> stateDt_drake =
+      rigid_body_plant.AllocateTimeDerivatives();
+
+  TestDrakeSolutionForVariousInitialValues(rigid_body_plant, gravity,
+                                           context, stateDt_drake);
 }
 
 }  // namespace cylinder_torque_free_analytical_solution
