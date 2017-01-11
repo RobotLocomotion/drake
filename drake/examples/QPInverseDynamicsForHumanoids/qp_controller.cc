@@ -10,9 +10,9 @@ const double QPController::kUpperBoundForContactBasis = 1000;
 
 void QPController::ResizeQP(const RigidBodyTree<double>& robot,
                             const QPInput& input) {
-  const std::map<std::string, ContactInformation>& all_contacts =
+  const std::unordered_map<std::string, ContactInformation>& all_contacts =
       input.contact_information();
-  const std::map<std::string, DesiredBodyMotion>& all_body_motions =
+  const std::unordered_map<std::string, DesiredBodyMotion>& all_body_motions =
       input.desired_body_motions();
   const DesiredDoFMotions& all_dof_motions = input.desired_dof_motions();
   const DesiredCentroidalMomentumDot& cen_mom_change =

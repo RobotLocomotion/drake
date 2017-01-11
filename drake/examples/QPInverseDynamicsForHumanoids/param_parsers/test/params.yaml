@@ -1,0 +1,60 @@
+ContactForceBasis:
+  weight: 1e-6
+
+Contacts:
+  default:
+    weight: 1e5
+    contact_points: [0, 0, 0]
+    Kd: 8
+    mu: 1
+    num_basis_per_contact_point: 3
+    normal: [0, 0, 1]
+
+  left_foot:
+    contact_points:
+      [[0.2, 0.05, -0.09],
+      [0.2, -0.05, -0.09],
+      [-0.05, -0.05, -0.09],
+      [-0.05, 0.05, -0.09]]
+    num_basis_per_contact_point: 5
+    weight: -1
+
+BodyMotions:
+  default:
+    Kp: 0
+    Kd: 0
+    weight: [1e-2]
+
+  left_foot:
+    Kp: 20
+    weight: [1, 1, 1, 1, 1, 2]
+
+  pelvis:
+    Kp: [20, 20, 20, 0, 0, 0]
+    Kd: [8, 8, 8, 0, 0, 0]
+    weight: [1, 1, 1, 0, 0, 0]
+
+DoFMotions:
+  default:
+    Kp: 0
+    Kd: 0
+    weight: 1e-2
+
+  floating_base:
+    Kd: [1, 2, 3, 4, 5, 6]
+    weight: 0
+
+  left_arm:
+    Kp: 10
+    Kd: 3
+    weight: -1
+
+  right_arm:
+    Kp: 20
+    Kd: 11
+    weight: 1
+
+CentroidalMomentum:
+  Kp: [0, 0, 0, 40, 40, 40]
+  Kd: [4, 4, 4, 12, 12, 12]
+  weight: [0, 0, 0, 10, 10, 10]

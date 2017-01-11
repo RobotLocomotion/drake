@@ -5,8 +5,6 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-// NOLINTNEXTLINE(whitespace/line_length)
-#include "drake/examples/QPInverseDynamicsForHumanoids/example_qp_input_for_valkyrie.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -32,7 +30,7 @@ void TestEigenVectorAndStdVector(const Eigen::MatrixBase<Derived>& eigvec,
 // size).
 template <typename Derived, typename Scalar, size_t Size>
 void TestEigenVectorAndCArray(const Eigen::MatrixBase<Derived>& eigvec,
-                              const Scalar(&array)[Size]) {
+                              const Scalar (&array)[Size]) {
   EXPECT_TRUE(eigvec.rows() == 1 || eigvec.cols() == 1);
   EXPECT_EQ(static_cast<size_t>(eigvec.size()), Size);
   for (size_t i = 0; i < Size; ++i) {
@@ -336,7 +334,37 @@ TEST_F(LcmUtilsTests, TestEncodeDecodeDesiredCentroidalMomentumDot) {
 // Test encoding and decoding of QPInput <-> lcmt_qp_input.
 TEST_F(LcmUtilsTests, TestEncodeDecodeQPInput) {
   HumanoidStatus tree_status(*tree_);
-  QPInput qp_input = MakeExampleQPInput(tree_status);
+  // Initialize QP input
+  QPInput qp_input(GetDoFNames(*tree_));
+  ContactInformation contact(*tree_->FindBody("leftFoot"), 3);
+  contact.mutable_contact_points() = Vector3<double>(1, 2, 3);
+  contact.mutable_mu() = 0.2;
+  contact.mutable_weight() = -1;
+  contact.mutable_acceleration_constraint_type() = ConstraintType::Hard;
+  contact.mutable_Kd() = 1;
+  contact.mutable_normal() = Vector3<double>(3, 2, 1).normalized();
+  qp_input.mutable_contact_information().emplace("leftFoot", contact);
+
+  DesiredBodyMotion pelv_motion(*tree_->FindBody("pelvis"));
+  pelv_motion.mutable_weights() << 1, 0, -1, 20, 0, -99;
+  pelv_motion.mutable_values() << 1, 2, 3, 4, 5, 6;
+  pelv_motion.SetAllConstraintTypesBasedOnWeights();
+  qp_input.mutable_desired_body_motions().emplace("pelvis", pelv_motion);
+
+  for (int i = 0; i < tree_->get_num_velocities(); ++i) {
+    qp_input.mutable_desired_dof_motions().mutable_weights()[i] = i - 10;
+    qp_input.mutable_desired_dof_motions().mutable_values()[i] = i;
+  }
+  qp_input.mutable_desired_dof_motions().SetAllConstraintTypesBasedOnWeights();
+
+  qp_input.mutable_desired_centroidal_momentum_dot().mutable_weights() << -1, 0,
+      1, 2, 3, 4;
+  qp_input.mutable_desired_centroidal_momentum_dot().mutable_values() << -3, -2,
+      -1, 0, 1, 2;
+  qp_input.mutable_desired_centroidal_momentum_dot()
+      .SetAllConstraintTypesBasedOnWeights();
+
+  qp_input.mutable_w_basis_reg() = 1e-3;
 
   // Test encode.
   lcmt_qp_input msg;
@@ -344,7 +372,7 @@ TEST_F(LcmUtilsTests, TestEncodeDecodeQPInput) {
   TestEncodeQPInput(qp_input, msg);
 
   // Test decode.
-  QPInput decoded_qp_input(*tree_);
+  QPInput decoded_qp_input;
   DecodeQPInput(*tree_, msg, &decoded_qp_input);
   EXPECT_EQ(qp_input, decoded_qp_input);
 }

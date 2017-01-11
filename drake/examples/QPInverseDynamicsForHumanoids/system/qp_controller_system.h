@@ -42,7 +42,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
     const lcmt_qp_input* qp_input_msg =
         EvalInputValue<lcmt_qp_input>(context, input_port_index_qp_input_);
 
-    QPInput qp_input(robot_);
+    QPInput qp_input;
     DecodeQPInput(robot_, *qp_input_msg, &qp_input);
 
     // Output:
@@ -61,7 +61,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
       const Context<double>& context) const override {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
-    QPOutput out(robot_);
+    QPOutput out(GetDoFNames(robot_));
     output->add_port(std::unique_ptr<AbstractValue>(new Value<QPOutput>(out)));
     return std::move(output);
   }
