@@ -283,6 +283,8 @@ template <class T>
 void Painleve<T>::SetVelocityDerivatives(const systems::Context<T>& context,
                                          systems::VectorBase<T>* const f,
                                          T fN, T fF, T xc, T yc) const {
+  using std::abs;
+
   // Get necessary state variables.
   const T x = context.get_continuous_state_vector().GetAtIndex(0);
   const T y = context.get_continuous_state_vector().GetAtIndex(1);
