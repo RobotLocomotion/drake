@@ -1,9 +1,11 @@
 #include "drake/multibody/collision/collision_filter.h"
 
+#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/joints/drake_joints.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/joints/drake_joints.h"
 
 #include "gtest/gtest.h"
 
@@ -12,13 +14,16 @@
 // This tests the implementation of the `collision_filter_group` information
 // contained in a URDF file.  The full implementation spans multiple drake
 // libraries.  These tests seek to validate all aspects of the collision
-// filter group functionality: from the underlying data structures, its
-// interaction with the RigidBodyTree and with parsing.
+// filter group functionality: from the underlying data structures, their
+// interactions with the RigidBodyTree, parsing, and in the collision detection
+// model.
 namespace DrakeCollision {
 namespace test {
-namespace  {
+namespace {
 
+using drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
 using Eigen::Isometry3d;
+using Eigen::VectorXd;
 using std::make_unique;
 using std::unique_ptr;
 using std::move;
@@ -33,8 +38,10 @@ GTEST_TEST(CollisionFilterGroupDefinition, DuplicateGroupNames) {
     manager.DefineCollisionFilterGroup(group_name);
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
-    std::string expected_msg = "Attempting to create duplicate collision "
-        "filter group: " + group_name;
+    std::string expected_msg =
+        "Attempting to create duplicate collision "
+        "filter group: " +
+        group_name;
     EXPECT_EQ(e.what(), expected_msg);
   }
 }
@@ -68,7 +75,8 @@ GTEST_TEST(CollisionFilterGroupDefinition, CollisionGroupOverflow) {
     manager.DefineCollisionFilterGroup("bad_group");
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
-    std::string expected_msg = "Requesting a collision filter group id when"
+    std::string expected_msg =
+        "Requesting a collision filter group id when"
         " there are no more available. Drake only supports " +
         std::to_string(MAX_NUM_COLLISION_FILTER_GROUPS) +
         " collision filter groups per RigidBodyTree instance.";
@@ -113,8 +121,8 @@ GTEST_TEST(CollisionFilterGroupDefinition, AddIgnoreGroupToUndefinedGroup) {
   } catch (std::runtime_error& e) {
     std::string expected_msg =
         "Attempting to add an ignored collision filter group to an undefined "
-            "collision filter group: Ignoring " +
-            group_name + " by " + group_name + ".";
+        "collision filter group: Ignoring " +
+        group_name + " by " + group_name + ".";
     EXPECT_EQ(e.what(), expected_msg);
   }
 }
@@ -207,8 +215,8 @@ GTEST_TEST(CollisionFilterGroupCompile, MultiGroupIgnoreSet) {
   manager.AddCollisionFilterGroupMember("group1", body);
   manager.CompileGroups();
   std::vector<int> ignore_union;
-  std::set_union(ignores0.begin(), ignores0.end(),
-                 ignores1.begin(), ignores1.end(),
+  std::set_union(ignores0.begin(), ignores0.end(), ignores1.begin(),
+                 ignores1.end(),
                  std::inserter(ignore_union, ignore_union.begin()));
   bitmask expected_ignores;
   for (auto i : ignore_union) {
@@ -309,7 +317,7 @@ GTEST_TEST(CollisionFilterGroupElement, ElementCanCollideWithTest) {
 
   // Case 1: By default, elements belong to no group and ignore nothing.
   EXPECT_EQ(e1.get_collision_filter_group(), NONE_MASK);
-  EXPECT_EQ(e1.get_collision_filter_ignores(), NONE_MAKS);
+  EXPECT_EQ(e1.get_collision_filter_ignores(), NONE_MASK);
 
   // Case 2: Two elements, belonging to the same group (which does *not*
   // ignore itself) are considered a viable collision pair.
@@ -339,13 +347,14 @@ GTEST_TEST(CollisionFilterGroupElement, ElementCanCollideWithTest) {
   EXPECT_FALSE(e1.CanCollideWith(&e2));
   EXPECT_FALSE(e2.CanCollideWith(&e1));
 }
+
 //---------------------------------------------------------------------------
 
 // Tests RBT
 //  - Adding a body with registered collision elements throws an exception.
-//  - Adding a body to an undefined group throws a meaningful exception
-//  - Collision elements receive the appropriate bitmasks
-//  -
+// TODO(SeanCurtis-TRI): Still to determine if I allow post-hoc editing. In
+// order to do so, I need to support modifications of the underlying model
+// (a la RBT::updateCollisionTransform.)
 
 // This test confirms that when a body is being added to an non-existant
 // group through the RigidBodyTree interface, that a meaningful exception is
@@ -359,15 +368,14 @@ GTEST_TEST(CollisionFilterGroupRBT, AddBodyToUndefinedGroup) {
   tree.add_rigid_body(move(body));
   std::string group_name = "no-such-group";
   try {
-    tree.AddCollisionFilterGroupMember(group_name,
-                                       body_ref->get_name(),
+    tree.AddCollisionFilterGroupMember(group_name, body_ref->get_name(),
                                        body_ref->get_model_instance_id());
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
     std::string expected_msg =
         "Attempting to add a link to an undefined collision filter group: "
         "Adding " +
-            body_ref->get_name() + " to " + group_name + ".";
+        body_ref->get_name() + " to " + group_name + ".";
     EXPECT_EQ(e.what(), expected_msg);
   }
 }
@@ -382,7 +390,8 @@ GTEST_TEST(CollisionFilterGroupRBT, CollisionElementSetFilters) {
   unique_ptr<RigidBody<double>> body(body1 = new RigidBody<double>());
   body->set_name("body1");
   body->set_model_instance_id(27);
-  unique_ptr<DrakeJoint> unique_joint(new FixedJoint("joint1", Isometry3d::Identity()));
+  unique_ptr<DrakeJoint> unique_joint(
+      new FixedJoint("joint1", Isometry3d::Identity()));
   body->setJoint(move(unique_joint));
   body->set_parent(&tree.world());
   tree.add_rigid_body(move(body));
@@ -405,13 +414,11 @@ GTEST_TEST(CollisionFilterGroupRBT, CollisionElementSetFilters) {
   std::string group_name1 = "test-group1";
   std::string group_name2 = "test-group2";
   tree.DefineCollisionFilterGroup(group_name1);
-  tree.AddCollisionFilterGroupMember(group_name1,
-                                     body1->get_name(),
+  tree.AddCollisionFilterGroupMember(group_name1, body1->get_name(),
                                      body1->get_model_instance_id());
   tree.AddCollisionFilterIgnoreTarget(group_name1, group_name2);
   tree.DefineCollisionFilterGroup(group_name2);
-  tree.AddCollisionFilterGroupMember(group_name2,
-                                     body2->get_name(),
+  tree.AddCollisionFilterGroupMember(group_name2, body2->get_name(),
                                      body2->get_model_instance_id());
 
   tree.compile();
@@ -422,9 +429,7 @@ GTEST_TEST(CollisionFilterGroupRBT, CollisionElementSetFilters) {
   expected_ignore.reset();
   expected_ignore.set(1);
   for (auto itr = body1->collision_elements_begin();
-       itr != body1->collision_elements_end();
-       ++itr) {
-
+       itr != body1->collision_elements_end(); ++itr) {
     EXPECT_EQ((*itr)->get_collision_filter_group(), expected_group);
     EXPECT_EQ((*itr)->get_collision_filter_ignores(), expected_ignore);
   }
@@ -433,15 +438,57 @@ GTEST_TEST(CollisionFilterGroupRBT, CollisionElementSetFilters) {
   expected_group.set(1);
   expected_ignore.reset();
   for (auto itr = body2->collision_elements_begin();
-       itr != body2->collision_elements_end();
-       ++itr) {
+       itr != body2->collision_elements_end(); ++itr) {
     EXPECT_EQ((*itr)->get_collision_filter_group(), expected_group);
     EXPECT_EQ((*itr)->get_collision_filter_ignores(), expected_ignore);
   }
 }
 
-// Test parser
-//  -
+//---------------------------------------------------------------------------
+
+// Parses a URDF file with an inherent geometric collision which is filtered
+// out using a single collision filter group with multiple members (which
+// ignores itself.)
+GTEST_TEST(CollisionFilterGroupURDF, ParseMultiMemberTest) {
+  RigidBodyTree<double> tree;
+  AddModelInstanceFromUrdfFileToWorld(
+      drake::GetDrakePath() +
+          "/multibody/collision/test/"
+          "collision_filter_group_test_multi_member.urdf",
+      drake::multibody::joints::kRollPitchYaw, &tree);
+  Eigen::Matrix<double, 16, 1> state;
+  state << 0, 0, 0, 0, 0, 0, 0, 0,  // x_0, rpy_0, joint12, joint23
+      0, 0, 0, 0, 0, 0, 0, 0;  // x_dot_0, omega_0, joint12_dot, joint23_dot
+
+  VectorXd q = state.topRows(8);
+  VectorXd v = state.bottomRows(8);
+  auto kinematics_cache = tree.doKinematics(q, v);
+  std::vector<PointPair> pairs =
+      tree.ComputeMaximumDepthCollisionPoints(kinematics_cache, false);
+  EXPECT_EQ(pairs.size(), 0u);
+}
+
+// Parses a URDF file with an inherent geometric collision which is filtered
+// out using one collision filter group which ignores multiple other collision
+// filter groups (each with a body in it).
+GTEST_TEST(CollisionFilterGroupURDF, ParseMultiIgnoreTest) {
+  RigidBodyTree<double> tree;
+  AddModelInstanceFromUrdfFileToWorld(
+      drake::GetDrakePath() +
+          "/multibody/collision/test/"
+          "collision_filter_group_test_multi_ignore.urdf",
+      drake::multibody::joints::kRollPitchYaw, &tree);
+  Eigen::Matrix<double, 16, 1> state;
+  state << 0, 0, 0, 0, 0, 0, 0, 0,  // x_0, rpy_0, joint12, joint23
+      0, 0, 0, 0, 0, 0, 0, 0;  // x_dot_0, omega_0, joint12_dot, joint23_dot
+
+  VectorXd q = state.topRows(8);
+  VectorXd v = state.bottomRows(8);
+  auto kinematics_cache = tree.doKinematics(q, v);
+  std::vector<PointPair> pairs =
+      tree.ComputeMaximumDepthCollisionPoints(kinematics_cache, false);
+  EXPECT_EQ(pairs.size(), 0u);
+}
 }  // namespace
 }  // namespace test
 }  // namespace DrakeCollision
