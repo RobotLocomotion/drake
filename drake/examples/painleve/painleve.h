@@ -40,6 +40,7 @@ class Painleve : public systems::LeafSystem<T> {
   Painleve();
 
   /// Models impact using an inelastic impact model with friction.
+  /// @p new_state is set to the output of the impact model on return.
   void HandleImpact(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* new_state) const;
@@ -98,10 +99,10 @@ class Painleve : public systems::LeafSystem<T> {
   Vector2<T> CalcStickingImpactImpulse(const systems::Context<T>& context)
     const;
   Vector2<T> CalcFConeImpactImpulse(const systems::Context<T>& context) const;
-  void DoCalcTimeDerivativesTwoContact(const systems::Context<T>& context,
+  void CalcTimeDerivativesTwoContact(const systems::Context<T>& context,
                                        systems::ContinuousState<T>* derivatives)
                                          const;
-  void DoCalcTimeDerivativesOneContactNoSliding(
+  void CalcTimeDerivativesOneContactNoSliding(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const;
   void SetVelocityDerivatives(const systems::Context<T>& context,
