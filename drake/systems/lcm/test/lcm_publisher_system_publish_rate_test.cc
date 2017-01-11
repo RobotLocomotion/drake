@@ -33,10 +33,6 @@ GTEST_TEST(LcmPublisherSystemPublishRateTest, TestGetSetPeriod) {
       LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name, &lcm);
   ASSERT_NE(dut.get(), nullptr);
 
-  // TODO(liang.fok) Restore this once #4746 is resolved.
-  // EXPECT_EQ(dut->get_publish_period(),
-  //           std::numeric_limits<double>::infinity());
-
   unique_ptr<Context<double>> context = dut->AllocateContext();
   UpdateActions<double> update_actions;
 

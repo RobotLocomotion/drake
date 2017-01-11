@@ -15,9 +15,7 @@ namespace systems {
 namespace lcm {
 
 /**
- * Publishes an LCM message containing information from its input port. The
- * default behavior of this system is to publish at every major simulation
- * timestep. To tune the publishing period, use set_publish_period().
+ * Publishes an LCM message containing information from its input port.
  */
 class LcmPublisherSystem : public LeafSystem<double> {
  public:
@@ -41,9 +39,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
 
   /**
    * A constructor for an %LcmPublisherSystem that takes LCM message objects on
-   * its sole abstract-valued input port and publishes at every major timestep
-   * of the simulation. The LCM message type is determined by the provided
-   * `serializer`.
+   * its sole abstract-valued input port. The LCM message type is determined by
+   * the provided `serializer`.
    *
    * @param[in] channel The LCM channel on which to publish.
    *
@@ -59,9 +56,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
 
   /**
    * A constructor for an %LcmPublisherSystem that takes vector data on its sole
-   * vector-valued input port and publishes at every major timestep of the
-   * simulaton.  The vector data is mapped to message content by the provided
-   * `translator`.
+   * vector-valued input port. The vector data is mapped to message content by
+   * the provided `translator`.
    *
    * @param[in] channel The LCM channel on which to publish.
    *
@@ -78,9 +74,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
 
   /**
    * Constructor that returns a publisher System that takes vector data on
-   * its sole vector-valued input port and publishes at every major timestep of
-   * the simulation. The vector data are mapped to message contents by the
-   * `translator` found in the provided `translator_dictionary`.
+   * its sole vector-valued input port. The vector data are mapped to message
+   * contents by the `translator` found in the provided `translator_dictionary`.
    *
    * @param[in] channel The LCM channel on which to publish.
    *
@@ -109,12 +104,13 @@ class LcmPublisherSystem : public LeafSystem<double> {
   /// major timestep of the simulation.
   void set_publish_period(double period);
 
-  // TODO(liang.fok) Restore this method once #4746 is addressed.
+  // TODO(liang.fok) Update this to use a LeafSystem accessor method once #4746
+  // is addressed.
   /// Returns the publishing period of this system. The publishing period is the
   /// amount of simulation time that elapses between successive publish
   /// operations. A value of infinity means this system publishes at every major
   /// timestep of the simulation.
-  // double get_publish_period() const { return period_; }
+  double get_publish_period() const;
 
   /// Returns the default name for a system that publishes @p channel.
   static std::string make_name(const std::string& channel);
