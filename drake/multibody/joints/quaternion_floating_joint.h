@@ -70,27 +70,22 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
    * Computes a matrix that transforms the time derivative of generalized 
    * configuration to generalized velocity _for given configuration @p q_.
    * @param q the 7-dimensional generalized configuration (see warning below)
-   * @warning It is assumed that the first three values of generalized
-   *          configuration are position (x,y,z; measured as the offset from
-   *          the global frame) and the next four values are unit quaternion
-   *          orientation (ew, ex, ey, ez). It is assumed that the first three
-   *          values of generalized velocity are angular velocity (ωx, ωy, ωz;
-   *          (expressed in the body frame of the parent link) and the second
-   *          three values are linear velocity (dx/dt, dy/dt, dz/dt; expressed
-   *          in a frame attached to the parent body frame but aligned with
-   *          the global frame).
+   * @warning The first three values of generalized configuration are positional
+   *          and the next four values are a quaternion orientation (ew, ex, ey,
+   *          ez). The first three values of generalized velocity are angular
+   *          velocity (ωx, ωy, ωz) and the second three values are linear
+   *          velocity (dx/dt, dy/dt, dz/dt). The particular frames associated
+   *          with generalized coordinates and generalized velocities are
+   *          described further immediately below.
    * @param[out] qdot_to_v a nv × nq sized matrix, where nv is the dimension of
    *        generalized velocities (6) and nq is the dimension of generalized
    *        coordinates (7), that converts time derivatives of generalized
    *        coordinates to generalized velocities _for given configuration
-   *        @p q_. The linear components of velocity will be transformed
-   *        from a frame attached to the parent body frame but aligned with the
-   *        global frame to the parent body frame. The time derivatives of
-   *        the quaternion values will be transformed to angular velocities in
-   *        the parent body frame. Note that the vector part of the quaternion
-   *        (ex ey ez) is identical in both the global and body frames (see
-   *        [Nikravesh 1988, p. 160), but the quaternion itself transforms
-   *        orientations from the parent body frame to the global frame.
+   *        @p q_. The linear components of velocity will be rotated from some
+   *        frame N to a frame B, while the time derivatives of the quaternion
+   *        values (the quaternion values themselves are used to generate
+   *        matrices that rotate vectors from Frame B to Frame N) will be
+   *        transformed to angular velocities in Frame B.
    * @warning If the norm of the quaternion values used for orientation in @p q
    *          is equal to `s ≠ 1`, applying @p qdot_to_v to unscaled time
    *          derivatives of the quaternion values will yield an angular
@@ -121,11 +116,13 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     const auto& ey = quat[2];
     const auto& ez = quat[3];
 
-    // The first three rows correspond to the zero matrix (first three columns)
-    // and the "G" matrix (next four columns) in the equation:
-    // 2 G de/dt = ω, where e = [ ew ex ey ez ] are the values of the
-    // unit quaternion and ω is the angular velocity vector defined in the
-    // inboard link body frame. This equation was taken from:
+    // Assume that the quaternion orientation (e) gives a transformation matrix
+    // that rotates vectors from some frame B to some frame N. The upper right
+    // hand block of the transformation matrix represents
+    // the 2 L part of the relationship ω = 2 L de/dt, where
+    // e = [ ew ex ey ez ] are the quaternion values and ω is an angular
+    // velocity given in frame B. The relationship ω = 2 L de/dt and the
+    // matrix L was taken from:
     // - P. Nikravesh, Computer-Aided Analysis of Mechanical Systems. Prentice
     //     Hall, New Jersey, 1988. Equation 6.108.
     // NOTE: the torque-free, cylindrical solid unit test successfully detects
@@ -138,41 +135,35 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
                                              -ez,  ey, -ex,  ew;
     qdot_to_v.template block<3, 4>(0, 3) *= 2.;
 
-    // Next three rows correspond to rigid body translation. Transformation
-    // from linear velocity measured in a frame attached to the parent center of
-    // mass and aligned with the global frame to a frame attached to the parent
-    // center of mass and aligned with the parent body frame.
+    // Given the arbitrary frames B and N described above, the next three
+    // columns rotate linear velocities from frame N to frame B.
     auto R = drake::math::quat2rotmat(quat);
     qdot_to_v.template block<3, 3>(3, 0) = R.transpose();
     qdot_to_v.template block<3, 4>(3, 3).setZero();
   }
 
   /**
-   * Computes a matrix that transforms the generalized velocity to the time 
+   * Computes a matrix that transforms a generalized velocity to the time
    * derivative of generalized configuration to generalized velocity _for given 
    * configuration @p q_.
-   * @param q the 7-dimensional generalized configuration (see warning below)
-   * @warning The first three values of generalized configuration are position
-   *          (x,y,z; measured as the offset from the global frame and
-   *          expressed in the global frame) and the next four values are unit
-   *          quaternion orientation (ew, ex, ey, ez). The first three values of
-   *          generalized velocity are angular velocity (ωx, ωy, ωz; expressed
-   *          in the parent body frame) and the second three values are
-   *          linear velocity (dx/dt, dy/dt, dz/dt; expressed
-   *          in a frame attached to the parent center of mass but aligned with
-   *          the global frame).
+   * @param q the 7-dimensional generalized configuration (see warning below).
+   * @warning The first three values of generalized configuration are positional
+   *          and the next four values are a quaternion orientation (ew, ex, ey,
+   *          ez). The first three values of generalized velocity are angular
+   *          velocity (ωx, ωy, ωz) and the second three values are linear
+   *          velocity (dx/dt, dy/dt, dz/dt). The particular frames associated
+   *          with generalized coordinates and generalized velocities are
+   *          described further immediately below.
    * @param[out] v_to_qdot a nq × nv sized matrix, where nv is the dimension of
    *        generalized velocities (6) and nq is the dimension of generalized
    *        coordinates (7), that converts generalized velocities to time
    *        derivatives of generalized coordinates _for given configuration 
-   *        @p q_. The linear components of velocity will be transformed
-   *        from a frame attached to the parent body frame but aligned with the
-   *        global frame to the parent body frame. Angular velocities in
-   *        the parent body frame will be transformed to time derivatives of
-   *        the quaternion values. Note that the vector part of the quaternion
-   *        (ex ey ez) is identical in both the global and body frames (see
-   *        [Nikravesh 1988, p. 160), but the quaternion itself transforms
-   *        orientations from the parent body frame to the global frame.
+   *        @p q_. The linear components of velocity will be rotated
+   *        from some frame B to some frame N (i.e., linear velocities will
+   *        not change in length), while angular velocities in Frame
+   *        B will be transformed to time derivatives of the quaternion values
+   *        (the quaternion values themselves are used to generate matrices that
+   *        rotate vectors from Frame B to Frame N).
    * @warning If the norm of the quaternion values used for orientation in @p q
    *          is equal to `s ≠ 1`, applying @p v_to_qdot to unscaled angular
    *          velocity vector will yeild time derivatives of the quaternion
@@ -203,12 +194,14 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     const auto& ey = quat[2];
     const auto& ez = quat[3];
 
-    // The first three columns correspond to the zero matrix (top three rows)
-    // and the transpose of the "G" matrix used in qdot2v() (bottom four rows).
-    // Specifically, this matrix serves the function:
-    // de/dt = 1/2 G^T ω, where e = [ qw qx qy qz ] are the values of the
-    // unit quaternion and ω is the angular velocity vector defined in the
-    // parent link body frame. This matrix was taken from:
+    // Assume that the quaternion orientation (e) gives a transformation matrix
+    // that rotates vectors from some frame B to some frame N. The upper right
+    // hand block of the tranfsormation matrix corresponds to the transpose of
+    // the "L" matrix used in qdot2v(). Specifically, this matrix represents
+    // the 1/2 Lᵀ part of the relationship de/dt = 1/2 Lᵀω, where
+    // e = [ ew ex ey ez ] are the quaternion values and ω is an angular
+    // velocity given in frame B. The relationship de/dt = 1/2 Lᵀω and the
+    // matrix L was taken from:
     // - P. Nikravesh, Computer-Aided Analysis of Mechanical Systems. Prentice
     //     Hall, New Jersey, 1988. Equation 6.109.
     v_to_qdot.template block<4, 3>(0, 0).setZero();
@@ -218,10 +211,8 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
                                              -ey,  ex,  ew;
     v_to_qdot.template block<4, 3>(3, 0) *= 0.5;
 
-    // Next three columns correspond to rigid body translation. Transformation
-    // of linear velocity measured in a frame attached to the parent center of
-    // mass and aligned with the parent body frame to a frame attached to the
-    // parent center of mass and aligned with the global frame.
+    // Given the arbitrary frames B and N described above, the next three
+    // columns rotate linear velocities from frame B to frame N.
     v_to_qdot.template block<3, 3>(0, 3) = drake::math::quat2rotmat(quat);
     v_to_qdot.template block<4, 3>(3, 3).setZero();
   }
