@@ -70,6 +70,7 @@ namespace {
 const double kEnormousDistance = 1e12;
 const double kCarLength = 4.6;  // TODO(maddog) Get from somewhere else.
 
+// State of a car in the underlying source maliput::api::RoadGeometry.
 struct SourceState {
   SourceState() {}
 
@@ -81,12 +82,18 @@ struct SourceState {
 };
 
 
+// Element of a car's travel path in the source maliput::api::RoadGeometry.
 struct PathRecord {
   const maliput::api::Lane* lane{};
   bool is_reversed{};
 };
 
 
+// EndlessRoadCarState is defined with respect to an InfiniteCircuitRoad,
+// which is a wrapper of sorts around an underlying source RoadGeometry.
+// Here, we unwrap the state of each car:  we map its state into the
+// source RoadGeometry, and figure out its path in that road network
+// a little ways into the future.
 void UnwrapEndlessRoadCarState(
     const std::vector<const EndlessRoadCarState<double>*>& car_inputs,
     const maliput::utility::InfiniteCircuitRoad* road,
@@ -99,29 +106,36 @@ void UnwrapEndlessRoadCarState(
   for (size_t i = 0; i < car_inputs.size(); ++i) {
     const EndlessRoadCarState<double>* self = car_inputs[i];
 
-    const maliput::api::RoadPosition rp = road->lane()->ProjectToSourceRoad(
-        {self->s(), 0., 0.}).first;
+    const maliput::api::RoadPosition rp =
+        road->lane()->ProjectToSourceRoad({self->s(), self->r(), 0.}).first;
     // TODO(maddog)  Until we deal with cars going the wrong way.
     DRAKE_DEMAND(std::cos(self->heading()) >= 0.);
+    // TODO(maddog@tri.global)  Until we deal with cars going in reverse.
     DRAKE_DEMAND(self->speed() >= 0.);
     const double longitudinal_speed =
         self->speed() * std::cos(self->heading());
+    // Save self's state projected into the source road-network.
     source_states->emplace_back(rp, longitudinal_speed);
 
-    const double horizon_meters = longitudinal_speed * horizon_seconds;
-    // TODO(maddog)  Is this < constraint relevant anymore???
-    DRAKE_DEMAND(horizon_meters < (0.5 * road->lane()->cycle_length()));
+    // (No point in making the horizon longer than one lap around the circuit.)
+    const double horizon_meters = std::min(
+        longitudinal_speed * horizon_seconds,
+        road->lane()->cycle_length());
     DRAKE_DEMAND(horizon_meters >= 0.);
-    const double circuit_s0 = road->lane()->circuit_s(self->s());
 
-    paths->emplace_back();  // Add empty path-vector to paths vector.
+    const double circuit_s_now = road->lane()->circuit_s(self->s());
+    const double circuit_s_horizon = circuit_s_now + horizon_meters;
 
-    int path_index = road->lane()->GetPathIndex(circuit_s0);
+    // Add an empty path-vector to paths vector for self.
+    paths->emplace_back();
+    std::vector<PathRecord>* self_path = &(paths->back());
+
+    int path_index = road->lane()->GetPathIndex(circuit_s_now);
     maliput::utility::InfiniteCircuitRoad::Record path_record =
         road->lane()->path_record(path_index);
-    double circuit_s_in = circuit_s0;
-    while (circuit_s_in <= (circuit_s0 + horizon_meters)) {
-      (*paths)[i].push_back({path_record.lane, path_record.is_reversed});
+    double circuit_s_in = circuit_s_now;
+    while (circuit_s_in <= circuit_s_horizon) {
+      self_path->push_back({path_record.lane, path_record.is_reversed});
 
       // TODO(maddog) Index should decrement for s_dot < 0.
       if (++path_index >= road->lane()->num_path_records()) {
@@ -130,11 +144,11 @@ void UnwrapEndlessRoadCarState(
       path_record = road->lane()->path_record(path_index);
       circuit_s_in = path_record.start_circuit_s;
       // Handle wrap-around of "circuit s" values.
-      if (circuit_s_in < circuit_s0) {
+      if (circuit_s_in < circuit_s_now) {
         circuit_s_in += road->lane()->cycle_length();
       }
     }
-    DRAKE_DEMAND(!(*paths)[i].empty());
+    DRAKE_DEMAND(!self_path->empty());
   }
 }
 
@@ -488,34 +502,34 @@ void EndlessRoadOracle<T>::ImplCalcOutput(
   // We consider a couple of different varieties of "car/obstacle ahead":
   //  a) cars ahead on the InfiniteCircuitRoad circuit, which covers
   //      normal car-following behavior;
-  //  b) cars approaching from the right, on intersecting lanes in
-  //      the base RoadGeometry --- this hopefully produces some non-crashing
-  //      behavior at intersections;
-  // TODO(maddog)  Actually do part (c).
-  //  c) cars in a merging lane to the left --- this hopefully produces
-  //      so non-crashing merging behaviors.
+  //  b) cars approaching on intersecting lanes in the base RoadGeometry
+  //      (an anticipated collision makes the intersection be treated as
+  //      a stationary obstacle);
+  //  c) cars in a merging lane in the base RoadGeometry.
 
-
+  // TODO(maddog@tri.global)  A more principled approach would probably make
+  //                          this a multiple of the IDM headway parameter h,
+  //                          but this value works well in the demo.  (Too
+  //                          short and there will be collisions!)
   // Time to look-ahead for intersections.
-  // TODO(maddog) Should be a multiple of IDM headway h.
-  // TODO(maddog) Should have a distance component, too, as a multiple of
-  //              car lengths.
-  //////////  const T kEventHorizon{2.0};  // seconds
   const T kEventHorizon{10.0};  // seconds
 
+  // The InfiniteCircuitRoad serves two functions:
+  //  1) emulate a uni-modal continuous system for the vehicle control until
+  //     proper hybrid system support is available;
+  //  2) represent the path of the cars through the source road network.
   //
-  // We really only want the InfiniteCircuitRoad to serve two functions:
-  //  1)  until proper hybrid system support is available, emulate a
-  //      uni-modal continuous system for the vehicle control;
-  //  2)  represent the path of the cars through the road network.
   // Here we extract the RoadPositions of each car in the underlying
-  // source RoadGeometry, and we extract their paths.
+  // source RoadGeometry, and we extract their paths forward (within the
+  // given horizon).
   std::vector<SourceState> source_states;
   std::vector<std::vector<PathRecord>> paths;
   UnwrapEndlessRoadCarState(car_inputs, road_, kEventHorizon,
                             &source_states, &paths);
 
+  // Deal with (a).
   AssessLongitudinal(source_states, paths, oracle_outputs);
+  // Deal with (b) and (c).
   AssessIntersections(source_states, paths, oracle_outputs);
 }
 
