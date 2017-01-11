@@ -1,6 +1,5 @@
 #pragma once
 
-#include <limits>
 #include <memory>
 #include <string>
 
@@ -104,11 +103,11 @@ class LcmPublisherSystem : public LeafSystem<double> {
 
   const std::string& get_channel_name() const;
 
-  // Sets the publishing period of this system. The publishing period is the
-  // amount of simulation time that elapses between successive publish
-  // operations. A value of infinity results in this system publishing at every
-  // major timestep of the simulation.
-  void set_publish_period(double period) { LeafSystem<double>::DeclarePublishPeriodSec(period); }
+  /// Sets the publishing period of this system. The publishing period is the
+  /// amount of simulation time that elapses between successive publish
+  /// operations. A value of infinity results in this system publishing at every
+  /// major timestep of the simulation.
+  void set_publish_period(double period);
 
   // TODO(liang.fok) Restore this method once #4746 is addressed.
   /// Returns the publishing period of this system. The publishing period is the

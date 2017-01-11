@@ -34,7 +34,8 @@ GTEST_TEST(LcmPublisherSystemPublishRateTest, TestGetSetPeriod) {
   ASSERT_NE(dut.get(), nullptr);
 
   // TODO(liang.fok) Restore this once #4746 is resolved.
-  // EXPECT_EQ(dut->get_publish_period(), std::numeric_limits<double>::infinity());
+  // EXPECT_EQ(dut->get_publish_period(),
+  //           std::numeric_limits<double>::infinity());
 
   unique_ptr<Context<double>> context = dut->AllocateContext();
   UpdateActions<double> update_actions;

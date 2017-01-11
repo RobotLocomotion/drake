@@ -33,15 +33,26 @@ void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
   // Instantiates a BasicVector with known state. This is the basic vector that
   // we want the LcmPublisherSystem to publish as a drake::lcmt_drake_signal
   // message.
-  auto vec = std::make_unique<BasicVector<double>>(kDim);
-  Eigen::VectorBlock<VectorX<double>> vector_value =
-      vec->get_mutable_value();
+  std::unique_ptr<BasicVector<double>> vec(
+      new BasicVector<double>(kDim));
 
-  for (int i = 0; i < kDim; ++i) {
-    vector_value[i] = i;
+  {
+    Eigen::VectorBlock<VectorX<double>> vector_value =
+        vec->get_mutable_value();
+
+    for (int i = 0; i < kDim; ++i) {
+      vector_value[i] = i;
+    }
   }
 
-  context->FixInputPort(kPortNumber, std::move(vec));
+  // Sets the value in the context's input port to be the above-defined
+  // VectorBase. Note that we need to overwrite the original input port
+  // created by the LcmPublisherSystem since we do not have write access to its
+  // input vector.
+  std::unique_ptr<InputPort> input_port(
+      new FreestandingInputPort(std::move(vec)));
+
+  context->SetInputPort(kPortNumber, std::move(input_port));
 
   // Sets the timestamp within the context. This timestamp should be transmitted
   // by the LCM message.
