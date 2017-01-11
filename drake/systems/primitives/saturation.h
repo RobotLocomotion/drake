@@ -25,6 +25,8 @@ namespace systems {
 /// Note that @f$ u_{min} @f$, and @f$ u_{max} @f$, and @f$ u @f$ are all
 /// vectors of same dimension, and the following condition holds elementwise.
 ///
+///   @f[ u_{min} <=  u_{max} @f]
+///
 /// @ingroup primitive_systems
 template <typename T>
 class Saturation : public LeafSystem<T> {

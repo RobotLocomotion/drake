@@ -77,6 +77,5 @@ const T& Saturation<T>::get_u_min_scalar() const {
 
 template class Saturation<double>;
 template class Saturation<AutoDiffXd>;
-
 }  // namespace systems
 }  // namespace drake
