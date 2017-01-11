@@ -60,9 +60,13 @@ Clarifications
 * Classes and methods should be documented using
   `Doxygen <https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html>`_.
 
-  * Only use Doxygen comments (``///`` or ``/** */``) on published APIs (public
-    or protected classes and methods).  Code with private access or declared in
-    ``.cc`` files should not use the Doxygen format.
+  * Only use Doxygen special comment blocks (comments declared with ``///`` or
+    ``/**``) on published APIs (public or protected classes and methods).  Code
+    with private access or declared in ``.cc`` files should not use the Doxygen
+    block format.  However, note that markup such as ``@return`` may still be
+    used for non-Doxygen (``//`` or ``/*``) comment blocks when it improves
+    readability of the source code for developers, even though it will never be
+    processed by Doxygen.
   * If you decide to use Doxygen formatting hints, then those *must* render
     correctly. For instructions on how to generate the Doxygen website, click
     :ref:`here <documentation-generation-instructions>`. For additional
