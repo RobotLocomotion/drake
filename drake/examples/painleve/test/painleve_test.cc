@@ -1,3 +1,4 @@
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/painleve/painleve.h"
 
 #include <memory>
@@ -232,8 +233,11 @@ TEST_F(PainleveTest, ImpactNoChange) {
       CreateNewContinuousState();
   EXPECT_FALSE(dut_->IsImpacting(*context_));
   dut_->HandleImpact(*context_, new_cstate.get());
-  for (int i = 0; i < new_cstate->size(); ++i)
-    EXPECT_EQ((*new_cstate)[i], (*context_->get_continuous_state())[i]);
+  EXPECT_TRUE(CompareMatrices(new_cstate->get_vector().CopyToVector(),
+                              context_->get_continuous_state()->get_vector().
+                                  CopyToVector(),
+                              std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::absolute));
 }
 
 // Verify that applying the impact model to an impacting configuration results
@@ -258,10 +262,11 @@ TEST_F(PainleveTest, InfFrictionImpactThenNoImpact) {
 
   // Do one more impact- there should now be no change.
   dut_->HandleImpact(*context_, new_cstate.get());
-  for (int i = 0; i < new_cstate->size(); ++i) {
-    EXPECT_NEAR((*new_cstate)[i], (*context_->get_continuous_state())[i],
-                std::numeric_limits<double>::epsilon());
-  }
+  EXPECT_TRUE(CompareMatrices(new_cstate->get_vector().CopyToVector(),
+                              context_->get_continuous_state()->get_vector().
+                                  CopyToVector(),
+                              std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::absolute));
 }
 
 // Verify that applying an impact model to an impacting state results in a
@@ -286,10 +291,11 @@ TEST_F(PainleveTest, NoFrictionImpactThenNoImpact) {
   // Do one more impact- there should now be no change.
   // Verify that there is no further change from this second impact.
   dut_->HandleImpact(*context_, new_cstate.get());
-  for (int i = 0; i < new_cstate->size(); ++i) {
-    EXPECT_NEAR((*new_cstate)[i], (*context_->get_continuous_state())[i],
-                std::numeric_limits<double>::epsilon());
-  }
+  EXPECT_TRUE(CompareMatrices(new_cstate->get_vector().CopyToVector(),
+                              context_->get_continuous_state()->get_vector().
+                                  CopyToVector(),
+                              std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::absolute));
 }
 
 // Verify that no exceptions thrown for a non-sliding configuration.
@@ -371,8 +377,11 @@ TEST_F(PainleveTest, ImpactNoChange2) {
   std::unique_ptr<systems::ContinuousState<double>> new_cstate =
       CreateNewContinuousState();
   dut_->HandleImpact(*context_, new_cstate.get());
-  for (int i = 0; i < new_cstate->size(); ++i)
-    EXPECT_EQ((*new_cstate)[i], (*context_->get_continuous_state())[i]);
+  EXPECT_TRUE(CompareMatrices(new_cstate->get_vector().CopyToVector(),
+                              context_->get_continuous_state()->get_vector().
+                                  CopyToVector(),
+                              std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::absolute));
 }
 
 // Verify that applying the impact model to an impacting state results
@@ -400,10 +409,11 @@ TEST_F(PainleveTest, InfFrictionImpactThenNoImpact2) {
 
   // Do one more impact- there should now be no change.
   dut_->HandleImpact(*context_, new_cstate.get());
-  for (int i = 0; i < new_cstate->size(); ++i) {
-    EXPECT_NEAR((*new_cstate)[i], (*context_->get_continuous_state())[i],
-                std::numeric_limits<double>::epsilon());
-  }
+  EXPECT_TRUE(CompareMatrices(new_cstate->get_vector().CopyToVector(),
+                              context_->get_continuous_state()->get_vector().
+                                  CopyToVector(),
+                              std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::absolute));
 }
 
 // Verify that applying the impact model to an impacting state results in a
@@ -429,10 +439,11 @@ TEST_F(PainleveTest, NoFrictionImpactThenNoImpact2) {
 
   // Do one more impact- there should now be no change.
   dut_->HandleImpact(*context_, new_cstate.get());
-  for (int i = 0; i < new_cstate->size(); ++i) {
-    EXPECT_NEAR((*new_cstate)[i], (*context_->get_continuous_state())[i],
-                std::numeric_limits<double>::epsilon());
-  }
+  EXPECT_TRUE(CompareMatrices(new_cstate->get_vector().CopyToVector(),
+                              context_->get_continuous_state()->get_vector().
+                                  CopyToVector(),
+                              std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::absolute));
 }
 
 }  // namespace

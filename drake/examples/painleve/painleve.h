@@ -39,13 +39,6 @@ class Painleve : public systems::LeafSystem<T> {
  public:
   Painleve();
 
-  void DoCalcOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
-
-  void DoCalcTimeDerivatives(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const override;
-
   /// Models impact using an inelastic impact model with friction.
   void HandleImpact(
       const systems::Context<T>& context,
@@ -94,6 +87,12 @@ class Painleve : public systems::LeafSystem<T> {
  protected:
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
+
+  void DoCalcTimeDerivatives(
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const override;
 
  private:
   Vector2<T> CalcStickingImpactImpulse(const systems::Context<T>& context)
