@@ -565,12 +565,12 @@ void ParseCollisionFilterGroup(RigidBodyTree<double>* tree, XMLElement* node,
 
   for (XMLElement* member_node = node->FirstChildElement("member"); member_node;
        member_node =
-           member_node->NextSiblingElement("collision_filter_group")) {
-    const char* link_name = node->Attribute("link");
+           member_node->NextSiblingElement("member")) {
+    const char* link_name = member_node->Attribute("link");
     if (!link_name)
       throw runtime_error(
-          "Collision filter group provides a member tag without specifying the "
-          "\"link\".");
+          "Collision filter group " + group_name + " provides a member tag "
+          "without specifying the \"link\" attribute.");
     tree->AddCollisionFilterGroupMember(group_name, link_name,
                                         model_instance_id);
   }
@@ -578,8 +578,8 @@ void ParseCollisionFilterGroup(RigidBodyTree<double>* tree, XMLElement* node,
   for (XMLElement* ignore_node =
            node->FirstChildElement("ignored_collision_filter_group");
        ignore_node; ignore_node = ignore_node->NextSiblingElement(
-                        "collision_filter_group")) {
-    const char* target_name = node->Attribute("collision_filter_group");
+                        "ignored_collision_filter_group")) {
+    const char* target_name = ignore_node->Attribute("collision_filter_group");
     if (!target_name)
       throw runtime_error(
           "Collision filter group provides a tag specifying a group to ignore "
