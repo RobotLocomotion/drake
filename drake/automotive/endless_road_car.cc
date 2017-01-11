@@ -10,6 +10,7 @@
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -223,13 +224,10 @@ EndlessRoadCar<T>::ComputeIdmAccelerations(
   // Furthermore, speed should be non-negative, so if it has dipped to/below
   // zero, then we want to clamp any more negative acceleration.
   if ((state.speed() <= 0.) && (forward_acceleration < 0.)) {
-    std::cerr << "CLAMP NEG ACCEL  id " << id_
-              << "  speed " << state.speed()
-              << "  fa " << forward_acceleration
-              << "  v_0 " << v_0
-              << "  delta_v " << delta_v
-              << "  delta_s " << s
-              << std::endl;
+    drake::log()->warn(
+        "Clamping negative acceleration for id {}:  speed {}  fa {}"
+        "  v_0 {}  delta_v {}  delta_s {}",
+        id_, state.speed(), forward_acceleration, v_0, delta_v, s);
     forward_acceleration = 0.;
   }
 

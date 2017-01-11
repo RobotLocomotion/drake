@@ -12,6 +12,7 @@
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -213,12 +214,9 @@ void AssessLongitudinal(
           const maliput::api::RoadPosition next_rp = next.rp;
           delta_position = sum + (next_rp.pos.s - s0);
           if (delta_position < 0.) {
-            std::cerr << "FOR dp " << delta_position
-                      << "   sum " << sum
-                      << "   next-s " << next_rp.pos.s
-                      << "   s0 " << s0
-                      << "   first " << is_first
-                      << std::endl;
+            drake::log()->warn(
+                "FORWARD dp {}  sum {}  next-s {}  s0 {}  is-first {}",
+                delta_position, sum, next_rp.pos.s, s0, is_first);
           }
           // TODO(maddog)  Oy, this needs to account for travel direction
           //               of next in its source lane, not inf-circuit lane.
@@ -240,12 +238,9 @@ void AssessLongitudinal(
           const maliput::api::RoadPosition next_rp = next.rp;
           delta_position = sum + (s0 - next_rp.pos.s);
           if (delta_position < 0.) {
-            std::cerr << "REV dp " << delta_position
-                      << "   sum " << sum
-                      << "   next-s " << next_rp.pos.s
-                      << "   s0 " << s0
-                      << "   first " << is_first
-                      << std::endl;
+            drake::log()->warn(
+                "REVERSED dp {}  sum {}  next-s {}  s0 {}  is-first {}",
+                delta_position, sum, next_rp.pos.s, s0, is_first);
           }
           // TODO(maddog)  Oy, this needs to account for travel direction
           //               of next in its source lane, not inf-circuit lane.
@@ -272,10 +267,9 @@ void AssessLongitudinal(
     // TODO(maddog) Do a correct distance measurement (not just delta-s).
     const double net_delta_sigma = delta_position - kCarLength;
     if (net_delta_sigma <= 0.) {
-      std::cerr << "TOO CLOSE!      delta_pos " << delta_position
-                << "   car len " << kCarLength
-                << "   nds " << net_delta_sigma
-                << std::endl;
+      drake::log()->error(
+          "COLLISION!  delta_pos {}  car-length {}  net-delta-sigma {}",
+          delta_position, kCarLength, net_delta_sigma);
     }
     // If delta_position < kCarLength, the cars crashed!
     // TODO(maddog)  Or, they were passing, with lateral distance > width....
