@@ -70,22 +70,26 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
    * Computes a matrix that transforms the time derivative of generalized 
    * configuration to generalized velocity _for given configuration @p q_.
    * @param q the 7-dimensional generalized configuration (see warning below)
-   * @warning The first three values of generalized configuration are positional
-   *          and the next four values are a quaternion orientation (ew, ex, ey,
-   *          ez). The first three values of generalized velocity are angular
-   *          velocity (ωx, ωy, ωz) and the second three values are linear
-   *          velocity (dx/dt, dy/dt, dz/dt). The particular frames associated
-   *          with generalized coordinates and generalized velocities are
-   *          described further immediately below.
+   * @warning Generalized coordinates and generalized velocities store
+   *          positional and orientational values using a different ordering!
+   *          The first three values of generalized coordinates are positional
+   *          and the next four values represent quaternion values used for
+   *          orientation (ew, ex, ey, ez). The first three values of
+   *          generalized velocity represent an angular velocity (ωx, ωy, ωz)
+   *          and the second three values represent a linear velocity. Some
+   *          particular frames associated with generalized coordinates and
+   *          generalized velocities are described further immediately below.
    * @param[out] qdot_to_v a nv × nq sized matrix, where nv is the dimension of
    *        generalized velocities (6) and nq is the dimension of generalized
    *        coordinates (7), that converts time derivatives of generalized
    *        coordinates to generalized velocities _for given configuration
    *        @p q_. The linear components of velocity will be rotated from some
-   *        frame N to a frame B, while the time derivatives of the quaternion
-   *        values (the quaternion values themselves are used to generate
-   *        matrices that rotate vectors from Frame B to Frame N) will be
-   *        transformed to angular velocities in Frame B.
+   *        frame N to a frame B (i.e., the length of this linear velocity
+   *        vector will be preserved), while the time derivatives of the
+   *        quaternion values (the quaternion values themselves are used to
+   *        generate matrices that rotate vectors from Frame B to Frame N) will
+   *        be transformed to angular velocities in Frame B. **Thus generalized
+   *        velocities in @p q must be represented in Frame B as well.**
    * @warning If the norm of the quaternion values used for orientation in @p q
    *          is equal to `s ≠ 1`, applying @p qdot_to_v to unscaled time
    *          derivatives of the quaternion values will yield an angular
@@ -147,13 +151,15 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
    * derivative of generalized configuration to generalized velocity _for given 
    * configuration @p q_.
    * @param q the 7-dimensional generalized configuration (see warning below).
-   * @warning The first three values of generalized configuration are positional
-   *          and the next four values are a quaternion orientation (ew, ex, ey,
-   *          ez). The first three values of generalized velocity are angular
-   *          velocity (ωx, ωy, ωz) and the second three values are linear
-   *          velocity (dx/dt, dy/dt, dz/dt). The particular frames associated
-   *          with generalized coordinates and generalized velocities are
-   *          described further immediately below.
+   * @warning Generalized coordinates and generalized velocities store
+   *          positional and orientational values using a different ordering!
+   *          The first three values of generalized coordinates are positional
+   *          and the next four values represent quaternion values used for
+   *          orientation (ew, ex, ey, ez). The first three values of
+   *          generalized velocity represent an angular velocity (ωx, ωy, ωz)
+   *          and the second three values represent a linear velocity. Some
+   *          particular frames associated with generalized coordinates and
+   *          generalized velocities are described further immediately below.
    * @param[out] v_to_qdot a nq × nv sized matrix, where nv is the dimension of
    *        generalized velocities (6) and nq is the dimension of generalized
    *        coordinates (7), that converts generalized velocities to time
@@ -163,7 +169,8 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
    *        not change in length), while angular velocities in Frame
    *        B will be transformed to time derivatives of the quaternion values
    *        (the quaternion values themselves are used to generate matrices that
-   *        rotate vectors from Frame B to Frame N).
+   *        rotate vectors from Frame B to Frame N). **Thus, generalized
+   *        coordinates in @p q must be represented in Frame N as well.**
    * @warning If the norm of the quaternion values used for orientation in @p q
    *          is equal to `s ≠ 1`, applying @p v_to_qdot to unscaled angular
    *          velocity vector will yeild time derivatives of the quaternion
