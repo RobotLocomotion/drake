@@ -283,7 +283,9 @@ TEST_F(KukaArmTest, EvalOutput) {
   VectorXd xc = context_->get_continuous_state()->CopyToVector();
   ASSERT_EQ(xc, desired_state);
 
-  // 3 outputs: state, kinematic results, contact results
+  // 4 outputs: state, kinematic results, contact results, model instance state.
+  // (In this context, there is only one model instance and thus only one model
+  // instance state port.)
   ASSERT_EQ(4, output_->get_num_ports());
   const BasicVector<double>* output_state = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_state);
