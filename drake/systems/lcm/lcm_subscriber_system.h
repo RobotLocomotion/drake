@@ -86,7 +86,8 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    * @param[in] channel The LCM channel on which to subscribe.
    *
    * @param[in] translator_dictionary A dictionary for obtaining the appropriate
-   * translator for a particular LCM channel.
+   * translator for a particular LCM channel. This reference must remain valid
+   * for the lifetime of this `LcmSubscriberSystem` object.
    *
    * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
    */
