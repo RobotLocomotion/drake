@@ -26,12 +26,10 @@ PidControlledSystem<T>::PidControlledSystem(
     std::unique_ptr<System<T>> plant,
     std::unique_ptr<MatrixGain<T>> feedback_selector,
     const T& Kp, const T& Ki, const T& Kd) {
-  const VectorX<T> Kp_v =
-      VectorX<T>::Ones(plant->get_input_port(0).size()) * Kp;
-  const VectorX<T> Ki_v =
-      VectorX<T>::Ones(plant->get_input_port(0).size()) * Ki;
-  const VectorX<T> Kd_v =
-      VectorX<T>::Ones(plant->get_input_port(0).size()) * Kd;
+  const int input_size = plant->get_input_port(0).size();
+  const VectorX<T> Kp_v = VectorX<T>::Ones(input_size) * Kp;
+  const VectorX<T> Ki_v = VectorX<T>::Ones(input_size) * Ki;
+  const VectorX<T> Kd_v = VectorX<T>::Ones(input_size) * Kd;
   Initialize(std::move(plant), std::move(feedback_selector), Kp_v, Ki_v, Kd_v);
 }
 
