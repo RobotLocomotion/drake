@@ -36,7 +36,7 @@ GTEST_TEST(TestMixedIntegerOptimization, TestMixedIntegerLinearProgram1) {
     prog.AddLinearConstraint(a1, -std::numeric_limits<double>::infinity(), 4);
     Eigen::RowVector2d a2(1, 1);
     prog.AddLinearConstraint(a2, 1, std::numeric_limits<double>::infinity(),
-                             {x.head<2>()});
+                             x.head<2>());
 
     RunSolver(&prog, *solver);
 

@@ -122,7 +122,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   // the optimization framework should support this (though it has not been
   // tested thoroughly yet)
   drake::solvers::MathematicalProgram prog;
-  drake::solvers::DecisionVariableVectorX vdot =
+  drake::solvers::VectorXDecisionVariable vdot =
       prog.NewContinuousVariables(nv, "vdot");
 
   auto H = tree->massMatrix(kinsol);
@@ -255,7 +255,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     // phiddot = -2 alpha phidot - alpha^2 phi  (0 + critically damped
     // stabilization term)
     prog.AddLinearEqualityConstraint(
-        J, -(Jdotv + 2 * alpha * J * v + alpha * alpha * phi), {vdot});
+        J, -(Jdotv + 2 * alpha * J * v + alpha * alpha * phi), vdot);
     H_and_neg_JT.conservativeResize(NoChange, H_and_neg_JT.cols() + J.rows());
     H_and_neg_JT.rightCols(J.rows()) = -J.transpose();
   }
@@ -342,7 +342,7 @@ RigidBodySystem::StateVector<double> getInitialState(
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(
           new SingleTimeKinematicConstraintWrapper(&constraints.back(),
                                                    &kin_helper));
-      prog.AddConstraint(con1wrapper, {qvar});
+      prog.AddConstraint(con1wrapper, qvar);
       constraints.push_back(RelativePositionConstraint(
           sys.tree.get(), loop.axis_, loop.axis_, loop.axis_,
           loop.frameA_->get_frame_index(), loop.frameB_->get_frame_index(),
@@ -350,7 +350,7 @@ RigidBodySystem::StateVector<double> getInitialState(
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(
           new SingleTimeKinematicConstraintWrapper(&constraints.back(),
                                                    &kin_helper));
-      prog.AddConstraint(con2wrapper, {qvar});
+      prog.AddConstraint(con2wrapper, qvar);
     }
 
     VectorXd q_guess = x0.topRows(nq);

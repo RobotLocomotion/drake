@@ -111,37 +111,6 @@ void RunNonlinearProgram(MathematicalProgram& prog,
   }
 }
 
-GTEST_TEST(testMathematicalProgram, SetSolutionFromBindingTest) {
-  // Test if SetDecisionVariableValueFromBinding sets the correct solution.
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<2>("x");
-  auto y = prog.NewContinuousVariables<3>("y");
-
-  // TODO(hongkai.dai): rewrite this test when Binding class is moved out from
-  // MathematicalProgram class
-  // Tests when the bounded variables in each Binding object are not contiguous
-  // variables in MathematicalProgram.
-  DecisionVariableVector<2> var1;
-  var1 << x(0), y(1);
-  prog.AddBoundingBoxConstraint(Eigen::Vector2d(0, 0), Eigen::Vector2d(1, 1),
-                                {var1});
-  DecisionVariableVector<3> var2;
-  var2 << y(2), y(0), x(1);
-  prog.AddLinearEqualityConstraint(Eigen::RowVector3d(1, 2, 3), 1, {var2});
-
-  Eigen::Vector2d x_expected(0.1, 0.3);
-  Eigen::Vector3d y_expected(0.2, 0.7, -1);
-  prog.SetDecisionVariableValueFromBinding(
-      Eigen::Vector2d(x_expected(0), y_expected(1)),
-      prog.bounding_box_constraints().front());
-  prog.SetDecisionVariableValueFromBinding(
-      Eigen::Vector3d(y_expected(2), y_expected(0), x_expected(1)),
-      prog.linear_equality_constraints().front());
-
-  DRAKE_ASSERT(CompareMatrices(prog.GetSolution(x), x_expected));
-  DRAKE_ASSERT(CompareMatrices(prog.GetSolution(y), y_expected));
-}
-
 GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
   // A simple test program to test if the bounding box constraints are added
   // correctly.
@@ -151,11 +120,11 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
   // Deliberately add two constraints on overlapped decision variables.
   // For x(1), the lower bound of the second constraint are used; while
   // the upper bound of the first variable is used.
-  DecisionVariableVector<2> variable_vec(x(1), x(3));
+  VectorDecisionVariable<2> variable_vec(x(1), x(3));
   prog.AddBoundingBoxConstraint(Vector2d(-1, -2), Vector2d(-0.2, -1),
-                                {variable_vec});
+                                variable_vec);
   prog.AddBoundingBoxConstraint(Vector3d(-1, -0.5, -3), Vector3d(2, 1, -0.1),
-                                {x.head(3)});
+                                {x.head<1>(), x.segment<2>(1)});
 
   Vector4d lb(-1, -0.5, -3, -2);
   Vector4d ub(2, -0.2, -0.1, -1);
@@ -173,23 +142,181 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
   // Test the scalar version of the bounding box constraint methods.
 
   MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<2, 2>();
-
-  // Three different ways to construct an equivalent constraint.
-  auto constraint1 = prog.AddBoundingBoxConstraint(0, 1, {x});
-  auto constraint2 = prog.AddBoundingBoxConstraint(0, 1, {x.col(0), x.col(1)});
-  auto constraint3 = prog.AddBoundingBoxConstraint(Eigen::Vector4d::Zero(),
+  auto x1 = prog.NewContinuousVariables<2, 2>("x1");
+  MatrixXDecisionVariable x2(2, 2);
+  x2 = x1;
+  // Four different ways to construct an equivalent constraint.
+  // 1. Imposes constraint on a static-sized matrix of decision variables.
+  // 2. Imposes constraint on a list of vectors of decision variables.
+  // 3. Imposes constraint on a dynamic-sized matrix of decision variables.
+  // 4. Imposes constraint using a vector of lower/upper bound, as compared
+  //    to the previous three cases which use a scalar lower/upper bound.
+  auto constraint1 = prog.AddBoundingBoxConstraint(0, 1, x1);
+  auto constraint2 =
+      prog.AddBoundingBoxConstraint(0, 1, {x1.col(0), x1.col(1)});
+  auto constraint3 = prog.AddBoundingBoxConstraint(0, 1, x2);
+  auto constraint4 = prog.AddBoundingBoxConstraint(Eigen::Vector4d::Zero(),
                                                    Eigen::Vector4d::Ones());
 
+  // Checks that the bound variables are correct.
+  for (const auto& binding : prog.bounding_box_constraints()) {
+    EXPECT_EQ(binding.GetNumElements(), 4);
+    VectorDecisionVariable<4> x_expected;
+    x_expected << x1(0, 0), x1(1, 0), x1(0, 1), x1(1, 1);
+    for (int i = 0; i < 4; ++i) {
+      EXPECT_EQ(binding.variables()(i), x_expected(i));
+    }
+  }
   EXPECT_TRUE(
       CompareMatrices(constraint1->lower_bound(), constraint2->lower_bound()));
   EXPECT_TRUE(
       CompareMatrices(constraint2->lower_bound(), constraint3->lower_bound()));
+  EXPECT_TRUE(
+      CompareMatrices(constraint3->lower_bound(), constraint4->lower_bound()));
 
   EXPECT_TRUE(
       CompareMatrices(constraint1->upper_bound(), constraint2->upper_bound()));
   EXPECT_TRUE(
       CompareMatrices(constraint2->upper_bound(), constraint3->upper_bound()));
+  EXPECT_TRUE(
+      CompareMatrices(constraint3->upper_bound(), constraint4->upper_bound()));
+}
+
+/* A generic cost derived from Constraint class. This is meant for testing
+ * adding a cost to optimization program, and the cost is in the form of a
+ * derived class of Constraint.
+ */
+class GenericTrivialCost1 : public Constraint {
+ public:
+  GenericTrivialCost1()
+      : Constraint(1, Vector1d(std::numeric_limits<double>::infinity()),
+                   Vector1d(std::numeric_limits<double>::infinity())),
+        private_val_(2) {}
+
+  void Eval(const Ref<const Eigen::VectorXd>& x, VectorXd& y) const override {
+    y.resize(1);
+    y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+  }
+
+  void Eval(const Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override {
+    y.resize(1);
+    y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+  }
+
+ private:
+  // Add a private data member to make sure no slicing on this class, derived
+  // from Constraint.
+  double private_val_{0};
+};
+
+/* A generic cost. This class is meant for testing adding a cost to the
+ * optimization program, by calling `MathematicalProgram::MakeCost` to
+ * convert this class to a ConstraintImpl object.
+ *
+ */
+class GenericTrivialCost2 {
+ public:
+  static size_t numInputs() { return 2; }
+  static size_t numOutputs() { return 1; }
+
+  template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
+    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
+    y(0) = x(0) * x(0) - x(1) * x(1) + 2;
+  }
+};
+
+// Verifies if the added cost evaluates the same as the original cost.
+// This function is supposed to test these costs added as a derived class
+// from Constraint.
+void VerifyAddedCost1(const MathematicalProgram& prog,
+                      const std::shared_ptr<Constraint>& cost,
+                      const Eigen::Ref<const Eigen::VectorXd>& x_value,
+                      int num_generic_costs_expected) {
+  EXPECT_EQ(prog.generic_costs().size(), num_generic_costs_expected);
+  Eigen::VectorXd y, y_expected;
+  prog.generic_costs().back().constraint()->Eval(x_value, y);
+  cost->Eval(x_value, y_expected);
+  EXPECT_TRUE(CompareMatrices(y, y_expected));
+}
+
+// Verifies if the added cost evaluates the same as the original cost.
+// This function is supposed to test these costs added by converting
+// a class to ConstraintImpl through MakeCost.
+void VerifyAddedCost2(const MathematicalProgram& prog,
+                      const GenericTrivialCost2& cost,
+                      const std::shared_ptr<Constraint>& returned_cost,
+                      const Eigen::Ref<const Eigen::Vector2d>& x_value,
+                      int num_generic_costs_expected) {
+  EXPECT_EQ(prog.generic_costs().size(), num_generic_costs_expected);
+  Eigen::VectorXd y(1), y_expected(1), y_returned;
+  prog.generic_costs().back().constraint()->Eval(x_value, y);
+  cost.eval<double>(x_value, y_expected);
+  EXPECT_TRUE(CompareMatrices(y, y_expected));
+  returned_cost->Eval(x_value, y_returned);
+  EXPECT_TRUE(CompareMatrices(y, y_returned));
+}
+
+GTEST_TEST(testMathematicalProgram, AddCostTest) {
+  // Test if the costs are added correctly.
+
+  // There are ways to add a generic cost
+  // 1. Add Binding<Constraint>
+  // 2. Add shared_ptr<Constraint> on a VectorDecisionVariable object.
+  // 3. Add shared_ptr<Constraint> on a VariableRefList.
+  // 4. Add a ConstraintImpl object on a VectorDecisionVariable object.
+  // 4. Add a ConstraintImpl object on a VariableRefList object.
+  // 5. Add a unique_ptr of object that can be converted to a ConstraintImpl
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  auto y = prog.NewContinuousVariables<2>("y");
+  // No cost yet.
+  int num_generic_costs = 0;
+  EXPECT_EQ(prog.generic_costs().size(), num_generic_costs);
+  EXPECT_EQ(prog.linear_costs().size(), 0);
+
+  std::shared_ptr<Constraint> generic_trivial_cost1 =
+      std::make_shared<GenericTrivialCost1>();
+
+  // Adds Binding<Constraint>
+  prog.AddCost(Binding<Constraint>(
+      generic_trivial_cost1, VectorDecisionVariable<3>(x(0), x(1), y(1))));
+  ++num_generic_costs;
+  VerifyAddedCost1(prog, generic_trivial_cost1, Eigen::Vector3d(1, 3, 5),
+                   num_generic_costs);
+
+  // Adds a std::shared_ptr<Constraint> on a VectorDecisionVariable object.
+  prog.AddCost(generic_trivial_cost1,
+               VectorDecisionVariable<3>(x(0), x(1), y(1)));
+  ++num_generic_costs;
+  VerifyAddedCost1(prog, generic_trivial_cost1, Eigen::Vector3d(1, 2, 3),
+                   num_generic_costs);
+
+  // Adds a std::shared_ptr<Constraint> on a VariableRefList object.
+  prog.AddCost(generic_trivial_cost1, {x, y.tail<1>()});
+  ++num_generic_costs;
+  VerifyAddedCost1(prog, generic_trivial_cost1, Eigen::Vector3d(2, 3, 4),
+                   num_generic_costs);
+
+  GenericTrivialCost2 generic_trivial_cost2;
+
+  // Add an object that can be converted to a ConstraintImpl object on a
+  // VectorDecisionVariable object.
+  auto returned_cost3 = prog.AddCost(generic_trivial_cost2,
+                                     VectorDecisionVariable<2>(x(0), y(1)));
+  ++num_generic_costs;
+  VerifyAddedCost2(prog, generic_trivial_cost2, returned_cost3,
+                   Eigen::Vector2d(1, 2), num_generic_costs);
+
+  // Add an object that can be converted to a ConstraintImpl object on a
+  // VariableRefList object.
+  auto returned_cost4 =
+      prog.AddCost(generic_trivial_cost2, {x.head<1>(), y.tail<1>()});
+  ++num_generic_costs;
+  VerifyAddedCost2(prog, generic_trivial_cost2, returned_cost4,
+                   Eigen::Vector2d(1, 2), num_generic_costs);
 }
 
 GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
@@ -203,7 +330,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   auto xhead = x.head(3);
 
   Vector4d b = Vector4d::Random();
-  auto con = prog.AddLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
+  auto con = prog.AddLinearEqualityConstraint(Matrix4d::Identity(), b, x);
 
   prog.SetInitialGuessForAllVariables(Vector4d::Zero());
   prog.Solve();
@@ -223,7 +350,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   // Add two more variables with a very slightly more complicated
   // constraint and solve again. Should still be a linear system.
   auto y = prog.NewContinuousVariables<2>();
-  prog.AddLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
+  prog.AddLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), y);
   prog.Solve();
   const auto& y_value = prog.GetSolution(y);
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y_value, 1e-10,
@@ -241,9 +368,8 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
                               MatrixCompareType::absolute));
   CheckSolverType(prog, "Linear System Solver");
 
-  std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
-      Vector2d::Constant(-1000.0), Vector2d::Constant(1000.0)));
-  prog.AddConstraint(bbcon, {x.head(2)});
+  prog.AddBoundingBoxConstraint(Vector2d::Constant(-1000),
+                                Vector2d::Constant(1000.0), x.head<2>());
 
   // Now solve as a nonlinear program.
   RunNonlinearProgram(prog, [&]() {
@@ -671,26 +797,26 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
   // variables to constraints/costs.
   auto x = prog.NewContinuousVariables(3);
   auto y = prog.NewContinuousVariables(3);
-  prog.AddCost(GloptipolyConstrainedExampleCost(), {x});
-  prog.AddCost(GloptipolyConstrainedExampleCost(), {y});
+  prog.AddCost(GloptipolyConstrainedExampleCost(), x);
+  prog.AddCost(GloptipolyConstrainedExampleCost(), y);
   std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
       new GloptipolyConstrainedExampleConstraint());
-  prog.AddConstraint(qp_con, {x});
-  prog.AddConstraint(qp_con, {y});
+  prog.AddConstraint(qp_con, x);
+  prog.AddConstraint(qp_con, y);
   prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
-                           -std::numeric_limits<double>::infinity(), 4, {x});
+                           -std::numeric_limits<double>::infinity(), 4, x);
   prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
-                           -std::numeric_limits<double>::infinity(), 4, {y});
+                           -std::numeric_limits<double>::infinity(), 4, y);
   prog.AddLinearConstraint(Vector3d(0, 3, 1).transpose(),
-                           -std::numeric_limits<double>::infinity(), 6, {x});
+                           -std::numeric_limits<double>::infinity(), 6, x);
   prog.AddLinearConstraint(Vector3d(0, 3, 1).transpose(),
-                           -std::numeric_limits<double>::infinity(), 6, {y});
+                           -std::numeric_limits<double>::infinity(), 6, y);
   prog.AddBoundingBoxConstraint(
       Vector3d(0, 0, 0),
-      Vector3d(2, std::numeric_limits<double>::infinity(), 3), {x});
+      Vector3d(2, std::numeric_limits<double>::infinity(), 3), x);
   prog.AddBoundingBoxConstraint(
       Vector3d(0, 0, 0),
-      Vector3d(2, std::numeric_limits<double>::infinity(), 3), {y});
+      Vector3d(2, std::numeric_limits<double>::infinity(), 3), y);
 
   // IPOPT has difficulty with this problem depending on the initial
   // conditions, which is why the initial guess varies so little.
@@ -752,7 +878,7 @@ GTEST_TEST(testMathematicalProgram, simpleLCP) {
 
   auto x = prog.NewContinuousVariables<2>();
 
-  prog.AddLinearComplementarityConstraint(M, q, {x});
+  prog.AddLinearComplementarityConstraint(M, q, x);
   EXPECT_NO_THROW(prog.Solve());
   const auto& x_value = prog.GetSolution(x);
   EXPECT_TRUE(CompareMatrices(x_value, Vector2d(16, 0), 1e-4,
@@ -776,8 +902,8 @@ GTEST_TEST(testMathematicalProgram, multiLCP) {
   auto x = prog.NewContinuousVariables<2>();
   auto y = prog.NewContinuousVariables<2>();
 
-  prog.AddLinearComplementarityConstraint(M, q, {x});
-  prog.AddLinearComplementarityConstraint(M, q, {y});
+  prog.AddLinearComplementarityConstraint(M, q, x);
+  prog.AddLinearComplementarityConstraint(M, q, y);
   EXPECT_NO_THROW(prog.Solve());
   const auto& x_value = prog.GetSolution(x);
   const auto& y_value = prog.GetSolution(y);
@@ -949,7 +1075,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   auto y = prog.NewContinuousVariables<1>("y");
   Q << 2.0, 0.0, 0.0, 2.0;
   c << -5.0, -2.0;
-  VariableListRef vars;
+  VariableRefList vars;
   vars.push_back(x.segment<1>(1));
   vars.push_back(y);
 
@@ -1011,7 +1137,7 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   Vector2d constraint2(2);
   constraint2 << 2., -1.;
   // 2*x1 - x3 = 0, so x3 should wind up as 1.0
-  VariableListRef vars;
+  VariableRefList vars;
   vars.push_back(x.segment(0, 1));
   vars.push_back(y);
 
@@ -1056,8 +1182,8 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   auto t_lorentz = prog_lorentz.NewContinuousVariables(1, "t");
   auto x_lorentz = prog_lorentz.NewContinuousVariables(xDim, "x");
   prog_lorentz.AddLorentzConeConstraint({t_lorentz, x_lorentz});
-  prog_lorentz.AddLinearEqualityConstraint(A, b, {x_lorentz});
-  prog_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_lorentz});
+  prog_lorentz.AddLinearEqualityConstraint(A, b, x_lorentz);
+  prog_lorentz.AddLinearCost(drake::Vector1d(1.0), t_lorentz);
 
   // A_hat = [A 0; 2*I A']
   MatrixXd A_hat(A.rows() + A.cols(), A.rows() + A.cols());
@@ -1094,10 +1220,10 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
       prog_rotated_lorentz.NewContinuousVariables<1>("slack");
   prog_rotated_lorentz.AddRotatedLorentzConeConstraint(
       {t_rotated_lorentz, slack_rotated_lorentz, x_rotated_lorentz});
-  prog_rotated_lorentz.AddLinearEqualityConstraint(A, b, {x_rotated_lorentz});
+  prog_rotated_lorentz.AddLinearEqualityConstraint(A, b, x_rotated_lorentz);
   prog_rotated_lorentz.AddBoundingBoxConstraint(1.0, 1.0,
                                                 slack_rotated_lorentz(0));
-  prog_rotated_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_rotated_lorentz});
+  prog_rotated_lorentz.AddLinearCost(drake::Vector1d(1.0), t_rotated_lorentz);
 
   double cost_expected_rotated_lorentz = x_expected.squaredNorm();
   // NLopt needs a really good starting point to solve SOCP, while SNOPT and
@@ -1129,7 +1255,7 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
                               VectorXd::Zero(xDim), 0,
                               x_expected.squaredNorm()));
 
-  prog_lorentz.AddConstraint(quadratic_constraint, {x_lorentz});
+  prog_lorentz.AddConstraint(quadratic_constraint, x_lorentz);
   RunNonlinearProgram(prog_lorentz, [&]() {
     const auto& x_lorentz_value = prog_lorentz.GetSolution(x_lorentz);
     EXPECT_TRUE(CompareMatrices(x_lorentz_value, x_expected, 1E-5,
@@ -1138,7 +1264,7 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
     EXPECT_NEAR(cost_expected_lorentz, t_lorentz_value(0), 1E-3);
   });
 
-  prog_rotated_lorentz.AddConstraint(quadratic_constraint, {x_rotated_lorentz});
+  prog_rotated_lorentz.AddConstraint(quadratic_constraint, x_rotated_lorentz);
   RunNonlinearProgram(prog_rotated_lorentz, [&]() {
     const auto& x_rotated_lorentz_value =
         prog_rotated_lorentz.GetSolution(x_rotated_lorentz);

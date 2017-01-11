@@ -78,6 +78,7 @@ target_link_libraries(drakeOptimization
   drakeCommon
   Eigen3::Eigen)
 drake_install_headers(
+  binding.h
   constraint.h
   function.h
   mathematical_program.h
