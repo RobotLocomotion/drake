@@ -71,13 +71,13 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
   // the rod endpoints are y + sin(theta)*r/2 and y - sin(theta)*r/2,
   // or, y + k*sin(theta)*r/2, where k = +/-1.
 
-  // Determine the point of contact (xc,yc).
+  // Determine the point of contact (cx,cy).
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : 1;
   const double half_rod_length = rod_length_ / 2;
-  const T xc = x + k * ctheta * half_rod_length;
-  const T yc = y + k * stheta * half_rod_length;
+  const T cx = x + k * ctheta * half_rod_length;
+  const T cy = y + k * stheta * half_rod_length;
 
   // Compute the impulses such that the tangential velocity post-collision
   // is zero.
@@ -99,11 +99,11 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
   const T delta_ydot = fN / mass_;
 
   // Change in thetadot is equivalent to the third component of:
-  // | xc - x |    | fF |
-  // | yc - y | ×  | fN | = (xc - x) * fN - (yc - y) * fF)
+  // | cx - x |    | fF |
+  // | cy - y | ×  | fN | = (cx - x) * fN - (cy - y) * fF)
   // | 0      |    | 0  |
   // divided by the moment of inertia.
-  const T delta_thetadot = ((xc - x) * fN - (yc - y) * fF) / J_;
+  const T delta_thetadot = ((cx - x) * fN - (cy - y) * fF) / J_;
 
   // Verify that the post-impact velocity is non-negative (to allowable floating
   // point error).
@@ -122,14 +122,14 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
 // These equations were determined by issuing the
 // following commands in Mathematica:
 //
-// xc[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
-// yc[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
+// cx[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
+// cy[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
 // Solve[{mass*delta_xdot == fF,
 //        mass*delta_ydot == fN,
-//        J*delta_thetadot == (xc[t] - x)*fN - (yc - y)*fF,
+//        J*delta_thetadot == (cx[t] - x)*fN - (cy - y)*fF,
 //        0 == (D[y[t], t] + delta_ydot) +
 //              k*(ell/2) *Cos[theta[t]]*(D[theta[t], t] + delta_thetadot),
-//        fF == mu*fN *-sgn_xcdot},
+//        fF == mu*fN *-sgn_cxdot},
 //       {delta_xdot, delta_ydot, delta_thetadot, fN, fF}]
 // where theta is the counter-clockwise angle the rod makes with the x-axis,
 // fN and fF are contact normal and frictional forces; delta_xdot,
@@ -176,19 +176,19 @@ Vector2<T> Painleve<T>::CalcFConeImpactImpulse(
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : 1;
   const double half_rod_length = rod_length_ / 2;
-  const T yc = y + k * stheta * half_rod_length;
+  const T cy = y + k * stheta * half_rod_length;
   const double mu = mu_;
   const double J = J_;
   const double mass = mass_;
   const double ell = rod_length_;
 
   // Compute the impulses.
-  const T xcdot = xdot - k * stheta * half_rod_length * thetadot;
-  const int sgn_xcdot = (xcdot > 0) ? 1 : -1;
+  const T cxdot = xdot - k * stheta * half_rod_length * thetadot;
+  const int sgn_cxdot = (cxdot > 0) ? 1 : -1;
   const T fN = (J * mass * (-(ell * k * ctheta * thetadot) / 2 - ydot)) /
-              (J + (ell * k * mass * mu * (-y + yc) * ctheta * sgn_xcdot) / 2 -
+              (J + (ell * k * mass * mu * (-y + cy) * ctheta * sgn_cxdot) / 2 -
               (ell * k * mass * ctheta * (x - (ell * k * ctheta) / 2 - x)) / 2);
-  const T fF = -sgn_xcdot * mu * fN;
+  const T fF = -sgn_cxdot * mu * fN;
 
   // Verify normal force is non-negative.
   DRAKE_DEMAND(fN >= 0);
@@ -200,10 +200,10 @@ Vector2<T> Painleve<T>::CalcFConeImpactImpulse(
 // These equations were determined by issuing the following commands in
 // Mathematica:
 //
-// xc[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
-// yc[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
+// cx[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
+// cy[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
 // Solve[{mass*delta_xdot == fF, mass*delta_ydot == fN,
-//        J*delta_thetadot == (xc[t] - x)*fN - (yc - y)*fF,
+//        J*delta_thetadot == (cx[t] - x)*fN - (cy - y)*fF,
 //        0 == (D[y[t], t] + delta_ydot) +
 //             k*(ell/2) *Cos[theta[t]]*(D[theta[t], t] + delta_thetadot),
 //        0 == (D[x[t], t] + delta_xdot) +
@@ -250,7 +250,7 @@ Vector2<T> Painleve<T>::CalcStickingImpactImpulse(
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : 1;
   const double half_rod_length = rod_length_ / 2;
-  const T yc = y + k * stheta * half_rod_length;
+  const T cy = y + k * stheta * half_rod_length;
 
   // Compute the impulses.
   const double ell = rod_length_;
@@ -258,11 +258,11 @@ Vector2<T> Painleve<T>::CalcStickingImpactImpulse(
   const double J = J_;
   const T fN = (2 * (-(ell * J * k * mass * ctheta * thetadot) +
       ell * k * mass * mass * y * ctheta * xdot -
-      ell * k * mass * mass * yc * ctheta * xdot -
+      ell * k * mass * mass * cy * ctheta * xdot -
       2 * J * mass * ydot + ell * k * mass * mass * y * ctheta * ydot -
-      ell * k * mass * mass * yc * ctheta * ydot)) /
+      ell * k * mass * mass * cy * ctheta * ydot)) /
       (4 * J - 2 * ell * k * mass * x * ctheta -
-          2 * ell * k * mass * y * ctheta + 2 * ell * k * mass * yc * ctheta +
+          2 * ell * k * mass * y * ctheta + 2 * ell * k * mass * cy * ctheta +
           ell * ell * k * k * mass * ctheta * ctheta +
           2 * ell * k * mass * ctheta * x);
   const T fF = -((mass * (-2 * ell * J * k * ctheta * thetadot + 4 * J * xdot -
@@ -273,7 +273,7 @@ Vector2<T> Painleve<T>::CalcStickingImpactImpulse(
       ell * ell * k * k * mass * ctheta * ctheta * ydot +
       2 * ell * k * mass * ctheta * x * ydot)) /
       (4 * J - 2 * ell * k * mass * x * ctheta -
-          2 * ell * k * mass * y * ctheta + 2 * ell * k * mass * yc * ctheta +
+          2 * ell * k * mass * y * ctheta + 2 * ell * k * mass * cy * ctheta +
           ell * ell * k * k * mass * ctheta * ctheta +
           2 * ell * k * mass * ctheta * x));
 
@@ -287,7 +287,7 @@ Vector2<T> Painleve<T>::CalcStickingImpactImpulse(
 template <class T>
 void Painleve<T>::SetVelocityDerivatives(const systems::Context<T>& context,
                                          systems::VectorBase<T>* const f,
-                                         T fN, T fF, T xc, T yc) const {
+                                         T fN, T fF, T cx, T cy) const {
   using std::abs;
 
   // Get necessary state variables.
@@ -299,7 +299,7 @@ void Painleve<T>::SetVelocityDerivatives(const systems::Context<T>& context,
   // Compute the derivatives
   const T xddot = fF / mass_;
   const T yddot = fN / mass_ + get_gravitational_acceleration();
-  const T thetaddot = ((xc - x) * fN - (yc - y) * fF) / J_;
+  const T thetaddot = ((cx - x) * fN - (cy - y) * fF) / J_;
 
   // Set the derivatives.
   f->SetAtIndex(3, xddot);
@@ -314,35 +314,35 @@ void Painleve<T>::SetVelocityDerivatives(const systems::Context<T>& context,
   const int k = (stheta > 0) ? -1 : 1;
 
   // Verify that the vertical acceleration at the point of contact is zero
-  // (i.e., ycddot = 0).
-  const T ycddot =
+  // (i.e., cyddot = 0).
+  const T cyddot =
       yddot +
           ell * k * (ctheta * thetaddot - stheta * thetadot * thetadot) / 2;
-  DRAKE_DEMAND(abs(ycddot) < std::numeric_limits<double>::epsilon());
+  DRAKE_DEMAND(abs(cyddot) < std::numeric_limits<double>::epsilon());
 
   // If the force is within the friction cone, verify that the horizontal
-  // acceleration at the point of contact is zero (i.e., xcddot = 0).
+  // acceleration at the point of contact is zero (i.e., cxddot = 0).
   if (fN*mu > abs(fF)) {
-    const T xcddot =
+    const T cxddot =
         xddot +
             ell * k * (-stheta * thetaddot - ctheta * thetadot * thetadot) / 2;
 
-    DRAKE_DEMAND(abs(xcddot) < std::numeric_limits<double>::epsilon());
+    DRAKE_DEMAND(abs(cxddot) < std::numeric_limits<double>::epsilon());
   }
 }
 
 // Computes the contact forces for the case of zero sliding velocity, assuming
 // that the tangential acceleration at the point of contact will be zero
-// (i.e., xcddot = 0). This function solves for these forces.
+// (i.e., cxddot = 0). This function solves for these forces.
 //
 // Equations were determined by issuing the following command in Mathematica:
-// xc[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
-// yc[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
-// Solve[{0 == D[D[yc[t], t], t],
+// cx[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
+// cy[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
+// Solve[{0 == D[D[cy[t], t], t],
 //        D[D[y[t], t], t] == fN/mass + g,
 //        D[D[x[t], t], t] == fF/mass,
-//        J*D[D[theta[t], t], t] == (xc[t]-x[t])*fN - (yc[t]-y[t])*fF,
-//        0 == D[D[xc[t], t], t]},
+//        J*D[D[theta[t], t], t] == (cx[t]-x[t])*fN - (cy[t]-y[t])*fF,
+//        0 == D[D[cx[t], t], t]},
 //       { fN, fF, D[D[y[t], t], t], D[D[x[t], t], t],
 //          D[D[theta[t], t], t] } ]
 // where theta is the counter-clockwise angle the rod makes with the
@@ -425,8 +425,8 @@ void Painleve<T>::CalcTimeDerivativesOneContactNoSliding(
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : 1;
-  const T xc = x + k * ctheta * half_rod_length;
-  const T yc = y + k * stheta * half_rod_length;
+  const T cx = x + k * ctheta * half_rod_length;
+  const T cy = y + k * stheta * half_rod_length;
 
   // Compute the contact forces, assuming sticking contact.
   Vector2<T> cf = CalcStickingContactForces(context);
@@ -473,24 +473,24 @@ void Painleve<T>::CalcTimeDerivativesOneContactNoSliding(
 
     // Calculate candidate tangential accelerations.
     auto calc_tan_accel = [=](int d, const T N, const T F) {
-      const T thetaddot = ((xc - x) * N - (yc - y) * F) / J;
+      const T thetaddot = ((cx - x) * N - (cy - y) * F) / J;
       return F / mass +
           ell * k * (-stheta * thetaddot - ctheta * thetadot * thetadot) / 2;
     };
 
     // Compute two tangential acceleration candidates.
-    const T xcddot1 = calc_tan_accel(+1, fN1, fF1);
-    const T xcddot2 = calc_tan_accel(-1, fN2, fF2);
+    const T cxddot1 = calc_tan_accel(+1, fN1, fF1);
+    const T cxddot2 = calc_tan_accel(-1, fN2, fF2);
 
     // Pick the one that is smaller in magnitude.
-    if (abs(xcddot1) < abs(xcddot2)) {
-      SetVelocityDerivatives(context, f, fN1, fF1, xc, yc);
+    if (abs(cxddot1) < abs(cxddot2)) {
+      SetVelocityDerivatives(context, f, fN1, fF1, cx, cy);
     } else {
-      SetVelocityDerivatives(context, f, fN2, fF2, xc, yc);
+      SetVelocityDerivatives(context, f, fN2, fF2, cx, cy);
     }
   } else {
     // Friction force is within the friction cone.
-    SetVelocityDerivatives(context, f, fN, fF, xc, yc);
+    SetVelocityDerivatives(context, f, fN, fF, cx, cy);
   }
 }
 
@@ -542,17 +542,17 @@ bool Painleve<T>::IsImpacting(const systems::Context<T>& context) const {
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : 1;
-  const T yc = y + k * stheta * half_rod_length;
+  const T cy = y + k * stheta * half_rod_length;
 
   // If rod endpoint is not touching, there is no impact.
-  if (yc >= std::numeric_limits<double>::epsilon())
+  if (cy >= std::numeric_limits<double>::epsilon())
     return false;
 
   // Compute the velocity at the point of contact.
-  const T ycdot = ydot + k * ctheta * half_rod_length * thetadot;
+  const T cydot = ydot + k * ctheta * half_rod_length * thetadot;
 
   // Verify that the rod is not impacting.
-  return (ycdot < -std::numeric_limits<double>::epsilon());
+  return (cydot < -std::numeric_limits<double>::epsilon());
 }
 
 template <typename T>
@@ -588,12 +588,12 @@ void Painleve<T>::DoCalcTimeDerivatives(
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : 1;
 
-  // Determine the point of contact (xc, yc).
-  const T xc = x + k * ctheta * half_rod_length;
-  const T yc = y + k * stheta * half_rod_length;
+  // Determine the point of contact (cx, cy).
+  const T cx = x + k * ctheta * half_rod_length;
+  const T cy = y + k * stheta * half_rod_length;
 
   // Compute the horizontal velocity at the point of contact.
-  const T xcdot = xdot - k * stheta * half_rod_length * thetadot;
+  const T cxdot = xdot - k * stheta * half_rod_length * thetadot;
 
   // First three derivative components are xdot, ydot, thetadot.
   f->SetAtIndex(0, xdot);
@@ -602,7 +602,7 @@ void Painleve<T>::DoCalcTimeDerivatives(
 
   // Case 1 (ballistic mode): the rod is not touching the ground
   // (located at y=0).
-  if (yc > std::numeric_limits<double>::epsilon()) {
+  if (cy > std::numeric_limits<double>::epsilon()) {
     // Second three derivative components are simple: just add in gravitational
     // acceleration.
     f->SetAtIndex(3, T(0));
@@ -625,32 +625,32 @@ void Painleve<T>::DoCalcTimeDerivatives(
 
     // At this point, it is known that exactly one endpoint of the rod is
     // touching the halfspace. Compute the normal acceleration at that point of
-    // contact (yc_ddot), *assuming zero contact force*.
-    T ycddot = get_gravitational_acceleration() -
+    // contact (cy_ddot), *assuming zero contact force*.
+    T cyddot = get_gravitational_acceleration() -
                k * half_rod_length * stheta * thetadot * thetadot;
 
     // If this derivative is negative, we must compute the normal force
     // necessary to set it to zero.
-    if (ycddot < 0) {
+    if (cyddot < 0) {
       // Look for the case where the tangential velocity is zero.
-      if (abs(xcdot) < std::numeric_limits<double>::epsilon()) {
+      if (abs(cxdot) < std::numeric_limits<double>::epsilon()) {
         CalcTimeDerivativesOneContactNoSliding(context, derivatives);
         return;
       } else {
         // Rod is sliding at the point of contact.
         // These equations were determined by issuing the following
         // commands in Mathematica:
-        // xc[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
-        // yc[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
-        // Solve[{0 == D[D[yc[t], t], t],
+        // cx[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
+        // cy[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
+        // Solve[{0 == D[D[cy[t], t], t],
         //        D[D[y[t], t], t] == fN/mass + g,
         //        D[D[x[t], t], t] == fF/mass,
-        //        J*D[D[theta[t], t], t] == (xc[t]-x[t])*fN - (yc[t]-y[t])*fF,
-        //        fF == -sgn_xcdot*mu*fN},
+        //        J*D[D[theta[t], t], t] == (cx[t]-x[t])*fN - (cy[t]-y[t])*fF,
+        //        fF == -sgn_cxdot*mu*fN},
         // { fN, fF, D[D[y[t], t], t], D[D[x[t], t], t], D[D[theta[t], t], t]}]
         // where theta is the counter-clockwise angle the rod makes with the
         // x-axis, 'ell' is the length of the rod, fN and fF are normal and
-        // frictional forces, respectively, sgn_xcdot = sgn(xcdot), g is the
+        // frictional forces, respectively, sgn_cxdot = sgn(cxdot), g is the
         // acceleration due to gravity, and (hopefully) all other variables are
         // self-explanatory. The first two equations above are the formula
         // for the point of contact. The next equation requires that the
@@ -663,39 +663,39 @@ void Painleve<T>::DoCalcTimeDerivatives(
         const double J = J_;
         const double mass = mass_;
         const double mu = mu_;
-        const int sgn_xcdot = (xcdot > 0) ? 1 : -1;
+        const int sgn_cxdot = (cxdot > 0) ? 1 : -1;
         const double g = get_gravitational_acceleration();
         const double ell = rod_length_;
         const T fN = (2 * mass *
                    (-2 * g * J + ell * J * k * stheta * thetadot * thetadot)) /
                   (4 * J + ell * ell * k * k * mass * ctheta * ctheta +
-                   ell * ell * k * k * mass * mu * ctheta * sgn_xcdot * stheta);
+                   ell * ell * k * k * mass * mu * ctheta * sgn_cxdot * stheta);
 
         // Check for inconsistent configuration.
         if (fN < 0)
           throw std::runtime_error("Inconsistent configuration detected.");
 
         // Now that normal force is computed, set the acceleration.
-        const T fF = -sgn_xcdot * mu_ * fN;
+        const T fF = -sgn_cxdot * mu_ * fN;
         f->SetAtIndex(3, fF / mass_);
         f->SetAtIndex(4, fN / mass_ + get_gravitational_acceleration());
-        f->SetAtIndex(5, ((xc - x) * fN - (yc - y) * fF) / J);
+        f->SetAtIndex(5, ((cx - x) * fN - (cy - y) * fF) / J);
 
         // Compute the normal acceleration at the contact point (a check).
         const T yddot = f->GetAtIndex(4);
         const T thetaddot = f->GetAtIndex(5);
-        ycddot =
+        cyddot =
             yddot +
             ell * k * (ctheta * thetaddot - stheta * thetadot * thetadot) / 2;
 
         // Lines below currently unused but are occasionally helpful for
         // debugging.
         //        const T xddot = f->GetAtIndex(3);
-        //        const T xcddot = xddot + ell*k*(-stheta*thetaddot -
+        //        const T cxddot = xddot + ell*k*(-stheta*thetaddot -
         //                                        +ctheta*thetadot*thetadot)/2;
 
         // Verify that the normal acceleration is zero.
-        DRAKE_DEMAND(abs(ycddot) < std::numeric_limits<double>::epsilon() * 10);
+        DRAKE_DEMAND(abs(cyddot) < std::numeric_limits<double>::epsilon() * 10);
       }
     }
   }
