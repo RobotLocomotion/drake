@@ -9,6 +9,7 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/automotive/endless_road_oracle-internal.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 #include "drake/common/drake_assert.h"
@@ -66,29 +67,7 @@ void EndlessRoadOracle<T>::DoCalcOutput(
 }
 
 
-namespace {
-
-const double kEnormousDistance = 1e12;
-const double kCarLength = 4.6;  // TODO(maddog) Get from somewhere else.
-
-// State of a car in the underlying source maliput::api::RoadGeometry.
-struct SourceState {
-  SourceState() {}
-
-  SourceState(maliput::api::RoadPosition arp, double als)
-      : rp(arp), longitudinal_speed(als) {}
-
-  maliput::api::RoadPosition rp;
-  double longitudinal_speed{};
-};
-
-
-// Element of a car's travel path in the source maliput::api::RoadGeometry.
-struct PathRecord {
-  const maliput::api::Lane* lane{};
-  bool is_reversed{};
-};
-
+namespace internal {
 
 // EndlessRoadCarState is defined with respect to an InfiniteCircuitRoad,
 // which is a wrapper of sorts around an underlying source RoadGeometry.
@@ -280,8 +259,6 @@ void AssessLongitudinal(
   }
 }
 
-
-enum LaneRelation { kIntersection, kMerge, kSplit };
 
 LaneRelation DetermineLaneRelation(const PathRecord& pra,
                                    const PathRecord& prb) {
@@ -483,7 +460,7 @@ void AssessIntersections(
 }
 
 
-}  // namespace
+}  // namespace internal
 
 
 
@@ -516,8 +493,8 @@ void EndlessRoadOracle<T>::ImplCalcOutput(
   // Here we extract the RoadPositions of each car in the underlying
   // source RoadGeometry, and we extract their paths forward (within the
   // given horizon).
-  std::vector<SourceState> source_states;
-  std::vector<std::vector<PathRecord>> paths;
+  std::vector<internal::SourceState> source_states;
+  std::vector<std::vector<internal::PathRecord>> paths;
   UnwrapEndlessRoadCarState(car_inputs, road_, kEventHorizon,
                             &source_states, &paths);
 
