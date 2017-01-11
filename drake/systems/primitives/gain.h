@@ -19,7 +19,7 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in drakeSystemFramework.
+/// They are already available to link against in the containing library.
 ///
 /// To use other specific scalar types see gain-inl.h.
 ///

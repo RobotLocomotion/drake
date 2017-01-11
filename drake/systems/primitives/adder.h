@@ -20,7 +20,7 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
 class Adder : public LeafSystem<T> {

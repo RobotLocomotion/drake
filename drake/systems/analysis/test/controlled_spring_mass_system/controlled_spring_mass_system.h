@@ -23,7 +23,7 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 /// @ingroup rigid_body_systems
 template <typename T>

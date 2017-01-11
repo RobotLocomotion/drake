@@ -23,7 +23,7 @@ class XMLElement;
 /// - AutoDiffXd
 /// - AutoDiffUpTo73d
 ///
-/// They are already available to link against in drakeRBM.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
 class RigidBodyFrame {
