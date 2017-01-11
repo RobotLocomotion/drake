@@ -9,7 +9,7 @@ namespace painleve {
 /// from [Stewart 2000]. The Painleve Paradox consists of a rod contacting
 /// a planar surface *without impact* and subject to sliding Coulomb friction.
 /// The problem is well known to correspond to an *inconsistent rigid contact
-/// configuration*, where non-impulsive forces are necessary to resolve the
+/// configuration*, where impulsive forces are necessary to resolve the
 /// problem.
 ///
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
@@ -17,17 +17,23 @@ namespace painleve {
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 /// Instantiated templates for the following scalar types @p T are provided:
+///
 /// - double
 ///
-/// They are already available to link against in drakePainleve.
+/// They are already available to link against in the containing library.
 ///
 /// Inputs: no inputs.
+///
 /// States: planar position (state indices 0 and 1) and orientation (state
 ///         index 2), and planar linear velocity (state indices 3 and 4) and
 ///         scalar angular velocity (state index 5) in units of m, radians,
 ///         m/s, and rad/s, respectively. Orientation is measured counter-
 ///         clockwise with respect to the x-axis.
+///
 /// Outputs: same as state.
+///
+/// * [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
+///                    Impact. SIAM Rev., 42(1), 3-39, 2000.
 template <typename T>
 class Painleve : public systems::LeafSystem<T> {
  public:
