@@ -20,6 +20,15 @@ Does your code compile?  :facepalm:
 Is the code the minimal set of what you want?
 =============================================
 
+- If the PR exceeds 500 lines of code, excluding comments, divide it
+  into multiple PRs.
+
+  - If you are modifying an API, consider deprecating the old interface instead
+    of migrating all call sites immediately.
+
+  - If you are introducing a new feature, consider adding only test cases
+    now, and deferring the first application use to a follow-up PR.
+
 - Do a self-review, before you ask anyone else to review.
 
   - Before you even submit the PR, you can review the diffs using
