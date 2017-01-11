@@ -260,39 +260,90 @@ void AssessLongitudinal(
 }
 
 
+const maliput::api::LaneEnd GetStartEnd(const PathRecord& pr) {
+  return maliput::api::LaneEnd(pr.lane,
+                               (pr.is_reversed) ?
+                               maliput::api::LaneEnd::kFinish :
+                               maliput::api::LaneEnd::kStart);
+}
+
+const maliput::api::LaneEnd GetFinishEnd(const PathRecord& pr) {
+  return maliput::api::LaneEnd(pr.lane,
+                               (pr.is_reversed) ?
+                               maliput::api::LaneEnd::kStart :
+                               maliput::api::LaneEnd::kFinish);
+}
+
+bool IsConfluentWith(const maliput::api::LaneEnd& a,
+                     const maliput::api::LaneEnd& b) {
+  // TODO(maddog@tri.global)  This object equality isn't necessarily part of
+  //                          the GetConfluentBranches() contract.  Should it
+  //                          be?  (Everything is easy until you start tiling.)
+  return (a.lane->GetConfluentBranches(a.end) ==
+          b.lane->GetConfluentBranches(b.end));
+}
+
+
 LaneRelation DetermineLaneRelation(const PathRecord& pra,
                                    const PathRecord& prb) {
   // Assuming that the lanes described by pra and prb belong to the same
-  // junction, determine how they related.
+  // junction, determine how they are related.
+  DRAKE_DEMAND(pra.lane->segment()->junction() ==
+               prb.lane->segment()->junction());
 
-  // If they terminate at same BranchPoint, they merge.
-  // Otherwise, if they originate at same BranchPoint, they split.
-  // Otherwise, they merely intersect.
-  // TODO(maddog)  Two other goofy cases:  split-merge, and tangent-loops.
+  // (Below, "originate" and "terminate" are relative to the direction of
+  // travel on a lane, e.g. a 'reversed' lane originates at LaneEnd::kFinish.)
+  //
+  // The options are:
+  //
+  // 0) If they do not share a BranchPoint, they merely intersect.
+  //     #    *----\ /--->*    #
+  //     #          \          #
+  //     #    *----/ \--->*    #
+  //
+  // 1) If they terminate at the same BranchPoint, they merge.
+  //     #    *---->----\      #
+  //     #               *     #
+  //     #    *---->----/      #
+  //
+  // 2) If they originate at the same BranchPoint, they split.
+  //     #     /---->----*     #
+  //     #    *                #
+  //     #     \---->----*     #
+  //
+  // 3) They could originate at a shared BranchPoint, *and* terminate at
+  //    another shared BranchPoint, i.e., "split-merge".
+  //     #    /---->----\      #
+  //     #   *           *     #
+  //     #    \---->----/      #
+  //
+  // 4) They could originate and terminate at a single shared BranchPoint,
+  //    i.e., "tangent loops".
+  //     #   /-------------\   #
+  //     #   \-->--\ /-->--/   #
+  //     #          *          #
+  //     #   /-->--/ \-->--\   #
+  //     #   \-------------/   #
+  //
+  // Shared-BranchPoint configurations that have opposing travel-directions
+  // are considered intersecting --- because if two vehicles occupy such a
+  // configuration they will collide.
+  bool is_split = IsConfluentWith(GetStartEnd(pra), GetStartEnd(prb));
+  bool is_merge = IsConfluentWith(GetFinishEnd(pra), GetFinishEnd(prb));
 
-  const maliput::api::BranchPoint* a_end_pt =
-      pra.lane->GetBranchPoint(
-          (pra.is_reversed) ? maliput::api::LaneEnd::kStart
-          : maliput::api::LaneEnd::kFinish);
-  const maliput::api::BranchPoint* b_end_pt =
-      prb.lane->GetBranchPoint(
-          (prb.is_reversed) ? maliput::api::LaneEnd::kStart
-          : maliput::api::LaneEnd::kFinish);
-  // TODO(maddog) Also ensure branches are confluent.
-  if (b_end_pt == a_end_pt) { return kMerge; }
-
-  const maliput::api::BranchPoint* a_start_pt =
-      pra.lane->GetBranchPoint(
-          (pra.is_reversed) ? maliput::api::LaneEnd::kFinish
-          : maliput::api::LaneEnd::kStart);
-  const maliput::api::BranchPoint* b_start_pt =
-      prb.lane->GetBranchPoint(
-          (prb.is_reversed) ? maliput::api::LaneEnd::kFinish
-          : maliput::api::LaneEnd::kStart);
-  // TODO(maddog) Also ensure branches are confluent.
-  if (b_start_pt == a_start_pt) { return kSplit; }
-
-  return kIntersection;
+  if (is_split && is_merge) {
+    if (pra.lane->GetBranchPoint(maliput::api::LaneEnd::kStart) ==
+        pra.lane->GetBranchPoint(maliput::api::LaneEnd::kFinish)) {
+      return kTangentLoops;
+    }
+    return kSplitMerge;
+  } else if (is_split) {
+    return kSplit;
+  } else if (is_merge) {
+    return kMerge;
+  } else {
+    return kIntersection;
+  }
 }
 
 
@@ -443,7 +494,14 @@ void AssessIntersections(
             // TODO(maddog) Handle split.
             continue;
           }
-          default: { DRAKE_ABORT(); }
+          case kSplitMerge: {
+            // TODO(maddog) Handle split-merge.
+            DRAKE_ABORT();
+          }
+          case kTangentLoops: {
+            // TODO(maddog) Handle tangent-loops.
+            DRAKE_ABORT();
+          }
         }
 
         // TODO(maddog) Compare speeds?  We really want the slower car

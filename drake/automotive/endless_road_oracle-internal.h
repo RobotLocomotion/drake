@@ -15,6 +15,12 @@ const double kEnormousDistance {1e12};
 
 const double kCarLength {4.6};  // TODO(maddog) Get from somewhere else.
 
+enum LaneRelation { kIntersection,
+                    kMerge,
+                    kSplit,
+                    kSplitMerge,
+                    kTangentLoops };
+
 // State of a car in the underlying source maliput::api::RoadGeometry.
 struct SourceState {
   SourceState() {}
@@ -44,8 +50,6 @@ void AssessLongitudinal(
     const std::vector<SourceState>& source_states,
     const std::vector<std::vector<PathRecord>>& paths,
     const std::vector<EndlessRoadOracleOutput<double>*>& oracle_outputs);
-
-enum LaneRelation { kIntersection, kMerge, kSplit };
 
 LaneRelation DetermineLaneRelation(const PathRecord& pra,
                                    const PathRecord& prb);
