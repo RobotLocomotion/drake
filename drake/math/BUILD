@@ -34,7 +34,6 @@ cc_library(
     srcs = [
         "axis_angle.cc",
         "quaternion.cc",
-        "random_rotation.cc",
         "roll_pitch_yaw.cc",
         "rotation_matrix.cc",
     ],
