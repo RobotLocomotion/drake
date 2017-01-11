@@ -14,10 +14,6 @@ except ImportError:
     # We will flag this as an error later, and only if we really needed it.
     pass
 
-from drake_paths import add_module_search_paths
-
-add_module_search_paths()  # So we can find lcm stuff.
-
 import lcm
 
 from drake.lcmt_driving_command_t import lcmt_driving_command_t as lcm_msg
