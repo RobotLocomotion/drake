@@ -16,8 +16,8 @@ namespace painleve {
 /// this class, please refer to http://drake.mit.edu/cxx_inl.html.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
-/// Instantiated templates for the following scalar types @p T are provided:
 ///
+/// Instantiated templates for the following scalar types @p T are provided:
 /// - double
 ///
 /// They are already available to link against in the containing library.
