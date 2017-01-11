@@ -17,7 +17,7 @@ namespace automotive {
 /// - drake::TaylorVarXd
 /// - drake::symbolic::Expression
 ///
-/// They are already available to link against in libdrakeAutomotive.
+/// They are already available to link against in the containing library.
 ///
 /// @ingroup automotive_systems
 ///

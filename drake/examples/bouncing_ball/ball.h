@@ -20,7 +20,7 @@ namespace bouncing_ball {
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
-/// They are already available to link against in drakeBouncingBall.
+/// They are already available to link against in the containing library.
 ///
 /// Inputs: no inputs.
 /// States: vertical position (state index 0) and velocity (state index 1) in
