@@ -34,9 +34,8 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree)
     : tree_(move(tree)) {
   DRAKE_DEMAND(tree_ != nullptr);
 
-  // Declares an input port for the generalized force vector. The generalized
-  // forces in this vector are sent as commands to the actuators within the
-  // RigidBodyTree.
+  // Declares an input port for the command vector. The commands in this vector
+  // are sent to the actuators within the RigidBodyTree.
   command_input_port_index_ = System<T>::DeclareInputPort(kVectorValued,
       get_num_actuators()).get_index();
   // Declares a vector-valued output port for `x`, the plant's generalized state

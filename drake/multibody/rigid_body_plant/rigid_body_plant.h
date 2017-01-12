@@ -36,18 +36,23 @@ namespace systems {
 /// The %RigidBodyPlant's state consists of a vector containing the generalized
 /// positions followed by the generalized velocities of the system.
 ///
-/// <B>Input Port:</B>
+/// The %RigidBodyPlant provides a number of input and output ports. The precise
+/// number depends on the number of model instances within the RigidBodyTree
+/// and the number of them that have actuators. The following lists the
+/// accessors for obtaining the input and output ports of the %RigidBodyPlant.
+/// These accessors are typically used when "wiring up" a RigidBodyPlant within
+/// a Diagram using DiagramBuilder. See, for example, DiagramBuilder::Connect(),
+/// DiagramBuilder::ExportInput(), and DiagramBuilder::ExportOutput().
 ///
-/// There is one input port. It is accessible via the following accessor:
+/// <B>Input Port Accessors:</B>
 ///
-/// - command_input_port(): Contains the command vector for the
-///   RigidBodyTree's actuators.
+/// - command_input_port(): Contains the command vector for the RigidBodyTree's
+///   actuators.
 ///
-/// <B>Output Ports:</B>
+/// - model_input_port(): Contains the command vector for the actuators
+///   belonging to a particular model instance within the RigidBodyTree.
 ///
-/// There are numerous output ports. The number depends on how many model
-/// instances exist in the RigidBodyTree. The output ports are available via
-/// the following accessors.
+/// <B>Output Port Accessors:</B>
 ///
 /// - state_output_port(): A vector-valued port containing the state vector,
 ///   `x`, of the system. The state vector, `x`, consists of generalized
@@ -69,8 +74,7 @@ namespace systems {
 ///   computations.
 ///
 /// - model_state_output_port(): A vector-valued port containing the state
-///   vector for a particular model instance within the RigidBodyTree that is
-///   within this RigidBodyPlant.
+///   vector for a particular model instance in the RigidBodyTree.
 ///
 /// The multibody model consists of a set of rigid bodies connected through
 /// joints in a tree structure. Bodies may have a collision model in which case
@@ -220,15 +224,6 @@ class RigidBodyPlant : public LeafSystem<T> {
   static T JointLimitForce(const DrakeJoint& joint,
                            const T& position, const T& velocity);
 
-  /// Returns a descriptor of the input port for a specific model
-  /// instance.
-  const InputPortDescriptor<T>& model_input_port(
-      int model_instance_id) const {
-    return System<T>::get_input_port(input_map_.at(model_instance_id));
-  }
-
-
-
   /// Returns the index into the output port for @p model_instance_id
   /// which corresponds to the world position index of @p
   /// world_position_index, or throws if the position index does not
@@ -248,14 +243,22 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   /// @name System input port descriptor accessors.
   /// These are accessors for obtaining descriptors of this
-  /// RigidBodyPlant's input port. See this class's description for details
-  /// about this port.
+  /// RigidBodyPlant's input ports. See this class's description for details
+  /// about these ports.
   ///@{
 
   /// Returns a descriptor of the actuator command input port.
   const InputPortDescriptor<T>& command_input_port() const {
     return System<T>::get_input_port(command_input_port_index_);
   }
+
+  /// Returns a descriptor of the input port for a specific model
+  /// instance.
+  const InputPortDescriptor<T>& model_input_port(
+      int model_instance_id) const {
+    return System<T>::get_input_port(input_map_.at(model_instance_id));
+  }
+
   ///@}
 
   /// @name System output port descriptor accessors.
