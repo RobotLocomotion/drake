@@ -57,49 +57,52 @@ class RunningCostEndWrapper : public solvers::Constraint {
   explicit RunningCostEndWrapper(
       std::shared_ptr<solvers::Constraint> constraint)
       : solvers::Constraint(constraint->num_constraints(),
+                            constraint->num_vars(),
                             constraint->lower_bound(),
                             constraint->upper_bound()),
         constraint_(constraint) {}
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+ private:
+  std::shared_ptr<Constraint> constraint_;
+
+  void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override {
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override {
     TaylorVecXd wrapped_x = x;
     wrapped_x(0) *= 0.5;
     constraint_->Eval(wrapped_x, y);
   };
-
- private:
-  std::shared_ptr<Constraint> constraint_;
 };
 
 class RunningCostMidWrapper : public solvers::Constraint {
  public:
   explicit RunningCostMidWrapper(
       std::shared_ptr<solvers::Constraint> constraint)
-      : Constraint(constraint->num_constraints(), constraint->lower_bound(),
+      : Constraint(constraint->num_constraints(),
+                   constraint->num_vars(),
+                   constraint->lower_bound(),
                    constraint->upper_bound()),
         constraint_(constraint) {}
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+ private:
+  std::shared_ptr<Constraint> constraint_;
+
+  void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override {
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override {
     TaylorVecXd wrapped_x(x.rows() - 1);
     wrapped_x.tail(x.rows() - 2) = x.tail(x.rows() - 2);
     wrapped_x(0) = (x(0) + x(1)) * 0.5;
     constraint_->Eval(wrapped_x, y);
   };
-
- private:
-  std::shared_ptr<Constraint> constraint_;
 };
 
 }  // anon namespace

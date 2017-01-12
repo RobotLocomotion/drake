@@ -27,7 +27,8 @@ KinematicsCache<Scalar>& KinematicsCacheHelper<Scalar>::UpdateKinematics(
 SingleTimeKinematicConstraintWrapper::SingleTimeKinematicConstraintWrapper(
     const SingleTimeKinematicConstraint* rigid_body_constraint,
     KinematicsCacheHelper<double>* kin_helper)
-    : Constraint(rigid_body_constraint->getNumConstraint(nullptr)),
+    : Constraint(rigid_body_constraint->getNumConstraint(nullptr),
+    rigid_body_constraint->getRobotPointer()->get_num_positions()),
       rigid_body_constraint_(rigid_body_constraint),
       kin_helper_(kin_helper) {
   Eigen::VectorXd lower_bound;
@@ -38,7 +39,7 @@ SingleTimeKinematicConstraintWrapper::SingleTimeKinematicConstraintWrapper(
 
 SingleTimeKinematicConstraintWrapper::~SingleTimeKinematicConstraintWrapper() {}
 
-void SingleTimeKinematicConstraintWrapper::Eval(
+void SingleTimeKinematicConstraintWrapper::Eval_impl(
     const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::VectorXd& y) const {
   auto& kinsol = kin_helper_->UpdateKinematics(
       q, rigid_body_constraint_->getRobotPointer());
@@ -46,7 +47,7 @@ void SingleTimeKinematicConstraintWrapper::Eval(
   rigid_body_constraint_->eval(nullptr, kinsol, y, dy);
 }
 
-void SingleTimeKinematicConstraintWrapper::Eval(
+void SingleTimeKinematicConstraintWrapper::Eval_impl(
     const Eigen::Ref<const TaylorVecXd>& tq, TaylorVecXd& ty) const {
   Eigen::VectorXd q = drake::math::autoDiffToValueMatrix(tq);
   auto& kinsol = kin_helper_->UpdateKinematics(
@@ -58,7 +59,7 @@ void SingleTimeKinematicConstraintWrapper::Eval(
       y, (dy * drake::math::autoDiffToGradientMatrix(tq)).eval(), ty);
 }
 
-void QuasiStaticConstraintWrapper::Eval(
+void QuasiStaticConstraintWrapper::Eval_impl(
     const Eigen::Ref<const Eigen::VectorXd>& q,
     Eigen::VectorXd& y) const {
   auto& kinsol = kin_helper_->UpdateKinematics(
@@ -73,7 +74,8 @@ void QuasiStaticConstraintWrapper::Eval(
 QuasiStaticConstraintWrapper::QuasiStaticConstraintWrapper(
     const QuasiStaticConstraint* rigid_body_constraint,
     KinematicsCacheHelper<double>* kin_helper)
-    : Constraint(rigid_body_constraint->getNumConstraint(nullptr) - 1),
+    : Constraint(rigid_body_constraint->getNumConstraint(nullptr) - 1,
+                 rigid_body_constraint->getRobotPointer()->get_num_positions() + rigid_body_constraint->getNumWeights()),
       rigid_body_constraint_(rigid_body_constraint),
       kin_helper_(kin_helper) {
   Eigen::VectorXd lower_bound;
@@ -84,7 +86,7 @@ QuasiStaticConstraintWrapper::QuasiStaticConstraintWrapper(
 
 QuasiStaticConstraintWrapper::~QuasiStaticConstraintWrapper() {}
 
-void QuasiStaticConstraintWrapper::Eval(
+void QuasiStaticConstraintWrapper::Eval_impl(
     const Eigen::Ref<const TaylorVecXd>& tq, TaylorVecXd& ty) const {
   Eigen::VectorXd q = drake::math::autoDiffToValueMatrix(tq);
   auto& kinsol = kin_helper_->UpdateKinematics(

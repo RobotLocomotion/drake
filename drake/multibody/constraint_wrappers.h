@@ -45,15 +45,15 @@ class SingleTimeKinematicConstraintWrapper : public drake::solvers::Constraint {
 
   ~SingleTimeKinematicConstraintWrapper() override;
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& q,
-            Eigen::VectorXd& y) const override;
-
-  void Eval(const Eigen::Ref<const TaylorVecXd>& tq,
-            TaylorVecXd& ty) const override;
-
  private:
   const SingleTimeKinematicConstraint* rigid_body_constraint_;
   mutable KinematicsCacheHelper<double>* kin_helper_;
+
+  void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& q,
+            Eigen::VectorXd& y) const override;
+
+  void Eval_impl(const Eigen::Ref<const TaylorVecXd>& tq,
+            TaylorVecXd& ty) const override;
 };
 
 class QuasiStaticConstraintWrapper : public drake::solvers::Constraint {
@@ -69,15 +69,15 @@ class QuasiStaticConstraintWrapper : public drake::solvers::Constraint {
 
   virtual ~QuasiStaticConstraintWrapper();
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& q,
-            Eigen::VectorXd& y) const override;
-
-  void Eval(const Eigen::Ref<const TaylorVecXd>& tq,
-            TaylorVecXd& ty) const override;
-
  private:
   const QuasiStaticConstraint* rigid_body_constraint_;
   mutable KinematicsCacheHelper<double>* kin_helper_;
+
+  void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& q,
+            Eigen::VectorXd& y) const override;
+
+  void Eval_impl(const Eigen::Ref<const TaylorVecXd>& tq,
+            TaylorVecXd& ty) const override;
 };
 
 }  // namespace plants

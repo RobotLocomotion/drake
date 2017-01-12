@@ -156,24 +156,7 @@ class InverseKinObjective : public Constraint {
  public:
   // All references are aliased for the life of the objective.
   InverseKinObjective(const RigidBodyTree<double>* model, const MatrixXd& Q)
-      : Constraint(model->get_num_positions()), Q_(Q) {}
-
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
-    VectorXd q_err = x - q_nom_i_;
-    y(0) = q_err.transpose() * Q_ * q_err;
-  }
-
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
-    VectorXd x_val = autoDiffToValueMatrix(x);
-    VectorXd q_err = x_val - q_nom_i_;
-    VectorXd y_val = q_err.transpose() * Q_ * q_err;
-    MatrixXd dy_vec = 2 * q_err.transpose() * Q_;
-    auto gradient_mat = autoDiffToGradientMatrix(x);
-    math::initializeAutoDiffGivenGradientMatrix(
-        y_val, (dy_vec * gradient_mat).eval(), y);
-  }
+      : Constraint(model->get_num_positions(), Q.rows()), Q_(Q) {}
 
   /// Set the nominal posture.  This should be invoked before any
   /// calls to Eval() (the output of Eval() is undefined if this has
@@ -183,6 +166,23 @@ class InverseKinObjective : public Constraint {
  private:
   const MatrixXd& Q_;
   VectorXd q_nom_i_;
+
+  void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
+                 Eigen::VectorXd& y) const override {
+    VectorXd q_err = x - q_nom_i_;
+    y(0) = q_err.transpose() * Q_ * q_err;
+  }
+
+  void Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
+                 TaylorVecXd& y) const override {
+    VectorXd x_val = autoDiffToValueMatrix(x);
+    VectorXd q_err = x_val - q_nom_i_;
+    VectorXd y_val = q_err.transpose() * Q_ * q_err;
+    MatrixXd dy_vec = 2 * q_err.transpose() * Q_;
+    auto gradient_mat = autoDiffToGradientMatrix(x);
+    math::initializeAutoDiffGivenGradientMatrix(
+        y_val, (dy_vec * gradient_mat).eval(), y);
+  }
 };
 
 }  // anonymous namespace
