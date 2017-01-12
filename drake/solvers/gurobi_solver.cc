@@ -533,54 +533,39 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // TODO(naveenoid) : This needs access externally.
   double sparseness_threshold = 1e-14;
   error = AddCosts(model, prog, sparseness_threshold);
-  DRAKE_ASSERT(!error);
+  DRAKE_DEMAND(!error);
 
-  if (!error) {
-    error = ProcessLinearConstraints(model, prog, sparseness_threshold);
-  }
-  DRAKE_ASSERT(!error);
+  error = ProcessLinearConstraints(model, prog, sparseness_threshold);
+  DRAKE_DEMAND(!error);
 
   // Add Lorentz cone constraints.
-  if (!error) {
-    error = AddSecondOrderConeConstraints(
-        prog, prog.lorentz_cone_constraints(), sparseness_threshold,
-        lorentz_cone_new_variable_indices, model);
-  }
-  DRAKE_ASSERT(!error);
+  error = AddSecondOrderConeConstraints(
+      prog, prog.lorentz_cone_constraints(), sparseness_threshold,
+      lorentz_cone_new_variable_indices, model);
+  DRAKE_DEMAND(!error);
 
   // Add rotated Lorentz cone constraints.
-  if (!error) {
-    error = AddSecondOrderConeConstraints(
-        prog, prog.rotated_lorentz_cone_constraints(), sparseness_threshold,
-        rotated_lorentz_cone_new_variable_indices, model);
-  }
-  DRAKE_ASSERT(!error);
+  error = AddSecondOrderConeConstraints(
+      prog, prog.rotated_lorentz_cone_constraints(), sparseness_threshold,
+      rotated_lorentz_cone_new_variable_indices, model);
+  DRAKE_DEMAND(!error);
 
   DRAKE_ASSERT(HasCorrectNumberOfVariables(model, is_new_variable.size()));
 
-  if (!error) {
-    for (const auto it : prog.GetSolverOptionsDouble("GUROBI")) {
-      error = GRBsetdblparam(env, it.first.c_str(), it.second);
-      DRAKE_ASSERT(!error);
-      if (error) {
-        continue;
-      }
-    }
-  }
-  if (!error) {
-    for (const auto it : prog.GetSolverOptionsInt("GUROBI")) {
-      error = GRBsetintparam(env, it.first.c_str(), it.second);
-      DRAKE_ASSERT(!error);
-      if (error) {
-        continue;
-      }
-    }
+  for (const auto it : prog.GetSolverOptionsDouble("GUROBI")) {
+    error = GRBsetdblparam(env, it.first.c_str(), it.second);
+    DRAKE_DEMAND(!error);
   }
 
-  if (!error) {
-    error = GRBoptimize(model);
+
+  for (const auto it : prog.GetSolverOptionsInt("GUROBI")) {
+    error = GRBsetintparam(env, it.first.c_str(), it.second);
+    DRAKE_DEMAND(!error);
   }
-  DRAKE_ASSERT(!error);
+
+
+  error = GRBoptimize(model);
+  DRAKE_DEMAND(!error);
 
   SolutionResult result = SolutionResult::kUnknownError;
 
