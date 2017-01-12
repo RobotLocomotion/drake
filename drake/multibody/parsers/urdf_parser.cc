@@ -539,11 +539,10 @@ void SetDynamics(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
 }
 
 /**
- * Parses the collision filter group URDF specification.  Assigns collision
- * filter groups to bodies and the groups that the bodies ignore.  The scope
- * of a collision filter group is limited to the scope of the URDF file. In
- * other words, if two URDF files are loaded and both use a common collision
- * filter group name, those groups will be considered unique.
+ * Parses the URDF collision filter group specification. Attempts to add
+ * collision filter groups (with their member lists and ignore lists) to the
+ * tree specification.  Inconsistent definitions will lead to thrown
+ * exceptions.
  *
  * @param tree                  The rigid body tree containing the bodies to
  *                              which the filters will be applied.
@@ -555,6 +554,8 @@ void ParseCollisionFilterGroup(RigidBodyTree<double>* tree, XMLElement* node,
   const char* attr = node->Attribute("drake_ignore");
   if (attr && (std::strcmp(attr, "true") == 0)) return;
 
+  // TODO(SeanCurtis-TRI): After upgarding to newest tinyxml, add line numbers
+  // to error messages.
   attr = node->Attribute("name");
   if (!attr)
     throw runtime_error(
@@ -564,13 +565,12 @@ void ParseCollisionFilterGroup(RigidBodyTree<double>* tree, XMLElement* node,
   tree->DefineCollisionFilterGroup(group_name);
 
   for (XMLElement* member_node = node->FirstChildElement("member"); member_node;
-       member_node =
-           member_node->NextSiblingElement("member")) {
+       member_node = member_node->NextSiblingElement("member")) {
     const char* link_name = member_node->Attribute("link");
     if (!link_name)
-      throw runtime_error(
-          "Collision filter group " + group_name + " provides a member tag "
-          "without specifying the \"link\" attribute.");
+      throw runtime_error("Collision filter group " + group_name +
+                          " provides a member tag "
+                          "without specifying the \"link\" attribute.");
     tree->AddCollisionFilterGroupMember(group_name, link_name,
                                         model_instance_id);
   }
@@ -583,7 +583,7 @@ void ParseCollisionFilterGroup(RigidBodyTree<double>* tree, XMLElement* node,
     if (!target_name)
       throw runtime_error(
           "Collision filter group provides a tag specifying a group to ignore "
-          "without specifying the \"collision_filter_group\".");
+          "without specifying the \"collision_filter_group\" attribute.");
 
     tree->AddCollisionFilterIgnoreTarget(group_name, target_name);
   }
@@ -1080,7 +1080,7 @@ ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
   //}
   // END_DEBUG
 
-  // Parse the collision filter groups
+  // Parses the collision filter groups.
   for (XMLElement* group_node =
            node->FirstChildElement("collision_filter_group");
        group_node;

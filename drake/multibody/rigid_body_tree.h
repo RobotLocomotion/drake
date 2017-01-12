@@ -1182,9 +1182,10 @@ class RigidBodyTree {
 
   /**
    * Attempts to define a new collision filter group.  The given name *must*
-   * be unique.  Duplicate names or attempting to add more collision filter
-   * groups than the system can handle will lead to failure. In the event of
-   * failure, an exception is thrown.
+   * be unique in the current session (see CollisionFilterGroupManager for more
+   * detail).  Duplicate names or attempting to add more collision filter groups
+   * than the system can handle will lead to failure. In the event of failure,
+   * an exception is thrown.
    * @param name        The unique name of the new group.
    */
   void DefineCollisionFilterGroup(const std::string& name);
@@ -1192,14 +1193,11 @@ class RigidBodyTree {
   /**
    * Adds a RigidBody to a collision filter group.  The RigidBody is referenced
    * by name and model instance id. The process will fail if the body cannot be
-   * found (with the previously provided model instance id), or if the group
-   * cannot be found, or if the indicated boy already has *registered*
-   * collision elements (i.e., it has previously been compiled with collision
-   * elements).
+   * found, if the group cannot be found, or if the indicated boy already has
+   * *registered* collision elements (see Model::AddElement for more details).
    * An exception is thrown in the event of failure.
    * @param group_name      The collision filter group name to add the body to.
-   * @param body_name       The name of the body to add (as a member of the
-   *                        group's model instance id.
+   * @param body_name       The name of the body to add.
    * @param model_id        The id of the model instance to which this body
    *                        belongs.
    */
@@ -1209,8 +1207,8 @@ class RigidBodyTree {
 
   /**
    * Adds a collision group to the set of groups ignored by the specified
-   * collision filter group.  Will fail if the specified specified group name
-   * does not refer to an existing collision filter group.  (Although, the
+   * collision filter group.  Will fail if the specified group name
+   * does not refer to an existing collision filter group.  (The
    * target group name need not exist at this time.)  An exception is thrown
    * upon failure.
    * @param group_name
@@ -1220,8 +1218,7 @@ class RigidBodyTree {
                                       const std::string& target_group_name);
 
   // TODO(SeanCurtis-TRI): Kill this method when matlab dependencies are
-  // removed.  There is a corresponding method on the
-  // CollisionFilterGroupManager.
+  // removed.  There is a corresponding method on CollisionFilterGroupManager.
   /**
    Directly set the masks for a body.  The values will remain in the current
    session (i.e., until Clear is called).

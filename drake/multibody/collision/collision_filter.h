@@ -8,9 +8,9 @@
 
 static const int MAX_NUM_COLLISION_FILTER_GROUPS = 128;
 
-
 // forward declaration
-template <typename U> class RigidBody;
+template <typename U>
+class RigidBody;
 
 namespace DrakeCollision {
 
@@ -30,17 +30,13 @@ extern const bitmask DEFAULT_GROUP;
  to it, and the names of collision filter groups that it ignores.  This
  class is used for initialization and not run-time calculations.
 
- By definition, a collision filter group can only apply to bodies within a
- single model instance.  This class tracks the identifier of the model it
- works with.
-
  @tparam  T  A valid Eigen scalar type.
  */
 template <typename T>
 class CollisionFilterGroup {
  public:
   /**
-   Default constructor for use with unordered_map.
+   Default constructor required by use in std::unordered_map.
    */
   CollisionFilterGroup();
 
@@ -54,7 +50,7 @@ class CollisionFilterGroup {
 
   void add_body(const RigidBody<T>& body) { bodies_.push_back(&body); }
 
-  std::vector<const RigidBody<T>*> get_bodies() { return bodies_; }
+  std::vector<const RigidBody<T>*>& get_bodies() { return bodies_; }
 
   const std::vector<std::string>& get_ignore_groups() const {
     return ignore_groups_;
@@ -71,9 +67,13 @@ class CollisionFilterGroup {
   std::vector<std::string> ignore_groups_{};
 };
 
+// TODO(SeanCurtis-TRI): Per discussion in issue #4729, this will eventually
+// be expanded to include programmatic manipulation of groups during
+// construction, and, eventually, dynamic manipulation of groups during
+// simulation.
 /**
- This class provides management utilities for the collision filter groups for
- RigidBodyTree instances.
+ This class provides management utilities for the definition of collision filter
+ groups for RigidBodyTree instances.
 
  The intent of the manager is to serve as an accumulator during the *parsing*
  process.  It serves as an intermediate representation of the collision filter
@@ -85,9 +85,9 @@ class CollisionFilterGroup {
  RigidBodyTree::compile).  Multiple sessions can be run on a single manager
  (this naturally arises from parsing multiple files).  Collision filter groups
  defined during a single session must all have unique group *names*. Names
- used in different sessions are treated as being *different* collision filter
- groups.  The names of the groups is only maintained during parsing.  At
- runtime, the names are replaced with integer identifiers.
+ repeated in different sessions are treated as being *different* collision
+ filter groups.  The names of the groups are only maintained during parsing.
+ During compilation, the names are replaced with integer identifiers.
 
  The group manager can handle a finite number of groups
  (MAX_NUM_COLLISION_FILTER_GROUPS).  Each session contributes towards reaching
@@ -117,13 +117,13 @@ class CollisionFilterGroupManager {
 
   /**
    Based on the current specification, builds the appropriate collision filter
-   bitmasks and assigns them to the specified rigid bodies.
+   bitmasks and assigns them to the previously provided rigid bodies.
    */
   void CompileGroups();
 
   /**
    Attempts to define a new collision filter group.  The given name *must*
-   be unique.  Duplicate names or attempting to add more
+   be unique in this session.  Duplicate names or attempting to add more
    collision filter groups than the system can handle will lead to failure. In
    the event of failure, an exception is thrown.
    @param name        The unique name of the new group.
@@ -132,16 +132,18 @@ class CollisionFilterGroupManager {
 
   // Note: unlike the other public methods of this class, this method does *not*
   // throw an exception upon failure.  The reason is two-fold:
-  //  1) This method a a single fail condition (which can be succinctly
+  //  1) This method has a single fail condition (which can be succinctly
   //     communicated with a boolean.)
   //  2) The caller has more context to why this was called and is better able
-  //     to provide a meaningful error message.
+  //     to provide a meaningful error message.  More particularly, this code
+  //     cannot create an error message including the body name without creating
+  //     a circular dependency between drakeRBM and drakeCollision.
   /**
    Adds a RigidBody to a collision filter group.  The process will fail if the
    group cannot be found.
-   @param group_name      The collision filter group name to add the body to.
-   @param body            The name of the body to add (as a member of the
-                          group's model instance id.
+   @param group_name      The name of the collision filter group to add the body
+                          to.
+   @param body            The body to add.
    @returns False if the group could not be found.
    */
   bool AddCollisionFilterGroupMember(const std::string& group_name,
@@ -168,34 +170,36 @@ class CollisionFilterGroupManager {
 
   /**
    Returns the group membership bitmask for the given @p body.  If there is
-   no information for this body, the zero bitmask will be returned.
+   no information for this body, the zero bitmask will be returned.  This
+   should only be called *after* CompileGroups.
    */
-  bitmask get_group_mask(const RigidBody<T>& body);
+  const bitmask& get_group_mask(const RigidBody<T>& body);
 
   /**
    Returns the ignored group bitmask for the given @p body.  If there is
-   no information for this body, the zero bitmask will be returned.
+   no information for this body, the zero bitmask will be returned.  This
+   should only be called *after* CompileGroups.
    */
-  bitmask get_ignore_mask(const RigidBody<T>& body);
+  const bitmask& get_ignore_mask(const RigidBody<T>& body);
 
   // TODO(SeanCurtis-TRI): Kill this method when matlab dependencies are
   // removed.  There is a corresponding method on the RigidBodyTree.
   /**
    Directly set the masks for a body.  The values will remain in the current
-   session (i.e., until Clear is called).
-   This is a convenience function for Matlab integration.  The Matlab parser
-   handles the mapping of collision filter group names to ids and passes the
-   mapped ids directly the manager for when the tree gets compiled.  It relies
-   on correct encoding of groups into bitmasks.
+   session (i.e., until Clear is called). This is a convenience function for
+   Matlab integration.  The Matlab parser handles the mapping of collision
+   filter group names to ids and passes the mapped ids directly the manager for
+   when the tree gets compiled. The input bitmasks are in no way validated.
+   Bitmasks initialized in this manner are *not* guaranteed to include
+   membership in the DEFAULT_GROUP.
    */
   void SetBodyCollisionFilters(const RigidBody<T>& body, const bitmask& group,
                                const bitmask& ignores);
 
   /**
-   Clears the cached collision filter group specification data.  It does *not*
-   reset the counter for available collision filter groups.  This allows the
-   accumulation of unique collision filter groups for a single instance of
-   the manager.
+   Clears the cached collision filter group specification data from the current
+   session.  It does *not* reset the counter for available collision filter
+   groups.
    */
   void Clear();
 
@@ -208,7 +212,7 @@ class CollisionFilterGroupManager {
   // is the default group (which is implicitly consumed.)
   int next_id_{1};
 
-  // Map between group names and specification of its collision filter group.
+  // Map between group names and its collision filter group specification.
   std::unordered_map<std::string, DrakeCollision::CollisionFilterGroup<T>>
       collision_filter_groups_{};
 

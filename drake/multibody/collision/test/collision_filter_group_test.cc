@@ -41,7 +41,7 @@ GTEST_TEST(CollisionFilterGroupDefinition, DuplicateGroupNames) {
     std::string expected_msg =
         "Attempting to create duplicate collision "
         "filter group: " +
-        group_name;
+        group_name + ".";
     EXPECT_EQ(e.what(), expected_msg);
   }
 }
@@ -162,7 +162,7 @@ GTEST_TEST(CollisionFilterGroupCompile, MultiGroupMembership) {
   manager.AddCollisionFilterGroupMember("group1", body);
   manager.AddCollisionFilterGroupMember("group3", body);
   manager.CompileGroups();
-  bitmask expected_group( 0b1011);
+  bitmask expected_group(0b1011);
   EXPECT_EQ(manager.get_group_mask(body), expected_group);
 }
 

@@ -19,8 +19,18 @@
         centers both lie on the x-axis at a distance of 2R - d, where id is 0.1
         units (the penetration depth).
 
-        This tests the parser's ability to correctly create a group with an
-        ignore set with multiple members.
+        This tests the parser's ability to correctly create a group with a
+        member set with multiple members.
+
+        The robot *may* appear overly complex for the test.  But collision
+        cliques already exclude possible collisions between pairs (A, B) and
+        (B, C) due to their adjacency.  The collision between pair (A, C) will
+        *not* be dismissed due to cliques.  Only the collision filter groups
+        will prevent a reported collision.
+
+        There are two variants of this file to test two aspects of collision
+        filter groups.  This variant tests that a body that ignores multiple
+         *collision filter groups* will lead to the correct filtering behavior.
     -->
  <link name="body1">
    <collision>

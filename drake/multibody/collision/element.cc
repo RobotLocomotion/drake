@@ -11,34 +11,26 @@ using std::ostream;
 namespace DrakeCollision {
 
 Element::Element()
-    : DrakeShapes::Element(Eigen::Isometry3d::Identity()), body_(nullptr),
-      collision_filter_group_(DrakeCollision::DEFAULT_GROUP),
-      collision_filter_ignores_(DrakeCollision::NONE_MASK) {
+    : DrakeShapes::Element(Eigen::Isometry3d::Identity()), body_(nullptr) {
   id = (ElementId) this;
 }
 
 Element::Element(const DrakeShapes::Geometry& geometry,
                  const Isometry3d& T_element_to_local)
-    : DrakeShapes::Element(geometry, T_element_to_local), body_(nullptr),
-      collision_filter_group_(DrakeCollision::DEFAULT_GROUP),
-      collision_filter_ignores_(DrakeCollision::NONE_MASK) {
+    : DrakeShapes::Element(geometry, T_element_to_local), body_(nullptr) {
   id = (ElementId) this;
 }
 
 Element::Element(const Isometry3d& T_element_to_link,
                  const RigidBody<double>* body)
-    : DrakeShapes::Element(T_element_to_link), body_(body),
-      collision_filter_group_(DrakeCollision::DEFAULT_GROUP),
-      collision_filter_ignores_(DrakeCollision::NONE_MASK) {
+    : DrakeShapes::Element(T_element_to_link), body_(body) {
   id = (ElementId) this;
 }
 
 Element::Element(const DrakeShapes::Geometry& geometry,
                  const Isometry3d& T_element_to_link,
                  const RigidBody<double>* body)
-    : DrakeShapes::Element(geometry, T_element_to_link), body_(body),
-      collision_filter_group_(DrakeCollision::DEFAULT_GROUP),
-      collision_filter_ignores_(DrakeCollision::NONE_MASK) {
+    : DrakeShapes::Element(geometry, T_element_to_link), body_(body) {
   id = (ElementId) this;
 }
 

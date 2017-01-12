@@ -1,8 +1,8 @@
 #include "drake/multibody/collision/collision_filter.h"
 
-#include <drake/common/drake_assert.h>
-#include <drake/common/text_logging.h>
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/text_logging.h"
 
 #include <string>
 #include <utility>
@@ -32,7 +32,7 @@ void CollisionFilterGroupManager<T>::DefineCollisionFilterGroup(
     collision_filter_groups_[name] = CollisionFilterGroup<T>(name, id);
   } else {
     throw std::runtime_error(
-        "Attempting to create duplicate collision filter group: " + name);
+        "Attempting to create duplicate collision filter group: " + name + ".");
   }
 }
 
@@ -100,7 +100,7 @@ int CollisionFilterGroupManager<T>::GetGroupId(const std::string& group_name) {
 }
 
 template <typename T>
-bitmask CollisionFilterGroupManager<T>::get_group_mask(
+const bitmask& CollisionFilterGroupManager<T>::get_group_mask(
     const RigidBody<T>& body) {
   auto itr = body_groups_.find(&body);
   if (itr != body_groups_.end()) {
@@ -110,7 +110,7 @@ bitmask CollisionFilterGroupManager<T>::get_group_mask(
 }
 
 template <typename T>
-bitmask CollisionFilterGroupManager<T>::get_ignore_mask(
+const bitmask& CollisionFilterGroupManager<T>::get_ignore_mask(
     const RigidBody<T>& body) {
   auto itr = body_groups_.find(&body);
   if (itr != body_groups_.end()) {

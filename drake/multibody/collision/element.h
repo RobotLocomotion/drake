@@ -124,14 +124,16 @@ class Element : public DrakeShapes::Element {
   const std::vector<int>& collision_cliques() const;
 
   /** Returns a pointer to the `RigidBody` to which this `Element`
-  is attached. **/
+   *  is attached.
+   */
   const RigidBody<double>* get_body() const;
 
-  /** Sets the `RigidBody` this collision element is attached to. **/
+  /** Sets the `RigidBody` this collision element is attached to. */
   void set_body(const RigidBody<double> *body);
 
   /** Sets the collision filter state of the element: the groups to which this
-   * element belongs and the groups that it should ignore. */
+   * element belongs and the groups that it should ignore.
+   */
   void set_collision_filter(const bitmask &group,
                             const bitmask &ignores);
 
@@ -175,15 +177,15 @@ class Element : public DrakeShapes::Element {
   // By arbitrary convention, the ordering is monotonically increasing.
   std::vector<int> collision_cliques_;
 
-  // A bitmask that determines the collision groups that this rigid body is part
+  // A bitmask that determines the collision groups that this element is part
   // of. If the i-th bit is set this rigid body belongs to the i-th collision
-  // group. A rigid body can belong to several collision groups.
-  DrakeCollision::bitmask collision_filter_group_;
+  // group. An element can belong to multiple collision groups.
+  DrakeCollision::bitmask collision_filter_group_{DEFAULT_GROUP};
 
-  // A bitmask that determines which collision groups this rigid body does not
-  // collide with. Thus, if the i-th bit is set this rigid body is not checked
-  // for collisions with bodies in the i-th group.
-  DrakeCollision::bitmask collision_filter_ignores_;
+  // A bitmask that determines which collision groups this element can *not*
+  // collide with. Thus, if the i-th bit is set this element is not checked
+  // for collisions with elements in the i-th group.
+  DrakeCollision::bitmask collision_filter_ignores_{NONE_MASK};
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
