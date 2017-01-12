@@ -19,6 +19,31 @@ non support of hardware-accelerated rendering. To address this, go to
 ``Virtual Machine Settings``, and check the ``Accelerate 3D Graphics`` box under
 Display settings; now the simulations draw properly.
 
+.. _faq_drake_visualizer_no_module_named_vtk_common_core_python:
+
+Why does Drake Visualizer crash with a "No module named vtkCommonCorePython" Error?
+===================================================================================
+
+Symptom: When you start ``drake-visualizer``, it crashes with the following
+error::
+
+    File "/usr/lib/python2.7/dist-packages/vtk/__init__.py", line 39, in <module>
+      from vtkCommonCore import *
+    File "/usr/lib/python2.7/dist-packages/vtk/vtkCommonCore.py", line 1, in <module>
+      from vtkCommonCorePython import *
+    ImportError: No module named vtkCommonCorePython
+
+Solution: This is a `known problem <https://github.com/RobotLocomotion/drake/issues/4738>`_
+when you have ``python-vtk6`` installed. The workaround depends on whether
+you're building Drake within a ROS Catkin workspace.
+
+For non-ROS users, see :ref:`these instructions <drake_fix_drake_visualizer>`.
+
+For ROS Indigo users, see
+:ref:`these instructions <drake_ros_indigo_test_drake_visualizer>`.
+
+For ROS Kinetic users, see :ref:`step 5 <drake_ros_kinetic_build_workspace>` and
+:ref:`step 6 <drake_ros_kinetic_environment_variables>`.
 
 .. _faq_java_classes:
 
