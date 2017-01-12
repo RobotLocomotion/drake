@@ -9,6 +9,9 @@
 
 namespace DrakeCollision {
 
+const bitmask NONE_MASK(0);
+const bitmask DEFAULT_GROUP(1);
+
 using drake::AutoDiffXd;
 
 template <typename T>
@@ -37,7 +40,7 @@ template <typename T>
 void CollisionFilterGroupManager<T>::CompileGroups() {
   for (auto& pair : collision_filter_groups_) {
     CollisionFilterGroup<T>& group = pair.second;
-    bitmask group_mask, ignore_mask;
+    bitmask group_mask = DEFAULT_GROUP, ignore_mask = NONE_MASK;
     group_mask.set(group.get_mask_id());
     for (const auto& ignore_name : group.get_ignore_groups()) {
       const auto& itr = collision_filter_groups_.find(ignore_name);

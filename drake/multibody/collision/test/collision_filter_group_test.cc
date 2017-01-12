@@ -52,13 +52,13 @@ GTEST_TEST(CollisionFilterGroupDefinition, CollisionGroupAssignment) {
   CollisionFilterGroupManager<double> manager;
   const int group_count = 10;
   for (int i = 0; i < group_count; ++i) {
-    std::string group_name = "group" + std::to_string(i);
+    std::string group_name = "group" + std::to_string(i + 1);
     manager.DefineCollisionFilterGroup(group_name);
   }
 
   for (int i = 0; i < group_count; ++i) {
-    std::string group_name = "group" + std::to_string(i);
-    EXPECT_EQ(manager.GetGroupId(group_name), i);
+    std::string group_name = "group" + std::to_string(i + 1);
+    EXPECT_EQ(manager.GetGroupId(group_name), i + 1);
   }
 }
 
@@ -67,7 +67,7 @@ GTEST_TEST(CollisionFilterGroupDefinition, CollisionGroupAssignment) {
 // message.
 GTEST_TEST(CollisionFilterGroupDefinition, CollisionGroupOverflow) {
   CollisionFilterGroupManager<double> manager;
-  for (int i = 0; i < MAX_NUM_COLLISION_FILTER_GROUPS; ++i) {
+  for (int i = 1; i < MAX_NUM_COLLISION_FILTER_GROUPS; ++i) {
     std::string group_name = "group" + std::to_string(i);
     manager.DefineCollisionFilterGroup(group_name);
   }
@@ -146,43 +146,40 @@ GTEST_TEST(CollisionFilterGroupCompile, SingleGroupMembership) {
   RigidBody<double> body;
   manager.AddCollisionFilterGroupMember(group_name, body);
   manager.CompileGroups();
-  bitmask expected_group;
-  // First group added should be group: 0.  See CollisionGroupAssignment test.
-  int expected_id = 0;
-  expected_group.set(expected_id);
+  // First group added should be group: 1 and 0 (default).
+  // See CollisionGroupAssignment test.
+  bitmask expected_group(0b11);
   EXPECT_EQ(manager.get_group_mask(body), expected_group);
 }
 
 // Tests correct bit mask for a body belonging to multiple groups.
 GTEST_TEST(CollisionFilterGroupCompile, MultiGroupMembership) {
   CollisionFilterGroupManager<double> manager;
-  manager.DefineCollisionFilterGroup("group0");
   manager.DefineCollisionFilterGroup("group1");
   manager.DefineCollisionFilterGroup("group2");
+  manager.DefineCollisionFilterGroup("group3");
   RigidBody<double> body;
-  manager.AddCollisionFilterGroupMember("group0", body);
-  manager.AddCollisionFilterGroupMember("group2", body);
+  manager.AddCollisionFilterGroupMember("group1", body);
+  manager.AddCollisionFilterGroupMember("group3", body);
   manager.CompileGroups();
-  bitmask expected_group;
-  expected_group.set(0);
-  expected_group.set(2);
+  bitmask expected_group( 0b1011);
   EXPECT_EQ(manager.get_group_mask(body), expected_group);
 }
 
 // Tests correct ignore bit mask for a body belonging to a single group.
 GTEST_TEST(CollisionFilterGroupCompile, SingleGroupIgnoreSet) {
   CollisionFilterGroupManager<double> manager;
-  for (int i = 0; i < 4; ++i) {
+  for (int i = 1; i <= 4; ++i) {
     manager.DefineCollisionFilterGroup("group" + std::to_string(i));
   }
-  // group 0 ignores itself, 2, & 3
-  std::vector<int> ignores = {0, 2, 3};
+  // group 1 ignores itself, 3, & 4
+  std::vector<int> ignores = {1, 3, 4};
   for (auto i : ignores) {
-    manager.AddCollisionFilterIgnoreTarget("group0",
+    manager.AddCollisionFilterIgnoreTarget("group1",
                                            "group" + std::to_string(i));
   }
   RigidBody<double> body;
-  manager.AddCollisionFilterGroupMember("group0", body);
+  manager.AddCollisionFilterGroupMember("group1", body);
   manager.CompileGroups();
   bitmask expected_ignores;
   for (auto i : ignores) {
@@ -195,24 +192,24 @@ GTEST_TEST(CollisionFilterGroupCompile, SingleGroupIgnoreSet) {
 // should be the union of its groups ignores.
 GTEST_TEST(CollisionFilterGroupCompile, MultiGroupIgnoreSet) {
   CollisionFilterGroupManager<double> manager;
-  for (int i = 0; i < 6; ++i) {
+  for (int i = 1; i <= 6; ++i) {
     manager.DefineCollisionFilterGroup("group" + std::to_string(i));
   }
-  // group 0 ignores itself, 2, & 3
-  std::set<int> ignores0 = {0, 2, 3};
+  // group 1 ignores itself, 3, & 4
+  std::set<int> ignores0 = {1, 3, 4};
   for (auto i : ignores0) {
-    manager.AddCollisionFilterIgnoreTarget("group0",
-                                           "group" + std::to_string(i));
-  }
-  // group 1 ignores 3 & 4
-  std::set<int> ignores1 = {3, 4};
-  for (auto i : ignores1) {
     manager.AddCollisionFilterIgnoreTarget("group1",
                                            "group" + std::to_string(i));
   }
+  // group 2 ignores 4 & 5
+  std::set<int> ignores1 = {3, 4};
+  for (auto i : ignores1) {
+    manager.AddCollisionFilterIgnoreTarget("group2",
+                                           "group" + std::to_string(i));
+  }
   RigidBody<double> body;
-  manager.AddCollisionFilterGroupMember("group0", body);
   manager.AddCollisionFilterGroupMember("group1", body);
+  manager.AddCollisionFilterGroupMember("group2", body);
   manager.CompileGroups();
   std::vector<int> ignore_union;
   std::set_union(ignores0.begin(), ignores0.end(), ignores1.begin(),
@@ -228,12 +225,12 @@ GTEST_TEST(CollisionFilterGroupCompile, MultiGroupIgnoreSet) {
 // Tests that references to undefined groups are simply ignored.
 GTEST_TEST(CollisionFilterGroupCompile, IgnoreNonExistentGroup) {
   CollisionFilterGroupManager<double> manager;
-  manager.DefineCollisionFilterGroup("group0");
+  manager.DefineCollisionFilterGroup("group1");
   // group1 does not exist.
-  manager.AddCollisionFilterIgnoreTarget("group0", "group1");
+  manager.AddCollisionFilterIgnoreTarget("group1", "group2");
 
   RigidBody<double> body;
-  manager.AddCollisionFilterGroupMember("group0", body);
+  manager.AddCollisionFilterGroupMember("group1", body);
   manager.CompileGroups();
 
   bitmask expected_ignores = NONE_MASK;
@@ -244,18 +241,17 @@ GTEST_TEST(CollisionFilterGroupCompile, IgnoreNonExistentGroup) {
 // reference.
 GTEST_TEST(CollisionFilterGroupCompile, IgnoreRedundantGroup) {
   CollisionFilterGroupManager<double> manager;
-  manager.DefineCollisionFilterGroup("group0");
   manager.DefineCollisionFilterGroup("group1");
+  manager.DefineCollisionFilterGroup("group2");
   // Redundantly adds group 1.
-  manager.AddCollisionFilterIgnoreTarget("group0", "group1");
-  manager.AddCollisionFilterIgnoreTarget("group0", "group1");
+  manager.AddCollisionFilterIgnoreTarget("group1", "group2");
+  manager.AddCollisionFilterIgnoreTarget("group1", "group2");
 
   RigidBody<double> body;
-  manager.AddCollisionFilterGroupMember("group0", body);
+  manager.AddCollisionFilterGroupMember("group1", body);
   manager.CompileGroups();
 
-  bitmask expected_ignores = NONE_MASK;
-  expected_ignores.set(1);
+  bitmask expected_ignores(0b100);
   EXPECT_EQ(manager.get_ignore_mask(body), expected_ignores);
 }
 
@@ -263,32 +259,31 @@ GTEST_TEST(CollisionFilterGroupCompile, IgnoreRedundantGroup) {
 // it once.
 GTEST_TEST(CollisionFilterGroupCompile, AddBodyRedundantly) {
   CollisionFilterGroupManager<double> manager;
-  manager.DefineCollisionFilterGroup("group0");
   manager.DefineCollisionFilterGroup("group1");
+  manager.DefineCollisionFilterGroup("group2");
   // Redundantly adds group 1.
-  manager.AddCollisionFilterIgnoreTarget("group0", "group1");
+  manager.AddCollisionFilterIgnoreTarget("group1", "group2");
 
   RigidBody<double> body;
-  manager.AddCollisionFilterGroupMember("group0", body);
-  manager.AddCollisionFilterGroupMember("group0", body);
+  manager.AddCollisionFilterGroupMember("group1", body);
+  manager.AddCollisionFilterGroupMember("group1", body);
   manager.CompileGroups();
 
-  bitmask expected_ignores = NONE_MASK;
-  expected_ignores.set(1);
+  bitmask expected_ignores(0b100);
   EXPECT_EQ(manager.get_ignore_mask(body), expected_ignores);
 }
 
 // Tests that clearing the manager removes all data except the next group.
 GTEST_TEST(CollisionFilterGroupCompile, ClearFlushesData) {
   CollisionFilterGroupManager<double> manager;
-  manager.DefineCollisionFilterGroup("group0");
   manager.DefineCollisionFilterGroup("group1");
+  manager.DefineCollisionFilterGroup("group2");
   // Redundantly adds group 1.
-  manager.AddCollisionFilterIgnoreTarget("group0", "group1");
+  manager.AddCollisionFilterIgnoreTarget("group1", "group2");
 
   RigidBody<double> body1, body2;
-  manager.AddCollisionFilterGroupMember("group0", body1);
-  manager.AddCollisionFilterGroupMember("group0", body2);
+  manager.AddCollisionFilterGroupMember("group1", body1);
+  manager.AddCollisionFilterGroupMember("group1", body2);
   manager.CompileGroups();
 
   manager.Clear();
@@ -298,12 +293,12 @@ GTEST_TEST(CollisionFilterGroupCompile, ClearFlushesData) {
   EXPECT_EQ(manager.get_group_mask(body2), NONE_MASK);
   EXPECT_EQ(manager.get_ignore_mask(body2), NONE_MASK);
   // Confirms that the groups have been deleted.
-  EXPECT_EQ(manager.GetGroupId("group0"), -1);
   EXPECT_EQ(manager.GetGroupId("group1"), -1);
+  EXPECT_EQ(manager.GetGroupId("group2"), -1);
 
   // Confirms that the available group counter has continued counting.
-  manager.DefineCollisionFilterGroup("group2");
-  EXPECT_EQ(manager.GetGroupId("group2"), 2);
+  manager.DefineCollisionFilterGroup("group3");
+  EXPECT_EQ(manager.GetGroupId("group3"), 3);
 }
 
 //---------------------------------------------------------------------------
@@ -316,7 +311,7 @@ GTEST_TEST(CollisionFilterGroupElement, ElementCanCollideWithTest) {
   DrakeCollision::Element e2;
 
   // Case 1: By default, elements belong to no group and ignore nothing.
-  EXPECT_EQ(e1.get_collision_filter_group(), NONE_MASK);
+  EXPECT_EQ(e1.get_collision_filter_group(), DEFAULT_GROUP);
   EXPECT_EQ(e1.get_collision_filter_ignores(), NONE_MASK);
 
   // Case 2: Two elements, belonging to the same group (which does *not*
@@ -423,24 +418,18 @@ GTEST_TEST(CollisionFilterGroupRBT, CollisionElementSetFilters) {
 
   tree.compile();
   // Tests the state of the collision filters.
-  bitmask expected_group, expected_ignore;
-  expected_group.reset();
-  expected_group.set(0);
-  expected_ignore.reset();
-  expected_ignore.set(1);
+  bitmask expected_group1(0b11), expected_ignore1(0b100);
   for (auto itr = body1->collision_elements_begin();
        itr != body1->collision_elements_end(); ++itr) {
-    EXPECT_EQ((*itr)->get_collision_filter_group(), expected_group);
-    EXPECT_EQ((*itr)->get_collision_filter_ignores(), expected_ignore);
+    EXPECT_EQ((*itr)->get_collision_filter_group(), expected_group1);
+    EXPECT_EQ((*itr)->get_collision_filter_ignores(), expected_ignore1);
   }
 
-  expected_group.reset();
-  expected_group.set(1);
-  expected_ignore.reset();
+  bitmask expected_group2(0b101);
   for (auto itr = body2->collision_elements_begin();
        itr != body2->collision_elements_end(); ++itr) {
-    EXPECT_EQ((*itr)->get_collision_filter_group(), expected_group);
-    EXPECT_EQ((*itr)->get_collision_filter_ignores(), expected_ignore);
+    EXPECT_EQ((*itr)->get_collision_filter_group(), expected_group2);
+    EXPECT_EQ((*itr)->get_collision_filter_ignores(), NONE_MASK);
   }
 }
 

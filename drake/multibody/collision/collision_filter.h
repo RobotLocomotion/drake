@@ -17,8 +17,12 @@ namespace DrakeCollision {
 typedef std::bitset<MAX_NUM_COLLISION_FILTER_GROUPS> bitmask;
 
 // Constants
-extern const bitmask ALL_MASK;
+// The empty bit mask.  Used in the membership group mask represents no
+// membership.  As the ignore mask, the body ignores nothing.
 extern const bitmask NONE_MASK;
+// The membership bit mask indicating the CFG to which *all* bodies belong. A
+// body can be made invisible (from a collision perspective) by having setting
+// its ignore mask to DEFAULT_GROUP.
 extern const bitmask DEFAULT_GROUP;
 
 /**
@@ -200,8 +204,9 @@ class CollisionFilterGroupManager {
   // if this manager is out of ids.
   int acquire_next_group_id();
 
-  // The next available collision filter group identifier.
-  int next_id_{0};
+  // The next available collision filter group identifier.  Assumes that 0
+  // is the default group (which is implicitly consumed.)
+  int next_id_{1};
 
   // Map between group names and specification of its collision filter group.
   std::unordered_map<std::string, DrakeCollision::CollisionFilterGroup<T>>
