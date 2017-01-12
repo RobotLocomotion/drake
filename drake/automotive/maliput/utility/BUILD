@@ -8,12 +8,12 @@ cc_library(
     srcs = [
         "generate_obj.cc",
         "generate_urdf.cc",
-        "infinite_circuit_road.cc"
+        "infinite_circuit_road.cc",
     ],
     hdrs = [
         "generate_obj.h",
         "generate_urdf.h",
-        "infinite_circuit_road.h"
+        "infinite_circuit_road.h",
     ],
     linkstatic = 1,
     deps = [
@@ -32,7 +32,6 @@ cc_binary(
         "//drake/common:text_logging_gflags",
     ],
 )
-
 
 # === test/ ===
 
@@ -65,7 +64,7 @@ py_test(
     srcs = ["test/yaml_to_obj_test.py"],
     args = ["drake/automotive/maliput/utility/yaml_to_obj"],
     data = [
-        "//drake/automotive/maliput/monolane:yamls",
         ":yaml_to_obj",
+        "//drake/automotive/maliput/monolane:yamls",
     ],
 )

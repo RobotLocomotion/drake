@@ -20,8 +20,8 @@ cc_library(
     hdrs = ["param_parsers/rigid_body_tree_alias_groups.h"],
     linkstatic = 1,
     deps = [
-        "@yaml_cpp//:lib",
         "//drake/multibody:rigid_body_tree",
+        "@yaml_cpp//:lib",
     ],
 )
 

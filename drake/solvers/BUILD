@@ -177,10 +177,11 @@ cc_library(
 cc_googletest(
     name = "binding_test",
     srcs = [
-        "test/binding_test.cc"
+        "test/binding_test.cc",
     ],
-    deps = [":binding",
-            ":constraint"
+    deps = [
+        ":binding",
+        ":constraint",
     ],
 )
 
