@@ -23,7 +23,7 @@ Eigen::MatrixXd ExtractDerivativesMatrix(const TaylorVecXd& vec_in) {
 
 DirectCollocationConstraint::DirectCollocationConstraint(int num_states,
                                                          int num_inputs)
-    : Constraint(num_states, 1 + (2 * num_states_) + (2 * num_inputs_),
+    : Constraint(num_states, 1 + (2 * num_states) + (2 * num_inputs),
                  Eigen::VectorXd::Zero(num_states),
                  Eigen::VectorXd::Zero(num_states)),
       num_states_(num_states),
