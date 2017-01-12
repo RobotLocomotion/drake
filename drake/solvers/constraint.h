@@ -50,9 +50,12 @@ class Constraint {
   /// in Constraint::Eval(x, y), y should be a \p num_constraints x 1 vector.
   /// @param num_vars. The number of rows in the input, namely in
   /// Constraint::Eval(x, y), x should be a \p num_vars x 1 vector.
-  /// If the input dimension is not known, then set \p num_vars to Eigen::Dynamic.
+  /// If the input dimension is not known, then set \p num_vars to
+  /// Eigen::Dynamic.
   Constraint(size_t num_constraints, int num_vars)
-      : lower_bound_(num_constraints), upper_bound_(num_constraints), num_vars_(num_vars){
+      : lower_bound_(num_constraints),
+        upper_bound_(num_constraints),
+        num_vars_(num_vars) {
     check(num_constraints);
     lower_bound_.setConstant(-std::numeric_limits<double>::infinity());
     upper_bound_.setConstant(std::numeric_limits<double>::infinity());
@@ -67,15 +70,20 @@ class Constraint {
   Constraint& operator=(Constraint&& rhs) = delete;
 
   template <typename DerivedLB, typename DerivedUB>
-  Constraint(size_t num_constraints, int num_vars, Eigen::MatrixBase<DerivedLB> const& lb,
+  Constraint(size_t num_constraints, int num_vars,
+             Eigen::MatrixBase<DerivedLB> const& lb,
              Eigen::MatrixBase<DerivedUB> const& ub)
       : Constraint(num_constraints, num_vars, lb, ub, "") {}
 
   template <typename DerivedLB, typename DerivedUB>
-  Constraint(size_t num_constraints, int num_vars, const Eigen::MatrixBase<DerivedLB>& lb,
+  Constraint(size_t num_constraints, int num_vars,
+             const Eigen::MatrixBase<DerivedLB>& lb,
              const Eigen::MatrixBase<DerivedUB>& ub,
              const std::string& description)
-      : lower_bound_(lb), upper_bound_(ub), num_vars_(num_vars), description_(description) {
+      : lower_bound_(lb),
+        upper_bound_(ub),
+        num_vars_(num_vars),
+        description_(description) {
     check(num_constraints);
   }
 
@@ -84,8 +92,8 @@ class Constraint {
   // TODO(bradking): consider using a Ref for `y`.  This will require the client
   // to do allocation, but also allows it to choose stack allocation instead.
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                    Eigen::VectorXd& y) const {
+            // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+            Eigen::VectorXd& y) const {
     DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
     Eval_impl(x, y);
   }
@@ -93,8 +101,8 @@ class Constraint {
   // need to support non-differentiable functions (at least, if
   // DifferentiableConstraint is ever implemented).
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                    TaylorVecXd& y) const {
+            // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+            TaylorVecXd& y) const {
     DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
     Eval_impl(x, y);
   }
@@ -137,16 +145,17 @@ class Constraint {
 
   /** Getter for the number of variables in the constraint, namely the
    * number of rows in x, as used in Eval(x, y). */
-  int num_vars() const {return num_vars_;}
+  int num_vars() const { return num_vars_; }
 
  protected:
   virtual void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                         // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                          Eigen::VectorXd& y) const = 0;
 
   virtual void Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                         // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                          TaylorVecXd& y) const = 0;
+
  private:
   Eigen::VectorXd lower_bound_;
   Eigen::VectorXd upper_bound_;
@@ -272,7 +281,7 @@ class LorentzConeConstraint : public Constraint {
   const Eigen::MatrixXd& A() const { return A_; }
 
   /// Getter for b.
-  const Eigen::VectorXd& b() const { return b_;}
+  const Eigen::VectorXd& b() const { return b_; }
 
  protected:
   void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -460,10 +469,10 @@ class LinearConstraint : public Constraint {
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_;
 
   void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override;
+                 Eigen::VectorXd& y) const override;
 
   void Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override;
+                 TaylorVecXd& y) const override;
 };
 
 /**
@@ -530,10 +539,10 @@ class BoundingBoxConstraint : public LinearConstraint {
 
  protected:
   void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override;
+                 Eigen::VectorXd& y) const override;
 
   void Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override;
+                 TaylorVecXd& y) const override;
 };
 
 /**
@@ -728,7 +737,6 @@ class LinearMatrixInequalityConstraint : public Constraint {
 
   /* Getter for all given matrices F */
   const std::vector<Eigen::MatrixXd>& F() const { return F_; }
-
 
   /// Gets the number of rows in the matrix inequality constraint. Namely
   /// Fi are all matrix_rows() x matrix_rows() matrices.

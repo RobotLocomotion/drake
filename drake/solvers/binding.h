@@ -28,7 +28,8 @@ class Binding {
   Binding(const std::shared_ptr<C>& c, const VariableRefList& v)
       : constraint_(c) {
     vars_ = ConcatenateVariableRefList(v);
-    DRAKE_DEMAND(c->num_vars() == vars_.rows() || c->num_vars() == Eigen::Dynamic);
+    DRAKE_DEMAND(c->num_vars() == vars_.rows() ||
+                 c->num_vars() == Eigen::Dynamic);
   }
 
   template <typename U>

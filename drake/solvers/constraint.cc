@@ -5,20 +5,20 @@
 namespace drake {
 namespace solvers {
 void QuadraticConstraint::Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-                               Eigen::VectorXd& y) const {
+                                    Eigen::VectorXd& y) const {
   y.resize(num_constraints());
   y = .5 * x.transpose() * Q_ * x + b_.transpose() * x;
 }
 
 void QuadraticConstraint::Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-                               TaylorVecXd& y) const {
+                                    TaylorVecXd& y) const {
   y.resize(num_constraints());
   y = .5 * x.transpose() * Q_.cast<TaylorVarXd>() * x +
       b_.cast<TaylorVarXd>().transpose() * x;
 }
 
-void LorentzConeConstraint::Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-                                 Eigen::VectorXd& y) const {
+void LorentzConeConstraint::Eval_impl(
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
   Eigen::VectorXd z = A_ * x + b_;
   y.resize(num_constraints());
   y(0) = z(0);
@@ -26,7 +26,7 @@ void LorentzConeConstraint::Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x
 }
 
 void LorentzConeConstraint::Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-                                 TaylorVecXd& y) const {
+                                      TaylorVecXd& y) const {
   TaylorVecXd z = A_.cast<TaylorVarXd>() * x + b_.cast<TaylorVarXd>();
   y.resize(num_constraints());
   y(0) = z(0);
@@ -42,8 +42,8 @@ void RotatedLorentzConeConstraint::Eval_impl(
   y(2) = z(0) * z(1) - z.tail(z.size() - 2).squaredNorm();
 }
 
-void RotatedLorentzConeConstraint::Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-                                        TaylorVecXd& y) const {
+void RotatedLorentzConeConstraint::Eval_impl(
+    const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const {
   TaylorVecXd z = A_.cast<TaylorVarXd>() * x + b_.cast<TaylorVarXd>();
   y.resize(num_constraints());
   y(0) = z(0);
@@ -52,7 +52,7 @@ void RotatedLorentzConeConstraint::Eval_impl(const Eigen::Ref<const TaylorVecXd>
 }
 
 void PolynomialConstraint::Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-                                Eigen::VectorXd& y) const {
+                                     Eigen::VectorXd& y) const {
   double_evaluation_point_.clear();
   for (size_t i = 0; i < poly_vars_.size(); i++) {
     double_evaluation_point_[poly_vars_[i]] = x[i];
@@ -64,7 +64,7 @@ void PolynomialConstraint::Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
 }
 
 void PolynomialConstraint::Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-                                TaylorVecXd& y) const {
+                                     TaylorVecXd& y) const {
   taylor_evaluation_point_.clear();
   for (size_t i = 0; i < poly_vars_.size(); i++) {
     taylor_evaluation_point_[poly_vars_[i]] = x[i];
@@ -76,23 +76,23 @@ void PolynomialConstraint::Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
 }
 
 void LinearConstraint::Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-                            Eigen::VectorXd& y) const {
+                                 Eigen::VectorXd& y) const {
   y.resize(num_constraints());
   y = A_ * x;
 }
 void LinearConstraint::Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-                            TaylorVecXd& y) const {
+                                 TaylorVecXd& y) const {
   y.resize(num_constraints());
   y = A_.cast<TaylorVarXd>() * x;
 }
 
-void BoundingBoxConstraint::Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-                                 Eigen::VectorXd& y) const {
+void BoundingBoxConstraint::Eval_impl(
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
   y.resize(num_constraints());
   y = x;
 }
 void BoundingBoxConstraint::Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-                                 TaylorVecXd& y) const {
+                                      TaylorVecXd& y) const {
   y.resize(num_constraints());
   y = x;
 }
@@ -154,7 +154,8 @@ void LinearMatrixInequalityConstraint::Eval_impl(
 LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
     const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
     double symmetry_tolerance)
-    : Constraint(F.empty() ? 0 : F.front().rows(), F.empty() ? 0 : F.size() - 1),
+    : Constraint(F.empty() ? 0 : F.front().rows(),
+                 F.empty() ? 0 : F.size() - 1),
       F_(F.begin(), F.end()),
       matrix_rows_(F.empty() ? 0 : F.front().rows()) {
   DRAKE_DEMAND(!F.empty());

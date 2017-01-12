@@ -6,16 +6,15 @@ namespace plants {
 
 template <typename T>
 KinematicsCacheHelper<T>::KinematicsCacheHelper(
-    const std::vector<std::unique_ptr<RigidBody<T>>>& bodies) :
-    kinsol_(RigidBodyTree<T>::CreateKinematicsCacheFromBodiesVector(bodies)) {
+    const std::vector<std::unique_ptr<RigidBody<T>>>& bodies)
+    : kinsol_(RigidBodyTree<T>::CreateKinematicsCacheFromBodiesVector(bodies)) {
 }
 
 template <typename Scalar>
 KinematicsCache<Scalar>& KinematicsCacheHelper<Scalar>::UpdateKinematics(
     const Eigen::Ref<const Eigen::VectorXd>& q,
     const RigidBodyTree<double>* tree) {
-  if ((q.size() != last_q_.size()) || (q != last_q_) ||
-      (tree != last_tree_)) {
+  if ((q.size() != last_q_.size()) || (q != last_q_) || (tree != last_tree_)) {
     last_q_ = q;
     last_tree_ = tree;
     kinsol_.initialize(q);
@@ -28,7 +27,7 @@ SingleTimeKinematicConstraintWrapper::SingleTimeKinematicConstraintWrapper(
     const SingleTimeKinematicConstraint* rigid_body_constraint,
     KinematicsCacheHelper<double>* kin_helper)
     : Constraint(rigid_body_constraint->getNumConstraint(nullptr),
-    rigid_body_constraint->getRobotPointer()->get_num_positions()),
+                 rigid_body_constraint->getRobotPointer()->get_num_positions()),
       rigid_body_constraint_(rigid_body_constraint),
       kin_helper_(kin_helper) {
   Eigen::VectorXd lower_bound;
@@ -60,11 +59,9 @@ void SingleTimeKinematicConstraintWrapper::Eval_impl(
 }
 
 void QuasiStaticConstraintWrapper::Eval_impl(
-    const Eigen::Ref<const Eigen::VectorXd>& q,
-    Eigen::VectorXd& y) const {
+    const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::VectorXd& y) const {
   auto& kinsol = kin_helper_->UpdateKinematics(
-      q.head(
-          rigid_body_constraint_->getRobotPointer()->get_num_positions()),
+      q.head(rigid_body_constraint_->getRobotPointer()->get_num_positions()),
       rigid_body_constraint_->getRobotPointer());
   auto weights = q.tail(rigid_body_constraint_->getNumWeights());
   Eigen::MatrixXd dy;
@@ -75,7 +72,8 @@ QuasiStaticConstraintWrapper::QuasiStaticConstraintWrapper(
     const QuasiStaticConstraint* rigid_body_constraint,
     KinematicsCacheHelper<double>* kin_helper)
     : Constraint(rigid_body_constraint->getNumConstraint(nullptr) - 1,
-                 rigid_body_constraint->getRobotPointer()->get_num_positions() + rigid_body_constraint->getNumWeights()),
+                 rigid_body_constraint->getRobotPointer()->get_num_positions() +
+                     rigid_body_constraint->getNumWeights()),
       rigid_body_constraint_(rigid_body_constraint),
       kin_helper_(kin_helper) {
   Eigen::VectorXd lower_bound;
@@ -90,8 +88,7 @@ void QuasiStaticConstraintWrapper::Eval_impl(
     const Eigen::Ref<const TaylorVecXd>& tq, TaylorVecXd& ty) const {
   Eigen::VectorXd q = drake::math::autoDiffToValueMatrix(tq);
   auto& kinsol = kin_helper_->UpdateKinematics(
-      q.head(
-          rigid_body_constraint_->getRobotPointer()->get_num_positions()),
+      q.head(rigid_body_constraint_->getRobotPointer()->get_num_positions()),
       rigid_body_constraint_->getRobotPointer());
 
   Eigen::VectorXd y;
