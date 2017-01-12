@@ -96,13 +96,20 @@ class FinalCostWrapper : public solvers::Constraint {
  public:
   FinalCostWrapper(int num_time_samples, int num_states,
                    std::shared_ptr<Constraint> constraint)
-      : Constraint(constraint->num_constraints(), constraint->lower_bound(),
+      : Constraint(constraint->num_constraints(),
+                   constraint->num_vars(),
+                   constraint->lower_bound(),
                    constraint->upper_bound()),
         num_time_samples_(num_time_samples),
         num_states_(num_states),
         constraint_(constraint) {}
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+ private:
+  const int num_time_samples_;
+  const int num_states_;
+  std::shared_ptr<Constraint> constraint_;
+
+  void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override {
     // TODO(sam.creasey) If we actually need this, we could cut and
     // paste most of the implementation below (or maybe delegate to a
@@ -110,7 +117,7 @@ class FinalCostWrapper : public solvers::Constraint {
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override {
     DRAKE_ASSERT(x.rows() == (num_time_samples_ - 1) + num_states_);
 
@@ -118,16 +125,11 @@ class FinalCostWrapper : public solvers::Constraint {
     wrapped_x(0) = x.head(num_time_samples_ - 1).sum();
     wrapped_x.tail(num_states_) = x.tail(num_states_);
     DRAKE_ASSERT(wrapped_x(0).derivatives().rows() ==
-                 x(0).derivatives().rows());
+        x(0).derivatives().rows());
 
     constraint_->Eval(wrapped_x, y);
     DRAKE_ASSERT(y(0).derivatives().rows() == x(0).derivatives().rows());
   };
-
- private:
-  const int num_time_samples_;
-  const int num_states_;
-  std::shared_ptr<Constraint> constraint_;
 };
 
 }  // anon namespace
