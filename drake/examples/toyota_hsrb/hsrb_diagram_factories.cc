@@ -71,7 +71,8 @@ unique_ptr<systems::Diagram<double>> BuildPlantAndVisualizerDiagram(
 
   // Instantiates a system for visualizing the model.
   const auto visualizer = builder.AddSystem<DrakeVisualizer>(tree, lcm);
-  builder.Connect(plant_ptr->get_output_port(0), visualizer->get_input_port(0));
+  builder.Connect(plant_ptr->state_output_port(),
+                  visualizer->get_input_port(0));
 
   // Exports all of the RigidBodyPlant's input and output ports.
   for (int i = 0; i < plant_ptr->get_num_input_ports(); ++i) {

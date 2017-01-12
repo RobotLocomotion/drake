@@ -305,7 +305,8 @@ TEST_F(KukaArmTest, EvalOutput) {
 
   // Evaluates the correctness of the kinematics results port.
   auto& kinematics_results =
-      output_->get_data(1)->GetValue<KinematicsResults<double>>();
+      output_->get_data(kuka_plant_->kinematics_results_output_port_index())->
+         GetValue<KinematicsResults<double>>();
   ASSERT_EQ(kinematics_results.get_num_positions(), kNumPositions_);
   ASSERT_EQ(kinematics_results.get_num_velocities(), kNumVelocities_);
 

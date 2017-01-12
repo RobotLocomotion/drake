@@ -70,7 +70,7 @@ VisualizedPlant<T>::VisualizedPlant(
       rigid_body_plant_->get_rigid_body_tree(), lcm);
 
   // Connects the plant to the publisher for visualization.
-  builder.Connect(rigid_body_plant_->get_output_port(0),
+  builder.Connect(rigid_body_plant_->state_output_port(),
                   viz_publisher_->get_input_port(0));
 
   // Exposes output and input ports of the Diagram.
@@ -126,7 +126,7 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
       rigid_body_plant_->model_input_port(robot_instance_id);
   const auto& robot_output_port =
       rigid_body_plant_->model_state_output_port(robot_instance_id);
-  const auto& plant_output_port = rigid_body_plant_->get_output_port(0);
+  const auto& plant_output_port = rigid_body_plant_->state_output_port();
 
   rigid_body_plant_->set_contact_parameters(
       penetration_stiffness, penetration_damping, friction_coefficient);
