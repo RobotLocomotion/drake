@@ -44,8 +44,15 @@ class Constraint {
   }
 
  public:
-  explicit Constraint(size_t num_constraints)
-      : lower_bound_(num_constraints), upper_bound_(num_constraints) {
+  /// Constructs a constraint which has \p num_constraints rows, with input
+  /// variables to Eval a \p num_vars x 1 vector.
+  /// @param num_constraints. The number of rows in the constraints, namely
+  /// in Constraint::Eval(x, y), y should be a \p num_constraints x 1 vector.
+  /// @param num_vars. The number of rows in the input, namely in
+  /// Constraint::Eval(x, y), x should be a \p num_vars x 1 vector.
+  /// If the input dimension is not known, then set \p num_vars to Eigen::Dynamic.
+  Constraint(size_t num_constraints, int num_vars)
+      : lower_bound_(num_constraints), upper_bound_(num_constraints), num_vars_(num_vars){
     check(num_constraints);
     lower_bound_.setConstant(-std::numeric_limits<double>::infinity());
     upper_bound_.setConstant(std::numeric_limits<double>::infinity());
@@ -60,15 +67,15 @@ class Constraint {
   Constraint& operator=(Constraint&& rhs) = delete;
 
   template <typename DerivedLB, typename DerivedUB>
-  Constraint(size_t num_constraints, Eigen::MatrixBase<DerivedLB> const& lb,
+  Constraint(size_t num_constraints, int num_vars, Eigen::MatrixBase<DerivedLB> const& lb,
              Eigen::MatrixBase<DerivedUB> const& ub)
-      : Constraint(num_constraints, lb, ub, "") {}
+      : Constraint(num_constraints, num_vars, lb, ub, "") {}
 
   template <typename DerivedLB, typename DerivedUB>
-  Constraint(size_t num_constraints, const Eigen::MatrixBase<DerivedLB>& lb,
+  Constraint(size_t num_constraints, int num_vars, const Eigen::MatrixBase<DerivedLB>& lb,
              const Eigen::MatrixBase<DerivedUB>& ub,
              const std::string& description)
-      : lower_bound_(lb), upper_bound_(ub), description_(description) {
+      : lower_bound_(lb), upper_bound_(ub), num_vars_(num_vars), description_(description) {
     check(num_constraints);
   }
 
@@ -122,13 +129,15 @@ class Constraint {
     upper_bound_ = upper_bound;
   }
 
+  /** Getter for the number of variables in the constraint, namely the
+   * number of rows in x, as used in Eval(x, y). */
+  int num_vars() const {return num_vars_;}
+
  private:
   Eigen::VectorXd lower_bound_;
   Eigen::VectorXd upper_bound_;
+  int num_vars_{0};
   std::string description_;
-  // TODO(hongkai.dai) : Add a field for the acceptable dimension of Eval. Note
-  // that LorentzConeConstraint and RotatedLorentzConeConstraint can have
-  // dynamic dimension, so we can use Eigen::Dynamic instead.
 };
 
 /**
@@ -142,7 +151,7 @@ class QuadraticConstraint : public Constraint {
   QuadraticConstraint(const Eigen::MatrixBase<DerivedQ>& Q,
                       const Eigen::MatrixBase<Derivedb>& b, double lb,
                       double ub)
-      : Constraint(kNumConstraints, drake::Vector1d::Constant(lb),
+      : Constraint(kNumConstraints, Q.rows(), drake::Vector1d::Constant(lb),
                    drake::Vector1d::Constant(ub)),
         Q_(Q),
         b_(b) {
@@ -226,7 +235,7 @@ class LorentzConeConstraint : public Constraint {
   LorentzConeConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
                         const Eigen::Ref<const Eigen::VectorXd>& b)
       : Constraint(
-            2, Eigen::Vector2d::Constant(0.0),
+            2, A.cols(), Eigen::Vector2d::Constant(0.0),
             Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())),
         A_(A),
         b_(b) {
@@ -284,7 +293,7 @@ class RotatedLorentzConeConstraint : public Constraint {
   RotatedLorentzConeConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
                                const Eigen::Ref<const Eigen::VectorXd>& b)
       : Constraint(
-            3, Eigen::Vector3d::Constant(0.0),
+            3, A.cols(), Eigen::Vector3d::Constant(0.0),
             Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity())),
         A_(A),
         b_(b) {
@@ -338,7 +347,7 @@ class PolynomialConstraint : public Constraint {
   PolynomialConstraint(const VectorXPoly& polynomials,
                        const std::vector<Polynomiald::VarType>& poly_vars,
                        const Eigen::VectorXd& lb, const Eigen::VectorXd& ub)
-      : Constraint(polynomials.rows(), lb, ub),
+      : Constraint(polynomials.rows(), poly_vars.size(), lb, ub),
         polynomials_(polynomials),
         poly_vars_(poly_vars) {}
 
@@ -370,18 +379,17 @@ class PolynomialConstraint : public Constraint {
 // todo: consider implementing DifferentiableConstraint,
 // TwiceDifferentiableConstraint, ComplementarityConstraint,
 // IntegerConstraint, ...
+
 /**
  * Implements a constraint of the form @f lb <= Ax <= ub @f
  */
 class LinearConstraint : public Constraint {
  public:
-  explicit LinearConstraint(size_t num_constraints)
-      : Constraint(num_constraints) {}
   template <typename DerivedA, typename DerivedLB, typename DerivedUB>
   LinearConstraint(const Eigen::MatrixBase<DerivedA>& a,
                    const Eigen::MatrixBase<DerivedLB>& lb,
                    const Eigen::MatrixBase<DerivedUB>& ub)
-      : Constraint(a.rows(), lb, ub), A_(a) {
+      : Constraint(a.rows(), a.cols(), lb, ub), A_(a) {
     DRAKE_ASSERT(a.rows() == lb.rows());
   }
 
@@ -526,7 +534,7 @@ class LinearComplementarityConstraint : public Constraint {
   template <typename DerivedM, typename Derivedq>
   LinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                   const Eigen::MatrixBase<Derivedq>& q)
-      : Constraint(q.rows()), M_(M), q_(q) {}
+      : Constraint(q.rows(), M.cols()), M_(M), q_(q) {}
 
   LinearComplementarityConstraint(const LinearComplementarityConstraint& rhs) =
       delete;
@@ -621,7 +629,7 @@ class PositiveSemidefiniteConstraint : public Constraint {
    * @endcode
    */
   explicit PositiveSemidefiniteConstraint(int rows)
-      : Constraint(rows, Eigen::VectorXd::Zero(rows),
+      : Constraint(rows, rows * rows, Eigen::VectorXd::Zero(rows),
                    Eigen::VectorXd::Constant(
                        rows, std::numeric_limits<double>::infinity())),
         matrix_rows_(rows) {}

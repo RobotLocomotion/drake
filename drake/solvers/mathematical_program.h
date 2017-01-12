@@ -187,6 +187,7 @@ class MathematicalProgram {
     template <typename... Args>
     ConstraintImpl(const F& f, Args&&... args)
         : Constraint(detail::FunctionTraits<F>::numOutputs(f),
+                     detail::FunctionTraits<F>::numInputs(f),
                      std::forward<Args>(args)...),
           f_(f) {}
 
@@ -194,6 +195,7 @@ class MathematicalProgram {
     template <typename... Args>
     ConstraintImpl(F&& f, Args&&... args)
         : Constraint(detail::FunctionTraits<F>::numOutputs(f),
+                     detail::FunctionTraits<F>::numInputs(f),
                      std::forward<Args>(args)...),
           f_(std::forward<F>(f)) {}
 

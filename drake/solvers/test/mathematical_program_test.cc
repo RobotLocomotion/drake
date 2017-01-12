@@ -189,7 +189,7 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
 class GenericTrivialCost1 : public Constraint {
  public:
   GenericTrivialCost1()
-      : Constraint(1, Vector1d(std::numeric_limits<double>::infinity()),
+      : Constraint(1, 3, Vector1d(std::numeric_limits<double>::infinity()),
                    Vector1d(std::numeric_limits<double>::infinity())),
         private_val_(2) {}
 
@@ -620,7 +620,7 @@ class LowerBoundTestCost {
 class LowerBoundTestConstraint : public Constraint {
  public:
   LowerBoundTestConstraint(int i1, int i2)
-      : Constraint(1, Vector1d::Constant(4),
+      : Constraint(1, Eigen::Dynamic, Vector1d::Constant(4),
                    Vector1d::Constant(std::numeric_limits<double>::infinity())),
         i1_(i1),
         i2_(i2) {}
@@ -759,7 +759,7 @@ class GloptipolyConstrainedExampleConstraint
  public:
   GloptipolyConstrainedExampleConstraint()
       : Constraint(
-            1, Vector1d::Constant(0),
+            1, 3, Vector1d::Constant(0),
             Vector1d::Constant(std::numeric_limits<double>::infinity())) {}
 
   // for just these two types, implementing this locally is almost cleaner...
