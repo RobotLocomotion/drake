@@ -300,7 +300,9 @@ void BulletModel::DoAddElement(const Element& element) {
             bt_shape_no_margin = newBulletStaticMeshShape(mesh, false);
             success = true;
           } catch (std::exception &e) {
-            drake::log()->log(spdlog::level::warn, e.what());
+            drake::log()->warn(std::string(e.what()) +
+                ". Unable to construct triangle mesh from obj file; using "
+                "convex hull of mesh instead.");
           }
         }
         if (!success) {  // A convex hull representation of the mesh points.
