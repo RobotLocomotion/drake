@@ -132,7 +132,7 @@ environment variables as follows::
 
 
     export LD_LIBRARY_PATH=$HOME/dev/drake_catkin_workspace/install/lib/vtk-5.10:$LD_LIBRARY_PATH
-    export PYTHONPATH=$HOME/dev/drake_catkin_workspace/build/drake/externals/director/src/vtk-build/Wrapping/Python:/home/liang/dev/drake_catkin_workspace/build/drake/externals/director/src/vtk-build/bin:$PYTHONPATH
+    export PYTHONPATH=$HOME/dev/drake_catkin_workspace/build/drake/externals/director/src/vtk-build/Wrapping/Python:$HOME/dev/drake_catkin_workspace/build/drake/externals/director/src/vtk-build/bin:$PYTHONPATH
 
 You should now be able to run ``drake-visualizer``. For more background
 information, see
@@ -142,3 +142,12 @@ This concludes the instructions for how to install and build Drake using ROS
 Kinetic on Ubuntu 16.04. See
 :ref:`these additional notes <drake_ros_additional_notes>` on where to proceed
 from here.
+
+.. _drake_ros_kinetic_troubleshooting:
+
+Troubleshooting
+===============
+
+If you're unable to launch ``drake-visualizer`` due to a
+"No module named vtkCommonCorePython" error, see
+:ref:`this FAQ <faq_drake_visualizer_no_module_named_vtk_common_core_python_ros_kinetic>`.
