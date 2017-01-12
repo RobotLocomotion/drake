@@ -83,7 +83,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * translator for a particular LCM channel. This reference must remain
    * valid for the lifetime of this object.
    *
-   * @param lcm A non-null pointer to the LCM subsystem to publish on. This
+   * @param lcm A non-null pointer to the LCM subsystem to publish on. The
    * pointer must remain valid for the lifetime of this object.
    */
   LcmPublisherSystem(const std::string& channel,
@@ -98,19 +98,12 @@ class LcmPublisherSystem : public LeafSystem<double> {
 
   const std::string& get_channel_name() const;
 
-  /// Sets the publishing period of this system. The publishing period is the
-  /// amount of simulation time that elapses between successive publish
-  /// operations. A value of infinity results in this system publishing at every
-  /// major timestep of the simulation.
+  /**
+   * Sets the publishing period of this system. See
+   * LeafSystem::DeclarePublishPeriodSec() for details about the semantics of
+   * parameter `period`.
+   */
   void set_publish_period(double period);
-
-  // TODO(liang.fok) Update this to use a LeafSystem accessor method once #4746
-  // is addressed.
-  /// Returns the publishing period of this system. The publishing period is the
-  /// amount of simulation time that elapses between successive publish
-  /// operations. A value of infinity means this system publishes at every major
-  /// timestep of the simulation.
-  double get_publish_period() const;
 
   /// Returns the default name for a system that publishes @p channel.
   static std::string make_name(const std::string& channel);
