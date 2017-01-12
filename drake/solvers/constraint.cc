@@ -154,7 +154,7 @@ void LinearMatrixInequalityConstraint::Eval(
 LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
     const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
     double symmetry_tolerance)
-    : Constraint(F.empty() ? 0 : F.front().rows()),
+    : Constraint(F.empty() ? 0 : F.front().rows(), F.empty() ? 0 : F.size() - 1),
       F_(F.begin(), F.end()),
       matrix_rows_(F.empty() ? 0 : F.front().rows()) {
   DRAKE_DEMAND(!F.empty());
