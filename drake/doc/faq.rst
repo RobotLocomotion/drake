@@ -43,19 +43,7 @@ appropriate subsection below.
 Non-ROS Users
 -------------
 
-There is a `known issue <https://github.com/RobotLocomotion/drake/issues/4738>`_
-where having some version of ``python-vtk6`` installed will result in
-``drake-visualizer`` failing to start. To determine if you have ``python-vtk6``
-installed, execute::
-
-    dpkg -l | grep python-vtk6
-
-To test whether ``drake-visualizer`` can start, execute::
-
-    cd drake-distro
-    ./build/install/bin/drake_visualizer
-
-If the above-mentioned error occurs, configure Director's build system to build
+To work around the problem, configure Director's build system to build
 VTK5 from source (``drake-visualizer`` is built on Director, which is built on
 VTK5)::
 
@@ -79,19 +67,7 @@ You should now be able to start ``drake-visualizer``.
 ROS Indigo Users
 ----------------
 
-There is a `known issue <https://github.com/RobotLocomotion/drake/issues/4738>`_
-where having some version of ``python-vtk6`` installed will result in
-``drake-visualizer`` failing to start. To determine if you have ``python-vtk6``
-installed, execute::
-
-    dpkg -l | grep python-vtk6
-
-To test whether ``drake-visualizer`` can start, execute::
-
-    cd ~/dev/drake_catkin_workspace
-    ./install/bin/drake_visualizer
-
-If the above-mentinoed error occurs, configure Director's build system to build
+To work around the problem, configure Director's build system to build
 VTK5 from source (``drake-visualizer`` is built on Director, which is built on
 VTK5)::
 
