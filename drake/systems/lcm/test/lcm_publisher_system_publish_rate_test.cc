@@ -1,5 +1,6 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 
+#include <cmath>
 #include <memory>
 
 #include "gtest/gtest.h"
@@ -103,45 +104,14 @@ GTEST_TEST(LcmPublisherSystemPublishRateTest, TestPublishPeriod) {
   simulator.set_publish_every_time_step(false);
   simulator.Initialize();
 
-  // Initially, the simulation time is 0 and the timstamp of the last
-  // published LCM message was at time 0.
-  EXPECT_EQ(simulator.get_mutable_context()->get_time(), 0);
-  VerifyTimestamp(lcm.get_last_published_message(channel_name), 0);
-
-  // At time 0.1, the last published LCM message remains at time 0.
-  simulator.StepTo(0.1);
-  EXPECT_EQ(simulator.get_mutable_context()->get_time(), 0.1);
-  VerifyTimestamp(lcm.get_last_published_message(channel_name), 0);
-
-  // At time 1.0, the last published LCM message remains at time 0.
-  simulator.StepTo(1.0);
-  EXPECT_EQ(simulator.get_mutable_context()->get_time(), 1.0);
-  VerifyTimestamp(lcm.get_last_published_message(channel_name), 0);
-
-  // At time 1.49, the last published LCM message remains at time 0.
-  simulator.StepTo(1.49);
-  EXPECT_EQ(simulator.get_mutable_context()->get_time(), 1.49);
-  VerifyTimestamp(lcm.get_last_published_message(channel_name), 0);
-
-  // At time 1.5, the last published LCM message is at time 1.5.
-  simulator.StepTo(1.5);
-  EXPECT_EQ(simulator.get_mutable_context()->get_time(), 1.5);
-  VerifyTimestamp(lcm.get_last_published_message(channel_name), 1.5 * 1000);
-
-  // At time 2.0, the last published LCM message is at time 1.5.
-  simulator.StepTo(2.0);
-  EXPECT_EQ(simulator.get_mutable_context()->get_time(), 2.0);
-  VerifyTimestamp(lcm.get_last_published_message(channel_name), 1.5 * 1000);
-
-  // At time 2.99, the last published LCM message is at time 1.5.
-  simulator.StepTo(2.99);
-  EXPECT_EQ(simulator.get_mutable_context()->get_time(), 2.99);
-  VerifyTimestamp(lcm.get_last_published_message(channel_name), 1.5 * 1000);
-
-  // At time 3.0, the last published LCM message is at time 3.0.
-  simulator.StepTo(3.0);
-  EXPECT_EQ(simulator.get_mutable_context()->get_time(), 3.0);
-  VerifyTimestamp(lcm.get_last_published_message(channel_name), 3.0 * 1000);
+  for (double time = 0; time < 4; time += 0.01) {
+    simulator.StepTo(time);
+    EXPECT_EQ(simulator.get_mutable_context()->get_time(), time);
+    const double expected_time =
+        floor(time / kPublishPeriod) * kPublishPeriod * 1000;
+    VerifyTimestamp(lcm.get_last_published_message(channel_name),
+                    expected_time);
+  }
 }
 
 }  // namespace
