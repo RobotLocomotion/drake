@@ -35,14 +35,63 @@ error::
 
 Solution: This is a `known problem <https://github.com/RobotLocomotion/drake/issues/4738>`_
 when you have ``python-vtk6`` installed. The workaround depends on whether
-you're building Drake within a ROS Catkin workspace.
+you're building Drake within a ROS Catkin workspace. Please jump to the
+appropriate subsection below.
 
-For non-ROS users, see :ref:`these instructions <drake_fix_drake_visualizer>`.
+.. _faq_drake_visualizer_no_module_named_vtk_common_core_python_non_ros:
 
-For ROS Indigo users, see
-:ref:`these instructions <drake_ros_indigo_test_drake_visualizer>`.
+Non-ROS Users
+-------------
 
-For ROS Kinetic users, see :ref:`step 5 <drake_ros_kinetic_build_workspace>` and
+To workaround the problem, configure Director's build system to build VTK5 from
+source (``drake-visualizer`` is built on Director, which is built on VTK5)::
+
+    cd drake-distro/build/externals/director
+    cmake . -DUSE_SYSTEM_VTK=OFF
+    cd drake-distro/build
+    make (or ninja)
+
+Next, modify a couple environment variables before starting
+``drake-visualizer``::
+
+    cd drake-distro
+    export LD_LIBRARY_PATH=`pwd`/build/install/lib/vtk-5.10:$LD_LIBRARY_PATH
+    export PYTHONPATH=`pwd`/build/externals/director/src/vtk-build/Wrapping/Python:`pwd`/build/externals/director/src/vtk-build/bin:$PYTHONPATH
+
+You should now be able to start ``drake-visualizer``.
+
+
+.. _faq_drake_visualizer_no_module_named_vtk_common_core_python_ros_indigo:
+
+ROS Indigo Users
+----------------
+
+To workaround the problem, configure Director's build system to build VTK5 from
+source (``drake-visualizer`` is built on Director, which is built on VTK5)::
+
+    cd ~/dev/drake_catkin_workspace/build/drake/externals/director
+    cmake . -DUSE_SYSTEM_VTK=OFF
+    cd ~/dev/drake_catkin_workspace
+    catkin build
+
+Next, modify a couple environment variables before starting
+``drake-visualizer``::
+
+    export LD_LIBRARY_PATH=$HOME/dev/drake_catkin_workspace/install/lib/vtk-5.10:$LD_LIBRARY_PATH
+    export PYTHONPATH=$HOME/dev/drake_catkin_workspace/build/drake/externals/director/src/vtk-build/Wrapping/Python:$HOME/dev/drake_catkin_workspace/build/drake/externals/director/src/vtk-build/bin:$PYTHONPATH
+
+You should now be able to start ``drake-visualizer``.
+
+
+.. _faq_drake_visualizer_no_module_named_vtk_common_core_python_ros_kinetic:
+
+ROS Kinetic Users
+-----------------
+
+Since ROS Kinetic requires VTK6, the
+:ref:`setup instructions <build_from_source_using_ros_kinetic>` already contain
+the workaround to this error. See in particular
+:ref:`step 5 <drake_ros_kinetic_build_workspace>` and
 :ref:`step 6 <drake_ros_kinetic_environment_variables>`.
 
 .. _faq_java_classes:
