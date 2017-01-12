@@ -133,7 +133,7 @@ void UnwrapEndlessRoadCarState(
 }
 
 
-void AssessLongitudinal(
+void AssessForwardPath(
     const std::vector<SourceState>& source_states,
     const std::vector<std::vector<PathRecord>>& paths,
     const std::vector<EndlessRoadOracleOutput<double>*>& oracle_outputs) {
@@ -347,79 +347,101 @@ LaneRelation DetermineLaneRelation(const PathRecord& pra,
 }
 
 
-void AssessIntersections(
+void AssessJunctions(
     const std::vector<SourceState>& source_states,
     const std::vector<std::vector<PathRecord>>& paths,
     const std::vector<EndlessRoadOracleOutput<double>*>& oracle_outputs) {
-
-  // Indexing Phase.
-  // For each car, measure/record the 'time-in' and 'time-out' to all junctions
-  // expected to be traversed within kEventHorizon.
-  struct TimeBox {
-    size_t car_index;
-    PathRecord pr;
-    double time_in;
-    double time_out;
-    double s_in;   // Distance to entry from current position.
-    double s_out;  // Distance to exit from current position.
-  };
+  // "For each Junction, a list of all TimeBox's with a Lane in that Junction."
   std::map<const maliput::api::Junction*,
            std::vector<TimeBox>> boxes_by_junction;
+  // "For each car (identified by its index), a list of all Junctions which
+  //  its short-term path with traverse."
   std::map<int, std::vector<const maliput::api::Junction*>> junctions_by_car;
 
-  for (size_t i = 0; i < source_states.size(); ++i) {
-    const SourceState& self = source_states[i];
-    DRAKE_DEMAND(self.rp.lane == paths[i][0].lane);
+  IndexJunctions(source_states, paths, &boxes_by_junction, &junctions_by_car);
+  MeasureJunctions(source_states, paths, boxes_by_junction, junctions_by_car,
+                   oracle_outputs);
+}
 
-    double sum = 0.;
+
+void IndexJunctions(
+    const std::vector<SourceState>& source_states,
+    const std::vector<std::vector<PathRecord>>& paths,
+    std::map<const api::Junction*, std::vector<TimeBox>>* boxes_by_junction,
+    std::map<int, std::vector<const api::Junction*>>* junctions_by_car) {
+  // For each car, measure/record the 'time-in' and 'time-out' to all junctions
+  // expected to be traversed by the explored path.
+  for (size_t car_index = 0; car_index < source_states.size(); ++car_index) {
+    // state of the i-th car
+    const SourceState& self = source_states[car_index];
+    // path of the i-th car
+    const std::vector<PathRecord>& path = paths[car_index];
+    // Sanity check:  current lane is the first lane in the path.
+    DRAKE_DEMAND(self.rp.lane == path[0].lane);
+
+    double s_current = 0.;
     bool is_first = true;
-    for (const PathRecord& section : paths[i]) {
-      double lane_length{};
-      if (!section.is_reversed) {
+    for (const PathRecord& pr : path) {
+      double pr_length{};
+      if (!pr.is_reversed) {
         const double s0 = (is_first) ? self.rp.pos.s : 0.;
-        lane_length = section.lane->length() - s0;
+        pr_length = pr.lane->length() - s0;
       } else {
-        const double s0 = (is_first) ? self.rp.pos.s : section.lane->length();
-        lane_length = s0;
+        const double s0 = (is_first) ? self.rp.pos.s : pr.lane->length();
+        pr_length = s0;
       }
-      DRAKE_DEMAND(lane_length > 0.);
-      const double s_in = sum;
-      sum += lane_length;
-      const double s_out = sum;
-      // TODO(maddog) Decide if better way to deal with zero speed.
+      DRAKE_DEMAND(pr_length > 0.);
+      const double s_in = s_current;
+      s_current += pr_length;
+      const double s_out = s_current;
+      // An exactly-stopped car would never reach the junction; it is more
+      // stable to pretend that it is travelling very, very slowly (that way
+      // the closest exactly-stopped car will appear to get there first).
       const double kNonZeroSpeed = 1e-12;
       const double speed = std::max(self.longitudinal_speed, kNonZeroSpeed);
-      // TODO(maddog) time in/out should account for length of vehicle, too.
+      // TODO(maddog@tri.global)  Time in/out should probably account
+      //                          for the length of the vehicle, too.
       const double time_in = s_in / speed;
       const double time_out = s_out / speed;
-      const TimeBox box = TimeBox{i, section,
-                                  time_in, time_out,
-                                  s_in, s_out};
+      const TimeBox time_box = TimeBox{car_index, pr,
+                                       time_in, time_out,
+                                       s_in, s_out};
 
       const maliput::api::Junction* junction =
-          section.lane->segment()->junction();
-      boxes_by_junction[junction].push_back(box);
-      junctions_by_car[i].push_back(junction);
+          pr.lane->segment()->junction();
+      (*boxes_by_junction)[junction].push_back(time_box);
+      (*junctions_by_car)[car_index].push_back(junction);
 
       is_first = false;
     }
   }
+}
 
-  // Measure Phase.
-  // For each car, find cars which are entering the same junction at the
-  // same time as this car.  We only want to pay attention to cars coming
-  // from the right, and ultimately only care about the nearest such car.
-  for (size_t i = 0; i < source_states.size(); ++i) {
+
+void MeasureJunctions(
+    const std::vector<SourceState>& source_states,
+    const std::vector<std::vector<PathRecord>>& paths,
+    const std::map<const api::Junction*,
+    std::vector<TimeBox>>& boxes_by_junction,
+    const std::map<int, std::vector<const api::Junction*>>& junctions_by_car,
+    const std::vector<EndlessRoadOracleOutput<double>*>& oracle_outputs) {
+  // For each car, find cars which are expected to occupy the same junction
+  // at the same time.
+  for (size_t car_index = 0; car_index < source_states.size(); ++car_index) {
+    const SourceState& self = source_states[car_index];
+
     double might_collide_at = kEnormousDistance;
     double maybe_diff_vel{};
 
-    // Iterate over the junctions which car 'i' participates in.
-    for (const auto& junction : junctions_by_car[i]) {
-      // Find the TimeBox for this car.
+    // Iterate over the junctions which car 'car_index' participates in.
+    for (const auto& junction : junctions_by_car.at(car_index)) {
+      // Find the TimeBox for this car at this junction.
       const TimeBox self_box = [&]() {
-        // TODO(maddog)  Linear search is dumb.
-        for (const TimeBox& box : boxes_by_junction[junction]) {
-          if (box.car_index == i) { return box; }
+        // TODO(maddog)  Linear search is kind of dumb.
+        // TODO(maddog)  There are potentially multiple TimeBoxes for the same
+        //               car at the same junction.
+        for (const TimeBox& box : boxes_by_junction.at(junction)) {
+          if (box.car_index == car_index) { return box; }
         }
         DRAKE_ABORT();
       }();
@@ -429,18 +451,24 @@ void AssessIntersections(
       const double kMergeHorizonSeconds = 2.;
       const double merge_horizon =
           (kMergeHorizonCarLengths * kCarLength) +
-          (kMergeHorizonSeconds * source_states[i].longitudinal_speed);
+          (kMergeHorizonSeconds * self.longitudinal_speed);
 
       // If self is *already in* the intersection, then skip it.
       // (E.g., keep going and get out of the intersection!)
       if (self_box.time_in == 0.) { continue; }
 
       // Are there any intersecting TimeBoxes from other cars at this junction?
-      for (const auto& other_box : boxes_by_junction[junction]) {
-        // Skip self (car 'i').
-        if (other_box.car_index == i) { continue; }
+      for (const auto& other_box : boxes_by_junction.at(junction)) {
+        // Skip self (car 'car_index').
+        if (other_box.car_index == car_index) {
+          continue;
+        }
         // Skip same lane (which cannot be an intersecting path).
-        if (other_box.pr.lane == self_box.pr.lane) { continue;}
+        // TODO(maddog)  Actually process same-lane, and subsume the work of
+        //               AssessForwardPath().
+        if (other_box.pr.lane == self_box.pr.lane) {
+          continue;
+        }
         // TODO(maddog) It would probably be more efficient to keep track of
         //              "cars i,j merging at junction q" instead of rescanning
         //              here.
@@ -462,7 +490,7 @@ void AssessIntersections(
             // so consider self's position of entry as an obstacle.
             if (self_box.s_in < might_collide_at) {
               might_collide_at = self_box.s_in;
-              maybe_diff_vel = source_states[i].longitudinal_speed - 0.;
+              maybe_diff_vel = self.longitudinal_speed - 0.;
             }
             break;
           }
@@ -485,7 +513,7 @@ void AssessIntersections(
             if (net_delta_sigma < might_collide_at) {
               might_collide_at = net_delta_sigma;
               maybe_diff_vel =
-                  source_states[i].longitudinal_speed -
+                  self.longitudinal_speed -
                   source_states[other_box.car_index].longitudinal_speed;
             }
             break;
@@ -510,9 +538,9 @@ void AssessIntersections(
       }
     }
 
-    if (might_collide_at < oracle_outputs[i]->net_delta_sigma()) {
-      oracle_outputs[i]->set_net_delta_sigma(might_collide_at);
-      oracle_outputs[i]->set_delta_sigma_dot(maybe_diff_vel);
+    if (might_collide_at < oracle_outputs[car_index]->net_delta_sigma()) {
+      oracle_outputs[car_index]->set_net_delta_sigma(might_collide_at);
+      oracle_outputs[car_index]->set_delta_sigma_dot(maybe_diff_vel);
     }
   }
 }
@@ -557,9 +585,9 @@ void EndlessRoadOracle<T>::ImplCalcOutput(
                             &source_states, &paths);
 
   // Deal with (a).
-  AssessLongitudinal(source_states, paths, oracle_outputs);
+  AssessForwardPath(source_states, paths, oracle_outputs);
   // Deal with (b) and (c).
-  AssessIntersections(source_states, paths, oracle_outputs);
+  AssessJunctions(source_states, paths, oracle_outputs);
 }
 
 
