@@ -41,17 +41,14 @@ class IKTrajectoryCost : public drake::solvers::Constraint {
                    const Eigen::MatrixBase<Derived>& q_nom)
       : Constraint(1, helper.nq() * (helper.nT() + 2)), helper_(helper), q_nom_(q_nom) {}
 
- private:
-  const IKTrajectoryHelper& helper_;
-  const MatrixXd q_nom_;
-
+ protected:
   void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
+                 Eigen::VectorXd& y) const override {
     throw std::runtime_error("Non-gradient version not implemented!");
   }
 
   void Eval_impl(const Eigen::Ref<const drake::TaylorVecXd>& x,
-            drake::TaylorVecXd& y) const override {
+                 drake::TaylorVecXd& y) const override {
     const int nq = helper_.nq();
     const int nT = helper_.nT();
 
@@ -69,6 +66,10 @@ class IKTrajectoryCost : public drake::solvers::Constraint {
         y_scalar, (dJ_vec * drake::math::autoDiffToGradientMatrix(x)).eval(),
         y);
   }
+
+ private:
+  const IKTrajectoryHelper& helper_;
+  const MatrixXd q_nom_;
 };
 
 // Create a mega-constraint which handles all of the sub-constraints
@@ -142,31 +143,14 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
     }
   }
 
- private:
-  void AppendBounds(const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
-    DRAKE_ASSERT(lb.size() == ub.size());
-    int prev_size = lower_bound().size();
-    Eigen::VectorXd new_lb(prev_size + lb.size());
-    Eigen::VectorXd new_ub(prev_size + ub.size());
-    new_lb.head(prev_size) = lower_bound();
-    new_lb.tail(lb.size()) = lb;
-    new_ub.head(prev_size) = upper_bound();
-    new_ub.tail(ub.size()) = ub;
-    set_bounds(new_lb, new_ub);
-  }
-
-  const RigidBodyTree<double>* model_;
-  const IKTrajectoryHelper& helper_;
-  const int num_constraints_;
-  const RigidBodyConstraint* const* constraint_array_;
-
+ protected:
   void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
+                 Eigen::VectorXd& y) const override {
     throw std::runtime_error("Non-gradient version not implemented!");
   }
 
   void Eval_impl(const Eigen::Ref<const drake::TaylorVecXd>& x,
-            drake::TaylorVecXd& y) const override {
+                 drake::TaylorVecXd& y) const override {
     const int nq = helper_.nq();
     const int nT = helper_.nT();
     const std::vector<Eigen::VectorXd>& t_inbetween = helper_.t_inbetween();
@@ -330,6 +314,24 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
     drake::math::initializeAutoDiffGivenGradientMatrix(
         y_scalar, (dy_scalar * drake::math::autoDiffToGradientMatrix(x)), y);
   }
+
+ private:
+  void AppendBounds(const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
+    DRAKE_ASSERT(lb.size() == ub.size());
+    int prev_size = lower_bound().size();
+    Eigen::VectorXd new_lb(prev_size + lb.size());
+    Eigen::VectorXd new_ub(prev_size + ub.size());
+    new_lb.head(prev_size) = lower_bound();
+    new_lb.tail(lb.size()) = lb;
+    new_ub.head(prev_size) = upper_bound();
+    new_ub.tail(ub.size()) = ub;
+    set_bounds(new_lb, new_ub);
+  }
+
+  const RigidBodyTree<double>* model_;
+  const IKTrajectoryHelper& helper_;
+  const int num_constraints_;
+  const RigidBodyConstraint* const* constraint_array_;
 };
 
 }  // anonymous namespace

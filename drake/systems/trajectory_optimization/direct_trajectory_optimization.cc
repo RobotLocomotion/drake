@@ -97,20 +97,16 @@ class FinalCostWrapper : public solvers::Constraint {
   FinalCostWrapper(int num_time_samples, int num_states,
                    std::shared_ptr<Constraint> constraint)
       : Constraint(constraint->num_constraints(),
-                   constraint->num_vars(),
+                   (num_time_samples - 1) + num_states,
                    constraint->lower_bound(),
                    constraint->upper_bound()),
         num_time_samples_(num_time_samples),
         num_states_(num_states),
         constraint_(constraint) {}
 
- private:
-  const int num_time_samples_;
-  const int num_states_;
-  std::shared_ptr<Constraint> constraint_;
-
+ protected:
   void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
+                 Eigen::VectorXd& y) const override {
     // TODO(sam.creasey) If we actually need this, we could cut and
     // paste most of the implementation below (or maybe delegate to a
     // templated version).  I don't expect that scenario to occur.
@@ -118,7 +114,7 @@ class FinalCostWrapper : public solvers::Constraint {
   }
 
   void Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
+                 TaylorVecXd& y) const override {
     DRAKE_ASSERT(x.rows() == (num_time_samples_ - 1) + num_states_);
 
     TaylorVecXd wrapped_x(num_states_ + 1);
@@ -130,6 +126,11 @@ class FinalCostWrapper : public solvers::Constraint {
     constraint_->Eval(wrapped_x, y);
     DRAKE_ASSERT(y(0).derivatives().rows() == x(0).derivatives().rows());
   };
+
+ private:
+  const int num_time_samples_;
+  const int num_states_;
+  std::shared_ptr<Constraint> constraint_;
 };
 
 }  // anon namespace
