@@ -95,24 +95,12 @@ GTEST_TEST(LcmPublisherSystemPublishRateTest, TestPublishPeriod) {
   dut->set_publish_period(kPublishPeriod);
   std::unique_ptr<Context<double>> context = dut->AllocateContext();
 
-  auto vec = make_unique<BasicVector<double>>(kDim);
-  Eigen::VectorBlock<VectorX<double>> vector_value =
-      vec->get_mutable_value();
-
-  for (int i = 0; i < kDim; ++i) {
-    vector_value[i] = i;
-  }
-
-  context->FixInputPort(kPortNumber, std::move(vec));
+  context->FixInputPort(kPortNumber,
+      make_unique<BasicVector<double>>(Eigen::VectorXd::Zero(kDim)));
 
   // Prepares to integrate.
   drake::systems::Simulator<double> simulator(*dut, std::move(context));
   simulator.set_publish_every_time_step(false);
-  simulator.reset_integrator<systems::RungeKutta3Integrator<double>>(*dut,
-                                              simulator.get_mutable_context());
-  simulator.get_mutable_integrator()->set_fixed_step_mode(true);
-  simulator.get_mutable_integrator()->set_minimum_step_size(1e-3);
-  simulator.get_mutable_integrator()->set_maximum_step_size(1e-3);
   simulator.Initialize();
 
   // Initially, the simulation time is 0 and the timstamp of the last
