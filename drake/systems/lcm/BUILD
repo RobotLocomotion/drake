@@ -61,6 +61,7 @@ cc_googletest(
     deps = [
         ":lcm",
         ":lcmt_drake_signal_translator",
+        "//drake/systems/analysis",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
     ],
