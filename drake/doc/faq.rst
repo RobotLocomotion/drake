@@ -55,16 +55,9 @@ To test whether ``drake-visualizer`` can start, execute::
     cd drake-distro
     ./build/install/bin/drake_visualizer
 
-You might encounter the following error::
-
-    File "/usr/lib/python2.7/dist-packages/vtk/__init__.py", line 39, in <module>
-      from vtkCommonCore import *
-    File "/usr/lib/python2.7/dist-packages/vtk/vtkCommonCore.py", line 1, in <module>
-      from vtkCommonCorePython import *
-    ImportError: No module named vtkCommonCorePython
-
-If the error occurs, configure Director's build system to build VTK5 from source
-(``drake-visualizer`` is built on Director, which is built on VTK5)::
+If the above-mentioned error occurs, configure Director's build system to build
+VTK5 from source (``drake-visualizer`` is built on Director, which is built on
+VTK5)::
 
     cd drake-distro/build/externals/director
     cmake . -DUSE_SYSTEM_VTK=OFF
@@ -98,16 +91,9 @@ To test whether ``drake-visualizer`` can start, execute::
     cd ~/dev/drake_catkin_workspace
     ./install/bin/drake_visualizer
 
-You might encounter the following error::
-
-    File "/usr/lib/python2.7/dist-packages/vtk/__init__.py", line 39, in <module>
-      from vtkCommonCore import *
-    File "/usr/lib/python2.7/dist-packages/vtk/vtkCommonCore.py", line 1, in <module>
-      from vtkCommonCorePython import *
-    ImportError: No module named vtkCommonCorePython
-
-If the error occurs, configure Director's build system to build VTK5 from source
-(``drake-visualizer`` is built on Director, which is built on VTK5)::
+If the above-mentinoed error occurs, configure Director's build system to build
+VTK5 from source (``drake-visualizer`` is built on Director, which is built on
+VTK5)::
 
     cd ~/dev/drake_catkin_workspace/build/drake/externals/director
     cmake . -DUSE_SYSTEM_VTK=OFF
