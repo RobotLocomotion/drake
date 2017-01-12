@@ -93,3 +93,44 @@ This concludes the instructions for how to install and build Drake using ROS
 Indigo on Ubuntu 14.04. See
 :ref:`these additional notes <drake_ros_additional_notes>` on where to proceed
 from here.
+
+.. _drake_ros_indigo_test_drake_visualizer:
+
+Step 6: Test Whether ``drake-visualizer`` Works
+===============================================
+
+There is a `known issue <https://github.com/RobotLocomotion/drake/issues/4738>`_
+where having some version of ``python-vtk6`` installed will result in
+``drake-visualizer`` failing to start. To determine if you have ``python-vtk6``
+installed, execute::
+
+    dpkg -l | grep python-vtk6
+
+To test whether ``drake-visualizer`` can start, execute::
+
+    cd ~/dev/drake_catkin_workspace
+    ./install/bin/drake_visualizer
+
+You might encounter the following error::
+
+    File "/usr/lib/python2.7/dist-packages/vtk/__init__.py", line 39, in <module>
+      from vtkCommonCore import *
+    File "/usr/lib/python2.7/dist-packages/vtk/vtkCommonCore.py", line 1, in <module>
+      from vtkCommonCorePython import *
+    ImportError: No module named vtkCommonCorePython
+
+If the error occurs, configure Director's build system to build VTK5 from source
+(``drake-visualizer`` is built on Director, which is built on VTK5)::
+
+    cd ~/dev/drake_catkin_workspace/build/drake/externals/director
+    cmake . -DUSE_SYSTEM_VTK=OFF
+    cd ~/dev/drake_catkin_workspace
+    catkin build
+
+Next, modify a couple environment variables before starting
+``drake-visualizer``::
+
+    export LD_LIBRARY_PATH=$HOME/dev/drake_catkin_workspace/install/lib/vtk-5.10:$LD_LIBRARY_PATH
+    export PYTHONPATH=$HOME/dev/drake_catkin_workspace/build/drake/externals/director/src/vtk-build/Wrapping/Python:$HOME/dev/drake_catkin_workspace/build/drake/externals/director/src/vtk-build/bin:$PYTHONPATH
+
+You should now be able to start ``drake-visualizer``.
