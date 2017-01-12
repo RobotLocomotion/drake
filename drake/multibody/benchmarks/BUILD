@@ -18,13 +18,13 @@ cc_library(
 )
 
 filegroup(
-    name = "test_models",
+    name = "acrobot_models",
     testonly = 1,
     srcs = glob([
-        "test/**/*.obj",
-        "test/**/*.sdf",
-        "test/**/*.urdf",
-        "test/**/*.xml",
+        "acrobot/*.obj",
+        "acrobot/*.sdf",
+        "acrobot/*.urdf",
+        "acrobot/*.xml",
     ]),
 )
 

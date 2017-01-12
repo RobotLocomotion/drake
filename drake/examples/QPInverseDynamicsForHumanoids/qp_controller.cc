@@ -447,7 +447,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   for (const auto& pair : input.desired_body_motions()) {
     const DesiredBodyMotion& body_motion_d = pair.second;
     body_J_[body_ctr] =
-        rs.robot().CalcBodySpatialVeclocityJacobianInWorldFrame(rs.cache(),
+        rs.robot().CalcBodySpatialVelocityJacobianInWorldFrame(rs.cache(),
             body_motion_d.body());
     body_Jdv_[body_ctr] =
         rs.robot().CalcBodySpatialVelocityJacobianDotTimesVInWorldFrame(
@@ -612,7 +612,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
 
     // Compute acceleration for contact body.
     Matrix6X<double> J_body =
-        rs.robot().CalcBodySpatialVeclocityJacobianInWorldFrame(rs.cache(),
+        rs.robot().CalcBodySpatialVelocityJacobianInWorldFrame(rs.cache(),
             resolved_contact.body());
     Vector6<double> Jdv_body =
         rs.robot().CalcBodySpatialVelocityJacobianDotTimesVInWorldFrame(
@@ -698,7 +698,7 @@ std::ostream& operator<<(std::ostream& out, const ConstraintType& type) {
 }
 
 std::ostream& operator<<(std::ostream& out, const DesiredBodyMotion& input) {
-  for (int i = 0; i < kTwistSize; ++i) {
+  for (int i = 0; i < 6; ++i) {
     out << "desired " << input.body_name() << input.get_row_name(i)
         << " acc: " << input.values()[i] << " weight: " << input.weights()[i]
         << " " << input.constraint_types()[i];

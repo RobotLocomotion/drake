@@ -82,7 +82,7 @@ class AcrobotTests : public ::testing::Test {
   void SetUp() {
     std::string file_name =
         drake::GetDrakePath() +
-        "/multibody/test/rigid_body_tree/double_pendulum.urdf";
+        "/multibody/benchmarks/acrobot/double_pendulum.urdf";
     robot_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         file_name, multibody::joints::kFixed, robot_.get());
@@ -223,7 +223,7 @@ TEST_F(AcrobotTests, SpatialVelocityTests) {
 // are correct:
 // CalcFramePoseInWorldFrame,
 // CalcFrameSpatialVelocityInWorldFrame,
-// CalcFrameSpatialVeclocityJacobianInWorldFrame,
+// CalcFrameSpatialVelocityJacobianInWorldFrame,
 // CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame
 //
 // A fixed frame named "test_frame" is added to
@@ -245,7 +245,7 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
 
     frame_ptr_ = robot_->findFrame("test_frame").get();
     body_ptr_ = &(frame_ptr_->get_rigid_body());
-    offset_ = frame_ptr_->get_transform_to_body();
+    X_BF_ = frame_ptr_->get_transform_to_body();
     frame_id_ = frame_ptr_->get_frame_index();
 
     q_ = VectorX<double>(robot_->get_num_positions());
@@ -256,116 +256,132 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
 
     cache_->initialize(q_, v_);
     robot_->doKinematics(*cache_, true);
+
+    tol_ = 1e-14;
   }
 
-  // Tests:
-  // CalcFramePoseInWorldFrame(body, offset) ==
-  // CalcFramePoseInWorldFrame(frame),
-  // assuming the underlying function relativeTransform is correct.
+  // Tests CalcFramePoseInWorldFrame(B, X_BF) returns the same results from
+  // CalcFramePoseInWorldFrame(F) assuming the latter is correct.
   void TestPose() {
     Isometry3<double> pose =
-        robot_->CalcFramePoseInWorldFrame(*cache_, *body_ptr_, offset_);
+        robot_->CalcFramePoseInWorldFrame(*cache_, *body_ptr_, X_BF_);
     Isometry3<double> pose_as_frame =
         robot_->CalcFramePoseInWorldFrame(*cache_, *frame_ptr_);
 
     EXPECT_TRUE(drake::CompareMatrices(pose.linear(), pose_as_frame.linear(),
-                                       1e-14,
+                                       tol_,
                                        drake::MatrixCompareType::absolute));
 
     EXPECT_TRUE(drake::CompareMatrices(pose.translation(),
-                                       pose_as_frame.translation(), 1e-14,
+                                       pose_as_frame.translation(), tol_,
                                        drake::MatrixCompareType::absolute));
   }
 
-  // Tests:
-  // CalcFrameSpatialVelocityInWorldFrame(body, offset) ==
-  // CalcFrameSpatialVelocityInWorldFrame(frame),
-  // and
-  // CalcFrameSpatialVelocityInWorldFrame(frame) ==
-  // [R, 0; 0, R] * relativeTwist(world, frame, frame), where R is the rotation
-  // from frame to world.
+  // Tests CalcFrameSpatialVelocityInWorldFrame(B, X_BF) returns the same
+  // results as CalcFrameSpatialVelocityInWorldFrame(F), assumeing the
+  // latter is correct.
+  //
+  // Assuming relativeTwist is correct, tests
+  // CalcFrameSpatialVelocityInWorldFrame(F) returns the same results from
+  // [R_WF, 0; 0, R_WF] * relativeTwist(W, F, F), where R_WF is
+  // the rotation of F measured and expressed in the world frame W.
   void TestSpatialVelocity() {
-    TwistVector<double> xdot = robot_->CalcFrameSpatialVelocityInWorldFrame(
-        *cache_, *body_ptr_, offset_);
-    TwistVector<double> xdot_as_frame =
+    Vector6<double> V_WF = robot_->CalcFrameSpatialVelocityInWorldFrame(
+        *cache_, *body_ptr_, X_BF_);
+    Vector6<double> V_WF_as_frame =
         robot_->CalcFrameSpatialVelocityInWorldFrame(*cache_, *frame_ptr_);
 
-    EXPECT_TRUE(drake::CompareMatrices(xdot, xdot_as_frame, 1e-14,
+    EXPECT_TRUE(drake::CompareMatrices(V_WF, V_WF_as_frame, tol_,
                                        drake::MatrixCompareType::absolute));
 
-    TwistVector<double> xdot_b = robot_->relativeTwist(
+    // relativeTwist returns a plucker vector. The plucker vector
+    // representation is the same as spatial velocity only when the velocity
+    // is expressed in the body frame.
+    Vector6<double> V_WF_F = robot_->relativeTwist(
         *cache_, robot_->world().get_body_index(), frame_id_, frame_id_);
-    Isometry3<double> pose =
+    Isometry3<double> X_WF =
         robot_->CalcFramePoseInWorldFrame(*cache_, *frame_ptr_);
-    TwistVector<double> xdot_w;
-    xdot_w.head<3>() = pose.linear() * xdot_b.head<3>();
-    xdot_w.tail<3>() = pose.linear() * xdot_b.tail<3>();
+    Vector6<double> V_WF_W;
+    V_WF_W.head<3>() = X_WF.linear() * V_WF_F.head<3>();
+    V_WF_W.tail<3>() = X_WF.linear() * V_WF_F.tail<3>();
 
-    EXPECT_TRUE(drake::CompareMatrices(xdot, xdot_w, 1e-14,
+    EXPECT_TRUE(drake::CompareMatrices(V_WF, V_WF_W, tol_,
                                        drake::MatrixCompareType::absolute));
   }
 
-  // Tests:
-  // CalcFrameSpatialVelocityInWorldFrame(body, offset) ==
-  // CalcFrameSpatialVelocityInWorldFrame(frame),
-  // and
-  // CalcFrameSpatialVelocityInWorldFrame(frame) * v ==
-  // CalcFrameSpatialVelocityInWorldFrame(frame),
-  // [R, 0; 0, R] * geometricJacobian(world, frame, frame) ==
-  // CalcFrameSpatialVelocityInWorldFrame(frame)
+  // Tests CalcFrameSpatialVelocityJacobianInWorldFrame(B, X_BF) returns
+  // the same results from CalcFrameSpatialVelocityJacobianInWorldFrame(F)
+  // assuming the latter is correct.
+  //
+  // Tests CalcFrameSpatialVelocityJacobianInWorldFrame(B, X_BF, false) * v
+  // is the same as CalcFrameSpatialVelocityInWorldFrame(F) assuming the latter
+  // is correct.
+  //
+  // Tests CalcFrameSpatialVelocityJacobianInWorldFrame(B, X_BF, true) * qdot
+  // is the same as CalcFrameSpatialVelocityInWorldFrame(F) assuming the latter
+  // is correct.
+  //
+  // Tests CalcFrameSpatialVelocityJacobianInWorldFrame(F) returns the
+  // same results from [R_WF, 0; 0, R_WF] * geometricJacobian(W, F, F), where
+  // R_WF is the rotation of frame measured and expressed in the world frame.
   void TestSpatialVelocityJacobian(bool use_qdot) {
-    TwistVector<double> xdot = robot_->CalcFrameSpatialVelocityInWorldFrame(
-        *cache_, *body_ptr_, offset_);
-    MatrixX<double> J = robot_->CalcFrameSpatialVeclocityJacobianInWorldFrame(
-        *cache_, *body_ptr_, offset_, use_qdot);
+    Vector6<double> V_WF = robot_->CalcFrameSpatialVelocityInWorldFrame(
+        *cache_, *body_ptr_, X_BF_);
+    MatrixX<double> J = robot_->CalcFrameSpatialVelocityJacobianInWorldFrame(
+        *cache_, *body_ptr_, X_BF_, use_qdot);
     MatrixX<double> J_as_frame =
-        robot_->CalcFrameSpatialVeclocityJacobianInWorldFrame(
+        robot_->CalcFrameSpatialVelocityJacobianInWorldFrame(
             *cache_, *frame_ptr_, use_qdot);
 
-    EXPECT_TRUE(drake::CompareMatrices(J, J_as_frame, 1e-14,
+    EXPECT_TRUE(drake::CompareMatrices(J, J_as_frame, tol_,
                                        drake::MatrixCompareType::absolute));
 
     if (!use_qdot) {
-      EXPECT_TRUE(drake::CompareMatrices(xdot, J * v_, 1e-14,
+      EXPECT_TRUE(drake::CompareMatrices(V_WF, J * v_, tol_,
                                          drake::MatrixCompareType::absolute));
     } else {
-      VectorX<double> qd = robot_->GetVelocityToQDotMapping(*cache_) * v_;
-      EXPECT_TRUE(drake::CompareMatrices(xdot, J * qd, 1e-14,
+      VectorX<double> qdot = robot_->GetVelocityToQDotMapping(*cache_) * v_;
+      EXPECT_TRUE(drake::CompareMatrices(V_WF, J * qdot, tol_,
                                          drake::MatrixCompareType::absolute));
     }
 
-    Isometry3<double> pose =
+    Isometry3<double> X_WF =
         robot_->CalcFramePoseInWorldFrame(*cache_, *frame_ptr_);
     KinematicPath kinematic_path = robot_->findKinematicPath(
         robot_->world().get_body_index(), frame_ptr_->get_frame_index());
+    // geometricJacobian returns the Jacobian w.r.t a plucker vector.
+    // So J_plucker_WF_F == J_WF_F, and we can compute J_WF by rotating it
+    // with R_WF.
     MatrixX<double> Jg = robot_->geometricJacobian(
         *cache_, robot_->world().get_body_index(),
         frame_ptr_->get_frame_index(), frame_ptr_->get_frame_index(), use_qdot);
     Jg = robot_->compactToFull(Jg, kinematic_path.joint_path, use_qdot);
-    Jg.topRows<3>() = pose.linear() * Jg.topRows<3>();
-    Jg.bottomRows<3>() = pose.linear() * Jg.bottomRows<3>();
+    Jg.topRows<3>() = X_WF.linear() * Jg.topRows<3>();
+    Jg.bottomRows<3>() = X_WF.linear() * Jg.bottomRows<3>();
 
-    EXPECT_TRUE(drake::CompareMatrices(Jg, J, 1e-14,
+    EXPECT_TRUE(drake::CompareMatrices(Jg, J, tol_,
                                        drake::MatrixCompareType::absolute));
   }
 
-  // Tests:
-  // CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(body, offset) ==
-  // CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(frame),
-  // and
-  // CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(frame).tail<3> ==
-  // transformPointsJacobianDotTimesV(Vec3::Zero, frame, world),
+  // Tests CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(B, X_BF)
+  // returns the same results from
+  // CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(F) assuming the
+  // latter is correct.
+  //
+  // Tests CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(F).tail<3> is
+  // the same from transformPointsJacobianDotTimesV(Vec3::Zero, F, W) assuming
+  // the latter is correct.
   void TestSpatialVelocityJacobianDotTimesV() {
-    TwistVector<double> Jdv =
+    Vector6<double> Jdv =
         robot_->CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
-            *cache_, *body_ptr_, offset_);
-    TwistVector<double> Jdv_as_frame =
+            *cache_, *body_ptr_, X_BF_);
+    Vector6<double> Jdv_as_frame =
         robot_->CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
             *cache_, *frame_ptr_);
-    EXPECT_TRUE(drake::CompareMatrices(Jdv, Jdv_as_frame, 1e-14,
+    EXPECT_TRUE(drake::CompareMatrices(Jdv, Jdv_as_frame, tol_,
                                        drake::MatrixCompareType::absolute));
 
-    Vector3<double> off = offset_.translation();
+    Vector3<double> off = X_BF_.translation();
     VectorX<double> Jdv1 = robot_->transformPointsJacobianDotTimesV(
         *cache_, off, body_ptr_->get_body_index(),
         robot_->world().get_body_index());
@@ -373,22 +389,27 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
         *cache_, Vector3<double>::Zero(), frame_ptr_->get_frame_index(),
         robot_->world().get_body_index());
 
-    EXPECT_TRUE(drake::CompareMatrices(Jdv2, Jdv1, 1e-14,
+    EXPECT_TRUE(drake::CompareMatrices(Jdv2, Jdv1, tol_,
                                        drake::MatrixCompareType::absolute));
 
-    EXPECT_TRUE(drake::CompareMatrices(Jdv.tail<3>(), Jdv1, 1e-14,
+    EXPECT_TRUE(drake::CompareMatrices(Jdv.tail<3>(), Jdv1, tol_,
                                        drake::MatrixCompareType::absolute));
   }
 
   std::unique_ptr<RigidBodyTree<double>> robot_;
   std::unique_ptr<KinematicsCache<double>> cache_;
+  // Frame F
   const RigidBodyFrame<double>* frame_ptr_;
+  // Frame B
   const RigidBody<double>* body_ptr_;
   int frame_id_;
 
+  double tol_;
+
   VectorX<double> q_;
   VectorX<double> v_;
-  Isometry3<double> offset_;
+  // The pose of F measured and expressed in B.
+  Isometry3<double> X_BF_;
 };
 
 TEST_F(RBTDifferentialKinematicsHelperTest, RPYPoseTest) {

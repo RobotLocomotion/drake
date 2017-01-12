@@ -153,14 +153,14 @@ cc_googletest(
     srcs = ["test/rigid_body_tree/rigid_body_tree_kinematics_test.cc"],
     data = [
         "test/rigid_body_tree/two_dof_robot.urdf",
-        "test/rigid_body_tree/double_pendulum.urdf"
+        "//drake/multibody/benchmarks:acrobot_models",
     ],
     deps = [
         ":rigid_body_tree",
         "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
-        "//drake/multibody/parsers",
         "//drake/multibody/benchmarks:acrobot",
+        "//drake/multibody/parsers",
     ],
 )
 

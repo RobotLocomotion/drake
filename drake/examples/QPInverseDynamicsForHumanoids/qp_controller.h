@@ -320,7 +320,7 @@ class ContactInformation {
     for (int i = 0; i < contact_points_.cols(); ++i) {
       offset.translation() = contact_points_.col(i);
       J.block(3 * i, 0, 3, robot.get_num_velocities()) =
-          robot.CalcFrameSpatialVeclocityJacobianInWorldFrame(
+          robot.CalcFrameSpatialVelocityJacobianInWorldFrame(
               cache, *body_, offset).bottomRows<3>();
     }
     return J;
@@ -520,13 +520,13 @@ class DesiredBodyMotion : public ConstrainedValues {
       : ConstrainedValues(6), body_(&body), control_during_contact_(false) {}
 
   inline bool is_valid() const {
-    return this->ConstrainedValues::is_valid(kTwistSize);
+    return this->ConstrainedValues::is_valid(6);
   }
 
   inline std::string get_row_name(int i) const {
-    static const std::string row_name[kTwistSize] = {"[WX]", "[WY]", "[WZ]",
-                                                     "[X]",  "[Y]",  "[Z]"};
-    if (i < 0 || i >= kTwistSize)
+    static const std::string row_name[6] = {"[WX]", "[WY]", "[WZ]",
+                                            "[X]",  "[Y]",  "[Z]"};
+    if (i < 0 || i >= 6)
       throw std::runtime_error("index must be within [0, 5]");
     return row_name[i];
   }
@@ -636,17 +636,17 @@ std::ostream& operator<<(std::ostream& out, const DesiredDoFMotions& input);
  */
 class DesiredCentroidalMomentumDot : public ConstrainedValues {
  public:
-  DesiredCentroidalMomentumDot() : ConstrainedValues(kTwistSize) {}
+  DesiredCentroidalMomentumDot() : ConstrainedValues(6) {}
 
   inline bool is_valid() const {
-    return this->ConstrainedValues::is_valid(kTwistSize);
+    return this->ConstrainedValues::is_valid(6);
   }
 
   inline std::string get_row_name(int i) const {
     static const std::string row_name[6] = {"AngMom[X]", "AngMom[Y]",
                                             "AngMom[Z]", "LinMom[X]",
                                             "LinMom[Y]", "LinMom[Z]"};
-    if (i < 0 || i >= kTwistSize)
+    if (i < 0 || i >= 6)
       throw std::runtime_error("index must be within [0, 5]");
     return row_name[i];
   }

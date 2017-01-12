@@ -2959,7 +2959,7 @@ drake::Vector6<T> RigidBodyTree<T>::CalcFrameSpatialVelocityInWorldFrame(
 }
 
 template <typename T> drake::Matrix6X<T>
-RigidBodyTree<T>::CalcFrameSpatialVeclocityJacobianInWorldFrame(
+RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianInWorldFrame(
     const KinematicsCache<T>& cache, const RigidBody<T>& body,
     const drake::Isometry3<T>& X_BF, bool in_terms_of_qdot) const {
   int world_index = world().get_body_index();
