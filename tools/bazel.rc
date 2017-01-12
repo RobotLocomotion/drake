@@ -5,7 +5,7 @@ build -c opt
 # Default build options.
 build --strip=never
 build --copt -Werror=all
-build --cxxopt -std=c++1y
+build --crosstool_top=//tools:default-toolchain
 
 # Default test options.
 test --test_output=errors
@@ -42,16 +42,17 @@ build:everything --define=WITH_GUROBI=ON
 test:everything --test_env=HOME
 test:everything --test_env=GRB_LICENSE_FILE
 
+### Unsupported Crosstool ###
+# Use the default Bazel-generated CROSSTOOL.
+# This may be useful for developers with unsupported workstation configurations.
+build:unsupported_crosstool --crosstool_top=//external:cc_toolchain
+
 ### Cpplint. ###
 # By default, cpplint tests are run as part of `bazel test` alongside all of
 # the other compilation and test targets.  This is a convenience shortcut to
 # only do the cpplint testing and nothing else.
 test:cpplint --build_tests_only
 test:cpplint --test_tag_filters=cpplint
-
-### Clang. ###
-build:clang --compiler=clang-3.9
-build:clang --crosstool_top=//tools:default-toolchain
 
 ### Kcov coverage build. ###
 build:kcov --copt -g
