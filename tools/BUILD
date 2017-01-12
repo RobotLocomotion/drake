@@ -8,6 +8,11 @@ sh_binary(
     data = ["valgrind.supp"],
 )
 
+sh_binary(
+    name = "kcov",
+    srcs = ["kcov.sh"],
+)
+
 py_binary(
     name = "cmake_configure_file",
     srcs = ["cmake_configure_file.py"],

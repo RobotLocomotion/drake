@@ -169,7 +169,7 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
     if (!solved) {
       return SolutionResult::kUnknownError;
     }
-    prog.SetDecisionVariableValueFromBinding(constraint_solution, binding);
+    prog.SetDecisionVariableValues(binding.variables(), constraint_solution);
   }
   return SolutionResult::kSolutionFound;
 }

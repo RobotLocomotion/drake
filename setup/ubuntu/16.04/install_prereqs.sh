@@ -75,6 +75,7 @@ gfortran
 gfortran-5
 git
 graphviz
+libgl1-mesa-dri
 libgtk2.0-dev
 libhtml-form-perl
 libmpfr-dev
@@ -97,12 +98,14 @@ python-bs4
 python-dev
 python-gtk2
 python-html5lib
+python-lxml
 python-numpy
 python-sphinx
 python-vtk
 python-yaml
 unzip
 valgrind
+xvfb
 zip
 zlib1g-dev
 

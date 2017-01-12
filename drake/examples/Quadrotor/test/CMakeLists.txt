@@ -7,7 +7,7 @@ drake_add_matlab_test(NAME examples/Quadrotor/test/testInvertFlatOutputs OPTIONA
 drake_add_matlab_test(NAME examples/Quadrotor/test/testMISOSTrajectory REQUIRES gurobi yalmip OPTIONAL iris COMMAND testMISOSTrajectory)
 
 if(lcm_FOUND)
-  drake_add_cc_test(quadrotor_dynamics_test quadrotor_dynamics_test.cc)
+  drake_add_cc_test(quadrotor_dynamics_test)
   target_link_libraries(quadrotor_dynamics_test
       drakeMultibodyParsers
       drakeQuadrotorCommon

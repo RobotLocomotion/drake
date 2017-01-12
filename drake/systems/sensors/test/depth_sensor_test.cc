@@ -117,7 +117,7 @@ std::pair<VectorX<double>, Matrix3Xd> DoBoxOcclusionTest(
   // Adds a box to the world at the specified location.
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(),
-      RigidBodyTree<double>::kWorldName, nullptr, box_xyz,
+      RigidBodyTreeConstants::kWorldName, nullptr, box_xyz,
       Vector3d::Zero() /* rpy */);
 
   DrakeShapes::Box geom(Eigen::Vector3d(kBoxWidth, kBoxWidth, kBoxWidth));

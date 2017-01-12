@@ -4,6 +4,6 @@ drake_add_matlab_test(NAME examples/ZMP/test/testZMPplan_coordinates REQUIRES sp
 drake_add_matlab_test(NAME examples/ZMP/test/testZMPplanners REQUIRES spotless OPTIONAL bullet COMMAND testZMPplanners)
 
 if (lcm_FOUND)
-  drake_add_cc_test(zmp_planner_test zmp_planner_test.cc)
+  drake_add_cc_test(zmp_planner_test)
   target_link_libraries(zmp_planner_test drakeZMPTestUtil)
 endif()

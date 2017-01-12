@@ -12,7 +12,6 @@ set(sources
   matrix_util.cc
   normalize_vector.cc
   quaternion.cc
-  random_rotation.cc
   roll_pitch_yaw.cc
   rotation_conversion_gradient.cc
   rotation_matrix.cc)
