@@ -285,8 +285,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
     }
 
     SolutionResult result = prog.Solve();
-    const VectorXd& vars_value =
-        prog.GetSolution(vars);
+    const VectorXd& vars_value = prog.GetSolution(vars);
     q_sol->col(t_index) = vars_value;
     info[t_index] = GetIKSolverInfo(prog, result);
   }

@@ -39,7 +39,9 @@ class IKTrajectoryCost : public drake::solvers::Constraint {
   template <typename Derived>
   IKTrajectoryCost(const IKTrajectoryHelper& helper,
                    const Eigen::MatrixBase<Derived>& q_nom)
-      : Constraint(1, helper.nq() * (helper.nT() + 2)), helper_(helper), q_nom_(q_nom) {}
+      : Constraint(1, helper.nq() * (helper.nT() + 2)),
+        helper_(helper),
+        q_nom_(q_nom) {}
 
  protected:
   void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -81,7 +83,10 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
   IKInbetweenConstraint(const RigidBodyTree<double>* model,
                         const IKTrajectoryHelper& helper, int num_constraints,
                         const RigidBodyConstraint* const* constraint_array)
-      : Constraint(0, helper.nq() * (helper.nT() + helper.num_qdotfree())),  // Update bounds later in constructor.
+      : Constraint(0, helper.nq() * (helper.nT() +
+                                     helper.num_qdotfree())),  // Update bounds
+                                                               // later in
+                                                               // constructor.
         model_(model),
         helper_(helper),
         num_constraints_(num_constraints),
@@ -195,8 +200,8 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
     for (int i = 0; i < nT - 1; i++) {
       q.resize(nq * nT, 1);
       MatrixXd q_inbetween_block_tmp = helper_.dq_inbetween_dqknot()[i] * q +
-          helper_.dq_inbetween_dqd0()[i] * qdot0 +
-          helper_.dq_inbetween_dqdf()[i] * qdotf;
+                                       helper_.dq_inbetween_dqd0()[i] * qdot0 +
+                                       helper_.dq_inbetween_dqdf()[i] * qdotf;
       q_inbetween_block_tmp.resize(nq, t_inbetween[i].size());
       q_inbetween.block(0, inbetween_idx, nq, t_inbetween[i].size()) =
           q_inbetween_block_tmp;
@@ -227,8 +232,8 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
                 MatrixXd::Zero(nc, nq * (num_qfree + num_qdotfree));
             dc_kdx.block(0, 0, nc, nq * num_qfree) =
                 dc_k *
-                    helper_.dq_inbetween_dqknot()[i].block(nq * j, 0, nq,
-                                                           nq * num_qfree);
+                helper_.dq_inbetween_dqknot()[i].block(nq * j, 0, nq,
+                                                       nq * num_qfree);
 
             dc_kdx.block(0, nq * num_qfree, nc, nq) =
                 dc_k * helper_.dq_inbetween_dqd0()[i].block(nq * j, 0, nq, nq);
@@ -267,7 +272,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
       VectorXd mtkc_c(nc);
       MatrixXd mtkc_dc(nc, nq * (num_qfree + num_inbetween_tsamples));
       DRAKE_ASSERT(static_cast<int>(helper_.t_samples().size()) ==
-          num_qfree + num_inbetween_tsamples);
+                   num_qfree + num_inbetween_tsamples);
       mtkc->eval(helper_.t_samples().data(), helper_.t_samples().size(),
                  q_samples.block(0, 0, nq, num_qfree + num_inbetween_tsamples),
                  mtkc_c, mtkc_dc);
@@ -298,8 +303,8 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
 
         mtkc_dc_dx.block(0, 0, nc, nq * num_qfree) +=
             dc_ij *
-                helper_.dq_inbetween_dqknot()[j].block(
-                    0, 0, nq * t_inbetween[j].size(), nq * num_qfree);
+            helper_.dq_inbetween_dqknot()[j].block(
+                0, 0, nq * t_inbetween[j].size(), nq * num_qfree);
         mtkc_dc_dx.block(0, nq * num_qfree, nc, nq) +=
             dc_ij * helper_.dq_inbetween_dqd0()[j];
         mtkc_dc_dx.block(0, nq * num_qfree + nq, nc, nq) +=
