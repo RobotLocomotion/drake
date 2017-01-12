@@ -51,8 +51,9 @@ source (``drake-visualizer`` is built on Director, which is built on VTK5)::
     cd drake-distro/build
     make (or ninja)
 
-Next, modify a couple environment variables before starting
-``drake-visualizer``::
+Next, modify two environment variables before starting ``drake-visualizer``
+(note that this has only been tested when there are no spaces in the path to
+the present working directory)::
 
     cd drake-distro
     export LD_LIBRARY_PATH=`pwd`/build/install/lib/vtk-5.10:$LD_LIBRARY_PATH
@@ -74,7 +75,7 @@ source (``drake-visualizer`` is built on Director, which is built on VTK5)::
     cd ~/dev/drake_catkin_workspace
     catkin build
 
-Next, modify a couple environment variables before starting
+Next, modify two environment variables before starting
 ``drake-visualizer``::
 
     export LD_LIBRARY_PATH=$HOME/dev/drake_catkin_workspace/install/lib/vtk-5.10:$LD_LIBRARY_PATH
