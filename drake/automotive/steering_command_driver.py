@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# Do not run this program directly; only use the compiled form in bazel-bin.
 
 """Publishes steering commands over LCM.
 """
@@ -13,10 +13,6 @@ try:
 except ImportError:
     # We will flag this as an error later, and only if we really needed it.
     pass
-
-from drake_paths import add_module_search_paths
-
-add_module_search_paths()  # So we can find lcm stuff.
 
 import lcm
 
