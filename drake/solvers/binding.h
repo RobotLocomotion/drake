@@ -16,7 +16,9 @@ class Binding {
  public:
   Binding(const std::shared_ptr<C>& c,
           const Eigen::Ref<const VectorXDecisionVariable>& v)
-      : constraint_(c), vars_(v) {}
+      : constraint_(c), vars_(v) {
+    DRAKE_DEMAND(c->num_vars() == v.rows() || c->num_vars() == Eigen::Dynamic);
+  }
 
   /**
    * Concatenates each VectorDecisionVariable object in @p v into a single
@@ -26,6 +28,7 @@ class Binding {
   Binding(const std::shared_ptr<C>& c, const VariableRefList& v)
       : constraint_(c) {
     vars_ = ConcatenateVariableRefList(v);
+    DRAKE_DEMAND(c->num_vars() == vars_.rows() || c->num_vars() == Eigen::Dynamic);
   }
 
   template <typename U>

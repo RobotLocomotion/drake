@@ -196,12 +196,8 @@ class GenericTrivialCost1 : public Constraint {
       : Constraint(1, 3, Vector1d(std::numeric_limits<double>::infinity()),
                    Vector1d(std::numeric_limits<double>::infinity())),
         private_val_(2) {}
- private:
 
-  // Add a private data member to make sure no slicing on this class, derived
-  // from Constraint.
-  double private_val_{0};
-
+ protected:
   void Eval_impl(const Ref<const Eigen::VectorXd>& x, VectorXd& y) const override {
     y.resize(1);
     y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
@@ -211,6 +207,11 @@ class GenericTrivialCost1 : public Constraint {
     y.resize(1);
     y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
   }
+
+ private:
+  // Add a private data member to make sure no slicing on this class, derived
+  // from Constraint.
+  double private_val_{0};
 };
 
 /* A generic cost. This class is meant for testing adding a cost to the
@@ -763,7 +764,7 @@ class LowerBoundTestConstraint : public Constraint {
         i1_(i1),
         i2_(i2) {}
 
- private:
+ protected:
   // for just these two types, implementing this locally is almost cleaner...
   void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override {
@@ -774,6 +775,7 @@ class LowerBoundTestConstraint : public Constraint {
     EvalImpl(x, y);
   }
 
+ private:
   template <typename ScalarType>
   void EvalImpl(
       const Eigen::Ref<const Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>>& x,
@@ -947,7 +949,7 @@ class GloptipolyConstrainedExampleConstraint
             1, 3, Vector1d::Constant(0),
             Vector1d::Constant(numeric_limits<double>::infinity())) {}
 
- private:
+ protected:
   // for just these two types, implementing this locally is almost cleaner...
   void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd& y) const override {
@@ -958,6 +960,7 @@ class GloptipolyConstrainedExampleConstraint
     EvalImpl(x, y);
   }
 
+ private:
   template <typename ScalarType>
   void EvalImpl(const Ref<const Matrix<ScalarType, Dynamic, 1>>& x,
                 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).

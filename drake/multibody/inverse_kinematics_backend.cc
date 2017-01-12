@@ -163,10 +163,7 @@ class InverseKinObjective : public Constraint {
   /// not been set.)
   void set_q_nom(const VectorXd& q_nom_i) { q_nom_i_ = q_nom_i; }
 
- private:
-  const MatrixXd& Q_;
-  VectorXd q_nom_i_;
-
+ protected:
   void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
                  Eigen::VectorXd& y) const override {
     VectorXd q_err = x - q_nom_i_;
@@ -183,6 +180,10 @@ class InverseKinObjective : public Constraint {
     math::initializeAutoDiffGivenGradientMatrix(
         y_val, (dy_vec * gradient_mat).eval(), y);
   }
+
+ private:
+  const MatrixXd& Q_;
+  VectorXd q_nom_i_;
 };
 
 }  // anonymous namespace
