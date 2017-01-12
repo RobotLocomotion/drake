@@ -85,6 +85,7 @@ Cheat sheet for operating on specific portions of the project::
   bazel test --config=memcheck common:polynomial_test  # Run one test under memcheck (valgrind).
   bazel test --config=fastmemcheck common:*            # Run common's tests under memcheck, with minimal recompiling.
   bazel test --config=asan common:polynomial_test      # Run one test under AddressSanitizer.
+  bazel test --config=kcov common:polynomial_test      # Run one test under kcov (see instructions below).
   bazel build -c dbg common:polynomial_test && \
     gdb ../bazel-bin/drake/common/polynomial_test      # Run one test under gdb.
 
@@ -128,6 +129,34 @@ Note that this config includes *only* the tests that require Gurobi::
 
   ``bazel test --config gurobi ...``
 
+Optional Tools
+==============
+
+The Drake Bazel build system has integration support for some optional
+development tools:
+
+ * kcov -- test coverage analysis
+
+kcov
+----
+
+``kcov`` can analyze coverage for any binary that contains DWARF format
+debuggging symbols, and produce nicely formatted browse-able coverage
+reports. It is supported on Ubuntu and OSX only. Install ``kcov`` from source
+following the instructions here: :ref:`Building kcov <building-kcov>`.
+
+To analyze test coverage, run the tests under ``kcov``::
+
+  bazel test --config kcov //...
+
+The coverage report is written to the ``drake-distro/bazel-kcov`` directory. To
+view it, browse to ``drake-distro/bazel-kcov/index.html``.
+
+.. toctree::
+   :hidden:
+
+   building_kcov
+
 FAQ
 ===
 
@@ -136,4 +165,3 @@ Q. What does ``ccache: error: Could not find compiler "gcc" in PATH`` mean?
    A. Your ``$PATH`` still has the magic ``ccache`` directory on it somewhere.
       Update your dotfiles so that something like ``/usr/lib/ccache`` is not on
       your ``$PATH``.
-

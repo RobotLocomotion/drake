@@ -123,7 +123,10 @@ new_git_repository(
 load("//tools:gurobi.bzl", "gurobi_repository")
 gurobi_repository(
     name = "gurobi",
-    workspace_dir = __workspace_dir__,
-    build_file = "tools/gurobi.BUILD",
 )
 
+load("//tools:soft_failure.bzl", "soft_failure_binary_repository")
+soft_failure_binary_repository(
+    name = "drake_visualizer",
+    local_path = __workspace_dir__ + "/build/install/bin/drake-visualizer",
+)

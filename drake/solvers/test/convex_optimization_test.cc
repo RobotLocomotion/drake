@@ -99,7 +99,7 @@ void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
       Eigen::Vector2d(0.0, 2.0),
       Eigen::Vector2d(std::numeric_limits<double>::infinity(),
                       std::numeric_limits<double>::infinity()),
-      {x.head<2>()});
+      x.head<2>());
 
   if (solver.SolverName() == "SNOPT") {
     prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
@@ -154,11 +154,11 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
   Eigen::Vector3d c1(-3, -1, -4);
   Eigen::Vector2d c2(-1, -1);
 
-  prog.AddLinearCost(c1, {x.head<3>()});
-  prog.AddLinearCost(c2, {x.tail<2>()});
+  prog.AddLinearCost(c1, x.head<3>());
+  prog.AddLinearCost(c2, x.tail<2>());
 
   Eigen::RowVector3d a1(3, 1, 2);
-  prog.AddLinearEqualityConstraint(a1, 30, {x.head<3>()});
+  prog.AddLinearEqualityConstraint(a1, 30, x.head<3>());
 
   Eigen::Matrix<double, 4, 4> A;
   A << 2, 1, 3, 1, 0, 2, 0, 3, 1, 2, 0, 1, 1, 0, 2, 0;
@@ -172,7 +172,7 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
   prog.AddBoundingBoxConstraint(
       Eigen::Vector3d::Zero(),
       Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()),
-      {x.head<3>()});
+      x.head<3>());
 
   if (solver.SolverName() == "SNOPT") {
     prog.SetInitialGuessForAllVariables(Eigen::Vector4d::Zero());
@@ -208,8 +208,8 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
   // The quadratic cost is 0.5*x'*Q*x+b'*x.
   Q << 4, 2, 0, 2;
   Eigen::Vector2d b(1, 0);
-  prog.AddQuadraticCost(Q, b, {x});
-  prog.AddLinearCost(drake::Vector1d(1.0), {x.segment<1>(1)});
+  prog.AddQuadraticCost(Q, b, x);
+  prog.AddLinearCost(drake::Vector1d(1.0), x.segment<1>(1));
 
   // Deliberately add two bounding box constraints
   // (x1, x2) >= (0, 0)
@@ -218,7 +218,7 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
   // to test multiple bounding box constraints.
   prog.AddBoundingBoxConstraint(
       Eigen::Vector2d(0, 0),
-      Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()), {x});
+      Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()), x);
   prog.AddBoundingBoxConstraint(-1, std::numeric_limits<double>::infinity(),
                                 x(1));
 
@@ -397,7 +397,7 @@ void TestQuadraticProgram4(const MathematicalProgramSolverInterface& solver) {
   Eigen::Vector3d b = Eigen::Vector3d::Zero();
   prog.AddQuadraticCost(Q, b);
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1),
-                                   Vector1d::Constant(1), {x.head<2>()});
+                                   Vector1d::Constant(1), x.head<2>());
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 2),
                                    Vector1d::Constant(2),
                                    {x.segment<1>(0), x.segment<1>(2)});
@@ -556,10 +556,10 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   auto lorentz_cone2 = prog.AddLorentzConeConstraint(A_lorentz2, b_lorentz2,
                                                      {t.segment<1>(1), a});
   // a'*(x2 - x1) = 1
-  prog.AddLinearEqualityConstraint((x2 - x1).transpose(), 1.0, {a});
+  prog.AddLinearEqualityConstraint((x2 - x1).transpose(), 1.0, a);
 
   // Add cost
-  auto cost = prog.AddLinearCost(Eigen::Vector2d(1.0, 1.0), {t});
+  auto cost = prog.AddLinearCost(Eigen::Vector2d(1.0, 1.0), t);
 
   RunSolver(&prog, solver);
 
@@ -620,8 +620,8 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
         Eigen::MatrixXd::Identity(R2.cols(), R1.cols());
     b_lorentz3 << 1, Eigen::VectorXd::Zero(R1.cols());
     b_lorentz4 << 1, Eigen::VectorXd::Zero(R2.cols());
-    prog_intersect.AddLorentzConeConstraint(A_lorentz3, b_lorentz3, {u1});
-    prog_intersect.AddLorentzConeConstraint(A_lorentz4, b_lorentz4, {u2});
+    prog_intersect.AddLorentzConeConstraint(A_lorentz3, b_lorentz3, u1);
+    prog_intersect.AddLorentzConeConstraint(A_lorentz4, b_lorentz4, u2);
 
     // Add constraint y = x1 + R1*u1
     //                y = x2 + R2*u2
@@ -707,13 +707,13 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
   prog_socp.AddLinearEqualityConstraint(A_w, Eigen::VectorXd::Zero(kXdim),
                                         {w, x_socp});
 
-  prog_socp.AddLinearConstraint(A, b_lb, b_ub, {x_socp});
+  prog_socp.AddLinearConstraint(A, b_lb, b_ub, x_socp);
 
   std::shared_ptr<LinearConstraint> cost_socp1(new LinearConstraint(
       c.transpose(), drake::Vector1d(-std::numeric_limits<double>::infinity()),
       drake::Vector1d(std::numeric_limits<double>::infinity())));
-  prog_socp.AddCost(cost_socp1, {x_socp});
-  prog_socp.AddLinearCost(drake::Vector1d(1.0), {y});
+  prog_socp.AddCost(cost_socp1, x_socp);
+  prog_socp.AddLinearCost(drake::Vector1d(1.0), y);
   RunSolver(&prog_socp, solver);
   const auto& x_socp_value = prog_socp.GetSolution(x_socp);
   double objective_value_socp =
@@ -731,8 +731,8 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
   // Now solve the problem as a QP.
   MathematicalProgram prog_qp;
   auto x_qp = prog_qp.NewContinuousVariables(kXdim, "x");
-  prog_qp.AddQuadraticCost(Q, c, {x_qp});
-  prog_qp.AddLinearConstraint(A, b_lb, b_ub, {x_qp});
+  prog_qp.AddQuadraticCost(Q, c, x_qp);
+  prog_qp.AddLinearConstraint(A, b_lb, b_ub, x_qp);
   RunSolver(&prog_qp, solver);
   const auto& x_qp_value = prog_qp.GetSolution(x_qp);
   Eigen::RowVectorXd x_qp_transpose = x_qp_value.transpose();
@@ -828,7 +828,7 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
       Eigen::VectorXd::Zero(num_nodes - 1),
       Eigen::VectorXd::Constant(num_nodes - 1,
                                 std::numeric_limits<double>::infinity()),
-      {t});
+      t);
 
   // sqrt((x(i)-x(i+1))^2 + (y(i) - y(i+1))^2) <= ti + spring_rest_length
   for (int i = 0; i < num_nodes - 1; ++i) {
@@ -856,8 +856,8 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
   b_lorentz2 << 1, Eigen::VectorXd::Zero(num_nodes);
   prog.AddRotatedLorentzConeConstraint(A_lorentz2, b_lorentz2, {z, t});
 
-  prog.AddLinearCost(drake::Vector1d(spring_stiffness / 2), {z});
-  prog.AddLinearCost(weight, {y});
+  prog.AddLinearCost(drake::Vector1d(spring_stiffness / 2), z);
+  prog.AddLinearCost(weight, y);
 
   RunSolver(&prog, solver);
 
@@ -983,8 +983,8 @@ GTEST_TEST(TestConvexOptimization, TestL2NormCost) {
   Eigen::Vector2d b = A * x_desired;
 
   std::shared_ptr<QuadraticConstraint> obj1 =
-      prog.AddQuadraticErrorCost(Q, x_desired, {x});
-  std::shared_ptr<QuadraticConstraint> obj2 = prog.AddL2NormCost(A, b, {x});
+      prog.AddQuadraticErrorCost(Q, x_desired, x);
+  std::shared_ptr<QuadraticConstraint> obj2 = prog.AddL2NormCost(A, b, x);
 
   // Test the objective at a 6 arbitrary values (to guarantee correctness
   // of the six-parameter quadratic form.
@@ -1089,7 +1089,7 @@ GTEST_TEST(TestConvexOptimization, TestQuadraticProgram5) {
     prog.AddQuadraticCost(G, g0, {x, z, y});
     prog.AddLinearEqualityConstraint(CE_xy, ce0_xy, {x, y});
     prog.AddLinearConstraint(CI_xy, ci_xy_lower, ci_xy_upper, {x, y});
-    prog.AddLinearConstraint(CI_z, ci_z_lower, ci_z_upper, {z});
+    prog.AddLinearConstraint(CI_z, ci_z_lower, ci_z_upper, z);
 
     if (solver->SolverName() == "SNOPT") {
       prog.SetInitialGuessForAllVariables(drake::Vector6<double>::Zero());
@@ -1198,7 +1198,7 @@ GTEST_TEST(TestConvexOptimization, TestTrivialSDP) {
 
     prog.AddBoundingBoxConstraint(1, 1, S(1, 0));
 
-    prog.AddLinearCost(Eigen::Vector2d(1, 1), {S.diagonal()});
+    prog.AddLinearCost(Eigen::Vector2d(1, 1), S.diagonal());
 
     RunSolver(&prog, *solver);
 
@@ -1213,9 +1213,9 @@ namespace {
 // Add condition A' * P + P * A + Q = 0
 //               Q is p.s.d
 template <int x_dim>
-DecisionVariableMatrix<x_dim, x_dim> AddLyapunovCondition(
+MatrixDecisionVariable<x_dim, x_dim> AddLyapunovCondition(
     const Eigen::Matrix<double, x_dim, x_dim>& A,
-    const DecisionVariableMatrix<x_dim, x_dim>& P, MathematicalProgram* prog) {
+    const MatrixDecisionVariable<x_dim, x_dim>& P, MathematicalProgram* prog) {
   const auto Q = prog->NewSymmetricContinuousVariables<x_dim>();
   prog->AddPositiveSemidefiniteConstraint(Q);
   // TODO(hongkai.dai): Use symbolic variable to compute the expression
@@ -1334,9 +1334,9 @@ GTEST_TEST(TestConvexOptimization, TestEigenvalueProblem) {
 
     Eigen::Vector2d x_lb(0.1, 1);
     Eigen::Vector2d x_ub(2, 3);
-    prog.AddBoundingBoxConstraint(x_lb, x_ub, {x});
+    prog.AddBoundingBoxConstraint(x_lb, x_ub, x);
 
-    prog.AddLinearCost(drake::Vector1d(1), {z});
+    prog.AddLinearCost(drake::Vector1d(1), z);
 
     RunSolver(&prog, *solver);
 

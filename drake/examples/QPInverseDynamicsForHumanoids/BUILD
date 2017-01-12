@@ -15,6 +15,17 @@ cc_library(
 )
 
 cc_library(
+    name = "rigid_body_tree_alias_groups",
+    srcs = ["param_parsers/rigid_body_tree_alias_groups.cc"],
+    hdrs = ["param_parsers/rigid_body_tree_alias_groups.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+        "@yaml_cpp//:lib",
+    ],
+)
+
+cc_library(
     name = "example_qp_input_for_valkyrie",
     srcs = ["example_qp_input_for_valkyrie.cc"],
     hdrs = ["example_qp_input_for_valkyrie.h"],
@@ -77,6 +88,24 @@ cc_test(
         ":control_utils",
         ":example_qp_input_for_valkyrie",
         ":qp_controller",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "rigid_body_tree_alias_groups_test",
+    srcs = ["param_parsers/test/rigid_body_tree_alias_groups_test.cc"],
+    data = [
+        "param_parsers/test/full.yaml",
+        "param_parsers/test/no_body_groups.yaml",
+        "param_parsers/test/no_joint_groups.yaml",
+        "param_parsers/test/parse_fails.yaml",
+        "//drake/multibody:test_models",
+    ],
+    deps = [
+        ":rigid_body_tree_alias_groups",
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody/parsers",
         "@gtest//:main",

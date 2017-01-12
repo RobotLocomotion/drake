@@ -164,6 +164,7 @@ GTEST_TEST(testConstraint, testPositiveSemidefiniteConstraint) {
   cnstr.Eval(X2, y);
   EXPECT_TRUE((y.array() < cnstr.lower_bound().array()).any() ||
               (y.array() > cnstr.upper_bound().array()).any());
+  EXPECT_EQ(cnstr.matrix_rows(), 3);
 }
 
 GTEST_TEST(testConstraint, testLinearMatrixInequalityConstraint) {

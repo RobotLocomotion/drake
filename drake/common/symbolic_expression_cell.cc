@@ -153,7 +153,7 @@ ostream& ExpressionVar::Display(ostream& os) const { return os << var_; }
 
 ExpressionConstant::ExpressionConstant(const double v)
     : ExpressionCell{ExpressionKind::Constant, hash<double>{}(v)}, v_{v} {
-  Expression::check_nan(v_);
+  DRAKE_ASSERT(!std::isnan(v));
 }
 
 Variables ExpressionConstant::GetVariables() const { return Variables{}; }
@@ -180,6 +180,32 @@ ostream& ExpressionConstant::Display(ostream& os) const {
   oss << setprecision(numeric_limits<double>::max_digits10) << v_;
   return os << oss.str();
 }
+
+ExpressionNaN::ExpressionNaN() : ExpressionCell{ExpressionKind::NaN, 41} {
+  // ExpressionCell constructor calls hash_combine(ExpressionKind::NaN, 41) to
+  // compute the hash of ExpressionNaN. Here 41 does not have any special
+  // meaning.
+}
+
+Variables ExpressionNaN::GetVariables() const { return Variables{}; }
+
+bool ExpressionNaN::EqualTo(const ExpressionCell& e) const {
+  // Expression::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
+  return true;
+}
+
+bool ExpressionNaN::Less(const ExpressionCell& e) const {
+  // Expression::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == e.get_kind());
+  return false;
+}
+
+double ExpressionNaN::Evaluate(const Environment& env) const {
+  throw runtime_error("NaN is detected during Symbolic computation.");
+}
+
+ostream& ExpressionNaN::Display(ostream& os) const { return os << "NaN"; }
 
 ExpressionNeg::ExpressionNeg(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Neg, e} {}

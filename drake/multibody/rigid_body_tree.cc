@@ -78,12 +78,10 @@ using std::unordered_map;
 using std::vector;
 using std::endl;
 
-template <typename T>
-const set<int> RigidBodyTree<T>::default_model_instance_id_set = {0};
-template <typename T>
-const char* const RigidBodyTree<T>::kWorldName = "world";
-template <typename T>
-const int RigidBodyTree<T>::kWorldBodyIndex = 0;
+const char* const RigidBodyTreeConstants::kWorldName = "world";
+const int RigidBodyTreeConstants::kWorldBodyIndex = 0;
+// TODO(liang.fok) Update this along with the resolution of #3088.
+const set<int> RigidBodyTreeConstants::default_model_instance_id_set = {0};
 
 template <typename T>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -109,8 +107,8 @@ RigidBodyTree<T>::RigidBodyTree(void)
 
   // Adds the rigid body representing the world. It has model instance ID 0.
   std::unique_ptr<RigidBody<T>> world_body(new RigidBody<T>());
-  world_body->set_name(RigidBodyTree<T>::kWorldName);
-  world_body->set_model_name(RigidBodyTree<T>::kWorldName);
+  world_body->set_name(RigidBodyTreeConstants::kWorldName);
+  world_body->set_model_name(RigidBodyTreeConstants::kWorldName);
 
   // TODO(liang.fok): Assign the world body a unique model instance ID of zero.
   // See: https://github.com/RobotLocomotion/drake/issues/3088
@@ -2460,8 +2458,8 @@ RigidBodyTree<T>::FindModelInstanceBodies(int model_instance_id) const {
     // TODO(liang.fok): Remove the world name check once the world is assigned
     // its own model instance ID. See:
     // https://github.com/RobotLocomotion/drake/issues/3088
-    if (rigid_body->get_name() != kWorldName &&
-        rigid_body->get_model_name() != kWorldName &&
+    if (rigid_body->get_name() != RigidBodyTreeConstants::kWorldName &&
+        rigid_body->get_model_name() != RigidBodyTreeConstants::kWorldName &&
         rigid_body->get_model_instance_id() == model_instance_id) {
       result.push_back(rigid_body.get());
     }
@@ -2533,7 +2531,8 @@ shared_ptr<RigidBodyFrame<T>> RigidBodyTree<T>::findFrame(
 template <typename T>
 std::vector<int> RigidBodyTree<T>::FindBaseBodies(int model_instance_id)
 const {
-  return FindChildrenOfBody(kWorldBodyIndex, model_instance_id);
+  return FindChildrenOfBody(RigidBodyTreeConstants::kWorldBodyIndex,
+                            model_instance_id);
 }
 
 template <typename T>

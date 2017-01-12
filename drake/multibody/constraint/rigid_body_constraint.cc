@@ -1507,13 +1507,13 @@ void Point2PointDistanceConstraint::name(
       if (bodyA_ != 0) {
         bodyA_name = getRobotPointer()->bodies[bodyA_]->get_name();
       } else {
-        bodyA_name = std::string(RigidBodyTree<double>::kWorldName);
+        bodyA_name = std::string(RigidBodyTreeConstants::kWorldName);
       }
       std::string bodyB_name;
       if (bodyB_ != 0) {
         bodyB_name = getRobotPointer()->bodies[bodyB_]->get_name();
       } else {
-        bodyB_name = std::string(RigidBodyTree<double>::kWorldName);
+        bodyB_name = std::string(RigidBodyTreeConstants::kWorldName);
       }
       name_str.push_back("Distance from " + bodyA_name + " pt " +
                          std::to_string(i) + " to " + bodyB_name + " pt " +

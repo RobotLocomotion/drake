@@ -3,6 +3,8 @@
 #include <functional>
 #include <string>
 
+#include "drake/common/drake_assert.h"
+
 namespace drake {
 namespace maliput {
 namespace api {
@@ -123,13 +125,17 @@ struct RoadPosition {
 
 
 /// Bounds in the lateral dimension (r component) of LANE-space, consisting
-/// of a pair of minimum and maximum r value.
+/// of a pair of minimum and maximum r value.  The bounds must straddle r = 0,
+/// i.e., the minimum must be <= 0 and the maximum must be >= 0.
 struct RBounds {
   /// Default constructor.
   RBounds() {}
 
   /// Fully parameterized constructor.
-  RBounds(double rmin, double rmax) : r_min(rmin), r_max(rmax) {}
+  RBounds(double rmin, double rmax) : r_min(rmin), r_max(rmax) {
+    DRAKE_DEMAND(r_min <= 0.);
+    DRAKE_DEMAND(r_max >= 0.);
+  }
 
   double r_min{};
   double r_max{};

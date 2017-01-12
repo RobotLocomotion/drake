@@ -361,7 +361,7 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
   // Obtains a list of the world's children. Verifies that this list is
   // identical to base_body_list.
   std::vector<int> children_of_world_list =
-      tree_->FindChildrenOfBody(RigidBodyTree<double>::kWorldBodyIndex);
+      tree_->FindChildrenOfBody(RigidBodyTreeConstants::kWorldBodyIndex);
 
   EXPECT_EQ(base_body_list.size(), children_of_world_list.size());
 

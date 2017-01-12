@@ -1,7 +1,7 @@
-#include "drake/matlab/util/drakeMexUtil.h"
 #include <stdexcept>
 
 #include "drake/common/drake_assert.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -26,7 +26,8 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[],
   mxArray* ex = mexCallMATLABWithTrap(nlhs, plhs, nrhs, prhs, filename);
   if (ex) {
     mexPrintf(
-        "DrakeSystem S-Function: error when calling ''%s'' with the following "
+        "DrakeSystem mexCallMATLABsafe: error when calling ''%s'' with the "
+        "following "
         "arguments:\n",
         filename);
     for (i = 0; i < nrhs; i++) mexCallMATLAB(0, NULL, 1, &prhs[i], "disp");
@@ -36,9 +37,6 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[],
     mexPrintf(errmsg);
     mxFree(errmsg);
     mxDestroyArray(report);
-    mexErrMsgIdAndTxt("Drake:mexCallMATLABsafe:CallbackError",
-                      "Error in MATLAB callback.\nSee additional debugging "
-                      "information above");
     mxDestroyArray(ex);
     return true;
   }
@@ -49,9 +47,10 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[],
           "following arguments:\n",
           filename);
       for (i = 0; i < nrhs; i++) mexCallMATLAB(0, NULL, 1, &prhs[i], "disp");
-      mexErrMsgIdAndTxt("Drake:mexCallMATLABsafe:NotEnoughOutputs",
-                        "Asked for %d outputs, but function only returned %d\n",
-                        nrhs, i);
+      mexPrintf(
+          "Not Enough Outputs: Asked for %d outputs, but function only "
+          "returned %d\n",
+          nrhs, i);
       return true;
     }
   return false;
@@ -82,7 +81,7 @@ mxArray* createDrakeMexPointer(void* ptr, const std::string& name, int type_id,
   int nrhs = 4 + num_additional_inputs;
   mxArray* plhs[1];
   mxArray** prhs;
-  prhs = new mxArray* [nrhs];
+  prhs = new mxArray*[nrhs];
 
   prhs[0] = mxCreateNumericMatrix(1, 1, cid, mxREAL);
   memcpy(mxGetData(prhs[0]), &ptr, sizeof(ptr));

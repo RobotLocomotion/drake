@@ -81,3 +81,64 @@ Here is the command::
 
 By default, all files in Drake are checked using the default settings.
 Consult the program's `--help` for more detailed options.
+
+
+Python
+======
+
+.. _code-style-tools-pylint:
+
+pylint
+------
+
+Installation
+^^^^^^^^^^^^
+
+On Ubuntu, install via ``pip``::
+
+  pip install --user -U pylint
+
+To your ``.bashrc`` or ``.profile``, add the line::
+
+  export PATH=$HOME/.local/bin:$PATH
+
+On OSX, similarly::
+
+  pip install --user -U pylint
+
+To your ``.bashrc`` or ``.bash_profile``, add the line::
+
+  export PATH=$HOME/Library/Python/2.7/bin:$PATH
+
+Usage
+^^^^^
+
+To run ``pylint``, with some noisy reports and questionable rules suppressed::
+
+  pylint --reports=n --disable=C,R [file name]
+
+It is possible to suppress pylint complaints, either via configuration files in
+various locations, or by special comments in python source files. Consult the
+program's `--help` or ``docs.pylint.org`` for details.
+
+pep8.py
+-------
+
+Installation
+^^^^^^^^^^^^
+
+Like ``pylint``, ``pep8`` should be installed via ``pip``. Instructions are
+exactly analogous to those for ``pylint`` above, substituting the package name
+``pep8``.
+
+Usage
+^^^^^
+
+Run ``pep8`` like this::
+
+  pep8 [file name]
+
+It is possible to suppress pep8 errors, either via configuration files in
+various locations, or command line options. However, it does not support
+individual suppressions via source code comments. Consult the program's
+`--help` or ``pep8.readthedocs.org`` for details.
