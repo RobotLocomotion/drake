@@ -18,24 +18,6 @@ namespace systems {
 /// This class provides a System interface around a multibody dynamics model
 /// of the world represented by a RigidBodyTree.
 ///
-/// <B>%System input</B>: A %RigidBodyPlant has a vector valued input
-/// port for external actuation with size equal to the number of
-/// RigidBodyActuator's in the RigidBodyTree. Each RigidBodyActuator
-/// maps to a single DOF joint (currently actuation cannot be applied
-/// to multiple DOF's joints). The units of the actuation are the same
-/// as the units of the generalized force on the joint. In addition,
-/// actuators allow for a gear box reduction factor and for actuation
-/// limits which are only used by controllers; the RigidBodyPlant does
-/// not apply these limits. The gear box factor effectively is a
-/// multiplier on the input actuation to the RigidBodyPlant.
-/// Alternately, individual input ports for each model instance which
-/// has actuators are provided by model_input_port().  If any port
-/// returned by model_input_port() is connected, the input port for
-/// the full tree must not be used.
-///
-/// The %RigidBodyPlant's state consists of a vector containing the generalized
-/// positions followed by the generalized velocities of the system.
-///
 /// The %RigidBodyPlant provides a number of input and output ports. The precise
 /// number depends on the number of model instances within the RigidBodyTree
 /// and the number of them that have actuators. The following lists the
@@ -47,10 +29,22 @@ namespace systems {
 /// <B>Input Port Accessors:</B>
 ///
 /// - command_input_port(): Contains the command vector for the RigidBodyTree's
-///   actuators.
+///   actuators. Note that if this port is connected, none of the ports returned
+///   by model_input_port() can be connected. The size of this vector is equal
+///   to the number of RigidBodyActuator's in the RigidBodyTree. Each
+///   RigidBodyActuator maps to a single DOF joint (currently actuation cannot
+///   be applied to multiple DOF's joints). The units of the actuation are the
+///   same as the units of the generalized force on the joint. In addition,
+///   actuators allow for a gear box reduction factor and for actuation
+///   limits which are only used by controllers; the RigidBodyPlant does
+///   not apply these limits. The gear box factor effectively is a
+///   multiplier on the input actuation to the RigidBodyPlant.
 ///
 /// - model_input_port(): Contains the command vector for the actuators
 ///   belonging to a particular model instance within the RigidBodyTree.
+///   If any port returned by model_input_port() is connected, the input port
+///   for the full tree, which is obtained using command_input_port(), must not
+///   be used.
 ///
 /// <B>Output Port Accessors:</B>
 ///
@@ -76,12 +70,14 @@ namespace systems {
 /// - model_state_output_port(): A vector-valued port containing the state
 ///   vector for a particular model instance in the RigidBodyTree.
 ///
-/// The multibody model consists of a set of rigid bodies connected through
-/// joints in a tree structure. Bodies may have a collision model in which case
-/// collisions are considered. In addition, the model may contain loop
-/// constraints described by RigidBodyLoop's in the multibody model. Even though
-/// loop constraints are a particular case of holonomic constrants, general
-/// holonomic constrants are not yet supported.
+/// The %RigidBodyPlant's state consists of a vector containing the generalized
+/// positions followed by the generalized velocities of the system. This state
+/// is applied to a RigidBodyTree, which is a multibody model that consists of a
+/// set of rigid bodies connected through joints in a tree structure. Bodies may
+/// have a collision model in which case collisions are considered. In addition,
+/// the model may contain loop constraints described by RigidBodyLoop's in the
+/// multibody model. Even though loop constraints are a particular case of
+/// holonomic constraints, general holonomic constraints are not yet supported.
 ///
 /// The system dynamics is given by the set of multibody equations written in
 /// generalized coordinates including loop joints as a set of holonomic
