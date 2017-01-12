@@ -76,7 +76,7 @@ void SetIKSolverOptions(const IKoptions& ikoptions,
 /// underlying model.
 void AddSingleTimeLinearPostureConstraint(
     const double *t, const RigidBodyConstraint*, int nq,
-    const drake::solvers::DecisionVariableMatrixX& vars,
+    const drake::solvers::MatrixXDecisionVariable& vars,
     drake::solvers::MathematicalProgram* prog);
 
 /// Add a single time linear posture constraint to @p prog at time @p
@@ -85,7 +85,7 @@ void AddSingleTimeLinearPostureConstraint(
 void AddQuasiStaticConstraint(
     const double *t, const RigidBodyConstraint*,
     KinematicsCacheHelper<double>* kin_helper,
-    const drake::solvers::DecisionVariableMatrixX& vars,
+    const drake::solvers::MatrixXDecisionVariable& vars,
     drake::solvers::MathematicalProgram* prog);
 
 }  // namespace plants

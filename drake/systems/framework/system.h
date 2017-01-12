@@ -554,7 +554,9 @@ class System {
   /// Returns the descriptor of the input port at index @p port_index.
   const InputPortDescriptor<T>& get_input_port(int port_index) const {
     if (port_index >= get_num_input_ports()) {
-      throw std::out_of_range("port number out of range.");
+      throw std::out_of_range("System " + get_name() + ": Port index " +
+          std::to_string(port_index) + " is out of range. There are only " +
+          std::to_string(get_num_input_ports()) + " input ports.");
     }
     return input_ports_[port_index];
   }
@@ -562,7 +564,9 @@ class System {
   /// Returns the descriptor of the output port at index @p port_index.
   const OutputPortDescriptor<T>& get_output_port(int port_index) const {
     if (port_index >= get_num_output_ports()) {
-      throw std::out_of_range("port number out of range.");
+      throw std::out_of_range("System " + get_name() + ": Port index " +
+          std::to_string(port_index) + " is out of range. There are only " +
+          std::to_string(get_num_output_ports()) + " output ports.");
     }
     return output_ports_[port_index];
   }

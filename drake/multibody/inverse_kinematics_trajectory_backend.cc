@@ -22,8 +22,8 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::VectorXi;
 
-using drake::solvers::DecisionVariableMatrixX;
-using drake::solvers::DecisionVariableVectorX;
+using drake::solvers::MatrixXDecisionVariable;
+using drake::solvers::VectorXDecisionVariable;
 using drake::solvers::SolutionResult;
 using drake::solvers::MathematicalProgram;
 
@@ -372,9 +372,9 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
   // Create our decision variables.  "q" represents all positions of
   // the model at each timestep in nT.  "qdot0" and "qdotf" are qdot
   // at the initial and final timestep.
-  DecisionVariableVectorX q = prog.NewContinuousVariables(nT * nq, "q");
-  DecisionVariableVectorX qdot0 = prog.NewContinuousVariables(nq, "qdot0");
-  DecisionVariableVectorX qdotf = prog.NewContinuousVariables(nq, "qdotf");
+  VectorXDecisionVariable q = prog.NewContinuousVariables(nT * nq, "q");
+  VectorXDecisionVariable qdot0 = prog.NewContinuousVariables(nq, "qdot0");
+  VectorXDecisionVariable qdotf = prog.NewContinuousVariables(nq, "qdotf");
 
   std::shared_ptr<drake::solvers::Constraint> cost =
       std::make_shared<IKTrajectoryCost>(helper, q_nom);
@@ -397,7 +397,7 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
     joint_limit_min.head(nq) = q_seed.col(0);
     joint_limit_max.head(nq) = q_seed.col(0);
   }
-  prog.AddBoundingBoxConstraint(joint_limit_min, joint_limit_max, {q});
+  prog.AddBoundingBoxConstraint(joint_limit_min, joint_limit_max, q);
   Eigen::MatrixXd q_initial_guess = q_seed;
   q_initial_guess.resize(nq * nT, 1);
   prog.SetInitialGuess(q, q_initial_guess);
@@ -410,9 +410,9 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
   ikoptions.getqd0(qd0_lb, qd0_ub);
   VectorXd qd0_seed = (qd0_lb + qd0_ub) / 2;
   if (fix_initial_state) {
-    prog.AddBoundingBoxConstraint(qd0_seed, qd0_seed, {qdot0});
+    prog.AddBoundingBoxConstraint(qd0_seed, qd0_seed, qdot0);
   } else {
-    prog.AddBoundingBoxConstraint(qd0_lb, qd0_ub, {qdot0});
+    prog.AddBoundingBoxConstraint(qd0_lb, qd0_ub, qdot0);
   }
   prog.SetInitialGuess(qdot0, qd0_seed);
 
@@ -421,7 +421,7 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
   VectorXd qdf_ub(nq);
   ikoptions.getqdf(qdf_lb, qdf_ub);
   VectorXd qdf_seed = (qdf_lb + qdf_ub) / 2;
-  prog.AddBoundingBoxConstraint(qdf_lb, qdf_ub, {qdotf});
+  prog.AddBoundingBoxConstraint(qdf_lb, qdf_ub, qdotf);
   prog.SetInitialGuess(qdotf, qdf_seed);
 
   // TODO(sam.creasey) Consider making the kinematics cache helper
@@ -457,7 +457,7 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
         if (!stc->isTimeValid(&t[t_index])) {
           continue;
         }
-        prog.AddConstraint(wrapper, {q.segment(nq * t_index, nq)});
+        prog.AddConstraint(wrapper, q.segment(nq * t_index, nq));
       }
     } else if (constraint_category ==
                RigidBodyConstraint::PostureConstraintCategory) {
@@ -470,7 +470,7 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
         VectorXd lb;
         VectorXd ub;
         pc->bounds(&t[t_index], lb, ub);
-        prog.AddBoundingBoxConstraint(lb, ub, {q.segment(nq * t_index, nq)});
+        prog.AddBoundingBoxConstraint(lb, ub, q.segment(nq * t_index, nq));
       }
     } else if (constraint_category ==
                RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory) {
@@ -509,7 +509,7 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
       }
       Eigen::SparseMatrix<double> A_sparse(num_constraint, nq * nT);
       A_sparse.setFromTriplets(triplet_list.begin(), triplet_list.end());
-      prog.AddLinearConstraint(MatrixXd(A_sparse), lb, ub, {q});
+      prog.AddLinearConstraint(MatrixXd(A_sparse), lb, ub, q);
     }
   }
 
