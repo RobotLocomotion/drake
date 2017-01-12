@@ -35,18 +35,23 @@ class PainleveTest : public ::testing::Test {
 
   // Sets a secondary initial Painleve configuration.
   void SetSecondInitialConfig() {
-    // This configuration is symmetric to the default Painleve configuration
-    // about the y-axis:
-    const auto vdef = context_->get_continuous_state()->get_vector().
-        CopyToVector();
-    ContinuousState<double>& x =
+    // Set the configuration to an inconsistent (Painleve') type state with
+    // the rod at a 135 degree counter-clockwise angle with respect to the
+    // x-axis. The rod in [Stewart, 2000] is at a 45 degree counter-clockwise
+    // angle with respect to the x-axis.
+    // * [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
+    //                    Impact. SIAM Rev., 42(1), 3-39, 2000.
+    using std::sqrt;
+    const double half_len = dut_->get_rod_length() / 2;
+    const double r22 = sqrt(2) / 2;
+    ContinuousState<double>& xc =
         *context_->get_mutable_continuous_state();
-    x[0] = -vdef(0);
-    x[1] = vdef(1);
-    x[2] = vdef(2) + M_PI_2;
-    x[3] = -vdef(3);
-    x[4] = vdef(4);
-    x[5] = vdef(5);
+    xc[0] = -half_len * r22;
+    xc[1] = half_len * r22;
+    xc[2] = 3 * M_PI / 4.0;
+    xc[3] = 1.0;
+    xc[4] = 0.0;
+    xc[5] = 0.0;
   }
 
   // Sets the rod to an arbitrary impacting state.
