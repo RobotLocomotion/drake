@@ -1219,6 +1219,21 @@ class RigidBodyTree {
   void AddCollisionFilterIgnoreTarget(const std::string& group_name,
                                       const std::string& target_group_name);
 
+  // TODO(SeanCurtis-TRI): Kill this method when matlab dependencies are
+  // removed.  There is a corresponding method on the
+  // CollisionFilterGroupManager.
+  /**
+   Directly set the masks for a body.  The values will remain in the current
+   session (i.e., until Clear is called).
+   This is a convenience function for Matlab integration.  The Matlab parser
+   handles the mapping of collision filter group names to ids and passes the
+   mapped ids directly the manager for when the tree gets compiled.  It relies
+   on correct encoding of groups into bitmasks.
+   */
+  void SetBodyCollisionFilters(const RigidBody<T>& body,
+                               const DrakeCollision::bitmask& group,
+                               const DrakeCollision::bitmask& ignores);
+
   /**
    * @brief Returns a mutable reference to the RigidBody associated with the
    * world in the model. This is the root of the RigidBodyTree.

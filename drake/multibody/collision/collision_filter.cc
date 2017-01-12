@@ -117,6 +117,12 @@ bitmask CollisionFilterGroupManager<T>::get_ignore_mask(
 }
 
 template <typename T>
+void CollisionFilterGroupManager<T>::SetBodyCollisionFilters(
+    const RigidBody<T>& body, const bitmask& group, const bitmask& ignores) {
+  body_groups_[&body] = std::make_pair(group, ignores);
+}
+
+template <typename T>
 void CollisionFilterGroupManager<T>::Clear() {
   collision_filter_groups_.clear();
   body_groups_.clear();

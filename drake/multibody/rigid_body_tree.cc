@@ -238,6 +238,13 @@ void RigidBodyTree<T>::AddCollisionFilterIgnoreTarget(
 }
 
 template <typename T>
+void RigidBodyTree<T>::SetBodyCollisionFilters(
+    const RigidBody<T>& body, const DrakeCollision::bitmask& group,
+    const DrakeCollision::bitmask& ignores) {
+  collision_group_manager_.SetBodyCollisionFilters(body, group, ignores);
+}
+
+template <typename T>
 void RigidBodyTree<T>::compile(void) {
   SortTree();
 

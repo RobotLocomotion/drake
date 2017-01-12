@@ -174,6 +174,19 @@ class CollisionFilterGroupManager {
    */
   bitmask get_ignore_mask(const RigidBody<T>& body);
 
+  // TODO(SeanCurtis-TRI): Kill this method when matlab dependencies are
+  // removed.  There is a corresponding method on the RigidBodyTree.
+  /**
+   Directly set the masks for a body.  The values will remain in the current
+   session (i.e., until Clear is called).
+   This is a convenience function for Matlab integration.  The Matlab parser
+   handles the mapping of collision filter group names to ids and passes the
+   mapped ids directly the manager for when the tree gets compiled.  It relies
+   on correct encoding of groups into bitmasks.
+   */
+  void SetBodyCollisionFilters(const RigidBody<T>& body, const bitmask& group,
+                               const bitmask& ignores);
+
   /**
    Clears the cached collision filter group specification data.  It does *not*
    reset the counter for available collision filter groups.  This allows the
