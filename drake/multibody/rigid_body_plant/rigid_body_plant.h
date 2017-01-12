@@ -238,9 +238,9 @@ class RigidBodyPlant : public LeafSystem<T> {
   static Matrix3<T> ComputeBasisFromZ(const Vector3<T>& z_axis_W);
 
   /// @name System input port descriptor accessors.
-  /// These are accessors for obtaining descriptors of this
-  /// RigidBodyPlant's input ports. See this class's description for details
-  /// about these ports.
+  /// These are accessors for obtaining descriptors of this RigidBodyPlant's
+  /// input ports. See this class's description for details about these ports
+  /// and how these accessors are typically used.
   ///@{
 
   /// Returns a descriptor of the actuator command input port.
@@ -258,9 +258,9 @@ class RigidBodyPlant : public LeafSystem<T> {
   ///@}
 
   /// @name System output port descriptor accessors.
-  /// These are accessors for obtaining descriptors of this
-  /// RigidBodyPlant's output ports. See this class's description for details
-  /// about these ports.
+  /// These are accessors for obtaining descriptors of this RigidBodyPlant's
+  /// output ports. See this class's description for details about these ports
+  /// and how these accessors are typically used.
   ///@{
 
   /// Returns a descriptor of the state output port.
