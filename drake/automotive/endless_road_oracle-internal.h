@@ -11,6 +11,9 @@ namespace drake {
 namespace automotive {
 namespace internal {
 
+namespace api = maliput::api;
+namespace utility = maliput::utility;
+
 const double kEnormousDistance {1e12};
 
 const double kCarLength {4.6};  // TODO(maddog) Get from somewhere else.
@@ -25,28 +28,37 @@ enum LaneRelation { kIntersection,
 struct SourceState {
   SourceState() {}
 
-  SourceState(maliput::api::RoadPosition arp, double als)
+  SourceState(api::RoadPosition arp, double als)
       : rp(arp), longitudinal_speed(als) {}
 
-  maliput::api::RoadPosition rp;
+  api::RoadPosition rp;
   double longitudinal_speed{};
 };
 
-
 // Element of a car's travel path in the source maliput::api::RoadGeometry.
 struct PathRecord {
-  const maliput::api::Lane* lane{};
+  const api::Lane* lane{};
   bool is_reversed{};
+};
+
+// Record of when/where a car is expected to enter/exit a junction.
+struct TimeBox {
+  size_t car_index;
+  PathRecord pr;
+  double time_in;
+  double time_out;
+  double s_in;   // Distance to entry from current position.
+  double s_out;  // Distance to exit from current position.
 };
 
 void UnwrapEndlessRoadCarState(
     const std::vector<const EndlessRoadCarState<double>*>& car_inputs,
-    const maliput::utility::InfiniteCircuitRoad* road,
+    const utility::InfiniteCircuitRoad* road,
     const double horizon_seconds,
     std::vector<SourceState>* source_states,
     std::vector<std::vector<PathRecord>>* paths);
 
-void AssessLongitudinal(
+void AssessForwardPath(
     const std::vector<SourceState>& source_states,
     const std::vector<std::vector<PathRecord>>& paths,
     const std::vector<EndlessRoadOracleOutput<double>*>& oracle_outputs);
@@ -54,10 +66,25 @@ void AssessLongitudinal(
 LaneRelation DetermineLaneRelation(const PathRecord& pra,
                                    const PathRecord& prb);
 
-void AssessIntersections(
+void AssessJunctions(
     const std::vector<SourceState>& source_states,
     const std::vector<std::vector<PathRecord>>& paths,
     const std::vector<EndlessRoadOracleOutput<double>*>& oracle_outputs);
+
+void IndexJunctions(
+    const std::vector<SourceState>& source_states,
+    const std::vector<std::vector<PathRecord>>& paths,
+    std::map<const api::Junction*, std::vector<TimeBox>>* boxes_by_junction,
+    std::map<int, std::vector<const api::Junction*>>* junctions_by_car);
+
+void MeasureJunctions(
+    const std::vector<SourceState>& source_states,
+    const std::vector<std::vector<PathRecord>>& paths,
+    const std::map<const api::Junction*,
+    std::vector<TimeBox>>& boxes_by_junction,
+    const std::map<int, std::vector<const api::Junction*>>& junctions_by_car,
+    const std::vector<EndlessRoadOracleOutput<double>*>& oracle_outputs);
+
 
 }  // namespace internal
 }  // namespace automotive
