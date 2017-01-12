@@ -311,44 +311,10 @@ Drake is adding support for the Bazel build system.
 
     bazel
 
-.. _drake_fix_drake_visualizer:
 
-How To Fix ``drake-visualizer`` Error: "No module named vtkCommonCorePython"
-============================================================================
+Troubleshooting
+===============
 
-There is a `known issue <https://github.com/RobotLocomotion/drake/issues/4738>`_
-where having some version of ``python-vtk6`` installed will result in
-``drake-visualizer`` failing to start. To determine if you have ``python-vtk6``
-installed, execute::
-
-    dpkg -l | grep python-vtk6
-
-To test whether ``drake-visualizer`` can start, execute::
-
-    cd drake-distro
-    ./build/install/bin/drake_visualizer
-
-You might encounter the following error::
-
-    File "/usr/lib/python2.7/dist-packages/vtk/__init__.py", line 39, in <module>
-      from vtkCommonCore import *
-    File "/usr/lib/python2.7/dist-packages/vtk/vtkCommonCore.py", line 1, in <module>
-      from vtkCommonCorePython import *
-    ImportError: No module named vtkCommonCorePython
-
-If the error occurs, configure Director's build system to build VTK5 from source
-(``drake-visualizer`` is built on Director, which is built on VTK5)::
-
-    cd drake-distro/build/externals/director
-    cmake . -DUSE_SYSTEM_VTK=OFF
-    cd drake-distro/build
-    make (or ninja)
-
-Next, modify a couple environment variables before starting
-``drake-visualizer``::
-
-    cd drake-distro
-    export LD_LIBRARY_PATH=`pwd`/build/install/lib/vtk-5.10:$LD_LIBRARY_PATH
-    export PYTHONPATH=`pwd`/build/externals/director/src/vtk-build/Wrapping/Python:`pwd`/build/externals/director/src/vtk-build/bin:$PYTHONPATH
-
-You should now be able to start ``drake-visualizer``.
+If you're unable to launch ``drake-visualizer`` due to a
+"No module named vtkCommonCorePython" error, see
+:ref:`this FAQ <faq_drake_visualizer_no_module_named_vtk_common_core_python_non_ros>`.
