@@ -6,6 +6,7 @@
 // For background, see http://drake.mit.edu/cxx_inl.html.
 
 #include <limits>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/examples/painleve/painleve.h"
@@ -18,6 +19,19 @@ template <typename T>
 Painleve<T>::Painleve() {
   this->DeclareContinuousState(3, 3, 0);
   this->DeclareOutputPort(systems::kVectorValued, 6);
+}
+
+// Utility method for determining the lower rod endpoint.
+template <class T>
+std::pair<T, T> Painleve<T>::CalcRodLowerEndpoint(const T& x,
+                                                  const T& y,
+                                                  const int k,
+                                                  const T& ctheta,
+                                                  const T& stheta,
+                                                  const double half_rod_len) {
+  const T cx = x + k * ctheta * half_rod_len;
+  const T cy = y + k * stheta * half_rod_len;
+  return std::make_pair(cx, cy);
 }
 
 template <typename T>
@@ -76,8 +90,10 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : 1;
   const double half_rod_length = rod_length_ / 2;
-  const T cx = x + k * ctheta * half_rod_length;
-  const T cy = y + k * stheta * half_rod_length;
+  const std::pair<T, T> c = CalcRodLowerEndpoint(x, y, k, ctheta, stheta,
+                                                 half_rod_length);
+  const T cx = c.first;
+  const T cy = c.second;
 
   // Compute the impulses such that the tangential velocity post-collision
   // is zero.
@@ -402,6 +418,111 @@ Vector2<T> Painleve<T>::CalcStickingContactForces(
 }
 
 // Computes the time derivatives for the case of the rod contacting the
+// surface at exactly one point and with sliding velocity.
+template <class T>
+void Painleve<T>::CalcTimeDerivativesOneContactSliding(
+    const systems::Context<T>& context,
+    systems::ContinuousState<T>* derivatives) const {
+  using std::abs;
+
+  // Get the necessary parts of the state.
+  const systems::VectorBase<T>& state = context.get_continuous_state_vector();
+  const T& x = state.GetAtIndex(0);
+  const T& y = state.GetAtIndex(1);
+  const T& theta = state.GetAtIndex(2);
+  const T& xdot = state.GetAtIndex(3);
+  const T& thetadot = state.GetAtIndex(5);
+
+  // Obtain the structure we need to write into.
+  DRAKE_ASSERT(derivatives != nullptr);
+  systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
+
+  // The two endpoints of the rod are located at (x,y) + R(theta)*[0,l/2] and
+  // (x,y) + R(theta)*[0,-l/2], where
+  // R(theta) = | cos(theta) -sin(theta) |
+  //            | sin(theta)  cos(theta) |
+  // and l is designated as the rod length. Thus, the heights of
+  // the rod endpoints are y + sin(theta)*l/2 and y - sin(theta)*l/2.
+  const double half_rod_length = rod_length_ / 2;
+  const T ctheta = cos(theta);
+  const T stheta = sin(theta);
+  const int k = (stheta > 0) ? -1 : 1;
+
+  // Determine the point of contact (cx, cy).
+  const std::pair<T, T> c = CalcRodLowerEndpoint(x, y, k, ctheta, stheta,
+                                                 half_rod_length);
+  const T cx = c.first;
+  const T cy = c.second;
+
+  // Compute the horizontal velocity at the point of contact.
+  const T cxdot = xdot - k * stheta * half_rod_length * thetadot;
+
+  // Compute the normal acceleration at the point of contact (cy_ddot),
+  // *assuming zero contact force*.
+  T cyddot = get_gravitational_acceleration() -
+      k * half_rod_length * stheta * thetadot * thetadot;
+
+  // These equations were determined by issuing the following
+  // commands in Mathematica:
+  // cx[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
+  // cy[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
+  // Solve[{0 == D[D[cy[t], t], t],
+  //        D[D[y[t], t], t] == fN/mass + g,
+  //        D[D[x[t], t], t] == fF/mass,
+  //        J*D[D[theta[t], t], t] == (cx[t]-x[t])*fN - (cy[t]-y[t])*fF,
+  //        fF == -sgn_cxdot*mu*fN},
+  // { fN, fF, D[D[y[t], t], t], D[D[x[t], t], t], D[D[theta[t], t], t]}]
+  // where theta is the counter-clockwise angle the rod makes with the
+  // x-axis, 'ell' is the length of the rod, fN and fF are normal and
+  // frictional forces, respectively, sgn_cxdot = sgn(cxdot), g is the
+  // acceleration due to gravity, and (hopefully) all other variables are
+  // self-explanatory. The first two equations above are the formula
+  // for the point of contact. The next equation requires that the
+  // vertical acceleration be zero. The fourth and fifth equations
+  // describe the horizontal and vertical accelerations at the center
+  // of mass of the rod. The sixth equation yields the moment from
+  // the contact forces. The last equation corresponds to the relationship
+  // between normal and frictional forces (dictated by the Coulomb
+  // friction model).
+  const double J = J_;
+  const double mass = mass_;
+  const double mu = mu_;
+  const int sgn_cxdot = (cxdot > 0) ? 1 : -1;
+  const double g = get_gravitational_acceleration();
+  const double ell = rod_length_;
+  const T fN = (2 * mass *
+      (-2 * g * J + ell * J * k * stheta * thetadot * thetadot)) /
+      (4 * J + ell * ell * k * k * mass * ctheta * ctheta +
+          ell * ell * k * k * mass * mu * ctheta * sgn_cxdot * stheta);
+
+  // Check for inconsistent configuration.
+  if (fN < 0)
+    throw std::runtime_error("Inconsistent configuration detected.");
+
+  // Now that normal force is computed, set the acceleration.
+  const T fF = -sgn_cxdot * mu_ * fN;
+  f->SetAtIndex(3, fF / mass_);
+  f->SetAtIndex(4, fN / mass_ + get_gravitational_acceleration());
+  f->SetAtIndex(5, ((cx - x) * fN - (cy - y) * fF) / J);
+
+  // Compute the normal acceleration at the contact point (a check).
+  const T yddot = f->GetAtIndex(4);
+  const T thetaddot = f->GetAtIndex(5);
+  cyddot =
+      yddot +
+          ell * k * (ctheta * thetaddot - stheta * thetadot * thetadot) / 2;
+
+  // Lines below currently unused but are occasionally helpful for
+  // debugging.
+  //        const T xddot = f->GetAtIndex(3);
+  //        const T cxddot = xddot + ell*k*(-stheta*thetaddot -
+  //                                        +ctheta*thetadot*thetadot)/2;
+
+  // Verify that the normal acceleration is zero.
+  DRAKE_DEMAND(abs(cyddot) < std::numeric_limits<double>::epsilon() * 10);
+}
+
+// Computes the time derivatives for the case of the rod contacting the
 // surface at exactly one point and without any sliding velocity.
 template <class T>
 void Painleve<T>::CalcTimeDerivativesOneContactNoSliding(
@@ -425,8 +546,10 @@ void Painleve<T>::CalcTimeDerivativesOneContactNoSliding(
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : 1;
-  const T cx = x + k * ctheta * half_rod_length;
-  const T cy = y + k * stheta * half_rod_length;
+  const std::pair<T, T> c = CalcRodLowerEndpoint(x, y, k, ctheta, stheta,
+                                                 half_rod_length);
+  const T cx = c.first;
+  const T cy = c.second;
 
   // Compute the contact forces, assuming sticking contact.
   Vector2<T> cf = CalcStickingContactForces(context);
@@ -588,9 +711,9 @@ void Painleve<T>::DoCalcTimeDerivatives(
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : 1;
 
-  // Determine the point of contact (cx, cy).
-  const T cx = x + k * ctheta * half_rod_length;
-  const T cy = y + k * stheta * half_rod_length;
+  // Determine the height of the point of contact (cx, cy).
+  const T cy =  CalcRodLowerEndpoint(x, y, k, ctheta, stheta,
+                                     half_rod_length).second;
 
   // Compute the horizontal velocity at the point of contact.
   const T cxdot = xdot - k * stheta * half_rod_length * thetadot;
@@ -633,70 +756,10 @@ void Painleve<T>::DoCalcTimeDerivatives(
     // necessary to set it to zero.
     if (cyddot < 0) {
       // Look for the case where the tangential velocity is zero.
-      if (abs(cxdot) < std::numeric_limits<double>::epsilon()) {
+      if (abs(cxdot) < std::numeric_limits<double>::epsilon())
         CalcTimeDerivativesOneContactNoSliding(context, derivatives);
-        return;
-      } else {
-        // Rod is sliding at the point of contact.
-        // These equations were determined by issuing the following
-        // commands in Mathematica:
-        // cx[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
-        // cy[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
-        // Solve[{0 == D[D[cy[t], t], t],
-        //        D[D[y[t], t], t] == fN/mass + g,
-        //        D[D[x[t], t], t] == fF/mass,
-        //        J*D[D[theta[t], t], t] == (cx[t]-x[t])*fN - (cy[t]-y[t])*fF,
-        //        fF == -sgn_cxdot*mu*fN},
-        // { fN, fF, D[D[y[t], t], t], D[D[x[t], t], t], D[D[theta[t], t], t]}]
-        // where theta is the counter-clockwise angle the rod makes with the
-        // x-axis, 'ell' is the length of the rod, fN and fF are normal and
-        // frictional forces, respectively, sgn_cxdot = sgn(cxdot), g is the
-        // acceleration due to gravity, and (hopefully) all other variables are
-        // self-explanatory. The first two equations above are the formula
-        // for the point of contact. The next equation requires that the
-        // vertical acceleration be zero. The fourth and fifth equations
-        // describe the horizontal and vertical accelerations at the center
-        // of mass of the rod. The sixth equation yields the moment from
-        // the contact forces. The last equation corresponds to the relationship
-        // between normal and frictional forces (dictated by the Coulomb
-        // friction model).
-        const double J = J_;
-        const double mass = mass_;
-        const double mu = mu_;
-        const int sgn_cxdot = (cxdot > 0) ? 1 : -1;
-        const double g = get_gravitational_acceleration();
-        const double ell = rod_length_;
-        const T fN = (2 * mass *
-                   (-2 * g * J + ell * J * k * stheta * thetadot * thetadot)) /
-                  (4 * J + ell * ell * k * k * mass * ctheta * ctheta +
-                   ell * ell * k * k * mass * mu * ctheta * sgn_cxdot * stheta);
-
-        // Check for inconsistent configuration.
-        if (fN < 0)
-          throw std::runtime_error("Inconsistent configuration detected.");
-
-        // Now that normal force is computed, set the acceleration.
-        const T fF = -sgn_cxdot * mu_ * fN;
-        f->SetAtIndex(3, fF / mass_);
-        f->SetAtIndex(4, fN / mass_ + get_gravitational_acceleration());
-        f->SetAtIndex(5, ((cx - x) * fN - (cy - y) * fF) / J);
-
-        // Compute the normal acceleration at the contact point (a check).
-        const T yddot = f->GetAtIndex(4);
-        const T thetaddot = f->GetAtIndex(5);
-        cyddot =
-            yddot +
-            ell * k * (ctheta * thetaddot - stheta * thetadot * thetadot) / 2;
-
-        // Lines below currently unused but are occasionally helpful for
-        // debugging.
-        //        const T xddot = f->GetAtIndex(3);
-        //        const T cxddot = xddot + ell*k*(-stheta*thetaddot -
-        //                                        +ctheta*thetadot*thetadot)/2;
-
-        // Verify that the normal acceleration is zero.
-        DRAKE_DEMAND(abs(cyddot) < std::numeric_limits<double>::epsilon() * 10);
-      }
+      else
+        CalcTimeDerivativesOneContactSliding(context, derivatives);
     }
   }
 }

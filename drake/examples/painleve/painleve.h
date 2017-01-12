@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -105,11 +107,20 @@ class Painleve : public systems::LeafSystem<T> {
   void CalcTimeDerivativesOneContactNoSliding(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const;
+  void CalcTimeDerivativesOneContactSliding(
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const;
   void SetVelocityDerivatives(const systems::Context<T>& context,
                               systems::VectorBase<T>* const f,
                               T fN, T fF, T xc, T yc) const;
   Vector2<T> CalcStickingContactForces(
       const systems::Context<T>& context) const;
+  static std::pair<T, T> CalcRodLowerEndpoint(const T& x,
+                                              const T& y,
+                                              const int k,
+                                              const T& ctheta,
+                                              const T& stheta,
+                                              const double half_rod_len);
 
   double mass_{1.0};        // The mass of the rod.
   double rod_length_{1.0};  // The length of the rod.
