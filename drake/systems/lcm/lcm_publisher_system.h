@@ -98,15 +98,15 @@ class LcmPublisherSystem : public LeafSystem<double> {
 
   const std::string& get_channel_name() const;
 
+  /// Returns the default name for a system that publishes @p channel.
+  static std::string make_name(const std::string& channel);
+
   /**
    * Sets the publishing period of this system. See
    * LeafSystem::DeclarePublishPeriodSec() for details about the semantics of
    * parameter `period`.
    */
   void set_publish_period(double period);
-
-  /// Returns the default name for a system that publishes @p channel.
-  static std::string make_name(const std::string& channel);
 
   /**
    * Takes the VectorBase from the input port of the context and publishes
