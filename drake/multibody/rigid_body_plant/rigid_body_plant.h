@@ -36,19 +36,45 @@ namespace systems {
 /// The %RigidBodyPlant's state consists of a vector containing the generalized
 /// positions followed by the generalized velocities of the system.
 ///
-/// <B>%System output</B>:
-/// - Port 0: The state vector of the system in a vector valued port.
-/// - Port 1: A KinematicsResults class allowing access to the results from
-/// kinematics computations for each RigidBody.
-/// - Port 2: A ContactsResults class allowing access to the results
-/// from contact computations.
-/// - Ports 3-N: Individual output ports containing the state
-/// (positions + velocities) for each model instance, accessed
-/// through model_state_output_port().
+/// <B>Input Port:</B>
+///
+/// There is one input port. It is accessible via the following accessor:
+///
+/// - command_input_port(): Contains the command vector for the
+///   RigidBodyTree's actuators.
+///
+/// <B>Output Ports:</B>
+///
+/// There are numerous output ports. The number depends on how many model
+/// instances exist in the RigidBodyTree. The output ports are available via
+/// the following accessors.
+///
+/// - state_output_port(): A vector-valued port containing the state vector,
+///   `x`, of the system. The state vector, `x`, consists of generalized
+///   positions followed by generalized velocities. Semantics of `x` can be
+///   obtained using the following methods:
+///
+///   - RigidBodyPlant<T>::get_num_states()
+///   - RigidBodyTree<T>::get_num_positions()
+///   - RigidBodyTree<T>::get_num_velocities()
+///   - RigidBodyTree<T>::get_position_name()
+///   - RigidBodyTree<T>::get_velocity_name()
+///
+/// - kinematics_results_output_port(): An abstract-valued port containing a
+///   KinematicsResults object allowing access to the results from kinematics
+///   computations for each RigidBody in the RigidBodyTree.
+///
+/// - contact_results_output_port(): An abstract-valued port containing a
+///   ContactsResults object allowing access to the results from contact
+///   computations.
+///
+/// - model_state_output_port(): A vector-valued port containing the state
+///   vector for a particular model instance within the RigidBodyTree that is
+///   within this RigidBodyPlant.
 ///
 /// The multibody model consists of a set of rigid bodies connected through
 /// joints in a tree structure. Bodies may have a collision model in which case
-/// collisions are considered. In addition the model may contain loop
+/// collisions are considered. In addition, the model may contain loop
 /// constraints described by RigidBodyLoop's in the multibody model. Even though
 /// loop constraints are a particular case of holonomic constrants, general
 /// holonomic constrants are not yet supported.
@@ -220,25 +246,37 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// @retval R_WL          The computed basis.
   static Matrix3<T> ComputeBasisFromZ(const Vector3<T>& z_axis_W);
 
+  /// @name System input port descriptor accessors.
+  /// These are accessors for obtaining descriptors of this
+  /// RigidBodyPlant's input port. See this class's description for details
+  /// about this port.
+  ///@{
+
+  /// Returns a descriptor of the actuator command input port.
+  const InputPortDescriptor<T>& command_input_port() const {
+    return System<T>::get_input_port(command_input_port_index_);
+  }
+  ///@}
+
   /// @name System output port descriptor accessors.
-  /// These are accessor methods for obtaining descriptors of this
+  /// These are accessors for obtaining descriptors of this
   /// RigidBodyPlant's output ports. See this class's description for details
   /// about these ports.
   ///@{
 
   /// Returns a descriptor of the state output port.
   const OutputPortDescriptor<T>& state_output_port() const {
-    return System<T>::get_output_port(state_output_port_id_);
+    return System<T>::get_output_port(state_output_port_index_);
   }
 
   /// Returns a descriptor of the KinematicsResults output port.
   const OutputPortDescriptor<T>& kinematics_results_output_port() const {
-    return System<T>::get_output_port(kinematics_output_port_id_);
+    return System<T>::get_output_port(kinematics_output_port_index_);
   }
 
   /// Returns a descriptor of the ContactResults output port.
   const OutputPortDescriptor<T>& contact_results_output_port() const {
-    return System<T>::get_output_port(contact_output_port_id_);
+    return System<T>::get_output_port(contact_output_port_index_);
   }
 
   /// Returns a descriptor of the output port containing the state of a
@@ -253,6 +291,27 @@ class RigidBodyPlant : public LeafSystem<T> {
           std::to_string(output_map_.size() - 1) + ".");
     }
     return System<T>::get_output_port(output_map_.at(model_instance_id));
+  }
+  ///@}
+
+  /// @name System output port index accessors.
+  /// These are accessors for obtaining indices of this RigidBodyPlant's output
+  /// ports. See this class's description for details about these ports.
+  ///@{
+  int state_output_port_index() const {
+    return state_output_port().get_index();
+  }
+
+  int kinematics_results_output_port_index() const {
+    return kinematics_results_output_port().get_index();
+  }
+
+  int contact_results_output_port_index() const {
+    return contact_results_output_port().get_index();
+  }
+
+  int model_state_output_port_index(int model_instance_id) const {
+    return model_state_output_port(model_instance_id).get_index();
   }
   ///@}
 
@@ -320,9 +379,10 @@ class RigidBodyPlant : public LeafSystem<T> {
   T friction_coefficient_{1.0};
 
   std::unique_ptr<const RigidBodyTree<T>> tree_;
-  int state_output_port_id_{};
-  int kinematics_output_port_id_{};
-  int contact_output_port_id_{};
+  int command_input_port_index_{};
+  int state_output_port_index_{};
+  int kinematics_output_port_index_{};
+  int contact_output_port_index_{};
 
   // Maps model instance ids to input port indices.  A value of -1
   // indicates that a model instance has no actuators, and thus no

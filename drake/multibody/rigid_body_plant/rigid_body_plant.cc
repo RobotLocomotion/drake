@@ -34,15 +34,19 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree)
     : tree_(move(tree)) {
   DRAKE_DEMAND(tree_ != nullptr);
 
-  // The first input to this system is a vector containing the
-  // generalized forces commanded on the actuators.
-  System<T>::DeclareInputPort(kVectorValued, get_num_actuators());
-  // The first output of the system is the state vector.
-  state_output_port_id_ =
+  // Declares an input port for the generalized force vector. The generalized
+  // forces in this vector are sent as commands to the actuators within the
+  // RigidBodyTree.
+  command_input_port_index_ = System<T>::DeclareInputPort(kVectorValued,
+      get_num_actuators()).get_index();
+  // Declares a vector-valued output port for `x`, the plant's generalized state
+  // vector.
+  state_output_port_index_ =
       this->DeclareOutputPort(kVectorValued, get_num_states()).get_index();
-  // Declares an abstract valued port for kinematics results.
-  kinematics_output_port_id_ = this->DeclareAbstractOutputPort().get_index();
-  contact_output_port_id_ = this->DeclareAbstractOutputPort().get_index();
+  // Declares an abstract valued output port for kinematics results.
+  kinematics_output_port_index_ = this->DeclareAbstractOutputPort().get_index();
+  // Declares an abstract valued output port for contact information.
+  contact_output_port_index_ = this->DeclareAbstractOutputPort().get_index();
 
   const int num_instances = tree_->get_num_model_instances();
   const std::pair<int, int> default_entry =
@@ -247,30 +251,29 @@ template <typename T>
 std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
     const Context<T>& context) const {
   auto output = make_unique<LeafSystemOutput<T>>();
-  // Allocates an output for the RigidBodyPlant state (output port 0).
+  // Allocates an output port for the state vector.
   {
     auto data = make_unique<BasicVector<T>>(get_num_states());
     auto port = make_unique<OutputPort>(move(data));
     output->get_mutable_ports()->push_back(move(port));
   }
 
-  // Allocates an output for the RigidBodyPlant kinematics results
-  // (output port 1).
+  // Allocates an output port for the kinematics results.
   {
     auto kinematics_results = make_unique<Value<KinematicsResults<T>>>(
         KinematicsResults<T>(tree_.get()));
     output->add_port(move(kinematics_results));
   }
 
-  // Allocates an output for the RigidBodyPlant contact results
-  // (output port 2).
+  // Allocates an output port for the contact results.
   {
     auto contact_results =
         make_unique<Value<ContactResults<T>>>(ContactResults<T>());
     output->add_port(move(contact_results));
   }
 
-  // Allocates an output for each of the per-instance output ports.
+  // Allocates an output port for each model instance's state vector in the
+  // RigidBodyTree.
   for (int instance_id = 0;
        instance_id < get_num_model_instances(); ++instance_id) {
     if (output_map_[instance_id] == kInvalidPortIdentifier) { continue; }
@@ -286,7 +289,7 @@ template <typename T>
 std::unique_ptr<ContinuousState<T>> RigidBodyPlant<T>::AllocateContinuousState()
     const {
   // The state is second-order.
-  DRAKE_ASSERT(System<T>::get_input_port(0).size() == get_num_actuators());
+  DRAKE_ASSERT(command_input_port().size() == get_num_actuators());
   // TODO(amcastro-tri): add z state to track energy conservation.
   return std::make_unique<ContinuousState<T>>(
       std::make_unique<BasicVector<T>>(get_num_states()),
@@ -301,13 +304,13 @@ void RigidBodyPlant<T>::DoCalcOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   // Evaluates the state output port.
-  BasicVector<T>* output_vector =
-      output->GetMutableVectorData(state_output_port_id_);
+  BasicVector<T>* state_output_vector =
+      output->GetMutableVectorData(state_output_port_index_);
   // TODO(amcastro-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
-  output_vector->get_mutable_value() =
+  state_output_vector->get_mutable_value() =
       context.get_continuous_state()->CopyToVector();
-  const auto state_vector = output_vector->get_value();
+  const auto state_vector = state_output_vector->get_value();
 
   for (int instance_id = 0;
        instance_id < get_num_model_instances(); ++instance_id) {
@@ -328,12 +331,12 @@ void RigidBodyPlant<T>::DoCalcOutput(const Context<T>& context,
 
   // Evaluates the kinematics results output port.
   auto& kinematics_results =
-      output->GetMutableData(kinematics_output_port_id_)
+      output->GetMutableData(kinematics_output_port_index_)
           ->template GetMutableValue<KinematicsResults<T>>();
   kinematics_results.UpdateFromContext(context);
 
   // Evaluates the contact results output port.
-  auto& contact_results = output->GetMutableData(contact_output_port_id_)
+  auto& contact_results = output->GetMutableData(contact_output_port_index_)
                               ->template GetMutableValue<ContactResults<T>>();
   ComputeContactResults(context, &contact_results);
 }
