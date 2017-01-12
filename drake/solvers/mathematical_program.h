@@ -202,7 +202,7 @@ class MathematicalProgram {
                      std::forward<Args>(args)...),
           f_(std::forward<F>(f)) {}
 
-   private:
+   protected:
     void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd& y) const override {
       y.resize(detail::FunctionTraits<F>::numOutputs(f_));
