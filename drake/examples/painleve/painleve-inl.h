@@ -81,7 +81,7 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
   // (x,y) + R(theta)*[0,-r/2], where
   // R(theta) = | cos(theta) -sin(theta) |
   //            | sin(theta)  cos(theta) |
-  // and r is designated as the rod endpoint. Thus, the heights of
+  // and r is designated as the rod length. Thus, the heights of
   // the rod endpoints are y + sin(theta)*r/2 and y - sin(theta)*r/2,
   // or, y + k*sin(theta)*r/2, where k = +/-1.
 
@@ -138,19 +138,19 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
 // These equations were determined by issuing the
 // following commands in Mathematica:
 //
-// cx[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
-// cy[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
+// cx[t_] := x[t] + k*Cos[theta[t]]*(r/2)
+// cy[t_] := y[t] + k*Sin[theta[t]]*(r/2)
 // Solve[{mass*delta_xdot == fF,
 //        mass*delta_ydot == fN,
 //        J*delta_thetadot == (cx[t] - x)*fN - (cy - y)*fF,
 //        0 == (D[y[t], t] + delta_ydot) +
-//              k*(ell/2) *Cos[theta[t]]*(D[theta[t], t] + delta_thetadot),
+//              k*(r/2) *Cos[theta[t]]*(D[theta[t], t] + delta_thetadot),
 //        fF == mu*fN *-sgn_cxdot},
 //       {delta_xdot, delta_ydot, delta_thetadot, fN, fF}]
 // where theta is the counter-clockwise angle the rod makes with the x-axis,
 // fN and fF are contact normal and frictional forces; delta_xdot,
 // delta_ydot, and delta_thetadot represent the changes in velocity,
-// ell is the length of the rod, sgn_xdot is the sign of the tangent
+// r is the length of the rod, sgn_xdot is the sign of the tangent
 // velocity (pre-impact), and (hopefully) all other variables are
 // self-explanatory.
 //
@@ -185,7 +185,7 @@ Vector2<T> Painleve<T>::CalcFConeImpactImpulse(
   // (x,y) + R(theta)*[0,-r/2], where
   // R(theta) = | cos(theta) -sin(theta) |
   //            | sin(theta)  cos(theta) |
-  // and r is designated as the rod endpoint. Thus, the heights of
+  // and r is designated as the rod length. Thus, the heights of
   // the rod endpoints are y + sin(theta)*r/2 and y - sin(theta)*r/2,
   // or, y + k*sin(theta)*r/2, where k = +/-1.
   const T ctheta = cos(theta);
@@ -196,14 +196,14 @@ Vector2<T> Painleve<T>::CalcFConeImpactImpulse(
   const double mu = mu_;
   const double J = J_;
   const double mass = mass_;
-  const double ell = rod_length_;
+  const double r = rod_length_;
 
   // Compute the impulses.
   const T cxdot = xdot - k * stheta * half_rod_length * thetadot;
   const int sgn_cxdot = (cxdot > 0) ? 1 : -1;
-  const T fN = (J * mass * (-(ell * k * ctheta * thetadot) / 2 - ydot)) /
-              (J + (ell * k * mass * mu * (-y + cy) * ctheta * sgn_cxdot) / 2 -
-              (ell * k * mass * ctheta * (x - (ell * k * ctheta) / 2 - x)) / 2);
+  const T fN = (J * mass * (-(r * k * ctheta * thetadot) / 2 - ydot)) /
+              (J + (r * k * mass * mu * (-y + cy) * ctheta * sgn_cxdot) / 2 -
+              (r * k * mass * ctheta * (x - (r * k * ctheta) / 2 - x)) / 2);
   const T fF = -sgn_cxdot * mu * fN;
 
   // Verify normal force is non-negative.
@@ -216,18 +216,18 @@ Vector2<T> Painleve<T>::CalcFConeImpactImpulse(
 // These equations were determined by issuing the following commands in
 // Mathematica:
 //
-// cx[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
-// cy[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
+// cx[t_] := x[t] + k*Cos[theta[t]]*(r/2)
+// cy[t_] := y[t] + k*Sin[theta[t]]*(r/2)
 // Solve[{mass*delta_xdot == fF, mass*delta_ydot == fN,
 //        J*delta_thetadot == (cx[t] - x)*fN - (cy - y)*fF,
 //        0 == (D[y[t], t] + delta_ydot) +
-//             k*(ell/2) *Cos[theta[t]]*(D[theta[t], t] + delta_thetadot),
+//             k*(r/2) *Cos[theta[t]]*(D[theta[t], t] + delta_thetadot),
 //        0 == (D[x[t], t] + delta_xdot) +
-//             k*(ell/2)*-Cos[theta[t]]*(D[theta[t], t] + delta_thetadot)},
+//             k*(r/2)*-Cos[theta[t]]*(D[theta[t], t] + delta_thetadot)},
 //       {delta_xdot, delta_ydot, delta_thetadot, fN, fF}]
 // which computes the change in velocity and frictional (fF) and normal (fN)
 // impulses necessary to bring the system to rest at the point of contact,
-// 'ell' is the rod length, theta is the counter-clockwise angle measured
+// 'r' is the rod length, theta is the counter-clockwise angle measured
 // with respect to the x-axis; delta_xdot, delta_ydot, and delta_thetadot
 // are the changes in velocity.
 //
@@ -255,11 +255,11 @@ Vector2<T> Painleve<T>::CalcStickingImpactImpulse(
   const T& ydot = state.GetAtIndex(4);
   const T& thetadot = state.GetAtIndex(5);
 
-  // The two points of the rod are located at (x,y) + R(theta)*[0,ell/2] and
-  // (x,y) + R(theta)*[0,-ell/2], where
+  // The two points of the rod are located at (x,y) + R(theta)*[0,r/2] and
+  // (x,y) + R(theta)*[0,-r/2], where
   // R(theta) = | cos(theta) -sin(theta) |
   //            | sin(theta)  cos(theta) |
-  // and ell is designated as the rod endpoint. Thus, the heights of
+  // and r is designated as the rod length. Thus, the heights of
   // the rod endpoints are y + sin(theta)*l/2 and y - sin(theta)*l/2,
   // or, y + k*sin(theta)*l/2, where k = +/-1.
   const T ctheta = cos(theta);
@@ -269,29 +269,29 @@ Vector2<T> Painleve<T>::CalcStickingImpactImpulse(
   const T cy = y + k * stheta * half_rod_length;
 
   // Compute the impulses.
-  const double ell = rod_length_;
+  const double r = rod_length_;
   const double mass = mass_;
   const double J = J_;
-  const T fN = (2 * (-(ell * J * k * mass * ctheta * thetadot) +
-      ell * k * mass * mass * y * ctheta * xdot -
-      ell * k * mass * mass * cy * ctheta * xdot -
-      2 * J * mass * ydot + ell * k * mass * mass * y * ctheta * ydot -
-      ell * k * mass * mass * cy * ctheta * ydot)) /
-      (4 * J - 2 * ell * k * mass * x * ctheta -
-          2 * ell * k * mass * y * ctheta + 2 * ell * k * mass * cy * ctheta +
-          ell * ell * k * k * mass * ctheta * ctheta +
-          2 * ell * k * mass * ctheta * x);
-  const T fF = -((mass * (-2 * ell * J * k * ctheta * thetadot + 4 * J * xdot -
-      2 * ell * k * mass * x * ctheta * xdot +
-      ell * ell * k * k * mass * ctheta * ctheta * xdot +
-      2 * ell * k * mass * ctheta * x * xdot -
-      2 * ell * k * mass * x * ctheta * ydot +
-      ell * ell * k * k * mass * ctheta * ctheta * ydot +
-      2 * ell * k * mass * ctheta * x * ydot)) /
-      (4 * J - 2 * ell * k * mass * x * ctheta -
-          2 * ell * k * mass * y * ctheta + 2 * ell * k * mass * cy * ctheta +
-          ell * ell * k * k * mass * ctheta * ctheta +
-          2 * ell * k * mass * ctheta * x));
+  const T fN = (2 * (-(r * J * k * mass * ctheta * thetadot) +
+      r * k * mass * mass * y * ctheta * xdot -
+      r * k * mass * mass * cy * ctheta * xdot -
+      2 * J * mass * ydot + r * k * mass * mass * y * ctheta * ydot -
+      r * k * mass * mass * cy * ctheta * ydot)) /
+      (4 * J - 2 * r * k * mass * x * ctheta -
+          2 * r * k * mass * y * ctheta + 2 * r * k * mass * cy * ctheta +
+          r * r * k * k * mass * ctheta * ctheta +
+          2 * r * k * mass * ctheta * x);
+  const T fF = -((mass * (-2 * r * J * k * ctheta * thetadot + 4 * J * xdot -
+      2 * r * k * mass * x * ctheta * xdot +
+      r * r * k * k * mass * ctheta * ctheta * xdot +
+      2 * r * k * mass * ctheta * x * xdot -
+      2 * r * k * mass * x * ctheta * ydot +
+      r * r * k * k * mass * ctheta * ctheta * ydot +
+      2 * r * k * mass * ctheta * x * ydot)) /
+      (4 * J - 2 * r * k * mass * x * ctheta -
+          2 * r * k * mass * y * ctheta + 2 * r * k * mass * cy * ctheta +
+          r * r * k * k * mass * ctheta * ctheta +
+          2 * r * k * mass * ctheta * x));
 
   // Verify that normal impulse is non-negative.
   DRAKE_DEMAND(fN > 0.0);
@@ -324,7 +324,7 @@ void Painleve<T>::SetVelocityDerivatives(const systems::Context<T>& context,
 
   // Get constants for checking accelerations.
   const double mu = mu_;
-  const double ell = rod_length_;
+  const double r = rod_length_;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : 1;
@@ -333,7 +333,7 @@ void Painleve<T>::SetVelocityDerivatives(const systems::Context<T>& context,
   // (i.e., cyddot = 0).
   const T cyddot =
       yddot +
-          ell * k * (ctheta * thetaddot - stheta * thetadot * thetadot) / 2;
+          r * k * (ctheta * thetaddot - stheta * thetadot * thetadot) / 2;
   DRAKE_DEMAND(abs(cyddot) < std::numeric_limits<double>::epsilon());
 
   // If the force is within the friction cone, verify that the horizontal
@@ -341,7 +341,7 @@ void Painleve<T>::SetVelocityDerivatives(const systems::Context<T>& context,
   if (fN*mu > abs(fF)) {
     const T cxddot =
         xddot +
-            ell * k * (-stheta * thetaddot - ctheta * thetadot * thetadot) / 2;
+            r * k * (-stheta * thetaddot - ctheta * thetadot * thetadot) / 2;
 
     DRAKE_DEMAND(abs(cxddot) < std::numeric_limits<double>::epsilon());
   }
@@ -352,8 +352,8 @@ void Painleve<T>::SetVelocityDerivatives(const systems::Context<T>& context,
 // (i.e., cxddot = 0). This function solves for these forces.
 //
 // Equations were determined by issuing the following command in Mathematica:
-// cx[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
-// cy[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
+// cx[t_] := x[t] + k*Cos[theta[t]]*(r/2)
+// cy[t_] := y[t] + k*Sin[theta[t]]*(r/2)
 // Solve[{0 == D[D[cy[t], t], t],
 //        D[D[y[t], t], t] == fN/mass + g,
 //        D[D[x[t], t], t] == fF/mass,
@@ -391,28 +391,28 @@ Vector2<T> Painleve<T>::CalcStickingContactForces(
 
   // Set named Mathematica constants.
   const double mass = mass_;
-  const double ell = rod_length_;
+  const double r = rod_length_;
   const double g = get_gravitational_acceleration();
   const double J = J_;
   const T fN =
       (mass *
-          (-8 * g * J - 2 * ell * ell * g * k * k * mass * stheta * stheta +
-              4 * ell * J * k * stheta * thetadot * thetadot +
-              ell * ell * ell * k * k * k * mass * ctheta * ctheta * stheta *
+          (-8 * g * J - 2 * r * r * g * k * k * mass * stheta * stheta +
+              4 * r * J * k * stheta * thetadot * thetadot +
+              r * r * r * k * k * k * mass * ctheta * ctheta * stheta *
                   thetadot * thetadot +
-              ell * ell * ell * k * k * k * mass * stheta * stheta * stheta *
+              r * r * r * k * k * k * mass * stheta * stheta * stheta *
                   thetadot * thetadot)) /
-          (2 * (4 * J + ell * ell * k * k * mass * ctheta * ctheta +
-              ell * ell * k * k * mass * stheta * stheta));
+          (2 * (4 * J + r * r * k * k * mass * ctheta * ctheta +
+              r * r * k * k * mass * stheta * stheta));
   const T fF =
-      -(2 * ell * ell * g * k * k * mass * mass * ctheta * stheta -
-          4 * ell * J * k * mass * ctheta * thetadot * thetadot -
-          ell * ell * ell * k * k * k * mass * mass * ctheta * ctheta *
+      -(2 * r * r * g * k * k * mass * mass * ctheta * stheta -
+          4 * r * J * k * mass * ctheta * thetadot * thetadot -
+          r * r * r * k * k * k * mass * mass * ctheta * ctheta *
               ctheta * thetadot * thetadot -
-          ell * ell * ell * k * k * k * mass * mass * ctheta * stheta *
+          r * r * r * k * k * k * mass * mass * ctheta * stheta *
               stheta * thetadot * thetadot) /
-          (2 * (4 * J + ell * ell * k * k * mass * ctheta * ctheta +
-              ell * ell * k * k * mass * stheta * stheta));
+          (2 * (4 * J + r * r * k * k * mass * ctheta * ctheta +
+              r * r * k * k * mass * stheta * stheta));
 
   return Vector2<T>(fN, fF);
 }
@@ -464,8 +464,8 @@ void Painleve<T>::CalcTimeDerivativesOneContactSliding(
 
   // These equations were determined by issuing the following
   // commands in Mathematica:
-  // cx[t_] := x[t] + k*Cos[theta[t]]*(ell/2)
-  // cy[t_] := y[t] + k*Sin[theta[t]]*(ell/2)
+  // cx[t_] := x[t] + k*Cos[theta[t]]*(r/2)
+  // cy[t_] := y[t] + k*Sin[theta[t]]*(r/2)
   // Solve[{0 == D[D[cy[t], t], t],
   //        D[D[y[t], t], t] == fN/mass + g,
   //        D[D[x[t], t], t] == fF/mass,
@@ -473,7 +473,7 @@ void Painleve<T>::CalcTimeDerivativesOneContactSliding(
   //        fF == -sgn_cxdot*mu*fN},
   // { fN, fF, D[D[y[t], t], t], D[D[x[t], t], t], D[D[theta[t], t], t]}]
   // where theta is the counter-clockwise angle the rod makes with the
-  // x-axis, 'ell' is the length of the rod, fN and fF are normal and
+  // x-axis, 'r' is the length of the rod, fN and fF are normal and
   // frictional forces, respectively, sgn_cxdot = sgn(cxdot), g is the
   // acceleration due to gravity, and (hopefully) all other variables are
   // self-explanatory. The first two equations above are the formula
@@ -489,11 +489,11 @@ void Painleve<T>::CalcTimeDerivativesOneContactSliding(
   const double mu = mu_;
   const int sgn_cxdot = (cxdot > 0) ? 1 : -1;
   const double g = get_gravitational_acceleration();
-  const double ell = rod_length_;
+  const double r = rod_length_;
   const T fN = (2 * mass *
-      (-2 * g * J + ell * J * k * stheta * thetadot * thetadot)) /
-      (4 * J + ell * ell * k * k * mass * ctheta * ctheta +
-          ell * ell * k * k * mass * mu * ctheta * sgn_cxdot * stheta);
+      (-2 * g * J + r * J * k * stheta * thetadot * thetadot)) /
+      (4 * J + r * r * k * k * mass * ctheta * ctheta +
+          r * r * k * k * mass * mu * ctheta * sgn_cxdot * stheta);
 
   // Check for inconsistent configuration.
   if (fN < 0)
@@ -510,12 +510,12 @@ void Painleve<T>::CalcTimeDerivativesOneContactSliding(
   const T thetaddot = f->GetAtIndex(5);
   cyddot =
       yddot +
-          ell * k * (ctheta * thetaddot - stheta * thetadot * thetadot) / 2;
+          r * k * (ctheta * thetaddot - stheta * thetadot * thetadot) / 2;
 
   // Lines below currently unused but are occasionally helpful for
   // debugging.
   //        const T xddot = f->GetAtIndex(3);
-  //        const T cxddot = xddot + ell*k*(-stheta*thetaddot -
+  //        const T cxddot = xddot + r*k*(-stheta*thetaddot -
   //                                        +ctheta*thetadot*thetadot)/2;
 
   // Verify that the normal acceleration is zero.
@@ -568,7 +568,7 @@ void Painleve<T>::CalcTimeDerivativesOneContactNoSliding(
 
     // Set named Mathematica constants.
     const double mass = get_rod_mass();
-    const double ell = get_rod_length();
+    const double r = get_rod_length();
     const double J = get_rod_moment_of_inertia();
     const double g = get_gravitational_acceleration();
 
@@ -579,9 +579,9 @@ void Painleve<T>::CalcTimeDerivativesOneContactNoSliding(
     auto calc_force = [=](int d) {
       const T N =
           (2 * mass *
-              (-2 * g * J + ell * J * k * stheta * thetadot * thetadot)) /
-              (4 * J + ell * ell * k * k * mass * ctheta * ctheta +
-                  ell * ell * k * k * mass * mu * ctheta * d * stheta);
+              (-2 * g * J + r * J * k * stheta * thetadot * thetadot)) /
+              (4 * J + r * r * k * k * mass * ctheta * ctheta +
+                  r * r * k * k * mass * mu * ctheta * d * stheta);
       const T F = -d * mu * N;
       return Vector2<T>(N, F);
     };
@@ -598,7 +598,7 @@ void Painleve<T>::CalcTimeDerivativesOneContactNoSliding(
     auto calc_tan_accel = [=](int d, const T N, const T F) {
       const T thetaddot = ((cx - x) * N - (cy - y) * F) / J;
       return F / mass +
-          ell * k * (-stheta * thetaddot - ctheta * thetadot * thetadot) / 2;
+          r * k * (-stheta * thetaddot - ctheta * thetadot * thetadot) / 2;
     };
 
     // Compute two tangential acceleration candidates.
@@ -630,7 +630,6 @@ void Painleve<T>::CalcTimeDerivativesTwoContact(
   const T& xdot = state.GetAtIndex(3);
 
   // Obtain the structure we need to write into.
-  DRAKE_ASSERT(derivatives != nullptr);
   systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
   DRAKE_ASSERT(f != nullptr);
 
@@ -686,6 +685,15 @@ void Painleve<T>::DoCalcTimeDerivatives(
   using std::sin;
   using std::cos;
   using std::abs;
+
+  // TODO(edrumwri): This method currently determines the (hybrid) dynamics
+  //                 mode based on the current values of the state variables.
+  //                 Different dynamics equations are evaluated depending on
+  //                 which mode is selected (e.g., sliding at a single contact,
+  //                 ballistic motion, etc.) A future update to this example
+  //                 will store the dynamics mode as an abstract variable, and
+  //                 this mode variable will be updated through event handling
+  //                 functions.
 
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
