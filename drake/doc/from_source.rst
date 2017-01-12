@@ -339,7 +339,7 @@ You might encounter the following error::
 If the error occurs, configure Director's build system to build VTK5 from source
 (``drake-visualizer`` is built on Director, which is built on VTK5)::
 
-    cd drake-distro/build/drake/externals/director
+    cd drake-distro/build/externals/director
     cmake . -DUSE_SYSTEM_VTK=OFF
     cd drake-distro/build
     make (or ninja)
@@ -349,6 +349,6 @@ Next, modify a couple environment variables before starting
 
     cd drake-distro
     export LD_LIBRARY_PATH=`pwd`/build/install/lib/vtk-5.10:$LD_LIBRARY_PATH
-    export PYTHONPATH=`pwd`/build/externals/director/src/vtk-build/Wrapping/Python:`pwd`/build/externals/director/src/vtk-build/bin:$PYTHONPATHPython:$HOME/dev/drake_catkin_workspace/build/drake/externals/director/src/vtk-build/bin:$PYTHONPATH
+    export PYTHONPATH=`pwd`/build/externals/director/src/vtk-build/Wrapping/Python:`pwd`/build/externals/director/src/vtk-build/bin:$PYTHONPATH
 
 You should now be able to start ``drake-visualizer``.
