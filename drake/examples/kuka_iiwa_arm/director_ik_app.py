@@ -3,6 +3,8 @@ Usage: This program should be launched using the command line specified in the
        kuka_sim.pmd file.
 '''
 
+import time
+
 from director import mainwindowapp
 from director import robotsystem
 from director import applogic
@@ -42,6 +44,28 @@ def makeRobotSystem(view):
     return factory.construct(view=view, options=options)
 
 
+def sendGripperCommand(targetPositionMM, force):
+    msg = lcmdrake.lcmt_schunk_wsg_command()
+    msg.utime = int(time.time()*1e6)
+    msg.force = force
+    msg.target_position_mm = targetPositionMM
+    lcmUtils.publish('SCHUNK_WSG_COMMAND', msg)
+
+
+def gripperOpen():
+    sendGripperCommand(100, 40)
+
+
+def gripperClose():
+    sendGripperCommand(15, 40)
+
+
+def setupToolbar():
+    toolBar = applogic.findToolBar('Main Toolbar')
+    app.app.addToolBarAction(toolBar, 'Gripper Open', icon='', callback=gripperOpen)
+    app.app.addToolBarAction(toolBar, 'Gripper Close', icon='', callback=gripperClose)
+
+
 # create a default mainwindow app
 app = mainwindowapp.MainWindowAppFactory().construct()
 mainwindowapp.MainWindowPanelFactory().construct(app=app.app, view=app.view)
@@ -54,6 +78,8 @@ app.app.addWidgetToDock(robotSystem.teleopPanel.widget,
                         QtCore.Qt.RightDockWidgetArea)
 app.app.addWidgetToDock(robotSystem.playbackPanel.widget,
                         QtCore.Qt.BottomDockWidgetArea)
+
+setupToolbar()
 
 # show sim time in the status bar
 infoLabel = KukaSimInfoLabel(app.mainWindow.statusBar())
