@@ -9,9 +9,6 @@
 
 namespace DrakeCollision {
 
-const bitmask NONE_MASK(0);
-const bitmask DEFAULT_GROUP(1);
-
 using drake::AutoDiffXd;
 
 template <typename T>
@@ -20,7 +17,7 @@ CollisionFilterGroup<T>::CollisionFilterGroup() : name_(""), mask_id_(-1) {}
 template <typename T>
 CollisionFilterGroup<T>::CollisionFilterGroup(const std::string& name, int id)
     : name_(name), mask_id_(id) {
-  DRAKE_ASSERT(mask_id_ >= 0 && mask_id_ < MAX_NUM_COLLISION_FILTER_GROUPS);
+  DRAKE_ASSERT(mask_id_ >= 0 && mask_id_ < kMaxNumCollisionFilterGroups);
 }
 
 template <typename T>
@@ -40,7 +37,7 @@ template <typename T>
 void CollisionFilterGroupManager<T>::CompileGroups() {
   for (auto& pair : collision_filter_groups_) {
     CollisionFilterGroup<T>& group = pair.second;
-    bitmask group_mask = DEFAULT_GROUP, ignore_mask = NONE_MASK;
+    bitmask group_mask = kDefaultGroup, ignore_mask = kNoneMask;
     group_mask.set(group.get_mask_id());
     for (const auto& ignore_name : group.get_ignore_groups()) {
       const auto& itr = collision_filter_groups_.find(ignore_name);
@@ -106,7 +103,7 @@ const bitmask& CollisionFilterGroupManager<T>::get_group_mask(
   if (itr != body_groups_.end()) {
     return itr->second.first;
   }
-  return NONE_MASK;
+  return kNoneMask;
 }
 
 template <typename T>
@@ -116,7 +113,7 @@ const bitmask& CollisionFilterGroupManager<T>::get_ignore_mask(
   if (itr != body_groups_.end()) {
     return itr->second.second;
   }
-  return NONE_MASK;
+  return kNoneMask;
 }
 
 template <typename T>
@@ -133,11 +130,11 @@ void CollisionFilterGroupManager<T>::Clear() {
 
 template <typename T>
 int CollisionFilterGroupManager<T>::acquire_next_group_id() {
-  if (next_id_ >= MAX_NUM_COLLISION_FILTER_GROUPS) {
+  if (next_id_ >= kMaxNumCollisionFilterGroups) {
     throw std::runtime_error(
         "Requesting a collision filter group id when"
         " there are no more available. Drake only supports " +
-        std::to_string(MAX_NUM_COLLISION_FILTER_GROUPS) +
+        std::to_string(kMaxNumCollisionFilterGroups) +
         " collision filter groups per RigidBodyTree instance.");
   }
   return next_id_++;

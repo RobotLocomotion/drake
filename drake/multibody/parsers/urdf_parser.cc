@@ -554,7 +554,7 @@ void ParseCollisionFilterGroup(RigidBodyTree<double>* tree, XMLElement* node,
   const char* attr = node->Attribute("drake_ignore");
   if (attr && (std::strcmp(attr, "true") == 0)) return;
 
-  // TODO(SeanCurtis-TRI): After upgarding to newest tinyxml, add line numbers
+  // TODO(SeanCurtis-TRI): After upgrading to newest tinyxml, add line numbers
   // to error messages.
   attr = node->Attribute("name");
   if (!attr)

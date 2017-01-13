@@ -19,9 +19,6 @@
         centers both lie on the x-axis at a distance of 2R - d, where id is 0.1
         units (the penetration depth).
 
-        This tests the parser's ability to correctly create a group with a
-        member set with multiple members.
-
         The robot *may* appear overly complex for the test.  But collision
         cliques already exclude possible collisions between pairs (A, B) and
         (B, C) due to their adjacency.  The collision between pair (A, C) will

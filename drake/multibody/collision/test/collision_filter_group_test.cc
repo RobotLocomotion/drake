@@ -24,7 +24,6 @@ namespace {
 using drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
 using Eigen::Isometry3d;
 using Eigen::VectorXd;
-using std::make_unique;
 using std::unique_ptr;
 using std::move;
 
@@ -67,7 +66,7 @@ GTEST_TEST(CollisionFilterGroupDefinition, CollisionGroupAssignment) {
 // message.
 GTEST_TEST(CollisionFilterGroupDefinition, CollisionGroupOverflow) {
   CollisionFilterGroupManager<double> manager;
-  for (int i = 1; i < MAX_NUM_COLLISION_FILTER_GROUPS; ++i) {
+  for (int i = 1; i < kMaxNumCollisionFilterGroups; ++i) {
     std::string group_name = "group" + std::to_string(i);
     manager.DefineCollisionFilterGroup(group_name);
   }
@@ -78,7 +77,7 @@ GTEST_TEST(CollisionFilterGroupDefinition, CollisionGroupOverflow) {
     std::string expected_msg =
         "Requesting a collision filter group id when"
         " there are no more available. Drake only supports " +
-        std::to_string(MAX_NUM_COLLISION_FILTER_GROUPS) +
+        std::to_string(kMaxNumCollisionFilterGroups) +
         " collision filter groups per RigidBodyTree instance.";
     EXPECT_EQ(e.what(), expected_msg);
   }
@@ -233,7 +232,7 @@ GTEST_TEST(CollisionFilterGroupCompile, IgnoreNonExistentGroup) {
   manager.AddCollisionFilterGroupMember("group1", body);
   manager.CompileGroups();
 
-  bitmask expected_ignores = NONE_MASK;
+  bitmask expected_ignores = kNoneMask;
   EXPECT_EQ(manager.get_ignore_mask(body), expected_ignores);
 }
 
@@ -288,10 +287,10 @@ GTEST_TEST(CollisionFilterGroupCompile, ClearFlushesData) {
 
   manager.Clear();
   // Confirms zero membership and ignore bitmasks for both bodies.
-  EXPECT_EQ(manager.get_group_mask(body1), NONE_MASK);
-  EXPECT_EQ(manager.get_ignore_mask(body1), NONE_MASK);
-  EXPECT_EQ(manager.get_group_mask(body2), NONE_MASK);
-  EXPECT_EQ(manager.get_ignore_mask(body2), NONE_MASK);
+  EXPECT_EQ(manager.get_group_mask(body1), kNoneMask);
+  EXPECT_EQ(manager.get_ignore_mask(body1), kNoneMask);
+  EXPECT_EQ(manager.get_group_mask(body2), kNoneMask);
+  EXPECT_EQ(manager.get_ignore_mask(body2), kNoneMask);
   // Confirms that the groups have been deleted.
   EXPECT_EQ(manager.GetGroupId("group1"), -1);
   EXPECT_EQ(manager.GetGroupId("group2"), -1);
@@ -311,8 +310,8 @@ GTEST_TEST(CollisionFilterGroupElement, ElementCanCollideWithTest) {
   DrakeCollision::Element e2;
 
   // Case 1: By default, elements belong to no group and ignore nothing.
-  EXPECT_EQ(e1.get_collision_filter_group(), DEFAULT_GROUP);
-  EXPECT_EQ(e1.get_collision_filter_ignores(), NONE_MASK);
+  EXPECT_EQ(e1.get_collision_filter_group(), kDefaultGroup);
+  EXPECT_EQ(e1.get_collision_filter_ignores(), kNoneMask);
 
   // Case 2: Two elements, belonging to the same group (which does *not*
   // ignore itself) are considered a viable collision pair.
@@ -429,7 +428,7 @@ GTEST_TEST(CollisionFilterGroupRBT, CollisionElementSetFilters) {
   for (auto itr = body2->collision_elements_begin();
        itr != body2->collision_elements_end(); ++itr) {
     EXPECT_EQ((*itr)->get_collision_filter_group(), expected_group2);
-    EXPECT_EQ((*itr)->get_collision_filter_ignores(), NONE_MASK);
+    EXPECT_EQ((*itr)->get_collision_filter_ignores(), kNoneMask);
   }
 }
 

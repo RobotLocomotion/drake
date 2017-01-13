@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-static const int MAX_NUM_COLLISION_FILTER_GROUPS = 128;
+constexpr int kMaxNumCollisionFilterGroups = 128;
 
 // forward declaration
 template <typename U>
@@ -14,21 +14,44 @@ class RigidBody;
 
 namespace DrakeCollision {
 
-typedef std::bitset<MAX_NUM_COLLISION_FILTER_GROUPS> bitmask;
+typedef std::bitset<kMaxNumCollisionFilterGroups> bitmask;
 
 // Constants
 // The empty bit mask.  Used in the membership group mask represents no
 // membership.  As the ignore mask, the body ignores nothing.
-extern const bitmask NONE_MASK;
+constexpr bitmask kNoneMask(0);
 // The membership bit mask indicating the CFG to which *all* bodies belong. A
 // body can be made invisible (from a collision perspective) by having setting
-// its ignore mask to DEFAULT_GROUP.
-extern const bitmask DEFAULT_GROUP;
+// its ignore mask to kDefaultGroup.
+constexpr bitmask kDefaultGroup(1);
 
 /**
  The specification of a collision filter group: its name, bodies that belong
  to it, and the names of collision filter groups that it ignores.  This
  class is used for initialization and not run-time calculations.
+
+ A collision filter group is a mechanism for cheaply culling pairs of collision
+ elements from consideration during collision detection. One collision filter
+ group associates a set of bodies with a set of *ignored* collision filter
+ groups.  At runtime, when a pair of bodies @f$(A, B)@f$ are determined to be a
+ collision candidate, their collision filter group membership is examined.
+
+ Given the following definitions:
+
+   - @f$G(A) \triangleq \{g^A_0, g^A_1, ..., g^A_n\}@f$ is the set of all groups
+     to which @f$A@f$ belongs,
+   - @f$I(f) \triangleq \{g^f_0, g^f_1, ..., g^f_m\}@f$ is the set set of all
+     groups that group @f$f@f$ ignores,
+   - @f$I(A) \triangleq \{I(g^A_0) \cap I(g^A_1) \cap ... \cap I(g^A_n)\}@f$
+     such that @f$g^A_i \in G(A)@f$ is the set of all groups that @f$A@f$
+     ignores.
+
+ Then, the pair @f$(A, B)@f$ will be filtered if:
+
+    @f$I(A) \cap G(B) \ne \emptyset \lor I(B) \cap G(A) \ne \emptyset@f$.
+
+ In other words, if either body belongs to a group which is ignored by *any*
+ group the other body belongs to.
 
  @tparam  T  A valid Eigen scalar type.
  */
