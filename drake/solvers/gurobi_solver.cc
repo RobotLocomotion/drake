@@ -567,8 +567,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   SolutionResult result = SolutionResult::kUnknownError;
 
-  // If any error exists so far, its either from invalid input or
-  // from unknown errors.
+  // If any error exists so far, it's from calling GRBoptimize.
   // TODO(naveenoid) : Properly handle gurobi specific error.
   // message.
   if (error) {
