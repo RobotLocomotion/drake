@@ -34,6 +34,7 @@ list(APPEND optimization_files
   linear_system_solver.cc
   mathematical_program.cc
   moby_lcp_solver.cc
+  rotation_constraint.cc
   system_identification.cc
   )
 if(ipopt_FOUND)
@@ -84,6 +85,7 @@ drake_install_headers(
   mathematical_program.h
   mathematical_program_solver_interface.h
   decision_variable.h
+  rotation_constraint.h
   system_identification.h
   )
 drake_install_libraries(drakeOptimization)
