@@ -89,8 +89,8 @@ class ContactResultTest : public ::testing::Test {
     context_->FixInputPort(0, make_unique<BasicVector<double>>(0));
     plant_->CalcOutput(*context_.get(), output_.get());
 
-    return output_->get_data(plant_->contact_results_output_port_index())->
-        GetValue<ContactResults<double>>();
+    const int port_index = plant_->contact_results_output_port().get_index();
+    return output_->get_data(port_index)->GetValue<ContactResults<double>>();
   }
 
   // Add a sphere with default radius, placed at the given position.

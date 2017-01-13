@@ -294,27 +294,6 @@ class RigidBodyPlant : public LeafSystem<T> {
   }
   ///@}
 
-  /// @name System output port index accessors.
-  /// These are accessors for obtaining indices of this RigidBodyPlant's output
-  /// ports. See this class's description for details about these ports.
-  ///@{
-  int state_output_port_index() const {
-    return state_output_port().get_index();
-  }
-
-  int kinematics_results_output_port_index() const {
-    return kinematics_results_output_port().get_index();
-  }
-
-  int contact_results_output_port_index() const {
-    return contact_results_output_port().get_index();
-  }
-
-  int model_state_output_port_index(int model_instance_id) const {
-    return model_state_output_port(model_instance_id).get_index();
-  }
-  ///@}
-
  protected:
   // LeafSystem<T> override.
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
