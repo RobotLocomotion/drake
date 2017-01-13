@@ -25,7 +25,8 @@ if(Bullet_FOUND)
 
     drake_add_cc_test(drake_visualizer_test)
     target_link_libraries(drake_visualizer_test
-      drakeRigidBodyPlant)
+        drakeRigidBodyPlant
+        drakeSystemAnalysis)
   endif()
 endif()
 

@@ -9,25 +9,28 @@ const int kPortIndex = 0;
 }  // namespace
 
 DrakeVisualizer::DrakeVisualizer(
-    const RigidBodyTree<double>& tree, drake::lcm::DrakeLcmInterface* lcm) :
-    lcm_(lcm), load_message_(CreateLoadMessage(tree)),
-    draw_message_translator_(tree) {
+    const RigidBodyTree<double>& tree, drake::lcm::DrakeLcmInterface* lcm)
+    : lcm_(lcm),
+      load_message_(CreateLoadMessage(tree)),
+      draw_message_translator_(tree) {
   set_name("drake_visualizer");
   const int vector_size =
       tree.get_num_positions() + tree.get_num_velocities();
   DeclareInputPort(kVectorValued, vector_size);
 }
 
-void DrakeVisualizer::DoPublish(const Context<double>& context)
-    const {
+void DrakeVisualizer::set_publish_period(double period) {
+  LeafSystem<double>::DeclarePublishPeriodSec(period);
+}
+
+void DrakeVisualizer::DoPublish(const Context<double>& context) const {
   // TODO(liang.fok): Replace the following code once System 2.0's API allows
   // systems to declare that they need a certain action to be performed at
   // simulation time t_0.
   //
   // Before any draw commands, we need to send the load_robot message.
-  if (context.get_time() == 0.0) {
+  if (context.get_time() == 0.0)
     PublishLoadRobot();
-  }
   DRAKE_DEMAND(sent_load_robot_);
 
   // Obtains the input vector, which contains the generalized q,v state of the

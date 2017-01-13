@@ -11,6 +11,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 #include "drake/multibody/shapes/geometry.h"
+#include "drake/systems/analysis/simulator.h"
 
 namespace drake {
 namespace systems {
@@ -488,6 +489,37 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   // Verifies that the correct messages were actually transmitted.
   VerifyLoadMessage(lcm.get_last_published_message("DRAKE_VIEWER_LOAD_ROBOT"));
   VerifyDrawMessage(lcm.get_last_published_message("DRAKE_VIEWER_DRAW"));
+}
+
+// Tests that the published LCM message has the expected timestamps.
+GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
+  const double kPublishPeriod = 1.5;  // Seconds between publications.
+
+  unique_ptr<RigidBodyTree<double>> tree = CreateRigidBodyTree();
+  drake::lcm::DrakeMockLcm lcm;
+
+  // Instantiates the "device under test".
+  DrakeVisualizer dut(*tree, &lcm);
+  dut->set_publish_period(kPublishPeriod);
+  unique_ptr<Context<double>> context = dut->AllocateContext();
+
+  const int num_inputs = tree->get_num_positions() + tree->get_num_velocities();
+  context->FixInputPort(kPortNumber,
+      make_unique<BasicVector<double>>(Eigen::VectorXd::Zero(num_inputs)));
+
+  // Prepares to integrate.
+  drake::systems::Simulator<double> simulator(*dut, std::move(context));
+  simulator.set_publish_every_time_step(false);
+  simulator.Initialize();
+
+  for (double time = 0; time < 4; time += 0.01) {
+    simulator.StepTo(time);
+    EXPECT_EQ(simulator.get_mutable_context()->get_time(), time);
+    const double expected_time =
+        std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;
+    VerifyTimestamp(lcm.get_last_published_message(channel_name),
+                    expected_time);
+  }
 }
 
 }  // namespace
