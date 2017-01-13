@@ -504,7 +504,7 @@ void VerifyTimestamp(const std::vector<uint8_t>& transmitted_message_bytes,
   EXPECT_EQ(transmitted_message.decode(transmitted_message_bytes.data(), 0,
                            transmitted_message_bytes.size()),
             transmitted_message_bytes.size());
-  EXPECT_EQ(transmitted_message.timestamp, timestamp);
+  EXPECT_NEAR(transmitted_message.timestamp, timestamp, 1e-10);
 }
 
 // Tests that the published LCM message has the expected timestamps.
@@ -531,7 +531,8 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
 
   for (double time = 0; time < 4; time += 0.01) {
     simulator.StepTo(time);
-    EXPECT_EQ(simulator.get_mutable_context()->get_time(), time);
+    EXPECT_NEAR(simulator.get_mutable_context()->get_time(), time, 1e-10);
+    // Note that the expected time is in milliseconds.
     const double expected_time =
         std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;
     VerifyTimestamp(lcm.get_last_published_message("DRAKE_VIEWER_DRAW"),
