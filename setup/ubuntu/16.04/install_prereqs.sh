@@ -68,6 +68,7 @@ default-jdk
 doxygen
 flex
 freeglut3-dev
+g++
 g++-5
 g++-5-multilib
 gdb
