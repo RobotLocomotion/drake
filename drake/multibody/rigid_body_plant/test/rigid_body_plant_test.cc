@@ -27,6 +27,8 @@ using std::unique_ptr;
 namespace drake {
 
 using multibody::joints::kFixed;
+using multibody::joints::kQuaternion;
+using parsers::ModelInstanceIdTable;
 using parsers::sdf::AddModelInstancesFromSdfFile;
 
 namespace systems {
@@ -519,8 +521,27 @@ GTEST_TEST(RigidBodyPlantTest, InstancePortTest) {
   EXPECT_EQ(joint4_instance, 3);
   EXPECT_ANY_THROW(
       plant.FindInstancePositionIndexFromWorldIndex(0, joint4_world));
-};
+}
 
+// Tests what happens with both types of input ports are connected
+// (entire plant vs. individual model instance).
+GTEST_TEST(rigid_body_plant_test, TestConnectBothTypesOfInputPorts) {
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  const ModelInstanceIdTable table =
+      AddModelInstancesFromSdfFile(drake::GetDrakePath() +
+          "/multibody/rigid_body_plant/test/limited_prismatic.sdf",
+          kQuaternion, nullptr /* weld to frame */, tree.get());
+  const int model_instance_id = table.at("limited_prismatic_test_model");
+  RigidBodyPlant<double> plant(move(tree));
+  const int num_inputs = plant.get_num_actuators(model_instance_id) * 2;
+  auto context = plant.CreateDefaultContext();
+  context->FixInputPort(
+      plant.command_input_port().get_index(),
+      make_unique<BasicVector<double>>(Eigen::VectorXd::Zero(num_inputs)));
+  context->FixInputPort(
+      plant.model_input_port(model_instance_id).get_index(),
+      make_unique<BasicVector<double>>(Eigen::VectorXd::Zero(num_inputs)));
+}
 
 }  // namespace
 }  // namespace test
