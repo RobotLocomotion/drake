@@ -150,6 +150,9 @@ GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received_message, sample_data));
 }
 
+// TODO(liang.fok) Consider combining the following with near-identical code in
+// drake_visualizer_test.cc.
+
 // Verifies that the last transmitted message's timestamp is equal to the
 // provided timestamp.
 void VerifyTimestamp(const std::vector<uint8_t>& transmitted_message_bytes,
