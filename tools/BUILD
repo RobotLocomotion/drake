@@ -18,6 +18,11 @@ py_binary(
     srcs = ["cmake_configure_file.py"],
 )
 
+py_binary(
+    name = "drakelint",
+    srcs = ["drakelint.py"],
+)
+
 alias(
     name = "buildifier",
     actual = "@com_github_bazelbuild_buildifier//buildifier",
