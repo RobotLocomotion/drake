@@ -33,9 +33,9 @@ class PainleveTest : public ::testing::Test {
     return context_->get_mutable_continuous_state_vector();
   }
 
-  // Sets a secondary initial Painleve configuration.
+  // Sets a secondary initial Painlevé configuration.
   void SetSecondInitialConfig() {
-    // Set the configuration to an inconsistent (Painleve') type state with
+    // Set the configuration to an inconsistent (Painlevé) type state with
     // the rod at a 135 degree counter-clockwise angle with respect to the
     // x-axis. The rod in [Stewart, 2000] is at a 45 degree counter-clockwise
     // angle with respect to the x-axis.
@@ -215,20 +215,20 @@ TEST_F(PainleveTest, ConsistentDerivativesContacting) {
   EXPECT_NEAR((*derivatives_)[5], 0.0, tol);
 }
 
-// Verify the Painleve configuration occurs.
+// Verify the inconsistent (Painlevé Paradox) configuration occurs.
 TEST_F(PainleveTest, Inconsistent) {
   EXPECT_THROW(dut_->CalcTimeDerivatives(*context_, derivatives_.get()),
                std::runtime_error);
 }
 
-// Verify the second Painleve configuration occurs.
+// Verify the second inconsistent (Painlevé Paradox) configuration occurs.
 TEST_F(PainleveTest, Inconsistent2) {
   SetSecondInitialConfig();
   EXPECT_THROW(dut_->CalcTimeDerivatives(*context_, derivatives_.get()),
                std::runtime_error);
 }
 
-// Verify that the (non-impacting) Painleve configuration does not result in a
+// Verify that the (non-impacting) Painlevé configuration does not result in a
 // state change.
 TEST_F(PainleveTest, ImpactNoChange) {
   // Set state.
@@ -254,7 +254,7 @@ TEST_F(PainleveTest, InfFrictionImpactThenNoImpact) {
   // Cause the initial state to be impacting.
   SetImpactingState();
 
-  // Set the coefficient of friction to infinite. This forces the Painleve code
+  // Set the coefficient of friction to infinite. This forces the Painlevé code
   // to go through the first impact path (impulse within the friction cone).
   dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
 
@@ -279,7 +279,7 @@ TEST_F(PainleveTest, NoFrictionImpactThenNoImpact) {
   // Set the initial state to be impacting.
   SetImpactingState();
 
-  // Set the coefficient of friction to zero. This forces the Painleve code
+  // Set the coefficient of friction to zero. This forces the Painlevé code
   // to go through the second impact path (impulse corresponding to sticking
   // friction post-impact lies outside of the friction cone).
   dut_->set_mu_coulomb(0.0);
@@ -368,7 +368,7 @@ TEST_F(PainleveTest, MultiPoint) {
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 }
 
-// Verify that the Painleve configuration does not correspond to an impacting
+// Verify that the Painlevé configuration does not correspond to an impacting
 // state.
 TEST_F(PainleveTest, ImpactNoChange2) {
   SetSecondInitialConfig();
@@ -397,7 +397,7 @@ TEST_F(PainleveTest, InfFrictionImpactThenNoImpact2) {
   // Cause the initial state to be impacting.
   SetImpactingState();
 
-  // Set the coefficient of friction to infinite. This forces the Painleve code
+  // Set the coefficient of friction to infinite. This forces the Painlevé code
   // to go through the first impact path.
   dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
 
@@ -427,7 +427,7 @@ TEST_F(PainleveTest, NoFrictionImpactThenNoImpact2) {
   // Cause the initial state to be impacting.
   SetImpactingState();
 
-  // Set the coefficient of friction to zero. This forces the Painleve code
+  // Set the coefficient of friction to zero. This forces the Painlevé code
   // to go through the second impact path.
   dut_->set_mu_coulomb(0.0);
 

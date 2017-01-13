@@ -435,6 +435,7 @@ void Painleve<T>::CalcTimeDerivativesOneContactSliding(
 
   // Obtain the structure we need to write into.
   systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
+  DRAKE_ASSERT(f != nullptr);
 
   // The two endpoints of the rod are located at (x,y) + R(theta)*[0,r/2] and
   // (x,y) + R(theta)*[0,-r/2], where
@@ -705,12 +706,12 @@ void Painleve<T>::DoCalcTimeDerivatives(
   // Obtain the structure we need to write into.
   systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
 
-  // The two endpoints of the rod are located at (x,y) + R(theta)*[0,l/2] and
-  // (x,y) + R(theta)*[0,-l/2], where
+  // The two endpoints of the rod are located at (x,y) + R(theta)*[0,r/2] and
+  // (x,y) + R(theta)*[0,-r/2], where
   // R(theta) = | cos(theta) -sin(theta) |
   //            | sin(theta)  cos(theta) |
-  // and l is designated as the rod length. Thus, the heights of
-  // the rod endpoints are y + sin(theta)*l/2 and y - sin(theta)*l/2.
+  // and r is designated as the rod length. Thus, the heights of
+  // the rod endpoints are y + sin(theta)*r/2 and y - sin(theta)*r/2.
   const double half_rod_length = rod_length_ / 2;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
