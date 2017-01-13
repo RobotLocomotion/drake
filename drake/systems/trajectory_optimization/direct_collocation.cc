@@ -61,13 +61,13 @@ class RunningCostEndWrapper : public solvers::Constraint {
         constraint_(constraint) {}
 
  protected:
-  void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-                 Eigen::VectorXd& y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override {
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-                 TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override {
     TaylorVecXd wrapped_x = x;
     wrapped_x(0) *= 0.5;
     constraint_->Eval(wrapped_x, y);
@@ -90,13 +90,13 @@ class RunningCostMidWrapper : public solvers::Constraint {
         constraint_(constraint) {}
 
  protected:
-  void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-                 Eigen::VectorXd& y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override {
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-                 TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override {
     TaylorVecXd wrapped_x(x.rows() - 1);
     wrapped_x.tail(x.rows() - 2) = x.tail(x.rows() - 2);
     wrapped_x(0) = (x(0) + x(1)) * 0.5;

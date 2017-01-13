@@ -31,15 +31,15 @@ DirectCollocationConstraint::DirectCollocationConstraint(int num_states,
 
 DirectCollocationConstraint::~DirectCollocationConstraint() {}
 
-void DirectCollocationConstraint::Eval_impl(
-    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
+void DirectCollocationConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd> &x, Eigen::VectorXd &y) const {
   TaylorVecXd y_t;
   Eval(math::initializeAutoDiff(x), y_t);
   y = math::autoDiffToValueMatrix(y_t);
 }
 
-void DirectCollocationConstraint::Eval_impl(
-    const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const {
+void DirectCollocationConstraint::DoEval(
+    const Eigen::Ref<const TaylorVecXd> &x, TaylorVecXd &y) const {
   DRAKE_ASSERT(x.size() == 1 + (2 * num_states_) + (2 * num_inputs_));
 
   // Extract our input variables:
