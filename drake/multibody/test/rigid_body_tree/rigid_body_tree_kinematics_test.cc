@@ -381,9 +381,9 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
     EXPECT_TRUE(drake::CompareMatrices(Jdv, Jdv_as_frame, tol_,
                                        drake::MatrixCompareType::absolute));
 
-    Vector3<double> off = X_BF_.translation();
+    Vector3<double> p_BF = X_BF_.translation();
     VectorX<double> Jdv1 = robot_->transformPointsJacobianDotTimesV(
-        *cache_, off, body_ptr_->get_body_index(),
+        *cache_, p_BF, body_ptr_->get_body_index(),
         robot_->world().get_body_index());
     VectorX<double> Jdv2 = robot_->transformPointsJacobianDotTimesV(
         *cache_, Vector3<double>::Zero(), frame_ptr_->get_frame_index(),

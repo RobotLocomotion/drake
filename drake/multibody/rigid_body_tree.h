@@ -322,7 +322,7 @@ class RigidBodyTree {
   /// the world frame `W`. Frame F is attached to RigidBody @p body.
   /// @param cache Reference to the KinematicsCache.
   /// @param body Reference to the RigidBody.
-  /// @parma X_BF The pose of frame `F` measured and expressed in body frame
+  /// @param X_BF The pose of frame `F` measured and expressed in body frame
   /// `B`.
   /// @returns `X_WF` the pose of frame F measured and expressed in the world
   /// frame `W`.
@@ -356,7 +356,7 @@ class RigidBodyTree {
   /// Frame F is attached to rigid body @p body.
   /// @param cache Reference to the KinematicsCache.
   /// @param body Reference to the RigidBody.
-  /// @parma X_BF The pose of frame `F` measured and expressed in body frame
+  /// @param X_BF The pose of frame `F` measured and expressed in body frame
   /// `B`.
   /// @returns `V_WF_W` The spatial velocity of the rigid body frame `F` with
   /// respect to the world frame `W`, expressed in the world frame.
@@ -370,7 +370,7 @@ class RigidBodyTree {
   /// body @p body.
   /// @param cache Reference to the KinematicsCache.
   /// @param B Reference to the RigidBody.
-  /// @parma X_BF The pose of frame `F` measured and expressed in body frame
+  /// @param X_BF The pose of frame `F` measured and expressed in body frame
   /// `B`.
   /// @param in_terms_of_qdot `true` for `J_WF` computed with respect to the
   /// time derivative of the generalized position such that
@@ -422,7 +422,7 @@ class RigidBodyTree {
   /// @p `body`.
   /// @param cache Reference to the KinematicsCache.
   /// @param body Reference to the RigidBody.
-  /// @parma X_BF The pose of frame `F` measured and expressed in body frame
+  /// @param X_BF The pose of frame `F` measured and expressed in body frame
   /// `B`.
   /// @return `J_WFdot * v`
   drake::Vector6<T> CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(

@@ -2962,45 +2962,47 @@ template <typename T> drake::Matrix6X<T>
 RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianInWorldFrame(
     const KinematicsCache<T>& cache, const RigidBody<T>& body,
     const drake::Isometry3<T>& X_BF, bool in_terms_of_qdot) const {
-  int world_index = world().get_body_index();
-  drake::Vector3<T> p = CalcFramePoseInWorldFrame(cache, body, X_BF).
-      template cast<T>().translation();
+  const int world_index = world().get_body_index();
+  const int num_col =
+      in_terms_of_qdot ? get_num_positions() : get_num_velocities();
+
+  drake::Vector3<T> p_WF =
+      CalcFramePoseInWorldFrame(cache, body, X_BF).translation();
 
   std::vector<int> v_or_q_indices;
-  drake::MatrixX<T> J_body = geometricJacobian(
+  drake::MatrixX<T> plucker_J_WB = geometricJacobian(
       cache, world_index, body.get_body_index(), world_index, in_terms_of_qdot,
       &v_or_q_indices);
 
   int col = 0;
-  int num_col = in_terms_of_qdot ? get_num_positions() : get_num_velocities();
-  drake::Matrix6X<T> J = MatrixX<T>::Zero(6, num_col);
+  drake::Matrix6X<T> J_WF = MatrixX<T>::Zero(6, num_col);
   for (int idx : v_or_q_indices) {
     // Angular velocity stays the same.
-    J.col(idx) = J_body.col(col);
+    J_WF.col(idx) = plucker_J_WB.col(col);
     // Linear velocity needs an additional cross product term.
-    J.col(idx).template tail<3>() +=
-        J_body.col(col).template head<3>().cross(p);
+    J_WF.col(idx).template tail<3>() +=
+        plucker_J_WB.col(col).template head<3>().cross(p_WF);
     col++;
   }
-  return J;
+  return J_WF;
 }
 
 template <typename T> drake::Vector6<T>
 RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
       const KinematicsCache<T>& cache, const RigidBody<T>& body,
       const drake::Isometry3<T>& X_BF) const {
-  int world_index = world().get_body_index();
-  int body_index = body.get_body_index();
-  drake::Vector3<T> p = CalcFramePoseInWorldFrame(cache, body, X_BF).
-      template cast<T>().translation();
+  const int world_index = world().get_body_index();
+  const int body_index = body.get_body_index();
+  drake::Vector3<T> p_WF =
+      CalcFramePoseInWorldFrame(cache, body, X_BF).translation();
 
-  TwistVector<T> twist =
+  TwistVector<T> plucker_V_WF =
       relativeTwist(cache, world_index, body_index, world_index);
-  TwistVector<T> J_body_dot_times_v =
+  TwistVector<T> plucker_Jdv_WB =
       geometricJacobianDotTimesV(cache, world_index, body_index, world_index);
 
-  Vector3<T> pdot =
-      twist.template head<3>().cross(p) + twist.template tail<3>();
+  Vector3<T> pdot_WF = plucker_V_WF.template head<3>().cross(p_WF) +
+      plucker_V_WF.template tail<3>();
 
   // Define J and Jg as follows:
   // xdot = J * v, and twist = Jg * v, where xdot is the twist expressed in the
@@ -3013,10 +3015,10 @@ RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
   //  = [\dot{Jg_lin} + \dot{Jg_ang}.cross(p) + Jg_ang.cross(\dot{p})] * v
   //  = [liner part of JgdotV + angular of JgdotV.cross(p) +
   //     omega.cross(\dot{p})]
-  TwistVector<T> Jdv = J_body_dot_times_v;
-  Jdv.template tail<3>() += twist.template head<3>().cross(pdot) +
-                            J_body_dot_times_v.template head<3>().cross(p);
-  return Jdv;
+  TwistVector<T> Jdv_WF = plucker_Jdv_WB;
+  Jdv_WF.template tail<3>() += plucker_V_WF.template head<3>().cross(pdot_WF) +
+                               plucker_Jdv_WB.template head<3>().cross(p_WF);
+  return Jdv_WF;
 }
 
 // Explicit template instantiations for massMatrix.
