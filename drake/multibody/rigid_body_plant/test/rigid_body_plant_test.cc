@@ -229,8 +229,9 @@ TEST_F(KukaArmTest, SetDefaultState) {
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
-  context_->FixInputPort(0, make_unique<BasicVector<double>>(
-                                kuka_plant_->get_num_actuators()));
+  context_->FixInputPort(kuka_plant_->command_input_port().get_index(),
+                         make_unique<BasicVector<double>>(
+                             kuka_plant_->get_num_actuators()));
 
   // Asserts that for this case the zero configuration corresponds to a state
   // vector with all entries equal to zero.
@@ -269,8 +270,9 @@ TEST_F(KukaArmTest, EvalOutput) {
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
-  context_->FixInputPort(0, make_unique<BasicVector<double>>(
-                                kuka_plant_->get_num_actuators()));
+  context_->FixInputPort(kuka_plant_->command_input_port().get_index(),
+                         make_unique<BasicVector<double>>(
+                             kuka_plant_->get_num_actuators()));
 
   // Sets the state to a non-zero value.
   VectorXd desired_angles(kNumPositions_);
@@ -397,7 +399,8 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
   input << applied_force;
   auto input_vector = std::make_unique<BasicVector<double>>(1);
   input_vector->set_value(input);
-  context->FixInputPort(0, move(input_vector));
+  context->FixInputPort(plant.command_input_port().get_index(),
+                        move(input_vector));
 
   // Obtain the time derivatives; test that speed is zero, return acceleration.
   auto derivatives = plant.AllocateTimeDerivatives();

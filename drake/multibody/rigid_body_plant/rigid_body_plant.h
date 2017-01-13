@@ -32,8 +32,8 @@ namespace systems {
 ///   actuators. Note that if this port is connected, none of the ports returned
 ///   by model_input_port() can be connected. The size of this vector is equal
 ///   to the number of RigidBodyActuator's in the RigidBodyTree. Each
-///   RigidBodyActuator maps to a single DOF joint (currently actuation cannot
-///   be applied to multiple DOF's joints). The units of the actuation are the
+///   RigidBodyActuator maps to a single-DOF joint (currently actuation cannot
+///   be applied to multiple-DOF joints). The units of the actuation are the
 ///   same as the units of the generalized force on the joint. In addition,
 ///   actuators allow for a gear box reduction factor and for actuation
 ///   limits which are only used by controllers; the RigidBodyPlant does
@@ -74,10 +74,11 @@ namespace systems {
 /// positions followed by the generalized velocities of the system. This state
 /// is applied to a RigidBodyTree, which is a multibody model that consists of a
 /// set of rigid bodies connected through joints in a tree structure. Bodies may
-/// have a collision model in which case collisions are considered. In addition,
-/// the model may contain loop constraints described by RigidBodyLoop's in the
-/// multibody model. Even though loop constraints are a particular case of
-/// holonomic constraints, general holonomic constraints are not yet supported.
+/// have a collision model, in which case, collisions are considered. In
+/// addition, the model may contain loop constraints described by
+/// RigidBodyLoop instances in the multibody model. Even though loop constraints
+/// are a particular case of holonomic constraints, general holonomic
+/// constraints are not yet supported.
 ///
 /// The system dynamics is given by the set of multibody equations written in
 /// generalized coordinates including loop joints as a set of holonomic
