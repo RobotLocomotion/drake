@@ -311,6 +311,7 @@ std::tuple<Quaterniond, Vector4d, Vector3d, Vector3d>
   return returned_tuple;
 }
 
+
 /**
  * Calculates exact solutions for translational motion of an arbitrary rigid
  * body B in a Newtonian frame (world) N.  Algorithm from high-school physics.
@@ -372,6 +373,94 @@ std::tuple<Vector3d, Vector3d, Vector3d>
 
 
 //-----------------------------------------------------------------------------
+void  TestMapVelocityToQDot(
+    const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
+    const Vector3d& w_NB_B_exact,
+    const Vector3d& v_NBo_B_exact,
+    const Vector4d& quatDt_NB_exact,
+    const Vector3d& xyzDt_exact,
+    const std::unique_ptr<systems::Context<double>>& context) {
+
+  // Form matrix of motion variables.
+  Eigen::VectorXd motion_variables(6);
+  motion_variables << w_NB_B_exact, v_NBo_B_exact;
+
+  // Test if MapVelocityToQDot accurately converts motion variables to
+  // time-derivatives of coordinates.
+  systems::BasicVector<double> coordinatesDt_from_map(7);
+  rigid_body_plant.MapVelocityToQDot(*context, motion_variables,
+                                     &coordinatesDt_from_map);
+  const double xDt_map = coordinatesDt_from_map[0];
+  const double yDt_map = coordinatesDt_from_map[1];
+  const double zDt_map = coordinatesDt_from_map[2];
+  const double e0Dt_map = coordinatesDt_from_map[3];
+  const double e1Dt_map = coordinatesDt_from_map[4];
+  const double e2Dt_map = coordinatesDt_from_map[5];
+  const double e3Dt_map = coordinatesDt_from_map[6];
+  const Vector3d xyzDt_map(xDt_map, yDt_map, zDt_map);
+  const Vector4d quatDt_map(e0Dt_map, e1Dt_map, e2Dt_map, e3Dt_map);
+#if 0
+  std::cout << "\n\n--------------------------------------------------";
+  std::cout << "\n----------- Test: MapVelocityToQDot --------------";
+  std::cout << "\n--------------------------------------------------";
+  std::cout << "\nquatDt_map =    \n" << quatDt_map;
+  std::cout << "\nquatDt_NB_exact = \n" << quatDt_NB_exact;
+  std::cout << "\n\nxyzDt_map=        \n" << xyzDt_map;
+  std::cout << "\nxyzDt_exact =     \n" << xyzDt_exact;
+  std::cout << "\n--------------------------------------------------\n";
+#endif
+
+  //--------------------------------------------------------------
+  // TODO(Mitiguy and Drumwright) change epsilon_test to 50*epsilon.
+  //--------------------------------------------------------------
+  const double epsilon = std::numeric_limits<double>::epsilon();
+  const double epsilon_test = 1.0E17 * epsilon;
+  EXPECT_TRUE(CompareMatrices(xyzDt_map,      xyzDt_exact, epsilon_test));
+  EXPECT_TRUE(CompareMatrices(quatDt_map, quatDt_NB_exact, epsilon_test));
+}
+
+
+//-----------------------------------------------------------------------------
+void  TestMapQDotToVelocity(
+    const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
+    const Vector4d& quatDt_NB_exact,
+    const Vector3d& xyzDt_exact,
+    const Vector3d& w_NB_B_exact,
+    const Vector3d& v_NBo_B_exact,
+    const std::unique_ptr<systems::Context<double>>& context) {
+
+  // Form matrix of time-derivative of coordinates.
+  Eigen::VectorXd coordinatesDt(7);
+  coordinatesDt << xyzDt_exact, quatDt_NB_exact;
+
+  // Test if MapQDotToVelocity accurately converts time-derivative of
+  // coordinates to motion variables.
+  systems::BasicVector<double> wv_from_map(6);
+  rigid_body_plant.MapQDotToVelocity(*context, coordinatesDt, &wv_from_map);
+  const Vector3d w_map(wv_from_map[0], wv_from_map[1], wv_from_map[2]);
+  const Vector3d v_map(wv_from_map[3], wv_from_map[4], wv_from_map[5]);
+#if 0
+  std::cout << "\n\n--------------------------------------------------";
+  std::cout << "\n----------- Test: MapQDotToVelocity --------------";
+  std::cout << "\n--------------------------------------------------";
+  std::cout << "\nw_map         = \n" << w_map;
+  std::cout << "\nw_NB_B_exact  = \n" << w_NB_B_exact;
+  std::cout << "\n\nv from map  = \n" << v_map;
+  std::cout << "\nv_NBo_B_exact = \n" << v_NBo_B_exact;
+  std::cout << "\n--------------------------------------------------\n";
+#endif
+
+  //--------------------------------------------------------------
+  // TODO(Mitiguy and Drumwright) change epsilon_test to 50*epsilon.
+  //--------------------------------------------------------------
+  const double epsilon = std::numeric_limits<double>::epsilon();
+  const double epsilon_test = 1.0E17 * epsilon;
+  EXPECT_TRUE(CompareMatrices(w_map,  w_NB_B_exact, epsilon_test));
+  EXPECT_TRUE(CompareMatrices(v_map, v_NBo_B_exact, epsilon_test));
+}
+
+
+//-----------------------------------------------------------------------------
 // Test Drake solution versus closed-form solution for specific initial value.
 void  TestDrakeSolutionForSpecificInitialValue(
     const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
@@ -426,29 +515,29 @@ void  TestDrakeSolutionForSpecificInitialValue(
 
   // Get the state (defined above) and state time-derivatives for comparison.
   const VectorXd state_as_vector = state_drake.CopyToVector();
-  const Vector3d xyz_drake   = state_as_vector.segment<3>(0);
-  const Vector4d quat_drake  = state_as_vector.segment<4>(3);
-  const Vector3d w_drake     = state_as_vector.segment<3>(7);
-  const Vector3d v_drake     = state_as_vector.segment<3>(10);
+  const Vector3d xyz_drake     = state_as_vector.segment<3>(0);
+  const Vector4d quat_NB_drake = state_as_vector.segment<4>(3);
+  const Vector3d w_NB_B_drake  = state_as_vector.segment<3>(7);
+  const Vector3d v_NBo_B_drake = state_as_vector.segment<3>(10);
 
   const VectorXd stateDt_as_vector = stateDt_drake->CopyToVector();
-  const Vector3d xyzDt_drake  = stateDt_as_vector.segment<3>(0);
-  const Vector4d quatDt_drake = stateDt_as_vector.segment<4>(3);
-  const Vector3d wDt_drake    = stateDt_as_vector.segment<3>(7);
-  const Vector3d vDt_drake    = stateDt_as_vector.segment<3>(10);
+  const Vector3d xyzDt_drake     = stateDt_as_vector.segment<3>(0);
+  const Vector4d quatDt_NB_drake = stateDt_as_vector.segment<4>(3);
+  const Vector3d wDt_NB_B_drake  = stateDt_as_vector.segment<3>(7);
+  const Vector3d vDt_NBo_B_drake = stateDt_as_vector.segment<3>(10);
 
   // Reserve space for values returned by calculating exact solution.
-  Vector4d quat_exact, quatDt_exact;
-  Vector3d w_exact, wDt_exact;
+  Vector4d quat_NB_exact, quatDt_NB_exact;
+  Vector3d w_NB_B_exact, wDt_NB_B_exact;
   Vector3d xyz_exact, xyzDt_exact, xyzDDt_exact;
 
   // Calculate exact analytical rotational solution.
   Quaterniond quat_initial = math::quat2eigenQuaternion(quat_NB_initial);
   Quaterniond quat_NB;
   const double t = 0;
-  std::tie(quat_NB, quatDt_exact, w_exact, wDt_exact) =
+  std::tie(quat_NB, quatDt_NB_exact, w_NB_B_exact, wDt_NB_B_exact) =
       CalculateExactRotationalSolutionNB(t, quat_initial, w_NB_B_initial);
-  quat_exact << quat_NB.w(), quat_NB.x(), quat_NB.y(), quat_NB.z();
+  quat_NB_exact << quat_NB.w(), quat_NB.x(), quat_NB.y(), quat_NB.z();
 
   // Calculate exact analytical translational solution.
   // Exact analytical solution needs v_initial expressed in terms of Nx, Ny, Nz.
@@ -463,125 +552,73 @@ void  TestDrakeSolutionForSpecificInitialValue(
   // Initially, (time=0), these matrices should be close to machine-precision,
   // which is approximately 2.22E-16.
   const double epsilon = std::numeric_limits<double>::epsilon();
-  const Eigen::Matrix3d R_NB_drake = math::quat2rotmat(quat_drake);
-  const Eigen::Matrix3d R_NB_exact = math::quat2rotmat(quat_exact);
-  EXPECT_TRUE(R_NB_drake.isApprox(R_NB_exact, 50 * epsilon));
+  const double epsilon_test = 50 * epsilon;
+  const Eigen::Matrix3d R_NB_drake = math::quat2rotmat(quat_NB_drake);
+  const Eigen::Matrix3d R_NB_exact = math::quat2rotmat(quat_NB_exact);
+  EXPECT_TRUE(R_NB_drake.isApprox(R_NB_exact, epsilon_test));
 
   // Drake: Compensate for definition of vDt = acceleration - w x v.
-  const Vector3d w_cross_v_drake = w_drake.cross(v_drake);
-  const Vector3d xyzDDt_drake = R_NB_drake * (vDt_drake + w_cross_v_drake);
+  const Vector3d w_cross_v_drake = w_NB_B_drake.cross(v_NBo_B_drake);
+  const Vector3d xyzDDt_drake = R_NB_drake *(vDt_NBo_B_drake + w_cross_v_drake);
 
   // Exact: Compensate for definition of vDt = acceleration - w x v.
   const Eigen::Matrix3d R_BN_exact = R_NB_exact.inverse();
-  const Vector3d v_exact = R_BN_exact * xyzDt_exact;
-  const Vector3d w_cross_v_exact = w_exact.cross(v_exact);
-  const Vector3d vDt_exact = R_BN_exact * xyzDDt_exact - w_cross_v_exact;
+  const Vector3d v_NBo_B_exact = R_BN_exact * xyzDt_exact;
+  const Vector3d w_cross_v_exact = w_NB_B_exact.cross(v_NBo_B_exact);
+  const Vector3d vDt_NBo_B_exact = R_BN_exact * xyzDDt_exact - w_cross_v_exact;
 
 #if 0  // TODO(mitiguy) Remove these debug statements.
-  std::cout << "\n\n quat_drake\n"   << quat_drake;
-  std::cout << "\n quat_exact\n"     << quat_exact;
-  std::cout << "\n\n quatDt_drake\n" << quatDt_drake;
-  std::cout << "\n quatDt_exact\n"   << quatDt_exact;
-  std::cout << "\n\n w_drake\n"      << w_drake;
-  std::cout << "\n w_exact\n"        << w_exact;
-  std::cout << "\n\n wDt_drake\n"    << wDt_drake;
-  std::cout << "\n wDt_exact\n"      << wDt_exact;
-  std::cout << "\n\n xyz_drake\n"    << xyz_drake;
-  std::cout << "\n xyz_exact\n"      << xyz_exact;
-  std::cout << "\n\n xyzDt_drake\n"  << xyzDt_drake;
-  std::cout << "\n xyzDt_exact\n"    << xyzDt_exact;
-  std::cout << "\n\n xyzDDt_drake\n" << xyzDDt_drake;
-  std::cout << "\n xyzDDt_exact\n"   << xyzDDt_exact;
-  std::cout << "\n\n v_drake\n"      << v_drake;
-  std::cout << "\n v_exact\n"        << v_exact;
-  std::cout << "\n\n vDt_drake\n"    << vDt_drake;
-  std::cout << "\n vDt_exact\n"      << vDt_exact << "\n\n";
+  std::cout << "\n\n quat_NB_drake\n"   << quat_NB_drake;
+  std::cout << "\n quat_NB_exact\n"     << quat_NB_exact;
+  std::cout << "\n\n quatDt_drake\n"    << quatDt_NB_drake;
+  std::cout << "\n quatDt_NB_exact\n"   << quatDt_NB_exact;
+  std::cout << "\n\n w_NB_B_drake\n"    << w_NB_B_drake;
+  std::cout << "\n w_NB_B_exact\n"      << w_NB_B_exact;
+  std::cout << "\n\n wDt_NB_B_drake\n"  << wDt_NB_B_drake;
+  std::cout << "\n wDt_NB_B_exact\n"    << wDt_NB_B_exact;
+  std::cout << "\n\n xyz_drake\n"       << xyz_drake;
+  std::cout << "\n xyz_exact\n"         << xyz_exact;
+  std::cout << "\n\n xyzDt_drake\n"     << xyzDt_drake;
+  std::cout << "\n xyzDt_exact\n"       << xyzDt_exact;
+  std::cout << "\n\n xyzDDt_drake\n"    << xyzDDt_drake;
+  std::cout << "\n xyzDDt_exact\n"      << xyzDDt_exact;
+  std::cout << "\n\n v_NBo_B_drake\n"   << v_NBo_B_drake;
+  std::cout << "\n v_NBo_B_exact\n"     << v_NBo_B_exact;
+  std::cout << "\n\n vDt_NBo_B_drake\n" << vDt_NBo_B_drake;
+  std::cout << "\n vDt_NBo_B_exact\n"   << vDt_NBo_B_exact << "\n\n";
 #endif
 
-  // Compare remaining drake and exact results.
-  const double epsilon_test = 50 * epsilon;
-  EXPECT_TRUE(CompareMatrices(w_drake,           w_exact,        epsilon_test));
-  EXPECT_TRUE(CompareMatrices(wDt_drake,       wDt_exact, 1600 * epsilon_test));
-  EXPECT_TRUE(CompareMatrices(xyz_drake,       xyz_exact,        epsilon_test));
-  EXPECT_TRUE(CompareMatrices(xyzDt_drake,   xyzDt_exact,        epsilon_test));
-  EXPECT_TRUE(CompareMatrices(xyzDDt_drake, xyzDDt_exact,   10 * epsilon_test));
-  EXPECT_TRUE(CompareMatrices(v_drake,           v_exact,        epsilon_test));
-  EXPECT_TRUE(CompareMatrices(vDt_drake,       vDt_exact,   10 * epsilon_test));
+  // Compare Drake and exact results.
+  EXPECT_TRUE(CompareMatrices(w_NB_B_drake,       w_NB_B_exact,      epsilon_test));
+  EXPECT_TRUE(CompareMatrices(wDt_NB_B_drake,   wDt_NB_B_exact, 1600*epsilon_test));
+  EXPECT_TRUE(CompareMatrices(xyz_drake,             xyz_exact,      epsilon_test));
+  EXPECT_TRUE(CompareMatrices(xyzDt_drake,         xyzDt_exact,      epsilon_test));
+  EXPECT_TRUE(CompareMatrices(xyzDDt_drake,       xyzDDt_exact,   10*epsilon_test));
+  EXPECT_TRUE(CompareMatrices(v_NBo_B_drake,     v_NBo_B_exact,      epsilon_test));
+  EXPECT_TRUE(CompareMatrices(vDt_NBo_B_drake, vDt_NBo_B_exact,   10*epsilon_test));
 
   // Two-step process to compare time-derivative of Drake quaternion with exact.
   // Since more than one time-derivative of a quaternion is associated with the
   // same angular velocity, convert to angular velocity to compare results.
-  Quaterniond quaternion_drake = math::quat2eigenQuaternion(quat_drake);
+  Quaterniond quaternion_drake = math::quat2eigenQuaternion(quat_NB_drake);
   const Vector3d w_from_quatDt_drake =
       CalculateAngularVelocityExpressedInBFromQuaternionDt(
-          quaternion_drake, quatDt_drake);
-  Quaterniond quatd_exact = math::quat2eigenQuaternion(quat_exact);
+          quaternion_drake, quatDt_NB_drake);
+  Quaterniond quatd_exact = math::quat2eigenQuaternion(quat_NB_exact);
   const Vector3d w_from_quatDt_exact =
       CalculateAngularVelocityExpressedInBFromQuaternionDt(
-          quatd_exact, quatDt_exact);
-  EXPECT_TRUE(CompareMatrices(w_from_quatDt_drake, w_drake, 50 * epsilon));
-  EXPECT_TRUE(CompareMatrices(w_from_quatDt_exact, w_exact, 50 * epsilon));
+          quatd_exact, quatDt_NB_exact);
+  EXPECT_TRUE(CompareMatrices(w_from_quatDt_drake, w_NB_B_drake, epsilon_test));
+  EXPECT_TRUE(CompareMatrices(w_from_quatDt_exact, w_NB_B_exact, epsilon_test));
 
-#if 0
   //--------------------------------------------------------------
   // EXTRA: Test MapQDotToVelocity and MapVelocityToQDot for Evan.
-  // TODO(Mitiguy and Drumwright) lose BadFix.
   //--------------------------------------------------------------
-  const double BadFix = 1.0E16;  // 1.0E16;  // 1.0E-5;
-#define Test_MapQDotToVelocity_1_or_MapVelocityToQDotFalse_0    0
-#if Test_MapQDotToVelocity_1_or_MapVelocityToQDotFalse_0
-  // Form matrix of time-derivative of coordinates.
-  Eigen::VectorXd coordinatesDt(7);
-  coordinatesDt << xyzDt_drake, quatDt_drake;
+  TestMapVelocityToQDot(rigid_body_plant, w_NB_B_exact, v_NBo_B_exact,
+                        quatDt_NB_exact, xyzDt_exact, context);
 
-  // Test if MapQDotToVelocity accurately converts time-derivative of
-  // coordinates to motion variables.
-  systems::BasicVector<double> wv_from_map(6);
-  rigid_body_plant.MapQDotToVelocity(*context, coordinatesDt, &wv_from_map);
-  const Vector3d w_map(wv_from_map[0], wv_from_map[1], wv_from_map[2]);
-  const Vector3d v_map(wv_from_map[3], wv_from_map[4], wv_from_map[5]);
-  std::cout << "\n\n--------------------------------------------------";
-  std::cout << "\n---------- TestA: MapQDotToVelocity --------------";
-  std::cout << "\n--------------------------------------------------";
-  std::cout << "\nw from map = \n" << w_map;
-  std::cout << "\nw exact = \n" << w_exact;
-  std::cout << "\n\nv from map = \n" << v_map;
-  std::cout << "\nv accurate (drake) = \n" << v_drake;
-  std::cout << "\n--------------------------------------------------\n";
-  EXPECT_TRUE(CompareMatrices(w_map, w_exact, BadFix * epsilon));
-  EXPECT_TRUE(CompareMatrices(v_map, v_drake, BadFix * epsilon));
-#else
-
-  // Form matrix of motion variables.
-  Eigen::VectorXd motion_variables(6);
-  motion_variables << w_drake, v_drake;
-
-  // Test if MapVelocityToQDot accurately converts motion variables to
-  // time-derivatives of coordinates.
-  systems::BasicVector<double> coordinatesDt_from_map(7);
-  rigid_body_plant.MapVelocityToQDot(*context, motion_variables,
-                                      &coordinatesDt_from_map);
-  const double xDt_map = coordinatesDt_from_map[0];
-  const double yDt_map = coordinatesDt_from_map[1];
-  const double zDt_map = coordinatesDt_from_map[2];
-  const double q0Dt_map = coordinatesDt_from_map[3];
-  const double q1Dt_map = coordinatesDt_from_map[4];
-  const double q2Dt_map = coordinatesDt_from_map[5];
-  const double q3Dt_map = coordinatesDt_from_map[6];
-  const Vector3d xyzDt_map(xDt_map, yDt_map, zDt_map);
-  const Vector4d quatDt_map(q0Dt_map, q1Dt_map, q2Dt_map, q3Dt_map);
-  std::cout << "\n\n--------------------------------------------------";
-  std::cout << "\n---------- TestB: MapVelocityToQDot --------------";
-  std::cout << "\n--------------------------------------------------";
-  std::cout << "\nxyzDt from map = \n" << xyzDt_map;
-  std::cout << "\nxyzDt exact = \n" << xyzDt_exact;
-  std::cout << "\n\nquatDt from map = \n" << quatDt_map;
-  std::cout << "\nquatDt exact = \n" << quatDt_exact;
-  std::cout << "\n--------------------------------------------------\n";
-  EXPECT_TRUE(CompareMatrices(xyzDt_map,   xyzDt_exact, BadFix * epsilon));
-  EXPECT_TRUE(CompareMatrices(quatDt_map, quatDt_exact, BadFix * epsilon));
-#endif
-#endif
+  TestMapQDotToVelocity(rigid_body_plant, quatDt_NB_exact, xyzDt_exact,
+                        w_NB_B_exact, v_NBo_B_exact, context);
 }
 
 
@@ -597,7 +634,7 @@ void  TestDrakeSolutionForVariousInitialValues(
   // Create 3x1 matrix for vx, vy, vz (defined above -- not x', y', z').
   const Vector3d w_NB_B_initial(2.0, 4.0, 6.0);
   const Vector3d xyz_initial(1.0, 2.0, 3.0);
-  const Vector3d v_NBo_B_initial(4.0, 5.0, 6.0);
+  const Vector3d v_NBo_B_initial(-4.2, 5.5, 6.1);
 
   // Create 4x1 matrix for normalized quaternion e0, e1, e2, e3 (defined above).
   // Iterate through many initial values for quaternion.
