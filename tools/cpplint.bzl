@@ -50,6 +50,35 @@ def _is_source_label(label):
         return False
   fail("Unknown extension for source " + label)
 
+def _add_linter_rules(source_labels, source_filenames, name, data=None):
+  # Common attributes for all of our py_test invocations.
+  data = (data or [])
+  size = "small"
+  tags = ["cpplint"]
+
+  # Google cpplint.
+  cpplint_cfg = ["//:CPPLINT.cfg"] + native.glob(['CPPLINT.cfg'])
+  native.py_test(
+    name = name + "_cpplint",
+    srcs = ["@google_styleguide//:cpplint"],
+    data = data + cpplint_cfg + source_labels,
+    args = _EXTENSIONS_ARGS + source_filenames,
+    main = "cpplint.py",
+    size = size,
+    tags = tags,
+  )
+
+  # Additional Drake lint.
+  native.py_test(
+    name = name + "_drake_lint",
+    srcs = ["//tools:drakelint"],
+    data = data + source_labels,
+    args = source_filenames,
+    main = "drakelint.py",
+    size = size,
+    tags = tags,
+  )
+
 def cpplint(data=None, extra_srcs=None):
   """For every C++ rule in the BUILD file so far, adds a test rule that runs
   cpplint over the C++ sources listed in that rule.  Thus, BUILD file authors
@@ -62,13 +91,6 @@ def cpplint(data=None, extra_srcs=None):
   be passed in as extra_srcs=[].
 
   """
-  # Common attributes for all of our py_test invocations.
-  srcs = ["@google_styleguide//:cpplint"]
-  data = ["//:CPPLINT.cfg"] + native.glob(['CPPLINT.cfg']) + (data or [])
-  main = "cpplint.py"
-  size = "small"
-  tags = ["cpplint"]
-
   # Iterate over all C++ rules.
   for rule in native.existing_rules().values():
     if not rule["kind"].startswith("cc_"):
@@ -90,26 +112,11 @@ def cpplint(data=None, extra_srcs=None):
     source_filenames = ["$(location %s)" % x for x in source_labels]
 
     # Run the cpplint checker as a unit test.
-    native.py_test(
-      name = rule["name"] + "_cpplint",
-      srcs = srcs,
-      data = data + source_labels,
-      args = _EXTENSIONS_ARGS + source_filenames,
-      main = main,
-      size = size,
-      tags = tags,
-    )
+    _add_linter_rules(source_labels, source_filenames, rule["name"], data)
 
   # Lint all of the extra_srcs separately in a single rule.
   if extra_srcs:
     source_labels = extra_srcs
     source_filenames = ["$(location %s)" % x for x in source_labels]
-    native.py_test(
-      name = "extra_srcs_cpplint",
-      srcs = srcs,
-      data = data + source_labels,
-      args = _EXTENSIONS_ARGS + source_filenames,
-      main = main,
-      size = size,
-      tags = tags,
-    )
+    _add_linter_rules(source_labels, source_filenames,
+                      "extra_srcs_cpplint", data)
