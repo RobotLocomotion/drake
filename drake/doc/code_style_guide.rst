@@ -153,6 +153,12 @@ Clarifications
   "``const MyClass &foo;``". This is what is enforced by :ref:`clang-format <code-style-tools-clang-format>`. For additional context, see
   `this comment thread <https://github.com/robotlocomotion/drake/pull/3830#issuecomment-254849776>`_.
 
+* For the `Conditionals Rule <https://google.github.io/styleguide/cppguide.html#Conditionals>`_,
+  we clarify that the bodies of all ``if / else`` statements *must* be
+  surrounded by curly braces. This is true even for single-line bodies. The
+  ability to save a single vertical line is no longer a valid motivation to
+  omit the curly braces.
+
 .. _code-style-guide-cpp-exceptions:
 
 Exceptions
