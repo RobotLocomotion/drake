@@ -198,14 +198,14 @@ class GenericTrivialCost1 : public Constraint {
         private_val_(2) {}
 
  protected:
-  void Eval_impl(const Ref<const Eigen::VectorXd>& x,
-                 VectorXd& y) const override {
+  void DoEval(const Ref<const Eigen::VectorXd> &x,
+              VectorXd &y) const override {
     y.resize(1);
     y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
   }
 
-  void Eval_impl(const Ref<const TaylorVecXd>& x,
-                 TaylorVecXd& y) const override {
+  void DoEval(const Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override {
     y.resize(1);
     y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
   }
@@ -768,12 +768,12 @@ class LowerBoundTestConstraint : public Constraint {
 
  protected:
   // for just these two types, implementing this locally is almost cleaner...
-  void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-                 Eigen::VectorXd& y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override {
     EvalImpl(x, y);
   }
-  void Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-                 TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override {
     EvalImpl(x, y);
   }
 
@@ -953,12 +953,12 @@ class GloptipolyConstrainedExampleConstraint
 
  protected:
   // for just these two types, implementing this locally is almost cleaner...
-  void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-                 Eigen::VectorXd& y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override {
     EvalImpl(x, y);
   }
-  void Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-                 TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override {
     EvalImpl(x, y);
   }
 

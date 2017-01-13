@@ -164,13 +164,13 @@ class InverseKinObjective : public Constraint {
   void set_q_nom(const VectorXd& q_nom_i) { q_nom_i_ = q_nom_i; }
 
  protected:
-  void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                  Eigen::VectorXd& y) const override {
     VectorXd q_err = x - q_nom_i_;
     y(0) = q_err.transpose() * Q_ * q_err;
   }
 
-  void Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
+  void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
                  TaylorVecXd& y) const override {
     VectorXd x_val = autoDiffToValueMatrix(x);
     VectorXd q_err = x_val - q_nom_i_;

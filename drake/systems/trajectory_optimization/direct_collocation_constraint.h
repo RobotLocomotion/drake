@@ -49,10 +49,10 @@ class DirectCollocationConstraint : public solvers::Constraint {
   virtual void dynamics(const TaylorVecXd& state, const TaylorVecXd& input,
                         TaylorVecXd* xdot) const = 0;
 
-  void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-                 Eigen::VectorXd& y) const override;
-  void Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-                 TaylorVecXd& y) const override;
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override;
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override;
 
 
  private:

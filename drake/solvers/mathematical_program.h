@@ -203,8 +203,8 @@ class MathematicalProgram {
           f_(std::forward<F>(f)) {}
 
    protected:
-    void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
+    void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+                Eigen::VectorXd &y) const override {
       y.resize(detail::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                    detail::FunctionTraits<F>::numInputs(f_));
@@ -212,8 +212,8 @@ class MathematicalProgram {
                    detail::FunctionTraits<F>::numOutputs(f_));
       detail::FunctionTraits<F>::eval(f_, x, y);
     }
-    void Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-              TaylorVecXd& y) const override {
+    void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+                TaylorVecXd &y) const override {
       y.resize(detail::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                    detail::FunctionTraits<F>::numInputs(f_));

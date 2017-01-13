@@ -105,16 +105,16 @@ class FinalCostWrapper : public solvers::Constraint {
         constraint_(constraint) {}
 
  protected:
-  void Eval_impl(const Eigen::Ref<const Eigen::VectorXd>& x,
-                 Eigen::VectorXd& y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override {
     // TODO(sam.creasey) If we actually need this, we could cut and
     // paste most of the implementation below (or maybe delegate to a
     // templated version).  I don't expect that scenario to occur.
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void Eval_impl(const Eigen::Ref<const TaylorVecXd>& x,
-                 TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override {
     DRAKE_ASSERT(x.rows() == (num_time_samples_ - 1) + num_states_);
 
     TaylorVecXd wrapped_x(num_states_ + 1);

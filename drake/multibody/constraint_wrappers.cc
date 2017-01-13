@@ -38,16 +38,16 @@ SingleTimeKinematicConstraintWrapper::SingleTimeKinematicConstraintWrapper(
 
 SingleTimeKinematicConstraintWrapper::~SingleTimeKinematicConstraintWrapper() {}
 
-void SingleTimeKinematicConstraintWrapper::Eval_impl(
-    const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::VectorXd& y) const {
+void SingleTimeKinematicConstraintWrapper::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd> &q, Eigen::VectorXd &y) const {
   auto& kinsol = kin_helper_->UpdateKinematics(
       q, rigid_body_constraint_->getRobotPointer());
   Eigen::MatrixXd dy;
   rigid_body_constraint_->eval(nullptr, kinsol, y, dy);
 }
 
-void SingleTimeKinematicConstraintWrapper::Eval_impl(
-    const Eigen::Ref<const TaylorVecXd>& tq, TaylorVecXd& ty) const {
+void SingleTimeKinematicConstraintWrapper::DoEval(
+    const Eigen::Ref<const TaylorVecXd> &tq, TaylorVecXd &ty) const {
   Eigen::VectorXd q = drake::math::autoDiffToValueMatrix(tq);
   auto& kinsol = kin_helper_->UpdateKinematics(
       q, rigid_body_constraint_->getRobotPointer());
@@ -58,8 +58,8 @@ void SingleTimeKinematicConstraintWrapper::Eval_impl(
       y, (dy * drake::math::autoDiffToGradientMatrix(tq)).eval(), ty);
 }
 
-void QuasiStaticConstraintWrapper::Eval_impl(
-    const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::VectorXd& y) const {
+void QuasiStaticConstraintWrapper::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd> &q, Eigen::VectorXd &y) const {
   auto& kinsol = kin_helper_->UpdateKinematics(
       q.head(rigid_body_constraint_->getRobotPointer()->get_num_positions()),
       rigid_body_constraint_->getRobotPointer());
@@ -84,8 +84,8 @@ QuasiStaticConstraintWrapper::QuasiStaticConstraintWrapper(
 
 QuasiStaticConstraintWrapper::~QuasiStaticConstraintWrapper() {}
 
-void QuasiStaticConstraintWrapper::Eval_impl(
-    const Eigen::Ref<const TaylorVecXd>& tq, TaylorVecXd& ty) const {
+void QuasiStaticConstraintWrapper::DoEval(
+    const Eigen::Ref<const TaylorVecXd> &tq, TaylorVecXd &ty) const {
   Eigen::VectorXd q = drake::math::autoDiffToValueMatrix(tq);
   auto& kinsol = kin_helper_->UpdateKinematics(
       q.head(rigid_body_constraint_->getRobotPointer()->get_num_positions()),
