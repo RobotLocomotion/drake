@@ -142,6 +142,8 @@ void AddRotationMatrixSpectrahedralSdpConstraint(
       {R.col(0), R.col(1), R.col(2)});
 }
 
+namespace {
+
 void AddOrthogonalConstraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorDecisionVariable<3>>& v1,
@@ -171,6 +173,8 @@ void AddOrthogonalConstraint(
   prog->AddRotatedLorentzConeConstraint(A, b, {v1, v2});
 }
 
+}  // namespace
+
 void AddRotationMatrixOrthonormalSocpConstraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R) {
@@ -195,16 +199,22 @@ void AddRotationMatrixOrthonormalSocpConstraint(
   AddOrthogonalConstraint(prog, R.row(0).transpose(), R.row(2).transpose());
 }
 
+namespace {
+
 // Decodes the discretization of the axes.
 // For compactness, this method is referred to as phi(i) in the documentation
 // below.  The implementation must give a valid number even for i<0 and
 // i>num_binary_variables_per_half_axis.
-double envelope_min_value(int i, int num_binary_variables_per_half_axis) {
+double EnvelopeMinValue(int i, int num_binary_variables_per_half_axis) {
   return static_cast<double>(i) / num_binary_variables_per_half_axis;
 }
 
-Eigen::Vector3d flipVector(const Eigen::Ref<const Eigen::Vector3d>& vpos,
+// Given (an integer enumeration of) the orthant, takes a vector in the
+// positive orthant into that orthant by flipping the signs of the individual
+// elements.
+Eigen::Vector3d FlipVector(const Eigen::Ref<const Eigen::Vector3d>& vpos,
                            int orthant) {
+  DRAKE_ASSERT(vpos(0) >= 0 && vpos(1) >= 0 && vpos(2) >= 0);
   DRAKE_DEMAND(orthant >= 0 && orthant <= 7);
   Eigen::Vector3d v = vpos;
   if (orthant & (1 << 2)) v(0) = -v(0);
@@ -213,9 +223,11 @@ Eigen::Vector3d flipVector(const Eigen::Ref<const Eigen::Vector3d>& vpos,
   return v;
 }
 
-// Selects all eight permutation of a and b.
+// Given (an integer enumeration of) the orthant, return a vector c with
+// c(i) = a(i) if element i is positive in the indicated orthant, otherwise
+// c(i) = b(i).
 template <typename Derived>
-Eigen::Matrix<Derived, 3, 1> pickPermutation(
+Eigen::Matrix<Derived, 3, 1> PickPermutation(
     const Eigen::Matrix<Derived, 3, 1>& a,
     const Eigen::Matrix<Derived, 3, 1>& b, int orthant) {
   DRAKE_DEMAND(orthant >= 0 && orthant <= 7);
@@ -226,16 +238,20 @@ Eigen::Matrix<Derived, 3, 1> pickPermutation(
   return c;
 }
 
-double intercept(double x, double y) {
+// Given two coordinates, find the (positive) third coordinate on that
+// intersects with the unit circle.
+double Intercept(double x, double y) {
   DRAKE_ASSERT(x * x + y * y <= 1);
   return std::sqrt(1 - x * x - y * y);
 }
+
+}  // namespace
 
 namespace internal {
 
 std::vector<Eigen::Vector3d> IntersectBoxWUnitCircle(Eigen::Vector3d bmin,
                                                      Eigen::Vector3d bmax) {
-  // Assumes the positive orthant (and bmax>bmin).
+  // Assumes the positive orthant (and bmax>=bmin).
   DRAKE_ASSERT(bmin(0) >= 0 && bmin(1) >= 0 && bmin(2) >= 0);
   DRAKE_ASSERT(bmax(0) >= bmin(0) && bmax(1) >= bmin(1) && bmax(2) >= bmin(2));
 
@@ -246,7 +262,7 @@ std::vector<Eigen::Vector3d> IntersectBoxWUnitCircle(Eigen::Vector3d bmin,
   std::vector<Eigen::Vector3d> intersections;
 
   // Note: all logic below are ordered to avoid imaginary sqrts, but
-  // the intercept method asserts for this, just in case.
+  // the Intercept method asserts for this, just in case.
 
   if (bmin.lpNorm<2>() == 1) {
     // Then only the min corner intersects.
@@ -267,29 +283,29 @@ std::vector<Eigen::Vector3d> IntersectBoxWUnitCircle(Eigen::Vector3d bmin,
     // Then two intersections on the bottom face.
     // Get the +x one first.
     v = bmin;
-    v(0) = intercept(v(1), v(2));
+    v(0) = Intercept(v(1), v(2));
     if (v(0) <= bmax(0)) {
       intersections.push_back(v);
     } else {
       // Must be on the back face.
       v(0) = bmax(0);
-      v(1) = intercept(v(0), v(2));
+      v(1) = Intercept(v(0), v(2));
       intersections.push_back(v);
     }
-    // Now get the -x intersection.
+    // Now get the +y intersection.
     v = bmin;
-    v(1) = intercept(v(0), v(2));
+    v(1) = Intercept(v(0), v(2));
     if (v(1) <= bmax(1)) {
       intersections.push_back(v);
     } else {
       v(1) = bmax(1);
-      v(0) = intercept(v(1), v(2));
+      v(0) = Intercept(v(1), v(2));
       intersections.push_back(v);
     }
   } else {
     // Then exactly one intersection on the bmax(0),bmax(1),z edge.
     DRAKE_ASSERT(v(0) == bmax(0) && v(1) == bmax(1));  // already set for me.
-    v(2) = intercept(v(0), v(1));
+    v(2) = Intercept(v(0), v(1));
     intersections.push_back(v);
   }
 
@@ -297,26 +313,26 @@ std::vector<Eigen::Vector3d> IntersectBoxWUnitCircle(Eigen::Vector3d bmin,
   v << bmin(0), bmin(1), bmax(2);  // near top corner
   if (v.lpNorm<2>() >= 1) {
     // Then exact one "top" intersection, along this edge.
-    v(2) = intercept(v(0), v(1));
+    v(2) = Intercept(v(0), v(1));
     intersections.push_back(v);
   } else {
     // Then exactly two intersections on the top face.
-    v(0) = intercept(v(1), v(2));
+    v(0) = Intercept(v(1), v(2));
     if (v(0) <= bmax(0)) {
       intersections.push_back(v);
     } else {
       v(0) = bmax(0);
-      v(1) = intercept(v(0), v(2));
+      v(1) = Intercept(v(0), v(2));
       intersections.push_back(v);
     }
 
     v << bmin(0), bmin(1), bmax(2);
-    v(1) = intercept(v(0), v(2));
+    v(1) = Intercept(v(0), v(2));
     if (v(1) <= bmax(1)) {
       intersections.push_back(v);
     } else {
       v(1) = bmax(1);
-      v(0) = intercept(v(1), v(2));
+      v(0) = Intercept(v(1), v(2));
       intersections.push_back(v);
     }
   }
@@ -326,16 +342,18 @@ std::vector<Eigen::Vector3d> IntersectBoxWUnitCircle(Eigen::Vector3d bmin,
     // and missed the top and bottom faces.  There must be two more
     // intersections -- on the other two vertical edges.
 
-    v << bmin(0), bmax(1), intercept(bmin(0), bmax(1));
+    v << bmin(0), bmax(1), Intercept(bmin(0), bmax(1));
     intersections.push_back(v);
 
-    v << bmax(0), bmin(1), intercept(bmax(0), bmin(1));
+    v << bmax(0), bmin(1), Intercept(bmax(0), bmin(1));
     intersections.push_back(v);
   }
   return intersections;
 }
 
 }  // namespace internal
+
+namespace {
 
 void AddMcCormickVectorConstraints(
     MathematicalProgram* prog, const VectorDecisionVariable<3>& v,
@@ -347,14 +365,14 @@ void AddMcCormickVectorConstraints(
   // Iterate through regions.
   Eigen::Vector3d box_min, box_max;
   for (int xi = 0; xi < N; xi++) {
-    box_min(0) = envelope_min_value(xi, N);
-    box_max(0) = envelope_min_value(xi + 1, N);
+    box_min(0) = EnvelopeMinValue(xi, N);
+    box_max(0) = EnvelopeMinValue(xi + 1, N);
     for (int yi = 0; yi < N; yi++) {
-      box_min(1) = envelope_min_value(yi, N);
-      box_max(1) = envelope_min_value(yi + 1, N);
+      box_min(1) = EnvelopeMinValue(yi, N);
+      box_max(1) = EnvelopeMinValue(yi + 1, N);
       for (int zi = 0; zi < N; zi++) {
-        box_min(2) = envelope_min_value(zi, N);
-        box_max(2) = envelope_min_value(zi + 1, N);
+        box_min(2) = EnvelopeMinValue(zi, N);
+        box_max(2) = EnvelopeMinValue(zi + 1, N);
 
         // If min corner is inside the unit circle...
         if (box_min.lpNorm<2>() < 1.0) {
@@ -371,10 +389,10 @@ void AddMcCormickVectorConstraints(
             for (int o = 0; o < 8; o++) {  // iterate over orthants
               prog->AddLinearConstraint(
                   Eigen::RowVector3d(1, 1, 1), 0.0, 2.0,
-                  pickPermutation(this_cpos, this_cneg, o));
+                  PickPermutation(this_cpos, this_cneg, o));
             }
           } else {
-            // Find the intercepts of the unit sphere with the box.
+            // Find the Intercepts of the unit sphere with the box.
             auto pts = internal::IntersectBoxWUnitCircle(box_min, box_max);
             DRAKE_DEMAND(pts.size() >= 3);
             Eigen::Vector3d normal;
@@ -439,8 +457,8 @@ void AddMcCormickVectorConstraints(
             Eigen::RowVector3d orthant_normal;
             VectorDecisionVariable<3> orthant_c;
             for (int o = 0; o < 8; o++) {  // iterate over orthants
-              orthant_normal = flipVector(normal, o).transpose();
-              orthant_c = pickPermutation(this_cpos, this_cneg, o);
+              orthant_normal = FlipVector(normal, o).transpose();
+              orthant_c = PickPermutation(this_cpos, this_cneg, o);
 
               // Minimum vector norm constraint: normal.dot(v) >= d,
               // Since we only apply this when the box is active, since 0<=d<=1,
@@ -522,6 +540,8 @@ void AddMcCormickVectorConstraints(
   }
 }
 
+}  // namespace
+
 void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
@@ -531,7 +551,7 @@ void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
   // Use a simple lambda to make the constraints more readable below.
   // Note that forall k>=0, phi(k)>=0.
   auto phi = [&](int k) -> double {
-    return envelope_min_value(k, num_binary_vars_per_half_axis);
+    return EnvelopeMinValue(k, num_binary_vars_per_half_axis);
   };
 
   // Creates binary decision variables which discretize each axis.

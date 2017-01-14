@@ -299,7 +299,8 @@ GTEST_TEST(RotationTest, TestMcCormick) {
     R_test = math::YRotation(M_PI_4) * R_test;
     EXPECT_TRUE(IsFeasible(R_test));
 
-    // This one caught a bug during random testing.
+    // This one caught a bug (in the loop finding the most conservative linear
+    // constraint for a given region) during random testing.
     R_test << 0.17082017792981191, 0.65144498431260445, -0.73921573253413542,
         -0.82327804434149443, -0.31781600529013027, -0.47032568342231595,
         -0.54132589862048197, 0.68892119955432829, 0.48203096610835455;

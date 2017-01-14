@@ -14,9 +14,11 @@
 /// points (using lcm_call_matlab) for which R==R_sample (within some tol).
 
 using Eigen::Matrix3d;
+using Eigen::Vector3d;
 
 namespace drake {
 namespace solvers {
+namespace {
 
 // Use this method to change the feasibility envelope for all of the plotting
 // tools.
@@ -24,8 +26,7 @@ namespace solvers {
 void AddTestConstraints(MathematicalProgram* prog,
                         const MatrixDecisionVariable<3, 3>& R) {
   // Add your favorite constraints here.
-  AddRotationMatrixMcCormickEnvelopeMilpConstraints(
-      prog, R, 1);
+  AddRotationMatrixMcCormickEnvelopeMilpConstraints(prog, R, 1);
 }
 
 bool IsFeasible(
@@ -40,7 +41,7 @@ bool IsFeasible(
   return (prog->Solve() == kSolutionFound);
 }
 
-void drawCircle(double radius = 1.0) {
+void DrawCircle(double radius = 1.0) {
   const int N = 100;
 
   Eigen::Matrix2Xd points(2, N);
@@ -56,23 +57,21 @@ void drawCircle(double radius = 1.0) {
                      4.0);
 }
 
-void plotFeasiblePoints(const Eigen::Matrix2Xd& points, double radius = 1.0,
+void PlotFeasiblePoints(const Eigen::Matrix2Xd& points, double radius = 1.0,
                         int fig_num = 1) {
   using lcm::LcmCallMatlab;
   LcmCallMatlab("figure", fig_num);
   LcmCallMatlab("clf");
   LcmCallMatlab("hold", "on");
   LcmCallMatlab("plot", points.row(0), points.row(1), ".", "MarkerSize", 20.0);
-  drawCircle(radius);
+  DrawCircle(radius);
   LcmCallMatlab("xlim", Eigen::RowVector2d(-1.1, 1.1));
   LcmCallMatlab("ylim", Eigen::RowVector2d(-1.1, 1.1));
   LcmCallMatlab("axis", "equal");
 }
 
-void plotColumnVectorXYSlice(int column = 0,
-                             const Matrix3d R_otherdims = Matrix3d::Identity(),
-                             int fig_num = 1) {
-  Matrix3d R_sample = R_otherdims;
+void PlotColumnVectorXYSlice(double z = 0.0, int fig_num = 1) {
+  Vector3d sample(0, 0, z);
 
   MathematicalProgram prog;
   MatrixDecisionVariable<3, 3> R = NewRotationMatrixVars(&prog);
@@ -81,8 +80,7 @@ void plotColumnVectorXYSlice(int column = 0,
   // Add a feasibility constraint.
   std::shared_ptr<LinearEqualityConstraint> feasibility_constraint =
       prog.AddLinearEqualityConstraint(Eigen::Matrix3d::Identity(),
-                                       Eigen::Vector3d::Zero(),
-                                       R.col(column));
+                                       Eigen::Vector3d::Zero(), R.col(0));
 
   const int num_samples_per_axis = 50;
   Eigen::Matrix2Xd feasible_points(2,
@@ -92,40 +90,37 @@ void plotColumnVectorXYSlice(int column = 0,
   double minval = -1.0, maxval = 1.0;
   for (int i = 0; i < num_samples_per_axis; i++) {
     double x = minval + i * (maxval - minval) / (num_samples_per_axis - 1);
-    R_sample(0, column) = x;
+    sample(0) = x;
     for (int j = 0; j < num_samples_per_axis; j++) {
       double y = minval + j * (maxval - minval) / (num_samples_per_axis - 1);
-      R_sample(1, column) = y;
-      if (IsFeasible(&prog, feasibility_constraint, R_sample.col(column)))
+      sample(1) = y;
+      if (IsFeasible(&prog, feasibility_constraint, sample))
         feasible_points.col(num_feasible++) = Eigen::Vector2d(x, y);
     }
-    std::cout << ".";
+    std::cout << "." << std::flush;
   }
   feasible_points.conservativeResize(2, num_feasible);
 
-  plotFeasiblePoints(feasible_points,
-                     std::sqrt(1 - R_sample(2, column) * R_sample(2, column)),
+  PlotFeasiblePoints(feasible_points, std::sqrt(1 - sample(2) * sample(2)),
                      fig_num);
-  lcm::LcmCallMatlab("xlabel", "R(0," + std::to_string(column) + ")");
-  lcm::LcmCallMatlab("ylabel", "R(1," + std::to_string(column) + ")");
-  lcm::LcmCallMatlab("title", "R(2," + std::to_string(column) + ") = " +
-                                  std::to_string(R_sample(2, column)));
+  lcm::LcmCallMatlab("xlabel", "R(0,0)");
+  lcm::LcmCallMatlab("ylabel", "R(1,0)");
+  lcm::LcmCallMatlab("title", "R(2,0) = " + std::to_string(z));
 }
 
-
-void do_main() {
+void DoMain() {
   // Make some plots
 
   // Plots z=0 slice of the first column.
-  Eigen::Matrix3d R0 = Eigen::Matrix3d::Identity();
-  //  R0(2,0) = .25;
-  plotColumnVectorXYSlice(0, R0);
+  // To plot z=0.25, set R0(2,0) = 0.25.
+  PlotColumnVectorXYSlice(0.0);
 }
 
+}  // namespace
 }  // namespace solvers
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  drake::solvers::do_main();
+  drake::solvers::DoMain();
   return 0;
 }
