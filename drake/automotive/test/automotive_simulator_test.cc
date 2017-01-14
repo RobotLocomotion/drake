@@ -140,11 +140,6 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestPrius) {
                        "/automotive/models/prius/prius_with_lidar.sdf", 17);
 }
 
-GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestBox) {
-  TestSimpleCarWithSdf(GetDrakePath() +
-                       "/automotive/models/boxcar.sdf", 1);
-}
-
 GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestTwoDofBot) {
   TestSimpleCarWithSdf(GetDrakePath() +
                        "/automotive/models/prius/prius.sdf", 13);
@@ -212,20 +207,6 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file_1, int num_bodies_1,
 }
 
 // Cover AddTrajectoryCar (and thus AddPublisher).
-GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestPrius) {
-  TestTrajectoryCarWithSdf(GetDrakePath() +
-                           "/automotive/models/prius/prius_with_lidar.sdf", 17,
-                           GetDrakePath() +
-                           "/automotive/models/boxcar.sdf", 1);
-}
-
-GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestBoxcar) {
-  TestTrajectoryCarWithSdf(GetDrakePath() +
-                           "/automotive/models/boxcar.sdf", 1,
-                           GetDrakePath() +
-                           "/automotive/models/prius/prius_with_lidar.sdf", 17);
-}
-
 GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestTwoDofBot) {
   TestTrajectoryCarWithSdf(GetDrakePath() +
                            "/automotive/models/prius/prius.sdf", 13,
