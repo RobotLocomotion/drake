@@ -12,7 +12,20 @@ namespace solvers {
 MatrixDecisionVariable<3, 3> NewRotationMatrixVars(MathematicalProgram* prog,
                                                    const std::string& name) {
   MatrixDecisionVariable<3, 3> R = prog->NewContinuousVariables<3, 3>(name);
+
+  // Forall i,j, -1 <= R(i,j) <=1.
   prog->AddBoundingBoxConstraint(-1, 1, R);
+
+  // -1 <= trace(R) <= 3.
+  // Proof sketch:
+  //   orthonormal => |lambda_i|=1.
+  //   R is real => eigenvalues either real or appear in complex conj pairs.
+  //   Case 1: All real (lambda_i \in {-1,1}).
+  //     det(R)=lambda_1*lambda_2*lambda_3=1 => lambda_1=lambda_2, lambda_3=1.
+  //   Case 2: Two imaginary, pick conj(lambda_1) = lambda_2.
+  //    => lambda_1*lambda_2 = 1.  =>  lambda_3 = 1.
+  //    and also => lambda_1 + lambda_2 = 2*Re(lambda_1) \in [-2,2].
+  prog->AddLinearConstraint(Eigen::RowVector3d::Ones(), -1, 3, R.diagonal());
   return R;
 }
 

@@ -5,7 +5,6 @@
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/mathematical_program.h"
 
-
 /// @file Functions for reasoning about 3D rotations in a @MathematicalProgram.
 ///
 /// There are a number of choices for representing 3D rotations in a
@@ -19,7 +18,6 @@
 /// Unfortunately, in the context of mathematical programming, most of these
 /// constraints are non-convex.  The methods below include convex relaxations
 /// of these non-convex constraints.
-
 
 // TODO(all): Other concepts to potentially implement:
 //  - PSDlift from section 1.2 of https://arxiv.org/pdf/1403.4914.pdf .  This
@@ -36,7 +34,8 @@ namespace drake {
 namespace solvers {
 
 /// Allocates a 3x3 matrix of decision variables with the trivial bounding
-/// box constraint ensuring all elements are [-1,1].
+/// box constraint ensuring all elements are [-1,1], and the linear constraint
+/// imposing -1 <= trace(R) <= 3.
 MatrixDecisionVariable<3, 3> NewRotationMatrixVars(
     MathematicalProgram* prog, const std::string& name = "R");
 
