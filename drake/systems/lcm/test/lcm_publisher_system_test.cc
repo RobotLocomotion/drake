@@ -150,18 +150,6 @@ GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received_message, sample_data));
 }
 
-// Verifies that the last transmitted message's timestamp is equal to the
-// provided timestamp.
-void VerifyTimestamp(const std::vector<uint8_t>& transmitted_message_bytes,
-                     double timestamp) {
-  lcmt_drake_signal transmitted_message;
-  // Decodes message and checks that the correct number of bytes was processed.
-  EXPECT_EQ(transmitted_message.decode(transmitted_message_bytes.data(), 0,
-                           transmitted_message_bytes.size()),
-            transmitted_message_bytes.size());
-  EXPECT_EQ(transmitted_message.timestamp, timestamp);
-}
-
 // Tests that the published LCM message has the expected timestamps.
 GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
   const double kPublishPeriod = 1.5;  // Seconds between publications.
@@ -188,8 +176,8 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
     EXPECT_EQ(simulator.get_mutable_context()->get_time(), time);
     const double expected_time =
         std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;
-    VerifyTimestamp(lcm.get_last_published_message(channel_name),
-                    expected_time);
+    EXPECT_EQ(lcm.DecodeLastPublishedMessageAs<lcmt_drake_signal>(
+      channel_name).timestamp, expected_time);
   }
 }
 
