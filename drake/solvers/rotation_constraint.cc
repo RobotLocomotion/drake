@@ -549,7 +549,9 @@ void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
   DRAKE_DEMAND(num_binary_vars_per_half_axis >= 1);
 
   // Use a simple lambda to make the constraints more readable below.
-  // Note that forall k>=0, phi(k)>=0.
+  // Note that
+  //  forall k>=0, 0<=phi(k), and
+  //  forall k<=num_binary_vars_per_half_axis, phi(k)<=1.
   auto phi = [&](int k) -> double {
     return EnvelopeMinValue(k, num_binary_vars_per_half_axis);
   };
@@ -580,18 +582,33 @@ void AddRotationMatrixMcCormickEnvelopeMilpConstraints(
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
       for (int k = 0; k < num_binary_vars_per_half_axis; k++) {
-        // R(i,j) >= phi(k) => Bpos[k](i,j) = 1
-        // R(i,j) <= phi(k) => Bpos[k](i,j) = 0
+        // R(i,j) > phi(k) => Bpos[k](i,j) = 1
+        // R(i,j) < phi(k) => Bpos[k](i,j) = 0
+        // R(i,j) = phi(k) => Bpos[k](i,j) = 0 or 1
         // -2 + 2*Bpos[k](i,j) <= R(i,j)-phi(k) <= Bpos[k](i,j)
+
+        // Tight on the lower bound:
         prog->AddLinearConstraint(
             Eigen::RowVector2d(1, -2), -2 + phi(k), phi(k),
-            {R.block<1, 1>(i, j), Bpos[k].block<1, 1>(i, j)});
+            VectorDecisionVariable<2>{R(i, j), Bpos[k](i, j)});
+        // Tight on the upper bound:
+        prog->AddLinearConstraint(
+            Eigen::RowVector2d(1, -1), -2 + phi(k), phi(k),
+            VectorDecisionVariable<2>{R(i, j), Bpos[k](i, j)});
+
         // -R(i,j) >= phi(k) => Bneg[k](i,j) = 1
         // -R(i,j) <= phi(k) => Bneg[k](i,j) = 0
+        // -R(i,j) = phi(k) => Bneg[k](i,j) = 0 or 1
         // -Bneg[k](i,j) <= R(i,j)+phi(k) <= 2-2*Bneg[k](i,j)
+
+        // Tight on the lower bound:
+        prog->AddLinearConstraint(
+            Eigen::RowVector2d(1, 1), -phi(k), 2 - phi(k),
+            VectorDecisionVariable<2>{R(i, j), Bneg[k](i, j)});
+        // Tight on the lower bound:
         prog->AddLinearConstraint(
             Eigen::RowVector2d(1, 2), -phi(k), 2 - phi(k),
-            {R.block<1, 1>(i, j), Bneg[k].block<1, 1>(i, j)});
+            VectorDecisionVariable<2>{R(i, j), Bneg[k](i, j)});
 
         if (k == num_binary_vars_per_half_axis - 1) {
           //   Cpos[k](i,j) = Bpos[k](i,j)
