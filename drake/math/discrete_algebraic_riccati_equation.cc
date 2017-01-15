@@ -1,4 +1,5 @@
-#include "drake/math/discrete_algebraic_ricatti_equation.h"
+#include "drake/math/discrete_algebraic_riccati_equation.h"
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/is_approx_equal_abstol.h"
@@ -48,12 +49,11 @@ void check_detectable(const Eigen::Ref<const Eigen::MatrixXd>& A,
   Eigen::MatrixXd C = L * D_sqrt;
   check_stabilizable(A.transpose(), C.transpose());
 }
-/**
- * "Givens rotation" computes an orthogonal 2x2 matrix R such that
- * it eliminates the 2nd coordinate of the vector [a,b]', i.e.,
- * R * [ a ] = [ a_hat ]
- *     [ b ]   [   0   ]
- */
+
+// "Givens rotation" computes an orthogonal 2x2 matrix R such that
+// it eliminates the 2nd coordinate of the vector [a,b]', i.e.,
+// R * [ a ] = [ a_hat ]
+//     [ b ]   [   0   ]
 void Givens_rotation(double a, double b, Eigen::Ref<Eigen::MatrixXd> R,
                      double eps = 1e-10) {
   double c, s;
@@ -204,17 +204,14 @@ void swap_block_22(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
           T(p + 3, p + 2) = 0;
 }
 
-/**
- * Functionality of "swap_block" function:
- * swap the 1x1 or 2x2 blocks pointed by p and q.
- * There are four cases: swaping 1x1 and 1x1 matrices, swaping 2x2 and 1x1
- * matrices,
- * swaping 1x1 and 2x2 matrices, and swaping 2x2 and 2x2 matrices.
- * Algorithms are described in the papers
- * "A generalized eigenvalue approach for solving Riccati equations" by P. Van
- * Dooren, 1981, and "Numerical Methods for General and Structured Eigenvalue
- * Problems" by Daniel Kressner, 2005.
- */
+// Functionality of "swap_block" function:
+// swap the 1x1 or 2x2 blocks pointed by p and q.
+// There are four cases: swaping 1x1 and 1x1 matrices, swaping 2x2 and 1x1
+// matrices, swaping 1x1 and 2x2 matrices, and swaping 2x2 and 2x2 matrices.
+// Algorithms are described in the papers
+// "A generalized eigenvalue approach for solving Riccati equations" by P. Van
+// Dooren, 1981, and "Numerical Methods for General and Structured Eigenvalue
+// Problems" by Daniel Kressner, 2005.
 void swap_block(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                 Eigen::Ref<Eigen::MatrixXd> Z, int p, int q, int q_block_size,
                 double eps = 1e-10) {
@@ -242,26 +239,26 @@ void swap_block(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
   }
 }
 
-/**
- * Functionality of "reorder_eigen" function:
- * Reorder the eigenvalues of (S,T) such that the top-left n by n matrix has
- * stable eigenvalues
- * by multiplying Q's and Z's on the left and the right, respectively.
- * Stable eigenvalues are inside the unit disk.
- *
- * Algorithm:
- * Go along the diagonals of (S,T) from the top left to the bottom right.
- * Once find a stable eigenvalue, push it to top left.
- * In implementation, use two pointers, p and q.
- * p points to the current block (1x1 or 2x2) and q points to the block with the
- * stable eigenvalue(s).
- * Push the block pointed by q to the position pointed by p.
- * Finish when n stable eigenvalues are placed at the top-left n by n matrix.
- * The algorithm for swaping blocks is described in the papers
- * "A generalized eigenvalue approach for solving Riccati equations" by P. Van
- * Dooren, 1981, and "Numerical Methods for General and Structured Eigenvalue
- * Problems" by Daniel Kressner, 2005.
- */
+// Functionality of "reorder_eigen" function:
+// Reorder the eigenvalues of (S,T) such that the top-left n by n matrix has
+// stable eigenvalues by multiplying Q's and Z's on the left and the right,
+// respectively.
+// Stable eigenvalues are inside the unit disk.
+//
+// Algorithm:
+// Go along the diagonals of (S,T) from the top left to the bottom right.
+// Once find a stable eigenvalue, push it to top left.
+// In implementation, use two pointers, p and q.
+// p points to the current block (1x1 or 2x2) and q points to the block with the
+// stable eigenvalue(s).
+// Push the block pointed by q to the position pointed by p.
+// Finish when n stable eigenvalues are placed at the top-left n by n matrix.
+// The algorithm for swaping blocks is described in the papers
+// "A generalized eigenvalue approach for solving Riccati equations" by P. Van
+// Dooren, 1981 ( http://epubs.siam.org/doi/pdf/10.1137/0902010 ),
+// and "Numerical Methods for General and Structured Eigenvalue Problems" by
+// Daniel Kressner, 2005
+// ( http://sma.epfl.ch/~anchpcommon/publications/kressner_eigenvalues.pdf ).
 void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                    Eigen::Ref<Eigen::MatrixXd> Z, double eps = 1e-10) {
   // abs(a) < eps => a = 0
@@ -314,7 +311,8 @@ void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
  *
  * Based on the Schur Vector approach outlined in this paper:
  * "On the Numerical Solution of the Discrete-Time Algebraic Riccati Equation"
- * by Thrasyvoulos Pappas, Alan J. Laub, and Nils R. Sandell
+ * by Thrasyvoulos Pappas, Alan J. Laub, and Nils R. Sandell, in TAC, 1980,
+ * http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=1102434
  *
  * Note: When, for example, n = 100, m = 80, and entries of A, B, Q_half,
  * R_half are sampled from standard normal distributions, where
@@ -322,7 +320,8 @@ void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
  * is 10^{-6}, while the absolute error of the solution computed by Matlab is
  * 10^{-8}.
  *
- * TODO(weiqiao.han): I may add an refinement procedure to improve the accuracy,
+ * TODO(weiqiao.han): I may overwrite the RealQZ function to improve the
+ * accuracy,
  * together with more thorough tests.
  */
 

@@ -1,4 +1,4 @@
-#include "drake/math/discrete_algebraic_ricatti_equation.h"
+#include "drake/math/discrete_algebraic_riccati_equation.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "gtest/gtest.h"
