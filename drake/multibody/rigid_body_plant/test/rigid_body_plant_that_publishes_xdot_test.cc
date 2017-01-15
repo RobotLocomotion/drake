@@ -53,14 +53,8 @@ GTEST_TEST(RigidBodyPlantThatPublishesXdotTest, TestPublishLcmMessage) {
   EXPECT_NO_THROW(dut.Publish(*context));
 
   // Verifies that the transmitted message is correct.
-  const std::vector<uint8_t>& transmitted_message_bytes =
-      lcm.get_last_published_message(kChannelName);
-
-  lcmt_drake_signal transmitted_message;
-  // Decodes message and checks that the correct number of bytes was processed.
-  EXPECT_EQ(transmitted_message.decode(transmitted_message_bytes.data(), 0,
-                           transmitted_message_bytes.size()),
-            transmitted_message_bytes.size());
+  const lcmt_drake_signal transmitted_message =
+      lcm.DecodeLastPublishedMessageAs<lcmt_drake_signal>(kChannelName);
 
   lcmt_drake_signal expected_message;
   expected_message.dim = kNumStates;

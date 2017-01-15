@@ -15,5 +15,6 @@ endif()
 
 drake_add_cc_test(drake_mock_lcm_test)
 target_link_libraries(drake_mock_lcm_test
-  drakeLcm)
+    drakeLCMTypes
+    drakeLcm)
 

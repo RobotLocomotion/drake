@@ -132,10 +132,7 @@ class ToyotaHsrbTests : public ::testing::Test {
 // Verifies that @p message_bytes is correct. Only a few key fields are checked.
 // The rest of the message is assumed to be correct.
 // See drake_visualizer_test.cc for a more comprehensive test.
-void VerifyLoadMessage(const std::vector<uint8_t>& message_bytes) {
-  drake::lcmt_viewer_load_robot message;
-  ASSERT_EQ(message.decode(message_bytes.data(), 0, message_bytes.size()),
-            static_cast<int>(message_bytes.size()));
+void VerifyLoadMessage(const lcmt_viewer_load_robot& message) {
   ASSERT_EQ(message.num_links, 3);
   EXPECT_EQ(message.link.at(0).name, "world");
   EXPECT_EQ(message.link.at(1).name, "link1");
@@ -151,11 +148,7 @@ void VerifyLoadMessage(const std::vector<uint8_t>& message_bytes) {
 // Verifies that @p message_bytes is correct. Only a few key fields are checked.
 // The rest of the message is assumed to be correct. See
 // drake_visualizer_test.cc for a more comprehensive test.
-void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
-  drake::lcmt_viewer_draw expected_message;
-  ASSERT_EQ(
-      expected_message.decode(message_bytes.data(), 0, message_bytes.size()),
-      static_cast<int>(message_bytes.size()));
+void VerifyDrawMessage(const lcmt_viewer_draw& expected_message) {
   ASSERT_EQ(expected_message.num_links, 3);
   EXPECT_EQ(expected_message.timestamp, 0);
   EXPECT_EQ(expected_message.link_name.at(0), "world");
@@ -216,8 +209,10 @@ void VerifyDiagram(const Diagram<double>& dut, const VectorXd& desired_state,
   }
 
   // // Verifies that the correct LCM messages were published
-  VerifyLoadMessage(lcm.get_last_published_message("DRAKE_VIEWER_LOAD_ROBOT"));
-  VerifyDrawMessage(lcm.get_last_published_message("DRAKE_VIEWER_DRAW"));
+  VerifyLoadMessage(lcm.DecodeLastPublishedMessageAs<lcmt_viewer_load_robot>(
+                        "DRAKE_VIEWER_LOAD_ROBOT"));
+  VerifyDrawMessage(lcm.DecodeLastPublishedMessageAs<lcmt_viewer_draw>(
+                        "DRAKE_VIEWER_DRAW"));
 }
 
 // Tests BuildPlantAndVisualizerDiagram().
