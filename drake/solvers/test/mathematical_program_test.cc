@@ -193,16 +193,19 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
 class GenericTrivialCost1 : public Constraint {
  public:
   GenericTrivialCost1()
-      : Constraint(1, Vector1d(std::numeric_limits<double>::infinity()),
+      : Constraint(1, 3, Vector1d(std::numeric_limits<double>::infinity()),
                    Vector1d(std::numeric_limits<double>::infinity())),
         private_val_(2) {}
 
-  void Eval(const Ref<const Eigen::VectorXd>& x, VectorXd& y) const override {
+ protected:
+  void DoEval(const Ref<const Eigen::VectorXd> &x,
+              VectorXd &y) const override {
     y.resize(1);
     y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
   }
 
-  void Eval(const Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override {
+  void DoEval(const Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override {
     y.resize(1);
     y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
   }
@@ -758,18 +761,19 @@ class LowerBoundTestCost {
 class LowerBoundTestConstraint : public Constraint {
  public:
   LowerBoundTestConstraint(int i1, int i2)
-      : Constraint(1, Vector1d::Constant(4),
+      : Constraint(1, Eigen::Dynamic, Vector1d::Constant(4),
                    Vector1d::Constant(numeric_limits<double>::infinity())),
         i1_(i1),
         i2_(i2) {}
 
+ protected:
   // for just these two types, implementing this locally is almost cleaner...
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override {
     EvalImpl(x, y);
   }
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override {
     EvalImpl(x, y);
   }
 
@@ -943,16 +947,18 @@ class GloptipolyConstrainedExampleConstraint
                            // constraint without going through drake::Function
  public:
   GloptipolyConstrainedExampleConstraint()
-      : Constraint(1, Vector1d::Constant(0),
-                   Vector1d::Constant(numeric_limits<double>::infinity())) {}
+      : Constraint(
+            1, 3, Vector1d::Constant(0),
+            Vector1d::Constant(numeric_limits<double>::infinity())) {}
 
+ protected:
   // for just these two types, implementing this locally is almost cleaner...
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override {
     EvalImpl(x, y);
   }
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override {
     EvalImpl(x, y);
   }
 

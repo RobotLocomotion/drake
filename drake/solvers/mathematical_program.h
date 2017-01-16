@@ -190,6 +190,7 @@ class MathematicalProgram {
     template <typename... Args>
     ConstraintImpl(const F& f, Args&&... args)
         : Constraint(detail::FunctionTraits<F>::numOutputs(f),
+                     detail::FunctionTraits<F>::numInputs(f),
                      std::forward<Args>(args)...),
           f_(f) {}
 
@@ -197,11 +198,13 @@ class MathematicalProgram {
     template <typename... Args>
     ConstraintImpl(F&& f, Args&&... args)
         : Constraint(detail::FunctionTraits<F>::numOutputs(f),
+                     detail::FunctionTraits<F>::numInputs(f),
                      std::forward<Args>(args)...),
           f_(std::forward<F>(f)) {}
 
-    void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
+   protected:
+    void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+                Eigen::VectorXd &y) const override {
       y.resize(detail::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                    detail::FunctionTraits<F>::numInputs(f_));
@@ -209,8 +212,8 @@ class MathematicalProgram {
                    detail::FunctionTraits<F>::numOutputs(f_));
       detail::FunctionTraits<F>::eval(f_, x, y);
     }
-    void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-              TaylorVecXd& y) const override {
+    void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+                TaylorVecXd &y) const override {
       y.resize(detail::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                    detail::FunctionTraits<F>::numInputs(f_));

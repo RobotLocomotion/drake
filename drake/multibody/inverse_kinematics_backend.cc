@@ -156,16 +156,22 @@ class InverseKinObjective : public Constraint {
  public:
   // All references are aliased for the life of the objective.
   InverseKinObjective(const RigidBodyTree<double>* model, const MatrixXd& Q)
-      : Constraint(model->get_num_positions()), Q_(Q) {}
+      : Constraint(model->get_num_positions(), Q.rows()), Q_(Q) {}
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
+  /// Set the nominal posture.  This should be invoked before any
+  /// calls to Eval() (the output of Eval() is undefined if this has
+  /// not been set.)
+  void set_q_nom(const VectorXd& q_nom_i) { q_nom_i_ = q_nom_i; }
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                 Eigen::VectorXd& y) const override {
     VectorXd q_err = x - q_nom_i_;
     y(0) = q_err.transpose() * Q_ * q_err;
   }
 
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
+                 TaylorVecXd& y) const override {
     VectorXd x_val = autoDiffToValueMatrix(x);
     VectorXd q_err = x_val - q_nom_i_;
     VectorXd y_val = q_err.transpose() * Q_ * q_err;
@@ -174,11 +180,6 @@ class InverseKinObjective : public Constraint {
     math::initializeAutoDiffGivenGradientMatrix(
         y_val, (dy_vec * gradient_mat).eval(), y);
   }
-
-  /// Set the nominal posture.  This should be invoked before any
-  /// calls to Eval() (the output of Eval() is undefined if this has
-  /// not been set.)
-  void set_q_nom(const VectorXd& q_nom_i) { q_nom_i_ = q_nom_i; }
 
  private:
   const MatrixXd& Q_;
@@ -284,8 +285,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
     }
 
     SolutionResult result = prog.Solve();
-    const VectorXd& vars_value =
-        prog.GetSolution(vars);
+    const VectorXd& vars_value = prog.GetSolution(vars);
     q_sol->col(t_index) = vars_value;
     info[t_index] = GetIKSolverInfo(prog, result);
   }
