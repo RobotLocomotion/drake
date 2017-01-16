@@ -269,7 +269,7 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   const drake::multibody::joints::FloatingBaseType joint_type =
       drake::multibody::joints::kQuaternion;
   std::shared_ptr<RigidBodyFrame<double>> weld_to_frame = nullptr;
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+  parsers::urdf::AddModelInstanceFromUrdfFile(
       urdf_dir_file_name, joint_type, weld_to_frame, tree.get());
 
   // Create 4x1 matrix for quaternion e0, e1, e2, e3 (defined below).
@@ -333,11 +333,6 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // Allocate space to hold time-derivative of state_drake.
   std::unique_ptr<systems::ContinuousState<double>> stateDt_drake =
       rigid_body_plant.AllocateTimeDerivatives();
-
-  // Even though there are no actuators here we have to create a zero-length
-  // actuator input port.
-  const int num_actuators = rigid_body_plant.get_num_actuators();
-  context->FixInputPort(0, VectorXd::Zero(num_actuators));
 
   // Evaluate the time-derivatives of the state.
   rigid_body_plant.CalcTimeDerivatives(*context, stateDt_drake.get());

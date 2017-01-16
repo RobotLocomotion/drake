@@ -231,7 +231,7 @@ TEST_F(KukaArmTest, SetDefaultState) {
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
-  context_->FixInputPort(kuka_plant_->command_input_port().get_index(),
+  context_->FixInputPort(kuka_plant_->actuator_command_input_port().get_index(),
                          make_unique<BasicVector<double>>(
                              kuka_plant_->get_num_actuators()));
 
@@ -243,18 +243,17 @@ TEST_F(KukaArmTest, SetDefaultState) {
 }
 
 // Tests RigidBodyPlant<T>::CalcOutput() for a KUKA iiwa arm model.
-// For a RigidBodyPlant<T> the first output of the system should equal the
-// state vector. The second output from this system should correspond to a
-// RigidBodyPlant<T>::VectorOfPoses containing the poses of all bodies in the
-// system.
 TEST_F(KukaArmTest, EvalOutput) {
   auto& tree = kuka_plant_->get_rigid_body_tree();
 
   // Checks that the number of input and output ports in the system and context
   // are consistent.
-  ASSERT_EQ(2, kuka_plant_->get_num_input_ports());
-  ASSERT_EQ(2, context_->get_num_input_ports());
+  ASSERT_EQ(1, kuka_plant_->get_num_input_ports());
+  ASSERT_EQ(1, context_->get_num_input_ports());
   ASSERT_EQ(1, kuka_plant_->get_num_model_instances());
+
+  // TODO(liang.fok) Update this to be 1 once #3088 is resolved.
+  const int kModelInstanceId = 0;
 
   // Checks the size of the input ports to match the number of generalized
   // forces that can be applied.
@@ -266,15 +265,18 @@ TEST_F(KukaArmTest, EvalOutput) {
   ASSERT_EQ(kNumStates_, kuka_plant_->get_num_states(0));
   ASSERT_EQ(kNumActuators_, kuka_plant_->get_num_actuators());
   ASSERT_EQ(kNumActuators_, kuka_plant_->get_num_actuators(0));
-  ASSERT_EQ(kNumActuators_, kuka_plant_->get_input_port(0).size());
-  ASSERT_EQ(kNumActuators_, kuka_plant_->model_input_port(0).size());
+  ASSERT_EQ(kNumActuators_,
+      kuka_plant_->model_instance_actuator_command_input_port(
+          kModelInstanceId).size());
 
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
-  context_->FixInputPort(kuka_plant_->command_input_port().get_index(),
-                         make_unique<BasicVector<double>>(
-                             kuka_plant_->get_num_actuators()));
+  context_->FixInputPort(
+      kuka_plant_->model_instance_actuator_command_input_port(
+                       kModelInstanceId).get_index(),
+                       make_unique<BasicVector<double>>(
+                           kuka_plant_->get_num_actuators()));
 
   // Sets the state to a non-zero value.
   VectorXd desired_angles(kNumPositions_);
@@ -287,25 +289,27 @@ TEST_F(KukaArmTest, EvalOutput) {
   VectorXd xc = context_->get_continuous_state()->CopyToVector();
   ASSERT_EQ(xc, desired_state);
 
-  // 4 outputs: state, kinematic results, contact results, model instance state.
+  // Four output ports:
+  //
+  //    (1) plant state
+  //    (2) model instance state
+  //    (3) kinematic results
+  //    (4) contact results
+  //
   // (In this context, there is only one model instance and thus only one model
   // instance state port.)
   ASSERT_EQ(4, output_->get_num_ports());
-  const BasicVector<double>* output_state = output_->get_vector_data(0);
-  ASSERT_NE(nullptr, output_state);
 
   kuka_plant_->CalcOutput(*context_, output_.get());
 
-  // Asserts the output equals the state.
-  EXPECT_EQ(desired_state, output_state->get_value());
-
   // Check that the per-instance port (we should only have one) equals
   // the expected state.
+  const int output_index = kuka_plant_->
+      model_instance_state_output_port(kModelInstanceId).get_index();
   const BasicVector<double>* instance_output =
-      output_->get_vector_data(
-          kuka_plant_->model_state_output_port(0).get_index());
+      output_->get_vector_data(output_index);
   ASSERT_NE(nullptr, instance_output);
-  EXPECT_EQ(desired_state, instance_output->get_value());
+  EXPECT_EQ(desired_state, instance_output->get_value().eval());
 
   // Evaluates the correctness of the kinematics results port.
   const int index = kuka_plant_->kinematics_results_output_port().get_index();
@@ -401,7 +405,7 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
   input << applied_force;
   auto input_vector = std::make_unique<BasicVector<double>>(1);
   input_vector->set_value(input);
-  context->FixInputPort(plant.command_input_port().get_index(),
+  context->FixInputPort(plant.actuator_command_input_port().get_index(),
                         move(input_vector));
 
   // Obtain the time derivatives; test that speed is zero, return acceleration.
@@ -521,26 +525,6 @@ GTEST_TEST(RigidBodyPlantTest, InstancePortTest) {
   EXPECT_EQ(joint4_instance, 3);
   EXPECT_ANY_THROW(
       plant.FindInstancePositionIndexFromWorldIndex(0, joint4_world));
-}
-
-// Tests what happens with both types of input ports are connected
-// (entire plant vs. individual model instance).
-GTEST_TEST(rigid_body_plant_test, TestConnectBothTypesOfInputPorts) {
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  const ModelInstanceIdTable table =
-      AddModelInstancesFromSdfFile(drake::GetDrakePath() +
-          "/multibody/rigid_body_plant/test/limited_prismatic.sdf",
-          kQuaternion, nullptr /* weld to frame */, tree.get());
-  const int model_instance_id = table.at("limited_prismatic_test_model");
-  RigidBodyPlant<double> plant(move(tree));
-  const int num_inputs = plant.get_num_actuators(model_instance_id) * 2;
-  auto context = plant.CreateDefaultContext();
-  context->FixInputPort(
-      plant.command_input_port().get_index(),
-      make_unique<BasicVector<double>>(Eigen::VectorXd::Zero(num_inputs)));
-  context->FixInputPort(
-      plant.model_input_port(model_instance_id).get_index(),
-      make_unique<BasicVector<double>>(Eigen::VectorXd::Zero(num_inputs)));
 }
 
 }  // namespace

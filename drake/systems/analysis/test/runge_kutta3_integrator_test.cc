@@ -344,10 +344,6 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   RigidBodyPlant<double> plant(move(tree));
   auto context = plant.CreateDefaultContext();
 
-  // Setup an empty input port.
-  context->SetInputPort(0, std::make_unique<FreestandingInputPort>(
-      std::make_unique<BasicVector<double>>(plant.get_num_actuators())));
-
   Eigen::Vector3d v0(1, 2, 3);    // Linear velocity in body's frame.
   Eigen::Vector3d w0(-4, 5, -6);  // Angular velocity in body's frame.
   BasicVector<double> generalized_velocities(plant.get_num_velocities());

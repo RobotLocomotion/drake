@@ -18,40 +18,35 @@ namespace systems {
 /// This class provides a System interface around a multibody dynamics model
 /// of the world represented by a RigidBodyTree.
 ///
-/// The %RigidBodyPlant provides a number of input and output ports. The precise
-/// number depends on the number of model instances within the RigidBodyTree
-/// and the number of them that have actuators. The following lists the
-/// accessors for obtaining the input and output ports of the %RigidBodyPlant.
-/// These accessors are typically used when "wiring up" a RigidBodyPlant within
-/// a Diagram using DiagramBuilder. See, for example, DiagramBuilder::Connect(),
+/// The %RigidBodyPlant provides a number of input and output ports. The number
+/// and types of port accessors depends on the number of model instances within
+/// the RigidBodyTree with actuators. The following lists the accessors for
+/// obtaining the input and output ports of the %RigidBodyPlant. These accessors
+/// are typically used when "wiring up" a RigidBodyPlant within a Diagram using
+/// DiagramBuilder. See, for example, DiagramBuilder::Connect(),
 /// DiagramBuilder::ExportInput(), and DiagramBuilder::ExportOutput().
 ///
-/// <B>Input Port Accessors:</B>
+/// <B>Plant-Centric Port Accessors:</B>
 ///
-/// - command_input_port(): Contains the command vector for the RigidBodyTree's
-///   actuators. Note that if this port is connected, none of the ports returned
-///   by model_input_port() can be connected. The size of this vector is equal
-///   to the number of RigidBodyActuator's in the RigidBodyTree. Each
-///   RigidBodyActuator maps to a single-DOF joint (currently actuation cannot
-///   be applied to multiple-DOF joints). The units of the actuation are the
-///   same as the units of the generalized force on the joint. In addition,
-///   actuators allow for a gear box reduction factor and for actuation
-///   limits which are only used by controllers; the RigidBodyPlant does
-///   not apply these limits. The gear box factor effectively is a
-///   multiplier on the input actuation to the RigidBodyPlant.
-///
-/// - model_input_port(): Contains the command vector for the actuators
-///   belonging to a particular model instance within the RigidBodyTree.
-///   If any port returned by model_input_port() is connected, the input port
-///   for the full tree, which is obtained using command_input_port(), must not
-///   be used.
-///
-/// <B>Output Port Accessors:</B>
+/// - actuator_command_input_port(): Contains the command vector for the
+///   RigidBodyTree's actuators. This method can only be called when there is
+///   only one model instance in the RigidBodyTree, as
+///   determined by get_num_model_instances(), and this model instance has at
+///   least one actuator. The size of this vector equals the number of
+///   RigidBodyActuator's in the RigidBodyTree. Each RigidBodyActuator maps to a
+///   single-DOF joint (currently actuation cannot be applied to multiple-DOF
+///   joints). The units of the actuation are the same as the units of the
+///   generalized force on the joint. In addition, actuators allow for a gear
+///   box reduction factor and for actuation limits which are only used by
+///   controllers; the RigidBodyPlant does not apply these limits. The gear box
+///   factor effectively is a multiplier on the input actuation to the
+///   RigidBodyPlant.
 ///
 /// - state_output_port(): A vector-valued port containing the state vector,
-///   `x`, of the system. The state vector, `x`, consists of generalized
-///   positions followed by generalized velocities. Semantics of `x` can be
-///   obtained using the following methods:
+///   `x`, of the system. This is useful for downstream systems that require
+///   `x`, which includes DrakeVisualizer. The state vector, `x`, consists of
+///   generalized positions followed by generalized velocities. Semantics of `x`
+///   can be obtained using the following methods:
 ///
 ///   - RigidBodyPlant<T>::get_num_states()
 ///   - RigidBodyTree<T>::get_num_positions()
@@ -67,8 +62,18 @@ namespace systems {
 ///   ContactsResults object allowing access to the results from contact
 ///   computations.
 ///
-/// - model_state_output_port(): A vector-valued port containing the state
-///   vector for a particular model instance in the RigidBodyTree.
+/// <B>Model-Instance-Centric Port Accessors:</B>
+///
+/// - model_instance_actuator_command_input_port(): Contains the command vector
+///   for the actuators belonging to a particular model instance within the
+///   RigidBodyTree. This method can only be called using the model instance ID
+///   of a model with actuators. To determine if a model instance possesses
+///   actuators, use model_instance_has_actuators().
+///
+/// - model_instance_state_output_port(): A vector-valued port containing the
+///   state vector for a particular model instance in the RigidBodyTree. This
+///   method can only be called when this class is instantiated with constructor
+///   parameter `export_model_instance_centric_ports` equal to `true`.
 ///
 /// The %RigidBodyPlant's state consists of a vector containing the generalized
 /// positions followed by the generalized velocities of the system. This state
@@ -111,6 +116,8 @@ class RigidBodyPlant : public LeafSystem<T> {
  public:
   /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
   /// the world in @p tree.  @p tree must not be `nullptr`.
+  ///
+  /// @param[in] tree the dynamic model to use with this plant.
   // TODO(SeanCurtis-TRI): It appears that the tree has to be "compiled"
   // already.  Confirm/deny and document that result.
   explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree);
@@ -159,7 +166,8 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// Returns the number of actuators for a specific model instance.
   int get_num_actuators(int model_instance_id) const;
 
-  /// Returns the number of model instances in the world.
+  /// Returns the number of model instances in the world, not including the
+  /// world.
   int get_num_model_instances() const;
 
   /// Returns the size of the input vector to the system. This equals the
@@ -244,17 +252,33 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// and how these accessors are typically used.
   ///@{
 
-  /// Returns a descriptor of the actuator command input port.
-  const InputPortDescriptor<T>& command_input_port() const {
-    return System<T>::get_input_port(command_input_port_index_);
+  /// Returns a descriptor of the actuator command input port. This method can
+  /// only be called when there is only one model instance in the RigidBodyTree.
+  /// Otherwise, a std::runtime_error will be thrown. It returns the same port
+  /// as model_instance_actuator_command_input_port() using input
+  /// parameter RigidBodyTreeConstants::kFirstModelInstanceId.
+  const InputPortDescriptor<T>& actuator_command_input_port() const {
+    if (get_num_model_instances() != 1) {
+      throw std::runtime_error("RigidBodyPlant::actuator_command_input_port(): "
+          "ERROR: This method can only called when there is only one model "
+          "instance in the RigidBodyTree. There are currently " +
+          std::to_string(get_num_model_instances()) + " model instances in the "
+          "RigidBodyTree.");
+    }
+    return model_instance_actuator_command_input_port(
+                         RigidBodyTreeConstants::kFirstModelInstanceId);
   }
 
-  /// Returns a descriptor of the input port for a specific model
-  /// instance.
-  const InputPortDescriptor<T>& model_input_port(
-      int model_instance_id) const {
-    return System<T>::get_input_port(input_map_.at(model_instance_id));
-  }
+  // Returns true if and only if the model instance with the provided
+  // `model_instance_id` has actuators. This is useful when trying to determine
+  // whether it's safe to call model_instance_actuator_command_input_port().
+  bool model_instance_has_actuators(int model_instance_id) const;
+
+  /// Returns a descriptor of the input port for a specific model instance. This
+  /// method can only be called when this class is instantiated with constructor
+  /// parameter `export_model_instance_centric_ports` equal to `true`.
+  const InputPortDescriptor<T>& model_instance_actuator_command_input_port(
+      int model_instance_id) const;
 
   ///@}
 
@@ -264,10 +288,19 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// and how these accessors are typically used.
   ///@{
 
-  /// Returns a descriptor of the state output port.
+  /// Returns a descriptor of the plant-centric state output port. The size of
+  /// this port is equal to get_num_states().
   const OutputPortDescriptor<T>& state_output_port() const {
     return System<T>::get_output_port(state_output_port_index_);
   }
+
+  /// Returns a descriptor of the output port containing the state of a
+  /// particular model with instance ID equal to @p model_instance_id. Throws a
+  /// std::runtime_error if @p model_instance_id does not exist. This method can
+  /// only be called when this class is instantiated with constructor parameter
+  /// `export_model_instance_centric_ports` equal to `true`.
+  const OutputPortDescriptor<T>& model_instance_state_output_port(
+      int model_instance_id) const;
 
   /// Returns a descriptor of the KinematicsResults output port.
   const OutputPortDescriptor<T>& kinematics_results_output_port() const {
@@ -277,20 +310,6 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// Returns a descriptor of the ContactResults output port.
   const OutputPortDescriptor<T>& contact_results_output_port() const {
     return System<T>::get_output_port(contact_output_port_index_);
-  }
-
-  /// Returns a descriptor of the output port containing the state of a
-  /// particular model with instance ID equal to @p model_instance_id. Throws a
-  /// std::runtime_error if @p model_instance_id does not exist.
-  const OutputPortDescriptor<T>& model_state_output_port(
-      int model_instance_id) const {
-    if (model_instance_id >= static_cast<int>(output_map_.size())) {
-      throw std::runtime_error("RigidBodyPlant: model_state_output_port: "
-          "ERROR: Model instance ID " + std::to_string(model_instance_id) +
-          " does not exist! Maximum ID is " +
-          std::to_string(output_map_.size() - 1) + ".");
-    }
-    return System<T>::get_output_port(output_map_.at(model_instance_id));
   }
   ///@}
 
@@ -335,6 +354,8 @@ class RigidBodyPlant : public LeafSystem<T> {
       VectorBase<T> *generalized_velocity) const override;
 
  private:
+  void ExportModelInstanceCentricPorts();
+
   // Computes the contact results for feeding the corresponding output port.
   void ComputeContactResults(const Context<T>& context,
                              ContactResults<T>* contacts) const;
@@ -351,30 +372,30 @@ class RigidBodyPlant : public LeafSystem<T> {
   VectorX<T> ComputeContactForce(const KinematicsCache<T>& kinsol,
                                  ContactResults<T>* contacts = nullptr) const;
 
+  std::unique_ptr<const RigidBodyTree<T>> tree_;
+
   // Some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
   T penetration_stiffness_{150.0};  // An arbitrarily large number.
   T penetration_damping_{penetration_stiffness_ / 10.0};
   T friction_coefficient_{1.0};
 
-  std::unique_ptr<const RigidBodyTree<T>> tree_;
-  int command_input_port_index_{};
   int state_output_port_index_{};
   int kinematics_output_port_index_{};
   int contact_output_port_index_{};
 
-  // Maps model instance ids to input port indices.  A value of -1
-  // indicates that a model instance has no actuators, and thus no
-  // corresponding input port.
+  // Maps model instance ids to input port indices.  A value of
+  // kInvalidPortIdentifier indicates that a model instance has no actuators,
+  // and thus no corresponding input port.
   std::vector<int> input_map_;
   // Maps model instance ids to actuator indices and number of
   // actuators in the RigidBodyTree.  Values are stored as a pair of
   // (index, count).
   std::vector<std::pair<int, int>> actuator_map_;
 
-  // Maps model instance ids to output port indices.  A value of -1
-  // indicates that a model instance has no state and thus no
-  // corresponding output port.
+  // Maps model instance ids to output port indices.  A value of
+  // kInvalidPortIdentifier indicates that a model instance has no state and
+  // thus no corresponding output port.
   std::vector<int> output_map_;
   // Maps model instance ids to position indices and number of
   // position states in the RigidBodyTree.  Values are stored as a

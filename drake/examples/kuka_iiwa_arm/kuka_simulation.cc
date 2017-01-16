@@ -86,7 +86,7 @@ class SimulatedKuka : public systems::Diagram<T> {
           std::move(rigid_body_tree));
       plant_ = plant.get();
 
-      DRAKE_ASSERT(plant_->command_input_port().size() ==
+      DRAKE_ASSERT(plant_->actuator_command_input_port().size() ==
                    plant_->get_num_positions());
 
       // Constants are chosen by trial and error to qualitatively match
