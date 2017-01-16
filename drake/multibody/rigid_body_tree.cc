@@ -80,7 +80,9 @@ using std::endl;
 
 const char* const RigidBodyTreeConstants::kWorldName = "world";
 const int RigidBodyTreeConstants::kWorldBodyIndex = 0;
-// TODO(liang.fok) Update this along with the resolution of #3088.
+// TODO(liang.fok) Update the following two variables along with the resolution
+// of #3088. Once #3088 is resolved, ID of the first model instance should be 1.
+const int RigidBodyTreeConstants::kFirstModelInstanceId = 0;
 const set<int> RigidBodyTreeConstants::default_model_instance_id_set = {0};
 
 template <typename T>
@@ -2873,6 +2875,8 @@ int RigidBodyTree<T>::add_model_instance() {
   return num_model_instances_++;
 }
 
+// TODO(liang.fok) Update this method implementation once the world is assigned
+// its own model instance ID (#3088). It should return num_model_instances_ - 1.
 template <typename T>
 int RigidBodyTree<T>::get_num_model_instances() const {
   return num_model_instances_;

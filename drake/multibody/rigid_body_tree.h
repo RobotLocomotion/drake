@@ -53,6 +53,11 @@ struct RigidBodyTreeConstants {
   static const int kWorldBodyIndex;
 
   /**
+   * The ID of the first model instance in the tree.
+   */
+  static const int kFirstModelInstanceId;
+
+  /**
    * Defines the default model instance ID set. This is a set containing the
    * model instance ID of the first model instance that is added to the tree.
    */
@@ -118,7 +123,7 @@ class RigidBodyTree {
   int get_next_clique_id() { return next_available_clique_++; }
 
   /**
-   * Returns the number of model instances in the tree.
+   * Returns the number of model instances in the tree, not including the world.
    */
   int get_num_model_instances() const;
 

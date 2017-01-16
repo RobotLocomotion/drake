@@ -136,13 +136,15 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
     int wsg_instance_id{};
     plant_ = builder.AddSystem(BuildCombinedPlant<T>(&iiwa_instance_id,
                                                      &wsg_instance_id));
-    const auto& iiwa_input_port = plant_->model_input_port(iiwa_instance_id);
+    const auto& iiwa_input_port =
+        plant_->model_instance_actuator_command_input_port(iiwa_instance_id);
     const auto& iiwa_output_port =
-        plant_->model_state_output_port(iiwa_instance_id);
+        plant_->model_instance_state_output_port(iiwa_instance_id);
 
-    const auto& wsg_input_port = plant_->model_input_port(wsg_instance_id);
+    const auto& wsg_input_port =
+        plant_->model_instance_actuator_command_input_port(wsg_instance_id);
     const auto& wsg_output_port =
-            plant_->model_state_output_port(wsg_instance_id);
+            plant_->model_instance_state_output_port(wsg_instance_id);
 
     // Connect the pid controllers for each device.
 

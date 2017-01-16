@@ -86,7 +86,6 @@ class ContactResultTest : public ::testing::Test {
     plant_ = make_unique<RigidBodyPlant<double>>(move(unique_tree));
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
-    context_->FixInputPort(0, make_unique<BasicVector<double>>(0));
     plant_->CalcOutput(*context_.get(), output_.get());
 
     const int port_index = plant_->contact_results_output_port().get_index();

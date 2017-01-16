@@ -15,6 +15,7 @@
 
 using std::make_unique;
 using std::move;
+using std::runtime_error;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -33,21 +34,18 @@ template <typename T>
 RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree)
     : tree_(move(tree)) {
   DRAKE_DEMAND(tree_ != nullptr);
-
-  // Declares an input port for the command vector. The commands in this vector
-  // are sent to the actuators within the RigidBodyTree.
-  command_input_port_index_ = System<T>::DeclareInputPort(kVectorValued,
-      get_num_actuators()).get_index();
-  // Declares a vector-valued output port for `x`, the plant's generalized state
-  // vector.
   state_output_port_index_ =
       this->DeclareOutputPort(kVectorValued, get_num_states()).get_index();
+  ExportModelInstanceCentricPorts();
   // Declares an abstract valued output port for kinematics results.
   kinematics_output_port_index_ = this->DeclareAbstractOutputPort().get_index();
   // Declares an abstract valued output port for contact information.
   contact_output_port_index_ = this->DeclareAbstractOutputPort().get_index();
+}
 
-  const int num_instances = tree_->get_num_model_instances();
+template <typename T>
+void RigidBodyPlant<T>::ExportModelInstanceCentricPorts() {
+const int num_instances = tree_->get_num_model_instances();
   const std::pair<int, int> default_entry =
       std::pair<int, int>(kInvalidPortIdentifier, 0);
   input_map_.resize(num_instances, kInvalidPortIdentifier);
@@ -250,9 +248,23 @@ template <typename T>
 std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
     const Context<T>& context) const {
   auto output = make_unique<LeafSystemOutput<T>>();
-  // Allocates an output port for the state vector.
+
+  // Note that the ordering here must match the order in which the output ports
+  // were declared during construction.
+
+  // Allocates an output port for the plant-centric state vector.
   {
     auto data = make_unique<BasicVector<T>>(get_num_states());
+    auto port = make_unique<OutputPort>(move(data));
+    output->get_mutable_ports()->push_back(move(port));
+  }
+
+  // Allocates an output port for each model instance's state vector in the
+  // RigidBodyTree.
+  for (int instance_id = 0;
+       instance_id < get_num_model_instances(); ++instance_id) {
+    if (output_map_[instance_id] == kInvalidPortIdentifier) { continue; }
+    auto data = make_unique<BasicVector<T>>(get_num_states(instance_id));
     auto port = make_unique<OutputPort>(move(data));
     output->get_mutable_ports()->push_back(move(port));
   }
@@ -271,29 +283,65 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
     output->add_port(move(contact_results));
   }
 
-  // Allocates an output port for each model instance's state vector in the
-  // RigidBodyTree.
-  for (int instance_id = 0;
-       instance_id < get_num_model_instances(); ++instance_id) {
-    if (output_map_[instance_id] == kInvalidPortIdentifier) { continue; }
-    auto data = make_unique<BasicVector<T>>(get_num_states(instance_id));
-    auto port = make_unique<OutputPort>(move(data));
-    output->get_mutable_ports()->push_back(move(port));
-  }
-
   return std::unique_ptr<SystemOutput<T>>(output.release());
+}
+
+template <typename T>
+const OutputPortDescriptor<T>&
+RigidBodyPlant<T>::model_instance_state_output_port(
+    int model_instance_id) const {
+  if (model_instance_id >= static_cast<int>(output_map_.size())) {
+    throw std::runtime_error("RigidBodyPlant::model_state_output_port(): "
+        "ERROR: Model instance with ID " + std::to_string(model_instance_id) +
+        " does not exist! Maximum ID is " +
+        std::to_string(output_map_.size() - 1) + ".");
+  }
+  if (output_map_.at(model_instance_id) == kInvalidPortIdentifier) {
+    throw std::runtime_error("RigidBodyPlant::model_state_output_port(): "
+        "ERROR: Model instance with ID " + std::to_string(model_instance_id) +
+        " does not have any state output port!");
+  }
+  return System<T>::get_output_port(output_map_.at(model_instance_id));
 }
 
 template <typename T>
 std::unique_ptr<ContinuousState<T>> RigidBodyPlant<T>::AllocateContinuousState()
     const {
-  // The state is second-order.
-  DRAKE_ASSERT(command_input_port().size() == get_num_actuators());
   // TODO(amcastro-tri): add z state to track energy conservation.
-  return std::make_unique<ContinuousState<T>>(
-      std::make_unique<BasicVector<T>>(get_num_states()),
-      get_num_positions() /* num_q */, get_num_velocities() /* num_v */,
-      0 /* num_z */);
+  return make_unique<ContinuousState<T>>(
+      make_unique<BasicVector<T>>(get_num_states()),
+      get_num_positions()    /* num_q */,
+      get_num_velocities()   /* num_v */,
+      0                      /* num_z */);
+}
+
+template <typename T>
+bool RigidBodyPlant<T>::model_instance_has_actuators(int model_instance_id)
+    const {
+  DRAKE_ASSERT(static_cast<int>(input_map_.size()) ==
+                   get_num_model_instances());
+  if (model_instance_id >= get_num_model_instances()) {
+    throw std::runtime_error(
+        "RigidBodyPlant::model_instance_has_actuators(): ERROR: provided "
+        "model_instance_id of " + std::to_string(model_instance_id) +
+        " does not exist. Maximum model_instance_id is " +
+        std::to_string(get_num_model_instances()));
+  }
+  return input_map_.at(model_instance_id) != kInvalidPortIdentifier;
+}
+
+template <typename T>
+const InputPortDescriptor<T>&
+    RigidBodyPlant<T>::model_instance_actuator_command_input_port(
+        int model_instance_id) const {
+  if (input_map_.at(model_instance_id) == kInvalidPortIdentifier) {
+    throw std::runtime_error("RigidBodyPlant::"
+        "model_instance_actuator_command_input_port(): ERROR model instance "
+        "with ID " + std::to_string(model_instance_id) + " does not have "
+        "an actuator command input ports because it does not have any "
+        "actuators.");
+  }
+  return System<T>::get_input_port(input_map_.at(model_instance_id));
 }
 
 template <typename T>
@@ -302,15 +350,17 @@ void RigidBodyPlant<T>::DoCalcOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
+  // TODO(amcastro-tri): Remove this copy by allowing output ports to be
+  // mere pointers to state variables (or cache lines).
+  const VectorX<T> state_vector =
+      context.get_continuous_state()->CopyToVector();
+
   // Evaluates the state output port.
   BasicVector<T>* state_output_vector =
       output->GetMutableVectorData(state_output_port_index_);
-  // TODO(amcastro-tri): Remove this copy by allowing output ports to be
-  // mere pointers to state variables (or cache lines).
-  state_output_vector->get_mutable_value() =
-      context.get_continuous_state()->CopyToVector();
-  const auto state_vector = state_output_vector->get_value();
+  state_output_vector->get_mutable_value() = state_vector;
 
+  // Updates the model-instance-centric state output ports.
   for (int instance_id = 0;
        instance_id < get_num_model_instances(); ++instance_id) {
     if (output_map_[instance_id] == kInvalidPortIdentifier) { continue; }
@@ -328,13 +378,13 @@ void RigidBodyPlant<T>::DoCalcOutput(const Context<T>& context,
                              instance_velocities.second);
   }
 
-  // Evaluates the kinematics results output port.
+  // Updates the kinematics results output port.
   auto& kinematics_results =
       output->GetMutableData(kinematics_output_port_index_)
           ->template GetMutableValue<KinematicsResults<T>>();
   kinematics_results.UpdateFromContext(context);
 
-  // Evaluates the contact results output port.
+  // Updates the contact results output port.
   auto& contact_results = output->GetMutableData(contact_output_port_index_)
                               ->template GetMutableValue<ContactResults<T>>();
   ComputeContactResults(context, &contact_results);
@@ -354,20 +404,28 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   DRAKE_DEMAND(derivatives != nullptr);
 
-  // The input vector of actuation values.
-  VectorX<T> u;
-  const BasicVector<T>* input = this->EvalVectorInput(context, 0);
-  if (input != nullptr) {
+
+
+  VectorX<T> u;   // The plant-centric input vector of actuation values.
+  u.resize(get_num_actuators());
+  u.fill(0.);
+
+  if (get_num_actuators() > 0) {
+    // The following code checks that all plant-centric actuator command input
+    // ports for are connected. It throws a runtime_error exception if this is
+    // not the case.
     for (int instance_id = 0;
-         instance_id < get_num_model_instances(); ++instance_id) {
+        instance_id < get_num_model_instances(); ++instance_id) {
       if (input_map_[instance_id] == kInvalidPortIdentifier) { continue; }
-      DRAKE_ASSERT(
-          this->EvalVectorInput(context, input_map_[instance_id]) == nullptr);
+      if (this->EvalVectorInput(context, input_map_[instance_id]) == nullptr) {
+        throw runtime_error("RigidBodyPlant::DoCalcTimeDerivatives(): ERROR: "
+           "Actuator command input port for model instance " +
+           std::to_string(instance_id) + " is not connected. All " +
+           std::to_string(get_num_model_instances()) + " actuator command "
+           "input ports must be connected.");
+      }
     }
-    u = input->get_value();
-  } else {
-    u.resize(get_num_actuators());
-    u.fill(0.);
+
     for (int instance_id = 0;
          instance_id < get_num_model_instances(); ++instance_id) {
       if (input_map_[instance_id] == kInvalidPortIdentifier) { continue; }
@@ -489,7 +547,7 @@ int RigidBodyPlant<T>::FindInstancePositionIndexFromWorldIndex(
   const auto& instance_positions = position_map_[model_instance_id];
   if (world_position_index >=
       (instance_positions.first + instance_positions.second)) {
-    throw std::runtime_error(
+    throw runtime_error(
         "Unable to find position index in model instance.");
   }
   return world_position_index - instance_positions.first;
