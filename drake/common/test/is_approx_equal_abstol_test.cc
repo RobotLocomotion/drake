@@ -57,8 +57,34 @@ GTEST_TEST(IsApproxEqualMatrixTest, BasicTest) {
   EXPECT_FALSE(is_approx_equal_abstol(nan2, ones2, tolerance));
 }
 
+GTEST_TEST(IsApproxEqualAbstolPermutationTest, PermutationTest) {
+  MatrixXd test(2, 3);
+  test << 1, 2, 3, 4, 5, 6;
+
+  const double tol = 1e-8;
+  EXPECT_TRUE(IsApproxEqualAbsTolWithPermutedColumns(test, test, tol));
+  EXPECT_FALSE(
+      IsApproxEqualAbsTolWithPermutedColumns(test, test.leftCols<2>(), tol));
+  EXPECT_FALSE(
+      IsApproxEqualAbsTolWithPermutedColumns(test.leftCols<2>(), test, tol));
+
+  MatrixXd test2(2, 3);
+
+  // Switch cols 2 and 3.
+  test2 << 1, 3, 2, 4, 6, 5;
+  EXPECT_TRUE(IsApproxEqualAbsTolWithPermutedColumns(test, test2, tol));
+
+  // All columns in test2 are in test1, but one is repeated.
+  test2 << 1, 1, 2, 4, 4, 5;
+  EXPECT_FALSE(IsApproxEqualAbsTolWithPermutedColumns(test, test2, tol));
+  EXPECT_FALSE(IsApproxEqualAbsTolWithPermutedColumns(test2, test, tol));
+
+  // Matching but with one duplicated columns.
+  test2.resize(2, 4);
+  test2 << 1, 1, 2, 3, 4, 4, 5, 6;
+  EXPECT_FALSE(IsApproxEqualAbsTolWithPermutedColumns(test, test2, tol));
+  EXPECT_FALSE(IsApproxEqualAbsTolWithPermutedColumns(test2, test, tol));
+}
 
 }  // namespace
 }  // namespace drake
-
-
