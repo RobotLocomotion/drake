@@ -126,11 +126,6 @@ classdef Quadrotor < RigidBodyManipulator
         q = x(1:6);
         qd = x(7:12);
         qdd = obj.sodynamics(t,q,qd,u);
-        if obj.wind_on
-            if t < 1.5
-                qdd = qdd + [.75; 0; 0; 0; 0; 0];
-            end
-        end
         
         f = [qd; qdd];
         
