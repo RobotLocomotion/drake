@@ -11,6 +11,7 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/matrix_gain.h"
+#include "drake/systems/primitives/saturation.h"
 
 namespace drake {
 namespace systems {
@@ -100,7 +101,8 @@ class TestPlantWithMoreOutputs : public TestPlant {
 // Instantiates a PidControlledSystem based on the supplied plant and
 // feedback selector. Verifies that the output of the PID controller is correct
 // relative to the hard-coded input and gain values.
-void DoPidControlledSystemTest(std::unique_ptr<TestPlant> plant,
+void DoPidControlledSystemTest(
+    std::unique_ptr<TestPlant> plant,
     std::unique_ptr<MatrixGain<double>> feedback_selector) {
   DiagramBuilder<double> builder;
   const Vector1d input(1.);
@@ -127,17 +129,16 @@ void DoPidControlledSystemTest(std::unique_ptr<TestPlant> plant,
   systems::Context<double>* controller_context =
       diagram->GetMutableSubsystemContext(context.get(), controller);
   systems::Context<double>* plant_context =
-      controller->GetMutableSubsystemContext(
-          controller_context, controller->plant());
+      controller->GetMutableSubsystemContext(controller_context,
+                                             controller->plant());
 
   diagram->CalcOutput(*context, output.get());
   const BasicVector<double>* output_vec = output->get_vector_data(0);
-  const double pid_input =
-      dynamic_cast<TestPlant*>(controller->plant())->GetInputValue(
-          *plant_context);
-  EXPECT_EQ(pid_input,
-      input[0] + (state[0] - output_vec->get_value()[0]) * Kp(0) +
-          (state[1] - output_vec->get_value()[1]) * Kd(0));
+  const double pid_input = dynamic_cast<TestPlant*>(controller->plant())
+                               ->GetInputValue(*plant_context);
+  EXPECT_EQ(pid_input, input[0] +
+                           (state[0] - output_vec->get_value()[0]) * Kp(0) +
+                           (state[1] - output_vec->get_value()[1]) * Kd(0));
 }
 
 // Tests a plant where the size of output port zero is twice the size of input
@@ -147,11 +148,9 @@ GTEST_TEST(PidControlledSystemTest, SimplePidControlledSystem) {
   // twice.
   auto plant = std::make_unique<TestPlantWithMinOutputs>();
   auto feedback_selector =
-      std::make_unique<MatrixGain<double>>(
-          plant->get_output_port(0).size());
+      std::make_unique<MatrixGain<double>>(plant->get_output_port(0).size());
   DoPidControlledSystemTest(std::move(plant), std::move(feedback_selector));
 }
-
 
 // Tests a plant where the size of output port zero is more than twice the size
 // of input port zero.
@@ -166,14 +165,96 @@ GTEST_TEST(PidControlledSystemTest, PlantWithMoreOutputs) {
                                            plant_output_size);
   EXPECT_EQ(feedback_selector_matrix.rows(), 2);
   EXPECT_EQ(feedback_selector_matrix.cols(), 6);
-  feedback_selector_matrix
-      << 1, 0, 0, 0, 0, 0,
-         0, 1, 0, 0, 0, 0;
+  feedback_selector_matrix << 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0;
 
   auto feedback_selector =
       std::make_unique<MatrixGain<double>>(feedback_selector_matrix);
 
   DoPidControlledSystemTest(std::move(plant), std::move(feedback_selector));
+}
+
+// Instantiates a test of the ConnectController on the TestPlantWithMinOutputs
+// plant. The saturation_test flag can be set to enable testing the variant
+// of the ConnectController method that includes a Saturation in the input.
+void DoConnectControllerTest(bool saturation_test = false) {
+  auto plant = std::make_unique<TestPlantWithMinOutputs>();
+  auto feedback_selector =
+      std::make_unique<MatrixGain<double>>(plant->get_output_port(0).size());
+
+  DiagramBuilder<double> standardBuilder;
+
+  auto plant_ptr = standardBuilder.AddSystem(std::move(plant));
+  const auto& plant_input_port = plant_ptr->get_input_port(0);
+  const auto& plant_output_port = plant_ptr->get_output_port(0);
+
+  const Vector1d input(1.0);
+  const Eigen::Vector2d state(1.1, 0.2);
+  auto input_source = standardBuilder.AddSystem<ConstantVectorSource>(input);
+  auto state_source = standardBuilder.AddSystem<ConstantVectorSource>(state);
+
+  const Vector1d Kp(4);
+  const Vector1d Ki(0);
+  const Vector1d Kd(0.5);
+
+  if (!saturation_test) {
+    auto plant_pid_ports = PidControlledSystem<double>::ConnectController(
+        plant_input_port, plant_output_port, std::move(feedback_selector), Kp,
+        Ki, Kd, &standardBuilder);
+
+    standardBuilder.Connect(input_source->get_output_port(),
+                            plant_pid_ports.control_input_port);
+    standardBuilder.Connect(state_source->get_output_port(),
+                            plant_pid_ports.state_input_port);
+
+  } else {
+    auto plant_pid_ports = PidControlledSystem<double>::ConnectController(
+        plant_input_port, plant_output_port, std::move(feedback_selector), Kp,
+        Ki, Kd, VectorX<double>::Constant(1, 0.0) /* u_min */,
+        VectorX<double>::Constant(1, 0.5) /* u_max */, &standardBuilder);
+
+    standardBuilder.Connect(input_source->get_output_port(),
+                            plant_pid_ports.control_input_port);
+    standardBuilder.Connect(state_source->get_output_port(),
+                            plant_pid_ports.state_input_port);
+  }
+
+  standardBuilder.ExportOutput(plant_output_port);
+
+  auto standard_diagram = standardBuilder.Build();
+  auto context = standard_diagram->CreateDefaultContext();
+  auto output = standard_diagram->AllocateOutput(*context);
+
+  auto plant_context =
+      standard_diagram->GetMutableSubsystemContext(context.get(), plant_ptr);
+
+  plant_ptr->CalcOutput(*plant_context, output.get());
+  const BasicVector<double>* output_vec = output->get_vector_data(0);
+  const double pid_input =
+      dynamic_cast<TestPlant*>(plant_ptr)->GetInputValue(*plant_context);
+
+  double calculated_input = input[0] +
+                            (state[0] - output_vec->get_value()[0]) * Kp(0) +
+                            (state[1] - output_vec->get_value()[1]) * Kd(0);
+  if (!saturation_test) {
+    EXPECT_EQ(pid_input, calculated_input);
+  } else {
+    if (calculated_input > 0.5 /* u_max */) {
+      calculated_input = 0.5;
+    }
+    EXPECT_EQ(pid_input, calculated_input);
+  }
+}
+
+// Tests a plant where the controller is attached with the ConnectController
+// method.
+GTEST_TEST(PidControlledSystemTest, ConnectControllerResult) {
+  DoConnectControllerTest(false /* saturation_test */);
+}
+
+// Tests a plant where the controller is attached with the ConnectController
+// method and a Saturation in the input to the plant.
+GTEST_TEST(PidControlledSystemTest, SaturatingConnectControllerResult) {
+  DoConnectControllerTest(true /* saturation_test */);
 }
 
 }  // namespace
