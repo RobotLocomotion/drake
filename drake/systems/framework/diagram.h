@@ -803,12 +803,7 @@ class Diagram : public System<T>,
     GetSystemIndexOrAbort(sys);
 
     // Add this port to our externally visible topology.
-    const auto& subsystem_ports = sys->get_input_ports();
-    if (port_index < 0 ||
-        port_index >= static_cast<int>(subsystem_ports.size())) {
-      throw std::out_of_range("Input port out of range.");
-    }
-    const auto& subsystem_descriptor = subsystem_ports[port_index];
+    const auto& subsystem_descriptor = sys->get_input_port(port_index);
     this->DeclareInputPort(subsystem_descriptor.get_data_type(),
                            subsystem_descriptor.size());
   }
@@ -821,12 +816,7 @@ class Diagram : public System<T>,
     GetSystemIndexOrAbort(sys);
 
     // Add this port to our externally visible topology.
-    const auto& subsystem_ports = sys->get_output_ports();
-    if (port_index < 0 ||
-        port_index >= static_cast<int>(subsystem_ports.size())) {
-      throw std::out_of_range("Output port out of range.");
-    }
-    const auto& subsystem_descriptor = subsystem_ports[port_index];
+    const auto& subsystem_descriptor = sys->get_output_port(port_index);
     this->DeclareOutputPort(subsystem_descriptor.get_data_type(),
                             subsystem_descriptor.size());
   }
