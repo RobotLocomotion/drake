@@ -257,7 +257,8 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
     cache_->initialize(q_, v_);
     robot_->doKinematics(*cache_, true);
 
-    tol_ = 50 * Eigen::NumTraits<double>::epsilon();
+    // This is the smallest integer multiplier for epsilon to pass these tests.
+    tol_ = 4 * Eigen::NumTraits<double>::epsilon();
   }
 
   // Tests CalcFramePoseInWorldFrame(B, X_BF) returns the same results from
