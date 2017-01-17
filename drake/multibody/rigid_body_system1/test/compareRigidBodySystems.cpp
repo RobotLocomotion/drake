@@ -56,9 +56,8 @@ GTEST_TEST(CompareRigidBodySystemsTest, TestAll) {
     auto xdot1 = r1->dynamics(t, x, u);
     auto xdot2 = r2->dynamics(t, x, u);
 
-    std::string explanation;
     EXPECT_TRUE(CompareMatrices(
-        xdot1, xdot2, 1e-8, MatrixCompareType::relative, &explanation))
+        xdot1, xdot2, 1e-8, MatrixCompareType::relative))
         << "Model mismatch!" << std::endl
         << "  - initial state:" << std::endl
         << x << std::endl
@@ -67,9 +66,7 @@ GTEST_TEST(CompareRigidBodySystemsTest, TestAll) {
         << "  - xdot1:" << std::endl
         << xdot1.transpose() << std::endl
         << "  - xdot2:" << std::endl
-        << xdot2.transpose() << std::endl
-        << "  - error message:" << std::endl
-        << explanation;
+        << xdot2.transpose() << std::endl;
   }
 }
 
