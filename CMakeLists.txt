@@ -214,6 +214,10 @@ drake_add_external(robotlocomotion_lcmtypes PUBLIC CMAKE PYTHON
 drake_add_external(signalscope PUBLIC CMAKE PYTHON QT
   DEPENDS ctk_python_console lcm pythonqt)
 
+# sdformat
+drake_add_external(sdformat PUBLIC CMAKE
+  DEPENDS ignmath)
+
 # Option to skip building drake proper via the superbuild. This allows the
 # superbuild to build everything BUT drake, which can still be built separately
 # from its build directory. This is used by the dashboards to make separate
@@ -255,6 +259,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     -DWITH_NLOPT:BOOL=${WITH_NLOPT}
     -DWITH_OCTOMAP:BOOL=${WITH_OCTOMAP}
     -DWITH_PYTHON_3:BOOL=${WITH_PYTHON_3}
+    -DWITH_SDFORMAT:BOOL=${WITH_SDFORMAT}
     -DWITH_SEDUMI:BOOL=${WITH_SEDUMI}
     -DWITH_SIGNALSCOPE:BOOL=${WITH_SIGNALSCOPE}
     -DWITH_SNOPT:BOOL=${WITH_SNOPT}
@@ -293,6 +298,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     nlopt
     octomap
     robotlocomotion_lcmtypes
+    sdformat
     sedumi
     snopt
     spdlog
