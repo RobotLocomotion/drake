@@ -2,6 +2,8 @@ add_library_with_exports(LIB_NAME drakeSensors SOURCE_FILES
     depth_sensor.cc
     depth_sensor_output.cc
     depth_sensor_specification.cc
+    gyroscope.cc
+    gyroscope_output.cc
     rotary_encoders.cc)
 target_link_libraries(drakeSensors
     drakeRBM
@@ -12,6 +14,8 @@ drake_install_headers(
     depth_sensor.h
     depth_sensor_output.h
     depth_sensor_specification.h
+    gyroscope.h
+    gyroscope_output.h
     rotary_encoders.h)
 drake_install_pkg_config_file(drake-sensors
     TARGET drakeSensors
