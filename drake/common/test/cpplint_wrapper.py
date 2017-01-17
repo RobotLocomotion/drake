@@ -106,8 +106,7 @@ def main():
     drake_dir = os.path.abspath(os.path.join(drake_common_test_dir, '../..'))
     drake_distro_dir = os.path.abspath(os.path.join(drake_dir, '..'))
     drake_ros_dir = os.path.join(drake_distro_dir, 'ros')
-    default_cpplint = os.path.join(
-        drake_distro_dir, 'externals/google_styleguide/cpplint/cpplint.py')
+    default_cpplint = os.path.join(drake_common_test_dir, 'cpplint.py')
 
     # Prepare to parse our arguments.
     parser = argparse.ArgumentParser(
