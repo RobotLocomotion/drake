@@ -2992,30 +2992,28 @@ RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
       const drake::Isometry3<T>& X_BF) const {
   const int world_index = world().get_body_index();
   const int body_index = body.get_body_index();
-  drake::Vector3<T> p_WF =
-      CalcFramePoseInWorldFrame(cache, body, X_BF).translation();
+  Vector3<T> p_WF = CalcFramePoseInWorldFrame(cache, body, X_BF).translation();
+  Vector3<T> pdot_WF = CalcFrameSpatialVelocityInWorldFrame(
+      cache, body, X_BF).template tail<3>();
 
-  TwistVector<T> plucker_V_WF =
+  TwistVector<T> plucker_V_WB =
       relativeTwist(cache, world_index, body_index, world_index);
   TwistVector<T> plucker_Jdv_WB =
       geometricJacobianDotTimesV(cache, world_index, body_index, world_index);
 
-  Vector3<T> pdot_WF = plucker_V_WF.template head<3>().cross(p_WF) +
-      plucker_V_WF.template tail<3>();
-
-  // Define J and Jg as follows:
-  // xdot = J * v, and twist = Jg * v, where xdot is the twist expressed in the
-  // world aligned body frame, and twist is expressed in the world frame.
-  // J = CalcJacobianForWorldAlignedBody, and Jg = geometricJacobian
+  // Let J = J_WF, and pJ = plucker_J_WF, s.t.
+  // V_WF = J_WF * v, and plucker_V_WF = plucker_J_WF * v, where V_WF is the
+  // spatial velocity of frame F meassured and expressed in the world frame,
+  // and plucker_V_WF is the plucker velocity of the same quantity.
+  // J = CalcJacobianForWorldAlignedBody, and pJ = geometricJacobian.
   //
-  // Each column of J = [Jg_ang; Jg_lin + Jg_ang.cross(p)].
-  // Thus for Jdv, the angular part stays the same,
-  // for the linear part:
-  //  = [\dot{Jg_lin} + \dot{Jg_ang}.cross(p) + Jg_ang.cross(\dot{p})] * v
-  //  = [liner part of JgdotV + angular of JgdotV.cross(p) +
-  //     omega.cross(\dot{p})]
+  // For column i of J, J(i) = [pJ_ang(i); pJ_lin(i) + pJ_ang(i).cross(p)],
+  // where _ang and _lin are the angular and linear components respectively.
+  // Thus, for Jdv, the angular part stays the same, and the linear part equals:
+  //  = [\dot{pJ_lin} + \dot{pJ_ang}.cross(p) + pJ_ang.cross(\dot{p})] * v
+  //  = [pJdv_lin + pJdv_ang.cross(p) + omega.cross(\dot{p})]
   TwistVector<T> Jdv_WF = plucker_Jdv_WB;
-  Jdv_WF.template tail<3>() += plucker_V_WF.template head<3>().cross(pdot_WF) +
+  Jdv_WF.template tail<3>() += plucker_V_WB.template head<3>().cross(pdot_WF) +
                                plucker_Jdv_WB.template head<3>().cross(p_WF);
   return Jdv_WF;
 }
