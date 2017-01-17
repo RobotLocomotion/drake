@@ -43,10 +43,8 @@ drake_install_headers(
 set(private_headers)
 
 add_library_with_exports(LIB_NAME drakeSystemPrimitives
-    SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
+    SOURCE_FILES ${sources} ${private_headers})
 target_link_libraries(drakeSystemPrimitives drakeSystemFramework drakeCommon)
-
-drake_install_headers(${installed_headers})
 
 drake_install_libraries(drakeSystemPrimitives)
 drake_install_pkg_config_file(drake-system-primitives
