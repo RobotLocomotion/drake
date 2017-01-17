@@ -9,6 +9,7 @@ using Eigen::VectorXd;
 
 using std::make_unique;
 using std::move;
+using std::string;
 
 namespace drake {
 
@@ -19,7 +20,7 @@ namespace sensors {
 
 constexpr int Accelerometer::kNumMeasurements;
 
-Accelerometer::Accelerometer(const std::string& name,
+Accelerometer::Accelerometer(const string& name,
                              const RigidBodyFrame<double>& frame,
                              const RigidBodyTree<double>& tree,
                              bool include_gravity)
@@ -35,6 +36,44 @@ Accelerometer::Accelerometer(const std::string& name,
                                       tree_.get_num_velocities()).get_index();
   output_port_index_ =
       DeclareOutputPort(kVectorValued, kNumMeasurements).get_index();
+}
+
+Accelerometer* Accelerometer::AttachAccelerometer(
+    const string& name,
+    const RigidBodyFrame<double>& frame,
+    const RigidBodyPlant<double>& plant,
+    bool include_gravity,
+    DiagramBuilder<double>* builder) {
+  const RigidBodyTree<double>& tree = plant.get_rigid_body_tree();
+
+  // Ensures the input parameters are valid.
+  {
+    DRAKE_DEMAND(tree.findFrame(frame.get_name(), frame.get_model_instance_id())
+        != nullptr);
+    DRAKE_DEMAND(builder != nullptr);
+    bool plant_in_builder = false;
+    std::vector<systems::System<double>*> systems =
+        builder->GetMutableSystems();
+    for (auto system : systems) {
+      if (system == &plant) {
+        plant_in_builder = true;
+      }
+    }
+    if (!plant_in_builder) {
+      throw std::runtime_error("Accelerometer::AttachAccelerometer: ERROR: The "
+          "provide DiagramBuilder does not contain the provided "
+          "RigidBodyPlant.");
+    }
+  }
+
+  auto accelerometer = builder->template AddSystem<Accelerometer>(name, frame,
+      tree, include_gravity);
+  builder->Connect(plant.state_output_port(),
+      accelerometer->get_plant_state_input_port());
+  // TODO(liang.fok) Connect the accelerometer's plant state derivate input port
+  // once RigidBodyPlant has an output port containing xdot. This can only be
+  // done once #2890 is resolved.
+  return accelerometer;
 }
 
 std::unique_ptr<BasicVector<double>> Accelerometer::AllocateOutputVector(
@@ -74,6 +113,9 @@ void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
   // The sensor's frame coincides with frame_'s origin.
   const Vector3d sensor_origin = Vector3d::Zero();
 
+  // TODO(liang.fok) Update the following implementation using the new helper
+  // methods introduced in #4590.
+
   const auto J = tree_.transformPointsJacobian(
       kinematics_cache, sensor_origin, frame_.get_frame_index(),
       RigidBodyTreeConstants::kWorldBodyIndex, false /* in_terms_of_qdot */);
@@ -93,6 +135,8 @@ void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
   Vector3d accel_body = quatRotateVec(quat_world_to_body, accel_base);
 
   if (include_gravity_) {
+    // TODO(liang.fok) Update this to allow user-settable gravity. This will be
+    // done once MultiBodyTree exists. See: #4799.
     const Vector3d gravity(0, 0, 9.81);
     accel_body += quatRotateVec(quat_world_to_body, gravity);
   }
