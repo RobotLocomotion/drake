@@ -1392,7 +1392,6 @@ double RigidBodyTree<T>::getMass(
 template <typename T>
 template <typename Scalar>
 Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree<T>::centerOfMass(
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     const KinematicsCache<Scalar>& cache,
     const std::set<int>& model_instance_id_set) const {
   cache.checkCachedKinematicsSettings(false, false, "centerOfMass");

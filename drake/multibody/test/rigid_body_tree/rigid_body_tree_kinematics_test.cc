@@ -257,7 +257,7 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
     cache_->initialize(q_, v_);
     robot_->doKinematics(*cache_, true);
 
-    tol_ = 1e-14;
+    tol_ = 50 * Eigen::NumTraits<double>::epsilon();
   }
 
   // Tests CalcFramePoseInWorldFrame(B, X_BF) returns the same results from
@@ -278,7 +278,7 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
   }
 
   // Tests CalcFrameSpatialVelocityInWorldFrame(B, X_BF) returns the same
-  // results as CalcFrameSpatialVelocityInWorldFrame(F), assumeing the
+  // results as CalcFrameSpatialVelocityInWorldFrame(F), assuming the
   // latter is correct.
   //
   // Assuming relativeTwist is correct, tests
@@ -294,6 +294,7 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
     EXPECT_TRUE(drake::CompareMatrices(V_WF, V_WF_as_frame, tol_,
                                        drake::MatrixCompareType::absolute));
 
+    Vector6<double> V_WF_W;
     // relativeTwist returns a plucker vector. The plucker vector
     // representation is the same as spatial velocity only when the velocity
     // is expressed in the body frame.
@@ -301,9 +302,11 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
         *cache_, robot_->world().get_body_index(), frame_id_, frame_id_);
     Isometry3<double> X_WF =
         robot_->CalcFramePoseInWorldFrame(*cache_, *frame_ptr_);
-    Vector6<double> V_WF_W;
-    V_WF_W.head<3>() = X_WF.linear() * V_WF_F.head<3>();
-    V_WF_W.tail<3>() = X_WF.linear() * V_WF_F.tail<3>();
+    // Extracts the rotation matrix from the transform.
+    const Matrix3<double>& R_WF = X_WF.linear();
+    // Re-expresses velocity vectors in the world frame.
+    V_WF_W.head<3>() = R_WF * V_WF_F.head<3>();
+    V_WF_W.tail<3>() = R_WF * V_WF_F.tail<3>();
 
     EXPECT_TRUE(drake::CompareMatrices(V_WF, V_WF_W, tol_,
                                        drake::MatrixCompareType::absolute));
