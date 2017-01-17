@@ -154,7 +154,8 @@ GTEST_TEST(CollisionFilterGroupCompile, SingleGroupMembership) {
   manager.AddCollisionFilterGroupMember(group_name, body);
   manager.CompileGroups();
   // First group added should be group: 1 and 0 (default).
-  // See CollisionGroupAssignment test.
+  // See CollisionGroupAssignment test. See file documentation for explanation
+  // of binary value.
   bitmask expected_group(0b11);
   EXPECT_EQ(manager.get_group_mask(body), expected_group);
 }
@@ -169,6 +170,7 @@ GTEST_TEST(CollisionFilterGroupCompile, MultiGroupMembership) {
   manager.AddCollisionFilterGroupMember("group1", body);
   manager.AddCollisionFilterGroupMember("group3", body);
   manager.CompileGroups();
+  // See file documentation for explanation of binary value.
   bitmask expected_group(0b1011);
   EXPECT_EQ(manager.get_group_mask(body), expected_group);
 }
@@ -258,6 +260,7 @@ GTEST_TEST(CollisionFilterGroupCompile, IgnoreRedundantGroup) {
   manager.AddCollisionFilterGroupMember("group1", body);
   manager.CompileGroups();
 
+  // See file documentation for explanation of binary value.
   bitmask expected_ignores(0b100);
   EXPECT_EQ(manager.get_ignore_mask(body), expected_ignores);
 }
@@ -276,6 +279,7 @@ GTEST_TEST(CollisionFilterGroupCompile, AddBodyRedundantly) {
   manager.AddCollisionFilterGroupMember("group1", body);
   manager.CompileGroups();
 
+  // See file documentation for explanation of binary value.
   bitmask expected_ignores(0b100);
   EXPECT_EQ(manager.get_ignore_mask(body), expected_ignores);
 }
@@ -427,6 +431,7 @@ GTEST_TEST(CollisionFilterGroupRBT, CollisionElementSetFilters) {
 
   tree.compile();
   // Tests the state of the collision filters.
+  // See file documentation for explanation of binary value.
   bitmask expected_group1(0b11), expected_ignore1(0b100);
   for (auto itr = body1->collision_elements_begin();
        itr != body1->collision_elements_end(); ++itr) {
