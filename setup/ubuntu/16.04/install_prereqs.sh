@@ -30,7 +30,7 @@ while true; do
       wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
       add-apt-repository -y "deb http://llvm.org/apt/xenial/ llvm-toolchain-xenial-3.9 main"
       apt-get update
-      apt install --no-install-recommends clang-3.9 lldb-3.9
+      apt install --no-install-recommends clang-3.9
       break
       ;;
     [Nn]*) break ;;
@@ -68,13 +68,11 @@ default-jdk
 doxygen
 flex
 freeglut3-dev
-g++
 g++-5
 g++-5-multilib
 gdb
 gfortran
 gfortran-5
-gfortran-5-multilib
 git
 graphviz
 libgl1-mesa-dri
@@ -85,10 +83,12 @@ libpng12-dev
 libqt4-dev
 libqt4-opengl-dev
 libqwt-dev
+libterm-readkey-perl
 libtool
 libvtk-java
 libvtk5-dev
 libvtk5-qt4-dev
+libwww-perl
 libxmu-dev
 make
 ninja-build
