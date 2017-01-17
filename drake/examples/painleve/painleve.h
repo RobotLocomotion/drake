@@ -74,7 +74,7 @@ class Painleve : public systems::LeafSystem<T> {
 
   /// Constructor for the Painleve' Paradox system using piecewise DAE based
   /// approach.
-  Painleve();
+  explicit Painleve();
 
   /// Constructor for the Painleve' Paradox system using time stepping approach.
   /// @param dt The integration step size.

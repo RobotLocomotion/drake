@@ -9,7 +9,7 @@ template class Painleve<double>;
 
 // TODO(edrumwri): Enable AutoDiff build when the LCP solver supports
 // AutoDiff.
-//template class Painleve<Eigen::AutoDiffScalar<drake::Vector1d>>;
+// template class Painleve<Eigen::AutoDiffScalar<drake::Vector1d>>;
 
 }  // namespace painleve
 }  // namespace drake

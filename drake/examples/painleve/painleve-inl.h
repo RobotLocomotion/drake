@@ -134,7 +134,7 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
   E.col(1) << 0, 0, 1, 1;
 
   // Set up the LCP matrix. First do the "normal contact direction" rows.
-  MatrixX<T> MM(8,8);
+  MatrixX<T> MM(8, 8);
   MM.template block<2, 2>(0, 0) = N * iM * N.transpose();
   MM.template block<2, 2>(0, 2) = N * iM * F.transpose();
   MM.template block<2, 2>(0, 4) = -MM.template block<2, 2>(0, 2);
@@ -160,15 +160,15 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
 
   // Set up the LCP vector.
   VectorX<T> qq(8);
-  qq.segment(0,2) = N * v;
+  qq.segment(0, 2) = N * v;
   qq(0) += erp*yep1/dt_;
   qq(1) += erp*yep2/dt_;
-  qq.segment(2,2) = F * v;
-  qq.segment(4,2) = -qq.segment(2,2);
-  qq.template segment(6,2).setZero();
+  qq.segment(2, 2) = F * v;
+  qq.segment(4, 2) = -qq.segment(2, 2);
+  qq.template segment(6, 2).setZero();
 
   // Regularize the LCP matrix.
-  MM += MatrixX<T>::Identity(8,8) * cfm;
+  MM += MatrixX<T>::Identity(8, 8) * cfm;
 
   // Solve the LCP.
   VectorX<T> zz;
@@ -176,9 +176,9 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
   DRAKE_DEMAND(success);
 
   // Get the normal and frictional contact forces out.
-  VectorX<T> fN = zz.segment(0,2);
-  VectorX<T> fF_pos = zz.segment(2,2);
-  VectorX<T> fF_neg = zz.segment(4,2);
+  VectorX<T> fN = zz.segment(0, 2);
+  VectorX<T> fF_pos = zz.segment(2, 2);
+  VectorX<T> fF_neg = zz.segment(4, 2);
 
   // Compute the new velocity.
   VectorX<T> vplus = v + iM * (N.transpose()*fN + F.transpose()*fF_pos -
