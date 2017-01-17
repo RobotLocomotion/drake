@@ -22,6 +22,7 @@ namespace qp_inverse_dynamics {
  * Enum class for constraint types.
  * Hard: will be enforced by equality constraints.
  * Soft: will be enforced by cost functions.
+ * Skip: will be ignored.
  */
 enum class ConstraintType { Hard = -1, Skip = 0, Soft = 1 };
 
@@ -54,9 +55,13 @@ class ConstrainedValues {
   }
 
   /**
-   * Sets all the ConstraintType based on their corresponding weight values.
-   * ConstraintType is Soft if weight > 0, Skip if weight = 0, and Hard if
-   * weight < 0
+   * Sets all the ConstraintType enums based on their corresponding weight
+   * values. ConstraintType is set to:
+   * <pre>
+   *   ConstraintType::Soft if weight > 0
+   *   ConstraintType::Skip if weight = 0
+   *   ConstraintType::Hard if weight < 0
+   * </pre>
    */
   void SetAllConstraintTypesBasedOnWeights() {
     for (int i = 0; i < weights_.size(); ++i) {
@@ -508,7 +513,7 @@ class ContactInformation {
 std::ostream& operator<<(std::ostream& out, const ContactInformation& contact);
 
 /**
- * A wrapper class specifying desired body motion (acceleration) for a rigid
+ * A wrapper class specifying desired body motions (acceleration) for a rigid
  * body and their corresponding weights for the QP.
  * The acceleration is expressed in a frame that has the same orientation as
  * the world, and located at the origin of the body.
@@ -579,21 +584,21 @@ std::ostream& operator<<(std::ostream& out, const DesiredBodyMotion& input);
 
 /**
  * A wrapper class specifying desired DoF (degree of freedom)
- * motions (acceleration) and their corresponding weights for the QP.
+ * motions (accelerations) and their corresponding weights for the QP.
  *
  * The desired acceleration can be skipped, enforced as equality constraints
  * or optimized as a cost term depending on the constraint type.
  *
  * TODO: (siyuan.feng) Expand this to have policies (controllers).
  */
-class DesiredDoFMotions : public ConstrainedValues {
+class DesiredDofMotions : public ConstrainedValues {
  public:
-  DesiredDoFMotions() {}
-  explicit DesiredDoFMotions(const std::vector<std::string>& names)
+  DesiredDofMotions() {}
+  explicit DesiredDofMotions(const std::vector<std::string>& names)
       : ConstrainedValues(static_cast<int>(names.size())), dof_names_(names) {}
 
   inline bool is_valid() const {
-    return this->DesiredDoFMotions::is_valid(size());
+    return this->DesiredDofMotions::is_valid(size());
   }
 
   bool is_valid(int dim) const {
@@ -603,7 +608,7 @@ class DesiredDoFMotions : public ConstrainedValues {
     return this->ConstrainedValues::is_valid(dim);
   }
 
-  bool operator==(const DesiredDoFMotions& other) const {
+  bool operator==(const DesiredDofMotions& other) const {
     if (dof_names_.size() != other.dof_names_.size()) {
       return false;
     }
@@ -616,7 +621,7 @@ class DesiredDoFMotions : public ConstrainedValues {
     return this->ConstrainedValues::operator==(other);
   }
 
-  inline bool operator!=(const DesiredDoFMotions& other) const {
+  inline bool operator!=(const DesiredDofMotions& other) const {
     return !(this->operator==(other));
   }
 
@@ -630,14 +635,14 @@ class DesiredDoFMotions : public ConstrainedValues {
   std::vector<std::string> dof_names_;
 };
 
-std::ostream& operator<<(std::ostream& out, const DesiredDoFMotions& input);
+std::ostream& operator<<(std::ostream& out, const DesiredDofMotions& input);
 
 /**
- * A wrapper class specifying desired centroidal momentum change and their
- * corresponding weights for the QP.
- * The change in momentum are expressed in the world frame.
- * The first three terms are angular.
- * Linear momentum change = com acceleration * mass.
+ * A wrapper class specifying desired centroidal momentum change and its
+ * corresponding weight for the QP.
+ * The change in momentum is expressed in the world frame.
+ * The first three terms are for angular momentum, and the last three are for
+ * linear momemtum. Linear momentum change = com acceleration * mass.
  *
  * The desired centroidal momentum change can be skipped, enforced as
  * equality constraints or optimized as a cost term depending on the
@@ -669,17 +674,17 @@ std::ostream& operator<<(std::ostream& out,
 /**
  * Input to the QP inverse dynamics controller
  */
-class QPInput {
+class QpInput {
  public:
-  QPInput() {}
+  QpInput() {}
 
-  explicit QPInput(const std::vector<std::string>& dof_names)
-      : desired_dof_motions_(DesiredDoFMotions(dof_names)) {}
+  explicit QpInput(const std::vector<std::string>& dof_names)
+      : desired_dof_motions_(DesiredDofMotions(dof_names)) {}
 
   inline bool is_valid() const { return is_valid(desired_dof_motions_.size()); }
 
   /**
-   * Checks validity of this QPInput.
+   * Checks validity of this QpInput.
    * @param num_vd Dimension of acceleration in the generalized coordinates.
    * @return true if this is valid.
    */
@@ -710,7 +715,7 @@ class QPInput {
     return true;
   }
 
-  bool operator==(const QPInput& other) const {
+  bool operator==(const QpInput& other) const {
     if (contact_info_.size() != other.contact_info_.size() ||
         desired_body_motions_.size() != other.desired_body_motions_.size()) {
       return false;
@@ -748,7 +753,7 @@ class QPInput {
     return true;
   }
 
-  inline bool operator!=(const QPInput& other) const {
+  inline bool operator!=(const QpInput& other) const {
     return !(this->operator==(other));
   }
 
@@ -765,7 +770,7 @@ class QPInput {
   desired_body_motions() const {
     return desired_body_motions_;
   }
-  inline const DesiredDoFMotions& desired_dof_motions() const {
+  inline const DesiredDofMotions& desired_dof_motions() const {
     return desired_dof_motions_;
   }
   inline const DesiredCentroidalMomentumDot& desired_centroidal_momentum_dot()
@@ -783,7 +788,7 @@ class QPInput {
   mutable_desired_body_motions() {
     return desired_body_motions_;
   }
-  inline DesiredDoFMotions& mutable_desired_dof_motions() {
+  inline DesiredDofMotions& mutable_desired_dof_motions() {
     return desired_dof_motions_;
   }
   inline DesiredCentroidalMomentumDot&
@@ -799,7 +804,7 @@ class QPInput {
   std::unordered_map<std::string, DesiredBodyMotion> desired_body_motions_;
 
   // Desired joint accelerations
-  DesiredDoFMotions desired_dof_motions_;
+  DesiredDofMotions desired_dof_motions_;
 
   // Desired centroidal momentum change (change of overall linear and angular
   // momentum)
@@ -809,7 +814,7 @@ class QPInput {
   double w_basis_reg_;
 };
 
-std::ostream& operator<<(std::ostream& out, const QPInput& input);
+std::ostream& operator<<(std::ostream& out, const QpInput& input);
 
 /**
  * This class holds the contact force / wrench related information, and works
@@ -987,11 +992,11 @@ std::ostream& operator<<(std::ostream& out, const BodyAcceleration& acc);
 /**
  * Output of the QP inverse dynamics controller
  */
-class QPOutput {
+class QpOutput {
  public:
-  QPOutput() {}
+  QpOutput() {}
 
-  explicit QPOutput(const std::vector<std::string>& dof_names)
+  explicit QpOutput(const std::vector<std::string>& dof_names)
       : dof_names_(dof_names),
         vd_(VectorX<double>::Zero(dof_names.size())),
         dof_torques_(VectorX<double>::Zero(dof_names.size())) {}
@@ -1096,7 +1101,7 @@ class QPOutput {
   std::vector<std::pair<std::string, double>> costs_;
 };
 
-std::ostream& operator<<(std::ostream& out, const QPOutput& output);
+std::ostream& operator<<(std::ostream& out, const QpOutput& output);
 
 class QPController {
  public:
@@ -1109,8 +1114,8 @@ class QPController {
    * @param output Container for outputs
    * @return 0 if successful. < 0 if error.
    */
-  int Control(const HumanoidStatus& robot_status, const QPInput& input,
-              QPOutput* output);
+  int Control(const HumanoidStatus& robot_status, const QpInput& input,
+              QpOutput* output);
 
   static const double kUpperBoundForContactBasis;
 
@@ -1217,7 +1222,7 @@ class QPController {
    * @param robot Model
    * @param input input to the QP
    */
-  void ResizeQP(const RigidBodyTree<double>& robot, const QPInput& input);
+  void ResizeQP(const RigidBodyTree<double>& robot, const QpInput& input);
 
   template <typename DerivedA, typename DerivedB>
   void AddAsConstraints(const Eigen::MatrixBase<DerivedA>& A,
@@ -1277,10 +1282,12 @@ class QPController {
   }
 };
 
+// TODO(siyuanfeng): This should be made more robust and general, and it
+// should also be in RigidBodyTreee.
 template <typename T>
-std::vector<std::string> GetDoFNames(const RigidBodyTree<T>& robot) {
+std::vector<std::string> GetDofNames(const RigidBodyTree<T>& robot) {
   std::vector<std::string> names(robot.get_num_velocities());
-  // strip out the "dot" part from name
+  // Strips out the "dot" part from name.
   for (int i = 0; i < robot.get_num_velocities(); ++i) {
     names[i] = robot.get_velocity_name(i);
     names[i] = names[i].substr(0, names[i].size() - 3);

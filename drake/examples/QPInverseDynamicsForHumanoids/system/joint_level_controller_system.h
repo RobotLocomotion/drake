@@ -33,7 +33,7 @@ using systems::Value;
  *  disturbance observers, etc.
  *
  * Input: HumanoidStatus
- * Input: QPOutput
+ * Input: QpOutput
  * Output: lcm message bot_core::atlas_command_t in channel "ROBOT_COMMAND"
  */
 class JointLevelControllerSystem : public systems::LeafSystem<double> {
@@ -62,8 +62,8 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {
     // Inputs
-    const QPOutput* qp_output =
-        EvalInputValue<QPOutput>(context, in_port_idx_qp_output_);
+    const QpOutput* qp_output =
+        EvalInputValue<QpOutput>(context, in_port_idx_qp_output_);
     const HumanoidStatus* rs =
         EvalInputValue<HumanoidStatus>(context, in_port_idx_humanoid_status_);
 
@@ -137,7 +137,7 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
   }
 
   /**
-   * @return Port for the input: QPOutput.
+   * @return Port for the input: QpOutput.
    */
   inline const InputPortDescriptor<double>& get_input_port_qp_output() const {
     return get_input_port(in_port_idx_qp_output_);

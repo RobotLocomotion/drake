@@ -1,10 +1,11 @@
+#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
+
 #include <set>
 
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
@@ -17,31 +18,27 @@ namespace {
 class ParamParserTests : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    std::string urdf =
+    std::string urdf_name =
         drake::GetDrakePath() +
-        std::string(
-            "/examples/Valkyrie/urdf/urdf/"
-            "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
-    std::string alias_groups_config =
+        "/examples/Valkyrie/urdf/urdf/"
+        "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
+    std::string alias_groups_config_name =
         drake::GetDrakePath() +
-        std::string(
-            "/examples/QPInverseDynamicsForHumanoids/"
-            "param_parsers/test/alias_groups.yaml");
-
-    std::string controller_config =
+        "/examples/QPInverseDynamicsForHumanoids/"
+        "param_parsers/test/alias_groups.yaml";
+    std::string controller_config_name =
         drake::GetDrakePath() +
-        std::string(
-            "/examples/QPInverseDynamicsForHumanoids/"
-            "param_parsers/test/params.yaml");
+        "/examples/QPInverseDynamicsForHumanoids/"
+        "param_parsers/test/params.yaml";
 
     robot_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-        urdf, multibody::joints::kRollPitchYaw, robot_.get());
+        urdf_name, multibody::joints::kRollPitchYaw, robot_.get());
 
     rbt_alias_ = std::make_unique<RigidBodyTreeAliasGroups<double>>(*robot_);
-    rbt_alias_->LoadFromYAMLFile(YAML::LoadFile(alias_groups_config));
+    rbt_alias_->LoadFromYAMLFile(YAML::LoadFile(alias_groups_config_name));
 
-    paramset_.LoadFromYAMLConfigFile(YAML::LoadFile(controller_config),
+    paramset_.LoadFromYAMLConfigFile(YAML::LoadFile(controller_config_name),
                                      *rbt_alias_);
   }
 
@@ -49,7 +46,7 @@ class ParamParserTests : public ::testing::Test {
   std::unique_ptr<RigidBodyTreeAliasGroups<double>> rbt_alias_;
   ParamSet paramset_;
 
-  const double tol_ = 1e-20;
+  const double kTolerance_ = 1e-20;
 };
 
 // Tests for parsing params related to ContactInformation.
@@ -83,20 +80,20 @@ TEST_F(ParamParserTests, ContactInformation) {
     EXPECT_EQ(contact.weight(), -1);
     EXPECT_EQ(contact.acceleration_constraint_type(), ConstraintType::Hard);
     EXPECT_TRUE(CompareMatrices(contact.normal(), Vector3<double>(0, 0, 1),
-                                tol_, MatrixCompareType::absolute));
+                                kTolerance_, MatrixCompareType::absolute));
     EXPECT_EQ(contact.contact_points().cols(), 4);
     EXPECT_TRUE(CompareMatrices(contact.contact_points().col(0),
-                                Vector3<double>(0.2, 0.05, -0.09), tol_,
+                                Vector3<double>(0.2, 0.05, -0.09), kTolerance_,
                                 MatrixCompareType::absolute));
     EXPECT_TRUE(CompareMatrices(contact.contact_points().col(1),
-                                Vector3<double>(0.2, -0.05, -0.09), tol_,
+                                Vector3<double>(0.2, -0.05, -0.09), kTolerance_,
                                 MatrixCompareType::absolute));
     EXPECT_TRUE(CompareMatrices(contact.contact_points().col(2),
-                                Vector3<double>(-0.05, -0.05, -0.09), tol_,
-                                MatrixCompareType::absolute));
+                                Vector3<double>(-0.05, -0.05, -0.09),
+                                kTolerance_, MatrixCompareType::absolute));
     EXPECT_TRUE(CompareMatrices(contact.contact_points().col(3),
-                                Vector3<double>(-0.05, 0.05, -0.09), tol_,
-                                MatrixCompareType::absolute));
+                                Vector3<double>(-0.05, 0.05, -0.09),
+                                kTolerance_, MatrixCompareType::absolute));
   }
 
   {
@@ -109,14 +106,14 @@ TEST_F(ParamParserTests, ContactInformation) {
     EXPECT_EQ(contact.weight(), 1e5);
     EXPECT_EQ(contact.acceleration_constraint_type(), ConstraintType::Soft);
     EXPECT_TRUE(CompareMatrices(contact.normal(), Vector3<double>(0, 0, 1),
-                                tol_, MatrixCompareType::absolute));
+                                kTolerance_, MatrixCompareType::absolute));
     EXPECT_EQ(contact.contact_points().cols(), 1);
     EXPECT_TRUE(CompareMatrices(contact.contact_points().col(0),
-                                Vector3<double>::Zero(), tol_,
+                                Vector3<double>::Zero(), kTolerance_,
                                 MatrixCompareType::absolute));
   }
 
-  // "NO_SUCH_BODY_GROUP" is not a valid group name, so lookup returns emtpy.
+  // "NO_SUCH_BODY_GROUP" is not a valid group name, so lookup returns empty.
   EXPECT_TRUE(
       paramset_.MakeContactInformation("NO_SUCH_BODY_GROUP", *rbt_alias_)
           .empty());
@@ -163,19 +160,19 @@ TEST_F(ParamParserTests, BodyMotionParams) {
       paramset_.MakeDesiredBodyMotion("pelvis", *rbt_alias_).at("pelvis");
   Vector6<double> weights;
   weights << 1, 1, 1, 0, 0, 0;
-  TestDesiredBodyMotion(motion, body, weights, tol_);
+  TestDesiredBodyMotion(motion, body, weights, kTolerance_);
 
   // Unspecified, uses "default".
   body = robot_->FindBody("rightFoot");
   motion = paramset_.MakeDesiredBodyMotion(*body);
   weights = Vector6<double>::Constant(1e-2);
-  TestDesiredBodyMotion(motion, body, weights, tol_);
+  TestDesiredBodyMotion(motion, body, weights, kTolerance_);
 
   // Partially specified.
   body = robot_->FindBody("leftFoot");
   motion = paramset_.MakeDesiredBodyMotion(*body);
   weights << 1, 1, 1, 1, 1, 2;
-  TestDesiredBodyMotion(motion, body, weights, tol_);
+  TestDesiredBodyMotion(motion, body, weights, kTolerance_);
 
   // "NO_SUCH_BODY_GROUP" is not a valid group name, so this returns emtpy.
   EXPECT_TRUE(paramset_.MakeDesiredBodyMotion("NO_SUCH_BODY_GROUP", *rbt_alias_)
@@ -189,9 +186,9 @@ TEST_F(ParamParserTests, BodyMotionParams) {
                                          &(Kp_vec[0]), &(Kd_vec[0]));
   Kp_expected << 20, 20, 20, 0, 0, 0;
   Kd_expected << 8, 8, 8, 0, 0, 0;
-  EXPECT_TRUE(CompareMatrices(Kp_vec[0], Kp_expected, tol_,
+  EXPECT_TRUE(CompareMatrices(Kp_vec[0], Kp_expected, kTolerance_,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(Kd_vec[0], Kd_expected, tol_,
+  EXPECT_TRUE(CompareMatrices(Kd_vec[0], Kd_expected, kTolerance_,
                               MatrixCompareType::absolute));
 
   // Body group "feet" maps to ["leftFoot", "rightFoot"]
@@ -202,16 +199,16 @@ TEST_F(ParamParserTests, BodyMotionParams) {
   // Left foot
   Kp_expected << 20, 20, 20, 20, 20, 20;
   Kd_expected << 0, 0, 0, 0, 0, 0;
-  EXPECT_TRUE(CompareMatrices(Kp_vec[0], Kp_expected, tol_,
+  EXPECT_TRUE(CompareMatrices(Kp_vec[0], Kp_expected, kTolerance_,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(Kd_vec[0], Kd_expected, tol_,
+  EXPECT_TRUE(CompareMatrices(Kd_vec[0], Kd_expected, kTolerance_,
                               MatrixCompareType::absolute));
   // Right foot (not specified, equals default)
   Kp_expected << 0, 0, 0, 0, 0, 0;
   Kd_expected << 0, 0, 0, 0, 0, 0;
-  EXPECT_TRUE(CompareMatrices(Kp_vec[1], Kp_expected, tol_,
+  EXPECT_TRUE(CompareMatrices(Kp_vec[1], Kp_expected, kTolerance_,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(Kd_vec[1], Kd_expected, tol_,
+  EXPECT_TRUE(CompareMatrices(Kd_vec[1], Kd_expected, kTolerance_,
                               MatrixCompareType::absolute));
 }
 
@@ -222,7 +219,7 @@ TEST_F(ParamParserTests, CentroidalMomentumDotParams) {
       paramset_.MakeDesiredCentroidalMomentumDot();
   Vector6<double> weights;
   weights << 0, 0, 0, 10, 10, 10;
-  EXPECT_TRUE(CompareMatrices(cdot.weights(), weights, tol_,
+  EXPECT_TRUE(CompareMatrices(cdot.weights(), weights, kTolerance_,
                               MatrixCompareType::absolute));
 
   // Tests for gains.
@@ -231,10 +228,10 @@ TEST_F(ParamParserTests, CentroidalMomentumDotParams) {
   Kp_expected << 0, 0, 0, 40, 40, 40;
   Kd_expected << 4, 4, 4, 12, 12, 12;
   paramset_.LookupDesiredCentroidalMomentumDotGains(&Kp, &Kd);
-  EXPECT_TRUE(
-      CompareMatrices(Kp, Kp_expected, tol_, MatrixCompareType::absolute));
-  EXPECT_TRUE(
-      CompareMatrices(Kd, Kd_expected, tol_, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(Kp, Kp_expected, kTolerance_,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(Kd, Kd_expected, kTolerance_,
+                              MatrixCompareType::absolute));
 }
 
 // Tests for DesiredDoFMotion related param parsing.
@@ -258,7 +255,7 @@ TEST_F(ParamParserTests, DoFParams) {
   //     Kp: 20
   //     Kd: 11
   //     weight: 1
-  DesiredDoFMotions motion = paramset_.MakeDesiredDoFMotions();
+  DesiredDofMotions motion = paramset_.MakeDesiredDofMotions();
   std::set<int> l_arm(rbt_alias_->get_velocity_group("left_arm").begin(),
                       rbt_alias_->get_velocity_group("left_arm").end());
   std::set<int> r_arm(rbt_alias_->get_velocity_group("right_arm").begin(),
@@ -302,10 +299,10 @@ TEST_F(ParamParserTests, DoFParams) {
     Kd_expected(i) = ctr++;
   }
   paramset_.LookupDesiredDoFMotionGains(&Kp, &Kd);
-  EXPECT_TRUE(
-      CompareMatrices(Kp, Kp_expected, tol_, MatrixCompareType::absolute));
-  EXPECT_TRUE(
-      CompareMatrices(Kd, Kd_expected, tol_, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(Kp, Kp_expected, kTolerance_,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(Kd, Kd_expected, kTolerance_,
+                              MatrixCompareType::absolute));
 }
 
 }  // namespace

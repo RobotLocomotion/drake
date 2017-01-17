@@ -1,4 +1,4 @@
-# For all 6 dim gains / weights, the order is [angular, linear]
+# For all 6 dim gains / weights, the order is [angular, linear].
 
 ContactForceBasis:
   weight: 1e-6

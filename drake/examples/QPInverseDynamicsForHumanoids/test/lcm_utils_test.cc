@@ -121,9 +121,9 @@ static void TestEncodeDesiredBodyMotion(const DesiredBodyMotion& mot,
   TestConstrainedValuesMsg(mot, msg.constrained_accelerations);
 }
 
-// Test equality of the given DesiredDoFMotions and lcmt_desired_dof_motions
+// Test equality of the given DesiredDofMotions and lcmt_desired_dof_motions
 // message.
-static void TestEncodeDesiredDoFMotions(const DesiredDoFMotions& mot,
+static void TestEncodeDesiredDofMotions(const DesiredDofMotions& mot,
                                         const lcmt_desired_dof_motions& msg) {
   EXPECT_EQ(msg.num_dof, mot.size());
   EXPECT_EQ(static_cast<int>(msg.dof_names.size()), mot.size());
@@ -133,8 +133,8 @@ static void TestEncodeDesiredDoFMotions(const DesiredDoFMotions& mot,
   TestConstrainedValuesMsg(mot, msg.constrained_accelerations);
 }
 
-// Test equality of the given QPInput and lcmt_qp_input message.
-static void TestEncodeQPInput(const QPInput& qp_input,
+// Test equality of the given QpInput and lcmt_qp_input message.
+static void TestEncodeQpInput(const QpInput& qp_input,
                               const lcmt_qp_input& msg) {
   // Contacts
   EXPECT_EQ(msg.num_contacts,
@@ -157,7 +157,7 @@ static void TestEncodeQPInput(const QPInput& qp_input,
     TestEncodeDesiredBodyMotion(it->second, msg_mot);
   }
   // Dof motions
-  TestEncodeDesiredDoFMotions(qp_input.desired_dof_motions(),
+  TestEncodeDesiredDofMotions(qp_input.desired_dof_motions(),
                               msg.desired_dof_motions);
 
   // Centroidal momentum
@@ -298,19 +298,19 @@ TEST_F(LcmUtilsTests, TestEncodeDecodeDesiredBodyMotion) {
 }
 
 // Test encoding and decoding of
-// DesiredDoFMotions <-> lcmt_desired_dof_motions.
-TEST_F(LcmUtilsTests, TestEncodeDecodeDesiredDoFMotions) {
-  DesiredDoFMotions mot({"a", "b", "c", "d"});
+// DesiredDofMotions <-> lcmt_desired_dof_motions.
+TEST_F(LcmUtilsTests, TestEncodeDecodeDesiredDofMotions) {
+  DesiredDofMotions mot({"a", "b", "c", "d"});
   SetConstrainedValues(&mot, mot.size());
 
   // Test encode.
   lcmt_desired_dof_motions msg;
-  EncodeDesiredDoFMotions(mot, &msg);
-  TestEncodeDesiredDoFMotions(mot, msg);
+  EncodeDesiredDofMotions(mot, &msg);
+  TestEncodeDesiredDofMotions(mot, msg);
 
   // Test decode.
-  DesiredDoFMotions decoded_mot;
-  DecodeDesiredDoFMotions(msg, &decoded_mot);
+  DesiredDofMotions decoded_mot;
+  DecodeDesiredDofMotions(msg, &decoded_mot);
   EXPECT_EQ(decoded_mot, mot);
 }
 
@@ -331,11 +331,11 @@ TEST_F(LcmUtilsTests, TestEncodeDecodeDesiredCentroidalMomentumDot) {
   EXPECT_EQ(Ld, decoded_Ld);
 }
 
-// Test encoding and decoding of QPInput <-> lcmt_qp_input.
-TEST_F(LcmUtilsTests, TestEncodeDecodeQPInput) {
+// Test encoding and decoding of QpInput <-> lcmt_qp_input.
+TEST_F(LcmUtilsTests, TestEncodeDecodeQpInput) {
   HumanoidStatus tree_status(*tree_);
-  // Initialize QP input
-  QPInput qp_input(GetDoFNames(*tree_));
+  // Initializes QP input.
+  QpInput qp_input(GetDofNames(*tree_));
   ContactInformation contact(*tree_->FindBody("leftFoot"), 3);
   contact.mutable_contact_points() = Vector3<double>(1, 2, 3);
   contact.mutable_mu() = 0.2;
@@ -368,12 +368,12 @@ TEST_F(LcmUtilsTests, TestEncodeDecodeQPInput) {
 
   // Test encode.
   lcmt_qp_input msg;
-  EncodeQPInput(qp_input, &msg);
-  TestEncodeQPInput(qp_input, msg);
+  EncodeQpInput(qp_input, &msg);
+  TestEncodeQpInput(qp_input, msg);
 
   // Test decode.
-  QPInput decoded_qp_input;
-  DecodeQPInput(*tree_, msg, &decoded_qp_input);
+  QpInput decoded_qp_input;
+  DecodeQpInput(*tree_, msg, &decoded_qp_input);
   EXPECT_EQ(qp_input, decoded_qp_input);
 }
 

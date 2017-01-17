@@ -215,20 +215,19 @@ const ParamType& FindParam(
   return *param;
 }
 
-// Returns a parameter map (M) from body names to parameters of type ParamType.
-// The YAML node @p config is assumed to formatted as collection of entries,
-// where each entry is essentially a <key, stuff> pair.
-// This function first looks for an entry whose key is "default", and uses
-// @p ParseParam to generate a ParamType (default_param). All information must
-// be provided for the "default" entry.
-// The pair <"default" -> default_param> is then stored in M.
-// This method then iterates through all the other entries in @p config. For
-// each
-// entry (pair<key, stuff>), a ParamType (param) is generated based on
-// stuff, and default_param is used to fill in the blanks if stuff is
-// incomplete. key is assumed to be a name for a body group, which can be
-// expanded to a collection of bodies using @p alias_group. For each body in
-// this group, a pair of <body_name -> param> is generated and stored in M.
+// Returns a parameter map (`M`) from body names to parameters of type
+// ParamType. The YAML node @p config is assumed to be formatted as collection
+// of entries, where each entry is a `<key, content>` pair. This function first
+// looks for an entry whose `key` is `default`, and uses @p ParseParam to
+// generate a `default_param`. All information must be provided for this
+// `default` entry in the config file. The mapping `default -> default_param`
+// is then stored in M. This method then iterates through all the other entries
+// in @p config, and For each entry `pair<key, content>`, a `param` is
+// generated from `content`. `default_param` is used to fill in the blanks if
+// `content` is incomplete. `key` is assumed to be a name for a body group,
+// which can be expanded to a collection of bodies using @p alias_group. For
+// each body in this group, a mapping of `body_name -> param` is generated and
+// stored in M.
 //
 // @throws std::runtime_error if @p config does not contain a "default" entry,
 // or it fails to parse individual entries, or some group name does not exist in
@@ -265,15 +264,15 @@ std::unordered_map<std::string, ParamType> BuildBodyGroupParamMap(
 
     // group_name exists.
     if (alias_group.has_body_group(group_name)) {
-      // Make a param entry for each body in this body group.
+      // Makes a param entry for each body in this body group.
       const std::vector<const RigidBody<double>*> bodies =
           alias_group.get_body_group(group_name);
       for (const RigidBody<double>* body : bodies) {
         param.name = body->get_name();
 
         auto find_res = params.find(param.name);
-        // If this body already has a contact param defined, should check they
-        // are the same. If not, should throw.
+        // If this body already has a contact param defined, checks that they
+        // are the same. If not, throws.
         if (find_res != params.end()) {
           if (param != find_res->second) {
             std::string error_msg =
@@ -298,9 +297,9 @@ std::unordered_map<std::string, ParamType> BuildBodyGroupParamMap(
 
 std::ostream& operator<<(std::ostream& out, const DesiredMotionParam& param) {
   out << param.name << ":\n";
-  out << "  Kp: " << param.Kp.transpose() << std::endl;
-  out << "  Kd: " << param.Kd.transpose() << std::endl;
-  out << "  weight: " << param.weight.transpose() << std::endl;
+  out << "  Kp: " << param.Kp.transpose() << "\n";
+  out << "  Kd: " << param.Kd.transpose() << "\n";
+  out << "  weight: " << param.weight.transpose() << "\n";
   return out;
 }
 
@@ -308,13 +307,13 @@ std::ostream& operator<<(std::ostream& out, const ContactParam& param) {
   out << param.name << ":\n";
   out << "  contact_points:\n";
   for (int i = 0; i < param.contact_points.cols(); ++i)
-    out << "    " << param.contact_points.col(i).transpose() << std::endl;
-  out << "  normal: " << param.normal.transpose() << std::endl;
+    out << "    " << param.contact_points.col(i).transpose() << "\n";
+  out << "  normal: " << param.normal.transpose() << "\n";
   out << "  num_basis_per_contact_point: " << param.num_basis_per_contact_point
-      << std::endl;
-  out << "  mu: " << param.mu << std::endl;
-  out << "  Kd: " << param.Kd << std::endl;
-  out << "  weight: " << param.weight << std::endl;
+      << "\n";
+  out << "  mu: " << param.mu << "\n";
+  out << "  Kd: " << param.Kd << "\n";
+  out << "  weight: " << param.weight << "\n";
   return out;
 }
 
@@ -374,7 +373,7 @@ void ParamSet::LoadFromYAMLConfigFile(
       // to set it to something different again.
       if (dof_motion_params_.at(dof_idx) != default_dof_motion_param_ &&
           dof_motion_params_.at(dof_idx) != tmp_1dof_param) {
-        std::string error_msg = "Param for " + param.name +
+        std::string error_msg = "Param for " + dof_name +
                                 " is specified twice, and they are different.";
         throw std::runtime_error(error_msg);
       } else {
@@ -484,13 +483,13 @@ DesiredCentroidalMomentumDot ParamSet::MakeDesiredCentroidalMomentumDot()
   return cdot;
 }
 
-DesiredDoFMotions ParamSet::MakeDesiredDoFMotions() const {
+DesiredDofMotions ParamSet::MakeDesiredDofMotions() const {
   int dim = static_cast<int>(dof_motion_params_.size());
   std::vector<std::string> dof_names(dim);
   for (int i = 0; i < dim; ++i) {
     dof_names[i] = dof_motion_params_.at(i).name;
   }
-  DesiredDoFMotions dof_motion(dof_names);
+  DesiredDofMotions dof_motion(dof_names);
 
   for (int i = 0; i < dim; ++i) {
     dof_motion.mutable_weight(i) = dof_motion_params_.at(i).weight(0);

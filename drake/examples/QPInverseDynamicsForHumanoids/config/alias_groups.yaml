@@ -2,16 +2,20 @@ joint_groups:
   floating_base: [base]
 
   left_arm:
-    [leftShoulderPitch, leftShoulderRoll, leftShoulderYaw, leftElbowPitch, leftForearmYaw, leftWristRoll, leftWristPitch]
+    [leftShoulderPitch, leftShoulderRoll, leftShoulderYaw, leftElbowPitch,
+     leftForearmYaw, leftWristRoll, leftWristPitch]
 
   right_arm:
-    [rightShoulderPitch, rightShoulderRoll, rightShoulderYaw, rightElbowPitch, rightForearmYaw, rightWristRoll, rightWristPitch]
+    [rightShoulderPitch, rightShoulderRoll, rightShoulderYaw, rightElbowPitch,
+     rightForearmYaw, rightWristRoll, rightWristPitch]
 
   left_leg:
-    [leftHipYaw, leftHipRoll, leftHipPitch, leftKneePitch, leftAnklePitch, leftAnkleRoll]
+    [leftHipYaw, leftHipRoll, leftHipPitch,
+     leftKneePitch, leftAnklePitch, leftAnkleRoll]
 
   right_leg:
-    [rightHipYaw, rightHipRoll, rightHipPitch, rightKneePitch, rightAnklePitch, rightAnkleRoll]
+    [rightHipYaw, rightHipRoll, rightHipPitch,
+     rightKneePitch, rightAnklePitch, rightAnkleRoll]
 
   neck:
     [lowerNeckPitch]

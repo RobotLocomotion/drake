@@ -2,8 +2,8 @@
 
 #include <memory>
 #include <string>
-#include <utility>
 #include <unordered_map>
+#include <utility>
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
@@ -21,9 +21,9 @@ namespace qp_inverse_dynamics {
 /**
  * A simple PlanEval block that generates qp input for the qp inverse dynamics
  * controller.
- * The controller is moves the robot's pelvis height following a sine wave while
+ * The controller moves the robot's pelvis height following a sine wave while
  * holding everything else stationary. It assumes the robot is in double
- * support, and the stationary setpoint can be set by SetDesired.
+ * stance, and the stationary setpoint can be set by SetDesired.
  *
  * Input: HumanoidStatus
  * Output: lcmt_qp_input
@@ -81,7 +81,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
                              ->GetMutableValue<lcmt_qp_input>();
 
     // Update desired accelerations.
-    QPInput qp_input(GetDoFNames(robot_));
+    QpInput qp_input(GetDofNames(robot_));
     qp_input.mutable_contact_information() =
         paramset_.MakeContactInformation("feet", alias_groups_);
 
@@ -93,7 +93,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     qp_input.mutable_desired_body_motions().insert(motion_d.begin(),
                                                    motion_d.end());
 
-    qp_input.mutable_desired_dof_motions() = paramset_.MakeDesiredDoFMotions();
+    qp_input.mutable_desired_dof_motions() = paramset_.MakeDesiredDofMotions();
     qp_input.mutable_w_basis_reg() =
         paramset_.get_basis_regularization_weight();
 
@@ -124,7 +124,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
                                               robot_status->torso().velocity());
 
     // Encode and send.
-    EncodeQPInput(qp_input, &msg);
+    EncodeQpInput(qp_input, &msg);
   }
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
@@ -163,7 +163,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   }
 
   /**
-   * @return Port for the output: QPInput.
+   * @return Port for the output: QpInput.
    */
   inline const OutputPortDescriptor<double>& get_output_port_qp_input() const {
     return get_output_port(output_port_index_qp_input_);
