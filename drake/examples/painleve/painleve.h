@@ -1,8 +1,9 @@
 #pragma once
 
-#include <utility>
-
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/solvers/moby_lcp_solver.h"
+
+#include <utility>
 
 namespace drake {
 namespace painleve {
@@ -21,6 +22,7 @@ namespace painleve {
 ///
 /// Instantiated templates for the following scalar types @p T are provided:
 /// - double
+/// - AutoDiffXd
 ///
 /// They are already available to link against in the containing library.
 ///
@@ -30,16 +32,53 @@ namespace painleve {
 ///         index 2), and planar linear velocity (state indices 3 and 4) and
 ///         scalar angular velocity (state index 5) in units of m, radians,
 ///         m/s, and rad/s, respectively. Orientation is measured counter-
-///         clockwise with respect to the x-axis.
-///
-/// Outputs: same as state.
+///         clockwise with respect to the x-axis. One abstract state variable
+///         (of type Painleve::Modes) is used to identify which dynamic mode
+///         the system is in (e.g., ballistic, contacting at one point and
+///         sliding, etc.), one abstract state variable (of type int) is used
+///         to determine which endpoint(s) of the rod contact the halfspace
+///         (k=-1 indicates the bottom of the rod when theta = pi/2, k=+1
+///         indicates the top of the rod when theta = pi/2, and k=0 indicates
+///         both endpoints of the rod are contacting the halfspace), and one
+///         abstract state variable is used to indicate the sliding velocity
+///         at the beginning of an integration interval.
+/// Outputs: planar position (state indices 0 and 1) and orientation (state
+///          index 2), and planar linear velocity (state indices 3 and 4) and
+///          scalar angular velocity (state index 5) in units of m, radians,
+///          m/s, and rad/s, respectively.
 ///
 /// * [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
 ///                    Impact. SIAM Rev., 42(1), 3-39, 2000.
 template <typename T>
 class Painleve : public systems::LeafSystem<T> {
  public:
+  /// Possible dynamic modes for the Painleve Paradox rod.
+  enum Mode {
+    /// Rod is currently undergoing ballistic motion.
+    kBallisticMotion,
+
+    /// Rod is sliding while undergoing non-impacting contact at one contact
+    /// point (a rod endpoint); the other rod endpoint is not in contact.
+    kSlidingSingleContact,
+
+    /// Rod is sticking while undergoing non-impacting contact at one contact
+    /// point (a rod endpoint); the other rod endpoint is not in contact.
+    kStickingSingleContact,
+
+    /// Rod is sliding at two contact points without impact.
+    kSlidingTwoContacts,
+
+    /// Rod is sticking at two contact points without impact.
+    kStickingTwoContacts
+  };
+
+  /// Constructor for the Painleve' Paradox system using piecewise DAE based
+  /// approach.
   Painleve();
+
+  /// Constructor for the Painleve' Paradox system using time stepping approach.
+  /// @param dt The integration step size.
+  Painleve(T dt);
 
   /// Models impact using an inelastic impact model with friction.
   /// @p new_state is set to the output of the impact model on return.
@@ -87,17 +126,23 @@ class Painleve : public systems::LeafSystem<T> {
   /// this method returns `false`.
   bool IsImpacting(const systems::Context<T>& context) const;
 
+  /// Gets the integration step size for the time stepping system.
+  /// @returns 0 if this is a DAE-based system.
+  T get_integration_step_size() const { return dt_; }
+
  protected:
-  void SetDefaultState(const systems::Context<T>& context,
-                       systems::State<T>* state) const override;
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override;
-
-  void DoCalcTimeDerivatives(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const override;
+  void DoCalcTimeDerivatives(const systems::Context<T>& context,
+                             systems::ContinuousState<T>* derivatives) const;
+  void DoCalcDiscreteVariableUpdates(const systems::Context<T>& context,
+                                     systems::DiscreteState<T>* discrete_state)
+      const override;
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override;
 
  private:
+  solvers::MobyLCPSolver lcp_;
   Vector2<T> CalcStickingImpactImpulse(const systems::Context<T>& context)
     const;
   Vector2<T> CalcFConeImpactImpulse(const systems::Context<T>& context) const;
@@ -122,6 +167,7 @@ class Painleve : public systems::LeafSystem<T> {
                                               const T& stheta,
                                               const double half_rod_len);
 
+  T dt_{0.0};               // Integration step-size for time stepping approach.
   double mass_{1.0};        // The mass of the rod.
   double rod_length_{1.0};  // The length of the rod.
   double mu_{1000.0};       // The coefficient of friction.

@@ -1,4 +1,5 @@
 #include "drake/examples/painleve/painleve.h"
+#include "drake/systems/analysis/simulator.h"
 
 #include <memory>
 
@@ -12,7 +13,9 @@ namespace drake {
 namespace painleve {
 namespace {
 
-class PainleveTest : public ::testing::Test {
+/// Class for testing the Painleve Paradox example using a piecewise DAE
+/// approach.
+class PainleveDAETest : public ::testing::Test {
  protected:
   void SetUp() override {
     dut_ = std::make_unique<Painleve<double>>();
@@ -29,7 +32,7 @@ class PainleveTest : public ::testing::Test {
         std::move(cstate_vec), state_dim / 2, state_dim / 2, 0);
   }
 
-  VectorBase<double>* continuous_state() {
+  systems::VectorBase<double>* continuous_state() {
     return context_->get_mutable_continuous_state_vector();
   }
 
@@ -43,7 +46,7 @@ class PainleveTest : public ::testing::Test {
     //                    Impact. SIAM Rev., 42(1), 3-39, 2000.
     using std::sqrt;
     const double half_len = dut_->get_rod_length() / 2;
-    const double r22 = sqrt(2) / 2;
+    const double r22 = std::sqrt(2) / 2;
     ContinuousState<double>& xc =
         *context_->get_mutable_continuous_state();
     xc[0] = -half_len * r22;
@@ -66,13 +69,55 @@ class PainleveTest : public ::testing::Test {
   }
 
   std::unique_ptr<Painleve<double>> dut_;  //< The device under test.
-  std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<SystemOutput<double>> output_;
-  std::unique_ptr<ContinuousState<double>> derivatives_;
+  std::unique_ptr<systems::Context<double>> context_;
+  std::unique_ptr<systems::SystemOutput<double>> output_;
+  std::unique_ptr<systems::ContinuousState<double>> derivatives_;
+};
+
+/// Class for testing the Painleve Paradox example using a first order time
+/// stepping approach.
+class PainleveTimeSteppingTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    const double dt = 1e-3;
+    dut_ = std::make_unique<Painleve<double>>(dt);
+    context_ = dut_->CreateDefaultContext();
+    output_ = dut_->AllocateOutput(*context_);
+  }
+
+  systems::BasicVector<double>* discrete_state() {
+    return context_->get_mutable_discrete_state(0);
+  }
+
+  // Sets a secondary initial Painleve configuration.
+  void SetSecondInitialConfig() {
+    // Set the configuration to an inconsistent (Painlevé) type state with
+    // the rod at a 135 degree counter-clockwise angle with respect to the
+    // x-axis. The rod in [Stewart, 2000] is at a 45 degree counter-clockwise
+    // angle with respect to the x-axis.
+    // * [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
+    //                    Impact. SIAM Rev., 42(1), 3-39, 2000.
+    using std::sqrt;
+    const double half_len = dut_->get_rod_length() / 2;
+    const double r22 = std::sqrt(2) / 2;
+    auto xd = discrete_state()->get_mutable_value();
+
+    xd[0] = -half_len * r22;
+    xd[1] = half_len * r22;
+    xd[2] = 3 * M_PI / 4.0;
+    xd[3] = 1.0;
+    xd[4] = 0.0;
+    xd[5] = 0.0;
+  }
+
+  std::unique_ptr<Painleve<double>> dut_;  //< The device under test.
+  std::unique_ptr<systems::Context<double>> context_;
+  std::unique_ptr<systems::SystemOutput<double>> output_;
+  std::unique_ptr<systems::ContinuousState<double>> derivatives_;
 };
 
 // Checks that the output port represents the state.
-TEST_F(PainleveTest, Output) {
+TEST_F(PainleveDAETest, Output) {
   const ContinuousState<double>& xc = *context_->get_continuous_state();
   std::unique_ptr<SystemOutput<double>> output =
       dut_->AllocateOutput(*context_);
@@ -83,13 +128,13 @@ TEST_F(PainleveTest, Output) {
 
 // Verifies that setting dut to an impacting state actually results in an
 // impacting state.
-TEST_F(PainleveTest, ImpactingState) {
+TEST_F(PainleveDAETest, ImpactingState) {
   SetImpactingState();
   EXPECT_TRUE(dut_->IsImpacting(*context_));
 }
 
 // Tests parameter getting and setting.
-TEST_F(PainleveTest, Parameters) {
+TEST_F(PainleveDAETest, Parameters) {
   // Set parameters to non-default values.
   const double g = -1.0;
   const double mass = 0.125;
@@ -109,7 +154,7 @@ TEST_F(PainleveTest, Parameters) {
 }
 
 // Verify that impact handling works as expected.
-TEST_F(PainleveTest, ImpactWorks) {
+TEST_F(PainleveDAETest, ImpactWorks) {
   // Set writable state.
   std::unique_ptr<ContinuousState<double>> new_cstate =
       CreateNewContinuousState();
@@ -144,7 +189,7 @@ TEST_F(PainleveTest, ImpactWorks) {
 
 // Verify that derivatives match what we expect from a non-inconsistent,
 // ballistic configuration.
-TEST_F(PainleveTest, ConsistentDerivativesBallistic) {
+TEST_F(PainleveDAETest, ConsistentDerivativesBallistic) {
   // Set the initial state to ballistic motion.
   const double half_len = dut_->get_rod_length() / 2;
   ContinuousState<double>& xc =
@@ -173,7 +218,7 @@ TEST_F(PainleveTest, ConsistentDerivativesBallistic) {
 
 // Verify that derivatives match what we expect from a non-inconsistent
 // contacting configuration.
-TEST_F(PainleveTest, ConsistentDerivativesContacting) {
+TEST_F(PainleveDAETest, ConsistentDerivativesContacting) {
   // Set the initial state to sustained contact with zero tangential velocity
   // at the point of contact.
   const double half_len = dut_->get_rod_length() / 2;
@@ -216,13 +261,13 @@ TEST_F(PainleveTest, ConsistentDerivativesContacting) {
 }
 
 // Verify the inconsistent (Painlevé Paradox) configuration occurs.
-TEST_F(PainleveTest, Inconsistent) {
+TEST_F(PainleveDAETest, Inconsistent) {
   EXPECT_THROW(dut_->CalcTimeDerivatives(*context_, derivatives_.get()),
                std::runtime_error);
 }
 
 // Verify the second inconsistent (Painlevé Paradox) configuration occurs.
-TEST_F(PainleveTest, Inconsistent2) {
+TEST_F(PainleveDAETest, Inconsistent2) {
   SetSecondInitialConfig();
   EXPECT_THROW(dut_->CalcTimeDerivatives(*context_, derivatives_.get()),
                std::runtime_error);
@@ -230,7 +275,7 @@ TEST_F(PainleveTest, Inconsistent2) {
 
 // Verify that the (non-impacting) Painlevé configuration does not result in a
 // state change.
-TEST_F(PainleveTest, ImpactNoChange) {
+TEST_F(PainleveDAETest, ImpactNoChange) {
   // Set state.
   std::unique_ptr<ContinuousState<double>> new_cstate =
       CreateNewContinuousState();
@@ -246,7 +291,7 @@ TEST_F(PainleveTest, ImpactNoChange) {
 // Verify that applying the impact model to an impacting configuration results
 // in a non-impacting configuration. This test exercises the model for the case
 // where impulses that yield tangential sticking lie within the friction cone.
-TEST_F(PainleveTest, InfFrictionImpactThenNoImpact) {
+TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact) {
   // Set writable state.
   std::unique_ptr<ContinuousState<double>> new_cstate =
       CreateNewContinuousState();
@@ -275,7 +320,7 @@ TEST_F(PainleveTest, InfFrictionImpactThenNoImpact) {
 // Verify that applying an impact model to an impacting state results in a
 // non-impacting state. This test exercises the model for the case
 // where impulses that yield tangential sticking lie outside the friction cone.
-TEST_F(PainleveTest, NoFrictionImpactThenNoImpact) {
+TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact) {
   // Set the initial state to be impacting.
   SetImpactingState();
 
@@ -302,7 +347,7 @@ TEST_F(PainleveTest, NoFrictionImpactThenNoImpact) {
 }
 
 // Verify that no exceptions thrown for a non-sliding configuration.
-TEST_F(PainleveTest, NoSliding) {
+TEST_F(PainleveDAETest, NoSliding) {
   const double half_len = dut_->get_rod_length() / 2;
   const double r22 = std::sqrt(2) / 2;
   ContinuousState<double>& xc =
@@ -335,7 +380,7 @@ TEST_F(PainleveTest, NoSliding) {
 }
 
 // Test multiple (two-point) contact configurations.
-TEST_F(PainleveTest, MultiPoint) {
+TEST_F(PainleveDAETest, MultiPoint) {
   ContinuousState<double>& xc =
       *context_->get_mutable_continuous_state();
 
@@ -370,7 +415,7 @@ TEST_F(PainleveTest, MultiPoint) {
 
 // Verify that the Painlevé configuration does not correspond to an impacting
 // state.
-TEST_F(PainleveTest, ImpactNoChange2) {
+TEST_F(PainleveDAETest, ImpactNoChange2) {
   SetSecondInitialConfig();
 
   // Verify no impact.
@@ -389,7 +434,7 @@ TEST_F(PainleveTest, ImpactNoChange2) {
 
 // Verify that applying the impact model to an impacting state results
 // in a non-impacting state.
-TEST_F(PainleveTest, InfFrictionImpactThenNoImpact2) {
+TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact2) {
   // Set writable state.
   std::unique_ptr<ContinuousState<double>> new_cstate =
       CreateNewContinuousState();
@@ -419,7 +464,7 @@ TEST_F(PainleveTest, InfFrictionImpactThenNoImpact2) {
 
 // Verify that applying the impact model to an impacting state results in a
 // non-impacting state.
-TEST_F(PainleveTest, NoFrictionImpactThenNoImpact2) {
+TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact2) {
   // Set writable state.
   std::unique_ptr<ContinuousState<double>> new_cstate =
       CreateNewContinuousState();
@@ -446,7 +491,7 @@ TEST_F(PainleveTest, NoFrictionImpactThenNoImpact2) {
 }
 
 // Verifies that rod in a ballistic state does not correspond to an impact.
-TEST_F(PainleveTest, BallisticNoImpact) {
+TEST_F(PainleveDAETest, BallisticNoImpact) {
   // Set writable state.
   std::unique_ptr<ContinuousState<double>> new_cstate =
   CreateNewContinuousState();
@@ -462,6 +507,34 @@ TEST_F(PainleveTest, BallisticNoImpact) {
   // Verify that no impact occurs.
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 }
+
+/// Verify that Painleve Paradox system can be effectively simulated using
+/// first-order time stepping approach.
+TEST_F(PainleveTimeSteppingTest, TimeStepping) {
+  // Set the initial state to an inconsistent configuration.
+  SetSecondInitialConfig();
+
+  // Init the simulator.
+  systems::Simulator<double> simulator(*dut_, std::move(context_));
+
+  // Integrate forward to a point where the rod should be at rest.
+  const double t_final = 2.5;
+  simulator.StepTo(t_final);
+
+  // Get angular orientation and velocity.
+  const auto v = simulator.get_context().get_discrete_state(0)->get_value();
+  const double theta = v(2);
+  const double theta_dot = v(5);
+
+  // After sufficiently long, theta should be 0 or M_PI and the velocity
+  // should be nearly zero.
+  EXPECT_TRUE(std::fabs(theta) < 1e-6 || std::fabs(theta - M_PI) < 1e-6);
+  EXPECT_NEAR(theta_dot, 0.0, 1e-6);
+
+  // TODO(edrumwri): Introduce more extensive tests that cross-validates the
+  // time-stepping based approach against the piecewise DAE-based approach.
+}
+
 
 }  // namespace
 }  // namespace painleve
