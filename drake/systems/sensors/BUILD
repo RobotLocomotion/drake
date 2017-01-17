@@ -12,6 +12,7 @@ cc_library(
     hdrs = [],
     linkstatic = 1,
     deps = [
+        ":accelerometer",
         ":depth_sensor",
         ":rotary_encoders",
     ],
@@ -23,6 +24,23 @@ cc_library(
     hdrs = ["rotary_encoders.h"],
     linkstatic = 1,
     deps = [
+        "//drake/systems/framework",
+    ],
+)
+
+cc_library(
+    name = "accelerometer",
+    srcs = [
+        "accelerometer.cc",
+        "accelerometer_output.cc",
+    ],
+    hdrs = [
+        "accelerometer.h",
+        "accelerometer_output.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework",
     ],
 )
@@ -53,6 +71,16 @@ cc_googletest(
     deps = [
         ":rotary_encoders",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "accelerometer_test",
+    srcs = ["test/accelerometer_test.cc"],
+    deps = [
+        ":accelerometer",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
     ],
 )
 

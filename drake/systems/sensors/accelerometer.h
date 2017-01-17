@@ -18,7 +18,8 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/// A simulated ideal accelerometer that measures linear acceleration.
+/// A simulated ideal accelerometer that measures the linear acceleration of a
+/// frame associated with a RigidBodyTree.
 ///
 /// <B>System Input Ports:</B>
 ///
@@ -36,8 +37,8 @@ namespace sensors {
 /// This system has one output port that is accessible via the following
 /// accessor method:
 ///
-///  - get_acceleration_output_port(): Contains the sensed acceleration data in
-///    this sensor's frame.
+///  - get_output_port(): Contains the sensed acceleration data in this sensor's
+///    frame.
 ///
 /// @ingroup sensor_systems
 ///
@@ -57,18 +58,18 @@ class Accelerometer : public systems::LeafSystem<double> {
   /// is the frame in which this sensor's output is given. A copy of this frame
   /// is stored as a class member variable.
   ///
-  /// @param[in] tree The RigidBodyTree being sensed by this sensor. This should
-  /// be a reference to the same RigidBodyTree that is being used by the
-  /// RigidBodyPlant whose outputs are fed into this sensor. This parameter is
-  /// aliased by a class member variable so its lifespan must exceed that of
-  /// this class' instance.
+  /// @param[in] tree The RigidBodyTree that belongs to the RigidBodyPlatn being
+  /// sensed by this sensor. This should be a reference to the same
+  /// RigidBodyTree that is being used by the RigidBodyPlant whose outputs are
+  /// fed into this sensor. This parameter is aliased by a class member variable
+  /// so its lifespan must exceed that of this class' instance.
   ///
-  /// @param[in] include_gravity_compensation Whether to include the
+  /// @param[in] include_gravity Whether to include the
   //  acceleration due to gravity in the sensor's reading.
   ///
   Accelerometer(const std::string& name, const RigidBodyFrame<double>& frame,
       const RigidBodyTree<double>& tree,
-      bool include_gravity_compensation = true);
+      bool include_gravity = true);
 
   // Non-copyable.
   /// @name Deleted Copy/Move Operations
@@ -92,16 +93,18 @@ class Accelerometer : public systems::LeafSystem<double> {
 
   /// Returns a descriptor of the input port that should contain the generalized
   /// (i.e., linear and rotational) position and velocity state of the
-  /// RigidBodyTree DOFs.
-  const InputPortDescriptor<double>& get_state_input_port() const {
-    return System<double>::get_input_port(state_input_port_index_);
+  /// RigidBodyPlant that this sensor is sensing.
+  const InputPortDescriptor<double>& get_plant_state_input_port() const {
+    return System<double>::get_input_port(plant_state_input_port_index_);
   }
 
   /// Returns a descriptor of the input port that should contain the derivative
   /// of the generalized (i.e., linear and rotational) position and velocity
   /// state of the RigidBodyTree DOFs.
-  const InputPortDescriptor<double>& get_state_derivative_input_port() const {
-    return System<double>::get_input_port(state_derivative_input_port_index_);
+  const InputPortDescriptor<double>& get_plant_state_derivative_input_port()
+      const {
+    return System<double>::get_input_port(
+        plant_state_derivative_input_port_index_);
   }
 
   /// Returns a descriptor of the state output port, which contains the sensor's
@@ -127,10 +130,10 @@ class Accelerometer : public systems::LeafSystem<double> {
   const std::string name_;
   const RigidBodyFrame<double> frame_;
   const RigidBodyTree<double>& tree_;
-  const bool include_gravity_compensation_{};
+  const bool include_gravity_{};
 
-  int state_input_port_index_{};
-  int state_derivative_input_port_index_{};
+  int plant_state_input_port_index_{};
+  int plant_state_derivative_input_port_index_{};
   int output_port_index_{};
 };
 

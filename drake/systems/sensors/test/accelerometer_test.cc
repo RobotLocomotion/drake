@@ -85,10 +85,10 @@ GTEST_TEST(TestAccelerometer, TestFreeFall) {
   EXPECT_EQ(num_velocities, 6);
 
   dut_context->FixInputPort(
-      dut.get_state_input_port().get_index(),
+      dut.get_plant_state_input_port().get_index(),
       make_unique<BasicVector<double>>(VectorX<double>::Zero(num_states)));
   dut_context->FixInputPort(
-      dut.get_state_derivative_input_port().get_index(),
+      dut.get_plant_state_derivative_input_port().get_index(),
       make_unique<BasicVector<double>>(VectorX<double>::Zero(num_states)));
 
   auto xc_vector = make_unique<BasicVector<double>>(

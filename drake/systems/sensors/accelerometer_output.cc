@@ -16,17 +16,17 @@ AccelerometerOutput<T>::AccelerometerOutput()
 
 template <typename T>
 const T& AccelerometerOutput<T>::get_accel_x() const {
-  return BasicVector<T>::GetAtIndex(0);
+  return BasicVector<T>::GetAtIndex(kAccelXIndex);
 }
 
 template <typename T>
 const T& AccelerometerOutput<T>::get_accel_y() const {
-  return BasicVector<T>::GetAtIndex(1);
+  return BasicVector<T>::GetAtIndex(kAccelYIndex);
 }
 
 template <typename T>
 const T& AccelerometerOutput<T>::get_accel_z() const {
-  return BasicVector<T>::GetAtIndex(2);
+  return BasicVector<T>::GetAtIndex(kAccelZIndex);
 }
 
 template class AccelerometerOutput<double>;

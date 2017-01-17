@@ -25,6 +25,11 @@ class AccelerometerOutput : public BasicVector<T> {
   /// Returns the Z-component of the linear acceleration in the sensor's frame.
   const T& get_accel_z() const;
   //@}
+
+ private:
+  static const int kAccelXIndex{0};
+  static const int kAccelYIndex{1};
+  static const int kAccelZIndex{2};
 };
 
 }  // namespace sensors

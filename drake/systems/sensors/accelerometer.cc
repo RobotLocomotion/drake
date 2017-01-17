@@ -22,15 +22,15 @@ constexpr int Accelerometer::kNumMeasurements;
 Accelerometer::Accelerometer(const std::string& name,
                              const RigidBodyFrame<double>& frame,
                              const RigidBodyTree<double>& tree,
-                             bool include_gravity_compensation)
+                             bool include_gravity)
     : name_(name),
       frame_(frame),
       tree_(tree),
-      include_gravity_compensation_(include_gravity_compensation) {
-  state_input_port_index_ =
+      include_gravity_(include_gravity) {
+  plant_state_input_port_index_ =
       DeclareInputPort(kVectorValued, tree_.get_num_positions() +
                                       tree_.get_num_velocities()).get_index();
-  state_derivative_input_port_index_ =
+  plant_state_derivative_input_port_index_ =
       DeclareInputPort(kVectorValued, tree_.get_num_positions() +
                                       tree_.get_num_velocities()).get_index();
   output_port_index_ =
@@ -50,9 +50,9 @@ void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
   // Obtains the two input vectors, x and xdot. x is the state vector. xdot is
   // the time derivative of x.
   const VectorXd x = this->EvalEigenVectorInput(
-    context, state_input_port_index_);
+    context, plant_state_input_port_index_);
   const VectorXd xdot = this->EvalEigenVectorInput(
-      context, state_derivative_input_port_index_);
+      context, plant_state_derivative_input_port_index_);
 
   // Computes:
   //
@@ -92,7 +92,7 @@ void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
   const Vector3d accel_base = Jdot_times_v + J * vdot;
   Vector3d accel_body = quatRotateVec(quat_world_to_body, accel_base);
 
-  if (include_gravity_compensation_) {
+  if (include_gravity_) {
     const Vector3d gravity(0, 0, 9.81);
     accel_body += quatRotateVec(quat_world_to_body, gravity);
   }
