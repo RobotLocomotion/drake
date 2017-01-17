@@ -3005,13 +3005,14 @@ RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
   // V_WF = J_WF * v, and plucker_V_WF = plucker_J_WF * v, where V_WF is the
   // spatial velocity of frame F meassured and expressed in the world frame,
   // and plucker_V_WF is the plucker velocity of the same quantity.
-  // J = CalcJacobianForWorldAlignedBody, and pJ = geometricJacobian.
+  // J = CalcFrameSpatialVelocityJacobianInWorldFrame(), and
+  // pJ = geometricJacobian().
   //
-  // For column i of J, J(i) = [pJ_ang(i); pJ_lin(i) + pJ_ang(i).cross(p)],
+  // For column i of J, J(i) = [pJ_ang(i); pJ_lin(i) + pJ_ang(i).cross(p_WF)],
   // where _ang and _lin are the angular and linear components respectively.
   // Thus, for Jdv, the angular part stays the same, and the linear part equals:
-  //  = [\dot{pJ_lin} + \dot{pJ_ang}.cross(p) + pJ_ang.cross(\dot{p})] * v
-  //  = [pJdv_lin + pJdv_ang.cross(p) + omega.cross(\dot{p})]
+  //  = [pJdot_lin + pJdot_ang.cross(p_WF) + pJ_ang.cross(pdot_WF)] * v
+  //  = [pJdv_lin + pJdv_ang.cross(p_WF) + omega_WF.cross(pdot_WF)]
   TwistVector<T> Jdv_WF = plucker_Jdv_WB;
   Jdv_WF.template tail<3>() += plucker_V_WB.template head<3>().cross(pdot_WF) +
                                plucker_Jdv_WB.template head<3>().cross(p_WF);
