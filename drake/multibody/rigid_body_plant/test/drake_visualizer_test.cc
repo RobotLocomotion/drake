@@ -8,9 +8,11 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_mock_lcm.h"
+#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 #include "drake/multibody/shapes/geometry.h"
+#include "drake/systems/analysis/simulator.h"
 
 namespace drake {
 namespace systems {
@@ -488,6 +490,54 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   // Verifies that the correct messages were actually transmitted.
   VerifyLoadMessage(lcm.get_last_published_message("DRAKE_VIEWER_LOAD_ROBOT"));
   VerifyDrawMessage(lcm.get_last_published_message("DRAKE_VIEWER_DRAW"));
+}
+
+// TODO(liang.fok) Consider combining the following with near-identical code in
+// lcm_publisher_test.cc.
+
+// Verifies that the last transmitted message's timestamp is equal to the
+// provided timestamp.
+void VerifyTimestamp(const std::vector<uint8_t>& transmitted_message_bytes,
+                     double timestamp) {
+  lcmt_viewer_draw transmitted_message;
+  // Decodes message and checks that the correct number of bytes was processed.
+  EXPECT_EQ(transmitted_message.decode(transmitted_message_bytes.data(), 0,
+                           transmitted_message_bytes.size()),
+            transmitted_message_bytes.size());
+  EXPECT_NEAR(transmitted_message.timestamp, timestamp, 1e-10);
+}
+
+// Tests that the published LCM message has the expected timestamps.
+GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
+  const double kPublishPeriod = 1.5;  // Seconds between publications.
+
+  unique_ptr<RigidBodyTree<double>> tree = CreateRigidBodyTree();
+  drake::lcm::DrakeMockLcm lcm;
+
+  // Instantiates the "device under test".
+  DrakeVisualizer dut(*tree, &lcm);
+  dut.set_publish_period(kPublishPeriod);
+  unique_ptr<Context<double>> context = dut.AllocateContext();
+
+  const int kPortNumber = 0;
+  const int num_inputs = tree->get_num_positions() + tree->get_num_velocities();
+  context->FixInputPort(kPortNumber,
+      make_unique<BasicVector<double>>(Eigen::VectorXd::Zero(num_inputs)));
+
+  // Prepares to integrate.
+  drake::systems::Simulator<double> simulator(dut, std::move(context));
+  simulator.set_publish_every_time_step(false);
+  simulator.Initialize();
+
+  for (double time = 0; time < 4; time += 0.01) {
+    simulator.StepTo(time);
+    EXPECT_NEAR(simulator.get_mutable_context()->get_time(), time, 1e-10);
+    // Note that the expected time is in milliseconds.
+    const double expected_time =
+        std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;
+    VerifyTimestamp(lcm.get_last_published_message("DRAKE_VIEWER_DRAW"),
+                    expected_time);
+  }
 }
 
 }  // namespace

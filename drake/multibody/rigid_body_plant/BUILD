@@ -98,6 +98,7 @@ cc_googletest(
     deps = [
         ":drake_visualizer",
         "//drake/lcm:mock",
+        "//drake/systems/analysis",
     ],
 )
 
