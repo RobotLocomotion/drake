@@ -277,6 +277,14 @@ std::vector<Eigen::Vector3d> IntersectBoxWUnitCircle(Eigen::Vector3d bmin,
   // Note: all logic below are ordered to avoid imaginary sqrts, but
   // the Intercept method asserts for this, just in case.
 
+  // An axis-aligned box in the positive orthant can intersect with the unit
+  // circle at:
+  //  1 point - when the box touchest the unit circle exactly at the corner,
+  //  3 points - when exactly one corner is inside the unit circle OR exactly
+  //      one corner is outside the unit circle, or
+  //  4 points, when >= two points are inside the unit circle and >= two
+  //      points are outside the unit circle.
+
   if (bmin.lpNorm<2>() == 1) {
     // Then only the min corner intersects.
     intersections.push_back(bmin);
@@ -405,7 +413,10 @@ void AddMcCormickVectorConstraints(
                   PickPermutation(this_cpos, this_cneg, o));
             }
           } else {
-            // Find the Intercepts of the unit sphere with the box.
+            // Find the intercepts of the unit sphere with the box, then find
+            // the tightest linear constraint of the form:
+            //    d <= normal'*v
+            // that puts v inside (but as close as possible to) the unit circle.
             auto pts = internal::IntersectBoxWUnitCircle(box_min, box_max);
             DRAKE_DEMAND(pts.size() >= 3);
             Eigen::Vector3d normal;
@@ -450,10 +461,11 @@ void AddMcCormickVectorConstraints(
             // and we have 0 <= theta < pi/2.
             // Proof sketch:
             // Every vector in the convex hull can be written as
-            //   v = (sum_i w_i p_i)/sqrt(sum_i w_i^2), w_i>0, sum_i w_i=1.
-            // Given normal'*v = |normal||v|cos(theta), and |normal|=|v|=1,
+            //   v = sum_i w_i p_i, w_i>0, sum_i w_i=1.
+            // Note that |v| = 1 when v=p_i, and <1 when v is inside the hull.
+            // Given normal'*v = |normal||v|cos(theta), and |normal|=1,
             // we have
-            //   cos(theta) = normal'*v = (\sum w_i normal'*p_i)/sqrt(..).
+            //   cos(theta) = normal'*v/|v| = (\sum w_i normal'*p_i)/|v|.
             // This obtains a minimum when w_i=1 for min_i normal'*p_i,
             // (because that maximizes the denominator AND minimizes the
             //  numerator), yielding:
