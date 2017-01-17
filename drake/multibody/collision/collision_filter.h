@@ -104,8 +104,8 @@ class CollisionFilterGroup {
  instance.
 
  The manager is used in parsing *sessions*.  By design, one session maps to
- parsing a single file.  The session ends with a call to Clear (called in
- RigidBodyTree::compile).  Multiple sessions can be run on a single manager
+ parsing a single file.  The session ends with a call to Clear() (called in
+ RigidBodyTree::compile()).  Multiple sessions can be run on a single manager
  (this naturally arises from parsing multiple files).  Collision filter groups
  defined during a single session must all have unique group *names*. Names
  repeated in different sessions are treated as being *different* collision
@@ -113,7 +113,7 @@ class CollisionFilterGroup {
  During compilation, the names are replaced with integer identifiers.
 
  The group manager can handle a finite number of groups
- (MAX_NUM_COLLISION_FILTER_GROUPS).  Each session contributes towards reaching
+ (kMaxNumCollisionFilterGroups).  Each session contributes towards reaching
  that total.  If the maximum number of groups has been defined, subsequent
  efforts to define a new collision filter group will cause exceptions to be
  thrown.
@@ -187,7 +187,7 @@ class CollisionFilterGroupManager {
   /**
    Reports the collision filter group assigned to the given group name.
    @param group_name    The group name to query.
-   @returns the assigned group name (-1 if in valid group name).
+   @returns the assigned group id (kInvalidGroupId if an valid group name).
    */
   int GetGroupId(const std::string& group_name);
 
@@ -209,7 +209,7 @@ class CollisionFilterGroupManager {
   // removed.  There is a corresponding method on the RigidBodyTree.
   /**
    Directly set the masks for a body.  The values will remain in the current
-   session (i.e., until Clear is called). This is a convenience function for
+   session (i.e., until Clear() is called). This is a convenience function for
    Matlab integration.  The Matlab parser handles the mapping of collision
    filter group names to ids and passes the mapped ids directly the manager for
    when the tree gets compiled. The input bitmasks are in no way validated.
@@ -222,9 +222,20 @@ class CollisionFilterGroupManager {
   /**
    Clears the cached collision filter group specification data from the current
    session.  It does *not* reset the counter for available collision filter
-   groups.
+   groups. This is what makes it possible for a file to be read multiple times
+   in sequence, but to have each parsing produce a unique set of collision
+   filter groups.  Or if two files are parsed, and both use a common name for a
+   collision filter group. They are treated as unique collision filter groups
+   and all of those groups count against the *total* number of groups supported
+   by a single instance of the manager.
    */
   void Clear();
+
+  /**
+   Reported value for group names that do not map to known collision filter
+   groups.
+   */
+  static const int kInvalidGroupId;
 
  private:
   // Attempts to provision a group id for the next group.  Throws an exception

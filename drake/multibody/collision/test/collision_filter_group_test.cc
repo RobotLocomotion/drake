@@ -17,6 +17,14 @@
 // filter group functionality: from the underlying data structures, their
 // interactions with the RigidBodyTree, parsing, and in the collision detection
 // model.
+//
+// Because collision filter groups are ultimately represented with bitmasks,
+// expected mask values are initialized using binary representations of numbers.
+// For example, a bit mask that has groups 0, 1, and 4 set would equate to
+// the binary value:
+//    Value: 0b10011
+//    Group:   43210,
+// where groups are enumerated from *right* to *left*.
 namespace DrakeCollision {
 namespace test {
 namespace {
@@ -110,7 +118,7 @@ GTEST_TEST(CollisionFilterGroupDefinition, RepeatAddBody) {
   // Note: no exception thrown implies success.
 }
 
-// Confirms that adding an ignore group to a non-existant group throws a
+// Confirms that adding an ignore group to a non-existent group throws a
 // meaningful exception.
 GTEST_TEST(CollisionFilterGroupDefinition, AddIgnoreGroupToUndefinedGroup) {
   CollisionFilterGroupManager<double> manager;
@@ -126,7 +134,7 @@ GTEST_TEST(CollisionFilterGroupDefinition, AddIgnoreGroupToUndefinedGroup) {
   }
 }
 
-// Confirms that adding a RigidBody to a non-existant group reports failure.
+// Confirms that adding a RigidBody to a non-existent group reports failure.
 GTEST_TEST(CollisionFilterGroupDefinition, AddBodyToUndefinedGroup) {
   CollisionFilterGroupManager<double> manager;
   std::string group_name = "group1";
@@ -201,7 +209,7 @@ GTEST_TEST(CollisionFilterGroupCompile, MultiGroupIgnoreSet) {
                                            "group" + std::to_string(i));
   }
   // group 2 ignores 4 & 5
-  std::set<int> ignores1 = {3, 4};
+  std::set<int> ignores1 = {4, 5};
   for (auto i : ignores1) {
     manager.AddCollisionFilterIgnoreTarget("group2",
                                            "group" + std::to_string(i));
@@ -225,7 +233,7 @@ GTEST_TEST(CollisionFilterGroupCompile, MultiGroupIgnoreSet) {
 GTEST_TEST(CollisionFilterGroupCompile, IgnoreNonExistentGroup) {
   CollisionFilterGroupManager<double> manager;
   manager.DefineCollisionFilterGroup("group1");
-  // group1 does not exist.
+  // group2 does not exist.
   manager.AddCollisionFilterIgnoreTarget("group1", "group2");
 
   RigidBody<double> body;
@@ -236,7 +244,7 @@ GTEST_TEST(CollisionFilterGroupCompile, IgnoreNonExistentGroup) {
   EXPECT_EQ(manager.get_ignore_mask(body), expected_ignores);
 }
 
-// Tests that references to redundant groups behaves the same as a single
+// Tests that references to redundant groups behave the same as a single
 // reference.
 GTEST_TEST(CollisionFilterGroupCompile, IgnoreRedundantGroup) {
   CollisionFilterGroupManager<double> manager;
@@ -292,8 +300,10 @@ GTEST_TEST(CollisionFilterGroupCompile, ClearFlushesData) {
   EXPECT_EQ(manager.get_group_mask(body2), kNoneMask);
   EXPECT_EQ(manager.get_ignore_mask(body2), kNoneMask);
   // Confirms that the groups have been deleted.
-  EXPECT_EQ(manager.GetGroupId("group1"), -1);
-  EXPECT_EQ(manager.GetGroupId("group2"), -1);
+  EXPECT_EQ(manager.GetGroupId("group1"),
+            CollisionFilterGroupManager<double>::kInvalidGroupId);
+  EXPECT_EQ(manager.GetGroupId("group2"),
+            CollisionFilterGroupManager<double>::kInvalidGroupId);
 
   // Confirms that the available group counter has continued counting.
   manager.DefineCollisionFilterGroup("group3");
@@ -350,7 +360,7 @@ GTEST_TEST(CollisionFilterGroupElement, ElementCanCollideWithTest) {
 // order to do so, I need to support modifications of the underlying model
 // (a la RBT::updateCollisionTransform.)
 
-// This test confirms that when a body is being added to an non-existant
+// This test confirms that when a body is being added to an non-existent
 // group through the RigidBodyTree interface, that a meaningful exception is
 // thrown.
 GTEST_TEST(CollisionFilterGroupRBT, AddBodyToUndefinedGroup) {

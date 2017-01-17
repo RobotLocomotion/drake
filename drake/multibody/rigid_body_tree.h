@@ -1185,7 +1185,7 @@ class RigidBodyTree {
    * be unique in the current session (see CollisionFilterGroupManager for more
    * detail).  Duplicate names or attempting to add more collision filter groups
    * than the system can handle will lead to failure. In the event of failure,
-   * an exception is thrown.
+   * an exception is thrown.  kMaxNumCollisionFilterGroups defines the limit.
    * @param name        The unique name of the new group.
    */
   void DefineCollisionFilterGroup(const std::string& name);
@@ -1221,7 +1221,7 @@ class RigidBodyTree {
   // removed.  There is a corresponding method on CollisionFilterGroupManager.
   /**
    Directly set the masks for a body.  The values will remain in the current
-   session (i.e., until Clear is called).
+   session (i.e., until CollisionFilterGroupManager::Clear() is called).
    This is a convenience function for Matlab integration.  The Matlab parser
    handles the mapping of collision filter group names to ids and passes the
    mapped ids directly the manager for when the tree gets compiled.  It relies

@@ -21,6 +21,9 @@ CollisionFilterGroup<T>::CollisionFilterGroup(const std::string& name, int id)
 }
 
 template <typename T>
+const int CollisionFilterGroupManager<T>::kInvalidGroupId = -1;
+
+template <typename T>
 void CollisionFilterGroupManager<T>::DefineCollisionFilterGroup(
     const std::string& name) {
   auto itr = collision_filter_groups_.find(name);
@@ -91,7 +94,7 @@ template <typename T>
 int CollisionFilterGroupManager<T>::GetGroupId(const std::string& group_name) {
   auto itr = collision_filter_groups_.find(group_name);
   if (itr == collision_filter_groups_.end()) {
-    return -1;
+    return kInvalidGroupId;
   }
   return itr->second.get_mask_id();
 }
