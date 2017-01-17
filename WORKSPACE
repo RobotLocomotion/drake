@@ -52,6 +52,13 @@ new_git_repository(
     build_file = "tools/spdlog.BUILD",
 )
 
+new_git_repository(
+    name = "tinyobjloader",
+    remote = "https://github.com/syoyo/tinyobjloader.git",
+    commit = "7c3206f9193ca259b73fec6556cdcab45c1f5723",
+    build_file = "tools/tinyobjloader.BUILD",
+)
+
 maven_jar(
     name = "net_sf_jchart2d_jchart2d",
     artifact = "net.sf.jchart2d:jchart2d:3.3.2",
@@ -91,6 +98,13 @@ new_git_repository(
     remote = "https://github.com/flexible-collision-library/fcl.git",
     commit = "06d48b3b6f3605b8caf119d5208d8156eb64fe0d",
     build_file = "tools/fcl.BUILD",
+)
+
+new_git_repository(
+    name = "tinyobjloader",
+    remote = "https://github.com/syoyo/tinyobjloader.git",
+    commit = "7c3206f9193ca259b73fec6556cdcab45c1f5723",
+    build_file = "tools/tinyobjloader.BUILD",
 )
 
 # Necessary for buildifier.
