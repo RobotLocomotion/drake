@@ -21,3 +21,8 @@ if(VTK_FOUND)
   drake_add_cc_test(rgbd_camera_test)
   target_link_libraries(rgbd_camera_test drakeSensors)
 endif()
+
+drake_add_cc_test(gyroscope_test)
+target_link_libraries(gyroscope_test
+    drakeMultibodyParsers
+    drakeSensors)
