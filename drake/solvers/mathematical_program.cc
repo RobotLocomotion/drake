@@ -65,7 +65,6 @@ AttributesSet kGenericSolverCapabilities =
 bool is_satisfied(AttributesSet required, AttributesSet available) {
   return ((required & ~available) == kNoCapabilities);
 }
-
 }  // anon namespace
 
 enum {
@@ -440,10 +439,10 @@ void MathematicalProgram::AddConstraint(
   lorentz_cone_constraint_.push_back(binding);
 }
 
-Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
-    const Eigen::Ref<const VectorX<drake::symbolic::Expression>>& v) {
-  DRAKE_DEMAND(v.rows() >= 2);
-
+void MathematicalProgram::DecomposeLinearExpression(const Eigen::Ref<const VectorX<drake::symbolic::Expression>> &v,
+                                                    Eigen::MatrixXd* A,
+                                                    Eigen::VectorXd* b,
+                                                    VectorXDecisionVariable* vars) {
   // 0. Setup map_var_to_index and var_vec.
   unordered_map<size_t, int> map_var_to_index;
   vector<symbolic::Variable> var_vec;
@@ -458,35 +457,42 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
   }
 
   // 1. Construct vars using var_vec.
-  VectorXDecisionVariable vars{var_vec.size()};
-  for (int i{0}; i < vars.size(); ++i) {
-    vars(i) = var_vec[i];
+  vars->resize(var_vec.size());
+  for (int i{0}; i < vars->size(); ++i) {
+    (*vars)(i) = var_vec[i];
   }
 
   // 2. Construct decompose v as
   // v = A * vars + b
-  Eigen::MatrixXd A{Eigen::MatrixXd::Zero(v.size(), vars.size())};
-  Eigen::VectorXd b(v.size());
+  *A = Eigen::MatrixXd::Zero(v.rows(), vars->rows());
+  *b = Eigen::VectorXd::Zero(v.rows());
   for (int i{0}; i < v.size(); ++i) {
     const symbolic::Expression& e_i{v(i)};
     if (is_addition(e_i)) {
-      DecomposeLinearExpression(e_i, map_var_to_index, A.row(i),
-                                &b(i));
+      DecomposeLinearExpression(e_i, map_var_to_index, A->row(i), b->data() + i);
     } else if (is_variable(e_i)) {
       // i-th row is var_i
       const symbolic::Variable& var_i{get_variable(e_i)};
-      A(i, map_var_to_index[var_i.get_id()]) = 1;
-      b(i) = 0;
+      (*A)(i, map_var_to_index[var_i.get_id()]) = 1;
+      (*b)(i) = 0;
     } else if (is_constant(e_i)) {
-      b(i) = get_constant_value(e_i);
+      (*b)(i) = get_constant_value(e_i);
 
     } else {
-      throw SymbolicError(e_i,
-                          "non-linear but called with AddLorentzConeConstraint");
+      throw SymbolicError(e_i, "is non-linear");
     }
   }
-  return Binding<LorentzConeConstraint>{AddLorentzConeConstraint(A, b, vars),
-                                   vars};
+}
+
+
+Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
+    const Eigen::Ref<const VectorX<drake::symbolic::Expression>>& v) {
+  DRAKE_DEMAND(v.rows() >= 2);
+  Eigen::MatrixXd A{};
+  Eigen::VectorXd b(v.size());
+  VectorXDecisionVariable vars{};
+  DecomposeLinearExpression(v, &A, &b, &vars);
+  return Binding<LorentzConeConstraint>(AddLorentzConeConstraint(A, b, vars), vars);
 }
 
 void MathematicalProgram::AddConstraint(
@@ -517,6 +523,16 @@ void MathematicalProgram::AddConstraint(
     std::shared_ptr<RotatedLorentzConeConstraint> con,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   AddConstraint(Binding<RotatedLorentzConeConstraint>(con, vars));
+}
+
+Binding<RotatedLorentzConeConstraint> MathematicalProgram::AddRotatedLorentzConeConstraint(
+    const Eigen::Ref<const VectorX<drake::symbolic::Expression>>& v) {
+  DRAKE_DEMAND(v.rows() >= 3);
+  Eigen::MatrixXd A{};
+  Eigen::VectorXd b(v.size());
+  VectorXDecisionVariable vars{};
+  DecomposeLinearExpression(v, &A, &b, &vars);
+  return Binding<RotatedLorentzConeConstraint>(AddRotatedLorentzConeConstraint(A, b, vars), vars);
 }
 
 std::shared_ptr<RotatedLorentzConeConstraint>
