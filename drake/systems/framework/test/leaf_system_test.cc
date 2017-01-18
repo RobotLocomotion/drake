@@ -30,12 +30,16 @@ class TestSystem : public LeafSystem<T> {
   void AddPeriodicUpdate() {
     const double period = 10.0;
     const double offset = 5.0;
-    this->DeclarePeriodicUpdate(period, offset);
+    this->DeclarePeriodicDiscreteUpdate(period, offset);
   }
 
   void AddPeriodicUpdate(double period) {
     const double offset = 0.0;
-    this->DeclarePeriodicUpdate(period, offset);
+    this->DeclarePeriodicDiscreteUpdate(period, offset);
+  }
+
+  void AddPeriodicUnrestrictedUpdate(double period, double offset) {
+    this->DeclarePeriodicUnrestrictedUpdate(period, offset);
   }
 
   void AddPublish(double period) {
@@ -103,6 +107,25 @@ TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
   ASSERT_EQ(1u, actions.events.size());
   EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
             actions.events[0].action);
+}
+
+// Tests that if the current time is smaller than the offset, the next
+// update time is the offset, DiscreteUpdate and UnrestrictedUpdate happen
+// at the same time.
+TEST_F(LeafSystemTest, EventsAtTheSameTime) {
+  context_.set_time(2.0);
+  UpdateActions<double> actions;
+  // Both actions happen at t = 5.
+  system_.AddPeriodicUpdate();
+  system_.AddPeriodicUnrestrictedUpdate(3, 5);
+  system_.CalcNextUpdateTime(context_, &actions);
+
+  EXPECT_EQ(5.0, actions.time);
+  ASSERT_EQ(2u, actions.events.size());
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
+            actions.events[0].action);
+  EXPECT_EQ(DiscreteEvent<double>::kUnrestrictedUpdateAction,
+            actions.events[1].action);
 }
 
 // Tests that if the current time is exactly the offset, the next
