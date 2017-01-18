@@ -593,6 +593,14 @@ void ExpressionMulFactory::AddTerm(const Expression& base,
   // The following assertion holds because of
   // ExpressionMulFactory::AddExpression.
   DRAKE_ASSERT(!(is_constant(base) && is_constant(exponent)));
+  if (is_pow(base)) {
+    // If (base, exponent) = (pow(e1, e2), exponent)), then add (e1, e2 *
+    // exponent)
+    // Example: (x^2)^3 => x^(2 * 3)
+    return AddTerm(get_first_argument(base),
+                   get_second_argument(base) * exponent);
+  }
+
   const auto it(base_to_exp_map_.find(base));
   if (it != base_to_exp_map_.end()) {
     // base is already in map.
@@ -608,16 +616,8 @@ void ExpressionMulFactory::AddTerm(const Expression& base,
       base_to_exp_map_.erase(it);
     }
   } else {
-    // Product is not found in base_to_exp_map_. Add the entry (base, exponent).
-    if (is_pow(base)) {
-      // If (base, exponent) = (pow(e1, e2), exponent)), then add (e1, e2 *
-      // exponent)
-      // Example: (x^2)^3 => x^(2 * 3)
-      base_to_exp_map_.emplace(get_first_argument(base),
-                               get_second_argument(base) * exponent);
-    } else {
-      base_to_exp_map_.emplace(base, exponent);
-    }
+    // Product is not found in term_to_exp_map_. Add the entry (base, exponent).
+    base_to_exp_map_.emplace(base, exponent);
   }
 }
 
