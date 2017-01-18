@@ -539,6 +539,57 @@ void SetDynamics(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
 }
 
 /**
+ * Parses the URDF collision filter group specification. Attempts to add
+ * collision filter groups (with their member lists and ignore lists) to the
+ * tree specification.  Inconsistent definitions will lead to thrown
+ * exceptions.
+ *
+ * @param tree                  The rigid body tree containing the bodies to
+ *                              which the filters will be applied.
+ * @param node                  The XML node containing the filter details.
+ * @param model_instance_id     The id of the current model instance.
+ */
+void ParseCollisionFilterGroup(RigidBodyTree<double>* tree, XMLElement* node,
+                               int model_instance_id) {
+  const char* attr = node->Attribute("drake_ignore");
+  if (attr && (std::strcmp(attr, "true") == 0)) return;
+
+  // TODO(SeanCurtis-TRI): After upgrading to newest tinyxml, add line numbers
+  // to error messages.
+  attr = node->Attribute("name");
+  if (!attr)
+    throw runtime_error(
+        "Collision filter group specification missing name attribute.");
+  string group_name(attr);
+
+  tree->DefineCollisionFilterGroup(group_name);
+
+  for (XMLElement* member_node = node->FirstChildElement("member"); member_node;
+       member_node = member_node->NextSiblingElement("member")) {
+    const char* link_name = member_node->Attribute("link");
+    if (!link_name)
+      throw runtime_error("Collision filter group " + group_name +
+                          " provides a member tag "
+                          "without specifying the \"link\" attribute.");
+    tree->AddCollisionFilterGroupMember(group_name, link_name,
+                                        model_instance_id);
+  }
+
+  for (XMLElement* ignore_node =
+           node->FirstChildElement("ignored_collision_filter_group");
+       ignore_node; ignore_node = ignore_node->NextSiblingElement(
+                        "ignored_collision_filter_group")) {
+    const char* target_name = ignore_node->Attribute("collision_filter_group");
+    if (!target_name)
+      throw runtime_error(
+          "Collision filter group provides a tag specifying a group to ignore "
+          "without specifying the \"collision_filter_group\" attribute.");
+
+    tree->AddCollisionFilterIgnoreTarget(group_name, target_name);
+  }
+}
+
+/**
  * Parses a joint URDF specification to obtain the names of the joint, parent
  * link, child link, and the joint type. An exception is thrown if any of these
  * names cannot be determined.
@@ -1029,7 +1080,13 @@ ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
   //}
   // END_DEBUG
 
-  // todo: parse collision filter groups
+  // Parses the collision filter groups.
+  for (XMLElement* group_node =
+           node->FirstChildElement("collision_filter_group");
+       group_node;
+       group_node = group_node->NextSiblingElement("collision_filter_group")) {
+    ParseCollisionFilterGroup(tree, group_node, model_instance_id);
+  }
 
   // Parses the model's joint elements.
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;

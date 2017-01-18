@@ -16,9 +16,7 @@ using std::stringstream;
 using std::vector;
 
 template <typename T>
-RigidBody<T>::RigidBody()
-    : collision_filter_group_(DrakeCollision::DEFAULT_GROUP),
-      collision_filter_ignores_(DrakeCollision::NONE_MASK) {
+RigidBody<T>::RigidBody() {
   center_of_mass_ = Vector3d::Zero();
   spatial_inertia_ << drake::SquareTwistMatrix<double>::Zero();
 }
@@ -186,54 +184,6 @@ Isometry3d RigidBody<T>::ComputeWorldFixedPose() const {
 }
 
 template <typename T>
-void RigidBody<T>::setCollisionFilter(const DrakeCollision::bitmask& group,
-                                   const DrakeCollision::bitmask& ignores) {
-  setCollisionFilterGroup(group);
-  setCollisionFilterIgnores(ignores);
-}
-
-template <typename T>
-const DrakeCollision::bitmask& RigidBody<T>::getCollisionFilterGroup() const {
-  return collision_filter_group_;
-}
-
-template <typename T>
-void RigidBody<T>::setCollisionFilterGroup(
-  const DrakeCollision::bitmask& group) {
-  collision_filter_group_ = group;
-}
-
-template <typename T>
-const DrakeCollision::bitmask& RigidBody<T>::getCollisionFilterIgnores() const {
-  return collision_filter_ignores_;
-}
-
-template <typename T>
-void RigidBody<T>::setCollisionFilterIgnores(const DrakeCollision::bitmask&
-    ignores) {
-  collision_filter_ignores_ = ignores;
-}
-
-template <typename T>
-void RigidBody<T>::addToCollisionFilterGroup(const DrakeCollision::bitmask&
-    group) {
-  collision_filter_group_ |= group;
-}
-
-template <typename T>
-void RigidBody<T>::ignoreCollisionFilterGroup(const DrakeCollision::bitmask&
-    group) {
-  collision_filter_ignores_ |= group;
-}
-
-template <typename T>
-void RigidBody<T>::collideWithCollisionFilterGroup(
-  const DrakeCollision::bitmask&
-    group) {
-  collision_filter_ignores_ &= ~group;
-}
-
-template <typename T>
 bool RigidBody<T>::adjacentTo(const RigidBody& other) const {
   return ((has_as_parent(other) && !(joint_ && joint_->is_floating())) ||
           (other.has_as_parent(*this) &&
@@ -242,10 +192,7 @@ bool RigidBody<T>::adjacentTo(const RigidBody& other) const {
 
 template <typename T>
 bool RigidBody<T>::CanCollideWith(const RigidBody& other) const {
-  bool ignored =
-      this == &other || adjacentTo(other) ||
-      (collision_filter_group_ & other.getCollisionFilterIgnores()).any() ||
-      (other.getCollisionFilterGroup() & collision_filter_ignores_).any();
+  bool ignored = this == &other || adjacentTo(other);
   return !ignored;
 }
 

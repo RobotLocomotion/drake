@@ -59,6 +59,8 @@ using drake::math::gradientMatrixToAutoDiff;
 using drake::math::Gradient;
 using drake::multibody::joints::FloatingBaseType;
 
+using DrakeCollision::CollisionFilterGroup;
+
 using std::allocator;
 using std::cerr;
 using std::cout;
@@ -202,6 +204,46 @@ const RigidBodyActuator& RigidBodyTree<T>::GetActuator(
 }
 
 template <typename T>
+void RigidBodyTree<T>::DefineCollisionFilterGroup(const std::string& name) {
+  collision_group_manager_.DefineCollisionFilterGroup(name);
+}
+
+template <typename T>
+void RigidBodyTree<T>::AddCollisionFilterGroupMember(
+    const std::string& group_name, const std::string& body_name, int model_id) {
+  int body_index = FindBodyIndex(body_name, model_id);
+  RigidBody<T>* body = bodies[body_index].get();
+  if (body->get_num_collision_elements() > 0) {
+    throw std::runtime_error("Attempting to add a body, '" + body->get_name() +
+                             "', to a collision group, '" +
+                             group_name +
+                             "' that has already been compiled with "
+                             "collision elements.");
+  }
+  if (!collision_group_manager_.AddCollisionFilterGroupMember(group_name,
+                                                              *body)) {
+    throw std::runtime_error(
+        "Attempting to add a link to an undefined collision filter group: "
+        "Adding " +
+        body->get_name() + " to " + group_name + ".");
+  }
+}
+
+template <typename T>
+void RigidBodyTree<T>::AddCollisionFilterIgnoreTarget(
+    const std::string& group_name, const std::string& target_group_name) {
+  collision_group_manager_.AddCollisionFilterIgnoreTarget(group_name,
+                                                          target_group_name);
+}
+
+template <typename T>
+void RigidBodyTree<T>::SetBodyCollisionFilters(
+    const RigidBody<T>& body, const DrakeCollision::bitmask& group,
+    const DrakeCollision::bitmask& ignores) {
+  collision_group_manager_.SetBodyCollisionFilters(body, group, ignores);
+}
+
+template <typename T>
 void RigidBodyTree<T>::compile(void) {
   SortTree();
 
@@ -317,6 +359,28 @@ void RigidBodyTree<T>::CompileCollisionState() {
     }
   }
 
+  // Process collision filter groups
+  collision_group_manager_.CompileGroups();
+
+  // Set the collision filter data on the body's elements. Note: this does
+  // *not* update the collision elements that may have already been registered
+  // with the collision model. But attempts to add bodies with registered
+  // collision elements to a collision filter group, should have already thrown
+  // an exception.
+  for (auto& pair : body_collision_map_) {
+    RigidBody<T>* body = pair.first;
+    DrakeCollision::bitmask group =
+        collision_group_manager_.get_group_mask(*body);
+    DrakeCollision::bitmask ignore =
+        collision_group_manager_.get_ignore_mask(*body);
+    BodyCollisions& elements = pair.second;
+    for (const auto& collision_item : elements) {
+      element_order_[collision_item.element]->set_collision_filter(group,
+                                                                   ignore);
+    }
+  }
+  collision_group_manager_.Clear();
+
   // Builds cliques for collision filtering.
   CreateCollisionCliques();
 
@@ -390,8 +454,6 @@ void RigidBodyTree<T>::CreateCollisionCliques() {
     RigidBody<T>* body_i = bodies[i].get();
     for (size_t j = i + 1; j < bodies.size(); ++j) {
       RigidBody<T>* body_j = bodies[j].get();
-      // TODO(SeanCurtis-TRI): This translates collision filter information into
-      // cliques.  In the future, don't collapse these.
       if (!body_i->CanCollideWith(*body_j)) {
         BodyCollisions& elements_i =  body_collision_map_[body_i];
         for (const auto& item : elements_i) {

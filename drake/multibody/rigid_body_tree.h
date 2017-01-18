@@ -20,6 +20,7 @@
 #include "drake/multibody/kinematics_cache-inl.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_frame.h"
+#include "drake/multibody/collision/collision_filter.h"
 #include "drake/multibody/collision/drake_collision.h"
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -1180,6 +1181,57 @@ class RigidBodyTree {
   RigidBody<T>* add_rigid_body(std::unique_ptr<RigidBody<T>> body);
 
   /**
+   * Attempts to define a new collision filter group.  The given name *must*
+   * be unique in the current session (see CollisionFilterGroupManager for more
+   * detail).  Duplicate names or attempting to add more collision filter groups
+   * than the system can handle will lead to failure. In the event of failure,
+   * an exception is thrown.  kMaxNumCollisionFilterGroups defines the limit.
+   * @param name        The unique name of the new group.
+   */
+  void DefineCollisionFilterGroup(const std::string& name);
+
+  /**
+   * Adds a RigidBody to a collision filter group.  The RigidBody is referenced
+   * by name and model instance id. The process will fail if the body cannot be
+   * found, if the group cannot be found, or if the indicated body already has
+   * *registered* collision elements (see Model::AddElement() for more details).
+   * An exception is thrown in the event of failure.
+   * @param group_name      The collision filter group name to add the body to.
+   * @param body_name       The name of the body to add.
+   * @param model_id        The id of the model instance to which this body
+   *                        belongs.
+   */
+  void AddCollisionFilterGroupMember(const std::string& group_name,
+                                     const std::string& body_name,
+                                     int model_id);
+
+  /**
+   * Adds a collision group to the set of groups ignored by the specified
+   * collision filter group.  Will fail if the specified group name
+   * does not refer to an existing collision filter group.  (The
+   * target group name need not exist at this time.)  An exception is thrown
+   * upon failure.
+   * @param group_name
+   * @param target_group_name
+   */
+  void AddCollisionFilterIgnoreTarget(const std::string& group_name,
+                                      const std::string& target_group_name);
+
+  // TODO(SeanCurtis-TRI): Kill this method when matlab dependencies are
+  // removed.  There is a corresponding method on CollisionFilterGroupManager.
+  /**
+   Directly set the masks for a body.  The values will remain in the current
+   session (i.e., until CollisionFilterGroupManager::Clear() is called).
+   This is a convenience function for Matlab integration.  The Matlab parser
+   handles the mapping of collision filter group names to ids and passes the
+   mapped ids directly the manager for when the tree gets compiled.  It relies
+   on correct encoding of groups into bitmasks.
+   */
+  void SetBodyCollisionFilters(const RigidBody<T>& body,
+                               const DrakeCollision::bitmask& group,
+                               const DrakeCollision::bitmask& ignores);
+
+  /**
    * @brief Returns a mutable reference to the RigidBody associated with the
    * world in the model. This is the root of the RigidBodyTree.
    */
@@ -1354,12 +1406,16 @@ class RigidBodyTree {
   // proper, intermediate representation.
   std::unordered_map<RigidBody<T>*, BodyCollisions>
       body_collision_map_;
+
   // Bullet's collision results are affected by the order in which the collision
   // elements are added. This queues the collision elements in the added order
   // so that when actually registered with the collision engine, they'll be
   // submitted in the invocation order.
   // See https://github.com/bulletphysics/bullet3/issues/888
   std::vector< std::unique_ptr<DrakeCollision::Element>> element_order_;
+
+  // Manager for instantiating and managing collision filter groups.
+  DrakeCollision::CollisionFilterGroupManager<T> collision_group_manager_{};
 };
 
 typedef RigidBodyTree<double> RigidBodyTreed;
