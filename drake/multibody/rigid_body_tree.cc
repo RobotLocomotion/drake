@@ -2904,24 +2904,21 @@ Vector6<T> RigidBodyTree<T>::CalcBodySpatialVelocityInWorldFrame(
 
   const auto& body_element = cache.get_element(body.get_body_index());
 
-  // Plucker velocity vector of body B with respect to the world W, expressed in
-  // the world frame W.
-  // Alternatively, you can think of it as the spatial velocity of frame Bwo
-  // measured and expressed in the world frame, where Bwo is rigidly attached
-  // to B and instantaneously coincides with the world frame.
-  const Vector6<T>& plucker_velocity_WB = body_element.twist_in_world;
-
   // Position of the frame B's origin in the world frame.
   const Vector3<T> p_WB = body_element.transform_to_world.translation();
 
-  Vector6<T> spatial_velocity_WB = plucker_velocity_WB;
+  // body_element.twist_in_world is the spatial velocity of frame Bwo measured
+  // and expressed in the world frame, where Bwo is rigidly attached to B and
+  // instantaneously coincides with the world frame.
+  const Vector6<T>& V_WBwo = body_element.twist_in_world;
 
-  // Compute body linear velocity from the instantaneous velocity of a point
-  // located at the world's origin rigidly attached to B.
-  auto w_WB = plucker_velocity_WB.template topRows<3>();
-  spatial_velocity_WB.template bottomRows<3>() += w_WB.cross(p_WB);
+  Vector6<T> V_WB = V_WBwo;
 
-  return spatial_velocity_WB;
+  // Computes V_WB from V_WBwo.
+  auto w_WB = V_WBwo.template topRows<3>();
+  V_WB.template bottomRows<3>() += w_WB.cross(p_WB);
+
+  return V_WB;
 }
 
 template <typename T>
@@ -2971,7 +2968,10 @@ RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianInWorldFrame(
       CalcFramePoseInWorldFrame(cache, body, X_BF).translation();
 
   std::vector<int> v_or_q_indices;
-  drake::MatrixX<T> plucker_J_WB = geometricJacobian(
+  // J_WBwo is the Jacobian of the spatial velocity of frame Bwo measured
+  // and expressed in the world frame, where Bwo is rigidly attached to B and
+  // instantaneously coincides with the world frame.
+  drake::MatrixX<T> J_WBwo = geometricJacobian(
       cache, world_index, body.get_body_index(), world_index, in_terms_of_qdot,
       &v_or_q_indices);
 
@@ -2979,10 +2979,10 @@ RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianInWorldFrame(
   drake::Matrix6X<T> J_WF = MatrixX<T>::Zero(6, num_col);
   for (int idx : v_or_q_indices) {
     // Angular velocity stays the same.
-    J_WF.col(idx) = plucker_J_WB.col(col);
+    J_WF.col(idx) = J_WBwo.col(col);
     // Linear velocity needs an additional cross product term.
     J_WF.col(idx).template tail<3>() +=
-        plucker_J_WB.col(col).template head<3>().cross(p_WF);
+        J_WBwo.col(col).template head<3>().cross(p_WF);
     col++;
   }
   return J_WF;
@@ -2995,29 +2995,27 @@ RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
   const int world_index = world().get_body_index();
   const int body_index = body.get_body_index();
   Vector3<T> p_WF = CalcFramePoseInWorldFrame(cache, body, X_BF).translation();
-  Vector3<T> pdot_WF = CalcFrameSpatialVelocityInWorldFrame(
-      cache, body, X_BF).template tail<3>();
+  Vector6<T> V_WF = CalcFrameSpatialVelocityInWorldFrame(cache, body, X_BF);
+  Vector3<T> pdot_WF = V_WF.template tail<3>();
+  Vector3<T> w_WF = V_WF.template head<3>();
 
-  TwistVector<T> plucker_V_WB =
-      relativeTwist(cache, world_index, body_index, world_index);
-  TwistVector<T> plucker_Jdv_WB =
+  // Define frame Bwo, which is rigidly attached to B and instantaneously
+  // coincides with the world frame. V_WBwo is the spatial velocity of Bwo
+  // measured and expressed in the world frame. Jdv_WBwo is the Jacobian dot of
+  // V_WBwo times the generalized velocity.
+  TwistVector<T> Jdv_WBwo =
       geometricJacobianDotTimesV(cache, world_index, body_index, world_index);
 
-  // Let J = J_WF, and pJ = plucker_J_WF, s.t.
-  // V_WF = J_WF * v, and plucker_V_WF = plucker_J_WF * v, where V_WF is the
-  // spatial velocity of frame F meassured and expressed in the world frame,
-  // and plucker_V_WF is the plucker velocity of the same quantity.
-  // J = CalcFrameSpatialVelocityJacobianInWorldFrame(), and
-  // pJ = geometricJacobian().
-  //
-  // For column i of J, J(i) = [pJ_ang(i); pJ_lin(i) + pJ_ang(i) x p_WF],
+  // For column i of J_WF,
+  // J_WF(i) = [J_WBwo_ang(i); J_WBwo_lin(i) + J_WBwo_ang(i) x p_WF],
   // where _ang and _lin are the angular and linear components respectively.
-  // Thus, for Jdv, the angular part stays the same, and the linear part equals:
-  //  = [pJdot_lin + pJdot_ang x p_WF + pJ_ang x pdot_WF] * v
-  //  = [pJdv_lin + pJdv_ang x p_WF + omega_WF x pdot_WF]
-  TwistVector<T> Jdv_WF = plucker_Jdv_WB;
-  Jdv_WF.template tail<3>() += plucker_V_WB.template head<3>().cross(pdot_WF) +
-                               plucker_Jdv_WB.template head<3>().cross(p_WF);
+  // Thus, for Jdv_WF, the angular part is the same with the angular part of
+  // J_WBwo. For the linear part:
+  //  = [Jdot_WBwo_lin + Jdot_WBwo_ang x p_WF + J_WBwo_ang x pdot_WF] * v
+  //  = [Jdv_WBwo_lin + Jdv_WBwo_ang x p_WF + w_WF x pdot_WF]
+  TwistVector<T> Jdv_WF = Jdv_WBwo;
+  Jdv_WF.template tail<3>() += w_WF.template head<3>().cross(pdot_WF) +
+                               Jdv_WBwo.template head<3>().cross(p_WF);
   return Jdv_WF;
 }
 
