@@ -11,6 +11,7 @@
 #include <Eigen/Core>
 #include <unsupported/Eigen/Polynomials>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 
 /** A scalar multi-variate polynomial, modeled after the msspoly in spotless.
@@ -461,6 +462,24 @@ class Polynomial {
   /// Sorts through Monomial list and merges any that have the same powers.
   void MakeMonomialsUnique(void);
 };
+
+// Implements power function for Polynomial. It computes <tt>p^n</tt> using
+// recursion whose depth is bounded to O(log n).
+template <typename CoefficientType>
+Polynomial<CoefficientType> pow(
+    const Polynomial<CoefficientType>& p,
+    typename Polynomial<CoefficientType>::PowerType n) {
+  DRAKE_ASSERT(n >= 0);
+  if (n == 0) {
+    return Polynomial<CoefficientType>{1.0};
+  }
+  const Polynomial<CoefficientType> p_half{pow(p, n / 2)};
+  if (n % 2 == 1) {
+    return p * p_half * p_half;  // Odd n case.
+  } else {
+    return p_half * p_half;  // Even n case.
+  }
+}
 
 template <typename CoefficientType, int Rows, int Cols>
 std::ostream& operator<<(

@@ -71,6 +71,9 @@ void testOperators() {
     Polynomial<CoefficientType> poly1_scaled = poly1 * scalar;
     Polynomial<CoefficientType> poly1_div = poly1 / scalar;
     Polynomial<CoefficientType> poly1_times_poly1 = poly1;
+    Polynomial<CoefficientType> pow_poly1_3 = pow(poly1, 3);
+    Polynomial<CoefficientType> pow_poly1_4 = pow(poly1, 4);
+    Polynomial<CoefficientType> pow_poly1_10 = pow(poly1, 10);
     poly1_times_poly1 *= poly1_times_poly1;
 
     double t = uniform(generator);
@@ -94,6 +97,16 @@ void testOperators() {
     EXPECT_NEAR(poly1_times_poly1.EvaluateUnivariate(t),
                 poly1.EvaluateUnivariate(t) * poly1.EvaluateUnivariate(t),
                 1e-8);
+    EXPECT_NEAR(pow_poly1_3.EvaluateUnivariate(t),
+                pow(poly1.EvaluateUnivariate(t), 3), 1e-8);
+    EXPECT_NEAR(pow_poly1_4.EvaluateUnivariate(t),
+                pow(poly1.EvaluateUnivariate(t), 4), 1e-8);
+    EXPECT_NEAR(pow_poly1_10.EvaluateUnivariate(t),
+                pow(poly1.EvaluateUnivariate(t), 10), 1e-8);
+    EXPECT_NEAR(pow_poly1_3.EvaluateUnivariate(t) *
+                    pow_poly1_4.EvaluateUnivariate(t) *
+                    pow_poly1_3.EvaluateUnivariate(t),
+                pow_poly1_10.EvaluateUnivariate(t), 1e-8);
 
     // Check the '==' operator.
     EXPECT_TRUE(poly1 + poly2 == sum);
