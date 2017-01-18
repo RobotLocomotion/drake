@@ -604,24 +604,19 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
     auto y = prog_intersect.NewContinuousVariables(kXdim, "y");
 
     // Add the constraint that both
-    // A_lorentz3 * u1 + b_lorentz3
-    // and
-    // A_lorentz4 * u2 + b_lorentz4
-    // are in the Lorentz cone.
-    // A_lorentz3 = [0; I], b_lorentz3 = [1; 0]
-    // A_lorentz4 = [0; I], b_lorentz4 = [1; 0]
-    Eigen::MatrixXd A_lorentz3(R1.cols() + 1, R1.cols());
-    Eigen::MatrixXd A_lorentz4(R2.cols() + 1, R2.cols());
-    Eigen::VectorXd b_lorentz3(R1.cols() + 1);
-    Eigen::VectorXd b_lorentz4(R2.cols() + 1);
-    A_lorentz3 << Eigen::RowVectorXd::Zero(R1.cols()),
-        Eigen::MatrixXd::Identity(R1.cols(), R1.cols());
-    A_lorentz4 << Eigen::RowVectorXd::Zero(R2.cols()),
-        Eigen::MatrixXd::Identity(R2.cols(), R1.cols());
-    b_lorentz3 << 1, Eigen::VectorXd::Zero(R1.cols());
-    b_lorentz4 << 1, Eigen::VectorXd::Zero(R2.cols());
-    prog_intersect.AddLorentzConeConstraint(A_lorentz3, b_lorentz3, u1);
-    prog_intersect.AddLorentzConeConstraint(A_lorentz4, b_lorentz4, u2);
+    // [1; u1] and [1; u2] are in the Lorentz cone
+    VectorX<symbolic::Expression> e1(1 + u1.rows());
+    VectorX<symbolic::Expression> e2(1 + u2.rows());
+    e1(0) = 1;
+    e2(0) = 1;
+    for (int i = 0; i < u1.rows(); ++i) {
+      e1(i + 1) = +u1(i);
+    }
+    for (int i = 0; i < u2.rows(); ++i) {
+      e2(i + 1) = +u2(i);
+    }
+    prog_intersect.AddLorentzConeConstraint(e1);
+    prog_intersect.AddLorentzConeConstraint(e2);
 
     // Add constraint y = x1 + R1*u1
     //                y = x2 + R2*u2
