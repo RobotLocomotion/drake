@@ -20,12 +20,6 @@ GTEST_TEST(ValueTest, Access) {
   EXPECT_EQ(3, erased.GetValueOrThrow<int>());
 }
 
-GTEST_TEST(ValueTest, Copy) {
-  Value<int> value(42);
-  Value<int> copied_value = value;
-  EXPECT_EQ(42, copied_value.get_value());
-}
-
 GTEST_TEST(ValueTest, Clone) {
   Value<int> value(43);
   const AbstractValue& erased = value;
@@ -117,9 +111,9 @@ class PrintableValue : public Value<T>, public PrintInterface {
  public:
   explicit PrintableValue(const T& v) : Value<T>(v) {}
 
-  // PrintableValues are copyable but not moveable.
-  PrintableValue(const PrintableValue<T>& other) = default;
-  PrintableValue& operator=(const PrintableValue<T>& other) = default;
+  // PrintableValues neither copyable nor moveable.
+  PrintableValue(const PrintableValue<T>& other) = delete;
+  PrintableValue& operator=(const PrintableValue<T>& other) = delete;
   PrintableValue(PrintableValue<T>&& other) = delete;
   PrintableValue& operator=(PrintableValue<T>&& other) = delete;
 
