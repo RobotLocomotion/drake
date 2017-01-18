@@ -40,6 +40,7 @@ namespace painleve {
 ///         (k=-1 indicates the bottom of the rod when theta = pi/2, k=+1
 ///         indicates the top of the rod when theta = pi/2, and k=0 indicates
 ///         both endpoints of the rod are contacting the halfspace).
+///
 /// Outputs: planar position (state indices 0 and 1) and orientation (state
 ///          index 2), and planar linear velocity (state indices 3 and 4) and
 ///          scalar angular velocity (state index 5) in units of m, radians,
@@ -75,11 +76,11 @@ class Painleve : public systems::LeafSystem<T> {
 
   /// Constructor for the Painleve' Paradox system using piecewise DAE based
   /// approach.
-  explicit Painleve();
+  Painleve();
 
   /// Constructor for the Painleve' Paradox system using time stepping approach.
   /// @param dt The integration step size.
-  Painleve(T dt);
+  explicit Painleve(T dt);
 
   /// Models impact using an inelastic impact model with friction.
   /// @p new_state is set to the output of the impact model on return.
@@ -132,12 +133,12 @@ class Painleve : public systems::LeafSystem<T> {
   T get_integration_step_size() const { return dt_; }
 
  protected:
-  std::unique_ptr<systems::AbstractState> AllocateAbstractState() 
+  std::unique_ptr<systems::AbstractState> AllocateAbstractState()
                                             const override;
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override;
   void DoCalcTimeDerivatives(const systems::Context<T>& context,
-                             systems::ContinuousState<T>* derivatives) 
+                             systems::ContinuousState<T>* derivatives)
                                const override;
   void DoCalcDiscreteVariableUpdates(const systems::Context<T>& context,
                                      systems::DiscreteState<T>* discrete_state)

@@ -6,6 +6,7 @@
 // For background, see http://drake.mit.edu/cxx_inl.html.
 
 #include <limits>
+#include <vector>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -478,7 +479,7 @@ void Painleve<T>::SetVelocityDerivatives(const systems::Context<T>& context,
   const double r = rod_length_;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const int k = (stheta > 0) ? -1 : 1;
+  const int k = context.template get_abstract_state<int>(1);
 
   // Verify that the vertical acceleration at the point of contact is zero
   // (i.e., cyddot = 0).
@@ -802,6 +803,8 @@ bool Painleve<T>::IsImpacting(const systems::Context<T>& context) const {
   using std::sin;
   using std::cos;
 
+  // TODO(edrumwri): incorporate modes into this?
+
   // Get state data necessary to compute the point of contact.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
   const T& y = state.GetAtIndex(1);
@@ -875,7 +878,7 @@ void Painleve<T>::DoCalcTimeDerivatives(
 
   // Call the proper derivative function (depending on mode type).
   switch (mode) {
-    case kBallisticMotion: 
+    case kBallisticMotion:
       return CalcTimeDerivativesBallistic(context, derivatives);
     case kSlidingSingleContact:
       return CalcTimeDerivativesOneContactSliding(context, derivatives);
@@ -887,7 +890,7 @@ void Painleve<T>::DoCalcTimeDerivatives(
       return CalcTimeDerivativesTwoContact(context, derivatives);
 
     default:
-      DRAKE_ABORT(); 
+      DRAKE_ABORT();
   }
 /*
   // Determine the height of the point of contact (cx, cy).
@@ -934,12 +937,12 @@ void Painleve<T>::DoCalcTimeDerivatives(
 */
 }
 
-/// Allocates the abstract state
+/// Allocates the abstract state (for piecewise DAE systems).
 template <typename T>
 std::unique_ptr<systems::AbstractState> Painleve<T>::
   AllocateAbstractState() const {
   if (dt_ == 0) {
-    // Piecewise DAE approach needs two  abstract variables (one mode and one 
+    // Piecewise DAE approach needs two  abstract variables (one mode and one
     // contact point indicator).
     std::vector<std::unique_ptr<systems::AbstractValue>> abstract_data;
     abstract_data.push_back(systems::PackValue(Painleve<T>::kInvalidMode));
@@ -968,13 +971,16 @@ void Painleve<T>::SetDefaultState(const systems::Context<T>& context,
     // DAE mode.
     state->get_mutable_continuous_state()->SetFromVector(x0);
 
-    // Point to the abstract data.
-    state->get_mutable_abstract_state()->get_mutable_abstract_state(0).template GetMutableValue<Painleve<T>::Mode>() = Painleve<T>::kSlidingSingleContact;
+    // Indicate that the rod is in the single contact sliding mode.
+    state->get_mutable_abstract_state()->get_mutable_abstract_state(0).
+        template GetMutableValue<Painleve<T>::Mode>() =
+            Painleve<T>::kSlidingSingleContact;
 
     // Contact determination code
     const double theta = x0(2);
     const int k = (std::sin(theta) > 0) ? -1 : 1;
-    state->get_mutable_abstract_state()->get_mutable_abstract_state(1).template GetMutableValue<int>() = k;
+    state->get_mutable_abstract_state()->get_mutable_abstract_state(1).
+        template GetMutableValue<int>() = k;
   } else {
     state->get_mutable_discrete_state()->get_mutable_discrete_state(0)->
         SetFromVector(x0);

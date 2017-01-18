@@ -55,6 +55,40 @@ class PainleveDAETest : public ::testing::Test {
     xc[3] = 1.0;
     xc[4] = 0.0;
     xc[5] = 0.0;
+
+    // Indicate that the rod is in the single contact sliding mode.
+    AbstractState* abs_state = context_->get_mutable_state()->
+                                 get_mutable_abstract_state();
+    abs_state->get_mutable_abstract_state(0).
+      template GetMutableValue<Painleve<double>::Mode>() =
+        Painleve<double>::kSlidingSingleContact;
+
+    // Contact determination code
+    const double theta = xc[2];
+    const int k = (std::sin(theta) > 0) ? -1 : 1;
+    abs_state->get_mutable_abstract_state(1).
+      template GetMutableValue<int>() = k;
+  }
+
+  void SetBallisticState() {
+    const double half_len = dut_->get_rod_length() / 2;
+    ContinuousState<double>& xc =
+        *context_->get_mutable_continuous_state();
+    xc[0] = 0.0;
+    xc[1] = 10*half_len;
+    xc[2] = M_PI_2;
+    xc[3] = 1.0;
+    xc[4] = 2.0;
+    xc[5] = 3.0;
+
+    // Set the mode to ballistic.
+    AbstractState* abs_state = context_->get_mutable_state()->
+                                 get_mutable_abstract_state();
+    abs_state->get_mutable_abstract_state(0).
+      template GetMutableValue<Painleve<double>::Mode>() =
+        Painleve<double>::kBallisticMotion;
+
+    // Note: contact point mode is now arbitrary.
   }
 
   // Sets the rod to an arbitrary impacting state.
@@ -170,6 +204,8 @@ TEST_F(PainleveDAETest, ImpactWorks) {
   xc[3] = 0.0;
   xc[4] = -1.0;
   xc[5] = 0.0;
+
+  // TODO(edrumwri): Set the abstract state.
   EXPECT_TRUE(dut_->IsImpacting(*context_));
 
   // Handle the impact.
@@ -185,21 +221,15 @@ TEST_F(PainleveDAETest, ImpactWorks) {
   EXPECT_NEAR(xc[3], 0.0, tol);
   EXPECT_NEAR(xc[4], 0.0, tol);
   EXPECT_NEAR(xc[5], 0.0, tol);
+
+  // TODO(edrumwri): Verify the abstract state.
 }
 
 // Verify that derivatives match what we expect from a non-inconsistent,
 // ballistic configuration.
 TEST_F(PainleveDAETest, ConsistentDerivativesBallistic) {
   // Set the initial state to ballistic motion.
-  const double half_len = dut_->get_rod_length() / 2;
-  ContinuousState<double>& xc =
-      *context_->get_mutable_continuous_state();
-  xc[0] = 0.0;
-  xc[1] = 10*half_len;
-  xc[2] = M_PI_2;
-  xc[3] = 1.0;
-  xc[4] = 2.0;
-  xc[5] = 3.0;
+  SetBallisticState();
 
   // Calculate the derivatives.
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
@@ -208,12 +238,17 @@ TEST_F(PainleveDAETest, ConsistentDerivativesBallistic) {
   // ballistic system.
   const double tol = std::numeric_limits<double>::epsilon();
   const double g = dut_->get_gravitational_acceleration();
+  const ContinuousState<double>& xc = *context_->get_continuous_state();
   EXPECT_NEAR((*derivatives_)[0], xc[3], tol);  // qdot = v ...
   EXPECT_NEAR((*derivatives_)[1], xc[4], tol);  // ... for this ...
   EXPECT_NEAR((*derivatives_)[2], xc[5], tol);  // ... system.
   EXPECT_NEAR((*derivatives_)[3], 0.0, tol);   // Zero horizontal acceleration.
   EXPECT_NEAR((*derivatives_)[4], g, tol);     // Gravitational acceleration.
   EXPECT_NEAR((*derivatives_)[5], 0.0, tol);   // Zero rotational acceleration.
+
+  // Verify the abstract state.
+  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
+            Painleve<double>::kBallisticMotion);
 }
 
 // Verify that derivatives match what we expect from a non-inconsistent
@@ -230,6 +265,8 @@ TEST_F(PainleveDAETest, ConsistentDerivativesContacting) {
   xc[3] = 0.0;
   xc[4] = 0.0;
   xc[5] = 0.0;
+  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
+      Painleve<double>::kStickingSingleContact;
 
   // Calculate the derivatives.
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
@@ -250,6 +287,8 @@ TEST_F(PainleveDAETest, ConsistentDerivativesContacting) {
   // and try again. Derivatives should be exactly the same because no frictional
   // force can be applied.
   xc[3] = -1.0;
+  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
+      Painleve<double>::kSlidingSingleContact;
   dut_->set_mu_coulomb(0.0);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR((*derivatives_)[0], xc[3], tol);
@@ -276,6 +315,8 @@ TEST_F(PainleveDAETest, Inconsistent2) {
 // Verify that the (non-impacting) Painlevé configuration does not result in a
 // state change.
 TEST_F(PainleveDAETest, ImpactNoChange) {
+  // TODO(edrumwri): consider abstract state
+
   // Set state.
   std::unique_ptr<ContinuousState<double>> new_cstate =
       CreateNewContinuousState();
@@ -286,6 +327,8 @@ TEST_F(PainleveDAETest, ImpactNoChange) {
                                   CopyToVector(),
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
+
+  // TODO(edrumwri): consider abstract state
 }
 
 // Verify that applying the impact model to an impacting configuration results
@@ -295,6 +338,8 @@ TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact) {
   // Set writable state.
   std::unique_ptr<ContinuousState<double>> new_cstate =
       CreateNewContinuousState();
+
+  // TODO(edrumwri): consider abstract state.
 
   // Cause the initial state to be impacting.
   SetImpactingState();
@@ -315,6 +360,8 @@ TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact) {
                                   CopyToVector(),
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
+
+  // TODO(edrumwri): consider abstract state.
 }
 
 // Verify that applying an impact model to an impacting state results in a
@@ -323,6 +370,8 @@ TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact) {
 TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact) {
   // Set the initial state to be impacting.
   SetImpactingState();
+
+  // TODO(edrumwri): consider abstract state.
 
   // Set the coefficient of friction to zero. This forces the Painlevé code
   // to go through the second impact path (impulse corresponding to sticking
@@ -336,6 +385,8 @@ TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact) {
   context_->get_mutable_continuous_state()->SetFrom(*new_cstate);
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 
+  // TODO(edrumwri): consider abstract state.
+
   // Do one more impact- there should now be no change.
   // Verify that there is no further change from this second impact.
   dut_->HandleImpact(*context_, new_cstate.get());
@@ -344,6 +395,8 @@ TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact) {
                                   CopyToVector(),
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
+
+  // TODO(edrumwri): consider abstract state.
 }
 
 // Verify that no exceptions thrown for a non-sliding configuration.
@@ -364,6 +417,8 @@ TEST_F(PainleveDAETest, NoSliding) {
   xc[3] = 0.0;
   xc[4] = 0.0;
   xc[5] = 0.0;
+  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
+      Painleve<double>::kStickingSingleContact;
 
   // Verify no impact.
   EXPECT_FALSE(dut_->IsImpacting(*context_));
@@ -392,6 +447,8 @@ TEST_F(PainleveDAETest, MultiPoint) {
   xc[3] = 0.0;
   xc[4] = 0.0;
   xc[5] = 0.0;
+  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
+      Painleve<double>::kStickingTwoContacts;
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   for (int i=0; i< derivatives_->size(); ++i)
     EXPECT_NEAR((*derivatives_)[i], 0.0, tol);
@@ -406,6 +463,8 @@ TEST_F(PainleveDAETest, MultiPoint) {
   xc[3] = 1.0;
   xc[4] = 0.0;
   xc[5] = 0.0;
+  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
+      Painleve<double>::kSlidingTwoContacts;
   EXPECT_THROW(dut_->CalcTimeDerivatives(*context_, derivatives_.get()),
                std::logic_error);
 
@@ -417,6 +476,8 @@ TEST_F(PainleveDAETest, MultiPoint) {
 // state.
 TEST_F(PainleveDAETest, ImpactNoChange2) {
   SetSecondInitialConfig();
+
+  // TODO(edrumwri): set abstract state.
 
   // Verify no impact.
   EXPECT_FALSE(dut_->IsImpacting(*context_));
@@ -430,6 +491,8 @@ TEST_F(PainleveDAETest, ImpactNoChange2) {
                                   CopyToVector(),
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
+
+  // TODO(edrumwri): set abstract state.
 }
 
 // Verify that applying the impact model to an impacting state results
@@ -441,6 +504,8 @@ TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact2) {
 
   // Cause the initial state to be impacting.
   SetImpactingState();
+
+  // TODO(edrumwri): set abstract state.
 
   // Set the coefficient of friction to infinite. This forces the Painlevé code
   // to go through the first impact path.
@@ -460,7 +525,10 @@ TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact2) {
                                   CopyToVector(),
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
+
+  // TODO(edrumwri): set abstract state.
 }
+
 
 // Verify that applying the impact model to an impacting state results in a
 // non-impacting state.
@@ -471,6 +539,8 @@ TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact2) {
 
   // Cause the initial state to be impacting.
   SetImpactingState();
+
+  // TODO(edrumwri): set abstract state.
 
   // Set the coefficient of friction to zero. This forces the Painlevé code
   // to go through the second impact path.
@@ -488,6 +558,8 @@ TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact2) {
                                   CopyToVector(),
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
+
+  // TODO(edrumwri): set abstract state.
 }
 
 // Verifies that rod in a ballistic state does not correspond to an impact.
@@ -499,10 +571,13 @@ TEST_F(PainleveDAETest, BallisticNoImpact) {
   // Cause the initial state to be impacting.
   SetImpactingState();
 
-  // Move the rod upward vertically so that it is no longer impacting.
+  // Move the rod upward vertically so that it is no longer impacting and
+  // set the mode to ballistic motion.
   ContinuousState<double>& xc =
       *context_->get_mutable_continuous_state();
   xc[1] += 10.0;
+  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
+      Painleve<double>::kBallisticMotion;
 
   // Verify that no impact occurs.
   EXPECT_FALSE(dut_->IsImpacting(*context_));
@@ -522,9 +597,9 @@ TEST_F(PainleveTimeSteppingTest, TimeStepping) {
   simulator.StepTo(t_final);
 
   // Get angular orientation and velocity.
-  const auto v = simulator.get_context().get_discrete_state(0)->get_value();
-  const double theta = v(2);
-  const double theta_dot = v(5);
+  const auto xd = simulator.get_context().get_discrete_state(0)->get_value();
+  const double theta = xd(2);
+  const double theta_dot = xd(5);
 
   // After sufficiently long, theta should be 0 or M_PI and the velocity
   // should be nearly zero.
