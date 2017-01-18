@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic_variable.h"
 
 namespace drake {
@@ -34,6 +35,8 @@ namespace symbolic {
  */
 class Environment {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Environment)
+
   typedef typename drake::symbolic::Variable key_type;
   typedef double mapped_type;
   typedef
@@ -46,18 +49,6 @@ class Environment {
 
   /** Default constructor. */
   Environment() = default;
-
-  /** Move-construct a set from an rvalue. */
-  Environment(Environment&& e) = default;
-
-  /** Copy-construct a set from an lvalue. */
-  Environment(const Environment& e) = default;
-
-  /** Move-assign a set from an rvalue. */
-  Environment& operator=(Environment&& e) = default;
-
-  /** Copy-assign a set from an lvalue. */
-  Environment& operator=(const Environment& e) = default;
 
   /** List constructor. Constructs an environment from a list of (Variable *
    * double). */

@@ -11,6 +11,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/dummy_value.h"
 
 namespace drake {
@@ -334,23 +335,13 @@ class FunctionalForm {
    */
   class Variables {
    public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variables)
+
     /** Construct an empty set.  */
     Variables() = default;
 
     /** Construct a set from an initializer list.  */
     Variables(std::initializer_list<Variable> init);
-
-    /** Move-construct a set from an rvalue.  */
-    Variables(Variables&&) = default;
-
-    /** Copy-construct a set from an lvalue.  */
-    Variables(Variables const&) = default;
-
-    /** Move-assign a set from an rvalue.  */
-    Variables& operator=(Variables&&) = default;
-
-    /** Copy-assign a set from an lvalue.  */
-    Variables& operator=(Variables const&) = default;
 
     /** Return the union of two sets.  */
     static Variables Union(Variables const& l, Variables const& r);

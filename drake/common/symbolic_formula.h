@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
@@ -77,20 +78,10 @@ call \c Evaluate from within Drake for readability.
 */
 class Formula {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Formula)
+
   /** Default constructor (deleted). */
   Formula() = delete;
-
-  /** Move-construct a set from an rvalue. */
-  Formula(Formula&& f) = default;
-
-  /** Copy-construct a set from an lvalue. */
-  Formula(const Formula& f) = default;
-
-  /** Move-assign a set from an rvalue. */
-  Formula& operator=(Formula&& f) = default;
-
-  /** Copy-assign a set from an lvalue. */
-  Formula& operator=(const Formula& f) = default;
 
   explicit Formula(const std::shared_ptr<FormulaCell> ptr);
 

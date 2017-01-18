@@ -13,6 +13,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/cond.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
@@ -133,20 +134,10 @@ symbolic::Expression can be used as a scalar type of Eigen types.
 */
 class Expression {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Expression)
+
   /** Default constructor. It constructs Zero(). */
   Expression() { *this = Zero(); }
-
-  /** Move-constructs an Expression from an rvalue. */
-  Expression(Expression&& e) = default;
-
-  /** Copy-constructs an Expression from an lvalue. */
-  Expression(const Expression& e) = default;
-
-  /** Move-assigns an Expression from an rvalue. */
-  Expression& operator=(Expression&& e) = default;
-
-  /** Copy-assigns an Expression from an lvalue. */
-  Expression& operator=(const Expression& e) = default;
 
   /** Constructs a constant. */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.

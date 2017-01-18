@@ -7,6 +7,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
 
 namespace drake {
@@ -15,6 +16,8 @@ namespace symbolic {
 /** Represents a symbolic variable. */
 class Variable {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variable)
+
   /** Default constructor. This is needed to have Eigen::Matrix<Variable>. The
       objects created by the default constructor share the same ID, zero. As a
       result, they all are identified as a single variable by equality operator
@@ -24,18 +27,6 @@ class Variable {
 
   /** Constructs a variable with a string . */
   explicit Variable(const std::string& name);
-
-  /** Move-construct a set from an rvalue. */
-  Variable(Variable&& v) = default;
-
-  /** Copy-construct a set from an lvalue. */
-  Variable(const Variable& v) = default;
-
-  /** Move-assign. */
-  Variable& operator=(Variable&& v) = default;
-
-  /** Copy-assign. */
-  Variable& operator=(const Variable& v) = default;
 
   size_t get_id() const;
   size_t get_hash() const { return std::hash<size_t>{}(id_); }
