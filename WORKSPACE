@@ -93,6 +93,13 @@ new_git_repository(
     build_file = "tools/fcl.BUILD",
 )
 
+new_git_repository(
+    name = "ignmath",
+    remote = "https://github.com/clalancette/ign-math-mirror.git",
+    commit = "44578fca0b0c51839f0ad91778d25405440bc3dd",
+    build_file = "tools/ignmath.BUILD",
+)
+
 # Necessary for buildifier.
 http_archive(
     name = "io_bazel_rules_go",
