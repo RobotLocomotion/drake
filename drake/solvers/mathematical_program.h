@@ -1602,6 +1602,17 @@ class MathematicalProgram {
                      const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
+   * Add a symbolic expression @param v is in the rotated Lorentz cone, i.e.,
+   * \f[
+   * v_0v_1 \ge v_2^2 + ... + v_{n-1}^2\\
+   * v_0 \ge 0, v_1 \ge 0
+   * \f]
+   * @param v A linear expression of variables, \f$ v = A x + b\f$, where \f$ A, b \f$ are given matrices of the correct size, \f$ x \f$ is the vector of decision variables.
+   * @retval binding The newly added rotated Lorentz cone constraint, together with the bound variables.
+   */
+  Binding<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
+
+  /**
    * Adds a rotated Lorentz cone constraint referencing potentially a subset
    * of decision variables, The linear expression @f$ z=Ax+b @f$ is in rotated
    * Lorentz cone.
@@ -2395,6 +2406,19 @@ class MathematicalProgram {
       }
     }
   }
+
+  /**
+   * Given a vector of linear expressions v, decompose it to
+   * \f$ v = A vars + b \f$
+   * @param[in] v A vector of linear expressions
+   * @param[out] A
+   * @param[out] b
+   * @param[out] vars
+   */
+  void DecomposeLinearExpression(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
+      Eigen::MatrixXd* A, Eigen::VectorXd* b,
+      VectorXDecisionVariable* vars);
 };
 }  // namespace solvers
 }  // namespace drake
