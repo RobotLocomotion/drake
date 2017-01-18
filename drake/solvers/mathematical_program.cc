@@ -440,6 +440,55 @@ void MathematicalProgram::AddConstraint(
   lorentz_cone_constraint_.push_back(binding);
 }
 
+Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
+    const Eigen::Ref<const VectorX<drake::symbolic::Expression>>& v) {
+  DRAKE_DEMAND(v.rows() >= 2);
+
+  // 0. Setup map_var_to_index and var_vec.
+  unordered_map<size_t, int> map_var_to_index;
+  vector<symbolic::Variable> var_vec;
+  int idx{0};
+  for (int i{0}; i < v.size(); ++i) {
+    for (const symbolic::Variable& var : v(i).GetVariables()) {
+      if (map_var_to_index.find(var.get_id()) == map_var_to_index.end()) {
+        map_var_to_index.emplace(var.get_id(), idx++);
+        var_vec.push_back(var);
+      }
+    }
+  }
+
+  // 1. Construct vars using var_vec.
+  VectorXDecisionVariable vars{var_vec.size()};
+  for (int i{0}; i < vars.size(); ++i) {
+    vars(i) = var_vec[i];
+  }
+
+  // 2. Construct decompose v as
+  // v = A * vars + b
+  Eigen::MatrixXd A{Eigen::MatrixXd::Zero(v.size(), vars.size())};
+  Eigen::VectorXd b(v.size());
+  for (int i{0}; i < v.size(); ++i) {
+    const symbolic::Expression& e_i{v(i)};
+    if (is_addition(e_i)) {
+      DecomposeLinearExpression(e_i, map_var_to_index, A.row(i),
+                                &b(i));
+    } else if (is_variable(e_i)) {
+      // i-th row is var_i
+      const symbolic::Variable& var_i{get_variable(e_i)};
+      A(i, map_var_to_index[var_i.get_id()]) = 1;
+      b(i) = 0;
+    } else if (is_constant(e_i)) {
+      b(i) = get_constant_value(e_i);
+
+    } else {
+      throw SymbolicError(e_i,
+                          "non-linear but called with AddLorentzConeConstraint");
+    }
+  }
+  return Binding<LorentzConeConstraint>{AddLorentzConeConstraint(A, b, vars),
+                                   vars};
+}
+
 void MathematicalProgram::AddConstraint(
     std::shared_ptr<LorentzConeConstraint> con,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
