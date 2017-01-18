@@ -9,6 +9,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
@@ -230,20 +231,10 @@ class ExpressionAdd : public ExpressionCell {
 /** Factory class to help build ExpressionAdd expressions. */
 class ExpressionAddFactory {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExpressionAddFactory)
+
   /** Default constructor. */
   ExpressionAddFactory() = default;
-
-  /** Move-constructs from an rvalue. */
-  ExpressionAddFactory(ExpressionAddFactory&& f) = default;
-
-  /** Copy-constructs from an lvalue. */
-  ExpressionAddFactory(const ExpressionAddFactory& f) = default;
-
-  /** Move-assigns from an rvalue. */
-  ExpressionAddFactory& operator=(ExpressionAddFactory&& f) = default;
-
-  /** Copy-assigns from an lvalue. */
-  ExpressionAddFactory& operator=(const ExpressionAddFactory& f) = default;
 
   /** Constructs ExpressionAddFactory with @p constant_term and @p
    * term_to_coeff_map. */
@@ -342,20 +333,10 @@ class ExpressionMul : public ExpressionCell {
 /** Factory class to help build ExpressionMul expressions. */
 class ExpressionMulFactory {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExpressionMulFactory)
+
   /** Default constructor. It constructs. */
   ExpressionMulFactory() = default;
-
-  /** Move-constructs from an rvalue. */
-  ExpressionMulFactory(ExpressionMulFactory&& f) = default;
-
-  /** Copy-constructs from an lvalue. */
-  ExpressionMulFactory(const ExpressionMulFactory& f) = default;
-
-  /** Move-assigns from an rvalue. */
-  ExpressionMulFactory& operator=(ExpressionMulFactory&& f) = default;
-
-  /** Copy-assigns from an lvalue. */
-  ExpressionMulFactory& operator=(const ExpressionMulFactory& f) = default;
 
   /** Constructs ExpressionMulFactory with @p constant_term and @p
    * term_to_exp_map. */
