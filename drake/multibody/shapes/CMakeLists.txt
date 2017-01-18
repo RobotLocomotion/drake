@@ -16,3 +16,8 @@ drake_install_pkg_config_file(drake-shapes
   REQUIRES
     eigen3
     spruce)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
+
