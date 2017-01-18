@@ -10,6 +10,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/polynomial.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
@@ -37,6 +38,10 @@ class ExpressionCell {
   virtual bool EqualTo(const ExpressionCell& c) const = 0;
   /** Provides lexicographical ordering between expressions. */
   virtual bool Less(const ExpressionCell& c) const = 0;
+  /** Checks if it is a polynomial. */
+  bool is_polynomial() const { return is_polynomial_; }
+  /** Returns Polynomial. */
+  virtual Polynomial<double> ToPolynomial() const = 0;
   /** Evaluates under a given environment. */
   virtual double Evaluate(const Environment& env) const = 0;
   /** Outputs string representation of expression into output stream @p os. */
@@ -53,12 +58,13 @@ class ExpressionCell {
   ExpressionCell& operator=(ExpressionCell&& e) = delete;
   /** Copy-assigns (DELETED). */
   ExpressionCell& operator=(const ExpressionCell& e) = delete;
-  /** Constructs ExpressionCell of kind @p k with @p hash. */
-  ExpressionCell(ExpressionKind k, size_t hash);
+  /** Constructs ExpressionCell of kind @p k with @p hash and @p is_poly . */
+  ExpressionCell(ExpressionKind k, size_t hash, bool is_poly);
 
  private:
   const ExpressionKind kind_{};
   const size_t hash_{};
+  const bool is_polynomial_{false};
 };
 
 /** Represents the base class for unary expressions.  */
@@ -86,8 +92,9 @@ class UnaryExpressionCell : public ExpressionCell {
   UnaryExpressionCell& operator=(UnaryExpressionCell&& e) = delete;
   /** Copy-assigns (DELETED). */
   UnaryExpressionCell& operator=(const UnaryExpressionCell& e) = delete;
-  /** Constructs UnaryExpressionCell of kind @p k with @p hash and @p e. */
-  UnaryExpressionCell(ExpressionKind k, const Expression& e);
+  /** Constructs UnaryExpressionCell of kind @p k with @p hash, @p e, and @p
+   * is_poly. */
+  UnaryExpressionCell(ExpressionKind k, const Expression& e, bool is_poly);
   /** Returns the evaluation result f(@p v ). */
   virtual double DoEvaluate(double v) const = 0;
 
@@ -123,10 +130,11 @@ class BinaryExpressionCell : public ExpressionCell {
   BinaryExpressionCell& operator=(BinaryExpressionCell&& e) = delete;
   /** Copy-assigns (DELETED). */
   BinaryExpressionCell& operator=(const BinaryExpressionCell& e) = delete;
-  /** Constructs BinaryExpressionCell of kind @p k with @p hash, @p e1, @p e2.
+  /** Constructs BinaryExpressionCell of kind @p k with @p hash, @p e1, @p e2,
+   * @p is_poly.
    */
   BinaryExpressionCell(ExpressionKind k, const Expression& e1,
-                       const Expression& e2);
+                       const Expression& e2, bool is_poly);
   /** Returns the evaluation result f(@p v1, @p v2 ). */
   virtual double DoEvaluate(double v1, double v2) const = 0;
 
@@ -143,6 +151,7 @@ class ExpressionVar : public ExpressionCell {
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
+  Polynomial<double> ToPolynomial() const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 
@@ -158,6 +167,7 @@ class ExpressionConstant : public ExpressionCell {
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
+  Polynomial<double> ToPolynomial() const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 
@@ -172,6 +182,7 @@ class ExpressionNaN : public ExpressionCell {
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
+  Polynomial<double> ToPolynomial() const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
@@ -180,6 +191,7 @@ class ExpressionNaN : public ExpressionCell {
 class ExpressionNeg : public UnaryExpressionCell {
  public:
   explicit ExpressionNeg(const Expression& e);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -201,7 +213,8 @@ class ExpressionNeg : public UnaryExpressionCell {
  */
 class ExpressionAdd : public ExpressionCell {
  public:
-  /** Constructs ExpressionAdd from @p constant_term and @term_to_coeff_map. */
+  /** Constructs ExpressionAdd from @p constant_term and @term_to_coeff_map.
+   */
   ExpressionAdd(double constant_term,
                 const std::map<Expression, double>& term_to_coeff_map);
   /** Collects variables in expression. */
@@ -210,6 +223,8 @@ class ExpressionAdd : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   /** Checks ordering between this and @p e. */
   bool Less(const ExpressionCell& e) const override;
+  /** Returns Polynomial. */
+  Polynomial<double> ToPolynomial() const override;
   /** Evaluates expression under a given environment @p env. */
   double Evaluate(const Environment& env) const override;
   /** Outputs string representation of expression into output stream @p os. */
@@ -224,6 +239,12 @@ class ExpressionAdd : public ExpressionCell {
  private:
   std::ostream& DisplayTerm(std::ostream& os, bool print_plus, double coeff,
                             const Expression& term) const;
+  // Determines if the summation represented by term_to_coeff_map is
+  // polynomial-convertible or not. This function is used in the
+  // constructor of ExpressionAdd.
+  static bool determine_polynomial(
+      const std::map<Expression, double>& term_to_coeff_map);
+
   const double constant_term_{};
   const std::map<Expression, double> term_to_coeff_map_;
 };
@@ -275,7 +296,8 @@ class ExpressionAddFactory {
          c0 + c1 * t1 + ... + cn * tn
 
      results in c0 + c1 * t1 + ... + (coeff * term) + ... + cn * tn. Note that
-     it also performs simplifications to merge the coefficients of common terms.
+     it also performs simplifications to merge the coefficients of common
+     terms.
   */
   void AddTerm(double coeff, const Expression& term);
   /* Adds term_to_coeff_map to this factory. It calls AddConstant and AddTerm
@@ -292,17 +314,20 @@ class ExpressionAddFactory {
  * @f[
  *     c_0 \cdot \prod b_i^{e_i}
  * @f]
- *  where @f$ c_i @f$ is a constant and @f$ b_i @f$ and @f$ e_i @f$ are symbolic
+ *  where @f$ c_i @f$ is a constant and @f$ b_i @f$ and @f$ e_i @f$ are
+ * symbolic
  * expressions.
  *
  * Internally this class maintains a member variable @c constant_factor_ to
  * represent @f$ c_0 @f$ and another member variable @c term_to_exp_map_ to
- * refpresent a mapping from a term (whose type is symbolic::Expression) to its
+ * refpresent a mapping from a term (whose type is symbolic::Expression) to
+ * its
  * corresponding exponentiation (whose type is symbolic::Expression).
  */
 class ExpressionMul : public ExpressionCell {
  public:
-  /** Constructs ExpressionMul from @p constant_factor and @term_to_exp_map. */
+  /** Constructs ExpressionMul from @p constant_factor and @term_to_exp_map.
+   */
   ExpressionMul(double constant_factor,
                 const std::map<Expression, Expression>& term_to_exp_map);
   /** Collects variables in expression. */
@@ -311,6 +336,8 @@ class ExpressionMul : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   /** Checks ordering between this and @p e. */
   bool Less(const ExpressionCell& e) const override;
+  /** Returns Polynomial. */
+  Polynomial<double> ToPolynomial() const override;
   /** Evaluates expression under a given environment @p env. */
   double Evaluate(const Environment& env) const override;
   /** Outputs string representation of expression into output stream @p os. */
@@ -326,6 +353,11 @@ class ExpressionMul : public ExpressionCell {
   std::ostream& DisplayTerm(std::ostream& os, bool print_mul,
                             const Expression& base,
                             const Expression& pow) const;
+  // Determines if the product represented by term_to_coeff_map is
+  // polynomial-convertible or not. This function is used in the
+  // constructor of ExpressionMul.
+  static bool determine_polynomial(
+      const std::map<Expression, Expression>& term_to_exp_map);
   double constant_factor_{};
   std::map<Expression, Expression> term_to_exp_map_;
 };
@@ -390,6 +422,7 @@ class ExpressionMulFactory {
 class ExpressionDiv : public BinaryExpressionCell {
  public:
   ExpressionDiv(const Expression& e1, const Expression& e2);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -400,6 +433,7 @@ class ExpressionDiv : public BinaryExpressionCell {
 class ExpressionLog : public UnaryExpressionCell {
  public:
   explicit ExpressionLog(const Expression& e);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression log(const Expression& e);
@@ -414,6 +448,7 @@ class ExpressionLog : public UnaryExpressionCell {
 class ExpressionAbs : public UnaryExpressionCell {
  public:
   explicit ExpressionAbs(const Expression& e);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression abs(const Expression& e);
@@ -427,6 +462,7 @@ class ExpressionAbs : public UnaryExpressionCell {
 class ExpressionExp : public UnaryExpressionCell {
  public:
   explicit ExpressionExp(const Expression& e);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -437,6 +473,7 @@ class ExpressionExp : public UnaryExpressionCell {
 class ExpressionSqrt : public UnaryExpressionCell {
  public:
   explicit ExpressionSqrt(const Expression& e);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression sqrt(const Expression& e);
@@ -451,6 +488,7 @@ class ExpressionSqrt : public UnaryExpressionCell {
 class ExpressionPow : public BinaryExpressionCell {
  public:
   ExpressionPow(const Expression& e1, const Expression& e2);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression pow(const Expression& e1, const Expression& e2);
@@ -460,12 +498,17 @@ class ExpressionPow : public BinaryExpressionCell {
      non-integer. */
   static void check_domain(double v1, double v2);
   double DoEvaluate(double v1, double v2) const override;
+  // Determines if pow(base, exponent) is polynomial-convertible or not. This
+  // function is used in constructor of ExpressionPow.
+  static bool determine_polynomial(const Expression& base,
+                                   const Expression& exponent);
 };
 
 /** Symbolic expression representing sine function. */
 class ExpressionSin : public UnaryExpressionCell {
  public:
   explicit ExpressionSin(const Expression& e);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -476,6 +519,7 @@ class ExpressionSin : public UnaryExpressionCell {
 class ExpressionCos : public UnaryExpressionCell {
  public:
   explicit ExpressionCos(const Expression& e);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -486,6 +530,7 @@ class ExpressionCos : public UnaryExpressionCell {
 class ExpressionTan : public UnaryExpressionCell {
  public:
   explicit ExpressionTan(const Expression& e);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -496,6 +541,7 @@ class ExpressionTan : public UnaryExpressionCell {
 class ExpressionAsin : public UnaryExpressionCell {
  public:
   explicit ExpressionAsin(const Expression& e);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression asin(const Expression& e);
@@ -510,6 +556,7 @@ class ExpressionAsin : public UnaryExpressionCell {
 class ExpressionAcos : public UnaryExpressionCell {
  public:
   explicit ExpressionAcos(const Expression& e);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend Expression acos(const Expression& e);
@@ -524,6 +571,7 @@ class ExpressionAcos : public UnaryExpressionCell {
 class ExpressionAtan : public UnaryExpressionCell {
  public:
   explicit ExpressionAtan(const Expression& e);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -535,6 +583,7 @@ class ExpressionAtan : public UnaryExpressionCell {
 class ExpressionAtan2 : public BinaryExpressionCell {
  public:
   ExpressionAtan2(const Expression& e1, const Expression& e2);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -545,6 +594,7 @@ class ExpressionAtan2 : public BinaryExpressionCell {
 class ExpressionSinh : public UnaryExpressionCell {
  public:
   explicit ExpressionSinh(const Expression& e);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -555,6 +605,7 @@ class ExpressionSinh : public UnaryExpressionCell {
 class ExpressionCosh : public UnaryExpressionCell {
  public:
   explicit ExpressionCosh(const Expression& e);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -565,6 +616,7 @@ class ExpressionCosh : public UnaryExpressionCell {
 class ExpressionTanh : public UnaryExpressionCell {
  public:
   explicit ExpressionTanh(const Expression& e);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -575,6 +627,7 @@ class ExpressionTanh : public UnaryExpressionCell {
 class ExpressionMin : public BinaryExpressionCell {
  public:
   ExpressionMin(const Expression& e1, const Expression& e2);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -585,6 +638,7 @@ class ExpressionMin : public BinaryExpressionCell {
 class ExpressionMax : public BinaryExpressionCell {
  public:
   ExpressionMax(const Expression& e1, const Expression& e2);
+  Polynomial<double> ToPolynomial() const override;
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -604,6 +658,8 @@ class ExpressionIfThenElse : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   /** Provides lexicographical ordering between expressions. */
   bool Less(const ExpressionCell& e) const override;
+  /** Returns Polynomial. */
+  Polynomial<double> ToPolynomial() const override;
   /** Evaluates expression under a given environment @p env. */
   double Evaluate(const Environment& env) const override;
   /** Outputs string representation of expression into output stream @p os. */
