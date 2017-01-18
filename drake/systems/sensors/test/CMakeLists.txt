@@ -7,6 +7,10 @@ if(Bullet_FOUND)
 
   drake_add_cc_test(accelerometer_test)
   target_link_libraries(accelerometer_test
+      drakeLcm
+      drakeLCMSystem2
       drakeMultibodyParsers
-      drakeSensors)
+      drakeSensors
+      drakeSystemAnalysis
+      drakeSystemPrimitives)
 endif()

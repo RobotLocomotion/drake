@@ -10,6 +10,9 @@ namespace lcm {
 
 DrakeMockLcm::DrakeMockLcm() {}
 
+DrakeMockLcm::DrakeMockLcm(bool enable_loop_back)
+    : enable_loop_back_(enable_loop_back) {}
+
 void DrakeMockLcm::StartReceiveThread() {
   DRAKE_DEMAND(!receive_thread_started_);
   receive_thread_started_ = true;
@@ -33,6 +36,10 @@ void DrakeMockLcm::Publish(const std::string& channel, const void* data,
 
   const uint8_t* bytes = reinterpret_cast<const uint8_t*>(data);
   saved_message->data = std::vector<uint8_t>(&bytes[0], &bytes[data_size]);
+
+  if (enable_loop_back_) {
+    InduceSubscriberCallback(channel, data, data_size);
+  }
 }
 
 const std::vector<uint8_t>& DrakeMockLcm::get_last_published_message(
