@@ -124,7 +124,8 @@ class LeafSystem : public System<T> {
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const override {
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
-    for (const auto& descriptor : this->get_output_ports()) {
+    for (int i = 0; i < this->get_num_output_ports(); ++i) {
+      const OutputPortDescriptor<T>& descriptor = this->get_output_port(i);
       // TODO(liang.fok) Generalize this method to support ports of type
       // kAbstractValued.
       DRAKE_DEMAND(descriptor.get_data_type() == kVectorValued);

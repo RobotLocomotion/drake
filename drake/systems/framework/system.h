@@ -546,41 +546,31 @@ class System {
     return static_cast<int>(output_ports_.size());
   }
 
-  /// Returns descriptors for all the input ports of this system.
-  const std::vector<InputPortDescriptor<T>>& get_input_ports() const {
-    return input_ports_;
-  }
-
   /// Returns the descriptor of the input port at index @p port_index.
   const InputPortDescriptor<T>& get_input_port(int port_index) const {
-    if (port_index >= get_num_input_ports()) {
+    if (port_index < 0 || port_index >= get_num_input_ports()) {
       throw std::out_of_range("System " + get_name() + ": Port index " +
           std::to_string(port_index) + " is out of range. There are only " +
           std::to_string(get_num_input_ports()) + " input ports.");
     }
-    return input_ports_[port_index];
+    return *input_ports_[port_index];
   }
 
   /// Returns the descriptor of the output port at index @p port_index.
   const OutputPortDescriptor<T>& get_output_port(int port_index) const {
-    if (port_index >= get_num_output_ports()) {
+    if (port_index < 0 || port_index >= get_num_output_ports()) {
       throw std::out_of_range("System " + get_name() + ": Port index " +
           std::to_string(port_index) + " is out of range. There are only " +
           std::to_string(get_num_output_ports()) + " output ports.");
     }
-    return output_ports_[port_index];
-  }
-
-  /// Returns descriptors for all the output ports of this system.
-  const std::vector<OutputPortDescriptor<T>>& get_output_ports() const {
-    return output_ports_;
+    return *output_ports_[port_index];
   }
 
   /// Returns the total dimension of all of the input ports (as if they were
   /// muxed).
   int get_num_total_inputs() const {
     int count = 0;
-    for (const auto& in : input_ports_) count += in.size();
+    for (const auto& in : input_ports_) count += in->size();
     return count;
   }
 
@@ -588,7 +578,7 @@ class System {
   /// muxed).
   int get_num_total_outputs() const {
     int count = 0;
-    for (const auto& out : output_ports_) count += out.size();
+    for (const auto& out : output_ports_) count += out->size();
     return count;
   }
 
@@ -711,8 +701,9 @@ class System {
   /// @return descriptor of declared port.
   const InputPortDescriptor<T>& DeclareInputPort(PortDataType type, int size) {
     int port_index = get_num_input_ports();
-    input_ports_.emplace_back(this, port_index, type, size);
-    return input_ports_.back();
+    input_ports_.push_back(std::make_unique<InputPortDescriptor<T>>(
+    this, port_index, type, size));
+    return *input_ports_.back();
   }
 
   /// Adds an abstract-valued port to the input topology.
@@ -726,8 +717,9 @@ class System {
   const OutputPortDescriptor<T>& DeclareOutputPort(PortDataType type,
                                                    int size) {
     int port_index = get_num_output_ports();
-    output_ports_.emplace_back(this, port_index, type, size);
-    return output_ports_.back();
+    output_ports_.push_back(std::make_unique<OutputPortDescriptor<T>>(
+        this, port_index, type, size));
+    return *output_ports_.back();
   }
 
   /// Adds an abstract-valued port with to the output topology.
@@ -1018,8 +1010,10 @@ class System {
   System& operator=(System<T>&& other) = delete;
 
   std::string name_;
-  std::vector<InputPortDescriptor<T>> input_ports_;
-  std::vector<OutputPortDescriptor<T>> output_ports_;
+  // input_ports_ and output_ports_ are vectors of unique_ptr so that references
+  // to the descriptors will remain valid even if the vector is resized.
+  std::vector<std::unique_ptr<InputPortDescriptor<T>>> input_ports_;
+  std::vector<std::unique_ptr<OutputPortDescriptor<T>>> output_ports_;
   const detail::InputPortEvaluatorInterface<T>* parent_{nullptr};
 
   // TODO(sherm1) Replace these fake cache entries with real cache asap.

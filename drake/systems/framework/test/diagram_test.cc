@@ -166,14 +166,16 @@ class DiagramTest : public ::testing::Test {
 // Tests that the diagram exports the correct topology.
 TEST_F(DiagramTest, Topology) {
   ASSERT_EQ(kSize, diagram_->get_num_input_ports());
-  for (const auto& descriptor : diagram_->get_input_ports()) {
+  for (int i = 0; i < kSize; ++i) {
+    const auto& descriptor = diagram_->get_input_port(i);
     EXPECT_EQ(diagram_.get(), descriptor.get_system());
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
     EXPECT_EQ(kSize, descriptor.size());
   }
 
   ASSERT_EQ(kSize, diagram_->get_num_output_ports());
-  for (const auto& descriptor : diagram_->get_output_ports()) {
+  for (int i = 0; i < kSize; ++i) {
+    const auto& descriptor = diagram_->get_output_port(i);
     EXPECT_EQ(diagram_.get(), descriptor.get_system());
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
     EXPECT_EQ(kSize, descriptor.size());
