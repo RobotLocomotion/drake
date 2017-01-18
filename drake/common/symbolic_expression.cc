@@ -127,6 +127,16 @@ bool Expression::Less(const Expression& e) const {
   return ptr_->Less(*(e.ptr_));
 }
 
+bool Expression::is_polynomial() const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return ptr_->is_polynomial();
+}
+
+Polynomial<double> Expression::ToPolynomial() const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return ptr_->ToPolynomial();
+}
+
 double Expression::Evaluate(const Environment& env) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->Evaluate(env);
