@@ -1,5 +1,7 @@
 #include "drake/multibody/shapes/geometry.h"
 
+#include "drake/common/text_logging.h"
+
 #include <algorithm>
 #include <cstdio>
 #include <fstream>
@@ -259,7 +261,7 @@ string Mesh::FindFileWithObjExtension() const {
 }
 
 void Mesh::LoadObjFile(PointsVector* vertices,
-                       TrianglesVector* triangles) const {
+                       TrianglesVector* triangles, bool triangulate) const {
   string obj_file_name = FindFileWithObjExtension();
   ifstream file(obj_file_name);
   if (!file) {
@@ -269,6 +271,7 @@ void Mesh::LoadObjFile(PointsVector* vertices,
   std::string line;
   int line_number = 0;
   int maximum_index = 0;
+  int added_triangles = 0;
   while (!file.eof()) {
     ++line_number;
     std::getline(file, line);
@@ -314,11 +317,32 @@ void Mesh::LoadObjFile(PointsVector* vertices,
         indices.push_back(index);
       }
       if (indices.size() != 3) {
-        throw std::runtime_error(
-            "In file \"" + obj_file_name + "\" "
-            "(line " + std::to_string(line_number) + "). "
-            "Only triangular faces supported. However "
-            + std::to_string(indices.size()) + " indices are provided.");
+        if (triangulate) {
+          // This is a very naive triangulation.  It simple creates a fan
+          // around the 0th vertex through the loop of vertices in the polygon.
+          // The fan won't necessarily produce triangles with the best aspect
+          // ratio.  Furthermore, if the polygon is *not* convex, it is
+          // possible to create overlapping triangles.
+          //
+          // The triangle consisting of (0, 1, 2) is handled below, so this
+          // starts with (0, 2, 3).
+          const int index_size = static_cast<int>(indices.size());
+          for (int i = 2; i < index_size - 1; ++i) {
+            triangles->push_back(
+                Vector3i(indices[0] - 1, indices[i] - 1, indices[i + 1] - 1));
+          }
+          // A polygon of n vertices produces a fan of n - 2 triangles.
+          // One of those is a given, so we're "adding" n - 3 triangles.
+          added_triangles += index_size - 3;
+        } else {
+          throw std::runtime_error("In file \"" + obj_file_name +
+                                   "\" (line " +
+                                   std::to_string(line_number) +
+                                   "). "
+                                   "Only triangular faces supported. However " +
+                                   std::to_string(indices.size()) +
+                                   " indices are provided.");
+        }
       }
       triangles->push_back(Vector3i(indices[0]-1, indices[1]-1, indices[2]-1));
     }
@@ -333,6 +357,13 @@ void Mesh::LoadObjFile(PointsVector* vertices,
             std::to_string(maximum_index) + ") "
         "exceeds the number of vertices (" +
             std::to_string(vertices->size()) + ". ");
+  }
+
+  if (added_triangles > 0) {
+    drake::log()->info("Encountered non-triangular faces in '" + obj_file_name +
+                       "'. Triangulation was applied, adding " +
+                       std::to_string(added_triangles) +
+                       " new triangles to the mesh.");
   }
 }
 

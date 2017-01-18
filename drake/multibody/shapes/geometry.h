@@ -175,11 +175,14 @@ class Mesh : public Geometry {
   @param[out] triangles Vector of indices for each triangle in the mesh.
   The i-th entry of @p triangles holds a 3D vector of integer indices into
   @p vertices corresponding to the vertices forming the i-th triangle.
+  @param[in] triangulate  If true, triangulates any faces that are not already
+  triangles, otherwise, throws exception.
 
   On output, `vertices.size()` corresponds to the number of vertices in the mesh
   while `triangles.size()` corresponds to the number of triangles in the mesh.
   **/
-  void LoadObjFile(PointsVector* vertices, TrianglesVector* triangles) const;
+  void LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
+                   bool triangulate = false) const;
 
  private:
   // This method finds a juxtaposed obj file from the `resolved_filename_`
