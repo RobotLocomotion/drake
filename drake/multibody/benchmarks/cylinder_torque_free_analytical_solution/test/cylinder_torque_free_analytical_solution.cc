@@ -98,7 +98,9 @@ T CalculateQuaternionDtConstraintFromQuaternionDt(
  * @param quat  Quaternion e0, e1, e2, e3 that relates two right-handed
  *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
  * @param quatDt  time-derivative of `quat`, i.e., [e0', e1', e2', e3'].
- * @returns true if constraint is reasonably accurate, otherwise false.
+ * @returns true if both of the following constraints are satisfied:
+ * a) e0^2 + e1^2 + e3^2 + e3^2 - 1 = 0,  within 800 * double precision epsilon.
+ * b) 2*(e0*e0' + e1*e1' + e2*e2' + e3*e3') = 0   to within 800 * epsilon.
  *
  * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
  *   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
@@ -111,14 +113,13 @@ bool TestQuaternionDtConstraintFromQuaternionDt(
 
   // For an accurate test, the quaternion should be reasonably accurate.
   const double double_epsilon = std::numeric_limits<double>::epsilon();
+  const double tolerance = 800 * double_epsilon;
   const double quat_epsilon = abs(1.0 - quat.norm());
-  const bool is_good_quat_norm = (quat_epsilon <= 800 * double_epsilon);
+  const bool is_good_quat_norm = (quat_epsilon <= tolerance);
 
   const double quatDt_test =
     CalculateQuaternionDtConstraintFromQuaternionDt(quat, quatDt);
-  const bool is_quat_epsilon_larger = quat_epsilon > double_epsilon;
-  const double epsilon = is_quat_epsilon_larger ? quat_epsilon : double_epsilon;
-  const bool is_good_quatDt = (quatDt_test <= 100 * epsilon);
+  const bool is_good_quatDt = (quatDt_test <= tolerance);
 
   return is_good_quat_norm && is_good_quatDt;
 }
@@ -399,24 +400,24 @@ void  TestMapVelocityToQDot(
   const double e3Dt_map = coordinatesDt_from_map[6];
   const Vector3d xyzDt_map(xDt_map, yDt_map, zDt_map);
   const Vector4d quatDt_map(e0Dt_map, e1Dt_map, e2Dt_map, e3Dt_map);
-#if 0
+#if 0  // TODO(mitiguy) Remove these debug statements.
   std::cout << "\n\n--------------------------------------------------";
   std::cout << "\n----------- Test: MapVelocityToQDot --------------";
   std::cout << "\n--------------------------------------------------";
-  std::cout << "\nquatDt_map =    \n" << quatDt_map;
+  std::cout << "\nquatDt_map =      \n" << quatDt_map;
   std::cout << "\nquatDt_NB_exact = \n" << quatDt_NB_exact;
-  std::cout << "\n\nxyzDt_map=        \n" << xyzDt_map;
+  std::cout << "\n\nxyzDt_map=      \n" << xyzDt_map;
   std::cout << "\nxyzDt_exact =     \n" << xyzDt_exact;
   std::cout << "\n--------------------------------------------------\n";
 #endif
 
   //--------------------------------------------------------------
-  // TODO(Mitiguy and Drumwright) change epsilon_test to 50*epsilon.
+  // TODO(Mitiguy and Drumwright) change tolerance to 50*epsilon with PR #4604.
   //--------------------------------------------------------------
   const double epsilon = std::numeric_limits<double>::epsilon();
-  const double epsilon_test = 1.0E17 * epsilon;
-  EXPECT_TRUE(CompareMatrices(xyzDt_map,      xyzDt_exact, epsilon_test));
-  EXPECT_TRUE(CompareMatrices(quatDt_map, quatDt_NB_exact, epsilon_test));
+  const double tolerance = 1.0E17 * epsilon;
+  EXPECT_TRUE(CompareMatrices(xyzDt_map,      xyzDt_exact, tolerance));
+  EXPECT_TRUE(CompareMatrices(quatDt_map, quatDt_NB_exact, tolerance));
 }
 
 
@@ -439,7 +440,7 @@ void  TestMapQDotToVelocity(
   rigid_body_plant.MapQDotToVelocity(*context, coordinatesDt, &wv_from_map);
   const Vector3d w_map(wv_from_map[0], wv_from_map[1], wv_from_map[2]);
   const Vector3d v_map(wv_from_map[3], wv_from_map[4], wv_from_map[5]);
-#if 0
+#if 0  // TODO(mitiguy) Remove these debug statements.
   std::cout << "\n\n--------------------------------------------------";
   std::cout << "\n----------- Test: MapQDotToVelocity --------------";
   std::cout << "\n--------------------------------------------------";
@@ -451,12 +452,12 @@ void  TestMapQDotToVelocity(
 #endif
 
   //--------------------------------------------------------------
-  // TODO(Mitiguy and Drumwright) change epsilon_test to 50*epsilon.
+  // TODO(Mitiguy and Drumwright) change tolerance to 50*epsilon with PR #4604.
   //--------------------------------------------------------------
   const double epsilon = std::numeric_limits<double>::epsilon();
-  const double epsilon_test = 1.0E17 * epsilon;
-  EXPECT_TRUE(CompareMatrices(w_map,  w_NB_B_exact, epsilon_test));
-  EXPECT_TRUE(CompareMatrices(v_map, v_NBo_B_exact, epsilon_test));
+  const double tolerance = 1.0E17 * epsilon;
+  EXPECT_TRUE(CompareMatrices(w_map,  w_NB_B_exact, tolerance));
+  EXPECT_TRUE(CompareMatrices(v_map, v_NBo_B_exact, tolerance));
 }
 
 
@@ -503,7 +504,6 @@ void  TestDrakeSolutionForSpecificInitialValue(
   Eigen::Matrix<double, 13, 1> state_initial;
   state_initial << xyz_initial, quat_NB_initial,
                    w_NB_B_initial, v_NBo_B_initial;
-  // Reserve sufficient room for state portion of Context.
   systems::VectorBase<double>& state_drake =
       *(context->get_mutable_continuous_state_vector());
   state_drake.SetFromVector(state_initial);
@@ -552,10 +552,10 @@ void  TestDrakeSolutionForSpecificInitialValue(
   // Initially, (time=0), these matrices should be close to machine-precision,
   // which is approximately 2.22E-16.
   const double epsilon = std::numeric_limits<double>::epsilon();
-  const double epsilon_test = 50 * epsilon;
+  const double tol = 50 * epsilon;
   const Eigen::Matrix3d R_NB_drake = math::quat2rotmat(quat_NB_drake);
   const Eigen::Matrix3d R_NB_exact = math::quat2rotmat(quat_NB_exact);
-  EXPECT_TRUE(R_NB_drake.isApprox(R_NB_exact, epsilon_test));
+  EXPECT_TRUE(R_NB_drake.isApprox(R_NB_exact, tol));
 
   // Drake: Compensate for definition of vDt = acceleration - w x v.
   const Vector3d w_cross_v_drake = w_NB_B_drake.cross(v_NBo_B_drake);
@@ -589,13 +589,14 @@ void  TestDrakeSolutionForSpecificInitialValue(
 #endif
 
   // Compare Drake and exact results.
-  EXPECT_TRUE(CompareMatrices(w_NB_B_drake,       w_NB_B_exact,      epsilon_test));
-  EXPECT_TRUE(CompareMatrices(wDt_NB_B_drake,   wDt_NB_B_exact, 1600*epsilon_test));
-  EXPECT_TRUE(CompareMatrices(xyz_drake,             xyz_exact,      epsilon_test));
-  EXPECT_TRUE(CompareMatrices(xyzDt_drake,         xyzDt_exact,      epsilon_test));
-  EXPECT_TRUE(CompareMatrices(xyzDDt_drake,       xyzDDt_exact,   10*epsilon_test));
-  EXPECT_TRUE(CompareMatrices(v_NBo_B_drake,     v_NBo_B_exact,      epsilon_test));
-  EXPECT_TRUE(CompareMatrices(vDt_NBo_B_drake, vDt_NBo_B_exact,   10*epsilon_test));
+  // TODO(mitiguy) Investigate why big factor (1600) needed to test wDt_NB_B.
+  EXPECT_TRUE(CompareMatrices(w_NB_B_drake,       w_NB_B_exact,      tol));
+  EXPECT_TRUE(CompareMatrices(wDt_NB_B_drake,   wDt_NB_B_exact, 1600*tol));
+  EXPECT_TRUE(CompareMatrices(xyz_drake,             xyz_exact,      tol));
+  EXPECT_TRUE(CompareMatrices(xyzDt_drake,         xyzDt_exact,      tol));
+  EXPECT_TRUE(CompareMatrices(xyzDDt_drake,       xyzDDt_exact,   10*tol));
+  EXPECT_TRUE(CompareMatrices(v_NBo_B_drake,     v_NBo_B_exact,      tol));
+  EXPECT_TRUE(CompareMatrices(vDt_NBo_B_drake, vDt_NBo_B_exact,   10*tol));
 
   // Two-step process to compare time-derivative of Drake quaternion with exact.
   // Since more than one time-derivative of a quaternion is associated with the
@@ -608,11 +609,12 @@ void  TestDrakeSolutionForSpecificInitialValue(
   const Vector3d w_from_quatDt_exact =
       CalculateAngularVelocityExpressedInBFromQuaternionDt(
           quatd_exact, quatDt_NB_exact);
-  EXPECT_TRUE(CompareMatrices(w_from_quatDt_drake, w_NB_B_drake, epsilon_test));
-  EXPECT_TRUE(CompareMatrices(w_from_quatDt_exact, w_NB_B_exact, epsilon_test));
+  EXPECT_TRUE(CompareMatrices(w_from_quatDt_drake, w_NB_B_drake, tol));
+  EXPECT_TRUE(CompareMatrices(w_from_quatDt_exact, w_NB_B_exact, tol));
 
   //--------------------------------------------------------------
-  // EXTRA: Test MapQDotToVelocity and MapVelocityToQDot for Evan.
+  // EXTRA: Test MapQDotToVelocity and MapVelocityToQDot for Evan's PR #4604.
+  // TODO(Mitiguy and Drumwright) change tolerance in next methods for PR #4604.
   //--------------------------------------------------------------
   TestMapVelocityToQDot(rigid_body_plant, w_NB_B_exact, v_NBo_B_exact,
                         quatDt_NB_exact, xyzDt_exact, context);
@@ -669,7 +671,7 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
       "cylinder_torque_free_analytical_solution/";
   const std::string urdf_dir_file_name = GetDrakePath() + urdf_dir + urdf_name;
 
-  // Create a default RigidBodyTree constructor.
+  // Construct an empty RigidBodyTree.
   std::unique_ptr<RigidBodyTree<double>> tree =
       std::make_unique<RigidBodyTree<double>>();
 
@@ -685,12 +687,11 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       urdf_dir_file_name, joint_type, weld_to_frame, tree.get());
 
-  // Query drake for gravitational acceleration before moving tree.
+  // Query Drake for gravitational acceleration before moving tree.
   // Note: a_grav is an improperly-named public member of tree class (BAD).
   const Vector3d gravity = tree->a_grav.tail<3>();
 
   // Create a RigidBodyPlant which takes ownership of tree.
-  // Note: unique_ptr helps ensure tree is only managed/deleted once.
   drake::systems::RigidBodyPlant<double> rigid_body_plant(std::move(tree));
 
   // Create a Context which stores state and extra calculations.
