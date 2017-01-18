@@ -1,0 +1,9 @@
+
+directories:
+  .
+  -externals
+  -build
+
+targets:
+  //...:all
+
