@@ -33,8 +33,7 @@ target_link_libraries(rigid_body_tree_creation_test
 drake_add_cc_test(rigid_body_tree_kinematics_test)
 target_link_libraries(rigid_body_tree_kinematics_test
     drakeMultibodyParsers
-    drakeRBM
-    drakeMultibodyBenchmarks)
+    drakeRBM)
 
 drake_add_cc_test(rigid_body_tree_dynamics_test)
 target_link_libraries(rigid_body_tree_dynamics_test

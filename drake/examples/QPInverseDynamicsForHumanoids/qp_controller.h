@@ -283,14 +283,14 @@ class ContactInformation {
    * @param referece_point the reference point for the equivalent wrench.
    * @return The matrix that converts point forces to an equivalent wrench.
    */
-  Matrix6X<double> ComputeWrenchMatrix(
+  MatrixX<double> ComputeWrenchMatrix(
       const Matrix3X<double>& contact_points,
       const Vector3<double>& reference_point) const {
     if (contact_points.cols() != contact_points_.cols())
       throw std::runtime_error("contact points size mismatch");
 
-    Matrix6X<double> force_to_wrench =
-        Matrix6X<double>::Zero(6, 3 * contact_points.cols());
+    MatrixX<double> force_to_wrench =
+        MatrixX<double>::Zero(6, 3 * contact_points.cols());
     int col_idx = 0;
     for (int i = 0; i < contact_points.cols(); ++i) {
       // Force part: just sum up all the point forces, so these are I
@@ -316,12 +316,10 @@ class ContactInformation {
       const RigidBodyTree<double>& robot,
       const KinematicsCache<double>& cache) const {
     MatrixX<double> J(3 * contact_points_.cols(), robot.get_num_velocities());
-    Isometry3<double> offset(Isometry3<double>::Identity());
     for (int i = 0; i < contact_points_.cols(); ++i) {
-      offset.translation() = contact_points_.col(i);
       J.block(3 * i, 0, 3, robot.get_num_velocities()) =
-          robot.CalcFrameSpatialVelocityJacobianInWorldFrame(
-              cache, *body_, offset).bottomRows<3>();
+          GetTaskSpaceJacobian(robot, cache, *body_, contact_points_.col(i))
+              .bottomRows<3>();
     }
     return J;
   }
@@ -338,12 +336,10 @@ class ContactInformation {
       const RigidBodyTree<double>& robot,
       const KinematicsCache<double>& cache) const {
     VectorX<double> Jdv(3 * contact_points_.cols());
-    Isometry3<double> offset(Isometry3<double>::Identity());
     for (int i = 0; i < contact_points_.cols(); ++i) {
-      offset.translation() = contact_points_.col(i);
       Jdv.segment<3>(3 * i) =
-          robot.CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
-              cache, *body_, offset).bottomRows<3>();
+          GetTaskSpaceJacobianDotTimesV(robot, cache, *body_,
+                                        contact_points_.col(i)).bottomRows<3>();
     }
     return Jdv;
   }
@@ -359,11 +355,10 @@ class ContactInformation {
       const RigidBodyTree<double>& robot,
       const KinematicsCache<double>& cache) const {
     VectorX<double> vel(3 * contact_points_.cols());
-    Isometry3<double> offset(Isometry3<double>::Identity());
     for (int i = 0; i < contact_points_.cols(); ++i) {
-      offset.translation() = contact_points_.col(i);
-      vel.segment<3>(3 * i) = robot.CalcFrameSpatialVelocityInWorldFrame(
-          cache, *body_, offset).bottomRows<3>();
+      vel.segment<3>(3 * i) =
+          GetTaskSpaceVel(robot, cache, *body_, contact_points_.col(i))
+              .bottomRows<3>();
     }
     return vel;
   }
@@ -520,13 +515,13 @@ class DesiredBodyMotion : public ConstrainedValues {
       : ConstrainedValues(6), body_(&body), control_during_contact_(false) {}
 
   inline bool is_valid() const {
-    return this->ConstrainedValues::is_valid(6);
+    return this->ConstrainedValues::is_valid(kTwistSize);
   }
 
   inline std::string get_row_name(int i) const {
-    static const std::string row_name[6] = {"[WX]", "[WY]", "[WZ]",
-                                            "[X]",  "[Y]",  "[Z]"};
-    if (i < 0 || i >= 6)
+    static const std::string row_name[kTwistSize] = {"[WX]", "[WY]", "[WZ]",
+                                                     "[X]",  "[Y]",  "[Z]"};
+    if (i < 0 || i >= kTwistSize)
       throw std::runtime_error("index must be within [0, 5]");
     return row_name[i];
   }
@@ -636,17 +631,17 @@ std::ostream& operator<<(std::ostream& out, const DesiredDoFMotions& input);
  */
 class DesiredCentroidalMomentumDot : public ConstrainedValues {
  public:
-  DesiredCentroidalMomentumDot() : ConstrainedValues(6) {}
+  DesiredCentroidalMomentumDot() : ConstrainedValues(kTwistSize) {}
 
   inline bool is_valid() const {
-    return this->ConstrainedValues::is_valid(6);
+    return this->ConstrainedValues::is_valid(kTwistSize);
   }
 
   inline std::string get_row_name(int i) const {
     static const std::string row_name[6] = {"AngMom[X]", "AngMom[Y]",
                                             "AngMom[Z]", "LinMom[X]",
                                             "LinMom[Y]", "LinMom[Z]"};
-    if (i < 0 || i >= 6)
+    if (i < 0 || i >= kTwistSize)
       throw std::runtime_error("index must be within [0, 5]");
     return row_name[i];
   }
@@ -1136,15 +1131,15 @@ class QPController {
   MatrixX<double> mass_matrix_;
   VectorX<double> dynamics_bias_;
 
-  Matrix3X<double> J_com_;
+  MatrixX<double> J_com_;
   VectorX<double> J_dot_times_v_com_;
-  Matrix6X<double> centroidal_momentum_matrix_;
+  MatrixX<double> centroidal_momentum_matrix_;
   VectorX<double> centroidal_momentum_matrix_dot_times_v_;
 
   VectorX<double> solution_;
 
-  std::vector<Matrix6X<double>> body_J_;
-  std::vector<Vector6<double>> body_Jdv_;
+  std::vector<MatrixX<double>> body_J_;
+  std::vector<VectorX<double>> body_Jdv_;
 
   // These determines the size of the QP. These are set in ResizeQP
   int num_contact_body_{0};
