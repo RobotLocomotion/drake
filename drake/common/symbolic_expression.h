@@ -17,6 +17,7 @@
 #include "drake/common/dummy_value.h"
 #include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
+#include "drake/common/polynomial.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
@@ -157,6 +158,15 @@ class Expression {
       This function is used as a compare function in map<Expression> and
       set<Expression> via std::less<drake::symbolic::Expression>. */
   bool Less(const Expression& e) const;
+
+  /** Checks if this symbolic expression is convertible to Polynomial. */
+  bool is_polynomial() const;
+
+  /** Returns a Polynomial representing this expression.
+   *  Note that the ID of a variable is preserved in this translation.
+   *  \pre{is_polynomial() is true.}
+   */
+  Polynomial<double> ToPolynomial() const;
 
   /** Evaluates under a given environment (by default, an empty environment).
       It throws a std::runtime exception if NaN is detected during evaluation.
