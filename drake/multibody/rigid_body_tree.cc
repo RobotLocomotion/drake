@@ -2915,9 +2915,8 @@ Vector6<T> RigidBodyTree<T>::CalcBodySpatialVelocityInWorldFrame(
 
   // Compute body linear velocity from the instantaneous velocity of a point
   // located at the world's origin rigidly attached to B.
-  spatial_velocity_WB.template bottomRows<3>() =
-      plucker_velocity_WB.template bottomRows<3>() -
-          p_WB.cross(plucker_velocity_WB.template topRows<3>());
+  auto w_WB = plucker_velocity_WB.template topRows<3>();
+  spatial_velocity_WB.template bottomRows<3>() += w_WB.cross(p_WB);
 
   return spatial_velocity_WB;
 }
