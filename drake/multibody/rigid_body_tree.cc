@@ -82,7 +82,7 @@ const char* const RigidBodyTreeConstants::kWorldName = "world";
 const int RigidBodyTreeConstants::kWorldBodyIndex = 0;
 // TODO(liang.fok) Update the following two variables along with the resolution
 // of #3088. Once #3088 is resolved, ID of the first model instance should be 1.
-const int RigidBodyTreeConstants::kFirstModelInstanceId = 0;
+const int RigidBodyTreeConstants::kFirstNonWorldModelInstanceId = 0;
 const set<int> RigidBodyTreeConstants::default_model_instance_id_set = {0};
 
 template <typename T>

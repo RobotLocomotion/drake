@@ -100,7 +100,7 @@ PassiveVisualizedPlant<T>::PassiveVisualizedPlant(
   // Fixes constant sources to all inputs.
   const systems::RigidBodyPlant<T>& plant = visualized_plant_->plant();
 
-  for (int instance_id = RigidBodyTreeConstants::kFirstModelInstanceId;
+  for (int instance_id = RigidBodyTreeConstants::kFirstNonWorldModelInstanceId;
       instance_id < plant.get_num_model_instances(); ++instance_id) {
     if (plant.model_instance_has_actuators(instance_id)) {
       const int input_port_index =

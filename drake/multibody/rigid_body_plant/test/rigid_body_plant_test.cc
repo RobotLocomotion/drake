@@ -252,8 +252,8 @@ TEST_F(KukaArmTest, EvalOutput) {
   ASSERT_EQ(1, context_->get_num_input_ports());
   ASSERT_EQ(1, kuka_plant_->get_num_model_instances());
 
-  // TODO(liang.fok) Update this to be 1 once #3088 is resolved.
-  const int kModelInstanceId = 0;
+  const int kModelInstanceId =
+      RigidBodyTreeConstants::kFirstNonWorldModelInstanceId;
 
   // Checks the size of the input ports to match the number of generalized
   // forces that can be applied.
@@ -292,7 +292,7 @@ TEST_F(KukaArmTest, EvalOutput) {
   // Four output ports:
   //
   //    (1) plant state
-  //    (2) model instance state
+  //    (2) model instance state for tree containing a single model instance
   //    (3) kinematic results
   //    (4) contact results
   //

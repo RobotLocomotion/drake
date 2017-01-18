@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include <Eigen/Dense>
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
@@ -10,8 +9,6 @@
 #include "drake/lcmt_drake_signal.hpp"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-
-using Eigen::VectorXd;
 
 using std::make_unique;
 using std::move;
@@ -51,9 +48,8 @@ GTEST_TEST(RigidBodyPlantThatPublishesXdotTest, TestPublishLcmMessage) {
   EXPECT_EQ(dut.get_input_size(), 0);
   EXPECT_EQ(dut.get_output_size(), kNumStates);
 
-  unique_ptr<Context<double>> context = dut.CreateDefaultContext();
-
   // Forces the DUT to publish an LCM message.
+  unique_ptr<Context<double>> context = dut.CreateDefaultContext();
   EXPECT_NO_THROW(dut.Publish(*context));
 
   // Verifies that the transmitted message is correct.

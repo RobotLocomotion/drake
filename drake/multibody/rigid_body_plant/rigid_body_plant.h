@@ -71,9 +71,7 @@ namespace systems {
 ///   actuators, use model_instance_has_actuators().
 ///
 /// - model_instance_state_output_port(): A vector-valued port containing the
-///   state vector for a particular model instance in the RigidBodyTree. This
-///   method can only be called when this class is instantiated with constructor
-///   parameter `export_model_instance_centric_ports` equal to `true`.
+///   state vector for a particular model instance in the RigidBodyTree.
 ///
 /// The %RigidBodyPlant's state consists of a vector containing the generalized
 /// positions followed by the generalized velocities of the system. This state
@@ -115,7 +113,7 @@ template <typename T>
 class RigidBodyPlant : public LeafSystem<T> {
  public:
   /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
-  /// the world in @p tree.  @p tree must not be `nullptr`.
+  /// the world in `tree`.  `tree` must not be `nullptr`.
   ///
   /// @param[in] tree the dynamic model to use with this plant.
   // TODO(SeanCurtis-TRI): It appears that the tree has to be "compiled"
@@ -178,25 +176,25 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// of the continuous state vector.
   int get_output_size() const;
 
-  /// Sets the generalized coordinate @p position_index to the value
-  /// @p position.
+  /// Sets the generalized coordinate `position_index` to the value
+  /// `position`.
   void set_position(Context<T>* context,
                     int position_index, T position) const;
 
-  /// Sets the generalized velocity @p velocity_index to the value
-  /// @p velocity.
+  /// Sets the generalized velocity `velocity_index` to the value
+  /// `velocity`.
   void set_velocity(Context<T>* context,
                     int velocity_index, T velocity) const;
 
-  /// Sets the continuous state vector of the system to be @p x.
+  /// Sets the continuous state vector of the system to be `x`.
   void set_state_vector(Context<T>* context,
                         const Eigen::Ref<const VectorX<T>> x) const;
 
-  /// Sets the continuous state vector of the system to be @p x.
+  /// Sets the continuous state vector of the system to be `x`.
   void set_state_vector(State<T>* state,
                         const Eigen::Ref<const VectorX<T>> x) const;
 
-  /// Sets the state in @p context so that generalized positions and velocities
+  /// Sets the state in `context` so that generalized positions and velocities
   /// are zero. For quaternion based joints the quaternion is set to be the
   /// identity (or equivalently a zero rotation).
   void SetDefaultState(const Context<T>& context,
@@ -229,9 +227,9 @@ class RigidBodyPlant : public LeafSystem<T> {
   static T JointLimitForce(const DrakeJoint& joint,
                            const T& position, const T& velocity);
 
-  /// Returns the index into the output port for @p model_instance_id
-  /// which corresponds to the world position index of @p
-  /// world_position_index, or throws if the position index does not
+  /// Returns the index into the output port for `model_instance_id`
+  /// which corresponds to the world position index of
+  /// `world_position_index`, or throws if the position index does not
   /// correspond to the model id.
   int FindInstancePositionIndexFromWorldIndex(
       int model_instance_id, int world_position_index);
@@ -256,7 +254,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// only be called when there is only one model instance in the RigidBodyTree.
   /// Otherwise, a std::runtime_error will be thrown. It returns the same port
   /// as model_instance_actuator_command_input_port() using input
-  /// parameter RigidBodyTreeConstants::kFirstModelInstanceId.
+  /// parameter RigidBodyTreeConstants::kFirstNonWorldModelInstanceId.
   const InputPortDescriptor<T>& actuator_command_input_port() const {
     if (get_num_model_instances() != 1) {
       throw std::runtime_error("RigidBodyPlant::actuator_command_input_port(): "
@@ -266,12 +264,12 @@ class RigidBodyPlant : public LeafSystem<T> {
           "RigidBodyTree.");
     }
     return model_instance_actuator_command_input_port(
-                         RigidBodyTreeConstants::kFirstModelInstanceId);
+                         RigidBodyTreeConstants::kFirstNonWorldModelInstanceId);
   }
 
-  // Returns true if and only if the model instance with the provided
-  // `model_instance_id` has actuators. This is useful when trying to determine
-  // whether it's safe to call model_instance_actuator_command_input_port().
+  /// Returns true if and only if the model instance with the provided
+  /// `model_instance_id` has actuators. This is useful when trying to determine
+  /// whether it's safe to call model_instance_actuator_command_input_port().
   bool model_instance_has_actuators(int model_instance_id) const;
 
   /// Returns a descriptor of the input port for a specific model instance. This
@@ -295,8 +293,8 @@ class RigidBodyPlant : public LeafSystem<T> {
   }
 
   /// Returns a descriptor of the output port containing the state of a
-  /// particular model with instance ID equal to @p model_instance_id. Throws a
-  /// std::runtime_error if @p model_instance_id does not exist. This method can
+  /// particular model with instance ID equal to `model_instance_id`. Throws a
+  /// std::runtime_error if `model_instance_id` does not exist. This method can
   /// only be called when this class is instantiated with constructor parameter
   /// `export_model_instance_centric_ports` equal to `true`.
   const OutputPortDescriptor<T>& model_instance_state_output_port(

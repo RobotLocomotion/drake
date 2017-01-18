@@ -411,9 +411,8 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
   u.fill(0.);
 
   if (get_num_actuators() > 0) {
-    // The following code checks that all plant-centric actuator command input
-    // ports for are connected. It throws a runtime_error exception if this is
-    // not the case.
+    // The following code evaluates the actuator command input ports and throws
+    // a runtime_error exception if at least one of the ports is not connected.
     for (int instance_id = 0;
         instance_id < get_num_model_instances(); ++instance_id) {
       if (input_map_[instance_id] == kInvalidPortIdentifier) { continue; }

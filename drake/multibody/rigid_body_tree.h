@@ -53,9 +53,9 @@ struct RigidBodyTreeConstants {
   static const int kWorldBodyIndex;
 
   /**
-   * The ID of the first model instance in the tree.
+   * The ID of the first non-world model instance in the tree.
    */
-  static const int kFirstModelInstanceId;
+  static const int kFirstNonWorldModelInstanceId;
 
   /**
    * Defines the default model instance ID set. This is a set containing the
