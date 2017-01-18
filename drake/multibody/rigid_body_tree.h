@@ -14,6 +14,7 @@
 #include "drake/common/constants.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_stl_types.h"
+#include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/force_torque_measurement.h"
 #include "drake/multibody/kinematic_path.h"
@@ -312,10 +313,163 @@ class RigidBodyTree {
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1> centerOfMass(
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      KinematicsCache<Scalar>& cache,
+      const KinematicsCache<Scalar>& cache,
       const std::set<int>& model_instance_id_set =
           RigidBodyTreeConstants::default_model_instance_id_set) const;
+
+  /// Computes the pose `X_WB` of @p body's frame B in the world frame W.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param body Reference to the RigidBody.
+  /// @retval `X_WB`
+  drake::Isometry3<T> CalcBodyPoseInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body) const {
+    return CalcFramePoseInWorldFrame(
+        cache, body, drake::Isometry3<T>::Identity());
+  }
+
+  /// Computes the pose `X_WF` of @p frame_F in the world frame W. @p frame_F
+  /// does not necessarily need to be owned by this RigidBodyTree. However,
+  /// the RigidBody to which @p frame_F attaches to has to be owned by this
+  /// RigidBodyTree.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param frame_F Reference to the RigidBodyFrame.
+  /// @retval `X_WF`
+  drake::Isometry3<T> CalcFramePoseInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBodyFrame<T>& frame_F) const {
+    return CalcFramePoseInWorldFrame(cache, frame_F.get_rigid_body(),
+        frame_F.get_transform_to_body().template cast<T>());
+  }
+
+  /// Computes the pose `X_WF` of the rigid body frame F in the world frame W.
+  /// Frame F is rigidly attached to @p body.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param body Reference to the RigidBody.
+  /// @param X_BF The pose of frame F in body frame B.
+  /// @retval `X_WF`
+  drake::Isometry3<T> CalcFramePoseInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
+      const drake::Isometry3<T>& X_BF) const;
+
+  /// Computes the spatial velocity `V_WB` of @p body's frame B measured and
+  /// expressed in the world frame W.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param body Reference to the RigidBody.
+  /// @retval `V_WB`
+  drake::Vector6<T> CalcBodySpatialVelocityInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body) const;
+
+  /// Computes the spatial velocity `V_WF` of RigidBodyFrame @p frame_F measured
+  /// and expressed in the world frame W. @p frame_F does not necessarily need
+  /// to be owned by this RigidBodyTree. However, the RigidBody to which
+  /// @p frame_F attaches to has to be owned by this RigidBodyTree.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param frame_F Reference to the RigidBodyFrame.
+  /// @retval `V_WF`
+  drake::Vector6<T> CalcFrameSpatialVelocityInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBodyFrame<T>& frame_F) const {
+    return CalcFrameSpatialVelocityInWorldFrame(
+        cache, frame_F.get_rigid_body(),
+        frame_F.get_transform_to_body().template cast<T>());
+  }
+
+  /// Computes the spatial velocity `V_WF` of the frame F measured and expressed
+  /// in the world frame W. Frame F is rigidly attached to @p body.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param body Reference to the RigidBody.
+  /// @param X_BF The pose of frame F in body frame B.
+  /// @retval `V_WF`
+  drake::Vector6<T> CalcFrameSpatialVelocityInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
+      const drake::Isometry3<T>& X_BF) const;
+
+  /// Computes the Jacobian `J_WF` of the spatial velocity `V_WF` of frame F
+  /// measured and expressed in the world frame W such that `V_WF = J_WF * v`,
+  /// where `v` is the generalized velocity. Frame F is rigidly attached to
+  /// @p body.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param B Reference to the RigidBody.
+  /// @param X_BF The pose of frame F in body frame B.
+  /// @param in_terms_of_qdot `true` for `J_WF` computed with respect to the
+  /// time derivative of the generalized position such that
+  /// `V_WF = J_WF * qdot`. `false` for `J_WF` computed with respect to `v`.
+  /// @retval `J_WF`
+  drake::Matrix6X<T> CalcFrameSpatialVelocityJacobianInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
+      const drake::Isometry3<T>& X_BF,
+      bool in_terms_of_qdot = false) const;
+
+  /// Computes the Jacobian `J_WF` of the spatial velocity `V_WF` of frame F
+  /// measured and expressed in the world frame W such that `V_WF = J_WF * v`,
+  /// where `v` is the generalized velocity. @p frame_F does not necessarily
+  /// need to be owned by this RigidBodyTree. However, the RigidBody to which
+  /// @p frame_F attaches to has to be owned by this RigidBodyTree.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param frame_F Reference to the RigidBodyFrame.
+  /// @param in_terms_of_qdot `true` for `J_WF` computed with respect to the
+  /// time derivative of the generalized position such that
+  /// `V_WF = J_WF * qdot`. `false` for `J_WF` computed with respect to `v`.
+  /// @retval `J_WF`
+  drake::Matrix6X<T> CalcFrameSpatialVelocityJacobianInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBodyFrame<T>& frame_F,
+      bool in_terms_of_qdot = false) const {
+    return CalcFrameSpatialVelocityJacobianInWorldFrame(
+        cache, frame_F.get_rigid_body(),
+        frame_F.get_transform_to_body().template cast<T>(), in_terms_of_qdot);
+  }
+
+  /// Computes the Jacobian `J_WB` of the spatial velocity `V_WB` of body
+  /// frame B measured and expressed in the world frame `W` such that
+  /// `V_WB = J_WB * v`, where `v` is the generalized velocity.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param body Reference to the RigidBody.
+  /// @param in_terms_of_qdot `true` for `J_WB` computed with respect to the
+  /// time derivative of the generalized position such that
+  /// `V_WB = J_WB * qdot`. `false` for `J_WB` computed with respect to `v`.
+  /// @retval `J_WB`
+  drake::Matrix6X<T> CalcBodySpatialVelocityJacobianInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
+      bool in_terms_of_qdot = false) const {
+    return CalcFrameSpatialVelocityJacobianInWorldFrame(
+        cache, body, drake::Isometry3<T>::Identity(), in_terms_of_qdot);
+  }
+
+  /// Computes `Jdot_WF * v`, where `J_WF` is the Jacobian of spatial velocity,
+  /// `V_WF`, of frame F measured and expressed in the world frame W, and
+  /// `v` is the generalized velocity. Frame F is rigidly attached to @p body.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param body Reference to the RigidBody.
+  /// @param X_BF The pose of frame F in body frame B.
+  /// @retval `Jdot_WF * v`
+  drake::Vector6<T> CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
+      const drake::Isometry3<T>& X_BF) const;
+
+  /// Computes `Jdot_WF * v`, where `J_WF` is the Jacobian of spatial velocity
+  /// `V_WF` of frame F measured and expressed in the world frame W, and
+  /// `v` is the generalized velocity. @p frame_F does not necessarily need to
+  /// be owned by this RigidBodyTree. However, the RigidBody to which @p frame_F
+  /// attaches to has to be owned by this RigidBodyTree.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param frame_F Reference to the RigidBodyFrame.
+  /// @retval `Jdot_WF * v`
+  drake::Vector6<T> CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBodyFrame<T>& frame_F) const {
+    return CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+        cache, frame_F.get_rigid_body(),
+        frame_F.get_transform_to_body().template cast<T>());
+  }
+
+  /// Computes `Jdot_WB * v`, where `J_WB` is the Jacobian of the spatial
+  /// velocity `V_WB` of body frame B measured and expressed in the world
+  /// frame W, and `v` is the generalized velocity.
+  /// @param cache Reference to the KinematicsCache.
+  /// @param body Reference to the RigidBody.
+  /// @retval `Jdot_WB * v`
+  drake::Vector6<T> CalcBodySpatialVelocityJacobianDotTimesVInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body) const {
+    return CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+        cache, body, drake::Isometry3<T>::Identity());
+  }
 
   /**
    * Converts a matrix B, which transforms generalized velocities (v) to an

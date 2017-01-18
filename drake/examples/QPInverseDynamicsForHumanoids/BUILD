@@ -36,25 +36,14 @@ cc_library(
 )
 
 cc_library(
-    name = "rigid_body_tree_utils",
-    srcs = ["rigid_body_tree_utils.cc"],
-    hdrs = ["rigid_body_tree_utils.h"],
-    linkstatic = 1,
-    deps = [
-        "//drake/common",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/systems/robotInterfaces:side",
-    ],
-)
-
-cc_library(
     name = "humanoid_status",
     srcs = ["humanoid_status.cc"],
     hdrs = ["humanoid_status.h"],
     linkstatic = 1,
     deps = [
-        ":rigid_body_tree_utils",
         "//drake/common",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/systems/robotInterfaces:side",
     ],
 )
 
