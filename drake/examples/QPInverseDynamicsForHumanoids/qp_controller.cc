@@ -9,12 +9,12 @@ namespace qp_inverse_dynamics {
 const double QPController::kUpperBoundForContactBasis = 1000;
 
 void QPController::ResizeQP(const RigidBodyTree<double>& robot,
-                            const QPInput& input) {
-  const std::map<std::string, ContactInformation>& all_contacts =
+                            const QpInput& input) {
+  const std::unordered_map<std::string, ContactInformation>& all_contacts =
       input.contact_information();
-  const std::map<std::string, DesiredBodyMotion>& all_body_motions =
+  const std::unordered_map<std::string, DesiredBodyMotion>& all_body_motions =
       input.desired_body_motions();
-  const DesiredDoFMotions& all_dof_motions = input.desired_dof_motions();
+  const DesiredDofMotions& all_dof_motions = input.desired_dof_motions();
   const DesiredCentroidalMomentumDot& cen_mom_change =
       input.desired_centroidal_momentum_dot();
   // Figure out dimensions.
@@ -253,8 +253,8 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   basis_reg_vec_ = VectorX<double>::Zero(num_basis_);
 }
 
-int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
-                          QPOutput* output) {
+int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
+                          QpOutput* output) {
   if (!input.is_valid(rs.robot().get_num_velocities())) {
     std::cerr << "input is invalid\n";
     return -1;
@@ -719,7 +719,7 @@ std::ostream& operator<<(std::ostream& out, const ContactInformation& contact) {
   return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const DesiredDoFMotions& input) {
+std::ostream& operator<<(std::ostream& out, const DesiredDofMotions& input) {
   for (int i = 0; i < input.size(); ++i) {
     out << "desired " << input.dof_name(i) << " acc: " << input.value(i)
         << " weight: " << input.weight(i) << " " << input.constraint_type(i);
@@ -736,9 +736,9 @@ std::ostream& operator<<(std::ostream& out,
   return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const QPInput& input) {
+std::ostream& operator<<(std::ostream& out, const QpInput& input) {
   out << "===============================================\n";
-  out << "QPInput:\n";
+  out << "QpInput:\n";
   out << input.desired_centroidal_momentum_dot() << std::endl;
 
   for (const auto& pair : input.desired_body_motions()) {
@@ -779,9 +779,9 @@ std::ostream& operator<<(std::ostream& out, const BodyAcceleration& acc) {
   return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
+std::ostream& operator<<(std::ostream& out, const QpOutput& output) {
   out << "===============================================\n";
-  out << "QPOutput:\n";
+  out << "QpOutput:\n";
   out << "accelerations:\n";
   for (int i = 0; i < output.vd().size(); ++i) {
     out << output.dof_name(i) << ": " << output.vd()[i] << std::endl;

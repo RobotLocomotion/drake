@@ -16,8 +16,8 @@ namespace qp_inverse_dynamics {
  * A wrapper around qp inverse dynamics controller.
  *
  * Input: HumanoidStatus
- * Input: QPInput
- * Output: QPOutput
+ * Input: QpInput
+ * Output: QpOutput
  */
 class QPControllerSystem : public systems::LeafSystem<double> {
  public:
@@ -42,12 +42,12 @@ class QPControllerSystem : public systems::LeafSystem<double> {
     const lcmt_qp_input* qp_input_msg =
         EvalInputValue<lcmt_qp_input>(context, input_port_index_qp_input_);
 
-    QPInput qp_input(robot_);
-    DecodeQPInput(robot_, *qp_input_msg, &qp_input);
+    QpInput qp_input;
+    DecodeQpInput(robot_, *qp_input_msg, &qp_input);
 
     // Output:
-    QPOutput& qp_output = output->GetMutableData(output_port_index_qp_input_)
-                              ->GetMutableValue<QPOutput>();
+    QpOutput& qp_output = output->GetMutableData(output_port_index_qp_input_)
+                              ->GetMutableValue<QpOutput>();
 
     if (qp_controller_.Control(*rs, qp_input, &qp_output) < 0) {
       std::cout << rs->position().transpose() << std::endl;
@@ -61,8 +61,8 @@ class QPControllerSystem : public systems::LeafSystem<double> {
       const Context<double>& context) const override {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
-    QPOutput out(robot_);
-    output->add_port(std::unique_ptr<AbstractValue>(new Value<QPOutput>(out)));
+    QpOutput out(GetDofNames(robot_));
+    output->add_port(std::unique_ptr<AbstractValue>(new Value<QpOutput>(out)));
     return std::move(output);
   }
 
@@ -75,14 +75,14 @@ class QPControllerSystem : public systems::LeafSystem<double> {
   }
 
   /**
-   * @return Port for the input: QPInput.
+   * @return Port for the input: QpInput.
    */
   inline const InputPortDescriptor<double>& get_input_port_qp_input() const {
     return get_input_port(input_port_index_qp_input_);
   }
 
   /**
-   * @return Port for the output: QPOutput.
+   * @return Port for the output: QpOutput.
    */
   inline const OutputPortDescriptor<double>& get_output_port_qp_output() const {
     return get_output_port(output_port_index_qp_input_);

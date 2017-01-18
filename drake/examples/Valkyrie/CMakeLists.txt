@@ -10,6 +10,12 @@ endif()
 
 drake_add_matlab_test(NAME examples/Valkyrie/runValkyrieVisualize OPTIONAL bullet gurobi snopt COMMAND runValkyrieVisualize)
 
+add_library_with_exports(LIB_NAME drakeValkyrieConstants SOURCE_FILES
+    valkyrie_constants.cc)
+target_link_libraries(drakeValkyrieConstants drakeCommon)
+drake_install_libraries(drakeValkyrieConstants)
+drake_install_headers(valkyrie_constants.h)
+
 if (lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeRobotCommandToDesiredEffortConverter SOURCE_FILES
       robot_command_to_desired_effort_converter.cc)
