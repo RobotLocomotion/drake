@@ -1,3 +1,6 @@
+LIST(APPEND CMAKE_MODULE_PATH "${PROJECT_BINARY_DIR}/../install/lib/cmake/sdformat")
+include(SDFormatConfig)
+
 # RigidBodyTree unit tests.
 drake_add_cc_test(test_kinematics_cache_checks)
 target_link_libraries(test_kinematics_cache_checks
@@ -16,6 +19,10 @@ add_executable(debug_manipulator_dynamics debug_manipulator_dynamics.cc)
 target_link_libraries(debug_manipulator_dynamics
     drakeMultibodyParsers
     drakeRBM)
+
+drake_add_cc_test(sdformat_test)
+target_include_directories(sdformat_test PUBLIC ${SDFormat_INCLUDE_DIRS})
+target_link_libraries(sdformat_test sdformat)
 
 # Inverse kinematics unit tests.
 macro(add_ik_cpp)
