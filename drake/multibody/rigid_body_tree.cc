@@ -2906,20 +2906,20 @@ Vector6<T> RigidBodyTree<T>::CalcBodySpatialVelocityInWorldFrame(
 
   // Plucker velocity vector of body B with respect to the world W, expressed in
   // the world frame W.
-  const Vector6<T>& plucker_velocity_WB_W = body_element.twist_in_world;
+  const Vector6<T>& plucker_velocity_WB = body_element.twist_in_world;
 
-  // Position of the origin Bo of the body frame B, expressed in world frame.
-  const Vector3<T> p_Bo_W = body_element.transform_to_world.translation();
+  // Position of the frame B's origin in the world frame.
+  const Vector3<T> p_WB = body_element.transform_to_world.translation();
 
-  Vector6<T> spatial_velocity_WB_W = plucker_velocity_WB_W;
+  Vector6<T> spatial_velocity_WB = plucker_velocity_WB;
 
   // Compute body linear velocity from the instantaneous velocity of a point
   // located at the world's origin rigidly attached to B.
-  spatial_velocity_WB_W.template bottomRows<3>() =
-      plucker_velocity_WB_W.template bottomRows<3>() -
-          p_Bo_W.cross(plucker_velocity_WB_W.template topRows<3>());
+  spatial_velocity_WB.template bottomRows<3>() =
+      plucker_velocity_WB.template bottomRows<3>() -
+          p_WB.cross(plucker_velocity_WB.template topRows<3>());
 
-  return spatial_velocity_WB_W;
+  return spatial_velocity_WB;
 }
 
 template <typename T>
@@ -2928,33 +2928,33 @@ drake::Vector6<T> RigidBodyTree<T>::CalcFrameSpatialVelocityInWorldFrame(
     const drake::Isometry3<T>& X_BF) const {
   // Spatial velocity of body B with respect to the world W, expressed in
   // the world frame W.
-  Vector6<T> V_WB_W =
+  Vector6<T> V_WB =
       CalcBodySpatialVelocityInWorldFrame(cache, body);
 
   // Angular velocity of frame B with respect to W, expressed in W.
-  const auto& w_WB_W = V_WB_W.template topRows<3>();
+  const auto& w_WB = V_WB.template topRows<3>();
   // Linear velocity of frame B with respect to W, expressed in W.
-  const auto& v_WB_W = V_WB_W.template bottomRows<3>();
+  const auto& v_WB = V_WB.template bottomRows<3>();
 
   // Body pose measured and expressed in the world frame.
   Isometry3<T> X_WB = CalcBodyPoseInWorldFrame(cache, body);
   // Vector from Bo to Fo expressed in B.
-  Vector3<T> p_BF_B = X_BF.template cast<T>().translation();
+  Vector3<T> p_BF = X_BF.translation();
   // Vector from Bo to Fo expressed in W.
-  Vector3<T> p_BF_W = X_WB.linear() * p_BF_B;
+  Vector3<T> p_BF_W = X_WB.linear() * p_BF;
 
   // Spatial velocity of frame F with respect to the world frame W, expressed in
   // the world frame.
-  Vector6<T> V_WF_W;
+  Vector6<T> V_WF;
   // Aliases to angular and linear components in the spatial velocity vector.
-  auto w_WF_W = V_WF_W.template topRows<3>();
-  auto v_WF_W = V_WF_W.template bottomRows<3>();
+  auto w_WF = V_WF.template topRows<3>();
+  auto v_WF = V_WF.template bottomRows<3>();
 
   // Compute the spatial velocity of frame F.
-  w_WF_W = w_WB_W;
-  v_WF_W = v_WB_W + w_WB_W.cross(p_BF_W);
+  w_WF = w_WB;
+  v_WF = v_WB + w_WB.cross(p_BF_W);
 
-  return V_WF_W;
+  return V_WF;
 }
 
 template <typename T> drake::Matrix6X<T>
@@ -3008,11 +3008,11 @@ RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
   // J = CalcFrameSpatialVelocityJacobianInWorldFrame(), and
   // pJ = geometricJacobian().
   //
-  // For column i of J, J(i) = [pJ_ang(i); pJ_lin(i) + pJ_ang(i).cross(p_WF)],
+  // For column i of J, J(i) = [pJ_ang(i); pJ_lin(i) + pJ_ang(i) x p_WF],
   // where _ang and _lin are the angular and linear components respectively.
   // Thus, for Jdv, the angular part stays the same, and the linear part equals:
-  //  = [pJdot_lin + pJdot_ang.cross(p_WF) + pJ_ang.cross(pdot_WF)] * v
-  //  = [pJdv_lin + pJdv_ang.cross(p_WF) + omega_WF.cross(pdot_WF)]
+  //  = [pJdot_lin + pJdot_ang x p_WF + pJ_ang x pdot_WF] * v
+  //  = [pJdv_lin + pJdv_ang x p_WF + omega_WF x pdot_WF]
   TwistVector<T> Jdv_WF = plucker_Jdv_WB;
   Jdv_WF.template tail<3>() += plucker_V_WB.template head<3>().cross(pdot_WF) +
                                plucker_Jdv_WB.template head<3>().cross(p_WF);
