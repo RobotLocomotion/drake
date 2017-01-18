@@ -69,7 +69,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
   /**
    * @return Port for the input: HumanoidStatus.
    */
-  inline const InputPortDescriptor<double>& get_input_port_humanoid_status()
+  InputPortDescriptor<double> get_input_port_humanoid_status()
       const {
     return get_input_port(input_port_index_humanoid_status_);
   }
@@ -77,14 +77,14 @@ class QPControllerSystem : public systems::LeafSystem<double> {
   /**
    * @return Port for the input: QPInput.
    */
-  inline const InputPortDescriptor<double>& get_input_port_qp_input() const {
+  InputPortDescriptor<double> get_input_port_qp_input() const {
     return get_input_port(input_port_index_qp_input_);
   }
 
   /**
    * @return Port for the output: QPOutput.
    */
-  inline const OutputPortDescriptor<double>& get_output_port_qp_output() const {
+  OutputPortDescriptor<double> get_output_port_qp_output() const {
     return get_output_port(output_port_index_qp_input_);
   }
 

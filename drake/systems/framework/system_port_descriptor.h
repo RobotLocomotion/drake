@@ -44,23 +44,13 @@ class InputPortDescriptor {
   }
 
   /// @name Basic Concepts
-  /// MoveConstructible only; not CopyConstructible; not Copy/Move-Assignable.
+  /// MoveConstructible, CopyConstructible, Copy-Assignable, Move-Assignable
   /// @{
-  //
-  // Implementation note: This class aliases a pointer to the system that
-  // contains it and captures its own index within that system's port vector,
-  // so we must be careful not to allow C++ copying to extend the lifetime of
-  // the system alias or duplicate our claim to the index.  Thus, this class is
-  // `MoveConstructible` but neither copyable nor assignable: it supports move
-  // to populate a vector, but is non-copyable in order remain the "one true
-  // descriptor" after construction and non-assignable in order to remain
-  // const.  Code that wishes to refer to this descriptor after insertion into
-  // the vector should use a reference (not copy) of this descriptor.
   InputPortDescriptor() = delete;
   InputPortDescriptor(InputPortDescriptor&& other) = default;
-  InputPortDescriptor(const InputPortDescriptor&) = delete;
-  InputPortDescriptor& operator=(InputPortDescriptor&&) = delete;
-  InputPortDescriptor& operator=(const InputPortDescriptor&) = delete;
+  InputPortDescriptor(const InputPortDescriptor&) = default;
+  InputPortDescriptor& operator=(InputPortDescriptor&&) = default;
+  InputPortDescriptor& operator=(const InputPortDescriptor&) = default;
   ~InputPortDescriptor() = default;
   /// @}
 
@@ -70,10 +60,10 @@ class InputPortDescriptor {
   int size() const { return size_; }
 
  private:
-  const System<T>* const system_;
-  const int index_;
-  const PortDataType data_type_;
-  const int size_;
+  const System<T>* system_{nullptr};
+  int index_{0};
+  PortDataType data_type_{kVectorValued};
+  int size_{0};
 };
 
 /// OutputPortDescriptor is a notation for specifying the kind of output a
@@ -99,14 +89,13 @@ class OutputPortDescriptor {
     }
   }
   /// @name Basic Concepts
-  /// MoveConstructible only; not CopyConstructible; not Copy/Move-Assignable.
+  /// MoveConstructible, CopyConstructible, Copy-Assignable, Move-Assignable
   /// @{
-  // See InputPortDescriptor doc for implementation note and justification.
   OutputPortDescriptor() = delete;
   OutputPortDescriptor(OutputPortDescriptor&&) = default;
-  OutputPortDescriptor(const OutputPortDescriptor&) = delete;
+  OutputPortDescriptor(const OutputPortDescriptor&) = default;
   OutputPortDescriptor& operator=(OutputPortDescriptor&&) = default;
-  OutputPortDescriptor& operator=(const OutputPortDescriptor&) = delete;
+  OutputPortDescriptor& operator=(const OutputPortDescriptor&) = default;
   ~OutputPortDescriptor() = default;
   /// @}
 
@@ -116,10 +105,10 @@ class OutputPortDescriptor {
   int size() const { return size_; }
 
  private:
-  const System<T>* const system_;
-  const int index_;
-  const PortDataType data_type_;
-  const int size_;
+  const System<T>* system_{nullptr};
+  int index_{0};
+  PortDataType data_type_{kVectorValued};
+  int size_{0};
 };
 
 }  // namespace systems

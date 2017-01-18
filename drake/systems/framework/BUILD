@@ -452,6 +452,15 @@ cc_googletest(
 )
 
 cc_googletest(
+    name = "system_port_descriptor_test",
+    deps = [
+        ":leaf_system",
+        ":system_port_descriptor",
+        "//drake/common",
+    ],
+)
+
+cc_googletest(
     name = "value_test",
     deps = [
         ":value",

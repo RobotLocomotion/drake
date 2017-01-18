@@ -57,10 +57,10 @@ class Saturation : public LeafSystem<T> {
                       const Eigen::Ref<const VectorX<T>>& u_max);
 
   /// Returns the input port.
-  const InputPortDescriptor<T>& get_input_port() const;
+  InputPortDescriptor<T> get_input_port() const;
 
   /// Returns the output port.
-  const OutputPortDescriptor<T>& get_output_port() const;
+  OutputPortDescriptor<T> get_output_port() const;
 
   /// Returns the lower limit `u_{min}` as a scalar value. Aborts if the lower
   /// limit cannot be represented by a single scalar value. This can occur if

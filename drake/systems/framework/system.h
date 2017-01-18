@@ -552,7 +552,7 @@ class System {
   }
 
   /// Returns the descriptor of the input port at index @p port_index.
-  const InputPortDescriptor<T>& get_input_port(int port_index) const {
+  InputPortDescriptor<T> get_input_port(int port_index) const {
     if (port_index >= get_num_input_ports()) {
       throw std::out_of_range("System " + get_name() + ": Port index " +
           std::to_string(port_index) + " is out of range. There are only " +
@@ -562,7 +562,7 @@ class System {
   }
 
   /// Returns the descriptor of the output port at index @p port_index.
-  const OutputPortDescriptor<T>& get_output_port(int port_index) const {
+  OutputPortDescriptor<T> get_output_port(int port_index) const {
     if (port_index >= get_num_output_ports()) {
       throw std::out_of_range("System " + get_name() + ": Port index " +
           std::to_string(port_index) + " is out of range. There are only " +
@@ -709,7 +709,7 @@ class System {
 
   /// Adds a port with the specified @p type and @p size to the input topology.
   /// @return descriptor of declared port.
-  const InputPortDescriptor<T>& DeclareInputPort(PortDataType type, int size) {
+  InputPortDescriptor<T> DeclareInputPort(PortDataType type, int size) {
     int port_index = get_num_input_ports();
     input_ports_.emplace_back(this, port_index, type, size);
     return input_ports_.back();
@@ -717,13 +717,13 @@ class System {
 
   /// Adds an abstract-valued port to the input topology.
   /// @return descriptor of declared port.
-  const InputPortDescriptor<T>& DeclareAbstractInputPort() {
+  InputPortDescriptor<T> DeclareAbstractInputPort() {
     return DeclareInputPort(kAbstractValued, 0 /* size */);
   }
 
   /// Adds a port with the specified @p type and @p size to the output topology.
   /// @return descriptor of declared port.
-  const OutputPortDescriptor<T>& DeclareOutputPort(PortDataType type,
+  OutputPortDescriptor<T> DeclareOutputPort(PortDataType type,
                                                    int size) {
     int port_index = get_num_output_ports();
     output_ports_.emplace_back(this, port_index, type, size);
@@ -732,7 +732,7 @@ class System {
 
   /// Adds an abstract-valued port with to the output topology.
   /// @return descriptor of declared port.
-  const OutputPortDescriptor<T>& DeclareAbstractOutputPort() {
+  OutputPortDescriptor<T> DeclareAbstractOutputPort() {
     return DeclareOutputPort(kAbstractValued, 0 /* size */);
   }
   //@}

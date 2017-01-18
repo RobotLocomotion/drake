@@ -196,7 +196,7 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   /// Returns a descriptor of the input port for a specific model
   /// instance.
-  const InputPortDescriptor<T>& model_input_port(
+  InputPortDescriptor<T> model_input_port(
       int model_instance_id) const {
     return System<T>::get_input_port(input_map_.at(model_instance_id));
   }
@@ -227,24 +227,24 @@ class RigidBodyPlant : public LeafSystem<T> {
   ///@{
 
   /// Returns a descriptor of the state output port.
-  const OutputPortDescriptor<T>& state_output_port() const {
+  OutputPortDescriptor<T> state_output_port() const {
     return System<T>::get_output_port(state_output_port_id_);
   }
 
   /// Returns a descriptor of the KinematicsResults output port.
-  const OutputPortDescriptor<T>& kinematics_results_output_port() const {
+  OutputPortDescriptor<T> kinematics_results_output_port() const {
     return System<T>::get_output_port(kinematics_output_port_id_);
   }
 
   /// Returns a descriptor of the ContactResults output port.
-  const OutputPortDescriptor<T>& contact_results_output_port() const {
+  OutputPortDescriptor<T> contact_results_output_port() const {
     return System<T>::get_output_port(contact_output_port_id_);
   }
 
   /// Returns a descriptor of the output port containing the state of a
   /// particular model with instance ID equal to @p model_instance_id. Throws a
   /// std::runtime_error if @p model_instance_id does not exist.
-  const OutputPortDescriptor<T>& model_state_output_port(
+  OutputPortDescriptor<T> model_state_output_port(
       int model_instance_id) const {
     if (model_instance_id >= static_cast<int>(output_map_.size())) {
       throw std::runtime_error("RigidBodyPlant: model_state_output_port: "

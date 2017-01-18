@@ -90,19 +90,19 @@ bool PidController<T>::has_any_direct_feedthrough() const {
 }
 
 template <typename T>
-const InputPortDescriptor<T>& PidController<T>::get_error_port() const {
+InputPortDescriptor<T> PidController<T>::get_error_port() const {
   return Diagram<T>::get_input_port(0);
 }
 
 template <typename T>
-const InputPortDescriptor<T>&
+InputPortDescriptor<T>
 PidController<T>::get_error_derivative_port() const {
   return Diagram<T>::get_input_port(1);
 }
 
 
 template <typename T>
-const OutputPortDescriptor<T>&
+OutputPortDescriptor<T>
 PidController<T>::get_control_output_port() const {
   return System<T>::get_output_port(0);
 }

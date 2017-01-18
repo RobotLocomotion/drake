@@ -268,23 +268,23 @@ class SimulatedIiwaWithWsg : public systems::Diagram<T> {
 
   const RigidBodyPlant<T>& get_plant() const { return *plant_; }
 
-  const InputPortDescriptor<T>& get_iiwa_input_port() const {
+  InputPortDescriptor<T> get_iiwa_input_port() const {
     return this->get_input_port(0);
   }
 
-  const OutputPortDescriptor<T>& get_iiwa_state_port() const {
+  OutputPortDescriptor<T> get_iiwa_state_port() const {
     return this->get_output_port(0);
   }
 
-  const InputPortDescriptor<T>& get_wsg_input_port() const {
+  InputPortDescriptor<T> get_wsg_input_port() const {
     return this->get_input_port(1);
   }
 
-  const OutputPortDescriptor<T>& get_wsg_state_port() const {
+  OutputPortDescriptor<T> get_wsg_state_port() const {
     return this->get_output_port(1);
   }
 
-  const OutputPortDescriptor<T>& get_plant_output_port() const {
+  OutputPortDescriptor<T> get_plant_output_port() const {
     return this->get_output_port(2);
   }
 

@@ -47,12 +47,12 @@ const VectorX<T>& Gain<T>::get_gain_vector() const {
 }
 
 template <typename T>
-const InputPortDescriptor<T>& Gain<T>::get_input_port() const {
+InputPortDescriptor<T> Gain<T>::get_input_port() const {
   return System<T>::get_input_port(0);
 }
 
 template <typename T>
-const OutputPortDescriptor<T>& Gain<T>::get_output_port() const {
+OutputPortDescriptor<T> Gain<T>::get_output_port() const {
   return System<T>::get_output_port(0);
 }
 

@@ -27,12 +27,12 @@ class ValkyriePDAndFeedForwardController : public systems::LeafSystem<double> {
     return std::move(output);
   }
 
-  inline const InputPortDescriptor<double>& get_input_port_kinematics_result()
+  InputPortDescriptor<double> get_input_port_kinematics_result()
       const {
     return get_input_port(input_port_index_kinematics_result_);
   }
 
-  inline const OutputPortDescriptor<double>& get_output_port_atlas_command()
+  OutputPortDescriptor<double> get_output_port_atlas_command()
       const {
     return get_output_port(output_port_index_atlas_command_);
   }
