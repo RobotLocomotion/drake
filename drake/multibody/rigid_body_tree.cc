@@ -213,7 +213,7 @@ void RigidBodyTree<T>::AddCollisionFilterGroupMember(
     const std::string& group_name, const std::string& body_name, int model_id) {
   int body_index = FindBodyIndex(body_name, model_id);
   RigidBody<T>* body = bodies[body_index].get();
-  if (body->get_num_collision_element() > 0) {
+  if (body->get_num_collision_elements() > 0) {
     throw std::runtime_error("Attempting to add a body, '" + body->get_name() +
                              "', to a collision group, '" +
                              group_name +

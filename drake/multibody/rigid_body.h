@@ -398,7 +398,7 @@ class RigidBody {
    * Reports the total number of *registered* collision elements attached to
    * this body. See Model::AddElement() for definition of "registered".
    */
-  int get_num_collision_element() const {
+  int get_num_collision_elements() const {
     return static_cast<int>(collision_elements_.size());
   }
 

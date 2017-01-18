@@ -38,11 +38,11 @@ constexpr bitmask kDefaultGroup(1);
 
  Given the following definitions:
 
-   - @f$G(A) \triangleq \{g^A_0, g^A_1, ..., g^A_n\}@f$ is the set of all groups
+   - @f$G(A) ≜ \{g^A_0, g^A_1, ..., g^A_n\}@f$ is the set of all groups
      to which @f$A@f$ belongs,
-   - @f$I(f) \triangleq \{g^f_0, g^f_1, ..., g^f_m\}@f$ is the set set of all
+   - @f$I(f) ≜ \{g^f_0, g^f_1, ..., g^f_m\}@f$ is the set set of all
      groups that group @f$f@f$ ignores,
-   - @f$I(A) \triangleq \{I(g^A_0) \cap I(g^A_1) \cap ... \cap I(g^A_n)\}@f$
+   - @f$I(A) ≜ \{I(g^A_0) \cap I(g^A_1) \cap ... \cap I(g^A_n)\}@f$
      such that @f$g^A_i \in G(A)@f$ is the set of all groups that @f$A@f$
      ignores.
 

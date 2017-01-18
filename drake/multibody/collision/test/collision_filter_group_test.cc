@@ -415,8 +415,11 @@ GTEST_TEST(CollisionFilterGroupRBT, CollisionElementSetFilters) {
 
   // Adds collision elements.
   Element element(DrakeShapes::Sphere(1.0));
-  tree.addCollisionElement(element, *body1, "");
-  tree.addCollisionElement(element, *body2, "");
+  // This is not a *filter* group.  This is a designation used to select
+  // so-called "terrain points".  See RigidBodyTree::getTerrainContactPoints().
+  std::string collision_group = "";
+  tree.addCollisionElement(element, *body1, collision_group);
+  tree.addCollisionElement(element, *body2, collision_group);
 
   // Sets up collision filter groups.
   std::string group_name1 = "test-group1";
