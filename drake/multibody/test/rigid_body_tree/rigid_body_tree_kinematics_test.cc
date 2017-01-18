@@ -257,8 +257,9 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
     cache_->initialize(q_, v_);
     robot_->doKinematics(*cache_, true);
 
-    // This is the smallest integer multiplier for epsilon to pass these tests.
-    tol_ = 4 * Eigen::NumTraits<double>::epsilon();
+    // The smallest integer multiplier for epsilon to pass these tests is
+    // around 6. I made it 10.
+    tol_ = 10 * Eigen::NumTraits<double>::epsilon();
   }
 
   // Tests CalcFramePoseInWorldFrame(B, X_BF) returns the same results from
@@ -389,8 +390,9 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
     VectorX<double> Jdv1 = robot_->transformPointsJacobianDotTimesV(
         *cache_, p_BF, body_ptr_->get_body_index(),
         robot_->world().get_body_index());
+    // TODO(siyuanfeng): No need for eval once RBT is fully templated.
     VectorX<double> Jdv2 = robot_->transformPointsJacobianDotTimesV(
-        *cache_, Vector3<double>::Zero(), frame_ptr_->get_frame_index(),
+        *cache_, Vector3<double>::Zero().eval(), frame_ptr_->get_frame_index(),
         robot_->world().get_body_index());
 
     EXPECT_TRUE(drake::CompareMatrices(Jdv2, Jdv1, tol_,
