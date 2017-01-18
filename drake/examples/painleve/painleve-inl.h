@@ -11,15 +11,15 @@
 #include "drake/common/drake_assert.h"
 #include "drake/examples/painleve/painleve.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/test_utilities/pack_value.h"
+#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace painleve {
 
 template <typename T>
 Painleve<T>::Painleve() {
-  // Piecewise DAE approach needs six continuous variables and three
-  // abstract variables (one mode, one contact point indicator, and one
-  // sliding direction).
+  // Piecewise DAE approach needs six continuous variables.
   this->DeclareContinuousState(3, 3, 0);
   this->DeclareOutputPort(systems::kVectorValued, 6);
 }
@@ -538,7 +538,7 @@ Vector2<T> Painleve<T>::CalcStickingContactForces(
   // Precompute quantities that will be used repeatedly.
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const int k = (stheta > 0) ? -1 : 1;
+  const int k = context.template get_abstract_state<int>(1);
 
   // Set named Mathematica constants.
   const double mass = mass_;
@@ -597,7 +597,7 @@ void Painleve<T>::CalcTimeDerivativesOneContactSliding(
   const double half_rod_length = rod_length_ / 2;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const int k = (stheta > 0) ? -1 : 1;
+  const int k = context.template get_abstract_state<int>(1);
 
   // Determine the point of contact (cx, cy).
   const std::pair<T, T> c = CalcRodLowerEndpoint(x, y, k, ctheta, stheta,
@@ -691,11 +691,11 @@ void Painleve<T>::CalcTimeDerivativesOneContactNoSliding(
   const T& theta = context.get_continuous_state_vector().GetAtIndex(2);
   const T& thetadot = context.get_continuous_state_vector().GetAtIndex(5);
 
-  // Compute contact point.
+  // Get the contact point.
+  const int k = context.template get_abstract_state<int>(1);
   const double half_rod_length = rod_length_ / 2;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const int k = (stheta > 0) ? -1 : 1;
   const std::pair<T, T> c = CalcRodLowerEndpoint(x, y, k, ctheta, stheta,
                                                  half_rod_length);
   const T cx = c.first;
@@ -827,6 +827,21 @@ bool Painleve<T>::IsImpacting(const systems::Context<T>& context) const {
   return (cydot < -std::numeric_limits<double>::epsilon());
 }
 
+// Computes the rod accelerations for the case of ballistic motion.
+template <typename T>
+void Painleve<T>::CalcTimeDerivativesBallistic(
+    const systems::Context<T>& context,
+    systems::ContinuousState<T>* derivatives) const {
+  // Obtain the structure we need to write into.
+  systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
+
+  // Second three derivative components are simple: just add in gravitational
+  // acceleration.
+  f->SetAtIndex(3, T(0));
+  f->SetAtIndex(4, get_gravitational_acceleration());
+  f->SetAtIndex(5, T(0));
+}
+
 template <typename T>
 void Painleve<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
@@ -842,9 +857,6 @@ void Painleve<T>::DoCalcTimeDerivatives(
 
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
-  const T& x = state.GetAtIndex(0);
-  const T& y = state.GetAtIndex(1);
-  const T& theta = state.GetAtIndex(2);
   const T& xdot = state.GetAtIndex(3);
   const T& ydot = state.GetAtIndex(4);
   const T& thetadot = state.GetAtIndex(5);
@@ -852,17 +864,32 @@ void Painleve<T>::DoCalcTimeDerivatives(
   // Obtain the structure we need to write into.
   systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
 
-  // The two endpoints of the rod are located at (x,y) + R(theta)*[0,r/2] and
-  // (x,y) + R(theta)*[0,-r/2], where
-  // R(theta) = | cos(theta) -sin(theta) |
-  //            | sin(theta)  cos(theta) |
-  // and r is designated as the rod length. Thus, the heights of
-  // the rod endpoints are y + sin(theta)*r/2 and y - sin(theta)*r/2.
-  const double half_rod_length = rod_length_ / 2;
-  const T ctheta = cos(theta);
-  const T stheta = sin(theta);
-  const int k = (stheta > 0) ? -1 : 1;
+  // Get the abstract variables that determine the current system mode and
+  // the endpoint in contact.
+  const Mode mode = context.template get_abstract_state<Mode>(0);
 
+  // First three derivative components are xdot, ydot, thetadot.
+  f->SetAtIndex(0, xdot);
+  f->SetAtIndex(1, ydot);
+  f->SetAtIndex(2, thetadot);
+
+  // Call the proper derivative function (depending on mode type).
+  switch (mode) {
+    case kBallisticMotion: 
+      return CalcTimeDerivativesBallistic(context, derivatives);
+    case kSlidingSingleContact:
+      return CalcTimeDerivativesOneContactSliding(context, derivatives);
+    case kStickingSingleContact:
+      return CalcTimeDerivativesOneContactNoSliding(context, derivatives);
+    case kSlidingTwoContacts:
+      return CalcTimeDerivativesTwoContact(context, derivatives);
+    case kStickingTwoContacts:
+      return CalcTimeDerivativesTwoContact(context, derivatives);
+
+    default:
+      DRAKE_ABORT(); 
+  }
+/*
   // Determine the height of the point of contact (cx, cy).
   const T cy =  CalcRodLowerEndpoint(x, y, k, ctheta, stheta,
                                      half_rod_length).second;
@@ -870,19 +897,9 @@ void Painleve<T>::DoCalcTimeDerivatives(
   // Compute the horizontal velocity at the point of contact.
   const T cxdot = xdot - k * stheta * half_rod_length * thetadot;
 
-  // First three derivative components are xdot, ydot, thetadot.
-  f->SetAtIndex(0, xdot);
-  f->SetAtIndex(1, ydot);
-  f->SetAtIndex(2, thetadot);
-
   // Case 1 (ballistic mode): the rod is not touching the ground
   // (located at y=0).
   if (cy > std::numeric_limits<double>::epsilon()) {
-    // Second three derivative components are simple: just add in gravitational
-    // acceleration.
-    f->SetAtIndex(3, T(0));
-    f->SetAtIndex(4, get_gravitational_acceleration());
-    f->SetAtIndex(5, T(0));
   } else {
     // Case 2: the rod is touching the ground (or even embedded in the ground).
     // Constraint stabilization should be used to eliminate embedding, but we
@@ -914,6 +931,25 @@ void Painleve<T>::DoCalcTimeDerivatives(
         CalcTimeDerivativesOneContactSliding(context, derivatives);
     }
   }
+*/
+}
+
+/// Allocates the abstract state
+template <typename T>
+std::unique_ptr<systems::AbstractState> Painleve<T>::
+  AllocateAbstractState() const {
+  if (dt_ == 0) {
+    // Piecewise DAE approach needs two  abstract variables (one mode and one 
+    // contact point indicator).
+    std::vector<std::unique_ptr<systems::AbstractValue>> abstract_data;
+    abstract_data.push_back(systems::PackValue(Painleve<T>::kInvalidMode));
+
+    // Indicates that the rod is in contact at both points.
+    abstract_data.push_back(systems::PackValue(0));
+    return std::make_unique<systems::AbstractState>(std::move(abstract_data));
+  } else {
+    return std::make_unique<systems::AbstractState>();
+  }
 }
 
 /// Sets the rod to a 45 degree angle with the halfspace and positions the rod
@@ -929,7 +965,16 @@ void Painleve<T>::SetDefaultState(const systems::Context<T>& context,
   const double r22 = sqrt(2) / 2;
   x0 << half_len * r22, half_len * r22, M_PI / 4.0, -1, 0, 0;  // Initial state.
   if (dt_ == 0) {
+    // DAE mode.
     state->get_mutable_continuous_state()->SetFromVector(x0);
+
+    // Point to the abstract data.
+    state->get_mutable_abstract_state()->get_mutable_abstract_state(0).template GetMutableValue<Painleve<T>::Mode>() = Painleve<T>::kSlidingSingleContact;
+
+    // Contact determination code
+    const double theta = x0(2);
+    const int k = (std::sin(theta) > 0) ? -1 : 1;
+    state->get_mutable_abstract_state()->get_mutable_abstract_state(1).template GetMutableValue<int>() = k;
   } else {
     state->get_mutable_discrete_state()->get_mutable_discrete_state(0)->
         SetFromVector(x0);

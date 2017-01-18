@@ -35,13 +35,11 @@ namespace painleve {
 ///         clockwise with respect to the x-axis. One abstract state variable
 ///         (of type Painleve::Modes) is used to identify which dynamic mode
 ///         the system is in (e.g., ballistic, contacting at one point and
-///         sliding, etc.), one abstract state variable (of type int) is used
+///         sliding, etc.) and one abstract state variable (of type int) is used
 ///         to determine which endpoint(s) of the rod contact the halfspace
 ///         (k=-1 indicates the bottom of the rod when theta = pi/2, k=+1
 ///         indicates the top of the rod when theta = pi/2, and k=0 indicates
-///         both endpoints of the rod are contacting the halfspace), and one
-///         abstract state variable is used to indicate the sliding velocity
-///         at the beginning of an integration interval.
+///         both endpoints of the rod are contacting the halfspace).
 /// Outputs: planar position (state indices 0 and 1) and orientation (state
 ///          index 2), and planar linear velocity (state indices 3 and 4) and
 ///          scalar angular velocity (state index 5) in units of m, radians,
@@ -54,6 +52,9 @@ class Painleve : public systems::LeafSystem<T> {
  public:
   /// Possible dynamic modes for the Painleve Paradox rod.
   enum Mode {
+    /// Mode is invalid.
+    kInvalidMode,
+
     /// Rod is currently undergoing ballistic motion.
     kBallisticMotion,
 
@@ -131,10 +132,13 @@ class Painleve : public systems::LeafSystem<T> {
   T get_integration_step_size() const { return dt_; }
 
  protected:
+  std::unique_ptr<systems::AbstractState> AllocateAbstractState() 
+                                            const override;
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override;
   void DoCalcTimeDerivatives(const systems::Context<T>& context,
-                             systems::ContinuousState<T>* derivatives) const;
+                             systems::ContinuousState<T>* derivatives) 
+                               const override;
   void DoCalcDiscreteVariableUpdates(const systems::Context<T>& context,
                                      systems::DiscreteState<T>* discrete_state)
       const override;
@@ -146,6 +150,9 @@ class Painleve : public systems::LeafSystem<T> {
   Vector2<T> CalcStickingImpactImpulse(const systems::Context<T>& context)
     const;
   Vector2<T> CalcFConeImpactImpulse(const systems::Context<T>& context) const;
+  void CalcTimeDerivativesBallistic(const systems::Context<T>& context,
+                                       systems::ContinuousState<T>* derivatives)
+                                         const;
   void CalcTimeDerivativesTwoContact(const systems::Context<T>& context,
                                        systems::ContinuousState<T>* derivatives)
                                          const;
@@ -173,6 +180,11 @@ class Painleve : public systems::LeafSystem<T> {
   double mu_{1000.0};       // The coefficient of friction.
   double g_{-9.81};         // The acceleration due to gravity.
   double J_{1.0};           // The moment of the inertia of the rod.
+
+  // Owned pointers to the data comprising the abstract state (for piecewise
+  // DAE system only). The only purpose of these pointers is to maintain
+  // ownership. They may be populated at construction time and are never
+  // accessed thereafter.
 };
 
 }  // namespace painleve
