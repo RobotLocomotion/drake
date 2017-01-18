@@ -1448,6 +1448,16 @@ class MathematicalProgram {
   }
 
   /**
+   * Adds Lorentz cone constraint referencing potentially a subset of the decision variables.
+   * @param v An Eigen::Vector of symbolic::Expression. Constraining that
+   * \f[
+   * v_0 \ge \sqrt{v_1^2 + ... + v_{n-1}^2}
+   * \f]
+   * @return The newly constructed Lorentz cone constraint with the bounded variables.
+   */
+  Binding<LorentzConeConstraint> AddLorentzConeConstraint(const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
+
+  /**
    * Adds Lorentz cone constraint referencing potentially a subset
    * of the decision variables.
    */
