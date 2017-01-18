@@ -202,6 +202,13 @@ cc_googletest(
     ],
 )
 
+cc_googletest(
+    name = "sdformat_test",
+    deps = [
+        "@sdformat//:lib",
+    ],
+)
+
 filegroup(
     name = "test_models",
     testonly = 1,

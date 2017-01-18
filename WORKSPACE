@@ -80,6 +80,13 @@ new_git_repository(
 )
 
 new_git_repository(
+    name = "sdformat",
+    remote = "https://github.com/clalancette/sdformat-mirror.git",
+    commit = "339b744fa326bf5cb10778556ab15d9915a12241",
+    build_file = "tools/sdformat.BUILD",
+)
+
+new_git_repository(
     name = "octomap",
     remote = "https://github.com/OctoMap/octomap.git",
     commit = "6d7c31ae4df2c93cb8a954e44d442338b58d3558",
