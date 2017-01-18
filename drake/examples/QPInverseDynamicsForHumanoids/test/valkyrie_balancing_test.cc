@@ -24,19 +24,14 @@ namespace qp_inverse_dynamics {
 // seconds.
 GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   // Loads model.
-  std::string urdf =
-      drake::GetDrakePath() +
-      std::string(
-          "/examples/Valkyrie/urdf/urdf/"
-          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
+  std::string urdf = drake::GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
+      "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
   std::string alias_groups_config =
-      drake::GetDrakePath() + std::string(
-                                  "/examples/QPInverseDynamicsForHumanoids/"
-                                  "config/alias_groups.yaml");
+      drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
+          "config/alias_groups.yaml";
   std::string controller_config =
-      drake::GetDrakePath() + std::string(
-                                  "/examples/QPInverseDynamicsForHumanoids/"
-                                  "config/controller.yaml");
+      drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
+          "config/controller.yaml";
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(

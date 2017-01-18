@@ -38,13 +38,11 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     set_name("plan_eval");
 
     std::string alias_groups_config =
-        drake::GetDrakePath() + std::string(
-                                    "/examples/QPInverseDynamicsForHumanoids/"
-                                    "config/alias_groups.yaml");
+        drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
+                                "config/alias_groups.yaml";
     std::string controller_config =
-        drake::GetDrakePath() + std::string(
-                                    "/examples/QPInverseDynamicsForHumanoids/"
-                                    "config/controller.yaml");
+        drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
+                                "config/controller.yaml";
     // KinematicsProperty
     alias_groups_.LoadFromYAMLFile(YAML::LoadFile(alias_groups_config));
 

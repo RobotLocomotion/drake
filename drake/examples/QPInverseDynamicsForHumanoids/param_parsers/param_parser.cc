@@ -216,18 +216,18 @@ const ParamType& FindParam(
 }
 
 // Returns a parameter map (`M`) from body names to parameters of type
-// ParamType. The YAML node @p config is assumed to be formatted as collection
+// ParamType. The YAML node @p config is assumed to be formatted as a collection
 // of entries, where each entry is a `<key, content>` pair. This function first
 // looks for an entry whose `key` is `default`, and uses @p ParseParam to
 // generate a `default_param`. All information must be provided for this
 // `default` entry in the config file. The mapping `default -> default_param`
-// is then stored in M. This method then iterates through all the other entries
-// in @p config, and For each entry `pair<key, content>`, a `param` is
+// is then stored in `M`. This method then iterates through all the other
+// entries in @p config, and for each entry `pair<key, content>`, a `param` is
 // generated from `content`. `default_param` is used to fill in the blanks if
 // `content` is incomplete. `key` is assumed to be a name for a body group,
 // which can be expanded to a collection of bodies using @p alias_group. For
 // each body in this group, a mapping of `body_name -> param` is generated and
-// stored in M.
+// stored in `M`.
 //
 // @throws std::runtime_error if @p config does not contain a "default" entry,
 // or it fails to parse individual entries, or some group name does not exist in

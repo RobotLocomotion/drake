@@ -46,7 +46,7 @@ class ParamParserTests : public ::testing::Test {
   std::unique_ptr<RigidBodyTreeAliasGroups<double>> rbt_alias_;
   ParamSet paramset_;
 
-  const double kTolerance_ = 1e-20;
+  const double kTolerance = 1e-20;
 };
 
 // Tests for parsing params related to ContactInformation.
@@ -80,20 +80,20 @@ TEST_F(ParamParserTests, ContactInformation) {
     EXPECT_EQ(contact.weight(), -1);
     EXPECT_EQ(contact.acceleration_constraint_type(), ConstraintType::Hard);
     EXPECT_TRUE(CompareMatrices(contact.normal(), Vector3<double>(0, 0, 1),
-                                kTolerance_, MatrixCompareType::absolute));
+                                kTolerance, MatrixCompareType::absolute));
     EXPECT_EQ(contact.contact_points().cols(), 4);
     EXPECT_TRUE(CompareMatrices(contact.contact_points().col(0),
-                                Vector3<double>(0.2, 0.05, -0.09), kTolerance_,
+                                Vector3<double>(0.2, 0.05, -0.09), kTolerance,
                                 MatrixCompareType::absolute));
     EXPECT_TRUE(CompareMatrices(contact.contact_points().col(1),
-                                Vector3<double>(0.2, -0.05, -0.09), kTolerance_,
+                                Vector3<double>(0.2, -0.05, -0.09), kTolerance,
                                 MatrixCompareType::absolute));
     EXPECT_TRUE(CompareMatrices(contact.contact_points().col(2),
                                 Vector3<double>(-0.05, -0.05, -0.09),
-                                kTolerance_, MatrixCompareType::absolute));
+                                kTolerance, MatrixCompareType::absolute));
     EXPECT_TRUE(CompareMatrices(contact.contact_points().col(3),
                                 Vector3<double>(-0.05, 0.05, -0.09),
-                                kTolerance_, MatrixCompareType::absolute));
+                                kTolerance, MatrixCompareType::absolute));
   }
 
   {
@@ -106,10 +106,10 @@ TEST_F(ParamParserTests, ContactInformation) {
     EXPECT_EQ(contact.weight(), 1e5);
     EXPECT_EQ(contact.acceleration_constraint_type(), ConstraintType::Soft);
     EXPECT_TRUE(CompareMatrices(contact.normal(), Vector3<double>(0, 0, 1),
-                                kTolerance_, MatrixCompareType::absolute));
+                                kTolerance, MatrixCompareType::absolute));
     EXPECT_EQ(contact.contact_points().cols(), 1);
     EXPECT_TRUE(CompareMatrices(contact.contact_points().col(0),
-                                Vector3<double>::Zero(), kTolerance_,
+                                Vector3<double>::Zero(), kTolerance,
                                 MatrixCompareType::absolute));
   }
 
@@ -160,19 +160,19 @@ TEST_F(ParamParserTests, BodyMotionParams) {
       paramset_.MakeDesiredBodyMotion("pelvis", *rbt_alias_).at("pelvis");
   Vector6<double> weights;
   weights << 1, 1, 1, 0, 0, 0;
-  TestDesiredBodyMotion(motion, body, weights, kTolerance_);
+  TestDesiredBodyMotion(motion, body, weights, kTolerance);
 
   // Unspecified, uses "default".
   body = robot_->FindBody("rightFoot");
   motion = paramset_.MakeDesiredBodyMotion(*body);
   weights = Vector6<double>::Constant(1e-2);
-  TestDesiredBodyMotion(motion, body, weights, kTolerance_);
+  TestDesiredBodyMotion(motion, body, weights, kTolerance);
 
   // Partially specified.
   body = robot_->FindBody("leftFoot");
   motion = paramset_.MakeDesiredBodyMotion(*body);
   weights << 1, 1, 1, 1, 1, 2;
-  TestDesiredBodyMotion(motion, body, weights, kTolerance_);
+  TestDesiredBodyMotion(motion, body, weights, kTolerance);
 
   // "NO_SUCH_BODY_GROUP" is not a valid group name, so this returns emtpy.
   EXPECT_TRUE(paramset_.MakeDesiredBodyMotion("NO_SUCH_BODY_GROUP", *rbt_alias_)
@@ -186,9 +186,9 @@ TEST_F(ParamParserTests, BodyMotionParams) {
                                          &(Kp_vec[0]), &(Kd_vec[0]));
   Kp_expected << 20, 20, 20, 0, 0, 0;
   Kd_expected << 8, 8, 8, 0, 0, 0;
-  EXPECT_TRUE(CompareMatrices(Kp_vec[0], Kp_expected, kTolerance_,
+  EXPECT_TRUE(CompareMatrices(Kp_vec[0], Kp_expected, kTolerance,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(Kd_vec[0], Kd_expected, kTolerance_,
+  EXPECT_TRUE(CompareMatrices(Kd_vec[0], Kd_expected, kTolerance,
                               MatrixCompareType::absolute));
 
   // Body group "feet" maps to ["leftFoot", "rightFoot"]
@@ -199,16 +199,16 @@ TEST_F(ParamParserTests, BodyMotionParams) {
   // Left foot
   Kp_expected << 20, 20, 20, 20, 20, 20;
   Kd_expected << 0, 0, 0, 0, 0, 0;
-  EXPECT_TRUE(CompareMatrices(Kp_vec[0], Kp_expected, kTolerance_,
+  EXPECT_TRUE(CompareMatrices(Kp_vec[0], Kp_expected, kTolerance,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(Kd_vec[0], Kd_expected, kTolerance_,
+  EXPECT_TRUE(CompareMatrices(Kd_vec[0], Kd_expected, kTolerance,
                               MatrixCompareType::absolute));
   // Right foot (not specified, equals default)
   Kp_expected << 0, 0, 0, 0, 0, 0;
   Kd_expected << 0, 0, 0, 0, 0, 0;
-  EXPECT_TRUE(CompareMatrices(Kp_vec[1], Kp_expected, kTolerance_,
+  EXPECT_TRUE(CompareMatrices(Kp_vec[1], Kp_expected, kTolerance,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(Kd_vec[1], Kd_expected, kTolerance_,
+  EXPECT_TRUE(CompareMatrices(Kd_vec[1], Kd_expected, kTolerance,
                               MatrixCompareType::absolute));
 }
 
@@ -219,7 +219,7 @@ TEST_F(ParamParserTests, CentroidalMomentumDotParams) {
       paramset_.MakeDesiredCentroidalMomentumDot();
   Vector6<double> weights;
   weights << 0, 0, 0, 10, 10, 10;
-  EXPECT_TRUE(CompareMatrices(cdot.weights(), weights, kTolerance_,
+  EXPECT_TRUE(CompareMatrices(cdot.weights(), weights, kTolerance,
                               MatrixCompareType::absolute));
 
   // Tests for gains.
@@ -228,9 +228,9 @@ TEST_F(ParamParserTests, CentroidalMomentumDotParams) {
   Kp_expected << 0, 0, 0, 40, 40, 40;
   Kd_expected << 4, 4, 4, 12, 12, 12;
   paramset_.LookupDesiredCentroidalMomentumDotGains(&Kp, &Kd);
-  EXPECT_TRUE(CompareMatrices(Kp, Kp_expected, kTolerance_,
+  EXPECT_TRUE(CompareMatrices(Kp, Kp_expected, kTolerance,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(Kd, Kd_expected, kTolerance_,
+  EXPECT_TRUE(CompareMatrices(Kd, Kd_expected, kTolerance,
                               MatrixCompareType::absolute));
 }
 
@@ -299,9 +299,9 @@ TEST_F(ParamParserTests, DoFParams) {
     Kd_expected(i) = ctr++;
   }
   paramset_.LookupDesiredDoFMotionGains(&Kp, &Kd);
-  EXPECT_TRUE(CompareMatrices(Kp, Kp_expected, kTolerance_,
+  EXPECT_TRUE(CompareMatrices(Kp, Kp_expected, kTolerance,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(Kd, Kd_expected, kTolerance_,
+  EXPECT_TRUE(CompareMatrices(Kd, Kd_expected, kTolerance,
                               MatrixCompareType::absolute));
 }
 

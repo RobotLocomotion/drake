@@ -513,7 +513,7 @@ class ContactInformation {
 std::ostream& operator<<(std::ostream& out, const ContactInformation& contact);
 
 /**
- * A wrapper class specifying desired body motions (acceleration) for a rigid
+ * A wrapper class specifying desired body motions (accelerations) for a rigid
  * body and their corresponding weights for the QP.
  * The acceleration is expressed in a frame that has the same orientation as
  * the world, and located at the origin of the body.

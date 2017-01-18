@@ -127,14 +127,14 @@ class ParamSet {
    * 5 sections: ContactForceBasis, Contacts, BodyMotions, DoFMotions, and
    * CentroidalMomentum.
    *
-   * For Contacts, BodyMotions and DoFMotions sections, entries are specified
-   * based on body or joint groups rather than RigidBody names or DrakeJoint
-   * to decouple these parameters from a specific RigidBodyTree.
+   * For the Contacts, BodyMotions and DoFMotions sections, entries are
+   * specified based on body or joint groups rather than RigidBody names or
+   * DrakeJoint to decouple these parameters from a specific RigidBodyTree.
    * The relationship between body / joint groups and RigidBodyTree is provided
    * by RigidBodyTreeAliasGroups.
    *
-   * For Contacts, BodyMotions and DoFMotions sections, default entries can be
-   * provided to cover situations where parameters are queried for bodies or
+   * For the Contacts, BodyMotions and DoFMotions sections, default entries can
+   * be provided to cover situations where parameters are queried for bodies or
    * joints whose parameters are not explicitly defined. The default parameters
    * are also used to fill incomplete entries. Complete default parameters for
    * these sections are thus required. Here is a simple example:
@@ -299,7 +299,7 @@ class ParamSet {
                                     Vector6<double>* Kd) const;
 
   /**
-   * Sets the Kp and Kd gains for all DoF.
+   * Obtains the Kp and Kd gains for all DoF.
    * @p Kp and @p Kd will be resized to match the number of DoFs of the
    * RigidBodyTree in the RigidBodyTreeAliasGroups passed to
    * LoadFromYAMLConfigFile.
@@ -311,7 +311,7 @@ class ParamSet {
                                    VectorX<double>* Kd) const;
 
   /**
-   * Sets the Kp and Kd gains for the centroidal momentum tracker.
+   * Obtains the Kp and Kd gains for the centroidal momentum tracker.
    *
    * @param[out] Kp output.
    * @param[out] Kd output.
