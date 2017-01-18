@@ -2906,6 +2906,9 @@ Vector6<T> RigidBodyTree<T>::CalcBodySpatialVelocityInWorldFrame(
 
   // Plucker velocity vector of body B with respect to the world W, expressed in
   // the world frame W.
+  // Alternatively, you can think of it as the spatial velocity of frame Bwo
+  // measured and expressed in the world frame, where Bwo is rigidly attached
+  // to B and instantaneously coincides with the world frame.
   const Vector6<T>& plucker_velocity_WB = body_element.twist_in_world;
 
   // Position of the frame B's origin in the world frame.
@@ -2915,9 +2918,8 @@ Vector6<T> RigidBodyTree<T>::CalcBodySpatialVelocityInWorldFrame(
 
   // Compute body linear velocity from the instantaneous velocity of a point
   // located at the world's origin rigidly attached to B.
-  spatial_velocity_WB.template bottomRows<3>() =
-      plucker_velocity_WB.template bottomRows<3>() -
-          p_WB.cross(plucker_velocity_WB.template topRows<3>());
+  auto w_WB = plucker_velocity_WB.template topRows<3>();
+  spatial_velocity_WB.template bottomRows<3>() += w_WB.cross(p_WB);
 
   return spatial_velocity_WB;
 }
