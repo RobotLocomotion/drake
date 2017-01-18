@@ -22,6 +22,7 @@ drake_setup_options()
 # External projects in order of dependencies; 'trivial' ones first
 drake_add_external(avl PUBLIC CMAKE FORTRAN)
 drake_add_external(eigen PUBLIC CMAKE)
+drake_add_external(ignmath PUBLIC CMAKE) # dependency of sdformat
 drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(qt_property_browser CMAKE QT)
 drake_add_external(sedumi PUBLIC CMAKE MATLAB)
@@ -244,6 +245,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     -DWITH_GTEST:BOOL=${WITH_GOOGLETEST}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_GUROBI:BOOL=${WITH_GUROBI}
     -DWITH_HSRB_DESCRIPTION:BOOL=${WITH_HSRB_DESCRIPTION}
+    -DWITH_IGNMATH:BOOL=${WITH_IGNMATH}
     -DWITH_IPOPT:BOOL=${WITH_IPOPT}
     -DWITH_IRIS:BOOL=${WITH_IRIS}
     -DWITH_LCM:BOOL=${WITH_LCM}
@@ -281,6 +283,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     google_styleguide
     googletest
     gurobi
+    ignmath
     ipopt
     iris
     lcm
