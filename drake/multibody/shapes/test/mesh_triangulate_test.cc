@@ -7,7 +7,7 @@
 namespace DrakeShapes {
 namespace {
 
-const std::string kUri = "";  // No specific URI is required for these tests.
+const char kUri[] = "";  // No specific URI is required for these tests.
 
 // Confirms that attempts to load non-triangle meshes by default throws an
 // exception.
