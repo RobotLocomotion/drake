@@ -46,7 +46,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   paramset.LoadFromYAMLConfigFile(YAML::LoadFile(controller_config),
                                   alias_groups);
 
-  HumanoidStatus robot_status(*robot);
+  HumanoidStatus robot_status(*robot, alias_groups);
 
   QPController con;
   QpInput input(GetDofNames(*robot));
@@ -69,13 +69,13 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
       paramset.MakeDesiredCentroidalMomentumDot();
 
   // Set up initial condition.
+  DRAKE_DEMAND(valkyrie::kRPYValkyrieDoF == robot->get_num_positions());
   VectorX<double> q =
       valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDoF);
   VectorX<double> v = VectorX<double>::Zero(robot->get_num_velocities());
-  DRAKE_DEMAND(valkyrie::kRPYValkyrieDoF == robot->get_num_positions());
   VectorX<double> q_ini = q;
 
-  robot_status.Update(0, q, v, VectorX<double>::Zero(robot->actuators.size()),
+  robot_status.Update(0, q, v, VectorX<double>::Zero(robot->get_num_actuators()),
                       Vector6<double>::Zero(), Vector6<double>::Zero());
 
   // Set up a tracking problem.
@@ -89,7 +89,11 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
                                         &Kd_pelvis);
   paramset.LookupDesiredBodyMotionGains(*robot->FindBody("torso"), &Kp_torso,
                                         &Kd_torso);
+<<<<<<< HEAD
   paramset.LookupDesiredDoFMotionGains(&Kp_q, &Kd_q);
+=======
+  paramset.LookupDesiredDofMotionGains(&Kp_q, &Kd_q);
+>>>>>>> refactroing. split system wrappers to .h and .cc
   paramset.LookupDesiredCentroidalMomentumDotGains(&Kp_centroidal,
                                                    &Kd_centroidal);
   Kp_com = Kp_centroidal.tail<3>();
@@ -109,7 +113,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
 
   // Perturb initial condition.
   v[robot_status.name_to_position_index().at("torsoRoll")] += 1;
-  robot_status.Update(0, q, v, VectorX<double>::Zero(robot->actuators.size()),
+  robot_status.Update(0, q, v, VectorX<double>::Zero(robot->get_num_actuators()),
                       Vector6<double>::Zero(), Vector6<double>::Zero());
 
   // dt = 3e-3 is picked arbitrarily, with Gurobi, this one control call takes
@@ -135,7 +139,8 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
                                              robot_status.velocity());
     input.mutable_desired_centroidal_momentum_dot().mutable_values().tail<3>() =
         (Kp_com.array() * (desired_com - robot_status.com()).array() -
-         Kd_com.array() * robot_status.comd().array()).matrix() *
+         Kd_com.array() * robot_status.comd().array())
+            .matrix() *
         robot->getMass();
 
     int status = con.Control(robot_status, input, &output);
@@ -152,7 +157,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
     time += dt;
 
     robot_status.Update(time, q, v,
-                        VectorX<double>::Zero(robot->actuators.size()),
+                        VectorX<double>::Zero(robot->get_num_actuators()),
                         Vector6<double>::Zero(), Vector6<double>::Zero());
     tick_ctr++;
   }
@@ -162,6 +167,12 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   // they should have no velocity after simulation.
   // Thus, the tolerances on feet velocities are smaller than those for the
   // generalized position and velocity.
+  std::cout << "left: " << robot_status.foot(Side::LEFT).velocity().transpose()
+            << std::endl;
+  std::cout << "right: "
+            << robot_status.foot(Side::RIGHT).velocity().transpose()
+            << std::endl;
+
   EXPECT_TRUE(robot_status.foot(Side::LEFT).velocity().norm() < 1e-6);
   EXPECT_TRUE(robot_status.foot(Side::RIGHT).velocity().norm() < 1e-6);
   EXPECT_TRUE(drake::CompareMatrices(q, q_ini, 1e-4,

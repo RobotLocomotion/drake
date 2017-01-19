@@ -1,13 +1,13 @@
 #pragma once
 
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "bot_core/atlas_command_t.hpp"
 #include "bot_core/robot_state_t.hpp"
 #include "drake/common/eigen_types.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
 
 #include "drake/lcmt_body_acceleration.hpp"
 #include "drake/lcmt_constrained_values.hpp"

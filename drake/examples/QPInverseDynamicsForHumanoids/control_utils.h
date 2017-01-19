@@ -1,7 +1,7 @@
 #pragma once
 
-#include <iostream>
 #include <Eigen/Dense>
+#include <iostream>
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"

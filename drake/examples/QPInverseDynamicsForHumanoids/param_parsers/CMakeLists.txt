@@ -7,7 +7,7 @@ if (yaml-cpp_FOUND)
   add_library(drakeQPControllerParamParsing param_parser.cc)
   target_link_libraries(drakeQPControllerParamParsing
       drakeRigidBodyAliasGroups
-      drakeQPController)
+      drakeQPControllerCommon)
 endif()
 
 if(BUILD_TESTING)

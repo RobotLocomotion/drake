@@ -545,7 +545,7 @@ void ParamSet::LookupDesiredCentroidalMomentumDotGains(
   *Kd = centroidal_momentum_dot_params_.Kd;
 }
 
-void ParamSet::LookupDesiredDoFMotionGains(VectorX<double>* Kp,
+void ParamSet::LookupDesiredDofMotionGains(VectorX<double>* Kp,
                                            VectorX<double>* Kd) const {
   int dim = static_cast<int>(dof_motion_params_.size());
 
