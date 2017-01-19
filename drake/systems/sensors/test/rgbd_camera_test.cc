@@ -5,7 +5,7 @@
 namespace drake {
 namespace {
 
-GTEST_TEST(TestRGBDCamera, Instanciate) {
+GTEST_TEST(TestRGBDCamera, Instantiate) {
   systems::sensors::RGBDCamera camera;
 }
 }  // namespace
