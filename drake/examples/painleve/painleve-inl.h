@@ -36,7 +36,7 @@ Painleve<T>::Painleve(T dt) : dt_(dt) {
   // Time stepping approach requires three position variables and
   // three velocity variables.
   this->DeclareDiscreteState(6);
-  this->DeclareDiscreteUpdatePeriodicSec(dt);
+  this->DeclareDiscreteUpdatePeriodSec(dt);
   this->DeclareOutputPort(systems::kVectorValued, 6);
 }
 
