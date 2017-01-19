@@ -17,7 +17,8 @@ using Eigen::Matrix3d;
 namespace drake {
 namespace solvers {
 
-void AddObjective(MathematicalProgram* prog, const MatrixXDecisionVariable& R,
+void AddObjective(MathematicalProgram* prog,
+                  const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
                   const Eigen::Ref<const Matrix3d>& R_desired) {
   MatrixDecisionVariable<9, 1> error =
       prog->NewContinuousVariables<9, 1>("error");
@@ -41,7 +42,7 @@ void AddObjective(MathematicalProgram* prog, const MatrixXDecisionVariable& R,
   prog->AddLinearCost(Vector1d::Ones(), sigma);
 }
 
-// Interates over possible setting of the RPY limits flag, and for each setting
+// Iterates over possible setting of the RPY limits flag, and for each setting
 // evaluates a mesh of points within those limits.  This test confirms that
 // of the rotation matrices generated from rotations with those limits are
 // still feasible after the RPY limits constraints have been applied.
@@ -237,6 +238,16 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   desired[0] << .5, std::sqrt(11.0) / 6.0, 2.0 / 3.0;
   desired[1] << 2 * std::sqrt(11.0) / 15.0, .6, 2.0 / 3.0;
   desired[2] << .5, .6, std::sqrt(39.0) / 10.0;
+  CompareIntersectionResults(
+      desired, internal::IntersectBoxWUnitCircle(box_min, box_max));
+
+  // All four intersections are on the vertical edges.
+  box_min << 1.0 / 3.0, 1.0 / 3.0, 0;
+  box_max << 2.0 / 3.0, 2.0 / 3.0, 1;
+  desired[0] << 1.0 / 3.0, 1.0 / 3.0, std::sqrt(7.0) / 3.0;
+  desired[1] << 2.0 / 3.0, 1.0 / 3.0, 2.0 / 3.0;
+  desired[2] << 1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0;
+  desired.push_back(Vector3d(2.0 / 3.0, 2.0 / 3.0, 1.0 / 3.0));
   CompareIntersectionResults(
       desired, internal::IntersectBoxWUnitCircle(box_min, box_max));
 

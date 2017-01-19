@@ -421,7 +421,8 @@ void AddMcCormickVectorConstraints(
             DRAKE_DEMAND(pts.size() >= 3);
             Eigen::Vector3d normal;
             // Note: 1-d is the distance to the farthest point on the unit
-            // circle, so intentionally initialize it to a (known) bad value.
+            // circle that is inside the bounding box, so intentionally
+            // initialize it to a (known) bad value.
             double d = -1;
 
             if (pts.size() == 3) {
@@ -460,10 +461,15 @@ void AddMcCormickVectorConstraints(
             //    cos(theta) = min_i normal.dot(pt[i]),
             // and we have 0 <= theta < pi/2.
             // Proof sketch:
-            // Every vector in the convex hull can be written as
+            // Every vector in the convex hull of the intersection points
+            // can be written as
             //   v = sum_i w_i p_i, w_i>0, sum_i w_i=1.
             // Note that |v| = 1 when v=p_i, and <1 when v is inside the hull.
-            // Given normal'*v = |normal||v|cos(theta), and |normal|=1,
+            // Furthermore, every point in the intersection of the bounding box
+            // and the unit circle can be represented by a vector u which is
+            // a vector v in the convex hull, but with length normalized to 1.
+            //   u = v / |v|.
+            // Given normal'*u = |normal||u|cos(theta), and |normal|=|u|=1,
             // we have
             //   cos(theta) = normal'*v/|v| = (\sum w_i normal'*p_i)/|v|.
             // This obtains a minimum when w_i=1 for min_i normal'*p_i,
@@ -490,6 +496,11 @@ void AddMcCormickVectorConstraints(
               // and allowing normal.dot(v) to take values at least [-1,1]
               // otherwise, the complete constraint is
               //   normal'*x >= d - 6+2*c[xi](0)+2*c[yi](1)+2*c[zi](2)
+              // or, in words:
+              //   if c[xi](0) = 1 and c[yi](1) == 1 and c[zi](2) == 1, then
+              //     normal'*x >= d,
+              //   otherwise
+              //     normal'*x >= -1.
               a << orthant_normal, -2, -2, -2;
               prog->AddLinearConstraint(a, d - 6, 1, {v, orthant_c});
 
@@ -519,7 +530,20 @@ void AddMcCormickVectorConstraints(
               //   normal.dot(vi)
               //     normal.dot(vi) <=
               //     sin(theta)+6-2*c[xi](0)-2*c[yi](1)-2*c[zi](2).
-
+              // Note: (An alternative tighter, but SOCP constraint)
+              //   v, v1, v2 forms an orthornormal basis. So n'*v is the
+              //   projection of n in the v direction, same for n'*v1, n'*v2.
+              //   Thus
+              //     (n'*v)^2 + (n'*v1)^2 + (n'*v2)^2 = n'*n
+              //   which translates to "The norm of a vector is equal to the
+              //   sum of squares of the vector projected onto each axes of an
+              //   orthornormal basis".
+              //   This equation is the same as
+              //     (n'*v1)^2 + (n'*v2)^2 <= sin(theta)^2
+              //   So actually instead of imposing
+              //     -sin(theta)<=n'*vi <=sin(theta),
+              //   we can impose a tighter Lorentz cone constraint
+              //     [|sin(theta)|, n'*v1, n'*v2] is in the Lorentz cone.
               prog->AddLinearConstraint(a, -sin(theta) - 6, 1, {v1, orthant_c});
               prog->AddLinearConstraint(a, -sin(theta) - 6, 1, {v2, orthant_c});
 
@@ -529,12 +553,18 @@ void AddMcCormickVectorConstraints(
 
               // Cross-product constraint: ideally v2 = v.cross(v1).
               // Since v is within theta of normal, we have that v2 must be
-              // within theta of normal.cross(v1).  In fact this is very
-              // conservative -- v2 can actually only rotate by theta in the
-              // plane orthogonal to v1.  Since the maximum slope of sin() is
-              // maximal around 0, this confers a conservative elementwise
-              // convex(!) constraint that
-              //  -asin(theta) <= v2 - normal.cross(v1) <= asin(theta).
+              // within theta of normal.cross(v1).  To see this, observe that
+              //   v2'*(normal.cross(v1)) = normal'*(v1.cross(v2))
+              //     = normal'*v >= cos(theta).
+              // The vector normal.cross(v1) has a length less than 1, so
+              //   v2'*(normal.cross(v1)/|normal.cross(v1)|) >=
+              //     v2'*(normal.cross(v1)) >= cos(theta)
+              // Thus the angle between the vector v2 and normal.cross(v1) is
+              // less than theta.  In fact this is very conservative -- v2 can
+              // actually only rotate by theta in the plane orthogonal to v1.
+              // Since the maximum slope of sin() is maximal around 0, this
+              // confers a conservative elementwise convex(!) constraint that
+              //   -asin(theta) <= v2 - normal.cross(v1) <= asin(theta).
               // Since 0<=theta<=pi/2, this should be enough to rule out the
               // det(R)=-1 case (the shortest projection of a line across the
               // circle onto a single axis has length 2sqrt(3)/3 > 1.15), and
@@ -544,7 +574,9 @@ void AddMcCormickVectorConstraints(
               // constraints are
               //  -asin(theta)-6+2(cxi+cyi+czi) <= v2-normal.cross(v1)
               //    v2-normal.cross(v1) <= asin(theta)+6-2(cxi+cyi+czi)
-
+              // Note: Again this constraint could be tighter as a Lorenz cone
+              // constraint of the form:
+              //   |v2 - normal.cross(v1)| <= 2*sin(theta/2).
               A_cross << Eigen::Matrix3d::Identity(),
                   -math::VectorToSkewSymmetric(orthant_normal),
                   Eigen::Matrix3d::Constant(-2);
