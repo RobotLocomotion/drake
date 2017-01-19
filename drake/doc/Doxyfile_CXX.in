@@ -286,9 +286,30 @@ EXPAND_ONLY_PREDEF     = YES
 SEARCH_INCLUDES        = YES
 INCLUDE_PATH           =
 INCLUDE_FILE_PATTERNS  =
-PREDEFINED             = \
-  DRAKE_DOXYGEN_CXX=1
-
+PREDEFINED += DRAKE_DOXYGEN_CXX=1
+# =============================================================================
+# N.B. The spelling of the macro names between common/drake_copyable.h and this
+# file must be kept in sync!
+# =============================================================================
+# The following macros are carefully crafted to retain good markup when they
+# pass through Doxygen's preprocesor.
+PREDEFINED += DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(X):=" \
+/** \name Does not allow copy, move, or assignment */ \
+/** \{ */ \
+X(const X&) = delete; \
+X& operator=(const X&) = delete; \
+X(X&&) = delete; \
+X& operator=(X&&) = delete; \
+/** \} */"
+PREDEFINED += DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(X):=" \
+/** \name Implements CopyConstructible, CopyAssignable, MoveConstructible, MoveAssignable */ \
+/** \{ */ \
+X(const X&) = default; \
+X& operator=(const X&) = default; \
+X(X&&) = default; \
+X& operator=(X&&) = default; \
+/** \} */"
+# =============================================================================
 EXPAND_AS_DEFINED      =
 SKIP_FUNCTION_MACROS   = YES
 #---------------------------------------------------------------------------
