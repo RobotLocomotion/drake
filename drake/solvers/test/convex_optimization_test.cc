@@ -686,21 +686,11 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
 
   auto x_socp = prog_socp.NewContinuousVariables(kXdim, "x");
   auto y = prog_socp.NewContinuousVariables<1>("y");
-  auto w = prog_socp.NewContinuousVariables(kXdim, "w");
-
-  Eigen::MatrixXd A_lorentz(2 + kXdim, 1 + kXdim);
-  A_lorentz << Eigen::RowVectorXd::Zero(1 + kXdim),
-      Eigen::MatrixXd::Identity(1 + kXdim, 1 + kXdim);
-  Eigen::VectorXd b_lorentz(2 + kXdim);
-  b_lorentz << 2, Eigen::VectorXd::Zero(1 + kXdim);
-  prog_socp.AddRotatedLorentzConeConstraint(A_lorentz, b_lorentz, {y, w});
-
   Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> lltOfQ(Q_symmetric);
   Eigen::MatrixXd Q_sqrt = lltOfQ.matrixU();
-  Eigen::MatrixXd A_w(kXdim, 2 * kXdim);
-  A_w << Eigen::MatrixXd::Identity(kXdim, kXdim), -Q_sqrt;
-  prog_socp.AddLinearEqualityConstraint(A_w, Eigen::VectorXd::Zero(kXdim),
-                                        {w, x_socp});
+  VectorX<symbolic::Expression> e(2 + kXdim);
+  e << +y(0), 2, Q_sqrt * x_socp;
+  prog_socp.AddRotatedLorentzConeConstraint(e);
 
   prog_socp.AddLinearConstraint(A, b_lb, b_ub, x_socp);
 
@@ -715,13 +705,8 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
       c.transpose() * x_socp_value + prog_socp.GetSolution(y(0));
 
   // Check the solution
-  const auto& w_value = prog_socp.GetSolution(w);
-  EXPECT_NEAR(2 * prog_socp.GetSolution(y(0)), w_value.squaredNorm(), 1E-6);
-  EXPECT_TRUE(CompareMatrices(w_value, Q_sqrt * x_socp_value, 1e-6,
-                              MatrixCompareType::absolute));
+  EXPECT_NEAR(2 * prog_socp.GetSolution(y(0)), (Q_sqrt * x_socp_value).squaredNorm(), 1E-6);
   EXPECT_GE(prog_socp.GetSolution(y(0)), 0);
-  EXPECT_TRUE(CompareMatrices(w_value, Q_sqrt * x_socp_value, 1E-6,
-                              MatrixCompareType::absolute));
 
   // Now solve the problem as a QP.
   MathematicalProgram prog_qp;

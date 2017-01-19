@@ -435,7 +435,6 @@ void MathematicalProgram::AddConstraint(
 void MathematicalProgram::AddConstraint(
     const Binding<LorentzConeConstraint>& binding) {
   required_capabilities_ |= kLorentzConeConstraint;
-  DRAKE_ASSERT(binding.GetNumElements() >= 2);
   lorentz_cone_constraint_.push_back(binding);
 }
 
@@ -492,6 +491,7 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
   Eigen::VectorXd b(v.size());
   VectorXDecisionVariable vars{};
   DecomposeLinearExpression(v, &A, &b, &vars);
+  DRAKE_DEMAND(vars.rows() >= 1);
   return Binding<LorentzConeConstraint>(AddLorentzConeConstraint(A, b, vars), vars);
 }
 
@@ -515,7 +515,6 @@ MathematicalProgram::AddLorentzConeConstraint(
 void MathematicalProgram::AddConstraint(
     const Binding<RotatedLorentzConeConstraint>& binding) {
   required_capabilities_ |= kRotatedLorentzConeConstraint;
-  DRAKE_ASSERT(binding.GetNumElements() >= 3);
   rotated_lorentz_cone_constraint_.push_back(binding);
 }
 
@@ -532,6 +531,7 @@ Binding<RotatedLorentzConeConstraint> MathematicalProgram::AddRotatedLorentzCone
   Eigen::VectorXd b(v.size());
   VectorXDecisionVariable vars{};
   DecomposeLinearExpression(v, &A, &b, &vars);
+  DRAKE_DEMAND(vars.rows() >= 1);
   return Binding<RotatedLorentzConeConstraint>(AddRotatedLorentzConeConstraint(A, b, vars), vars);
 }
 
