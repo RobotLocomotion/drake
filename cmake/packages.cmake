@@ -140,7 +140,6 @@ macro(drake_find_packages)
     INTERFACE_COMPILE_DEFINITIONS ${GTEST_DEFINITIONS})
 
   drake_find_package(VTK CONFIG REQUIRED)
-  include_directories(${VTK_INCLUDE_DIRS})
 
   # END required packages
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
