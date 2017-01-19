@@ -24,12 +24,8 @@ class PainleveDAETest : public ::testing::Test {
     derivatives_ = dut_->AllocateTimeDerivatives();
   }
 
-  std::unique_ptr<ContinuousState<double>> CreateNewContinuousState()
-                                                                         const {
-    const int state_dim = 6;
-    auto cstate_vec = std::make_unique<BasicVector<double>>(state_dim);
-    return std::make_unique<ContinuousState<double>>(
-        std::move(cstate_vec), state_dim / 2, state_dim / 2, 0);
+  std::unique_ptr<State<double>> CloneState() const {
+    return context_->CloneState();
   }
 
   systems::VectorBase<double>* continuous_state() {
@@ -100,6 +96,19 @@ class PainleveDAETest : public ::testing::Test {
     ContinuousState<double>& xc =
         *context_->get_mutable_continuous_state();
     xc[4] = -1.0;
+
+    // Indicate that the rod is in the single contact sliding mode.
+    AbstractState* abs_state = context_->get_mutable_state()->
+                                 get_mutable_abstract_state();
+    abs_state->get_mutable_abstract_state(0).
+      template GetMutableValue<Painleve<double>::Mode>() =
+        Painleve<double>::kSlidingSingleContact;
+
+    // Contact determination code
+    const double theta = xc[2];
+    const int k = (std::sin(theta) > 0) ? -1 : 1;
+    abs_state->get_mutable_abstract_state(1).
+      template GetMutableValue<int>() = k;
   }
 
   std::unique_ptr<Painleve<double>> dut_;  //< The device under test.
@@ -190,8 +199,7 @@ TEST_F(PainleveDAETest, Parameters) {
 // Verify that impact handling works as expected.
 TEST_F(PainleveDAETest, ImpactWorks) {
   // Set writable state.
-  std::unique_ptr<ContinuousState<double>> new_cstate =
-      CreateNewContinuousState();
+  std::unique_ptr<State<double>> new_state = CloneState();
 
   // Cause the initial state to be impacting, with center of mass directly
   // over the point of contact.
@@ -205,12 +213,19 @@ TEST_F(PainleveDAETest, ImpactWorks) {
   xc[4] = -1.0;
   xc[5] = 0.0;
 
-  // TODO(edrumwri): Set the abstract state.
+  // Set the mode variables.
+  context_->template get_mutable_abstract_state<Painleve<double>::Mode>(0) =
+      Painleve<double>::kStickingSingleContact;
+  const double theta = xc[3];
+  const int k = (std::sin(theta) > 0) ? -1 : 1;
+  context_->template get_mutable_abstract_state<int>(1) = k;
+
+  // Rod should not be impacting.
   EXPECT_TRUE(dut_->IsImpacting(*context_));
 
   // Handle the impact.
-  dut_->HandleImpact(*context_, new_cstate.get());
-  context_->get_mutable_continuous_state()->SetFrom(*new_cstate);
+  dut_->HandleImpact(*context_, new_state.get());
+  context_->get_mutable_state()->SetFrom(*new_state);
 
   // Verify that the state has been modified such that the body is no longer
   // in an impacting state and the configuration has not been modified.
@@ -221,8 +236,6 @@ TEST_F(PainleveDAETest, ImpactWorks) {
   EXPECT_NEAR(xc[3], 0.0, tol);
   EXPECT_NEAR(xc[4], 0.0, tol);
   EXPECT_NEAR(xc[5], 0.0, tol);
-
-  // TODO(edrumwri): Verify the abstract state.
 }
 
 // Verify that derivatives match what we expect from a non-inconsistent,
@@ -315,20 +328,20 @@ TEST_F(PainleveDAETest, Inconsistent2) {
 // Verify that the (non-impacting) Painlevé configuration does not result in a
 // state change.
 TEST_F(PainleveDAETest, ImpactNoChange) {
-  // TODO(edrumwri): consider abstract state
-
   // Set state.
-  std::unique_ptr<ContinuousState<double>> new_cstate =
-      CreateNewContinuousState();
+  std::unique_ptr<State<double>> new_state = CloneState();
   EXPECT_FALSE(dut_->IsImpacting(*context_));
-  dut_->HandleImpact(*context_, new_cstate.get());
-  EXPECT_TRUE(CompareMatrices(new_cstate->get_vector().CopyToVector(),
+  dut_->HandleImpact(*context_, new_state.get());
+  EXPECT_TRUE(CompareMatrices(new_state->get_continuous_state()->get_vector().
+                                  CopyToVector(),
                               context_->get_continuous_state()->get_vector().
                                   CopyToVector(),
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
 
-  // TODO(edrumwri): consider abstract state
+  // Verify that the state is still in a sliding configuration.
+  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
+            Painleve<double>::kSlidingSingleContact);
 }
 
 // Verify that applying the impact model to an impacting configuration results
@@ -336,32 +349,36 @@ TEST_F(PainleveDAETest, ImpactNoChange) {
 // where impulses that yield tangential sticking lie within the friction cone.
 TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact) {
   // Set writable state.
-  std::unique_ptr<ContinuousState<double>> new_cstate =
-      CreateNewContinuousState();
-
-  // TODO(edrumwri): consider abstract state.
+  std::unique_ptr<State<double>> new_state = CloneState();
 
   // Cause the initial state to be impacting.
   SetImpactingState();
+
+  // Verify that the state is in a sliding mode.
+  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
+            Painleve<double>::kSlidingSingleContact);
 
   // Set the coefficient of friction to infinite. This forces the Painlevé code
   // to go through the first impact path (impulse within the friction cone).
   dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
 
   // Handle the impact and copy the result to the context.
-  dut_->HandleImpact(*context_, new_cstate.get());
-  context_->get_mutable_continuous_state()->SetFrom(*new_cstate);
+  dut_->HandleImpact(*context_, new_state.get());
+  context_->get_mutable_state()->SetFrom(*new_state);
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 
+  // Verify that the state is now in a sticking mode.
+  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
+            Painleve<double>::kStickingSingleContact);
+
   // Do one more impact- there should now be no change.
-  dut_->HandleImpact(*context_, new_cstate.get());
-  EXPECT_TRUE(CompareMatrices(new_cstate->get_vector().CopyToVector(),
+  dut_->HandleImpact(*context_, new_state.get());
+  EXPECT_TRUE(CompareMatrices(new_state->get_continuous_state()->get_vector().
+                                  CopyToVector(),
                               context_->get_continuous_state()->get_vector().
                                   CopyToVector(),
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
-
-  // TODO(edrumwri): consider abstract state.
 }
 
 // Verify that applying an impact model to an impacting state results in a
@@ -371,7 +388,9 @@ TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact) {
   // Set the initial state to be impacting.
   SetImpactingState();
 
-  // TODO(edrumwri): consider abstract state.
+  // Verify that the state is in a sliding mode.
+  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
+            Painleve<double>::kSlidingSingleContact);
 
   // Set the coefficient of friction to zero. This forces the Painlevé code
   // to go through the second impact path (impulse corresponding to sticking
@@ -379,24 +398,28 @@ TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact) {
   dut_->set_mu_coulomb(0.0);
 
   // Handle the impact and copy the result to the context.
-  std::unique_ptr<ContinuousState<double>> new_cstate =
-      CreateNewContinuousState();
-  dut_->HandleImpact(*context_, new_cstate.get());
-  context_->get_mutable_continuous_state()->SetFrom(*new_cstate);
+  std::unique_ptr<State<double>> new_state = CloneState();
+  dut_->HandleImpact(*context_, new_state.get());
+  context_->get_mutable_state()->SetFrom(*new_state);
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 
-  // TODO(edrumwri): consider abstract state.
+  // Verify that the state is still in a sliding mode.
+  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
+            Painleve<double>::kSlidingSingleContact);
 
   // Do one more impact- there should now be no change.
   // Verify that there is no further change from this second impact.
-  dut_->HandleImpact(*context_, new_cstate.get());
-  EXPECT_TRUE(CompareMatrices(new_cstate->get_vector().CopyToVector(),
+  dut_->HandleImpact(*context_, new_state.get());
+  EXPECT_TRUE(CompareMatrices(new_state->get_continuous_state()->get_vector().
+                                  CopyToVector(),
                               context_->get_continuous_state()->get_vector().
                                   CopyToVector(),
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
 
-  // TODO(edrumwri): consider abstract state.
+  // Verify that the state is still in a sliding mode.
+  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
+            Painleve<double>::kSlidingSingleContact);
 }
 
 // Verify that no exceptions thrown for a non-sliding configuration.
@@ -477,56 +500,52 @@ TEST_F(PainleveDAETest, MultiPoint) {
 TEST_F(PainleveDAETest, ImpactNoChange2) {
   SetSecondInitialConfig();
 
-  // TODO(edrumwri): set abstract state.
-
   // Verify no impact.
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 
   // Set writable state.
-  std::unique_ptr<ContinuousState<double>> new_cstate =
-      CreateNewContinuousState();
-  dut_->HandleImpact(*context_, new_cstate.get());
-  EXPECT_TRUE(CompareMatrices(new_cstate->get_vector().CopyToVector(),
+  std::unique_ptr<State<double>> new_state = CloneState();
+  dut_->HandleImpact(*context_, new_state.get());
+  EXPECT_TRUE(CompareMatrices(new_state->get_continuous_state()->get_vector().
+                                  CopyToVector(),
                               context_->get_continuous_state()->get_vector().
                                   CopyToVector(),
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
-
-  // TODO(edrumwri): set abstract state.
 }
 
 // Verify that applying the impact model to an impacting state results
 // in a non-impacting state.
 TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact2) {
   // Set writable state.
-  std::unique_ptr<ContinuousState<double>> new_cstate =
-      CreateNewContinuousState();
+  std::unique_ptr<State<double>> new_state = CloneState();
 
   // Cause the initial state to be impacting.
   SetImpactingState();
-
-  // TODO(edrumwri): set abstract state.
 
   // Set the coefficient of friction to infinite. This forces the Painlevé code
   // to go through the first impact path.
   dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
 
   // Handle the impact and copy the result to the context.
-  dut_->HandleImpact(*context_, new_cstate.get());
-  context_->get_mutable_continuous_state()->SetFrom(*new_cstate);
+  dut_->HandleImpact(*context_, new_state.get());
+  context_->get_mutable_state()->SetFrom(*new_state);
 
   // Verify the state no longer corresponds to an impact.
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 
+  // Verify that the state is in a sticking mode.
+  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
+            Painleve<double>::kStickingSingleContact);
+
   // Do one more impact- there should now be no change.
-  dut_->HandleImpact(*context_, new_cstate.get());
-  EXPECT_TRUE(CompareMatrices(new_cstate->get_vector().CopyToVector(),
+  dut_->HandleImpact(*context_, new_state.get());
+  EXPECT_TRUE(CompareMatrices(new_state->get_continuous_state()->get_vector().
+                                  CopyToVector(),
                               context_->get_continuous_state()->get_vector().
                                   CopyToVector(),
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
-
-  // TODO(edrumwri): set abstract state.
 }
 
 
@@ -534,39 +553,46 @@ TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact2) {
 // non-impacting state.
 TEST_F(PainleveDAETest, NoFrictionImpactThenNoImpact2) {
   // Set writable state.
-  std::unique_ptr<ContinuousState<double>> new_cstate =
-      CreateNewContinuousState();
+  std::unique_ptr<State<double>> new_state = CloneState();
 
   // Cause the initial state to be impacting.
   SetImpactingState();
 
-  // TODO(edrumwri): set abstract state.
+  // Verify that the state is still in a sliding configuration.
+  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
+            Painleve<double>::kSlidingSingleContact);
 
   // Set the coefficient of friction to zero. This forces the Painlevé code
   // to go through the second impact path.
   dut_->set_mu_coulomb(0.0);
 
+  // Verify that the state is still in a sliding configuration.
+  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
+            Painleve<double>::kSlidingSingleContact);
+
   // Handle the impact and copy the result to the context.
-  dut_->HandleImpact(*context_, new_cstate.get());
-  context_->get_mutable_continuous_state()->SetFrom(*new_cstate);
+  dut_->HandleImpact(*context_, new_state.get());
+  context_->get_mutable_state()->SetFrom(*new_state);
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 
   // Do one more impact- there should now be no change.
-  dut_->HandleImpact(*context_, new_cstate.get());
-  EXPECT_TRUE(CompareMatrices(new_cstate->get_vector().CopyToVector(),
+  dut_->HandleImpact(*context_, new_state.get());
+  EXPECT_TRUE(CompareMatrices(new_state->get_continuous_state()->get_vector().
+                                  CopyToVector(),
                               context_->get_continuous_state()->get_vector().
                                   CopyToVector(),
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
 
-  // TODO(edrumwri): set abstract state.
+  // Verify that the state is still in a sliding configuration.
+  EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
+            Painleve<double>::kSlidingSingleContact);
 }
 
 // Verifies that rod in a ballistic state does not correspond to an impact.
 TEST_F(PainleveDAETest, BallisticNoImpact) {
   // Set writable state.
-  std::unique_ptr<ContinuousState<double>> new_cstate =
-  CreateNewContinuousState();
+  std::unique_ptr<State<double>> new_state = CloneState();
 
   // Cause the initial state to be impacting.
   SetImpactingState();

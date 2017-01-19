@@ -84,9 +84,8 @@ class Painleve : public systems::LeafSystem<T> {
 
   /// Models impact using an inelastic impact model with friction.
   /// @p new_state is set to the output of the impact model on return.
-  void HandleImpact(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* new_state) const;
+  void HandleImpact(const systems::Context<T>& context,
+                    systems::State<T>* new_state) const;
 
   /// Gets the acceleration (with respect to the positive y-axis) due to
   /// gravity (i.e., this number should generally be negative).

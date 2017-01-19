@@ -198,7 +198,7 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
 /// Models impact using an inelastic impact model with friction.
 template <typename T>
 void Painleve<T>::HandleImpact(const systems::Context<T>& context,
-                               systems::ContinuousState<T>* new_state) const {
+                               systems::State<T>* new_state) const {
   using std::abs;
 
   // Get the necessary parts of the state.
@@ -211,12 +211,18 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
   const T& thetadot = state.GetAtIndex(5);
 
   // Get the state vector.
-  systems::VectorBase<T>* new_statev = new_state->get_mutable_vector();
+  systems::VectorBase<T>* new_statev = new_state->
+      get_mutable_continuous_state()->get_mutable_vector();
 
   // Positional aspects of state do not change.
   new_statev->SetAtIndex(0, x);
   new_statev->SetAtIndex(1, y);
   new_statev->SetAtIndex(2, theta);
+
+  // Copy abstract variables (mode and contact point) by default. Mode
+  // may change depending on impact outcome.
+  new_state->get_mutable_abstract_state()->CopyFrom(
+      *context.get_abstract_state());
 
   // If there is no impact, quit now.
   if (!IsImpacting(context)) {
@@ -260,6 +266,14 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
     const Vector2<T> f_sliding = CalcFConeImpactImpulse(context);
     fN = f_sliding(0);
     fF = f_sliding(1);
+
+    // Set the mode to sliding.
+    new_state->template get_mutable_abstract_state<Mode>(0) =
+      Painleve<T>::kSlidingSingleContact;
+  } else {
+    // Set the mode to sticking.
+    new_state->template get_mutable_abstract_state<Mode>(0) =
+      Painleve<T>::kStickingSingleContact;
   }
 
   // Compute the change in linear velocity.
@@ -803,7 +817,7 @@ bool Painleve<T>::IsImpacting(const systems::Context<T>& context) const {
   using std::sin;
   using std::cos;
 
-  // TODO(edrumwri): incorporate modes into this?
+  // Note: we do not consider modes here.
 
   // Get state data necessary to compute the point of contact.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
@@ -816,7 +830,7 @@ bool Painleve<T>::IsImpacting(const systems::Context<T>& context) const {
   const double half_rod_length = rod_length_ / 2;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const int k = (stheta > 0) ? -1 : 1;
+  const int k = (stheta > 0) ? -1 : (stheta < 0) ? 1 : 0;
   const T cy = y + k * stheta * half_rod_length;
 
   // If rod endpoint is not touching, there is no impact.
