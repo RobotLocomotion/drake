@@ -89,11 +89,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
                                         &Kd_pelvis);
   paramset.LookupDesiredBodyMotionGains(*robot->FindBody("torso"), &Kp_torso,
                                         &Kd_torso);
-<<<<<<< HEAD
-  paramset.LookupDesiredDoFMotionGains(&Kp_q, &Kd_q);
-=======
   paramset.LookupDesiredDofMotionGains(&Kp_q, &Kd_q);
->>>>>>> refactroing. split system wrappers to .h and .cc
   paramset.LookupDesiredCentroidalMomentumDotGains(&Kp_centroidal,
                                                    &Kd_centroidal);
   Kp_com = Kp_centroidal.tail<3>();

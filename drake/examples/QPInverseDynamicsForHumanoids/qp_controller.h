@@ -151,19 +151,6 @@ class QPController {
   void SetTempMatricesToZero();
 };
 
-// TODO(siyuanfeng): This should be made more robust and general, and it
-// should also be in RigidBodyTreee.
-template <typename T>
-std::vector<std::string> GetDofNames(const RigidBodyTree<T>& robot) {
-  std::vector<std::string> names(robot.get_num_velocities());
-  // Strips out the "dot" part from name.
-  for (int i = 0; i < robot.get_num_velocities(); ++i) {
-    names[i] = robot.get_velocity_name(i);
-    names[i] = names[i].substr(0, names[i].size() - 3);
-  }
-  return names;
-}
-
 }  // namespace qp_inverse_dynamics
 }  // namespace examples
 }  // namespace drake
