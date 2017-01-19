@@ -139,6 +139,9 @@ macro(drake_find_packages)
   set_property(TARGET GTest::GTest APPEND PROPERTY
     INTERFACE_COMPILE_DEFINITIONS ${GTEST_DEFINITIONS})
 
+  drake_find_package(VTK CONFIG REQUIRED)
+  include_directories(${VTK_INCLUDE_DIRS})
+
   # END required packages
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # BEGIN optional packages
