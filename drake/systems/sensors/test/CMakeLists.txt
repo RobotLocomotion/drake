@@ -6,3 +6,8 @@ if(Bullet_FOUND)
   target_link_libraries(depth_sensor_test
       drakeSensors)
 endif()
+
+if(VTK_FOUND)
+  drake_add_cc_test(rgbd_camera_test)
+  target_link_libraries(rgbd_camera_test drakeSensors)
+endif()
