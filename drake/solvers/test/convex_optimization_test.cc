@@ -705,7 +705,8 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
       c.transpose() * x_socp_value + prog_socp.GetSolution(y(0));
 
   // Check the solution
-  EXPECT_NEAR(2 * prog_socp.GetSolution(y(0)), (Q_sqrt * x_socp_value).squaredNorm(), 1E-6);
+  EXPECT_NEAR(2 * prog_socp.GetSolution(y(0)),
+              (Q_sqrt * x_socp_value).squaredNorm(), 1E-6);
   EXPECT_GE(prog_socp.GetSolution(y(0)), 0);
 
   // Now solve the problem as a QP.

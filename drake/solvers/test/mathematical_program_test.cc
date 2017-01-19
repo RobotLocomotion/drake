@@ -198,14 +198,12 @@ class GenericTrivialCost1 : public Constraint {
         private_val_(2) {}
 
  protected:
-  void DoEval(const Ref<const Eigen::VectorXd> &x,
-              VectorXd &y) const override {
+  void DoEval(const Ref<const Eigen::VectorXd>& x, VectorXd& y) const override {
     y.resize(1);
     y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
   }
 
-  void DoEval(const Ref<const TaylorVecXd> &x,
-              TaylorVecXd &y) const override {
+  void DoEval(const Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override {
     y.resize(1);
     y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
   }
@@ -487,11 +485,15 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic4) {
 
   EXPECT_TRUE(prog.linear_constraints().empty());
   EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
-  EXPECT_EQ(prog.bounding_box_constraints().back().constraint(), binding.constraint());
-  EXPECT_EQ(prog.bounding_box_constraints().back().variables(), binding.variables());
+  EXPECT_EQ(prog.bounding_box_constraints().back().constraint(),
+            binding.constraint());
+  EXPECT_EQ(prog.bounding_box_constraints().back().variables(),
+            binding.variables());
   EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(1)));
-  EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(), Vector1d(1)));
-  EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(), Vector1d(2)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->lower_bound(), Vector1d(1)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->upper_bound(), Vector1d(2)));
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic5) {
@@ -504,32 +506,49 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic5) {
 
   EXPECT_TRUE(prog.linear_constraints().empty());
   EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
-  EXPECT_EQ(prog.bounding_box_constraints().back().constraint(), binding.constraint());
-  EXPECT_EQ(prog.bounding_box_constraints().back().variables(), binding.variables());
+  EXPECT_EQ(prog.bounding_box_constraints().back().constraint(),
+            binding.constraint());
+  EXPECT_EQ(prog.bounding_box_constraints().back().variables(),
+            binding.variables());
   EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(1)));
-  EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(), Vector1d(-2)));
-  EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(), Vector1d(-1)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->lower_bound(), Vector1d(-2)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->upper_bound(), Vector1d(-1)));
 }
 
 namespace {
-void CheckParsedSymbolicLorentzConeConstraint(MathematicalProgram* prog, const Eigen::Ref<const Eigen::Matrix<symbolic::Expression, Eigen::Dynamic, 1>>& e) {
+void CheckParsedSymbolicLorentzConeConstraint(
+    MathematicalProgram* prog,
+    const Eigen::Ref<
+        const Eigen::Matrix<symbolic::Expression, Eigen::Dynamic, 1>>& e) {
   const auto& binding1 = prog->AddLorentzConeConstraint(e);
   const auto& binding2 = prog->lorentz_cone_constraints().back();
 
   EXPECT_EQ(binding1.constraint(), binding2.constraint());
-  EXPECT_EQ(binding1.constraint()->A() * binding1.variables() + binding1.constraint()->b(), e);
-  EXPECT_EQ(binding2.constraint()->A() * binding2.variables() + binding2.constraint()->b(), e);
+  EXPECT_EQ(binding1.constraint()->A() * binding1.variables() +
+                binding1.constraint()->b(),
+            e);
+  EXPECT_EQ(binding2.constraint()->A() * binding2.variables() +
+                binding2.constraint()->b(),
+            e);
 }
 
-void CheckParsedSymbolicRotatedLorentzConeConstraint(MathematicalProgram* prog, const Eigen::Ref<const Eigen::Matrix<symbolic::Expression, Eigen::Dynamic, 1>>& e) {
+void CheckParsedSymbolicRotatedLorentzConeConstraint(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& e) {
   const auto& binding1 = prog->AddRotatedLorentzConeConstraint(e);
   const auto& binding2 = prog->rotated_lorentz_cone_constraints().back();
 
   EXPECT_EQ(binding1.constraint(), binding2.constraint());
-  EXPECT_EQ(binding1.constraint()->A() * binding1.variables() + binding1.constraint()->b(), e);
-  EXPECT_EQ(binding2.constraint()->A() * binding2.variables() + binding2.constraint()->b(), e);
+  EXPECT_EQ(binding1.constraint()->A() * binding1.variables() +
+                binding1.constraint()->b(),
+            e);
+  EXPECT_EQ(binding2.constraint()->A() * binding2.variables() +
+                binding2.constraint()->b(),
+            e);
 }
-}  // namespace anonymous
+}  // namespace
 
 GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint1) {
   // Add Lorentz cone constraint:
@@ -547,7 +566,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint2) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>("x");
   Matrix<symbolic::Expression, 3, 1> e;
-  e << x(0) + 1, x(1) + 2, + x(2);
+  e << x(0) + 1, x(1) + 2, +x(2);
   CheckParsedSymbolicLorentzConeConstraint(&prog, e);
 }
 
@@ -560,9 +579,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint3) {
   auto x = prog.NewContinuousVariables<3>("x");
   Matrix<symbolic::Expression, 3, 1> e;
   // clang-format on
-  e << 2*x(0) + 3*x(2),
-        -x(0) + 2*x(2),
-                 +x(2);
+  e << 2 * x(0) + 3 * x(2), -x(0) + 2 * x(2), +x(2);
   // clang-format off;
   CheckParsedSymbolicLorentzConeConstraint(&prog, e);
 }
@@ -631,7 +648,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint4) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<4>("x");
   Matrix<symbolic::Expression, 5, 1> e;
-  e << 2 * x(0) + 3*x(2) + 3, x(0) - 4 * x(2), 2 * x(2), 3 * x(0) + 1, 4;
+  e << 2 * x(0) + 3 * x(2) + 3, x(0) - 4 * x(2), 2 * x(2), 3 * x(0) + 1, 4;
   CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
 }
 
@@ -1000,12 +1017,12 @@ class LowerBoundTestConstraint : public Constraint {
 
  protected:
   // for just these two types, implementing this locally is almost cleaner...
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override {
     EvalImpl(x, y);
   }
-  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
-              TaylorVecXd &y) const override {
+  void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
+              TaylorVecXd& y) const override {
     EvalImpl(x, y);
   }
 
@@ -1179,18 +1196,17 @@ class GloptipolyConstrainedExampleConstraint
                            // constraint without going through drake::Function
  public:
   GloptipolyConstrainedExampleConstraint()
-      : Constraint(
-            1, 3, Vector1d::Constant(0),
-            Vector1d::Constant(numeric_limits<double>::infinity())) {}
+      : Constraint(1, 3, Vector1d::Constant(0),
+                   Vector1d::Constant(numeric_limits<double>::infinity())) {}
 
  protected:
   // for just these two types, implementing this locally is almost cleaner...
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override {
     EvalImpl(x, y);
   }
-  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
-              TaylorVecXd &y) const override {
+  void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
+              TaylorVecXd& y) const override {
     EvalImpl(x, y);
   }
 

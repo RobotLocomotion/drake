@@ -1448,14 +1448,17 @@ class MathematicalProgram {
   }
 
   /**
-   * Adds Lorentz cone constraint referencing potentially a subset of the decision variables.
+   * Adds Lorentz cone constraint referencing potentially a subset of the
+   * decision variables.
    * @param v An Eigen::Vector of symbolic::Expression. Constraining that
    * \f[
    * v_0 \ge \sqrt{v_1^2 + ... + v_{n-1}^2}
    * \f]
-   * @return The newly constructed Lorentz cone constraint with the bounded variables.
+   * @return The newly constructed Lorentz cone constraint with the bounded
+   * variables.
    */
-  Binding<LorentzConeConstraint> AddLorentzConeConstraint(const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
+  Binding<LorentzConeConstraint> AddLorentzConeConstraint(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
 
   /**
    * Adds Lorentz cone constraint referencing potentially a subset
@@ -1607,10 +1610,14 @@ class MathematicalProgram {
    * v_0v_1 \ge v_2^2 + ... + v_{n-1}^2\\
    * v_0 \ge 0, v_1 \ge 0
    * \f]
-   * @param v A linear expression of variables, \f$ v = A x + b\f$, where \f$ A, b \f$ are given matrices of the correct size, \f$ x \f$ is the vector of decision variables.
-   * @retval binding The newly added rotated Lorentz cone constraint, together with the bound variables.
+   * @param v A linear expression of variables, \f$ v = A x + b\f$, where \f$ A,
+   * b \f$ are given matrices of the correct size, \f$ x \f$ is the vector of
+   * decision variables.
+   * @retval binding The newly added rotated Lorentz cone constraint, together
+   * with the bound variables.
    */
-  Binding<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
+  Binding<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
 
   /**
    * Adds a rotated Lorentz cone constraint referencing potentially a subset
@@ -2417,8 +2424,7 @@ class MathematicalProgram {
    */
   void DecomposeLinearExpression(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
-      Eigen::MatrixXd* A, Eigen::VectorXd* b,
-      VectorXDecisionVariable* vars);
+      Eigen::MatrixXd* A, Eigen::VectorXd* b, VectorXDecisionVariable* vars);
 };
 }  // namespace solvers
 }  // namespace drake
