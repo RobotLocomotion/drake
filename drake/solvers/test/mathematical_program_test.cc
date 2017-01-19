@@ -477,6 +477,40 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
   EXPECT_EQ(M_e - M_ub, Ax - ub_in_ctr);
 }
 
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic4) {
+  // Check the linear constraint 2  <= 2 * x <= 4.
+  // Note: this is a bounding box constraint
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  const symbolic::Expression e(2 * x(1));
+  const auto& binding = prog.AddLinearConstraint(e, 2, 4);
+
+  EXPECT_TRUE(prog.linear_constraints().empty());
+  EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
+  EXPECT_EQ(prog.bounding_box_constraints().back().constraint(), binding.constraint());
+  EXPECT_EQ(prog.bounding_box_constraints().back().variables(), binding.variables());
+  EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(1)));
+  EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(), Vector1d(1)));
+  EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(), Vector1d(2)));
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic5) {
+  // Check the linear constraint 2  <= -2 * x <= 4.
+  // Note: this is a bounding box constraint
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  const symbolic::Expression e(-2 * x(1));
+  const auto& binding = prog.AddLinearConstraint(e, 2, 4);
+
+  EXPECT_TRUE(prog.linear_constraints().empty());
+  EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
+  EXPECT_EQ(prog.bounding_box_constraints().back().constraint(), binding.constraint());
+  EXPECT_EQ(prog.bounding_box_constraints().back().variables(), binding.variables());
+  EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(1)));
+  EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(), Vector1d(-2)));
+  EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(), Vector1d(-1)));
+}
+
 namespace {
 void CheckParsedSymbolicLorentzConeConstraint(MathematicalProgram* prog, const Eigen::Ref<const Eigen::Matrix<symbolic::Expression, Eigen::Dynamic, 1>>& e) {
   const auto& binding1 = prog->AddLorentzConeConstraint(e);
