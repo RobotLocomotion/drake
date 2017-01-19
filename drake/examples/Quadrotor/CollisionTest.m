@@ -63,8 +63,13 @@ plot(tsamp, usamp1(4,:));
 hold on;
 plot(tsamp, usamp2(4,:));
 
-% design FIR filter to filter noise to 1/10 of Nyquist rate
+% design FIR filter to filter noise to 5% of Nyquist rate
 b = fir1(48, 0.05);
+
+hit1 = zeros(100,1);
+hit2 = zeros(100,1);
+for j = 1:100
+
 % generate Gaussian (normally-distributed) white noise
 nx = randn(N,1);
 ny = randn(N,1);
@@ -72,19 +77,9 @@ nz = randn(N,1);
 % apply to filter to yield bandlimited noise
 wx = filter(b,1,nx);
 wy = filter(b,1,ny);
-wz = .1*filter(b,1,nz);
-w = 2*[wx wy wz]';
+wz = filter(b,1,nz);
+w = [(.5/max(wx))*wx (.5/max(abs(wy)))*wy (.05/max(abs(wz)))*wz]';
 %w = zeros(3,N);
-
-figure()
-subplot(2,1,1);
-plot(nx);
-hold on;
-plot(wx);
-subplot(2,1,2);
-plot(ny);
-hold on;
-plot(wy);
 
 %Simulate with random wind input
 xcl1 = zeros(12,N);
@@ -94,20 +89,6 @@ for k = 1:(N-1)
     xcl1(:,k+1) = xk(:,2);
 end
 
-figure();
-subplot(3,1,1);
-plot(tsamp, xsamp1(1,:));
-hold on
-plot(tsamp, xcl1(1,:));
-subplot(3,1,2);
-plot(tsamp, xsamp1(2,:));
-hold on;
-plot(tsamp, xcl1(2,:));
-subplot(3,1,3);
-plot(tsamp, xsamp1(3,:));
-hold on
-plot(tsamp, xcl1(3,:));
-
 %Simulate with random wind input
 xcl2 = zeros(12,N);
 xcl2(:,1) = xsamp2(:,1);
@@ -116,32 +97,52 @@ for k = 1:(N-1)
     xcl2(:,k+1) = xk(:,2);
 end
 
-figure();
-subplot(3,1,1);
-plot(tsamp, xsamp2(1,:));
-hold on
-plot(tsamp, xcl2(1,:));
-subplot(3,1,2);
-plot(tsamp, xsamp2(2,:));
-hold on;
-plot(tsamp, xcl2(2,:));
-subplot(3,1,3);
-plot(tsamp, xsamp2(3,:));
-hold on
-plot(tsamp, xcl2(3,:));
-
 %Check for collisions
-tree_width = ((.1+.4*[.45 .9 .95 .5 .65 .85]')+.5).^2;
-for j = 1:size(xcl1,2)
-    check1(:,j) = (treeDistance(xcl1(1:6,j)) < tree_width);
+tree_width = ((.1+.4*[.45 .9 .95 .5 .65 .85]')+.54).^2;
+for k = 1:size(xcl1,2)
+    check1(:,k) = (treeDistance(xcl1(1:6,k)) < tree_width);
 end
-any(check1(:))
+hit1(j) = any(check1(:));
 %v.playback(PPTrajectory(foh(tsamp,xcl1)), struct('slider',true));
 
-for j = 1:size(xcl2,2)
-    check2(:,j) = (treeDistance(xcl2(1:6,j)) < tree_width);
+for k = 1:size(xcl2,2)
+    check2(:,k) = (treeDistance(xcl2(1:6,k)) < tree_width);
 end
-any(check2(:))
+hit2(j) = any(check2(:));
+
+end
+
+sum(hit1)
+sum(hit2)
+
+% figure();
+% subplot(3,1,1);
+% plot(tsamp, xsamp1(1,:));
+% hold on
+% plot(tsamp, xcl1(1,:));
+% subplot(3,1,2);
+% plot(tsamp, xsamp1(2,:));
+% hold on;
+% plot(tsamp, xcl1(2,:));
+% subplot(3,1,3);
+% plot(tsamp, xsamp1(3,:));
+% hold on
+% plot(tsamp, xcl1(3,:));
+% 
+% figure();
+% subplot(3,1,1);
+% plot(tsamp, xsamp2(1,:));
+% hold on
+% plot(tsamp, xcl2(1,:));
+% subplot(3,1,2);
+% plot(tsamp, xsamp2(2,:));
+% hold on;
+% plot(tsamp, xcl2(2,:));
+% subplot(3,1,3);
+% plot(tsamp, xsamp2(3,:));
+% hold on
+% plot(tsamp, xcl2(3,:));
+
 %v.playback(PPTrajectory(foh(tsamp2, xcl2)) ,struct('slider',true));
 
 %Write movie files
