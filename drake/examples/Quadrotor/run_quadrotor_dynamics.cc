@@ -9,6 +9,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -23,8 +24,10 @@ namespace drake {
 
 using multibody::joints::kFixed;
 using multibody::joints::kRollPitchYaw;
+using parsers::ModelInstanceIdTable;
 using parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
 using parsers::sdf::AddModelInstancesFromSdfFile;
+using systems::InputPortDescriptor;
 
 namespace examples {
 namespace quadrotor {
@@ -39,14 +42,13 @@ class Quadrotor : public systems::Diagram<T> {
     this->set_name("Quadrotor");
 
     auto tree = std::make_unique<RigidBodyTree<T>>();
-    AddModelInstanceFromUrdfFileToWorld(
+    ModelInstanceIdTable model_id_table = AddModelInstanceFromUrdfFileToWorld(
         drake::GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
         kRollPitchYaw, tree.get());
-
+    const int quadrotor_id = model_id_table.at("quadrotor");
     AddModelInstancesFromSdfFile(
         drake::GetDrakePath() + "/examples/Quadrotor/warehouse.sdf",
         kFixed, nullptr /* weld to frame */, tree.get());
-
     drake::multibody::AddFlatTerrainToWorld(tree.get());
 
     systems::DiagramBuilder<T> builder;
@@ -54,17 +56,17 @@ class Quadrotor : public systems::Diagram<T> {
     plant_ =
         builder.template AddSystem<systems::RigidBodyPlant<T>>(std::move(tree));
 
+    // Verifies that the quadrotor has no actuators.
+    DRAKE_DEMAND(plant_->get_num_actuators() == 0);
+    DRAKE_DEMAND(plant_->get_num_actuators(quadrotor_id) == 0);
+
     VectorX<T> hover_input(plant_->get_input_size());
     hover_input.setZero();
-    systems::ConstantVectorSource<T>* source =
-        builder.template AddSystem<systems::ConstantVectorSource<T>>(
-            hover_input);
 
     systems::DrakeVisualizer* publisher =
         builder.template AddSystem<systems::DrakeVisualizer>(
             plant_->get_rigid_body_tree(), &lcm_);
 
-    builder.Connect(source->get_output_port(), plant_->get_input_port(0));
     builder.Connect(plant_->get_output_port(0), publisher->get_input_port(0));
 
     builder.BuildInto(this);

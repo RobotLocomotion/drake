@@ -65,12 +65,6 @@ string ReadTextFile(const string& file) {
   return buffer.str();
 }
 
-// TODO(liang.fok) Combine with near-identical code in rigid_body_plant_test.cc.
-template <class T>
-unique_ptr<FreestandingInputPort> MakeInput(unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(move(data));
-}
-
 const char* kModelFileName = "/examples/toyota_hsrb/test/test_model.urdf";
 const int kNumPositions{8};   // 7 floating DOFs and 1 regular DOF.
 const int kNumVelocities{7};  // 6 floating DOFs and 1 regular DOF.
@@ -183,8 +177,11 @@ void VerifyDiagram(const Diagram<double>& dut, const VectorXd& desired_state,
   EXPECT_EQ(desired_state, output_state->get_value());
 
   // Evaluates the correctness of the kinematics results port.
+  const int kinematics_results_port =
+      plant.kinematics_results_output_port().get_index();
   auto& kinematics_results =
-      output->get_data(1)->GetValue<KinematicsResults<double>>();
+      output->get_data(kinematics_results_port)->
+          GetValue<KinematicsResults<double>>();
   ASSERT_EQ(kinematics_results.get_num_positions(), kNumPositions);
   ASSERT_EQ(kinematics_results.get_num_velocities(), kNumVelocities);
 
@@ -229,11 +226,7 @@ TEST_F(ToyotaHsrbTests, TestBuildPlantAndVisualizerDiagram) {
   ASSERT_EQ(plant_->get_num_actuators(), kNumActuators);
   ASSERT_EQ(dut->get_input_port(0).size(), kNumActuators);
 
-  // Connect to a "fake" free standing input.
-  // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
-  // derivatives per #3218.
-  context->SetInputPort(0, MakeInput(make_unique<BasicVector<double>>(
-                                         plant_->get_num_actuators())));
+  context->FixInputPort(0, Eigen::VectorXd::Zero(plant_->get_num_actuators()));
 
   // Sets the state to a non-zero value.
   VectorXd desired_state(kNumStates);

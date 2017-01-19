@@ -86,13 +86,10 @@ class ContactResultTest : public ::testing::Test {
     plant_ = make_unique<RigidBodyPlant<double>>(move(unique_tree));
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
-    context_->FixInputPort(0, make_unique<BasicVector<double>>(0));
     plant_->CalcOutput(*context_.get(), output_.get());
 
-    // TODO(SeanCurtis-TRI): This hard-coded value is unfortunate. However,
-    //  there is no mechanism for finding out the port id for a known port
-    //  (e.g., contact results). Update when such a mechanism exists.
-    return output_->get_data(2)->GetValue<ContactResults<double>>();
+    const int port_index = plant_->contact_results_output_port().get_index();
+    return output_->get_data(port_index)->GetValue<ContactResults<double>>();
   }
 
   // Add a sphere with default radius, placed at the given position.
