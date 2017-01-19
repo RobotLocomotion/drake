@@ -29,7 +29,7 @@ are specifically targeted to those developers, and formatting compromises have
 been made so that the information in this section is (mostly) readable from the
 source code used to generate it (for example, ASCII drawings instead of image
 files, simple Markdown tables rather than fancy-but-unreadable html ones).
-However, much of this can be useful to users of the Drake API also so
+However, much of this can be useful to users of the Drake API also so it
 is included in the external documentation.
 
 @warning Drake is under development and these concepts have not yet been
@@ -59,8 +59,9 @@ Where possible, we refer to published literature to supplement our code
 documentation. That literature can provide clear, concise, and unambiguous
 documentation of the equations and algorithms we are using, but employs typeset
 mathematics to do so. We need to translate that mathematics into code, where
-there is much less typographical flexibility, but would like to be able to
-verify by direct comparison that we have implemented the mathematics correctly.
+there is much less typographical flexibility. The Drake notation is designed to
+facilitate comparison between the typeset and coded math in order to verify
+correct implementation.
 
 In addition, we need developers to provide good local documentation for our
 mathematical algorithms in the form of
@@ -74,10 +75,10 @@ source code readability and writability. And difficult-to-write documentation
 often doesn't get written at all.
 
 Perhaps not surprisingly, some notational compromises are necessary to achieve
-these goals! In typeset equations in our publications and comments we
-attempt to use a minimum of typographical flourishes that would be difficult
-to capture in code, such as script symbols or putting arrows over
-vectors. Since almost all interesting quantities in multibody dynamics are
+these goals! When we do choose to use typeset mathematical notation, we avoid
+typical typographical flourishes that would impede translation from math
+notation to code. For example, we avoid script typefaces and putting arrows over
+vectors. Also, since almost all interesting quantities in multibody dynamics are
 vectors or matrices, we do not follow the common convention of using bold for
 those quantities since (a) almost everything would be bold adding little
 clarity, and (b) we can't do that in source code or comments. We do use a
@@ -322,11 +323,11 @@ a convenient spatial quantity.
 
 <h3>Location</h3>
 
-The location of a point P in a frame A is given by a position vector
-@f$^Ap^P@f$, measured from A's origin Ao. When used for computation, we assume
-this vector is expressed in A's basis. When useful for clarify, the basis
-can be shown explicitly as @f$[^{A_O}p^P]_A@f$. In monogram notation,
-we write these symbols as `p_AP` and `p_AoP_A` respectively. When used in a
+The location of a point S in a frame A is given by a position vector
+@f$^Ap^S@f$, measured from A's origin Ao. When used for computation, we assume
+this vector is expressed in A's basis. When useful for clarity, the basis
+can be shown explicitly as @f$[^{A_O}p^S]_A@f$. In monogram notation,
+we write these symbols as `p_AS` and `p_AoS_A`, respectively. When used in a
 pose, we are
 interested in the location of frame B's origin Bo in A, @f$^Ap^{B_O}@f$
 (`p_ABo`), or more explicitly @f$[^{A_O}p^{B_O}]_A@f$ (`p_AoBo_A`).
@@ -368,7 +369,7 @@ frame G via <pre>
 Because a rotation is orthogonal, its transpose is its inverse. Hence
 `R_FG = (R_GF)⁻¹ = (R_GF)ᵀ`. (In %Eigen that is `R_GF.transpose()`). This
 transposed matrix can be used to re-express r_G in terms of Fx, Fy, Fz as <pre>
-     r_F = R_FG * r_G  or  r_F = R_GF.transpose() * v_G
+     r_F = R_FG * r_G  or  r_F = R_GF.transpose() * r_G
 </pre>
 In either direction, correct behavior can be obtained by using the
 recommended notation and then matching up the frame labels pairwise left
@@ -402,9 +403,10 @@ structured as follows: <pre>
 There is a rotation matrix in the upper left 3×3 block (see above), and a
 position vector in the first 3×1 elements of the rightmost column. Then the
 bottom row is `[0 0 0 1]`. The rightmost column can also be viewed as the
-homogenous form of the position vector, `[x y z 1]ᵀ`.
+homogenous form of the position vector, `[x y z 1]ᵀ`. See %Eigen's documentation
+for Eigen::Transform for a detailed discussion.
 
-A transform may be applied to position vectors to shift the measured-from
+A transform may be applied to position vectors to translate the measured-from
 point to a different frame origin, and to re-express the vector in that frame's
 basis. For example, if we know the location of a point P
 measured in and expressed in frame A, we write that `p_AP` (or `p_AoP_A`) to
@@ -415,12 +417,12 @@ frame B, we can write: <pre>
 </pre> The inverse of a transform reverses the superscripts so <pre>
     X_FG = (X_GF)⁻¹
 </pre> The inverse has a particularly simple form: <pre>
-                     --------- ----
-                    |         |    |
-  X_FG = (X_GF)⁻¹ = |  R_FG   |p_FG|
-                    |         |    |
-                    | 0  0  0 | 1  |
-                     --------- ----
+          --------- ----
+         |         |    |
+  X_FG = |  R_FG   |p_FG| = (X_GF)⁻¹
+         |         |    |
+         | 0  0  0 | 1  |
+          --------- ----
 </pre>
 where `R_FG = (R_GF)⁻¹ = (R_GF)ᵀ` and `p_FG = R_FG * −p_GF`. Transforms are
 easily composed, with correctness assured by pairwise matching of frame
