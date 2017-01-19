@@ -24,8 +24,8 @@ class QPControllerSystem : public systems::LeafSystem<double> {
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 
-  std::unique_ptr<systems::SystemOutput<double>> AllocateOutput(
-      const systems::Context<double>& context) const override;
+  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
+      const systems::OutputPortDescriptor<double>& descriptor) const override;
 
   /**
    * @return Port for the input: HumanoidStatus.
@@ -48,7 +48,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
    */
   inline const systems::OutputPortDescriptor<double>&
   get_output_port_qp_output() const {
-    return get_output_port(output_port_index_qp_input_);
+    return get_output_port(output_port_index_qp_output_);
   }
 
  private:
@@ -63,7 +63,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
 
   int input_port_index_humanoid_status_;
   int input_port_index_qp_input_;
-  int output_port_index_qp_input_;
+  int output_port_index_qp_output_;
 };
 
 }  // namespace qp_inverse_dynamics

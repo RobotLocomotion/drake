@@ -154,13 +154,10 @@ std::unique_ptr<systems::AbstractState> PlanEvalSystem::AllocateAbstractState()
   return std::make_unique<systems::AbstractState>(std::move(abstract_vals));
 }
 
-std::unique_ptr<systems::SystemOutput<double>> PlanEvalSystem::AllocateOutput(
-    const systems::Context<double>& context) const {
-  std::unique_ptr<systems::LeafSystemOutput<double>> output(
-      new systems::LeafSystemOutput<double>);
-  output->add_port(std::unique_ptr<systems::AbstractValue>(
-      new systems::Value<QpInput>(QpInput(GetDofNames(robot_)))));
-  return std::move(output);
+std::unique_ptr<systems::AbstractValue> PlanEvalSystem::AllocateOutputAbstract(
+    const systems::OutputPortDescriptor<double>& descriptor) const {
+  DRAKE_DEMAND(descriptor.get_index() == output_port_index_qp_input_);
+  return systems::AbstractValue::Make<QpInput>(QpInput(GetDofNames(robot_)));
 }
 
 void PlanEvalSystem::SetDesired(const VectorX<double>& q_d,

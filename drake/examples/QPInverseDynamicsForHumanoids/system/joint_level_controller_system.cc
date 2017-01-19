@@ -92,16 +92,13 @@ void JointLevelControllerSystem::DoCalcOutput(
   msg.desired_controller_period_ms = 0;
 }
 
-std::unique_ptr<systems::SystemOutput<double>>
-JointLevelControllerSystem::AllocateOutput(
-    const systems::Context<double>& context) const {
-  std::unique_ptr<systems::LeafSystemOutput<double>> output(
-      new systems::LeafSystemOutput<double>);
+std::unique_ptr<systems::AbstractValue>
+JointLevelControllerSystem::AllocateOutputAbstract(
+    const systems::OutputPortDescriptor<double>& descriptor) const {
+  DRAKE_DEMAND(out_port_index_atlas_cmd_ == descriptor.get_index());
 
-  output->add_port(std::unique_ptr<systems::AbstractValue>(
-      new systems::Value<bot_core::atlas_command_t>(
-          bot_core::atlas_command_t())));
-  return std::move(output);
+  return systems::AbstractValue::Make<bot_core::atlas_command_t>(
+      bot_core::atlas_command_t());
 }
 
 }  // namespace qp_inverse_dynamics

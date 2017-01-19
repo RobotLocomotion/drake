@@ -16,18 +16,17 @@ namespace qp_inverse_dynamics {
  * controller.
  * The controller moves the robot's pelvis height following a sine wave while
  * holding everything else stationary. It assumes the robot is in double
- * stance, and the stationary setpoint can be set by SetDesired.
+ * stance, and the stationary setpoint can be set by SetDesired().
  *
- * Conceptually, this block is a discrete time controller. In order to capture
- * the discrete time nature, control is performed in DoCalcUnrestrictedUpdate,
- * and the result is stored in AbstractState. DoCalcOutput merely copies the
- * latest result from the AbstractState and sends it through the output port.
- * Context's time must properly maintained. The internal states of the plan
- * are also stored in the AbstractState, and can be modified in
- * DoCalcUnrestrictedUpdate.
+ * Since this block is a discrete time controller, control is performed in
+ * DoCalcUnrestrictedUpdate(), and the result is stored in AbstractState.
+ * DoCalcOutput() merely copies the latest result from the AbstractState and
+ * sends it through the output port. Context's time must properly maintained.
+ * The internal states of the plan are also stored in the AbstractState, and
+ * can be modified in DoCalcUnrestrictedUpdate().
  *
  * Input: HumanoidStatus
- * Output: lcmt_qp_input
+ * Output: QpInput
  */
 class PlanEvalSystem : public systems::LeafSystem<double> {
  public:
@@ -39,8 +38,8 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
                                 systems::State<double>* state) const override;
 
-  std::unique_ptr<systems::SystemOutput<double>> AllocateOutput(
-      const systems::Context<double>& context) const override;
+  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
+      const systems::OutputPortDescriptor<double>& descriptor) const override;
 
   std::unique_ptr<systems::AbstractState> AllocateAbstractState()
       const override;

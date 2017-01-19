@@ -75,8 +75,9 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   VectorX<double> v = VectorX<double>::Zero(robot->get_num_velocities());
   VectorX<double> q_ini = q;
 
-  robot_status.Update(0, q, v, VectorX<double>::Zero(robot->get_num_actuators()),
-                      Vector6<double>::Zero(), Vector6<double>::Zero());
+  robot_status.Update(0, q, v,
+      VectorX<double>::Zero(robot->get_num_actuators()),
+      Vector6<double>::Zero(), Vector6<double>::Zero());
 
   // Set up a tracking problem.
   // Gains
@@ -109,8 +110,9 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
 
   // Perturb initial condition.
   v[robot_status.name_to_position_index().at("torsoRoll")] += 1;
-  robot_status.Update(0, q, v, VectorX<double>::Zero(robot->get_num_actuators()),
-                      Vector6<double>::Zero(), Vector6<double>::Zero());
+  robot_status.Update(0, q, v,
+      VectorX<double>::Zero(robot->get_num_actuators()),
+      Vector6<double>::Zero(), Vector6<double>::Zero());
 
   // dt = 3e-3 is picked arbitrarily, with Gurobi, this one control call takes
   // roughly 3ms.

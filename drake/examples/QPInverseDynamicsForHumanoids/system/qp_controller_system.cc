@@ -14,7 +14,7 @@ QPControllerSystem::QPControllerSystem(const RigidBodyTree<double>& robot)
     : robot_(robot) {
   input_port_index_humanoid_status_ = DeclareAbstractInputPort().get_index();
   input_port_index_qp_input_ = DeclareAbstractInputPort().get_index();
-  output_port_index_qp_input_ = DeclareAbstractOutputPort().get_index();
+  output_port_index_qp_output_ = DeclareAbstractOutputPort().get_index();
 
   DRAKE_ASSERT(this->get_num_input_ports() == 2);
   DRAKE_ASSERT(this->get_num_output_ports() == 1);
@@ -33,7 +33,7 @@ void QPControllerSystem::DoCalcOutput(
       EvalInputValue<QpInput>(context, input_port_index_qp_input_);
 
   // Output:
-  QpOutput& qp_output = output->GetMutableData(output_port_index_qp_input_)
+  QpOutput& qp_output = output->GetMutableData(output_port_index_qp_output_)
                             ->GetMutableValue<QpOutput>();
 
   if (qp_controller_.Control(*rs, *qp_input, &qp_output) < 0) {
@@ -44,14 +44,12 @@ void QPControllerSystem::DoCalcOutput(
   }
 }
 
-std::unique_ptr<systems::SystemOutput<double>>
-QPControllerSystem::AllocateOutput(
-    const systems::Context<double>& context) const {
-  std::unique_ptr<systems::LeafSystemOutput<double>> output(
-      new systems::LeafSystemOutput<double>);
-  output->add_port(std::unique_ptr<systems::AbstractValue>(
-      new systems::Value<QpOutput>(QpOutput(GetDofNames(robot_)))));
-  return std::move(output);
+std::unique_ptr<systems::AbstractValue>
+QPControllerSystem::AllocateOutputAbstract(
+    const systems::OutputPortDescriptor<double>& descriptor) const {
+  DRAKE_DEMAND(descriptor.get_index() == output_port_index_qp_output_);
+
+  return systems::AbstractValue::Make<QpOutput>(QpOutput(GetDofNames(robot_)));
 }
 
 }  // namespace qp_inverse_dynamics

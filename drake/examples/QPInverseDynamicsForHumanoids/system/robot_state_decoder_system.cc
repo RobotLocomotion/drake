@@ -43,11 +43,10 @@ void RobotStateDecoderSystem::DoCalcOutput(
   hum_status.Update(time, pos, vel, joint_torque, l_foot_wrench, r_foot_wrench);
 }
 
-std::unique_ptr<systems::SystemOutput<double>>
-RobotStateDecoderSystem::AllocateOutput(
-    const systems::Context<double>& context) const {
-  std::unique_ptr<systems::LeafSystemOutput<double>> output(
-      new systems::LeafSystemOutput<double>);
+std::unique_ptr<systems::AbstractValue>
+RobotStateDecoderSystem::AllocateOutputAbstract(
+    const systems::OutputPortDescriptor<double>& descriptor) const {
+  DRAKE_DEMAND(descriptor.get_index() == output_port_index_humanoid_status_);
 
   std::string alias_groups_config =
       drake::GetDrakePath() + std::string(
@@ -58,9 +57,7 @@ RobotStateDecoderSystem::AllocateOutput(
   alias_groups.LoadFromYAMLFile(YAML::LoadFile(alias_groups_config));
 
   HumanoidStatus rs(robot_, alias_groups);
-  output->add_port(std::unique_ptr<systems::AbstractValue>(
-      new systems::Value<HumanoidStatus>(rs)));
-  return std::move(output);
+  return systems::AbstractValue::Make<HumanoidStatus>(rs);
 }
 
 }  // namespace qp_inverse_dynamics
