@@ -186,24 +186,24 @@ class ExpressionNeg : public UnaryExpressionCell {
   double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing addition (sum of products).
+/** Symbolic expression representing an addition which is a sum of products.
  *
- * It represents a summation of terms:
  * @f[
- *     c_0 + \sum c_i t_i
+ *     c_0 + \sum c_i * e_i
  * @f]
- *  where @f$ c_i @f$ is a constant and @f$ t_i @f$ is a symbolic expression.
  *
- * Internally this class maintains a member variable @c constant_term_ to
- * represent @f$ c_0 @f$ and another member variable @c term_to_coeff_map_ to
- * represent a mapping from a term (whose type is symbolic::Expression) to its
- * corresponding coefficient (whose type is double).
+ *  where @f$ c_i @f$ is a constant and @f$ e_i @f$ is a symbolic expression.
+ *
+ * Internally this class maintains a member variable @c constant_ to represent
+ * @f$ c_0 @f$ and another member variable @c exp_to_coeff_map_ to represent a
+ * mapping from an expression @f$ e_i @f$ to its coefficient @f$ c_i @f$ of
+ * double.
  */
 class ExpressionAdd : public ExpressionCell {
  public:
-  /** Constructs ExpressionAdd from @p constant_term and @term_to_coeff_map. */
-  ExpressionAdd(double constant_term,
-                const std::map<Expression, double>& term_to_coeff_map);
+  /** Constructs ExpressionAdd from @p constant_ and @exp_to_coeff_map. */
+  ExpressionAdd(double constant_,
+                const std::map<Expression, double>& exp_to_coeff_map);
   /** Collects variables in expression. */
   Variables GetVariables() const override;
   /** Checks structural equality. */
@@ -214,18 +214,18 @@ class ExpressionAdd : public ExpressionCell {
   double Evaluate(const Environment& env) const override;
   /** Outputs string representation of expression into output stream @p os. */
   std::ostream& Display(std::ostream& os) const override;
-  /** Returns constant term. */
-  double get_constant_term() const { return constant_term_; }
-  /** Returns map from terms to their coefficients. */
-  const std::map<Expression, double>& get_term_to_coeff_map() const {
-    return term_to_coeff_map_;
+  /** Returns the constant. */
+  double get_constant() const { return constant_; }
+  /** Returns map from an expression to its coefficient. */
+  const std::map<Expression, double>& get_exp_to_coeff_map() const {
+    return exp_to_coeff_map_;
   }
 
  private:
   std::ostream& DisplayTerm(std::ostream& os, bool print_plus, double coeff,
                             const Expression& term) const;
-  const double constant_term_{};
-  const std::map<Expression, double> term_to_coeff_map_;
+  const double constant_{};
+  const std::map<Expression, double> exp_to_coeff_map_;
 };
 
 /** Factory class to help build ExpressionAdd expressions. */
@@ -236,10 +236,10 @@ class ExpressionAddFactory {
   /** Default constructor. */
   ExpressionAddFactory() = default;
 
-  /** Constructs ExpressionAddFactory with @p constant_term and @p
-   * term_to_coeff_map. */
-  ExpressionAddFactory(double constant_term,
-                       const std::map<Expression, double>& term_to_coeff_map);
+  /** Constructs ExpressionAddFactory with @p constant and @p
+   * exp_to_coeff_map. */
+  ExpressionAddFactory(double constant,
+                       const std::map<Expression, double>& exp_to_coeff_map);
 
   /** Constructs ExpressionAddFactory from @p ptr. */
   explicit ExpressionAddFactory(std::shared_ptr<const ExpressionAdd> ptr);
@@ -261,13 +261,13 @@ class ExpressionAddFactory {
   Expression GetExpression() const;
 
  private:
-  /* Adds constant_term to this factory.
-     Adding constant constant_term into an add factory representing
+  /* Adds constant to this factory.
+     Adding constant constant into an add factory representing
 
          c0 + c1 * t1 + ... + cn * tn
 
-     results in (c0 + constant_term) + c1 * t1 + ... + cn * tn.  */
-  void AddConstant(double constant_term);
+     results in (c0 + constant) + c1 * t1 + ... + cn * tn.  */
+  void AddConstant(double constant);
   /* Adds coeff * term to this factory.
 
      Adding (coeff * term) into an add factory representing
@@ -278,33 +278,32 @@ class ExpressionAddFactory {
      it also performs simplifications to merge the coefficients of common terms.
   */
   void AddTerm(double coeff, const Expression& term);
-  /* Adds term_to_coeff_map to this factory. It calls AddConstant and AddTerm
+  /* Adds exp_to_coeff_map to this factory. It calls AddConstant and AddTerm
    * methods. */
-  void AddMap(const std::map<Expression, double> term_to_coeff_map);
+  void AddMap(const std::map<Expression, double> exp_to_coeff_map);
 
-  double constant_term_{0.0};
-  std::map<Expression, double> term_to_coeff_map_;
+  double constant_{0.0};
+  std::map<Expression, double> exp_to_coeff_map_;
 };
 
-/** Symbolic expression representing multiplication of exponentiations.
+/** Symbolic expression representing a multiplication of powers.
  *
- * It represents a product of terms:
  * @f[
  *     c_0 \cdot \prod b_i^{e_i}
  * @f]
- *  where @f$ c_i @f$ is a constant and @f$ b_i @f$ and @f$ e_i @f$ are symbolic
+ *
+ * where @f$ c_0 @f$ is a constant and @f$ b_i @f$ and @f$ e_i @f$ are symbolic
  * expressions.
  *
- * Internally this class maintains a member variable @c constant_factor_ to
- * represent @f$ c_0 @f$ and another member variable @c term_to_exp_map_ to
- * refpresent a mapping from a term (whose type is symbolic::Expression) to its
- * corresponding exponentiation (whose type is symbolic::Expression).
+ * Internally this class maintains a member variable @c constant_ representing
+ * @f$ c_0 @f$ and another member variable @c base_to_exp_map_ representing
+ * a mapping from a base, @f$ b_i @f$ to its exponentiation @f$ e_i @f$.
  */
 class ExpressionMul : public ExpressionCell {
  public:
-  /** Constructs ExpressionMul from @p constant_factor and @term_to_exp_map. */
-  ExpressionMul(double constant_factor,
-                const std::map<Expression, Expression>& term_to_exp_map);
+  /** Constructs ExpressionMul from @p constant and @p base_to_exp_map. */
+  ExpressionMul(double constant,
+                const std::map<Expression, Expression>& base_to_exp_map);
   /** Collects variables in expression. */
   Variables GetVariables() const override;
   /** Checks structural equality. */
@@ -316,18 +315,18 @@ class ExpressionMul : public ExpressionCell {
   /** Outputs string representation of expression into output stream @p os. */
   std::ostream& Display(std::ostream& os) const override;
   /** Returns constant term. */
-  double get_constant_factor() const { return constant_factor_; }
+  double get_constant() const { return constant_; }
   /** Returns map from a term to its coefficient. */
-  const std::map<Expression, Expression>& get_term_to_exp_map() const {
-    return term_to_exp_map_;
+  const std::map<Expression, Expression>& get_base_to_exp_map() const {
+    return base_to_exp_map_;
   }
 
  private:
   std::ostream& DisplayTerm(std::ostream& os, bool print_mul,
                             const Expression& base,
                             const Expression& pow) const;
-  double constant_factor_{};
-  std::map<Expression, Expression> term_to_exp_map_;
+  double constant_{};
+  std::map<Expression, Expression> base_to_exp_map_;
 };
 
 /** Factory class to help build ExpressionMul expressions. */
@@ -338,10 +337,10 @@ class ExpressionMulFactory {
   /** Default constructor. It constructs. */
   ExpressionMulFactory() = default;
 
-  /** Constructs ExpressionMulFactory with @p constant_term and @p
-   * term_to_exp_map. */
-  ExpressionMulFactory(double constant_factor,
-                       const std::map<Expression, Expression>& term_to_exp_map);
+  /** Constructs ExpressionMulFactory with @p constant and @p
+   * base_to_exp_map. */
+  ExpressionMulFactory(double constant,
+                       const std::map<Expression, Expression>& base_to_exp_map);
 
   /** Constructs ExpressionMulFactory from @p ptr. */
   explicit ExpressionMulFactory(std::shared_ptr<const ExpressionMul> ptr);
@@ -362,13 +361,13 @@ class ExpressionMulFactory {
   Expression GetExpression() const;
 
  private:
-  /* Adds constant_factor to this factory.
-     Adding constant_factor into an mul factory representing
+  /* Adds constant to this factory.
+     Adding constant into an mul factory representing
 
          c * b1 ^ e1 * ... * bn ^ en
 
-     results in (constant_factor * c) * b1 ^ e1 * ... * bn ^ en. */
-  void AddConstant(double constant_factor);
+     results in (constant * c) * b1 ^ e1 * ... * bn ^ en. */
+  void AddConstant(double constant);
   /* Adds pow(base, exponent) to this factory.
      Adding pow(base, exponent) into an mul factory representing
 
@@ -378,12 +377,12 @@ class ExpressionMulFactory {
      it also performs simplifications to merge the exponents of common bases.
   */
   void AddTerm(const Expression& base, const Expression& exponent);
-  /* Adds term_to_exp_map to this factory. It calls AddConstant and AddTerm
+  /* Adds base_to_exp_map to this factory. It calls AddConstant and AddTerm
    * methods. */
-  void AddMap(const std::map<Expression, Expression> term_to_exp_map);
+  void AddMap(const std::map<Expression, Expression> base_to_exp_map);
 
-  double constant_factor_{1.0};
-  std::map<Expression, Expression> term_to_exp_map_;
+  double constant_{1.0};
+  std::map<Expression, Expression> base_to_exp_map_;
 };
 
 /** Symbolic expression representing division. */

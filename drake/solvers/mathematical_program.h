@@ -203,8 +203,8 @@ class MathematicalProgram {
           f_(std::forward<F>(f)) {}
 
    protected:
-    void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-                Eigen::VectorXd &y) const override {
+    void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                Eigen::VectorXd& y) const override {
       y.resize(detail::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                    detail::FunctionTraits<F>::numInputs(f_));
@@ -212,8 +212,8 @@ class MathematicalProgram {
                    detail::FunctionTraits<F>::numOutputs(f_));
       detail::FunctionTraits<F>::eval(f_, x, y);
     }
-    void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
-                TaylorVecXd &y) const override {
+    void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
+                TaylorVecXd& y) const override {
       y.resize(detail::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                    detail::FunctionTraits<F>::numInputs(f_));
@@ -2369,10 +2369,10 @@ class MathematicalProgram {
     DRAKE_DEMAND(coeffs.rows() == 1);
     DRAKE_DEMAND(static_cast<size_t>(coeffs.cols()) == map_var_to_index.size());
     DRAKE_ASSERT(is_addition(e));
-    *constant_term = get_constant_term_in_addition(e);
-    const std::map<symbolic::Expression, double>& term_to_coeff_map{
-        get_terms_in_addition(e)};
-    for (const std::pair<symbolic::Expression, double>& p : term_to_coeff_map) {
+    *constant_term = get_constant_in_addition(e);
+    const std::map<symbolic::Expression, double>& exp_to_coeff_map{
+        get_exp_to_coeff_map_in_addition(e)};
+    for (const std::pair<symbolic::Expression, double>& p : exp_to_coeff_map) {
       if (is_variable(p.first)) {
         const symbolic::Variable& var{get_variable(p.first)};
         const double coeff{p.second};
