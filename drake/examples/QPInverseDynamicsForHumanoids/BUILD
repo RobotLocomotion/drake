@@ -63,7 +63,6 @@ cc_library(
     hdrs = ["qp_controller_common.h"],
     linkstatic = 1,
     deps = [
-        ":rigid_body_tree_utils",
         "//drake/common",
         "//drake/math:gradient",
         "//drake/multibody:rigid_body_tree",

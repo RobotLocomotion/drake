@@ -24,14 +24,8 @@ class QPControllerSystem : public systems::LeafSystem<double> {
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 
-  void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-                                systems::State<double>* state) const override;
-
   std::unique_ptr<systems::SystemOutput<double>> AllocateOutput(
       const systems::Context<double>& context) const override;
-
-  std::unique_ptr<systems::AbstractState> AllocateAbstractState()
-      const override;
 
   /**
    * @return Port for the input: HumanoidStatus.
@@ -59,7 +53,6 @@ class QPControllerSystem : public systems::LeafSystem<double> {
 
  private:
   const RigidBodyTree<double>& robot_;
-  const double control_dt_{2e-3};
 
   // TODO(siyuan.feng): This is a bad temporary hack to the const constraint for
   // CalcOutput. It is because qp controller needs to allocate mutable workspace

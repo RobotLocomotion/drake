@@ -84,15 +84,10 @@ void controller_loop() {
 
   systems::Context<double>* plan_eval_context =
       diagram->GetMutableSubsystemContext(context.get(), plan_eval);
-  systems::Context<double>* qp_controller_context =
-      diagram->GetMutableSubsystemContext(context.get(), qp_con);
-
   systems::State<double>* plan_eval_state =
       plan_eval_context->get_mutable_state();
-  systems::State<double>* qp_controller_state =
-      qp_controller_context->get_mutable_state();
 
-  // Set plan eval's desired to the nominal state.
+  // Sets plan eval's desired to the nominal state.
   DRAKE_DEMAND(valkyrie::kRPYValkyrieDof == robot->get_num_positions());
   VectorX<double> desired_q =
       valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDof);
@@ -108,24 +103,12 @@ void controller_loop() {
   while (true) {
     // Computes control.
     if (next_control_time <= context->get_time()) {
-      // TODO(siyuanfeng): should directly call on diagrams stuff when diagram can handle unrestriced updates.
+      // TODO(siyuanfeng): should directly the equivelant from Diagram.
+      // See issue #4566
       plan_eval->DoCalcUnrestrictedUpdate(*plan_eval_context, plan_eval_state);
-      qp_con->DoCalcUnrestrictedUpdate(*qp_controller_context, qp_controller_state);
 
-      next_control_time = plan_eval->CalcNextUpdateTime(*plan_eval_context, &update_actions);
-
-      /*
-      for (const systems::DiscreteEvent<double>& event : update_actions.events) {
-        if (event.action == systems::DiscreteEvent<double>::kUnrestrictedUpdateAction) {
-          systems::State<double>* x = context->get_mutable_state();
-          DRAKE_DEMAND(x != nullptr);
-          diagram->CalcUnrestrictedUpdate(*context, event, x);
-        }
-      }
-      update_actions.events.clear();
-      next_control_time = diagram->CalcNextUpdateTime(*context, &update_actions);
-      std::cout << next_control_time << " " << context->get_time() << std::endl;
-      */
+      next_control_time =
+          plan_eval->CalcNextUpdateTime(*plan_eval_context, &update_actions);
 
       // Sends the bot_core::atlas_command_t msg.
       diagram->Publish(*context);
