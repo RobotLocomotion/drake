@@ -58,18 +58,18 @@ void TestFullConfig(multibody::joints::FloatingBaseType type) {
   EXPECT_TRUE(alias.has_body_group("b_group3"));
   EXPECT_FALSE(alias.has_body_group("b_non_existant_group"));
 
-  EXPECT_EQ(alias.get_position_group("j_group1").size(), 0);
-  EXPECT_EQ(alias.get_velocity_group("j_group1").size(), 0);
+  EXPECT_EQ(alias.get_position_group("j_group1").size(), 0u);
+  EXPECT_EQ(alias.get_velocity_group("j_group1").size(), 0u);
 
-  EXPECT_EQ(alias.get_body_group("b_group1").size(), 0);
-  EXPECT_EQ(alias.get_body_group("b_group2").size(), 2);
+  EXPECT_EQ(alias.get_body_group("b_group1").size(), 0u);
+  EXPECT_EQ(alias.get_body_group("b_group2").size(), 2u);
   EXPECT_EQ(alias.get_body_group("b_group2")[0]->get_name(), "link1");
   EXPECT_EQ(alias.get_body_group("b_group2")[1]->get_name(), "link3");
-  EXPECT_EQ(alias.get_body_group("b_group3").size(), 1);
+  EXPECT_EQ(alias.get_body_group("b_group3").size(), 1u);
   EXPECT_EQ(alias.get_body_group("b_group3")[0]->get_name(), "world");
 
-  EXPECT_EQ(alias.get_joint_group("j_group1").size(), 0);
-  EXPECT_EQ(alias.get_joint_group("j_group2").size(), 2);
+  EXPECT_EQ(alias.get_joint_group("j_group1").size(), 0u);
+  EXPECT_EQ(alias.get_joint_group("j_group2").size(), 2u);
   EXPECT_EQ(alias.get_joint_group("j_group2")[0]->get_name(), "base");
   EXPECT_EQ(alias.get_joint_group("j_group2")[1]->get_name(), "joint1");
 
@@ -77,8 +77,8 @@ void TestFullConfig(multibody::joints::FloatingBaseType type) {
   const std::vector<int>& v_indices = alias.get_velocity_group("j_group2");
   switch (type) {
     case drake::multibody::joints::kQuaternion:
-      EXPECT_EQ(q_indices.size(), 8);
-      EXPECT_EQ(v_indices.size(), 7);
+      EXPECT_EQ(q_indices.size(), 8u);
+      EXPECT_EQ(v_indices.size(), 7u);
       EXPECT_EQ(robot->get_position_name(q_indices[0]), "base_x");
       EXPECT_EQ(robot->get_position_name(q_indices[1]), "base_y");
       EXPECT_EQ(robot->get_position_name(q_indices[2]), "base_z");
@@ -95,8 +95,8 @@ void TestFullConfig(multibody::joints::FloatingBaseType type) {
       EXPECT_EQ(robot->get_velocity_name(v_indices[5]), "base_vz");
       break;
     case multibody::joints::kRollPitchYaw:
-      EXPECT_EQ(q_indices.size(), 7);
-      EXPECT_EQ(v_indices.size(), 7);
+      EXPECT_EQ(q_indices.size(), 7u);
+      EXPECT_EQ(v_indices.size(), 7u);
       EXPECT_EQ(robot->get_position_name(q_indices[0]), "base_x");
       EXPECT_EQ(robot->get_position_name(q_indices[1]), "base_y");
       EXPECT_EQ(robot->get_position_name(q_indices[2]), "base_z");
@@ -112,8 +112,8 @@ void TestFullConfig(multibody::joints::FloatingBaseType type) {
       EXPECT_EQ(robot->get_velocity_name(v_indices[5]), "base_yawdot");
       break;
     case multibody::joints::kFixed:
-      EXPECT_EQ(q_indices.size(), 1);
-      EXPECT_EQ(v_indices.size(), 1);
+      EXPECT_EQ(q_indices.size(), 1u);
+      EXPECT_EQ(v_indices.size(), 1u);
       break;
   }
 
@@ -160,12 +160,12 @@ void TestNoBodyGroupsConfig(multibody::joints::FloatingBaseType type) {
   EXPECT_FALSE(alias.has_position_group("j_non_existant_group"));
   EXPECT_FALSE(alias.has_velocity_group("j_non_existant_group"));
 
-  EXPECT_EQ(alias.get_position_group("j_group1").size(), 0);
-  EXPECT_EQ(alias.get_velocity_group("j_group1").size(), 0);
-  EXPECT_EQ(alias.get_position_group("j_group2").size(), 2);
-  EXPECT_EQ(alias.get_velocity_group("j_group2").size(), 2);
-  EXPECT_EQ(alias.get_position_group("j_group3").size(), 0);
-  EXPECT_EQ(alias.get_velocity_group("j_group3").size(), 0);
+  EXPECT_EQ(alias.get_position_group("j_group1").size(), 0u);
+  EXPECT_EQ(alias.get_velocity_group("j_group1").size(), 0u);
+  EXPECT_EQ(alias.get_position_group("j_group2").size(), 2u);
+  EXPECT_EQ(alias.get_velocity_group("j_group2").size(), 2u);
+  EXPECT_EQ(alias.get_position_group("j_group3").size(), 0u);
+  EXPECT_EQ(alias.get_velocity_group("j_group3").size(), 0u);
 
   EXPECT_EQ(robot->get_position_name(
         alias.get_position_group("j_group2")[0]), "joint1");
@@ -176,8 +176,8 @@ void TestNoBodyGroupsConfig(multibody::joints::FloatingBaseType type) {
   EXPECT_EQ(robot->get_velocity_name(
         alias.get_velocity_group("j_group2")[1]), "joint2dot");
 
-  EXPECT_EQ(alias.get_joint_group("j_group1").size(), 0);
-  EXPECT_EQ(alias.get_joint_group("j_group2").size(), 2);
+  EXPECT_EQ(alias.get_joint_group("j_group1").size(), 0u);
+  EXPECT_EQ(alias.get_joint_group("j_group2").size(), 2u);
   EXPECT_EQ(alias.get_joint_group("j_group2")[0]->get_name(), "joint1");
   EXPECT_EQ(alias.get_joint_group("j_group2")[1]->get_name(), "joint2");
 }
@@ -215,11 +215,11 @@ void TestNoJointGroupsConfig(multibody::joints::FloatingBaseType type) {
   EXPECT_TRUE(alias.has_body_group("b_group3"));
   EXPECT_FALSE(alias.has_body_group("b_non_existant_group"));
 
-  EXPECT_EQ(alias.get_body_group("b_group1").size(), 0);
-  EXPECT_EQ(alias.get_body_group("b_group2").size(), 2);
+  EXPECT_EQ(alias.get_body_group("b_group1").size(), 0u);
+  EXPECT_EQ(alias.get_body_group("b_group2").size(), 2u);
   EXPECT_EQ(alias.get_body_group("b_group2")[0]->get_name(), "link3");
   EXPECT_EQ(alias.get_body_group("b_group2")[1]->get_name(), "link2");
-  EXPECT_EQ(alias.get_body_group("b_group3").size(), 1);
+  EXPECT_EQ(alias.get_body_group("b_group3").size(), 1u);
   EXPECT_EQ(alias.get_body_group("b_group3")[0]->get_name(), "link1");
 }
 
