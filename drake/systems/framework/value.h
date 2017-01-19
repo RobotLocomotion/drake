@@ -94,6 +94,11 @@ class AbstractValue {
     DownCastMutableOrThrow<T>()->set_value(value_to_set);
   }
 
+  template <typename T>
+  static std::unique_ptr<AbstractValue> Make(const T& value) {
+    return std::unique_ptr<AbstractValue>(new Value<T>(value));
+  }
+
  private:
   // Casts this to a Value<T>*.  Throws std::bad_cast if the cast fails.
   template <typename T>

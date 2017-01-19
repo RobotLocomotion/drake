@@ -126,11 +126,13 @@ class LeafSystem : public System<T> {
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
     for (int i = 0; i < this->get_num_output_ports(); ++i) {
       const OutputPortDescriptor<T>& descriptor = this->get_output_port(i);
-      // TODO(liang.fok) Generalize this method to support ports of type
-      // kAbstractValued.
-      DRAKE_DEMAND(descriptor.get_data_type() == kVectorValued);
-      output->get_mutable_ports()->emplace_back(
-          new OutputPort(AllocateOutputVector(descriptor)));
+      if (descriptor.get_data_type() == kVectorValued) {
+        output->get_mutable_ports()->emplace_back(
+            new OutputPort(AllocateOutputVector(descriptor)));
+      } else {
+        output->get_mutable_ports()->emplace_back(
+            new OutputPort(AllocateOutputAbstract(descriptor)));
+      }
     }
     return std::unique_ptr<SystemOutput<T>>(output.release());
   }
@@ -212,6 +214,16 @@ class LeafSystem : public System<T> {
   virtual std::unique_ptr<BasicVector<T>> AllocateOutputVector(
       const OutputPortDescriptor<T>& descriptor) const {
     return std::make_unique<BasicVector<T>>(descriptor.size());
+  }
+
+  /// Given a port descriptor, allocates the abstract storage.  The default
+  /// implementation in this class aborts.  Subclasses with abstract output
+  /// ports must override. The descriptor must match a port declared via
+  /// DeclareOutputPort.
+  virtual std::unique_ptr<AbstractValue> AllocateOutputAbstract(
+      const OutputPortDescriptor<T>& descriptor) const {
+    DRAKE_ABORT_MSG("A concrete leaf system with abstract output ports must "
+                    "override AllocateOutputAbstract.");
   }
 
   // =========================================================================

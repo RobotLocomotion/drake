@@ -13,6 +13,11 @@ namespace drake {
 namespace systems {
 namespace {
 
+GTEST_TEST(ValueTest, Make) {
+  auto abstract_value = AbstractValue::Make<int>(42);
+  EXPECT_EQ(42, abstract_value->GetValue<int>());
+}
+
 GTEST_TEST(ValueTest, Access) {
   Value<int> value(3);
   const AbstractValue& erased = value;
