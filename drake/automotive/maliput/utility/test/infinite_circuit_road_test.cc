@@ -220,7 +220,7 @@ TEST_F(InfiniteCircuitRoadTest, CycleLength) {
 
 
 TEST_F(InfiniteCircuitRoadTest, PathRecords) {
-  EXPECT_EQ(path_.size(), dut_->lane()->num_path_records());
+  EXPECT_EQ(static_cast<int>(path_.size()), dut_->lane()->num_path_records());
 
   double cumulative_length = 0;
   for (size_t i = 0; i < path_.size(); ++i) {
@@ -230,7 +230,7 @@ TEST_F(InfiniteCircuitRoadTest, PathRecords) {
     EXPECT_EQ((reversed_set_.count(i) > 0), rec.is_reversed);
 
     const double s = cumulative_length + (0.25 * path_[i]->length());
-    EXPECT_EQ(i, dut_->lane()->GetPathIndex(s));
+    EXPECT_EQ(static_cast<int>(i), dut_->lane()->GetPathIndex(s));
 
     cumulative_length += path_[i]->length();
   }

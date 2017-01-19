@@ -18,7 +18,7 @@ GTEST_TEST(TestBinding, constructBinding) {
   Binding<BoundingBoxConstraint> binding1(
       bb_con,
       {VectorDecisionVariable<2>(x3, x1), VectorDecisionVariable<1>(x2)});
-  EXPECT_EQ(binding1.GetNumElements(), 3);
+  EXPECT_EQ(binding1.GetNumElements(), 3u);
   VectorDecisionVariable<3> var1_expected(x3, x1, x2);
   for (int i = 0; i < 3; ++i) {
     EXPECT_EQ(binding1.variables()(i), var1_expected(i));
@@ -27,7 +27,7 @@ GTEST_TEST(TestBinding, constructBinding) {
   // Creates a binding with a single VectorDecisionVariable.
   Binding<BoundingBoxConstraint> binding2(
       bb_con, VectorDecisionVariable<3>(x3, x1, x2));
-  EXPECT_EQ(binding2.GetNumElements(), 3);
+  EXPECT_EQ(binding2.GetNumElements(), 3u);
   for (int i = 0; i < 3; ++i) {
     EXPECT_EQ(binding2.variables()(i), var1_expected(i));
   }
