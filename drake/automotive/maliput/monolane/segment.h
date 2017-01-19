@@ -6,6 +6,7 @@
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/segment.h"
 #include "drake/automotive/maliput/monolane/lane.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace maliput {
@@ -18,6 +19,8 @@ class LineLane;
 /// An api::Segment implementation.
 class Segment : public api::Segment {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Segment)
+
   /// Constructs a new Segment.
   ///
   /// The Segment is not fully initialized until one of NewLineLane()
@@ -43,7 +46,7 @@ class Segment : public api::Segment {
                       const CubicPolynomial& elevation,
                       const CubicPolynomial& superelevation);
 
-  virtual ~Segment() {}
+  ~Segment() override = default;
 
  private:
   const api::SegmentId do_id() const override { return id_; }
