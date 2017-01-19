@@ -15,10 +15,9 @@ template <typename DerivedA, typename DerivedB>
 bool is_approx_equal_abstol(const Eigen::MatrixBase<DerivedA>& m1,
                             const Eigen::MatrixBase<DerivedB>& m2,
                             double tolerance) {
-  return (
-      (m1.rows() == m2.rows()) &&
-      (m1.cols() == m2.cols()) &&
-      ((m1 - m2).template lpNorm<Eigen::Infinity>() <= tolerance));
+  return ((m1.rows() == m2.rows()) &&  // BR
+          (m1.cols() == m2.cols()) &&  // BR
+          ((m1 - m2).template lpNorm<Eigen::Infinity>() <= tolerance));
 }
 
 /// Returns true if and only if a simple greedy search reveals a permutation
@@ -59,6 +58,5 @@ bool IsApproxEqualAbsTolWithPermutedColumns(
   }
   return true;
 }
-
 
 }  // namespace drake

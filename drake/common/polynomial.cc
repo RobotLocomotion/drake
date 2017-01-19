@@ -68,12 +68,9 @@ Polynomial<CoefficientType>::Polynomial(
     typename vector<typename Polynomial<CoefficientType>::Monomial>::
         const_iterator finish) {
   is_univariate_ = true;
-  for (
-      typename vector<
-          typename Polynomial<CoefficientType>::Monomial>::const_iterator iter =
-          start;
-      iter != finish; iter++)
+  for (auto iter = start; iter != finish; iter++) {
     monomials_.push_back(*iter);
+  }
   MakeMonomialsUnique();
 }
 
@@ -134,7 +131,9 @@ Polynomial<CoefficientType>::Monomial::Factor(const Monomial& divisor) const {
   result.coefficient = coefficient / divisor.coefficient;
   for (const Term& term : terms) {
     const PowerType divisor_power = divisor.GetDegreeOf(term.var);
-    if (term.power < divisor_power) { return error; }
+    if (term.power < divisor_power) {
+      return error;
+    }
     Term new_term;
     new_term.var = term.var;
     new_term.power = term.power - divisor_power;
@@ -143,7 +142,9 @@ Polynomial<CoefficientType>::Monomial::Factor(const Monomial& divisor) const {
     }
   }
   for (const Term& divisor_term : divisor.terms) {
-    if (!GetDegreeOf(divisor_term.var)) { return error; }
+    if (!GetDegreeOf(divisor_term.var)) {
+      return error;
+    }
   }
   return result;
 }
@@ -261,8 +262,8 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::Derivative(
 
   for (typename vector<Monomial>::const_iterator iter = monomials_.begin();
        iter != monomials_.end(); iter++) {
-    if (!iter->terms.empty() && (
-            iter->terms[0].power >= static_cast<PowerType>(derivative_order))) {
+    if (!iter->terms.empty() &&
+        (iter->terms[0].power >= static_cast<PowerType>(derivative_order))) {
       Monomial m = *iter;
       for (unsigned int k = 0; k < derivative_order;
            k++) {  // take the remaining derivatives
@@ -544,8 +545,7 @@ Polynomial<CoefficientType>::VariableNameToId(const string name,
     multiplier *= kNumNameChars + 1;
   }
   if (name_part > kMaxNamePart) {
-    throw runtime_error("name " + name +
-                        " (" + std::to_string(name_part) +
+    throw runtime_error("name " + name + " (" + std::to_string(name_part) +
                         ") exceeds max allowed");
   }
   const VarType maxId = std::numeric_limits<VarType>::max() / 2 / kMaxNamePart;
@@ -561,7 +561,7 @@ string Polynomial<CoefficientType>::IdToVariableName(const VarType id) {
                                                 // doing the trig support here
 
   unsigned int m = id / 2 / kMaxNamePart;
-  unsigned int multiplier = static_cast<unsigned int>(
+  unsigned int multiplier = static_cast<unsigned int>(  // BR
       std::pow(static_cast<double>(kNumNameChars + 1),
                static_cast<int>(kNameLength) - 1));
   char name[kNameLength + 1];

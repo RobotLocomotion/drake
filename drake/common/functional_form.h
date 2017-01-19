@@ -734,11 +734,9 @@ struct NumTraits<drake::FunctionalForm> {
     MulCost = 1
   };
 
-  template<bool Vectorized>
+  template <bool Vectorized>
   struct Div {
-    enum {
-      Cost = 1
-    };
+    enum { Cost = 1 };
   };
 
   typedef drake::FunctionalForm Real;

@@ -87,7 +87,7 @@ class Polynomial {
     /// A comparison to allow std::lexicographical_compare on this class; does
     /// not reflect any sort of mathematical total order.
     bool operator<(const Monomial& other) const {
-      return ((coefficient < other.coefficient)  ||
+      return ((coefficient < other.coefficient) ||
               ((coefficient == other.coefficient) && (terms < other.terms)));
     }
 
@@ -193,12 +193,13 @@ class Polynomial {
     for (typename std::vector<Monomial>::const_iterator iter =
              monomials_.begin();
          iter != monomials_.end(); iter++) {
-      if (iter->terms.empty())
+      if (iter->terms.empty()) {
         value += iter->coefficient;
-      else
+      } else {
         value += iter->coefficient *
-                  Pow((ProductType) x,
-                      (PowerType) iter->terms[0].power);
+                 Pow(static_cast<ProductType>(x),
+                     static_cast<PowerType>(iter->terms[0].power));
+      }
     }
     return value;
   }
@@ -217,14 +218,14 @@ class Polynomial {
   typename Product<CoefficientType, T>::type EvaluateMultivariate(
       const std::map<VarType, T>& var_values) const {
     typedef typename std::remove_const<
-      typename Product<CoefficientType, T>::type>::type ProductType;
+        typename Product<CoefficientType, T>::type>::type ProductType;
     ProductType value = 0;
     for (const Monomial& monomial : monomials_) {
       ProductType monomial_value = monomial.coefficient;
       for (const Term& term : monomial.terms) {
-        monomial_value *= std::pow(
-            static_cast<ProductType>(var_values.at(term.var)),
-            term.power);
+        monomial_value *=
+            std::pow(static_cast<ProductType>(var_values.at(term.var)),  // BR
+                     term.power);
       }
       value += monomial_value;
     }
