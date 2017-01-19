@@ -237,7 +237,7 @@ option(SKIP_DRAKE_BUILD "Build external projects but not drake itself" OFF)
 # dependencies are needed because the drake project must configure only after
 # any dependencies used by MATLAB have been installed.
 # TODO: re-add TEST to drake flags when subprojects arrive
-drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
+drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake
   BINARY_DIR ${PROJECT_BINARY_DIR}/drake
   CMAKE_ARGS

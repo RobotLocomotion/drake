@@ -4,10 +4,12 @@ add_library_with_exports(LIB_NAME drakeSensors SOURCE_FILES
     depth_sensor_specification.cc
     rgbd_camera.cc
     rotary_encoders.cc)
+
 target_link_libraries(drakeSensors
     drakeRBM
     drakeSystemFramework
     ${VTK_LIBRARIES})
+target_include_directories(drakeSensors PUBLIC ${VTK_INCLUDE_DIRS})
 
 drake_install_libraries(drakeSensors)
 drake_install_headers(
