@@ -103,8 +103,8 @@ void controller_loop() {
   while (true) {
     // Computes control.
     if (next_control_time <= context->get_time()) {
-      // TODO(siyuanfeng): should directly the equivelant from Diagram.
-      // See issue #4566
+      // TODO(siyuanfeng): should directly use the equivelant from Diagram
+      // once issue #4566 is resolved.
       plan_eval->DoCalcUnrestrictedUpdate(*plan_eval_context, plan_eval_state);
 
       next_control_time =

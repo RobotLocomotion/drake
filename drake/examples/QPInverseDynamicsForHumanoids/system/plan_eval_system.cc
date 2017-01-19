@@ -2,9 +2,9 @@
 
 #include <memory>
 #include <string>
-#include <vector>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
@@ -20,11 +20,9 @@ struct SimplePlan {
   VectorSetpoint<double> joint_PDff;
   CartesianSetpoint<double> pelvis_PDff;
   CartesianSetpoint<double> torso_PDff;
+  VectorSetpoint<double> com_PDff;
 
-  Vector3<double> desired_com;
   Vector3<double> initial_com;
-  Vector3<double> Kp_com;
-  Vector3<double> Kd_com;
 };
 
 PlanEvalSystem::PlanEvalSystem(const RigidBodyTree<double>& robot)
@@ -57,7 +55,7 @@ void PlanEvalSystem::DoCalcOutput(const systems::Context<double>& context,
                                   systems::SystemOutput<double>* output) const {
   // Output:
   QpInput& qp_input = output->GetMutableData(output_port_index_qp_input_)
-                           ->GetMutableValue<QpInput>();
+                          ->GetMutableValue<QpInput>();
 
   // Gets QpInput from AbstractState.
   qp_input = context.get_abstract_state<QpInput>(1);
@@ -91,11 +89,11 @@ void PlanEvalSystem::DoCalcUnrestrictedUpdate(
 
   Vector6<double> Kp, Kd;
   paramset_.LookupDesiredCentroidalMomentumDotGains(&Kp, &Kd);
-  plan.Kp_com = Kp.tail<3>();
-  plan.Kd_com = Kd.tail<3>();
+  plan.com_PDff.mutable_Kp() = Kp.tail<3>();
+  plan.com_PDff.mutable_Kd() = Kd.tail<3>();
 
   // Moves desired com height in a sine wave.
-  plan.desired_com[2] =
+  plan.com_PDff.mutable_desired_position()[2] =
       plan.initial_com[2] + 0.1 * std::sin(robot_status->time() * 2 * M_PI);
 
   /////////////////////////////////////////////////////////////////////////////
@@ -121,15 +119,11 @@ void PlanEvalSystem::DoCalcUnrestrictedUpdate(
       paramset_.MakeDesiredCentroidalMomentumDot();
 
   // Does acceleration feedback based on the plan.
-  Vector3<double> com_err = plan.desired_com - robot_status->com();
-  Vector3<double> comd_err = -robot_status->comd();
-
   qp_input.mutable_desired_centroidal_momentum_dot()
       .mutable_values()
       .tail<3>() = robot_.getMass() *
-                   (plan.Kp_com.array() * com_err.array() +
-                    plan.Kd_com.array() * comd_err.array())
-                       .matrix();
+                   plan.com_PDff.ComputeTargetAcceleration(
+                       robot_status->com(), robot_status->comd());
 
   qp_input.mutable_desired_dof_motions().mutable_values() =
       plan.joint_PDff.ComputeTargetAcceleration(robot_status->position(),
@@ -171,13 +165,16 @@ void PlanEvalSystem::SetDesired(const VectorX<double>& q_d,
 
   KinematicsCache<double> cache = robot_.doKinematics(q_d);
 
-  plan.initial_com = plan.desired_com = robot_.centerOfMass(cache);
+  plan.initial_com = robot_.centerOfMass(cache);
   plan.pelvis_PDff.mutable_desired_pose() = robot_.relativeTransform(
       cache, 0,
       alias_groups_.get_body_group("pelvis").front()->get_body_index());
   plan.torso_PDff.mutable_desired_pose() = robot_.relativeTransform(
       cache, 0,
       alias_groups_.get_body_group("torso").front()->get_body_index());
+
+  plan.com_PDff = VectorSetpoint<double>(3);
+  plan.com_PDff.mutable_desired_position() = plan.initial_com;
 
   int dim = robot_.get_num_velocities();
   plan.joint_PDff = VectorSetpoint<double>(dim);

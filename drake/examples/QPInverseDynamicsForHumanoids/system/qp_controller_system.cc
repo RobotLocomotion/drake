@@ -16,9 +16,6 @@ QPControllerSystem::QPControllerSystem(const RigidBodyTree<double>& robot)
   input_port_index_qp_input_ = DeclareAbstractInputPort().get_index();
   output_port_index_qp_output_ = DeclareAbstractOutputPort().get_index();
 
-  DRAKE_ASSERT(this->get_num_input_ports() == 2);
-  DRAKE_ASSERT(this->get_num_output_ports() == 1);
-
   set_name("qp_controller");
 }
 

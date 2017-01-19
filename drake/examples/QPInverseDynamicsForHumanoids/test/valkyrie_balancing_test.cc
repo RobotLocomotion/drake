@@ -165,12 +165,6 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   // they should have no velocity after simulation.
   // Thus, the tolerances on feet velocities are smaller than those for the
   // generalized position and velocity.
-  std::cout << "left: " << robot_status.foot(Side::LEFT).velocity().transpose()
-            << std::endl;
-  std::cout << "right: "
-            << robot_status.foot(Side::RIGHT).velocity().transpose()
-            << std::endl;
-
   EXPECT_TRUE(robot_status.foot(Side::LEFT).velocity().norm() < 1e-6);
   EXPECT_TRUE(robot_status.foot(Side::RIGHT).velocity().norm() < 1e-6);
   EXPECT_TRUE(drake::CompareMatrices(q, q_ini, 1e-4,
