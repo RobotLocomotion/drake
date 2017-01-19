@@ -37,7 +37,7 @@ Painleve<T>::Painleve(T dt) : dt_(dt) {
   // three velocity variables.
   this->DeclareDiscreteState(6);
   const double offset = 0.0;
-  this->DeclarePeriodicUpdate(dt, offset);
+  this->DeclareDiscreteUpdatePeriodicSec(dt);
   this->DeclareOutputPort(systems::kVectorValued, 6);
 }
 
