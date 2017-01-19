@@ -1,4 +1,4 @@
-function [p, xtraj1, utraj1, prog1, xtraj2, utraj2, prog2] = runRobustWObs
+function [p, v, xtraj1, utraj1, xtraj2, utraj2] = runRobustWObs
 
 % simple planning demo which takes the quadrotor from hover at y=0m to a new hover at
 % y=10m with minimal thrust. Creates a forest set up to have the Quadrotor
@@ -13,7 +13,7 @@ p = addTree(p, [.8,.45,1.25], [.5;2.3], pi/4);
 p = addTree(p, [.75,.9,1.75], [2.2;4.5], -pi/5);
 p = addTree(p, [.85,.95,1.65], [-1.85;5.2], -pi/3.7);
 p = addTree(p, [.5,.35,1.65], [0;5.8], -pi/6);
-p = addTree(p, [.55,.65,1.5], [.25;7.5], pi/4);
+p = addTree(p, [.55,.65,1.5], [.25;7.5], 0);
 p = addTree(p, [.55,.85,1.6], [-1.35;8.5], pi/3.7);
 
 %tree_pos = [[.5;2.3], [2.2;4.5], [-1.85;5.2], [0;5.8], [.25;7.5], [-1.35;8.5]];
@@ -46,28 +46,33 @@ duration = [tf0 tf0];
 traj_init.x = PPTrajectory(foh([0,tf0],[double(x0),double(xf)]));
 traj_init.u = ConstantTrajectory(u0);
 
+%Disturbance + LQR Weights
+D = diag([.2 .2 .05].^2);
+E0 = .01^2*eye(12);
+Q = blkdiag(10*eye(6), 1*eye(6));
+R = .1*eye(4);
+Qf = Q;
+
+%Solve without trees first to use as initial guess
 options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;
-prog1 = DirtranTrajectoryOptimization(p, N, duration, options);
-
-prog1 = prog1.addStateConstraint(ConstantConstraint(double(x0)),1);
-prog1 = prog1.addInputConstraint(ConstantConstraint(u0),1);
-prog1 = prog1.addStateConstraint(ConstantConstraint(double(xf)),N);
-prog1 = prog1.addInputConstraint(ConstantConstraint(u0),N);
-%prog1 = prog1.addStateConstraint(BoundingBoxConstraint([0], [inf]), 2:(N-1), 3);
-
-prog1 = prog1.addRunningCost(@cost);
-
-prog1 = prog1.setSolverOptions('snopt','majoroptimalitytolerance',1e-3);
-prog1 = prog1.setSolverOptions('snopt','minoroptimalitytolerance',1e-4);
-prog1 = prog1.setSolverOptions('snopt','majorfeasibilitytolerance',1e-3);
-prog1 = prog1.setSolverOptions('snopt','minorfeasibilitytolerance',1e-4);
-prog1 = prog1.setSolverOptions('snopt','iterationslimit',100000);
+prog0 = DirtranTrajectoryOptimization(p,N,duration,options);
+prog0 = prog0.addStateConstraint(ConstantConstraint(double(x0)),1);
+prog0 = prog0.addInputConstraint(ConstantConstraint(u0),1);
+prog0 = prog0.addStateConstraint(ConstantConstraint(double(xf)),N);
+prog0 = prog0.addInputConstraint(ConstantConstraint(u0),N);
+%prog0 = prog0.addStateConstraint(BoundingBoxConstraint([0], [inf]), 2:(N-1), 3);
+prog0 = prog0.addRunningCost(@cost);
+prog0 = prog0.setSolverOptions('snopt','majoroptimalitytolerance',1e-3);
+prog0 = prog0.setSolverOptions('snopt','minoroptimalitytolerance',1e-4);
+prog0 = prog0.setSolverOptions('snopt','majorfeasibilitytolerance',1e-3);
+prog0 = prog0.setSolverOptions('snopt','minorfeasibilitytolerance',1e-4);
+prog0 = prog0.setSolverOptions('snopt','iterationslimit',100000);
 %prog1 = prog1.setSolverOptions('snopt','majoritterationslimit',10000);
 %prog1 = prog1.setSolverOptions('snopt','minoritterationslimit',5000);
 
-%Solve without trees first to use as initial guess
+prog0 = addPlanVisualizer(p,prog0);
 tic
-[xtraj0,utraj0] = prog1.solveTraj(tf0,traj_init);
+[xtraj0,utraj0] = prog0.solveTraj(tf0,traj_init);
 toc
 traj_init.x = xtraj0;
 traj_init.u = utraj0;
@@ -76,13 +81,13 @@ tsamp0 = linspace(xtraj0.tspan(1), xtraj0.tspan(2), N);
 xsamp0 = xtraj0.eval(tsamp0);
 usamp0 = utraj0.eval(tsamp0);
 
-figure();
-subplot(3,1,1);
-plot(tsamp0, xsamp0(1,:));
-subplot(3,1,2);
-plot(tsamp0, xsamp0(2,:));
-subplot(3,1,3);
-plot(tsamp0, xsamp0(3,:));
+% figure();
+% subplot(3,1,1);
+% plot(tsamp0, xsamp0(1,:));
+% subplot(3,1,2);
+% plot(tsamp0, xsamp0(2,:));
+% subplot(3,1,3);
+% plot(tsamp0, xsamp0(3,:));
 
 figure();
 subplot(4,1,1);
@@ -94,19 +99,33 @@ plot(tsamp0, usamp0(3,:));
 subplot(4,1,4);
 plot(tsamp0, usamp0(4,:));
 
+N1 = 121;
+options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;
+prog1 = RobustDirtranTrajectoryOptimization(p,N1,D,E0,Q,R,Qf,duration,options);
+prog1 = prog1.addStateConstraint(ConstantConstraint(double(x0)),1);
+prog1 = prog1.addInputConstraint(ConstantConstraint(u0),1);
+prog1 = prog1.addStateConstraint(ConstantConstraint(double(xf)),N1);
+prog1 = prog1.addInputConstraint(ConstantConstraint(u0),N1-1);
+%prog1 = prog1.addStateConstraint(BoundingBoxConstraint([0], [inf]), 2:(N-1), 3);
+prog1 = prog1.addRunningCost(@cost);
+prog1 = prog1.setSolverOptions('snopt','majoroptimalitytolerance',1e-3);
+prog1 = prog1.setSolverOptions('snopt','minoroptimalitytolerance',1e-3);
+prog1 = prog1.setSolverOptions('snopt','majorfeasibilitytolerance',1e-3);
+prog1 = prog1.setSolverOptions('snopt','minorfeasibilitytolerance',1e-3);
+prog1 = prog1.setSolverOptions('snopt','superbasicslimit',5000);
+prog1 = prog1.setSolverOptions('snopt','iterationslimit',100000);
+
 collision_constraint = FunctionHandleConstraint(tree_width,inf*ones(6,1),2,@treeDistance);
 collision_constraint.grad_method = 'user';
 collision_constraint.grad_level = 1;
-prog1 = prog1.addStateConstraint(collision_constraint,2:N-1,1:2);
+prog1 = prog1.addStateConstraint(collision_constraint,2:N1-1,1:2);
 
 prog1 = addPlanVisualizer(p,prog1);
 tic
 [xtraj1,utraj1,z1,F1,info1] = prog1.solveTraj(tf0,traj_init);
 toc
 
-tsamp1 = linspace(xtraj1.tspan(1), xtraj1.tspan(2), N);
-dt1 = tsamp1(2)-tsamp1(1);
-tsamp1 = tsamp1(1:end-1)+0.5*dt1;
+tsamp1 = linspace(xtraj1.tspan(1), xtraj1.tspan(2), N1);
 xsamp1 = xtraj1.eval(tsamp1);
 usamp1 = utraj1.eval(tsamp1);
 
@@ -118,15 +137,15 @@ usamp1 = utraj1.eval(tsamp1);
 % subplot(3,1,3);
 % plot(tsamp1, xsamp1(3,:));
 % 
-% figure();
-% subplot(4,1,1);
-% plot(tsamp1, usamp1(1,:));
-% subplot(4,1,2);
-% plot(tsamp1, usamp1(2,:));
-% subplot(4,1,3);
-% plot(tsamp1, usamp1(3,:));
-% subplot(4,1,4);
-% plot(tsamp1, usamp1(4,:));
+figure();
+subplot(4,1,1);
+plot(tsamp1, usamp1(1,:));
+subplot(4,1,2);
+plot(tsamp1, usamp1(2,:));
+subplot(4,1,3);
+plot(tsamp1, usamp1(3,:));
+subplot(4,1,4);
+plot(tsamp1, usamp1(4,:));
 
 v.playback(xtraj1, struct('slider',true));
 
@@ -152,31 +171,27 @@ E0 = .01^2*eye(12);
 Q = blkdiag(10*eye(6), 1*eye(6));
 R = .1*eye(4);
 Qf = Q;
+N2 = 61;
 options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;
-prog2 = RobustDirtranTrajectoryOptimization(p,N,D,E0,Q,R,Qf,duration,options);
-
+prog2 = RobustDirtranTrajectoryOptimization(p,N2,D,E0,Q,R,Qf,duration,options);
 prog2 = prog2.addRobustCost(Q,5*R,Qf);
 %prog2 = prog2.addRobustInputConstraint();
-prog2 = prog2.addRobustStateConstraint(collision_constraint,2:(N-1),1:2);
-
-prog2 = addPlanVisualizer(p,prog2);
-
+prog2 = prog2.addRobustStateConstraint(collision_constraint,2:(N2-1),1:2);
 prog2 = prog2.addStateConstraint(ConstantConstraint(double(x0)),1);
 prog2 = prog2.addInputConstraint(ConstantConstraint(u0),1);
-prog2 = prog2.addStateConstraint(ConstantConstraint(double(xf)),N);
-prog2 = prog2.addInputConstraint(ConstantConstraint(u0),N-1);
+prog2 = prog2.addStateConstraint(ConstantConstraint(double(xf)),N2);
+prog2 = prog2.addInputConstraint(ConstantConstraint(u0),N2-1);
 %prog2 = prog2.addStateConstraint(BoundingBoxConstraint([0], [inf]), 2:(N-1), 3);
-
-prog2 = prog2.addStateConstraint(collision_constraint,2:N-1,1:2);
-
+prog2 = prog2.addStateConstraint(collision_constraint,2:N2-1,1:2);
 prog2 = prog2.addRunningCost(@cost);
-
 prog2 = prog2.setSolverOptions('snopt','majoroptimalitytolerance',1e-3);
 prog2 = prog2.setSolverOptions('snopt','minoroptimalitytolerance',1e-4);
 prog2 = prog2.setSolverOptions('snopt','majorfeasibilitytolerance',1e-3);
 prog2 = prog2.setSolverOptions('snopt','minorfeasibilitytolerance',1e-4);
+prog1 = prog1.setSolverOptions('snopt','superbasicslimit',5000);
 prog2 = prog2.setSolverOptions('snopt','iterationslimit',100000);
 
+prog2 = addPlanVisualizer(p,prog2);
 tic
 [xtraj2,utraj2,z2,F2,info2] = prog2.solveTraj(tf0,traj_init);
 toc
@@ -218,55 +233,6 @@ subplot(4,1,4);
 plot(tsamp1, usamp1(4,:));
 hold on;
 plot(tsamp2, usamp2(4,:));
-
-%Closed-loop simulation
-c1 = tvlqr(p,xtraj1,utraj1,Q,R,Q);
-K1 = c1.D.eval(tsamp1);
-c2 = tvlqr(p,xtraj2,utraj2,Q,R,Q);
-K2 = c2.D.eval(tsamp2);
-
-% clsys1 = feedback(p,c1);
-% xcl1 = clsys1.simulate([utraj1.tspan(1) utraj1.tspan(2)], xtraj1.eval(0));
-% xcl1samp = xcl1.eval(0:.05:2.75);
-
-%Simulate with random wind input
-xcl1(:,1) = xsamp1(:,1);
-for k = 1:(N-1)
-    [~,xk] = ode3(@(t,x)p.dynamics_w(t,x,usamp1(:,k)+K1(:,:,k)*(xcl1(:,k)-xsamp1(:,k)),.2*randn(3,1)), [0 .05], xcl1(:,k), .05);
-    xcl1(:,k+1) = xk(:,2);
-end
-
-%Check for collisions
-for j = 1:size(xcl1,2)
-    check1(:,j) = (treeDistance(xcl1(1:6,j)) < tree_width);
-end
-v.playback(PPTrajectory(foh(tsamp1,xcl1)), struct('slider',true));
-
-% clsys2 = feedback(p,c2);
-% xcl2 = clsys2.simulate([utraj2.tspan(1) utraj2.tspan(2)], xtraj2.eval(0));
-% xcl2samp = xcl2.eval(0:.05:2.75);
-
-%Simulate with random wind input
-xcl2(:,1) = xsamp2(:,1);
-for k = 1:(N-1)
-    [~,xk] = ode3(@(t,x)p.dynamics_w(t,x,usamp2(:,k)+K2(:,:,k)*(xcl2(:,k)-xsamp2(:,k)),.2*randn(3,1)), [0 .05], xcl2(:,k), .05);
-    xcl2(:,k+1) = xk(:,2);
-end
-
-for j = 1:size(xcl2,2)
-    check2(:,j) = (treeDistance(xcl2(1:6,j)) < tree_width);
-end
-v.playback(PPTrajectory(foh(tsamp2, xcl2)) ,struct('slider',true));
-
-% %Write movie files
-% %v.playbackAVI(xcl1, 'quad1.avi');
-% %v.playbackAVI(xcl2, 'quad2.avi');
-% % setenv('PATH', [getenv('PATH') ':/usr/local/bin']);
-% % setenv('PATH', [getenv('PATH') ':/Library/TeX/texbin']);
-% % v.playbackSWF(xcl1, 'swing1.swf');
-% % v.playbackSWF(xcl2, 'swing2.swf');
-%
-
 
 end
 
