@@ -10,6 +10,8 @@ namespace monolane {
 /// in the xy-plane (the ground plane) of the world frame.
 class LineLane : public Lane {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LineLane)
+
   /// Constructs a LineLane, a lane specified by a line segment defined in the
   /// xy-plane (the ground plane) of the world frame.
   ///
@@ -34,7 +36,7 @@ class LineLane : public Lane {
         dy_(dxy.y()),
         heading_(std::atan2(dy_, dx_)) {}
 
-  virtual ~LineLane() {}
+  ~LineLane() override = default;
 
  private:
   api::LanePosition DoToLanePosition(

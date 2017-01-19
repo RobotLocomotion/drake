@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 namespace maliput {
 namespace api {
@@ -25,7 +27,9 @@ struct SegmentId {
 /// Segments are grouped by Junction.
 class Segment {
  public:
-  virtual ~Segment() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Segment)
+
+  virtual ~Segment() = default;
 
   /// Returns the persistent identifier.
   const SegmentId id() const { return do_id(); }
@@ -48,15 +52,8 @@ class Segment {
   //                         implementation.
   const Lane* lane(int index) const { return do_lane(index); }
 
-  /// @name Deleted Copy/Move Operations
-  /// Segment is neither copyable nor moveable.
-  ///@{
-  explicit Segment(const Segment&) = delete;
-  Segment& operator=(const Segment&) = delete;
-  ///@}
-
  protected:
-  Segment() {}
+  Segment() = default;
 
  private:
   /// @name NVI implementations of the public methods.

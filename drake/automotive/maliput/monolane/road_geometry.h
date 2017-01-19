@@ -18,6 +18,8 @@ namespace monolane {
 /// a sensible road network.
 class RoadGeometry : public api::RoadGeometry {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadGeometry)
+
   /// Constructs an empty RoadGeometry with the specified tolerances.
   RoadGeometry(const api::RoadGeometryId& id,
                const double linear_tolerance,
@@ -32,7 +34,7 @@ class RoadGeometry : public api::RoadGeometry {
   /// Creates and adds a new BranchPoint with the specified @p id.
   BranchPoint* NewBranchPoint(api::BranchPointId id);
 
-  virtual ~RoadGeometry() {}
+  ~RoadGeometry() override = default;
 
  private:
   const api::RoadGeometryId do_id() const override { return id_; }

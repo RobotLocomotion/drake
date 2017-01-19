@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -31,6 +32,8 @@ namespace automotive {
 template <typename T>
 class IdmPlanner : public systems::LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IdmPlanner)
+
   /// @p v_ref desired velocity of the ego car in units of m/s.
   explicit IdmPlanner(const T& v_ref);
   ~IdmPlanner() override;
@@ -50,12 +53,6 @@ class IdmPlanner : public systems::LeafSystem<T> {
 
   void SetDefaultParameters(const systems::LeafContext<T>& context,
                             systems::Parameters<T>* params) const override;
-
-  // Disable copy and assignment.
-  IdmPlanner(const IdmPlanner<T>&) = delete;
-  IdmPlanner& operator=(const IdmPlanner<T>&) = delete;
-  IdmPlanner(IdmPlanner<T>&&) = delete;
-  IdmPlanner& operator=(IdmPlanner<T>&&) = delete;
 
  private:
   void DoCalcOutput(const systems::Context<T>& context,

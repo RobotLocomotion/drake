@@ -1,9 +1,10 @@
 #pragma once
 
-#include "drake/automotive/maliput/api/lane_data.h"
-
 #include <memory>
 #include <string>
+
+#include "drake/automotive/maliput/api/lane_data.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace maliput {
@@ -31,7 +32,9 @@ struct LaneId {
 /// parameterizations (e.g., each Lane has its own reference curve).
 class Lane {
  public:
-  virtual ~Lane() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Lane)
+
+  virtual ~Lane() = default;
 
   /// Returns the persistent identifier.
   const LaneId id() const { return do_id(); }
@@ -155,15 +158,8 @@ class Lane {
     return DoGetDefaultBranch(which_end);
   }
 
-  /// @name Deleted Copy/Move Operations
-  /// Lane is neither copyable nor moveable.
-  ///@{
-  explicit Lane(const Lane&) = delete;
-  Lane& operator=(const Lane&) = delete;
-  ///@}
-
  protected:
-  Lane() {}
+  Lane() = default;
 
  private:
   /// @name NVI implementations of the public methods.
