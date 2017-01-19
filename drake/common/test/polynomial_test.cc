@@ -71,6 +71,9 @@ void testOperators() {
     Polynomial<CoefficientType> poly1_scaled = poly1 * scalar;
     Polynomial<CoefficientType> poly1_div = poly1 / scalar;
     Polynomial<CoefficientType> poly1_times_poly1 = poly1;
+    const Polynomial<CoefficientType> pow_poly1_3{pow(poly1, 3)};
+    const Polynomial<CoefficientType> pow_poly1_4{pow(poly1, 4)};
+    const Polynomial<CoefficientType> pow_poly1_10{pow(poly1, 10)};
     poly1_times_poly1 *= poly1_times_poly1;
 
     double t = uniform(generator);
@@ -94,6 +97,16 @@ void testOperators() {
     EXPECT_NEAR(poly1_times_poly1.EvaluateUnivariate(t),
                 poly1.EvaluateUnivariate(t) * poly1.EvaluateUnivariate(t),
                 1e-8);
+    EXPECT_NEAR(pow_poly1_3.EvaluateUnivariate(t),
+                pow(poly1.EvaluateUnivariate(t), 3), 1e-8);
+    EXPECT_NEAR(pow_poly1_4.EvaluateUnivariate(t),
+                pow(poly1.EvaluateUnivariate(t), 4), 1e-8);
+    EXPECT_NEAR(pow_poly1_10.EvaluateUnivariate(t),
+                pow(poly1.EvaluateUnivariate(t), 10), 1e-8);
+    EXPECT_NEAR(pow_poly1_3.EvaluateUnivariate(t) *
+                    pow_poly1_4.EvaluateUnivariate(t) *
+                    pow_poly1_3.EvaluateUnivariate(t),
+                pow_poly1_10.EvaluateUnivariate(t), 1e-8);
 
     // Check the '==' operator.
     EXPECT_TRUE(poly1 + poly2 == sum);
@@ -307,6 +320,10 @@ GTEST_TEST(PolynomialTest, MonomialFactor) {
 GTEST_TEST(PolynomialTest, MultivariateValue) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
+  const Polynomiald p{x * x + 2 * x * y + y * y + 2};
+  const Polynomiald pow_p_2{pow(p, 2)};
+  const Polynomiald pow_p_3{pow(p, 3)};
+  const Polynomiald pow_p_7{pow(p, 7)};
   const std::map<Polynomiald::VarType, double> eval_point = {
     {x.GetSimpleVariable(), 1},
     {y.GetSimpleVariable(), 2}};
@@ -314,6 +331,14 @@ GTEST_TEST(PolynomialTest, MultivariateValue) {
   EXPECT_EQ((2 * x * x + y).EvaluateMultivariate(eval_point), 4);
   EXPECT_EQ((x * x + 2 * y).EvaluateMultivariate(eval_point), 5);
   EXPECT_EQ((x * x + x * y).EvaluateMultivariate(eval_point), 3);
+  EXPECT_NEAR(pow_p_2.EvaluateMultivariate(eval_point),
+              pow(p.EvaluateMultivariate(eval_point), 2), 1e-8);
+  EXPECT_NEAR(pow_p_3.EvaluateMultivariate(eval_point),
+              pow(p.EvaluateMultivariate(eval_point), 3), 1e-8);
+  EXPECT_NEAR(pow_p_7.EvaluateMultivariate(eval_point),
+              pow(p.EvaluateMultivariate(eval_point), 7), 1e-8);
+  EXPECT_NEAR((pow_p_2 * pow_p_3 * pow_p_2).EvaluateMultivariate(eval_point),
+              pow_p_7.EvaluateMultivariate(eval_point), 1e-8);
 }
 
 GTEST_TEST(PolynomialTest, Conversion) {
