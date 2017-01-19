@@ -1,23 +1,24 @@
 #include "drake/multibody/shapes/geometry.h"
-#include <tiny_obj_loader.h>
 
 #include <algorithm>
 #include <cstdio>
 #include <fstream>
 #include <stdexcept>
 
+#include <tiny_obj_loader.h>
+
 #include "spruce.hh"
 
-using std::string;
-using std::ostream;
-using std::istringstream;
 using std::ifstream;
+using std::istringstream;
+using std::ostream;
+using std::string;
 
-using Eigen::Vector3i;
-using Eigen::Vector3d;
-using Eigen::RowVectorXd;
 using Eigen::Matrix3Xd;
 using Eigen::Matrix3Xi;
+using Eigen::RowVectorXd;
+using Eigen::Vector3d;
+using Eigen::Vector3i;
 
 namespace DrakeShapes {
 const int Geometry::NUM_BBOX_POINTS = 8;
@@ -282,7 +283,7 @@ void Mesh::LoadObjFile(PointsVector* vertices,
   bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
       obj_file_name.c_str(), path.c_str(), true);
 
-  // Use the boolean return value, and the error string to determine
+  // Use the boolean return value and the error string to determine
   // if we should proceeed.
   if (!ret || !err.empty()) {
     throw std::runtime_error("Error parsing file \""
@@ -290,7 +291,7 @@ void Mesh::LoadObjFile(PointsVector* vertices,
   }
 
   // Store the vertices.
-  for (size_t index = 0; index < attrib.vertices.size(); index += 3) {
+  for (size_t index = 0; index < attrib.vertices.size() - 3; index += 3) {
     vertices->push_back(Vector3d(attrib.vertices[index],
                                  attrib.vertices[index + 1],
                                  attrib.vertices[index + 2]));
@@ -298,32 +299,33 @@ void Mesh::LoadObjFile(PointsVector* vertices,
 
   // Iterate over the shapes.
   for (auto const& shape : shapes) {
-    unsigned int indexOffset = 0;
+    unsigned int index_offset = 0;
 
     // For each face in the shape.
     for (unsigned int face = 0;
          face < shape.mesh.num_face_vertices.size(); ++face) {
-      auto vertCount = shape.mesh.num_face_vertices[face];
+      const size_t vert_count = shape.mesh.num_face_vertices[face];
 
       // Make sure the face has three vertices.
-      if (vertCount != 3) {
+      if (vert_count != 3) {
         throw std::runtime_error(
             "In file \"" + obj_file_name + "\" "
             "Only triangular faces supported. However "
-            + std::to_string(vertCount) + " indices are provided.");
+            + std::to_string(vert_count) + " indices are provided.");
       }
 
-      Vector3i faceIndices;
+      Vector3i face_indices;
 
       // For each vertex in the face.
-      for (auto vert = 0; vert < vertCount; ++vert) {
+      for (size_t vert = 0; vert < vert_count; ++vert) {
         // Store the vertex index.
-        faceIndices[vert] = shape.mesh.indices[indexOffset + vert].vertex_index;
+        face_indices[vert] =
+          shape.mesh.indices[index_offset + vert].vertex_index;
       }
 
-      triangles->push_back(faceIndices);
+      triangles->push_back(face_indices);
 
-      indexOffset += vertCount;
+      index_offset += vert_count;
     }
   }
 }
