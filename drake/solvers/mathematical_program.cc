@@ -331,70 +331,69 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
                                 &constant_term);
       new_lb(i) = lb(i) - constant_term;
       new_ub(i) = ub(i) - constant_term;
-    } else {
-      if (is_multiplication(e_i)) {
+    } else if (is_multiplication(e_i)) {
         // i-th constraint should be lb <= c * var_i <= ub, where c is a constant.
-        double c = get_constant_factor_in_multiplication(e_i);
-        const std::map<symbolic::Expression, symbolic::Expression>& map_base_to_exponent = get_products_in_multiplication(e_i);
-        if (map_base_to_exponent.size() == 1) {
-          for (const std::pair<symbolic::Expression, symbolic::Expression>& p : map_base_to_exponent) {
-            if (!is_variable(p.first) || !is_one(p.second)) {
-              throw SymbolicError(e_i, "non-linear but called with AddLinearConstraint");
-            }
-            else {
-              const symbolic::Variable& var_i = get_variable(p.first);
-              if (v.size() == 1) {
-                // Add a bounding box constraint lb/c <= v <= ub/c
-                if (c > 0) {
-                  new_lb(i) = lb(i) / c;
-                  new_ub(i) = ub(i) / c;
-                }
-                else {
-                  new_lb(i) = ub(i) / c;
-                  new_ub(i) = lb(i) / c;
-                }
-                return Binding<BoundingBoxConstraint>(AddBoundingBoxConstraint(new_lb(i), new_ub(i), var_i), vars);
+      double c = get_constant_factor_in_multiplication(e_i);
+      const std::map<symbolic::Expression, symbolic::Expression>& map_base_to_exponent = get_products_in_multiplication(e_i);
+      if (map_base_to_exponent.size() == 1) {
+        for (const std::pair<symbolic::Expression, symbolic::Expression>& p : map_base_to_exponent) {
+          if (!is_variable(p.first) || !is_one(p.second)) {
+            throw SymbolicError(e_i, "non-linear but called with AddLinearConstraint");
+          }
+          else {
+            const symbolic::Variable& var_i = get_variable(p.first);
+            if (v.size() == 1) {
+              // Add a bounding box constraint lb/c <= v <= ub/c
+              if (c > 0) {
+                new_lb(i) = lb(i) / c;
+                new_ub(i) = ub(i) / c;
               }
               else {
-                A(i, map_var_to_index[get_variable(p.first).get_id()]) = c;
-                new_lb(i) = lb(i);
-                new_ub(i) = ub(i);
+                new_lb(i) = ub(i) / c;
+                new_ub(i) = lb(i) / c;
               }
+              return Binding<BoundingBoxConstraint>(AddBoundingBoxConstraint(new_lb(i), new_ub(i), var_i), vars);
+            }
+            else {
+              A(i, map_var_to_index[var_i.get_id()]) = c;
+              new_lb(i) = lb(i);
+              new_ub(i) = ub(i);
             }
           }
         }
-        else {
-          // There is more than one base, like x^2*y^3
-          throw SymbolicError(e_i, "non-linear but called with AddLinearConstraint");
-        }
       }
-      else if (is_variable(e_i)) {
-        // i-th constraint is lb <= var_i <= ub
-        const symbolic::Variable &var_i{get_variable(e_i)};
-        if (v.size() == 1) {
-          // If this is the only constraint, we call AddBoundingBoxConstraint.
-          return Binding<BoundingBoxConstraint>{
-              AddBoundingBoxConstraint(lb(i), ub(i), var_i), vars};
-        } else {
-          A(i, map_var_to_index[var_i.get_id()]) = 1;
-          new_lb(i) = lb(i);
-          new_ub(i) = ub(i);
-        }
-      } else if (is_constant(e_i)) {
-        const double c_i{get_constant_value(e_i)};
-        if (lb_i <= c_i && c_i <= ub_i) {
-          throw SymbolicError(e_i, lb_i, ub_i,
-                              "trivial but called with AddLinearConstraint");
-        } else {
-          throw SymbolicError(
-              e_i, lb_i, ub_i,
-              "unsatisfiable but called with AddLinearConstraint");
-        }
-      } else {
-        throw SymbolicError(e_i, lb_i, ub_i,
-                            "non-linear but called with AddLinearConstraint");
+      else {
+        // There is more than one base, like x^2*y^3
+        throw SymbolicError(e_i, "non-linear but called with AddLinearConstraint");
       }
     }
+    else if (is_variable(e_i)) {
+      // i-th constraint is lb <= var_i <= ub
+      const symbolic::Variable &var_i{get_variable(e_i)};
+      if (v.size() == 1) {
+        // If this is the only constraint, we call AddBoundingBoxConstraint.
+        return Binding<BoundingBoxConstraint>{
+            AddBoundingBoxConstraint(lb(i), ub(i), var_i), vars};
+      } else {
+        A(i, map_var_to_index[var_i.get_id()]) = 1;
+        new_lb(i) = lb(i);
+        new_ub(i) = ub(i);
+      }
+    } else if (is_constant(e_i)) {
+      const double c_i{get_constant_value(e_i)};
+      if (lb_i <= c_i && c_i <= ub_i) {
+        throw SymbolicError(e_i, lb_i, ub_i,
+                            "trivial but called with AddLinearConstraint");
+      } else {
+        throw SymbolicError(
+            e_i, lb_i, ub_i,
+            "unsatisfiable but called with AddLinearConstraint");
+      }
+    } else {
+      throw SymbolicError(e_i, lb_i, ub_i,
+                          "non-linear but called with AddLinearConstraint");
+    }
+
   }
   return Binding<LinearConstraint>{AddLinearConstraint(A, new_lb, new_ub, vars),
                                    vars};
@@ -507,9 +506,26 @@ void MathematicalProgram::DecomposeLinearExpression(const Eigen::Ref<const Vecto
     const symbolic::Expression& e_i{v(i)};
     if (is_addition(e_i)) {
       DecomposeLinearExpression(e_i, map_var_to_index, A->row(i), b->data() + i);
+    } else if (is_multiplication(e_i)){
+      double c = get_constant_factor_in_multiplication(e_i);
+      const std::map<symbolic::Expression, symbolic::Expression>& map_base_to_exponent = get_products_in_multiplication(e_i);
+      if (map_base_to_exponent.size() == 1) {
+        for (const std::pair<symbolic::Expression, symbolic::Expression>& p : map_base_to_exponent) {
+          if (!is_variable(p.first) || !is_one(p.second)) {
+            throw SymbolicError(e_i, "is non-linear");
+          } else {
+            const symbolic::Variable &var_i = get_variable(p.first);
+            (*A)(i, map_var_to_index[var_i.get_id()]) = c;
+          }
+        }
+      }
+      else {
+        // There is more than one base, like x^2*y^3
+        throw SymbolicError(e_i, "is non-linear");
+      }
     } else if (is_variable(e_i)) {
       // i-th row is var_i
-      const symbolic::Variable& var_i{get_variable(e_i)};
+      const symbolic::Variable &var_i{get_variable(e_i)};
       (*A)(i, map_var_to_index[var_i.get_id()]) = 1;
       (*b)(i) = 0;
     } else if (is_constant(e_i)) {
@@ -518,6 +534,7 @@ void MathematicalProgram::DecomposeLinearExpression(const Eigen::Ref<const Vecto
     } else {
       throw SymbolicError(e_i, "is non-linear");
     }
+
   }
 }
 
