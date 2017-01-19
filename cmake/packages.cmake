@@ -136,6 +136,7 @@ macro(drake_find_packages)
     GTEST_DONT_DEFINE_SUCCEED=1
     GTEST_DONT_DEFINE_TEST=1)
   drake_find_package(GTest MODULE REQUIRED)
+  drake_find_package(tinyobjloader CONFIG REQUIRED)
   set_property(TARGET GTest::GTest APPEND PROPERTY
     INTERFACE_COMPILE_DEFINITIONS ${GTEST_DEFINITIONS})
   drake_find_package(tinyobjloader CONFIG REQUIRED)
