@@ -24,6 +24,8 @@ class TestSystem : public LeafSystem<T> {
  public:
   TestSystem() {
     this->set_name("TestSystem");
+    this->DeclareOutputPort(kVectorValued, 17);
+    this->DeclareAbstractOutputPort();
   }
   ~TestSystem() override {}
 
@@ -64,6 +66,16 @@ class TestSystem : public LeafSystem<T> {
   std::unique_ptr<Parameters<T>> AllocateParameters() const override {
     return std::make_unique<Parameters<T>>(
         std::make_unique<BasicVector<T>>(2));
+  }
+
+  std::unique_ptr<BasicVector<T>> AllocateOutputVector(
+      const OutputPortDescriptor<T>& descriptor) const override {
+    return std::make_unique<BasicVector<T>>(17);
+  }
+
+  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
+      const OutputPortDescriptor<T>& descriptor) const override {
+    return AbstractValue::Make<int>(42);
   }
 
   void SetDefaultParameters(const LeafContext<T>& context,
@@ -274,6 +286,22 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   EXPECT_EQ(4, xc->get_generalized_position().size());
   EXPECT_EQ(3, xc->get_generalized_velocity().size());
   EXPECT_EQ(2, xc->get_misc_continuous_state().size());
+}
+
+// Tests that the vector-valued output has been allocated with the correct
+// dimensions.
+TEST_F(LeafSystemTest, DeclareVectorOutput) {
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+  auto output = system_.AllocateOutput(*context);
+  EXPECT_EQ(17, output->get_vector_data(0)->size());
+}
+
+// Tests that the abstract-valued output has been allocated with the correct
+// type.
+TEST_F(LeafSystemTest, DeclareAbstractOutput) {
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+  auto output = system_.AllocateOutput(*context);
+  EXPECT_EQ(42, UnpackIntValue(output->get_data(1)));
 }
 
 // Tests both that an unrestricted update callback is called and that
