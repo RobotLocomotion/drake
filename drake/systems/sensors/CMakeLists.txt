@@ -9,7 +9,7 @@ target_link_libraries(drakeSensors
     drakeRBM
     drakeSystemFramework
     ${VTK_LIBRARIES})
-target_include_directories(drakeSensors PUBLIC ${VTK_INCLUDE_DIRS})
+target_include_directories(drakeSensors PRIVATE ${VTK_INCLUDE_DIRS})
 
 drake_install_libraries(drakeSensors)
 drake_install_headers(
