@@ -2371,60 +2371,6 @@ class MathematicalProgram {
 
   VectorXDecisionVariable NewVariables(VarType type, int rows,
                                        const std::vector<std::string>& names);
-
-  /** Decomposes a linear combination @p e = c0 + c1 * v1 + ... cn * vn into
-   *  the followings:
-   *
-   *     constant term      : c0
-   *     coefficient vector : [c1, ..., cn]
-   *     variable vector    : [v1, ..., vn]
-   *
-   *  Then, it returns a pair (c0, [c1, ..., cn]). A map from variable ID to
-   *  int, @p map_var_to_index, is used to decide a variable's index in a linear
-   *  combination.
-   *
-   *  \pre{1. @c coeffs is a row vector of double, whose length matches with the
-   *          size of @c map_var_to_index.
-   *       2. @c e is an addition symbolic-expression.}
-   */
-  template <typename Derived>
-  void DecomposeLinearExpression(
-      const symbolic::Expression& e,
-      const std::unordered_map<size_t, int>& map_var_to_index,
-      const Eigen::MatrixBase<Derived>& coeffs, double* constant_term) {
-    static_assert(std::is_same<typename Derived::Scalar, double>::value,
-                  "coeffs must be a matrix of double.");
-    DRAKE_DEMAND(coeffs.rows() == 1);
-    DRAKE_DEMAND(static_cast<size_t>(coeffs.cols()) == map_var_to_index.size());
-    DRAKE_ASSERT(is_addition(e));
-    *constant_term = get_constant_in_addition(e);
-    const std::map<symbolic::Expression, double>& exp_to_coeff_map{
-        get_exp_to_coeff_map_in_addition(e)};
-    for (const std::pair<symbolic::Expression, double>& p : exp_to_coeff_map) {
-      if (is_variable(p.first)) {
-        const symbolic::Variable& var{get_variable(p.first)};
-        const double coeff{p.second};
-        const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
-            0, map_var_to_index.at(var.get_id())) = coeff;
-      } else {
-        std::ostringstream oss;
-        oss << "Expression " << e << " is non-linear.";
-        throw std::runtime_error(oss.str());
-      }
-    }
-  }
-
-  /**
-   * Given a vector of linear expressions v, decompose it to
-   * \f$ v = A vars + b \f$
-   * @param[in] v A vector of linear expressions
-   * @param[out] A
-   * @param[out] b
-   * @param[out] vars
-   */
-  void DecomposeLinearExpression(
-      const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
-      Eigen::MatrixXd* A, Eigen::VectorXd* b, VectorXDecisionVariable* vars);
 };
 }  // namespace solvers
 }  // namespace drake
