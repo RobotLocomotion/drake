@@ -340,25 +340,34 @@ it always holds that z = x X y (rather than -(x X y)) ensuring that this is a
 right-handed rotation matrix. This is equivalent to saying
 that the determinant of a rotation matrix is 1, not -1.
 
-Suppose we have a vector r_F expressed in terms of the right-handed, orthogonal
-basis Fx, Fy, Fz and one would like to express r instead as r_G, in terms of a
-right-handed, orthogonal basis Gx, Gy, Gz. To calculate r_G, we form a rotation
-matrix @f$^GR^F@f$ (`R_GF`) whose columns are the F basis vectors re-expressed
-in G: <pre>
-         G F   (      |      |      )
-  R_GF =  R  = ( Fx_G | Fy_G | Fz_G )
-               (      |      |      )
+The columns of a rotation matrix form a basis, and the rows form a different
+basis. The rotation matrix can then be used to re-express quantities from one
+basis to another. Suppose we have a vector r_F expressed in terms of the
+right-handed, orthogonal basis Fx, Fy, Fz and would like to express r instead
+as r_G, in terms of a right-handed, orthogonal basis Gx, Gy, Gz. To calculate
+r_G, we form a rotation matrix @f$^GR^F@f$ (`R_GF`) whose columns are the F
+basis vectors re-expressed in G: <pre>
+          ---- ---- ----
+         |    |    |    |
+  R_GF = |Fx_G|Fy_G|Fz_G|
+         |    |    |    |
+          ---- ---- ----  3×3
 where
-         [Fx⋅Gx]         [Fy⋅Gx]         [Fz⋅Gx]
-  Fx_G = [Fx⋅Gy]  Fy_G = [Fy⋅Gy]  Fz_G = [Fz⋅Gy]
-         [Fx⋅Gz]         [Fy⋅Gz]         [Fz⋅Gz]
+          -----           -----           -----
+         |Fx⋅Gx|         |Fy⋅Gx|         |Fz⋅Gx|
+  Fx_G = |Fx⋅Gy|  Fy_G = |Fy⋅Gy|  Fz_G = |Fz⋅Gy|
+         |Fx⋅Gz|         |Fy⋅Gz|         |Fz⋅Gz|
+          -----           -----           -----  3×1
 </pre>
-Now we can re-express the vector v from frame F to frame G via <pre>
+In the above, v⋅w=vᵀw is the dot product of two vectors v and w. (Looking at
+the element definitions above, you can see that the rows are the G basis
+vectors re-expressed in F.) Now we can re-express the vector r from frame F to
+frame G via <pre>
      r_G = R_GF * r_F.
 </pre>
 Because a rotation is orthogonal, its transpose is its inverse. Hence
-`R_FG = (R_GF)ᵀ`. (In %Eigen that is `R_GF.transpose()`). This transpose
-matrix can be used to re-express r_G in terms of Fx, Fy, Fz as <pre>
+`R_FG = (R_GF)⁻¹ = (R_GF)ᵀ`. (In %Eigen that is `R_GF.transpose()`). This
+transposed matrix can be used to re-express r_G in terms of Fx, Fy, Fz as <pre>
      r_F = R_FG * r_G  or  r_F = R_GF.transpose() * v_G
 </pre>
 In either direction, correct behavior can be obtained by using the
@@ -376,24 +385,28 @@ the equivalent rotation matrix `R_GF`.
 
 <h3>Transforms</h3>
 
-A transform combines location and orientation to form a pose. We use the
-quantity symbol `X` for transforms, and use the Isometry3 variant of the
-Eigen::Transform class to represent them. ("Isometry" indicates that the
-transform preserves lengths, that is, it does not scale or shear but only
-shifts and rotates.) Conceptually, a transform is a 4×4 matrix
+A transform combines position and orientation so contains a pose as defined
+above. We use the quantity symbol @f$X@f$ for transforms, so they appear as
+@f$^AX^B@f$ when typeset and `X_AB` in code. Drake uses the `Isometry3` variant
+of the Eigen::Transform class to represent transforms. ("Isometry" indicates
+that the transform preserves lengths, that is, it does not scale or shear but
+only translates and rotates.) Conceptually, a transform is a 4×4 matrix
 structured as follows: <pre>
-               (       |      )   (      |      |      |      )
-         G F   ( R_GF  | p_GF )   ( Fx_G | Fy_G | Fz_G | p_GF )
-  X_GF =  X  = (       |      ) = (      |      |      |      )
-               ( 0 0 0 |  1   )   (   0  |   0  |   0  |  1   )
+          --------- ----     ---- ---- ---- ----
+         |         |    |   |    |    |    |    |
+         |  R_GF   |p_GF|   |Fx_G|Fy_G|Fz_G|p_GF|
+  X_GF = |         |    | = |    |    |    |    |
+         | 0  0  0 | 1  |   |  0 |  0 |  0 | 1  |
+          --------- ----     ---- ---- ---- ----  4×4
 </pre>
 There is a rotation matrix in the upper left 3×3 block (see above), and a
 position vector in the first 3×1 elements of the rightmost column. Then the
 bottom row is `[0 0 0 1]`. The rightmost column can also be viewed as the
 homogenous form of the position vector, `[x y z 1]ᵀ`.
 
-A transform may be applied to location vectors to shift the origin and
-re-express the vector. For example, if we know the location of a point P
+A transform may be applied to position vectors to shift the measured-from
+point to a different frame origin, and to re-express the vector in that frame's
+basis. For example, if we know the location of a point P
 measured in and expressed in frame A, we write that `p_AP` (or `p_AoP_A`) to
 mean the vector from A's origin Ao to the point P, expressed in A. If we want
 to know the location of that same point P, but measured in and expressed in
@@ -401,13 +414,17 @@ frame B, we can write: <pre>
     p_BP = X_BA * p_AP.
 </pre> The inverse of a transform reverses the superscripts so <pre>
     X_FG = (X_GF)⁻¹
-</pre> Also, the inverse has a particularly simple form: <pre>
-                    (      |            )
-                    ( R_FG | -R_FG*p_GF )
-  X_FG = (X_GF)⁻¹ = (      |            )
-                    ( 0 0 0       1     )
-</pre> where `R_FG = (R_GF)⁻¹ = (R_GF)ᵀ`. Transforms are easily composed, with
-correctness assured by pairwise matching of frame symbols: <pre>
+</pre> The inverse has a particularly simple form: <pre>
+                     --------- ----
+                    |         |    |
+  X_FG = (X_GF)⁻¹ = |  R_FG   |p_FG|
+                    |         |    |
+                    | 0  0  0 | 1  |
+                     --------- ----
+</pre>
+where `R_FG = (R_GF)⁻¹ = (R_GF)ᵀ` and `p_FG = R_FG * −p_GF`. Transforms are
+easily composed, with correctness assured by pairwise matching of frame
+symbols: <pre>
     X_WC = X_WA * X_AB * X_BC.
 </pre>
 
