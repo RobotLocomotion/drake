@@ -317,17 +317,25 @@ void Mesh::LoadObjFile(PointsVector* vertices,
         indices.push_back(index);
       }
       if (indices.size() != 3) {
-        if (triangulate) {
-          // This is a very naive triangulation.  It simple creates a fan
+        if (triangulate && indices.size() > 3) {
+          // This is a very naive triangulation.  It simply creates a fan
           // around the 0th vertex through the loop of vertices in the polygon.
           // The fan won't necessarily produce triangles with the best aspect
           // ratio.  Furthermore, if the polygon is *not* convex, it is
-          // possible to create overlapping triangles.
+          // possible to create overlapping triangles. Overlapping triangles
+          // are topologically ugly, but won't change distance or collision
+          // query results.  Only queries that would track which *triangle*
+          // satisfied a query would be affected (because it would not be
+          // unique), but we have no such queries.
           //
+          // For a polygon with n vertices indexed in the range [0, n - 1] we
+          // create triangles built on those indices in the pattern:
+          //    (0, 1, 2), (0, 2, 3), (0, 3, 4), ..., (0, n-2, n-1).
           // The triangle consisting of (0, 1, 2) is handled below, so this
           // starts with (0, 2, 3).
           const int index_size = static_cast<int>(indices.size());
           for (int i = 2; i < index_size - 1; ++i) {
+            // OBJ file indices are 1-based, subtracting 1 makes them 0-based.
             triangles->push_back(
                 Vector3i(indices[0] - 1, indices[i] - 1, indices[i + 1] - 1));
           }
@@ -338,8 +346,8 @@ void Mesh::LoadObjFile(PointsVector* vertices,
           throw std::runtime_error("In file \"" + obj_file_name +
                                    "\" (line " +
                                    std::to_string(line_number) +
-                                   "). "
-                                   "Only triangular faces supported. However " +
+                                   "). Only triangular faces are supported. " +
+                                   "However " +
                                    std::to_string(indices.size()) +
                                    " indices are provided.");
         }

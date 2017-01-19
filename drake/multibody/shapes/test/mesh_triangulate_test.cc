@@ -7,32 +7,33 @@
 namespace DrakeShapes {
 namespace {
 
+const std::string kUri = "";  // No specific URI is required for these tests.
+
 // Confirms that attempts to load non-triangle meshes by default throws an
 // exception.
 GTEST_TEST(MeshShapeTests, ParseQuadMeshFail) {
-  std::string uri = "";  // unnecessary for this test.
-  std::string file_name = drake::GetDrakePath() +
+  const std::string kFileName = drake::GetDrakePath() +
       "/multibody/shapes/test/quad_cube.obj";
-  Mesh mesh(uri, file_name);
+  Mesh mesh(kUri, kFileName);
   DrakeShapes::PointsVector vertices;
   DrakeShapes::TrianglesVector triangles;
   try {
     mesh.LoadObjFile(&vertices, &triangles, false /*triangulate*/);
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
-    std::string expected_msg = "In file \"" + file_name + "\" (line 15). " +
-            "Only triangular faces supported. However 4 indices are provided.";
-    EXPECT_EQ(e.what(), expected_msg);
+    const std::string kExpectedMessage = "In file \"" + kFileName + "\" (line" +
+            " 15). Only triangular faces are supported. However 4 indices are" +
+            " provided.";
+    EXPECT_EQ(e.what(), kExpectedMessage);
   }
 }
 
 // Confirms that the quad mesh is triangulated into a viable alternative
 // triangle mesh upon request.
 GTEST_TEST(MeshShapeTests, TriangulateQuadMesh) {
-  std::string uri = "";  // unnecessary for this test.
-  std::string file_name = drake::GetDrakePath() +
+  const std::string kFileName = drake::GetDrakePath() +
       "/multibody/shapes/test/quad_cube.obj";
-  Mesh mesh(uri, file_name);
+  Mesh mesh(kUri, kFileName);
   DrakeShapes::PointsVector vertices;
   DrakeShapes::TrianglesVector triangles;
 
@@ -48,10 +49,9 @@ GTEST_TEST(MeshShapeTests, TriangulateQuadMesh) {
 
 // Confirms that triangle meshes are successfully loaded.
 GTEST_TEST(MeshShapeTests, ParseTriMesh) {
-  std::string uri = "";  // unnecessary for this test.
-  std::string file_name = drake::GetDrakePath() +
+  const std::string kFileName = drake::GetDrakePath() +
       "/multibody/shapes/test/tri_cube.obj";
-  Mesh mesh(uri, file_name);
+  Mesh mesh(kUri, kFileName);
   DrakeShapes::PointsVector vertices;
   DrakeShapes::TrianglesVector triangles;
 
