@@ -3,6 +3,7 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/solvers/moby_lcp_solver.h"
 
+#include <memory>
 #include <utility>
 
 namespace drake {
@@ -33,7 +34,7 @@ namespace painleve {
 ///         scalar angular velocity (state index 5) in units of m, radians,
 ///         m/s, and rad/s, respectively. Orientation is measured counter-
 ///         clockwise with respect to the x-axis. One abstract state variable
-///         (of type Painleve::Modes) is used to identify which dynamic mode
+///         (of type Painleve::Mode) is used to identify which dynamic mode
 ///         the system is in (e.g., ballistic, contacting at one point and
 ///         sliding, etc.) and one abstract state variable (of type int) is used
 ///         to determine which endpoint(s) of the rod contact the halfspace
@@ -54,7 +55,7 @@ class Painleve : public systems::LeafSystem<T> {
   /// Possible dynamic modes for the Painleve Paradox rod.
   enum Mode {
     /// Mode is invalid.
-    kInvalidMode,
+    kInvalid,
 
     /// Rod is currently undergoing ballistic motion.
     kBallisticMotion,
@@ -74,12 +75,15 @@ class Painleve : public systems::LeafSystem<T> {
     kStickingTwoContacts
   };
 
-  /// Constructor for the Painleve' Paradox system using piecewise DAE based
-  /// approach.
+  /// Constructor for the Painleve' Paradox system using a piecewise DAE
+  /// (differential algebraic equation) based approach.
   Painleve();
 
-  /// Constructor for the Painleve' Paradox system using time stepping approach.
-  /// @param dt The integration step size.
+  /// Constructor for the Painleve' Paradox system using a time stepping
+  /// approach.
+  /// @param dt The integration step size. This step size cannot be reset
+  ///           after construction.
+  /// @throws std::logic_error if @p dt is not positive.
   explicit Painleve(T dt);
 
   /// Models impact using an inelastic impact model with friction.
@@ -180,11 +184,6 @@ class Painleve : public systems::LeafSystem<T> {
   double mu_{1000.0};       // The coefficient of friction.
   double g_{-9.81};         // The acceleration due to gravity.
   double J_{1.0};           // The moment of the inertia of the rod.
-
-  // Owned pointers to the data comprising the abstract state (for piecewise
-  // DAE system only). The only purpose of these pointers is to maintain
-  // ownership. They may be populated at construction time and are never
-  // accessed thereafter.
 };
 
 }  // namespace painleve

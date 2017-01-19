@@ -59,13 +59,14 @@ class PainleveDAETest : public ::testing::Test {
       template GetMutableValue<Painleve<double>::Mode>() =
         Painleve<double>::kSlidingSingleContact;
 
-    // Contact determination code
+    // Determine the point of contact. 
     const double theta = xc[2];
     const int k = (std::sin(theta) > 0) ? -1 : 1;
     abs_state->get_mutable_abstract_state(1).
       template GetMutableValue<int>() = k;
   }
 
+  // Sets the rod to a state that corresponds to ballistic motion.
   void SetBallisticState() {
     const double half_len = dut_->get_rod_length() / 2;
     ContinuousState<double>& xc =
@@ -104,7 +105,7 @@ class PainleveDAETest : public ::testing::Test {
       template GetMutableValue<Painleve<double>::Mode>() =
         Painleve<double>::kSlidingSingleContact;
 
-    // Contact determination code
+    // Determine the point of contact.
     const double theta = xc[2];
     const int k = (std::sin(theta) > 0) ? -1 : 1;
     abs_state->get_mutable_abstract_state(1).
@@ -259,7 +260,7 @@ TEST_F(PainleveDAETest, ConsistentDerivativesBallistic) {
   EXPECT_NEAR((*derivatives_)[4], g, tol);     // Gravitational acceleration.
   EXPECT_NEAR((*derivatives_)[5], 0.0, tol);   // Zero rotational acceleration.
 
-  // Verify the abstract state.
+  // Verify the mode is still ballistic.
   EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
             Painleve<double>::kBallisticMotion);
 }
@@ -339,7 +340,7 @@ TEST_F(PainleveDAETest, ImpactNoChange) {
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
 
-  // Verify that the state is still in a sliding configuration.
+  // Verify that the mode is still sliding.
   EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
             Painleve<double>::kSlidingSingleContact);
 }
@@ -534,7 +535,7 @@ TEST_F(PainleveDAETest, InfFrictionImpactThenNoImpact2) {
   // Verify the state no longer corresponds to an impact.
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 
-  // Verify that the state is in a sticking mode.
+  // Verify that the state is now in a sticking mode.
   EXPECT_EQ(context_->template get_abstract_state<Painleve<double>::Mode>(0),
             Painleve<double>::kStickingSingleContact);
 
@@ -610,7 +611,7 @@ TEST_F(PainleveDAETest, BallisticNoImpact) {
 }
 
 /// Verify that Painleve Paradox system can be effectively simulated using
-/// first-order time stepping approach.
+/// the first-order time stepping approach.
 TEST_F(PainleveTimeSteppingTest, TimeStepping) {
   // Set the initial state to an inconsistent configuration.
   SetSecondInitialConfig();
@@ -632,10 +633,9 @@ TEST_F(PainleveTimeSteppingTest, TimeStepping) {
   EXPECT_TRUE(std::fabs(theta) < 1e-6 || std::fabs(theta - M_PI) < 1e-6);
   EXPECT_NEAR(theta_dot, 0.0, 1e-6);
 
-  // TODO(edrumwri): Introduce more extensive tests that cross-validates the
+  // TODO(edrumwri): Introduce more extensive tests that cross-validate the
   // time-stepping based approach against the piecewise DAE-based approach.
 }
-
 
 }  // namespace
 }  // namespace painleve
