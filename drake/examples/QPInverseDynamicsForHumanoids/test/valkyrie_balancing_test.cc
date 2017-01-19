@@ -69,9 +69,9 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
       paramset.MakeDesiredCentroidalMomentumDot();
 
   // Set up initial condition.
-  DRAKE_DEMAND(valkyrie::kRPYValkyrieDoF == robot->get_num_positions());
+  DRAKE_DEMAND(valkyrie::kRPYValkyrieDof == robot->get_num_positions());
   VectorX<double> q =
-      valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDoF);
+      valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDof);
   VectorX<double> v = VectorX<double>::Zero(robot->get_num_velocities());
   VectorX<double> q_ini = q;
 

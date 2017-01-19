@@ -93,9 +93,9 @@ void controller_loop() {
       qp_controller_context->get_mutable_state();
 
   // Set plan eval's desired to the nominal state.
+  DRAKE_DEMAND(valkyrie::kRPYValkyrieDof == robot->get_num_positions());
   VectorX<double> desired_q =
-      valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDoF);
-  DRAKE_DEMAND(valkyrie::kRPYValkyrieDoF == robot->get_num_positions());
+      valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDof);
   plan_eval->SetDesired(desired_q, plan_eval_state);
 
   lcm.StartReceiveThread();

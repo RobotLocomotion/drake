@@ -5,7 +5,7 @@ namespace examples {
 namespace valkyrie {
 
 VectorX<double> RPYValkyrieFixedPointState() {
-  VectorX<double> ret(kRPYValkyrieDoF * 2);
+  VectorX<double> ret(kRPYValkyrieDof * 2);
   ret << 0, 0, 1.025, 0, 0, 0, 0, 0, 0, 0, 0.300196631343025, 1.25, 0,
       0.785398163397448, 1.571, 0, 0, 0.300196631343025, -1.25, 0,
       -0.785398163397448, 1.571, 0, 0, 0, 0, -0.49, 1.205, -0.71, 0, 0, 0,
@@ -15,7 +15,7 @@ VectorX<double> RPYValkyrieFixedPointState() {
 }
 
 VectorX<double> RPYValkyrieFixedPointTorque() {
-  VectorX<double> ff_torque(kRPYValkyrieDoF);
+  VectorX<double> ff_torque(kRPYValkyrieDof);
   ff_torque << 0, 0, 0, 0, 0, 0, 0, 54.07374714, -1.16973414,
       1.89429714, 3.778290679, -8.104844333, -1.370804286, 2.345797901,
       -0.3205054571, -0.2609708356, -0.1427544212, 3.778290679, 8.104844333,
