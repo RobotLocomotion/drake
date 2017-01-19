@@ -28,7 +28,7 @@ ZeroOrderHold<T>::ZeroOrderHold(const T& period_sec, int size) {
   // once #3109 supporting automatic sizes is resolved.
   this->DeclareInputPort(kVectorValued, size);
   this->DeclareOutputPort(kVectorValued, size);
-  this->DeclareUpdatePeriodSec(period_sec);
+  this->DeclareDiscreteUpdatePeriodSec(period_sec);
 }
 
 template <typename T>
