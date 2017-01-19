@@ -119,7 +119,6 @@ class HumanoidStatus {
     position_.resize(robot_->get_num_positions());
     velocity_.resize(robot_->get_num_velocities());
     joint_torque_.resize(robot_->actuators.size());
-    nominal_position_ = robot_->getZeroConfiguration();
 
     // Build various lookup maps.
     body_name_to_id_ = std::unordered_map<std::string, int>();
@@ -138,65 +137,6 @@ class HumanoidStatus {
     for (int i = 0; i < static_cast<int>(robot_->actuators.size()); ++i) {
       actuator_name_to_actuator_index_[robot_->actuators.at(i).name_] = i;
     }
-
-    // TODO(siyuan.feng): these are hard coded for Valkyrie, and they should
-    // be included in the model file or loaded from a separate config file.
-    nominal_position_[name_to_position_index().at("base_z")] = 1.025;
-    nominal_position_[name_to_position_index().at("rightHipPitch")] = -0.49;
-    nominal_position_[name_to_position_index().at("rightKneePitch")] = 1.205;
-    nominal_position_[name_to_position_index().at("rightAnklePitch")] = -0.71;
-
-    nominal_position_[name_to_position_index().at("leftHipPitch")] = -0.49;
-    nominal_position_[name_to_position_index().at("leftKneePitch")] = 1.205;
-    nominal_position_[name_to_position_index().at("leftAnklePitch")] = -0.71;
-
-    nominal_position_[name_to_position_index().at("rightShoulderPitch")] =
-        0.300196631343025;
-    nominal_position_[name_to_position_index().at("rightShoulderRoll")] = 1.25;
-    nominal_position_[name_to_position_index().at("rightElbowPitch")] =
-        0.785398163397448;
-    nominal_position_[name_to_position_index().at("rightForearmYaw")] = 1.571;
-
-    nominal_position_[name_to_position_index().at("leftShoulderPitch")] =
-        0.300196631343025;
-    nominal_position_[name_to_position_index().at("leftShoulderRoll")] = -1.25;
-    nominal_position_[name_to_position_index().at("leftElbowPitch")] =
-      -0.785398163397448;
-    nominal_position_[name_to_position_index().at("leftForearmYaw")] = 1.571;
-
-    leg_joint_names_.insert("rightHipYaw");
-    leg_joint_names_.insert("rightHipRoll");
-    leg_joint_names_.insert("rightHipPitch");
-    leg_joint_names_.insert("rightKneePitch");
-    leg_joint_names_.insert("rightAnklePitch");
-    leg_joint_names_.insert("rightAnkleRoll");
-    leg_joint_names_.insert("leftHipYaw");
-    leg_joint_names_.insert("leftHipRoll");
-    leg_joint_names_.insert("leftHipPitch");
-    leg_joint_names_.insert("leftKneePitch");
-    leg_joint_names_.insert("leftAnklePitch");
-    leg_joint_names_.insert("leftAnkleRoll");
-
-    back_joint_names_.insert("torsoYaw");
-    back_joint_names_.insert("torsoPitch");
-    back_joint_names_.insert("torsoRoll");
-
-    arm_joint_names_.insert("rightShoulderPitch");
-    arm_joint_names_.insert("rightShoulderRoll");
-    arm_joint_names_.insert("rightShoulderYaw");
-    arm_joint_names_.insert("rightElbowPitch");
-    arm_joint_names_.insert("rightForearmYaw");
-    arm_joint_names_.insert("rightWristRoll");
-    arm_joint_names_.insert("rightWristPitch");
-    arm_joint_names_.insert("leftShoulderPitch");
-    arm_joint_names_.insert("leftShoulderRoll");
-    arm_joint_names_.insert("leftShoulderYaw");
-    arm_joint_names_.insert("leftElbowPitch");
-    arm_joint_names_.insert("leftForearmYaw");
-    arm_joint_names_.insert("leftWristRoll");
-    arm_joint_names_.insert("leftWristPitch");
-
-    neck_joint_names_.insert("lowerNeckPitch");
   }
 
   /**
@@ -231,11 +171,6 @@ class HumanoidStatus {
 
   void Update();
 
-  /**
-   * Returns a nominal q.
-   */
-  VectorX<double> GetNominalPosition() const { return nominal_position_; }
-
   // Getters
   inline const RigidBodyTree<double>& robot() const { return *robot_; }
   inline const KinematicsCache<double>& cache() const { return cache_; }
@@ -253,18 +188,6 @@ class HumanoidStatus {
   inline const std::unordered_map<std::string, int>& actuator_name_to_id()
       const {
     return actuator_name_to_actuator_index_;
-  }
-  inline const std::set<std::string>& leg_joint_names() const {
-    return leg_joint_names_;
-  }
-  inline const std::set<std::string>& arm_joint_names() const {
-    return arm_joint_names_;
-  }
-  inline const std::set<std::string>& back_joint_names() const {
-    return back_joint_names_;
-  }
-  inline const std::set<std::string>& neck_joint_names() const {
-    return neck_joint_names_;
   }
 
   inline double time() const { return time_; }
@@ -346,10 +269,6 @@ class HumanoidStatus {
   const RigidBodyTree<double>* robot_;
   KinematicsCache<double> cache_;
 
-  // Nominal position for the robot.
-  // TODO(siyuan.feng): should read this from the model file eventually.
-  VectorX<double> nominal_position_;
-
   // Map body name to its index.
   std::unordered_map<std::string, int> body_name_to_id_;
   // Map position name to its index.
@@ -358,11 +277,6 @@ class HumanoidStatus {
   std::unordered_map<std::string, int> name_to_velocity_index_;
   // Map actuator name to its index.
   std::unordered_map<std::string, int> actuator_name_to_actuator_index_;
-
-  std::set<std::string> leg_joint_names_;
-  std::set<std::string> arm_joint_names_;
-  std::set<std::string> back_joint_names_;
-  std::set<std::string> neck_joint_names_;
 
   double time_;
 

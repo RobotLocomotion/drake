@@ -7,6 +7,7 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/robot_state_decoder_system.h"
+#include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -33,11 +34,8 @@ namespace qp_inverse_dynamics {
 // is another lcm message of type bot_core::atlas_command_t.
 void controller_loop() {
   // Loads model.
-  std::string urdf =
-      drake::GetDrakePath() +
-      std::string(
-          "/examples/Valkyrie/urdf/urdf/"
-          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
+  std::string urdf = drake::GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
+      "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       urdf, multibody::joints::kRollPitchYaw, robot.get());
@@ -88,12 +86,10 @@ void controller_loop() {
   auto output = diagram->AllocateOutput(*context);
 
   // Set plan eval's desired to the initial state.
-  HumanoidStatus rs(*robot);
-  rs.Update(0, rs.GetNominalPosition(),
-            VectorX<double>::Zero(robot->get_num_velocities()),
-            VectorX<double>::Zero(robot->actuators.size()),
-            Vector6<double>::Zero(), Vector6<double>::Zero());
-  plan_eval->SetDesired(rs);
+  VectorX<double> desired_q =
+      valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDoF);
+  DRAKE_DEMAND(valkyrie::kRPYValkyrieDoF == robot->get_num_positions());
+  plan_eval->SetDesired(desired_q);
 
   lcm.StartReceiveThread();
 
