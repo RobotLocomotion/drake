@@ -31,6 +31,10 @@ class AbstractState {
   /// Returns the number of elements of abstract state.
   int size() const;
 
+  const std::vector<AbstractValue*>& get_data() const {
+    return data_;
+  }
+
   /// Returns the element of abstract state at the given @p index, or aborts if
   /// the index is out-of-bounds.
   const AbstractValue& get_abstract_state(int index) const;
