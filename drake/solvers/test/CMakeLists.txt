@@ -22,6 +22,12 @@ target_link_libraries(system_identification_test drakeOptimization)
 drake_add_cc_test(constraint_test)
 target_link_libraries(constraint_test drakeOptimization drakeCommon)
 
+drake_add_cc_test(nonlinear_program_test)
+target_link_libraries(nonlinear_program_test drakeOptimization)
+
+drake_add_cc_test(linear_system_solver_test)
+target_link_libraries(linear_system_solver_test drakeOptimization)
+
 if(dreal_FOUND)
   drake_add_cc_test(dreal_solver_test)
   target_link_libraries(dreal_solver_test drakeOptimization)
