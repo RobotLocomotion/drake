@@ -1605,7 +1605,8 @@ class MathematicalProgram {
                      const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
-   * Add a symbolic expression @param v is in the rotated Lorentz cone, i.e.,
+   * Adds a constraint that a symbolic expression @param v is in the rotated
+   * Lorentz cone, i.e.,
    * \f[
    * v_0v_1 \ge v_2^2 + ... + v_{n-1}^2\\
    * v_0 \ge 0, v_1 \ge 0

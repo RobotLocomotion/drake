@@ -604,7 +604,7 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
     auto y = prog_intersect.NewContinuousVariables(kXdim, "y");
 
     // Add the constraint that both
-    // [1; u1] and [1; u2] are in the Lorentz cone
+    // [1; u1] and [1; u2] are in the Lorentz cone.
     VectorX<symbolic::Expression> e1(1 + u1.rows());
     VectorX<symbolic::Expression> e2(1 + u2.rows());
     e1(0) = 1;
