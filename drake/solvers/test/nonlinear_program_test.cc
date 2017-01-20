@@ -155,139 +155,16 @@ GTEST_TEST(testNonlinearProgram, QuadraticCost) {
   });
 }
 
-
-class TestProblem1Cost {
- public:
-  static size_t numInputs() { return 5; }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-    y(0) = (-50.0 * x(0) * x(0)) + (42 * x(0)) - (50.0 * x(1) * x(1)) +
-        (44 * x(1)) - (50.0 * x(2) * x(2)) + (45 * x(2)) -
-        (50.0 * x(3) * x(3)) + (47 * x(3)) - (50.0 * x(4) * x(4)) +
-        (47.5 * x(4));
+GTEST_TEST(testNonlinearProgram, testQPproblem1) {
+  // Use generic cost, non-symbolic constraint.
+  for (int cost_form = QPproblem1::CostForm::kCostBegin; cost_form <= QPproblem1::CostForm::kCostEnd; ++cost_form) {
+    for (int cnstr_form = QPproblem1::ConstraintForm::kConstraintBegin; cnstr_form <= QPproblem1::ConstraintForm::kConstraintEnd; ++cnstr_form) {
+      QPproblem1 prob(static_cast<QPproblem1::CostForm>(cost_form), static_cast<QPproblem1::ConstraintForm>(cnstr_form));
+      RunNonlinearProgram(*(prob.prog()), [&]() {
+        EXPECT_TRUE(prob.CheckSolution());
+      });
+    }
   }
-};
-
-GTEST_TEST(testNonlinearProgram, testProblem1) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<5>();
-  prog.AddCost(TestProblem1Cost());
-  VectorXd constraint(5);
-  constraint << 20, 12, 11, 7, 4;
-  prog.AddLinearConstraint(
-      constraint.transpose(),
-      Vector1d::Constant(-numeric_limits<double>::infinity()),
-      Vector1d::Constant(40));
-  prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
-                                MatrixXd::Constant(5, 1, 1));
-  VectorXd expected(5);
-  expected << 1, 1, 0, 1, 0;
-
-  // IPOPT has difficulty with this problem depending on the initial
-  // conditions, which is why the initial guess varies so little.
-  std::srand(0);
-  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(5));
-  RunNonlinearProgram(prog, [&]() {
-    const auto& x_value = prog.GetSolution(x);
-    EXPECT_TRUE(
-        CompareMatrices(x_value, expected, 1e-9, MatrixCompareType::absolute));
-  });
-}
-
-// This test is semantically equivalent with the above testProgram1 test, but it
-// uses the symbolic version of AddLinearConstraint method in
-// MathematicalProgram class.
-GTEST_TEST(testNonlinearProgram, testProblem1Symbolic) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<5>();
-  const auto constraint =
-      20 * x(0) + 12 * x(1) + 11 * x(2) + 7 * x(3) + 4 * x(4);
-  prog.AddCost(TestProblem1Cost());
-  prog.AddLinearConstraint(constraint, -numeric_limits<double>::infinity(),
-                           40.0);
-  prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
-                                MatrixXd::Constant(5, 1, 1));
-  VectorXd expected(5);
-  expected << 1, 1, 0, 1, 0;
-
-  // IPOPT has difficulty with this problem depending on the initial
-  // conditions, which is why the initial guess varies so little.
-  std::srand(0);
-  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(5));
-  RunNonlinearProgram(prog, [&]() {
-    const auto& x_value = prog.GetSolution(x);
-    EXPECT_TRUE(
-        CompareMatrices(x_value, expected, 1e-9, MatrixCompareType::absolute));
-  });
-}
-
-// This test is identical to testProblem1 above but the cost is
-// framed as a QP instead.
-GTEST_TEST(testNonlinearProgram, testProblem1AsQP) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<5>();
-
-  Eigen::MatrixXd Q = -100 * Eigen::Matrix<double, 5, 5>::Identity();
-  Eigen::VectorXd c(5);
-  c << 42, 44, 45, 47, 47.5;
-
-  prog.AddQuadraticCost(Q, c);
-
-  VectorXd constraint(5);
-  constraint << 20, 12, 11, 7, 4;
-  prog.AddLinearConstraint(constraint.transpose(),
-                           -numeric_limits<double>::infinity(), 40);
-  EXPECT_EQ(prog.linear_constraints().size(), 1u);
-  EXPECT_EQ(prog.generic_constraints().size(), 0u);
-
-  prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
-                                MatrixXd::Constant(5, 1, 1));
-  VectorXd expected(5);
-  expected << 1, 1, 0, 1, 0;
-  std::srand(0);
-  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(5));
-  RunNonlinearProgram(prog, [&]() {
-    const auto& x_value = prog.GetSolution(x);
-    EXPECT_TRUE(
-        CompareMatrices(x_value, expected, 1e-9, MatrixCompareType::absolute));
-  });
-}
-
-// This test is semantically equivalent with the above testProgram1AsQp test,
-// but it uses the symbolic version of AddLinearConstraint method in
-// MathematicalProgram class.
-GTEST_TEST(testNonlinearProgram, testProblem1AsQPSymbolic) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<5>();
-
-  Eigen::MatrixXd Q{-100 * Eigen::Matrix<double, 5, 5>::Identity()};
-  Eigen::VectorXd c(5);
-  c << 42, 44, 45, 47, 47.5;
-
-  prog.AddQuadraticCost(Q, c);
-
-  const symbolic::Expression constraint{20 * x(0) + 12 * x(1) + 11 * x(2) +
-      7 * x(3) + 4 * x(4)};
-  prog.AddLinearConstraint(constraint, -numeric_limits<double>::infinity(), 40);
-  EXPECT_EQ(prog.linear_constraints().size(), 1u);
-  EXPECT_EQ(prog.generic_constraints().size(), 0u);
-
-  prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
-                                MatrixXd::Constant(5, 1, 1));
-  VectorXd expected(5);
-  expected << 1, 1, 0, 1, 0;
-  std::srand(0);
-  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(5));
-  RunNonlinearProgram(prog, [&]() {
-    const auto& x_value = prog.GetSolution(x);
-    EXPECT_TRUE(
-        CompareMatrices(x_value, expected, 1e-9, MatrixCompareType::absolute));
-  });
 }
 }  // namespace test
 }  // namespace solvers
