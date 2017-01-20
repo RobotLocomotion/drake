@@ -50,10 +50,11 @@ Next topic: @ref multibody_notation
 /** @defgroup multibody_notation Terminology and Notation
 @ingroup multibody_concepts
 
-Drake uses consistent terminology and notation for multibody mechanics, for
-clear communication among Drake programmers and users, to reduce the likelihood
-of errors in translating mathematical algorithms into code, and to facilitate
-verification of the code's correctness.
+Drake uses consistent terminology and notation for multibody mechanics,
+- for clear communication among Drake programmers and users,
+- to reduce the likelihood of errors in translating mathematical algorithms
+  into code, and
+- to facilitate verification of the code's correctness.
 
 Where possible, we refer to published literature to supplement our code
 documentation. That literature can provide clear, concise, and unambiguous
@@ -106,17 +107,20 @@ Next topic: @ref multibody_notation_basics
 /** @defgroup multibody_notation_basics Notation Basics
 @ingroup multibody_notation
 
-We are interested in representing physical quantities like
-position, orientation, inertia, and spatial velocity. For discussion here, let
-@f$Q@f$ stand for an arbitrary physical quantity; we'll replace it with specific
-quantity symbols later. For computation with vector quantities,
-we must choose a _basis_ in which to
-express the individual numerical elements, which we call the _measure numbers_
-of a vector. (A basis is a set of independent direction vectors that spans a
+We are interested in representing physical quantities like position,
+orientation, inertia, and spatial velocity. For discussion here, let @f$Q@f$
+stand for an arbitrary physical quantity; we'll replace it with specific
+quantity symbols later. For computation with vector quantities, we must choose a
+_basis_ in which to express the individual numerical elements. A basis is a set
+of independent direction vectors that spans a
 space of interest; for example, the x,y,z axes of a coordinate frame span 3D
-space.) Any suitable basis
-may be chosen for computation; that choice does not change the
-meaning of a physical quantity but is simply an agreed-upon convention for
+space. To _express_ a vector quantity in a particular basis means to form the
+dot product of that vector with each of the basis vectors in turn, yielding
+a single scalar each time. We call those scalars the _measure numbers_ of the
+vector in that basis.
+
+Any suitable basis may be chosen for computation; that choice does not change
+the meaning of a physical quantity but is simply an agreed-upon convention for
 writing down that quantity numerically. The chosen basis is called the
 _expressed-in basis_; however, since our Cartesian bases are always
 the axes of a coordinate frame, we more commonly refer to it as the
@@ -142,10 +146,13 @@ We are more careful about the font for more complex symbols and equations.
 Physical quantities in general may be characterized by
 - a symbol for the quantity type, e.g. @f$v@f$ for velocity or @f$I@f$ for
   inertia,
-- a reference symbol (typically a body or frame),
-- a target symbol (typically a point or another frame), and
+- a reference symbol (typically a body or frame, can be a point),
+- a target symbol (can be a point, body, or frame), and
 - an index for selecting a particular quantity from a collection (rarely
   needed in practice).
+
+Quantities involving mass properties may have an additional "taken about" point;
+we'll discuss that elsewhere.
 
 (Note that a physical quantity does not have an expressed-in frame; that is
 necessary only for numerical computation.)
@@ -165,7 +172,7 @@ numerically in the world frame W, we write @f$[^Aω^B]_W@f$
 commonly used to simplify symbols when the meaning is clear. In particular
 if the reference symbol has an obvious frame, that basis is the default for
 the expressed-in frame. For example, `w_AB` can be used instead of `w_AB_A` (you
-can think of that as "no need to repeat the '`_A`' twice").
+can think of that as "no need to repeat the `_A` twice").
 Other defaults will be noted as they are introduced.
 
 Please note that this compact notation is *not* intended as a substitute for
@@ -216,7 +223,10 @@ models each defined with respect to its own Model frame. This corresponds to the
 
 To simplify notation, we allow a _frame_ to be specified in unambiguous contexts
 where only a _point_ or a _basis_ is required. In those cases, either the frame
-origin point, or the frame basis formed by its axes, are understood instead.
+origin point, or the frame basis formed by its axes, are understood instead. You
+can infer what is being used by looking at the quantity symbol. For example, for
+a position vector `p_AB` we are using points `Ao` and `Bo`, while for an angular
+velocity vector `w_AB` we are using the bases `Ax,Ay,Az` and `Bx,By,Bz`.
 
 A _body_ is fundamentally a frame, so we use the same symbol for both a body
 and its _body frame_. For example, a body B has an associated body frame B.
@@ -316,7 +326,9 @@ Next topic: @ref multibody_spatial_pose
 
 A _spatial pose_, more commonly just _pose_, provides the location and
 orientation of a frame B with respect to another frame A. A _spatial transform_,
-or just _transform_, is the verb form of a pose: it maps a point whose location
+or just _transform_, is the "verb" form of a pose. It is a linear operator that
+is easily constructed from the pose information as we will show below. A
+transform can be used to map a point whose location
 is known in frame B to that same point's location in frame A. We'll discuss
 location and orientation separately and then show how they are combined to form
 a convenient spatial quantity.
@@ -341,8 +353,10 @@ it always holds that z = x X y (rather than -(x X y)) ensuring that this is a
 right-handed rotation matrix. This is equivalent to saying
 that the determinant of a rotation matrix is 1, not -1.
 
-The columns of a rotation matrix form a basis, and the rows form a different
-basis. The rotation matrix can then be used to re-express quantities from one
+A rotation matrix can be considered the "verb" form of a basis that represents
+the orientation of a frame F in another frame G.
+The columns of a rotation matrix are simply the basis F, and the rows are the
+basis G. The rotation matrix can then be used to re-express quantities from one
 basis to another. Suppose we have a vector r_F expressed in terms of the
 right-handed, orthogonal basis Fx, Fy, Fz and would like to express r instead
 as r_G, in terms of a right-handed, orthogonal basis Gx, Gy, Gz. To calculate
@@ -416,17 +430,17 @@ frame B, we can write: <pre>
     p_BP = X_BA * p_AP.
 </pre> The inverse of a transform reverses the superscripts so <pre>
     X_FG = (X_GF)⁻¹
-</pre> The inverse has a particularly simple form: <pre>
-          --------- ----
-         |         |    |
-  X_FG = |  R_FG   |p_FG| = (X_GF)⁻¹
-         |         |    |
-         | 0  0  0 | 1  |
-          --------- ----
+</pre> The inverse has a particularly simple form. Given `X_GF` as depicted
+above, `X_FG` is <pre>
+          --------- -------------     --------- ----
+         |         |             |   |         |    |
+         | (R_GF)ᵀ |−(R_GF)ᵀ*p_GF|   |  R_FG   |p_FG|
+  X_FG = |         |             | = |         |    |
+         | 0  0  0 |      1      |   | 0  0  0 | 1  |
+          --------- --------------    --------- ----
 </pre>
-where `R_FG = (R_GF)⁻¹ = (R_GF)ᵀ` and `p_FG = R_FG * −p_GF`. Transforms are
-easily composed, with correctness assured by pairwise matching of frame
-symbols: <pre>
+Transforms are easily composed, with correctness assured by pairwise matching of
+frame symbols: <pre>
     X_WC = X_WA * X_AB * X_BC.
 </pre>
 
@@ -447,7 +461,7 @@ elements 3-5 are translational. Here are the spatial vectors we use in Drake:
       Spatial: Velocity  Acceleration   Force
                  ---         ---         ---    Eigen access
               0 |   |       |   |       |   |
-    rotation  1 | ω |       | β |       | τ |   .head<3>()
+    rotation  1 | ω |       | α |       | τ |   .head<3>()
               2 |   |       |   |       |   |
                  ---         ---         ---
               3 |   |       |   |       |   |
@@ -470,7 +484,7 @@ equivalents:
  Code | Rotational quantity      || Code | Translational quantity
 :----:|--------------------------||:----:|-----------------------
   w   | ω - angular velocity     ||  v   | linear velocity
-  b   | β - angular acceleration ||  a   | linear acceleration
+alpha | α - angular acceleration ||  a   | linear acceleration
   t   | τ - torque               ||  f   | force
 
 While the rotational component of a spatial vector applies to a rigid body as a
@@ -481,12 +495,12 @@ specified frame. Thus, unambiguous notation for spatial vectors must specify
 both a point and an expressed-in frame. Motion quantities must also state the
 reference frame with respect to which the motion is measured.
 
-Example spatial quantity      |At |Exp|     Typeset      |   Code  | Expanded
-------------------------------|---|:-:|:----------------:|:-------:|:--------:
-Body B's spatial velocity in A|Bo | A |@f$^AV^B       @f$|`V_AB`   |`V_ABo_A`
-Same, but expressed in world  |Bo | W |@f$[^AV^B]_W   @f$|`V_AB_W` |`V_ABo_W`
-B's spatial acceleration in W |Bcm| W |@f$^WA^{B_{cm}}@f$|`A_WBcm` |`A_WBcm_W`
-Spatial force applied to B    |Bcm| W |@f$[F^{Bcm}]_W @f$|`F_Bcm_W`|` `
+Example spatial quantity      |At |Exp|     Typeset        |   Code  | Expanded
+------------------------------|---|:-:|:------------------:|:-------:|:--------:
+Body B's spatial velocity in A|Bo | A |@f$^AV^B         @f$|`V_AB`   |`V_ABo_A`
+Same, but expressed in world  |Bo | W |@f$[^AV^B]_W     @f$|`V_AB_W` |`V_ABo_W`
+B's spatial acceleration in W |Bcm| W |@f$^WA^{B_{cm}}  @f$|`A_WBcm` |`A_WBcm_W`
+Spatial force applied to B    |Bcm| W |@f$[F^{B_{cm}}]_W@f$|`F_Bcm_W`|` `
 
 In the above table "At" is the point at which the translational activity occurs;
 "Exp" is the expressed-in frame in which both vectors are expressed. Note that
@@ -536,21 +550,21 @@ we can represent it more compactly. Also, inertia is most effectively
 represented as mass times a unit inertia, which permits numerically robust
 representation of shape distribution for very small or zero masses.
 
-Spatial inertia for a rigid body B is taken about a reference point P, and
+Spatial inertia for a rigid body B is taken about a point P, and
 expressed in some frame F. Often P=Bcm (B's center of mass) or P=Bo (B's
 origin), and F=B (the body frame) or F=W (the world frame). We always document
-these clearly and use the decorated symbol @f$ [^BM^P]_F @f$ = `M_BP_F` to mean
-spatial inertia of body B about point P, expressed in frame F. For example,
-`M_BBcm_W` (=@f$[^BM^{B_{cm}}]_W@f$) is the spatial inertia of body B taken
+these clearly and use the decorated symbol @f$ [M^{B/P}]_F @f$ = `M_BP_F` to
+mean spatial inertia of body B about point P, expressed in frame F. For example,
+`M_BBcm_W` (=@f$[M^{B/B_{cm}}]_W@f$) is the spatial inertia of body B taken
 about its center of mass (the "central inertia") and expressed in the world
 frame. We allow the body name and frame to be dropped if it is obvious from
 the "about" point, so `M_Bcm` (@f$M^{B_{cm}}@f$) is the central spatial
 inertia of body B, expressed in B. Inertia can be taken about any point. For
-example `M_BWo_W` (@f$[^BM^{Wo}]_W@f$) is body B's spatial inertia taken about
+example `M_BWo_W` (@f$[M^{B/Wo}]_W@f$) is body B's spatial inertia taken about
 the World frame origin, and expressed in World.
 
-Given `M_BP_F` (@f$[^BM^P]_F@f$), its top left submatrix is `I_BP_F`
-(@f$[^BI^P]_F@f$) and position vector c = `p_PBcm_F` (@f$[^Pp^{B_{cm}}]_F@f$),
+Given `M_BP_F` (@f$[M^{B/P}]_F@f$), its top left submatrix is `I_BP_F`
+(@f$[I^{B/P}]_F@f$) and position vector c = `p_PBcm_F` (@f$[^Pp^{B_{cm}}]_F@f$),
 that is, the position vector of the center of mass measured from point P and
 expressed in F. Note that if the "taken about" point is `Bcm`, then c=0.
 **/
