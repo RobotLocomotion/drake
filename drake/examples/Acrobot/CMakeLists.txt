@@ -67,7 +67,7 @@ if(lcm_FOUND)
       drakeSensors
       drakeSystemAnalysis)
   drake_add_test(NAME acrobot_run_lqr_w_estimator COMMAND acrobot_run_lqr_w_estimator -realtime_factor 0.0)
-  
+
 
 endif(lcm_FOUND)
 

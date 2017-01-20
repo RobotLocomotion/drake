@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <string>
 
 #include "drake/examples/acrobot/lcmt_acrobot_u.hpp"
 #include "drake/examples/acrobot/lcmt_acrobot_x.hpp"
