@@ -13,25 +13,25 @@
 #include "drake/examples/acrobot/lcmt_acrobot_u.hpp"
 #include "drake/examples/acrobot/lcmt_acrobot_x.hpp"
 
-#include "drake/lcm/drake_lcm.h"
-#include "drake/systems/analysis/simulator.h"
 #include "drake/examples/Acrobot/acrobot_energy_shaping_controller.h"
 #include "drake/examples/Acrobot/acrobot_lcm_msg_handler.h"
+#include "drake/lcm/drake_lcm.h"
+#include "drake/systems/analysis/simulator.h"
 
 #include "drake/common/drake_path.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/multibody/joints/floating_base_types.h"
 
-#include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
+#include "drake/systems/primitives/linear_system.h"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
 DEFINE_double(realtime_factor, 1.0,
               "Playback speed.  See documentation for "
-                  "Simulator::set_target_realtime_rate() for details.");
+              "Simulator::set_target_realtime_rate() for details.");
 
 namespace drake {
 namespace examples {
@@ -91,12 +91,11 @@ using std::this_thread::sleep_for;
 
 int DoMain() {
   // fetch acrobot parameters from AcrobotPlant
-
   auto acrobot = std::make_unique<AcrobotPlant<double>>();
   const double m1 = acrobot->getm1();
   const double m2 = acrobot->getm2();
   const double l1 = acrobot->getl1();
-  //const double l2 = acrobot->getl2();
+  // const double l2 = acrobot->getl2();
   const double lc1 = acrobot->getlc1();
   const double lc2 = acrobot->getlc2();
   const double Ic1 = acrobot->getIc1();
@@ -105,7 +104,7 @@ int DoMain() {
   const double b2 = acrobot->getb2();
   const double g = acrobot->getg();
 
-  // declare lcm messages
+  // set up lcm communication
   drake::lcm::DrakeLcm lcm;
 
   const std::string channel_x = "acrobot_xhat";
@@ -124,7 +123,7 @@ int DoMain() {
   // Set nominal state to the upright fixed point.
   AcrobotStateVector<double>* x_nominal =
       dynamic_cast<AcrobotStateVector<double>*>(
-      context0->get_mutable_continuous_state_vector());
+          context0->get_mutable_continuous_state_vector());
   DRAKE_ASSERT(x_nominal != nullptr);
   x_nominal->set_theta1(M_PI);
   x_nominal->set_theta2(0.0);
@@ -134,13 +133,13 @@ int DoMain() {
   auto linear_system = Linearize(*acrobot, *context0);
 
   Eigen::Matrix4d Q = Eigen::Matrix4d::Identity();
-  //Q(0, 0) = 10;
-  //Q(1, 1) = 10;
+  // Q(0, 0) = 10;
+  // Q(1, 1) = 10;
   Vector1d R = Vector1d::Constant(1);
 
   systems::LinearQuadraticRegulatorResult lqr_result =
-      systems::LinearQuadraticRegulator(linear_system->A(), linear_system->B()
-          , Q, R);
+      systems::LinearQuadraticRegulator(linear_system->A(), linear_system->B(),
+                                        Q, R);
   Eigen::Matrix4d S = lqr_result.S;
   Eigen::Matrix<double, 1, 4> K = lqr_result.K;
 
@@ -150,12 +149,11 @@ int DoMain() {
   auto x = std::make_unique<AcrobotStateVector<double>>();
 
   while (true) {
-    double u=0;
-    // receive x
+    double u = 0;
+
     if (handler.get_receive_channel() == channel_x) {
-      // Gets the received message.
-      const lcmt_acrobot_x received_msg =
-          handler.GetReceivedMessage();
+      // receive x
+      const lcmt_acrobot_x received_msg = handler.GetReceivedMessage();
       /*
       std::cout << "theta1 = " << received_msg.theta1
                 << " ,theta2 = " << received_msg.theta2
@@ -168,11 +166,8 @@ int DoMain() {
       const double theta2dot = received_msg.theta2Dot;
 
       // calculate u = f(x)
-      Eigen::Matrix<double,4,1> x_c(theta1,
-                                    theta2,
-                                    theta1dot,
-                                    theta2dot);
-      const Eigen::Matrix<double,4,1> x0(M_PI, 0,0,0);
+      Eigen::Matrix<double, 4, 1> x_c(theta1, theta2, theta1dot, theta2dot);
+      const Eigen::Matrix<double, 4, 1> x0(M_PI, 0, 0, 0);
 
       x->set_theta1(theta1);
       x->set_theta2(theta2);
@@ -198,7 +193,7 @@ int DoMain() {
 
       Eigen::Matrix<double, 2, 1> C;
       C << -2 * m2l1lc2 * s2 * x->theta2dot() * x->theta1dot() +
-          -m2l1lc2 * s2 * x->theta2dot() * x->theta2dot(),
+               -m2l1lc2 * s2 * x->theta2dot() * x->theta2dot(),
           m2l1lc2 * s2 * x->theta1dot() * x->theta1dot();
 
       // add in G terms
@@ -209,42 +204,53 @@ int DoMain() {
       C(0) += b1 * x->theta1dot();
       C(1) += b2 * x->theta2dot();
 
-      double PE,KE;
-      KE = 0.5*qdot.transpose()*H*qdot;
-      PE = -m1*g*lc1*c1 - m2*g*(l1*c1 + lc2*c12);
-      const double E = KE+PE;
-      const double Ed = (m1*lc1 + m2*(l1+lc2))*g;
-      const double Etilde = E-Ed;
-      const double u_e = -5 * Etilde * x->theta2dot();
+      // controller gains
+      const double k_e = 5;
+      const double k_p = 50;
+      const double k_d = 5;
 
-      const double y = -50*x->theta2() - 5 * x->theta2dot();
-      double a3 = H_inverse(1,1), a2 = H_inverse(0,1);
-      double u_p = (a2*C(0)+y)/a3+ C(1);
+      double PE, KE;
+      KE = 0.5 * qdot.transpose() * H * qdot;
+      PE = -m1 * g * lc1 * c1 - m2 * g * (l1 * c1 + lc2 * c12);
+      const double E = KE + PE;
+      const double Ed = (m1 * lc1 + m2 * (l1 + lc2)) * g;
+      const double Etilde = E - Ed;
+      const double u_e = -k_e * Etilde * x->theta2dot();
 
-      while(x_c(0)>2*M_PI) {x_c(0) -= 2*M_PI;}
-      while(x_c(0)<0) {x_c(0) += 2*M_PI;}
+      const double y = -k_p * x->theta2() - k_d * x->theta2dot();
+      double a3 = H_inverse(1, 1), a2 = H_inverse(0, 1);
+      double u_p = (a2 * C(0) + y) / a3 + C(1);
 
-      while(x_c(1)>M_PI) {x_c(1) -= 2*M_PI;}
-      while(x_c(1)<-M_PI) {x_c(1) += 2*M_PI;}
-
-
-      double cost = (x_c.transpose()-x0.transpose()) * S * (x_c-x0);
-      if(cost < 1e3) {
-        Eigen::Matrix<double,1,1> u_v = K*(x0-x_c);
-        //cout << "K=\n" << K << endl;
-        //cout << "x0-x_c=\n" << x0-x_c << endl;
-        u = u_v(0,0);
-        //cout << "lqr ";
+      // wrapping of theta1 and theta2
+      while (x_c(0) > 2 * M_PI) {
+        x_c(0) -= 2 * M_PI;
       }
-      else
+      while (x_c(0) < 0) {
+        x_c(0) += 2 * M_PI;
+      }
+
+      while (x_c(1) > M_PI) {
+        x_c(1) -= 2 * M_PI;
+      }
+      while (x_c(1) < -M_PI) {
+        x_c(1) += 2 * M_PI;
+      }
+
+      //deciding which contoller to use (LQR or energy shaping)
+      double cost = (x_c.transpose() - x0.transpose()) * S * (x_c - x0);
+      if (cost < 1e3) {
+        Eigen::Matrix<double, 1, 1> u_v = K * (x0 - x_c);
+        u = u_v(0, 0);
+        // cout << "lqr ";
+      } else
         u = u_e + u_p;
 
-      //saturation
+      // saturation
       const double ku_upper_bound = 20;
       const double ku_lower_bound = -20;
 
-      if(u>=ku_upper_bound) u=ku_upper_bound;
-      if(u<=ku_lower_bound) u=ku_lower_bound;
+      if (u >= ku_upper_bound) u = ku_upper_bound;
+      if (u <= ku_lower_bound) u = ku_lower_bound;
       /*
       cout << "u_e = " <<u_e << ", u_p= " << u_p << ", E~= " << Etilde << ", "
           "theta1 = " << x_c(0) << ", theta2=" << x_c(1)
@@ -254,7 +260,7 @@ int DoMain() {
     }
 
     // publish u
-    msg_u.tau= u;
+    msg_u.tau = u;
     msg_u.encode(&buffer_u[0], 0, msg_u.getEncodedSize());
     lcm.Publish(channel_u, &buffer_u[0], msg_u.getEncodedSize());
 
@@ -263,7 +269,6 @@ int DoMain() {
 
   return 0;
 }
-
 }
 }  // namespace acrobot
 }  // namespace examples

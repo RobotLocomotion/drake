@@ -38,13 +38,9 @@ if(lcm_FOUND)
   add_executable(acrobot_energy_shaping_controller_w_lcm
           acrobot_energy_shaping_controller_w_lcm.cc)
   target_link_libraries(acrobot_energy_shaping_controller_w_lcm
-          drakeSystemAnalysis
           drakeLCMSystem2
           drakeAcrobotLcm
           drakeAcrobotPlant
-          drakeMultibodyParsers
-          drakeRigidBodyPlant
-          drakeSystemAnalysis
           drakeLinearControl)
 
   add_executable(acrobot_run_passive acrobot_run_passive.cc)
