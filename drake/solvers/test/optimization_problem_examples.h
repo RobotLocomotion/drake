@@ -97,6 +97,20 @@ class LinearSystemExample3 : public LinearSystemExample2 {
     return true;
   }
 };
+
+// This test comes from Section 2.2 of "Handbook of Test Problems in
+// Local and Global Optimization."
+class QPproblem1 {
+ public:
+  QPproblem1() : prog_(std::make_shared<MathematicalProgram>()), x_{} {
+    x_ = prog_->NewContinuousVariables<5>("x");
+    prog->AddBoundingBoxConstraint(0, 1, x_);
+  }
+
+ private:
+  std::shared_ptr<MathematicalProgram> prog_;
+  VectorDecisionVariable<5> x_;
+};
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

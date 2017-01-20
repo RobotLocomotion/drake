@@ -155,8 +155,7 @@ GTEST_TEST(testNonlinearProgram, QuadraticCost) {
   });
 }
 
-// This test comes from Section 2.2 of "Handbook of Test Problems in
-// Local and Global Optimization."
+
 class TestProblem1Cost {
  public:
   static size_t numInputs() { return 5; }
