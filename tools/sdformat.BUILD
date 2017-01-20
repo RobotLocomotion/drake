@@ -93,8 +93,10 @@ cc_library(
         "include/sdf/SDFExtension.hh",
         "include/sdf/sdf_config.h", # from cmake_configure_file above
         "include/sdf/sdf.hh",       # from genrule above
+        "src/urdf/urdf_parser/urdf_parser.h",
+        "src/urdf/visible.h",
     ],
-    includes = ["include"],
+    includes = ["include", "src/urdf"],
     visibility = ["//visibility:public"],
     linkopts = ["-lboost_system", "-lboost_filesystem", "-lboost_program_options", "-lboost_regex", "-lboost_iostreams", "-ltinyxml"],
     deps = [
