@@ -363,8 +363,8 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   const double inf = std::numeric_limits<double>::infinity();
   RungeKutta2Integrator<double> rk2(plant, dt, context.get());
   rk2.Initialize();
-  const double t_final = 1.0;
-  for (double t = 0.0; std::abs(t - t_final) > dt; t += dt)
+  const double t_final = dt;
+  for (double t = 0.0; std::abs(t - t_final) >= dt; t += dt)
     rk2.StepOnceAtMost(inf, inf, dt);  // Steps forward by dt.
 
   // Get the final state.
@@ -377,8 +377,10 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   for (int i=0; i< plant.get_num_velocities(); ++i)
     plant.set_velocity(context.get(), i, generalized_velocities[i]);
   RungeKutta3Integrator<double> rk3(plant, context.get());
-  rk3.set_maximum_step_size(0.1);
-  rk3.set_target_accuracy(1e-6);
+//  rk3.set_maximum_step_size(0.1);
+  rk3.set_maximum_step_size(dt);
+//  rk3.set_target_accuracy(1e-6);
+  rk3.set_fixed_step_mode(true);
   rk3.Initialize();
 
   // StepOnceAtFixedSize for one second.

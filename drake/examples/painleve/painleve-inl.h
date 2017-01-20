@@ -27,7 +27,7 @@ Painleve<T>::Painleve() {
 
 template <typename T>
 Painleve<T>::Painleve(double dt) : dt_(dt) {
-  // Verify that step size parameter is valid. 
+  // Verify that step size parameter is valid.
   if (dt_ <= 0.0)
     throw std::logic_error("Time stepping system must be constructed using "
                                "positive integration step.");
@@ -35,8 +35,7 @@ Painleve<T>::Painleve(double dt) : dt_(dt) {
   // Time stepping approach requires three position variables and
   // three velocity variables.
   this->DeclareDiscreteState(6);
-  const double offset = 0.0;
-  this->DeclareDiscreteUpdatePeriodicSec(dt);
+  this->DeclareDiscreteUpdatePeriodSec(dt);
   this->DeclareOutputPort(systems::kVectorValued, 6);
 }
 
@@ -101,7 +100,7 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
   // constraint stabilization. See:
   // M. Anitescu and G. Hart. A Constraint-Stabilized Time-Stepping Approach
   // for Rigid Multibody Dynamics with Joints, Contact, and Friction. Intl.
-  // J. for Numerical Methods in Engr., 60(14), 2004. 
+  // J. for Numerical Methods in Engr., 60(14), 2004.
   const int nc = 2;
 
   // The two contact points are (xep1, yep1) and (xep2, yep2).
@@ -120,10 +119,10 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
   // Problem matrices and vectors are mildly adapted from:
   // M. Anitescu and F. Potra. Formulating Dynamic Multi-Rigid Body Contact
   // Problems as Solvable Linear Complementarity Problems. Nonlinear Dynamics,
-  // 14, 1997. 
+  // 14, 1997.
 
   // Set up the inverse generalized inertia matrix, expressed in Frame A:
-  // aligned with the "world" and located at the center of mass of the rod. 
+  // aligned with the "world" and located at the center of mass of the rod.
   Matrix3<T> iM;
   iM << 1.0/mass_, 0,         0,
         0,         1.0/mass_, 0,
@@ -133,7 +132,7 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
   // (expressed in Frame A).
   v(1) += dt_*get_gravitational_acceleration();
 
-  // Set up the contact normal and tangent (friction) direction Jacobian 
+  // Set up the contact normal and tangent (friction) direction Jacobian
   // matrices. These take the form:
   //     | 0   0  |        | 1  1  |
   // N = | 1   1  |    F = | 0  0  |
@@ -162,13 +161,13 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
   MM.template block<2, 2>(0, 4) = -MM.template block<2, 2>(0, 2);
   MM.template block<2, 2>(0, 6).setZero();
 
-  // Now construct the un-negated tangent contact direction rows (everything 
+  // Now construct the un-negated tangent contact direction rows (everything
   // but last block column).
   MM.template block<2, 2>(2, 0) = F * iM * N.transpose();
   MM.template block<2, 2>(2, 2) = F * iM * F.transpose();
   MM.template block<2, 2>(2, 4) = -MM.template block<2, 2>(2, 2);
 
-  // Now construct the negated tangent contact direction rows (everything but 
+  // Now construct the negated tangent contact direction rows (everything but
   // last block column). These negated tangent contact directions allow the
   // LCP to compute forces applied along the negative x-axis.
   MM.template block<2, 6>(4, 0) = -MM.template block<2, 6>(2, 0);
@@ -195,7 +194,7 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
   // Cottle et al. show that any linear complementarity problem is solvable
   // for sufficiently large cfm.
   // R. Cottle, J.-S. Pang, and R. Stone. The Linear Complementarity Problem.
-  // Academic Press, 1992. 
+  // Academic Press, 1992.
   MM += MatrixX<T>::Identity(8, 8) * cfm;
 
   // Solve the LCP.
@@ -949,7 +948,9 @@ std::unique_ptr<systems::AbstractState> Painleve<T>::
     // Piecewise DAE approach needs two  abstract variables (one mode and one
     // contact point indicator).
     std::vector<std::unique_ptr<systems::AbstractValue>> abstract_data;
-    abstract_data.push_back(std::make_unique<systems::Value<Painleve<T>::Mode>>(Painleve<T>::kInvalid));
+    abstract_data.push_back(
+        std::make_unique<systems::Value<Painleve<T>::Mode>>(
+            Painleve<T>::kInvalid));
 
     // Indicates that the rod is in contact at both points.
     abstract_data.push_back(std::make_unique<systems::Value<int>>(0));
@@ -981,7 +982,7 @@ void Painleve<T>::SetDefaultState(const systems::Context<T>& context,
         template GetMutableValue<Painleve<T>::Mode>() =
             Painleve<T>::kSlidingSingleContact;
 
-    // Determine and set the point of contact. 
+    // Determine and set the point of contact.
     const double theta = x0(2);
     const int k = (std::sin(theta) > 0) ? -1 : 1;
     state->get_mutable_abstract_state()->get_mutable_abstract_state(1).

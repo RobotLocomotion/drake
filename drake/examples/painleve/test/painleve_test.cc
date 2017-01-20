@@ -59,7 +59,7 @@ class PainleveDAETest : public ::testing::Test {
       template GetMutableValue<Painleve<double>::Mode>() =
         Painleve<double>::kSlidingSingleContact;
 
-    // Determine the point of contact. 
+    // Determine the point of contact.
     const double theta = xc[2];
     const int k = (std::sin(theta) > 0) ? -1 : 1;
     abs_state->get_mutable_abstract_state(1).
