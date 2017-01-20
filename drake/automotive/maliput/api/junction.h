@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 namespace maliput {
 namespace api {
@@ -25,7 +27,9 @@ struct JunctionId {
 /// Junctions are grouped by RoadGeometry.
 class Junction {
  public:
-  virtual ~Junction() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Junction)
+
+  virtual ~Junction() = default;
 
   /// Returns the persistent identifier.
   const JunctionId id() const { return do_id(); }
@@ -43,15 +47,8 @@ class Junction {
   /// @pre @p index must be >= 0 and < num_segments().
   const Segment* segment(int index) const { return do_segment(index); }
 
-  /// @name Deleted Copy/Move Operations
-  /// Junction is neither copyable nor moveable.
-  ///@{
-  explicit Junction(const Junction&) = delete;
-  Junction& operator=(const Junction&) = delete;
-  ///@}
-
  protected:
-  Junction() {}
+  Junction() = default;
 
  private:
   /// @name NVI implementations of the public methods.

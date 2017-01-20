@@ -17,8 +17,8 @@ IiwaCommandReceiver::IiwaCommandReceiver() {
   this->DeclareOutputPort(systems::kVectorValued, kNumJoints);
 }
 
-void IiwaCommandReceiver::EvalOutput(const Context<double>& context,
-                                     SystemOutput<double>* output) const {
+void IiwaCommandReceiver::DoCalcOutput(const Context<double>& context,
+                                       SystemOutput<double>* output) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& command = input->GetValue<lcmt_iiwa_command>();
@@ -64,7 +64,7 @@ IiwaStatusSender::AllocateOutput(
   return std::unique_ptr<SystemOutput<double>>(output.release());
 }
 
-void IiwaStatusSender::EvalOutput(
+void IiwaStatusSender::DoCalcOutput(
     const Context<double>& context, SystemOutput<double>* output) const {
   systems::AbstractValue* mutable_data = output->GetMutableData(0);
   lcmt_iiwa_status& status =

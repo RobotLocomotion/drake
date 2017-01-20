@@ -1,6 +1,9 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
+load("//tools:drake.bzl", "cc_googletest")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -99,7 +102,7 @@ cc_binary(
     deps = [
         ":rigid_body_tree",
         "//drake/common:measure_execution",
-        "//drake/multibody/parsers:multi_body_parsers",
+        "//drake/multibody/parsers",
         "@gtest//:main",
     ],
 )
@@ -112,98 +115,90 @@ cc_binary(
     linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "//drake/multibody/parsers:multi_body_parsers",
-        "@gtest//:main",
+        "//drake/multibody/parsers",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "rbt_collisions_test",
-    size = "small",
     srcs = ["test/rigid_body_tree/rbt_collisions_test.cc"],
     data = [":test_models"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "//drake/multibody/parsers:multi_body_parsers",
-        "@gtest//:main",
+        "//drake/multibody/parsers",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "rigid_body_collision_clique_test",
-    size = "small",
     srcs = ["test/rigid_body_tree/rigid_body_collision_clique_test.cc"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "//drake/multibody/parsers:multi_body_parsers",
-        "@gtest//:main",
+        "//drake/multibody/parsers",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "rigid_body_constraint_test",
-    size = "small",
     srcs = ["constraint/test/rigid_body_constraint_test.cc"],
     data = ["//drake/examples/Atlas:models"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_constraint",
-        "//drake/multibody/parsers:multi_body_parsers",
-        "@gtest//:main",
+        "//drake/multibody/parsers",
     ],
 )
 
-cc_test(
-    name = "rigid_body_tree_inverse_dynamics_test",
-    size = "small",
-    srcs = ["test/rigid_body_tree/rigid_body_tree_inverse_dynamics_test.cc"],
+cc_googletest(
+    name = "rigid_body_tree_kinematics_test",
+    srcs = ["test/rigid_body_tree/rigid_body_tree_kinematics_test.cc"],
+    data = [
+        "test/rigid_body_tree/two_dof_robot.urdf",
+        "//drake/multibody/benchmarks:acrobot_models",
+    ],
+    deps = [
+        ":rigid_body_tree",
+        "//drake/common:drake_path",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/benchmarks:acrobot",
+        "//drake/multibody/parsers",
+    ],
+)
+
+cc_googletest(
+    name = "rigid_body_tree_dynamics_test",
+    srcs = ["test/rigid_body_tree/rigid_body_tree_dynamics_test.cc"],
     data = ["//drake/examples/Atlas:models"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
         "//drake/common:eigen_matrix_compare",
         "//drake/math:jacobian",
-        "//drake/multibody/parsers:multi_body_parsers",
-        "@gtest//:main",
+        "//drake/multibody/parsers",
     ],
 )
 
-cc_test(
-    name = "rigid_body_tree_test",
-    size = "small",
-    srcs = ["test/rigid_body_tree/rigid_body_tree_test.cc"],
+cc_googletest(
+    name = "rigid_body_tree_creation_test",
+    srcs = ["test/rigid_body_tree/rigid_body_tree_creation_test.cc"],
     data = glob(["test/rigid_body_tree/*.urdf"]),
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "//drake/multibody/parsers:multi_body_parsers",
-        "@gtest//:main",
+        "//drake/multibody/parsers",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "test_kinematics_cache_checks",
-    size = "small",
-    srcs = ["test/test_kinematics_cache_checks.cc"],
     data = ["//drake/examples/Atlas:models"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "//drake/multibody/parsers:multi_body_parsers",
-        "@gtest//:main",
+        "//drake/multibody/parsers",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "rigid_body_test",
-    size = "small",
-    srcs = ["test/rigid_body_test.cc"],
-    linkstatic = 1,
     deps = [
         ":rigid_body_tree",
-        "@gtest//:main",
     ],
 )
 
@@ -217,3 +212,7 @@ filegroup(
         "test/**/*.xml",
     ]),
 )
+
+cpplint(data = [
+    "constraint/CPPLINT.cfg",
+])

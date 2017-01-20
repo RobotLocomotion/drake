@@ -8,7 +8,7 @@
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/system1/System.h"
+#include "drake/multibody/rigid_body_system1/System.h"
 
 using drake::multibody::joints::FloatingBaseType;
 using drake::multibody::joints::kQuaternion;
@@ -679,7 +679,7 @@ class RigidBodySensor {
   /// Returns the name of the model (i.e., robot) that owns this sensor.
   const std::string& get_model_name() const;
 
-  /// Returns the frame to which thi sensor is attached.
+  /// Returns the frame to which this sensor is attached.
   const RigidBodyFrame<double>& get_frame() const;
 
   /// Returns the rigid body system to which this sensor attaches.

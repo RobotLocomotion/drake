@@ -51,16 +51,14 @@ TEST_F(SingleLaneEgoAndAgentTest, Topology) {
             dut_.get_num_output_ports());
 
   const auto& output_ego_car_pos =
-      dut_.get_output_ports().at(diagram_outport_ego_);
+      dut_.get_output_port(diagram_outport_ego_);
   const auto& output_agent_car_pos =
-      dut_.get_output_ports().at(diagram_outport_agent_);
+      dut_.get_output_port(diagram_outport_agent_);
 
   EXPECT_EQ(systems::kVectorValued, output_ego_car_pos.get_data_type());
   EXPECT_EQ(systems::kVectorValued, output_agent_car_pos.get_data_type());
-  EXPECT_EQ(systems::kOutputPort, output_ego_car_pos.get_face());
-  EXPECT_EQ(systems::kOutputPort, output_agent_car_pos.get_face());
-  EXPECT_EQ(2 /* two outputs: x, v */, output_ego_car_pos.get_size());
-  EXPECT_EQ(2 /* two outputs: x, v */, output_agent_car_pos.get_size());
+  EXPECT_EQ(2 /* two outputs: x, v */, output_ego_car_pos.size());
+  EXPECT_EQ(2 /* two outputs: x, v */, output_agent_car_pos.size());
 }
 
 TEST_F(SingleLaneEgoAndAgentTest, EvalOutput) {
@@ -77,7 +75,7 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalOutput) {
   const systems::BasicVector<double>* output_agent =
       output_->get_vector_data(diagram_outport_agent_);
 
-  dut_.EvalOutput(*context_, output_.get());
+  dut_.CalcOutput(*context_, output_.get());
 
   // Default state vector is all zeros; outputs are one-to-one wrt. states.
   EXPECT_EQ(0.0, state_vec_ego->GetAtIndex(0));
@@ -96,7 +94,7 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalOutput) {
   (*state_vec_agent)[0] = 6.0;
   (*state_vec_agent)[1] = 4.0;
 
-  dut_.EvalOutput(*context_, output_.get());
+  dut_.CalcOutput(*context_, output_.get());
 
   // Default state vector is all zeros; outputs are one-to-one wrt. states.
   EXPECT_EQ(1.0, state_vec_ego->GetAtIndex(0));
@@ -130,8 +128,8 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalTimeDerivatives) {
   (*state_vec_agent)[0] = 6.0;
   (*state_vec_agent)[1] = 0.0;
 
-  dut_.EvalTimeDerivatives(*context_, derivatives_.get());
-  dut_.EvalOutput(*context_, output_.get());
+  dut_.CalcTimeDerivatives(*context_, derivatives_.get());
+  dut_.CalcOutput(*context_, output_.get());
 
   // Expected state derivatives. Velocity v should map to x_dot.
   // The car should accelerate, as evidenced by a positive v_dot.
@@ -149,8 +147,8 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalTimeDerivatives) {
   (*state_vec_agent)[0] = 10.0;
   (*state_vec_agent)[1] = 10.0;
 
-  dut_.EvalTimeDerivatives(*context_, derivatives_.get());
-  dut_.EvalOutput(*context_, output_.get());
+  dut_.CalcTimeDerivatives(*context_, derivatives_.get());
+  dut_.CalcOutput(*context_, output_.get());
 
   // Expected state derivatives. Velocity v maps should map to x_dot.
   // The car should rapidly decelerate, as evidenced by a negative v_dot.

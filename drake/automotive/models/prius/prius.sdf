@@ -425,7 +425,7 @@
         <pose>-2.27 -0.91139 -0.21858 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>prius.dae</uri>
+            <uri>package://prius/prius.dae</uri>
           </mesh>
         </geometry>
         <material>

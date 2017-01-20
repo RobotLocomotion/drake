@@ -75,7 +75,7 @@ class SimulatedKuka : public systems::Diagram<T> {
       auto rigid_body_tree = std::make_unique<RigidBodyTree<double>>();
       drake::parsers::urdf::AddModelInstanceFromUrdfFile(
           drake::GetDrakePath() +
-          "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf",
+          "/examples/kuka_iiwa_arm/urdf/iiwa14_simplified_collision.urdf",
           drake::multibody::joints::kFixed,
           nullptr /* weld to frame */, rigid_body_tree.get());
 
@@ -86,7 +86,7 @@ class SimulatedKuka : public systems::Diagram<T> {
           std::move(rigid_body_tree));
       plant_ = plant.get();
 
-      DRAKE_ASSERT(plant_->get_input_port(0).get_size() ==
+      DRAKE_ASSERT(plant_->actuator_command_input_port().size() ==
                    plant_->get_num_positions());
 
       // Constants are chosen by trial and error to qualitatively match

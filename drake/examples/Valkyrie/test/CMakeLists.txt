@@ -19,9 +19,9 @@ if(lcm_FOUND)
     drakeSystemPrimitives
     drakeRobotCommandToDesiredEffortConverter)
 
-  add_executable(valkyrie_ik_test valkyrie_ik_test.cc)
+  drake_add_cc_test(NAME valkyrie_ik_test
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
   target_link_libraries(valkyrie_ik_test
-    GTest::GTest GTest::Main
     drakeCommon
     drakeIK
     drakeLcm
@@ -31,7 +31,6 @@ if(lcm_FOUND)
     drakeSystemFramework
     drakeSystemAnalysis
     drakeSystemPrimitives)
-
 
   add_executable(valkyrie_ik_trajectory valkyrie_ik_trajectory.cc)
   target_link_libraries(valkyrie_ik_trajectory

@@ -14,3 +14,5 @@ drake_install_pkg_config_file(drake-estimators
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
+
+add_subdirectory(dev)

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <set>
+#include <utility>
 #include <vector>
 
 #include "drake/systems/framework/basic_vector.h"
@@ -28,7 +29,7 @@ namespace systems {
 template <typename T>
 class LeafContext : public Context<T> {
  public:
-  LeafContext() {}
+  LeafContext() : state_(std::make_unique<State<T>>()) {}
   virtual ~LeafContext() {}
 
   void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
@@ -52,9 +53,9 @@ class LeafContext : public Context<T> {
     return static_cast<int>(inputs_.size());
   }
 
-  const State<T>& get_state() const override { return state_; }
+  const State<T>& get_state() const override { return *state_; }
 
-  State<T>* get_mutable_state() override { return &state_; }
+  State<T>* get_mutable_state() override { return state_.get(); }
 
   /// Reserves a cache entry with the given @p prerequisites on which it
   /// depends. Returns a ticket to identify the entry.
@@ -135,7 +136,34 @@ class LeafContext : public Context<T> {
  protected:
   /// The caller owns the returned memory.
   Context<T>* DoClone() const override {
-    LeafContext<T>* context = new LeafContext<T>();
+    LeafContext<T>* clone = new LeafContext<T>();
+
+    // Make a deep copy of the state.
+    clone->state_ = this->CloneState();
+
+    // Make deep copies of the parameters.
+    clone->set_parameters(parameters_->Clone());
+
+    // Make deep copies of the inputs into FreestandingInputPorts.
+    // TODO(david-german-tri): Preserve version numbers as well.
+    for (const auto& port : this->inputs_) {
+      if (port == nullptr) {
+        clone->inputs_.emplace_back(nullptr);
+      } else {
+        clone->inputs_.emplace_back(new FreestandingInputPort(
+            port->template get_vector_data<T>()->Clone()));
+      }
+    }
+
+    // Make deep copies of everything else using the default copy constructors.
+    *clone->get_mutable_step_info() = this->get_step_info();
+    clone->cache_ = this->cache_;
+    return clone;
+  }
+
+  /// The caller owns the returned memory.
+  State<T>* DoCloneState() const override {
+    State<T>* clone = new State<T>();
 
     // Make a deep copy of the continuous state using BasicVector::Clone().
     if (this->get_continuous_state() != nullptr) {
@@ -145,32 +173,15 @@ class LeafContext : public Context<T> {
       const int num_z = xc.get_misc_continuous_state().size();
       const BasicVector<T>& xc_vector =
           dynamic_cast<const BasicVector<T>&>(xc.get_vector());
-      context->set_continuous_state(std::make_unique<ContinuousState<T>>(
+      clone->set_continuous_state(std::make_unique<ContinuousState<T>>(
           xc_vector.Clone(), num_q, num_v, num_z));
     }
 
     // Make deep copies of the discrete and abstract states.
-    context->set_discrete_state(get_state().get_discrete_state()->Clone());
-    context->set_abstract_state(get_state().get_abstract_state()->Clone());
+    clone->set_discrete_state(get_state().get_discrete_state()->Clone());
+    clone->set_abstract_state(get_state().get_abstract_state()->Clone());
 
-    // Make deep copies of the parameters.
-    context->set_parameters(parameters_->Clone());
-
-    // Make deep copies of the inputs into FreestandingInputPorts.
-    // TODO(david-german-tri): Preserve version numbers as well.
-    for (const auto& port : this->inputs_) {
-      if (port == nullptr) {
-        context->inputs_.emplace_back(nullptr);
-      } else {
-        context->inputs_.emplace_back(new FreestandingInputPort(
-            port->template get_vector_data<T>()->Clone()));
-      }
-    }
-
-    // Make deep copies of everything else using the default copy constructors.
-    *context->get_mutable_step_info() = this->get_step_info();
-    context->cache_ = this->cache_;
-    return context;
+    return clone;
   }
 
   const InputPort* GetInputPort(int index) const override {
@@ -189,7 +200,7 @@ class LeafContext : public Context<T> {
   std::vector<std::unique_ptr<InputPort>> inputs_;
 
   // The internal state of the System.
-  State<T> state_;
+  std::unique_ptr<State<T>> state_;
 
   // The parameters of the system.
   std::unique_ptr<Parameters<T>> parameters_;

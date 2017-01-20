@@ -1,5 +1,7 @@
 #include "drake/examples/Valkyrie/robot_state_decoder.h"
 
+#include <utility>
+
 #include "drake/examples/Valkyrie/robot_state_lcmtype_util.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/lcmUtil.h"
@@ -37,8 +39,8 @@ RobotStateDecoder::RobotStateDecoder(const RigidBodyTree<double>& tree)
   set_name("RobotStateDecoder");
 }
 
-void RobotStateDecoder::EvalOutput(const Context<double>& context,
-                                   SystemOutput<double>* output) const {
+void RobotStateDecoder::DoCalcOutput(const Context<double>& context,
+                                     SystemOutput<double>* output) const {
   // Input: robot_state_t message.
   const auto& message =
       EvalAbstractInput(context, robot_state_message_port_index_)

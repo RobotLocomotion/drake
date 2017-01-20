@@ -22,9 +22,8 @@ namespace systems {
  * achieve a 3rd order integration accuracy.
  *
  * @param system A dynamical system to be used in the dynamic constraints.
- *    This system must implement DoToAutoDiffXd.  Note that the optimization
- *    will "clone" this system for it's internal use; changes to system
- *    after calling this method will NOT impact the trajectory optimization.
+ *    This system must implement DoToAutoDiffXd. Note that this is aliased for
+ *    the lifetime of this object.
  * @param context Required to describe any parameters of the system.  The
  *    values of the state in this context do not have any effect.  This
  *    context will also be "cloned" by the optimization; changes to the context
@@ -39,7 +38,7 @@ namespace systems {
  */
 class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
  public:
-  DircolTrajectoryOptimization(const System<double>& system,
+  DircolTrajectoryOptimization(const System<double>* system,
                                const Context<double>& context,
                                int num_time_samples,
                                double trajectory_time_lower_bound,
@@ -47,9 +46,21 @@ class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
 
   void AddRunningCost(std::shared_ptr<solvers::Constraint> constraint) override;
 
-  // TODO(sam.creasey) The MATLAB implementation of
-  // DircolTrajectoryOptimization overrides the parent's
-  // reconstructStateTrajectory to provide its own interpolation.
+  PiecewisePolynomialTrajectory ReconstructStateTrajectory() const override;
+  // TODO(Lucy-tri) According to @siyuanfeng-tri, the current calculation of
+  // derivatives is not correct for floating base joints. More strongly, we
+  // can't use independent splines for joints with coupled degrees of freedom.
+
+  // Disable copy and assign.
+  DircolTrajectoryOptimization(const DircolTrajectoryOptimization&) = delete;
+  DircolTrajectoryOptimization& operator=(const DircolTrajectoryOptimization&) =
+      delete;
+
+ private:
+  const System<double>* system_{nullptr};
+  const std::unique_ptr<Context<double>> context_{nullptr};
+  const std::unique_ptr<ContinuousState<double>> continuous_state_{nullptr};
+  FreestandingInputPort* input_port_{nullptr};
 };
 
 }  // namespace systems

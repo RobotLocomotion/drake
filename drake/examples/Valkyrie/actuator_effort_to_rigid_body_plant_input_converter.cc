@@ -17,7 +17,7 @@ ActuatorEffortToRigidBodyPlantInputConverter<T>::
 }
 
 template <typename T>
-void ActuatorEffortToRigidBodyPlantInputConverter<T>::EvalOutput(
+void ActuatorEffortToRigidBodyPlantInputConverter<T>::DoCalcOutput(
     const Context<T>& context, SystemOutput<T>* output) const {
   int index = 0;
   for (const auto& actuator : ordered_actuators_) {
@@ -43,7 +43,7 @@ ActuatorEffortToRigidBodyPlantInputConverter<T>::DeclareEffortInputPorts(
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& ActuatorEffortToRigidBodyPlantInputConverter<
+const InputPortDescriptor<T>& ActuatorEffortToRigidBodyPlantInputConverter<
     T>::effort_input_port(const RigidBodyActuator& actuator) {
   return get_input_port(effort_ports_indices_.at(&actuator));
 }

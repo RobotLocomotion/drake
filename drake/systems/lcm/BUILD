@@ -1,6 +1,9 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
+load("//tools:drake.bzl", "cc_googletest")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -53,54 +56,45 @@ cc_library(
 
 # === test ===
 
-cc_test(
+cc_googletest(
     name = "lcm_publisher_system_test",
-    size = "small",
-    srcs = ["test/lcm_publisher_system_test.cc"],
     deps = [
         ":lcm",
         ":lcmt_drake_signal_translator",
+        "//drake/systems/analysis",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "lcm_subscriber_system_test",
-    size = "small",
-    srcs = ["test/lcm_subscriber_system_test.cc"],
     deps = [
         ":lcm",
         ":lcmt_drake_signal_translator",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "lcm_translator_dictionary_test",
-    size = "small",
-    srcs = ["test/lcm_translator_dictionary_test.cc"],
     deps = [
         ":lcmt_drake_signal_translator",
         ":translator",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "serializer_test",
-    size = "small",
-    srcs = ["test/serializer_test.cc"],
     deps = [
         ":lcm",
         ":lcmt_drake_signal_translator",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
-        "@gtest//:main",
     ],
 )
+
+cpplint()

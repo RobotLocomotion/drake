@@ -32,7 +32,7 @@ class RandomSource : public LeafSystem<double> {
   /// @param num_outputs The dimension of the (single) vector output port.
   /// @param sampling_interval_sec The sampling interval in seconds.
   RandomSource(int num_outputs, double sampling_interval_sec) {
-    this->DeclareUpdatePeriodSec(sampling_interval_sec);
+    this->DeclareDiscreteUpdatePeriodSec(sampling_interval_sec);
     this->DeclareOutputPort(drake::systems::kVectorValued, num_outputs);
     this->DeclareDiscreteState(num_outputs);
   }
@@ -44,8 +44,9 @@ class RandomSource : public LeafSystem<double> {
   /// Initializes the random number generator.
   void set_random_seed(double seed) { generator_.seed(seed); }
 
-  /// Computes a random number and stores it in the discrete state.
-  void DoEvalDiscreteVariableUpdates(
+ private:
+  // Computes a random number and stores it in the discrete state.
+  void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
       drake::systems::DiscreteState<double>* updates) const override {
     const int N = updates->get_discrete_state(0)->size();
@@ -55,14 +56,14 @@ class RandomSource : public LeafSystem<double> {
     }
   }
 
-  /// Output is the zero-order hold of the discrete state.
-  void EvalOutput(const drake::systems::Context<double>& context,
-                  drake::systems::SystemOutput<double>* output) const override {
+  // Output is the zero-order hold of the discrete state.
+  void DoCalcOutput(
+      const drake::systems::Context<double>& context,
+      drake::systems::SystemOutput<double>* output) const override {
     output->GetMutableVectorData(0)->SetFromVector(
         context.get_discrete_state(0)->CopyToVector());
   }
 
- private:
   // Note: currently there is undeclared state in the variables below.
   // TODO(russt): Use abstract state to save the parameters of the generator and
   // distribution (waiting on event scheduling for abstract states).

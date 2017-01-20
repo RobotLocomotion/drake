@@ -1,13 +1,17 @@
 if(gurobi_FOUND)
   add_library_with_exports(LIB_NAME drakeQP SOURCE_FILES qp.cc)
-  target_link_libraries(drakeQP gurobi)
+  target_link_libraries(drakeQP
+    Eigen3::Eigen
+    gurobi)
 
   drake_install_libraries(drakeQP)
   drake_install_headers(fast_qp.h gurobi_qp.h)
   drake_install_pkg_config_file(drake-qp
     TARGET drakeQP
     LIBS -ldrakeQP
-    REQUIRES gurobi)
+    REQUIRES
+      eigen3
+      gurobi)
 endif()
 
 set(private_headers
@@ -70,13 +74,16 @@ else()
 endif()
 
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
-target_link_libraries(drakeOptimization drakeCommon)
+target_link_libraries(drakeOptimization
+  drakeCommon
+  Eigen3::Eigen)
 drake_install_headers(
+  binding.h
   constraint.h
   function.h
   mathematical_program.h
+  mathematical_program_solver_interface.h
   decision_variable.h
-  solution_result.h
   system_identification.h
   )
 drake_install_libraries(drakeOptimization)
@@ -84,6 +91,7 @@ drake_install_pkg_config_file(drake-optimization
   TARGET drakeOptimization
   LIBS -ldrakeOptimization
   REQUIRES
+    drake-common
     eigen3
     ${optimization_requires})
 

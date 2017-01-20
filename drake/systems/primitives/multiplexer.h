@@ -16,7 +16,7 @@ namespace systems {
 /// Instantiated templates for the following `T` values are provided:
 /// - double
 ///
-/// They are already available to link against in `libdrakeSystemsFramework`.
+/// They are already available to link against in the containing library.
 /// Currently, no other values for `T` are supported.
 ///
 /// @ingroup primitive_systems
@@ -32,14 +32,14 @@ class Multiplexer : public LeafSystem<T> {
   /// valued output port of size `sum(input_sizes)`.
   explicit Multiplexer(std::vector<int> input_sizes);
 
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override;
-
   // Non-copyable.
   Multiplexer(const Multiplexer<T>&) = delete;
   Multiplexer& operator=(const Multiplexer<T>&) = delete;
 
  private:
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override;
+
   const std::vector<int> input_sizes_;
 };
 

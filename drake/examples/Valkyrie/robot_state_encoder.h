@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 #include <utility>
@@ -40,26 +41,26 @@ class RobotStateEncoder final : public LeafSystem<double> {
 
   RobotStateEncoder& operator=(const RobotStateEncoder&) = delete;
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override;
-
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override;
 
   /// Returns descriptor of output port on which the LCM message is presented.
-  const SystemPortDescriptor<double>& lcm_message_port() const;
+  const OutputPortDescriptor<double>& lcm_message_port() const;
 
   /// Returns descriptor of kinematics result input port.
-  const SystemPortDescriptor<double>& kinematics_results_port() const;
+  const InputPortDescriptor<double>& kinematics_results_port() const;
 
   /// Returns descriptor of contact results input port.
-  const SystemPortDescriptor<double>& contact_results_port() const;
+  const InputPortDescriptor<double>& contact_results_port() const;
 
   /// Returns descriptor of effort input port corresponding to @param actuator.
-  const SystemPortDescriptor<double>& effort_port(
+  const InputPortDescriptor<double>& effort_port(
       const RigidBodyActuator& actuator) const;
 
  private:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override;
+
   std::map<const RigidBodyActuator*, int> DeclareEffortInputPorts();
 
   std::map<Side, int> DeclareWrenchInputPorts();

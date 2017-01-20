@@ -1,23 +1,22 @@
-drake_add_cc_test(NAME setpoint_test)
-target_link_libraries(setpoint_test
-  drakeQPController
-  GTest::GTest GTest::Main)
+drake_add_cc_test(setpoint_test)
+target_link_libraries(setpoint_test drakeQPController)
 
-if(lcm_FOUND)
+if(lcm_FOUND AND yaml-cpp_FOUND)
   drake_add_cc_test(NAME lcm_utils_test)
   target_link_libraries(lcm_utils_test
     drakeMultibodyParsers
-    drakeQPControllerLcmTranslator
     drakeQPController
-    GTest::GTest GTest::Main)
+    drakeQPControllerLcmTranslator)
 endif()
 
-if(gurobi_FOUND)
+if(gurobi_FOUND AND yaml-cpp_FOUND)
   drake_add_cc_test(NAME valkyrie_balancing_test SIZE medium)
   target_link_libraries(valkyrie_balancing_test
     drakeMultibodyParsers
     drakeQPController
-    GTest::GTest GTest::Main)
+    drakeQPControllerParamParsing
+    drakeRigidBodyAliasGroups
+    drakeValkyrieConstants)
 endif()
 
 if(gurobi_FOUND AND lcm_FOUND)
@@ -28,7 +27,8 @@ if(gurobi_FOUND AND lcm_FOUND)
     drakeMultibodyParsers
     drakeQPController
     drakeQPControllerLcmTranslator
-    drakeRigidBodyPlant
-    drakeSystemAnalysis)
+    drakeQPControllerParamParsing
+    drakeRigidBodyAliasGroups
+    drakeValkyrieConstants)
 endif()
 

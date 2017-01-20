@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/state.h"
@@ -32,6 +35,10 @@ template <typename T>
 class Context {
  public:
   virtual ~Context() {}
+
+  Context() = default;
+  Context(const Context&) = delete;
+  Context& operator=(const Context&) = delete;
 
   // =========================================================================
   // Accessors and Mutators for Time.
@@ -180,9 +187,16 @@ class Context {
   /// Returns the number of input ports.
   virtual int get_num_input_ports() const = 0;
 
-  /// Connects a FreestandingInputPort with the given @p value at the given
-  /// @p index. Asserts if @p index is out of range.
+  /// Connects a FreestandingInputPort with the given vector @p value at the
+  /// given @p index. Asserts if @p index is out of range.
   void FixInputPort(int index, std::unique_ptr<BasicVector<T>> value) {
+    SetInputPort(index,
+                 std::make_unique<FreestandingInputPort>(std::move(value)));
+  }
+
+  /// Connects a FreestandingInputPort with the given abstract @p value at the
+  /// given @p index. Asserts if @p index is out of range.
+  void FixInputPort(int index, std::unique_ptr<AbstractValue> value) {
     SetInputPort(index,
                  std::make_unique<FreestandingInputPort>(std::move(value)));
   }
@@ -213,7 +227,7 @@ class Context {
   /// This is a framework implementation detail.  User code should not call it.
   const InputPort* EvalInputPort(
       const detail::InputPortEvaluatorInterface<T>* evaluator,
-      const SystemPortDescriptor<T>& descriptor) const {
+      const InputPortDescriptor<T>& descriptor) const {
     const InputPort* port = GetInputPort(descriptor.get_index());
     if (port == nullptr) return nullptr;
     if (port->requires_evaluation()) {
@@ -235,7 +249,7 @@ class Context {
   /// This is a framework implementation detail.  User code should not call it.
   const BasicVector<T>* EvalVectorInput(
       const detail::InputPortEvaluatorInterface<T>* evaluator,
-      const SystemPortDescriptor<T>& descriptor) const {
+      const InputPortDescriptor<T>& descriptor) const {
     const InputPort* port = EvalInputPort(evaluator, descriptor);
     if (port == nullptr) return nullptr;
     return port->template get_vector_data<T>();
@@ -251,7 +265,7 @@ class Context {
   /// This is a framework implementation detail.  User code should not call it.
   const AbstractValue* EvalAbstractInput(
       const detail::InputPortEvaluatorInterface<T>* evaluator,
-      const SystemPortDescriptor<T>& descriptor) const {
+      const InputPortDescriptor<T>& descriptor) const {
     const InputPort* port = EvalInputPort(evaluator, descriptor);
     if (port == nullptr) return nullptr;
     return port->get_abstract_data();
@@ -271,7 +285,7 @@ class Context {
   template <typename V>
   const V* EvalInputValue(
       const detail::InputPortEvaluatorInterface<T>* evaluator,
-      const SystemPortDescriptor<T>& descriptor) const {
+      const InputPortDescriptor<T>& descriptor) const {
     const AbstractValue* value = EvalAbstractInput(evaluator, descriptor);
     if (value == nullptr) return nullptr;
     return &(value->GetValue<V>());
@@ -285,6 +299,11 @@ class Context {
   /// at the time the clone is created.
   std::unique_ptr<Context<T>> Clone() const {
     return std::unique_ptr<Context<T>>(DoClone());
+  }
+
+  /// Returns a deep copy of this Context's State.
+  std::unique_ptr<State<T>> CloneState() const {
+    return std::unique_ptr<State<T>>(DoCloneState());
   }
 
   /// Initializes this context's time, state, and parameters from the real
@@ -310,17 +329,18 @@ class Context {
   }
 
   // Throws an exception unless the given @p descriptor matches this context.
-  void VerifyInputPort(const SystemPortDescriptor<T>& descriptor) const {
+  void VerifyInputPort(const InputPortDescriptor<T>& descriptor) const {
     const int i = descriptor.get_index();
     const InputPort* port = GetInputPort(i);
-    DRAKE_THROW_UNLESS(port != nullptr);
+    // If the port isn't connected, we don't have anything else to check.
+    if (port == nullptr) { return; }
     // TODO(david-german-tri, sherm1): Consider checking sampling here.
 
     // In the vector-valued case, check the size.
     if (descriptor.get_data_type() == kVectorValued) {
       const BasicVector<T>* input_vector = port->template get_vector_data<T>();
       DRAKE_THROW_UNLESS(input_vector != nullptr);
-      DRAKE_THROW_UNLESS(input_vector->size() == descriptor.get_size());
+      DRAKE_THROW_UNLESS(input_vector->size() == descriptor.size());
     }
     // In the abstract-valued case, there is nothing else to check.
   }
@@ -328,6 +348,9 @@ class Context {
  protected:
   /// Contains the return-type-covariant implementation of Clone().
   virtual Context<T>* DoClone() const = 0;
+
+  /// Contains the return-type-covariant implementation of CloneState().
+  virtual State<T>* DoCloneState() const = 0;
 
   /// Returns a const reference to current time and step information.
   const StepInfo<T>& get_step_info() const { return step_info_; }

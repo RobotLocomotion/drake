@@ -12,6 +12,7 @@
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/test_utilities/pack_value.h"
 
 namespace drake {
 namespace systems {
@@ -21,20 +22,26 @@ namespace {
 template<typename T>
 class TestSystem : public LeafSystem<T> {
  public:
-  TestSystem() {}
+  TestSystem() {
+    this->set_name("TestSystem");
+    this->DeclareOutputPort(kVectorValued, 17);
+    this->DeclareAbstractOutputPort();
+  }
   ~TestSystem() override {}
-
-  std::string get_name() const override { return "TestSystem"; }
 
   void AddPeriodicUpdate() {
     const double period = 10.0;
     const double offset = 5.0;
-    this->DeclarePeriodicUpdate(period, offset);
+    this->DeclarePeriodicDiscreteUpdate(period, offset);
   }
 
   void AddPeriodicUpdate(double period) {
     const double offset = 0.0;
-    this->DeclarePeriodicUpdate(period, offset);
+    this->DeclarePeriodicDiscreteUpdate(period, offset);
+  }
+
+  void AddPeriodicUnrestrictedUpdate(double period, double offset) {
+    this->DeclarePeriodicUnrestrictedUpdate(period, offset);
   }
 
   void AddPublish(double period) {
@@ -49,16 +56,26 @@ class TestSystem : public LeafSystem<T> {
     this->DeclareContinuousState(std::move(vec), 4, 3, 2);
   }
 
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override {}
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override {}
 
-  void EvalTimeDerivatives(
+  void DoCalcTimeDerivatives(
       const Context<T>& context,
       ContinuousState<T>* derivatives) const override {}
 
   std::unique_ptr<Parameters<T>> AllocateParameters() const override {
     return std::make_unique<Parameters<T>>(
         std::make_unique<BasicVector<T>>(2));
+  }
+
+  std::unique_ptr<BasicVector<T>> AllocateOutputVector(
+      const OutputPortDescriptor<T>& descriptor) const override {
+    return std::make_unique<BasicVector<T>>(17);
+  }
+
+  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
+      const OutputPortDescriptor<T>& descriptor) const override {
+    return AbstractValue::Make<int>(42);
   }
 
   void SetDefaultParameters(const LeafContext<T>& context,
@@ -100,7 +117,27 @@ TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
 
   EXPECT_EQ(5.0, actions.time);
   ASSERT_EQ(1u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
+            actions.events[0].action);
+}
+
+// Tests that if the current time is smaller than the offset, the next
+// update time is the offset, DiscreteUpdate and UnrestrictedUpdate happen
+// at the same time.
+TEST_F(LeafSystemTest, EventsAtTheSameTime) {
+  context_.set_time(2.0);
+  UpdateActions<double> actions;
+  // Both actions happen at t = 5.
+  system_.AddPeriodicUpdate();
+  system_.AddPeriodicUnrestrictedUpdate(3, 5);
+  system_.CalcNextUpdateTime(context_, &actions);
+
+  EXPECT_EQ(5.0, actions.time);
+  ASSERT_EQ(2u, actions.events.size());
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
+            actions.events[0].action);
+  EXPECT_EQ(DiscreteEvent<double>::kUnrestrictedUpdateAction,
+            actions.events[1].action);
 }
 
 // Tests that if the current time is exactly the offset, the next
@@ -113,7 +150,8 @@ TEST_F(LeafSystemTest, ExactlyAtOffset) {
 
   EXPECT_EQ(15.0, actions.time);
   ASSERT_EQ(1u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
+            actions.events[0].action);
 }
 
 // Tests that if the current time is larger than the offset, the next
@@ -126,7 +164,8 @@ TEST_F(LeafSystemTest, OffsetIsInThePast) {
 
   EXPECT_EQ(25.0, actions.time);
   ASSERT_EQ(1u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
+            actions.events[0].action);
 }
 
 // Tests that if the current time is exactly an update time, the next update
@@ -139,7 +178,8 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
 
   EXPECT_EQ(35.0, actions.time);
   ASSERT_EQ(1u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
+            actions.events[0].action);
 }
 
 // Tests that if a LeafSystem has both a discrete update and a periodic Publish,
@@ -162,14 +202,16 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   system_.CalcNextUpdateTime(context_, &actions);
   EXPECT_EQ(15.0, actions.time);
   ASSERT_EQ(1u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
+            actions.events[0].action);
 
   // Both events fire at 60sec.
   context_.set_time(59.0);
   system_.CalcNextUpdateTime(context_, &actions);
   EXPECT_EQ(60.0, actions.time);
   ASSERT_EQ(2u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
+            actions.events[0].action);
 }
 
 // Tests that if the integrator has stopped on the k-th sample, and the current
@@ -246,6 +288,109 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   EXPECT_EQ(2, xc->get_misc_continuous_state().size());
 }
 
+// Tests that the vector-valued output has been allocated with the correct
+// dimensions.
+TEST_F(LeafSystemTest, DeclareVectorOutput) {
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+  auto output = system_.AllocateOutput(*context);
+  EXPECT_EQ(17, output->get_vector_data(0)->size());
+}
+
+// Tests that the abstract-valued output has been allocated with the correct
+// type.
+TEST_F(LeafSystemTest, DeclareAbstractOutput) {
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+  auto output = system_.AllocateOutput(*context);
+  EXPECT_EQ(42, UnpackIntValue(output->get_data(1)));
+}
+
+// Tests both that an unrestricted update callback is called and that
+// modifications to state dimension are caught.
+TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
+  // Create 9, 1, and 3 dimensional continuous, discrete, and abstract state
+  // vectors.
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+  context->set_continuous_state(
+    std::make_unique<ContinuousState<double>>(
+      std::make_unique<BasicVector<double>>(9), 3, 3, 3));
+  context->set_discrete_state(
+    std::make_unique<DiscreteState<double>>(
+      std::make_unique<BasicVector<double>>(1)));
+  std::vector<std::unique_ptr<AbstractValue>> abstract_data;
+  abstract_data.push_back(PackValue(3));
+  abstract_data.push_back(PackValue(5));
+  abstract_data.push_back(PackValue(7));
+  context->set_abstract_state(
+        std::make_unique<AbstractState>(std::move(abstract_data)));
+
+  // Copy the state.
+  std::unique_ptr<State<double>> x = context->CloneState();
+
+  // Create an unrestricted update callback that just copies the state.
+  DiscreteEvent<double> event;
+  event.action = DiscreteEvent<double>::kUnrestrictedUpdateAction;
+  event.do_unrestricted_update = [](const Context<double>& c,
+                                  State<double>* s) {
+    s->CopyFrom(*c.CloneState());
+  };
+
+  // Verify no exception is thrown.
+  EXPECT_NO_THROW(system_.CalcUnrestrictedUpdate(*context, event, x.get()));
+
+  // Change the function to change the continuous state dimension.
+  // Call the unrestricted update function again, now verifying that an
+  // exception is thrown.
+  event.do_unrestricted_update = [](const Context<double>& c,
+                                  State<double>* s) {
+    s->CopyFrom(*c.CloneState());
+    s->set_continuous_state(
+      std::make_unique<ContinuousState<double>>(
+        std::make_unique<BasicVector<double>>(4), 4, 0, 0));
+  };
+
+  // Call the unrestricted update function, verifying that an exception
+  // is thrown
+  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, event, x.get()),
+               std::logic_error);
+
+  // Restore the continuous state (size).
+  x->set_continuous_state(
+    std::make_unique<ContinuousState<double>>(
+      std::make_unique<BasicVector<double>>(9), 3, 3, 3));
+
+  // Change the event to indicate to change the discrete state dimension.
+  event.do_unrestricted_update = [](const Context<double>& c,
+                                  State<double>* s) {
+    std::vector<std::unique_ptr<BasicVector<double>>> disc_data;
+    s->CopyFrom(*c.CloneState());
+    disc_data.push_back(std::make_unique<BasicVector<double>>(1));
+    disc_data.push_back(std::make_unique<BasicVector<double>>(1));
+    s->set_discrete_state(
+         std::make_unique<DiscreteState<double>>(std::move(disc_data)));
+  };
+
+  // Call the unrestricted update function again, again verifying that an
+  // exception is thrown.
+  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, event, x.get()),
+               std::logic_error);
+
+  // Restore the discrete state (size).
+  x->set_discrete_state(
+    std::make_unique<DiscreteState<double>>(
+      std::make_unique<BasicVector<double>>(1)));
+
+  // Change the event to indicate to change the abstract state dimension.
+  event.do_unrestricted_update = [](const Context<double>& c,
+                                  State<double>* s) {
+    s->CopyFrom(*c.CloneState());
+    s->set_abstract_state(std::make_unique<AbstractState>());
+  };
+
+  // Call the unrestricted update function again, again verifying that an
+  // exception is thrown.
+  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, event, x.get()),
+               std::logic_error);
+}
 
 // Tests that the next update time is computed correctly for LeafSystems
 // templated on AutoDiffXd. Protects against regression on #4431.

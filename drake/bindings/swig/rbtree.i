@@ -157,11 +157,18 @@
     return $self->transformPoints(cache, points, current_body_or_frame_ind, new_body_or_frame_ind);
   }
 
-  Eigen::Matrix<double, drake::kSpaceDimension, 1> centerOfMass(KinematicsCache<double> &cache, const std::set<int> &model_instance_id = default_model_instance_id_set) const {
+  Eigen::Matrix<double, drake::kSpaceDimension, 1> centerOfMass(
+      KinematicsCache<double> &cache,
+      const std::set<int> &model_instance_id =
+          RigidBodyTreeConstants::default_model_instance_id_set) const {
     return $self->centerOfMass(cache, model_instance_id);
   }
 
-  Eigen::Matrix<double, drake::kSpaceDimension, Eigen::Dynamic> centerOfMassJacobian(KinematicsCache<double>& cache, const std::set<int>& model_instance_ids = default_model_instance_id_set, bool in_terms_of_qdot = false) const {
+  Eigen::Matrix<double, drake::kSpaceDimension, Eigen::Dynamic> centerOfMassJacobian(
+      KinematicsCache<double>& cache,
+      const std::set<int>& model_instance_ids =
+          RigidBodyTreeConstants::default_model_instance_id_set,
+      bool in_terms_of_qdot = false) const {
     return $self->centerOfMassJacobian(cache, model_instance_ids, in_terms_of_qdot);
   }
 

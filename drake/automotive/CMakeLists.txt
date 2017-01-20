@@ -16,6 +16,18 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   idm_planner.cc
   linear_car.cc
   maliput/api/road_geometry.cc
+  maliput/monolane/arc_lane.cc
+  maliput/monolane/branch_point.cc
+  maliput/monolane/builder.cc
+  maliput/monolane/junction.cc
+  maliput/monolane/lane.cc
+  maliput/monolane/line_lane.cc
+  maliput/monolane/loader.cc
+  maliput/monolane/road_geometry.cc
+  maliput/monolane/segment.cc
+  maliput/utility/generate_obj.cc
+  maliput/utility/generate_urdf.cc
+  maliput/utility/infinite_circuit_road.cc
   simple_car.cc
   single_lane_ego_and_agent.cc
   trajectory_car.cc
@@ -25,6 +37,8 @@ target_link_libraries(drakeAutomotive
   drakeSystemAnalysis
   drakeSystemFramework
   drakeSystemPrimitives
+  Eigen3::Eigen
+  yaml-cpp
   )
 drake_install_libraries(drakeAutomotive)
 drake_install_headers(
@@ -87,10 +101,10 @@ if(lcm_FOUND)
       drakeSystemAnalysis
       drakeSystemControllers
       drakeLCMSystem2)
-  add_test(NAME car_sim_lcm COMMAND car_sim_lcm --simulation_sec 0.1)
+  drake_add_test(NAME car_sim_lcm COMMAND car_sim_lcm --simulation_sec 0.1)
 
   # TODO(liang.fok) Enable the following unit test once the build system is able
   # to automatically generate the speed_bump.obj file from the speed_bump.yaml
   # file.
-  # add_test(NAME car_sim_lcm COMMAND car_sim_lcm --with_speed_bump true --simulation_sec 0.1)
+  # drake_add_test(NAME car_sim_lcm COMMAND car_sim_lcm --with_speed_bump true --simulation_sec 0.1)
 endif()

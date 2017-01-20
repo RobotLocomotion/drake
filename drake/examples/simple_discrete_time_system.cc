@@ -15,13 +15,13 @@ class SimpleDiscreteTimeSystem : public drake::systems::LeafSystem<double> {
  public:
   SimpleDiscreteTimeSystem() {
     const int kSize = 1;  // The dimension of both output (y) and state (x).
-    this->DeclareUpdatePeriodSec(1.0);
+    this->DeclareDiscreteUpdatePeriodSec(1.0);
     this->DeclareOutputPort(drake::systems::kVectorValued, kSize);
     this->DeclareDiscreteState(kSize);
   }
 
   // x[n+1] = x[n]^3
-  void DoEvalDiscreteVariableUpdates(
+  void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
       drake::systems::DiscreteState<double>* updates) const override {
     double x = context.get_discrete_state(0)->GetAtIndex(0);
@@ -30,7 +30,7 @@ class SimpleDiscreteTimeSystem : public drake::systems::LeafSystem<double> {
   }
 
   // y = x
-  void EvalOutput(const drake::systems::Context<double>& context,
+  void DoCalcOutput(const drake::systems::Context<double>& context,
                   drake::systems::SystemOutput<double>* output) const override {
     output->GetMutableVectorData(0)->SetFromVector(
         context.get_discrete_state(0)->CopyToVector());

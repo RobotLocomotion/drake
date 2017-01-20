@@ -28,27 +28,24 @@ template <typename T>
 LinearCar<T>::~LinearCar() {}
 
 template <typename T>
-const systems::SystemPortDescriptor<T>& LinearCar<T>::get_input_port() const {
+const systems::InputPortDescriptor<T>& LinearCar<T>::get_input_port() const {
   return systems::System<T>::get_input_port(0);
 }
 
 template <typename T>
-const systems::SystemPortDescriptor<T>& LinearCar<T>::get_output_port() const {
+const systems::OutputPortDescriptor<T>& LinearCar<T>::get_output_port() const {
   return systems::System<T>::get_output_port(0);
 }
 
 template <typename T>
-void LinearCar<T>::EvalOutput(const systems::Context<T>& context,
-                              systems::SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
-
+void LinearCar<T>::DoCalcOutput(const systems::Context<T>& context,
+                                systems::SystemOutput<T>* output) const {
   this->GetMutableOutputVector(output, 0) =
       this->CopyContinuousStateVector(context);
 }
 
 template <typename T>
-void LinearCar<T>::EvalTimeDerivatives(
+void LinearCar<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));

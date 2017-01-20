@@ -1,13 +1,20 @@
 #pragma once
 
+#include <memory>
+
+#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/controllers/gravity_compensator.h"
+#include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/multiplexer.h"
+#include "drake/systems/primitives/trajectory_source.h"
 
 namespace drake {
 namespace examples {
@@ -33,6 +40,9 @@ class VisualizedPlant : public systems::Diagram<T> {
                   double penetration_stiffness, double penetration_damping,
                   double friction_coefficient, lcm::DrakeLcmInterface* lcm);
 
+  const systems::RigidBodyPlant<T>& plant() const {
+    return *rigid_body_plant_;
+  }
  private:
   systems::RigidBodyPlant<T>* rigid_body_plant_{nullptr};
   systems::DrakeVisualizer* drake_visualizer{nullptr};
@@ -51,7 +61,31 @@ class PassiveVisualizedPlant : public systems::Diagram<T> {
 
  private:
   VisualizedPlant<T>* visualized_plant_{nullptr};
-  systems::ConstantVectorSource<T>* constant_vector_source_{nullptr};
+};
+
+/// A custom `systems::Diagram` consisting of a `systems::PidControlledSystem`
+/// wrapping a `RigidBodyPlant` with a `systems::GravityCompensator` attached
+/// in feedback and a `systems::DrakeVisualizer` attached to the output. The
+/// resulting diagram has no input ports and the same output ports as the
+/// `systems::PidControlledSystem`.
+template <typename T>
+class PositionControlledPlantWithRobot : public systems::Diagram<T> {
+ public:
+  /// Builds the PositionControlledPlantWithRobot.
+  PositionControlledPlantWithRobot(
+      std::unique_ptr<RigidBodyTree<T>> world_tree,
+      std::unique_ptr<PiecewisePolynomialTrajectory> pp_traj,
+      int robot_model_instance_id, const RigidBodyTree<T>& robot_tree,
+      double penetration_stiffness, double penetration_damping,
+      double friction_coefficient, lcm::DrakeLcmInterface* lcm);
+
+ private:
+  systems::Multiplexer<T>* input_mux_{nullptr};
+  systems::GravityCompensator<T>* gravity_compensator_{nullptr};
+  systems::TrajectorySource<T>* desired_plan_{nullptr};
+  systems::DrakeVisualizer* drake_visualizer_{nullptr};
+  systems::RigidBodyPlant<T>* rigid_body_plant_{nullptr};
+  std::unique_ptr<const PiecewisePolynomialTrajectory> poly_trajectory_;
 };
 
 }  // namespace kuka_iiwa_arm

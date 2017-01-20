@@ -1,0 +1,62 @@
+<robot name="contact_point_generator">
+  <link name="body">
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+         <box size="2 2 2"/>
+      </geometry>
+    </collision>
+
+    <collision>
+      <origin xyz="-1 0 0" rpy="0 0 0"/>
+      <geometry>
+        <!-- This should generate a contact point; DrakeShapes::Sphere has
+            a threshold of 1e-6.  Only spheres with a radius *strictly less*
+            than the threshold will generate contact points. -->
+         <sphere radius="0.9999e-6"/>
+      </geometry>
+    </collision>
+
+    <collision>
+      <!-- This should *not* generate a contact points. -->
+      <origin xyz="-1 0 0" rpy="0 0 0"/>
+      <geometry>
+         <sphere radius="1.0001e-6"/>
+      </geometry>
+    </collision>
+
+    <collision>
+      <!-- This should *not* generate a contact points. -->
+      <origin xyz="1 0 0" rpy="0 0 0"/>
+      <geometry>
+         <sphere radius="0.5"/>
+      </geometry>
+    </collision>
+
+    <collision>
+      <!-- This should *not* generate a contact points. -->
+      <origin xyz="0 5 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.5" length="1"/>
+      </geometry>
+    </collision>
+
+    <collision>
+      <!-- This should *not* generate a contact points. -->
+      <origin xyz="0 -5 0" rpy="0 0 0"/>
+      <geometry>
+        <capsule radius="0.5" length="1"/>
+      </geometry>
+    </collision>
+
+    <collision>
+      <!-- This should *not* generate a contact points. -->
+      <origin xyz="0 0 5" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="tet.obj"/>
+      </geometry>
+
+    </collision>
+  </link>
+</robot>

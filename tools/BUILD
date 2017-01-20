@@ -1,5 +1,4 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
 
@@ -7,6 +6,21 @@ sh_binary(
     name = "valgrind",
     srcs = ["valgrind.sh"],
     data = ["valgrind.supp"],
+)
+
+sh_binary(
+    name = "kcov",
+    srcs = ["kcov.sh"],
+)
+
+py_binary(
+    name = "cmake_configure_file",
+    srcs = ["cmake_configure_file.py"],
+)
+
+py_binary(
+    name = "drakelint",
+    srcs = ["drakelint.py"],
 )
 
 alias(
@@ -38,4 +52,9 @@ cc_toolchain(
     static_runtime_libs = [":empty"],
     strip_files = ":empty",
     supports_param_files = 0,
+)
+
+config_setting(
+    name = "with_gurobi",
+    values = {"define": "WITH_GUROBI=ON"},
 )

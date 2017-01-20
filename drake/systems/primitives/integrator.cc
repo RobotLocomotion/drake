@@ -45,23 +45,23 @@ std::unique_ptr<ContinuousState<T>> Integrator<T>::AllocateContinuousState()
     const {
   // The integrator's state is first-order; its state vector size is the
   // same as the input (and output) vector size.
-  const int size = System<T>::get_output_port(0).get_size();
-  DRAKE_ASSERT(System<T>::get_input_port(0).get_size() == size);
+  const int size = System<T>::get_output_port(0).size();
+  DRAKE_ASSERT(System<T>::get_input_port(0).size() == size);
   return std::make_unique<ContinuousState<T>>(
       std::make_unique<BasicVector<T>>(size));
 }
 
 template <typename T>
-void Integrator<T>::EvalTimeDerivatives(const Context<T>& context,
-                                        ContinuousState<T>* derivatives) const {
+void Integrator<T>::DoCalcTimeDerivatives(
+    const Context<T>& context, ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   const BasicVector<T>* input = this->EvalVectorInput(context, 0);
   derivatives->SetFromVector(input->get_value());
 }
 
 template <typename T>
-void Integrator<T>::EvalOutput(const Context<T>& context,
-                               SystemOutput<T>* output) const {
+void Integrator<T>::DoCalcOutput(const Context<T>& context,
+                                 SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
@@ -73,7 +73,7 @@ void Integrator<T>::EvalOutput(const Context<T>& context,
 
 template <typename T>
 Integrator<AutoDiffXd>* Integrator<T>::DoToAutoDiffXd() const {
-  return new Integrator<AutoDiffXd>(this->get_input_port(0).get_size());
+  return new Integrator<AutoDiffXd>(this->get_input_port(0).size());
 }
 
 // Explicitly instantiates on the most common scalar types.

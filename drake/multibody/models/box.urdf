@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<robot name="box">
+  <link name="box">
+    <inertial>
+      <mass value="1"/>
+      <!-- Inertia values were calculated to be consistent with the mass and
+           geometry size, assuming a uniform density. -->
+      <inertia ixx="0.0108" ixy="0" ixz="0" iyy="0.0083" iyz="0" izz="0.0042"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <box size=".1 .2 .3"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <box size=".1 .2 .3"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>

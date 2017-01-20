@@ -46,7 +46,7 @@ GTEST_TEST(PassThroughScalarTypeTest, AutoDiff) {
 
   context->FixInputPort(0, std::move(input));
 
-  buffer->EvalOutput(*context, output.get());
+  buffer->CalcOutput(*context, output.get());
 
   ASSERT_EQ(1, output->get_num_ports());
   auto output_vector = output->get_vector_data(0)->get_value();

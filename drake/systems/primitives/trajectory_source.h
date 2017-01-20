@@ -20,7 +20,7 @@ namespace systems {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 /// @ingroup primitive_systems
 template <typename T>
@@ -31,12 +31,12 @@ class TrajectorySource : public LeafSystem<T> {
   /// system.
   explicit TrajectorySource(const Trajectory& trajectory);
 
-  /// Outputs a signal using the time-varying trajectory specified in the
-  /// constructor.
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override;
-
  private:
+  // Outputs a signal using the time-varying trajectory specified in the
+  // constructor.
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override;
+
   const Trajectory& trajectory_;
 };
 

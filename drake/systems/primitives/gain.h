@@ -19,7 +19,7 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in drakeSystemFramework.
+/// They are already available to link against in the containing library.
 ///
 /// To use other specific scalar types see gain-inl.h.
 ///
@@ -51,20 +51,21 @@ class Gain : public LeafSystem<T> {
   /// Returns the gain vector constant.
   const VectorX<T>& get_gain_vector() const;
 
-  /// Sets the output port value to the product of the gain and the input port
-  /// value. The gain is specified in the constructor.
-  /// If number of connected input or output ports differs from one or, the
-  /// input ports are not the correct size, std::runtime_error will be thrown.
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override;
 
   /// Returns the input port.
-  const SystemPortDescriptor<T>& get_input_port() const;
+  const InputPortDescriptor<T>& get_input_port() const;
 
   /// Returns the output port.
-  const SystemPortDescriptor<T>& get_output_port() const;
+  const OutputPortDescriptor<T>& get_output_port() const;
 
  private:
+  // Sets the output port value to the product of the gain and the input port
+  // value. The gain is specified in the constructor.
+  // If number of connected input or output ports differs from one or, the
+  // input ports are not the correct size, std::runtime_error will be thrown.
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override;
+
   // TODO(amcastro-tri): move gain_ to System<T>::Parameter.
   const VectorX<T> k_;
 };

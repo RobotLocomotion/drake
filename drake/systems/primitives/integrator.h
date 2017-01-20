@@ -18,7 +18,7 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 /// @ingroup primitive_systems
 
@@ -35,12 +35,8 @@ class Integrator : public LeafSystem<T> {
   void set_integral_value(Context<T>* context,
                           const Eigen::Ref<const VectorX<T>>& value) const;
 
-  // System<T> overrides
+  // System<T> override.
   bool has_any_direct_feedthrough() const override;
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override;
-  void EvalTimeDerivatives(const Context<T>& context,
-                           ContinuousState<T>* derivatives) const override;
 
   // Returns an Integrator<AutoDiffXd> with the same dimensions as this
   // Integrator.
@@ -49,9 +45,17 @@ class Integrator : public LeafSystem<T> {
   }
 
  protected:
+  // System<T> overrides.
+
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override;
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override;
+
   // Returns an Integrator<AutoDiffXd> with the same dimensions as this
   // Integrator.
   Integrator<AutoDiffXd>* DoToAutoDiffXd() const override;
+
   // LeafSystem<T> override
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
 };

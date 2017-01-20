@@ -56,8 +56,8 @@ RotaryEncoders<T>::RotaryEncoders(int input_port_size,
 }
 
 template <typename T>
-void RotaryEncoders<T>::EvalOutput(const systems::Context<T>& context,
-                                   systems::SystemOutput<T>* output) const {
+void RotaryEncoders<T>::DoCalcOutput(const systems::Context<T>& context,
+                                     systems::SystemOutput<T>* output) const {
   Eigen::VectorBlock<VectorX<T>> y =
       output->GetMutableVectorData(0)->get_mutable_value();
   const Eigen::VectorBlock<const VectorX<T>>& calibration_offsets =
@@ -115,7 +115,7 @@ Eigen::VectorBlock<const VectorX<T>> RotaryEncoders<T>::get_calibration_offsets(
 
 template <typename T>
 RotaryEncoders<AutoDiffXd>* RotaryEncoders<T>::DoToAutoDiffXd() const {
-  return new RotaryEncoders<AutoDiffXd>(this->get_input_port(0).get_size(),
+  return new RotaryEncoders<AutoDiffXd>(this->get_input_port(0).size(),
                                         indices_, ticks_per_revolution_);
 }
 

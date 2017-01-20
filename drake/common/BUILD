@@ -1,6 +1,9 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
+load("//tools:drake.bzl", "cc_googletest")
+
 package(default_visibility = ["//visibility:public"])
 
 # A library of things that EVERYONE should want and MUST EAT.
@@ -16,10 +19,12 @@ cc_library(
         "constants.h",
         "drake_assert.h",
         "drake_compat.h",
+        "drake_copyable.h",
         "drake_deprecated.h",
         "drake_throw.h",
         "eigen_stl_types.h",
         "eigen_types.h",
+        "never_destroyed.h",
         "text_logging.h",
     ],
     linkstatic = 1,
@@ -33,6 +38,12 @@ cc_library(
 cc_library(
     name = "cond",
     hdrs = ["cond.h"],
+    linkstatic = 1,
+)
+
+cc_library(
+    name = "dummy_value",
+    hdrs = ["dummy_value.h"],
     linkstatic = 1,
 )
 
@@ -60,6 +71,7 @@ cc_library(
     deps = [
         ":common",
         ":cond",
+        ":dummy_value",
     ],
 )
 
@@ -81,6 +93,7 @@ cc_library(
     linkstatic = 1,
     deps = [
         ":common",
+        ":dummy_value",
     ],
 )
 
@@ -104,8 +117,10 @@ cc_library(
         "symbolic_environment.cc",
         "symbolic_expression.cc",
         "symbolic_expression_cell.cc",
+        "symbolic_expression_cell.h",
         "symbolic_formula.cc",
         "symbolic_formula_cell.cc",
+        "symbolic_formula_cell.h",
         "symbolic_variable.cc",
         "symbolic_variables.cc",
     ],
@@ -113,9 +128,7 @@ cc_library(
         "hash.h",
         "symbolic_environment.h",
         "symbolic_expression.h",
-        "symbolic_expression_cell.h",
         "symbolic_formula.h",
-        "symbolic_formula_cell.h",
         "symbolic_variable.h",
         "symbolic_variables.h",
     ],
@@ -123,6 +136,7 @@ cc_library(
     deps = [
         ":common",
         ":cond",
+        ":dummy_value",
         ":number_traits",
     ],
 )
@@ -228,234 +242,185 @@ cc_library(
     linkstatic = 1,
 )
 
-cc_test(
+cc_googletest(
     name = "autodiff_overloads_test",
-    size = "small",
-    srcs = ["test/autodiff_overloads_test.cc"],
     deps = [
         ":autodiff",
         ":common",
         ":eigen_matrix_compare",
         ":extract_double",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "double_overloads_test",
-    size = "small",
-    srcs = ["test/double_overloads_test.cc"],
     deps = [
         ":common",
         ":cond",
         ":double",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "drake_assert_test",
-    size = "small",
-    srcs = ["test/drake_assert_test.cc"],
     deps = [
         ":common",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "drake_assert_test_compile",
-    size = "small",
-    srcs = ["test/drake_assert_test_compile.cc"],
     deps = [
         ":common",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "drake_deprecated_test",
-    size = "small",
-    srcs = ["test/drake_deprecated_test.cc"],
     # Remove spurious warnings from the default build output.
     copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":common",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "drake_throw_test",
-    size = "small",
-    srcs = ["test/drake_throw_test.cc"],
     deps = [
         ":common",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
+    name = "dummy_value_test",
+    deps = [
+        ":dummy_value",
+    ],
+)
+
+cc_googletest(
     name = "eigen_matrix_compare_test",
-    size = "small",
-    srcs = ["test/eigen_matrix_compare_test.cc"],
     deps = [
         ":common",
         ":eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "eigen_stl_types_test",
-    size = "small",
-    srcs = ["test/eigen_stl_types_test.cc"],
     deps = [
         ":common",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "extract_double_test",
-    size = "small",
-    srcs = ["test/extract_double_test.cc"],
     deps = [
         ":common",
         ":extract_double",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "functional_form_test",
-    size = "small",
-    srcs = ["test/functional_form_test.cc"],
     deps = [
         ":common",
         ":functional_form",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "is_approx_equal_abstol_test",
-    size = "small",
-    srcs = ["test/is_approx_equal_abstol_test.cc"],
     deps = [
         ":common",
         ":is_approx_equal_abstol",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
+    name = "never_destroyed_test",
+    deps = [
+        ":common",
+    ],
+)
+
+cc_googletest(
     name = "nice_type_name_test",
-    size = "small",
-    srcs = ["test/nice_type_name_test.cc"],
     deps = [
         ":common",
         ":nice_type_name",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "polynomial_test",
-    size = "small",
-    srcs = ["test/polynomial_test.cc"],
     deps = [
         ":common",
         ":eigen_matrix_compare",
         ":random_polynomial_matrix",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "sorted_vectors_have_intersection_test",
-    size = "small",
-    srcs = ["test/sorted_vectors_have_intersection_test.cc"],
     deps = [
         ":common",
         ":sorted_vectors_have_intersection",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "symbolic_environment_test",
-    size = "small",
-    srcs = ["test/symbolic_environment_test.cc"],
     deps = [
         ":common",
         ":symbolic",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "symbolic_expression_test",
-    size = "small",
-    srcs = ["test/symbolic_expression_test.cc"],
     deps = [
         ":common",
         ":symbolic",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "symbolic_formula_test",
-    size = "small",
-    srcs = ["test/symbolic_formula_test.cc"],
     deps = [
         ":common",
         ":symbolic",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "symbolic_variable_test",
-    size = "small",
-    srcs = ["test/symbolic_variable_test.cc"],
     deps = [
         ":common",
         ":symbolic",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "symbolic_variables_test",
-    size = "small",
-    srcs = ["test/symbolic_variables_test.cc"],
     deps = [
         ":common",
         ":symbolic",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "text_logging_test",
-    size = "small",
-    srcs = ["test/text_logging_test.cc"],
     deps = [
         ":common",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "trig_poly_test",
-    size = "small",
-    srcs = ["test/trig_poly_test.cc"],
     deps = [
         ":common",
         ":polynomial",
-        "@gtest//:main",
     ],
 )
 
@@ -465,3 +430,5 @@ cc_test(
 # - text_logging_test in fancy variants
 # - drake_deprecated_test in fancy variants
 # - cpplint_wrapper_test.py
+
+cpplint()

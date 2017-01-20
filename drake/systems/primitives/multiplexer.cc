@@ -22,8 +22,8 @@ Multiplexer<T>::Multiplexer(std::vector<int> input_sizes)
 }
 
 template <typename T>
-void Multiplexer<T>::EvalOutput(const Context<T>& context,
-                                SystemOutput<T>* output) const {
+void Multiplexer<T>::DoCalcOutput(const Context<T>& context,
+                                  SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   auto output_vector = System<T>::GetMutableOutputVector(output, 0);

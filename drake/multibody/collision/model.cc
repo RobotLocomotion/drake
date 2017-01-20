@@ -8,14 +8,23 @@ using std::unique_ptr;
 using std::vector;
 
 namespace DrakeCollision {
-ElementId Model::addElement(const Element& element) {
-  unique_ptr<Element> element_local(element.clone());
-  ElementId id = element_local->getId();
-  this->elements.insert(make_pair(id, move(element_local)));
-  return id;
+
+Element* Model::AddElement(std::unique_ptr<Element> element) {
+  ElementId id = element->getId();
+  const auto& itr = elements.find(id);
+  if (itr == elements.end()) {
+    elements.insert(make_pair(id, move(element)));
+    Element* raw_element = elements[id].get();
+    DoAddElement(*raw_element);
+    return raw_element;
+  }
+  throw std::runtime_error(
+      "Attempting to add an element with a duplicate"
+      "id: " +
+      std::to_string(id));
 }
 
-bool Model::removeElement(const ElementId& id) {
+bool Model::removeElement(ElementId id) {
   return elements.erase(id) > 0;
 }
 
@@ -47,7 +56,7 @@ void Model::getTerrainContactPoints(ElementId id0,
   }
 }
 
-bool Model::updateElementWorldTransform(const ElementId id,
+bool Model::updateElementWorldTransform(ElementId id,
                                         const Isometry3d& T_elem_to_world) {
   auto elem_itr = elements.find(id);
   if (elem_itr != elements.end()) {
@@ -75,14 +84,14 @@ bool Model::transformCollisionFrame(
 
 bool closestPointsAllToAll(
     const vector<ElementId>& ids_to_check,
-    const bool use_margins,
+    bool use_margins,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<PointPair>& closest_points) {
   return false;
 }
 
 bool collisionPointsAllToAll(
-    const bool use_margins,
+    bool use_margins,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<PointPair>& points) {
   return false;
@@ -90,7 +99,7 @@ bool collisionPointsAllToAll(
 
 bool closestPointsPairwise(
     const vector<ElementIdPair>& id_pairs,
-    const bool use_margins,
+    bool use_margins,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<PointPair>& closest_points) {
   return false;

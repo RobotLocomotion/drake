@@ -38,7 +38,7 @@ void TestGainSystem(const Gain<T>& gain_system,
   // Hook input of the expected size.
   context->FixInputPort(0, std::move(input));
 
-  gain_system.EvalOutput(*context, output.get());
+  gain_system.CalcOutput(*context, output.get());
 
   // Checks that the number of output ports in the Gain system and the
   // SystemOutput are consistent.

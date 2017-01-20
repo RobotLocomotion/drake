@@ -35,6 +35,13 @@ if(xfoil_FOUND)
     CACHE FILEPATH "Path to the xfoil executable")
 endif()
 
+if(lcm_FOUND)
+  # Needs to be in cache to keep MATLAB happy. The target lcm-java is imported
+  # by find_package(lcm).
+  get_target_property(_lcm_jar_file lcm-java JAR_FILE)
+  get_filename_component(LCM_JAR_FILE "${_lcm_jar_file}" REALPATH CACHE)
+endif()
+
 add_subdirectory(util)
 add_subdirectory(solvers)
 add_subdirectory(systems)

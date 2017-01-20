@@ -18,14 +18,14 @@ class SimpleMixedContinuousTimeDiscreteTimeSystem
  public:
   SimpleMixedContinuousTimeDiscreteTimeSystem() {
     const int kSize = 1;
-    this->DeclareUpdatePeriodSec(1.0);
+    this->DeclareDiscreteUpdatePeriodSec(1.0);
     this->DeclareOutputPort(drake::systems::kVectorValued, 2 * kSize);
     this->DeclareContinuousState(kSize);
     this->DeclareDiscreteState(kSize);
   }
 
   // x[n+1] = x[n]^3
-  void DoEvalDiscreteVariableUpdates(
+  void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
       drake::systems::DiscreteState<double>* updates) const override {
     const double x = context.get_discrete_state(0)->GetAtIndex(0);
@@ -34,7 +34,7 @@ class SimpleMixedContinuousTimeDiscreteTimeSystem
   }
 
   // xdot = -x + x^3
-  void EvalTimeDerivatives(
+  void DoCalcTimeDerivatives(
       const drake::systems::Context<double>& context,
       drake::systems::ContinuousState<double>* derivatives) const override {
     const double x = context.get_continuous_state_vector().GetAtIndex(0);
@@ -43,8 +43,9 @@ class SimpleMixedContinuousTimeDiscreteTimeSystem
   }
 
   // y = x
-  void EvalOutput(const drake::systems::Context<double>& context,
-                  drake::systems::SystemOutput<double>* output) const override {
+  void DoCalcOutput(
+      const drake::systems::Context<double>& context,
+      drake::systems::SystemOutput<double>* output) const override {
     const double x1 = context.get_discrete_state(0)->GetAtIndex(0);
     output->GetMutableVectorData(0)->SetAtIndex(0, x1);
 

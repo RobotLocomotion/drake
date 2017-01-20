@@ -35,10 +35,11 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   /// The input force to this system is not direct feedthrough.
   bool has_any_direct_feedthrough() const override { return false; }
 
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
+ private:
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
 
-  void EvalTimeDerivatives(
+  void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
@@ -63,7 +64,7 @@ class AcrobotPlant : public systems::LeafSystem<T> {
 
   // LeafSystem<T> override.
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override;
+      const systems::OutputPortDescriptor<T>& descriptor) const override;
 
   // System<T> override.
   AcrobotPlant<AutoDiffXd>* DoToAutoDiffXd() const override;

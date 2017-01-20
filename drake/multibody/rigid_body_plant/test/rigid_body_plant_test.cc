@@ -1,3 +1,5 @@
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+
 #include <iostream>
 #include <memory>
 
@@ -12,7 +14,6 @@
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 
 using Eigen::Isometry3d;
 using Eigen::Quaterniond;
@@ -26,6 +27,8 @@ using std::unique_ptr;
 namespace drake {
 
 using multibody::joints::kFixed;
+using multibody::joints::kQuaternion;
+using parsers::ModelInstanceIdTable;
 using parsers::sdf::AddModelInstancesFromSdfFile;
 
 namespace systems {
@@ -228,8 +231,9 @@ TEST_F(KukaArmTest, SetDefaultState) {
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
-  context_->FixInputPort(0, make_unique<BasicVector<double>>(
-                                kuka_plant_->get_num_actuators()));
+  context_->FixInputPort(kuka_plant_->actuator_command_input_port().get_index(),
+                         make_unique<BasicVector<double>>(
+                             kuka_plant_->get_num_actuators()));
 
   // Asserts that for this case the zero configuration corresponds to a state
   // vector with all entries equal to zero.
@@ -238,11 +242,7 @@ TEST_F(KukaArmTest, SetDefaultState) {
   ASSERT_EQ(xc, VectorXd::Zero(xc.size()));
 }
 
-// Tests RigidBodyPlant<T>::EvalOutput() for a KUKA iiwa arm model.
-// For a RigidBodyPlant<T> the first output of the system should equal the
-// state vector. The second output from this system should correspond to a
-// RigidBodyPlant<T>::VectorOfPoses containing the poses of all bodies in the
-// system.
+// Tests RigidBodyPlant<T>::CalcOutput() for a KUKA iiwa arm model.
 TEST_F(KukaArmTest, EvalOutput) {
   auto& tree = kuka_plant_->get_rigid_body_tree();
 
@@ -250,20 +250,33 @@ TEST_F(KukaArmTest, EvalOutput) {
   // are consistent.
   ASSERT_EQ(1, kuka_plant_->get_num_input_ports());
   ASSERT_EQ(1, context_->get_num_input_ports());
+  ASSERT_EQ(1, kuka_plant_->get_num_model_instances());
+
+  const int kModelInstanceId =
+      RigidBodyTreeConstants::kFirstNonWorldModelInstanceId;
 
   // Checks the size of the input ports to match the number of generalized
   // forces that can be applied.
   ASSERT_EQ(kNumPositions_, kuka_plant_->get_num_positions());
+  ASSERT_EQ(kNumPositions_, kuka_plant_->get_num_positions(0));
   ASSERT_EQ(kNumVelocities_, kuka_plant_->get_num_velocities());
+  ASSERT_EQ(kNumVelocities_, kuka_plant_->get_num_velocities(0));
   ASSERT_EQ(kNumStates_, kuka_plant_->get_num_states());
+  ASSERT_EQ(kNumStates_, kuka_plant_->get_num_states(0));
   ASSERT_EQ(kNumActuators_, kuka_plant_->get_num_actuators());
-  ASSERT_EQ(kNumActuators_, kuka_plant_->get_input_port(0).get_size());
+  ASSERT_EQ(kNumActuators_, kuka_plant_->get_num_actuators(0));
+  ASSERT_EQ(kNumActuators_,
+      kuka_plant_->model_instance_actuator_command_input_port(
+          kModelInstanceId).size());
 
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
-  context_->FixInputPort(0, make_unique<BasicVector<double>>(
-                                kuka_plant_->get_num_actuators()));
+  context_->FixInputPort(
+      kuka_plant_->model_instance_actuator_command_input_port(
+                       kModelInstanceId).get_index(),
+                       make_unique<BasicVector<double>>(
+                           kuka_plant_->get_num_actuators()));
 
   // Sets the state to a non-zero value.
   VectorXd desired_angles(kNumPositions_);
@@ -276,19 +289,32 @@ TEST_F(KukaArmTest, EvalOutput) {
   VectorXd xc = context_->get_continuous_state()->CopyToVector();
   ASSERT_EQ(xc, desired_state);
 
-  // 3 outputs: state, kinematic results, contact results
-  ASSERT_EQ(3, output_->get_num_ports());
-  const BasicVector<double>* output_state = output_->get_vector_data(0);
-  ASSERT_NE(nullptr, output_state);
+  // Four output ports:
+  //
+  //    (1) plant state
+  //    (2) model instance state for tree containing a single model instance
+  //    (3) kinematic results
+  //    (4) contact results
+  //
+  // (In this context, there is only one model instance and thus only one model
+  // instance state port.)
+  ASSERT_EQ(4, output_->get_num_ports());
 
-  kuka_plant_->EvalOutput(*context_, output_.get());
+  kuka_plant_->CalcOutput(*context_, output_.get());
 
-  // Asserts the output equals the state.
-  EXPECT_EQ(desired_state, output_state->get_value());
+  // Check that the per-instance port (we should only have one) equals
+  // the expected state.
+  const int output_index = kuka_plant_->
+      model_instance_state_output_port(kModelInstanceId).get_index();
+  const BasicVector<double>* instance_output =
+      output_->get_vector_data(output_index);
+  ASSERT_NE(nullptr, instance_output);
+  EXPECT_EQ(desired_state, instance_output->get_value().eval());
 
   // Evaluates the correctness of the kinematics results port.
+  const int index = kuka_plant_->kinematics_results_output_port().get_index();
   auto& kinematics_results =
-      output_->get_data(1)->GetValue<KinematicsResults<double>>();
+      output_->get_data(index)->GetValue<KinematicsResults<double>>();
   ASSERT_EQ(kinematics_results.get_num_positions(), kNumPositions_);
   ASSERT_EQ(kinematics_results.get_num_velocities(), kNumVelocities_);
 
@@ -379,11 +405,12 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
   input << applied_force;
   auto input_vector = std::make_unique<BasicVector<double>>(1);
   input_vector->set_value(input);
-  context->FixInputPort(0, move(input_vector));
+  context->FixInputPort(plant.actuator_command_input_port().get_index(),
+                        move(input_vector));
 
   // Obtain the time derivatives; test that speed is zero, return acceleration.
   auto derivatives = plant.AllocateTimeDerivatives();
-  plant.EvalTimeDerivatives(*context, derivatives.get());
+  plant.CalcTimeDerivatives(*context, derivatives.get());
   auto xdot = derivatives->CopyToVector();
   EXPECT_EQ(xdot(0), 0.);  // Not moving.
   return xdot(1);
@@ -453,6 +480,51 @@ GTEST_TEST(rigid_body_plant_test, TestContactFrameCreation) {
   R_WL = RigidBodyPlant<double>::ComputeBasisFromZ(z);
   ExpectOrthonormal(R_WL);
   EXPECT_EQ(z, R_WL.col(2));
+}
+
+// Verifies that various model-instance-specific accessor methods work.
+GTEST_TEST(RigidBodyPlantTest, InstancePortTest) {
+  auto tree_ptr = make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      drake::GetDrakePath() +
+      "/multibody/test/rigid_body_tree/three_dof_robot.urdf",
+      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
+      tree_ptr.get());
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
+      Vector3d(1., 1., 0));
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      drake::GetDrakePath() +
+      "/multibody/test/rigid_body_tree/four_dof_robot.urdf",
+      drake::multibody::joints::kFixed, weld_to_frame,
+      tree_ptr.get());
+
+  RigidBodyPlant<double> plant(move(tree_ptr));
+
+  EXPECT_EQ(plant.get_num_states(), 14);
+  EXPECT_EQ(plant.get_input_size(), 7);
+  EXPECT_EQ(plant.get_output_size(), 14);
+
+  EXPECT_EQ(plant.get_num_actuators(0), 3);
+  EXPECT_EQ(plant.get_num_positions(0), 3);
+  EXPECT_EQ(plant.get_num_velocities(0), 3);
+  EXPECT_EQ(plant.get_num_states(0), 6);
+  EXPECT_EQ(plant.get_num_actuators(1), 4);
+  EXPECT_EQ(plant.get_num_positions(1), 4);
+  EXPECT_EQ(plant.get_num_velocities(1), 4);
+  EXPECT_EQ(plant.get_num_states(1), 8);
+
+  // TODO(liang.fok) The following has a bug, see #4697.
+  const RigidBodyTree<double>& tree = plant.get_rigid_body_tree();
+  const std::map<std::string, int> position_name_to_index_map =
+      tree.computePositionNameToIndexMap();
+  const int joint4_world = position_name_to_index_map.at("joint4");
+  ASSERT_EQ(joint4_world, 6);
+  const int joint4_instance = plant.FindInstancePositionIndexFromWorldIndex(
+      1, joint4_world);
+  EXPECT_EQ(joint4_instance, 3);
+  EXPECT_ANY_THROW(
+      plant.FindInstancePositionIndexFromWorldIndex(0, joint4_world));
 }
 
 }  // namespace

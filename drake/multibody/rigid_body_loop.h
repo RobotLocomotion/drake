@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <Eigen/Dense>
 
 #include "drake/multibody/rigid_body_frame.h"
@@ -20,7 +22,7 @@
 /// - AutoDiffXd
 /// - AutoDiffUpTo73d
 ///
-/// They are already available to link against in drakeRBM.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
 class RigidBodyLoop {

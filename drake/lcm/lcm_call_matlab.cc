@@ -6,16 +6,17 @@
 
 #include "lcm/lcm-cpp.hpp"
 
+#include "drake/common/never_destroyed.h"
 #include "drake/lcmt_call_matlab.hpp"
 #include "drake/lcmt_matlab_array.hpp"
 
 namespace drake {
 namespace lcm {
 
-static int g_uid = 0;
+static int globally_unique_id = 0;
 
 LcmMatlabRemoteVariable::LcmMatlabRemoteVariable()
-    : uid_(g_uid++)
+    : unique_id_(globally_unique_id++)
 // TODO(russt): replace this with a random int64_t, e.g.
 // http://stackoverflow.com/questions/7114043/random-number-generation-in-c11-how-to-generate-how-do-they-work
 // TODO(russt): david-german-tri recommended a more robust (but more complex)
@@ -30,7 +31,8 @@ void ToLcmMatlabArray(const LcmMatlabRemoteVariable& var,
   matlab_array->cols = 1;
   matlab_array->num_bytes = sizeof(int64_t);
   matlab_array->data.resize(matlab_array->num_bytes);
-  memcpy(matlab_array->data.data(), &var.uid_, matlab_array->num_bytes);
+  int64_t uid = var.unique_id();
+  memcpy(matlab_array->data.data(), &uid, matlab_array->num_bytes);
 }
 
 void ToLcmMatlabArray(double var, drake::lcmt_matlab_array* matlab_array) {
@@ -52,6 +54,18 @@ void ToLcmMatlabArray(const Eigen::Ref<const Eigen::MatrixXd>& mat,
   memcpy(matlab_array->data.data(), mat.data(), matlab_array->num_bytes);
 }
 
+void ToLcmMatlabArray(
+    const Eigen::Ref <
+        const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>>& mat,
+    drake::lcmt_matlab_array* matlab_array) {
+  matlab_array->type = drake::lcmt_matlab_array::LOGICAL;
+  matlab_array->rows = mat.rows();
+  matlab_array->cols = mat.cols();
+  matlab_array->num_bytes = sizeof(bool) * mat.rows() * mat.cols();
+  matlab_array->data.resize(matlab_array->num_bytes);
+  memcpy(matlab_array->data.data(), mat.data(), matlab_array->num_bytes);
+}
+
 void ToLcmMatlabArray(const std::string& str,
                       drake::lcmt_matlab_array* matlab_array) {
   matlab_array->type = drake::lcmt_matlab_array::CHAR;
@@ -63,15 +77,11 @@ void ToLcmMatlabArray(const std::string& str,
 }
 
 void internal::PublishLcmCallMatlab(const drake::lcmt_call_matlab& msg) {
-  // Keep a local instance of LCM here for publishing.
-  // Per the style guide, must use a raw pointer (who's destructor will never be
-  // called).
-  // https://google.github.io/styleguide/cppguide.html#Static_and_Global_Variables
-  static ::lcm::LCM* lcm = new ::lcm::LCM();
+  static never_destroyed<::lcm::LCM> lcm;
 
-  if (!lcm->good()) return;
+  if (!lcm.access().good()) return;
 
-  lcm->publish("LCM_CALL_MATLAB", &msg);
+  lcm.access().publish("LCM_CALL_MATLAB", &msg);
 }
 
 }  // namespace lcm

@@ -13,7 +13,7 @@ RobotCommandToDesiredEffortConverter::RobotCommandToDesiredEffortConverter(
   set_name("RobotCommandToDesiredEffortConverter");
 }
 
-void RobotCommandToDesiredEffortConverter::EvalOutput(
+void RobotCommandToDesiredEffortConverter::DoCalcOutput(
     const systems::Context<double>& context,
     systems::SystemOutput<double>* output) const {
   using bot_core::atlas_command_t;
@@ -49,7 +49,7 @@ void RobotCommandToDesiredEffortConverter::EvalOutput(
   }
 }
 
-const SystemPortDescriptor<double>&
+const OutputPortDescriptor<double>&
 RobotCommandToDesiredEffortConverter::desired_effort_output_port(
     const RigidBodyActuator& actuator) const {
   return get_output_port(desired_effort_port_indices_.at(&actuator));

@@ -21,7 +21,7 @@ namespace bouncing_ball {
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
-/// They are already available to link against in drakeBouncingBall.
+/// They are already available to link against in the containing library.
 ///
 /// Inputs: no inputs.
 /// States: vertical position (state index 0) and velocity (state index 1) in
@@ -33,6 +33,12 @@ class BouncingBall : public Ball<T> {
  public:
   /// Constructor for the BouncingBall system.
   BouncingBall();
+
+  void DoCalcNextUpdateTime(const systems::Context<T>& context,
+                            systems::UpdateActions<T>* actions) const override;
+
+  void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
+                                systems::State<T>* state) const override;
 
   /// TODO(jadecastro): This is a prototype implementation to be overridden from
   /// the system API, pending further discussions.
@@ -51,10 +57,15 @@ class BouncingBall : public Ball<T> {
   void PerformReset(systems::Context<T>* context) const;
 
   /// Getter for the coefficient of restitution for this model.
-  double GetRestitutionCoef() const { return restitution_coef_; }
+  double get_restitution_coef() const { return restitution_coef_; }
 
  private:
-  const double restitution_coef_ = 0.8;  // coefficient of restitution
+  const double restitution_coef_ = 1.0;  // Coefficient of restitution.
+
+  // Numerically intolerant signum function.
+  int sgn(T x) const {
+    return (T(0) < x) - (x < T(0));
+  }
 };
 
 }  // namespace bouncing_ball

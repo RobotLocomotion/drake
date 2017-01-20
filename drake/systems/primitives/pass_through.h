@@ -31,7 +31,7 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// @ingroup primitive_systems
 
 template <typename T>
@@ -41,9 +41,10 @@ class PassThrough : public LeafSystem<T> {
   /// @param size number of elements in the signal to be processed.
   explicit PassThrough(int size);
 
-  /// Sets the output port to equal the input port.
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override;
+ private:
+  // Sets the output port to equal the input port.
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override;
 };
 
 }  // namespace systems

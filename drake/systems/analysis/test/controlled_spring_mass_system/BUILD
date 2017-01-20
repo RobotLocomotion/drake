@@ -1,6 +1,9 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
+load("//tools:drake.bzl", "cc_googletest")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -20,13 +23,12 @@ cc_library(
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "controlled_spring_mass_system_test",
-    size = "small",
     srcs = ["controlled_spring_mass_system_test.cc"],
-    linkstatic = 1,
     deps = [
         ":controlled_spring_mass_system",
-        "@gtest//:main",
     ],
 )
+
+cpplint()

@@ -1,6 +1,9 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
+load("//tools:drake.bzl", "cc_googletest")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -48,12 +51,11 @@ cc_library(
 
 # === test/ ===
 
-cc_test(
+cc_googletest(
     name = "spline_generation_test",
-    size = "small",
-    srcs = ["test/spline_generation_test.cc"],
     deps = [
         ":spline_generation",
-        "@gtest//:main",
     ],
 )
+
+cpplint()

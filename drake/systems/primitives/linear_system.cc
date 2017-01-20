@@ -1,5 +1,7 @@
 #include "drake/systems/primitives/linear_system.h"
 
+#include <utility>
+
 #include <Eigen/Dense>
 #include <Eigen/LU>
 
@@ -38,10 +40,10 @@ std::unique_ptr<LinearSystem<double>> Linearize(
   DRAKE_DEMAND(system.get_num_output_ports() <= 1);
 
   const int num_inputs = (system.get_num_input_ports() > 0)
-                             ? system.get_input_port(0).get_size()
+                             ? system.get_input_port(0).size()
                              : 0,
             num_outputs = (system.get_num_output_ports() > 0)
-                              ? system.get_output_port(0).get_size()
+                              ? system.get_output_port(0).size()
                               : 0;
 
   // Create an autodiff version of the system.
@@ -75,7 +77,7 @@ std::unique_ptr<LinearSystem<double>> Linearize(
 
   std::unique_ptr<ContinuousState<AutoDiffXd>> autodiff_xdot =
       autodiff_system->AllocateTimeDerivatives();
-  autodiff_system->EvalTimeDerivatives(*autodiff_context, autodiff_xdot.get());
+  autodiff_system->CalcTimeDerivatives(*autodiff_context, autodiff_xdot.get());
   auto autodiff_xdot_vec = autodiff_xdot->CopyToVector();
 
   // Ensure that xdot0 = f(x0,u0) == 0.
@@ -97,7 +99,7 @@ std::unique_ptr<LinearSystem<double>> Linearize(
   if (num_outputs > 0) {
     std::unique_ptr<SystemOutput<AutoDiffXd>> autodiff_y0 =
         autodiff_system->AllocateOutput(*autodiff_context);
-    autodiff_system->EvalOutput(*autodiff_context, autodiff_y0.get());
+    autodiff_system->CalcOutput(*autodiff_context, autodiff_y0.get());
     auto autodiff_y0_vec = autodiff_y0->get_vector_data(0)->CopyToVector();
 
     Eigen::MatrixXd CD = math::autoDiffToGradientMatrix(autodiff_y0_vec);

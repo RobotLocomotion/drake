@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/systems/primitives/affine_system.h"
 
 namespace drake {
@@ -26,7 +28,7 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 ///
 /// @ingroup primitive_systems

@@ -44,8 +44,18 @@ class Constraint {
   }
 
  public:
-  explicit Constraint(size_t num_constraints)
-      : lower_bound_(num_constraints), upper_bound_(num_constraints) {
+  /// Constructs a constraint which has \p num_constraints rows, with input
+  /// variables to Eval a \p num_vars x 1 vector.
+  /// @param num_constraints. The number of rows in the constraints, namely
+  /// in Constraint::Eval(x, y), y should be a \p num_constraints x 1 vector.
+  /// @param num_vars. The number of rows in the input, namely in
+  /// Constraint::Eval(x, y), x should be a \p num_vars x 1 vector.
+  /// If the input dimension is not known, then set \p num_vars to
+  /// Eigen::Dynamic.
+  Constraint(size_t num_constraints, int num_vars)
+      : lower_bound_(num_constraints),
+        upper_bound_(num_constraints),
+        num_vars_(num_vars) {
     check(num_constraints);
     lower_bound_.setConstant(-std::numeric_limits<double>::infinity());
     upper_bound_.setConstant(std::numeric_limits<double>::infinity());
@@ -60,15 +70,20 @@ class Constraint {
   Constraint& operator=(Constraint&& rhs) = delete;
 
   template <typename DerivedLB, typename DerivedUB>
-  Constraint(size_t num_constraints, Eigen::MatrixBase<DerivedLB> const& lb,
+  Constraint(size_t num_constraints, int num_vars,
+             Eigen::MatrixBase<DerivedLB> const& lb,
              Eigen::MatrixBase<DerivedUB> const& ub)
-      : Constraint(num_constraints, lb, ub, "") {}
+      : Constraint(num_constraints, num_vars, lb, ub, "") {}
 
   template <typename DerivedLB, typename DerivedUB>
-  Constraint(size_t num_constraints, const Eigen::MatrixBase<DerivedLB>& lb,
+  Constraint(size_t num_constraints, int num_vars,
+             const Eigen::MatrixBase<DerivedLB>& lb,
              const Eigen::MatrixBase<DerivedUB>& ub,
              const std::string& description)
-      : lower_bound_(lb), upper_bound_(ub), description_(description) {
+      : lower_bound_(lb),
+        upper_bound_(ub),
+        num_vars_(num_vars),
+        description_(description) {
     check(num_constraints);
   }
 
@@ -76,15 +91,21 @@ class Constraint {
 
   // TODO(bradking): consider using a Ref for `y`.  This will require the client
   // to do allocation, but also allows it to choose stack allocation instead.
-  virtual void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                    Eigen::VectorXd& y) const = 0;
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+            // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+            Eigen::VectorXd& y) const {
+    DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
+    DoEval(x, y);
+  }
   // Move this to DifferentiableConstraint derived class if/when we
   // need to support non-differentiable functions (at least, if
   // DifferentiableConstraint is ever implemented).
-  virtual void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                    TaylorVecXd& y) const = 0;
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+            // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+            TaylorVecXd& y) const {
+    DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
+    DoEval(x, y);
+  }
 
   Eigen::VectorXd const& lower_bound() const { return lower_bound_; }
   Eigen::VectorXd const& upper_bound() const { return upper_bound_; }
@@ -122,9 +143,23 @@ class Constraint {
     upper_bound_ = upper_bound;
   }
 
+  /** Getter for the number of variables in the constraint, namely the
+   * number of rows in x, as used in Eval(x, y). */
+  int num_vars() const { return num_vars_; }
+
+ protected:
+  virtual void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                      Eigen::VectorXd &y) const = 0;
+
+  virtual void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                      TaylorVecXd &y) const = 0;
+
  private:
   Eigen::VectorXd lower_bound_;
   Eigen::VectorXd upper_bound_;
+  int num_vars_{0};
   std::string description_;
 };
 
@@ -139,7 +174,7 @@ class QuadraticConstraint : public Constraint {
   QuadraticConstraint(const Eigen::MatrixBase<DerivedQ>& Q,
                       const Eigen::MatrixBase<Derivedb>& b, double lb,
                       double ub)
-      : Constraint(kNumConstraints, drake::Vector1d::Constant(lb),
+      : Constraint(kNumConstraints, Q.rows(), drake::Vector1d::Constant(lb),
                    drake::Vector1d::Constant(ub)),
         Q_(Q),
         b_(b) {
@@ -156,12 +191,6 @@ class QuadraticConstraint : public Constraint {
   QuadraticConstraint& operator=(QuadraticConstraint&& rhs) = delete;
 
   ~QuadraticConstraint() override {}
-
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override;
-
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override;
 
   virtual const Eigen::MatrixXd& Q() const { return Q_; }
 
@@ -189,33 +218,54 @@ class QuadraticConstraint : public Constraint {
     b_ = new_b;
   }
 
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override;
+
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override;
+
  private:
   Eigen::MatrixXd Q_;
   Eigen::VectorXd b_;
 };
 
 /**
- A LorentzConeConstraint that takes a n x 1 vector x, and imposes constraint
- \f[
- x_1 >= \sqrt{x_2^2+...+x_n^2}
- \f]
+ Constraining the linear expression \f$ z=Ax+b \f$ lies within the Lorentz cone.
+ A vector \f$ z \in \mathbb{R}^n \f$ lies within Lorentz cone if
+ @f[
+ z_0 \ge \sqrt{z_1^2+...+z_{n-1}^2}
+ @f]
+ <!-->
+ z(0) >= sqrt(z(1)^2 + ... + z(n-1)^2)
+ <-->
+ where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^{n}@f$ are given matrices.
  Ideally this constraint should be handled by a second-order cone solver.
  In case the user wants to enforce this constraint through general nonlinear
  optimization, with smooth gradient, we alternatively impose the following
  constraint, with smooth gradient everywhere
- \f[
- x_1 >= 0 \\
- x_1^2-x_2^2-...-x_n^2 >= 0
- \f]
+ @f[
+ a_0^Tx+b_0\ge 0\\
+ (a_0^Tx+b_0)^2-(a_1^Tx+b_1)^2-...-(a_{n-1}^Tx+b_{n-1})^2 \ge 0
+ @f]
+ where @f$ a_i^T@f$ is the i'th row of matrix @f$ A@f$. @f$ b_i @f$ is the i'th
+ entry of vector @f$ b @f$.
+
  For more information and visualization, please refer to
  https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
  */
 class LorentzConeConstraint : public Constraint {
  public:
-  LorentzConeConstraint()
-      : Constraint(2, Eigen::Vector2d::Constant(0.0),
-                   Eigen::Vector2d::Constant(
-                       std::numeric_limits<double>::infinity())) {}
+  LorentzConeConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                        const Eigen::Ref<const Eigen::VectorXd>& b)
+      : Constraint(
+            2, A.cols(), Eigen::Vector2d::Constant(0.0),
+            Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())),
+        A_(A),
+        b_(b) {
+    DRAKE_DEMAND(A_.rows() >= 2);
+    DRAKE_ASSERT(A_.rows() == b_.rows());
+  }
 
   LorentzConeConstraint(const LorentzConeConstraint& rhs) = delete;
 
@@ -227,30 +277,60 @@ class LorentzConeConstraint : public Constraint {
 
   ~LorentzConeConstraint() override {}
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override;
+  /// Getter for A.
+  const Eigen::MatrixXd& A() const { return A_; }
 
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override;
+  /// Getter for b.
+  const Eigen::VectorXd& b() const { return b_; }
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override;
+
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override;
+
+ private:
+  const Eigen::MatrixXd A_;
+  const Eigen::VectorXd b_;
 };
 
 /**
- * A rotated Lorentz cone constraint that taks a n x 1 vector x, and imposes
- * constraint
- * \f[
- * x_1 >= 0
- * x_2 >= 0
- * x_1 * x_2 >= x_3^2 + x_4^2 + ... + x_n^2
- * \f]
+ * Constraining that the linear expression \f$ z=Ax+b \f$ lies within rotated
+ * Lorentz cone.
+ * A vector \f$ z \in\mathbb{R}^n \f$ lies within rotated Lorentz cone, if
+ * @f[
+ * z_0 \ge 0\\
+ * z_1 \ge 0\\
+ * z_0  z_1 \ge z_2^2 + z_3^2 + ... + z_{n-1}^2
+ * @f]
+ * where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^n@f$ are given matrices.
+ * <!-->
+ * z(0) >= 0
+ * z(1) >= 0
+ * z(0) * z(1) >= z(2)^2 + z(3)^2 + ... + z(n-1)^2
+ * <-->
  * For more information and visualization, please refer to
  * https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
  */
 class RotatedLorentzConeConstraint : public Constraint {
  public:
-  RotatedLorentzConeConstraint()
-      : Constraint(3, Eigen::Vector3d::Constant(0.0),
-                   Eigen::Vector3d::Constant(
-                       std::numeric_limits<double>::infinity())) {}
+  RotatedLorentzConeConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                               const Eigen::Ref<const Eigen::VectorXd>& b)
+      : Constraint(
+            3, A.cols(), Eigen::Vector3d::Constant(0.0),
+            Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity())),
+        A_(A),
+        b_(b) {
+    DRAKE_DEMAND(A_.rows() >= 3);
+    DRAKE_ASSERT(A_.rows() == b_.rows());
+  }
+
+  /// Getter for A.
+  const Eigen::MatrixXd& A() const { return A_; }
+
+  /// Getter for b.
+  const Eigen::VectorXd& b() const { return b_; }
 
   RotatedLorentzConeConstraint(const RotatedLorentzConeConstraint& rhs) =
       delete;
@@ -265,11 +345,16 @@ class RotatedLorentzConeConstraint : public Constraint {
 
   ~RotatedLorentzConeConstraint() override {}
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override;
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override;
 
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override;
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override;
+
+ private:
+  const Eigen::MatrixXd A_;
+  const Eigen::VectorXd b_;
 };
 
 /**
@@ -288,7 +373,7 @@ class PolynomialConstraint : public Constraint {
   PolynomialConstraint(const VectorXPoly& polynomials,
                        const std::vector<Polynomiald::VarType>& poly_vars,
                        const Eigen::VectorXd& lb, const Eigen::VectorXd& ub)
-      : Constraint(polynomials.rows(), lb, ub),
+      : Constraint(polynomials.rows(), poly_vars.size(), lb, ub),
         polynomials_(polynomials),
         poly_vars_(poly_vars) {}
 
@@ -302,11 +387,12 @@ class PolynomialConstraint : public Constraint {
 
   ~PolynomialConstraint() override {}
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override;
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override;
 
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override;
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override;
 
  private:
   const VectorXPoly polynomials_;
@@ -320,18 +406,17 @@ class PolynomialConstraint : public Constraint {
 // todo: consider implementing DifferentiableConstraint,
 // TwiceDifferentiableConstraint, ComplementarityConstraint,
 // IntegerConstraint, ...
+
 /**
  * Implements a constraint of the form @f lb <= Ax <= ub @f
  */
 class LinearConstraint : public Constraint {
  public:
-  explicit LinearConstraint(size_t num_constraints)
-      : Constraint(num_constraints) {}
   template <typename DerivedA, typename DerivedLB, typename DerivedUB>
   LinearConstraint(const Eigen::MatrixBase<DerivedA>& a,
                    const Eigen::MatrixBase<DerivedLB>& lb,
                    const Eigen::MatrixBase<DerivedUB>& ub)
-      : Constraint(a.rows(), lb, ub), A_(a) {
+      : Constraint(a.rows(), a.cols(), lb, ub), A_(a) {
     DRAKE_ASSERT(a.rows() == lb.rows());
   }
 
@@ -344,12 +429,6 @@ class LinearConstraint : public Constraint {
   LinearConstraint& operator=(LinearConstraint&& rhs) = delete;
 
   ~LinearConstraint() override {}
-
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override;
-
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override;
 
   virtual Eigen::SparseMatrix<double> GetSparseMatrix() const {
     return A_.sparseView();
@@ -388,6 +467,12 @@ class LinearConstraint : public Constraint {
 
  protected:
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_;
+
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override;
+
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override;
 };
 
 /**
@@ -452,11 +537,12 @@ class BoundingBoxConstraint : public LinearConstraint {
 
   ~BoundingBoxConstraint() override {}
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override;
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override;
 
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override;
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override;
 };
 
 /**
@@ -476,7 +562,7 @@ class LinearComplementarityConstraint : public Constraint {
   template <typename DerivedM, typename Derivedq>
   LinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                   const Eigen::MatrixBase<Derivedq>& q)
-      : Constraint(q.rows()), M_(M), q_(q) {}
+      : Constraint(q.rows(), M.cols()), M_(M), q_(q) {}
 
   LinearComplementarityConstraint(const LinearComplementarityConstraint& rhs) =
       delete;
@@ -492,15 +578,16 @@ class LinearComplementarityConstraint : public Constraint {
 
   ~LinearComplementarityConstraint() override {}
 
-  /** Return Mx + q (the value of the slack variable). */
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override;
-
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override;
-
   const Eigen::MatrixXd& M() const { return M_; }
   const Eigen::VectorXd& q() const { return q_; }
+
+ protected:
+  /** Return Mx + q (the value of the slack variable). */
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override;
+
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override;
 
  private:
   // TODO(ggould-tri) We are storing what are likely statically sized matrices
@@ -534,7 +621,7 @@ class PositiveSemidefiniteConstraint : public Constraint {
    *
    * // Add a 2 x 2 symmetric matrix S to optimization program as new decision
    * // variables.
-   * auto S = prog.AddSymmetricContinuousVariables<2>("S");
+   * auto S = prog.NewSymmetricContinuousVariables<2>("S");
    *
    * // Impose a positive semidefinite constraint on S.
    * std::shared_ptr<PositiveSemidefiniteConstraint> psd_constraint =
@@ -571,9 +658,10 @@ class PositiveSemidefiniteConstraint : public Constraint {
    * @endcode
    */
   explicit PositiveSemidefiniteConstraint(int rows)
-      : Constraint(rows, Eigen::VectorXd::Zero(rows),
+      : Constraint(rows, rows * rows, Eigen::VectorXd::Zero(rows),
                    Eigen::VectorXd::Constant(
-                       rows, std::numeric_limits<double>::infinity())) {}
+                       rows, std::numeric_limits<double>::infinity())),
+        matrix_rows_(rows) {}
 
   PositiveSemidefiniteConstraint(const PositiveSemidefiniteConstraint& rhs) =
       delete;
@@ -588,20 +676,27 @@ class PositiveSemidefiniteConstraint : public Constraint {
 
   ~PositiveSemidefiniteConstraint() override {}
 
+  int matrix_rows() const { return matrix_rows_; }
+
+ protected:
   /**
    * Evaluate the eigen values of the symmetric matrix.
    * @param x The stacked columns of the symmetric matrix.
    */
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override;
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override;
 
   /**
    * @param x The stacked columns of the symmetric matrix. This function is not
    * supported yet, since Eigen's eigen value solver does not accept
    * AutoDiffScalar.
    */
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override;
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override;
+
+ private:
+  int matrix_rows_;  // Number of rows in the symmetric matrix being positive
+                     // semi-definite.
 };
 
 /**
@@ -643,22 +738,23 @@ class LinearMatrixInequalityConstraint : public Constraint {
   /* Getter for all given matrices F */
   const std::vector<Eigen::MatrixXd>& F() const { return F_; }
 
+  /// Gets the number of rows in the matrix inequality constraint. Namely
+  /// Fi are all matrix_rows() x matrix_rows() matrices.
+  int matrix_rows() const { return matrix_rows_; }
+
+ protected:
   /**
    * Evaluate the eigen values of the linear matrix.
    */
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override;
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override;
 
   /**
    * This function is not supported, since Eigen's eigen value solver does not
    * accept AutoDiffScalar type.
    */
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override;
-
-  /// Gets the number of rows in the matrix inequality constraint. Namely
-  /// Fi are all matrix_rows() x matrix_rows() matrices.
-  int matrix_rows() const { return matrix_rows_; }
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override;
 
  private:
   std::vector<Eigen::MatrixXd> F_;

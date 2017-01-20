@@ -17,7 +17,7 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 /// @ingroup primitive_systems
 template <typename T>
@@ -36,10 +36,11 @@ class Demultiplexer : public LeafSystem<T> {
   /// a multiple of @p output_ports_sizes.
   explicit Demultiplexer(int size, int output_ports_sizes = 1);
 
-  /// Sets the i-th output port to the value of the i-th component of the input
-  /// port.
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override;
+ private:
+  // Sets the i-th output port to the value of the i-th component of the input
+  // port.
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override;
 };
 
 }  // namespace systems

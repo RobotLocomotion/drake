@@ -31,12 +31,12 @@ TEST_F(MultiplexerTest, Basic) {
 
   // Confirm the shape.
   ASSERT_EQ(3, mux_->get_num_input_ports());
-  ASSERT_EQ(2, mux_->get_input_port(0).get_size());
-  ASSERT_EQ(1, mux_->get_input_port(1).get_size());
-  ASSERT_EQ(3, mux_->get_input_port(2).get_size());
+  ASSERT_EQ(2, mux_->get_input_port(0).size());
+  ASSERT_EQ(1, mux_->get_input_port(1).size());
+  ASSERT_EQ(3, mux_->get_input_port(2).size());
   ASSERT_EQ(3, context_->get_num_input_ports());
   ASSERT_EQ(1, mux_->get_num_output_ports());
-  ASSERT_EQ(6, mux_->get_output_port(0).get_size());
+  ASSERT_EQ(6, mux_->get_output_port(0).size());
   ASSERT_EQ(1, output_->get_num_ports());
   ASSERT_EQ(6, output_->get_vector_data(0)->size());
 
@@ -46,7 +46,7 @@ TEST_F(MultiplexerTest, Basic) {
   context_->FixInputPort(2, BasicVector<double>::Make({31.0, 32.0, 33.0}));
 
   // Confirm output data.
-  mux_->EvalOutput(*context_, output_.get());
+  mux_->CalcOutput(*context_, output_.get());
   ASSERT_EQ(6, output_->get_vector_data(0)->size());
   auto value = output_->get_vector_data(0)->get_value();
   ASSERT_EQ(11.0, value[0]);
@@ -64,13 +64,13 @@ TEST_F(MultiplexerTest, ScalarConstructor) {
 
   // Confirm the shape.
   ASSERT_EQ(4, mux_->get_num_input_ports());
-  ASSERT_EQ(1, mux_->get_input_port(0).get_size());
-  ASSERT_EQ(1, mux_->get_input_port(1).get_size());
-  ASSERT_EQ(1, mux_->get_input_port(2).get_size());
-  ASSERT_EQ(1, mux_->get_input_port(3).get_size());
+  ASSERT_EQ(1, mux_->get_input_port(0).size());
+  ASSERT_EQ(1, mux_->get_input_port(1).size());
+  ASSERT_EQ(1, mux_->get_input_port(2).size());
+  ASSERT_EQ(1, mux_->get_input_port(3).size());
   ASSERT_EQ(4, context_->get_num_input_ports());
   ASSERT_EQ(1, mux_->get_num_output_ports());
-  ASSERT_EQ(4, mux_->get_output_port(0).get_size());
+  ASSERT_EQ(4, mux_->get_output_port(0).size());
   ASSERT_EQ(1, output_->get_num_ports());
   ASSERT_EQ(4, output_->get_vector_data(0)->size());
 }

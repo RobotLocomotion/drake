@@ -58,7 +58,7 @@ TEST_F(ZeroOrderHoldTest, Output) {
       context_->get_mutable_discrete_state(0));
   xd->get_mutable_value() << 1.0, 3.14, 2.18;
 
-  hold_->EvalOutput(*context_, output_.get());
+  hold_->CalcOutput(*context_, output_.get());
 
   const BasicVector<double>* output_vector = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_vector);
@@ -82,7 +82,7 @@ TEST_F(ZeroOrderHoldTest, NextUpdateTimeMustNotBeCurrentTime) {
   // Check that the action is to update.
   ASSERT_EQ(1u, actions.events.size());
   const DiscreteEvent<double>& event = actions.events[0];
-  EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, event.action);
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction, event.action);
 }
 
 // Tests that when the current time is between updates, a update is requested
@@ -100,18 +100,18 @@ TEST_F(ZeroOrderHoldTest, NextUpdateTimeIsInTheFuture) {
   // Check that the action is to update.
   ASSERT_EQ(1u, actions.events.size());
   const DiscreteEvent<double>& event = actions.events[0];
-  EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, event.action);
+  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction, event.action);
 }
 
 // Tests that discrete updates update the state.
 TEST_F(ZeroOrderHoldTest, Update) {
   // Fire off an update event.
   DiscreteEvent<double> update_event;
-  update_event.action = DiscreteEvent<double>::kUpdateAction;
+  update_event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
 
   std::unique_ptr<DiscreteState<double>> update =
       hold_->AllocateDiscreteVariables();
-  hold_->EvalDiscreteVariableUpdates(*context_, {update_event}, update.get());
+  hold_->CalcDiscreteVariableUpdates(*context_, {update_event}, update.get());
 
   // Check that the state has been updated to the input.
   const VectorBase<double>* xd = update->get_discrete_state(0);

@@ -21,7 +21,7 @@ namespace systems {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 template <typename T>
 class ConstantValueSource : public LeafSystem<T> {
  public:
@@ -31,8 +31,8 @@ class ConstantValueSource : public LeafSystem<T> {
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const override;
 
-  void EvalOutput(const Context<T>& context,
-                  SystemOutput<T>* output) const override;
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override;
 
  private:
   // TODO(david-german-tri): move source_value_ to the system's parameters.

@@ -3,6 +3,8 @@
 /// @file This file contains classes dealing with sending/receiving
 /// LCM messages related to the Schunk WSG gripper.
 
+#include <memory>
+
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/examples/schunk_wsg/gen/schunk_wsg_trajectory_generator_state_vector.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -29,20 +31,20 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
   /// which contains the position of the actuated finger.
   SchunkWsgTrajectoryGenerator(int input_size, int position_index);
 
-  const systems::SystemPortDescriptor<double>& get_command_input_port() const {
+  const systems::InputPortDescriptor<double>& get_command_input_port() const {
     return this->get_input_port(0);
   }
 
-  const systems::SystemPortDescriptor<double>& get_state_input_port() const {
+  const systems::InputPortDescriptor<double>& get_state_input_port() const {
     return this->get_input_port(1);
   }
 
-  void EvalOutput(const systems::Context<double>& context,
-                  systems::SystemOutput<double>* output) const override;
-
  protected:
+  void DoCalcOutput(const systems::Context<double>& context,
+                    systems::SystemOutput<double>* output) const override;
+
   /// Latches the input port into the discrete state.
-  void DoEvalDiscreteVariableUpdates(
+  void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
       systems::DiscreteState<double>* discrete_state) const override;
 
@@ -77,10 +79,10 @@ class SchunkWsgStatusSender : public systems::LeafSystem<double> {
   std::unique_ptr<systems::SystemOutput<double>> AllocateOutput(
       const systems::Context<double>& context) const override;
 
-  void EvalOutput(const systems::Context<double>& context,
-                  systems::SystemOutput<double>* output) const override;
-
  private:
+  void DoCalcOutput(const systems::Context<double>& context,
+                    systems::SystemOutput<double>* output) const override;
+
   const int position_index_{};
   const int velocity_index_{};
 };

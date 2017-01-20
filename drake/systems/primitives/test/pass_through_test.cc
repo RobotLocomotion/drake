@@ -45,7 +45,7 @@ TEST_F(PassThroughTest, VectorThroughPassThroughSystem) {
   // Hook input of the expected size.
   context_->FixInputPort(0, std::move(input_));
 
-  pass_through_->EvalOutput(*context_, output_.get());
+  pass_through_->CalcOutput(*context_, output_.get());
 
   // Checks that the number of output ports in the system and in the
   // output are consistent.

@@ -22,10 +22,10 @@ const int kNumberToUpdate = 2001;
 // A shell System to test the default implementations.
 class TestSystem : public System<double> {
  public:
-  TestSystem() {}
+  TestSystem() {
+    this->set_name("TestSystem");
+  }
   ~TestSystem() override {}
-
-  std::string get_name() const override { return "TestSystem"; }
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
       const override {
@@ -46,12 +46,15 @@ class TestSystem : public System<double> {
     return nullptr;
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {}
+  const InputPortDescriptor<double>& AddAbstractInputPort() {
+    return this->DeclareAbstractInputPort();
+  }
 
-  void EvalTimeDerivatives(
-      const Context<double>& context,
-      ContinuousState<double>* derivatives) const override {}
+
+  const OutputPortDescriptor<double>& AddAbstractOutputPort() {
+    return this->DeclareAbstractOutputPort();
+  }
+
 
   int get_publish_count() const { return publish_count_; }
   int get_update_count() const { return update_count_; }
@@ -63,6 +66,13 @@ class TestSystem : public System<double> {
   }
 
  protected:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+
+  void DoCalcTimeDerivatives(
+      const Context<double>& context,
+      ContinuousState<double>* derivatives) const override {}
+
   // Sets up an arbitrary mapping from the current time to the next discrete
   // action, to exercise several different forms of discrete action.
   void DoCalcNextUpdateTime(const Context<double>& context,
@@ -75,7 +85,7 @@ class TestSystem : public System<double> {
       event.action = DiscreteEvent<double>::kPublishAction;
     } else if (context.get_time() < 20.0) {
       // Use the default update action.
-      event.action = DiscreteEvent<double>::kUpdateAction;
+      event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
     } else if (context.get_time() < 30.0) {
       // Use a custom publish action.
       event.action = DiscreteEvent<double>::kPublishAction;
@@ -83,8 +93,9 @@ class TestSystem : public System<double> {
                                    std::placeholders::_1 /* context */);
     } else {
       // Use a custom update action.
-      event.action = DiscreteEvent<double>::kUpdateAction;
-      event.do_update = std::bind(&TestSystem::DoEvalDiscreteUpdatesNumber,
+      event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
+      event.do_calc_discrete_variable_update = std::bind(
+                                  &TestSystem::DoCalcDiscreteUpdatesNumber,
                                   this, std::placeholders::_1 /* context */,
                                   std::placeholders::_2 /* discrete state */,
                                   kNumberToUpdate);
@@ -97,7 +108,7 @@ class TestSystem : public System<double> {
   }
 
   // The default update function.
-  void DoEvalDiscreteVariableUpdates(
+  void DoCalcDiscreteVariableUpdates(
       const Context<double> &context,
       DiscreteState<double> *discrete_state) const override {
     ++update_count_;
@@ -111,7 +122,7 @@ class TestSystem : public System<double> {
 
   // A custom update function with additional argument @p num, which may be
   // bound in DoCalcNextUpdateTime.
-  void DoEvalDiscreteUpdatesNumber(const Context<double> &context,
+  void DoCalcDiscreteUpdatesNumber(const Context<double> &context,
                                    DiscreteState<double> *discrete_state,
                                    int num) const {
     updated_numbers_.push_back(num);
@@ -203,7 +214,7 @@ TEST_F(SystemTest, DiscreteUpdate) {
 
   std::unique_ptr<DiscreteState<double>> update =
       system_.AllocateDiscreteVariables();
-  system_.EvalDiscreteVariableUpdates(context_, actions.events[0],
+  system_.CalcDiscreteVariableUpdates(context_, actions.events[0],
                                       update.get());
   EXPECT_EQ(1, system_.get_update_count());
 }
@@ -233,10 +244,31 @@ TEST_F(SystemTest, CustomDiscreteUpdate) {
 
   std::unique_ptr<DiscreteState<double>> update =
       system_.AllocateDiscreteVariables();
-  system_.EvalDiscreteVariableUpdates(context_, actions.events[0],
+  system_.CalcDiscreteVariableUpdates(context_, actions.events[0],
                                       update.get());
   ASSERT_EQ(1u, system_.get_updated_numbers().size());
   EXPECT_EQ(kNumberToUpdate, system_.get_updated_numbers()[0]);
+}
+
+// Tests that descriptor references remain valid even if lots of other
+// descriptors are added to the system, forcing a vector resize.
+TEST_F(SystemTest, PortDescriptorsAreStable) {
+  const auto& first_input = system_.AddAbstractInputPort();
+  const auto& first_output = system_.AddAbstractOutputPort();
+  for (int i = 0; i < 1000; i++) {
+    system_.AddAbstractInputPort();
+    system_.AddAbstractOutputPort();
+  }
+  EXPECT_EQ(1001, system_.get_num_input_ports());
+  EXPECT_EQ(1001, system_.get_num_output_ports());
+
+  // Check for address equality.
+  EXPECT_EQ(&first_input, &system_.get_input_port(0));
+  EXPECT_EQ(&first_output, &system_.get_output_port(0));
+
+  // Check for valid content.
+  EXPECT_EQ(kAbstractValued, first_input.get_data_type());
+  EXPECT_EQ(kAbstractValued, first_output.get_data_type());
 }
 
 // A shell System for AbstractValue IO test
@@ -252,11 +284,11 @@ class ValueIOTestSystem : public System<double> {
 
     DeclareInputPort(kVectorValued, 1);
     DeclareOutputPort(kVectorValued, 1);
+
+    set_name("ValueIOTestSystem");
   }
 
   ~ValueIOTestSystem() override {}
-
-  std::string get_name() const override { return "ValueIOTestSystem"; }
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
       const override {
@@ -274,9 +306,9 @@ class ValueIOTestSystem : public System<double> {
 
   void SetDefaults(Context<double>* context) const override {}
 
-  // Eval append "output" to input(0), and sets output(1) = 2 * input(1).
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  // Append "output" to input(0), and sets output(1) = 2 * input(1).
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     const std::string* str_in = EvalInputValue<std::string>(context, 0);
 
     std::string& str_out =
@@ -324,7 +356,7 @@ GTEST_TEST(SystemIOTest, SystemValueIOTest) {
   context->SetInputPort(
       1, std::make_unique<FreestandingInputPort>(std::move(vec_input)));
 
-  test_sys.EvalOutput(*context, output.get());
+  test_sys.CalcOutput(*context, output.get());
 
   EXPECT_EQ(context->get_num_input_ports(), 2);
   EXPECT_EQ(output->get_num_ports(), 2);

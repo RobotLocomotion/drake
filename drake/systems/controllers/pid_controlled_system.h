@@ -1,9 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -129,14 +131,34 @@ class PidControlledSystem : public Diagram<T> {
   System<T>* plant() { return plant_; }
 
   /// @return the input port for the feed forward control input.
-  const SystemPortDescriptor<T>& get_control_input_port() const {
+  const InputPortDescriptor<T>& get_control_input_port() const {
     return this->get_input_port(0);
   }
 
   /// @return the input port for the desired position/velocity state.
-  const SystemPortDescriptor<T>& get_state_input_port() const {
+  const InputPortDescriptor<T>& get_state_input_port() const {
     return this->get_input_port(1);
   }
+
+  /// The return type of ConnectController.
+  struct ConnectResult {
+    /// The feed forward control input.
+    const InputPortDescriptor<T>& control_input_port;
+    /// The feedback state input.
+    const InputPortDescriptor<T>& state_input_port;
+  };
+
+  /// Creates a PidController and uses @p builder to connect @p plant_input and
+  /// @p plant_output from an existing plant, adding additional systems
+  /// (adders, multiplexers, gains, etc.) as needed.
+  static ConnectResult ConnectController(
+      const InputPortDescriptor<T>& plant_input,
+      const OutputPortDescriptor<T>& plant_output,
+      std::unique_ptr<MatrixGain<T>> feedback_selector,
+      const VectorX<T>& Kp,
+      const VectorX<T>& Ki,
+      const VectorX<T>& Kd,
+      DiagramBuilder<T>* builder);
 
  private:
   // A helper function for the constructors. This is necessary to avoid seg
@@ -148,29 +170,6 @@ class PidControlledSystem : public Diagram<T> {
     const VectorX<T>& Kp, const VectorX<T>& Ki, const VectorX<T>& Kd);
 
   System<T>* plant_{nullptr};
-  PidController<T>* controller_{nullptr};
-  MatrixGain<T>* feedback_selector_{nullptr};
-
-  // Takes as input the plant's error state vector and outputs separate position
-  // and velocity state error vectors. These outputs are then inputted into the
-  // PID controller.
-  Demultiplexer<T>* error_demux_{nullptr};
-
-  // Inverts the PID controller's output command. The output of this system is
-  // inputted into plant_input_.
-  Gain<T>* controller_inverter_{nullptr};
-
-  // Inverts the PidControlledSystem input containing the desired state of the
-  // plant. The output is inputted into state_minus_target_.
-  Gain<T>* error_inverter_{nullptr};
-
-  // Subtracts the desired state of the plant from the current state of the
-  // plant. The resulting vector is inputted into error_demux_.
-  Adder<T>* state_minus_target_{nullptr};
-
-  // Adds the PID controller's output command with the provided feed forward
-  // command. The resulting command is then inputted into plant_.
-  Adder<T>* plant_input_{nullptr};
 };
 
 }  // namespace systems

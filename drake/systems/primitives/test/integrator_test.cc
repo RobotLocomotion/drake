@@ -47,17 +47,15 @@ class IntegratorTest : public ::testing::Test {
 
 // Tests that the system exports the correct topology.
 TEST_F(IntegratorTest, Topology) {
-  ASSERT_EQ(1u, integrator_->get_input_ports().size());
-  const auto& input_descriptor = integrator_->get_input_ports()[0];
+  ASSERT_EQ(1u, integrator_->get_num_input_ports());
+  const auto& input_descriptor = integrator_->get_input_port(0);
   EXPECT_EQ(kVectorValued, input_descriptor.get_data_type());
-  EXPECT_EQ(kInputPort, input_descriptor.get_face());
-  EXPECT_EQ(kLength, input_descriptor.get_size());
+  EXPECT_EQ(kLength, input_descriptor.size());
 
-  ASSERT_EQ(1u, integrator_->get_output_ports().size());
-  const auto& output_descriptor = integrator_->get_output_ports()[0];
+  ASSERT_EQ(1u, integrator_->get_num_output_ports());
+  const auto& output_descriptor = integrator_->get_output_port(0);
   EXPECT_EQ(kVectorValued, output_descriptor.get_data_type());
-  EXPECT_EQ(kOutputPort, output_descriptor.get_face());
-  EXPECT_EQ(kLength, output_descriptor.get_size());
+  EXPECT_EQ(kLength, output_descriptor.size());
 }
 
 // Tests that the output of an integrator is its state.
@@ -66,7 +64,7 @@ TEST_F(IntegratorTest, Output) {
   input_->get_mutable_value() << 1.0, 2.0, 3.0;
   context_->FixInputPort(0, std::move(input_));
 
-  integrator_->EvalOutput(*context_, output_.get());
+  integrator_->CalcOutput(*context_, output_.get());
 
   ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_port = output_->get_vector_data(0);
@@ -78,7 +76,7 @@ TEST_F(IntegratorTest, Output) {
 
   continuous_state()->get_mutable_vector()->SetAtIndex(1, 42.0);
   expected << 0.0, 42.0, 0.0;
-  integrator_->EvalOutput(*context_, output_.get());
+  integrator_->CalcOutput(*context_, output_.get());
   EXPECT_EQ(expected, output_port->get_value());
 }
 
@@ -88,7 +86,7 @@ TEST_F(IntegratorTest, Derivatives) {
   input_->get_mutable_value() << 1.0, 2.0, 3.0;
   context_->FixInputPort(0, std::move(input_));
 
-  integrator_->EvalTimeDerivatives(*context_, derivatives_.get());
+  integrator_->CalcTimeDerivatives(*context_, derivatives_.get());
   Eigen::Vector3d expected;
   expected << 1.0, 2.0, 3.0;
   EXPECT_EQ(expected, derivatives_->CopyToVector());

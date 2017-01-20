@@ -23,13 +23,13 @@ Demultiplexer<T>::Demultiplexer(int size, int output_ports_sizes) {
 }
 
 template <typename T>
-void Demultiplexer<T>::EvalOutput(const Context<T>& context,
-                                  SystemOutput<T>* output) const {
+void Demultiplexer<T>::DoCalcOutput(const Context<T>& context,
+                                    SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   // All output ports have the same size as defined in the constructor.
-  const int out_size = this->get_output_port(0).get_size();
+  const int out_size = this->get_output_port(0).size();
 
   // TODO(amcastro-tri): the output should simply reference the input port's
   // value to avoid copy.

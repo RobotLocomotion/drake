@@ -4,7 +4,8 @@ if(lcm_FOUND)
   target_link_libraries(drakePendulumPlant
     drakeMultibodyParsers
     drakeSystemFramework
-    drakeTrajectoryOptimization)
+    drakeTrajectoryOptimization
+    Eigen3::Eigen)
   drake_install_libraries(drakePendulumPlant)
   drake_install_headers(pendulum_plant.h pendulum_swing_up.h)
   drake_install_pkg_config_file(drake-pendulum-plant
@@ -48,7 +49,8 @@ if(lcm_FOUND)
     drakePendulumPlant
     drakeRigidBodyPlant
     drakeSystemControllers
-    drakeSystemAnalysis)
+    drakeSystemAnalysis
+    GTest::GTest)
 
   if(ipopt_FOUND OR NLopt_FOUND OR snopt_FOUND)
     drake_add_test(NAME pendulum_run_swing_up

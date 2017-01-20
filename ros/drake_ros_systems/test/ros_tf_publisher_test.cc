@@ -1,11 +1,13 @@
+#include "drake/systems/ros_tf_publisher.h"
+
 #include <gtest/gtest.h>
 #include <memory>
+
+#include "ros/ros.h"
 
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/ros/parameter_server.h"
-#include "drake/systems/ros_tf_publisher.h"
-#include "ros/ros.h"
 
 using std::make_unique;
 using std::string;
@@ -20,7 +22,7 @@ namespace systems {
 namespace test {
 namespace {
 
-// Tests the RostfPublisher by instantiating it, making it publish a transform,
+// Tests the RosTfPublisher by instantiating it, making it publish a transform,
 // and verifying that the expected transform messages were transmitted.
 GTEST_TEST(RosTfPublisherTest, TestRosTfPublisher) {
   string urdf_string;
@@ -36,7 +38,7 @@ GTEST_TEST(RosTfPublisherTest, TestRosTfPublisher) {
 
   EXPECT_EQ(publisher->get_num_output_ports(), 0);
   EXPECT_EQ(input->size(), 4);
-  EXPECT_EQ(publisher->get_input_port(0).get_size(), input->size());
+  EXPECT_EQ(publisher->get_input_port(0).size(), input->size());
 
   Eigen::VectorXd robot_position = Eigen::VectorXd::Zero(input->size());
   robot_position << 1.0, -0.5, 0, 0;
@@ -99,6 +101,6 @@ GTEST_TEST(RosTfPublisherTest, TestRosTfPublisher) {
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "drake_ros_test_node");
+  ros::init(argc, argv, "drake_ros_tf_publisher_test_node");
   return RUN_ALL_TESTS();
 }

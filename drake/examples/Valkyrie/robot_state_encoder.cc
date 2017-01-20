@@ -57,8 +57,8 @@ RobotStateEncoder::RobotStateEncoder(
 
 RobotStateEncoder::~RobotStateEncoder() {}
 
-void RobotStateEncoder::EvalOutput(const Context<double>& context,
-                                   SystemOutput<double>* output) const {
+void RobotStateEncoder::DoCalcOutput(const Context<double>& context,
+                                     SystemOutput<double>* output) const {
   auto& message = output->GetMutableData(lcm_message_port_index_)
                       ->GetMutableValue<robot_state_t>();
   message.utime = static_cast<int64_t>(context.get_time() * 1e6);
@@ -88,22 +88,22 @@ std::unique_ptr<SystemOutput<double>> RobotStateEncoder::AllocateOutput(
   return std::unique_ptr<SystemOutput<double>>(output.release());
 }
 
-const SystemPortDescriptor<double>& RobotStateEncoder::lcm_message_port()
+const OutputPortDescriptor<double>& RobotStateEncoder::lcm_message_port()
     const {
   return get_output_port(lcm_message_port_index_);
 }
 
-const SystemPortDescriptor<double>& RobotStateEncoder::kinematics_results_port()
+const InputPortDescriptor<double>& RobotStateEncoder::kinematics_results_port()
     const {
   return get_input_port(kinematics_results_port_index_);
 }
 
-const SystemPortDescriptor<double>& RobotStateEncoder::contact_results_port()
+const InputPortDescriptor<double>& RobotStateEncoder::contact_results_port()
     const {
   return get_input_port(contact_results_port_index_);
 }
 
-const SystemPortDescriptor<double>& RobotStateEncoder::effort_port(
+const InputPortDescriptor<double>& RobotStateEncoder::effort_port(
     const RigidBodyActuator& actuator) const {
   return get_input_port(effort_port_indices_.at(&actuator));
 }

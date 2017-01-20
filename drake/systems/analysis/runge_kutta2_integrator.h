@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
@@ -64,7 +66,7 @@ void RungeKutta2Integrator<T>::DoStepOnceFixedSize(const T& dt) {
 
   // TODO(sherm1) This should be calculating into the cache so that
   // Publish() doesn't have to recalculate if it wants to output derivatives.
-  IntegratorBase<T>::get_system().EvalTimeDerivatives(
+  IntegratorBase<T>::get_system().CalcTimeDerivatives(
       IntegratorBase<T>::get_context(), derivs0_.get());
 
   // First stage is an explicit Euler step:
@@ -75,7 +77,7 @@ void RungeKutta2Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   IntegratorBase<T>::get_mutable_context()->set_time(t);
 
   // use derivative at t+dt
-  IntegratorBase<T>::get_system().EvalTimeDerivatives(
+  IntegratorBase<T>::get_system().CalcTimeDerivatives(
       *IntegratorBase<T>::get_mutable_context(), derivs1_.get());
   const auto& xcdot1 = derivs1_->get_vector();
 

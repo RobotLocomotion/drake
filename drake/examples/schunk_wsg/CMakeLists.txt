@@ -15,7 +15,11 @@ if(lcm_FOUND)
   drake_install_pkg_config_file(drake-schunk-wsg
     TARGET drakeSchunkWsg
     LIBS -ldrakeSchunkWsg
-    REQUIRES drake-lcm-system drake-lcmtypes-cpp drake-rigid-body-plant)
+    REQUIRES
+      drake-lcm-system
+      drake-lcmtypes-cpp
+      drake-multibody-parsers
+      drake-rigid-body-plant)
 
   add_executable(schunk_wsg_simulation schunk_wsg_simulation.cc)
   target_link_libraries(schunk_wsg_simulation

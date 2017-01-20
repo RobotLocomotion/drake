@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+
 /// @file
 /// Template method implementations for constant_value_source.h.
 /// Most users should only include that file, not this one.
@@ -32,7 +35,7 @@ std::unique_ptr<SystemOutput<T>> ConstantValueSource<T>::AllocateOutput(
 }
 
 template <typename T>
-void ConstantValueSource<T>::EvalOutput(const Context<T>& context,
+void ConstantValueSource<T>::DoCalcOutput(const Context<T>& context,
                                         SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));

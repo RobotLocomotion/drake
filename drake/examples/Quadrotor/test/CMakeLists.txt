@@ -5,3 +5,13 @@ drake_add_matlab_test(NAME examples/Quadrotor/test/quadrotorDynamics OPTIONAL bu
 drake_add_matlab_test(NAME examples/Quadrotor/test/testCollisions OPTIONAL bullet gurobi snopt COMMAND testCollisions)
 drake_add_matlab_test(NAME examples/Quadrotor/test/testInvertFlatOutputs OPTIONAL bullet snopt COMMAND testInvertFlatOutputs)
 drake_add_matlab_test(NAME examples/Quadrotor/test/testMISOSTrajectory REQUIRES gurobi yalmip OPTIONAL iris COMMAND testMISOSTrajectory)
+
+if(lcm_FOUND)
+  drake_add_cc_test(quadrotor_dynamics_test)
+  target_link_libraries(quadrotor_dynamics_test
+      drakeMultibodyParsers
+      drakeQuadrotorCommon
+      drakeRigidBodyPlant
+      drakeSystemAnalysis
+      drakeSystemPrimitives)
+endif()

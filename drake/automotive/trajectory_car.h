@@ -1,10 +1,12 @@
 #pragma once
 
+#include <memory>
 #include <stdexcept>
 
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/simple_car_state.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -28,6 +30,8 @@ namespace automotive {
 template <typename T>
 class TrajectoryCar : public systems::LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryCar)
+
   /// Constructs a TrajectoryCar system that traces the given @p curve,
   /// at the given constant @p speed, starting at the given @p start_time.
   /// Throws an error if the curve is empty (a zero @p path_length).
@@ -40,25 +44,23 @@ class TrajectoryCar : public systems::LeafSystem<T> {
                             SimpleCarStateIndices::kNumCoordinates);
   }
 
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override {
-    DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-    DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
+ protected:
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override {
     SimpleCarState<T>* const output_vector =
         dynamic_cast<SimpleCarState<T>*>(output->GetMutableVectorData(0));
     DRAKE_ASSERT(output_vector);
 
-    DoEvalOutput(context.get_time(), output_vector);
+    ImplCalcOutput(context.get_time(), output_vector);
   }
 
- protected:
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override {
+      const systems::OutputPortDescriptor<T>& descriptor) const override {
     return std::make_unique<SimpleCarState<T>>();
   }
 
  private:
-  void DoEvalOutput(double time, SimpleCarState<T>* output) const {
+  void ImplCalcOutput(double time, SimpleCarState<T>* output) const {
     // Trace the curve at a fixed speed.
     const double distance = speed_ * (time - start_time_);
     const Curve2<double>::PositionResult pose = curve_.GetPosition(distance);

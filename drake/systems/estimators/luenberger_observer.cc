@@ -1,6 +1,7 @@
 #include "drake/systems/estimators/luenberger_observer.h"
 
 #include <cmath>
+#include <utility>
 
 namespace drake {
 namespace systems {
@@ -15,7 +16,9 @@ LuenbergerObserver<T>::LuenbergerObserver(
       observer_gain_(observer_gain),
       observed_system_context_(std::move(observed_system_context)),
       observed_system_output_(
-          observed_system_->AllocateOutput(*observed_system_context_)) {
+          observed_system_->AllocateOutput(*observed_system_context_)),
+      observed_system_derivatives_(
+          observed_system_->AllocateTimeDerivatives()) {
   DRAKE_DEMAND(observed_system_ != nullptr);
 
   // Note: Could potentially extend this to MIMO systems.
@@ -40,35 +43,38 @@ LuenbergerObserver<T>::LuenbergerObserver(
 
   // First input port is the output of the observed system.
   this->DeclareInputPort(systems::kVectorValued,
-                         observed_system_->get_output_port(0).get_size());
+                         observed_system_->get_output_port(0).size());
 
   // Check the size of the gain matrix.
   DRAKE_DEMAND(observer_gain_.rows() == x->size());
   DRAKE_DEMAND(observer_gain_.cols() ==
-               observed_system_->get_output_port(0).get_size());
+               observed_system_->get_output_port(0).size());
 
   // Second input port is the input to the observed system (if it exists).
   if (observed_system_->get_num_input_ports() > 0) {
     this->DeclareInputPort(systems::kVectorValued,
-                           observed_system_->get_input_port(0).get_size());
+                           observed_system_->get_input_port(0).size());
   }
+
+  // State has the same dimensions as the system being observed.
+  const ContinuousState<T>& xc =
+      *observed_system_context_->get_continuous_state();
+  const int num_q = xc.get_generalized_position().size();
+  const int num_v = xc.get_generalized_velocity().size();
+  const int num_z = xc.get_misc_continuous_state().size();
+  this->DeclareContinuousState(num_q, num_v, num_z);
 }
 
 template <typename T>
-std::unique_ptr<systems::ContinuousState<T>>
-LuenbergerObserver<T>::AllocateContinuousState() const {
-  return observed_system_->AllocateTimeDerivatives();
-}
-
-template <typename T>
-void LuenbergerObserver<T>::EvalOutput(const systems::Context<T>& context,
-                                       systems::SystemOutput<T>* output) const {
+void LuenbergerObserver<T>::DoCalcOutput(
+    const systems::Context<T>& context,
+    systems::SystemOutput<T>* output) const {
   output->GetMutableVectorData(0)->set_value(
       context.get_continuous_state_vector().CopyToVector());
 }
 
 template <typename T>
-void LuenbergerObserver<T>::EvalTimeDerivatives(
+void LuenbergerObserver<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   // (Note that all relevant data in the observed_system_context is set here
@@ -83,24 +89,25 @@ void LuenbergerObserver<T>::EvalTimeDerivatives(
         0, this->EvalVectorInput(context, 1)->CopyToVector());
   }
   // Set observed system state.
-  // TODO(russt): Use set_value once the (derived) types match.
-  observed_system_context_->get_mutable_continuous_state_vector()
-      ->SetFromVector(context.get_continuous_state_vector().CopyToVector());
+  observed_system_context_->get_mutable_continuous_state_vector()->SetFrom(
+      context.get_continuous_state_vector());
 
   // Evaluate the observed system.
-  observed_system_->EvalOutput(*observed_system_context_,
+  observed_system_->CalcOutput(*observed_system_context_,
                                observed_system_output_.get());
-  observed_system_->EvalTimeDerivatives(*observed_system_context_, derivatives);
+  observed_system_->CalcTimeDerivatives(*observed_system_context_,
+                                        observed_system_derivatives_.get());
 
   // Get the measurements.
   auto y = this->EvalVectorInput(context, 0)->CopyToVector();
   auto yhat = observed_system_output_->GetMutableVectorData(0)->CopyToVector();
 
   // Add in the observed gain terms.
-  auto xdothat = derivatives->get_mutable_vector();
+  auto xdothat = observed_system_derivatives_->get_mutable_vector();
 
   // xdothat = f(xhat,u) + L(y-yhat).
-  xdothat->SetFromVector(xdothat->CopyToVector() + observer_gain_ * (y - yhat));
+  derivatives->SetFromVector(
+      xdothat->CopyToVector() + observer_gain_ * (y - yhat));
 }
 
 template class LuenbergerObserver<double>;

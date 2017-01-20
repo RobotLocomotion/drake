@@ -21,6 +21,10 @@ typedef std::vector<Eigen::Vector3i> TrianglesVector;
 
 std::string ShapeToString(Shape ss);
 
+// TODO(SeanCurtis-TRI): Magic number here.  It also leads to issues where the
+// distance between two points (ostensibly represented with zero-radius spheres)
+// will differ by this minimum radius (because they're not truly zero radius).
+// https://github.com/RobotLocomotion/drake/issues/4555
 const double MIN_RADIUS = 1e-7;
 
 class Geometry {

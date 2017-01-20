@@ -56,8 +56,20 @@ class VectorBase {
     GetAtIndex(index) = value;
   }
 
-  /// Replaces the entire state with the contents of value. Throws
-  /// std::runtime_error if value is not a column vector with size() rows.
+  /// Replaces the entire vector with the contents of @p value. Throws
+  /// std::runtime_error if @p value is not a column vector with size() rows.
+  ///
+  /// Implementations should ensure this operation is O(N) in the size of the
+  /// value and allocates no memory.
+  virtual void SetFrom(const VectorBase<T>& value) {
+    DRAKE_THROW_UNLESS(value.size() == size());
+    for (int i = 0; i < value.size(); ++i) {
+      SetAtIndex(i, value.GetAtIndex((i)));
+    }
+  }
+
+  /// Replaces the entire vector with the contents of @p value. Throws
+  /// std::runtime_error if @p value is not a column vector with size() rows.
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates no memory.

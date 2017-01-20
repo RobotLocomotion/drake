@@ -20,8 +20,10 @@ set(sources
   symbolic_environment.cc
   symbolic_expression.cc
   symbolic_expression_cell.cc
+  symbolic_expression_cell.h
   symbolic_formula.cc
   symbolic_formula_cell.cc
+  symbolic_formula_cell.h
   symbolic_variable.cc
   symbolic_variables.cc
   text_logging.cc
@@ -36,9 +38,11 @@ set(installed_headers
   double_overloads.h
   drake_assert.h
   drake_compat.h
+  drake_copyable.h
   drake_deprecated.h
   drake_path.h
   drake_throw.h
+  dummy_value.h
   eigen_autodiff_types.h
   eigen_matrix_compare.h
   eigen_stl_types.h
@@ -47,15 +51,14 @@ set(installed_headers
   functional_form.h
   hash.h
   is_approx_equal_abstol.h
+  never_destroyed.h
   nice_type_name.h
   number_traits.h
   polynomial.h
   sorted_vectors_have_intersection.h
   symbolic_environment.h
   symbolic_expression.h
-  symbolic_expression_cell.h
   symbolic_formula.h
-  symbolic_formula_cell.h
   symbolic_variable.h
   symbolic_variables.h
   text_logging.h
@@ -71,11 +74,19 @@ set(private_headers
 # Create the library target and note its dependencies.
 add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
-target_link_libraries(drakeCommon gflags Threads::Threads)
+target_link_libraries(drakeCommon
+  Eigen3::Eigen
+  gflags
+  Threads::Threads)
+
+set(drakeCommon_CFLAGS)
+set(drakeCommon_REQUIRES)
 
 if(spdlog_FOUND)
   target_compile_definitions(drakeCommon PUBLIC HAVE_SPDLOG)
   target_link_libraries(drakeCommon spdlog::spdlog)
+  set(drakeCommon_CFLAGS -DHAVE_SPDLOG)
+  set(drakeCommon_REQUIRES spdlog)
 endif()
 
 # Install all externally-visible headers.
@@ -89,7 +100,10 @@ drake_install_pkg_config_file(drake-common
     -ldrakeCommon
     -lgflags
     ${CMAKE_THREAD_LIBS_INIT}
-  REQUIRES eigen3)
+  CFLAGS ${drakeCommon_CFLAGS}
+  REQUIRES
+    eigen3
+    ${drakeCommon_REQUIRES})
 
 if(BUILD_TESTING)
   add_subdirectory(test)

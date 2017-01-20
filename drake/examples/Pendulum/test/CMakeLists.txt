@@ -11,14 +11,10 @@ if(lcm_FOUND)
   drake_add_cc_test(pendulum_plant_test)
   target_link_libraries(pendulum_plant_test drakePendulumPlant)
 
-  add_executable(pendulum_trajectory_optimization_test
-    pendulum_trajectory_optimization_test.cc)
-  target_link_libraries(pendulum_trajectory_optimization_test
-    drakePendulumPlant drakeTrajectoryOptimization GTest::GTest GTest::Main)
-
   if(ipopt_FOUND OR NLopt_FOUND OR snopt_FOUND)
-    drake_add_test(NAME pendulum_trajectory_optimization_test
-      COMMAND pendulum_trajectory_optimization_test)
+    drake_add_cc_test(pendulum_trajectory_optimization_test)
+    target_link_libraries(pendulum_trajectory_optimization_test
+      drakePendulumPlant drakeTrajectoryOptimization)
   endif()
 endif()
 

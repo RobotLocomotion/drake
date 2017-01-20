@@ -1,10 +1,13 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
+load("//tools:drake.bzl", "cc_googletest")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = "multi_body_parsers",
+    name = "parsers",
     srcs = [
         "model_instance_id_table.cc",
         "package_map.cc",
@@ -34,7 +37,7 @@ cc_binary(
     srcs = ["test/urdf_kinematics_test.cc"],
     linkstatic = 1,
     deps = [
-        ":multi_body_parsers",
+        ":parsers",
         "//drake/multibody:rigid_body_tree",
         "@gtest//:main",
     ],
@@ -47,7 +50,7 @@ cc_binary(
     srcs = ["test/urdf_collision_test.cc"],
     linkstatic = 1,
     deps = [
-        ":multi_body_parsers",
+        ":parsers",
         "//drake/multibody:rigid_body_tree",
         "@gtest//:main",
     ],
@@ -59,46 +62,48 @@ cc_binary(
     srcs = ["test/urdf_manipulator_dynamics_test.cc"],
     linkstatic = 1,
     deps = [
-        ":multi_body_parsers",
+        ":parsers",
         "//drake/multibody:rigid_body_tree",
         "@gtest//:main",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "package_map_test",
-    size = "small",
     srcs = ["test/package_map_test/package_map_test.cc"],
     data = [
         ":test_models",
     ],
     deps = [
-        ":multi_body_parsers",
-        "@gtest//:main",
+        ":parsers",
     ],
 )
 
-cc_test(
+cc_googletest(
+    name = "parser_common_test",
+    srcs = ["test/parser_common_test/parser_common_test.cc"],
+    data = ["test/parser_common_test/test_file.txt"],
+    deps = [
+        ":parsers",
+    ],
+)
+
+cc_googletest(
     name = "urdf_parser_test",
-    size = "small",
     srcs = ["test/urdf_parser_test/urdf_parser_test.cc"],
     data = [
         ":test_models",
         "//drake/examples/Atlas:models",
     ],
     deps = [
-        ":multi_body_parsers",
-        "@gtest//:main",
+        ":parsers",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "xml_util_test",
-    size = "small",
-    srcs = ["test/xml_util_test.cc"],
     deps = [
-        ":multi_body_parsers",
-        "@gtest//:main",
+        ":parsers",
     ],
 )
 
@@ -112,3 +117,5 @@ filegroup(
         "test/**/*.xml",
     ]),
 )
+
+cpplint()
