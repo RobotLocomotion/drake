@@ -93,7 +93,17 @@ cc_library(
         "include/sdf/SDFExtension.hh",
         "include/sdf/sdf_config.h", # from cmake_configure_file above
         "include/sdf/sdf.hh",       # from genrule above
+        "src/urdf/urdf_exception/exception.h",
+        "src/urdf/urdf_model/color.h",
+        "src/urdf/urdf_model/joint.h",
+        "src/urdf/urdf_model/link.h",
+        "src/urdf/urdf_model/model.h",
+        "src/urdf/urdf_model/pose.h",
+        "src/urdf/urdf_model/twist.h",
+        "src/urdf/urdf_model_state/model_state.h",
         "src/urdf/urdf_parser/urdf_parser.h",
+        "src/urdf/urdf_sensor/sensor.h",
+        "src/urdf/urdf_world/world.h",
         "src/urdf/visible.h",
     ],
     includes = ["include", "src/urdf"],
