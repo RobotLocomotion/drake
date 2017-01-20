@@ -1,10 +1,10 @@
 #pragma once
 
-#include "drake/systems/framework/leaf_system.h"
-#include "drake/solvers/moby_lcp_solver.h"
-
 #include <memory>
 #include <utility>
+
+#include "drake/solvers/moby_lcp_solver.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace painleve {
@@ -23,7 +23,6 @@ namespace painleve {
 ///
 /// Instantiated templates for the following scalar types @p T are provided:
 /// - double
-/// - AutoDiffXd
 ///
 /// They are already available to link against in the containing library.
 ///
@@ -84,7 +83,7 @@ class Painleve : public systems::LeafSystem<T> {
   /// @param dt The integration step size. This step size cannot be reset
   ///           after construction.
   /// @throws std::logic_error if @p dt is not positive.
-  explicit Painleve(T dt);
+  explicit Painleve(double dt);
 
   /// Models impact using an inelastic impact model with friction.
   /// @p new_state is set to the output of the impact model on return.
@@ -133,7 +132,7 @@ class Painleve : public systems::LeafSystem<T> {
 
   /// Gets the integration step size for the time stepping system.
   /// @returns 0 if this is a DAE-based system.
-  T get_integration_step_size() const { return dt_; }
+  double get_integration_step_size() const { return dt_; }
 
  protected:
   std::unique_ptr<systems::AbstractState> AllocateAbstractState()
@@ -150,7 +149,6 @@ class Painleve : public systems::LeafSystem<T> {
                        systems::State<T>* state) const override;
 
  private:
-  solvers::MobyLCPSolver lcp_;
   Vector2<T> CalcStickingImpactImpulse(const systems::Context<T>& context)
     const;
   Vector2<T> CalcFConeImpactImpulse(const systems::Context<T>& context) const;
@@ -178,7 +176,10 @@ class Painleve : public systems::LeafSystem<T> {
                                               const T& stheta,
                                               const double half_rod_len);
 
-  T dt_{0.0};               // Integration step-size for time stepping approach.
+  // Solves linear complementarity problems for time stepping.
+  solvers::MobyLCPSolver lcp_;
+
+  double dt_{0.0};          // Integration step-size for time stepping approach.
   double mass_{1.0};        // The mass of the rod.
   double rod_length_{1.0};  // The length of the rod.
   double mu_{1000.0};       // The coefficient of friction.

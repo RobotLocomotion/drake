@@ -13,7 +13,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/examples/painleve/painleve.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
@@ -27,7 +26,7 @@ Painleve<T>::Painleve() {
 }
 
 template <typename T>
-Painleve<T>::Painleve(T dt) : dt_(dt) {
+Painleve<T>::Painleve(double dt) : dt_(dt) {
   // Verify that step size parameter is valid. 
   if (dt_ <= 0.0)
     throw std::logic_error("Time stepping system must be constructed using "
@@ -902,6 +901,7 @@ void Painleve<T>::DoCalcTimeDerivatives(
   using std::abs;
 
   // Don't compute any derivatives if this is the time stepping system.
+  DRAKE_ASSERT(derivatives->size() == 0);
   if (dt_ > 0)
     return;
 
@@ -949,10 +949,10 @@ std::unique_ptr<systems::AbstractState> Painleve<T>::
     // Piecewise DAE approach needs two  abstract variables (one mode and one
     // contact point indicator).
     std::vector<std::unique_ptr<systems::AbstractValue>> abstract_data;
-    abstract_data.push_back(systems::PackValue(Painleve<T>::kInvalid));
+    abstract_data.push_back(std::make_unique<systems::Value<Painleve<T>::Mode>>(Painleve<T>::kInvalid));
 
     // Indicates that the rod is in contact at both points.
-    abstract_data.push_back(systems::PackValue(0));
+    abstract_data.push_back(std::make_unique<systems::Value<int>>(0));
     return std::make_unique<systems::AbstractState>(std::move(abstract_data));
   } else {
     // Time stepping approach needs no abstract variables.
