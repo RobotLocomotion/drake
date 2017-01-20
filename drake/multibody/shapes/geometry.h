@@ -187,7 +187,7 @@ class Mesh : public Geometry {
  private:
   // Given a list of vertex values and three indices into that set, computes a
   // normal for the plane defined by the vertices.
-  // If the indices are invalid or if the points are co-linear.
+  // Returns false if the indices are invalid or if the points are co-linear.
   static bool getNormal(const PointsVector& vertices, int i0, int i1, int i2,
                  Eigen::Vector3d* normal);
 
