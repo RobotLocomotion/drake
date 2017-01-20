@@ -31,9 +31,42 @@ cmake_configure_file(
     visibility = [],
 )
 
+public_headers = [
+    "include/ignition/math/Angle.hh",
+    "include/ignition/math/Box.hh",
+    "include/ignition/math/Filter.hh",
+    "include/ignition/math/Frustum.hh",
+    "include/ignition/math/Helpers.hh",
+    "include/ignition/math/Inertial.hh",
+    "include/ignition/math/Kmeans.hh",
+    "include/ignition/math/Line2.hh",
+    "include/ignition/math/Line3.hh",
+    "include/ignition/math/MassMatrix3.hh",
+    "include/ignition/math/Matrix3.hh",
+    "include/ignition/math/Matrix4.hh",
+    "include/ignition/math/PID.hh",
+    "include/ignition/math/Plane.hh",
+    "include/ignition/math/Pose3.hh",
+    "include/ignition/math/Quaternion.hh",
+    "include/ignition/math/Rand.hh",
+    "include/ignition/math/RotationSpline.hh",
+    "include/ignition/math/SemanticVersion.hh",
+    "include/ignition/math/SignalStats.hh",
+    "include/ignition/math/SphericalCoordinates.hh",
+    "include/ignition/math/Spline.hh",
+    "include/ignition/math/System.hh",
+    "include/ignition/math/Temperature.hh",
+    "include/ignition/math/Triangle.hh",
+    "include/ignition/math/Triangle3.hh",
+    "include/ignition/math/Vector2.hh",
+    "include/ignition/math/Vector3.hh",
+    "include/ignition/math/Vector3Stats.hh",
+    "include/ignition/math/Vector4.hh",
+]
+
 # Generates the library exported to users.  The explicitly listed srcs= matches
-# upstream's explicitly listed sources.  The globbed hdrs= matches upstream's
-# explicitly globbed headers.
+# upstream's explicitly listed sources.  The explicitly listed hdrs= matches
+# upstream's explicitly listed headers.
 cc_library(
     name = "lib_without_mathhh",
     srcs = [
@@ -53,22 +86,30 @@ cc_library(
         "src/Temperature.cc",
         "src/Vector3Stats.cc",
     ],
-    hdrs = glob([
-        "include/ignition/math/*.hh",
-    ]) + [
-        "include/ignition/math/config.hh",
+    # We need to list the private headers along with the public ones so
+    # that bazel copies them all into the right place during the build
+    # phase.
+    hdrs = public_headers + [
+        "include/ignition/math/BoxPrivate.hh",
+        "include/ignition/math/FrustumPrivate.hh",
+        "include/ignition/math/KmeansPrivate.hh",
+        "include/ignition/math/RotationSplinePrivate.hh",
+        "include/ignition/math/SignalStatsPrivate.hh",
+        "include/ignition/math/SplinePrivate.hh",
+        "include/ignition/math/Vector3StatsPrivate.hh",
+        "include/ignition/math/config.hh", # from cmake_configure_file above
     ],
     includes = ["include"],
     visibility = [],
 )
 
-# Generates math.hh, which consists of #include statements for *all* of the
-# other headers in the library (!!!).  The first line is
+# Generates math.hh, which consists of #include statements for all of the
+# other headers in the library except the *Private.hh ones.  The first line is
 # '#include <ignition/math/config.hh>' followed by one line like
 # '#include <ignition/math/Angle.hh>' for each non-generated header.
 genrule(
     name = "mathhh_genrule",
-    srcs = glob(["include/ignition/math/*.hh"]),
+    srcs = public_headers,
     outs = ["include/ignition/math.hh"],
     cmd = "(" + (
         "echo '#include <ignition/math/config.hh>' && " +
