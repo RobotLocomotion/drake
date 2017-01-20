@@ -440,50 +440,48 @@ bool is_max(const Expression& e);
 bool is_if_then_else(const Expression& e);
 
 /** Returns the constant value of the constant expression @p e.
- *  \pre{@e is a constant expression.}
+ *  \pre{@p e is a constant expression.}
  */
 double get_constant_value(const Expression& e);
 /** Returns the embedded symbolic variable in the variable expression @p e.
- *  \pre{@e is a variable expression.}
+ *  \pre{@p e is a variable expression.}
  */
 const Variable& get_variable(const Expression& e);
 /** Returns the argument in the unary expression @p e.
- *  \pre{@e is a unary expression.}
+ *  \pre{@p e is a unary expression.}
 */
 const Expression& get_argument(const Expression& e);
 /** Returns the first argument of the binary expression @p e.
- *  \pre{@e is a binary expression.}
+ *  \pre{@p e is a binary expression.}
 */
 const Expression& get_first_argument(const Expression& e);
 /** Returns the second argument of the binary expression @p e.
- *  \pre{@e is a binary expression.}
+ *  \pre{@p e is a binary expression.}
 */
 const Expression& get_second_argument(const Expression& e);
-/** Returns the constant term in the addition expression @p e. For instance,
+/** Returns the constant part of the addition expression @p e. For instance,
  *  given 7 + 2 * x + 3 * y, it returns 7.
- *  \pre{@e is an addition expression.}
+ *  \pre{@p e is an addition expression.}
 */
-double get_constant_term_in_addition(const Expression& e);
-/** Returns the terms in the expression @p e. @note This function assumes that
- *  @p e is an addition expression. The return value is a std::map from a
- *  symbolic expression to its coefficient in the summation. For instance, given
- *  7 + 2 * x + 3 * y, the return value maps 'x' to 2 and 'y' to 3.
- *  \pre{@e is an addition expression.}
+double get_constant_in_addition(const Expression& e);
+/** Returns the map from an expression to its coefficient in the addition
+ *  expression @p e. For instance, given 7 + 2 * x + 3 * y, the return value
+ *  maps 'x' to 2 and 'y' to 3.
+ *  \pre{@p e is an addition expression.}
 */
-const std::map<Expression, double>& get_terms_in_addition(const Expression& e);
-/** Returns the constant factor in the multiplication expression @p e. For
+const std::map<Expression, double>& get_exp_to_coeff_map_in_addition(
+    const Expression& e);
+/** Returns the constant part of the multiplication expression @p e. For
  *  instance, given 7 * x^2 * y^3, it returns 7.
- *  \pre{@e is a multiplication expression.}
+ *  \pre{@p e is a multiplication expression.}
 */
-double get_constant_factor_in_multiplication(const Expression& e);
-/** Returns the products in the expression @p e. @note This function assumes
- *  that @p e is a multiplication expression. The return value is a std::map
- *  from a base (symbolic expression) to its exponent (symbolic expression) in
- *  the product. For instance, given 7 * x^2 * y^3, the return value maps 'x' to
- *  2 and 'y' to 3.
- *  \pre{@e is a multiplication expression.}
+double get_constant_in_multiplication(const Expression& e);
+/** Returns the map from a base expression to its exponent expression in the
+ * multiplication expression @p e. For instance, given 7 * x^2 * y^3 * z^x, the
+ * return value maps 'x' to 2, 'y' to 3, and 'z' to 'x'.
+ *  \pre{@p e is a multiplication expression.}
 */
-const std::map<Expression, Expression>& get_products_in_multiplication(
+const std::map<Expression, Expression>& get_base_to_exp_map_in_multiplication(
     const Expression& e);
 
 // Matrix<Expression> * Matrix<Variable> => Matrix<Expression>

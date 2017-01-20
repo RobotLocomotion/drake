@@ -216,19 +216,18 @@ ostream& ExpressionNeg::Display(ostream& os) const {
 
 double ExpressionNeg::DoEvaluate(const double v) const { return -v; }
 
-ExpressionAdd::ExpressionAdd(const double constant_term,
-                             const map<Expression, double>& term_to_coeff_map)
+ExpressionAdd::ExpressionAdd(const double constant,
+                             const map<Expression, double>& exp_to_coeff_map)
     : ExpressionCell{ExpressionKind::Add,
-                     hash_combine(hash<double>{}(constant_term),
-                                  term_to_coeff_map)},
-      constant_term_(constant_term),
-      term_to_coeff_map_(term_to_coeff_map) {
-  DRAKE_ASSERT(!term_to_coeff_map_.empty());
+                     hash_combine(hash<double>{}(constant), exp_to_coeff_map)},
+      constant_(constant),
+      exp_to_coeff_map_(exp_to_coeff_map) {
+  DRAKE_ASSERT(!exp_to_coeff_map_.empty());
 }
 
 Variables ExpressionAdd::GetVariables() const {
   Variables ret{};
-  for (const auto& p : term_to_coeff_map_) {
+  for (const auto& p : exp_to_coeff_map_) {
     ret.insert(p.first.GetVariables());
   }
   return ret;
@@ -238,13 +237,12 @@ bool ExpressionAdd::EqualTo(const ExpressionCell& e) const {
   // Expression::EqualTo guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionAdd& add_e{static_cast<const ExpressionAdd&>(e)};
-  // Compare constant_term.
-  if (constant_term_ != add_e.constant_term_) {
+  // Compare constant.
+  if (constant_ != add_e.constant_) {
     return false;
   }
-  return equal(term_to_coeff_map_.cbegin(), term_to_coeff_map_.cend(),
-               add_e.term_to_coeff_map_.cbegin(),
-               add_e.term_to_coeff_map_.cend(),
+  return equal(exp_to_coeff_map_.cbegin(), exp_to_coeff_map_.cend(),
+               add_e.exp_to_coeff_map_.cbegin(), add_e.exp_to_coeff_map_.cend(),
                [](const pair<Expression, double>& p1,
                   const pair<Expression, double>& p2) {
                  return p1.first.EqualTo(p2.first) && p1.second == p2.second;
@@ -255,17 +253,17 @@ bool ExpressionAdd::Less(const ExpressionCell& e) const {
   // Expression::Less guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionAdd& add_e{static_cast<const ExpressionAdd&>(e)};
-  // Compare the constant_terms.
-  if (constant_term_ < add_e.constant_term_) {
+  // Compare the constants.
+  if (constant_ < add_e.constant_) {
     return true;
   }
-  if (add_e.constant_term_ < constant_term_) {
+  if (add_e.constant_ < constant_) {
     return false;
   }
   // Compare the two maps.
   return lexicographical_compare(
-      term_to_coeff_map_.cbegin(), term_to_coeff_map_.cend(),
-      add_e.term_to_coeff_map_.cbegin(), add_e.term_to_coeff_map_.cend(),
+      exp_to_coeff_map_.cbegin(), exp_to_coeff_map_.cend(),
+      add_e.exp_to_coeff_map_.cbegin(), add_e.exp_to_coeff_map_.cend(),
       [](const pair<Expression, double>& p1,
          const pair<Expression, double>& p2) {
         const Expression& term1{p1.first};
@@ -284,21 +282,21 @@ bool ExpressionAdd::Less(const ExpressionCell& e) const {
 
 double ExpressionAdd::Evaluate(const Environment& env) const {
   return accumulate(
-      term_to_coeff_map_.begin(), term_to_coeff_map_.end(), constant_term_,
+      exp_to_coeff_map_.begin(), exp_to_coeff_map_.end(), constant_,
       [&env](const double init, const pair<Expression, double>& p) {
         return init + p.first.Evaluate(env) * p.second;
       });
 }
 
 ostream& ExpressionAdd::Display(ostream& os) const {
-  DRAKE_ASSERT(!term_to_coeff_map_.empty());
+  DRAKE_ASSERT(!exp_to_coeff_map_.empty());
   bool print_plus{false};
   os << "(";
-  if (constant_term_ != 0.0) {
-    os << constant_term_;
+  if (constant_ != 0.0) {
+    os << constant_;
     print_plus = true;
   }
-  for (auto& p : term_to_coeff_map_) {
+  for (auto& p : exp_to_coeff_map_) {
     DisplayTerm(os, print_plus, p.second, p.first);
     print_plus = true;
   }
@@ -330,14 +328,12 @@ ostream& ExpressionAdd::DisplayTerm(ostream& os, const bool print_plus,
 }
 
 ExpressionAddFactory::ExpressionAddFactory(
-    const double constant_term,
-    const map<Expression, double>& term_to_coeff_map)
-    : constant_term_{constant_term}, term_to_coeff_map_{term_to_coeff_map} {}
+    const double constant, const map<Expression, double>& exp_to_coeff_map)
+    : constant_{constant}, exp_to_coeff_map_{exp_to_coeff_map} {}
 
 ExpressionAddFactory::ExpressionAddFactory(
     const shared_ptr<const ExpressionAdd> ptr)
-    : ExpressionAddFactory{ptr->get_constant_term(),
-                           ptr->get_term_to_coeff_map()} {}
+    : ExpressionAddFactory{ptr->get_constant(), ptr->get_exp_to_coeff_map()} {}
 
 void ExpressionAddFactory::AddExpression(const Expression& e) {
   if (is_constant(e)) {
@@ -349,13 +345,13 @@ void ExpressionAddFactory::AddExpression(const Expression& e) {
     return Add(to_addition(e));
   }
   if (is_multiplication(e)) {
-    const double constant_factor{get_constant_factor_in_multiplication(e)};
-    if (constant_factor != 1.0) {
-      // Instead of adding (1.0 * (constant_factor * b1^t1 ... bn^tn)),
-      // add (constant_factor, 1.0 * b1^t1 ... bn^tn).
+    const double constant{get_constant_in_multiplication(e)};
+    if (constant != 1.0) {
+      // Instead of adding (1.0 * (constant * b1^t1 ... bn^tn)),
+      // add (constant, 1.0 * b1^t1 ... bn^tn).
       return AddTerm(
-          constant_factor,
-          ExpressionMulFactory(1.0, get_products_in_multiplication(e))
+          constant,
+          ExpressionMulFactory(1.0, get_base_to_exp_map_in_multiplication(e))
               .GetExpression());
     }
   }
@@ -363,40 +359,39 @@ void ExpressionAddFactory::AddExpression(const Expression& e) {
 }
 
 void ExpressionAddFactory::Add(const shared_ptr<const ExpressionAdd> ptr) {
-  AddConstant(ptr->get_constant_term());
-  AddMap(ptr->get_term_to_coeff_map());
+  AddConstant(ptr->get_constant());
+  AddMap(ptr->get_exp_to_coeff_map());
 }
 
 ExpressionAddFactory& ExpressionAddFactory::operator=(
     const shared_ptr<ExpressionAdd> ptr) {
-  constant_term_ = ptr->get_constant_term();
-  term_to_coeff_map_ = ptr->get_term_to_coeff_map();
+  constant_ = ptr->get_constant();
+  exp_to_coeff_map_ = ptr->get_exp_to_coeff_map();
   return *this;
 }
 
 ExpressionAddFactory& ExpressionAddFactory::Negate() {
-  constant_term_ = -constant_term_;
-  for (auto& p : term_to_coeff_map_) {
+  constant_ = -constant_;
+  for (auto& p : exp_to_coeff_map_) {
     p.second = -p.second;
   }
   return *this;
 }
 
 Expression ExpressionAddFactory::GetExpression() const {
-  if (term_to_coeff_map_.empty()) {
-    return Expression{constant_term_};
+  if (exp_to_coeff_map_.empty()) {
+    return Expression{constant_};
   }
-  if (constant_term_ == 0.0 && term_to_coeff_map_.size() == 1u) {
+  if (constant_ == 0.0 && exp_to_coeff_map_.size() == 1u) {
     // 0.0 + c1 * t1 -> c1 * t1
-    const auto it(term_to_coeff_map_.cbegin());
+    const auto it(exp_to_coeff_map_.cbegin());
     return it->first * it->second;
   }
-  return Expression{
-      make_shared<ExpressionAdd>(constant_term_, term_to_coeff_map_)};
+  return Expression{make_shared<ExpressionAdd>(constant_, exp_to_coeff_map_)};
 }
 
-void ExpressionAddFactory::AddConstant(const double constant_term) {
-  constant_term_ += constant_term;
+void ExpressionAddFactory::AddConstant(const double constant) {
+  constant_ += constant;
 }
 
 void ExpressionAddFactory::AddTerm(const double coeff, const Expression& term) {
@@ -407,8 +402,8 @@ void ExpressionAddFactory::AddTerm(const double coeff, const Expression& term) {
     return AddTerm(-coeff, get_argument(term));
   }
 
-  const auto it(term_to_coeff_map_.find(term));
-  if (it != term_to_coeff_map_.end()) {
+  const auto it(exp_to_coeff_map_.find(term));
+  if (it != exp_to_coeff_map_.end()) {
     // Case1: term is already in the map
     double& this_coeff{it->second};
     this_coeff += coeff;
@@ -416,35 +411,34 @@ void ExpressionAddFactory::AddTerm(const double coeff, const Expression& term) {
       // If the coefficient becomes zero, remove the entry.
       // TODO(soonho-tri): The following operation is not sound since it cancels
       // `term` which might contain 0/0 problems.
-      term_to_coeff_map_.erase(it);
+      exp_to_coeff_map_.erase(it);
     }
   } else {
-    // Case2: term is not found in term_to_coeff_map_.
+    // Case2: term is not found in exp_to_coeff_map_.
     // Add the entry (term, coeff).
-    term_to_coeff_map_.emplace(term, coeff);
+    exp_to_coeff_map_.emplace(term, coeff);
   }
 }
 
 void ExpressionAddFactory::AddMap(
-    const map<Expression, double> term_to_coeff_map) {
-  for (const auto& p : term_to_coeff_map) {
+    const map<Expression, double> exp_to_coeff_map) {
+  for (const auto& p : exp_to_coeff_map) {
     AddTerm(p.second, p.first);
   }
 }
 
-ExpressionMul::ExpressionMul(const double constant_factor,
-                             const map<Expression, Expression>& term_to_exp_map)
+ExpressionMul::ExpressionMul(const double constant,
+                             const map<Expression, Expression>& base_to_exp_map)
     : ExpressionCell{ExpressionKind::Mul,
-                     hash_combine(hash<double>{}(constant_factor),
-                                  term_to_exp_map)},
-      constant_factor_(constant_factor),
-      term_to_exp_map_(term_to_exp_map) {
-  DRAKE_ASSERT(!term_to_exp_map_.empty());
+                     hash_combine(hash<double>{}(constant), base_to_exp_map)},
+      constant_(constant),
+      base_to_exp_map_(base_to_exp_map) {
+  DRAKE_ASSERT(!base_to_exp_map_.empty());
 }
 
 Variables ExpressionMul::GetVariables() const {
   Variables ret{};
-  for (const auto& p : term_to_exp_map_) {
+  for (const auto& p : base_to_exp_map_) {
     ret.insert(p.first.GetVariables());
     ret.insert(p.second.GetVariables());
   }
@@ -455,13 +449,13 @@ bool ExpressionMul::EqualTo(const ExpressionCell& e) const {
   // Expression::EqualTo guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionMul& mul_e{static_cast<const ExpressionMul&>(e)};
-  // Compare constant_factor.
-  if (constant_factor_ != mul_e.constant_factor_) {
+  // Compare constant.
+  if (constant_ != mul_e.constant_) {
     return false;
   }
   // Check each (term, coeff) pairs in two maps.
-  return equal(term_to_exp_map_.cbegin(), term_to_exp_map_.cend(),
-               mul_e.term_to_exp_map_.cbegin(), mul_e.term_to_exp_map_.cend(),
+  return equal(base_to_exp_map_.cbegin(), base_to_exp_map_.cend(),
+               mul_e.base_to_exp_map_.cbegin(), mul_e.base_to_exp_map_.cend(),
                [](const pair<Expression, Expression>& p1,
                   const pair<Expression, Expression>& p2) {
                  return p1.first.EqualTo(p2.first) &&
@@ -473,17 +467,17 @@ bool ExpressionMul::Less(const ExpressionCell& e) const {
   // Expression::Less guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionMul& mul_e{static_cast<const ExpressionMul&>(e)};
-  // Compare the constant_factors.
-  if (constant_factor_ < mul_e.constant_factor_) {
+  // Compare the constants.
+  if (constant_ < mul_e.constant_) {
     return true;
   }
-  if (mul_e.constant_factor_ < constant_factor_) {
+  if (mul_e.constant_ < constant_) {
     return false;
   }
   // Compare the two maps.
   return lexicographical_compare(
-      term_to_exp_map_.cbegin(), term_to_exp_map_.cend(),
-      mul_e.term_to_exp_map_.cbegin(), mul_e.term_to_exp_map_.cend(),
+      base_to_exp_map_.cbegin(), base_to_exp_map_.cend(),
+      mul_e.base_to_exp_map_.cbegin(), mul_e.base_to_exp_map_.cend(),
       [](const pair<Expression, Expression>& p1,
          const pair<Expression, Expression>& p2) {
         const Expression& base1{p1.first};
@@ -502,21 +496,21 @@ bool ExpressionMul::Less(const ExpressionCell& e) const {
 
 double ExpressionMul::Evaluate(const Environment& env) const {
   return accumulate(
-      term_to_exp_map_.begin(), term_to_exp_map_.end(), constant_factor_,
+      base_to_exp_map_.begin(), base_to_exp_map_.end(), constant_,
       [&env](const double init, const pair<Expression, Expression>& p) {
         return init * std::pow(p.first.Evaluate(env), p.second.Evaluate(env));
       });
 }
 
 ostream& ExpressionMul::Display(ostream& os) const {
-  DRAKE_ASSERT(!term_to_exp_map_.empty());
+  DRAKE_ASSERT(!base_to_exp_map_.empty());
   bool print_mul{false};
   os << "(";
-  if (constant_factor_ != 1.0) {
-    os << constant_factor_;
+  if (constant_ != 1.0) {
+    os << constant_;
     print_mul = true;
   }
-  for (auto& p : term_to_exp_map_) {
+  for (auto& p : base_to_exp_map_) {
     DisplayTerm(os, print_mul, p.first, p.second);
     print_mul = true;
   }
@@ -542,14 +536,12 @@ ostream& ExpressionMul::DisplayTerm(ostream& os, const bool print_mul,
 }
 
 ExpressionMulFactory::ExpressionMulFactory(
-    const double constant_factor,
-    const map<Expression, Expression>& term_to_exp_map)
-    : constant_factor_{constant_factor}, term_to_exp_map_{term_to_exp_map} {}
+    const double constant, const map<Expression, Expression>& base_to_exp_map)
+    : constant_{constant}, base_to_exp_map_{base_to_exp_map} {}
 
 ExpressionMulFactory::ExpressionMulFactory(
     const shared_ptr<const ExpressionMul> ptr)
-    : ExpressionMulFactory{ptr->get_constant_factor(),
-                           ptr->get_term_to_exp_map()} {}
+    : ExpressionMulFactory{ptr->get_constant(), ptr->get_base_to_exp_map()} {}
 
 void ExpressionMulFactory::AddExpression(const Expression& e) {
   if (is_constant(e)) {
@@ -564,37 +556,36 @@ void ExpressionMulFactory::AddExpression(const Expression& e) {
 }
 
 void ExpressionMulFactory::Add(const shared_ptr<const ExpressionMul> ptr) {
-  AddConstant(ptr->get_constant_factor());
-  AddMap(ptr->get_term_to_exp_map());
+  AddConstant(ptr->get_constant());
+  AddMap(ptr->get_base_to_exp_map());
 }
 
 ExpressionMulFactory& ExpressionMulFactory::operator=(
     const shared_ptr<ExpressionMul> ptr) {
-  constant_factor_ = ptr->get_constant_factor();
-  term_to_exp_map_ = ptr->get_term_to_exp_map();
+  constant_ = ptr->get_constant();
+  base_to_exp_map_ = ptr->get_base_to_exp_map();
   return *this;
 }
 
 ExpressionMulFactory& ExpressionMulFactory::Negate() {
-  constant_factor_ = -constant_factor_;
+  constant_ = -constant_;
   return *this;
 }
 
 Expression ExpressionMulFactory::GetExpression() const {
-  if (term_to_exp_map_.empty()) {
-    return Expression{constant_factor_};
+  if (base_to_exp_map_.empty()) {
+    return Expression{constant_};
   }
-  if (constant_factor_ == 1.0 && term_to_exp_map_.size() == 1u) {
+  if (constant_ == 1.0 && base_to_exp_map_.size() == 1u) {
     // 1.0 * c1^t1 -> c1^t1
-    const auto it(term_to_exp_map_.cbegin());
+    const auto it(base_to_exp_map_.cbegin());
     return pow(it->first, it->second);
   }
-  return Expression{
-      make_shared<ExpressionMul>(constant_factor_, term_to_exp_map_)};
+  return Expression{make_shared<ExpressionMul>(constant_, base_to_exp_map_)};
 }
 
-void ExpressionMulFactory::AddConstant(const double constant_factor) {
-  constant_factor_ *= constant_factor;
+void ExpressionMulFactory::AddConstant(const double constant) {
+  constant_ *= constant;
 }
 
 void ExpressionMulFactory::AddTerm(const Expression& base,
@@ -602,8 +593,8 @@ void ExpressionMulFactory::AddTerm(const Expression& base,
   // The following assertion holds because of
   // ExpressionMulFactory::AddExpression.
   DRAKE_ASSERT(!(is_constant(base) && is_constant(exponent)));
-  const auto it(term_to_exp_map_.find(base));
-  if (it != term_to_exp_map_.end()) {
+  const auto it(base_to_exp_map_.find(base));
+  if (it != base_to_exp_map_.end()) {
     // base is already in map.
     // (= b1^e1 * ... * (base^this_exponent) * ... * en^bn).
     // Update it to be (... * (base^(this_exponent + exponent)) * ...)
@@ -614,25 +605,25 @@ void ExpressionMulFactory::AddTerm(const Expression& base,
       // If it ends up with base^0 (= 1.0) then remove this entry from the map.
       // TODO(soonho-tri): The following operation is not sound since it can
       // cancels `base` which might include 0/0 problems.
-      term_to_exp_map_.erase(it);
+      base_to_exp_map_.erase(it);
     }
   } else {
-    // Product is not found in term_to_exp_map_. Add the entry (base, exponent).
+    // Product is not found in base_to_exp_map_. Add the entry (base, exponent).
     if (is_pow(base)) {
       // If (base, exponent) = (pow(e1, e2), exponent)), then add (e1, e2 *
       // exponent)
       // Example: (x^2)^3 => x^(2 * 3)
-      term_to_exp_map_.emplace(get_first_argument(base),
+      base_to_exp_map_.emplace(get_first_argument(base),
                                get_second_argument(base) * exponent);
     } else {
-      term_to_exp_map_.emplace(base, exponent);
+      base_to_exp_map_.emplace(base, exponent);
     }
   }
 }
 
 void ExpressionMulFactory::AddMap(
-    const map<Expression, Expression> term_to_exp_map) {
-  for (const auto& p : term_to_exp_map) {
+    const map<Expression, Expression> base_to_exp_map) {
+  for (const auto& p : base_to_exp_map) {
     AddTerm(p.first, p.second);
   }
 }

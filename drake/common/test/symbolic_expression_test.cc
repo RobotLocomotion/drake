@@ -419,32 +419,30 @@ TEST_F(SymbolicExpressionTest, GetSecondArgument) {
 }
 
 TEST_F(SymbolicExpressionTest, GetConstantTermInAddition) {
-  EXPECT_PRED2(ExprEqual, get_constant_term_in_addition(2 * x_ + 3 * y_), 0.0);
-  EXPECT_PRED2(ExprEqual, get_constant_term_in_addition(3 + 2 * x_ + 3 * y_),
-               3);
-  EXPECT_PRED2(ExprEqual, get_constant_term_in_addition(-2 + 2 * x_ + 3 * y_),
-               -2);
+  EXPECT_PRED2(ExprEqual, get_constant_in_addition(2 * x_ + 3 * y_), 0.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_addition(3 + 2 * x_ + 3 * y_), 3);
+  EXPECT_PRED2(ExprEqual, get_constant_in_addition(-2 + 2 * x_ + 3 * y_), -2);
 }
 
 TEST_F(SymbolicExpressionTest, GetTermsInAddition) {
   const Expression e{3 + 2 * x_ + 3 * y_};
-  const map<Expression, double> terms{get_terms_in_addition(e)};
+  const map<Expression, double> terms{get_exp_to_coeff_map_in_addition(e)};
   EXPECT_EQ(terms.at(x_), 2.0);
   EXPECT_EQ(terms.at(y_), 3.0);
 }
 
 TEST_F(SymbolicExpressionTest, GetConstantFactorInMultiplication) {
-  EXPECT_PRED2(ExprEqual, get_constant_factor_in_multiplication(x_ * y_ * y_),
-               1.0);
-  EXPECT_PRED2(ExprEqual,
-               get_constant_factor_in_multiplication(2 * x_ * y_ * y_), 2.0);
-  EXPECT_PRED2(ExprEqual,
-               get_constant_factor_in_multiplication(-3 * x_ * y_ * y_), -3.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(x_ * y_ * y_), 1.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(2 * x_ * y_ * y_),
+               2.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(-3 * x_ * y_ * y_),
+               -3.0);
 }
 
 TEST_F(SymbolicExpressionTest, GetProductsInMultiplication) {
   const Expression e{2 * x_ * y_ * y_ * pow(z_, y_)};
-  const map<Expression, Expression> products{get_products_in_multiplication(e)};
+  const map<Expression, Expression> products{
+      get_base_to_exp_map_in_multiplication(e)};
   EXPECT_PRED2(ExprEqual, products.at(x_), 1.0);
   EXPECT_PRED2(ExprEqual, products.at(y_), 2.0);
   EXPECT_PRED2(ExprEqual, products.at(z_), y_);
