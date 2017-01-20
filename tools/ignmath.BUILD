@@ -18,11 +18,12 @@ cmake_configure_file(
         ":cmakelists_with_version",
     ],
     defines = [
-        # It would be nice to get this information directly from CMakeLists.txt, but it
-        # ends up being too hard.  ignition-math sets a project name
-        # as "ignition-math<version>", and then uses CMake substring to pick that version
-        # out.  We'd have to extend the cmake_configure_file functionality to do the same,
-        # and I'm not sure it is worth it.  We just hard code the major version here.
+        # It would be nice to get this information directly from CMakeLists.txt,
+        # but it ends up being too hard.  ignition-math sets a project name
+        # as "ignition-math<version>", and then uses CMake substring to pick
+        # that version out.  We'd have to extend the cmake_configure_file
+        # functionality to do the same, and I'm not sure it is worth it.  We
+        # just hard code the major version here.
         "PROJECT_NAME_NO_VERSION=ignition-math",
         "PROJECT_MAJOR_VERSION=3",
         "PROJECT_VERSION_FULL=3.0.0",
@@ -61,9 +62,10 @@ cc_library(
     visibility = [],
 )
 
-# Generates math.hh, which consists of #include statements for *all* of the other
-# headers in the library (!!!).  The first line is '#include <ignition/math/config.hh>'
-# followed by one line like '#include <ignition/math/Angle.hh>' for each non-generated header.
+# Generates math.hh, which consists of #include statements for *all* of the
+# other headers in the library (!!!).  The first line is
+# '#include <ignition/math/config.hh>' followed by one line like
+# '#include <ignition/math/Angle.hh>' for each non-generated header.
 genrule(
     name = "mathhh_genrule",
     srcs = glob(["include/ignition/math/*.hh"]),

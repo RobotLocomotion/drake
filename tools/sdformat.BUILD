@@ -30,9 +30,9 @@ cmake_configure_file(
 )
 
 # Generates sdf.hh, which consists of #include statements for *all* of the other
-# headers in the library (!!!).  There is one line like '#include <sdf/Assert.hh>'
-# for each non-generated header, followed at the end by a
-# single '#include <sdf/sdf_config.hh>'.
+# headers in the library (!!!).  There is one line like
+# '#include <sdf/Assert.hh>' for each non-generated header, followed at the end
+# by a single '#include <sdf/sdf_config.hh>'.
 genrule(
     name = "sdfhh_genrule",
     srcs = [
