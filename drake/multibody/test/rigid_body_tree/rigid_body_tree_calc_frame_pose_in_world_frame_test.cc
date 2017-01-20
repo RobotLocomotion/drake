@@ -34,7 +34,7 @@ GTEST_TEST(RigidBodyTreeCalcFramePoseInWorldFrameTests, BoxAtOriginTest) {
       tree->FindBody("box"), Eigen::Isometry3d::Identity());
   tree->addFrame(frame);
 
-  const VectorXd q = VectorXd::Zero(tree->get_num_positions());
+  VectorXd q = tree->getZeroConfiguration();
   const VectorXd v = VectorXd::Zero(tree->get_num_velocities());
   const KinematicsCache<double> cache = tree->doKinematics(q, v);
   drake::Isometry3<double> X_WF =
