@@ -5,8 +5,7 @@
 #include <sdf/sdf.hh>
 
 namespace drake {
-namespace systems {
-namespace plants {
+namespace multibody {
 namespace test {
 namespace {
 
@@ -28,6 +27,5 @@ GTEST_TEST(SDFormatTest, TestBasic) {
 
 }  // namespace
 }  // namespace test
-}  // namespace plants
-}  // namespace systems
+}  // namespace multibody
 }  // namespace drake
