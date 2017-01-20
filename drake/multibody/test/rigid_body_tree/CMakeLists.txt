@@ -25,6 +25,11 @@ if(Bullet_FOUND)
       drakeRBM)
 endif()
 
+drake_add_cc_test(rigid_body_tree_calc_frame_pose_in_world_frame_test)
+target_link_libraries(rigid_body_tree_calc_frame_pose_in_world_frame_test
+    drakeMultibodyParsers
+    drakeRBM)
+
 drake_add_cc_test(NAME rigid_body_tree_creation_test SIZE medium)
 target_link_libraries(rigid_body_tree_creation_test
     drakeMultibodyParsers
