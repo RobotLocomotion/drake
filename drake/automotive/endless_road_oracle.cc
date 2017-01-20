@@ -67,6 +67,56 @@ void EndlessRoadOracle<T>::DoCalcOutput(
 }
 
 
+
+template <typename T>
+void EndlessRoadOracle<T>::ImplCalcOutput(
+    const std::vector<const EndlessRoadCarState<T>*>& car_inputs,
+    const std::vector<EndlessRoadOracleOutput<T>*>& oracle_outputs) const {
+  // The goal here is, for each car, to calculate the distance and
+  // differential velocity to the nearest other car/obstacle ahead.
+  // We consider a couple of different varieties of "car/obstacle ahead":
+  //  a) cars ahead on the InfiniteCircuitRoad circuit, which covers
+  //      normal car-following behavior;
+  //  b) cars approaching on intersecting lanes in the base RoadGeometry
+  //      (an anticipated collision makes the intersection be treated as
+  //      a stationary obstacle);
+  //  c) cars in a merging lane in the base RoadGeometry.
+
+  // TODO(maddog@tri.global)  A more principled approach would probably make
+  //                          this a multiple of the IDM headway parameter h,
+  //                          but this value works well in the demo.  (Too
+  //                          short and there will be collisions!)
+  // Time to look-ahead for intersections.
+  const T kEventHorizon{10.0};  // seconds
+
+  // The InfiniteCircuitRoad serves two functions:
+  //  1) emulate a uni-modal continuous system for the vehicle control until
+  //     proper hybrid system support is available;
+  //  2) represent the path of the cars through the source road network.
+  //
+  // Here we extract the RoadPositions of each car in the underlying
+  // source RoadGeometry, and we extract their paths forward (within the
+  // given horizon).
+  std::vector<internal::SourceState> source_states;
+  std::vector<std::vector<internal::PathRecord>> paths;
+  UnwrapEndlessRoadCarState(car_inputs, road_, kEventHorizon,
+                            &source_states, &paths);
+
+  // Deal with goal (a).
+  AssessForwardPath(car_inputs, source_states, paths, oracle_outputs);
+  // Deal with goal (b) and goal (c).
+  AssessJunctions(source_states, paths, oracle_outputs);
+}
+
+
+template <typename T>
+std::unique_ptr<systems::BasicVector<T>
+                > EndlessRoadOracle<T>::AllocateOutputVector(
+    const systems::OutputPortDescriptor<T>& descriptor) const {
+  return std::make_unique<EndlessRoadOracleOutput<T>>();
+}
+
+
 namespace internal {
 
 // EndlessRoadCarState is defined with respect to an InfiniteCircuitRoad,
@@ -92,14 +142,13 @@ void UnwrapEndlessRoadCarState(
     DRAKE_DEMAND(std::cos(self->heading()) >= 0.);
     // TODO(maddog@tri.global)  Until we deal with cars going in reverse.
     DRAKE_DEMAND(self->speed() >= 0.);
-    const double longitudinal_speed =
-        self->speed() * std::cos(self->heading());
+    const double circuit_s_speed = self->speed() * std::cos(self->heading());
     // Save self's state projected into the source road-network.
-    source_states->emplace_back(rp, longitudinal_speed);
+    source_states->emplace_back(rp, circuit_s_speed);
 
     // (No point in making the horizon longer than one lap around the circuit.)
     const double horizon_meters = std::min(
-        longitudinal_speed * horizon_seconds,
+        circuit_s_speed * horizon_seconds,
         road->lane()->cycle_length());
     DRAKE_DEMAND(horizon_meters >= 0.);
 
@@ -117,7 +166,7 @@ void UnwrapEndlessRoadCarState(
     while (circuit_s_in <= circuit_s_horizon) {
       self_path->push_back({path_record.lane, path_record.is_reversed});
 
-      // TODO(maddog) Index should decrement for s_dot < 0.
+      // TODO(maddog) Index should decrement for speed < 0.
       if (++path_index >= road->lane()->num_path_records()) {
         path_index = 0;
       }
@@ -134,6 +183,7 @@ void UnwrapEndlessRoadCarState(
 
 
 void AssessForwardPath(
+    const std::vector<const EndlessRoadCarState<double>*>& car_inputs,
     const std::vector<SourceState>& source_states,
     const std::vector<std::vector<PathRecord>>& paths,
     const std::vector<EndlessRoadOracleOutput<double>*>& oracle_outputs) {
@@ -142,29 +192,26 @@ void AssessForwardPath(
   // Sort cars by longitudinal position:  use an ordered multimap that
   // maps s-position --> car-index.
 
-  // Map{Lane* --> MultiMap{s --> car_index}}
+  // Map of multimap:  Lane* --> s --> (car_index, ...)
   std::map<const maliput::api::Lane*,
            std::multimap<double, int>> cars_by_lane_and_s;
 
-  for (size_t i = 0; i < source_states.size(); ++i) {
-    const SourceState& self = source_states[i];
-    cars_by_lane_and_s[self.rp.lane].emplace(self.rp.pos.s, i);
+  for (size_t car_index = 0; car_index < source_states.size(); ++car_index) {
+    const SourceState& self = source_states[car_index];
+    cars_by_lane_and_s[self.rp.lane].emplace(self.rp.pos.s, car_index);
   }
 
   // For each car:
   //  - find nearest other car that is:
-  //     a) ahead of self, and
-  //     b) has a lateral position within XXXXXX bounds of self.
+  //     a) ahead of self
+  // TODO(maddog@tri.global)  AND b) has a lateral position within
+  //                                 some X margin of self.
   //  - compute/record:
-  //     * net true longitudinal distance to other car (delta sigma)
-  //     * true longitudinal velocity difference (delta sigma-dot)
-  // TODO(maddog)  Do something reasonable if num_cars_ < 2.
-  for (size_t i = 0; i < source_states.size(); ++i) {
-    const SourceState& self = source_states[i];
-    const maliput::api::RoadPosition self_rp = self.rp;
-
-//XXX    DRAKE_DEMAND(cars_by_lane_and_s[self_rp.lane][self_rp.pos.s] !=
-//XXX                 cars_by_lane_and_s[self_rp.lane].end());
+  //     * net longitudinal distance to other car (delta s)
+  //     * longitudinal velocity difference (delta s-dot)
+  for (size_t car_index = 0; car_index < source_states.size(); ++car_index) {
+    const SourceState& self = source_states[car_index];
+    const std::vector<PathRecord>& self_path = paths[car_index];
 
     double delta_position = kEnormousDistance;
     double delta_velocity = 0.;
@@ -172,90 +219,100 @@ void AssessForwardPath(
     // Find the next car which is ahead of self, by at least a car-length.
     // Search along the sequence of lanes to be taken by self, starting with
     // the current lane.
-    DRAKE_DEMAND(self_rp.lane == paths[i][0].lane);
+
+    // Sanity check:  current lane should be first lane on path.
+    DRAKE_DEMAND(self.rp.lane == self_path[0].lane);
 
     double sum = 0.;
-    // TODO(maddog)  Review this; the notion is to skip self, and might as
-    //               well skip any cars sooo close to self.
-    double bound_nudge = 0.1 * kCarLength;
-    bool is_first = true;
-    auto path_it = paths[i].begin();
-    while (path_it != paths[i].end()) {
+    auto path_it = self_path.begin();
+    DRAKE_DEMAND(path_it != self_path.end());
+    // Start looking at least one car-length ahead (e.g., ignore cars that we
+    // have already collided with).
+    double skip_length = path_it->is_reversed ?
+        (path_it->lane->length() - self.rp.pos.s + kCarLength) :
+        (self.rp.pos.s + kCarLength);
+    for (; path_it != self_path.end(); ++path_it) {
+      double s0{};
+      double lane_length{};
       if (!path_it->is_reversed) {
-        const double s0 = (is_first) ? self_rp.pos.s : 0.;
-        const double lane_length = path_it->lane->length() - s0;
-        DRAKE_DEMAND(lane_length > 0.);
-
-        auto next_it = cars_by_lane_and_s[path_it->lane].upper_bound(
-            s0 + bound_nudge);
-        if (next_it != cars_by_lane_and_s[path_it->lane].end()) {
-          const SourceState& next = source_states[next_it->second];
-          const maliput::api::RoadPosition next_rp = next.rp;
-          delta_position = sum + (next_rp.pos.s - s0);
-          if (delta_position < 0.) {
-            drake::log()->warn(
-                "FORWARD dp {}  sum {}  next-s {}  s0 {}  is-first {}",
-                delta_position, sum, next_rp.pos.s, s0, is_first);
-          }
-          // TODO(maddog)  Oy, this needs to account for travel direction
-          //               of next in its source lane, not inf-circuit lane.
-          delta_velocity = self.longitudinal_speed - next.longitudinal_speed;
-          break;
-        }
-        sum += lane_length;
-        bound_nudge = std::max(0., bound_nudge - lane_length);
+        s0 = skip_length;
+        lane_length = path_it->lane->length() - s0;
       } else {
-        /* Self is travelling this lane backwards. */
-        const double s0 = (is_first) ? self_rp.pos.s : path_it->lane->length();
-        const double lane_length = s0;
-        DRAKE_DEMAND(lane_length > 0.);
+        // Self is travelling this lane backwards.
+        s0 = path_it->lane->length() - skip_length;
+        lane_length = s0;
+      }
+      if (lane_length <= 0.) {
+        skip_length = -lane_length;
+        continue;
+      }
+      skip_length = 0.;
 
-        auto next_it = std::make_reverse_iterator(
-            cars_by_lane_and_s[path_it->lane].lower_bound(s0 - bound_nudge));
-        if (next_it != cars_by_lane_and_s[path_it->lane].rend()) {
-          const SourceState& next = source_states[next_it->second];
-          const maliput::api::RoadPosition next_rp = next.rp;
-          delta_position = sum + (s0 - next_rp.pos.s);
+      const std::multimap<double, int>& cars_in_lane =
+          cars_by_lane_and_s[path_it->lane];
+
+      if (!path_it->is_reversed) {
+        auto next_it = cars_in_lane.upper_bound(s0);
+        if (next_it != cars_in_lane.end()) {
+          const size_t next_car_index = next_it->second;
+          const SourceState& next = source_states[next_car_index];
+          delta_position = sum + (next.rp.pos.s - s0);
           if (delta_position < 0.) {
             drake::log()->warn(
-                "REVERSED dp {}  sum {}  next-s {}  s0 {}  is-first {}",
-                delta_position, sum, next_rp.pos.s, s0, is_first);
+                "FORWARD dp {}  sum {}  next-s {}  s0 {}  skip {}",
+                delta_position, sum, next.rp.pos.s, s0, skip_length);
           }
-          // TODO(maddog)  Oy, this needs to account for travel direction
-          //               of next in its source lane, not inf-circuit lane.
-          delta_velocity = self.longitudinal_speed - next.longitudinal_speed;
+          const double self_local_s_speed = self.circuit_s_speed;
+          const double next_local_s_speed =
+              next.circuit_s_speed *
+              (paths[next_car_index][0].is_reversed ? -1. : 1.);
+          delta_velocity = self_local_s_speed - next_local_s_speed;
           break;
         }
-        sum += lane_length;
-        bound_nudge = std::max(0., bound_nudge - lane_length);
+      } else {
+        auto next_it = std::make_reverse_iterator(cars_in_lane.lower_bound(s0));
+        if (next_it != cars_in_lane.rend()) {
+          const size_t next_car_index = next_it->second;
+          const SourceState& next = source_states[next_car_index];
+          delta_position = sum + (s0 - next.rp.pos.s);
+          if (delta_position < 0.) {
+            drake::log()->warn(
+                "REVERSED dp {}  sum {}  next-s {}  s0 {}  skip {}",
+                delta_position, sum, next.rp.pos.s, s0, skip_length);
+          }
+          const double self_local_s_speed = -self.circuit_s_speed;
+          const double next_local_s_speed =
+              next.circuit_s_speed *
+              (paths[next_car_index][0].is_reversed ? -1. : 1.);
+          delta_velocity = -(self_local_s_speed - next_local_s_speed);
+          break;
+        }
       }
-      ++path_it;
-      is_first = false;
+      sum += lane_length;
     }
-
-    // While within horizon...
-    //   Traipse ahead to next branchpoint.
-    //   Loop over all other-lanes on same side of BP as this-lane.
-    //     Loop over all cars on lane
-    //       If car is not heading toward BP, skip it.
-    //       If car is closer to BP (farther from self, in parallel)
-    //         than last best other, skip it.
-    //       Mark down car as "best other" at X distance from BP.
-    //     ...Recurse back into lanes leading to this lane, too.
-
-    // TODO(maddog) Do a correct distance measurement (not just delta-s).
+    // TODO(maddog@tri.global)  We are actually only calculating 'delta s'
+    //                          here, not 'delta sigma'; consider doing it
+    //                          the right way.
     const double net_delta_sigma = delta_position - kCarLength;
     if (net_delta_sigma <= 0.) {
+      // TODO(maddog@tri.global)  Don't consider it a collision if the lateral
+      //                          distance exceeds some safe width.
       drake::log()->error(
           "COLLISION!  delta_pos {}  car-length {}  net-delta-sigma {}",
           delta_position, kCarLength, net_delta_sigma);
     }
-    // If delta_position < kCarLength, the cars crashed!
-    // TODO(maddog)  Or, they were passing, with lateral distance > width....
-    DRAKE_DEMAND(net_delta_sigma > 0.);
+    // Transform delta_velocity back into forward-facing frame of the car.
+    // TODO(maddog@tri.global)  We are actually only calculating 's-dot',
+    //                          not 'sigma-dot'; consider doing it the
+    //                          right way.
+    const double cos_heading = std::cos(car_inputs[car_index]->heading());
+    const double delta_sigma_dot =
+        (cos_heading == 0.) ?
+        std::copysign(kEnormousVelocity, delta_velocity) :
+        (delta_velocity / cos_heading);
 
-    oracle_outputs[i]->set_net_delta_sigma(net_delta_sigma);
-    oracle_outputs[i]->set_delta_sigma_dot(delta_velocity);
+    oracle_outputs[car_index]->set_net_delta_sigma(net_delta_sigma);
+    oracle_outputs[car_index]->set_delta_sigma_dot(delta_sigma_dot);
   }
 }
 
@@ -398,7 +455,7 @@ void IndexJunctions(
       // stable to pretend that it is travelling very, very slowly (that way
       // the closest exactly-stopped car will appear to get there first).
       const double kNonZeroSpeed = 1e-12;
-      const double speed = std::max(self.longitudinal_speed, kNonZeroSpeed);
+      const double speed = std::max(self.circuit_s_speed, kNonZeroSpeed);
       // TODO(maddog@tri.global)  Time in/out should probably account
       //                          for the length of the vehicle, too.
       const double time_in = s_in / speed;
@@ -451,7 +508,7 @@ void MeasureJunctions(
       const double kMergeHorizonSeconds = 2.;
       const double merge_horizon =
           (kMergeHorizonCarLengths * kCarLength) +
-          (kMergeHorizonSeconds * self.longitudinal_speed);
+          (kMergeHorizonSeconds * self.circuit_s_speed);
 
       // If self is *already in* the intersection, then skip it.
       // (E.g., keep going and get out of the intersection!)
@@ -490,7 +547,7 @@ void MeasureJunctions(
             // so consider self's position of entry as an obstacle.
             if (self_box.s_in < might_collide_at) {
               might_collide_at = self_box.s_in;
-              maybe_diff_vel = self.longitudinal_speed - 0.;
+              maybe_diff_vel = self.circuit_s_speed - 0.;
             }
             break;
           }
@@ -513,8 +570,8 @@ void MeasureJunctions(
             if (net_delta_sigma < might_collide_at) {
               might_collide_at = net_delta_sigma;
               maybe_diff_vel =
-                  self.longitudinal_speed -
-                  source_states[other_box.car_index].longitudinal_speed;
+                  self.circuit_s_speed -
+                  source_states[other_box.car_index].circuit_s_speed;
             }
             break;
           }
@@ -547,56 +604,6 @@ void MeasureJunctions(
 
 
 }  // namespace internal
-
-
-
-template <typename T>
-void EndlessRoadOracle<T>::ImplCalcOutput(
-    const std::vector<const EndlessRoadCarState<T>*>& car_inputs,
-    const std::vector<EndlessRoadOracleOutput<T>*>& oracle_outputs) const {
-  // The goal here is, for each car, to calculate the distance and
-  // differential velocity to the nearest other car/obstacle ahead.
-  // We consider a couple of different varieties of "car/obstacle ahead":
-  //  a) cars ahead on the InfiniteCircuitRoad circuit, which covers
-  //      normal car-following behavior;
-  //  b) cars approaching on intersecting lanes in the base RoadGeometry
-  //      (an anticipated collision makes the intersection be treated as
-  //      a stationary obstacle);
-  //  c) cars in a merging lane in the base RoadGeometry.
-
-  // TODO(maddog@tri.global)  A more principled approach would probably make
-  //                          this a multiple of the IDM headway parameter h,
-  //                          but this value works well in the demo.  (Too
-  //                          short and there will be collisions!)
-  // Time to look-ahead for intersections.
-  const T kEventHorizon{10.0};  // seconds
-
-  // The InfiniteCircuitRoad serves two functions:
-  //  1) emulate a uni-modal continuous system for the vehicle control until
-  //     proper hybrid system support is available;
-  //  2) represent the path of the cars through the source road network.
-  //
-  // Here we extract the RoadPositions of each car in the underlying
-  // source RoadGeometry, and we extract their paths forward (within the
-  // given horizon).
-  std::vector<internal::SourceState> source_states;
-  std::vector<std::vector<internal::PathRecord>> paths;
-  UnwrapEndlessRoadCarState(car_inputs, road_, kEventHorizon,
-                            &source_states, &paths);
-
-  // Deal with (a).
-  AssessForwardPath(source_states, paths, oracle_outputs);
-  // Deal with (b) and (c).
-  AssessJunctions(source_states, paths, oracle_outputs);
-}
-
-
-template <typename T>
-std::unique_ptr<systems::BasicVector<T>
-                > EndlessRoadOracle<T>::AllocateOutputVector(
-    const systems::OutputPortDescriptor<T>& descriptor) const {
-  return std::make_unique<EndlessRoadOracleOutput<T>>();
-}
 
 
 // These instantiations must match the API documentation in

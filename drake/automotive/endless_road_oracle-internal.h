@@ -16,6 +16,8 @@ namespace utility = maliput::utility;
 
 const double kEnormousDistance {1e12};
 
+const double kEnormousVelocity {1e12};
+
 const double kCarLength {4.6};  // TODO(maddog) Get from somewhere else.
 
 enum LaneRelation { kIntersection,
@@ -28,11 +30,12 @@ enum LaneRelation { kIntersection,
 struct SourceState {
   SourceState() {}
 
-  SourceState(api::RoadPosition arp, double als)
-      : rp(arp), longitudinal_speed(als) {}
-
+  SourceState(api::RoadPosition rp_in, double circuit_s_speed_in)
+      : rp(rp_in), circuit_s_speed(circuit_s_speed_in) {}
+  /// Position in the source RoadGeometry.
   api::RoadPosition rp;
-  double longitudinal_speed{};
+  /// Rate of change of s-parameter along the infinite circuit.
+  double circuit_s_speed{};
 };
 
 // Element of a car's travel path in the source maliput::api::RoadGeometry.
@@ -59,6 +62,7 @@ void UnwrapEndlessRoadCarState(
     std::vector<std::vector<PathRecord>>* paths);
 
 void AssessForwardPath(
+    const std::vector<const EndlessRoadCarState<double>*>& car_inputs,
     const std::vector<SourceState>& source_states,
     const std::vector<std::vector<PathRecord>>& paths,
     const std::vector<EndlessRoadOracleOutput<double>*>& oracle_outputs);
