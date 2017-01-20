@@ -11,7 +11,7 @@ namespace test {
 namespace {
 
 GTEST_TEST(SDFormatTest, TestBasic) {
-  const std::string sdf_str("<?xml version='1.0'?><sdf version='1.6'><model name='my_model'><link name='link'/></model></sdf>");
+  const std::string sdf_str("<?xml version='1.0'?><sdf version='1.6'><model name='my_model'><link name='link'/></model></sdf>"); // NOLINT
   sdf::SDFPtr sdf_parsed(new sdf::SDF());
   sdf::init(sdf_parsed);
 
