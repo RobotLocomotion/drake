@@ -176,7 +176,7 @@ class Mesh : public Geometry {
   The i-th entry of @p triangles holds a 3D vector of integer indices into
   @p vertices corresponding to the vertices forming the i-th triangle.
   @param[in] triangulate  If true, triangulates any faces that are not already
-  triangles, otherwise, throws exception.
+  triangles, otherwise, throws std::runtime_error.
 
   On output, `vertices.size()` corresponds to the number of vertices in the mesh
   while `triangles.size()` corresponds to the number of triangles in the mesh.
@@ -185,6 +185,12 @@ class Mesh : public Geometry {
                    bool triangulate = false) const;
 
  private:
+  // Given a list of vertex values and three indices into that set, computes a
+  // normal for the plane defined by the vertices.
+  // If the indices are invalid or if the points are co-linear.
+  static bool getNormal(const PointsVector& vertices, int i0, int i1, int i2,
+                 Eigen::Vector3d* normal);
+
   // This method finds a juxtaposed obj file from the `resolved_filename_`
   // member. If unable to resolve an obj file it throws an exception.
   // If `resolved_filename_` already is an obj file then it returns
