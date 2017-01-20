@@ -453,9 +453,9 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
       new_ub(i) = ub(i) - constant_term;
     } else if (is_multiplication(e_i)) {
       // i-th constraint should be lb <= c * var_i <= ub, where c is a constant.
-      const double c = get_constant_factor_in_multiplication(e_i);
+      const double c = get_constant_in_multiplication(e_i);
       const std::map<symbolic::Expression, symbolic::Expression>&
-          map_base_to_exponent = get_products_in_multiplication(e_i);
+          map_base_to_exponent = get_base_to_exp_map_in_multiplication(e_i);
       if (map_base_to_exponent.size() == 1) {
         for (const std::pair<symbolic::Expression, symbolic::Expression>& p :
              map_base_to_exponent) {
