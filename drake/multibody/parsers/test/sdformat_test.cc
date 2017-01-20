@@ -11,19 +11,19 @@ namespace test {
 namespace {
 
 GTEST_TEST(SDFormatTest, TestBasic) {
-  const std::string sdfstr("<?xml version='1.0'?><sdf version='1.6'><model name='my_model'><link name='link'/></model></sdf>");
-  sdf::SDFPtr sdfParsed(new sdf::SDF());
-  sdf::init(sdfParsed);
+  const std::string sdf_str("<?xml version='1.0'?><sdf version='1.6'><model name='my_model'><link name='link'/></model></sdf>");
+  sdf::SDFPtr sdf_parsed(new sdf::SDF());
+  sdf::init(sdf_parsed);
 
-  EXPECT_TRUE(sdf::readString(sdfstr, sdfParsed));
+  EXPECT_TRUE(sdf::readString(sdf_str, sdf_parsed));
 
-  sdf::ElementPtr model = sdfParsed->Root()->GetElement("model");
-  std::string modelName = model->Get<std::string>("name");
+  sdf::ElementPtr model = sdf_parsed->Root()->GetElement("model");
+  std::string model_name = model->Get<std::string>("name");
 
-  EXPECT_EQ(modelName, std::string("my_model"));
+  EXPECT_EQ(model_name, std::string("my_model"));
 
-  std::string linkName = model->GetElement("link")->Get<std::string>("name");
-  EXPECT_EQ(linkName, std::string("link"));
+  std::string link_name = model->GetElement("link")->Get<std::string>("name");
+  EXPECT_EQ(link_name, std::string("link"));
 }
 
 }  // namespace
