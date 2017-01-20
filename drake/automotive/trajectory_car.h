@@ -6,6 +6,7 @@
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/simple_car_state.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -29,6 +30,8 @@ namespace automotive {
 template <typename T>
 class TrajectoryCar : public systems::LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryCar)
+
   /// Constructs a TrajectoryCar system that traces the given @p curve,
   /// at the given constant @p speed, starting at the given @p start_time.
   /// Throws an error if the curve is empty (a zero @p path_length).
