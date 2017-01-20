@@ -6,6 +6,7 @@
 
 namespace drake {
 namespace multibody {
+namespace parsers {
 namespace test {
 namespace {
 
@@ -27,5 +28,6 @@ GTEST_TEST(SDFormatTest, TestBasic) {
 
 }  // namespace
 }  // namespace test
+}  // namespace parsers
 }  // namespace multibody
 }  // namespace drake
