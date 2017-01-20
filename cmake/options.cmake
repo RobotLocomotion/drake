@@ -87,9 +87,9 @@ function(drake_system_dependency NAME)
 
   # Parse arguments
   cmake_parse_arguments("_sd"
-    "OPTIONAL"
+    "OPTIONAL;PREFER_SYSTEM_VERSION;--"
     "REQUIRES;VERSION;DEPENDS"
-    ""
+    "ADDITIONAL_VERSIONS"
     ${_args})
 
   # Check for required arguments.
@@ -106,9 +106,14 @@ function(drake_system_dependency NAME)
   if(DEFINED _sd_DEPENDS)
     set(_sd_DEPENDS DEPENDS "${_sd_DEPENDS}")
   endif()
+  if(_sd_PREFER_SYSTEM_VERSION)
+    set(_default ON)
+  else()
+    set(_default OFF)
+  endif()
 
   # Create option for using system version of external.
-  drake_option(USE_SYSTEM_${NAME} OFF
+  drake_option(USE_SYSTEM_${NAME} ${_default}
     "${_sd_DEPENDS}"
     "Use the system-provided"
     "${_sd_UNPARSED_ARGUMENTS}"
@@ -145,6 +150,17 @@ function(drake_system_dependency NAME)
 
   # If using system version, ensure it is available.
   if(USE_SYSTEM_${NAME})
+    set(_user_dir "${${NAME}_DIR}")
+    foreach(_version ${_sd_ADDITIONAL_VERSIONS})
+      find_package(${_sd_REQUIRES} ${_version} QUIET)
+      if(${NAME}_FOUND)
+        set(HAVE_${NAME} TRUE PARENT_SCOPE)
+        return()
+      endif()
+      set(${NAME}_DIR "${_user_dir}" CACHE PATH
+        "The directory containing a CMake configuration file for ${NAME}."
+        FORCE)
+    endforeach()
     find_package(${_sd_REQUIRES} ${_sd_VERSION} REQUIRED)
     set(HAVE_${NAME} TRUE PARENT_SCOPE)
   endif()
@@ -222,6 +238,11 @@ macro(drake_setup_options)
     DEPENDS "HAVE_BOT_CORE_LCMTYPES"
     "robotlocomotion LCM types")
 
+  drake_system_dependency(
+    VTK OPTIONAL PREFER_SYSTEM_VERSION REQUIRES VTK VERSION 5.10
+    ADDITIONAL_VERSIONS 5.8 --
+    "Visualization ToolKit")
+
   drake_system_dependency(YAML_CPP OPTIONAL REQUIRES yaml-cpp
     "C++ library for reading and writing YAML configuration files")
 
@@ -234,7 +255,7 @@ macro(drake_setup_options)
   drake_optional_external(CCD ON "Convex shape Collision Detection library")
 
   drake_optional_external(DIRECTOR ON
-    DEPENDS "HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES\;NOT DISABLE_PYTHON"
+    DEPENDS "HAVE_VTK\;HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES\;NOT DISABLE_PYTHON"
     "VTK-based visualization tool and robot user interface")
 
   drake_optional_external(GOOGLE_STYLEGUIDE ON
