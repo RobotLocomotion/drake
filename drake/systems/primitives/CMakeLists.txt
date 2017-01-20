@@ -14,7 +14,6 @@ set(sources
     saturation.cc
     signal_logger.cc
     trajectory_source.cc
-    variable_saturation.cc
     zero_order_hold.cc)
 
 drake_install_headers(
@@ -36,7 +35,6 @@ drake_install_headers(
   saturation.h
   signal_logger.h
   trajectory_source.h
-  variable_saturation.h
   zero_order_hold.h
   zero_order_hold-inl.h)
 
