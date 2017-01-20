@@ -138,6 +138,7 @@ cc_library(
         ":cond",
         ":dummy_value",
         ":number_traits",
+        ":polynomial",
     ],
 )
 
