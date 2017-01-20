@@ -299,6 +299,12 @@ class SymbolicError : public runtime_error {
    *  \pre{1. @c coeffs is a row vector of double, whose length matches with the
    *          size of @c map_var_to_index.
    *       2. @c e is an addition symbolic-expression.}
+   * @tparam Derived An Eigen row vector of doubles.
+   * @param[in] e The symbolic linear expression
+   * @param[in] map_var_to_index A mapping from variable ID to variable index,
+   * such that map_var_to_index[vi.get_ID()] = i.
+   * @param[out] coeffs A row vector. coeffs(i) = ci.
+   * @param[out] constant_term c0 in the equation above.
    */
 template <typename Derived>
 void DecomposeLinearExpression(
@@ -367,7 +373,7 @@ void DecomposeLinearExpression(
       DecomposeLinearExpression(e_i, map_var_to_index, A->row(i),
                                 b->data() + i);
     } else if (is_multiplication(e_i)) {
-      double c = get_constant_in_multiplication(e_i);
+      const double c = get_constant_in_multiplication(e_i);
       const std::map<symbolic::Expression, symbolic::Expression>&
           map_base_to_exponent = get_base_to_exp_map_in_multiplication(e_i);
       if (map_base_to_exponent.size() == 1) {
@@ -447,7 +453,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
       new_ub(i) = ub(i) - constant_term;
     } else if (is_multiplication(e_i)) {
       // i-th constraint should be lb <= c * var_i <= ub, where c is a constant.
-      double c = get_constant_factor_in_multiplication(e_i);
+      const double c = get_constant_factor_in_multiplication(e_i);
       const std::map<symbolic::Expression, symbolic::Expression>&
           map_base_to_exponent = get_products_in_multiplication(e_i);
       if (map_base_to_exponent.size() == 1) {
