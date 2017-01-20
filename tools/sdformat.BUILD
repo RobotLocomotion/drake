@@ -27,23 +27,25 @@ cmake_configure_file(
     visibility = [],
 )
 
+public_headers = [
+    "include/sdf/Assert.hh",
+    "include/sdf/Console.hh",
+    "include/sdf/Element.hh",
+    "include/sdf/Exception.hh",
+    "include/sdf/Param.hh",
+    "include/sdf/parser.hh",
+    "include/sdf/SDFImpl.hh",
+    "include/sdf/system_util.hh",
+    "include/sdf/Types.hh",
+]
+
 # Generates sdf.hh, which consists of #include statements for *all* of the other
 # headers in the library (!!!).  There is one line like
 # '#include <sdf/Assert.hh>' for each non-generated header, followed at the end
 # by a single '#include <sdf/sdf_config.hh>'.
 genrule(
     name = "sdfhh_genrule",
-    srcs = [
-        "include/sdf/Assert.hh",
-        "include/sdf/Console.hh",
-        "include/sdf/Element.hh",
-        "include/sdf/Exception.hh",
-        "include/sdf/Param.hh",
-        "include/sdf/parser.hh",
-        "include/sdf/SDFImpl.hh",
-        "include/sdf/Types.hh",
-        "include/sdf/system_util.hh",
-    ],
+    srcs = public_headers,
     outs = ["include/sdf/sdf.hh"],
     # TODO: centralize this logic, as it is used here, in ignmath.BUILD, and
     # in fcl.BUILD
@@ -56,8 +58,8 @@ genrule(
 )
 
 # Generates the library exported to users.  The explicitly listed srcs= matches
-# upstream's explicitly listed sources.  The globbed hdrs= matches upstream's
-# explicitly globbed headers.
+# upstream's explicitly listed sources.  The explicitly listed hdrs= matches
+# upstream's explicitly listed headers.
 cc_library(
     name = "lib",
     srcs = [
@@ -81,11 +83,16 @@ cc_library(
         "src/urdf/urdf_parser/urdf_sensor.cpp",
         "src/urdf/urdf_parser/world.cpp",
     ],
-    hdrs = glob([
-        "include/sdf/*.hh",
-    ]) + [
-        "include/sdf/sdf_config.h",
-        "include/sdf/sdf.hh",
+    # We need to list the private headers along with the public ones so that
+    # bazel copies them all into the right place during the build phase.
+    hdrs = public_headers + [
+        "include/sdf/Converter.hh",
+        "include/sdf/ExceptionPrivate.hh",
+        "include/sdf/parser_private.hh",
+        "include/sdf/parser_urdf.hh",
+        "include/sdf/SDFExtension.hh",
+        "include/sdf/sdf_config.h", # from cmake_configure_file above
+        "include/sdf/sdf.hh",       # from genrule above
     ],
     includes = ["include"],
     visibility = ["//visibility:public"],
