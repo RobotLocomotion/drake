@@ -37,54 +37,6 @@ namespace drake {
 namespace examples {
 namespace acrobot {
 namespace {
-// tried to build the controller as a drake system, but failed
-/*
-int DoMain() {
-  drake::systems::DiagramBuilder<double> builder;
-  const std::string channel_x = "acrobot_xhat";
-  const std::string channel_u = "acrobot_u";
-
-  lcm::DrakeLcm lcm;
-
-  auto acrobot = std::make_unique<AcrobotPlant<double>>();
-
-  //------------------controller--------------------------------------
-  // create state receiver
-  auto state_sub =
-      builder.AddSystem(systems::lcm::LcmSubscriberSystem::Make<lcmt_acrobot_x>(
-          channel_x, &lcm));
-  auto state_receiver = builder.AddSystem<AcrobotStateReceiver>();
-  builder.Connect(state_sub->get_output_port(0),
-                  state_receiver->get_input_port(0));
-
-  // command sender
-  auto command_pub =
-      builder.AddSystem(systems::lcm::LcmPublisherSystem::Make<lcmt_acrobot_u>(
-          channel_u, &lcm));
-  auto command_sender = builder.AddSystem<AcrobotCommandSender>();
-  builder.Connect(command_sender->get_output_port(0),
-                  command_pub->get_input_port(0));
-
-  auto controller = builder.AddSystem<AcrobotSwingUpController>(*acrobot);
-  builder.Connect(controller->get_output_port(0),
-                  command_sender->get_input_port(0));
-  builder.Connect(state_receiver->get_output_port(0),
-                  controller->get_input_port(0));
-
-
-  auto diagram = builder.Build();
-  systems::Simulator<double> simulator(*diagram);
-
-  lcm.StartReceiveThread();
-
-  simulator.set_target_realtime_rate(FLAGS_realtime_factor);
-  simulator.Initialize();
-  // Simulate for a very long time.
-  simulator.StepTo(FLAGS_simulation_sec);
-
-  return 0;
-}
-*/
 
 using std::chrono::milliseconds;
 using std::this_thread::sleep_for;

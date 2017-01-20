@@ -44,17 +44,18 @@ class AcrobotPlant : public systems::LeafSystem<T> {
 
   T EvalEnergy(const systems::Context<T>& context) const;
 
-  T getm1() const {return m1;}
-  T getm2() const {return m2;}
-  T getl1() const {return l1;}
-  T getl2() const {return l2;}
-  T getlc1() const {return lc1;}
-  T getlc2() const {return lc2;}
-  T getIc1() const {return Ic1;}
-  T getIc2() const {return Ic2;}
-  T getb1() const {return b1;}
-  T getb2() const {return b2;}
-  T getg() const {return g;}
+  T getm1() const { return m1; }
+  T getm2() const { return m2; }
+  T getl1() const { return l1; }
+  T getl2() const { return l2; }
+  T getlc1() const { return lc1; }
+  T getlc2() const { return lc2; }
+  T getIc1() const { return Ic1; }
+  T getIc2() const { return Ic2; }
+  T getb1() const { return b1; }
+  T getb2() const { return b2; }
+  T getg() const { return g; }
+
  private:
   // LeafSystem<T> override.
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
@@ -68,6 +69,7 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   AcrobotPlant<AutoDiffXd>* DoToAutoDiffXd() const override;
 
   // TODO(russt): Declare these as parameters in the context.
+
   const double m1{1.0},  // Mass of link 1 (kg).
       m2{1.0},           // Mass of link 2 (kg).
       l1{1.0},           // Length of link 1 (m).
@@ -85,22 +87,24 @@ class AcrobotPlant : public systems::LeafSystem<T> {
       b2{0.1},    // Damping coefficient of the elbow joint (kg*m^2/s).
       g{9.81};    // Gravitational constant (m/s^2).
 
-  //const double m1{2.4367},  // Mass of link 1 (kg).
-  //    m2{0.6178},           // Mass of link 2 (kg).
-  //    l1{0.5263},           // Length of link 1 (m).
-  //    l2{0},           // Length of link 2 (m).
-  //    lc1{1.6738},  // Vertical distance from shoulder joint to center of
-  // mass of
-                // link 1 (m).
-  //    lc2{1.5651},  // Vertical distance from elbox joint to center of mass of
-                  //link 2 (m).
-  //    Ic1{-4.7443},  // Inertia of link 1 about the center of mass of link 1
-                // (kg*m^2).
-  //    Ic2{-1.0068},   // Inertia of link 2 about the center of mass of link 2
-  // (kg*m^2).
-  //    b1{0.0320},    // Damping coefficient of the shoulder joint (kg*m^2/s).
-  //    b2{0.0413},    // Damping coefficient of the elbow joint (kg*m^2/s).
-  //    g{9.81};    // Gravitational constant (m/s^2).
+  /*
+  // parameters for the acrbot in the lab
+  const double m1{2.4367},  // Mass of link 1 (kg).
+      m2{0.6178},           // Mass of link 2 (kg).
+      l1{0.5263},           // Length of link 1 (m).
+      l2{0},                // Length of link 2 (m).
+      lc1{1.6738},   // Vertical distance from shoulder joint to center of
+                     // mass of link 1 (m).
+      lc2{1.5651},   // Vertical distance from elbox joint to center of mass of
+                     // link 2 (m).
+      Ic1{-4.7443},  // Inertia of link 1 about the center of mass of link 1
+                     // (kg*m^2).
+      Ic2{-1.0068},  // Inertia of link 2 about the center of mass of link 2
+                     // (kg*m^2).
+      b1{0.0320},    // Damping coefficient of the shoulder joint (kg*m^2/s).
+      b2{0.0413},    // Damping coefficient of the elbow joint (kg*m^2/s).
+      g{9.81};       // Gravitational constant (m/s^2).
+  */
 };
 
 /// Constructs the Acrobot with (only) encoder outputs.
