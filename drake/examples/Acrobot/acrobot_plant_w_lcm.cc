@@ -1,6 +1,4 @@
-//
-// Created by Pang Tao on 9/1/17.
-//
+// a version of the acrobot plant that talks to controller through LCM
 #include <memory>
 
 #include <gflags/gflags.h>
@@ -21,8 +19,6 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/examples/Acrobot/acrobot_energy_shaping_controller.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
-
-
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");

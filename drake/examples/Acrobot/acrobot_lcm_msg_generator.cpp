@@ -1,6 +1,4 @@
-//
-// Created by Pang Tao on 9/1/17.
-//
+// generates simple LCM messages to test acrobot_plant_w_lcm
 
 #include <memory>
 

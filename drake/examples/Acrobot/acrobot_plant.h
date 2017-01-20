@@ -35,14 +35,6 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   /// The input force to this system is not direct feedthrough.
   bool has_any_direct_feedthrough() const override { return false; }
 
- private:
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override;
-
-  void DoCalcTimeDerivatives(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const override;
-
   T EvalEnergy(const systems::Context<T>& context) const;
 
   T getm1() const { return m1; }
@@ -57,7 +49,15 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   T getb2() const { return b2; }
   T getg() const { return g; }
 
+
  private:
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
+
+  void DoCalcTimeDerivatives(
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const override;
+
   // LeafSystem<T> override.
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
       const override;
@@ -89,7 +89,7 @@ class AcrobotPlant : public systems::LeafSystem<T> {
       g{9.81};    // Gravitational constant (m/s^2).
 
   /*
-  // parameters for the acrbot in the lab
+  // parameters for the acrobot in the lab
   const double m1{2.4367},  // Mass of link 1 (kg).
       m2{0.6178},           // Mass of link 2 (kg).
       l1{0.5263},           // Length of link 1 (m).

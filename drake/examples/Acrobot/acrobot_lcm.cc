@@ -18,7 +18,7 @@ AcrobotStateReceiver::AcrobotStateReceiver() {
   this->DeclareOutputPort(systems::kVectorValued, kNumJoints*2);
 }
 
-void AcrobotStateReceiver::EvalOutput(const Context<double>& context,
+void AcrobotStateReceiver::DoCalcOutput(const Context<double>& context,
                                      SystemOutput<double>* output) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
@@ -57,7 +57,7 @@ AcrobotCommandSender::AllocateOutput(
   return std::unique_ptr<SystemOutput<double>>(output.release());
 }
 
-void AcrobotCommandSender::EvalOutput(
+void AcrobotCommandSender::DoCalcOutput(
     const Context<double>& context, SystemOutput<double>* output) const {
   systems::AbstractValue* mutable_data = output->GetMutableData(0);
   lcmt_acrobot_u& status =
@@ -75,7 +75,7 @@ AcrobotCommandReceiver::AcrobotCommandReceiver() {
   this->DeclareOutputPort(systems::kVectorValued, 1);
 }
 
-void AcrobotCommandReceiver::EvalOutput(const Context<double>& context,
+void AcrobotCommandReceiver::DoCalcOutput(const Context<double>& context,
                                       SystemOutput<double>* output) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
@@ -114,7 +114,7 @@ AcrobotStateSender::AllocateOutput(
   return std::unique_ptr<SystemOutput<double>>(output.release());
 }
 
-void AcrobotStateSender::EvalOutput(
+void AcrobotStateSender::DoCalcOutput(
     const Context<double>& context, SystemOutput<double>* output) const {
   systems::AbstractValue* mutable_data = output->GetMutableData(0);
   lcmt_acrobot_x& status =

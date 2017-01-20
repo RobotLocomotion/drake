@@ -216,7 +216,7 @@ int DoMain() {
     msg_u.encode(&buffer_u[0], 0, msg_u.getEncodedSize());
     lcm.Publish(channel_u, &buffer_u[0], msg_u.getEncodedSize());
 
-    sleep_for(milliseconds(5));
+    //sleep_for(milliseconds(5));
   }
 
   return 0;

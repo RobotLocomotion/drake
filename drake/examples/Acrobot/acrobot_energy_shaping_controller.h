@@ -1,3 +1,9 @@
+// The same energy shaping controller as in
+// acrobot_energy_shaping_controller_w_lcm, but using System 2.0. It should
+// be connected to AcrobotStateReceiver and AcrobotCommandSender (in
+// acrobot_lcm.h) to communiate via lcm to acrobot_plant_w_lcm.
+// For some reason it does not work at the moment. 
+
 #pragma once
 
 #include "drake/examples/Acrobot/acrobot_plant.h"
