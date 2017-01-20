@@ -47,6 +47,8 @@ genrule(
     name = "fclh_genrule",
     srcs = glob(["include/**/*.h"]),
     outs = ["include/fcl/fcl.h"],
+    # TODO: centralize this logic, as it is used here, in ignmath.BUILD, and
+    # in sdformat.BUILD
     cmd = "(" + (
         "echo '#pragma once' && " +
         "echo '$(SRCS)' | tr ' ' '\\n' | " +

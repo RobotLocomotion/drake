@@ -45,6 +45,8 @@ genrule(
         "include/sdf/system_util.hh",
     ],
     outs = ["include/sdf/sdf.hh"],
+    # TODO: centralize this logic, as it is used here, in ignmath.BUILD, and
+    # in fcl.BUILD
     cmd = "(" + (
         "echo '$(SRCS)' | tr ' ' '\\n' | " +
         "sed 's|.*include/\(.*\)|#include \\<\\1\\>|g' &&" +

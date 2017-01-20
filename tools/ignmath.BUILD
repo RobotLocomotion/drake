@@ -111,6 +111,8 @@ genrule(
     name = "mathhh_genrule",
     srcs = public_headers,
     outs = ["include/ignition/math.hh"],
+    # TODO: centralize this logic, as it is used here, in sdformat.BUILD, and
+    # in fcl.BUILD
     cmd = "(" + (
         "echo '#include <ignition/math/config.hh>' && " +
         "echo '$(SRCS)' | tr ' ' '\\n' | " +
