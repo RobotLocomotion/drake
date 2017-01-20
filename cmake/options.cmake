@@ -167,6 +167,25 @@ function(drake_optional_external NAME DEFAULT_STATE)
 endfunction()
 
 #------------------------------------------------------------------------------
+# Set internal flag indicating whether or not to build an optional component.
+#
+# This sets the variables WITH_<NAME> and HAVE_<NAME>, indicating if the
+# specified external is available and will be built. These will be true iff
+# <WHEN> is also true.
+#------------------------------------------------------------------------------
+function(drake_dependent_external NAME WHEN)
+  string(REPLACE " " ";" WHEN "${WHEN}") # Force splitting
+  if(${WHEN})
+    set(_value ON)
+  else()
+    set(_value OFF)
+  endif()
+
+  set(WITH_${NAME} "${_value}" PARENT_SCOPE)
+  set(HAVE_${NAME} "${_value}" PARENT_SCOPE)
+endfunction()
+
+#------------------------------------------------------------------------------
 # Set up options
 #------------------------------------------------------------------------------
 macro(drake_setup_options)
@@ -304,7 +323,7 @@ macro(drake_setup_options)
   drake_optional_external(MOSEK OFF
     "Convex optimization solver\; free for academics")
 
-  drake_optional_external(SIGNALSCOPE OFF DEPENDS "WITH_DIRECTOR"
+  drake_optional_external(SIGNALSCOPE OFF
     "Live plotting tool for LCM messages")
 
   drake_optional_external(SNOPT OFF
@@ -323,9 +342,12 @@ macro(drake_setup_options)
   # BEGIN indirectly optional external projects
 
   # The following projects are enabled iff their related externals are enabled.
-  set(WITH_CTK_PYTHON_CONSOLE ${WITH_DIRECTOR})
-  set(WITH_PYTHONQT ${WITH_DIRECTOR})
-  set(WITH_QT_PROPERTY_BROWSER ${WITH_DIRECTOR})
+  drake_dependent_external(CTK_PYTHON_CONSOLE
+    "WITH_DIRECTOR OR WITH_SIGNALSCOPE")
+  drake_dependent_external(PYTHONQT
+    "WITH_DIRECTOR OR WITH_SIGNALSCOPE")
+  drake_dependent_external(QT_PROPERTY_BROWSER
+    "WITH_DIRECTOR")
 
   # END indirectly optional external projects
 endmacro()
