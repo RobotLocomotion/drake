@@ -619,7 +619,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, FunctionalForm>::value &&
         std::is_same<typename MatrixR::Scalar, double>::value,
     Eigen::Matrix<FunctionalForm, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(MatrixL const& lhs, MatrixR const& rhs) {
   return lhs * rhs.template cast<FunctionalForm>();
 }
@@ -635,7 +635,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, double>::value &&
         std::is_same<typename MatrixR::Scalar, FunctionalForm>::value,
     Eigen::Matrix<FunctionalForm, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(MatrixL const& lhs, MatrixR const& rhs) {
   return lhs.template cast<FunctionalForm>() * rhs;
 }
@@ -734,11 +734,9 @@ struct NumTraits<drake::FunctionalForm> {
     MulCost = 1
   };
 
-  template<bool Vectorized>
+  template <bool Vectorized>
   struct Div {
-    enum {
-      Cost = 1
-    };
+    enum { Cost = 1 };
   };
 
   typedef drake::FunctionalForm Real;

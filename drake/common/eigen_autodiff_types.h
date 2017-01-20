@@ -25,7 +25,7 @@ using AutoDiffXd = Eigen::AutoDiffScalar<Eigen::VectorXd>;
 // note: tried using template default values (e.g. Eigen::Dynamic), but they
 // didn't seem to work on my mac clang
 template <int num_vars>
-using TaylorVard = Eigen::AutoDiffScalar<Eigen::Matrix<double, num_vars, 1> >;
+using TaylorVard = Eigen::AutoDiffScalar<Eigen::Matrix<double, num_vars, 1>>;
 template <int num_vars, int rows>
 using TaylorVecd = Eigen::Matrix<TaylorVard<num_vars>, rows, 1>;
 template <int num_vars, int rows, int cols>

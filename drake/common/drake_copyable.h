@@ -32,10 +32,10 @@ class Foo {
 };
 </pre>
 */
-#define DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Classname)      \
-  Classname(const Classname&) = delete;                 \
-  void operator=(const Classname&) = delete;            \
-  Classname(Classname&&) = delete;                      \
+#define DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Classname) \
+  Classname(const Classname&) = delete;            \
+  void operator=(const Classname&) = delete;       \
+  Classname(Classname&&) = delete;                 \
   void operator=(Classname&&) = delete;
 
 /** DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN defaults the special member
@@ -56,13 +56,13 @@ class Foo {
 };
 </pre>
 */
-#define DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Classname)       \
-  Classname(const Classname&) = default;                        \
-  Classname& operator=(const Classname&) = default;             \
-  Classname(Classname&&) = default;                             \
-  Classname& operator=(Classname&&) = default;                  \
-  /* Fails at compile-time if default-copy doesn't work. */     \
-  static void DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE() {        \
-    (void) static_cast<Classname& (Classname::*)(               \
-        const Classname&)>(&Classname::operator=);              \
+#define DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Classname)           \
+  Classname(const Classname&) = default;                            \
+  Classname& operator=(const Classname&) = default;                 \
+  Classname(Classname&&) = default;                                 \
+  Classname& operator=(Classname&&) = default;                      \
+  /* Fails at compile-time if default-copy doesn't work. */         \
+  static void DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE() {            \
+    (void)static_cast<Classname& (Classname::*)(const Classname&)>( \
+        &Classname::operator=);                                     \
   }
