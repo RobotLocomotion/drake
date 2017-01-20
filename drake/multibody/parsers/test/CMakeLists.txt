@@ -1,6 +1,3 @@
-LIST(APPEND CMAKE_MODULE_PATH "${PROJECT_BINARY_DIR}/../install/lib/cmake/sdformat")
-include(SDFormatConfig)
-
 add_executable(urdf_kinematics_test urdf_kinematics_test.cc)
 target_link_libraries(urdf_kinematics_test
     drakeMultibodyParsers
