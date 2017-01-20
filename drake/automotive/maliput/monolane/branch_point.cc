@@ -35,8 +35,7 @@ std::unique_ptr<api::LaneEnd> BranchPoint::DoGetDefaultBranch(
 }
 
 const api::LaneEnd& BranchPoint::AddABranch(const api::LaneEnd& lane_end) {
-  DRAKE_DEMAND(
-      confluent_branches_.find(lane_end) == confluent_branches_.end());
+  DRAKE_DEMAND(confluent_branches_.find(lane_end) == confluent_branches_.end());
   DRAKE_DEMAND(ongoing_branches_.find(lane_end) == ongoing_branches_.end());
   a_side_.add(lane_end);
   confluent_branches_[lane_end] = &a_side_;
@@ -45,8 +44,7 @@ const api::LaneEnd& BranchPoint::AddABranch(const api::LaneEnd& lane_end) {
 }
 
 const api::LaneEnd& BranchPoint::AddBBranch(const api::LaneEnd& lane_end) {
-  DRAKE_DEMAND(
-      confluent_branches_.find(lane_end) == confluent_branches_.end());
+  DRAKE_DEMAND(confluent_branches_.find(lane_end) == confluent_branches_.end());
   DRAKE_DEMAND(ongoing_branches_.find(lane_end) == ongoing_branches_.end());
   b_side_.add(lane_end);
   confluent_branches_[lane_end] = &b_side_;

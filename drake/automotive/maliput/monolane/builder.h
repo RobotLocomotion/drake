@@ -63,7 +63,7 @@ class EndpointXy {
   EndpointXy() = default;
 
   EndpointXy(double x, double y, double heading)
-      :x_(x), y_(y), heading_(heading) {}
+      : x_(x), y_(y), heading_(heading) {}
 
   /// Returns an EndpointXy with reversed direction.
   EndpointXy reverse() const {

@@ -52,13 +52,9 @@ class RoadGeometry : public api::RoadGeometry {
       const api::GeoPosition& geo_pos,
       const api::RoadPosition& hint) const override;
 
-  double do_linear_tolerance() const override {
-    return linear_tolerance_;
-  }
+  double do_linear_tolerance() const override { return linear_tolerance_; }
 
-  double do_angular_tolerance() const override {
-    return angular_tolerance_;
-  }
+  double do_angular_tolerance() const override { return angular_tolerance_; }
 
   api::RoadGeometryId id_;
   double linear_tolerance_{};
