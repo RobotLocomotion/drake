@@ -19,8 +19,6 @@ cmake_configure_file(
     ],
     defines = [
         "PROJECT_NAME=SDFormat",
-        "SDF_VERSION=4.1",
-        "SDF_VERSION_FULL=4.1.1",
         "SDF_VERSION_NAME=",
         "CMAKE_INSTALL_FULL_DATAROOTDIR=/usr/share",
         "SDF_PKG_VERSION=",
