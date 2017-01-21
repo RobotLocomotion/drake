@@ -98,8 +98,8 @@ class LinearSystemExample3 : public LinearSystemExample2 {
   }
 };
 
-// This test comes from Section 2.2 of "Handbook of Test Problems in
-// Local and Global Optimization."
+/// This test comes from Section 2.2 of "Handbook of Test Problems in
+/// Local and Global Optimization."
 class NonConvexQPproblem1 {
   /// This is a non-convex quadratic program with inequality constraints.
   /// We choose to add the cost and constraints through different forms,
@@ -202,8 +202,8 @@ class NonConvexQPproblem1 {
   Eigen::Matrix<double, 5, 1> x_expected_;
 };
 
-// This test comes from Section 2.3 of "Handbook of Test Problems in
-// Local and Global Optimization."
+/// This test comes from Section 2.3 of "Handbook of Test Problems in
+/// Local and Global Optimization."
 class NonConvexQPproblem2 {
  public:
   enum CostForm {
@@ -308,6 +308,136 @@ class NonConvexQPproblem2 {
     prog_->AddLinearConstraint(constraint2, -std::numeric_limits<double>::infinity(), 20);
   }
 
+  std::shared_ptr<MathematicalProgram> prog_;
+  Eigen::Matrix<symbolic::Variable, 6, 1> x_;
+  Eigen::Matrix<double, 6, 1> x_expected_;
+};
+
+
+/// This test comes from Section 3.4 of "Handbook of Test Problems in
+/// Local and Global Optimization.
+class LowerBoundedProblem {
+ public:
+  enum ConstraintForm {
+    kConstraintBegin = 0,
+    kNonSymbolic = 0,
+    kSymbolic = 1,
+    kConstraintEnd = 1
+  };
+
+ public:
+  LowerBoundedProblem(ConstraintForm cnstr_form) : prog_(std::make_shared<MathematicalProgram>()), x_{}, x_expected_{} {
+    x_ = prog_->NewContinuousVariables<6>("x");
+
+    Eigen::Matrix<double, 6, 1> lb{};
+    Eigen::Matrix<double, 6, 1> ub{};
+    lb << 0, 0, 1, 0, 1, 0;
+    ub << std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity(), 5, 6, 5, 10;
+    prog_->AddBoundingBoxConstraint(lb, ub);
+
+    prog_->AddCost(LowerBoundTestCost());
+    std::shared_ptr<Constraint> con1(new LowerBoundTestConstraint(2, 3));
+    prog_->AddConstraint(con1);
+    std::shared_ptr<Constraint> con2(new LowerBoundTestConstraint(4, 5));
+    prog_->AddConstraint(con2);
+
+    switch (cnstr_form) {
+      case kNonSymbolic: {
+        AddNonSymbolicConstraint();
+        break;
+      }
+      case kSymbolic: {
+        AddSymbolicConstraint();
+        break;
+      }
+      default : throw std::runtime_error("Not a supported constraint form");
+    }
+
+    x_expected_ << 5, 1, 5, 0, 5, 10;
+  }
+
+  bool CheckSolution() const {
+    const auto& x_value = prog_->GetSolution(x_);
+    return CompareMatrices(x_value, x_expected_, 1E-3, MatrixCompareType::absolute);
+  }
+
+  std::shared_ptr<MathematicalProgram> prog() {return prog_;}
+
+  void SetInitialGuess1() {
+    std::srand(0);
+    Eigen::Matrix<double, 6, 1> delta = 0.05 * Eigen::Matrix<double, 6, 1>::Random();
+    prog_->SetInitialGuess(x_, x_expected_ + delta);
+  }
+
+  void SetInitialGuess2() {
+    std::srand(0);
+    Eigen::Matrix<double, 6, 1> delta = 0.05 * Eigen::Matrix<double, 6, 1>::Random();
+    prog_->SetInitialGuess(x_, x_expected_ - delta);
+  }
+
+ private:
+  class LowerBoundTestCost {
+   public:
+    static size_t numInputs() { return 6; }
+    static size_t numOutputs() { return 1; }
+
+    template <typename ScalarType>
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    void eval(detail::VecIn<ScalarType> const& x, detail::VecOut<ScalarType>& y) const {
+      DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+      DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
+      y(0) = -25 * (x(0) - 2) * (x(0) - 2) + (x(1) - 2) * (x(1) - 2) -
+          (x(2) - 1) * (x(2) - 1) - (x(3) - 4) * (x(3) - 4) -
+          (x(4) - 1) * (x(4) - 1) - (x(5) - 4) * (x(5) - 4);
+    }
+  };
+
+  class LowerBoundTestConstraint : public Constraint {
+   public:
+    LowerBoundTestConstraint(int i1, int i2)
+        : Constraint(1, Eigen::Dynamic, Vector1d::Constant(4),
+                     Vector1d::Constant(std::numeric_limits<double>::infinity())),
+          i1_(i1),
+          i2_(i2) {}
+
+   protected:
+    // for just these two types, implementing this locally is almost cleaner...
+    void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                Eigen::VectorXd& y) const override {
+      EvalImpl(x, y);
+    }
+    void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
+                TaylorVecXd& y) const override {
+      EvalImpl(x, y);
+    }
+
+   private:
+    template <typename ScalarType>
+    void EvalImpl(
+        const Eigen::Ref<const Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>>& x,
+        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+        Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>& y) const {
+      y.resize(1);
+      y(0) = (x(i1_) - 3) * (x(i1_) - 3) + x(i2_);
+    }
+
+    int i1_;
+    int i2_;
+  };
+ private:
+  void AddSymbolicConstraint() {
+    prog_->AddLinearConstraint(x_(0) - 3 * x_(1), -std::numeric_limits<double>::infinity(), 2);
+    prog_->AddLinearConstraint(-x_(0) + x_(1), -std::numeric_limits<double>::infinity(), 2);
+    prog_->AddLinearConstraint(x_(0) + x_(1), -std::numeric_limits<double>::infinity(), 6);
+  }
+
+  void AddNonSymbolicConstraint() {
+    prog_->AddLinearConstraint(Eigen::RowVector2d(1, -3), -std::numeric_limits<double>::infinity(), 2, x_.head<2>());
+    prog_->AddLinearConstraint(Eigen::RowVector2d(-1, 1), -std::numeric_limits<double>::infinity(), 2, x_.head<2>());
+    prog_->AddLinearConstraint(Eigen::RowVector2d(1, 1), -std::numeric_limits<double>::infinity(), 6, x_.head<2>());
+  }
+
+ private:
   std::shared_ptr<MathematicalProgram> prog_;
   Eigen::Matrix<symbolic::Variable, 6, 1> x_;
   Eigen::Matrix<double, 6, 1> x_expected_;

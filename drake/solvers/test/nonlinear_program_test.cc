@@ -156,7 +156,6 @@ GTEST_TEST(testNonlinearProgram, QuadraticCost) {
 }
 
 GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem1) {
-  // Use generic cost, non-symbolic constraint.
   for (int cost_form = NonConvexQPproblem1::CostForm::kCostBegin; cost_form <= NonConvexQPproblem1::CostForm::kCostEnd; ++cost_form) {
     for (int cnstr_form = NonConvexQPproblem1::ConstraintForm::kConstraintBegin; cnstr_form <= NonConvexQPproblem1::ConstraintForm::kConstraintEnd; ++cnstr_form) {
       NonConvexQPproblem1 prob(static_cast<NonConvexQPproblem1::CostForm>(cost_form), static_cast<NonConvexQPproblem1::ConstraintForm>(cnstr_form));
@@ -168,7 +167,6 @@ GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem1) {
 }
 
 GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem2) {
-  // Use generic cost, non-symbolic constraint.
   for (int cost_form = NonConvexQPproblem2::CostForm::kCostBegin; cost_form <= NonConvexQPproblem2::CostForm::kCostEnd; ++cost_form) {
     for (int cnstr_form = NonConvexQPproblem2::ConstraintForm::kConstraintBegin; cnstr_form <= NonConvexQPproblem2::ConstraintForm::kConstraintEnd; ++cnstr_form) {
       NonConvexQPproblem2 prob(static_cast<NonConvexQPproblem2::CostForm>(cost_form), static_cast<NonConvexQPproblem2::ConstraintForm>(cnstr_form));
@@ -179,6 +177,19 @@ GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem2) {
   }
 }
 
+GTEST_TEST(testNonlinearProgram, testLowerBoundedProblem) {
+  for (int cnstr_form = LowerBoundedProblem::ConstraintForm::kConstraintBegin; cnstr_form <= LowerBoundedProblem::ConstraintForm::kConstraintEnd; ++cnstr_form) {
+    LowerBoundedProblem prob(static_cast<LowerBoundedProblem::ConstraintForm>(cnstr_form));
+    prob.SetInitialGuess1();
+    RunNonlinearProgram(*(prob.prog()), [&]() {
+      EXPECT_TRUE(prob.CheckSolution());
+    });
+    prob.SetInitialGuess2();
+    RunNonlinearProgram(*(prob.prog()), [&]() {
+      EXPECT_TRUE(prob.CheckSolution());
+    });
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
