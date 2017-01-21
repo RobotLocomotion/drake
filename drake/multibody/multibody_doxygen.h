@@ -50,7 +50,7 @@ Next topic: @ref multibody_notation
 /** @defgroup multibody_notation Terminology and Notation
 @ingroup multibody_concepts
 
-Drake uses consistent terminology and notation for multibody mechanics,
+Drake uses consistent terminology and notation for multibody mechanics
 - for clear communication among Drake programmers and users,
 - to reduce the likelihood of errors in translating mathematical algorithms
   into code, and
