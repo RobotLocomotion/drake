@@ -39,14 +39,27 @@ namespace systems {
 template <typename T>
 class Saturation : public LeafSystem<T> {
  public:
-  /// Constructs a %Saturation system where the upper and lower values are
-  /// represented by scalars.
+  /// Constructs a variable %Saturation system where the upper and lower values
+  /// are represented by vectors of identical size and can be supplied via the
+  /// max_value_port and min_value_port respectively.
   ///
   /// @param[in] input_size sets size of the input and output ports.
   ///
-  /// The min and max values can be connected in the appropriate ports
+  /// Please consult this class' description for the requirements of
+  /// @p u_min and @p u_max to be supplied via the corresponding ports.
   explicit Saturation(int input_size);
 
+  /// Constructs a constant %Saturation system where the upper and lower
+  /// values are represented by vectors of identical size supplied via this
+  /// constructor.
+  ///
+  /// @param[in] u_min the lower (vector) limit to the
+  /// saturation.
+  /// @param[in] u_max the upper (vector) limit to the
+  /// saturation.
+  ///
+  /// Please consult this class' description for the requirements of
+  /// @p u_min and @p u_max.
   Saturation(const VectorX<T>& min_value, const VectorX<T>& max_value);
 
   /// Returns the input port.

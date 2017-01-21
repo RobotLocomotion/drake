@@ -13,7 +13,7 @@ namespace systems {
 
 template <typename T>
 Saturation<T>::Saturation(int input_size)
-    : min_max_ports_enabled_{true},
+    : min_max_ports_enabled_(true),
       input_size_(input_size),
       max_value_(VectorX<T>::Constant(input_size,
                                       std::numeric_limits<double>::infinity())),

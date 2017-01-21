@@ -179,14 +179,14 @@ GTEST_TEST(VariableSaturationTest, VariableDoubleTest) {
   EXPECT_NO_FATAL_FAILURE(SaturationTest<double>(false));
 }
 
-// Tests the ability to use double vectors for inputs, and limits and constant
-// lower and upper limits.
+// Tests the ability to use AutoDiff vectors for inputs, and limits and
+// constant lower and upper limits.
 GTEST_TEST(VariableSaturationTest, ConstantAutoDiffTest) {
   EXPECT_NO_FATAL_FAILURE(SaturationTest<AutoDiffXd>(true));
 }
 
-// Tests the ability to use double vectors for inputs, and limits and variable
-// lower and upper limits.
+// Tests the ability to use AutoDiff vectors for inputs, and limits and
+// variable lower and upper limits.
 GTEST_TEST(VariableSaturationTest, VariableAutoDiffTest) {
   EXPECT_NO_FATAL_FAILURE(SaturationTest<AutoDiffXd>(false));
 }
