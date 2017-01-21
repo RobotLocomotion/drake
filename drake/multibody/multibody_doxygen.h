@@ -172,7 +172,7 @@ numerically in the world frame W, we write @f$[^Aω^B]_W@f$
 commonly used to simplify symbols when the meaning is clear. In particular
 if the reference symbol has an obvious frame, that basis is the default for
 the expressed-in frame. For example, `w_AB` can be used instead of `w_AB_A` (you
-can think of that as "no need to repeat the `_A` twice").
+can think of that as "no need to repeat the '_A' twice").
 Other defaults will be noted as they are introduced.
 
 Please note that this compact notation is *not* intended as a substitute for
@@ -300,6 +300,8 @@ Rotation Matrix|  R   |@f$^AR^B@f$|`R_AB`|Frame B's orientation in A
 Transform      |  X   |@f$^AX^B@f$|`X_AB`|Frame B's pose in A
 
 † expressed in point P's body's frame.
+
+<!-- TODO(sherm1,mitiguy) fill out above table? -->
 
 Next topic: @ref multibody_spatial_algebra
 **/
@@ -495,12 +497,12 @@ specified frame. Thus, unambiguous notation for spatial vectors must specify
 both a point and an expressed-in frame. Motion quantities must also state the
 reference frame with respect to which the motion is measured.
 
-Example spatial quantity      |At |Exp|     Typeset        |   Code  | Expanded
-------------------------------|---|:-:|:------------------:|:-------:|:--------:
-Body B's spatial velocity in A|Bo | A |@f$^AV^B         @f$|`V_AB`   |`V_ABo_A`
-Same, but expressed in world  |Bo | W |@f$[^AV^B]_W     @f$|`V_AB_W` |`V_ABo_W`
-B's spatial acceleration in W |Bcm| W |@f$^WA^{B_{cm}}  @f$|`A_WBcm` |`A_WBcm_W`
-Spatial force applied to B    |Bcm| W |@f$[F^{B_{cm}}]_W@f$|`F_Bcm_W`|` `
+Example spatial quantity      |At |Exp|     Typeset        |   Code
+------------------------------|---|:-:|:------------------:|:-------:
+Body B's spatial velocity in A|Bo | A |@f$^AV^B         @f$|`V_AB`
+Same, but expressed in world  |Bo | W |@f$[^AV^B]_W     @f$|`V_AB_W`
+B's spatial acceleration in W |Bcm| W |@f$^WA^{B_{cm}}  @f$|`A_WBcm`
+Spatial force applied to B    |Bcm| W |@f$[F^{B_{cm}}]_W@f$|`F_Bcm_W`
 
 In the above table "At" is the point at which the translational activity occurs;
 "Exp" is the expressed-in frame in which both vectors are expressed. Note that
