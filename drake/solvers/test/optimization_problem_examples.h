@@ -235,6 +235,7 @@ class NonConvexQPproblem2 {
         break;
       }
       case kQuadraticCost : {
+        AddQuadraticCost();
         break;
       }
       default : throw std::runtime_error("Unsupported cost form");
@@ -252,14 +253,16 @@ class NonConvexQPproblem2 {
       default : throw std::runtime_error("Unsupported constraint form");
     }
 
-    x_expected << 0, 1, 0, 1, 1, 20;
+    x_expected_ << 0, 1, 0, 1, 1, 20;
     prog_->SetInitialGuess(x_, x_expected_ + 0.01 * Eigen::Matrix<double, 6, 1>::Random());
   }
 
   bool CheckSolution() const {
     const auto& x_value = prog_->GetSolution(x_);
-    return CompareMatrices(x_value, x_expected, 1E-4, MatrixCompareType::absolute);
+    return CompareMatrices(x_value, x_expected_, 1E-3, MatrixCompareType::absolute);
   }
+
+  std::shared_ptr<MathematicalProgram> prog() const {return prog_;}
 
  private:
   class TestProblem2Cost {
@@ -279,6 +282,15 @@ class NonConvexQPproblem2 {
           (-1.5 * x(4)) + (-10.0 * x(5));
     }
   };
+
+  void AddQuadraticCost() {
+    Eigen::Matrix<double, 6, 6> Q = -100.0 * Eigen::Matrix<double, 6, 6>::Identity();
+    Q(5, 5) = 0.0;
+    Eigen::Matrix<double, 6, 1> c{};
+    c << -10.5, -7.5, -3.5, -2.5, -1.5, -10.0;
+
+    prog_->AddQuadraticCost(Q, c);
+  }
 
   void AddNonSymbolicConstraint() {
     Eigen::Matrix<double, 1, 6> a1{};
