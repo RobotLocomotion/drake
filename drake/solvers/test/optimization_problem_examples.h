@@ -100,28 +100,11 @@ class LinearSystemExample3 : public LinearSystemExample2 {
 
 // This test comes from Section 2.2 of "Handbook of Test Problems in
 // Local and Global Optimization."
-class TestProblem1Cost {
- public:
-  static size_t numInputs() { return 5; }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(detail::VecIn<ScalarType> const& x, detail::VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-    y(0) = (-50.0 * x(0) * x(0)) + (42 * x(0)) - (50.0 * x(1) * x(1)) +
-        (44 * x(1)) - (50.0 * x(2) * x(2)) + (45 * x(2)) -
-        (50.0 * x(3) * x(3)) + (47 * x(3)) - (50.0 * x(4) * x(4)) +
-        (47.5 * x(4));
-  }
-};
-
-class QPproblem1 {
-  /// This is a convex quadratic program with inequality constraints. We choose
-  /// to add the cost and constraints through different forms, to test different
-  /// solvers, and whether MathematicalProgram can parse constraints in
-  /// different forms.
+class NonConvexQPproblem1 {
+  /// This is a non-convex quadratic program with inequality constraints.
+  /// We choose to add the cost and constraints through different forms,
+  /// to test different solvers, and whether MathematicalProgram can parse
+  /// constraints in different forms.
  public:
   enum CostForm {
     kCostBegin = 0,
@@ -139,7 +122,7 @@ class QPproblem1 {
   };
 
  public:
-  QPproblem1(CostForm cost_form, ConstraintForm constraint_form) : prog_(std::make_shared<MathematicalProgram>()), x_{}, x_expected_{} {
+  NonConvexQPproblem1(CostForm cost_form, ConstraintForm constraint_form) : prog_(std::make_shared<MathematicalProgram>()), x_{}, x_expected_{} {
     x_ = prog_->NewContinuousVariables<5>("x");
     prog_->AddBoundingBoxConstraint(0, 1, x_);
     switch (cost_form) {
@@ -179,6 +162,23 @@ class QPproblem1 {
   }
 
  private:
+  class TestProblem1Cost {
+   public:
+    static size_t numInputs() { return 5; }
+    static size_t numOutputs() { return 1; }
+
+    template <typename ScalarType>
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    void eval(detail::VecIn<ScalarType> const& x, detail::VecOut<ScalarType>& y) const {
+      DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+      DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
+      y(0) = (-50.0 * x(0) * x(0)) + (42 * x(0)) - (50.0 * x(1) * x(1)) +
+          (44 * x(1)) - (50.0 * x(2) * x(2)) + (45 * x(2)) -
+          (50.0 * x(3) * x(3)) + (47 * x(3)) - (50.0 * x(4) * x(4)) +
+          (47.5 * x(4));
+    }
+  };
+
   void AddConstraint() {
     Eigen::Matrix<double, 1, 5> a;
     a << 20, 12, 11, 7, 4;
@@ -200,6 +200,105 @@ class QPproblem1 {
   std::shared_ptr<MathematicalProgram> prog_;
   VectorDecisionVariable<5> x_;
   Eigen::Matrix<double, 5, 1> x_expected_;
+};
+
+// This test comes from Section 2.3 of "Handbook of Test Problems in
+// Local and Global Optimization."
+class NonConvexQPproblem2 {
+ public:
+  enum CostForm {
+    kCostBegin = 0,
+    kGenericCost = 0,
+    kQuadraticCost = 1,
+    // TODO(hongkai.dai): Add symbolic quadratic cost
+    kCostEnd = 1
+  };
+
+  enum ConstraintForm {
+    kConstraintBegin = 0,
+    kNonSymbolicConstraint = 0,
+    kSymbolicConstraint = 1,
+    kConstraintEnd = 1
+  };
+
+ public:
+  NonConvexQPproblem2(CostForm cost_form, ConstraintForm cnstr_form) :
+      prog_(std::make_shared<MathematicalProgram>()), x_{}, x_expected_{} {
+    x_ = prog_->NewContinuousVariables<6>("x");
+
+    prog_->AddBoundingBoxConstraint(0, 1, x_.head<5>());
+    prog_->AddBoundingBoxConstraint(0, std::numeric_limits<double>::infinity(), x_(5));
+
+    switch (cost_form) {
+      case kGenericCost : {
+        prog_->AddCost(TestProblem2Cost());
+        break;
+      }
+      case kQuadraticCost : {
+        break;
+      }
+      default : throw std::runtime_error("Unsupported cost form");
+    }
+
+    switch (cnstr_form) {
+      case kNonSymbolicConstraint : {
+        AddNonSymbolicConstraint();
+        break;
+      }
+      case kSymbolicConstraint : {
+        AddSymbolicConstraint();
+        break;
+      }
+      default : throw std::runtime_error("Unsupported constraint form");
+    }
+
+    x_expected << 0, 1, 0, 1, 1, 20;
+    prog_->SetInitialGuess(x_, x_expected_ + 0.01 * Eigen::Matrix<double, 6, 1>::Random());
+  }
+
+  bool CheckSolution() const {
+    const auto& x_value = prog_->GetSolution(x_);
+    return CompareMatrices(x_value, x_expected, 1E-4, MatrixCompareType::absolute);
+  }
+
+ private:
+  class TestProblem2Cost {
+   public:
+    static size_t numInputs() { return 6; }
+    static size_t numOutputs() { return 1; }
+
+    template<typename ScalarType>
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    void eval(detail::VecIn <ScalarType> const &x,
+              detail::VecOut <ScalarType> &y) const {
+      DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+      DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
+      y(0) = (-50.0 * x(0) * x(0)) + (-10.5 * x(0)) - (50.0 * x(1) * x(1)) +
+          (-7.5 * x(1)) - (50.0 * x(2) * x(2)) + (-3.5 * x(2)) -
+          (50.0 * x(3) * x(3)) + (-2.5 * x(3)) - (50.0 * x(4) * x(4)) +
+          (-1.5 * x(4)) + (-10.0 * x(5));
+    }
+  };
+
+  void AddNonSymbolicConstraint() {
+    Eigen::Matrix<double, 1, 6> a1{};
+    Eigen::Matrix<double, 1, 6> a2{};
+    a1 << 6, 3, 3, 2, 1, 0;
+    a2 << 10, 0, 10, 0, 0, 1;
+    prog_->AddLinearConstraint(a1, -std::numeric_limits<double>::infinity(), 6.5);
+    prog_->AddLinearConstraint(a2, -std::numeric_limits<double>::infinity(), 20);
+  }
+
+  void AddSymbolicConstraint() {
+    const symbolic::Expression constraint1{6 * x_(0) + 3 * x_(1) + 3 * x_(2) + 2 * x_(3) + x_(4)};
+    const symbolic::Expression constraint2{10 * x_(0) + 10 * x_(2) + x_(5)};
+    prog_->AddLinearConstraint(constraint1, -std::numeric_limits<double>::infinity(), 6.5);
+    prog_->AddLinearConstraint(constraint2, -std::numeric_limits<double>::infinity(), 20);
+  }
+
+  std::shared_ptr<MathematicalProgram> prog_;
+  Eigen::Matrix<symbolic::Variable, 6, 1> x_;
+  Eigen::Matrix<double, 6, 1> x_expected_;
 };
 }  // namespace test
 }  // namespace solvers

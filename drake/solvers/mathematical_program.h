@@ -1332,6 +1332,11 @@ class MathematicalProgram {
     return AddBoundingBoxConstraint(lb, ub, ConcatenateVariableRefList(vars));
   }
 
+  template <typename Derived>
+  typename std::enable_if<std::is_same<Derived::Scalar, symbolic::Variable>::value, std::shared_ptr<BoundingBoxConstraint>>::type
+  AddBoundingBoxConstraint(double lb, double ub, const Eigen::MatrixBase<Derived>& vars) {
+    return AddBoundingBoxConstraint(Eigen::Matrix<double, Derived::RowsAtCompileTime, )
+  }
   /**
    * Adds the same scalar lower and upper bound to every variable in the matrix.
    * This method is used for a static-sized matrix of decision variables.

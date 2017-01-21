@@ -155,17 +155,30 @@ GTEST_TEST(testNonlinearProgram, QuadraticCost) {
   });
 }
 
-GTEST_TEST(testNonlinearProgram, testQPproblem1) {
+GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem1) {
   // Use generic cost, non-symbolic constraint.
-  for (int cost_form = QPproblem1::CostForm::kCostBegin; cost_form <= QPproblem1::CostForm::kCostEnd; ++cost_form) {
-    for (int cnstr_form = QPproblem1::ConstraintForm::kConstraintBegin; cnstr_form <= QPproblem1::ConstraintForm::kConstraintEnd; ++cnstr_form) {
-      QPproblem1 prob(static_cast<QPproblem1::CostForm>(cost_form), static_cast<QPproblem1::ConstraintForm>(cnstr_form));
+  for (int cost_form = NonConvexQPproblem1::CostForm::kCostBegin; cost_form <= NonConvexQPproblem1::CostForm::kCostEnd; ++cost_form) {
+    for (int cnstr_form = NonConvexQPproblem1::ConstraintForm::kConstraintBegin; cnstr_form <= NonConvexQPproblem1::ConstraintForm::kConstraintEnd; ++cnstr_form) {
+      NonConvexQPproblem1 prob(static_cast<NonConvexQPproblem1::CostForm>(cost_form), static_cast<NonConvexQPproblem1::ConstraintForm>(cnstr_form));
       RunNonlinearProgram(*(prob.prog()), [&]() {
         EXPECT_TRUE(prob.CheckSolution());
       });
     }
   }
 }
+
+GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem2) {
+  // Use generic cost, non-symbolic constraint.
+  for (int cost_form = NonConvexQPproblem2::CostForm::kCostBegin; cost_form <= NonConvexQPproblem2::CostForm::kCostEnd; ++cost_form) {
+    for (int cnstr_form = NonConvexQPproblem2::ConstraintForm::kConstraintBegin; cnstr_form <= NonConvexQPproblem2::ConstraintForm::kConstraintEnd; ++cnstr_form) {
+      NonConvexQPproblem2 prob(static_cast<NonConvexQPproblem2::CostForm>(cost_form), static_cast<NonConvexQPproblem2::ConstraintForm>(cnstr_form));
+      RunNonlinearProgram(*(prob.prog()), [&]() {
+        EXPECT_TRUE(prob.CheckSolution());
+      });
+    }
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -518,24 +518,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint4) {
   CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
 }
 
-// This test comes from Section 2.3 of "Handbook of Test Problems in
-// Local and Global Optimization."
-class TestProblem2Cost {
- public:
-  static size_t numInputs() { return 6; }
-  static size_t numOutputs() { return 1; }
 
-  template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-    y(0) = (-50.0 * x(0) * x(0)) + (-10.5 * x(0)) - (50.0 * x(1) * x(1)) +
-           (-7.5 * x(1)) - (50.0 * x(2) * x(2)) + (-3.5 * x(2)) -
-           (50.0 * x(3) * x(3)) + (-2.5 * x(3)) - (50.0 * x(4) * x(4)) +
-           (-1.5 * x(4)) + (-10.0 * x(5));
-  }
-};
 
 GTEST_TEST(testMathematicalProgram, testProblem2) {
   MathematicalProgram prog;
