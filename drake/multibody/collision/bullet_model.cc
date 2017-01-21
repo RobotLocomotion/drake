@@ -179,41 +179,21 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletMeshShape(
 std::unique_ptr<btCollisionShape> BulletModel::newBulletStaticMeshShape(
     const DrakeShapes::Mesh& geometry, bool use_margins) {
 
-  // Gathers vertices and triangles from the mesh_interface's file.
+  // Gathers vertices and triangles from the mesh's file.
   DrakeShapes::PointsVector vertices;
   DrakeShapes::TrianglesVector triangles;
   geometry.LoadObjFile(&vertices, &triangles);
 
-  // Creates a btTriangleMesh (a btStridingMeshInterface) to provide the
-  // information needed by the more complex btBvhTriangleMeshShape.
-  // Example (the only one) in Bullet includes:
-  // - RaytestDemo.cpp (see RaytestDemo::initPhysics).
-  //   Accessible from the ExampleBrowser:
-  //     - Raycast -> Raytest
-  //
-  // Another example of mesh_interface interface (with a
-  // btTriangleIndexVertexArray):
-  // - BenchmarkDemo.cpp (see BenchmarkDemo::createLargeMeshBody).
-  //   Accessible from the ExampleBrowser:
-  //     - Benchmarks -> Prim vs Mesh
-  //     - Benchmarks -> Convex vs Mesh
-  //     - Benchmarks -> Raycast
-  // In none of those example the interface is ever freed.
-  // TODO(amcastro-tri): in none of the mentioned Bullet's examples the
-  // mesh interface is ever freed. However looking at Bullet's internals it does
-  // not seem like btBvhTriangleMeshShape takes ownership of this pointer.
-  // Therefore there seems to be a memory leak here.
-  // However, who would hold a pointer to this object? Drake does not have the
-  // infrastructure to keep track of this data right now. See issue 2710 which
-  // proposes a solution.
-  btTriangleMesh* mesh_interface = new btTriangleMesh();
+  btTriangleMesh* mesh = new btTriangleMesh();
+  // BulletModel takes ownership of the mesh because Bullet does not.
+  bt_triangle_meshes_.emplace_back(mesh);
 
   // Preallocates memory.
   int num_triangles = static_cast<int>(triangles.size());
   int num_vertices = static_cast<int>(vertices.size());
 
-  mesh_interface->preallocateIndices(num_triangles);
-  mesh_interface->preallocateVertices(num_vertices);
+  mesh->preallocateIndices(num_triangles);
+  mesh->preallocateVertices(num_vertices);
 
   // Loads individual triangles.
   for (int itri = 0; itri <  num_triangles; ++itri) {
@@ -224,15 +204,15 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletStaticMeshShape(
         vertices[tri(1)](0), vertices[tri(1)](1), vertices[tri(1)](2));
     btVector3 vertex2(
         vertices[tri(2)](0), vertices[tri(2)](1), vertices[tri(2)](2));
-    mesh_interface->addTriangle(vertex0, vertex1, vertex2);
+    mesh->addTriangle(vertex0, vertex1, vertex2);
   }
 
   // Instantiates a Bullet collision object with a btBvhTriangleMeshShape shape.
-  // btBvhTriangleMeshShape is a static-triangle mesh_interface shape with
+  // btBvhTriangleMeshShape is a static-triangle mesh shape with
   // Bounding Volume Hierarchy optimization.
   bool useQuantizedAabbCompression = true;
   btBvhTriangleMeshShape* bvh_mesh_shape =
-      new btBvhTriangleMeshShape(mesh_interface, useQuantizedAabbCompression);
+      new btBvhTriangleMeshShape(mesh, useQuantizedAabbCompression);
   std::unique_ptr<btCollisionShape> bt_shape(bvh_mesh_shape);
 
   // Sets margins.

@@ -41,6 +41,8 @@ printed without any special handling.
 #include <spdlog/fmt/ostr.h>
 #endif
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 
 #ifdef HAVE_SPDLOG
@@ -58,10 +60,9 @@ namespace logging {
 /// that we expect to use, as spdlog's API does change from time to time.
 class logger {
  public:
-  logger();
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(logger)
 
-  logger(const logger&) = delete;
-  logger& operator=(const logger&) = delete;
+  logger();
 
   template <typename... Args>
   void trace(const char* fmt, const Args&... args) {}

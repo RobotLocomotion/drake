@@ -32,7 +32,7 @@ class RandomSource : public LeafSystem<double> {
   /// @param num_outputs The dimension of the (single) vector output port.
   /// @param sampling_interval_sec The sampling interval in seconds.
   RandomSource(int num_outputs, double sampling_interval_sec) {
-    this->DeclareUpdatePeriodSec(sampling_interval_sec);
+    this->DeclareDiscreteUpdatePeriodSec(sampling_interval_sec);
     this->DeclareOutputPort(drake::systems::kVectorValued, num_outputs);
     this->DeclareDiscreteState(num_outputs);
   }

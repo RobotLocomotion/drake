@@ -127,6 +127,16 @@ bool Expression::Less(const Expression& e) const {
   return ptr_->Less(*(e.ptr_));
 }
 
+bool Expression::is_polynomial() const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return ptr_->is_polynomial();
+}
+
+Polynomial<double> Expression::ToPolynomial() const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return ptr_->ToPolynomial();
+}
+
 double Expression::Evaluate(const Environment& env) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->Evaluate(env);
@@ -701,18 +711,19 @@ const Expression& get_first_argument(const Expression& e) {
 const Expression& get_second_argument(const Expression& e) {
   return to_binary(e)->get_second_argument();
 }
-double get_constant_term_in_addition(const Expression& e) {
-  return to_addition(e)->get_constant_term();
+double get_constant_in_addition(const Expression& e) {
+  return to_addition(e)->get_constant();
 }
-const map<Expression, double>& get_terms_in_addition(const Expression& e) {
-  return to_addition(e)->get_term_to_coeff_map();
-}
-double get_constant_factor_in_multiplication(const Expression& e) {
-  return to_multiplication(e)->get_constant_factor();
-}
-const map<Expression, Expression>& get_products_in_multiplication(
+const map<Expression, double>& get_exp_to_coeff_map_in_addition(
     const Expression& e) {
-  return to_multiplication(e)->get_term_to_exp_map();
+  return to_addition(e)->get_exp_to_coeff_map();
+}
+double get_constant_in_multiplication(const Expression& e) {
+  return to_multiplication(e)->get_constant();
+}
+const map<Expression, Expression>& get_base_to_exp_map_in_multiplication(
+    const Expression& e) {
+  return to_multiplication(e)->get_base_to_exp_map();
 }
 
 }  // namespace symbolic

@@ -199,6 +199,19 @@ macro(drake_add_cmake_external PROJECT)
       PYTHON_LIBRARY)
   endif()
 
+  if(_ext_QT)
+    find_package(Qt 4.8 REQUIRED)
+    list(APPEND _ext_PROPAGATE_CACHE_VARS QT_QMAKE_EXECUTABLE)
+  endif()
+
+  if(_ext_VTK)
+    find_package(VTK 5.10)
+    if(NOT VTK_FOUND)
+      find_package(VTK 5.8 REQUIRED)
+    endif()
+    list(APPEND _ext_PROPAGATE_CACHE_VARS VTK_DIR)
+  endif()
+
   drake_build_cache_args(_ext_PROPAGATE_CACHE ${_ext_LIST_SEPARATOR}
     ${_ext_PROPAGATE_CACHE_VARS})
 
@@ -343,6 +356,8 @@ endmacro()
 #   FORTRAN   - External uses Fortran
 #   MATLAB    - External uses MATLAB
 #   PYTHON    - External uses Python
+#   QT        - External uses Qt
+#   VTK       - External uses VTK
 #
 #   REQUIRES <deps...>
 #       List of packages (checked via `find_package`) that are required to
@@ -391,7 +406,18 @@ function(drake_add_external PROJECT)
     CONFIGURE_COMMAND
     BUILD_COMMAND
     INSTALL_COMMAND)
-  set(_ext_flags LOCAL PUBLIC CMAKE AUTOTOOLS ALWAYS TEST FORTRAN MATLAB PYTHON)
+  set(_ext_flags
+    LOCAL
+    PUBLIC
+    CMAKE
+    AUTOTOOLS
+    ALWAYS
+    TEST
+    FORTRAN
+    MATLAB
+    PYTHON
+    QT
+    VTK)
   set(_ext_sv_args
     SOURCE_SUBDIR
     SOURCE_DIR

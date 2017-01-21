@@ -19,6 +19,7 @@ cc_library(
         "constants.h",
         "drake_assert.h",
         "drake_compat.h",
+        "drake_copyable.h",
         "drake_deprecated.h",
         "drake_throw.h",
         "eigen_stl_types.h",
@@ -137,6 +138,7 @@ cc_library(
         ":cond",
         ":dummy_value",
         ":number_traits",
+        ":polynomial",
     ],
 )
 

@@ -9,12 +9,12 @@ namespace qp_inverse_dynamics {
 const double QPController::kUpperBoundForContactBasis = 1000;
 
 void QPController::ResizeQP(const RigidBodyTree<double>& robot,
-                            const QPInput& input) {
-  const std::map<std::string, ContactInformation>& all_contacts =
+                            const QpInput& input) {
+  const std::unordered_map<std::string, ContactInformation>& all_contacts =
       input.contact_information();
-  const std::map<std::string, DesiredBodyMotion>& all_body_motions =
+  const std::unordered_map<std::string, DesiredBodyMotion>& all_body_motions =
       input.desired_body_motions();
-  const DesiredDoFMotions& all_dof_motions = input.desired_dof_motions();
+  const DesiredDofMotions& all_dof_motions = input.desired_dof_motions();
   const DesiredCentroidalMomentumDot& cen_mom_change =
       input.desired_centroidal_momentum_dot();
   // Figure out dimensions.
@@ -253,8 +253,8 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   basis_reg_vec_ = VectorX<double>::Zero(num_basis_);
 }
 
-int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
-                          QPOutput* output) {
+int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
+                          QpOutput* output) {
   if (!input.is_valid(rs.robot().get_num_velocities())) {
     std::cerr << "input is invalid\n";
     return -1;
@@ -446,10 +446,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   cost_ctr = eq_ctr = 0;
   for (const auto& pair : input.desired_body_motions()) {
     const DesiredBodyMotion& body_motion_d = pair.second;
-    body_J_[body_ctr] = GetTaskSpaceJacobian(
-        rs.robot(), rs.cache(), body_motion_d.body(), Vector3<double>::Zero());
-    body_Jdv_[body_ctr] = GetTaskSpaceJacobianDotTimesV(
-        rs.robot(), rs.cache(), body_motion_d.body(), Vector3<double>::Zero());
+    body_J_[body_ctr] =
+        rs.robot().CalcBodySpatialVelocityJacobianInWorldFrame(rs.cache(),
+            body_motion_d.body());
+    body_Jdv_[body_ctr] =
+        rs.robot().CalcBodySpatialVelocityJacobianDotTimesVInWorldFrame(
+            rs.cache(), body_motion_d.body());
     linear_term = body_Jdv_[body_ctr] - body_motion_d.values();
 
     // Find the rows that correspond to cost and equality constraints.
@@ -609,12 +611,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     }
 
     // Compute acceleration for contact body.
-    MatrixX<double> J_body =
-        GetTaskSpaceJacobian(rs.robot(), rs.cache(), resolved_contact.body(),
-                             Vector3<double>::Zero());
-    Vector6<double> Jdv_body = GetTaskSpaceJacobianDotTimesV(
-        rs.robot(), rs.cache(), resolved_contact.body(),
-        Vector3<double>::Zero());
+    Matrix6X<double> J_body =
+        rs.robot().CalcBodySpatialVelocityJacobianInWorldFrame(rs.cache(),
+            resolved_contact.body());
+    Vector6<double> Jdv_body =
+        rs.robot().CalcBodySpatialVelocityJacobianDotTimesVInWorldFrame(
+            rs.cache(), resolved_contact.body());
 
     resolved_contact.mutable_body_acceleration() = J_body * vd_value + Jdv_body;
   }
@@ -696,7 +698,7 @@ std::ostream& operator<<(std::ostream& out, const ConstraintType& type) {
 }
 
 std::ostream& operator<<(std::ostream& out, const DesiredBodyMotion& input) {
-  for (int i = 0; i < kTwistSize; ++i) {
+  for (int i = 0; i < 6; ++i) {
     out << "desired " << input.body_name() << input.get_row_name(i)
         << " acc: " << input.values()[i] << " weight: " << input.weights()[i]
         << " " << input.constraint_types()[i];
@@ -717,7 +719,7 @@ std::ostream& operator<<(std::ostream& out, const ContactInformation& contact) {
   return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const DesiredDoFMotions& input) {
+std::ostream& operator<<(std::ostream& out, const DesiredDofMotions& input) {
   for (int i = 0; i < input.size(); ++i) {
     out << "desired " << input.dof_name(i) << " acc: " << input.value(i)
         << " weight: " << input.weight(i) << " " << input.constraint_type(i);
@@ -734,9 +736,9 @@ std::ostream& operator<<(std::ostream& out,
   return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const QPInput& input) {
+std::ostream& operator<<(std::ostream& out, const QpInput& input) {
   out << "===============================================\n";
-  out << "QPInput:\n";
+  out << "QpInput:\n";
   out << input.desired_centroidal_momentum_dot() << std::endl;
 
   for (const auto& pair : input.desired_body_motions()) {
@@ -777,9 +779,9 @@ std::ostream& operator<<(std::ostream& out, const BodyAcceleration& acc) {
   return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
+std::ostream& operator<<(std::ostream& out, const QpOutput& output) {
   out << "===============================================\n";
-  out << "QPOutput:\n";
+  out << "QpOutput:\n";
   out << "accelerations:\n";
   for (int i = 0; i < output.vd().size(); ++i) {
     out << output.dof_name(i) << ": " << output.vd()[i] << std::endl;

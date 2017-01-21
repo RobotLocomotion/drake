@@ -11,6 +11,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -27,6 +28,7 @@ using std::domain_error;
 using std::equal_to;
 using std::map;
 using std::ostringstream;
+using std::pair;
 using std::runtime_error;
 using std::set;
 using std::string;
@@ -419,35 +421,150 @@ TEST_F(SymbolicExpressionTest, GetSecondArgument) {
 }
 
 TEST_F(SymbolicExpressionTest, GetConstantTermInAddition) {
-  EXPECT_PRED2(ExprEqual, get_constant_term_in_addition(2 * x_ + 3 * y_), 0.0);
-  EXPECT_PRED2(ExprEqual, get_constant_term_in_addition(3 + 2 * x_ + 3 * y_),
-               3);
-  EXPECT_PRED2(ExprEqual, get_constant_term_in_addition(-2 + 2 * x_ + 3 * y_),
-               -2);
+  EXPECT_PRED2(ExprEqual, get_constant_in_addition(2 * x_ + 3 * y_), 0.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_addition(3 + 2 * x_ + 3 * y_), 3);
+  EXPECT_PRED2(ExprEqual, get_constant_in_addition(-2 + 2 * x_ + 3 * y_), -2);
 }
 
 TEST_F(SymbolicExpressionTest, GetTermsInAddition) {
   const Expression e{3 + 2 * x_ + 3 * y_};
-  const map<Expression, double> terms{get_terms_in_addition(e)};
+  const map<Expression, double> terms{get_exp_to_coeff_map_in_addition(e)};
   EXPECT_EQ(terms.at(x_), 2.0);
   EXPECT_EQ(terms.at(y_), 3.0);
 }
 
 TEST_F(SymbolicExpressionTest, GetConstantFactorInMultiplication) {
-  EXPECT_PRED2(ExprEqual, get_constant_factor_in_multiplication(x_ * y_ * y_),
-               1.0);
-  EXPECT_PRED2(ExprEqual,
-               get_constant_factor_in_multiplication(2 * x_ * y_ * y_), 2.0);
-  EXPECT_PRED2(ExprEqual,
-               get_constant_factor_in_multiplication(-3 * x_ * y_ * y_), -3.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(x_ * y_ * y_), 1.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(2 * x_ * y_ * y_),
+               2.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(-3 * x_ * y_ * y_),
+               -3.0);
 }
 
 TEST_F(SymbolicExpressionTest, GetProductsInMultiplication) {
   const Expression e{2 * x_ * y_ * y_ * pow(z_, y_)};
-  const map<Expression, Expression> products{get_products_in_multiplication(e)};
+  const map<Expression, Expression> products{
+      get_base_to_exp_map_in_multiplication(e)};
   EXPECT_PRED2(ExprEqual, products.at(x_), 1.0);
   EXPECT_PRED2(ExprEqual, products.at(y_), 2.0);
   EXPECT_PRED2(ExprEqual, products.at(z_), y_);
+}
+
+TEST_F(SymbolicExpressionTest, IsPolynomial) {
+  const vector<pair<Expression, bool>> test_vec{{e_constant_, true},
+                                                {e_var_, true},
+                                                {e_neg_, true},
+                                                {e_add_, true},
+                                                {e_mul_, true},
+                                                {e_div_, false},
+                                                {e_log_, false},
+                                                {e_abs_, false},
+                                                {e_exp_, false},
+                                                {e_sqrt_, false},
+                                                {e_pow_, false},
+                                                {e_sin_, false},
+                                                {e_cos_, false},
+                                                {e_tan_, false},
+                                                {e_asin_, false},
+                                                {e_acos_, false},
+                                                {e_atan_, false},
+                                                {e_atan2_, false},
+                                                {e_sinh_, false},
+                                                {e_cosh_, false},
+                                                {e_tanh_, false},
+                                                {e_min_, false},
+                                                {e_max_, false},
+                                                {e_ite_, false},
+                                                {Expression::NaN(), false}};
+  for (const pair<Expression, bool>& p : test_vec) {
+    EXPECT_EQ(p.first.is_polynomial(), p.second);
+  }
+
+  // x^2 -> polynomial
+  EXPECT_TRUE(pow(x_, 2).is_polynomial());
+  // 3 + x + y + z -> polynomial
+  EXPECT_TRUE((3 + x_ + y_ + z_).is_polynomial());
+  // 1 + x^2 + y^2 -> polynomial
+  EXPECT_TRUE((1 + pow(x_, 2) + pow(y_, 2)).is_polynomial());
+  // x^2 * y^2 -> polynomial
+  EXPECT_TRUE((pow(x_, 2) * pow(y_, 2)).is_polynomial());
+  // (x + y + z)^3 -> polynomial
+  EXPECT_TRUE(pow(x_ + y_ + z_, 3).is_polynomial());
+  // (x + y + z)^3 / 10 -> polynomial
+  EXPECT_TRUE((pow(x_ + y_ + z_, 3) / 10).is_polynomial());
+  // (x^3)^(1/3) -> x -> polynomial
+  EXPECT_TRUE(pow(pow(x_, 3), 1 / 3).is_polynomial());
+
+  // x^-1 -> not polynomial
+  EXPECT_FALSE(pow(x_, -1).is_polynomial());
+  // x^2.1 -> not polynomial
+  EXPECT_FALSE(pow(x_, 2.1).is_polynomial());
+  // x^y -> not polynomial
+  EXPECT_FALSE(pow(x_, y_).is_polynomial());
+  // 3 + x^y -> not polynomial
+  EXPECT_FALSE((3 + pow(x_, y_)).is_polynomial());
+  // 3 + x^2.1 -> not polynomial
+  EXPECT_FALSE((3 + pow(x_, 2.1)).is_polynomial());
+  // x^y / 10 -> not polynomial
+  EXPECT_FALSE((pow(x_, y_) / 10).is_polynomial());
+  // x^2 * y^ 2.1 -> not polynomial
+  EXPECT_FALSE((pow(x_, 2) * pow(y_, 2.1)).is_polynomial());
+  // x^2 * y^ -1 -> not polynomial
+  EXPECT_FALSE((pow(x_, 2) * pow(y_, -1)).is_polynomial());
+  // x^2 * y^ 2 * x^y / 10 -> not polynomial
+  EXPECT_FALSE((pow(x_, 2) * pow(y_, 2) * pow(x_, y_) / 10).is_polynomial());
+  // (x + y + z)^3 / x -> not polynomial
+  EXPECT_FALSE((pow(x_ + y_ + z_, 3) / x_).is_polynomial());
+  // sqrt(x^2) -> |x| -> not polynomial
+  EXPECT_FALSE(sqrt(pow(x_, 2)).is_polynomial());
+}
+
+TEST_F(SymbolicExpressionTest, ToPolynomial1) {
+  Environment env{{var_x_, 1.0}, {var_y_, 2.0}, {var_z_, 3.0}};
+  const map<Polynomial<double>::VarType, double> eval_point{
+      {var_x_.get_id(), env[var_x_]},
+      {var_y_.get_id(), env[var_y_]},
+      {var_z_.get_id(), env[var_z_]}};
+
+  const Expression e0{42.0};
+  const Expression e1{pow(x_, 2)};
+  const Expression e2{3 + x_ + y_ + z_};
+  const Expression e3{1 + pow(x_, 2) + pow(y_, 2)};
+  const Expression e4{pow(x_, 2) * pow(y_, 2)};
+  const Expression e5{pow(x_ + y_ + z_, 3)};
+  const Expression e6{pow(x_ + y_ + z_, 3) / 10};
+  const Expression e7{-pow(y_, 3)};
+  const Expression e8{pow(pow(x_, 3), 1 / 3)};
+
+  EXPECT_NEAR(e0.Evaluate(env),
+              e0.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e1.Evaluate(env),
+              e1.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e2.Evaluate(env),
+              e2.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e3.Evaluate(env),
+              e3.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e4.Evaluate(env),
+              e4.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e5.Evaluate(env),
+              e5.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e6.Evaluate(env),
+              e6.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e7.Evaluate(env),
+              e7.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e8.Evaluate(env),
+              e8.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+}
+
+TEST_F(SymbolicExpressionTest, ToPolynomial2) {
+  const vector<Expression> test_vec{
+      e_log_,  e_abs_,  e_exp_,  e_sqrt_, e_sin_,   e_cos_,
+      e_tan_,  e_asin_, e_acos_, e_atan_, e_atan2_, e_sinh_,
+      e_cosh_, e_tanh_, e_min_,  e_max_,  e_ite_,   Expression::NaN()};
+  for (const Expression& e : test_vec) {
+    EXPECT_FALSE(e.is_polynomial());
+    EXPECT_THROW(e.ToPolynomial(), runtime_error);
+  }
 }
 
 TEST_F(SymbolicExpressionTest, LessKind) {
@@ -1205,10 +1322,13 @@ TEST_F(SymbolicExpressionTest, Pow2) {
   EXPECT_DOUBLE_EQ(pow(neg_pi_, neg_one_).Evaluate(), std::pow(-3.141592, -1));
   EXPECT_THROW(pow(neg_pi_, neg_pi_).Evaluate(), domain_error);
 
-  const Expression e{pow(x_ * y_ * pi_, x_ + y_ + pi_)};
+  const Expression e1{pow(x_ * y_ * pi_, x_ + y_ + pi_)};
+  const Expression e2{(pow(x_, 2) * pow(y_, 2) * pow(x_, y_))};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
-  EXPECT_DOUBLE_EQ(e.Evaluate(env),
+  EXPECT_DOUBLE_EQ(e1.Evaluate(env),
                    std::pow(2 * 3.2 * 3.141592, 2 + 3.2 + 3.141592));
+  EXPECT_DOUBLE_EQ(e2.Evaluate(env),
+                   std::pow(2, 2) * std::pow(3.2, 2) * std::pow(2, 3.2));
 }
 
 TEST_F(SymbolicExpressionTest, Sin) {

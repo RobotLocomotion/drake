@@ -7,6 +7,7 @@
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace maliput {
@@ -20,10 +21,13 @@ class RoadGeometry;
 /// An implementation of LaneEndSet.
 class LaneEndSet : public api::LaneEndSet {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LaneEndSet)
+
+  LaneEndSet() = default;
+  ~LaneEndSet() override = default;
+
   /// Adds a LaneEnd.
   void add(const api::LaneEnd& end) { ends_.push_back(end); }
-
-  virtual ~LaneEndSet() {}
 
  private:
   int do_size() const override { return ends_.size(); }
@@ -37,6 +41,8 @@ class LaneEndSet : public api::LaneEndSet {
 /// An implementation of api::BranchPoint.
 class BranchPoint : public api::BranchPoint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BranchPoint)
+
   /// Constructs an empty BranchPoint.
   ///
   /// @p road_geometry must remain valid for the lifetime of this class.
@@ -54,7 +60,7 @@ class BranchPoint : public api::BranchPoint {
   void SetDefault(const api::LaneEnd& lane_end,
                   const api::LaneEnd& default_branch);
 
-  virtual ~BranchPoint() {}
+  ~BranchPoint() override = default;
 
  private:
   const api::BranchPointId do_id() const override { return id_; }

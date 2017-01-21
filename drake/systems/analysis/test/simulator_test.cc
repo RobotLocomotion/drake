@@ -442,7 +442,7 @@ class DiscreteSystem : public LeafSystem<double> {
     // Deliberately choose a period that is identical to, and therefore courts
     // floating-point error with, the default max step size.
     const double offset = 0.0;
-    this->DeclarePeriodicUpdate(kUpdatePeriod, offset);
+    this->DeclarePeriodicDiscreteUpdate(kUpdatePeriod, offset);
     this->DeclarePublishPeriodSec(kPublishPeriod);
 
     set_name("TestSystem");

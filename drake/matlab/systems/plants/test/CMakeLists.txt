@@ -1,5 +1,6 @@
 if(Matlab_FOUND)
   add_rbm_mex(compareParsersmex)
+  target_link_libraries(compareParsersmex GTest::GTest)
 
   macro(add_ikoptions_mex)
     drake_add_mex(${ARGV} ${ARGV}.cpp)
