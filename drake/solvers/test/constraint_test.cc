@@ -188,6 +188,23 @@ GTEST_TEST(testConstraint, testLinearMatrixInequalityConstraint) {
   EXPECT_TRUE((y.array() < cnstr.lower_bound().array()).any() ||
               (y.array() > cnstr.upper_bound().array()).any());
 }
+// Test that the Eval() method of LinearComplementarityConstraint correctly
+// returns the slack.
+GTEST_TEST(testConstraint, testSimpleLCPConstraintEval) {
+  Eigen::Matrix2d M = Eigen::Matrix2d::Identity();
+  Eigen::Vector2d q(-1, -1);
+
+  LinearComplementarityConstraint c(M, q);
+  Eigen::VectorXd x;
+  c.Eval(Eigen::Vector2d(1, 1), x);
+
+  EXPECT_TRUE(
+      CompareMatrices(x, Vector2d(0, 0), 1e-4, MatrixCompareType::absolute));
+  c.Eval(Eigen::Vector2d(1, 2), x);
+
+  EXPECT_TRUE(
+      CompareMatrices(x, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
+}
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

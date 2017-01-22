@@ -539,32 +539,6 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint4) {
 }
 
 //
-// Test that the Eval() method of LinearComplementarityConstraint correctly
-// returns the slack.
-GTEST_TEST(testMathematicalProgram, simpleLCPConstraintEval) {
-  MathematicalProgram prog;
-  Eigen::Matrix<double, 2, 2> M;
-
-  // clang-format off
-  M << 1, 0,
-       0, 1;
-  // clang-format on
-
-  Eigen::Vector2d q(-1, -1);
-
-  LinearComplementarityConstraint c(M, q);
-  Eigen::VectorXd x;
-  c.Eval(Eigen::Vector2d(1, 1), x);
-
-  EXPECT_TRUE(
-      CompareMatrices(x, Vector2d(0, 0), 1e-4, MatrixCompareType::absolute));
-  c.Eval(Eigen::Vector2d(1, 2), x);
-
-  EXPECT_TRUE(
-      CompareMatrices(x, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
-}
-
-//
 // Test that linear polynomial constraints get turned into linear constraints.
 GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
   const Polynomiald x("x");
