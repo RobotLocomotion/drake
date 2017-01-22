@@ -77,8 +77,7 @@ class AcrobotPlant : public systems::LeafSystem<T> {
       lc1{0.5},   // Vertical distance from shoulder joint to center of mass of
                   // link 1 (m).
       lc2{1.0},   // Vertical distance from elbox joint to center of mass of
-                  // link
-                  // 2 (m).
+                  // link 2 (m).
       Ic1{.083},  // Inertia of link 1 about the center of mass of link 1
                   // (kg*m^2).
       Ic2{.33},   // Inertia of link 2 about the center of mass of link 2
