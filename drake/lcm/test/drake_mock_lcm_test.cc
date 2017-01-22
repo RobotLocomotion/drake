@@ -161,6 +161,73 @@ GTEST_TEST(DrakeMockLcmTest, SubscribeTest) {
   EXPECT_EQ(message_bytes, received_bytes2);
 }
 
+// Tests DrakeMockLcm's ability to "publish" and "subscribe" to an LCM channel
+// via a loopback.
+GTEST_TEST(DrakeMockLcmTest, WithLoopbackTest) {
+  const string kChannelName =
+      "drake_mock_lcm_test_loopback_channel";
+
+  // Instantiates the Device Under Test (DUT). Note that loopback is enabled,
+  // which results in subscribers being notified when a message is published on
+  // the subscribed channel.
+  DrakeMockLcm dut(LoopbackSwitch::kWithLoopback);
+
+  // Instantiates a message handler.
+  MockMessageHandler handler;
+
+  dut.StartReceiveThread();
+  dut.Subscribe(kChannelName, &handler);
+
+  // Defines a fake serialized message.
+  const int kMessageSize = 10;
+  vector<uint8_t> message_bytes(kMessageSize);
+
+  for (int i = 0; i < kMessageSize; ++i) {
+    message_bytes[i] = i;
+  }
+
+  dut.Publish(kChannelName, &message_bytes[0], kMessageSize);
+
+  // Verifies that the message was received via loopback.
+  EXPECT_EQ(kChannelName, handler.get_channel());
+  EXPECT_EQ(kMessageSize, handler.get_buffer_size());
+
+  const vector<uint8_t>& received_bytes = handler.get_buffer();
+  EXPECT_EQ(message_bytes, received_bytes);
+}
+
+// Tests that DrakeMockLcm will not loopback a message when loopback is
+// disabled.
+GTEST_TEST(DrakeMockLcmTest, WithoutLoopbackTest) {
+  const string kChannelName =
+      "drake_mock_lcm_test_without_loopback_channel";
+
+  // Instantiates the Device Under Test (DUT). Note that loopback is disabled,
+  // which results in subscribers not being notified when a message is published
+  // on the subscribed channel.
+  DrakeMockLcm dut(LoopbackSwitch::kWithoutLoopback);
+
+  // Instantiates a message handler.
+  MockMessageHandler handler;
+
+  dut.StartReceiveThread();
+  dut.Subscribe(kChannelName, &handler);
+
+  // Defines a fake serialized message.
+  const int kMessageSize = 10;
+  vector<uint8_t> message_bytes(kMessageSize);
+
+  for (int i = 0; i < kMessageSize; ++i) {
+    message_bytes[i] = i;
+  }
+
+  dut.Publish(kChannelName, &message_bytes[0], kMessageSize);
+
+  // Verifies that the message was not received via loopback.
+  EXPECT_NE(kChannelName, handler.get_channel());
+  EXPECT_NE(kMessageSize, handler.get_buffer_size());
+}
+
 }  // namespace
 }  // namespace lcm
 }  // namespace drake
