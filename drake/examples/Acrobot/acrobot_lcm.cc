@@ -1,5 +1,4 @@
 #include "drake/examples/Acrobot/acrobot_lcm.h"
-
 #include "drake/examples/Acrobot/lcmt_acrobot_u.hpp"
 #include "drake/examples/Acrobot/lcmt_acrobot_x.hpp"
 

@@ -2,8 +2,8 @@
 #include <memory>
 #include <string>
 
-#include "drake/examples/acrobot/lcmt_acrobot_u.hpp"
-#include "drake/examples/acrobot/lcmt_acrobot_x.hpp"
+#include "drake/examples/Acrobot/lcmt_acrobot_u.hpp"
+#include "drake/examples/Acrobot/lcmt_acrobot_x.hpp"
 
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"

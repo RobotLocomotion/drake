@@ -3,7 +3,7 @@
 /// @file This file contains classes dealing with sending/receiving
 /// LCM messages related to acrobot. The functions in this file are based on
 /// iiwa_lcm.h
-
+#include <memory>
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
