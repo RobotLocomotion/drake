@@ -13,7 +13,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/text_logging.h"
-#include "drake/systems/framework/abstract_state.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/discrete_state.h"
@@ -135,38 +134,6 @@ class DiagramDiscreteVariables : public DiscreteState<T> {
   }
 
   std::vector<std::unique_ptr<DiscreteState<T>>> subdiscretes_;
-};
-
-class DiagramAbstractVariables : public AbstractState {
- public:
-  explicit DiagramAbstractVariables(
-      std::vector<std::unique_ptr<AbstractState>>&& subabstracts)
-      : AbstractState(Flatten(Unpack(subabstracts))),
-        subabstracts_(std::move(subabstracts)) {}
-
-  ~DiagramAbstractVariables() override {}
-
-  int num_subabstract() const {
-    return static_cast<int>(subabstracts_.size());
-  }
-
-  AbstractState* get_mutable_subabstract(int index) {
-    DRAKE_DEMAND(index >= 0 && index < num_subabstract());
-    return subabstracts_[index].get();
-  }
-
- private:
-  std::vector<AbstractValue*> Flatten(
-      const std::vector<AbstractState*>& in) const {
-    std::vector<AbstractValue*> out;
-    for (const AbstractState* state : in) {
-      const std::vector<AbstractValue*>& state_data = state->get_data();
-      out.insert(out.end(), state_data.begin(), state_data.end());
-    }
-    return out;
-  }
-
-  std::vector<std::unique_ptr<AbstractState>> subabstracts_;
 };
 
 }  // namespace internal
@@ -324,19 +291,6 @@ class Diagram : public System<T>,
     return std::unique_ptr<DiscreteState<T>>(
         new internal::DiagramDiscreteVariables<T>(
             std::move(sub_differences)));
-  }
-
-  /// Aggregates the discrete update variables from each subsystem into a
-  /// DiagramDiscreteVariables.
-  std::unique_ptr<AbstractState> AllocateAbstractVariables()
-      const override {
-    std::vector<std::unique_ptr<AbstractState>> sub_abstracts;
-    for (const System<T>* const system : sorted_systems_) {
-      sub_abstracts.push_back(system->AllocateAbstractVariables());
-    }
-    return std::unique_ptr<AbstractState>(
-        new internal::DiagramAbstractVariables(
-            std::move(sub_abstracts)));
   }
 
   void DoCalcTimeDerivatives(const Context<T>& context,
@@ -770,6 +724,7 @@ class Diagram : public System<T>,
       actions->events.push_back(event);
     }
 
+    // Request an unrestricted update event, if our subsystems want it.
     if (!unrestricted_updaters.empty()) {
       DiscreteEvent<T1> event;
       event.action = DiscreteEvent<T1>::kUnrestrictedUpdateAction;
@@ -1104,38 +1059,33 @@ class Diagram : public System<T>,
       const std::vector<std::pair<int, UpdateActions<T>>>& sub_actions) const {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
-    auto diagram_state = dynamic_cast<DiagramState*>(state);
+    auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
     DRAKE_DEMAND(diagram_state != nullptr);
 
-    /*
-    for (int i = 0; i < diagram_abstract_states->size(); ++i) {
-      auto subcontext = diagram_context->GetSubsystemContext(i);
-      diagram_abstract_states->get_mutable_abstract_state(i).CopyFrom(*(subcontext->get_state().get_abstract_state()));
-    }
+    // No need to set state to context's state, since it has already been done
+    // in System::CalcUnrestrictedUpdate().
 
     for (const auto& action : sub_actions) {
       const int index = action.first;
       const UpdateActions<T>& action_details = action.second;
       DRAKE_DEMAND(index >= 0 && index < num_subsystems());
 
-      // Get the context and the difference state for the specified system.
+      // Get the context and the state for the specified system.
       const Context<T>* subcontext =
           diagram_context->GetSubsystemContext(index);
       DRAKE_DEMAND(subcontext != nullptr);
-      AbstractState* sub_abstract_state =
-          diagram_abstract_states->get_mutable_subabstract(index);
-      DRAKE_DEMAND(sub_abstract_state != nullptr);
+      State<T>* substate = diagram_state->get_mutable_substate(index);
+      DRAKE_DEMAND(substate != nullptr);
 
       // Do that system's update actions.
       for (const DiscreteEvent<T>& event : action_details.events) {
-        if (event.action == DiscreteEvent<T>::kDiscreteUpdateAction) {
-          sorted_systems_[index]->CalcDiscreteVariableUpdates(*subcontext,
-                                                              event,
-                                                              subdifference);
+        if (event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction) {
+          sorted_systems_[index]->CalcUnrestrictedUpdate(*subcontext,
+                                                         event,
+                                                         substate);
         }
       }
     }
-    */
   }
 
   int num_subsystems() const {

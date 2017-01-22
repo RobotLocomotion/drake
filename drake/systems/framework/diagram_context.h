@@ -85,7 +85,7 @@ class DiagramState : public State<T> {
   }
 
  private:
-  int num_substates() {
+  int num_substates() const {
     return static_cast<int>(substates_.size());
   }
 

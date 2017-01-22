@@ -130,16 +130,6 @@ class System {
     return nullptr;
   }
 
-  /// Returns a AbstractState of the same dimensions as the discrete_state
-  /// allocated in CreateDefaultContext. The simulator will provide this state
-  /// as the output argument to Update.
-  /// By default, allocates nothing. Systems with abstract value variables
-  /// should override.
-  virtual std::unique_ptr<AbstractState> AllocateAbstractVariables()
-  const {
-    return nullptr;
-  }
-
   /// This convenience method allocates a context using AllocateContext() and
   /// sets its default values using SetDefaults().
   std::unique_ptr<Context<T>> CreateDefaultContext() const {
