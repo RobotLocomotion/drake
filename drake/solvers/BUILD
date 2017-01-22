@@ -222,6 +222,28 @@ cc_googletest(
 )
 
 cc_googletest(
+    name = "linear_complementary_problem_test",
+    srcs = [
+        "test/linear_complementary_problem_test.cc",
+    ],
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "linear_system_solver_test",
+    srcs = [
+        "test/linear_system_solver_test.cc",
+    ],
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
     name = "mathematical_program_test",
     srcs = [
         "test/mathematical_program_test.cc",
@@ -254,6 +276,19 @@ cc_googletest(
 
 cc_googletest(
     name = "moby_lcp_solver_test",
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "nonlinear_program_test",
+    srcs = [
+        "test/nonlinear_program_test.cc",
+        "test/mathematical_program_test_util.h",
+        "test/optimization_problem_examples.h",
+    ],
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",

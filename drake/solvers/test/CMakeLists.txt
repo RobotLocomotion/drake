@@ -28,6 +28,9 @@ target_link_libraries(nonlinear_program_test drakeOptimization)
 drake_add_cc_test(linear_system_solver_test)
 target_link_libraries(linear_system_solver_test drakeOptimization)
 
+drake_add_cc_test(linear_complementary_problem_test)
+target_link_libraries(linear_complementary_problem_test drakeOptimization)
+
 if(dreal_FOUND)
   drake_add_cc_test(dreal_solver_test)
   target_link_libraries(dreal_solver_test drakeOptimization)

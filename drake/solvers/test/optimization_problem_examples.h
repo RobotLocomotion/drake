@@ -442,6 +442,174 @@ class LowerBoundedProblem {
   Eigen::Matrix<symbolic::Variable, 6, 1> x_;
   Eigen::Matrix<double, 6, 1> x_expected_;
 };
+
+
+/// gloptiPolyConstrainedMinimization
+/// @brief from section 5.8.2 of the gloptipoly3 documentation
+///
+/// Which is from section 3.5 in
+///   Handbook of Test Problems in Local and Global Optimization
+/// We deliberately duplicate the problem, with the same constraints and
+/// costs on decision variables x and y, so as to test out program works
+/// correctly with multiple decision variables.
+class GloptiPolyConstrainedMinimizationProblem {
+ public:
+  enum CostForm {
+    kCostBegin = 0,
+    kGenericCost = 0,
+    kNonSymbolicCost = 1,
+    // TODO(hongkai.dai): add symbolic linear cost
+    kCostEnd = 1
+  };
+
+  enum ConstraintForm {
+    kConstraintBegin = 0,
+    kNonSymbolicConstraint = 0,
+    kSymbolicConstraint = 1,
+    // TODO(hongkai.dai): add quadratic constraint
+    kConstraintEnd = 1
+  };
+
+ public:
+  GloptiPolyConstrainedMinimizationProblem(CostForm cost_form, ConstraintForm cnstr_form) :
+      prog_(std::make_shared<MathematicalProgram>()), x_{}, y_{}, expected_(0.5, 0, 3) {
+    x_ = prog_->NewContinuousVariables<3>("x");
+    y_ = prog_->NewContinuousVariables<3>("y");
+
+    prog_->AddBoundingBoxConstraint(
+        Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(2, std::numeric_limits<double>::infinity(), 3), x_);
+    prog_->AddBoundingBoxConstraint(
+        Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(2, std::numeric_limits<double>::infinity(), 3), y_);
+
+    switch (cost_form) {
+      case kGenericCost : {
+        AddGenericCost();
+        break;
+      }
+      case kNonSymbolicCost : {
+        AddSymbolicCost();
+        break;
+      }
+      default : throw std::runtime_error("Not a supported cost form");
+    }
+
+    // TODO(hongkai.dai): write this in symbolic form also.
+    std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(new GloptipolyConstrainedExampleConstraint());
+    prog_->AddConstraint(qp_con, x_);
+    prog_->AddConstraint(qp_con, y_);
+
+    switch (cnstr_form) {
+      case kNonSymbolicConstraint : {
+        AddNonSymbolicConstraint();
+        break;
+      }
+      case kSymbolicConstraint : {
+        AddSymbolicConstraint();
+        break;
+      }
+      default : throw std::runtime_error("Not a supported constraint form");
+    }
+
+    Eigen::Vector3d initial_guess = expected_ + 0.01 * Eigen::Vector3d::Random();
+    prog_->SetInitialGuess(x_, initial_guess);
+    prog_->SetInitialGuess(y_, initial_guess);
+  }
+
+  std::shared_ptr<MathematicalProgram> prog() const {return prog_;}
+
+  bool CheckSolution() const {
+    const auto& x_value = prog_->GetSolution(x_);
+    const auto& y_value = prog_->GetSolution(y_);
+    return (CompareMatrices(x_value, expected_, 1E-4, MatrixCompareType::absolute)) &&
+    (CompareMatrices(y_value, expected_, 1E-4, MatrixCompareType::absolute));
+  }
+
+ private:
+  class GloptipolyConstrainedExampleCost {
+   public:
+    static size_t numInputs() { return 3; }
+    static size_t numOutputs() { return 1; }
+
+    template <typename ScalarType>
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    void eval(detail::VecIn<ScalarType> const& x, detail::VecOut<ScalarType>& y) const {
+      DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+      DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
+      y(0) = -2 * x(0) + x(1) - x(2);
+    }
+  };
+
+  class GloptipolyConstrainedExampleConstraint
+      : public Constraint {  // want to also support deriving directly from
+    // constraint without going through drake::Function
+   public:
+    GloptipolyConstrainedExampleConstraint()
+        : Constraint(1, 3, Vector1d::Constant(0),
+                     Vector1d::Constant(std::numeric_limits<double>::infinity())) {}
+
+   protected:
+    // for just these two types, implementing this locally is almost cleaner...
+    void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                Eigen::VectorXd& y) const override {
+      EvalImpl(x, y);
+    }
+    void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
+                TaylorVecXd& y) const override {
+      EvalImpl(x, y);
+    }
+
+   private:
+    template <typename ScalarType>
+    void EvalImpl(const Eigen::Ref<const Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>>& x,
+        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                  Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>& y) const {
+      y.resize(1);
+      y(0) = 24 - 20 * x(0) + 9 * x(1) - 13 * x(2) + 4 * x(0) * x(0) -
+          4 * x(0) * x(1) + 4 * x(0) * x(2) + 2 * x(1) * x(1) -
+          2 * x(1) * x(2) + 2 * x(2) * x(2);
+    }
+  };
+
+ private:
+  void AddGenericCost() {
+    prog_->AddCost(GloptipolyConstrainedExampleCost(), x_);
+    prog_->AddCost(GloptipolyConstrainedExampleCost(), y_);
+  }
+
+  void AddSymbolicCost() {
+    prog_->AddLinearCost(Eigen::Vector3d(-2, 1, -1), x_);
+    prog_->AddLinearCost(Eigen::Vector3d(-2, 1, -1), y_);
+  }
+
+  void AddNonSymbolicConstraint() {
+    Eigen::Matrix<double, 2, 3> A{};
+    // clang-format off
+    A << 1, 1, 1,
+         0, 3, 1;
+    // clang-format on
+    prog_->AddLinearConstraint(A, Eigen::Vector2d::Constant(-std::numeric_limits<double>::infinity()), Eigen::Vector2d(4, 6), x_);
+    prog_->AddLinearConstraint(A, Eigen::Vector2d::Constant(-std::numeric_limits<double>::infinity()), Eigen::Vector2d(4, 6), y_);
+  }
+
+  void AddSymbolicConstraint() {
+    Eigen::Matrix<symbolic::Expression, 2, 1> e1{};
+    Eigen::Matrix<symbolic::Expression, 2, 1> e2{};
+    // clang-format off
+    e1 << x_(0) + x_(1) + x_(2),
+              3 * x_(1) + x_(2);
+    e2 << y_(0) + y_(1) + y_(2),
+              3 * y_(1) + y_(2);
+    // clang-format on
+    prog_->AddLinearConstraint(e1, Eigen::Vector2d::Constant(-std::numeric_limits<double>::infinity()), Eigen::Vector2d(4, 6));
+    prog_->AddLinearConstraint(e2, Eigen::Vector2d::Constant(-std::numeric_limits<double>::infinity()), Eigen::Vector2d(4, 6));
+  }
+
+ private:
+  std::shared_ptr<MathematicalProgram> prog_;
+  VectorDecisionVariable<3> x_;
+  VectorDecisionVariable<3> y_;
+  Eigen::Vector3d expected_;
+};
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -265,6 +265,26 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
                    Eigen::Vector2d(1, 2), num_generic_costs);
 }
 
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
+  // Add Linear Constraint: -10 <= 3 - 5*x0 + 10*x2 - 7*y1 <= 10
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  const symbolic::Expression e{3 - 5 * x(0) + 10 * x(2) - 7 * y(1)};
+  const double lb{-10};
+  const double ub{+10};
+  const auto binding = prog.AddLinearConstraint(e, lb, ub);
+
+  // Check if the binding includes the correct linear constraint.
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 1u);
+  const symbolic::Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
+  const symbolic::Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
+  const symbolic::Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
+  EXPECT_TRUE((e - lb).EqualTo(Ax - lb_in_ctr));
+  EXPECT_TRUE((e - ub).EqualTo(Ax - ub_in_ctr));
+}
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
   // Add Linear Constraint: -10 <= x0 <= 10
@@ -518,178 +538,6 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint4) {
   CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
 }
 
-class SixHumpCamelCost {
- public:
-  static size_t numInputs() { return 2; }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-    y(0) =
-        x(0) * x(0) * (4 - 2.1 * x(0) * x(0) + x(0) * x(0) * x(0) * x(0) / 3) +
-        x(0) * x(1) + x(1) * x(1) * (-4 + 4 * x(1) * x(1));
-  }
-};
-
-GTEST_TEST(testMathematicalProgram, sixHumpCamel) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables(2);
-  auto cost = prog.AddCost(SixHumpCamelCost());
-
-  prog.SetInitialGuess(x, Vector2d::Random());
-  RunNonlinearProgram(prog, [&]() {
-    // check (numerically) if it is a local minimum
-    VectorXd ystar, y;
-    const auto& x_value = prog.GetSolution(x);
-    cost->Eval(x_value, ystar);
-    for (int i = 0; i < 10; i++) {
-      cost->Eval(x_value + .01 * Matrix<double, 2, 1>::Random(), y);
-      if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
-    }
-  });
-}
-
-class GloptipolyConstrainedExampleCost {
- public:
-  static size_t numInputs() { return 3; }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-    y(0) = -2 * x(0) + x(1) - x(2);
-  }
-};
-
-class GloptipolyConstrainedExampleConstraint
-    : public Constraint {  // want to also support deriving directly from
-                           // constraint without going through drake::Function
- public:
-  GloptipolyConstrainedExampleConstraint()
-      : Constraint(1, 3, Vector1d::Constant(0),
-                   Vector1d::Constant(numeric_limits<double>::infinity())) {}
-
- protected:
-  // for just these two types, implementing this locally is almost cleaner...
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
-    EvalImpl(x, y);
-  }
-  void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
-              TaylorVecXd& y) const override {
-    EvalImpl(x, y);
-  }
-
- private:
-  template <typename ScalarType>
-  void EvalImpl(const Ref<const Matrix<ScalarType, Dynamic, 1>>& x,
-                // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                Matrix<ScalarType, Dynamic, 1>& y) const {
-    y.resize(1);
-    y(0) = 24 - 20 * x(0) + 9 * x(1) - 13 * x(2) + 4 * x(0) * x(0) -
-           4 * x(0) * x(1) + 4 * x(0) * x(2) + 2 * x(1) * x(1) -
-           2 * x(1) * x(2) + 2 * x(2) * x(2);
-  }
-};
-
-// gloptiPolyConstrainedMinimization
-// @brief from section 5.8.2 of the gloptipoly3 documentation
-//
-// Which is from section 3.5 in
-//   Handbook of Test Problems in Local and Global Optimization
-GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
-  MathematicalProgram prog;
-
-  // This test is run twice on different collections of continuous
-  // variables to make sure that the solvers correctly handle mapping
-  // variables to constraints/costs.
-  auto x = prog.NewContinuousVariables(3);
-  auto y = prog.NewContinuousVariables(3);
-  prog.AddCost(GloptipolyConstrainedExampleCost(), x);
-  prog.AddCost(GloptipolyConstrainedExampleCost(), y);
-  std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
-      new GloptipolyConstrainedExampleConstraint());
-  prog.AddConstraint(qp_con, x);
-  prog.AddConstraint(qp_con, y);
-  prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
-                           -numeric_limits<double>::infinity(), 4, x);
-  prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
-                           -numeric_limits<double>::infinity(), 4, y);
-  prog.AddLinearConstraint(Vector3d(0, 3, 1).transpose(),
-                           -numeric_limits<double>::infinity(), 6, x);
-  prog.AddLinearConstraint(Vector3d(0, 3, 1).transpose(),
-                           -numeric_limits<double>::infinity(), 6, y);
-  prog.AddBoundingBoxConstraint(
-      Vector3d(0, 0, 0), Vector3d(2, numeric_limits<double>::infinity(), 3), x);
-  prog.AddBoundingBoxConstraint(
-      Vector3d(0, 0, 0), Vector3d(2, numeric_limits<double>::infinity(), 3), y);
-
-  // IPOPT has difficulty with this problem depending on the initial
-  // conditions, which is why the initial guess varies so little.
-  Vector3d initial_guess = Vector3d(.5, 0, 3) + .01 * Vector3d::Random();
-  prog.SetInitialGuess(x, initial_guess);
-  prog.SetInitialGuess(y, initial_guess);
-  RunNonlinearProgram(prog, [&]() {
-    const auto& x_value = prog.GetSolution(x);
-    const auto& y_value = prog.GetSolution(y);
-    EXPECT_TRUE(CompareMatrices(x_value, Vector3d(0.5, 0, 3), 1e-4,
-                                MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(y_value, Vector3d(0.5, 0, 3), 1e-4,
-                                MatrixCompareType::absolute));
-  });
-}
-
-// This test is semantically equivalent with the above
-// gloptipolyConstrainedMinimization test, but it uses the symbolic version of
-// AddLinearConstraint method in MathematicalProgram class.
-GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimizationSymbolic) {
-  MathematicalProgram prog;
-
-  // This test is run twice on different collections of continuous
-  // variables to make sure that the solvers correctly handle mapping
-  // variables to constraints/costs.
-  auto x = prog.NewContinuousVariables(3);
-  auto y = prog.NewContinuousVariables(3);
-  prog.AddCost(GloptipolyConstrainedExampleCost(), x);
-  prog.AddCost(GloptipolyConstrainedExampleCost(), y);
-  std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
-      new GloptipolyConstrainedExampleConstraint());
-  prog.AddConstraint(qp_con, x);
-  prog.AddConstraint(qp_con, y);
-
-  prog.AddLinearConstraint(x(0) + x(1) + x(2),
-                           -numeric_limits<double>::infinity(), 4);
-  prog.AddLinearConstraint(y(0) + y(1) + y(2),
-                           -numeric_limits<double>::infinity(), 4);
-  prog.AddLinearConstraint(3 * x(1) + x(2), -numeric_limits<double>::infinity(),
-                           6);
-  prog.AddLinearConstraint(3 * y(1) + y(2), -numeric_limits<double>::infinity(),
-                           6);
-  prog.AddBoundingBoxConstraint(
-      Vector3d(0, 0, 0), Vector3d(2, numeric_limits<double>::infinity(), 3), x);
-  prog.AddBoundingBoxConstraint(
-      Vector3d(0, 0, 0), Vector3d(2, numeric_limits<double>::infinity(), 3), y);
-
-  // IPOPT has difficulty with this problem depending on the initial
-  // conditions, which is why the initial guess varies so little.
-  Vector3d initial_guess{Vector3d(.5, 0, 3) + .01 * Vector3d::Random()};
-  prog.SetInitialGuess(x, initial_guess);
-  prog.SetInitialGuess(y, initial_guess);
-  RunNonlinearProgram(prog, [&]() {
-    const auto& x_value = prog.GetSolution(x);
-    const auto& y_value = prog.GetSolution(y);
-    EXPECT_TRUE(CompareMatrices(x_value, Vector3d(0.5, 0, 3), 1e-4,
-                                MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(y_value, Vector3d(0.5, 0, 3), 1e-4,
-                                MatrixCompareType::absolute));
-  });
-}
-
 //
 // Test that the Eval() method of LinearComplementarityConstraint correctly
 // returns the slack.
@@ -714,61 +562,6 @@ GTEST_TEST(testMathematicalProgram, simpleLCPConstraintEval) {
 
   EXPECT_TRUE(
       CompareMatrices(x, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
-}
-
-// Simple linear complementarity problem example.
-// @brief a hand-created LCP easily solved.
-//
-// Note: This test is meant to test that MathematicalProgram.Solve() works in
-// this case; tests of the correctness of the Moby LCP solver itself live in
-// testMobyLCP.
-GTEST_TEST(testMathematicalProgram, simpleLCP) {
-  MathematicalProgram prog;
-  Eigen::Matrix<double, 2, 2> M;
-
-  // clang-format off
-  M << 1, 4,
-       3, 1;
-  // clang-format on
-
-  Eigen::Vector2d q(-16, -15);
-
-  auto x = prog.NewContinuousVariables<2>();
-
-  prog.AddLinearComplementarityConstraint(M, q, x);
-  EXPECT_NO_THROW(prog.Solve());
-  const auto& x_value = prog.GetSolution(x);
-  EXPECT_TRUE(CompareMatrices(x_value, Vector2d(16, 0), 1e-4,
-                              MatrixCompareType::absolute));
-}
-
-// Multiple LC constraints in a single optimization problem
-// @brief Just two copies of the simpleLCP example, to make sure that the
-// write-through of LCP results to the solution vector works correctly.
-GTEST_TEST(testMathematicalProgram, multiLCP) {
-  MathematicalProgram prog;
-  Eigen::Matrix<double, 2, 2> M;
-
-  // clang-format off
-  M << 1, 4,
-       3, 1;
-  // clang-format on
-
-  Eigen::Vector2d q(-16, -15);
-
-  auto x = prog.NewContinuousVariables<2>();
-  auto y = prog.NewContinuousVariables<2>();
-
-  prog.AddLinearComplementarityConstraint(M, q, x);
-  prog.AddLinearComplementarityConstraint(M, q, y);
-  EXPECT_NO_THROW(prog.Solve());
-  const auto& x_value = prog.GetSolution(x);
-  const auto& y_value = prog.GetSolution(y);
-  EXPECT_TRUE(CompareMatrices(x_value, Vector2d(16, 0), 1e-4,
-                              MatrixCompareType::absolute));
-
-  EXPECT_TRUE(CompareMatrices(y_value, Vector2d(16, 0), 1e-4,
-                              MatrixCompareType::absolute));
 }
 
 //
@@ -1143,27 +936,6 @@ GTEST_TEST(testMathematicalProgram, testSolveSOCPasNLP) {
   A << 0, 1, 2, -1, 2, 3;
   b = Vector2d(1.0, 3.0);
   MinDistanceFromPlaneToOrigin(A, b);
-}
-
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
-  // Add Linear Constraint: -10 <= 3 - 5*x0 + 10*x2 - 7*y1 <= 10
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables(3, "x");
-  auto y = prog.NewContinuousVariables(3, "y");
-  const symbolic::Expression e{3 - 5 * x(0) + 10 * x(2) - 7 * y(1)};
-  const double lb{-10};
-  const double ub{+10};
-  const auto binding = prog.AddLinearConstraint(e, lb, ub);
-
-  // Check if the binding includes the correct linear constraint.
-  const VectorXDecisionVariable& var_vec{binding.variables()};
-  const auto constraint_ptr = binding.constraint();
-  EXPECT_EQ(constraint_ptr->num_constraints(), 1u);
-  const symbolic::Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
-  const symbolic::Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
-  const symbolic::Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
-  EXPECT_TRUE((e - lb).EqualTo(Ax - lb_in_ctr));
-  EXPECT_TRUE((e - ub).EqualTo(Ax - ub_in_ctr));
 }
 
 }  // namespace test

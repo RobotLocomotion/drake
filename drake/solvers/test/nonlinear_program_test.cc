@@ -190,6 +190,57 @@ GTEST_TEST(testNonlinearProgram, testLowerBoundedProblem) {
     });
   }
 }
+
+class SixHumpCamelCost {
+ public:
+  static size_t numInputs() { return 2; }
+  static size_t numOutputs() { return 1; }
+
+  template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
+    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
+    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
+    y(0) =
+        x(0) * x(0) * (4 - 2.1 * x(0) * x(0) + x(0) * x(0) * x(0) * x(0) / 3) +
+            x(0) * x(1) + x(1) * x(1) * (-4 + 4 * x(1) * x(1));
+  }
+};
+
+GTEST_TEST(testMathematicalProgram, sixHumpCamel) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2);
+  auto cost = prog.AddCost(SixHumpCamelCost());
+
+  prog.SetInitialGuess(x, Vector2d::Random());
+  RunNonlinearProgram(prog, [&]() {
+    // check (numerically) if it is a local minimum
+    VectorXd ystar, y;
+    const auto& x_value = prog.GetSolution(x);
+    cost->Eval(x_value, ystar);
+    for (int i = 0; i < 10; i++) {
+      cost->Eval(x_value + .01 * Matrix<double, 2, 1>::Random(), y);
+      if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
+    }
+  });
+}
+
+GTEST_TEST(testNonlinearProgram, testGloptiPolyConstrainedMinimization) {
+  for (int cost_form = GloptiPolyConstrainedMinimizationProblem::CostForm::kCostBegin; cost_form <= GloptiPolyConstrainedMinimizationProblem::CostForm::kCostEnd; ++cost_form) {
+    for (int cnstr_form =
+        GloptiPolyConstrainedMinimizationProblem::ConstraintForm::kConstraintBegin;
+         cnstr_form
+             <= GloptiPolyConstrainedMinimizationProblem::ConstraintForm::kConstraintEnd;
+         ++cnstr_form) {
+      GloptiPolyConstrainedMinimizationProblem prob
+          (static_cast<GloptiPolyConstrainedMinimizationProblem::CostForm>(cost_form),
+           static_cast<GloptiPolyConstrainedMinimizationProblem::ConstraintForm>(cnstr_form));
+      RunNonlinearProgram(*(prob.prog()), [&]() {
+        EXPECT_TRUE(prob.CheckSolution());
+      });
+    }
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
