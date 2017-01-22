@@ -182,8 +182,7 @@ GTEST_TEST(PolynomialTest, IntegralAndDerivative) {
 }
 
 GTEST_TEST(PolynomialTest, TestMakeMonomialsUnique) {
-  VectorXd coefficients(2);
-  coefficients << 1, 2;
+  Eigen::Vector2d coefficients(1, 2);
   Polynomial<double> poly(coefficients);
   const auto poly_squared = poly * poly;
   EXPECT_EQ(poly_squared.GetNumberOfCoefficients(), 3);
