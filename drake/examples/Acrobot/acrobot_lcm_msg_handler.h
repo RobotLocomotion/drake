@@ -1,6 +1,9 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <chrono>
+#include <mutex>
+#include <thread>
 
 #include "drake/examples/Acrobot/lcmt_acrobot_u.hpp"
 #include "drake/examples/Acrobot/lcmt_acrobot_x.hpp"
