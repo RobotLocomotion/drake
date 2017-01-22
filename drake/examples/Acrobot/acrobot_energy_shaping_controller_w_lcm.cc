@@ -9,9 +9,9 @@
 #include <gflags/gflags.h>
 
 #include "drake/examples/Acrobot/acrobot_plant.h"
-#include "drake/examples/acrobot/acrobot_lcm.h"
-#include "drake/examples/acrobot/lcmt_acrobot_u.hpp"
-#include "drake/examples/acrobot/lcmt_acrobot_x.hpp"
+#include "drake/examples/Acrobot/acrobot_lcm.h"
+#include "drake/examples/Acrobot/lcmt_acrobot_u.hpp"
+#include "drake/examples/Acrobot/lcmt_acrobot_x.hpp"
 
 #include "drake/examples/Acrobot/acrobot_energy_shaping_controller.h"
 #include "drake/examples/Acrobot/acrobot_lcm_msg_handler.h"
