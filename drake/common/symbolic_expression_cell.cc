@@ -186,8 +186,9 @@ double BinaryExpressionCell::Evaluate(const Environment& env) const {
 ExpressionVar::ExpressionVar(const Variable& v)
     : ExpressionCell{ExpressionKind::Var, hash_value<Variable>{}(v), true},
       var_{v} {
-  // Variable shouldn't be constructed by the default constructor.
-  DRAKE_DEMAND(var_.get_id() > 0);
+  // Dummy symbolic variable (ID = 0) should not be used in constructing
+  // symbolic expressions.
+  DRAKE_DEMAND(!var_.is_dummy());
 }
 
 Variables ExpressionVar::GetVariables() const { return {get_variable()}; }

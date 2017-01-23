@@ -169,8 +169,8 @@ class Expression {
   Polynomial<double> ToPolynomial() const;
 
   /** Evaluates under a given environment (by default, an empty environment).
-      It throws a std::runtime exception if NaN is detected during evaluation.
-  */
+   *  @throws std::runtime_error if NaN is detected during evaluation.
+   */
   double Evaluate(const Environment& env = Environment{}) const;
 
   /** Returns string representation of Expression. */
