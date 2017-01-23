@@ -22,6 +22,7 @@ drake_setup_options()
 # External projects in order of dependencies; 'trivial' ones first
 drake_add_external(avl PUBLIC CMAKE FORTRAN)
 drake_add_external(eigen PUBLIC CMAKE)
+drake_add_external(ignmath PUBLIC CMAKE) # dependency of sdformat
 drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(qt_property_browser CMAKE QT)
 drake_add_external(sedumi PUBLIC CMAKE MATLAB)
@@ -213,6 +214,10 @@ drake_add_external(robotlocomotion_lcmtypes PUBLIC CMAKE PYTHON
 drake_add_external(signalscope PUBLIC CMAKE PYTHON QT
   DEPENDS ctk_python_console lcm pythonqt)
 
+# sdformat
+drake_add_external(sdformat PUBLIC CMAKE
+  DEPENDS ignmath)
+
 # Option to skip building drake proper via the superbuild. This allows the
 # superbuild to build everything BUT drake, which can still be built separately
 # from its build directory. This is used by the dashboards to make separate
@@ -244,6 +249,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     -DWITH_GTEST:BOOL=${WITH_GOOGLETEST}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_GUROBI:BOOL=${WITH_GUROBI}
     -DWITH_HSRB_DESCRIPTION:BOOL=${WITH_HSRB_DESCRIPTION}
+    -DWITH_IGNMATH:BOOL=${WITH_IGNMATH}
     -DWITH_IPOPT:BOOL=${WITH_IPOPT}
     -DWITH_IRIS:BOOL=${WITH_IRIS}
     -DWITH_LCM:BOOL=${WITH_LCM}
@@ -253,6 +259,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     -DWITH_NLOPT:BOOL=${WITH_NLOPT}
     -DWITH_OCTOMAP:BOOL=${WITH_OCTOMAP}
     -DWITH_PYTHON_3:BOOL=${WITH_PYTHON_3}
+    -DWITH_SDFORMAT:BOOL=${WITH_SDFORMAT}
     -DWITH_SEDUMI:BOOL=${WITH_SEDUMI}
     -DWITH_SIGNALSCOPE:BOOL=${WITH_SIGNALSCOPE}
     -DWITH_SNOPT:BOOL=${WITH_SNOPT}
@@ -281,6 +288,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     google_styleguide
     googletest
     gurobi
+    ignmath
     ipopt
     iris
     lcm
@@ -290,6 +298,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     nlopt
     octomap
     robotlocomotion_lcmtypes
+    sdformat
     sedumi
     snopt
     spdlog

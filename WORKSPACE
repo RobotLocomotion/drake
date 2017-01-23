@@ -80,6 +80,13 @@ new_git_repository(
 )
 
 new_git_repository(
+    name = "sdformat",
+    remote = "https://github.com/clalancette/sdformat-mirror.git",
+    commit = "339b744fa326bf5cb10778556ab15d9915a12241",
+    build_file = "tools/sdformat.BUILD",
+)
+
+new_git_repository(
     name = "octomap",
     remote = "https://github.com/OctoMap/octomap.git",
     commit = "6d7c31ae4df2c93cb8a954e44d442338b58d3558",
@@ -91,6 +98,13 @@ new_git_repository(
     remote = "https://github.com/flexible-collision-library/fcl.git",
     commit = "06d48b3b6f3605b8caf119d5208d8156eb64fe0d",
     build_file = "tools/fcl.BUILD",
+)
+
+new_git_repository(
+    name = "ignmath",
+    remote = "https://github.com/clalancette/ign-math-mirror.git",
+    commit = "44578fca0b0c51839f0ad91778d25405440bc3dd",
+    build_file = "tools/ignmath.BUILD",
 )
 
 # Necessary for buildifier.

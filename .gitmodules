@@ -111,3 +111,9 @@
 [submodule "externals/qt_property_browser"]
 	path = externals/qt_property_browser
 	url = https://github.com/patmarion/QtPropertyBrowser
+[submodule "externals/ign-math"]
+	path = externals/ignmath
+	url = https://github.com/clalancette/ign-math-mirror.git
+[submodule "externals/sdformat"]
+	path = externals/sdformat
+	url = https://github.com/clalancette/sdformat-mirror.git

@@ -259,6 +259,12 @@ macro(drake_setup_options)
     "Helper tools to build Python & MATLAB wrappers"
     "for C++ libraries with Eigen")
 
+  drake_optional_external(IGNMATH ON
+    "Ignition math library, needed for SDFormat")
+
+  drake_optional_external(SDFORMAT ON
+    "SDF parsing library")
+
   # END external projects that are ON by default
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # BEGIN external projects that are only needed when MATLAB is in use
