@@ -23,7 +23,7 @@ drake_add_cc_test(constraint_test)
 target_link_libraries(constraint_test drakeOptimization drakeCommon)
 
 add_executable(nonlinear_program_test
-    optimization_examles.cc
+    optimization_examples.cc
     nonlinear_program_test.cc)
 target_link_libraries(nonlinear_program_test
     drakeCommon
@@ -33,7 +33,7 @@ target_link_libraries(nonlinear_program_test
 drake_add_test(NAME nonlinear_program_test COMMAND nonlinear_program_test)
 
 add_executable(linear_system_solver_test
-    optimization_examles.cc
+    optimization_examples.cc
     linear_system_solver_test.cc)
 target_link_libraries(linear_system_solver_test
     drakeCommon

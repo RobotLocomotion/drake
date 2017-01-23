@@ -10,9 +10,9 @@
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mathematical_program_solver_interface.h"
 #include "drake/solvers/nlopt_solver.h"
 #include "drake/solvers/snopt_solver.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/optimization_examples.h"
 
@@ -90,21 +90,15 @@ GTEST_TEST(testNonlinearProgram, BoundingBoxTest) {
 GTEST_TEST(testNonlinearProgram, trivialLinearSystem) {
   LinearSystemExample1 example1{};
   auto prog = example1.prog();
-  RunNonlinearProgram(*prog, [&]() {
-    EXPECT_TRUE(example1.CheckSolution());
-  });
+  RunNonlinearProgram(*prog, [&]() { EXPECT_TRUE(example1.CheckSolution()); });
 
   LinearSystemExample2 example2{};
   prog = example2.prog();
-  RunNonlinearProgram(*prog, [&]() {
-    EXPECT_TRUE(example2.CheckSolution());
-  });
+  RunNonlinearProgram(*prog, [&]() { EXPECT_TRUE(example2.CheckSolution()); });
 
   LinearSystemExample3 example3{};
   prog = example3.prog();
-  RunNonlinearProgram(*prog, [&]() {
-    EXPECT_TRUE(example3.CheckSolution());
-  });
+  RunNonlinearProgram(*prog, [&]() { EXPECT_TRUE(example3.CheckSolution()); });
 }
 
 GTEST_TEST(testNonlinearProgram, trivialLinearEquality) {
@@ -156,38 +150,47 @@ GTEST_TEST(testNonlinearProgram, QuadraticCost) {
 }
 
 GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem1) {
-  for (int cost_form = NonConvexQPproblem1::CostForm::kCostBegin; cost_form <= NonConvexQPproblem1::CostForm::kCostEnd; ++cost_form) {
-    for (int cnstr_form = NonConvexQPproblem1::ConstraintForm::kConstraintBegin; cnstr_form <= NonConvexQPproblem1::ConstraintForm::kConstraintEnd; ++cnstr_form) {
-      NonConvexQPproblem1 prob(static_cast<NonConvexQPproblem1::CostForm>(cost_form), static_cast<NonConvexQPproblem1::ConstraintForm>(cnstr_form));
-      RunNonlinearProgram(*(prob.prog()), [&]() {
-        EXPECT_TRUE(prob.CheckSolution());
-      });
+  for (int cost_form = NonConvexQPproblem1::CostForm::kCostBegin;
+       cost_form <= NonConvexQPproblem1::CostForm::kCostEnd; ++cost_form) {
+    for (int cnstr_form = NonConvexQPproblem1::ConstraintForm::kConstraintBegin;
+         cnstr_form <= NonConvexQPproblem1::ConstraintForm::kConstraintEnd;
+         ++cnstr_form) {
+      NonConvexQPproblem1 prob(
+          static_cast<NonConvexQPproblem1::CostForm>(cost_form),
+          static_cast<NonConvexQPproblem1::ConstraintForm>(cnstr_form));
+      RunNonlinearProgram(*(prob.prog()),
+                          [&]() { EXPECT_TRUE(prob.CheckSolution()); });
     }
   }
 }
 
 GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem2) {
-  for (int cost_form = NonConvexQPproblem2::CostForm::kCostBegin; cost_form <= NonConvexQPproblem2::CostForm::kCostEnd; ++cost_form) {
-    for (int cnstr_form = NonConvexQPproblem2::ConstraintForm::kConstraintBegin; cnstr_form <= NonConvexQPproblem2::ConstraintForm::kConstraintEnd; ++cnstr_form) {
-      NonConvexQPproblem2 prob(static_cast<NonConvexQPproblem2::CostForm>(cost_form), static_cast<NonConvexQPproblem2::ConstraintForm>(cnstr_form));
-      RunNonlinearProgram(*(prob.prog()), [&]() {
-        EXPECT_TRUE(prob.CheckSolution());
-      });
+  for (int cost_form = NonConvexQPproblem2::CostForm::kCostBegin;
+       cost_form <= NonConvexQPproblem2::CostForm::kCostEnd; ++cost_form) {
+    for (int cnstr_form = NonConvexQPproblem2::ConstraintForm::kConstraintBegin;
+         cnstr_form <= NonConvexQPproblem2::ConstraintForm::kConstraintEnd;
+         ++cnstr_form) {
+      NonConvexQPproblem2 prob(
+          static_cast<NonConvexQPproblem2::CostForm>(cost_form),
+          static_cast<NonConvexQPproblem2::ConstraintForm>(cnstr_form));
+      RunNonlinearProgram(*(prob.prog()),
+                          [&]() { EXPECT_TRUE(prob.CheckSolution()); });
     }
   }
 }
 
 GTEST_TEST(testNonlinearProgram, testLowerBoundedProblem) {
-  for (int cnstr_form = LowerBoundedProblem::ConstraintForm::kConstraintBegin; cnstr_form <= LowerBoundedProblem::ConstraintForm::kConstraintEnd; ++cnstr_form) {
-    LowerBoundedProblem prob(static_cast<LowerBoundedProblem::ConstraintForm>(cnstr_form));
+  for (int cnstr_form = LowerBoundedProblem::ConstraintForm::kConstraintBegin;
+       cnstr_form <= LowerBoundedProblem::ConstraintForm::kConstraintEnd;
+       ++cnstr_form) {
+    LowerBoundedProblem prob(
+        static_cast<LowerBoundedProblem::ConstraintForm>(cnstr_form));
     prob.SetInitialGuess1();
-    RunNonlinearProgram(*(prob.prog()), [&]() {
-      EXPECT_TRUE(prob.CheckSolution());
-    });
+    RunNonlinearProgram(*(prob.prog()),
+                        [&]() { EXPECT_TRUE(prob.CheckSolution()); });
     prob.SetInitialGuess2();
-    RunNonlinearProgram(*(prob.prog()), [&]() {
-      EXPECT_TRUE(prob.CheckSolution());
-    });
+    RunNonlinearProgram(*(prob.prog()),
+                        [&]() { EXPECT_TRUE(prob.CheckSolution()); });
   }
 }
 
@@ -203,7 +206,7 @@ class SixHumpCamelCost {
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
     y(0) =
         x(0) * x(0) * (4 - 2.1 * x(0) * x(0) + x(0) * x(0) * x(0) * x(0) / 3) +
-            x(0) * x(1) + x(1) * x(1) * (-4 + 4 * x(1) * x(1));
+        x(0) * x(1) + x(1) * x(1) * (-4 + 4 * x(1) * x(1));
   }
 };
 
@@ -226,18 +229,23 @@ GTEST_TEST(testMathematicalProgram, sixHumpCamel) {
 }
 
 GTEST_TEST(testNonlinearProgram, testGloptiPolyConstrainedMinimization) {
-  for (int cost_form = GloptiPolyConstrainedMinimizationProblem::CostForm::kCostBegin; cost_form <= GloptiPolyConstrainedMinimizationProblem::CostForm::kCostEnd; ++cost_form) {
-    for (int cnstr_form =
-        GloptiPolyConstrainedMinimizationProblem::ConstraintForm::kConstraintBegin;
-         cnstr_form
-             <= GloptiPolyConstrainedMinimizationProblem::ConstraintForm::kConstraintEnd;
+  for (int cost_form =
+           GloptiPolyConstrainedMinimizationProblem::CostForm::kCostBegin;
+       cost_form <=
+       GloptiPolyConstrainedMinimizationProblem::CostForm::kCostEnd;
+       ++cost_form) {
+    for (int cnstr_form = GloptiPolyConstrainedMinimizationProblem::
+             ConstraintForm::kConstraintBegin;
+         cnstr_form <= GloptiPolyConstrainedMinimizationProblem::
+                           ConstraintForm::kConstraintEnd;
          ++cnstr_form) {
-      GloptiPolyConstrainedMinimizationProblem prob
-          (static_cast<GloptiPolyConstrainedMinimizationProblem::CostForm>(cost_form),
-           static_cast<GloptiPolyConstrainedMinimizationProblem::ConstraintForm>(cnstr_form));
-      RunNonlinearProgram(*(prob.prog()), [&]() {
-        EXPECT_TRUE(prob.CheckSolution());
-      });
+      GloptiPolyConstrainedMinimizationProblem prob(
+          static_cast<GloptiPolyConstrainedMinimizationProblem::CostForm>(
+              cost_form),
+          static_cast<GloptiPolyConstrainedMinimizationProblem::ConstraintForm>(
+              cnstr_form));
+      RunNonlinearProgram(*(prob.prog()),
+                          [&]() { EXPECT_TRUE(prob.CheckSolution()); });
     }
   }
 }
@@ -366,19 +374,20 @@ GTEST_TEST(testNonlinearProgram, MinDistanceFromPlaneToOrigin) {
   A[1] = Matrix<double, 2, 3>::Zero();
   A[1] << 0, 1, 2, -1, 2, 3;
   b[1] = Vector2d(1.0, 3.0);
-  for (int i = MinDistanceFromPlaneToOrigin::CostForm::kCostBegin; i < MinDistanceFromPlaneToOrigin::CostForm::kCostEnd; ++i) {
-    for (int j = MinDistanceFromPlaneToOrigin::ConstraintForm::kConstraintBegin; j < MinDistanceFromPlaneToOrigin::ConstraintForm::kConstraintEnd; ++j) {
+  for (int i = MinDistanceFromPlaneToOrigin::CostForm::kCostBegin;
+       i < MinDistanceFromPlaneToOrigin::CostForm::kCostEnd; ++i) {
+    for (int j = MinDistanceFromPlaneToOrigin::ConstraintForm::kConstraintBegin;
+         j < MinDistanceFromPlaneToOrigin::ConstraintForm::kConstraintEnd;
+         ++j) {
       for (int k = 0; k < 2; ++k) {
-        MinDistanceFromPlaneToOrigin prob
-            (A[k], b[k], static_cast<MinDistanceFromPlaneToOrigin::CostForm>(i),
-             static_cast<MinDistanceFromPlaneToOrigin::ConstraintForm>(j));
+        MinDistanceFromPlaneToOrigin prob(
+            A[k], b[k], static_cast<MinDistanceFromPlaneToOrigin::CostForm>(i),
+            static_cast<MinDistanceFromPlaneToOrigin::ConstraintForm>(j));
         prob.SetInitialGuess();
-        RunNonlinearProgram(*(prob.prog_lorentz()), [&]() {
-          prob.CheckSolution(false);
-        });
-        RunNonlinearProgram(*(prob.prog_rotated_lorentz()), [&]() {
-          prob.CheckSolution(true);
-        });
+        RunNonlinearProgram(*(prob.prog_lorentz()),
+                            [&]() { prob.CheckSolution(false); });
+        RunNonlinearProgram(*(prob.prog_rotated_lorentz()),
+                            [&]() { prob.CheckSolution(true); });
       }
     }
   }

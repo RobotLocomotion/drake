@@ -79,7 +79,6 @@ GTEST_TEST(testMathematicalProgram, testAddFunction) {
   prog.AddCost(std::unique_ptr<Unique>(new Unique));
 }
 
-
 GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
   // Test the scalar version of the bounding box constraint methods.
 

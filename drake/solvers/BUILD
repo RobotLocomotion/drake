@@ -222,6 +222,18 @@ cc_googletest(
 )
 
 cc_googletest(
+    name = "equality_constrained_qp_solver_test",
+    srcs = [
+        "test/equality_constrained_qp_solver_test.cc",
+        "test/mathematical_program_test_util.h",
+    ],
+    deps = [
+        "mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
     name = "linear_complementary_problem_test",
     srcs = [
         "test/linear_complementary_problem_test.cc",
@@ -236,6 +248,9 @@ cc_googletest(
     name = "linear_system_solver_test",
     srcs = [
         "test/linear_system_solver_test.cc",
+        "test/mathematical_program_test_util.h",
+        "test/optimization_examples.h",
+        "test/optimization_examples.cc",
     ],
     deps = [
         ":mathematical_program",
@@ -287,7 +302,8 @@ cc_googletest(
     srcs = [
         "test/nonlinear_program_test.cc",
         "test/mathematical_program_test_util.h",
-        "test/optimization_problem_examples.h",
+        "test/optimization_examples.h",
+        "test/optimization_examples.cc",
     ],
     deps = [
         ":mathematical_program",

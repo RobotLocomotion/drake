@@ -1334,40 +1334,60 @@ class MathematicalProgram {
 
   /**
    * Adds the same scalar lower and upper bound to every variable in @p vars.
-   * @tparam Derived An Eigen::Matrix with symbolic::Variable as the scalar type.
+   * @tparam Derived An Eigen::Matrix with symbolic::Variable as the scalar
+   * type.
    * Derived::ColsAtCompileTime == 1.
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param vars The decision variables.
    */
   template <typename Derived>
-  typename std::enable_if<std::is_same<typename Derived::Scalar, symbolic::Variable>::value && Derived::ColsAtCompileTime == 1, std::shared_ptr<BoundingBoxConstraint>>::type
-  AddBoundingBoxConstraint(double lb, double ub, const Eigen::MatrixBase<Derived>& vars) {
-    const int kSize = Derived::RowsAtCompileTime != Eigen::Dynamic && Derived::ColsAtCompileTime != Eigen::Dynamic ? Derived::RowsAtCompileTime * Derived::ColsAtCompileTime : Eigen::Dynamic;
-    return AddBoundingBoxConstraint(Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), lb),
-                                    Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), ub), vars);
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value &&
+          Derived::ColsAtCompileTime == 1,
+      std::shared_ptr<BoundingBoxConstraint>>::type
+  AddBoundingBoxConstraint(double lb, double ub,
+                           const Eigen::MatrixBase<Derived>& vars) {
+    const int kSize =
+        Derived::RowsAtCompileTime != Eigen::Dynamic &&
+                Derived::ColsAtCompileTime != Eigen::Dynamic
+            ? Derived::RowsAtCompileTime * Derived::ColsAtCompileTime
+            : Eigen::Dynamic;
+    return AddBoundingBoxConstraint(
+        Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), lb),
+        Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), ub), vars);
   }
 
   /**
    * Adds the same scalar lower and upper bound to every variable in @p vars.
-   * @tparam Derived An Eigen::Matrix with symbolic::Variable as the scalar type.
+   * @tparam Derived An Eigen::Matrix with symbolic::Variable as the scalar
+   * type.
    * Derived::ColsAtCompileTime != 1.
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param vars The decision variables.
    */
   template <typename Derived>
-  typename std::enable_if<std::is_same<typename Derived::Scalar, symbolic::Variable>::value && Derived::ColsAtCompileTime != 1, std::shared_ptr<BoundingBoxConstraint>>::type
-  AddBoundingBoxConstraint(double lb, double ub, const Eigen::MatrixBase<Derived>& vars) {
-    const int kSize = Derived::RowsAtCompileTime != Eigen::Dynamic && Derived::ColsAtCompileTime != Eigen::Dynamic ? Derived::RowsAtCompileTime * Derived::ColsAtCompileTime : Eigen::Dynamic;
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value &&
+          Derived::ColsAtCompileTime != 1,
+      std::shared_ptr<BoundingBoxConstraint>>::type
+  AddBoundingBoxConstraint(double lb, double ub,
+                           const Eigen::MatrixBase<Derived>& vars) {
+    const int kSize =
+        Derived::RowsAtCompileTime != Eigen::Dynamic &&
+                Derived::ColsAtCompileTime != Eigen::Dynamic
+            ? Derived::RowsAtCompileTime * Derived::ColsAtCompileTime
+            : Eigen::Dynamic;
     Eigen::Matrix<symbolic::Variable, kSize, 1> flat_vars(vars.size());
     for (int j = 0; j < vars.cols(); ++j) {
       for (int i = 0; i < vars.rows(); ++i) {
         flat_vars(j * vars.rows() + i) = vars(i, j);
       }
     }
-    return AddBoundingBoxConstraint(Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), lb),
-    Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), ub), flat_vars);
+    return AddBoundingBoxConstraint(
+        Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), lb),
+        Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), ub), flat_vars);
   }
 
   /**
