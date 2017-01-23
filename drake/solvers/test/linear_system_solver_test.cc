@@ -4,7 +4,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
-#include "drake/solvers/test/optimization_problem_examples.h"
+#include "drake/solvers/test/optimization_examples.h"
 
 namespace drake {
 namespace solvers {

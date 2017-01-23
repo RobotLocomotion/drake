@@ -1333,14 +1333,31 @@ class MathematicalProgram {
   }
 
   /**
-   * Adds the same scalar lower and upper bound to every variable in the list.
+   * Adds the same scalar lower and upper bound to every variable in @p vars.
    * @tparam Derived An Eigen::Matrix with symbolic::Variable as the scalar type.
+   * Derived::ColsAtCompileTime == 1.
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param vars The decision variables.
    */
   template <typename Derived>
-  typename std::enable_if<std::is_same<typename Derived::Scalar, symbolic::Variable>::value, std::shared_ptr<BoundingBoxConstraint>>::type
+  typename std::enable_if<std::is_same<typename Derived::Scalar, symbolic::Variable>::value && Derived::ColsAtCompileTime == 1, std::shared_ptr<BoundingBoxConstraint>>::type
+  AddBoundingBoxConstraint(double lb, double ub, const Eigen::MatrixBase<Derived>& vars) {
+    const int kSize = Derived::RowsAtCompileTime != Eigen::Dynamic && Derived::ColsAtCompileTime != Eigen::Dynamic ? Derived::RowsAtCompileTime * Derived::ColsAtCompileTime : Eigen::Dynamic;
+    return AddBoundingBoxConstraint(Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), lb),
+                                    Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), ub), vars);
+  }
+
+  /**
+   * Adds the same scalar lower and upper bound to every variable in @p vars.
+   * @tparam Derived An Eigen::Matrix with symbolic::Variable as the scalar type.
+   * Derived::ColsAtCompileTime != 1.
+   * @param lb Lower bound.
+   * @param ub Upper bound.
+   * @param vars The decision variables.
+   */
+  template <typename Derived>
+  typename std::enable_if<std::is_same<typename Derived::Scalar, symbolic::Variable>::value && Derived::ColsAtCompileTime != 1, std::shared_ptr<BoundingBoxConstraint>>::type
   AddBoundingBoxConstraint(double lb, double ub, const Eigen::MatrixBase<Derived>& vars) {
     const int kSize = Derived::RowsAtCompileTime != Eigen::Dynamic && Derived::ColsAtCompileTime != Eigen::Dynamic ? Derived::RowsAtCompileTime * Derived::ColsAtCompileTime : Eigen::Dynamic;
     Eigen::Matrix<symbolic::Variable, kSize, 1> flat_vars(vars.size());

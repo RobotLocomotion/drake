@@ -14,7 +14,7 @@
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/mathematical_program_solver_interface.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
-#include "drake/solvers/test/optimization_problem_examples.h"
+#include "drake/solvers/test/optimization_examples.h"
 
 using Eigen::Dynamic;
 using Eigen::Ref;
@@ -358,6 +358,31 @@ GTEST_TEST(testMathematicalProgram, polynomialConstraint) {
   }
 }
 
+GTEST_TEST(testNonlinearProgram, MinDistanceFromPlaneToOrigin) {
+  std::array<MatrixXd, 2> A;
+  std::array<VectorXd, 2> b;
+  A[0] = Matrix<double, 1, 2>::Ones();
+  b[0] = Vector1d(2);
+  A[1] = Matrix<double, 2, 3>::Zero();
+  A[1] << 0, 1, 2, -1, 2, 3;
+  b[1] = Vector2d(1.0, 3.0);
+  for (int i = MinDistanceFromPlaneToOrigin::CostForm::kCostBegin; i < MinDistanceFromPlaneToOrigin::CostForm::kCostEnd; ++i) {
+    for (int j = MinDistanceFromPlaneToOrigin::ConstraintForm::kConstraintBegin; j < MinDistanceFromPlaneToOrigin::ConstraintForm::kConstraintEnd; ++j) {
+      for (int k = 0; k < 2; ++k) {
+        MinDistanceFromPlaneToOrigin prob
+            (A[k], b[k], static_cast<MinDistanceFromPlaneToOrigin::CostForm>(i),
+             static_cast<MinDistanceFromPlaneToOrigin::ConstraintForm>(j));
+        prob.SetInitialGuess();
+        RunNonlinearProgram(*(prob.prog_lorentz()), [&]() {
+          prob.CheckSolution(false);
+        });
+        RunNonlinearProgram(*(prob.prog_rotated_lorentz()), [&]() {
+          prob.CheckSolution(true);
+        });
+      }
+    }
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
