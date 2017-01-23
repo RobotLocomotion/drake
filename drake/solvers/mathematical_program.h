@@ -1335,8 +1335,7 @@ class MathematicalProgram {
   /**
    * Adds the same scalar lower and upper bound to every variable in @p vars.
    * @tparam Derived An Eigen::Matrix with symbolic::Variable as the scalar
-   * type.
-   * Derived::ColsAtCompileTime == 1.
+   * type. Derived::ColsAtCompileTime == 1.
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param vars The decision variables.
@@ -1361,8 +1360,7 @@ class MathematicalProgram {
   /**
    * Adds the same scalar lower and upper bound to every variable in @p vars.
    * @tparam Derived An Eigen::Matrix with symbolic::Variable as the scalar
-   * type.
-   * Derived::ColsAtCompileTime != 1.
+   * type. Derived::ColsAtCompileTime != 1.
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param vars The decision variables.

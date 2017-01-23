@@ -90,7 +90,7 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
   x3 << x1.col(0), x1.col(1);
   VectorXDecisionVariable x4(4);
   x4 = x3;
-  // Four different ways to construct an equivalent constraint.
+  // Six different ways to construct an equivalent constraint.
   // 1. Imposes constraint on a static-sized matrix of decision variables.
   // 2. Imposes constraint on a list of vectors of decision variables.
   // 3. Imposes constraint on a dynamic-sized matrix of decision variables.
@@ -227,8 +227,8 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
   // 2. Add shared_ptr<Constraint> on a VectorDecisionVariable object.
   // 3. Add shared_ptr<Constraint> on a VariableRefList.
   // 4. Add a ConstraintImpl object on a VectorDecisionVariable object.
-  // 4. Add a ConstraintImpl object on a VariableRefList object.
-  // 5. Add a unique_ptr of object that can be converted to a ConstraintImpl
+  // 5. Add a ConstraintImpl object on a VariableRefList object.
+  // 6. Add a unique_ptr of object that can be converted to a ConstraintImpl
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   auto y = prog.NewContinuousVariables<2>("y");
