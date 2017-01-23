@@ -18,11 +18,18 @@ namespace lcm {
  */
 class DrakeMockLcm : public DrakeLcmInterface {
  public:
+  /**
+   * A constructor that creates a DrakeMockLcm where loopback is diabled, i.e.,
+   * a call to Publish() will not result in subscriber callback function being
+   * called. To enable loop-back behavior, call EnableLoopBack().
+   */
   DrakeMockLcm();
 
   // Disable copy and assign.
   DrakeMockLcm(const DrakeMockLcm&) = delete;
   DrakeMockLcm& operator=(const DrakeMockLcm&) = delete;
+
+  void EnableLoopBack() { enable_loop_back_ = true; }
 
   void StartReceiveThread() override;
 
@@ -104,6 +111,7 @@ class DrakeMockLcm : public DrakeLcmInterface {
                                int data_size);
 
  private:
+  bool enable_loop_back_{false};
   bool receive_thread_started_{false};
 
   struct LastPublishedMessage {
