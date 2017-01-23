@@ -111,3 +111,6 @@
 [submodule "externals/qt_property_browser"]
 	path = externals/qt_property_browser
 	url = https://github.com/patmarion/QtPropertyBrowser
+[submodule "externals/tinyobjloader"]
+	path = externals/tinyobjloader
+	url = https://github.com/syoyo/tinyobjloader
