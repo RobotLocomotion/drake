@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <map>
 #include <set>
 #include <string>
@@ -128,21 +129,23 @@ class TrigPoly {
    * entries in its SinCosMap.
    */
   friend TrigPoly sin(const TrigPoly& p) {
+    using std::abs;
+    using std::copysign;
+    using std::floor;
+
     const std::vector<typename PolyType::Monomial>& m = p.poly_.GetMonomials();
     if (m.empty()) {
-      TrigPoly ret;
-      ret.poly_ = Polynomial<CoefficientType>(sin(CoefficientType(0)));
+      return TrigPoly(Polynomial<CoefficientType>(sin(CoefficientType(0))));
     } else if (p.poly_.GetDegree() > 1) {
       throw std::runtime_error(
           "sin of polynomials with degree > 1 is not supported");
     }
 
     // Base case of recursion is one mononomial with coefficient of 1.
-    if (m.size() == 1 && std::abs(m[0].coefficient) == CoefficientType(1)) {
+    if (m.size() == 1 && abs(m[0].coefficient) == CoefficientType(1)) {
       TrigPoly ret = p;
       if (m[0].terms.empty()) {  // then it's a constant
         ret.poly_ = Polynomial<CoefficientType>(sin(m[0].coefficient));
-        return ret;
       } else {
         typename SinCosMap::iterator iter =
             ret.sin_cos_map_.find(m[0].terms[0].var);
@@ -151,22 +154,21 @@ class TrigPoly {
               "tried taking the sin of a variable that does not exist in my "
               "sin_cos_map");
         ret.poly_.Subs(m[0].terms[0].var, iter->second.s);
-        return ret;
       }
+      return ret;
     }
 
     Polynomial<CoefficientType> pa;
     Polynomial<CoefficientType> pb(m.begin() + 1, m.end());
-    if (std::abs(m[0].coefficient) == CoefficientType(1)) {
+    if (abs(m[0].coefficient) == CoefficientType(1)) {
       pa = Polynomial<CoefficientType>(m[0].coefficient, m[0].terms);
-    } else if (m[0].coefficient - std::floor(m[0].coefficient) ==
+    } else if (m[0].coefficient - floor(m[0].coefficient) ==
                CoefficientType(0)) {
       // If the coefficient has integer magnitude greater than 1, recurse by
       // expanding out a term with coefficient of magnitude 1.
-      CoefficientType copy_sign(m[0].coefficient > 0 ? 1 : -1);
-      pa = Polynomial<CoefficientType>(copy_sign, m[0].terms);
-      pb +=
-          Polynomial<CoefficientType>(m[0].coefficient - copy_sign, m[0].terms);
+      auto unit = copysign(CoefficientType(1), m[0].coefficient);
+      pa = Polynomial<CoefficientType>(unit, m[0].terms);
+      pb += Polynomial<CoefficientType>(m[0].coefficient - unit, m[0].terms);
     } else {
       throw std::runtime_error("Fractional coefficients not supported");
     }
@@ -186,21 +188,23 @@ class TrigPoly {
    * entries in its SinCosMap.
    */
   friend TrigPoly cos(const TrigPoly& p) {
+    using std::abs;
+    using std::copysign;
+    using std::floor;
+
     const std::vector<typename PolyType::Monomial>& m = p.poly_.GetMonomials();
     if (m.empty()) {
-      TrigPoly ret;
-      ret.poly_ = Polynomial<CoefficientType>(cos(CoefficientType(0)));
+      return TrigPoly(Polynomial<CoefficientType>(cos(CoefficientType(0))));
     } else if (p.poly_.GetDegree() > 1) {
       throw std::runtime_error(
           "cos of polynomials with degree > 1 is not supported");
     }
 
     // Base case of recursion is one mononomial with coefficient of 1.
-    if (m.size() == 1 && std::abs(m[0].coefficient) == CoefficientType(1)) {
+    if (m.size() == 1 && abs(m[0].coefficient) == CoefficientType(1)) {
       TrigPoly ret = p;
       if (m[0].terms.empty()) {  // then it's a constant
         ret.poly_ = Polynomial<CoefficientType>(cos(m[0].coefficient));
-        return ret;
       } else {
         typename SinCosMap::iterator iter =
             ret.sin_cos_map_.find(m[0].terms[0].var);
@@ -209,25 +213,24 @@ class TrigPoly {
               "tried taking the sin of a variable that does not exist in my "
               "sin_cos_map");
         ret.poly_.Subs(m[0].terms[0].var, iter->second.c);
-        if (m[0].coefficient == (CoefficientType)-1) {
+        if (m[0].coefficient == CoefficientType(-1)) {
           ret *= -1;
         }  // cos(-q) => cos(q) => c (instead of -c)
-        return ret;
       }
+      return ret;
     }
 
     Polynomial<CoefficientType> pa;
     Polynomial<CoefficientType> pb(m.begin() + 1, m.end());
-    if (std::abs(m[0].coefficient) == CoefficientType(1)) {
+    if (abs(m[0].coefficient) == CoefficientType(1)) {
       pa = Polynomial<CoefficientType>(m[0].coefficient, m[0].terms);
-    } else if (m[0].coefficient - std::floor(m[0].coefficient) ==
+    } else if (m[0].coefficient - floor(m[0].coefficient) ==
                CoefficientType(0)) {
       // If the coefficient has integer magnitude greater than 1, recurse by
       // expanding out a term with coefficient of magnitude 1.
-      CoefficientType copy_sign(m[0].coefficient > 0 ? 1 : -1);
-      pa = Polynomial<CoefficientType>(copy_sign, m[0].terms);
-      pb +=
-          Polynomial<CoefficientType>(m[0].coefficient - copy_sign, m[0].terms);
+      auto unit = copysign(CoefficientType(1), m[0].coefficient);
+      pa = Polynomial<CoefficientType>(unit, m[0].terms);
+      pb += Polynomial<CoefficientType>(m[0].coefficient - unit, m[0].terms);
     } else {
       throw std::runtime_error("Fractional coefficients not supported");
     }
@@ -361,7 +364,7 @@ class TrigPoly {
   }
 
   const TrigPoly operator-() const {
-    TrigPoly ret = (*this) * -1;
+    TrigPoly ret = (*this) * CoefficientType(-1);
     return ret;
   }
 

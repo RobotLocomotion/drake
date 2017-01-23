@@ -59,6 +59,11 @@ GTEST_TEST(TrigPolyTest, SmokeTest) {
   TestSerializationFirstWord(sin(-p - p - p), "(-3)*s1*c1^2+s1^3");
   TestSerializationFirstWord(cos(p + p + p), "c1^3+(-3)*c1*s1^2");
   TestSerializationFirstWord(cos(-p - p - p), "c1^3+(-3)*c1*s1^2");
+
+  Polynomiald empty_poly;
+  TrigPolyd empty(empty_poly);
+  TestSerializationFirstWord(cos(empty), "(1)");
+  TestSerializationFirstWord(sin(empty), "(0)");
 }
 
 GTEST_TEST(TrigPolyTest, GetVariablesTest) {
