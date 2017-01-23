@@ -150,6 +150,18 @@ drake_add_external(octomap PUBLIC CMAKE
     -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
   SOURCE_SUBDIR octomap)
 
+# vtk
+drake_add_external(vtk PUBLIC CMAKE PYTHON QT
+  CMAKE_ARGS
+    -DBUILD_SHARED_LIBS=ON
+    -DBUILD_TESTING=OFF
+    -DBUILD_EXAMPLES=OFF
+    -DVTK_USE_GUISUPPORT=ON
+    -DVTK_USE_QT=ON
+    -DVTK_WRAP_PYTHON=ON
+    -DVTK_WRAP_TCL=OFF
+    -DVTK_USE_TK=OFF)
+
 # fcl
 drake_add_external(fcl PUBLIC CMAKE
   CMAKE_ARGS -DFCL_BUILD_TESTS=OFF
@@ -324,6 +336,7 @@ drake_add_external(director PUBLIC CMAKE ${TEST_DIRECTOR} PYTHON QT VTK
     libbot
     pythonqt
     qt_property_browser
+    vtk
 )
 
 # END external projects

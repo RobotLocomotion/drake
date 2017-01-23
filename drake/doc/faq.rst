@@ -43,11 +43,11 @@ appropriate subsection below.
 Non-ROS Users
 -------------
 
-To workaround the problem, configure Director's build system to build VTK5 from
+To workaround the problem, configure Drake's build system to build VTK5 from
 source (``drake-visualizer`` is built on Director, which is built on VTK5)::
 
-    cd drake-distro/build/externals/director
-    cmake . -DUSE_SYSTEM_VTK=OFF
+    cd drake-distro/build
+    cmake . -DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON
     cd drake-distro/build
     make (or ninja)
 
@@ -57,7 +57,7 @@ the present working directory)::
 
     cd drake-distro
     export LD_LIBRARY_PATH=`pwd`/build/install/lib/vtk-5.10:$LD_LIBRARY_PATH
-    export PYTHONPATH=`pwd`/build/externals/director/src/vtk-build/Wrapping/Python:`pwd`/build/externals/director/src/vtk-build/bin:$PYTHONPATH
+    export PYTHONPATH=`pwd`/build/externals/vtk/Wrapping/Python:`pwd`/build/externals/vtk/bin:$PYTHONPATH
 
 You should now be able to start ``drake-visualizer``.
 
@@ -70,8 +70,8 @@ ROS Indigo Users
 To workaround the problem, configure Director's build system to build VTK5 from
 source (``drake-visualizer`` is built on Director, which is built on VTK5)::
 
-    cd ~/dev/drake_catkin_workspace/build/drake/externals/director
-    cmake . -DUSE_SYSTEM_VTK=OFF
+    cd ~/dev/drake_catkin_workspace/build/drake
+    cmake . -DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON
     cd ~/dev/drake_catkin_workspace
     catkin build
 
@@ -79,7 +79,7 @@ Next, modify two environment variables before starting
 ``drake-visualizer``::
 
     export LD_LIBRARY_PATH=$HOME/dev/drake_catkin_workspace/install/lib/vtk-5.10:$LD_LIBRARY_PATH
-    export PYTHONPATH=$HOME/dev/drake_catkin_workspace/build/drake/externals/director/src/vtk-build/Wrapping/Python:$HOME/dev/drake_catkin_workspace/build/drake/externals/director/src/vtk-build/bin:$PYTHONPATH
+    export PYTHONPATH=$HOME/dev/drake_catkin_workspace/build/drake/externals/vtk/Wrapping/Python:$HOME/dev/drake_catkin_workspace/build/drake/externals/vtk/bin:$PYTHONPATH
 
 You should now be able to start ``drake-visualizer``.
 

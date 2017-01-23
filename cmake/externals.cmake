@@ -204,11 +204,7 @@ macro(drake_add_cmake_external PROJECT)
     list(APPEND _ext_PROPAGATE_CACHE_VARS QT_QMAKE_EXECUTABLE)
   endif()
 
-  if(_ext_VTK)
-    find_package(VTK 5.10)
-    if(NOT VTK_FOUND)
-      find_package(VTK 5.8 REQUIRED)
-    endif()
+  if(_ext_VTK AND USE_SYSTEM_VTK)
     list(APPEND _ext_PROPAGATE_CACHE_VARS VTK_DIR)
   endif()
 
