@@ -55,11 +55,11 @@ cc_library(
 # - equality_constrained_qp_solver
 # - linear_system_solver
 # - moby_lcp_solver
+# - IPOPT
 # - Gurobi (on Ubuntu)
 
 # Unsupported solvers:
 # - dReal
-# - IPOPT
 # - NLOPT
 # - SNOPT
 # - MOSEK
@@ -71,7 +71,6 @@ cc_library(
         "dreal_solver.h",
         "equality_constrained_qp_solver.cc",
         "equality_constrained_qp_solver.h",
-        "ipopt_solver.h",
         "linear_system_solver.cc",
         "linear_system_solver.h",
         "mathematical_program.cc",
@@ -80,7 +79,6 @@ cc_library(
         "mosek_solver.h",
         "nlopt_solver.h",
         "no_dreal.cc",
-        "no_ipopt.cc",
         "no_mosek.cc",
         "no_nlopt.cc",
         "no_snopt.cc",
@@ -97,6 +95,7 @@ cc_library(
         ":decision_variable",
         ":function",
         ":gurobi_solver",
+        ":ipopt_solver",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:number_traits",
@@ -171,6 +170,19 @@ cc_library(
             ":mathematical_program_api",
         ],
     }),
+)
+
+cc_library(
+    name = "ipopt_solver",
+    srcs = ["ipopt_solver.cc"],
+    hdrs = ["ipopt_solver.h"],
+    linkstatic = 1,
+    visibility = ["//visibility:private"],
+    deps = [
+        "@ipopt//:ipopt",
+        ":mathematical_program_api",
+        "//drake/math:autodiff",
+    ],
 )
 
 # === test/ ===
