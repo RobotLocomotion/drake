@@ -151,6 +151,17 @@ cc_library(
 )
 
 cc_library(
+    name = "diagram_logger",
+    srcs = ["diagram_logger.cc"],
+    hdrs = ["diagram_logger.h"],
+    linkstatic = 1,
+    deps = [
+        ":signal_logger",
+        "//drake/systems/framework",
+    ],
+)
+
+cc_library(
     name = "trajectory_source",
     srcs = ["trajectory_source.cc"],
     hdrs = ["trajectory_source.h"],
@@ -313,6 +324,20 @@ cc_googletest(
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/analysis",
         "//drake/systems/framework",
+    ],
+)
+
+cc_googletest(
+    name = "diagram_logger_test",
+    deps = [
+        ":affine_system",
+        ":diagram_logger",
+        ":gain",
+        ":linear_system",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/analysis",
+        "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
