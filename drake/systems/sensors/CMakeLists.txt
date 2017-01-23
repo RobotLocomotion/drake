@@ -10,27 +10,22 @@ set(drakeSensors_HEADERS
     depth_sensor_specification.h
     rotary_encoders.h)
 
-set(drakeSensors_LINK_LIBRARIES
-    drakeRBM
-    drakeSystemFramework)
-
-set(drakeSensors_INCLUDE_DIRS)
-
 if(VTK_FOUND)
-  set(drakeSensors_SRC_FILES ${drakeSensors_SRC_FILES} rgbd_camera.cc)
-  set(drakeSensors_HEADERS ${drakeSensors_HEADERS} rgbd_camera.h)
-  set(drakeSensors_LINK_LIBRARIES ${drakeSensors_LINK_LIBRARIES}
-      ${VTK_LIBRARIES})
-  set(drakeSensors_INCLUDE_DIRS ${drakeSensors_INCLUDE_DIRS}
-      ${VTK_INCLUDE_DIRS})
+  list(APPEND drakeSensors_SRC_FILES rgbd_camera.cc)
+  list(APPEND drakeSensors_HEADERS rgbd_camera.h)
 endif()
 
 add_library_with_exports(LIB_NAME drakeSensors SOURCE_FILES
     ${drakeSensors_SRC_FILES})
 
-target_link_libraries(drakeSensors ${drakeSensors_LINK_LIBRARIES})
+target_link_libraries(drakeSensors
+    drakeRBM
+    drakeSystemFramework)
 
-target_include_directories(drakeSensors PRIVATE ${drakeSensors_INCLUDE_DIRS})
+if(VTK_FOUND)
+  target_link_libraries(drakeSensors vtkRendering)
+  target_include_directories(drakeSensors PRIVATE ${VTK_INCLUDE_DIRS})
+endif()
 
 drake_install_libraries(drakeSensors)
 drake_install_headers(${drakeSensors_HEADERS})

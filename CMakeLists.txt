@@ -309,7 +309,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     swig_matlab
     swigmake
     textbook
-    VTK
+    vtk
     xfoil
     yalmip
     yaml_cpp
