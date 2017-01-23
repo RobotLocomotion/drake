@@ -87,7 +87,9 @@ class Environment {
   std::string to_string() const;
 
   /** Returns a reference to the value that is mapped to a key equivalent to
-   * @p key, performing an insertion if such key does not already exist. */
+   *  @p key, performing an insertion if such key does not already exist.
+   *  @throws std::runtime_error if key is a dummy variable.
+   */
   mapped_type& operator[](const key_type& key);
 
   friend std::ostream& operator<<(std::ostream& os, const Environment& env);

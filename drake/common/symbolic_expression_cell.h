@@ -38,11 +38,16 @@ class ExpressionCell {
   virtual bool EqualTo(const ExpressionCell& c) const = 0;
   /** Provides lexicographical ordering between expressions. */
   virtual bool Less(const ExpressionCell& c) const = 0;
-  /** Checks if it is a polynomial. */
+  /** Checks if this symbolic expression is convertible to Polynomial. */
   bool is_polynomial() const { return is_polynomial_; }
-  /** Returns Polynomial. */
+  /** Returns a Polynomial representing this expression.
+   *  Note that the ID of a variable is preserved in this translation.
+   *  \pre{is_polynomial() is true.}
+   */
   virtual Polynomial<double> ToPolynomial() const = 0;
-  /** Evaluates under a given environment. */
+  /** Evaluates under a given environment (by default, an empty environment).
+   *  @throws std::runtime_error if NaN is detected during evaluation.
+   */
   virtual double Evaluate(const Environment& env) const = 0;
   /** Outputs string representation of expression into output stream @p os. */
   virtual std::ostream& Display(std::ostream& os) const = 0;
