@@ -58,3 +58,13 @@ config_setting(
     name = "with_gurobi",
     values = {"define": "WITH_GUROBI=ON"},
 )
+
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+)
+
+config_setting(
+    name = "apple",
+    values = {"cpu": "darwin"},
+)
