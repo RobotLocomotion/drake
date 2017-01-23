@@ -1,12 +1,17 @@
-#include <typeinfo>
+#include <array>       // std::array
+#include <functional>  // std::function
+#include <limits>      // std::numeric_limits
+#include <map>         // std::map
+#include <memory>      // std::shared_ptr
+#include <stdexcept>   // std::runtime_error
+#include <utility>     // std::pair
+#include <vector>      // std::vector
 
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_variable.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mathematical_program.h"
@@ -16,8 +21,6 @@
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/optimization_examples.h"
 
-using Eigen::Dynamic;
-using Eigen::Ref;
 using Eigen::Matrix;
 using Eigen::Matrix2d;
 using Eigen::Matrix4d;
@@ -210,7 +213,7 @@ class SixHumpCamelCost {
   }
 };
 
-GTEST_TEST(testMathematicalProgram, sixHumpCamel) {
+GTEST_TEST(testNonlinearProgram, sixHumpCamel) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(2);
   auto cost = prog.AddCost(SixHumpCamelCost());
@@ -254,7 +257,7 @@ GTEST_TEST(testNonlinearProgram, testGloptiPolyConstrainedMinimization) {
 // Test that linear polynomial constraints get turned into linear constraints.
 // TODO(hongkai.dai): move this example to optimization_program_examples, add
 // the constraint in the symbolic form.
-GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
+GTEST_TEST(testNonlinearProgram, linearPolynomialConstraint) {
   const Polynomiald x("x");
   MathematicalProgram problem;
   static const double kEpsilon = 1e-7;
@@ -277,7 +280,7 @@ GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
 // Simple test of polynomial constraints.
 // TODO(hongkai.dai): move the code to optimization_program_examples, add
 // the constraints using symbolic forms.
-GTEST_TEST(testMathematicalProgram, polynomialConstraint) {
+GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
   static const double kInf = numeric_limits<double>::infinity();
   // Generic constraints in nlopt require a very generous epsilon.
   static const double kEpsilon = 1e-4;

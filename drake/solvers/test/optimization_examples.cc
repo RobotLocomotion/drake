@@ -1,5 +1,7 @@
 #include "drake/solvers/test/optimization_examples.h"
 
+#include "drake/common/eigen_matrix_compare.h"
+
 using Eigen::Matrix4d;
 using Eigen::Vector4d;
 using Eigen::Vector2d;

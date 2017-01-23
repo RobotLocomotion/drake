@@ -13,7 +13,7 @@ namespace test {
 namespace {
 void TestLinearSystemExample(LinearSystemExample1* example) {
   example->prog()->Solve();
-  CheckSolverType(*(example->prog()), "Linear System Solver");
+  CheckSolverName(*(example->prog()), "Linear System Solver");
   example->CheckSolution();
 }
 }  // namespace

@@ -3,7 +3,6 @@
 #include <limits>
 #include <memory>
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -87,7 +86,6 @@ class NonConvexQPproblem1 {
     kConstraintEnd = 1
   };
 
- public:
   NonConvexQPproblem1(CostForm cost_form, ConstraintForm constraint_form);
 
   MathematicalProgram* prog() const { return prog_.get(); }
@@ -143,7 +141,6 @@ class NonConvexQPproblem2 {
     kConstraintEnd = 1
   };
 
- public:
   NonConvexQPproblem2(CostForm cost_form, ConstraintForm cnstr_form);
 
   bool CheckSolution() const;
@@ -191,7 +188,6 @@ class LowerBoundedProblem {
     kConstraintEnd = 1
   };
 
- public:
   explicit LowerBoundedProblem(ConstraintForm cnstr_form);
 
   bool CheckSolution() const;
@@ -254,12 +250,10 @@ class LowerBoundedProblem {
     int i2_;
   };
 
- private:
   void AddSymbolicConstraint();
 
   void AddNonSymbolicConstraint();
 
- private:
   std::unique_ptr<MathematicalProgram> prog_;
   Eigen::Matrix<symbolic::Variable, 6, 1> x_;
   Eigen::Matrix<double, 6, 1> x_expected_;
@@ -291,7 +285,6 @@ class GloptiPolyConstrainedMinimizationProblem {
     kConstraintEnd = 1
   };
 
- public:
   GloptiPolyConstrainedMinimizationProblem(CostForm cost_form,
                                            ConstraintForm cnstr_form);
 
@@ -348,7 +341,6 @@ class GloptiPolyConstrainedMinimizationProblem {
     }
   };
 
- private:
   void AddGenericCost();
 
   void AddSymbolicCost();
@@ -357,7 +349,6 @@ class GloptiPolyConstrainedMinimizationProblem {
 
   void AddSymbolicConstraint();
 
- private:
   std::unique_ptr<MathematicalProgram> prog_;
   VectorDecisionVariable<3> x_;
   VectorDecisionVariable<3> y_;
