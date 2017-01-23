@@ -170,7 +170,8 @@ GTEST_TEST(DrakeMockLcmTest, WithLoopbackTest) {
   // Instantiates the Device Under Test (DUT). Note that loopback is enabled,
   // which results in subscribers being notified when a message is published on
   // the subscribed channel.
-  DrakeMockLcm dut(LoopbackSwitch::kWithLoopback);
+  DrakeMockLcm dut;
+  dut.EnableLoopBack();
 
   // Instantiates a message handler.
   MockMessageHandler handler;
@@ -202,10 +203,10 @@ GTEST_TEST(DrakeMockLcmTest, WithoutLoopbackTest) {
   const string kChannelName =
       "drake_mock_lcm_test_without_loopback_channel";
 
-  // Instantiates the Device Under Test (DUT). Note that loopback is disabled,
-  // which results in subscribers not being notified when a message is published
-  // on the subscribed channel.
-  DrakeMockLcm dut(LoopbackSwitch::kWithoutLoopback);
+  // Instantiates the Device Under Test (DUT). Note that loopback is by default
+  // disabled, which results in subscribers not being notified when a message is
+  // published on the subscribed channel.
+  DrakeMockLcm dut;
 
   // Instantiates a message handler.
   MockMessageHandler handler;
