@@ -344,9 +344,8 @@ void Mesh::LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
             triangles->push_back(
                 Vector3i(indices[0] - 1, indices[i] - 1, indices[i + 1] - 1));
             Vector3d testNormal;
-            valid = valid && GetNormal(*vertices, indices[0] - 1,
-                                       indices[i] - 1, indices[i + 1] - 1,
-                                       &testNormal);
+            valid = GetNormal(*vertices, indices[0] - 1, indices[i] - 1,
+                              indices[i + 1] - 1, &testNormal);
             valid = valid && lastNormal.dot(testNormal) > 1e-9;
             lastNormal = testNormal;
           }
