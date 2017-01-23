@@ -949,7 +949,7 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   systems::UpdateActions<double> update_actions;
   diagram_.CalcNextUpdateTime(*context_, &update_actions);
   EXPECT_EQ(update_actions.time, 2);
-  EXPECT_EQ(update_actions.events.size(), 1);
+  EXPECT_EQ(update_actions.events.size(), 1u);
   EXPECT_EQ(update_actions.events.front().action,
       DiscreteEvent<double>::ActionType::kUnrestrictedUpdateAction);
 
@@ -973,7 +973,7 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   diagram_.CalcNextUpdateTime(*context_, &update_actions);
   EXPECT_EQ(update_actions.time, 6);
   // One action to update all subsystems' state.
-  EXPECT_EQ(update_actions.events.size(), 1);
+  EXPECT_EQ(update_actions.events.size(), 1u);
 
   diagram_.CalcUnrestrictedUpdate(*context_, update_actions.events.front(),
                                   x_buf.get());
