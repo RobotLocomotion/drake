@@ -387,6 +387,31 @@ cc_googletest(
 )
 
 cc_googletest(
+    name = "symbolic_mixing_scalar_types_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+cc_googletest(
+    name = "symbolic_expression_matrix_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+cc_googletest(
+    name = "symbolic_variable_overloading_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+
+cc_googletest(
     name = "symbolic_formula_test",
     deps = [
         ":common",
