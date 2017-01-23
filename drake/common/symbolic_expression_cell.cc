@@ -184,11 +184,9 @@ double BinaryExpressionCell::Evaluate(const Environment& env) const {
 }
 
 ExpressionVar::ExpressionVar(const Variable& v)
-    : ExpressionCell{ExpressionKind::Var, hash_value<Variable>{}(v), true},
-      var_{v} {
-  // Variable shouldn't be constructed by the default constructor.
-  DRAKE_DEMAND(var_.get_id() > 0);
-}
+    : ExpressionCell{ExpressionKind::Var, hash_value<Variable>{}(v),
+                     !v.is_dummy()},
+      var_{v} {}
 
 Variables ExpressionVar::GetVariables() const { return {get_variable()}; }
 
@@ -207,10 +205,17 @@ bool ExpressionVar::Less(const ExpressionCell& e) const {
 }
 
 Polynomial<double> ExpressionVar::ToPolynomial() const {
+  DRAKE_ASSERT(is_polynomial());
   return Polynomial<double>(1.0, var_.get_id());
 }
 
 double ExpressionVar::Evaluate(const Environment& env) const {
+  if (var_.is_dummy()) {
+    ostringstream oss;
+    oss << "Dummy variable is detected"
+        << "in the evaluation of a symbolic expression.";
+    throw runtime_error(oss.str());
+  }
   Environment::const_iterator const it{env.find(var_)};
   if (it != env.cend()) {
     DRAKE_ASSERT(!std::isnan(it->second));

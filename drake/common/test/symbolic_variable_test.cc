@@ -38,7 +38,11 @@ class SymbolicVariableTest : public ::testing::Test {
 };
 
 TEST_F(SymbolicVariableTest, GetId) {
+  const Variable dummy{};
   const Variable x_prime{"x"};
+  EXPECT_TRUE(dummy.is_dummy());
+  EXPECT_FALSE(x_.is_dummy());
+  EXPECT_FALSE(x_prime.is_dummy());
   EXPECT_NE(x_.get_id(), x_prime.get_id());
 }
 

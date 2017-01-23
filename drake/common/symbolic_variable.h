@@ -18,16 +18,30 @@ class Variable {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variable)
 
-  /** Default constructor. This is needed to have Eigen::Matrix<Variable>. The
-      objects created by the default constructor share the same ID, zero. As a
-      result, they all are identified as a single variable by equality operator
-      (==). They all have the same hash value as well.
+  /** Default constructor. Constructs a dummy variable. This is needed to have
+      Eigen::Matrix<Variable>. The objects created by the default constructor
+      share the same ID, zero. As a result, they all are identified as a single
+      variable by equality operator (==). They all have the same hash value as
+      well.
+
+      It is valid to construct a dummy variable but the following operations are
+      not allowed (throws a runtime_error exception):
+
+      - Evaluating a symbolic expression including a dummy variable.
+      - Constructing a symbolic environment with a dummy variable.
+      - Converting a symbolic expression including a dummy variable into a
+        Polynomial via Expression::ToPolynomial method. Note that
+        Expression::is_polynomial returns false if an expression includes a
+        dummy variable.
    */
   Variable() : id_{0}, name_{std::string()} {}
 
   /** Constructs a variable with a string . */
   explicit Variable(const std::string& name);
 
+  /** Checks if this is a dummy variable (ID = 0) which is created by
+   *  default constructor. */
+  bool is_dummy() const { return get_id() == 0; }
   size_t get_id() const;
   size_t get_hash() const { return std::hash<size_t>{}(id_); }
   std::string get_name() const;

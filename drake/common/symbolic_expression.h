@@ -159,7 +159,10 @@ class Expression {
       set<Expression> via std::less<drake::symbolic::Expression>. */
   bool Less(const Expression& e) const;
 
-  /** Checks if this symbolic expression is convertible to Polynomial. */
+  /** Checks if this symbolic expression is convertible to Polynomial.
+   *  Note that a symbolic expression with a dummy variable is not considered as
+   *  a Polynomial.
+   */
   bool is_polynomial() const;
 
   /** Returns a Polynomial representing this expression.
@@ -169,8 +172,10 @@ class Expression {
   Polynomial<double> ToPolynomial() const;
 
   /** Evaluates under a given environment (by default, an empty environment).
-      It throws a std::runtime exception if NaN is detected during evaluation.
-  */
+   *  @throws a std::runtime exception if NaN is detected during evaluation.
+   *  @throws a std::runtime exception if this expression includes a dummy
+   *  variable.
+   */
   double Evaluate(const Environment& env = Environment{}) const;
 
   /** Returns string representation of Expression. */

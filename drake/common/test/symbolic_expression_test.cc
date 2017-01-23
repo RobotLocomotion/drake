@@ -95,9 +95,12 @@ static void CheckOrdering(const vector<Expression>& expressions) {
 // Provides common variables that are used by the following tests.
 class SymbolicExpressionTest : public ::testing::Test {
  protected:
+  const Variable var_dummy_{};
   const Variable var_x_{"x"};
   const Variable var_y_{"y"};
   const Variable var_z_{"z"};
+
+  const Expression dummy_{var_dummy_};
   const Expression x_{var_x_};
   const Expression y_{var_y_};
   const Expression z_{var_z_};
@@ -448,6 +451,13 @@ TEST_F(SymbolicExpressionTest, GetProductsInMultiplication) {
   EXPECT_PRED2(ExprEqual, products.at(x_), 1.0);
   EXPECT_PRED2(ExprEqual, products.at(y_), 2.0);
   EXPECT_PRED2(ExprEqual, products.at(z_), y_);
+}
+
+TEST_F(SymbolicExpressionTest, DummyVariable) {
+  EXPECT_FALSE(dummy_.is_polynomial());
+
+  const Environment env{{var_x_, 1.0}, {var_y_, 2.0}, {var_z_, 3.0}};
+  EXPECT_THROW(dummy_.Evaluate(env), runtime_error);
 }
 
 TEST_F(SymbolicExpressionTest, IsPolynomial) {
