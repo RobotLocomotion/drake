@@ -8,6 +8,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/gain.h"
@@ -864,6 +865,122 @@ TEST_F(DiscreteStateTest, Publish) {
   diagram_.Publish(*context_, actions.events[0]);
   // Check that publication occurred.
   EXPECT_EQ(true, diagram_.publisher()->published());
+}
+
+class AbstractStateSystem : public LeafSystem<double> {
+ public:
+  AbstractStateSystem(int id, double update_period) : id_(id) {
+    DeclarePeriodicUnrestrictedUpdate(update_period, 0);
+  }
+
+  ~AbstractStateSystem() override {}
+
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+
+  std::unique_ptr<AbstractState> AllocateAbstractState() const override {
+    std::vector<std::unique_ptr<AbstractValue>> values;
+    values.push_back({PackValue<double>(id_)});
+    return std::make_unique<AbstractState>(std::move(values));
+  }
+
+  // Abstract state is set to time + id.
+  void DoCalcUnrestrictedUpdate(const Context<double>& context,
+                                State<double>* state) const override {
+    double& state_num = state->get_mutable_abstract_state()->
+        get_mutable_abstract_state(0).GetMutableValue<double>();
+    state_num = id_ + context.get_time();
+  }
+
+  int get_id() const { return id_; }
+
+ private:
+  int id_{0};
+};
+
+class AbstractStateDiagram : public Diagram<double> {
+ public:
+  AbstractStateDiagram() : Diagram<double>() {
+    DiagramBuilder<double> builder;
+    sys0_ = builder.template AddSystem<AbstractStateSystem>(0, 2.);
+    sys1_ = builder.template AddSystem<AbstractStateSystem>(1, 3.);
+    builder.BuildInto(this);
+  }
+
+  AbstractStateSystem* get_mutable_sys0() { return sys0_; }
+  AbstractStateSystem* get_mutable_sys1() { return sys1_; }
+
+ private:
+  AbstractStateSystem* sys0_{nullptr};
+  AbstractStateSystem* sys1_{nullptr};
+};
+
+class AbstractStateDiagramTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    context_ = diagram_.CreateDefaultContext();
+  }
+
+  double get_sys0_abstract_data_as_double() {
+    const Context<double>& sys_context =
+        diagram_.GetSubsystemContext(*context_, diagram_.get_mutable_sys0());
+    return sys_context.get_abstract_state<double>(0);
+  }
+
+  double get_sys1_abstract_data_as_double() {
+    const Context<double>& sys_context =
+        diagram_.GetSubsystemContext(*context_, diagram_.get_mutable_sys1());
+    return sys_context.get_abstract_state<double>(0);
+  }
+
+  AbstractStateDiagram diagram_;
+  std::unique_ptr<Context<double>> context_;
+};
+
+TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
+  double time = 1;
+  context_->set_time(time);
+
+  // The abstract data should be initialized to their ids.
+  EXPECT_EQ(get_sys0_abstract_data_as_double(), 0);
+  EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
+
+  // First action time should be 2 sec, and only sys0 will be updating.
+  systems::UpdateActions<double> update_actions;
+  diagram_.CalcNextUpdateTime(*context_, &update_actions);
+  EXPECT_EQ(update_actions.time, 2);
+  EXPECT_EQ(update_actions.events.size(), 1);
+  EXPECT_EQ(update_actions.events.front().action,
+      DiscreteEvent<double>::ActionType::kUnrestrictedUpdateAction);
+
+  // Creates a temp state and does unrestricted updates.
+  std::unique_ptr<State<double>> x_buf = context_->CloneState();
+  diagram_.CalcUnrestrictedUpdate(*context_, update_actions.events.front(),
+                                  x_buf.get());
+
+  // The abstract data in the current context should be the same as before.
+  EXPECT_EQ(get_sys0_abstract_data_as_double(), 0);
+  EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
+
+  // Swaps in the new state, and the abstract data for sys0 should be updated.
+  context_->get_mutable_state()->CopyFrom(*x_buf);
+  EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
+  EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
+
+  // Sets time to 5.5, both system should be updating at 6 sec.
+  time = 5.5;
+  context_->set_time(time);
+  diagram_.CalcNextUpdateTime(*context_, &update_actions);
+  EXPECT_EQ(update_actions.time, 6);
+  // One action to update all subsystems' state.
+  EXPECT_EQ(update_actions.events.size(), 1);
+
+  diagram_.CalcUnrestrictedUpdate(*context_, update_actions.events.front(),
+                                  x_buf.get());
+  // Both sys0 and sys1's abstract data should be updated.
+  context_->get_mutable_state()->CopyFrom(*x_buf);
+  EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
+  EXPECT_EQ(get_sys1_abstract_data_as_double(), (time + 1));
 }
 
 }  // namespace
