@@ -28,6 +28,22 @@ alias(
     actual = "@com_github_bazelbuild_buildifier//buildifier",
 )
 
+# A script for adding compiler-specific flags to a CROSSTOOL file.
+sh_binary(
+    name = "amend_crosstool",
+    srcs = ["amend_crosstool.sh"],
+)
+
+# Files containing compiler-specific flags, one per line.
+filegroup(
+    name = "compiler_options",
+    srcs = [
+        "clang_options.txt",
+        "gcc_options.txt",
+    ],
+)
+
+# A custom CROSSTOOL for clang on Ubuntu.
 cc_toolchain_suite(
     name = "default-toolchain",
     toolchains = {
@@ -54,6 +70,7 @@ cc_toolchain(
     supports_param_files = 0,
 )
 
+# config_settings available to select properties in Drake targets.
 config_setting(
     name = "with_gurobi",
     values = {"define": "WITH_GUROBI=ON"},
