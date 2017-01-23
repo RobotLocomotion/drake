@@ -182,7 +182,8 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletStaticMeshShape(
   // Gathers vertices and triangles from the mesh_interface's file.
   DrakeShapes::PointsVector vertices;
   DrakeShapes::TrianglesVector triangles;
-  geometry.LoadObjFile(&vertices, &triangles, true /*triangulate*/);
+  geometry.LoadObjFile(&vertices, &triangles,
+                       DrakeShapes::Mesh::TriangulatePolicy::kTry);
 
   // Creates a btTriangleMesh (a btStridingMeshInterface) to provide the
   // information needed by the more complex btBvhTriangleMeshShape.

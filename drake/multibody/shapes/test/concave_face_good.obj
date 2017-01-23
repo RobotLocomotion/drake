@@ -1,8 +1,8 @@
-# This objs facilitates testing the triangulation functionality of the Mesh
-# shape.  The final face needs to be triangulated.  However, it is concave.
-# But the ordering of the vertices admits a viable triangulation.
+# This OBJ facilitates testing the triangulation functionality of the
+# DrakeShapes::Mesh class. The final face needs to be triangulated.  However,
+# it is concave. But the ordering of the vertices admits a viable triangulation.
 #
-# The is a pyramid-like shape.  THe base of the pyramid, however, is concave.
+# The is a pyramid-like shape.  The base of the pyramid, however, is concave.
 # The fan is formed at vertex 0.  In this case, the fan is valid.
 #
 #   1

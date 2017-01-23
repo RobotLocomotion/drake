@@ -146,6 +146,13 @@ class Capsule : public Geometry {
 
 class Mesh : public Geometry {
  public:
+  /** Specification of how the Mesh should process faces during parsing. */
+  enum class TriangulatePolicy {
+    kFailOnNonTri,    ///< Non-triangular faces cause an exception to be thrown.
+    kTry,             ///< The parser will attempt to triangulate non-triangular
+                      ///< faces, throwing an exception if the attempt fails.
+  };
+
   /** Constructs a representation of a mesh to be loaded from
   @p resolved_filename. @p uri provides a unique identifier used to interact
   with BotVisualizer. **/
@@ -175,21 +182,21 @@ class Mesh : public Geometry {
   @param[out] triangles Vector of indices for each triangle in the mesh.
   The i-th entry of @p triangles holds a 3D vector of integer indices into
   @p vertices corresponding to the vertices forming the i-th triangle.
-  @param[in] triangulate  If true, triangulates any faces that are not already
-  triangles, otherwise, throws std::runtime_error.
+  @param[in] triangulate  Specifies the triangulation policy.
 
   On output, `vertices.size()` corresponds to the number of vertices in the mesh
   while `triangles.size()` corresponds to the number of triangles in the mesh.
   **/
-  void LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
-                   bool triangulate = false) const;
+  void LoadObjFile(
+      PointsVector* vertices, TrianglesVector* triangles,
+      TriangulatePolicy triangulate = TriangulatePolicy::kFailOnNonTri) const;
 
  private:
   // Given a list of vertex values and three indices into that set, computes a
   // normal for the plane defined by the vertices.
   // Returns false if the indices are invalid or if the points are co-linear.
-  static bool getNormal(const PointsVector& vertices, int i0, int i1, int i2,
-                 Eigen::Vector3d* normal);
+  static bool GetNormal(const PointsVector &vertices, int i0, int i1, int i2,
+                        Eigen::Vector3d *normal);
 
   // This method finds a juxtaposed obj file from the `resolved_filename_`
   // member. If unable to resolve an obj file it throws an exception.

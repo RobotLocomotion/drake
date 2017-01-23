@@ -261,8 +261,8 @@ string Mesh::FindFileWithObjExtension() const {
   return spath.getStr();
 }
 
-void Mesh::LoadObjFile(PointsVector* vertices,
-                       TrianglesVector* triangles, bool triangulate) const {
+void Mesh::LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
+                       TriangulatePolicy triangulate) const {
   string obj_file_name = FindFileWithObjExtension();
   ifstream file(obj_file_name);
   if (!file) {
@@ -318,13 +318,13 @@ void Mesh::LoadObjFile(PointsVector* vertices,
         indices.push_back(index);
       }
       if (indices.size() != 3) {
-        if (triangulate && indices.size() > 3) {
+        if (triangulate == TriangulatePolicy::kTry && indices.size() > 3) {
           // This is a very naive triangulation.  It simply creates a fan
           // around the 0th vertex through the loop of vertices in the polygon.
           // The fan won't necessarily produce triangles with the best aspect
           // ratio.  Furthermore, if the polygon is *not* convex, it is
-          // possible to create overlapping triangles. This would be considered
-          // a degenerate case and will be considered a failure.
+          // possible to create overlapping triangles. This is a degenerate
+          // case and an exception will be thrown.
           //
           // We detect the degenerate case by comparing the normals of adjacent
           // triangles in the fan.  The normals must be facing in the "same"
@@ -336,23 +336,24 @@ void Mesh::LoadObjFile(PointsVector* vertices,
           // The triangle consisting of (0, 1, 2) is handled below, so this
           // starts with (0, 2, 3).
           Vector3d lastNormal;
-          bool valid = getNormal(*vertices, indices[0] - 1, indices[1] - 1,
+          bool valid = GetNormal(*vertices, indices[0] - 1, indices[1] - 1,
                                  indices[2] - 1, &lastNormal);
           const int index_size = static_cast<int>(indices.size());
-          for (int i = 2; i < index_size - 1; ++i) {
-            // OBJ file indices are 1-based, subtracting 1 makes them 0-based.
+          for (int i = 2; valid && i < index_size - 1; ++i) {
+            // OBJ file indices are 1-based; subtracting 1 makes them 0-based.
             triangles->push_back(
                 Vector3i(indices[0] - 1, indices[i] - 1, indices[i + 1] - 1));
             Vector3d testNormal;
-            valid = valid && getNormal(*vertices, indices[0] - 1,
+            valid = valid && GetNormal(*vertices, indices[0] - 1,
                                        indices[i] - 1, indices[i + 1] - 1,
                                        &testNormal);
             valid = valid && lastNormal.dot(testNormal) > 1e-9;
             lastNormal = testNormal;
           }
           if (!valid) {
-            throw std::runtime_error("Unable to triangulate obj in file '" +
-                obj_file_name + ". See log for details.");
+            throw std::runtime_error("Unable to triangulate face in file '" +
+                obj_file_name + " on line " + std::to_string(line_number) +
+                ". See log for details.");
           }
           // A polygon of n vertices produces a fan of n - 2 triangles.
           // One of those is a given, so we're "adding" n - 3 triangles.
@@ -411,10 +412,10 @@ void Mesh::getBoundingBoxPoints(Matrix3Xd& bbox_points) const {
       max_pos(2);
 }
 
-bool Mesh::getNormal(const PointsVector& vertices, int i0, int i1, int i2,
-                     Eigen::Vector3d* normal) {
+bool Mesh::GetNormal(const PointsVector &vertices, int i0, int i1, int i2,
+                     Eigen::Vector3d *normal) {
   const int kNumVertex = static_cast<int>(vertices.size());
-  DRAKE_ASSERT( i0 >= 0 && i1 >= 0 && i2 >= 0);
+  DRAKE_ASSERT(i0 >= 0 && i1 >= 0 && i2 >= 0);
   if (i0 >= kNumVertex || i1 >= kNumVertex || i2 >= kNumVertex) {
     drake::log()->warn(
         "Unable to compute normal. At least one OBJ index reference: " +
@@ -431,7 +432,7 @@ bool Mesh::getNormal(const PointsVector& vertices, int i0, int i1, int i2,
   // Detects and reports a degenerate triangle.  The triangle is degenerate if
   // its area is too small.  This could be either because the edges of the
   // triangle are co-linear *or* because the triangle is ridiculously small.
-  if ( normal->norm() < 1e-9 ) {
+  if (normal->norm() < 1e-9) {
     drake::log()->warn(
         "Unable to compute normal. Triangle has zero area with OBJ indices: " +
             std::to_string(i0 + 1) + ", " + std::to_string(i1 + 1) + ", " +

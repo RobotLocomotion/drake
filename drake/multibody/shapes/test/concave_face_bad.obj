@@ -1,9 +1,9 @@
-# This objs facilitates testing the triangulation functionality of the Mesh
-# shape.  The final face needs to be triangulated.  However, creating a fan
-# from the first vertex will create overlapping triangles with reversed
-# normals.
+# This OBJ facilitates testing the triangulation functionality of the
+# DrakeShapes::Mesh class. The final face needs to be triangulated.  However,
+# creating a fan from the first vertex will create overlapping triangles with
+# reversed normals.
 #
-# The is a pyramid-like shape.  THe base of the pyramid, however, is concave.
+# The is a pyramid-like shape.  The base of the pyramid, however, is concave.
 # The fan is formed at vertex 0.  In this case, the winding of (0, 1, 2) is
 # opposite of the winding of (0, 2, 3) so the overlapping face will be
 # detected and triangulation will fail.
