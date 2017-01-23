@@ -164,7 +164,7 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
 
   // Checks that the bound variables are correct.
   for (const auto& binding : prog.bounding_box_constraints()) {
-    EXPECT_EQ(binding.GetNumElements(), 4);
+    EXPECT_EQ(binding.GetNumElements(), 4u);
     VectorDecisionVariable<4> x_expected;
     x_expected << x1(0, 0), x1(1, 0), x1(0, 1), x1(1, 1);
     for (int i = 0; i < 4; ++i) {
@@ -240,7 +240,8 @@ void VerifyAddedCost1(const MathematicalProgram& prog,
                       const std::shared_ptr<Constraint>& cost,
                       const Eigen::Ref<const Eigen::VectorXd>& x_value,
                       int num_generic_costs_expected) {
-  EXPECT_EQ(prog.generic_costs().size(), num_generic_costs_expected);
+  EXPECT_EQ(static_cast<int>(prog.generic_costs().size()),
+            num_generic_costs_expected);
   Eigen::VectorXd y, y_expected;
   prog.generic_costs().back().constraint()->Eval(x_value, y);
   cost->Eval(x_value, y_expected);
@@ -255,7 +256,8 @@ void VerifyAddedCost2(const MathematicalProgram& prog,
                       const std::shared_ptr<Constraint>& returned_cost,
                       const Eigen::Ref<const Eigen::Vector2d>& x_value,
                       int num_generic_costs_expected) {
-  EXPECT_EQ(prog.generic_costs().size(), num_generic_costs_expected);
+  EXPECT_EQ(static_cast<int>(prog.generic_costs().size()),
+            num_generic_costs_expected);
   Eigen::VectorXd y(1), y_expected(1), y_returned;
   prog.generic_costs().back().constraint()->Eval(x_value, y);
   cost.eval<double>(x_value, y_expected);
@@ -279,8 +281,9 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
   auto y = prog.NewContinuousVariables<2>("y");
   // No cost yet.
   int num_generic_costs = 0;
-  EXPECT_EQ(prog.generic_costs().size(), num_generic_costs);
-  EXPECT_EQ(prog.linear_costs().size(), 0);
+  EXPECT_EQ(static_cast<int>(prog.generic_costs().size()),
+            num_generic_costs);
+  EXPECT_EQ(prog.linear_costs().size(), 0u);
 
   std::shared_ptr<Constraint> generic_trivial_cost1 =
       std::make_shared<GenericTrivialCost1>();
@@ -414,7 +417,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
   const std::shared_ptr<BoundingBoxConstraint> constraint_ptr{
       std::dynamic_pointer_cast<BoundingBoxConstraint>(binding.constraint())};
   EXPECT_TRUE(constraint_ptr != nullptr);
-  EXPECT_EQ(constraint_ptr->num_constraints(), 1);
+  EXPECT_EQ(constraint_ptr->num_constraints(), 1u);
 
   // Check if the binding includes the correct linear constraint.
   const VectorXDecisionVariable& var_vec{binding.variables()};
@@ -466,7 +469,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
   const auto binding = prog.AddLinearConstraint(M_e, M_lb, M_ub);
   const VectorXDecisionVariable& var_vec{binding.variables()};
   const auto constraint_ptr = binding.constraint();
-  EXPECT_EQ(constraint_ptr->num_constraints(), 4);
+  EXPECT_EQ(constraint_ptr->num_constraints(), 4u);
   const auto Ax = constraint_ptr->A() * var_vec;
   const auto lb_in_ctr = constraint_ptr->lower_bound();
   const auto ub_in_ctr = constraint_ptr->upper_bound();
@@ -484,7 +487,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic4) {
   const auto& binding = prog.AddLinearConstraint(e, 2, 4);
 
   EXPECT_TRUE(prog.linear_constraints().empty());
-  EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
+  EXPECT_EQ(prog.bounding_box_constraints().size(), 1u);
   EXPECT_EQ(prog.bounding_box_constraints().back().constraint(),
             binding.constraint());
   EXPECT_EQ(prog.bounding_box_constraints().back().variables(),
@@ -505,7 +508,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic5) {
   const auto& binding = prog.AddLinearConstraint(e, 2, 4);
 
   EXPECT_TRUE(prog.linear_constraints().empty());
-  EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
+  EXPECT_EQ(prog.bounding_box_constraints().size(), 1u);
   EXPECT_EQ(prog.bounding_box_constraints().back().constraint(),
             binding.constraint());
   EXPECT_EQ(prog.bounding_box_constraints().back().variables(),
@@ -1783,7 +1786,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
   // Check if the binding includes the correct linear constraint.
   const VectorXDecisionVariable& var_vec{binding.variables()};
   const auto constraint_ptr = binding.constraint();
-  EXPECT_EQ(constraint_ptr->num_constraints(), 1);
+  EXPECT_EQ(constraint_ptr->num_constraints(), 1u);
   const symbolic::Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
   const symbolic::Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
   const symbolic::Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
