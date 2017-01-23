@@ -241,6 +241,123 @@ GTEST_TEST(testNonlinearProgram, testGloptiPolyConstrainedMinimization) {
     }
   }
 }
+
+//
+// Test that linear polynomial constraints get turned into linear constraints.
+// TODO(hongkai.dai): move this example to optimization_program_examples, add
+// the constraint in the symbolic form.
+GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
+  const Polynomiald x("x");
+  MathematicalProgram problem;
+  static const double kEpsilon = 1e-7;
+  const auto x_var = problem.NewContinuousVariables(1);
+  const std::vector<Polynomiald::VarType> var_mapping = {x.GetSimpleVariable()};
+  std::shared_ptr<Constraint> resulting_constraint =
+      problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
+                                      Vector1d::Constant(2),
+                                      Vector1d::Constant(2));
+  // Check that the resulting constraint is a LinearConstraint.
+  EXPECT_NE(dynamic_cast<LinearConstraint*>(resulting_constraint.get()),
+            nullptr);
+  // Check that it gives the correct answer as well.
+  problem.SetInitialGuessForAllVariables(drake::Vector1d(0));
+  RunNonlinearProgram(problem, [&]() {
+    EXPECT_NEAR(problem.GetSolution(x_var(0)), 2, kEpsilon);
+  });
+}
+
+// Simple test of polynomial constraints.
+// TODO(hongkai.dai): move the code to optimization_program_examples, add
+// the constraints using symbolic forms.
+GTEST_TEST(testMathematicalProgram, polynomialConstraint) {
+  static const double kInf = numeric_limits<double>::infinity();
+  // Generic constraints in nlopt require a very generous epsilon.
+  static const double kEpsilon = 1e-4;
+
+  // Given a degenerate polynomial, get the trivial solution.
+  {
+    const Polynomiald x("x");
+    MathematicalProgram problem;
+    const auto x_var = problem.NewContinuousVariables(1);
+    const std::vector<Polynomiald::VarType> var_mapping = {
+        x.GetSimpleVariable()};
+    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
+                                    Vector1d::Constant(2),
+                                    Vector1d::Constant(2));
+    problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
+    RunNonlinearProgram(problem, [&]() {
+      EXPECT_NEAR(problem.GetSolution(x_var(0)), 2, kEpsilon);
+      // TODO(ggould-tri) test this with a two-sided constraint, once
+      // the nlopt wrapper supports those.
+    });
+  }
+
+  // Given a small univariate polynomial, find a low point.
+  {
+    const Polynomiald x("x");
+    const Polynomiald poly = (x - 1) * (x - 1);
+    MathematicalProgram problem;
+    const auto x_var = problem.NewContinuousVariables(1);
+    const std::vector<Polynomiald::VarType> var_mapping = {
+        x.GetSimpleVariable()};
+    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
+                                    Eigen::VectorXd::Zero(1),
+                                    Eigen::VectorXd::Zero(1));
+    problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
+    RunNonlinearProgram(problem, [&]() {
+      EXPECT_NEAR(problem.GetSolution(x_var(0)), 1, 0.2);
+      EXPECT_LE(poly.EvaluateUnivariate(problem.GetSolution(x_var(0))),
+                kEpsilon);
+    });
+  }
+
+  // Given a small multivariate polynomial, find a low point.
+  {
+    const Polynomiald x("x");
+    const Polynomiald y("y");
+    const Polynomiald poly = (x - 1) * (x - 1) + (y + 2) * (y + 2);
+    MathematicalProgram problem;
+    const auto xy_var = problem.NewContinuousVariables(2);
+    const std::vector<Polynomiald::VarType> var_mapping = {
+        x.GetSimpleVariable(), y.GetSimpleVariable()};
+    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
+                                    Eigen::VectorXd::Zero(1),
+                                    Eigen::VectorXd::Zero(1));
+    problem.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
+    RunNonlinearProgram(problem, [&]() {
+      EXPECT_NEAR(problem.GetSolution(xy_var(0)), 1, 0.2);
+      EXPECT_NEAR(problem.GetSolution(xy_var(1)), -2, 0.2);
+      std::map<Polynomiald::VarType, double> eval_point = {
+          {x.GetSimpleVariable(), problem.GetSolution(xy_var(0))},
+          {y.GetSimpleVariable(), problem.GetSolution(xy_var(1))}};
+      EXPECT_LE(poly.EvaluateMultivariate(eval_point), kEpsilon);
+    });
+  }
+
+  // Given two polynomial constraints, satisfy both.
+  {
+    // (x^4 - x^2 + 0.2 has two minima, one at 0.5 and the other at -0.5;
+    // constrain x < 0 and EXPECT that the solver finds the negative one.)
+    const Polynomiald x("x");
+    const Polynomiald poly = x * x * x * x - x * x + 0.2;
+    MathematicalProgram problem;
+    const auto x_var = problem.NewContinuousVariables(1);
+    problem.SetInitialGuess(x_var, Vector1d::Constant(-0.1));
+    const std::vector<Polynomiald::VarType> var_mapping = {
+        x.GetSimpleVariable()};
+    VectorXPoly polynomials_vec(2, 1);
+    polynomials_vec << poly, x;
+    problem.AddPolynomialConstraint(polynomials_vec, var_mapping,
+                                    Eigen::VectorXd::Constant(2, -kInf),
+                                    Eigen::VectorXd::Zero(2));
+    RunNonlinearProgram(problem, [&]() {
+      EXPECT_NEAR(problem.GetSolution(x_var(0)), -0.7, 0.2);
+      EXPECT_LE(poly.EvaluateUnivariate(problem.GetSolution(x_var(0))),
+                kEpsilon);
+    });
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
