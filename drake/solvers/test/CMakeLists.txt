@@ -47,6 +47,7 @@ target_link_libraries(linear_complementary_problem_test drakeOptimization)
 
 drake_add_cc_test(equality_constrained_qp_solver_test)
 target_link_libraries(equality_constrained_qp_solver_test drakeOptimization drakeCommon)
+
 if(dreal_FOUND)
   drake_add_cc_test(dreal_solver_test)
   target_link_libraries(dreal_solver_test drakeOptimization)

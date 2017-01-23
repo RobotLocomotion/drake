@@ -1,3 +1,5 @@
+#pragma once
+
 #include <limits>
 #include <memory>
 
@@ -14,7 +16,7 @@ class LinearSystemExample1 {
  public:
   LinearSystemExample1();
 
-  std::shared_ptr<MathematicalProgram> prog() const { return prog_; }
+  MathematicalProgram* prog() const { return prog_.get(); }
 
   const VectorDecisionVariable<4>& x() const { return x_; }
 
@@ -25,7 +27,7 @@ class LinearSystemExample1 {
   virtual bool CheckSolution() const;
 
  private:
-  std::shared_ptr<MathematicalProgram> prog_;
+  std::unique_ptr<MathematicalProgram> prog_;
   VectorDecisionVariable<4> x_;
   Eigen::Vector4d b_;
   std::shared_ptr<LinearEqualityConstraint> con_;
@@ -88,7 +90,7 @@ class NonConvexQPproblem1 {
  public:
   NonConvexQPproblem1(CostForm cost_form, ConstraintForm constraint_form);
 
-  std::shared_ptr<MathematicalProgram> prog() const { return prog_; }
+  MathematicalProgram* prog() const { return prog_.get(); }
 
   bool CheckSolution() const;
 
@@ -99,8 +101,8 @@ class NonConvexQPproblem1 {
     static size_t numOutputs() { return 1; }
 
     template <typename ScalarType>
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     void eval(detail::VecIn<ScalarType> const& x,
+        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               detail::VecOut<ScalarType>& y) const {
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -117,7 +119,7 @@ class NonConvexQPproblem1 {
 
   void AddQuadraticCost();
 
-  std::shared_ptr<MathematicalProgram> prog_;
+  std::unique_ptr<MathematicalProgram> prog_;
   VectorDecisionVariable<5> x_;
   Eigen::Matrix<double, 5, 1> x_expected_;
 };
@@ -146,7 +148,7 @@ class NonConvexQPproblem2 {
 
   bool CheckSolution() const;
 
-  std::shared_ptr<MathematicalProgram> prog() const { return prog_; }
+  MathematicalProgram* prog() const { return prog_.get(); }
 
  private:
   class TestProblem2Cost {
@@ -155,8 +157,8 @@ class NonConvexQPproblem2 {
     static size_t numOutputs() { return 1; }
 
     template <typename ScalarType>
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     void eval(detail::VecIn<ScalarType> const& x,
+        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               detail::VecOut<ScalarType>& y) const {
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -173,7 +175,7 @@ class NonConvexQPproblem2 {
 
   void AddSymbolicConstraint();
 
-  std::shared_ptr<MathematicalProgram> prog_;
+  std::unique_ptr<MathematicalProgram> prog_;
   Eigen::Matrix<symbolic::Variable, 6, 1> x_;
   Eigen::Matrix<double, 6, 1> x_expected_;
 };
@@ -194,7 +196,7 @@ class LowerBoundedProblem {
 
   bool CheckSolution() const;
 
-  std::shared_ptr<MathematicalProgram> prog() { return prog_; }
+  MathematicalProgram* prog() { return prog_.get(); }
 
   void SetInitialGuess1();
 
@@ -207,8 +209,8 @@ class LowerBoundedProblem {
     static size_t numOutputs() { return 1; }
 
     template <typename ScalarType>
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     void eval(detail::VecIn<ScalarType> const& x,
+        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               detail::VecOut<ScalarType>& y) const {
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -258,7 +260,7 @@ class LowerBoundedProblem {
   void AddNonSymbolicConstraint();
 
  private:
-  std::shared_ptr<MathematicalProgram> prog_;
+  std::unique_ptr<MathematicalProgram> prog_;
   Eigen::Matrix<symbolic::Variable, 6, 1> x_;
   Eigen::Matrix<double, 6, 1> x_expected_;
 };
@@ -293,7 +295,7 @@ class GloptiPolyConstrainedMinimizationProblem {
   GloptiPolyConstrainedMinimizationProblem(CostForm cost_form,
                                            ConstraintForm cnstr_form);
 
-  std::shared_ptr<MathematicalProgram> prog() const { return prog_; }
+  MathematicalProgram* prog() const { return prog_.get(); }
 
   bool CheckSolution() const;
 
@@ -304,8 +306,8 @@ class GloptiPolyConstrainedMinimizationProblem {
     static size_t numOutputs() { return 1; }
 
     template <typename ScalarType>
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     void eval(detail::VecIn<ScalarType> const& x,
+        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               detail::VecOut<ScalarType>& y) const {
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -356,7 +358,7 @@ class GloptiPolyConstrainedMinimizationProblem {
   void AddSymbolicConstraint();
 
  private:
-  std::shared_ptr<MathematicalProgram> prog_;
+  std::unique_ptr<MathematicalProgram> prog_;
   VectorDecisionVariable<3> x_;
   VectorDecisionVariable<3> y_;
   Eigen::Vector3d expected_;
@@ -400,12 +402,12 @@ class MinDistanceFromPlaneToOrigin {
                                const Eigen::VectorXd& b, CostForm cost_form,
                                ConstraintForm cnstr_form);
 
-  std::shared_ptr<MathematicalProgram> prog_lorentz() const {
-    return prog_lorentz_;
+  MathematicalProgram* prog_lorentz() const {
+    return prog_lorentz_.get();
   }
 
-  std::shared_ptr<MathematicalProgram> prog_rotated_lorentz() const {
-    return prog_rotated_lorentz_;
+  MathematicalProgram* prog_rotated_lorentz() const {
+    return prog_rotated_lorentz_.get();
   }
 
   void SetInitialGuess();
@@ -418,8 +420,8 @@ class MinDistanceFromPlaneToOrigin {
 
   Eigen::MatrixXd A_;
   Eigen::VectorXd b_;
-  std::shared_ptr<MathematicalProgram> prog_lorentz_;
-  std::shared_ptr<MathematicalProgram> prog_rotated_lorentz_;
+  std::unique_ptr<MathematicalProgram> prog_lorentz_;
+  std::unique_ptr<MathematicalProgram> prog_rotated_lorentz_;
   VectorDecisionVariable<1> t_lorentz_;
   VectorXDecisionVariable x_lorentz_;
   VectorDecisionVariable<1> t_rotated_lorentz_;

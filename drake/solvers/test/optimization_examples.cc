@@ -17,7 +17,7 @@ namespace drake {
 namespace solvers {
 namespace test {
 LinearSystemExample1::LinearSystemExample1()
-    : prog_(std::make_shared<MathematicalProgram>()), x_{}, b_{}, con_{} {
+    : prog_(std::make_unique<MathematicalProgram>()), x_{}, b_{}, con_{} {
   x_ = prog_->NewContinuousVariables<4>();
   b_ = Vector4d::Random();
   con_ = prog_->AddLinearEqualityConstraint(Matrix4d::Identity(), b_, x_);
@@ -76,7 +76,7 @@ bool LinearSystemExample3::CheckSolution() const {
 
 NonConvexQPproblem1::NonConvexQPproblem1(CostForm cost_form,
                                          ConstraintForm constraint_form)
-    : prog_(std::make_shared<MathematicalProgram>()), x_{}, x_expected_{} {
+    : prog_(std::make_unique<MathematicalProgram>()), x_{}, x_expected_{} {
   x_ = prog_->NewContinuousVariables<5>("x");
   prog_->AddBoundingBoxConstraint(0, 1, x_);
   switch (cost_form) {
@@ -138,7 +138,7 @@ void NonConvexQPproblem1::AddQuadraticCost() {
 
 NonConvexQPproblem2::NonConvexQPproblem2(CostForm cost_form,
                                          ConstraintForm cnstr_form)
-    : prog_(std::make_shared<MathematicalProgram>()), x_{}, x_expected_{} {
+    : prog_(std::make_unique<MathematicalProgram>()), x_{}, x_expected_{} {
   x_ = prog_->NewContinuousVariables<6>("x");
 
   prog_->AddBoundingBoxConstraint(0, 1, x_.head<5>());
@@ -211,7 +211,7 @@ void NonConvexQPproblem2::AddSymbolicConstraint() {
 }
 
 LowerBoundedProblem::LowerBoundedProblem(ConstraintForm cnstr_form)
-    : prog_(std::make_shared<MathematicalProgram>()), x_{}, x_expected_{} {
+    : prog_(std::make_unique<MathematicalProgram>()), x_{}, x_expected_{} {
   x_ = prog_->NewContinuousVariables<6>("x");
 
   Eigen::Matrix<double, 6, 1> lb{};
@@ -284,7 +284,7 @@ void LowerBoundedProblem::AddNonSymbolicConstraint() {
 GloptiPolyConstrainedMinimizationProblem::
     GloptiPolyConstrainedMinimizationProblem(CostForm cost_form,
                                              ConstraintForm cnstr_form)
-    : prog_(std::make_shared<MathematicalProgram>()),
+    : prog_(std::make_unique<MathematicalProgram>()),
       x_{},
       y_{},
       expected_(0.5, 0, 3) {
@@ -390,8 +390,8 @@ MinDistanceFromPlaneToOrigin::MinDistanceFromPlaneToOrigin(
     ConstraintForm cnstr_form)
     : A_(A),
       b_(b),
-      prog_lorentz_(std::make_shared<MathematicalProgram>()),
-      prog_rotated_lorentz_(std::make_shared<MathematicalProgram>()),
+      prog_lorentz_(std::make_unique<MathematicalProgram>()),
+      prog_rotated_lorentz_(std::make_unique<MathematicalProgram>()),
       t_lorentz_{},
       x_lorentz_(A.cols()),
       t_rotated_lorentz_{},
