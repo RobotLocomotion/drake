@@ -93,6 +93,13 @@ new_git_repository(
     build_file = "tools/fcl.BUILD",
 )
 
+new_git_repository(
+    name = "ipopt",
+    remote = "https://github.com/RobotLocomotion/ipopt-mirror.git",
+    commit = "11649b7a063e03af38fcc59cf8cdb0694735c84c",
+    build_file = "tools/ipopt.BUILD",
+)
+
 # Necessary for buildifier.
 http_archive(
     name = "io_bazel_rules_go",
