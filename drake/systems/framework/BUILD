@@ -356,6 +356,7 @@ cc_googletest(
     deps = [
         ":diagram",
         "//drake/common",
+        "//drake/systems/framework/test_utilities:pack_value",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:gain",
