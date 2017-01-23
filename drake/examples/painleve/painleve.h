@@ -1,7 +1,9 @@
 #pragma once
 
+#include <memory>
 #include <utility>
 
+#include "drake/solvers/moby_lcp_solver.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -30,22 +32,63 @@ namespace painleve {
 ///         index 2), and planar linear velocity (state indices 3 and 4) and
 ///         scalar angular velocity (state index 5) in units of m, radians,
 ///         m/s, and rad/s, respectively. Orientation is measured counter-
-///         clockwise with respect to the x-axis.
+///         clockwise with respect to the x-axis. One abstract state variable
+///         (of type Painleve::Mode) is used to identify which dynamic mode
+///         the system is in (e.g., ballistic, contacting at one point and
+///         sliding, etc.) and one abstract state variable (of type int) is used
+///         to determine which endpoint(s) of the rod contact the halfspace
+///         (k=-1 indicates the bottom of the rod when theta = pi/2, k=+1
+///         indicates the top of the rod when theta = pi/2, and k=0 indicates
+///         both endpoints of the rod are contacting the halfspace).
 ///
-/// Outputs: same as state.
+/// Outputs: planar position (state indices 0 and 1) and orientation (state
+///          index 2), and planar linear velocity (state indices 3 and 4) and
+///          scalar angular velocity (state index 5) in units of m, radians,
+///          m/s, and rad/s, respectively.
 ///
 /// * [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
-///                    Impact. SIAM Rev., 42(1), 3-39, 2000.
+///                    Impact". SIAM Rev., 42(1), 3-39, 2000.
 template <typename T>
 class Painleve : public systems::LeafSystem<T> {
  public:
+  /// Possible dynamic modes for the Painleve Paradox rod.
+  enum Mode {
+    /// Mode is invalid.
+    kInvalid,
+
+    /// Rod is currently undergoing ballistic motion.
+    kBallisticMotion,
+
+    /// Rod is sliding while undergoing non-impacting contact at one contact
+    /// point (a rod endpoint); the other rod endpoint is not in contact.
+    kSlidingSingleContact,
+
+    /// Rod is sticking while undergoing non-impacting contact at one contact
+    /// point (a rod endpoint); the other rod endpoint is not in contact.
+    kStickingSingleContact,
+
+    /// Rod is sliding at two contact points without impact.
+    kSlidingTwoContacts,
+
+    /// Rod is sticking at two contact points without impact.
+    kStickingTwoContacts
+  };
+
+  /// Constructor for the Painleve' Paradox system using a piecewise DAE
+  /// (differential algebraic equation) based approach.
   Painleve();
+
+  /// Constructor for the Painleve' Paradox system using a time stepping
+  /// approach.
+  /// @param dt The integration step size. This step size cannot be reset
+  ///           after construction.
+  /// @throws std::logic_error if @p dt is not positive.
+  explicit Painleve(double dt);
 
   /// Models impact using an inelastic impact model with friction.
   /// @p new_state is set to the output of the impact model on return.
-  void HandleImpact(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* new_state) const;
+  void HandleImpact(const systems::Context<T>& context,
+                    systems::State<T>* new_state) const;
 
   /// Gets the acceleration (with respect to the positive y-axis) due to
   /// gravity (i.e., this number should generally be negative).
@@ -87,41 +130,57 @@ class Painleve : public systems::LeafSystem<T> {
   /// this method returns `false`.
   bool IsImpacting(const systems::Context<T>& context) const;
 
+  /// Gets the integration step size for the time stepping system.
+  /// @returns 0 if this is a DAE-based system.
+  double get_integration_step_size() const { return dt_; }
+
+  /// Determines whether this is a time stepping system.
+  bool is_time_stepping_system() const { return dt_ > 0.0; }
+
  protected:
-  void SetDefaultState(const systems::Context<T>& context,
-                       systems::State<T>* state) const override;
+  int get_k(const systems::Context<T>& context) const;
+  std::unique_ptr<systems::AbstractState> AllocateAbstractState()
+                                            const override;
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override;
-
-  void DoCalcTimeDerivatives(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const override;
+  void DoCalcTimeDerivatives(const systems::Context<T>& context,
+                             systems::ContinuousState<T>* derivatives)
+                               const override;
+  void DoCalcDiscreteVariableUpdates(const systems::Context<T>& context,
+                                     systems::DiscreteState<T>* discrete_state)
+      const override;
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override;
 
  private:
   Vector2<T> CalcStickingImpactImpulse(const systems::Context<T>& context)
     const;
   Vector2<T> CalcFConeImpactImpulse(const systems::Context<T>& context) const;
-  void CalcTimeDerivativesTwoContact(const systems::Context<T>& context,
-                                       systems::ContinuousState<T>* derivatives)
-                                         const;
-  void CalcTimeDerivativesOneContactNoSliding(
+  void CalcAccelerationsBallistic(const systems::Context<T>& context,
+                                  systems::ContinuousState<T>* derivatives)
+                                    const;
+  void CalcAccelerationsTwoContact(const systems::Context<T>& context,
+                                   systems::ContinuousState<T>* derivatives)
+                                     const;
+  void CalcAccelerationsOneContactNoSliding(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const;
-  void CalcTimeDerivativesOneContactSliding(
+  void CalcAccelerationsOneContactSliding(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const;
-  void SetVelocityDerivatives(const systems::Context<T>& context,
-                              systems::VectorBase<T>* const f,
-                              T fN, T fF, T xc, T yc) const;
+  void SetAccelerations(const systems::Context<T>& context,
+                        systems::VectorBase<T>* const f,
+                        T fN, T fF, T xc, T yc) const;
   Vector2<T> CalcStickingContactForces(
       const systems::Context<T>& context) const;
-  static std::pair<T, T> CalcRodLowerEndpoint(const T& x,
-                                              const T& y,
-                                              const int k,
-                                              const T& ctheta,
-                                              const T& stheta,
-                                              const double half_rod_len);
+  static std::pair<T, T> CalcRodEndpoint(const T& x, const T& y, const int k,
+                                         const T& ctheta, const T& stheta,
+                                         const double half_rod_len);
 
+  // Solves linear complementarity problems for time stepping.
+  solvers::MobyLCPSolver lcp_;
+
+  double dt_{0.0};          // Integration step-size for time stepping approach.
   double mass_{1.0};        // The mass of the rod.
   double rod_length_{1.0};  // The length of the rod.
   double mu_{1000.0};       // The coefficient of friction.
