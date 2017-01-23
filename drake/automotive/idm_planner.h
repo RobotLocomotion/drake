@@ -48,7 +48,6 @@ class IdmPlanner : public systems::LeafSystem<T> {
   // The output of this system is an algebraic relation of its inputs.
   bool has_any_direct_feedthrough() const override { return true; }
 
-
   std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
 
   void SetDefaultParameters(const systems::LeafContext<T>& context,

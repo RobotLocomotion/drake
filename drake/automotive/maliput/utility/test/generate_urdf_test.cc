@@ -1,6 +1,5 @@
 #include "drake/automotive/maliput/utility/generate_urdf.h"
 
-
 #include "drake/automotive/maliput/monolane/arc_lane.h"
 #include "drake/automotive/maliput/monolane/builder.h"
 #include "drake/automotive/maliput/monolane/junction.h"
@@ -23,7 +22,7 @@ namespace mono = maliput::monolane;
 
 class GenerateUrdfTest : public ::testing::Test {
  protected:
-  const std::string kJunkBasename {"junk"};
+  const std::string kJunkBasename{"junk"};
 
   void SetUp() override {
     directory_.setAsTemp();
@@ -44,13 +43,13 @@ class GenerateUrdfTest : public ::testing::Test {
 TEST_F(GenerateUrdfTest, AtLeastRunIt) {
   const double kLinearTolerance = 0.01;
   const double kAngularTolerance = 0.01 * M_PI;
-  const api::RBounds kLaneBounds {-1., 1.};
-  const api::RBounds kDriveableBounds {-2., 2.};
+  const api::RBounds kLaneBounds{-1., 1.};
+  const api::RBounds kDriveableBounds{-2., 2.};
   mono::Builder b(kLaneBounds, kDriveableBounds,
                   kLinearTolerance, kAngularTolerance);
 
-  const mono::EndpointZ kZeroZ {0., 0., 0., 0.};
-  const mono::Endpoint start {{0., 0., 0.}, kZeroZ};
+  const mono::EndpointZ kZeroZ{0., 0., 0., 0.};
+  const mono::Endpoint start{{0., 0., 0.}, kZeroZ};
   b.Connect("0", start, 10., kZeroZ);
   const std::unique_ptr<const api::RoadGeometry> dut = b.Build({"dut"});
 
