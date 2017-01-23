@@ -1448,6 +1448,19 @@ class MathematicalProgram {
   }
 
   /**
+   * Adds Lorentz cone constraint referencing potentially a subset of the
+   * decision variables.
+   * @param v An Eigen::Vector of symbolic::Expression. Constraining that
+   * \f[
+   * v_0 \ge \sqrt{v_1^2 + ... + v_{n-1}^2}
+   * \f]
+   * @return The newly constructed Lorentz cone constraint with the bounded
+   * variables.
+   */
+  Binding<LorentzConeConstraint> AddLorentzConeConstraint(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
+
+  /**
    * Adds Lorentz cone constraint referencing potentially a subset
    * of the decision variables.
    */
@@ -1590,6 +1603,22 @@ class MathematicalProgram {
    */
   void AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con,
                      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds a constraint that a symbolic expression @param v is in the rotated
+   * Lorentz cone, i.e.,
+   * \f[
+   * v_0v_1 \ge v_2^2 + ... + v_{n-1}^2\\
+   * v_0 \ge 0, v_1 \ge 0
+   * \f]
+   * @param v A linear expression of variables, \f$ v = A x + b\f$, where \f$ A,
+   * b \f$ are given matrices of the correct size, \f$ x \f$ is the vector of
+   * decision variables.
+   * @retval binding The newly added rotated Lorentz cone constraint, together
+   * with the bound variables.
+   */
+  Binding<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
 
   /**
    * Adds a rotated Lorentz cone constraint referencing potentially a subset
@@ -2343,48 +2372,6 @@ class MathematicalProgram {
 
   VectorXDecisionVariable NewVariables(VarType type, int rows,
                                        const std::vector<std::string>& names);
-
-  /** Decomposes a linear combination @p e = c0 + c1 * v1 + ... cn * vn into
-   *  the followings:
-   *
-   *     constant term      : c0
-   *     coefficient vector : [c1, ..., cn]
-   *     variable vector    : [v1, ..., vn]
-   *
-   *  Then, it returns a pair (c0, [c1, ..., cn]). A map from variable ID to
-   *  int, @p map_var_to_index, is used to decide a variable's index in a linear
-   *  combination.
-   *
-   *  \pre{1. @c coeffs is a row vector of double, whose length matches with the
-   *          size of @c map_var_to_index.
-   *       2. @c e is an addition symbolic-expression.}
-   */
-  template <typename Derived>
-  void DecomposeLinearExpression(
-      const symbolic::Expression& e,
-      const std::unordered_map<size_t, int>& map_var_to_index,
-      const Eigen::MatrixBase<Derived>& coeffs, double* constant_term) {
-    static_assert(std::is_same<typename Derived::Scalar, double>::value,
-                  "coeffs must be a matrix of double.");
-    DRAKE_DEMAND(coeffs.rows() == 1);
-    DRAKE_DEMAND(static_cast<size_t>(coeffs.cols()) == map_var_to_index.size());
-    DRAKE_ASSERT(is_addition(e));
-    *constant_term = get_constant_in_addition(e);
-    const std::map<symbolic::Expression, double>& exp_to_coeff_map{
-        get_exp_to_coeff_map_in_addition(e)};
-    for (const std::pair<symbolic::Expression, double>& p : exp_to_coeff_map) {
-      if (is_variable(p.first)) {
-        const symbolic::Variable& var{get_variable(p.first)};
-        const double coeff{p.second};
-        const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
-            0, map_var_to_index.at(var.get_id())) = coeff;
-      } else {
-        std::ostringstream oss;
-        oss << "Expression " << e << " is non-linear.";
-        throw std::runtime_error(oss.str());
-      }
-    }
-  }
 };
 }  // namespace solvers
 }  // namespace drake

@@ -198,14 +198,12 @@ class GenericTrivialCost1 : public Constraint {
         private_val_(2) {}
 
  protected:
-  void DoEval(const Ref<const Eigen::VectorXd> &x,
-              VectorXd &y) const override {
+  void DoEval(const Ref<const Eigen::VectorXd>& x, VectorXd& y) const override {
     y.resize(1);
     y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
   }
 
-  void DoEval(const Ref<const TaylorVecXd> &x,
-              TaylorVecXd &y) const override {
+  void DoEval(const Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override {
     y.resize(1);
     y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
   }
@@ -401,6 +399,257 @@ GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
     EXPECT_DOUBLE_EQ(vars_value(0), 2);
     EXPECT_DOUBLE_EQ(vars_value(1), 1);
   });
+}
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
+  // Add Linear Constraint: -10 <= x0 <= 10
+  // Note that this constraint is a bounding-box constraint which is a sub-class
+  // of linear-constraint.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  const symbolic::Expression e{x(0)};
+  const auto binding = prog.AddLinearConstraint(e, -10, 10);
+
+  // Check that the constraint in the binding is of BoundingBoxConstraint by
+  // using dynamic_pointer_cast.
+  const std::shared_ptr<BoundingBoxConstraint> constraint_ptr{
+      std::dynamic_pointer_cast<BoundingBoxConstraint>(binding.constraint())};
+  EXPECT_TRUE(constraint_ptr != nullptr);
+  EXPECT_EQ(constraint_ptr->num_constraints(), 1);
+
+  // Check if the binding includes the correct linear constraint.
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const symbolic::Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
+  const symbolic::Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
+  const symbolic::Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
+  EXPECT_TRUE((e - -10).EqualTo(Ax - lb_in_ctr));
+  EXPECT_TRUE((e - 10).EqualTo(Ax - ub_in_ctr));
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
+  // Add Linear Constraints
+  //     3 <=  3 - 5*x0 +      + 10*x2        - 7*y1        <= 9
+  //   -10 <=                       x2                      <= 10
+  //    -7 <= -5 + 2*x0 + 3*x2         + 3*y0 - 2*y1 + 6*y2 <= 12
+  //     2 <=                     2*x2                      <= 3
+  //
+  // Note: the second constraint, -10 <= x2 <= 10 is actually a bounding-box
+  // constraint but We still process the four symbolic-constraints into a
+  // single linear-constraint whose coefficient matrix is the following.
+  //
+  //         [-5 0 10 0 -7 0]
+  //         [ 0 0  1 0  0 0]
+  //         [ 2 3  0 3 -2 6]
+  //         [ 0 0  2 0  0 0]
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  Matrix<symbolic::Expression, 4, 1> M_e;
+  Vector4d M_lb;
+  Vector4d M_ub;
+
+  // clang-format off
+  M_e  <<  3 - 5 * x(0) + 10 * x(2) - 7 * y(1),
+      +x(2),
+      -5 + 2 * x(0) + 3 * x(2) + 3 * y(0) - 2 * y(1) + 6 * y(2),
+      2 * x(2);
+  M_lb <<  3,
+      -10,
+      -7,
+       2;
+  M_ub << -7,
+      10,
+      12,
+      3;
+  // clang-format on
+
+  // Check if the binding includes the correct linear constraint.
+  const auto binding = prog.AddLinearConstraint(M_e, M_lb, M_ub);
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 4);
+  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto lb_in_ctr = constraint_ptr->lower_bound();
+  const auto ub_in_ctr = constraint_ptr->upper_bound();
+
+  EXPECT_EQ(M_e - M_lb, Ax - lb_in_ctr);
+  EXPECT_EQ(M_e - M_ub, Ax - ub_in_ctr);
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic4) {
+  // Check the linear constraint 2  <= 2 * x <= 4.
+  // Note: this is a bounding box constraint
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  const symbolic::Expression e(2 * x(1));
+  const auto& binding = prog.AddLinearConstraint(e, 2, 4);
+
+  EXPECT_TRUE(prog.linear_constraints().empty());
+  EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
+  EXPECT_EQ(prog.bounding_box_constraints().back().constraint(),
+            binding.constraint());
+  EXPECT_EQ(prog.bounding_box_constraints().back().variables(),
+            binding.variables());
+  EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(1)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->lower_bound(), Vector1d(1)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->upper_bound(), Vector1d(2)));
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic5) {
+  // Check the linear constraint 2  <= -2 * x <= 4.
+  // Note: this is a bounding box constraint
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  const symbolic::Expression e(-2 * x(1));
+  const auto& binding = prog.AddLinearConstraint(e, 2, 4);
+
+  EXPECT_TRUE(prog.linear_constraints().empty());
+  EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
+  EXPECT_EQ(prog.bounding_box_constraints().back().constraint(),
+            binding.constraint());
+  EXPECT_EQ(prog.bounding_box_constraints().back().variables(),
+            binding.variables());
+  EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(1)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->lower_bound(), Vector1d(-2)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->upper_bound(), Vector1d(-1)));
+}
+
+namespace {
+void CheckParsedSymbolicLorentzConeConstraint(
+    MathematicalProgram* prog,
+    const Eigen::Ref<
+        const Eigen::Matrix<symbolic::Expression, Eigen::Dynamic, 1>>& e) {
+  const auto& binding1 = prog->AddLorentzConeConstraint(e);
+  const auto& binding2 = prog->lorentz_cone_constraints().back();
+
+  EXPECT_EQ(binding1.constraint(), binding2.constraint());
+  EXPECT_EQ(binding1.constraint()->A() * binding1.variables() +
+                binding1.constraint()->b(),
+            e);
+  EXPECT_EQ(binding2.constraint()->A() * binding2.variables() +
+                binding2.constraint()->b(),
+            e);
+}
+
+void CheckParsedSymbolicRotatedLorentzConeConstraint(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& e) {
+  const auto& binding1 = prog->AddRotatedLorentzConeConstraint(e);
+  const auto& binding2 = prog->rotated_lorentz_cone_constraints().back();
+
+  EXPECT_EQ(binding1.constraint(), binding2.constraint());
+  EXPECT_EQ(binding1.constraint()->A() * binding1.variables() +
+                binding1.constraint()->b(),
+            e);
+  EXPECT_EQ(binding2.constraint()->A() * binding2.variables() +
+                binding2.constraint()->b(),
+            e);
+}
+}  // namespace
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint1) {
+  // Add Lorentz cone constraint:
+  // x is in Lorentz cone
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  Matrix<symbolic::Expression, 3, 1> e;
+  e << 1 * x(0), 1.0 * x(1), 1.0 * x(2);
+  CheckParsedSymbolicLorentzConeConstraint(&prog, e);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint2) {
+  // Add Lorentz cone constraint:
+  // x + [1, 2, 0] is in Lorentz cone.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  Matrix<symbolic::Expression, 3, 1> e;
+  e << x(0) + 1, x(1) + 2, +x(2);
+  CheckParsedSymbolicLorentzConeConstraint(&prog, e);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint3) {
+  // Add Lorentz cone constraint:
+  // [2 * x(0) + 3 * x(2)]
+  // [  - x(0) + 2 * x(2)]    is in Lorentz cone
+  // [               x(2)]
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  Matrix<symbolic::Expression, 3, 1> e;
+  // clang-format on
+  e << 2 * x(0) + 3 * x(2), -x(0) + 2 * x(2), +x(2);
+  // clang-format off;
+  CheckParsedSymbolicLorentzConeConstraint(&prog, e);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint4) {
+  // Add Lorentz cone constraint:
+  // [ 2 * x(0) + 3 * x(1) +            5]
+  // [ 4 * x(0)            + 4 * x(2) - 7]
+  // [                                 10]
+  // [                       2 * x(2)    ]
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  Matrix<symbolic::Expression, 4, 1> e;
+  // clang-format off
+  e << 2 * x(0) + 3 * x(1) + 5,
+       4 * x(0) + 4 * x(2) - 7,
+       10,
+       2 * x(2);
+
+  // clang-format on
+  CheckParsedSymbolicLorentzConeConstraint(&prog, e);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint1) {
+  // Add rotated Lorentz cone constraint:
+  // x is in the rotated Lorentz cone constraint.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  Matrix<symbolic::Expression, 3, 1> e;
+  e << +x(0), +x(1), +x(2);
+  CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint2) {
+  // Add rotated Lorentz cone constraint:
+  // [x(0) + 2 * x(2)]
+  // [x(0)           ] is in the rotated Lorentz cone
+  // [           x(2)]
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  Matrix<symbolic::Expression, 3, 1> e;
+  e << x(0) + 2 * x(2), +x(0), +x(2);
+  CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint3) {
+  // Add rotated Lorentz cone constraint:
+  // [x(0) + 1]
+  // [x(1) + 2] is in the rotated Lorentz cone
+  // [x(2)    ]
+  // [x(3) - 1]
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<4>("x");
+  Matrix<symbolic::Expression, 4, 1> e;
+  e << x(0) + 1, x(1) + 2, +x(2), x(3) - 1;
+  CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint4) {
+  // Add rotated Lorentz cone constraint:
+  // [2 * x(0) + 3 * x(2) + 3]
+  // [    x(0) - 4 * x(2)    ] is in the rotated Lorentz cone
+  // [           2 * x(2)    ]
+  // [3 * x(0)            + 1]
+  // [                      4]
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<4>("x");
+  Matrix<symbolic::Expression, 5, 1> e;
+  e << 2 * x(0) + 3 * x(2) + 3, x(0) - 4 * x(2), 2 * x(2), 3 * x(0) + 1, 4;
+  CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
 }
 
 // Tests a quadratic optimization problem, with only quadratic cost
@@ -768,12 +1017,12 @@ class LowerBoundTestConstraint : public Constraint {
 
  protected:
   // for just these two types, implementing this locally is almost cleaner...
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override {
     EvalImpl(x, y);
   }
-  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
-              TaylorVecXd &y) const override {
+  void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
+              TaylorVecXd& y) const override {
     EvalImpl(x, y);
   }
 
@@ -947,18 +1196,17 @@ class GloptipolyConstrainedExampleConstraint
                            // constraint without going through drake::Function
  public:
   GloptipolyConstrainedExampleConstraint()
-      : Constraint(
-            1, 3, Vector1d::Constant(0),
-            Vector1d::Constant(numeric_limits<double>::infinity())) {}
+      : Constraint(1, 3, Vector1d::Constant(0),
+                   Vector1d::Constant(numeric_limits<double>::infinity())) {}
 
  protected:
   // for just these two types, implementing this locally is almost cleaner...
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override {
     EvalImpl(x, y);
   }
-  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
-              TaylorVecXd &y) const override {
+  void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
+              TaylorVecXd& y) const override {
     EvalImpl(x, y);
   }
 
@@ -1541,76 +1789,6 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
   const symbolic::Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
   EXPECT_TRUE((e - lb).EqualTo(Ax - lb_in_ctr));
   EXPECT_TRUE((e - ub).EqualTo(Ax - ub_in_ctr));
-}
-
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
-  // Add Linear Constraint: -10 <= x0 <= 10
-  // Note that this constraint is a bounding-box constraint which is a sub-class
-  // of linear-constraint.
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables(3, "x");
-  const symbolic::Expression e{x(0)};
-  const auto binding = prog.AddLinearConstraint(e, -10, 10);
-
-  // Check that the constraint in the binding is of BoundingBoxConstraint by
-  // using dynamic_pointer_cast.
-  const std::shared_ptr<BoundingBoxConstraint> constraint_ptr{
-      std::dynamic_pointer_cast<BoundingBoxConstraint>(binding.constraint())};
-  EXPECT_TRUE(constraint_ptr != nullptr);
-  EXPECT_EQ(constraint_ptr->num_constraints(), 1);
-
-  // Check if the binding includes the correct linear constraint.
-  const VectorXDecisionVariable& var_vec{binding.variables()};
-  const symbolic::Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
-  const symbolic::Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
-  const symbolic::Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
-  EXPECT_TRUE((e - -10).EqualTo(Ax - lb_in_ctr));
-  EXPECT_TRUE((e - 10).EqualTo(Ax - ub_in_ctr));
-}
-
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
-  // Add Linear Constraints
-  //     3 <=  3 - 5*x0 +      + 10*x2        - 7*y1        <= 9
-  //   -10 <=                       x2                      <= 10
-  //    -7 <= -5 + 2*x0 + 3*x2         + 3*y0 - 2*y1 + 6*y2 <= 12
-  //
-  // Note: the second constraint, -10 <= x2 <= 10 is actually a bounding-box
-  // constraint but We still process the three symbolic-constraints into a
-  // single linear-constraint whose coefficient matrix is the following.
-  //
-  //         [-5 0 10 0 -7 0]
-  //         [ 0 0  1 0  0 0]
-  //         [ 2 3  0 3 -2 6]
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables(3, "x");
-  auto y = prog.NewContinuousVariables(3, "y");
-  Matrix<symbolic::Expression, 3, 1> M_e;
-  Vector3d M_lb;
-  Vector3d M_ub;
-
-  // clang-format off
-  M_e  <<  3 - 5 * x(0) + 10 * x(2) - 7 * y(1),
-          +x(2),
-          -5 + 2 * x(0) + 3 * x(2) + 3 * y(0) - 2 * y(1) + 6 * y(2);
-  M_lb <<  3,
-         -10,
-           7;
-  M_ub << -7,
-          10,
-          12;
-  // clang-format on
-
-  // Check if the binding includes the correct linear constraint.
-  const auto binding = prog.AddLinearConstraint(M_e, M_lb, M_ub);
-  const VectorXDecisionVariable& var_vec{binding.variables()};
-  const auto constraint_ptr = binding.constraint();
-  EXPECT_EQ(constraint_ptr->num_constraints(), 3);
-  const auto Ax = constraint_ptr->A() * var_vec;
-  const auto lb_in_ctr = constraint_ptr->lower_bound();
-  const auto ub_in_ctr = constraint_ptr->upper_bound();
-
-  EXPECT_EQ(M_e - M_lb, Ax - lb_in_ctr);
-  EXPECT_EQ(M_e - M_ub, Ax - ub_in_ctr);
 }
 
 }  // namespace

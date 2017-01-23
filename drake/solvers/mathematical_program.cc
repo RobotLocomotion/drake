@@ -25,11 +25,15 @@ namespace solvers {
 
 using std::map;
 using std::ostringstream;
+using std::pair;
 using std::runtime_error;
 using std::shared_ptr;
 using std::string;
 using std::unordered_map;
 using std::vector;
+
+using symbolic::Variable;
+using symbolic::Expression;
 
 namespace {
 
@@ -65,7 +69,6 @@ AttributesSet kGenericSolverCapabilities =
 bool is_satisfied(AttributesSet required, AttributesSet available) {
   return ((required & ~available) == kNoCapabilities);
 }
-
 }  // anon namespace
 
 enum {
@@ -262,21 +265,22 @@ void MathematicalProgram::AddConstraint(const Binding<Constraint>& binding) {
 }
 
 namespace {
+
 class SymbolicError : public runtime_error {
  public:
-  SymbolicError(const symbolic::Expression& e, const string& msg)
+  SymbolicError(const Expression& e, const string& msg)
       : runtime_error{make_string(e, msg)} {}
-  SymbolicError(const symbolic::Expression& e, const double lb, const double ub,
+  SymbolicError(const Expression& e, const double lb, const double ub,
                 const string& msg)
       : runtime_error{make_string(e, lb, ub, msg)} {}
 
  private:
-  static string make_string(const symbolic::Expression& e, const string& msg) {
+  static string make_string(const Expression& e, const string& msg) {
     ostringstream oss;
     oss << "Constraint " << e << " is " << msg << ".";
     return oss.str();
   }
-  static string make_string(const symbolic::Expression& e, const double lb,
+  static string make_string(const Expression& e, const double lb,
                             const double ub, const string& msg) {
     ostringstream oss;
     oss << "Constraint " << lb << " <= " << e << " <= " << ub << " is " << msg
@@ -284,17 +288,135 @@ class SymbolicError : public runtime_error {
     return oss.str();
   }
 };
+
+/** Decomposes a linear combination @p e = c0 + c1 * v1 + ... cn * vn into
+   *  the followings:
+   *
+   *     constant term      : c0
+   *     coefficient vector : [c1, ..., cn]
+   *     variable vector    : [v1, ..., vn]
+   *
+   *  Then, it returns a pair (c0, [c1, ..., cn]). A map from variable ID to
+   *  int, @p map_var_to_index, is used to decide a variable's index in a linear
+   *  combination.
+   *
+   *  \pre{1. @c coeffs is a row vector of double, whose length matches with the
+   *          size of @c map_var_to_index.
+   *       2. @c e is an addition symbolic-expression.}
+   * @tparam Derived An Eigen row vector of doubles.
+   * @param[in] e The symbolic linear expression
+   * @param[in] map_var_to_index A mapping from variable ID to variable index,
+   * such that map_var_to_index[vi.get_ID()] = i.
+   * @param[out] coeffs A row vector. coeffs(i) = ci.
+   * @param[out] constant_term c0 in the equation above.
+   */
+template <typename Derived>
+void DecomposeLinearExpression(
+    const Expression& e,
+    const std::unordered_map<size_t, int>& map_var_to_index,
+    const Eigen::MatrixBase<Derived>& coeffs, double* constant_term) {
+  static_assert(std::is_same<typename Derived::Scalar, double>::value,
+                "coeffs must be a matrix of double.");
+  DRAKE_DEMAND(coeffs.rows() == 1);
+  DRAKE_DEMAND(static_cast<size_t>(coeffs.cols()) == map_var_to_index.size());
+  DRAKE_ASSERT(is_addition(e));
+  *constant_term = get_constant_in_addition(e);
+  const std::map<Expression, double>& exp_to_coeff_map{
+      get_exp_to_coeff_map_in_addition(e)};
+  for (const pair<Expression, double>& p : exp_to_coeff_map) {
+    if (is_variable(p.first)) {
+      const symbolic::Variable& var{get_variable(p.first)};
+      const double coeff{p.second};
+      const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
+          0, map_var_to_index.at(var.get_id())) = coeff;
+    } else {
+      std::ostringstream oss;
+      oss << "Expression " << e << " is non-linear.";
+      throw std::runtime_error(oss.str());
+    }
+  }
+}
+
+/**
+ * Given a vector of linear expressions v, decompose it to
+ * \f$ v = A vars + b \f$
+ * @param[in] v A vector of linear expressions
+ * @param[out] A The matrix containing the linear coefficients.
+ * @param[out] b The vector containing all the constant terms.
+ * @param[out] vars All variables.
+ */
+void DecomposeLinearExpression(
+    const Eigen::Ref<const VectorX<Expression>>& v,
+    Eigen::MatrixXd* A, Eigen::VectorXd* b, VectorXDecisionVariable* vars) {
+  // 0. Setup map_var_to_index and var_vec.
+  unordered_map<size_t, int> map_var_to_index;
+  vector<symbolic::Variable> var_vec;
+  int idx{0};
+  for (int i{0}; i < v.size(); ++i) {
+    for (const symbolic::Variable& var : v(i).GetVariables()) {
+      if (map_var_to_index.find(var.get_id()) == map_var_to_index.end()) {
+        map_var_to_index.emplace(var.get_id(), idx++);
+        var_vec.push_back(var);
+      }
+    }
+  }
+
+  // 1. Construct vars using var_vec.
+  vars->resize(var_vec.size());
+  for (int i{0}; i < vars->size(); ++i) {
+    (*vars)(i) = var_vec[i];
+  }
+
+  // 2. Construct decompose v as
+  // v = A * vars + b
+  *A = Eigen::MatrixXd::Zero(v.rows(), vars->rows());
+  *b = Eigen::VectorXd::Zero(v.rows());
+  for (int i{0}; i < v.size(); ++i) {
+    const Expression& e_i{v(i)};
+    if (is_addition(e_i)) {
+      DecomposeLinearExpression(e_i, map_var_to_index, A->row(i),
+                                b->data() + i);
+    } else if (is_multiplication(e_i)) {
+      const double c = get_constant_in_multiplication(e_i);
+      const std::map<Expression, Expression>&
+          map_base_to_exponent = get_base_to_exp_map_in_multiplication(e_i);
+      if (map_base_to_exponent.size() == 1) {
+        for (const pair<Expression, Expression>& p :
+            map_base_to_exponent) {
+          if (!is_variable(p.first) || !is_one(p.second)) {
+            throw SymbolicError(e_i, "is non-linear");
+          } else {
+            const symbolic::Variable& var_i = get_variable(p.first);
+            (*A)(i, map_var_to_index[var_i.get_id()]) = c;
+          }
+        }
+      } else {
+        // There is more than one base, like x^2*y^3
+        throw SymbolicError(e_i, "is non-linear");
+      }
+    } else if (is_variable(e_i)) {
+      // i-th row is var_i
+      const symbolic::Variable& var_i{get_variable(e_i)};
+      (*A)(i, map_var_to_index[var_i.get_id()]) = 1;
+      (*b)(i) = 0;
+    } else if (is_constant(e_i)) {
+      (*b)(i) = get_constant_value(e_i);
+    } else {
+      throw SymbolicError(e_i, "is non-linear");
+    }
+  }
+}
 }  // anonymous namespace
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
-    const symbolic::Expression& e, const double lb, const double ub) {
-  return AddLinearConstraint(drake::Vector1<symbolic::Expression>(e),
+    const Expression& e, const double lb, const double ub) {
+  return AddLinearConstraint(drake::Vector1<Expression>(e),
                              drake::Vector1<double>(lb),
                              drake::Vector1<double>(ub));
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
-    const Eigen::Ref<const drake::VectorX<symbolic::Expression>>& v,
+    const Eigen::Ref<const drake::VectorX<Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub) {
   DRAKE_ASSERT(v.rows() == lb.rows() && v.rows() == ub.rows());
@@ -323,7 +445,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
   Eigen::VectorXd new_lb{v.size()};
   Eigen::VectorXd new_ub{v.size()};
   for (int i{0}; i < v.size(); ++i) {
-    const symbolic::Expression& e_i{v(i)};
+    const Expression& e_i{v(i)};
     const double lb_i{lb(i)};
     const double ub_i{ub(i)};
     if (is_addition(e_i)) {
@@ -332,9 +454,45 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
                                 &constant_term);
       new_lb(i) = lb(i) - constant_term;
       new_ub(i) = ub(i) - constant_term;
+    } else if (is_multiplication(e_i)) {
+      // i-th constraint should be lb <= c * var_i <= ub, where c is a constant.
+      const double c = get_constant_in_multiplication(e_i);
+      const std::map<Expression, Expression>&
+          map_base_to_exponent = get_base_to_exp_map_in_multiplication(e_i);
+      if (map_base_to_exponent.size() == 1) {
+        for (const pair<Expression, Expression>& p :
+             map_base_to_exponent) {
+          if (!is_variable(p.first) || !is_one(p.second)) {
+            throw SymbolicError(
+                e_i, "non-linear but called with AddLinearConstraint");
+          } else {
+            const Variable& var_i = get_variable(p.first);
+            if (v.size() == 1) {
+              // Add a bounding box constraint lb/c <= v <= ub/c
+              if (c > 0) {
+                new_lb(i) = lb(i) / c;
+                new_ub(i) = ub(i) / c;
+              } else {
+                new_lb(i) = ub(i) / c;
+                new_ub(i) = lb(i) / c;
+              }
+              return Binding<BoundingBoxConstraint>(
+                  AddBoundingBoxConstraint(new_lb(i), new_ub(i), var_i), vars);
+            } else {
+              A(i, map_var_to_index[var_i.get_id()]) = c;
+              new_lb(i) = lb(i);
+              new_ub(i) = ub(i);
+            }
+          }
+        }
+      } else {
+        // There is more than one base, like x^2*y^3
+        throw SymbolicError(e_i,
+                            "non-linear but called with AddLinearConstraint");
+      }
     } else if (is_variable(e_i)) {
       // i-th constraint is lb <= var_i <= ub
-      const symbolic::Variable& var_i{get_variable(e_i)};
+      const Variable& var_i{get_variable(e_i)};
       if (v.size() == 1) {
         // If this is the only constraint, we call AddBoundingBoxConstraint.
         return Binding<BoundingBoxConstraint>{
@@ -436,8 +594,19 @@ void MathematicalProgram::AddConstraint(
 void MathematicalProgram::AddConstraint(
     const Binding<LorentzConeConstraint>& binding) {
   required_capabilities_ |= kLorentzConeConstraint;
-  DRAKE_ASSERT(binding.GetNumElements() >= 2);
   lorentz_cone_constraint_.push_back(binding);
+}
+
+Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
+    const Eigen::Ref<const VectorX<Expression>>& v) {
+  DRAKE_DEMAND(v.rows() >= 2);
+  Eigen::MatrixXd A{};
+  Eigen::VectorXd b(v.size());
+  VectorXDecisionVariable vars{};
+  DecomposeLinearExpression(v, &A, &b, &vars);
+  DRAKE_DEMAND(vars.rows() >= 1);
+  return Binding<LorentzConeConstraint>(AddLorentzConeConstraint(A, b, vars),
+                                        vars);
 }
 
 void MathematicalProgram::AddConstraint(
@@ -460,7 +629,6 @@ MathematicalProgram::AddLorentzConeConstraint(
 void MathematicalProgram::AddConstraint(
     const Binding<RotatedLorentzConeConstraint>& binding) {
   required_capabilities_ |= kRotatedLorentzConeConstraint;
-  DRAKE_ASSERT(binding.GetNumElements() >= 3);
   rotated_lorentz_cone_constraint_.push_back(binding);
 }
 
@@ -468,6 +636,19 @@ void MathematicalProgram::AddConstraint(
     std::shared_ptr<RotatedLorentzConeConstraint> con,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   AddConstraint(Binding<RotatedLorentzConeConstraint>(con, vars));
+}
+
+Binding<RotatedLorentzConeConstraint>
+MathematicalProgram::AddRotatedLorentzConeConstraint(
+    const Eigen::Ref<const VectorX<Expression>>& v) {
+  DRAKE_DEMAND(v.rows() >= 3);
+  Eigen::MatrixXd A{};
+  Eigen::VectorXd b(v.size());
+  VectorXDecisionVariable vars{};
+  DecomposeLinearExpression(v, &A, &b, &vars);
+  DRAKE_DEMAND(vars.rows() >= 1);
+  return Binding<RotatedLorentzConeConstraint>(
+      AddRotatedLorentzConeConstraint(A, b, vars), vars);
 }
 
 std::shared_ptr<RotatedLorentzConeConstraint>
@@ -646,18 +827,18 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
 }
 
 size_t MathematicalProgram::FindDecisionVariableIndex(
-    const symbolic::Variable& var) const {
+    const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
   DRAKE_ASSERT(it != decision_variable_index_.end());
   return it->second;
 }
 
 MathematicalProgram::VarType MathematicalProgram::DecisionVariableType(
-    const symbolic::Variable& var) const {
+    const Variable& var) const {
   return decision_variable_type_[FindDecisionVariableIndex(var)];
 }
 
-double MathematicalProgram::GetSolution(const symbolic::Variable& var) const {
+double MathematicalProgram::GetSolution(const Variable& var) const {
   return x_values_[FindDecisionVariableIndex(var)];
 }
 
@@ -676,7 +857,7 @@ void MathematicalProgram::SetDecisionVariableValues(
 }
 
 void MathematicalProgram::SetDecisionVariableValue(
-    const symbolic::Variable& var, double value) {
+    const Variable& var, double value) {
   x_values_[FindDecisionVariableIndex(var)] = value;
 }
 
