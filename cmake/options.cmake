@@ -54,12 +54,20 @@ endfunction()
 # Arguments:
 #   OPTIONAL - Dependency is not required.
 #
+#   PREFER_SYSTEM_VERSION
+#     Default to using the system version of the dependency rather than the
+#     internal version.
+#
 #   REQUIRES <package>
 #     Name of package (as passed to `find_package`) that must be found if the
 #     system version is selected.
 #
 #   VERSION <version>
 #     Required version of the system package (passed to `find_package`).
+#
+#   ADDITIONAL_VERSIONS <version>
+#     Versions of the system package to be accepted in addition to the named
+#     VERSION.
 #
 #   DEPENDS <expression>
 #     A list of expressions which must evaluate to true for the component to
