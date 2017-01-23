@@ -39,6 +39,23 @@ Painleve<T>::Painleve(double dt) : dt_(dt) {
   this->DeclareOutputPort(systems::kVectorValued, 6);
 }
 
+/// Gets the integer variable 'k' used to determine the point of contact
+/// indicated by the current mode.
+/// @throws std::logic_error if this is a time-stepping system (implying that
+///         modes are unused).
+/// @returns the value -1 to indicate the bottom of the rod (when theta = pi/2),
+///          +1 to indicate the top of the rod (when theta = pi/2), or 0 to
+///          indicate the mode where both endpoints of the rod are contacting
+///          the halfspace.
+template <class T>
+int Painleve<T>::get_k(const systems::Context<T>& context) const {
+  if (is_time_stepping_system())
+    throw std::logic_error("'k' is not valid for time stepping systems.");
+  const int k = context.template get_abstract_state<int>(1);
+  DRAKE_DEMAND(std::abs(k) <= 1);
+  return k;
+}
+
 // Utility method for determining the lower rod endpoint.
 template <class T>
 std::pair<T, T> Painleve<T>::CalcRodLowerEndpoint(const T& x,
@@ -78,11 +95,11 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
 
   // Get the necessary state variables.
   const systems::BasicVector<T>& state = *context.get_discrete_state(0);
-  const Vector3<T> q = state.get_value().segment(0, 3);
-  Vector3<T> v = state.get_value().segment(3, 3);
-  const T x = q(0);
-  const T y = q(1);
-  const T theta = q(2);
+  const auto& q = state.get_value().template segment<3>(0);
+  Vector3<T> v = state.get_value().template segment<3>(3);
+  const T& x = q(0);
+  const T& y = q(1);
+  const T& theta = q(2);
 
   // Compute the two rod vertical endpoint locations.
   const T stheta = sin(theta);
@@ -130,7 +147,7 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
 
   // Update the generalized velocity vector with discretized external forces
   // (expressed in Frame A).
-  v(1) += dt_*get_gravitational_acceleration();
+  v(1) += dt_ * get_gravitational_acceleration();
 
   // Set up the contact normal and tangent (friction) direction Jacobian
   // matrices. These take the form:
@@ -230,7 +247,7 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
 
   // This method is only used for piecewise DAE integration. The time
   // stepping method implicitly incorporates impact into its model.
-  DRAKE_DEMAND(dt_ == 0);
+  DRAKE_DEMAND(!is_time_stepping_system());
 
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
@@ -498,9 +515,9 @@ Vector2<T> Painleve<T>::CalcStickingImpactImpulse(
 
 // Sets the velocity derivatives for the rod, given contact forces.
 template <class T>
-void Painleve<T>::SetVelocityDerivatives(const systems::Context<T>& context,
-                                         systems::VectorBase<T>* const f,
-                                         T fN, T fF, T cx, T cy) const {
+void Painleve<T>::SetAccelerations(const systems::Context<T>& context,
+                                   systems::VectorBase<T>* const f,
+                                   T fN, T fF, T cx, T cy) const {
   using std::abs;
 
   // Get necessary state variables.
@@ -524,7 +541,7 @@ void Painleve<T>::SetVelocityDerivatives(const systems::Context<T>& context,
   const double r = rod_length_;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const int k = context.template get_abstract_state<int>(1);
+  const int k = get_k(context);
 
   // Verify that the vertical acceleration at the point of contact is zero
   // (i.e., cyddot = 0).
@@ -584,7 +601,7 @@ Vector2<T> Painleve<T>::CalcStickingContactForces(
   // Precompute quantities that will be used repeatedly.
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const int k = context.template get_abstract_state<int>(1);
+  const int k = get_k(context);
 
   // Set named Mathematica constants.
   const double mass = mass_;
@@ -614,10 +631,10 @@ Vector2<T> Painleve<T>::CalcStickingContactForces(
   return Vector2<T>(fN, fF);
 }
 
-// Computes the time derivatives for the case of the rod contacting the
-// surface at exactly one point and with sliding velocity.
+// Computes the accelerations of the rod center of mass for the case of the rod
+// contacting the surface at exactly one point and with sliding velocity.
 template <class T>
-void Painleve<T>::CalcTimeDerivativesOneContactSliding(
+void Painleve<T>::CalcAccelerationsOneContactSliding(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   using std::abs;
@@ -643,7 +660,7 @@ void Painleve<T>::CalcTimeDerivativesOneContactSliding(
   const double half_rod_length = rod_length_ / 2;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const int k = context.template get_abstract_state<int>(1);
+  const int k = get_k(context);
 
   // Determine the point of contact (cx, cy).
   const std::pair<T, T> c = CalcRodLowerEndpoint(x, y, k, ctheta, stheta,
@@ -719,10 +736,10 @@ void Painleve<T>::CalcTimeDerivativesOneContactSliding(
   DRAKE_DEMAND(abs(cyddot) < std::numeric_limits<double>::epsilon() * 10);
 }
 
-// Computes the time derivatives for the case of the rod contacting the
-// surface at exactly one point and without any sliding velocity.
+// Computes the accelerations of the rod center of mass for the case of the rod
+// contacting the surface at exactly one point and without any sliding velocity.
 template <class T>
-void Painleve<T>::CalcTimeDerivativesOneContactNoSliding(
+void Painleve<T>::CalcAccelerationsOneContactNoSliding(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   using std::abs;
@@ -738,7 +755,7 @@ void Painleve<T>::CalcTimeDerivativesOneContactNoSliding(
   const T& thetadot = context.get_continuous_state_vector().GetAtIndex(5);
 
   // Get the contact point.
-  const int k = context.template get_abstract_state<int>(1);
+  const int k = get_k(context);
   const double half_rod_length = rod_length_ / 2;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
@@ -803,20 +820,20 @@ void Painleve<T>::CalcTimeDerivativesOneContactNoSliding(
 
     // Pick the one that is smaller in magnitude.
     if (abs(cxddot1) < abs(cxddot2)) {
-      SetVelocityDerivatives(context, f, fN1, fF1, cx, cy);
+      SetAccelerations(context, f, fN1, fF1, cx, cy);
     } else {
-      SetVelocityDerivatives(context, f, fN2, fF2, cx, cy);
+      SetAccelerations(context, f, fN2, fF2, cx, cy);
     }
   } else {
     // Friction force is within the friction cone.
-    SetVelocityDerivatives(context, f, fN, fF, cx, cy);
+    SetAccelerations(context, f, fN, fF, cx, cy);
   }
 }
 
-// Computes the time derivatives for the case of the rod contacting the
-// surface at more than one point.
+// Computes the accelerations of the rod center of mass for the case of the rod
+// contacting the surface at more than one point.
 template <class T>
-void Painleve<T>::CalcTimeDerivativesTwoContact(
+void Painleve<T>::CalcAccelerationsTwoContact(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   using std::abs;
@@ -875,9 +892,10 @@ bool Painleve<T>::IsImpacting(const systems::Context<T>& context) const {
   return (cydot < -std::numeric_limits<double>::epsilon());
 }
 
-// Computes the rod accelerations for the case of ballistic motion.
+// Computes the accelerations of the rod center of mass for the case of
+// ballistic motion.
 template <typename T>
-void Painleve<T>::CalcTimeDerivativesBallistic(
+void Painleve<T>::CalcAccelerationsBallistic(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   // Obtain the structure we need to write into.
@@ -901,7 +919,7 @@ void Painleve<T>::DoCalcTimeDerivatives(
 
   // Don't compute any derivatives if this is the time stepping system.
   DRAKE_ASSERT(derivatives->size() == 0);
-  if (dt_ > 0)
+  if (is_time_stepping_system())
     return;
 
   // Get the necessary parts of the state.
@@ -925,15 +943,15 @@ void Painleve<T>::DoCalcTimeDerivatives(
   // Call the proper derivative function (depending on mode type).
   switch (mode) {
     case kBallisticMotion:
-      return CalcTimeDerivativesBallistic(context, derivatives);
+      return CalcAccelerationsBallistic(context, derivatives);
     case kSlidingSingleContact:
-      return CalcTimeDerivativesOneContactSliding(context, derivatives);
+      return CalcAccelerationsOneContactSliding(context, derivatives);
     case kStickingSingleContact:
-      return CalcTimeDerivativesOneContactNoSliding(context, derivatives);
+      return CalcAccelerationsOneContactNoSliding(context, derivatives);
     case kSlidingTwoContacts:
-      return CalcTimeDerivativesTwoContact(context, derivatives);
+      return CalcAccelerationsTwoContact(context, derivatives);
     case kStickingTwoContacts:
-      return CalcTimeDerivativesTwoContact(context, derivatives);
+      return CalcAccelerationsTwoContact(context, derivatives);
 
     default:
       DRAKE_ABORT();
@@ -944,8 +962,8 @@ void Painleve<T>::DoCalcTimeDerivatives(
 template <typename T>
 std::unique_ptr<systems::AbstractState> Painleve<T>::
   AllocateAbstractState() const {
-  if (dt_ == 0) {
-    // Piecewise DAE approach needs two  abstract variables (one mode and one
+  if (!is_time_stepping_system()) {
+    // Piecewise DAE approach needs two abstract variables (one mode and one
     // contact point indicator).
     std::vector<std::unique_ptr<systems::AbstractValue>> abstract_data;
     abstract_data.push_back(
@@ -973,7 +991,7 @@ void Painleve<T>::SetDefaultState(const systems::Context<T>& context,
   VectorX<T> x0(6);
   const double r22 = sqrt(2) / 2;
   x0 << half_len * r22, half_len * r22, M_PI / 4.0, -1, 0, 0;  // Initial state.
-  if (dt_ == 0) {
+  if (!is_time_stepping_system()) {
     // DAE mode.
     state->get_mutable_continuous_state()->SetFromVector(x0);
 

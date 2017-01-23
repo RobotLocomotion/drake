@@ -47,7 +47,7 @@ namespace painleve {
 ///          m/s, and rad/s, respectively.
 ///
 /// * [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
-///                    Impact. SIAM Rev., 42(1), 3-39, 2000.
+///                    Impact". SIAM Rev., 42(1), 3-39, 2000.
 template <typename T>
 class Painleve : public systems::LeafSystem<T> {
  public:
@@ -134,7 +134,11 @@ class Painleve : public systems::LeafSystem<T> {
   /// @returns 0 if this is a DAE-based system.
   double get_integration_step_size() const { return dt_; }
 
+  /// Determines whether this is a time stepping system.
+  bool is_time_stepping_system() const { return dt_ > 0.0; }
+
  protected:
+  int get_k(const systems::Context<T>& context) const;
   std::unique_ptr<systems::AbstractState> AllocateAbstractState()
                                             const override;
   void DoCalcOutput(const systems::Context<T>& context,
@@ -152,21 +156,21 @@ class Painleve : public systems::LeafSystem<T> {
   Vector2<T> CalcStickingImpactImpulse(const systems::Context<T>& context)
     const;
   Vector2<T> CalcFConeImpactImpulse(const systems::Context<T>& context) const;
-  void CalcTimeDerivativesBallistic(const systems::Context<T>& context,
-                                       systems::ContinuousState<T>* derivatives)
-                                         const;
-  void CalcTimeDerivativesTwoContact(const systems::Context<T>& context,
-                                       systems::ContinuousState<T>* derivatives)
-                                         const;
-  void CalcTimeDerivativesOneContactNoSliding(
+  void CalcAccelerationsBallistic(const systems::Context<T>& context,
+                                  systems::ContinuousState<T>* derivatives)
+                                    const;
+  void CalcAccelerationsTwoContact(const systems::Context<T>& context,
+                                   systems::ContinuousState<T>* derivatives)
+                                     const;
+  void CalcAccelerationsOneContactNoSliding(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const;
-  void CalcTimeDerivativesOneContactSliding(
+  void CalcAccelerationsOneContactSliding(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const;
-  void SetVelocityDerivatives(const systems::Context<T>& context,
-                              systems::VectorBase<T>* const f,
-                              T fN, T fF, T xc, T yc) const;
+  void SetAccelerations(const systems::Context<T>& context,
+                        systems::VectorBase<T>* const f,
+                        T fN, T fF, T xc, T yc) const;
   Vector2<T> CalcStickingContactForces(
       const systems::Context<T>& context) const;
   static std::pair<T, T> CalcRodLowerEndpoint(const T& x,
