@@ -6,13 +6,13 @@
 #include <utility>
 #include <vector>
 
-constexpr int kMaxNumCollisionFilterGroups = 128;
-
 // forward declaration
 template <typename U>
 class RigidBody;
 
 namespace DrakeCollision {
+/** The maximum width of the collision filter group bitmasks. */
+constexpr int kMaxNumCollisionFilterGroups = 128;
 
 typedef std::bitset<kMaxNumCollisionFilterGroups> bitmask;
 
