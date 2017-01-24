@@ -617,7 +617,7 @@ class PainleveTimeSteppingTest : public ::testing::Test {
   std::unique_ptr<ContinuousState<double>> derivatives_;
 };
 
-/// Verify that Painleve Paradox system eventually goes to rest using the 
+/// Verify that Painleve Paradox system eventually goes to rest using the
 /// first-order time stepping approach (this tests expected meta behavior).
 TEST_F(PainleveTimeSteppingTest, RodGoesToRest) {
   // Set the initial state to an inconsistent configuration.

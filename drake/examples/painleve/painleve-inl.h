@@ -56,7 +56,7 @@ int Painleve<T>::get_k(const systems::Context<T>& context) const {
   return k;
 }
 
-// Utility method for determining the rod endpoint, given the endpoint 
+// Utility method for determining the rod endpoint, given the endpoint
 // k = { -1, 0, 1 }.
 template <class T>
 std::pair<T, T> Painleve<T>::CalcRodEndpoint(const T& x,
@@ -89,13 +89,13 @@ template <class T>
 void Painleve<T>::DoCalcDiscreteVariableUpdates(
                            const systems::Context<T>& context,
                            systems::DiscreteState<T>* discrete_state) const {
-  // Set ERP (error reduction parameter) and CFM (constraint force mixing) 
+  // Set ERP (error reduction parameter) and CFM (constraint force mixing)
   // to make this problem "mostly rigid" and with rapid stabilization. These
   // parameters are described in the Open Dynamics Engine user manual (see
   // http://ode.org/ode-latest-userguide.html#sec_3_8 titled "Soft constraint
   // and constraint force mixing (CFM)") as well as in a presentation by
   // Erin Catto at the 2011 Game Developers Conference (Soft Constraints:
-  // Reinventing the Spring, 
+  // Reinventing the Spring,
   // http://box2d.org/files/GDC2011/GDC2011_Catto_Erin_Soft_Constraints.pdf).
   const double erp = 0.8;
   const double cfm = 1e-8;
