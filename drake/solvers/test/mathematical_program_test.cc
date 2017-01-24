@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
@@ -145,6 +146,8 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
  */
 class GenericTrivialCost1 : public Constraint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GenericTrivialCost1)
+
   GenericTrivialCost1()
       : Constraint(1, 3, Vector1d(std::numeric_limits<double>::infinity()),
                    Vector1d(std::numeric_limits<double>::infinity())),
@@ -174,6 +177,10 @@ class GenericTrivialCost1 : public Constraint {
  */
 class GenericTrivialCost2 {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GenericTrivialCost2)
+
+  GenericTrivialCost2() = default;
+
   static size_t numInputs() { return 2; }
   static size_t numOutputs() { return 1; }
 

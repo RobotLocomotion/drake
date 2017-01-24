@@ -10,6 +10,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/polynomial.h"
 #include "drake/solvers/constraint.h"
@@ -198,6 +199,10 @@ GTEST_TEST(testNonlinearProgram, testLowerBoundedProblem) {
 
 class SixHumpCamelCost {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SixHumpCamelCost)
+
+  SixHumpCamelCost() = default;
+
   static size_t numInputs() { return 2; }
   static size_t numOutputs() { return 1; }
 

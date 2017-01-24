@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 namespace solvers {
 class MathematicalProgram;
@@ -16,6 +18,9 @@ enum SolutionResult {
 /// Interface used by implementations of individual solvers.
 class MathematicalProgramSolverInterface {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgramSolverInterface)
+
+  MathematicalProgramSolverInterface() = default;
   virtual ~MathematicalProgramSolverInterface() = default;
 
   /// Returns true iff this solver was enabled at compile-time.

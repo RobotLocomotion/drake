@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/solvers/decision_variable.h"
 
 namespace drake {
@@ -14,6 +15,8 @@ namespace solvers {
 template <typename C>
 class Binding {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Binding)
+
   Binding(const std::shared_ptr<C>& c,
           const Eigen::Ref<const VectorXDecisionVariable>& v)
       : constraint_(c), vars_(v) {
