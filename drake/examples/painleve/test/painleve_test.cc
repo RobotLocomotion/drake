@@ -7,7 +7,14 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 
-using namespace drake::systems;
+using drake::systems::VectorBase;
+using drake::systems::BasicVector;
+using drake::systems::ContinuousState;
+using drake::systems::State;
+using drake::systems::SystemOutput;
+using drake::systems::AbstractState;
+using drake::systems::Simulator;
+using drake::systems::Context;
 
 namespace drake {
 namespace painleve {
@@ -28,7 +35,7 @@ class PainleveDAETest : public ::testing::Test {
     return context_->CloneState();
   }
 
-  systems::VectorBase<double>* continuous_state() {
+  VectorBase<double>* continuous_state() {
     return context_->get_mutable_continuous_state_vector();
   }
 
@@ -39,7 +46,7 @@ class PainleveDAETest : public ::testing::Test {
     // x-axis. The rod in [Stewart, 2000] is at a 45 degree counter-clockwise
     // angle with respect to the x-axis.
     // * [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
-    //                    Impact. SIAM Rev., 42(1), 3-39, 2000.
+    //                    Impact". SIAM Rev., 42(1), 3-39, 2000.
     using std::sqrt;
     const double half_len = dut_->get_rod_length() / 2;
     const double r22 = std::sqrt(2) / 2;
@@ -113,9 +120,9 @@ class PainleveDAETest : public ::testing::Test {
   }
 
   std::unique_ptr<Painleve<double>> dut_;  //< The device under test.
-  std::unique_ptr<systems::Context<double>> context_;
-  std::unique_ptr<systems::SystemOutput<double>> output_;
-  std::unique_ptr<systems::ContinuousState<double>> derivatives_;
+  std::unique_ptr<Context<double>> context_;
+  std::unique_ptr<SystemOutput<double>> output_;
+  std::unique_ptr<ContinuousState<double>> derivatives_;
 };
 
 // Checks that the output port represents the state.
@@ -579,7 +586,7 @@ class PainleveTimeSteppingTest : public ::testing::Test {
     output_ = dut_->AllocateOutput(*context_);
   }
 
-  systems::BasicVector<double>* discrete_state() {
+  BasicVector<double>* mutable_discrete_state() {
     return context_->get_mutable_discrete_state(0);
   }
 
@@ -590,11 +597,11 @@ class PainleveTimeSteppingTest : public ::testing::Test {
     // x-axis. The rod in [Stewart, 2000] is at a 45 degree counter-clockwise
     // angle with respect to the x-axis.
     // * [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
-    //                    Impact. SIAM Rev., 42(1), 3-39, 2000.
+    //                    Impact". SIAM Rev., 42(1), 3-39, 2000.
     using std::sqrt;
     const double half_len = dut_->get_rod_length() / 2;
     const double r22 = std::sqrt(2) / 2;
-    auto xd = discrete_state()->get_mutable_value();
+    auto xd = mutable_discrete_state()->get_mutable_value();
 
     xd[0] = -half_len * r22;
     xd[1] = half_len * r22;
@@ -605,9 +612,9 @@ class PainleveTimeSteppingTest : public ::testing::Test {
   }
 
   std::unique_ptr<Painleve<double>> dut_;  //< The device under test.
-  std::unique_ptr<systems::Context<double>> context_;
-  std::unique_ptr<systems::SystemOutput<double>> output_;
-  std::unique_ptr<systems::ContinuousState<double>> derivatives_;
+  std::unique_ptr<Context<double>> context_;
+  std::unique_ptr<SystemOutput<double>> output_;
+  std::unique_ptr<ContinuousState<double>> derivatives_;
 };
 
 /// Verify that Painleve Paradox system can be effectively simulated using
@@ -617,7 +624,7 @@ TEST_F(PainleveTimeSteppingTest, TimeStepping) {
   SetSecondInitialConfig();
 
   // Init the simulator.
-  systems::Simulator<double> simulator(*dut_, std::move(context_));
+  Simulator<double> simulator(*dut_, std::move(context_));
 
   // Integrate forward to a point where the rod should be at rest.
   const double t_final = 10;

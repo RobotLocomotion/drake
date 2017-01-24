@@ -145,8 +145,8 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
   // Problems as Solvable Linear Complementarity Problems. Nonlinear Dynamics,
   // 14, 1997.
 
-  // Set up the inverse generalized inertia matrix, expressed in Frame A:
-  // aligned with the "world" and located at the center of mass of the rod.
+  // Construct the inverse generalized inertia matrix computed about the
+  // center of mass of the rod and expressed in the world frame.
   Matrix3<T> iM;
   iM << 1.0/mass_, 0,         0,
         0,         1.0/mass_, 0,
