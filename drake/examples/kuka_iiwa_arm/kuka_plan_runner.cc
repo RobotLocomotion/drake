@@ -7,6 +7,8 @@
 ///
 /// When a plan is received, it will immediately begin executing that
 /// plan on the arm (replacing any plan in progress).
+
+#include <iostream>
 #include <memory>
 
 #include <lcm/lcm-cpp.hpp>
@@ -74,10 +76,10 @@ class RobotPlanRunner {
     iiwa_command.joint_torque.resize(kNumJoints, 0.);
 
     while (true) {
-      // Call lcm handle until at least one message is processed
-      while (0 == lcm_.handleTimeout(10)) { }
+      // Call lcm handle until at least one status message is
+      // processed.
+      while (0 == lcm_.handleTimeout(10) || iiwa_status_.utime == -1) { }
 
-      DRAKE_ASSERT(iiwa_status_.utime != -1);
       cur_time_us = iiwa_status_.utime;
 
       if (plan_) {
@@ -111,6 +113,11 @@ class RobotPlanRunner {
   void HandlePlan(const lcm::ReceiveBuffer* rbuf, const std::string& chan,
                   const robotlocomotion::robot_plan_t* plan) {
     std::cout << "New plan received." << std::endl;
+    if (iiwa_status_.utime == -1) {
+      std::cout << "Discarding plan, no status message received yet"
+                << std::endl;
+      return;
+    }
 
     std::vector<Eigen::MatrixXd> knots(plan->num_states,
                                        Eigen::MatrixXd::Zero(kNumJoints, 1));
@@ -123,7 +130,16 @@ class RobotPlanRunner {
           continue;
         }
         // Treat the matrix at knots[i] as a column vector.
-        knots[i](name_to_idx[state.joint_name[j]], 0) = state.joint_position[j];
+        if (i == 0) {
+          // Always start moving from the position which we're
+          // currently commanding.
+          DRAKE_DEMAND(iiwa_status_.utime != -1);
+          knots[0](name_to_idx[state.joint_name[j]], 0) =
+              iiwa_status_.joint_position_commanded[j];
+        } else {
+          knots[i](name_to_idx[state.joint_name[j]], 0) =
+              state.joint_position[j];
+        }
       }
     }
 
