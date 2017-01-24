@@ -57,12 +57,10 @@ void Model::getTerrainContactPoints(ElementId id0,
 }
 
 bool Model::updateElementWorldTransform(ElementId id,
-                                        const Isometry3d& T_elem_to_world) {
+                                        const Isometry3d& X_WL) {
   auto elem_itr = elements.find(id);
   if (elem_itr != elements.end()) {
-    elem_itr->second->updateWorldTransform(
-        T_elem_to_world);  // fixme: this is taking T_local_to_world, not
-                           // T_elem_to_world.  so this method name is wrong
+    elem_itr->second->updateWorldTransform(X_WL);
     return true;
   } else {
     return false;
