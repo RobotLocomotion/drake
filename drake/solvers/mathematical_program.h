@@ -804,6 +804,15 @@ class MathematicalProgram {
 
   /**
    * Adds a linear cost term of the form c'*x.
+   * @param e A linear symbolic expression.
+   * @pre{ e is a linear expression c'*x, where each entry of x is a decision
+   * variable in the mathematical program}
+   * @return The newly added linear constraint, together with the bound variables.
+   */
+  Binding<LinearConstraint> AddLinearCost(const symbolic::Expression& e);
+
+  /**
+   * Adds a linear cost term of the form c'*x.
    * Applied to a subset of the variables and pushes onto
    * the linear cost data structure.
    */

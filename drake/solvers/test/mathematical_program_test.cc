@@ -280,6 +280,38 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
                    Eigen::Vector2d(1, 2), num_generic_costs);
 }
 
+void CheckAddedSymbolicLinearCost(MathematicalProgram* prog, const symbolic::Expression& e) {
+  int num_linear_costs = prog->linear_costs().size();
+  const auto& binding = prog->AddLinearCost(e);
+  EXPECT_EQ(prog->linear_costs().size(), num_linear_costs + 1);
+  EXPECT_EQ(prog->linear_costs().back().constraint(), binding.constraint());
+  EXPECT_EQ(binding.constraint()->num_constraints(), 1);
+  const symbolic::Expression cx{(binding.constraint()->A() * binding.variables())(0)};
+  double constant_term{0};
+  if (is_addition(e)) {
+    constant_term = get_constant_in_addition(e);
+  }
+  else if (is_constant(e)) {
+    constant_term = get_constant_value(e);
+  }
+  EXPECT_TRUE((e - cx).EqualTo(constant_term));
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearCostSymbolic) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  // Add Linear cost 2 * x(0) + 3 * x(1)
+  CheckAddedSymbolicLinearCost(&prog, 2 * x(0) + 3 * x(1));
+  // Add Linear cost x(1)
+  CheckAddedSymbolicLinearCost(&prog, +x(1));
+  // Add Linear cost x(0) + 2
+  CheckAddedSymbolicLinearCost(&prog, x(0) + 2);
+  // Add Linear cost 2 * x(0) + 3 * x(1) + 2
+  CheckAddedSymbolicLinearCost(&prog, 2 * x(0) + 3 * x(1) + 2);
+  // Add Linear (constant) cost 3
+  CheckAddedSymbolicLinearCost(&prog, 3);
+}
+
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
   // Add Linear Constraint: -10 <= 3 - 5*x0 + 10*x2 - 7*y1 <= 10
   MathematicalProgram prog;
