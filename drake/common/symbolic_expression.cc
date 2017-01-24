@@ -7,6 +7,9 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
@@ -19,13 +22,17 @@
 namespace drake {
 namespace symbolic {
 
+using std::accumulate;
 using std::make_shared;
 using std::map;
 using std::ostream;
 using std::ostringstream;
+using std::pair;
 using std::runtime_error;
 using std::shared_ptr;
 using std::string;
+using std::unordered_map;
+using std::vector;
 
 bool operator<(ExpressionKind k1, ExpressionKind k2) {
   return static_cast<int>(k1) < static_cast<int>(k2);
@@ -724,6 +731,87 @@ double get_constant_in_multiplication(const Expression& e) {
 const map<Expression, Expression>& get_base_to_exp_map_in_multiplication(
     const Expression& e) {
   return to_multiplication(e)->get_base_to_exp_map();
+}
+
+Expression Monomial(const unordered_map<Variable, int, hash_value<Variable>>&
+                        map_var_to_exponent) {
+  map<Expression, Expression> base_to_exp_map;
+  for (const auto& p : map_var_to_exponent) {
+    DRAKE_DEMAND(p.second > 0);
+    base_to_exp_map.emplace(Expression{p.first}, p.second);
+  }
+  return ExpressionMulFactory{1.0, base_to_exp_map}.GetExpression();
+}
+
+namespace internal {
+Monomial::Monomial(const Variable& var, const int exponent)
+    : degree_{exponent} {
+  DRAKE_DEMAND(exponent >= 0);
+  if (exponent > 0) {
+    powers_.emplace(var.get_id(), exponent);
+  }
+}
+Monomial::Monomial(const map<Variable::IdType, int>& powers)
+    : degree_{GetDegree(powers)}, powers_(powers) {}
+Expression Monomial::ToExpression(
+    const unordered_map<Variable::IdType, Variable>& id_to_var_map) const {
+  // It builds this base_to_exp_map and uses ExpressionMulFactory to build a
+  // multiplication expression.
+  map<Expression, Expression> base_to_exp_map;
+  for (const auto& p : powers_) {
+    const Variable::IdType id{p.first};
+    const int exponent{p.second};
+    const auto it = id_to_var_map.find(id);
+    if (it != id_to_var_map.end()) {
+      const Variable& var{it->second};
+      base_to_exp_map.emplace(Expression{var}, exponent);
+    } else {
+      ostringstream oss;
+      oss << "Variable whose ID is " << id << " appeared in a monomial "
+          << *this << "." << std::endl
+          << "However, Monomial::ToExpression method "
+             "fails to find the corresponding Variable in a given map.";
+      throw runtime_error(oss.str());
+    }
+  }
+  return ExpressionMulFactory{1.0, base_to_exp_map}.GetExpression();
+}
+
+int Monomial::GetDegree(const map<Variable::IdType, int>& powers) {
+  return accumulate(powers.begin(), powers.end(), 0,
+                    [](const int degree, const pair<Variable::IdType, int>& p) {
+                      return degree + p.second;
+                    });
+}
+
+std::ostream& operator<<(std::ostream& out, const Monomial& m) {
+  out << "{";
+  for (const auto& power : m.powers_) {
+    out << "(" << power.first << ", " << power.second << ") ";
+  }
+  return out << "}";
+}
+
+Monomial operator*(const Monomial& m1, const Monomial& m2) {
+  map<Variable::IdType, int> powers{m1.get_powers()};
+  for (const pair<Variable::IdType, int>& p : m2.get_powers()) {
+    const Variable::IdType var{p.first};
+    const int exponent{p.second};
+    auto it = powers.find(var);
+    if (it == powers.end()) {
+      powers.insert(p);
+    } else {
+      it->second += exponent;
+    }
+  }
+  return Monomial{powers};
+}
+
+}  // namespace internal
+
+Eigen::Matrix<Expression, Eigen::Dynamic, 1> MonomialBasis(
+    const Variables& vars, int degree) {
+  return internal::ComputeMonomialBasis<Eigen::Dynamic>(vars, degree);
 }
 
 }  // namespace symbolic
