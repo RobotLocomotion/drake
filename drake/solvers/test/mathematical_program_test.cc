@@ -8,6 +8,7 @@
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
+#include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
@@ -62,6 +63,63 @@ struct Unique {
   void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
 // TODO(naveenoid) : tests need to be purged of Random initializations.
+
+// Check the index, type and name etc of the newly added variables.
+// This function only works if the only variables contained in @p prog are @p var.
+template <typename Derived>
+void CheckAddedVariable(const MathematicalProgram& prog, const Eigen::MatrixBase<Derived>& var, const std::string& var_name, bool is_symmetric) {
+  // Checks the name of the newly added variables.
+  std::stringstream msg_buff;
+  msg_buff << var << std::endl;
+  EXPECT_EQ(msg_buff.str(), var_name);
+  // Checks num_vars() function.
+  EXPECT_EQ(prog.num_vars(), var.size());
+  // Checks the indices of the newly added variables.
+  for(int i = 0; i < static_cast<int>(var.rows()); ++i) {
+    for (int j = 0; j < var.cols(); ++j) {
+      EXPECT_EQ(prog.FindDecisionVariableIndex(var(i, j)), j * var.rows() + i);
+    }
+  }
+  EXPECT_EQ(math::IsSymmetric(var), is_symmetric);
+}
+GTEST_TEST(testAddVariable, testAddContinuousVariables1) {
+  // Adds a dynamic-sized matrix of continuous variables.
+  MathematicalProgram prog;
+  auto X = prog.NewContinuousVariables(2, 3, "X");
+  static_assert(std::is_same<decltype(X), MatrixXDecisionVariable>::value,
+      "should be a dynamic sized matrix");
+  EXPECT_EQ(X.rows(), 2);
+  EXPECT_EQ(X.cols(), 3);
+  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n", false);
+}
+
+GTEST_TEST(testAddVariable, testAddContinuousVariable2) {
+  // Adds a static-sized matrix of continuous variables.
+  MathematicalProgram prog;
+  auto X = prog.NewContinuousVariables<2, 3>("X");
+  static_assert(std::is_same<decltype(X), MatrixDecisionVariable<2, 3>>::value,
+  "should be a static sized matrix");
+  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n", false);
+}
+
+GTEST_TEST(testAddVariable, testAddContinuousVariable3) {
+  // Adds a dynamic-sized vector of continuous variables.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(4, "x");
+  static_assert(std::is_same<decltype(x), VectorXDecisionVariable>::value,
+  "Should be a VectorXDecisionVariable object.");
+  EXPECT_EQ(x.rows(), 4);
+  CheckAddedVariable(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n", false);
+}
+
+GTEST_TEST(testAddVariable, testAddContinuousVariable4) {
+  // Adds a static-sized vector of continuous variables.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<4>("x");
+  static_assert(std::is_same<decltype(x), VectorDecisionVariable<4>>::value,
+                "Should be a VectorXDecisionVariable object.");
+  CheckAddedVariable(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n", false);
+}
 
 GTEST_TEST(testMathematicalProgram, testAddFunction) {
   MathematicalProgram prog;

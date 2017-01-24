@@ -2150,9 +2150,11 @@ class MathematicalProgram {
   }
 
   /** Returns the index of the decision variable. Internally the solvers thinks
-   * all variables are stored in an array, and it accesess each individual
+   * all variables are stored in an array, and it acceses each individual
    * variable using its index. This index is used when adding constraints
    * and costs for each solver.
+   * @pre{ @p var is a decision variable in the mathematical program, otherwise
+   * this functions throws an error.}
    */
   size_t FindDecisionVariableIndex(const symbolic::Variable& var) const;
 

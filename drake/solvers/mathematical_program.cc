@@ -834,7 +834,7 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
 size_t MathematicalProgram::FindDecisionVariableIndex(
     const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
-  DRAKE_ASSERT(it != decision_variable_index_.end());
+  DRAKE_DEMAND(it != decision_variable_index_.end());
   return it->second;
 }
 
