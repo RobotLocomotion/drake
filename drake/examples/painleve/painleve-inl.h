@@ -56,14 +56,15 @@ int Painleve<T>::get_k(const systems::Context<T>& context) const {
   return k;
 }
 
-// Utility method for determining the lower rod endpoint.
+// Utility method for determining the rod endpoint, given the endpoint 
+// k = { -1, 0, 1 }.
 template <class T>
-std::pair<T, T> Painleve<T>::CalcRodLowerEndpoint(const T& x,
-                                                  const T& y,
-                                                  const int k,
-                                                  const T& ctheta,
-                                                  const T& stheta,
-                                                  const double half_rod_len) {
+std::pair<T, T> Painleve<T>::CalcRodEndpoint(const T& x,
+                                             const T& y,
+                                             const int k,
+                                             const T& ctheta,
+                                             const T& stheta,
+                                             const double half_rod_len) {
   const T cx = x + k * ctheta * half_rod_len;
   const T cy = y + k * stheta * half_rod_len;
   return std::make_pair(cx, cy);
@@ -88,8 +89,14 @@ template <class T>
 void Painleve<T>::DoCalcDiscreteVariableUpdates(
                            const systems::Context<T>& context,
                            systems::DiscreteState<T>* discrete_state) const {
-  // Set ERP and CFM to make this problem "mostly rigid" and with rapid
-  // stabilization.
+  // Set ERP (error reduction parameter) and CFM (constraint force mixing) 
+  // to make this problem "mostly rigid" and with rapid stabilization. These
+  // parameters are described in the Open Dynamics Engine user manual (see
+  // http://ode.org/ode-latest-userguide.html#sec_3_8 titled "Soft constraint
+  // and constraint force mixing (CFM)") as well as in a presentation by
+  // Erin Catto at the 2011 Game Developers Conference (Soft Constraints:
+  // Reinventing the Spring, 
+  // http://box2d.org/files/GDC2011/GDC2011_Catto_Erin_Soft_Constraints.pdf).
   const double erp = 0.8;
   const double cfm = 1e-8;
 
@@ -151,9 +158,8 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
 
   // Set up the contact normal and tangent (friction) direction Jacobian
   // matrices. These take the form:
-  //     | 0   0  |        | 1  1  |
-  // N = | 1   1  |    F = | 0  0  |
-  //     | n1  n2 |        | f1 f2 |
+  //     | 0 1 n1 |        | 1 0 f1 |
+  // N = | 0 1 n2 |    F = | 1 0 f2 |
   // where n1, n2/f1, f2 are the moment arm induced by applying the
   // force at the given contact point along the normal/tangent direction.
   MatrixX<T> N(nc, ngc), F(nc, ngc);
@@ -166,10 +172,13 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
   F(0, 2) = -(yep1 - y);
   F(1, 2) = -(yep2 - y);
 
-  // Construct the block diagonal matrix (denoted E in Anitscu and Potra 1997).
+  // Construct a matrix similar to E in Anitscu and Potra 1997. This matrix
+  // will yield mu*fN - E*fF = 0, or, equivalently:
+  // mu*fN₁ - fF₁⁺ - fF₁⁻ ≥ 0
+  // mu*fN₂ - fF₂⁺ - fF₂⁻ ≥ 0
   MatrixX<T> E(nk, nc);
-  E.col(0) << 1, 1, 0, 0;
-  E.col(1) << 0, 0, 1, 1;
+  E.col(0) << 1, 0, 1, 0;
+  E.col(1) << 0, 1, 0, 1;
 
   // Construct the LCP matrix. First do the "normal contact direction" rows.
   MatrixX<T> MM(8, 8);
@@ -201,8 +210,8 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
   // Construct the LCP vector.
   VectorX<T> qq(8);
   qq.segment(0, 2) = N * v;
-  qq(0) += erp*yep1/dt_;
-  qq(1) += erp*yep2/dt_;
+  qq(0) += erp * yep1/dt_;
+  qq(1) += erp * yep2/dt_;
   qq.segment(2, 2) = F * v;
   qq.segment(4, 2) = -qq.segment(2, 2);
   qq.template segment(6, 2).setZero();
@@ -296,7 +305,7 @@ void Painleve<T>::HandleImpact(const systems::Context<T>& context,
   const T stheta = sin(theta);
   const int k = (stheta > 0) ? -1 : 1;
   const double half_rod_length = rod_length_ / 2;
-  const std::pair<T, T> c = CalcRodLowerEndpoint(x, y, k, ctheta, stheta,
+  const std::pair<T, T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
                                                  half_rod_length);
   const T cx = c.first;
   const T cy = c.second;
@@ -663,7 +672,7 @@ void Painleve<T>::CalcAccelerationsOneContactSliding(
   const int k = get_k(context);
 
   // Determine the point of contact (cx, cy).
-  const std::pair<T, T> c = CalcRodLowerEndpoint(x, y, k, ctheta, stheta,
+  const std::pair<T, T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
                                                  half_rod_length);
   const T cx = c.first;
   const T cy = c.second;
@@ -759,7 +768,7 @@ void Painleve<T>::CalcAccelerationsOneContactNoSliding(
   const double half_rod_length = rod_length_ / 2;
   const T ctheta = cos(theta);
   const T stheta = sin(theta);
-  const std::pair<T, T> c = CalcRodLowerEndpoint(x, y, k, ctheta, stheta,
+  const std::pair<T, T> c = CalcRodEndpoint(x, y, k, ctheta, stheta,
                                                  half_rod_length);
   const T cx = c.first;
   const T cy = c.second;
@@ -918,9 +927,10 @@ void Painleve<T>::DoCalcTimeDerivatives(
   using std::abs;
 
   // Don't compute any derivatives if this is the time stepping system.
-  DRAKE_ASSERT(derivatives->size() == 0);
-  if (is_time_stepping_system())
+  if (is_time_stepping_system()) {
+    DRAKE_ASSERT(derivatives->size() == 0);
     return;
+  }
 
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
@@ -954,7 +964,7 @@ void Painleve<T>::DoCalcTimeDerivatives(
       return CalcAccelerationsTwoContact(context, derivatives);
 
     default:
-      DRAKE_ABORT();
+      DRAKE_ABORT_MSG("Invalid mode detected");
   }
 }
 

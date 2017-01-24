@@ -173,12 +173,9 @@ class Painleve : public systems::LeafSystem<T> {
                         T fN, T fF, T xc, T yc) const;
   Vector2<T> CalcStickingContactForces(
       const systems::Context<T>& context) const;
-  static std::pair<T, T> CalcRodLowerEndpoint(const T& x,
-                                              const T& y,
-                                              const int k,
-                                              const T& ctheta,
-                                              const T& stheta,
-                                              const double half_rod_len);
+  static std::pair<T, T> CalcRodEndpoint(const T& x, const T& y, const int k,
+                                         const T& ctheta, const T& stheta,
+                                         const double half_rod_len);
 
   // Solves linear complementarity problems for time stepping.
   solvers::MobyLCPSolver lcp_;

@@ -118,48 +118,6 @@ class PainleveDAETest : public ::testing::Test {
   std::unique_ptr<systems::ContinuousState<double>> derivatives_;
 };
 
-/// Class for testing the Painleve Paradox example using a first order time
-/// stepping approach.
-class PainleveTimeSteppingTest : public ::testing::Test {
- protected:
-  void SetUp() override {
-    const double dt = 1e-3;
-    dut_ = std::make_unique<Painleve<double>>(dt);
-    context_ = dut_->CreateDefaultContext();
-    output_ = dut_->AllocateOutput(*context_);
-  }
-
-  systems::BasicVector<double>* discrete_state() {
-    return context_->get_mutable_discrete_state(0);
-  }
-
-  // Sets a secondary initial Painleve configuration.
-  void SetSecondInitialConfig() {
-    // Set the configuration to an inconsistent (Painlevé) type state with
-    // the rod at a 135 degree counter-clockwise angle with respect to the
-    // x-axis. The rod in [Stewart, 2000] is at a 45 degree counter-clockwise
-    // angle with respect to the x-axis.
-    // * [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
-    //                    Impact. SIAM Rev., 42(1), 3-39, 2000.
-    using std::sqrt;
-    const double half_len = dut_->get_rod_length() / 2;
-    const double r22 = std::sqrt(2) / 2;
-    auto xd = discrete_state()->get_mutable_value();
-
-    xd[0] = -half_len * r22;
-    xd[1] = half_len * r22;
-    xd[2] = 3 * M_PI / 4.0;
-    xd[3] = 1.0;
-    xd[4] = 0.0;
-    xd[5] = 0.0;
-  }
-
-  std::unique_ptr<Painleve<double>> dut_;  //< The device under test.
-  std::unique_ptr<systems::Context<double>> context_;
-  std::unique_ptr<systems::SystemOutput<double>> output_;
-  std::unique_ptr<systems::ContinuousState<double>> derivatives_;
-};
-
 // Checks that the output port represents the state.
 TEST_F(PainleveDAETest, Output) {
   const ContinuousState<double>& xc = *context_->get_continuous_state();
@@ -610,6 +568,48 @@ TEST_F(PainleveDAETest, BallisticNoImpact) {
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 }
 
+/// Class for testing the Painleve Paradox example using a first order time
+/// stepping approach.
+class PainleveTimeSteppingTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    const double dt = 1e-2;
+    dut_ = std::make_unique<Painleve<double>>(dt);
+    context_ = dut_->CreateDefaultContext();
+    output_ = dut_->AllocateOutput(*context_);
+  }
+
+  systems::BasicVector<double>* discrete_state() {
+    return context_->get_mutable_discrete_state(0);
+  }
+
+  // Sets a secondary initial Painleve configuration.
+  void SetSecondInitialConfig() {
+    // Set the configuration to an inconsistent (Painlevé) type state with
+    // the rod at a 135 degree counter-clockwise angle with respect to the
+    // x-axis. The rod in [Stewart, 2000] is at a 45 degree counter-clockwise
+    // angle with respect to the x-axis.
+    // * [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
+    //                    Impact. SIAM Rev., 42(1), 3-39, 2000.
+    using std::sqrt;
+    const double half_len = dut_->get_rod_length() / 2;
+    const double r22 = std::sqrt(2) / 2;
+    auto xd = discrete_state()->get_mutable_value();
+
+    xd[0] = -half_len * r22;
+    xd[1] = half_len * r22;
+    xd[2] = 3 * M_PI / 4.0;
+    xd[3] = 1.0;
+    xd[4] = 0.0;
+    xd[5] = 0.0;
+  }
+
+  std::unique_ptr<Painleve<double>> dut_;  //< The device under test.
+  std::unique_ptr<systems::Context<double>> context_;
+  std::unique_ptr<systems::SystemOutput<double>> output_;
+  std::unique_ptr<systems::ContinuousState<double>> derivatives_;
+};
+
 /// Verify that Painleve Paradox system can be effectively simulated using
 /// the first-order time stepping approach.
 TEST_F(PainleveTimeSteppingTest, TimeStepping) {
@@ -620,7 +620,7 @@ TEST_F(PainleveTimeSteppingTest, TimeStepping) {
   systems::Simulator<double> simulator(*dut_, std::move(context_));
 
   // Integrate forward to a point where the rod should be at rest.
-  const double t_final = 2.5;
+  const double t_final = 10;
   simulator.StepTo(t_final);
 
   // Get angular orientation and velocity.
