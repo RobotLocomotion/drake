@@ -300,14 +300,16 @@ void CheckAddedSymbolicLinearCost(MathematicalProgram* prog,
 GTEST_TEST(testMathematicalProgram, AddLinearCostSymbolic) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
-  // Add Linear cost 2 * x(0) + 3 * x(1)
+  // Add linear cost 2 * x(0) + 3 * x(1)
   CheckAddedSymbolicLinearCost(&prog, 2 * x(0) + 3 * x(1));
-  // Add Linear cost x(1)
+  // Add linear cost x(1)
   CheckAddedSymbolicLinearCost(&prog, +x(1));
-  // Add Linear cost x(0) + 2
+  // Add linear cost x(0) + 2
   CheckAddedSymbolicLinearCost(&prog, x(0) + 2);
-  // Add Linear cost 2 * x(0) + 3 * x(1) + 2
+  // Add linear cost 2 * x(0) + 3 * x(1) + 2
   CheckAddedSymbolicLinearCost(&prog, 2 * x(0) + 3 * x(1) + 2);
+  // Add linear cost 2 * x(1)
+  CheckAddedSymbolicLinearCost(&prog, 2 * x(1));
   // Add Linear (constant) cost 3
   CheckAddedSymbolicLinearCost(&prog, 3);
 }
