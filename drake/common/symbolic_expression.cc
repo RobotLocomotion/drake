@@ -3,10 +3,14 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
@@ -19,13 +23,20 @@
 namespace drake {
 namespace symbolic {
 
+using std::accumulate;
+using std::back_inserter;
+using std::make_pair;
 using std::make_shared;
 using std::map;
 using std::ostream;
 using std::ostringstream;
+using std::pair;
 using std::runtime_error;
 using std::shared_ptr;
+using std::sort;
 using std::string;
+using std::unordered_map;
+using std::vector;
 
 bool operator<(ExpressionKind k1, ExpressionKind k2) {
   return static_cast<int>(k1) < static_cast<int>(k2);
@@ -724,6 +735,218 @@ double get_constant_in_multiplication(const Expression& e) {
 const map<Expression, Expression>& get_base_to_exp_map_in_multiplication(
     const Expression& e) {
   return to_multiplication(e)->get_base_to_exp_map();
+}
+
+Expression Monomial(const unordered_map<Variable, int, hash_value<Variable>>&
+                        map_var_to_exponent) {
+  map<Expression, Expression> base_to_exp_map;
+  for (const auto& p : map_var_to_exponent) {
+    DRAKE_DEMAND(p.second > 0);
+    base_to_exp_map.emplace(Expression{p.first}, p.second);
+  }
+  return ExpressionMulFactory{1.0, base_to_exp_map}.GetExpression();
+}
+
+namespace internal {
+
+// Represents a monomial. In this implementation a power, var^exponent, is
+// represented as a pair (variable ID and exponent). A monomial is represented
+// as a vector of powers.
+class Monomial {
+ public:
+  Monomial() = default;
+  Monomial(const Variable& var, const int exponent) : degree_{exponent} {
+    if (exponent > 0) {
+      powers_.emplace_back(var.get_id(), exponent);
+    }
+  }
+  Monomial(const vector<pair<Variable::IdType, int>>& powers)
+      : degree_{GetDegree(powers)}, powers_(powers) {}
+  int get_degree() const { return degree_; }
+  const vector<pair<Variable::IdType, int>>& get_powers() const {
+    return powers_;
+  }
+  // Returns a symbolic::Expression representing this monomial. Since, this
+  // class only includes the ID of a variable, not a variable itself, we need to
+  // a map from a variable ID to a variable as an argument to build an
+  // expression.
+  Expression ToExpression(
+      const unordered_map<Variable::IdType, Variable>& id_to_var_map) {
+    // It builds this base_to_exp_map and uses ExpressionMulFactory to build a
+    // multiplication expression.
+    map<Expression, Expression> base_to_exp_map;
+    for (const auto& p : powers_) {
+      const Variable::IdType id{p.first};
+      const int exponent{p.second};
+      const auto it = id_to_var_map.find(id);
+      if (it != id_to_var_map.end()) {
+        const Variable& var{it->second};
+        base_to_exp_map.emplace(Expression{var}, exponent);
+      } else {
+        ostringstream oss;
+        oss << "Variable whose ID is " << id << " appeared in a monomial "
+            << *this << "." << std::endl
+            << "However, Monomial::ToExpression method "
+               "fails to find the corresponding Variable in a given map.";
+        throw runtime_error(oss.str());
+      }
+    }
+    return ExpressionMulFactory{1.0, base_to_exp_map}.GetExpression();
+  }
+
+ private:
+  // Computes the degree of a monomial in a vector form. This method is used in
+  // a constructor of Monomial to set its degree at construction.
+  static int GetDegree(const vector<pair<Variable::IdType, int>>& powers) {
+    return accumulate(
+        powers.begin(), powers.end(), 0,
+        [](const int degree, const pair<Variable::IdType, int>& p) {
+          return degree + p.second;
+        });
+  }
+
+  int degree_{0};
+  vector<pair<Variable::IdType, int>> powers_;
+  friend std::ostream& operator<<(std::ostream& out, const Monomial& m);
+};
+
+std::ostream& operator<<(std::ostream& out, const Monomial& m) {
+  out << "{";
+  for (const auto& power : m.powers_) {
+    out << "(" << power.first << ", " << power.second << ") ";
+  }
+  return out << "}";
+}
+
+// Returns a multiplication of two monomials, m1 and m2.
+Monomial operator*(const Monomial& m1, const Monomial& m2) {
+  // This is the vector representation of the return value.
+  vector<pair<Variable::IdType, int>> powers;
+  const vector<pair<Variable::IdType, int>>& powers1{m1.get_powers()};
+  const vector<pair<Variable::IdType, int>>& powers2{m2.get_powers()};
+  vector<pair<Variable::IdType, int>>::const_iterator it1{powers1.cbegin()};
+  vector<pair<Variable::IdType, int>>::const_iterator it2{powers2.cbegin()};
+  // We basically merge the two monomials. The only interesting case is when two
+  // powers share the same base variable.
+  while (it1 != powers1.cend() && it2 != powers2.cend()) {
+    const Variable::IdType var1{it1->first};
+    const Variable::IdType var2{it2->first};
+    const int exponent1{it1->second};
+    const int exponent2{it2->second};
+    if (var1 > var2) {
+      powers.emplace_back(var1, exponent1);
+      ++it1;
+    } else if (var2 > var1) {
+      powers.emplace_back(var2, exponent2);
+      ++it2;
+    } else {
+      // var1 == var2
+      powers.emplace_back(var1, exponent1 + exponent2);
+      ++it1;
+      ++it2;
+    }
+  }
+  // Handles the leftovers.
+  if (it1 != powers1.cend()) {
+    powers.insert(powers.end(), it1, powers1.cend());
+  } else if (it2 != powers2.cend()) {
+    powers.insert(powers.end(), it2, powers2.cend());
+  }
+  return Monomial{powers};
+}
+
+// Implements Graded reverse lexicographic order.
+// See the following page for details:
+// https://en.wikipedia.org/wiki/Monomial_order#Graded_reverse_lexicographic_order
+struct GradedReverseLexOrder {
+  // Returns true if m1 > m2 under the Graded reverse lexicographic order.
+  bool operator()(const Monomial& m1, const Monomial& m2) {
+    const int d1{m1.get_degree()};
+    const int d2{m2.get_degree()};
+    if (d1 > d2) {
+      return true;
+    }
+    if (d2 > d1) {
+      return false;
+    }
+    // d1 == d2
+    if (d1 == 0) {
+      // Because both of them are 1.
+      return false;
+    }
+    const vector<pair<Variable::IdType, int>>& powers1{m1.get_powers()};
+    const vector<pair<Variable::IdType, int>>& powers2{m2.get_powers()};
+    // Note that we are using reverse_iterator.
+    vector<pair<Variable::IdType, int>>::const_reverse_iterator it1{
+        powers1.crbegin()};
+    vector<pair<Variable::IdType, int>>::const_reverse_iterator it2{
+        powers2.crbegin()};
+    while (it1 != powers1.crend() && it2 != powers2.crend()) {
+      const Variable::IdType var1{it1->first};
+      const Variable::IdType var2{it2->first};
+      const int exponent1{it1->second};
+      const int exponent2{it2->second};
+      if (var2 < var1) {
+        return true;
+      } else if (var1 < var2) {
+        return false;
+      } else {
+        // var1 == var2
+        if (exponent1 == exponent2) {
+          ++it1;
+          ++it2;
+        } else {
+          return exponent2 > exponent1;
+        }
+      }
+    }
+    return false;
+  }
+};
+
+// Helper function to implement MonomialBasis.
+// Computes [b * m for m in MonomialBasis(vars, degree)] and push them to bin.
+void MonomialsOfDegreeN(const Variables& vars, const int n, const Monomial& b,
+                        vector<Monomial>* const bin) {
+  DRAKE_ASSERT(vars.size() > 0);
+  if (n == 0) {
+    bin->push_back(b);
+    return;
+  }
+  const Variable& var{*vars.cbegin()};
+  bin->push_back(b * Monomial{var, n});
+  if (vars.size() == 1) {
+    return;
+  }
+  for (int i{n - 1}; i >= 0; --i) {
+    MonomialsOfDegreeN(vars - var, n - i, b * Monomial{var, i}, bin);
+  }
+  return;
+}
+}  // namespace internal
+
+Eigen::Matrix<Expression, Eigen::Dynamic, 1> MonomialBasis(
+    const Variables& vars, const int degree) {
+  DRAKE_DEMAND(vars.size() > 0);
+  DRAKE_DEMAND(degree >= 0);
+  // 1. Collect monomials.
+  vector<internal::Monomial> monomials;
+  for (int i{degree}; i >= 0; --i) {
+    MonomialsOfDegreeN(vars, i, internal::Monomial{}, &monomials);
+  }
+  // 2. Sort monomials using GradedReverseLexOrder ordering
+  sort(monomials.begin(), monomials.end(), internal::GradedReverseLexOrder{});
+  // 3. Build id_to_var_map (used in step 4).
+  unordered_map<Variable::IdType, Variable> id_to_var_map;
+  for (const Variable& var : vars) {
+    id_to_var_map.emplace(var.get_id(), var);
+  }
+  // 4. Prepare the return value, basis.
+  Eigen::Matrix<Expression, Eigen::Dynamic, 1> basis{monomials.size()};
+  for (size_t i{0}; i < monomials.size(); ++i) {
+    basis[i] = monomials[i].ToExpression(id_to_var_map);
+  }
+  return basis;
 }
 
 }  // namespace symbolic
