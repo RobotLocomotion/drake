@@ -1,8 +1,9 @@
 #pragma once
-#include <memory>
-#include <string>
+
 #include <chrono>
+#include <memory>
 #include <mutex>
+#include <string>
 #include <thread>
 
 #include "drake/examples/Acrobot/lcmt_acrobot_u.hpp"
@@ -21,8 +22,7 @@ class MessageHandler : public lcm::DrakeLcmMessageHandlerInterface {
   // A constructor that initializes the memory for storing received LCM
   // messages.
   MessageHandler() {
-    // Initializes the fields of received_message_ so the test logic can
-    // determine whether the desired message was received.
+    // Initializes the fields of received_message.
     received_message_.theta1 = 0;
     received_message_.theta2 = 0;
     received_message_.theta1Dot = 0;
