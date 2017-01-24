@@ -232,6 +232,8 @@ endfunction()
 # Set up basic platform properties for building Drake.
 #------------------------------------------------------------------------------
 macro(drake_setup_platform)
+  include(GNUInstallDirs)
+
   # Disable finding out-of-tree packages in the registry.
   # This doesn't exactly make find_package hermetic, but it's a useful step
   # in that direction.
@@ -248,6 +250,15 @@ macro(drake_setup_platform)
   set(LIB_SUFFIX "" CACHE STRING
     "Suffix of library install directory, e.g. '64'")
   mark_as_advanced(LIB_SUFFIX)
+
+  # Set RPATH for installed binaries
+  set(CMAKE_INSTALL_RPATH
+    ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
+    ${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}
+    ${CMAKE_INSTALL_PREFIX}/lib)
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
+
+  list(REMOVE_DUPLICATES CMAKE_INSTALL_RPATH)
 
   drake_setup_compiler()
   drake_setup_matlab()
