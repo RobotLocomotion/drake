@@ -55,6 +55,28 @@ bool ExprNotLess(const Expression& e1, const Expression& e2) {
   return !ExprLess(e1, e2);
 }
 
+// Compare two Eigen::Matrix<Expression> m1 and m2.
+//
+// TODO(soonho): Make CompareMatrices in eigen_matrix_compare.h compatible
+// with Eigen::Matrix<symbolic::Expression> and use that instead of this.
+bool MatrixEqual(
+    const Eigen::Matrix<Expression, Eigen::Dynamic, Eigen::Dynamic>& m1,
+    const Eigen::Matrix<Expression, Eigen::Dynamic, Eigen::Dynamic>& m2) {
+  if (m1.rows() != m2.rows() || m1.cols() != m2.cols()) {
+    return false;
+  }
+  for (int i{0}; i < m1.rows(); ++i) {
+    for (int j{0}; j < m1.cols(); ++j) {
+      const Expression& e1{m1(i, j)};
+      const Expression& e2{m2(i, j)};
+      if (!e1.EqualTo(e2)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 // Checks if a given 'expressions' is ordered by Expression::Less.
 static void CheckOrdering(const vector<Expression>& expressions) {
   for (size_t i{0}; i < expressions.size(); ++i) {
@@ -97,9 +119,11 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Variable var_x_{"x"};
   const Variable var_y_{"y"};
   const Variable var_z_{"z"};
+  const Variable var_w_{"w"};
   const Expression x_{var_x_};
   const Expression y_{var_y_};
   const Expression z_{var_z_};
+  const Expression w_{var_w_};
   const Expression x_plus_y_{x_ + y_};
   const Expression x_plus_z_{x_ + z_};
 
@@ -1740,6 +1764,198 @@ TEST_F(SymbolicExpressionTest, ToString) {
 
   EXPECT_EQ(e1.to_string(), "sin((x + (y * z)))");
   EXPECT_EQ(e2.to_string(), "cos(((pow(y, 2) * z) + pow(x, 2)))");
+}
+
+TEST_F(SymbolicExpressionTest, Monomial) {
+  // clang-format off
+  EXPECT_PRED2(ExprEqual, Monomial({}),
+               Expression{1.0});
+
+  EXPECT_PRED2(ExprEqual, Monomial({{var_x_, 1}}),
+               x_);
+
+  EXPECT_PRED2(ExprEqual, Monomial({{var_y_, 1}}),
+               y_);
+
+  EXPECT_PRED2(ExprEqual, Monomial({{var_x_, 1}, {var_y_, 1}}),
+               x_ * y_);
+
+  EXPECT_PRED2(ExprEqual, Monomial({{var_x_, 2}, {var_y_, 3}}),
+               x_ * x_ * y_ * y_ * y_);
+
+  EXPECT_PRED2(ExprEqual, Monomial({{var_x_, 1}, {var_y_, 2}, {var_z_, 3}}),
+               pow(x_, 1) * pow(y_, 2) * pow(z_, 3));
+  // clang-format on
+}
+
+TEST_F(SymbolicExpressionTest, MonomialBasis_x_0) {
+  const Eigen::Matrix<Expression, Eigen::Dynamic, 1> basis{
+      MonomialBasis({var_x_}, 0)};
+  Eigen::Matrix<Expression, 1, 1> expected;
+
+  // MonomialBasis({x}, 0)
+  expected << Expression{1.0};
+
+  EXPECT_PRED2(MatrixEqual, basis, expected);
+}
+
+TEST_F(SymbolicExpressionTest, MonomialBasis_x_2) {
+  const Eigen::Matrix<Expression, Eigen::Dynamic, 1> basis{
+      MonomialBasis({var_x_}, 2)};
+  Eigen::Matrix<Expression, 3, 1> expected;
+
+  // MonomialBasis({x}, 2)
+  // clang-format off
+  expected << x_ * x_,
+              x_,
+              1.0;
+  // clang-format on
+
+  EXPECT_PRED2(MatrixEqual, basis, expected);
+}
+
+TEST_F(SymbolicExpressionTest, MonomialBasis_x_y_0) {
+  const Eigen::Matrix<Expression, Eigen::Dynamic, 1> basis{
+      MonomialBasis({var_x_}, 0)};
+  Eigen::Matrix<Expression, 1, 1> expected;
+
+  // MonomialBasis({x, y}, 0)
+  expected << Expression{1.0};
+
+  EXPECT_PRED2(MatrixEqual, basis, expected);
+}
+
+TEST_F(SymbolicExpressionTest, MonomialBasis_x_y_1) {
+  const Eigen::Matrix<Expression, Eigen::Dynamic, 1> basis{
+      MonomialBasis({var_x_, var_y_}, 1)};
+  Eigen::Matrix<Expression, 3, 1> expected;
+
+  // MonomialBasis({x, y}, 1)
+  // clang-format off
+  expected << x_,
+              y_,
+              1.0;
+  // clang-format on
+
+  EXPECT_PRED2(MatrixEqual, basis, expected);
+}
+
+TEST_F(SymbolicExpressionTest, MonomialBasis_x_y_2) {
+  const Eigen::Matrix<Expression, Eigen::Dynamic, 1> basis{
+      MonomialBasis({var_x_, var_y_}, 2)};
+  Eigen::Matrix<Expression, 6, 1> expected;
+
+  // MonomialBasis({x, y}, 2)
+  // clang-format off
+  expected << x_ * x_,
+              x_ * y_,
+              y_ * y_,
+              x_,
+              y_,
+              1.0;
+  // clang-format on
+
+  EXPECT_PRED2(MatrixEqual, basis, expected);
+}
+
+TEST_F(SymbolicExpressionTest, MonomialBasis_x_y_3) {
+  const Eigen::Matrix<Expression, Eigen::Dynamic, 1> basis{
+      MonomialBasis({var_x_, var_y_}, 3)};
+  Eigen::Matrix<Expression, 10, 1> expected;
+
+  // MonomialBasis({x, y}, 3)
+  // clang-format off
+  expected << pow(x_, 3),
+              (pow(x_, 2) * y_),
+              (x_ * pow(y_, 2)),
+              pow(y_, 3),
+              pow(x_, 2),
+              (x_ * y_),
+              pow(y_, 2),
+              x_,
+              y_,
+              1;
+  // clang-format on
+
+  EXPECT_PRED2(MatrixEqual, basis, expected);
+}
+TEST_F(SymbolicExpressionTest, MonomialBasis_x_y_z_3) {
+  const Eigen::Matrix<Expression, Eigen::Dynamic, 1> basis{
+      MonomialBasis({var_x_, var_y_, var_z_}, 3)};
+  Eigen::Matrix<Expression, 20, 1> expected;
+
+  // MonomialBasis({x, y, z}, 3)
+  // clang-format off
+  expected << pow(x_, 3),
+              (pow(x_, 2) * y_),
+              (pow(x_, 2) * z_),
+              (x_ * pow(y_, 2)),
+              (x_ * y_ * z_),
+              (x_ * pow(z_, 2)),
+              pow(y_, 3),
+              (pow(y_, 2) * z_),
+              (y_ * pow(z_, 2)),
+              pow(z_, 3),
+              pow(x_, 2),
+              (x_ * y_),
+              (x_ * z_),
+              pow(y_, 2),
+              (y_ * z_),
+              pow(z_, 2),
+              x_,
+              y_,
+              z_,
+              1;
+  // clang-format on
+
+  EXPECT_PRED2(MatrixEqual, basis, expected);
+}
+
+TEST_F(SymbolicExpressionTest, MonomialBasis_x_y_z_w_3) {
+  const Eigen::Matrix<Expression, Eigen::Dynamic, 1> basis{
+      MonomialBasis({var_x_, var_y_, var_z_, var_w_}, 3)};
+  Eigen::Matrix<Expression, 35, 1> expected;
+
+  // MonomialBasis({x, y, z, w}, 3)
+  // clang-format off
+  expected << pow(x_, 3),
+              (pow(x_, 2) * y_),
+              (pow(x_, 2) * z_),
+              (pow(x_, 2) * w_),
+              (x_ * pow(y_, 2)),
+              (x_ * y_ * z_),
+              (x_ * y_ * w_),
+              (x_ * pow(z_, 2)),
+              (x_ * z_ * w_),
+              (x_ * pow(w_, 2)),
+              pow(y_, 3),
+              (pow(y_, 2) * z_),
+              (pow(y_, 2) * w_),
+              (y_ * pow(z_, 2)),
+              (y_ * z_ * w_),
+              (y_ * pow(w_, 2)),
+              pow(z_, 3),
+              (pow(z_, 2) * w_),
+              (z_ * pow(w_, 2)),
+              pow(w_, 3),
+              pow(x_, 2),
+              (x_ * y_),
+              (x_ * z_),
+              (x_ * w_),
+              pow(y_, 2),
+              (y_ * z_),
+              (y_ * w_),
+              pow(z_, 2),
+              (z_ * w_),
+              pow(w_, 2),
+              x_,
+              y_,
+              z_,
+              w_,
+              1;
+  // clang-format on
+
+  EXPECT_PRED2(MatrixEqual, basis, expected);
 }
 
 }  // namespace

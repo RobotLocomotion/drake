@@ -7,6 +7,8 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
@@ -26,6 +28,8 @@ using std::ostringstream;
 using std::runtime_error;
 using std::shared_ptr;
 using std::string;
+using std::unordered_map;
+using std::vector;
 
 bool operator<(ExpressionKind k1, ExpressionKind k2) {
   return static_cast<int>(k1) < static_cast<int>(k2);
@@ -724,6 +728,53 @@ double get_constant_in_multiplication(const Expression& e) {
 const map<Expression, Expression>& get_base_to_exp_map_in_multiplication(
     const Expression& e) {
   return to_multiplication(e)->get_base_to_exp_map();
+}
+
+Expression Monomial(const unordered_map<Variable, int, hash_value<Variable>>&
+                        map_var_to_exponent) {
+  map<Expression, Expression> base_to_exp_map;
+  for (const auto& p : map_var_to_exponent) {
+    DRAKE_DEMAND(p.second > 0);
+    base_to_exp_map.emplace(Expression{p.first}, p.second);
+  }
+  return ExpressionMulFactory{1.0, base_to_exp_map}.GetExpression();
+}
+
+namespace {
+// Helper function to implement MonomialBasis.
+// Computes [b * m for m in MonomialBasis(vars, degree)] and push them to bin.
+void MonomialsOfDegreeN(const Variables& vars, const int n, const Expression b,
+                        vector<Expression>* const bin) {
+  DRAKE_ASSERT(vars.size() > 0);
+  if (n == 0) {
+    bin->push_back(b * Expression::One());
+    return;
+  }
+  const Variable& var{*vars.cbegin()};
+  bin->push_back(b * pow(Expression{var}, n));
+  if (vars.size() == 1) {
+    return;
+  }
+  for (int i{n - 1}; i >= 0; --i) {
+    MonomialsOfDegreeN(vars - var, n - i, b * pow(Expression{var}, i), bin);
+  }
+  return;
+}
+}  // anonymous namespace
+
+Eigen::Matrix<Expression, Eigen::Dynamic, 1> MonomialBasis(
+    const Variables& vars, const int degree) {
+  DRAKE_DEMAND(vars.size() > 0);
+  DRAKE_DEMAND(degree >= 0);
+  vector<Expression> basis_exprs;
+  for (int i{degree}; i >= 0; --i) {
+    MonomialsOfDegreeN(vars, i, 1.0, &basis_exprs);
+  }
+  Eigen::Matrix<Expression, Eigen::Dynamic, 1> basis{basis_exprs.size()};
+  for (size_t i{0}; i < basis_exprs.size(); ++i) {
+    basis[i] = basis_exprs[i];
+  }
+  return basis;
 }
 
 }  // namespace symbolic
