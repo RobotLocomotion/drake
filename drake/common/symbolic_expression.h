@@ -8,6 +8,7 @@
 #include <ostream>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 
 #include <Eigen/Core>
@@ -502,7 +503,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, Expression>::value &&
         std::is_same<typename MatrixR::Scalar, Variable>::value,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs * rhs.template cast<Expression>();
 }
@@ -515,7 +516,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, Variable>::value &&
         std::is_same<typename MatrixR::Scalar, Expression>::value,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs;
 }
@@ -528,7 +529,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, Expression>::value &&
         std::is_same<typename MatrixR::Scalar, double>::value,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
@@ -541,7 +542,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, double>::value &&
         std::is_same<typename MatrixR::Scalar, Expression>::value,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
@@ -554,7 +555,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, Variable>::value &&
         std::is_same<typename MatrixR::Scalar, double>::value,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
@@ -567,10 +568,33 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, double>::value &&
         std::is_same<typename MatrixR::Scalar, Variable>::value,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
+
+/** Returns a monomial is of the form x^2*y^3, it does not have the constant
+ * factor. To generate a monomial x^2*y^3, @p map_var_to_exponent contains the
+ * pair (x.get_id(), 2) and (y.get_id(), 3).
+ *
+ * \pre{All exponents in @p map_var_to_exponent are positive integers.}
+ */
+Expression Monomial(
+    const std::unordered_map<Variable, int, hash_value<Variable>>&
+        map_var_to_exponent);
+
+/** Returns all monomials up to a given degree under the graded reverse
+ * lexicographic order. Note that graded reverse lexicographic order uses the
+ * total order among symbolic::Variable which is based on a variable's unique
+ * ID. For example, for a given variable ordering x > y > z,
+ * <tt>MonomialBasis({x, y, z}, 2)</tt> returns a column vector <tt>[x^2, xy,
+ * y^2, xz, yz, z^2, x, y, z, 1]</tt>.
+ *
+ * \pre{@p vars is a non-empty set.}
+ * \pre{@p degree is a non-negative integer.}
+ */
+Eigen::Matrix<Expression, Eigen::Dynamic, 1> MonomialBasis(
+    const Variables& vars, int degree);
 
 }  // namespace symbolic
 
