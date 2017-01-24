@@ -5,6 +5,8 @@
 
 #include <lcm/lcm-cpp.hpp>
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 namespace lcm {
 
@@ -14,6 +16,8 @@ namespace lcm {
  */
 class LcmReceiveThread {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmReceiveThread);
+
   /**
    * A constructor that instantiates the thread.
    *
@@ -28,10 +32,6 @@ class LcmReceiveThread {
    * stopped.
    */
   ~LcmReceiveThread();
-
-  // Disable copy and assign.
-  LcmReceiveThread(const LcmReceiveThread&) = delete;
-  LcmReceiveThread& operator=(const LcmReceiveThread&) = delete;
 
   /**
    * Stops the LCM receive thread. This stops the reception of LCM messages.

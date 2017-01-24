@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 
@@ -18,16 +19,14 @@ namespace lcm {
  */
 class DrakeMockLcm : public DrakeLcmInterface {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeMockLcm);
+
   /**
    * A constructor that creates a DrakeMockLcm where loopback is diabled, i.e.,
    * a call to Publish() will not result in subscriber callback function being
    * called. To enable loop-back behavior, call EnableLoopBack().
    */
   DrakeMockLcm();
-
-  // Disable copy and assign.
-  DrakeMockLcm(const DrakeMockLcm&) = delete;
-  DrakeMockLcm& operator=(const DrakeMockLcm&) = delete;
 
   void EnableLoopBack() { enable_loop_back_ = true; }
 
