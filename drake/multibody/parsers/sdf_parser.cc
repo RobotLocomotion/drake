@@ -502,8 +502,7 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
     pose_map.insert(pair<string, Isometry3d>(child_name, transform_to_model));
   }
 
-  Vector3d axis;
-  axis << 1, 0, 0;
+  Vector3d axis(1, 0, 0);
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && type.compare("fixed") != 0 &&
       type.compare("floating") != 0) {

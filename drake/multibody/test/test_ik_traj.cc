@@ -57,10 +57,10 @@ GTEST_TEST(testIKtraj, testIKtraj) {
   Vector3d com_lb = com0;
   com_lb(0) = std::numeric_limits<double>::quiet_NaN();
   com_lb(1) = std::numeric_limits<double>::quiet_NaN();
-  Vector3d com_ub = com0;
-  com_ub(0) = std::numeric_limits<double>::quiet_NaN();
-  com_ub(1) = std::numeric_limits<double>::quiet_NaN();
-  com_ub(2) = com0(2) + 0.5;
+  Vector3d com_ub(
+      std::numeric_limits<double>::quiet_NaN(),
+      std::numeric_limits<double>::quiet_NaN(),
+      com0(2) + 0.5);
   WorldCoMConstraint com_kc(model.get(), com_lb, com_ub);
   Vector3d rhand_pos_lb = rhand_pos0;
   rhand_pos_lb(0) += 0.1;
