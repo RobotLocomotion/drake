@@ -339,6 +339,11 @@ class ParamSet {
    */
   DesiredCentroidalMomentumDot MakeDesiredCentroidalMomentumDot() const;
 
+  QpInput MakeQpInput(
+      const std::vector<std::string>& contact_body_groups,
+      const std::vector<std::string>& tracked_body_groups,
+      const RigidBodyTreeAliasGroups<double>& alias_group) const;
+
   /**
    * Returns the weight for regularizing the basis vectors of contact forces.
    */
