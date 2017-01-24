@@ -294,11 +294,11 @@ std::ostream& operator<<(std::ostream& out, const ContactInformation& contact) {
 }
 
 std::string DesiredBodyMotion::get_row_name(int i) const {
-  static const std::string row_name[6] = {"[WX]", "[WY]", "[WZ]",
-                                                   "[X]",  "[Y]",  "[Z]"};
+  static constexpr const char* row_name[6] = {"[WX]", "[WY]", "[WZ]",
+                                              "[X]",  "[Y]",  "[Z]"};
   if (i < 0 || i >= 6)
     throw std::runtime_error("index must be within [0, 5]");
-  return row_name[i];
+  return std::string(row_name[i]);
 }
 
 bool DesiredBodyMotion::operator==(const DesiredBodyMotion& other) const {
@@ -350,12 +350,12 @@ std::ostream& operator<<(std::ostream& out, const DesiredDofMotions& input) {
 }
 
 std::string DesiredCentroidalMomentumDot::get_row_name(int i) const {
-  static const std::string row_name[6] = {"AngMom[X]", "AngMom[Y]",
-                                          "AngMom[Z]", "LinMom[X]",
-                                          "LinMom[Y]", "LinMom[Z]"};
+  static constexpr const char* row_name[6] = {"AngMom[X]", "AngMom[Y]",
+                                              "AngMom[Z]", "LinMom[X]",
+                                              "LinMom[Y]", "LinMom[Z]"};
   if (i < 0 || i >= 6)
     throw std::runtime_error("index must be within [0, 5]");
-  return row_name[i];
+  return std::string(row_name[i]);
 }
 
 std::ostream& operator<<(std::ostream& out,

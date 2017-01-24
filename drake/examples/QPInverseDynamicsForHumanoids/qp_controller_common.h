@@ -142,7 +142,7 @@ class ContactInformation {
  public:
   static const int kDefaultNumBasisPerContactPoint = 4;
 
-  /*
+  /**
    * Constructs a ContactInformation object for @p body.
    * @param body Reference to a RigidBody, which must be valid through the
    * lifespan of this obejct.
@@ -156,11 +156,11 @@ class ContactInformation {
    * the stacked point contact forces (F).
    * All point forces are in the world frame, and are applied at the contact
    * points in the world frame. Basis is (3 * N_c) by (N_basis * N_c), where
-   * N_c is the number of contact points, N_basis is the number of basis per
-   * contact point.
+   * N_c is the number of contact points, and N_basis is the number of basis
+   * per contact point.
    * @param robot model
-   * @param cache that stores the kinematics information, needs to be
-   * initialized first.
+   * @param cache Stores the kinematics information, needs to be initialized
+   * first.
    * @return Basis matrix
    */
   MatrixX<double> ComputeBasisMatrix(
@@ -360,7 +360,6 @@ class DesiredBodyMotion : public ConstrainedValues {
   }
   /// @}
 
-
  private:
   const RigidBody<double>* body_;
 
@@ -530,9 +529,9 @@ std::ostream& operator<<(std::ostream& out, const QpInput& input);
 class ResolvedContact {
  public:
   /**
-   * Constructs a ResolvedContact obejct for @p body.
+   * Constructs a ResolvedContact object for @p body.
    * @param body Reference to a RigidBody, which must be valid through the
-   * lifespan of this obejct.
+   * lifespan of this object.
    */
   explicit ResolvedContact(const RigidBody<double>& body) : body_(&body) {}
 
