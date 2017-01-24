@@ -10,7 +10,7 @@ namespace systems {
 
 /// An element-wise hard saturation block with inputs signal `u`,
 /// saturation values @f$ u_{min} @f$ and/or @f$ u_{max} @f$, and output
-/// `y ` respectively as in:
+/// `y` respectively as in:
 ///
 ///   @f[ y = u, u_{min} < u < u_{min} @f]
 ///   @f[ y = u_{min}, u \le u_{min} @f]
@@ -33,7 +33,9 @@ namespace systems {
 /// appropriate constructor by passing their default value. If these quantities
 /// are not defined as constants but they are not connected to appropriate
 /// sources, their values are taken by default to be
-/// @f$ u_{min} = \infty @f$, and  @f$ u_{max} = \infty @f$ respectively.
+/// @f$ u_{min} = -\infty @f$, and  @f$ u_{max} = \infty @f$ respectively.
+/// In this "variable" configuration, atleast one of the input ports must be
+/// connected.
 ///
 /// @ingroup primitive_systems
 template <typename T>
@@ -45,7 +47,7 @@ class Saturation : public LeafSystem<T> {
   ///
   /// @param[in] input_size sets size of the input and output ports.
   ///
-  /// Please consult this class' description for the requirements of
+  /// Please consult this class's description for the requirements of
   /// @p u_min and @p u_max to be supplied via the corresponding ports.
   explicit Saturation(int input_size);
 
@@ -58,7 +60,7 @@ class Saturation : public LeafSystem<T> {
   /// @param[in] u_max the upper (vector) limit to the
   /// saturation.
   ///
-  /// Please consult this class' description for the requirements of
+  /// Please consult this class's description for the requirements of
   /// @p u_min and @p u_max.
   Saturation(const VectorX<T>& min_value, const VectorX<T>& max_value);
 

@@ -74,6 +74,12 @@ void Saturation<T>::DoCalcOutput(const Context<T>& context,
         this->EvalVectorInput(context, max_value_port_index_);
     const BasicVector<T>* min_value_vector =
         this->EvalVectorInput(context, min_value_port_index_);
+
+    // Throws an error in case neither of the inputs are connected in
+    // the case of the variable version of the Saturation system.
+    DRAKE_THROW_UNLESS(min_value_vector != nullptr
+        || max_value_vector != nullptr);
+
     if (min_value_vector != nullptr) {
       u_min = min_value_vector->get_value();
     }

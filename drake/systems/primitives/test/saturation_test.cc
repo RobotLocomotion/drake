@@ -149,18 +149,17 @@ void SaturationTest(bool run_constant_saturation_test) {
     }
 
     if (run_constant_saturation_test) {
-      EXPECT_NO_THROW(TestConstantSaturation<T>(
-          *saturation_system, input_vector_range.col(i), expected));
+      TestConstantSaturation<T>(
+          *saturation_system, input_vector_range.col(i), expected);
     } else {
       // Tests Saturation with variable max and min values.
-      EXPECT_NO_THROW(
-          TestVariableSaturation<T>(*saturation_system, kUMin, kUMax,
-                                    input_vector_range.col(i), expected));
+      TestVariableSaturation<T>(*saturation_system, kUMin, kUMax,
+                                    input_vector_range.col(i), expected);
 
       VectorX<T> dummy_vector;
       // Tests Saturation with variable max and min values and neither supplied.
       // This results in the system acting as a pass through system.
-      EXPECT_NO_THROW(TestVariableSaturation<T>(
+      EXPECT_ANY_THROW(TestVariableSaturation<T>(
           *saturation_system, dummy_vector, dummy_vector,
           input_vector_range.col(i), input_vector_range.col(i)));
     }
