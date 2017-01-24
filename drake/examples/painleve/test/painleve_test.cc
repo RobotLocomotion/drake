@@ -646,7 +646,7 @@ TEST_F(PainleveTimeSteppingTest, RodGoesToRest) {
 // time stepping based system.
 GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSliding) {
   // Create two Painleve systems.
-  const double dt = 1e-3;
+  const double dt = 1e-1;
   Painleve<double> ts(dt);
   Painleve<double> pdae;
 
@@ -662,7 +662,7 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSliding) {
   // Init the simulator for the time stepping system.
   Simulator<double> simulator_ts(ts, std::move(context_ts));
 
-  // Integrate forward by a single dt.
+  // Integrate forward by a single *large* dt.
   simulator_ts.StepTo(dt);
 
   // Manually integrate the continuous state forward for the piecewise DAE
@@ -678,9 +678,12 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSliding) {
   xc->SetAtIndex(2, xc->GetAtIndex(2) + dt*xc->GetAtIndex(5));
 
   // See whether the states are equal.
-  const auto& xd = context_ts->get_discrete_state(0)->get_value();
+  const Context<double>& context_ts_new = simulator_ts.get_context();
+  const auto& xd = context_ts_new.get_discrete_state(0)->get_value();
 
-  const double tol = std::numeric_limits<double>::epsilon();
+  // Somewhat significant tolerance is necessary because of the constraint
+  // stabilized solution.
+  const double tol = 2e-8;
   EXPECT_NEAR(xc->GetAtIndex(0), xd[0], tol);
   EXPECT_NEAR(xc->GetAtIndex(1), xd[1], tol);
   EXPECT_NEAR(xc->GetAtIndex(2), xd[2], tol);

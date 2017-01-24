@@ -162,7 +162,7 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
   // N = | 0 1 n2 |    F = | 1 0 f2 |
   // where n1, n2/f1, f2 are the moment arm induced by applying the
   // force at the given contact point along the normal/tangent direction.
-  MatrixX<T> N(nc, ngc), F(nc, ngc);
+  Eigen::Matrix<T, nc, ngc> N, F;
   N(0, 0) = N(1, 0) = 0;
   N(0, 1) = N(1, 1) = 1;
   N(0, 2) = (xep1 - x);
@@ -176,12 +176,12 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
   // will yield mu*fN - E*fF = 0, or, equivalently:
   // mu*fN₁ - fF₁⁺ - fF₁⁻ ≥ 0
   // mu*fN₂ - fF₂⁺ - fF₂⁻ ≥ 0
-  MatrixX<T> E(nk, nc);
+  Eigen::Matrix<T, nk, nc> E;
   E.col(0) << 1, 0, 1, 0;
   E.col(1) << 0, 1, 0, 1;
 
   // Construct the LCP matrix. First do the "normal contact direction" rows.
-  MatrixX<T> MM(8, 8);
+  Eigen::Matrix<T, 8, 8> MM;
   MM.template block<2, 2>(0, 0) = N * iM * N.transpose();
   MM.template block<2, 2>(0, 2) = N * iM * F.transpose();
   MM.template block<2, 2>(0, 4) = -MM.template block<2, 2>(0, 2);
@@ -208,7 +208,7 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
   MM.template block<2, 2>(6, 6).setZero();
 
   // Construct the LCP vector.
-  VectorX<T> qq(8);
+  Eigen::Matrix<T, 8, 1> qq(8);
   qq.segment(0, 2) = N * v;
   qq(0) += erp * yep1/dt_;
   qq(1) += erp * yep2/dt_;
@@ -221,7 +221,7 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
   // for sufficiently large cfm.
   // R. Cottle, J.-S. Pang, and R. Stone. The Linear Complementarity Problem.
   // Academic Press, 1992.
-  MM += MatrixX<T>::Identity(8, 8) * cfm;
+  MM += Eigen::Matrix<T, 8, 8>::Identity() * cfm;
 
   // Solve the LCP.
   VectorX<T> zz;
