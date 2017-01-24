@@ -249,6 +249,12 @@ macro(drake_setup_platform)
     "Suffix of library install directory, e.g. '64'")
   mark_as_advanced(LIB_SUFFIX)
 
+  # Set RPATH for installed binaries
+  set(CMAKE_INSTALL_RPATH
+    ${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}
+    ${CMAKE_INSTALL_PREFIX}/lib)
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
+
   drake_setup_compiler()
   drake_setup_matlab()
   drake_setup_java()
