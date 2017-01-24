@@ -201,7 +201,6 @@ int DoMain() {
       // saturation
       const double ku_upper_bound = 20;
       const double ku_lower_bound = -20;
-
       if (u >= ku_upper_bound) u = ku_upper_bound;
       if (u <= ku_lower_bound) u = ku_lower_bound;
       /*

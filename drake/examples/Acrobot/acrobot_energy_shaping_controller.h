@@ -1,8 +1,13 @@
 // The same energy shaping controller as in
-// acrobot_energy_shaping_controller_w_lcm, but using System 2.0. It should
-// be connected to AcrobotStateReceiver and AcrobotCommandSender (in
-// acrobot_lcm.h) to communiate via lcm to acrobot_plant_w_lcm.
-// For some reason it does not work at the moment.
+// acrobot_energy_shaping_controller_w_lcm, but using System framework. It can
+// be either
+// 1) connected directly to an acrobot_plant, as in acrobot_run_swing_up.cc, or
+// 2) connected to AcrobotStateReceiver and AcrobotCommandSender (in
+// acrobot_lcm.h) to communiate via LCM to acrobot_plant_w_lcm (Does not work
+// at the moment).
+//
+// The structure of this controller is based on
+// PendulumEnergyShapingController in pendulum_run_energy_shaping.cc
 
 #pragma once
 
@@ -35,9 +40,9 @@ class AcrobotSwingUpController : public systems::LeafSystem<T> {
         b2(acrobot.getb2()),
         g(acrobot.getg()) {
     this->DeclareInputPort(systems::kVectorValued,
-                           acrobot.get_output_port(0).get_size());
+                           acrobot.get_output_port(0).size());
     this->DeclareOutputPort(systems::kVectorValued,
-                            acrobot.get_input_port(0).get_size());
+                            acrobot.get_input_port(0).size());
 
     // create context for linearization
     auto context0 = acrobot.CreateDefaultContext();
@@ -64,12 +69,9 @@ class AcrobotSwingUpController : public systems::LeafSystem<T> {
                                           linear_system->B(), Q, R);
     S = lqr_result.S;
     K = lqr_result.K;
-
-    cout << "S=\n" << lqr_result.S << endl;
-    cout << "K=\n" << lqr_result.K << endl;
   }
 
-  void EvalOutput(const systems::Context<T>& context,
+  void DoCalcOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override {
     const AcrobotStateVector<T>* x = dynamic_cast<const AcrobotStateVector<T>*>(
         this->EvalVectorInput(context, 0));
@@ -108,18 +110,24 @@ class AcrobotSwingUpController : public systems::LeafSystem<T> {
     C(0) += b1 * x->theta1dot();
     C(1) += b2 * x->theta2dot();
 
+    // controller gains
+    const double k_e = 5;
+    const double k_p = 50;
+    const double k_d = 5;
+
     T PE, KE;
     KE = 0.5 * qdot.transpose() * H * qdot;
     PE = -m1 * g * lc1 * c1 - m2 * g * (l1 * c1 + lc2 * c12);
     const T E = KE + PE;
     const T Ed = (m1 * lc1 + m2 * (l1 + lc2)) * g;
     const T Etilde = E - Ed;
-    const T u_e = -5 * Etilde * x->theta2dot();
+    const T u_e = -k_e * Etilde * x->theta2dot();
 
-    const T y = -50 * x->theta2() - 5 * x->theta2dot();
+    const T y = -k_p * x->theta2() - k_d * x->theta2dot();
     T a3 = H_inverse(1, 1), a2 = H_inverse(0, 1);
     T u_p = (a2 * C(0) + y) / a3 + C(1);
 
+    // wrapping of theta1 and theta2
     while (x_c(0) > 2 * M_PI) {
       x_c(0) -= 2 * M_PI;
     }
@@ -127,13 +135,14 @@ class AcrobotSwingUpController : public systems::LeafSystem<T> {
       x_c(0) += 2 * M_PI;
     }
 
-    while (x_c(1) > 2 * M_PI) {
+    while (x_c(1) > M_PI) {
       x_c(1) -= 2 * M_PI;
     }
-    while (x_c(1) < 0) {
+    while (x_c(1) < -M_PI) {
       x_c(1) += 2 * M_PI;
     }
 
+    // deciding which contoller to use (LQR or energy shaping)
     T cost = (x_c.transpose() - x0.transpose()) * S * (x_c - x0);
     if (cost < 1e3) {
       Eigen::Matrix<T, 1, 1> u_v = K * (x0 - x_c);
@@ -145,8 +154,11 @@ class AcrobotSwingUpController : public systems::LeafSystem<T> {
       u = u_e + u_p;
     }
 
-    // if(u>=1) u=1;
-    // if(u<=-1) u=-1;
+    // saturation
+    const T ku_upper_bound = 20;
+    const T ku_lower_bound = -20;
+    if (u >= ku_upper_bound) u = ku_upper_bound;
+    if (u <= ku_lower_bound) u = ku_lower_bound;
 
     cout << "u_e = " << u_e << ", u_p= " << u_p << ", E~= " << Etilde
          << ", "
@@ -174,7 +186,7 @@ class AcrobotSwingUpController : public systems::LeafSystem<T> {
       b1,   // Damping coefficient of the shoulder joint (kg*m^2/s).
       b2,   // Damping coefficient of the elbow joint (kg*m^2/s).
       g;    // Gravitational constant (m/s^2).
-  Eigen::MatrixXd S;
+  Eigen::Matrix4d S;
   Eigen::MatrixXd K;
 };
 

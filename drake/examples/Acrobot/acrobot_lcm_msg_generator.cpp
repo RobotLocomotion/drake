@@ -30,7 +30,7 @@ int DoMain() {
   lcm.StartReceiveThread();
 
   int t = 0;
-  while (t <= 1000) {
+  while (t < 1e5) {
     // publishing messages to be received
     msg_x.theta1 = t * M_PI / 6;
     msg_x.theta2 = t * M_PI / 6;

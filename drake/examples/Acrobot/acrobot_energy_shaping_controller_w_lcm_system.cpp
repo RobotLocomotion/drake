@@ -1,4 +1,6 @@
-// a version of the acrobot plant that talks to controller through LCM
+// acrobot_energy_shaping_controller connected to
+// LcmPublisher/SubscriberSystem. It communicates with acrobot_plant by LCM.
+
 #include <memory>
 
 #include <gflags/gflags.h>
@@ -22,7 +24,7 @@
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
-DEFINE_double(realtime_factor, 1.0,
+DEFINE_double(realtime_factor, 0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
@@ -45,8 +47,8 @@ int DoMain() {
       multibody::joints::kFixed, tree.get());
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
 
+  /*
   // ------------------virtual plant--------------------------------------
-
   auto acrobot = builder.AddSystem<AcrobotPlant>();
   // connect plant to visualizer
   builder.Connect(acrobot->get_output_port(0), publisher->get_input_port(0));
@@ -70,8 +72,8 @@ int DoMain() {
   builder.Connect(command_receiver->get_output_port(0),
                   acrobot->get_input_port(0));
   builder.Connect(acrobot->get_output_port(0), state_sender->get_input_port(0));
+  */
 
-  /*
   //------------------controller--------------------------------------
   // create state receiver
   auto state_sub =
@@ -89,20 +91,20 @@ int DoMain() {
   builder.Connect(command_sender->get_output_port(0),
                   command_pub->get_input_port(0));
 
+  auto acrobot = std::make_unique<AcrobotPlant<double>>();
   auto controller = builder.AddSystem<AcrobotSwingUpController>(*acrobot);
   builder.Connect(controller->get_output_port(0),
                   command_sender->get_input_port(0));
   builder.Connect(state_receiver->get_output_port(0),
                   controller->get_input_port(0));
 
-
   builder.Connect(state_receiver->get_output_port(0),
                   publisher->get_input_port(0));
-  */
 
   auto diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
 
+  /*
   // Set an initial condition near the stable fixed point.
   systems::Context<double>* acrobot_context =
       diagram->GetMutableSubsystemContext(simulator.get_mutable_context(),
@@ -114,6 +116,7 @@ int DoMain() {
   x0->set_theta2(0.1);
   x0->set_theta1dot(0.0);
   x0->set_theta2dot(0.0);
+  */
 
   lcm.StartReceiveThread();
 
