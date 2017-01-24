@@ -67,20 +67,44 @@ struct Unique {
 // Check the index, type and name etc of the newly added variables.
 // This function only works if the only variables contained in @p prog are @p var.
 template <typename Derived>
-void CheckAddedVariable(const MathematicalProgram& prog, const Eigen::MatrixBase<Derived>& var, const std::string& var_name, bool is_symmetric) {
+void CheckAddedVariable(const MathematicalProgram& prog, const Eigen::MatrixBase<Derived>& var, const std::string& var_name, bool is_symmetric, MathematicalProgram::VarType type_expected) {
   // Checks the name of the newly added variables.
   std::stringstream msg_buff;
   msg_buff << var << std::endl;
   EXPECT_EQ(msg_buff.str(), var_name);
   // Checks num_vars() function.
-  EXPECT_EQ(prog.num_vars(), var.size());
+  const int num_new_vars = is_symmetric ? var.rows() * (var.rows() + 1)/2 : var.size();
+  EXPECT_EQ(prog.num_vars(), num_new_vars);
+  // Checks if the newly added variable is symmetric.
+  EXPECT_EQ(math::IsSymmetric(var), is_symmetric);
   // Checks the indices of the newly added variables.
-  for(int i = 0; i < static_cast<int>(var.rows()); ++i) {
+  if (is_symmetric) {
+    int var_count = 0;
     for (int j = 0; j < var.cols(); ++j) {
-      EXPECT_EQ(prog.FindDecisionVariableIndex(var(i, j)), j * var.rows() + i);
+      for (int i = j; i < var.rows(); ++i) {
+        EXPECT_EQ(prog.FindDecisionVariableIndex(var(i, j)), var_count);
+        ++var_count;
+      }
     }
   }
-  EXPECT_EQ(math::IsSymmetric(var), is_symmetric);
+  else {
+    for (int i = 0; i < var.rows(); ++i) {
+      for (int j = 0; j < var.cols(); ++j) {
+        EXPECT_EQ(prog.FindDecisionVariableIndex(var(i, j)),
+                  j * var.rows() + i);
+      }
+    }
+  }
+
+  // Checks the type of the newly added variables.
+  const auto& variable_types = prog.DecisionVariableTypes();
+  for (int i = 0; i < var.rows(); ++i) {
+    for (int j = 0; j < var.cols(); ++j) {
+      EXPECT_EQ(variable_types[prog.FindDecisionVariableIndex(var(i, j))],
+          type_expected);
+      EXPECT_EQ(prog.DecisionVariableType(var(i, j)), type_expected);
+    }
+  }
 }
 GTEST_TEST(testAddVariable, testAddContinuousVariables1) {
   // Adds a dynamic-sized matrix of continuous variables.
@@ -90,7 +114,7 @@ GTEST_TEST(testAddVariable, testAddContinuousVariables1) {
       "should be a dynamic sized matrix");
   EXPECT_EQ(X.rows(), 2);
   EXPECT_EQ(X.cols(), 3);
-  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n", false);
+  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n", false, MathematicalProgram::VarType::CONTINUOUS);
 }
 
 GTEST_TEST(testAddVariable, testAddContinuousVariable2) {
@@ -99,7 +123,7 @@ GTEST_TEST(testAddVariable, testAddContinuousVariable2) {
   auto X = prog.NewContinuousVariables<2, 3>("X");
   static_assert(std::is_same<decltype(X), MatrixDecisionVariable<2, 3>>::value,
   "should be a static sized matrix");
-  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n", false);
+  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n", false, MathematicalProgram::VarType::CONTINUOUS);
 }
 
 GTEST_TEST(testAddVariable, testAddContinuousVariable3) {
@@ -109,7 +133,7 @@ GTEST_TEST(testAddVariable, testAddContinuousVariable3) {
   static_assert(std::is_same<decltype(x), VectorXDecisionVariable>::value,
   "Should be a VectorXDecisionVariable object.");
   EXPECT_EQ(x.rows(), 4);
-  CheckAddedVariable(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n", false);
+  CheckAddedVariable(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n", false, MathematicalProgram::VarType::CONTINUOUS);
 }
 
 GTEST_TEST(testAddVariable, testAddContinuousVariable4) {
@@ -118,7 +142,27 @@ GTEST_TEST(testAddVariable, testAddContinuousVariable4) {
   auto x = prog.NewContinuousVariables<4>("x");
   static_assert(std::is_same<decltype(x), VectorDecisionVariable<4>>::value,
                 "Should be a VectorXDecisionVariable object.");
-  CheckAddedVariable(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n", false);
+  CheckAddedVariable(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n", false, MathematicalProgram::VarType::CONTINUOUS);
+}
+
+GTEST_TEST(testAddVariable, testAddSymmetricVariable1) {
+  // Adds a static-sized symmetric matrix of continuous variables.
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<3>("X");
+  static_assert(std::is_same<decltype(X), MatrixDecisionVariable<3, 3>>::value,
+  "should be a MatrixDecisionVariable<3> object");
+  CheckAddedVariable(prog, X, "X(0,0) X(1,0) X(2,0)\nX(1,0) X(1,1) X(2,1)\nX(2,0) X(2,1) X(2,2)\n", true, MathematicalProgram::VarType::CONTINUOUS);
+}
+
+GTEST_TEST(testAddVariable, testAddSymmetricVariable2) {
+  // Adds a dynamic-sized symmetric matrix of continuous variables.
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables(3, "X");
+  static_assert(std::is_same<decltype(X), MatrixXDecisionVariable>::value,
+                "should be a MatrixXDecisionVariable object");
+  EXPECT_EQ(X.rows(), 3);
+  EXPECT_EQ(X.cols(), 3);
+  CheckAddedVariable(prog, X, "X(0,0) X(1,0) X(2,0)\nX(1,0) X(1,1) X(2,1)\nX(2,0) X(2,1) X(2,2)\n", true, MathematicalProgram::VarType::CONTINUOUS);
 }
 
 GTEST_TEST(testMathematicalProgram, testAddFunction) {
