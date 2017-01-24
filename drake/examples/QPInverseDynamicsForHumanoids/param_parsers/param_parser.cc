@@ -557,6 +557,39 @@ void ParamSet::LookupDesiredDofMotionGains(VectorX<double>* Kp,
   }
 }
 
+
+QpInput ParamSet::MakeQpInput(
+    const std::vector<std::string>& contact_body_groups,
+    const std::vector<std::string>& tracked_body_groups,
+    const RigidBodyTreeAliasGroups<double>& alias_group) const {
+  QpInput qp_input(GetDofNames(alias_group.get_tree()));
+
+  // Inserts all contacts.
+  for (const auto& contact_group : contact_body_groups) {
+    std::unordered_map<std::string, ContactInformation> contacts =
+        MakeContactInformation(contact_group, alias_group);
+    qp_input.mutable_contact_information().insert(contacts.begin(), contacts.end());
+  }
+
+  // Inserts all tracked bodies.
+  for (const auto& tracked_body_group : tracked_body_groups) {
+    std::unordered_map<std::string, DesiredBodyMotion> motions =
+        MakeDesiredBodyMotion(tracked_body_group, alias_group);
+    qp_input.mutable_desired_body_motions().insert(motions.begin(), motions.end());
+  }
+
+  // Makes desired DoF motions.
+  qp_input.mutable_desired_dof_motions() = MakeDesiredDofMotions();
+
+  // Copies basis regularization weight.
+  qp_input.mutable_w_basis_reg() = get_basis_regularization_weight();
+
+  // Makes DesiredCentroidalMomentumDot
+  qp_input.mutable_desired_centroidal_momentum_dot() = MakeDesiredCentroidalMomentumDot();
+
+  return qp_input;
+}
+
 }  // namespace param_parsers
 }  // namespace qp_inverse_dynamics
 }  // namespace examples

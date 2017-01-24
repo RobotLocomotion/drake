@@ -33,13 +33,13 @@ std::ostream& operator<<(std::ostream& out, const ConstraintType& type);
  */
 class ConstrainedValues {
  public:
-  ConstrainedValues() {}
-
   /**
    * Constructs a ConstrainedValues object with dimension @p dim. All weights
    * and values are initialized to zero, and constraint types are set to
    * ConstraintType::Skip.
    */
+  ConstrainedValues() {}
+
   explicit ConstrainedValues(int dim)
       : constraint_types_(dim, ConstraintType::Skip),
         weights_(VectorX<double>::Zero(dim)),

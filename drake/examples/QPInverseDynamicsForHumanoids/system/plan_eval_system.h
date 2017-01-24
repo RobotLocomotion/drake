@@ -32,17 +32,21 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
  public:
   explicit PlanEvalSystem(const RigidBodyTree<double>& robot);
 
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
+  virtual void DoCalcOutput(const systems::Context<double>& context,
+      systems::SystemOutput<double>* output) const override;
 
-  void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-                                systems::State<double>* state) const override;
-
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
+  virtual std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
       const systems::OutputPortDescriptor<double>& descriptor) const override;
 
-  std::unique_ptr<systems::AbstractState> AllocateAbstractState()
-      const override;
+  virtual std::unique_ptr<systems::AbstractState> AllocateAbstractState() const override {
+    throw std::runtime_error("Subclass need to implememt AllocateOutputAbstract.");
+    return std::make_unique<systems::AbstractState>();
+  }
+
+  virtual void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
+      systems::State<double>* state) const override {
+    throw std::runtime_error("Subclass need to implememt DoCalcUnrestrictedUpdate.");
+  }
 
   /**
    * Set the set point for tracking.
@@ -50,6 +54,9 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
    * @param state State that holds the plan.
    */
   void SetDesired(const VectorX<double>& q, systems::State<double>* state);
+  PlanEvalSystem(const RigidBodyTree<double>& robot,
+      const std::string& alias_groups_file_name,
+      const std::string& param_file_name);
 
   /**
    * @return Port for the input: HumanoidStatus.
@@ -67,7 +74,15 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     return get_output_port(output_port_index_qp_input_);
   }
 
- private:
+ protected:
+  template <typename PlanType> PlanType& get_mutable_plan(systems::State<double>* state) const {
+    return state->get_mutable_abstract_state()->get_mutable_abstract_state(abstract_state_plan_index_).GetMutableValue<PlanType>();
+  }
+
+  QpInput& get_mutable_qp_input(systems::State<double>* state) const {
+    return state->get_mutable_abstract_state()->get_mutable_abstract_state(abstract_state_qp_input_index_).GetMutableValue<QpInput>();
+  }
+
   const RigidBodyTree<double>& robot_;
   const double control_dt_{2e-3};
 
@@ -76,6 +91,8 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
 
   int input_port_index_humanoid_status_;
   int output_port_index_qp_input_;
+  int abstract_state_qp_input_index_;
+  int abstract_state_plan_index_;
 };
 
 }  // namespace qp_inverse_dynamics
