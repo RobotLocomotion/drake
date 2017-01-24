@@ -50,24 +50,8 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   HumanoidStatus robot_status(*robot, alias_groups);
 
   QPController con;
-  QpInput input(GetDofNames(*robot));
+  QpInput input = paramset.MakeQpInput({"feet"}, {"pelvis", "torso"}, alias_groups);
   QpOutput output(GetDofNames(*robot));
-
-  // Initializes QP input.
-  input.mutable_contact_information() =
-      paramset.MakeContactInformation("feet", alias_groups);
-
-  std::unordered_map<std::string, DesiredBodyMotion> motion_d =
-      paramset.MakeDesiredBodyMotion("pelvis", alias_groups);
-  input.mutable_desired_body_motions().insert(motion_d.begin(), motion_d.end());
-  motion_d = paramset.MakeDesiredBodyMotion("torso", alias_groups);
-  input.mutable_desired_body_motions().insert(motion_d.begin(), motion_d.end());
-
-  input.mutable_desired_dof_motions() = paramset.MakeDesiredDofMotions();
-  input.mutable_w_basis_reg() = paramset.get_basis_regularization_weight();
-
-  input.mutable_desired_centroidal_momentum_dot() =
-      paramset.MakeDesiredCentroidalMomentumDot();
 
   // Set up initial condition.
   DRAKE_DEMAND(valkyrie::kRPYValkyrieDof == robot->get_num_positions());

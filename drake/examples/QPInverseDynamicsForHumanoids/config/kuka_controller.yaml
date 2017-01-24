@@ -1,0 +1,35 @@
+# For all 6 dim gains / weights, the order is [angular, linear]
+
+ContactForceBasis:
+  weight: 1e-6
+
+CentroidalMomentum:
+  Kp: 0
+  Kd: 0
+  weight: 0
+
+Contacts:
+  default:
+    weight: 1e5
+    Kd: 8
+    mu: 1
+    contact_points: [0, 0, 0]
+    num_basis_per_contact_point: 4
+    normal: [0, 0, 1]
+
+BodyMotions:
+  default:
+    Kp: 0
+    Kd: 0
+    weight: 0
+
+  flange:
+    Kp: 10
+    Kd: 6
+    weight: 1
+
+DoFMotions:
+  default:
+    Kp: 10
+    Kd: 3
+    weight: 1e-1

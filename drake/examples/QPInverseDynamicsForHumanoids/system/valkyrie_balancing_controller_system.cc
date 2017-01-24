@@ -6,8 +6,8 @@
 #include "bot_core/robot_state_t.hpp"
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_system.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/atlas_joint_level_controller_system.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/humanoid_plan_eval_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/robot_state_decoder_system.h"
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
@@ -27,7 +27,7 @@ namespace qp_inverse_dynamics {
 // This is an example qp based inverse dynamics controller loop for Valkyrie
 // built from the Systems blocks.
 //
-// The overall input and output is a LCM message of type
+// The overall input and output is a lcm message of type
 // bot_core::robot_state_t and bot_core::atlas_command_t.
 void controller_loop() {
   // Loads model.
@@ -41,14 +41,21 @@ void controller_loop() {
 
   lcm::DrakeLcm lcm;
 
+  std::string alias_groups_config =
+      drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
+          "config/alias_groups.yaml";
+  std::string controller_config =
+      drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
+          "config/controller.yaml";
+
   RobotStateDecoderSystem* rs_msg_to_rs =
       builder.AddSystem(std::make_unique<RobotStateDecoderSystem>(*robot));
-  PlanEvalSystem* plan_eval =
-      builder.AddSystem(std::make_unique<PlanEvalSystem>(*robot));
+  HumanoidPlanEvalSystem* plan_eval =
+      builder.AddSystem(std::make_unique<HumanoidPlanEvalSystem>(*robot, alias_groups_config, controller_config));
   QPControllerSystem* qp_con =
       builder.AddSystem(std::make_unique<QPControllerSystem>(*robot));
-  JointLevelControllerSystem* joint_con =
-      builder.AddSystem<JointLevelControllerSystem>(*robot);
+  AtlasJointLevelControllerSystem* joint_con =
+      builder.AddSystem<AtlasJointLevelControllerSystem>(*robot);
 
   auto& robot_state_subscriber = *builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<bot_core::robot_state_t>(
@@ -68,9 +75,7 @@ void controller_loop() {
                   qp_con->get_input_port_humanoid_status());
   builder.Connect(plan_eval->get_output_port_qp_input(),
                   qp_con->get_input_port_qp_input());
-  // rs + qp_output -> atlas_command_t
-  builder.Connect(rs_msg_to_rs->get_output_port_humanoid_status(),
-                  joint_con->get_input_port_humanoid_status());
+  // qp_output -> atlas_command_t
   builder.Connect(qp_con->get_output_port_qp_output(),
                   joint_con->get_input_port_qp_output());
   // atlas_command_t -> lcm
