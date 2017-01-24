@@ -211,7 +211,7 @@ class Mesh : public Geometry {
 
   // cosine(30°) -- used to determine if normal deviation of decomposed
   // triangles lies within the documented threshold.
-  static constexpr double kCosThreshold = std::cos(30.0 / 180.0 * M_PI);
+  static const double kCosThreshold;
 
   // Given a list of vertex values and three indices into that set, computes a
   // unit-length normal vector to the triangle defined by the vertices.

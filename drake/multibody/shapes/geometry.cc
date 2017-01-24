@@ -184,6 +184,8 @@ ostream& operator<<(ostream& out, const Capsule& cc) {
   return out;
 }
 
+const double Mesh::kCosThreshold = std::cos(30.0 / 180.0 * M_PI);
+
 Mesh::Mesh(const string& uri, const string& resolved_filename)
     : Geometry(MESH),
       scale_(1.0, 1.0, 1.0),
@@ -361,14 +363,13 @@ void Mesh::LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
                 throw std::runtime_error("Trying to triangulate the face in '" +
                     obj_file_name + "' on line " +
                     std::to_string(line_number) +
-                    ".  The place is not sufficiently planar. " +
+                    ".  The face is not sufficiently planar. " +
                     "Consider triangulating by hand.");
               }
             }
             lastNormal = testNormal;
             triangles->push_back(
                 Vector3i(indices[0] - 1, indices[i] - 1, indices[i + 1] - 1));
-
           }
           if (!valid) {
             // Problems in computing the normal are logged in GetNormal.

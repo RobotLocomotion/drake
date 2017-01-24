@@ -120,7 +120,7 @@ GTEST_TEST(MeshShapeTests, DetectNonPlanarTriangulation) {
   GTEST_FAIL();
   } catch (std::runtime_error& e) {
   const std::string kExpectedMessage = "Trying to triangulate the face in '" +
-      kFileName + "' on line 25.  The place is not sufficiently planar. " +
+      kFileName + "' on line 25.  The face is not sufficiently planar. " +
       "Consider triangulating by hand.";
   EXPECT_EQ(e.what(), kExpectedMessage);
   }
