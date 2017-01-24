@@ -290,12 +290,14 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       size_t numel_belongs_to(mxGetNumberOfElements(belongs_to));
       size_t numel_ignores(mxGetNumberOfElements(ignores));
       size_t num_collision_filter_groups = max(numel_belongs_to, numel_ignores);
-      if (num_collision_filter_groups > kMaxNumCollisionFilterGroups) {
+      if (num_collision_filter_groups >
+          DrakeCollision::kMaxNumCollisionFilterGroups) {
         mexErrMsgIdAndTxt(
             "Drake:constructModelmex:TooManyCollisionFilterGroups",
             "The total number of collision filter groups (%d) "
             "exceeds the maximum allowed number (%d)",
-            num_collision_filter_groups, kMaxNumCollisionFilterGroups);
+            num_collision_filter_groups,
+            DrakeCollision::kMaxNumCollisionFilterGroups);
       }
 
       mxLogical* logical_belongs_to = mxGetLogicals(belongs_to);
