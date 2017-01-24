@@ -5,6 +5,7 @@
 #include "bot_core/atlas_command_t.hpp"
 #include "bot_core/robot_state_t.hpp"
 #include "drake/common/drake_path.h"
+#include "drake/common/text_logging.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
@@ -80,14 +81,14 @@ void controller_loop() {
 
   auto context = diagram->CreateDefaultContext();
   auto output = diagram->AllocateOutput(*context);
+  std::unique_ptr<systems::State<double>> tmp_state = context->CloneState();
   systems::UpdateActions<double> actions;
 
+  // Sets plan eval's desired to the nominal state.
   systems::Context<double>* plan_eval_context =
       diagram->GetMutableSubsystemContext(context.get(), plan_eval);
   systems::State<double>* plan_eval_state =
       plan_eval_context->get_mutable_state();
-
-  // Sets plan eval's desired to the nominal state.
   DRAKE_DEMAND(valkyrie::kRPYValkyrieDof == robot->get_num_positions());
   VectorX<double> desired_q =
       valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDof);
@@ -95,28 +96,38 @@ void controller_loop() {
 
   lcm.StartReceiveThread();
 
-  std::cout << "controller started\n";
+  drake::log()->info("controller started");
 
   systems::UpdateActions<double> update_actions;
-  double next_control_time = context->get_time();
 
-  // TODO(siyuan): This is a busy polling loop on LCM message. Should switch to
-  // a descheduled version at some point.
+  // Loops until the first status message arrives.
+  while (true) {
+    // Sets Context's time to the timestamp in the bot_core::robot_state_t msg.
+    const bot_core::robot_state_t* msg =
+        rs_msg_to_rs->EvalInputValue<bot_core::robot_state_t>(
+            diagram->GetSubsystemContext(*context, rs_msg_to_rs), 0);
+    context->set_time(static_cast<double>(msg->utime) / 1e6);
+    if (context->get_time() != 0) break;
+  }
+
+  double next_control_time = diagram->CalcNextUpdateTime(*context, &update_actions);
+
   while (true) {
     // Computes control.
     if (next_control_time <= context->get_time()) {
-      diagram->CalcUnrestrictedUpdate(*context, );
-      // TODO(siyuanfeng): should directly use the equivalent from Diagram
-      // once issue #4566 is resolved.
-      plan_eval->DoCalcUnrestrictedUpdate(*plan_eval_context, plan_eval_state);
+      diagram->CalcUnrestrictedUpdate(*context, update_actions.events.front(),
+                                      tmp_state.get());
+      context->get_mutable_state()->CopyFrom(*tmp_state);
 
       next_control_time =
-          plan_eval->CalcNextUpdateTime(*plan_eval_context, &update_actions);
+          diagram->CalcNextUpdateTime(*context, &update_actions);
 
       // Sends the bot_core::atlas_command_t msg.
       diagram->Publish(*context);
     }
 
+    // TODO(siyuan): This is a busy polling loop on LCM message. Should switch
+    // to a descheduled version.
     // Sets Context's time to the timestamp in the bot_core::robot_state_t msg.
     const bot_core::robot_state_t* msg =
         rs_msg_to_rs->EvalInputValue<bot_core::robot_state_t>(

@@ -425,7 +425,6 @@ bool QpInput::operator==(const QpInput& other) const {
     return false;
   }
   if (w_basis_reg_ != other.w_basis_reg_) {
-    std::cout << w_basis_reg_ << " " << other.w_basis_reg_;
     return false;
   }
 

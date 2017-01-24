@@ -2,6 +2,7 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/text_logging.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
@@ -144,7 +145,9 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
     int status = con.Control(robot_status, input, &output);
 
     if (status) {
-      std::cout << input << output;
+      std::stringstream err;
+      err << input << output;
+      drake::log()->info(err.str());
       break;
     }
 
@@ -172,8 +175,6 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   EXPECT_TRUE(drake::CompareMatrices(
       v, VectorX<double>::Zero(robot->get_num_velocities()), 1e-4,
       drake::MatrixCompareType::absolute));
-
-  std::cout << output;
 }
 
 }  // namespace qp_inverse_dynamics
