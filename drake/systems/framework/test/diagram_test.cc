@@ -113,15 +113,18 @@ class DiagramTest : public ::testing::Test {
   // Asserts that output_ is what it should be for the default values
   // of input0_, input1_, and input2_.
   void ExpectDefaultOutputs() {
-    Eigen::Vector3d expected_output0;
-    expected_output0 << 1 + 8 + 64, 2 + 16 + 128, 4 + 32 + 256;  // B
+    Eigen::Vector3d expected_output0(
+        1 + 8 + 64,
+        2 + 16 + 128,
+        4 + 32 + 256);  // B
 
-    Eigen::Vector3d expected_output1;
-    expected_output1 << 1 + 8, 2 + 16, 4 + 32;  // A
+    Eigen::Vector3d expected_output1(
+        1 + 8,
+        2 + 16,
+        4 + 32);  // A
     expected_output1 += expected_output0;       // A + B
 
-    Eigen::Vector3d expected_output2;
-    expected_output2 << 81, 243, 729;  // state of integrator1_
+    Eigen::Vector3d expected_output2(81, 243, 729);  // state of integrator1_
 
     const BasicVector<double>* output0 = output_->get_vector_data(0);
     ASSERT_TRUE(output0 != nullptr);
@@ -328,16 +331,20 @@ TEST_F(DiagramTest, Clone) {
   // Recompute the output and check the values.
   diagram_->CalcOutput(*clone, output_.get());
 
-  Eigen::Vector3d expected_output0;
-  expected_output0 << 3 + 8 + 64, 6 + 16 + 128, 9 + 32 + 256;  // B
+  Eigen::Vector3d expected_output0(
+      3 + 8 + 64,
+      6 + 16 + 128,
+      9 + 32 + 256);  // B
   const BasicVector<double>* output0 = output_->get_vector_data(0);
   ASSERT_TRUE(output0 != nullptr);
   EXPECT_EQ(expected_output0[0], output0->get_value()[0]);
   EXPECT_EQ(expected_output0[1], output0->get_value()[1]);
   EXPECT_EQ(expected_output0[2], output0->get_value()[2]);
 
-  Eigen::Vector3d expected_output1;
-  expected_output1 << 3 + 8, 6 + 16, 9 + 32;  // A
+  Eigen::Vector3d expected_output1(
+      3 + 8,
+      6 + 16,
+      9 + 32);  // A
   expected_output1 += expected_output0;       // A + B
   const BasicVector<double>* output1 = output_->get_vector_data(1);
   ASSERT_TRUE(output1 != nullptr);

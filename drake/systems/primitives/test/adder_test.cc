@@ -62,8 +62,7 @@ TEST_F(AdderTest, AddTwoVectors) {
   ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_port = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_port);
-  Eigen::Vector3d expected;
-  expected << 5, 7, 9;
+  Eigen::Vector3d expected(5, 7, 9);
   EXPECT_EQ(expected, output_port->get_value());
 }
 

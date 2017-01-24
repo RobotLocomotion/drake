@@ -29,8 +29,7 @@ GTEST_TEST(BasicVectorTest, SetZero) {
 // Tests that the BasicVector<double> is initialized to NaN.
 GTEST_TEST(BasicVectorTest, DoubleInitiallyNaN) {
   BasicVector<double> vec(3);
-  Eigen::Vector3d expected;
-  expected << NAN, NAN, NAN;
+  Eigen::Vector3d expected(NAN, NAN, NAN);
   EXPECT_TRUE(CompareMatrices(expected, vec.get_value(),
                               Eigen::NumTraits<double>::epsilon(),
                               MatrixCompareType::absolute));
