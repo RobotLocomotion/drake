@@ -142,73 +142,15 @@ PidControlledSystem<T>::ConnectController(
     const VectorX<T>& Ki, const VectorX<T>& Kd,
     const VectorX<T>& min_plant_input, const VectorX<T>& max_plant_input,
     DiagramBuilder<T>* builder) {
-  if (feedback_selector == nullptr) {
-    // No feedback selector was provided. Create a GainMatrix containing an
-    // identity matrix, which results in every element of the plant's output
-    // port zero being used as the feedback signal to the PID controller.
-    feedback_selector = std::make_unique<MatrixGain<T>>(plant_output.size());
-  }
-  auto feedback_selector_p =
-      builder->template AddSystem(std::move(feedback_selector));
 
-  DRAKE_ASSERT(plant_output.size() ==
-               feedback_selector_p->get_input_port().size());
-  const int num_effort_commands = plant_input.size();
-  const int num_states = num_effort_commands * 2;
-
-  DRAKE_ASSERT(feedback_selector_p->get_output_port().size() == num_states);
-
-  auto state_minus_target =
-      builder->template AddSystem<Adder<T>>(2, num_states);
-  auto controller = builder->template AddSystem<PidController<T>>(Kp, Ki, Kd);
-
-  // Split the input into two signals one with the positions and one
-  // with the velocities.
-  auto error_demux = builder->template AddSystem<Demultiplexer<T>>(
-      num_states, num_effort_commands);
-
-  auto controller_inverter =
-      builder->template AddSystem<Gain<T>>(-1.0, num_effort_commands);
-  auto error_inverter = builder->template AddSystem<Gain<T>>(-1.0, num_states);
-
-  // Create an adder to sum the provided input with the output of the
-  // controller.
-  auto plant_input_adder =
-      builder->template AddSystem<Adder<T>>(2, num_effort_commands);
-
-  auto force_saturator = builder->template AddSystem<Saturation<T>>(
+  auto saturation = builder->template AddSystem<Saturation<T>>(
       min_plant_input, max_plant_input);
 
-  builder->Connect(error_inverter->get_output_port(),
-                   state_minus_target->get_input_port(0));
-  builder->Connect(plant_output, feedback_selector_p->get_input_port());
-  builder->Connect(feedback_selector_p->get_output_port(),
-                   state_minus_target->get_input_port(1));
+  builder->Connect(saturation->get_output_port(), plant_input);
 
-  // Splits the error signal into positions and velocities components.
-  builder->Connect(state_minus_target->get_output_port(),
-                   error_demux->get_input_port(0));
-
-  // Connects PID controller.
-  builder->Connect(error_demux->get_output_port(0),
-                   controller->get_error_port());
-  builder->Connect(error_demux->get_output_port(1),
-                   controller->get_error_derivative_port());
-  // Adds feedback.
-  builder->Connect(controller->get_output_port(0),
-                   controller_inverter->get_input_port());
-  builder->Connect(controller_inverter->get_output_port(),
-                   plant_input_adder->get_input_port(0));
-
-  // Passes the control input through the force saturator.
-  builder->Connect(plant_input_adder->get_output_port(),
-                   force_saturator->get_input_port());
-
-  builder->Connect(force_saturator->get_output_port(), plant_input);
-
-  return ConnectResult{
-      plant_input_adder->get_input_port(1), error_inverter->get_input_port(),
-  };
+  return
+    PidControlledSystem<T>::ConnectController(saturation->get_input_port(),
+    plant_output, std::move(feedback_selector), Kp, Ki, Kd, builder);
 }
 
 template <typename T>
