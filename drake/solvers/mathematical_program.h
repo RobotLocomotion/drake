@@ -1333,95 +1333,56 @@ class MathematicalProgram {
   }
 
   /**
-   * Adds the same scalar lower and upper bound to every variable in the matrix.
-   * This method is used for a static-sized matrix of decision variables.
-   * @tparam rows The number of rows in the MatrixDecisionVariable.
+   * Adds the same scalar lower and upper bound to every variable in @p vars.
+   * @tparam Derived An Eigen Vector type with symbolic::Variable as the scalar
+   * type.
    * @param lb Lower bound.
    * @param ub Upper bound.
-   * @param vars A vector of decision variables.
-   * @return The newly created BoundingBoxConstraint.
+   * @param vars The decision variables.
    */
-  template <int rows>
-  typename std::enable_if<rows != Eigen::Dynamic,
-                          std::shared_ptr<BoundingBoxConstraint>>::type
-  AddBoundingBoxConstraint(
-      double lb, double ub,
-      const Eigen::MatrixBase<VectorDecisionVariable<rows>>& vars) {
+  template <typename Derived>
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value &&
+          Derived::ColsAtCompileTime == 1,
+      std::shared_ptr<BoundingBoxConstraint>>::type
+  AddBoundingBoxConstraint(double lb, double ub,
+                           const Eigen::MatrixBase<Derived>& vars) {
+    const int kSize = Derived::RowsAtCompileTime;
     return AddBoundingBoxConstraint(
-        Eigen::Matrix<double, rows, 1>::Constant(lb),
-        Eigen::Matrix<double, rows, 1>::Constant(ub), vars);
+        Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), lb),
+        Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), ub), vars);
   }
 
   /**
-   * Adds the same scalar lower and upper bound to every variable in the matrix.
-   * This method is used for a dynamic-sized matrix od decision variables.
-   * @tparam rows The number of rows in the MatrixDecisionVariable.
-   * @tparam cols The number of columns in the MatrixDecisionVariable.
+   * Adds the same scalar lower and upper bound to every variable in @p vars.
+   * @tparam Derived An Eigen::Matrix with symbolic::Variable as the scalar
+   * type. The matrix has unknown number of columns at compile time, or has
+   * more than one column.
    * @param lb Lower bound.
    * @param ub Upper bound.
-   * @param vars A vector of decision variables.
-   * @return The newly created BoundingBoxConstraint.
+   * @param vars The decision variables.
    */
-  template <int rows, int cols>
-  typename std::enable_if<rows == Eigen::Dynamic,
-                          std::shared_ptr<BoundingBoxConstraint>>::type
-  AddBoundingBoxConstraint(
-      double lb, double ub,
-      const Eigen::MatrixBase<VectorDecisionVariable<rows>>& vars) {
-    return AddBoundingBoxConstraint(Eigen::VectorXd::Constant(vars.size(), lb),
-                                    Eigen::VectorXd::Constant(vars.size(), ub),
-                                    vars);
-  }
-
-  /**
-   * Adds the same scalar lower and upper bound to every variable in the matrix.
-   * This method is used for a static-sized matrix of decision variables.
-   * @tparam rows The number of rows in the MatrixDecisionVariable.
-   * @tparam cols The number of columns in the MatrixDecisionVariable.
-   * @param lb Lower bound.
-   * @param ub Upper bound.
-   * @param vars A matrix of decision variables.
-   * @return The newly created BoundingBoxConstraint.
-   */
-  template <int rows, int cols>
-  typename std::enable_if<rows != Eigen::Dynamic && cols != Eigen::Dynamic,
-                          std::shared_ptr<BoundingBoxConstraint>>::type
-  AddBoundingBoxConstraint(
-      double lb, double ub,
-      const Eigen::MatrixBase<MatrixDecisionVariable<rows, cols>>& vars) {
-    VectorDecisionVariable<rows * cols> flat_vars;
-    for (int j = 0; j < cols; ++j) {
-      flat_vars.template segment<cols>(j * rows) = vars.col(j);
-    }
-
-    return AddBoundingBoxConstraint(
-        Eigen::Matrix<double, rows * cols, 1>::Constant(lb),
-        Eigen::Matrix<double, rows * cols, 1>::Constant(ub), flat_vars);
-  }
-
-  /**
-   * Adds the same scalar lower and upper bound to every variable in the matrix.
-   * This method is used for a dynamic-sized matrix od decision variables.
-   * @tparam rows The number of rows in the MatrixDecisionVariable.
-   * @tparam cols The number of columns in the MatrixDecisionVariable.
-   * @param lb Lower bound.
-   * @param ub Upper bound.
-   * @param vars A matrix of decision variables.
-   * @return The newly created BoundingBoxConstraint.
-   */
-  template <int rows, int cols>
-  typename std::enable_if<rows == Eigen::Dynamic || cols == Eigen::Dynamic,
-                          std::shared_ptr<BoundingBoxConstraint>>::type
-  AddBoundingBoxConstraint(
-      double lb, double ub,
-      const Eigen::MatrixBase<MatrixDecisionVariable<rows, cols>>& vars) {
-    VectorXDecisionVariable flat_vars(vars.size());
+  template <typename Derived>
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value &&
+          Derived::ColsAtCompileTime != 1,
+      std::shared_ptr<BoundingBoxConstraint>>::type
+  AddBoundingBoxConstraint(double lb, double ub,
+                           const Eigen::MatrixBase<Derived>& vars) {
+    const int kSize =
+        Derived::RowsAtCompileTime != Eigen::Dynamic &&
+                Derived::ColsAtCompileTime != Eigen::Dynamic
+            ? Derived::RowsAtCompileTime * Derived::ColsAtCompileTime
+            : Eigen::Dynamic;
+    Eigen::Matrix<symbolic::Variable, kSize, 1> flat_vars(vars.size());
     for (int j = 0; j < vars.cols(); ++j) {
-      flat_vars.segment(j * vars.rows(), vars.rows()) = vars.col(j);
+      for (int i = 0; i < vars.rows(); ++i) {
+        flat_vars(j * vars.rows() + i) = vars(i, j);
+      }
     }
-    return AddBoundingBoxConstraint(Eigen::VectorXd::Constant(vars.size(), lb),
-                                    Eigen::VectorXd::Constant(vars.size(), ub),
-                                    flat_vars);
+    return AddBoundingBoxConstraint(
+        Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), lb),
+        Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), ub), flat_vars);
   }
 
   /**
