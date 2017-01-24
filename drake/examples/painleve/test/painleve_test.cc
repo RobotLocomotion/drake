@@ -617,9 +617,9 @@ class PainleveTimeSteppingTest : public ::testing::Test {
   std::unique_ptr<ContinuousState<double>> derivatives_;
 };
 
-/// Verify that Painleve Paradox system can be effectively simulated using
-/// the first-order time stepping approach.
-TEST_F(PainleveTimeSteppingTest, TimeStepping) {
+/// Verify that Painleve Paradox system eventually goes to rest using the 
+/// first-order time stepping approach (this tests expected meta behavior).
+TEST_F(PainleveTimeSteppingTest, RodGoesToRest) {
   // Set the initial state to an inconsistent configuration.
   SetSecondInitialConfig();
 
@@ -639,9 +639,59 @@ TEST_F(PainleveTimeSteppingTest, TimeStepping) {
   // should be nearly zero.
   EXPECT_TRUE(std::fabs(theta) < 1e-6 || std::fabs(theta - M_PI) < 1e-6);
   EXPECT_NEAR(theta_dot, 0.0, 1e-6);
+}
+
+// This test checks to see whether a single semi-explicit step of the piecewise
+// DAE based Painleve system is equivalent to a single step of the semi-explicit
+// time stepping based system.
+GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSliding) {
+  // Create two Painleve systems.
+  const double dt = 1e-3;
+  Painleve<double> ts(dt);
+  Painleve<double> pdae;
+
+  // Set the coefficient of friction to a small value for both.
+  const double mu = 0.01;
+  ts.set_mu_coulomb(mu);
+  pdae.set_mu_coulomb(mu);
+
+  // Create contexts for both.
+  std::unique_ptr<Context<double>> context_ts = ts.CreateDefaultContext();
+  std::unique_ptr<Context<double>> context_pdae = pdae.CreateDefaultContext();
+
+  // Init the simulator for the time stepping system.
+  Simulator<double> simulator_ts(ts, std::move(context_ts));
+
+  // Integrate forward by a single dt.
+  simulator_ts.StepTo(dt);
+
+  // Manually integrate the continuous state forward for the piecewise DAE
+  // based approach.
+  std::unique_ptr<ContinuousState<double>> f = pdae.AllocateTimeDerivatives();
+  pdae.CalcTimeDerivatives(*context_pdae, f.get());
+  auto xc = context_pdae->get_mutable_continuous_state_vector();
+  xc->SetAtIndex(3, xc->GetAtIndex(3) + dt*((*f)[3]));
+  xc->SetAtIndex(4, xc->GetAtIndex(4) + dt*((*f)[4]));
+  xc->SetAtIndex(5, xc->GetAtIndex(5) + dt*((*f)[5]));
+  xc->SetAtIndex(0, xc->GetAtIndex(0) + dt*xc->GetAtIndex(3));
+  xc->SetAtIndex(1, xc->GetAtIndex(1) + dt*xc->GetAtIndex(4));
+  xc->SetAtIndex(2, xc->GetAtIndex(2) + dt*xc->GetAtIndex(5));
+
+  // See whether the states are equal.
+  const auto& xd = context_ts->get_discrete_state(0)->get_value();
+
+  const double tol = std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR(xc->GetAtIndex(0), xd[0], tol);
+  EXPECT_NEAR(xc->GetAtIndex(1), xd[1], tol);
+  EXPECT_NEAR(xc->GetAtIndex(2), xd[2], tol);
+  EXPECT_NEAR(xc->GetAtIndex(3), xd[3], tol);
+  EXPECT_NEAR(xc->GetAtIndex(4), xd[4], tol);
+  EXPECT_NEAR(xc->GetAtIndex(5), xd[5], tol);
 
   // TODO(edrumwri): Introduce more extensive tests that cross-validate the
-  // time-stepping based approach against the piecewise DAE-based approach.
+  // time-stepping based approach against the piecewise DAE-based approach for
+  // cases of sticking contact (once arbitrary external forcing is introduced)
+  // and sliding contacts at multiple points.
 }
 
 }  // namespace
