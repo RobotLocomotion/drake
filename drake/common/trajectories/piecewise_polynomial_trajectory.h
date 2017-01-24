@@ -45,6 +45,8 @@ class PiecewisePolynomialTrajectory : public Trajectory {
    */
   Eigen::Index cols() const override { return pp_.cols(); }
 
+  const PiecewisePolynomial<double>& get_piecewise_polynomial() const { return pp_; }
+
  private:
   PiecewisePolynomial<double> pp_;
 };
