@@ -1,0 +1,25 @@
+# This OBJ consists of two faces.  Neither face is planar.  Viewed from the
+# "right" direction, the faces look like this:
+#
+#     \      /
+#      \    /
+#       \  /
+#        \/
+#
+# The first face has a dihedral angle of slightly less than 30 degrees and
+# *should* triangulate.
+# The second face has a dihedral angle of slightly more than 30 degrees and
+# should *not* parse.
+#
+# 30 degrees is the documented threshold in DrakeShapes::Mesh
+#
+v 0 -1 0
+v 0.86689674893560276 0 0.49848773975383026
+v 0 1 0
+v -1 0 0
+v 0.86515142056970451 0 0.50151073715945726
+vn 0 1 0
+# valid face - 29.9 degrees
+f 1//1 2//1 3//1 4//1
+# invalid face - 30.1 degrees
+f 1//1 5//1 3//1 4//1

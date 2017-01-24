@@ -322,13 +322,13 @@ void Mesh::LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
           // This is a very naive triangulation.  It simply creates a fan
           // around the 0th vertex through the loop of vertices in the polygon.
           // The fan won't necessarily produce triangles with the best aspect
-          // ratio.  Furthermore, if the polygon is *not* convex, it is
-          // possible to create overlapping triangles. This is a degenerate
-          // case and an exception will be thrown.
+          // ratio.
           //
-          // We detect the degenerate case by comparing the normals of adjacent
-          // triangles in the fan.  The normals must be facing in the "same"
-          // direction (i.e., their dot product must be positive.)
+          // The requirement that two adjacent, generated triangles have normals
+          // that deviate by no more than 30° will implicitly catch the
+          // degenerate case where applying this algorithm to a concave face
+          // would cause changes in triangle winding and, therefore, normal
+          // directions.
           //
           // For a polygon with n vertices indexed in the range [0, n - 1] we
           // create triangles built on those indices in the pattern:
@@ -337,19 +337,41 @@ void Mesh::LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
           // starts with (0, 2, 3).
           Vector3d lastNormal;
           bool valid = GetNormal(*vertices, indices[0] - 1, indices[1] - 1,
-                                 indices[2] - 1, &lastNormal);
+                                 indices[2] - 1, &lastNormal, kMinArea);
           const int index_size = static_cast<int>(indices.size());
           for (int i = 2; valid && i < index_size - 1; ++i) {
             // OBJ file indices are 1-based; subtracting 1 makes them 0-based.
-            triangles->push_back(
-                Vector3i(indices[0] - 1, indices[i] - 1, indices[i + 1] - 1));
             Vector3d testNormal;
             valid = GetNormal(*vertices, indices[0] - 1, indices[i] - 1,
-                              indices[i + 1] - 1, &testNormal);
-            valid = valid && lastNormal.dot(testNormal) > 1e-9;
+                              indices[i + 1] - 1, &testNormal, kMinArea);
+            if (valid) {
+              double dot_product = lastNormal.dot(testNormal);
+              if (dot_product < 0) {
+                throw std::runtime_error("Trying to triangulate the face in '" +
+                    obj_file_name + "' on line " +
+                    std::to_string(line_number) +
+                    " led to bad triangles. The triangle based " +
+                    "on vertices " + std::to_string(indices[0]) +
+                    ", " + std::to_string(indices[i]) + ", and " +
+                    std::to_string(indices[i + 1]) +
+                    " (1-indexed) is wound in the opposite " +
+                    "direction from the previous triangle. " +
+                    "Consider triangulating by hand.");
+              } else if (dot_product < kCosThreshold) {
+                throw std::runtime_error("Trying to triangulate the face in '" +
+                    obj_file_name + "' on line " +
+                    std::to_string(line_number) +
+                    ".  The place is not sufficiently planar. " +
+                    "Consider triangulating by hand.");
+              }
+            }
             lastNormal = testNormal;
+            triangles->push_back(
+                Vector3i(indices[0] - 1, indices[i] - 1, indices[i + 1] - 1));
+
           }
           if (!valid) {
+            // Problems in computing the normal are logged in GetNormal.
             throw std::runtime_error("Unable to triangulate face in file '" +
                 obj_file_name + " on line " + std::to_string(line_number) +
                 ". See log for details.");
@@ -411,10 +433,11 @@ void Mesh::getBoundingBoxPoints(Matrix3Xd& bbox_points) const {
       max_pos(2);
 }
 
-bool Mesh::GetNormal(const PointsVector &vertices, int i0, int i1, int i2,
-                     Eigen::Vector3d *normal) {
-  const int kNumVertex = static_cast<int>(vertices.size());
+bool Mesh::GetNormal(const PointsVector& vertices, int i0, int i1, int i2,
+                     Eigen::Vector3d* normal, double minArea) {
+  DRAKE_ASSERT(normal != nullptr);
   DRAKE_ASSERT(i0 >= 0 && i1 >= 0 && i2 >= 0);
+  const int kNumVertex = static_cast<int>(vertices.size());
   if (i0 >= kNumVertex || i1 >= kNumVertex || i2 >= kNumVertex) {
     drake::log()->warn(
         "Unable to compute normal. At least one OBJ index reference: " +
@@ -428,16 +451,19 @@ bool Mesh::GetNormal(const PointsVector &vertices, int i0, int i1, int i2,
   const Vector3d& v1 = vertices[i1];
   const Vector3d& v2 = vertices[i2];
   *normal = (v1 - v0).cross(v2 - v0);
-  // Detects and reports a degenerate triangle.  The triangle is degenerate if
-  // its area is too small.  This could be either because the edges of the
-  // triangle are co-linear *or* because the triangle is ridiculously small.
-  if (normal->norm() < 1e-9) {
+
+  // The magnitude of this normal is *twice* the area of the triangle formed by
+  // v0, v1, and v2.  The normal is only considered valid if the area is at
+  // at least that specified by the caller.
+  double length = normal->norm();
+  if (length < 2 * minArea) {
     drake::log()->warn(
-        "Unable to compute normal. Triangle has zero area with OBJ indices: " +
+        "Unable to compute normal. Triangle with OBJ indices: " +
             std::to_string(i0 + 1) + ", " + std::to_string(i1 + 1) + ", " +
-            std::to_string(i2 + 1) + ".");
+            std::to_string(i2 + 1) + " is too small.");
     return false;
   }
+  *normal /= length;
   return true;
 }
 

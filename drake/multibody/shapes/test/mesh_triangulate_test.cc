@@ -65,6 +65,24 @@ GTEST_TEST(MeshShapeTests, ParseTriMesh) {
   EXPECT_EQ(triangles.size(), 12u);
 }
 
+// Confirms that triangle meshes are unchanged, even when triangulation is
+// explicitly called for.
+GTEST_TEST(MeshShapeTests, TriangulateTriMesh) {
+  const std::string kFileName = drake::GetDrakePath() +
+      "/multibody/shapes/test/tri_cube.obj";
+  Mesh mesh(kUri, kFileName);
+  PointsVector vertices;
+  TrianglesVector triangles;
+
+  mesh.LoadObjFile(&vertices, &triangles,
+                   Mesh::TriangulatePolicy::kTry);
+
+  // This is a *limited* test; it only tests the size of the mesh data and not
+  // values.
+  EXPECT_EQ(vertices.size(), 8u);
+  EXPECT_EQ(triangles.size(), 12u);
+}
+
 // Tests the triangulation code's ability to detect when triangulation leads
 // to overlapping triangles.  Confirms that an exception is thrown.
 GTEST_TEST(MeshShapeTests, DetectBadTriangulation) {
@@ -79,9 +97,32 @@ GTEST_TEST(MeshShapeTests, DetectBadTriangulation) {
                      Mesh::TriangulatePolicy::kTry);
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
-    const std::string kExpectedMessage = "Unable to triangulate face in file "
-        "'" + kFileName + " on line 38. See log for details.";
+    const std::string kExpectedMessage = "Trying to triangulate the face in '" +
+        kFileName + "' on line 38 led to bad triangles. The triangle based on "
+        "vertices 4, 1, and 2 (1-indexed) is wound in the opposite direction "
+        "from the previous triangle. Consider triangulating by hand.";
     EXPECT_EQ(e.what(), kExpectedMessage);
+  }
+}
+
+// Tests the triangulation code's ability to detect when a face is non-planar
+// beyond the allowable threshold.
+GTEST_TEST(MeshShapeTests, DetectNonPlanarTriangulation) {
+  const std::string kFileName = drake::GetDrakePath() +
+      "/multibody/shapes/test/non_planar.obj";
+  Mesh mesh(kUri, kFileName);
+  PointsVector vertices;
+  TrianglesVector triangles;
+
+  try {
+  mesh.LoadObjFile(&vertices, &triangles,
+      Mesh::TriangulatePolicy::kTry);
+  GTEST_FAIL();
+  } catch (std::runtime_error& e) {
+  const std::string kExpectedMessage = "Trying to triangulate the face in '" +
+      kFileName + "' on line 25.  The place is not sufficiently planar. " +
+      "Consider triangulating by hand.";
+  EXPECT_EQ(e.what(), kExpectedMessage);
   }
 }
 
@@ -137,6 +178,8 @@ GTEST_TEST(MeshShapeTests, DetectTriangulateDegenerateTriangle) {
   try {
     mesh.LoadObjFile(&vertices, &triangles, Mesh::TriangulatePolicy::kTry);
     // An exception *should* be thrown; no exception implies test failure.
+    // Using this instead of GTEST_FAIL(), so the second half of this test
+    // can run, even if this one "fails".
     EXPECT_TRUE(false);
   } catch (std::runtime_error& e) {
     const std::string kExpectedMessage = "Unable to triangulate face in file "
@@ -152,7 +195,7 @@ GTEST_TEST(MeshShapeTests, DetectTriangulateDegenerateTriangle) {
   try {
     mesh2.LoadObjFile(&vertices, &triangles, Mesh::TriangulatePolicy::kTry);
     // An exception *should* be thrown; no exception implies test failure.
-    EXPECT_TRUE(false);
+    GTEST_FAIL();
   } catch (std::runtime_error& e) {
     const std::string kExpectedMessage = "Unable to triangulate face in file "
         "'" + kFileName2 + " on line 25. See log for details.";

@@ -33,6 +33,7 @@ cc_googletest(
         "test/colinear_vertex.obj",
         "test/concave_face_bad.obj",
         "test/concave_face_good.obj",
+        "test/non_planar.obj",
         "test/out_of_order_vertex.obj",
         "test/quad_cube.obj",
         "test/tiny_triangle.obj",
