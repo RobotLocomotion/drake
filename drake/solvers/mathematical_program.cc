@@ -215,9 +215,12 @@ class SymbolicError : public runtime_error {
 // @param[in] e.  A symbolic expression
 // @param[out] vars.  The variables in @p e but not included in @p vars before
 // this call, will be appended to @p vars.
-// @param[out] map_var_to_index. map_var_to_index is of the same size as @p vars,
+// @param[out] map_var_to_index. map_var_to_index is of the same size as @p
+// vars,
 // and map_var_to_index[var(i)] = i
-void ExtractVariablesFromExpression(const symbolic::Expression& e, VectorXDecisionVariable* vars, unordered_map<size_t, int>* map_var_to_index) {
+void ExtractVariablesFromExpression(
+    const symbolic::Expression& e, VectorXDecisionVariable* vars,
+    unordered_map<size_t, int>* map_var_to_index) {
   for (const symbolic::Variable& var : e.GetVariables()) {
     if (map_var_to_index->find(var.get_id()) == map_var_to_index->end()) {
       map_var_to_index->emplace(var.get_id(), vars->size());
@@ -258,13 +261,13 @@ void DecomposeLinearExpression(
   DRAKE_DEMAND(static_cast<size_t>(coeffs.cols()) == map_var_to_index.size());
   if (is_addition(e)) {
     *constant_term = get_constant_in_addition(e);
-    const std::map<Expression, double> &exp_to_coeff_map{
+    const std::map<Expression, double>& exp_to_coeff_map{
         get_exp_to_coeff_map_in_addition(e)};
-    for (const pair<Expression, double> &p : exp_to_coeff_map) {
+    for (const pair<Expression, double>& p : exp_to_coeff_map) {
       if (is_variable(p.first)) {
-        const symbolic::Variable &var{get_variable(p.first)};
+        const symbolic::Variable& var{get_variable(p.first)};
         const double coeff{p.second};
-        const_cast<Eigen::MatrixBase<Derived> &>(coeffs)(
+        const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
             0, map_var_to_index.at(var.get_id())) = coeff;
       } else {
         std::ostringstream oss;
@@ -272,37 +275,34 @@ void DecomposeLinearExpression(
         throw std::runtime_error(oss.str());
       }
     }
-  }
-  else if (is_multiplication(e)) {
+  } else if (is_multiplication(e)) {
     const double c = get_constant_in_multiplication(e);
-    const std::map<Expression, Expression>& map_base_to_exponent = get_base_to_exp_map_in_multiplication(e);
+    const std::map<Expression, Expression>& map_base_to_exponent =
+        get_base_to_exp_map_in_multiplication(e);
     if (map_base_to_exponent.size() == 1) {
       for (const pair<Expression, Expression>& p : map_base_to_exponent) {
         if (!is_variable(p.first) || !is_one(p.second)) {
           throw SymbolicError(e, "is not linear");
-        }
-        else {
+        } else {
           const symbolic::Variable& var = get_variable(p.first);
-          const_cast<Eigen::MatrixBase<Derived> &>(coeffs)(map_var_to_index.at(var.get_id())) = c;
+          const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
+              map_var_to_index.at(var.get_id())) = c;
           *constant_term = 0;
         }
       }
-    }
-    else {
+    } else {
       // THere is more than one base, like x^2 * y^3
       throw SymbolicError(e, "is not linear");
     }
-  }
-  else if (is_variable(e)) {
+  } else if (is_variable(e)) {
     // just a single variable
     const symbolic::Variable& var{get_variable(e)};
-    const_cast<Eigen::MatrixBase<Derived> &>(coeffs)(map_var_to_index.at(var.get_id())) = 1;
+    const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
+        map_var_to_index.at(var.get_id())) = 1;
     *constant_term = 0;
-  }
-  else if (is_constant(e)) {
+  } else if (is_constant(e)) {
     *constant_term = get_constant_value(e);
-  }
-  else {
+  } else {
     throw SymbolicError(e, "is not linear");
   }
 }
@@ -315,9 +315,9 @@ void DecomposeLinearExpression(
  * @param[out] b The vector containing all the constant terms.
  * @param[out] vars All variables.
  */
-void DecomposeLinearExpression(
-    const Eigen::Ref<const VectorX<Expression>>& v,
-    Eigen::MatrixXd* A, Eigen::VectorXd* b, VectorXDecisionVariable* vars) {
+void DecomposeLinearExpression(const Eigen::Ref<const VectorX<Expression>>& v,
+                               Eigen::MatrixXd* A, Eigen::VectorXd* b,
+                               VectorXDecisionVariable* vars) {
   // 0. Setup map_var_to_index and var_vec.
   unordered_map<size_t, int> map_var_to_index;
   for (int i = 0; i < v.size(); ++i) {
@@ -330,8 +330,7 @@ void DecomposeLinearExpression(
   *b = Eigen::VectorXd::Zero(v.rows());
   for (int i{0}; i < v.size(); ++i) {
     const Expression& e_i{v(i)};
-    DecomposeLinearExpression(e_i, map_var_to_index, A->row(i),
-                              b->data() + i);
+    DecomposeLinearExpression(e_i, map_var_to_index, A->row(i), b->data() + i);
   }
 }
 }  // anonymous namespace
@@ -361,7 +360,8 @@ void MathematicalProgram::AddCost(
   AddCost(Binding<LinearConstraint>(obj, vars));
 }
 
-Binding<LinearConstraint> MathematicalProgram::AddLinearCost(const symbolic::Expression& e) {
+Binding<LinearConstraint> MathematicalProgram::AddLinearCost(
+    const symbolic::Expression& e) {
   VectorXDecisionVariable var(0);
   unordered_map<size_t, int> map_var_to_index;
   ExtractVariablesFromExpression(e, &var, &map_var_to_index);
@@ -464,11 +464,10 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     } else if (is_multiplication(e_i)) {
       // i-th constraint should be lb <= c * var_i <= ub, where c is a constant.
       const double c = get_constant_in_multiplication(e_i);
-      const std::map<Expression, Expression>&
-          map_base_to_exponent = get_base_to_exp_map_in_multiplication(e_i);
+      const std::map<Expression, Expression>& map_base_to_exponent =
+          get_base_to_exp_map_in_multiplication(e_i);
       if (map_base_to_exponent.size() == 1) {
-        for (const pair<Expression, Expression>& p :
-             map_base_to_exponent) {
+        for (const pair<Expression, Expression>& p : map_base_to_exponent) {
           if (!is_variable(p.first) || !is_one(p.second)) {
             throw SymbolicError(
                 e_i, "non-linear but called with AddLinearConstraint");
@@ -863,8 +862,8 @@ void MathematicalProgram::SetDecisionVariableValues(
   }
 }
 
-void MathematicalProgram::SetDecisionVariableValue(
-    const Variable& var, double value) {
+void MathematicalProgram::SetDecisionVariableValue(const Variable& var,
+                                                   double value) {
   x_values_[FindDecisionVariableIndex(var)] = value;
 }
 

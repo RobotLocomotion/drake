@@ -234,8 +234,7 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
   auto y = prog.NewContinuousVariables<2>("y");
   // No cost yet.
   int num_generic_costs = 0;
-  EXPECT_EQ(static_cast<int>(prog.generic_costs().size()),
-            num_generic_costs);
+  EXPECT_EQ(static_cast<int>(prog.generic_costs().size()), num_generic_costs);
   EXPECT_EQ(prog.linear_costs().size(), 0u);
 
   std::shared_ptr<Constraint> generic_trivial_cost1 =
@@ -280,18 +279,19 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
                    Eigen::Vector2d(1, 2), num_generic_costs);
 }
 
-void CheckAddedSymbolicLinearCost(MathematicalProgram* prog, const symbolic::Expression& e) {
+void CheckAddedSymbolicLinearCost(MathematicalProgram* prog,
+                                  const symbolic::Expression& e) {
   int num_linear_costs = prog->linear_costs().size();
   const auto& binding = prog->AddLinearCost(e);
   EXPECT_EQ(prog->linear_costs().size(), num_linear_costs + 1);
   EXPECT_EQ(prog->linear_costs().back().constraint(), binding.constraint());
   EXPECT_EQ(binding.constraint()->num_constraints(), 1);
-  const symbolic::Expression cx{(binding.constraint()->A() * binding.variables())(0)};
+  const symbolic::Expression cx{
+      (binding.constraint()->A() * binding.variables())(0)};
   double constant_term{0};
   if (is_addition(e)) {
     constant_term = get_constant_in_addition(e);
-  }
-  else if (is_constant(e)) {
+  } else if (is_constant(e)) {
     constant_term = get_constant_value(e);
   }
   EXPECT_TRUE((e - cx).EqualTo(constant_term));
