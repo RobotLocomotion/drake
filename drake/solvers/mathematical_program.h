@@ -1357,7 +1357,7 @@ class MathematicalProgram {
    * Adds the same scalar lower and upper bound to every variable in @p vars.
    * @tparam Derived An Eigen::Matrix with symbolic::Variable as the scalar
    * type. The matrix has unknown number of columns at compile time, or has
-   * more than one columns.
+   * more than one column.
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param vars The decision variables.

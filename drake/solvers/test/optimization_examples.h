@@ -66,8 +66,10 @@ class LinearSystemExample3 : public LinearSystemExample2 {
   bool CheckSolution() const override;
 };
 
-/// This test comes from Section 2.2 of "Handbook of Test Problems in
-/// Local and Global Optimization."
+/// This test comes from Section 2.2 of
+/// Handbook of Test Problems in Local and Global Optimization.
+/// © 1999
+/// ISBN 978-1-4757-3040-1
 class NonConvexQPproblem1 {
   /// This is a non-convex quadratic program with inequality constraints.
   /// We choose to add the cost and constraints through different forms,
@@ -125,8 +127,10 @@ class NonConvexQPproblem1 {
   Eigen::Matrix<double, 5, 1> x_expected_;
 };
 
-/// This test comes from Section 2.3 of "Handbook of Test Problems in
-/// Local and Global Optimization."
+/// This test comes from Section 2.3 of
+/// Handbook of Test Problems in Local and Global Optimization.
+/// © 1999
+/// ISBN 978-1-4757-3040-1
 class NonConvexQPproblem2 {
  public:
   enum CostForm {
@@ -180,8 +184,10 @@ class NonConvexQPproblem2 {
   Eigen::Matrix<double, 6, 1> x_expected_;
 };
 
-/// This test comes from Section 3.4 of "Handbook of Test Problems in
-/// Local and Global Optimization.
+/// This test comes from Section 3.4 of
+/// Handbook of Test Problems in Local and Global Optimization.
+/// © 1999
+/// ISBN 978-1-4757-3040-1
 class LowerBoundedProblem {
  public:
   enum ConstraintForm {
@@ -267,6 +273,8 @@ class LowerBoundedProblem {
 ///
 /// Which is from section 3.5 in
 ///   Handbook of Test Problems in Local and Global Optimization
+///   © 1999
+///   ISBN 978-1-4757-3040-1
 /// We deliberately duplicate the problem, with the same constraints and
 /// costs on decision variables x and y, so as to test out program works
 /// correctly with multiple decision variables.
@@ -312,8 +320,8 @@ class GloptiPolyConstrainedMinimizationProblem {
   };
 
   class GloptipolyConstrainedExampleConstraint
-      : public Constraint {  // want to also support deriving directly from
-                             // constraint without going through drake::Function
+      : public Constraint {  // Want to also support deriving directly from
+                             // constraint without going through Function.
    public:
     GloptipolyConstrainedExampleConstraint()
         : Constraint(
@@ -321,7 +329,7 @@ class GloptiPolyConstrainedMinimizationProblem {
               Vector1d::Constant(std::numeric_limits<double>::infinity())) {}
 
    protected:
-    // for just these two types, implementing this locally is almost cleaner...
+    // For just these two types, implementing this locally is almost cleaner.
     void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                 Eigen::VectorXd& y) const override {
       EvalImpl(x, &y);
