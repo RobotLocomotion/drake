@@ -25,6 +25,9 @@ class LinearSystemExample1 {
 
   virtual bool CheckSolution() const;
 
+ protected:
+  double tol() const {return 1E-10;}
+
  private:
   std::unique_ptr<MathematicalProgram> prog_;
   VectorDecisionVariable<4> x_;
@@ -226,7 +229,7 @@ class LowerBoundedProblem {
           i2_(i2) {}
 
    protected:
-    // for just these two types, implementing this locally is almost cleaner...
+    // For just these two types, implementing this locally is almost cleaner...
     void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                 Eigen::VectorXd& y) const override {
       EvalImpl(x, y);
@@ -260,7 +263,7 @@ class LowerBoundedProblem {
 };
 
 /// gloptiPolyConstrainedMinimization
-/// @brief from section 5.8.2 of the gloptipoly3 documentation
+/// @brief From section 5.8.2 of the gloptipoly3 documentation.
 ///
 /// Which is from section 3.5 in
 ///   Handbook of Test Problems in Local and Global Optimization
@@ -321,21 +324,20 @@ class GloptiPolyConstrainedMinimizationProblem {
     // for just these two types, implementing this locally is almost cleaner...
     void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                 Eigen::VectorXd& y) const override {
-      EvalImpl(x, y);
+      EvalImpl(x, &y);
     }
     void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
                 TaylorVecXd& y) const override {
-      EvalImpl(x, y);
+      EvalImpl(x, &y);
     }
 
    private:
     template <typename ScalarType>
     void EvalImpl(
         const Eigen::Ref<const Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>>& x,
-        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-        Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>& y) const {
-      y.resize(1);
-      y(0) = 24 - 20 * x(0) + 9 * x(1) - 13 * x(2) + 4 * x(0) * x(0) -
+        Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>* y) const {
+      y->resize(1);
+      (*y)(0) = 24 - 20 * x(0) + 9 * x(1) - 13 * x(2) + 4 * x(0) * x(0) -
              4 * x(0) * x(1) + 4 * x(0) * x(2) + 2 * x(1) * x(1) -
              2 * x(1) * x(2) + 2 * x(2) * x(2);
     }
@@ -355,24 +357,24 @@ class GloptiPolyConstrainedMinimizationProblem {
   Eigen::Vector3d expected_;
 };
 
-// An SOCP with Lorentz cone and rotated Lorentz cone constraints.
-// The objective is to find the smallest distance from a hyperplane
-// A * x = b to the origin.
-// We can solve the following SOCP with Lorentz cone constraint
-// min  t
-//  s.t t >= sqrt(x'*x)
-//      A * x = b.
-// Alternatively, we can solve the following SOCP with rotated Lorentz cone
-// constraint
-// min t
-// s.t t >= x'*x
-//     A * x = b.
-//
-// The optimal solution of this equality constrained QP can be found using
-// Lagrangian method. The optimal solution x* and Lagrangian multiplier z*
-// satisfy
-// A_hat * [x*; z*] = [b; 0]
-// where A_hat = [A 0; 2*I A'].
+/// An SOCP with Lorentz cone and rotated Lorentz cone constraints.
+/// The objective is to find the smallest distance from a hyperplane
+/// A * x = b to the origin.
+/// We can solve the following SOCP with Lorentz cone constraint
+/// min  t
+///  s.t t >= sqrt(xᵀ*x)
+///      A * x = b.
+/// Alternatively, we can solve the following SOCP with rotated Lorentz cone
+/// constraint
+/// min t
+/// s.t t >= xᵀ*x
+///     A * x = b.
+///
+/// The optimal solution of this equality constrained QP can be found using
+/// Lagrangian method. The optimal solution x* and Lagrangian multiplier z*
+/// satisfy
+/// A_hat * [x*; z*] = [b; 0]
+/// where A_hat = [A 0; 2*I Aᵀ].
 class MinDistanceFromPlaneToOrigin {
  public:
   enum CostForm {

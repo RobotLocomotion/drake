@@ -8,6 +8,7 @@
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::Vector2d;
+using Eigen::Matrix2d;
 
 namespace drake {
 namespace solvers {
@@ -26,13 +27,8 @@ namespace test {
 GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
-  MatrixXd Q(2, 2);
-// clang-format off
-  Q << 1.0, 0.0,
-      0.0, 1.0;
-// clang-format on
-  VectorXd c(2);
-  c << -1.0, -1.0;
+  Matrix2d Q = Matrix2d::Identity();
+  Vector2d c(-1, -1);
 
   prog.AddQuadraticCost(Q, c);
 

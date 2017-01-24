@@ -1334,8 +1334,8 @@ class MathematicalProgram {
 
   /**
    * Adds the same scalar lower and upper bound to every variable in @p vars.
-   * @tparam Derived An Eigen::Matrix with symbolic::Variable as the scalar
-   * type. Derived::ColsAtCompileTime == 1.
+   * @tparam Derived An Eigen Vector type with symbolic::Variable as the scalar
+   * type.
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param vars The decision variables.
@@ -1347,11 +1347,7 @@ class MathematicalProgram {
       std::shared_ptr<BoundingBoxConstraint>>::type
   AddBoundingBoxConstraint(double lb, double ub,
                            const Eigen::MatrixBase<Derived>& vars) {
-    const int kSize =
-        Derived::RowsAtCompileTime != Eigen::Dynamic &&
-                Derived::ColsAtCompileTime != Eigen::Dynamic
-            ? Derived::RowsAtCompileTime * Derived::ColsAtCompileTime
-            : Eigen::Dynamic;
+    const int kSize = Derived::RowsAtCompileTime;
     return AddBoundingBoxConstraint(
         Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), lb),
         Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), ub), vars);
@@ -1360,7 +1356,8 @@ class MathematicalProgram {
   /**
    * Adds the same scalar lower and upper bound to every variable in @p vars.
    * @tparam Derived An Eigen::Matrix with symbolic::Variable as the scalar
-   * type. Derived::ColsAtCompileTime != 1.
+   * type. The matrix has unknown number of columns at compile time, or has
+   * more than one columns.
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param vars The decision variables.

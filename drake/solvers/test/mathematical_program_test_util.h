@@ -15,8 +15,7 @@
 namespace drake {
 namespace solvers {
 namespace test {
-// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-void CheckSolverName(MathematicalProgram &prog,
+void CheckSolverName(const MathematicalProgram &prog,
                      std::string desired_solver_name) {
   std::string solver_name;
   int solver_result;

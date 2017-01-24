@@ -38,8 +38,7 @@ using std::numeric_limits;
 namespace drake {
 namespace solvers {
 namespace test {
-// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-void RunNonlinearProgram(MathematicalProgram& prog,
+void RunNonlinearProgram(MathematicalProgram* prog,
                          std::function<void(void)> test_func) {
   IpoptSolver ipopt_solver;
   NloptSolver nlopt_solver;
@@ -55,7 +54,7 @@ void RunNonlinearProgram(MathematicalProgram& prog,
       continue;
     }
     SolutionResult result = SolutionResult::kUnknownError;
-    ASSERT_NO_THROW(result = solver.second->Solve(prog)) << "Using solver: "
+    ASSERT_NO_THROW(result = solver.second->Solve(*prog)) << "Using solver: "
                                                          << solver.first;
     EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Using solver: "
                                                       << solver.first;
@@ -81,7 +80,7 @@ GTEST_TEST(testNonlinearProgram, BoundingBoxTest) {
   Vector4d lb(-1, -0.5, -3, -2);
   Vector4d ub(2, -0.2, -0.1, -1);
   prog.SetInitialGuessForAllVariables(Vector4d::Zero());
-  RunNonlinearProgram(prog, [&]() {
+  RunNonlinearProgram(&prog, [&]() {
     const auto& x_value = prog.GetSolution(x);
     for (int i = 0; i < 4; ++i) {
       EXPECT_GE(x_value(i), lb(i) - 1E-10);
@@ -93,15 +92,15 @@ GTEST_TEST(testNonlinearProgram, BoundingBoxTest) {
 GTEST_TEST(testNonlinearProgram, trivialLinearSystem) {
   LinearSystemExample1 example1{};
   auto prog = example1.prog();
-  RunNonlinearProgram(*prog, [&]() { EXPECT_TRUE(example1.CheckSolution()); });
+  RunNonlinearProgram(prog, [&]() { EXPECT_TRUE(example1.CheckSolution()); });
 
   LinearSystemExample2 example2{};
   prog = example2.prog();
-  RunNonlinearProgram(*prog, [&]() { EXPECT_TRUE(example2.CheckSolution()); });
+  RunNonlinearProgram(prog, [&]() { EXPECT_TRUE(example2.CheckSolution()); });
 
   LinearSystemExample3 example3{};
   prog = example3.prog();
-  RunNonlinearProgram(*prog, [&]() { EXPECT_TRUE(example3.CheckSolution()); });
+  RunNonlinearProgram(prog, [&]() { EXPECT_TRUE(example3.CheckSolution()); });
 }
 
 GTEST_TEST(testNonlinearProgram, trivialLinearEquality) {
@@ -113,7 +112,7 @@ GTEST_TEST(testNonlinearProgram, trivialLinearEquality) {
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(0, 1),
                                    Vector1d::Constant(1));
   prog.SetInitialGuess(vars, Vector2d(2, 2));
-  RunNonlinearProgram(prog, [&]() {
+  RunNonlinearProgram(&prog, [&]() {
     const auto& vars_value = prog.GetSolution(vars);
     EXPECT_DOUBLE_EQ(vars_value(0), 2);
     EXPECT_DOUBLE_EQ(vars_value(1), 1);
@@ -140,7 +139,7 @@ GTEST_TEST(testNonlinearProgram, QuadraticCost) {
   Matrix4d Q_symmetric = 0.5 * (Q + Q_transpose);
   Vector4d expected = -Q_symmetric.ldlt().solve(b);
   prog.SetInitialGuess(x, Vector4d::Zero());
-  RunNonlinearProgram(prog, [&]() {
+  RunNonlinearProgram(&prog, [&]() {
     const auto& x_value = prog.GetSolution(x);
     EXPECT_TRUE(
         CompareMatrices(x_value, expected, 1e-6, MatrixCompareType::absolute));
@@ -161,7 +160,7 @@ GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem1) {
       NonConvexQPproblem1 prob(
           static_cast<NonConvexQPproblem1::CostForm>(cost_form),
           static_cast<NonConvexQPproblem1::ConstraintForm>(cnstr_form));
-      RunNonlinearProgram(*(prob.prog()),
+      RunNonlinearProgram(prob.prog(),
                           [&]() { EXPECT_TRUE(prob.CheckSolution()); });
     }
   }
@@ -176,7 +175,7 @@ GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem2) {
       NonConvexQPproblem2 prob(
           static_cast<NonConvexQPproblem2::CostForm>(cost_form),
           static_cast<NonConvexQPproblem2::ConstraintForm>(cnstr_form));
-      RunNonlinearProgram(*(prob.prog()),
+      RunNonlinearProgram(prob.prog(),
                           [&]() { EXPECT_TRUE(prob.CheckSolution()); });
     }
   }
@@ -189,10 +188,10 @@ GTEST_TEST(testNonlinearProgram, testLowerBoundedProblem) {
     LowerBoundedProblem prob(
         static_cast<LowerBoundedProblem::ConstraintForm>(cnstr_form));
     prob.SetInitialGuess1();
-    RunNonlinearProgram(*(prob.prog()),
+    RunNonlinearProgram(prob.prog(),
                         [&]() { EXPECT_TRUE(prob.CheckSolution()); });
     prob.SetInitialGuess2();
-    RunNonlinearProgram(*(prob.prog()),
+    RunNonlinearProgram(prob.prog(),
                         [&]() { EXPECT_TRUE(prob.CheckSolution()); });
   }
 }
@@ -219,7 +218,7 @@ GTEST_TEST(testNonlinearProgram, sixHumpCamel) {
   auto cost = prog.AddCost(SixHumpCamelCost());
 
   prog.SetInitialGuess(x, Vector2d::Random());
-  RunNonlinearProgram(prog, [&]() {
+  RunNonlinearProgram(&prog, [&]() {
     // check (numerically) if it is a local minimum
     VectorXd ystar, y;
     const auto& x_value = prog.GetSolution(x);
@@ -247,7 +246,7 @@ GTEST_TEST(testNonlinearProgram, testGloptiPolyConstrainedMinimization) {
               cost_form),
           static_cast<GloptiPolyConstrainedMinimizationProblem::ConstraintForm>(
               cnstr_form));
-      RunNonlinearProgram(*(prob.prog()),
+      RunNonlinearProgram(prob.prog(),
                           [&]() { EXPECT_TRUE(prob.CheckSolution()); });
     }
   }
@@ -272,7 +271,7 @@ GTEST_TEST(testNonlinearProgram, linearPolynomialConstraint) {
             nullptr);
   // Check that it gives the correct answer as well.
   problem.SetInitialGuessForAllVariables(drake::Vector1d(0));
-  RunNonlinearProgram(problem, [&]() {
+  RunNonlinearProgram(&problem, [&]() {
     EXPECT_NEAR(problem.GetSolution(x_var(0)), 2, kEpsilon);
   });
 }
@@ -296,7 +295,7 @@ GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
                                     Vector1d::Constant(2),
                                     Vector1d::Constant(2));
     problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
-    RunNonlinearProgram(problem, [&]() {
+    RunNonlinearProgram(&problem, [&]() {
       EXPECT_NEAR(problem.GetSolution(x_var(0)), 2, kEpsilon);
       // TODO(ggould-tri) test this with a two-sided constraint, once
       // the nlopt wrapper supports those.
@@ -315,7 +314,7 @@ GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
     problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
-    RunNonlinearProgram(problem, [&]() {
+    RunNonlinearProgram(&problem, [&]() {
       EXPECT_NEAR(problem.GetSolution(x_var(0)), 1, 0.2);
       EXPECT_LE(poly.EvaluateUnivariate(problem.GetSolution(x_var(0))),
                 kEpsilon);
@@ -335,7 +334,7 @@ GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
     problem.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
-    RunNonlinearProgram(problem, [&]() {
+    RunNonlinearProgram(&problem, [&]() {
       EXPECT_NEAR(problem.GetSolution(xy_var(0)), 1, 0.2);
       EXPECT_NEAR(problem.GetSolution(xy_var(1)), -2, 0.2);
       std::map<Polynomiald::VarType, double> eval_point = {
@@ -361,7 +360,7 @@ GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
     problem.AddPolynomialConstraint(polynomials_vec, var_mapping,
                                     Eigen::VectorXd::Constant(2, -kInf),
                                     Eigen::VectorXd::Zero(2));
-    RunNonlinearProgram(problem, [&]() {
+    RunNonlinearProgram(&problem, [&]() {
       EXPECT_NEAR(problem.GetSolution(x_var(0)), -0.7, 0.2);
       EXPECT_LE(poly.EvaluateUnivariate(problem.GetSolution(x_var(0))),
                 kEpsilon);
@@ -387,9 +386,9 @@ GTEST_TEST(testNonlinearProgram, MinDistanceFromPlaneToOrigin) {
             A[k], b[k], static_cast<MinDistanceFromPlaneToOrigin::CostForm>(i),
             static_cast<MinDistanceFromPlaneToOrigin::ConstraintForm>(j));
         prob.SetInitialGuess();
-        RunNonlinearProgram(*(prob.prog_lorentz()),
+        RunNonlinearProgram(prob.prog_lorentz(),
                             [&]() { prob.CheckSolution(false); });
-        RunNonlinearProgram(*(prob.prog_rotated_lorentz()),
+        RunNonlinearProgram(prob.prog_rotated_lorentz(),
                             [&]() { prob.CheckSolution(true); });
       }
     }

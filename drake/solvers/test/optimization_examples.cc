@@ -28,14 +28,14 @@ LinearSystemExample1::LinearSystemExample1()
 
 bool LinearSystemExample1::CheckSolution() const {
   auto x_sol = prog_->GetSolution(x_);
-  if (!CompareMatrices(x_sol, b_, 1E-10, MatrixCompareType::absolute)) {
+  if (!CompareMatrices(x_sol, b_, tol(), MatrixCompareType::absolute)) {
     return false;
   }
   for (int i = 0; i < 4; ++i) {
-    if (std::abs(x_sol(i) - b_(i)) > 1E-10) {
+    if (std::abs(x_sol(i) - b_(i)) > tol()) {
       return false;
     }
-    if (!CompareMatrices(x_sol.head(i), b_.head(i), 1E-10,
+    if (!CompareMatrices(x_sol.head(i), b_.head(i), tol(),
                          MatrixCompareType::absolute)) {
       return false;
     }
@@ -53,7 +53,7 @@ bool LinearSystemExample2::CheckSolution() const {
   if (!LinearSystemExample1::CheckSolution()) {
     return false;
   }
-  if (!CompareMatrices(prog()->GetSolution(y_), b().topRows<2>() / 2, 1E-10,
+  if (!CompareMatrices(prog()->GetSolution(y_), b().topRows<2>() / 2, tol(),
                        MatrixCompareType::absolute)) {
     return false;
   }
@@ -65,11 +65,11 @@ LinearSystemExample3::LinearSystemExample3() : LinearSystemExample2() {
 }
 
 bool LinearSystemExample3::CheckSolution() const {
-  if (!CompareMatrices(prog()->GetSolution(x()), b() / 3, 1E-10,
+  if (!CompareMatrices(prog()->GetSolution(x()), b() / 3, tol(),
                        MatrixCompareType::absolute)) {
     return false;
   }
-  if (!CompareMatrices(prog()->GetSolution(y()), b().topRows<2>() / 2, 1E-10,
+  if (!CompareMatrices(prog()->GetSolution(y()), b().topRows<2>() / 2, tol(),
                        MatrixCompareType::absolute)) {
     return false;
   }
