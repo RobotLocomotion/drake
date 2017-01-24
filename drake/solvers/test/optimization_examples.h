@@ -284,8 +284,8 @@ class GloptiPolyConstrainedMinimizationProblem {
     kCostBegin = 0,
     kGenericCost = 0,
     kNonSymbolicCost = 1,
-    // TODO(hongkai.dai): add symbolic linear cost
-    kCostEnd = 1
+    kSymbolicCost = 2,
+    kCostEnd = 2
   };
 
   enum ConstraintForm {
@@ -355,6 +355,8 @@ class GloptiPolyConstrainedMinimizationProblem {
 
   void AddSymbolicCost();
 
+  void AddNonSymbolicCost();
+
   void AddNonSymbolicConstraint();
 
   void AddSymbolicConstraint();
@@ -388,7 +390,7 @@ class MinDistanceFromPlaneToOrigin {
   enum CostForm {
     kCostBegin = 0,
     kNonSymbolicCost = 0,
-    // TODO(hongkai.dai): add symbolic cost form
+    kSymbolicCost = 1,
     kCostEnd = 1
   };
 

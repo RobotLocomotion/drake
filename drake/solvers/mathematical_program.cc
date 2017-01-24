@@ -239,8 +239,7 @@ void ExtractVariablesFromExpression(const symbolic::Expression& e, VectorXDecisi
    *  combination.
    *
    *  \pre{1. @c coeffs is a row vector of double, whose length matches with the
-   *          size of @c map_var_to_index.
-   *       2. @c e is an addition symbolic-expression.}
+   *          size of @c map_var_to_index.}
    * @tparam Derived An Eigen row vector of doubles.
    * @param[in] e The symbolic linear expression
    * @param[in] map_var_to_index A mapping from variable ID to variable index,
