@@ -1,0 +1,4 @@
+<!DOCTYPE FilterScript>
+<FilterScript>
+ <filter name="Remove Duplicated Vertex"/>
+</FilterScript>
