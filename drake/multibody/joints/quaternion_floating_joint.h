@@ -12,6 +12,66 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverloaded-virtual"
+// TODO(sherm1,mitiguy) Verify that this is correct.
+/**
+ * Defines a 6 dof tree joint (mobilizer) that uses a unit quaternion as the
+ * generalized orientation coordinates.
+ *
+ * <h3>Generalized coordinates (configuration variables)</h3>
+ * There are 7 generalized coordinates q,
+ * organized as a position vector and quaternion. A tree joint connects an
+ * inboard (parent) body P to an outboard (child) body B. In those terms this
+ * joint's generalized coordinates are: <pre>
+ *          --------- ------------- T
+ *     q = | p_PB_P  |    q_PB     |
+ *          --------- -------------  7×1
+ *          px py pz   qw qx qy qz
+ * </pre>
+ * where `p_PB_P` is the position vector from P's origin Po to B's origin Bo,
+ * expressed in the P basis, and `q_PB` is the quaternion that is equivalent
+ * to the rotation matrix `R_PB`. The second line shows the 7 generalized
+ * coordinate scalars in order. Note that `qw` is the scalar part of the
+ * quaternion while `[qx qy qz]` is the vector part. See
+ * @ref multibody_spatial_pose for more  information about this notation.
+ *
+ * The time derivatives qdot of the generalized coordinates, _not_ to be
+ * confused with the generalized velocity variables v, are: <pre>
+ *          --------- ------------- T
+ *  qdot = | v_PB_P  |   qdot_PB   |
+ *          --------- -------------  7×1
+ * </pre>
+ * where `v_PB_P = d_P/dt p_PB_P` is the velocity of point Bo measured and
+ * expressed in the P frame, where we have emphasized that the derivative is
+ * taken in P, and `qdot_PB = d/dt q_PB` is the time derivative of the
+ * quaternion.
+ *
+ * <h3>Generalized velocity</h3>
+ * There are 6 generalized velocity variables v, organized as follows: <pre>
+ *          --------- -------- T
+ *     v = | ω_PB_B  | v_PB_B |
+ *          --------- --------  6×1
+ * </pre>
+ * where `ω_PB_B` is B's angular velocity in P, expressed in B, and
+ * `v_PB_B` is point Bo's translational velocity in P, expressed in B.
+ *
+ * Note that
+ * the rotational and translational quantities are in the reverse order from
+ * those in the generalized coordinates, and that the velocities are expressed
+ * in the _child_ frame B rather than in the parent. Clearly these are _not_
+ * the derivatives of the generalized coordinates!
+ *
+ * The time derivatives of the generalized velocities are: <pre>
+ *          --------- ----------- T
+ *  vdot = | α_PB_B  | vdot_PB_B |
+ *          --------- -----------  6×1
+ * </pre>
+ * where `α_PB_B` is B's angular acceleration in P, expressed in B, and
+ * `vdot_PB_B = d_B/dt v_PB_B` where we have emphasized that the derivative is
+ * taken in the B frame, so this is *not* the acceleration of Bo in P. That
+ * acceleration is given by `a_PB_B = vdot_PB_B + ω_PB_B × v_PB_B` (still in B).
+ * Re-expressing `a_PB_B` in P provides the configuration second derivative
+ * `a_PB_P = d²_P/dt² p_PB_P = q_PB*a_PB_B`.
+ */
 class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
  public:
   QuaternionFloatingJoint(const std::string& name,
@@ -20,6 +80,9 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
 
   virtual ~QuaternionFloatingJoint() {}
 
+  /** Returns the transform `X_PB(q)` where P is the parent body and B the
+   * child body connected by this joint.
+   */
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
@@ -67,36 +130,39 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
   }
 
   /**
-   * Computes a matrix that transforms the time derivative of generalized 
-   * configuration to generalized velocity _for given configuration @p q_.
-   * @param q the 7-dimensional generalized configuration (see warning below)
-   * @warning Generalized coordinates and generalized velocities store
-   *          positional and orientational values using a different ordering!
-   *          The first three values of generalized coordinates are positional
-   *          and the next four values represent quaternion values used for
-   *          orientation (ew, ex, ey, ez). The first three values of
-   *          generalized velocity represent an angular velocity (ωx, ωy, ωz)
-   *          and the second three values represent a linear velocity. Some
-   *          particular frames associated with generalized coordinates and
-   *          generalized velocities are described further immediately below.
-   * @param[out] qdot_to_v a nv × nq sized matrix, where nv is the dimension of
-   *        generalized velocities (6) and nq is the dimension of generalized
-   *        coordinates (7), that converts time derivatives of generalized
-   *        coordinates to generalized velocities _for given configuration
-   *        @p q_. The linear components of velocity will be rotated from some
-   *        frame N to a frame B (i.e., the length of this linear velocity
-   *        vector will be preserved), while the time derivatives of the
-   *        quaternion values (the quaternion values themselves are used to
-   *        generate matrices that rotate vectors from Frame B to Frame N) will
-   *        be transformed to angular velocities in Frame B. **Thus generalized
-   *        velocities in @p q must be represented in Frame B as well.**
-   * @warning If the norm of the quaternion values used for orientation in @p q
-   *          is equal to `s ≠ 1`, applying @p qdot_to_v to unscaled time
-   *          derivatives of the quaternion values will yield an angular
-   *          velocity vector scaled by `s` as well. This method neither
-   *          performs a normalization check nor normalizes the quaternion
-   *          orientation parameters, as implications for integration
-   *          techniques must be carefully considered.
+   * For the %QuaternionFloatingJoint, computes the matrix `N⁺(q)`∊ℝ⁶ˣ⁷ that
+   * maps generalized coordinate time derivatives qdot to generalized
+   * velocities v, with `v=N⁺ qdot`. The name signifies that `N⁺=pinv(N)` where
+   * `N(q)` is the matrix that maps v to qdot with `qdot=N v` and `pinv()`
+   * is the pseudoinverse (in this case the left pseudoinverse).
+   *
+   * See the class description for precise definitions of the generalized
+   * coordinates and velocities. Because the velocities are not the time
+   * derivatives of the coordinates, rotations and translations are
+   * reversed, and different expressed-in frames are employed, `N⁺` has the
+   * following elaborate structure: <pre>
+   *        -------- -----------
+   *       |  0₃ₓ₃  | Nq⁺_PB_B  |
+   *  N⁺ = |--------|-----------|
+   *       |  R_BP  |   0₃ₓ₄    |
+   *        -------- ----------- 6×7
+   * </pre>
+   * where `Nq_PB_B` is the matrix that maps angular velocity `ω_PB_B` to
+   * quaternion time derivative `qdot_PB` such that `qdot_PB=Nq_PB_B*ω_PB_B`,
+   * and `Nq⁺_PB_B` is the left pseudoinverse of `Nq_PB_B`.
+   *
+   * @param[in]  q The 7-element generalized configuration variable. See the
+   *   class documentation for details. See warning below regarding the effect
+   *   if the contained quaternion is not normalized.
+   * @param[out] qdot_to_v The matrix `N⁺`.
+   * @param      dqdot_to_v Unused, must be `nullptr` on entry.
+   *
+   * @warning Let `s` be the norm of the quaternion in `q`. If `s ≠ 1`, then
+   * we will calculate `s*Nq⁺_PB_B` in the upper right block of `N⁺` so the
+   * resulting angular velocity vector will be scaled by `s` as well. This
+   * method neither performs a normalization check nor normalizes the quaternion
+   * orientation parameters. Implications for integration techniques must be
+   * carefully considered.
    */
   template <typename DerivedQ>
   void qdot2v(const Eigen::MatrixBase<DerivedQ>& q,
@@ -146,38 +212,40 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     qdot_to_v.template block<3, 4>(3, 3).setZero();
   }
 
+
   /**
-   * Computes a matrix that transforms a generalized velocity to the time
-   * derivative of generalized configuration to generalized velocity _for given 
-   * configuration @p q_.
-   * @param q the 7-dimensional generalized configuration (see warning below).
-   * @warning Generalized coordinates and generalized velocities store
-   *          positional and orientational values using a different ordering!
-   *          The first three values of generalized coordinates are positional
-   *          and the next four values represent quaternion values used for
-   *          orientation (ew, ex, ey, ez). The first three values of
-   *          generalized velocity represent an angular velocity (ωx, ωy, ωz)
-   *          and the second three values represent a linear velocity. Some
-   *          particular frames associated with generalized coordinates and
-   *          generalized velocities are described further immediately below.
-   * @param[out] v_to_qdot a nq × nv sized matrix, where nv is the dimension of
-   *        generalized velocities (6) and nq is the dimension of generalized
-   *        coordinates (7), that converts generalized velocities to time
-   *        derivatives of generalized coordinates _for given configuration 
-   *        @p q_. The linear components of velocity will be rotated
-   *        from some frame B to some frame N (i.e., linear velocities will
-   *        not change in length), while angular velocities in Frame
-   *        B will be transformed to time derivatives of the quaternion values
-   *        (the quaternion values themselves are used to generate matrices that
-   *        rotate vectors from Frame B to Frame N). **Thus, generalized
-   *        coordinates in @p q must be represented in Frame N as well.**
-   * @warning If the norm of the quaternion values used for orientation in @p q
-   *          is equal to `s ≠ 1`, applying @p v_to_qdot to unscaled angular
-   *          velocity vector will yeild time derivatives of the quaternion
-   *          values scaled by `s` as well. This method neither
-   *          performs a normalization check nor normalizes the quaternion
-   *          orientation parameters, as implications for integration
-   *          techniques must be carefully considered.
+   * For the %QuaternionFloatingJoint, computes the matrix `N(q)`∊ℝ⁷ˣ⁶ that
+   * maps generalized velocities v to generalized coordinate time derivatives
+   * qdot, with `qdot=N v`.
+   *
+   * See the class description for precise definitions of the generalized
+   * coordinates and velocities. Because the velocities are not the time
+   * derivatives of the coordinates, rotations and translations are
+   * reversed, and different expressed-in frames are employed, `N` has the
+   * following elaborate structure: <pre>
+   *        ------- ------
+   *       |  0₃ₓ₃ | R_PB |
+   *       |-------|------|
+   *   N = |       |      |
+   *       |Nq_PB_B| 0₄ₓ₃ |
+   *       |       |      |
+   *        -------------- 7×6
+   * </pre>
+   * where `Nq_PB_B` is the matrix that maps angular velocity `ω_PB_B` to
+   * quaternion time derivative `qdot_PB` such that `qdot_PB=Nq_PB_B*ω_PB_B`.
+   *
+   * @param[in]  q The 7-element generalized configuration variable. See the
+   *   class documentation for details. See warning below regarding the effect
+   *   if the contained quaternion is not normalized.
+   * @param[out] v_to_qdot The matrix `N`.
+   * @param      dv_to_qdot Unused, must be `nullptr` on entry.
+   *
+   * @warning Let `s` be the norm of the quaternion in `q`. If `s ≠ 1`, then
+   * we will calculate `s*Nq_PB_B` in the lower left block of `N` so the
+   * resulting quaternion derivative will be scaled by `s` as well. This
+   * method neither performs a normalization check nor normalizes the quaternion
+   * orientation parameters. Implications for integration techniques must be
+   * carefully considered.
    */
   template <typename DerivedQ>
   void v2qdot(const Eigen::MatrixBase<DerivedQ>& q,
