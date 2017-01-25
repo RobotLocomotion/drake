@@ -18,7 +18,9 @@ const double kEnormousDistance {1e12};
 
 const double kEnormousVelocity {1e12};
 
-const double kCarLength {4.6};  // TODO(maddog) Get from somewhere else.
+// TODO(maddog) This should come from somewhere else, e.g., passed in.
+// Based on the length of a 2010 Prius.
+const double kCarLength {4.6};
 
 enum LaneRelation { kIntersection,
                     kMerge,

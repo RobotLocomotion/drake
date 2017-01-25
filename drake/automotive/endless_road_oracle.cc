@@ -412,7 +412,7 @@ void AssessJunctions(
   std::map<const maliput::api::Junction*,
            std::vector<TimeBox>> boxes_by_junction;
   // "For each car (identified by its index), a list of all Junctions which
-  //  its short-term path with traverse."
+  //  its path will traverse (within some horizon)."
   std::map<int, std::vector<const maliput::api::Junction*>> junctions_by_car;
 
   IndexJunctions(source_states, paths, &boxes_by_junction, &junctions_by_car);
@@ -453,7 +453,8 @@ void IndexJunctions(
       const double s_out = s_current;
       // An exactly-stopped car would never reach the junction; it is more
       // stable to pretend that it is travelling very, very slowly (that way
-      // the closest exactly-stopped car will appear to get there first).
+      // the closest exactly-stopped car will look like it is going to
+      // get there first).
       const double kNonZeroSpeed = 1e-12;
       const double speed = std::max(self.circuit_s_speed, kNonZeroSpeed);
       // TODO(maddog@tri.global)  Time in/out should probably account
@@ -496,7 +497,8 @@ void MeasureJunctions(
       const TimeBox self_box = [&]() {
         // TODO(maddog)  Linear search is kind of dumb.
         // TODO(maddog)  There are potentially multiple TimeBoxes for the same
-        //               car at the same junction.
+        //               car at the same junction, if the car circles back
+        //               through the junction within the horizon.
         for (const TimeBox& box : boxes_by_junction.at(junction)) {
           if (box.car_index == car_index) { return box; }
         }
@@ -521,7 +523,7 @@ void MeasureJunctions(
           continue;
         }
         // Skip same lane (which cannot be an intersecting path).
-        // TODO(maddog)  Actually process same-lane, and subsume the work of
+        // TODO(maddog)  Actually process same-lane, thus subsume the work of
         //               AssessForwardPath().
         if (other_box.pr.lane == self_box.pr.lane) {
           continue;
@@ -601,7 +603,6 @@ void MeasureJunctions(
     }
   }
 }
-
 
 }  // namespace internal
 
