@@ -1,6 +1,9 @@
+
+
 #include "drake/systems/primitives/saturation.h"
 
 #include <algorithm>
+#include <limits>
 
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -9,24 +12,46 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Saturation<T>::Saturation(const T& u_min, const T& u_max)
-    : Saturation(u_min * VectorX<T>::Ones(1), u_max * VectorX<T>::Ones(1)) {}
-
-template <typename T>
-Saturation<T>::Saturation(const Eigen::Ref<const VectorX<T>>& u_min,
-                          const Eigen::Ref<const VectorX<T>>& u_max)
-    : u_min_(u_min), u_max_(u_max) {
-  DRAKE_THROW_UNLESS(u_min_.size() == u_max_.size());
-  const int vector_size = u_min_.size();
-
-  // Ensures that the lower limits are smaller than the upper limits.
-  DRAKE_THROW_UNLESS((u_min_.array() <= u_max_.array()).all());
+Saturation<T>::Saturation(int input_size)
+    : min_max_ports_enabled_(true),
+      input_size_(input_size),
+      max_value_(VectorX<T>::Constant(input_size,
+                                      std::numeric_limits<double>::infinity())),
+      min_value_(VectorX<T>::Constant(
+          input_size, -std::numeric_limits<double>::infinity())) {
+  // Checks if input size is a positive integer.
+  DRAKE_THROW_UNLESS(input_size_ > 0);
 
   // Input and outputs are of same dimension.
   input_port_index_ =
-      this->DeclareInputPort(kVectorValued, vector_size).get_index();
+      this->DeclareInputPort(kVectorValued, input_size_).get_index();
+  max_value_port_index_ =
+      this->DeclareInputPort(kVectorValued, input_size_).get_index();
+  min_value_port_index_ =
+      this->DeclareInputPort(kVectorValued, input_size_).get_index();
   output_port_index_ =
-      this->DeclareOutputPort(kVectorValued, vector_size).get_index();
+      this->DeclareOutputPort(kVectorValued, input_size_).get_index();
+}
+
+template <typename T>
+Saturation<T>::Saturation(const VectorX<T>& min_value,
+                          const VectorX<T>& max_value)
+    : min_max_ports_enabled_(false),
+      input_size_(min_value.size()),
+      max_value_(max_value),
+      min_value_(min_value) {
+  // Checks if input size is a positive integer.
+  DRAKE_THROW_UNLESS(input_size_ > 0);
+
+  // Checks if limits are of same dimensions.
+  DRAKE_THROW_UNLESS(min_value.size() == max_value.size());
+
+  DRAKE_THROW_UNLESS((min_value_.array() <= max_value_.array()).all());
+
+  input_port_index_ =
+      this->DeclareInputPort(kVectorValued, input_size_).get_index();
+  output_port_index_ =
+      this->DeclareOutputPort(kVectorValued, input_size_).get_index();
 }
 
 template <typename T>
@@ -39,40 +64,41 @@ void Saturation<T>::DoCalcOutput(const Context<T>& context,
 
   const BasicVector<T>* input_vector =
       this->EvalVectorInput(context, input_port_index_);
-  DRAKE_DEMAND(input_vector);
+
+  // Initializes on the default values
+  VectorX<T> u_min = min_value_, u_max = max_value_;
+
+  // Extracts the min and/or max values if they are present in the input ports.
+  if (min_max_ports_enabled_) {
+    const BasicVector<T>* max_value_vector =
+        this->EvalVectorInput(context, max_value_port_index_);
+    const BasicVector<T>* min_value_vector =
+        this->EvalVectorInput(context, min_value_port_index_);
+
+    // Throws an error in case neither of the inputs are connected in
+    // the case of the variable version of the Saturation system.
+    DRAKE_THROW_UNLESS(min_value_vector != nullptr
+        || max_value_vector != nullptr);
+
+    if (min_value_vector != nullptr) {
+      u_min = min_value_vector->get_value();
+    }
+    if (max_value_vector != nullptr) {
+      u_max = max_value_vector->get_value();
+    }
+  }
+
+  DRAKE_THROW_UNLESS((u_min.array() <= u_max.array()).all());
+
   const auto& u = input_vector->get_value();
 
   using std::min;
   using std::max;
 
   // Loop through and set the saturation values.
-  for (int i = 0; i < u_min_.size(); ++i) {
-    y[i] = min(max(u[i], u_min_[i]), u_max_[i]);
+  for (int i = 0; i < u_min.size(); ++i) {
+    y[i] = min(max(u[i], u_min[i]), u_max[i]);
   }
-}
-
-template <typename T>
-const InputPortDescriptor<T>& Saturation<T>::get_input_port() const {
-  return System<T>::get_input_port(input_port_index_);
-}
-
-template <typename T>
-const OutputPortDescriptor<T>& Saturation<T>::get_output_port() const {
-  return System<T>::get_output_port(output_port_index_);
-}
-
-template <typename T>
-const T& Saturation<T>::get_u_max_scalar() const {
-  // Throws an error if the vector cannot be represented as a scalar.
-  DRAKE_THROW_UNLESS(u_max_.size() == 1);
-  return u_max_[0];
-}
-
-template <typename T>
-const T& Saturation<T>::get_u_min_scalar() const {
-  // Throws an error if the vector cannot be represented as a scalar.
-  DRAKE_THROW_UNLESS(u_min_.size() == 1);
-  return u_min_[0];
 }
 
 template class Saturation<double>;
