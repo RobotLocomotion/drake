@@ -241,7 +241,7 @@ void ExtractVariablesFromExpression(
    *  int, @p map_var_to_index, is used to decide a variable's index in a linear
    *  combination.
    *
-   *  \pre{1. @c coeffs is a row vector of double, whose length matches with the
+   *  \pre{@c coeffs is a row vector of double, whose length matches with the
    *          size of @c map_var_to_index.}
    * @tparam Derived An Eigen row vector of doubles.
    * @param[in] e The symbolic linear expression
