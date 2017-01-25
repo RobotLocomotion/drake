@@ -267,7 +267,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Declares that this System has a simple, fixed-period discrete update.
-  /// The first tick will be at t= offset_sec, and it will recur at every
+  /// The first tick will be at t = offset_sec, and it will recur at every
   /// period_sec thereafter. On the discrete tick, the system may update the
   /// discrete state.
   void DeclarePeriodicDiscreteUpdate(const T& period_sec, const T& offset_sec) {
@@ -276,7 +276,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Declares that this System has a simple, fixed-period unrestricted state
-  /// update. The first tick will be at t= offset_sec, and it will recur at
+  /// update. The first tick will be at t = offset_sec, and it will recur at
   /// every period_sec thereafter. On the discrete tick, the system may perform
   /// unrestricted updates.
   void DeclarePeriodicUnrestrictedUpdate(const T& period_sec,
