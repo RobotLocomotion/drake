@@ -39,6 +39,12 @@ error, add ``-DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON`` to the ``cmake`` command::
     cd drake-distro/build
     cmake .. -DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON
 
+Alternatively, if you have a compatible version of VTK5 installed, you can tell
+CMake to use it by specifying ``VTK_DIR`` as follows::
+
+    cd drake-distro/build
+    cmake .. -DVTK_DIR=path/to/vtk5
+
 .. _faq_vmware:
 
 Why doesn't Drake Visualizer work in VMWare Fusion or Workstation?
