@@ -1,8 +1,8 @@
 .. _build_from_source:
 
-********************************
-Source installation (mac, linux)
-********************************
+**********************************
+Source installation (OS X, Ubuntu)
+**********************************
 
 Optional: Setting up the MATLAB Compiler
 ========================================
@@ -51,7 +51,7 @@ setup steps:
 .. toctree::
     :maxdepth: 1
 
-    homebrew
+    mac
     ubuntu_trusty
     ubuntu_xenial
 
