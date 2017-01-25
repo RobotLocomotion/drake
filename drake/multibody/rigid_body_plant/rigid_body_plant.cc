@@ -637,12 +637,18 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint, const T& position,
     const T violation = position - qmax;
     const T limit_force =
         (-joint_stiffness * violation * (1 + joint_dissipation * velocity));
-    return std::min(limit_force, 0.);
+    // The following two lines are necessary to support templating on AutoDiffX.
+    // See: https://github.com/RobotLocomotion/drake/issues/4897#issuecomment-275099824.
+    using std::min;
+    return min(limit_force, 0.);
   } else if (position < qmin) {
     const T violation = position - qmin;
     const T limit_force =
         (-joint_stiffness * violation * (1 - joint_dissipation * velocity));
-    return std::max(limit_force, 0.);
+    // The following two lines are necessary to support templating on AutoDiffX.
+    // See: https://github.com/RobotLocomotion/drake/issues/4897#issuecomment-275099824.
+    using std::max;
+    return max(limit_force, 0.);
   }
   return 0;
 }
