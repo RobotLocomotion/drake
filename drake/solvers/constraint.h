@@ -11,6 +11,7 @@
 #include <Eigen/SparseCore>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 
@@ -44,6 +45,8 @@ class Constraint {
   }
 
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Constraint)
+
   /// Constructs a constraint which has \p num_constraints rows, with input
   /// variables to Eval a \p num_vars x 1 vector.
   /// @param num_constraints. The number of rows in the constraints, namely
@@ -60,14 +63,6 @@ class Constraint {
     lower_bound_.setConstant(-std::numeric_limits<double>::infinity());
     upper_bound_.setConstant(std::numeric_limits<double>::infinity());
   }
-
-  Constraint(const Constraint& rhs) = delete;
-
-  Constraint& operator=(const Constraint& rhs) = delete;
-
-  Constraint(Constraint&& rhs) = delete;
-
-  Constraint& operator=(Constraint&& rhs) = delete;
 
   template <typename DerivedLB, typename DerivedUB>
   Constraint(size_t num_constraints, int num_vars,
@@ -168,6 +163,8 @@ class Constraint {
  */
 class QuadraticConstraint : public Constraint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticConstraint)
+
   static const int kNumConstraints = 1;
 
   template <typename DerivedQ, typename Derivedb>
@@ -181,14 +178,6 @@ class QuadraticConstraint : public Constraint {
     DRAKE_ASSERT(Q_.rows() == Q_.cols());
     DRAKE_ASSERT(Q_.cols() == b_.rows());
   }
-
-  QuadraticConstraint(const QuadraticConstraint& rhs) = delete;
-
-  QuadraticConstraint& operator=(const QuadraticConstraint& rhs) = delete;
-
-  QuadraticConstraint(QuadraticConstraint&& rhs) = delete;
-
-  QuadraticConstraint& operator=(QuadraticConstraint&& rhs) = delete;
 
   ~QuadraticConstraint() override {}
 
@@ -256,6 +245,8 @@ class QuadraticConstraint : public Constraint {
  */
 class LorentzConeConstraint : public Constraint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LorentzConeConstraint)
+
   LorentzConeConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
                         const Eigen::Ref<const Eigen::VectorXd>& b)
       : Constraint(
@@ -266,14 +257,6 @@ class LorentzConeConstraint : public Constraint {
     DRAKE_DEMAND(A_.rows() >= 2);
     DRAKE_ASSERT(A_.rows() == b_.rows());
   }
-
-  LorentzConeConstraint(const LorentzConeConstraint& rhs) = delete;
-
-  LorentzConeConstraint& operator=(const LorentzConeConstraint& rhs) = delete;
-
-  LorentzConeConstraint(LorentzConeConstraint&& rhs) = delete;
-
-  LorentzConeConstraint& operator=(LorentzConeConstraint&& rhs) = delete;
 
   ~LorentzConeConstraint() override {}
 
@@ -315,6 +298,8 @@ class LorentzConeConstraint : public Constraint {
  */
 class RotatedLorentzConeConstraint : public Constraint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RotatedLorentzConeConstraint)
+
   RotatedLorentzConeConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
                                const Eigen::Ref<const Eigen::VectorXd>& b)
       : Constraint(
@@ -331,17 +316,6 @@ class RotatedLorentzConeConstraint : public Constraint {
 
   /// Getter for b.
   const Eigen::VectorXd& b() const { return b_; }
-
-  RotatedLorentzConeConstraint(const RotatedLorentzConeConstraint& rhs) =
-      delete;
-
-  RotatedLorentzConeConstraint& operator=(
-      const RotatedLorentzConeConstraint& rhs) = delete;
-
-  RotatedLorentzConeConstraint(RotatedLorentzConeConstraint&& rhs) = delete;
-
-  RotatedLorentzConeConstraint& operator=(RotatedLorentzConeConstraint&& rhs) =
-      delete;
 
   ~RotatedLorentzConeConstraint() override {}
 
@@ -370,20 +344,14 @@ class RotatedLorentzConeConstraint : public Constraint {
  */
 class PolynomialConstraint : public Constraint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PolynomialConstraint)
+
   PolynomialConstraint(const VectorXPoly& polynomials,
                        const std::vector<Polynomiald::VarType>& poly_vars,
                        const Eigen::VectorXd& lb, const Eigen::VectorXd& ub)
       : Constraint(polynomials.rows(), poly_vars.size(), lb, ub),
         polynomials_(polynomials),
         poly_vars_(poly_vars) {}
-
-  PolynomialConstraint(const PolynomialConstraint& rhs) = delete;
-
-  PolynomialConstraint& operator=(const PolynomialConstraint& rhs) = delete;
-
-  PolynomialConstraint(PolynomialConstraint&& rhs) = delete;
-
-  PolynomialConstraint& operator=(PolynomialConstraint&& rhs) = delete;
 
   ~PolynomialConstraint() override {}
 
@@ -412,6 +380,8 @@ class PolynomialConstraint : public Constraint {
  */
 class LinearConstraint : public Constraint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearConstraint)
+
   template <typename DerivedA, typename DerivedLB, typename DerivedUB>
   LinearConstraint(const Eigen::MatrixBase<DerivedA>& a,
                    const Eigen::MatrixBase<DerivedLB>& lb,
@@ -419,14 +389,6 @@ class LinearConstraint : public Constraint {
       : Constraint(a.rows(), a.cols(), lb, ub), A_(a) {
     DRAKE_ASSERT(a.rows() == lb.rows());
   }
-
-  LinearConstraint(const LinearConstraint& rhs) = delete;
-
-  LinearConstraint& operator=(const LinearConstraint& rhs) = delete;
-
-  LinearConstraint(LinearConstraint&& rhs) = delete;
-
-  LinearConstraint& operator=(LinearConstraint&& rhs) = delete;
 
   ~LinearConstraint() override {}
 
@@ -480,19 +442,12 @@ class LinearConstraint : public Constraint {
  */
 class LinearEqualityConstraint : public LinearConstraint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearEqualityConstraint)
+
   template <typename DerivedA, typename DerivedB>
   LinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,
                            const Eigen::MatrixBase<DerivedB>& beq)
       : LinearConstraint(Aeq, beq, beq) {}
-
-  LinearEqualityConstraint(const LinearEqualityConstraint& rhs) = delete;
-
-  LinearEqualityConstraint& operator=(const LinearEqualityConstraint& rhs) =
-      delete;
-
-  LinearEqualityConstraint(LinearEqualityConstraint&& rhs) = delete;
-
-  LinearEqualityConstraint& operator=(LinearEqualityConstraint&& rhs) = delete;
 
   ~LinearEqualityConstraint() override {}
 
@@ -521,19 +476,13 @@ class LinearEqualityConstraint : public LinearConstraint {
 */
 class BoundingBoxConstraint : public LinearConstraint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BoundingBoxConstraint)
+
   template <typename DerivedLB, typename DerivedUB>
   BoundingBoxConstraint(const Eigen::MatrixBase<DerivedLB>& lb,
                         const Eigen::MatrixBase<DerivedUB>& ub)
       : LinearConstraint(Eigen::MatrixXd::Identity(lb.rows(), lb.rows()), lb,
                          ub) {}
-
-  BoundingBoxConstraint(const BoundingBoxConstraint& rhs) = delete;
-
-  BoundingBoxConstraint& operator=(const BoundingBoxConstraint& rhs) = delete;
-
-  BoundingBoxConstraint(BoundingBoxConstraint&& rhs) = delete;
-
-  BoundingBoxConstraint& operator=(BoundingBoxConstraint&& rhs) = delete;
 
   ~BoundingBoxConstraint() override {}
 
@@ -559,22 +508,12 @@ class BoundingBoxConstraint : public LinearConstraint {
  */
 class LinearComplementarityConstraint : public Constraint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearComplementarityConstraint)
+
   template <typename DerivedM, typename Derivedq>
   LinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                   const Eigen::MatrixBase<Derivedq>& q)
       : Constraint(q.rows(), M.cols()), M_(M), q_(q) {}
-
-  LinearComplementarityConstraint(const LinearComplementarityConstraint& rhs) =
-      delete;
-
-  LinearComplementarityConstraint& operator=(
-      const LinearComplementarityConstraint& rhs) = delete;
-
-  LinearComplementarityConstraint(LinearComplementarityConstraint&& rhs) =
-      delete;
-
-  LinearComplementarityConstraint& operator=(
-      LinearComplementarityConstraint&& rhs) = delete;
 
   ~LinearComplementarityConstraint() override {}
 
@@ -605,6 +544,8 @@ class LinearComplementarityConstraint : public Constraint {
  */
 class PositiveSemidefiniteConstraint : public Constraint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PositiveSemidefiniteConstraint)
+
   /**
    * Impose the constraint that a symmetric matrix with size @p rows x @p rows
    * is positive semidefinite.
@@ -663,17 +604,6 @@ class PositiveSemidefiniteConstraint : public Constraint {
                        rows, std::numeric_limits<double>::infinity())),
         matrix_rows_(rows) {}
 
-  PositiveSemidefiniteConstraint(const PositiveSemidefiniteConstraint& rhs) =
-      delete;
-
-  PositiveSemidefiniteConstraint& operator=(
-      const PositiveSemidefiniteConstraint& rhs) = delete;
-
-  PositiveSemidefiniteConstraint(PositiveSemidefiniteConstraint&& rhs) = delete;
-
-  PositiveSemidefiniteConstraint& operator=(
-      PositiveSemidefiniteConstraint&& rhs) = delete;
-
   ~PositiveSemidefiniteConstraint() override {}
 
   int matrix_rows() const { return matrix_rows_; }
@@ -712,6 +642,8 @@ class PositiveSemidefiniteConstraint : public Constraint {
  */
 class LinearMatrixInequalityConstraint : public Constraint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearMatrixInequalityConstraint)
+
   /**
    * @param F Each symmetric matrix F[i] should be of the same size.
    * @param symmytry_tolerance  The precision to determine if the input matrices
@@ -720,18 +652,6 @@ class LinearMatrixInequalityConstraint : public Constraint {
   LinearMatrixInequalityConstraint(
       const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
       double symmetry_tolerance = 1E-10);
-
-  LinearMatrixInequalityConstraint(
-      const LinearMatrixInequalityConstraint& rhs) = delete;
-
-  LinearMatrixInequalityConstraint& operator=(
-      const LinearMatrixInequalityConstraint& rhs) = delete;
-
-  LinearMatrixInequalityConstraint(LinearMatrixInequalityConstraint&& rhs) =
-      delete;
-
-  LinearMatrixInequalityConstraint& operator=(
-      LinearMatrixInequalityConstraint&& rhs) = delete;
 
   ~LinearMatrixInequalityConstraint() override {}
 
