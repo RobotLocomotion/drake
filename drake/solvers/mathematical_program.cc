@@ -571,13 +571,26 @@ void MathematicalProgram::AddConstraint(
   return AddConstraint(Binding<LinearEqualityConstraint>(con, vars));
 }
 
-Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(const symbolic::Expression& e, double b) {
-  return AddLinearEqualityConstraint(Vector1<symbolic::Expression>(e), Vector1d(b));
+Binding<LinearEqualityConstraint> MathematicalProgram::AddLinearEqualityConstraint(const symbolic::Expression& e, double b) {
+  return AddLinearEqualityConstraint(drake::Vector1<symbolic::Expression>(e), drake::Vector1d(b));
 }
 
-Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(const Eigen::Ref<const VectorX<symbolic::Expression>>& v, const Eigen::Ref<const Eigen::VectorXd>& b) {
+Binding<LinearEqualityConstraint> MathematicalProgram::AddLinearEqualityConstraint(const Eigen::Ref<const VectorX<symbolic::Expression>>& v, const Eigen::Ref<const Eigen::VectorXd>& b) {
   DRAKE_DEMAND(v.rows() == b.rows());
-
+  VectorXDecisionVariable vars(0);
+  unordered_map<size_t, int> map_var_to_index;
+  for(int i = 0; i < v.rows(); ++i) {
+    ExtractVariablesFromExpression(v(i), &vars, &map_var_to_index);
+  }
+  // TODO(hongkai.dai): use sparse matrix.
+  Eigen::MatrixXd A(v.rows(), vars.rows());
+  Eigen::VectorXd beq(v.rows());
+  for (int i = 0; i < v.rows(); ++i) {
+    double constant_term(0);
+    DecomposeLinearExpression(v(i), map_var_to_index, A.row(i), &constant_term);
+    beq(i) = b(i) - constant_term;
+  }
+  return Binding<LinearEqualityConstraint>(AddLinearEqualityConstraint(A, beq, vars), vars);
 }
 
 std::shared_ptr<LinearEqualityConstraint>

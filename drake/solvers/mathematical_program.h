@@ -1211,7 +1211,9 @@ class MathematicalProgram {
    * (currently existing) variables.
    */
   template <typename DerivedA, typename DerivedB>
-  std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
+  typename std::enable_if<std::is_same<typename DerivedA::Scalar, double>::value &&
+      std::is_same<typename DerivedB::Scalar, double>::value, std::shared_ptr<LinearEqualityConstraint>>::type
+  AddLinearEqualityConstraint(
       const Eigen::MatrixBase<DerivedA>& Aeq,
       const Eigen::MatrixBase<DerivedB>& beq) {
     return AddLinearEqualityConstraint(Aeq, beq, decision_variables_);

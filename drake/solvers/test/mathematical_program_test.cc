@@ -460,6 +460,54 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic5) {
 }
 
 namespace {
+void CheckAddedSymbolicLinearEqualityConstraint(MathematicalProgram* prog, const symbolic::Expression& e, double b) {
+  int num_linear_eq_cnstr = prog->linear_equality_constraints().size();
+  auto binding = prog->AddLinearEqualityConstraint(e, b);
+  EXPECT_EQ(prog->linear_equality_constraints().size(), num_linear_eq_cnstr + 1);
+  EXPECT_EQ(prog->linear_equality_constraints().back().constraint(), binding.constraint());
+  EXPECT_EQ(prog->linear_equality_constraints().back().variables(), binding.variables());
+  EXPECT_EQ(binding.constraint()->num_constraints(), 1);
+  EXPECT_TRUE((binding.constraint()->A() * binding.variables() - binding.constraint()->lower_bound())(0).EqualTo(e - b));
+}
+}  // namespace
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
+  // Checks the single row linear equality constraint one by one:
+  
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+
+  // Checks x(0) = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, +x(0), 1);
+  // Checks x(1) = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, +x(1), 1);
+  // Checks x(0) + x(1) = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + x(1), 1);
+  // Checks x(0) + 2 * x(1) = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + 2 * x(1), 1);
+  // Checks 3 * x(0) - 2 * x(1) = 2
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, 3 * x(0) - 2 * x(1), 2);
+  // Checks 2 * x(0) = 2
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, 2 * x(0), 2);
+  // Checks x(0) + 3 * x(2) = 3
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + 3 * x(2), 3);
+  // Checks 2 * x(1) - 3 * x(2) = 4
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, 2 * x(1) - 3 * x(2), 4);
+  // Checks x(0) + 2 = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + 2 , 1);
+  // Checks x(1) - 2 = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(1) - 2, 1);
+  // Checks 3 * x(1) + 4 = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, 3 * x(1) + 4, 1);
+  // Checks x(0) + x(2) + 3 = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + x(2) + 3, 1);
+  // Checks 2 * x(0) + x(2) - 3 = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, 2 * x(0) + x(2) - 3, 1);
+  // Checks 3 * x(0) + x(1) + 4 * x(2) + 1 = 2
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, 3 * x(0) + x(1) + 4 * x(2) + 1, 2);
+}
+
+namespace {
 void CheckParsedSymbolicLorentzConeConstraint(
     MathematicalProgram* prog,
     const Eigen::Ref<
