@@ -17,7 +17,7 @@ if(VTK_FOUND)
 endif()
 
 add_library_with_exports(LIB_NAME drakeSensors SOURCE_FILES
-    ${drakeSensors_SRC_FILES} image.h)
+    ${drakeSensors_SRC_FILES})
 
 target_link_libraries(drakeSensors
     drakeRBM
