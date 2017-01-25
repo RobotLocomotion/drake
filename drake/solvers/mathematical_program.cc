@@ -571,6 +571,15 @@ void MathematicalProgram::AddConstraint(
   return AddConstraint(Binding<LinearEqualityConstraint>(con, vars));
 }
 
+Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(const symbolic::Expression& e, double b) {
+  return AddLinearEqualityConstraint(Vector1<symbolic::Expression>(e), Vector1d(b));
+}
+
+Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(const Eigen::Ref<const VectorX<symbolic::Expression>>& v, const Eigen::Ref<const Eigen::VectorXd>& b) {
+  DRAKE_DEMAND(v.rows() == b.rows());
+
+}
+
 std::shared_ptr<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& Aeq,

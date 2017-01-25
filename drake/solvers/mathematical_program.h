@@ -1125,6 +1125,35 @@ class MathematicalProgram {
   void AddConstraint(std::shared_ptr<LinearEqualityConstraint> con,
                      const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
+  /**
+   * Adds one row of linear constraint e = b where @p e is a symbolic
+   * expression. Throws an exception if
+   *  1. @p e is a non-linear expression.
+   *  2. @p e is a constant.
+   *
+   * @param e A linear symbolic expression in the form of <tt>c0 + c1 * x1 +
+   * ... + cn * xn</tt> where @c c_i is a constant and @x_i is a variable.
+   * @param b A scalar.
+   * @return The newly added linear equality constraint, together with the
+   * bound variable.
+   */
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const symbolic::Expression& e, double b);
+
+  /**
+   * Adds linear equality constraints \f$ v = b \f$, where \p v(i) is a symbolic
+   * linear expression. Throws an eception if
+   * 1. @p v(i) is a non-linear expression.
+   * 2. @p v(i) is a constant.
+   * @param v v(i) is a linear symbolic expression in the form of
+   * <tt> c0 + c1 * x1 + ... + cn * xn </tt> where ci is a constant and @xi is
+   * a variable.
+   * @param b A vector of doubles.
+   * @return The newly addlinear linear equality constraint, together with the
+   * bound variables.
+   */
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(const Eigen::Ref<const VectorX<symbolic::Expression>>& v, const Eigen::Ref<const Eigen::VectorXd>& b);
+
   /** AddLinearEqualityConstraint
    *
    * Adds linear equality constraints referencing potentially a subset of
