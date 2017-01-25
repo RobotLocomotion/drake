@@ -196,6 +196,10 @@ void DoConnectControllerTest(bool saturation_test = false) {
   const Vector1d Ki(0);
   const Vector1d Kd(0.5);
 
+  // Sets the max input in the case of saturation_test.
+  const double saturation_max = 0.5;
+
+
   if (!saturation_test) {
     auto plant_pid_ports = PidControlledSystem<double>::ConnectController(
         plant_input_port, plant_output_port, std::move(feedback_selector), Kp,
@@ -210,7 +214,7 @@ void DoConnectControllerTest(bool saturation_test = false) {
     auto plant_pid_ports = PidControlledSystem<double>::ConnectController(
         plant_input_port, plant_output_port, std::move(feedback_selector), Kp,
         Ki, Kd, VectorX<double>::Constant(1, 0.0) /* u_min */,
-        VectorX<double>::Constant(1, 0.5) /* u_max */, &standardBuilder);
+        VectorX<double>::Constant(1, saturation_max) /* u_max */, &standardBuilder);
 
     standardBuilder.Connect(input_source->get_output_port(),
                             plant_pid_ports.control_input_port);
@@ -238,9 +242,7 @@ void DoConnectControllerTest(bool saturation_test = false) {
   if (!saturation_test) {
     EXPECT_EQ(pid_input, calculated_input);
   } else {
-    if (calculated_input > 0.5 /* u_max */) {
-      calculated_input = 0.5;
-    }
+   calculated_input = saturation_max;
     EXPECT_EQ(pid_input, calculated_input);
   }
 }
