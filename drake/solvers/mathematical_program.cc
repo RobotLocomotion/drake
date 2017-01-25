@@ -210,14 +210,13 @@ class SymbolicError : public runtime_error {
   }
 };
 
-// Given an expression, extract all variables inside e, append these variables
-// To @p vars if they are not included in @p vars yet.
-// @param[in] e.  A symbolic expression
+// Given an expression @p e, extract all variables inside e, append these
+// variables to @p vars if they are not included in @p vars yet.
+// @param[in] e.  A symbolic expression.
 // @param[out] vars.  The variables in @p e but not included in @p vars before
 // this call, will be appended to @p vars.
 // @param[out] map_var_to_index. map_var_to_index is of the same size as @p
-// vars,
-// and map_var_to_index[var(i)] = i
+// vars, and map_var_to_index[vars(i).get_id()] = i.
 void ExtractVariablesFromExpression(
     const symbolic::Expression& e, VectorXDecisionVariable* vars,
     unordered_map<size_t, int>* map_var_to_index) {
@@ -291,11 +290,11 @@ void DecomposeLinearExpression(
         }
       }
     } else {
-      // THere is more than one base, like x^2 * y^3
+      // There are more than one base, like x^2 * y^3
       throw SymbolicError(e, "is not linear");
     }
   } else if (is_variable(e)) {
-    // just a single variable
+    // Just a single variable.
     const symbolic::Variable& var{get_variable(e)};
     const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
         map_var_to_index.at(var.get_id())) = 1;
