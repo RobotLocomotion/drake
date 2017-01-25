@@ -638,7 +638,8 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint, const T& position,
     const T limit_force =
         (-joint_stiffness * violation * (1 + joint_dissipation * velocity));
     // The following two lines are necessary to support templating on AutoDiffX.
-    // See: https://github.com/RobotLocomotion/drake/issues/4897#issuecomment-275099824.
+    // See https://github.com/RobotLocomotion/drake/issues/4897#issuecomment-275099824
+    // and the file description of drake/common/autodiff_overloads.h.
     using std::min;
     return min(limit_force, 0.);
   } else if (position < qmin) {
@@ -646,7 +647,8 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint, const T& position,
     const T limit_force =
         (-joint_stiffness * violation * (1 - joint_dissipation * velocity));
     // The following two lines are necessary to support templating on AutoDiffX.
-    // See: https://github.com/RobotLocomotion/drake/issues/4897#issuecomment-275099824.
+    // See https://github.com/RobotLocomotion/drake/issues/4897#issuecomment-275099824
+    // and the file description of drake/common/autodiff_overloads.h.
     using std::max;
     return max(limit_force, 0.);
   }
