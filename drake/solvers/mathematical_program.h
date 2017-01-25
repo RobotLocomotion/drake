@@ -805,9 +805,10 @@ class MathematicalProgram {
   /**
    * Adds a linear cost term of the form c'*x.
    * @param e A linear symbolic expression.
-   * @pre{ e is a linear expression c'*x, where each entry of x is a decision
+   * @pre{e is a linear expression c'*x, where each entry of x is a decision
    * variable in the mathematical program}
-   * @return The newly added linear constraint, together with the bound variables.
+   * @return The newly added linear constraint, together with the bound
+   * variables.
    */
   Binding<LinearConstraint> AddLinearCost(const symbolic::Expression& e);
 
@@ -1934,7 +1935,8 @@ class MathematicalProgram {
    * @param var A decision variable in the program.
    * @param value The value of that decision variable.
    */
-  void SetDecisionVariableValue(const symbolic::Variable& var, double value);
+  void SetDecisionVariableValue(const symbolic::Variable& var,
+                                const double value);
 
   /**
    * Set an option for a particular solver.  This interface does not

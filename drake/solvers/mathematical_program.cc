@@ -220,6 +220,7 @@ class SymbolicError : public runtime_error {
 void ExtractVariablesFromExpression(
     const symbolic::Expression& e, VectorXDecisionVariable* vars,
     unordered_map<size_t, int>* map_var_to_index) {
+  DRAKE_DEMAND(static_cast<int>(map_var_to_index->size()) == vars->size());
   for (const symbolic::Variable& var : e.GetVariables()) {
     if (map_var_to_index->find(var.get_id()) == map_var_to_index->end()) {
       map_var_to_index->emplace(var.get_id(), vars->size());
@@ -279,15 +280,14 @@ void DecomposeLinearExpression(
     const std::map<Expression, Expression>& map_base_to_exponent =
         get_base_to_exp_map_in_multiplication(e);
     if (map_base_to_exponent.size() == 1) {
-      for (const pair<Expression, Expression>& p : map_base_to_exponent) {
-        if (!is_variable(p.first) || !is_one(p.second)) {
-          throw SymbolicError(e, "is not linear");
-        } else {
-          const symbolic::Variable& var = get_variable(p.first);
-          const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
-              map_var_to_index.at(var.get_id())) = c;
-          *constant_term = 0;
-        }
+      const pair<Expression, Expression>& p = *map_base_to_exponent.begin();
+      if (!is_variable(p.first) || !is_one(p.second)) {
+        throw SymbolicError(e, "is not linear");
+      } else {
+        const symbolic::Variable& var = get_variable(p.first);
+        const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
+            map_var_to_index.at(var.get_id())) = c;
+        *constant_term = 0;
       }
     } else {
       // There are more than one base, like x^2 * y^3
@@ -368,6 +368,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearCost(
   double constant_term;
   DecomposeLinearExpression(e, map_var_to_index, c, &constant_term);
   // The constant term is ignored now.
+  // TODO(hongkai.dai): support adding constant term to the cost.
   return Binding<LinearConstraint>(AddLinearCost(c, var), var);
 }
 
@@ -466,28 +467,27 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
       const std::map<Expression, Expression>& map_base_to_exponent =
           get_base_to_exp_map_in_multiplication(e_i);
       if (map_base_to_exponent.size() == 1) {
-        for (const pair<Expression, Expression>& p : map_base_to_exponent) {
-          if (!is_variable(p.first) || !is_one(p.second)) {
-            throw SymbolicError(
-                e_i, "non-linear but called with AddLinearConstraint");
-          } else {
-            const Variable& var_i = get_variable(p.first);
-            if (v.size() == 1) {
-              // Add a bounding box constraint lb/c <= v <= ub/c
-              if (c > 0) {
-                new_lb(i) = lb(i) / c;
-                new_ub(i) = ub(i) / c;
-              } else {
-                new_lb(i) = ub(i) / c;
-                new_ub(i) = lb(i) / c;
-              }
-              return Binding<BoundingBoxConstraint>(
-                  AddBoundingBoxConstraint(new_lb(i), new_ub(i), var_i), vars);
+        const pair<Expression, Expression>& p = *map_base_to_exponent.begin();
+        if (!is_variable(p.first) || !is_one(p.second)) {
+          throw SymbolicError(
+              e_i, "non-linear but called with AddLinearConstraint");
+        } else {
+          const Variable& var_i = get_variable(p.first);
+          if (v.size() == 1) {
+            // Add a bounding box constraint lb/c <= v <= ub/c
+            if (c > 0) {
+              new_lb(i) = lb(i) / c;
+              new_ub(i) = ub(i) / c;
             } else {
-              A(i, map_var_to_index[var_i.get_id()]) = c;
-              new_lb(i) = lb(i);
-              new_ub(i) = ub(i);
+              new_lb(i) = ub(i) / c;
+              new_ub(i) = lb(i) / c;
             }
+            return Binding<BoundingBoxConstraint>(
+                AddBoundingBoxConstraint(new_lb(i), new_ub(i), var_i), vars);
+          } else {
+            A(i, map_var_to_index[var_i.get_id()]) = c;
+            new_lb(i) = lb(i);
+            new_ub(i) = ub(i);
           }
         }
       } else {
@@ -862,7 +862,7 @@ void MathematicalProgram::SetDecisionVariableValues(
 }
 
 void MathematicalProgram::SetDecisionVariableValue(const Variable& var,
-                                                   double value) {
+                                                   const double value) {
   x_values_[FindDecisionVariableIndex(var)] = value;
 }
 
