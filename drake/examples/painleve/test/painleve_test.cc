@@ -662,20 +662,23 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSliding) {
   // Init the simulator for the time stepping system.
   Simulator<double> simulator_ts(ts, std::move(context_ts));
 
-  // Integrate forward by a single *large* dt.
+  // Integrate forward by a single *large* dt. Note that the update rate
+  // is set by the time stepping system, so stepping to dt should yield
+  // exactly one step.
   simulator_ts.StepTo(dt);
+  EXPECT_EQ(simulator_ts.get_num_discrete_updates(), 1);
 
   // Manually integrate the continuous state forward for the piecewise DAE
   // based approach.
   std::unique_ptr<ContinuousState<double>> f = pdae.AllocateTimeDerivatives();
   pdae.CalcTimeDerivatives(*context_pdae, f.get());
   auto xc = context_pdae->get_mutable_continuous_state_vector();
-  xc->SetAtIndex(3, xc->GetAtIndex(3) + dt*((*f)[3]));
-  xc->SetAtIndex(4, xc->GetAtIndex(4) + dt*((*f)[4]));
-  xc->SetAtIndex(5, xc->GetAtIndex(5) + dt*((*f)[5]));
-  xc->SetAtIndex(0, xc->GetAtIndex(0) + dt*xc->GetAtIndex(3));
-  xc->SetAtIndex(1, xc->GetAtIndex(1) + dt*xc->GetAtIndex(4));
-  xc->SetAtIndex(2, xc->GetAtIndex(2) + dt*xc->GetAtIndex(5));
+  xc->SetAtIndex(3, xc->GetAtIndex(3) + dt * ((*f)[3]));
+  xc->SetAtIndex(4, xc->GetAtIndex(4) + dt * ((*f)[4]));
+  xc->SetAtIndex(5, xc->GetAtIndex(5) + dt * ((*f)[5]));
+  xc->SetAtIndex(0, xc->GetAtIndex(0) + dt * xc->GetAtIndex(3));
+  xc->SetAtIndex(1, xc->GetAtIndex(1) + dt * xc->GetAtIndex(4));
+  xc->SetAtIndex(2, xc->GetAtIndex(2) + dt * xc->GetAtIndex(5));
 
   // See whether the states are equal.
   const Context<double>& context_ts_new = simulator_ts.get_context();
