@@ -8,6 +8,56 @@ Frequently Asked Questions
    :depth: 3
    :local:
 
+.. _faq_cmake_vtk_version_crash:
+
+Why Does CMake Fail With An Error Indicating No Compatible VTK Found?
+=====================================================================
+
+Symptom: When running ``cmake ..`` in ``drake-distro/build``, the following
+error is reported::
+
+    CMake Error at cmake/options.cmake:172 (find_package):
+      Could not find a configuration file for package "VTK" that is compatible
+      with requested version "5.10".
+
+      The following configuration files were considered but not accepted:
+
+        /usr/lib/cmake/vtk-6.2/VTKConfig.cmake, version: 6.2.0
+
+    Call Stack (most recent call first):
+      cmake/options.cmake:249 (drake_system_dependency)
+      CMakeLists.txt:17 (drake_setup_options)
+
+
+    -- Configuring incomplete, errors occurred!
+
+Solution: This error is typically caused by your system having a newer version
+of VTK installed than the version required by Drake. As indicated by the error
+message, Drake needs VTK 5.10 whereas the system has VTK 6.2. To get around this
+error, add ``-DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON`` to the ``cmake`` command::
+
+    cd drake-distro/build
+    cmake .. -DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON
+
+.. _faq_cmake_vtk_build_GLintptr_failure:
+
+Why Does VTK Build Fail Indicating that ‘GLintptr’ has not been declared?
+=========================================================================
+
+Symptom: When build Drake using CMake options
+``-DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON``, the build of VTK fails with the
+following error::
+
+    /usr/include/GL/glxext.h:480:143: error: ‘GLintptr’ has not been declared
+
+Solution: This error appears to be due to VTK5's reliance on the
+``GLX_GLXEXT_LEGACY`` macro, which was inexplicably commented out. See
+discussion
+`here <https://github.com/UV-CDAT/uvcdat/issues/983#issuecomment-71814770>`_.
+To work around this error, change Drake's ``externals/vtk`` submodule to
+point to ``https://github.com/liangfok/VTK.git`` and use SHA
+``ec43254f432af2e49f10bd2d1996cc578895c19f``.
+
 .. _faq_vmware:
 
 Why doesn't Drake Visualizer work in VMWare Fusion or Workstation?
