@@ -637,12 +637,14 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint, const T& position,
     const T violation = position - qmax;
     const T limit_force =
         (-joint_stiffness * violation * (1 + joint_dissipation * velocity));
-    return std::min(limit_force, 0.);
+    using std::min;  // Needed for ADL.
+    return min(limit_force, 0.);
   } else if (position < qmin) {
     const T violation = position - qmin;
     const T limit_force =
         (-joint_stiffness * violation * (1 - joint_dissipation * velocity));
-    return std::max(limit_force, 0.);
+    using std::max;  // Needed for ADL.
+    return max(limit_force, 0.);
   }
   return 0;
 }
