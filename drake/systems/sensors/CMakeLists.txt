@@ -8,6 +8,7 @@ set(drakeSensors_HEADERS
     depth_sensor.h
     depth_sensor_output.h
     depth_sensor_specification.h
+    image.h
     rotary_encoders.h)
 
 if(VTK_FOUND)
@@ -16,7 +17,7 @@ if(VTK_FOUND)
 endif()
 
 add_library_with_exports(LIB_NAME drakeSensors SOURCE_FILES
-    ${drakeSensors_SRC_FILES})
+    ${drakeSensors_SRC_FILES} image.h)
 
 target_link_libraries(drakeSensors
     drakeRBM
