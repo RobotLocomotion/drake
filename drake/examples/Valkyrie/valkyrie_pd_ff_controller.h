@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+
 #include "lcmtypes/bot_core/atlas_command_t.hpp"
 
 #include "drake/systems/framework/leaf_system.h"
@@ -24,12 +27,12 @@ class ValkyriePDAndFeedForwardController : public systems::LeafSystem<double> {
     return std::move(output);
   }
 
-  inline const SystemPortDescriptor<double>& get_input_port_kinematics_result()
+  inline const InputPortDescriptor<double>& get_input_port_kinematics_result()
       const {
     return get_input_port(input_port_index_kinematics_result_);
   }
 
-  inline const SystemPortDescriptor<double>& get_output_port_atlas_command()
+  inline const OutputPortDescriptor<double>& get_output_port_atlas_command()
       const {
     return get_output_port(output_port_index_atlas_command_);
   }

@@ -1,0 +1,17 @@
+# lock-order-inversion (libmosek64.*) in lc_auth_data
+deadlock:lc_auth_data
+
+# unlock of an unlocked mutex (libmosek64.*) in l_mt_unlock
+mutex:l_mt_unlock
+
+# unlock of an unlocked mutex (libmosek64.*) in lc_checkout
+mutex:lc_checkout
+
+# data race (libiomp5.*) in __kmp_resume
+race:__kmp_resume
+
+# data race (libglib-2.0.*) in g_static_rec_mutex_lock
+race:g_static_rec_mutex_lock
+
+# thread leak (libiomp5.*) in __kmp_create_worker
+thread:__kmp_create_worker

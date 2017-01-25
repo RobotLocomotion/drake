@@ -1,6 +1,7 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "cc_googletest")
 
 package(default_visibility = ["//visibility:public"])
@@ -146,7 +147,9 @@ cc_binary(
         "create_trajectory_params.cc",
         "create_trajectory_params.h",
     ],
-    linkstatic = 1,
+    data = [
+        ":models",
+    ],
     deps = [
         ":automotive_simulator",
         "//drake/common:text_logging_gflags",
@@ -160,7 +163,9 @@ cc_binary(
         "car_sim_lcm_common.cc",
         "car_sim_lcm_common.h",
     ],
-    linkstatic = 1,
+    data = [
+        ":models",
+    ],
     deps = [
         ":automotive_simulator",
         "//drake/common:text_logging_gflags",
@@ -170,24 +175,58 @@ cc_binary(
     ],
 )
 
-py_library(
-    name = "drake_paths",
-    srcs = ["drake_paths.py"],
-)
-
 py_binary(
     name = "steering_command_driver",
     srcs = ["steering_command_driver.py"],
     deps = [
-        ":drake_paths",
-        "//drake/lcmtypes:py_automotive",
+        "//drake/lcmtypes:automotive-py",
         "@lcm//:lcm-python",
     ],
 )
 
+java_binary(
+    name = "lcm-spy",
+    main_class = "lcm.spy.Spy",
+    runtime_deps = [
+        "//drake/lcmtypes:automotive-java",
+        "//drake/lcmtypes:viewer-java",
+    ],
+)
+
+py_binary(
+    name = "demo",
+    srcs = ["automotive_demo.py"],
+    data = [
+        ":automotive_demo",
+        ":lcm-spy",
+        ":steering_command_driver",
+        "@drake_visualizer//:drake-visualizer",
+        "@lcm//:lcm-logger",
+    ],
+    main = "automotive_demo.py",
+    deps = [
+        "@lcm//:lcm-python",
+    ],
+)
+
+genrule(
+    name = "speed_bump_genrule",
+    srcs = ["models/speed_bump/speed_bump.yaml"],
+    outs = ["models/speed_bump/speed_bump.obj"],
+    cmd = " ".join([
+        "$(location //drake/automotive/maliput/utility:yaml_to_obj)",
+        "--yaml_file '$<'",
+        "--obj_dir `dirname '$@'`",
+        "--obj_file `basename '$@' .obj`",
+    ]),
+    tools = ["//drake/automotive/maliput/utility:yaml_to_obj"],
+)
+
 filegroup(
     name = "models",
-    srcs = glob(["models/**"]),
+    srcs = glob(["models/**"]) + [
+        "models/speed_bump/speed_bump.obj",
+    ],
 )
 
 # === test/ ===
@@ -257,3 +296,5 @@ cc_googletest(
         "//drake/automotive:generated_translators",
     ],
 )
+
+cpplint()

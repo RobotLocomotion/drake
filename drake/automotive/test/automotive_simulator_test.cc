@@ -114,13 +114,9 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
 
   // Confirm that appropriate draw messages are coming out. Just a few of the
   // message's fields are checked.
-  const std::vector<uint8_t>& published_message_bytes =
-      mock_lcm->get_last_published_message("DRAKE_VIEWER_DRAW");
-
-  drake::lcmt_viewer_draw published_draw_message;
-  EXPECT_GT(published_draw_message.decode(&published_message_bytes[0], 0,
-                                          published_message_bytes.size()),
-            0);
+  const std::string channel_name = "DRAKE_VIEWER_DRAW";
+  lcmt_viewer_draw published_draw_message =
+      mock_lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>(channel_name);
 
   // One body belongs to the world, the rest belong to the car model.
   EXPECT_EQ(published_draw_message.num_links, 1 + num_vehicle_bodies);
@@ -138,11 +134,6 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
 GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestPrius) {
   TestSimpleCarWithSdf(GetDrakePath() +
                        "/automotive/models/prius/prius_with_lidar.sdf", 17);
-}
-
-GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestBox) {
-  TestSimpleCarWithSdf(GetDrakePath() +
-                       "/automotive/models/boxcar.sdf", 1);
 }
 
 GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestTwoDofBot) {
@@ -212,20 +203,6 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file_1, int num_bodies_1,
 }
 
 // Cover AddTrajectoryCar (and thus AddPublisher).
-GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestPrius) {
-  TestTrajectoryCarWithSdf(GetDrakePath() +
-                           "/automotive/models/prius/prius_with_lidar.sdf", 17,
-                           GetDrakePath() +
-                           "/automotive/models/boxcar.sdf", 1);
-}
-
-GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestBoxcar) {
-  TestTrajectoryCarWithSdf(GetDrakePath() +
-                           "/automotive/models/boxcar.sdf", 1,
-                           GetDrakePath() +
-                           "/automotive/models/prius/prius_with_lidar.sdf", 17);
-}
-
 GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestTwoDofBot) {
   TestTrajectoryCarWithSdf(GetDrakePath() +
                            "/automotive/models/prius/prius.sdf", 13,

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <chrono>
 #include <limits>
+#include <memory>
 #include <tuple>
 #include <utility>
 
@@ -51,7 +52,7 @@ namespace systems {
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  *
  * Instantiated templates for the following kinds of T's are provided and
- * available to link against in libdrakeSystemAnalysis:
+ * available to link against in the containing library:
  * - double
  * - AutoDiffXd
  *

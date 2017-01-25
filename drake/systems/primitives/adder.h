@@ -20,7 +20,7 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
 class Adder : public LeafSystem<T> {
@@ -34,7 +34,7 @@ class Adder : public LeafSystem<T> {
   bool has_any_direct_feedthrough() const override { return true; }
 
   /// Returns the output port.
-  const SystemPortDescriptor<T>& get_output_port() const;
+  const OutputPortDescriptor<T>& get_output_port() const;
 
   /// Returns an Adder<AutoDiffXd> with the same dimensions as this Adder.
   std::unique_ptr<Adder<AutoDiffXd>> ToAutoDiffXd() const {

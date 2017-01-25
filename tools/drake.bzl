@@ -1,5 +1,4 @@
 # -*- python -*-
-# This file contains macros for Bazel; see drake/doc/bazel.rst.
 
 def cc_googletest(
         name,

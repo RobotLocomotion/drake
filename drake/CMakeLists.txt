@@ -39,9 +39,6 @@ find_package(Doxygen MODULE)
 find_package(Perl MODULE)
 find_package(Threads MODULE REQUIRED)
 
-# set up pods
-include(../cmake/pods.cmake)
-
 # A compatibility shim function that declares a library, with a built-in
 # default of SHARED.
 function(add_library_with_exports)
@@ -78,9 +75,12 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=shadow")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=inconsistent-missing-override")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=sign-compare")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=return-stack-address")
 else()
   # TODO(jwnimmer-tri) Get a similar complement of flags working on clang.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=extra -Wno-unused-parameter")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=extra")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=return-local-addr")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter")
   # TODO(jwnimmer-tri) Fix these warnings and remove this suppression.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers")
 endif()
@@ -105,9 +105,6 @@ endif()
 enable_testing()
 include(CTest)
 set(GTEST_ROOT ${CMAKE_INSTALL_PREFIX})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_FAIL=1")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_SUCCEED=1")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_TEST=1")
 
 set(drake_jar_javafiles matlab/util/Transform.java)
 set(drake_jar_requires)
@@ -125,17 +122,15 @@ if(lcm_FOUND)
   list(APPEND drake_jar_requires lcm-java lcmtypes_drake-java)
 
   # add lcmgl
-  # annoyingly, libbot does not define a classpath variable. there might be a cleaner way to do this
-  execute_process(COMMAND pkg-config --variable=prefix bot2-lcmgl-client OUTPUT_VARIABLE LCMGL_BUILD_DIR)
-  if(NOT LCMGL_BUILD_DIR)
+  # libbot does not define a classpath variable. there might be a cleaner way to do this
+  if(NOT bot2-lcmgl-client_PREFIX)  # Set by drake_find_package(... PKG_CONFIG)
     message("
   --------------------------------------------------------------------------------
     *** IMPORTANT: bot2-lcmgl build directory not found. ***
   --------------------------------------------------------------------------------
     ")
   else()
-    string(STRIP ${LCMGL_BUILD_DIR} LCMGL_BUILD_DIR)
-    find_jar(LCMGL_JAR_FILE bot2-lcmgl PATHS "${LCMGL_BUILD_DIR}/share/java/")
+    find_jar(LCMGL_JAR_FILE bot2-lcmgl PATHS "${bot2-lcmgl-client_PREFIX}/share/java/")
     if(NOT LCMGL_JAR_FILE)
       message(FATAL_ERROR "
   --------------------------------------------------------------------------------

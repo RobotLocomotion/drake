@@ -17,7 +17,6 @@ namespace schunk_wsg {
 using systems::Context;
 using systems::DiscreteState;
 using systems::SystemOutput;
-using systems::SystemPortDescriptor;
 
 SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(
     int input_size, int position_index)
@@ -28,7 +27,7 @@ SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(
   this->DeclareOutputPort(systems::kVectorValued, 2);
   // The update period below matches the polling rate from
   // drake-schunk-driver.
-  this->DeclareUpdatePeriodSec(0.05);
+  this->DeclareDiscreteUpdatePeriodSec(0.05);
 }
 
 void SchunkWsgTrajectoryGenerator::DoCalcOutput(

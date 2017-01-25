@@ -1,6 +1,7 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "cc_googletest")
 
 package(default_visibility = ["//visibility:public"])
@@ -97,6 +98,7 @@ cc_googletest(
     deps = [
         ":drake_visualizer",
         "//drake/lcm:mock",
+        "//drake/systems/analysis",
     ],
 )
 
@@ -142,3 +144,5 @@ filegroup(
         "test/**/*.xml",
     ]),
 )
+
+cpplint()

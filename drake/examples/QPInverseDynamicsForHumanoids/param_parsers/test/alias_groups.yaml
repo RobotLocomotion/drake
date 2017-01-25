@@ -1,0 +1,27 @@
+joint_groups:
+  floating_base: base
+
+  left_arm:
+    [leftShoulderPitch, leftShoulderRoll, leftShoulderYaw, leftElbowPitch, leftForearmYaw, leftWristRoll, leftWristPitch]
+
+  right_arm:
+    [rightShoulderPitch, rightShoulderRoll, rightShoulderYaw, rightElbowPitch, rightForearmYaw, rightWristRoll, rightWristPitch]
+
+  left_leg:
+    [leftHipYaw, leftHipRoll, leftHipPitch, leftKneePitch, leftAnklePitch, leftAnkleRoll]
+
+  right_leg:
+    [rightHipYaw, rightHipRoll, rightHipPitch, rightKneePitch, rightAnklePitch, rightAnkleRoll]
+
+  neck:
+    [lowerNeckPitch]
+
+  spine:
+    [torsoYaw, torsoPitch, torsoRoll]
+
+body_groups:
+  feet: [leftFoot, rightFoot]
+  left_foot: leftFoot
+  right_foot: rightFoot
+  pelvis: pelvis
+  torso: torso

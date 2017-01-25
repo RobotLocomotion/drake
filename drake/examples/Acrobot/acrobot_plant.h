@@ -49,7 +49,7 @@ class AcrobotPlant : public systems::LeafSystem<T> {
 
   // LeafSystem<T> override.
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override;
+      const systems::OutputPortDescriptor<T>& descriptor) const override;
 
   // System<T> override.
   AcrobotPlant<AutoDiffXd>* DoToAutoDiffXd() const override;

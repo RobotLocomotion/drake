@@ -1,5 +1,7 @@
 #include "drake/automotive/car_sim_lcm_common.h"
 
+#include <utility>
+
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
@@ -208,8 +210,8 @@ std::unique_ptr<systems::Diagram<double>> CreatCarSimLcmDiagram(
   // outer side of the turn.
   //
   MatrixX<double> matrix_gain(
-      controller->get_input_port(1).get_size(),
-      command_subscriber->get_output_port(0).get_size());
+      controller->get_input_port(1).size(),
+      command_subscriber->get_output_port(0).size());
   matrix_gain <<
       1,                 0,                  0,
       0,                 0,                  0,
@@ -217,9 +219,9 @@ std::unique_ptr<systems::Diagram<double>> CreatCarSimLcmDiagram(
       0,                 0,                  0,
       0, 1. / kWheelRadius, -1. / kWheelRadius,
       0, 1. / kWheelRadius, -1. / kWheelRadius;
-  DRAKE_ASSERT(matrix_gain.rows() == controller->get_input_port(1).get_size());
+  DRAKE_ASSERT(matrix_gain.rows() == controller->get_input_port(1).size());
   DRAKE_ASSERT(matrix_gain.cols() ==
-      command_subscriber->get_output_port(0).get_size());
+      command_subscriber->get_output_port(0).size());
 
   // TODO(liang.fok): Consider replacing the the MatrixGain system below with a
   // custom system that converts the user's commands to the vehicle's actuator's
@@ -231,7 +233,7 @@ std::unique_ptr<systems::Diagram<double>> CreatCarSimLcmDiagram(
 
   // Instantiates a constant vector source for the feed-forward torque command.
   // The feed-forward torque is zero.
-  VectorX<double> constant_vector(controller->get_input_port(0).get_size());
+  VectorX<double> constant_vector(controller->get_input_port(0).size());
   constant_vector.setZero();
   auto constant_zero_source =
       builder.template AddSystem<ConstantVectorSource<double>>(constant_vector);

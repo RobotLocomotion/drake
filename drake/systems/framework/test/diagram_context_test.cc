@@ -91,8 +91,7 @@ class DiagramContextTest : public ::testing::Test {
   // connected to @p context at @p index.
   static const BasicVector<double>* ReadVectorInputPort(
       const Context<double>& context, int index) {
-    SystemPortDescriptor<double> descriptor(nullptr, kInputPort, index,
-                                            kVectorValued, 0);
+    InputPortDescriptor<double> descriptor(nullptr, index, kVectorValued, 0);
     return context.EvalVectorInput(nullptr, descriptor);
   }
 

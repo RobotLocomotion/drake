@@ -89,7 +89,6 @@ set(system2_installed_headers
   pid_controller.h)
 add_library_with_exports(LIB_NAME drakeSystemControllers
     SOURCE_FILES ${system2_sources} ${system2_installed_headers})
-add_dependencies(drakeSystemControllers drakeCommon drakeRBM drakeSystemFramework drakeSystemPrimitives)
 target_link_libraries(drakeSystemControllers
     drakeCommon
     drakeRBM

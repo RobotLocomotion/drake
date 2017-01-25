@@ -25,6 +25,9 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   maliput/monolane/loader.cc
   maliput/monolane/road_geometry.cc
   maliput/monolane/segment.cc
+  maliput/utility/generate_obj.cc
+  maliput/utility/generate_urdf.cc
+  maliput/utility/infinite_circuit_road.cc
   simple_car.cc
   single_lane_ego_and_agent.cc
   trajectory_car.cc

@@ -5,6 +5,8 @@
 #include <sstream>
 #include <string>
 
+#include "drake/common/never_destroyed.h"
+
 using std::atomic;
 using std::ostream;
 using std::ostringstream;
@@ -14,12 +16,16 @@ namespace drake {
 namespace symbolic {
 
 size_t Variable::get_next_id() {
-  // Purposefully never freed to avoid static initialization fiasco.
-  static atomic<size_t>* next_id = new atomic<size_t>{0};
-  return (*next_id)++;
+  // Note that id 0 is reserved for anonymous variable which is created by the
+  // default constructor, Variable(). As a result, we have an invariant
+  // "get_next_id() > 0".
+  static never_destroyed<atomic<size_t>> next_id(1);
+  return next_id.access()++;
 }
 
-Variable::Variable(const string& name) : id_(get_next_id()), name_(name) {}
+Variable::Variable(const string& name) : id_{get_next_id()}, name_{name} {
+  DRAKE_ASSERT(id_ > 0);
+}
 size_t Variable::get_id() const { return id_; }
 string Variable::get_name() const { return name_; }
 string Variable::to_string() const {

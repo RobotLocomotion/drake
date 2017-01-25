@@ -32,6 +32,13 @@ git_repository(
 )
 
 new_git_repository(
+    name = "google_styleguide",
+    remote = "https://github.com/google/styleguide.git",
+    commit = "159b4c81bbca97a9ca00f1195a37174388398a67",
+    build_file = "tools/google_styleguide.BUILD",
+)
+
+new_git_repository(
     name = "eigen",
     remote = "https://github.com/RobotLocomotion/eigen-mirror.git",
     commit = "d3ee2bc648be3d8be8c596a9a0aefef656ff8637",
@@ -45,10 +52,16 @@ new_git_repository(
     build_file = "tools/spdlog.BUILD",
 )
 
+maven_jar(
+    name = "net_sf_jchart2d_jchart2d",
+    artifact = "net.sf.jchart2d:jchart2d:3.3.2",
+    sha1 = "4950821eefe4c204903e68b4d45a558b5ebdd6fa",
+)
+
 new_git_repository(
     name = "lcm",
     remote = "https://github.com/lcm-proj/lcm.git",
-    commit = "9015dce5defd3902b1725bd091b80c0517774e40",
+    commit = "755d8108bf4447d83786e0e6586875371ba859e5",
     build_file = "tools/lcm.BUILD",
 )
 
@@ -57,6 +70,27 @@ new_git_repository(
     remote = "https://github.com/RobotLocomotion/bullet3.git",
     commit = "ae2c4ca0618d55c6a29900aed75b958604149fdb",
     build_file = "tools/bullet.BUILD",
+)
+
+new_git_repository(
+    name = "ccd",
+    remote = "https://github.com/danfis/libccd.git",
+    commit = "16b9379fb6e8610566fe5e1396166daf7106f165",
+    build_file = "tools/ccd.BUILD",
+)
+
+new_git_repository(
+    name = "octomap",
+    remote = "https://github.com/OctoMap/octomap.git",
+    commit = "6d7c31ae4df2c93cb8a954e44d442338b58d3558",
+    build_file = "tools/octomap.BUILD",
+)
+
+new_git_repository(
+    name = "fcl",
+    remote = "https://github.com/flexible-collision-library/fcl.git",
+    commit = "06d48b3b6f3605b8caf119d5208d8156eb64fe0d",
+    build_file = "tools/fcl.BUILD",
 )
 
 # Necessary for buildifier.
@@ -89,7 +123,10 @@ new_git_repository(
 load("//tools:gurobi.bzl", "gurobi_repository")
 gurobi_repository(
     name = "gurobi",
-    workspace_dir = __workspace_dir__,
-    build_file = "tools/gurobi.BUILD",
 )
 
+load("//tools:soft_failure.bzl", "soft_failure_binary_repository")
+soft_failure_binary_repository(
+    name = "drake_visualizer",
+    local_path = __workspace_dir__ + "/build/install/bin/drake-visualizer",
+)

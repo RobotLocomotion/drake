@@ -1,8 +1,8 @@
 .. _build_from_source:
 
-********************************
-Source installation (mac, linux)
-********************************
+**********************************
+Source installation (OS X, Ubuntu)
+**********************************
 
 Optional: Setting up the MATLAB Compiler
 ========================================
@@ -51,7 +51,7 @@ setup steps:
 .. toctree::
     :maxdepth: 1
 
-    homebrew
+    mac
     ubuntu_trusty
     ubuntu_xenial
 
@@ -310,3 +310,11 @@ Drake is adding support for the Bazel build system.
     :maxdepth: 1
 
     bazel
+
+
+Troubleshooting
+===============
+
+If you're unable to launch ``drake-visualizer`` due to a
+"No module named vtkCommonCorePython" error, see
+:ref:`this FAQ <faq_drake_visualizer_no_module_named_vtk_common_core_python_non_ros>`.

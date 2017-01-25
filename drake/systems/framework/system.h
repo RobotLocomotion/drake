@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <limits>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -221,38 +222,6 @@ class System {
   /// appropriate subsystem evaluate the source output port.
   //@{
 
-  /// This method is called to update *any* state variables in the @p context
-  /// because the given @p event has arrived. Dispatches to
-  /// DoCalcUnrestrictedUpdate() by default, or to
-  /// `event.do_unrestricted_update` if provided. Does not allow the
-  /// dimensionality of the state variables to change.
-  /// @throws std::logic_error if the dimensionality of the state variables
-  ///         changes in the callback.
-  void CalcUnrestrictedUpdate(const Context<T>& context,
-                              const DiscreteEvent<T>& event,
-                              State<T>* state) const {
-    const int64_t continuous_state_dim =
-                       state->get_continuous_state()->size();
-    const int64_t discrete_state_dim = state->get_discrete_state()->size();
-    const int64_t abstract_state_dim = state->get_abstract_state()->size();
-    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
-
-    // Copy current state to the passed-in state, as specified in the
-    // documentation for DoCalclUnrestrictedUpdate().
-    state->CopyFrom(context.get_state());
-
-    if (event.do_unrestricted_update == nullptr) {
-      DoCalcUnrestrictedUpdate(context, state);
-    } else {
-      event.do_unrestricted_update(context, state);
-    }
-    if (continuous_state_dim != state->get_continuous_state()->size() ||
-        discrete_state_dim != state->get_discrete_state()->size() ||
-        abstract_state_dim != state->get_abstract_state()->size())
-      throw std::logic_error("State variable dimensions cannot be changed "
-                               "in CalcUnrestrictedUpdate().");
-  }
-
   /// Returns a reference to the cached value of the conservative power. If
   /// necessary the cache will be updated first using CalcConservativePower().
   /// @see CalcConservativePower()
@@ -291,7 +260,7 @@ class System {
       const Context<T>& context, int port_index) const {
     const BasicVector<T>* input_vector = EvalVectorInput(context, port_index);
     DRAKE_ASSERT(input_vector != nullptr);
-    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).get_size());
+    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).size());
     return input_vector->get_value();
   }
 
@@ -368,7 +337,38 @@ class System {
     }
   }
 
-  // TODO(edrumwri) CalcUnrestrictedUpdate() PR #4382.
+  /// This method is called to update *any* state variables in the @p context
+  /// because the given @p event has arrived. Dispatches to
+  /// DoCalcUnrestrictedUpdate() by default, or to
+  /// `event.do_unrestricted_update` if provided. Does not allow the
+  /// dimensionality of the state variables to change.
+  /// @throws std::logic_error if the dimensionality of the state variables
+  ///         changes in the callback.
+  void CalcUnrestrictedUpdate(const Context<T>& context,
+                              const DiscreteEvent<T>& event,
+                              State<T>* state) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
+    const int continuous_state_dim =
+        state->get_continuous_state()->size();
+    const int discrete_state_dim = state->get_discrete_state()->size();
+    const int abstract_state_dim = state->get_abstract_state()->size();
+
+    // Copy current state to the passed-in state, as specified in the
+    // documentation for DoCalclUnrestrictedUpdate().
+    state->CopyFrom(context.get_state());
+
+    if (event.do_unrestricted_update == nullptr) {
+      DoCalcUnrestrictedUpdate(context, state);
+    } else {
+      event.do_unrestricted_update(context, state);
+    }
+    if (continuous_state_dim != state->get_continuous_state()->size() ||
+        discrete_state_dim != state->get_discrete_state()->size() ||
+        abstract_state_dim != state->get_abstract_state()->size())
+      throw std::logic_error("State variable dimensions cannot be changed "
+                                 "in CalcUnrestrictedUpdate().");
+  }
 
   /// This method is called by a Simulator during its calculation of the size of
   /// the next continuous step to attempt. The System returns the next time at
@@ -546,37 +546,31 @@ class System {
     return static_cast<int>(output_ports_.size());
   }
 
-  /// Returns descriptors for all the input ports of this system.
-  const std::vector<SystemPortDescriptor<T>>& get_input_ports() const {
-    return input_ports_;
-  }
-
   /// Returns the descriptor of the input port at index @p port_index.
-  const SystemPortDescriptor<T>& get_input_port(int port_index) const {
-    if (port_index >= get_num_input_ports()) {
-      throw std::out_of_range("port number out of range.");
+  const InputPortDescriptor<T>& get_input_port(int port_index) const {
+    if (port_index < 0 || port_index >= get_num_input_ports()) {
+      throw std::out_of_range("System " + get_name() + ": Port index " +
+          std::to_string(port_index) + " is out of range. There are only " +
+          std::to_string(get_num_input_ports()) + " input ports.");
     }
-    return input_ports_[port_index];
+    return *input_ports_[port_index];
   }
 
   /// Returns the descriptor of the output port at index @p port_index.
-  const SystemPortDescriptor<T>& get_output_port(int port_index) const {
-    if (port_index >= get_num_output_ports()) {
-      throw std::out_of_range("port number out of range.");
+  const OutputPortDescriptor<T>& get_output_port(int port_index) const {
+    if (port_index < 0 || port_index >= get_num_output_ports()) {
+      throw std::out_of_range("System " + get_name() + ": Port index " +
+          std::to_string(port_index) + " is out of range. There are only " +
+          std::to_string(get_num_output_ports()) + " output ports.");
     }
-    return output_ports_[port_index];
-  }
-
-  /// Returns descriptors for all the output ports of this system.
-  const std::vector<SystemPortDescriptor<T>>& get_output_ports() const {
-    return output_ports_;
+    return *output_ports_[port_index];
   }
 
   /// Returns the total dimension of all of the input ports (as if they were
   /// muxed).
   int get_num_total_inputs() const {
     int count = 0;
-    for (const auto& in : input_ports_) count += in.get_size();
+    for (const auto& in : input_ports_) count += in->size();
     return count;
   }
 
@@ -584,7 +578,7 @@ class System {
   /// muxed).
   int get_num_total_outputs() const {
     int count = 0;
-    for (const auto& out : output_ports_) count += out.get_size();
+    for (const auto& out : output_ports_) count += out->size();
     return count;
   }
 
@@ -606,7 +600,7 @@ class System {
         const VectorBase<T>* output_vector = output->get_vector_data(i);
         DRAKE_THROW_UNLESS(output_vector != nullptr);
         DRAKE_THROW_UNLESS(output_vector->size() ==
-            get_output_port(i).get_size());
+            get_output_port(i).size());
       }
     }
   }
@@ -697,52 +691,40 @@ class System {
  protected:
   //----------------------------------------------------------------------------
   /// @name                 System construction
-  /// Authors of concrete %Systems can use these methods in the constructor
+  /// Authors of derived %Systems can use these methods in the constructor
   /// for those %Systems.
   //@{
   /// Constructs an empty %System base class object.
   System() {}
 
-  /// Adds a port with the specified @p descriptor to the input topology.
-  void DeclareInputPort(const SystemPortDescriptor<T>& descriptor) {
-    DRAKE_ASSERT(descriptor.get_index() == get_num_input_ports());
-    DRAKE_ASSERT(descriptor.get_face() == kInputPort);
-    input_ports_.emplace_back(descriptor);
-  }
-
   /// Adds a port with the specified @p type and @p size to the input topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareInputPort(PortDataType type, int size) {
+  const InputPortDescriptor<T>& DeclareInputPort(PortDataType type, int size) {
     int port_index = get_num_input_ports();
-    input_ports_.emplace_back(this, kInputPort, port_index, type, size);
-    return input_ports_.back();
+    input_ports_.push_back(std::make_unique<InputPortDescriptor<T>>(
+    this, port_index, type, size));
+    return *input_ports_.back();
   }
 
   /// Adds an abstract-valued port to the input topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareAbstractInputPort() {
+  const InputPortDescriptor<T>& DeclareAbstractInputPort() {
     return DeclareInputPort(kAbstractValued, 0 /* size */);
-  }
-
-  /// Adds a port with the specified @p descriptor to the output topology.
-  void DeclareOutputPort(const SystemPortDescriptor<T>& descriptor) {
-    DRAKE_ASSERT(descriptor.get_index() == get_num_output_ports());
-    DRAKE_ASSERT(descriptor.get_face() == kOutputPort);
-    output_ports_.emplace_back(descriptor);
   }
 
   /// Adds a port with the specified @p type and @p size to the output topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareOutputPort(PortDataType type,
+  const OutputPortDescriptor<T>& DeclareOutputPort(PortDataType type,
                                                    int size) {
     int port_index = get_num_output_ports();
-    output_ports_.emplace_back(this, kOutputPort, port_index, type, size);
-    return output_ports_.back();
+    output_ports_.push_back(std::make_unique<OutputPortDescriptor<T>>(
+        this, port_index, type, size));
+    return *output_ports_.back();
   }
 
   /// Adds an abstract-valued port with to the output topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareAbstractOutputPort() {
+  const OutputPortDescriptor<T>& DeclareAbstractOutputPort() {
     return DeclareOutputPort(kAbstractValued, 0 /* size */);
   }
   //@}
@@ -765,6 +747,12 @@ class System {
 
   /// You must override this method to calculate values for output ports into
   /// the supplied argument, based on the contents of the given Context.
+  ///
+  /// This method is called only from the public non-virtual CalcOutput()
+  /// which will already have error-checked the parameters so you don't have to.
+  /// In particular, implementations may assume that the given Context is valid
+  /// for this %System; that the `output` pointer is non-null, and that
+  /// the referenced object is valid for this %System.
   virtual void DoCalcOutput(const Context<T>& context,
                             SystemOutput<T>* output) const = 0;
 
@@ -775,11 +763,12 @@ class System {
   /// the Context has second-order structure `xc=[q,v,z]`, that same structure
   /// applies to the derivatives.
   ///
-  /// This method is called from the public non-virtual CalcTimeDerivatives()
-  /// which will already have error-checked the parameters so you don't have to.
+  /// This method is called only from the public non-virtual
+  /// CalcTimeDerivatives() which will already have error-checked
+  /// the parameters so you don't have to.
   /// In particular, implementations may assume that the given Context is valid
   /// for this %System; that the `derivatives` pointer is non-null, and that
-  /// the given `derivatives` argument has the same constituent structure as was
+  /// the referenced object has the same constituent structure as was
   /// produced by AllocateTimeDerivatives().
   ///
   /// The default implementation does nothing if the `derivatives` vector is
@@ -795,13 +784,24 @@ class System {
   /// Implement this in your concrete System if you want it to take some action
   /// when the Simulator calls the Publish() method. This can be used for
   /// sending messages, producing console output, debugging, logging, saving the
-  /// trajectory to a file, etc. You may assume that the `context` has already
-  /// been validated before it is passed to you here.
+  /// trajectory to a file, etc.
+  ///
+  /// This method is called only from the public non-virtual Publish() which
+  /// will have already error-checked `context` so you may assume that it is
+  /// valid for this %System.
   virtual void DoPublish(const Context<T>& context) const {}
 
   /// Updates the @p discrete_state on sample events.
-  /// Override it, along with DoCalcNextUpdateTime, if your System has any
+  /// Override it, along with DoCalcNextUpdateTime(), if your System has any
   /// discrete variables.
+  ///
+  /// This method is called only from the public non-virtual
+  /// CalcDiscreteVariableUpdates() which will already have error-checked the
+  /// parameters so you don't have to. In particular, implementations may assume
+  /// that the given Context is valid for this %System; that the
+  /// `discrete_state` pointer is non-null, and that the referenced object
+  /// has the same constituent structure as was produced by
+  /// AllocateDiscreteVariables().
   virtual void DoCalcDiscreteVariableUpdates(
       const Context<T>& context, DiscreteState<T>* discrete_state) const {}
 
@@ -810,8 +810,21 @@ class System {
   /// abstract variables or generally make changes to state that cannot be
   /// made using CalcDiscreteVariableUpdates() or via integration of continuous
   /// variables.
-  /// @param[in,out] state the current state of the system on input; the desired
-  ///            state of the system on return.
+  ///
+  /// This method is called only from the public non-virtual
+  /// CalcUnrestrictedUpdate() which will already have error-checked the
+  /// parameters so you don't have to. In particular, implementations may assume
+  /// that the given Context is valid for this %System; that the `state` pointer
+  /// is non-null, and that the referenced object has the same constituent
+  /// structure as the state in `context`.
+  ///
+  /// @param[in]     context The "before" state that is to be used to calculate
+  ///                        the returned state update.
+  /// @param[in,out] state   The current state of the system on input; the
+  ///                        desired state of the system on return.
+  // TODO(sherm1) Shouldn't require preloading of the output state; better to
+  //              note just the changes since usually only a small subset will
+  //              be changed by this method.
   virtual void DoCalcUnrestrictedUpdate(const Context<T>& context,
                                         State<T>* state) const {}
 
@@ -819,13 +832,16 @@ class System {
   /// action.
   ///
   /// Override this method if your System has any discrete actions which must
-  /// interrupt the continuous simulation. You may assume that the context
-  /// has already been validated and the `actions` pointer is not nullptr.
+  /// interrupt the continuous simulation. This method is called only from the
+  /// public non-virtual CalcNextUpdateTime() which will already have
+  /// error-checked the parameters so you don't have to. You may assume that
+  /// `context` has already been validated and the `actions` pointer is
+  /// not `nullptr`.
   ///
   /// The default implementation returns with `actions` having a next sample
   /// time of Infinity and no actions to take.  If you declare actions, you may
   /// specify custom do_publish and do_update handlers.  If you do not,
-  /// DoPublish and DoEvalDifferenceUpdates will be used by default.
+  /// DoPublish and DoCalcDifferenceUpdates will be used by default.
   virtual void DoCalcNextUpdateTime(const Context<T>& context,
                                     UpdateActions<T>* actions) const {
     actions->time = std::numeric_limits<T>::infinity();
@@ -835,7 +851,8 @@ class System {
   /// Override this method for physical systems to calculate the potential
   /// energy currently stored in the configuration provided in the given
   /// Context. The default implementation returns 0 which is correct for
-  /// non-physical systems.
+  /// non-physical systems. You may assume that `context` has already
+  /// been validated before it is passed to you here.
   virtual T DoCalcPotentialEnergy(const Context<T>& context) const {
     return T(0);
   }
@@ -843,7 +860,8 @@ class System {
   /// Override this method for physical systems to calculate the kinetic
   /// energy currently present in the motion provided in the given
   /// Context. The default implementation returns 0 which is correct for
-  /// non-physical systems.
+  /// non-physical systems. You may assume that `context` has already
+  /// been validated before it is passed to you here.
   virtual T DoCalcKineticEnergy(const Context<T>& context) const {
     return T(0);
   }
@@ -854,6 +872,8 @@ class System {
   /// is *decreasing*. Power is in watts (J/s).
   ///
   /// By default, returns zero. Continuous, physical systems should override.
+  /// You may assume that `context` has already been validated before it is
+  /// passed to you here.
   virtual T DoCalcConservativePower(const Context<T>& context) const {
     return T(0);
   }
@@ -868,6 +888,8 @@ class System {
   /// systems; others return zero.
   ///
   /// By default, returns zero. Continuous, physical systems should override.
+  /// You may assume that `context` has already been validated before it is
+  /// passed to you here.
   virtual T DoCalcNonConservativePower(const Context<T>& context) const {
     return T(0);
   }
@@ -965,7 +987,7 @@ class System {
     BasicVector<T>* output_vector = output->GetMutableVectorData(port_index);
     DRAKE_ASSERT(output_vector != nullptr);
     DRAKE_ASSERT(output_vector->size() ==
-        get_output_port(port_index).get_size());
+        get_output_port(port_index).size());
 
     return output_vector->get_mutable_value();
   }
@@ -988,8 +1010,10 @@ class System {
   System& operator=(System<T>&& other) = delete;
 
   std::string name_;
-  std::vector<SystemPortDescriptor<T>> input_ports_;
-  std::vector<SystemPortDescriptor<T>> output_ports_;
+  // input_ports_ and output_ports_ are vectors of unique_ptr so that references
+  // to the descriptors will remain valid even if the vector is resized.
+  std::vector<std::unique_ptr<InputPortDescriptor<T>>> input_ports_;
+  std::vector<std::unique_ptr<OutputPortDescriptor<T>>> output_ports_;
   const detail::InputPortEvaluatorInterface<T>* parent_{nullptr};
 
   // TODO(sherm1) Replace these fake cache entries with real cache asap.

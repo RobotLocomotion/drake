@@ -19,7 +19,7 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in drakeSystemFramework.
+/// They are already available to link against in the containing library.
 ///
 /// To use other specific scalar types see gain-inl.h.
 ///
@@ -53,10 +53,10 @@ class Gain : public LeafSystem<T> {
 
 
   /// Returns the input port.
-  const SystemPortDescriptor<T>& get_input_port() const;
+  const InputPortDescriptor<T>& get_input_port() const;
 
   /// Returns the output port.
-  const SystemPortDescriptor<T>& get_output_port() const;
+  const OutputPortDescriptor<T>& get_output_port() const;
 
  private:
   // Sets the output port value to the product of the gain and the input port

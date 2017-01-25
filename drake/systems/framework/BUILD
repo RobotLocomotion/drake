@@ -1,6 +1,7 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "cc_googletest")
 
 package(default_visibility = ["//visibility:public"])
@@ -43,6 +44,7 @@ cc_library(
     linkstatic = 1,
     deps = [
         "//drake/common",
+        "//drake/common:dummy_value",
     ],
 )
 
@@ -354,6 +356,7 @@ cc_googletest(
     deps = [
         ":diagram",
         "//drake/common",
+        "//drake/systems/framework/test_utilities:pack_value",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:gain",
@@ -456,3 +459,5 @@ cc_googletest(
         "//drake/common",
     ],
 )
+
+cpplint()

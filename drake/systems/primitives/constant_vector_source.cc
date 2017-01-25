@@ -26,7 +26,7 @@ ConstantVectorSource<T>::ConstantVectorSource(const T& source_value)
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& ConstantVectorSource<T>::get_output_port()
+const OutputPortDescriptor<T>& ConstantVectorSource<T>::get_output_port()
     const {
   return System<T>::get_output_port(0);
 }

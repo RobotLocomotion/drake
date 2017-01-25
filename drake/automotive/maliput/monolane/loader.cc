@@ -3,6 +3,7 @@
 #include <cmath>
 #include <map>
 #include <string>
+#include <utility>
 
 #include "yaml-cpp/yaml.h"
 
@@ -62,7 +63,7 @@ std::unique_ptr<Endpoint> ResolvePointReference(
     const std::string& ref,
     const std::map<std::string, Endpoint>& xyz_catalog) {
   const auto parsed = [&]() {
-    static const std::string kReverse {"reverse "};
+    static const std::string kReverse{"reverse "};
     int where = ref.find(kReverse);
     if (where == 0) {
       // Strip "reverse " from head, and tag as reversed.

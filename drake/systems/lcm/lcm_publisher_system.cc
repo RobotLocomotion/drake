@@ -1,6 +1,7 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "drake/common/text_logging.h"
@@ -75,6 +76,10 @@ std::string LcmPublisherSystem::make_name(const std::string& channel) {
 
 const std::string& LcmPublisherSystem::get_channel_name() const {
   return channel_;
+}
+
+void LcmPublisherSystem::set_publish_period(double period) {
+  LeafSystem<double>::DeclarePublishPeriodSec(period);
 }
 
 void LcmPublisherSystem::DoPublish(const Context<double>& context) const {

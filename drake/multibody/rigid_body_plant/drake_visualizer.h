@@ -19,7 +19,7 @@ namespace systems {
 // t_0.
 /**
  * This is a Drake System 2.0 block that takes a RigidBodyTree and publishes LCM
- * messages that are intended for the Drake Visualizer. It does this in two
+ * messages that are intended for the DrakeVisualizer. It does this in two
  * phases: initialization, which runs when DoPublish() is called with
  * Context::get_time() equal to zero, and run-time, which runs every time
  * DoPublish() is called.
@@ -55,6 +55,13 @@ class DrakeVisualizer : public LeafSystem<double> {
    */
   DrakeVisualizer(const RigidBodyTree<double>& tree,
       drake::lcm::DrakeLcmInterface* lcm);
+
+  /**
+   * Sets the publishing period of this system. See
+   * LeafSystem::DeclarePublishPeriodSec() for details about the semantics of
+   * parameter `period`.
+   */
+  void set_publish_period(double period);
 
  private:
   void DoCalcOutput(const systems::Context<double>& context,

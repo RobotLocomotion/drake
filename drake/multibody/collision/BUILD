@@ -1,6 +1,7 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "cc_googletest")
 
 package(default_visibility = ["//visibility:public"])
@@ -8,10 +9,12 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "model",
     srcs = [
+        "collision_filter.cc",
         "element.cc",
         "model.cc",
     ],
     hdrs = [
+        "collision_filter.h",
         "element.h",
         "model.h",
         "point_pair.h",
@@ -19,6 +22,7 @@ cc_library(
     linkstatic = 1,
     deps = [
         "//drake/common",
+        "//drake/common:autodiff",
         "//drake/common:sorted_vectors_have_intersection",
         "//drake/multibody/shapes",
     ],
@@ -64,6 +68,21 @@ cc_library(
     ],
 )
 
+# N.B. This is just the FCL model, not the drake_collision dispatcher.  (The
+# other foo_collision libraries *do* contain the dispatcher.)
+cc_library(
+    name = "fcl_collision",
+    srcs = [
+        "fcl_model.cc",
+        "fcl_model.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        ":collision_api",
+        "@fcl//:lib",
+    ],
+)
+
 # By default, supply a bullet-only model.  As we gain more collision library
 # choices, we may want to be more subtle here.
 alias(
@@ -77,6 +96,25 @@ cc_googletest(
     deps = [
         ":collision",
         "//drake/common:drake_path",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "fcl_model_test",
+    deps = [
+        ":fcl_collision",
+    ],
+)
+
+cc_googletest(
+    name = "collision_filter_group_test",
+    data = [":test_models"],
+    deps = [
+        ":collision",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/joints",
+        "//drake/multibody/parsers",
     ],
 )
 
@@ -90,3 +128,5 @@ filegroup(
         "test/**/*.xml",
     ]),
 )
+
+cpplint()

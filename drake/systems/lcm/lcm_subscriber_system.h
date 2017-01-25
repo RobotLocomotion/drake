@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -67,7 +68,7 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    * @param[in] channel The LCM channel on which to subscribe.
    *
    * @param[in] translator A reference to the translator that converts between
-   * LCM message objects and `drake::systems::VectorBase` objects. This
+   * LCM message objects and `drake::systems::VectorBase` objects. The
    * reference must remain valid for the lifetime of this `LcmSubscriberSystem`
    * object.
    *
@@ -85,7 +86,8 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    * @param[in] channel The LCM channel on which to subscribe.
    *
    * @param[in] translator_dictionary A dictionary for obtaining the appropriate
-   * translator for a particular LCM channel.
+   * translator for a particular LCM channel. The reference must remain valid
+   * for the lifetime of this `LcmSubscriberSystem` object.
    *
    * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
    */
@@ -121,7 +123,7 @@ class LcmSubscriberSystem : public LeafSystem<double>,
                     SystemOutput<double>* output) const override;
 
   std::unique_ptr<BasicVector<double>> AllocateOutputVector(
-      const SystemPortDescriptor<double>& descriptor) const override;
+      const OutputPortDescriptor<double>& descriptor) const override;
 
  private:
   // All constructors delegate to here.

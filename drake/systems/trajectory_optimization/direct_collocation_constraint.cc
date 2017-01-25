@@ -1,5 +1,7 @@
 #include "drake/systems/trajectory_optimization/direct_collocation_constraint.h"
 
+#include <utility>
+
 #include "drake/common/drake_throw.h"
 #include "drake/math/autodiff.h"
 
@@ -21,22 +23,23 @@ Eigen::MatrixXd ExtractDerivativesMatrix(const TaylorVecXd& vec_in) {
 
 DirectCollocationConstraint::DirectCollocationConstraint(int num_states,
                                                          int num_inputs)
-    : Constraint(num_states, Eigen::VectorXd::Zero(num_states),
+    : Constraint(num_states, 1 + (2 * num_states) + (2 * num_inputs),
+                 Eigen::VectorXd::Zero(num_states),
                  Eigen::VectorXd::Zero(num_states)),
       num_states_(num_states),
       num_inputs_(num_inputs) {}
 
 DirectCollocationConstraint::~DirectCollocationConstraint() {}
 
-void DirectCollocationConstraint::Eval(
-    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
+void DirectCollocationConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd> &x, Eigen::VectorXd &y) const {
   TaylorVecXd y_t;
   Eval(math::initializeAutoDiff(x), y_t);
   y = math::autoDiffToValueMatrix(y_t);
 }
 
-void DirectCollocationConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
-                                       TaylorVecXd& y) const {
+void DirectCollocationConstraint::DoEval(
+    const Eigen::Ref<const TaylorVecXd> &x, TaylorVecXd &y) const {
   DRAKE_ASSERT(x.size() == 1 + (2 * num_states_) + (2 * num_inputs_));
 
   // Extract our input variables:
@@ -72,7 +75,7 @@ SystemDirectCollocationConstraint::SystemDirectCollocationConstraint(
     const systems::System<double>& system,
     const systems::Context<double>& context)
     : DirectCollocationConstraint(context.get_continuous_state()->size(),
-                                  system.get_input_port(0).get_size()),
+                                  system.get_input_port(0).size()),
       system_(systems::System<double>::ToAutoDiffXd(system)),
       context_(system_->CreateDefaultContext()),
       // Don't allocate the input port until we're past the point
@@ -85,7 +88,7 @@ SystemDirectCollocationConstraint::SystemDirectCollocationConstraint(
   // Allocate the input port and keep an alias around.
   input_port_ =
       new FreestandingInputPort(std::make_unique<BasicVector<AutoDiffXd>>(
-          system_->get_input_port(0).get_size()));
+          system_->get_input_port(0).size()));
   std::unique_ptr<InputPort> input_port(input_port_);
   context_->SetInputPort(0, std::move(input_port));
 }

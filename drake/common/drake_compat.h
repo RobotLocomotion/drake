@@ -8,15 +8,22 @@
 /// write code using the std::make_unique phrasing, but still support GCC 4.8.
 
 #ifndef DRAKE_DOXYGEN_CXX
-#if __cplusplus <= 201103L  // If C++11 or earlier, we need our own make_unique.
+#if __cplusplus <= 201103L  // If C++11 or earlier, we need our own helpers.
 
 #include <memory>
+#include <type_traits>
+#include <utility>
 
 namespace std {
+
 template<typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args) {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
+
+template<bool B, class T = void>
+using enable_if_t = typename enable_if<B, T>::type;
+
 }  // namespace std
 
 #endif  // version check

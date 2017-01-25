@@ -7,6 +7,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/multibody/collision/collision_filter.h"
 #include "drake/multibody/shapes/drake_shapes.h"
 
 // Forward declaration.
@@ -77,18 +78,20 @@ class Element : public DrakeShapes::Element {
 
   ElementId getId() const;
 
-  virtual bool isStatic() const { return false; }
+  /**
+   * Flags this collision element to be anchored, i.e. it does not move
+   * relative to the world frame.
+   * @see Element::is_anchored().
+   */
+  void set_anchored() { is_anchored_ = true; }
 
-  /** Flags this collision element to be static, i.e. does not move.
-  @see Element::is_static(). **/
-  void set_static() { is_static_ = true;}
-
-  /** Returns `true` if the shape does not move, `false` otherwise.
-
-  For instance, a terrain commonly is a static collision element. This property
-  could allow the collision dispatcher to perform certain optimizations not
-  generally possible for moving objects. **/
-  bool is_static() { return is_static_;}
+  /**
+   * Returns `true` if the shape does not move relative to the world frame.
+   * For instance, terrain geometry would commonly be anchored. This property
+   * allows the collision engine to perform certain optimizations not
+   * generally possible for moving objects.
+   */
+  bool is_anchored() const { return is_anchored_; }
 
   /**
    * Returns true if this element should be checked for collisions
@@ -121,11 +124,26 @@ class Element : public DrakeShapes::Element {
   const std::vector<int>& collision_cliques() const;
 
   /** Returns a pointer to the `RigidBody` to which this `Element`
-  is attached. **/
+   *  is attached.
+   */
   const RigidBody<double>* get_body() const;
 
-  /** Sets the `RigidBody` this collision element is attached to. **/
+  /** Sets the `RigidBody` this collision element is attached to. */
   void set_body(const RigidBody<double> *body);
+
+  /** Sets the collision filter state of the element: the groups to which this
+   * element belongs and the groups that it should ignore.
+   */
+  void set_collision_filter(const bitmask &group,
+                            const bitmask &ignores);
+
+  const bitmask& get_collision_filter_group() const {
+    return collision_filter_group_;
+  }
+
+  const bitmask& get_collision_filter_ignores() const {
+    return collision_filter_ignores_;
+  }
 
   /**
    * A toString method for this class.
@@ -137,7 +155,7 @@ class Element : public DrakeShapes::Element {
 
  private:
   ElementId id;
-  bool is_static_{false};
+  bool is_anchored_{false};
   const RigidBody<double>* body_{};
 
   // Collision cliques are defined as a set of collision elements that do not
@@ -158,6 +176,16 @@ class Element : public DrakeShapes::Element {
   // requires the entries in CollisionElement::collision_cliques_ to be sorted.
   // By arbitrary convention, the ordering is monotonically increasing.
   std::vector<int> collision_cliques_;
+
+  // A bitmask that determines the collision groups that this element is part
+  // of. If the i-th bit is set this rigid body belongs to the i-th collision
+  // group. An element can belong to multiple collision groups.
+  DrakeCollision::bitmask collision_filter_group_{kDefaultGroup};
+
+  // A bitmask that determines which collision groups this element can *not*
+  // collide with. Thus, if the i-th bit is set this element is not checked
+  // for collisions with elements in the i-th group.
+  DrakeCollision::bitmask collision_filter_ignores_{kNoneMask};
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

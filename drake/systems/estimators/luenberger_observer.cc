@@ -1,6 +1,7 @@
 #include "drake/systems/estimators/luenberger_observer.h"
 
 #include <cmath>
+#include <utility>
 
 namespace drake {
 namespace systems {
@@ -42,17 +43,17 @@ LuenbergerObserver<T>::LuenbergerObserver(
 
   // First input port is the output of the observed system.
   this->DeclareInputPort(systems::kVectorValued,
-                         observed_system_->get_output_port(0).get_size());
+                         observed_system_->get_output_port(0).size());
 
   // Check the size of the gain matrix.
   DRAKE_DEMAND(observer_gain_.rows() == x->size());
   DRAKE_DEMAND(observer_gain_.cols() ==
-               observed_system_->get_output_port(0).get_size());
+               observed_system_->get_output_port(0).size());
 
   // Second input port is the input to the observed system (if it exists).
   if (observed_system_->get_num_input_ports() > 0) {
     this->DeclareInputPort(systems::kVectorValued,
-                           observed_system_->get_input_port(0).get_size());
+                           observed_system_->get_input_port(0).size());
   }
 
   // State has the same dimensions as the system being observed.

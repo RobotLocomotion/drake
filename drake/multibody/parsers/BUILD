@@ -1,6 +1,7 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "cc_googletest")
 
 package(default_visibility = ["//visibility:public"])
@@ -79,6 +80,15 @@ cc_googletest(
 )
 
 cc_googletest(
+    name = "parser_common_test",
+    srcs = ["test/parser_common_test/parser_common_test.cc"],
+    data = ["test/parser_common_test/test_file.txt"],
+    deps = [
+        ":parsers",
+    ],
+)
+
+cc_googletest(
     name = "urdf_parser_test",
     srcs = ["test/urdf_parser_test/urdf_parser_test.cc"],
     data = [
@@ -107,3 +117,5 @@ filegroup(
         "test/**/*.xml",
     ]),
 )
+
+cpplint()

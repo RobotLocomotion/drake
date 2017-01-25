@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include "drake/systems/framework/abstract_state.h"

@@ -20,7 +20,7 @@ namespace systems {
 /// - AutoDiffXd
 /// - symbolic::Expression
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
 class ConstantVectorSource : public LeafSystem<T> {
@@ -40,7 +40,7 @@ class ConstantVectorSource : public LeafSystem<T> {
 
 
   /// Returns the output port to the constant source.
-  const SystemPortDescriptor<T>& get_output_port() const;
+  const OutputPortDescriptor<T>& get_output_port() const;
 
  private:
   // Outputs a signal with a fixed value as specified by the user.

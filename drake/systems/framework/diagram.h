@@ -4,6 +4,7 @@
 #include <functional>
 #include <limits>
 #include <map>
+#include <memory>
 #include <set>
 #include <stdexcept>
 #include <utility>
@@ -106,19 +107,19 @@ template <typename T>
 class DiagramDiscreteVariables : public DiscreteState<T> {
  public:
   explicit DiagramDiscreteVariables(
-      std::vector<std::unique_ptr<DiscreteState<T>>>&& subdifferences)
-      : DiscreteState<T>(Flatten(Unpack(subdifferences))),
-        subdifferences_(std::move(subdifferences)) {}
+      std::vector<std::unique_ptr<DiscreteState<T>>>&& subdiscretes)
+      : DiscreteState<T>(Flatten(Unpack(subdiscretes))),
+        subdiscretes_(std::move(subdiscretes)) {}
 
   ~DiagramDiscreteVariables() override {}
 
   int num_subdifferences() const {
-    return static_cast<int>(subdifferences_.size());
+    return static_cast<int>(subdiscretes_.size());
   }
 
   DiscreteState<T>* get_mutable_subdifference(int index) {
     DRAKE_DEMAND(index >= 0 && index < num_subdifferences());
-    return subdifferences_[index].get();
+    return subdiscretes_[index].get();
   }
 
  private:
@@ -132,7 +133,7 @@ class DiagramDiscreteVariables : public DiscreteState<T> {
     return out;
   }
 
-  std::vector<std::unique_ptr<DiscreteState<T>>> subdifferences_;
+  std::vector<std::unique_ptr<DiscreteState<T>>> subdiscretes_;
 };
 
 }  // namespace internal
@@ -391,7 +392,7 @@ class Diagram : public System<T>,
   /// this function.
   void EvaluateSubsystemInputPort(
       const Context<T>* context,
-      const SystemPortDescriptor<T>& descriptor) const override {
+      const InputPortDescriptor<T>& descriptor) const override {
     // Find the output port connected to the given input port.
     const PortIdentifier id{descriptor.get_system(), descriptor.get_index()};
     const auto upstream_it = dependency_graph_.find(id);
@@ -549,10 +550,13 @@ class Diagram : public System<T>,
   /// more specific covariant type.
   /// This is the NVI implementation of ToAutoDiffXd.
   Diagram<AutoDiffXd>* DoToAutoDiffXd() const override {
-    return ConvertScalarType<AutoDiffXd>([](const System<double>& subsystem) {
-             return subsystem.ToAutoDiffXd();
-           })
-        .release();
+    using FromType = System<double>;
+    using ToType = std::unique_ptr<System<AutoDiffXd>>;
+    std::function<ToType(const FromType&)> subsystem_converter{
+      [](const FromType& subsystem) {
+        return subsystem.ToAutoDiffXd();
+      }};
+    return ConvertScalarType<AutoDiffXd>(subsystem_converter).release();
   }
 
  private:
@@ -677,6 +681,7 @@ class Diagram : public System<T>,
 
     std::vector<std::pair<int, UpdateActions<T1>>> publishers;
     std::vector<std::pair<int, UpdateActions<T1>>> updaters;
+    std::vector<std::pair<int, UpdateActions<T1>>> unrestricted_updaters;
     for (int i = 0; i < num_subsystems(); i++) {
       // Ignore the subsystems that aren't among the most imminent updates.
       if (sub_actions[i].time > actions->time) continue;
@@ -688,8 +693,13 @@ class Diagram : public System<T>,
                              DiscreteEvent<T1>::kDiscreteUpdateAction)) {
         updaters.emplace_back(i, sub_actions[i]);
       }
+      if (internal::HasEvent(sub_actions[i],
+                             DiscreteEvent<T1>::kUnrestrictedUpdateAction)) {
+        unrestricted_updaters.emplace_back(i, sub_actions[i]);
+      }
     }
-    DRAKE_ASSERT(!publishers.empty() || !updaters.empty());
+    DRAKE_ASSERT(!publishers.empty() || !updaters.empty() ||
+                 !unrestricted_updaters.empty());
 
     // Request a publish event, if our subsystems want it.
     if (!publishers.empty()) {
@@ -711,6 +721,19 @@ class Diagram : public System<T>,
                                   std::placeholders::_1, /* context */
                                   std::placeholders::_2, /* difference state */
                                   updaters);
+      actions->events.push_back(event);
+    }
+
+    // Request an unrestricted update event, if our subsystems want it.
+    if (!unrestricted_updaters.empty()) {
+      DiscreteEvent<T1> event;
+      event.action = DiscreteEvent<T1>::kUnrestrictedUpdateAction;
+      event.do_unrestricted_update = std::bind(
+                                  &Diagram<T1>::HandleUnrestrictedUpdate,
+                                  this,
+                                  std::placeholders::_1, /* context */
+                                  std::placeholders::_2, /* state */
+                                  unrestricted_updaters);
       actions->events.push_back(event);
     }
   }
@@ -799,16 +822,9 @@ class Diagram : public System<T>,
     GetSystemIndexOrAbort(sys);
 
     // Add this port to our externally visible topology.
-    const auto& subsystem_ports = sys->get_input_ports();
-    if (port_index < 0 ||
-        port_index >= static_cast<int>(subsystem_ports.size())) {
-      throw std::out_of_range("Input port out of range.");
-    }
-    const auto& subsystem_descriptor = subsystem_ports[port_index];
-    SystemPortDescriptor<T> descriptor(
-        this, kInputPort, this->get_num_input_ports(),
-        subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size());
-    this->DeclareInputPort(descriptor);
+    const auto& subsystem_descriptor = sys->get_input_port(port_index);
+    this->DeclareInputPort(subsystem_descriptor.get_data_type(),
+                           subsystem_descriptor.size());
   }
 
   // Exposes the given port as an output of the Diagram.
@@ -819,16 +835,9 @@ class Diagram : public System<T>,
     GetSystemIndexOrAbort(sys);
 
     // Add this port to our externally visible topology.
-    const auto& subsystem_ports = sys->get_output_ports();
-    if (port_index < 0 ||
-        port_index >= static_cast<int>(subsystem_ports.size())) {
-      throw std::out_of_range("Output port out of range.");
-    }
-    const auto& subsystem_descriptor = subsystem_ports[port_index];
-    SystemPortDescriptor<T> descriptor(
-        this, kOutputPort, this->get_num_output_ports(),
-        subsystem_descriptor.get_data_type(), subsystem_descriptor.get_size());
-    this->DeclareOutputPort(descriptor);
+    const auto& subsystem_descriptor = sys->get_output_port(port_index);
+    this->DeclareOutputPort(subsystem_descriptor.get_data_type(),
+                            subsystem_descriptor.size());
   }
 
   // Evaluates the value of the output port with the given @p id in the given
@@ -1040,6 +1049,43 @@ class Diagram : public System<T>,
           sorted_systems_[index]->CalcDiscreteVariableUpdates(*subcontext,
                                                               event,
                                                               subdifference);
+        }
+      }
+    }
+  }
+
+  /// Handles Update callbacks that were registered in DoCalcNextUpdateTime.
+  /// Dispatches the UnrestrictedUpdate events to the subsystems that requested
+  /// them.
+  void HandleUnrestrictedUpdate(
+      const Context<T>& context, State<T>* state,
+      const std::vector<std::pair<int, UpdateActions<T>>>& sub_actions) const {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
+    DRAKE_DEMAND(diagram_state != nullptr);
+
+    // No need to set state to context's state, since it has already been done
+    // in System::CalcUnrestrictedUpdate().
+
+    for (const auto& action : sub_actions) {
+      const int index = action.first;
+      const UpdateActions<T>& action_details = action.second;
+      DRAKE_DEMAND(index >= 0 && index < num_subsystems());
+
+      // Get the context and the state for the specified system.
+      const Context<T>* subcontext =
+          diagram_context->GetSubsystemContext(index);
+      DRAKE_DEMAND(subcontext != nullptr);
+      State<T>* substate = diagram_state->get_mutable_substate(index);
+      DRAKE_DEMAND(substate != nullptr);
+
+      // Do that system's update actions.
+      for (const DiscreteEvent<T>& event : action_details.events) {
+        if (event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction) {
+          sorted_systems_[index]->CalcUnrestrictedUpdate(*subcontext,
+                                                         event,
+                                                         substate);
         }
       }
     }

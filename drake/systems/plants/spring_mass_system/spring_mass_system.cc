@@ -1,5 +1,7 @@
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
+#include <utility>
+
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -75,7 +77,7 @@ SpringMassSystem<T>::SpringMassSystem(const T& spring_constant_N_per_m,
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& SpringMassSystem<T>::get_force_port() const {
+const InputPortDescriptor<T>& SpringMassSystem<T>::get_force_port() const {
   if (system_is_forced_) {
     return this->get_input_port(0);
   } else {
@@ -86,7 +88,7 @@ const SystemPortDescriptor<T>& SpringMassSystem<T>::get_force_port() const {
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& SpringMassSystem<T>::get_output_port() const {
+const OutputPortDescriptor<T>& SpringMassSystem<T>::get_output_port() const {
   return System<T>::get_output_port(0);
 }
 
@@ -125,16 +127,9 @@ T SpringMassSystem<T>::DoCalcNonConservativePower(const MyContext&) const {
 }
 
 template <typename T>
-std::unique_ptr<SystemOutput<T>> SpringMassSystem<T>::AllocateOutput(
-    const Context<T>& context) const {
-  std::unique_ptr<LeafSystemOutput<T>> output(
-      new LeafSystemOutput<T>);
-  {
-    std::unique_ptr<BasicVector<T>> data(new SpringMassStateVector<T>());
-    std::unique_ptr<OutputPort> port(new OutputPort(std::move(data)));
-    output->get_mutable_ports()->push_back(std::move(port));
-  }
-  return std::unique_ptr<SystemOutput<T>>(output.release());
+std::unique_ptr<BasicVector<T>> SpringMassSystem<T>::AllocateOutputVector(
+    const OutputPortDescriptor<T>& descriptor) const {
+  return std::make_unique<SpringMassStateVector<T>>();
 }
 
 template <typename T>

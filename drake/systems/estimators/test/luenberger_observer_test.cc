@@ -51,13 +51,10 @@ GTEST_TEST(TestLuenberger, ErrorDynamics) {
   //  xhatdot = Axhat + Bu + L(y-yhat)
   //  y = xhat
 
-  Eigen::Vector3d xhat;
-  xhat << 1.0, 2.0, 3.0;
-  Vector1d u;
-  u << 4.0;
+  Eigen::Vector3d xhat(1.0, 2.0, 3.0);
+  Vector1d u(4.0);
 
-  Eigen::Vector2d y;
-  y << 5.0, 6.0;
+  Eigen::Vector2d y(5.0, 6.0);
 
   Eigen::Vector3d xhatdot = A * xhat + B * u + L * (y - C * xhat - D * u);
 

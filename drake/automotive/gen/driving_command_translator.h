@@ -3,6 +3,7 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
+#include <memory>
 #include <vector>
 
 #include "drake/automotive/gen/driving_command.h"
