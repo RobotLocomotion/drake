@@ -1,11 +1,10 @@
 #pragma once
 
-#include <fstream>
 #include <iostream>
 #include <list>
-#include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -23,6 +22,7 @@ namespace qp_inverse_dynamics {
  * Enum class for constraint types.
  * Hard: will be enforced by equality constraints.
  * Soft: will be enforced by cost functions.
+ * Skip: will be ignored.
  */
 enum class ConstraintType { Hard = -1, Skip = 0, Soft = 1 };
 
@@ -52,6 +52,27 @@ class ConstrainedValues {
     constraint_types_.resize(dim);
     weights_.resize(dim);
     values_.resize(dim);
+  }
+
+  /**
+   * Sets all the ConstraintType enums based on their corresponding weight
+   * values. ConstraintType is set to:
+   * <pre>
+   *   ConstraintType::Soft if weight > 0
+   *   ConstraintType::Skip if weight = 0
+   *   ConstraintType::Hard if weight < 0
+   * </pre>
+   */
+  void SetAllConstraintTypesBasedOnWeights() {
+    for (int i = 0; i < weights_.size(); ++i) {
+      if (weights_[i] > 0) {
+        constraint_types_.at(i) = ConstraintType::Soft;
+      } else if (weights_[i] < 0) {
+        constraint_types_.at(i) = ConstraintType::Hard;
+      } else {
+        constraint_types_.at(i) = ConstraintType::Skip;
+      }
+    }
   }
 
   /**
@@ -283,14 +304,14 @@ class ContactInformation {
    * @param referece_point the reference point for the equivalent wrench.
    * @return The matrix that converts point forces to an equivalent wrench.
    */
-  MatrixX<double> ComputeWrenchMatrix(
+  Matrix6X<double> ComputeWrenchMatrix(
       const Matrix3X<double>& contact_points,
       const Vector3<double>& reference_point) const {
     if (contact_points.cols() != contact_points_.cols())
       throw std::runtime_error("contact points size mismatch");
 
-    MatrixX<double> force_to_wrench =
-        MatrixX<double>::Zero(6, 3 * contact_points.cols());
+    Matrix6X<double> force_to_wrench =
+        Matrix6X<double>::Zero(6, 3 * contact_points.cols());
     int col_idx = 0;
     for (int i = 0; i < contact_points.cols(); ++i) {
       // Force part: just sum up all the point forces, so these are I
@@ -316,10 +337,12 @@ class ContactInformation {
       const RigidBodyTree<double>& robot,
       const KinematicsCache<double>& cache) const {
     MatrixX<double> J(3 * contact_points_.cols(), robot.get_num_velocities());
+    Isometry3<double> offset(Isometry3<double>::Identity());
     for (int i = 0; i < contact_points_.cols(); ++i) {
+      offset.translation() = contact_points_.col(i);
       J.block(3 * i, 0, 3, robot.get_num_velocities()) =
-          GetTaskSpaceJacobian(robot, cache, *body_, contact_points_.col(i))
-              .bottomRows<3>();
+          robot.CalcFrameSpatialVelocityJacobianInWorldFrame(
+              cache, *body_, offset).bottomRows<3>();
     }
     return J;
   }
@@ -336,10 +359,12 @@ class ContactInformation {
       const RigidBodyTree<double>& robot,
       const KinematicsCache<double>& cache) const {
     VectorX<double> Jdv(3 * contact_points_.cols());
+    Isometry3<double> offset(Isometry3<double>::Identity());
     for (int i = 0; i < contact_points_.cols(); ++i) {
+      offset.translation() = contact_points_.col(i);
       Jdv.segment<3>(3 * i) =
-          GetTaskSpaceJacobianDotTimesV(robot, cache, *body_,
-                                        contact_points_.col(i)).bottomRows<3>();
+          robot.CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+              cache, *body_, offset).bottomRows<3>();
     }
     return Jdv;
   }
@@ -355,10 +380,11 @@ class ContactInformation {
       const RigidBodyTree<double>& robot,
       const KinematicsCache<double>& cache) const {
     VectorX<double> vel(3 * contact_points_.cols());
+    Isometry3<double> offset(Isometry3<double>::Identity());
     for (int i = 0; i < contact_points_.cols(); ++i) {
-      vel.segment<3>(3 * i) =
-          GetTaskSpaceVel(robot, cache, *body_, contact_points_.col(i))
-              .bottomRows<3>();
+      offset.translation() = contact_points_.col(i);
+      vel.segment<3>(3 * i) = robot.CalcFrameSpatialVelocityInWorldFrame(
+          cache, *body_, offset).bottomRows<3>();
     }
     return vel;
   }
@@ -492,7 +518,7 @@ class ContactInformation {
 std::ostream& operator<<(std::ostream& out, const ContactInformation& contact);
 
 /**
- * A wrapper class specifying desired body motion (acceleration) for a rigid
+ * A wrapper class specifying desired body motions (accelerations) for a rigid
  * body and their corresponding weights for the QP.
  * The acceleration is expressed in a frame that has the same orientation as
  * the world, and located at the origin of the body.
@@ -515,13 +541,13 @@ class DesiredBodyMotion : public ConstrainedValues {
       : ConstrainedValues(6), body_(&body), control_during_contact_(false) {}
 
   inline bool is_valid() const {
-    return this->ConstrainedValues::is_valid(kTwistSize);
+    return this->ConstrainedValues::is_valid(6);
   }
 
   inline std::string get_row_name(int i) const {
-    static const std::string row_name[kTwistSize] = {"[WX]", "[WY]", "[WZ]",
-                                                     "[X]",  "[Y]",  "[Z]"};
-    if (i < 0 || i >= kTwistSize)
+    static const std::string row_name[6] = {"[WX]", "[WY]", "[WZ]",
+                                            "[X]",  "[Y]",  "[Z]"};
+    if (i < 0 || i >= 6)
       throw std::runtime_error("index must be within [0, 5]");
     return row_name[i];
   }
@@ -563,21 +589,21 @@ std::ostream& operator<<(std::ostream& out, const DesiredBodyMotion& input);
 
 /**
  * A wrapper class specifying desired DoF (degree of freedom)
- * motions (acceleration) and their corresponding weights for the QP.
+ * motions (accelerations) and their corresponding weights for the QP.
  *
  * The desired acceleration can be skipped, enforced as equality constraints
  * or optimized as a cost term depending on the constraint type.
  *
  * TODO: (siyuan.feng) Expand this to have policies (controllers).
  */
-class DesiredDoFMotions : public ConstrainedValues {
+class DesiredDofMotions : public ConstrainedValues {
  public:
-  DesiredDoFMotions() {}
-  explicit DesiredDoFMotions(const std::vector<std::string>& names)
+  DesiredDofMotions() {}
+  explicit DesiredDofMotions(const std::vector<std::string>& names)
       : ConstrainedValues(static_cast<int>(names.size())), dof_names_(names) {}
 
   inline bool is_valid() const {
-    return this->DesiredDoFMotions::is_valid(size());
+    return this->DesiredDofMotions::is_valid(size());
   }
 
   bool is_valid(int dim) const {
@@ -587,7 +613,7 @@ class DesiredDoFMotions : public ConstrainedValues {
     return this->ConstrainedValues::is_valid(dim);
   }
 
-  bool operator==(const DesiredDoFMotions& other) const {
+  bool operator==(const DesiredDofMotions& other) const {
     if (dof_names_.size() != other.dof_names_.size()) {
       return false;
     }
@@ -600,7 +626,7 @@ class DesiredDoFMotions : public ConstrainedValues {
     return this->ConstrainedValues::operator==(other);
   }
 
-  inline bool operator!=(const DesiredDoFMotions& other) const {
+  inline bool operator!=(const DesiredDofMotions& other) const {
     return !(this->operator==(other));
   }
 
@@ -614,14 +640,14 @@ class DesiredDoFMotions : public ConstrainedValues {
   std::vector<std::string> dof_names_;
 };
 
-std::ostream& operator<<(std::ostream& out, const DesiredDoFMotions& input);
+std::ostream& operator<<(std::ostream& out, const DesiredDofMotions& input);
 
 /**
- * A wrapper class specifying desired centroidal momentum change and their
- * corresponding weights for the QP.
- * The change in momentum are expressed in the world frame.
- * The first three terms are angular.
- * Linear momentum change = com acceleration * mass.
+ * A wrapper class specifying desired centroidal momentum change and its
+ * corresponding weight for the QP.
+ * The change in momentum is expressed in the world frame.
+ * The first three terms are for angular momentum, and the last three are for
+ * linear momemtum. Linear momentum change = com acceleration * mass.
  *
  * The desired centroidal momentum change can be skipped, enforced as
  * equality constraints or optimized as a cost term depending on the
@@ -631,17 +657,17 @@ std::ostream& operator<<(std::ostream& out, const DesiredDoFMotions& input);
  */
 class DesiredCentroidalMomentumDot : public ConstrainedValues {
  public:
-  DesiredCentroidalMomentumDot() : ConstrainedValues(kTwistSize) {}
+  DesiredCentroidalMomentumDot() : ConstrainedValues(6) {}
 
   inline bool is_valid() const {
-    return this->ConstrainedValues::is_valid(kTwistSize);
+    return this->ConstrainedValues::is_valid(6);
   }
 
   inline std::string get_row_name(int i) const {
     static const std::string row_name[6] = {"AngMom[X]", "AngMom[Y]",
                                             "AngMom[Z]", "LinMom[X]",
                                             "LinMom[Y]", "LinMom[Z]"};
-    if (i < 0 || i >= kTwistSize)
+    if (i < 0 || i >= 6)
       throw std::runtime_error("index must be within [0, 5]");
     return row_name[i];
   }
@@ -653,21 +679,17 @@ std::ostream& operator<<(std::ostream& out,
 /**
  * Input to the QP inverse dynamics controller
  */
-class QPInput {
+class QpInput {
  public:
-  explicit QPInput(const RigidBodyTree<double>& r) {
-    std::vector<std::string> names(r.get_num_velocities());
-    // strip out the "dot" part from name
-    for (int i = 0; i < r.get_num_velocities(); ++i)
-      names[i] =
-          r.get_velocity_name(i).substr(0, r.get_velocity_name(i).size() - 3);
-    desired_dof_motions_ = DesiredDoFMotions(names);
-  }
+  QpInput() {}
+
+  explicit QpInput(const std::vector<std::string>& dof_names)
+      : desired_dof_motions_(DesiredDofMotions(dof_names)) {}
 
   inline bool is_valid() const { return is_valid(desired_dof_motions_.size()); }
 
   /**
-   * Checks validity of this QPInput.
+   * Checks validity of this QpInput.
    * @param num_vd Dimension of acceleration in the generalized coordinates.
    * @return true if this is valid.
    */
@@ -698,7 +720,7 @@ class QPInput {
     return true;
   }
 
-  bool operator==(const QPInput& other) const {
+  bool operator==(const QpInput& other) const {
     if (contact_info_.size() != other.contact_info_.size() ||
         desired_body_motions_.size() != other.desired_body_motions_.size()) {
       return false;
@@ -736,7 +758,7 @@ class QPInput {
     return true;
   }
 
-  inline bool operator!=(const QPInput& other) const {
+  inline bool operator!=(const QpInput& other) const {
     return !(this->operator==(other));
   }
 
@@ -745,15 +767,15 @@ class QPInput {
   inline const std::string& dof_name(size_t idx) const {
     return desired_dof_motions_.dof_name(idx);
   }
-  inline const std::map<std::string, ContactInformation>& contact_information()
-      const {
+  inline const std::unordered_map<std::string, ContactInformation>&
+  contact_information() const {
     return contact_info_;
   }
-  inline const std::map<std::string, DesiredBodyMotion>& desired_body_motions()
-      const {
+  inline const std::unordered_map<std::string, DesiredBodyMotion>&
+  desired_body_motions() const {
     return desired_body_motions_;
   }
-  inline const DesiredDoFMotions& desired_dof_motions() const {
+  inline const DesiredDofMotions& desired_dof_motions() const {
     return desired_dof_motions_;
   }
   inline const DesiredCentroidalMomentumDot& desired_centroidal_momentum_dot()
@@ -763,15 +785,15 @@ class QPInput {
 
   // Setters
   inline double& mutable_w_basis_reg() { return w_basis_reg_; }
-  inline std::map<std::string, ContactInformation>&
+  inline std::unordered_map<std::string, ContactInformation>&
   mutable_contact_information() {
     return contact_info_;
   }
-  inline std::map<std::string, DesiredBodyMotion>&
+  inline std::unordered_map<std::string, DesiredBodyMotion>&
   mutable_desired_body_motions() {
     return desired_body_motions_;
   }
-  inline DesiredDoFMotions& mutable_desired_dof_motions() {
+  inline DesiredDofMotions& mutable_desired_dof_motions() {
     return desired_dof_motions_;
   }
   inline DesiredCentroidalMomentumDot&
@@ -781,13 +803,13 @@ class QPInput {
 
  private:
   // Contact information
-  std::map<std::string, ContactInformation> contact_info_;
+  std::unordered_map<std::string, ContactInformation> contact_info_;
 
   // Desired task space accelerations for specific bodies
-  std::map<std::string, DesiredBodyMotion> desired_body_motions_;
+  std::unordered_map<std::string, DesiredBodyMotion> desired_body_motions_;
 
   // Desired joint accelerations
-  DesiredDoFMotions desired_dof_motions_;
+  DesiredDofMotions desired_dof_motions_;
 
   // Desired centroidal momentum change (change of overall linear and angular
   // momentum)
@@ -797,7 +819,7 @@ class QPInput {
   double w_basis_reg_;
 };
 
-std::ostream& operator<<(std::ostream& out, const QPInput& input);
+std::ostream& operator<<(std::ostream& out, const QpInput& input);
 
 /**
  * This class holds the contact force / wrench related information, and works
@@ -975,18 +997,14 @@ std::ostream& operator<<(std::ostream& out, const BodyAcceleration& acc);
 /**
  * Output of the QP inverse dynamics controller
  */
-class QPOutput {
+class QpOutput {
  public:
-  explicit QPOutput(const RigidBodyTree<double>& r) {
-    dof_names_.resize(r.get_num_velocities());
-    for (int i = 0; i < r.get_num_velocities(); ++i) {
-      // strip out the "dot" part from name
-      dof_names_[i] =
-          r.get_velocity_name(i).substr(0, r.get_velocity_name(i).size() - 3);
-    }
-    vd_.resize(r.get_num_velocities());
-    dof_torques_.resize(r.get_num_velocities());
-  }
+  QpOutput() {}
+
+  explicit QpOutput(const std::vector<std::string>& dof_names)
+      : dof_names_(dof_names),
+        vd_(VectorX<double>::Zero(dof_names.size())),
+        dof_torques_(VectorX<double>::Zero(dof_names.size())) {}
 
   bool is_valid(int num_vd) const {
     if (vd_.size() != static_cast<int>(dof_names_.size()) ||
@@ -1022,13 +1040,13 @@ class QPOutput {
     return centroidal_momentum_dot_;
   }
   inline const VectorX<double>& vd() const { return vd_; }
-  inline const std::map<std::string, BodyAcceleration>& body_accelerations()
-      const {
+  inline const std::unordered_map<std::string, BodyAcceleration>&
+  body_accelerations() const {
     return body_accelerations_;
   }
   inline const VectorX<double>& dof_torques() const { return dof_torques_; }
-  inline const std::map<std::string, ResolvedContact>& resolved_contacts()
-      const {
+  inline const std::unordered_map<std::string, ResolvedContact>&
+  resolved_contacts() const {
     return resolved_contacts_;
   }
   inline const std::vector<std::pair<std::string, double>>& costs() const {
@@ -1044,10 +1062,12 @@ class QPOutput {
     return centroidal_momentum_dot_;
   }
   inline VectorX<double>& mutable_vd() { return vd_; }
-  inline std::map<std::string, BodyAcceleration>& mutable_body_accelerations() {
+  inline std::unordered_map<std::string, BodyAcceleration>&
+  mutable_body_accelerations() {
     return body_accelerations_;
   }
-  inline std::map<std::string, ResolvedContact>& mutable_resolved_contacts() {
+  inline std::unordered_map<std::string, ResolvedContact>&
+  mutable_resolved_contacts() {
     return resolved_contacts_;
   }
   inline VectorX<double>& mutable_dof_torques() { return dof_torques_; }
@@ -1076,17 +1096,17 @@ class QPOutput {
   VectorX<double> dof_torques_;
 
   // Computed contact related information such as point contact forces
-  std::map<std::string, ResolvedContact> resolved_contacts_;
+  std::unordered_map<std::string, ResolvedContact> resolved_contacts_;
 
   // Tracked body motion
-  std::map<std::string, BodyAcceleration> body_accelerations_;
+  std::unordered_map<std::string, BodyAcceleration> body_accelerations_;
 
   // Pair of the name of cost term and cost value (only the quadratic and linear
   // term, no constant term).
   std::vector<std::pair<std::string, double>> costs_;
 };
 
-std::ostream& operator<<(std::ostream& out, const QPOutput& output);
+std::ostream& operator<<(std::ostream& out, const QpOutput& output);
 
 class QPController {
  public:
@@ -1099,8 +1119,8 @@ class QPController {
    * @param output Container for outputs
    * @return 0 if successful. < 0 if error.
    */
-  int Control(const HumanoidStatus& robot_status, const QPInput& input,
-              QPOutput* output);
+  int Control(const HumanoidStatus& robot_status, const QpInput& input,
+              QpOutput* output);
 
   static const double kUpperBoundForContactBasis;
 
@@ -1131,15 +1151,15 @@ class QPController {
   MatrixX<double> mass_matrix_;
   VectorX<double> dynamics_bias_;
 
-  MatrixX<double> J_com_;
+  Matrix3X<double> J_com_;
   VectorX<double> J_dot_times_v_com_;
-  MatrixX<double> centroidal_momentum_matrix_;
+  Matrix6X<double> centroidal_momentum_matrix_;
   VectorX<double> centroidal_momentum_matrix_dot_times_v_;
 
   VectorX<double> solution_;
 
-  std::vector<MatrixX<double>> body_J_;
-  std::vector<VectorX<double>> body_Jdv_;
+  std::vector<Matrix6X<double>> body_J_;
+  std::vector<Vector6<double>> body_Jdv_;
 
   // These determines the size of the QP. These are set in ResizeQP
   int num_contact_body_{0};
@@ -1177,8 +1197,8 @@ class QPController {
   // matrices / vectors.
   std::unique_ptr<drake::solvers::MathematicalProgram> prog_;
   drake::solvers::GurobiSolver solver_;
-  drake::solvers::DecisionVariableVectorX basis_;
-  drake::solvers::DecisionVariableVectorX vd_;
+  drake::solvers::VectorXDecisionVariable basis_;
+  drake::solvers::VectorXDecisionVariable vd_;
 
   // pointers to different cost / constraint terms inside prog_
   drake::solvers::LinearEqualityConstraint* eq_dynamics_{nullptr};
@@ -1207,7 +1227,7 @@ class QPController {
    * @param robot Model
    * @param input input to the QP
    */
-  void ResizeQP(const RigidBodyTree<double>& robot, const QPInput& input);
+  void ResizeQP(const RigidBodyTree<double>& robot, const QpInput& input);
 
   template <typename DerivedA, typename DerivedB>
   void AddAsConstraints(const Eigen::MatrixBase<DerivedA>& A,
@@ -1266,6 +1286,19 @@ class QPController {
     JB_.setZero();
   }
 };
+
+// TODO(siyuanfeng): This should be made more robust and general, and it
+// should also be in RigidBodyTreee.
+template <typename T>
+std::vector<std::string> GetDofNames(const RigidBodyTree<T>& robot) {
+  std::vector<std::string> names(robot.get_num_velocities());
+  // Strips out the "dot" part from name.
+  for (int i = 0; i < robot.get_num_velocities(); ++i) {
+    names[i] = robot.get_velocity_name(i);
+    names[i] = names[i].substr(0, names[i].size() - 3);
+  }
+  return names;
+}
 
 }  // namespace qp_inverse_dynamics
 }  // namespace examples

@@ -37,15 +37,11 @@ GTEST_TEST(testIKpointwise, simpleIKpointwise) {
     q0.col(i) = tree->getZeroConfiguration();
     q0(3, i) = 0.8;
   }
-  Vector3d com_des = Vector3d::Zero();
-  com_des(2) = std::numeric_limits<double>::quiet_NaN();
+  Vector3d com_des(0, 0, std::numeric_limits<double>::quiet_NaN());
   WorldCoMConstraint com_kc(tree.get(), com_des, com_des);
-  Vector3d com_lb = Vector3d::Zero();
-  Vector3d com_ub = Vector3d::Zero();
-  com_lb(2) = 0.9;
-  com_ub(2) = 1.0;
-  Vector2d tspan_end;
-  tspan_end << 0.9, 1;
+  Vector3d com_lb(0, 0, 0.9);
+  Vector3d com_ub(0, 0, 1.0);
+  Vector2d tspan_end(0.9, 1);
 WorldCoMConstraint com_kc_final(tree.get(), com_lb, com_ub, tspan_end);
 
   int num_constraints = 2;

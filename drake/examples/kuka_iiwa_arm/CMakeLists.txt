@@ -26,7 +26,8 @@ if(lcm_FOUND)
       gflags)
   drake_add_test(
       NAME run_kuka_iiwa_arm_dynamics
-      COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5)
+      COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5
+      SIZE medium)
 
   add_executable(kuka_ik_demo kuka_ik_demo.cc)
   target_link_libraries(kuka_ik_demo

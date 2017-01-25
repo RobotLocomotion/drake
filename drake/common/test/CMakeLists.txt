@@ -27,6 +27,9 @@ target_link_libraries(nice_type_name_test drakeCommon)
 drake_add_cc_test(symbolic_variable_test)
 target_link_libraries(symbolic_variable_test drakeCommon)
 
+drake_add_cc_test(symbolic_variable_overloading_test)
+target_link_libraries(symbolic_variable_overloading_test drakeCommon)
+
 drake_add_cc_test(symbolic_variables_test)
 target_link_libraries(symbolic_variables_test drakeCommon)
 
@@ -35,6 +38,12 @@ target_link_libraries(symbolic_environment_test drakeCommon)
 
 drake_add_cc_test(symbolic_expression_test)
 target_link_libraries(symbolic_expression_test drakeCommon)
+
+drake_add_cc_test(symbolic_expression_matrix_test)
+target_link_libraries(symbolic_expression_matrix_test drakeCommon)
+
+drake_add_cc_test(symbolic_mixing_scalar_types_test)
+target_link_libraries(symbolic_mixing_scalar_types_test drakeCommon)
 
 drake_add_cc_test(symbolic_formula_test)
 target_link_libraries(symbolic_formula_test drakeCommon)

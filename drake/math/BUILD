@@ -1,6 +1,7 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "cc_googletest")
 
 package(default_visibility = ["//visibility:public"])
@@ -33,7 +34,6 @@ cc_library(
     srcs = [
         "axis_angle.cc",
         "quaternion.cc",
-        "random_rotation.cc",
         "roll_pitch_yaw.cc",
         "rotation_matrix.cc",
     ],
@@ -197,3 +197,5 @@ cc_googletest(
         "//drake/common:eigen_matrix_compare",
     ],
 )
+
+cpplint()

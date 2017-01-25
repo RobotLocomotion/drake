@@ -1,6 +1,7 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "cc_googletest")
 
 package(default_visibility = ["//visibility:public"])
@@ -18,6 +19,7 @@ cc_library(
         "constants.h",
         "drake_assert.h",
         "drake_compat.h",
+        "drake_copyable.h",
         "drake_deprecated.h",
         "drake_throw.h",
         "eigen_stl_types.h",
@@ -136,6 +138,7 @@ cc_library(
         ":cond",
         ":dummy_value",
         ":number_traits",
+        ":polynomial",
     ],
 )
 
@@ -384,6 +387,31 @@ cc_googletest(
 )
 
 cc_googletest(
+    name = "symbolic_mixing_scalar_types_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+cc_googletest(
+    name = "symbolic_expression_matrix_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+cc_googletest(
+    name = "symbolic_variable_overloading_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+
+cc_googletest(
     name = "symbolic_formula_test",
     deps = [
         ":common",
@@ -428,3 +456,5 @@ cc_googletest(
 # - text_logging_test in fancy variants
 # - drake_deprecated_test in fancy variants
 # - cpplint_wrapper_test.py
+
+cpplint()

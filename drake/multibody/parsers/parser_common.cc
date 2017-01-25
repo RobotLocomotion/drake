@@ -162,7 +162,7 @@ int AddFloatingJoint(
     // use the transform_to_body variable within weld_to_frame to initialize
     // the robot at the desired location in the world.
     if (weld_to_frame->get_name()
-          == string(RigidBodyTree<double>::kWorldName)) {
+          == string(RigidBodyTreeConstants::kWorldName)) {
       if (!weld_to_frame->has_as_rigid_body(nullptr)) {
         throw runtime_error(
             "AddFloatingJoint: Attempted to weld robot to the world while "

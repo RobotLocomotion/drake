@@ -21,7 +21,7 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
 class SpringMassStateVector : public BasicVector<T> {
@@ -66,7 +66,7 @@ class SpringMassStateVector : public BasicVector<T> {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - const T&
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 ///
 /// @ingroup rigid_body_systems
@@ -201,9 +201,9 @@ class SpringMassSystem : public LeafSystem<T> {
   T DoCalcNonConservativePower(const MyContext& context) const override;
 
   // System<T> overrides.
-  /// Allocates a single output port of type SpringMassStateVector<T>.
-  std::unique_ptr<MyOutput> AllocateOutput(
-      const MyContext& context) const override;
+  /// Allocates an output vector of type SpringMassStateVector<T>.
+  std::unique_ptr<BasicVector<T>> AllocateOutputVector(
+      const OutputPortDescriptor<T>& descriptor) const override;
 
   void DoCalcOutput(const MyContext& context, MyOutput* output) const override;
 

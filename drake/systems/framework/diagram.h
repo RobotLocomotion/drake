@@ -681,6 +681,7 @@ class Diagram : public System<T>,
 
     std::vector<std::pair<int, UpdateActions<T1>>> publishers;
     std::vector<std::pair<int, UpdateActions<T1>>> updaters;
+    std::vector<std::pair<int, UpdateActions<T1>>> unrestricted_updaters;
     for (int i = 0; i < num_subsystems(); i++) {
       // Ignore the subsystems that aren't among the most imminent updates.
       if (sub_actions[i].time > actions->time) continue;
@@ -692,8 +693,13 @@ class Diagram : public System<T>,
                              DiscreteEvent<T1>::kDiscreteUpdateAction)) {
         updaters.emplace_back(i, sub_actions[i]);
       }
+      if (internal::HasEvent(sub_actions[i],
+                             DiscreteEvent<T1>::kUnrestrictedUpdateAction)) {
+        unrestricted_updaters.emplace_back(i, sub_actions[i]);
+      }
     }
-    DRAKE_ASSERT(!publishers.empty() || !updaters.empty());
+    DRAKE_ASSERT(!publishers.empty() || !updaters.empty() ||
+                 !unrestricted_updaters.empty());
 
     // Request a publish event, if our subsystems want it.
     if (!publishers.empty()) {
@@ -715,6 +721,19 @@ class Diagram : public System<T>,
                                   std::placeholders::_1, /* context */
                                   std::placeholders::_2, /* difference state */
                                   updaters);
+      actions->events.push_back(event);
+    }
+
+    // Request an unrestricted update event, if our subsystems want it.
+    if (!unrestricted_updaters.empty()) {
+      DiscreteEvent<T1> event;
+      event.action = DiscreteEvent<T1>::kUnrestrictedUpdateAction;
+      event.do_unrestricted_update = std::bind(
+                                  &Diagram<T1>::HandleUnrestrictedUpdate,
+                                  this,
+                                  std::placeholders::_1, /* context */
+                                  std::placeholders::_2, /* state */
+                                  unrestricted_updaters);
       actions->events.push_back(event);
     }
   }
@@ -803,12 +822,7 @@ class Diagram : public System<T>,
     GetSystemIndexOrAbort(sys);
 
     // Add this port to our externally visible topology.
-    const auto& subsystem_ports = sys->get_input_ports();
-    if (port_index < 0 ||
-        port_index >= static_cast<int>(subsystem_ports.size())) {
-      throw std::out_of_range("Input port out of range.");
-    }
-    const auto& subsystem_descriptor = subsystem_ports[port_index];
+    const auto& subsystem_descriptor = sys->get_input_port(port_index);
     this->DeclareInputPort(subsystem_descriptor.get_data_type(),
                            subsystem_descriptor.size());
   }
@@ -821,12 +835,7 @@ class Diagram : public System<T>,
     GetSystemIndexOrAbort(sys);
 
     // Add this port to our externally visible topology.
-    const auto& subsystem_ports = sys->get_output_ports();
-    if (port_index < 0 ||
-        port_index >= static_cast<int>(subsystem_ports.size())) {
-      throw std::out_of_range("Output port out of range.");
-    }
-    const auto& subsystem_descriptor = subsystem_ports[port_index];
+    const auto& subsystem_descriptor = sys->get_output_port(port_index);
     this->DeclareOutputPort(subsystem_descriptor.get_data_type(),
                             subsystem_descriptor.size());
   }
@@ -1040,6 +1049,43 @@ class Diagram : public System<T>,
           sorted_systems_[index]->CalcDiscreteVariableUpdates(*subcontext,
                                                               event,
                                                               subdifference);
+        }
+      }
+    }
+  }
+
+  /// Handles Update callbacks that were registered in DoCalcNextUpdateTime.
+  /// Dispatches the UnrestrictedUpdate events to the subsystems that requested
+  /// them.
+  void HandleUnrestrictedUpdate(
+      const Context<T>& context, State<T>* state,
+      const std::vector<std::pair<int, UpdateActions<T>>>& sub_actions) const {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
+    DRAKE_DEMAND(diagram_state != nullptr);
+
+    // No need to set state to context's state, since it has already been done
+    // in System::CalcUnrestrictedUpdate().
+
+    for (const auto& action : sub_actions) {
+      const int index = action.first;
+      const UpdateActions<T>& action_details = action.second;
+      DRAKE_DEMAND(index >= 0 && index < num_subsystems());
+
+      // Get the context and the state for the specified system.
+      const Context<T>* subcontext =
+          diagram_context->GetSubsystemContext(index);
+      DRAKE_DEMAND(subcontext != nullptr);
+      State<T>* substate = diagram_state->get_mutable_substate(index);
+      DRAKE_DEMAND(substate != nullptr);
+
+      // Do that system's update actions.
+      for (const DiscreteEvent<T>& event : action_details.events) {
+        if (event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction) {
+          sorted_systems_[index]->CalcUnrestrictedUpdate(*subcontext,
+                                                         event,
+                                                         substate);
         }
       }
     }

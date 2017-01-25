@@ -32,6 +32,13 @@ git_repository(
 )
 
 new_git_repository(
+    name = "google_styleguide",
+    remote = "https://github.com/google/styleguide.git",
+    commit = "159b4c81bbca97a9ca00f1195a37174388398a67",
+    build_file = "tools/google_styleguide.BUILD",
+)
+
+new_git_repository(
     name = "eigen",
     remote = "https://github.com/RobotLocomotion/eigen-mirror.git",
     commit = "d3ee2bc648be3d8be8c596a9a0aefef656ff8637",
@@ -43,6 +50,12 @@ new_git_repository(
     remote = "https://github.com/gabime/spdlog.git",
     commit = "43a4048b92ef5b7eff6dc637a621c7da3a41d194",
     build_file = "tools/spdlog.BUILD",
+)
+
+maven_jar(
+    name = "net_sf_jchart2d_jchart2d",
+    artifact = "net.sf.jchart2d:jchart2d:3.3.2",
+    sha1 = "4950821eefe4c204903e68b4d45a558b5ebdd6fa",
 )
 
 new_git_repository(
@@ -110,7 +123,10 @@ new_git_repository(
 load("//tools:gurobi.bzl", "gurobi_repository")
 gurobi_repository(
     name = "gurobi",
-    workspace_dir = __workspace_dir__,
-    build_file = "tools/gurobi.BUILD",
 )
 
+load("//tools:soft_failure.bzl", "soft_failure_binary_repository")
+soft_failure_binary_repository(
+    name = "drake_visualizer",
+    local_path = __workspace_dir__ + "/build/install/bin/drake-visualizer",
+)

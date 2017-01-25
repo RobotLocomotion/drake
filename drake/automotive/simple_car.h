@@ -5,6 +5,7 @@
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/simple_car_config.h"
 #include "drake/automotive/gen/simple_car_state.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -39,12 +40,14 @@ namespace automotive {
 /// - drake::AutoDiffXd
 /// - drake::symbolic::Expression
 ///
-/// They are already available to link against in libdrakeAutomotive.
+/// They are already available to link against in the containing library.
 ///
 /// @ingroup automotive_systems
 template <typename T>
 class SimpleCar : public systems::LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleCar)
+
   explicit SimpleCar(const SimpleCarConfig<T>& config = get_default_config());
 
   static SimpleCarConfig<T> get_default_config();

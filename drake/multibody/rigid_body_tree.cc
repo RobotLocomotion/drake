@@ -47,6 +47,7 @@ using drake::MatrixX;
 using drake::TwistMatrix;
 using drake::TwistVector;
 using drake::Vector3;
+using drake::Vector6;
 using drake::VectorX;
 using drake::WrenchVector;
 using drake::kQuaternionSize;
@@ -58,6 +59,8 @@ using drake::math::autoDiffToGradientMatrix;
 using drake::math::gradientMatrixToAutoDiff;
 using drake::math::Gradient;
 using drake::multibody::joints::FloatingBaseType;
+
+using DrakeCollision::CollisionFilterGroup;
 
 using std::allocator;
 using std::cerr;
@@ -78,12 +81,12 @@ using std::unordered_map;
 using std::vector;
 using std::endl;
 
-template <typename T>
-const set<int> RigidBodyTree<T>::default_model_instance_id_set = {0};
-template <typename T>
-const char* const RigidBodyTree<T>::kWorldName = "world";
-template <typename T>
-const int RigidBodyTree<T>::kWorldBodyIndex = 0;
+const char* const RigidBodyTreeConstants::kWorldName = "world";
+const int RigidBodyTreeConstants::kWorldBodyIndex = 0;
+// TODO(liang.fok) Update the following two variables along with the resolution
+// of #3088. Once #3088 is resolved, ID of the first model instance should be 1.
+const int RigidBodyTreeConstants::kFirstNonWorldModelInstanceId = 0;
+const set<int> RigidBodyTreeConstants::default_model_instance_id_set = {0};
 
 template <typename T>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -109,8 +112,8 @@ RigidBodyTree<T>::RigidBodyTree(void)
 
   // Adds the rigid body representing the world. It has model instance ID 0.
   std::unique_ptr<RigidBody<T>> world_body(new RigidBody<T>());
-  world_body->set_name(RigidBodyTree<T>::kWorldName);
-  world_body->set_model_name(RigidBodyTree<T>::kWorldName);
+  world_body->set_name(RigidBodyTreeConstants::kWorldName);
+  world_body->set_model_name(RigidBodyTreeConstants::kWorldName);
 
   // TODO(liang.fok): Assign the world body a unique model instance ID of zero.
   // See: https://github.com/RobotLocomotion/drake/issues/3088
@@ -123,10 +126,42 @@ RigidBodyTree<T>::~RigidBodyTree(void) {}
 
 template <typename T>
 bool RigidBodyTree<T>::transformCollisionFrame(
-    const DrakeCollision::ElementId& eid,
-    const Eigen::Isometry3d& transform_body_to_joint) {
-  return collision_model_->transformCollisionFrame(eid,
-                                                   transform_body_to_joint);
+    RigidBody<T>* body, const Eigen::Isometry3d& displace_transform) {
+  // Collision elements in the body-collision map have *not* been registered
+  // with the collision engine yet and can simply be modified in
+  // place.
+  auto map_itr = body_collision_map_.find(body);
+  if (map_itr != body_collision_map_.end()) {
+    BodyCollisions& collision_items = map_itr->second;
+    for (const auto& item : collision_items) {
+      element_order_[item.element]->SetLocalTransform(
+          displace_transform *
+          element_order_[item.element]->getLocalTransform());
+    }
+  }
+
+  // TODO(SeanCurtis-TRI): These Collision elements have *already* been
+  // registered with the collision model; they must be moved through the
+  // collision model's interface. We need to decide if a method that is intended
+  // to be called as part of *construction* should modify collision elements
+  // already registered with the collision engine. In other words, do we allow
+  // the following work flow:
+  //   1) Add body to tree.
+  //   2) Add collision element to body.
+  //   3) transform the collision frame.
+  //   4) *compile*
+  //   5) repeate steps 2-4 on that same body.
+  // I suspect this should *not* be considered a valid workflow but still needs
+  // to be officially decided.
+  for (auto body_itr = body->collision_elements_begin();
+       body_itr != body->collision_elements_end(); ++body_itr) {
+    DrakeCollision::Element* element = *body_itr;
+    if (!collision_model_->transformCollisionFrame(element->getId(),
+                                                   displace_transform)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // TODO(amcastro-tri): This implementation is very inefficient since member
@@ -169,6 +204,46 @@ const RigidBodyActuator& RigidBodyTree<T>::GetActuator(
   }
   throw std::invalid_argument("ERROR: Could not find actuator named \"" + name +
       "\"");
+}
+
+template <typename T>
+void RigidBodyTree<T>::DefineCollisionFilterGroup(const std::string& name) {
+  collision_group_manager_.DefineCollisionFilterGroup(name);
+}
+
+template <typename T>
+void RigidBodyTree<T>::AddCollisionFilterGroupMember(
+    const std::string& group_name, const std::string& body_name, int model_id) {
+  int body_index = FindBodyIndex(body_name, model_id);
+  RigidBody<T>* body = bodies[body_index].get();
+  if (body->get_num_collision_elements() > 0) {
+    throw std::runtime_error("Attempting to add a body, '" + body->get_name() +
+                             "', to a collision group, '" +
+                             group_name +
+                             "' that has already been compiled with "
+                             "collision elements.");
+  }
+  if (!collision_group_manager_.AddCollisionFilterGroupMember(group_name,
+                                                              *body)) {
+    throw std::runtime_error(
+        "Attempting to add a link to an undefined collision filter group: "
+        "Adding " +
+        body->get_name() + " to " + group_name + ".");
+  }
+}
+
+template <typename T>
+void RigidBodyTree<T>::AddCollisionFilterIgnoreTarget(
+    const std::string& group_name, const std::string& target_group_name) {
+  collision_group_manager_.AddCollisionFilterIgnoreTarget(group_name,
+                                                          target_group_name);
+}
+
+template <typename T>
+void RigidBodyTree<T>::SetBodyCollisionFilters(
+    const RigidBody<T>& body, const DrakeCollision::bitmask& group,
+    const DrakeCollision::bitmask& ignores) {
+  collision_group_manager_.SetBodyCollisionFilters(body, group, ignores);
 }
 
 template <typename T>
@@ -264,43 +339,133 @@ void RigidBodyTree<T>::compile(void) {
     }
   }
 
-  // Updates the static collision elements and terrain contact points.
-  updateStaticCollisionElements();
-
-  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-    RigidBody<T>& body = **it;
-    Eigen::Matrix3Xd contact_points;
-    getTerrainContactPoints(body, &contact_points);
-    body.set_contact_points(contact_points);
-  }
-
   ConfirmCompleteTree();
 
-  CreateCollisionCliques();
+  CompileCollisionState();
 
   initialized_ = true;
 }
 
 template <typename T>
+void RigidBodyTree<T>::CompileCollisionState() {
+  // Identifies and processes collision elements that should be marked
+  // "anchored".
+  for (const auto& pair : body_collision_map_) {
+    RigidBody<T>* body = pair.first;
+    if (body->IsRigidlyFixedToWorld()) {
+      const BodyCollisions& elements = pair.second;
+      for (const auto& collision_item : elements) {
+        element_order_[collision_item.element]->set_anchored();
+        element_order_[collision_item.element]->updateWorldTransform(
+            body->ComputeWorldFixedPose());
+      }
+    }
+  }
+
+  // Process collision filter groups
+  collision_group_manager_.CompileGroups();
+
+  // Set the collision filter data on the body's elements. Note: this does
+  // *not* update the collision elements that may have already been registered
+  // with the collision model. But attempts to add bodies with registered
+  // collision elements to a collision filter group, should have already thrown
+  // an exception.
+  for (auto& pair : body_collision_map_) {
+    RigidBody<T>* body = pair.first;
+    DrakeCollision::bitmask group =
+        collision_group_manager_.get_group_mask(*body);
+    DrakeCollision::bitmask ignore =
+        collision_group_manager_.get_ignore_mask(*body);
+    BodyCollisions& elements = pair.second;
+    for (const auto& collision_item : elements) {
+      element_order_[collision_item.element]->set_collision_filter(group,
+                                                                   ignore);
+    }
+  }
+  collision_group_manager_.Clear();
+
+  // Builds cliques for collision filtering.
+  CreateCollisionCliques();
+
+  // Computes the contact points for a body.
+  for (auto& pair : body_collision_map_) {
+    RigidBody<T>* body = pair.first;
+    Eigen::Matrix3Xd contact_points;
+    BodyCollisions& elements = pair.second;
+    int num_points = 0;
+    // Note: contact points does *not* rely on collision element group names.
+    for (const auto& collision_item : elements) {
+      Matrix3Xd element_points;
+      element_order_[collision_item.element]->getTerrainContactPoints(
+          element_points);
+      contact_points.conservativeResize(
+          Eigen::NoChange, contact_points.cols() + element_points.cols());
+      contact_points.block(0, num_points, contact_points.rows(),
+                           element_points.cols()) = element_points;
+      num_points += element_points.cols();
+    }
+    body->set_contact_points(contact_points);
+  }
+
+  // Assigns finished collision elements to their corresponding rigid bodies.
+  for (auto& pair : body_collision_map_) {
+    RigidBody<T>* body = pair.first;
+    BodyCollisions& elements = pair.second;
+    for (const auto& collision_item : elements) {
+      body->AddCollisionElement(collision_item.group_name,
+                                element_order_[collision_item.element].get());
+    }
+  }
+
+  // Registers collision elements in the instantiation order to guarantee
+  // deterministic results. See Model::AddElement for details.
+  // NOTE: Do *not* attempt to use the elements in the body_collision_map after
+  // this loop; the collision elements will have been moved into the collision
+  // model.
+  for (size_t i = 0; i < element_order_.size(); ++i) {
+    collision_model_->AddElement(std::move(element_order_[i]));
+  }
+  body_collision_map_.clear();
+  element_order_.clear();
+}
+
+template <typename T>
 void RigidBodyTree<T>::CreateCollisionCliques() {
   int clique_id = get_next_clique_id();
-  // 1) For collision elements in the same body
-  for (auto& body : bodies) {
-    if (body->SetSelfCollisionClique(clique_id)) {
+  // Marks collision elements in the same body to be in the same clique.
+  for (auto& pair : body_collision_map_) {
+    BodyCollisions& collision_items = pair.second;
+    if ( collision_items.size() > 1 ) {
+      for (auto& item : collision_items) {
+        element_order_[item.element]->AddToCollisionClique(clique_id);
+      }
       clique_id = get_next_clique_id();
     }
   }
 
-  // 2) For collision elements in different bodies
+  // Collision elements on "adjacent" bodies belong in the same clique.
+  // This allows coarse link collision geometry. This coarse geometry might
+  // superficially collide, but not represent a *physical* collision.  Instead,
+  // it is assumed that constraints on the relative poses of adjacent links is
+  // determined by joint limits.
   // This is an O(N^2) loop -- but only happens at initialization.
-  //
   // If this proves to be too expensive, walking the tree would be O(N)
   // and still capture all of the adjacency.
+  // TODO(SeanCurtis-TRI): If compile gets called multiple times this will end
+  // up encoding redundant cliques.
   for (size_t i = 0; i < bodies.size(); ++i) {
+    RigidBody<T>* body_i = bodies[i].get();
     for (size_t j = i + 1; j < bodies.size(); ++j) {
-      if (!bodies[i]->CanCollideWith(*bodies[j])) {
-        bodies[i]->AddCollisionElementsToClique(clique_id);
-        bodies[j]->AddCollisionElementsToClique(clique_id);
+      RigidBody<T>* body_j = bodies[j].get();
+      if (!body_i->CanCollideWith(*body_j)) {
+        BodyCollisions& elements_i =  body_collision_map_[body_i];
+        for (const auto& item : elements_i) {
+          element_order_[item.element]->AddToCollisionClique(clique_id);
+        }
+        BodyCollisions& elements_j =  body_collision_map_[body_j];
+        for (const auto& item : elements_j) {
+          element_order_[item.element]->AddToCollisionClique(clique_id);
+        }
         clique_id = get_next_clique_id();
       }
     }
@@ -448,16 +613,30 @@ map<string, int> RigidBodyTree<T>::computePositionNameToIndexMap() const {
 }
 
 template <typename T>
-DrakeCollision::ElementId RigidBodyTree<T>::addCollisionElement(
+void RigidBodyTree<T>::addCollisionElement(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     const DrakeCollision::Element& element, RigidBody<T>& body,
     const string& group_name) {
-  DrakeCollision::ElementId id = collision_model_->addElement(element);
-  if (id != 0) {
-    body.AddCollisionElement(group_name,
-                             collision_model_->FindMutableElement(id));
+  auto itr = body_collision_map_.find(&body);
+  if (itr == body_collision_map_.end()) {
+    // NOTE: we do this instead of map[key] = value because we want an iterator
+    // to the newly inserted list for use in the remainder of the function.
+    bool success;
+    std::tie(itr, success) =
+        body_collision_map_.insert(std::make_pair(&body, BodyCollisions()));
+
+    if (!success) {
+      throw std::runtime_error(
+          "Unable to add the collision element to the "
+          "body: " +
+          body.get_name() + ".");
+    }
   }
-  return id;
+  BodyCollisions& body_collisions = itr->second;
+  size_t id = element_order_.size();
+  element_order_.emplace_back(
+      std::unique_ptr<DrakeCollision::Element>(element.clone()));
+  body_collisions.emplace_back(group_name, id);
 }
 
 template <typename T>
@@ -471,18 +650,9 @@ void RigidBodyTree<T>::updateCollisionElements(
 }
 
 template <typename T>
-void RigidBodyTree<T>::updateStaticCollisionElements() {
-  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-    RigidBody<T>& body = **it;
-    if (!body.has_parent_body()) {
-      updateCollisionElements(body, Isometry3d::Identity());
-    }
-  }
-}
-
-template <typename T>
 void RigidBodyTree<T>::updateDynamicCollisionElements(
     const KinematicsCache<double>& cache) {
+  CheckCacheValidity(cache);
   // todo: this is currently getting called many times with the same cache
   // object.  and it's presumably somewhat expensive.
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
@@ -639,6 +809,7 @@ bool RigidBodyTree<T>::collisionDetect(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<int>& bodyB_idx, const vector<int>& bodies_idx,
     const set<string>& active_element_groups, bool use_margins) {
+  CheckCacheValidity(cache);
   vector<DrakeCollision::ElementId> ids_to_check;
   for (const int& body_idx : bodies_idx) {
     if (body_idx >= 0 && body_idx < static_cast<int>(bodies.size())) {
@@ -660,6 +831,7 @@ bool RigidBodyTree<T>::collisionDetect(
     Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<int>& bodyB_idx, const vector<int>& bodies_idx, bool use_margins) {
+  CheckCacheValidity(cache);
   vector<DrakeCollision::ElementId> ids_to_check;
   for (const int& body_idx : bodies_idx) {
     if (body_idx >= 0 && body_idx < static_cast<int>(bodies.size())) {
@@ -683,6 +855,7 @@ bool RigidBodyTree<T>::collisionDetect(
     vector<int>& bodyB_idx,
     const set<string>& active_element_groups,
     bool use_margins) {
+  CheckCacheValidity(cache);
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
@@ -707,6 +880,7 @@ bool RigidBodyTree<T>::collisionDetect(
     vector<int>& bodyA_idx,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<int>& bodyB_idx, bool use_margins) {
+  CheckCacheValidity(cache);
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
@@ -762,18 +936,9 @@ RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
   vector<DrakeCollision::PointPair> contact_points;
   collision_model_->ComputeMaximumDepthCollisionPoints(use_margins,
                                                        contact_points);
-  size_t num_contact_points = contact_points.size();
-
-  // TODO(SeanCurtis-TRI): Once the bullet collision detection *properly* takes
-  // the Element::CanCollideWith method into account, this can be removed.
-  // But, for now, ComputeMaximumDepthCollisionPoints may produce collision
-  // information for pairs that shouldn't be considered. This code filters the
-  // results into `valid_pairs` with the expectation of removal after drake
-  // collision filters are fully integrated into the collision model.
-  // See issue #4204 (https://github.com/RobotLocomotion/drake/issues/4204).
-  std::vector<DrakeCollision::PointPair> valid_pairs;
-  valid_pairs.reserve(contact_points.size());
-  for (size_t i = 0; i < num_contact_points; ++i) {
+  // For each contact pair, map contact point from world frame to each body's
+  // frame.
+  for (size_t i = 0; i < contact_points.size(); ++i) {
     auto& pair = contact_points[i];
     if (pair.elementA->CanCollideWith(pair.elementB)) {
       // Get bodies' transforms.
@@ -790,10 +955,9 @@ RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
       // Eigen assumes aliasing by default and therefore this operation is safe.
       pair.ptA = TA.inverse() * contact_points[i].ptA;
       pair.ptB = TB.inverse() * contact_points[i].ptB;
-      valid_pairs.push_back(pair);
     }
   }
-  return valid_pairs;
+  return contact_points;
 }
 
 template <typename T>
@@ -846,6 +1010,38 @@ bool RigidBodyTree<T>::allCollisions(
 }
 
 template <typename T>
+template <typename Scalar>
+void RigidBodyTree<T>::CheckCacheValidity(
+    const KinematicsCache<Scalar>& cache) const {
+  if (cache.get_num_cache_elements() != get_num_bodies()) {
+    throw std::runtime_error("RigidBodyTree::CheckCacheValidity: Number of "
+        "cache elements (" + std::to_string(cache.get_num_cache_elements())
+        + ") does not equal the number of bodies in the RigidBodyTree (" +
+        std::to_string(get_num_bodies()) + ")");
+  }
+  for (int i = 0; i < get_num_bodies(); ++i) {
+    const RigidBody<T>& body = get_body(i);
+    if (body.has_joint()) {
+      const DrakeJoint& joint = body.getJoint();
+      const KinematicsCacheElement<Scalar>& cache_element =
+          cache.get_element(i);
+      if (cache_element.get_num_positions() != joint.get_num_positions() ||
+          cache_element.get_num_velocities() != joint.get_num_velocities()) {
+        throw std::runtime_error("RigidBodyTree::CheckCacheValidity: Cache "
+            "element " + std::to_string(i) + " for joint " + joint.get_name() +
+            " has incorrect number of joint positions or velocities.\n" +
+            "  - num positions: cache has " +
+            std::to_string(cache_element.get_num_positions()) +
+            ", joint has " + std::to_string(joint.get_num_positions()) + "\n"
+            "  - num velocities: cache has " +
+            std::to_string(cache.get_num_velocities()) + ", joint has " +
+            std::to_string(joint.get_num_velocities()));
+      }
+    }
+  }
+}
+
+template <typename T>
 KinematicsCache<T>
 RigidBodyTree<T>::CreateKinematicsCacheFromBodiesVector(
     const std::vector<std::unique_ptr<RigidBody<T>>>& bodies) {
@@ -873,15 +1069,19 @@ KinematicsCache<CacheT>
 RigidBodyTree<T>::CreateKinematicsCacheWithType() const {
   DRAKE_DEMAND(initialized_ && "This RigidBodyTree was not initialized."
       " RigidBodyTree::compile() must be called first.");
-  KinematicsCache<CacheT> cache(get_num_positions(), get_num_velocities());
+  std::vector<int> num_joint_positions;
+  std::vector<int> num_joint_velocities;
   for (const auto& body_unique_ptr : bodies) {
     const RigidBody<T>& body = *body_unique_ptr;
-    int num_positions_joint =
+    int num_positions =
         body.has_parent_body() ? body.getJoint().get_num_positions() : 0;
-    int num_velocities_joint =
+    int num_velocities =
         body.has_parent_body() ? body.getJoint().get_num_velocities() : 0;
-    cache.CreateCacheElement(num_positions_joint, num_velocities_joint);
+    num_joint_positions.push_back(num_positions);
+    num_joint_velocities.push_back(num_velocities);
   }
+  KinematicsCache<CacheT> cache(get_num_positions(), get_num_velocities(),
+      num_joint_positions, num_joint_velocities);
   return cache;
 }
 
@@ -918,6 +1118,7 @@ template <typename Scalar>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void RigidBodyTree<T>::doKinematics(KinematicsCache<Scalar>& cache,
                                     bool compute_JdotV) const {
+  CheckCacheValidity(cache);
   const auto& q = cache.getQ();
   if (!initialized_)
     throw runtime_error("RigidBodyTree::doKinematics: call compile first.");
@@ -1022,6 +1223,7 @@ template <typename Scalar>
 void RigidBodyTree<T>::updateCompositeRigidBodyInertias(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(false, false,
                                       "updateCompositeRigidBodyInertias");
 
@@ -1101,6 +1303,7 @@ TwistMatrix<Scalar> RigidBodyTree<T>::worldMomentumMatrix(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set,
     bool in_terms_of_qdot) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(false, false, "worldMomentumMatrix");
   updateCompositeRigidBodyInertias(cache);
 
@@ -1144,6 +1347,7 @@ TwistVector<Scalar> RigidBodyTree<T>::worldMomentumMatrixDotTimesV(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set)
 const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(true, true,
                                       "worldMomentumMatrixDotTimesV");
   updateCompositeRigidBodyInertias(cache);
@@ -1174,6 +1378,7 @@ TwistMatrix<Scalar> RigidBodyTree<T>::centroidalMomentumMatrix(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set,
     bool in_terms_of_qdot) const {
+  CheckCacheValidity(cache);
   // kinematics cache checks already being done in worldMomentumMatrix.
   auto ret = worldMomentumMatrix(cache, model_instance_id_set,
                                  in_terms_of_qdot);
@@ -1198,6 +1403,7 @@ TwistVector<Scalar> RigidBodyTree<T>::centroidalMomentumMatrixDotTimesV(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set)
 const {
+  CheckCacheValidity(cache);
   // kinematics cache checks already being done in worldMomentumMatrixDotTimesV
   auto ret = worldMomentumMatrixDotTimesV(cache, model_instance_id_set);
 
@@ -1248,9 +1454,8 @@ double RigidBodyTree<T>::getMass(
 template <typename T>
 template <typename Scalar>
 Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree<T>::centerOfMass(
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set)
-const {
+    const KinematicsCache<Scalar>& cache,
+    const std::set<int>& model_instance_id_set) const {
   cache.checkCachedKinematicsSettings(false, false, "centerOfMass");
 
   Eigen::Matrix<Scalar, kSpaceDimension, 1> com;
@@ -1326,7 +1531,7 @@ template <typename T>
 template <typename Scalar>
 MatrixX<Scalar> RigidBodyTree<T>::GetVelocityToQDotMapping(
         const KinematicsCache<Scalar>& cache) {
-    return transformQDotMappingToVelocityMapping(
+  return transformQDotMappingToVelocityMapping(
       cache,
       MatrixX<Scalar>::Identity(cache.get_num_positions(),
                                 cache.get_num_positions()));
@@ -1350,6 +1555,7 @@ RigidBodyTree<T>::centerOfMassJacobian(
     KinematicsCache<Scalar>& cache,
     const std::set<int>& model_instance_id_set,
     bool in_terms_of_qdot) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(false, false, "centerOfMassJacobian");
   auto A = worldMomentumMatrix(cache, model_instance_id_set, in_terms_of_qdot);
   double total_mass = getMass(model_instance_id_set);
@@ -1363,6 +1569,7 @@ RigidBodyTree<T>::centerOfMassJacobianDotTimesV(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache,
     const std::set<int>& model_instance_id_set) const {
+  CheckCacheValidity(cache);
   // kinematics cache checks are already being done in
   // centroidalMomentumMatrixDotTimesV
   auto cmm_dot_times_v =
@@ -1378,6 +1585,7 @@ std::pair<Eigen::Vector3d, double> RigidBodyTree<T>::resolveCenterOfPressure(
     const std::vector<ForceTorqueMeasurement>& force_torque_measurements,
     const Eigen::MatrixBase<DerivedNormal>& normal,
     const Eigen::MatrixBase<DerivedPoint>& point_on_contact_plane) const {
+  CheckCacheValidity(cache);
   // kinematics cache checks are already being done in relativeTransform
   typedef typename DerivedNormal::Scalar Scalar;
   TwistVector<Scalar> total_wrench = TwistVector<Scalar>::Zero();
@@ -1533,6 +1741,7 @@ TwistMatrix<Scalar> RigidBodyTree<T>::geometricJacobian(
     const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind,
     int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind,
     bool in_terms_of_qdot, std::vector<int>* v_or_qdot_indices) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(false, false, "geometricJacobian");
 
   KinematicPath kinematic_path =
@@ -1601,6 +1810,7 @@ TwistVector<Scalar> RigidBodyTree<T>::geometricJacobianDotTimesV(
     const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind,
     int end_effector_body_or_frame_ind,
     int expressed_in_body_or_frame_ind) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(true, true, "geometricJacobianDotTimesV");
 
   TwistVector<Scalar> ret(kTwistSize, 1);
@@ -1627,6 +1837,7 @@ template <typename Scalar>
 TwistVector<Scalar> RigidBodyTree<T>::relativeTwist(
     const KinematicsCache<Scalar>& cache, int base_or_frame_ind,
     int body_or_frame_ind, int expressed_in_body_or_frame_ind) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(true, false, "relativeTwist");
 
   int base_ind = parseBodyOrFrameID(base_or_frame_ind);
@@ -1648,6 +1859,7 @@ TwistVector<Scalar> RigidBodyTree<T>::transformSpatialAcceleration(
     const TwistVector<Scalar>& spatial_acceleration, int base_ind, int body_ind,
     int old_expressed_in_body_or_frame_ind,
     int new_expressed_in_body_or_frame_ind) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(true, true,
                                       "transformSpatialAcceleration");
 
@@ -1676,6 +1888,7 @@ template <typename Scalar>
 Transform<Scalar, 3, Isometry> RigidBodyTree<T>::relativeTransform(
     const KinematicsCache<Scalar>& cache, int base_or_frame_ind,
     int body_or_frame_ind) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(false, false, "relativeTransform");
 
   Transform<Scalar, 3, Isometry> Tbase_frame;
@@ -1700,6 +1913,7 @@ template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree<T>::massMatrix(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(false, false, "massMatrix");
 
   int nv = num_velocities_;
@@ -1747,6 +1961,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::dynamicsBiasTerm(
     const drake::eigen_aligned_std_unordered_map<
         RigidBody<T> const*, WrenchVector<Scalar>>& external_wrenches,
     bool include_velocity_terms) const {
+  CheckCacheValidity(cache);
   Matrix<Scalar, Eigen::Dynamic, 1> vd(num_velocities_, 1);
   vd.setZero();
   return inverseDynamics(cache, external_wrenches, vd, include_velocity_terms);
@@ -1761,6 +1976,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::inverseDynamics(
         RigidBody<T> const*, WrenchVector<Scalar>>& external_wrenches,
     const Matrix<Scalar, Eigen::Dynamic, 1>& vd,
     bool include_velocity_terms) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(
       include_velocity_terms, include_velocity_terms, "inverseDynamics");
 
@@ -1970,6 +2186,7 @@ RigidBodyTree<T>::transformPointsJacobian(
     const KinematicsCache<Scalar>& cache,
     const Eigen::MatrixBase<DerivedPoints>& points, int from_body_or_frame_ind,
     int to_body_or_frame_ind, bool in_terms_of_qdot) const {
+  CheckCacheValidity(cache);
   int cols = in_terms_of_qdot ? num_positions_ : num_velocities_;
   int npoints = static_cast<int>(points.cols());
 
@@ -2014,6 +2231,7 @@ RigidBodyTree<T>::relativeQuaternionJacobian(
     const KinematicsCache<Scalar>& cache,
     int from_body_or_frame_ind, int to_body_or_frame_ind,
     bool in_terms_of_qdot) const {
+  CheckCacheValidity(cache);
   int body_ind = parseBodyOrFrameID(from_body_or_frame_ind);
   int base_ind = parseBodyOrFrameID(to_body_or_frame_ind);
   KinematicPath kinematic_path = findKinematicPath(base_ind, body_ind);
@@ -2036,6 +2254,7 @@ Eigen::Matrix<Scalar, kRpySize, Eigen::Dynamic>
 RigidBodyTree<T>::relativeRollPitchYawJacobian(
     const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
     int to_body_or_frame_ind, bool in_terms_of_qdot) const {
+  CheckCacheValidity(cache);
   int body_ind = parseBodyOrFrameID(from_body_or_frame_ind);
   int base_ind = parseBodyOrFrameID(to_body_or_frame_ind);
   KinematicPath kinematic_path = findKinematicPath(base_ind, body_ind);
@@ -2060,6 +2279,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
 RigidBodyTree<T>::forwardKinPositionGradient(
     const KinematicsCache<Scalar>& cache,
     int npoints, int from_body_or_frame_ind, int to_body_or_frame_ind) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(false, false,
                                       "forwardKinPositionGradient");
 
@@ -2082,6 +2302,7 @@ RigidBodyTree<T>::transformPointsJacobianDotTimesV(
     const KinematicsCache<Scalar>& cache,
     const Eigen::MatrixBase<DerivedPoints>& points, int from_body_or_frame_ind,
     int to_body_or_frame_ind) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(true, true,
                                       "transformPointsJacobianDotTimesV");
 
@@ -2117,6 +2338,7 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
 RigidBodyTree<T>::relativeQuaternionJacobianDotTimesV(
     const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
     int to_body_or_frame_ind) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(true, true,
                                       "relativeQuaternionJacobianDotTimesV");
 
@@ -2164,6 +2386,7 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
 RigidBodyTree<T>::relativeRollPitchYawJacobianDotTimesV(
     const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
     int to_body_or_frame_ind) const {
+  CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(true, true,
                                       "relativeRollPitchYawJacobianDotTimesV");
 
@@ -2298,8 +2521,8 @@ RigidBodyTree<T>::FindModelInstanceBodies(int model_instance_id) const {
     // TODO(liang.fok): Remove the world name check once the world is assigned
     // its own model instance ID. See:
     // https://github.com/RobotLocomotion/drake/issues/3088
-    if (rigid_body->get_name() != kWorldName &&
-        rigid_body->get_model_name() != kWorldName &&
+    if (rigid_body->get_name() != RigidBodyTreeConstants::kWorldName &&
+        rigid_body->get_model_name() != RigidBodyTreeConstants::kWorldName &&
         rigid_body->get_model_instance_id() == model_instance_id) {
       result.push_back(rigid_body.get());
     }
@@ -2371,7 +2594,8 @@ shared_ptr<RigidBodyFrame<T>> RigidBodyTree<T>::findFrame(
 template <typename T>
 std::vector<int> RigidBodyTree<T>::FindBaseBodies(int model_instance_id)
 const {
-  return FindChildrenOfBody(kWorldBodyIndex, model_instance_id);
+  return FindChildrenOfBody(RigidBodyTreeConstants::kWorldBodyIndex,
+                            model_instance_id);
 }
 
 template <typename T>
@@ -2546,6 +2770,7 @@ template <typename T>
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::positionConstraints(
     const KinematicsCache<Scalar>& cache) const {
+  CheckCacheValidity(cache);
   Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
   for (size_t i = 0; i < loops.size(); ++i) {
     {  // position constraint
@@ -2569,6 +2794,7 @@ template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
 RigidBodyTree<T>::positionConstraintsJacobian(
     const KinematicsCache<Scalar>& cache, bool in_terms_of_qdot) const {
+  CheckCacheValidity(cache);
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(
       6 * loops.size(), in_terms_of_qdot ? num_positions_ : num_velocities_);
 
@@ -2590,6 +2816,7 @@ template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1>
 RigidBodyTree<T>::positionConstraintsJacDotTimesV(
     const KinematicsCache<Scalar>& cache) const {
+  CheckCacheValidity(cache);
   Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
 
   for (size_t i = 0; i < loops.size(); ++i) {
@@ -2709,6 +2936,8 @@ int RigidBodyTree<T>::add_model_instance() {
   return num_model_instances_++;
 }
 
+// TODO(liang.fok) Update this method implementation once the world is assigned
+// its own model instance ID (#3088). It should return num_model_instances_ - 1.
 template <typename T>
 int RigidBodyTree<T>::get_num_model_instances() const {
   return num_model_instances_;
@@ -2718,6 +2947,141 @@ int RigidBodyTree<T>::get_num_model_instances() const {
 template <typename T>
 int RigidBodyTree<T>::get_number_of_model_instances() const {
   return get_num_model_instances();
+}
+
+template <typename T>
+Isometry3<T> RigidBodyTree<T>::CalcFramePoseInWorldFrame(
+    const KinematicsCache<T>& cache, const RigidBody<T>& body,
+    const drake::Isometry3<T>& X_BF) const {
+  cache.checkCachedKinematicsSettings(
+      false, false, "CalcFramePoseInWorldFrame");
+
+  const auto& body_element = cache.get_element(body.get_body_index());
+  const Isometry3<T> X_WB = body_element.transform_to_world;
+  return X_WB * X_BF;
+}
+
+template <typename T>
+Vector6<T> RigidBodyTree<T>::CalcBodySpatialVelocityInWorldFrame(
+    const KinematicsCache<T>& cache, const RigidBody<T>& body) const {
+  cache.checkCachedKinematicsSettings(
+      true, false, "CalcBodySpatialVelocityInWorldFrame");
+
+  const auto& body_element = cache.get_element(body.get_body_index());
+
+  // Position of the frame B's origin in the world frame.
+  const auto& p_WB = body_element.transform_to_world.translation();
+
+  // body_element.twist_in_world is the spatial velocity of frame Bwo measured
+  // and expressed in the world frame, where Bwo is rigidly attached to B and
+  // instantaneously coincides with the world frame.
+  const Vector6<T>& V_WBwo = body_element.twist_in_world;
+
+  Vector6<T> V_WB = V_WBwo;
+
+  // Computes V_WB from V_WBwo.
+  const auto& w_WB = V_WBwo.template topRows<3>();
+  V_WB.template bottomRows<3>() += w_WB.cross(p_WB);
+
+  return V_WB;
+}
+
+template <typename T>
+drake::Vector6<T> RigidBodyTree<T>::CalcFrameSpatialVelocityInWorldFrame(
+    const KinematicsCache<T>& cache, const RigidBody<T>& body,
+    const drake::Isometry3<T>& X_BF) const {
+  // Spatial velocity of body B with respect to the world W, expressed in
+  // the world frame W.
+  Vector6<T> V_WB =
+      CalcBodySpatialVelocityInWorldFrame(cache, body);
+
+  // Angular velocity of frame B with respect to W, expressed in W.
+  const auto& w_WB = V_WB.template topRows<3>();
+  // Linear velocity of frame B with respect to W, expressed in W.
+  const auto& v_WB = V_WB.template bottomRows<3>();
+
+  // Body pose measured and expressed in the world frame.
+  Isometry3<T> X_WB = CalcBodyPoseInWorldFrame(cache, body);
+  // Vector from Bo to Fo expressed in B.
+  Vector3<T> p_BF = X_BF.translation();
+  // Vector from Bo to Fo expressed in W.
+  Vector3<T> p_BF_W = X_WB.linear() * p_BF;
+
+  // Spatial velocity of frame F with respect to the world frame W, expressed in
+  // the world frame.
+  Vector6<T> V_WF;
+  // Aliases to angular and linear components in the spatial velocity vector.
+  auto w_WF = V_WF.template topRows<3>();
+  auto v_WF = V_WF.template bottomRows<3>();
+
+  // Compute the spatial velocity of frame F.
+  w_WF = w_WB;
+  v_WF = v_WB + w_WB.cross(p_BF_W);
+
+  return V_WF;
+}
+
+template <typename T> drake::Matrix6X<T>
+RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianInWorldFrame(
+    const KinematicsCache<T>& cache, const RigidBody<T>& body,
+    const drake::Isometry3<T>& X_BF, bool in_terms_of_qdot) const {
+  const int world_index = world().get_body_index();
+  const int num_col =
+      in_terms_of_qdot ? get_num_positions() : get_num_velocities();
+
+  drake::Vector3<T> p_WF =
+      CalcFramePoseInWorldFrame(cache, body, X_BF).translation();
+
+  std::vector<int> v_or_q_indices;
+  // J_WBwo is the Jacobian of the spatial velocity of frame Bwo measured
+  // and expressed in the world frame, where Bwo is rigidly attached to B and
+  // instantaneously coincides with the world frame.
+  drake::MatrixX<T> J_WBwo = geometricJacobian(
+      cache, world_index, body.get_body_index(), world_index, in_terms_of_qdot,
+      &v_or_q_indices);
+
+  int col = 0;
+  drake::Matrix6X<T> J_WF = MatrixX<T>::Zero(6, num_col);
+  for (int idx : v_or_q_indices) {
+    // Angular velocity stays the same.
+    J_WF.col(idx) = J_WBwo.col(col);
+    // Linear velocity needs an additional cross product term.
+    J_WF.col(idx).template tail<3>() +=
+        J_WBwo.col(col).template head<3>().cross(p_WF);
+    col++;
+  }
+  return J_WF;
+}
+
+template <typename T> drake::Vector6<T>
+RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
+      const drake::Isometry3<T>& X_BF) const {
+  const int world_index = world().get_body_index();
+  const int body_index = body.get_body_index();
+  Vector3<T> p_WF = CalcFramePoseInWorldFrame(cache, body, X_BF).translation();
+  Vector6<T> V_WF = CalcFrameSpatialVelocityInWorldFrame(cache, body, X_BF);
+  Vector3<T> pdot_WF = V_WF.template tail<3>();
+  Vector3<T> w_WF = V_WF.template head<3>();
+
+  // Define frame Bwo, which is rigidly attached to B and instantaneously
+  // coincides with the world frame. V_WBwo is the spatial velocity of Bwo
+  // measured and expressed in the world frame. Jdv_WBwo is the Jacobian dot of
+  // V_WBwo times the generalized velocity.
+  TwistVector<T> Jdv_WBwo =
+      geometricJacobianDotTimesV(cache, world_index, body_index, world_index);
+
+  // For column i of J_WF,
+  // J_WF(i) = [J_WBwo_ang(i); J_WBwo_lin(i) + J_WBwo_ang(i) x p_WF],
+  // where _ang and _lin are the angular and linear components respectively.
+  // Thus, for Jdv_WF, the angular part is the same with the angular part of
+  // J_WBwo. For the linear part:
+  //  = [Jdot_WBwo_lin + Jdot_WBwo_ang x p_WF + J_WBwo_ang x pdot_WF] * v
+  //  = [Jdv_WBwo_lin + Jdv_WBwo_ang x p_WF + w_WF x pdot_WF]
+  TwistVector<T> Jdv_WF = Jdv_WBwo;
+  Jdv_WF.template tail<3>() += w_WF.template head<3>().cross(pdot_WF) +
+                               Jdv_WBwo.template head<3>().cross(p_WF);
+  return Jdv_WF;
 }
 
 // Explicit template instantiations for massMatrix.
@@ -2733,14 +3097,15 @@ RigidBodyTree<double>::massMatrix<double>(KinematicsCache<double>&) const;
 // Explicit template instantiations for centerOfMass.
 template Vector3<AutoDiffUpTo73d>
 RigidBodyTree<double>::centerOfMass<AutoDiffUpTo73d>(
-    KinematicsCache<AutoDiffUpTo73d>&,
+    const KinematicsCache<AutoDiffUpTo73d>&,
     set<int, less<int>, allocator<int>> const&) const;
 template Vector3<AutoDiffXd>
 RigidBodyTree<double>::centerOfMass<AutoDiffXd>(
-    KinematicsCache<AutoDiffXd>&,
+    const KinematicsCache<AutoDiffXd>&,
     set<int, less<int>, allocator<int>> const&) const;
 template Vector3d RigidBodyTree<double>::centerOfMass<double>(
-    KinematicsCache<double>&, set<int, less<int>, allocator<int>> const&) const;
+    const KinematicsCache<double>&,
+    set<int, less<int>, allocator<int>> const&) const;
 
 // Explicit template instantiations for GetVelocityToQDotMapping.
 template MatrixX<AutoDiffUpTo73d>
@@ -3143,6 +3508,14 @@ RigidBodyTree<double>::relativeQuaternionJacobianDotTimesV<AutoDiffUpTo73d>(
 template VectorX<AutoDiffXd>
 RigidBodyTree<double>::relativeQuaternionJacobianDotTimesV<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int) const;
+
+// Explicit template instantiations for CheckCacheValidity(cache).
+template void RigidBodyTree<double>::CheckCacheValidity(
+    const KinematicsCache<double>&) const;
+template void RigidBodyTree<double>::CheckCacheValidity(
+    const KinematicsCache<AutoDiffXd>&) const;
+template void RigidBodyTree<double>::CheckCacheValidity(
+    const KinematicsCache<AutoDiffUpTo73d>&) const;
 
 // Explicit template instantiations for doKinematics(cache).
 template void RigidBodyTree<double>::doKinematics(

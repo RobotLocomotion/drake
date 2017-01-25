@@ -1,9 +1,20 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "cc_googletest")
 
 package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "binding",
+    srcs = [],
+    hdrs = ["binding.h"],
+    linkstatic = 1,
+    deps = [
+        ":decision_variable",
+    ],
+)
 
 cc_library(
     name = "constraint",
@@ -76,12 +87,12 @@ cc_library(
         "snopt_solver.h",
     ],
     hdrs = [
-        "constraint.h",
         "mathematical_program.h",
         "mathematical_program_solver_interface.h",
     ],
     linkstatic = 1,
     deps = [
+        ":binding",
         ":constraint",
         ":decision_variable",
         ":function",
@@ -125,6 +136,7 @@ cc_library(
     linkstatic = 1,
     visibility = ["//visibility:private"],
     deps = [
+        ":binding",
         ":constraint",
         ":decision_variable",
         ":function",
@@ -162,6 +174,16 @@ cc_library(
 )
 
 # === test/ ===
+cc_googletest(
+    name = "binding_test",
+    srcs = [
+        "test/binding_test.cc",
+    ],
+    deps = [
+        ":binding",
+        ":constraint",
+    ],
+)
 
 cc_googletest(
     name = "constraint_test",
@@ -193,6 +215,43 @@ cc_googletest(
 
 cc_googletest(
     name = "decision_variable_test",
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "equality_constrained_qp_solver_test",
+    srcs = [
+        "test/equality_constrained_qp_solver_test.cc",
+        "test/mathematical_program_test_util.h",
+    ],
+    deps = [
+        "mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "linear_complementary_problem_test",
+    srcs = [
+        "test/linear_complementary_problem_test.cc",
+    ],
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "linear_system_solver_test",
+    srcs = [
+        "test/linear_system_solver_test.cc",
+        "test/mathematical_program_test_util.h",
+        "test/optimization_examples.h",
+        "test/optimization_examples.cc",
+    ],
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
@@ -239,6 +298,20 @@ cc_googletest(
 )
 
 cc_googletest(
+    name = "nonlinear_program_test",
+    srcs = [
+        "test/nonlinear_program_test.cc",
+        "test/mathematical_program_test_util.h",
+        "test/optimization_examples.h",
+        "test/optimization_examples.cc",
+    ],
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
     name = "system_identification_test",
     # The test takes ~20 sec in opt mode but ~140 sec in dbg mode.
     # To avoid timeouts in dbg or valgrind, we need "moderate" here.
@@ -249,3 +322,11 @@ cc_googletest(
         "//drake/common:eigen_matrix_compare",
     ],
 )
+
+# The extra_srcs are required here because cpplint() doesn't understand how to
+# extract labels from select() functions yet.
+cpplint(extra_srcs = [
+    "gurobi_solver.cc",
+    "gurobi_solver.h",
+    "no_gurobi.cc",
+])

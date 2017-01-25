@@ -88,9 +88,9 @@ int main(int argc, char* argv[]) {
   multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
   if (FLAGS_with_speed_bump) {
     AddModelInstancesFromSdfFile(
-      drake::GetDrakePath() + "/automotive/models/speed_bump/speed_bump.sdf",
-      multibody::joints::kFixed, nullptr /* weld to frame */,
-      rigid_body_tree.get());
+        drake::GetDrakePath() + "/automotive/models/speed_bump/speed_bump.sdf",
+        multibody::joints::kFixed, nullptr /* weld to frame */,
+        rigid_body_tree.get());
     VerifyCarSimLcmTree(*rigid_body_tree, 19);
   } else {
     VerifyCarSimLcmTree(*rigid_body_tree, 18);

@@ -1,6 +1,7 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "cc_googletest")
 
 package(default_visibility = ["//visibility:public"])
@@ -148,8 +149,24 @@ cc_googletest(
 )
 
 cc_googletest(
-    name = "rigid_body_tree_inverse_dynamics_test",
-    srcs = ["test/rigid_body_tree/rigid_body_tree_inverse_dynamics_test.cc"],
+    name = "rigid_body_tree_kinematics_test",
+    srcs = ["test/rigid_body_tree/rigid_body_tree_kinematics_test.cc"],
+    data = [
+        "test/rigid_body_tree/two_dof_robot.urdf",
+        "//drake/multibody/benchmarks:acrobot_models",
+    ],
+    deps = [
+        ":rigid_body_tree",
+        "//drake/common:drake_path",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/benchmarks:acrobot",
+        "//drake/multibody/parsers",
+    ],
+)
+
+cc_googletest(
+    name = "rigid_body_tree_dynamics_test",
+    srcs = ["test/rigid_body_tree/rigid_body_tree_dynamics_test.cc"],
     data = ["//drake/examples/Atlas:models"],
     deps = [
         ":rigid_body_tree",
@@ -160,8 +177,8 @@ cc_googletest(
 )
 
 cc_googletest(
-    name = "rigid_body_tree_test",
-    srcs = ["test/rigid_body_tree/rigid_body_tree_test.cc"],
+    name = "rigid_body_tree_creation_test",
+    srcs = ["test/rigid_body_tree/rigid_body_tree_creation_test.cc"],
     data = glob(["test/rigid_body_tree/*.urdf"]),
     deps = [
         ":rigid_body_tree",
@@ -195,3 +212,7 @@ filegroup(
         "test/**/*.xml",
     ]),
 )
+
+cpplint(data = [
+    "constraint/CPPLINT.cfg",
+])

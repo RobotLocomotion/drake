@@ -10,9 +10,12 @@ namespace drake {
 namespace solvers {
 namespace {
 template <typename Derived>
-bool DecisionVariableMatrixContainsIndex(const MathematicalProgram& prog,
-                                         const Eigen::MatrixBase<Derived>& v,
-                                         size_t index) {
+typename std::enable_if<
+    std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+    bool>::type
+MatrixDecisionVariableContainsIndex(const MathematicalProgram& prog,
+                                    const Eigen::MatrixBase<Derived>& v,
+                                    size_t index) {
   static_assert(
       std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
       "The input should be a matrix of symbolic::Variable.");
@@ -45,8 +48,7 @@ bool CheckDecisionVariableType(const MathematicalProgram& prog,
 }  // namespace
 
 /*
-* Test adding decision variables, constructing VariableList, together with
-* functions in DecisionVariableScalar and VariableList.
+* Test adding decision variables.
 */
 GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   MathematicalProgram prog;
@@ -77,7 +79,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
                 "should be a dynamic sized matrix");
   std::stringstream msg_buff3;
   msg_buff3 << x1 << std::endl;
-  EXPECT_EQ(msg_buff3.str(), "x0\nx1\nx2\nx3\nx4\nx5\n");
+  EXPECT_EQ(msg_buff3.str(), "x(0)\nx(1)\nx(2)\nx(3)\nx(4)\nx(5)\n");
   EXPECT_EQ(prog.num_vars(), 18u);
   EXPECT_FALSE(math::IsSymmetric(x1));
   std::array<std::string, 6> X_name = {{"X1", "X2", "X3", "X4", "X5", "X6"}};
@@ -93,8 +95,9 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   auto b1 = prog.NewBinaryVariables(6, "b1");
   std::stringstream msg_buff5;
   msg_buff5 << b1 << std::endl;
-  EXPECT_EQ(msg_buff5.str(), "b10\nb11\nb12\nb13\nb14\nb15\n");
+  EXPECT_EQ(msg_buff5.str(), "b1(0)\nb1(1)\nb1(2)\nb1(3)\nb1(4)\nb1(5)\n");
 
+  // Tests setting values for the decision variables.
   Eigen::Matrix<double, 6, 1> x_value;
   x_value << 0, 2, 4, 6, 8, 10;
   Eigen::Matrix<double, 6, 1> s_value;
@@ -110,7 +113,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   X_expected.resize(2, 3);
   Eigen::MatrixXd b_expected = b_value;
 
-  // Test if the values in the decision variables are correct.
+  // Tests if the values in the decision variables are correct.
   EXPECT_TRUE(CompareMatrices(prog.GetSolution(X1), X_expected, 1E-14,
                               MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(prog.GetSolution(S1), S_expected, 1E-14,
@@ -122,7 +125,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_TRUE(CompareMatrices(prog.GetSolution(b1), b_expected, 1E-14,
                               MatrixCompareType::absolute));
 
-  // Test if the variable type is correct
+  // Tests if the variable type is correct.
   EXPECT_TRUE(CheckDecisionVariableType(
       prog, X1, MathematicalProgram::VarType::CONTINUOUS));
   EXPECT_TRUE(CheckDecisionVariableType(
@@ -134,24 +137,22 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_TRUE(CheckDecisionVariableType(prog, b1,
                                         MathematicalProgram::VarType::BINARY));
 
-  // Test constructing VariableList.
-  VariableList var_list1({X1, S1});
-  EXPECT_FALSE(var_list1.column_vectors_only());
-  VariableList var_list2({x1});
-  EXPECT_TRUE(var_list2.column_vectors_only());
   for (int i = 0; i < 6; ++i) {
-    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(prog, X1, i));
-    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(prog, S1, i + 6));
-    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(prog, x1, i + 12));
-    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(prog, X2, i + 18));
+    EXPECT_TRUE(MatrixDecisionVariableContainsIndex(prog, X1, i));
+    EXPECT_TRUE(MatrixDecisionVariableContainsIndex(prog, S1, i + 6));
+    EXPECT_TRUE(MatrixDecisionVariableContainsIndex(prog, x1, i + 12));
+    EXPECT_TRUE(MatrixDecisionVariableContainsIndex(prog, X2, i + 18));
   }
 
+  // Tests if all entries in x1 are unique, that x1(i) = x1(j) iff i = j.
   for (int i = 0; i < 6; ++i) {
     for (int j = 0; j < 6; ++j) {
       EXPECT_EQ(x1(i) == x1(j), i == j);
     }
   }
-  DecisionVariableMatrix<2, 6> X_assembled;
+
+  // Tests concatenating two Eigen matrices of symbolic variables.
+  MatrixDecisionVariable<2, 6> X_assembled;
   X_assembled << X1, X2;
   Eigen::Matrix<double, 2, 6> X_assembled_expected;
   X_assembled_expected << X_expected, X_expected;
@@ -166,14 +167,6 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
     }
   }
 
-  // Test size() and num_unique_variables() functions of VariableList.
-  EXPECT_EQ(VariableList({X1}).num_unique_variables(), 6u);
-  EXPECT_EQ(VariableList({X1}).size(), 6u);
-  EXPECT_EQ(VariableList({X1, X1}).num_unique_variables(), 6u);
-  EXPECT_EQ(VariableList({X1, X1}).size(), 12u);
-  EXPECT_EQ(VariableList({X1, X1.row(1)}).num_unique_variables(), 6u);
-  EXPECT_EQ(VariableList({X1, X1.row(1)}).size(), 9u);
-
   std::unordered_set<symbolic::Variable, drake::hash_value<symbolic::Variable>>
       X1_unique_variables_expected;
   for (int i = 0; i < 2; ++i) {
@@ -181,10 +174,24 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
       X1_unique_variables_expected.insert(X1(i, j));
     }
   }
-  EXPECT_EQ(VariableList({X1}).unique_variables(),
-            X1_unique_variables_expected);
-  EXPECT_EQ(VariableList({X1, X1.row(1)}).unique_variables(),
-            X1_unique_variables_expected);
+}
+
+GTEST_TEST(TestDecisionVariable, TestVariableListRef) {
+  symbolic::Variable x1("x1");
+  symbolic::Variable x2("x2");
+  symbolic::Variable x3("x3");
+  symbolic::Variable x4("x4");
+
+  VectorDecisionVariable<2> x_vec1(x3, x1);
+  VectorDecisionVariable<2> x_vec2(x2, x4);
+  VariableRefList var_list{x_vec1, x_vec2};
+
+  VectorXDecisionVariable stacked_vars = ConcatenateVariableRefList(var_list);
+  EXPECT_EQ(stacked_vars.rows(), 4);
+  EXPECT_EQ(stacked_vars(0), x3);
+  EXPECT_EQ(stacked_vars(1), x1);
+  EXPECT_EQ(stacked_vars(2), x2);
+  EXPECT_EQ(stacked_vars(3), x4);
 }
 }  // namespace solvers
 }  // namespace drake

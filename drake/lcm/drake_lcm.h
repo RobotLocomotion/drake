@@ -6,6 +6,7 @@
 
 #include "lcm/lcm-cpp.hpp"
 
+#include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/lcm/lcm_receive_thread.h"
@@ -18,11 +19,9 @@ namespace lcm {
  */
 class DrakeLcm : public DrakeLcmInterface {
  public:
-  DrakeLcm();
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeLcm);
 
-  // Disable copy and assign.
-  DrakeLcm(const DrakeLcm&) = delete;
-  DrakeLcm& operator=(const DrakeLcm&) = delete;
+  DrakeLcm();
 
   /**
    * A destructor that forces the receive thread to be stopped.

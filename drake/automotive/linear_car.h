@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -13,7 +14,7 @@ namespace automotive {
 /// - drake::TaylorVarXd
 /// - drake::symbolic::Expression
 ///
-/// They are already available to link against in libdrakeAutomotive.
+/// They are already available to link against in the containing library.
 ///
 /// @ingroup automotive_systems
 ///
@@ -25,6 +26,8 @@ namespace automotive {
 template <typename T>
 class LinearCar : public systems::LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearCar)
+
   /// @p x_init initial position.
   /// @p v_init initial velocity.
   explicit LinearCar(const T& x_init, const T& v_init);
@@ -43,12 +46,6 @@ class LinearCar : public systems::LeafSystem<T> {
   // System<T> overrides.
   // Declare that the outputs are all algebraically isolated from the input.
   bool has_any_direct_feedthrough() const override { return false; }
-
-  // Disable copy and assignment.
-  LinearCar(const LinearCar<T>&) = delete;
-  LinearCar& operator=(const LinearCar<T>&) = delete;
-  LinearCar(LinearCar<T>&&) = delete;
-  LinearCar& operator=(LinearCar<T>&&) = delete;
 
  private:
   void DoCalcOutput(const systems::Context<T>& context,

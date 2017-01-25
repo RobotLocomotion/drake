@@ -1,6 +1,7 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "cc_googletest")
 
 package(default_visibility = ["//visibility:public"])
@@ -60,6 +61,7 @@ cc_googletest(
     deps = [
         ":lcm",
         ":lcmt_drake_signal_translator",
+        "//drake/systems/analysis",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
     ],
@@ -94,3 +96,5 @@ cc_googletest(
         "//drake/lcm:mock",
     ],
 )
+
+cpplint()

@@ -35,10 +35,10 @@ SimpleCarConfig<T> SimpleCar<T>::get_default_config() {
   result.set_wheelbase(static_cast<T>(106.3 * kInchToMeter));
   result.set_track(static_cast<T>(59.9 * kInchToMeter));
   result.set_max_abs_steering_angle(static_cast<T>(27 * kDegToRadian));
-  result.set_max_velocity(static_cast<T>(45.0));  // meters/second
-  result.set_max_acceleration(static_cast<T>(4.0));  // meters/second**2
+  result.set_max_velocity(static_cast<T>(45.0));            // meters/second
+  result.set_max_acceleration(static_cast<T>(4.0));         // meters/second**2
   result.set_velocity_lookahead_time(static_cast<T>(1.0));  // second
-  result.set_velocity_kp(static_cast<T>(1.0));  // Hz
+  result.set_velocity_kp(static_cast<T>(1.0));              // Hz
   return result;
 }
 

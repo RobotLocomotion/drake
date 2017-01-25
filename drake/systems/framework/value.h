@@ -94,6 +94,12 @@ class AbstractValue {
     DownCastMutableOrThrow<T>()->set_value(value_to_set);
   }
 
+  /// Returns an AbstractValue containing the given @p value.
+  template <typename T>
+  static std::unique_ptr<AbstractValue> Make(const T& value) {
+    return std::unique_ptr<AbstractValue>(new Value<T>(value));
+  }
+
  private:
   // Casts this to a Value<T>*.  Throws std::bad_cast if the cast fails.
   template <typename T>
@@ -145,14 +151,14 @@ class Value : public AbstractValue {
   explicit Value(const T& v) : value_(v) {}
   ~Value() override {}
 
-  // Values are copyable but not moveable.
-  Value(const Value<T>& other) = default;
-  Value& operator=(const Value<T>& other) = default;
+  // Values are neither copyable nor moveable.
+  Value(const Value<T>& other) = delete;
+  Value& operator=(const Value<T>& other) = delete;
   Value(Value<T>&& other) = delete;
   Value& operator=(Value<T>&& other) = delete;
 
   std::unique_ptr<AbstractValue> Clone() const override {
-    return std::make_unique<Value<T>>(*this);
+    return std::make_unique<Value<T>>(get_value());
   }
 
   void SetFrom(const AbstractValue& other) override {

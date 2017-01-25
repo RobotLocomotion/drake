@@ -5,7 +5,7 @@
 if(Matlab_FOUND)
   drake_add_mex(rbmMexFunctions rigidBodyTreeMexFunctions.cpp)
   drake_install_libraries(rbmMexFunctions)
-  target_link_libraries(rbmMexFunctions drakeMexUtil drakeMultibodyParsers drakeRBM)
+  target_link_libraries(rbmMexFunctions drakeMexUtil drakeRBM)
   # These warnings are not worth fixing.
   target_compile_options(rbmMexFunctions PRIVATE ${CXX_FLAGS_NO_SIGN_COMPARE})
 
@@ -43,7 +43,6 @@ if(Matlab_FOUND)
   add_rbm_mex(surfaceTangentsmex)
   add_rbm_mex(jointLimitConstraintsmex)
   add_rbm_mex(positionConstraintsmex)
-  add_rbm_mex(testFrameParsermex)
   add_rbm_mex(computeS1Trajmex)
   add_rbm_mex(createKinematicsCachemex)
   add_rbm_mex(createKinematicsCacheAutoDiffmex)
