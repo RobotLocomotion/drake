@@ -4,6 +4,7 @@
 
 #include "drake/automotive/gen/euler_floating_joint_state.h"
 #include "drake/automotive/gen/simple_car_state.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -13,6 +14,8 @@ namespace automotive {
 template <typename T>
 class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleCarToEulerFloatingJoint)
+
   SimpleCarToEulerFloatingJoint() {
     this->set_name("SimpleCarToEulerFloatingJoint");
     this->DeclareInputPort(systems::kVectorValued,

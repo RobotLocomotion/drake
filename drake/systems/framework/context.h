@@ -187,9 +187,16 @@ class Context {
   /// Returns the number of input ports.
   virtual int get_num_input_ports() const = 0;
 
-  /// Connects a FreestandingInputPort with the given @p value at the given
-  /// @p index. Asserts if @p index is out of range.
+  /// Connects a FreestandingInputPort with the given vector @p value at the
+  /// given @p index. Asserts if @p index is out of range.
   void FixInputPort(int index, std::unique_ptr<BasicVector<T>> value) {
+    SetInputPort(index,
+                 std::make_unique<FreestandingInputPort>(std::move(value)));
+  }
+
+  /// Connects a FreestandingInputPort with the given abstract @p value at the
+  /// given @p index. Asserts if @p index is out of range.
+  void FixInputPort(int index, std::unique_ptr<AbstractValue> value) {
     SetInputPort(index,
                  std::make_unique<FreestandingInputPort>(std::move(value)));
   }

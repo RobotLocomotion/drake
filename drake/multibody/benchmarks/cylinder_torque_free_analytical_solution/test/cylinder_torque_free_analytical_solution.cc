@@ -28,7 +28,7 @@ using Eigen::VectorXd;
 using Eigen::Quaterniond;
 
 /** Calculate quaternion's time-derivative from angular velocity and quaternion.
- * Algorithm from [Kane, 1983] Section 1.13, pages 58-59.
+ * Algorithm from [Kane, 1983] Section 1.13, Pages 58-59.
  *
  * @param quat_AB Quaternion e0, e1, e2, e3 that relates two right-handed
  *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
@@ -36,8 +36,8 @@ using Eigen::Quaterniond;
  * @param w_AB_B  B's angular velocity in A, expressed in B.
  * @retval quatDt time-derivative of quat_AB, i.e., [e0', e1', e2', e3'].
  *
- * @note Eigen's internal ordering for its Quaternion class should be
- * considered arbitrary. Herein we use `e0 = quat.w()`, `e1 = quat.x()`, etc.
+ * @note To avoid dependence on Eigen's internal ordering of elements in its
+ * Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
  * Return value `quatDt` *does* have a specific order as defined above.
  *
  * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
@@ -70,6 +70,7 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
  *
  * @param quat  Quaternion e0, e1, e2, e3 that relates two right-handed
  *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
+ *   Note: A quaternion like quat_AB is analogous to the rotation matrix R_AB.
  * @param quatDt  time-derivative of `quat`, i.e., [e0', e1', e2', e3'].
  * @retval value of constraint - should be near 0 (may be positive or negative).
  *
@@ -97,6 +98,7 @@ T CalculateQuaternionDtConstraintFromQuaternionDt(
  *
  * @param quat  Quaternion e0, e1, e2, e3 that relates two right-handed
  *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
+ *   Note: A quaternion like quat_AB is analogous to the rotation matrix R_AB.
  * @param quatDt  time-derivative of `quat`, i.e., [e0', e1', e2', e3'].
  * @returns true if both of the following constraints are satisfied:
  * a) e0^2 + e1^2 + e3^2 + e3^2 - 1 = 0,  within 800 * double precision epsilon.
@@ -125,7 +127,7 @@ bool TestQuaternionDtConstraintFromQuaternionDt(
 }
 
 /** Calculate angular velocity from quaternion and quaternion's time derivative.
- * Algorithm from [Kane, 1983] Section 1.13, pages 58-59.
+ * Algorithm from [Kane, 1983] Section 1.13, Pages 58-59.
  *
  * @param quat_AB  Quaternion e0, e1, e2, e3 that relates two right-handed
  *   orthogonal unitary bases e.g., Ax, Ay, Az (A) to Bx, By, Bz (B).
@@ -133,8 +135,8 @@ bool TestQuaternionDtConstraintFromQuaternionDt(
  * @param quatDt  time-derivative of `quat_AB`, i.e. [e0', e1', e2', e3'].
  * @retval w_AB_B  B's angular velocity in A, expressed in B.
  *
- * @note Eigen's internal ordering for its Quaternion class should be
- * considered arbitrary. Herein we use `e0 = quat.w()`, `e1 = quat.x()`, etc.
+ * @note To avoid dependence on Eigen's internal ordering of elements in its
+ * Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
  * Parameter `quatDt` *does* have a specific order as defined above.
  *
  * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
@@ -167,13 +169,14 @@ Vector3<T> CalculateAngularVelocityExpressedInBFromQuaternionDt(
 /**
  * Calculates exact solutions for quaternion, angular velocity, and angular
  * acceleration expressed in body-frame, for torque-free rotational motion of an
- * axis-symmetric rigid body B (uniform cylinder) in Newtonian frame (world) A.
+ * axis-symmetric rigid body B (uniform cylinder) in Newtonian frame (world) A,
+ * where torque-free means the moment of forces about B's mass center is zero.
  * Initially, right-handed orthogonal unit vectors Ax, Ay, Az fixed in world A
  * are equal to right-handed orthogonal unit vectors Bx, By, Bz fixed in B,
  * where Bz is parallel to B's symmetry axis.
- * Note: The more general solution that allows for initial misalignment of
- * Bx, By, Bz is in CalculateExactRotationalSolutionNB().
- * Algorithm from [Kane, 1983] Sections 1.13 and 3.1, pages 60-62 and 159-169.
+ * Note: The function CalculateExactRotationalSolutionNB() is a more general
+ * solution that allows for initial misalignment of Bx, By, Bz.
+ * Algorithm from [Kane, 1983] Sections 1.13 and 3.1, Pages 60-62 and 159-169.
  * @param t Current value of time.
  * @param w_NB_B_initial  B's initial angular velocity in N, expressed in B.
  * @returns Machine-precision values at time t are returned as defined below.
@@ -181,6 +184,7 @@ Vector3<T> CalculateAngularVelocityExpressedInBFromQuaternionDt(
  * std::tuple | Description
  * -----------|-------------------------------------------------
  * quat_AB    | Quaternion relating Ax, Ay, Az to Bx, By, Bz.
+ *            | Note: quat_AB is analogous to the rotation matrix R_AB.
  * w_NB_B     | B's angular velocity in N, expressed in B, e.g., [wx, wy, wz].
  * wDt_NB_B   | B's angular acceleration in N, expressed in B, [wx', wy', wz'].
  *
@@ -252,12 +256,13 @@ CalculateExactRotationalSolutionABInitiallyAligned(const double t,
 /**
  * Calculates exact solutions for quaternion and angular velocity expressed in
  * body-frame, and their time derivatives for torque-free rotational motion of
- * axis-symmetric rigid body B (uniform cylinder) in Newtonian frame (world) N.
+ * axis-symmetric rigid body B (uniform cylinder) in Newtonian frame (world) N,
+ * where torque-free means the moment of forces about B's mass center is zero.
  * The quaternion characterizes the orientiation between right-handed orthogonal
  * unit vectors Nx, Ny, Nz fixed in world N and right-handed orthogonal unit
  * vectors Bx, By, Bz fixed in B, where Bz is parallel to B's symmetry axis.
  * Note: CalculateExactRotationalSolutionABInitiallyAligned() implements the
- * algorithm from [Kane, 1983] Sections 1.13 and 3.1, pages 60-62 and 159-169.
+ * algorithm from [Kane, 1983] Sections 1.13 and 3.1, Pages 60-62 and 159-169.
  * This function allows for initial misalignment of Nx, Ny, Nz and Bx, By, Bz.
  * @param t Current value of time.
  * @param quat_NB_initial Initial value of the quaternion (which should already
@@ -269,6 +274,7 @@ CalculateExactRotationalSolutionABInitiallyAligned(const double t,
  * std::tuple | Description
  * -----------|-------------------------------------------------
  * quat_NB    | Quaternion relating Nx, Ny, Nz to Bx, By, Bz: [e0, e1, e2, e3].
+ *            | Note: quat_NB is analogous to the rotation matrix R_NB.
  * quatDt     | Time-derivative of `quat_NB', i.e., [e0', e1', e2', e3'].
  * w_NB_B     | B's angular velocity in N, expressed in B, e.g., [wx, wy, wz].
  * wDt_NB_B   | B's angular acceleration in N, expressed in B, [wx', wy', wz'].
@@ -386,7 +392,7 @@ void  TestMapVelocityToQDot(
   Eigen::VectorXd motion_variables(6);
   motion_variables << w_NB_B_exact, v_NBo_B_exact;
 
-  // Test if MapVelocityToQDot accurately converts motion variables to
+  // Test whether MapVelocityToQDot accurately converts motion variables to
   // time-derivatives of coordinates.
   systems::BasicVector<double> coordinatesDt_from_map(7);
   rigid_body_plant.MapVelocityToQDot(*context, motion_variables,
@@ -434,7 +440,7 @@ void  TestMapQDotToVelocity(
   Eigen::VectorXd coordinatesDt(7);
   coordinatesDt << xyzDt_exact, quatDt_NB_exact;
 
-  // Test if MapQDotToVelocity accurately converts time-derivative of
+  // Test whether MapQDotToVelocity accurately converts time-derivative of
   // coordinates to motion variables.
   systems::BasicVector<double> wv_from_map(6);
   rigid_body_plant.MapQDotToVelocity(*context, coordinatesDt, &wv_from_map);
@@ -551,6 +557,7 @@ void  TestDrakeSolutionForSpecificInitialValue(
   // convert quaternions to rotation matrix and compare rotation matrices.
   // Initially, (time=0), these matrices should be close to machine-precision,
   // which is approximately 2.22E-16.
+  // TODO(mitiguy) Add direct comparision of quaternions.
   const double epsilon = std::numeric_limits<double>::epsilon();
   const double tol = 50 * epsilon;
   const Eigen::Matrix3d R_NB_drake = math::quat2rotmat(quat_NB_drake);
@@ -697,11 +704,6 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // Create a Context which stores state and extra calculations.
   std::unique_ptr<systems::Context<double>> context =
       rigid_body_plant.CreateDefaultContext();
-
-  // Even though there are no actuators here we have to create a zero-length
-  // actuator input port.
-  const int num_actuators = rigid_body_plant.get_num_actuators();
-  context->FixInputPort(0, VectorXd::Zero(num_actuators));
 
   // Allocate space to hold time-derivative of state_drake.
   std::unique_ptr<systems::ContinuousState<double>> stateDt_drake =

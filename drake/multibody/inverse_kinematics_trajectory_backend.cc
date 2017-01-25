@@ -39,15 +39,18 @@ class IKTrajectoryCost : public drake::solvers::Constraint {
   template <typename Derived>
   IKTrajectoryCost(const IKTrajectoryHelper& helper,
                    const Eigen::MatrixBase<Derived>& q_nom)
-      : Constraint(1), helper_(helper), q_nom_(q_nom) {}
+      : Constraint(1, helper.nq() * (helper.nT() + 2)),
+        helper_(helper),
+        q_nom_(q_nom) {}
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override {
     throw std::runtime_error("Non-gradient version not implemented!");
   }
 
-  void Eval(const Eigen::Ref<const drake::TaylorVecXd>& x,
-            drake::TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const drake::TaylorVecXd> &x,
+              drake::TaylorVecXd &y) const override {
     const int nq = helper_.nq();
     const int nT = helper_.nT();
 
@@ -80,7 +83,10 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
   IKInbetweenConstraint(const RigidBodyTree<double>* model,
                         const IKTrajectoryHelper& helper, int num_constraints,
                         const RigidBodyConstraint* const* constraint_array)
-      : Constraint(0),  // Update bounds later in constructor.
+      : Constraint(0, helper.nq() * (helper.nT() +
+                                     helper.num_qdotfree())),  // Update bounds
+                                                               // later in
+                                                               // constructor.
         model_(model),
         helper_(helper),
         num_constraints_(num_constraints),
@@ -142,13 +148,14 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
     }
   }
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override {
     throw std::runtime_error("Non-gradient version not implemented!");
   }
 
-  void Eval(const Eigen::Ref<const drake::TaylorVecXd>& x,
-            drake::TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const drake::TaylorVecXd> &x,
+              drake::TaylorVecXd &y) const override {
     const int nq = helper_.nq();
     const int nT = helper_.nT();
     const std::vector<Eigen::VectorXd>& t_inbetween = helper_.t_inbetween();

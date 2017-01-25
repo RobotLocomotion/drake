@@ -47,13 +47,13 @@ class IntegratorTest : public ::testing::Test {
 
 // Tests that the system exports the correct topology.
 TEST_F(IntegratorTest, Topology) {
-  ASSERT_EQ(1u, integrator_->get_input_ports().size());
-  const auto& input_descriptor = integrator_->get_input_ports()[0];
+  ASSERT_EQ(1, integrator_->get_num_input_ports());
+  const auto& input_descriptor = integrator_->get_input_port(0);
   EXPECT_EQ(kVectorValued, input_descriptor.get_data_type());
   EXPECT_EQ(kLength, input_descriptor.size());
 
-  ASSERT_EQ(1u, integrator_->get_output_ports().size());
-  const auto& output_descriptor = integrator_->get_output_ports()[0];
+  ASSERT_EQ(1, integrator_->get_num_output_ports());
+  const auto& output_descriptor = integrator_->get_output_port(0);
   EXPECT_EQ(kVectorValued, output_descriptor.get_data_type());
   EXPECT_EQ(kLength, output_descriptor.size());
 }
@@ -70,8 +70,7 @@ TEST_F(IntegratorTest, Output) {
   const BasicVector<double>* output_port = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_port);
 
-  Eigen::Vector3d expected;
-  expected << 0.0, 0.0, 0.0;
+  Eigen::Vector3d expected = Eigen::Vector3d::Zero();
   EXPECT_EQ(expected, output_port->get_value());
 
   continuous_state()->get_mutable_vector()->SetAtIndex(1, 42.0);
@@ -87,8 +86,7 @@ TEST_F(IntegratorTest, Derivatives) {
   context_->FixInputPort(0, std::move(input_));
 
   integrator_->CalcTimeDerivatives(*context_, derivatives_.get());
-  Eigen::Vector3d expected;
-  expected << 1.0, 2.0, 3.0;
+  Eigen::Vector3d expected(1.0, 2.0, 3.0);
   EXPECT_EQ(expected, derivatives_->CopyToVector());
 }
 

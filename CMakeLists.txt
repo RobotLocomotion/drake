@@ -20,15 +20,16 @@ drake_setup_options()
 # BEGIN external projects
 
 # External projects in order of dependencies; 'trivial' ones first
+drake_add_external(avl PUBLIC CMAKE FORTRAN)
 drake_add_external(eigen PUBLIC CMAKE)
 drake_add_external(meshconverters PUBLIC CMAKE)
+drake_add_external(qt_property_browser CMAKE QT)
+drake_add_external(sedumi PUBLIC CMAKE MATLAB)
 drake_add_external(spdlog PUBLIC CMAKE)
+drake_add_external(spotless PUBLIC CMAKE MATLAB)
 drake_add_external(swigmake PUBLIC CMAKE MATLAB PYTHON)
+drake_add_external(xfoil PUBLIC CMAKE FORTRAN)
 drake_add_external(yalmip PUBLIC CMAKE MATLAB)
-
-# avl
-# The Ninja generator does not support Fortran.
-drake_add_external(avl PUBLIC CMAKE FORTRAN)
 
 # bullet
 drake_add_external(bullet PUBLIC CMAKE
@@ -125,8 +126,13 @@ drake_add_external(nlopt PUBLIC CMAKE
     -DINSTALL_INCLUDE_DIR=${CMAKE_INSTALL_PREFIX}/include/nlopt
     -DUSE_SWIG=OFF)
 
-# sedumi
-drake_add_external(sedumi PUBLIC CMAKE MATLAB)
+# pythonqt
+drake_add_external(pythonqt CMAKE PYTHON QT
+  CMAKE_ARGS
+    -DPythonQt_Wrap_Qtcore:BOOL=ON
+    -DPythonQt_Wrap_Qtgui:BOOL=ON
+    -DPythonQt_Wrap_Qtuitools:BOOL=ON
+)
 
 # snopt
 drake_add_external(snopt CMAKE MATLAB
@@ -137,15 +143,24 @@ drake_add_external(snopt CMAKE MATLAB
     -DBUILD_SNOPT_C_MEX=${Matlab_FOUND}
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON)
 
-# spotless
-drake_add_external(spotless PUBLIC CMAKE MATLAB)
-
 # octomap
 drake_add_external(octomap PUBLIC CMAKE
   CMAKE_ARGS
     -DBUILD_TESTING=OFF
     -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
   SOURCE_SUBDIR octomap)
+
+# vtk
+drake_add_external(vtk PUBLIC CMAKE PYTHON QT
+  CMAKE_ARGS
+    -DBUILD_SHARED_LIBS=ON
+    -DBUILD_TESTING=OFF
+    -DBUILD_EXAMPLES=OFF
+    -DVTK_USE_GUISUPPORT=ON
+    -DVTK_USE_QT=ON
+    -DVTK_WRAP_PYTHON=ON
+    -DVTK_WRAP_TCL=OFF
+    -DVTK_USE_TK=OFF)
 
 # fcl
 drake_add_external(fcl PUBLIC CMAKE
@@ -171,6 +186,10 @@ drake_add_external(yaml_cpp PUBLIC CMAKE
    -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
    -DYAML_CPP_BUILD_CONTRIB=OFF
    -DYAML_CPP_BUILD_TOOLS=OFF)
+
+# ctk_python_console
+drake_add_external(ctk_python_console CMAKE PYTHON QT
+  DEPENDS pythonqt)
 
 # iris
 drake_add_external(iris PUBLIC CMAKE MATLAB PYTHON
@@ -202,8 +221,9 @@ drake_add_external(bot_core_lcmtypes PUBLIC CMAKE PYTHON
 drake_add_external(robotlocomotion_lcmtypes PUBLIC CMAKE PYTHON
   DEPENDS bot_core_lcmtypes lcm)
 
-# xfoil
-drake_add_external(xfoil PUBLIC CMAKE FORTRAN)
+# signalscope
+drake_add_external(signalscope PUBLIC CMAKE PYTHON QT
+  DEPENDS ctk_python_console lcm pythonqt)
 
 # Option to skip building drake proper via the superbuild. This allows the
 # superbuild to build everything BUT drake, which can still be built separately
@@ -217,7 +237,7 @@ option(SKIP_DRAKE_BUILD "Build external projects but not drake itself" OFF)
 # dependencies are needed because the drake project must configure only after
 # any dependencies used by MATLAB have been installed.
 # TODO: re-add TEST to drake flags when subprojects arrive
-drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
+drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake
   BINARY_DIR ${PROJECT_BINARY_DIR}/drake
   CMAKE_ARGS
@@ -228,7 +248,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     -DWITH_BOT_CORE_LCMTYPES:BOOL=${WITH_BOT_CORE_LCMTYPES}
     -DWITH_BULLET:BOOL=${WITH_BULLET}
     -DWITH_CCD:BOOL=${WITH_CCD}
-    -DWITH_DIRECTOR:BOOL=${WITH_DIRECTOR}
     -DWITH_DREAL:BOOL=${WITH_DREAL}
     -DWITH_EIGEN3:BOOL=${WITH_EIGEN}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_FCL:BOOL=${WITH_FCL}
@@ -290,26 +309,36 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     swig_matlab
     swigmake
     textbook
+    vtk
     xfoil
     yalmip
     yaml_cpp
 )
 
 # director
-drake_add_external(director PUBLIC CMAKE TEST PYTHON
-  SOURCE_SUBDIR distro/superbuild
+if(APPLE)
+  # TODO(patmarion): fix director tests on macOS and re-add TEST always
+  set(TEST_DIRECTOR)
+else()
+  set(TEST_DIRECTOR TEST)
+endif()
+drake_add_external(director PUBLIC CMAKE ${TEST_DIRECTOR} PYTHON QT VTK
   CMAKE_ARGS
     -DUSE_DRAKE=ON
     -DUSE_LCM=${HAVE_LCM}
     -DUSE_LCMGL=${HAVE_LIBBOT}
-    -DUSE_SYSTEM_LCM=ON
-    -DUSE_EXTERNAL_INSTALL=ON
-  INSTALL_COMMAND :
-  DEPENDS bot_core_lcmtypes drake lcm libbot)
-
-# signalscope
-drake_add_external(signalscope PUBLIC CMAKE PYTHON
-  DEPENDS director)
+    -DUSE_LIBBOT=OFF
+    -DENABLE_TESTING=ON
+  DEPENDS
+    bot_core_lcmtypes
+    ctk_python_console
+    drake
+    lcm
+    libbot
+    pythonqt
+    qt_property_browser
+    vtk
+)
 
 # END external projects
 ###############################################################################

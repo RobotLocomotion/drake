@@ -1,0 +1,19 @@
+# This is the default project view file for CLion. It describes which
+# directories and targets CLion should traverse when ingesting the Bazel build.
+#
+# Developers who only wish to work on a subset of Drake may maintain custom
+# project views locally. The more narrowly scoped the project view, the faster
+# CLion indexing will be. Restricted project views of general interest may also
+# be committed to this directory, with file names of the form foo.bazelproject.
+#
+# Detailed documentation for the file format is available at
+# https://ij.bazel.build/docs/project-views.html
+
+directories:
+  .
+  -externals
+  -build
+
+targets:
+  //...:all
+

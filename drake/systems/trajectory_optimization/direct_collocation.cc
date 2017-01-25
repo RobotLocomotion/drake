@@ -25,9 +25,8 @@ DircolTrajectoryOptimization::DircolTrajectoryOptimization(
   context_->SetTimeStateAndParametersFrom(context);
 
   // Allocate the input port and keep an alias around.
-  input_port_ =
-      new FreestandingInputPort(std::make_unique<BasicVector<double>>(
-          system_->get_input_port(0).size()));
+  input_port_ = new FreestandingInputPort(
+      std::make_unique<BasicVector<double>>(system_->get_input_port(0).size()));
   std::unique_ptr<InputPort> input_port(input_port_);
   context_->SetInputPort(0, std::move(input_port));
 
@@ -57,17 +56,18 @@ class RunningCostEndWrapper : public solvers::Constraint {
   explicit RunningCostEndWrapper(
       std::shared_ptr<solvers::Constraint> constraint)
       : solvers::Constraint(constraint->num_constraints(),
-                            constraint->lower_bound(),
+                            constraint->num_vars(), constraint->lower_bound(),
                             constraint->upper_bound()),
         constraint_(constraint) {}
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override {
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override {
     TaylorVecXd wrapped_x = x;
     wrapped_x(0) *= 0.5;
     constraint_->Eval(wrapped_x, y);
@@ -81,17 +81,22 @@ class RunningCostMidWrapper : public solvers::Constraint {
  public:
   explicit RunningCostMidWrapper(
       std::shared_ptr<solvers::Constraint> constraint)
-      : Constraint(constraint->num_constraints(), constraint->lower_bound(),
-                   constraint->upper_bound()),
+      : Constraint(constraint->num_constraints(),
+                   constraint->num_vars() + 1,  // We wrap x(0) and x(1) into
+                                                // (x(0) + x(1)) * 0.5, so one
+                                                // less variable when calling
+                                                // Eval.
+                   constraint->lower_bound(), constraint->upper_bound()),
         constraint_(constraint) {}
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+              Eigen::VectorXd &y) const override {
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
+              TaylorVecXd &y) const override {
     TaylorVecXd wrapped_x(x.rows() - 1);
     wrapped_x.tail(x.rows() - 2) = x.tail(x.rows() - 2);
     wrapped_x(0) = (x(0) + x(1)) * 0.5;
@@ -137,10 +142,8 @@ DircolTrajectoryOptimization::ReconstructStateTrajectory() const {
     system_->CalcTimeDerivatives(*context_, continuous_state_.get());
     derivatives.push_back(continuous_state_->CopyToVector());
   }
-  return PiecewisePolynomialTrajectory(
-      PiecewisePolynomial<double>::Cubic(GetTimeVector(),
-                                         state_vec,
-                                         derivatives));
+  return PiecewisePolynomialTrajectory(PiecewisePolynomial<double>::Cubic(
+      GetTimeVector(), state_vec, derivatives));
 }
 
 }  // namespace systems

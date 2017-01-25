@@ -25,8 +25,7 @@ Eigen::Vector4d UniformlyRandomAxisAngle(Generator& generator) {
   std::normal_distribution<double> normal;
   std::uniform_real_distribution<double> uniform(-M_PI, M_PI);
   double angle = uniform(generator);
-  Eigen::Vector3d axis =
-      Eigen::Vector3d(normal(generator), normal(generator), normal(generator));
+  Eigen::Vector3d axis(normal(generator), normal(generator), normal(generator));
   axis.normalize();
   Eigen::Vector4d a;
   a << axis, angle;

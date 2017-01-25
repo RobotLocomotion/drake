@@ -6,7 +6,9 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -16,6 +18,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
@@ -187,6 +190,7 @@ class MathematicalProgram {
     template <typename... Args>
     ConstraintImpl(const F& f, Args&&... args)
         : Constraint(detail::FunctionTraits<F>::numOutputs(f),
+                     detail::FunctionTraits<F>::numInputs(f),
                      std::forward<Args>(args)...),
           f_(f) {}
 
@@ -194,11 +198,13 @@ class MathematicalProgram {
     template <typename... Args>
     ConstraintImpl(F&& f, Args&&... args)
         : Constraint(detail::FunctionTraits<F>::numOutputs(f),
+                     detail::FunctionTraits<F>::numInputs(f),
                      std::forward<Args>(args)...),
           f_(std::forward<F>(f)) {}
 
-    void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
+   protected:
+    void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                Eigen::VectorXd& y) const override {
       y.resize(detail::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                    detail::FunctionTraits<F>::numInputs(f_));
@@ -206,8 +212,8 @@ class MathematicalProgram {
                    detail::FunctionTraits<F>::numOutputs(f_));
       detail::FunctionTraits<F>::eval(f_, x, y);
     }
-    void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-              TaylorVecXd& y) const override {
+    void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
+                TaylorVecXd& y) const override {
       y.resize(detail::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                    detail::FunctionTraits<F>::numInputs(f_));
@@ -1070,6 +1076,31 @@ class MathematicalProgram {
   }
 
   /**
+   * Adds one row of linear constraint lb <= e <= ub where @p e is a symbolic
+   * expression. Throws an exception if
+   *  1. @p e is a non-linear expression.
+   *  2. <tt>lb <= e <= ub</tt> is a trivial constraint such as 1 <= 2 <= 3.
+   *  3. <tt>lb <= e <= ub</tt> is unsatisfiable such as 1 <= -5 <= 3
+   *
+   * @param e A linear symbolic expression in the form of <tt>c0 + c1 * v1 +
+   * ... + cn * vn</tt> where @c c_i is a constant and @v_i is a variable.
+   * @param lb A scalar, the lower bound.
+   * @param ub A scalar, the upper bound.
+   */
+  Binding<LinearConstraint> AddLinearConstraint(const symbolic::Expression& e,
+                                                double lb, double ub);
+
+  /**
+   * Adds linear constraints represented by symbolic expressions to the
+   * program. It throws if @v includes a non-linear expression or <tt>lb <= v <=
+   * ub</tt> includes trivial/unsatisfiable constraints.
+   */
+  Binding<LinearConstraint> AddLinearConstraint(
+      const Eigen::Ref<const drake::VectorX<symbolic::Expression>>& v,
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub);
+
+  /**
    * Adds linear equality constraints referencing potentially a
    * subset of the decision variables.
    */
@@ -1302,95 +1333,56 @@ class MathematicalProgram {
   }
 
   /**
-   * Adds the same scalar lower and upper bound to every variable in the matrix.
-   * This method is used for a static-sized matrix of decision variables.
-   * @tparam rows The number of rows in the MatrixDecisionVariable.
+   * Adds the same scalar lower and upper bound to every variable in @p vars.
+   * @tparam Derived An Eigen Vector type with symbolic::Variable as the scalar
+   * type.
    * @param lb Lower bound.
    * @param ub Upper bound.
-   * @param vars A vector of decision variables.
-   * @return The newly created BoundingBoxConstraint.
+   * @param vars The decision variables.
    */
-  template <int rows>
-  typename std::enable_if<rows != Eigen::Dynamic,
-                          std::shared_ptr<BoundingBoxConstraint>>::type
-  AddBoundingBoxConstraint(
-      double lb, double ub,
-      const Eigen::MatrixBase<VectorDecisionVariable<rows>>& vars) {
+  template <typename Derived>
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value &&
+          Derived::ColsAtCompileTime == 1,
+      std::shared_ptr<BoundingBoxConstraint>>::type
+  AddBoundingBoxConstraint(double lb, double ub,
+                           const Eigen::MatrixBase<Derived>& vars) {
+    const int kSize = Derived::RowsAtCompileTime;
     return AddBoundingBoxConstraint(
-        Eigen::Matrix<double, rows, 1>::Constant(lb),
-        Eigen::Matrix<double, rows, 1>::Constant(ub), vars);
+        Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), lb),
+        Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), ub), vars);
   }
 
   /**
-   * Adds the same scalar lower and upper bound to every variable in the matrix.
-   * This method is used for a dynamic-sized matrix od decision variables.
-   * @tparam rows The number of rows in the MatrixDecisionVariable.
-   * @tparam cols The number of columns in the MatrixDecisionVariable.
+   * Adds the same scalar lower and upper bound to every variable in @p vars.
+   * @tparam Derived An Eigen::Matrix with symbolic::Variable as the scalar
+   * type. The matrix has unknown number of columns at compile time, or has
+   * more than one column.
    * @param lb Lower bound.
    * @param ub Upper bound.
-   * @param vars A vector of decision variables.
-   * @return The newly created BoundingBoxConstraint.
+   * @param vars The decision variables.
    */
-  template <int rows, int cols>
-  typename std::enable_if<rows == Eigen::Dynamic,
-                          std::shared_ptr<BoundingBoxConstraint>>::type
-  AddBoundingBoxConstraint(
-      double lb, double ub,
-      const Eigen::MatrixBase<VectorDecisionVariable<rows>>& vars) {
-    return AddBoundingBoxConstraint(Eigen::VectorXd::Constant(vars.size(), lb),
-                                    Eigen::VectorXd::Constant(vars.size(), ub),
-                                    vars);
-  }
-
-  /**
-   * Adds the same scalar lower and upper bound to every variable in the matrix.
-   * This method is used for a static-sized matrix of decision variables.
-   * @tparam rows The number of rows in the MatrixDecisionVariable.
-   * @tparam cols The number of columns in the MatrixDecisionVariable.
-   * @param lb Lower bound.
-   * @param ub Upper bound.
-   * @param vars A matrix of decision variables.
-   * @return The newly created BoundingBoxConstraint.
-   */
-  template <int rows, int cols>
-  typename std::enable_if<rows != Eigen::Dynamic && cols != Eigen::Dynamic,
-                          std::shared_ptr<BoundingBoxConstraint>>::type
-  AddBoundingBoxConstraint(
-      double lb, double ub,
-      const Eigen::MatrixBase<MatrixDecisionVariable<rows, cols>>& vars) {
-    VectorDecisionVariable<rows * cols> flat_vars;
-    for (int j = 0; j < cols; ++j) {
-      flat_vars.template segment<cols>(j * rows) = vars.col(j);
-    }
-
-    return AddBoundingBoxConstraint(
-        Eigen::Matrix<double, rows * cols, 1>::Constant(lb),
-        Eigen::Matrix<double, rows * cols, 1>::Constant(ub), flat_vars);
-  }
-
-  /**
-   * Adds the same scalar lower and upper bound to every variable in the matrix.
-   * This method is used for a dynamic-sized matrix od decision variables.
-   * @tparam rows The number of rows in the MatrixDecisionVariable.
-   * @tparam cols The number of columns in the MatrixDecisionVariable.
-   * @param lb Lower bound.
-   * @param ub Upper bound.
-   * @param vars A matrix of decision variables.
-   * @return The newly created BoundingBoxConstraint.
-   */
-  template <int rows, int cols>
-  typename std::enable_if<rows == Eigen::Dynamic || cols == Eigen::Dynamic,
-                          std::shared_ptr<BoundingBoxConstraint>>::type
-  AddBoundingBoxConstraint(
-      double lb, double ub,
-      const Eigen::MatrixBase<MatrixDecisionVariable<rows, cols>>& vars) {
-    VectorXDecisionVariable flat_vars(vars.size());
+  template <typename Derived>
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value &&
+          Derived::ColsAtCompileTime != 1,
+      std::shared_ptr<BoundingBoxConstraint>>::type
+  AddBoundingBoxConstraint(double lb, double ub,
+                           const Eigen::MatrixBase<Derived>& vars) {
+    const int kSize =
+        Derived::RowsAtCompileTime != Eigen::Dynamic &&
+                Derived::ColsAtCompileTime != Eigen::Dynamic
+            ? Derived::RowsAtCompileTime * Derived::ColsAtCompileTime
+            : Eigen::Dynamic;
+    Eigen::Matrix<symbolic::Variable, kSize, 1> flat_vars(vars.size());
     for (int j = 0; j < vars.cols(); ++j) {
-      flat_vars.segment(j * vars.rows(), vars.rows()) = vars.col(j);
+      for (int i = 0; i < vars.rows(); ++i) {
+        flat_vars(j * vars.rows() + i) = vars(i, j);
+      }
     }
-    return AddBoundingBoxConstraint(Eigen::VectorXd::Constant(vars.size(), lb),
-                                    Eigen::VectorXd::Constant(vars.size(), ub),
-                                    flat_vars);
+    return AddBoundingBoxConstraint(
+        Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), lb),
+        Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), ub), flat_vars);
   }
 
   /**
@@ -1415,6 +1407,19 @@ class MathematicalProgram {
                      const VariableRefList& vars) {
     return AddConstraint(con, ConcatenateVariableRefList(vars));
   }
+
+  /**
+   * Adds Lorentz cone constraint referencing potentially a subset of the
+   * decision variables.
+   * @param v An Eigen::Vector of symbolic::Expression. Constraining that
+   * \f[
+   * v_0 \ge \sqrt{v_1^2 + ... + v_{n-1}^2}
+   * \f]
+   * @return The newly constructed Lorentz cone constraint with the bounded
+   * variables.
+   */
+  Binding<LorentzConeConstraint> AddLorentzConeConstraint(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
 
   /**
    * Adds Lorentz cone constraint referencing potentially a subset
@@ -1559,6 +1564,22 @@ class MathematicalProgram {
    */
   void AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con,
                      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds a constraint that a symbolic expression @param v is in the rotated
+   * Lorentz cone, i.e.,
+   * \f[
+   * v_0v_1 \ge v_2^2 + ... + v_{n-1}^2\\
+   * v_0 \ge 0, v_1 \ge 0
+   * \f]
+   * @param v A linear expression of variables, \f$ v = A x + b\f$, where \f$ A,
+   * b \f$ are given matrices of the correct size, \f$ x \f$ is the vector of
+   * decision variables.
+   * @retval binding The newly added rotated Lorentz cone constraint, together
+   * with the bound variables.
+   */
+  Binding<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
 
   /**
    * Adds a rotated Lorentz cone constraint referencing potentially a subset

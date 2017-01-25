@@ -146,6 +146,13 @@ class Capsule : public Geometry {
 
 class Mesh : public Geometry {
  public:
+  /** Specification of how the Mesh should process faces during parsing. */
+  enum class TriangulatePolicy {
+    kFailOnNonTri,    ///< Non-triangular faces cause an exception to be thrown.
+    kTry,             ///< The parser will attempt to triangulate non-triangular
+                      ///< faces, throwing an exception if the attempt fails.
+  };
+
   /** Constructs a representation of a mesh to be loaded from
   @p resolved_filename. @p uri provides a unique identifier used to interact
   with BotVisualizer. **/
@@ -171,17 +178,51 @@ class Mesh : public Geometry {
   /** Loads triangle mesh from an obj file into the provided vectors of vertices
   and triangles.
 
+  This method can optionally attempt to triangulate the mesh as it is read.
+  This triangulation is conservative. Non-triangular faces are decomposed into
+  a set of *equivalent* triangles. It places certain requirements on the
+  mesh for the triangulation to be valid.  If these requirements are not met,
+  an exception is thrown.  These requirements are:
+     1. Non-triangular faces cannot contain a sequence of co-linear vertices.
+     2. Non-triangular faces must be close to planar; the decomposed triangles
+        normals can deviate by no more than 30 degrees from their edge-adjacent
+        neighbors.
+     3. Decomposed triangles must have an area larger than 10⁻¹⁰ m².
+
+  NOTE: The triangulation method is simple.  Even if these requirements are met,
+  triangulation might fail.
+
   @param[out] vertices Vector of 3D vertices in the mesh.
   @param[out] triangles Vector of indices for each triangle in the mesh.
   The i-th entry of @p triangles holds a 3D vector of integer indices into
   @p vertices corresponding to the vertices forming the i-th triangle.
+  @param[in] triangulate  Specifies the triangulation policy.
 
   On output, `vertices.size()` corresponds to the number of vertices in the mesh
   while `triangles.size()` corresponds to the number of triangles in the mesh.
   **/
-  void LoadObjFile(PointsVector* vertices, TrianglesVector* triangles) const;
+  void LoadObjFile(
+      PointsVector* vertices, TrianglesVector* triangles,
+      TriangulatePolicy triangulate = TriangulatePolicy::kFailOnNonTri) const;
 
  private:
+  // Lower limit on generated triangle area (as documented).
+  static constexpr double kMinArea = 1e-10;
+
+  // cosine(30°) -- used to determine if normal deviation of decomposed
+  // triangles lies within the documented threshold.
+  static const double kCosThreshold;
+
+  // Given a list of vertex values and three indices into that set, computes a
+  // unit-length normal vector to the triangle defined by the vertices.
+  // Returns false if the indices are invalid, the points are co-linear, or
+  // the triangle is "too small".  "Small" is an arbitrary value. By design
+  // the triangulation process behaves conservatively. A user-defined mesh can
+  // include arbitrarily small triangles, but the triangulation process will
+  // not.
+  static bool GetNormal(const PointsVector& vertices, int i0, int i1, int i2,
+                        Eigen::Vector3d* normal, double minArea);
+
   // This method finds a juxtaposed obj file from the `resolved_filename_`
   // member. If unable to resolve an obj file it throws an exception.
   // If `resolved_filename_` already is an obj file then it returns

@@ -310,3 +310,11 @@ Drake is adding support for the Bazel build system.
     :maxdepth: 1
 
     bazel
+
+
+Troubleshooting
+===============
+
+If you're unable to launch ``drake-visualizer`` due to a
+"No module named vtkCommonCorePython" error, see
+:ref:`this FAQ <faq_drake_visualizer_no_module_named_vtk_common_core_python_non_ros>`.

@@ -46,6 +46,15 @@ class TestSystem : public System<double> {
     return nullptr;
   }
 
+  const InputPortDescriptor<double>& AddAbstractInputPort() {
+    return this->DeclareAbstractInputPort();
+  }
+
+
+  const OutputPortDescriptor<double>& AddAbstractOutputPort() {
+    return this->DeclareAbstractOutputPort();
+  }
+
 
   int get_publish_count() const { return publish_count_; }
   int get_update_count() const { return update_count_; }
@@ -239,6 +248,27 @@ TEST_F(SystemTest, CustomDiscreteUpdate) {
                                       update.get());
   ASSERT_EQ(1u, system_.get_updated_numbers().size());
   EXPECT_EQ(kNumberToUpdate, system_.get_updated_numbers()[0]);
+}
+
+// Tests that descriptor references remain valid even if lots of other
+// descriptors are added to the system, forcing a vector resize.
+TEST_F(SystemTest, PortDescriptorsAreStable) {
+  const auto& first_input = system_.AddAbstractInputPort();
+  const auto& first_output = system_.AddAbstractOutputPort();
+  for (int i = 0; i < 1000; i++) {
+    system_.AddAbstractInputPort();
+    system_.AddAbstractOutputPort();
+  }
+  EXPECT_EQ(1001, system_.get_num_input_ports());
+  EXPECT_EQ(1001, system_.get_num_output_ports());
+
+  // Check for address equality.
+  EXPECT_EQ(&first_input, &system_.get_input_port(0));
+  EXPECT_EQ(&first_output, &system_.get_output_port(0));
+
+  // Check for valid content.
+  EXPECT_EQ(kAbstractValued, first_input.get_data_type());
+  EXPECT_EQ(kAbstractValued, first_output.get_data_type());
 }
 
 // A shell System for AbstractValue IO test

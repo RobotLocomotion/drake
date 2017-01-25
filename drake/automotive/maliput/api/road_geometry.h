@@ -1,9 +1,10 @@
 #pragma once
 
-#include "drake/automotive/maliput/api/lane_data.h"
-
 #include <string>
 #include <vector>
+
+#include "drake/automotive/maliput/api/lane_data.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace maliput {
@@ -25,7 +26,9 @@ struct RoadGeometryId {
 //                          scalar type T like everything else in drake.
 class RoadGeometry {
  public:
-  virtual ~RoadGeometry() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadGeometry)
+
+  virtual ~RoadGeometry() = default;
 
   /// Returns the persistent identifier.
   ///
@@ -88,15 +91,8 @@ class RoadGeometry {
   /// Return value with size() == 0 indicates success.
   std::vector<std::string> CheckInvariants() const;
 
-  /// @name Deleted Copy/Move Operations
-  /// RoadGeometry is neither copyable nor moveable.
-  ///@{
-  explicit RoadGeometry(const RoadGeometry&) = delete;
-  RoadGeometry& operator=(const RoadGeometry&) = delete;
-  ///@}
-
  protected:
-  RoadGeometry() {}
+  RoadGeometry() = default;
 
  private:
   /// @name NVI implementations of the public methods.

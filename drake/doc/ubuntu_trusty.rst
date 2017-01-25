@@ -26,7 +26,7 @@ Clang 3.9::
 
     sudo apt-get install --no-install-recommends lsb-core software-properties-common wget
     wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
-    sudo add-apt-repository -y "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.9 main"
+    sudo add-apt-repository -y "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.9 main"
     sudo apt-get update
     sudo apt-get upgrade
     sudo apt-get install clang-3.9

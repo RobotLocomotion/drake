@@ -4,6 +4,8 @@
 #include <type_traits>
 #include <utility>
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 
 /// Wraps an underlying type T such that its storage is a direct member field
@@ -22,6 +24,8 @@ namespace drake {
 template <typename T>
 class never_destroyed {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(never_destroyed)
+
   /// Passes the constructor arguments along to T using perfect forwarding.
   template <typename... Args>
   explicit never_destroyed(Args&&... args) {
@@ -35,12 +39,6 @@ class never_destroyed {
   /// Returns the underlying T reference.
   T& access() { return *reinterpret_cast<T*>(&storage_); }
   const T& access() const { return *reinterpret_cast<const T*>(&storage_); }
-
-  // Neither copyable nor moveable.
-  never_destroyed(const never_destroyed& e) = delete;
-  never_destroyed& operator=(const never_destroyed& e) = delete;
-  never_destroyed(never_destroyed&& e) = delete;
-  never_destroyed& operator=(never_destroyed&& e) = delete;
 
  private:
   typename std::aligned_storage<sizeof(T), alignof(T)>::type storage_;

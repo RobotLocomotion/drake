@@ -19,6 +19,7 @@ cc_library(
         "constants.h",
         "drake_assert.h",
         "drake_compat.h",
+        "drake_copyable.h",
         "drake_deprecated.h",
         "drake_throw.h",
         "eigen_stl_types.h",
@@ -137,6 +138,7 @@ cc_library(
         ":cond",
         ":dummy_value",
         ":number_traits",
+        ":polynomial",
     ],
 )
 
@@ -383,6 +385,31 @@ cc_googletest(
         ":symbolic",
     ],
 )
+
+cc_googletest(
+    name = "symbolic_mixing_scalar_types_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+cc_googletest(
+    name = "symbolic_expression_matrix_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+cc_googletest(
+    name = "symbolic_variable_overloading_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
 
 cc_googletest(
     name = "symbolic_formula_test",

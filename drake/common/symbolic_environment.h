@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic_variable.h"
 
 namespace drake {
@@ -31,9 +32,27 @@ namespace symbolic {
  *   const double res2 = e2.Evaluate(env);  // x - y => 2.0 - 3.0 => -1.0
  *   const bool res = f.Evaluate(env);  // x + y > x - y => 5.0 >= -1.0 => True
  * \endcode
+ *
+ * Note that it is not allowed to have a dummy variable in a symbolic
+ * environment. It throws std::runtime_error for the attempts to create an
+ * environment with a dummy variable, to insert a dummy variable to an existing
+ * environment, or to take a reference to a value mapped to a dummy
+ * variable. See the following examples.
+ *
+ * \code{.cpp}
+ *   Variable    var_dummy{};           // OK to have a dummy variable
+ *   Environment e1{var_dummy};         // throws std::runtime_error exception
+ *   Environment e2{{var_dummy, 1.0}};  // throws std::runtime_error exception
+ *   Environment e{};
+ *   e.insert(var_dummy, 1.0);          // throws std::runtime_error exception
+ *   e[var_dummy] = 3.0;                // throws std::runtime_error exception
+ * \endcode
+ *
  */
 class Environment {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Environment)
+
   typedef typename drake::symbolic::Variable key_type;
   typedef double mapped_type;
   typedef
@@ -46,18 +65,6 @@ class Environment {
 
   /** Default constructor. */
   Environment() = default;
-
-  /** Move-construct a set from an rvalue. */
-  Environment(Environment&& e) = default;
-
-  /** Copy-construct a set from an lvalue. */
-  Environment(const Environment& e) = default;
-
-  /** Move-assign a set from an rvalue. */
-  Environment& operator=(Environment&& e) = default;
-
-  /** Copy-assign a set from an lvalue. */
-  Environment& operator=(const Environment& e) = default;
 
   /** List constructor. Constructs an environment from a list of (Variable *
    * double). */
@@ -96,7 +103,8 @@ class Environment {
   std::string to_string() const;
 
   /** Returns a reference to the value that is mapped to a key equivalent to
-   * @p key, performing an insertion if such key does not already exist. */
+   *  @p key, performing an insertion if such key does not already exist.
+   */
   mapped_type& operator[](const key_type& key);
 
   friend std::ostream& operator<<(std::ostream& os, const Environment& env);
