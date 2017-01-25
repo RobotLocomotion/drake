@@ -121,15 +121,11 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /// force lambda to the constraints.
   Eigen::VectorXd CalcVelocityChangeFromConstraintImpulses(
               const systems::Context<T>& context,
+              const Eigen::MatrixXd& J,
               const Eigen::VectorXd& lambda) const;
 
-  /// Computes the time derivative of the constraint equations, evaluated at
-  /// the current generalized coordinates and generalized velocity.
-  Eigen::VectorXd EvalConstraintEquationDot(const systems::Context<T>& context)
-                                              const;
-
   /// Gets the number of constraint equations.
-  int get_num_constraint_equations() const { return 3; }
+  int get_num_constraint_equations(const systems::Context<T>& context) const;
 
   /// Evaluates the constraint equations for a bead in absolute coordinates.
   /// This method is computationally expensive. To evaluate these equations,
@@ -139,8 +135,13 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   ///          minimum.
   /// @TODO(edrumwri): Provide a special function that calculates the parameters
   ///                  for a given function?
-  VectorX<T> EvaluateConstraintEquations(const systems::Context<T>& context)
-               const;
+  Eigen::VectorXd EvalConstraintEquations(
+      const systems::Context<T>& context) const;
+
+  /// Computes the time derivative of each constraint equation, evaluated at
+  /// the current generalized coordinates and generalized velocity.
+  Eigen::VectorXd EvalConstraintEquationsDot(
+      const systems::Context<T>& context) const;
 
   /// Allows the user to reset the wire parameter function (which points to the
   /// sinusoidal function by default.
@@ -148,23 +149,22 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   ///          (0 <= s <= 1) as default and outputs a point in 3D as output.
   /// @throws std::logic_error if f is a nullptr (the function must always be
   ///         set).
-  /*
-  void reset_wire_parameter_function(std::function<Eigen::Matrix<Eigen::AutoDiffScalar<drake::Vector1d>,3,1>(
-      const Eigen::AutoDiffScalar<drake::Vector1d>&)> f) {
+  void reset_wire_parameter_function(std::function<Eigen::Matrix<DScalar,3,1>(
+      const DScalar&)> f) {
     if (!f) throw std::logic_error("Function must be non-null.");
     f_ = f;
   }
-*/
 
-  /// The (optional) inverse of the wire parameter function.
-  /// This function takes a point in 3D as input and outputs a point
-  /// (0 <= s <= 1) as output. If this function is non-null, constraint
-  /// stabilization methods for DAEs can use it (via
-  /// EvaluateConstraintEquations()) to efficiently project a bead represented
-  /// in absolute coordinates back onto the wire. If this function is null,
-  /// EvaluateConstraintEquations() will use generic, presumably less efficient
-  /// methods instead. This function is not to nullptr by default.
-//  std::function<Eigen::AutoDiffScalar<drake::Vector1d>(const Eigen::Matrix<Eigen::AutoDiffScalar<drake::Vector1d>,3,1>&> inv_f_{nullptr};
+  /// Allows the user to reset the inverse wire parameter function (which
+  /// points to the inverse sinusoidal function by default).
+  /// @param inv_f The pointer to a function that takes a point in 3D as input
+  ///              and outputs a floating point scalar as output. nullptr is
+  ///              an acceptable value (BeadOnAWire will use a generic inversion
+  ///              routine).
+  void reset_inverse_wire_parameter_function(std::function<DScalar(
+      const Eigen::Matrix<DScalar,3,1>&)> inv_f) {
+    inv_f_ = inv_f;
+  }
 
   /// Example wire parametric function for the bead on a wire example. The
   /// exact function definition is:
@@ -174,10 +174,17 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   ///        | s      |
   static Eigen::Matrix<DScalar, 3, 1> sinusoidal_function(const DScalar& s);
 
-      /// Inverse parametric function for the bead on a wire system that uses the
+  /// Inverse parametric function for the bead on a wire system that uses the
   /// sinusoidal parametric example function. Simply returns the value closest
   /// to the vertical coordinate.
   static DScalar inverse_sinusoidal_function(const Vector3<DScalar>& v);
+
+  /// Computes the change in generalized velocity from applying constraint
+  /// impulses @p lambda.
+  /// @param context The current state of the system.
+  /// @param lambda The vector of constraint forces.
+  Eigen::VectorXd CalcVelocityChangeFromConstraintImpulses(
+      const systems::Context<T>& context, const Eigen::VectorXd& lambda) const;
 
  protected:
   void SetDefaultState(const systems::Context<T>& context,
@@ -190,7 +197,18 @@ class BeadOnAWire : public systems::LeafSystem<T> {
 
   // The wire parameter function. See set_wire_parameter_function() for more
   // information. This pointer must always be empty
-  std::function<Eigen::Matrix<DScalar, 3, 1>(const DScalar&)> f_{&sinusoidal_function};
+  std::function<Eigen::Matrix<DScalar, 3, 1>(const DScalar&)> f_{
+      &sinusoidal_function};
+
+  // The (optional) inverse of the wire parameter function.
+  // This function takes a point in 3D as input and outputs a point
+  // (0 <= s <= 1) as output. If this function is non-null, constraint
+  // stabilization methods for DAEs can use it (via
+  // EvaluateConstraintEquations()) to efficiently project a bead represented
+  // in absolute coordinates back onto the wire. If this function is null,
+  // EvaluateConstraintEquations() will use generic, presumably less efficient
+  // methods instead. This function is not to nullptr by default.
+  std::function<DScalar(const Eigen::Matrix<DScalar, 3, 1>&)> inv_f_{nullptr};
 
   double g_{-9.81};
 };

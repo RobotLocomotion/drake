@@ -11,7 +11,7 @@ namespace {
 class BeadOnAWireTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    /// Construct the bead on the wire in absolute coordinates.
+    // Construct the bead on the wire in absolute coordinates.
     dut_ = std::make_unique<BeadOnAWire<double>>(
         BeadOnAWire<double>::kAbsoluteCoordinates);
     context_ = dut_->CreateDefaultContext();
@@ -37,7 +37,7 @@ class BeadOnAWireTest : public ::testing::Test {
   std::unique_ptr<systems::ContinuousState<double>> derivatives_;
 };
 
-/// Checks output is as expected.
+// Checks output is as expected.
 TEST_F(BeadOnAWireTest, Output) {
   const systems::ContinuousState<double>& v = *context_->get_continuous_state();
   std::unique_ptr<systems::SystemOutput<double>> output =
@@ -47,7 +47,7 @@ TEST_F(BeadOnAWireTest, Output) {
     EXPECT_EQ(v[i], output->get_vector_data(0)->get_value()(i));
 }
 
-/// Tests parameter getting and setting.
+// Tests parameter getting and setting.
 TEST_F(BeadOnAWireTest, Parameters) {
   // Set parameters to non-default values.
   const double g = -1.0;
@@ -55,8 +55,8 @@ TEST_F(BeadOnAWireTest, Parameters) {
   EXPECT_EQ(dut_->get_gravitational_acceleration(), g);
 }
 
-/// Tests that sinusoidal parameter function produces the values and
-/// derivatives we expect.
+// Tests that sinusoidal parameter function produces the values and
+// derivatives we expect.
 TEST_F(BeadOnAWireTest, Sinusoidal) {
   // Set small tolerance value.
   const double tol = std::numeric_limits<double>::epsilon()*10.0;
@@ -90,15 +90,16 @@ TEST_F(BeadOnAWireTest, Sinusoidal) {
   EXPECT_NEAR(deriv2z, 0.0, tol);
 }
 
-/// Tests that the inverse of the sinusoidal parameter function produces the
-/// values and derivatives we expect.
+// Tests that the inverse of the sinusoidal parameter function produces the
+// values and derivatives we expect.
 TEST_F(BeadOnAWireTest, InverseSinusoidal) {
   // Set small tolerance value.
   const double tol = std::numeric_limits<double>::epsilon()*10.0;
 
   // Compute the value at pi/3.
+  const double test_value = M_PI/3.0;
   BeadOnAWire<double>::DScalar s;
-  s = M_PI/3.0;
+  s = test_value;
   auto v = dut_->sinusoidal_function(s);
   v(0).derivatives().resize(1);
   v(0).derivatives()(0) = 0.0;
@@ -121,10 +122,85 @@ TEST_F(BeadOnAWireTest, InverseSinusoidal) {
   // ------------------------
   //            ds
   const double ds = std::numeric_limits<double>::epsilon();
-  auto fprime = dut_->inverse_sinusoidal_function(dut_->sinusoidal_function(s+ds));
+  auto fprime = dut_->inverse_sinusoidal_function(
+      dut_->sinusoidal_function(s+ds));
   auto f = dut_->inverse_sinusoidal_function(dut_->sinusoidal_function(s));
   const double num_value = (fprime.value().value() - f.value().value())/ds;
   EXPECT_NEAR(candidate_value, num_value, tol);
+
+  // Compute the derivative of the inverse sinusoidal function using the
+  // velocity.
+  const double x = std::cos(test_value);
+  const double y = std::sin(test_value);
+  const double z = test_value;
+  const double xdot = 1.0;
+  const double ydot = 2.0;
+  const double zdot = 3.0;
+  const double inv_sinusoidal_dot = -y/(x*x + y*y)*xdot +
+                                     x/(x*x + y*y)*ydot;
+  Eigen::Matrix<BeadOnAWire<double>::DScalar, 3, 1> xx;
+  xx(0).value() = x;
+  xx(1).value() = y;
+  xx(2).value() = z;
+  xx(0).value().derivatives()(0) = xdot;
+  xx(1).value().derivatives()(0) = ydot;
+  xx(2).value().derivatives()(0) = zdot;
+  auto tprime = dut_->inverse_sinusoidal_function(xx);
+  EXPECT_NEAR(inv_sinusoidal_dot, tprime.value().derivatives()(0), tol);
+}
+
+// Tests the constraint function evaluation using the sinusoidal function.
+TEST_F(BeadOnAWireTest, ConstraintFunctionEval) {
+  // Use the version with the inverse sinusoidal function first.
+  dut_->reset_inverse_wire_parameter_function(
+      &dut_->inverse_sinusoidal_function);
+
+  // Put the bead directly onto the wire.
+  systems::ContinuousState<double>& xc =
+      *context_->get_mutable_continuous_state();
+  const double s = 1.0;
+  xc[0] = std::cos(s);
+  xc[1] = std::sin(s);
+  xc[2] = s;
+
+  // Verify that the constraint error is effectively zero.
+  const double tol = std::numeric_limits<double>::epsilon() * 10;
+  EXPECT_NEAR(dut_->EvalConstraintEquations(*context_).norm(),0.0,tol);
+
+  // Move the bead off of the wire and verify limit on expected error.
+  const double err = 1.0;
+  xc[0] += err;
+  EXPECT_LE(dut_->EvalConstraintEquations(*context_).norm(),1.0);
+  xc[0] = std::cos(s);
+  xc[1] += err;
+  EXPECT_LE(dut_->EvalConstraintEquations(*context_).norm(),1.0);
+
+  // TODO(edrumwri): Test the constraint evaluation without the inverse
+  // sinusoidal function.
+}
+
+// Tests the evaluation of the time derivative of the constraint functions 
+// using the sinusoidal function.
+TEST_F(BeadOnAWireTest, ConstraintDotFunctionEval) {
+  // Use the version with the inverse sinusoidal function first.
+  dut_->reset_inverse_wire_parameter_function(
+      &dut_->inverse_sinusoidal_function);
+
+  // Put the bead directly onto the wire and make its velocity such that
+  // it is not instantaneously leaving the wire.
+  systems::ContinuousState<double>& xc =
+      *context_->get_mutable_continuous_state();
+  const double s = 1.0;
+  xc[0] = std::cos(s);
+  xc[1] = std::sin(s);
+  xc[2] = s;
+  xc[3] = -std::sin(s);
+  xc[4] = std::cos(s);
+  xc[5] = 1.0;
+
+  // Verify that the constraint error is effectively zero.
+  const double tol = std::numeric_limits<double>::epsilon() * 10;
+  EXPECT_NEAR(dut_->EvalConstraintEquationsDot(*context_).norm(),0.0,tol);
 }
 
 }  // namespace

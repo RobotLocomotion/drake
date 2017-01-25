@@ -1,0 +1,369 @@
+#pragma once
+
+/// @file
+/// Template method implementations for half_explicit_DAE1_solver.h.
+/// Most users should only include that file, not this one.
+/// For background, see http://drake.mit.edu/cxx_inl.html.
+
+namespace drake {
+namespace systems {
+
+// Updates the continuous state in the Context using the saved generalized
+// coordinates and velocities and the given constraint forces.
+// @param context The pointer to the context to update.
+// @param lambda The vector of constraint forces.
+// @param dt The integration step size.
+template <class T>
+void HalfExplicitDAE1Solver<T>::UpdateContinuousState(Context<T>* context,
+                                                      const Eigen::VectorXd&
+                                                        lambda,
+                                                      double dt) const {
+  const System<T>& system = this->get_system();
+
+  // Compute the effect of applying the constraint forces (as impulsive forces).
+  const auto& dv = system.CalcVelocityChangeFromConstraintImpulses(context,
+                                                                   lambda);
+
+  // Compute v(t+Δt) and q(t+Δt).
+  const auto& vplus = vsave_ + dv;
+  system.MapVelocityToQDot(*context, vplus, qdot_.get());
+  const auto& q = context->get_continuous_state_vector().CopyToVector();
+  auto x = context->get_mutable_continuous_state();
+  x->get_mutable_generalized_position()->SetFromVector(q + vplus*dt);
+  x->get_mutable_generalized_velocity()->SetFromVector(vplus);
+}
+
+// Calculates the Jacobian of the algebraic equations in the DAE with respect
+// to the given constraint forces.
+// @param context The context containing the generalized state variables, with
+//                respect to which the Jacobian matrix will be computed.
+// @param lambda The vector of constraint forces, which should be of the same
+//               dimension (m) as the number of algebraic equations.
+// @param dt     The integration step size.
+// @returns      A m × m Jacobian matrix of the m algebraic equations
+//               differentiated with respect to the m-dimensional constraint
+//               force vector.
+template <class T>
+Eigen::MatrixXd HalfExplicitDAE1Solver<T>::CalcAlgebraicJacobian(
+    const Context<T>& context, const Eigen::VectorXd& lambda, double dt) const {
+  const double sqrt_eps = std::sqrt(std::numeric_limits<double>::epsilon());
+
+  // Get the context as modifiable (we will restore everything we touch).
+  Context<T>* context_mut = (Context<T>*) &context;
+  const auto& qsave = context.get_continuous_state()->get_generalized_position().
+      CopyToVector();
+  const auto& vsave = context.get_continuous_state()->get_generalized_velocity().
+      CopyToVector();
+
+  // Calculate the error in the algebraic equations at the current lambda.
+  UpdateContinuousState(context_mut, lambda, dt);
+  const auto& g0 = system.EvaluateConstraintEquations(context);
+
+  // Initialize the Jacobian matrix.
+  const int neq = g0.size();
+  const int nf = lambda.size();
+  Eigen::MatrixXd J(neq, nf);
+
+  // Copy lambda.
+  Eigen::VectorXd lambda_prime = lambda;
+  
+  // Iterate over each dimension of lambda
+  for (int i=0; i< nf; ++i) {
+    // Compute a good increment to the lambda dimension.
+    const double abs_lambda = std::abs(lambda(i));
+    double dlambda = (abs_lambda > 0.0) ? sqrt_eps * abs_lambda : sqrt_eps;
+
+    // Minimize effect of roundoff error.
+    lambda_prime(i) = lambda(i) + dlambda;
+    dlambda = lambda_prime(i) - lambda(i);
+
+    // Compute the column of the Jacobian.
+    UpdateContinuousState(context_mut, lambda_prime, dt);
+    const auto& gprime = system.EvaluateConstraintEquations(context);
+
+    lambda_prime(i) = lambda(i);
+    J.col(i) = (gprime - g0)/dlambda;
+  }
+
+  // Restore the generalized position and velocity.
+  context_mut->get_mutable_continuous_state()->
+      get_mutable_generalized_position()->SetFromVector(qsave);
+  context_mut->get_mutable_continuous_state()->
+      get_mutable_generalized_velocity()->SetFromVector(vsave);
+
+  return J;
+}
+
+// Computes the constraint Jacobian (the m × n matrix of partial derivatives of
+// the m constraint equations taken with respect to the n generalized velocity
+// variables).
+// @param context The context containing the generalized state variables, upon
+//                which the constraint equations are dependent.
+// @returns the constraint Jacobian matrix.
+template <class T>
+Eigen::MatrixXd HalfExplicitDAE1Solver<T>::CalcConstraintJacobian(
+    const Context<T>& context) const {
+  const System<T> &system = this->get_system();
+
+  // Get the number of constraint equations.
+  const int neq = system.get_num_constraint_equations(context);
+
+  // Store the current generalized velocity.
+  const auto& gv_save = context.get_continuous_state()->
+      get_generalized_velocity().CopyToVector();
+
+  // Get the context in mutable form.
+  Context<T>* context_mut = (Context<T>*) &context;
+
+  // Evaluating the time derivative of the constraint equations is equivalent
+  // to multiplying J * v, where J is the constraint Jacobian. By setting the
+  // generalized velocity to a sequence of unit vectors and evaluating the
+  // time derivative of the constraint equations repeatedly, we can compute
+  // the constraint Jacobian.
+  const int ngv = gv_save.size();
+  Eigen::MatrixXd J(neq, ngv);
+  const auto& gv = context_mut->get_mutable_continuous_state_vector();
+  for (int i=0; i< ngv; ++i) {
+    // Set the generalized velocity to a unit vector.
+    gv->SetFromVector(Eigen::Matrix<T, Eigen::Dynamic, 1>::Unit(ngv, i));
+
+    // Evaluate the constraint equation and set the corresponding column of
+    // the Jacobian matrix.
+    J.col(i) = system.EvalConstraintEquationsDot(*context_mut);
+  }
+
+  // Restore the generalized velocity.
+  context_mut->get_mutable_continuous_state()->
+      get_mutable_generalized_velocity()->SetFromVector(gv_save);
+
+  return J;
+}
+
+// Calculates the matrix J⋅M⁻¹⋅Jᵀ, where J is the Jacobian matrix of the
+// constraint equations (differentiated with respect to the generalized velocity
+// variables) and M⁻¹ is the inverse of the generalized inertia matrix.
+// @param context The context containing the generalized state variables, for
+//                which the constraint space inertia matrix should be computed.
+// @param J The m × n matrix of the partial derivatives of the m constraint
+//          equations taken with respect to the n generalized velocity
+//          variables.
+// @returns A m × m matrix, where m is the number of constraint equations.
+template <class T>
+Eigen::MatrixXd HalfExplicitDAE1Solver<T>::CalcConstraintSpaceInertiaMatrix(
+    const systems::Context<T>& context, const Eigen::MatrixXd& J) const {
+  const System<T>& system = this->get_system();
+
+  // Create the constraint force vector.
+  const int neq = system.get_num_constraint_equations(context);
+  Eigen::VectorXd lambda = Eigen::VectorXd::Zero(neq);
+
+  // Initialize the matrix.
+  Eigen::MatrixXd M(neq, neq);
+
+  // Propagate an impulsive force through the constraints and measure the
+  // constraint velocities.
+  for (int i=0; i< neq; ++i) {
+    // Apply a unit impulse, then zero that component.
+    lambda(i) = 1.0;
+    Eigen::VectorXd dv = system.CalcVelocityChangeFromConstraintImpulses(
+        context, J, lambda);
+    lambda(i) = 0.0;
+
+    // Set the appropriate row of the matrix.
+    M.row(i) = dv;
+  }
+
+  return M;
+}
+
+/// Integrates the DAE system forward in time by dt. This value is determined
+/// by IntegratorBase::Step().
+/// @pre The algebraic equation (g(q(t)) = 0 is true on entry.
+template <class T>
+void HalfExplicitDAE1Solver<T>::DoStepOnceFixedSize(const T& dt) {
+  // Find the continuous state xc within the Context, just once.
+  auto context = this->get_mutable_context();
+  const auto& xc = context->get_mutable_continuous_state();
+  const auto& system = this->get_system();
+
+  // TODO(edrumwri): Change this to a user-settable parameter.
+  const double grad_tol = 1e-6;
+
+  // Retrieve the generalized coordinates and velocities and auxiliary
+  // variables.
+  VectorBase<T>* q = xc->get_mutable_generalized_position();
+  VectorBase<T>* v = xc->get_mutable_generalized_velocity();
+  VectorBase<T>* z = xc->get_mutable_misc_continuous_state();
+
+  // Save the current generalized coordinates (may need to restore these,
+  // repeatedly).
+  qsave_ = q->CopyToVector();
+
+  // Evaluate the derivatives without accounting for constraint forces.
+  // TODO(sherm1) This should be calculating into the cache so that
+  // Publish() doesn't have to recalculate if it wants to output derivatives.
+  system.CalcTimeDerivatives(this->get_context(), derivs_.get());
+
+  // Retrieve the accelerations and auxiliary variable derivatives.
+  const auto& vdot = derivs_->get_generalized_velocity();
+  const auto& zdot = derivs_->get_misc_continuous_state();
+
+  // Update the generalized velocity and auxiliary variables using these
+  // accelerations (i.e., accelerations without constraint forces).
+  // v'(t+Δt) = v(t) + Δt⋅(f(q(t), v(t))
+  // z(t+Δt) = z(t) + Δt⋅dz/dt
+  v->PlusEqScaled({ {dt, vdot }});
+  z->PlusEqScaled({ {dt, zdot} });
+
+  // Save the updated generalized velocities.
+  vsave_ = v->CopyToVector();
+
+  // Compute constraint forces such that J*v(t+dt) = 0, where:
+  // v(t+Δt) = v'(t+Δt) + ΔtM⁻¹Jᵀλ
+  // where J is the constraint Jacobian and M is the generalized inertia
+  // matrix. This first step should give a good starting point for the
+  // constraint forces. Given the relationship q(t+Δt) = q(t) + Δt⋅N⋅v(t+Δt),
+  // where N(q(t)) is a matrix that converts generalized velocities to the time
+  // derivatives of generalized coordinates, the starting point will be perfect
+  // if g(q(t)) = 0 (the method precondition) and if g() is a linear function
+  // (implying that g(q(t) + Δt⋅v(t+Δt)) = g(q(t)) + Δt⋅N⋅g(v(t+Δt)) = 0 + 0.
+
+  // Compute JM⁻¹Jᵀ and Jv'(t+Δt).
+  const auto& J = CalcConstraintJacobian(*context);
+  const auto& JiMJT = CalcConstraintSpaceInertiaMatrix(*context, J);
+  Eigen::VectorXd Jvprime = system.EvalConstraintEquationsDot(*context);
+
+  // Solve ΔtJM⁻¹Jᵀλ + Jv'(t+Δt) = 0 for λ.
+  // @TODO(edrumwri): Do a more clever form of least squares than this
+  //                  (Tikhonov regularization), based on the number of
+  //                  constraint equations compared to the number of generalized
+  //                  velocity variables.
+  chol_.compute(JiMJT);
+  DRAKE_DEMAND(chol_.info() != Eigen::ComputationInfo::InvalidInput);
+  if (chol_.info() != Eigen::ComputationInfo::Success) {
+    double alpha = 1e-15;         // Initial regularization factor.
+    const double beta = 10.0;     // Regularization factor increase.
+    const int n = JiMJT.rows();
+    do {
+      chol_.compute(JiMJT + drake::MatrixX<T>::Identity(n, n) * alpha);
+      alpha *= beta;
+    } while (chol_.info() != Eigen::ComputationInfo::Success);
+  }
+  Eigen::VectorXd lambda = chol_.solve(-Jvprime);
+
+  // Compute the constraint error based on this lambda.
+  UpdateContinuousState(context, lambda, dt);
+  const auto& err = system.EvaluateConstraintEquations(*context);
+
+  // Compute the current value of the objective function.
+  double fcurrent = err.squaredNorm() / 2;
+
+  // Check for immediate success.
+  bool solution_found = (system.CalcConstraintErrorNorm(err) < constraint_tol_);
+
+  // TODO(edrumwri): Fix this comment.
+  // If the error is acceptable, use the updated velocity and position.
+  if (!solution_found) {
+    // Given the starting value for λ, iteratively compute the correct
+    // constraint forces such that g(q(t+Δt)) ≈ 0. We do this by iteratively:
+    // (1) Computing the error g(.) for a given λ; (2) Determining the Jacobian
+    // matrix (J) of the algebraic constraint equation errors computed with
+    // respect to the change in the current values of λ; (3) Solving JΔλ =
+    // g(.) for Δλ. (4) Using line search to determine a "good" value of α such
+    // that ||g((q(t+Δt))|| = ||g(q(t), v(t), λ+Δαλ)|| is reduced.
+    for (int j=0; j< max_nr_iterations_; ++j) {
+      // Revert the coordinates and velocity in the context.
+      q->SetFromVector(qsave_);
+      v->SetFromVector(vsave_);
+
+      // Determine the Jacobian matrix for the current lambda.
+      const auto& J = CalcAlgebraicJacobian(*context, lambda, dt);
+
+      // Solve for Δλ.
+      LU_.compute(J);
+      Eigen::VectorXd dlambda = LU_.solve(-err);
+
+      // Compute the gradient of the objective function with respect to lambda.
+      // 1/2*g(lambda)'*g(lambda) = J*g(lambda)
+      Eigen::VectorXd grad = J * err;
+
+      // Use line search to determine a good value of α.
+      LineSearchOutput lout = search_line(lambda, dlambda, fcurrent, grad, dt);
+
+      // Set updated lambda, constraint function outputs, and objective function
+      // evaluation.
+      lambda = lout.lambda_new;
+      err = lout.goutput;
+      fcurrent = lout.fnew;
+
+      // Check for solution.
+      solution_found = (system.CalcConstraintErrorNorm(err) < constraint_tol_);
+      if (solution_found) {
+        // TODO(edrumwri): break.
+      }
+
+      // Check for gradient approximately zero, indicating convergence to a
+      // non-solution.
+      double test = 0;
+      double den = std::max(0.5 * lambda.size(), lout.fnew);
+      for (int i=0; i< lambda.size(); ++i)
+        test = std::max(test, std::abs(grad(i))*std::max(lambda(i), 1.0)/den);
+      if (test < grad_tol) {
+        // TODO(edrumwri): break.
+      }
+    }
+
+    // TODO(edrumwri): If the residual error is too large, throw an exception
+    // indicating that a smaller step size should be attempted.
+    if (!solution_found) {
+      // TODO(edrumwri): Throw an exception.
+    }
+  }
+
+  // Update the time.
+  context->set_time(context->get_time() + dt);
+  IntegratorBase<T>::UpdateStatistics(dt);
+}
+
+/// Searches the line λ+αΔλ for a α that results in a "good" value of the
+/// objective function.
+/// @param lambda The current value of λ.
+/// @param dlambda The computed descent direction for λ (i.e., Δλ).
+/// @param fold The old objective function value (determined by computing the
+///             Euclidean norm of the vector output of the algebraic constraint
+///             equations and then scaling by 1/2).
+/// @param gradient The gradient of the objective function (i.e., the gradient
+///                 of the Euclidean norm of the vector output of the algebraic
+///                 constraint equations and then scaling by 1/2).
+/// \returns a structure containing the new value of λ, the new value of the
+///          objective function, and the new outputs of the algebraic constraint
+///          equations.
+template <class T>
+typename HalfExplicitDAE1Solver<T>::LineSearchOutput
+      HalfExplicitDAE1Solver<T>::search_line(
+          const Eigen::VectorXd& lambda, const Eigen::VectorXd& dlambda,
+          double fold, const Eigen::VectorXd& gradient, double dt) const {
+  // TODO(edrumwri): Do a proper linesearch.
+  // Set alpha to a constant.
+  const double alpha = 0.001;
+
+  // Compute the new lambda.
+  LineSearchOutput out;
+  out.lambda_new = lambda + dlambda*alpha;
+
+  // Evaluate the constraint equations.
+  const auto& system = this->get_system();
+  const Context<T>& context = this->get_context();
+  Context<T>* context_mut = (Context<T>*) &context;
+  UpdateContinuousState(context_mut, out.lambda_new, dt);
+  out.goutput = system.EvaluateConstraintEquations(context);
+
+  // Compute the new value of the objective function.
+  out.fnew = out.goutput.squaredNorm() / 2;
+
+  return out;
+}
+
+}  // namespace systems
+}  // namespace drake
+

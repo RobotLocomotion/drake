@@ -46,12 +46,6 @@ typename BeadOnAWire<T>::DScalar BeadOnAWire<T>::inverse_sinusoidal_function(con
  }
 
 /*
-template <class T, class ADiff>
-Eigen::Vector3<ADiff> BeadOnAWire<T>::sinusoidal_function(
-    const ADiff& s) {
-  return Eigen::Vector3<ADiff>(std::cos(s), std::sin(s), s);
-}
-
 
 template <class T>
 Eigen::VectorXd BeadOnAWire<T>::CalcVelocityChangeFromConstraintImpulses(
@@ -67,25 +61,8 @@ Eigen::VectorXd BeadOnAWire<T>::CalcVelocityChangeFromConstraintImpulses(
 }
 */
 
-/*
-/// Computes the time derivative of the constraint equations, evaluated at
-/// the current generalized coordinates and generalized velocity.
 template <class T>
-Eigen::VectorXd BeadOnAWire<T>::EvalConstraintEquationDot(
-    const systems::Context<T>& context) const {
-  // The constraint function is defined as:
-  // g(x) = f(f⁻¹(x)) - x
-  // where x is the position of the bead and f() is the parametric wire
-  // function. Therefore:
-  // dg/dt(x) = df/dt (f⁻¹(x)) ⋅ df⁻¹/dt (x) - v
-
-  // For example, assume that f(s) = | cos(s) sin(s) s | and that f⁻¹(x) = x₃
-  // Then dg/dt = | -sin(v₃) cos(v₃) 1 | ⋅ v₃ - v₃
-  // TODO(edrumwri): Finish implementing this.
-}
-
-template <class T>
-Eigen::VectorXd BeadOnAWire<T>::CalcConstraintEquationOutput(
+Eigen::VectorXd BeadOnAWire<T>::EvalConstraintEquations(
     const systems::Context<T>& context) const {
   // The constraint function is defined as:
   // g(x) = f(f⁻¹(x)) - x
@@ -93,21 +70,79 @@ Eigen::VectorXd BeadOnAWire<T>::CalcConstraintEquationOutput(
   // function.
 
   // Get the position of the bead.
-  const Vector3<T> x = context.get_continuous_state()->
-      get_generalized_position().CopyToVector();
+  const int three_d = 3;
+  Eigen::Matrix<DScalar, 3, 1> x;
+  const auto position = context.get_continuous_state()->
+                            get_generalized_position().CopyToVector();
+  for (int i=0; i< three_d; ++i)
+    x(i).value() = position[i];
 
   // Call the inverse function if there is one.
-  double s;
+  DScalar s;
   if (inv_f_)
     s = inv_f_(x);
   else {
     // TODO(edrumwri): Implement generic method.
   }
 
-  // Call the forward method and return the differene
-  return f_(s) - x;
+  // Get the output position.
+  Eigen::Matrix<DScalar, 3, 1> fs = f_(s);
+  Eigen::VectorXd xprime(3);
+  for (int i=0; i< three_d; ++i)
+    xprime[i] = fs(i).value().value() - x(i).value().value();
+
+  return xprime;
 }
-*/
+
+/// Computes the time derivative of the constraint equations, evaluated at
+/// the current generalized coordinates and generalized velocity.
+template <class T>
+Eigen::VectorXd BeadOnAWire<T>::EvalConstraintEquationsDot(
+    const systems::Context<T>& context) const {
+  // The constraint function is defined as:
+  // g(x) = f(f⁻¹(x)) - x
+  // where x is the position of the bead and f() is the parametric wire
+  // function. Therefore:
+  // dg/dt(x) = df/dt (f⁻¹(x)) ⋅ df⁻¹/dt (x) - v
+
+  // For example, assume that f(s) = | cos(s) sin(s) s | and that
+  // f⁻¹(x) = atan2(x(2),x(1)).
+  //
+  // Then dg/dt = | -sin(atan2(x(2),x(1))) cos(atan2(x(2),x(1))) 1 | ⋅
+  //              d/dt atan2(x(2),x(1)) - | v(1) v(2) v(3) |
+
+  // Compute df/dt (f⁻¹(x)). The result will be a vector.
+  const auto& xc = context.get_continuous_state()->get_vector();
+  Eigen::Matrix<BeadOnAWire<T>::DScalar, 3, 1> x;
+  x(0).value() = xc.GetAtIndex(0);
+  x(1).value() = xc.GetAtIndex(1);
+  x(2).value() = xc.GetAtIndex(2);
+  BeadOnAWire<T>::DScalar sprime = inv_f_(x);
+  sprime.derivatives()(0) = 1;
+  const Eigen::Matrix<BeadOnAWire<T>::DScalar, 3, 1> fprime = f_(sprime);
+
+  // Compute df⁻¹/dt (x). This result will be a scalar.
+  Eigen::Matrix<BeadOnAWire<T>::DScalar, 3, 1> xprime;
+  xprime(0).value() = xc.GetAtIndex(0);
+  xprime(1).value() = xc.GetAtIndex(1);
+  xprime(2).value() = xc.GetAtIndex(2);
+  xprime(0).value().derivatives()(0) = xc.GetAtIndex(3);
+  xprime(1).value().derivatives()(0) = xc.GetAtIndex(4);
+  xprime(2).value().derivatives()(0) = xc.GetAtIndex(5);
+  const double dinvf_dt = inv_f_(xprime).value().derivatives()(0);
+
+  // Set the velocity vector.
+  const Eigen::Vector3d v(xc.GetAtIndex(3), xc.GetAtIndex(4),
+                          xc.GetAtIndex(5));
+
+  // Compute the result.
+  const int three_d = 3;
+  Eigen::VectorXd result(three_d);
+  for (int i=0; i< three_d; ++i)
+    result(i) = fprime(i).derivatives()(0).value()*dinvf_dt - v(i);
+
+  return result;
+}
 
 template <typename T>
 void BeadOnAWire<T>::DoCalcOutput(const systems::Context<T>& context,
@@ -122,6 +157,23 @@ void BeadOnAWire<T>::DoCalcOutput(const systems::Context<T>& context,
 
   output_vector->get_mutable_value() =
       context.get_continuous_state()->CopyToVector();
+}
+
+template <class T>
+int BeadOnAWire<T>::get_num_constraint_equations(
+    const systems::Context<T>& context) const {
+  return (coordinate_type_ == kAbsoluteCoordinates) ? 3 : 0;
+}
+
+template <class T>
+Eigen::VectorXd BeadOnAWire<T>::CalcVelocityChangeFromConstraintImpulses(
+    const systems::Context<T>& context, const Eigen::MatrixXd& J,
+    const Eigen::VectorXd& lambda) const {
+  DRAKE_DEMAND(coordinate_type_ == kAbsoluteCoordinates);
+
+  // The bead on the wire is massless, so the velocity change is equal to
+  // simply Jᵀλ
+  return J.transpose() * lambda;
 }
 
 template <typename T>
