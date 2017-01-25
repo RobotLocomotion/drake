@@ -364,6 +364,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearCost(
   VectorXDecisionVariable var(0);
   unordered_map<size_t, int> map_var_to_index;
   ExtractVariablesFromExpression(e, &var, &map_var_to_index);
+  DRAKE_ASSERT(IsDecisionVariable(var));
   Eigen::RowVectorXd c(var.size());
   double constant_term;
   DecomposeLinearExpression(e, map_var_to_index, c, &constant_term);
@@ -446,6 +447,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
   for (int i = 0; i < v.size(); ++i) {
     ExtractVariablesFromExpression(v(i), &vars, &map_var_to_index);
   }
+  DRAKE_ASSERT(IsDecisionVariable(vars));
 
   // Construct A, new_lb, new_ub. map_var_to_index is used here.
   Eigen::MatrixXd A{Eigen::MatrixXd::Zero(v.size(), vars.size())};
@@ -609,6 +611,7 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
   Eigen::VectorXd b(v.size());
   VectorXDecisionVariable vars{};
   DecomposeLinearExpression(v, &A, &b, &vars);
+  DRAKE_ASSERT(IsDecisionVariable(vars));
   DRAKE_DEMAND(vars.rows() >= 1);
   return Binding<LorentzConeConstraint>(AddLorentzConeConstraint(A, b, vars),
                                         vars);
@@ -652,6 +655,7 @@ MathematicalProgram::AddRotatedLorentzConeConstraint(
   VectorXDecisionVariable vars{};
   DecomposeLinearExpression(v, &A, &b, &vars);
   DRAKE_DEMAND(vars.rows() >= 1);
+  DRAKE_ASSERT(IsDecisionVariable(vars));
   return Binding<RotatedLorentzConeConstraint>(
       AddRotatedLorentzConeConstraint(A, b, vars), vars);
 }
