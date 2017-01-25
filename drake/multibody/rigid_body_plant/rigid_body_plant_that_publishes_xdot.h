@@ -49,7 +49,7 @@ class RigidBodyPlantThatPublishesXdot : public RigidBodyPlant<T> {
 
   // A const pointer to an LCM subsystem. Note that while the pointer is const,
   // the LCM subsystem is not const.
-  lcm::DrakeLcmInterface* const lcm_{};
+  ::drake::lcm::DrakeLcmInterface* const lcm_{};
 
   // The LCM message upon which to publish `xdot`.
   const std::string channel_;
