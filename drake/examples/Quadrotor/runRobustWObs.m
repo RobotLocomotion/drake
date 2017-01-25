@@ -1,4 +1,4 @@
-function [p, v, xtraj1, utraj1, xtraj2, utraj2] = runRobustWObs
+function [p, v, xtraj1, utraj1, xtraj2, utraj2, xtraj3, utraj3] = runRobustWObs
 
 % simple planning demo which takes the quadrotor from hover at y=0m to a new hover at
 % y=10m with minimal thrust. Creates a forest set up to have the Quadrotor
@@ -109,9 +109,9 @@ prog1 = prog1.addInputConstraint(ConstantConstraint(u0),N1-1);
 %prog1 = prog1.addStateConstraint(BoundingBoxConstraint([0], [inf]), 2:(N-1), 3);
 prog1 = prog1.addRunningCost(@cost);
 prog1 = prog1.setSolverOptions('snopt','majoroptimalitytolerance',1e-3);
-prog1 = prog1.setSolverOptions('snopt','minoroptimalitytolerance',1e-3);
+prog1 = prog1.setSolverOptions('snopt','minoroptimalitytolerance',1e-4);
 prog1 = prog1.setSolverOptions('snopt','majorfeasibilitytolerance',1e-3);
-prog1 = prog1.setSolverOptions('snopt','minorfeasibilitytolerance',1e-3);
+prog1 = prog1.setSolverOptions('snopt','minorfeasibilitytolerance',1e-4);
 prog1 = prog1.setSolverOptions('snopt','superbasicslimit',5000);
 prog1 = prog1.setSolverOptions('snopt','iterationslimit',100000);
 
@@ -184,11 +184,39 @@ prog2 = prog2.addInputConstraint(ConstantConstraint(u0),N2-1);
 %prog2 = prog2.addStateConstraint(BoundingBoxConstraint([0], [inf]), 2:(N-1), 3);
 prog2 = prog2.addStateConstraint(collision_constraint,2:N2-1,1:2);
 prog2 = prog2.addRunningCost(@cost);
+prog2 = prog2.setSolverOptions('snopt','majoroptimalitytolerance',1e-2);
+prog2 = prog2.setSolverOptions('snopt','minoroptimalitytolerance',1e-4);
+prog2 = prog2.setSolverOptions('snopt','majorfeasibilitytolerance',1e-3);
+prog2 = prog2.setSolverOptions('snopt','minorfeasibilitytolerance',1e-4);
+prog2 = prog2.setSolverOptions('snopt','superbasicslimit',5000);
+prog2 = prog2.setSolverOptions('snopt','iterationslimit',100000);
+
+prog2 = addPlanVisualizer(p,prog2);
+tic
+[xtraj2,utraj2,z2,F2,info2] = prog2.solveTraj(tf0,traj_init);
+toc
+
+traj_init.x = xtraj2;
+traj_init.u = utraj2;
+
+N2 = 121;
+options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;
+prog2 = RobustDirtranTrajectoryOptimization(p,N2,D,E0,Q,R,Qf,duration,options);
+prog2 = prog2.addRobustCost(Q,5*R,Qf);
+%prog2 = prog2.addRobustInputConstraint();
+prog2 = prog2.addRobustStateConstraint(collision_constraint,2:(N2-1),1:2);
+prog2 = prog2.addStateConstraint(ConstantConstraint(double(x0)),1);
+prog2 = prog2.addInputConstraint(ConstantConstraint(u0),1);
+prog2 = prog2.addStateConstraint(ConstantConstraint(double(xf)),N2);
+prog2 = prog2.addInputConstraint(ConstantConstraint(u0),N2-1);
+prog2 = prog2.addStateConstraint(BoundingBoxConstraint([0], [inf]), 2:(N-1), 3);
+prog2 = prog2.addStateConstraint(collision_constraint,2:N2-1,1:2);
+prog2 = prog2.addRunningCost(@cost);
 prog2 = prog2.setSolverOptions('snopt','majoroptimalitytolerance',1e-3);
 prog2 = prog2.setSolverOptions('snopt','minoroptimalitytolerance',1e-4);
 prog2 = prog2.setSolverOptions('snopt','majorfeasibilitytolerance',1e-3);
 prog2 = prog2.setSolverOptions('snopt','minorfeasibilitytolerance',1e-4);
-prog1 = prog1.setSolverOptions('snopt','superbasicslimit',5000);
+prog2 = prog2.setSolverOptions('snopt','superbasicslimit',5000);
 prog2 = prog2.setSolverOptions('snopt','iterationslimit',100000);
 
 prog2 = addPlanVisualizer(p,prog2);
@@ -202,37 +230,80 @@ tsamp2 = linspace(xtraj2.tspan(1), xtraj2.tspan(2), N);
 xsamp2 = xtraj2.eval(tsamp2);
 usamp2 = utraj2.eval(tsamp2);
 
+D = diag([.4 .4 .05].^2);
+E0 = .01^2*eye(12);
+Q = blkdiag(10*eye(6), 1*eye(6));
+R = .1*eye(4);
+Qf = Q;
+N3 = 121;
+options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;
+prog3 = RobustDirtranTrajectoryOptimization(p,N3,D,E0,Q,R,Qf,duration,options);
+prog3 = prog3.addRobustCost(Q,5*R,Qf);
+%prog3 = prog3.addRobustInputConstraint();
+prog3 = prog3.addRobustStateConstraint(collision_constraint,2:(N3-1),1:2);
+prog3 = prog3.addStateConstraint(ConstantConstraint(double(x0)),1);
+prog3 = prog3.addInputConstraint(ConstantConstraint(u0),1);
+prog3 = prog3.addStateConstraint(ConstantConstraint(double(xf)),N3);
+prog3 = prog3.addInputConstraint(ConstantConstraint(u0),N3-1);
+%prog3 = prog3.addStateConstraint(BoundingBoxConstraint([0], [inf]), 2:(N-1), 3);
+prog3 = prog3.addStateConstraint(collision_constraint,2:N3-1,1:2);
+prog3 = prog3.addRunningCost(@cost);
+prog3 = prog3.setSolverOptions('snopt','majoroptimalitytolerance',1e-3);
+prog3 = prog3.setSolverOptions('snopt','minoroptimalitytolerance',1e-4);
+prog3 = prog3.setSolverOptions('snopt','majorfeasibilitytolerance',1e-3);
+prog3 = prog3.setSolverOptions('snopt','minorfeasibilitytolerance',1e-4);
+prog3 = prog3.setSolverOptions('snopt','superbasicslimit',5000);
+prog3 = prog3.setSolverOptions('snopt','iterationslimit',100000);
+
+prog3 = addPlanVisualizer(p,prog3);
+tic
+[xtraj3,utraj3,z3,F3,info3] = prog3.solveTraj(tf0,traj_init);
+toc
+
+v.playback(xtraj2, struct('slider',true));
+
+tsamp3 = linspace(xtraj2.tspan(1), xtraj2.tspan(2), N);
+xsamp3 = xtraj2.eval(tsamp2);
+usamp3 = utraj2.eval(tsamp2);
+
 figure();
 subplot(3,1,1);
 plot(tsamp1, xsamp1(1,:));
 hold on;
 plot(tsamp2, xsamp2(1,:));
+plot(tsamp3, xsamp3(1,:));
 subplot(3,1,2);
 plot(tsamp1, xsamp1(2,:));
 hold on;
 plot(tsamp2, xsamp2(2,:));
+plot(tsamp3, xsamp3(2,:));
 subplot(3,1,3);
 plot(tsamp1, xsamp1(3,:));
 hold on;
 plot(tsamp2, xsamp2(3,:));
+plot(tsamp3, xsamp3(3,:));
 
 figure();
 subplot(4,1,1);
 plot(tsamp1, usamp1(1,:));
 hold on;
 plot(tsamp2, usamp2(1,:));
+plot(tsamp3, usamp3(1,:));
 subplot(4,1,2);
 plot(tsamp1, usamp1(2,:));
 hold on;
 plot(tsamp2, usamp2(2,:));
+plot(tsamp3, usamp3(2,:));
 subplot(4,1,3);
 plot(tsamp1, usamp1(3,:));
 hold on;
 plot(tsamp2, usamp2(3,:));
+plot(tsamp3, usamp3(3,:));
 subplot(4,1,4);
 plot(tsamp1, usamp1(4,:));
 hold on;
 plot(tsamp2, usamp2(4,:));
+plot(tsamp3, usamp3(4,:));
 
 end
 

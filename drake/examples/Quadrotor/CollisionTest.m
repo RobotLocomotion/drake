@@ -15,18 +15,25 @@ xsamp1 = xtraj1.eval(tsamp);
 usamp1 = utraj1.eval(tsamp);
 xsamp2 = xtraj2.eval(tsamp);
 usamp2 = utraj2.eval(tsamp);
+xsamp3 = xtraj3.eval(tsamp);
+usamp3 = utraj3.eval(tsamp);
 
 A1 = zeros(12,12,N);
 B1 = zeros(12,4,N);
 A2 = A1;
 B2 = B1;
+A3 = A1;
+B3 = B1;
 for k = 1:N
     [~,df1] = p.dynamics_w(0, xsamp1(:,k), usamp1(:,k), zeros(3,1));
     [~,df2] = p.dynamics_w(0, xsamp2(:,k), usamp2(:,k), zeros(3,1));
+    [~,df3] = p.dynamics_w(0, xsamp3(:,k), usamp3(:,k), zeros(3,1));
     A1(:,:,k) = expm(dt*df1(:,2:13));
     B1(:,:,k) = iexpm(df1(:,2:13),dt)*df1(:,14:17);
     A2(:,:,k) = expm(dt*df2(:,2:13));
     B2(:,:,k) = iexpm(df2(:,2:13),dt)*df2(:,14:17);
+    A3(:,:,k) = expm(dt*df3(:,2:13));
+    B3(:,:,k) = iexpm(df3(:,2:13),dt)*df3(:,14:17);
 end
 
 P1 = zeros(12,12,N);
@@ -45,23 +52,35 @@ for k = (N-1):-1:1
     P2(:,:,k) = Q + K2(:,:,k)'*R*K2(:,:,k) + (A2(:,:,k)-B2(:,:,k)*K2(:,:,k))'*P2(:,:,k+1)*(A2(:,:,k)-B2(:,:,k)*K2(:,:,k));
 end
 
+P3 = zeros(12,12,N);
+K3 = zeros(4,12,N-1);
+P3(:,:,N) = Qf;
+for k = (N-1):-1:1
+    K3(:,:,k) = (R+B3(:,:,k)'*P3(:,:,k+1)*B3(:,:,k))\(B3(:,:,k)'*P3(:,:,k+1)*A3(:,:,k));
+    P3(:,:,k) = Q + K3(:,:,k)'*R*K3(:,:,k) + (A3(:,:,k)-B3(:,:,k)*K3(:,:,k))'*P3(:,:,k+1)*(A3(:,:,k)-B3(:,:,k)*K3(:,:,k));
+end
+
 figure();
 subplot(4,1,1);
 plot(tsamp, usamp1(1,:));
 hold on;
 plot(tsamp, usamp2(1,:));
+plot(tsamp, usamp3(1,:));
 subplot(4,1,2);
 plot(tsamp, usamp1(2,:));
 hold on;
 plot(tsamp, usamp2(2,:));
+plot(tsamp, usamp3(2,:));
 subplot(4,1,3);
 plot(tsamp, usamp1(3,:));
 hold on;
 plot(tsamp, usamp2(3,:));
+plot(tsamp, usamp3(3,:));
 subplot(4,1,4);
 plot(tsamp, usamp1(4,:));
 hold on;
 plot(tsamp, usamp2(4,:));
+plot(tsamp, usamp3(4,:));
 
 % design FIR filter to filter noise to 5% of Nyquist rate
 b = fir1(48, 0.05);
@@ -97,6 +116,14 @@ for k = 1:(N-1)
     xcl2(:,k+1) = xk(:,2);
 end
 
+%Simulate with random wind input
+xcl3 = zeros(12,N);
+xcl3(:,1) = xsamp3(:,1);
+for k = 1:(N-1)
+    [~,xk] = ode3(@(t,x)p.dynamics_w(t,x,usamp3(:,k)-K3(:,:,k)*(xcl3(:,k)-xsamp3(:,k)), w(:,k)), [0 dt], xcl3(:,k), dt);
+    xcl3(:,k+1) = xk(:,2);
+end
+
 %Check for collisions
 tree_width = ((.1+.4*[.45 .9 .95 .5 .65 .85]')+.54).^2;
 for k = 1:size(xcl1,2)
@@ -110,10 +137,16 @@ for k = 1:size(xcl2,2)
 end
 hit2(j) = any(check2(:));
 
+for k = 1:size(xcl2,2)
+    check3(:,k) = (treeDistance(xcl3(1:6,k)) < tree_width);
+end
+hit3(j) = any(check3(:));
+
 end
 
 sum(hit1)
 sum(hit2)
+sum(hit3)
 
 % figure();
 % subplot(3,1,1);
