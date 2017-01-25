@@ -195,6 +195,52 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable4) {
   CheckAddedVariable(prog, X, "B(0)\nB(1)\nB(2)\nB(3)\n", false, MathematicalProgram::VarType::BINARY);
 }
 
+template <typename Derived1, typename Derived2>
+typename std::enable_if<std::is_same<typename Derived1::Scalar, symbolic::Variable>::value &&
+    std::is_same<typename Derived2::Scalar, double>::value>::type
+CheckGetSolution(const MathematicalProgram& prog, const Eigen::MatrixBase<Derived1>& vars, const Eigen::MatrixBase<Derived2>& val_expected) {
+  auto val = prog.GetSolution(vars);
+  static_assert(std::is_same<decltype(val), Eigen::Matrix<double, Derived1::RowsAtCompileTime, Derived1::ColsAtCompileTime>>::value,
+  "GetSolution does not return the right type of matrix");
+  EXPECT_TRUE(CompareMatrices(val, val_expected));
+  for (int i = 0; i < vars.rows(); ++i) {
+    for (int j = 0; j < vars.cols(); ++j) {
+      EXPECT_NEAR(prog.GetSolution(vars(i, j)), val(i, j), 1E-14);
+    }
+  }
+};
+
+GTEST_TEST(testGetSolution, testSetSolution1) {
+  // Tests setting and getting solution for
+  // 1. A static-sized  matrix of decision variables.
+  // 2. A dynamic-sized matrix of decision variables.
+  // 3. A static-sized  vector of decision variables.
+  // 4. A dynamic-sized vector of decision variables.
+  MathematicalProgram prog;
+  auto X1 = prog.NewContinuousVariables<2, 3>("X");
+  auto X2 = prog.NewContinuousVariables(2, 3, "X");
+  auto x3 = prog.NewContinuousVariables<4>("x");
+  auto x4 = prog.NewContinuousVariables(4, "x");
+
+  Eigen::Matrix<double, 2, 3> X1_value{};
+  X1_value << 0, 1, 2, 3, 4, 5;
+  Eigen::Matrix<double, 2, 3> X2_value{};
+  X2_value = -X1_value;
+  Eigen::Vector4d x3_value(3, 4, 5, 6);
+  Eigen::Vector4d x4_value = -x3_value;
+  for (int i = 0; i < 3; ++i) {
+    prog.SetDecisionVariableValues(X1.col(i), X1_value.col(i));
+    prog.SetDecisionVariableValues(X2.col(i), X2_value.col(i));
+  }
+  prog.SetDecisionVariableValues(x3, x3_value);
+  prog.SetDecisionVariableValues(x4, x4_value);
+
+  CheckGetSolution(prog, X1, X1_value);
+  CheckGetSolution(prog, X2, X2_value);
+  CheckGetSolution(prog, x3, x3_value);
+  CheckGetSolution(prog, x4, x4_value);
+}
+
 GTEST_TEST(testMathematicalProgram, testAddFunction) {
   MathematicalProgram prog;
   prog.NewContinuousVariables<1>();
