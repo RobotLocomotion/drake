@@ -41,7 +41,7 @@ new_git_repository(
 new_git_repository(
     name = "eigen",
     remote = "https://github.com/RobotLocomotion/eigen-mirror.git",
-    commit = "d3ee2bc648be3d8be8c596a9a0aefef656ff8637",
+    commit = "1b7acef29a4c53b5867e5d9da7e97bde436219f9",
     build_file = "tools/eigen.BUILD",
 )
 
