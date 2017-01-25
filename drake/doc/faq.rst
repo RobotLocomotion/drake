@@ -39,25 +39,6 @@ error, add ``-DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON`` to the ``cmake`` command::
     cd drake-distro/build
     cmake .. -DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON
 
-.. _faq_cmake_vtk_build_GLintptr_failure:
-
-Why Does VTK Build Fail Indicating that ‘GLintptr’ has not been declared?
-=========================================================================
-
-Symptom: When build Drake using CMake options
-``-DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON``, the build of VTK fails with the
-following error::
-
-    /usr/include/GL/glxext.h:480:143: error: ‘GLintptr’ has not been declared
-
-Solution: This error appears to be due to VTK5's reliance on the
-``GLX_GLXEXT_LEGACY`` macro, which was inexplicably commented out. See
-discussion
-`here <https://github.com/UV-CDAT/uvcdat/issues/983#issuecomment-71814770>`_.
-To work around this error, change Drake's ``externals/vtk`` submodule to
-point to ``https://github.com/liangfok/VTK.git`` and use SHA
-``ec43254f432af2e49f10bd2d1996cc578895c19f``.
-
 .. _faq_vmware:
 
 Why doesn't Drake Visualizer work in VMWare Fusion or Workstation?
