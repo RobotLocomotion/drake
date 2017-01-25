@@ -655,6 +655,11 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSliding) {
   ts.set_mu_coulomb(mu);
   pdae.set_mu_coulomb(mu);
 
+  // Set "one step" constraint stabilization (not generally recommended, but
+  // works for a single step) and small regularization.
+  ts.set_cfm(std::numeric_limits<double>::epsilon());
+  ts.set_erp(1.0);
+
   // Create contexts for both.
   std::unique_ptr<Context<double>> context_ts = ts.CreateDefaultContext();
   std::unique_ptr<Context<double>> context_pdae = pdae.CreateDefaultContext();
@@ -684,9 +689,8 @@ GTEST_TEST(PainleveCrossValidationTest, OneStepSolutionSliding) {
   const Context<double>& context_ts_new = simulator_ts.get_context();
   const auto& xd = context_ts_new.get_discrete_state(0)->get_value();
 
-  // Somewhat significant tolerance is necessary because of the constraint
-  // stabilized solution.
-  const double tol = 2e-8;
+  // Check that the solution is nearly identical.
+  const double tol = std::numeric_limits<double>::epsilon()*10;
   EXPECT_NEAR(xc->GetAtIndex(0), xd[0], tol);
   EXPECT_NEAR(xc->GetAtIndex(1), xd[1], tol);
   EXPECT_NEAR(xc->GetAtIndex(2), xd[2], tol);

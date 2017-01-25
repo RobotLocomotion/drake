@@ -97,8 +97,8 @@ void Painleve<T>::DoCalcDiscreteVariableUpdates(
   // Erin Catto at the 2011 Game Developers Conference (Soft Constraints:
   // Reinventing the Spring,
   // http://box2d.org/files/GDC2011/GDC2011_Catto_Erin_Soft_Constraints.pdf).
-  const double erp = 0.8;
-  const double cfm = 1e-8;
+  const double erp = get_erp(); 
+  const double cfm = get_cfm();
 
   // Get the necessary state variables.
   const systems::BasicVector<T>& state = *context.get_discrete_state(0);

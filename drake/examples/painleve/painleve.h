@@ -85,6 +85,42 @@ class Painleve : public systems::LeafSystem<T> {
   /// @throws std::logic_error if @p dt is not positive.
   explicit Painleve(double dt);
 
+  /// Gets the constraint force mixing parameter (CFM, used for time stepping
+  /// systems only).
+  double get_cfm() const { return cfm_; }
+
+  /// Sets the constraint force mixing parameter (CFM, used for time stepping
+  /// systems only). The default CFM value is 1e-8.
+  /// @param cfm a floating point value in the range [0, infinity].
+  /// @throws std::logic_error if this is not a time stepping system or if
+  ///         cfm is set to a negative value.
+  void set_cfm(double cfm) {
+    if (!is_time_stepping_system())
+      throw std::logic_error("Attempt to set CFM for non-time stepping "
+                             "system.");
+    if (cfm < 0)
+      throw std::logic_error("Negative CFM value specified.");
+    cfm_ = cfm;
+  }
+
+  /// Gets the error reduction parameter (ERP, used for time stepping systems
+  /// only).
+  double get_erp() const { return erp_; }
+
+  /// Sets the error reduction parameter (ERP, used for time stepping systems
+  /// only). The default ERP value is 0.8.
+  /// @param erp a floating point value in the range [0, 1].
+  /// @throws std::logic_error if this is not a time stepping system or if
+  ///         erp is set to a negative value.
+  void set_erp(double erp) {
+    if (!is_time_stepping_system())
+      throw std::logic_error("Attempt to set ERP for non-time stepping "
+                             "system.");
+    if (erp < 0 || erp > 1)
+      throw std::logic_error("Invalid ERP value specified.");
+    erp_ = erp;
+  }
+
   /// Models impact using an inelastic impact model with friction.
   /// @p new_state is set to the output of the impact model on return.
   void HandleImpact(const systems::Context<T>& context,
@@ -186,6 +222,8 @@ class Painleve : public systems::LeafSystem<T> {
   double mu_{1000.0};       // The coefficient of friction.
   double g_{-9.81};         // The acceleration due to gravity.
   double J_{1.0};           // The moment of the inertia of the rod.
+  double erp_{0.8};         // ERP for time stepping systems
+  double cfm_{1e-8};        // CFM for time stepping systems
 };
 
 }  // namespace painleve
