@@ -39,12 +39,12 @@
   <!--Cylinder: length is along the y-axis! -->
   <!-- some constants -->
   <!-- Fix to world just for testing -->
-  <link name="world"/>
+  <!-- link name="world"/ -->
   <!--iiwa-->
   <!--joint between {parent} and link_0-->
   <joint name="world_iiwa_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0.0"/>
-    <parent link="world"/>
+    <!-- parent link="world"/ -->
     <child link="iiwa_link_0"/>
   </joint>
   <link name="iiwa_link_0">

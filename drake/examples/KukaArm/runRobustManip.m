@@ -1,4 +1,6 @@
-function runDirtranManip(N)
+function runRobustManip()
+
+N = 60;
 
 options.with_weight = true;
 options.with_box = true;
