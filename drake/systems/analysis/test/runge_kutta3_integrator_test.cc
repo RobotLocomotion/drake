@@ -360,7 +360,7 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   RungeKutta2Integrator<double> rk2(plant, dt, context.get());
   rk2.Initialize();
   const double t_final = 1.0;
-  for (double t = 0.0; std::abs(t - t_final) > dt; t += dt)
+  for (double t = 0.0; std::abs(t - t_final) >= dt; t += dt)
     rk2.StepOnceAtMost(inf, inf, dt);  // Steps forward by dt.
 
   // Get the final state.

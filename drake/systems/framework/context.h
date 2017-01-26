@@ -147,6 +147,12 @@ class Context {
     return get_state().get_abstract_state()->size();
   }
 
+  /// Returns a pointer to the abstract component of the state, which
+  /// may be of size zero.
+  const AbstractState* get_abstract_state() const {
+    return get_state().get_abstract_state();
+  }
+
   /// Returns a mutable pointer to the abstract component of the state,
   /// which may be of size zero.
   AbstractState* get_mutable_abstract_state() {

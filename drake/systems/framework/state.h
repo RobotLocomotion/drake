@@ -65,6 +65,22 @@ class State {
     return abstract_state_.get();
   }
 
+  /// Returns a const pointer to the abstract component of the
+  /// state at @p index.  Asserts if @p index doesn't exist.
+  template <typename U>
+  const U& get_abstract_state(int index) const {
+    const AbstractState* xm = get_abstract_state();
+    return xm->get_abstract_state(index).GetValue<U>();
+  }
+
+  /// Returns a mutable pointer to element @p index of the abstract state.
+  /// Asserts if @p index doesn't exist.
+  template <typename U>
+  U& get_mutable_abstract_state(int index) {
+    AbstractState* xm = get_mutable_abstract_state();
+    return xm->get_mutable_abstract_state(index).GetMutableValue<U>();
+  }
+
   /// Copies the values from another State of the same scalar type into this
   /// State.
   void CopyFrom(const State<T>& other) {
