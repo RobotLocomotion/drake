@@ -751,15 +751,15 @@ Monomial::Monomial(const Variable& var, const int exponent)
     powers_.emplace(var.get_id(), exponent);
   }
 }
-Monomial::Monomial(const map<Variable::IdType, int>& powers)
+Monomial::Monomial(const map<Variable::Id, int>& powers)
     : degree_{GetDegree(powers)}, powers_(powers) {}
 Expression Monomial::ToExpression(
-    const unordered_map<Variable::IdType, Variable>& id_to_var_map) const {
+    const unordered_map<Variable::Id, Variable>& id_to_var_map) const {
   // It builds this base_to_exp_map and uses ExpressionMulFactory to build a
   // multiplication expression.
   map<Expression, Expression> base_to_exp_map;
   for (const auto& p : powers_) {
-    const Variable::IdType id{p.first};
+    const Variable::Id id{p.first};
     const int exponent{p.second};
     const auto it = id_to_var_map.find(id);
     if (it != id_to_var_map.end()) {
@@ -777,9 +777,9 @@ Expression Monomial::ToExpression(
   return ExpressionMulFactory{1.0, base_to_exp_map}.GetExpression();
 }
 
-int Monomial::GetDegree(const map<Variable::IdType, int>& powers) {
+int Monomial::GetDegree(const map<Variable::Id, int>& powers) {
   return accumulate(powers.begin(), powers.end(), 0,
-                    [](const int degree, const pair<Variable::IdType, int>& p) {
+                    [](const int degree, const pair<Variable::Id, int>& p) {
                       return degree + p.second;
                     });
 }
@@ -793,9 +793,9 @@ std::ostream& operator<<(std::ostream& out, const Monomial& m) {
 }
 
 Monomial operator*(const Monomial& m1, const Monomial& m2) {
-  map<Variable::IdType, int> powers{m1.get_powers()};
-  for (const pair<Variable::IdType, int>& p : m2.get_powers()) {
-    const Variable::IdType var{p.first};
+  map<Variable::Id, int> powers{m1.get_powers()};
+  for (const pair<Variable::Id, int>& p : m2.get_powers()) {
+    const Variable::Id var{p.first};
     const int exponent{p.second};
     auto it = powers.find(var);
     if (it == powers.end()) {

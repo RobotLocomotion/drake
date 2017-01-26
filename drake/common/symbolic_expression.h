@@ -582,26 +582,26 @@ class Monomial {
   /** Default constructor. */
   Monomial() = default;
   /** Constructs a Monomial from @p powers. */
-  explicit Monomial(const std::map<Variable::IdType, int>& powers);
+  explicit Monomial(const std::map<Variable::Id, int>& powers);
   /** Constructs a Monomial from @p var and @exponent. */
   Monomial(const Variable& var, const int exponent);
   /** Returns the degree of this Monomial. */
   int get_degree() const { return degree_; }
-  const std::map<Variable::IdType, int>& get_powers() const { return powers_; }
+  const std::map<Variable::Id, int>& get_powers() const { return powers_; }
   /** Returns a symbolic expression representing this monomial. Since, this
    * class only includes the ID of a variable, not a variable itself, we need
    * @id_to_var_map, a map from a variable ID to a variable as an argument of
    * this method to build an expression. */
-  Expression ToExpression(const std::unordered_map<Variable::IdType, Variable>&
-                              id_to_var_map) const;
+  Expression ToExpression(
+      const std::unordered_map<Variable::Id, Variable>& id_to_var_map) const;
 
  private:
   // Computes the degree of a monomial. This method is used in a constructor of
   // Monomial to set its degree at construction.
-  static int GetDegree(const std::map<Variable::IdType, int>& powers);
+  static int GetDegree(const std::map<Variable::Id, int>& powers);
 
   int degree_{0};
-  std::map<Variable::IdType, int> powers_;
+  std::map<Variable::Id, int> powers_;
   friend std::ostream& operator<<(std::ostream& out, const Monomial& m);
 };
 
@@ -655,13 +655,13 @@ struct GradedReverseLexOrder {
       // Because both of them are 1.
       return false;
     }
-    const std::map<Variable::IdType, int>& powers1{m1.get_powers()};
-    const std::map<Variable::IdType, int>& powers2{m2.get_powers()};
-    std::map<Variable::IdType, int>::const_iterator it1{powers1.cbegin()};
-    std::map<Variable::IdType, int>::const_iterator it2{powers2.cbegin()};
+    const std::map<Variable::Id, int>& powers1{m1.get_powers()};
+    const std::map<Variable::Id, int>& powers2{m2.get_powers()};
+    std::map<Variable::Id, int>::const_iterator it1{powers1.cbegin()};
+    std::map<Variable::Id, int>::const_iterator it2{powers2.cbegin()};
     while (it1 != powers1.cend() && it2 != powers2.cend()) {
-      const Variable::IdType var1{it1->first};
-      const Variable::IdType var2{it2->first};
+      const Variable::Id var1{it1->first};
+      const Variable::Id var2{it2->first};
       const int exponent1{it1->second};
       const int exponent2{it2->second};
       if (variable_order_(var2, var1)) {
@@ -722,13 +722,12 @@ Eigen::Matrix<Expression, rows, 1> ComputeMonomialBasis(const Variables& vars,
   DRAKE_DEMAND(vars.size() > 0);
   DRAKE_DEMAND(degree >= 0);
   // 1. Collect monomials.
-  std::set<Monomial, GradedReverseLexOrder<std::less<Variable::IdType>>>
-      monomials;
+  std::set<Monomial, GradedReverseLexOrder<std::less<Variable::Id>>> monomials;
   for (int i{degree}; i >= 0; --i) {
     MonomialsOfDegreeN(vars, i, Monomial{}, &monomials);
   }
   // 2. Build id_to_var_map (used in step 3).
-  std::unordered_map<Variable::IdType, Variable> id_to_var_map;
+  std::unordered_map<Variable::Id, Variable> id_to_var_map;
   for (const Variable& var : vars) {
     id_to_var_map.emplace(var.get_id(), var);
   }
