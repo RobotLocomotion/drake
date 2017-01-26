@@ -1205,38 +1205,17 @@ MatrixDecisionVariable<x_dim, x_dim> AddLyapunovCondition(
   const auto Q = prog->NewSymmetricContinuousVariables<x_dim>();
   prog->AddPositiveSemidefiniteConstraint(Q);
   // TODO(hongkai.dai): Use symbolic variable to compute the expression
-  // A' * P + P * A + Q.
-  Eigen::Matrix<double, x_dim*(x_dim + 1) / 2, 1> lin_eq_bnd;
-  lin_eq_bnd.setZero();
-  std::vector<Eigen::Triplet<double>> lin_eq_triplets;
-  int lin_eq_idx = 0;
-  for (int j = 0; j < static_cast<int>(x_dim); ++j) {
-    for (int i = j; i < static_cast<int>(x_dim); ++i) {
-      for (int k = 0; k < static_cast<int>(x_dim); ++k) {
-        lin_eq_triplets.push_back(Eigen::Triplet<double>(
-            lin_eq_idx, prog->FindDecisionVariableIndex(P(k, j)), A(k, i)));
-        lin_eq_triplets.push_back(Eigen::Triplet<double>(
-            lin_eq_idx, prog->FindDecisionVariableIndex(P(i, k)), A(k, j)));
-      }
-      lin_eq_triplets.push_back(Eigen::Triplet<double>(
-          lin_eq_idx, prog->FindDecisionVariableIndex(Q(i, j)), 1.0));
-      ++lin_eq_idx;
-    }
-  }
-  Eigen::SparseMatrix<double> lin_eq_A_sparse(x_dim * (x_dim + 1) / 2,
-                                              prog->num_vars());
-  lin_eq_A_sparse.setFromTriplets(lin_eq_triplets.begin(),
-                                  lin_eq_triplets.end());
-
-  Eigen::MatrixXd lin_eq_A(lin_eq_A_sparse);
-  VectorDecisionVariable<x_dim * (x_dim + 1) / 2> lower_triangular_P{};
-  int P_count = 0;
+  // M = A' * P + P * A + Q.
+  Eigen::Matrix<symbolic::Expression, x_dim, x_dim> M;
+  M = A.transpose() * P + P * A + Q;
+  Eigen::Matrix<symbolic::Expression, x_dim * (x_dim + 1) / 2, 1> M_lower_triangular{};
+  int M_count = 0;
   for (int j = 0; j < x_dim; ++j) {
     for (int i = j; i < x_dim; ++i) {
-      lower_triangular_P(P_count++) = P(i, j);
+      M_lower_triangular(M_count++) = M(i, j);
     }
   }
-  prog->AddLinearEqualityConstraint(lin_eq_A, lin_eq_bnd, lower_triangular_P);
+  prog->AddLinearEqualityConstraint(M_lower_triangular, Eigen::Matrix<double, x_dim * (x_dim + 1)/2, 1>::Zero());
   return Q;
 }
 }  // namespace
