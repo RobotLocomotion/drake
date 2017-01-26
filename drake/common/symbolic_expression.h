@@ -750,7 +750,7 @@ constexpr int NChooseK(int n, int k) {
 }
 }  // namespace internal
 
-/** Returns a monomial is of the form x^2*y^3, it does not have the constant
+/** Returns a monomial of the form x^2*y^3, it does not have the constant
  * factor. To generate a monomial x^2*y^3, @p map_var_to_exponent contains the
  * pair (x.get_id(), 2) and (y.get_id(), 3).
  *
