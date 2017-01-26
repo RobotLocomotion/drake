@@ -103,6 +103,12 @@ int DoMain() {
 
   auto diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
+  /*
+  std::unique_ptr<systems::Context<double>> context =
+      diagram->AllocateContext();
+  diagram->SetDefaultState(*context, context->get_mutable_state());
+  systems::Simulator<double> simulator(*diagram, std::move(context));
+  */
 
   /*
   // Set an initial condition near the stable fixed point.

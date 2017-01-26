@@ -5,6 +5,8 @@
 /// iiwa_lcm.h
 #include <memory>
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
+#include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
 namespace examples {
@@ -16,6 +18,9 @@ class AcrobotStateReceiver : public systems::LeafSystem<double> {
 
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
+
+  std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector(
+      const systems::OutputPortDescriptor<double>& descriptor) const override;
 };
 
 class AcrobotCommandSender : public systems::LeafSystem<double> {

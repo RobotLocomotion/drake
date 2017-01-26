@@ -1,7 +1,5 @@
 #pragma once
 
-#pragma once
-
 #include <memory>
 
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"

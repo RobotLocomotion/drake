@@ -28,6 +28,7 @@ void AcrobotStateReceiver::DoCalcOutput(const Context<double>& context,
   output_vec(1) = state.theta2;
   output_vec(2) = state.theta1Dot;
   output_vec(3) = state.theta2Dot;
+
   /*
   std::cout << "\ntheta1 = " << output_vec(0)
             << "\ntheta2 = " << output_vec(1)
@@ -36,6 +37,12 @@ void AcrobotStateReceiver::DoCalcOutput(const Context<double>& context,
   */
 }
 
+std::unique_ptr<systems::BasicVector<double>>
+AcrobotStateReceiver::AllocateOutputVector(
+    const systems::OutputPortDescriptor<double>& descriptor) const {
+  DRAKE_THROW_UNLESS(descriptor.size() == 4);
+  return std::make_unique<AcrobotStateVector<double>>();
+}
 /*--------------------------------------------------------------------------*/
 AcrobotCommandSender::AcrobotCommandSender() {
   this->DeclareInputPort(systems::kVectorValued, 1);
