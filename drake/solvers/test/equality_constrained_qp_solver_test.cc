@@ -30,7 +30,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   Matrix2d Q = Matrix2d::Identity();
   Vector2d c(-1, -1);
 
-  prog.AddQuadraticCost(Q, c);
+  prog.AddQuadraticCost(Q, c, x);
 
   prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
   prog.Solve();
@@ -85,12 +85,12 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   VectorXd c(2);
   c << -1.0, -1.0;
 
-  prog.AddQuadraticCost(Q, c);
+  prog.AddQuadraticCost(Q, c, x);
 
   VectorXd constraint1(2);
   // x1 + x2 = 1
   constraint1 << 1, 1;
-  prog.AddLinearEqualityConstraint(constraint1.transpose(), 1.0);
+  prog.AddLinearEqualityConstraint(constraint1.transpose(), 1.0, x);
 
   prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
   prog.Solve();
