@@ -110,6 +110,7 @@ python-numpy
 python-sphinx
 python-vtk
 python-yaml
+ruby1.9
 unzip
 valgrind
 wget
