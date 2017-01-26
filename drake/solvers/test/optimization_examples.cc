@@ -306,6 +306,10 @@ GloptiPolyConstrainedMinimizationProblem::
       break;
     }
     case kNonSymbolicCost: {
+      AddNonSymbolicCost();
+      break;
+    }
+    case kSymbolicCost: {
       AddSymbolicCost();
       break;
     }
@@ -352,6 +356,11 @@ void GloptiPolyConstrainedMinimizationProblem::AddGenericCost() {
 }
 
 void GloptiPolyConstrainedMinimizationProblem::AddSymbolicCost() {
+  prog_->AddLinearCost(-2 * x_(0) + x_(1) - x_(2));
+  prog_->AddLinearCost(-2 * y_(0) + y_(1) - y_(2));
+}
+
+void GloptiPolyConstrainedMinimizationProblem::AddNonSymbolicCost() {
   prog_->AddLinearCost(Eigen::Vector3d(-2, 1, -1), x_);
   prog_->AddLinearCost(Eigen::Vector3d(-2, 1, -1), y_);
 }
@@ -406,9 +415,14 @@ MinDistanceFromPlaneToOrigin::MinDistanceFromPlaneToOrigin(
       prog_rotated_lorentz_->NewContinuousVariables(kXdim, "x");
 
   switch (cost_form) {
-    case kNonSymbolicCost: {
+    case kNonSymbolicCost : {
       prog_lorentz_->AddLinearCost(Vector1d(1), t_lorentz_);
       prog_rotated_lorentz_->AddLinearCost(Vector1d(1), t_rotated_lorentz_);
+      break;
+    }
+    case kSymbolicCost : {
+      prog_lorentz_->AddLinearCost(+t_lorentz_(0));
+      prog_rotated_lorentz_->AddLinearCost(+t_rotated_lorentz_(0));
       break;
     }
     default:

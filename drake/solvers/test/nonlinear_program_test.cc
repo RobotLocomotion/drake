@@ -382,9 +382,9 @@ GTEST_TEST(testNonlinearProgram, MinDistanceFromPlaneToOrigin) {
   A[1] << 0, 1, 2, -1, 2, 3;
   b[1] = Vector2d(1.0, 3.0);
   for (int i = MinDistanceFromPlaneToOrigin::CostForm::kCostBegin;
-       i < MinDistanceFromPlaneToOrigin::CostForm::kCostEnd; ++i) {
+       i <= MinDistanceFromPlaneToOrigin::CostForm::kCostEnd; ++i) {
     for (int j = MinDistanceFromPlaneToOrigin::ConstraintForm::kConstraintBegin;
-         j < MinDistanceFromPlaneToOrigin::ConstraintForm::kConstraintEnd;
+         j <= MinDistanceFromPlaneToOrigin::ConstraintForm::kConstraintEnd;
          ++j) {
       for (int k = 0; k < 2; ++k) {
         MinDistanceFromPlaneToOrigin prob(
