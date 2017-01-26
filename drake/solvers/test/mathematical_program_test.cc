@@ -294,8 +294,7 @@ void CheckAddedSymbolicLinearCost(MathematicalProgram* prog,
   EXPECT_EQ(prog->linear_costs().size(), num_linear_costs + 1);
   EXPECT_EQ(prog->linear_costs().back().constraint(), binding.constraint());
   EXPECT_EQ(binding.constraint()->num_constraints(), 1);
-  const Expression cx{
-      (binding.constraint()->A() * binding.variables())(0)};
+  const Expression cx{(binding.constraint()->A() * binding.variables())(0)};
   double constant_term{0};
   if (is_addition(e)) {
     constant_term = get_constant_in_addition(e);
@@ -461,23 +460,36 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic5) {
 }
 
 namespace {
-void CheckAddedSymbolicLinearEqualityConstraint(MathematicalProgram* prog, const Eigen::Ref<const VectorX<Expression>>& v, const Eigen::Ref<const Eigen::VectorXd>& b) {
+void CheckAddedSymbolicLinearEqualityConstraint(
+    MathematicalProgram* prog, const Eigen::Ref<const VectorX<Expression>>& v,
+    const Eigen::Ref<const Eigen::VectorXd>& b) {
   const int num_linear_eq_cnstr = prog->linear_equality_constraints().size();
   auto binding = prog->AddLinearEqualityConstraint(v, b);
   // Checks if the number of linear equality constraints get incremented by 1.
-  EXPECT_EQ(prog->linear_equality_constraints().size(), num_linear_eq_cnstr + 1);
-  // Checks if the newly added linear equality constraint in prog is the same as that returned from AddLinearEqualityConstraint.
-  EXPECT_EQ(prog->linear_equality_constraints().back().constraint(), binding.constraint());
-  // Checks if the bound variables of the newly added linear equality constraint in prog is the same as that returned from AddLinearEqualityConstraint.
-  EXPECT_EQ(prog->linear_equality_constraints().back().variables(), binding.variables());
-  // Checks if the number of rows in the newly added constraint is the same as the input expression.
+  EXPECT_EQ(prog->linear_equality_constraints().size(),
+            num_linear_eq_cnstr + 1);
+  // Checks if the newly added linear equality constraint in prog is the same as
+  // that returned from AddLinearEqualityConstraint.
+  EXPECT_EQ(prog->linear_equality_constraints().back().constraint(),
+            binding.constraint());
+  // Checks if the bound variables of the newly added linear equality constraint
+  // in prog is the same as that returned from AddLinearEqualityConstraint.
+  EXPECT_EQ(prog->linear_equality_constraints().back().variables(),
+            binding.variables());
+  // Checks if the number of rows in the newly added constraint is the same as
+  // the input expression.
   EXPECT_EQ(binding.constraint()->num_constraints(), v.rows());
-  // Check if the newly added linear equality constraint matches with the input expression.
-  EXPECT_EQ(binding.constraint()->A() * binding.variables() - binding.constraint()->lower_bound(), v - b);
+  // Check if the newly added linear equality constraint matches with the input
+  // expression.
+  EXPECT_EQ(binding.constraint()->A() * binding.variables() -
+                binding.constraint()->lower_bound(),
+            v - b);
 }
 
-void CheckAddedSymbolicLinearEqualityConstraint(MathematicalProgram* prog, const Expression& e, double b) {
-  CheckAddedSymbolicLinearEqualityConstraint(prog, Vector1<Expression>(e), Vector1d(b));
+void CheckAddedSymbolicLinearEqualityConstraint(MathematicalProgram* prog,
+                                                const Expression& e, double b) {
+  CheckAddedSymbolicLinearEqualityConstraint(prog, Vector1<Expression>(e),
+                                             Vector1d(b));
 }
 }  // namespace
 
@@ -504,7 +516,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
   // Checks 2 * x(1) - 3 * x(2) = 4
   CheckAddedSymbolicLinearEqualityConstraint(&prog, 2 * x(1) - 3 * x(2), 4);
   // Checks x(0) + 2 = 1
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + 2 , 1);
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + 2, 1);
   // Checks x(1) - 2 = 1
   CheckAddedSymbolicLinearEqualityConstraint(&prog, x(1) - 2, 1);
   // Checks 3 * x(1) + 4 = 1
@@ -514,7 +526,8 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
   // Checks 2 * x(0) + x(2) - 3 = 1
   CheckAddedSymbolicLinearEqualityConstraint(&prog, 2 * x(0) + x(2) - 3, 1);
   // Checks 3 * x(0) + x(1) + 4 * x(2) + 1 = 2
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, 3 * x(0) + x(1) + 4 * x(2) + 1, 2);
+  CheckAddedSymbolicLinearEqualityConstraint(&prog,
+                                             3 * x(0) + x(1) + 4 * x(2) + 1, 2);
 }
 
 GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
@@ -525,27 +538,30 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
 
   // Checks x(1) = 2
   //        x(0) = 1
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, Vector2<Expression>(+x(1), +x(0)), Eigen::Vector2d(2, 1));
+  CheckAddedSymbolicLinearEqualityConstraint(
+      &prog, Vector2<Expression>(+x(1), +x(0)), Eigen::Vector2d(2, 1));
 
   // Checks 2 * x(1) = 3
   //        x(0) + x(2) = 4
   //        x(0) + 3 * x(1) + 7 = 1
   Vector3<Expression> v{};
   v << 2 * x(1), x(0) + x(2), x(0) + 3 * x(1) + 7;
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, v, Eigen::Vector3d(3, 4, 1));
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, v,
+                                             Eigen::Vector3d(3, 4, 1));
 
   // Checks x(0) = 4
   //          1  = 1
   //        x(0) = 3
-  // Currently we do not throw an error, even if the constraint x(0) = 3 contradicts with x(0) = 4
-  CheckAddedSymbolicLinearEqualityConstraint(&prog, Vector3<Expression>(+x(0), 1, +x(0)), Eigen::Vector3d(4, 1, 3));
+  // Currently we do not throw an error, even if the constraint x(0) = 3
+  // contradicts with x(0) = 4
+  CheckAddedSymbolicLinearEqualityConstraint(
+      &prog, Vector3<Expression>(+x(0), 1, +x(0)), Eigen::Vector3d(4, 1, 3));
 }
 
 namespace {
 void CheckParsedSymbolicLorentzConeConstraint(
     MathematicalProgram* prog,
-    const Eigen::Ref<
-        const Eigen::Matrix<Expression, Eigen::Dynamic, 1>>& e) {
+    const Eigen::Ref<const Eigen::Matrix<Expression, Eigen::Dynamic, 1>>& e) {
   const auto& binding1 = prog->AddLorentzConeConstraint(e);
   const auto& binding2 = prog->lorentz_cone_constraints().back();
 
@@ -559,8 +575,7 @@ void CheckParsedSymbolicLorentzConeConstraint(
 }
 
 void CheckParsedSymbolicRotatedLorentzConeConstraint(
-    MathematicalProgram* prog,
-    const Eigen::Ref<const VectorX<Expression>>& e) {
+    MathematicalProgram* prog, const Eigen::Ref<const VectorX<Expression>>& e) {
   const auto& binding1 = prog->AddRotatedLorentzConeConstraint(e);
   const auto& binding2 = prog->rotated_lorentz_cone_constraints().back();
 

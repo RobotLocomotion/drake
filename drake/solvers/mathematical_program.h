@@ -297,7 +297,7 @@ class MathematicalProgram {
    * std::vector<std::string>& names);
    */
   VectorXDecisionVariable NewContinuousVariables(
-      std::size_t rows, const std::vector<std::string>& names);
+      size_t rows, const std::vector<std::string>& names);
 
   /**
    * Adds continuous variables to this MathematicalProgram, with default name
@@ -305,7 +305,7 @@ class MathematicalProgram {
    * @see NewContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  VectorXDecisionVariable NewContinuousVariables(std::size_t rows,
+  VectorXDecisionVariable NewContinuousVariables(size_t rows,
                                                  const std::string& name = "x");
 
   /// Adds continuous variables to this MathematicalProgram.
@@ -334,7 +334,7 @@ class MathematicalProgram {
    * The name of the variable is only used for the user for understand.
    */
   MatrixXDecisionVariable NewContinuousVariables(
-      std::size_t rows, std::size_t cols,
+      size_t rows, size_t cols,
       const std::vector<std::string>& names);
 
   /**
@@ -344,8 +344,8 @@ class MathematicalProgram {
    * @see NewContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  MatrixXDecisionVariable NewContinuousVariables(std::size_t rows,
-                                                 std::size_t cols,
+  MatrixXDecisionVariable NewContinuousVariables(size_t rows,
+                                                 size_t cols,
                                                  const std::string& name = "X");
 
   /// Adds continuous variables to this MathematicalProgram.
@@ -1152,7 +1152,9 @@ class MathematicalProgram {
    * @return The newly addlinear linear equality constraint, together with the
    * bound variables.
    */
-  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(const Eigen::Ref<const VectorX<symbolic::Expression>>& v, const Eigen::Ref<const Eigen::VectorXd>& b);
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
+      const Eigen::Ref<const Eigen::VectorXd>& b);
 
   /** AddLinearEqualityConstraint
    *
@@ -1211,11 +1213,12 @@ class MathematicalProgram {
    * (currently existing) variables.
    */
   template <typename DerivedA, typename DerivedB>
-  typename std::enable_if<std::is_same<typename DerivedA::Scalar, double>::value &&
-      std::is_same<typename DerivedB::Scalar, double>::value, std::shared_ptr<LinearEqualityConstraint>>::type
-  AddLinearEqualityConstraint(
-      const Eigen::MatrixBase<DerivedA>& Aeq,
-      const Eigen::MatrixBase<DerivedB>& beq) {
+  typename std::enable_if<
+      std::is_same<typename DerivedA::Scalar, double>::value &&
+          std::is_same<typename DerivedB::Scalar, double>::value,
+      std::shared_ptr<LinearEqualityConstraint>>::type
+  AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,
+                              const Eigen::MatrixBase<DerivedB>& beq) {
     return AddLinearEqualityConstraint(Aeq, beq, decision_variables_);
   }
 
@@ -2244,7 +2247,7 @@ class MathematicalProgram {
  private:
   // maps the ID of a symbolic variable to the index of the variable stored in
   // the optimization program.
-  std::unordered_map<size_t, size_t> decision_variable_index_{};
+  std::unordered_map<symbolic::Variable::Id, size_t> decision_variable_index_{};
 
   std::vector<VarType> decision_variable_type_;  // decision_variable_type_[i]
                                                  // stores the type of the

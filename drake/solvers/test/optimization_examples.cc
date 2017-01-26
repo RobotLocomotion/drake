@@ -488,7 +488,8 @@ void MinDistanceFromPlaneToOrigin::AddSymbolicConstraint() {
     tx2(i + 2) = +x_rotated_lorentz_(i);
   }
   prog_rotated_lorentz_->AddRotatedLorentzConeConstraint(tx2);
-  prog_rotated_lorentz_->AddLinearEqualityConstraint(A_ * x_rotated_lorentz_, b_);
+  prog_rotated_lorentz_->AddLinearEqualityConstraint(A_ * x_rotated_lorentz_,
+                                                     b_);
 }
 
 void MinDistanceFromPlaneToOrigin::SetInitialGuess() {
