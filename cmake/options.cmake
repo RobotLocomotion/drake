@@ -324,10 +324,6 @@ macro(drake_setup_options)
   # The following projects are default OFF when MATLAB is present and enabled.
   # Otherwise, they are hidden and default OFF. Some of them may also be hidden
   # on Windows regardless of the status of MATLAB.
-  drake_optional_external(IRIS OFF
-    DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND\;WITH_MOSEK"
-    "fast approximate convex segmentation")
-
   drake_optional_external(YALMIP OFF
     DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND"
     "free optimization front-end for MATLAB")
@@ -345,6 +341,10 @@ macro(drake_setup_options)
 
   drake_optional_external(GUROBI OFF
     "Convex/integer optimization solver\; free for academics")
+
+  drake_optional_external(IRIS OFF
+    DEPENDS "WITH_MOSEK\;WITH_SWIG_MATLAB"
+    "fast approximate convex segmentation")
 
   drake_optional_external(MESHCONVERTERS OFF
     "uses vcglib to convert a few standard filetypes")
