@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(drake-superbuild)
+project(drake-superbuild VERSION 0.0.0)
 
 include(CTest)
 
@@ -7,6 +7,7 @@ include(cmake/config.cmake)
 include(cmake/externals.cmake)
 include(cmake/examples.cmake)
 include(cmake/options.cmake)
+include(cmake/package.cmake)
 include(cmake/tools.cmake)
 include(cmake/git/hooks.cmake)
 
@@ -350,6 +351,7 @@ drake_add_example(LittleDog OFF
 
 # END examples
 ###############################################################################
+# BEGIN ros packages
 
 # hsrb_description is a ROS package that contains a model of Toyota's Human
 # Support Robot (HSR). The following method call downloads hsrb_description as a
@@ -361,3 +363,8 @@ drake_add_external(hsrb_description PUBLIC
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/ros/hsrb_description
   BUILD_COMMAND :
   INSTALL_COMMAND :)
+
+# END ros packages
+###############################################################################
+
+drake_setup_cpack()
