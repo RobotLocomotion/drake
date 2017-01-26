@@ -10,7 +10,6 @@ import google.protobuf.text_format
 from drake.tools import named_vector_pb2
 
 
-
 def put(fileobj, text, newlines_after=0):
     fileobj.write(text.strip('\n') + '\n' * newlines_after)
 
@@ -29,10 +28,12 @@ INDICES_END = """
 };
 """
 
+
 def to_kname(field):
     return 'k' + ''.join([
         word.capitalize()
         for word in field.split('_')])
+
 
 def generate_indices(hh, caller_context, fields):
     """
@@ -40,17 +41,18 @@ def generate_indices(hh, caller_context, fields):
         fields is the list of fieldnames in the LCM message.
     """
     context = dict(caller_context)
-    context.update(nfields = len(fields))
-    context.update(kname = "kNumCoordinates")
+    context.update(nfields=len(fields))
+    context.update(kname="kNumCoordinates")
     put(hh, INDICES_BEGIN % context, 1)
     for kvalue, field in enumerate(fields):
         # field is the LCM message field name
         # kname is the C++ kConstant name
         # kvalue is the C++ vector row index integer value
-        context.update(kname = to_kname(field['name']))
-        context.update(kvalue = kvalue)
+        context.update(kname=to_kname(field['name']))
+        context.update(kvalue=kvalue)
         put(hh, INDICES_FIELD % context, 1)
     put(hh, INDICES_END % context, 2)
+
 
 def generate_indices_storage(cc, caller_context, fields):
     """
@@ -58,15 +60,15 @@ def generate_indices_storage(cc, caller_context, fields):
         fields is the list of fieldnames in the LCM message.
     """
     context = dict(caller_context)
-    context.update(nfields = len(fields))
-    context.update(kname = "kNumCoordinates")
+    context.update(nfields=len(fields))
+    context.update(kname="kNumCoordinates")
     put(cc, INDICES_FIELD_STORAGE % context, 1)
     for kvalue, field in enumerate(fields):
         # field is the LCM message field name
         # kname is the C++ kConstant name
         # kvalue is the C++ vector row index integer value
-        context.update(kname = to_kname(field['name']))
-        context.update(kvalue = kvalue)
+        context.update(kname=to_kname(field['name']))
+        context.update(kvalue=kvalue)
         put(cc, INDICES_FIELD_STORAGE % context, 1)
     put(cc, '', 1)
 
@@ -77,6 +79,7 @@ DEFAULT_CTOR = """
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 """
+
 
 def generate_default_ctor(hh, context, _):
     put(hh, DEFAULT_CTOR % context, 2)
@@ -97,13 +100,14 @@ ACCESSOR_END = """
   //@}
 """
 
+
 def generate_accessors(hh, caller_context, fields):
     context = dict(caller_context)
     put(hh, ACCESSOR_BEGIN % context, 1)
     for field in fields:
-        context.update(field = field['name'])
-        context.update(kname = to_kname(field['name']))
-        context.update(doc = field['doc'])
+        context.update(field=field['name'])
+        context.update(kname=to_kname(field['name']))
+        context.update(doc=field['doc'])
         put(hh, ACCESSOR % context, 1)
     put(hh, ACCESSOR_END % context, 2)
 
@@ -244,7 +248,7 @@ def generate_deserialize(cc, caller_context, fields):
     context = dict(caller_context)
     put(cc, DESERIALIZE_BEGIN % context, 1)
     for field in fields:
-        context.update(field = field['name'])
+        context.update(field=field['name'])
         put(cc, DESERIALIZE_FIELD % context, 1)
     put(cc, DESERIALIZE_END % context, 2)
 
@@ -272,7 +276,7 @@ def generate_serialize(cc, caller_context, fields):
     context = dict(caller_context)
     put(cc, SERIALIZE_BEGIN % context, 1)
     for field in fields:
-        context.update(field = field['name'])
+        context.update(field=field['name'])
         put(cc, SERIALIZE_FIELD % context, 1)
     put(cc, SERIALIZE_END % context, 2)
 
@@ -313,7 +317,7 @@ def generate_code(args):
         with open(args.named_vector_file, "r") as f:
             vec = named_vector_pb2.NamedVector()
             google.protobuf.text_format.Merge(f.read(), vec)
-            fields = [{'name' : el.name, 'doc' : el.doc} for el in vec.element]
+            fields = [{'name': el.name, 'doc': el.doc} for el in vec.element]
     else:
         # Parse the field names from the command line.
         fields = [{'name': x, 'doc': x} for x in args.fields]
@@ -321,18 +325,18 @@ def generate_code(args):
     # The context provides string substitutions for the C++ code blocks in the
     # literal strings throughout this program.
     context = dict()
-    context.update(relative_cxx_dir = relative_cxx_dir)
-    context.update(camel = camel)
-    context.update(indices = camel + 'Indices')
-    context.update(snake = snake)
-    context.update(screaming_snake = screaming_snake)
-    context.update(opening_namespace = opening_namespace)
-    context.update(closing_namespace = closing_namespace)
+    context.update(relative_cxx_dir=relative_cxx_dir)
+    context.update(camel=camel)
+    context.update(indices=camel + 'Indices')
+    context.update(snake=snake)
+    context.update(screaming_snake=screaming_snake)
+    context.update(opening_namespace=opening_namespace)
+    context.update(closing_namespace=closing_namespace)
 
     # This is a specially-formatted code block to warn users not to edit.
     # This disclaimer text is special-cased by our review tool, reviewable.io.
     disclaimer = "// GENERATED FILE " + "DO NOT EDIT"
-    context.update(generated_code_warning = '\n'.join([
+    context.update(generated_code_warning='\n'.join([
         disclaimer, "// See drake/tools/lcm_vector_gen.py."]))
 
     with open(os.path.join(cxx_dir, "%s.h" % snake), 'w') as hh:
