@@ -2348,17 +2348,20 @@ class MathematicalProgram {
    * @param vars A matrix of variable.
    */
   template <typename Derived>
-  typename std::enable_if<std::is_same<typename Derived::Scalar, symbolic::Variable>::value, bool>::type
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+      bool>::type
   IsDecisionVariable(const Eigen::MatrixBase<Derived>& vars) {
     for (int i = 0; i < vars.rows(); ++i) {
       for (int j = 0; j < vars.cols(); ++j) {
-        if (decision_variable_index_.find(vars(i, j).get_id()) == decision_variable_index_.end()) {
+        if (decision_variable_index_.find(vars(i, j).get_id()) ==
+            decision_variable_index_.end()) {
           return false;
         }
       }
     }
     return true;
-  };
+  }
 };
 }  // namespace solvers
 }  // namespace drake
