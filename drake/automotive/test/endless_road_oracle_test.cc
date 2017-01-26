@@ -173,7 +173,7 @@ bool IsNear(double a, double b, double margin) {
 
 TEST_F(EndlessRoadOracleInternalTest, UnwrapEndlessRoadCarState) {
 
-  std::vector<EndlessRoadCarState<double>> inputs(4);
+  std::vector<EndlessRoadCarState<double>> inputs(5);
   const double kSpeed = 10.;
   inputs[0].set_s(10.);
   inputs[0].set_speed(kSpeed);
@@ -181,11 +181,14 @@ TEST_F(EndlessRoadOracleInternalTest, UnwrapEndlessRoadCarState) {
   inputs[1].set_s(1010.);
   inputs[1].set_speed(kSpeed);
 
-  inputs[2].set_s(1990.);
+  inputs[2].set_s(2010.);
   inputs[2].set_speed(kSpeed);
 
-  inputs[3].set_s(2010.);
+  inputs[3].set_s(4500.);
   inputs[3].set_speed(kSpeed);
+
+  inputs[4].set_s(3510.);
+  inputs[4].set_speed(kSpeed);
 
 
   std::vector<const EndlessRoadCarState<double>*> input_ptrs;
@@ -206,17 +209,20 @@ TEST_F(EndlessRoadOracleInternalTest, UnwrapEndlessRoadCarState) {
   EXPECT_TRUE(IsSourceStateClose(source_lanes_[4],
                                  (1000. * 5. / 6.) - 10., 0., 0., kSpeed,
                                  source_states[1], kLinearTolerance));
-  EXPECT_TRUE(IsSourceStateClose(source_lanes_[3],
-                                 (1000. / 6.) - 10., 0., 0., kSpeed,
-                                 source_states[2], kLinearTolerance));
   EXPECT_TRUE(IsSourceStateClose(source_lanes_[0],
                                  (1000. * 5. / 6.) - 10., 0., 0., kSpeed,
+                                 source_states[2], kLinearTolerance));
+  EXPECT_TRUE(IsSourceStateClose(source_lanes_[0], 500., 0., 0., kSpeed,
                                  source_states[3], kLinearTolerance));
+  EXPECT_TRUE(IsSourceStateClose(source_lanes_[2], 510., 0., 0., kSpeed,
+                                 source_states[4], kLinearTolerance));
 
-  ASSERT_EQ(3, paths[0].size());
-  EXPECT_TRUE(IsPathRecordEq(source_lanes_[0], false, paths[0][0]));
-  EXPECT_TRUE(IsPathRecordEq(source_lanes_[1], false, paths[0][1]));
-  EXPECT_TRUE(IsPathRecordEq(source_lanes_[4], true,  paths[0][2]));
+  ASSERT_EQ(5, paths[4].size());
+  EXPECT_TRUE(IsPathRecordEq(source_lanes_[2], false, paths[4][0]));
+  EXPECT_TRUE(IsPathRecordEq(source_lanes_[5], true,  paths[4][1]));
+  EXPECT_TRUE(IsPathRecordEq(source_lanes_[0], false, paths[4][2]));
+  EXPECT_TRUE(IsPathRecordEq(source_lanes_[1], false, paths[4][3]));
+  EXPECT_TRUE(IsPathRecordEq(source_lanes_[4], true,  paths[4][4]));
 }
 
 #if 0
