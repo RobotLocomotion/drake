@@ -176,60 +176,74 @@ GTEST_TEST(PidControlledSystemTest, PlantWithMoreOutputs) {
 class ConnectControllerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    auto plant = std::make_unique<TestPlantWithMinOutputs>();
-    feedback_selector =
-        std::make_unique<MatrixGain<double>>(plant->get_output_port(0).size());
+    auto plant_ptr = std::make_unique<TestPlantWithMinOutputs>();
+    feedback_selector_ =
+        std::make_unique<MatrixGain<double>>(
+            plant_ptr->get_output_port(0).size());
 
-    plant_ptr = standard_builder.AddSystem(std::move(plant));
+    plant_ = builder_.AddSystem(std::move(plant_ptr));
 
-    input_source = standard_builder.AddSystem<ConstantVectorSource>(input);
-    state_source = standard_builder.AddSystem<ConstantVectorSource>(state);
+    input_source_ = builder_.AddSystem<ConstantVectorSource>(plant_input_);
+    state_source_ = builder_.AddSystem<ConstantVectorSource>(desired_state_);
 
-    standard_builder.ExportOutput(plant_ptr->get_output_port(0));
+    builder_.ExportOutput(plant_->get_output_port(0));
   }
 
-  TestPlantWithMinOutputs* plant_ptr;
+  void ConnectPidPorts(
+      PidControlledSystem<double>::ConnectResult plant_pid_ports) {
+    builder_.Connect(input_source_->get_output_port(),
+                             plant_pid_ports.control_input_port);
+    builder_.Connect(state_source_->get_output_port(),
+                             plant_pid_ports.state_input_port);
+  }
+
+  double ComputePidInput() {
+    auto standard_diagram = builder_.Build();
+    auto context = standard_diagram->CreateDefaultContext();
+    auto output = standard_diagram->AllocateOutput(*context);
+
+    auto plant_context =
+        standard_diagram->GetMutableSubsystemContext(context.get(), plant_);
+
+    plant_->CalcOutput(*plant_context, output.get());
+    const BasicVector<double>* output_vec = output->get_vector_data(0);
+    const double pid_input =
+        dynamic_cast<TestPlant*>(plant_)->GetInputValue(*plant_context);
+
+    output_position_ = output_vec->get_value()[0];
+    output_velocity_ = output_vec->get_value()[1];
+    return pid_input;
+  }
+
+  TestPlantWithMinOutputs* plant_;
   const Vector1d Kp{4};
   const Vector1d Ki{0};
   const Vector1d Kd{0.5};
 
-  DiagramBuilder<double> standard_builder;
-  ConstantVectorSource<double>* input_source;
-  ConstantVectorSource<double>* state_source;
-  std::unique_ptr<MatrixGain<double>> feedback_selector;
+  DiagramBuilder<double> builder_;
+  ConstantVectorSource<double>* input_source_ = nullptr;
+  ConstantVectorSource<double>* state_source_ = nullptr;
+  std::unique_ptr<MatrixGain<double>> feedback_selector_;
 
-  const Vector1d input{1.0};
-  const Eigen::Vector2d state{1.1, 0.2};
-
-  std::unique_ptr<Diagram<double>> standard_diagram;
+  const Vector1d plant_input_{1.0};
+  const Eigen::Vector2d desired_state_{1.1, 0.2};
+  double output_position_{0.0};
+  double output_velocity_{0.0};
 };
 
 // Tests a plant where the controller is attached with the ConnectController
 // method.
 TEST_F(ConnectControllerTest, NonSaturatingController) {
   auto plant_pid_ports = PidControlledSystem<double>::ConnectController(
-      plant_ptr->get_input_port(0), plant_ptr->get_output_port(0),
-      std::move(feedback_selector), Kp, Ki, Kd, &standard_builder);
+      plant_->get_input_port(0), plant_->get_output_port(0),
+      std::move(feedback_selector_), Kp, Ki, Kd, &builder_);
 
-  standard_builder.Connect(input_source->get_output_port(),
-                           plant_pid_ports.control_input_port);
-  standard_builder.Connect(state_source->get_output_port(),
-                           plant_pid_ports.state_input_port);
-  auto standard_diagram = standard_builder.Build();
-  auto context = standard_diagram->CreateDefaultContext();
-  auto output = standard_diagram->AllocateOutput(*context);
+  ConnectPidPorts(plant_pid_ports);
 
-  auto plant_context =
-      standard_diagram->GetMutableSubsystemContext(context.get(), plant_ptr);
-
-  plant_ptr->CalcOutput(*plant_context, output.get());
-  const BasicVector<double>* output_vec = output->get_vector_data(0);
-  const double pid_input =
-      dynamic_cast<TestPlant*>(plant_ptr)->GetInputValue(*plant_context);
-
-  double calculated_input = input[0] +
-                            (state[0] - output_vec->get_value()[0]) * Kp(0) +
-                            (state[1] - output_vec->get_value()[1]) * Kd(0);
+  const double pid_input = ComputePidInput();
+  double calculated_input = plant_input_[0] +
+                            (desired_state_[0] - output_position_) * Kp(0) +
+                            (desired_state_[1] - output_velocity_) * Kd(0);
 
   EXPECT_EQ(pid_input, calculated_input);
 }
@@ -242,26 +256,13 @@ TEST_F(ConnectControllerTest, SaturatingController) {
 
   auto plant_pid_ports =
       PidControlledSystem<double>::ConnectControllerWithInputSaturation(
-          plant_ptr->get_input_port(0), plant_ptr->get_output_port(0),
-          std::move(feedback_selector), Kp, Ki, Kd, Vector1d(0.0) /* u_min */,
-          Vector1d(saturation_max), &standard_builder);
+          plant_->get_input_port(0), plant_->get_output_port(0),
+          std::move(feedback_selector_), Kp, Ki, Kd, Vector1d(0.0) /* u_min */,
+          Vector1d(saturation_max), &builder_);
 
-  standard_builder.Connect(input_source->get_output_port(),
-                           plant_pid_ports.control_input_port);
-  standard_builder.Connect(state_source->get_output_port(),
-                           plant_pid_ports.state_input_port);
-  standard_diagram = standard_builder.Build();
+  ConnectPidPorts(plant_pid_ports);
 
-  auto context = standard_diagram->CreateDefaultContext();
-  auto output = standard_diagram->AllocateOutput(*context);
-
-  auto plant_context =
-      standard_diagram->GetMutableSubsystemContext(context.get(), plant_ptr);
-
-  plant_ptr->CalcOutput(*plant_context, output.get());
-  const double pid_input =
-      dynamic_cast<TestPlant*>(plant_ptr)->GetInputValue(*plant_context);
-
+  const double pid_input = ComputePidInput();
   double calculated_input = saturation_max;
 
   EXPECT_EQ(pid_input, calculated_input);
