@@ -1,12 +1,14 @@
-#!/usr/bin/env python
-
 """Generate c++ and LCM definitions for the LCM Vector concept.
+Run this script using Bazel.
 """
 
 import argparse
 import os
-import subprocess
-import yaml
+
+import google.protobuf.text_format
+
+from drake.tools import named_vector_pb2
+
 
 
 def put(fileobj, text, newlines_after=0):
@@ -292,8 +294,7 @@ LCMTYPE_POSTAMBLE = """
 def generate_code(args):
     cxx_dir = os.path.abspath(args.cxx_dir)
     lcmtype_dir = os.path.abspath(args.lcmtype_dir)
-    drake_dist_dir = subprocess.check_output(
-        "git rev-parse --show-toplevel".split()).strip()
+    drake_dist_dir = args.workspace
     relative_cxx_dir = cxx_dir.replace(os.path.join(drake_dist_dir, ''), '')
 
     title_phrase = args.title.split()
@@ -306,10 +307,13 @@ def generate_code(args):
     closing_namespace = "".join(["}  // namespace " + x + "\n"
                                  for x in reversed(namespace)])
 
-    if args.yaml_file:
-        # Load the field names and docstrings from YAML.
+    if args.named_vector_file:
+        # Load the field names and docstrings from protobuf.
         # In the future, this can be extended for nested messages.
-        fields = yaml.load(open(args.yaml_file, "r"))
+        with open(args.named_vector_file, "r") as f:
+            vec = named_vector_pb2.NamedVector()
+            google.protobuf.text_format.Merge(f.read(), vec)
+            fields = [{'name' : el.name, 'doc' : el.doc} for el in vec.element]
     else:
         # Parse the field names from the command line.
         fields = [{'name': x, 'doc': x} for x in args.fields]
@@ -328,10 +332,8 @@ def generate_code(args):
     # This is a specially-formatted code block to warn users not to edit.
     # This disclaimer text is special-cased by our review tool, reviewable.io.
     disclaimer = "// GENERATED FILE " + "DO NOT EDIT"
-    generator = os.path.abspath(__file__).replace(
-        os.path.join(drake_dist_dir, ''), '')
     context.update(generated_code_warning = '\n'.join([
-        disclaimer, "// See " + generator + "."]))
+        disclaimer, "// See drake/tools/lcm_vector_gen.py."]))
 
     with open(os.path.join(cxx_dir, "%s.h" % snake), 'w') as hh:
         print "generating %s" % hh.name
@@ -382,6 +384,8 @@ def main():
     parser.add_argument(
         '--cxx-dir', help="output directory for cxx files", default=".")
     parser.add_argument(
+        '--workspace', help="Drake WORKSPACE root.", required=True)
+    parser.add_argument(
         '--namespace', help="::-delimited enclosing namespace",
         default="drake")
     # By default, LCM output is disabled.
@@ -390,8 +394,8 @@ def main():
     parser.add_argument(
         '--title', help="title phrase, from which type names will be made")
     parser.add_argument(
-        '--yaml_file',
-        help="YAML description of vector, which supersedes command-line fields")
+        '--named_vector_file',
+        help="Protobuf description of vector, supersedes command-line fields")
     parser.add_argument(
         'fields', metavar='FIELD', nargs='*', help="field names for vector")
     args = parser.parse_args()
