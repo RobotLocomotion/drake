@@ -810,7 +810,7 @@ Monomial operator*(const Monomial& m1, const Monomial& m2) {
 }  // namespace internal
 
 Eigen::Matrix<Expression, Eigen::Dynamic, 1> MonomialBasis(
-    const Variables& vars, int degree) {
+    const Variables& vars, const int degree) {
   return internal::ComputeMonomialBasis<Eigen::Dynamic>(vars, degree);
 }
 
