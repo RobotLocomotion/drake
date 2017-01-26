@@ -1227,9 +1227,14 @@ class RigidBodyTree {
    * specified \p model_id.
    *
    * @param[in] frame_name The name of the frame to find.
+   *
    * @param[in] model_id The ID of the model to which the frame belongs. If this
    * value is -1, search all models.
-   * @throws std::logic_error if multiple matching frames are found.
+   *
+   * @return The frame with the specified name and model instance ID.
+   *
+   * @throws std::logic_error if either multiple matching frames are found or no
+   * matching frame is found.
    */
   std::shared_ptr<RigidBodyFrame<T>> findFrame(const std::string& frame_name,
                                             int model_id = -1) const;
