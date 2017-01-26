@@ -82,7 +82,7 @@ new_git_repository(
 new_git_repository(
     name = "sdformat",
     remote = "https://github.com/clalancette/sdformat-mirror.git",
-    commit = "339b744fa326bf5cb10778556ab15d9915a12241",
+    commit = "1ab961d0ae50d82fe50f4682e3734d37f80dbff2",
     build_file = "tools/sdformat.BUILD",
 )
 
