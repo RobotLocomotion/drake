@@ -127,6 +127,12 @@ drake_add_external(nlopt PUBLIC CMAKE
     -DINSTALL_INCLUDE_DIR=${CMAKE_INSTALL_PREFIX}/include/nlopt
     -DUSE_SWIG=OFF)
 
+# pybind11
+drake_add_external(pybind11 CMAKE
+  CMAKE_ARGS
+    -DPYBIND11_PYTHON_VERSION=${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}
+    -DPYBIND11_TEST=OFF)
+
 # pythonqt
 drake_add_external(pythonqt CMAKE PYTHON QT
   CMAKE_ARGS
