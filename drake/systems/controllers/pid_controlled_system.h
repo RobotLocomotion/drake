@@ -161,7 +161,7 @@ class PidControlledSystem : public Diagram<T> {
   /// additional systems (adders, multiplexers, gains, saturation etc.) as
   /// needed. Note that using input limits along with integral gain constant
   /// may result in integral windup effects.
-  static ConnectResult ConnectController(
+  static ConnectResult ConnectControllerWithInputSaturation(
       const InputPortDescriptor<T>& plant_input,
       const OutputPortDescriptor<T>& plant_output,
       std::unique_ptr<MatrixGain<T>> feedback_selector, const VectorX<T>& Kp,

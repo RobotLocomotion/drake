@@ -135,7 +135,7 @@ PidControlledSystem<T>::ConnectController(
 
 template <typename T>
 typename PidControlledSystem<T>::ConnectResult
-PidControlledSystem<T>::ConnectController(
+PidControlledSystem<T>::ConnectControllerWithInputSaturation(
     const InputPortDescriptor<T>& plant_input,
     const OutputPortDescriptor<T>& plant_output,
     std::unique_ptr<MatrixGain<T>> feedback_selector, const VectorX<T>& Kp,
