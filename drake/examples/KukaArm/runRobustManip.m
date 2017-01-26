@@ -1,6 +1,6 @@
 function runRobustManip()
 
-N = 60;
+N = 45;
 
 options.with_weight = true;
 options.with_box = true;
@@ -16,6 +16,12 @@ q0 = [0;1.57;0;0;0;0;1.57];
 x0 = [q0;zeros(nq,1)];
 xG = double(r.resolveConstraints(zeros(nx,1)));
 
+%Disturbance + LQR Weights
+D = diag([.1 .1 .05].^2);
+E0 = .01^2*eye(12);
+Q = blkdiag(10*eye(6), 1*eye(6));
+R = .1*eye(4);
+Qf = 5*Q;
 
 tf0 = 3.0;
 
@@ -23,44 +29,73 @@ traj_init.x = PPTrajectory(foh([0,tf0],[x0,xG]));
 traj_init.u = ConstantTrajectory(zeros(nu,1));
   
 options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;
-traj_opt = DirtranTrajectoryOptimization(r,N,tf0*[(1-0.5) (1+0.5)],options);
-traj_opt = traj_opt.addStateConstraint(ConstantConstraint(x0),1);
-% traj_opt = traj_opt.addStateConstraint(ConstantConstraint(xG),N);
-% traj_opt = traj_opt.addRunningCost(@cost,2);
-traj_opt = traj_opt.addFinalCost(@finalCost);
-% traj_opt = addTrajectoryDisplayFunction(traj_opt,@displayStateTrajectory);
+prog0 = DirtranTrajectoryOptimization(r,N,tf0*[(1-0.1) (1+0.1)],options);
+prog0 = prog0.addStateConstraint(ConstantConstraint(x0),1);
+%prog0 = prog0.addStateConstraint(ConstantConstraint(xG),N);
+%prog0 = prog0.addRunningCost(@cost);
+prog0 = prog0.addFinalCost(@finalCost);
 
 [jlmin,jlmax] = r.getJointLimits;
 xmin = [jlmin;-inf(nq,1)];
 xmax = [jlmax;inf(nq,1)];
-traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(repmat(xmin,N,1),repmat(xmax,N,1)),traj_opt.x_inds);
-
+prog0 = prog0.addConstraint(BoundingBoxConstraint(repmat(xmin,N,1),repmat(xmax,N,1)),prog0.x_inds);
 
 constraint = FunctionHandleConstraint(-1e-1*ones(3,1),1e-1*ones(3,1),nx,@l_hand_constraint);
 constraint = constraint.setName('left_hand_constraint'); 
-traj_opt = traj_opt .addConstraint(constraint, {traj_opt.x_inds(:,N)});
+prog0 = prog0.addConstraint(constraint, {prog0.x_inds(:,N)});
 
 for i=1:N
   constraint = FunctionHandleConstraint(0,inf,nx,@l_hand_box_constraint);
   constraint = constraint.setName(sprintf('l_hand_box_constraint_%d',i));
-  traj_opt = traj_opt.addConstraint(constraint, {traj_opt.x_inds(:,i)});
+  prog0 = prog0.addConstraint(constraint, {prog0.x_inds(:,i)});
 end
 
-
 tic;
-[xtraj,utraj,z,F,info,infeasible] = traj_opt.solveTraj(tf0,traj_init);
+[xtraj,utraj,z,F,info,infeasible] = prog0.solveTraj(tf0,traj_init);
 toc
 
-x = z(traj_opt.x_inds);
-u = z(traj_opt.u_inds);
+v.playback(xtraj,struct('slider','true'))
+
+%Run robust version
+options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;
+prog1 = RobustDirtranTrajectoryOptimization(r,N,D,E0,Q,R,Qf,tf0*[(1-0.1) (1+0.1)],options);
+prog1 = prog1.addStateConstraint(ConstantConstraint(x0),1);
+%prog1 = prog1.addStateConstraint(ConstantConstraint(xG),N);
+%prog1 = prog1.addRunningCost(@cost);
+prog1 = prog1.addFinalCost(@finalCost);
+prog1 = prog1.addRobustCost(Q,R,Qf);
+% prog1 = prog1.setSolverOptions('snopt','majoroptimalitytolerance',1e-3);
+% prog1 = prog1.setSolverOptions('snopt','minoroptimalitytolerance',1e-4);
+% prog1 = prog1.setSolverOptions('snopt','majorfeasibilitytolerance',1e-3);
+% prog1 = prog1.setSolverOptions('snopt','minorfeasibilitytolerance',1e-4);
+% prog1 = prog1.setSolverOptions('snopt','iterationslimit',100000);
+
+[jlmin,jlmax] = r.getJointLimits;
+xmin = [jlmin;-inf(nq,1)];
+xmax = [jlmax;inf(nq,1)];
+prog1 = prog1.addConstraint(BoundingBoxConstraint(repmat(xmin,N,1),repmat(xmax,N,1)),prog1.x_inds);
+
+constraint = FunctionHandleConstraint(-1e-1*ones(3,1),1e-1*ones(3,1),nx,@l_hand_constraint);
+constraint = constraint.setName('left_hand_constraint'); 
+prog1 = prog1.addConstraint(constraint, {prog0.x_inds(:,N)});
+
+for i=1:N
+  constraint = FunctionHandleConstraint(0,inf,nx,@l_hand_box_constraint);
+  constraint = constraint.setName(sprintf('l_hand_box_constraint_%d',i));
+  prog1 = prog1.addConstraint(constraint, {prog1.x_inds(:,i)});
+end
+
+%Run again with box constraint
+traj_init.x = xtraj;
+traj_init.u = utraj;
+tic;
+[xtraj,utraj,z,F,info,infeasible] = prog1.solveTraj(tf0,traj_init);
+toc
 
 v.playback(xtraj,struct('slider','true'))
 
 keyboard
 
-Q = diag([100*ones(nq,1);10*ones(nq,1)]);
-R = 0.01*eye(nu);
-Qf = 5*Q;
 c = tvlqr(r,xtraj,utraj,Q,R,Qf);
 
 rt = TimeSteppingRigidBodyManipulator(r,0.001);
@@ -80,7 +115,6 @@ v.playback(traj,struct('slider',true));
 
 keyboard
 
-
   function displayStateTrajectory(t,x,u)
     ts = [0,cumsum(t)'];
     xtraj = PPTrajectory(foh(ts,x));
@@ -89,8 +123,8 @@ keyboard
   end
 
   function [g,dg,ddg] = cost(h,x,u)
-    Q = diag([zeros(nq,1);1e-6*ones(nq,1)]);
-    R = 0.0*eye(nu);
+    Q = diag([zeros(nq,1);zeros(nq,1)]);
+    R = 1e-3*eye(nu);
 
     g = (x-xG)'*Q*(x-xG) + u'*R*u;
     dg = [0, 2*(x'*Q -xG'*Q), 2*u'*R];
@@ -101,7 +135,7 @@ keyboard
     Q = diag([zeros(nq,1);ones(nq,1)]);
     
     g = (x-xG)'*Q*(x-xG);
-    dg = [0, 2*(x'*Q -xG'*Q)];
+    dg = [0, 2*(x-xG)'*Q];
     ddg = blkdiag(0, 2*Q);
   end
 
