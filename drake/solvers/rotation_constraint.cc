@@ -261,9 +261,12 @@ double Intercept(double x, double y) {
 }  // namespace
 
 namespace internal {
-
-std::vector<Eigen::Vector3d> IntersectBoxWUnitCircle(Eigen::Vector3d bmin,
-                                                     Eigen::Vector3d bmax) {
+// Given an axis-aligned box in the first orthant, computes and returns all the
+// intersecting points between the edges of the box and the unit sphere.
+// @param bmin  The vertex of the box closest to the origin.
+// @param bmax  The vertex of the box farthest from the origin.
+std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(const Eigen::Vector3d &bmin,
+                                                                  const Eigen::Vector3d &bmax) {
   // Assumes the positive orthant (and bmax>=bmin).
   DRAKE_ASSERT(bmin(0) >= 0 && bmin(1) >= 0 && bmin(2) >= 0);
   DRAKE_ASSERT(bmax(0) >= bmin(0) && bmax(1) >= bmin(1) && bmax(2) >= bmin(2));
@@ -272,105 +275,73 @@ std::vector<Eigen::Vector3d> IntersectBoxWUnitCircle(Eigen::Vector3d bmin,
   DRAKE_ASSERT(bmin.lpNorm<2>() <= 1);
   DRAKE_ASSERT(bmax.lpNorm<2>() >= 1);
 
-  std::vector<Eigen::Vector3d> intersections;
+  std::vector<Eigen::Vector3d> intersection;
+  // The box has at most 12 edges, each edge can intersect with the unit sphere
+  // for at most once, since the box is in the first orthant.
+  intersection.reserve(12);
 
-  // Note: all logic below are ordered to avoid imaginary sqrts, but
-  // the Intercept method asserts for this, just in case.
-
-  // An axis-aligned box in the positive orthant can intersect with the unit
-  // circle at:
-  //  1 point - when the box touchest the unit circle exactly at the corner,
-  //  3 points - when exactly one corner is inside the unit circle OR exactly
-  //      one corner is outside the unit circle, or
-  //  4 points, when >= two points are inside the unit circle and >= two
-  //      points are outside the unit circle.
-
-  if (bmin.lpNorm<2>() == 1) {
-    // Then only the min corner intersects.
-    intersections.push_back(bmin);
-    return intersections;
-  }
-
-  if (bmax.lpNorm<2>() == 1) {
-    // Then only the max corner intersects.
-    intersections.push_back(bmax);
-    return intersections;
-  }
-
-  // Finds the "bottom" (min z) intersection(s).
-  Eigen::Vector3d v;
-  v << bmax(0), bmax(1), bmin(2);  // far bottom corner
-  if (v.lpNorm<2>() > 1) {
-    // Then two intersections on the bottom face.
-    // Get the +x one first.
-    v = bmin;
-    v(0) = Intercept(v(1), v(2));
-    if (v(0) <= bmax(0)) {
-      intersections.push_back(v);
-    } else {
-      // Must be on the back face.
-      v(0) = bmax(0);
-      v(1) = Intercept(v(0), v(2));
-      intersections.push_back(v);
+  // 1. Loop through each vertex of the box, add it to intersection if
+  // the vertex is on the sphere.
+  // First find out all the vertices of the box (since it is possible that
+  // bmin(i) = bmax(i), the number of vertices can be not equal to 8).
+  std::vector<Eigen::Vector3d> vertices;
+  vertices.reserve(8);
+  vertices.push_back(bmin);
+  for (int axis = 0; axis < 3; ++axis) {
+    // For each axis, if bmax(axis) != bmin(axis), then append a copy of the
+    // current vertices to the end, change the corresponding axis of the
+    // appended vertices to bmax(axis).
+    if (bmin(axis) != bmax(axis)) {
+      // vertices_max is the same as vertices,
+      std::vector<Eigen::Vector3d> vertices_max(vertices);
+      for (int i = 0; i < static_cast<int>(vertices_max.size()); ++i) {
+        vertices_max[i](axis) = bmax(axis);
+      }
+      vertices.insert(vertices.end(), vertices_max.begin(), vertices_max.end());
     }
-    // Now get the +y intersection.
-    v = bmin;
-    v(1) = Intercept(v(0), v(2));
-    if (v(1) <= bmax(1)) {
-      intersections.push_back(v);
-    } else {
-      v(1) = bmax(1);
-      v(0) = Intercept(v(1), v(2));
-      intersections.push_back(v);
-    }
-  } else {
-    // Then exactly one intersection on the bmax(0),bmax(1),z edge.
-    DRAKE_ASSERT(v(0) == bmax(0) && v(1) == bmax(1));  // already set for me.
-    v(2) = Intercept(v(0), v(1));
-    intersections.push_back(v);
   }
-
-  // Finds the "top" (max z) intersections(s).
-  v << bmin(0), bmin(1), bmax(2);  // near top corner
-  if (v.lpNorm<2>() >= 1) {
-    // Then exact one "top" intersection, along this edge.
-    v(2) = Intercept(v(0), v(1));
-    intersections.push_back(v);
-  } else {
-    // Then exactly two intersections on the top face.
-    v(0) = Intercept(v(1), v(2));
-    if (v(0) <= bmax(0)) {
-      intersections.push_back(v);
-    } else {
-      v(0) = bmax(0);
-      v(1) = Intercept(v(0), v(2));
-      intersections.push_back(v);
-    }
-
-    v << bmin(0), bmin(1), bmax(2);
-    v(1) = Intercept(v(0), v(2));
-    if (v(1) <= bmax(1)) {
-      intersections.push_back(v);
-    } else {
-      v(1) = bmax(1);
-      v(0) = Intercept(v(1), v(2));
-      intersections.push_back(v);
+  // Now loop through the vertices, add it to intersection if the vertex is on
+  // the sphere.
+  for (int i = 0; i < static_cast<int>(vertices.size()); ++i) {
+    if(vertices[i].norm() == 1) {
+      intersection.push_back(vertices[i]);
     }
   }
 
-  if (intersections.size() == 2) {
-    // Then the unit circle passed through the near and far vertical edges,
-    // and missed the top and bottom faces.  There must be two more
-    // intersections -- on the other two vertical edges.
+  // 2. Loop through each edge, find the intersection between each edge and the
+  // unit sphere, if one exists, and not a vertex.
+  for (int axis = 0; axis < 3; ++axis) {
+    // axis = 0 means edges along x axis;
+    // axis = 1 means edges along y axis;
+    // axis = 2 means edges along z axis;
+    int fixed_axis1 = (axis + 1) % 3;
+    int fixed_axis2 = (axis + 2) % 3;
+    for (int i = 0; i < 4; ++i) {
+      // 4 edges along each axis;
 
-    v << bmin(0), bmax(1), Intercept(bmin(0), bmax(1));
-    intersections.push_back(v);
+      // First finds the two end points on the edge.
+      Eigen::Vector3d pt_closer, pt_farther;
+      pt_closer(axis) = bmin(axis);
+      pt_farther(axis) = bmax(axis);
+      pt_closer(fixed_axis1) = i & (1 << 1) ? bmin(fixed_axis1) : bmax(fixed_axis1);
+      pt_farther(fixed_axis1) = pt_closer(fixed_axis1);
+      pt_closer(fixed_axis2) = i & (1 << 0) ? bmin(fixed_axis2) : bmax(fixed_axis2);
+      pt_farther(fixed_axis2) = pt_closer(fixed_axis2);
 
-    v << bmax(0), bmin(1), Intercept(bmax(0), bmin(1));
-    intersections.push_back(v);
+      // Determines if there is an intersecting point between the edge and the sphere.
+      // If the intersecting point is not the vertex of the box, then push this
+      // intersecting point to intersection directly.
+      if (pt_closer.norm() < 1 && pt_farther.norm() > 1) {
+        Eigen::Vector3d pt_intersect{};
+        pt_intersect(fixed_axis1) = pt_closer(fixed_axis1);
+        pt_intersect(fixed_axis2) = pt_closer(fixed_axis2);
+        pt_intersect(axis) = Intercept(pt_intersect(fixed_axis1), pt_intersect(fixed_axis2));
+        intersection.push_back(pt_intersect);
+      }
+    }
   }
-  return intersections;
-}
+  return intersection;
+};
 
 }  // namespace internal
 
@@ -417,7 +388,8 @@ void AddMcCormickVectorConstraints(
             // the tightest linear constraint of the form:
             //    d <= normal'*v
             // that puts v inside (but as close as possible to) the unit circle.
-            auto pts = internal::IntersectBoxWUnitCircle(box_min, box_max);
+            auto pts =
+                internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max);
             DRAKE_DEMAND(pts.size() >= 3);
             Eigen::Vector3d normal;
             // Note: 1-d is the distance to the farthest point on the unit
