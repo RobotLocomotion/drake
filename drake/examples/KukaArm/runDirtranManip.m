@@ -1,7 +1,7 @@
-function runDirtranManip(N)
+function runDirtranManip
 
 options.with_weight = true;
-options.with_box = true;
+options.with_shelf = true;
 r = KukaArm(options);
 
 nx = r.getNumStates;
@@ -10,11 +10,12 @@ nu = r.getNumInputs;
 
 v=r.constructVisualizer;
 
-q0 = [0;1.57;0;0;0;0;1.57];
+
+q0 = [0;-0.683;0;1.77;0;0.88;-1.57];
 x0 = [q0;zeros(nq,1)];
 xG = double(r.resolveConstraints(zeros(nx,1)));
-
-
+v.draw(0,x0);
+N = 30;
 tf0 = 3.0;
 
 traj_init.x = PPTrajectory(foh([0,tf0],[x0,xG]));
@@ -34,13 +35,15 @@ xmax = [jlmax;inf(nq,1)];
 traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(repmat(xmin,N,1),repmat(xmax,N,1)),traj_opt.x_inds);
 
 
-constraint = FunctionHandleConstraint(-1e-1*ones(3,1),1e-1*ones(3,1),nx,@l_hand_constraint);
-constraint = constraint.setName('left_hand_constraint'); 
-traj_opt = traj_opt .addConstraint(constraint, {traj_opt.x_inds(:,N)});
+tol = [0.03;0.03;0.005;0.01;0.01;0.01];
 
-for i=1:N
-  constraint = FunctionHandleConstraint(0,inf,nx,@l_hand_box_constraint);
-  constraint = constraint.setName(sprintf('l_hand_box_constraint_%d',i));
+constraint = FunctionHandleConstraint(-tol,tol,nx,@l_hand_constraint);
+constraint = constraint.setName('left_hand_constraint'); 
+traj_opt = traj_opt.addConstraint(constraint, {traj_opt.x_inds(:,N)});
+
+for i=1:N-1
+  constraint = FunctionHandleConstraint(0,inf,nx,@l_hand_shelf_constraint);
+  constraint = constraint.setName(sprintf('l_hand_shelf_constraint_%d',i));
   traj_opt = traj_opt.addConstraint(constraint, {traj_opt.x_inds(:,i)});
 end
 
@@ -54,7 +57,7 @@ u = z(traj_opt.u_inds);
 
 v.playback(xtraj,struct('slider','true'))
 
-keyboard
+
 
 Q = diag([100*ones(nq,1);10*ones(nq,1)]);
 R = 0.01*eye(nu);
@@ -107,24 +110,20 @@ keyboard
   function [f,df] = l_hand_constraint(x)
     q = x(1:nq);
     kinsol = doKinematics(r, q);
-    [pl,Jl] = forwardKin(r,kinsol,r.findLinkId('iiwa_link_ee'),[0;0;0]);
+    opt.rotation_type = 1;
+    [pl,Jl] = forwardKin(r,kinsol,r.findLinkId('iiwa_link_ee'),[0;0;0],opt);
 
-    f = pl-[0.0;0.0;1.36];
+    f = pl-[0.4;0.0;1.03;pi/2;0;pi/2];
     df = [Jl,zeros(length(f),nq)];
   end
 
-  function [f,df] = l_hand_box_constraint(x)
+  function [f,df] = l_hand_shelf_constraint(x)
     q = x(1:nq);
     kinsol = doKinematics(r, q);
-    [pl,Jl] = forwardKin(r,kinsol,r.findLinkId('iiwa_link_ee'),[0;0;0.1]);
-
-    box_center = [0.6;0;1.4];
-    radius = 0.4 + 0.05;
-
-    % approx
-    err = pl - box_center;
-    f = err'*err - radius^2;
-    df = [2*err'*Jl,zeros(length(f),nq)];
+    [phi,~,~,~,~,~,~,~,J] = r.contactConstraints(kinsol);
+   
+    f = phi;
+    df = [J,zeros(length(f),nq)];
   end
 
 end
