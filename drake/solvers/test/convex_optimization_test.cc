@@ -122,7 +122,8 @@ void TestLinearProgram1(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
   prog.AddLinearCost(Eigen::Vector2d(1.0, -2.0), x);
-  prog.AddBoundingBoxConstraint(Eigen::Vector2d(0, -1), Eigen::Vector2d(2, 4), x);
+  prog.AddBoundingBoxConstraint(Eigen::Vector2d(0, -1), Eigen::Vector2d(2, 4),
+                                x);
 
   if (solver.SolverName() == "SNOPT") {
     prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
@@ -264,7 +265,8 @@ void TestQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
 
   prog.AddBoundingBoxConstraint(
       Eigen::MatrixXd::Zero(3, 1),
-      Eigen::MatrixXd::Constant(3, 1, std::numeric_limits<double>::infinity()), x);
+      Eigen::MatrixXd::Constant(3, 1, std::numeric_limits<double>::infinity()),
+      x);
 
   // This test handles the case that in one LinearConstraint,
   // some rows have active upper bounds;
@@ -1208,14 +1210,17 @@ MatrixDecisionVariable<x_dim, x_dim> AddLyapunovCondition(
   // M = A' * P + P * A + Q.
   Eigen::Matrix<symbolic::Expression, x_dim, x_dim> M;
   M = A.transpose() * P + P * A + Q;
-  Eigen::Matrix<symbolic::Expression, x_dim * (x_dim + 1) / 2, 1> M_lower_triangular{};
+  Eigen::Matrix<symbolic::Expression, x_dim*(x_dim + 1) / 2, 1>
+      M_lower_triangular{};
   int M_count = 0;
   for (int j = 0; j < x_dim; ++j) {
     for (int i = j; i < x_dim; ++i) {
       M_lower_triangular(M_count++) = M(i, j);
     }
   }
-  prog->AddLinearEqualityConstraint(M_lower_triangular, Eigen::Matrix<double, x_dim * (x_dim + 1)/2, 1>::Zero());
+  prog->AddLinearEqualityConstraint(
+      M_lower_triangular,
+      Eigen::Matrix<double, x_dim*(x_dim + 1) / 2, 1>::Zero());
   return Q;
 }
 }  // namespace

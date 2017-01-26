@@ -469,8 +469,8 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
       if (map_base_to_exponent.size() == 1) {
         const pair<Expression, Expression>& p = *map_base_to_exponent.begin();
         if (!is_variable(p.first) || !is_one(p.second)) {
-          throw SymbolicError(
-              e_i, "non-linear but called with AddLinearConstraint");
+          throw SymbolicError(e_i,
+                              "non-linear but called with AddLinearConstraint");
         } else {
           const Variable& var_i = get_variable(p.first);
           if (v.size() == 1) {
@@ -574,7 +574,7 @@ void MathematicalProgram::AddConstraint(
 Binding<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(const Expression& e,
                                                  double b) {
-  return AddLinearEqualityConstraint(drake::Vector1<Expression>(e),
+  return AddLinearEqualityConstraint(drake::Vector1<symbolic::Expression>(e),
                                      drake::Vector1d(b));
 }
 

@@ -415,12 +415,12 @@ MinDistanceFromPlaneToOrigin::MinDistanceFromPlaneToOrigin(
       prog_rotated_lorentz_->NewContinuousVariables(kXdim, "x");
 
   switch (cost_form) {
-    case kNonSymbolicCost : {
+    case kNonSymbolicCost: {
       prog_lorentz_->AddLinearCost(Vector1d(1), t_lorentz_);
       prog_rotated_lorentz_->AddLinearCost(Vector1d(1), t_rotated_lorentz_);
       break;
     }
-    case kSymbolicCost : {
+    case kSymbolicCost: {
       prog_lorentz_->AddLinearCost(+t_lorentz_(0));
       prog_rotated_lorentz_->AddLinearCost(+t_rotated_lorentz_(0));
       break;
