@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 
@@ -19,7 +20,6 @@ namespace sensors {
 template <typename T>
 class Image {
  public:
-
   /// Image size and number of channel only constructor.  Specifies a width,
   /// height and number of channels for the image.  All the channel values in
   /// all the pixels are initialized with zero.
@@ -102,7 +102,7 @@ class Image {
     data_.resize(width * height * channel_);
     std::fill(data_.begin(), data_.end(), 0);
     width_ = width;
-    height_= height;
+    height_ = height;
   }
 
   /// Access to the pixel located at (x, y) in image coordinate system where x
