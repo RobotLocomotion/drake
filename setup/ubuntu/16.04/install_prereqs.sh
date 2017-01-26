@@ -77,6 +77,12 @@ gfortran-5
 gfortran-5-multilib
 git
 graphviz
+libboost-dev
+libboost-filesystem-dev
+libboost-iostreams-dev
+libboost-program-options-dev
+libboost-regex-dev
+libboost-system-dev
 libgl1-mesa-dri
 libgtk2.0-dev
 libhtml-form-perl
@@ -85,6 +91,7 @@ libpng12-dev
 libqt4-dev
 libqt4-opengl-dev
 libqwt-dev
+libtinyxml-dev
 libtool
 libvtk-java
 libvtk5-dev
