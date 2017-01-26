@@ -862,7 +862,7 @@ void MathematicalProgram::SetDecisionVariableValues(
 }
 
 void MathematicalProgram::SetDecisionVariableValue(const Variable& var,
-                                                   const double value) {
+                                                   double value) {
   x_values_[FindDecisionVariableIndex(var)] = value;
 }
 

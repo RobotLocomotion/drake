@@ -1935,8 +1935,7 @@ class MathematicalProgram {
    * @param var A decision variable in the program.
    * @param value The value of that decision variable.
    */
-  void SetDecisionVariableValue(const symbolic::Variable& var,
-                                const double value);
+  void SetDecisionVariableValue(const symbolic::Variable& var, double value);
 
   /**
    * Set an option for a particular solver.  This interface does not
