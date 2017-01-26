@@ -38,13 +38,12 @@
   <material name="White">
     <color rgba="1.0 1.0 1.0 1.0"/>
   </material>
-  <!-- Fix to world just for testing -->
-  <!-- link name="world"/ -->
+  <link name="base"/>
   <!--iiwa-->
   <!--joint between {parent} and link_0-->
-  <joint name="world_iiwa_joint" type="fixed">
+  <joint name="base_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0.0"/>
-    <!--parent link="world"/ -->
+    <parent link="base"/>
     <child link="iiwa_link_0"/>
   </joint>
   <link name="iiwa_link_0">
@@ -60,13 +59,13 @@
       </geometry>
       <material name="Grey"/>
     </visual>
-    <collision>
+<!--     <collision>
       <origin rpy="0 0 0" xyz="-0.015 0 0.07"/>
       <geometry>
           <cylinder radius="0.139" length="0.17"/>
       </geometry>
       <material name="Grey"/>
-    </collision>
+    </collision> -->
     <self_collision_checking>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
@@ -87,8 +86,9 @@
   <link name="iiwa_link_1">
     <inertial>
       <origin rpy="0 0 0" xyz="0 -0.03 0.12"/>
-      <mass value="4"/>
-      <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.09" iyz="0" izz="0.02"/>
+      <mass value="5.76"/> <!--4-->
+      <!--<inertia ixx="0.1" ixy="0" ixz="0" iyy="0.09" iyz="0" izz="0.02"/>--> <!--<original urdf value>-->
+      <inertia ixx="0.033" ixy="0" ixz="0" iyy="0.0333" iyz="0.004887" izz="0.0123"/> <!--<TODO(YeZhao): lumped parameter estimation>-->
     </inertial>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -97,13 +97,13 @@
       </geometry>
       <material name="Grey"/>
     </visual>
-    <collision>
+<!--     <collision>
       <origin rpy="0 0 0" xyz="0 -0.014 0.14"/>
       <geometry>
           <cylinder radius="0.101" length="0.29"/>
       </geometry>
       <material name="Grey"/>
-    </collision>
+    </collision> -->
   </link>
   <!-- joint between link_1 and link_2 -->
   <joint name="iiwa_joint_2" type="revolute">
@@ -118,8 +118,9 @@
   <link name="iiwa_link_2">
     <inertial>
       <origin rpy="0 0 0" xyz="0.0003 0.059 0.042"/>
-      <mass value="4"/>
-      <inertia ixx="0.05" ixy="0" ixz="0" iyy="0.018" iyz="0" izz="0.044"/>
+      <mass value="6.35"/> <!-- 3.95 kuka CAD value--> <!--4 original urdf value-->
+      <!--<inertia ixx="0.05" ixy="0" ixz="0" iyy="0.018" iyz="0" izz="0.044"/>--> <!--<original urdf value>-->
+      <inertia ixx="0.0305" ixy="0" ixz="0" iyy="0.0304" iyz="0.004887" izz="0.011"/>
     </inertial>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -128,13 +129,13 @@
       </geometry>
       <material name="Orange"/>
     </visual>
-    <collision>
+<!--     <collision>
       <origin rpy="1.57079632679 0 0" xyz="0 0.056 0.035"/>
       <geometry>
           <cylinder radius="0.101" length="0.29"/>
       </geometry>
       <material name="Orange"/>
-    </collision>
+    </collision> -->
   </link>
   <!-- joint between link_2 and link_3 -->
   <joint name="iiwa_joint_3" type="revolute">
@@ -149,8 +150,9 @@
   <link name="iiwa_link_3">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0.03 0.13"/>
-      <mass value="3"/>
-      <inertia ixx="0.08" ixy="0" ixz="0" iyy="0.075" iyz="0" izz="0.01"/>
+      <mass value="3.5"/> <!--3.18 kuka CAD value--> <!--4 original urdf value-->
+      <!--<inertia ixx="0.08" ixy="0" ixz="0" iyy="0.075" iyz="0" izz="0.01"/>--> <!--<original urdf value>-->
+      <inertia ixx="0.025" ixy="0" ixz="0" iyy="0.0238" iyz="0.00487" izz="0.0076"/>
     </inertial>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -159,13 +161,13 @@
       </geometry>
       <material name="Grey"/>
     </visual>
-    <collision>
+<!--     <collision>
       <origin rpy="0 0 0" xyz="0 0.025 0.137"/>
       <geometry>
           <cylinder radius="0.092" length="0.29"/>
       </geometry>
       <material name="Grey"/>
-    </collision>
+    </collision> -->
   </link>
   <!-- joint between link_3 and link_4 -->
   <joint name="iiwa_joint_4" type="revolute">
@@ -180,8 +182,9 @@
   <link name="iiwa_link_4">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0.067 0.034"/>
-      <mass value="2.7"/>
-      <inertia ixx="0.03" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.029"/>
+      <mass value="3.5"/> <!--2.74 kuka CAD value--> <!--4 original urdf value-->
+      <!--<inertia ixx="0.03" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.029"/>--> <!--<original urdf value>-->
+      <inertia ixx="0.017" ixy="0" ixz="0" iyy="0.0164" iyz="0.00284" izz="0.006"/>
     </inertial>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -190,13 +193,13 @@
       </geometry>
       <material name="Orange"/>
     </visual>
-    <collision>
+<!--     <collision>
       <origin rpy="1.57079632679 0 0" xyz="0 0.056 0.025"/>
       <geometry>
           <cylinder radius="0.092" length="0.25"/>
       </geometry>
       <material name="Orange"/>
-    </collision>
+    </collision> -->
   </link>
   <!-- joint between link_4 and link_5 -->
   <joint name="iiwa_joint_5" type="revolute">
@@ -211,8 +214,9 @@
   <link name="iiwa_link_5">
     <inertial>
       <origin rpy="0 0 0" xyz="0.0001 0.021 0.076"/>
-      <mass value="1.7"/>
-      <inertia ixx="0.02" ixy="0" ixz="0" iyy="0.018" iyz="0" izz="0.005"/>
+      <mass value="3.5"/> <!--1.69 kuka CAD value--> <!--1.7 original urdf value-->
+      <!--<inertia ixx="0.02" ixy="0" ixz="0" iyy="0.018" iyz="0" izz="0.005"/>--> <!--<original urdf value>-->
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.0087" iyz="0.00309" izz="0.00449"/>
     </inertial>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -221,13 +225,13 @@
       </geometry>
       <material name="Grey"/>
     </visual>
-    <collision>
+<!--     <collision>
       <origin rpy="-0.3 0 0" xyz="0 0.03 0.13"/>
       <geometry>
           <cylinder radius="0.07" length="0.29"/>
       </geometry>
       <material name="Grey"/>
-    </collision>
+    </collision> -->
   </link>
   <!-- joint between link_5 and link_6 -->
   <joint name="iiwa_joint_6" type="revolute">
@@ -242,8 +246,9 @@
   <link name="iiwa_link_6">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0.0006 0.0004"/>
-      <mass value="1.8"/>
-      <inertia ixx="0.005" ixy="0" ixz="0" iyy="0.0036" iyz="0" izz="0.0047"/>
+      <mass value="1.8"/> <!--1.8 kuka CAD value--> <!--1.8 original urdf value-->
+      <!--<inertia ixx="0.005" ixy="0" ixz="0" iyy="0.0036" iyz="0" izz="0.0047"/>--> <!--<original urdf value>-->
+      <inertia ixx="0.0049" ixy="0" ixz="0" iyy="0.0047" iyz="0.000246" izz="0.0036"/>
     </inertial>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -252,13 +257,13 @@
       </geometry>
       <material name="Orange"/>
     </visual>
-    <collision>
+<!--     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="meshes/collision/link_6.obj"/>
       </geometry>
       <material name="Orange"/>
-    </collision>
+    </collision> -->
   </link>
   <!-- joint between link_6 and link_7 -->
   <joint name="iiwa_joint_7" type="revolute">
@@ -273,8 +278,9 @@
   <link name="iiwa_link_7">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0.02"/>
-      <mass value="0.3"/>
-      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      <mass value="1.2"/> <!--0.31 kuka CAD value--> <!--0.3 original urdf value-->
+      <!--<inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>--> <!--<original urdf value>-->
+      <inertia ixx="0.0002" ixy="0" ixz="0" iyy="0.0002" iyz="0" izz="0.0003"/>
     </inertial>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>

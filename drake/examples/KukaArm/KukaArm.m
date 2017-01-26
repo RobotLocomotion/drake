@@ -26,7 +26,7 @@ classdef KukaArm < RigidBodyManipulator
       end
 
       if options.with_weight
-        urdf = 'urdf/iiwa14_with_weight.urdf';
+        urdf = 'urdf/iiwa14_fixed_gripper.urdf';
       end
       
       warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
@@ -42,6 +42,13 @@ classdef KukaArm < RigidBodyManipulator
       if options.with_box
         obj = obj.addRobotFromURDF('urdf/box.urdf', [0.6;0;1.4], [0;0;0]);
       end
+      if options.with_shelf
+        obj = obj.addRobotFromURDF('urdf/shelf.urdf', [0.6;0;0.88], [0;0;0]);
+      end
+      
+      obj = obj.removeCollisionGroupsExcept({'manip'});
+      obj = compile(obj);
+
     end
 
     function [f,df] = dynamics_w(obj,t,x,u,w)
