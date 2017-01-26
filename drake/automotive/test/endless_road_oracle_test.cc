@@ -171,6 +171,26 @@ bool IsNear(double a, double b, double margin) {
 }
 
 
+::testing::AssertionResult IsOracleOutputNear(
+     double expected_net_delta_sigma,
+     double expected_delta_sigma_dot,
+     const EndlessRoadOracleOutput<double>& actual_output,
+     double linear_tolerance) {
+  if (!(IsNear(actual_output.net_delta_sigma(),
+               expected_net_delta_sigma, linear_tolerance) &&
+        IsNear(actual_output.delta_sigma_dot(),
+               expected_delta_sigma_dot, linear_tolerance))) {
+    return ::testing::AssertionFailure()
+        << "Expected output (" << expected_net_delta_sigma
+        << ", " << expected_delta_sigma_dot << ") differs from actual output ("
+        << actual_output.net_delta_sigma() << ", "
+        << actual_output.delta_sigma_dot() << ") by more than "
+        << linear_tolerance << ".";
+  }
+  return ::testing::AssertionSuccess();
+}
+
+
 TEST_F(EndlessRoadOracleInternalTest, UnwrapEndlessRoadCarState) {
 
   std::vector<EndlessRoadCarState<double>> inputs(5);
@@ -225,11 +245,66 @@ TEST_F(EndlessRoadOracleInternalTest, UnwrapEndlessRoadCarState) {
   EXPECT_TRUE(IsPathRecordEq(source_lanes_[4], true,  paths[4][4]));
 }
 
-#if 0
-TEST_F(EndlessRoadOracleInternalTest, AssessLongitudinal) {
 
+TEST_F(EndlessRoadOracleInternalTest, AssessForwardPath) {
+  // Set up a 'world' with three cars.
+  std::vector<internal::SourceState> source_states;
+  std::vector<std::vector<internal::PathRecord>> paths;
 
+  source_states.emplace_back(
+      api::RoadPosition {source_lanes_[0], {400., 0., 0.}}, 1., 1.);
+  paths.emplace_back<std::vector<internal::PathRecord>>(
+    {{source_lanes_[0], false},
+      {source_lanes_[1], false},
+      {source_lanes_[4], true}});
+
+  source_states.emplace_back(
+      api::RoadPosition {source_lanes_[0], {600., 0., 0.}}, 1., 5.);
+  paths.emplace_back<std::vector<internal::PathRecord>>(
+    {{source_lanes_[0], false},
+      {source_lanes_[1], false},
+      {source_lanes_[4], true}});
+
+  source_states.emplace_back(
+      api::RoadPosition {source_lanes_[3], {0., 0., 0.}}, 1., 10.);
+  paths.emplace_back<std::vector<internal::PathRecord>>(
+    {{source_lanes_[3], false},
+      {source_lanes_[0], true},
+      {source_lanes_[5], false},
+      {source_lanes_[2], true}});
+
+  source_states.emplace_back(
+      api::RoadPosition {source_lanes_[5], {50., 0., 0.}}, 1., 100.);
+  paths.emplace_back<std::vector<internal::PathRecord>>(
+      {{source_lanes_[5], true},
+        {source_lanes_[0], false},
+        {source_lanes_[3], true},
+        {source_lanes_[4], false}});
+
+  std::vector<EndlessRoadOracleOutput<double>> outputs(source_states.size());
+  std::vector<EndlessRoadOracleOutput<double>*> output_ptrs;
+  for (EndlessRoadOracleOutput<double>& output : outputs) {
+    output_ptrs.push_back(&output);
+  }
+
+  internal::AssessForwardPath(source_states, paths, output_ptrs);
+
+  ASSERT_EQ(4, outputs.size());
+  EXPECT_TRUE(IsOracleOutputNear(
+      (600. - 400. - internal::kCarLength), -4., outputs[0],
+      kLinearTolerance));
+  EXPECT_TRUE(IsOracleOutputNear(internal::kEnormousDistance, 0., outputs[1],
+                                 kLinearTolerance));
+  EXPECT_TRUE(IsOracleOutputNear(
+      ((1000. / 6) + ((1000. * 5. / 6.) - 600.) - internal::kCarLength), 15.,
+      outputs[2],
+      kLinearTolerance));
+  EXPECT_TRUE(IsOracleOutputNear(
+      (50. + 400. - internal::kCarLength), 99., outputs[3],
+      kLinearTolerance));
 }
+
+#if 0
 TEST_F(EndlessRoadOracleInternalTest, DetermineLaneRelation) {
 
 

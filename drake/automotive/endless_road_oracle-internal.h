@@ -32,10 +32,16 @@ enum LaneRelation { kIntersection,
 struct SourceState {
   SourceState() {}
 
-  SourceState(api::RoadPosition rp_in, double circuit_s_speed_in)
-      : rp(rp_in), circuit_s_speed(circuit_s_speed_in) {}
+  SourceState(api::RoadPosition rp_in,
+              double cos_heading_in,
+              double circuit_s_speed_in)
+      : rp(rp_in),
+        cos_heading(cos_heading_in),
+        circuit_s_speed(circuit_s_speed_in) {}
   /// Position in the source RoadGeometry.
   api::RoadPosition rp;
+  /// Cosine of heading in (s,r) frame.
+  double cos_heading;
   /// Rate of change of s-parameter along the infinite circuit.
   double circuit_s_speed{};
 };
@@ -64,7 +70,6 @@ void UnwrapEndlessRoadCarState(
     std::vector<std::vector<PathRecord>>* paths);
 
 void AssessForwardPath(
-    const std::vector<const EndlessRoadCarState<double>*>& car_inputs,
     const std::vector<SourceState>& source_states,
     const std::vector<std::vector<PathRecord>>& paths,
     const std::vector<EndlessRoadOracleOutput<double>*>& oracle_outputs);
