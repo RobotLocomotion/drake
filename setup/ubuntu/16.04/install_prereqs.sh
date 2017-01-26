@@ -105,6 +105,7 @@ python-vtk
 python-yaml
 unzip
 valgrind
+wget
 xvfb
 zip
 zlib1g-dev
