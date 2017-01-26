@@ -583,8 +583,8 @@ Binding<LinearEqualityConstraint> MathematicalProgram::AddLinearEqualityConstrai
     ExtractVariablesFromExpression(v(i), &vars, &map_var_to_index);
   }
   // TODO(hongkai.dai): use sparse matrix.
-  Eigen::MatrixXd A(v.rows(), vars.rows());
-  Eigen::VectorXd beq(v.rows());
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(v.rows(), vars.rows());
+  Eigen::VectorXd beq = Eigen::VectorXd::Zero(v.rows());
   for (int i = 0; i < v.rows(); ++i) {
     double constant_term(0);
     DecomposeLinearExpression(v(i), map_var_to_index, A.row(i), &constant_term);
