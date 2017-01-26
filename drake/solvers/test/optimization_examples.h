@@ -3,6 +3,7 @@
 #include <limits>
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -13,6 +14,8 @@ namespace test {
  */
 class LinearSystemExample1 {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample1)
+
   LinearSystemExample1();
 
   MathematicalProgram* prog() const { return prog_.get(); }
@@ -43,6 +46,8 @@ class LinearSystemExample1 {
  */
 class LinearSystemExample2 : public LinearSystemExample1 {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample2)
+
   LinearSystemExample2();
 
   VectorDecisionVariable<2> y() const { return y_; }
@@ -61,6 +66,8 @@ class LinearSystemExample2 : public LinearSystemExample1 {
  */
 class LinearSystemExample3 : public LinearSystemExample2 {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample3)
+
   LinearSystemExample3();
 
   bool CheckSolution() const override;
@@ -76,6 +83,8 @@ class NonConvexQPproblem1 {
   /// to test different solvers, and whether MathematicalProgram can parse
   /// constraints in different forms.
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem1)
+
   enum CostForm {
     kCostBegin = 0,
     kGenericCost = 0,
@@ -100,6 +109,10 @@ class NonConvexQPproblem1 {
  private:
   class TestProblem1Cost {
    public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestProblem1Cost)
+
+    TestProblem1Cost() = default;
+
     static size_t numInputs() { return 5; }
     static size_t numOutputs() { return 1; }
 
@@ -133,6 +146,8 @@ class NonConvexQPproblem1 {
 /// ISBN 978-1-4757-3040-1
 class NonConvexQPproblem2 {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem2)
+
   enum CostForm {
     kCostBegin = 0,
     kGenericCost = 0,
@@ -157,6 +172,10 @@ class NonConvexQPproblem2 {
  private:
   class TestProblem2Cost {
    public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestProblem2Cost)
+
+    TestProblem2Cost() = default;
+
     static size_t numInputs() { return 6; }
     static size_t numOutputs() { return 1; }
 
@@ -190,6 +209,8 @@ class NonConvexQPproblem2 {
 /// ISBN 978-1-4757-3040-1
 class LowerBoundedProblem {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LowerBoundedProblem)
+
   enum ConstraintForm {
     kConstraintBegin = 0,
     kNonSymbolic = 0,
@@ -210,6 +231,10 @@ class LowerBoundedProblem {
  private:
   class LowerBoundTestCost {
    public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LowerBoundTestCost)
+
+    LowerBoundTestCost() = default;
+
     static size_t numInputs() { return 6; }
     static size_t numOutputs() { return 1; }
 
@@ -227,6 +252,8 @@ class LowerBoundedProblem {
 
   class LowerBoundTestConstraint : public Constraint {
    public:
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LowerBoundTestConstraint)
+
     LowerBoundTestConstraint(int i1, int i2)
         : Constraint(
               1, Eigen::Dynamic, Vector1d::Constant(4),
@@ -280,6 +307,8 @@ class LowerBoundedProblem {
 /// correctly with multiple decision variables.
 class GloptiPolyConstrainedMinimizationProblem {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GloptiPolyConstrainedMinimizationProblem)
+
   enum CostForm {
     kCostBegin = 0,
     kGenericCost = 0,
@@ -306,6 +335,10 @@ class GloptiPolyConstrainedMinimizationProblem {
  private:
   class GloptipolyConstrainedExampleCost {
    public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GloptipolyConstrainedExampleCost)
+
+    GloptipolyConstrainedExampleCost() = default;
+
     static size_t numInputs() { return 3; }
     static size_t numOutputs() { return 1; }
 
@@ -323,6 +356,8 @@ class GloptiPolyConstrainedMinimizationProblem {
       : public Constraint {  // Want to also support deriving directly from
                              // constraint without going through Function.
    public:
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GloptipolyConstrainedExampleConstraint)
+
     GloptipolyConstrainedExampleConstraint()
         : Constraint(
               1, 3, Vector1d::Constant(0),
@@ -385,6 +420,8 @@ class GloptiPolyConstrainedMinimizationProblem {
 /// where A_hat = [A 0; 2*I Aᵀ].
 class MinDistanceFromPlaneToOrigin {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinDistanceFromPlaneToOrigin)
+
   enum CostForm {
     kCostBegin = 0,
     kNonSymbolicCost = 0,
