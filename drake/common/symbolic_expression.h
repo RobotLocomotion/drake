@@ -584,7 +584,7 @@ class Monomial {
   /** Constructs a Monomial from @p powers. */
   explicit Monomial(const std::map<Variable::Id, int>& powers);
   /** Constructs a Monomial from @p var and @exponent. */
-  Monomial(const Variable& var, const int exponent);
+  Monomial(const Variable& var, int exponent);
   /** Returns the degree of this Monomial. */
   int get_degree() const { return degree_; }
   const std::map<Variable::Id, int>& get_powers() const { return powers_; }
@@ -692,7 +692,7 @@ struct GradedReverseLexOrder {
  * @tparam MonomialOrder provides a monomial ordering.
  */
 template <typename MonomialOrder>
-void MonomialsOfDegreeN(const Variables& vars, const int n, const Monomial& b,
+void MonomialsOfDegreeN(const Variables& vars, int n, const Monomial& b,
                         std::set<Monomial, MonomialOrder>* const bin) {
   DRAKE_ASSERT(vars.size() > 0);
   if (n == 0) {
@@ -718,7 +718,7 @@ void MonomialsOfDegreeN(const Variables& vars, const int n, const Monomial& b,
  */
 template <int rows>
 Eigen::Matrix<Expression, rows, 1> ComputeMonomialBasis(const Variables& vars,
-                                                        const int degree) {
+                                                        int degree) {
   DRAKE_DEMAND(vars.size() > 0);
   DRAKE_DEMAND(degree >= 0);
   // 1. Collect monomials.
@@ -745,7 +745,7 @@ Eigen::Matrix<Expression, rows, 1> ComputeMonomialBasis(const Variables& vars,
 }
 // Computes "n choose k", the number of ways, disregarding order, that k objects
 // can be chosen from among n objects.
-constexpr int NChooseK(const int n, const int k) {
+constexpr int NChooseK(int n, int k) {
   return (k == 0) ? 1 : (n * NChooseK(n - 1, k - 1)) / k;
 }
 }  // namespace internal
