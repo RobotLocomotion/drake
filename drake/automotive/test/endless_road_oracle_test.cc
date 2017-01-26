@@ -154,6 +154,23 @@ bool IsNear(double a, double b, double margin) {
 }
 
 
+::testing::AssertionResult IsPathRecordEq(
+     const api::Lane* expected_lane, bool expected_is_reversed,
+     const internal::PathRecord& actual_path_record) {
+  if ((actual_path_record.lane != expected_lane) ||
+      (actual_path_record.is_reversed != expected_is_reversed)) {
+    return ::testing::AssertionFailure()
+        << "Expected lane " << expected_lane->id().id << " ("
+        << expected_lane << ") and is_reversed " << expected_is_reversed
+        << " does not match actual lane "
+        << actual_path_record.lane->id().id << " ("
+        << actual_path_record.lane << ") and is_reversed "
+        << actual_path_record.is_reversed << ".";
+  }
+  return ::testing::AssertionSuccess();
+}
+
+
 TEST_F(EndlessRoadOracleInternalTest, UnwrapEndlessRoadCarState) {
 
   std::vector<EndlessRoadCarState<double>> inputs(4);
@@ -195,16 +212,11 @@ TEST_F(EndlessRoadOracleInternalTest, UnwrapEndlessRoadCarState) {
   EXPECT_TRUE(IsSourceStateClose(source_lanes_[0],
                                  (1000. * 5. / 6.) - 10., 0., 0., kSpeed,
                                  source_states[3], kLinearTolerance));
-#if 0
-  ASSERT_EQ(99, paths[0].size());
-  EXPECT_TRUE(IsPathRecordEq(, paths[0][0]));
-  EXPECT_TRUE(IsPathRecordEq(, paths[0][0]));
-  EXPECT_TRUE(IsPathRecordEq(, paths[0][0]));
-  EXPECT_TRUE(IsPathRecordEq(, paths[0][0]));
-  EXPECT_TRUE(IsPathRecordEq(, paths[0][0]));
-  EXPECT_TRUE(IsPathRecordEq(, paths[0][0]));
-  EXPECT_TRUE(IsPathRecordEq(, paths[0][0]));
-#endif
+
+  ASSERT_EQ(3, paths[0].size());
+  EXPECT_TRUE(IsPathRecordEq(source_lanes_[0], false, paths[0][0]));
+  EXPECT_TRUE(IsPathRecordEq(source_lanes_[1], false, paths[0][1]));
+  EXPECT_TRUE(IsPathRecordEq(source_lanes_[4], true,  paths[0][2]));
 }
 
 #if 0
