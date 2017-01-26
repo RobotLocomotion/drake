@@ -12,7 +12,7 @@ void SolveDAREandVerify(const Eigen::Ref<const MatrixXd>& A,
                         const Eigen::Ref<const MatrixXd>& Q,
                         const Eigen::Ref<const MatrixXd>& R) {
   MatrixXd X = DiscreteAlgebraicRiccatiEquation(A, B, Q, R);
-  // check that X is positive semi-definite
+  // Check that X is positive semi-definite.
   EXPECT_TRUE(
       CompareMatrices(X, X.transpose(), 1E-10, MatrixCompareType::absolute));
   int n = X.rows();
@@ -20,7 +20,7 @@ void SolveDAREandVerify(const Eigen::Ref<const MatrixXd>& A,
   for (int i = 0; i < n; i++) {
     EXPECT_GE(es.eigenvalues()[i], 0);
   }
-  // check that X is the solution to the discrete time ARE
+  // Check that X is the solution to the discrete time ARE.
   MatrixXd Y = A.transpose() * X * A - X -
                A.transpose() * X * B * (B.transpose() * X * B + R).inverse() *
                    B.transpose() * X * A +

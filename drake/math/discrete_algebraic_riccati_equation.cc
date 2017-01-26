@@ -54,7 +54,9 @@ void check_detectable(const Eigen::Ref<const Eigen::MatrixXd>& A,
 // it eliminates the 2nd coordinate of the vector [a,b]', i.e.,
 // R * [ a ] = [ a_hat ]
 //     [ b ]   [   0   ]
-void Givens_rotation(double a, double b, Eigen::Ref<Eigen::MatrixXd> R,
+// The implementation is based on
+// https://en.wikipedia.org/wiki/Givens_rotation#Stable_calculation
+void Givens_rotation(double a, double b, Eigen::Ref<Eigen::Matrix2d> R,
                      double eps = 1e-10) {
   double c, s;
   if (fabs(b) < eps) {
@@ -79,102 +81,132 @@ void Givens_rotation(double a, double b, Eigen::Ref<Eigen::MatrixXd> R,
 
 void swap_block_11(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                    Eigen::Ref<Eigen::MatrixXd> Z, int p) {
-  // Dooren, Case I, p124-125
+  // The arguments S, T, and Z will be changed.
+  // Dooren, Case I, p124-125.
   int n2 = S.rows();
-  Eigen::MatrixXd A = S.block<2, 2>(p, p), B = T.block<2, 2>(p, p),
-                  Z1 = Eigen::MatrixXd::Identity(n2, n2);
-  Eigen::MatrixXd H = A(1, 1) * B - B(1, 1) * A;
+  Eigen::Matrix2d A = S.block<2, 2>(p, p);
+  Eigen::Matrix2d B = T.block<2, 2>(p, p);
+  Eigen::MatrixXd Z1 = Eigen::MatrixXd::Identity(n2, n2);
+  Eigen::Matrix2d H = A(1, 1) * B - B(1, 1) * A;
   Givens_rotation(H(0, 1), H(0, 0), Z1.block<2, 2>(p, p));
-  S = (S * Z1).eval(), T = (T * Z1).eval(), Z = (Z * Z1).eval();
+  S = (S * Z1).eval();
+  T = (T * Z1).eval();
+  Z = (Z * Z1).eval();
   Eigen::MatrixXd Q = Eigen::MatrixXd::Identity(n2, n2);
   Givens_rotation(T(p, p), T(p + 1, p), Q.block<2, 2>(p, p));
-  S = (Q * S).eval(), T = (Q * T).eval();
-  S(p + 1, p) = T(p + 1, p) = 0;
+  S = (Q * S).eval();
+  T = (Q * T).eval();
+  S(p + 1, p) = 0;
+  T(p + 1, p) = 0;
 }
 void swap_block_21(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                    Eigen::Ref<Eigen::MatrixXd> Z, int p) {
-  // Dooren, Case II, p126-127
+  // The arguments S, T, and Z will be changed.
+  // Dooren, Case II, p126-127.
   int n2 = S.rows();
-  Eigen::Matrix3d A = S.block<3, 3>(p, p), B = T.block<3, 3>(p, p);
+  Eigen::Matrix3d A = S.block<3, 3>(p, p);
+  Eigen::Matrix3d B = T.block<3, 3>(p, p);
+  // Compute H and eliminate H(1,0) by row operation.
   Eigen::Matrix3d H = A(2, 2) * B - B(2, 2) * A;
   Eigen::Matrix3d R = Eigen::MatrixXd::Identity(3, 3);
   Givens_rotation(H(0, 0), H(1, 0), R.block<2, 2>(0, 0));
   H = (R * H).eval();
-  Eigen::MatrixXd Z1, Z2, Q1, Q2;
-  Z1 = Z2 = Q1 = Q2 = Eigen::MatrixXd::Identity(n2, n2);
-  Givens_rotation(H(1, 2), H(1, 1), Z1.block<2, 2>(p + 1, p + 1));  // compute
-                                                                    // Z1
+  Eigen::MatrixXd Z1 = Eigen::MatrixXd::Identity(n2, n2);
+  Eigen::MatrixXd Z2 = Eigen::MatrixXd::Identity(n2, n2);
+  Eigen::MatrixXd Q1 = Eigen::MatrixXd::Identity(n2, n2);
+  Eigen::MatrixXd Q2 = Eigen::MatrixXd::Identity(n2, n2);
+  // Compute Z1, Z2, Q1, Q2.
+  Givens_rotation(H(1, 2), H(1, 1), Z1.block<2, 2>(p + 1, p + 1));
   H = (H * Z1.block<3, 3>(p, p)).eval();
-  Givens_rotation(H(0, 1), H(0, 0), Z2.block<2, 2>(p, p));  // compute Z2
-  S = (S * Z1).eval(), T = (T * Z1).eval(), Z = (Z * Z1 * Z2).eval();
+  Givens_rotation(H(0, 1), H(0, 0), Z2.block<2, 2>(p, p));
+  S = (S * Z1).eval();
+  T = (T * Z1).eval();
+  Z = (Z * Z1 * Z2).eval();
   Givens_rotation(T(p + 1, p + 1), T(p + 2, p + 1),
-                  Q1.block<2, 2>(p + 1, p + 1));  // compute Q1
-  S = (Q1 * S * Z2).eval(), T = (Q1 * T * Z2).eval();
-  Givens_rotation(T(p, p), T(p + 1, p), Q2.block<2, 2>(p, p));  // compute Q2;
-  S = (Q2 * S).eval(), T = (Q2 * T).eval();
-  S(p + 1, p) = S(p + 2, p) = T(p + 1, p) = T(p + 2, p) = T(p + 2, p + 1) = 0;
+                  Q1.block<2, 2>(p + 1, p + 1));
+  S = (Q1 * S * Z2).eval();
+  T = (Q1 * T * Z2).eval();
+  Givens_rotation(T(p, p), T(p + 1, p), Q2.block<2, 2>(p, p));
+  S = (Q2 * S).eval();
+  T = (Q2 * T).eval();
+  S(p + 1, p) = 0;
+  S(p + 2, p) = 0;
+  T(p + 1, p) = 0;
+  T(p + 2, p) = 0;
+  T(p + 2, p + 1) = 0;
 }
 void swap_block_12(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                    Eigen::Ref<Eigen::MatrixXd> Z, int p) {
+  // The arguments S, T, and Z will be changed.
   int n2 = S.rows();
-  // swap the role of S and T
-  Eigen::MatrixXd Q0, Z1, Z2, Q1, Q2, Q3;
-  Z1 = Z2 = Q0 = Q1 = Q2 = Q3 = Eigen::MatrixXd::Identity(n2, n2);
+  // Swap the role of S and T.
+  Eigen::MatrixXd Z1 = Eigen::MatrixXd::Identity(n2, n2);
+  Eigen::MatrixXd Z2 = Eigen::MatrixXd::Identity(n2, n2);
+  Eigen::MatrixXd Q0 = Eigen::MatrixXd::Identity(n2, n2);
+  Eigen::MatrixXd Q1 = Eigen::MatrixXd::Identity(n2, n2);
+  Eigen::MatrixXd Q2 = Eigen::MatrixXd::Identity(n2, n2);
+  Eigen::MatrixXd Q3 = Eigen::MatrixXd::Identity(n2, n2);
   Givens_rotation(S(p + 1, p + 1), S(p + 2, p + 1),
                   Q0.block<2, 2>(p + 1, p + 1));
-  S = (Q0 * S).eval(), T = (Q0 * T).eval();
-  Eigen::Matrix3d A = S.block<3, 3>(p, p), B = T.block<3, 3>(p, p);
-  // compute H and eliminate H(2,1) by row op
+  S = (Q0 * S).eval();
+  T = (Q0 * T).eval();
+  Eigen::Matrix3d A = S.block<3, 3>(p, p);
+  Eigen::Matrix3d B = T.block<3, 3>(p, p);
+  // Compute H and eliminate H(2,1) by column operation.
   Eigen::Matrix3d H = B(0, 0) * A - A(0, 0) * B;
   Eigen::Matrix3d R = Eigen::MatrixXd::Identity(3, 3);
   Givens_rotation(H(2, 2), H(2, 1), R.block<2, 2>(1, 1));
   H = (H * R).eval();
-  // compute Q1, Q2, Z1, Z2
-  Givens_rotation(H(0, 1), H(1, 1), Q1.block<2, 2>(p, p));  // compute Q1
+  // Compute Q1, Q2, Z1, Z2.
+  Givens_rotation(H(0, 1), H(1, 1), Q1.block<2, 2>(p, p));
   H = (Q1.block<3, 3>(p, p) * H).eval();
-  Givens_rotation(H(1, 2), H(2, 2), Q2.block<2, 2>(p + 1, p + 1));  // compute
-                                                                    // Q2
-  S = (Q1 * S).eval(), T = (Q1 * T).eval();
-  Givens_rotation(S(p + 1, p + 1), S(p + 1, p),
-                  Z1.block<2, 2>(p, p));  // compute Z1
-  S = (Q2 * S * Z1).eval(), T = (Q2 * T * Z1).eval();
+  Givens_rotation(H(1, 2), H(2, 2), Q2.block<2, 2>(p + 1, p + 1));
+  S = (Q1 * S).eval();
+  T = (Q1 * T).eval();
+  Givens_rotation(S(p + 1, p + 1), S(p + 1, p), Z1.block<2, 2>(p, p));
+  S = (Q2 * S * Z1).eval();
+  T = (Q2 * T * Z1).eval();
   Givens_rotation(S(p + 2, p + 2), S(p + 2, p + 1),
-                  Z2.block<2, 2>(p + 1, p + 1));  // compute Z2
-  S = (S * Z2).eval(), T = (T * Z2).eval(), Z = (Z * Z1 * Z2).eval();
-  // swap back the role of S and T
+                  Z2.block<2, 2>(p + 1, p + 1));
+  S = (S * Z2).eval();
+  T = (T * Z2).eval();
+  Z = (Z * Z1 * Z2).eval();
+  // Swap back the role of S and T.
   Givens_rotation(T(p, p), T(p + 1, p), Q3.block<2, 2>(p, p));
-  S = (Q3 * S).eval(), T = (Q3 * T).eval();
-  S(p + 2, p) = S(p + 2, p + 1) = T(p + 1, p) = T(p + 2, p) = T(p + 2, p + 1) =
-      0;
+  S = (Q3 * S).eval();
+  T = (Q3 * T).eval();
+  S(p + 2, p) = 0;
+  S(p + 2, p + 1) = 0;
+  T(p + 1, p) = 0;
+  T(p + 2, p) = 0;
+  T(p + 2, p + 1) = 0;
 }
 
 void swap_block_22(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                    Eigen::Ref<Eigen::MatrixXd> Z, int p) {
-  // direct swapping algorithm
+  // The arguments S, T, and Z will be changed.
+  // Direct Swapping Algorithm based on
   // "Numerical Methods for General and Structured Eigenvalue Problems" by
   // Daniel Kressner, p108-111.
+  // ( http://sma.epfl.ch/~anchpcommon/publications/kressner_eigenvalues.pdf ).
   // Also relevant but not applicable here:
   // "On Swapping Diagonal Blocks in Real Schur Form" by Zhaojun Bai and James
   // W. Demmelt;
   int n2 = S.rows();
-  Eigen::MatrixXd A = S.block<4, 4>(p, p), B = T.block<4, 4>(p, p);
-  // solve
+  Eigen::MatrixXd A = S.block<4, 4>(p, p);
+  Eigen::MatrixXd B = T.block<4, 4>(p, p);
+  // Solve
   // A11 * X - Y A22 = A12
   // B11 * X - Y B22 = B12
-  // reduce to solve Cx=D, where x=[x1;...;x4;y1;...;y4]
+  // Reduce to solve Cx=D, where x=[x1;...;x4;y1;...;y4].
   Eigen::Matrix<double, 8, 8> C = Eigen::Matrix<double, 8, 8>::Zero();
   Eigen::Matrix<double, 8, 1> D;
-  C(0, 0) = A(0, 0), C(0, 2) = A(0, 1), C(0, 4) = -A(2, 2), C(0, 5) = -A(3, 2),
-       C(1, 1) = A(0, 0), C(1, 3) = A(0, 1), C(1, 4) = -A(2, 3),
-       C(1, 5) = -A(3, 3), C(2, 0) = A(1, 0), C(2, 2) = A(1, 1),
-       C(2, 6) = -A(2, 2), C(2, 7) = -A(3, 2), C(3, 1) = A(1, 0),
-       C(3, 3) = A(1, 1), C(3, 6) = -A(2, 3), C(3, 7) = -A(3, 3),
-       C(4, 0) = B(0, 0), C(4, 2) = B(0, 1), C(4, 4) = -B(2, 2),
-       C(4, 5) = -B(3, 2), C(5, 1) = B(0, 0), C(5, 3) = B(0, 1),
-       C(5, 4) = -B(2, 3), C(5, 5) = -B(3, 3), C(6, 0) = B(1, 0),
-       C(6, 2) = B(1, 1), C(6, 6) = -B(2, 2), C(6, 7) = -B(3, 2),
-       C(7, 1) = B(1, 0), C(7, 3) = B(1, 1), C(7, 6) = -B(2, 3),
-       C(7, 7) = -B(3, 3);
+  C << A(0, 0), 0, A(0, 1), 0, -A(2, 2), -A(3, 2), 0, 0, 0, A(0, 0), 0, A(0, 1),
+      -A(2, 3), -A(3, 3), 0, 0, A(1, 0), 0, A(1, 1), 0, 0, 0, -A(2, 2),
+      -A(3, 2), 0, A(1, 0), 0, A(1, 1), 0, 0, -A(2, 3), -A(3, 3), B(0, 0), 0,
+      B(0, 1), 0, -B(2, 2), -B(3, 2), 0, 0, 0, B(0, 0), 0, B(0, 1), -B(2, 3),
+      -B(3, 3), 0, 0, B(1, 0), 0, B(1, 1), 0, 0, 0, -B(2, 2), -B(3, 2), 0,
+      B(1, 0), 0, B(1, 1), 0, 0, -B(2, 3), -B(3, 3);
   D << A(0, 2), A(0, 3), A(1, 2), A(1, 3), B(0, 2), B(0, 3), B(1, 2), B(1, 3);
   Eigen::MatrixXd x = C.colPivHouseholderQr().solve(D);
   // Q * [ -Y ] = [ R_Y ] ,  Z' * [ -X ] = [ R_X ] .
@@ -182,26 +214,37 @@ void swap_block_22(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
   Eigen::Matrix<double, 4, 2> X, Y;
   X << -x(0, 0), -x(1, 0), -x(2, 0), -x(3, 0), Eigen::Matrix2d::Identity();
   Y << -x(4, 0), -x(5, 0), -x(6, 0), -x(7, 0), Eigen::Matrix2d::Identity();
-  Eigen::MatrixXd Q1, Z1;
-  Q1 = Z1 = Eigen::MatrixXd::Identity(n2, n2);
+  Eigen::MatrixXd Q1 = Eigen::MatrixXd::Identity(n2, n2);
+  Eigen::MatrixXd Z1 = Eigen::MatrixXd::Identity(n2, n2);
   Eigen::ColPivHouseholderQR<Eigen::Matrix<double, 4, 2> > qr1(X);
   Z1.block<4, 4>(p, p) = qr1.householderQ();
   Eigen::ColPivHouseholderQR<Eigen::Matrix<double, 4, 2> > qr2(Y);
   Q1.block<4, 4>(p, p) = qr2.householderQ().adjoint();
-  // apply transform Q1 * (S,T) * Z1
-  S = (Q1 * S * Z1).eval(), T = (Q1 * T * Z1).eval(), Z = (Z * Z1).eval();
-  // eliminate the T(p+3,p+2) entry
+  // Apply transform Q1 * (S,T) * Z1.
+  S = (Q1 * S * Z1).eval();
+  T = (Q1 * T * Z1).eval();
+  Z = (Z * Z1).eval();
+  // Eliminate the T(p+3,p+2) entry.
   Eigen::MatrixXd Q2 = Eigen::MatrixXd::Identity(n2, n2);
   Givens_rotation(T(p + 2, p + 2), T(p + 3, p + 2),
                   Q2.block<2, 2>(p + 2, p + 2));
-  S = (Q2 * S).eval(), T = (Q2 * T).eval();
-  // eliminate the T(p+1,p) entry
+  S = (Q2 * S).eval();
+  T = (Q2 * T).eval();
+  // Eliminate the T(p+1,p) entry.
   Eigen::MatrixXd Q3 = Eigen::MatrixXd::Identity(n2, n2);
   Givens_rotation(T(p, p), T(p + 1, p), Q3.block<2, 2>(p, p));
-  S = (Q3 * S).eval(), T = (Q3 * T).eval();
-  S(p + 2, p) = S(p + 2, p + 1) = S(p + 3, p) = S(p + 3, p + 1) = T(p + 1, p) =
-      T(p + 2, p) = T(p + 2, p + 1) = T(p + 3, p) = T(p + 3, p + 1) =
-          T(p + 3, p + 2) = 0;
+  S = (Q3 * S).eval();
+  T = (Q3 * T).eval();
+  S(p + 2, p) = 0;
+  S(p + 2, p + 1) = 0;
+  S(p + 3, p) = 0;
+  S(p + 3, p + 1) = 0;
+  T(p + 1, p) = 0;
+  T(p + 2, p) = 0;
+  T(p + 2, p + 1) = 0;
+  T(p + 3, p) = 0;
+  T(p + 3, p + 1) = 0;
+  T(p + 3, p + 2) = 0;
 }
 
 // Functionality of "swap_block" function:
@@ -210,8 +253,9 @@ void swap_block_22(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
 // matrices, swaping 1x1 and 2x2 matrices, and swaping 2x2 and 2x2 matrices.
 // Algorithms are described in the papers
 // "A generalized eigenvalue approach for solving Riccati equations" by P. Van
-// Dooren, 1981, and "Numerical Methods for General and Structured Eigenvalue
-// Problems" by Daniel Kressner, 2005.
+// Dooren, 1981 ( http://epubs.siam.org/doi/pdf/10.1137/0902010 ), and
+// "Numerical Methods for General and Structured Eigenvalue Problems" by
+// Daniel Kressner, 2005.
 void swap_block(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                 Eigen::Ref<Eigen::MatrixXd> Z, int p, int q, int q_block_size,
                 double eps = 1e-10) {
@@ -255,17 +299,15 @@ void swap_block(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
 // Finish when n stable eigenvalues are placed at the top-left n by n matrix.
 // The algorithm for swaping blocks is described in the papers
 // "A generalized eigenvalue approach for solving Riccati equations" by P. Van
-// Dooren, 1981 ( http://epubs.siam.org/doi/pdf/10.1137/0902010 ),
-// and "Numerical Methods for General and Structured Eigenvalue Problems" by
-// Daniel Kressner, 2005
-// ( http://sma.epfl.ch/~anchpcommon/publications/kressner_eigenvalues.pdf ).
+// Dooren, 1981, and "Numerical Methods for General and Structured Eigenvalue
+// Problems" by Daniel Kressner, 2005.
 void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                    Eigen::Ref<Eigen::MatrixXd> Z, double eps = 1e-10) {
   // abs(a) < eps => a = 0
   int n2 = S.rows();
   int n = n2 / 2, p = 0, q = 0;
   while (p < n && q < n2) {
-    // update q
+    // Update q.
     int q_block_size;
     while (q < n2) {
       if (q == n2 - 1 || fabs(S(q + 1, q)) < eps) {  // block size = 1
@@ -286,7 +328,7 @@ void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
     }
     if (q >= n2)
       throw std::runtime_error("fail to find enough stable eigenvalues");
-    // swap blocks pointed by p and q
+    // Swap blocks pointed by p and q.
     if (p != q) {
       swap_block(S, T, Z, p, q, q_block_size);
       p += q_block_size;
@@ -321,8 +363,7 @@ void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
  * 10^{-8}.
  *
  * TODO(weiqiao.han): I may overwrite the RealQZ function to improve the
- * accuracy,
- * together with more thorough tests.
+ * accuracy, together with more thorough tests.
  */
 
 Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
@@ -362,15 +403,15 @@ Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
   Eigen::MatrixXd S = qz.matrixS(), T = qz.matrixT(),
                   Z = qz.matrixZ().adjoint();
 
-  // reorder the generalized eigenvalues of (S,T)
+  // Reorder the generalized eigenvalues of (S,T).
   Eigen::MatrixXd Z2 = Eigen::MatrixXd::Identity(2 * n, 2 * n);
   reorder_eigen(S, T, Z2);
   Z = (Z * Z2).eval();
 
-  // the first n columns of Z is ( U1 )
+  // The first n columns of Z is ( U1 ) .
   //                             ( U2 )
   //            -1
-  // X = U2 * U1   is a solution of the discrete time Riccati equation
+  // X = U2 * U1   is a solution of the discrete time Riccati equation.
   Eigen::MatrixXd U1 = Z.block(0, 0, n, n), U2 = Z.block(n, 0, n, n);
   Eigen::MatrixXd X = U2 * U1.inverse();
   X = (X + X.adjoint().eval()) / 2.0;
