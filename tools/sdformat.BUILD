@@ -20,7 +20,7 @@ cmake_configure_file(
     defines = [
         "PROJECT_NAME=SDFormat",
         "SDF_VERSION_NAME=",
-        "CMAKE_INSTALL_FULL_DATAROOTDIR=/usr/share",
+        "CMAKE_INSTALL_FULL_DATAROOTDIR=external/sdformat/sdf/1.6",
         "SDF_PKG_VERSION=",
         "URDF_GE_0P3=1",
     ],
@@ -112,4 +112,5 @@ cc_library(
     deps = [
         "@ignmath//:lib",
     ],
+    data = glob(['sdf/1.6/*.sdf']),
 )
