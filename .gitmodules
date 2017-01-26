@@ -114,3 +114,6 @@
 [submodule "externals/vtk"]
 	path = externals/vtk
 	url = https://github.com/liangfok/VTK.git
+[submodule "externals/pybind11"]
+	path = externals/pybind11
+	url = https://github.com/pybind/pybind11
