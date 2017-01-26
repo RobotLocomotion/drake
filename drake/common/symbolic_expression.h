@@ -746,8 +746,8 @@ Eigen::Matrix<Expression, rows, 1> ComputeMonomialBasis(const Variables& vars,
 }
 // Computes "n choose k", the number of ways, disregarding order, that k objects
 // can be chosen from among n objects.
-constexpr int n_choose_k(const int n, const int k) {
-  return (k == 0) ? 1 : (n * n_choose_k(n - 1, k - 1)) / k;
+constexpr int NChooseK(const int n, const int k) {
+  return (k == 0) ? 1 : (n * NChooseK(n - 1, k - 1)) / k;
 }
 }  // namespace internal
 
@@ -775,12 +775,12 @@ Eigen::Matrix<Expression, Eigen::Dynamic, 1> MonomialBasis(
     const Variables& vars, int degree);
 
 template <int n, int degree>
-Eigen::Matrix<Expression, internal::n_choose_k(n + degree, degree), 1>
+Eigen::Matrix<Expression, internal::NChooseK(n + degree, degree), 1>
 MonomialBasis(const Variables& vars) {
   static_assert(n > 0, "n should be a positive integer.");
   static_assert(degree >= 0, "degree should be a non-negative integer.");
-  return internal::ComputeMonomialBasis<internal::n_choose_k(
-      n + degree, degree)>(vars, degree);
+  return internal::ComputeMonomialBasis<internal::NChooseK(n + degree, degree)>(
+      vars, degree);
 }
 }  // namespace symbolic
 
