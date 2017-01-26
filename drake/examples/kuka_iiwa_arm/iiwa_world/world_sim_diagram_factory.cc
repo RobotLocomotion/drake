@@ -167,7 +167,7 @@ PositionControlledPlantWithRobot<T>::PositionControlledPlantWithRobot(
   Eigen::VectorXd ki = Eigen::VectorXd::Zero(num_robot_actuators);
   Eigen::VectorXd kd = Eigen::VectorXd::Zero(num_robot_actuators);
 
-  SetPositionControlledIIWAGains(kp, ki, kd);
+  SetPositionControlledIiwaGains(&kp, &ki, &kd);
   auto pid_controller = PidControlledSystem<T>::ConnectController(
       robot_input_port, robot_output_port, nullptr /* feedback */, kp, ki, kd,
       &builder);
