@@ -103,7 +103,7 @@ void EndlessRoadOracle<T>::ImplCalcOutput(
                             &source_states, &paths);
 
   // Deal with goal (a).
-  AssessForwardPath(car_inputs, source_states, paths, oracle_outputs);
+  AssessForwardPath(source_states, paths, oracle_outputs);
   // Deal with goal (b) and goal (c).
   AssessJunctions(source_states, paths, oracle_outputs);
 }
@@ -138,13 +138,14 @@ void UnwrapEndlessRoadCarState(
 
     const maliput::api::RoadPosition rp =
         road->lane()->ProjectToSourceRoad({self->s(), self->r(), 0.}).first;
+    const double cos_heading = std::cos(self->heading());
     // TODO(maddog)  Until we deal with cars going the wrong way.
-    DRAKE_DEMAND(std::cos(self->heading()) >= 0.);
+    DRAKE_DEMAND(cos_heading >= 0.);
     // TODO(maddog@tri.global)  Until we deal with cars going in reverse.
     DRAKE_DEMAND(self->speed() >= 0.);
-    const double circuit_s_speed = self->speed() * std::cos(self->heading());
+    const double circuit_s_speed = self->speed() * cos_heading;
     // Save self's state projected into the source road-network.
-    source_states->emplace_back(rp, circuit_s_speed);
+    source_states->emplace_back(rp, cos_heading, circuit_s_speed);
 
     // (No point in making the horizon longer than one lap around the circuit.)
     const double horizon_meters = std::min(
@@ -183,7 +184,6 @@ void UnwrapEndlessRoadCarState(
 
 
 void AssessForwardPath(
-    const std::vector<const EndlessRoadCarState<double>*>& car_inputs,
     const std::vector<SourceState>& source_states,
     const std::vector<std::vector<PathRecord>>& paths,
     const std::vector<EndlessRoadOracleOutput<double>*>& oracle_outputs) {
@@ -219,6 +219,9 @@ void AssessForwardPath(
     // Find the next car which is ahead of self, by at least a car-length.
     // Search along the sequence of lanes to be taken by self, starting with
     // the current lane.
+    // TODO(maddog@tri.global)  To generalize over vehicles of different
+    //   lengths, what we really want here is the 'SourceState.rp' to reflect
+    //   the position of the *rear bumper*.
 
     // Sanity check:  current lane should be first lane on path.
     DRAKE_DEMAND(self.rp.lane == self_path[0].lane);
@@ -228,9 +231,10 @@ void AssessForwardPath(
     DRAKE_DEMAND(path_it != self_path.end());
     // Start looking at least one car-length ahead (e.g., ignore cars that we
     // have already collided with).
+    const double skip_margin = kCarLength;
     double skip_length = path_it->is_reversed ?
-        (path_it->lane->length() - self.rp.pos.s + kCarLength) :
-        (self.rp.pos.s + kCarLength);
+        (path_it->lane->length() - self.rp.pos.s + skip_margin) :
+        (self.rp.pos.s + skip_margin);
     for (; path_it != self_path.end(); ++path_it) {
       double s0{};
       double lane_length{};
@@ -293,7 +297,7 @@ void AssessForwardPath(
     // TODO(maddog@tri.global)  We are actually only calculating 'delta s'
     //                          here, not 'delta sigma'; consider doing it
     //                          the right way.
-    const double net_delta_sigma = delta_position - kCarLength;
+    const double net_delta_sigma = delta_position + skip_margin - kCarLength;
     if (net_delta_sigma <= 0.) {
       // TODO(maddog@tri.global)  Don't consider it a collision if the lateral
       //                          distance exceeds some safe width.
@@ -305,11 +309,10 @@ void AssessForwardPath(
     // TODO(maddog@tri.global)  We are actually only calculating 's-dot',
     //                          not 'sigma-dot'; consider doing it the
     //                          right way.
-    const double cos_heading = std::cos(car_inputs[car_index]->heading());
     const double delta_sigma_dot =
-        (cos_heading == 0.) ?
+        (self.cos_heading == 0.) ?
         std::copysign(kEnormousVelocity, delta_velocity) :
-        (delta_velocity / cos_heading);
+        (delta_velocity / self.cos_heading);
 
     oracle_outputs[car_index]->set_net_delta_sigma(net_delta_sigma);
     oracle_outputs[car_index]->set_delta_sigma_dot(delta_sigma_dot);
