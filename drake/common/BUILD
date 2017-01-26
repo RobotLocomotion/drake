@@ -192,6 +192,17 @@ cc_library(
 )
 
 cc_library(
+    name = "monomial",
+    srcs = ["monomial.cc"],
+    hdrs = ["monomial.h"],
+    linkstatic = 1,
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+cc_library(
     name = "nice_type_name",
     srcs = ["nice_type_name.cc"],
     hdrs = ["nice_type_name.h"],
@@ -335,6 +346,15 @@ cc_googletest(
     deps = [
         ":common",
         ":is_approx_equal_abstol",
+    ],
+)
+
+cc_googletest(
+    name = "monomial_test",
+    deps = [
+        ":common",
+        ":monomial",
+        ":symbolic",
     ],
 )
 
