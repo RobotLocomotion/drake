@@ -85,6 +85,19 @@ def generate_default_ctor(hh, context, _):
     put(hh, DEFAULT_CTOR % context, 2)
 
 
+DO_CLONE = """
+  %(camel)s<T>* DoClone() const override {
+    auto result = new %(camel)s;
+    result->SetFromVector(this->CopyToVector());
+    return result;
+  }
+"""
+
+
+def generate_do_clone(hh, context, _):
+    put(hh, DO_CLONE % context, 2)
+
+
 ACCESSOR_BEGIN = """
   /// @name Getters and Setters
   //@{
@@ -345,6 +358,7 @@ def generate_code(args):
         generate_indices(hh, context, fields)
         put(hh, VECTOR_CLASS_BEGIN % context, 2)
         generate_default_ctor(hh, context, fields)
+        generate_do_clone(hh, context, fields)
         generate_accessors(hh, context, fields)
         put(hh, VECTOR_CLASS_END % context, 2)
         put(hh, VECTOR_HH_POSTAMBLE % context, 1)
