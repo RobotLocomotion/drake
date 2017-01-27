@@ -100,6 +100,13 @@ new_git_repository(
     build_file = "tools/ipopt.BUILD",
 )
 
+new_git_repository(
+    name = "pybind11",
+    remote = "https://github.com/pybind/pybind11.git",
+    commit = "7830e8509f2adc97ce9ee32bf99cd4b82089cc4c",
+    build_file = "tools/pybind11.BUILD",
+)
+
 # Necessary for buildifier.
 http_archive(
     name = "io_bazel_rules_go",
