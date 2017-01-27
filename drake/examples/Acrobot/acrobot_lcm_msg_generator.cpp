@@ -1,8 +1,8 @@
 // generates simple LCM messages to test acrobot_plant_w_lcm
 
 #include <memory>
-#include <vector>
 #include <string>
+#include <vector>
 
 #include "drake/examples/Acrobot/lcmt_acrobot_u.hpp"
 #include "drake/examples/Acrobot/lcmt_acrobot_x.hpp"

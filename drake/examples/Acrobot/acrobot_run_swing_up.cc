@@ -3,7 +3,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_path.h"
-#include "drake/examples/Acrobot/acrobot_energy_shaping_controller.h"
+#include "drake/examples/Acrobot/acrobot_spong_controller.h"
 #include "drake/examples/Acrobot/acrobot_plant.h"
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
 #include "drake/lcm/drake_lcm.h"
@@ -48,7 +48,7 @@ int do_main(int argc, char* argv[]) {
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   builder.Connect(acrobot->get_output_port(0), publisher->get_input_port(0));
 
-  auto controller = builder.AddSystem<AcrobotSwingUpController>(*acrobot);
+  auto controller = builder.AddSystem<AcrobotSpongController>();
   builder.Connect(acrobot->get_output_port(0), controller->get_input_port(0));
   builder.Connect(controller->get_output_port(0), acrobot->get_input_port(0));
 
@@ -70,40 +70,6 @@ int do_main(int argc, char* argv[]) {
   x0->set_theta2(-0.1);
   x0->set_theta1dot(0.0);
   x0->set_theta2dot(0.02);
-
-  //--------------------------------------------------------------------------
-  // create context for linearization
-  auto context0 = acrobot->CreateDefaultContext();
-  context0->FixInputPort(0, Vector1d::Constant(0.0));
-
-  // Set nominal state to the upright fixed point.
-  AcrobotStateVector<double>* x = dynamic_cast<AcrobotStateVector<double>*>(
-      context0->get_mutable_continuous_state_vector());
-  DRAKE_ASSERT(x != nullptr);
-  x->set_theta1(M_PI);
-  x->set_theta2(0.0);
-  x->set_theta1dot(0.0);
-  x->set_theta2dot(0.0);
-
-  auto linear_system = Linearize(*acrobot, *context0);
-
-  cout << linear_system->A() << endl;
-  cout << linear_system->B() << endl;
-  cout << acrobot->EvalEnergy(*context0) << endl;
-
-  Eigen::Matrix4d Q = Eigen::Matrix4d::Identity();
-  // Q(0, 0) = 10;
-  // Q(1, 1) = 10;
-  Vector1d R = Vector1d::Constant(1);
-
-  systems::LinearQuadraticRegulatorResult lqr_result =
-      systems::LinearQuadraticRegulator(linear_system->A(), linear_system->B(),
-                                        Q, R);
-
-  cout << "S=\n" << lqr_result.S << endl;
-  cout << "K=\n" << lqr_result.K << endl;
-
-  //--------------------------------------------------------------------------
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();

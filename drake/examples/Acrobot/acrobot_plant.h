@@ -33,8 +33,11 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   /// The input force to this system is not direct feedthrough.
   bool has_any_direct_feedthrough() const override { return false; }
 
-  T EvalEnergy(const systems::Context<T>& context) const;
+  // H and C matrices in the manipulator equation
+  Eigen::Matrix<T, 2, 1> C_matrix(const AcrobotStateVector<T>& x) const;
+  Eigen::Matrix<T, 2, 2> H_matrix(const AcrobotStateVector<T>& x) const;
 
+  // getters for robot parameters
   T getm1() const { return m1; }
   T getm2() const { return m2; }
   T getl1() const { return l1; }
@@ -46,6 +49,10 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   T getb1() const { return b1; }
   T getb2() const { return b2; }
   T getg() const { return g; }
+
+ protected:
+  T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
+  T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
 
  private:
   void DoCalcOutput(const systems::Context<T>& context,
@@ -83,6 +90,9 @@ class AcrobotPlant : public systems::LeafSystem<T> {
       b1{0.1},    // Damping coefficient of the shoulder joint (kg*m^2/s).
       b2{0.1},    // Damping coefficient of the elbow joint (kg*m^2/s).
       g{9.81};    // Gravitational constant (m/s^2).
+  const double I1 = Ic1 + m1 * lc1 * lc1;
+  const double I2 = Ic2 + m2 * lc2 * lc2;
+  const double m2l1lc2 = m2 * l1 * lc2;  // occurs often!
 
   /*
   // parameters for the acrobot in the lab

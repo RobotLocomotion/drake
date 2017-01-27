@@ -1,14 +1,24 @@
-// a version of the acrobot plant that talks to controller through LCM
+/*
+ * A simulated acrobot plant that talks to its controller through LCM,
+ * implemented by the following Diagram system:
+ *
+ * LcmSubscriberSystem -->
+ * AcrobotCommandReceiver -->
+ * AcrobotPlant -->
+ * AcrobotStateSender -->
+ * LcmPublisherSystem
+ *
+ */
 #include <memory>
 
 #include <gflags/gflags.h>
 
 #include "drake/examples/Acrobot/acrobot_lcm.h"
+#include "drake/examples/Acrobot/acrobot_plant.h"
 #include "drake/examples/Acrobot/lcmt_acrobot_u.hpp"
 #include "drake/examples/Acrobot/lcmt_acrobot_x.hpp"
 
 #include "drake/common/drake_path.h"
-#include "drake/examples/Acrobot/acrobot_energy_shaping_controller.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -28,6 +38,7 @@ DEFINE_double(realtime_factor, 1.0,
 
 using std::chrono::milliseconds;
 using std::this_thread::sleep_for;
+
 namespace drake {
 namespace examples {
 namespace acrobot {
@@ -59,7 +70,6 @@ int DoMain() {
                   command_receiver->get_input_port(0));
 
   // state sender
-
   auto state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_acrobot_x>(channel_x, &lcm));
   auto state_sender = builder.AddSystem<AcrobotStateSender>();
@@ -70,35 +80,6 @@ int DoMain() {
   builder.Connect(command_receiver->get_output_port(0),
                   acrobot->get_input_port(0));
   builder.Connect(acrobot->get_output_port(0), state_sender->get_input_port(0));
-
-  /*
-  //------------------controller--------------------------------------
-  // create state receiver
-  auto state_sub =
-      builder.AddSystem(systems::lcm::LcmSubscriberSystem::Make<lcmt_acrobot_x>(
-          channel_x, &lcm));
-  auto state_receiver = builder.AddSystem<AcrobotStateReceiver>();
-  builder.Connect(state_sub->get_output_port(0),
-                  state_receiver->get_input_port(0));
-
-  // command sender
-  auto command_pub =
-      builder.AddSystem(systems::lcm::LcmPublisherSystem::Make<lcmt_acrobot_u>(
-          channel_u, &lcm));
-  auto command_sender = builder.AddSystem<AcrobotCommandSender>();
-  builder.Connect(command_sender->get_output_port(0),
-                  command_pub->get_input_port(0));
-
-  auto controller = builder.AddSystem<AcrobotSwingUpController>(*acrobot);
-  builder.Connect(controller->get_output_port(0),
-                  command_sender->get_input_port(0));
-  builder.Connect(state_receiver->get_output_port(0),
-                  controller->get_input_port(0));
-
-
-  builder.Connect(state_receiver->get_output_port(0),
-                  publisher->get_input_port(0));
-  */
 
   auto diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);

@@ -11,6 +11,9 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/sensors/rotary_encoders.h"
 
+using std::sin;
+using std::cos;
+
 namespace drake {
 namespace examples {
 namespace acrobot {
@@ -24,6 +27,7 @@ AcrobotPlant<T>::AcrobotPlant() {
   this->DeclareInputPort(systems::kVectorValued, 1);
   this->DeclareContinuousState(kNumDOF * 2);  // Position + velocity.
   this->DeclareOutputPort(systems::kVectorValued, kNumDOF * 2);
+
 }
 
 template <typename T>
@@ -35,6 +39,42 @@ void AcrobotPlant<T>::DoCalcOutput(const systems::Context<T>& context,
           .get_value());
 }
 
+template <typename T>
+Eigen::Matrix<T, 2, 2> AcrobotPlant<T>::H_matrix(const AcrobotStateVector<T>&
+x)
+const {
+  const T c2 = cos(x.theta2());
+
+  const T h12 = I2 + m2l1lc2 * c2;
+  Eigen::Matrix<T, 2, 2> H;
+  H << I1 + I2 + m2 * l1 * l1 + 2 * m2l1lc2 * c2, h12, h12, I2;
+  return H;
+}
+
+template <typename T>
+Eigen::Matrix<T, 2, 1> AcrobotPlant<T>::C_matrix(const AcrobotStateVector<T>&
+x)
+const {
+  const T s1 = sin(x.theta1()), s2 = sin(x.theta2());
+  const T s12 = sin(x.theta1() + x.theta2());
+
+  Eigen::Matrix<T, 2, 1> C;
+  C << -2 * m2l1lc2 * s2 * x.theta2dot() * x.theta1dot() +
+      -m2l1lc2 * s2 * x.theta2dot() * x.theta2dot(),
+      m2l1lc2 * s2 * x.theta1dot() * x.theta1dot();
+
+  // add in G terms
+  C(0) += g * m1 * lc1 * s1 + g * m2 * (l1 * s1 + lc2 * s12);
+  C(1) += g * m2 * lc2 * s12;
+
+  // damping terms
+  C(0) += b1 * x.theta1dot();
+  C(1) += b2 * x.theta2dot();
+
+  return C;
+}
+
+
 // Compute the actual physics.
 template <typename T>
 void AcrobotPlant<T>::DoCalcTimeDerivatives(
@@ -45,7 +85,7 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
   const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
       context.get_continuous_state_vector());
   const T& tau = this->EvalVectorInput(context, 0)->GetAtIndex(0);
-
+  /*
   const double I1 = Ic1 + m1 * lc1 * lc1;
   const double I2 = Ic2 + m2 * lc2 * lc2;
   const double m2l1lc2 = m2 * l1 * lc2;  // occurs often!
@@ -72,7 +112,9 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
   // damping terms
   C(0) += b1 * x.theta1dot();
   C(1) += b2 * x.theta2dot();
-
+  */
+  Eigen::Matrix<T, 2, 2> H = H_matrix(x);
+  Eigen::Matrix<T, 2, 1> C = C_matrix(x);
   // input matrix
   Eigen::Matrix<T, 2, 1> B;
   B << 0.0, 1.0;
@@ -83,33 +125,30 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
 }
 
 template <typename T>
-T AcrobotPlant<T>::EvalEnergy(const systems::Context<T>& context) const {
+T AcrobotPlant<T>::DoCalcKineticEnergy(const systems::Context<T>& context)
+const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-
   const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
       context.get_continuous_state_vector());
 
-  const double I1 = Ic1 + m1 * lc1 * lc1;
-  const double I2 = Ic2 + m2 * lc2 * lc2;
-  const double m2l1lc2 = m2 * l1 * lc2;  // occurs often!
-
-  using std::sin;
-  using std::cos;
-  const T c1 = cos(x.theta1()), c2 = cos(x.theta2());
-  const T c12 = cos(x.theta1() + x.theta2());
-  // const T s1 = sin(x.theta1()), s2 = sin(x.theta2());
-  // const T s12 = sin(x.theta1() + x.theta2());
-
-  const T h12 = I2 + m2l1lc2 * c2;
-  Eigen::Matrix<T, 2, 2> H;
-  H << I1 + I2 + m2 * l1 * l1 + 2 * m2l1lc2 * c2, h12, h12, I2;
+  Eigen::Matrix<T, 2, 2> H = H_matrix(x);
   Eigen::Matrix<T, 2, 1> qdot(x.theta1dot(), x.theta2dot());
 
-  T PE, KE;
-  KE = 0.5 * qdot.transpose() * H * qdot;
-  PE = -m1 * g * lc1 * c1 - m2 * g * (l1 * c1 + lc2 * c12);
+  return 0.5 * qdot.transpose() * H * qdot;
+}
 
-  return PE + KE;
+template <typename T>
+T AcrobotPlant<T>::DoCalcPotentialEnergy(const systems::Context<T>& context)
+const {
+  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
+  const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
+      context.get_continuous_state_vector());
+
+  using std::cos;
+  const T c1 = cos(x.theta1());
+  const T c12 = cos(x.theta1() + x.theta2());
+
+  return -m1 * g * lc1 * c1 - m2 * g * (l1 * c1 + lc2 * c12);
 }
 
 template <typename T>

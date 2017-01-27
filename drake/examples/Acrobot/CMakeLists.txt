@@ -35,25 +35,13 @@ if(lcm_FOUND)
           drakeSystemAnalysis
           drakeLinearControl)
 
-  add_executable(acrobot_energy_shaping_controller_w_lcm_system
-          acrobot_energy_shaping_controller_w_lcm_system.cpp)
-  target_link_libraries(acrobot_energy_shaping_controller_w_lcm_system
+  add_executable(acrobot_spong_controller_w_lcm
+          acrobot_spong_controller_w_lcm.cc)
+  target_link_libraries(acrobot_spong_controller_w_lcm
           drakeSystemAnalysis
           drakeLCMSystem2
           drakeAcrobotLcm
-          drakeAcrobotPlant
-          drakeMultibodyParsers
-          drakeRigidBodyPlant
-          drakeSystemAnalysis
-          drakeLinearControl)
-
-  add_executable(acrobot_energy_shaping_controller_w_lcm
-          acrobot_energy_shaping_controller_w_lcm.cc)
-  target_link_libraries(acrobot_energy_shaping_controller_w_lcm
-          drakeLCMSystem2
-          drakeAcrobotLcm
-          drakeAcrobotPlant
-          drakeLinearControl)
+          drakeAcrobotPlant)
 
   add_executable(acrobot_run_passive acrobot_run_passive.cc)
   target_link_libraries(acrobot_run_passive
