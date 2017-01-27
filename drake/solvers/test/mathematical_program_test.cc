@@ -110,6 +110,7 @@ void CheckAddedVariable(const MathematicalProgram& prog,
     }
   }
 }
+
 GTEST_TEST(testAddVariable, testAddContinuousVariables1) {
   // Adds a dynamic-sized matrix of continuous variables.
   MathematicalProgram prog;
