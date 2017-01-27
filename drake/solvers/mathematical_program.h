@@ -2184,9 +2184,11 @@ class MathematicalProgram {
   }
 
   /** Returns the index of the decision variable. Internally the solvers thinks
-   * all variables are stored in an array, and it accesess each individual
+   * all variables are stored in an array, and it acceses each individual
    * variable using its index. This index is used when adding constraints
    * and costs for each solver.
+   * @pre{@p var is a decision variable in the mathematical program, otherwise
+   * this function asserts an error.}
    */
   size_t FindDecisionVariableIndex(const symbolic::Variable& var) const;
 
@@ -2372,6 +2374,28 @@ class MathematicalProgram {
 
   VectorXDecisionVariable NewVariables(VarType type, int rows,
                                        const std::vector<std::string>& names);
+
+  /*
+   * Given a matrix of decision variables, return true if every entry in the
+   * matrix is a decision variable in the program; otherwise return false.
+   * @tparam  A Eigen::Matrix type of symbolic::Variable.
+   * @param vars A matrix of variable.
+   */
+  template <typename Derived>
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+      bool>::type
+  IsDecisionVariable(const Eigen::MatrixBase<Derived>& vars) {
+    for (int i = 0; i < vars.rows(); ++i) {
+      for (int j = 0; j < vars.cols(); ++j) {
+        if (decision_variable_index_.find(vars(i, j).get_id()) ==
+            decision_variable_index_.end()) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
 };
 }  // namespace solvers
 }  // namespace drake
