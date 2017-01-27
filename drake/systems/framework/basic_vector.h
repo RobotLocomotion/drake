@@ -24,8 +24,8 @@ namespace systems {
 template <typename T>
 class BasicVector : public VectorBase<T> {
  public:
-  // TODO(jwnimmer-tri) Should we use a drake_copyable macro here?  Right now,
-  // we are copy-only.
+  // BasicVector cannot be copied or moved; use Clone instead.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BasicVector)
 
   /// Initializes with the given @p size using the drake::dummy_value<T>, which
   /// is NaN when T = double.
@@ -122,23 +122,15 @@ class BasicVector : public VectorBase<T> {
     return std::unique_ptr<BasicVector<T>>(DoClone());
   }
 
-  // Assignment of BasicVectors could change size, so we forbid it.
-  BasicVector& operator=(const BasicVector& other) = delete;
-
-  // BasicVector objects are not moveable.
-  BasicVector(BasicVector&& other) = delete;
-  BasicVector& operator=(BasicVector&& other) = delete;
-
  protected:
-  explicit BasicVector(const BasicVector& other)
-      : VectorBase<T>(), values_(other.values_) {}
-
   /// Returns a new BasicVector containing a copy of the entire vector.
   /// Caller must take ownership.
   ///
   /// Subclasses of BasicVector must override DoClone to return their covariant
   /// type.
-  virtual BasicVector<T>* DoClone() const { return new BasicVector<T>(*this); }
+  virtual BasicVector<T>* DoClone() const {
+    return new BasicVector<T>(values_);
+  }
 
  private:
   // Sets @p data at @p index to an object of type T, which must have a
