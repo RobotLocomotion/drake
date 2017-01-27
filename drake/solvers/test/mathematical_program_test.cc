@@ -225,6 +225,8 @@ CheckGetSolution(const MathematicalProgram& prog,
                                            Derived1::ColsAtCompileTime>>::value,
                 "GetSolution does not return the right type of matrix");
   EXPECT_TRUE(CompareMatrices(val, val_expected));
+
+  // Checks getting solution for a single variable.
   for (int i = 0; i < vars.rows(); ++i) {
     for (int j = 0; j < vars.cols(); ++j) {
       EXPECT_NEAR(prog.GetSolution(vars(i, j)), val(i, j), 1E-14);
