@@ -206,7 +206,7 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     qdot_to_v.template block<3, 4>(0, 3) *= 2.;
 
     // Given the arbitrary frames B and N described above, the next three
-    // columns rotate linear velocities from frame N to frame B.
+    // columns re-express linear velocities from frame N to frame B.
     auto R = drake::math::quat2rotmat(quat);
     qdot_to_v.template block<3, 3>(3, 0) = R.transpose();
     qdot_to_v.template block<3, 4>(3, 3).setZero();

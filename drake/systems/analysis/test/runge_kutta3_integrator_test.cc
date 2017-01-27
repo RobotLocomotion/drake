@@ -354,7 +354,7 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
     plant.set_velocity(context.get(), i, generalized_velocities[i]);
 
   // Set a non-identity position and orientation.
-  plant.set_position(context.get(), 0, 1.0);  // Set position to (1,1,1)
+  plant.set_position(context.get(), 0, 1.0);  // Set position to (1,2,3).
   plant.set_position(context.get(), 1, 2.0);
   plant.set_position(context.get(), 2, 3.0);
   plant.set_position(context.get(), 3, std::sqrt(2)/2);  // Set orientation to
@@ -382,7 +382,7 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   for (int i=0; i< plant.get_num_velocities(); ++i)
     plant.set_velocity(context.get(), i, generalized_velocities[i]);
   // Reset the non-identity position and orientation.
-  plant.set_position(context.get(), 0, 1.0);  // Set position to (1,1,1)
+  plant.set_position(context.get(), 0, 1.0);  // Set position to (1,2,3).
   plant.set_position(context.get(), 1, 2.0);
   plant.set_position(context.get(), 2, 3.0);
   plant.set_position(context.get(), 3, std::sqrt(2)/2);  // Set orientation to
