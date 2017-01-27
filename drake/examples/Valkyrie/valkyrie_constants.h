@@ -9,7 +9,7 @@ namespace valkyrie {
 // All the following assumes using:
 // urdf/urdf/valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf
 // TODO(siyuan.feng): Add functinos to auto generate these.
-constexpr int kRPYValkyrieDoF = 36;
+constexpr int kRPYValkyrieDof = 36;
 
 VectorX<double> RPYValkyrieFixedPointState();
 

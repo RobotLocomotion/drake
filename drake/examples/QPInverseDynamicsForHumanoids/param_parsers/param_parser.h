@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
 
 #include "yaml-cpp/yaml.h"
 
@@ -310,7 +310,7 @@ class ParamSet {
    * @param[out] Kp output.
    * @param[out] Kd output.
    */
-  void LookupDesiredDoFMotionGains(VectorX<double>* Kp,
+  void LookupDesiredDofMotionGains(VectorX<double>* Kp,
                                    VectorX<double>* Kd) const;
 
   /**

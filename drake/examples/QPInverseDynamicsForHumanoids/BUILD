@@ -39,7 +39,7 @@ cc_library(
     ],
     linkstatic = 1,
     deps = [
-        ":qp_controller",
+        ":qp_controller_common",
         ":rigid_body_tree_alias_groups",
     ],
 )
@@ -50,9 +50,20 @@ cc_library(
     hdrs = ["humanoid_status.h"],
     linkstatic = 1,
     deps = [
+        ":rigid_body_tree_alias_groups",
         "//drake/common",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/robotInterfaces:side",
+    ],
+)
+
+cc_library(
+    name = "qp_controller_common",
+    srcs = ["qp_controller_common.cc"],
+    hdrs = ["qp_controller_common.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/multibody:rigid_body_tree",
     ],
 )
 
@@ -63,6 +74,7 @@ cc_library(
     linkstatic = 1,
     deps = [
         ":humanoid_status",
+        ":qp_controller_common",
         "//drake/common",
         "//drake/math:gradient",
         "//drake/solvers:mathematical_program",

@@ -1,8 +1,11 @@
+#include <iostream>
 #include <memory>
 #include <thread>
-#include <iostream>
 
+#include "bot_core/atlas_command_t.hpp"
+#include "bot_core/robot_state_t.hpp"
 #include "drake/common/drake_path.h"
+#include "drake/common/text_logging.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
@@ -18,20 +21,14 @@
 #include "drake/systems/primitives/constant_value_source.h"
 
 namespace drake {
-
-using systems::DiagramBuilder;
-using systems::Diagram;
-using systems::lcm::LcmSubscriberSystem;
-using systems::lcm::LcmPublisherSystem;
-
 namespace examples {
 namespace qp_inverse_dynamics {
 
 // This is an example qp based inverse dynamics controller loop for Valkyrie
-// built from the system2 blocks.
+// built from the Systems blocks.
 //
-// The input is a lcm message of type bot_core::robot_state_t, and the output
-// is another lcm message of type bot_core::atlas_command_t.
+// The overall input and output is a LCM message of type
+// bot_core::robot_state_t and bot_core::atlas_command_t.
 void controller_loop() {
   // Loads model.
   std::string urdf = drake::GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
@@ -40,7 +37,7 @@ void controller_loop() {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       urdf, multibody::joints::kRollPitchYaw, robot.get());
 
-  DiagramBuilder<double> builder;
+  systems::DiagramBuilder<double> builder;
 
   lcm::DrakeLcm lcm;
 
@@ -53,11 +50,11 @@ void controller_loop() {
   JointLevelControllerSystem* joint_con =
       builder.AddSystem<JointLevelControllerSystem>(*robot);
 
-  auto& robot_state_subscriber =
-      *builder.AddSystem(LcmSubscriberSystem::Make<bot_core::robot_state_t>(
+  auto& robot_state_subscriber = *builder.AddSystem(
+      systems::lcm::LcmSubscriberSystem::Make<bot_core::robot_state_t>(
           "EST_ROBOT_STATE", &lcm));
-  auto& atlas_command_publisher =
-      *builder.AddSystem(LcmPublisherSystem::Make<bot_core::atlas_command_t>(
+  auto& atlas_command_publisher = *builder.AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<bot_core::atlas_command_t>(
           "ROBOT_COMMAND", &lcm));
 
   // lcm -> rs
@@ -80,25 +77,63 @@ void controller_loop() {
   builder.Connect(joint_con->get_output_port_atlas_command(),
                   atlas_command_publisher.get_input_port(0));
 
-  std::unique_ptr<Diagram<double>> diagram = builder.Build();
+  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
   auto context = diagram->CreateDefaultContext();
   auto output = diagram->AllocateOutput(*context);
+  std::unique_ptr<systems::State<double>> tmp_state = context->CloneState();
+  systems::UpdateActions<double> actions;
 
-  // Set plan eval's desired to the initial state.
+  // Sets plan eval's desired to the nominal state.
+  systems::Context<double>* plan_eval_context =
+      diagram->GetMutableSubsystemContext(context.get(), plan_eval);
+  systems::State<double>* plan_eval_state =
+      plan_eval_context->get_mutable_state();
+  DRAKE_DEMAND(valkyrie::kRPYValkyrieDof == robot->get_num_positions());
   VectorX<double> desired_q =
-      valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDoF);
-  DRAKE_DEMAND(valkyrie::kRPYValkyrieDoF == robot->get_num_positions());
-  plan_eval->SetDesired(desired_q);
+      valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDof);
+  plan_eval->SetDesired(desired_q, plan_eval_state);
 
   lcm.StartReceiveThread();
 
-  std::cout << "controller started\n";
-  // Call controller.
+  drake::log()->info("controller started");
+
+  systems::UpdateActions<double> update_actions;
+
+  // Loops until the first status message arrives.
   while (true) {
-    const systems::Context<double>& pub_context =
-        diagram->GetSubsystemContext(*context.get(), &atlas_command_publisher);
-    atlas_command_publisher.Publish(pub_context);
+    // Sets Context's time to the timestamp in the bot_core::robot_state_t msg.
+    const bot_core::robot_state_t* msg =
+        rs_msg_to_rs->EvalInputValue<bot_core::robot_state_t>(
+            diagram->GetSubsystemContext(*context, rs_msg_to_rs), 0);
+    context->set_time(static_cast<double>(msg->utime) / 1e6);
+    if (context->get_time() != 0) break;
+  }
+
+  double next_control_time =
+      diagram->CalcNextUpdateTime(*context, &update_actions);
+
+  while (true) {
+    // Computes control.
+    if (next_control_time <= context->get_time()) {
+      diagram->CalcUnrestrictedUpdate(*context, update_actions.events.front(),
+                                      tmp_state.get());
+      context->get_mutable_state()->CopyFrom(*tmp_state);
+
+      next_control_time =
+          diagram->CalcNextUpdateTime(*context, &update_actions);
+
+      // Sends the bot_core::atlas_command_t msg.
+      diagram->Publish(*context);
+    }
+
+    // TODO(siyuan): This is a busy polling loop on LCM message. Should switch
+    // to a descheduled version.
+    // Sets Context's time to the timestamp in the bot_core::robot_state_t msg.
+    const bot_core::robot_state_t* msg =
+        rs_msg_to_rs->EvalInputValue<bot_core::robot_state_t>(
+            diagram->GetSubsystemContext(*context, rs_msg_to_rs), 0);
+    context->set_time(static_cast<double>(msg->utime) / 1e6);
   }
 }
 

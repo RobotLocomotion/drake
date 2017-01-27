@@ -1,12 +1,61 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 
-#include "drake/math/cross_product.h"
-
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
 const double QPController::kUpperBoundForContactBasis = 1000;
+
+template <typename DerivedA, typename DerivedB>
+void QPController::AddAsConstraints(
+    const Eigen::MatrixBase<DerivedA>& A, const Eigen::MatrixBase<DerivedB>& b,
+    const std::list<int>& idx, drake::solvers::LinearEqualityConstraint* eq) {
+  if (idx.empty()) return;
+  if (A.rows() != b.rows() || A.rows() > tmp_vd_mat_.rows() || b.cols() != 1 ||
+      A.cols() != tmp_vd_mat_.cols()) {
+    throw std::runtime_error("Invalid input dimension.");
+  }
+
+  int row_ctr = 0;
+  for (int d : idx) {
+    tmp_vd_mat_.row(row_ctr) = A.row(d);
+    tmp_vd_vec_.row(row_ctr) = b.row(d);
+    row_ctr++;
+  }
+  eq->UpdateConstraint(tmp_vd_mat_.topRows(row_ctr), tmp_vd_vec_.head(row_ctr));
+}
+
+template <typename DerivedA, typename DerivedB, typename DerivedW>
+void QPController::AddAsCosts(const Eigen::MatrixBase<DerivedA>& A,
+                              const Eigen::MatrixBase<DerivedB>& b,
+                              const Eigen::MatrixBase<DerivedW>& weights,
+                              const std::list<int>& idx,
+                              drake::solvers::QuadraticConstraint* cost) {
+  if (idx.empty()) return;
+  if (A.rows() != b.rows() || A.rows() != weights.rows() ||
+      A.rows() > tmp_vd_mat_.rows() || b.cols() != 1 || weights.cols() != 1 ||
+      A.cols() != tmp_vd_mat_.cols()) {
+    throw std::runtime_error("Invalid input dimension.");
+  }
+
+  tmp_vd_mat_.setZero();
+  tmp_vd_vec_.setZero();
+  for (int d : idx) {
+    double weight = weights[d];
+    tmp_vd_mat_ += weight * A.row(d).transpose() * A.row(d);
+    tmp_vd_vec_ += weight * A.row(d).transpose() * b.row(d);
+  }
+  cost->UpdateQuadraticAndLinearTerms(tmp_vd_mat_, tmp_vd_vec_);
+}
+
+void QPController::SetTempMatricesToZero() {
+  basis_to_force_matrix_.setZero();
+  torque_linear_.setZero();
+  dynamics_linear_.setZero();
+  inequality_linear_.setZero();
+
+  JB_.setZero();
+}
 
 void QPController::ResizeQP(const RigidBodyTree<double>& robot,
                             const QpInput& input) {
@@ -26,7 +75,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
     num_point_force += contact_pair.second.num_contact_points();
     num_basis += contact_pair.second.num_basis();
   }
-  int num_torque = robot.actuators.size();
+  int num_torque = robot.get_num_actuators();
   int num_variable = num_vd + num_basis;
 
   // Figure out size of the constrained dimensions of body motions.
@@ -413,7 +462,7 @@ int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
       rs.robot().B.bottomRows(num_torque_).transpose() * torque_linear_;
   inequality_upper_bound_ = inequality_lower_bound_ =
       -rs.robot().B.bottomRows(num_torque_).transpose() * torque_constant_;
-  for (size_t i = 0; i < rs.robot().actuators.size(); ++i) {
+  for (int i = 0; i < rs.robot().get_num_actuators(); ++i) {
     inequality_lower_bound_[i] += rs.robot().actuators[i].effort_limit_min_;
     inequality_upper_bound_[i] += rs.robot().actuators[i].effort_limit_max_;
   }
@@ -678,139 +727,6 @@ int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
   }
 
   return 0;
-}
-
-// Print statements.
-std::ostream& operator<<(std::ostream& out, const ConstraintType& type) {
-  out << "constraint type: ";
-  switch (type) {
-    case ConstraintType::Hard:
-      out << "Hard\n";
-      break;
-    case ConstraintType::Skip:
-      out << "Skip\n";
-      break;
-    case ConstraintType::Soft:
-      out << "Soft\n";
-      break;
-  }
-  return out;
-}
-
-std::ostream& operator<<(std::ostream& out, const DesiredBodyMotion& input) {
-  for (int i = 0; i < 6; ++i) {
-    out << "desired " << input.body_name() << input.get_row_name(i)
-        << " acc: " << input.values()[i] << " weight: " << input.weights()[i]
-        << " " << input.constraint_types()[i];
-  }
-  return out;
-}
-
-std::ostream& operator<<(std::ostream& out, const ContactInformation& contact) {
-  out << "contact: " << contact.body_name() << std::endl;
-  out << "contact points in body frame: " << std::endl;
-  for (int j = 0; j < contact.contact_points().cols(); ++j)
-    out << contact.contact_points().col(j).transpose() << std::endl;
-  out << "normal in body frame: " << contact.normal().transpose() << std::endl;
-  out << "mu: " << contact.mu() << std::endl;
-  out << contact.acceleration_constraint_type();
-  out << "weight: " << contact.weight() << std::endl;
-  out << "Kd: " << contact.Kd() << std::endl;
-  return out;
-}
-
-std::ostream& operator<<(std::ostream& out, const DesiredDofMotions& input) {
-  for (int i = 0; i < input.size(); ++i) {
-    out << "desired " << input.dof_name(i) << " acc: " << input.value(i)
-        << " weight: " << input.weight(i) << " " << input.constraint_type(i);
-  }
-  return out;
-}
-
-std::ostream& operator<<(std::ostream& out,
-                         const DesiredCentroidalMomentumDot& input) {
-  for (int i = 0; i < 6; ++i) {
-    out << "desired " << input.get_row_name(i) << " change: " << input.value(i)
-        << " weight: " << input.weight(i) << " " << input.constraint_type(i);
-  }
-  return out;
-}
-
-std::ostream& operator<<(std::ostream& out, const QpInput& input) {
-  out << "===============================================\n";
-  out << "QpInput:\n";
-  out << input.desired_centroidal_momentum_dot() << std::endl;
-
-  for (const auto& pair : input.desired_body_motions()) {
-    out << pair.second << std::endl;
-  }
-
-  out << input.desired_dof_motions() << std::endl;
-
-  out << "weight_basis_reg: " << input.w_basis_reg() << std::endl;
-
-  for (const auto& contact_pair : input.contact_information()) {
-    out << contact_pair.second << std::endl;
-  }
-
-  return out;
-}
-
-std::ostream& operator<<(std::ostream& out, const ResolvedContact& contact) {
-  out << "contact: " << contact.body_name() << std::endl;
-  out << "contact points in world frame: " << std::endl;
-  for (int j = 0; j < contact.contact_points().cols(); ++j)
-    out << contact.contact_points().col(j).transpose() << std::endl;
-  out << "point forces in world frame: " << std::endl;
-  for (int j = 0; j < contact.point_forces().cols(); ++j)
-    out << contact.point_forces().col(j).transpose() << std::endl;
-  out << "equivalent wrench in world aligned body frame: "
-      << contact.equivalent_wrench().transpose() << std::endl;
-  out << "body acceleration: " << contact.body_acceleration().transpose()
-      << std::endl;
-  out << "reference point in world frame: " << contact.reference_point()
-      << std::endl;
-  return out;
-}
-
-std::ostream& operator<<(std::ostream& out, const BodyAcceleration& acc) {
-  out << acc.body_name() << " acc: " << acc.accelerations().transpose()
-      << std::endl;
-  return out;
-}
-
-std::ostream& operator<<(std::ostream& out, const QpOutput& output) {
-  out << "===============================================\n";
-  out << "QpOutput:\n";
-  out << "accelerations:\n";
-  for (int i = 0; i < output.vd().size(); ++i) {
-    out << output.dof_name(i) << ": " << output.vd()[i] << std::endl;
-  }
-
-  out << "com acc: ";
-  out << output.comdd().transpose() << std::endl;
-
-  for (const auto& body_motion_pair : output.body_accelerations()) {
-    out << body_motion_pair.second;
-  }
-
-  out << "===============================================\n";
-  for (const auto& contact_result_pair : output.resolved_contacts()) {
-    out << contact_result_pair.second;
-  }
-
-  out << "===============================================\n";
-  out << "torque:\n";
-  for (int i = 0; i < output.dof_torques().size(); ++i) {
-    out << output.dof_name(i) << ": " << output.dof_torques()[i] << std::endl;
-  }
-  out << "===============================================\n";
-  out << "costs:\n";
-  for (const std::pair<std::string, double>& cost : output.costs()) {
-    out << cost.first << ": " << cost.second << std::endl;
-  }
-
-  return out;
 }
 
 }  // namespace qp_inverse_dynamics
