@@ -54,10 +54,26 @@ tic;
 [xtraj,utraj,z,F,info,infeasible] = prog1.solveTraj(tf0,traj_init);
 toc
 
-x = z(prog1.x_inds);
-u = z(prog1.u_inds);
 
-v.playback(xtraj,struct('slider','true'))
+%LQR Controller
+Q = diag([100*ones(nq,1);10*ones(nq,1)]);
+R = 0.01*eye(nu);
+Qf = 5*Q;
+c = tvlqr(r,xtraj,utraj,Q,R,Qf);
+
+%Simulate closed-loop system
+rt = TimeSteppingRigidBodyManipulator(r,0.001);
+sys = feedback(rt,c);
+if 1
+  % Forward simulate dynamics with visulazation, then playback at realtime
+  S=warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
+  output_select(1).system=1;
+  output_select(1).output=1;
+  sys = mimoCascade(sys,v,[],[],output_select);
+  warning(S);
+end
+traj=simulate(sys,[0,utraj.tspan(2)],xtraj.eval(xtraj.tspan(1)));
+v.playback(traj,struct('slider',true));
 
 %Run robust version
 
