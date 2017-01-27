@@ -156,9 +156,11 @@ class System {
   /// (implicit computations) in system diagrams. Any System for which none of
   /// the input ports ever feeds through to any of the output ports should
   /// override this method to return false.
-  // TODO(amcastro-tri): Provide a more descriptive mechanism to specify
-  // pairwise (input_port, output_port) feedthrough.
-  virtual bool has_any_direct_feedthrough() const { return true; }
+  // TODO(4105): Provide a more descriptive mechanism to specify pairwise
+  // (input_port, output_port) feedthrough.
+  virtual bool has_any_direct_feedthrough() const {
+    return (get_num_input_ports() > 0) && (get_num_output_ports() > 0);
+  }
 
   //@}
 
