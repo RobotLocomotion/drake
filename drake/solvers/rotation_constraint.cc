@@ -275,12 +275,25 @@ std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(
   DRAKE_ASSERT(bmin.lpNorm<2>() <= 1);
   DRAKE_ASSERT(bmax.lpNorm<2>() >= 1);
 
-  std::vector<Eigen::Vector3d> intersection;
+  std::vector<Eigen::Vector3d> intersections;
+
+  if (bmin.lpNorm<2>() == 1) {
+    // Then only the min corner intersects.
+    intersections.push_back(bmin);
+    return intersections;
+  }
+
+  if (bmax.lpNorm<2>() == 1) {
+    // Then only the max corner intersects.
+    intersections.push_back(bmax);
+    return intersections;
+  }
+
   // The box has at most 12 edges, each edge can intersect with the unit sphere
   // for at most once, since the box is in the first orthant.
-  intersection.reserve(12);
+  intersections.reserve(12);
 
-  // 1. Loop through each vertex of the box, add it to intersection if
+  // 1. Loop through each vertex of the box, add it to intersections if
   // the vertex is on the sphere.
   for (int i = 0; i < 8; ++i) {
     Eigen::Vector3d vertex{};
@@ -288,11 +301,11 @@ std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(
       vertex(axis) = i & (1 << axis) ? bmin(axis) : bmax(axis);
     }
     if (vertex.norm() == 1) {
-      intersection.push_back(vertex);
+      intersections.push_back(vertex);
     }
   }
 
-  // 2. Loop through each edge, find the intersection between each edge and the
+  // 2. Loop through each edge, find the intersections between each edge and the
   // unit sphere, if one exists, and not a vertex.
   for (int axis = 0; axis < 3; ++axis) {
     // axis = 0 means edges along x axis;
@@ -317,18 +330,18 @@ std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(
       // Determines if there is an intersecting point between the edge and the
       // sphere.
       // If the intersecting point is not the vertex of the box, then push this
-      // intersecting point to intersection directly.
+      // intersecting point to intersections directly.
       if (pt_closer.norm() < 1 && pt_farther.norm() > 1) {
         Eigen::Vector3d pt_intersect{};
         pt_intersect(fixed_axis1) = pt_closer(fixed_axis1);
         pt_intersect(fixed_axis2) = pt_closer(fixed_axis2);
         pt_intersect(axis) =
             Intercept(pt_intersect(fixed_axis1), pt_intersect(fixed_axis2));
-        intersection.push_back(pt_intersect);
+        intersections.push_back(pt_intersect);
       }
     }
   }
-  return intersection;
+  return intersections;
 }
 
 }  // namespace internal
