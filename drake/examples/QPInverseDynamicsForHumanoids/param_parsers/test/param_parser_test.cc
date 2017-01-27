@@ -298,7 +298,7 @@ TEST_F(ParamParserTests, DoFParams) {
     Kp_expected(i) = 0;
     Kd_expected(i) = ctr++;
   }
-  paramset_.LookupDesiredDoFMotionGains(&Kp, &Kd);
+  paramset_.LookupDesiredDofMotionGains(&Kp, &Kd);
   EXPECT_TRUE(CompareMatrices(Kp, Kp_expected, kTolerance,
                               MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(Kd, Kd_expected, kTolerance,
