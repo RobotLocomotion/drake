@@ -55,6 +55,9 @@ class Integrator : public LeafSystem<T> {
   // Returns an Integrator<AutoDiffXd> with the same dimensions as this
   // Integrator.
   Integrator<AutoDiffXd>* DoToAutoDiffXd() const override;
+  // Returns an Integrator<symbolic::Expression> with the same dimensions as
+  // this Integrator.
+  Integrator<symbolic::Expression>* DoToSymbolic() const override;
 
   // LeafSystem<T> override
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
