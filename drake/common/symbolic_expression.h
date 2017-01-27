@@ -145,6 +145,8 @@ class Expression {
   Expression(double d);
   /** Constructs a variable expression from symbolic::Variable. */
   explicit Expression(const Variable& var);
+  /** Constructs a variable expression from string @p name. */
+  explicit Expression(const std::string& name);
   /** Returns expression kind. */
   ExpressionKind get_kind() const;
   /** Returns hash value. */
