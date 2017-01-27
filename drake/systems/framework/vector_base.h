@@ -6,6 +6,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
@@ -25,6 +26,9 @@ namespace systems {
 template <typename T>
 class VectorBase {
  public:
+  // VectorBase objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VectorBase)
+
   virtual ~VectorBase() {}
 
   /// Returns the number of elements in the vector.
@@ -165,12 +169,6 @@ class VectorBase {
 
     return norm;
   }
-
-  // VectorBase objects are neither copyable nor moveable.
-  VectorBase(const VectorBase<T>& other) = delete;
-  VectorBase& operator=(const VectorBase<T>& other) = delete;
-  VectorBase(VectorBase<T>&& other) = delete;
-  VectorBase& operator=(VectorBase<T>&& other) = delete;
 
  protected:
   VectorBase() {}

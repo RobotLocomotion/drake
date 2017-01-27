@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/abstract_state.h"
 #include "drake/systems/framework/discrete_state.h"
 
@@ -24,6 +25,9 @@ namespace systems {
 template <typename T>
 class Parameters {
  public:
+  // Parameters are not copyable or moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Parameters)
+
   /// Constructs an empty Parameters.
   Parameters() : Parameters({}, {}) {}
 
@@ -101,12 +105,6 @@ class Parameters {
     clone->abstract_parameters_ = abstract_parameters_->Clone();
     return clone;
   }
-
-  // Parameters are not copyable or moveable.
-  Parameters(const Parameters& other) = delete;
-  Parameters& operator=(const Parameters& other) = delete;
-  Parameters(Parameters&& other) = delete;
-  Parameters& operator=(Parameters&& other) = delete;
 
  private:
   // TODO(david-german-tri): Consider renaming AbstractState and DiscreteState

@@ -8,6 +8,7 @@
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/cache.h"
@@ -90,6 +91,9 @@ struct UpdateActions {
 template <typename T>
 class System {
  public:
+  // System objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System)
+
   virtual ~System() {}
 
   //----------------------------------------------------------------------------
@@ -1003,12 +1007,6 @@ class System {
   //@}
 
  private:
-  // System objects are neither copyable nor moveable.
-  System(const System<T>& other) = delete;
-  System& operator=(const System<T>& other) = delete;
-  System(System<T>&& other) = delete;
-  System& operator=(System<T>&& other) = delete;
-
   std::string name_;
   // input_ports_ and output_ports_ are vectors of unique_ptr so that references
   // to the descriptors will remain valid even if the vector is resized.

@@ -24,6 +24,9 @@ namespace systems {
 template <typename T>
 class BasicVector : public VectorBase<T> {
  public:
+  // TODO(jwnimmer-tri) Should we use a drake_copyable macro here?  Right now,
+  // we are copy-only.
+
   /// Initializes with the given @p size using the drake::dummy_value<T>, which
   /// is NaN when T = double.
   explicit BasicVector(int size)

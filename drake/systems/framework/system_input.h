@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port_listener_interface.h"
@@ -20,6 +21,8 @@ namespace systems {
 /// FreestandingInputPorts.
 class InputPort : public detail::OutputPortListenerInterface {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InputPort)
+
   ~InputPort() override;
 
   /// Returns a positive number that increases monotonically, and changes
@@ -71,6 +74,9 @@ class InputPort : public detail::OutputPortListenerInterface {
 /// OutputPort.
 class DependentInputPort : public InputPort {
  public:
+  // DependentInputPort objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DependentInputPort)
+
   /// Creates an input port connected to the given @p output_port, which
   /// must not be nullptr. The output port must outlive this input port.
   explicit DependentInputPort(OutputPort* output_port);
@@ -92,19 +98,16 @@ class DependentInputPort : public InputPort {
   const OutputPort* get_output_port() const override { return output_port_; }
 
  private:
-  // DependentInputPort objects are neither copyable nor moveable.
-  DependentInputPort(const DependentInputPort& other) = delete;
-  DependentInputPort& operator=(const DependentInputPort& other) = delete;
-  DependentInputPort(DependentInputPort&& other) = delete;
-  DependentInputPort& operator=(DependentInputPort&& other) = delete;
-
-  OutputPort* output_port_;
+  OutputPort* output_port_{};
 };
 
 /// The FreestandingInputPort encapsulates a vector of data for use as an input
 /// to a System.
 class FreestandingInputPort : public InputPort {
  public:
+  // FreestandingInputPort objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreestandingInputPort)
+
   /// Constructs a vector-valued FreestandingInputPort.
   /// Takes ownership of @p vec.
   ///
@@ -173,12 +176,6 @@ class FreestandingInputPort : public InputPort {
   const OutputPort* get_output_port() const override { return &output_port_; }
 
  private:
-  // FreestandingInputPort objects are neither copyable nor moveable.
-  FreestandingInputPort(const FreestandingInputPort& other) = delete;
-  FreestandingInputPort& operator=(const FreestandingInputPort& other) = delete;
-  FreestandingInputPort(FreestandingInputPort&& other) = delete;
-  FreestandingInputPort& operator=(FreestandingInputPort&& other) = delete;
-
   OutputPort output_port_;
 };
 

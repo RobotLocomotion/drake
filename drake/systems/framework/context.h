@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/state.h"
@@ -34,11 +35,10 @@ struct StepInfo {
 template <typename T>
 class Context {
  public:
-  virtual ~Context() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Context)
 
   Context() = default;
-  Context(const Context&) = delete;
-  Context& operator=(const Context&) = delete;
+  virtual ~Context() = default;
 
   // =========================================================================
   // Accessors and Mutators for Time.
