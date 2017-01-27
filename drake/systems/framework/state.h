@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/abstract_state.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/discrete_state.h"
@@ -20,6 +21,9 @@ namespace systems {
 template <typename T>
 class State {
  public:
+  // State is not copyable or moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(State)
+
   State()
       : abstract_state_(std::make_unique<AbstractState>()),
         continuous_state_(std::make_unique<ContinuousState<T>>()),
@@ -96,12 +100,6 @@ class State {
     discrete_state_->SetFrom(*other.get_discrete_state());
     abstract_state_->CopyFrom(*other.get_abstract_state());
   }
-
-  // State is not copyable or moveable.
-  State(const State& other) = delete;
-  State& operator=(const State& other) = delete;
-  State(State&& other) = delete;
-  State& operator=(State&& other) = delete;
 
  private:
   std::unique_ptr<AbstractState> abstract_state_;

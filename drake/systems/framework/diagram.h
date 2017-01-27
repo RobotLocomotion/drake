@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/cache.h"
@@ -57,6 +58,10 @@ bool HasEvent(const UpdateActions<T> actions,
 template <typename T>
 class DiagramOutput : public SystemOutput<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramOutput)
+
+  DiagramOutput() = default;
+
   int get_num_ports() const override { return static_cast<int>(ports_.size()); }
 
   OutputPort* get_mutable_port(int index) override {
@@ -89,6 +94,8 @@ class DiagramOutput : public SystemOutput<T> {
 template <typename T>
 class DiagramTimeDerivatives : public DiagramContinuousState<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramTimeDerivatives)
+
   explicit DiagramTimeDerivatives(
       std::vector<std::unique_ptr<ContinuousState<T>>>&& substates)
       : DiagramContinuousState<T>(Unpack(substates)),
@@ -106,6 +113,8 @@ class DiagramTimeDerivatives : public DiagramContinuousState<T> {
 template <typename T>
 class DiagramDiscreteVariables : public DiscreteState<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramDiscreteVariables)
+
   explicit DiagramDiscreteVariables(
       std::vector<std::unique_ptr<DiscreteState<T>>>&& subdiscretes)
       : DiscreteState<T>(Flatten(Unpack(subdiscretes))),
@@ -146,6 +155,9 @@ template <typename T>
 class Diagram : public System<T>,
                 public detail::InputPortEvaluatorInterface<T> {
  public:
+  // Diagram objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Diagram)
+
   typedef typename std::pair<const System<T>*, int> PortIdentifier;
 
   ~Diagram() override {}
@@ -1094,12 +1106,6 @@ class Diagram : public System<T>,
   int num_subsystems() const {
     return static_cast<int>(sorted_systems_.size());
   }
-
-  // Diagram objects are neither copyable nor moveable.
-  Diagram(const Diagram<T>& other) = delete;
-  Diagram& operator=(const Diagram<T>& other) = delete;
-  Diagram(Diagram<T>&& other) = delete;
-  Diagram& operator=(Diagram<T>&& other) = delete;
 
   // A map from the input ports of constituent systems, to the output ports of
   // the systems on which they depend.

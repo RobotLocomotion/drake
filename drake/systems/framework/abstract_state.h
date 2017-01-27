@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
@@ -17,6 +18,9 @@ namespace systems {
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 class AbstractState {
  public:
+  // AbstractState is not copyable or moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AbstractState)
+
   // Constructs an empty abstract state.
   AbstractState();
 
@@ -48,12 +52,6 @@ class AbstractState {
   /// will own its own data. This is true regardless of whether the state being
   /// cloned had ownership of its data or not.
   std::unique_ptr<AbstractState> Clone() const;
-
-  // AbstractState is not copyable or moveable.
-  AbstractState(const AbstractState& other) = delete;
-  AbstractState& operator=(const AbstractState& other) = delete;
-  AbstractState(AbstractState&& other) = delete;
-  AbstractState& operator=(AbstractState&& other) = delete;
 
  private:
   // Pointers to the data comprising the state. If the data is owned, these

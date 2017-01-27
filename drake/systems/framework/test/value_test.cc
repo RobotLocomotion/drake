@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 
 #include "gtest/gtest.h"
@@ -114,13 +115,9 @@ GTEST_TEST(ValueTest, CannotUneraseToParentClass) {
 template <typename T>
 class PrintableValue : public Value<T>, public PrintInterface {
  public:
-  explicit PrintableValue(const T& v) : Value<T>(v) {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrintableValue)
 
-  // PrintableValues neither copyable nor moveable.
-  PrintableValue(const PrintableValue<T>& other) = delete;
-  PrintableValue& operator=(const PrintableValue<T>& other) = delete;
-  PrintableValue(PrintableValue<T>&& other) = delete;
-  PrintableValue& operator=(PrintableValue<T>&& other) = delete;
+  explicit PrintableValue(const T& v) : Value<T>(v) {}
 
   std::unique_ptr<AbstractValue> Clone() const override {
     return std::unique_ptr<PrintableValue<T>>(
