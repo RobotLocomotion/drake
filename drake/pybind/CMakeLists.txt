@@ -1,5 +1,5 @@
-find_package(pybind11 REQUIRED)
 
-pybind11_add_module(rbtree rbtree.cc)
-target_link_libraries(rbtree PRIVATE drakeMultibodyParsers drakeRBM)
-install(TARGETS rbtree DESTINATION lib/python/${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages/pydrake)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-shadow")
+pybind11_add_module(_rbtree rbtree.cc)
+target_link_libraries(_rbtree PRIVATE drakeRBM drakeMultibodyParsers Eigen3::Eigen)
+install(TARGETS _rbtree DESTINATION lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages/pydrake)

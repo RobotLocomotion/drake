@@ -15,7 +15,7 @@ class TestUrdfParser(unittest.TestCase):
         base_dir = os.path.dirname(urdf_file)
         package_map = pydrake.rbtree.PackageMap()
         weld_frame = None
-        floating_base_type = pydrake.rbtree.kRollPitchYaw
+        floating_base_type = pydrake.rbtree.FloatingBaseType.kRollPitchYaw
 
         robot = pydrake.rbtree.RigidBodyTree()
         pydrake.rbtree.AddModelInstanceFromUrdfStringSearchingInRosPackages(
