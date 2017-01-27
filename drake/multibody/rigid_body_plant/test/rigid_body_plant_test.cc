@@ -69,9 +69,8 @@ GTEST_TEST(RigidBodyPlantTest, TestLoadUrdf) {
 // Tests the generalized velocities to generalized coordinates time
 // derivatives for a free body with a quaternion base.
 GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
-  const double kTol = 1e-10;     // Test succeeds at one order of magnitude
-                                 // greater tolerance on my machine.
-  const int kNumPositions = 7;   // One quaternion + 3D position.
+  const double kTol = 5e-12;     // Loosest tolerance that all tests succeed.
+  const int kNumPositions = 7;   // One quaternion + 3d position.
   const int kNumVelocities = 6;  // Angular velocity + linear velocity.
   const int kNumStates = kNumPositions + kNumVelocities;
 
@@ -130,7 +129,7 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
   EXPECT_EQ(v0[1], positions_derivatives.GetAtIndex(1));
   EXPECT_EQ(v0[2], positions_derivatives.GetAtIndex(2));
 
-  // Loop over roll-pitch-yaw values. This will run approximately 1,000 tests.
+  // Loop over roll-pitch-yaw values: this will run approximately 1,000 tests.
   const double kAngleInc = 10.0 * M_PI / 180.0;  // 10 degree increments
   for (double roll = 0; roll <= M_PI_2; roll += kAngleInc) {
     for (double pitch = 0; pitch <= M_PI_2; pitch += kAngleInc) {
@@ -161,15 +160,18 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
         // derivative code is correct. See #4121.
 
         // Test q * qdot near zero.
-        // Quaterniond qdot(xc->GetAtIndex(3), xc->GetAtIndex(4),
-        //                  xc->GetAtIndex(5), xc->GetAtIndex(6));
-        // DRAKE_ASSERT(std::abs(q.dot(qdot)) < 1e-14);
+         Quaterniond qdot(positions_derivatives.GetAtIndex(3),
+                          positions_derivatives.GetAtIndex(4),
+                          positions_derivatives.GetAtIndex(5),
+                          positions_derivatives.GetAtIndex(6));
+        DRAKE_ASSERT(std::abs(q.dot(qdot)) < 1e-15);
 
         // Map time derivative of generalized configuration back to generalized
         // velocity.
         plant.MapQDotToVelocity(*context, positions_derivatives,
                                 &generalized_velocities);
 
+        // Ordering is angular velocities first, linear velocities second.
         EXPECT_NEAR(w0[0], generalized_velocities.GetAtIndex(0), kTol);
         EXPECT_NEAR(w0[1], generalized_velocities.GetAtIndex(1), kTol);
         EXPECT_NEAR(w0[2], generalized_velocities.GetAtIndex(2), kTol);

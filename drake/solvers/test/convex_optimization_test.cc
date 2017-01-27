@@ -149,24 +149,29 @@ void TestLinearProgram1(const MathematicalProgramSolverInterface& solver) {
 void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<4>();
-  // We deliberately break the cost to c1' * [x0;x1;x2] + c2'*[x2;x3] here
+  // We deliberately break the cost to
+  // f1(x) = -3 * x(0) - x(1) - 4 * x(2)
+  // and f2(x) = -x(2) - x(3)
   // to test adding multiple costs.
-  Eigen::Vector3d c1(-3, -1, -4);
-  Eigen::Vector2d c2(-1, -1);
 
-  prog.AddLinearCost(c1, x.head<3>());
-  prog.AddLinearCost(c2, x.tail<2>());
+  prog.AddLinearCost(-3 * x(0) - x(1) - 4 * x(2));
+  prog.AddLinearCost(-x(2) - x(3));
 
-  Eigen::RowVector3d a1(3, 1, 2);
-  prog.AddLinearEqualityConstraint(a1, 30, x.head<3>());
+  prog.AddLinearEqualityConstraint(3 * x(0) + x(1) + 2 * x(2), 30);
 
-  Eigen::Matrix<double, 4, 4> A;
-  A << 2, 1, 3, 1, 0, 2, 0, 3, 1, 2, 0, 1, 1, 0, 2, 0;
+  Vector4<symbolic::Expression> v{};
+  // clang-format off
+  v << 2 * x(0) + x(1) + 3 * x(2) + x(3),
+       2 * x(1) + 3 * x(3),
+       x(0) + 2 * x(1) + x(3),
+       x(0) + 2 * x(2);
+  // clang-format on
+
   Eigen::Vector4d b_lb(15, -std::numeric_limits<double>::infinity(),
                        -std::numeric_limits<double>::infinity(), -100);
   Eigen::Vector4d b_ub(std::numeric_limits<double>::infinity(), 25,
                        std::numeric_limits<double>::infinity(), 40);
-  prog.AddLinearConstraint(A, b_lb, b_ub);
+  prog.AddLinearConstraint(v, b_lb, b_ub);
 
   prog.AddBoundingBoxConstraint(0, 10, x(1));
   prog.AddBoundingBoxConstraint(

@@ -297,7 +297,7 @@ class MathematicalProgram {
    * std::vector<std::string>& names);
    */
   VectorXDecisionVariable NewContinuousVariables(
-      std::size_t rows, const std::vector<std::string>& names);
+      size_t rows, const std::vector<std::string>& names);
 
   /**
    * Adds continuous variables to this MathematicalProgram, with default name
@@ -305,7 +305,7 @@ class MathematicalProgram {
    * @see NewContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  VectorXDecisionVariable NewContinuousVariables(std::size_t rows,
+  VectorXDecisionVariable NewContinuousVariables(size_t rows,
                                                  const std::string& name = "x");
 
   /// Adds continuous variables to this MathematicalProgram.
@@ -334,7 +334,7 @@ class MathematicalProgram {
    * The name of the variable is only used for the user for understand.
    */
   MatrixXDecisionVariable NewContinuousVariables(
-      std::size_t rows, std::size_t cols,
+      size_t rows, size_t cols,
       const std::vector<std::string>& names);
 
   /**
@@ -344,8 +344,8 @@ class MathematicalProgram {
    * @see NewContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  MatrixXDecisionVariable NewContinuousVariables(std::size_t rows,
-                                                 std::size_t cols,
+  MatrixXDecisionVariable NewContinuousVariables(size_t rows,
+                                                 size_t cols,
                                                  const std::string& name = "X");
 
   /// Adds continuous variables to this MathematicalProgram.
@@ -1125,6 +1125,37 @@ class MathematicalProgram {
   void AddConstraint(std::shared_ptr<LinearEqualityConstraint> con,
                      const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
+  /**
+   * Adds one row of linear constraint e = b where @p e is a symbolic
+   * expression. Throws an exception if
+   *  1. @p e is a non-linear expression.
+   *  2. @p e is a constant.
+   *
+   * @param e A linear symbolic expression in the form of <tt>c0 + c1 * x1 +
+   * ... + cn * xn</tt> where @c c_i is a constant and @x_i is a variable.
+   * @param b A scalar.
+   * @return The newly added linear equality constraint, together with the
+   * bound variable.
+   */
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const symbolic::Expression& e, double b);
+
+  /**
+   * Adds linear equality constraints \f$ v = b \f$, where \p v(i) is a symbolic
+   * linear expression. Throws an exception if
+   * 1. @p v(i) is a non-linear expression.
+   * 2. @p v(i) is a constant.
+   * @param v v(i) is a linear symbolic expression in the form of
+   * <tt> c0 + c1 * x1 + ... + cn * xn </tt> where ci is a constant and @xi is
+   * a variable.
+   * @param b A vector of doubles.
+   * @return The newly added linear equality constraint, together with the
+   * bound variables.
+   */
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
+      const Eigen::Ref<const Eigen::VectorXd>& b);
+
   /** AddLinearEqualityConstraint
    *
    * Adds linear equality constraints referencing potentially a subset of
@@ -1182,9 +1213,12 @@ class MathematicalProgram {
    * (currently existing) variables.
    */
   template <typename DerivedA, typename DerivedB>
-  std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
-      const Eigen::MatrixBase<DerivedA>& Aeq,
-      const Eigen::MatrixBase<DerivedB>& beq) {
+  typename std::enable_if<
+      std::is_same<typename DerivedA::Scalar, double>::value &&
+          std::is_same<typename DerivedB::Scalar, double>::value,
+      std::shared_ptr<LinearEqualityConstraint>>::type
+  AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,
+                              const Eigen::MatrixBase<DerivedB>& beq) {
     return AddLinearEqualityConstraint(Aeq, beq, decision_variables_);
   }
 
@@ -2150,9 +2184,11 @@ class MathematicalProgram {
   }
 
   /** Returns the index of the decision variable. Internally the solvers thinks
-   * all variables are stored in an array, and it accesess each individual
+   * all variables are stored in an array, and it acceses each individual
    * variable using its index. This index is used when adding constraints
    * and costs for each solver.
+   * @pre{@p var is a decision variable in the mathematical program, otherwise
+   * this function asserts an error.}
    */
   size_t FindDecisionVariableIndex(const symbolic::Variable& var) const;
 
@@ -2213,7 +2249,7 @@ class MathematicalProgram {
  private:
   // maps the ID of a symbolic variable to the index of the variable stored in
   // the optimization program.
-  std::unordered_map<size_t, size_t> decision_variable_index_{};
+  std::unordered_map<symbolic::Variable::Id, size_t> decision_variable_index_{};
 
   std::vector<VarType> decision_variable_type_;  // decision_variable_type_[i]
                                                  // stores the type of the
@@ -2338,6 +2374,28 @@ class MathematicalProgram {
 
   VectorXDecisionVariable NewVariables(VarType type, int rows,
                                        const std::vector<std::string>& names);
+
+  /*
+   * Given a matrix of decision variables, return true if every entry in the
+   * matrix is a decision variable in the program; otherwise return false.
+   * @tparam  A Eigen::Matrix type of symbolic::Variable.
+   * @param vars A matrix of variable.
+   */
+  template <typename Derived>
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+      bool>::type
+  IsDecisionVariable(const Eigen::MatrixBase<Derived>& vars) {
+    for (int i = 0; i < vars.rows(); ++i) {
+      for (int j = 0; j < vars.cols(); ++j) {
+        if (decision_variable_index_.find(vars(i, j).get_id()) ==
+            decision_variable_index_.end()) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
 };
 }  // namespace solvers
 }  // namespace drake

@@ -479,7 +479,7 @@ void MinDistanceFromPlaneToOrigin::AddSymbolicConstraint() {
   }
   prog_lorentz_->AddLorentzConeConstraint(tx);
   // TODO(hongkai.dai): change this to symbolic form.
-  prog_lorentz_->AddLinearEqualityConstraint(A_, b_, x_lorentz_);
+  prog_lorentz_->AddLinearEqualityConstraint(A_ * x_lorentz_, b_);
 
   VectorX<Expression> tx2(2 + A_.cols());
   tx2(0) = 1;
@@ -488,8 +488,8 @@ void MinDistanceFromPlaneToOrigin::AddSymbolicConstraint() {
     tx2(i + 2) = +x_rotated_lorentz_(i);
   }
   prog_rotated_lorentz_->AddRotatedLorentzConeConstraint(tx2);
-  prog_rotated_lorentz_->AddLinearEqualityConstraint(A_, b_,
-                                                     x_rotated_lorentz_);
+  prog_rotated_lorentz_->AddLinearEqualityConstraint(A_ * x_rotated_lorentz_,
+                                                     b_);
 }
 
 void MinDistanceFromPlaneToOrigin::SetInitialGuess() {

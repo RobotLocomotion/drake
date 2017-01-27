@@ -47,7 +47,6 @@ drake_add_matlab_test(NAME systems/plants/test/testFloatingBaseDynamics OPTIONAL
 drake_add_matlab_test(NAME systems/plants/test/testFloatingMassSpringDamperForceGradients OPTIONAL bullet COMMAND testFloatingMassSpringDamperForceGradients)
 drake_add_matlab_test(NAME systems/plants/test/testForwardJacDotTimesV OPTIONAL bullet COMMAND testForwardJacDotTimesV)
 drake_add_matlab_test(NAME systems/plants/test/testForwardKinRot OPTIONAL bullet COMMAND testForwardKinRot)
-drake_add_matlab_test(NAME systems/plants/test/testGeometricJacobian OPTIONAL bullet COMMAND testGeometricJacobian)
 drake_add_matlab_test(NAME systems/plants/test/testGeometricJacobianDotTimesV OPTIONAL bullet COMMAND testGeometricJacobianDotTimesV)
 drake_add_matlab_test(NAME systems/plants/test/testGeometricJacobianDotV OPTIONAL bullet COMMAND testGeometricJacobianDotV)
 drake_add_matlab_test(NAME systems/plants/test/testGradients OPTIONAL bullet COMMAND testGradients)
