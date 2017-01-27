@@ -30,8 +30,7 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
         l1{acrobot.getl1()},
         lc1{acrobot.getlc1()},
         lc2{acrobot.getlc2()},
-        g{acrobot.getg()}
-  {
+        g{acrobot.getg()} {
     this->DeclareInputPort(systems::kVectorValued,
                            acrobot.get_output_port(0).size());
     this->DeclareOutputPort(systems::kVectorValued,
@@ -39,7 +38,7 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
 
     // create context for linearization
     auto context0 = acrobot.CreateDefaultContext();
-    context0->FixInputPort(0, Vector1d::Constant(0.0));
+    context0->FixInputPort(0, Vector1d(0));
 
     // Set nominal state to the upright fixed point.
     AcrobotStateVector<double>* x = dynamic_cast<AcrobotStateVector<double>*>(
@@ -55,7 +54,7 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
     Eigen::Matrix4d Q = Eigen::Matrix4d::Identity();
     Q(0, 0) = 10;
     Q(1, 1) = 10;
-    Vector1d R = Vector1d::Constant(1);
+    Vector1d R(1);
 
     systems::LinearQuadraticRegulatorResult lqr_result =
         systems::LinearQuadraticRegulator(linear_system->A(),
@@ -74,8 +73,7 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
     const Vector2<T> C = acrobot.C_matrix(*x);
     const Matrix2<T> H_inverse = H.inverse();
     const Vector4<T> x0(M_PI, 0, 0, 0);
-    Vector4<T> x_c(x->theta1(), x->theta2(), x->theta1dot(),
-                         x->theta2dot());
+    Vector4<T> x_c(x->theta1(), x->theta2(), x->theta1dot(), x->theta2dot());
 
     // controller gains
     const double k_e = 5;
@@ -158,7 +156,7 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
       lc2,  // Vertical distance from elbox joint to center of mass of link
       g;    // Gravitational constant (m/s^2).
   Eigen::Matrix4d S;
-  Eigen::Matrix<T,1,4> K;
+  Eigen::Matrix<T, 1, 4> K;
 };
 
 }  // namespace acrobot
