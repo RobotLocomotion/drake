@@ -1,4 +1,4 @@
-function runRobustManip()
+function [xtraj,utraj,xtraj2,utraj2] = runRobustManip()
 
 options.with_weight = true;
 options.with_shelf = true;
@@ -9,6 +9,15 @@ nq = r.getNumPositions;
 nu = r.getNumInputs;
 
 v=r.constructVisualizer;
+
+%LQR Controller Stuff
+Q = diag([100*ones(nq,1);10*ones(nq,1)]);
+R = 0.01*eye(nu);
+Qf = 5*Q;
+
+%Robust stuff
+D = diag([1 1 1]);
+E0 = .01*eye(14);
 
 q0 = [0;-0.683;0;1.77;0;0.88;-1.57];
 x0 = [q0;zeros(nq,1)];
@@ -54,11 +63,54 @@ tic;
 [xtraj,utraj,z,F,info,infeasible] = prog1.solveTraj(tf0,traj_init);
 toc
 
+traj_init.x = xtraj;
+traj_init.u = utraj;
+  
+%Robust Version
+options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;
+prog2 = RobustDirtranTrajectoryOptimization(r,N,D,E0,Q,R,Qf,tf0*[.8 1.2],options);
+prog2 = prog2.addStateConstraint(ConstantConstraint(x0),1);
+% prog2 = prog2.addStateConstraint(ConstantConstraint(xG),N);
+prog2 = prog2.addRunningCost(@cost);
+prog2 = prog2.addFinalCost(@finalCost);
+% prog2 = addTrajectoryDisplayFunction(prog2,@displayStateTrajectory);
 
-%LQR Controller
-Q = diag([100*ones(nq,1);10*ones(nq,1)]);
-R = 0.01*eye(nu);
-Qf = 5*Q;
+prog2 = prog2.addRobustCost(Q,R,Qf);
+%prog2 = prog2.addRobustInputConstraint();
+%prog2 = prog2.addRobustStateConstraint(collision_constraint,2:(N2-1),1:2);
+
+[jlmin,jlmax] = r.getJointLimits;
+xmin = [jlmin;-inf(nq,1)];
+xmax = [jlmax;inf(nq,1)];
+prog2 = prog2.addConstraint(BoundingBoxConstraint(repmat(xmin,N,1),repmat(xmax,N,1)),prog2.x_inds);
+prog2 = prog2.addRobustStateConstraint(BoundingBoxConstraint(xmin,xmax),1:N,1:14);
+
+tol = [0.03;0.03;0.005;0.01;0.01;0.01];
+
+constraint = FunctionHandleConstraint(-tol,tol,nx,@l_hand_constraint);
+constraint = constraint.setName('left_hand_constraint'); 
+prog2 = prog2.addConstraint(constraint, {prog2.x_inds(:,N)});
+prog2 = prog2.addRobustStateConstraint(constraint,N,1:14);
+
+for i=1:N-1
+  constraint = FunctionHandleConstraint(0,inf,nx,@l_hand_shelf_constraint);
+  constraint = constraint.setName(sprintf('l_hand_shelf_constraint_%d',i));
+  prog2 = prog2.addConstraint(constraint, {prog2.x_inds(:,i)});
+  prog2 = prog2.addRobustStateConstraint(constraint,i,1:14);
+end
+
+prog2 = prog2.setSolverOptions('snopt','majoroptimalitytolerance',1e-2);
+prog2 = prog2.setSolverOptions('snopt','minoroptimalitytolerance',1e-3);
+%prog2 = prog2.setSolverOptions('snopt','majorfeasibilitytolerance',1e-4);
+prog2 = prog2.setSolverOptions('snopt','iterationslimit',100000);
+
+tic;
+[xtraj2,utraj2,z,F,info,infeasible] = prog2.solveTraj(tf0,traj_init);
+toc
+
+v.playback(xtraj2,struct('slider',true));
+
+%Closed-loop simulation
 c = tvlqr(r,xtraj,utraj,Q,R,Qf);
 
 %Simulate closed-loop system

@@ -51,7 +51,7 @@ classdef KukaArm < RigidBodyManipulator
 
     end
     
-    function nw = getNumDistrubances(obj)
+    function nw = getNumDisturbances(obj)
         switch obj.disturbance_type
             case 1
                 nw = 3;
@@ -64,20 +64,37 @@ classdef KukaArm < RigidBodyManipulator
         end
     end
     
-    function [f,df] = dynamics_w(obj,t,x,u,w)
-     switch obj.disturbance_type
-       case 1
-         % ee force
-         [f,df] = dynamics_w_ee(obj,t,x,u,w);       
-       case 2
-         % x error
-         [f,df] = dynamics_w_x(obj,t,x,u,w);       
-       case 3
-         % u error
-         [f,df] = dynamics_w_u(obj,t,x,u,w);       
-       otherwise 
-         error('Unknown disturbance type');
-     end
+    function [f,df,d2f] = dynamics_w(obj,t,x,u,w)
+        
+        [f,df] = dynamics_w_ee(obj,t,x,u,w);
+        
+        if nargout == 3
+            %Finite diff to get 2nd derivatives
+            nx = length(x);
+            nu = length(u);
+            nw = length(w);
+            
+            Dx = 1e-6*eye(nx);
+            Du = 1e-6*eye(nu);
+            Dw = 1e-6*eye(nw);
+            
+            d2f = zeros(nx, 1+nx+nu+nw, 1+nx+nu+nw);
+            for k = 1:nx
+                [~,df_p] = dynamics_w_ee(obj,t,x+Dx(:,k),u,w);
+                d2f(:,:,1+k) = df_p-df;
+            end
+            for k = 1:nu
+                [~,df_p] = dynamics_w_ee(obj,t,x,u+Du(:,k),w);
+                d2f(:,:,1+nx+k) = df_p-df;
+            end
+            for k = 1:nw
+                [~,df_p] = dynamics_w_ee(obj,t,x,u,w+Dw(:,k));
+                d2f(:,:,1+nx+nu+k) = df_p-df;
+            end
+            
+            d2f = reshape(d2f,nx,(1+nx+nu+nw)*(1+nx+nu+nw));
+            
+        end
 
     end
     
