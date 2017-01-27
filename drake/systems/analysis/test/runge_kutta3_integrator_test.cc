@@ -387,7 +387,7 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   // Verify that the final states are "close".
   VectorX<double> x_final_rk3 = context->get_continuous_state_vector().
       CopyToVector();
-  const double close_tol = 1e-6;
+  const double close_tol = 2e-6;
   for (int i=0; i< x_final_rk2.size(); ++i)
     EXPECT_NEAR(x_final_rk2[i], x_final_rk3[i], close_tol);
 }
