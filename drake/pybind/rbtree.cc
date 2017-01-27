@@ -85,24 +85,52 @@ PYBIND11_PLUGIN(_rbtree) {
                                int to_body_or_frame_ind) {
       return tree.transformPoints(cache, points, from_body_or_frame_ind, to_body_or_frame_ind);
     })
+    .def("addFrame", &RigidBodyTree<double>::addFrame)
+    .def("FindBody", [](const RigidBodyTree<double>& self,
+                        const std::string& body_name,
+                        const std::string& model_name = "",
+                        int model_id = -1) {
+      return self.FindBody(body_name, model_name, model_id);
+    }, py::arg("body_name"), 
+       py::arg("model_name") = "", 
+       py::arg("model_id") = -1,
+       py::return_value_policy::reference)
+    .def("world", 
+         (RigidBody<double>& (RigidBodyTree<double>::*)
+          ()) &RigidBodyTree<double>::world,
+         py::return_value_policy::reference)
+    .def("findFrame", &RigidBodyTree<double>::findFrame,
+         py::arg("frame_name"), py::arg("model_id") = -1)
     ;
 
-  py::class_<KinematicsCache<double>>(m, "KinematicsCacheDouble");
+  py::class_<KinematicsCache<double> >(m, "KinematicsCacheDouble");
   py::class_<KinematicsCache<AutoDiffXd> >(m, "KinematicsCacheAutoDiffXd");
 
   py::class_<drake::parsers::PackageMap>(m, "PackageMap")
     .def(py::init<>())
     ;
 
-  py::class_<RigidBodyFrame<double>>(m, "RigidBodyFrame");
+  py::class_<RigidBody<double> >(m, "RigidBody")
+    .def("get_name", &RigidBody<double>::get_name)
+    .def("get_body_index", &RigidBody<double>::get_body_index)
+    ;
+
+  py::class_<RigidBodyFrame<double>, std::shared_ptr<RigidBodyFrame<double> > >(m, "RigidBodyFrame")
+    .def(py::init<const std::string&, 
+                  RigidBody<double>*,
+                  const Eigen::VectorXd&,
+                  const Eigen::VectorXd& >())
+    .def("get_frame_index", &RigidBodyFrame<double>::get_frame_index)
+    ;
+
+  m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages", 
+        &drake::parsers::urdf::AddModelInstanceFromUrdfStringSearchingInRosPackages);
 
   py::enum_<drake::multibody::joints::FloatingBaseType>(m, "FloatingBaseType")
     .value("kFixed", drake::multibody::joints::FloatingBaseType::kFixed)
     .value("kRollPitchYaw", drake::multibody::joints::FloatingBaseType::kRollPitchYaw)
     .value("kQuaternion", drake::multibody::joints::FloatingBaseType::kQuaternion);
 
-  m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages", 
-        &drake::parsers::urdf::AddModelInstanceFromUrdfStringSearchingInRosPackages);
 
   return m.ptr();
 }
