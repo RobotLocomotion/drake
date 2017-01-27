@@ -123,7 +123,7 @@ class KukaDemo : public systems::Diagram<T> {
     viz_publisher_ = builder.template AddSystem<systems::DrakeVisualizer>(
         plant_->get_rigid_body_tree(), &lcm_);
 
-    builder.Connect(desired_plan_->get_output_port(0),
+    builder.Connect(desired_plan_->get_output_port(),
                     input_mux->get_input_port(0));
 
     // Splits the RBP output into positions (q) and velocities (v).

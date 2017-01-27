@@ -90,9 +90,9 @@ int do_main(int argc, char* argv[]) {
 
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
 
-  builder.Connect(input_source->get_output_port(0),
+  builder.Connect(input_source->get_output_port(),
                   controller->get_input_port(0));
-  builder.Connect(state_source->get_output_port(0),
+  builder.Connect(state_source->get_output_port(),
                   controller->get_input_port(1));
   builder.Connect(controller->get_output_port(0), publisher->get_input_port(0));
 
