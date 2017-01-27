@@ -25,6 +25,7 @@ using Eigen::VectorXd;
 
 using drake::solvers::detail::VecIn;
 using drake::solvers::detail::VecOut;
+using drake::symbolic::Expression;
 
 using std::numeric_limits;
 
@@ -287,14 +288,13 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
 }
 
 void CheckAddedSymbolicLinearCost(MathematicalProgram* prog,
-                                  const symbolic::Expression& e) {
+                                  const Expression& e) {
   int num_linear_costs = prog->linear_costs().size();
   const auto& binding = prog->AddLinearCost(e);
   EXPECT_EQ(prog->linear_costs().size(), num_linear_costs + 1);
   EXPECT_EQ(prog->linear_costs().back().constraint(), binding.constraint());
   EXPECT_EQ(binding.constraint()->num_constraints(), 1);
-  const symbolic::Expression cx{
-      (binding.constraint()->A() * binding.variables())(0)};
+  const Expression cx{(binding.constraint()->A() * binding.variables())(0)};
   double constant_term{0};
   if (is_addition(e)) {
     constant_term = get_constant_in_addition(e);
@@ -326,7 +326,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(3, "x");
   auto y = prog.NewContinuousVariables(3, "y");
-  const symbolic::Expression e{3 - 5 * x(0) + 10 * x(2) - 7 * y(1)};
+  const Expression e{3 - 5 * x(0) + 10 * x(2) - 7 * y(1)};
   const double lb{-10};
   const double ub{+10};
   const auto binding = prog.AddLinearConstraint(e, lb, ub);
@@ -335,9 +335,9 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
   const VectorXDecisionVariable& var_vec{binding.variables()};
   const auto constraint_ptr = binding.constraint();
   EXPECT_EQ(constraint_ptr->num_constraints(), 1u);
-  const symbolic::Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
-  const symbolic::Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
-  const symbolic::Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
+  const Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
+  const Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
+  const Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
   EXPECT_TRUE((e - lb).EqualTo(Ax - lb_in_ctr));
   EXPECT_TRUE((e - ub).EqualTo(Ax - ub_in_ctr));
 }
@@ -348,7 +348,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
   // of linear-constraint.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(3, "x");
-  const symbolic::Expression e{x(0)};
+  const Expression e{x(0)};
   const auto binding = prog.AddLinearConstraint(e, -10, 10);
 
   // Check that the constraint in the binding is of BoundingBoxConstraint by
@@ -360,9 +360,9 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
 
   // Check if the binding includes the correct linear constraint.
   const VectorXDecisionVariable& var_vec{binding.variables()};
-  const symbolic::Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
-  const symbolic::Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
-  const symbolic::Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
+  const Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
+  const Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
+  const Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
   EXPECT_TRUE((e - -10).EqualTo(Ax - lb_in_ctr));
   EXPECT_TRUE((e - 10).EqualTo(Ax - ub_in_ctr));
 }
@@ -385,7 +385,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(3, "x");
   auto y = prog.NewContinuousVariables(3, "y");
-  Matrix<symbolic::Expression, 4, 1> M_e;
+  Matrix<Expression, 4, 1> M_e;
   Vector4d M_lb;
   Vector4d M_ub;
 
@@ -422,7 +422,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic4) {
   // Note: this is a bounding box constraint
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
-  const symbolic::Expression e(2 * x(1));
+  const Expression e(2 * x(1));
   const auto& binding = prog.AddLinearConstraint(e, 2, 4);
 
   EXPECT_TRUE(prog.linear_constraints().empty());
@@ -443,7 +443,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic5) {
   // Note: this is a bounding box constraint
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
-  const symbolic::Expression e(-2 * x(1));
+  const Expression e(-2 * x(1));
   const auto& binding = prog.AddLinearConstraint(e, 2, 4);
 
   EXPECT_TRUE(prog.linear_constraints().empty());
@@ -460,10 +460,108 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic5) {
 }
 
 namespace {
+void CheckAddedSymbolicLinearEqualityConstraint(
+    MathematicalProgram* prog, const Eigen::Ref<const VectorX<Expression>>& v,
+    const Eigen::Ref<const Eigen::VectorXd>& b) {
+  const int num_linear_eq_cnstr = prog->linear_equality_constraints().size();
+  auto binding = prog->AddLinearEqualityConstraint(v, b);
+  // Checks if the number of linear equality constraints get incremented by 1.
+  EXPECT_EQ(prog->linear_equality_constraints().size(),
+            num_linear_eq_cnstr + 1);
+  // Checks if the newly added linear equality constraint in prog is the same as
+  // that returned from AddLinearEqualityConstraint.
+  EXPECT_EQ(prog->linear_equality_constraints().back().constraint(),
+            binding.constraint());
+  // Checks if the bound variables of the newly added linear equality constraint
+  // in prog is the same as that returned from AddLinearEqualityConstraint.
+  EXPECT_EQ(prog->linear_equality_constraints().back().variables(),
+            binding.variables());
+  // Checks if the number of rows in the newly added constraint is the same as
+  // the input expression.
+  EXPECT_EQ(binding.constraint()->num_constraints(), v.rows());
+  // Check if the newly added linear equality constraint matches with the input
+  // expression.
+  EXPECT_EQ(binding.constraint()->A() * binding.variables() -
+                binding.constraint()->lower_bound(),
+            v - b);
+}
+
+void CheckAddedSymbolicLinearEqualityConstraint(MathematicalProgram* prog,
+                                                const Expression& e, double b) {
+  CheckAddedSymbolicLinearEqualityConstraint(prog, Vector1<Expression>(e),
+                                             Vector1d(b));
+}
+}  // namespace
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
+  // Checks the single row linear equality constraint one by one:
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+
+  // Checks x(0) = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, +x(0), 1);
+  // Checks x(1) = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, +x(1), 1);
+  // Checks x(0) + x(1) = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + x(1), 1);
+  // Checks x(0) + 2 * x(1) = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + 2 * x(1), 1);
+  // Checks 3 * x(0) - 2 * x(1) = 2
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, 3 * x(0) - 2 * x(1), 2);
+  // Checks 2 * x(0) = 2
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, 2 * x(0), 2);
+  // Checks x(0) + 3 * x(2) = 3
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + 3 * x(2), 3);
+  // Checks 2 * x(1) - 3 * x(2) = 4
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, 2 * x(1) - 3 * x(2), 4);
+  // Checks x(0) + 2 = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + 2, 1);
+  // Checks x(1) - 2 = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(1) - 2, 1);
+  // Checks 3 * x(1) + 4 = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, 3 * x(1) + 4, 1);
+  // Checks x(0) + x(2) + 3 = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, x(0) + x(2) + 3, 1);
+  // Checks 2 * x(0) + x(2) - 3 = 1
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, 2 * x(0) + x(2) - 3, 1);
+  // Checks 3 * x(0) + x(1) + 4 * x(2) + 1 = 2
+  CheckAddedSymbolicLinearEqualityConstraint(&prog,
+                                             3 * x(0) + x(1) + 4 * x(2) + 1, 2);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
+  // Checks adding multiple rows of linear equality constraints.
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+
+  // Checks x(1) = 2
+  //        x(0) = 1
+  CheckAddedSymbolicLinearEqualityConstraint(
+      &prog, Vector2<Expression>(+x(1), +x(0)), Eigen::Vector2d(2, 1));
+
+  // Checks 2 * x(1) = 3
+  //        x(0) + x(2) = 4
+  //        x(0) + 3 * x(1) + 7 = 1
+  Vector3<Expression> v{};
+  v << 2 * x(1), x(0) + x(2), x(0) + 3 * x(1) + 7;
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, v,
+                                             Eigen::Vector3d(3, 4, 1));
+
+  // Checks x(0) = 4
+  //          1  = 1
+  //        x(0) = 3
+  // Currently we do not throw an error, even if the constraint x(0) = 3
+  // contradicts with x(0) = 4
+  CheckAddedSymbolicLinearEqualityConstraint(
+      &prog, Vector3<Expression>(+x(0), 1, +x(0)), Eigen::Vector3d(4, 1, 3));
+}
+
+namespace {
 void CheckParsedSymbolicLorentzConeConstraint(
     MathematicalProgram* prog,
-    const Eigen::Ref<
-        const Eigen::Matrix<symbolic::Expression, Eigen::Dynamic, 1>>& e) {
+    const Eigen::Ref<const Eigen::Matrix<Expression, Eigen::Dynamic, 1>>& e) {
   const auto& binding1 = prog->AddLorentzConeConstraint(e);
   const auto& binding2 = prog->lorentz_cone_constraints().back();
 
@@ -477,8 +575,7 @@ void CheckParsedSymbolicLorentzConeConstraint(
 }
 
 void CheckParsedSymbolicRotatedLorentzConeConstraint(
-    MathematicalProgram* prog,
-    const Eigen::Ref<const VectorX<symbolic::Expression>>& e) {
+    MathematicalProgram* prog, const Eigen::Ref<const VectorX<Expression>>& e) {
   const auto& binding1 = prog->AddRotatedLorentzConeConstraint(e);
   const auto& binding2 = prog->rotated_lorentz_cone_constraints().back();
 
@@ -497,7 +594,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint1) {
   // x is in Lorentz cone
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>("x");
-  Matrix<symbolic::Expression, 3, 1> e;
+  Matrix<Expression, 3, 1> e;
   e << 1 * x(0), 1.0 * x(1), 1.0 * x(2);
   CheckParsedSymbolicLorentzConeConstraint(&prog, e);
 }
@@ -507,7 +604,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint2) {
   // x + [1, 2, 0] is in Lorentz cone.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>("x");
-  Matrix<symbolic::Expression, 3, 1> e;
+  Matrix<Expression, 3, 1> e;
   e << x(0) + 1, x(1) + 2, +x(2);
   CheckParsedSymbolicLorentzConeConstraint(&prog, e);
 }
@@ -519,7 +616,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint3) {
   // [               x(2)]
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>("x");
-  Matrix<symbolic::Expression, 3, 1> e;
+  Matrix<Expression, 3, 1> e;
   // clang-format on
   e << 2 * x(0) + 3 * x(2), -x(0) + 2 * x(2), +x(2);
   // clang-format off;
@@ -534,7 +631,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLorentzConeConstraint4) {
   // [                       2 * x(2)    ]
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>("x");
-  Matrix<symbolic::Expression, 4, 1> e;
+  Matrix<Expression, 4, 1> e;
   // clang-format off
   e << 2 * x(0) + 3 * x(1) + 5,
        4 * x(0) + 4 * x(2) - 7,
@@ -550,7 +647,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint1) {
   // x is in the rotated Lorentz cone constraint.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>("x");
-  Matrix<symbolic::Expression, 3, 1> e;
+  Matrix<Expression, 3, 1> e;
   e << +x(0), +x(1), +x(2);
   CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
 }
@@ -562,7 +659,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint2) {
   // [           x(2)]
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>("x");
-  Matrix<symbolic::Expression, 3, 1> e;
+  Matrix<Expression, 3, 1> e;
   e << x(0) + 2 * x(2), +x(0), +x(2);
   CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
 }
@@ -575,7 +672,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint3) {
   // [x(3) - 1]
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<4>("x");
-  Matrix<symbolic::Expression, 4, 1> e;
+  Matrix<Expression, 4, 1> e;
   e << x(0) + 1, x(1) + 2, +x(2), x(3) - 1;
   CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
 }
@@ -589,7 +686,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint4) {
   // [                      4]
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<4>("x");
-  Matrix<symbolic::Expression, 5, 1> e;
+  Matrix<Expression, 5, 1> e;
   e << 2 * x(0) + 3 * x(2) + 3, x(0) - 4 * x(2), 2 * x(2), 3 * x(0) + 1, 4;
   CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
 }

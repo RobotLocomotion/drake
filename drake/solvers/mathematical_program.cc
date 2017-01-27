@@ -111,12 +111,12 @@ VectorXDecisionVariable MathematicalProgram::NewContinuousVariables(
 }
 
 MatrixXDecisionVariable MathematicalProgram::NewContinuousVariables(
-    std::size_t rows, std::size_t cols, const std::vector<std::string>& names) {
+    size_t rows, size_t cols, const std::vector<std::string>& names) {
   return NewVariables(VarType::CONTINUOUS, rows, cols, false, names);
 }
 
 VectorXDecisionVariable MathematicalProgram::NewContinuousVariables(
-    std::size_t rows, const std::string& name) {
+    size_t rows, const std::string& name) {
   std::vector<std::string> names(rows);
   for (int i = 0; i < static_cast<int>(rows); ++i) {
     names[i] = name + "(" + std::to_string(i) + ")";
@@ -125,7 +125,7 @@ VectorXDecisionVariable MathematicalProgram::NewContinuousVariables(
 }
 
 MatrixXDecisionVariable MathematicalProgram::NewContinuousVariables(
-    std::size_t rows, std::size_t cols, const std::string& name) {
+    size_t rows, size_t cols, const std::string& name) {
   std::vector<std::string> names(rows * cols);
   int count = 0;
   for (int j = 0; j < static_cast<int>(cols); ++j) {
@@ -218,8 +218,8 @@ class SymbolicError : public runtime_error {
 // @param[out] map_var_to_index. map_var_to_index is of the same size as @p
 // vars, and map_var_to_index[vars(i).get_id()] = i.
 void ExtractVariablesFromExpression(
-    const symbolic::Expression& e, VectorXDecisionVariable* vars,
-    unordered_map<size_t, int>* map_var_to_index) {
+    const Expression& e, VectorXDecisionVariable* vars,
+    unordered_map<Variable::Id, int>* map_var_to_index) {
   DRAKE_DEMAND(static_cast<int>(map_var_to_index->size()) == vars->size());
   for (const symbolic::Variable& var : e.GetVariables()) {
     if (map_var_to_index->find(var.get_id()) == map_var_to_index->end()) {
@@ -253,12 +253,12 @@ void ExtractVariablesFromExpression(
 template <typename Derived>
 void DecomposeLinearExpression(
     const Expression& e,
-    const std::unordered_map<size_t, int>& map_var_to_index,
+    const std::unordered_map<Variable::Id, int>& map_var_to_index,
     const Eigen::MatrixBase<Derived>& coeffs, double* constant_term) {
   static_assert(std::is_same<typename Derived::Scalar, double>::value,
                 "coeffs must be a matrix of double.");
   DRAKE_DEMAND(coeffs.rows() == 1);
-  DRAKE_DEMAND(static_cast<size_t>(coeffs.cols()) == map_var_to_index.size());
+  DRAKE_DEMAND(coeffs.cols() == static_cast<int>(map_var_to_index.size()));
   if (is_addition(e)) {
     *constant_term = get_constant_in_addition(e);
     const std::map<Expression, double>& exp_to_coeff_map{
@@ -318,7 +318,7 @@ void DecomposeLinearExpression(const Eigen::Ref<const VectorX<Expression>>& v,
                                Eigen::MatrixXd* A, Eigen::VectorXd* b,
                                VectorXDecisionVariable* vars) {
   // 0. Setup map_var_to_index and var_vec.
-  unordered_map<size_t, int> map_var_to_index;
+  unordered_map<Variable::Id, int> map_var_to_index;
   for (int i = 0; i < v.size(); ++i) {
     ExtractVariablesFromExpression(v(i), vars, &map_var_to_index);
   }
@@ -360,9 +360,9 @@ void MathematicalProgram::AddCost(
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearCost(
-    const symbolic::Expression& e) {
+    const Expression& e) {
   VectorXDecisionVariable var(0);
-  unordered_map<size_t, int> map_var_to_index;
+  unordered_map<Variable::Id, int> map_var_to_index;
   ExtractVariablesFromExpression(e, &var, &map_var_to_index);
   Eigen::RowVectorXd c(var.size());
   double constant_term;
@@ -441,7 +441,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 
   // Setup map_var_to_index and var_vec.
   // such that map_var_to_index[var(i)] = i
-  unordered_map<size_t, int> map_var_to_index;
+  unordered_map<Variable::Id, int> map_var_to_index;
   VectorXDecisionVariable vars(0);
   for (int i = 0; i < v.size(); ++i) {
     ExtractVariablesFromExpression(v(i), &vars, &map_var_to_index);
@@ -569,6 +569,35 @@ void MathematicalProgram::AddConstraint(
     std::shared_ptr<LinearEqualityConstraint> con,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   return AddConstraint(Binding<LinearEqualityConstraint>(con, vars));
+}
+
+Binding<LinearEqualityConstraint>
+MathematicalProgram::AddLinearEqualityConstraint(const Expression& e,
+                                                 double b) {
+  return AddLinearEqualityConstraint(drake::Vector1<Expression>(e),
+                                     drake::Vector1d(b));
+}
+
+Binding<LinearEqualityConstraint>
+MathematicalProgram::AddLinearEqualityConstraint(
+    const Eigen::Ref<const VectorX<Expression>>& v,
+    const Eigen::Ref<const Eigen::VectorXd>& b) {
+  DRAKE_DEMAND(v.rows() == b.rows());
+  VectorXDecisionVariable vars(0);
+  unordered_map<Variable::Id, int> map_var_to_index;
+  for (int i = 0; i < v.rows(); ++i) {
+    ExtractVariablesFromExpression(v(i), &vars, &map_var_to_index);
+  }
+  // TODO(hongkai.dai): use sparse matrix.
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(v.rows(), vars.rows());
+  Eigen::VectorXd beq = Eigen::VectorXd::Zero(v.rows());
+  for (int i = 0; i < v.rows(); ++i) {
+    double constant_term(0);
+    DecomposeLinearExpression(v(i), map_var_to_index, A.row(i), &constant_term);
+    beq(i) = b(i) - constant_term;
+  }
+  return Binding<LinearEqualityConstraint>(
+      AddLinearEqualityConstraint(A, beq, vars), vars);
 }
 
 std::shared_ptr<LinearEqualityConstraint>
