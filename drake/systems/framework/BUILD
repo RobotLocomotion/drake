@@ -45,7 +45,9 @@ cc_library(
     linkstatic = 1,
     deps = [
         "//drake/common",
+        "//drake/common:autodiff",
         "//drake/common:dummy_value",
+        "//drake/common:symbolic",
     ],
 )
 
@@ -314,7 +316,7 @@ cc_googletest(
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:eigen_matrix_compare",
-        "//drake/common:functional_form",
+        "//drake/common:symbolic",
     ],
 )
 
