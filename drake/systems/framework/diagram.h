@@ -13,6 +13,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/number_traits.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/diagram_context.h"
@@ -557,7 +558,7 @@ class Diagram : public System<T>,
   }
 
   /// Creates a deep copy of this Diagram<double>, converting the scalar type
-  /// to AutoDiffXd, and preserving all internal structure. Diagram subclasses
+  /// to AutoDiffXd, and preserving all internal structure. Subclasses
   /// may wish to override to initialize additional member data, or to return a
   /// more specific covariant type.
   /// This is the NVI implementation of ToAutoDiffXd.
@@ -569,6 +570,22 @@ class Diagram : public System<T>,
         return subsystem.ToAutoDiffXd();
       }};
     return ConvertScalarType<AutoDiffXd>(subsystem_converter).release();
+  }
+
+  /// Creates a deep copy of this Diagram<double>, converting the scalar type
+  /// to symbolic::Expression, and preserving all internal structure. Subclasses
+  /// may wish to override to initialize additional member data, or to return a
+  /// more specific covariant type.
+  /// This is the NVI implementation of ToSymbolic.
+  Diagram<symbolic::Expression>* DoToSymbolic() const override {
+    using FromType = System<double>;
+    using ToType = std::unique_ptr<System<symbolic::Expression>>;
+    std::function<ToType(const FromType&)> subsystem_converter{
+        [](const FromType& subsystem) {
+          return subsystem.ToSymbolic();
+        }};
+    return ConvertScalarType<symbolic::Expression>(
+        subsystem_converter).release();
   }
 
  private:

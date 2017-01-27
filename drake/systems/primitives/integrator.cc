@@ -76,9 +76,15 @@ Integrator<AutoDiffXd>* Integrator<T>::DoToAutoDiffXd() const {
   return new Integrator<AutoDiffXd>(this->get_input_port(0).size());
 }
 
+template <typename T>
+Integrator<symbolic::Expression>* Integrator<T>::DoToSymbolic() const {
+  return new Integrator<symbolic::Expression>(this->get_input_port(0).size());
+}
+
 // Explicitly instantiates on the most common scalar types.
 template class Integrator<double>;
 template class Integrator<AutoDiffXd>;
+template class Integrator<symbolic::Expression>;
 
 }  // namespace systems
 }  // namespace drake
