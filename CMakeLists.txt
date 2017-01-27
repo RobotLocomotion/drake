@@ -206,8 +206,8 @@ drake_add_external(iris PUBLIC CMAKE MATLAB PYTHON
     -DIRIS_WITH_CDD=ON
     -DIRIS_WITH_EIGEN=OFF
     -DIRIS_WITH_MOSEK=OFF
-    -DSWIG_EXECUTABLE=${CMAKE_INSTALL_PREFIX}/bin/swig
-  DEPENDS eigen mosek swig_matlab)
+    -DIRIS_WITH_MATLAB=${Matlab_FOUND}
+  DEPENDS eigen mosek pybind11)
 
 # lcm
 drake_add_external(lcm PUBLIC CMAKE PYTHON
