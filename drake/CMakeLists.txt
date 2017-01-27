@@ -173,8 +173,9 @@ if(Matlab_FOUND)
 endif()
 add_subdirectory(examples)
 
-if(Matlab_FOUND OR NOT DISABLE_PYTHON)
+if(NOT DISABLE_PYTHON)
   add_subdirectory(bindings)
+  add_subdirectory(pybind)
 endif()
 
 if(BUILD_TESTING)
