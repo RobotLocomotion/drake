@@ -10,6 +10,7 @@ nu = r.getNumInputs;
 
 v=r.constructVisualizer;
 
+
 %LQR Controller Stuff
 Q = diag([100*ones(nq,1);10*ones(nq,1)]);
 R = 0.01*eye(nu);
@@ -23,7 +24,7 @@ q0 = [0;-0.683;0;1.77;0;0.88;-1.57];
 x0 = [q0;zeros(nq,1)];
 xG = double(r.resolveConstraints(zeros(nx,1)));
 v.draw(0,x0);
-N = 35;
+N = 30;
 tf0 = 3.0;
 
 traj_init.x = PPTrajectory(foh([0,tf0],[x0,xG]));
@@ -49,7 +50,7 @@ constraint = constraint.setName('left_hand_constraint');
 prog1 = prog1.addConstraint(constraint, {prog1.x_inds(:,N)});
 
 for i=1:N-1
-  constraint = FunctionHandleConstraint(0,inf,nx,@l_hand_shelf_constraint);
+  constraint = FunctionHandleConstraint(zeros(3,1),inf(3,1),nx,@l_hand_shelf_constraint);
   constraint = constraint.setName(sprintf('l_hand_shelf_constraint_%d',i));
   prog1 = prog1.addConstraint(constraint, {prog1.x_inds(:,i)});
 end
@@ -65,6 +66,7 @@ tic;
 toc
 
 v.playback(xtraj,struct('slider',true));
+
 
 traj_init.x = xtraj;
 traj_init.u = utraj;
@@ -96,7 +98,7 @@ prog2 = prog2.addConstraint(constraint, {prog2.x_inds(:,N)});
 %prog2 = prog2.addRobustStateConstraint(constraint,N-1,1:14);
 
 for i=1:N-1
-  constraint = FunctionHandleConstraint(0,inf,nx,@l_hand_shelf_constraint);
+  constraint = FunctionHandleConstraint(zeros(3,1),inf(3,1),nx,@l_hand_shelf_constraint);
   constraint = constraint.setName(sprintf('l_hand_shelf_constraint_%d',i));
   prog2 = prog2.addConstraint(constraint, {prog2.x_inds(:,i)});
 %   if i > 1

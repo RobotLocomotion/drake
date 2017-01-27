@@ -44,6 +44,8 @@ classdef KukaArm < RigidBodyManipulator
       end
       if options.with_shelf
         obj = obj.addRobotFromURDF('urdf/shelf.urdf', [0.6;0;0.88], [0;0;0]);
+        obj = obj.addRobotFromURDF('urdf/shelf.urdf', [0.6;0.2;1.08], [pi/2;0;0]);
+        obj = obj.addRobotFromURDF('urdf/shelf.urdf', [0.8;0.0;1.08], [0;pi/2;0]);
       end
       
       obj = obj.removeCollisionGroupsExcept({'manip'});
