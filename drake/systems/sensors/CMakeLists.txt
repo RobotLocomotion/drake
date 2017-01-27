@@ -8,6 +8,7 @@ set(drakeSensors_HEADERS
     depth_sensor.h
     depth_sensor_output.h
     depth_sensor_specification.h
+    image.h
     rotary_encoders.h)
 
 if(VTK_FOUND)

@@ -368,7 +368,7 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   const double inf = std::numeric_limits<double>::infinity();
   RungeKutta2Integrator<double> rk2(plant, dt, context.get());
   rk2.Initialize();
-  const double t_final = dt*1e4;
+  const double t_final = 1.0;
   for (double t = 0.0; std::abs(t - t_final) >= dt; t += dt)
     rk2.StepOnceAtMost(inf, inf, dt);  // Steps forward by dt.
 

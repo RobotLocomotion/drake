@@ -306,6 +306,10 @@ GloptiPolyConstrainedMinimizationProblem::
       break;
     }
     case kNonSymbolicCost: {
+      AddNonSymbolicCost();
+      break;
+    }
+    case kSymbolicCost: {
       AddSymbolicCost();
       break;
     }
@@ -352,6 +356,11 @@ void GloptiPolyConstrainedMinimizationProblem::AddGenericCost() {
 }
 
 void GloptiPolyConstrainedMinimizationProblem::AddSymbolicCost() {
+  prog_->AddLinearCost(-2 * x_(0) + x_(1) - x_(2));
+  prog_->AddLinearCost(-2 * y_(0) + y_(1) - y_(2));
+}
+
+void GloptiPolyConstrainedMinimizationProblem::AddNonSymbolicCost() {
   prog_->AddLinearCost(Eigen::Vector3d(-2, 1, -1), x_);
   prog_->AddLinearCost(Eigen::Vector3d(-2, 1, -1), y_);
 }
@@ -406,9 +415,14 @@ MinDistanceFromPlaneToOrigin::MinDistanceFromPlaneToOrigin(
       prog_rotated_lorentz_->NewContinuousVariables(kXdim, "x");
 
   switch (cost_form) {
-    case kNonSymbolicCost: {
+    case kNonSymbolicCost : {
       prog_lorentz_->AddLinearCost(Vector1d(1), t_lorentz_);
       prog_rotated_lorentz_->AddLinearCost(Vector1d(1), t_rotated_lorentz_);
+      break;
+    }
+    case kSymbolicCost : {
+      prog_lorentz_->AddLinearCost(+t_lorentz_(0));
+      prog_rotated_lorentz_->AddLinearCost(+t_rotated_lorentz_(0));
       break;
     }
     default:
@@ -465,7 +479,7 @@ void MinDistanceFromPlaneToOrigin::AddSymbolicConstraint() {
   }
   prog_lorentz_->AddLorentzConeConstraint(tx);
   // TODO(hongkai.dai): change this to symbolic form.
-  prog_lorentz_->AddLinearEqualityConstraint(A_, b_, x_lorentz_);
+  prog_lorentz_->AddLinearEqualityConstraint(A_ * x_lorentz_, b_);
 
   VectorX<Expression> tx2(2 + A_.cols());
   tx2(0) = 1;
@@ -474,8 +488,8 @@ void MinDistanceFromPlaneToOrigin::AddSymbolicConstraint() {
     tx2(i + 2) = +x_rotated_lorentz_(i);
   }
   prog_rotated_lorentz_->AddRotatedLorentzConeConstraint(tx2);
-  prog_rotated_lorentz_->AddLinearEqualityConstraint(A_, b_,
-                                                     x_rotated_lorentz_);
+  prog_rotated_lorentz_->AddLinearEqualityConstraint(A_ * x_rotated_lorentz_,
+                                                     b_);
 }
 
 void MinDistanceFromPlaneToOrigin::SetInitialGuess() {

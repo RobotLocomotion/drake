@@ -157,7 +157,7 @@ class RigidBodyTree {
    * This is important to the parsing code to maintain a Drake RigidBodyTree
    * invariant.  RigidBody instances do not maintain their own pose relative
    * to their in-board joint.  The joint's space is considered to be the body's
-   * space.  So, if a urdf/sdf file defines the body with a non-identity pose
+   * space.  So, if a URDF or SDF file defines the body with a non-identity pose
    * relative to the parent, the parser uses this to move the collision elements
    * relative to the effective body frame -- that of the parent joint.
    *
@@ -270,7 +270,7 @@ class RigidBodyTree {
   /// Initializes a `KinematicsCache` with the given configuration @p q,
   /// computes the kinematics, and returns the cache.
   ///
-  /// This method is explicitly instantiated in RigidBodyTree.cpp for a
+  /// This method is explicitly instantiated in rigid_body_tree.cc for a
   /// small set of supported `DerivedQ`.
   template <typename DerivedQ>
   KinematicsCache<typename DerivedQ::Scalar> doKinematics(
@@ -279,7 +279,7 @@ class RigidBodyTree {
   /// Initializes a `KinematicsCache` with the given configuration @p q
   /// and velocity @p v, computes the kinematics, and returns the cache.
   ///
-  /// This method is explicitly instantiated in RigidBodyTree.cpp for a
+  /// This method is explicitly instantiated in rigid_body_tree.cc for a
   /// small set of supported `DerivedQ` and `DerivedV`.
   template <typename DerivedQ, typename DerivedV>
   KinematicsCache<typename DerivedQ::Scalar> doKinematics(
@@ -288,7 +288,7 @@ class RigidBodyTree {
 
   /// Computes the kinematics on the given @p cache.
   ///
-  /// This method is explicitly instantiated in RigidBodyTree.cpp for a
+  /// This method is explicitly instantiated in rigid_body_tree.cc for a
   /// small set of supported Scalar types.
   template <typename Scalar>
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -840,10 +840,10 @@ class RigidBodyTree {
   relativeTransform(const KinematicsCache<Scalar>& cache, int base_or_frame_ind,
                     int body_or_frame_ind) const;
 
-  /** computeContactJacobians
-   * @brief Computes the jacobian for many points in the format currently used
-   * by matlab.  (possibly should be scheduled for deletion, taking
-   * accumulateContactJacobians with it)
+  /**
+   * Computes the Jacobian for many points in the format currently used by
+   * MATLAB.  (possibly should be scheduled for deletion, taking
+   * accumulateContactJacobians() with it)
    */
   template <typename Scalar>
   void computeContactJacobians(
@@ -871,7 +871,7 @@ class RigidBodyTree {
       RigidBody<T>& body,
       const std::string& group_name);
 
-  /// Retrieve a (const) pointer to an element of the collision model.
+  /// Retrieve a `const` pointer to an element of the collision model.
   /// Note: The use of Find (instead of get) and the use of CamelCase both
   /// imply a potential runtime cost are carried over from the collision model
   /// accessor method.
@@ -937,9 +937,9 @@ class RigidBodyTree {
                         Eigen::VectorXd& distances, Eigen::Matrix3Xd& normals,
                         bool use_margins = false);
 
-  /** collisionDetectFromPoints
-   * @brief Computes the (signed) distance from the given points to the nearest
-   * body in the RigidBodyTree.
+  /**
+   * Computes the *signed* distance from the given points to the nearest body in
+   * the RigidBodyTree.
    */
   void collisionDetectFromPoints(
       const KinematicsCache<double>& cache,
@@ -1123,7 +1123,7 @@ class RigidBodyTree {
    * @param[in] model_instance_id The ID of the model instance whose rigid
    * bodies are being searched for.
    *
-   * @return A vector of pointers to every rigid body belonging to the sepcified
+   * @return A vector of pointers to every rigid body belonging to the specified
    * model instance.
    */
   std::vector<const RigidBody<T>*>
@@ -1200,7 +1200,7 @@ class RigidBodyTree {
    * @param[in] model_instance_id The ID of the model instance that owns the
    * rigid body to find. This parameter is optional. If supplied, the set of
    * rigid bodies to search through is restricted to those that belong to the
-   * speified model instance. Otherwise, all rigid bodies in this tree are
+   * specified model instance. Otherwise, all rigid bodies in this tree are
    * searched.
    *
    * @return A pointer to the rigid body whose parent joint is named
@@ -1230,7 +1230,7 @@ class RigidBodyTree {
    * @param[in] model_instance_id The ID of the model instance that owns the
    * rigid body to find. This parameter is optional. If supplied, the set of
    * rigid bodies to search through is restricted to those that belong to the
-   * speified model instance. Otherwise, all rigid bodies in this tree are
+   * specified model instance. Otherwise, all rigid bodies in this tree are
    * searched.
    *
    * @return The index of the rigid body whose parent joint is named
@@ -1253,9 +1253,14 @@ class RigidBodyTree {
    * specified \p model_id.
    *
    * @param[in] frame_name The name of the frame to find.
+   *
    * @param[in] model_id The ID of the model to which the frame belongs. If this
    * value is -1, search all models.
-   * @throws std::logic_error if multiple matching frames are found.
+   *
+   * @return The frame with the specified name and model instance ID.
+   *
+   * @throws std::logic_error if either multiple matching frames are found or no
+   * matching frame is found.
    */
   std::shared_ptr<RigidBodyFrame<T>> findFrame(const std::string& frame_name,
                                             int model_id = -1) const;
@@ -1562,44 +1567,42 @@ class RigidBodyTree {
 
   std::set<std::string> already_printed_warnings;
   // TODO(SeanCurtis-TRI): This isn't properly used.
-  // No query operations should work if it hasn't been
-  // initialized.  Calling compile is the only thing that should set this.
-  // Furthermore, any operation that changes the tree (e.g., adding a body,
-  // collision element, etc.) should clear the bit again, requiring another
-  // call to compile.
+  // No query operations should work if it hasn't been initialized.  Calling
+  // compile() is the only thing that should set this. Furthermore, any
+  // operation that changes the tree (e.g., adding a body, collision element,
+  // etc.) should clear the bit again, requiring another call to compile().
   bool initialized_{false};
 
   int next_available_clique_ = 0;
 
  private:
-  // Utility class for storing body collision data during RBT instantiation.
+  // A utility class for storing body collision data during RBT instantiation.
   struct BodyCollisionItem {
-    BodyCollisionItem(const std::string& grp_name,
-                      size_t element_index) {
-      group_name = grp_name;
-      element = element_index;
+    BodyCollisionItem(const std::string& grp_name, size_t element_index)
+        : group_name(grp_name), element(element_index) {
     }
     std::string group_name;
     size_t element;
   };
 
   typedef std::vector<BodyCollisionItem> BodyCollisions;
-  // This data structures supports an orderly instantiation of the collision
+  // This data structure supports an orderly instantiation of the collision
   // elements.  It is populated during tree construction, exercised during
-  // RigidBodyTree::compile at the conclusion of which, it is emptied.
+  // RigidBodyTree::compile() at the conclusion of which it is emptied.
   // It has no run-time value.  This is a hacky alternative to having a
-  // proper, intermediate representation.
-  std::unordered_map<RigidBody<T>*, BodyCollisions>
-      body_collision_map_;
+  // proper Intermediate Representation (IR).
+  std::unordered_map<RigidBody<T>*, BodyCollisions> body_collision_map_;
 
   // Bullet's collision results are affected by the order in which the collision
   // elements are added. This queues the collision elements in the added order
-  // so that when actually registered with the collision engine, they'll be
+  // so that when they are registered with the collision engine, they'll be
   // submitted in the invocation order.
-  // See https://github.com/bulletphysics/bullet3/issues/888
+  //
+  // For more information, see:
+  //     https://github.com/bulletphysics/bullet3/issues/888
   std::vector< std::unique_ptr<DrakeCollision::Element>> element_order_;
 
-  // Manager for instantiating and managing collision filter groups.
+  // A manager for instantiating and managing collision filter groups.
   DrakeCollision::CollisionFilterGroupManager<T> collision_group_manager_{};
 };
 

@@ -22,6 +22,9 @@ namespace internal {
 /// entries that depend on it.
 class CacheEntry {
  public:
+  // TODO(jwnimmer-tri) Should we use a drake_copyable macro here?  Right now,
+  // we are moveable via our copy ctor, rather than a move-specific overload.
+
   CacheEntry();
   ~CacheEntry();
 

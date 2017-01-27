@@ -213,6 +213,13 @@ filegroup(
     ]),
 )
 
+filegroup(
+    name = "models",
+    srcs = [
+        "models/box.urdf",
+    ],
+)
+
 cpplint(data = [
     "constraint/CPPLINT.cfg",
 ])

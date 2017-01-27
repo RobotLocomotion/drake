@@ -11,6 +11,7 @@
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
 #include "drake/systems/framework/abstract_state.h"
@@ -45,6 +46,9 @@ struct PeriodicEvent {
 template <typename T>
 class LeafSystem : public System<T> {
  public:
+  // LeafSystem objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafSystem)
+
   ~LeafSystem() override {}
 
   // =========================================================================
@@ -147,12 +151,6 @@ class LeafSystem : public System<T> {
       const override {
     return AllocateDiscreteState();
   }
-
-  // LeafSystem objects are neither copyable nor moveable.
-  explicit LeafSystem(const System<T>& other) = delete;
-  LeafSystem& operator=(const System<T>& other) = delete;
-  explicit LeafSystem(System<T>&& other) = delete;
-  LeafSystem& operator=(System<T>&& other) = delete;
 
  protected:
   LeafSystem() {}

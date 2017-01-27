@@ -6,7 +6,9 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/common/eigen_stl_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/robotInterfaces/Side.h"
 
@@ -65,19 +67,17 @@ class BodyOfInterest {
   Isometry3<double> offset_;
 
   Isometry3<double> pose_;
-  // This is the task space velocity, or twist of a frame that has the same
-  // orientation as the world frame, but located at the origin of the body
-  // frame.
+  // Spatial velocity in the world frame.
   Vector6<double> vel_;
-  // Task space Jacobian, xdot = J * v
+  // Spatial velocity Jacobian, vel = J * v
   MatrixX<double> J_;
-  // Task space Jd * v
+  // Spatial velocity Jacobian dot times v, Jdot * v
   Vector6<double> Jdot_times_v_;
 };
 
 /**
  * Mostly a thin wrapper on RigidBodyTree.
- * It has kinematic values such as task space velocity of various body parts,
+ * It has kinematic values such as spatial velocity of various body parts,
  * some measured contact force / torque information, joint torque, etc.
  * It also stores robot specific constants.
  */
@@ -96,48 +96,9 @@ class HumanoidStatus {
    * @param robot Reference to a RigidBodyTree, which must be valid through the
    * lifespan of this obejct.
    */
-  explicit HumanoidStatus(const RigidBodyTree<double>& robot)
-      : robot_(&robot),
-        cache_(robot_->CreateKinematicsCache()),
-        // TODO(siyuan.feng): The names of the links are hard coded for
-        // Valkyrie, and they should be specified in some separate config file.
-        bodies_of_interest_{
-            BodyOfInterest("pelvis", *robot_->FindBody("pelvis"),
-                           Vector3<double>::Zero()),
-            BodyOfInterest("torso", *robot_->FindBody("torso"),
-                           Vector3<double>::Zero()),
-            BodyOfInterest("leftFoot", *robot_->FindBody("leftFoot"),
-                           Vector3<double>::Zero()),
-            BodyOfInterest("rightFoot", *robot_->FindBody("rightFoot"),
-                           Vector3<double>::Zero()),
-            BodyOfInterest("leftFootSensor", *robot_->FindBody("leftFoot"),
-                           kFootToSensorPositionOffset),
-            BodyOfInterest("rightFootSensor", *robot_->FindBody("rightFoot"),
-                           kFootToSensorPositionOffset)} {
-    time_ = 0;
-
-    position_.resize(robot_->get_num_positions());
-    velocity_.resize(robot_->get_num_velocities());
-    joint_torque_.resize(robot_->actuators.size());
-
-    // Build various lookup maps.
-    body_name_to_id_ = std::unordered_map<std::string, int>();
-    for (auto it = robot_->bodies.begin(); it != robot_->bodies.end(); ++it) {
-      body_name_to_id_[(*it)->get_name()] = it - robot_->bodies.begin();
-    }
-
-    name_to_position_index_ = std::unordered_map<std::string, int>();
-    for (int i = 0; i < robot_->get_num_positions(); ++i) {
-      name_to_position_index_[robot_->get_position_name(i)] = i;
-    }
-    name_to_velocity_index_ = std::unordered_map<std::string, int>();
-    for (int i = 0; i < robot_->get_num_velocities(); ++i) {
-      name_to_velocity_index_[robot_->get_velocity_name(i)] = i;
-    }
-    for (int i = 0; i < static_cast<int>(robot_->actuators.size()); ++i) {
-      actuator_name_to_actuator_index_[robot_->actuators.at(i).name_] = i;
-    }
-  }
+  HumanoidStatus(
+      const RigidBodyTree<double>& robot,
+      const param_parsers::RigidBodyTreeAliasGroups<double>& alias_group);
 
   /**
    * Do kinematics and compute useful information based on kinematics and
@@ -215,22 +176,26 @@ class HumanoidStatus {
   inline const Vector6<double>& centroidal_momentum() const {
     return centroidal_momentum_;
   }
-  inline const BodyOfInterest& pelvis() const { return bodies_of_interest_[0]; }
-  inline const BodyOfInterest& torso() const { return bodies_of_interest_[1]; }
+  inline const BodyOfInterest& pelvis() const {
+    return bodies_of_interest_.at("pelvis");
+  }
+  inline const BodyOfInterest& torso() const {
+    return bodies_of_interest_.at("torso");
+  }
   inline const BodyOfInterest& foot(Side::SideEnum s) const {
     if (s == Side::LEFT)
-      return bodies_of_interest_[2];
+      return bodies_of_interest_.at("left_foot");
     else
-      return bodies_of_interest_[3];
+      return bodies_of_interest_.at("right_foot");
   }
   inline const BodyOfInterest& foot(int s) const {
     return foot(Side::values.at(s));
   }
   inline const BodyOfInterest& foot_sensor(Side::SideEnum s) const {
     if (s == Side::LEFT)
-      return bodies_of_interest_[4];
+      return bodies_of_interest_.at("left_foot_sensor");
     else
-      return bodies_of_interest_[5];
+      return bodies_of_interest_.at("right_foot_sensor");
   }
   inline const Vector2<double>& cop() const { return cop_; }
   inline const Vector2<double>& cop_in_sole_frame(Side::SideEnum s) const {
@@ -302,7 +267,8 @@ class HumanoidStatus {
   Vector6<double> centroidal_momentum_;
 
   // A list of body of interest, e.g. pelvis, feet, etc.
-  std::vector<BodyOfInterest> bodies_of_interest_;
+  eigen_aligned_std_unordered_map<std::string, BodyOfInterest>
+      bodies_of_interest_;
 
   // Center of pressure
   Vector2<double> cop_;

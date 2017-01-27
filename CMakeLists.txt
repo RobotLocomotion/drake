@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(drake-superbuild)
+project(drake-superbuild VERSION 0.0.0)
 
 include(CTest)
 
@@ -7,6 +7,7 @@ include(cmake/config.cmake)
 include(cmake/externals.cmake)
 include(cmake/examples.cmake)
 include(cmake/options.cmake)
+include(cmake/package.cmake)
 include(cmake/tools.cmake)
 include(cmake/git/hooks.cmake)
 
@@ -126,6 +127,12 @@ drake_add_external(nlopt PUBLIC CMAKE
     -DINSTALL_INCLUDE_DIR=${CMAKE_INSTALL_PREFIX}/include/nlopt
     -DUSE_SWIG=OFF)
 
+# pybind11
+drake_add_external(pybind11 CMAKE
+  CMAKE_ARGS
+    -DPYBIND11_PYTHON_VERSION=${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}
+    -DPYBIND11_TEST=OFF)
+
 # pythonqt
 drake_add_external(pythonqt CMAKE PYTHON QT
   CMAKE_ARGS
@@ -156,6 +163,7 @@ drake_add_external(vtk PUBLIC CMAKE PYTHON QT
     -DBUILD_SHARED_LIBS=ON
     -DBUILD_TESTING=OFF
     -DBUILD_EXAMPLES=OFF
+    "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} -DGLX_GLXEXT_LEGACY=1"
     -DVTK_USE_GUISUPPORT=ON
     -DVTK_USE_QT=ON
     -DVTK_WRAP_PYTHON=ON
@@ -198,7 +206,8 @@ drake_add_external(iris PUBLIC CMAKE MATLAB PYTHON
     -DIRIS_WITH_CDD=ON
     -DIRIS_WITH_EIGEN=OFF
     -DIRIS_WITH_MOSEK=OFF
-  DEPENDS eigen mosek)
+    -DSWIG_EXECUTABLE=${CMAKE_INSTALL_PREFIX}/bin/swig
+  DEPENDS eigen mosek swig_matlab)
 
 # lcm
 drake_add_external(lcm PUBLIC CMAKE PYTHON
@@ -350,6 +359,7 @@ drake_add_example(LittleDog OFF
 
 # END examples
 ###############################################################################
+# BEGIN ros packages
 
 # hsrb_description is a ROS package that contains a model of Toyota's Human
 # Support Robot (HSR). The following method call downloads hsrb_description as a
@@ -361,3 +371,8 @@ drake_add_external(hsrb_description PUBLIC
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/ros/hsrb_description
   BUILD_COMMAND :
   INSTALL_COMMAND :)
+
+# END ros packages
+###############################################################################
+
+drake_setup_cpack()

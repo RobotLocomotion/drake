@@ -10,6 +10,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/polynomial.h"
 #include "drake/solvers/constraint.h"
@@ -198,6 +199,10 @@ GTEST_TEST(testNonlinearProgram, testLowerBoundedProblem) {
 
 class SixHumpCamelCost {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SixHumpCamelCost)
+
+  SixHumpCamelCost() = default;
+
   static size_t numInputs() { return 2; }
   static size_t numOutputs() { return 1; }
 
@@ -377,9 +382,9 @@ GTEST_TEST(testNonlinearProgram, MinDistanceFromPlaneToOrigin) {
   A[1] << 0, 1, 2, -1, 2, 3;
   b[1] = Vector2d(1.0, 3.0);
   for (int i = MinDistanceFromPlaneToOrigin::CostForm::kCostBegin;
-       i < MinDistanceFromPlaneToOrigin::CostForm::kCostEnd; ++i) {
+       i <= MinDistanceFromPlaneToOrigin::CostForm::kCostEnd; ++i) {
     for (int j = MinDistanceFromPlaneToOrigin::ConstraintForm::kConstraintBegin;
-         j < MinDistanceFromPlaneToOrigin::ConstraintForm::kConstraintEnd;
+         j <= MinDistanceFromPlaneToOrigin::ConstraintForm::kConstraintEnd;
          ++j) {
       for (int k = 0; k < 2; ++k) {
         MinDistanceFromPlaneToOrigin prob(
