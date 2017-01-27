@@ -39,33 +39,33 @@ void AcrobotPlant<T>::DoCalcOutput(const systems::Context<T>& context,
 }
 
 template <typename T>
-Eigen::Matrix<T, 2, 2> AcrobotPlant<T>::MatrixH(
+Matrix2<T> AcrobotPlant<T>::MatrixH(
     const AcrobotStateVector<T>& x) const {
   const T c2 = cos(x.theta2());
 
-  const T h12 = I2 + m2l1lc2 * c2;
-  Eigen::Matrix<T, 2, 2> H;
-  H << I1 + I2 + m2 * l1 * l1 + 2 * m2l1lc2 * c2, h12, h12, I2;
+  const T h12 = I2_ + m2l1lc2_ * c2;
+  Matrix2<T> H;
+  H << I1_ + I2_ + m2_ * l1_ * l1_ + 2 * m2l1lc2_ * c2, h12, h12, I2_;
   return H;
 }
 
 template <typename T>
-Vector2<T> AcrobotPlant<T>::MatrixC(const AcrobotStateVector<T>& x) const {
+Vector2<T> AcrobotPlant<T>::VectorC(const AcrobotStateVector<T>& x) const {
   const T s1 = sin(x.theta1()), s2 = sin(x.theta2());
   const T s12 = sin(x.theta1() + x.theta2());
 
   Vector2<T> C;
-  C << -2 * m2l1lc2 * s2 * x.theta2dot() * x.theta1dot() +
-           -m2l1lc2 * s2 * x.theta2dot() * x.theta2dot(),
-      m2l1lc2 * s2 * x.theta1dot() * x.theta1dot();
+  C << -2 * m2l1lc2_ * s2 * x.theta2dot() * x.theta1dot() +
+           -m2l1lc2_ * s2 * x.theta2dot() * x.theta2dot(),
+      m2l1lc2_ * s2 * x.theta1dot() * x.theta1dot();
 
   // add in G terms
-  C(0) += g * m1 * lc1 * s1 + g * m2 * (l1 * s1 + lc2 * s12);
-  C(1) += g * m2 * lc2 * s12;
+  C(0) += g_ * m1_ * lc1_ * s1 + g_ * m2_ * (l1_ * s1 + lc2_ * s12);
+  C(1) += g_ * m2_ * lc2_ * s12;
 
   // damping terms
-  C(0) += b1 * x.theta1dot();
-  C(1) += b2 * x.theta2dot();
+  C(0) += b1_ * x.theta1dot();
+  C(1) += b2_ * x.theta2dot();
 
   return C;
 }
@@ -81,13 +81,12 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
       context.get_continuous_state_vector());
   const T& tau = this->EvalVectorInput(context, 0)->GetAtIndex(0);
 
-  Eigen::Matrix<T, 2, 2> H = MatrixH(x);
-  Eigen::Matrix<T, 2, 1> C = MatrixC(x);
+  Matrix2<T> H = MatrixH(x);
+  Vector2<T> C = VectorC(x);
   // input matrix
-  Eigen::Matrix<T, 2, 1> B;
-  B << 0.0, 1.0;
+  Vector2<T> B(0,1);
 
-  Eigen::Matrix<T, 4, 1> xdot;
+  Vector4<T> xdot;
   xdot << x.theta1dot(), x.theta2dot(), H.inverse() * (B * tau - C);
   derivatives->SetFromVector(xdot);
 }
@@ -99,8 +98,8 @@ T AcrobotPlant<T>::DoCalcKineticEnergy(
   const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
       context.get_continuous_state_vector());
 
-  Eigen::Matrix<T, 2, 2> H = MatrixH(x);
-  Eigen::Matrix<T, 2, 1> qdot(x.theta1dot(), x.theta2dot());
+  Matrix2<T> H = MatrixH(x);
+  Vector2<T> qdot(x.theta1dot(), x.theta2dot());
 
   return 0.5 * qdot.transpose() * H * qdot;
 }
@@ -116,7 +115,7 @@ T AcrobotPlant<T>::DoCalcPotentialEnergy(
   const T c1 = cos(x.theta1());
   const T c12 = cos(x.theta1() + x.theta2());
 
-  return -m1 * g * lc1 * c1 - m2 * g * (l1 * c1 + lc2 * c12);
+  return -m1_ * g_ * lc1_ * c1 - m2_ * g_ * (l1_ * c1 + lc2_ * c12);
 }
 
 template <typename T>

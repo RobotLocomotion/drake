@@ -7,7 +7,6 @@
  * AcrobotCommandPublisher—>
  * LcmPublisherSystem
  *
- *
  */
 
 #include <memory>
@@ -50,7 +49,6 @@ int DoMain() {
   builder.Connect(command_sender->get_output_port(0),
                   command_pub->get_input_port(0));
 
-  auto acrobot = std::make_unique<AcrobotPlant<double>>();
   auto controller = builder.AddSystem<AcrobotSpongController>();
   builder.Connect(controller->get_output_port(0),
                   command_sender->get_input_port(0));

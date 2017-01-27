@@ -33,22 +33,25 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   /// The input force to this system is not direct feedthrough.
   bool has_any_direct_feedthrough() const override { return false; }
 
-  // H and C matrices in the manipulator equation
-  Vector2<T> MatrixC(const AcrobotStateVector<T>& x) const;
-  Eigen::Matrix<T, 2, 2> MatrixH(const AcrobotStateVector<T>& x) const;
+  /// Manipulator equation of Acrobot: H * qdotdot + C = B*u
+  /// H[2x2] is the mass matrix.
+  /// C[2x1] includes the Coriolis term, gravity term and the damping term, i.e.
+  /// C[Cx1] = Coriolis(q,v)*v + g(q) + [b1*theta1;b2*theta2]
+  Vector2<T> VectorC(const AcrobotStateVector<T>& x) const;
+  Matrix2<T> MatrixH(const AcrobotStateVector<T>& x) const;
 
   // getters for robot parameters
-  T getm1() const { return m1; }
-  T getm2() const { return m2; }
-  T getl1() const { return l1; }
-  T getl2() const { return l2; }
-  T getlc1() const { return lc1; }
-  T getlc2() const { return lc2; }
-  T getIc1() const { return Ic1; }
-  T getIc2() const { return Ic2; }
-  T getb1() const { return b1; }
-  T getb2() const { return b2; }
-  T getg() const { return g; }
+  T m1() const { return m1_; }
+  T m2() const { return m2_; }
+  T l1() const { return l1_; }
+  T l2() const { return l2_; }
+  T lc1() const { return lc1_; }
+  T lc2() const { return lc2_; }
+  T Ic1() const { return Ic1_; }
+  T Ic2() const { return Ic2_; }
+  T b1() const { return b1_; }
+  T b2() const { return b2_; }
+  T g() const { return g_; }
 
  protected:
   T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
@@ -75,24 +78,24 @@ class AcrobotPlant : public systems::LeafSystem<T> {
 
   // TODO(russt): Declare these as parameters in the context.
 
-  const double m1{1.0},  // Mass of link 1 (kg).
-      m2{1.0},           // Mass of link 2 (kg).
-      l1{1.0},           // Length of link 1 (m).
-      l2{2.0},           // Length of link 2 (m).
-      lc1{0.5},   // Vertical distance from shoulder joint to center of mass of
+  const double m1_{1.0},  // Mass of link 1 (kg).
+      m2_{1.0},           // Mass of link 2 (kg).
+      l1_{1.0},           // Length of link 1 (m).
+      l2_{2.0},           // Length of link 2 (m).
+      lc1_{0.5},   // Vertical distance from shoulder joint to center of mass of
                   // link 1 (m).
-      lc2{1.0},   // Vertical distance from elbox joint to center of mass of
+      lc2_{1.0},   // Vertical distance from elbox joint to center of mass of
                   // link 2 (m).
-      Ic1{.083},  // Inertia of link 1 about the center of mass of link 1
+      Ic1_{.083},  // Inertia of link 1 about the center of mass of link 1
                   // (kg*m^2).
-      Ic2{.33},   // Inertia of link 2 about the center of mass of link 2
+      Ic2_{.33},   // Inertia of link 2 about the center of mass of link 2
                   // (kg*m^2).
-      b1{0.1},    // Damping coefficient of the shoulder joint (kg*m^2/s).
-      b2{0.1},    // Damping coefficient of the elbow joint (kg*m^2/s).
-      g{9.81};    // Gravitational constant (m/s^2).
-  const double I1 = Ic1 + m1 * lc1 * lc1;
-  const double I2 = Ic2 + m2 * lc2 * lc2;
-  const double m2l1lc2 = m2 * l1 * lc2;  // occurs often!
+      b1_{0.1},    // Damping coefficient of the shoulder joint (kg*m^2/s).
+      b2_{0.1},    // Damping coefficient of the elbow joint (kg*m^2/s).
+      g_{9.81};    // Gravitational constant (m/s^2).
+  const double I1_ = Ic1_ + m1_ * lc1_ * lc1_;
+  const double I2_ = Ic2_ + m2_ * lc2_ * lc2_;
+  const double m2l1lc2_ = m2_ * l1_ * lc2_;  // occurs often!
 
   /*
   // parameters for the acrobot in the lab
