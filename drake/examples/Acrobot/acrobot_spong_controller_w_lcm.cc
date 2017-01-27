@@ -35,7 +35,7 @@ int DoMain() {
   const std::string channel_u = "acrobot_u";
   lcm::DrakeLcm lcm;
 
-  //------------------controller--------------------------------------
+  // -----------------controller--------------------------------------
   // create state receiver
   auto state_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_acrobot_x>(channel_x, &lcm));

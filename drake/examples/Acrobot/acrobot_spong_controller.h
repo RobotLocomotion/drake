@@ -23,7 +23,7 @@ using std::endl;
 template <typename T>
 class AcrobotSpongController : public systems::LeafSystem<T> {
  public:
-  explicit AcrobotSpongController()
+  AcrobotSpongController()
       : acrobot{},
         m1{acrobot.getm1()},
         m2{acrobot.getm2()},
