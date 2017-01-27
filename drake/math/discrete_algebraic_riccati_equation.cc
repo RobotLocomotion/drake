@@ -79,9 +79,9 @@ void Givens_rotation(double a, double b, Eigen::Ref<Eigen::Matrix2d> R,
   R(0, 0) = c, R(0, 1) = -s, R(1, 0) = s, R(1, 1) = c;
 }
 
+// The arguments S, T, and Z will be changed.
 void swap_block_11(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                    Eigen::Ref<Eigen::MatrixXd> Z, int p) {
-  // The arguments S, T, and Z will be changed.
   // Dooren, Case I, p124-125.
   int n2 = S.rows();
   Eigen::Matrix2d A = S.block<2, 2>(p, p);
@@ -99,9 +99,10 @@ void swap_block_11(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
   S(p + 1, p) = 0;
   T(p + 1, p) = 0;
 }
+
+// The arguments S, T, and Z will be changed.
 void swap_block_21(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                    Eigen::Ref<Eigen::MatrixXd> Z, int p) {
-  // The arguments S, T, and Z will be changed.
   // Dooren, Case II, p126-127.
   int n2 = S.rows();
   Eigen::Matrix3d A = S.block<3, 3>(p, p);
@@ -135,9 +136,10 @@ void swap_block_21(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
   T(p + 2, p) = 0;
   T(p + 2, p + 1) = 0;
 }
+
+// The arguments S, T, and Z will be changed.
 void swap_block_12(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                    Eigen::Ref<Eigen::MatrixXd> Z, int p) {
-  // The arguments S, T, and Z will be changed.
   int n2 = S.rows();
   // Swap the role of S and T.
   Eigen::MatrixXd Z1 = Eigen::MatrixXd::Identity(n2, n2);
@@ -182,9 +184,9 @@ void swap_block_12(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
   T(p + 2, p + 1) = 0;
 }
 
+// The arguments S, T, and Z will be changed.
 void swap_block_22(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
                    Eigen::Ref<Eigen::MatrixXd> Z, int p) {
-  // The arguments S, T, and Z will be changed.
   // Direct Swapping Algorithm based on
   // "Numerical Methods for General and Structured Eigenvalue Problems" by
   // Daniel Kressner, p108-111.
