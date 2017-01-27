@@ -4,6 +4,10 @@
 load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
+package(
+    default_visibility = [":__subpackages__"],
+)
+
 drake_cc_library(
     name = "control_utils",
     srcs = [],
@@ -15,34 +19,8 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "rigid_body_tree_alias_groups",
-    srcs = [
-        "param_parsers/rigid_body_tree_alias_groups.cc",
-    ],
-    hdrs = [
-        "param_parsers/rigid_body_tree_alias_groups.h",
-    ],
-    linkstatic = 1,
-    deps = [
-        "//drake/multibody:rigid_body_tree",
-        "@yaml_cpp//:lib",
-    ],
-)
-
-drake_cc_library(
-    name = "param_parser",
-    srcs = [
-        "param_parsers/param_parser.cc",
-    ],
-    hdrs = [
-        "param_parsers/param_parser.h",
-    ],
-    linkstatic = 1,
-    deps = [
-        ":qp_controller_common",
-        ":rigid_body_tree_alias_groups",
-    ],
+exports_files(
+    ["config/valkyrie.alias_groups"],
 )
 
 drake_cc_library(
@@ -51,8 +29,8 @@ drake_cc_library(
     hdrs = ["humanoid_status.h"],
     linkstatic = 1,
     deps = [
-        ":rigid_body_tree_alias_groups",
         "//drake/common",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/robotInterfaces:side",
     ],
@@ -65,6 +43,25 @@ drake_cc_library(
     linkstatic = 1,
     deps = [
         "//drake/multibody:rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_utils",
+    srcs = ["lcm_utils.cc"],
+    hdrs = ["lcm_utils.h"],
+    deps = [
+        "@bot_core_lcmtypes//:lib",
+        ":qp_controller_common",
+        "//drake/lcmtypes:body_acceleration",
+        "//drake/lcmtypes:constrained_values",
+        "//drake/lcmtypes:contact_information",
+        "//drake/lcmtypes:desired_body_motion",
+        "//drake/lcmtypes:desired_centroidal_momentum_dot",
+        "//drake/lcmtypes:desired_dof_motions",
+        "//drake/lcmtypes:qp_input",
+        "//drake/lcmtypes:resolved_contact",
+        "//drake/util:lcm_util",
     ],
 )
 
@@ -85,6 +82,26 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
+    name = "lcm_utils_test",
+    data = [
+        "//drake/examples/Valkyrie:models",
+    ],
+    deps = [
+        ":lcm_utils",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "setpoint_test",
+    deps = [
+        ":control_utils",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "valkyrie_balancing_test",
     srcs = ["test/valkyrie_balancing_test.cc"],
     data = [
@@ -99,43 +116,10 @@ drake_cc_googletest(
     ],
     deps = [
         ":control_utils",
-        ":param_parser",
         ":qp_controller",
         "//drake/common:eigen_matrix_compare",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
         "//drake/examples/Valkyrie:valkyrie_constants",
-        "//drake/multibody/parsers",
-    ],
-)
-
-drake_cc_googletest(
-    name = "rigid_body_tree_alias_groups_test",
-    srcs = ["param_parsers/test/rigid_body_tree_alias_groups_test.cc"],
-    data = [
-        "param_parsers/test/full.yaml",
-        "param_parsers/test/no_body_groups.yaml",
-        "param_parsers/test/no_joint_groups.yaml",
-        "param_parsers/test/parse_fails.yaml",
-        "//drake/multibody:test_models",
-    ],
-    deps = [
-        ":rigid_body_tree_alias_groups",
-        "//drake/common:eigen_matrix_compare",
-        "//drake/multibody/parsers",
-    ],
-)
-
-drake_cc_googletest(
-    name = "param_parser_test",
-    srcs = ["param_parsers/test/param_parser_test.cc"],
-    data = [
-        "param_parsers/test/alias_groups.yaml",
-        "param_parsers/test/params.yaml",
-        "//drake/examples/Valkyrie:models",
-    ],
-    deps = [
-        ":param_parser",
-        ":rigid_body_tree_alias_groups",
-        "//drake/common:eigen_matrix_compare",
         "//drake/multibody/parsers",
     ],
 )
