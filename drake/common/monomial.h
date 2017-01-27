@@ -13,8 +13,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
+#include "drake/common/variable.h"
+#include "drake/common/variables.h"
 
 namespace drake {
 
@@ -208,10 +208,10 @@ Expression Monomial(
 
 /** Returns all monomials up to a given degree under the graded reverse
  * lexicographic order. Note that graded reverse lexicographic order uses the
- * total order among symbolic::Variable which is based on a variable's unique
- * ID. For example, for a given variable ordering x > y > z,
- * <tt>MonomialBasis({x, y, z}, 2)</tt> returns a column vector <tt>[x^2, xy,
- * y^2, xz, yz, z^2, x, y, z, 1]</tt>.
+ * total order among Variable which is based on a variable's unique ID. For
+ * example, for a given variable ordering x > y > z, <tt>MonomialBasis({x, y,
+ * z}, 2)</tt> returns a column vector <tt>[x^2, xy, y^2, xz, yz, z^2, x, y, z,
+ * 1]</tt>.
  *
  * \pre{@p vars is a non-empty set.}
  * \pre{@p degree is a non-negative integer.}

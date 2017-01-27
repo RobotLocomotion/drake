@@ -1,4 +1,4 @@
-#include "drake/common/symbolic_environment.h"
+#include "drake/common/environment.h"
 
 #include <cmath>
 #include <initializer_list>
@@ -8,7 +8,6 @@
 #include <string>
 
 namespace drake {
-namespace symbolic {
 
 using std::endl;
 using std::ostream;
@@ -21,8 +20,8 @@ namespace {
 void throw_if_dummy(const Variable& var) {
   if (var.is_dummy()) {
     ostringstream oss;
-    oss << "Dummy symbolic variable (ID = 0) is detected"
-        << "in the initialization of a symbolic environment.";
+    oss << "Dummy variable (ID = 0) is detected"
+        << "in the initialization of an environment.";
     throw runtime_error(oss.str());
   }
 }
@@ -30,7 +29,7 @@ void throw_if_dummy(const Variable& var) {
 void throw_if_nan(const double v) {
   if (std::isnan(v)) {
     ostringstream oss;
-    oss << "NaN is detected in the initialization of a symbolic environment.";
+    oss << "NaN is detected in the initialization of an environment.";
     throw runtime_error(oss.str());
   }
 }
@@ -77,5 +76,4 @@ ostream& operator<<(ostream& os, const Environment& env) {
   }
   return os;
 }
-}  // namespace symbolic
 }  // namespace drake

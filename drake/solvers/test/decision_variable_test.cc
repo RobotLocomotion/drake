@@ -6,10 +6,10 @@ namespace drake {
 namespace solvers {
 namespace test {
 GTEST_TEST(TestDecisionVariable, TestVariableListRef) {
-  symbolic::Variable x1("x1");
-  symbolic::Variable x2("x2");
-  symbolic::Variable x3("x3");
-  symbolic::Variable x4("x4");
+  Variable x1("x1");
+  Variable x2("x2");
+  Variable x3("x3");
+  Variable x4("x4");
 
   VectorDecisionVariable<2> x_vec1(x3, x1);
   VectorDecisionVariable<2> x_vec2(x2, x4);

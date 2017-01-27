@@ -76,6 +76,19 @@ cc_library(
 )
 
 cc_library(
+    name = "environment",
+    srcs = ["environment.cc"],
+    hdrs = [
+        "environment.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        ":common",
+        ":variable",
+    ],
+)
+
+cc_library(
     name = "extract_double",
     hdrs = ["extract_double.h"],
     linkstatic = 1,
@@ -114,31 +127,54 @@ cc_library(
 cc_library(
     name = "symbolic",
     srcs = [
-        "symbolic_environment.cc",
         "symbolic_expression.cc",
         "symbolic_expression_cell.cc",
         "symbolic_expression_cell.h",
         "symbolic_formula.cc",
         "symbolic_formula_cell.cc",
         "symbolic_formula_cell.h",
-        "symbolic_variable.cc",
-        "symbolic_variables.cc",
     ],
     hdrs = [
         "hash.h",
-        "symbolic_environment.h",
         "symbolic_expression.h",
         "symbolic_formula.h",
-        "symbolic_variable.h",
-        "symbolic_variables.h",
     ],
     linkstatic = 1,
     deps = [
         ":common",
         ":cond",
         ":dummy_value",
+        ":environment",
         ":number_traits",
         ":polynomial",
+        ":variable",
+        ":variables",
+    ],
+)
+
+cc_library(
+    name = "variable",
+    srcs = ["variable.cc"],
+    hdrs = [
+        "hash.h",
+        "variable.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        ":common",
+    ],
+)
+
+cc_library(
+    name = "variables",
+    srcs = ["variables.cc"],
+    hdrs = [
+        "variables.h",
+    ],
+    linkstatic = 1,
+    deps = [
+        ":common",
+        ":variable",
     ],
 )
 
@@ -391,7 +427,7 @@ cc_googletest(
 )
 
 cc_googletest(
-    name = "symbolic_environment_test",
+    name = "environment_test",
     deps = [
         ":common",
         ":symbolic",
@@ -423,7 +459,7 @@ cc_googletest(
 )
 
 cc_googletest(
-    name = "symbolic_variable_overloading_test",
+    name = "variable_overloading_test",
     deps = [
         ":common",
         ":symbolic",
@@ -440,7 +476,7 @@ cc_googletest(
 )
 
 cc_googletest(
-    name = "symbolic_variable_test",
+    name = "variable_test",
     deps = [
         ":common",
         ":symbolic",
@@ -448,7 +484,7 @@ cc_googletest(
 )
 
 cc_googletest(
-    name = "symbolic_variables_test",
+    name = "variables_test",
     deps = [
         ":common",
         ":symbolic",

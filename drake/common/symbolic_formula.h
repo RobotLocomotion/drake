@@ -8,11 +8,11 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/environment.h"
 #include "drake/common/hash.h"
-#include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
+#include "drake/common/variable.h"
+#include "drake/common/variables.h"
 
 namespace drake {
 namespace symbolic {
@@ -69,11 +69,11 @@ The following simple simplifications are implemented:
 
 \note Formula class has an explicit conversion operator to bool. It evaluates a
 symbolic formula under an empty environment. If a symbolic formula includes
-symbolic variables, the conversion operator throws an exception. This operator
-is only intended for third-party code doing things like
-<tt>(imag(SymbolicExpression(0)) == SymbolicExpression(0)) { ... };<tt> that we
-found in Eigen3 codebase. In general, a user of this class should explicitly
-call \c Evaluate from within Drake for readability.
+variables, the conversion operator throws an exception. This operator is only
+intended for third-party code doing things like <tt>(imag(SymbolicExpression(0))
+== SymbolicExpression(0)) { ... };<tt> that we found in Eigen3 codebase. In
+general, a user of this class should explicitly call \c Evaluate from within
+Drake for readability.
 
 */
 class Formula {

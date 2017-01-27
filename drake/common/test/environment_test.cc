@@ -1,4 +1,4 @@
-#include "drake/common/symbolic_environment.h"
+#include "drake/common/environment.h"
 
 #include <cmath>
 #include <stdexcept>
@@ -6,17 +6,16 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/variable.h"
 
 namespace drake {
-namespace symbolic {
 namespace {
 
 using std::string;
 using std::runtime_error;
 
 // Provides common variables that are used by the following tests.
-class SymbolicEnvironmentTest : public ::testing::Test {
+class EnvironmentTest : public ::testing::Test {
  protected:
   const Variable var_dummy_{};
   const Variable var_x_{"x"};
@@ -26,7 +25,7 @@ class SymbolicEnvironmentTest : public ::testing::Test {
   const Variable var_v_{"v"};
 };
 
-TEST_F(SymbolicEnvironmentTest, EmptySize) {
+TEST_F(EnvironmentTest, EmptySize) {
   const Environment env1{};
   EXPECT_TRUE(env1.empty());
   EXPECT_EQ(env1.size(), 0u);
@@ -36,18 +35,18 @@ TEST_F(SymbolicEnvironmentTest, EmptySize) {
   EXPECT_EQ(env2.size(), 3u);
 }
 
-TEST_F(SymbolicEnvironmentTest, InitWithNan) {
+TEST_F(EnvironmentTest, InitWithNan) {
   EXPECT_THROW((Environment{{var_x_, 10}, {var_y_, NAN}}), runtime_error);
 }
 
-TEST_F(SymbolicEnvironmentTest, InitializerListWithoutValues) {
+TEST_F(EnvironmentTest, InitializerListWithoutValues) {
   const Environment env{var_x_, var_y_, var_z_};
   for (const auto& p : env) {
     EXPECT_EQ(p.second, 0.0);
   }
 }
 
-TEST_F(SymbolicEnvironmentTest, insert_find) {
+TEST_F(EnvironmentTest, insert_find) {
   Environment env1{{var_x_, 2}, {var_y_, 3}, {var_z_, 4}};
   const Environment env2{env1};
 
@@ -66,7 +65,7 @@ TEST_F(SymbolicEnvironmentTest, insert_find) {
   EXPECT_EQ(env1.size(), 5u);
 }
 
-TEST_F(SymbolicEnvironmentTest, ToString) {
+TEST_F(EnvironmentTest, ToString) {
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
   const string out{env.to_string()};
   EXPECT_TRUE(out.find("x -> 2") != string::npos);
@@ -74,16 +73,15 @@ TEST_F(SymbolicEnvironmentTest, ToString) {
   EXPECT_TRUE(out.find("z -> 3") != string::npos);
 }
 
-TEST_F(SymbolicEnvironmentTest, DummyVariable1) {
+TEST_F(EnvironmentTest, DummyVariable1) {
   EXPECT_THROW(Environment({var_dummy_, var_x_}), runtime_error);
   EXPECT_THROW(Environment({{var_dummy_, 1.0}, {var_x_, 2}}), runtime_error);
 }
 
-TEST_F(SymbolicEnvironmentTest, DummyVariable2) {
+TEST_F(EnvironmentTest, DummyVariable2) {
   Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
   EXPECT_THROW(env.insert(var_dummy_, 0.0), runtime_error);
 }
 
 }  // namespace
-}  // namespace symbolic
 }  // namespace drake

@@ -47,7 +47,7 @@ class Binding {
 
   /**
    * Returns true iff the given @p var is included in this Binding.*/
-  bool ContainsVariable(const symbolic::Variable& var) const {
+  bool ContainsVariable(const Variable& var) const {
     for (int i = 0; i < vars_.rows(); ++i) {
       if (vars_(i) == var) {
         return true;

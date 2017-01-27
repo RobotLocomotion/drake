@@ -7,12 +7,12 @@
 #include <stdexcept>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/environment.h"
 #include "drake/common/hash.h"
-#include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
+#include "drake/common/variable.h"
+#include "drake/common/variables.h"
 
 namespace drake {
 namespace symbolic {
@@ -113,9 +113,7 @@ ostream& NaryFormulaCell::DisplayWithOp(ostream& os, const string& op) const {
 FormulaTrue::FormulaTrue()
     : FormulaCell{FormulaKind::True, hash<string>{}("True")} {}
 
-symbolic::Variables FormulaTrue::GetFreeVariables() const {
-  return Variables{};
-}
+Variables FormulaTrue::GetFreeVariables() const { return Variables{}; }
 
 bool FormulaTrue::EqualTo(const FormulaCell& f) const {
   // Formula::EqualTo guarantees the following assertion.
@@ -137,9 +135,7 @@ ostream& FormulaTrue::Display(ostream& os) const { return os << "True"; }
 FormulaFalse::FormulaFalse()
     : FormulaCell{FormulaKind::False, hash<string>{}("False")} {}
 
-symbolic::Variables FormulaFalse::GetFreeVariables() const {
-  return Variables{};
-}
+Variables FormulaFalse::GetFreeVariables() const { return Variables{}; }
 
 bool FormulaFalse::EqualTo(const FormulaCell& f) const {
   // Formula::EqualTo guarantees the following assertion.
@@ -281,9 +277,7 @@ ostream& FormulaOr::Display(ostream& os) const {
 FormulaNot::FormulaNot(const Formula& f)
     : FormulaCell{FormulaKind::Not, f.get_hash()}, f_{f} {}
 
-symbolic::Variables FormulaNot::GetFreeVariables() const {
-  return f_.GetFreeVariables();
-}
+Variables FormulaNot::GetFreeVariables() const { return f_.GetFreeVariables(); }
 
 bool FormulaNot::EqualTo(const FormulaCell& f) const {
   // Formula::EqualTo guarantees the following assertion.
@@ -312,7 +306,7 @@ FormulaForall::FormulaForall(const Variables& vars, const Formula& f)
       vars_{vars},
       f_{f} {}
 
-symbolic::Variables FormulaForall::GetFreeVariables() const {
+Variables FormulaForall::GetFreeVariables() const {
   return f_.GetFreeVariables() - vars_;
 }
 
