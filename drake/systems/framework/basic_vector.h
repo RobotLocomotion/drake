@@ -35,6 +35,7 @@ class BasicVector : public VectorBase<T> {
   /// Constructs a BasicVector with the specified @p data.
   explicit BasicVector(const VectorX<T>& data) : values_(data) {}
 
+  /// Constructs a BasicVector whose elements are the elements of @p data.
   static std::unique_ptr<BasicVector<T>> Make(
       const std::initializer_list<T>& data) {
     auto vec = std::make_unique<BasicVector<T>>(data.size());
@@ -43,6 +44,17 @@ class BasicVector : public VectorBase<T> {
       vec->SetAtIndex(i++, datum);
     }
     return vec;
+  }
+
+  /// Constructs a BasicVector where each element is constructed using the
+  /// placewise-corresponding member of @p args as the sole constructor
+  /// argument.  For instance:
+  ///   BasicVector<symbolic::Expression>::Make("x", "y", "z");
+  template<typename... Fargs>
+  static std::unique_ptr<BasicVector<T>> Make(Fargs&&... args) {
+    auto data = std::make_unique<BasicVector<T>>(sizeof...(args));
+    BasicVector<T>::MakeRecursive(data.get(), 0, args...);
+    return std::move(data);
   }
 
   int size() const override { return static_cast<int>(values_.rows()); }
@@ -129,6 +141,24 @@ class BasicVector : public VectorBase<T> {
   virtual BasicVector<T>* DoClone() const { return new BasicVector<T>(*this); }
 
  private:
+  // Sets @p data at @p index to an object of type T, which must have a
+  // single-argument constructor invoked via @p constructor_arg, and then
+  // recursively invokes itself on the next index with @p recursive args.
+  // Helper for BasicVector<T>::Make.
+  template<typename F, typename... Fargs>
+  static void MakeRecursive(BasicVector<T>* data, int index,
+                            F constructor_arg, Fargs&&... recursive_args) {
+    data->SetAtIndex(index++, T(constructor_arg));
+    BasicVector<T>::MakeRecursive(data, index, recursive_args...);
+  }
+
+  // Base case for the MakeRecursive template recursion.
+  template<typename F, typename... Fargs>
+  static void MakeRecursive(BasicVector<T>* data, int index,
+                            F constructor_arg) {
+    data->SetAtIndex(index++, T(constructor_arg));
+  }
+
   // Add in multiple scaled vectors to this vector. All vectors
   // must be the same size. This function overrides the default DoPlusEqScaled()
   // implementation toward maximizing speed. This implementation should be able
