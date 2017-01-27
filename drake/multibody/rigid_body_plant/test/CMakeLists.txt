@@ -11,7 +11,16 @@ if(Bullet_FOUND)
     drakeRigidBodyPlant)
 
   drake_add_cc_test(compute_contact_result_test)
-  target_link_libraries(compute_contact_result_test drakeRigidBodyPlant drakeRBSystem)
+  target_link_libraries(compute_contact_result_test
+      drakeRigidBodyPlant
+      drakeRBSystem
+      )
+
+  drake_add_cc_test(contact_force_formula_test)
+  target_link_libraries(contact_force_formula_test
+      drakeRigidBodyPlant
+      drakeRBSystem
+      )
 
   if (lcm_FOUND)
     drake_add_cc_test(rigid_body_plant_that_publishes_xdot_test)
