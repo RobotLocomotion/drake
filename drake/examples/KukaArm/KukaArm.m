@@ -50,7 +50,20 @@ classdef KukaArm < RigidBodyManipulator
       obj = compile(obj);
 
     end
-
+    
+    function nw = getNumDistrubances(obj)
+        switch obj.disturbance_type
+            case 1
+                nw = 3;
+            case 2
+                nw = obj.getNumContStates();
+            case 3
+                nw = obj.getNumInputs();
+            otherwise
+                error('Unknown disturbance type');
+        end
+    end
+    
     function [f,df] = dynamics_w(obj,t,x,u,w)
      switch obj.disturbance_type
        case 1
