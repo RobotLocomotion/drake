@@ -84,7 +84,7 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
   Matrix2<T> H = MatrixH(x);
   Vector2<T> C = VectorC(x);
   // input matrix
-  Vector2<T> B(0,1);
+  Vector2<T> B(0, 1);
 
   Vector4<T> xdot;
   xdot << x.theta1dot(), x.theta2dot(), H.inverse() * (B * tau - C);
