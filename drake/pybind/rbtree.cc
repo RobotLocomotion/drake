@@ -6,6 +6,10 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
+#include "autodiff_types.h"
+
+typedef Eigen::AutoDiffScalar<Eigen::VectorXd> AutoDiffXd;
+
 namespace py = pybind11;
 
 PYBIND11_PLUGIN(_rbtree) {
@@ -46,6 +50,15 @@ PYBIND11_PLUGIN(_rbtree) {
                             const Eigen::VectorXd& v) {
       return tree.doKinematics(q, v);
     })
+    .def("doKinematics", [](const RigidBodyTree<double>& tree, 
+                            const VectorXAutoDiffXd& q) {
+      return tree.doKinematics(q);
+    })
+    .def("doKinematics", [](const RigidBodyTree<double>& tree, 
+                            const VectorXAutoDiffXd& q,
+                            const VectorXAutoDiffXd& v) {
+      return tree.doKinematics(q, v);
+    })
     .def("centerOfMass", &RigidBodyTree<double>::centerOfMass<double>,
          py::arg("cache"), 
          py::arg("model_instance_id_set") = RigidBodyTreeConstants::default_model_instance_id_set)
@@ -65,9 +78,17 @@ PYBIND11_PLUGIN(_rbtree) {
                                int to_body_or_frame_ind) {
       return tree.transformPoints(cache, points, from_body_or_frame_ind, to_body_or_frame_ind);
     })
+    .def("transformPoints", [](const RigidBodyTree<double>& tree,
+                               const KinematicsCache<AutoDiffXd>& cache,
+                               const Eigen::Matrix<double, 3, Eigen::Dynamic>& points,
+                               int from_body_or_frame_ind,
+                               int to_body_or_frame_ind) {
+      return tree.transformPoints(cache, points, from_body_or_frame_ind, to_body_or_frame_ind);
+    })
     ;
 
-  py::class_<KinematicsCache<double>>(m, "KinematicsCache");
+  py::class_<KinematicsCache<double>>(m, "KinematicsCacheDouble");
+  py::class_<KinematicsCache<AutoDiffXd> >(m, "KinematicsCacheAutoDiffXd");
 
   py::class_<drake::parsers::PackageMap>(m, "PackageMap")
     .def(py::init<>())
