@@ -42,6 +42,7 @@ cc_library(
         "//drake/systems/primitives:gain",
         "//drake/systems/primitives:integrator",
         "//drake/systems/primitives:pass_through",
+        "//drake/systems/primitives:saturation",
     ],
 )
 
