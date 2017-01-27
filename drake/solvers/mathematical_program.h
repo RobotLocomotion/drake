@@ -1142,14 +1142,14 @@ class MathematicalProgram {
 
   /**
    * Adds linear equality constraints \f$ v = b \f$, where \p v(i) is a symbolic
-   * linear expression. Throws an eception if
+   * linear expression. Throws an exception if
    * 1. @p v(i) is a non-linear expression.
    * 2. @p v(i) is a constant.
    * @param v v(i) is a linear symbolic expression in the form of
    * <tt> c0 + c1 * x1 + ... + cn * xn </tt> where ci is a constant and @xi is
    * a variable.
    * @param b A vector of doubles.
-   * @return The newly addlinear linear equality constraint, together with the
+   * @return The newly added linear equality constraint, together with the
    * bound variables.
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
