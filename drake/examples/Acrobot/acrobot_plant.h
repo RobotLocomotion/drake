@@ -135,10 +135,8 @@ class AcrobotWEncoder : public systems::Diagram<T> {
 /// Constructs the LQR controller for stabilizing the upright fixed point using
 /// default LQR cost matrices which have been tested for this system.
 std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
-    const AcrobotPlant<double>* acrobot);
+    const AcrobotPlant<double>& acrobot);
 
-std::unique_ptr<systems::AffineSystem<double>> SwingUpController(
-    const AcrobotPlant<double>* acrobot);
 
 }  // namespace acrobot
 }  // namespace examples

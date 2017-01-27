@@ -173,8 +173,8 @@ template class AcrobotWEncoder<double>;
 template class AcrobotWEncoder<AutoDiffXd>;
 
 std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
-    const AcrobotPlant<double>* acrobot) {
-  auto context = acrobot->CreateDefaultContext();
+    const AcrobotPlant<double>& acrobot) {
+  auto context = acrobot.CreateDefaultContext();
 
   // Set nominal torque to zero.
   context->FixInputPort(0, Vector1d::Constant(0.0));
@@ -196,7 +196,7 @@ std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
   Q(1, 1) = 10;
   Vector1d R = Vector1d::Constant(1);
 
-  return systems::LinearQuadraticRegulator(*acrobot, *context, Q, R);
+  return systems::LinearQuadraticRegulator(acrobot, *context, Q, R);
 }
 
 }  // namespace acrobot

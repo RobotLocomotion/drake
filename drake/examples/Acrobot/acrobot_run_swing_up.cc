@@ -51,11 +51,7 @@ int do_main(int argc, char* argv[]) {
   auto controller = builder.AddSystem<AcrobotSpongController>();
   builder.Connect(acrobot->get_output_port(0), controller->get_input_port(0));
   builder.Connect(controller->get_output_port(0), acrobot->get_input_port(0));
-
-  // auto controller = builder.AddSystem(BalancingLQRController(acrobot));
-  // builder.Connect(acrobot->get_output_port(0), controller->get_input_port());
-  // builder.Connect(controller->get_output_port(), acrobot->get_input_port(0));
-
+  
   auto diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
   systems::Context<double>* acrobot_context =
