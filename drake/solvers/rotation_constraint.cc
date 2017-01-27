@@ -305,8 +305,8 @@ std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(
     }
   }
 
-  // 2. Loop through each edge, find the intersections between each edge and the
-  // unit sphere, if one exists, and not a vertex.
+  // 2. Loop through each edge, find the intersection between each edge and the
+  // unit sphere, if one exists.
   for (int axis = 0; axis < 3; ++axis) {
     // axis = 0 means edges along x axis;
     // axis = 1 means edges along y axis;
