@@ -267,7 +267,7 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
     const int quat_size = 4;
     auto q_quat = q_.middleRows(base_body.get_position_start_index()+
                                 quat_offset, quat_size);
-    q_quat /= q_quat.norm(); 
+    q_quat /= q_quat.norm();
 
     cache_->initialize(q_, v_);
     robot_->doKinematics(*cache_, true);
