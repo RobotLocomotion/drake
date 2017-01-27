@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import numpy as np
 import pydrake
@@ -63,22 +65,22 @@ constraints = [
                # placing a lower bound of -Inf and an upper bound of +Inf along
                # those axes.
                ik.WorldPositionConstraint(robot, base_body_id,
-                                          np.array([0.0, 0.0, 0.0]),
+                                          np.array([0.0, 0.0, 0.0])[:, None],
                                           np.array([np.nan, np.nan, 0.0]),
                                           np.array([np.nan, np.nan, 0.0])),
                ik.WorldPositionConstraint(robot, base_body_id,
-                                          np.array([1.0, 0.0, 0.0]),
+                                          np.array([1.0, 0.0, 0.0])[:, None],
                                           np.array([np.nan, np.nan, 0.0]),
                                           np.array([np.nan, np.nan, 0.0])),
                ik.WorldPositionConstraint(robot, base_body_id,
-                                          np.array([0.0, 1.0, 0.0]),
+                                          np.array([0.0, 1.0, 0.0])[:, None],
                                           np.array([np.nan, np.nan, 0.0]),
                                           np.array([np.nan, np.nan, 0.0])),
 
                # This constraint exactly specifies the desired position of the
                # hand frame we defined earlier.
                ik.WorldPositionConstraint(robot, hand_frame_id,
-                                          np.array([0.0, 0.0, 0.0]),
+                                          np.array([0.0, 0.0, 0.0])[:, None],
                                           np.array([0.5, 0.0, 0.6]),
                                           np.array([0.5, 0.0, 0.6])),
                # And this specifies the orientation of that frame
@@ -98,4 +100,4 @@ results = ik.InverseKin(robot, q_seed, q_seed, constraints, options)
 # optimizer.
 assert results.info[0] == 1
 
-print repr(results.q_sol[0])
+print(repr(results.q_sol[0]))
