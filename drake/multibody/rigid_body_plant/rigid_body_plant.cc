@@ -128,6 +128,20 @@ RigidBodyPlant<T>::~RigidBodyPlant() {}
 
 // TODO(liang.fok) Remove this method once a more advanced contact modeling
 // framework is available.
+#ifdef USE_STRIBECK
+template <typename T>
+void RigidBodyPlant<T>::set_contact_parameters(double penetration_stiffness,
+                                               double static_friction_coef,
+                                               double dynamic_friction_coef,
+                                               double transition_speed,
+                                               double dissipation) {
+  penetration_stiffness_ = penetration_stiffness;
+  dissipation_ = dissipation;
+  dynamic_friction_ceof_ = dynamic_friction_coef;
+  static_friction_coef_ = static_friction_coef;
+  inv_transition_speed_ = 1.0 / transition_speed;
+}
+#else
 template <typename T>
 void RigidBodyPlant<T>::set_contact_parameters(double penetration_stiffness,
                                                double penetration_damping,
@@ -136,6 +150,7 @@ void RigidBodyPlant<T>::set_contact_parameters(double penetration_stiffness,
   penetration_damping_ = penetration_damping;
   friction_coefficient_ = friction_coefficient;
 }
+#endif
 
 template <typename T>
 bool RigidBodyPlant<T>::has_any_direct_feedthrough() const {
@@ -635,7 +650,6 @@ void RigidBodyPlant<T>::ComputeContactResults(
     const Context<T>& context, ContactResults<T>* contacts) const {
   DRAKE_ASSERT(contacts != nullptr);
   contacts->Clear();
-
   // TODO(SeanCurtis-TRI): This is horribly redundant code that only exists
   // because the data is not properly accessible in the cache.  This is
   // boilerplate drawn from EvalDerivatives.  See that code for further
@@ -698,6 +712,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
                                                0, false);
       auto JB = tree_->transformPointsJacobian(kinsol, pair.ptB, body_b_index,
                                                0, false);
+      // This normal points *from* element b *to* element A.
       Vector3<T> this_normal = pair.normal;
 
       // R_WC is a left-multiplied rotation matrix to transform a vector from
@@ -705,22 +720,77 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       Matrix3<T> R_WC = ComputeBasisFromZ(this_normal);
       auto J = R_WC.transpose() * (JA - JB);  // J = [ D1; D2; n ]
 
-      auto relative_velocity = J * kinsol.getV();
+      // The velocity of A wr.t. B, expressed in the contact frame, C.
+      auto v_BA_C = J * kinsol.getV();
 
       {
+#ifdef USE_STRIBECK
+        // Normal force:
+        // This is the implementation of the Hunt-Crossley contact model
+        // Normal force is simply f(x, x') = kx(1 + dx') where
+        //    x: is the *penetration depth*.
+        //    x': is the rate of change of penetration, x' > 0 -> increased
+        //        penetration.
+        //    k: penetration stiffness, k > 0
+        //    d: dissipation factor, d > 0
+        // f(x, x') > 0 provides a repulsive force.
+        // It is *possible* for this force to become attractive if there is a
+        // sufficiently large *separating* velocity.  In fact, this occurs if
+        // x' < -1 / d or dx' < -1.  In these cases, we simply clamp the force
+        // to zero.
+
+        // pair.distance is the signed distance (with negative values indicating
+        // collision.  Therefore, x = -pair.distance.
+        // The relative velocity, v_BA_C, is the velocity of A w.r.t. B
+        // expressed in C.  If the objects are getting closer (i.e., increasing
+        // penetration depth), then A is moving *against* the normal direction.
+        // That means, x' = -v_BA_C(2).
+
+        double x = -pair.distance;
+        double x_dot = -v_BA_C(2);
+
+        std::cout << "Contact\n";
+        std::cout << "\tNormal: " << this_normal.transpose() << "\n";
+        std::cout << "\tRelative velocity: " << v_BA_C.transpose() << "\n";
+        double damping = 1.0 + dissipation_ * x_dot;
+        std::cout << "\tdamping: " << damping << "\n";
+        // No normal force implies no contact force.  Simply move to the next
+        // contact.
+        if (damping <= 0) continue;
+        Vector3<T> fA;
+        fA(2) = penetration_stiffness_ * x * damping;
+        std::cout << "\tNormal force: " << fA(2) << "\n";
+        // Friction force
+        auto slip_vector = v_BA_C.template head<2>();
+        T slip_speed_squared = slip_vector.squaredNorm();
+        // Consider a value value indistinguishable from zero if it is smaller
+        // then 1e-14.  This allows me to compare the square of that value.
+        const T kNonZeroSqd = T(1e-14 * 1e-14);
+        if (slip_speed_squared > kNonZeroSqd) {
+          T slip_speed = std::sqrt(slip_speed_squared);
+          std::cout << "\tSlip speed: " << slip_speed << "\n";
+          T friction_coefficient = ComputeFrictionCoefficient(slip_speed);
+          std::cout << "\tfric coeff: " << friction_coefficient << "\n";
+          fA.template head<2>() = -(friction_coefficient * fA(2) / slip_speed) *
+              slip_vector;
+        } else {
+          fA.template head<2>() << 0, 0;
+        }
+
+#else
         // Spring law for normal force:  fA_normal = -k * phi - b * phidot
         // and damping for tangential force:  fA_tangent = -b * tangentdot
         // (bounded by the friction cone).
         Vector3<T> fA;
         fA(2) = std::max<T>(-penetration_stiffness_ * pair.distance -
-                                penetration_damping_ * relative_velocity(2),
+                                penetration_damping_ * v_BA_C(2),
                             0.0);
         fA.head(2) =
             -std::min<T>(penetration_damping_,
                          friction_coefficient_ * fA(2) /
-                             (relative_velocity.head(2).norm() + EPSILON)) *
-            relative_velocity.head(2);  // Epsilon avoids divide by zero.
-
+                             (v_BA_C.head(2).norm() + EPSILON)) *
+            v_BA_C.head(2);  // Epsilon avoids divide by zero.
+#endif
         // fB is equal and opposite to fA: fB = -fA.
         // Therefore the generalized forces tau_c due to contact are:
         // tau_c = (R_CW * JA)^T * fA + (R_CW * JB)^T * fB = J^T * fA.
@@ -768,6 +838,28 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
     }
   }
   return contact_force;
+}
+
+template <typename T>
+T RigidBodyPlant<T>::ComputeFrictionCoefficient(T v_tangent_BC) const {
+  DRAKE_ASSERT(v_tangent_BC >= 0);
+  T v = v_tangent_BC * inv_transition_speed_;
+  if (v >= 3) {
+    return dynamic_friction_ceof_;
+  } else if (v >= 1) {
+    return static_friction_coef_ -
+           (static_friction_coef_ - dynamic_friction_ceof_) *
+               step5((v - 1) / 2);
+  } else {
+    return static_friction_coef_ * step5(v);
+  }
+}
+
+template <typename T>
+T RigidBodyPlant<T>::step5(T x){
+  DRAKE_ASSERT(0 <= x && x <= 1);
+  const T x3 = x * x * x;
+  return x3 * (10 + x * (6 * x - 15)); // 10x³ - 15x⁴ + 6x⁵
 }
 
 // Explicitly instantiates on the most common scalar types.
