@@ -2,13 +2,13 @@
 
 #include <memory>
 
+#include "gtest/gtest.h"
+
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system_input.h"
-
-#include "gtest/gtest.h"
 
 using Eigen::Matrix;
 using Eigen::MatrixXd;

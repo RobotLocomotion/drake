@@ -36,7 +36,8 @@ drake_install_headers(
   signal_logger.h
   trajectory_source.h
   zero_order_hold.h
-  zero_order_hold-inl.h)
+  zero_order_hold-inl.h
+  )
 
 # Headers that are needed by code here but should not
 # be exposed anywhere else.

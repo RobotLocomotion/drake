@@ -20,6 +20,7 @@ cc_library(
         ":leaf_context",
         ":leaf_system",
         ":parameters",
+        ":single_output_vector_source",
         ":state",
         ":system",
         ":value",
@@ -294,6 +295,16 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "single_output_vector_source",
+    srcs = ["single_output_vector_source.cc"],
+    hdrs = ["single_output_vector_source.h"],
+    linkstatic = 1,
+    deps = [
+        ":leaf_system",
+    ],
+)
+
 # === test/ ===
 
 cc_googletest(
@@ -457,6 +468,13 @@ cc_googletest(
     deps = [
         ":value",
         "//drake/common",
+    ],
+)
+
+cc_googletest(
+    name = "single_output_vector_source_test",
+    deps = [
+        ":single_output_vector_source",
     ],
 )
 
