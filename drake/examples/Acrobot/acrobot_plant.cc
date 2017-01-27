@@ -39,7 +39,7 @@ void AcrobotPlant<T>::DoCalcOutput(const systems::Context<T>& context,
 }
 
 template <typename T>
-Eigen::Matrix<T, 2, 2> AcrobotPlant<T>::H_matrix(
+Eigen::Matrix<T, 2, 2> AcrobotPlant<T>::MatrixH(
     const AcrobotStateVector<T>& x) const {
   const T c2 = cos(x.theta2());
 
@@ -50,7 +50,7 @@ Eigen::Matrix<T, 2, 2> AcrobotPlant<T>::H_matrix(
 }
 
 template <typename T>
-Vector2<T> AcrobotPlant<T>::C_matrix(const AcrobotStateVector<T>& x) const {
+Vector2<T> AcrobotPlant<T>::MatrixC(const AcrobotStateVector<T>& x) const {
   const T s1 = sin(x.theta1()), s2 = sin(x.theta2());
   const T s12 = sin(x.theta1() + x.theta2());
 
@@ -81,8 +81,8 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
       context.get_continuous_state_vector());
   const T& tau = this->EvalVectorInput(context, 0)->GetAtIndex(0);
 
-  Eigen::Matrix<T, 2, 2> H = H_matrix(x);
-  Eigen::Matrix<T, 2, 1> C = C_matrix(x);
+  Eigen::Matrix<T, 2, 2> H = MatrixH(x);
+  Eigen::Matrix<T, 2, 1> C = MatrixC(x);
   // input matrix
   Eigen::Matrix<T, 2, 1> B;
   B << 0.0, 1.0;
@@ -99,7 +99,7 @@ T AcrobotPlant<T>::DoCalcKineticEnergy(
   const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
       context.get_continuous_state_vector());
 
-  Eigen::Matrix<T, 2, 2> H = H_matrix(x);
+  Eigen::Matrix<T, 2, 2> H = MatrixH(x);
   Eigen::Matrix<T, 2, 1> qdot(x.theta1dot(), x.theta2dot());
 
   return 0.5 * qdot.transpose() * H * qdot;

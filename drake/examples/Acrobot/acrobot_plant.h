@@ -34,8 +34,8 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   bool has_any_direct_feedthrough() const override { return false; }
 
   // H and C matrices in the manipulator equation
-  Vector2<T> C_matrix(const AcrobotStateVector<T>& x) const;
-  Eigen::Matrix<T, 2, 2> H_matrix(const AcrobotStateVector<T>& x) const;
+  Vector2<T> MatrixC(const AcrobotStateVector<T>& x) const;
+  Eigen::Matrix<T, 2, 2> MatrixH(const AcrobotStateVector<T>& x) const;
 
   // getters for robot parameters
   T getm1() const { return m1; }

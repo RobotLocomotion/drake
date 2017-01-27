@@ -69,18 +69,34 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
         this->EvalVectorInput(context, 0));
     DRAKE_ASSERT(x != nullptr);
 
-    const Matrix2<T> H = acrobot.H_matrix(*x);
-    const Vector2<T> C = acrobot.C_matrix(*x);
+    const Matrix2<T> H = acrobot.MatrixH(*x);
+    const Vector2<T> C = acrobot.MatrixC(*x);
     const Matrix2<T> H_inverse = H.inverse();
     const Vector4<T> x0(M_PI, 0, 0, 0);
     Vector4<T> x_c(x->theta1(), x->theta2(), x->theta1dot(), x->theta2dot());
+
+    /*
+     * Swing-up control law: u = u_p + u_e;
+     * u_e is the energy shaping controller.
+     * u_e = k_e * (E_desired - E) * theta2dot, so that
+     * Edot = k_e * (E_desired - E) * theta2dot^2.
+     *
+     * u_p is the partial feedback linearization controller which stabalizes q2.
+     * We want qdotdot = y = - k_p * theta2 - k_d * theta2dot
+     * Given acrobot's manipulator equation:
+     * qdot = H^-1 * (Bu - C), where H = [a1,a2; a2,a3], B = [0;1], C=[C0;C1]
+     * we have:
+     * qdotdot = -C0*a2 + a3*(u-C1)
+     * Equating the above equation to y gives
+     * u_p = (a2 * C0 + y) / a3 + C1;
+     *
+    */
 
     // controller gains
     const double k_e = 5;
     const double k_p = 50;
     const double k_d = 5;
 
-    // AcrobotPlant<T> acrobot;
     auto context_acrobot = acrobot.CreateDefaultContext();
     AcrobotStateVector<double>* x_acrobot =
         dynamic_cast<AcrobotStateVector<double>*>(
@@ -117,15 +133,18 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
       x_c(1) += 2 * M_PI;
     }
 
-    // deciding which contoller to use (LQR or energy shaping)
+    /*
+     * Balancing control law
+     * When the robot is close enough to the upright fixed point, i.e.
+     * (x-x0)'*S*(x-x0) < some_threshold, an LQR controller linearized about
+     * the upright fixed point takes over and balances the robot about its
+     * upright position.
+     */
     T cost = (x_c.transpose() - x0.transpose()) * S * (x_c - x0);
     T u;
     if (cost < 1e3) {
       Eigen::Matrix<T, 1, 1> u_v = K * (x0 - x_c);
-      // cout << "K=\n" << K << endl;
-      // cout << "x0-x_c=\n" << x0-x_c << endl;
       u = u_v(0, 0);
-      // cout << "lqr ";
     } else {
       u = u_e + u_p;
     }
