@@ -23,14 +23,14 @@ q0 = [0;-0.683;0;1.77;0;0.88;-1.57];
 x0 = [q0;zeros(nq,1)];
 xG = double(r.resolveConstraints(zeros(nx,1)));
 v.draw(0,x0);
-N = 30;
+N = 35;
 tf0 = 3.0;
 
 traj_init.x = PPTrajectory(foh([0,tf0],[x0,xG]));
 traj_init.u = ConstantTrajectory(zeros(nu,1));
   
 options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;
-prog1 = DirtranTrajectoryOptimization(r,N,tf0*[.8 1.2],options);
+prog1 = RobustDirtranTrajectoryOptimization(r,N,D,E0,Q,R,Qf,tf0*[.8 1.2],options);
 prog1 = prog1.addStateConstraint(ConstantConstraint(x0),1);
 % prog1 = prog1.addStateConstraint(ConstantConstraint(xG),N);
 prog1 = prog1.addRunningCost(@cost);
@@ -63,6 +63,8 @@ prog1 = prog1.setSolverOptions('snopt','iterationslimit',100000);
 tic;
 [xtraj,utraj,z,F,info,infeasible] = prog1.solveTraj(tf0,traj_init);
 toc
+
+v.playback(xtraj,struct('slider',true));
 
 traj_init.x = xtraj;
 traj_init.u = utraj;
@@ -114,24 +116,6 @@ toc
 
 v.playback(xtraj2,struct('slider',true));
 
-%Closed-loop simulation
-c = tvlqr(r,xtraj,utraj,Q,R,Qf);
-
-%Simulate closed-loop system
-rt = TimeSteppingRigidBodyManipulator(r,0.001);
-sys = feedback(rt,c);
-if 1
-  % Forward simulate dynamics with visulazation, then playback at realtime
-  S=warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
-  output_select(1).system=1;
-  output_select(1).output=1;
-  sys = mimoCascade(sys,v,[],[],output_select);
-  warning(S);
-end
-traj=simulate(sys,[0,utraj.tspan(2)],xtraj.eval(xtraj.tspan(1)));
-v.playback(traj,struct('slider',true));
-
-%Run robust version
 
 %--------- Cost + Constraint Functions ---------%
 
