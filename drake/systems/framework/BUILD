@@ -232,6 +232,7 @@ cc_library(
         ":context",
         "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:symbolic",
     ],
 )
 
