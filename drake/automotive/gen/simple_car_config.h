@@ -40,6 +40,12 @@ class SimpleCarConfig : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
+  SimpleCarConfig<T>* DoClone() const override {
+    auto result = new SimpleCarConfig;
+    result->SetFromVector(this->CopyToVector());
+    return result;
+  }
+
   /// @name Getters and Setters
   //@{
   /// wheelbase
