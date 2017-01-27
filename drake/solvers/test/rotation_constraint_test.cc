@@ -14,6 +14,8 @@
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
 
+using std::sqrt;
+
 namespace drake {
 namespace solvers {
 
@@ -209,28 +211,32 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   desired.push_back(Vector3d(0, 1, 0));
   desired.push_back(Vector3d(0, 0, 1));
   CompareIntersectionResults(
-      desired, internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
 
   // Lifts box bottom (in z).  Still has 3 solutions.
   box_min << 0, 0, 1.0 / 3.0;
   desired[0] << std::sqrt(8) / 3.0, 0, 1.0 / 3.0;
   desired[1] << 0, std::sqrt(8) / 3.0, 1.0 / 3.0;
   CompareIntersectionResults(
-      desired, internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
 
   // Lowers box top (in z).  Now we have four solutions.
   box_max << 1, 1, 2.0 / 3.0;
   desired[2] << std::sqrt(5) / 3.0, 0, 2.0 / 3.0;
   desired.push_back(Vector3d(0, std::sqrt(5) / 3.0, 2.0 / 3.0));
   CompareIntersectionResults(
-      desired, internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
 
   // Gets a different four edges by shortening the box (in x).
   box_max(0) = .5;
   desired[0] << .5, std::sqrt(23.0) / 6.0, 1.0 / 3.0;
   desired[2] << .5, std::sqrt(11.0) / 6.0, 2.0 / 3.0;
   CompareIntersectionResults(
-      desired, internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
 
   // Now three edges again as we shorten the box (in y).
   box_max(1) = .6;
@@ -239,7 +245,8 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   desired[1] << 2 * std::sqrt(11.0) / 15.0, .6, 2.0 / 3.0;
   desired[2] << .5, .6, std::sqrt(39.0) / 10.0;
   CompareIntersectionResults(
-      desired, internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
 
   // All four intersections are on the vertical edges.
   box_min << 1.0 / 3.0, 1.0 / 3.0, 0;
@@ -249,15 +256,18 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   desired[2] << 1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0;
   desired.push_back(Vector3d(2.0 / 3.0, 2.0 / 3.0, 1.0 / 3.0));
   CompareIntersectionResults(
-      desired, internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
 
-  //box_max right on the unit sphere.
+  // box_max right on the unit sphere.
   box_max << 1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0;
+  box_min << 0, 1.0 / 3.0, 0;
   // Should return just the single point.
   desired.erase(desired.begin() + 1, desired.end());
   desired[0] = box_max;
   CompareIntersectionResults(
-      desired, internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
 
   // Multiple vertices are on the sphere.
   box_min << 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0;
@@ -266,12 +276,26 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   desired.push_back(Eigen::Vector3d(1.0 / 3, 2.0 / 3, 2.0 / 3));
   desired.push_back(Eigen::Vector3d(2.0 / 3, 1.0 / 3, 2.0 / 3));
   desired.push_back(Eigen::Vector3d(2.0 / 3, 2.0 / 3, 1.0 / 3));
-  CompareIntersectionResults(desired, internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CompareIntersectionResults(
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
 
-  // Multiple vertices are on the sphere. Along one dimension the box has zero length.
-  box_min << 1.0 / 3, 1.0 / 3, 2.0 / 3;
-  box_max << 2.0 / 3, 2.0 / 3, 2.0 / 3;
+  // Six intersections.
+  box_min = Eigen::Vector3d::Constant(1.0 / 3.0);
+  box_max = Eigen::Vector3d::Constant(sqrt(6) / 3.0);
   desired.clear();
+  // The intersecting points are the 6 permutations of
+  // (1.0 / 3.0, sqrt(2) / 3.0, sqrt(6) / 3.0)
+  desired.resize(6);
+  desired[0] << 1.0 / 3.0, sqrt(2) / 3.0, sqrt(6) / 3.0;
+  desired[1] << 1.0 / 3.0, sqrt(6) / 3.0, sqrt(2) / 3.0;
+  desired[2] << sqrt(2) / 3.0, 1.0 / 3.0, sqrt(6) / 3.0;
+  desired[3] << sqrt(2) / 3.0, sqrt(6) / 3.0, 1.0 / 3.0;
+  desired[4] << sqrt(6) / 3.0, 1.0 / 3.0, sqrt(2) / 3.0;
+  desired[5] << sqrt(6) / 3.0, sqrt(2) / 3.0, 1.0 / 3.0;
+  CompareIntersectionResults(
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
 }
 
 bool IsFeasibleCheck(

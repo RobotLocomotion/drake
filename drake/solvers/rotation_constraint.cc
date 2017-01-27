@@ -265,11 +265,11 @@ namespace internal {
 // intersecting points between the edges of the box and the unit sphere.
 // @param bmin  The vertex of the box closest to the origin.
 // @param bmax  The vertex of the box farthest from the origin.
-std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(const Eigen::Vector3d &bmin,
-                                                                  const Eigen::Vector3d &bmax) {
-  // Assumes the positive orthant (and bmax>=bmin).
+std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(
+    const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax) {
+  // Assumes the positive orthant (and bmax > bmin).
   DRAKE_ASSERT(bmin(0) >= 0 && bmin(1) >= 0 && bmin(2) >= 0);
-  DRAKE_ASSERT(bmax(0) >= bmin(0) && bmax(1) >= bmin(1) && bmax(2) >= bmin(2));
+  DRAKE_ASSERT(bmax(0) > bmin(0) && bmax(1) > bmin(1) && bmax(2) > bmin(2));
 
   // Assumes the unit circle intersects the box.
   DRAKE_ASSERT(bmin.lpNorm<2>() <= 1);
@@ -282,29 +282,13 @@ std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(const Eigen::V
 
   // 1. Loop through each vertex of the box, add it to intersection if
   // the vertex is on the sphere.
-  // First find out all the vertices of the box (since it is possible that
-  // bmin(i) = bmax(i), the number of vertices can be not equal to 8).
-  std::vector<Eigen::Vector3d> vertices;
-  vertices.reserve(8);
-  vertices.push_back(bmin);
-  for (int axis = 0; axis < 3; ++axis) {
-    // For each axis, if bmax(axis) != bmin(axis), then append a copy of the
-    // current vertices to the end, change the corresponding axis of the
-    // appended vertices to bmax(axis).
-    if (bmin(axis) != bmax(axis)) {
-      // vertices_max is the same as vertices,
-      std::vector<Eigen::Vector3d> vertices_max(vertices);
-      for (int i = 0; i < static_cast<int>(vertices_max.size()); ++i) {
-        vertices_max[i](axis) = bmax(axis);
-      }
-      vertices.insert(vertices.end(), vertices_max.begin(), vertices_max.end());
+  for (int i = 0; i < 8; ++i) {
+    Eigen::Vector3d vertex{};
+    for (int axis = 0; axis < 3; ++axis) {
+      vertex(axis) = i & (1 << axis) ? bmin(axis) : bmax(axis);
     }
-  }
-  // Now loop through the vertices, add it to intersection if the vertex is on
-  // the sphere.
-  for (int i = 0; i < static_cast<int>(vertices.size()); ++i) {
-    if(vertices[i].norm() == 1) {
-      intersection.push_back(vertices[i]);
+    if (vertex.norm() == 1) {
+      intersection.push_back(vertex);
     }
   }
 
@@ -323,25 +307,29 @@ std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(const Eigen::V
       Eigen::Vector3d pt_closer, pt_farther;
       pt_closer(axis) = bmin(axis);
       pt_farther(axis) = bmax(axis);
-      pt_closer(fixed_axis1) = i & (1 << 1) ? bmin(fixed_axis1) : bmax(fixed_axis1);
+      pt_closer(fixed_axis1) =
+          i & (1 << 1) ? bmin(fixed_axis1) : bmax(fixed_axis1);
       pt_farther(fixed_axis1) = pt_closer(fixed_axis1);
-      pt_closer(fixed_axis2) = i & (1 << 0) ? bmin(fixed_axis2) : bmax(fixed_axis2);
+      pt_closer(fixed_axis2) =
+          i & (1 << 0) ? bmin(fixed_axis2) : bmax(fixed_axis2);
       pt_farther(fixed_axis2) = pt_closer(fixed_axis2);
 
-      // Determines if there is an intersecting point between the edge and the sphere.
+      // Determines if there is an intersecting point between the edge and the
+      // sphere.
       // If the intersecting point is not the vertex of the box, then push this
       // intersecting point to intersection directly.
       if (pt_closer.norm() < 1 && pt_farther.norm() > 1) {
         Eigen::Vector3d pt_intersect{};
         pt_intersect(fixed_axis1) = pt_closer(fixed_axis1);
         pt_intersect(fixed_axis2) = pt_closer(fixed_axis2);
-        pt_intersect(axis) = Intercept(pt_intersect(fixed_axis1), pt_intersect(fixed_axis2));
+        pt_intersect(axis) =
+            Intercept(pt_intersect(fixed_axis1), pt_intersect(fixed_axis2));
         intersection.push_back(pt_intersect);
       }
     }
   }
   return intersection;
-};
+}
 
 }  // namespace internal
 
@@ -388,8 +376,8 @@ void AddMcCormickVectorConstraints(
             // the tightest linear constraint of the form:
             //    d <= normal'*v
             // that puts v inside (but as close as possible to) the unit circle.
-            auto pts =
-                internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max);
+            auto pts = internal::ComputeBoxEdgesAndSphereIntersection(box_min,
+                                                                      box_max);
             DRAKE_DEMAND(pts.size() >= 3);
             Eigen::Vector3d normal;
             // Note: 1-d is the distance to the farthest point on the unit
