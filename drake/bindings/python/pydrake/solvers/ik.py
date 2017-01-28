@@ -7,9 +7,13 @@ from ._ik import (IKResults,
                   InverseKinTraj,
                   InverseKinPointwise,
                   PostureConstraint,
-                  WorldEulerConstraint)
+                  WorldEulerConstraint,
+                  WorldQuatConstraint,
+                  WorldGazeDirConstraint)
 
 from ._ik import WorldPositionConstraint as _WorldPositionConstraint
+from ._ik import WorldPositionInFrameConstraint as \
+    _WorldPositionInFrameConstraint
 
 
 class WorldPositionConstraint(_WorldPositionConstraint):
@@ -19,8 +23,22 @@ class WorldPositionConstraint(_WorldPositionConstraint):
             # TODO: deprecate this method
             pts = pts.reshape((pts.size, 1))
         if tspan is None:
-            super(WorldPositionConstraint, self).__init__(model, body,
-                                                          pts, lb, ub)
+            super(WorldPositionConstraint, self).__init__(
+                model, body, pts, lb, ub)
         else:
-            super(WorldPositionConstraint, self).__init__(model, body,
-                                                          pts, lb, ub, tspan)
+            super(WorldPositionConstraint, self).__init__(
+                model, body, pts, lb, ub, tspan)
+
+
+class WorldPositionInFrameConstraint(_WorldPositionInFrameConstraint):
+    def __init__(self, model, body, pts, T_world_to_frame, lb, ub, tspan=None):
+        pts = np.asarray(pts)
+        if pts.ndim == 1:
+            # TODO: deprecate this method
+            pts = pts.reshape((pts.size, 1))
+        if tspan is None:
+            super(WorldPositionInFrameConstraint, self).__init__(
+                model, body, pts, T_world_to_frame, lb, ub)
+        else:
+            super(WorldPositionInFrameConstraint, self).__init__(
+                model, body, pts, T_world_to_frame, lb, ub, tspan)
