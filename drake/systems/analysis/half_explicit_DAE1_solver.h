@@ -92,12 +92,14 @@ class HalfExplicitDAE1Solver : public IntegratorBase<T> {
                                const Eigen::VectorXd& dlambda,
                                double fold,
                                const Eigen::VectorXd& gradient,
+                               const Eigen::MatrixXd& J,
                                double dt) const;
   void DoStepOnceFixedSize(const T& dt) override;
   Eigen::MatrixXd CalcConstraintSpaceInertiaMatrix(
       const systems::Context<T>& context, const Eigen::MatrixXd& J) const;
   void UpdateContinuousState(Context<T>* context,
                              const Eigen::VectorXd& lambda,
+                             const Eigen::MatrixXd& J,
                              double dt) const;
   Eigen::MatrixXd CalcConstraintJacobian(
       const systems::Context<T>& context) const;
@@ -107,6 +109,7 @@ class HalfExplicitDAE1Solver : public IntegratorBase<T> {
   // variables.
   Eigen::MatrixXd CalcAlgebraicJacobian(const Context<T>& context,
                                         const Eigen::VectorXd& lambda,
+                                        const Eigen::MatrixXd& Jc,
                                         double dt) const;
 
   // The maximum number of Newton-Raphson iterations.

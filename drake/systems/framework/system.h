@@ -288,6 +288,50 @@ class System {
   //@}
 
   //----------------------------------------------------------------------------
+  /// @name                        Constraint-related functions.
+  ///
+  // @{
+
+  /// Gets the number of constraint equations for this system.
+  /// @returns zero by default
+  int get_num_constraint_equations(const Context<T>& context) const {
+    return do_get_num_constraint_equations(context);
+  }
+
+  /// Evaluates the constraint equations for the system at the generalized
+  /// coordinates and generalized velocity specified by the context.
+  Eigen::VectorXd EvalConstraintEquations(
+      const Context<T>& context) const {
+    return DoEvalConstraintEquations(context);
+  }
+
+  /// Computes the time derivative of each constraint equation, evaluated at
+  /// the generalized coordinates and generalized velocity specified by the
+  /// context.
+  Eigen::VectorXd EvalConstraintEquationsDot(
+      const Context<T>& context) const {
+    return DoEvalConstraintEquationsDot(context);
+  }
+
+  /// Computes the change in velocity from applying the given constraint forces
+  /// to the system at the given context.
+  Eigen::VectorXd
+      CalcVelocityChangeFromConstraintImpulses(const Context<T>& context,
+                                               const Eigen::MatrixXd& J,
+                                               const Eigen::VectorXd& lambda)
+                                                   const {
+    return DoCalcVelocityChangeFromConstraintImpulses(context, J, lambda);
+  }
+
+  /// Computes the norm on constraint error.
+  double CalcConstraintErrorNorm(const Context<T>& context,
+                                 const Eigen::VectorXd& err) const {
+    return DoCalcConstraintErrorNorm(context, err);
+  }
+
+  //@}
+
+  //----------------------------------------------------------------------------
   /// @name                        Calculations
   /// A Drake %System defines a set of common computations that are understood
   /// by the framework. Most of these are embodied in a `Calc` method that
@@ -972,6 +1016,54 @@ class System {
     return nullptr;
   }
   //@}
+
+//----------------------------------------------------------------------------
+/// @name                        Constraint-related functions (protected).
+///
+// @{
+
+  /// Gets the number of constraint equations for this system.
+  /// @returns zero by default
+  virtual int do_get_num_constraint_equations(const Context<T>& context) const {
+    return 0;
+  }
+
+  /// Evaluates the constraint equations for the system at the generalized
+  /// coordinates and generalized velocity specified by the context.
+  virtual Eigen::VectorXd DoEvalConstraintEquations(
+      const Context<T>& context) const {
+    DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
+    return Eigen::VectorXd();
+  }
+
+  /// Computes the time derivative of each constraint equation, evaluated at
+  /// the generalized coordinates and generalized velocity specified by the
+  /// context.
+  virtual Eigen::VectorXd
+      DoEvalConstraintEquationsDot(
+        const Context<T>& context) const {
+    DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
+    return Eigen::VectorXd();
+  }
+
+  /// Computes the change in velocity from applying the given constraint forces
+  /// to the system at the given context.
+  virtual Eigen::VectorXd
+    DoCalcVelocityChangeFromConstraintImpulses(const Context<T>& context,
+                                               const Eigen::MatrixXd& J,
+                                               const Eigen::VectorXd& lambda)
+                                                   const {
+    DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
+    const auto& gv = context.get_continuous_state()->get_generalized_velocity();
+    return Eigen::VectorXd::Zero(gv.size());
+  }
+
+  /// Computes the norm of the constraint error. This default implementation
+  /// computes a Euclidean norm of the error.
+  virtual double DoCalcConstraintErrorNorm(const Context<T>& context,
+                                 const Eigen::VectorXd& err) const {
+    return err.norm();
+  }
 
   //----------------------------------------------------------------------------
   /// @name                 Utility methods (protected)

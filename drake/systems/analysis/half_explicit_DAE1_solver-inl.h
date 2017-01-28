@@ -17,19 +17,20 @@ template <class T>
 void HalfExplicitDAE1Solver<T>::UpdateContinuousState(Context<T>* context,
                                                       const Eigen::VectorXd&
                                                         lambda,
+                                                      const Eigen::MatrixXd& J,
                                                       double dt) const {
   const System<T>& system = this->get_system();
 
   // Compute the effect of applying the constraint forces (as impulsive forces).
-  const auto& dv = system.CalcVelocityChangeFromConstraintImpulses(context,
+  const auto& dv = system.CalcVelocityChangeFromConstraintImpulses(*context, J,
                                                                    lambda);
 
   // Compute v(t+Δt) and q(t+Δt).
   const auto& vplus = vsave_ + dv;
   system.MapVelocityToQDot(*context, vplus, qdot_.get());
-  const auto& q = context->get_continuous_state_vector().CopyToVector();
+  const auto& qplus = qsave_ + vplus*dt;
   auto x = context->get_mutable_continuous_state();
-  x->get_mutable_generalized_position()->SetFromVector(q + vplus*dt);
+  x->get_mutable_generalized_position()->SetFromVector(qplus);
   x->get_mutable_generalized_velocity()->SetFromVector(vplus);
 }
 
@@ -45,7 +46,9 @@ void HalfExplicitDAE1Solver<T>::UpdateContinuousState(Context<T>* context,
 //               force vector.
 template <class T>
 Eigen::MatrixXd HalfExplicitDAE1Solver<T>::CalcAlgebraicJacobian(
-    const Context<T>& context, const Eigen::VectorXd& lambda, double dt) const {
+    const Context<T>& context, const Eigen::VectorXd& lambda,
+    const Eigen::MatrixXd& Jc, double dt) const {
+  const System<T>& system = this->get_system();
   const double sqrt_eps = std::sqrt(std::numeric_limits<double>::epsilon());
 
   // Get the context as modifiable (we will restore everything we touch).
@@ -56,8 +59,8 @@ Eigen::MatrixXd HalfExplicitDAE1Solver<T>::CalcAlgebraicJacobian(
       CopyToVector();
 
   // Calculate the error in the algebraic equations at the current lambda.
-  UpdateContinuousState(context_mut, lambda, dt);
-  const auto& g0 = system.EvaluateConstraintEquations(context);
+  UpdateContinuousState(context_mut, lambda, Jc, dt);
+  const auto& g0 = system.EvalConstraintEquations(context);
 
   // Initialize the Jacobian matrix.
   const int neq = g0.size();
@@ -78,8 +81,8 @@ Eigen::MatrixXd HalfExplicitDAE1Solver<T>::CalcAlgebraicJacobian(
     dlambda = lambda_prime(i) - lambda(i);
 
     // Compute the column of the Jacobian.
-    UpdateContinuousState(context_mut, lambda_prime, dt);
-    const auto& gprime = system.EvaluateConstraintEquations(context);
+    UpdateContinuousState(context_mut, lambda_prime, Jc, dt);
+    const auto& gprime = system.EvalConstraintEquations(context);
 
     lambda_prime(i) = lambda(i);
     J.col(i) = (gprime - g0)/dlambda;
@@ -122,7 +125,8 @@ Eigen::MatrixXd HalfExplicitDAE1Solver<T>::CalcConstraintJacobian(
   // the constraint Jacobian.
   const int ngv = gv_save.size();
   Eigen::MatrixXd J(neq, ngv);
-  const auto& gv = context_mut->get_mutable_continuous_state_vector();
+  auto gv = context_mut->get_mutable_continuous_state()->
+      get_mutable_generalized_velocity();
   for (int i=0; i< ngv; ++i) {
     // Set the generalized velocity to a unit vector.
     gv->SetFromVector(Eigen::Matrix<T, Eigen::Dynamic, 1>::Unit(ngv, i));
@@ -195,6 +199,10 @@ void HalfExplicitDAE1Solver<T>::DoStepOnceFixedSize(const T& dt) {
   VectorBase<T>* v = xc->get_mutable_generalized_velocity();
   VectorBase<T>* z = xc->get_mutable_misc_continuous_state();
 
+  // Resize qdot, if necessary.
+  if (qdot_ == nullptr)
+    qdot_ = std::make_unique<systems::BasicVector<T>>(q->size());
+
   // Save the current generalized coordinates (may need to restore these,
   // repeatedly).
   qsave_ = q->CopyToVector();
@@ -252,14 +260,15 @@ void HalfExplicitDAE1Solver<T>::DoStepOnceFixedSize(const T& dt) {
   Eigen::VectorXd lambda = chol_.solve(-Jvprime);
 
   // Compute the constraint error based on this lambda.
-  UpdateContinuousState(context, lambda, dt);
-  const auto& err = system.EvaluateConstraintEquations(*context);
+  UpdateContinuousState(context, lambda, J, dt);
+  auto err = system.EvalConstraintEquations(*context);
 
   // Compute the current value of the objective function.
   double fcurrent = err.squaredNorm() / 2;
 
   // Check for immediate success.
-  bool solution_found = (system.CalcConstraintErrorNorm(err) < constraint_tol_);
+  bool solution_found =
+      (system.CalcConstraintErrorNorm(*context, err) < constraint_tol_);
 
   // TODO(edrumwri): Fix this comment.
   // If the error is acceptable, use the updated velocity and position.
@@ -277,18 +286,19 @@ void HalfExplicitDAE1Solver<T>::DoStepOnceFixedSize(const T& dt) {
       v->SetFromVector(vsave_);
 
       // Determine the Jacobian matrix for the current lambda.
-      const auto& J = CalcAlgebraicJacobian(*context, lambda, dt);
+      const auto& Jl = CalcAlgebraicJacobian(*context, lambda, J, dt);
 
       // Solve for Δλ.
-      LU_.compute(J);
+      LU_.compute(Jl);
       Eigen::VectorXd dlambda = LU_.solve(-err);
 
       // Compute the gradient of the objective function with respect to lambda.
       // 1/2*g(lambda)'*g(lambda) = J*g(lambda)
-      Eigen::VectorXd grad = J * err;
+      Eigen::VectorXd grad = Jl * err;
 
       // Use line search to determine a good value of α.
-      LineSearchOutput lout = search_line(lambda, dlambda, fcurrent, grad, dt);
+      LineSearchOutput lout = search_line(lambda, dlambda, fcurrent,
+                                          grad, J, dt);
 
       // Set updated lambda, constraint function outputs, and objective function
       // evaluation.
@@ -297,10 +307,10 @@ void HalfExplicitDAE1Solver<T>::DoStepOnceFixedSize(const T& dt) {
       fcurrent = lout.fnew;
 
       // Check for solution.
-      solution_found = (system.CalcConstraintErrorNorm(err) < constraint_tol_);
-      if (solution_found) {
-        // TODO(edrumwri): break.
-      }
+      solution_found =
+          (system.CalcConstraintErrorNorm(*context, err) < constraint_tol_);
+      if (solution_found)
+        break;
 
       // Check for gradient approximately zero, indicating convergence to a
       // non-solution.
@@ -308,9 +318,8 @@ void HalfExplicitDAE1Solver<T>::DoStepOnceFixedSize(const T& dt) {
       double den = std::max(0.5 * lambda.size(), lout.fnew);
       for (int i=0; i< lambda.size(); ++i)
         test = std::max(test, std::abs(grad(i))*std::max(lambda(i), 1.0)/den);
-      if (test < grad_tol) {
-        // TODO(edrumwri): break.
-      }
+      if (test < grad_tol)
+        break;
     }
 
     // TODO(edrumwri): If the residual error is too large, throw an exception
@@ -342,21 +351,31 @@ template <class T>
 typename HalfExplicitDAE1Solver<T>::LineSearchOutput
       HalfExplicitDAE1Solver<T>::search_line(
           const Eigen::VectorXd& lambda, const Eigen::VectorXd& dlambda,
-          double fold, const Eigen::VectorXd& gradient, double dt) const {
-  // TODO(edrumwri): Do a proper linesearch.
-  // Set alpha to a constant.
-  const double alpha = 0.001;
+          double fold, const Eigen::VectorXd& gradient,
+          const Eigen::MatrixXd& J, double dt) const {
+  // The initial step length scalar.
+  double alpha = 1.0;
+
+  // Get the slope of the step.
+  double slope = gradient.dot(dlambda);
+  double test = 0.0;
+  for (int i=0; i< dlambda.size(); ++i) {
+    test = std::max(test,
+                    std::abs(dlambda(i)) / std::max(std::abs(lambda(i), 1.0)));
+  }
 
   // Compute the new lambda.
   LineSearchOutput out;
   out.lambda_new = lambda + dlambda*alpha;
 
+  //
+
   // Evaluate the constraint equations.
   const auto& system = this->get_system();
   const Context<T>& context = this->get_context();
   Context<T>* context_mut = (Context<T>*) &context;
-  UpdateContinuousState(context_mut, out.lambda_new, dt);
-  out.goutput = system.EvaluateConstraintEquations(context);
+  UpdateContinuousState(context_mut, out.lambda_new, J, dt);
+  out.goutput = system.EvalConstraintEquations(context);
 
   // Compute the new value of the objective function.
   out.fnew = out.goutput.squaredNorm() / 2;

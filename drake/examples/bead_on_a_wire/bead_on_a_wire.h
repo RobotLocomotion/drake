@@ -124,25 +124,6 @@ class BeadOnAWire : public systems::LeafSystem<T> {
               const Eigen::MatrixXd& J,
               const Eigen::VectorXd& lambda) const;
 
-  /// Gets the number of constraint equations.
-  int get_num_constraint_equations(const systems::Context<T>& context) const;
-
-  /// Evaluates the constraint equations for a bead in absolute coordinates.
-  /// This method is computationally expensive. To evaluate these equations,
-  /// the method locates the variable s that minimizes the univariate function
-  /// ||f(s) - x||, where x is the location of the bead.
-  /// @warning The solution returned by this approach is not generally a global
-  ///          minimum.
-  /// @TODO(edrumwri): Provide a special function that calculates the parameters
-  ///                  for a given function?
-  Eigen::VectorXd EvalConstraintEquations(
-      const systems::Context<T>& context) const;
-
-  /// Computes the time derivative of each constraint equation, evaluated at
-  /// the current generalized coordinates and generalized velocity.
-  Eigen::VectorXd EvalConstraintEquationsDot(
-      const systems::Context<T>& context) const;
-
   /// Allows the user to reset the wire parameter function (which points to the
   /// sinusoidal function by default.
   /// @param f The pointer to a function that takes a wire parameter
@@ -174,21 +155,54 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   ///        | s      |
   static Eigen::Matrix<DScalar, 3, 1> sinusoidal_function(const DScalar& s);
 
+  /// Example wire parametric function for the bead on a wire example. The
+  /// exact function definition is:
+  /// <pre>
+  ///        | s |
+  /// f(s) = | 0 |
+  ///        | 0 |
+  static Eigen::Matrix<DScalar, 3, 1> linear_function(const DScalar& s);
+
   /// Inverse parametric function for the bead on a wire system that uses the
-  /// sinusoidal parametric example function. Simply returns the value closest
-  /// to the vertical coordinate.
+  /// sinusoidal parametric example function.
   static DScalar inverse_sinusoidal_function(const Vector3<DScalar>& v);
+
+  /// Inverse parametric function for the bead on a wire system that uses the
+  /// linear parametric example function.
+  static DScalar inverse_linear_function(const Vector3<DScalar>& v);
+
+ protected:
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override;
+
+  /// Gets the number of constraint equations.
+  int do_get_num_constraint_equations(const systems::Context<T>& context) const
+  override;
+
+  /// Evaluates the constraint equations for a bead in absolute coordinates.
+  /// This method is computationally expensive. To evaluate these equations,
+  /// the method locates the variable s that minimizes the univariate function
+  /// ||f(s) - x||, where x is the location of the bead.
+  /// @warning The solution returned by this approach is not generally a global
+  ///          minimum.
+  /// @TODO(edrumwri): Provide a special function that calculates the parameters
+  ///                  for a given function?
+  Eigen::VectorXd DoEvalConstraintEquations(
+      const systems::Context<T>& context) const override;
+
+  /// Computes the time derivative of each constraint equation, evaluated at
+  /// the current generalized coordinates and generalized velocity.
+  Eigen::VectorXd DoEvalConstraintEquationsDot(
+      const systems::Context<T>& context) const override;
 
   /// Computes the change in generalized velocity from applying constraint
   /// impulses @p lambda.
   /// @param context The current state of the system.
   /// @param lambda The vector of constraint forces.
-  Eigen::VectorXd CalcVelocityChangeFromConstraintImpulses(
-      const systems::Context<T>& context, const Eigen::VectorXd& lambda) const;
-
- protected:
-  void SetDefaultState(const systems::Context<T>& context,
-                       systems::State<T>* state) const override;
+  Eigen::VectorXd
+  DoCalcVelocityChangeFromConstraintImpulses(
+      const systems::Context<T>& context, const Eigen::MatrixXd& J,
+      const Eigen::VectorXd& lambda) const override;
 
  private:
 
@@ -208,7 +222,8 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   // in absolute coordinates back onto the wire. If this function is null,
   // EvaluateConstraintEquations() will use generic, presumably less efficient
   // methods instead. This function is not to nullptr by default.
-  std::function<DScalar(const Eigen::Matrix<DScalar, 3, 1>&)> inv_f_{nullptr};
+  std::function<DScalar(const Eigen::Matrix<DScalar, 3, 1>&)> inv_f_{
+      &inverse_sinusoidal_function};
 
   double g_{-9.81};
 };

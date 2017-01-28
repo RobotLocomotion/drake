@@ -29,9 +29,23 @@ BeadOnAWire<T>::BeadOnAWire(BeadOnAWire<T>::CoordinateType type) {
 }
 
 template <class T>
-//Vector3<Eigen::AutoDiffScalar<Eigen::Matrix<Eigen::AutoDiffScalar<drake::Vector1d>, 1, 1>>>
-  Eigen::Matrix<typename BeadOnAWire<T>::DScalar, 3, 1>
-  BeadOnAWire<T>::sinusoidal_function(const typename BeadOnAWire<T>::DScalar& s) {
+Eigen::Matrix<typename BeadOnAWire<T>::DScalar, 3, 1>
+BeadOnAWire<T>::linear_function(const typename BeadOnAWire<T>::DScalar& s) {
+  return Vector3<BeadOnAWire<T>::DScalar>(s, s, s);
+}
+
+template <class T>
+typename BeadOnAWire<T>::DScalar
+BeadOnAWire<T>::inverse_linear_function(
+    const Vector3<typename BeadOnAWire<T>::DScalar>& v) {
+  using std::atan2;
+  return v(0);
+}
+
+template <class T>
+Eigen::Matrix<typename BeadOnAWire<T>::DScalar, 3, 1>
+  BeadOnAWire<T>::sinusoidal_function(
+      const typename BeadOnAWire<T>::DScalar& s) {
   using std::cos;
   using std::sin;
   return Vector3<BeadOnAWire<T>::DScalar>(cos(s),
@@ -40,7 +54,9 @@ template <class T>
 }
 
 template <class T>
-typename BeadOnAWire<T>::DScalar BeadOnAWire<T>::inverse_sinusoidal_function(const Vector3<typename BeadOnAWire<T>::DScalar>& v) {
+typename BeadOnAWire<T>::DScalar
+    BeadOnAWire<T>::inverse_sinusoidal_function(
+        const Vector3<typename BeadOnAWire<T>::DScalar>& v) {
   using std::atan2;
   return atan2(v(1), v(0));
  }
@@ -62,7 +78,7 @@ Eigen::VectorXd BeadOnAWire<T>::CalcVelocityChangeFromConstraintImpulses(
 */
 
 template <class T>
-Eigen::VectorXd BeadOnAWire<T>::EvalConstraintEquations(
+Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
     const systems::Context<T>& context) const {
   // The constraint function is defined as:
   // g(x) = f(f⁻¹(x)) - x
@@ -97,7 +113,7 @@ Eigen::VectorXd BeadOnAWire<T>::EvalConstraintEquations(
 /// Computes the time derivative of the constraint equations, evaluated at
 /// the current generalized coordinates and generalized velocity.
 template <class T>
-Eigen::VectorXd BeadOnAWire<T>::EvalConstraintEquationsDot(
+Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquationsDot(
     const systems::Context<T>& context) const {
   // The constraint function is defined as:
   // g(x) = f(f⁻¹(x)) - x
@@ -160,13 +176,13 @@ void BeadOnAWire<T>::DoCalcOutput(const systems::Context<T>& context,
 }
 
 template <class T>
-int BeadOnAWire<T>::get_num_constraint_equations(
+int BeadOnAWire<T>::do_get_num_constraint_equations(
     const systems::Context<T>& context) const {
   return (coordinate_type_ == kAbsoluteCoordinates) ? 3 : 0;
 }
 
 template <class T>
-Eigen::VectorXd BeadOnAWire<T>::CalcVelocityChangeFromConstraintImpulses(
+Eigen::VectorXd BeadOnAWire<T>::DoCalcVelocityChangeFromConstraintImpulses(
     const systems::Context<T>& context, const Eigen::MatrixXd& J,
     const Eigen::VectorXd& lambda) const {
   DRAKE_DEMAND(coordinate_type_ == kAbsoluteCoordinates);
@@ -184,7 +200,7 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
   using std::sin;
   using std::cos;
   using std::abs;
-  /*
+
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
 
   // Obtain the structure we need to write into.
@@ -197,6 +213,7 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
 
   // Compute the derivatives using the desired coordinate representation.
   if (coordinate_type_ == kMinimalCoordinates) {
+    /*
     // Get the necessary parts of the state.
     const T s = state.GetAtIndex(0);
     const T sdot = state.GetAtIndex(1);
@@ -208,11 +225,9 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
     f->SetAtIndex(0, sdot);
 
     // TODO(edrumwri): Compute acceleration from Lagrangian Dynamics.
+     */
   } else {
     // Compute acceleration from unconstrained Newtonian dynamics.
-    const T x = state.GetAtIndex(0);
-    const T y = state.GetAtIndex(1);
-    const T z = state.GetAtIndex(2);
     const T xdot = state.GetAtIndex(3);
     const T ydot = state.GetAtIndex(4);
     const T zdot = state.GetAtIndex(5);
@@ -224,10 +239,10 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
     f->SetAtIndex(0, xdot);
     f->SetAtIndex(1, ydot);
     f->SetAtIndex(2, zdot);
-
-    // TODO(edrumwri): Compute accelerations.
+    f->SetAtIndex(3, fext(0));
+    f->SetAtIndex(4, fext(1));
+    f->SetAtIndex(5, fext(2));
   }
-   */
 }
 
 template <typename T>
