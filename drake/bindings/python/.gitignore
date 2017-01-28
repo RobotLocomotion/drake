@@ -1,5 +1,0 @@
-*.so
-pydrake/rbtree.py
-pydrake/autodiffutils.py
-pydrake/solvers/ik.py
-*.pyc
