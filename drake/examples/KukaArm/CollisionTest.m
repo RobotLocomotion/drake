@@ -2,6 +2,10 @@
 
 close all
 
+ptions.with_weight = true;
+options.with_shelf = true;
+p = KukaArm(options);
+
 Nq = 7;
 Nx = 14;
 Nu = 7;
