@@ -8,7 +8,7 @@ Nu = 7;
 
 %Cost weighting matrices
 Q = diag([100*ones(Nq,1);10*ones(Nq,1)]);
-R = 0.01*eye(nu);
+R = 0.01*eye(Nu);
 Qf = 5*Q;
 
 N = 2000;
@@ -17,10 +17,10 @@ tsamp2 = linspace(0,xtraj2.tspan(2),N);
 dt1 = tsamp1(2)-tsamp1(1);
 dt2 = tsamp2(2)-tsamp2(1);
 
-xsamp1 = xtraj1.eval(tsamp1);
-usamp1 = utraj1.eval(tsamp1);
-xsamp2 = xtraj2.eval(tsamp2);
-usamp2 = utraj2.eval(tsamp2);
+% xsamp1 = xtraj1.eval(tsamp1);
+% usamp1 = utraj1.eval(tsamp1);
+% xsamp2 = xtraj2.eval(tsamp2);
+% usamp2 = utraj2.eval(tsamp2);
 
 A1 = zeros(14,14,N);
 B1 = zeros(14,7,N);
@@ -82,7 +82,7 @@ hold on;
 plot(tsamp2, usamp2(7,:));
 
 % design FIR filter to filter noise to 5% of Nyquist rate
-b = fir1(48, 0.02);
+b = fir1(1024, 0.01);
 
 for j = 1:1
 
@@ -95,15 +95,19 @@ wx = filter(b,1,nx);
 wy = filter(b,1,ny);
 wz = filter(b,1,nz);
 w = [(5/max(wx))*wx (5/max(abs(wy)))*wy (5/max(abs(wz)))*wz]';
-figure();
-
 %w = zeros(3,N);
+
+figure();
+plot(tsamp1, w(1,:));
+hold on
+plot(tsamp1, w(2,:));
+plot(tsamp1, w(3,:));
 
 %Simulate with random ee force
 xcl1 = zeros(Nx,N);
 xcl1(:,1) = xsamp1(:,1);
 for k = 1:(N-1)
-    [~,xk] = ode2(@(t,x)p.dynamics_w(t,x,usamp1(:,k)-K1(:,:,k)*(xcl1(:,k)-xsamp1(:,k)), w(:,k)), [0 dt1], xcl1(:,k), dt1);
+    [~,xk] = ode3(@(t,x)p.dynamics_w(t,x,usamp1(:,k)-K1(:,:,k)*(xcl1(:,k)-xsamp1(:,k)), w(:,k)), [0 dt1], xcl1(:,k), dt1);
     xcl1(:,k+1) = xk(:,2);
 end
 
@@ -111,7 +115,7 @@ end
 xcl2 = zeros(Nx,N);
 xcl2(:,1) = xsamp2(:,1);
 for k = 1:(N-1)
-    [~,xk] = ode2(@(t,x)p.dynamics_w(t,x,usamp2(:,k)-K2(:,:,k)*(xcl2(:,k)-xsamp2(:,k)), w(:,k)), [0 dt2], xcl2(:,k), dt2);
+    [~,xk] = ode3(@(t,x)p.dynamics_w(t,x,usamp2(:,k)-K2(:,:,k)*(xcl2(:,k)-xsamp2(:,k)), w(:,k)), [0 dt2], xcl2(:,k), dt2);
     xcl2(:,k+1) = xk(:,2);
 end
 
