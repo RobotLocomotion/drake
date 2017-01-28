@@ -99,9 +99,7 @@ class FixedJoint : public DrakeJointImpl<FixedJoint> {
       std::default_random_engine& generator) const override;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_position_name().")
-#endif
   std::string getPositionName(int index) const override;
 
  public:

@@ -162,9 +162,7 @@ class RigidBodyFrame {
   // #4407. Fix parsers to use construtor instead.
   void set_transform_to_body(const Eigen::Isometry3d& transform_to_body);
 
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 
  private:
   std::string name_;

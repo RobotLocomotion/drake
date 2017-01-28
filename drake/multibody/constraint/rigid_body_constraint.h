@@ -488,9 +488,7 @@ class WorldQuatConstraint : public QuatConstraint {
   Eigen::Vector4d quat_des_;
 
  public:
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
 class RelativeQuatConstraint : public QuatConstraint {
@@ -515,9 +513,7 @@ class RelativeQuatConstraint : public QuatConstraint {
   Eigen::Vector4d quat_des_;
 
  public:
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
 class EulerConstraint : public SingleTimeKinematicConstraint {
@@ -579,9 +575,7 @@ class GazeConstraint : public SingleTimeKinematicConstraint {
   double conethreshold_{};
 
  public:
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
 class GazeOrientConstraint : public GazeConstraint {
@@ -606,9 +600,7 @@ class GazeOrientConstraint : public GazeConstraint {
   Eigen::Vector4d quat_des_;
 
  public:
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
 class WorldGazeOrientConstraint : public GazeOrientConstraint {
@@ -647,9 +639,7 @@ class GazeDirConstraint : public GazeConstraint {
   Eigen::Vector3d dir_;
 
  public:
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
 class WorldGazeDirConstraint : public GazeDirConstraint {
@@ -688,9 +678,7 @@ class GazeTargetConstraint : public GazeConstraint {
   Eigen::Vector3d gaze_origin_;
 
  public:
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
 class WorldGazeTargetConstraint : public GazeTargetConstraint {
@@ -794,9 +782,7 @@ class Point2LineSegDistConstraint : public SingleTimeKinematicConstraint {
   double dist_ub_{};
 
  public:
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
 class WorldFixedPositionConstraint : public MultipleTimeKinematicConstraint {
@@ -926,9 +912,7 @@ class WorldPositionInFrameConstraint : public WorldPositionConstraint {
   Eigen::Matrix4d T_world_to_frame_;
 
  public:
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
 class PostureChangeConstraint : public MultipleTimeLinearPostureConstraint {
