@@ -18,6 +18,7 @@ cc_library(
     name = "pendulum_plant",
     srcs = ["pendulum_plant.cc"],
     hdrs = ["pendulum_plant.h"],
+    linkstatic = 1,
     deps = [
         ":pendulum_state_vector",
         "//drake/systems/framework",
