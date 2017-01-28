@@ -10,7 +10,6 @@ nu = r.getNumInputs;
 
 v=r.constructVisualizer;
 
-
 %LQR Controller Stuff
 Q = diag([100*ones(nq,1);10*ones(nq,1)]);
 R = 0.01*eye(nu);
@@ -24,7 +23,7 @@ q0 = [0;-0.683;0;1.77;0;0.88;-1.57];
 x0 = [q0;zeros(nq,1)];
 xG = double(r.resolveConstraints(zeros(nx,1)));
 v.draw(0,x0);
-N = 30;
+N = 20;
 tf0 = 3.0;
 
 traj_init.x = PPTrajectory(foh([0,tf0],[x0,xG]));
@@ -67,10 +66,9 @@ toc
 
 v.playback(xtraj,struct('slider',true));
 
-
 traj_init.x = xtraj;
 traj_init.u = utraj;
-  
+
 %Robust Version
 options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;
 prog2 = RobustDirtranTrajectoryOptimization(r,N,D,E0,Q,R,Qf,tf0*[.8 1.2],options);
@@ -80,7 +78,7 @@ prog2 = prog2.addRunningCost(@cost);
 prog2 = prog2.addFinalCost(@finalCost);
 % prog2 = addTrajectoryDisplayFunction(prog2,@displayStateTrajectory);
 
-prog2 = prog2.addRobustCost(Q,R,Qf);
+prog2 = prog2.addRobustCost(.1*Q,.1*R,Qf);
 %prog2 = prog2.addRobustInputConstraint();
 %prog2 = prog2.addRobustStateConstraint(collision_constraint,2:(N2-1),1:2);
 
