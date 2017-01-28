@@ -30,7 +30,7 @@ struct SimpleCarConfigIndices {
 
 /// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class SimpleCarConfig : public systems::BasicVector<T> {
+class SimpleCarConfig final : public systems::BasicVector<T> {
  public:
   // An abbreviation for our row index constants.
   typedef SimpleCarConfigIndices K;
@@ -38,6 +38,18 @@ class SimpleCarConfig : public systems::BasicVector<T> {
   /// Default constructor.  Sets all rows to zero.
   SimpleCarConfig() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
+  }
+
+  /// Copy constructor.
+  SimpleCarConfig(const SimpleCarConfig& other)
+      : systems::BasicVector<T>(K::kNumCoordinates) {
+    this->SetFromVector(other.CopyToVector());
+  }
+
+  /// Copy-assignment operator.
+  SimpleCarConfig& operator=(const SimpleCarConfig& other) {
+    this->SetFromVector(other.CopyToVector());
+    return *this;
   }
 
   SimpleCarConfig<T>* DoClone() const override {
