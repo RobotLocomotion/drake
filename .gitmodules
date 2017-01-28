@@ -52,12 +52,6 @@
 [submodule "externals/meshconverters"]
 	path = externals/meshconverters
 	url = https://github.com/RobotLocomotion/meshConverters.git
-[submodule "externals/swigmake"]
-	path = externals/swigmake
-	url = https://github.com/rdeits/swigmake.git
-[submodule "externals/swig_matlab"]
-	path = externals/swig_matlab
-	url = https://github.com/jaeandersson/swig.git
 [submodule "externals/yaml_cpp"]
 	path = externals/yaml_cpp
 	url = https://github.com/jbeder/yaml-cpp.git

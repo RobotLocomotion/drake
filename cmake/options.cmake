@@ -303,15 +303,6 @@ macro(drake_setup_options)
   drake_optional_external(SPDLOG ON
     "Fast C++ text logging facility\; disabling will turn off text logging")
 
-  drake_optional_external(SWIG_MATLAB ON
-    DEPENDS "NOT DISABLE_MATLAB OR NOT DISABLE_PYTHON"
-    "A version of SWIG with MATLAB support")
-
-  drake_optional_external(SWIGMAKE ON
-    DEPENDS "NOT DISABLE_MATLAB OR NOT DISABLE_PYTHON\;WITH_SWIG_MATLAB"
-    "Helper tools to build Python & MATLAB wrappers"
-    "for C++ libraries with Eigen")
-
   # END external projects that are ON by default
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # BEGIN external projects that are only needed when MATLAB is in use
@@ -348,7 +339,7 @@ macro(drake_setup_options)
     "Convex/integer optimization solver\; free for academics")
 
   drake_optional_external(IRIS OFF
-    DEPENDS "WITH_MOSEK\;WITH_SWIG_MATLAB"
+    DEPENDS "WITH_MOSEK\;"
     "fast approximate convex segmentation")
 
   drake_optional_external(MESHCONVERTERS OFF
