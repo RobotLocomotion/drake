@@ -693,10 +693,11 @@
       xtraj = xtraj.setOutputFrame(obj.plant.getStateFrame);
     end
     
-    function [S, T] = fastsqrt(obj,A)
+    function S = fastsqrt(obj,A)
         %FASTSQRT computes the square root of a matrix A with Denman-Beavers iteration
         
         %S = sqrtm(A);
+        Ep = 1e-8*eye(size(A,1));
         
         if nnz(diag(A) > 0) ~= size(A,1)
             S = diag(sqrt(diag(A)));
@@ -707,11 +708,11 @@
         S = A;
         T = I;
         
-        T = .5*(T + inv(S));
+        T = .5*(T + inv(S+Ep));
         S = .5*(S+I);
         for k = 1:4
-            Snew = .5*(S + inv(T));
-            T = .5*(T + inv(S));
+            Snew = .5*(S + inv(T+Ep));
+            T = .5*(T + inv(S+Ep));
             S = Snew;
         end
         
