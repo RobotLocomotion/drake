@@ -10,6 +10,8 @@ include(../cmake/packages.cmake)
 include(../cmake/test.cmake)
 include(../cmake/tools.cmake)
 
+find_package(pybind11 REQUIRED)
+
 drake_setup_platform()
 drake_setup_tools()
 drake_find_packages()

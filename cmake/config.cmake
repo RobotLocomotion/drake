@@ -204,12 +204,11 @@ macro(drake_setup_python)
   # Choose your python (major) version
   option(WITH_PYTHON_3 "Force Drake to use Python 3 instead of Python 2" OFF)
 
-  # if(WITH_PYTHON_3)
-  #   find_package(Python 3 MODULE REQUIRED)
-  # else()
-  #   find_package(Python 2.7 MODULE REQUIRED)
-  # endif()
-  find_package(pybind11 REQUIRED)
+  if(WITH_PYTHON_3)
+    find_package(Python 3 MODULE REQUIRED)
+  else()
+    find_package(Python 2.7 MODULE REQUIRED)
+  endif()
 endmacro()
 
 #------------------------------------------------------------------------------
