@@ -175,7 +175,6 @@ add_subdirectory(examples)
 
 if(NOT DISABLE_PYTHON)
   add_subdirectory(bindings)
-  add_subdirectory(pybind)
 endif()
 
 if(BUILD_TESTING)
