@@ -7,6 +7,7 @@
 
 #include <utility>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 
 namespace drake {

@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
@@ -17,12 +18,9 @@ namespace systems {
 template <class T>
 class ExplicitEulerIntegrator : public IntegratorBase<T> {
  public:
-  ~ExplicitEulerIntegrator() override = default;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExplicitEulerIntegrator)
 
-  // Disable copy, assign, and move.
-  ExplicitEulerIntegrator(const ExplicitEulerIntegrator<T>& other) = delete;
-  ExplicitEulerIntegrator& operator=(const ExplicitEulerIntegrator<T>& other) =
-      delete;
+  ~ExplicitEulerIntegrator() override = default;
 
   /**
    * Constructs a fixed-step integrator for a given system using the given

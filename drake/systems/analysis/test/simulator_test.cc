@@ -1,4 +1,5 @@
 #include "drake/systems/analysis/simulator.h"
+
 #include <cmath>
 #include <complex>
 #include <functional>
@@ -7,6 +8,7 @@
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
