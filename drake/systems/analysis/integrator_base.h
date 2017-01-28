@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/vector_base.h"
@@ -30,6 +31,8 @@ solution, so must be avoided.
 template <class T>
 class IntegratorBase {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IntegratorBase)
+
   /**
    * Status returned by StepOnceAtMost().
    * When a step is successful, it will return an indication of what caused it
@@ -89,10 +92,6 @@ class IntegratorBase {
 
   /** Destructor. */
   virtual ~IntegratorBase() = default;
-
-  // Disable copy, assign, and move.
-  IntegratorBase(const IntegratorBase<T>& other) = delete;
-  IntegratorBase& operator=(const IntegratorBase<T>& other) = delete;
 
   /**
    * Indicates whether an integrator supports error estimation.

@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
@@ -13,12 +14,9 @@ namespace systems {
 template <class T>
 class RungeKutta2Integrator : public IntegratorBase<T> {
  public:
-  ~RungeKutta2Integrator() override = default;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RungeKutta2Integrator)
 
-  // Disable copy, assign, and move.
-  RungeKutta2Integrator(const RungeKutta2Integrator<T>& other) = delete;
-  RungeKutta2Integrator& operator=(const RungeKutta2Integrator<T>& other) =
-      delete;
+  ~RungeKutta2Integrator() override = default;
 
   /**
  * Constructs fixed-step integrator for a given system using the given
