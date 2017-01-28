@@ -2,6 +2,7 @@
 #include "drake/solvers/rotation_constraint_internal.h"
 
 #include <algorithm>
+#include <functional>
 #include <vector>
 
 #include "drake/math/cross_product.h"
@@ -397,6 +398,9 @@ void AddMcCormickVectorConstraints(
             // circle that is inside the bounding box, so intentionally
             // initialize it to a (known) bad value.
             double d = -1;
+
+            normal = std::accumulate(pts.begin(), pts.end(), Eigen::Vector3d::Zero());
+            normal /= pts.size();
 
             if (pts.size() == 3) {
               normal = (pts[1] - pts[0]).cross(pts[2] - pts[0]);
