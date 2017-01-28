@@ -85,6 +85,25 @@ def generate_default_ctor(hh, context, _):
     put(hh, DEFAULT_CTOR % context, 2)
 
 
+COPY_CTOR_ASSIGN = """
+  /// Copy constructor.
+  %(camel)s(const %(camel)s& other)
+      : systems::BasicVector<T>(K::kNumCoordinates) {
+    this->SetFromVector(other.CopyToVector());
+  }
+
+  /// Copy-assignment operator.
+  %(camel)s& operator=(const %(camel)s& other) {
+    this->SetFromVector(other.CopyToVector());
+    return *this;
+  }
+"""
+
+
+def generate_copy_ctor_assign(hh, context, _):
+    put(hh, COPY_CTOR_ASSIGN % context, 2)
+
+
 DO_CLONE = """
   %(camel)s<T>* DoClone() const override {
     auto result = new %(camel)s;
@@ -144,7 +163,7 @@ VECTOR_CLASS_BEGIN = """
 
 /// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class %(camel)s : public systems::BasicVector<T> {
+class %(camel)s %(maybe_final_keyword)s : public systems::BasicVector<T> {
  public:
   // An abbreviation for our row index constants.
   typedef %(indices)s K;
@@ -324,6 +343,7 @@ def generate_code(args):
     closing_namespace = "".join(["}  // namespace " + x + "\n"
                                  for x in reversed(namespace)])
 
+    final = False
     if args.named_vector_file:
         # Load the field names and docstrings from protobuf.
         # In the future, this can be extended for nested messages.
@@ -331,6 +351,7 @@ def generate_code(args):
             vec = named_vector_pb2.NamedVector()
             google.protobuf.text_format.Merge(f.read(), vec)
             fields = [{'name': el.name, 'doc': el.doc} for el in vec.element]
+            final = vec.final
     else:
         # Parse the field names from the command line.
         fields = [{'name': x, 'doc': x} for x in args.fields]
@@ -345,6 +366,7 @@ def generate_code(args):
     context.update(screaming_snake=screaming_snake)
     context.update(opening_namespace=opening_namespace)
     context.update(closing_namespace=closing_namespace)
+    context.update(maybe_final_keyword=("final" if final else ""))
 
     # This is a specially-formatted code block to warn users not to edit.
     # This disclaimer text is special-cased by our review tool, reviewable.io.
@@ -358,6 +380,8 @@ def generate_code(args):
         generate_indices(hh, context, fields)
         put(hh, VECTOR_CLASS_BEGIN % context, 2)
         generate_default_ctor(hh, context, fields)
+        if final:
+            generate_copy_ctor_assign(hh, context, fields)
         generate_do_clone(hh, context, fields)
         generate_accessors(hh, context, fields)
         put(hh, VECTOR_CLASS_END % context, 2)
