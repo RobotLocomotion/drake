@@ -50,6 +50,7 @@ cc_googletest(
 
 cc_googletest(
     name = "pendulum_dynamic_constraint_test",
+    linkstatic = 1,
     deps = [
         ":pendulum_plant",
         "//drake/common:eigen_matrix_compare",
@@ -59,6 +60,7 @@ cc_googletest(
 
 cc_googletest(
     name = "pendulum_trajectory_optimization_test",
+    linkstatic = 1,
     deps = [
         ":pendulum_swing_up",
         "//drake/common:eigen_matrix_compare",
