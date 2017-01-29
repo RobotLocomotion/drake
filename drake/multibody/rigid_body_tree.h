@@ -1539,7 +1539,6 @@ class RigidBodyTree {
   RigidBodyTree(const RigidBodyTree&);
   RigidBodyTree& operator=(const RigidBodyTree&) { return *this; }
 
-  std::set<std::string> already_printed_warnings;
   // TODO(SeanCurtis-TRI): This isn't properly used.
   // No query operations should work if it hasn't been initialized.  Calling
   // compile() is the only thing that should set this. Furthermore, any
