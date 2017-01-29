@@ -427,35 +427,14 @@ void AddMcCormickVectorConstraints(
             // we know that the minimal of this function is obtained at the
             // boundary of α.
             double d = 1;
-            for (int i = 0; i < static_cast<int>(pts.size()); ++i) {
-              d = std::min(normal.dot(pts[i]), d);
+            for (const auto& pt : pts) {
+              d = std::min(normal.dot(pt), d);
             }
             DRAKE_DEMAND(normal(0) > 0 && normal(1) > 0 && normal(2) > 0);
             DRAKE_DEMAND(d > 0 && d < 1);
 
-            // Useful below: the intersection points of the unit sphere with
-            // the box represent the convex hull of directions for vector v.
-            // Since all points must have magnitude 1 (and we've normalized the
-            // normal), all vectors within this set are within an angle theta
-            // of the normal, with
-            //    cos(theta) = min_i normal.dot(pt[i]),
-            // and we have 0 <= theta < pi/2.
-            // Proof sketch:
-            // Every vector in the convex hull of the intersection points
-            // can be written as
-            //   v = sum_i w_i p_i, w_i>0, sum_i w_i=1.
-            // Note that |v| = 1 when v=p_i, and <1 when v is inside the hull.
-            // Furthermore, every point in the intersection of the bounding box
-            // and the unit circle can be represented by a vector u which is
-            // a vector v in the convex hull, but with length normalized to 1.
-            //   u = v / |v|.
-            // Given normal'*u = |normal||u|cos(theta), and |normal|=|u|=1,
-            // we have
-            //   cos(theta) = normal'*v/|v| = (\sum w_i normal'*p_i)/|v|.
-            // This obtains a minimum when w_i=1 for min_i normal'*p_i,
-            // (because that maximizes the denominator AND minimizes the
-            //  numerator), yielding:
-            //   cos(theta) >= min_i normal.dot(pt[i]).
+            // theta is the maximal angle between v and normal, where v is an
+            // intersecting point between the box and the sphere.
             double cos_theta = 1;
             for (const auto& pt : pts) {
               cos_theta = std::min(cos_theta, normal.dot(pt));
