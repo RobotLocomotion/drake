@@ -112,7 +112,8 @@ T CalculateQuaternionDtConstraintFromQuaternionDt(
 template <typename T>
 bool TestQuaternionDtConstraintFromQuaternionDt(
     const Eigen::Quaternion<T>& quat, const Vector4<T>& quatDt) {
-
+  using std::abs;
+  
   // For an accurate test, the quaternion should be reasonably accurate.
   const double double_epsilon = std::numeric_limits<double>::epsilon();
   const double tolerance = 800 * double_epsilon;
