@@ -435,10 +435,7 @@ void AddMcCormickVectorConstraints(
 
             // theta is the maximal angle between v and normal, where v is an
             // intersecting point between the box and the sphere.
-            double cos_theta = 1;
-            for (const auto& pt : pts) {
-              cos_theta = std::min(cos_theta, normal.dot(pt));
-            }
+            double cos_theta = d;
             const double theta = std::acos(cos_theta);
 
             Eigen::Matrix<double, 1, 6> a;
