@@ -3,6 +3,7 @@
 #include <functional>
 #include <memory>
 #include <ostream>
+#include <set>
 #include <string>
 #include <utility>
 
@@ -36,7 +37,11 @@ enum class FormulaKind {
 // Total ordering between FormulaKinds
 bool operator<(FormulaKind k1, FormulaKind k2);
 
-class FormulaCell;  // In drake/common/symbolic_formula_cell.h
+class FormulaCell;            // In drake/common/symbolic_formula_cell.h
+class RelationalFormulaCell;  // In drake/common/symbolic_formula_cell.h
+class NaryFormulaCell;        // In drake/common/symbolic_formula_cell.h
+class FormulaNot;             // In drake/common/symbolic_formula_cell.h
+class FormulaForall;          // In drake/common/symbolic_formula_cell.h
 
 /** Represents a symbolic form of a first-order logic formula.
 
@@ -139,6 +144,28 @@ class Formula {
   friend std::ostream& operator<<(std::ostream& os, const Formula& f);
   friend void swap(Formula& a, Formula& b) { std::swap(a.ptr_, b.ptr_); }
 
+  friend bool is_false(const Formula& f);
+  friend bool is_true(const Formula& f);
+  friend bool is_equal_to(const Formula& f);
+  friend bool is_not_equal_to(const Formula& f);
+  friend bool is_greater_than(const Formula& f);
+  friend bool is_greater_than_or_equal_to(const Formula& f);
+  friend bool is_less_than(const Formula& f);
+  friend bool is_less_than_or_equal_to(const Formula& f);
+  friend bool is_relational(const Formula& f);
+  friend bool is_conjunction(const Formula& f);
+  friend bool is_disjunction(const Formula& f);
+  friend bool is_negation(const Formula& f);
+  friend bool is_forall(const Formula& f);
+
+  // Note that the following cast functions are only for low-level operations
+  // and not exposed to the user of symbolic_formula.h. These functions are
+  // declared in symbolic_formula_cell.h header.
+  friend std::shared_ptr<RelationalFormulaCell> to_relational(const Formula& f);
+  friend std::shared_ptr<NaryFormulaCell> to_nary(const Formula& f);
+  friend std::shared_ptr<FormulaNot> to_negation(const Formula& f);
+  friend std::shared_ptr<FormulaForall> to_forall(const Formula& f);
+
  private:
   std::shared_ptr<FormulaCell> ptr_;
 };
@@ -156,7 +183,66 @@ Formula operator<=(const Expression& e1, const Expression& e2);
 Formula operator>(const Expression& e1, const Expression& e2);
 Formula operator>=(const Expression& e1, const Expression& e2);
 
-std::ostream& operator<<(std::ostream& os, const Formula& e);
+std::ostream& operator<<(std::ostream& os, const Formula& f);
+
+/** Checks if @p f is structurally equal to False formula. */
+bool is_false(const Formula& f);
+/** Checks if @p f is structurally equal to True formula. */
+bool is_true(const Formula& f);
+/** Checks if @p f is a formula representing equality (==). */
+bool is_equal_to(const Formula& f);
+/** Checks if @p f is a formula representing disequality (!=). */
+bool is_not_equal_to(const Formula& f);
+/** Checks if @p f is a formula representing greater-than (>). */
+bool is_greater_than(const Formula& f);
+/** Checks if @p f is a formula representing greater-than-or-equal-to (>=). */
+bool is_greater_than_or_equal_to(const Formula& f);
+/** Checks if @p f is a formula representing less-than (<). */
+bool is_less_than(const Formula& f);
+/** Checks if @p f is a formula representing less-than-or-equal-to (<=). */
+bool is_less_than_or_equal_to(const Formula& f);
+/** Checks if @p f is a relational formula ({==, !=, >, >=, <, <=}). */
+bool is_relational(const Formula& f);
+/** Checks if @p f is a conjunction (∧). */
+bool is_conjunction(const Formula& f);
+/** Checks if @p f is a disjunction (∨). */
+bool is_disjunction(const Formula& f);
+/** Checks if @p f is a n-ary formula ({∧, ∨}). */
+bool is_nary(const Formula& f);
+/** Checks if @p f is a negation (¬). */
+bool is_negation(const Formula& f);
+/** Checks if @p f is a Forall formula (∀). */
+bool is_forall(const Formula& f);
+
+/** Returns the lhs-argument of a relational formula @p f.
+ *  \pre{@p f is a relational formula.}
+ */
+const Expression& get_lhs_expression(const Formula& f);
+
+/** Returns the rhs-argument of a relational formula @p f.
+ *  \pre{@p f is a relational formula.}
+ */
+const Expression& get_rhs_expression(const Formula& f);
+
+/** Returns the set of formulas in a n-ary formula @p f.
+ *  \pre{@p f is a n-ary formula.}
+ */
+const std::set<Formula>& get_operands(const Formula& f);
+
+/** Returns the formula in a negation formula @p f.
+ *  \pre{@p f is a negation formula.}
+ */
+const Formula& get_operand(const Formula& f);
+
+/** Returns the quantified variables in a forall formula @p f.
+ *  \pre{@p f is a forall formula.}
+ */
+const Variables& get_quantified_variables(const Formula& f);
+
+/** Returns the quantified formula in a forall formula @p f.
+ *  \pre{@p f is a forall formula.}
+ */
+const Formula& get_quantified_formula(const Formula& f);
 
 }  // namespace symbolic
 
