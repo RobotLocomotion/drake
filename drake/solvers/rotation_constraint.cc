@@ -344,7 +344,6 @@ std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(
   }
   return intersections;
 }
-
 }  // namespace internal
 
 namespace {
@@ -393,42 +392,46 @@ void AddMcCormickVectorConstraints(
             auto pts = internal::ComputeBoxEdgesAndSphereIntersection(box_min,
                                                                       box_max);
             DRAKE_DEMAND(pts.size() >= 3);
-            Eigen::Vector3d normal;
-            // Note: 1-d is the distance to the farthest point on the unit
-            // circle that is inside the bounding box, so intentionally
-            // initialize it to a (known) bad value.
-            double d = -1;
-
-            normal = std::accumulate(pts.begin(), pts.end(), Eigen::Vector3d::Zero());
+            // Set normal to be the average of pts.
+            Eigen::Vector3d normal = Eigen::Vector3d::Zero();
+            for (int i = 0; i < static_cast<int>(pts.size()); ++i) {
+              normal += pts[i];
+            }
             normal /= pts.size();
+            normal.normalize();
 
-            if (pts.size() == 3) {
-              normal = (pts[1] - pts[0]).cross(pts[2] - pts[0]);
-              if (normal(0) < 0) normal = -normal;
-              normal.normalize();
-              d = normal.dot(pts[0]);
-            } else {
-              // 4 points, so search for the tightest linear constraint.
-              // (will intersect with 3 of the points, so just try all
-              // combinations).
-              Eigen::Vector3d n;
-              for (int i = 0; i < 4; i++) {
-                n = (pts[(1 + i) % 4] - pts[i])
-                        .cross(pts[(2 + i) % 4] - pts[i]);
-                if (n(0) < 0) n = -n;
-                n.normalize();
-                const double this_d = n.dot(pts[i]);
-                if (n.dot(pts[(3 + i) % 4]) >=
-                        this_d  // then it's a valid constraint
-                    &&
-                    this_d > d) {  // and it's tighter than the previous best.
-                  normal = n;
-                  d = this_d;
-                }
-              }
-              DRAKE_DEMAND(d >= 0 && d <= 1);
+            // We will prove that the minimum of normalᵀ * v is obtained
+            // at one of the point.col(i).
+            // To compute the minimum of normalᵀ * v, where v is an intersecting
+            // point between the unit circle and the box. Notice that the
+            // intersection between the box and the unit circle can be
+            // decomposed
+            // to individual segment, each segment is a curve, that connects one
+            // intersecting point on the edge of the box, to another
+            // intersecting point on the edge of the box.
+            // Take one curve as an example, that
+            // connects the points v1, v2, on different edges of the box, and
+            // suppose v1(i) = v2(i) = u, namely these two points are on the
+            // box surface x(i) = u.
+            // The point v on the curve can be written as
+            // v(i) = u, v(j)² + v(k)² = 1 - u²,
+            // min(v1(j), v2(j)) <= v(j) <= max(v1(j), v2(j))
+            // min(v1(k), v2(k)) <= v(k) <= max(v1(k), v2(k))
+            // We define t = sqrt(1 - u²), and write v(j), v(k) as
+            // v(j) = t * cos(α), v(k) = t * sin(α)
+            // since the box is in the first orthant, we know 0 <= α <= pi/2
+            // We expand normalᵀ * v as
+            //   normal(i) * v(i) + normal(j) * v(j) + normal(k) * v(k)
+            // = normal(i) * u + t * (normal(j) * cos(α) + normal(k) * sin(α))
+            // since normal(j) >= 0, normal(k) >= 0,
+            // we know that the minimal of this function is obtained at the
+            // boundary of α.
+            double d = 1;
+            for (int i = 0; i < static_cast<int>(pts.size()); ++i) {
+              d = std::min(normal.dot(pts[i]), d);
             }
             DRAKE_DEMAND(normal(0) > 0 && normal(1) > 0 && normal(2) > 0);
+            DRAKE_DEMAND(d > 0 && d < 1);
 
             // Useful below: the intersection points of the unit sphere with
             // the box represent the convex hull of directions for vector v.
