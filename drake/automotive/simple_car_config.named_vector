@@ -1,3 +1,5 @@
+final: true
+
 element {
     name: "wheelbase"
     doc: "wheelbase"
