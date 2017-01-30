@@ -422,7 +422,7 @@ void  TestMapVelocityToQDot(
   // TODO(Mitiguy and Drumwright) change tolerance to 50*epsilon with PR #4604.
   //--------------------------------------------------------------
   const double epsilon = std::numeric_limits<double>::epsilon();
-  const double tolerance = 1.0E17 * epsilon;
+  const double tolerance = 50 * epsilon;
   EXPECT_TRUE(CompareMatrices(xyzDt_map,      xyzDt_exact, tolerance));
   EXPECT_TRUE(CompareMatrices(quatDt_map, quatDt_NB_exact, tolerance));
 }
@@ -462,7 +462,7 @@ void  TestMapQDotToVelocity(
   // TODO(Mitiguy and Drumwright) change tolerance to 50*epsilon with PR #4604.
   //--------------------------------------------------------------
   const double epsilon = std::numeric_limits<double>::epsilon();
-  const double tolerance = 1.0E17 * epsilon;
+  const double tolerance = 50 * epsilon;
   EXPECT_TRUE(CompareMatrices(w_map,  w_NB_B_exact, tolerance));
   EXPECT_TRUE(CompareMatrices(v_map, v_NBo_B_exact, tolerance));
 }
