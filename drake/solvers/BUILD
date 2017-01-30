@@ -348,5 +348,7 @@ cc_googletest(
 cpplint(extra_srcs = [
     "gurobi_solver.cc",
     "gurobi_solver.h",
+    "ipopt_solver.cc",
     "no_gurobi.cc",
+    "no_ipopt.cc",
 ])
