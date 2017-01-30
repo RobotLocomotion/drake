@@ -185,23 +185,33 @@ GTEST_TEST(TestAccelerometer, TestSensorAttachedToSwingingPendulum) {
   const Eigen::VectorXd x = logger.get_plant_state();
   const Eigen::VectorXd x_dot = logger.get_plant_state_derivative();
   const Eigen::VectorXd q = x.head(tree.get_num_positions());
-  const Eigen::VectorXd v = x.segment(tree.get_num_positions(),
-                                      tree.get_num_velocities());
+  const Eigen::VectorXd v = x.tail(tree.get_num_velocities());
 
   KinematicsCache<double> cache = tree.doKinematics(q, v);
 
-  // Let V be the linear acceleration of the sensor in the world frame. The
-  // equation for V is:
+  // The subsequent code implements the following math.
   //
-  // V = w x r + v_linear
+  // Let:
   //
-  // Since v_linear is zero in this example:
+  //   - v be the linear acceleration of the sensor in the world frame.
+  //   - v_linear be the velocity of a reference point.
+  //   - r be the position of the sensor relative to the reference point.
+  //   - w be the angular velocity of the pendulum in the same frame as the
+  //     reference point.
   //
-  // V = w x r
+  // The equation for v is:
   //
-  // Taking the derivative of V with respect to time gives:
+  //     v = w x r + v_linear
   //
-  // V_dot = w_dot x r + w x r_dot
+  // Let the reference point be the world's origin. Since the pendulum is
+  // anchored to the world's origin, v_linear is a 3-vector of zeros. Thus:
+  //
+  //     v = w x r
+  //
+  // Taking the derivative of v with respect to time gives v_dot, which is
+  // defined as follows:
+  //
+  //     v_dot = w_dot x r + w x r_dot
   //
   const Vector3d w_dot(0, x_dot(1), 0);
   const Vector3d w(0, x(1), 0);
@@ -219,8 +229,10 @@ GTEST_TEST(TestAccelerometer, TestSensorAttachedToSwingingPendulum) {
   const Vector3d w_dot_cross_r = w_dot.cross(r_translation);
   const Vector3d w_cross_r_dot = w.cross(r_dot_translation);
 
-  const Vector3d v_dot_in_world_frame =
-      w_dot_cross_r + w_cross_r_dot + diagram.get_tree().a_grav.tail<3>();
+  Vector3d v_dot_in_world_frame = w_dot_cross_r + w_cross_r_dot;
+  if (diagram.get_accelerometer().get_include_gravity()) {
+     v_dot_in_world_frame += diagram.get_tree().a_grav.tail<3>();
+  }
   const Vector3d v_dot = r.linear().transpose() * v_dot_in_world_frame;
 
   EXPECT_TRUE(CompareMatrices(latest_measurement, v_dot, 1e-11,
