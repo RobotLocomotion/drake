@@ -1,10 +1,11 @@
 /*
- * creates the following diagram system:
+ * An acrobot Spong controller that communicates to acrobot_plang_w_lcm
+ * through LCM, implemented by the following diagram system:
  *
  * LcmSubscriberSystem—>
  * AcrobotStateReceiver—>
  * AcrobotSpongController—>
- * AcrobotCommandPublisher—>
+ * AcrobotCommandSender—>
  * LcmPublisherSystem
  *
  */

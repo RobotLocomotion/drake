@@ -1,5 +1,5 @@
 /*
- * A simulated acrobot plant that talks to its controller through LCM,
+ * A simulated acrobot plant that communicates to its controller through LCM,
  * implemented by the following Diagram system:
  *
  * LcmSubscriberSystem -->
