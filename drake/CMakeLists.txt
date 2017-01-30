@@ -63,7 +63,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers -
 if(NOT CMAKE_CXX_FLAGS MATCHES "-fsanitize=") # sanitizers are extremely brittle without lazy linking
   if(APPLE)
     set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_SHARED_LINKER_FLAGS}")
-    # set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_MODULE_LINKER_FLAGS}")
+    set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_MODULE_LINKER_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_EXE_LINKER_FLAGS}")
   else()
     set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_SHARED_LINKER_FLAGS}")
