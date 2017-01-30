@@ -10,7 +10,7 @@ include(../cmake/packages.cmake)
 include(../cmake/test.cmake)
 include(../cmake/tools.cmake)
 
-find_package(pybind11 REQUIRED)
+find_package(pybind11)
 
 drake_setup_platform()
 drake_setup_tools()
@@ -175,7 +175,7 @@ if(Matlab_FOUND)
 endif()
 add_subdirectory(examples)
 
-if(NOT DISABLE_PYTHON)
+if(pybind11_FOUND AND NOT DISABLE_PYTHON)
   add_subdirectory(bindings)
 endif()
 
