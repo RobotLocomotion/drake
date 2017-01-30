@@ -94,8 +94,10 @@ void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
   // output xdot.
   //
   // During the first simulation tick, xdot is invalid since it has not yet
-  // arrived from the RigidBodyPlant.
-  if (context.get_time() == 0.0) {
+  // arrived from the RigidBodyPlant. When xdot is invalid, simply set it to be
+  // a vector of zeros. Note, however, that this may also mask situations where
+  // the simulation has gone unstable and invalid appears mid-simulation.
+  if (!xdot.allFinite()) {
     xdot = VectorXd::Zero(x.size());
   }
 
