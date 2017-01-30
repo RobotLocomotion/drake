@@ -50,4 +50,12 @@ if (snopt_FOUND)
   add_ik_gtest(test_ik_traj)
 endif ()
 
+add_library_with_exports(LIB_NAME drakeRigidBodyActuatorCompareToClone
+    SOURCE_FILES rigid_body_actuator_compare_to_clone.cc)
+target_link_libraries(drakeRigidBodyActuatorCompareToClone drakeRBM)
+
+add_library_with_exports(LIB_NAME drakeRigidBodyLoopCompareToClone
+    SOURCE_FILES rigid_body_loop_compare_to_clone.cc)
+target_link_libraries(drakeRigidBodyLoopCompareToClone drakeRBM)
+
 add_subdirectory(rigid_body_tree)
