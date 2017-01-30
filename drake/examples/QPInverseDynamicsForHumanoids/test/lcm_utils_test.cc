@@ -1,27 +1,19 @@
 #include <cstdlib>
+#include <memory>
 
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/example_qp_input_for_valkyrie.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 namespace {
-
-static std::string get_urdf_name() {
-  std::string urdf =
-      drake::GetDrakePath() +
-      std::string(
-          "/examples/Valkyrie/urdf/urdf/"
-          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
-  return urdf;
-}
-static RigidBodyTree<double> robot(
-    get_urdf_name(), drake::multibody::joints::kRollPitchYaw);
 
 // Test if an Eigen vector (row or column) equals a std vector.
 template <typename Derived, typename Scalar>
@@ -38,7 +30,7 @@ void TestEigenVectorAndStdVector(const Eigen::MatrixBase<Derived>& eigvec,
 // size).
 template <typename Derived, typename Scalar, size_t Size>
 void TestEigenVectorAndCArray(const Eigen::MatrixBase<Derived>& eigvec,
-                              const Scalar(&array)[Size]) {
+                              const Scalar (&array)[Size]) {
   EXPECT_TRUE(eigvec.rows() == 1 || eigvec.cols() == 1);
   EXPECT_EQ(static_cast<size_t>(eigvec.size()), Size);
   for (size_t i = 0; i < Size; ++i) {
@@ -129,9 +121,9 @@ static void TestEncodeDesiredBodyMotion(const DesiredBodyMotion& mot,
   TestConstrainedValuesMsg(mot, msg.constrained_accelerations);
 }
 
-// Test equality of the given DesiredDoFMotions and lcmt_desired_dof_motions
+// Test equality of the given DesiredDofMotions and lcmt_desired_dof_motions
 // message.
-static void TestEncodeDesiredDoFMotions(const DesiredDoFMotions& mot,
+static void TestEncodeDesiredDofMotions(const DesiredDofMotions& mot,
                                         const lcmt_desired_dof_motions& msg) {
   EXPECT_EQ(msg.num_dof, mot.size());
   EXPECT_EQ(static_cast<int>(msg.dof_names.size()), mot.size());
@@ -141,8 +133,8 @@ static void TestEncodeDesiredDoFMotions(const DesiredDoFMotions& mot,
   TestConstrainedValuesMsg(mot, msg.constrained_accelerations);
 }
 
-// Test equality of the given QPInput and lcmt_qp_input message.
-static void TestEncodeQPInput(const QPInput& qp_input,
+// Test equality of the given QpInput and lcmt_qp_input message.
+static void TestEncodeQpInput(const QpInput& qp_input,
                               const lcmt_qp_input& msg) {
   // Contacts
   EXPECT_EQ(msg.num_contacts,
@@ -165,7 +157,7 @@ static void TestEncodeQPInput(const QPInput& qp_input,
     TestEncodeDesiredBodyMotion(it->second, msg_mot);
   }
   // Dof motions
-  TestEncodeDesiredDoFMotions(qp_input.desired_dof_motions(),
+  TestEncodeDesiredDofMotions(qp_input.desired_dof_motions(),
                               msg.desired_dof_motions);
 
   // Centroidal momentum
@@ -201,9 +193,23 @@ static void TestBodyAcceleration(const BodyAcceleration& acc,
   TestEigenVectorAndCArray(acc.accelerations(), msg.accelerations);
 }
 
+class LcmUtilsTests : public ::testing::Test {
+ protected:
+  virtual void SetUp() {
+    tree_ = std::make_unique<RigidBodyTree<double>>();
+    parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+        GetDrakePath() +
+            "/examples/Valkyrie/urdf/urdf/"
+            "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
+        multibody::joints::kRollPitchYaw, tree_.get());
+  }
+
+  std::unique_ptr<RigidBodyTree<double>> tree_;
+};
+
 // Test encoding and decoding of ResolvedContact <-> lcmt_resolved_contact.
-GTEST_TEST(testLcmUtils, testEncodeDecodeResolvedContact) {
-  ResolvedContact contact(*robot.FindBody("leftFoot"));
+TEST_F(LcmUtilsTests, TestEncodeDecodeResolvedContact) {
+  ResolvedContact contact(*tree_->FindBody("leftFoot"));
   contact.mutable_num_basis_per_contact_point() = 4;
   contact.mutable_basis().resize(4);
   contact.mutable_basis() << 0.1, 0.0, 0.2, 0.3;
@@ -218,27 +224,27 @@ GTEST_TEST(testLcmUtils, testEncodeDecodeResolvedContact) {
   EncodeResolvedContact(contact, &msg);
   TestResolvedContact(contact, msg);
 
-  ResolvedContact decoded_contact(*robot.FindBody("world"));
-  DecodeResolvedContact(robot, msg, &decoded_contact);
+  ResolvedContact decoded_contact(*tree_->FindBody("world"));
+  DecodeResolvedContact(*tree_, msg, &decoded_contact);
   EXPECT_EQ(decoded_contact, contact);
 }
 
 // Test encoding and decoding of ResolvedContact <-> lcmt_resolved_contact.
-GTEST_TEST(testLcmUtils, testEncodeDecodeBodyAcceleration) {
-  BodyAcceleration acc(*robot.FindBody("leftFoot"));
+TEST_F(LcmUtilsTests, TestEncodeDecodeBodyAcceleration) {
+  BodyAcceleration acc(*tree_->FindBody("leftFoot"));
   acc.mutable_accelerations() << 1, 2, 3, 4, 5, 6;
 
   lcmt_body_acceleration msg;
   EncodeBodyAcceleration(acc, &msg);
   TestBodyAcceleration(acc, msg);
 
-  BodyAcceleration decoded_acc(*robot.FindBody("world"));
-  DecodeBodyAcceleration(robot, msg, &decoded_acc);
+  BodyAcceleration decoded_acc(*tree_->FindBody("world"));
+  DecodeBodyAcceleration(*tree_, msg, &decoded_acc);
   EXPECT_EQ(decoded_acc, acc);
 }
 
 // Test encoding and decoding of ResolvedContact <-> lcmt_resolved_contact.
-GTEST_TEST(testLcmUtils, testEncodeDecodeConstrainedValues) {
+TEST_F(LcmUtilsTests, TestEncodeDecodeConstrainedValues) {
   ConstrainedValues val;
   SetConstrainedValues(&val, 7);
 
@@ -254,8 +260,8 @@ GTEST_TEST(testLcmUtils, testEncodeDecodeConstrainedValues) {
 }
 
 // Test encoding and decoding of ResolvedContact <-> lcmt_resolved_contact.
-GTEST_TEST(testLcmUtils, testEncodeDecodeContactInformation) {
-  ContactInformation info(*robot.FindBody("leftFoot"), 5);
+TEST_F(LcmUtilsTests, TestEncodeDecodeContactInformation) {
+  ContactInformation info(*tree_->FindBody("leftFoot"), 5);
   info.mutable_contact_points().resize(3, 2);
   info.mutable_contact_points().col(0) = Vector3<double>(0.3, -0.1, 1);
   info.mutable_contact_points().col(1) = Vector3<double>(-0.3, 0.1, -1);
@@ -269,15 +275,15 @@ GTEST_TEST(testLcmUtils, testEncodeDecodeContactInformation) {
   TestEncodeContactInformation(info, msg);
 
   // Test decode.
-  ContactInformation decoded_info(*robot.FindBody("world"));
-  DecodeContactInformation(robot, msg, &decoded_info);
+  ContactInformation decoded_info(*tree_->FindBody("world"));
+  DecodeContactInformation(*tree_, msg, &decoded_info);
   EXPECT_EQ(decoded_info, info);
 }
 
 // Test encoding and decoding of
 // DesiredBodyMotion <-> lcmt_desired_body_motion.
-GTEST_TEST(testLcmUtils, testEncodeDecodeDesiredBodyMotion) {
-  DesiredBodyMotion mot(*robot.FindBody("leftFoot"));
+TEST_F(LcmUtilsTests, TestEncodeDecodeDesiredBodyMotion) {
+  DesiredBodyMotion mot(*tree_->FindBody("leftFoot"));
   mot.mutable_control_during_contact() = true;
   SetConstrainedValues(&mot, mot.size());
 
@@ -287,31 +293,31 @@ GTEST_TEST(testLcmUtils, testEncodeDecodeDesiredBodyMotion) {
   TestEncodeDesiredBodyMotion(mot, msg);
 
   // Test decode
-  DesiredBodyMotion decoded_mot(*robot.FindBody("world"));
-  DecodeDesiredBodyMotion(robot, msg, &decoded_mot);
+  DesiredBodyMotion decoded_mot(*tree_->FindBody("world"));
+  DecodeDesiredBodyMotion(*tree_, msg, &decoded_mot);
   EXPECT_EQ(decoded_mot, mot);
 }
 
 // Test encoding and decoding of
-// DesiredDoFMotions <-> lcmt_desired_dof_motions.
-GTEST_TEST(testLcmUtils, testEncodeDecodeDesiredDoFMotions) {
-  DesiredDoFMotions mot({"a", "b", "c", "d"});
+// DesiredDofMotions <-> lcmt_desired_dof_motions.
+TEST_F(LcmUtilsTests, TestEncodeDecodeDesiredDofMotions) {
+  DesiredDofMotions mot({"a", "b", "c", "d"});
   SetConstrainedValues(&mot, mot.size());
 
   // Test encode.
   lcmt_desired_dof_motions msg;
-  EncodeDesiredDoFMotions(mot, &msg);
-  TestEncodeDesiredDoFMotions(mot, msg);
+  EncodeDesiredDofMotions(mot, &msg);
+  TestEncodeDesiredDofMotions(mot, msg);
 
   // Test decode.
-  DesiredDoFMotions decoded_mot;
-  DecodeDesiredDoFMotions(msg, &decoded_mot);
+  DesiredDofMotions decoded_mot;
+  DecodeDesiredDofMotions(msg, &decoded_mot);
   EXPECT_EQ(decoded_mot, mot);
 }
 
 // Test encoding and decoding of
 // DesiredCentroidalMomentumDot <-> SetConstrainedValues.
-GTEST_TEST(testLcmUtils, testEncodeDecodeDesiredCentroidalMomentumDot) {
+TEST_F(LcmUtilsTests, TestEncodeDecodeDesiredCentroidalMomentumDot) {
   DesiredCentroidalMomentumDot Ld;
   SetConstrainedValues(&Ld, Ld.size());
 
@@ -326,19 +332,48 @@ GTEST_TEST(testLcmUtils, testEncodeDecodeDesiredCentroidalMomentumDot) {
   EXPECT_EQ(Ld, decoded_Ld);
 }
 
-// Test encoding and decoding of QPInput <-> lcmt_qp_input.
-GTEST_TEST(testLcmUtils, testEncodeDecodeQPInput) {
-  HumanoidStatus robot_status(robot);
-  QPInput qp_input = MakeExampleQPInput(robot_status);
+// Test encoding and decoding of QpInput <-> lcmt_qp_input.
+TEST_F(LcmUtilsTests, TestEncodeDecodeQpInput) {
+  // Initialize QP input
+  QpInput qp_input(GetDofNames(*tree_));
+  ContactInformation contact(*tree_->FindBody("leftFoot"), 3);
+  contact.mutable_contact_points() = Vector3<double>(1, 2, 3);
+  contact.mutable_mu() = 0.2;
+  contact.mutable_weight() = -1;
+  contact.mutable_acceleration_constraint_type() = ConstraintType::Hard;
+  contact.mutable_Kd() = 1;
+  contact.mutable_normal() = Vector3<double>(3, 2, 1).normalized();
+  qp_input.mutable_contact_information().emplace("leftFoot", contact);
+
+  DesiredBodyMotion pelv_motion(*tree_->FindBody("pelvis"));
+  pelv_motion.mutable_weights() << 1, 0, -1, 20, 0, -99;
+  pelv_motion.mutable_values() << 1, 2, 3, 4, 5, 6;
+  pelv_motion.SetAllConstraintTypesBasedOnWeights();
+  qp_input.mutable_desired_body_motions().emplace("pelvis", pelv_motion);
+
+  for (int i = 0; i < tree_->get_num_velocities(); ++i) {
+    qp_input.mutable_desired_dof_motions().mutable_weights()[i] = i - 10;
+    qp_input.mutable_desired_dof_motions().mutable_values()[i] = i;
+  }
+  qp_input.mutable_desired_dof_motions().SetAllConstraintTypesBasedOnWeights();
+
+  qp_input.mutable_desired_centroidal_momentum_dot().mutable_weights() << -1, 0,
+      1, 2, 3, 4;
+  qp_input.mutable_desired_centroidal_momentum_dot().mutable_values() << -3, -2,
+      -1, 0, 1, 2;
+  qp_input.mutable_desired_centroidal_momentum_dot()
+      .SetAllConstraintTypesBasedOnWeights();
+
+  qp_input.mutable_w_basis_reg() = 1e-3;
 
   // Test encode.
   lcmt_qp_input msg;
-  EncodeQPInput(qp_input, &msg);
-  TestEncodeQPInput(qp_input, msg);
+  EncodeQpInput(qp_input, &msg);
+  TestEncodeQpInput(qp_input, msg);
 
   // Test decode.
-  QPInput decoded_qp_input(robot);
-  DecodeQPInput(robot, msg, &decoded_qp_input);
+  QpInput decoded_qp_input;
+  DecodeQpInput(*tree_, msg, &decoded_qp_input);
   EXPECT_EQ(qp_input, decoded_qp_input);
 }
 

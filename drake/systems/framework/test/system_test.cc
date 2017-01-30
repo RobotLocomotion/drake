@@ -22,31 +22,39 @@ const int kNumberToUpdate = 2001;
 // A shell System to test the default implementations.
 class TestSystem : public System<double> {
  public:
-  TestSystem() {}
+  TestSystem() {
+    this->set_name("TestSystem");
+  }
   ~TestSystem() override {}
-
-  std::string get_name() const override { return "TestSystem"; }
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
       const override {
     return nullptr;
   }
 
-  std::unique_ptr<Context<double>> CreateDefaultContext() const override {
+  std::unique_ptr<Context<double>> AllocateContext() const override {
     return nullptr;
   }
+
+  void SetDefaultState(const Context<double>& context,
+                       State<double>* state) const override {}
+
+  void SetDefaults(Context<double>* context) const override {}
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override {
     return nullptr;
   }
 
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {}
+  const InputPortDescriptor<double>& AddAbstractInputPort() {
+    return this->DeclareAbstractInputPort();
+  }
 
-  void EvalTimeDerivatives(
-      const Context<double>& context,
-      ContinuousState<double>* derivatives) const override {}
+
+  const OutputPortDescriptor<double>& AddAbstractOutputPort() {
+    return this->DeclareAbstractOutputPort();
+  }
+
 
   int get_publish_count() const { return publish_count_; }
   int get_update_count() const { return update_count_; }
@@ -58,6 +66,13 @@ class TestSystem : public System<double> {
   }
 
  protected:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+
+  void DoCalcTimeDerivatives(
+      const Context<double>& context,
+      ContinuousState<double>* derivatives) const override {}
+
   // Sets up an arbitrary mapping from the current time to the next discrete
   // action, to exercise several different forms of discrete action.
   void DoCalcNextUpdateTime(const Context<double>& context,
@@ -70,7 +85,7 @@ class TestSystem : public System<double> {
       event.action = DiscreteEvent<double>::kPublishAction;
     } else if (context.get_time() < 20.0) {
       // Use the default update action.
-      event.action = DiscreteEvent<double>::kUpdateAction;
+      event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
     } else if (context.get_time() < 30.0) {
       // Use a custom publish action.
       event.action = DiscreteEvent<double>::kPublishAction;
@@ -78,10 +93,11 @@ class TestSystem : public System<double> {
                                    std::placeholders::_1 /* context */);
     } else {
       // Use a custom update action.
-      event.action = DiscreteEvent<double>::kUpdateAction;
-      event.do_update = std::bind(&TestSystem::DoEvalDifferenceUpdatesNumber,
+      event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
+      event.do_calc_discrete_variable_update = std::bind(
+                                  &TestSystem::DoCalcDiscreteUpdatesNumber,
                                   this, std::placeholders::_1 /* context */,
-                                  std::placeholders::_2 /* difference state */,
+                                  std::placeholders::_2 /* discrete state */,
                                   kNumberToUpdate);
     }
   }
@@ -92,9 +108,9 @@ class TestSystem : public System<double> {
   }
 
   // The default update function.
-  void DoEvalDifferenceUpdates(
-      const Context<double>& context,
-      DifferenceState<double>* difference_state) const override {
+  void DoCalcDiscreteVariableUpdates(
+      const Context<double> &context,
+      DiscreteState<double> *discrete_state) const override {
     ++update_count_;
   }
 
@@ -106,9 +122,9 @@ class TestSystem : public System<double> {
 
   // A custom update function with additional argument @p num, which may be
   // bound in DoCalcNextUpdateTime.
-  void DoEvalDifferenceUpdatesNumber(const Context<double>& context,
-                                     DifferenceState<double>* difference_state,
-                                     int num) const {
+  void DoCalcDiscreteUpdatesNumber(const Context<double> &context,
+                                   DiscreteState<double> *discrete_state,
+                                   int num) const {
     updated_numbers_.push_back(num);
   }
 
@@ -125,20 +141,37 @@ class SystemTest : public ::testing::Test {
   LeafContext<double> context_;
 };
 
+TEST_F(SystemTest, Feedthrough) {
+  // No inputs or outputs.
+  EXPECT_FALSE(system_.has_any_direct_feedthrough());
+
+  // Both inputs and outputs.
+  system_.AddAbstractInputPort();
+  system_.AddAbstractOutputPort();
+  EXPECT_TRUE(system_.has_any_direct_feedthrough());
+
+  // Only inputs.
+  TestSystem input_only;
+  input_only.AddAbstractInputPort();
+  EXPECT_FALSE(input_only.has_any_direct_feedthrough());
+
+  // Only outputs.
+  TestSystem output_only;
+  output_only.AddAbstractOutputPort();
+  EXPECT_FALSE(output_only.has_any_direct_feedthrough());
+}
+
 TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
   auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
   BasicVector<double> state_vec2(kSize);
 
-  system_.MapVelocityToQDot(context_, *state_vec1,
-                            &state_vec2);
+  system_.MapVelocityToQDot(context_, *state_vec1, &state_vec2);
   EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
   EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
   EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
 
   // Test Eigen specialized function specially.
-  system_.MapVelocityToQDot(context_,
-                            state_vec1->CopyToVector(),
-                            &state_vec2);
+  system_.MapVelocityToQDot(context_, state_vec1->CopyToVector(), &state_vec2);
   EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
   EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
   EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
@@ -148,16 +181,13 @@ TEST_F(SystemTest, MapConfigurationDerivativesToVelocity) {
   auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
   BasicVector<double> state_vec2(kSize);
 
-  system_.MapQDotToVelocity(context_, *state_vec1,
-                            &state_vec2);
+  system_.MapQDotToVelocity(context_, *state_vec1, &state_vec2);
   EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
   EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
   EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
 
   // Test Eigen specialized function specially.
-  system_.MapQDotToVelocity(context_,
-                            state_vec1->CopyToVector(),
-                            &state_vec2);
+  system_.MapQDotToVelocity(context_, state_vec1->CopyToVector(), &state_vec2);
   EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
   EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
   EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
@@ -167,8 +197,7 @@ TEST_F(SystemTest, ConfigurationDerivativeVelocitySizeMismatch) {
   auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
   BasicVector<double> state_vec2(kSize + 1);
 
-  EXPECT_THROW(system_.MapQDotToVelocity(
-      context_, *state_vec1, &state_vec2),
+  EXPECT_THROW(system_.MapQDotToVelocity(context_, *state_vec1, &state_vec2),
                std::runtime_error);
 }
 
@@ -176,8 +205,7 @@ TEST_F(SystemTest, VelocityConfigurationDerivativeSizeMismatch) {
   auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
   BasicVector<double> state_vec2(kSize + 1);
 
-  EXPECT_THROW(system_.MapVelocityToQDot(
-      context_, *state_vec1, &state_vec2),
+  EXPECT_THROW(system_.MapVelocityToQDot(context_, *state_vec1, &state_vec2),
                std::runtime_error);
 }
 
@@ -194,7 +222,7 @@ TEST_F(SystemTest, DiscretePublish) {
   EXPECT_EQ(1, system_.get_publish_count());
 }
 
-// Tests that the default DoEvalDifferenceUpdates is invoked when no other
+// Tests that the default DoEvalDiscreteVariableUpdates is invoked when no other
 // handler is
 // registered in DoCalcNextUpdateTime.
 TEST_F(SystemTest, DiscreteUpdate) {
@@ -204,9 +232,10 @@ TEST_F(SystemTest, DiscreteUpdate) {
   system_.CalcNextUpdateTime(context_, &actions);
   ASSERT_EQ(1u, actions.events.size());
 
-  std::unique_ptr<DifferenceState<double>> update =
-      system_.AllocateDifferenceVariables();
-  system_.EvalDifferenceUpdates(context_, actions.events[0], update.get());
+  std::unique_ptr<DiscreteState<double>> update =
+      system_.AllocateDiscreteVariables();
+  system_.CalcDiscreteVariableUpdates(context_, actions.events[0],
+                                      update.get());
   EXPECT_EQ(1, system_.get_update_count());
 }
 
@@ -233,11 +262,33 @@ TEST_F(SystemTest, CustomDiscreteUpdate) {
   system_.CalcNextUpdateTime(context_, &actions);
   ASSERT_EQ(1u, actions.events.size());
 
-  std::unique_ptr<DifferenceState<double>> update =
-      system_.AllocateDifferenceVariables();
-  system_.EvalDifferenceUpdates(context_, actions.events[0], update.get());
+  std::unique_ptr<DiscreteState<double>> update =
+      system_.AllocateDiscreteVariables();
+  system_.CalcDiscreteVariableUpdates(context_, actions.events[0],
+                                      update.get());
   ASSERT_EQ(1u, system_.get_updated_numbers().size());
   EXPECT_EQ(kNumberToUpdate, system_.get_updated_numbers()[0]);
+}
+
+// Tests that descriptor references remain valid even if lots of other
+// descriptors are added to the system, forcing a vector resize.
+TEST_F(SystemTest, PortDescriptorsAreStable) {
+  const auto& first_input = system_.AddAbstractInputPort();
+  const auto& first_output = system_.AddAbstractOutputPort();
+  for (int i = 0; i < 1000; i++) {
+    system_.AddAbstractInputPort();
+    system_.AddAbstractOutputPort();
+  }
+  EXPECT_EQ(1001, system_.get_num_input_ports());
+  EXPECT_EQ(1001, system_.get_num_output_ports());
+
+  // Check for address equality.
+  EXPECT_EQ(&first_input, &system_.get_input_port(0));
+  EXPECT_EQ(&first_output, &system_.get_output_port(0));
+
+  // Check for valid content.
+  EXPECT_EQ(kAbstractValued, first_input.get_data_type());
+  EXPECT_EQ(kAbstractValued, first_output.get_data_type());
 }
 
 // A shell System for AbstractValue IO test
@@ -248,31 +299,36 @@ class ValueIOTestSystem : public System<double> {
   // std::string.
   // The second input / output pair are vector type with length 1.
   ValueIOTestSystem() {
-    DeclareAbstractInputPort(kInheritedSampling);
-    DeclareAbstractOutputPort(kInheritedSampling);
+    DeclareAbstractInputPort();
+    DeclareAbstractOutputPort();
 
-    DeclareInputPort(kVectorValued, 1, kInheritedSampling);
-    DeclareOutputPort(kVectorValued, 1, kInheritedSampling);
+    DeclareInputPort(kVectorValued, 1);
+    DeclareOutputPort(kVectorValued, 1);
+
+    set_name("ValueIOTestSystem");
   }
 
   ~ValueIOTestSystem() override {}
-
-  std::string get_name() const override { return "ValueIOTestSystem"; }
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
       const override {
     return nullptr;
   }
 
-  std::unique_ptr<Context<double>> CreateDefaultContext() const override {
+  std::unique_ptr<Context<double>> AllocateContext() const override {
     std::unique_ptr<LeafContext<double>> context(new LeafContext<double>);
     context->SetNumInputPorts(this->get_num_input_ports());
     return std::unique_ptr<Context<double>>(context.release());
   }
 
-  // Eval append "output" to input(0), and sets output(1) = 2 * input(1).
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override {
+  void SetDefaultState(const Context<double>& context,
+                       State<double>* state) const override {}
+
+  void SetDefaults(Context<double>* context) const override {}
+
+  // Append "output" to input(0), and sets output(1) = 2 * input(1).
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {
     const std::string* str_in = EvalInputValue<std::string>(context, 0);
 
     std::string& str_out =
@@ -320,7 +376,7 @@ GTEST_TEST(SystemIOTest, SystemValueIOTest) {
   context->SetInputPort(
       1, std::make_unique<FreestandingInputPort>(std::move(vec_input)));
 
-  test_sys.EvalOutput(*context, output.get());
+  test_sys.CalcOutput(*context, output.get());
 
   EXPECT_EQ(context->get_num_input_ports(), 2);
   EXPECT_EQ(output->get_num_ports(), 2);

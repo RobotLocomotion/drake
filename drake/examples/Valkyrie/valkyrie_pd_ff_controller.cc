@@ -1,20 +1,19 @@
 #include <cmath>
 #include <iostream>
+#include <memory>
 #include <string>
 
 #include "drake/common/drake_path.h"
-
 #include "drake/examples/Valkyrie/robot_state_decoder.h"
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/examples/Valkyrie/valkyrie_pd_ff_controller.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/kinematics_cache.h"
-
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/lcm/drake_lcm.h"
-
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-
 #include "drake/util/drakeUtil.h"
 
 #include "lcmtypes/bot_core/atlas_command_t.hpp"
@@ -22,7 +21,7 @@
 
 namespace drake {
 using lcm::DrakeLcm;
-using examples::valkyrie::kRPYValkyrieDoF;
+using examples::valkyrie::kRPYValkyrieDof;
 
 namespace systems {
 
@@ -39,10 +38,8 @@ ValkyriePDAndFeedForwardController::ValkyriePDAndFeedForwardController(
       feedforward_torque_(nominal_torque),
       Kp_(Kp),
       Kd_(Kd) {
-  input_port_index_kinematics_result_ =
-      DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
-  output_port_index_atlas_command_ =
-      DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
+  input_port_index_kinematics_result_ = DeclareAbstractInputPort().get_index();
+  output_port_index_atlas_command_ = DeclareAbstractOutputPort().get_index();
 
   if (!Kp_.allFinite())
     throw std::runtime_error("Invalid Kp.");
@@ -56,7 +53,7 @@ ValkyriePDAndFeedForwardController::ValkyriePDAndFeedForwardController(
   set_name("pd_and_ff_controller_for_val");
 }
 
-void ValkyriePDAndFeedForwardController::EvalOutput(
+void ValkyriePDAndFeedForwardController::DoCalcOutput(
                   const Context<double>& context,
                   SystemOutput<double>* output) const {
   // State input
@@ -135,9 +132,11 @@ void run_valkyrie_pd_ff_controller() {
       std::string(
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
-  RigidBodyTree<double> robot(urdf, drake::multibody::joints::kRollPitchYaw);
+  auto robot = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      urdf, multibody::joints::kRollPitchYaw, robot.get());
 
-  VectorX<double> Kp(kRPYValkyrieDoF);
+  VectorX<double> Kp(kRPYValkyrieDof);
   Kp << 0, 0, 0, 0, 0, 0,            // base
       100, 300, 300,                 // spine
       10,                            // neck
@@ -148,7 +147,7 @@ void run_valkyrie_pd_ff_controller() {
       100, 100, 300, 300, 300, 100,  // r leg
       100, 100, 300, 300, 300, 100;  // l leg
 
-  VectorX<double> Kd(kRPYValkyrieDoF);
+  VectorX<double> Kd(kRPYValkyrieDof);
   Kd << 0, 0, 0, 0, 0, 0,      // base
       10, 10, 10,              // spine
       3,                       // neck
@@ -162,11 +161,11 @@ void run_valkyrie_pd_ff_controller() {
   DrakeLcm lcm;
   DiagramBuilder<double> builder;
   RobotStateDecoder* state_decoder =
-      builder.AddSystem(std::make_unique<RobotStateDecoder>(robot));
+      builder.AddSystem(std::make_unique<RobotStateDecoder>(*robot));
   ValkyriePDAndFeedForwardController* controller =
       builder.AddSystem(std::make_unique<ValkyriePDAndFeedForwardController>(
-          robot, examples::valkyrie::RPYValkyrieFixedPointState().head(
-                     kRPYValkyrieDoF),
+          *robot, examples::valkyrie::RPYValkyrieFixedPointState().head(
+                     kRPYValkyrieDof),
           examples::valkyrie::RPYValkyrieFixedPointTorque(), Kp, Kd));
 
   // lcm

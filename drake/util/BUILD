@@ -1,8 +1,9 @@
-# -*- python -*
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load("//tools:cpplint.bzl", "cpplint")
 
 package(default_visibility = ["//visibility:public"])
-
-DEPS = ["//drake/common:common"]
 
 cc_library(
     name = "util",
@@ -15,8 +16,11 @@ cc_library(
         "drakeUtil.h",
     ],
     linkstatic = 1,
-    deps = DEPS + [
+    deps = [
+        "//drake/common",
         "//drake/math:geometric_transform",
         "//drake/math:gradient",
     ],
 )
+
+cpplint()

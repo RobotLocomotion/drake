@@ -7,7 +7,9 @@ add_library_with_exports(LIB_NAME drakeJoints SOURCE_FILES
         revolute_joint.cc
         roll_pitch_yaw_floating_joint.cc)
 
-target_link_libraries(drakeJoints drakeGeometryUtil)
+target_link_libraries(drakeJoints
+  drakeGeometryUtil
+  Eigen3::Eigen)
 
 drake_install_libraries(drakeJoints)
 drake_install_headers(
@@ -27,4 +29,7 @@ drake_install_pkg_config_file(drake-joints
   REQUIRES
     drake-geometry-util
     eigen3)
-add_subdirectory(test)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

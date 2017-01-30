@@ -6,13 +6,13 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/quaternion.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_value_source.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/constant_value_source.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 #include "drake/util/drakeGeometryUtil.h"
 
@@ -32,7 +32,8 @@ using multibody::joints::FloatingBaseType;
 // Transforms a spatial force expressed in the sensor frame to an equivalent
 // one in a frame that is world aligned frame located at the sensor position.
 static ContactForce<double> TransformContactWrench(
-    const RigidBodyFrame& sensor_info, const Isometry3<double>& body_pose,
+    const RigidBodyFrame<double>& sensor_info,
+    const Isometry3<double>& body_pose,
     const SpatialForce<double>& spatial_force_in_sensor_frame) {
   Isometry3<double> sensor_pose =
       body_pose * sensor_info.get_transform_to_body();
@@ -65,9 +66,9 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
   multibody::AddFlatTerrainToWorld(&tree, 100., 10.);
 
   // Make hand / foot mounted force torque sensors.
-  std::vector<RigidBodyFrame> force_torque_sensor_info;
-  std::map<Side, RigidBodyFrame> hand_ft_sensor_info;
-  std::map<Side, RigidBodyFrame> foot_ft_sensor_info;
+  std::vector<RigidBodyFrame<double>> force_torque_sensor_info;
+  std::map<Side, RigidBodyFrame<double>> hand_ft_sensor_info;
+  std::map<Side, RigidBodyFrame<double>> foot_ft_sensor_info;
   std::map<Side, std::string> foot_names;
   foot_names[Side::LEFT] = "leftFoot";
   foot_names[Side::RIGHT] = "rightFoot";
@@ -87,11 +88,13 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
 
   for (Side side : Side::values) {
     foot_ft_sensor_info[side] =
-        RigidBodyFrame(foot_names[side] + "FTSensor",
-                       tree.FindBody(foot_names[side]), foot_ft_sensor_offset);
+        RigidBodyFrame<double>(
+            foot_names[side] + "FTSensor",
+            tree.FindBody(foot_names[side]), foot_ft_sensor_offset);
     hand_ft_sensor_info[side] =
-        RigidBodyFrame(hand_names[side] + "FTSensor",
-                       tree.FindBody(hand_names[side]), hand_ft_sensor_offset);
+        RigidBodyFrame<double>(
+            hand_names[side] + "FTSensor",
+            tree.FindBody(hand_names[side]), hand_ft_sensor_offset);
     force_torque_sensor_info.push_back(foot_ft_sensor_info[side]);
     force_torque_sensor_info.push_back(hand_ft_sensor_info[side]);
   }
@@ -215,7 +218,7 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
 
   auto context = diagram->CreateDefaultContext();
   auto output = diagram->AllocateOutput(*context);
-  diagram->EvalOutput(*context, output.get());
+  diagram->CalcOutput(*context, output.get());
 
   // TODO(tkoolen): magic numbers.
   auto cache_output = output->get_data(0)->GetValue<KinematicsCache<double>>();

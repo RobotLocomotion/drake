@@ -1,8 +1,11 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/simple_car_config.h"
 #include "drake/automotive/gen/simple_car_state.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -37,12 +40,14 @@ namespace automotive {
 /// - drake::AutoDiffXd
 /// - drake::symbolic::Expression
 ///
-/// They are already available to link against in libdrakeAutomotive.
+/// They are already available to link against in the containing library.
 ///
 /// @ingroup automotive_systems
 template <typename T>
 class SimpleCar : public systems::LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleCar)
+
   explicit SimpleCar(const SimpleCarConfig<T>& config = get_default_config());
 
   static SimpleCarConfig<T> get_default_config();
@@ -51,9 +56,9 @@ class SimpleCar : public systems::LeafSystem<T> {
  public:
   // System<T> overrides
   bool has_any_direct_feedthrough() const override;
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
-  void EvalTimeDerivatives(
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
+  void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
@@ -62,12 +67,13 @@ class SimpleCar : public systems::LeafSystem<T> {
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
       const override;
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override;
+      const systems::OutputPortDescriptor<T>& descriptor) const override;
 
  private:
-  void DoEvalOutput(const SimpleCarState<T>&, SimpleCarState<T>*) const;
-  void DoEvalTimeDerivatives(const SimpleCarState<T>&, const DrivingCommand<T>&,
-                             SimpleCarState<T>*) const;
+  void ImplCalcOutput(const SimpleCarState<T>&, SimpleCarState<T>*) const;
+  void ImplCalcTimeDerivatives(const SimpleCarState<T>&,
+                               const DrivingCommand<T>&,
+                               SimpleCarState<T>*) const;
 
   const SimpleCarConfig<T> config_;
 };

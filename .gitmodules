@@ -9,10 +9,10 @@
 	url = https://github.com/lcm-proj/lcm.git
 [submodule "externals/bot_core_lcmtypes"]
 	path = externals/bot_core_lcmtypes
-	url = https://github.com/mwoehlke-kitware/bot_core_lcmtypes
+	url = https://github.com/openhumanoids/bot_core_lcmtypes
 [submodule "externals/libbot"]
 	path = externals/libbot
-	url = https://github.com/RobotLocomotion/libbot.git
+	url = https://github.com/RobotLocomotion/libbot2.git
 [submodule "externals/spotless"]
 	path = externals/spotless
 	url = https://github.com/RobotLocomotion/spotless-pod.git
@@ -73,7 +73,7 @@
 	ignore = untracked
 [submodule "externals/google_styleguide"]
 	path = externals/google_styleguide
-	url = https://github.com/mwoehlke-kitware/styleguide.git
+	url = https://github.com/google/styleguide.git
 [submodule "externals/spdlog"]
 	path = externals/spdlog
 	url = https://github.com/gabime/spdlog.git
@@ -99,3 +99,21 @@
 [submodule "ros/hsrb_description"]
 	path = ros/hsrb_description
 	url = https://github.com/ToyotaResearchInstitute/hsrb_description.git
+[submodule "externals/fcl"]
+	path = externals/fcl
+	url = https://github.com/flexible-collision-library/fcl.git
+[submodule "externals/pythonqt"]
+	path = externals/pythonqt
+	url = https://github.com/commontk/PythonQt.git
+[submodule "externals/ctk_python_console"]
+	path = externals/ctk_python_console
+	url = https://github.com/patmarion/ctkPythonConsole
+[submodule "externals/qt_property_browser"]
+	path = externals/qt_property_browser
+	url = https://github.com/patmarion/QtPropertyBrowser
+[submodule "externals/vtk"]
+	path = externals/vtk
+	url = git://vtk.org/VTK.git
+[submodule "externals/pybind11"]
+	path = externals/pybind11
+	url = https://github.com/pybind/pybind11

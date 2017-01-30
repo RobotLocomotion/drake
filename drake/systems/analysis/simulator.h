@@ -3,10 +3,12 @@
 #include <algorithm>
 #include <chrono>
 #include <limits>
+#include <memory>
 #include <tuple>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
@@ -51,7 +53,7 @@ namespace systems {
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  *
  * Instantiated templates for the following kinds of T's are provided and
- * available to link against in libdrakeSystemAnalysis:
+ * available to link against in the containing library:
  * - double
  * - AutoDiffXd
  *
@@ -62,6 +64,8 @@ namespace systems {
 template <typename T>
 class Simulator {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Simulator)
+
   /** Create a %Simulator that can advance a given System through time to
    * produce a trajectory consisting of a sequence of Context values. The System
    * must not have unresolved input ports if the values of those ports are
@@ -163,6 +167,22 @@ class Simulator {
    */
   double get_actual_realtime_rate() const;
 
+  /** Sets whether the simulation should invoke Publish on the System under
+   * simulation during every time step. If enabled, Publish will be invoked
+   * after discrete updates and before continuous integration. Regardless of
+   * whether publishing every time step is enabled, Publish will be invoked at
+   * Simulator initialize time, and as System<T>::CalcNextUpdateTime requests.
+   */
+  void set_publish_every_time_step(bool publish) {
+    publish_every_time_step_ = publish;
+  }
+
+  /** Returns true if the simulation should invoke Publish on the System under
+   * simulation every time step.  By default, returns true.
+   */
+  // TODO(sherm1, edrumwri): Consider making this false by default.
+  bool get_publish_every_time_step() const { return publish_every_time_step_; }
+
   /** Returns a const reference to the internally-maintained Context holding the
    * most recent step in the trajectory. This is suitable for publishing or
    * extracting information about this trajectory step.
@@ -215,9 +235,14 @@ class Simulator {
   /** Gets the number of integration steps since the last Initialize() call. */
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
-  /** Gets the number of difference equation updates performed since the last
-  Initialize() call? */
-  int64_t get_num_updates() const { return num_updates_; }
+  /** Gets the number of discrete variable updates performed since the last
+  Initialize() call. */
+  int64_t get_num_discrete_updates() const { return num_discrete_updates_; }
+
+  /** Gets the number of "unrestricted" updates performed since the last
+  Initialize() call. */
+  int64_t get_num_unrestricted_updates() const {
+    return num_unrestricted_updates_; }
 
   /** Gets a pointer to the integrator used to advance the continuous aspects
    *  of the system.
@@ -260,16 +285,6 @@ class Simulator {
   using Duration = std::chrono::duration<double>;
   using TimePoint = std::chrono::time_point<Clock, Duration>;
 
-  Simulator(const Simulator& s) = delete;
-  Simulator& operator=(const Simulator& s) = delete;
-
-  // Return a proposed end time for this step, and whether we picked that time
-  // because we hit the next update time.
-  static std::pair<T, bool> ProposeStepEndTime(const T& step_start_time,
-                                               const T& ideal_step_size,
-                                               const T& next_update_time,
-                                               const T& final_time);
-
   // If the simulated time in the context is ahead of real time, pause long
   // enough to let real time catch up (approximately).
   void PauseIfTooFast() const;
@@ -294,12 +309,17 @@ class Simulator {
   // Slow down to this rate if possible (user settable).
   double target_realtime_rate_{0.};
 
+  bool publish_every_time_step_{true};
+
   // These are recorded at initialization or statistics reset.
   double initial_simtime_{nan()};  // Simulated time at start of period.
   TimePoint initial_realtime_;     // Real time at start of period.
 
-  // The number of updates since the last call to Initialize().
-  int64_t num_updates_{0};
+  // The number of discrete updates since the last call to Initialize().
+  int64_t num_discrete_updates_{0};
+
+  // The number of unrestricted updates since the last call to Initialize().
+  int64_t num_unrestricted_updates_{0};
 
   // The number of publishes since the last call to Initialize().
   int64_t num_publishes_{0};
@@ -311,8 +331,11 @@ class Simulator {
   // Set by Initialize() and reset by various traumas.
   bool initialization_done_{false};
 
-  // Pre-allocated temporaries for updated difference states.
-  std::unique_ptr<DifferenceState<T>> discrete_updates_;
+  // Pre-allocated temporaries for updated discrete states.
+  std::unique_ptr<DiscreteState<T>> discrete_updates_;
+
+  // Pre-allocated temporaries for states from unrestricted updates.
+  std::unique_ptr<State<T>> unrestricted_updates_;
 };
 
 template <typename T>
@@ -331,7 +354,10 @@ Simulator<T>::Simulator(const System<T>& system,
       new RungeKutta2Integrator<T>(system_, dt, context_.get()));
   integrator_->Initialize();
 
-  discrete_updates_ = system_.AllocateDifferenceVariables();
+  // Allocate the necessary temporaries for storing state in update calls
+  // (which will then be transferred back to system state).
+  discrete_updates_ = system_.AllocateDiscreteVariables();
+  unrestricted_updates_ = context_->CloneState();
 }
 
 template <typename T>
@@ -356,11 +382,13 @@ void Simulator<T>::Initialize() {
 /**
  * Steps the simulation to the specified time.
  * The simulation loop is as follows:
- * 1. Perform necessary difference variable updates.
+ * 1. Perform necessary discrete variable updates.
  * 2. Publish.
  * 3. Integrate the smooth system (the ODE or DAE)
  * 4. Perform post-step stabilization for DAEs (if desired).
  * @param boundary_time The time to advance the context to.
+ * @pre The simulation state is valid  (i.e., no discrete updates or state
+ *      projections are necessary) at the present time.
  */
 template <typename T>
 void Simulator<T>::StepTo(const T& boundary_time) {
@@ -370,12 +398,11 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
   // Updates/publishes can be triggered throughout the integration process,
   // but are not active at the start of the step.
-  bool update_hit = false;
-  bool publish_hit = false;
+  bool sample_time_hit = false;
 
   // Integrate until desired interval has completed.
   UpdateActions<T> update_actions;
-  while (context_->get_time() <= boundary_time) {
+  while (context_->get_time() < boundary_time || sample_time_hit) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
     SPDLOG_TRACE(log(), "Starting a simulation step at {}", step_start_time);
@@ -384,36 +411,54 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     PauseIfTooFast();
 
     // First take any necessary discrete actions.
-    if (update_hit) {
+    if (sample_time_hit) {
+      // Do unrestricted updates first.
       for (const DiscreteEvent<T>& event : update_actions.events) {
-        switch (event.action) {
-          case DiscreteEvent<T>::kPublishAction: {
-            system_.Publish(*context_, event);
-            ++num_publishes_;
-            break;
-          }
-          case DiscreteEvent<T>::kUpdateAction: {
-            DifferenceState<T>* xd = context_->get_mutable_difference_state();
-            // Systems with discrete update events must have difference state.
-            DRAKE_DEMAND(xd != nullptr);
-            // First, compute the discrete updates into a temporary buffer.
-            system_.EvalDifferenceUpdates(*context_, event,
-                                          discrete_updates_.get());
-            // Then, write them back into the context.
-            xd->CopyFrom(*discrete_updates_);
-            break;
-          }
-          default: {
-            DRAKE_ABORT_MSG("Unknown DiscreteEvent action.");
-            break;
+        if (event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction) {
+          State<T>* x = context_->get_mutable_state();
+          DRAKE_DEMAND(x != nullptr);
+          // First, compute the unrestricted updates into a temporary buffer.
+          system_.CalcUnrestrictedUpdate(*context_, event,
+                                         unrestricted_updates_.get());
+          // TODO(edrumwri): simply swap the states for additional speed.
+          // Now write the update back into the context.
+          x->CopyFrom(*unrestricted_updates_);
+          ++num_unrestricted_updates_;
+        } else {
+          if (event.action == DiscreteEvent<T>::kUnknownAction) {
+              throw std::logic_error("kUnknownAction encountered.");
           }
         }
       }
-      ++num_updates_;
+
+      // Do restricted (discrete variable) updates next.
+      for (const DiscreteEvent<T>& event : update_actions.events) {
+        if (event.action == DiscreteEvent<T>::kDiscreteUpdateAction) {
+          DiscreteState<T> *xd = context_->get_mutable_discrete_state();
+          // Systems with discrete update events must have discrete state.
+          DRAKE_DEMAND(xd != nullptr);
+          // First, compute the discrete updates into a temporary buffer.
+          system_.CalcDiscreteVariableUpdates(*context_, event,
+                                              discrete_updates_.get());
+          // Then, write them back into the context.
+          xd->CopyFrom(*discrete_updates_);
+          ++num_discrete_updates_;
+        }
+      }
+
+      // Do any publishes last.
+      for (const DiscreteEvent<T>& event : update_actions.events) {
+        if (event.action == DiscreteEvent<T>::kPublishAction) {
+            system_.Publish(*context_, event);
+            ++num_publishes_;
+          }
+        }
     }
 
+    // TODO(edrumwri): Add every step updates in the same manner as every step
+    //                 publishes.
     // Allow System a chance to produce some output.
-    if (publish_hit) {
+    if (get_publish_every_time_step()) {
       system_.Publish(*context_);
       ++num_publishes_;
     }
@@ -422,36 +467,45 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     update_actions.events.clear();
 
     // How far can we go before we have to take a sampling break?
-    const T next_update_time =
+    const T next_sample_time =
         system_.CalcNextUpdateTime(*context_, &update_actions);
-    DRAKE_ASSERT(next_update_time >= step_start_time);
-    const T next_update_dt = next_update_time - step_start_time;
+    DRAKE_DEMAND(next_sample_time >= step_start_time);
 
-    // TODO(edrumwri): Get the next publish time when API available.
+    // Determine whether the DiscreteEvent requested by the System at
+    // next_sample_time includes an Update action, a Publish action, or both.
+    T next_update_dt = std::numeric_limits<double>::infinity();
     T next_publish_dt = std::numeric_limits<double>::infinity();
-    T next_publish_time = step_start_time + next_publish_dt;
+    for (const DiscreteEvent<T>& event : update_actions.events) {
+      if (event.action == DiscreteEvent<T>::kDiscreteUpdateAction ||
+          event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction) {
+        next_update_dt = next_sample_time - step_start_time;
+      }
+      if (event.action == DiscreteEvent<T>::kPublishAction) {
+        next_publish_dt = next_sample_time - step_start_time;
+      }
+    }
 
-    // Attempt to integrate.
+    // Get the dt that gets to the boundary time.
+    const T boundary_dt = boundary_time - step_start_time;
+
+    // Attempt to integrate. Updates and boundary times are consciously
+    // distinguished between. See internal documentation for
+    // IntegratorBase::StepOnceAtMost() for more information.
     typename IntegratorBase<T>::StepResult result =
-        integrator_->StepOnceAtMost(next_publish_dt, next_update_dt);
+        integrator_->StepOnceAtMost(next_publish_dt, next_update_dt,
+                                    boundary_dt);
     switch (result) {
       case IntegratorBase<T>::kReachedUpdateTime:
-        update_hit = true;
-
-        // Check whether update time effectively identical to publish time.
-        publish_hit = (context_->get_time() >= next_publish_time);
-        break;
-
       case IntegratorBase<T>::kReachedPublishTime:
-        update_hit = false;
-        publish_hit = true;
+        // Next line sets the time to the exact sample time rather than
+        // introducing rounding error by summing the context time + dt.
+        context_->set_time(next_sample_time);
+        sample_time_hit = true;
         break;
 
       case IntegratorBase<T>::kTimeHasAdvanced:
-        update_hit = false;
-        // TODO(edrumwri): Check if not publishing after every step, then
-        //                 turn this off if that is the case.
-        publish_hit = true;
+      case IntegratorBase<T>::kReachedBoundaryTime:
+        sample_time_hit = false;
         break;
 
       default:
@@ -461,40 +515,6 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
     // TODO(sherm1) Constraint projection goes here.
   }
-
-  // publish at the end of the step
-  system_.Publish(*context_);
-  ++num_publishes_;
-}
-
-// TODO(edrumwri): Prepare to remove
-template <typename T>
-std::pair<T, bool> Simulator<T>::ProposeStepEndTime(const T& step_start_time,
-                                                    const T& ideal_step_size,
-                                                    const T& next_update_time,
-                                                    const T& final_time) {
-  static constexpr double kMaxStretch = 0.01;  // Allow 1% step size stretch.
-
-  // Start with the ideal step size.
-  T step_end_time = step_start_time + ideal_step_size;
-
-  // We can be persuaded to take a slightly bigger step if necessary to
-  // avoid a tiny sliver step before we have to do something discrete.
-  const T step_stretch_time = step_end_time + kMaxStretch * ideal_step_size;
-
-  // The step may be limited or stretched either by final time or update
-  // time, whichever comes sooner.
-  bool update_time_hit = false;
-  if (next_update_time <= final_time) {
-    if (next_update_time <= step_stretch_time) {
-      step_end_time = next_update_time;
-      update_time_hit = true;
-    }
-  } else {  // boundary_time < next_update_time.
-    if (final_time <= step_stretch_time) step_end_time = final_time;
-  }
-
-  return std::make_pair(step_end_time, update_time_hit);
 }
 
 }  // namespace systems

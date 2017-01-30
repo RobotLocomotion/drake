@@ -37,18 +37,24 @@ class SimpleCarState : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
+  SimpleCarState<T>* DoClone() const override {
+    auto result = new SimpleCarState;
+    result->SetFromVector(this->CopyToVector());
+    return result;
+  }
+
   /// @name Getters and Setters
   //@{
-  // x
+  /// x
   const T& x() const { return this->GetAtIndex(K::kX); }
   void set_x(const T& x) { this->SetAtIndex(K::kX, x); }
-  // y
+  /// y
   const T& y() const { return this->GetAtIndex(K::kY); }
   void set_y(const T& y) { this->SetAtIndex(K::kY, y); }
-  // heading
+  /// heading
   const T& heading() const { return this->GetAtIndex(K::kHeading); }
   void set_heading(const T& heading) { this->SetAtIndex(K::kHeading, heading); }
-  // velocity
+  /// velocity
   const T& velocity() const { return this->GetAtIndex(K::kVelocity); }
   void set_velocity(const T& velocity) {
     this->SetAtIndex(K::kVelocity, velocity);

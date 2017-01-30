@@ -8,8 +8,8 @@
 #include "drake/multibody/rigid_body_system1/BotVisualizer.h"
 #include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/system1/LCMSystem.h"
-#include "drake/system1/cascade_system.h"
+#include "drake/multibody/rigid_body_system1/LCMSystem.h"
+#include "drake/multibody/rigid_body_system1/cascade_system.h"
 
 using std::make_shared;
 using std::shared_ptr;
@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
     tree->addCollisionElement(
         DrakeCollision::Element(geom, T_element_to_link, &world), world,
         "terrain");
-    tree->updateStaticCollisionElements();
+    tree->compile();
   }
 
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();

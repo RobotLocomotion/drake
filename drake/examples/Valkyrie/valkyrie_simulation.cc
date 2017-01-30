@@ -7,18 +7,18 @@
 #include "drake/examples/Valkyrie/robot_state_encoder.h"
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/pass_through.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/pass_through.h"
 
 #include "lcmtypes/bot_core/atlas_command_t.hpp"
 #include "lcmtypes/bot_core/robot_state_t.hpp"
@@ -96,11 +96,11 @@ int main(int argc, const char** argv) {
   }
 
   // LCM outputs.
-  std::vector<RigidBodyFrame> force_torque_sensor_info = {
-      RigidBodyFrame("leftFootFTSensor", tree.FindBody("leftFoot"),
-                     Isometry3<double>::Identity()),
-      RigidBodyFrame("rightFootFTSensor", tree.FindBody("rightFoot"),
-                     Isometry3<double>::Identity())};
+  std::vector<RigidBodyFrame<double>> force_torque_sensor_info = {
+      RigidBodyFrame<double>("leftFootFTSensor", tree.FindBody("leftFoot"),
+                             Isometry3<double>::Identity()),
+      RigidBodyFrame<double>("rightFootFTSensor", tree.FindBody("rightFoot"),
+                             Isometry3<double>::Identity())};
 
   auto& robot_state_encoder = *builder.AddSystem<RobotStateEncoder>(
       plant.get_rigid_body_tree(), force_torque_sensor_info);
@@ -118,10 +118,10 @@ int main(int argc, const char** argv) {
 
   for (const auto& actuator : actuators) {
     // Desired effort inputs to actuator dynamics.
-    auto desired_effort_output =
+    const auto& desired_effort_output =
         robot_command_to_desired_effort_converter.desired_effort_output_port(
             *actuator);
-    auto desired_effort_input =
+    const auto& desired_effort_input =
         actuator_dynamics.at(actuator)->get_input_port(0);
     builder.Connect(desired_effort_output, desired_effort_input);
 
@@ -148,7 +148,9 @@ int main(int argc, const char** argv) {
   }
 
   // Plant input to plant.
-  builder.Connect(actuator_effort_to_rigid_body_plant_input_converter, plant);
+  builder.Connect(
+      actuator_effort_to_rigid_body_plant_input_converter.get_output_port(0),
+      plant.get_input_port(0));
 
   // Raw state vector to visualizer.
   builder.Connect(plant.state_output_port(),

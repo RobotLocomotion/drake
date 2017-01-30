@@ -40,29 +40,35 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
+  IdmPlannerParameters<T>* DoClone() const override {
+    auto result = new IdmPlannerParameters;
+    result->SetFromVector(this->CopyToVector());
+    return result;
+  }
+
   /// @name Getters and Setters
   //@{
-  // desired velocity in free traffic
+  /// desired velocity in free traffic
   const T& v_ref() const { return this->GetAtIndex(K::kVRef); }
   void set_v_ref(const T& v_ref) { this->SetAtIndex(K::kVRef, v_ref); }
-  // max acceleration
+  /// max acceleration
   const T& a() const { return this->GetAtIndex(K::kA); }
   void set_a(const T& a) { this->SetAtIndex(K::kA, a); }
-  // comfortable braking deceleration
+  /// comfortable braking deceleration
   const T& b() const { return this->GetAtIndex(K::kB); }
   void set_b(const T& b) { this->SetAtIndex(K::kB, b); }
-  // minimum desired net distance
+  /// minimum desired net distance
   const T& s_0() const { return this->GetAtIndex(K::kS0); }
   void set_s_0(const T& s_0) { this->SetAtIndex(K::kS0, s_0); }
-  // desired time headway to vehicle in front
+  /// desired time headway to vehicle in front
   const T& time_headway() const { return this->GetAtIndex(K::kTimeHeadway); }
   void set_time_headway(const T& time_headway) {
     this->SetAtIndex(K::kTimeHeadway, time_headway);
   }
-  // free-road exponent
+  /// free-road exponent
   const T& delta() const { return this->GetAtIndex(K::kDelta); }
   void set_delta(const T& delta) { this->SetAtIndex(K::kDelta, delta); }
-  // length of leading car
+  /// length of leading car
   const T& l_a() const { return this->GetAtIndex(K::kLA); }
   void set_l_a(const T& l_a) { this->SetAtIndex(K::kLA, l_a); }
   //@}

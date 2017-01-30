@@ -2,8 +2,10 @@
 
 #include <memory>
 #include <set>
+#include <utility>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/cache.h"
@@ -28,8 +30,11 @@ namespace systems {
 template <typename T>
 class LeafContext : public Context<T> {
  public:
-  LeafContext() {}
-  virtual ~LeafContext() {}
+  // LeafContext objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafContext)
+
+  LeafContext() : state_(std::make_unique<State<T>>()) {}
+  ~LeafContext() override {}
 
   void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
@@ -52,9 +57,9 @@ class LeafContext : public Context<T> {
     return static_cast<int>(inputs_.size());
   }
 
-  const State<T>& get_state() const override { return state_; }
+  const State<T>& get_state() const override { return *state_; }
 
-  State<T>* get_mutable_state() override { return &state_; }
+  State<T>* get_mutable_state() override { return state_.get(); }
 
   /// Reserves a cache entry with the given @p prerequisites on which it
   /// depends. Returns a ticket to identify the entry.
@@ -103,11 +108,16 @@ class LeafContext : public Context<T> {
 
   // =========================================================================
   // Accessors and Mutators for Parameters.
-  // TODO(david-german-tri): Add accessors for modal parameters.
+  // TODO(david-german-tri): Add accessors for abstract parameters.
 
   /// Sets the parameters to @p params, deleting whatever was there before.
   void set_parameters(std::unique_ptr<Parameters<T>> params) {
     parameters_ = std::move(params);
+  }
+
+  /// Returns the entire Parameters object.
+  Parameters<T>* get_mutable_parameters() {
+    return parameters_.get();
   }
 
   /// Returns the number of vector-valued parameters.
@@ -130,7 +140,34 @@ class LeafContext : public Context<T> {
  protected:
   /// The caller owns the returned memory.
   Context<T>* DoClone() const override {
-    LeafContext<T>* context = new LeafContext<T>();
+    LeafContext<T>* clone = new LeafContext<T>();
+
+    // Make a deep copy of the state.
+    clone->state_ = this->CloneState();
+
+    // Make deep copies of the parameters.
+    clone->set_parameters(parameters_->Clone());
+
+    // Make deep copies of the inputs into FreestandingInputPorts.
+    // TODO(david-german-tri): Preserve version numbers as well.
+    for (const auto& port : this->inputs_) {
+      if (port == nullptr) {
+        clone->inputs_.emplace_back(nullptr);
+      } else {
+        clone->inputs_.emplace_back(new FreestandingInputPort(
+            port->template get_vector_data<T>()->Clone()));
+      }
+    }
+
+    // Make deep copies of everything else using the default copy constructors.
+    *clone->get_mutable_step_info() = this->get_step_info();
+    clone->cache_ = this->cache_;
+    return clone;
+  }
+
+  /// The caller owns the returned memory.
+  State<T>* DoCloneState() const override {
+    State<T>* clone = new State<T>();
 
     // Make a deep copy of the continuous state using BasicVector::Clone().
     if (this->get_continuous_state() != nullptr) {
@@ -140,32 +177,15 @@ class LeafContext : public Context<T> {
       const int num_z = xc.get_misc_continuous_state().size();
       const BasicVector<T>& xc_vector =
           dynamic_cast<const BasicVector<T>&>(xc.get_vector());
-      context->set_continuous_state(std::make_unique<ContinuousState<T>>(
+      clone->set_continuous_state(std::make_unique<ContinuousState<T>>(
           xc_vector.Clone(), num_q, num_v, num_z));
     }
 
-    // Make deep copies of the difference and modal states.
-    context->set_difference_state(get_state().get_difference_state()->Clone());
-    context->set_modal_state(get_state().get_modal_state()->Clone());
+    // Make deep copies of the discrete and abstract states.
+    clone->set_discrete_state(get_state().get_discrete_state()->Clone());
+    clone->set_abstract_state(get_state().get_abstract_state()->Clone());
 
-    // Make deep copies of the parameters.
-    context->set_parameters(parameters_->Clone());
-
-    // Make deep copies of the inputs into FreestandingInputPorts.
-    // TODO(david-german-tri): Preserve version numbers as well.
-    for (const auto& port : this->inputs_) {
-      if (port == nullptr) {
-        context->inputs_.emplace_back(nullptr);
-      } else {
-        context->inputs_.emplace_back(new FreestandingInputPort(
-            port->template get_vector_data<T>()->Clone()));
-      }
-    }
-
-    // Make deep copies of everything else using the default copy constructors.
-    *context->get_mutable_step_info() = this->get_step_info();
-    context->cache_ = this->cache_;
-    return context;
+    return clone;
   }
 
   const InputPort* GetInputPort(int index) const override {
@@ -174,17 +194,11 @@ class LeafContext : public Context<T> {
   }
 
  private:
-  // LeafContext objects are neither copyable nor moveable.
-  LeafContext(const LeafContext& other) = delete;
-  LeafContext& operator=(const LeafContext& other) = delete;
-  LeafContext(LeafContext&& other) = delete;
-  LeafContext& operator=(LeafContext&& other) = delete;
-
   // The external inputs to the System.
   std::vector<std::unique_ptr<InputPort>> inputs_;
 
   // The internal state of the System.
-  State<T> state_;
+  std::unique_ptr<State<T>> state_;
 
   // The parameters of the system.
   std::unique_ptr<Parameters<T>> parameters_;

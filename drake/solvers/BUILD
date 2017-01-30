@@ -1,26 +1,76 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
+load("//tools:drake.bzl", "cc_googletest")
+
 package(default_visibility = ["//visibility:public"])
 
-DEPS = [
-    "//drake/common",
-    "//drake/common:autodiff",
-    "//drake/common:polynomial",
-]
+cc_library(
+    name = "binding",
+    srcs = [],
+    hdrs = ["binding.h"],
+    linkstatic = 1,
+    deps = [
+        ":decision_variable",
+    ],
+)
 
-# TODO(jwnimmer-tri) This BUILD file only compiles the in-tree solvers.
-# External solvers are not yet supported.
+cc_library(
+    name = "constraint",
+    srcs = ["constraint.cc"],
+    hdrs = ["constraint.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/common",
+        "//drake/common:autodiff",
+        "//drake/common:polynomial",
+        "//drake/math:matrix_util",
+    ],
+)
 
+cc_library(
+    name = "decision_variable",
+    srcs = ["decision_variable.cc"],
+    hdrs = ["decision_variable.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/common",
+        "//drake/common:number_traits",
+        "//drake/common:symbolic",
+    ],
+)
+
+cc_library(
+    name = "function",
+    srcs = [],
+    hdrs = ["function.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/common",
+    ],
+)
+
+# Supported solvers:
+# - equality_constrained_qp_solver
+# - linear_system_solver
+# - moby_lcp_solver
+# - IPOPT (on Ubuntu only)
+# - Gurobi (on Ubuntu only)
+
+# Unsupported solvers:
+# - dReal
+# - NLOPT
+# - SNOPT
+# - MOSEK
+
+# TODO(jwnimmer-tri, david-german-tri): Support more solvers.
 cc_library(
     name = "mathematical_program",
     srcs = [
-        "decision_variable.cc",
         "dreal_solver.h",
         "equality_constrained_qp_solver.cc",
         "equality_constrained_qp_solver.h",
-        "gurobi_solver.h",
-        "ipopt_solver.h",
         "linear_system_solver.cc",
         "linear_system_solver.h",
         "mathematical_program.cc",
@@ -29,22 +79,30 @@ cc_library(
         "mosek_solver.h",
         "nlopt_solver.h",
         "no_dreal.cc",
-        "no_gurobi.cc",
-        "no_ipopt.cc",
         "no_mosek.cc",
         "no_nlopt.cc",
         "no_snopt.cc",
         "snopt_solver.h",
     ],
     hdrs = [
-        "constraint.h",
-        "decision_variable.h",
-        "function.h",
         "mathematical_program.h",
-        "solution_result.h",
+        "mathematical_program_solver_interface.h",
     ],
     linkstatic = 1,
-    deps = DEPS,
+    deps = [
+        ":binding",
+        ":constraint",
+        ":decision_variable",
+        ":function",
+        ":gurobi_solver",
+        ":ipopt_solver",
+        "//drake/common",
+        "//drake/common:autodiff",
+        "//drake/common:number_traits",
+        "//drake/common:polynomial",
+        "//drake/common:symbolic",
+        "//drake/math:matrix_util",
+    ],
 )
 
 cc_library(
@@ -52,5 +110,243 @@ cc_library(
     srcs = ["system_identification.cc"],
     hdrs = ["system_identification.h"],
     linkstatic = 1,
-    deps = DEPS + [":mathematical_program"],
+    deps = [
+        ":mathematical_program",
+        "//drake/common",
+        "//drake/common:autodiff",
+        "//drake/common:polynomial",
+    ],
 )
+
+# The mathematical_program_api target exists so that solver targets can access
+# the mathematical_program.h header, and the :mathematical_program target can
+# depend on solver targets, without creating a circular dependency.
+#
+# TODO(hongkai-dai): MathematicalProgram should be refactored so that
+# implementations of MathematicalProgramSolverInterface are not co-dependent
+# with MathematicalProgram itself, and then this target should be deleted.
+cc_library(
+    name = "mathematical_program_api",
+    srcs = [],
+    hdrs = [
+        "mathematical_program.h",
+        "mathematical_program_solver_interface.h",
+    ],
+    linkstatic = 1,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":binding",
+        ":constraint",
+        ":decision_variable",
+        ":function",
+        "//drake/common",
+        "//drake/common:autodiff",
+        "//drake/common:number_traits",
+        "//drake/common:polynomial",
+    ],
+)
+
+# External Solvers.
+
+# If --config gurobi is used, this target builds object code that satisfies
+# MathematicalProgramSolverInterface by calling Gurobi. Otherwise, this target
+# builds dummy object code that fails at runtime.
+cc_library(
+    name = "gurobi_solver",
+    srcs = select({
+        "//tools:with_gurobi": ["gurobi_solver.cc"],
+        "//conditions:default": ["no_gurobi.cc"],
+    }),
+    hdrs = ["gurobi_solver.h"],
+    linkstatic = 1,
+    visibility = ["//visibility:private"],
+    deps = select({
+        "//tools:with_gurobi": [
+            ":mathematical_program_api",
+            "//drake/math:eigen_sparse_triplet",
+            "@gurobi//:lib",
+        ],
+        "//conditions:default": [
+            ":mathematical_program_api",
+        ],
+    }),
+)
+
+cc_library(
+    name = "ipopt_solver",
+    srcs = select({
+        "//tools:apple": ["no_ipopt.cc"],
+        "//tools:linux": ["ipopt_solver.cc"],
+    }),
+    hdrs = ["ipopt_solver.h"],
+    linkstatic = 1,
+    visibility = ["//visibility:private"],
+    deps = select({
+        "//tools:linux": [
+            "@ipopt//:lib",
+            ":mathematical_program_api",
+            "//drake/math:autodiff",
+        ],
+        "//tools:apple": [
+            ":mathematical_program_api",
+        ],
+    }),
+)
+
+# === test/ ===
+cc_googletest(
+    name = "binding_test",
+    srcs = [
+        "test/binding_test.cc",
+    ],
+    deps = [
+        ":binding",
+        ":constraint",
+    ],
+)
+
+cc_googletest(
+    name = "constraint_test",
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/math:gradient",
+    ],
+)
+
+# TODO(hongkai-dai): Separate this test into a test that uses Gurobi, and a
+# test that doesn't.
+cc_googletest(
+    name = "convex_optimization_test",
+    srcs = [
+        "test/convex_optimization_test.cc",
+        "test/mathematical_program_test_util.h",
+    ],
+    # This test uses Gurobi if present, but does not require it.
+    tags = [
+        "exclusive",
+        "local",
+    ],
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "decision_variable_test",
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "equality_constrained_qp_solver_test",
+    srcs = [
+        "test/equality_constrained_qp_solver_test.cc",
+        "test/mathematical_program_test_util.h",
+    ],
+    deps = [
+        "mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "linear_complementary_problem_test",
+    srcs = [
+        "test/linear_complementary_problem_test.cc",
+    ],
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "linear_system_solver_test",
+    srcs = [
+        "test/linear_system_solver_test.cc",
+        "test/mathematical_program_test_util.h",
+        "test/optimization_examples.cc",
+        "test/optimization_examples.h",
+    ],
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "mathematical_program_test",
+    srcs = [
+        "test/mathematical_program_test.cc",
+        "test/mathematical_program_test_util.h",
+    ],
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+# TODO(hongkai-dai): Separate this test into a test that uses Gurobi, and a
+# test that doesn't.
+cc_googletest(
+    name = "mixed_integer_optimization_test",
+    srcs = [
+        "test/mathematical_program_test_util.h",
+        "test/mixed_integer_optimization_test.cc",
+    ],
+    # This test uses Gurobi if present, but does not require it.
+    tags = [
+        "exclusive",
+        "local",
+    ],
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "moby_lcp_solver_test",
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "nonlinear_program_test",
+    srcs = [
+        "test/mathematical_program_test_util.h",
+        "test/nonlinear_program_test.cc",
+        "test/optimization_examples.cc",
+        "test/optimization_examples.h",
+    ],
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "system_identification_test",
+    # The test takes ~20 sec in opt mode but ~140 sec in dbg mode.
+    # To avoid timeouts in dbg or valgrind, we need "moderate" here.
+    # TODO(bazelbuild/bazel#1748) This produces a spurious complaint.
+    timeout = "moderate",
+    deps = [
+        ":system_identification",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+# The extra_srcs are required here because cpplint() doesn't understand how to
+# extract labels from select() functions yet.
+cpplint(extra_srcs = [
+    "gurobi_solver.cc",
+    "gurobi_solver.h",
+    "no_gurobi.cc",
+])

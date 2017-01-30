@@ -1,16 +1,31 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-package(default_visibility = ["//visibility:public"])
+load("//tools:cpplint.bzl", "cpplint")
+load("//tools:drake.bzl", "cc_googletest")
 
-DEPS = ["//drake/common:common"]
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "autodiff",
     srcs = ["autodiff.cc"],
     hdrs = ["autodiff.h"],
     linkstatic = 1,
-    deps = DEPS + ["//drake/common:autodiff"],
+    deps = [
+        "//drake/common",
+        "//drake/common:autodiff",
+    ],
+)
+
+cc_library(
+    name = "continuous_algebraic_ricatti_equation",
+    srcs = ["continuous_algebraic_ricatti_equation.cc"],
+    hdrs = ["continuous_algebraic_ricatti_equation.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/common",
+        "//drake/common:is_approx_equal_abstol",
+    ],
 )
 
 # TODO(jwnimmer-tri) Improved name for this library, "pose_representations"?
@@ -19,7 +34,6 @@ cc_library(
     srcs = [
         "axis_angle.cc",
         "quaternion.cc",
-        "random_rotation.cc",
         "roll_pitch_yaw.cc",
         "rotation_matrix.cc",
     ],
@@ -33,7 +47,9 @@ cc_library(
         "rotation_matrix.h",
     ],
     linkstatic = 1,
-    deps = DEPS,
+    deps = [
+        "//drake/common",
+    ],
 )
 
 cc_library(
@@ -54,7 +70,21 @@ cc_library(
         "rotation_conversion_gradient.h",
     ],
     linkstatic = 1,
-    deps = DEPS + [":autodiff"],
+    deps = [
+        ":autodiff",
+        "//drake/common",
+    ],
+)
+
+cc_library(
+    name = "matrix_util",
+    srcs = ["matrix_util.cc"],
+    hdrs = ["matrix_util.h"],
+    linkstatic = 1,
+    deps = [
+        "//drake/common",
+        "//drake/common:number_traits",
+    ],
 )
 
 # These all require bleeding-edge Eigen, so please don't fold them into any
@@ -64,7 +94,9 @@ cc_library(
     srcs = ["eigen_sparse_triplet.cc"],
     hdrs = ["eigen_sparse_triplet.h"],
     linkstatic = 1,
-    deps = DEPS,
+    deps = [
+        "//drake/common",
+    ],
 )
 
 cc_library(
@@ -72,7 +104,10 @@ cc_library(
     srcs = ["expmap.cc"],
     hdrs = ["expmap.h"],
     linkstatic = 1,
-    deps = DEPS + [":gradient"],
+    deps = [
+        ":gradient",
+        "//drake/common",
+    ],
 )
 
 cc_library(
@@ -80,5 +115,87 @@ cc_library(
     srcs = ["jacobian.cc"],
     hdrs = ["jacobian.h"],
     linkstatic = 1,
-    deps = DEPS,
+    deps = [
+        "//drake/common",
+    ],
 )
+
+# === test/ ===
+
+cc_googletest(
+    name = "autodiff_test",
+    deps = [
+        ":autodiff",
+        ":gradient",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "cross_product_test",
+    deps = [
+        ":gradient",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "expmap_test",
+    deps = [
+        ":expmap",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "eigen_sparse_triplet_test",
+    deps = [
+        ":eigen_sparse_triplet",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "jacobian_test",
+    deps = [
+        ":gradient",
+        ":jacobian",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "gradient_util_test",
+    deps = [
+        ":gradient",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "matrix_util_test",
+    deps = [
+        ":matrix_util",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common:symbolic",
+    ],
+)
+
+cc_googletest(
+    name = "normalize_vector_test",
+    deps = [
+        ":gradient",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "rotation_conversion_test",
+    deps = [
+        ":geometric_transform",
+        ":gradient",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cpplint()

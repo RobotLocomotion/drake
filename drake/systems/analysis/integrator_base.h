@@ -2,9 +2,11 @@
 
 #include <algorithm>
 #include <limits>
+#include <memory>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/vector_base.h"
@@ -29,6 +31,8 @@ solution, so must be avoided.
 template <class T>
 class IntegratorBase {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IntegratorBase)
+
   /**
    * Status returned by StepOnceAtMost().
    * When a step is successful, it will return an indication of what caused it
@@ -58,9 +62,13 @@ class IntegratorBase {
      * User requested control whenever an internal step is successful.
      */
     kTimeHasAdvanced = 4,
+    /**
+     * Reached the desired integration time without reaching an update time.
+     */
+    kReachedBoundaryTime = 5,
     /** Took maximum number of steps without finishing integrating over the
      * interval. */
-    kReachedStepLimit = 5,
+    kReachedStepLimit = 6,
   };
 
   /**
@@ -84,10 +92,6 @@ class IntegratorBase {
 
   /** Destructor. */
   virtual ~IntegratorBase() = default;
-
-  // Disable copy, assign, and move.
-  IntegratorBase(const IntegratorBase<T>& other) = delete;
-  IntegratorBase& operator=(const IntegratorBase<T>& other) = delete;
 
   /**
    * Indicates whether an integrator supports error estimation.
@@ -170,18 +174,23 @@ class IntegratorBase {
   double get_accuracy_in_use() const { return accuracy_in_use_; }
 
   /**
-   * Sets the maximum step size that may be taken by this integrator. For fixed
-   * step integrators all steps will be taken at the maximum step size *unless*
-   * an event would be missed.
+   * Sets the maximum step size that may be taken by this integrator. The
+   * integrator may stretch the maximum step size by as much as 1% to reach a
+   * discrete event. For fixed step integrators, all steps will be taken at the
+   * maximum step size *unless* an event would be missed.
    */
+  // TODO(edrumwri): Update this comment when stretch size is configurable.
   void set_maximum_step_size(const T& max_step_size) {
     DRAKE_ASSERT(max_step_size >= 0.0);
     max_step_size_ = max_step_size;
   }
 
   /**
-   * Gets the maximum step size that may be taken by this integrator.
+   * Gets the maximum step size that may be taken by this integrator. This is
+   * a soft maximum: the integrator may stretch it by as much as 1% to hit a
+   * discrete event.
    */
+  // TODO(edrumwri): Update this comment when stretch size is configurable.
   const T& get_maximum_step_size() const { return max_step_size_; }
 
   /**
@@ -239,14 +248,32 @@ class IntegratorBase {
    * will be thrown). If Initialize() is not called, an exception will be
    * thrown when attempting to call StepOnceAtMost(). To reinitialize the
    * integrator, Reset() should be called followed by Initialize().
-   * @throws std::logic_error If the context has not been set or one of the
-   *         weighting matrix coefficients is set to a negative value (this
+   * @throws std::logic_error If the context has not been set or a user-set
+   *         parameter has been set illogically (i.e., one of the
+   *         weighting matrix coefficients is set to a negative value- this
    *         check is only performed for integrators that support error
-   *         estimation).
+   *         estimation; the maximum step size is smaller than the minimum
+   *         step size; the requested initial step size is outside of the
+   *         interval [minimum step size, maximum step size]).
    * @sa Reset()
    */
   void Initialize() {
     if (!context_) throw std::logic_error("Context has not been set.");
+
+    // Verify that user settings are reasonable.
+    if (max_step_size_ < min_step_size_) {
+      throw std::logic_error("Integrator maximum step size is less than the "
+                             "minimum step size");
+    }
+
+    if (req_initial_step_size_ > max_step_size_) {
+      throw std::logic_error("Requested integrator initial step size is larger "
+                             "than the maximum step size.");
+    }
+    if (req_initial_step_size_ < min_step_size_) {
+      throw std::logic_error("Requested integrator initial step size is smaller"
+                             " than the minimum step size.");
+    }
 
     // TODO(edrumwri): Compute qbar_weight_, z_weight_ automatically.
     // Set error weighting vectors if not already done.
@@ -310,18 +337,25 @@ class IntegratorBase {
   /**
    * Integrates the system forward in time. Integrator must already have
    * been initialized or an exception will be thrown. The context will be
-   * integrated forward *at most*
-   * by the minimum of { `publish_dt`, `update_dt`, `get_maximum_step_size()` }.
+   * integrated forward by an amount that will never exceed the minimum of
+   * `publish_dt`, `update_dt`, and `1.01 * get_maximum_step_size()`.
    * Error controlled integrators may take smaller steps.
+   *
    * @param publish_dt The step size, >= 0.0 (exception will be thrown
    *        if this is not the case) at which the next publish will occur.
    * @param update_dt The step size, >= 0.0 (exception will be thrown
    *        if this is not the case) at which the next update will occur.
+   * @param boundary_dt The step size, >= 0.0 (exception will be thrown
+   *        if this is not the case) marking the end of the user-designated
+   *        simulated interval.
    * @throws std::logic_error If the integrator has not been initialized or one
-   *                          of publish_dt or update_dt is negative.
+   *                          of publish_dt, update_dt, or boundary_dt is
+   *                          negative.
    * @return The reason for the integration step ending.
    */
-  StepResult StepOnceAtMost(const T& publish_dt, const T& update_dt);
+  // TODO(edrumwri): Make the stretch size configurable.
+  StepResult StepOnceAtMost(const T& publish_dt, const T& update_dt,
+                            const T& boundary_dt);
 
   /**
    * @name Integrator statistics methods.
@@ -786,14 +820,17 @@ class IntegratorBase {
 
   /**
    * Derived classes may re-implement this method to integrate the continuous
-   * portion of this system forward by a single step of no greater size than
-   * dt_max. This method is called during the StepOnceAtMost() method. This
-   * default implementation simply calls DoStepOnceFixedSize(dt_max).
-   * @param dt The maximum integration step to take.
-   * @returns `false` if the integrator does not take the full step of dt;
-   *           otherwise, should return `true`.
+   * portion of this system forward by a *single step* of no greater size than
+   * @p max_dt. This method is called during the StepOnceAtMost() method. This
+   * default implementation simply calls DoStepOnceFixedSize(max_dt) and
+   * returns `{ true, max_dt }`.
+   * @param max_dt The maximum integration step to take.
+   * @returns a std::pair<bool, T>, with the first element corresponding to
+   *          `false` if the integrator does not take the full step of @p max_dt
+   *           (and `true` otherwise) and the second element corresponding to
+   *           the step size actually taken by the integrator.
    */
-  virtual bool DoStepOnceAtMost(const T& dt_max);
+  virtual std::pair<bool, T> DoStepOnceAtMost(const T& max_dt);
 
   /**
    * Derived classes must implement this method to integrate the continuous
@@ -958,9 +995,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
 
   // Verify that the integrator supports error estimates.
   if (!supports_error_estimation())
-    throw std::logic_error(
-        "StepErrorControlled() requires error "
-        "estimation.");
+    throw std::logic_error("StepErrorControlled() requires error estimation.");
 
   // Save time, continuous variables, and time derivative because we'll possibly
   // revert time and state.
@@ -1165,40 +1200,123 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
 }
 
 template <class T>
-bool IntegratorBase<T>::DoStepOnceAtMost(const T& max_dt) {
+std::pair<bool, T> IntegratorBase<T>::DoStepOnceAtMost(const T& max_dt) {
   StepOnceAtFixedSize(max_dt);
-  return true;
+  return std::make_pair(true, max_dt);
 }
 
 template <class T>
 typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
-    const T& publish_dt, const T& update_dt) {
+    const T& publish_dt, const T& update_dt, const T& boundary_dt) {
   if (!IntegratorBase<T>::is_initialized())
     throw std::logic_error("Integrator not initialized.");
 
-  // Sort the times for stopping- sort is stable to preserve preferences for
-  // stopping. In decreasing order of preference for equal values, we want
-  // the update step, then the publish step, then the maximum step size.
-  const int64_t kDTs = 3;  // Number of dt values to evaluate.
-  const T& max_step_size = IntegratorBase<T>::get_maximum_step_size();
-  const T* stop_dts[kDTs] = {&update_dt, &publish_dt, &max_step_size};
-  std::stable_sort(stop_dts, stop_dts + kDTs,
-                   [](const T* t1, const T* t2) { return *t1 < *t2; });
+  // Verify that update dt is positive
+  DRAKE_DEMAND(update_dt > 0.0);
 
-  // Set dt and take the step.
-  const T& dt = *stop_dts[0];
+  // Verify that other dt's are non-negative
+  DRAKE_DEMAND(publish_dt >= 0.0);
+  DRAKE_DEMAND(boundary_dt >= 0.0);
+
+  // The size of the integration step is the minimum of the time until the next
+  // update event, the time until the next publish event, the boundary time
+  // (i.e., the maximum time that the user wished to step to), and the maximum
+  // step size (which may stretch slightly to hit a discrete event).
+
+  // We report to the caller which event ultimately constrained the step size.
+  // If multiple events constrained it equally, we prefer to report update
+  // events over publish events, publish events over boundary step limits,
+  // and boundary limits over maximum step size limits. The caller must
+  // determine event simultaneity by inspecting the time.
+
+  // The maintainer of this code is advised to consider that, while updates
+  // and boundary times, may both conceptually be deemed events, the distinction
+  // is made for a reason. If both an update and a boundary time occur
+  // simultaneously, the following behavior should result:
+  // (1) kReachedUpdateTime is returned, (2) Simulator::StepTo() performs the
+  // necessary update, (3) StepOnceAtMost() is called with boundary_dt=0 and
+  // returns kReachedBoundaryTime, and (4) the simulation terminates. This
+  // sequence of operations will ensure that the simulation state is valid if
+  // Simulator::StepTo() is called again to advance time further.
+
+  // We now analyze the following simultaneous cases with respect to Simulator:
+  //
+  // { publish, update }
+  // kReachedUpdateTime will be returned, an update will be followed by a
+  // publish.
+  //
+  // { publish, update, max step }
+  // kReachedUpdateTime will be returned, an update will be followed by a
+  // publish.
+  //
+  // { publish, boundary time, max step }
+  // kReachedPublishTime will be returned, a publish will be performed followed
+  // by another call to this function, which should return kReachedBoundaryTime
+  // (followed in rapid succession by StepTo(.) return).
+  //
+  // { publish, boundary time, max step }
+  // kReachedPublishTime will be returned, a publish will be performed followed
+  // by another call to this function, which should return kReachedBoundaryTime
+  // (followed in rapid succession by StepTo(.) return).
+  //
+  // { publish, update, boundary time, maximum step size }
+  // kUpdateTimeReached will be returned, an update followed by a publish
+  // will then be performed followed by another call to this function, which
+  // should return kReachedBoundaryTime (followed in rapid succession by
+  // StepTo(.) return).
+
+  // By default, the candidate dt is the next discrete update event.
+  StepResult candidate_result = IntegratorBase<T>::kReachedUpdateTime;
+  T dt = update_dt;
+
+  // If the next discrete publish event is sooner than the next discrete update
+  // event, the publish event becomes the candidate dt
+  if (publish_dt < update_dt) {
+    candidate_result = IntegratorBase<T>::kReachedPublishTime;
+    dt = publish_dt;
+  }
+
+  // If the stop time (boundary time) is sooner than the candidate, use it
+  // instead.
+  if (boundary_dt < dt) {
+    candidate_result = IntegratorBase<T>::kReachedBoundaryTime;
+    dt = boundary_dt;
+  }
+
+  // If all events are farther into the future than the maximum step
+  // size times a stretch factor of 1.01, the maximum step size becomes the
+  // candidate dt. Put another way, if the maximum step occurs right before
+  // an update or a publish, the update or publish is done instead. In contrast,
+  // we never step past boundary_dt, even if doing so would allow hitting a
+  // publish or an update.
+  const bool reached_boundary =
+      (candidate_result == IntegratorBase<T>::kReachedBoundaryTime);
+  static constexpr double kMaxStretch = 1.01;  // Allow 1% step size stretch.
+  const T& max_dt = IntegratorBase<T>::get_maximum_step_size();
+  if ((reached_boundary && max_dt < dt) ||
+      (!reached_boundary && max_dt * kMaxStretch < dt)) {
+    candidate_result = IntegratorBase<T>::kTimeHasAdvanced;
+    dt = max_dt;
+  }
+
   if (dt < 0.0) throw std::logic_error("Negative dt.");
-  const bool step_size_was_dt = DoStepOnceAtMost(dt);
+  bool step_size_was_dt;
+  T actual_dt;
+  std::tie(step_size_was_dt, actual_dt) = DoStepOnceAtMost(dt);
 
   // Update generic statistics.
-  UpdateStatistics(dt);
+  UpdateStatistics(actual_dt);
 
-  // Return depending on the step taken.
-  if (!step_size_was_dt || &dt == &max_step_size)
+  if (step_size_was_dt) {
+    // If the integrator took the entire maximum step size we allowed above,
+    // we report to the caller that a step constraint was hit, which may
+    // indicate a discrete event has arrived.
+    return candidate_result;
+  } else {
+    // Otherwise, we report to the caller that time has advanced, but no
+    // discrete event has arrived.
     return IntegratorBase<T>::kTimeHasAdvanced;
-  if (&dt == &publish_dt) return IntegratorBase<T>::kReachedPublishTime;
-  if (&dt == &update_dt) return IntegratorBase<T>::kReachedUpdateTime;
-  DRAKE_ABORT_MSG("Never should have reached here.");
+  }
 }
 
 }  // namespace systems

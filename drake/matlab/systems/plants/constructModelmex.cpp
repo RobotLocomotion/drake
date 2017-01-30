@@ -290,12 +290,12 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       size_t numel_belongs_to(mxGetNumberOfElements(belongs_to));
       size_t numel_ignores(mxGetNumberOfElements(ignores));
       size_t num_collision_filter_groups = max(numel_belongs_to, numel_ignores);
-      if (num_collision_filter_groups > MAX_NUM_COLLISION_FILTER_GROUPS) {
+      if (num_collision_filter_groups > kMaxNumCollisionFilterGroups) {
         mexErrMsgIdAndTxt(
             "Drake:constructModelmex:TooManyCollisionFilterGroups",
             "The total number of collision filter groups (%d) "
             "exceeds the maximum allowed number (%d)",
-            num_collision_filter_groups, MAX_NUM_COLLISION_FILTER_GROUPS);
+            num_collision_filter_groups, kMaxNumCollisionFilterGroups);
       }
 
       mxLogical* logical_belongs_to = mxGetLogicals(belongs_to);
@@ -311,7 +311,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
           mask.set(j);
         }
       }
-      b->setCollisionFilter(group, mask);
+      model->SetBodyCollisionFilters(*b, group, mask);
     }
 
     model->bodies.push_back(std::move(b));
@@ -383,7 +383,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   // mexPrintf("constructModelmex: Parsing frames\n");
   // END_DEBUG
   for (int i = 0; i < num_frames; i++) {
-    shared_ptr<RigidBodyFrame> fr(new RigidBodyFrame());
+    shared_ptr<RigidBodyFrame<double>> fr(new RigidBodyFrame<double>());
 
     fr->set_name(mxGetStdString(mxGetPropertySafe(pFrames, i, "name")));
 
@@ -436,8 +436,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     //    cout << "loop " << i << ": frame_A = " <<
     //    model->frames[frame_A_ind]->name << ", frame_B = " <<
     //    model->frames[frame_B_ind]->name << endl;
-    model->loops.push_back(RigidBodyLoop(model->frames[frame_A_ind],
-                                         model->frames[frame_B_ind], axis));
+    model->loops.push_back(RigidBodyLoop<double>(
+        model->frames[frame_A_ind], model->frames[frame_B_ind], axis));
   }
 
   // ACTUATORS

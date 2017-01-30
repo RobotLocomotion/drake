@@ -1,4 +1,24 @@
 if(Matlab_FOUND)
+  # Used by matlab/util/systemWCMakeEnv.m
+  if(APPLE)
+    if(DEFINED ENV{DYLD_LIBRARY_PATH})
+      set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE INTERNAL "" FORCE)
+    else()
+      set(DYLD_LIBRARY_PATH "" CACHE INTERNAL "" FORCE)
+    endif()
+    if(DEFINED ENV{DYLD_FRAMEWORK_PATH})
+      set(DYLD_FRAMEWORK_PATH "$ENV{DYLD_FRAMEWORK_PATH}" CACHE INTERNAL "" FORCE)
+    else()
+      set(DYLD_FRAMEWORK_PATH "" CACHE INTERNAL "" FORCE)
+    endif()
+  else()
+    if(DEFINED ENV{LD_LIBRARY_PATH})
+      set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE INTERNAL "" FORCE)
+    else()
+      set(LD_LIBRARY_PATH "" CACHE INTERNAL "" FORCE)
+    endif()
+  endif()
+
   drake_add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
   target_link_libraries(drakeMexUtil drakeCommon)
 
@@ -37,7 +57,9 @@ if(Matlab_FOUND)
   target_link_libraries(closestExpmapmex drakeMexUtil drakeGeometryUtil)
 
   drake_add_mex(resolveCenterOfPressuremex resolveCenterOfPressuremex.cpp $<TARGET_OBJECTS:drakeUtil>)
-  target_link_libraries(resolveCenterOfPressuremex drakeMexUtil)
+  target_link_libraries(resolveCenterOfPressuremex
+    drakeMexUtil
+    Eigen3::Eigen)
 
   if(Matlab_SIMULINK_FOUND)
     drake_add_mex(realtime realtime.cpp)

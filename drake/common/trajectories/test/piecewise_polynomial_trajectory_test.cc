@@ -70,36 +70,6 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   EXPECT_EQ(kPpTrajFromPpMatrix.value(1)(2), 2);  // y2 = 2 * y
   EXPECT_EQ(kPpTrajFromPpMatrix.value(2)(2), 4);
   EXPECT_EQ(kPpTrajFromPpMatrix.value(3)(2), 6);
-
-  // Test: construct a PiecewisePolynomialTrajectory from a matrix.
-
-  const int kNumJoints {3};
-  // Each column represents a particular time, and the rows of that
-  // column contain values for each joint coordinate.
-  MatrixXd traj_matrix(kNumJoints, times.size());
-  traj_matrix <<
-      9.9, 2, 3, 4.1,
-      6, 5, 4.5, 5.1,
-      7, 6, 4, 2.1;
-
-  // Create a PiecewisePolynomialTrajectory from a matrix.
-  const PiecewisePolynomialTrajectory kPpTrajFromMatrix {traj_matrix, times};
-  EXPECT_EQ(kPpTrajFromMatrix.rows(), kNumJoints);
-  EXPECT_EQ(kPpTrajFromMatrix.cols(), 1);
-  // There is interpolation between points in the input matrix (traj_matrix),
-  // but in this test we test just at the knot points (times).
-  // The output from value() is a vector of length = kNumJoints.
-  EXPECT_EQ(kPpTrajFromMatrix.value(times[0])(0), traj_matrix(0, 0));
-  EXPECT_EQ(kPpTrajFromMatrix.value(times[0])(1), traj_matrix(1, 0));
-  EXPECT_EQ(kPpTrajFromMatrix.value(times[0])(2), traj_matrix(2, 0));
-
-  // Don't bother testing every knot point; just boundaries.
-  EXPECT_EQ(kPpTrajFromMatrix.value(times[1])(2), traj_matrix(2, 1));
-  EXPECT_EQ(kPpTrajFromMatrix.value(times[2])(2), traj_matrix(2, 2));
-
-  EXPECT_EQ(kPpTrajFromMatrix.value(times[3])(0), traj_matrix(0, 3));
-  EXPECT_EQ(kPpTrajFromMatrix.value(times[3])(1), traj_matrix(1, 3));
-  EXPECT_EQ(kPpTrajFromMatrix.value(times[3])(2), traj_matrix(2, 3));
 }
 
 }  // namespace

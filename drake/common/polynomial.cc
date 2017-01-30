@@ -514,6 +514,7 @@ bool Polynomial<CoefficientType>::IsApprox(const Polynomial& other,
   return GetCoefficients().isApprox(other.GetCoefficients(), tol);
 }
 
+// TODO(jwnimmer-tri) Replace with never_destroyed<std::string>?
 const char kNameChars[] = "@#_.abcdefghijklmnopqrstuvwxyz";
 const unsigned int kNumNameChars = sizeof(kNameChars) - 1;
 const unsigned int kNameLength = 4;
@@ -594,7 +595,7 @@ void Polynomial<CoefficientType>::MakeMonomialsUnique(void) {
         }
       }
     }
-    for (int j = 0; j < (i - 1); j++) {
+    for (int j = 0; j <= (i - 1); j++) {
       Monomial& mj = monomials_[j];
       if (mi.HasSameExponents(mj)) {
         // it's a match, so delete monomial i

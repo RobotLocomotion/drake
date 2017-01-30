@@ -1,6 +1,7 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "drake/common/text_logging.h"
@@ -38,11 +39,12 @@ LcmPublisherSystem::LcmPublisherSystem(
   DRAKE_DEMAND(lcm_);
 
   if (translator_ != nullptr) {
-    DeclareInputPort(kVectorValued, translator_->get_vector_size(),
-                     kContinuousSampling);
+    DeclareInputPort(kVectorValued, translator_->get_vector_size());
   } else {
-    DeclareAbstractInputPort(kContinuousSampling);
+    DeclareAbstractInputPort();
   }
+
+  set_name(make_name(channel_));
 }
 
 LcmPublisherSystem::LcmPublisherSystem(
@@ -68,16 +70,16 @@ LcmPublisherSystem::LcmPublisherSystem(
 
 LcmPublisherSystem::~LcmPublisherSystem() {}
 
-std::string LcmPublisherSystem::get_name() const {
-  return get_name(channel_);
-}
-
-std::string LcmPublisherSystem::get_name(const std::string& channel) {
+std::string LcmPublisherSystem::make_name(const std::string& channel) {
   return "LcmPublisherSystem(" + channel + ")";
 }
 
 const std::string& LcmPublisherSystem::get_channel_name() const {
   return channel_;
+}
+
+void LcmPublisherSystem::set_publish_period(double period) {
+  LeafSystem<double>::DeclarePublishPeriodSec(period);
 }
 
 void LcmPublisherSystem::DoPublish(const Context<double>& context) const {

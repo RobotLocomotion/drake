@@ -9,27 +9,21 @@ const int kPortIndex = 0;
 }  // namespace
 
 DrakeVisualizer::DrakeVisualizer(
-    const RigidBodyTree<double>& tree, drake::lcm::DrakeLcmInterface* lcm) :
-    lcm_(lcm), load_message_(CreateLoadMessage(tree)),
-    draw_message_translator_(tree) {
+    const RigidBodyTree<double>& tree, drake::lcm::DrakeLcmInterface* lcm)
+    : lcm_(lcm),
+      load_message_(CreateLoadMessage(tree)),
+      draw_message_translator_(tree) {
   set_name("drake_visualizer");
   const int vector_size =
       tree.get_num_positions() + tree.get_num_velocities();
-  DeclareInputPort(kVectorValued, vector_size, kContinuousSampling);
+  DeclareInputPort(kVectorValued, vector_size);
 }
 
-const lcmt_viewer_load_robot&
-DrakeVisualizer::get_load_message() const {
-  return load_message_;
+void DrakeVisualizer::set_publish_period(double period) {
+  LeafSystem<double>::DeclarePublishPeriodSec(period);
 }
 
-const std::vector<uint8_t>&
-DrakeVisualizer::get_draw_message_bytes() const {
-  return draw_message_bytes_;
-}
-
-void DrakeVisualizer::DoPublish(const Context<double>& context)
-    const {
+void DrakeVisualizer::DoPublish(const Context<double>& context) const {
   // TODO(liang.fok): Replace the following code once System 2.0's API allows
   // systems to declare that they need a certain action to be performed at
   // simulation time t_0.
@@ -47,12 +41,13 @@ void DrakeVisualizer::DoPublish(const Context<double>& context)
 
   // Translates the input vector into an array of bytes representing an LCM
   // message.
-  draw_message_translator_.Serialize(
-      context.get_time(), *input_vector, &draw_message_bytes_);
+  std::vector<uint8_t> message_bytes;
+  draw_message_translator_.Serialize(context.get_time(), *input_vector,
+                                     &message_bytes);
 
   // Publishes onto the specified LCM channel.
-  lcm_->Publish("DRAKE_VIEWER_DRAW", draw_message_bytes_.data(),
-      draw_message_bytes_.size());
+  lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
+                message_bytes.size());
 }
 
 void DrakeVisualizer::PublishLoadRobot() const {

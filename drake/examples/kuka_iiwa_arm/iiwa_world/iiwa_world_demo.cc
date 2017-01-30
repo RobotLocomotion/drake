@@ -8,10 +8,13 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_world_sim_builder.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_diagram_factory.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
+#include "drake/lcm/drake_lcm.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
@@ -24,14 +27,18 @@ namespace {
 
 int DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
-  auto iiwa_world = std::make_unique<IiwaWorldSimBuilder<double>>();
+  auto iiwa_world = std::make_unique<WorldSimTreeBuilder<double>>();
 
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
-  iiwa_world->StoreModel("iiwa", "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
+
   iiwa_world->StoreModel(
-      "table",
-      "/examples/kuka_iiwa_arm/models/table/extra_heavy_duty_table.sdf");
+      "iiwa",
+      "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
+
+  iiwa_world->StoreModel(
+      "table", "/examples/kuka_iiwa_arm/models/table/"
+               "extra_heavy_duty_table_surface_only_collision.sdf");
   iiwa_world->StoreModel(
       "cylinder",
       "/examples/kuka_iiwa_arm/models/objects/simple_cylinder.urdf");
@@ -41,10 +48,6 @@ int DoMain() {
   iiwa_world->AddFixedModelInstance("table", Eigen::Vector3d::Zero() /* xyz */,
                                     Eigen::Vector3d::Zero() /* rpy */);
   iiwa_world->AddGround();
-
-  iiwa_world->SetPenetrationContactParameters(4500 /* penetration_stiffness */,
-                                              1.0 /* penetration_damping */,
-                                              1.0 /* contact friction */);
 
   // The `z` coordinate of the top of the table in the world frame.
   // The quantity 0.736 is the `z` coordinate of the frame associated with the
@@ -66,32 +69,23 @@ int DoMain() {
   iiwa_world->AddFloatingModelInstance("cylinder", kCylinder2Base);
   iiwa_world->AddFloatingModelInstance("cuboid", kBoxBase);
 
-  // Sets up a builder for the demo.
-  std::unique_ptr<drake::systems::DiagramBuilder<double>> demo_builder{
-      std::make_unique<drake::systems::DiagramBuilder<double>>()};
+  lcm::DrakeLcm lcm;
 
-  auto iiwa_plant_diagram =
-      demo_builder->template AddSystem(iiwa_world->Build());
+  auto visualized_plant = std::make_unique<VisualizedPlant<double>>(
+      iiwa_world->Build(), 4500 /* penetration_stiffness */,
+      1.0 /* penetration_damping */, 1.0 /* contact friction */, &lcm);
 
-  // Instantiates a constant source that outputs a vector of zeros.
-  VectorX<double> constant_value(iiwa_world->GetPlantInputSize());
-  constant_value.setZero();
+  auto demo_plant = std::make_unique<PassiveVisualizedPlant<double>>(
+      std::move(visualized_plant));
 
-  auto const_source_ =
-      demo_builder->template AddSystem<systems::ConstantVectorSource<double>>(
-          constant_value);
+  auto simulator = std::make_unique<systems::Simulator<double>>(*demo_plant);
 
-  // Cascades the constant source to the iiwa plant diagram. This effectively
-  // results in the robot being uncontrolled.
-  demo_builder->Cascade(*const_source_, *iiwa_plant_diagram);
-
-  auto demo_diagram = demo_builder->Build();
-
-  auto simulator = std::make_unique<systems::Simulator<double>>(*demo_diagram);
-
-  iiwa_world->SetZeroConfiguration(simulator.get(), demo_diagram.get());
+  systems::Context<double>* context = simulator->get_mutable_context();
+  demo_plant->SetDefaultState(*context, context->get_mutable_state());
 
   simulator->Initialize();
+  simulator->set_target_realtime_rate(1.0);
+
   simulator->StepTo(FLAGS_simulation_sec);
 
   return 0;

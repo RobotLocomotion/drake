@@ -20,7 +20,7 @@ namespace bouncing_ball {
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
-/// They are already available to link against in drakeBouncingBall.
+/// They are already available to link against in the containing library.
 ///
 /// Inputs: no inputs.
 /// States: vertical position (state index 0) and velocity (state index 1) in
@@ -33,16 +33,20 @@ class Ball : public systems::LeafSystem<T> {
   // Constructor for the Ball system.
   Ball();
 
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override;
+  /// Gets the signed acceleration due to gravity. Since initial positions
+  /// correspond to heights, acceleration should be negative.
+  double get_gravitational_acceleration() const { return -9.81; }
 
-  void EvalTimeDerivatives(
+ protected:
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override;
+
+  void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
- protected:
-  std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
-    const override;
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override;
 };
 
 }  // namespace bouncing_ball

@@ -1,5 +1,9 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
@@ -52,12 +56,9 @@ namespace systems {
 template <class T>
 class RungeKutta3Integrator : public IntegratorBase<T> {
  public:
-  ~RungeKutta3Integrator() override = default;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RungeKutta3Integrator)
 
-  // Disable copy, assign, and move.
-  RungeKutta3Integrator(const RungeKutta3Integrator<T>& other) = delete;
-  RungeKutta3Integrator& operator=(const RungeKutta3Integrator<T>& other) =
-      delete;
+  ~RungeKutta3Integrator() override = default;
 
   explicit RungeKutta3Integrator(const System<T>& system,
                                  Context<T>* context = nullptr)
@@ -77,7 +78,7 @@ class RungeKutta3Integrator : public IntegratorBase<T> {
 
  private:
   void DoInitialize() override;
-  bool DoStepOnceAtMost(const T& dt) override;
+  std::pair<bool, T> DoStepOnceAtMost(const T& max_dt) override;
   void DoStepOnceFixedSize(const T& dt) override;
 
   // Vector used in error estimate calculations.

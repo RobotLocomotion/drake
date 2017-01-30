@@ -29,17 +29,14 @@ namespace systems {
 
 RobotStateEncoder::RobotStateEncoder(
     const RigidBodyTree<double>& tree,
-    const std::vector<RigidBodyFrame>& ft_sensor_info)
+    const std::vector<RigidBodyFrame<double>>& ft_sensor_info)
     : tree_(CheckTreeIsRobotStateLcmTypeCompatible(tree)),
       floating_body_(tree.bodies[1]->getJoint().is_floating()
                          ? tree.bodies[1].get()
                          : nullptr),
-      lcm_message_port_index_(
-          DeclareAbstractOutputPort(kContinuousSampling).get_index()),
-      kinematics_results_port_index_(
-          DeclareAbstractInputPort(kContinuousSampling).get_index()),
-      contact_results_port_index_(
-          DeclareAbstractInputPort(kContinuousSampling).get_index()),
+      lcm_message_port_index_(DeclareAbstractOutputPort().get_index()),
+      kinematics_results_port_index_(DeclareAbstractInputPort().get_index()),
+      contact_results_port_index_(DeclareAbstractInputPort().get_index()),
       effort_port_indices_(DeclareEffortInputPorts()),
       force_torque_sensor_info_(ft_sensor_info) {
   int sensor_idx = 0;
@@ -60,8 +57,8 @@ RobotStateEncoder::RobotStateEncoder(
 
 RobotStateEncoder::~RobotStateEncoder() {}
 
-void RobotStateEncoder::EvalOutput(const Context<double>& context,
-                                   SystemOutput<double>* output) const {
+void RobotStateEncoder::DoCalcOutput(const Context<double>& context,
+                                     SystemOutput<double>* output) const {
   auto& message = output->GetMutableData(lcm_message_port_index_)
                       ->GetMutableValue<robot_state_t>();
   message.utime = static_cast<int64_t>(context.get_time() * 1e6);
@@ -91,22 +88,22 @@ std::unique_ptr<SystemOutput<double>> RobotStateEncoder::AllocateOutput(
   return std::unique_ptr<SystemOutput<double>>(output.release());
 }
 
-const SystemPortDescriptor<double>& RobotStateEncoder::lcm_message_port()
+const OutputPortDescriptor<double>& RobotStateEncoder::lcm_message_port()
     const {
   return get_output_port(lcm_message_port_index_);
 }
 
-const SystemPortDescriptor<double>& RobotStateEncoder::kinematics_results_port()
+const InputPortDescriptor<double>& RobotStateEncoder::kinematics_results_port()
     const {
   return get_input_port(kinematics_results_port_index_);
 }
 
-const SystemPortDescriptor<double>& RobotStateEncoder::contact_results_port()
+const InputPortDescriptor<double>& RobotStateEncoder::contact_results_port()
     const {
   return get_input_port(contact_results_port_index_);
 }
 
-const SystemPortDescriptor<double>& RobotStateEncoder::effort_port(
+const InputPortDescriptor<double>& RobotStateEncoder::effort_port(
     const RigidBodyActuator& actuator) const {
   return get_input_port(effort_port_indices_.at(&actuator));
 }
@@ -118,9 +115,8 @@ RobotStateEncoder::DeclareEffortInputPorts() {
   // Currently, all RigidBodyActuators are assumed to be one-dimensional.
   const int actuator_effort_length = 1;
   for (const auto& actuator : tree_.actuators) {
-    ret[&actuator] = DeclareInputPort(kVectorValued, actuator_effort_length,
-                                      kContinuousSampling)
-                         .get_index();
+    ret[&actuator] =
+        DeclareInputPort(kVectorValued, actuator_effort_length).get_index();
   }
   return ret;
 }
@@ -128,8 +124,7 @@ RobotStateEncoder::DeclareEffortInputPorts() {
 std::map<Side, int> RobotStateEncoder::DeclareWrenchInputPorts() {
   std::map<Side, int> ret;
   for (const auto& side : Side::values) {
-    ret[side] = DeclareInputPort(kVectorValued, kTwistSize, kContinuousSampling)
-                    .get_index();
+    ret[side] = DeclareInputPort(kVectorValued, kTwistSize).get_index();
   }
   return ret;
 }

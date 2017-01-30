@@ -5,6 +5,8 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
+#include <utility>
+
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 
 namespace drake {
@@ -51,27 +53,27 @@ void RungeKutta3Integrator<T>::DoInitialize() {
  * RK3-specific stepping function.
  */
 template <class T>
-bool RungeKutta3Integrator<T>::DoStepOnceAtMost(const T& dt_max) {
+std::pair<bool, T> RungeKutta3Integrator<T>::DoStepOnceAtMost(const T& max_dt) {
   using std::isnan;
 
   // TODO(edrumwri): move derivative evaluation at t0 to the simulator where
   // it can be used for efficient guard function zero finding.
   auto& system = this->get_system();
   auto& context = this->get_context();
-  system.EvalTimeDerivatives(context, derivs0_.get());
+  system.CalcTimeDerivatives(context, derivs0_.get());
 
   // Call the generic error controlled stepper unless error control is
   // disabled.
   if (this->get_fixed_step_mode()) {
     this->get_mutable_interval_start_state() =
         context.get_continuous_state_vector().CopyToVector();
-    this->DoStepOnceFixedSize(dt_max);
+    this->DoStepOnceFixedSize(max_dt);
+    return std::make_pair(true, max_dt);
   } else {
-    this->StepErrorControlled(dt_max, derivs0_.get());
+    this->StepErrorControlled(max_dt, derivs0_.get());
+    const T& dt = this->get_previous_integration_step_size();
+    return std::make_pair(dt == max_dt, dt);
   }
-
-  const T& dt = this->get_previous_integration_step_size();
-  return (dt == dt_max);
 }
 
 template <class T>
@@ -96,14 +98,14 @@ void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   // Compute the first intermediate state and derivative (at t=0.5, x(0.5)).
   this->get_mutable_context()->set_time(ta + dt * 0.5);
   xc->PlusEqScaled(dt * 0.5, xcdot0);
-  system.EvalTimeDerivatives(context, derivs1_.get());
+  system.CalcTimeDerivatives(context, derivs1_.get());
   const auto& xcdot1 = derivs1_->get_vector();
 
   // Compute the second intermediate state and derivative (at t=1, x(1)).
   this->get_mutable_context()->set_time(tb);
   xc->SetFromVector(this->get_interval_start_state());
   xc->PlusEqScaled({{-dt, xcdot0}, {dt * 2, xcdot1}});
-  system.EvalTimeDerivatives(context, derivs2_.get());
+  system.CalcTimeDerivatives(context, derivs2_.get());
   const auto& xcdot2 = derivs2_->get_vector();
 
   // calculate the state at dt.

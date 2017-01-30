@@ -1,12 +1,12 @@
 {
   "modelName" : "kuka_iiwa",
   "urdfConfig": {
-    "default": "urdf/iiwa14_no_collision.urdf",
-    "robotState": "urdf/iiwa14_no_collision.urdf",
-    "ik":         "urdf/iiwa14_no_collision.urdf",
-    "chull":      "urdf/iiwa14_no_collision.urdf",
-    "playback":   "urdf/iiwa14_no_collision.urdf",
-    "teleop":     "urdf/iiwa14_no_collision.urdf"
+    "default": "urdf/iiwa14_simplified_collision.urdf",
+    "robotState": "urdf/iiwa14_simplified_collision.urdf",
+    "ik":         "urdf/iiwa14_simplified_collision.urdf",
+    "chull":      "urdf/iiwa14_simplified_collision.urdf",
+    "playback":   "urdf/iiwa14_simplified_collision.urdf",
+    "teleop":     "urdf/iiwa14_simplified_collision.urdf"
   },
 
   "teleopJointGroups" : [

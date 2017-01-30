@@ -2,7 +2,7 @@
 
 #include <Eigen/Dense>
 #include "drake/common/drake_assert.h"
-#include "drake/systems/controllers/linear_optimal_control.h"
+#include "drake/systems/controllers/linear_quadratic_regulator.h"
 
 using namespace Eigen;
 
@@ -42,8 +42,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   Map<MatrixXd> K(mxGetPr(plhs[0]), R_rows, A_cols);
   Map<MatrixXd> S(mxGetPr(plhs[1]), A_rows, A_cols);
 
-  S = drake::systems::ContinuousAlgebraicRiccatiEquation(A, B, Q, R);
-
-  Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
-  K = R_cholesky.solve(B.transpose() * S);
+  drake::systems::LinearQuadraticRegulatorResult result =
+      drake::systems::LinearQuadraticRegulator(A, B, Q, R);
+  S = result.S;
+  K = result.K;
 }

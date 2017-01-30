@@ -62,15 +62,14 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
 
   Eigen::Isometry3d T_second_model_to_world;
   {
-    Eigen::Vector3d xyz, rpy;
-    xyz << 1, 1, 1;
-    rpy = Eigen::Vector3d::Zero();
+    Eigen::Vector3d xyz = Eigen::Vector3d::Ones();
+    Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
     T_second_model_to_world.matrix()
         << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), "world", nullptr,
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
       T_second_model_to_world);
 
   rigid_body_sys->AddModelInstanceFromFile(

@@ -1,15 +1,17 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/primitives/adder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/demultiplexer.h"
-#include "drake/systems/framework/primitives/gain.h"
-#include "drake/systems/framework/primitives/matrix_gain.h"
+#include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/gain.h"
+#include "drake/systems/primitives/matrix_gain.h"
 
 namespace drake {
 namespace systems {
@@ -65,8 +67,8 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] Kp the proportional constant.
   /// @param[in] Ki the integral constant.
   /// @param[in] Kd the derivative constant.
-  PidControlledSystem(std::unique_ptr<System<T>> plant,
-                      const T& Kp, const T& Ki, const T& Kd);
+  PidControlledSystem(std::unique_ptr<System<T>> plant, const T& Kp,
+                      const T& Ki, const T& Kd);
 
   /// A constructor where the gains are vector values and all of the plant's
   /// output port zero is part of the feedback signal. The length of the gain
@@ -80,9 +82,8 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] Ki the integral vector constant.
   ///
   /// @param[in] Kd the derivative vector constant.
-  PidControlledSystem(std::unique_ptr<System<T>> plant,
-                      const VectorX<T>& Kp, const VectorX<T>& Ki,
-                      const VectorX<T>& Kd);
+  PidControlledSystem(std::unique_ptr<System<T>> plant, const VectorX<T>& Kp,
+                      const VectorX<T>& Ki, const VectorX<T>& Kd);
 
   /// A constructor where the gains are scalar values and some of the plant's
   /// output is part of the feedback signal as specified by
@@ -128,44 +129,56 @@ class PidControlledSystem : public Diagram<T> {
 
   System<T>* plant() { return plant_; }
 
-  /// Sets @p context to a default state in which the positions and
-  /// velocities are all zero.  The integral of the controller is also
-  /// set to zero.
-  void SetDefaultState(Context<T>* context) const;
+  /// @return the input port for the feed forward control input.
+  const InputPortDescriptor<T>& get_control_input_port() const {
+    return this->get_input_port(0);
+  }
+
+  /// @return the input port for the desired position/velocity state.
+  const InputPortDescriptor<T>& get_state_input_port() const {
+    return this->get_input_port(1);
+  }
+
+  /// The return type of ConnectController.
+  struct ConnectResult {
+    /// The feed forward control input.
+    const InputPortDescriptor<T>& control_input_port;
+    /// The feedback state input.
+    const InputPortDescriptor<T>& state_input_port;
+  };
+
+  /// Creates a PidController and uses @p builder to connect @p plant_input and
+  /// @p plant_output from an existing plant, adding additional systems
+  /// (adders, multiplexers, gains, etc.) as needed.
+  static ConnectResult ConnectController(
+      const InputPortDescriptor<T>& plant_input,
+      const OutputPortDescriptor<T>& plant_output,
+      std::unique_ptr<MatrixGain<T>> feedback_selector, const VectorX<T>& Kp,
+      const VectorX<T>& Ki, const VectorX<T>& Kd, DiagramBuilder<T>* builder);
+
+  /// Creates a PidController with input saturation and uses @p builder to
+  /// connect @p plant_input and @p plant_output from an existing plant, adding
+  /// additional systems (adders, multiplexers, gains, saturation etc.) as
+  /// needed. Note that using input limits along with integral gain constant
+  /// may result in integral windup effects.
+  static ConnectResult ConnectControllerWithInputSaturation(
+      const InputPortDescriptor<T>& plant_input,
+      const OutputPortDescriptor<T>& plant_output,
+      std::unique_ptr<MatrixGain<T>> feedback_selector, const VectorX<T>& Kp,
+      const VectorX<T>& Ki, const VectorX<T>& Kd,
+      const VectorX<T>& min_plant_input, const VectorX<T>& max_plant_input,
+      DiagramBuilder<T>* builder);
 
  private:
   // A helper function for the constructors. This is necessary to avoid seg
-  // faults caused by simultaneously moving the plant and calling methods on the
-  // plant when one constructor delegates to another constructor.
-  void Initialize(
-    std::unique_ptr<System<T>> plant,
-    std::unique_ptr<MatrixGain<T>> feedback_selector,
-    const VectorX<T>& Kp, const VectorX<T>& Ki, const VectorX<T>& Kd);
+  // faults caused by simultaneously moving the plant and calling methods on
+  // the plant when one constructor delegates to another constructor.
+  void Initialize(std::unique_ptr<System<T>> plant,
+                  std::unique_ptr<MatrixGain<T>> feedback_selector,
+                  const VectorX<T>& Kp, const VectorX<T>& Ki,
+                  const VectorX<T>& Kd);
 
   System<T>* plant_{nullptr};
-  PidController<T>* controller_{nullptr};
-  MatrixGain<T>* feedback_selector_{nullptr};
-
-  // Takes as input the plant's error state vector and outputs separate position
-  // and velocity state error vectors. These outputs are then inputted into the
-  // PID controller.
-  Demultiplexer<T>* error_demux_{nullptr};
-
-  // Inverts the PID controller's output command. The output of this system is
-  // inputted into plant_input_.
-  Gain<T>* controller_inverter_{nullptr};
-
-  // Inverts the PidControlledSystem input containing the desired state of the
-  // plant. The output is inputted into state_minus_target_.
-  Gain<T>* error_inverter_{nullptr};
-
-  // Subtracts the desired state of the plant from the current state of the
-  // plant. The resulting vector is inputted into error_demux_.
-  Adder<T>* state_minus_target_{nullptr};
-
-  // Adds the PID controller's output command with the provided feed forward
-  // command. The resulting command is then inputted into plant_.
-  Adder<T>* plant_input_{nullptr};
 };
 
 }  // namespace systems

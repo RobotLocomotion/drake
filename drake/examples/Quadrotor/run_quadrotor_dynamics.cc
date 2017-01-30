@@ -1,19 +1,34 @@
+/// @file
+///
+/// This demo sets up a passive Quadrotor plant in a world described by the
+/// warehouse model. The robot simply rests on the floor within the walls
+/// of the warehouse.
+
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/parser_sdf.h"
-#include "drake/multibody/parser_urdf.h"
-#include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/multibody/parsers/model_instance_id_table.h"
+#include "drake/multibody/parsers/sdf_parser.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {
+
+using multibody::joints::kFixed;
+using multibody::joints::kRollPitchYaw;
+using parsers::ModelInstanceIdTable;
+using parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
+using parsers::sdf::AddModelInstancesFromSdfFile;
+using systems::InputPortDescriptor;
+
 namespace examples {
 namespace quadrotor {
 namespace {
@@ -27,15 +42,13 @@ class Quadrotor : public systems::Diagram<T> {
     this->set_name("Quadrotor");
 
     auto tree = std::make_unique<RigidBodyTree<T>>();
-
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+    ModelInstanceIdTable model_id_table = AddModelInstanceFromUrdfFileToWorld(
         drake::GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
-        multibody::joints::kRollPitchYaw, nullptr, tree.get());
-
-    drake::parsers::sdf::AddModelInstancesFromSdfFile(
+        kRollPitchYaw, tree.get());
+    const int quadrotor_id = model_id_table.at("quadrotor");
+    AddModelInstancesFromSdfFile(
         drake::GetDrakePath() + "/examples/Quadrotor/warehouse.sdf",
-        multibody::joints::kFixed, nullptr, tree.get());
-
+        kFixed, nullptr /* weld to frame */, tree.get());
     drake::multibody::AddFlatTerrainToWorld(tree.get());
 
     systems::DiagramBuilder<T> builder;
@@ -43,25 +56,28 @@ class Quadrotor : public systems::Diagram<T> {
     plant_ =
         builder.template AddSystem<systems::RigidBodyPlant<T>>(std::move(tree));
 
+    // Verifies that the quadrotor has no actuators.
+    DRAKE_DEMAND(plant_->get_num_actuators() == 0);
+    DRAKE_DEMAND(plant_->get_num_actuators(quadrotor_id) == 0);
+
     VectorX<T> hover_input(plant_->get_input_size());
     hover_input.setZero();
-    systems::ConstantVectorSource<T>* source =
-        builder.template AddSystem<systems::ConstantVectorSource<T>>(
-            hover_input);
 
     systems::DrakeVisualizer* publisher =
         builder.template AddSystem<systems::DrakeVisualizer>(
             plant_->get_rigid_body_tree(), &lcm_);
 
-    builder.Connect(source->get_output_port(), plant_->get_input_port(0));
     builder.Connect(plant_->get_output_port(0), publisher->get_input_port(0));
 
     builder.BuildInto(this);
   }
 
-  void SetDefaultState(systems::Context<T>* context) const {
-    systems::Context<T>* plant_context =
-        this->GetMutableSubsystemContext(context, plant_);
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override {
+    DRAKE_DEMAND(state != nullptr);
+    systems::Diagram<T>::SetDefaultState(context, state);
+    systems::State<T>* plant_state =
+        this->GetMutableSubsystemState(state, plant_);
     VectorX<T> x0(plant_->get_num_states());
     x0.setZero();
     /* x0 is the initial state where
@@ -69,7 +85,7 @@ class Quadrotor : public systems::Diagram<T> {
      * x0(3), x0(4), x0(5) are the quedrotor's Euler angles phi, theta, psi
      */
     x0(2) = 0.2;  // setting arbitrary z-position
-    plant_->set_state_vector(plant_context, x0);
+    plant_->set_state_vector(plant_state, x0);
   }
 
  private:
@@ -82,8 +98,6 @@ int do_main(int argc, char* argv[]) {
 
   Quadrotor<double> model;
   systems::Simulator<double> simulator(model);
-
-  model.SetDefaultState(simulator.get_mutable_context());
 
   simulator.Initialize();
   simulator.StepTo(FLAGS_duration);

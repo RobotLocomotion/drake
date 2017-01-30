@@ -1,5 +1,8 @@
+#include <memory>
+#include <utility>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/supervector.h"
 
@@ -13,6 +16,8 @@ namespace systems {
 template <typename T>
 class DiagramContinuousState : public ContinuousState<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramContinuousState)
+
   /// Constructs a ContinuousState that is composed of other ContinuousStates,
   /// which are not owned by this object and must outlive it.
   ///

@@ -15,6 +15,7 @@ set(lcm_dependent_header_files)
 if (lcm_FOUND)
   set(lcm_dependent_header_files
     drake_visualizer.h
+    rigid_body_plant_that_publishes_xdot.h
     viewer_draw_translator.h)
 endif ()
 
@@ -22,6 +23,7 @@ set(lcm_dependent_source_files)
 if (lcm_FOUND)
   set(lcm_dependent_source_files
     drake_visualizer.cc
+    rigid_body_plant_that_publishes_xdot.cc
     viewer_draw_translator.cc)
 endif ()
 
@@ -36,11 +38,12 @@ add_library_with_exports(LIB_NAME drakeRigidBodyPlant SOURCE_FILES
   ${lcm_dependent_source_files}
   ${source_files})
 target_link_libraries(drakeRigidBodyPlant
-  ${lcm_dependent_link_libraries}
   drakeCommon
-  drakeSystemFramework
+  drakeOptimization
   drakeRBM
-  drakeOptimization)
+  drakeSystemFramework
+  Eigen3::Eigen
+  ${lcm_dependent_link_libraries})
 
 drake_install_headers(
     ${lcm_dependent_header_files}

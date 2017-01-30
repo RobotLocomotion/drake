@@ -9,6 +9,9 @@
   #define SWIG_FILE_WITH_INIT
   #include <Python.h>
 #endif
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/package_map.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 %}
 
@@ -37,7 +40,7 @@
 %template(mapStringString) std::map<std::string,std::string>;
 %shared_ptr(RigidBody<double>)
 %template(vectorRigidBody) std::vector<std::shared_ptr<RigidBody<double> > >;
-%shared_ptr(RigidBodyFrame)
+%shared_ptr(RigidBodyFrame<double>)
 
 %eigen_typemaps(Eigen::VectorXd)
 %eigen_typemaps(Eigen::Vector2d)
@@ -64,11 +67,19 @@
 
 %include "drake/multibody/rigid_body_frame.h"
 
+%include "drake/multibody/parsers/package_map.h"
+
+%inline %{
+  typedef std::map<std::string, int> ModelInstanceIdTable;
+%}
+%include "drake/multibody/parsers/urdf_parser.h"
+
 %immutable RigidBodyTree::actuators;
 %immutable RigidBodyTree::loops;
 
 // unique_ptr confuses SWIG, so we'll ignore it for now
 %ignore RigidBodyTree<double>::add_rigid_body(std::unique_ptr<RigidBody<double> > body);
+%ignore RigidBodyTree<double>::CreateKinematicsCacheFromBodiesVector(const std::vector<std::unique_ptr<RigidBody<double>>>& bodies);
 
 // Ignore this member so that it doesn't generate setters/getters.
 // These cause problems since bodies is a vector of unique_ptr's and
@@ -77,7 +88,8 @@
 %include "drake/multibody/rigid_body_tree.h"
 %include "drake/multibody/joints/floating_base_types.h"
 %extend RigidBodyTree {
-  RigidBodyTree(const std::string& urdf_filename, const std::string& joint_type) {
+  RigidBodyTree(const std::string& urdf_filename,
+      const std::string& joint_type = "ROLLPITCHYAW") {
     // FIXED = 0, ROLLPITCHYAW = 1, QUATERNION = 2
     drake::multibody::joints::FloatingBaseType floating_base_type;
 
@@ -92,7 +104,11 @@
       return nullptr;
     }
 
-    return new RigidBodyTree<double>(urdf_filename, floating_base_type);
+    auto tree = new RigidBodyTree<double>();
+    drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+        urdf_filename, floating_base_type, tree);
+
+    return tree;
   }
 
   KinematicsCache<double> doKinematics(
@@ -141,11 +157,18 @@
     return $self->transformPoints(cache, points, current_body_or_frame_ind, new_body_or_frame_ind);
   }
 
-  Eigen::Matrix<double, drake::kSpaceDimension, 1> centerOfMass(KinematicsCache<double> &cache, const std::set<int> &model_instance_id = default_model_instance_id_set) const {
+  Eigen::Matrix<double, drake::kSpaceDimension, 1> centerOfMass(
+      KinematicsCache<double> &cache,
+      const std::set<int> &model_instance_id =
+          RigidBodyTreeConstants::default_model_instance_id_set) const {
     return $self->centerOfMass(cache, model_instance_id);
   }
 
-  Eigen::Matrix<double, drake::kSpaceDimension, Eigen::Dynamic> centerOfMassJacobian(KinematicsCache<double>& cache, const std::set<int>& model_instance_ids = default_model_instance_id_set, bool in_terms_of_qdot = false) const {
+  Eigen::Matrix<double, drake::kSpaceDimension, Eigen::Dynamic> centerOfMassJacobian(
+      KinematicsCache<double>& cache,
+      const std::set<int>& model_instance_ids =
+          RigidBodyTreeConstants::default_model_instance_id_set,
+      bool in_terms_of_qdot = false) const {
     return $self->centerOfMassJacobian(cache, model_instance_ids, in_terms_of_qdot);
   }
 
@@ -157,3 +180,4 @@
 
 %template(RigidBodyTree_d) RigidBodyTree<double>;
 %template(RigidBody_d) RigidBody<double>;
+%template(RigidBodyFrame_d) RigidBodyFrame<double>;

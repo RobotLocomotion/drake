@@ -6,6 +6,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
@@ -25,6 +26,9 @@ namespace systems {
 template <typename T>
 class VectorBase {
  public:
+  // VectorBase objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VectorBase)
+
   virtual ~VectorBase() {}
 
   /// Returns the number of elements in the vector.
@@ -56,8 +60,20 @@ class VectorBase {
     GetAtIndex(index) = value;
   }
 
-  /// Replaces the entire state with the contents of value. Throws
-  /// std::runtime_error if value is not a column vector with size() rows.
+  /// Replaces the entire vector with the contents of @p value. Throws
+  /// std::runtime_error if @p value is not a column vector with size() rows.
+  ///
+  /// Implementations should ensure this operation is O(N) in the size of the
+  /// value and allocates no memory.
+  virtual void SetFrom(const VectorBase<T>& value) {
+    DRAKE_THROW_UNLESS(value.size() == size());
+    for (int i = 0; i < value.size(); ++i) {
+      SetAtIndex(i, value.GetAtIndex((i)));
+    }
+  }
+
+  /// Replaces the entire vector with the contents of @p value. Throws
+  /// std::runtime_error if @p value is not a column vector with size() rows.
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates no memory.
@@ -153,12 +169,6 @@ class VectorBase {
 
     return norm;
   }
-
-  // VectorBase objects are neither copyable nor moveable.
-  VectorBase(const VectorBase<T>& other) = delete;
-  VectorBase& operator=(const VectorBase<T>& other) = delete;
-  VectorBase(VectorBase<T>&& other) = delete;
-  VectorBase& operator=(VectorBase<T>&& other) = delete;
 
  protected:
   VectorBase() {}

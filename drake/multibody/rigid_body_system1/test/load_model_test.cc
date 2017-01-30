@@ -71,9 +71,8 @@ TEST_P(LoadModelTest, TestNoOffset) {
   // x = 0, y = 0, z = 0.6.
   Eigen::Isometry3d T_link2_to_link1;
   {
-    Eigen::Vector3d rpy = Eigen::Vector3d::Zero(),
-                    xyz = Eigen::Vector3d::Zero();
-    xyz(2) = 0.6;
+    Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+    Eigen::Vector3d xyz(0, 0, 0.6);
     T_link2_to_link1.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
@@ -86,13 +85,13 @@ TEST_P(LoadModelTest, TestVerticalOffset) {
   // and Y-offset of 1.0m.
   Eigen::Isometry3d T_model_to_world;
   {
-    Eigen::Vector3d rpy = Eigen::Vector3d::Zero(),
-                    xyz = Eigen::Vector3d::Ones();
+    Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+    Eigen::Vector3d xyz = Eigen::Vector3d::Ones();
     T_model_to_world.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
       nullptr,  // not used since the robot is attached to the world
       T_model_to_world);
 
@@ -124,9 +123,8 @@ TEST_P(LoadModelTest, TestVerticalOffset) {
   // x = 0, y = 0, z = 0.6.
   Eigen::Isometry3d T_link2_to_link1;
   {
-    Eigen::Vector3d rpy = Eigen::Vector3d::Zero(),
-                    xyz = Eigen::Vector3d::Zero();
-    xyz(2) = 0.6;
+    Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+    Eigen::Vector3d xyz(0, 0, 0.6);
     T_link2_to_link1.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
@@ -148,16 +146,15 @@ TEST_P(LoadModelTest, TestWeld) {
   Eigen::Isometry3d T_model2_to_link2;
   {
     Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
-    Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
-    xyz(2) = 0.06;
+    Eigen::Vector3d xyz(0, 0, 0.06);
     T_model2_to_link2.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
   auto link2_body = rbs.getRigidBodyTree()->FindBody("link2");
   EXPECT_TRUE(link2_body != nullptr);
 
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), "joint2", link2_body,
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "joint2", link2_body,
       T_model2_to_link2);
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() +
@@ -190,8 +187,7 @@ GTEST_TEST(LoadSDFTest, TestInternalOffset) {
   Eigen::Isometry3d T_model_to_world;
   {
     Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
-    Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
-    xyz(2) = 1;
+    Eigen::Vector3d xyz(0, 0, 1);
     T_model_to_world.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
@@ -208,14 +204,13 @@ GTEST_TEST(LoadSDFTest, TestDualOffsetSdf1) {
   Eigen::Isometry3d T_model_world_to_drake_world;
   {
     Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
-    Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
-    xyz(0) = 2;
+    Eigen::Vector3d xyz(2, 0, 0);
     T_model_world_to_drake_world.matrix() << drake::math::rpy2rotmat(rpy), xyz,
         0, 0, 0, 1;
   }
 
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
       nullptr,  // not used since the robot is attached to the world
       T_model_world_to_drake_world);
 
@@ -230,8 +225,7 @@ GTEST_TEST(LoadSDFTest, TestDualOffsetSdf1) {
   Eigen::Isometry3d T_model_to_world;
   {
     Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
-    Eigen::Vector3d xyz;
-    xyz << 2, 0, 1;
+    Eigen::Vector3d xyz(2, 0, 1);
     T_model_to_world.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
@@ -251,15 +245,14 @@ GTEST_TEST(LoadSDFTest, TestDualOffsetSdf2) {
   // frame and Drake's world frame.
   Eigen::Isometry3d T_model_world_to_drake_world;
   {
-    Eigen::Vector3d xyz, rpy;
-    xyz << 0, -1, 0;
-    rpy << -1.570796326794896557998982, 0, 0;
+    Eigen::Vector3d xyz(0, -1, 0);
+    Eigen::Vector3d rpy(-1.570796326794896557998982, 0, 0);
     T_model_world_to_drake_world.matrix() << drake::math::rpy2rotmat(rpy), xyz,
         0, 0, 0, 1;
   }
 
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
       nullptr,  // not used since the robot is attached to the world
       T_model_world_to_drake_world);
 
@@ -290,14 +283,13 @@ GTEST_TEST(LoadSDFTest, TestDualOffsetUrdf1) {
   Eigen::Isometry3d T_model_world_to_drake_world;
   {
     Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
-    Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
-    xyz(0) = 2;
+    Eigen::Vector3d xyz(2, 0, 0);
     T_model_world_to_drake_world.matrix() << drake::math::rpy2rotmat(rpy), xyz,
         0, 0, 0, 1;
   }
 
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
       nullptr,  // not used since the robot is attached to the world
       T_model_world_to_drake_world);
 
@@ -312,8 +304,7 @@ GTEST_TEST(LoadSDFTest, TestDualOffsetUrdf1) {
   Eigen::Isometry3d T_model_to_world;
   {
     Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
-    Eigen::Vector3d xyz;
-    xyz << 2, 0, 1;
+    Eigen::Vector3d xyz(2, 0, 1);
     T_model_to_world.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
@@ -333,15 +324,14 @@ GTEST_TEST(LoadSDFTest, TestDualOffsetUrdf2) {
   // frame and Drake's world frame.
   Eigen::Isometry3d T_model_world_to_drake_world;
   {
-    Eigen::Vector3d xyz, rpy;
-    xyz << 0, -1, 0;
-    rpy << -1.570796326794896557998982, 0, 0;
+    Eigen::Vector3d xyz(0, -1, 0);
+    Eigen::Vector3d rpy(-1.570796326794896557998982, 0, 0);
     T_model_world_to_drake_world.matrix() << drake::math::rpy2rotmat(rpy), xyz,
         0, 0, 0, 1;
   }
 
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
       nullptr,  // not used since the robot is attached to the world
       T_model_world_to_drake_world);
 
@@ -420,9 +410,8 @@ TEST_P(ModelToWorldTransformTest, TestModelToWorldTransform) {
   // Defines the expected model-to-world transform.
   Eigen::Isometry3d T_model_to_world;
   {
-    Eigen::Vector3d xyz, rpy;
-    xyz << params.x_, params.y_, params.z_;
-    rpy << params.roll_, params.pitch_, params.yaw_;
+    Eigen::Vector3d xyz(params.x_, params.y_, params.z_);
+    Eigen::Vector3d rpy(params.roll_, params.pitch_, params.yaw_);
     T_model_to_world.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 

@@ -1,34 +1,21 @@
 # Source files used to build drakeSystemFramework.
 set(sources
+  abstract_state.cc
   basic_vector.cc
   cache.cc
   context.cc
   continuous_state.cc
-  difference_state.cc
   diagram.cc
   diagram_builder.cc
   diagram_context.cc
   diagram_continuous_state.cc
+  discrete_state.cc
   input_port_evaluator_interface.cc
   leaf_context.cc
   leaf_system.cc
-  modal_state.cc
   output_port_listener_interface.cc
   parameters.cc
-  primitives/adder.cc
-  primitives/affine_system.cc
-  primitives/constant_value_source.cc
-  primitives/constant_vector_source.cc
-  primitives/demultiplexer.cc
-  primitives/gain.cc
-  primitives/integrator.cc
-  primitives/linear_system.cc
-  primitives/matrix_gain.cc
-  primitives/multiplexer.cc
-  primitives/pass_through.cc
-  primitives/signal_logger.cc
-  primitives/trajectory_source.cc
-  primitives/zero_order_hold.cc
+  single_output_vector_source.cc
   state.cc
   subvector.cc
   supervector.cc
@@ -37,7 +24,8 @@ set(sources
   system_output.cc
   system_port_descriptor.cc
   value.cc
-  vector_base.cc)
+  vector_base.cc
+  )
 
 # Headers that should be installed with Drake so that they
 # are available elsewhere via #include.
@@ -49,6 +37,7 @@ set(sources
 # System2 framework template implementations have been moved into .cc files
 # using explicit instantiation, tighten this list.
 set(installed_headers
+  abstract_state.h
   basic_vector.h
   cache.h
   context.h
@@ -57,23 +46,24 @@ set(installed_headers
   diagram_builder.h
   diagram_context.h
   diagram_continuous_state.h
-  difference_state.h
+  discrete_state.h
   input_port_evaluator_interface.h
   leaf_context.h
   leaf_system.h
-  modal_state.h
   output_port_listener_interface.h
   parameters.h
+  single_output_vector_source.h
   state.h
   subvector.h
   supervector.h
   system.h
-  systems.h
   system_input.h
   system_output.h
   system_port_descriptor.h
+  systems.h
   value.h
-  vector_base.h)
+  vector_base.h
+  )
 
 # Headers that are needed by code here but should not
 # be exposed anywhere else.
@@ -81,7 +71,10 @@ set(private_headers)
 
 add_library_with_exports(LIB_NAME drakeSystemFramework
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
-target_link_libraries(drakeSystemFramework drakeCommon drakeTrajectories)
+target_link_libraries(drakeSystemFramework
+  drakeCommon
+  drakeTrajectories
+  Eigen3::Eigen)
 
 drake_install_headers(${installed_headers})
 
@@ -93,9 +86,6 @@ drake_install_pkg_config_file(drake-system-framework
     drake-common
     drake-trajectories
     eigen3)
-
-#add_subdirectory(examples)
-add_subdirectory(primitives)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

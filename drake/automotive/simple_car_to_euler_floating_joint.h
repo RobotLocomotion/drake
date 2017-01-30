@@ -1,7 +1,10 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/automotive/gen/euler_floating_joint_state.h"
 #include "drake/automotive/gen/simple_car_state.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -11,21 +14,18 @@ namespace automotive {
 template <typename T>
 class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleCarToEulerFloatingJoint)
+
   SimpleCarToEulerFloatingJoint() {
     this->set_name("SimpleCarToEulerFloatingJoint");
     this->DeclareInputPort(systems::kVectorValued,
-                           SimpleCarStateIndices::kNumCoordinates,
-                           systems::kContinuousSampling);
+                           SimpleCarStateIndices::kNumCoordinates);
     this->DeclareOutputPort(systems::kVectorValued,
-                            EulerFloatingJointStateIndices::kNumCoordinates,
-                            systems::kContinuousSampling);
+                            EulerFloatingJointStateIndices::kNumCoordinates);
   }
 
-  void EvalOutput(const systems::Context<T>& context,
-                  systems::SystemOutput<T>* output) const override {
-    DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-    DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
-
+  void DoCalcOutput(const systems::Context<T>& context,
+                    systems::SystemOutput<T>* output) const override {
     typedef systems::VectorBase<T> Base;
     const Base* const input_vector = this->EvalVectorInput(context, 0);
     DRAKE_ASSERT(input_vector != nullptr);
@@ -49,7 +49,7 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
 
  protected:
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override {
+      const systems::OutputPortDescriptor<T>& descriptor) const override {
     return std::make_unique<EulerFloatingJointState<T>>();
   }
 };

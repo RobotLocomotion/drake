@@ -1,6 +1,9 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
+load("//tools:drake.bzl", "cc_googletest")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -8,7 +11,9 @@ cc_library(
     srcs = ["continuity_constraint.cc"],
     hdrs = ["continuity_constraint.h"],
     linkstatic = 1,
-    deps = ["//drake/common"],
+    deps = [
+        "//drake/common",
+    ],
 )
 
 cc_library(
@@ -39,5 +44,18 @@ cc_library(
     srcs = ["value_constraint.cc"],
     hdrs = ["value_constraint.h"],
     linkstatic = 1,
-    deps = ["//drake/common"],
+    deps = [
+        "//drake/common",
+    ],
 )
+
+# === test/ ===
+
+cc_googletest(
+    name = "spline_generation_test",
+    deps = [
+        ":spline_generation",
+    ],
+)
+
+cpplint()

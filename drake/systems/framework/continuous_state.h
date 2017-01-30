@@ -3,8 +3,10 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/subvector.h"
@@ -21,6 +23,9 @@ namespace systems {
 template <typename T>
 class ContinuousState {
  public:
+  // ContinuousState is not copyable or moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContinuousState)
+
   /// Constructs a ContinuousState for a system that does not have second-order
   /// structure: All of the state is misc_continuous_state_.
   explicit ContinuousState(std::unique_ptr<VectorBase<T>> state) {
@@ -145,15 +150,17 @@ class ContinuousState {
   }
 
 
+  /// Copies the values from another ContinuousState of the same scalar type
+  /// into this State.
+  void CopyFrom(const ContinuousState<T>& other) {
+    SetFromGeneric(other);
+  }
+
+  /// Initializes this ContinuousState (regardless of scalar type) from a
+  /// State<double>. All scalar types in Drake must support initialization from
+  /// doubles.
   void SetFrom(const ContinuousState<double>& other) {
-    DRAKE_DEMAND(size() == other.size());
-    DRAKE_DEMAND(get_generalized_position().size() ==
-                 other.get_generalized_position().size());
-    DRAKE_DEMAND(get_generalized_velocity().size() ==
-                 other.get_generalized_velocity().size());
-    DRAKE_DEMAND(get_misc_continuous_state().size() ==
-                 other.get_misc_continuous_state().size());
-    SetFromVector(other.CopyToVector().template cast<T>());
+    SetFromGeneric(other);
   }
 
   /// Sets the entire continuous state vector from an Eigen expression.
@@ -165,13 +172,19 @@ class ContinuousState {
   /// Returns a copy of the entire continuous state vector into an Eigen vector.
   VectorX<T> CopyToVector() const { return this->get_vector().CopyToVector(); }
 
-  // ContinuousState is not copyable or moveable.
-  ContinuousState(const ContinuousState& other) = delete;
-  ContinuousState& operator=(const ContinuousState& other) = delete;
-  ContinuousState(ContinuousState&& other) = delete;
-  ContinuousState& operator=(ContinuousState&& other) = delete;
-
  private:
+  template <typename U>
+  void SetFromGeneric(const ContinuousState<U>& other) {
+    DRAKE_DEMAND(size() == other.size());
+    DRAKE_DEMAND(get_generalized_position().size() ==
+        other.get_generalized_position().size());
+    DRAKE_DEMAND(get_generalized_velocity().size() ==
+        other.get_generalized_velocity().size());
+    DRAKE_DEMAND(get_misc_continuous_state().size() ==
+        other.get_misc_continuous_state().size());
+    SetFromVector(other.CopyToVector().template cast<T>());
+  }
+
   // The entire continuous state vector.  May or may not own the underlying
   // data.
   std::unique_ptr<VectorBase<T>> state_;

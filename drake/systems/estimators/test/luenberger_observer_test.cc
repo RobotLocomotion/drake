@@ -7,7 +7,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
-#include "drake/systems/framework/primitives/linear_system.h"
+#include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
 namespace {
@@ -51,13 +51,10 @@ GTEST_TEST(TestLuenberger, ErrorDynamics) {
   //  xhatdot = Axhat + Bu + L(y-yhat)
   //  y = xhat
 
-  Eigen::Vector3d xhat;
-  xhat << 1.0, 2.0, 3.0;
-  Vector1d u;
-  u << 4.0;
+  Eigen::Vector3d xhat(1.0, 2.0, 3.0);
+  Vector1d u(4.0);
 
-  Eigen::Vector2d y;
-  y << 5.0, 6.0;
+  Eigen::Vector2d y(5.0, 6.0);
 
   Eigen::Vector3d xhatdot = A * xhat + B * u + L * (y - C * xhat - D * u);
 
@@ -65,8 +62,8 @@ GTEST_TEST(TestLuenberger, ErrorDynamics) {
   context->FixInputPort(1, u);
   context->get_mutable_continuous_state_vector()->SetFromVector(xhat);
 
-  observer->EvalTimeDerivatives(*context, derivatives.get());
-  observer->EvalOutput(*context, output.get());
+  observer->CalcTimeDerivatives(*context, derivatives.get());
+  observer->CalcOutput(*context, output.get());
 
   double tol = 1e-10;
 

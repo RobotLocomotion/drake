@@ -1,152 +1,126 @@
+<?xml version="1.0" ?>
 <!--
   This prius model supports ackerman steering, which is controlled by
   an actuator.
-  
-  This model is rear-wheel-drive. The rear two wheels are independently controlled.
 
--->
+  This model is rear-wheel-drive. The rear two wheels are independently
+  controlled. -->
 <robot name="car">
-  
   <link name="front_axle">
-    <!-- <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="5.42793634" />
-      <inertia iyy="0.00216238" ixx="0.50037476" izz="0.50167219" />
-    </inertial> -->
+    <!-- <inertial><origin xyz="0 0 0" rpy="0 0 0" /><mass value="5.42793634" /><inertia iyy="0.00216238" ixx="0.50037476" izz="0.50167219" /></inertial>-->
     <visual>
-      <origin xyz="0 0 0.3302" rpy="0 0 0" />
+      <origin rpy="0 0 0" xyz="0 0 0.3302"/>
       <geometry>
-        <box size="0.061842105 1.051315789 0.030921" />
+        <box size="0.061842105 1.051315789 0.030921"/>
       </geometry>
       <material name="">
-        <color rgba="0 0 1 1" />
+        <color rgba="0 0 1 1"/>
       </material>
     </visual>
   </link>
-  
   <link name="left_tie_rod_arm">
-    <!-- <inertial>
-      <mass value="1.58382895" />
-      <inertia iyy="0.01392609" iyx="0.00888406" ixy="0.00888406" ixx="0.00760563" izz="0.02127934" />
-    </inertial> -->
+    <!-- <inertial><mass value="1.58382895" /><inertia iyy="0.01392609" iyx="0.00888406" ixy="0.00888406" ixx="0.00760563" izz="0.02127934" /></inertial>-->
     <visual>
-      <origin xyz="0 0.02228556 0.299279" rpy="0 0 0" />
+      <origin rpy="0 0 0" xyz="0 0.02228556 0.299279"/>
       <geometry>
-        <box size="0.061842105 0.140955396 0.030921" />
+        <box size="0.061842105 0.140955396 0.030921"/>
       </geometry>
       <material name="">
-        <color rgba="0 .5 0 1" />
+        <color rgba="0 .5 0 1"/>
       </material>
     </visual>
     <visual>
-      <origin xyz="-0.108367333 -0.054311782 0.299279" rpy="0 0 0.463647611" />
+      <origin rpy="0 0 0.463647611" xyz="-0.108367333 -0.054311782 0.299279"/>
       <geometry>
-        <box size="0.204636598 0.061842105 0.030921" />
+        <box size="0.204636598 0.061842105 0.030921"/>
       </geometry>
       <material name="">
-        <color rgba="0 .5 0 1" />
+        <color rgba="0 .5 0 1"/>
       </material>
-    </visual>     
+    </visual>
   </link>
-  
   <link name="right_tie_rod_arm">
-    <!-- <inertial>
-      <mass value="1.58382895" />
-      <inertia iyy="0.01392609" iyx="-0.00888406" ixy="-0.00888406" ixx="0.00760563" izz="0.02127934" />
-    </inertial> -->
+    <!-- <inertial><mass value="1.58382895" /><inertia iyy="0.01392609" iyx="-0.00888406" ixy="-0.00888406" ixx="0.00760563" izz="0.02127934" /></inertial>-->
     <visual>
-      <origin xyz="0.172468672 -0.108519747 0.299279" rpy="0 0 0" />
+      <origin rpy="0 0 0" xyz="0.172468672 -0.108519747 0.299279"/>
       <geometry>
-        <box size="0.061842105 0.140955396 0.030921" />
+        <box size="0.061842105 0.140955396 0.030921"/>
       </geometry>
       <material name="">
-        <color rgba="0 .5 0 1" />
+        <color rgba="0 .5 0 1"/>
       </material>
     </visual>
     <visual>
-      <origin xyz="0.063859619 -0.031929809 0.299279" rpy="0 0 -0.463647611" />
+      <origin rpy="0 0 -0.463647611" xyz="0.063859619 -0.031929809 0.299279"/>
       <geometry>
-        <box size="0.204636598 0.061842105 0.030921" />
+        <box size="0.204636598 0.061842105 0.030921"/>
       </geometry>
       <material name="">
-        <color rgba="0 .5 0 1" />
+        <color rgba="0 .5 0 1"/>
       </material>
-    </visual>  
+    </visual>
   </link>
-  
   <link name="tie_rod">
-    <!-- <inertial>
-      <mass value="4.53748175" />
-      <inertia iyy="0.00180764" ixx="0.29241361" izz="0.29349820" />
-    </inertial> -->
+    <!-- <inertial><mass value="4.53748175" /><inertia iyy="0.00180764" ixx="0.29241361" izz="0.29349820" /></inertial>-->
     <visual>
-      <origin xyz="0 -0.408502555 0.3302" rpy="0 0 0" />
+      <origin rpy="0 0 0" xyz="0 -0.408502555 0.3302"/>
       <geometry>
-        <box size="0.061842105 0.878847118 0.030921" />
+        <box size="0.061842105 0.878847118 0.030921"/>
       </geometry>
       <material name="">
-        <color rgba="0 0 1 1" />
+        <color rgba="0 0 1 1"/>
       </material>
     </visual>
   </link>
-  
   <!-- Hubs -->
   <link name="left_hub">
-    <!-- <inertial>
-      <mass value="0.12538524" />
-      <inertia iyy="0.00001499" ixx=" 0.00004745" izz=" 0.00004745" />
-    </inertial> -->
+    <!-- <inertial><mass value="0.12538524" /><inertia iyy="0.00001499" ixx=" 0.00004745" izz=" 0.00004745" /></inertial>-->
     <visual>
-      <origin xyz="0 0.61842105 0.299279" rpy="1.5708 0 0" />
+      <origin rpy="1.5708 0 0" xyz="0 0.61842105 0.299279"/>
       <geometry>
         <cylinder length="0.061842105" radius="0.015460526"/>
       </geometry>
       <material name="">
-        <color rgba="0 0 1 1" />
+        <color rgba="0 0 1 1"/>
       </material>
     </visual>
   </link>
-  
   <link name="right_hub">
-    <!-- <inertial>
-      <mass value="0.12538524" />
-      <inertia iyy="0.00001499" ixx=" 0.00004745" izz=" 0.00004745" />
-    </inertial> -->
+    <!-- <inertial><mass value="0.12538524" /><inertia iyy="0.00001499" ixx=" 0.00004745" izz=" 0.00004745" /></inertial>-->
     <visual>
-      <origin xyz="0 -0.61842105 0.299279" rpy="1.5708 0 0" />
+      <origin rpy="1.5708 0 0" xyz="0 -0.61842105 0.299279"/>
       <geometry>
         <cylinder length="0.061842105" radius="0.015460526"/>
       </geometry>
       <material name="">
-        <color rgba="0 0 1 1" />
+        <color rgba="0 0 1 1"/>
       </material>
     </visual>
   </link>
-  
   <!-- Wheels -->
   <link name="left_wheel">
     <inertial>
-      <mass value="14.28" />
-      <inertia iyy=".77843904" ixx=".49991220" izz=".49991220" />
+      <mass value="14.28"/>
+      <inertia ixx=".49991220" iyy=".77843904" izz=".49991220"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="1.5708 0 0" />
+      <origin rpy="1.5708 0 0" xyz="0 0 0"/>
       <geometry>
         <cylinder length=".215" radius="0.323342"/>
       </geometry>
       <material name="">
-        <color rgba=".2 .2 .2 1" />
+        <color rgba=".2 .2 .2 1"/>
       </material>
-    </visual>  
+    </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="1.5708 0 0" />
+      <origin rpy="1.5708 0 0" xyz="0 0 0"/>
       <geometry>
         <cylinder length=".215" radius="0.323342"/>
       </geometry>
     </collision>
     <!-- Wheel Markings -->
     <visual>
-      <origin xyz="0 0.1075 0" rpy="0 0 1.5708"/>
+      <origin rpy="0 0 1.5708" xyz="0 0.1075 0"/>
       <material>
         <color rgba=".9 .9 .9 1"/>
       </material>
@@ -155,7 +129,7 @@
       </geometry>
     </visual>
     <visual>
-      <origin xyz="0 0.1075 0" rpy="0 1.5708 0"/>
+      <origin rpy="0 1.5708 0" xyz="0 0.1075 0"/>
       <material>
         <color rgba=".9 .9 .9 1"/>
       </material>
@@ -164,30 +138,29 @@
       </geometry>
     </visual>
   </link>
-  
   <link name="right_wheel">
     <inertial>
-      <mass value="14.28" />
-      <inertia iyy=".77843904" ixx=".49991220" izz=".49991220" />
+      <mass value="14.28"/>
+      <inertia ixx=".49991220" iyy=".77843904" izz=".49991220"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="1.5708 0 0" />
+      <origin rpy="1.5708 0 0" xyz="0 0 0"/>
       <geometry>
         <cylinder length=".215" radius="0.323342"/>
       </geometry>
       <material name="">
-        <color rgba=".2 .2 .2 1" />
+        <color rgba=".2 .2 .2 1"/>
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="1.5708 0 0" />
+      <origin rpy="1.5708 0 0" xyz="0 0 0"/>
       <geometry>
         <cylinder length=".215" radius="0.323342"/>
       </geometry>
     </collision>
     <!-- Wheel Markings -->
     <visual>
-      <origin xyz="0 -.1075 0" rpy="0 0 1.5708"/>
+      <origin rpy="0 0 1.5708" xyz="0 -.1075 0"/>
       <material>
         <color rgba=".9 .9 .9 1"/>
       </material>
@@ -196,80 +169,38 @@
       </geometry>
     </visual>
     <visual>
-      <origin xyz="0 -.1075 0" rpy="0 1.5708 0"/>
+      <origin rpy="0 1.5708 0" xyz="0 -.1075 0"/>
       <material>
         <color rgba=".9 .9 .9 1"/>
       </material>
       <geometry>
         <box size=".0025 .0025 .25"/>
       </geometry>
-    </visual>     
+    </visual>
   </link>
-  
   <link name="left_wheel_rear">
     <inertial>
-      <mass value="16.78" />
-      <inertia iyy="1.02355320" ixx="0.75264650" izz="0.75264650" />
+      <mass value="16.78"/>
+      <inertia ixx="0.75264650" iyy="1.02355320" izz="0.75264650"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="1.5708 0 0" />
+      <origin rpy="1.5708 0 0" xyz="0 0 0"/>
       <geometry>
         <cylinder length=".215" radius="0.323342"/>
       </geometry>
       <material name="">
-        <color rgba=".2 .2 .2 1" />
-      </material>
-    </visual> 
-    <collision>
-      <origin xyz="0 0 0" rpy="1.5708 0 0" />
-      <geometry>
-        <cylinder length=".215" radius="0.323342"/>
-      </geometry>
-    </collision>    
-    <!-- Wheel Markings -->
-    <visual>
-      <origin xyz="0 0.1075 0" rpy="0 0 1.5708"/>
-      <material>
-        <color rgba=".9 .9 .9 1"/>
-      </material>
-      <geometry>
-        <box size=".0025 .0025 .25"/>
-      </geometry>
-    </visual>
-    <visual>
-      <origin xyz="0 0.1075 0" rpy="0 1.5708 0"/>
-      <material>
-        <color rgba=".9 .9 .9 1"/>
-      </material>
-      <geometry>
-        <box size=".0025 .0025 .25"/>
-      </geometry>
-    </visual>
-  </link>
-  
-  <link name="right_wheel_rear">
-    <inertial>
-      <mass value="16.78" />
-      <inertia iyy="1.02355320" ixx="0.75264650" izz="0.75264650" />
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0" rpy="1.5708 0 0" />
-      <geometry>
-        <cylinder length=".215" radius="0.323342"/>
-      </geometry>
-      <material name="">
-        <color rgba=".2 .2 .2 1" />
+        <color rgba=".2 .2 .2 1"/>
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="1.5708 0 0" />
+      <origin rpy="1.5708 0 0" xyz="0 0 0"/>
       <geometry>
         <cylinder length=".215" radius="0.323342"/>
       </geometry>
     </collision>
     <!-- Wheel Markings -->
     <visual>
-      <origin xyz="0 -0.1075 0" rpy="0 0 1.5708"/>
+      <origin rpy="0 0 1.5708" xyz="0 0.1075 0"/>
       <material>
         <color rgba=".9 .9 .9 1"/>
       </material>
@@ -278,73 +209,105 @@
       </geometry>
     </visual>
     <visual>
-      <origin xyz="0 -0.1075 0" rpy="0 1.5708 0"/>
+      <origin rpy="0 1.5708 0" xyz="0 0.1075 0"/>
       <material>
         <color rgba=".9 .9 .9 1"/>
       </material>
       <geometry>
         <box size=".0025 .0025 .25"/>
       </geometry>
-    </visual>     
+    </visual>
   </link>
-  
+  <link name="right_wheel_rear">
+    <inertial>
+      <mass value="16.78"/>
+      <inertia ixx="0.75264650" iyy="1.02355320" izz="0.75264650"/>
+    </inertial>
+    <visual>
+      <origin rpy="1.5708 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length=".215" radius="0.323342"/>
+      </geometry>
+      <material name="">
+        <color rgba=".2 .2 .2 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="1.5708 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length=".215" radius="0.323342"/>
+      </geometry>
+    </collision>
+    <!-- Wheel Markings -->
+    <visual>
+      <origin rpy="0 0 1.5708" xyz="0 -0.1075 0"/>
+      <material>
+        <color rgba=".9 .9 .9 1"/>
+      </material>
+      <geometry>
+        <box size=".0025 .0025 .25"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin rpy="0 1.5708 0" xyz="0 -0.1075 0"/>
+      <material>
+        <color rgba=".9 .9 .9 1"/>
+      </material>
+      <geometry>
+        <box size=".0025 .0025 .25"/>
+      </geometry>
+    </visual>
+  </link>
   <!-- Main Chassis -->
   <link name="chassis_floor">
     <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="57.833027175" />
-      <inertia iyy="68.899955711" ixx="2.715531035" izz="71.606270974" />
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="57.833027175"/>
+      <inertia ixx="2.715531035" iyy="68.899955711" izz="71.606270974"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0.3302" rpy="0 0 0" />
+      <origin rpy="0 0 0" xyz="0 0 0.3302"/>
       <geometry>
-        <box size="2.880802 .75 0.030921" />
+        <box size="2.880802 .75 0.030921"/>
       </geometry>
       <material name="">
-        <color rgba="1 1 1 1" />
+        <color rgba="1 1 1 1"/>
       </material>
     </visual>
- 
-    <!-- spacers -->  
+    <!-- spacers -->
     <visual>
-      <origin xyz="1.409480 0 0.299279" rpy="0 0 0" />
+      <origin rpy="0 0 0" xyz="1.409480 0 0.299279"/>
       <geometry>
-        <box size=".06184211 .75 0.030921" />
+        <box size=".06184211 .75 0.030921"/>
       </geometry>
       <material name="">
-        <color rgba="0 1 1 1" />
+        <color rgba="0 1 1 1"/>
       </material>
     </visual>
     <visual>
-      <origin xyz="-1.409480 0 0.299279" rpy="0 0 0" />
+      <origin rpy="0 0 0" xyz="-1.409480 0 0.299279"/>
       <geometry>
-        <box size=".06184211 .75 0.030921" />
+        <box size=".06184211 .75 0.030921"/>
       </geometry>
       <material name="">
-        <color rgba="0 1 1 1" />
+        <color rgba="0 1 1 1"/>
       </material>
     </visual>
   </link>
-  
   <!-- Rear_Axle -->
   <link name="rear_axle">
-    <!-- <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="4.53748175" />
-      <inertia iyy="0.00180764" ixx="0.29241361" izz="0.29349820" />
-    </inertial> -->
+    <!-- <inertial><origin xyz="0 0 0" rpy="0 0 0" /><mass value="4.53748175" /><inertia iyy="0.00180764" ixx="0.29241361" izz="0.29349820" /></inertial>-->
     <visual>
-      <origin xyz="-1.409480 0 0" rpy="0 0 0" />
+      <origin rpy="0 0 0" xyz="-1.409480 0 0"/>
       <geometry>
-        <box size=".06184211 1.388985 0.030921" />
+        <box size=".06184211 1.388985 0.030921"/>
       </geometry>
       <material name="">
-        <color rgba="0 0 1 1" />
+        <color rgba="0 0 1 1"/>
       </material>
     </visual>
   </link>
-  
-     <link name="front_left_contact_point">
+  <link name="front_left_contact_point">
     <visual>
       <material>
         <color rgba="0 1 0 0"/>
@@ -354,7 +317,7 @@
       </geometry>
     </visual>
   </link>
-      <link name="front_right_contact_point">
+  <link name="front_right_contact_point">
     <visual>
       <material>
         <color rgba="0 1 0 0"/>
@@ -384,72 +347,63 @@
       </geometry>
     </visual>
   </link>
-
-<link name="body">
+  <link name="body">
     <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="5.42793634" />
-      <inertia ixx="0.00216238" iyy="0.50037476" izz="0.50167219" />
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="5.42793634"/>
+      <inertia ixx="0.00216238" iyy="0.50037476" izz="0.50167219"/>
     </inertial>
     <visual>
-      <origin xyz="-3.6725 -.9213945 .1666" rpy="0 0 0" />
+      <origin rpy="0 0 0" xyz="-3.6725 -.9213945 .1666"/>
       <geometry>
-        <mesh filename="prius.dae" scale="1" />
+        <mesh filename="prius.dae" scale="1"/>
       </geometry>
     </visual>
-</link>
-
-<joint name="body" type="fixed">
-    <parent link="front_axle" />
-    <child link="body" />
-    <origin xyz="0 0 0" />
-    <axis xyz="0 0 1" />
+  </link>
+  <joint name="body" type="fixed">
+    <parent link="front_axle"/>
+    <child link="body"/>
+    <origin xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
   </joint>
-  
   <joint name="steering" type="revolute">
-    <parent link="front_axle" />
-    <child link="left_tie_rod_arm" />
-    <origin xyz="0 0.494736842 0" />
-    <axis xyz="0 0 1" />
-    <limit lower="-0.401425728" upper="0.5" /> 
+    <parent link="front_axle"/>
+    <child link="left_tie_rod_arm"/>
+    <origin xyz="0 0.494736842 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.401425728" upper="0.5"/>
   </joint>
-  
   <joint name="left_pin" type="continuous">
-    <parent link="left_tie_rod_arm" />
-    <child link="tie_rod" />
-    <origin xyz="-0.172468672 -0.086234287 0" />
-    <axis xyz="0 0 1" />
-    <limit lower="-3.1416" upper="3.1416" />
+    <parent link="left_tie_rod_arm"/>
+    <child link="tie_rod"/>
+    <origin xyz="-0.172468672 -0.086234287 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.1416" upper="3.1416"/>
   </joint>
-  
   <joint name="right_pin" type="continuous">
-    <parent link="tie_rod" />
-    <child link="right_tie_rod_arm" />
-    <origin xyz="0 -0.817005012 0" />
-    <axis xyz="0 0 1" />
-    <limit lower="-3.1416" upper="3.1416" />
+    <parent link="tie_rod"/>
+    <child link="right_tie_rod_arm"/>
+    <origin xyz="0 -0.817005012 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.1416" upper="3.1416"/>
   </joint>
-  
   <loop_joint name="pin" type="continuous">
     <axis xyz="0 0 1"/>
     <link1 link="right_tie_rod_arm" rpy="0 0 0" xyz="0.172468672 -0.086234287 0"/>
     <link2 link="front_axle" rpy="0 0 0" xyz="0 -0.494736842 0"/>
   </loop_joint>
-  
   <joint name="left_hub" type="fixed">
-    <parent link="left_tie_rod_arm" />
-    <child link="left_hub" />
-    <origin xyz="0 -0.494736842 0" />
-    <axis xyz="0 0 1" />
+    <parent link="left_tie_rod_arm"/>
+    <child link="left_hub"/>
+    <origin xyz="0 -0.494736842 0"/>
+    <axis xyz="0 0 1"/>
   </joint>
-  
   <joint name="right_hub" type="fixed">
-    <parent link="right_tie_rod_arm" />
-    <child link="right_hub" />
-    <origin xyz="0.172468672 0.408502555 0" />
-    <axis xyz="0 0 0" />
+    <parent link="right_tie_rod_arm"/>
+    <child link="right_hub"/>
+    <origin xyz="0.172468672 0.408502555 0"/>
+    <axis xyz="0 0 0"/>
   </joint>
-
   <joint name="front_left_contact_sliding" type="prismatic">
     <parent link="left_hub"/>
     <child link="front_left_contact_point"/>
@@ -457,14 +411,12 @@
     <axis xyz="0 0 1"/>
     <limit lower="0" upper=".323342"/>
   </joint>
-  
   <force_element name="front_left_spring">
-    <linear_spring_damper rest_length=".323342" stiffness="10000" damping="100">
+    <linear_spring_damper damping="100" rest_length=".323342" stiffness="10000">
       <link1 link="left_hub" xyz="0 0.801993 .323342"/>
       <link2 link="front_left_contact_point"/>
     </linear_spring_damper>
   </force_element>
-  
   <joint name="left_wheel_joint" type="continuous">
     <axis xyz="0 1 0"/>
     <parent link="front_left_contact_point"/>
@@ -472,7 +424,6 @@
     <origin xyz="0 0 .323342"/>
     <dynamics damping="0"/>
   </joint>
-  
   <joint name="front_right_contact_sliding" type="prismatic">
     <parent link="right_hub"/>
     <child link="front_right_contact_point"/>
@@ -480,14 +431,12 @@
     <axis xyz="0 0 1"/>
     <limit lower="0" upper=".323342"/>
   </joint>
-  
   <force_element name="front_right_spring">
-    <linear_spring_damper rest_length=".323342" stiffness="10000" damping="100">
+    <linear_spring_damper damping="100" rest_length=".323342" stiffness="10000">
       <link1 link="right_hub" xyz="0 -0.801993 .323342"/>
       <link2 link="front_right_contact_point"/>
     </linear_spring_damper>
   </force_element>
-  
   <joint name="right_wheel_joint" type="continuous">
     <axis xyz="0 1 0"/>
     <parent link="front_right_contact_point"/>
@@ -495,36 +444,31 @@
     <origin xyz="0 0 .323342"/>
     <dynamics damping="0"/>
   </joint>
-  
   <joint name="chassis_floor_axle" type="fixed">
-    <parent link="front_axle" />
-    <child link="chassis_floor" />
-    <origin xyz="-1.409480 0 0.061842" />
-    <axis xyz="0 0 1" />
+    <parent link="front_axle"/>
+    <child link="chassis_floor"/>
+    <origin xyz="-1.409480 0 0.061842"/>
+    <axis xyz="0 0 1"/>
   </joint>
-  
   <joint name="chassis_rear_axle" type="fixed">
-    <parent link="chassis_floor" />
-    <child link="rear_axle" />
-    <origin xyz="0 0 0.287408" />
-    <axis xyz="0 0 1" />
+    <parent link="chassis_floor"/>
+    <child link="rear_axle"/>
+    <origin xyz="0 0 0.287408"/>
+    <axis xyz="0 0 1"/>
   </joint>
-  
-   <joint name="rear_left_contact_sliding" type="prismatic">
+  <joint name="rear_left_contact_sliding" type="prismatic">
     <parent link="rear_axle"/>
     <child link="rear_left_contact_point"/>
     <origin xyz="-1.409480 .801993 -0.323342"/>
     <axis xyz="0 0 1"/>
     <limit lower="0" upper="0.34925"/>
   </joint>
-  
   <force_element name="rear_left_spring">
-    <linear_spring_damper rest_length="0.323342" stiffness="10000" damping="100">
+    <linear_spring_damper damping="100" rest_length="0.323342" stiffness="10000">
       <link1 link="rear_axle" xyz="-1.409480 0.801993 0"/>
       <link2 link="rear_left_contact_point"/>
     </linear_spring_damper>
   </force_element>
-  
   <joint name="rear_left_wheel_joint" type="continuous">
     <axis xyz="0 1 0"/>
     <parent link="rear_left_contact_point"/>
@@ -532,7 +476,6 @@
     <origin xyz="0 0 0.323342"/>
     <dynamics damping="0"/>
   </joint>
-  
   <joint name="rear_right_contact_sliding" type="prismatic">
     <parent link="rear_axle"/>
     <child link="rear_right_contact_point"/>
@@ -540,14 +483,12 @@
     <axis xyz="0 0 1"/>
     <limit lower="0" upper="0.34925"/>
   </joint>
-  
   <force_element name="rear_right_spring">
-    <linear_spring_damper rest_length="0.323342" stiffness="10000" damping="100">
+    <linear_spring_damper damping="100" rest_length="0.323342" stiffness="10000">
       <link1 link="rear_axle" xyz="-1.409480 -0.801993 0"/>
       <link2 link="rear_right_contact_point"/>
     </linear_spring_damper>
   </force_element>
-  
   <joint name="rear_right_wheel_joint" type="continuous">
     <axis xyz="0 1 0"/>
     <parent link="rear_right_contact_point"/>
@@ -555,21 +496,16 @@
     <origin xyz="0 0 0.323342"/>
     <dynamics damping="0"/>
   </joint>
-  
-  
   <transmission name="steering_drive" type="SimpleTransmission">
     <joint name="steering"/>
     <actuator name="steering_angle"/>
   </transmission>
-  
   <transmission name="front_left_drive" type="SimpleTransmission">
     <joint name="rear_left_wheel_joint"/>
     <actuator name="throttle_left_value"/>
   </transmission>
-  
   <transmission name="front_right_drive" type="SimpleTransmission">
     <joint name="rear_right_wheel_joint"/>
     <actuator name="throttle_right_value"/>
   </transmission>
-  
 </robot>

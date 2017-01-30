@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/system.h"
@@ -26,6 +27,9 @@ namespace systems {
 template <typename T>
 class DiagramBuilder {
  public:
+  // DiagramBuilder objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramBuilder)
+
   DiagramBuilder() {}
   virtual ~DiagramBuilder() {}
 
@@ -111,11 +115,9 @@ class DiagramBuilder {
   }
 
   /// Declares that input port @p dest is connected to output port @p src.
-  void Connect(const SystemPortDescriptor<T>& src,
-               const SystemPortDescriptor<T>& dest) {
-    DRAKE_DEMAND(src.get_face() == kOutputPort);
-    DRAKE_DEMAND(dest.get_face() == kInputPort);
-    DRAKE_DEMAND(src.get_size() == dest.get_size());
+  void Connect(const OutputPortDescriptor<T>& src,
+               const InputPortDescriptor<T>& dest) {
+    DRAKE_DEMAND(src.size() == dest.size());
     PortIdentifier dest_id{dest.get_system(), dest.get_index()};
     PortIdentifier src_id{src.get_system(), src.get_index()};
     ThrowIfInputAlreadyWired(dest_id);
@@ -146,8 +148,7 @@ class DiagramBuilder {
 
   /// Declares that the given @p input port of a constituent system is an input
   /// to the entire Diagram.
-  void ExportInput(const SystemPortDescriptor<T>& input) {
-    DRAKE_DEMAND(input.get_face() == kInputPort);
+  void ExportInput(const InputPortDescriptor<T>& input) {
     PortIdentifier id{input.get_system(), input.get_index()};
     ThrowIfInputAlreadyWired(id);
     ThrowIfSystemNotRegistered(input.get_system());
@@ -157,8 +158,7 @@ class DiagramBuilder {
 
   /// Declares that the given @p output port of a constituent system is an
   /// output of the entire diagram.
-  void ExportOutput(const SystemPortDescriptor<T>& output) {
-    DRAKE_DEMAND(output.get_face() == kOutputPort);
+  void ExportOutput(const OutputPortDescriptor<T>& output) {
     ThrowIfSystemNotRegistered(output.get_system());
     output_port_ids_.push_back(
         PortIdentifier{output.get_system(), output.get_index()});
@@ -276,12 +276,6 @@ class DiagramBuilder {
     blueprint.sorted_systems = SortSystems();
     return blueprint;
   }
-
-  // DiagramBuilder objects are neither copyable nor moveable.
-  DiagramBuilder(const DiagramBuilder<T>& other) = delete;
-  DiagramBuilder& operator=(const DiagramBuilder<T>& other) = delete;
-  DiagramBuilder(DiagramBuilder<T>&& other) = delete;
-  DiagramBuilder& operator=(DiagramBuilder<T>&& other) = delete;
 
   // The ordered inputs and outputs of the Diagram to be built.
   std::vector<PortIdentifier> input_port_ids_;

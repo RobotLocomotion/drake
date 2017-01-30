@@ -18,6 +18,7 @@ using std::runtime_error;
 // Provides common variables that are used by the following tests.
 class SymbolicEnvironmentTest : public ::testing::Test {
  protected:
+  const Variable var_dummy_{};
   const Variable var_x_{"x"};
   const Variable var_y_{"y"};
   const Variable var_z_{"z"};
@@ -71,6 +72,16 @@ TEST_F(SymbolicEnvironmentTest, ToString) {
   EXPECT_TRUE(out.find("x -> 2") != string::npos);
   EXPECT_TRUE(out.find("y -> 3") != string::npos);
   EXPECT_TRUE(out.find("z -> 3") != string::npos);
+}
+
+TEST_F(SymbolicEnvironmentTest, DummyVariable1) {
+  EXPECT_THROW(Environment({var_dummy_, var_x_}), runtime_error);
+  EXPECT_THROW(Environment({{var_dummy_, 1.0}, {var_x_, 2}}), runtime_error);
+}
+
+TEST_F(SymbolicEnvironmentTest, DummyVariable2) {
+  Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
+  EXPECT_THROW(env.insert(var_dummy_, 0.0), runtime_error);
 }
 
 }  // namespace

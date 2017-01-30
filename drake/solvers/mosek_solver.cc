@@ -1,6 +1,3 @@
-// A wrapper file for MosekWrapper and mosekQP that handles constraint and
-// objective marshalling
-
 #include "drake/solvers/mosek_solver.h"
 
 #include <algorithm>
@@ -18,10 +15,10 @@ namespace drake {
 namespace solvers {
 namespace {
 // Add LinearConstraints and LinearEqualityConstraints to the Mosek task.
-template <typename Binding>
+template <typename C>
 MSKrescodee AddLinearConstraintsFromBindings(
-    MSKtask_t* task, const std::vector<Binding>& constraint_list,
-    bool is_equality_constraint) {
+    MSKtask_t* task, const std::vector<Binding<C>>& constraint_list,
+    bool is_equality_constraint, const MathematicalProgram& prog) {
   for (const auto& binding : constraint_list) {
     auto constraint = binding.constraint();
     const Eigen::MatrixXd& A = constraint->A();
@@ -68,18 +65,15 @@ MSKrescodee AddLinearConstraintsFromBindings(
       std::vector<double> A_nonzero_val;
       A_nonzero_col_idx.reserve(A.cols());
       A_nonzero_val.reserve(A.cols());
-      int A_col_idx = 0;
-      for (const DecisionVariableMatrixX& var :
-           binding.variable_list().variables()) {
-        DRAKE_ASSERT(var.cols() == 1);
-        for (int k = 0; k < static_cast<int>(var.rows()); ++k) {
-          if (std::abs(A(i, A_col_idx)) > Eigen::NumTraits<double>::epsilon()) {
-            A_nonzero_col_idx.push_back(var(k, 0).index());
-            A_nonzero_val.push_back(A(i, A_col_idx));
-          }
-          ++A_col_idx;
+
+      for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
+        if (std::abs(A(i, k)) > Eigen::NumTraits<double>::epsilon()) {
+          A_nonzero_col_idx.push_back(
+              prog.FindDecisionVariableIndex(binding.variables()(k)));
+          A_nonzero_val.push_back(A(i, k));
         }
       }
+
       rescode = MSK_putarow(*task, constraint_idx + i, A_nonzero_val.size(),
                             A_nonzero_col_idx.data(), A_nonzero_val.data());
       if (rescode != MSK_RES_OK) {
@@ -93,12 +87,12 @@ MSKrescodee AddLinearConstraintsFromBindings(
 MSKrescodee AddLinearConstraints(const MathematicalProgram& prog,
                                  MSKtask_t* task) {
   MSKrescodee rescode = AddLinearConstraintsFromBindings(
-      task, prog.linear_equality_constraints(), true);
+      task, prog.linear_equality_constraints(), true, prog);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
-  rescode =
-      AddLinearConstraintsFromBindings(task, prog.linear_constraints(), false);
+  rescode = AddLinearConstraintsFromBindings(task, prog.linear_constraints(),
+                                             false, prog);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
@@ -115,16 +109,11 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
     const auto& constraint = binding.constraint();
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
-    int var_count = 0;
-    for (const DecisionVariableMatrixX& var :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        int x_idx = var(i).index();
-        x_lb[x_idx] = std::max(x_lb[x_idx], lower_bound[var_count]);
-        x_ub[x_idx] = std::min(x_ub[x_idx], upper_bound[var_count]);
-        var_count++;
-      }
+
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      size_t x_idx = prog.FindDecisionVariableIndex(binding.variables()(i));
+      x_lb[x_idx] = std::max(x_lb[x_idx], lower_bound[i]);
+      x_ub[x_idx] = std::min(x_ub[x_idx], upper_bound[i]);
     }
   }
 
@@ -150,106 +139,297 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
 /*
  * This is the helper function to add two types of second order cone
  * constraints:
- * A Lorentz cone constraint: x0 >= sqrt(x1^2 + .. xN^2)
- * A rotated Lorentz cone constraint: x0*x1 >= x2^2 + .. + xN^2, x0 >= 0, x1 >=0
+ * 1. A Lorentz cone constraint:
+ *    z = A*x+b
+ *    z0 >= sqrt(z1^2 + .. zN^2)
+ * 2. A rotated Lorentz cone constraint:
+ *    z = A*x+b
+ *    z0*z1 >= z2^2 + .. + zN^2,
+ *    z0 >= 0, z1 >=0
  * Mosek does not allow two cones to share variables. To overcome this,
- * for every lorentz cone x0 >= sqrt(x1^2 + ... + xN^2),
- * we will add a new set of variable (y0, ..., yN), with the constraint
- * y0 >= sqrt(y1^2 + ... + yN^2)
- * y0 = x0, ..., yN = xN
- * for every rotated lorentz
- * cone x0 * x1>= x2^2 + ... + xN^2, x0 >= 0, x1 >=0
- * we will add a new set of variable (y0, ..., yN), with the constraint
- * 2*y0*y1 >= y2^2 + ... + yN^2, y0 >= 0, y1 >=0
- * y0 = x0 / 2, y1 = x1, ..., yN = xN
+ * we will add a new set of variable (z0, ..., zN)
  * @param is_new_variable  Refer to the documentation on is_new_variable in
  * MosekSolver::Solve() function
  */
-template <typename Bindings>
+template <typename C>
 MSKrescodee AddSecondOrderConeConstraints(
-    const std::vector<Bindings>& second_order_cone_constraints,
-    bool is_rotated_cone, MSKtask_t* task, std::vector<bool>* is_new_variable) {
+    const MathematicalProgram& prog,
+    const std::vector<Binding<C>>& second_order_cone_constraints,
+    MSKtask_t* task, std::vector<bool>* is_new_variable) {
+  static_assert(std::is_same<C, LorentzConeConstraint>::value ||
+                    std::is_same<C, RotatedLorentzConeConstraint>::value,
+                "Should be either Lorentz cone constraint or rotated Lorentz "
+                "cone constraint");
+  bool is_rotated_cone = std::is_same<C, RotatedLorentzConeConstraint>::value;
   MSKrescodee rescode = MSK_RES_OK;
-
   for (auto const& binding : second_order_cone_constraints) {
-    std::vector<int> cone_var_indices(binding.GetNumElements());
-    int var_count = 0;
-    for (const DecisionVariableMatrixX& var :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        cone_var_indices[var_count] = var(i, 0).index();
-        ++var_count;
-      }
+    std::vector<MSKint32t> cone_var_indices(binding.GetNumElements());
+
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      cone_var_indices[i] =
+          prog.FindDecisionVariableIndex(binding.variables()(i));
     }
-    const int num_cone_vars = static_cast<int>(cone_var_indices.size());
+
+    const auto& A = binding.constraint()->A();
+    const auto& b = binding.constraint()->b();
+    const int num_z = A.rows();
     MSKint32t num_total_vars = 0;
     rescode = MSK_getnumvar(*task, &num_total_vars);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    rescode = MSK_appendvars(*task, num_cone_vars);
+    rescode = MSK_appendvars(*task, num_z);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    is_new_variable->resize(num_total_vars + num_cone_vars);
-    std::vector<MSKint32t> new_cone_var_indices(num_cone_vars);
-    for (int i = 0; i < num_cone_vars; ++i) {
+    is_new_variable->resize(num_total_vars + num_z);
+    std::vector<MSKint32t> new_var_indices(num_z);
+    for (int i = 0; i < num_z; ++i) {
       is_new_variable->at(num_total_vars + i) = true;
-      new_cone_var_indices[i] = num_total_vars + i;
-      rescode = MSK_putvarbound(*task, new_cone_var_indices[i], MSK_BK_FR,
+      new_var_indices[i] = num_total_vars + i;
+      rescode = MSK_putvarbound(*task, new_var_indices[i], MSK_BK_FR,
                                 -MSK_INFINITY, MSK_INFINITY);
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
     }
     MSKconetypee cone_type = is_rotated_cone ? MSK_CT_RQUAD : MSK_CT_QUAD;
-    rescode = MSK_appendcone(*task, cone_type, 0.0, cone_var_indices.size(),
-                             new_cone_var_indices.data());
+    rescode =
+        MSK_appendcone(*task, cone_type, 0.0, num_z, new_var_indices.data());
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
 
     // Add the linear constraint
-    // y1 = x1, ..., yN = xN
+    // z = A*x+b
+    // Unfortunately Mosek's definition of rotated Lorentz cone is different
+    // from ours. The rotated Lorentz cone in Mosek is defined as
+    // 2*z(0) * z(1) >= z(2)^2 + ... + z(n-1)^2
+    // Our definition of rotated Lorentz cone is
+    //   z(0) * z(1) >= z(2)^2 + ... + z(n-1)^2
+    // So there is a factor of 2 for rotated Lorentz cone.
+    // With this difference in rotated Lorentz cone, the first row of constraint
+    // z = A * x + b needs special treatment.
     // If using Lorentz cone,
-    // Add the linear constraint y0 = x0.
-    // otherwise, add the linear constraint y0 = x0 / 2;
+    // Add the linear constraint
+    //   z0 = a0^T * x + b0;
+    // If using rotated Lorentz cone, add the linear constraint
+    // 2*z0 = a0^T * x + b0
     int num_lin_cons;
     rescode = MSK_getnumcon(*task, &num_lin_cons);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    rescode = MSK_appendcons(*task, num_cone_vars);
+    rescode = MSK_appendcons(*task, num_z);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    MSKint32t var_indices0[2] = {cone_var_indices[0], new_cone_var_indices[0]};
+    std::vector<MSKint32t> var_indices(cone_var_indices);
+    var_indices.push_back(new_var_indices[0]);
     double y0_factor = is_rotated_cone ? -2 : -1;
-    double val0[2] = {1, y0_factor};
-    rescode = MSK_putarow(*task, num_lin_cons, 2, var_indices0, val0);
+    Eigen::RowVectorXd val0(1 + cone_var_indices.size());
+    val0.head(cone_var_indices.size()) = A.row(0);
+    val0(cone_var_indices.size()) = y0_factor;
+    rescode = MSK_putarow(*task, num_lin_cons, 1 + cone_var_indices.size(),
+                          var_indices.data(), val0.data());
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    rescode = MSK_putconbound(*task, num_lin_cons, MSK_BK_FX, 0.0, 0.0);
+    rescode = MSK_putconbound(*task, num_lin_cons, MSK_BK_FX, -b(0), -b(0));
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    for (int i = 1; i < num_cone_vars; ++i) {
-      MSKint32t var_indices_i[2] = {cone_var_indices[i],
-                                    new_cone_var_indices[i]};
-      double val_i[2] = {1, -1};
-      rescode = MSK_putarow(*task, num_lin_cons + i, 2, var_indices_i, val_i);
+    for (int i = 1; i < num_z; ++i) {
+      // In row i of the linear constraint z = A*x+b, the decision variables are
+      // [x z(i)]. So compared to the previous row of the constraint, the only
+      // changed decision variable is z(i). We can thus pop the last variable
+      // (z(i-1)), and push back z(i).
+      var_indices.pop_back();
+      var_indices.push_back(new_var_indices[i]);
+      Eigen::RowVectorXd val(1 + cone_var_indices.size());
+      val.head(cone_var_indices.size()) = A.row(i);
+      val(cone_var_indices.size()) = -1;
+      rescode =
+          MSK_putarow(*task, num_lin_cons + i, 1 + cone_var_indices.size(),
+                      var_indices.data(), val.data());
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
-      rescode = MSK_putconbound(*task, num_lin_cons + i, MSK_BK_FX, 0.0, 0.0);
+      rescode =
+          MSK_putconbound(*task, num_lin_cons + i, MSK_BK_FX, -b(i), -b(i));
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
     }
   }
   // Expect rescode == MSK_RES_OK.
+  return rescode;
+}
+
+/*
+ * To add positive semidefinite matrix, Mosek needs to create a "bar variable"
+ * We will need to add linear constraints
+ * X = X_bar
+ * where X is some matrix expression, that we want to be positive semidefinite.
+ */
+MSKrescodee AddBarVariable(int rows, MSKtask_t* task) {
+  MSKrescodee rescode = MSK_RES_OK;
+  rescode = MSK_appendbarvars(*task, 1, &rows);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+
+  int num_bar_var = 0;
+  rescode = MSK_getnumbarvar(*task, &num_bar_var);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+
+  int num_linear_constraint = 0;
+  rescode = MSK_getnumcon(*task, &num_linear_constraint);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+
+  rescode = MSK_appendcons(*task, (rows + 1) * rows / 2);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+
+  int new_linear_constraint_count = 0;
+  for (int j = 0; j < rows; ++j) {
+    for (int i = j; i < rows; ++i) {
+      int linear_constraint_index =
+          num_linear_constraint + new_linear_constraint_count;
+      double bar_A_ij_val = i == j ? -1.0 : -0.5;
+      MSKint64t bar_A_matrix_idx;
+      rescode = MSK_appendsparsesymmat(*task, rows, 1, &i, &j, &bar_A_ij_val,
+                                       &bar_A_matrix_idx);
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
+
+      double bar_A_weights = 1.0;
+      rescode = MSK_putbaraij(*task, linear_constraint_index, num_bar_var - 1,
+                              1, &bar_A_matrix_idx, &bar_A_weights);
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
+
+      ++new_linear_constraint_count;
+    }
+  }
+  return rescode;
+}
+
+MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
+                                               MSKtask_t* task) {
+  MSKrescodee rescode = MSK_RES_OK;
+  for (const auto& binding : prog.positive_semidefinite_constraints()) {
+    const auto& symmetric_matrix_variable = binding.variables();
+
+    int num_linear_constraint = 0;
+    rescode = MSK_getnumcon(*task, &num_linear_constraint);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    // Add S_bar as new variables. Mosek needs to create so called "bar
+    // variable"
+    // for matrix in positive semidefinite cones.
+    int matrix_rows = binding.constraint()->matrix_rows();
+
+    AddBarVariable(matrix_rows, task);
+
+    // Add the constraint S = S_bar
+    // This linear constraint is imposed as
+    // S(i, j) - trace(bar_A_ij * S_bar) = 0
+    // where bar_A_ij has the same dimension as S_bar
+    // bar_A_ij(i, j) = 0.5, bar_A_ij(j, i) = 0.5 if i != j
+    // bar_A_ij(i, j) = 1                         if i == j
+
+    int new_linear_constraint_count = 0;
+    // It is important to use the same for-loop order as in
+    // AddBarVariable().
+    for (int j = 0; j < matrix_rows; ++j) {
+      for (int i = j; i < matrix_rows; ++i) {
+        int linear_constraint_index =
+            num_linear_constraint + new_linear_constraint_count;
+        double symmetric_matrix_val = 1.0;
+        MSKint32t symmetric_matrix_var_ij_index =
+            prog.FindDecisionVariableIndex(
+                symmetric_matrix_variable(j * matrix_rows + i));
+        rescode =
+            MSK_putarow(*task, linear_constraint_index, 1,
+                        &symmetric_matrix_var_ij_index, &symmetric_matrix_val);
+        if (rescode != MSK_RES_OK) {
+          return rescode;
+        }
+
+        rescode = MSK_putconbound(*task, linear_constraint_index, MSK_BK_FX,
+                                  0.0, 0.0);
+        if (rescode != MSK_RES_OK) {
+          return rescode;
+        }
+
+        ++new_linear_constraint_count;
+      }
+    }
+  }
+  return rescode;
+}
+
+MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog,
+                                                MSKtask_t* task) {
+  MSKrescodee rescode = MSK_RES_OK;
+  for (const auto& binding : prog.linear_matrix_inequality_constraints()) {
+    int num_linear_constraint = 0;
+    rescode = MSK_getnumcon(*task, &num_linear_constraint);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+
+    int rows = binding.constraint()->matrix_rows();
+
+    AddBarVariable(rows, task);
+
+    int new_linear_constraint_count = 0;
+    // It is important to use the same for-loop order as in
+    // AddBarVariable().
+    for (int j = 0; j < rows; ++j) {
+      for (int i = j; i < rows; ++i) {
+        int linear_constraint_index =
+            num_linear_constraint + new_linear_constraint_count;
+
+        const auto& F = binding.constraint()->F();
+        auto F_it = F.begin();
+        rescode = MSK_putconbound(*task, linear_constraint_index, MSK_BK_FX,
+                                  -(*F_it)(i, j), -(*F_it)(i, j));
+        if (rescode != MSK_RES_OK) {
+          return rescode;
+        }
+        ++F_it;
+
+        Eigen::SparseVector<double, Eigen::RowMajor> A_row(prog.num_vars());
+        A_row.setZero();
+        A_row.reserve(binding.GetNumElements());
+
+        for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
+          A_row.coeffRef(prog.FindDecisionVariableIndex(
+              binding.variables()(k))) += (*F_it)(i, j);
+          ++F_it;
+        }
+
+        DRAKE_ASSERT(F_it == F.end());
+        rescode = MSK_putarow(*task, linear_constraint_index, A_row.nonZeros(),
+                              A_row.innerIndexPtr(), A_row.valuePtr());
+        if (rescode != MSK_RES_OK) {
+          return rescode;
+        }
+
+        ++new_linear_constraint_count;
+      }
+    }
+  }
   return rescode;
 }
 
@@ -264,32 +444,32 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
   std::vector<Eigen::Triplet<double>> linear_term_triplets;
   for (const auto& binding : prog.quadratic_costs()) {
     const auto& constraint = binding.constraint();
-    // The quadratic cost is of form 0.5*x'*Q*x + b*x
+    // The quadratic cost is of form 0.5*x'*Q*x + b*x.
     const auto& Q = constraint->Q();
     const auto& b = constraint->b();
     std::vector<int> var_indices(Q.rows());
-    {
-      int var_count = 0;
-      for (const auto& var : binding.variable_list().variables()) {
-        DRAKE_ASSERT(var.cols() == 1);
-        for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-          var_indices[var_count] = var(i, 0).index();
-          ++var_count;
-        }
-      }
+
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      var_indices[i] = prog.FindDecisionVariableIndex(binding.variables()(i));
     }
+
     for (int i = 0; i < Q.rows(); ++i) {
       int var_index_i = var_indices[i];
       for (int j = 0; j < i; ++j) {
         const double Qij = (Q(i, j) + Q(j, i)) / 2;
         if (std::abs(Qij) > Eigen::NumTraits<double>::epsilon()) {
-          Q_lower_triplets.push_back(
-              Eigen::Triplet<double>(var_index_i, var_indices[j], Qij));
+          if (var_index_i > var_indices[j]) {
+            Q_lower_triplets.push_back(
+                Eigen::Triplet<double>(var_index_i, var_indices[j], Qij));
+          } else {
+            Q_lower_triplets.push_back(
+                Eigen::Triplet<double>(var_indices[j], var_index_i, Qij));
+          }
         }
       }
       if (std::abs(Q(i, i)) > Eigen::NumTraits<double>::epsilon()) {
         Q_lower_triplets.push_back(
-            Eigen::Triplet<double>(var_index_i, var_indices[i], Q(i, i)));
+            Eigen::Triplet<double>(var_index_i, var_index_i, Q(i, i)));
       }
       if (std::abs(b(i)) > Eigen::NumTraits<double>::epsilon()) {
         linear_term_triplets.push_back(
@@ -298,17 +478,11 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
     }
   }
   for (const auto& binding : prog.linear_costs()) {
-    int var_count = 0;
     const auto& c = binding.constraint()->A();
-    for (const DecisionVariableMatrixX& var :
-         binding.variable_list().variables()) {
-      DRAKE_ASSERT(var.cols() == 1);
-      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        if (std::abs(c(var_count)) > Eigen::NumTraits<double>::epsilon()) {
-          linear_term_triplets.push_back(
-              Eigen::Triplet<double>(var(i, 0).index(), 0, c(var_count)));
-        }
-        var_count++;
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      if (std::abs(c(i)) > Eigen::NumTraits<double>::epsilon()) {
+        linear_term_triplets.push_back(Eigen::Triplet<double>(
+            prog.FindDecisionVariableIndex(binding.variables()(i)), 0, c(i)));
       }
     }
   }
@@ -352,16 +526,16 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
                                 bool* with_integer_or_binary_variable) {
   MSKrescodee rescode = MSK_RES_OK;
   int num_vars = prog.num_vars();
-  const std::vector<DecisionVariableScalar::VarType>& var_type =
-      prog.VariableTypes();
+  const std::vector<MathematicalProgram::VarType>& var_type =
+      prog.DecisionVariableTypes();
   for (int i = 0; i < num_vars && rescode == MSK_RES_OK; ++i) {
-    if (var_type[i] == DecisionVariableScalar::VarType::INTEGER) {
+    if (var_type[i] == MathematicalProgram::VarType::INTEGER) {
       rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
       *with_integer_or_binary_variable = true;
-    } else if (var_type[i] == DecisionVariableScalar::VarType::BINARY) {
+    } else if (var_type[i] == MathematicalProgram::VarType::BINARY) {
       *with_integer_or_binary_variable = true;
       rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
       double xi_lb = NAN;
@@ -435,14 +609,24 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
 
   // Add Lorentz cone constraints.
   if (rescode == MSK_RES_OK) {
-    rescode = AddSecondOrderConeConstraints(prog.lorentz_cone_constraints(),
-                                            false, &task, &is_new_variable);
+    rescode = AddSecondOrderConeConstraints(
+        prog, prog.lorentz_cone_constraints(), &task, &is_new_variable);
   }
 
   // Add rotated Lorentz cone constraints.
   if (rescode == MSK_RES_OK) {
     rescode = AddSecondOrderConeConstraints(
-        prog.rotated_lorentz_cone_constraints(), true, &task, &is_new_variable);
+        prog, prog.rotated_lorentz_cone_constraints(), &task, &is_new_variable);
+  }
+
+  // Add positive semidefinite constraints.
+  if (rescode == MSK_RES_OK) {
+    rescode = AddPositiveSemidefiniteConstraints(prog, &task);
+  }
+
+  // Add linear matrix inequality constraints.
+  if (rescode == MSK_RES_OK) {
+    rescode = AddLinearMatrixInequalityConstraint(prog, &task);
   }
 
   SolutionResult result = SolutionResult::kUnknownError;
@@ -461,7 +645,9 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     solution_type = MSK_SOL_ITG;
   } else if (prog.quadratic_costs().empty() &&
              prog.lorentz_cone_constraints().empty() &&
-             prog.rotated_lorentz_cone_constraints().empty()) {
+             prog.rotated_lorentz_cone_constraints().empty() &&
+             prog.positive_semidefinite_constraints().empty() &&
+             prog.linear_matrix_inequality_constraints().empty()) {
     solution_type = MSK_SOL_BAS;
   } else {
     solution_type = MSK_SOL_ITR;

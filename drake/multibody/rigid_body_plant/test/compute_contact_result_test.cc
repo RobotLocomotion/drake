@@ -11,14 +11,14 @@
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 
 // The ContactResult class is largely a container for the data that is computed
-//  by the RigidBodyPlant while determining contact forces.  This test confirms
-//  that for a known set of contacts, that the expected contact forces are
-//  generated and stashed into the ContactResult data structure.
+// by the RigidBodyPlant while determining contact forces.  This test confirms
+// that for a known set of contacts, that the expected contact forces are
+// generated and stashed into the ContactResult data structure.
 //
-//  Thus, a rigid body tree is created with a known configuration such that the
-//  contacts and corresponding contact forces are known.  The RigidBodyPlant's
-//  EvalOutput is invoked on the ContactResult port and the ContactResult
-//  contents are evaluated to see if they contain the expected results.
+// Thus, a rigid body tree is created with a known configuration such that the
+// contacts and corresponding contact forces are known.  The RigidBodyPlant's
+// CalcOutput is invoked on the ContactResult port and the ContactResult
+// contents are evaluated to see if they contain the expected results.
 
 using Eigen::Isometry3d;
 using Eigen::Quaterniond;
@@ -35,13 +35,6 @@ namespace plants {
 namespace rigid_body_plant {
 namespace test {
 namespace {
-
-// Utility function to create an input port.
-template <class T>
-unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
-  return make_unique<FreestandingInputPort>(std::move(data));
-}
 
 // Utility function to facilitate comparing matrices for equivalency.
 template <typename DerivedA, typename DerivedB>
@@ -79,8 +72,7 @@ class ContactResultTest : public ::testing::Test {
     tree_ = unique_tree.get();
 
     x_anchor_ = 1.5;
-    Vector3d pos;
-    pos << x_anchor_ - (kRadius + distance), 0, 0;
+    Vector3d pos(x_anchor_ - (kRadius + distance), 0, 0);
     body1_ = AddSphere(pos, "sphere1");
     pos << x_anchor_ + (kRadius + distance), 0, 0;
     body2_ = AddSphere(pos, "sphere2");
@@ -93,14 +85,10 @@ class ContactResultTest : public ::testing::Test {
     plant_ = make_unique<RigidBodyPlant<double>>(move(unique_tree));
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
-    context_->SetInputPort(0, MakeInput(make_unique<BasicVector<double>>(0)));
-    plant_->SetZeroConfiguration(context_.get());
-    plant_->EvalOutput(*context_.get(), output_.get());
+    plant_->CalcOutput(*context_.get(), output_.get());
 
-    // TODO(SeanCurtis-TRI): This hard-coded value is unfortunate. However,
-    //  there is no mechanism for finding out the port id for a known port
-    //  (e.g., contact results). Update when such a mechanism exists.
-    return output_->get_data(2)->GetValue<ContactResults<double>>();
+    const int port_index = plant_->contact_results_output_port().get_index();
+    return output_->get_data(port_index)->GetValue<ContactResults<double>>();
   }
 
   // Add a sphere with default radius, placed at the given position.
@@ -152,8 +140,14 @@ TEST_F(ContactResultTest, SingleCollision) {
   const RigidBody<double>* b1 = tree_->FindBody(e1);
   const RigidBody<double>* b2 = tree_->FindBody(e2);
   ASSERT_NE(e1, e2);
-  ASSERT_TRUE(b1 == body1_ || b1 == body2_);
-  ASSERT_TRUE(b2 == body1_ || b2 == body2_);
+  ASSERT_TRUE((b1 == body1_ && b2 == body2_) || (b1 == body2_ && b2 == body1_));
+
+  // The direction of the force depends on which body is 1 and which is 2. We
+  // assume b1 is body1_, if not, we reverse the sign of the force.
+  double force_sign = -1;
+  if (b2 == body1_) {
+    force_sign = 1;
+  }
 
   // Confirms the contact details are as expected.
   const auto& resultant = info.get_resultant_force();
@@ -163,12 +157,12 @@ TEST_F(ContactResultTest, SingleCollision) {
   //  be set in some other manner, then this test may fail.
   const double stiffness = 150.0;
   double force = stiffness * offset * 2;
-  expected_spatial_force << 0, 0, 0, -force, 0, 0;
+  expected_spatial_force << 0, 0, 0, force_sign * force, 0, 0;
   ASSERT_TRUE(
       CompareMatrices(resultant.get_spatial_force(), expected_spatial_force));
 
   const auto& details = info.get_contact_details();
-  ASSERT_EQ(details.size(), 1);
+  ASSERT_EQ(details.size(), 1u);
   auto detail_force = details[0]->ComputeContactForce();
   ASSERT_TRUE(CompareMatrices(detail_force.get_spatial_force(),
                               expected_spatial_force));

@@ -80,8 +80,8 @@ void EncodeResolvedContact(const ResolvedContact& contact,
   eigenVectorToCArray(contact.reference_point(), msg->reference_point);
 }
 
-void DecodeQPInput(const RigidBodyTree<double>& robot, const lcmt_qp_input& msg,
-                   QPInput* qp_input) {
+void DecodeQpInput(const RigidBodyTree<double>& robot, const lcmt_qp_input& msg,
+                   QpInput* qp_input) {
   if (!qp_input) return;
 
   ContactInformation info(*robot.FindBody("world"));
@@ -98,7 +98,7 @@ void DecodeQPInput(const RigidBodyTree<double>& robot, const lcmt_qp_input& msg,
     qp_input->mutable_desired_body_motions().emplace(mot.body_name(), mot);
   }
 
-  DecodeDesiredDoFMotions(msg.desired_dof_motions,
+  DecodeDesiredDofMotions(msg.desired_dof_motions,
                           &(qp_input->mutable_desired_dof_motions()));
   DecodeDesiredCentroidalMomentumDot(
       msg.desired_centroidal_momentum_dot,
@@ -106,15 +106,15 @@ void DecodeQPInput(const RigidBodyTree<double>& robot, const lcmt_qp_input& msg,
   qp_input->mutable_w_basis_reg() = msg.w_basis_reg;
 
   if (!qp_input->is_valid(robot.get_num_velocities())) {
-    throw std::runtime_error("Decoded QPInput is invalid.");
+    throw std::runtime_error("Decoded QpInput is invalid.");
   }
 }
 
-void EncodeQPInput(const QPInput& qp_input, lcmt_qp_input* msg) {
+void EncodeQpInput(const QpInput& qp_input, lcmt_qp_input* msg) {
   if (!msg) return;
 
   if (!qp_input.is_valid()) {
-    throw std::runtime_error("Can't encode invalid QPInput.");
+    throw std::runtime_error("Can't encode invalid QpInput.");
   }
 
   msg->num_contacts = static_cast<int>(qp_input.contact_information().size());
@@ -136,7 +136,7 @@ void EncodeQPInput(const QPInput& qp_input, lcmt_qp_input* msg) {
     desired_body_motion_ctr++;
   }
 
-  EncodeDesiredDoFMotions(qp_input.desired_dof_motions(),
+  EncodeDesiredDofMotions(qp_input.desired_dof_motions(),
                           &(msg->desired_dof_motions));
 
   EncodeDesiredCentroidalMomentumDot(qp_input.desired_centroidal_momentum_dot(),
@@ -197,23 +197,23 @@ void EncodeDesiredBodyMotion(const DesiredBodyMotion& body_motion,
   EncodeConstrainedValues(body_motion, &(msg->constrained_accelerations));
 }
 
-void DecodeDesiredDoFMotions(const lcmt_desired_dof_motions& msg,
-                             DesiredDoFMotions* dof_motions) {
+void DecodeDesiredDofMotions(const lcmt_desired_dof_motions& msg,
+                             DesiredDofMotions* dof_motions) {
   if (!dof_motions) return;
 
-  *dof_motions = DesiredDoFMotions(msg.dof_names);
+  *dof_motions = DesiredDofMotions(msg.dof_names);
   DecodeConstrainedValues(msg.constrained_accelerations, dof_motions);
 
   if (!dof_motions->is_valid()) {
-    throw std::runtime_error("Decoded DesiredDoFMotions is invalid.");
+    throw std::runtime_error("Decoded DesiredDofMotions is invalid.");
   }
 }
 
-void EncodeDesiredDoFMotions(const DesiredDoFMotions& dof_motions,
+void EncodeDesiredDofMotions(const DesiredDofMotions& dof_motions,
                              lcmt_desired_dof_motions* msg) {
   if (!msg) return;
   if (!dof_motions.is_valid()) {
-    throw std::runtime_error("Can't encode invalid DesiredDoFMotions.");
+    throw std::runtime_error("Can't encode invalid DesiredDofMotions.");
   }
 
   msg->num_dof = dof_motions.size();

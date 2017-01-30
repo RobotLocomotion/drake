@@ -1,9 +1,12 @@
+#include <memory>
 
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/Acrobot/acrobot_plant.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 
 namespace drake {
@@ -14,9 +17,11 @@ namespace {
 // Tests that the hand-derived dynamics (from the textbook) match the dynamics
 // generated from the urdf via the RigidBodyPlant class.
 GTEST_TEST(UrdfDynamicsTest, AllTests) {
-  auto tree = std::make_unique<RigidBodyTree<double>>(
-      GetDrakePath() + "/examples/Acrobot/Acrobot.urdf",
-      multibody::joints::kFixed);
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+    GetDrakePath() + "/examples/Acrobot/Acrobot.urdf",
+    multibody::joints::kFixed, tree.get());
+
   systems::RigidBodyPlant<double> rbp(std::move(tree));
   AcrobotPlant<double> p;
 
@@ -44,15 +49,15 @@ GTEST_TEST(UrdfDynamicsTest, AllTests) {
     u_rbp->SetFromVector(u);
     u_p->SetFromVector(u);
 
-    rbp.EvalTimeDerivatives(*context_rbp, xdot_rbp.get());
-    p.EvalTimeDerivatives(*context_p, xdot_p.get());
+    rbp.CalcTimeDerivatives(*context_rbp, xdot_rbp.get());
+    p.CalcTimeDerivatives(*context_p, xdot_p.get());
 
     EXPECT_TRUE(CompareMatrices(xdot_rbp->CopyToVector(),
                                 xdot_p->CopyToVector(), 1e-8,
                                 MatrixCompareType::absolute));
 
-    rbp.EvalOutput(*context_rbp, y_rbp.get());
-    p.EvalOutput(*context_p, y_p.get());
+    rbp.CalcOutput(*context_rbp, y_rbp.get());
+    p.CalcOutput(*context_p, y_p.get());
 
     EXPECT_TRUE(CompareMatrices(y_rbp->get_vector_data(0)->CopyToVector(),
                                 y_p->get_vector_data(0)->CopyToVector(), 1e-8,

@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 
 #include "gtest/gtest.h"
@@ -13,17 +14,16 @@ namespace drake {
 namespace systems {
 namespace {
 
+GTEST_TEST(ValueTest, Make) {
+  auto abstract_value = AbstractValue::Make<int>(42);
+  EXPECT_EQ(42, abstract_value->GetValue<int>());
+}
+
 GTEST_TEST(ValueTest, Access) {
   Value<int> value(3);
   const AbstractValue& erased = value;
   EXPECT_EQ(3, erased.GetValue<int>());
   EXPECT_EQ(3, erased.GetValueOrThrow<int>());
-}
-
-GTEST_TEST(ValueTest, Copy) {
-  Value<int> value(42);
-  Value<int> copied_value = value;
-  EXPECT_EQ(42, copied_value.get_value());
 }
 
 GTEST_TEST(ValueTest, Clone) {
@@ -115,13 +115,9 @@ GTEST_TEST(ValueTest, CannotUneraseToParentClass) {
 template <typename T>
 class PrintableValue : public Value<T>, public PrintInterface {
  public:
-  explicit PrintableValue(const T& v) : Value<T>(v) {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrintableValue)
 
-  // PrintableValues are copyable but not moveable.
-  PrintableValue(const PrintableValue<T>& other) = default;
-  PrintableValue& operator=(const PrintableValue<T>& other) = default;
-  PrintableValue(PrintableValue<T>&& other) = delete;
-  PrintableValue& operator=(PrintableValue<T>&& other) = delete;
+  explicit PrintableValue(const T& v) : Value<T>(v) {}
 
   std::unique_ptr<AbstractValue> Clone() const override {
     return std::unique_ptr<PrintableValue<T>>(

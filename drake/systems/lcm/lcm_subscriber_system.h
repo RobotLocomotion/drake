@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -67,7 +68,7 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    * @param[in] channel The LCM channel on which to subscribe.
    *
    * @param[in] translator A reference to the translator that converts between
-   * LCM message objects and `drake::systems::VectorBase` objects. This
+   * LCM message objects and `drake::systems::VectorBase` objects. The
    * reference must remain valid for the lifetime of this `LcmSubscriberSystem`
    * object.
    *
@@ -85,7 +86,8 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    * @param[in] channel The LCM channel on which to subscribe.
    *
    * @param[in] translator_dictionary A dictionary for obtaining the appropriate
-   * translator for a particular LCM channel.
+   * translator for a particular LCM channel. The reference must remain valid
+   * for the lifetime of this `LcmSubscriberSystem` object.
    *
    * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
    */
@@ -95,18 +97,13 @@ class LcmSubscriberSystem : public LeafSystem<double>,
 
   ~LcmSubscriberSystem() override;
 
-  std::string get_name() const override;
-
   /// Returns the default name for a system that subscribes to @p channel.
-  static std::string get_name(const std::string& channel);
+  static std::string make_name(const std::string& channel);
 
   const std::string& get_channel_name() const;
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override;
-
-  void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const override;
 
   /**
    * Returns the translator used by this subscriber. This translator can be used
@@ -122,8 +119,11 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   LcmSubscriberSystem& operator=(const LcmSubscriberSystem&) = delete;
 
  protected:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override;
+
   std::unique_ptr<BasicVector<double>> AllocateOutputVector(
-      const SystemPortDescriptor<double>& descriptor) const override;
+      const OutputPortDescriptor<double>& descriptor) const override;
 
  private:
   // All constructors delegate to here.

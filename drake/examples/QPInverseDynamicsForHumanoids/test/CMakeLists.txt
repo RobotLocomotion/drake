@@ -1,32 +1,21 @@
-drake_add_cc_test(NAME setpoint_test)
+drake_add_cc_test(setpoint_test)
 target_link_libraries(setpoint_test
-  drakeQPController
-  GTest::GTest GTest::Main)
+  drakeMath)
 
-if(lcm_FOUND)
-  drake_add_cc_test(NAME lcm_utils_test)
+if(lcm_FOUND AND yaml-cpp_FOUND)
+  drake_add_cc_test(lcm_utils_test)
   target_link_libraries(lcm_utils_test
-    drakeQPControllerLcmTranslator
+    drakeMultibodyParsers
     drakeQPController
-    GTest::GTest GTest::Main)
+    drakeQPControllerLcmTranslator)
 endif()
 
-drake_find_package(gurobi PKG_CONFIG)
-if(gurobi_FOUND)
+if(gurobi_FOUND AND yaml-cpp_FOUND)
   drake_add_cc_test(NAME valkyrie_balancing_test SIZE medium)
   target_link_libraries(valkyrie_balancing_test
+    drakeMultibodyParsers
     drakeQPController
-    GTest::GTest GTest::Main)
+    drakeQPControllerParamParsing
+    drakeRigidBodyAliasGroups
+    drakeValkyrieConstants)
 endif()
-
-if(gurobi_FOUND AND lcm_FOUND)
-  add_executable(valkyrie_qp_inverse_dynamics_controller
-    valkyrie_qp_inverse_dynamics_controller.cc)
-  target_link_libraries(valkyrie_qp_inverse_dynamics_controller
-    drakeLCMSystem2
-    drakeQPController
-    drakeQPControllerLcmTranslator
-    drakeRigidBodyPlant
-    drakeSystemAnalysis)
-endif()
-

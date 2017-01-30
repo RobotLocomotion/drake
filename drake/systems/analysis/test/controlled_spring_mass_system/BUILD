@@ -1,6 +1,9 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
+load("//tools:drake.bzl", "cc_googletest")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -12,22 +15,20 @@ cc_library(
     deps = [
         "//drake/systems/controllers:pid_controller",
         "//drake/systems/framework",
-        "//drake/systems/framework/primitives:adder",
-        "//drake/systems/framework/primitives:constant_vector_source",
-        "//drake/systems/framework/primitives:demultiplexer",
-        "//drake/systems/framework/primitives:gain",
         "//drake/systems/plants/spring_mass_system",
+        "//drake/systems/primitives:adder",
+        "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:demultiplexer",
+        "//drake/systems/primitives:gain",
     ],
 )
 
-cc_test(
+cc_googletest(
     name = "controlled_spring_mass_system_test",
-    size = "small",
-    testonly = 1,
     srcs = ["controlled_spring_mass_system_test.cc"],
-    linkstatic = 1,
     deps = [
         ":controlled_spring_mass_system",
-        "@gtest//:main",
     ],
 )
+
+cpplint()

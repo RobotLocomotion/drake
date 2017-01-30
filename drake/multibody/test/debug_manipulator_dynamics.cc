@@ -3,39 +3,44 @@
 #include <memory>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 using Eigen::VectorXd;
 using std::cout;
-using std::endl;
 using std::default_random_engine;
+using std::endl;
 
 int main() {
-  RigidBodyTree<double> model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      "examples/Atlas/urdf/atlas_minimal_contact.urdf",
+      drake::multibody::joints::kRollPitchYaw, tree.get());
 
   default_random_engine generator;
-  VectorXd q = model.getRandomConfiguration(generator);
-  VectorXd v = VectorXd::Random(model.get_num_velocities());
-  KinematicsCache<double> cache = model.doKinematics(q, v);
+  VectorXd q = tree->getRandomConfiguration(generator);
+  VectorXd v = VectorXd::Random(tree->get_num_velocities());
+  KinematicsCache<double> cache = tree->doKinematics(q, v);
 
   auto points = drake::Matrix3X<double>::Random(3, 5).eval();
   int body_or_frame_ind = 8;
   int base_or_frame_ind = 0;
-  model.transformPointsJacobianDotTimesV(cache, points, body_or_frame_ind,
+  tree->transformPointsJacobianDotTimesV(cache, points, body_or_frame_ind,
                                          base_or_frame_ind);
 
-  auto M = model.massMatrix<double>(cache);
+  auto M = tree->massMatrix<double>(cache);
   cout << M << endl << endl;
 
   RigidBodyTree<double>::BodyToWrenchMap external_wrenches;
   drake::WrenchVector<double> f_ext_r_foot;
   f_ext_r_foot.setRandom();
-  external_wrenches.insert({model.FindBody("r_foot"), f_ext_r_foot});
+  external_wrenches.insert({tree->FindBody("r_foot"), f_ext_r_foot});
 
-  VectorXd vd(model.get_num_velocities());
+  VectorXd vd(tree->get_num_velocities());
   vd.setRandom();
 
-  auto C = model.inverseDynamics(cache, external_wrenches, vd);
+  auto C = tree->inverseDynamics(cache, external_wrenches, vd);
   cout << C << endl << endl;
   return 0;
 }
