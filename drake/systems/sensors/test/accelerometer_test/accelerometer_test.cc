@@ -194,17 +194,17 @@ GTEST_TEST(TestAccelerometer, TestSensorAttachedToSwingingPendulum) {
   // Let:
   //
   //   - v be the linear acceleration of the sensor in the world frame.
-  //   - v_linear be the velocity of a reference point.
-  //   - r be the position of the sensor relative to the reference point.
-  //   - w be the angular velocity of the pendulum in the same frame as the
-  //     reference point.
+  //   - v_ref be the linear velocity of a reference point in the world frame.
+  //   - r be the vector from the sensor to the reference point expressed in the
+  //       world frame.
+  //   - w be the angular velocity of the pendulum in the world frame.
   //
   // The equation for v is:
   //
-  //     v = w x r + v_linear
+  //     v = w x r + v_ref
   //
   // Let the reference point be the world's origin. Since the pendulum is
-  // anchored to the world's origin, v_linear is a 3-vector of zeros. Thus:
+  // anchored to the world's origin, v_ref is a vector of zeros. Thus:
   //
   //     v = w x r
   //

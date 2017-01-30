@@ -14,8 +14,8 @@ const int AccelerometerOutputConstants::kAccelZIndex;
 
 template <typename T>
 AccelerometerOutput<T>::AccelerometerOutput()
-    : BasicVector<double>(Accelerometer::kNumMeasurements) {
-  this->SetFromVector(VectorX<double>::Zero(Accelerometer::kNumMeasurements));
+    : BasicVector<double>(Accelerometer::kNumDimensions) {
+  this->SetFromVector(VectorX<double>::Zero(Accelerometer::kNumDimensions));
 }
 
 template <typename T>

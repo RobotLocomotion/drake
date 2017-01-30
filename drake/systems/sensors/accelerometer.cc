@@ -17,7 +17,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-constexpr int Accelerometer::kNumMeasurements;
+constexpr int Accelerometer::kNumDimensions;
 
 Accelerometer::Accelerometer(const string& name,
                              const RigidBodyFrame<double>& frame,
@@ -34,7 +34,7 @@ Accelerometer::Accelerometer(const string& name,
       DeclareInputPort(kVectorValued, tree_.get_num_positions() +
                                       tree_.get_num_velocities()).get_index();
   output_port_index_ =
-      DeclareOutputPort(kVectorValued, kNumMeasurements).get_index();
+      DeclareOutputPort(kVectorValued, kNumDimensions).get_index();
 }
 
 Accelerometer* Accelerometer::AttachAccelerometer(
@@ -90,11 +90,12 @@ void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
   VectorXd xdot = this->EvalEigenVectorInput(
       context, plant_state_derivative_input_port_index_);
 
-  // Checks if xdot contains non-finite values like NaN, which happens during
-  // the first simulation cycle since xdot was not yet transmitted from the
-  // RigidBodyPlant to this Accelerometer sensor. If xdot contains non-finite
-  // values, xdot is set to be a vector of zeros.
-  if (!xdot.allFinite()) {
+  // TODO(liang.fok): Remoe the following check once RigidBodyPlant is able to
+  // output xdot.
+  //
+  // During the first simulation tick, xdot is invalid since it has not yet
+  // arrived from the RigidBodyPlant.
+  if (context.get_time() == 0.0) {
     xdot = VectorXd::Zero(x.size());
   }
 
@@ -111,8 +112,8 @@ void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
   const auto v = x.tail(get_tree().get_num_velocities());
   const auto vdot = xdot.tail(get_tree().get_num_velocities());
 
-  // TODO(liang.fok): Obtain the KinematicsCache directly from the
-  // RigidBodyPlant instead of recomputing it here.
+  // TODO(liang.fok): Obtain the KinematicsCache directly from the context
+  // instead of recomputing it here.
   const KinematicsCache<double> kinematics_cache =
       tree_.doKinematics(q, v);
 
