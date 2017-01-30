@@ -25,15 +25,16 @@ namespace sensors {
 ///                 | < vector of zeros >
 ///                 |
 ///                 V
-/// -----------------------------------
-/// | RigidBodyPlantThatPublishesXdot |
-/// -----------------------------------
-///                 |                      -----------------------
-///     ------------| x                    | LcmSubscriberSystem |
-///     |           |                      -----------------------
-///     |           V                                 |
-///     |   -----------------          x_dot          |
-///     |   | Accelerometer | <------------------------
+/// -----------------------------------  x_dot (via LCM)
+/// | RigidBodyPlantThatPublishesXdot |------------------
+/// -----------------------------------                 |
+///                 |                                   V
+///                 |                        -----------------------
+///     ------------| x                      | LcmSubscriberSystem |
+///     |           |                        -----------------------
+///     |           V                                   |
+///     |   -----------------          x_dot            |
+///     |   | Accelerometer | <--------------------------
 ///     |   -----------------
 ///     |           |
 ///     V           V
@@ -78,6 +79,8 @@ class AccelerometerExampleDiagram : public Diagram<double> {
 
   /// @name Accessors
   //@{
+  const Accelerometer& get_accelerometer() const { return *accelerometer_; }
+
   const RigidBodyTree<double>& get_tree() const { return *tree_; }
 
   RigidBodyPlantThatPublishesXdot<double>* get_plant() const {

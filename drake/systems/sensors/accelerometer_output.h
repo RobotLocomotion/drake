@@ -30,6 +30,10 @@ class AccelerometerOutput : public BasicVector<T> {
 
   /// Returns the Z-component of the linear acceleration in the sensor's frame.
   const T& get_accel_z() const;
+
+  /// Returns a Vector3<T> containing the linear acceleration in the sensor's
+  /// frame. The ordering of the values in this 3-vector are `[x, y, z]`.
+  Vector3<T> get_accel() const;
   //@}
 };
 

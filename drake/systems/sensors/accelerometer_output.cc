@@ -33,6 +33,12 @@ const T& AccelerometerOutput<T>::get_accel_z() const {
   return BasicVector<T>::GetAtIndex(AccelerometerOutputConstants::kAccelZIndex);
 }
 
+template <typename T>
+Vector3<T> AccelerometerOutput<T>::get_accel() const {
+  Vector3<T> result(get_accel_x(), get_accel_y(), get_accel_z());
+  return result;
+}
+
 template class AccelerometerOutput<double>;
 
 }  // namespace sensors

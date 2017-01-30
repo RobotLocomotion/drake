@@ -14,9 +14,6 @@ using std::move;
 using std::string;
 
 namespace drake {
-
-using math::quatRotateVec;
-
 namespace systems {
 namespace sensors {
 
@@ -50,8 +47,6 @@ Accelerometer* Accelerometer::AttachAccelerometer(
 
   // Ensures the input parameters are valid.
   {
-    DRAKE_DEMAND(tree.findFrame(frame.get_name(), frame.get_model_instance_id())
-        != nullptr);
     DRAKE_DEMAND(builder != nullptr);
     bool plant_in_builder = false;
     std::vector<systems::System<double>*> systems =
@@ -95,15 +90,11 @@ void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
   VectorXd xdot = this->EvalEigenVectorInput(
       context, plant_state_derivative_input_port_index_);
 
-  // Checks if xdot contains NaN values, which happens during the first
-  // simulation cycle. If it does, zeros xdot.
-  bool xdot_contains_nan = false;
-  for (int i = 0; i < xdot.size() && !xdot_contains_nan; i++) {
-    if (std::isnan(xdot(i))) {
-      xdot_contains_nan = true;
-    }
-  }
-  if (xdot_contains_nan) {
+  // Checks if xdot contains non-finite values like NaN, which happens during
+  // the first simulation cycle since xdot was not yet transmitted from the
+  // RigidBodyPlant to this Accelerometer sensor. If xdot contains non-finite
+  // values, xdot is set to be a vector of zeros.
+  if (!xdot.allFinite()) {
     xdot = VectorXd::Zero(x.size());
   }
 
@@ -117,38 +108,44 @@ void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
   // Note that x = [q, v].
   //
   const auto q = x.head(get_tree().get_num_positions());
-  const auto v = x.segment(get_tree().get_num_positions(),
-                           get_tree().get_num_velocities());
-  const auto vdot = xdot.bottomRows(get_tree().get_num_velocities());
+  const auto v = x.tail(get_tree().get_num_velocities());
+  const auto vdot = xdot.tail(get_tree().get_num_velocities());
 
+  // TODO(liang.fok): Obtain the KinematicsCache directly from the
+  // RigidBodyPlant instead of recomputing it here.
   const KinematicsCache<double> kinematics_cache =
       tree_.doKinematics(q, v);
 
   const auto J_WF = tree_.CalcFrameSpatialVelocityJacobianInWorldFrame(
-      kinematics_cache, frame_.get_rigid_body(), frame_.get_transform_to_body(),
-      false /* in_terms_of_qdot */);
+      kinematics_cache, frame_, false /* in_terms_of_qdot */);
 
   const drake::Vector6<double> Jdot_WF_times_v =
       tree_.CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
           kinematics_cache, frame_);
 
+  // Note that an "A" in the variable name denotes "spatial acceleration" while
+  // an "a" denotes "linear acceleration". For more details about this
+  // nomenclature, see the website linked to below.
+  //
+  // http://drake.mit.edu/doxygen_cxx/group__multibody__spatial__vectors.html
+  //
   const auto A_WF = Jdot_WF_times_v + J_WF * vdot;
 
   drake::Isometry3<double> X_WF = tree_.CalcFramePoseInWorldFrame(
       kinematics_cache, frame_);
 
-  Vector3d A_WF_F = X_WF.linear().transpose() * A_WF.tail<3>();
+  Vector3d a_WF_F = X_WF.linear().transpose() * A_WF.tail<3>();
 
   if (include_gravity_) {
     const Vector3d gravity = tree_.a_grav.tail<3>();
-    A_WF_F += X_WF.linear().transpose() * gravity;
+    a_WF_F += X_WF.linear().transpose() * gravity;
   }
 
   // Saves the acceleration readings into the output port.
   BasicVector<double>* output_vector =
       output->GetMutableVectorData(output_port_index_);
 
-  output_vector->SetFromVector(A_WF_F);
+  output_vector->SetFromVector(a_WF_F);
 }
 
 std::ostream& operator<<(std::ostream& out, const Accelerometer& sensor) {
