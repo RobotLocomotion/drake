@@ -59,6 +59,8 @@ AccelerometerExampleDiagram::AccelerometerExampleDiagram(
   plant_ = builder_.template AddSystem<RigidBodyPlantThatPublishesXdot<double>>(
       move(tree), xdot_channel_name, lcm_);
 
+  xdot_filter_ = builder_.template AddSystem<AccelerometerXdotFilter>(
+    plant_->get_num_states());
   translator_ =
       make_unique<LcmtDrakeSignalTranslator>(plant_->get_num_states());
   lcm_subscriber_ = builder_.template AddSystem<LcmSubscriberSystem>(
@@ -76,12 +78,14 @@ AccelerometerExampleDiagram::AccelerometerExampleDiagram(
           VectorX<double>::Zero(plant_->actuator_command_input_port().size()));
 
   builder_.Connect(lcm_subscriber_->get_output_port(0),
+                   xdot_filter_->get_input_port());
+  builder_.Connect(xdot_filter_->get_output_port(),
                    accelerometer_->get_plant_state_derivative_input_port());
   builder_.Connect(constant_zero_source->get_output_port(),
                    plant_->actuator_command_input_port());
   builder_.Connect(plant_->state_output_port(),
                    logger_->get_plant_state_input_port());
-  builder_.Connect(lcm_subscriber_->get_output_port(0),
+  builder_.Connect(xdot_filter_->get_output_port(),
                    logger_->get_plant_state_derivative_input_port());
   builder_.Connect(accelerometer_->get_output_port(),
                    logger_->get_acceleration_input_port());

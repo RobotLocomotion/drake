@@ -2,7 +2,8 @@ if(Bullet_FOUND)
   add_executable(accelerometer_test
       accelerometer_example_diagram.cc
       accelerometer_test.cc
-      accelerometer_test_logger.cc)
+      accelerometer_test_logger.cc
+      accelerometer_xdot_filter.cc)
   target_link_libraries(accelerometer_test
       drakeCommon
       drakeLcm
@@ -20,7 +21,8 @@ if(Bullet_FOUND AND lcm_FOUND)
   add_executable(accelerometer_example
       accelerometer_example_diagram.cc
       accelerometer_example.cc
-      accelerometer_test_logger.cc)
+      accelerometer_test_logger.cc
+      accelerometer_xdot_filter.cc)
   target_link_libraries(accelerometer_example
       drakeCommon
       drakeLcm

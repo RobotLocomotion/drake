@@ -87,19 +87,8 @@ void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
   // the time derivative of x.
   const VectorXd x = this->EvalEigenVectorInput(
     context, plant_state_input_port_index_);
-  VectorXd xdot = this->EvalEigenVectorInput(
+  const VectorXd xdot = this->EvalEigenVectorInput(
       context, plant_state_derivative_input_port_index_);
-
-  // TODO(liang.fok): Remoe the following check once RigidBodyPlant is able to
-  // output xdot.
-  //
-  // During the first simulation tick, xdot is invalid since it has not yet
-  // arrived from the RigidBodyPlant. When xdot is invalid, simply set it to be
-  // a vector of zeros. Note, however, that this may also mask situations where
-  // the simulation has gone unstable and invalid appears mid-simulation.
-  if (!xdot.allFinite()) {
-    xdot = VectorXd::Zero(x.size());
-  }
 
   // Computes:
   //
