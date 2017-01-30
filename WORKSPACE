@@ -146,6 +146,12 @@ soft_failure_binary_repository(
 )
 
 # Python Libraries
+new_local_repository(
+    name = "python_headers",
+    path = "/usr/include/python2.7",
+    build_file = "tools/python_headers.BUILD",
+)
+
 new_http_archive(
     name = "six_archive",
     url = "https://pypi.python.org/packages/source/s/six/six-1.10.0.tar.gz",
