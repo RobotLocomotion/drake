@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <limits>
 #include <vector>
 
 #include "drake/math/cross_product.h"
@@ -314,31 +315,34 @@ std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(
     // axis = 2 means edges along z axis;
     int fixed_axis1 = (axis + 1) % 3;
     int fixed_axis2 = (axis + 2) % 3;
-    for (int i = 0; i < 4; ++i) {
-      // 4 edges along each axis;
+    // 4 edges along each axis;
 
-      // First finds the two end points on the edge.
-      Eigen::Vector3d pt_closer, pt_farther;
-      pt_closer(axis) = bmin(axis);
-      pt_farther(axis) = bmax(axis);
-      pt_closer(fixed_axis1) =
-          i & (1 << 1) ? bmin(fixed_axis1) : bmax(fixed_axis1);
+    // First finds the two end points on the edge.
+    Eigen::Vector3d pt_closer, pt_farther;
+    pt_closer(axis) = bmin(axis);
+    pt_farther(axis) = bmax(axis);
+    std::array<double, 2> fixed_axis1_val = {bmin(fixed_axis1),
+                                             bmax(fixed_axis1)};
+    std::array<double, 2> fixed_axis2_val = {bmin(fixed_axis2),
+                                             bmax(fixed_axis2)};
+    for (double val1 : fixed_axis1_val) {
+      pt_closer(fixed_axis1) = val1;
       pt_farther(fixed_axis1) = pt_closer(fixed_axis1);
-      pt_closer(fixed_axis2) =
-          i & (1 << 0) ? bmin(fixed_axis2) : bmax(fixed_axis2);
-      pt_farther(fixed_axis2) = pt_closer(fixed_axis2);
+      for (double val2 : fixed_axis2_val) {
+        pt_closer(fixed_axis2) = val2;
+        pt_farther(fixed_axis2) = pt_closer(fixed_axis2);
 
-      // Determines if there is an intersecting point between the edge and the
-      // sphere.
-      // If the intersecting point is not the vertex of the box, then push this
-      // intersecting point to intersections directly.
-      if (pt_closer.norm() < 1 && pt_farther.norm() > 1) {
-        Eigen::Vector3d pt_intersect{};
-        pt_intersect(fixed_axis1) = pt_closer(fixed_axis1);
-        pt_intersect(fixed_axis2) = pt_closer(fixed_axis2);
-        pt_intersect(axis) =
-            Intercept(pt_intersect(fixed_axis1), pt_intersect(fixed_axis2));
-        intersections.push_back(pt_intersect);
+        // Determines if there is an intersecting point between the edge and the
+        // sphere. If the intersecting point is not the vertex of the box, then
+        // push this intersecting point to intersections directly.
+        if (pt_closer.norm() < 1 && pt_farther.norm() > 1) {
+          Eigen::Vector3d pt_intersect{};
+          pt_intersect(fixed_axis1) = pt_closer(fixed_axis1);
+          pt_intersect(fixed_axis2) = pt_closer(fixed_axis2);
+          pt_intersect(axis) =
+              Intercept(pt_intersect(fixed_axis1), pt_intersect(fixed_axis2));
+          intersections.push_back(pt_intersect);
+        }
       }
     }
   }
@@ -387,49 +391,63 @@ void AddMcCormickVectorConstraints(
           } else {
             // Find the intercepts of the unit sphere with the box, then find
             // the tightest linear constraint of the form:
-            //    d <= normal'*v
+            //    d <= n'*v
             // that puts v inside (but as close as possible to) the unit circle.
+            // We will show that we can solve an SOCP to find such normal vector
+            // n.
             auto pts = internal::ComputeBoxEdgesAndSphereIntersection(box_min,
                                                                       box_max);
             DRAKE_DEMAND(pts.size() >= 3);
-            // Set normal to be the average of pts.
-            Eigen::Vector3d normal = Eigen::Vector3d::Zero();
-            for (int i = 0; i < static_cast<int>(pts.size()); ++i) {
-              normal += pts[i];
-            }
-            normal /= pts.size();
-            normal.normalize();
 
-            // We will prove that the minimum of normalᵀ * v is obtained
-            // at one of the point.col(i).
-            // To compute the minimum of normalᵀ * v, where v is an intersecting
-            // point between the unit circle and the box. Notice that the
-            // intersection between the box and the unit circle can be
-            // decomposed
-            // to individual segment, each segment is a curve, that connects one
-            // intersecting point on the edge of the box, to another
-            // intersecting point on the edge of the box.
-            // Take one curve as an example, that
-            // connects the points v1, v2, on different edges of the box, and
-            // suppose v1(i) = v2(i) = u, namely these two points are on the
-            // box surface x(i) = u.
-            // The point v on the curve can be written as
-            // v(i) = u, v(j)² + v(k)² = 1 - u²,
-            // min(v1(j), v2(j)) <= v(j) <= max(v1(j), v2(j))
-            // min(v1(k), v2(k)) <= v(k) <= max(v1(k), v2(k))
-            // We define t = sqrt(1 - u²), and write v(j), v(k) as
-            // v(j) = t * cos(α), v(k) = t * sin(α)
-            // since the box is in the first orthant, we know 0 <= α <= pi/2
-            // We expand normalᵀ * v as
-            //   normal(i) * v(i) + normal(j) * v(j) + normal(k) * v(k)
-            // = normal(i) * u + t * (normal(j) * cos(α) + normal(k) * sin(α))
-            // since normal(j) >= 0, normal(k) >= 0,
-            // we know that the minimal of this function is obtained at the
-            // boundary of α.
-            double d = 1;
+            // We first prove that for a given normal vector n, and ANY unit
+            // length vector v within the intersection region between the
+            // surface of the unit sphere and the interior of the axis-aligned
+            // box, the minimal of nᵀ * v, always occurs at one of the vertex of
+            // the intersection region, if the box and the vector n are in the
+            // same orthant. Namely min nᵀ * v = min(nᵀ * pts.col(i))
+            // To see this, for any vector v in the intersection region, suppose
+            // it is on an arc, aligned with one axis. Without loss of
+            // generality we assume the aligned axis is x axis, namely
+            // v(0) = t, box_min(0) <= t <= box_max(0)
+            // and v(1)² + v(2)² = 1 - t², with the bounds
+            // box_min(1) <= v(1) <= box_max(1)
+            // box_min(2) <= v(2) <= box_max(2)
+            // And the inner product nᵀ * v =
+            // n(0) * t + s * (n(1) * cos(α) + n(2) * sin(α))
+            // where we define s = sqrt(1 - t²)
+            // Using the property of trigonmetric function, we know that
+            // the minimal of (n(1) * cos(α) + n(2) * sin(α)) is obtained at
+            // the boundary of α. Thus we know that the minimal of nᵀ * v is
+            // always obtained at one of the vertex pts.col(i).
+
+            // To find the tightest bound d satisfying nᵀ * v >= d for all
+            // vector v in the intersection region, we use the fact that for
+            // a given normal vector v, the minimal of nᵀ * v is always obtained
+            // at one of the vertices pts.col(i), and formulate the following
+            // SOCP to find the normal vector n
+            // max d
+            // s.t d <= nᵀ * pts.col(i)
+            //     nᵀ * n <= 1
+
+            MathematicalProgram prog_normal;
+            auto n = prog_normal.NewContinuousVariables<3>();
+            auto d_var = prog_normal.NewContinuousVariables<1>();
+            prog_normal.AddLinearCost(Vector1d(-1), d_var);
             for (const auto& pt : pts) {
-              d = std::min(normal.dot(pt), d);
+              prog_normal.AddLinearConstraint(
+                  Eigen::Vector4d(pt(0), pt(1), pt(2), -1), 0,
+                  std::numeric_limits<double>::infinity(), {n, d_var});
             }
+            // A_lorentz * n + b_lorentz = [1; n]
+            Eigen::Matrix<double, 4, 3> A_lorentz{};
+            A_lorentz << Eigen::RowVector3d::Zero(),
+                Eigen::Matrix3d::Identity();
+            Eigen::Vector4d b_lorentz(1, 0, 0, 0);
+            prog_normal.AddLorentzConeConstraint(A_lorentz, b_lorentz, n);
+            prog_normal.Solve();
+            Eigen::Vector3d normal = prog_normal.GetSolution(n);
+            double d = prog_normal.GetSolution(d_var(0));
+
             DRAKE_DEMAND(normal(0) > 0 && normal(1) > 0 && normal(2) > 0);
             DRAKE_DEMAND(d > 0 && d < 1);
 
