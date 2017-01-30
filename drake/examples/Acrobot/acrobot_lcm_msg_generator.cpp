@@ -1,4 +1,4 @@
-// generates simple LCM messages to test acrobot_plant_w_lcm
+// Generates simple LCM messages to test acrobot_plant and controllers.
 
 #include <memory>
 #include <string>
@@ -31,7 +31,7 @@ int DoMain() {
 
   int t = 0;
   while (t < 1e5) {
-    // publishing messages to be received
+    // Publishes messages to be received.
     msg_x.theta1 = t * M_PI / 6;
     msg_x.theta2 = t * M_PI / 6;
     msg_x.theta1Dot = std::sin(msg_x.theta1);
@@ -40,7 +40,7 @@ int DoMain() {
     msg_x.encode(&buffer[0], 0, msg_x.getEncodedSize());
     lcm.Publish(channel_x, &buffer[0], msg_x.getEncodedSize());
 
-    // receive lcm messages
+    // Receives lcm messages.
     if (handler.get_receive_channel() == channel_x) {
       // Gets the received message.
       const lcmt_acrobot_x received_msg = handler.GetReceivedMessage();
@@ -54,24 +54,6 @@ int DoMain() {
     t++;
   }
 
-  // publish tau
-  /*
-  const std::string channel_u = "acrobot_u";
-  lcmt_acrobot_u msg_u;
-  std::vector<uint8_t> buffer(msg_u.getEncodedSize());
-
-  int t = 0;
-  while (t <= 1000) {
-    // publishing messages to be received
-    msg_u.tau = 2*(t%2)-1;
-
-    msg_u.encode(&buffer[0], 0, msg_u.getEncodedSize());
-    lcm.Publish(channel_u, &buffer[0], msg_u.getEncodedSize());
-
-    sleep_for(milliseconds(1000));
-    t++;
-  }
-   */
   return 0;
 }
 }  // namespace

@@ -16,11 +16,12 @@ namespace drake {
 namespace examples {
 namespace acrobot {
 
-// Handles received LCM messages, copied from drake_lcm_test.cc
+/// Handles received LCM messages of type lcmt_acrobot_x.
+// copied from drake/lcm/test/drake_lcm_test.cc
 class MessageHandler : public lcm::DrakeLcmMessageHandlerInterface {
  public:
-  // A constructor that initializes the memory for storing received LCM
-  // messages.
+  /// A constructor that initializes the memory for storing received LCM
+  /// messages.
   MessageHandler() {
     // Initializes the fields of received_message.
     received_message_.theta1 = 0;
@@ -30,7 +31,7 @@ class MessageHandler : public lcm::DrakeLcmMessageHandlerInterface {
     received_message_.timestamp = 0;
   }
 
-  // This is the callback method.
+  /// This is the callback method.
   void HandleMessage(const std::string& channel, const void* message_buffer,
                      int message_size) override {
     channel_ = channel;
@@ -38,7 +39,7 @@ class MessageHandler : public lcm::DrakeLcmMessageHandlerInterface {
     received_message_.decode(message_buffer, 0, message_size);
   }
 
-  // Returns a copy of the most recently received message.
+  /// Returns a copy of the most recently received message.
   lcmt_acrobot_x GetReceivedMessage() {
     lcmt_acrobot_x message_copy;
     std::lock_guard<std::mutex> lock(message_mutex_);
@@ -46,7 +47,7 @@ class MessageHandler : public lcm::DrakeLcmMessageHandlerInterface {
     return message_copy;
   }
 
-  // Returns the channel on which the most recent message was received.
+  /// Returns the channel on which the most recent message was received.
   const std::string& get_receive_channel() { return channel_; }
 
  private:

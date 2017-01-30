@@ -12,6 +12,8 @@ using systems::SystemOutput;
 static const int kNumJoints = 2;
 
 /*--------------------------------------------------------------------------*/
+// methods implementation for AcrobotStateReceiver.
+
 AcrobotStateReceiver::AcrobotStateReceiver() {
   this->DeclareAbstractInputPort();
   this->DeclareOutputPort(systems::kVectorValued, kNumJoints * 2);
@@ -28,13 +30,6 @@ void AcrobotStateReceiver::DoCalcOutput(const Context<double>& context,
   output_vec(1) = state.theta2;
   output_vec(2) = state.theta1Dot;
   output_vec(3) = state.theta2Dot;
-
-  /*
-  std::cout << "\ntheta1 = " << output_vec(0)
-            << "\ntheta2 = " << output_vec(1)
-            << "\ntheta1Dot = " << output_vec(2)
-            << "\ntheta2Dot = " << output_vec(3);
-  */
 }
 
 std::unique_ptr<systems::BasicVector<double>>
@@ -43,7 +38,10 @@ AcrobotStateReceiver::AllocateOutputVector(
   DRAKE_THROW_UNLESS(descriptor.size() == 4);
   return std::make_unique<AcrobotStateVector<double>>();
 }
+
 /*--------------------------------------------------------------------------*/
+// methods implementation for AcrobotCommandSender.
+
 AcrobotCommandSender::AcrobotCommandSender() {
   this->DeclareInputPort(systems::kVectorValued, 1);
   this->DeclareAbstractOutputPort();
@@ -73,6 +71,8 @@ void AcrobotCommandSender::DoCalcOutput(const Context<double>& context,
 }
 
 /*--------------------------------------------------------------------------*/
+// methods implementation for AcrobotCommandReceiver
+
 AcrobotCommandReceiver::AcrobotCommandReceiver() {
   this->DeclareAbstractInputPort();
   this->DeclareOutputPort(systems::kVectorValued, 1);
@@ -86,15 +86,11 @@ void AcrobotCommandReceiver::DoCalcOutput(const Context<double>& context,
   auto output_vec = this->GetMutableOutputVector(output, 0);
 
   output_vec(0) = command.tau;
-  /*
-  std::cout << "\ntheta1 = " << output_vec(0)
-            << "\ntheta2 = " << output_vec(1)
-            << "\ntheta1Dot = " << output_vec(2)
-            << "\ntheta2Dot = " << output_vec(3);
-  */
 }
 
 /*--------------------------------------------------------------------------*/
+// methods implementation for AcrobotStateSender
+
 AcrobotStateSender::AcrobotStateSender() {
   this->DeclareInputPort(systems::kVectorValued, kNumJoints * 2);
   this->DeclareAbstractOutputPort();

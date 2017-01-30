@@ -58,7 +58,7 @@ int do_main(int argc, char* argv[]) {
       diagram->GetMutableSubsystemContext(simulator.get_mutable_context(),
                                           acrobot);
 
-  // Set an initial condition near the upright fixed point.
+  // Sets an initial condition near the upright fixed point.
   AcrobotStateVector<double>* x0 = dynamic_cast<AcrobotStateVector<double>*>(
       acrobot_context->get_mutable_continuous_state_vector());
   DRAKE_DEMAND(x0 != nullptr);
