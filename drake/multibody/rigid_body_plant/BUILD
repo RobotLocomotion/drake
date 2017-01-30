@@ -151,9 +151,9 @@ cc_googletest(
     deps = [
         ":rigid_body_plant_that_publishes_xdot",
         "//drake/common:drake_path",
+        "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
         "//drake/multibody/parsers",
-        "//drake/lcm:lcmt_drake_signal_utils",
     ],
 )
 
