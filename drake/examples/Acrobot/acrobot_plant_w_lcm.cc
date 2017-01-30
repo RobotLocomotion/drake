@@ -55,28 +55,25 @@ int DoMain() {
       GetDrakePath() + "/examples/Acrobot/Acrobot.urdf",
       multibody::joints::kFixed, tree.get());
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
-
-  // ------------------virtual plant--------------------------------------
-
   auto acrobot = builder.AddSystem<AcrobotPlant>();
-  // connect plant to visualizer
+  // Connects plant to visualizer.
   builder.Connect(acrobot->get_output_port(0), publisher->get_input_port(0));
 
-  // command receiver
+  // Creates command receiver and subscriber.
   auto command_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_acrobot_u>(channel_u, &lcm));
   auto command_receiver = builder.AddSystem<AcrobotCommandReceiver>();
   builder.Connect(command_sub->get_output_port(0),
                   command_receiver->get_input_port(0));
 
-  // state sender
+  // Creates state sender and publisher.
   auto state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_acrobot_x>(channel_x, &lcm));
   auto state_sender = builder.AddSystem<AcrobotStateSender>();
   builder.Connect(state_sender->get_output_port(0),
                   state_pub->get_input_port(0));
 
-  // connect plant to command receiver and state sender
+  // Connects plant to command receiver and state sender.
   builder.Connect(command_receiver->get_output_port(0),
                   acrobot->get_input_port(0));
   builder.Connect(acrobot->get_output_port(0), state_sender->get_input_port(0));
@@ -84,7 +81,7 @@ int DoMain() {
   auto diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
 
-  // Set an initial condition near the stable fixed point.
+  // Sets an initial condition near the stable fixed point.
   systems::Context<double>* acrobot_context =
       diagram->GetMutableSubsystemContext(simulator.get_mutable_context(),
                                           acrobot);
