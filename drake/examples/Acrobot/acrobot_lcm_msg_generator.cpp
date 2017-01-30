@@ -22,8 +22,11 @@ int DoMain() {
   drake::lcm::DrakeLcm lcm;
 
   const std::string channel_x = "acrobot_xhat";
+  const std::string channel_u = "acrobot_u";
   lcmt_acrobot_x msg_x;
-  std::vector<uint8_t> buffer(msg_x.getEncodedSize());
+  lcmt_acrobot_u msg_u;
+  std::vector<uint8_t> buffer_x(msg_x.getEncodedSize());
+  std::vector<uint8_t> buffer_u(msg_u.getEncodedSize());
 
   MessageHandler handler;
   lcm.Subscribe(channel_x, &handler);
@@ -31,24 +34,26 @@ int DoMain() {
 
   int t = 0;
   while (t < 1e5) {
-    // Publishes messages to be received.
+    // Publishes msg_x.
     msg_x.theta1 = t * M_PI / 6;
     msg_x.theta2 = t * M_PI / 6;
     msg_x.theta1Dot = std::sin(msg_x.theta1);
     msg_x.theta2Dot = std::cos(msg_x.theta2);
 
-    msg_x.encode(&buffer[0], 0, msg_x.getEncodedSize());
-    lcm.Publish(channel_x, &buffer[0], msg_x.getEncodedSize());
+    msg_x.encode(&buffer_x[0], 0, msg_x.getEncodedSize());
+    lcm.Publish(channel_x, &buffer_x[0], msg_x.getEncodedSize());
 
-    // Receives lcm messages.
+    // Publishes msg_u using received msg_x.
     if (handler.get_receive_channel() == channel_x) {
       // Gets the received message.
       const lcmt_acrobot_x received_msg = handler.GetReceivedMessage();
 
-      std::cout << "theta1 = " << received_msg.theta1
-                << " ,theta2 = " << received_msg.theta2
-                << " ,theta1Dot = " << received_msg.theta1Dot
-                << " ,theta2Dot = " << received_msg.theta2Dot << std::endl;
+      // Calculates some output from received state.
+      msg_u.tau = received_msg.theta1 + received_msg.theta2;
+
+      // Publish msg_u
+      msg_u.encode(&buffer_u[0], 0, msg_u.getEncodedSize());
+      lcm.Publish(channel_u, &buffer_u[0], msg_u.getEncodedSize());
     }
     sleep_for(milliseconds(500));
     t++;

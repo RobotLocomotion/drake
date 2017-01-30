@@ -59,11 +59,11 @@ Vector2<T> AcrobotPlant<T>::VectorC(const AcrobotStateVector<T>& x) const {
            -m2l1lc2_ * s2 * x.theta2dot() * x.theta2dot(),
       m2l1lc2_ * s2 * x.theta1dot() * x.theta1dot();
 
-  // add in G terms
+  // Add in G terms.
   C(0) += g_ * m1_ * lc1_ * s1 + g_ * m2_ * (l1_ * s1 + lc2_ * s12);
   C(1) += g_ * m2_ * lc2_ * s12;
 
-  // damping terms
+  // Damping terms.
   C(0) += b1_ * x.theta1dot();
   C(1) += b2_ * x.theta2dot();
 
@@ -83,8 +83,7 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
 
   Matrix2<T> H = MatrixH(x);
   Vector2<T> C = VectorC(x);
-  // input matrix
-  Vector2<T> B(0, 1);
+  Vector2<T> B(0, 1); // input matrix
 
   Vector4<T> xdot;
   xdot << x.theta1dot(), x.theta2dot(), H.inverse() * (B * tau - C);

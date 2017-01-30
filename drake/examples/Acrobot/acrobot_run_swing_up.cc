@@ -23,9 +23,6 @@ namespace examples {
 namespace acrobot {
 namespace {
 
-using std::cout;
-using std::endl;
-
 // Simple example which simulates the Acrobot, started near its stable fixed
 // point, with a Spong swing-up controller designed to reach the unstable
 // fixed point.  Run drake-visualizer to see the animated result.

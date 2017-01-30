@@ -33,12 +33,14 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   /// The input force to this system is not direct feedthrough.
   bool has_any_direct_feedthrough() const override { return false; }
 
-  /// Manipulator equation of Acrobot: H * qdotdot + C = B*u
+  ///@{
+  /// Manipulator equation of Acrobot: H * qdotdot + C = B*u.
   /// H[2x2] is the mass matrix.
   /// C[2x1] includes the Coriolis term, gravity term and the damping term, i.e.
   /// C[Cx1] = Coriolis(q,v)*v + g(q) + [b1*theta1;b2*theta2]
   Vector2<T> VectorC(const AcrobotStateVector<T>& x) const;
   Matrix2<T> MatrixH(const AcrobotStateVector<T>& x) const;
+  ///@}
 
   // getters for robot parameters
   T m1() const { return m1_; }
@@ -83,38 +85,39 @@ class AcrobotPlant : public systems::LeafSystem<T> {
       l1_{1.0},           // Length of link 1 (m).
       l2_{2.0},           // Length of link 2 (m).
       lc1_{0.5},   // Vertical distance from shoulder joint to center of mass of
-                  // link 1 (m).
+                   // link 1 (m).
       lc2_{1.0},   // Vertical distance from elbox joint to center of mass of
-                  // link 2 (m).
+                   // link 2 (m).
       Ic1_{.083},  // Inertia of link 1 about the center of mass of link 1
-                  // (kg*m^2).
+                   // (kg*m^2).
       Ic2_{.33},   // Inertia of link 2 about the center of mass of link 2
-                  // (kg*m^2).
+                   // (kg*m^2).
       b1_{0.1},    // Damping coefficient of the shoulder joint (kg*m^2/s).
       b2_{0.1},    // Damping coefficient of the elbow joint (kg*m^2/s).
       g_{9.81};    // Gravitational constant (m/s^2).
-  const double I1_ = Ic1_ + m1_ * lc1_ * lc1_;
-  const double I2_ = Ic2_ + m2_ * lc2_ * lc2_;
-  const double m2l1lc2_ = m2_ * l1_ * lc2_;  // occurs often!
 
   /*
   // parameters for the acrobot in the lab
   const double m1{2.4367},  // Mass of link 1 (kg).
-      m2{0.6178},           // Mass of link 2 (kg).
-      l1{0.5263},           // Length of link 1 (m).
-      l2{0},                // Length of link 2 (m).
-      lc1{1.6738},   // Vertical distance from shoulder joint to center of
-                     // mass of link 1 (m).
-      lc2{1.5651},   // Vertical distance from elbox joint to center of mass of
-                     // link 2 (m).
-      Ic1{-4.7443},  // Inertia of link 1 about the center of mass of link 1
-                     // (kg*m^2).
-      Ic2{-1.0068},  // Inertia of link 2 about the center of mass of link 2
-                     // (kg*m^2).
-      b1{0.0320},    // Damping coefficient of the shoulder joint (kg*m^2/s).
-      b2{0.0413},    // Damping coefficient of the elbow joint (kg*m^2/s).
-      g{9.81};       // Gravitational constant (m/s^2).
+    m2{0.6178},           // Mass of link 2 (kg).
+    l1{0.5263},           // Length of link 1 (m).
+    l2{0},                // Length of link 2 (m).
+    lc1{1.6738},   // Vertical distance from shoulder joint to center of
+                   // mass of link 1 (m).
+    lc2{1.5651},   // Vertical distance from elbox joint to center of mass of
+                   // link 2 (m).
+    Ic1{-4.7443},  // Inertia of link 1 about the center of mass of link 1
+                   // (kg*m^2).
+    Ic2{-1.0068},  // Inertia of link 2 about the center of mass of link 2
+                   // (kg*m^2).
+    b1{0.0320},    // Damping coefficient of the shoulder joint (kg*m^2/s).
+    b2{0.0413},    // Damping coefficient of the elbow joint (kg*m^2/s).
+    g{9.81};       // Gravitational constant (m/s^2).
   */
+
+  const double I1_ = Ic1_ + m1_ * lc1_ * lc1_;
+  const double I2_ = Ic2_ + m2_ * lc2_ * lc2_;
+  const double m2l1lc2_ = m2_ * l1_ * lc2_;  // Quantities that occur often.
 };
 
 /// Constructs the Acrobot with (only) encoder outputs.
@@ -136,7 +139,6 @@ class AcrobotWEncoder : public systems::Diagram<T> {
 /// default LQR cost matrices which have been tested for this system.
 std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
     const AcrobotPlant<double>& acrobot);
-
 
 }  // namespace acrobot
 }  // namespace examples

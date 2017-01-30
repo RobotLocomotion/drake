@@ -36,14 +36,14 @@ int DoMain() {
   lcm::DrakeLcm lcm;
 
   // -----------------controller--------------------------------------
-  // create state receiver
+  // Create state receiver.
   auto state_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_acrobot_x>(channel_x, &lcm));
   auto state_receiver = builder.AddSystem<AcrobotStateReceiver>();
   builder.Connect(state_sub->get_output_port(0),
                   state_receiver->get_input_port(0));
 
-  // command sender
+  // Create command sender.
   auto command_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_acrobot_u>(channel_u, &lcm));
   auto command_sender = builder.AddSystem<AcrobotCommandSender>();
@@ -58,7 +58,6 @@ int DoMain() {
 
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
-  // systems::Simulator<double> simulator(*diagram);
 
   lcm.StartReceiveThread();
 

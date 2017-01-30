@@ -155,13 +155,6 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
     if (u >= ku_upper_bound) u = ku_upper_bound;
     if (u <= ku_lower_bound) u = ku_lower_bound;
 
-    cout << "u_e = " << u_e << ", u_p= " << u_p << ", E~= " << E_tilde
-         << ", "
-            "theta1 = "
-         << x_c(0) << ", theta2=" << x_c(1) << " ,theta1dot = " << x_c(2)
-         << " ,theta2dot=" << x_c(3) << " ,u= " << u << ", cost=" << cost
-         << endl;
-
     output->GetMutableVectorData(0)->SetAtIndex(0, u);
   }
 
@@ -171,7 +164,7 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
       m2_,           // Mass of link 2 (kg).
       l1_,           // Length of link 1 (m).
       lc1_,  // Vertical distance from shoulder joint to center of mass of
-            // link 1 (m).
+             // link 1 (m).
       lc2_,  // Vertical distance from elbox joint to center of mass of link
       g_;    // Gravitational constant (m/s^2).
   Eigen::Matrix4d S_;
