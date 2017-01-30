@@ -37,8 +37,8 @@ printed without any special handling.
 #define SPDLOG_DEBUG_ON 1
 #define SPDLOG_TRACE_ON 1
 #endif
-#include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
+#include <spdlog/spdlog.h>
 #endif
 
 #include "drake/common/drake_copyable.h"
@@ -77,12 +77,14 @@ class logger {
   template <typename... Args>
   void critical(const char* fmt, const Args&... args) {}
 
+  // clang-format off
   template <typename T> void trace(const T&) {}
   template <typename T> void debug(const T&) {}
   template <typename T> void info(const T&) {}
   template <typename T> void warn(const T&) {}
   template <typename T> void error(const T&) {}
   template <typename T> void critical(const T&) {}
+  // clang-format on
 };
 
 }  // namespace logging

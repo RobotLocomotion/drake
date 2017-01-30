@@ -430,7 +430,7 @@ class TrigPoly {
         std::string var = PolyType::IdToVariableName(k_v_pair.first);
         std::string sin = PolyType::IdToVariableName(k_v_pair.second.s);
         std::string cos = PolyType::IdToVariableName(k_v_pair.second.c);
-        os << sin << "=sin(" << var << "), "
+        os << sin << "=sin(" << var << "), "  // BR
            << cos << "=cos(" << var << "), ";
       }
     }

@@ -504,7 +504,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, Expression>::value &&
         std::is_same<typename MatrixR::Scalar, Variable>::value,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs * rhs.template cast<Expression>();
 }
@@ -517,7 +517,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, Variable>::value &&
         std::is_same<typename MatrixR::Scalar, Expression>::value,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs;
 }
@@ -530,7 +530,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, Expression>::value &&
         std::is_same<typename MatrixR::Scalar, double>::value,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
@@ -543,7 +543,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, double>::value &&
         std::is_same<typename MatrixR::Scalar, Expression>::value,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
@@ -556,7 +556,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, Variable>::value &&
         std::is_same<typename MatrixR::Scalar, double>::value,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
@@ -569,7 +569,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, double>::value &&
         std::is_same<typename MatrixR::Scalar, Variable>::value,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime> >::type
+                  MatrixR::ColsAtCompileTime>>::type
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
