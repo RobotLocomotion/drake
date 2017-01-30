@@ -15,4 +15,4 @@ gen_lcm_and_vector_from_proto "driving command" $drake/automotive/driving_comman
 gen_lcm_and_vector "euler floating joint state" x y z roll pitch yaw
 gen_vector_proto "idm planner parameters" $drake/automotive/idm_planner_parameters.named_vector
 gen_lcm_and_vector "simple car state" x y heading velocity
-gen_lcm_and_vector "simple car config" wheelbase track max_abs_steering_angle max_velocity max_acceleration velocity_lookahead_time velocity_kp
+gen_lcm_and_vector_from_proto "simple car config" $drake/automotive/simple_car_config.named_vector
