@@ -39,7 +39,7 @@ void QPControllerSystem::DoCalcOutput(
     err << rs->velocity().transpose() << "\n";
     err << *qp_input << std::endl;
     throw std::runtime_error(
-        "QPControllerSystem: QP cannot solve \n" + err.str());
+        "QPControllerSystem: QP cannot solve\n" + err.str());
   }
 }
 

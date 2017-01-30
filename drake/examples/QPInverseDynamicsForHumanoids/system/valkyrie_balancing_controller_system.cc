@@ -147,3 +147,4 @@ void controller_loop() {
 }  // end namespace drake
 
 int main() { drake::examples::qp_inverse_dynamics::controller_loop(); }
+
