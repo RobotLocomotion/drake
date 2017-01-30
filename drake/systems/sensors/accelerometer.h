@@ -27,25 +27,28 @@ namespace sensors {
 /// frame associated with a RigidBodyPlant.
 ///
 /// The math implemented by this sensor is as follows. Let `v` be the
-/// RigidBodyPlant's velocity state vector, `v_wp` be the linear velocity of
-/// a point `p` in the world frame, and `J_wp` be the Jacobian matrix that
-/// relates `p`'s linear velocity vector to `v`. The equation for `v_Wp` is as
-/// follows:
+/// RigidBodyPlant's generalized velocity state vector, `A` be the
+/// accelerometer's frame, `v_WAo_W` be the linear velocity of the origin of
+/// the accelerometer's frame defined in the world frame,`W`, and `J_WA` be the
+/// Jacobian matrix that relates `v_WAo_W` to `v`. The equation for `v_WAo_A` is
+/// as follows:
 ///
-/// @f[
-/// v_{Wp} = J_{wp} v
-/// @f]
+/// <pre>
+/// v_WAo_W = J_WA v
+/// </pre>
 ///
-/// The linear acceleration of point `p` in the world frame, `a_Wp`, can
-/// be computed by taking the time derivative of `v_Wp`, which is derived as
+/// Let `a_WAo_W` be the linear acceleration of the `Ao` (i.e., the origin of
+/// frame `A`) in the world frame. of point `p` in the world frame, `a_Wp`, can
+/// be computed by taking the time derivative of `v_WAo_A`, which is derived as
 /// follows using the chain rule:
 ///
-/// @f[
-/// a_{Wp} = J_{wp} \dot{v} + \dot{J}_{wp} v
-/// @f]
+/// <pre>
+/// a_WAo_W = J_WA v_dot + J_WA_dot v
+/// </pre>
 ///
-/// The acceleration vector `a_Wp` is then transformed into the sensor's frame
-/// and outputted optionally including the effects of gravity.
+/// The acceleration vector `a_WAo_W` is then transformed into the
+/// accelerometer's frame and outputted optionally including the effects of
+/// gravity.
 ///
 /// <B>%System Input Ports:</B>
 ///
@@ -72,7 +75,7 @@ class Accelerometer : public systems::LeafSystem<double> {
  public:
   /// This accelerometer measures linear acceleration along 3 axes within its
   /// frame: X, Y, and Z.
-  static constexpr int kNumMeasurements{3};
+  static constexpr int kNumDimensions{3};
 
   /// A constructor that initializes an Accelerometer.
   ///
@@ -143,14 +146,15 @@ class Accelerometer : public systems::LeafSystem<double> {
   const RigidBodyFrame<double>& get_frame() const { return frame_; }
 
   /// Returns a descriptor of the input port that should contain the generalized
-  /// joint angles and rates of the RigidBodyPlant that this sensor is sensing.
+  /// position and velocity vector of the RigidBodyPlant that this sensor is
+  /// sensing.
   const InputPortDescriptor<double>& get_plant_state_input_port() const {
     return System<double>::get_input_port(plant_state_input_port_index_);
   }
 
   /// Returns a descriptor of the input port that should contain the derivative
-  /// of the generalized joint angles and rates of the RigidBodyPlant that this
-  /// sensor is sensing.
+  /// of the generalized position and velocity vector of the RigidBodyPlant that
+  /// this sensor is sensing.
   const InputPortDescriptor<double>& get_plant_state_derivative_input_port()
       const {
     return System<double>::get_input_port(
@@ -180,7 +184,7 @@ class Accelerometer : public systems::LeafSystem<double> {
   const std::string name_;
   const RigidBodyFrame<double> frame_;
   const RigidBodyTree<double>& tree_;
-  const bool include_gravity_{};
+  const bool include_gravity_{true};
 
   int plant_state_input_port_index_{};
   int plant_state_derivative_input_port_index_{};
