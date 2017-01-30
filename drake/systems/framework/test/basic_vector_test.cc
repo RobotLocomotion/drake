@@ -122,6 +122,34 @@ GTEST_TEST(BasicVectorTest, InfNorm) {
   EXPECT_EQ(vec.NormInf(), 4);
 }
 
+// Tests the infinity norm for an autodiff type.
+GTEST_TEST(BasicVectorTest, InfNormAutodiff) {
+  // Set up the device under test ("dut").
+  AutoDiffXd element0;
+  element0.value() = -11.5;
+  element0.derivatives() = Eigen::Vector2d(1.5, -2.5);
+  AutoDiffXd element1;
+  element1.value() = 22.5;
+  element1.derivatives() = Eigen::Vector2d(-3.5, 4.5);
+  auto dut = BasicVector<AutoDiffXd>::Make({element0, element1});
+
+  // The element1 has the max absolute value of the AutoDiffScalar's scalar.
+  // It is positive, so the sign of its derivatives remains unchanged.
+  AutoDiffXd expected_norminf;
+  expected_norminf.value() = 22.5;
+  expected_norminf.derivatives() = Eigen::Vector2d(-3.5, 4.5);
+  EXPECT_EQ(dut->NormInf().value(), expected_norminf.value());
+  EXPECT_EQ(dut->NormInf().derivatives(), expected_norminf.derivatives());
+
+  // The element0 has the max absolute value of the AutoDiffScalar's scalar.
+  // It is negative, so the sign of its derivatives gets flipped.
+  dut->GetAtIndex(0).value() = -33.5;
+  expected_norminf.value() = 33.5;
+  expected_norminf.derivatives() = Eigen::Vector2d(-1.5, 2.5);
+  EXPECT_EQ(dut->NormInf().value(), expected_norminf.value());
+  EXPECT_EQ(dut->NormInf().derivatives(), expected_norminf.derivatives());
+}
+
 // Tests all += * operations for BasicVector.
 GTEST_TEST(BasicVectorTest, PlusEqScaled) {
   BasicVector<double> ogvec(2), vec1(2), vec2(2), vec3(2), vec4(2), vec5(2);
