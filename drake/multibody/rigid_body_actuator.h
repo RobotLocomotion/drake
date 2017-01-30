@@ -36,6 +36,14 @@ class RigidBodyActuator {
       double effort_limit_min = -std::numeric_limits<double>::infinity(),
       double effort_limit_max = std::numeric_limits<double>::infinity());
 
+  /**
+   * Compares this %RigidBodyActuator with a clone. Since this method is
+   * intended to compare a clone, an *exact* match is performed. This method
+   * will only return `true` if the provided `other` %RigidBodyActuator is
+   * exactly the same as this %RigidBodyActuator.
+   */
+  bool CompareToClone(const RigidBodyActuator& other) const;
+
   const std::string name_;
   const RigidBody<double>* const body_;
   const double reduction_;

@@ -182,6 +182,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "rigid_body_tree_clone_test",
+    srcs = ["test/rigid_body_tree/rigid_body_tree_clone_test.cc"],
+    data = [
+        ":test_models",
+        "//drake/automotive:models",
+        "//drake/examples/Atlas:models",
+        "//drake/examples/Valkyrie:models",
+    ],
+    deps = [
+        ":rigid_body_tree",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
     name = "rigid_body_tree_creation_test",
     srcs = ["test/rigid_body_tree/rigid_body_tree_creation_test.cc"],
     data = glob(["test/rigid_body_tree/*.urdf"]),
