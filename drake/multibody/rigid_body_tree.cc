@@ -124,6 +124,298 @@ RigidBodyTree<T>::RigidBodyTree(void)
 template <typename T>
 RigidBodyTree<T>::~RigidBodyTree(void) {}
 
+// For an explanation of why these SWIG preprocessor commands are needed, see
+// the comment immediately above the declaration of RigidBodyTree::Clone() in
+// rigid_body_tree.h.
+#ifndef SWIG
+template <>
+unique_ptr<RigidBodyTree<double>> RigidBodyTree<double>::Clone() const {
+  auto clone = make_unique<RigidBodyTree<double>>();
+
+  clone->joint_limit_min = this->joint_limit_min;
+  clone->joint_limit_max = this->joint_limit_max;
+  clone->a_grav = this->a_grav;
+  clone->B = this->B;
+  clone->num_positions_ = this->num_positions_;
+  clone->num_velocities_ = this->num_velocities_;
+  clone->num_model_instances_ = this->num_model_instances_;
+  clone->initialized_ = this->initialized_;
+
+  // Clones the rigid bodies.
+  for (const auto& body : bodies) {
+    if (body->get_name() != std::string(RigidBodyTreeConstants::kWorldName)) {
+      clone->bodies.push_back(body->Clone());
+    }
+  }
+
+  // Clones the joints and adds them to the cloned RigidBody objects.
+  for (const auto& original_body : bodies) {
+    if (original_body->get_name() ==
+        std::string(RigidBodyTreeConstants::kWorldName)) {
+      continue;
+    }
+
+    const int original_body_index =
+        this->FindBodyIndex(original_body->get_name(),
+                            original_body->get_model_instance_id());
+    const int cloned_body_index =
+        clone->FindBodyIndex(original_body->get_name(),
+                            original_body->get_model_instance_id());
+    DRAKE_DEMAND(original_body_index == cloned_body_index);
+
+    RigidBody<double>* cloned_body = clone->get_mutable_body(cloned_body_index);
+    DRAKE_DEMAND(cloned_body != nullptr);
+
+    const RigidBody<double>* original_body_parent = original_body->get_parent();
+    DRAKE_DEMAND(original_body_parent != nullptr);
+
+    const int original_body_parent_index =
+        this->FindBodyIndex(original_body_parent->get_name(),
+                            original_body_parent->get_model_instance_id());
+    const int cloned_body_parent_index =
+        clone->FindBodyIndex(original_body_parent->get_name(),
+                            original_body_parent->get_model_instance_id());
+    DRAKE_DEMAND(original_body_parent_index == cloned_body_parent_index);
+
+    RigidBody<double>* cloned_body_parent =
+        clone->get_mutable_body(cloned_body_parent_index);
+    DRAKE_DEMAND(cloned_body_parent != nullptr);
+
+    cloned_body->add_joint(cloned_body_parent,
+                           original_body->getJoint().Clone());
+  }
+
+  for (const auto& original_frame : frames) {
+    const RigidBody<double>& original_frame_body =
+        original_frame->get_rigid_body();
+    const int cloned_frame_body_index =
+        clone->FindBodyIndex(original_frame_body.get_name(),
+                            original_frame_body.get_model_instance_id());
+    RigidBody<double>* cloned_frame_body =
+        clone->get_mutable_body(cloned_frame_body_index);
+    DRAKE_DEMAND(cloned_frame_body != nullptr);
+    std::shared_ptr<RigidBodyFrame<double>> cloned_frame =
+        original_frame->Clone(cloned_frame_body);
+    clone->frames.push_back(cloned_frame);
+  }
+
+  // Adds joints to the cloned RigidBodyFrame objects.
+  for (const auto& original_frame : frames) {
+    std::shared_ptr<RigidBodyFrame<double>> cloned_frame =
+        clone->findFrame(original_frame->get_name(),
+                        original_frame->get_model_instance_id());
+    DRAKE_DEMAND(cloned_frame != nullptr);
+    const RigidBody<double>& original_frame_body =
+        original_frame->get_rigid_body();
+    const int cloned_frame_body_index =
+        clone->FindBodyIndex(original_frame_body.get_name(),
+                            original_frame_body.get_model_instance_id());
+    RigidBody<double>* cloned_frame_body =
+        clone->get_mutable_body(cloned_frame_body_index);
+    DRAKE_DEMAND(cloned_frame_body != nullptr);
+    cloned_frame->set_rigid_body(cloned_frame_body);
+  }
+
+  for (const auto& actuator : actuators) {
+    RigidBody<double>* cloned_body =
+        clone->FindBody(actuator.body_->get_name(), "" /* model_name */,
+            actuator.body_->get_model_instance_id());
+    DRAKE_DEMAND(cloned_body != nullptr);
+    clone->actuators.emplace_back(
+        actuator.name_, cloned_body, actuator.reduction_,
+        actuator.effort_limit_min_, actuator.effort_limit_max_);
+  }
+
+  for (const auto& loop : loops) {
+    std::shared_ptr<RigidBodyFrame<double>> frame_a =
+        clone->findFrame(loop.frameA_->get_name(),
+            loop.frameA_->get_model_instance_id());
+    std::shared_ptr<RigidBodyFrame<double>> frame_b =
+        clone->findFrame(loop.frameB_->get_name(),
+            loop.frameB_->get_model_instance_id());
+    clone->loops.emplace_back(frame_a, frame_b, loop.axis_);
+  }
+
+  return clone;
+}
+#endif
+
+template<>
+bool RigidBodyTree<double>::CompareToClone(const RigidBodyTree<double>& other)
+    const {
+  if (this->get_num_model_instances() != other.get_num_model_instances()) {
+    drake::log()->debug(
+        "RigidBodyTree::CompareToClone(): num model instances mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        this->get_num_model_instances(),
+        other.get_num_model_instances());
+    return false;
+  }
+  if (this->get_num_bodies() != other.get_num_bodies()) {
+    drake::log()->debug(
+        "RigidBodyTree::CompareToClone(): num bodies mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        this->get_num_bodies(),
+        other.get_num_bodies());
+    return false;
+  }
+  if (this->get_num_frames() != other.get_num_frames()) {
+    drake::log()->debug(
+        "RigidBodyTree::CompareToClone(): num bodies mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        this->get_num_frames(),
+        other.get_num_frames());
+    return false;
+  }
+  if (this->get_num_positions() != other.get_num_positions()) {
+    drake::log()->debug(
+        "RigidBodyTree::CompareToClone(): num positions mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        this->get_num_positions(),
+        other.get_num_positions());
+    return false;
+  }
+  if (this->get_num_velocities() != other.get_num_velocities()) {
+    drake::log()->debug(
+        "RigidBodyTree::CompareToClone(): num velocities mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        this->get_num_velocities(),
+        other.get_num_velocities());
+    return false;
+  }
+  if (this->get_num_actuators() != other.get_num_actuators()) {
+    drake::log()->debug(
+        "RigidBodyTree::CompareToClone(): num velocities mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        this->get_num_actuators(),
+        other.get_num_actuators());
+    return false;
+  }
+  for (int i = 0; i < this->get_num_bodies(); ++i) {
+    if (!this->bodies.at(i)->CompareToClone(*other.bodies.at(i))) {
+      drake::log()->debug(
+          "RigidBodyTree::CompareToClone(): bodies mismatch at index {}.", i);
+      return false;
+    }
+  }
+  for (int i = 0; i < this->get_num_frames(); ++i) {
+    if (!this->frames.at(i)->CompareToClone(*other.frames.at(i))) {
+      drake::log()->debug(
+          "RigidBodyTree::CompareToClone(): frames mismatch at index {}.", i);
+      return false;
+    }
+  }
+  for (int i = 0; i < this->get_num_actuators(); ++i) {
+    const RigidBodyActuator* this_actuator = &actuators.at(i);
+    const RigidBodyActuator* other_actuator = &other.actuators.at(i);
+    if (this_actuator->name_ != other_actuator->name_) {
+      drake::log()->debug(
+          "RigidBodyTree::CompareToClone(): actuators mismatch at index {}. "
+          "Names do not match:\n"
+          "  - this: {}\n"
+          "  - other: {}",
+          i, this_actuator->name_, other_actuator->name_);
+      return false;
+    }
+    if (!this_actuator->body_->CompareToClone(*other_actuator->body_)) {
+      drake::log()->debug(
+          "RigidBodyTree::CompareToClone(): actuator mismatch at index {}. "
+          "Bodies do not match.", i);
+      return false;
+    }
+    if (this_actuator->reduction_ != other_actuator->reduction_) {
+      drake::log()->debug(
+          "RigidBodyTree::CompareToClone(): actuator mismatch at index {}. "
+          "Reductions do not match:\n"
+          "  - this: {}\n"
+          "  - other: {}",
+          i, this_actuator->reduction_, other_actuator->reduction_);
+      return false;
+    }
+    if (this_actuator->effort_limit_min_ != other_actuator->effort_limit_min_) {
+      drake::log()->debug(
+          "RigidBodyTree::CompareToClone(): actuator mismatch at index {}. "
+          "Minimum effort limits do not match:\n"
+          "  - this: {}\n"
+          "  - other: {}",
+          i, this_actuator->effort_limit_min_,
+          other_actuator->effort_limit_min_);
+      return false;
+    }
+    if (this_actuator->effort_limit_max_ != other_actuator->effort_limit_max_) {
+      drake::log()->debug(
+          "RigidBodyTree::CompareToClone(): actuator mismatch at index {}. "
+          "Maximum effort limits do not match:\n"
+          "  - this: {}\n"
+          "  - other: {}",
+          i, this_actuator->effort_limit_max_,
+          other_actuator->effort_limit_max_);
+      return false;
+    }
+  }
+  for (int i = 0; i < static_cast<int>(this->loops.size()); ++i) {
+    const RigidBodyLoop<double>* this_loop = &loops.at(i);
+    const RigidBodyLoop<double>* other_loop = &other.loops.at(i);
+    if (!this_loop->frameA_->CompareToClone(*other_loop->frameA_)) {
+      drake::log()->debug(
+          "RigidBodyTree::CompareToClone(): loop mismatch at index {}. "
+          "FrameAs do not match.", i);
+      return false;
+    }
+    if (!this_loop->frameB_->CompareToClone(*other_loop->frameB_)) {
+      drake::log()->debug(
+          "RigidBodyTree::CompareToClone(): loop mismatch at index {}. "
+          "FrameBs do not match.", i);
+      return false;
+    }
+    if (!this_loop->axis_.isApprox(other_loop->axis_,
+        std::numeric_limits<double>::epsilon())) {
+      drake::log()->debug(
+          "RigidBodyTree::CompareToClone(): loop mismatch at index {}. "
+          "Axes do not match:\n"
+          "  - this: {}\n"
+          "  - other: {}",
+          i, this_loop->axis_.transpose(),
+          other_loop->axis_.transpose());
+      return false;
+    }
+  }
+  if (this->a_grav != other.a_grav) {
+    drake::log()->debug(
+        "RigidBodyTree::CompareToClone(): gravity vector mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        this->a_grav,
+        other.a_grav);
+    return false;
+  }
+  if (this->B != other.B) {
+    drake::log()->debug(
+        "RigidBodyTree::CompareToClone(): B matrix mismatch:\n"
+        "  - this:\n{}\n"
+        "  - other:\n{}",
+        this->B,
+        other.B);
+    return false;
+  }
+  if (this->initialized_ != other.initialized_) {
+    drake::log()->debug(
+        "RigidBodyTree::CompareToClone(): initialized_ mismatch:\n"
+        "  - this:\n{}\n"
+        "  - other:\n{}",
+        this->initialized_,
+        other.initialized_);
+    return false;
+  }
+  return true;
+}
+
 template <typename T>
 bool RigidBodyTree<T>::transformCollisionFrame(
     RigidBody<T>* body, const Eigen::Isometry3d& displace_transform) {
@@ -2760,9 +3052,14 @@ int RigidBodyTree<T>::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
 
 template <typename T>
 const RigidBody<T>& RigidBodyTree<T>::get_body(int body_index) const {
-  DRAKE_DEMAND(body_index >= 0 &&
-      body_index < get_num_bodies());
+  DRAKE_DEMAND(body_index >= 0 && body_index < get_num_bodies());
   return *bodies[body_index].get();
+}
+
+template <typename T>
+RigidBody<T>* RigidBodyTree<T>::get_mutable_body(int body_index) {
+  DRAKE_DEMAND(body_index >= 0 && body_index < get_num_bodies());
+  return bodies[body_index].get();
 }
 
 template <typename T>
@@ -2774,6 +3071,11 @@ int RigidBodyTree<T>::get_num_bodies() const {
 template <typename T>
 int RigidBodyTree<T>::get_number_of_bodies() const {
   return get_num_bodies();
+}
+
+template <typename T>
+int RigidBodyTree<T>::get_num_frames() const {
+  return static_cast<int>(frames.size());
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
