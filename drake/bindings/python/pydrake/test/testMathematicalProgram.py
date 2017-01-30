@@ -10,7 +10,6 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_program_construction(self):
         prog = mathematicalprogram.MathematicalProgram()
         vars = prog.NewContinuousVariables(5, "x")
-        print(vars)
 
     def test_mixed_integer_optimization(self):
         prog = mathematicalprogram.MathematicalProgram()
@@ -21,11 +20,11 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearConstraint(a, -np.inf, 4, x)
         a2 = np.array([1.0, 1.0])
         prog.AddLinearConstraint(a2, 1, np.inf, x[:2])
-        x_expected = np.array([1.0, 0.0, 1.0])
         result = prog.Solve()
         self.assertEqual(result, mathematicalprogram.SolutionResult.kSolutionFound)
 
         # Test that we got the right solution for all x
+        x_expected = np.array([1.0, 0.0, 1.0])
         self.assertTrue(np.all(np.isclose(prog.GetSolution(x), x_expected)))
 
         # Also test by asking for the value of each element of x
