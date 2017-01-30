@@ -70,7 +70,7 @@
  * taken in the B frame, so this is *not* the acceleration of Bo in P. That
  * acceleration is given by `a_PB_B = vdot_PB_B + ω_PB_B × v_PB_B` (still in B).
  * Re-expressing `a_PB_B` in P provides the configuration second derivative
- * `a_PB_P = d²_P/dt² p_PB_P = q_PB*a_PB_B`.
+ * `a_PB_P = d²_P/dt² p_PB_P = R_PB*a_PB_B`.
  */
 class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
  public:
@@ -187,8 +187,8 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     const auto& ez = quat[3];
 
     // Assume that the quaternion orientation (e) gives a transformation matrix
-    // that rotates vectors from some frame B to some frame N. The upper right
-    // hand block of the transformation matrix represents
+    // that re-expresses vectors from some frame B to some frame N. The upper
+    // right hand block of the transformation matrix represents
     // the 2 L part of the relationship ω = 2 L de/dt, where
     // e = [ ew ex ey ez ] are the quaternion values and ω is an angular
     // velocity given in frame B. The relationship ω = 2 L de/dt and the
@@ -270,10 +270,10 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     const auto& ez = quat[3];
 
     // Assume that the quaternion orientation (e) gives a transformation matrix
-    // that rotates vectors from some frame B to some frame N. The upper right
-    // hand block of the tranfsormation matrix corresponds to the transpose of
-    // the "L" matrix used in qdot2v(). Specifically, this matrix represents
-    // the 1/2 Lᵀ part of the relationship de/dt = 1/2 Lᵀω, where
+    // that re-expresses vectors from some frame B to some frame N. The upper
+    // right hand block of the tranfsormation matrix corresponds to the
+    // transpose of the "L" matrix used in qdot2v(). Specifically, this matrix
+    // represents the 1/2 Lᵀ part of the relationship de/dt = 1/2 Lᵀω, where
     // e = [ ew ex ey ez ] are the quaternion values and ω is an angular
     // velocity given in frame B. The relationship de/dt = 1/2 Lᵀω and the
     // matrix L was taken from:
@@ -287,7 +287,7 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     v_to_qdot.template block<4, 3>(3, 0) *= 0.5;
 
     // Given the arbitrary frames B and N described above, the next three
-    // columns rotate linear velocities from frame B to frame N.
+    // columns re-express linear velocities from frame B to frame N.
     v_to_qdot.template block<3, 3>(0, 3) = drake::math::quat2rotmat(quat);
     v_to_qdot.template block<4, 3>(3, 3).setZero();
   }
