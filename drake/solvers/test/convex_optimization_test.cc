@@ -190,6 +190,47 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
       CompareMatrices(x_value, x_expected, 1e-10, MatrixCompareType::absolute));
 }
 
+// Test a simple linear programming problem
+// Adapt from http://people.brunel.ac.uk/~mastjjb/jeb/or/morelp.html
+// min 4x0 + 5x1 + 6x2
+// s.t.
+//     x0 + x1 >= 11
+//     x0 - x1 <= 5
+//     x2 - x0 - x1 = 0
+//     7x0 >= 35 - 12x1
+//     x0 >= 0 x1 >= 0 x2 >= 0
+// The optimal solution is at (8, 3, 11)
+//
+// This test is added to show how to use AddLinearConstraint function which
+// takes a symbolic::Formula. Note that we use this function to create
+// LinearConstraint, LinearEqualityConstraint, and BoundingBoxConstraint.
+void TestLinearProgram3(const MathematicalProgramSolverInterface& solver) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+
+  // Add cost function.
+  prog.AddLinearCost(4 * x(0) + 5 * x(1) + 6 * x(2));
+
+  // Add constraints.
+  prog.AddLinearConstraint(x(0) + x(1) >= 11);
+  prog.AddLinearConstraint(x(0) - x(1) <= 5);
+  prog.AddLinearConstraint(x(2) - x(0) - x(1) == 0);
+  prog.AddLinearConstraint(7 * x(0) >= 35 - 12 * x(1));
+  prog.AddLinearConstraint(+x(0) >= 0);
+  prog.AddLinearConstraint(+x(1) >= 0);
+  prog.AddLinearConstraint(+x(2) >= 0);
+
+  if (solver.SolverName() == "SNOPT") {
+    prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
+  }
+  RunSolver(&prog, solver);
+
+  Eigen::Vector3d x_expected(8, 3, 11);
+  const auto& x_value = prog.GetSolution(x);
+  EXPECT_TRUE(
+      CompareMatrices(x_value, x_expected, 1e-6, MatrixCompareType::absolute));
+}
+
 /////////////////////////////////////////
 /////////// Quadratic Program ///////////
 /////////////////////////////////////////
@@ -945,6 +986,14 @@ GTEST_TEST(TestConvexOptimization, TestLinearProgram2) {
   GetLinearProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     TestLinearProgram2(*solver);
+  }
+}
+
+GTEST_TEST(TestConvexOptimization, TestLinearProgram3) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+  GetLinearProgramSolvers(&solvers);
+  for (const auto& solver : solvers) {
+    TestLinearProgram3(*solver);
   }
 }
 
