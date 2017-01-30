@@ -70,10 +70,12 @@ drake_cc_library(
     srcs = [
         "test/accelerometer_test/accelerometer_example_diagram.cc",
         "test/accelerometer_test/accelerometer_test_logger.cc",
+        "test/accelerometer_test/accelerometer_xdot_filter.cc",
     ],
     hdrs = [
         "test/accelerometer_test/accelerometer_example_diagram.h",
         "test/accelerometer_test/accelerometer_test_logger.h",
+        "test/accelerometer_test/accelerometer_xdot_filter.h",
     ],
     data = [
         "//drake/examples/Pendulum:models",
