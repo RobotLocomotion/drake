@@ -254,6 +254,21 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
     for (int i = 0; i < q_.size(); ++i) q_[i] = 0.2 * i;
     for (int i = 0; i < v_.size(); ++i) v_[i] = -0.2 * i;
 
+    // Normalize quaternion so that spatial transformations to world frame
+    // using spatial isometries operate correctly- this is necessary for the
+    // method TestSpatialVelocityJacobian() to provide a matching result.
+    // TODO(amcastro-tri): Remove this block of code once Issue #4942 has been
+    // resolved.
+    std::vector<int> base_body_indices = robot_->FindBaseBodies();
+    EXPECT_EQ(base_body_indices.size(), 1);
+    const int base_index = base_body_indices.front();
+    const RigidBody<double>& base_body = robot_->get_body(base_index);
+    const int quat_offset = 3;
+    const int quat_size = 4;
+    auto q_quat = q_.middleRows(base_body.get_position_start_index()+
+                                quat_offset, quat_size);
+    q_quat /= q_quat.norm();
+
     cache_->initialize(q_, v_);
     robot_->doKinematics(*cache_, true);
 

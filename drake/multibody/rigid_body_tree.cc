@@ -1482,6 +1482,41 @@ Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree<T>::centerOfMass(
 }
 
 template <typename T>
+VectorX<T> RigidBodyTree<T>::transformVelocityToQDot(
+    const KinematicsCache<T>& cache,
+    const VectorX<T>& v) {
+  VectorX<T> qdot(cache.get_num_positions());
+  int qdot_start = 0;
+  int v_start = 0;
+  for (int body_id = 0; body_id < cache.get_num_cache_elements(); ++body_id) {
+    const auto& element = cache.get_element(body_id);
+    qdot.segment(qdot_start, element.get_num_positions()).noalias() =
+        element.v_to_qdot * v.segment(v_start, element.get_num_velocities());
+    qdot_start += element.get_num_positions();
+    v_start += element.get_num_velocities();
+  }
+  return qdot;
+}
+
+template <typename T>
+VectorX<T> RigidBodyTree<T>::transformQDotToVelocity(
+    const KinematicsCache<T>& cache,
+    const VectorX<T>& qdot) {
+  VectorX<T> v(cache.get_num_velocities());
+  int qdot_start = 0;
+  int v_start = 0;
+  for (int body_id = 0; body_id < cache.get_num_cache_elements(); ++body_id) {
+    const auto& element = cache.get_element(body_id);
+    v.segment(v_start, element.get_num_velocities()).noalias() =
+        element.qdot_to_v *
+            qdot.segment(qdot_start, element.get_num_positions());
+    qdot_start += element.get_num_positions();
+    v_start += element.get_num_velocities();
+  }
+  return v;
+}
+
+template <typename T>
 template <typename Derived>
 MatrixX<typename Derived::Scalar>
 RigidBodyTree<T>::transformVelocityMappingToQDotMapping(
@@ -1496,8 +1531,8 @@ RigidBodyTree<T>::transformVelocityMappingToQDotMapping(
   for (int body_id = 0; body_id < cache.get_num_cache_elements(); ++body_id) {
     const auto& element = cache.get_element(body_id);
     Ap.middleCols(Ap_col_start, element.get_num_positions()).noalias() =
-        Av.middleCols(Av_col_start, element.get_num_velocities()) *
-            element.qdot_to_v;
+            Av.middleCols(Av_col_start, element.get_num_velocities()) *
+                element.qdot_to_v;
     Ap_col_start += element.get_num_positions();
     Av_col_start += element.get_num_velocities();
   }
