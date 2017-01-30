@@ -1,7 +1,7 @@
 function runDirtranManip
 
 options.with_weight = true;
-options.with_shelf = true;
+options.with_shelf_and_boxes = true;
 r = KukaArm(options);
 
 nx = r.getNumStates;
@@ -10,22 +10,21 @@ nu = r.getNumInputs;
 
 v=r.constructVisualizer;
 
-
 q0 = [0;-0.683;0;1.77;0;0.88;-1.57];
 x0 = [q0;zeros(nq,1)];
 xG = double(r.resolveConstraints(zeros(nx,1)));
 v.draw(0,x0);
-N = 30;
+N = 40;
 tf0 = 3.0;
 
 traj_init.x = PPTrajectory(foh([0,tf0],[x0,xG]));
 traj_init.u = ConstantTrajectory(zeros(nu,1));
   
-options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;
+options.integration_method = DirtranTrajectoryOptimization.FORWARD_EULER;
 traj_opt = DirtranTrajectoryOptimization(r,N,tf0*[(1-0.5) (1+0.5)],options);
 traj_opt = traj_opt.addStateConstraint(ConstantConstraint(x0),1);
 % traj_opt = traj_opt.addStateConstraint(ConstantConstraint(xG),N);
-% traj_opt = traj_opt.addRunningCost(@cost,2);
+traj_opt = traj_opt.addRunningCost(@cost);
 traj_opt = traj_opt.addFinalCost(@finalCost);
 % traj_opt = addTrajectoryDisplayFunction(traj_opt,@displayStateTrajectory);
 
@@ -34,20 +33,32 @@ xmin = [jlmin;-inf(nq,1)];
 xmax = [jlmax;inf(nq,1)];
 traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(repmat(xmin,N,1),repmat(xmax,N,1)),traj_opt.x_inds);
 
-
 tol = [0.03;0.03;0.005;0.01;0.01;0.01];
 
 constraint = FunctionHandleConstraint(-tol,tol,nx,@l_hand_constraint);
 constraint = constraint.setName('left_hand_constraint'); 
 traj_opt = traj_opt.addConstraint(constraint, {traj_opt.x_inds(:,N)});
 
-for i=1:N-1
-  constraint = FunctionHandleConstraint(0,inf,nx,@l_hand_shelf_constraint);
+traj_opt = traj_opt.setSolverOptions('snopt','majoroptimalitytolerance',1e-3);
+traj_opt = traj_opt.setSolverOptions('snopt','minoroptimalitytolerance',1e-4);
+traj_opt = traj_opt.setSolverOptions('snopt','majorfeasibilitytolerance',1e-3);
+traj_opt = traj_opt.setSolverOptions('snopt','minorfeasibilitytolerance',1e-4);
+traj_opt = traj_opt.setSolverOptions('snopt','iterationslimit',1000000);
+
+tic;
+[xtraj,utraj,z,F,info,infeasible] = traj_opt.solveTraj(tf0,traj_init);
+toc
+
+v.playback(xtraj,struct('slider','true'))
+
+for i=2:N-1
+  constraint = FunctionHandleConstraint(zeros(5,1),inf*ones(5,1),nx,@l_hand_shelf_constraint);
   constraint = constraint.setName(sprintf('l_hand_shelf_constraint_%d',i));
   traj_opt = traj_opt.addConstraint(constraint, {traj_opt.x_inds(:,i)});
 end
 
-
+traj_init.x = xtraj;
+traj_init.u = utraj;
 tic;
 [xtraj,utraj,z,F,info,infeasible] = traj_opt.solveTraj(tf0,traj_init);
 toc
@@ -56,8 +67,6 @@ x = z(traj_opt.x_inds);
 u = z(traj_opt.u_inds);
 
 v.playback(xtraj,struct('slider','true'))
-
-
 
 Q = diag([100*ones(nq,1);10*ones(nq,1)]);
 R = 0.01*eye(nu);
@@ -90,8 +99,8 @@ keyboard
   end
 
   function [g,dg,ddg] = cost(h,x,u)
-    Q = diag([zeros(nq,1);1e-6*ones(nq,1)]);
-    R = 0.0*eye(nu);
+    Q = diag([zeros(nq,1);1*ones(nq,1)]);
+    R = 0.001*eye(nu);
 
     g = (x-xG)'*Q*(x-xG) + u'*R*u;
     dg = [0, 2*(x'*Q -xG'*Q), 2*u'*R];
@@ -99,7 +108,7 @@ keyboard
   end
 
   function [g,dg,ddg] = finalCost(T,x)
-    Q = diag([zeros(nq,1);ones(nq,1)]);
+    Q = diag([zeros(nq,1);100*ones(nq,1)]);
     
     g = (x-xG)'*Q*(x-xG);
     dg = [0, 2*(x'*Q -xG'*Q)];
@@ -121,7 +130,6 @@ keyboard
     q = x(1:nq);
     kinsol = doKinematics(r, q);
     [phi,~,~,~,~,~,~,~,J] = r.contactConstraints(kinsol);
-   
     f = phi;
     df = [J,zeros(length(f),nq)];
   end
