@@ -19,28 +19,32 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
+// TODO(liang.fok): xdot is coming from LCM and must be wired separately.
+// Once RigidBodyPlant is able to output xdot, update this accelerometer to
+// use it. See #4105 and #2890.
+
 /// A simulated ideal accelerometer that measures the linear acceleration of a
 /// frame associated with a RigidBodyPlant.
 ///
-/// The math implemented by this sensor is as follows. Let `V` be the
-/// RigidBodyPlant's velocity state vector, `V_wp` be the linear velocity of
+/// The math implemented by this sensor is as follows. Let `v` be the
+/// RigidBodyPlant's velocity state vector, `v_wp` be the linear velocity of
 /// a point `p` in the world frame, and `J_wp` be the Jacobian matrix that
-/// relates `p`'s linear velocity vector to `V`. The equation for `V_wp` is as
+/// relates `p`'s linear velocity vector to `v`. The equation for `v_Wp` is as
 /// follows:
 ///
 /// @f[
-/// V_{wp} = J_{wp} V
+/// v_{Wp} = J_{wp} v
 /// @f]
 ///
-/// The linear acceleration of point `p` in the world frame, `A_wp`, can
-/// be computed by taking the time derivative of `V_wp`, which is derived as
+/// The linear acceleration of point `p` in the world frame, `a_Wp`, can
+/// be computed by taking the time derivative of `v_Wp`, which is derived as
 /// follows using the chain rule:
 ///
 /// @f[
-/// A_{wp} = J_{wp} \dot{V} + \dot{J}_{wp} V
+/// a_{Wp} = J_{wp} \dot{v} + \dot{J}_{wp} v
 /// @f]
 ///
-/// The acceleration vector `A_wp` is then transformed into the sensor's frame
+/// The acceleration vector `a_Wp` is then transformed into the sensor's frame
 /// and outputted optionally including the effects of gravity.
 ///
 /// <B>%System Input Ports:</B>
@@ -78,7 +82,7 @@ class Accelerometer : public systems::LeafSystem<double> {
   /// is the frame in which this sensor's output is given. A copy of this frame
   /// is stored as a class member variable.
   ///
-  /// @param[in] tree The RigidBodyTree that belongs to the RigidBodyPlatn being
+  /// @param[in] tree The RigidBodyTree that belongs to the RigidBodyPlant being
   /// sensed by this sensor. This should be a reference to the same
   /// RigidBodyTree that is being used by the RigidBodyPlant whose outputs are
   /// fed into this sensor. This parameter is aliased by a class member variable
@@ -104,8 +108,7 @@ class Accelerometer : public systems::LeafSystem<double> {
   ///
   /// @param[in] name The name of the sensor. This can be any value.
   ///
-  /// @param[in] frame The frame to which the Accelerometer is attached. This
-  /// must be a frame within the provided plant.
+  /// @param[in] frame The frame to which the Accelerometer is attached.
   ///
   /// @param[in] plant The plant that the newly instantiated Accelerometer must
   /// sense. The provided plant must be in the provided builder.
@@ -124,6 +127,9 @@ class Accelerometer : public systems::LeafSystem<double> {
       bool include_gravity,
       DiagramBuilder<double>* builder);
 
+  /// Retrusn whether gravity is included in this sensor's measurements.
+  bool get_include_gravity() const { return include_gravity_; }
+
   /// Returns the name of this sensor. The name can be any user-specified value.
   const std::string& get_name() const { return name_; }
 
@@ -137,15 +143,14 @@ class Accelerometer : public systems::LeafSystem<double> {
   const RigidBodyFrame<double>& get_frame() const { return frame_; }
 
   /// Returns a descriptor of the input port that should contain the generalized
-  /// (i.e., linear and rotational) position and velocity state of the
-  /// RigidBodyPlant that this sensor is sensing.
+  /// joint angles and rates of the RigidBodyPlant that this sensor is sensing.
   const InputPortDescriptor<double>& get_plant_state_input_port() const {
     return System<double>::get_input_port(plant_state_input_port_index_);
   }
 
   /// Returns a descriptor of the input port that should contain the derivative
-  /// of the generalized (i.e., linear and rotational) position and velocity
-  /// state of the RigidBodyTree DOFs.
+  /// of the generalized joint angles and rates of the RigidBodyPlant that this
+  /// sensor is sensing.
   const InputPortDescriptor<double>& get_plant_state_derivative_input_port()
       const {
     return System<double>::get_input_port(
