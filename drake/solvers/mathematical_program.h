@@ -20,6 +20,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_formula.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
@@ -334,8 +335,7 @@ class MathematicalProgram {
    * The name of the variable is only used for the user for understand.
    */
   MatrixXDecisionVariable NewContinuousVariables(
-      size_t rows, size_t cols,
-      const std::vector<std::string>& names);
+      size_t rows, size_t cols, const std::vector<std::string>& names);
 
   /**
    * Adds continuous variables to this MathematicalProgram, with default name
@@ -344,8 +344,7 @@ class MathematicalProgram {
    * @see NewContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  MatrixXDecisionVariable NewContinuousVariables(size_t rows,
-                                                 size_t cols,
+  MatrixXDecisionVariable NewContinuousVariables(size_t rows, size_t cols,
                                                  const std::string& name = "X");
 
   /// Adds continuous variables to this MathematicalProgram.
@@ -505,7 +504,7 @@ class MathematicalProgram {
   template <int rows, int cols>
   MatrixDecisionVariable<rows, cols> NewBinaryVariables(
       const std::string& name = "b") {
-    std::array<std::string, rows*cols> names;
+    std::array<std::string, rows * cols> names;
     int count = 0;
     for (int j = 0; j < cols; ++j) {
       for (int i = 0; i < rows; ++i) {
@@ -1125,6 +1124,27 @@ class MathematicalProgram {
       const Eigen::Ref<const drake::VectorX<symbolic::Expression>>& v,
       const Eigen::Ref<const Eigen::VectorXd>& lb,
       const Eigen::Ref<const Eigen::VectorXd>& ub);
+
+  /**
+   * Add a linear constraint represented by a symbolic formula to the
+   * program. The input formula @p f can be of the following forms:
+   *
+   *  1. e1  <=  e2 , which is 0 <= e2 - e1 <= ∞
+   *  2. e1  >=  e2 , which is 0 <= e1 - e2 <= ∞
+   *  3. e1  ==  e2
+   *
+   * Note that first two cases might return an object of
+   * Binding<BoundingBoxConstraint> depending on @p f. Also the third case
+   * returns an object of Binding<LinearEqualityConstraint>.
+   *
+   * It throws an exception if
+   *  1. @p f is not matched with one of the above patterns. Especially, strict
+   *     inequalities (<, >) are not allowed.
+   *  2. @p f includes a non-linear expression.
+   *  3. @p f is either a trivial constraint such as "1 <= 2" or an
+   *     unsatisfiable constraint such as "2 <= 1".
+   */
+  Binding<LinearConstraint> AddLinearConstraint(const symbolic::Formula& f);
 
   /**
    * Adds linear equality constraints referencing potentially a
