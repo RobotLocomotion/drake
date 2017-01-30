@@ -36,7 +36,7 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
     this->DeclareOutputPort(systems::kVectorValued,
                             acrobot_.get_input_port(0).size());
 
-    // create context for linearization
+    // Create context for linearization.
     auto context0 = acrobot_.CreateDefaultContext();
     context0->FixInputPort(0, Vector1d(0));
 
@@ -118,7 +118,7 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
     T a3 = H_inverse(1, 1), a2 = H_inverse(0, 1);
     T u_p = (a2 * C(0) + y) / a3 + C(1);
 
-    // wrapping of theta1 and theta2
+    // Wrapping of theta1 and theta2.
     while (x_c(0) > 2 * M_PI) {
       x_c(0) -= 2 * M_PI;
     }
@@ -149,7 +149,7 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
       u = u_e + u_p;
     }
 
-    // saturation
+    // Saturation.
     const T ku_upper_bound = 20;
     const T ku_lower_bound = -20;
     if (u >= ku_upper_bound) u = ku_upper_bound;
