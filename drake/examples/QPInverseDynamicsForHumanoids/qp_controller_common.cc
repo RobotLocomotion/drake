@@ -1,4 +1,5 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
+
 #include "drake/math/cross_product.h"
 
 namespace drake {
