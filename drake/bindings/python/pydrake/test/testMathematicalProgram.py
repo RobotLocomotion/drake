@@ -26,7 +26,6 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(result, mathematicalprogram.SolutionResult.kSolutionFound)
 
         # Test that we got the right solution for all x
-        print("got", prog.GetSolution(x))
         self.assertTrue(np.all(np.isclose(prog.GetSolution(x), x_expected)))
 
         # Also test by asking for the value of each element of x
