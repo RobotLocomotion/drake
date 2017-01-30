@@ -159,6 +159,11 @@ soft_failure_binary_repository(
     local_path = __workspace_dir__ + "/build/install/bin/drake-visualizer",
 )
 
+load("//tools:gfortran.bzl", "gfortran_repository")
+gfortran_repository(
+    name = "gfortran",
+)
+
 # Python Libraries
 new_http_archive(
     name = "six_archive",
