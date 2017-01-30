@@ -348,7 +348,7 @@ macro(drake_setup_options)
     "Convex/integer optimization solver\; free for academics")
 
   drake_optional_external(IRIS OFF
-    DEPENDS "WITH_MOSEK\;WITH_SWIG_MATLAB"
+    DEPENDS "WITH_MOSEK"
     "fast approximate convex segmentation")
 
   drake_optional_external(MESHCONVERTERS OFF
