@@ -8,6 +8,10 @@ package tools;
 // System Framework data structures.
 message NamedVector {
     repeated NamedVectorElement element = 1;
+
+    // Whether the type should be closed (aka final) (and thus copyable in C++)
+    // or open (and thus only cloneable in C++).
+    bool final = 2;
 }
 
 message NamedVectorElement {
