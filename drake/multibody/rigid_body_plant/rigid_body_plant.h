@@ -410,6 +410,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   VectorX<T> EvaluateActuatorInputs(const Context<T>& context) const;
 
  private:
+#ifdef USE_STRIBECK
   // Computes the friction coefficient based on the relative tangential
   // *speed* of the contact point C relative to B (expressed in B).
   //
@@ -445,7 +446,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
   // range [0, 1] where the f'(0) = f'(1) = 0.
   static T step5(T x);
-
+#endif
   std::unique_ptr<const RigidBodyTree<T>> tree_;
 
   // Some parameters defining the contact.

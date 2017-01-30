@@ -777,12 +777,42 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
   //  as a zero-force contact.
   for (const auto& pair : pairs) {
     if (pair.distance < 0.0) {  // There is contact.
+      // Define contact point: the pair contains points on the *surfaces* of
+      // A and B.  For penetration, these points will *not* be coincident.
+      // We must define a common contact point at which relative velocity is
+      // defined and the force is applied.
+
       int body_a_index = pair.elementA->get_body()->get_body_index();
       int body_b_index = pair.elementB->get_body()->get_body_index();
+      // The point on A's surface (As) in the world frame (W).
+      Vector3<T> p_WAs =
+          kinsol.get_element(body_a_index).transform_to_world * pair.ptA;
+      // The point on B's surface (Bs) in the world frame (W).
+      Vector3<T> p_WBs =
+          kinsol.get_element(body_b_index).transform_to_world * pair.ptB;
+      // The point of contact in the world frame.
+      Vector3<T> p_WC = (p_WAs + p_WBs) * 0.5;
+
+#ifdef USE_STRIBECK
+      // The contact point in A's frame.
+      Vector3<T> p_AAc = kinsol.get_element(body_a_index)
+                             .transform_to_world.inverse(Eigen::Isometry) *
+                         p_WC;
+      // The contact point in B's frame.
+      Vector3<T> p_BBc = kinsol.get_element(body_b_index)
+                             .transform_to_world.inverse(Eigen::Isometry) *
+                         p_WC;
+
+      auto JA = tree_->transformPointsJacobian(kinsol, p_AAc, body_a_index,
+                                               0, false);
+      auto JB = tree_->transformPointsJacobian(kinsol, p_BBc, body_b_index,
+                                               0, false);
+#else
       auto JA = tree_->transformPointsJacobian(kinsol, pair.ptA, body_a_index,
                                                0, false);
       auto JB = tree_->transformPointsJacobian(kinsol, pair.ptB, body_b_index,
                                                0, false);
+#endif
       // This normal points *from* element b *to* element A.
       Vector3<T> this_normal = pair.normal;
 
@@ -820,17 +850,12 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
         double x = -pair.distance;
         double x_dot = -v_BA_C(2);
 
-        std::cout << "Contact\n";
-        std::cout << "\tNormal: " << this_normal.transpose() << "\n";
-        std::cout << "\tRelative velocity: " << v_BA_C.transpose() << "\n";
         double damping = 1.0 + dissipation_ * x_dot;
-        std::cout << "\tdamping: " << damping << "\n";
         // No normal force implies no contact force.  Simply move to the next
         // contact.
         if (damping <= 0) continue;
         Vector3<T> fA;
         fA(2) = penetration_stiffness_ * x * damping;
-        std::cout << "\tNormal force: " << fA(2) << "\n";
         // Friction force
         auto slip_vector = v_BA_C.template head<2>();
         T slip_speed_squared = slip_vector.squaredNorm();
@@ -839,9 +864,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
         const T kNonZeroSqd = T(1e-14 * 1e-14);
         if (slip_speed_squared > kNonZeroSqd) {
           T slip_speed = std::sqrt(slip_speed_squared);
-          std::cout << "\tSlip speed: " << slip_speed << "\n";
           T friction_coefficient = ComputeFrictionCoefficient(slip_speed);
-          std::cout << "\tfric coeff: " << friction_coefficient << "\n";
           fA.template head<2>() = -(friction_coefficient * fA(2) / slip_speed) *
               slip_vector;
         } else {
@@ -871,16 +894,6 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
         // this term needs to be subtracted.
         contact_force += J.transpose() * fA;
         if (contacts != nullptr) {
-          Vector3<T> pt_a_world =
-              kinsol.get_element(pair.elementA->get_body()->get_body_index())
-                  .transform_to_world *
-              pair.ptA;
-          Vector3<T> pt_b_world =
-              kinsol.get_element(pair.elementB->get_body()->get_body_index())
-                  .transform_to_world *
-              pair.ptB;
-          Vector3<T> point = (pt_a_world + pt_b_world) * 0.5;
-
           ContactInfo<T>& contact_info = contacts->AddContact(
               pair.elementA->getId(), pair.elementB->getId());
 
@@ -897,7 +910,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           Vector3<T> force = R_WC * fA;
           Vector3<T> normal = R_WC.template block<3, 1>(0, 2);
 
-          calculator.AddForce(point, normal, force);
+          calculator.AddForce(p_WC, normal, force);
 
           contact_info.set_resultant_force(calculator.ComputeResultant());
           // TODO(SeanCurtis-TRI): As with previous note, this line depends
@@ -911,7 +924,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
   }
   return contact_force;
 }
-
+#ifdef USE_STRIBECK
 template <typename T>
 VectorX<T> RigidBodyPlant<T>::EvaluateActuatorInputs(
     const Context<T>& context) const {
@@ -975,7 +988,7 @@ T RigidBodyPlant<T>::step5(T x){
   const T x3 = x * x * x;
   return x3 * (10 + x * (6 * x - 15)); // 10x³ - 15x⁴ + 6x⁵
 }
-
+#endif
 // Explicitly instantiates on the most common scalar types.
 template class RigidBodyPlant<double>;
 

@@ -15,11 +15,15 @@ namespace drake {
 namespace systems {
 namespace {
 
+#ifdef USE_STRIBECK
+
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using std::make_unique;
 using std::unique_ptr;
+
+typedef Vector6<double> Vector6d;
 
 // Basic infrastructure for setting up and running contact tests.  Creates two
 // spheres with a *fixed* penetration depth.  Variants of this test will
@@ -50,23 +54,19 @@ class ContactFormulaTest : public ::testing::Test {
                           ->get_mutable_continuous_state()
                           ->get_mutable_generalized_velocity();
     ASSERT_EQ(velocities->size(), 12);  // Two quaternion floating joints.
-    Vector3d v_WS2 = get_v_WS2();
+    Vector6d v_WS2 = get_v_WS2();
     VectorXd target_velocities;
     target_velocities.resize(12);
     target_velocities << 0, 0, 0,     // sphere 1 angular velocity
         0, 0, 0,                      // sphere 1 linear velocity
-        0, 0, 0,                      // sphere 2 angular velocity
-        v_WS2[0], v_WS2[1], v_WS2[2]; // sphere 2 linear velocity
+        v_WS2[0], v_WS2[1], v_WS2[2], // sphere 2 angular velocity
+        v_WS2[3], v_WS2[4], v_WS2[5]; // sphere 2 linear velocity
     velocities->SetFromVector(target_velocities);
 
     SetContactParameters();
-#ifdef USE_STRIBECK
     plant_->set_contact_parameters(stiffness_, static_friction_,
                                    dynamic_friction_, transition_speed_,
                                    dissipation_);
-#else
-    plant_->set_contact_parameters(stiffness_, damping_, friction_coeff_);
-#endif
 
     plant_->CalcOutput(*context_.get(), output_.get());
     contacts_ =
@@ -77,16 +77,11 @@ class ContactFormulaTest : public ::testing::Test {
   // parameters.
   // TODO(SeanCurtis-TRI): Modify this as materials come into play.
   virtual void SetContactParameters() {
-#ifdef USE_STRIBECK
     stiffness_ = 10000;
     static_friction_ = 0.7;
     dynamic_friction_ = 0.5;
     transition_speed_ = 0.01;
     dissipation_ = 0.5;
-#else
-    damping_ = 10;
-    friction_coeff_ = 1.0;
-#endif
   }
 
   // Interprets the velocity of sphere 2 as the rate of change of penetration.
@@ -95,7 +90,7 @@ class ContactFormulaTest : public ::testing::Test {
     // of the right-hand sphere, positive values separate the spheres and
     // reflect a *decrease* in penetration.  Thus x_dot must be the negative of
     // this value.
-    return -get_v_WS2()(0);
+    return -get_v_WS2()(3);
   }
 
   // Provides the linear velocity with which the second sphere is moving.
@@ -103,8 +98,10 @@ class ContactFormulaTest : public ::testing::Test {
   // force.  The velocity is v_WS2 (the velocity of sphere 2 w.r.t. the world
   // expressed in the world frame.)  Because sphere 2 is on the right, positive
   // x values *separate* the objects, negative values lead to deeper collision.
-  virtual Vector3d get_v_WS2() {
-    return Vector3d(0, 0, 0);
+  virtual Vector6d get_v_WS2() {
+    Vector6d vec;
+    vec << 0., 0., 0., 0., 0., 0.;
+    return vec;
   }
 
   // Add a sphere with default radius, placed at the given position.
@@ -143,15 +140,10 @@ class ContactFormulaTest : public ::testing::Test {
   // Contact parameter constants.  These should get set by
   // SetContactParameters().
   double stiffness_ = 10000;
-#ifdef USE_STRIBECK
   double static_friction_ = 0.7;
   double dynamic_friction_ = 0.5;
   double transition_speed_ = 0.01;
   double dissipation_ = 0.5;
-#else
-  double damping_ = 10;
-  double friction_coeff_ = 1.0;
-#endif
 
   const double kTolerance = Eigen::NumTraits<double>::dummy_precision();
 };
@@ -169,8 +161,6 @@ TEST_F(ContactFormulaTest, ZeroVelocityCollision) {
   SpatialForce<double> expected_spatial_force;
   // This force should be pushing sphere1 to the left.
   expected_spatial_force << 0, 0, 0, -expected_force_magnitude, 0, 0;
-  std::cout << "No velocity expected; " << expected_spatial_force.transpose()
-            << "\n";
   ASSERT_TRUE(CompareMatrices(resultant.get_spatial_force(),
                               expected_spatial_force, kTolerance,
                               MatrixCompareType::absolute));
@@ -180,8 +170,10 @@ TEST_F(ContactFormulaTest, ZeroVelocityCollision) {
 // engage the dissipation term. The velocity leads to *deeper* penetration.
 class ConvergingContactFormulaTest : public ContactFormulaTest {
  protected:
-  Vector3d get_v_WS2() override {
-    return Vector3d(kNormalVelocity, 0, 0);
+  Vector6d get_v_WS2() override {
+    Vector6d vec;
+    vec << 0., 0., 0., kNormalVelocity, 0., 0.;
+    return vec;
   }
 
   // The speed (m/s) at which they are *converging* (as indicated by negative
@@ -202,8 +194,6 @@ TEST_F(ConvergingContactFormulaTest, ConvergingContactTest) {
   SpatialForce<double> expected_spatial_force;
   // This force should be pushing sphere1 to the left.
   expected_spatial_force << 0, 0, 0, -expected_force_magnitude, 0, 0;
-  std::cout << "Converging expected; " << expected_spatial_force.transpose()
-            << "\n";
   ASSERT_TRUE(CompareMatrices(resultant.get_spatial_force(),
                               expected_spatial_force, kTolerance,
                               MatrixCompareType::absolute));
@@ -213,8 +203,10 @@ TEST_F(ConvergingContactFormulaTest, ConvergingContactTest) {
 // engage the dissipation term. The velocity leads to *shallower* penetration.
 class DivergingContactFormulaTest : public ContactFormulaTest {
  protected:
-  Vector3d get_v_WS2() override {
-    return Vector3d(kNormalVelocity, 0, 0);
+  Vector6d get_v_WS2() override {
+    Vector6d vec;
+    vec << 0., 0., 0., kNormalVelocity, 0., 0.;
+    return vec;
   }
 
   // The speed (m/s) at which they are *separating* (as indicated by positive
@@ -235,8 +227,6 @@ TEST_F(DivergingContactFormulaTest, DivergingContactTest) {
   SpatialForce<double> expected_spatial_force;
   // This force should be pushing to the left.
   expected_spatial_force << 0, 0, 0, -expected_force_magnitude, 0, 0;
-  std::cout << "Diverging expected; " << expected_spatial_force.transpose()
-            << "\n";
   ASSERT_TRUE(CompareMatrices(resultant.get_spatial_force(),
                               expected_spatial_force, kTolerance,
                               MatrixCompareType::absolute));
@@ -248,8 +238,10 @@ TEST_F(DivergingContactFormulaTest, DivergingContactTest) {
 // sucking.
 class SuctionContactFormulaTest : public ContactFormulaTest {
  protected:
-  Vector3d get_v_WS2() override {
-    return Vector3d(kNormalVelocity, 0, 0);
+  Vector6d get_v_WS2() override {
+    Vector6d vec;
+    vec << 0., 0., 0., kNormalVelocity, 0., 0.;
+    return vec;
   }
 
   // The relative velocity of the two contact points in the *normal* direction.
@@ -274,9 +266,10 @@ TEST_F(SuctionContactFormulaTest, SuctionContactTest) {
 // transition slip speed.
 class StictionContactFormulaTest : public ContactFormulaTest {
  protected:
-  Vector3d get_v_WS2() override {
-    // Simply give a component of velocity in the y-direction.
-    return Vector3d(0, kTangentSpeed, 0);
+  Vector6d get_v_WS2() override {
+    Vector6d vec;
+    vec << 0., 0., 0., 0., kTangentSpeed, 0.;
+    return vec;
   }
 
   // Tangent speed *is* the relative speed. By picking a speed that is half of
@@ -304,8 +297,6 @@ TEST_F(StictionContactFormulaTest, StictionContactTest) {
   // component should be pointing up (+y).
   expected_spatial_force << 0, 0, 0, -expected_normal_magnitude,
       expected_tangent_magnitude, 0;
-  std::cout << "Small friction expected; " << expected_spatial_force.transpose()
-            << "\n";
   ASSERT_TRUE(CompareMatrices(resultant.get_spatial_force(),
                               expected_spatial_force, kTolerance,
                               MatrixCompareType::absolute));
@@ -316,9 +307,10 @@ TEST_F(StictionContactFormulaTest, StictionContactTest) {
 // the transition speed.
 class TransitionContactFormulaTest : public ContactFormulaTest {
  protected:
-  Vector3d get_v_WS2() override {
-    // Simply give a component of velocity in the y-direction.
-    return Vector3d(0, kTangentSpeed, 0);
+  Vector6d get_v_WS2() override {
+    Vector6d vec;
+    vec << 0., 0., 0., 0., kTangentSpeed, 0.;
+    return vec;
   }
 
   // Tangent speed *is* the relative speed. Two times the transition speed will
@@ -346,8 +338,6 @@ TEST_F(TransitionContactFormulaTest, TransitionContactTest) {
   // component should be pointing up (+y).
   expected_spatial_force << 0, 0, 0, -expected_normal_magnitude,
       expected_tangent_magnitude, 0;
-  std::cout << "Small friction expected; " << expected_spatial_force.transpose()
-            << "\n";
   ASSERT_TRUE(CompareMatrices(resultant.get_spatial_force(),
                               expected_spatial_force, kTolerance,
                               MatrixCompareType::absolute));
@@ -357,9 +347,10 @@ TEST_F(TransitionContactFormulaTest, TransitionContactTest) {
 // in the sliding regime (i.e., slip speed > 3 * transition speed).
 class SlidingContactFormulaTest : public ContactFormulaTest {
  protected:
-  Vector3d get_v_WS2() override {
-    // Simply give a component of velocity in the y-direction.
-    return Vector3d(0, kTangentSpeed, 0);
+  Vector6d get_v_WS2() override {
+    Vector6d vec;
+    vec << 0., 0., 0., 0., kTangentSpeed, 0.;
+    return vec;
   }
 
   // Tangent speed *is* the relative speed. In the sliding regime, the
@@ -386,13 +377,52 @@ TEST_F(SlidingContactFormulaTest, SlidingContactTest) {
   // component should be pointing up (+y).
   expected_spatial_force << 0, 0, 0, -expected_normal_magnitude,
       expected_tangent_magnitude, 0;
-  std::cout << "Small friction expected; " << expected_spatial_force.transpose()
-            << "\n";
   ASSERT_TRUE(CompareMatrices(resultant.get_spatial_force(),
                               expected_spatial_force, kTolerance,
                               MatrixCompareType::absolute));
 }
 
+// This class confirms that relative velocity due to spin produces the
+// correct frictional force.
+class SlidingSpinContactFormulaTest : public ContactFormulaTest {
+ protected:
+  Vector6d get_v_WS2() override {
+    Vector6d vec;
+    vec << 0., 0., kZAngularSpeed, 0., 0., 0.;
+    return vec;
+  }
+
+  // The contact is at a distance of radius - 1/2 penetration depth. I want
+  // that point to have a *linear* velocity of 5 * transition speed (in the +y
+  // direction). This is the angular velocity that provides it.
+  const double kZAngularSpeed = -0.5 * transition_speed_ / (kRadius - kPenetrationDepth * 0.5);
+};
+
+// Confirms that a slight tangential force (between 1 and 3X the transition
+// speed) produces the correct tangential force.
+TEST_F(SlidingSpinContactFormulaTest, SlidingSpinContactTest) {
+  EXPECT_EQ(contacts_.get_num_contacts(), 1);
+
+  // The normal component is simply the undamped case (zero relative velocity
+  // in the normal direction).
+  double expected_normal_magnitude = kPenetrationDepth * stiffness_;
+  // In the final interval (slip speed > 3 * transition speed) the coefficient
+  // of friction is the dynamic coefficients.
+  double expected_mu = 0.5 * static_friction_;
+  double expected_tangent_magnitude = expected_mu * expected_normal_magnitude;
+  const auto info = contacts_.get_contact_info(0);
+  const auto& resultant = info.get_resultant_force();
+  SpatialForce<double> expected_spatial_force;
+  // The normal component should be pointing to the left (-x) and the tangential
+  // component should be pointing up (+y).
+  expected_spatial_force << 0, 0, 0, -expected_normal_magnitude,
+      expected_tangent_magnitude, 0;
+  ASSERT_TRUE(CompareMatrices(resultant.get_spatial_force(),
+                              expected_spatial_force, kTolerance,
+                              MatrixCompareType::absolute));
+}
+
+#endif  // USE_STRIBECK
 }  // namespace
 }  // namespace systems
 }  // namespace drake
