@@ -34,6 +34,7 @@ cc_library(
     srcs = [
         "axis_angle.cc",
         "quaternion.cc",
+        "random_rotation.cc",
         "roll_pitch_yaw.cc",
         "rotation_matrix.cc",
     ],
@@ -185,6 +186,14 @@ cc_googletest(
     name = "normalize_vector_test",
     deps = [
         ":gradient",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+cc_googletest(
+    name = "rotation_matrix_test",
+    deps = [
+        ":geometric_transform",
         "//drake/common:eigen_matrix_compare",
     ],
 )
