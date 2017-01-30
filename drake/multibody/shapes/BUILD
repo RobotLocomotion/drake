@@ -40,8 +40,8 @@ cc_googletest(
         "test/tri_cube.obj",
     ],
     deps = [
-        "//drake/common:drake_path",
         ":shapes",
+        "//drake/common:drake_path",
     ],
 )
 
