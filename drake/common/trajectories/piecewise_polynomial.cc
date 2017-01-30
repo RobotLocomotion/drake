@@ -166,8 +166,9 @@ operator*=(const PiecewisePolynomial<CoefficientType>& other) {
   if (!segmentTimesEqual(other, kEpsilonTime))
     throw runtime_error(
         "Multiplication not yet implemented when segment times are not equal");
-  for (size_t i = 0; i < polynomials_.size(); i++)
-    polynomials_[i] *= other.polynomials_[i];
+  for (size_t i = 0; i < polynomials_.size(); i++) {
+    polynomials_[i].array() *= other.polynomials_[i].array();
+  }
   return *this;
 }
 
