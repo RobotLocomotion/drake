@@ -1,0 +1,28 @@
+element {
+    name: "wheelbase"
+    doc: "wheelbase"
+}
+element {
+    name: "track"
+    doc: "track"
+}
+element {
+    name: "max_abs_steering_angle"
+    doc: "max_abs_steering_angle"
+}
+element {
+    name: "max_velocity"
+    doc: "max_velocity"
+}
+element {
+    name: "max_acceleration"
+    doc: "max_acceleration"
+}
+element {
+    name: "velocity_lookahead_time"
+    doc: "velocity_lookahead_time"
+}
+element {
+    name: "velocity_kp"
+    doc: "velocity_kp"
+}
