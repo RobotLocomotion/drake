@@ -25,6 +25,16 @@ if(Bullet_FOUND)
       drakeRBM)
 endif()
 
+add_library_with_exports(LIB_NAME drakeRigidBodyTreeCompareToClone SOURCE_FILES
+    rigid_body_tree_compare_to_clone.cc)
+target_link_libraries(drakeRigidBodyTreeCompareToClone
+    drakeRBM)
+
+drake_add_cc_test(NAME rigid_body_tree_clone_test SIZE small)
+target_link_libraries(rigid_body_tree_clone_test
+    drakeMultibodyParsers
+    drakeRigidBodyTreeCompareToClone)
+
 drake_add_cc_test(NAME rigid_body_tree_creation_test SIZE medium)
 target_link_libraries(rigid_body_tree_creation_test
     drakeMultibodyParsers
