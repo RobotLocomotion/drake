@@ -370,6 +370,12 @@ toolchain {
   }
   linking_mode_flags { mode: DYNAMIC }
 
+  # Extra linker flags specific to Drake.
+  # TODO(david-german-tri): This is brittle. Ideally, we would obtain this
+  # linker flag from gfortran itself, but Bazel seems to resist that.
+  # See https://groups.google.com/forum/#!topic/bazel-discuss/tBOYrgAkVyc.
+  linker_flag: "-L/usr/local/Cellar/gcc@5/5.4.0_1/lib/gcc/5/"
+
   # Extra warning flags specific to Drake.
   cxx_flag: "-Werror=inconsistent-missing-override"
   cxx_flag: "-Werror=sign-compare"
