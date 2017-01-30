@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant_that_publishes_xdot.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -9,6 +10,8 @@
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 #include "drake/systems/sensors/accelerometer.h"
 #include "drake/systems/sensors/test/accelerometer_test/accelerometer_test_logger.h"
+#include "drake/systems/sensors/test/accelerometer_test/accelerometer_xdot_filter.h"
+
 
 namespace drake {
 namespace systems {
@@ -32,14 +35,20 @@ namespace sensors {
 ///                 |                        -----------------------
 ///     ------------| x                      | LcmSubscriberSystem |
 ///     |           |                        -----------------------
+///     |           |                                   |
+///     |           |                                   V
+///     |           |                      ---------------------------
+///     |           |                      | AccelerometerXdotFilter |
+///     |           |                      ---------------------------
+///     |           |                                   |
 ///     |           V                                   |
-///     |   -----------------          x_dot            |
-///     |   | Accelerometer | <--------------------------
-///     |   -----------------
-///     |           |
-///     V           V
-/// --------------------
-/// |      Logger      |
+///     |   -----------------       filtered x_dot      |
+///     |   | Accelerometer | <-------------------------|
+///     |   -----------------                           |
+///     |           |                                   |
+///     V           V                                   |
+/// --------------------                                |
+/// |      Logger      | <-------------------------------
 /// --------------------
 /// </pre>
 ///
@@ -59,6 +68,8 @@ namespace sensors {
 class AccelerometerExampleDiagram : public Diagram<double> {
  public:
   explicit AccelerometerExampleDiagram(::drake::lcm::DrakeLcmInterface* lcm);
+
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AccelerometerExampleDiagram);
 
   /// Initializes this diagram.
   ///
@@ -104,6 +115,7 @@ class AccelerometerExampleDiagram : public Diagram<double> {
   int model_instance_id_{};
   std::shared_ptr<RigidBodyFrame<double>> sensor_frame_;
   RigidBodyPlantThatPublishesXdot<double>* plant_{nullptr};
+  AccelerometerXdotFilter* xdot_filter_{nullptr};
   std::unique_ptr<lcm::LcmtDrakeSignalTranslator> translator_;
   lcm::LcmSubscriberSystem* lcm_subscriber_{nullptr};
   Accelerometer* accelerometer_{nullptr};

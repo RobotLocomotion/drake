@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -101,8 +102,7 @@ class Accelerometer : public systems::LeafSystem<double> {
   /// @name Deleted Copy/Move Operations
   /// Accelerometer is neither copyable nor moveable.
   ///@{
-  explicit Accelerometer(const Accelerometer&) = delete;
-  Accelerometer& operator=(const Accelerometer&) = delete;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Accelerometer);
   ///@}
 
   /// Instantiates and attaches an Accelerometer to a RigidBodyPlant. It
