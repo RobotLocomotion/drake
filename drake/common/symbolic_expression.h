@@ -403,7 +403,7 @@ bool is_neg_one(const Expression& e);
 /** Checks if @p e is 2.0. */
 bool is_two(const Expression& e);
 /** Checks if @p e is NaN. */
-bool is_nan(const Expression& e);
+bool isnan(const Expression& e);
 /** Checks if @p e is a variable expression. */
 bool is_variable(const Expression& e);
 /** Checks if @p e is a unary-minus expression. */
