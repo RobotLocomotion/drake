@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <memory>
 
 #include <Eigen/Dense>
@@ -43,6 +44,14 @@ class RigidBodyLoop {
   RigidBodyLoop(std::shared_ptr<RigidBodyFrame<T>> frameA,
                 std::shared_ptr<RigidBodyFrame<T>> frameB,
                 const Eigen::Vector3d& axis);
+
+  /**
+   * Compares this %RigidBodyLoop with a clone. Since this method is intended to
+   * compare a clone, an *exact* match is performed. This method will only
+   * return `true` if the provided `other` %RigidBodyLoop is exactly the same as
+   * this %RigidBodyLoop.
+   */
+  bool CompareToClone(const RigidBodyLoop<double>& other) const;
 
   const std::shared_ptr<RigidBodyFrame<T>> frameA_, frameB_;
   const Eigen::Vector3d axis_;

@@ -113,6 +113,21 @@ class RigidBodyTree {
 
   virtual ~RigidBodyTree();
 
+  // The following preprocessor condition is necessary because wrapping method
+  // Clone() in SWIG causes the following build error to occur:
+  //
+  //     "call to implicitly-deleted copy constructor"
+  //
+  // Unfortunately, adding "%ignore RigidBodyTree<double>::Clone()" to
+  // drake-distro/drake/bindings/swig/rbtree.i does not work.
+#ifndef SWIG
+  /**
+   * Returns a deep clone of this RigidBodyTree<double>. Currently, everything
+   * *except* for collision and visual elements are cloned.
+   */
+  std::unique_ptr<RigidBodyTree<double>> Clone() const;
+#endif
+
   /**
    * Adds a new model instance to this `RigidBodyTree`. The model instance is
    * identified by a unique model instance ID, which is the return value of
@@ -1250,16 +1265,27 @@ class RigidBodyTree {
   /**
    * Returns the body at index @p body_index. Parameter @p body_index must be
    * between zero and the number of bodies in this tree, which can be determined
-   * by calling RigidBodyTree::get_num_bodies(). Note that the body at
-   * index 0 represents the world.
+   * by calling RigidBodyTree::get_num_bodies().
    */
   const RigidBody<T>& get_body(int body_index) const;
+
+  /**
+   * Returns the body at index @p body_index. Parameter @p body_index must be
+   * between zero and the number of bodies in this tree, which can be determined
+   * by calling RigidBodyTree::get_num_bodies().
+   */
+  RigidBody<T>* get_mutable_body(int body_index);
 
   /**
    * Returns the number of bodies in this tree. This includes the one body that
    * represents the world.
    */
   int get_num_bodies() const;
+
+  /**
+   * Returns the number of frames in this tree.
+   */
+  int get_num_frames() const;
 
   DRAKE_DEPRECATED("Please use get_num_bodies().")
   int get_number_of_bodies() const;
@@ -1433,6 +1459,12 @@ class RigidBodyTree {
    * Returns the number of actuators in this %RigidBodyTree.
    */
   int get_num_actuators() const;
+
+  /**
+   * Returns whether this %RigidBodyTree is initialized. It is initialized after
+   * compile() is called.
+   */
+  bool initialized() const { return initialized_; }
 
  public:
   Eigen::VectorXd joint_limit_min;
