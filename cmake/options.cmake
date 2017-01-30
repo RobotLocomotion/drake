@@ -233,7 +233,7 @@ macro(drake_setup_options)
     "Google command-line flags processing library")
 
   drake_system_dependency(
-    PYBIND11 REQUIRES pybind11
+    PYBIND11 OPTIONAL REQUIRES pybind11
     DEPENDS "NOT DISABLE_PYTHON"
     "Python/C++11 interoperability tool")
 
