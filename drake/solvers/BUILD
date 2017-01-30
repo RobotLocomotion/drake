@@ -55,7 +55,7 @@ cc_library(
 # - equality_constrained_qp_solver
 # - linear_system_solver
 # - moby_lcp_solver
-# - IPOPT (on Ubuntu only)
+# - IPOPT
 # - Gurobi (on Ubuntu only)
 
 # Unsupported solvers:
@@ -174,23 +174,15 @@ cc_library(
 
 cc_library(
     name = "ipopt_solver",
-    srcs = select({
-        "//tools:apple": ["no_ipopt.cc"],
-        "//tools:linux": ["ipopt_solver.cc"],
-    }),
+    srcs = ["ipopt_solver.cc"],
     hdrs = ["ipopt_solver.h"],
     linkstatic = 1,
     visibility = ["//visibility:private"],
-    deps = select({
-        "//tools:linux": [
-            "@ipopt//:lib",
-            ":mathematical_program_api",
-            "//drake/math:autodiff",
-        ],
-        "//tools:apple": [
-            ":mathematical_program_api",
-        ],
-    }),
+    deps = [
+        "@ipopt//:lib",
+        ":mathematical_program_api",
+        "//drake/math:autodiff",
+    ],
 )
 
 # === test/ ===
@@ -348,7 +340,5 @@ cc_googletest(
 cpplint(extra_srcs = [
     "gurobi_solver.cc",
     "gurobi_solver.h",
-    "ipopt_solver.cc",
     "no_gurobi.cc",
-    "no_ipopt.cc",
 ])
