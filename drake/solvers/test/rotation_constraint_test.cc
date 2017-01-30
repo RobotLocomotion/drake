@@ -391,7 +391,7 @@ GTEST_TEST(RotationTest, TestMcCormick) {
     // Checks a few cases just outside the L1 ball.  Should be feasible for
     // num_bins=1, but infeasible for num_bins>1.
     R_test = math::YRotation(M_PI_4);
-    R_test(2, 0) -= 0.2;
+    R_test(2, 0) -= 0.1;
     EXPECT_GT(R_test.col(0).lpNorm<1>(), 1.0);
     EXPECT_GT(R_test.row(2).lpNorm<1>(), 1.0);
     if (num_bins == 1)

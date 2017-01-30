@@ -415,7 +415,7 @@ void AddMcCormickVectorConstraints(
             // And the inner product nᵀ * v =
             // n(0) * t + s * (n(1) * cos(α) + n(2) * sin(α))
             // where we define s = sqrt(1 - t²)
-            // Using the property of trigonmetric function, we know that
+            // Using the property of trigonometric function, we know that
             // the minimal of (n(1) * cos(α) + n(2) * sin(α)) is obtained at
             // the boundary of α. Thus we know that the minimal of nᵀ * v is
             // always obtained at one of the vertex pts.col(i).
@@ -526,19 +526,16 @@ void AddMcCormickVectorConstraints(
               prog->AddLinearConstraint(a, -1, sin(theta) + 6, {v2, orthant_c});
 
               // Cross-product constraint: ideally v2 = v.cross(v1).
-              // Since v is within theta of normal, we have that v2 must be
-              // within theta of normal.cross(v1).  To see this, observe that
-              //   v2'*(normal.cross(v1)) = normal'*(v1.cross(v2))
-              //     = normal'*v >= cos(theta).
-              // The vector normal.cross(v1) has a length less than 1, so
-              //   v2'*(normal.cross(v1)/|normal.cross(v1)|) >=
-              //     v2'*(normal.cross(v1)) >= cos(theta)
-              // Thus the angle between the vector v2 and normal.cross(v1) is
-              // less than theta.  In fact this is very conservative -- v2 can
-              // actually only rotate by theta in the plane orthogonal to v1.
-              // Since the maximum slope of sin() is maximal around 0, this
-              // confers a conservative elementwise convex(!) constraint that
-              //   -asin(theta) <= v2 - normal.cross(v1) <= asin(theta).
+              // Since v is within theta of normal, we will prove that
+              // |v2 - normal.cross(v1)| <= 2 * sin(theta / 2)
+              // Notice that (v2 - normal.cross(v1))ᵀ * (v2 - normal.cross(v1))
+              // = v2ᵀ * v2 + (normal.cross(v1))ᵀ * (normal.cross(v1)) -
+              //      2 * v2ᵀ * (normal.cross(v1))
+              // <= 1 + 1 - 2 * cos(theta)
+              // = (2 * sin(theta / 2))²
+              // Thus we get |v2 - normal.cross(v1)| <= 2 * sin(theta / 2)
+              // Here we consider to use an elementwise linear constraint
+              // -2*sin(theta / 2) <=  v2 - normal.cross(v1) <= 2*sin(theta / 2)
               // Since 0<=theta<=pi/2, this should be enough to rule out the
               // det(R)=-1 case (the shortest projection of a line across the
               // circle onto a single axis has length 2sqrt(3)/3 > 1.15), and
@@ -546,8 +543,8 @@ void AddMcCormickVectorConstraints(
 
               // To activate this only when the box is active, the complete
               // constraints are
-              //  -asin(theta)-6+2(cxi+cyi+czi) <= v2-normal.cross(v1)
-              //    v2-normal.cross(v1) <= asin(theta)+6-2(cxi+cyi+czi)
+              //  -2*sin(theta/2)-6+2(cxi+cyi+czi) <= v2-normal.cross(v1)
+              //    v2-normal.cross(v1) <= 2*sin(theta/2)+6-2(cxi+cyi+czi)
               // Note: Again this constraint could be tighter as a Lorenz cone
               // constraint of the form:
               //   |v2 - normal.cross(v1)| <= 2*sin(theta/2).
@@ -555,13 +552,13 @@ void AddMcCormickVectorConstraints(
                   -math::VectorToSkewSymmetric(orthant_normal),
                   Eigen::Matrix3d::Constant(-2);
               prog->AddLinearConstraint(
-                  A_cross, Eigen::Vector3d::Constant(-std::asin(theta) - 6),
+                  A_cross, Eigen::Vector3d::Constant(-2 * sin(theta / 2) - 6),
                   Eigen::Vector3d::Constant(2), {v2, v1, orthant_c});
 
               A_cross.rightCols<3>() = Eigen::Matrix3d::Constant(2.0);
               prog->AddLinearConstraint(
                   A_cross, Eigen::Vector3d::Constant(-2),
-                  Eigen::Vector3d::Constant(std::asin(theta) + 6),
+                  Eigen::Vector3d::Constant(2 * sin(theta / 2) + 6),
                   {v2, v1, orthant_c});
             }
           }
