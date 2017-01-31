@@ -32,11 +32,10 @@ PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
           const drake::symbolic::Expression&,
           double, 
           double)) &drake::solvers::MathematicalProgram::AddLinearConstraint)
-    .def("_AddLinearCost", (std::shared_ptr<drake::solvers::LinearConstraint> 
-           (drake::solvers::MathematicalProgram::*)(
-           const Eigen::Ref<const Eigen::VectorXd>&,
-           const Eigen::Ref<const drake::solvers::VectorXDecisionVariable>& vars))
-           &drake::solvers::MathematicalProgram::AddLinearCost)
+    .def("AddLinearCost",
+         (drake::solvers::Binding<drake::solvers::LinearConstraint>
+          (drake::solvers::MathematicalProgram::*)(
+          const drake::symbolic::Expression&)) &drake::solvers::MathematicalProgram::AddLinearCost)
     .def("Solve", &drake::solvers::MathematicalProgram::Solve)
     .def("_GetSolution", [](const drake::solvers::MathematicalProgram& prog,
                             const drake::symbolic::Variable& var) {

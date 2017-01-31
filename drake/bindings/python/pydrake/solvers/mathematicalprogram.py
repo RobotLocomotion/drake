@@ -29,11 +29,6 @@ def _NewBinaryVariables(self, *args, **kwargs):
 MathematicalProgram.NewBinaryVariables = _NewBinaryVariables
 
 
-def _AddLinearCost(self, c, x):
-    return self._AddLinearCost(c, VectorXDecisionVariable(x))
-
-MathematicalProgram.AddLinearCost = _AddLinearCost
-
 def _GetSolution(self, x):
     if isinstance(x, np.ndarray):
         return self._GetSolution(VectorXDecisionVariable(x))
