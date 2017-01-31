@@ -92,7 +92,7 @@ IPOPT_LIBS = [
 ]
 
 # Invokes ./configure, make, and make install to build IPOPT. We arbitrarily
-# use make -j 8 and hope for the best in terms of overall CPU consumption, since
+# use make -j 32 and hope for the best in terms of overall CPU consumption, since
 # Bazel has no way to tell a genrule how many cores it should use.
 #
 # We emit static libraries because dynamic libraries would have different names
@@ -113,18 +113,13 @@ genrule(
     visibility = ["//visibility:private"],
 )
 
-# Only Linux builds should depend on this target.  gfortran is not available as
-# a system library on OS X.
-# TODO(david-german-tri): Ingest the fortran library path from the pkg-config
-# files generated during the IPOPT build.
 cc_library(
     name = "lib",
     srcs = IPOPT_LIBS,
     hdrs = IPOPT_HDRS,
     includes = ["include/coin"],
-    linkopts = [
-        "-lgfortran",
-        "-ldl",
+    deps = [
+        "@gfortran//:lib",
     ],
     linkstatic = 1,
     visibility = ["//visibility:public"],
