@@ -23,8 +23,8 @@ class KukaSimInfoLabel(object):
         self.label = QtGui.QLabel('')
         statusBar.addPermanentWidget(self.label)
 
-        self.sub = lcmUtils.addSubscriber('IIWA_STATUS',
-                                  lcmdrake.lcmt_iiwa_status, self.onIiwaStatus)
+        self.sub = lcmUtils.addSubscriber(
+            'IIWA_STATUS', lcmdrake.lcmt_iiwa_status, self.onIiwaStatus)
         self.sub.setSpeedLimit(30)
 
         self.label.text = '[waiting for sim status]'
@@ -40,7 +40,7 @@ def makeRobotSystem(view):
     factory = robotsystem.RobotSystemFactory()
     options = factory.getDisabledOptions()
     factory.setDependentOptions(options, usePlannerPublisher=True,
-                                         useTeleop=True)
+                                useTeleop=True)
     return factory.construct(view=view, options=options)
 
 
@@ -98,7 +98,7 @@ robotSystem.playbackPanel.animateOnExecute = True
 robotSystem.ikPlanner.getIkOptions().setProperty('Use pointwise', False)
 
 # set the default camera view
-applogic.resetCamera(viewDirection=[-1,0,0], view=app.view)
+applogic.resetCamera(viewDirection=[-1, 0, 0], view=app.view)
 
 # start!
 app.app.start()

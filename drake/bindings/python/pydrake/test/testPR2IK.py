@@ -3,6 +3,7 @@ import numpy as np
 import pydrake
 from pydrake.solvers import ik
 
+
 def load_robot_from_urdf(urdf_file):
     """
     This function demonstrates how to pass a complete
