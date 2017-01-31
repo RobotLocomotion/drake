@@ -1,5 +1,5 @@
-#include "drake/automotive/endless_road_oracle.h"
-#include "drake/automotive/endless_road_oracle-internal.h"
+#include "drake/automotive/dev/endless_road_oracle.h"
+#include "drake/automotive/dev/endless_road_oracle-internal.h"
 
 #include <memory>
 

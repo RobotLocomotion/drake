@@ -1,4 +1,5 @@
-#include "drake/automotive/endless_road_oracle.h"
+#include "drake/automotive/dev/endless_road_oracle.h"
+#include "drake/automotive/dev/endless_road_oracle-internal.h"
 
 #include <algorithm>
 #include <cmath>
@@ -9,7 +10,6 @@
 
 #include <Eigen/Geometry>
 
-#include "drake/automotive/endless_road_oracle-internal.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/utility/infinite_circuit_road.h"
 #include "drake/common/drake_assert.h"
