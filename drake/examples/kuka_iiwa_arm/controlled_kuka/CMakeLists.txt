@@ -42,7 +42,7 @@ if(lcm_FOUND)
     target_link_libraries(kuka_inverse_dynamics_demo
       drakeKukaIiwaArmCommon
       kuka_traj_follower_system
-      drakeLCMSystem2
+      drakeLcmSystem
       drakeRigidBodyPlant
       drakeSystemAnalysis)
   endif()
