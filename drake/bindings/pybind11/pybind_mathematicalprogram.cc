@@ -10,8 +10,8 @@ namespace py = pybind11;
 
 PYBIND11_MAKE_OPAQUE(drake::solvers::VectorXDecisionVariable);
 
-PYBIND11_PLUGIN(_mathematicalprogram) {
-  py::module m("_mathematicalprogram", "Drake MathematicalProgram Bindings");
+PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
+  py::module m("_pybind_mathematicalprogram", "Drake MathematicalProgram Bindings");
 
   py::class_<drake::solvers::MathematicalProgram>(m, "MathematicalProgram")
     .def(py::init<>())
