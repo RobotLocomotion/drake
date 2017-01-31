@@ -5,7 +5,7 @@ Bazel build system
 ******************
 
 The Bazel build system is officially supported for a subset of Drake on
-Ubuntu Xenial, and is being tested on Ubuntu Trusty and OS X.
+Ubuntu Xenial, Ubuntu Trusty, and OS X.
 For more information, see:
 
  * https://bazel.build/

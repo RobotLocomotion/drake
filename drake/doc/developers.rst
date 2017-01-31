@@ -83,8 +83,8 @@ and  ``WITH_GFLAGS``, which should be set to ``ON``.
 +------------------------------+------------------+--------------------+-------------------+---------+
 | Operating System             | Build Systems    | Compilers          | Superbuild Deps   | Build   |
 +==============================+==================+====================+===================+=========+
-| Ubuntu 14.04 LTS ("Trusty")  | CMake 3.5        | | GCC 4.9          | Minimal           | Debug   |
-|                              |                  | | Java 1.8         |                   +---------+
+| Ubuntu 14.04 LTS ("Trusty")  | | CMake 3.5      | | GCC 4.9          | Minimal           | Debug   |
+|                              | | Bazel 0.4.2    | | Java 1.8         |                   +---------+
 |                              |                  |                    |                   | Release |
 |                              |                  |                    +-------------------+---------+
 |                              |                  |                    | Default           | Debug   |
@@ -105,8 +105,8 @@ and  ``WITH_GFLAGS``, which should be set to ``ON``.
 |                              |                  | | Java 1.8         |                   +---------+
 |                              |                  |                    |                   | Release |
 +------------------------------+------------------+--------------------+-------------------+---------+
-| OS X 10.10                   | CMake 3.5        | | Apple Clang 7.0  | Minimal           | Debug   |
-|                              |                  | | Java 1.8         |                   +---------+
+| OS X 10.10                   | | CMake 3.5      | | Apple Clang 7.0  | Minimal           | Debug   |
+|                              | | Bazel 0.4.2    | | Java 1.8         |                   +---------+
 |                              |                  |                    |                   | Release |
 |                              |                  |                    +-------------------+---------+
 |                              |                  |                    | Default           | Debug   |
