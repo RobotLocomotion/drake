@@ -11,6 +11,9 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+/**
+ * A translator class that constructs a HumanoidStatus from a state vector.
+ */
 class RobotStatusWrapper : public systems::LeafSystem<double> {
  public:
   RobotStatusWrapper(const RigidBodyTree<double>& robot,

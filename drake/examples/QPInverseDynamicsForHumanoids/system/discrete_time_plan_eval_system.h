@@ -13,29 +13,24 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 /**
- * A simple PlanEval block that generates qp input for the qp inverse dynamics
- * controller.
- * The controller moves the robot's pelvis height following a sine wave while
- * holding everything else stationary. It assumes the robot is in double
- * stance, and the stationary setpoint can be set by SetDesired().
- *
- * Since this block is a discrete time controller, control is performed in
- * DoCalcUnrestrictedUpdate(), and the result is stored in AbstractState.
- * DoCalcOutput() merely copies the latest result from the AbstractState and
- * sends it through the output port. Context's time must be properly maintained.
- * The internal states of the plan are also stored in the AbstractState, and
- * can be modified in DoCalcUnrestrictedUpdate().
- *
- * Input: HumanoidStatus
- * Output: QpInput
+ * A base block that generates qp input for the qp inverse dynamics controller.
+ * This class must be extended to implement the desired behaviors. Due to its
+ * discrete time nature, control is computed in DoCalcUnrestrictedUpdate(),
+ * and the result is stored in its AbstractState. DoCalcOutput() merely copies
+ * the latest result from its AbstractState and sends it through the output
+ * port. Context's time must be properly maintained. The internal states of
+ * the plan are also stored in its AbstractState, and can be modified in
+ * DoCalcUnrestrictedUpdate().
  */
-class PlanEvalSystem : public systems::LeafSystem<double> {
+class DiscreteTimePlanEvalSystem : public systems::LeafSystem<double> {
  public:
-  explicit PlanEvalSystem(const RigidBodyTree<double>& robot);
+  DiscreteTimePlanEvalSystem(const RigidBodyTree<double>& robot,
+                             const std::string& alias_groups_file_name,
+                             const std::string& param_file_name,
+                             double dt);
 
-  void DoCalcOutput(
-      const systems::Context<double>& context,
-      systems::SystemOutput<double>* output) const override;
+  void DoCalcOutput(const systems::Context<double>& context,
+                    systems::SystemOutput<double>* output) const override;
 
   std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
       const systems::OutputPortDescriptor<double>& descriptor) const override;
@@ -47,9 +42,8 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     return std::make_unique<systems::AbstractState>();
   }
 
-  void DoCalcUnrestrictedUpdate(
-      const systems::Context<double>& context,
-      systems::State<double>* state) const override {
+  void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
+                                systems::State<double>* state) const override {
     throw std::runtime_error(
         "Subclass need to implememt DoCalcUnrestrictedUpdate.");
   }
@@ -59,10 +53,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
    * @param q_d Desired generalized position.
    * @param state State that holds the plan.
    */
-  void SetDesired(const VectorX<double>& q, systems::State<double>* state);
-  PlanEvalSystem(const RigidBodyTree<double>& robot,
-                 const std::string& alias_groups_file_name,
-                 const std::string& param_file_name);
+  void SetDesired(const VectorX<double>& q_d, systems::State<double>* state);
 
   /**
    * @return Port for the input: HumanoidStatus.

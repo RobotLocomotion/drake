@@ -3,16 +3,28 @@
 #include <memory>
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
-#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+/**
+ * A class that extends JointLevelControllerSystem and output an additional
+ * bot_core::atlas_command_t in addition to the BasicVector of torques.
+ */
 class AtlasJointLevelControllerSystem : public JointLevelControllerSystem {
  public:
+  /**
+   * Constructor for AtlasJointLevelControllerSystem.
+   * @param robot Reference to a RigidBodyTree. An internal alias is saved,
+   * so the lifespan of @p robot must be longer than this object.
+   */
   explicit AtlasJointLevelControllerSystem(const RigidBodyTree<double>& robot);
 
+  /**
+   * Calls JointLevelControllerSystem::DoCalcOutput() first, then constructs
+   * a bot_core::atlas_command_t.
+   */
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 
@@ -30,7 +42,7 @@ class AtlasJointLevelControllerSystem : public JointLevelControllerSystem {
  private:
   int output_port_index_atlas_cmd_;
 
-  // Joint level gains, these are in actuator order.
+  // Joint level gains, these are in robot_.actuators order.
   VectorX<double> k_q_p_;
   VectorX<double> k_q_i_;
   VectorX<double> k_qd_p_;
