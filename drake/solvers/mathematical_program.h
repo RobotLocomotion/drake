@@ -1099,12 +1099,10 @@ class MathematicalProgram {
   template <typename DerivedV, typename DerivedB>
   typename std::enable_if<
       std::is_base_of<Eigen::MatrixBase<DerivedV>, DerivedV>::value &&
-              std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
-              std::is_same<typename DerivedV::Scalar,
-                           symbolic::Expression>::value &&
-              std::is_same<typename DerivedB::Scalar, double>::value &&
-              DerivedV::ColsAtCompileTime == 1 ||
-          DerivedB::ColsAtCompileTime == 1,
+      std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
+      std::is_same<typename DerivedV::Scalar, symbolic::Expression>::value &&
+      std::is_same<typename DerivedB::Scalar, double>::value &&
+      (DerivedV::ColsAtCompileTime == 1 || DerivedB::ColsAtCompileTime == 1),
       Binding<LinearEqualityConstraint>>::type
   AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& v,
                               const Eigen::MatrixBase<DerivedB>& b) {
@@ -1132,11 +1130,10 @@ class MathematicalProgram {
   template <typename DerivedV, typename DerivedB>
   typename std::enable_if<
       std::is_base_of<Eigen::MatrixBase<DerivedV>, DerivedV>::value &&
-          std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
-          std::is_same<typename DerivedV::Scalar,
-                       symbolic::Expression>::value &&
-          std::is_same<typename DerivedB::Scalar, double>::value &&
-          DerivedV::ColsAtCompileTime != 1 && DerivedB::ColsAtCompileTime != 1,
+      std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
+      std::is_same<typename DerivedV::Scalar, symbolic::Expression>::value &&
+      std::is_same<typename DerivedB::Scalar, double>::value &&
+      DerivedV::ColsAtCompileTime != 1 && DerivedB::ColsAtCompileTime != 1,
       Binding<LinearEqualityConstraint>>::type
   AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
                               const Eigen::MatrixBase<DerivedB>& B,
