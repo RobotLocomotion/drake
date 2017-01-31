@@ -692,9 +692,8 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic6) {
 }
 
 namespace {
-void CheckAddedSymbolicLinearEqualityConstraint(
-    MathematicalProgram* prog, const Eigen::Ref<const VectorX<Expression>>& v,
-    const Eigen::Ref<const Eigen::VectorXd>& b) {
+void CheckAddedSymbolicLinearEqualityConstraint(MathematicalProgram* prog,
+const Eigen::Ref<const MatrixX<Expression>>& v, const Eigen::Ref<const Eigen::MatrixXd>& b, bool is_symmetric = false) {
   const int num_linear_eq_cnstr = prog->linear_equality_constraints().size();
   auto binding = prog->AddLinearEqualityConstraint(v, b);
   // Checks if the number of linear equality constraints get incremented by 1.
@@ -710,12 +709,26 @@ void CheckAddedSymbolicLinearEqualityConstraint(
             binding.variables());
   // Checks if the number of rows in the newly added constraint is the same as
   // the input expression.
-  EXPECT_EQ(binding.constraint()->num_constraints(), v.rows());
+  int num_constraints_expected(0);
+  if (is_symmetric) {
+    num_constraints_expected = v.rows() * (v.rows() + 1) / 2;
+  }
+  else {
+    num_constraints_expected = v.size();
+  }
+  EXPECT_EQ(binding.constraint()->num_constraints(), num_constraints_expected);
   // Check if the newly added linear equality constraint matches with the input
   // expression.
-  EXPECT_EQ(binding.constraint()->A() * binding.variables() -
-                binding.constraint()->lower_bound(),
-            v - b);
+  VectorX<Expression> flat_V = binding.constraint()->A() * binding.variables() -
+      binding.constraint()->lower_bound();
+  if (is_symmetric) {
+    EXPECT_EQ(math::ToSymmetricMatrixFromLowerTriangularColumns(flat_V), v - b);
+  }
+  else {
+    MatrixX<Expression> v_resize = flat_V;
+    v_resize.conservativeResize(v.rows(), v.cols());
+    EXPECT_EQ(v_resize, v - b);
+  }
 }
 
 void CheckAddedSymbolicLinearEqualityConstraint(MathematicalProgram* prog,
@@ -790,6 +803,17 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
   //       -x(1) = 2
   CheckAddedSymbolicLinearEqualityConstraint(
       &prog, Vector3<Expression>(+x(0), 1, -x(1)), Eigen::Vector3d(4, 1, 2));
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint3) {
+  // Checks adding a matrix of linear equality constraints.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2, 2>("X");
+
+  // Checks X = [1, 2; 3, 4]
+  Eigen::Matrix2d b1{};
+  b1 << 1, 2, 3, 4;
+  CheckAddedSymbolicLinearEqualityConstraint(&prog, Eigen::Matrix2d::Identity() * x, b1);
 }
 
 namespace {

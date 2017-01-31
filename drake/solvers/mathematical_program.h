@@ -22,6 +22,7 @@
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
 #include "drake/common/variable.h"
+#include "drake/math/matrix_util.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/decision_variable.h"
@@ -1096,6 +1097,66 @@ class MathematicalProgram {
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
       const Eigen::Ref<const Eigen::VectorXd>& b);
+
+  /**
+   * Adds a linear equality constraint for a matrix of linear expression @p V,
+   * such that V(i, j) = B(i, j). If V is a symmetric matrix, then only the
+   * lower triangular part of V is constrained.
+   * @tparam DerivedV An Eigen Matrix type of Expression. The number of columns
+   * at compile time should not be 1. Also a ColMajor matrix.
+   * @tparam DerivedB An Eigen Matrix type of double. A ColMajor matrix.
+   * @param V An Eigen Matrix of symbolic expressions. V(i, j) should be a
+   * linear expression.
+   * @param B An Eigen Matrix of doubles.
+   * @param is_symmetric If true, then only the lower triangular part of @p V
+   * is constrained, @default is false.
+   * @return The newly added linear equality constraint, together with the
+   * bound variables.
+   */
+  template <typename DerivedV, typename DerivedB>
+  typename std::enable_if<std::is_base_of<Eigen::MatrixBase<DerivedV>, DerivedV>::value &&
+      std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
+      std::is_same<typename DerivedV::Scalar, symbolic::Expression>::value &&
+      std::is_same<typename DerivedB::Scalar, double>::value &&
+      DerivedV::Options == Eigen::ColMajor &&
+      DerivedB::options == Eigen::ColMajor &&
+      DerivedV::ColsAtCompileTime != 1, Binding<LinearEqualityConstraint>>::type
+  AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V, const Eigen::MatrixBase<DerivedB>& B, bool is_symmetric = false) {
+    // Check if V and B are symmetric
+    if (is_symmetric) {
+      DRAKE_DEMAND(V.rows() == V.cols() && B.rows() == B.cols());
+      DRAKE_ASSERT(math::IsSymmetric(V) && math::IsSymmetric((B)));
+    }
+    DRAKE_DEMAND(V.rows() == B.rows() && V.cols() == B.cols());
+
+    // Form the flatten version of V and B, when is_symmetric = false,
+    // the flatten version is just to concatenate each column of the matrix;
+    // otherwise the flatten version is to concatenate each column of the
+    // lower triangular part of the matrix.
+    const int V_rows = DerivedV::RowsAtCompileTime != Eigen::Dynamic ? DerivedV::RowsAtCompileTime : DerivedB::RowsAtCompileTime;
+    const int V_cols = DerivedV::ColsAtCompileTime != Eigen::Dynamic ? DerivedV::ColsAtCompileTime : DerivedB::ColsAtCompileTime;
+
+    const int V_triangular_size = V_rows != Eigen::Dynamic ? (V_rows + 1) * V_rows / 2 : Eigen::Dynamic;
+    const int V_size = V_rows != Eigen::Dynamic && V_cols != Eigen::Dynamic ? V_rows * V_cols : Eigen::Dynamic;
+    if (is_symmetric) {
+      Eigen::Matrix<symbolic::Expression, V_triangular_size, 1> flat_lower_V{};
+      Eigen::Matrix<double, V_triangular_size, 1> flat_lower_B{};
+      int V_idx = 0;
+      for (int j = 0; j < V.cols(); ++j) {
+        for (int i = j; i < V.rows(); ++i) {
+          flat_lower_V(V_idx) = V(i, j);
+          flat_lower_B(V_idx) = B(i, j);
+          ++V_idx;
+        }
+      }
+      return AddLinearEqualityConstraint(flat_lower_V, flat_lower_B);
+    }
+    else {
+      Eigen::Map<Eigen::Matrix<symbolic::Expression, V_size, 1>> flat_V(V.data(), V.size());
+      Eigen::Map<Eigen::Matrix<double, V_size, 1>> flat_B(B.data(), B.size());
+      return AddLinearEqualityConstraint(flat_V, flat_B);
+    }
+  };
 
   /** AddLinearEqualityConstraint
    *
