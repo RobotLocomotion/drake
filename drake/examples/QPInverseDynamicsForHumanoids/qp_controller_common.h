@@ -336,9 +336,7 @@ class DesiredBodyMotion : public ConstrainedValues {
   explicit DesiredBodyMotion(const RigidBody<double>& body)
       : ConstrainedValues(6), body_(&body), control_during_contact_(false) {}
 
-  inline bool is_valid() const {
-    return this->ConstrainedValues::is_valid(6);
-  }
+  inline bool is_valid() const { return this->ConstrainedValues::is_valid(6); }
 
   std::string get_row_name(int i) const;
 
@@ -427,9 +425,7 @@ class DesiredCentroidalMomentumDot : public ConstrainedValues {
  public:
   DesiredCentroidalMomentumDot() : ConstrainedValues(6) {}
 
-  inline bool is_valid() const {
-    return this->ConstrainedValues::is_valid(6);
-  }
+  inline bool is_valid() const { return this->ConstrainedValues::is_valid(6); }
 
   std::string get_row_name(int i) const;
 };

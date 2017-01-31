@@ -31,8 +31,9 @@ namespace qp_inverse_dynamics {
 // bot_core::robot_state_t and bot_core::atlas_command_t.
 void controller_loop() {
   // Loads model.
-  std::string urdf = drake::GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
-      "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
+  std::string urdf = drake::GetDrakePath() +
+                     "/examples/Valkyrie/urdf/urdf/"
+                     "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       urdf, multibody::joints::kRollPitchYaw, robot.get());
@@ -41,17 +42,18 @@ void controller_loop() {
 
   lcm::DrakeLcm lcm;
 
-  std::string alias_groups_config =
-      drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
-          "config/alias_groups.yaml";
-  std::string controller_config =
-      drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
-          "config/controller.yaml";
+  std::string alias_groups_config = drake::GetDrakePath() +
+                                    "/examples/QPInverseDynamicsForHumanoids/"
+                                    "config/alias_groups.yaml";
+  std::string controller_config = drake::GetDrakePath() +
+                                  "/examples/QPInverseDynamicsForHumanoids/"
+                                  "config/controller.yaml";
 
   RobotStateDecoderSystem* rs_msg_to_rs =
       builder.AddSystem(std::make_unique<RobotStateDecoderSystem>(*robot));
   HumanoidPlanEvalSystem* plan_eval =
-      builder.AddSystem(std::make_unique<HumanoidPlanEvalSystem>(*robot, alias_groups_config, controller_config));
+      builder.AddSystem(std::make_unique<HumanoidPlanEvalSystem>(
+          *robot, alias_groups_config, controller_config));
   QPControllerSystem* qp_con =
       builder.AddSystem(std::make_unique<QPControllerSystem>(*robot));
   AtlasJointLevelControllerSystem* joint_con =
@@ -147,4 +149,3 @@ void controller_loop() {
 }  // end namespace drake
 
 int main() { drake::examples::qp_inverse_dynamics::controller_loop(); }
-

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_system.h"
 
@@ -11,8 +12,8 @@ namespace qp_inverse_dynamics {
 class HumanoidPlanEvalSystem : public PlanEvalSystem {
  public:
   HumanoidPlanEvalSystem(const RigidBodyTree<double>& robot,
-      const std::string& alias_groups_file_name,
-      const std::string& param_file_name);
+                         const std::string& alias_groups_file_name,
+                         const std::string& param_file_name);
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
                                 systems::State<double>* state) const override;

@@ -13,8 +13,9 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
  public:
   explicit JointLevelControllerSystem(const RigidBodyTree<double>& robot);
 
-  virtual void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
+  void DoCalcOutput(
+      const systems::Context<double>& context,
+      systems::SystemOutput<double>* output) const override;
 
   /**
    * @return Port for the input: lcm message bot_core::robot_state_t

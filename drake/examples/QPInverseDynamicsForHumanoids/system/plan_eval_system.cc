@@ -15,9 +15,12 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 PlanEvalSystem::PlanEvalSystem(const RigidBodyTree<double>& robot,
-    const std::string& alias_groups_file_name,
-    const std::string& param_file_name)
-    : robot_(robot), alias_groups_(robot), abstract_state_qp_input_index_(0), abstract_state_plan_index_(1) {
+                               const std::string& alias_groups_file_name,
+                               const std::string& param_file_name)
+    : robot_(robot),
+      alias_groups_(robot),
+      abstract_state_qp_input_index_(0),
+      abstract_state_plan_index_(1) {
   input_port_index_humanoid_status_ = DeclareAbstractInputPort().get_index();
   output_port_index_qp_input_ = DeclareAbstractOutputPort().get_index();
   // Declare discrete time controller.
@@ -43,7 +46,8 @@ void PlanEvalSystem::DoCalcOutput(const systems::Context<double>& context,
                           ->GetMutableValue<QpInput>();
 
   // Gets QpInput from AbstractState.
-  qp_input = context.get_abstract_state<QpInput>(abstract_state_qp_input_index_);
+  qp_input =
+      context.get_abstract_state<QpInput>(abstract_state_qp_input_index_);
 }
 
 std::unique_ptr<systems::AbstractValue> PlanEvalSystem::AllocateOutputAbstract(

@@ -1,6 +1,7 @@
 if(lcm_FOUND)
   add_executable(controlled_kuka_demo
-      controlled_kuka_demo.cc)
+      controlled_kuka_demo.cc
+      make_demo_plan.cc)
   target_link_libraries(controlled_kuka_demo
       drakeKukaIiwaArmCommon
       drakeLcmSystem
@@ -35,7 +36,8 @@ if(lcm_FOUND)
   endif()
 
   add_executable(kuka_inverse_dynamics_demo
-    kuka_inverse_dynamics_demo.cc)
+    kuka_inverse_dynamics_demo.cc
+    make_demo_plan.cc)
   target_link_libraries(kuka_inverse_dynamics_demo
     drakeKukaIiwaArmCommon
     kuka_traj_follower_system
