@@ -2,11 +2,11 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "translator",
     srcs = [
         "lcm_and_vector_base_translator.cc",
@@ -22,7 +22,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "lcm",
     srcs = [
         "lcm_publisher_system.cc",
@@ -42,7 +42,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "lcmt_drake_signal_translator",
     srcs = ["lcmt_drake_signal_translator.cc"],
     hdrs = ["lcmt_drake_signal_translator.h"],

@@ -2,10 +2,16 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
+load(
+    "//tools:drake.bzl",
+    "cc_googletest",
+    "drake_cc_library",
+    "drake_cc_binary",
+)
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "monolane",
     srcs = [],
     hdrs = [],
@@ -17,7 +23,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "lanes",
     srcs = [
         "arc_lane.cc",
@@ -45,7 +51,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "builder",
     srcs = [
         "builder.cc",
@@ -59,7 +65,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "loader",
     srcs = [
         "loader.cc",
@@ -69,8 +75,8 @@ cc_library(
     ],
     linkstatic = 1,
     deps = [
-        ":builder",
         "@yaml_cpp//:lib",
+        ":builder",
     ],
 )
 
@@ -86,8 +92,8 @@ cc_test(
     size = "small",
     srcs = ["test/monolane_builder_test.cc"],
     deps = [
-        ":builder",
         "@gtest//:main",
+        ":builder",
     ],
 )
 
@@ -96,13 +102,13 @@ cc_test(
     size = "small",
     srcs = ["test/monolane_lanes_test.cc"],
     deps = [
+        "@gtest//:main",
         ":lanes",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
-cc_binary(
+drake_cc_binary(
     name = "yaml_load",
     testonly = 1,
     srcs = ["test/yaml_load.cc"],

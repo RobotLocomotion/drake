@@ -2,11 +2,11 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "gravity_compensator",
     srcs = ["gravity_compensator.cc"],
     hdrs = ["gravity_compensator.h"],
@@ -18,7 +18,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "linear_quadratic_regulator",
     srcs = ["linear_quadratic_regulator.cc"],
     hdrs = ["linear_quadratic_regulator.h"],
@@ -31,7 +31,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "pid_controller",
     srcs = ["pid_controller.cc"],
     hdrs = ["pid_controller.h"],
@@ -46,7 +46,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "pid_controlled_system",
     srcs = ["pid_controlled_system.cc"],
     hdrs = ["pid_controlled_system.h"],

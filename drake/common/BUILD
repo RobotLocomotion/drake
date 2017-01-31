@@ -2,13 +2,13 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
 # A library of things that EVERYONE should want and MUST EAT.
 # Be appropriately hesitant when adding new things here.
-cc_library(
+drake_cc_library(
     name = "common",
     srcs = [
         "drake_assert.cc",
@@ -35,33 +35,33 @@ cc_library(
 )
 
 # Specific traits and operators that are relevant to all ScalarTypes.
-cc_library(
+drake_cc_library(
     name = "cond",
     hdrs = ["cond.h"],
     linkstatic = 1,
 )
 
-cc_library(
+drake_cc_library(
     name = "dummy_value",
     hdrs = ["dummy_value.h"],
     linkstatic = 1,
 )
 
-cc_library(
+drake_cc_library(
     name = "number_traits",
     hdrs = ["number_traits.h"],
     linkstatic = 1,
 )
 
 # Drake's specific ScalarType-providing libraries.
-cc_library(
+drake_cc_library(
     name = "double",
     srcs = ["double_overloads.cc"],
     hdrs = ["double_overloads.h"],
     linkstatic = 1,
 )
 
-cc_library(
+drake_cc_library(
     name = "autodiff",
     hdrs = [
         "autodiff_overloads.h",
@@ -75,7 +75,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "environment",
     srcs = ["environment.cc"],
     hdrs = [
@@ -88,7 +88,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "extract_double",
     hdrs = ["extract_double.h"],
     linkstatic = 1,
@@ -99,7 +99,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "functional_form",
     srcs = ["functional_form.cc"],
     hdrs = ["functional_form.h"],
@@ -110,7 +110,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "polynomial",
     srcs = ["polynomial.cc"],
     hdrs = [
@@ -124,7 +124,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "symbolic",
     srcs = [
         "symbolic_expression.cc",
@@ -179,7 +179,7 @@ cc_library(
 )
 
 # Miscellaneous utilities.
-cc_library(
+drake_cc_library(
     name = "drake_path",
     # TODO(david-german-tri): Set testonly = 1 once the non-test uses of
     # drake_path are removed.
@@ -208,7 +208,7 @@ genrule(
 
 # TODO(jwnimmer-tri) Move this header file into test/ subdirectory (and this
 # stanza below the "test/" comment marker).
-cc_library(
+drake_cc_library(
     name = "eigen_matrix_compare",
     testonly = 1,
     hdrs = ["eigen_matrix_compare.h"],
@@ -218,7 +218,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "is_approx_equal_abstol",
     hdrs = ["is_approx_equal_abstol.h"],
     linkstatic = 1,
@@ -227,7 +227,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "monomial",
     srcs = ["monomial.cc"],
     hdrs = ["monomial.h"],
@@ -238,7 +238,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "nice_type_name",
     srcs = ["nice_type_name.cc"],
     hdrs = ["nice_type_name.h"],
@@ -248,7 +248,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "sorted_vectors_have_intersection",
     hdrs = ["sorted_vectors_have_intersection.h"],
     linkstatic = 1,
@@ -257,7 +257,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "text_logging_gflags",
     hdrs = ["text_logging_gflags.h"],
     # TODO(jwnimmer-tri) Ideally, gflags BUILD would do this for us.  Figure
@@ -273,7 +273,7 @@ cc_library(
 
 # === test/ ===
 
-cc_library(
+drake_cc_library(
     name = "random_polynomial_matrix",
     testonly = 1,
     hdrs = ["test/random_polynomial_matrix.h"],
@@ -283,7 +283,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "measure_execution",
     testonly = 1,
     hdrs = ["test/measure_execution.h"],

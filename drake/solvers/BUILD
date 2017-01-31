@@ -2,11 +2,11 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "binding",
     srcs = [],
     hdrs = ["binding.h"],
@@ -16,7 +16,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "constraint",
     srcs = ["constraint.cc"],
     hdrs = ["constraint.h"],
@@ -29,7 +29,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "decision_variable",
     srcs = ["decision_variable.cc"],
     hdrs = ["decision_variable.h"],
@@ -41,7 +41,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "function",
     srcs = [],
     hdrs = ["function.h"],
@@ -65,7 +65,7 @@ cc_library(
 # - MOSEK
 
 # TODO(jwnimmer-tri, david-german-tri): Support more solvers.
-cc_library(
+drake_cc_library(
     name = "mathematical_program",
     srcs = [
         "dreal_solver.h",
@@ -105,7 +105,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "system_identification",
     srcs = ["system_identification.cc"],
     hdrs = ["system_identification.h"],
@@ -125,7 +125,7 @@ cc_library(
 # TODO(hongkai-dai): MathematicalProgram should be refactored so that
 # implementations of MathematicalProgramSolverInterface are not co-dependent
 # with MathematicalProgram itself, and then this target should be deleted.
-cc_library(
+drake_cc_library(
     name = "mathematical_program_api",
     srcs = [],
     hdrs = [
@@ -151,7 +151,7 @@ cc_library(
 # If --config gurobi is used, this target builds object code that satisfies
 # MathematicalProgramSolverInterface by calling Gurobi. Otherwise, this target
 # builds dummy object code that fails at runtime.
-cc_library(
+drake_cc_library(
     name = "gurobi_solver",
     srcs = select({
         "//tools:with_gurobi": ["gurobi_solver.cc"],
@@ -172,7 +172,7 @@ cc_library(
     }),
 )
 
-cc_library(
+drake_cc_library(
     name = "ipopt_solver",
     srcs = select({
         "//tools:apple": ["no_ipopt.cc"],
