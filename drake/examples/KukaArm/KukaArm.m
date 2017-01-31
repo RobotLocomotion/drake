@@ -30,20 +30,8 @@ classdef KukaArm < RigidBodyManipulator
       if ~isfield(options,'with_shelf_and_boxes')
         options.with_shelf_and_boxes = false;
       end
-      if ~isfield(options,'mass3')
-        options.mass3 = false;
-      end
-      if ~isfield(options,'mass5')
-          options.mass5 = false;
-      end
       if options.with_weight
         urdf = 'urdf/iiwa14_fixed_gripper.urdf';
-      end
-      if options.mass3
-          urdf = 'urdf/iiwa14_fixed_gripper_3.urdf';
-      end
-      if options.mass5
-          urdf = 'urdf/iiwa14_fixed_gripper_5.urdf';
       end
 
       warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
@@ -65,8 +53,8 @@ classdef KukaArm < RigidBodyManipulator
         obj = obj.addRobotFromURDF('urdf/shelf.urdf', [0.8;0.0;1.08], [0;pi/2;0]);
       end
       if options.with_shelf_and_boxes
-        %obj = obj.addRobotFromURDF('urdf/box.urdf', [-0.3;-.55;1], [0;0;0]);
-        obj = obj.addRobotFromURDF('urdf/box.urdf', [-0.3;0;1.4], [0;0;0]);
+        %obj = obj.addRobotFromURDF('urdf/box.urdf', [-0.3;-.9;.9], [0;0;0]);
+        obj = obj.addRobotFromURDF('urdf/box.urdf', [-0.3;0;1.5], [0;0;0]);
         obj = obj.addRobotFromURDF('urdf/shelf.urdf', [0.6;0;0.88], [0;0;0]);
         obj = obj.addRobotFromURDF('urdf/shelf.urdf', [0.6;0.2;1.08], [pi/2;0;0]);
         obj = obj.addRobotFromURDF('urdf/shelf.urdf', [0.8;0.0;1.08], [0;pi/2;0]);

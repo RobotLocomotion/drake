@@ -6,16 +6,6 @@ options.with_weight = true;
 options.with_shelf_and_boxes = true;
 p = KukaArm(options);
 
-options.with_weight = true;
-options.with_shelf_and_boxes = true;
-options.mass3 = true;
-p3 = KukaArm(options);
-
-options.with_weight = true;
-options.with_shelf_and_boxes = true;
-options.mass5 = true;
-p5 = KukaArm(options);
-
 Nq = 7;
 Nx = 14;
 Nu = 7;
@@ -96,7 +86,7 @@ hold on;
 plot(tsamp2, usamp2(7,:));
 
 % design FIR filter to filter noise to 5% of Nyquist rate
-b = fir1(1024, 0.01);
+b = fir1(1024, 0.005);
 
 for j = 1:1
 
@@ -108,7 +98,7 @@ nz = randn(N,1);
 wx = filter(b,1,nx);
 wy = filter(b,1,ny);
 wz = filter(b,1,nz);
-w = [(3/max(abs(wx)))*wx (3/max(abs(wy)))*wy (5/max(abs(wz)))*wz]';
+w = [(10/max(abs(wx)))*wx (10/max(abs(wy)))*wy (10/max(abs(wz)))*wz]';
 %w = zeros(3,N);
 
 figure();
@@ -121,7 +111,8 @@ plot(tsamp1, w(3,:));
 xcl1 = zeros(Nx,N);
 xcl1(:,1) = xsamp1(:,1);
 for k = 1:(N-1)
-    [~,xk] = ode2(@(t,x)p3.dynamics_w(t,x,usamp1(:,k)-K1(:,:,k)*(xcl1(:,k)-xsamp1(:,k)), w(:,k)), [0 dt1], xcl1(:,k), dt1);
+    ucl1(:,k) = usamp1(:,k)-K1(:,:,k)*(xcl1(:,k)-xsamp1(:,k));
+    [~,xk] = ode2(@(t,x)p.dynamics_w(t,x, ucl1(:,k), w(:,k)), [0 dt1], xcl1(:,k), dt1);
     xcl1(:,k+1) = xk(:,2);
 end
 
@@ -129,7 +120,8 @@ end
 xcl2 = zeros(Nx,N);
 xcl2(:,1) = xsamp2(:,1);
 for k = 1:(N-1)
-    [~,xk] = ode2(@(t,x)p3.dynamics_w(t,x,usamp2(:,k)-K2(:,:,k)*(xcl2(:,k)-xsamp2(:,k)), w(:,k)), [0 dt2], xcl2(:,k), dt2);
+    ucl2(:,k) = usamp2(:,k)-K2(:,:,k)*(xcl2(:,k)-xsamp2(:,k));
+    [~,xk] = ode2(@(t,x)p.dynamics_w(t,x, ucl2(:,k), w(:,k)), [0 dt2], xcl2(:,k), dt2);
     xcl2(:,k+1) = xk(:,2);
 end
 
@@ -140,19 +132,6 @@ for k = 1:(N-1)
     phi = shelf_collision(p,xcl1(:,k));
     minPhi1(k) = min(phi);
 end
-
-%find impact velocity
-for k = 3500:4000
-    if minPhi1(k) < 0
-        kinsol = doKinematics(p3, xcl1(1:7,k));
-        [~, J1] = forwardKin(p3,kinsol,p3.findLinkId('finger_1_link_3'),[0;0;0],opt);
-        vhit1(:,j) = J1*xcl1(8:end,k);
-        break;
-    end
-end
-kinsol = doKinematics(p3, xcl1(1:7,N));
-[~, J1] = forwardKin(p3,kinsol,p3.findLinkId('finger_1_link_3'),[0;0;0],opt);
-vhit1e(:,j) = J1*xcl1(8:end,N);
         
 %Check for collisions
 hit2 = zeros(N,1);
@@ -161,19 +140,6 @@ for k = 1:(N-1)
     phi = shelf_collision(p,xcl2(:,k));
     minPhi2(k) = min(phi);
 end
-
-%find impact velocity
-for k = 3500:4000
-    if minPhi2(k) < 0
-        kinsol = doKinematics(p3, xcl2(1:7,k));
-        [~, J2] = forwardKin(p3,kinsol,p3.findLinkId('finger_1_link_3'),[0;0;0],opt);
-        vhit2(:,j) = J1*xcl2(8:end,k);
-        break;
-    end
-end
-kinsol = doKinematics(p3, xcl2(1:7,N));
-[~, J2] = forwardKin(p3,kinsol,p3.findLinkId('finger_1_link_3'),[0;0;0],opt);
-vhit2e(:,j) = J2*xcl2(8:end,N);
 
 xcltraj1 = PPTrajectory(foh(tsamp1,xcl1));
 xcltraj1 = xcltraj1.setOutputFrame(p.getStateFrame());
@@ -184,6 +150,24 @@ v.playback(xcltraj1,struct('slider',true));
 v.playback(xcltraj2,struct('slider',true));
 end
 
+%Control deviation:
+(1/N)*sum(((ucl1(:)-vec(usamp1(:,1:end-1)))).^2)
+(1/N)*sum(((ucl2(:)-vec(usamp2(:,1:end-1)))).^2)
+
+(1/N)*sum((xcl1(:)-xsamp1(:)).^2)
+(1/N)*sum((xcl2(:)-xsamp2(:)).^2)
+
+g1 = 0;
+g2 = 0;
+Qr = diag([zeros(Nq,1);ones(Nq,1)]);
+Rr = .001*eye(Nu);
+Qn = diag([zeros(Nq,1);100*ones(Nq,1)]);
+for k = 1:(N-1)
+    g1 = g1 + xcl1(:,k)'*Qr*xcl1(:,k) + ucl1(:,k)'*Rr*ucl1(:,k);
+    g2 = g2 + xcl2(:,k)'*Qr*xcl2(:,k) + ucl2(:,k)'*Rr*ucl2(:,k);
+end
+g1 = xcl1(:,N)'*Qn*xcl1(:,N);
+g2 = xcl2(:,N)'*Qn*xcl2(:,N);
 
 for k = 1:N
     q1 = xcl1(1:7,k);

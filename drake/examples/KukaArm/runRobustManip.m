@@ -1,4 +1,6 @@
-function [xtraj1,utraj1,xtraj2,utraj2] = runRobustManip()
+function [xtraj1,utraj1,xtraj2,utraj2,xtraj0,utraj0] = runRobustManip()
+
+pad = 0;
 
 options.with_weight = true;
 options.with_shelf_and_boxes = true;
@@ -16,7 +18,7 @@ R = 0.01*eye(nu);
 Qf = 5*Q;
 
 %Robust stuff
-D = diag([10 10 100]);
+D = diag([100 100 100]);
 E0 = .1*eye(14);
 
 q0 = [0;-0.683;0;1.77;0;0.88;-1.57];
@@ -58,6 +60,8 @@ tic;
 [xtraj0,utraj0,z,F,info,infeasible] = prog1.solveTraj(tf0,traj_init);
 toc
 
+v.playback(xtraj0,struct('slider',true));
+
 %Add contact constraints
 for i=2:N-1
   constraint = FunctionHandleConstraint(zeros(4,1),inf*ones(4,1),nx,@l_hand_shelf_constraint);
@@ -65,12 +69,17 @@ for i=2:N-1
   prog1 = prog1.addConstraint(constraint, {prog1.x_inds(:,i)});
 end
 
+%Use last solution as initial guess
+traj_init.x = xtraj0;
+traj_init.u = utraj0;
+
 %Re-solve
 tic;
-[xtraj1,utraj1,z,F,info,infeasible] = prog1.solveTraj(1.5*tf0,traj_init);
+[xtraj0,utraj0,z,F,info,infeasible] = prog1.solveTraj(1.5*tf0,traj_init);
 toc
 
-v.playback(xtraj1,struct('slider',true));
+v.playback(xtraj0,struct('slider',true));
+
 
 N = 80;
 options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;
@@ -91,6 +100,12 @@ constraint = FunctionHandleConstraint(-tol,tol,nx,@l_hand_constraint);
 constraint = constraint.setName('left_hand_constraint'); 
 prog2 = prog2.addConstraint(constraint, {prog2.x_inds(:,N)});
 
+prog2 = prog2.setSolverOptions('snopt','majoroptimalitytolerance',1e-3);
+prog2 = prog2.setSolverOptions('snopt','minoroptimalitytolerance',1e-4);
+prog2 = prog2.setSolverOptions('snopt','majorfeasibilitytolerance',1e-3);
+prog2 = prog2.setSolverOptions('snopt','minorfeasibilitytolerance',1e-4);
+prog2 = prog2.setSolverOptions('snopt','iterationslimit',100000);
+
 %Add contact constraints
 for i=2:N-1
   constraint = FunctionHandleConstraint(zeros(4,1),inf*ones(4,1),nx,@l_hand_shelf_constraint);
@@ -98,39 +113,58 @@ for i=2:N-1
   prog2 = prog2.addConstraint(constraint, {prog2.x_inds(:,i)});
 end
 
-prog2 = prog2.setSolverOptions('snopt','majoroptimalitytolerance',1e-3);
-prog2 = prog2.setSolverOptions('snopt','minoroptimalitytolerance',1e-4);
-prog2 = prog2.setSolverOptions('snopt','majorfeasibilitytolerance',1e-3);
-prog2 = prog2.setSolverOptions('snopt','minorfeasibilitytolerance',1e-4);
-prog2 = prog2.setSolverOptions('snopt','iterationslimit',100000);
-
 %Use last solution as initial guess
-traj_init.x = xtraj1;
-traj_init.u = utraj1;
+traj_init.x = xtraj0;
+traj_init.u = utraj0;
 
+pad = 0;
 %Re-solve
 tic;
 [xtraj1,utraj1,z,F,info,infeasible] = prog2.solveTraj(1.5*tf0,traj_init);
 toc
 
-v.playback(xtraj1,struct('slider',true));
-
 %---------- Robust Version ----------%
 
-constraint = FunctionHandleConstraint(zeros(4,1),inf(4,1),nq,@l_hand_shelf_constraint_r,1);
-constraint = constraint.setName('l_hand_shelf_constraint_r');
-prog2 = prog2.addRobustStateConstraint(constraint,2:(N-1),1:nq);
+N = 80;
+options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;
+prog2 = RobustDirtranTrajectoryOptimization(r,N,D,E0,Q,R,Qf,tf0*[1-0.5 1+0.5],options);
+prog2 = prog2.addStateConstraint(ConstantConstraint(x0),1);
+prog2 = prog2.addFinalCost(@finalCost);
+% prog2 = addTrajectoryDisplayFunction(prog2,@displayStateTrajectory);
 
-prog2 = prog2.addRobustCost(Q,R,Qf);
+[jlmin,jlmax] = r.getJointLimits;
+xmin = [jlmin;-inf(nq,1)];
+xmax = [jlmax;inf(nq,1)];
+prog2 = prog2.addConstraint(BoundingBoxConstraint(repmat(xmin,N,1),repmat(xmax,N,1)),prog2.x_inds);
 
-traj_init.x = xtraj1;
-traj_init.u = utraj1;
+tol = [0.03;0.03;0.005;0.01;0.01;0.01];
+
+constraint = FunctionHandleConstraint(-tol,tol,nx,@l_hand_constraint);
+constraint = constraint.setName('left_hand_constraint'); 
+prog2 = prog2.addConstraint(constraint, {prog2.x_inds(:,N)});
 
 prog2 = prog2.setSolverOptions('snopt','majoroptimalitytolerance',1e-3);
 prog2 = prog2.setSolverOptions('snopt','minoroptimalitytolerance',1e-4);
 prog2 = prog2.setSolverOptions('snopt','majorfeasibilitytolerance',1e-3);
 prog2 = prog2.setSolverOptions('snopt','minorfeasibilitytolerance',1e-4);
 prog2 = prog2.setSolverOptions('snopt','iterationslimit',100000);
+
+%Add contact constraints
+for i=2:(N-1)
+  constraint = FunctionHandleConstraint(zeros(4,1),inf*ones(4,1),nx,@l_hand_shelf_constraint);
+  constraint = constraint.setName(sprintf('l_hand_shelf_constraint_%d',i));
+  prog2 = prog2.addConstraint(constraint, {prog2.x_inds(:,i)});
+end
+
+prog2 = prog2.addRobustCost(10*ones(14), 1e-2*ones(7), 100*ones(14));
+
+% constraint = FunctionHandleConstraint(zeros(4,1),inf(4,1),nq,@l_hand_shelf_constraint_r,1);
+% constraint = constraint.setName('l_hand_shelf_constraint_r');
+% prog2 = prog2.addRobustStateConstraint(constraint,2:(N-1),1:nq);
+
+%Use last solution as initial guess
+traj_init.x = xtraj1;
+traj_init.u = utraj1;
 
 tic;
 [xtraj2,utraj2,z,F,info,infeasible] = prog2.solveTraj(1.5*tf0,traj_init);
@@ -148,8 +182,8 @@ function displayStateTrajectory(t,x,u)
 end
 
 function [g,dg,ddg] = cost(h,x,u)
-    Qr = diag([zeros(nq,1);1*ones(nq,1)]);
-    Rr = .001*eye(nu);
+    Qr = diag([zeros(nq,1); ones(nq,1)]);
+    Rr = 0.001*eye(nu);
 
     g = (x-xG)'*Qr*(x-xG) + u'*Rr*u;
     dg = [0, 2*(x'*Qr -xG'*Qr), 2*u'*Rr];
@@ -157,7 +191,7 @@ function [g,dg,ddg] = cost(h,x,u)
 end
 
 function [g,dg,ddg] = finalCost(T,x)
-    Qn = diag([zeros(nq,1);10*ones(nq,1)]);
+    Qn = diag([zeros(nq,1); 100*ones(nq,1)]);
 
     g = (x-xG)'*Qn*(x-xG);
     dg = [0, 2*(x'*Qn -xG'*Qn)];
@@ -179,7 +213,11 @@ function [f,df] = l_hand_shelf_constraint(x)
     q = x(1:nq);
     kinsol = doKinematics(r, q);
     [phi,~,~,~,~,~,~,~,J] = r.contactConstraints(kinsol);
-    f = phi;
+    if pad
+        f = phi - [.01 0 0 0]';
+    else
+        f = phi;
+    end
     df = [J,zeros(length(f),nq)];
 end
 
