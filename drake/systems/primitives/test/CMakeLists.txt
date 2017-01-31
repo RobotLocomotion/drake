@@ -46,6 +46,9 @@ target_link_libraries(saturation_test drakeSystemPrimitives)
 drake_add_cc_test(signal_logger_test)
 target_link_libraries(signal_logger_test drakeSystemPrimitives drakeSystemAnalysis)
 
+drake_add_cc_test(diagram_logger_test)
+target_link_libraries(diagram_logger_test drakeSystemPrimitives drakeSystemAnalysis)
+
 drake_add_cc_test(trajectory_source_test)
 target_link_libraries(trajectory_source_test drakeSystemPrimitives)
 
