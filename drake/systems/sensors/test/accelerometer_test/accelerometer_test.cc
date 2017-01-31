@@ -52,8 +52,8 @@ GTEST_TEST(TestAccelerometer, AccessorsAndToStringTest) {
   EXPECT_EQ(std::count(dut_string.begin(), dut_string.end(), '\n'), 3);
 }
 
-// Attaches an accelerometer to a box that's falling due to the effects of
-// gravity. The provided `xyz` and `rpy` specify the transformation between the
+// Attaches an accelerometer to a box that's falling due to gravity. The
+// provided `xyz` and `rpy` parameters specify the transformation between the
 // sensing frame and the frame of the rigid body to which the accelerometer is
 // attached.
 void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
@@ -66,17 +66,16 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
           GetDrakePath() + "/multibody/models/box.urdf",
           drake::multibody::joints::kQuaternion, tree.get());
 
-  // Adds a frame to the RigidBodyTree called "sensor frame" that is coincident
-  // with the "box" body within the RigidBodyTree.
-  Eigen::Isometry3d X_BS;  // Sensor frame's pose in Body's frame.
-  const Eigen::Matrix3d rotation_matrix = drake::math::rpy2rotmat(rpy);
+  // Adds a frame to the RigidBodyTree called "accelerometer frame" that is
+  // coincident with the "box" body within the RigidBodyTree.
+  const Eigen::Matrix3d R_BA = drake::math::rpy2rotmat(rpy);
 
-  // std::cout << "Rotation Matrix:\n" << rotation_matrix << std::endl;
-  X_BS.matrix() << rotation_matrix, xyz, 0, 0, 0, 1;
+  Eigen::Isometry3d X_BA;  // Transform from accelerometer's to body's frames.
+  X_BA.matrix() << R_BA, xyz, 0, 0, 0, 1;
 
   auto sensor_frame = std::allocate_shared<RigidBodyFrame<double>>(
-      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "sensor frame",
-      tree->FindBody("box"), X_BS);
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "accelerometer frame",
+      tree->FindBody("box"), X_BA);
   tree->addFrame(sensor_frame);
   EXPECT_EQ(tree->get_num_actuators(), 0);
 
@@ -118,8 +117,11 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
   ASSERT_EQ(output->get_num_ports(), 1);
   dut.CalcOutput(*dut_context, output.get());
 
+  // The frame of the RigidBody to which the sensor is attached is coincident
+  // with the world frame.
+  const Eigen::Matrix3d R_BW = Eigen::Matrix3d::Identity();
   Vector3d expected_measurement =
-      rotation_matrix.inverse() * tree->a_grav.tail<3>();
+      R_BA.inverse() * R_BW * tree->a_grav.tail<3>();
   EXPECT_TRUE(CompareMatrices(output->get_vector_data(0)->get_value(),
                               expected_measurement, 1e-10,
                               MatrixCompareType::absolute));
@@ -142,6 +144,9 @@ GTEST_TEST(TestAccelerometer, TestFreeFall_VariousOrientations) {
   }
 }
 
+// Tests that the accelerometer attached to a floating rigid body can measure
+// the effects of gravity. The sensor's frame is translated along all three axes
+// relative to the body's frame.
 GTEST_TEST(TestAccelerometer, TestFreeFall_VariousTranslations) {
   const double kMinRange = -1;
   const double kMaxRange = 1;

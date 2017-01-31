@@ -25,7 +25,7 @@ namespace sensors {
 ///       | ConstantVectorSource |
 ///       ------------------------
 ///                 |
-///                 | < vector of zeros >
+///                 | < vector of zeros > (actuator torque commands)
 ///                 |
 ///                 V
 /// -----------------------------------  x_dot (via LCM)
@@ -47,9 +47,9 @@ namespace sensors {
 ///     |   -----------------                           |
 ///     |           |                                   |
 ///     V           V                                   |
-/// --------------------                                |
-/// |      Logger      | <-------------------------------
-/// --------------------
+/// -------------------------------------               |
+/// |      AccelerometerTestLogger      | <--------------
+/// -------------------------------------
 /// </pre>
 ///
 /// The `ConstantVectorSource` outputs a vector of zeros, which effectively
@@ -67,9 +67,9 @@ namespace sensors {
 
 class AccelerometerExampleDiagram : public Diagram<double> {
  public:
-  explicit AccelerometerExampleDiagram(::drake::lcm::DrakeLcmInterface* lcm);
-
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AccelerometerExampleDiagram);
+
+  explicit AccelerometerExampleDiagram(::drake::lcm::DrakeLcmInterface* lcm);
 
   /// Initializes this diagram.
   ///

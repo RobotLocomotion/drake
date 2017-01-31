@@ -39,7 +39,7 @@ AccelerometerExampleDiagram::AccelerometerExampleDiagram(
   auto tree = make_unique<RigidBodyTree<double>>();
   tree_ = tree.get();
 
-  // Adds a box to the RigidBodyTree and obtains its model instance ID.
+  // Adds a pendulum to the RigidBodyTree and obtains its model instance ID.
   const parsers::ModelInstanceIdTable table =
       AddModelInstanceFromUrdfFileToWorld(
           model_file_name, drake::multibody::joints::kFixed, tree_);
@@ -50,7 +50,7 @@ AccelerometerExampleDiagram::AccelerometerExampleDiagram(
   sensor_frame_transform.translation() << 0, 0, -0.5;
 
   // Adds a frame to the RigidBodyTree called "sensor frame" that is coincident
-  // with the "swing_arm" body within the RigidBodyTree.
+  // with the "arm" body within the RigidBodyTree.
   sensor_frame_ = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "sensor frame",
       tree->FindBody("arm"), sensor_frame_transform);
