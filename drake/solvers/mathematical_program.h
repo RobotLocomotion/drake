@@ -1113,9 +1113,12 @@ class MathematicalProgram {
    * Adds a linear equality constraint for a matrix of linear expression @p V,
    * such that V(i, j) = B(i, j). If V is a symmetric matrix, then only the
    * lower triangular part of V is constrained.
+   * This function is meant to provide convenience to the user, it incurs
+   * additional copy and memory allocation. For faster speed, add each column
+   * of the matrix equality in a for loop.
    * @tparam DerivedV An Eigen Matrix type of Expression. The number of columns
-   * at compile time should not be 1. Also a ColMajor matrix.
-   * @tparam DerivedB An Eigen Matrix type of double. A ColMajor matrix.
+   * at compile time should not be 1.
+   * @tparam DerivedB An Eigen Matrix type of double.
    * @param V An Eigen Matrix of symbolic expressions. V(i, j) should be a
    * linear expression.
    * @param B An Eigen Matrix of doubles.
@@ -1129,8 +1132,6 @@ class MathematicalProgram {
       std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
       std::is_same<typename DerivedV::Scalar, symbolic::Expression>::value &&
       std::is_same<typename DerivedB::Scalar, double>::value &&
-      DerivedV::Options == Eigen::ColMajor &&
-      DerivedB::Options == Eigen::ColMajor &&
       DerivedV::ColsAtCompileTime != 1 && DerivedB::ColsAtCompileTime != 1,
       Binding<LinearEqualityConstraint>>::type
   AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V, const Eigen::MatrixBase<DerivedB>& B, bool is_symmetric = false) {
@@ -1165,8 +1166,16 @@ class MathematicalProgram {
       return AddLinearEqualityConstraint(flat_lower_V, flat_lower_B);
     }
     else {
-      Eigen::Map<const Eigen::Matrix<symbolic::Expression, V_size, 1>> flat_V(&V(0, 0), V.size());
-      Eigen::Map<const Eigen::Matrix<double, V_size, 1>> flat_B(&B(0, 0), B.size());
+      Eigen::Matrix<symbolic::Expression, V_size, 1> flat_V(V.size());
+      Eigen::Matrix<double, V_size, 1> flat_B(V.size());
+      int V_idx = 0;
+      for (int j = 0; j < V.cols(); ++j) {
+        for (int i = 0; i < V.rows(); ++i) {
+          flat_V(V_idx) = V(i, j);
+          flat_B(V_idx) = B(i, j);
+          ++V_idx;
+        }
+      }
       return AddLinearEqualityConstraint(flat_V, flat_B);
     }
   };

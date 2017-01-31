@@ -14,7 +14,7 @@ namespace {
 void TestLinearSystemExample(LinearSystemExample1* example) {
   example->prog()->Solve();
   CheckSolverName(*(example->prog()), "Linear System Solver");
-  example->CheckSolution();
+  EXPECT_TRUE(example->CheckSolution());
 }
 }  // namespace
 
@@ -27,6 +27,13 @@ GTEST_TEST(testLinearSystemSolver, trivialExample) {
 
   LinearSystemExample3 example3{};
   TestLinearSystemExample(&example1);
+}
+
+GTEST_TEST(testLinearSystemSolver, linearMatrixEqualityExample) {
+  LinearMatrixEqualityExample example{};
+  example.prog()->Solve();
+  CheckSolverName(*(example.prog()), "Linear System Solver");
+  EXPECT_TRUE(example.CheckSolution());
 }
 }  // namespace test
 }  // namespace solvers
