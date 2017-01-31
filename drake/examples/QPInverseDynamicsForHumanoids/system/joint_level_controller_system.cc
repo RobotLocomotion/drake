@@ -27,6 +27,7 @@ void JointLevelControllerSystem::DoCalcOutput(
   auto out_vector = GetMutableOutputVector(output, output_port_index_torque_);
 
   out_vector = robot_.B.transpose() * qp_output->dof_torques();
+
   DRAKE_ASSERT(out_vector.size() == robot_.get_num_actuators());
 }
 

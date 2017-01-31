@@ -1,4 +1,4 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_system.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/discrete_time_plan_eval_system.h"
 
 #include <memory>
 #include <string>
@@ -14,24 +14,25 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
-PlanEvalSystem::PlanEvalSystem(const RigidBodyTree<double>& robot,
-                               const std::string& alias_groups_file_name,
-                               const std::string& param_file_name)
+DiscreteTimePlanEvalSystem::DiscreteTimePlanEvalSystem(
+    const RigidBodyTree<double>& robot,
+    const std::string& alias_groups_file_name,
+    const std::string& param_file_name,
+    double dt)
     : robot_(robot),
+      control_dt_(dt),
       alias_groups_(robot),
       abstract_state_qp_input_index_(0),
       abstract_state_plan_index_(1) {
   input_port_index_humanoid_status_ = DeclareAbstractInputPort().get_index();
   output_port_index_qp_input_ = DeclareAbstractOutputPort().get_index();
-  // Declare discrete time controller.
+  // Declare discrete time update.
   DeclarePeriodicUnrestrictedUpdate(control_dt_, 0);
 
   set_name("plan_eval");
 
-  // KinematicsProperty
   alias_groups_.LoadFromYAMLFile(YAML::LoadFile(alias_groups_file_name));
 
-  // Controller config
   paramset_.LoadFromYAMLConfigFile(YAML::LoadFile(param_file_name),
                                    alias_groups_);
 
@@ -39,18 +40,18 @@ PlanEvalSystem::PlanEvalSystem(const RigidBodyTree<double>& robot,
   abstract_state_plan_index_ = 1;
 }
 
-void PlanEvalSystem::DoCalcOutput(const systems::Context<double>& context,
-                                  systems::SystemOutput<double>* output) const {
-  // Output:
+void DiscreteTimePlanEvalSystem::DoCalcOutput(
+    const systems::Context<double>& context,
+    systems::SystemOutput<double>* output) const {
+  // Copies QpInput from AbstractState.
   QpInput& qp_input = output->GetMutableData(output_port_index_qp_input_)
                           ->GetMutableValue<QpInput>();
-
-  // Gets QpInput from AbstractState.
   qp_input =
       context.get_abstract_state<QpInput>(abstract_state_qp_input_index_);
 }
 
-std::unique_ptr<systems::AbstractValue> PlanEvalSystem::AllocateOutputAbstract(
+std::unique_ptr<systems::AbstractValue>
+DiscreteTimePlanEvalSystem::AllocateOutputAbstract(
     const systems::OutputPortDescriptor<double>& descriptor) const {
   DRAKE_DEMAND(descriptor.get_index() == output_port_index_qp_input_);
   return systems::AbstractValue::Make<QpInput>(QpInput(GetDofNames(robot_)));

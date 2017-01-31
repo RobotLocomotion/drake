@@ -9,16 +9,29 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+/**
+ * A class that translates QpOutput to vector of torque commands.
+ */
 class JointLevelControllerSystem : public systems::LeafSystem<double> {
  public:
+  /**
+   * Constructor for JointLevelControllerSystem.
+   * @param robot Reference to a RigidBodyTree. An internal alias is saved,
+   * so the lifespan of @p robot must be longer than this object.
+   */
   explicit JointLevelControllerSystem(const RigidBodyTree<double>& robot);
 
-  void DoCalcOutput(
-      const systems::Context<double>& context,
-      systems::SystemOutput<double>* output) const override;
+  /**
+   * Extracts the torques from a QpOutput to a BasicVector.
+   * More specifically, the output tau_act = B^T * qp_output.dof_torques, where
+   * B is a selection matrix that maps the RigidBodyTree's actuators to its
+   * generalized acceleration.
+   */
+  void DoCalcOutput(const systems::Context<double>& context,
+                    systems::SystemOutput<double>* output) const override;
 
   /**
-   * @return Port for the input: lcm message bot_core::robot_state_t
+   * @return Port for the input: QpOutput
    */
   inline const systems::InputPortDescriptor<double>& get_input_port_qp_output()
       const {
@@ -26,7 +39,7 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
   }
 
   /**
-   * @return Port for the output: HumanoidStatus.
+   * @return Port for the output: torques as a BasicVector
    */
   inline const systems::OutputPortDescriptor<double>& get_output_port_torque()
       const {

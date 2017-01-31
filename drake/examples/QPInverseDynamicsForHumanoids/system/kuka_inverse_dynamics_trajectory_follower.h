@@ -23,38 +23,37 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+/**
+ * Builds a Diagram of a Kuka IIWA arm controlled by inverse dynamics to follow
+ * a desired trajectory.
+ */
 class KukaInverseDynamicsTrajectoryFollower : public systems::Diagram<double> {
  public:
   KukaInverseDynamicsTrajectoryFollower(
-      const std::string& model_path,
-      const std::string& alias_group_path,
+      const std::string& model_path, const std::string& alias_group_path,
       const std::string& controller_config_path) {
     this->set_name("KukaInverseDynamicsTrajectoryFollower");
 
-    // Instantiates an Multibody Dynamics (MBD) model of the world.
     auto tree = std::make_unique<RigidBodyTree<double>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        model_path,
-        drake::multibody::joints::kFixed,
-        nullptr, tree.get());
+        model_path, drake::multibody::joints::kFixed, nullptr, tree.get());
 
     drake::multibody::AddFlatTerrainToWorld(tree.get());
 
     systems::DiagramBuilder<double> builder;
 
-    // Instantiates a RigidBodyPlant from an MBD model of the world.
     plant_ = builder.AddSystem<systems::RigidBodyPlant<double>>(move(tree));
     const RigidBodyTree<double>& robot = plant_->get_rigid_body_tree();
 
-    rs_wrapper_ = builder.AddSystem(std::make_unique<RobotStatusWrapper>(
-        robot, alias_group_path));
+    rs_wrapper_ = builder.AddSystem(
+        std::make_unique<RobotStatusWrapper>(robot, alias_group_path));
     joint_level_controller_ =
         builder.AddSystem(std::make_unique<JointLevelControllerSystem>(robot));
 
     plan_eval_ = builder.AddSystem(std::make_unique<KukaPlanEvalSystem>(
-        robot, alias_group_path, controller_config_path));
+        robot, alias_group_path, controller_config_path, 0.002));
     id_controller_ =
-        builder.AddSystem(std::make_unique<QPControllerSystem>(robot));
+        builder.AddSystem(std::make_unique<QPControllerSystem>(robot, 0.002));
 
     viz_publisher_ =
         builder.template AddSystem<systems::DrakeVisualizer>(robot, &lcm_);
@@ -71,16 +70,21 @@ class KukaInverseDynamicsTrajectoryFollower : public systems::Diagram<double> {
                     id_controller_->get_input_port_humanoid_status());
     builder.Connect(plan_eval_->get_output_port_qp_input(),
                     id_controller_->get_input_port_qp_input());
-    // qp_output -> plant
+    // qp_output -> joint controller
     builder.Connect(id_controller_->get_output_port_qp_output(),
                     joint_level_controller_->get_input_port_qp_output());
+    // joint controller -> plant
     builder.Connect(joint_level_controller_->get_output_port_torque(),
                     plant_->get_input_port(0));
 
+    // plant -> viz
     builder.Connect(plant_->state_output_port(),
                     viz_publisher_->get_input_port(0));
 
+    // Exports plant's state output.
     builder.ExportOutput(plant_->state_output_port());
+
+    // Exports torque command.
     builder.ExportOutput(joint_level_controller_->get_output_port_torque());
 
     builder.BuildInto(this);

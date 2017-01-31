@@ -3,17 +3,24 @@
 #include <memory>
 #include <string>
 
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_system.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/discrete_time_plan_eval_system.h"
 
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
-class HumanoidPlanEvalSystem : public PlanEvalSystem {
+/**
+ * This class extends DiscreteTimePlanEvalSystem. It moves the robot's pelvis
+ * height following a sine wave while holding everything else stationary. It
+ * assumes the robot is in double stance, and the stationary set point is set
+ * by SetDesired().
+ */
+class HumanoidPlanEvalSystem : public DiscreteTimePlanEvalSystem {
  public:
   HumanoidPlanEvalSystem(const RigidBodyTree<double>& robot,
                          const std::string& alias_groups_file_name,
-                         const std::string& param_file_name);
+                         const std::string& param_file_name,
+                         double dt);
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
                                 systems::State<double>* state) const override;
@@ -22,8 +29,9 @@ class HumanoidPlanEvalSystem : public PlanEvalSystem {
       const override;
 
   /**
-   * Set the set point for tracking.
+   * Sets the set point for tracking.
    * @param q_d Desired generalized position.
+   * @param state State
    */
   void SetDesired(const VectorX<double>& q, systems::State<double>* state);
 };
