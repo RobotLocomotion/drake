@@ -6,6 +6,7 @@
 workspace(name = "drake")
 
 load("//tools/third_party/kythe/tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
+load("//tools:github.bzl", "github_archive")
 
 pkg_config_package(
     name = "glib",
@@ -17,39 +18,43 @@ pkg_config_package(
     modname = "python2",
 )
 
-new_http_archive(
+github_archive(
     name = "gtest",
-    url = "https://github.com/google/googletest/archive/release-1.7.0.zip",
-    sha256 = "b58cb7547a28b2c718d1e38aee18a3659c9e3ff52440297e965f5edffe34b6d0",
+    repository = "google/googletest",
+    commit = "release-1.7.0",
+    sha256 = "f73a6546fdf9fce9ff93a5015e0333a8af3062a152a9ad6bcb772c96687016cc",
     build_file = "tools/gtest.BUILD",
-    strip_prefix = "googletest-release-1.7.0",
 )
 
-git_repository(
-    name   = "gflags",
+github_archive(
+    name = "gflags",
+    repository = "gflags/gflags",
     commit = "a69b2544d613b4bee404988710503720c487119a",
-    remote = "https://github.com/gflags/gflags.git"
+    sha256 = "8b3836d5ca34a2da4d6375cf5f2030c719b508ca16014fcc9d5e9b295b56a6c1",
 )
 
-new_git_repository(
+github_archive(
     name = "google_styleguide",
-    remote = "https://github.com/google/styleguide.git",
+    repository = "google/styleguide",
     commit = "159b4c81bbca97a9ca00f1195a37174388398a67",
+    sha256 = "3ed86946e6e637f0fe21749c0323b086e62c4b8b93694d6cedad615cdc584512",
     build_file = "tools/google_styleguide.BUILD",
 )
 
-new_git_repository(
+github_archive(
     name = "eigen",
-    remote = "https://github.com/RobotLocomotion/eigen-mirror.git",
+    repository = "RobotLocomotion/eigen-mirror",
     commit = "d3ee2bc648be3d8be8c596a9a0aefef656ff8637",
     build_file = "tools/eigen.BUILD",
+    sha256 = "db797e2857d3d6def92ec2c46aa04577d3e1bb371d6fe14e6bdfc088dcaf2e9e",
 )
 
-new_git_repository(
+github_archive(
     name = "spdlog",
-    remote = "https://github.com/gabime/spdlog.git",
+    repository = "gabime/spdlog",
     commit = "43a4048b92ef5b7eff6dc637a621c7da3a41d194",
     build_file = "tools/spdlog.BUILD",
+    sha256 = "5166c036eacd625b86f725bfba356547e0bc497232649662c61cde7b1b423292",
 )
 
 maven_jar(
@@ -58,61 +63,68 @@ maven_jar(
     sha1 = "4950821eefe4c204903e68b4d45a558b5ebdd6fa",
 )
 
-new_git_repository(
+github_archive(
     name = "lcm",
-    remote = "https://github.com/lcm-proj/lcm.git",
+    repository = "lcm-proj/lcm",
     commit = "755d8108bf4447d83786e0e6586875371ba859e5",
     build_file = "tools/lcm.BUILD",
+    sha256 = "062b2daf35deb617552ffc2145ec238a2898710c8c5e9c49dc2514519c5f7930",
 )
 
-new_git_repository(
+github_archive(
     name = "bullet",
-    remote = "https://github.com/RobotLocomotion/bullet3.git",
+    repository = "RobotLocomotion/bullet3",
     commit = "ae2c4ca0618d55c6a29900aed75b958604149fdb",
     build_file = "tools/bullet.BUILD",
+    sha256 = "2121dc8b0d33f50adbad8fc9ac5e007141df5cf5738fce72200c5bac4ffc589b",
 )
 
-new_git_repository(
+github_archive(
     name = "ccd",
-    remote = "https://github.com/danfis/libccd.git",
+    repository = "danfis/libccd",
     commit = "16b9379fb6e8610566fe5e1396166daf7106f165",
     build_file = "tools/ccd.BUILD",
+    sha256 = "fc583888c731d91c9ef287ca9ba443426ecfce75056d6c468b063b383bd8efa1",
 )
 
-new_git_repository(
+github_archive(
     name = "octomap",
-    remote = "https://github.com/OctoMap/octomap.git",
+    repository = "OctoMap/octomap",
     commit = "6d7c31ae4df2c93cb8a954e44d442338b58d3558",
     build_file = "tools/octomap.BUILD",
+    sha256 = "023ddd5b1e8ed1a70374c352cbd5b02bd5a26707f61a13cfb087766d5ca466e3",
 )
 
-new_git_repository(
+github_archive(
     name = "fcl",
-    remote = "https://github.com/flexible-collision-library/fcl.git",
+    repository = "flexible-collision-library/fcl",
     commit = "06d48b3b6f3605b8caf119d5208d8156eb64fe0d",
     build_file = "tools/fcl.BUILD",
+    sha256 = "0a5652cac609cca58f85d68c08298e177867188ad730e78c8c9ac97eea8d32b4",
 )
 
-new_git_repository(
+github_archive(
     name = "ipopt",
-    remote = "https://github.com/RobotLocomotion/ipopt-mirror.git",
+    repository = "RobotLocomotion/ipopt-mirror",
     commit = "11649b7a063e03af38fcc59cf8cdb0694735c84c",
     build_file = "tools/ipopt.BUILD",
+    sha256 = "e497c849f0787c8eb3a918d72cf4b4ae48117a183d2b3ae800049cc09e102c8d",
 )
 
-new_git_repository(
+github_archive(
     name = "pybind11",
-    remote = "https://github.com/pybind/pybind11.git",
+    repository = "pybind/pybind11",
     commit = "7830e8509f2adc97ce9ee32bf99cd4b82089cc4c",
     build_file = "tools/pybind11.BUILD",
+    sha256 = "16612244e7585f82228fe27e0629f6b01e7459b7b4ead90447cfb53c48dd86f3",
 )
 
 # Necessary for buildifier.
-http_archive(
+github_archive(
     name = "io_bazel_rules_go",
+    repository = "bazelbuild/rules_go",
+    commit = "0.3.1",
     sha256 = "b7759f01d29c075db177f688ffb4464aad2b8fbb7017f89a1d3819ce07f1d584",
-    strip_prefix = "rules_go-0.3.1",
-    url = "https://github.com/bazelbuild/rules_go/archive/0.3.1.tar.gz",
 )
 
 # Necessary for buildifier.
@@ -121,17 +133,19 @@ load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
 # Necessary for buildifier.
 go_repositories()
 
-git_repository(
+github_archive(
     name = "com_github_bazelbuild_buildifier",
+    repository = "bazelbuild/buildifier",
     commit = "93929369232fcda305607a2e0aa7b3cd9cf8912d",
-    remote = "https://github.com/bazelbuild/buildifier.git",
+    sha256 = "51a84592ced38213592a2d177cf551d3be9179092d3921a38154a2662610df96",
 )
 
-new_git_repository(
+github_archive(
     name = "yaml_cpp",
-    remote = "https://github.com/jbeder/yaml-cpp.git",
+    repository = "jbeder/yaml-cpp",
     commit = "85af926ddc5f3c8fb438001743e65ec3a039ceec",
     build_file = "tools/yaml_cpp.BUILD",
+    sha256 = "d94cdb84f346ce4d9f1f891505ed257796103f70ce56590bdd02e025c8503b16",
 )
 
 load("//tools:gurobi.bzl", "gurobi_repository")
@@ -166,10 +180,11 @@ http_archive(
     strip_prefix = "protobuf-3.0.0",
 )
 
-git_repository(
+github_archive(
     name = "org_pubref_rules_protobuf",
-    remote = "https://github.com/pubref/rules_protobuf.git",
-    tag = "v0.7.1",
+    repository = "pubref/rules_protobuf",
+    commit = "v0.7.1",
+    sha256 = "646b39438d8eeba02d9af890dee444c7e4e9d08ae8611bc0e0621257010162db",
 )
 
 load("@org_pubref_rules_protobuf//python:rules.bzl",
