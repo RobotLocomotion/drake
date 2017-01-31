@@ -51,7 +51,7 @@ int DoMain() {
       // Calculates some output from received state.
       msg_u.tau = received_msg.theta1 + received_msg.theta2;
 
-      // Publish msg_u
+      // Publish msg_u.
       msg_u.encode(&buffer_u[0], 0, msg_u.getEncodedSize());
       lcm.Publish(channel_u, &buffer_u[0], msg_u.getEncodedSize());
     }

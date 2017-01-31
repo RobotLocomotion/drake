@@ -37,7 +37,7 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   /// Manipulator equation of Acrobot: H * qdotdot + C = B*u.
   /// H[2x2] is the mass matrix.
   /// C[2x1] includes the Coriolis term, gravity term and the damping term, i.e.
-  /// C[Cx1] = Coriolis(q,v)*v + g(q) + [b1*theta1;b2*theta2]
+  /// C[2x1] = Coriolis(q,v)*v + g(q) + [b1*theta1;b2*theta2]
   Vector2<T> VectorC(const AcrobotStateVector<T>& x) const;
   Matrix2<T> MatrixH(const AcrobotStateVector<T>& x) const;
   ///@}
@@ -97,23 +97,30 @@ class AcrobotPlant : public systems::LeafSystem<T> {
       g_{9.81};    // Gravitational constant (m/s^2).
 
   /*
-  // parameters for the acrobot in the lab
-  const double m1{2.4367},  // Mass of link 1 (kg).
-    m2{0.6178},           // Mass of link 2 (kg).
-    l1{0.5263},           // Length of link 1 (m).
-    l2{0},                // Length of link 2 (m).
-    lc1{1.6738},   // Vertical distance from shoulder joint to center of
+  // parameters for the acrobot in the MIT lab
+  const double m1_{2.4367},  // Mass of link 1 (kg).
+    m2_{0.6178},           // Mass of link 2 (kg).
+    l1_{0.5263},           // Length of link 1 (m).
+    l2_{0},                // Length of link 2 (m).
+    lc1_{1.6738},   // Vertical distance from shoulder joint to center of
                    // mass of link 1 (m).
-    lc2{1.5651},   // Vertical distance from elbox joint to center of mass of
+    lc2_{1.5651},   // Vertical distance from elbox joint to center of mass of
                    // link 2 (m).
-    Ic1{-4.7443},  // Inertia of link 1 about the center of mass of link 1
+    Ic1_{-4.7443},  // Inertia of link 1 about the center of mass of link 1
                    // (kg*m^2).
-    Ic2{-1.0068},  // Inertia of link 2 about the center of mass of link 2
+    Ic2_{-1.0068},  // Inertia of link 2 about the center of mass of link 2
                    // (kg*m^2).
-    b1{0.0320},    // Damping coefficient of the shoulder joint (kg*m^2/s).
-    b2{0.0413},    // Damping coefficient of the elbow joint (kg*m^2/s).
-    g{9.81};       // Gravitational constant (m/s^2).
+    b1_{0.0320},    // Damping coefficient of the shoulder joint (kg*m^2/s).
+    b2_{0.0413},    // Damping coefficient of the elbow joint (kg*m^2/s).
+    g_{9.81};       // Gravitational constant (m/s^2).
   */
+
+  // Note that the Spong controller behaves differently on these two sets of
+  // parameters. The controller works well on the first set of parameters,
+  // which Spong used in his paper. In contrast, it is difficult to find a
+  // functional set of gains to stabilize the robot about its upright fixed
+  // point using the second set of parameters, which represent a real robot.
+  // This difference illustrates the limitations of the Spong controller.
 
   const double I1_ = Ic1_ + m1_ * lc1_ * lc1_;
   const double I2_ = Ic2_ + m2_ * lc2_ * lc2_;
