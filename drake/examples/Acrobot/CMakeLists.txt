@@ -10,7 +10,7 @@ if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeAcrobotLcm SOURCE_FILES
           acrobot_lcm.cc)
   target_link_libraries(drakeAcrobotLcm
-          drakeLCMSystem2)
+          drakeLcmSystem)
   drake_install_libraries(drakeAcrobotLcm)
   drake_install_headers(
           acrobot_lcm.h)
@@ -27,7 +27,7 @@ if(lcm_FOUND)
   add_executable(acrobot_plant_w_lcm acrobot_plant_w_lcm.cc)
   target_link_libraries(acrobot_plant_w_lcm
           drakeSystemAnalysis
-          drakeLCMSystem2
+          drakeLcmSystem
           drakeAcrobotLcm
           drakeAcrobotPlant
           drakeMultibodyParsers
@@ -39,7 +39,7 @@ if(lcm_FOUND)
           acrobot_spong_controller_w_lcm.cc)
   target_link_libraries(acrobot_spong_controller_w_lcm
           drakeSystemAnalysis
-          drakeLCMSystem2
+          drakeLcmSystem
           drakeAcrobotLcm
           drakeAcrobotPlant)
 
