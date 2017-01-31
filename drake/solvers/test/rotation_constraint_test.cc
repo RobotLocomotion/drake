@@ -201,7 +201,7 @@ void CompareIntersectionResults(std::vector<Vector3d> desired,
 
 void CompareHalfspaceRelaxation(const std::vector<Vector3d>& pts) {
   // Computes a possibly less tight n and d analytically. For each triangle with
-  // vertices pts[i], pts[j] and pts[k], determine if the halfspace coincinding
+  // vertices pts[i], pts[j] and pts[k], determine if the halfspace coinciding
   // with the triangle is a cutting plane (namely all vertices in pts are on one
   // side of the halfspace). Pick the cutting plane halfspace that is farthest
   // away from the origin.
