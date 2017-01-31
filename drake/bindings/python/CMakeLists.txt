@@ -12,7 +12,6 @@ if(BUILD_TESTING)
   function(drake_add_python_test module_name)
     drake_add_test(NAME test_python_${module_name}
       COMMAND "${PYTHON_EXECUTABLE}" -m unittest ${module_name})
-      # WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
     set_tests_properties(test_python_${module_name} PROPERTIES ENVIRONMENT "PYTHONPATH=$PYTHONPATH:${DRAKE_INSTALL_PYTHON_DIR}")
   endfunction()
 
