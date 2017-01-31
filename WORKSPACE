@@ -190,3 +190,12 @@ github_archive(
 load("@org_pubref_rules_protobuf//python:rules.bzl",
      "py_proto_repositories")
 py_proto_repositories()
+
+# The "@python_headers//:python_headers" target is required by protobuf_python
+# during "bazel query" but not "bazel build", so a stub is fine.
+new_local_repository(
+    name = "python_headers",
+    path = "not/real/stub",
+    build_file_content = ("cc_library(name = 'python_headers', " +
+                          "visibility = ['//visibility:public'])")
+)
