@@ -199,6 +199,49 @@ void CompareIntersectionResults(std::vector<Vector3d> desired,
   }
 }
 
+void CompareHalfspaceRelaxation(const std::vector<Vector3d>& pts) {
+  // Computes a possibly less tight n and d analytically. For each triangle with
+  // vertices pts[i], pts[j] and pts[k], determine if the halfspace coincinding
+  // with the triangle is a cutting plane (namely all vertices in pts are on one
+  // side of the halfspace). Pick the cutting plane halfspace that is farthest
+  // away from the origin.
+  DRAKE_DEMAND(pts.size() >= 3);
+
+  double d = -1;
+  for (int i = 0; i < static_cast<int>(pts.size()); ++i) {
+    for (int j = i + 1; j < static_cast<int>(pts.size()); ++j) {
+      for (int k = j + 1; k < static_cast<int>(pts.size()); ++k) {
+        // Find the normal of the triangle.
+        Eigen::Vector3d normal_tmp = (pts[k] - pts[i]).cross(pts[j] - pts[i]);
+        normal_tmp.normalize();
+        if (normal_tmp(0) < 0) {
+          normal_tmp = -normal_tmp;
+        }
+        double d_tmp = normal_tmp.transpose() * pts[i];
+        bool is_cutting_plane = true;
+        for (const auto& pt : pts) {
+          if (pt.transpose() * normal_tmp < d_tmp - 1E-10) {
+            is_cutting_plane = false;
+            break;
+          }
+        }
+        if (is_cutting_plane) {
+          d = std::max(d, d_tmp);
+        }
+      }
+    }
+  }
+
+  Eigen::Vector3d n_expected;
+  double d_expected;
+  internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(pts, &n_expected,
+                                                               &d_expected);
+  EXPECT_GE(d_expected, d - 1E-8);
+  for (const auto& pt : pts) {
+    EXPECT_GE(pt.transpose() * n_expected - d_expected, -1E-6);
+  }
+}
+
 // Test a number of closed-form solutions for the intersection of a box in the
 // positive orthant with the unit circle.
 GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
@@ -213,6 +256,7 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   CompareIntersectionResults(
       desired,
       internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CompareHalfspaceRelaxation(desired);
 
   // Lifts box bottom (in z).  Still has 3 solutions.
   box_min << 0, 0, 1.0 / 3.0;
@@ -221,6 +265,7 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   CompareIntersectionResults(
       desired,
       internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CompareHalfspaceRelaxation(desired);
 
   // Lowers box top (in z).  Now we have four solutions.
   box_max << 1, 1, 2.0 / 3.0;
@@ -229,6 +274,7 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   CompareIntersectionResults(
       desired,
       internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CompareHalfspaceRelaxation(desired);
 
   // Gets a different four edges by shortening the box (in x).
   box_max(0) = .5;
@@ -237,6 +283,7 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   CompareIntersectionResults(
       desired,
       internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CompareHalfspaceRelaxation(desired);
 
   // Now three edges again as we shorten the box (in y).
   box_max(1) = .6;
@@ -247,6 +294,7 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   CompareIntersectionResults(
       desired,
       internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CompareHalfspaceRelaxation(desired);
 
   // All four intersections are on the vertical edges.
   box_min << 1.0 / 3.0, 1.0 / 3.0, 0;
@@ -258,6 +306,7 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   CompareIntersectionResults(
       desired,
       internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CompareHalfspaceRelaxation(desired);
 
   // box_max right on the unit sphere.
   box_max << 1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0;
@@ -296,6 +345,7 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   CompareIntersectionResults(
       desired,
       internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CompareHalfspaceRelaxation(desired);
 }
 
 bool IsFeasibleCheck(

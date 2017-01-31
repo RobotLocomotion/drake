@@ -348,6 +348,71 @@ std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(
   }
   return intersections;
 }
+
+/*
+ * For the intersection region between the surface of the unit sphere, and the
+ * interior of a box aligned with the axes, use a half space relaxation for
+ * the intersection region as nᵀ * v >= d
+ * @param[in] pts. The vertices containing the intersecting points between edges
+ * of the box and the surface of the unit sphere.
+ * @param[out] n. The unit length normal vector of the halfspace, pointing
+ * outward.
+ * @param[out] d. The intercept of the halfspace.
+ */
+void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
+    const std::vector<Eigen::Vector3d>& pts, Eigen::Vector3d* n, double* d) {
+  DRAKE_DEMAND(pts.size() >= 3);
+  // We first prove that for a given normal vector n, and ANY unit
+  // length vector v within the intersection region between the
+  // surface of the unit sphere and the interior of the axis-aligned
+  // box, the minimal of nᵀ * v, always occurs at one of the vertex of
+  // the intersection region, if the box and the vector n are in the
+  // same orthant. Namely min nᵀ * v = min(nᵀ * pts.col(i))
+  // To see this, for any vector v in the intersection region, suppose
+  // it is on an arc, aligned with one axis. Without loss of
+  // generality we assume the aligned axis is x axis, namely
+  // v(0) = t, box_min(0) <= t <= box_max(0)
+  // and v(1)² + v(2)² = 1 - t², with the bounds
+  // box_min(1) <= v(1) <= box_max(1)
+  // box_min(2) <= v(2) <= box_max(2)
+  // And the inner product nᵀ * v =
+  // n(0) * t + s * (n(1) * cos(α) + n(2) * sin(α))
+  // where we define s = sqrt(1 - t²)
+  // Using the property of trigonometric function, we know that
+  // the minimal of (n(1) * cos(α) + n(2) * sin(α)) is obtained at
+  // the boundary of α. Thus we know that the minimal of nᵀ * v is
+  // always obtained at one of the vertex pts.col(i).
+
+  // To find the tightest bound d satisfying nᵀ * v >= d for all
+  // vector v in the intersection region, we use the fact that for
+  // a given normal vector n, the minimal of nᵀ * v is always obtained
+  // at one of the vertices pts.col(i), and formulate the following
+  // SOCP to find the normal vector n
+  // max d
+  // s.t d <= nᵀ * pts.col(i)
+  //     nᵀ * n <= 1
+  MathematicalProgram prog_normal;
+  auto n_var = prog_normal.NewContinuousVariables<3>();
+  auto d_var = prog_normal.NewContinuousVariables<1>();
+  prog_normal.AddLinearCost(Vector1d(-1), d_var);
+  for (const auto &pt : pts) {
+    prog_normal.AddLinearConstraint(
+        Eigen::Vector4d(pt(0), pt(1), pt(2), -1), 0,
+        std::numeric_limits<double>::infinity(), {n_var, d_var});
+  }
+  // A_lorentz * n + b_lorentz = [1; n]
+  Eigen::Matrix<double, 4, 3> A_lorentz{};
+  A_lorentz << Eigen::RowVector3d::Zero(),
+      Eigen::Matrix3d::Identity();
+  Eigen::Vector4d b_lorentz(1, 0, 0, 0);
+  prog_normal.AddLorentzConeConstraint(A_lorentz, b_lorentz, n_var);
+  prog_normal.Solve();
+  *n = prog_normal.GetSolution(n_var);
+  *d = prog_normal.GetSolution(d_var(0));
+
+  DRAKE_DEMAND((*n)(0) > 0 && (*n)(1) > 0 && (*n)(2) > 0);
+  DRAKE_DEMAND(*d > 0 && *d < 1);
+}
 }  // namespace internal
 
 namespace {
@@ -393,63 +458,15 @@ void AddMcCormickVectorConstraints(
             // the tightest linear constraint of the form:
             //    d <= n'*v
             // that puts v inside (but as close as possible to) the unit circle.
-            // We will show that we can solve an SOCP to find such normal vector
-            // n.
             auto pts = internal::ComputeBoxEdgesAndSphereIntersection(box_min,
                                                                       box_max);
             DRAKE_DEMAND(pts.size() >= 3);
 
-            // We first prove that for a given normal vector n, and ANY unit
-            // length vector v within the intersection region between the
-            // surface of the unit sphere and the interior of the axis-aligned
-            // box, the minimal of nᵀ * v, always occurs at one of the vertex of
-            // the intersection region, if the box and the vector n are in the
-            // same orthant. Namely min nᵀ * v = min(nᵀ * pts.col(i))
-            // To see this, for any vector v in the intersection region, suppose
-            // it is on an arc, aligned with one axis. Without loss of
-            // generality we assume the aligned axis is x axis, namely
-            // v(0) = t, box_min(0) <= t <= box_max(0)
-            // and v(1)² + v(2)² = 1 - t², with the bounds
-            // box_min(1) <= v(1) <= box_max(1)
-            // box_min(2) <= v(2) <= box_max(2)
-            // And the inner product nᵀ * v =
-            // n(0) * t + s * (n(1) * cos(α) + n(2) * sin(α))
-            // where we define s = sqrt(1 - t²)
-            // Using the property of trigonometric function, we know that
-            // the minimal of (n(1) * cos(α) + n(2) * sin(α)) is obtained at
-            // the boundary of α. Thus we know that the minimal of nᵀ * v is
-            // always obtained at one of the vertex pts.col(i).
 
-            // To find the tightest bound d satisfying nᵀ * v >= d for all
-            // vector v in the intersection region, we use the fact that for
-            // a given normal vector v, the minimal of nᵀ * v is always obtained
-            // at one of the vertices pts.col(i), and formulate the following
-            // SOCP to find the normal vector n
-            // max d
-            // s.t d <= nᵀ * pts.col(i)
-            //     nᵀ * n <= 1
-
-            MathematicalProgram prog_normal;
-            auto n = prog_normal.NewContinuousVariables<3>();
-            auto d_var = prog_normal.NewContinuousVariables<1>();
-            prog_normal.AddLinearCost(Vector1d(-1), d_var);
-            for (const auto& pt : pts) {
-              prog_normal.AddLinearConstraint(
-                  Eigen::Vector4d(pt(0), pt(1), pt(2), -1), 0,
-                  std::numeric_limits<double>::infinity(), {n, d_var});
-            }
-            // A_lorentz * n + b_lorentz = [1; n]
-            Eigen::Matrix<double, 4, 3> A_lorentz{};
-            A_lorentz << Eigen::RowVector3d::Zero(),
-                Eigen::Matrix3d::Identity();
-            Eigen::Vector4d b_lorentz(1, 0, 0, 0);
-            prog_normal.AddLorentzConeConstraint(A_lorentz, b_lorentz, n);
-            prog_normal.Solve();
-            Eigen::Vector3d normal = prog_normal.GetSolution(n);
-            double d = prog_normal.GetSolution(d_var(0));
-
-            DRAKE_DEMAND(normal(0) > 0 && normal(1) > 0 && normal(2) > 0);
-            DRAKE_DEMAND(d > 0 && d < 1);
+            double d(0);
+            Eigen::Vector3d normal{};
+            internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(
+                pts, &normal, &d);
 
             // theta is the maximal angle between v and normal, where v is an
             // intersecting point between the box and the sphere.
