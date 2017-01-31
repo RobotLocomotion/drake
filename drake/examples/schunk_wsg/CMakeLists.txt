@@ -4,7 +4,7 @@ if(lcm_FOUND)
     schunk_wsg_lcm.cc
     simulated_schunk_wsg_system.cc)
   target_link_libraries(drakeSchunkWsg
-    drakeLCMSystem2
+    drakeLcmSystem
     drakeMultibodyParsers
     drakeRigidBodyPlant)
   drake_install_libraries(drakeSchunkWsg)
@@ -26,7 +26,7 @@ if(lcm_FOUND)
     drakeSchunkWsg
     drakeSystemAnalysis
     drakeSystemControllers
-    drakeLCMSystem2)
+    drakeLcmSystem)
   drake_add_test(
       NAME schunk_wsg_simulation COMMAND schunk_wsg_simulation -simulation_sec 0.1)
 endif()

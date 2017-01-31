@@ -6,7 +6,7 @@ if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
     robot_state_decoder_system.cc
     valkyrie_balancing_controller_system.cc)
   target_link_libraries(valkyrie_balancing_controller_system
-    drakeLCMSystem2
+    drakeLcmSystem
     drakeMultibodyParsers
     drakeQPController
     drakeQPControllerLcmTranslator
