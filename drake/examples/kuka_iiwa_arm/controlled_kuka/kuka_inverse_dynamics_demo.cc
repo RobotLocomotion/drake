@@ -43,7 +43,7 @@ using systems::Context;
 using systems::Simulator;
 
 namespace examples {
-namespace qp_inverse_dynamics {
+namespace kuka_iiwa_arm {
 namespace {
 
 unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {

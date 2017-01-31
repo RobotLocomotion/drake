@@ -43,8 +43,8 @@ class BodyOfInterest {
               const KinematicsCache<double>& cache) {
     pose_ = robot.CalcFramePoseInWorldFrame(cache, *body_, offset_);
     vel_ = robot.CalcFrameSpatialVelocityInWorldFrame(cache, *body_, offset_);
-    J_ = robot.CalcFrameSpatialVelocityJacobianInWorldFrame(
-        cache, *body_, offset_);
+    J_ = robot.CalcFrameSpatialVelocityJacobianInWorldFrame(cache, *body_,
+                                                            offset_);
     Jdot_times_v_ = robot.CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
         cache, *body_, offset_);
   }

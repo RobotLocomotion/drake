@@ -13,7 +13,8 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 AtlasJointLevelControllerSystem::AtlasJointLevelControllerSystem(
-    const RigidBodyTree<double>& robot) : JointLevelControllerSystem(robot) {
+    const RigidBodyTree<double>& robot)
+    : JointLevelControllerSystem(robot) {
   output_port_index_atlas_cmd_ = DeclareAbstractOutputPort().get_index();
 
   // TODO(siyuan.fent): Load gains from some config.
@@ -32,7 +33,6 @@ AtlasJointLevelControllerSystem::AtlasJointLevelControllerSystem(
 void AtlasJointLevelControllerSystem::DoCalcOutput(
     const systems::Context<double>& context,
     systems::SystemOutput<double>* output) const {
-
   JointLevelControllerSystem::DoCalcOutput(context, output);
 
   // Output
