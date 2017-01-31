@@ -21,8 +21,7 @@ AccelerometerTestLogger::AccelerometerTestLogger(int plant_state_size)
   plant_state_derivative_port_index_ =
       this->DeclareInputPort(kVectorValued, plant_state_size).get_index();
   acceleration_port_index_ =
-      this->DeclareInputPort(kVectorValued, Accelerometer::kNumDimensions)
-          .get_index();
+      this->DeclareInputPort(kVectorValued, 3).get_index();
 }
 
 void AccelerometerTestLogger::DoPublish(const Context<double>& context)
