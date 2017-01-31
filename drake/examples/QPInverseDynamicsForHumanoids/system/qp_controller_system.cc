@@ -58,8 +58,8 @@ std::unique_ptr<systems::AbstractState>
 QPControllerSystem::AllocateAbstractState() const {
   std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(1);
   abstract_vals[abstract_state_qp_output_index_] =
-      std::move(std::unique_ptr<systems::AbstractValue>(
-          new systems::Value<QpOutput>(QpOutput(GetDofNames(robot_)))));
+      std::unique_ptr<systems::AbstractValue>(
+          new systems::Value<QpOutput>(QpOutput(GetDofNames(robot_))));
   return std::make_unique<systems::AbstractState>(std::move(abstract_vals));
 }
 
