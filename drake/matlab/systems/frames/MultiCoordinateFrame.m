@@ -172,7 +172,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
       tf=[];
       fid=-1;
       for i=1:length(obj.frame)
-        if (obj.frame{i}==target)
+        if (obj.frame{i} == target)
           if (fid>0)
             error('Found transforms to this target from multiple children.  That''s not allowed');
           end
