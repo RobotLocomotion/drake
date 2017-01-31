@@ -20,7 +20,7 @@ GCC 4.9::
     sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
     sudo apt-get update
     sudo apt-get upgrade
-    sudo apt-get install g++-4.9-multilib gfortran-4.9
+    sudo apt-get install g++-4.9-multilib gfortran-4.9 gfortran
 
 Clang 3.9::
 
@@ -29,7 +29,7 @@ Clang 3.9::
     sudo add-apt-repository -y "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.9 main"
     sudo apt-get update
     sudo apt-get upgrade
-    sudo apt-get install clang-3.9
+    sudo apt-get install clang-3.9 gfortran
 
 .. _cmake:
 
