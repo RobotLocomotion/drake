@@ -629,7 +629,7 @@ MathematicalProgram::AddLinearEqualityConstraint(const Expression& e,
 }
 
 Binding<LinearEqualityConstraint>
-MathematicalProgram::AddLinearEqualityConstraint(
+MathematicalProgram::DoAddLinearEqualityConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& b) {
   DRAKE_DEMAND(v.rows() == b.rows());
