@@ -120,7 +120,7 @@ Next steps
    developers
    Doxygen (C++) <doxygen_cxx/index.html#://>
    Doxygen (MATLAB) <doxygen_matlab/index.html#://>
-   URDF Reference <urdf/drakeURDF.html#://>
+   models
    faq
    issues
    video_tutorials
