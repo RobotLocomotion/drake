@@ -2,7 +2,7 @@ from __future__ import absolute_import, print_function
 
 import numpy as np
 
-from ._autodiffutils import *
+from ._pydrake_autodiffutils import *
 
 
 def wrap(wrapper_type, x):

@@ -2,7 +2,7 @@ from __future__ import absolute_import, print_function
 
 import numpy as np
 
-from ._rbtree import *
+from ._pydrake_rbtree import *
 from . import autodiffutils as ad
 
 

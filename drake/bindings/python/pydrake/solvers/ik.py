@@ -1,18 +1,18 @@
 from __future__ import absolute_import
 import numpy as np
 
-from ._ik import (IKResults,
-                  IKoptions,
-                  InverseKin,
-                  InverseKinTraj,
-                  InverseKinPointwise,
-                  PostureConstraint,
-                  WorldEulerConstraint,
-                  WorldQuatConstraint,
-                  WorldGazeDirConstraint)
+from ._pydrake_ik import (IKResults,
+                          IKoptions,
+                          InverseKin,
+                          InverseKinTraj,
+                          InverseKinPointwise,
+                          PostureConstraint,
+                          WorldEulerConstraint,
+                          WorldQuatConstraint,
+                          WorldGazeDirConstraint)
 
-from ._ik import WorldPositionConstraint as _WorldPositionConstraint
-from ._ik import WorldPositionInFrameConstraint as \
+from ._pydrake_ik import WorldPositionConstraint as _WorldPositionConstraint
+from ._pydrake_ik import WorldPositionInFrameConstraint as \
     _WorldPositionInFrameConstraint
 
 

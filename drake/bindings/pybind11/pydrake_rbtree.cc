@@ -6,12 +6,12 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
-#include "drake/bindings/pybind11/autodiff_types.h"
+#include "drake/bindings/pybind11/pydrake_autodiff_types.h"
 
 namespace py = pybind11;
 
-PYBIND11_PLUGIN(_rbtree) {
-  py::module m("_rbtree", "Bindings for the RigidBodyTree class");
+PYBIND11_PLUGIN(_pydrake_rbtree) {
+  py::module m("_pydrake_rbtree", "Bindings for the RigidBodyTree class");
 
   py::class_<RigidBodyTree<double>>(m, "RigidBodyTree")
     .def(py::init<>())
