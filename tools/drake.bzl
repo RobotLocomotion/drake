@@ -28,7 +28,7 @@ def drake_cc_binary(
         deps=deps,
         **kwargs)
 
-def cc_googletest(
+def drake_cc_googletest(
         name,
         size=None,
         srcs=None,

@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -48,7 +48,7 @@ drake_cc_library(
 
 # === test/ ===
 
-cc_googletest(
+drake_cc_googletest(
     name = "rotary_encoders_test",
     deps = [
         ":rotary_encoders",
@@ -56,7 +56,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "depth_sensor_test",
     srcs = ["test/depth_sensor_test.cc"],
     deps = [

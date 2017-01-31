@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -88,7 +88,7 @@ drake_cc_library(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "simulator_test",
     deps = [
         ":explicit_euler_integrator",
@@ -98,7 +98,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "explicit_euler_integrator_test",
     deps = [
         ":explicit_euler_integrator",
@@ -106,7 +106,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "runge_kutta2_integrator_test",
     deps = [
         ":my_spring_mass_system",
@@ -114,7 +114,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "runge_kutta3_integrator_test",
     deps = [
         ":my_spring_mass_system",

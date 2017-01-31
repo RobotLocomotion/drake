@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -193,7 +193,7 @@ drake_cc_library(
     linkstatic = 1,
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "adder_test",
     deps = [
         ":adder",
@@ -202,7 +202,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "affine_system_test",
     deps = [
         ":affine_linear_test",
@@ -212,7 +212,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "constant_value_source_test",
     deps = [
         ":constant_value_source",
@@ -221,7 +221,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "constant_vector_source_test",
     deps = [
         ":constant_vector_source",
@@ -230,7 +230,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "demultiplexer_test",
     deps = [
         ":demultiplexer",
@@ -239,7 +239,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "gain_test",
     srcs = [
         "test/gain_scalartype_test.cc",
@@ -253,7 +253,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "integrator_test",
     deps = [
         ":integrator",
@@ -262,7 +262,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "linear_system_test",
     deps = [
         ":affine_linear_test",
@@ -272,7 +272,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "matrix_gain_test",
     deps = [
         ":affine_linear_test",
@@ -282,7 +282,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "multiplexer_test",
     deps = [
         ":multiplexer",
@@ -291,7 +291,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "pass_through_test",
     srcs = [
         "test/pass_through_scalartype_test.cc",
@@ -304,7 +304,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "random_source_test",
     deps = [
         ":random_source",
@@ -314,14 +314,14 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "saturation_test",
     deps = [
         ":saturation",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "signal_logger_test",
     deps = [
         ":affine_system",
@@ -333,7 +333,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "trajectory_source_test",
     deps = [
         ":trajectory_source",
@@ -343,7 +343,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "zero_order_hold_test",
     deps = [
         ":zero_order_hold",

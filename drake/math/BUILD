@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -123,7 +123,7 @@ drake_cc_library(
 
 # === test/ ===
 
-cc_googletest(
+drake_cc_googletest(
     name = "autodiff_test",
     deps = [
         ":autodiff",
@@ -132,7 +132,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "cross_product_test",
     deps = [
         ":gradient",
@@ -140,7 +140,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "expmap_test",
     deps = [
         ":expmap",
@@ -148,7 +148,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "eigen_sparse_triplet_test",
     deps = [
         ":eigen_sparse_triplet",
@@ -156,7 +156,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "jacobian_test",
     deps = [
         ":gradient",
@@ -165,7 +165,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "gradient_util_test",
     deps = [
         ":gradient",
@@ -173,7 +173,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "matrix_util_test",
     deps = [
         ":matrix_util",
@@ -182,7 +182,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "normalize_vector_test",
     deps = [
         ":gradient",
@@ -190,7 +190,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "rotation_matrix_test",
     deps = [
         ":geometric_transform",
@@ -198,7 +198,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "rotation_conversion_test",
     deps = [
         ":geometric_transform",

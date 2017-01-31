@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 drake_cc_library(
     name = "pendulum_state_vector",
@@ -37,7 +37,7 @@ drake_cc_library(
 
 # === test/ ===
 
-cc_googletest(
+drake_cc_googletest(
     name = "pendulum_urdf_dynamics_test",
     data = ["Pendulum.urdf"],
     deps = [
@@ -49,7 +49,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "pendulum_dynamic_constraint_test",
     deps = [
         ":pendulum_plant",
@@ -58,7 +58,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "pendulum_trajectory_optimization_test",
     deps = [
         ":pendulum_swing_up",

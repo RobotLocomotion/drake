@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -310,7 +310,7 @@ drake_cc_library(
 
 # === test/ ===
 
-cc_googletest(
+drake_cc_googletest(
     name = "basic_vector_test",
     deps = [
         ":vector",
@@ -321,7 +321,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "cache_test",
     deps = [
         ":cache",
@@ -330,7 +330,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "continuous_state_test",
     deps = [
         ":continuous_state",
@@ -338,7 +338,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "diagram_builder_test",
     deps = [
         ":diagram_builder",
@@ -351,7 +351,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "diagram_context_test",
     deps = [
         ":diagram_context",
@@ -365,7 +365,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "diagram_test",
     deps = [
         ":diagram",
@@ -379,7 +379,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "discrete_state_test",
     deps = [
         ":discrete_state",
@@ -387,7 +387,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "leaf_context_test",
     deps = [
         ":leaf_context",
@@ -397,7 +397,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "leaf_system_test",
     deps = [
         ":leaf_system",
@@ -406,7 +406,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "abstract_state_test",
     deps = [
         ":abstract_state",
@@ -415,7 +415,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "parameters_test",
     deps = [
         ":parameters",
@@ -424,7 +424,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "subvector_test",
     deps = [
         ":vector",
@@ -433,7 +433,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "supervector_test",
     deps = [
         ":vector",
@@ -441,7 +441,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "system_input_test",
     deps = [
         ":system_input",
@@ -449,7 +449,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "system_output_test",
     deps = [
         ":system_output",
@@ -457,7 +457,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "system_test",
     deps = [
         ":leaf_context",
@@ -466,7 +466,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "value_test",
     deps = [
         ":value",
@@ -474,7 +474,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "single_output_vector_source_test",
     deps = [
         ":single_output_vector_source",

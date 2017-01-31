@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -61,7 +61,7 @@ drake_cc_library(
 
 # === test/ ===
 
-cc_googletest(
+drake_cc_googletest(
     name = "gravity_compensator_test",
     data = [
         "//drake/examples/SimpleFourBar:models",
@@ -73,7 +73,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "linear_quadratic_regulator_test",
     deps = [
         ":linear_quadratic_regulator",
@@ -81,7 +81,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "pid_controlled_system_test",
     deps = [
         ":pid_controlled_system",
@@ -89,7 +89,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "pid_controller_test",
     deps = [
         ":pid_controller",
