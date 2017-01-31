@@ -2,11 +2,11 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "autodiff",
     srcs = ["autodiff.cc"],
     hdrs = ["autodiff.h"],
@@ -17,7 +17,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "continuous_algebraic_ricatti_equation",
     srcs = ["continuous_algebraic_ricatti_equation.cc"],
     hdrs = ["continuous_algebraic_ricatti_equation.h"],
@@ -29,7 +29,7 @@ cc_library(
 )
 
 # TODO(jwnimmer-tri) Improved name for this library, "pose_representations"?
-cc_library(
+drake_cc_library(
     name = "geometric_transform",
     srcs = [
         "axis_angle.cc",
@@ -53,7 +53,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "gradient",
     srcs = [
         "autodiff_gradient.cc",
@@ -77,7 +77,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "matrix_util",
     srcs = ["matrix_util.cc"],
     hdrs = ["matrix_util.h"],
@@ -90,7 +90,7 @@ cc_library(
 
 # These all require bleeding-edge Eigen, so please don't fold them into any
 # other important labels until we get all workspaces on newer-Eigen.
-cc_library(
+drake_cc_library(
     name = "eigen_sparse_triplet",
     srcs = ["eigen_sparse_triplet.cc"],
     hdrs = ["eigen_sparse_triplet.h"],
@@ -100,7 +100,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "expmap",
     srcs = ["expmap.cc"],
     hdrs = ["expmap.h"],
@@ -111,7 +111,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "jacobian",
     srcs = ["jacobian.cc"],
     hdrs = ["jacobian.h"],

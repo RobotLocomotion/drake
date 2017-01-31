@@ -2,12 +2,12 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
 # TODO(jwnimmer-tri) Move code to a trajectory.cc file
-cc_library(
+drake_cc_library(
     name = "trajectory",
     hdrs = ["trajectory.h"],
     linkstatic = 1,
@@ -16,7 +16,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "piecewise_function",
     srcs = ["piecewise_function.cc"],
     hdrs = ["piecewise_function.h"],
@@ -26,7 +26,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "piecewise_polynomial",
     srcs = [
         "exponential_plus_piecewise_polynomial.cc",
@@ -46,7 +46,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "piecewise_polynomial_trajectory",
     srcs = ["piecewise_polynomial_trajectory.cc"],
     hdrs = ["piecewise_polynomial_trajectory.h"],
@@ -58,7 +58,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "piecewise_quaternion",
     srcs = ["piecewise_quaternion.cc"],
     hdrs = ["piecewise_quaternion.h"],
@@ -72,7 +72,7 @@ cc_library(
 
 # === test/ ===
 
-cc_library(
+drake_cc_library(
     name = "random_piecewise_polynomial",
     testonly = 1,
     hdrs = ["test/random_piecewise_polynomial.h"],

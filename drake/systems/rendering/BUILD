@@ -2,11 +2,11 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "pose_aggregator",
     srcs = ["pose_aggregator.cc"],
     hdrs = ["pose_aggregator.h"],
@@ -20,7 +20,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "pose_bundle",
     srcs = ["pose_bundle.cc"],
     hdrs = ["pose_bundle.h"],

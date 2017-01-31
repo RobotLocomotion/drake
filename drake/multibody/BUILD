@@ -2,11 +2,16 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load(
+    "//tools:drake.bzl",
+    "cc_googletest",
+    "drake_cc_library",
+    "drake_cc_binary",
+)
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "inverse_kinematics",
     srcs = [
         "constraint_wrappers.cc",
@@ -34,7 +39,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "rigid_body_constraint",
     srcs = ["constraint/rigid_body_constraint.cc"],
     hdrs = ["constraint/rigid_body_constraint.h"],
@@ -44,7 +49,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "rigid_body_tree",
     srcs = [
         "kinematics_cache.cc",
@@ -83,7 +88,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "rigid_body_tree_construction",
     srcs = ["rigid_body_tree_construction.cc"],
     hdrs = ["rigid_body_tree_construction.h"],
@@ -94,21 +99,21 @@ cc_library(
 )
 
 # TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
-cc_binary(
+drake_cc_binary(
     name = "benchmark_rigid_body_tree",
     testonly = 1,
     srcs = ["test/benchmark_rigid_body_tree.cc"],
     linkstatic = 1,
     deps = [
+        "@gtest//:main",
         ":rigid_body_tree",
         "//drake/common:measure_execution",
         "//drake/multibody/parsers",
-        "@gtest//:main",
     ],
 )
 
 # TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
-cc_binary(
+drake_cc_binary(
     name = "debug_manipulator_dynamics",
     testonly = 1,
     srcs = ["test/debug_manipulator_dynamics.cc"],

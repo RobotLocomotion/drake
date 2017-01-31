@@ -2,11 +2,11 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "ball",
     srcs = ["ball.cc"],
     hdrs = [
@@ -20,7 +20,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "bouncing_ball",
     srcs = ["bouncing_ball.cc"],
     hdrs = [

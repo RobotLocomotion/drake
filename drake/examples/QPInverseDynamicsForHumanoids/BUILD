@@ -2,8 +2,9 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
+load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
 
-cc_library(
+drake_cc_library(
     name = "control_utils",
     srcs = [],
     hdrs = ["control_utils.h"],
@@ -14,7 +15,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "rigid_body_tree_alias_groups",
     srcs = [
         "param_parsers/rigid_body_tree_alias_groups.cc",
@@ -24,12 +25,12 @@ cc_library(
     ],
     linkstatic = 1,
     deps = [
-        "//drake/multibody:rigid_body_tree",
         "@yaml_cpp//:lib",
+        "//drake/multibody:rigid_body_tree",
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "param_parser",
     srcs = [
         "param_parsers/param_parser.cc",
@@ -44,7 +45,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "humanoid_status",
     srcs = ["humanoid_status.cc"],
     hdrs = ["humanoid_status.h"],
@@ -57,7 +58,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "qp_controller_common",
     srcs = ["qp_controller_common.cc"],
     hdrs = ["qp_controller_common.h"],
@@ -67,7 +68,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "qp_controller",
     srcs = ["qp_controller.cc"],
     hdrs = ["qp_controller.h"],
@@ -97,13 +98,13 @@ cc_test(
         "local",
     ],
     deps = [
+        "@gtest//:main",
         ":control_utils",
         ":param_parser",
         ":qp_controller",
         "//drake/common:eigen_matrix_compare",
         "//drake/examples/Valkyrie:valkyrie_constants",
         "//drake/multibody/parsers",
-        "@gtest//:main",
     ],
 )
 
@@ -118,10 +119,10 @@ cc_test(
         "//drake/multibody:test_models",
     ],
     deps = [
+        "@gtest//:main",
         ":rigid_body_tree_alias_groups",
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody/parsers",
-        "@gtest//:main",
     ],
 )
 
@@ -134,11 +135,11 @@ cc_test(
         "//drake/examples/Valkyrie:models",
     ],
     deps = [
+        "@gtest//:main",
         ":param_parser",
         ":rigid_body_tree_alias_groups",
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody/parsers",
-        "@gtest//:main",
     ],
 )
 

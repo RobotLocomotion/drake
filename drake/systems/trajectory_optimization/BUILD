@@ -2,11 +2,11 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "direct_collocation",
     srcs = [
         "direct_collocation.cc",
@@ -23,7 +23,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "direct_trajectory_optimization",
     srcs = ["direct_trajectory_optimization.cc"],
     hdrs = ["direct_trajectory_optimization.h"],
