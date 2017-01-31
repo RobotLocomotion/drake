@@ -14,6 +14,8 @@
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
 
+using std::sqrt;
+
 namespace drake {
 namespace solvers {
 
@@ -197,6 +199,49 @@ void CompareIntersectionResults(std::vector<Vector3d> desired,
   }
 }
 
+void CompareHalfspaceRelaxation(const std::vector<Vector3d>& pts) {
+  // Computes a possibly less tight n and d analytically. For each triangle with
+  // vertices pts[i], pts[j] and pts[k], determine if the halfspace coinciding
+  // with the triangle is a cutting plane (namely all vertices in pts are on one
+  // side of the halfspace). Pick the cutting plane halfspace that is farthest
+  // away from the origin.
+  DRAKE_DEMAND(pts.size() >= 3);
+
+  double d = -1;
+  for (int i = 0; i < static_cast<int>(pts.size()); ++i) {
+    for (int j = i + 1; j < static_cast<int>(pts.size()); ++j) {
+      for (int k = j + 1; k < static_cast<int>(pts.size()); ++k) {
+        // Find the normal of the triangle.
+        Eigen::Vector3d normal_tmp = (pts[k] - pts[i]).cross(pts[j] - pts[i]);
+        normal_tmp.normalize();
+        if (normal_tmp(0) < 0) {
+          normal_tmp = -normal_tmp;
+        }
+        double d_tmp = normal_tmp.transpose() * pts[i];
+        bool is_cutting_plane = true;
+        for (const auto& pt : pts) {
+          if (pt.transpose() * normal_tmp < d_tmp - 1E-10) {
+            is_cutting_plane = false;
+            break;
+          }
+        }
+        if (is_cutting_plane) {
+          d = std::max(d, d_tmp);
+        }
+      }
+    }
+  }
+
+  Eigen::Vector3d n_expected;
+  double d_expected;
+  internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(pts, &n_expected,
+                                                               &d_expected);
+  EXPECT_GE(d_expected, d - 1E-8);
+  for (const auto& pt : pts) {
+    EXPECT_GE(pt.transpose() * n_expected - d_expected, -1E-6);
+  }
+}
+
 // Test a number of closed-form solutions for the intersection of a box in the
 // positive orthant with the unit circle.
 GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
@@ -209,28 +254,36 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   desired.push_back(Vector3d(0, 1, 0));
   desired.push_back(Vector3d(0, 0, 1));
   CompareIntersectionResults(
-      desired, internal::IntersectBoxWUnitCircle(box_min, box_max));
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CompareHalfspaceRelaxation(desired);
 
   // Lifts box bottom (in z).  Still has 3 solutions.
   box_min << 0, 0, 1.0 / 3.0;
   desired[0] << std::sqrt(8) / 3.0, 0, 1.0 / 3.0;
   desired[1] << 0, std::sqrt(8) / 3.0, 1.0 / 3.0;
   CompareIntersectionResults(
-      desired, internal::IntersectBoxWUnitCircle(box_min, box_max));
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CompareHalfspaceRelaxation(desired);
 
   // Lowers box top (in z).  Now we have four solutions.
   box_max << 1, 1, 2.0 / 3.0;
   desired[2] << std::sqrt(5) / 3.0, 0, 2.0 / 3.0;
   desired.push_back(Vector3d(0, std::sqrt(5) / 3.0, 2.0 / 3.0));
   CompareIntersectionResults(
-      desired, internal::IntersectBoxWUnitCircle(box_min, box_max));
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CompareHalfspaceRelaxation(desired);
 
   // Gets a different four edges by shortening the box (in x).
   box_max(0) = .5;
   desired[0] << .5, std::sqrt(23.0) / 6.0, 1.0 / 3.0;
   desired[2] << .5, std::sqrt(11.0) / 6.0, 2.0 / 3.0;
   CompareIntersectionResults(
-      desired, internal::IntersectBoxWUnitCircle(box_min, box_max));
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CompareHalfspaceRelaxation(desired);
 
   // Now three edges again as we shorten the box (in y).
   box_max(1) = .6;
@@ -239,7 +292,9 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   desired[1] << 2 * std::sqrt(11.0) / 15.0, .6, 2.0 / 3.0;
   desired[2] << .5, .6, std::sqrt(39.0) / 10.0;
   CompareIntersectionResults(
-      desired, internal::IntersectBoxWUnitCircle(box_min, box_max));
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CompareHalfspaceRelaxation(desired);
 
   // All four intersections are on the vertical edges.
   box_min << 1.0 / 3.0, 1.0 / 3.0, 0;
@@ -249,15 +304,48 @@ GTEST_TEST(RotationTest, TestIntersectBoxWithCircle) {
   desired[2] << 1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0;
   desired.push_back(Vector3d(2.0 / 3.0, 2.0 / 3.0, 1.0 / 3.0));
   CompareIntersectionResults(
-      desired, internal::IntersectBoxWUnitCircle(box_min, box_max));
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CompareHalfspaceRelaxation(desired);
 
-  // Last case is box_max right on the unit sphere.
+  // box_max right on the unit sphere.
   box_max << 1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0;
+  box_min << 0, 1.0 / 3.0, 0;
   // Should return just the single point.
   desired.erase(desired.begin() + 1, desired.end());
   desired[0] = box_max;
   CompareIntersectionResults(
-      desired, internal::IntersectBoxWUnitCircle(box_min, box_max));
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+
+  // Multiple vertices are on the sphere.
+  box_min << 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0;
+  box_max << 2.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0;
+  desired.clear();
+  desired.push_back(Eigen::Vector3d(1.0 / 3, 2.0 / 3, 2.0 / 3));
+  desired.push_back(Eigen::Vector3d(2.0 / 3, 1.0 / 3, 2.0 / 3));
+  desired.push_back(Eigen::Vector3d(2.0 / 3, 2.0 / 3, 1.0 / 3));
+  CompareIntersectionResults(
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+
+  // Six intersections.
+  box_min = Eigen::Vector3d::Constant(1.0 / 3.0);
+  box_max = Eigen::Vector3d::Constant(sqrt(6) / 3.0);
+  desired.clear();
+  // The intersecting points are the 6 permutations of
+  // (1.0 / 3.0, sqrt(2) / 3.0, sqrt(6) / 3.0)
+  desired.resize(6);
+  desired[0] << 1.0 / 3.0, sqrt(2) / 3.0, sqrt(6) / 3.0;
+  desired[1] << 1.0 / 3.0, sqrt(6) / 3.0, sqrt(2) / 3.0;
+  desired[2] << sqrt(2) / 3.0, 1.0 / 3.0, sqrt(6) / 3.0;
+  desired[3] << sqrt(2) / 3.0, sqrt(6) / 3.0, 1.0 / 3.0;
+  desired[4] << sqrt(6) / 3.0, 1.0 / 3.0, sqrt(2) / 3.0;
+  desired[5] << sqrt(6) / 3.0, sqrt(2) / 3.0, 1.0 / 3.0;
+  CompareIntersectionResults(
+      desired,
+      internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max));
+  CompareHalfspaceRelaxation(desired);
 }
 
 bool IsFeasibleCheck(
@@ -353,7 +441,7 @@ GTEST_TEST(RotationTest, TestMcCormick) {
     // Checks a few cases just outside the L1 ball.  Should be feasible for
     // num_bins=1, but infeasible for num_bins>1.
     R_test = math::YRotation(M_PI_4);
-    R_test(2, 0) -= 0.2;
+    R_test(2, 0) -= 0.1;
     EXPECT_GT(R_test.col(0).lpNorm<1>(), 1.0);
     EXPECT_GT(R_test.row(2).lpNorm<1>(), 1.0);
     if (num_bins == 1)

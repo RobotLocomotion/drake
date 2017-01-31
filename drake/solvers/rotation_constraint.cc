@@ -2,6 +2,8 @@
 #include "drake/solvers/rotation_constraint_internal.h"
 
 #include <algorithm>
+#include <functional>
+#include <limits>
 #include <vector>
 
 #include "drake/math/cross_product.h"
@@ -261,29 +263,21 @@ double Intercept(double x, double y) {
 }  // namespace
 
 namespace internal {
-
-std::vector<Eigen::Vector3d> IntersectBoxWUnitCircle(Eigen::Vector3d bmin,
-                                                     Eigen::Vector3d bmax) {
-  // Assumes the positive orthant (and bmax>=bmin).
+// Given an axis-aligned box in the first orthant, computes and returns all the
+// intersecting points between the edges of the box and the unit sphere.
+// @param bmin  The vertex of the box closest to the origin.
+// @param bmax  The vertex of the box farthest from the origin.
+std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(
+    const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax) {
+  // Assumes the positive orthant (and bmax > bmin).
   DRAKE_ASSERT(bmin(0) >= 0 && bmin(1) >= 0 && bmin(2) >= 0);
-  DRAKE_ASSERT(bmax(0) >= bmin(0) && bmax(1) >= bmin(1) && bmax(2) >= bmin(2));
+  DRAKE_ASSERT(bmax(0) > bmin(0) && bmax(1) > bmin(1) && bmax(2) > bmin(2));
 
   // Assumes the unit circle intersects the box.
   DRAKE_ASSERT(bmin.lpNorm<2>() <= 1);
   DRAKE_ASSERT(bmax.lpNorm<2>() >= 1);
 
   std::vector<Eigen::Vector3d> intersections;
-
-  // Note: all logic below are ordered to avoid imaginary sqrts, but
-  // the Intercept method asserts for this, just in case.
-
-  // An axis-aligned box in the positive orthant can intersect with the unit
-  // circle at:
-  //  1 point - when the box touchest the unit circle exactly at the corner,
-  //  3 points - when exactly one corner is inside the unit circle OR exactly
-  //      one corner is outside the unit circle, or
-  //  4 points, when >= two points are inside the unit circle and >= two
-  //      points are outside the unit circle.
 
   if (bmin.lpNorm<2>() == 1) {
     // Then only the min corner intersects.
@@ -297,81 +291,127 @@ std::vector<Eigen::Vector3d> IntersectBoxWUnitCircle(Eigen::Vector3d bmin,
     return intersections;
   }
 
-  // Finds the "bottom" (min z) intersection(s).
-  Eigen::Vector3d v;
-  v << bmax(0), bmax(1), bmin(2);  // far bottom corner
-  if (v.lpNorm<2>() > 1) {
-    // Then two intersections on the bottom face.
-    // Get the +x one first.
-    v = bmin;
-    v(0) = Intercept(v(1), v(2));
-    if (v(0) <= bmax(0)) {
-      intersections.push_back(v);
-    } else {
-      // Must be on the back face.
-      v(0) = bmax(0);
-      v(1) = Intercept(v(0), v(2));
-      intersections.push_back(v);
-    }
-    // Now get the +y intersection.
-    v = bmin;
-    v(1) = Intercept(v(0), v(2));
-    if (v(1) <= bmax(1)) {
-      intersections.push_back(v);
-    } else {
-      v(1) = bmax(1);
-      v(0) = Intercept(v(1), v(2));
-      intersections.push_back(v);
-    }
-  } else {
-    // Then exactly one intersection on the bmax(0),bmax(1),z edge.
-    DRAKE_ASSERT(v(0) == bmax(0) && v(1) == bmax(1));  // already set for me.
-    v(2) = Intercept(v(0), v(1));
-    intersections.push_back(v);
-  }
+  // The box has at most 12 edges, each edge can intersect with the unit sphere
+  // at most once, since the box is in the first orthant.
+  intersections.reserve(12);
 
-  // Finds the "top" (max z) intersections(s).
-  v << bmin(0), bmin(1), bmax(2);  // near top corner
-  if (v.lpNorm<2>() >= 1) {
-    // Then exact one "top" intersection, along this edge.
-    v(2) = Intercept(v(0), v(1));
-    intersections.push_back(v);
-  } else {
-    // Then exactly two intersections on the top face.
-    v(0) = Intercept(v(1), v(2));
-    if (v(0) <= bmax(0)) {
-      intersections.push_back(v);
-    } else {
-      v(0) = bmax(0);
-      v(1) = Intercept(v(0), v(2));
-      intersections.push_back(v);
+  // 1. Loop through each vertex of the box, add it to intersections if
+  // the vertex is on the sphere.
+  for (int i = 0; i < 8; ++i) {
+    Eigen::Vector3d vertex{};
+    for (int axis = 0; axis < 3; ++axis) {
+      vertex(axis) = i & (1 << axis) ? bmin(axis) : bmax(axis);
     }
-
-    v << bmin(0), bmin(1), bmax(2);
-    v(1) = Intercept(v(0), v(2));
-    if (v(1) <= bmax(1)) {
-      intersections.push_back(v);
-    } else {
-      v(1) = bmax(1);
-      v(0) = Intercept(v(1), v(2));
-      intersections.push_back(v);
+    if (vertex.norm() == 1) {
+      intersections.push_back(vertex);
     }
   }
 
-  if (intersections.size() == 2) {
-    // Then the unit circle passed through the near and far vertical edges,
-    // and missed the top and bottom faces.  There must be two more
-    // intersections -- on the other two vertical edges.
+  // 2. Loop through each edge, find the intersection between each edge and the
+  // unit sphere, if one exists.
+  for (int axis = 0; axis < 3; ++axis) {
+    // axis = 0 means edges along x axis;
+    // axis = 1 means edges along y axis;
+    // axis = 2 means edges along z axis;
+    int fixed_axis1 = (axis + 1) % 3;
+    int fixed_axis2 = (axis + 2) % 3;
+    // 4 edges along each axis;
 
-    v << bmin(0), bmax(1), Intercept(bmin(0), bmax(1));
-    intersections.push_back(v);
+    // First finds the two end points on the edge.
+    Eigen::Vector3d pt_closer, pt_farther;
+    pt_closer(axis) = bmin(axis);
+    pt_farther(axis) = bmax(axis);
+    std::array<double, 2> fixed_axis1_val = {
+        {bmin(fixed_axis1), bmax(fixed_axis1)}};
+    std::array<double, 2> fixed_axis2_val = {
+        {bmin(fixed_axis2), bmax(fixed_axis2)}};
+    for (double val1 : fixed_axis1_val) {
+      pt_closer(fixed_axis1) = val1;
+      pt_farther(fixed_axis1) = pt_closer(fixed_axis1);
+      for (double val2 : fixed_axis2_val) {
+        pt_closer(fixed_axis2) = val2;
+        pt_farther(fixed_axis2) = pt_closer(fixed_axis2);
 
-    v << bmax(0), bmin(1), Intercept(bmax(0), bmin(1));
-    intersections.push_back(v);
+        // Determines if there is an intersecting point between the edge and the
+        // sphere. If the intersecting point is not the vertex of the box, then
+        // push this intersecting point to intersections directly.
+        if (pt_closer.norm() < 1 && pt_farther.norm() > 1) {
+          Eigen::Vector3d pt_intersect{};
+          pt_intersect(fixed_axis1) = pt_closer(fixed_axis1);
+          pt_intersect(fixed_axis2) = pt_closer(fixed_axis2);
+          pt_intersect(axis) =
+              Intercept(pt_intersect(fixed_axis1), pt_intersect(fixed_axis2));
+          intersections.push_back(pt_intersect);
+        }
+      }
+    }
   }
   return intersections;
 }
 
+/*
+ * For the intersection region between the surface of the unit sphere, and the
+ * interior of a box aligned with the axes, use a half space relaxation for
+ * the intersection region as nᵀ * v >= d
+ * @param[in] pts. The vertices containing the intersecting points between edges
+ * of the box and the surface of the unit sphere.
+ * @param[out] n. The unit length normal vector of the halfspace, pointing
+ * outward.
+ * @param[out] d. The intercept of the halfspace.
+ */
+void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
+    const std::vector<Eigen::Vector3d>& pts, Eigen::Vector3d* n, double* d) {
+  DRAKE_DEMAND(pts.size() >= 3);
+  // We first prove that for a given normal vector n, and ANY unit
+  // length vector v within the intersection region between the
+  // surface of the unit sphere and the interior of the axis-aligned
+  // box, the minimal of nᵀ * v, always occurs at one of the vertex of
+  // the intersection region, if the box and the vector n are in the
+  // same orthant. Namely min nᵀ * v = min(nᵀ * pts.col(i))
+  // To see this, for any vector v in the intersection region, suppose
+  // it is on an arc, aligned with one axis. Without loss of
+  // generality we assume the aligned axis is x axis, namely
+  // v(0) = t, box_min(0) <= t <= box_max(0)
+  // and v(1)² + v(2)² = 1 - t², with the bounds
+  // box_min(1) <= v(1) <= box_max(1)
+  // box_min(2) <= v(2) <= box_max(2)
+  // And the inner product nᵀ * v =
+  // n(0) * t + s * (n(1) * cos(α) + n(2) * sin(α))
+  // where we define s = sqrt(1 - t²)
+  // Using the property of trigonometric function, we know that
+  // the minimal of (n(1) * cos(α) + n(2) * sin(α)) is obtained at
+  // the boundary of α. Thus we know that the minimal of nᵀ * v is
+  // always obtained at one of the vertex pts.col(i).
+
+  // To find the tightest bound d satisfying nᵀ * v >= d for all
+  // vector v in the intersection region, we use the fact that for
+  // a given normal vector n, the minimal of nᵀ * v is always obtained
+  // at one of the vertices pts.col(i), and formulate the following
+  // SOCP to find the normal vector n
+  // max d
+  // s.t d <= nᵀ * pts.col(i)
+  //     nᵀ * n <= 1
+  MathematicalProgram prog_normal;
+  auto n_var = prog_normal.NewContinuousVariables<3>();
+  auto d_var = prog_normal.NewContinuousVariables<1>();
+  prog_normal.AddLinearCost(Vector1d(-1), d_var);
+  for (const auto& pt : pts) {
+    prog_normal.AddLinearConstraint(Eigen::Vector4d(pt(0), pt(1), pt(2), -1), 0,
+                                    std::numeric_limits<double>::infinity(),
+                                    {n_var, d_var});
+  }
+  // A_lorentz * n + b_lorentz = [1; n]
+  Eigen::Matrix<double, 4, 3> A_lorentz{};
+  A_lorentz << Eigen::RowVector3d::Zero(), Eigen::Matrix3d::Identity();
+  Eigen::Vector4d b_lorentz(1, 0, 0, 0);
+  prog_normal.AddLorentzConeConstraint(A_lorentz, b_lorentz, n_var);
+  prog_normal.Solve();
+  *n = prog_normal.GetSolution(n_var);
+  *d = prog_normal.GetSolution(d_var(0));
+
+  DRAKE_DEMAND((*n)(0) > 0 && (*n)(1) > 0 && (*n)(2) > 0);
+  DRAKE_DEMAND(*d > 0 && *d < 1);
+}
 }  // namespace internal
 
 namespace {
@@ -415,71 +455,20 @@ void AddMcCormickVectorConstraints(
           } else {
             // Find the intercepts of the unit sphere with the box, then find
             // the tightest linear constraint of the form:
-            //    d <= normal'*v
+            //    d <= n'*v
             // that puts v inside (but as close as possible to) the unit circle.
-            auto pts = internal::IntersectBoxWUnitCircle(box_min, box_max);
+            auto pts = internal::ComputeBoxEdgesAndSphereIntersection(box_min,
+                                                                      box_max);
             DRAKE_DEMAND(pts.size() >= 3);
-            Eigen::Vector3d normal;
-            // Note: 1-d is the distance to the farthest point on the unit
-            // circle that is inside the bounding box, so intentionally
-            // initialize it to a (known) bad value.
-            double d = -1;
 
-            if (pts.size() == 3) {
-              normal = (pts[1] - pts[0]).cross(pts[2] - pts[0]);
-              if (normal(0) < 0) normal = -normal;
-              normal.normalize();
-              d = normal.dot(pts[0]);
-            } else {
-              // 4 points, so search for the tightest linear constraint.
-              // (will intersect with 3 of the points, so just try all
-              // combinations).
-              Eigen::Vector3d n;
-              for (int i = 0; i < 4; i++) {
-                n = (pts[(1 + i) % 4] - pts[i])
-                        .cross(pts[(2 + i) % 4] - pts[i]);
-                if (n(0) < 0) n = -n;
-                n.normalize();
-                const double this_d = n.dot(pts[i]);
-                if (n.dot(pts[(3 + i) % 4]) >=
-                        this_d  // then it's a valid constraint
-                    &&
-                    this_d > d) {  // and it's tighter than the previous best.
-                  normal = n;
-                  d = this_d;
-                }
-              }
-              DRAKE_DEMAND(d >= 0 && d <= 1);
-            }
-            DRAKE_DEMAND(normal(0) > 0 && normal(1) > 0 && normal(2) > 0);
+            double d(0);
+            Eigen::Vector3d normal{};
+            internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(
+                pts, &normal, &d);
 
-            // Useful below: the intersection points of the unit sphere with
-            // the box represent the convex hull of directions for vector v.
-            // Since all points must have magnitude 1 (and we've normalized the
-            // normal), all vectors within this set are within an angle theta
-            // of the normal, with
-            //    cos(theta) = min_i normal.dot(pt[i]),
-            // and we have 0 <= theta < pi/2.
-            // Proof sketch:
-            // Every vector in the convex hull of the intersection points
-            // can be written as
-            //   v = sum_i w_i p_i, w_i>0, sum_i w_i=1.
-            // Note that |v| = 1 when v=p_i, and <1 when v is inside the hull.
-            // Furthermore, every point in the intersection of the bounding box
-            // and the unit circle can be represented by a vector u which is
-            // a vector v in the convex hull, but with length normalized to 1.
-            //   u = v / |v|.
-            // Given normal'*u = |normal||u|cos(theta), and |normal|=|u|=1,
-            // we have
-            //   cos(theta) = normal'*v/|v| = (\sum w_i normal'*p_i)/|v|.
-            // This obtains a minimum when w_i=1 for min_i normal'*p_i,
-            // (because that maximizes the denominator AND minimizes the
-            //  numerator), yielding:
-            //   cos(theta) >= min_i normal.dot(pt[i]).
-            double cos_theta = 1;
-            for (const auto& pt : pts) {
-              cos_theta = std::min(cos_theta, normal.dot(pt));
-            }
+            // theta is the maximal angle between v and normal, where v is an
+            // intersecting point between the box and the sphere.
+            double cos_theta = d;
             const double theta = std::acos(cos_theta);
 
             Eigen::Matrix<double, 1, 6> a;
@@ -552,19 +541,16 @@ void AddMcCormickVectorConstraints(
               prog->AddLinearConstraint(a, -1, sin(theta) + 6, {v2, orthant_c});
 
               // Cross-product constraint: ideally v2 = v.cross(v1).
-              // Since v is within theta of normal, we have that v2 must be
-              // within theta of normal.cross(v1).  To see this, observe that
-              //   v2'*(normal.cross(v1)) = normal'*(v1.cross(v2))
-              //     = normal'*v >= cos(theta).
-              // The vector normal.cross(v1) has a length less than 1, so
-              //   v2'*(normal.cross(v1)/|normal.cross(v1)|) >=
-              //     v2'*(normal.cross(v1)) >= cos(theta)
-              // Thus the angle between the vector v2 and normal.cross(v1) is
-              // less than theta.  In fact this is very conservative -- v2 can
-              // actually only rotate by theta in the plane orthogonal to v1.
-              // Since the maximum slope of sin() is maximal around 0, this
-              // confers a conservative elementwise convex(!) constraint that
-              //   -asin(theta) <= v2 - normal.cross(v1) <= asin(theta).
+              // Since v is within theta of normal, we will prove that
+              // |v2 - normal.cross(v1)| <= 2 * sin(theta / 2)
+              // Notice that (v2 - normal.cross(v1))ᵀ * (v2 - normal.cross(v1))
+              // = v2ᵀ * v2 + (normal.cross(v1))ᵀ * (normal.cross(v1)) -
+              //      2 * v2ᵀ * (normal.cross(v1))
+              // <= 1 + 1 - 2 * cos(theta)
+              // = (2 * sin(theta / 2))²
+              // Thus we get |v2 - normal.cross(v1)| <= 2 * sin(theta / 2)
+              // Here we consider to use an elementwise linear constraint
+              // -2*sin(theta / 2) <=  v2 - normal.cross(v1) <= 2*sin(theta / 2)
               // Since 0<=theta<=pi/2, this should be enough to rule out the
               // det(R)=-1 case (the shortest projection of a line across the
               // circle onto a single axis has length 2sqrt(3)/3 > 1.15), and
@@ -572,8 +558,8 @@ void AddMcCormickVectorConstraints(
 
               // To activate this only when the box is active, the complete
               // constraints are
-              //  -asin(theta)-6+2(cxi+cyi+czi) <= v2-normal.cross(v1)
-              //    v2-normal.cross(v1) <= asin(theta)+6-2(cxi+cyi+czi)
+              //  -2*sin(theta/2)-6+2(cxi+cyi+czi) <= v2-normal.cross(v1)
+              //    v2-normal.cross(v1) <= 2*sin(theta/2)+6-2(cxi+cyi+czi)
               // Note: Again this constraint could be tighter as a Lorenz cone
               // constraint of the form:
               //   |v2 - normal.cross(v1)| <= 2*sin(theta/2).
@@ -581,13 +567,13 @@ void AddMcCormickVectorConstraints(
                   -math::VectorToSkewSymmetric(orthant_normal),
                   Eigen::Matrix3d::Constant(-2);
               prog->AddLinearConstraint(
-                  A_cross, Eigen::Vector3d::Constant(-std::asin(theta) - 6),
+                  A_cross, Eigen::Vector3d::Constant(-2 * sin(theta / 2) - 6),
                   Eigen::Vector3d::Constant(2), {v2, v1, orthant_c});
 
               A_cross.rightCols<3>() = Eigen::Matrix3d::Constant(2.0);
               prog->AddLinearConstraint(
                   A_cross, Eigen::Vector3d::Constant(-2),
-                  Eigen::Vector3d::Constant(std::asin(theta) + 6),
+                  Eigen::Vector3d::Constant(2 * sin(theta / 2) + 6),
                   {v2, v1, orthant_c});
             }
           }
