@@ -1,5 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
+#include <pybind11/operators.h>
 #include <pybind11/stl.h>
 
 
@@ -25,20 +26,12 @@ PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
             const std::string&)) &drake::solvers::MathematicalProgram::NewBinaryVariables,
          py::arg("rows"),
          py::arg("name") = "x")
-    .def("_AddLinearConstraint", (std::shared_ptr<drake::solvers::LinearConstraint> 
-           (drake::solvers::MathematicalProgram::*)(
-           const Eigen::Ref<const Eigen::MatrixXd>&,
-           const Eigen::Ref<const Eigen::VectorXd>&,
-           const Eigen::Ref<const Eigen::VectorXd>&,
-           const Eigen::Ref<const drake::solvers::VectorXDecisionVariable>& vars))
-           &drake::solvers::MathematicalProgram::AddLinearConstraint)
-    .def("_AddLinearConstraint", (std::shared_ptr<drake::solvers::LinearConstraint> 
-           (drake::solvers::MathematicalProgram::*)(
-           const Eigen::Ref<const Eigen::RowVectorXd>&,
-           double lb,
-           double ub,
-           const Eigen::Ref<const drake::solvers::VectorXDecisionVariable>& vars))
-           &drake::solvers::MathematicalProgram::AddLinearConstraint)
+    .def("AddLinearConstraint", 
+         (drake::solvers::Binding<drake::solvers::LinearConstraint>
+          (drake::solvers::MathematicalProgram::*)(
+          const drake::symbolic::Expression&,
+          double, 
+          double)) &drake::solvers::MathematicalProgram::AddLinearConstraint)
     .def("_AddLinearCost", (std::shared_ptr<drake::solvers::LinearConstraint> 
            (drake::solvers::MathematicalProgram::*)(
            const Eigen::Ref<const Eigen::VectorXd>&,
@@ -62,7 +55,70 @@ PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
     .value("kUnknownError", drake::solvers::SolutionResult::kUnknownError);
 
   py::class_<drake::symbolic::Variable>(m, "Variable")
-    .def(py::init<const std::string&>());
+    .def(py::init<const std::string&>())
+    .def("__add__", [](const drake::symbolic::Variable& self, const drake::symbolic::Variable& other) {
+      return drake::symbolic::Expression{self + other};
+    })
+    .def("__add__", [](const drake::symbolic::Variable& self, double other) {
+      return drake::symbolic::Expression{self + other};
+    })
+    .def("__radd__", [](const drake::symbolic::Variable& self, double other) {
+      return drake::symbolic::Expression{other + self};
+    })
+    .def("__sub__", [](const drake::symbolic::Variable& self, const drake::symbolic::Variable& other) {
+      return drake::symbolic::Expression{self - other};
+    })
+    .def("__sub__", [](const drake::symbolic::Variable& self, double other) {
+      return drake::symbolic::Expression{self - other};
+    })
+    .def("__rsub__", [](const drake::symbolic::Variable& self, double other) {
+      return drake::symbolic::Expression{other - self};
+    })
+    .def("__mul__", [](const drake::symbolic::Variable& self, const drake::symbolic::Variable& other) {
+      return drake::symbolic::Expression{self * other};
+    })
+    .def("__mul__", [](const drake::symbolic::Variable& self, double other) {
+      return drake::symbolic::Expression{self * other};
+    })
+    .def("__rmul__", [](const drake::symbolic::Variable& self, double other) {
+      return drake::symbolic::Expression{other * self};
+    })
+    .def("__truediv__", [](const drake::symbolic::Variable& self, const drake::symbolic::Variable& other) {
+      return drake::symbolic::Expression{self / other};
+    })
+    .def("__truediv__", [](const drake::symbolic::Variable& self, double other) {
+      return drake::symbolic::Expression{self / other};
+    })
+    .def("__rtruediv__", [](const drake::symbolic::Variable& self, double other) {
+      return drake::symbolic::Expression{other / self};
+    })
+    ;
+
+  py::class_<drake::symbolic::Expression>(m, "Expression")
+    .def(py::init<>())
+    .def(py::init<const drake::symbolic::Variable&>())
+    .def(py::self                    + py::self)
+    .def(py::self                    + drake::symbolic::Variable())
+    .def(drake::symbolic::Variable() + py::self)
+    .def(py::self                    + double())
+    .def(double()                    + py::self)
+    .def(py::self                    - py::self)
+    .def(py::self                    - drake::symbolic::Variable())
+    .def(drake::symbolic::Variable() - py::self)
+    .def(py::self                    - double())
+    .def(double()                    - py::self)
+    .def(py::self                    * py::self)
+    .def(py::self                    * drake::symbolic::Variable())
+    .def(drake::symbolic::Variable() * py::self)
+    .def(py::self                    * double())
+    .def(double()                    * py::self)
+    .def(py::self                    / py::self)
+    .def(py::self                    / drake::symbolic::Variable())
+    .def(drake::symbolic::Variable() / py::self)
+    .def(py::self                    / double())
+    .def(double()                    / py::self)
+    ;
+
 
   py::class_<drake::solvers::VectorXDecisionVariable>(m, "_VectorXDecisionVariable")
     .def(py::init<size_t>())
@@ -78,6 +134,8 @@ PYBIND11_PLUGIN(_pybind_mathematicalprogram) {
     ;
 
   py::class_<drake::solvers::LinearConstraint, std::shared_ptr<drake::solvers::LinearConstraint> >(m, "LinearConstraint");
+
+  py::class_<drake::solvers::Binding<drake::solvers::LinearConstraint> >(m, "Binding_LinearConstraint");
 
   return m.ptr();
 }

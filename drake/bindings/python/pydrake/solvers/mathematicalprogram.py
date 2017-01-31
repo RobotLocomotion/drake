@@ -29,12 +29,6 @@ def _NewBinaryVariables(self, *args, **kwargs):
 MathematicalProgram.NewBinaryVariables = _NewBinaryVariables
 
 
-def _AddLinearConstraint(self, A, lb, ub, x):
-    return self._AddLinearConstraint(A, lb, ub, VectorXDecisionVariable(x))
-
-MathematicalProgram.AddLinearConstraint = _AddLinearConstraint
-
-
 def _AddLinearCost(self, c, x):
     return self._AddLinearCost(c, VectorXDecisionVariable(x))
 
