@@ -75,6 +75,33 @@ bool LinearSystemExample3::CheckSolution() const {
   return true;
 }
 
+LinearMatrixEqualityExample::LinearMatrixEqualityExample()
+    : prog_(std::make_unique<MathematicalProgram>()), X_{}, A_{} {
+  X_ = prog_->NewSymmetricContinuousVariables<3>("X");
+  // clang-format off
+  A_ << -1, -2,  3,
+         0, -2,  4,
+         0,  0, -4;
+  // clang-format on
+  prog_->AddLinearEqualityConstraint(A_.transpose() * X_ + X_ * A_,
+                                     -Eigen::Matrix3d::Identity(), true);
+}
+
+bool LinearMatrixEqualityExample::CheckSolution() const {
+  auto X_value = prog_->GetSolution(X_);
+  if (!CompareMatrices(A_.transpose() * X_value + X_value * A_,
+                       -Eigen::Matrix3d::Identity(), 1E-8,
+                       MatrixCompareType::absolute)) {
+    return false;
+  }
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es;
+  es.compute(X_value);
+  if (!(es.eigenvalues().array() >= 0).all()) {
+    return false;
+  }
+  return true;
+}
+
 NonConvexQPproblem1::NonConvexQPproblem1(CostForm cost_form,
                                          ConstraintForm constraint_form)
     : prog_(std::make_unique<MathematicalProgram>()), x_{}, x_expected_{} {

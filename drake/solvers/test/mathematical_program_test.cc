@@ -870,7 +870,11 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint4) {
   // Checks Aᵀ * X + X * A = B, bot the left and right hand-side are dynamic
   // sized.
   CheckAddedSymmetricSymbolicLinearEqualityConstraint(&prog, M_dynamic, B_dynamic);
+
+  // Checks Aᵀ * X + X * A = E.
+  CheckAddedSymmetricSymbolicLinearEqualityConstraint(&prog, M, Eigen::Matrix2d::Identity());
 }
+
 namespace {
 void CheckParsedSymbolicLorentzConeConstraint(
     MathematicalProgram* prog,
