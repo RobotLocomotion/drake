@@ -27,29 +27,58 @@ namespace sensors {
 /// A simulated ideal accelerometer that measures the linear acceleration of a
 /// frame associated with a RigidBodyPlant.
 ///
-/// The math implemented by this sensor is as follows. Let `v` be the
-/// RigidBodyPlant's generalized velocity state vector, `A` be the
-/// accelerometer's frame, `v_WAo_W` be the linear velocity of the origin of
-/// the accelerometer's frame defined in the world frame,`W`, and `J_WA` be the
-/// Jacobian matrix that relates `v_WAo_W` to `v`. The equation for `v_WAo_A` is
-/// as follows:
+/// The math implemented by this sensor is as follows. Let:
+///  - `v` be the RigidBodyPlant's generalized velocity state vector.
+///  - `A` be the accelerometer's frame with origin point `Ao`.
+///  - `W` be the world frame with origin point `Wo`.
+///  - `v_WAo_W` be `Ao`'s translational velocity in `W` expressed in `W`.
+///  - `J_WA` be the Jacobian matrix that relates `v_WAo_W` to `v`.
+///  - `R_AW` be the rotation matrix from `W` to `A`.
+///
+/// The equation for `v_WAo_W` is as follows:
 ///
 /// <pre>
 /// v_WAo_W = J_WA v
 /// </pre>
 ///
-/// Let `a_WAo_W` be the linear acceleration of the `Ao` (i.e., the origin of
-/// frame `A`) in the world frame. of point `p` in the world frame, `a_Wp`, can
-/// be computed by taking the time derivative of `v_WAo_A`, which is derived as
-/// follows using the chain rule:
+/// Let `a_WAo_W` be the `Ao`'s translational acceleration in `W` expressed in
+/// `W`. `a_WAo_W` can be computed by taking the time derivative of `v_WAo_W`,
+/// which is derived as follows using the chain rule:
 ///
 /// <pre>
-/// a_WAo_W = J_WA v_dot + J_WA_dot v
+/// a_WAo_W = d/dt v_WAo_W = J_WA vdot_WAo_W + Jdot_WA v_WAo_W
 /// </pre>
 ///
-/// The acceleration vector `a_WAo_W` is then transformed into the
-/// accelerometer's frame and outputted optionally including the effects of
-/// gravity.
+/// `a_WAo_W` is then re-expressed in `A` using the rotation matrix `R_AW`:
+///
+/// <pre>
+/// a_WAo_A = R_AW a_WAo_W
+/// </pre>
+///
+/// Note that `a_WA_A` does not include gravity. The constructor includes
+/// boolean input parameter `include_gravity`, which allows the user to specify
+/// whether the accelerometer should also sense the acceleration due to gravity.
+/// If gravity is to be included, this acceleration performs the following
+/// additional math:
+///
+/// Let:
+///  - `g_W` be the acceleration due to gravity in `W`, as specified by
+///    RigidBodyTree::a_grav.
+///  - `g_A` be the acceleration due to gravity in `A`.
+///
+/// `g_A` is computed as follows:
+///
+/// <pre>
+/// g_A = R_AW * g_W
+/// </pre>
+///
+/// `g_A` is then added to `a_WAo_A`:
+///
+/// <pre>
+/// a_WAo_A = a_WAo_A + g_A
+/// </pre>
+///
+/// This concludes the discussion of what is computed by this accelerometer.
 ///
 /// <B>%System Input Ports:</B>
 ///
@@ -74,36 +103,29 @@ namespace sensors {
 ///
 class Accelerometer : public systems::LeafSystem<double> {
  public:
-  /// This accelerometer measures linear acceleration along 3 axes within its
-  /// frame: X, Y, and Z.
-  static constexpr int kNumDimensions{3};
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Accelerometer);
 
   /// A constructor that initializes an Accelerometer.
   ///
   /// @param[in] name The name of the accelerometer. This can be any value.
   ///
-  /// @param[in] frame The frame to which this accelerometer is attached. This
-  /// is the frame in which this sensor's output is given. A copy of this frame
-  /// is stored as a class member variable.
+  /// @param[in] frame The frame `A` to which this accelerometer is attached
+  /// (see class documentation for definition of `A`). This is the frame in
+  /// which this accelerometer's output is given. This reference must remain
+  /// valid for the lifetime of this class's instance.
   ///
   /// @param[in] tree The RigidBodyTree that belongs to the RigidBodyPlant being
   /// sensed by this sensor. This should be a reference to the same
   /// RigidBodyTree that is being used by the RigidBodyPlant whose outputs are
-  /// fed into this sensor. This parameter is aliased by a class member variable
-  /// so its lifespan must exceed that of this class' instance.
+  /// fed into this sensor. This parameter's lifespan must exceed that of this
+  /// class's instance.
   ///
   /// @param[in] include_gravity Whether to include the acceleration due to
-  /// gravity in the sensor's readings.
+  /// gravity in the sensor's readings. See this class's description for more
+  /// details about the meaning of this parameter.
   ///
   Accelerometer(const std::string& name, const RigidBodyFrame<double>& frame,
       const RigidBodyTree<double>& tree, bool include_gravity = true);
-
-  // Non-copyable.
-  /// @name Deleted Copy/Move Operations
-  /// Accelerometer is neither copyable nor moveable.
-  ///@{
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Accelerometer);
-  ///@}
 
   /// Instantiates and attaches an Accelerometer to a RigidBodyPlant. It
   /// connects the Accelerometer's plant state input port. <b>It does not
@@ -120,9 +142,11 @@ class Accelerometer : public systems::LeafSystem<double> {
   /// gravity in the sensor's readings.
   ///
   /// @param[out] builder A pointer to the DiagramBuilder to which the newly
-  /// instantiated Accelerometer is added. This must not be nullptr.
+  /// instantiated Accelerometer is added. This must not be `nullptr`.
   ///
-  /// @return A pointer to the newly instantiated and added Accelerometer.
+  /// @return A pointer to the newly instantiated and added accelerometer. The
+  /// accelerometer is initially owned by the builder. Ownership will
+  /// subsequently be transferred to the Diagram that is build by the builder.
   static Accelerometer* AttachAccelerometer(
       const std::string& name,
       const RigidBodyFrame<double>& frame,
@@ -167,7 +191,7 @@ class Accelerometer : public systems::LeafSystem<double> {
     return System<double>::get_output_port(output_port_index_);
   }
 
-  /// Allocates the output vector. See this class' description for details of
+  /// Allocates the output vector. See this class's description for details of
   /// this output vector.
   std::unique_ptr<BasicVector<double>> AllocateOutputVector(
       const OutputPortDescriptor<double>& descriptor) const override;

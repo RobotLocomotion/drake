@@ -13,30 +13,20 @@ const int AccelerometerOutputConstants::kAccelYIndex;
 const int AccelerometerOutputConstants::kAccelZIndex;
 
 template <typename T>
-AccelerometerOutput<T>::AccelerometerOutput()
-    : BasicVector<double>(Accelerometer::kNumDimensions) {
-  this->SetFromVector(VectorX<double>::Zero(Accelerometer::kNumDimensions));
-}
-
-template <typename T>
-const T& AccelerometerOutput<T>::get_accel_x() const {
-  return BasicVector<T>::GetAtIndex(AccelerometerOutputConstants::kAccelXIndex);
-}
-
-template <typename T>
-const T& AccelerometerOutput<T>::get_accel_y() const {
-  return BasicVector<T>::GetAtIndex(AccelerometerOutputConstants::kAccelYIndex);
-}
-
-template <typename T>
-const T& AccelerometerOutput<T>::get_accel_z() const {
-  return BasicVector<T>::GetAtIndex(AccelerometerOutputConstants::kAccelZIndex);
+AccelerometerOutput<T>::AccelerometerOutput() : BasicVector<double>(3) {
+  this->SetFromVector(VectorX<double>::Zero(3));
 }
 
 template <typename T>
 Vector3<T> AccelerometerOutput<T>::get_accel() const {
-  Vector3<T> result(get_accel_x(), get_accel_y(), get_accel_z());
-  return result;
+  // TODO(liang.fok) Optimize the following code by re-interpreting the three
+  // acceleration values, which are already sitting sequentially in
+  // BasicVector's memory, as a Vector3<T> with no copying.
+  Vector3<T> acceleration(
+      BasicVector<T>::GetAtIndex(AccelerometerOutputConstants::kAccelXIndex),
+      BasicVector<T>::GetAtIndex(AccelerometerOutputConstants::kAccelYIndex),
+      BasicVector<T>::GetAtIndex(AccelerometerOutputConstants::kAccelZIndex));
+  return acceleration;
 }
 
 template class AccelerometerOutput<double>;

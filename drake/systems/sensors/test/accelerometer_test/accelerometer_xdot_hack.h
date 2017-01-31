@@ -13,32 +13,27 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-// TODO(liang.fok): Remove this systeme once RigidBodyPlant is able to output
+// TODO(liang.fok): Remove this system once RigidBodyPlant is able to output
 // xdot.
 
 /// Implements a system with one input port and one output port, both vector
 /// valued. If the input port contains a vector with non-finite values, this
 /// system outputs a vector containing zeros. Otherwise it outputs the same
-/// value as the input. This is useful for filtering `xdot` for the
+/// value as the input. This is useful for providing a valid `xdot` for the
 /// accelerometer, which will contain non-finite values during the first
 /// simulation tick.
 ///
 /// @ingroup sensor_systems
 ///
-class AccelerometerXdotFilter : public systems::LeafSystem<double> {
+class AccelerometerXdotHack : public systems::LeafSystem<double> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AccelerometerXdotHack);
+
   /// The constructor.
   ///
   /// @param[in] port_size The size of the input and output ports.
   ///
-  explicit AccelerometerXdotFilter(int port_size);
-
-  // Non-copyable.
-  /// @name Deleted Copy/Move Operations
-  /// AccelerometerXdotFilter is neither copyable nor moveable.
-  ///@{
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AccelerometerXdotFilter);
-  ///@}
+  explicit AccelerometerXdotHack(int port_size);
 
   /// Allocates the output vector. See this class' description for details of
   /// this output vector.

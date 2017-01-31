@@ -13,39 +13,27 @@ namespace systems {
 
 using sensors::Accelerometer;
 
-AccelerometerTestLogger::AccelerometerTestLogger(int plant_state_size)
-    : plant_state_(plant_state_size) {
+AccelerometerTestLogger::AccelerometerTestLogger(int plant_state_size) {
   DRAKE_DEMAND(plant_state_size > 0);
   plant_state_port_index_ =
       this->DeclareInputPort(kVectorValued, plant_state_size).get_index();
   plant_state_derivative_port_index_ =
       this->DeclareInputPort(kVectorValued, plant_state_size).get_index();
   acceleration_port_index_ =
-      this->DeclareInputPort(kVectorValued, Accelerometer::kNumDimensions)
-          .get_index();
+      this->DeclareInputPort(kVectorValued, 3).get_index();
 }
 
 void AccelerometerTestLogger::DoPublish(const Context<double>& context)
     const {
-  double current_time = context.get_time();
-
-  // Record time and input to the num_samples position.
-  plant_state_ =
-      this->EvalVectorInput(context, plant_state_port_index_)->get_value();
-  plant_state_derivative_ =
-      this->EvalVectorInput(context, plant_state_derivative_port_index_)->
-          get_value();
-  acceleration_ =
-      this->EvalVectorInput(context, acceleration_port_index_)->get_value();
-
   if (log_to_console_) {
     std::stringstream buffer;
-    buffer << "AccelerometerTestLogger::DoPublish:\n"
-              "  - time: " << std::to_string(current_time) << "\n"
-              "  - plant_state = " << plant_state_.transpose() << "\n"
-              "  - plant_state_derivative = "
-                  << plant_state_derivative_.transpose() << "\n"
-              "  - acceleration = " << acceleration_.transpose();
+    buffer <<
+        "AccelerometerTestLogger::DoPublish:\n"
+        "  - time: " << std::to_string(context.get_time()) << "\n"
+        "  - plant_state = " << get_plant_state(context).transpose() << "\n"
+        "  - plant_state_derivative = "
+            << get_plant_state_derivative(context).transpose() << "\n"
+        "  - acceleration = " << get_acceleration(context).transpose();
     drake::log()->info(buffer.str());
   }
 }
@@ -63,6 +51,25 @@ AccelerometerTestLogger::get_plant_state_derivative_input_port() const {
 const InputPortDescriptor<double>&
 AccelerometerTestLogger::get_acceleration_input_port() const {
   return System<double>::get_input_port(acceleration_port_index_);
+}
+
+Eigen::VectorXd AccelerometerTestLogger::get_plant_state(
+    const Context<double>& context) const {
+  DRAKE_ASSERT_VOID(System<double>::CheckValidContext(context));
+  return this->EvalVectorInput(context, plant_state_port_index_)->get_value();
+}
+
+Eigen::VectorXd AccelerometerTestLogger::get_plant_state_derivative(
+    const Context<double>& context) const {
+  DRAKE_ASSERT_VOID(System<double>::CheckValidContext(context));
+  return this->EvalVectorInput(context,
+          plant_state_derivative_port_index_)->get_value();
+}
+
+Eigen::VectorXd AccelerometerTestLogger::get_acceleration(
+    const Context<double>& context) const {
+  DRAKE_ASSERT_VOID(System<double>::CheckValidContext(context));
+  return this->EvalVectorInput(context, acceleration_port_index_)->get_value();
 }
 
 }  // namespace systems
