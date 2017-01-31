@@ -79,18 +79,16 @@ void HumanoidPlanEvalSystem::DoCalcUnrestrictedUpdate(
 
 std::unique_ptr<systems::AbstractState>
 HumanoidPlanEvalSystem::AllocateAbstractState() const {
-  QpInput input0 = paramset_.MakeQpInput(
-      {"feet"}, /* contacts */
-      {"pelvis", "torso"}, /* tracekd bodies */
-      alias_groups_);
-
   std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(2);
   abstract_vals[abstract_state_plan_index_] =
-      std::move(std::unique_ptr<systems::AbstractValue>(
-          new systems::Value<SimpleValkyriePlan>(SimpleValkyriePlan())));
+      std::unique_ptr<systems::AbstractValue>(
+          new systems::Value<SimpleValkyriePlan>(SimpleValkyriePlan()));
   abstract_vals[abstract_state_qp_input_index_] =
-      std::move(std::unique_ptr<systems::AbstractValue>(
-          new systems::Value<QpInput>(input0)));
+      std::unique_ptr<systems::AbstractValue>(
+          new systems::Value<QpInput>(paramset_.MakeQpInput(
+              {"feet"}, /* contacts */
+              {"pelvis", "torso"}, /* tracekd bodies */
+              alias_groups_)));
   return std::make_unique<systems::AbstractState>(std::move(abstract_vals));
 }
 
