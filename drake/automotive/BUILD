@@ -97,10 +97,10 @@ drake_cc_library(
 drake_cc_library(
     name = "endless_road_oracle",
     srcs = [
-        "endless_road_oracle.cc",
-        "endless_road_oracle-internal.h",
+        "dev/endless_road_oracle.cc",
+        "dev/endless_road_oracle-internal.h",
     ],
-    hdrs = ["endless_road_oracle.h"],
+    hdrs = ["dev/endless_road_oracle.h"],
     linkstatic = 1,
     deps = [
         ":generated_vectors",
@@ -302,6 +302,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "endless_road_oracle_test",
+    srcs = ["dev/test/endless_road_oracle_test.cc"],
     deps = [
         "//drake/automotive:endless_road_oracle",
         "//drake/automotive/maliput/monolane:builder",

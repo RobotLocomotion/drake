@@ -6,7 +6,7 @@
 
 #include "drake/automotive/endless_road_car.h"
 #include "drake/automotive/endless_road_car_to_euler_floating_joint.h"
-#include "drake/automotive/endless_road_oracle.h"
+#include "drake/automotive/dev/endless_road_oracle.h"
 #include "drake/automotive/gen/driving_command_translator.h"
 #include "drake/automotive/gen/endless_road_car_state_translator.h"
 #include "drake/automotive/gen/euler_floating_joint_state_translator.h"

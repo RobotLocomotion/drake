@@ -1,10 +1,6 @@
 drake_add_cc_test(curve2_test)
 target_link_libraries(curve2_test drakeAutomotive)
 
-drake_add_cc_test(endless_road_oracle_test)
-target_link_libraries(endless_road_oracle_test
-                      drakeAutomotive)
-
 drake_add_cc_test(endless_road_car_to_euler_floating_joint_test)
 target_link_libraries(endless_road_car_to_euler_floating_joint_test
                       drakeAutomotive)
