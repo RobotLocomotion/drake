@@ -15,7 +15,9 @@ which uses `Doxygen <http://www.stack.nl/~dimitri/doxygen/>`_, and
 `Drake's website <http://drake.mit.edu>`_, which
 uses `Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_.
 
-Drake's documentation is built using the ``documentation`` build target::
+Drake's documentation is built using the ``documentation`` build target. First
+build Drake like normal, otherwise the ``documentation`` build target will not
+exist. Then execute::
 
     $ cd drake-distro/build/drake
     $ [make|ninja] documentation
@@ -26,3 +28,10 @@ browser:
 - Drake website: ``drake-distro/build/drake/doc/sphinx/index.html``
 - Doxygen C++ website: ``drake-distro/build/drake/doc/doxygen_cxx/html/index.html``
 - Doxygen Matlab website: ``drake-distro/build/drake/doc/doxygen_matlab/html/index.html``
+
+If you're using ``ninja``, there are two additional build targets that allow you
+to build just the Sphinx website or C++ Doxygen website::
+
+    $ cd drake-distro/build/drake
+    $ ninja doc/doxygen_cxx_output
+    $ ninja doc/sphinx_output
