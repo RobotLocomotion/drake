@@ -113,6 +113,13 @@ genrule(
     visibility = ["//visibility:private"],
 )
 
+# TODO(david-german-tri): This is brittle. Ideally, we would obtain this
+# linker flag from gfortran itself, but Bazel seems to resist that.
+# See https://groups.google.com/forum/#!topic/bazel-discuss/tBOYrgAkVyc.
+HOMEBREW_GFORTRAN_FLAG = "-L/usr/local/Cellar/gcc@5/5.4.0_1/lib/gcc/5/"
+LINKOPTS_LINUX = ["-lgfortran", "-ldl"]
+LINKOPTS_APPLE = LINKOPTS_LINUX + [HOMEBREW_GFORTRAN_PATH]
+
 # Only Linux builds should depend on this target.  gfortran is not available as
 # a system library on OS X.
 # TODO(david-german-tri): Ingest the fortran library path from the pkg-config
@@ -122,10 +129,10 @@ cc_library(
     srcs = IPOPT_LIBS,
     hdrs = IPOPT_HDRS,
     includes = ["include/coin"],
-    linkopts = [
-        "-lgfortran",
-        "-ldl",
-    ],
+    linkopts = select({
+       "//config:linux" : LINKOPTS_LINUX,
+       "//config:apple" : LINKOPTS_APPLE,
+    }),
     linkstatic = 1,
     visibility = ["//visibility:public"],
     alwayslink = 1,
