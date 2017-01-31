@@ -30,13 +30,15 @@ FormulaCell::FormulaCell(const FormulaKind k, const size_t hash)
     : kind_{k}, hash_{hash_combine(hash, static_cast<size_t>(kind_))} {}
 
 RelationalFormulaCell::RelationalFormulaCell(const FormulaKind k,
-                                             const Expression& e1,
-                                             const Expression& e2)
-    : FormulaCell{k, hash_combine(e1.get_hash(), e2)}, e1_{e1}, e2_{e2} {}
+                                             const Expression& lhs,
+                                             const Expression& rhs)
+    : FormulaCell{k, hash_combine(lhs.get_hash(), rhs)},
+      e_lhs_{lhs},
+      e_rhs_{rhs} {}
 
 Variables RelationalFormulaCell::GetFreeVariables() const {
-  Variables ret{e1_.GetVariables()};
-  ret.insert(e2_.GetVariables());
+  Variables ret{e_lhs_.GetVariables()};
+  ret.insert(e_rhs_.GetVariables());
   return ret;
 }
 
@@ -45,7 +47,7 @@ bool RelationalFormulaCell::EqualTo(const FormulaCell& f) const {
   DRAKE_ASSERT(get_kind() == f.get_kind());
   const RelationalFormulaCell& rel_f{
       static_cast<const RelationalFormulaCell&>(f)};
-  return e1_.EqualTo(rel_f.e1_) && e2_.EqualTo(rel_f.e2_);
+  return e_lhs_.EqualTo(rel_f.e_lhs_) && e_rhs_.EqualTo(rel_f.e_rhs_);
 }
 
 bool RelationalFormulaCell::Less(const FormulaCell& f) const {
@@ -53,13 +55,13 @@ bool RelationalFormulaCell::Less(const FormulaCell& f) const {
   DRAKE_ASSERT(get_kind() == f.get_kind());
   const RelationalFormulaCell& rel_f{
       static_cast<const RelationalFormulaCell&>(f)};
-  if (e1_.Less(rel_f.e1_)) {
+  if (e_lhs_.Less(rel_f.e_lhs_)) {
     return true;
   }
-  if (rel_f.e1_.Less(e1_)) {
+  if (rel_f.e_lhs_.Less(e_lhs_)) {
     return false;
   }
-  return e2_.Less(rel_f.e2_);
+  return e_rhs_.Less(rel_f.e_rhs_);
 }
 
 NaryFormulaCell::NaryFormulaCell(const FormulaKind k,
@@ -96,7 +98,7 @@ bool NaryFormulaCell::Less(const FormulaCell& f) const {
 }
 
 ostream& NaryFormulaCell::DisplayWithOp(ostream& os, const string& op) const {
-  const set<Formula>& formulas{get_formulas()};
+  const set<Formula>& formulas{get_operands()};
   auto it(formulas.cbegin());
   DRAKE_ASSERT(formulas.size() > 1u);
   os << "(";
@@ -162,12 +164,12 @@ FormulaEq::FormulaEq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Eq, e1, e2} {}
 
 bool FormulaEq::Evaluate(const Environment& env) const {
-  return get_1st_expression().Evaluate(env) ==
-         get_2nd_expression().Evaluate(env);
+  return get_lhs_expression().Evaluate(env) ==
+         get_rhs_expression().Evaluate(env);
 }
 
 ostream& FormulaEq::Display(ostream& os) const {
-  return os << "(" << get_1st_expression() << " = " << get_2nd_expression()
+  return os << "(" << get_lhs_expression() << " = " << get_rhs_expression()
             << ")";
 }
 
@@ -175,12 +177,12 @@ FormulaNeq::FormulaNeq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Neq, e1, e2} {}
 
 bool FormulaNeq::Evaluate(const Environment& env) const {
-  return get_1st_expression().Evaluate(env) !=
-         get_2nd_expression().Evaluate(env);
+  return get_lhs_expression().Evaluate(env) !=
+         get_rhs_expression().Evaluate(env);
 }
 
 ostream& FormulaNeq::Display(ostream& os) const {
-  return os << "(" << get_1st_expression() << " != " << get_2nd_expression()
+  return os << "(" << get_lhs_expression() << " != " << get_rhs_expression()
             << ")";
 }
 
@@ -188,12 +190,12 @@ FormulaGt::FormulaGt(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Gt, e1, e2} {}
 
 bool FormulaGt::Evaluate(const Environment& env) const {
-  return get_1st_expression().Evaluate(env) >
-         get_2nd_expression().Evaluate(env);
+  return get_lhs_expression().Evaluate(env) >
+         get_rhs_expression().Evaluate(env);
 }
 
 ostream& FormulaGt::Display(ostream& os) const {
-  return os << "(" << get_1st_expression() << " > " << get_2nd_expression()
+  return os << "(" << get_lhs_expression() << " > " << get_rhs_expression()
             << ")";
 }
 
@@ -201,12 +203,12 @@ FormulaGeq::FormulaGeq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Geq, e1, e2} {}
 
 bool FormulaGeq::Evaluate(const Environment& env) const {
-  return get_1st_expression().Evaluate(env) >=
-         get_2nd_expression().Evaluate(env);
+  return get_lhs_expression().Evaluate(env) >=
+         get_rhs_expression().Evaluate(env);
 }
 
 ostream& FormulaGeq::Display(ostream& os) const {
-  return os << "(" << get_1st_expression() << " >= " << get_2nd_expression()
+  return os << "(" << get_lhs_expression() << " >= " << get_rhs_expression()
             << ")";
 }
 
@@ -214,12 +216,12 @@ FormulaLt::FormulaLt(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Lt, e1, e2} {}
 
 bool FormulaLt::Evaluate(const Environment& env) const {
-  return get_1st_expression().Evaluate(env) <
-         get_2nd_expression().Evaluate(env);
+  return get_lhs_expression().Evaluate(env) <
+         get_rhs_expression().Evaluate(env);
 }
 
 ostream& FormulaLt::Display(ostream& os) const {
-  return os << "(" << get_1st_expression() << " < " << get_2nd_expression()
+  return os << "(" << get_lhs_expression() << " < " << get_rhs_expression()
             << ")";
 }
 
@@ -227,25 +229,25 @@ FormulaLeq::FormulaLeq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Leq, e1, e2} {}
 
 bool FormulaLeq::Evaluate(const Environment& env) const {
-  return get_1st_expression().Evaluate(env) <=
-         get_2nd_expression().Evaluate(env);
+  return get_lhs_expression().Evaluate(env) <=
+         get_rhs_expression().Evaluate(env);
 }
 
 ostream& FormulaLeq::Display(ostream& os) const {
-  return os << "(" << get_1st_expression() << " <= " << get_2nd_expression()
+  return os << "(" << get_lhs_expression() << " <= " << get_rhs_expression()
             << ")";
 }
 
 FormulaAnd::FormulaAnd(const set<Formula>& formulas)
     : NaryFormulaCell{FormulaKind::And, formulas} {
-  DRAKE_ASSERT(get_formulas().size() > 1u);
+  DRAKE_ASSERT(get_operands().size() > 1u);
 }
 
 FormulaAnd::FormulaAnd(const Formula& f1, const Formula& f2)
     : NaryFormulaCell{FormulaKind::And, set<Formula>{f1, f2}} {}
 
 bool FormulaAnd::Evaluate(const Environment& env) const {
-  for (const auto& f : get_formulas()) {
+  for (const auto& f : get_operands()) {
     if (!f.Evaluate(env)) {
       return false;
     }
@@ -259,14 +261,14 @@ ostream& FormulaAnd::Display(ostream& os) const {
 
 FormulaOr::FormulaOr(const set<Formula>& formulas)
     : NaryFormulaCell{FormulaKind::Or, formulas} {
-  DRAKE_ASSERT(get_formulas().size() > 1u);
+  DRAKE_ASSERT(get_operands().size() > 1u);
 }
 
 FormulaOr::FormulaOr(const Formula& f1, const Formula& f2)
     : NaryFormulaCell{FormulaKind::Or, set<Formula>{f1, f2}} {}
 
 bool FormulaOr::Evaluate(const Environment& env) const {
-  for (const auto& f : get_formulas()) {
+  for (const auto& f : get_operands()) {
     if (f.Evaluate(env)) {
       return true;
     }
@@ -347,5 +349,99 @@ bool FormulaForall::Evaluate(const Environment& env) const {
 ostream& FormulaForall::Display(ostream& os) const {
   return os << "forall(" << vars_ << ". " << f_ << ")";
 }
+
+bool is_false(const FormulaCell& f) {
+  return f.get_kind() == FormulaKind::False;
+}
+
+bool is_true(const FormulaCell& f) { return f.get_kind() == FormulaKind::True; }
+
+bool is_equal_to(const FormulaCell& f) {
+  return f.get_kind() == FormulaKind::Eq;
+}
+
+bool is_not_equal_to(const FormulaCell& f) {
+  return f.get_kind() == FormulaKind::Neq;
+}
+
+bool is_greater_than(const FormulaCell& f) {
+  return f.get_kind() == FormulaKind::Gt;
+}
+
+bool is_greater_than_or_equal_to(const FormulaCell& f) {
+  return f.get_kind() == FormulaKind::Geq;
+}
+
+bool is_less_than(const FormulaCell& f) {
+  return f.get_kind() == FormulaKind::Lt;
+}
+
+bool is_less_than_or_equal_to(const FormulaCell& f) {
+  return f.get_kind() == FormulaKind::Leq;
+}
+
+bool is_relational(const FormulaCell& f) {
+  return is_equal_to(f) || is_not_equal_to(f) || is_greater_than(f) ||
+         is_greater_than_or_equal_to(f) || is_less_than(f) ||
+         is_less_than_or_equal_to(f);
+}
+
+bool is_conjunction(const FormulaCell& f) {
+  return f.get_kind() == FormulaKind::And;
+}
+
+bool is_disjunction(const FormulaCell& f) {
+  return f.get_kind() == FormulaKind::Or;
+}
+
+bool is_nary(const FormulaCell& f) {
+  return is_conjunction(f) || is_disjunction(f);
+}
+
+bool is_negation(const FormulaCell& f) {
+  return f.get_kind() == FormulaKind::Not;
+}
+
+bool is_forall(const FormulaCell& f) {
+  return f.get_kind() == FormulaKind::Forall;
+}
+
+shared_ptr<RelationalFormulaCell> to_relational(
+    const shared_ptr<FormulaCell> f_ptr) {
+  DRAKE_ASSERT(is_relational(*f_ptr));
+  return static_pointer_cast<RelationalFormulaCell>(f_ptr);
+}
+
+shared_ptr<RelationalFormulaCell> to_relational(const Formula& f) {
+  return to_relational(f.ptr_);
+}
+
+shared_ptr<NaryFormulaCell> to_nary(const shared_ptr<FormulaCell> f_ptr) {
+  DRAKE_ASSERT(is_nary(*f_ptr));
+  return static_pointer_cast<NaryFormulaCell>(f_ptr);
+}
+
+shared_ptr<NaryFormulaCell> to_nary(const Formula& f) {
+  return to_nary(f.ptr_);
+}
+
+shared_ptr<FormulaNot> to_negation(const shared_ptr<FormulaCell> f_ptr) {
+  DRAKE_ASSERT(is_negation(*f_ptr));
+  return static_pointer_cast<FormulaNot>(f_ptr);
+}
+
+shared_ptr<FormulaNot> to_negation(const Formula& f) {
+  return to_negation(f.ptr_);
+}
+
+shared_ptr<FormulaForall> to_forall(const shared_ptr<FormulaCell> f_ptr) {
+  DRAKE_ASSERT(is_forall(*f_ptr));
+  return static_pointer_cast<FormulaForall>(f_ptr);
+}
+
+shared_ptr<FormulaForall> to_forall(const Formula& f) {
+  return to_forall(f.ptr_);
+}
+
 }  // namespace symbolic
 }  // namespace drake
