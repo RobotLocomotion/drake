@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include <Eigen/Geometry>
@@ -11,13 +12,6 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverloaded-virtual"
 class RevoluteJoint : public FixedAxisOneDoFJoint<RevoluteJoint> {
-  // disable copy construction and assignment
-  // RevoluteJoint(const RevoluteJoint&) = delete;
-  // RevoluteJoint& operator=(const RevoluteJoint&) = delete;
-
- private:
-  Eigen::Vector3d rotation_axis;
-
  public:
   RevoluteJoint(const std::string& name,
                 const Eigen::Isometry3d& transform_to_parent_body,
@@ -31,6 +25,8 @@ class RevoluteJoint : public FixedAxisOneDoFJoint<RevoluteJoint> {
 
   virtual ~RevoluteJoint() {}
 
+  std::unique_ptr<DrakeJoint> Clone() const override;
+
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
@@ -41,11 +37,15 @@ class RevoluteJoint : public FixedAxisOneDoFJoint<RevoluteJoint> {
     return ret;
   }
 
+  bool operator==(const DrakeJoint& other) const override;
+  bool operator!=(const DrakeJoint& other) const override;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
  private:
   static drake::TwistVector<double> spatialJointAxis(
       const Eigen::Vector3d& rotation_axis);
 
- public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  Eigen::Vector3d rotation_axis;
 };
 #pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual

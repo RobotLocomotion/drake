@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <random>
 #include <string>
 
@@ -100,6 +101,11 @@ class DrakeJoint {
    * The destructor.
    */
   virtual ~DrakeJoint();
+
+  /**
+   * Returns a clone of this DrakeJoint.
+   */
+  virtual std::unique_ptr<DrakeJoint> Clone() const = 0;
 
   /**
    * Returns the transform `X_PF` giving the pose of the joint's "fixed" frame
@@ -219,6 +225,9 @@ class DrakeJoint {
       Eigen::AutoDiffScalar<Eigen::VectorXd>)
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  virtual bool operator==(const DrakeJoint& other) const;
+  virtual bool operator!=(const DrakeJoint& other) const;
 
  protected:
   const std::string name;
