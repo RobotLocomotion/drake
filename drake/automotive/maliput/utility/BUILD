@@ -2,10 +2,16 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_binary",
+)
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "utility",
     srcs = [
         "generate_obj.cc",
@@ -25,7 +31,7 @@ cc_library(
     ],
 )
 
-cc_binary(
+drake_cc_binary(
     name = "yaml_to_obj",
     srcs = ["yaml_to_obj.cc"],
     deps = [
@@ -37,26 +43,20 @@ cc_binary(
 
 # === test/ ===
 
-cc_test(
+drake_cc_googletest(
     name = "generate_urdf_test",
-    size = "small",
-    srcs = ["test/generate_urdf_test.cc"],
     deps = [
         ":utility",
         "//drake/automotive/maliput/monolane",
         "//drake/thirdParty:spruce",
-        "@gtest//:main",
     ],
 )
 
-cc_test(
+drake_cc_googletest(
     name = "infinite_circuit_road_test",
-    size = "small",
-    srcs = ["test/infinite_circuit_road_test.cc"],
     deps = [
         ":utility",
         "//drake/automotive/maliput/monolane",
-        "@gtest//:main",
     ],
 )
 

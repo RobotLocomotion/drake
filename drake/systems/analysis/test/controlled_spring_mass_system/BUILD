@@ -2,11 +2,11 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "controlled_spring_mass_system",
     testonly = 1,
     srcs = ["controlled_spring_mass_system.cc"],
@@ -23,7 +23,7 @@ cc_library(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "controlled_spring_mass_system_test",
     srcs = ["controlled_spring_mass_system_test.cc"],
     deps = [

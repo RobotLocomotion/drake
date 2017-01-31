@@ -1,6 +1,34 @@
 # -*- python -*-
 
-def cc_googletest(
+def drake_cc_library(
+        name,
+        hdrs=None,
+        srcs=None,
+        deps=None,
+        **kwargs):
+    """Creates a rule to declare a C++ library."""
+    native.cc_library(
+        name=name,
+        hdrs=hdrs,
+        srcs=srcs,
+        deps=deps,
+        **kwargs)
+
+def drake_cc_binary(
+        name,
+        hdrs=None,
+        srcs=None,
+        deps=None,
+        **kwargs):
+    """Creates a rule to declare a C++ binary."""
+    native.cc_binary(
+        name=name,
+        hdrs=hdrs,
+        srcs=srcs,
+        deps=deps,
+        **kwargs)
+
+def drake_cc_googletest(
         name,
         size=None,
         srcs=None,

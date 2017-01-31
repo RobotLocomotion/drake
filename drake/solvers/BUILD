@@ -2,11 +2,11 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "binding",
     srcs = [],
     hdrs = ["binding.h"],
@@ -16,7 +16,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "constraint",
     srcs = ["constraint.cc"],
     hdrs = ["constraint.h"],
@@ -29,7 +29,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "decision_variable",
     srcs = ["decision_variable.cc"],
     hdrs = ["decision_variable.h"],
@@ -41,7 +41,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "function",
     srcs = [],
     hdrs = ["function.h"],
@@ -65,7 +65,7 @@ cc_library(
 # - MOSEK
 
 # TODO(jwnimmer-tri, david-german-tri): Support more solvers.
-cc_library(
+drake_cc_library(
     name = "mathematical_program",
     srcs = [
         "dreal_solver.h",
@@ -105,7 +105,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "system_identification",
     srcs = ["system_identification.cc"],
     hdrs = ["system_identification.h"],
@@ -125,7 +125,7 @@ cc_library(
 # TODO(hongkai-dai): MathematicalProgram should be refactored so that
 # implementations of MathematicalProgramSolverInterface are not co-dependent
 # with MathematicalProgram itself, and then this target should be deleted.
-cc_library(
+drake_cc_library(
     name = "mathematical_program_api",
     srcs = [],
     hdrs = [
@@ -151,7 +151,7 @@ cc_library(
 # If --config gurobi is used, this target builds object code that satisfies
 # MathematicalProgramSolverInterface by calling Gurobi. Otherwise, this target
 # builds dummy object code that fails at runtime.
-cc_library(
+drake_cc_library(
     name = "gurobi_solver",
     srcs = select({
         "//tools:with_gurobi": ["gurobi_solver.cc"],
@@ -172,7 +172,7 @@ cc_library(
     }),
 )
 
-cc_library(
+drake_cc_library(
     name = "ipopt_solver",
     srcs = ["ipopt_solver.cc"],
     hdrs = ["ipopt_solver.h"],
@@ -186,7 +186,7 @@ cc_library(
 )
 
 # === test/ ===
-cc_googletest(
+drake_cc_googletest(
     name = "binding_test",
     srcs = [
         "test/binding_test.cc",
@@ -197,7 +197,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "constraint_test",
     deps = [
         ":mathematical_program",
@@ -208,7 +208,7 @@ cc_googletest(
 
 # TODO(hongkai-dai): Separate this test into a test that uses Gurobi, and a
 # test that doesn't.
-cc_googletest(
+drake_cc_googletest(
     name = "convex_optimization_test",
     srcs = [
         "test/convex_optimization_test.cc",
@@ -225,7 +225,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "decision_variable_test",
     deps = [
         ":mathematical_program",
@@ -233,7 +233,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "equality_constrained_qp_solver_test",
     srcs = [
         "test/equality_constrained_qp_solver_test.cc",
@@ -245,7 +245,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "linear_complementary_problem_test",
     srcs = [
         "test/linear_complementary_problem_test.cc",
@@ -256,7 +256,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "linear_system_solver_test",
     srcs = [
         "test/linear_system_solver_test.cc",
@@ -270,7 +270,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "mathematical_program_test",
     srcs = [
         "test/mathematical_program_test.cc",
@@ -284,7 +284,7 @@ cc_googletest(
 
 # TODO(hongkai-dai): Separate this test into a test that uses Gurobi, and a
 # test that doesn't.
-cc_googletest(
+drake_cc_googletest(
     name = "mixed_integer_optimization_test",
     srcs = [
         "test/mathematical_program_test_util.h",
@@ -301,7 +301,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "moby_lcp_solver_test",
     deps = [
         ":mathematical_program",
@@ -309,7 +309,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "nonlinear_program_test",
     srcs = [
         "test/mathematical_program_test_util.h",
@@ -323,7 +323,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "system_identification_test",
     # The test takes ~20 sec in opt mode but ~140 sec in dbg mode.
     # To avoid timeouts in dbg or valgrind, we need "moderate" here.
