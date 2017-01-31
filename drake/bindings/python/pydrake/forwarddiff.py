@@ -29,3 +29,17 @@ def jacobian(function, x):
         x_ad.flat[i] = AutoDiffXd(x.flat[i], der)
     y_ad = function(x_ad)
     return np.vstack(y.derivatives() for y in y_ad)
+
+
+def sin(x):
+    if isinstance(x, AutoDiffXd):
+        return x.sin()
+    else:
+        return np.sin(x)
+
+
+def cos(x):
+    if isinstance(x, AutoDiffXd):
+        return x.cos()
+    else:
+        return np.cos(x)

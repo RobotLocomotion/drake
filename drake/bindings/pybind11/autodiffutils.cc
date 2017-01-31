@@ -1,4 +1,3 @@
-#include <iostream>
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
@@ -7,6 +6,14 @@
 
 
 namespace py = pybind11;
+
+using std::sin;
+using std::cos;
+
+template <typename Derived>
+AutoDiffXd eval(const Eigen::AutoDiffScalar<Derived>& x) {
+  return AutoDiffXd(x.value(), x.derivatives());
+}
 
 PYBIND11_PLUGIN(_autodiffutils) {
   py::module m("_autodiffutils", "Bindings for Eigen AutoDiff Scalars");
@@ -22,7 +29,45 @@ PYBIND11_PLUGIN(_autodiffutils) {
     .def("derivatives", [](const AutoDiffXd& self) {
       return self.derivatives();
     })
-    ;
+    .def("sin", [](const AutoDiffXd& self) { return eval(sin(self)); })
+    .def("cos", [](const AutoDiffXd& self) { return eval(cos(self)); })
+    .def("__add__", [](const AutoDiffXd& self, const AutoDiffXd& other) {
+      return eval(self + other);
+    })
+    .def("__add__", [](const AutoDiffXd& self, double other) {
+      return eval(self + other);
+    })
+    .def("__radd__", [](const AutoDiffXd& self, double other) {
+      return eval(other + self);
+    })
+    .def("__sub__", [](const AutoDiffXd& self, const AutoDiffXd& other) {
+      return eval(self - other);
+    })
+    .def("__sub__", [](const AutoDiffXd& self, double other) {
+      return eval(self - other);
+    })
+    .def("__rsub__", [](const AutoDiffXd& self, double other) {
+      return eval(other - self);
+    })
+    .def("__mul__", [](const AutoDiffXd& self, const AutoDiffXd& other) {
+      return eval(self * other);
+    })
+    .def("__mul__", [](const AutoDiffXd& self, double other) {
+      return eval(self * other);
+    })
+    .def("__rmul__", [](const AutoDiffXd& self, double other) {
+      return eval(other * self);
+    })
+    .def("__truediv__", [](const AutoDiffXd& self, const AutoDiffXd& other) {
+      return eval(self / other);
+    })
+    .def("__truediv__", [](const AutoDiffXd& self, double other) {
+      return eval(self / other);
+    })
+    .def("__rtruediv__", [](const AutoDiffXd& self, double other) {
+      return eval(other / self);
+    })
+   ;
 
   py::class_<VectorXAutoDiffXd>(m, "VectorXAutoDiffXd")
     .def("__init__",

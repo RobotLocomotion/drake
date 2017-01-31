@@ -19,8 +19,6 @@ def _doKinematics(self, q, v=None):
     if v is not None:
         if isinstance(v.flat[0], ad.AutoDiffXd):
             v = ad.wrap(ad.VectorXAutoDiffXd, v)
-        print("q", q)
-        print("v", v)
         return self._doKinematics(q, v)
     else:
         return self._doKinematics(q)
