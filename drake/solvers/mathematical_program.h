@@ -683,14 +683,6 @@ class MathematicalProgram {
   }
 
   /**
-   * Adds a cost to the problem which covers all decision
-   * variables created at the time the cost was added.
-   */
-  void AddCost(std::shared_ptr<Constraint> obj) {
-    AddCost(obj, decision_variables_);
-  }
-
-  /**
    * Convert an input of type @tparam F to a ConstraintImpl object.
    * @tparam F This class should have functions numInputs(), numOutputs and
    * eval(x, y). Check drake::solvrs::detail::FunctionTraits for more details.
@@ -733,20 +725,6 @@ class MathematicalProgram {
     return c;
   }
 
-  /**
-   * Adds a cost to the optimization program on all decision variables.
-   * @tparam F it should define functions numInputs, numOutputs and eval. Check
-   * drake::solvers::detail::FunctionTraits for more detail.
-   */
-  template <typename F>
-  typename std::enable_if<
-      !std::is_convertible<F, std::shared_ptr<Constraint>>::value &&
-          !std::is_convertible<F, Binding<Constraint>>::value,
-      std::shared_ptr<Constraint>>::type
-  AddCost(F&& f) {
-    return AddCost(std::forward<F>(f), decision_variables_);
-  }
-
   // libstdc++ 4.9 evaluates
   // `std::is_convertible<std::unique_ptr<Unrelated>,
   // std::shared_ptr<Constraint>>::value`
@@ -775,20 +753,6 @@ class MathematicalProgram {
         std::forward<std::unique_ptr<F>>(f));
     AddCost(c, vars);
     return c;
-  }
-
-  /**
-   * Adds a cost to the optimization program on all decision variables.
-   * @tparam F it should define functions numInputs, numOutputs and eval. Check
-   * drake::solvers::detail::FunctionTraits for more detail.
-   */
-  template <typename F>
-  typename std::enable_if<
-      (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) &&
-          (!std::is_convertible<F, Binding<Constraint>>::value),
-      std::shared_ptr<Constraint>>::type
-  AddCost(std::unique_ptr<F>&& f) {
-    return AddCost(std::forward<std::unique_ptr<F>>(f), decision_variables_);
   }
 
   /**
@@ -846,17 +810,6 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
-   * Adds a linear cost term of the form c'*x.
-   * Applied to all decision variables existing at the time when
-   * the cost is added, and pushes onto
-   * the linear cost data structure.
-   */
-  std::shared_ptr<LinearConstraint> AddLinearCost(
-      const Eigen::Ref<const Eigen::VectorXd>& c) {
-    return AddLinearCost(c, decision_variables_);
-  }
-
-  /**
    * Adds a cost term of the form 0.5*x'*Q*x + b'x.
    * Applied to subset of the variables and pushes onto
    * the quadratic cost data structure.
@@ -901,16 +854,6 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
-   * Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
-   * Applied to all (currently existing) variables.
-   */
-  std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
-      const Eigen::Ref<const Eigen::MatrixXd>& Q,
-      const Eigen::Ref<const Eigen::VectorXd>& x_desired) {
-    return AddQuadraticErrorCost(Q, x_desired, decision_variables_);
-  }
-
-  /**
    * Adds a cost term of the form | Ax - b |^2.
    */
   std::shared_ptr<QuadraticConstraint> AddL2NormCost(
@@ -948,25 +891,6 @@ class MathematicalProgram {
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& b,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
-
-  /**
-   * Adds a cost term of the form 0.5*x'*Q*x + b'x.
-   * Applies to all (currently existing) variables.
-   */
-  std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
-      const Eigen::Ref<const Eigen::MatrixXd>& Q,
-      const Eigen::Ref<const Eigen::VectorXd>& b) {
-    return AddQuadraticCost(Q, b, decision_variables_);
-  }
-
-  /**
-   * Adds a constraint to the problem which covers all decision.
-   * variables created at the time the constraint was added.
-   */
-  template <typename ConstraintT>
-  void AddConstraint(std::shared_ptr<ConstraintT> constraint) {
-    AddConstraint(constraint, decision_variables_);
-  }
 
   /**
    * Adds a generic constraint to the program.  This should
@@ -1041,17 +965,6 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
-   * Adds linear constraints to the program for all (currently existing)
-   * variables.
-   */
-  std::shared_ptr<LinearConstraint> AddLinearConstraint(
-      const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::VectorXd>& lb,
-      const Eigen::Ref<const Eigen::VectorXd>& ub) {
-    return AddLinearConstraint(A, lb, ub, decision_variables_);
-  }
-
-  /**
    * Adds one row of linear constraint referencing potentially a
    * subset of the decision variables (defined in the vars parameter).
    * lb <= a*vars <= ub
@@ -1082,21 +995,6 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars) {
     return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
                                vars);
-  }
-
-  /**
-   * Adds one row of linear constraint on all variables.
-   * lb <= a*vars <= ub
-   * @param a A row vector.
-   * @param lb A scalar, the lower bound.
-   * @param ub A scalar, the upper bound
-   */
-  template <typename DerivedA>
-  std::shared_ptr<LinearConstraint> AddLinearConstraint(
-      const Eigen::MatrixBase<DerivedA>& a, double lb, double ub) {
-    DRAKE_ASSERT(a.rows() == 1);
-    return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
-                               decision_variables_);
   }
 
   /**
@@ -1228,21 +1126,6 @@ class MathematicalProgram {
       const Eigen::Ref<const Eigen::VectorXd>& beq,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
-  /** AddLinearEqualityConstraint
-   *
-   * Adds linear equality constraints to the program for all
-   * (currently existing) variables.
-   */
-  template <typename DerivedA, typename DerivedB>
-  typename std::enable_if<
-      std::is_same<typename DerivedA::Scalar, double>::value &&
-          std::is_same<typename DerivedB::Scalar, double>::value,
-      std::shared_ptr<LinearEqualityConstraint>>::type
-  AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,
-                              const Eigen::MatrixBase<DerivedB>& beq) {
-    return AddLinearEqualityConstraint(Aeq, beq, decision_variables_);
-  }
-
   /**
    * Adds one row of linear equality constraint referencing potentially a subset
    * of decision variables.
@@ -1274,21 +1157,6 @@ class MathematicalProgram {
       const Eigen::Ref<const Eigen::RowVectorXd>& a, double beq,
       const Eigen::Ref<const VectorXDecisionVariable>& vars) {
     return AddLinearEqualityConstraint(a, drake::Vector1d(beq), vars);
-  }
-
-  /**
-   * Adds one row of linear equality constraint referencing all
-   * decision variables.
-   * @f[
-   * ax = beq
-   * @f]
-   * @param a A row vector.
-   * @param beq A scalar.
-   */
-  std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
-      const Eigen::Ref<const Eigen::RowVectorXd>& a, double beq) {
-    return AddLinearEqualityConstraint(a, drake::Vector1d(beq),
-                                       decision_variables_);
   }
 
   /**
@@ -1354,17 +1222,6 @@ class MathematicalProgram {
       const Eigen::Ref<const Eigen::VectorXd>& lb,
       const Eigen::Ref<const Eigen::VectorXd>& ub,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
-
-  /** AddBoundingBoxConstraint
-   *
-   * Adds bounding box constraints to the program for all
-   * (currently existing) variables.
-   */
-  std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
-      const Eigen::Ref<const Eigen::VectorXd>& lb,
-      const Eigen::Ref<const Eigen::VectorXd>& ub) {
-    return AddBoundingBoxConstraint(lb, ub, decision_variables_);
-  }
 
   /**
    * Adds bounds for a single variable.
@@ -1534,27 +1391,6 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
-   * Adds Lorentz cone constraint to the program for all
-   * (currently existing) variables.
-   * The linear expression @f$ z=Ax+b @f$ is in the Lorentz cone.
-   * A vector \f$ z \in\mathbb{R}^n \f$ is in the Lorentz cone, if
-   * <!--
-   * z(0) >= sqrt{z(1)² + ... + z(n-1)²}
-   * -->
-   * @f[
-   * z_0 \ge \sqrt{z_1^2 + ... + z_{n-1}^2}
-   * @f]
-   * @param A A @f$\mathbb{R}^{n \times m}@f$ matrix.
-   * @param b A @f$ \mathbb{R}^{n} @f$ vector.
-   * @return The newly added Lorentz cone constraint.
-   */
-  std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint(
-      const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::VectorXd>& b) {
-    return AddLorentzConeConstraint(A, b, decision_variables_);
-  }
-
-  /**
    * Imposes that a vector @f$ x\in\mathbb{R}^m @f$ lies in Lorentz cone. Namely
    * @f[
    * x_0 \ge \sqrt{x_1^2 + .. + x_{m-1}^2}
@@ -1690,30 +1526,6 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
-   * Adds a rotated Lorentz constraint to the program for all
-   * (currently existing) variables, the linear expression @f$ z=Ax+b @f$ is in
-   * rotated Lorentz cone.
-   * A vector \f$ z \in\mathbb{R}^n \f$ is in the rotated Lorentz cone, if
-   * <!--
-   * z(0)*z(1) >= z(2)^2 + ... + z(n-1)^2
-   * -->
-   * @f[
-   * z_0z_1 \ge z_2^2 + ... + z_{n-1}^2
-   * @f]
-   * where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^n@f$ are given
-   * matrices.
-   * @param A A matrix whose number of columns equals to the size of the
-   * decision variables.
-   * @param b A vector whose number of rows equals to the size fo the decision
-   * variables.
-   */
-  std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
-      const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::VectorXd>& b) {
-    return AddRotatedLorentzConeConstraint(A, b, decision_variables_);
-  }
-
-  /**
    * Impose that a vector @f$ x\in\mathbb{R}^m @f$ is in rotated Lorentz cone.
    * Namely
    * @f[
@@ -1801,17 +1613,6 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
-   * Adds a linear complementarity constraint to the program for all
-   * (currently existing) variables.
-   */
-  std::shared_ptr<LinearComplementarityConstraint>
-  AddLinearComplementarityConstraint(
-      const Eigen::Ref<const Eigen::MatrixXd>& M,
-      const Eigen::Ref<const Eigen::VectorXd>& q) {
-    return AddLinearComplementarityConstraint(M, q, decision_variables_);
-  }
-
-  /**
    * Adds a polynomial constraint to the program referencing a subset
    * of the decision variables (defined in the vars parameter).
    */
@@ -1833,17 +1634,6 @@ class MathematicalProgram {
       const std::vector<Polynomiald::VarType>& poly_vars,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
-  /**
-   * Adds a polynomial constraint to the program referencing all of the
-   * decision variables.
-   */
-  std::shared_ptr<Constraint> AddPolynomialConstraint(
-      const VectorXPoly& polynomials,
-      const std::vector<Polynomiald::VarType>& poly_vars,
-      const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
-    return AddPolynomialConstraint(polynomials, poly_vars, lb, ub,
-                                   decision_variables_);
-  }
 
   /**
    * Adds a positive semidefinite constraint on a symmetric matrix.

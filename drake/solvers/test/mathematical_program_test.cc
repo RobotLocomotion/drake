@@ -269,19 +269,19 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
 
 GTEST_TEST(testMathematicalProgram, testAddFunction) {
   MathematicalProgram prog;
-  prog.NewContinuousVariables<1>();
+  auto x = prog.NewContinuousVariables<1>();
 
   Movable movable;
-  prog.AddCost(std::move(movable));
-  prog.AddCost(Movable());
+  prog.AddCost(std::move(movable), x);
+  prog.AddCost(Movable(), x);
 
   Copyable copyable;
-  prog.AddCost(copyable);
+  prog.AddCost(copyable, x);
 
   Unique unique;
-  prog.AddCost(std::cref(unique));
-  prog.AddCost(std::make_shared<Unique>());
-  prog.AddCost(std::unique_ptr<Unique>(new Unique));
+  prog.AddCost(std::cref(unique), x);
+  prog.AddCost(std::make_shared<Unique>(), x);
+  prog.AddCost(std::unique_ptr<Unique>(new Unique), x);
 }
 
 GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
@@ -310,7 +310,7 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
   auto constraint4 = prog.AddBoundingBoxConstraint(0, 1, x3);
   auto constraint5 = prog.AddBoundingBoxConstraint(0, 1, x4);
   auto constraint6 = prog.AddBoundingBoxConstraint(Eigen::Vector4d::Zero(),
-                                                   Eigen::Vector4d::Ones());
+                                                   Eigen::Vector4d::Ones(), x3);
 
   // Checks that the bound variables are correct.
   for (const auto& binding : prog.bounding_box_constraints()) {

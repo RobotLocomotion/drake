@@ -82,7 +82,7 @@ NonConvexQPproblem1::NonConvexQPproblem1(CostForm cost_form,
   prog_->AddBoundingBoxConstraint(0, 1, x_);
   switch (cost_form) {
     case kGenericCost: {
-      prog_->AddCost(TestProblem1Cost());
+      prog_->AddCost(TestProblem1Cost(), x_);
       break;
     }
     case kQuadraticCost: {
@@ -119,7 +119,7 @@ bool NonConvexQPproblem1::CheckSolution() const {
 void NonConvexQPproblem1::AddConstraint() {
   Eigen::Matrix<double, 1, 5> a;
   a << 20, 12, 11, 7, 4;
-  prog_->AddLinearConstraint(a, -numeric_limits<double>::infinity(), 40);
+  prog_->AddLinearConstraint(a, -numeric_limits<double>::infinity(), 40, x_);
 }
 
 void NonConvexQPproblem1::AddSymbolicConstraint() {
@@ -134,7 +134,7 @@ void NonConvexQPproblem1::AddQuadraticCost() {
       -100 * Eigen::Matrix<double, 5, 5>::Identity();
   Eigen::Matrix<double, 5, 1> c;
   c << 42, 44, 45, 47, 47.5;
-  prog_->AddQuadraticCost(Q, c);
+  prog_->AddQuadraticCost(Q, c, x_);
 }
 
 NonConvexQPproblem2::NonConvexQPproblem2(CostForm cost_form,
@@ -147,7 +147,7 @@ NonConvexQPproblem2::NonConvexQPproblem2(CostForm cost_form,
 
   switch (cost_form) {
     case kGenericCost: {
-      prog_->AddCost(TestProblem2Cost());
+      prog_->AddCost(TestProblem2Cost(), x_);
       break;
     }
     case kQuadraticCost: {
@@ -189,7 +189,7 @@ void NonConvexQPproblem2::AddQuadraticCost() {
   Eigen::Matrix<double, 6, 1> c{};
   c << -10.5, -7.5, -3.5, -2.5, -1.5, -10.0;
 
-  prog_->AddQuadraticCost(Q, c);
+  prog_->AddQuadraticCost(Q, c, x_);
 }
 
 void NonConvexQPproblem2::AddNonSymbolicConstraint() {
@@ -197,8 +197,8 @@ void NonConvexQPproblem2::AddNonSymbolicConstraint() {
   Eigen::Matrix<double, 1, 6> a2{};
   a1 << 6, 3, 3, 2, 1, 0;
   a2 << 10, 0, 10, 0, 0, 1;
-  prog_->AddLinearConstraint(a1, -numeric_limits<double>::infinity(), 6.5);
-  prog_->AddLinearConstraint(a2, -numeric_limits<double>::infinity(), 20);
+  prog_->AddLinearConstraint(a1, -numeric_limits<double>::infinity(), 6.5, x_);
+  prog_->AddLinearConstraint(a2, -numeric_limits<double>::infinity(), 20, x_);
 }
 
 void NonConvexQPproblem2::AddSymbolicConstraint() {
@@ -220,13 +220,13 @@ LowerBoundedProblem::LowerBoundedProblem(ConstraintForm cnstr_form)
   lb << 0, 0, 1, 0, 1, 0;
   ub << numeric_limits<double>::infinity(), numeric_limits<double>::infinity(),
       5, 6, 5, 10;
-  prog_->AddBoundingBoxConstraint(lb, ub);
+  prog_->AddBoundingBoxConstraint(lb, ub, x_);
 
-  prog_->AddCost(LowerBoundTestCost());
+  prog_->AddCost(LowerBoundTestCost(), x_);
   std::shared_ptr<Constraint> con1(new LowerBoundTestConstraint(2, 3));
-  prog_->AddConstraint(con1);
+  prog_->AddConstraint(con1, x_);
   std::shared_ptr<Constraint> con2(new LowerBoundTestConstraint(4, 5));
-  prog_->AddConstraint(con2);
+  prog_->AddConstraint(con2, x_);
 
   switch (cnstr_form) {
     case kNonSymbolic: {

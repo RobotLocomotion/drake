@@ -237,15 +237,14 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     }
   }
 
+  solvers::VectorXDecisionVariable position_force{};
   if (tree->getNumPositionConstraints()) {
     size_t nc = tree->getNumPositionConstraints();
     const double alpha = 5.0;  // 1/time constant of position constraint
                                // satisfaction (see my latex rigid body notes)
 
-    prog.NewContinuousVariables(
-        nc, "position constraint force");  // don't actually need to use the
-                                           // decision variable reference that
-                                           // would be returned...
+    position_force = prog.NewContinuousVariables(
+        nc, "position constraint force");
 
     // then compute the constraint force
     auto phi = tree->positionConstraints(kinsol);
@@ -261,7 +260,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   }
 
   // add [H,-J^T]*[vdot;f] = -C
-  prog.AddLinearEqualityConstraint(H_and_neg_JT, -C);
+  prog.AddLinearEqualityConstraint(H_and_neg_JT, -C, {vdot, position_force});
 
   prog.Solve();
   //      prog.PrintSolution();
@@ -348,7 +347,7 @@ RigidBodySystem::StateVector<double> getInitialState(
     }
 
     VectorXd q_guess = x0.topRows(nq);
-    prog.AddQuadraticCost(MatrixXd::Identity(nq, nq), q_guess);
+    prog.AddQuadraticCost(MatrixXd::Identity(nq, nq), q_guess, qvar);
     prog.Solve();
 
     const VectorXd& qvar_value = prog.GetSolution(qvar);

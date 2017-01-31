@@ -575,7 +575,7 @@ void MathematicalProgram::AddConstraint(
 Binding<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(const Expression& e,
                                                  double b) {
-  return AddLinearEqualityConstraint(drake::Vector1<Expression>(e),
+  return AddLinearEqualityConstraint(drake::Vector1<symbolic::Expression>(e),
                                      drake::Vector1d(b));
 }
 

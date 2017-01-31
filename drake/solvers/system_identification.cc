@@ -299,7 +299,8 @@ SystemIdentification<T>::EstimateParameters(
     }
     problem.AddPolynomialConstraint(constraint_polys, problem_vartypes,
                                     Eigen::VectorXd::Zero(polys.rows()),
-                                    Eigen::VectorXd::Zero(polys.rows()));
+                                    Eigen::VectorXd::Zero(polys.rows()),
+                                    {parameter_variables, error_variables});
   }
 
   // Create a cost function that is least-squares on the error terms.

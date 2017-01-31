@@ -55,7 +55,7 @@ void TestLinearProgramFeasibility(
   A << 1, 2, 3, 0, 1, -2, 0, 0, 0;
   Eigen::Vector3d b_lb(0, -std::numeric_limits<double>::infinity(), -1);
   Eigen::Vector3d b_ub(10, 3, 0);
-  prog.AddLinearConstraint(A, b_lb, b_ub);
+  prog.AddLinearConstraint(A, b_lb, b_ub, x);
   prog.AddBoundingBoxConstraint(1.0, std::numeric_limits<double>::infinity(),
                                 x(1));
 
@@ -88,13 +88,13 @@ void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
 
-  prog.AddLinearCost(Eigen::Vector2d(2.0, 1.0));
+  prog.AddLinearCost(Eigen::Vector2d(2.0, 1.0), x);
   Eigen::Matrix<double, 3, 2> A;
   A << -1, 1, 1, 1, 1, -2;
   Eigen::Vector3d b_lb(-std::numeric_limits<double>::infinity(), 2.0,
                        -std::numeric_limits<double>::infinity());
   Eigen::Vector3d b_ub(1.0, std::numeric_limits<double>::infinity(), 4.0);
-  prog.AddLinearConstraint(A, b_lb, b_ub);
+  prog.AddLinearConstraint(A, b_lb, b_ub, x);
   prog.AddBoundingBoxConstraint(
       Eigen::Vector2d(0.0, 2.0),
       Eigen::Vector2d(std::numeric_limits<double>::infinity(),
@@ -121,8 +121,9 @@ void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
 void TestLinearProgram1(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
-  prog.AddLinearCost(Eigen::Vector2d(1.0, -2.0));
-  prog.AddBoundingBoxConstraint(Eigen::Vector2d(0, -1), Eigen::Vector2d(2, 4));
+  prog.AddLinearCost(Eigen::Vector2d(1.0, -2.0), x);
+  prog.AddBoundingBoxConstraint(Eigen::Vector2d(0, -1), Eigen::Vector2d(2, 4),
+                                x);
 
   if (solver.SolverName() == "SNOPT") {
     prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
@@ -227,7 +228,7 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
   prog.AddBoundingBoxConstraint(-1, std::numeric_limits<double>::infinity(),
                                 x(1));
 
-  prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1), 1);
+  prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1), 1, x);
 
   if (solver.SolverName() == "SNOPT") {
     prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
@@ -260,11 +261,12 @@ void TestQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
   Q(2, 1) = 1;
   Eigen::VectorXd b(3);
   b << 2.0, 0.0, 0.0;
-  prog.AddQuadraticCost(Q, b);
+  prog.AddQuadraticCost(Q, b, x);
 
   prog.AddBoundingBoxConstraint(
       Eigen::MatrixXd::Zero(3, 1),
-      Eigen::MatrixXd::Constant(3, 1, std::numeric_limits<double>::infinity()));
+      Eigen::MatrixXd::Constant(3, 1, std::numeric_limits<double>::infinity()),
+      x);
 
   // This test handles the case that in one LinearConstraint,
   // some rows have active upper bounds;
@@ -277,9 +279,9 @@ void TestQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
                        -std::numeric_limits<double>::infinity());
   Eigen::Vector4d b_ub(std::numeric_limits<double>::infinity(), -1, 100,
                        std::numeric_limits<double>::infinity());
-  prog.AddLinearConstraint(A1, b_lb, b_ub);
+  prog.AddLinearConstraint(A1, b_lb, b_ub, x);
   // This test also handles linear equality constraint
-  prog.AddLinearEqualityConstraint(Eigen::RowVector3d(3, 1, 3), 3);
+  prog.AddLinearEqualityConstraint(Eigen::RowVector3d(3, 1, 3), 3, x);
 
   if (solver.SolverName() == "SNOPT") {
     prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
@@ -314,7 +316,7 @@ void TestQuadraticProgram2(const MathematicalProgramSolverInterface& solver) {
 
   b << 3.2, 1.3, 5.6, 9.0, 1.2;
 
-  prog.AddQuadraticCost(Q, b);
+  prog.AddQuadraticCost(Q, b, x);
 
   if (solver.SolverName() == "SNOPT") {
     prog.SetInitialGuessForAllVariables(Eigen::Matrix<double, 5, 1>::Zero());
@@ -400,7 +402,7 @@ void TestQuadraticProgram4(const MathematicalProgramSolverInterface& solver) {
   Eigen::Matrix3d Q = Eigen::Matrix3d::Identity();
   Q(2, 2) = 2.0;
   Eigen::Vector3d b = Eigen::Vector3d::Zero();
-  prog.AddQuadraticCost(Q, b);
+  prog.AddQuadraticCost(Q, b, x);
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1),
                                    Vector1d::Constant(1), x.head<2>());
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 2),
@@ -427,13 +429,13 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
   Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
   Eigen::Vector2d x_desired;
   x_desired << 1.0, 0.0;
-  auto objective = prog.AddQuadraticErrorCost(Q, x_desired);
+  auto objective = prog.AddQuadraticErrorCost(Q, x_desired, x);
 
   Eigen::Matrix2d A;
   A << 1.0, 1.0, -1.0, 1.0;
   Eigen::Vector2d ub = Eigen::Vector2d::Constant(1.0);
   Eigen::Vector2d lb = Eigen::Vector2d::Constant(-1.0);
-  auto constraint = prog.AddLinearConstraint(A, lb, ub);
+  auto constraint = prog.AddLinearConstraint(A, lb, ub, x);
   Eigen::Vector2d x_expected;
 
   const int N = 40;  // number of points to test around the circle
@@ -1205,31 +1207,20 @@ MatrixDecisionVariable<x_dim, x_dim> AddLyapunovCondition(
   const auto Q = prog->NewSymmetricContinuousVariables<x_dim>();
   prog->AddPositiveSemidefiniteConstraint(Q);
   // TODO(hongkai.dai): Use symbolic variable to compute the expression
-  // A' * P + P * A + Q.
-  Eigen::Matrix<double, x_dim*(x_dim + 1) / 2, 1> lin_eq_bnd;
-  lin_eq_bnd.setZero();
-  std::vector<Eigen::Triplet<double>> lin_eq_triplets;
-  int lin_eq_idx = 0;
-  for (int j = 0; j < static_cast<int>(x_dim); ++j) {
-    for (int i = j; i < static_cast<int>(x_dim); ++i) {
-      for (int k = 0; k < static_cast<int>(x_dim); ++k) {
-        lin_eq_triplets.push_back(Eigen::Triplet<double>(
-            lin_eq_idx, prog->FindDecisionVariableIndex(P(k, j)), A(k, i)));
-        lin_eq_triplets.push_back(Eigen::Triplet<double>(
-            lin_eq_idx, prog->FindDecisionVariableIndex(P(i, k)), A(k, j)));
-      }
-      lin_eq_triplets.push_back(Eigen::Triplet<double>(
-          lin_eq_idx, prog->FindDecisionVariableIndex(Q(i, j)), 1.0));
-      ++lin_eq_idx;
+  // M = A' * P + P * A + Q.
+  Eigen::Matrix<symbolic::Expression, x_dim, x_dim> M;
+  M = A.transpose() * P + P * A + Q;
+  Eigen::Matrix<symbolic::Expression, x_dim*(x_dim + 1) / 2, 1>
+      M_lower_triangular{};
+  int M_count = 0;
+  for (int j = 0; j < x_dim; ++j) {
+    for (int i = j; i < x_dim; ++i) {
+      M_lower_triangular(M_count++) = M(i, j);
     }
   }
-  Eigen::SparseMatrix<double> lin_eq_A_sparse(x_dim * (x_dim + 1) / 2,
-                                              prog->num_vars());
-  lin_eq_A_sparse.setFromTriplets(lin_eq_triplets.begin(),
-                                  lin_eq_triplets.end());
-
-  Eigen::MatrixXd lin_eq_A(lin_eq_A_sparse);
-  prog->AddLinearEqualityConstraint(lin_eq_A, lin_eq_bnd);
+  prog->AddLinearEqualityConstraint(
+      M_lower_triangular,
+      Eigen::Matrix<double, x_dim*(x_dim + 1) / 2, 1>::Zero());
   return Q;
 }
 }  // namespace

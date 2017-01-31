@@ -31,9 +31,10 @@ GTEST_TEST(TestMixedIntegerOptimization, TestMixedIntegerLinearProgram1) {
     MathematicalProgram prog;
     auto x = prog.NewBinaryVariables(3, "x");
     Eigen::Vector3d c(-1, -1, -2);
-    prog.AddLinearCost(c);
+    prog.AddLinearCost(c, x);
     Eigen::RowVector3d a1(1, 2, 3);
-    prog.AddLinearConstraint(a1, -std::numeric_limits<double>::infinity(), 4);
+    prog.AddLinearConstraint(a1, -std::numeric_limits<double>::infinity(), 4,
+                             x);
     Eigen::RowVector2d a2(1, 1);
     prog.AddLinearConstraint(a2, 1, std::numeric_limits<double>::infinity(),
                              x.head<2>());
@@ -60,9 +61,10 @@ GTEST_TEST(TestMixedIntegerOptimization, TestMixedIntegerLinearProgram2) {
     MathematicalProgram prog;
     auto x = prog.NewBinaryVariables<3>("x");
     Eigen::Vector3d c(2, 1, -2);
-    prog.AddLinearCost(c);
+    prog.AddLinearCost(c, x);
     Eigen::RowVector3d a1(0.7, 0.5, 1);
-    prog.AddLinearConstraint(a1, 1.8, std::numeric_limits<double>::infinity());
+    prog.AddLinearConstraint(a1, 1.8, std::numeric_limits<double>::infinity(),
+                             x);
 
     RunSolver(&prog, *solver);
 

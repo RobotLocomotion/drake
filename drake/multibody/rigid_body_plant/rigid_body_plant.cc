@@ -497,12 +497,15 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
 
   right_hand_side -= ComputeContactForce(kinsol);
 
+  solvers::VectorXDecisionVariable position_force{};
+
   if (tree_->getNumPositionConstraints()) {
     size_t nc = tree_->getNumPositionConstraints();
     // 1/time constant of position constraint satisfaction.
     const T alpha = 5.0;
 
-    prog.NewContinuousVariables(nc, "position constraint force");
+    position_force = prog.NewContinuousVariables(nc,
+                                                 "position constraint force");
 
     auto phi = tree_->positionConstraints(kinsol);
     auto J = tree_->positionConstraintsJacobian(kinsol, false);
@@ -518,7 +521,8 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
   }
 
   // Adds [H,-J^T] * [vdot;f] = -C.
-  prog.AddLinearEqualityConstraint(H_and_neg_JT, -right_hand_side);
+  prog.AddLinearEqualityConstraint(H_and_neg_JT, -right_hand_side,
+                                   {vdot, position_force});
 
   prog.Solve();
 

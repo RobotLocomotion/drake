@@ -111,7 +111,7 @@ GTEST_TEST(testNonlinearProgram, trivialLinearEquality) {
 
   // Use a non-square matrix to catch row/column mistakes in the solvers.
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(0, 1),
-                                   Vector1d::Constant(1));
+                                   Vector1d::Constant(1), vars);
   prog.SetInitialGuess(vars, Vector2d(2, 2));
   RunNonlinearProgram(&prog, [&]() {
     const auto& vars_value = prog.GetSolution(vars);
@@ -133,7 +133,7 @@ GTEST_TEST(testNonlinearProgram, QuadraticCost) {
   Q(2, 3) = -0.02;
 
   Vector4d b(1.0, -0.5, 1.3, 2.5);
-  prog.AddQuadraticCost(Q, b);
+  prog.AddQuadraticCost(Q, b, x);
 
   Matrix4d Q_transpose = Q;
   Q_transpose.transposeInPlace();
@@ -220,7 +220,7 @@ class SixHumpCamelCost {
 GTEST_TEST(testNonlinearProgram, sixHumpCamel) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(2);
-  auto cost = prog.AddCost(SixHumpCamelCost());
+  auto cost = prog.AddCost(SixHumpCamelCost(), x);
 
   prog.SetInitialGuess(x, Vector2d::Random());
   RunNonlinearProgram(&prog, [&]() {
@@ -270,7 +270,7 @@ GTEST_TEST(testNonlinearProgram, linearPolynomialConstraint) {
   std::shared_ptr<Constraint> resulting_constraint =
       problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
                                       Vector1d::Constant(2),
-                                      Vector1d::Constant(2));
+                                      Vector1d::Constant(2), x_var);
   // Check that the resulting constraint is a LinearConstraint.
   EXPECT_NE(dynamic_cast<LinearConstraint*>(resulting_constraint.get()),
             nullptr);
@@ -298,7 +298,7 @@ GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
         x.GetSimpleVariable()};
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
                                     Vector1d::Constant(2),
-                                    Vector1d::Constant(2));
+                                    Vector1d::Constant(2), x_var);
     problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
     RunNonlinearProgram(&problem, [&]() {
       EXPECT_NEAR(problem.GetSolution(x_var(0)), 2, kEpsilon);
@@ -317,7 +317,7 @@ GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
         x.GetSimpleVariable()};
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
                                     Eigen::VectorXd::Zero(1),
-                                    Eigen::VectorXd::Zero(1));
+                                    Eigen::VectorXd::Zero(1), x_var);
     problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
     RunNonlinearProgram(&problem, [&]() {
       EXPECT_NEAR(problem.GetSolution(x_var(0)), 1, 0.2);
@@ -337,7 +337,7 @@ GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
         x.GetSimpleVariable(), y.GetSimpleVariable()};
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
                                     Eigen::VectorXd::Zero(1),
-                                    Eigen::VectorXd::Zero(1));
+                                    Eigen::VectorXd::Zero(1), xy_var);
     problem.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
     RunNonlinearProgram(&problem, [&]() {
       EXPECT_NEAR(problem.GetSolution(xy_var(0)), 1, 0.2);
@@ -364,7 +364,7 @@ GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
     polynomials_vec << poly, x;
     problem.AddPolynomialConstraint(polynomials_vec, var_mapping,
                                     Eigen::VectorXd::Constant(2, -kInf),
-                                    Eigen::VectorXd::Zero(2));
+                                    Eigen::VectorXd::Zero(2), x_var);
     RunNonlinearProgram(&problem, [&]() {
       EXPECT_NEAR(problem.GetSolution(x_var(0)), -0.7, 0.2);
       EXPECT_LE(poly.EvaluateUnivariate(problem.GetSolution(x_var(0))),
