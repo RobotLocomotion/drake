@@ -18,6 +18,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
@@ -1099,15 +1100,17 @@ class MathematicalProgram {
   template <typename DerivedV, typename DerivedB>
   typename std::enable_if<
       std::is_base_of<Eigen::MatrixBase<DerivedV>, DerivedV>::value &&
-      std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
-          std::is_same<typename DerivedV::Scalar, symbolic::Expression>::value &&
-          std::is_same<typename DerivedB::Scalar, double>::value &&
-          DerivedV::ColsAtCompileTime == 1 || DerivedB::ColsAtCompileTime == 1,
-  Binding<LinearEqualityConstraint>>::type AddLinearEqualityConstraint(
-      const Eigen::MatrixBase<DerivedV>& v,
-      const Eigen::MatrixBase<DerivedB>& b) {
+              std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
+              std::is_same<typename DerivedV::Scalar,
+                           symbolic::Expression>::value &&
+              std::is_same<typename DerivedB::Scalar, double>::value &&
+              DerivedV::ColsAtCompileTime == 1 ||
+          DerivedB::ColsAtCompileTime == 1,
+      Binding<LinearEqualityConstraint>>::type
+  AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& v,
+                              const Eigen::MatrixBase<DerivedB>& b) {
     return DoAddLinearEqualityConstraint(v, b);
-  };
+  }
 
   /**
    * Adds a linear equality constraint for a matrix of linear expression @p V,
@@ -1128,17 +1131,23 @@ class MathematicalProgram {
    * bound variables.
    */
   template <typename DerivedV, typename DerivedB>
-  typename std::enable_if<std::is_base_of<Eigen::MatrixBase<DerivedV>, DerivedV>::value &&
-      std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
-      std::is_same<typename DerivedV::Scalar, symbolic::Expression>::value &&
-      std::is_same<typename DerivedB::Scalar, double>::value &&
-      DerivedV::ColsAtCompileTime != 1 && DerivedB::ColsAtCompileTime != 1,
+  typename std::enable_if<
+      std::is_base_of<Eigen::MatrixBase<DerivedV>, DerivedV>::value &&
+          std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
+          std::is_same<typename DerivedV::Scalar,
+                       symbolic::Expression>::value &&
+          std::is_same<typename DerivedB::Scalar, double>::value &&
+          DerivedV::ColsAtCompileTime != 1 && DerivedB::ColsAtCompileTime != 1,
       Binding<LinearEqualityConstraint>>::type
-  AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V, const Eigen::MatrixBase<DerivedB>& B, bool is_symmetric = false) {
+  AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
+                              const Eigen::MatrixBase<DerivedB>& B,
+                              bool is_symmetric = false) {
     // Check if V and B are symmetric
     if (is_symmetric) {
       DRAKE_DEMAND(V.rows() == V.cols() && B.rows() == B.cols());
-      //DRAKE_ASSERT(V.EqualTo(V.transpose()) && math::IsSymmetric((B)));
+      DRAKE_ASSERT(CompareMatrices(B, B.transpose()));
+      // TODO(hongkai.dai): Assert V is symmetric, when Soonho adds the function
+      // to compare two matrices of symbolic expressions.
     }
     DRAKE_DEMAND(V.rows() == B.rows() && V.cols() == B.cols());
 
@@ -1146,15 +1155,24 @@ class MathematicalProgram {
     // the flatten version is just to concatenate each column of the matrix;
     // otherwise the flatten version is to concatenate each column of the
     // lower triangular part of the matrix.
-    const int V_rows = DerivedV::RowsAtCompileTime != Eigen::Dynamic ? static_cast<int>(DerivedV::RowsAtCompileTime) : static_cast<int>(DerivedB::RowsAtCompileTime);
-    const int V_cols = DerivedV::ColsAtCompileTime != Eigen::Dynamic ? static_cast<int>(DerivedV::ColsAtCompileTime) : static_cast<int>(DerivedB::ColsAtCompileTime);
+    const int V_rows = DerivedV::RowsAtCompileTime != Eigen::Dynamic
+                           ? static_cast<int>(DerivedV::RowsAtCompileTime)
+                           : static_cast<int>(DerivedB::RowsAtCompileTime);
+    const int V_cols = DerivedV::ColsAtCompileTime != Eigen::Dynamic
+                           ? static_cast<int>(DerivedV::ColsAtCompileTime)
+                           : static_cast<int>(DerivedB::ColsAtCompileTime);
 
-    const int V_triangular_size = V_rows != Eigen::Dynamic ? (V_rows + 1) * V_rows / 2 : Eigen::Dynamic;
-    const int V_size = V_rows != Eigen::Dynamic && V_cols != Eigen::Dynamic ? V_rows * V_cols : Eigen::Dynamic;
+    const int V_triangular_size =
+        V_rows != Eigen::Dynamic ? (V_rows + 1) * V_rows / 2 : Eigen::Dynamic;
+    const int V_size = V_rows != Eigen::Dynamic && V_cols != Eigen::Dynamic
+                           ? V_rows * V_cols
+                           : Eigen::Dynamic;
     if (is_symmetric) {
       int V_triangular_size_dynamic = V.rows() * (V.rows() + 1) / 2;
-      Eigen::Matrix<symbolic::Expression, V_triangular_size, 1> flat_lower_V(V_triangular_size_dynamic);
-      Eigen::Matrix<double, V_triangular_size, 1> flat_lower_B(V_triangular_size_dynamic);
+      Eigen::Matrix<symbolic::Expression, V_triangular_size, 1> flat_lower_V(
+          V_triangular_size_dynamic);
+      Eigen::Matrix<double, V_triangular_size, 1> flat_lower_B(
+          V_triangular_size_dynamic);
       int V_idx = 0;
       for (int j = 0; j < V.cols(); ++j) {
         for (int i = j; i < V.rows(); ++i) {
@@ -1164,8 +1182,7 @@ class MathematicalProgram {
         }
       }
       return AddLinearEqualityConstraint(flat_lower_V, flat_lower_B);
-    }
-    else {
+    } else {
       Eigen::Matrix<symbolic::Expression, V_size, 1> flat_V(V.size());
       Eigen::Matrix<double, V_size, 1> flat_B(V.size());
       int V_idx = 0;
@@ -1178,7 +1195,7 @@ class MathematicalProgram {
       }
       return AddLinearEqualityConstraint(flat_V, flat_B);
     }
-  };
+  }
 
   /** AddLinearEqualityConstraint
    *
