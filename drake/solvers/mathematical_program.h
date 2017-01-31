@@ -1087,6 +1087,8 @@ class MathematicalProgram {
    * linear expression. Throws an exception if
    * 1. @p v(i) is a non-linear expression.
    * 2. @p v(i) is a constant.
+   * @tparam DerivedV An Eigen Matrix type of Expression.
+   * @tparam DerivedB An Eigen Matrix type of double.
    * @param v v(i) is a linear symbolic expression in the form of
    * <tt> c0 + c1 * x1 + ... + cn * xn </tt> where ci is a constant and @xi is
    * a variable.
@@ -1094,9 +1096,18 @@ class MathematicalProgram {
    * @return The newly added linear equality constraint, together with the
    * bound variables.
    */
-  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
-      const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
-      const Eigen::Ref<const Eigen::VectorXd>& b);
+  template <typename DerivedV, typename DerivedB>
+  typename std::enable_if<
+      std::is_base_of<Eigen::MatrixBase<DerivedV>, DerivedV>::value &&
+      std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
+          std::is_same<typename DerivedV::Scalar, symbolic::Expression>::value &&
+          std::is_same<typename DerivedB::Scalar, double>::value &&
+          DerivedV::ColsAtCompileTime == 1 || DerivedB::ColsAtCompileTime == 1,
+  Binding<LinearEqualityConstraint>>::type AddLinearEqualityConstraint(
+      const Eigen::MatrixBase<DerivedV>& v,
+      const Eigen::MatrixBase<DerivedB>& b) {
+    return DoAddLinearEqualityConstraint(v, b);
+  };
 
   /**
    * Adds a linear equality constraint for a matrix of linear expression @p V,
@@ -1119,13 +1130,14 @@ class MathematicalProgram {
       std::is_same<typename DerivedV::Scalar, symbolic::Expression>::value &&
       std::is_same<typename DerivedB::Scalar, double>::value &&
       DerivedV::Options == Eigen::ColMajor &&
-      DerivedB::options == Eigen::ColMajor &&
-      DerivedV::ColsAtCompileTime != 1, Binding<LinearEqualityConstraint>>::type
+      DerivedB::Options == Eigen::ColMajor &&
+      DerivedV::ColsAtCompileTime != 1 && DerivedB::ColsAtCompileTime != 1,
+      Binding<LinearEqualityConstraint>>::type
   AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V, const Eigen::MatrixBase<DerivedB>& B, bool is_symmetric = false) {
     // Check if V and B are symmetric
     if (is_symmetric) {
       DRAKE_DEMAND(V.rows() == V.cols() && B.rows() == B.cols());
-      DRAKE_ASSERT(math::IsSymmetric(V) && math::IsSymmetric((B)));
+      //DRAKE_ASSERT(V.EqualTo(V.transpose()) && math::IsSymmetric((B)));
     }
     DRAKE_DEMAND(V.rows() == B.rows() && V.cols() == B.cols());
 
@@ -1133,14 +1145,15 @@ class MathematicalProgram {
     // the flatten version is just to concatenate each column of the matrix;
     // otherwise the flatten version is to concatenate each column of the
     // lower triangular part of the matrix.
-    const int V_rows = DerivedV::RowsAtCompileTime != Eigen::Dynamic ? DerivedV::RowsAtCompileTime : DerivedB::RowsAtCompileTime;
-    const int V_cols = DerivedV::ColsAtCompileTime != Eigen::Dynamic ? DerivedV::ColsAtCompileTime : DerivedB::ColsAtCompileTime;
+    const int V_rows = DerivedV::RowsAtCompileTime != Eigen::Dynamic ? static_cast<int>(DerivedV::RowsAtCompileTime) : static_cast<int>(DerivedB::RowsAtCompileTime);
+    const int V_cols = DerivedV::ColsAtCompileTime != Eigen::Dynamic ? static_cast<int>(DerivedV::ColsAtCompileTime) : static_cast<int>(DerivedB::ColsAtCompileTime);
 
     const int V_triangular_size = V_rows != Eigen::Dynamic ? (V_rows + 1) * V_rows / 2 : Eigen::Dynamic;
     const int V_size = V_rows != Eigen::Dynamic && V_cols != Eigen::Dynamic ? V_rows * V_cols : Eigen::Dynamic;
     if (is_symmetric) {
-      Eigen::Matrix<symbolic::Expression, V_triangular_size, 1> flat_lower_V{};
-      Eigen::Matrix<double, V_triangular_size, 1> flat_lower_B{};
+      int V_triangular_size_dynamic = V.rows() * (V.rows() + 1) / 2;
+      Eigen::Matrix<symbolic::Expression, V_triangular_size, 1> flat_lower_V(V_triangular_size_dynamic);
+      Eigen::Matrix<double, V_triangular_size, 1> flat_lower_B(V_triangular_size_dynamic);
       int V_idx = 0;
       for (int j = 0; j < V.cols(); ++j) {
         for (int i = j; i < V.rows(); ++i) {
@@ -1152,8 +1165,8 @@ class MathematicalProgram {
       return AddLinearEqualityConstraint(flat_lower_V, flat_lower_B);
     }
     else {
-      Eigen::Map<Eigen::Matrix<symbolic::Expression, V_size, 1>> flat_V(V.data(), V.size());
-      Eigen::Map<Eigen::Matrix<double, V_size, 1>> flat_B(B.data(), B.size());
+      Eigen::Map<const Eigen::Matrix<symbolic::Expression, V_size, 1>> flat_V(&V(0, 0), V.size());
+      Eigen::Map<const Eigen::Matrix<double, V_size, 1>> flat_B(&B(0, 0), B.size());
       return AddLinearEqualityConstraint(flat_V, flat_B);
     }
   };
@@ -2288,6 +2301,10 @@ class MathematicalProgram {
     }
     return true;
   }
+
+  Binding<LinearEqualityConstraint> DoAddLinearEqualityConstraint(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
+      const Eigen::Ref<const Eigen::VectorXd>& b);
 };
 }  // namespace solvers
 }  // namespace drake
