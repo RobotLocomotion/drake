@@ -2,11 +2,11 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "framework",
     srcs = [],
     hdrs = [],
@@ -28,7 +28,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "vector",
     srcs = [
         "basic_vector.cc",
@@ -51,7 +51,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "value",
     srcs = ["value.cc"],
     hdrs = ["value.h"],
@@ -62,7 +62,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "cache",
     srcs = ["cache.cc"],
     hdrs = ["cache.h"],
@@ -73,7 +73,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "abstract_state",
     srcs = ["abstract_state.cc"],
     hdrs = ["abstract_state.h"],
@@ -85,7 +85,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "continuous_state",
     srcs = ["continuous_state.cc"],
     hdrs = ["continuous_state.h"],
@@ -97,7 +97,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "discrete_state",
     srcs = ["discrete_state.cc"],
     hdrs = ["discrete_state.h"],
@@ -110,7 +110,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "state",
     srcs = ["state.cc"],
     hdrs = ["state.h"],
@@ -126,7 +126,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "parameters",
     srcs = ["parameters.cc"],
     hdrs = ["parameters.h"],
@@ -138,7 +138,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "system_port_descriptor",
     srcs = ["system_port_descriptor.cc"],
     hdrs = ["system_port_descriptor.h"],
@@ -148,7 +148,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "output_port_listener_interface",
     srcs = ["output_port_listener_interface.cc"],
     hdrs = ["output_port_listener_interface.h"],
@@ -158,7 +158,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "system_output",
     srcs = ["system_output.cc"],
     hdrs = ["system_output.h"],
@@ -171,7 +171,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "input_port_evaluator_interface",
     srcs = ["input_port_evaluator_interface.cc"],
     hdrs = ["input_port_evaluator_interface.h"],
@@ -183,7 +183,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "system_input",
     srcs = ["system_input.cc"],
     hdrs = ["system_input.h"],
@@ -195,7 +195,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "context",
     srcs = ["context.cc"],
     hdrs = ["context.h"],
@@ -208,7 +208,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "leaf_context",
     srcs = ["leaf_context.cc"],
     hdrs = ["leaf_context.h"],
@@ -222,7 +222,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "system",
     srcs = ["system.cc"],
     hdrs = ["system.h"],
@@ -236,7 +236,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "leaf_system",
     srcs = ["leaf_system.cc"],
     hdrs = ["leaf_system.h"],
@@ -249,7 +249,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "diagram_continuous_state",
     srcs = ["diagram_continuous_state.cc"],
     hdrs = ["diagram_continuous_state.h"],
@@ -260,7 +260,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "diagram_context",
     srcs = ["diagram_context.cc"],
     hdrs = ["diagram_context.h"],
@@ -273,7 +273,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "diagram",
     srcs = ["diagram.cc"],
     hdrs = ["diagram.h"],
@@ -287,7 +287,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "diagram_builder",
     srcs = ["diagram_builder.cc"],
     hdrs = ["diagram_builder.h"],
@@ -298,7 +298,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "single_output_vector_source",
     srcs = ["single_output_vector_source.cc"],
     hdrs = ["single_output_vector_source.h"],

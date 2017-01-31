@@ -2,11 +2,11 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:drake.bzl", "cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "kalman_filter",
     srcs = ["kalman_filter.cc"],
     hdrs = ["kalman_filter.h"],
@@ -19,7 +19,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "luenberger_observer",
     srcs = ["luenberger_observer.cc"],
     hdrs = ["luenberger_observer.h"],
