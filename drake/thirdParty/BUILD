@@ -3,7 +3,7 @@
 # This file contains rules for the Bazel build system.
 # See http://bazel.io/ .
 
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
