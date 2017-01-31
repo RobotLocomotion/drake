@@ -48,9 +48,9 @@ RobotStateDecoderSystem::AllocateOutputAbstract(
     const systems::OutputPortDescriptor<double>& descriptor) const {
   DRAKE_DEMAND(descriptor.get_index() == output_port_index_humanoid_status_);
 
-  std::string alias_groups_config =
-      drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
-      "config/alias_groups.yaml";
+  std::string alias_groups_config = drake::GetDrakePath() +
+                                    "/examples/QPInverseDynamicsForHumanoids/"
+                                    "config/alias_groups.yaml";
 
   // KinematicsProperty
   param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(robot_);

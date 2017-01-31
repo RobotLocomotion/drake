@@ -50,7 +50,10 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   HumanoidStatus robot_status(*robot, alias_groups);
 
   QPController con;
-  QpInput input = paramset.MakeQpInput({"feet"}, {"pelvis", "torso"}, alias_groups);
+  QpInput input = paramset.MakeQpInput(
+      {"feet"}, /* contacts */
+      {"pelvis", "torso"}, /* tracked bodies*/
+      alias_groups);
   QpOutput output(GetDofNames(*robot));
 
   // Set up initial condition.

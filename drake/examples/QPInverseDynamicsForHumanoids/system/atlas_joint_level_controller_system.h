@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "drake/systems/framework/leaf_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace examples {
@@ -16,7 +16,7 @@ class AtlasJointLevelControllerSystem : public JointLevelControllerSystem {
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 
-  virtual std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
+  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
       const systems::OutputPortDescriptor<double>& descriptor) const override;
 
   /**

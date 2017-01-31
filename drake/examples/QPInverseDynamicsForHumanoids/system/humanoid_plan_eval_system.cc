@@ -25,7 +25,8 @@ struct SimpleValkyriePlan {
   Vector3<double> initial_com;
 };
 
-HumanoidPlanEvalSystem::HumanoidPlanEvalSystem(const RigidBodyTree<double>& robot,
+HumanoidPlanEvalSystem::HumanoidPlanEvalSystem(
+    const RigidBodyTree<double>& robot,
     const std::string& alias_groups_file_name,
     const std::string& param_file_name)
     : PlanEvalSystem(robot, alias_groups_file_name, param_file_name) {
@@ -42,7 +43,6 @@ void HumanoidPlanEvalSystem::DoCalcUnrestrictedUpdate(
   const HumanoidStatus* robot_status = EvalInputValue<HumanoidStatus>(
       context, input_port_index_humanoid_status_);
 
-  /////////////////////////////////////////////////////////////////////////////
   // Mutates the plan.
   // This can be much more complicated like replanning trajectories, etc.
   paramset_.LookupDesiredBodyMotionGains(*robot_.FindBody("pelvis"),
@@ -63,10 +63,10 @@ void HumanoidPlanEvalSystem::DoCalcUnrestrictedUpdate(
   plan.com_PDff.mutable_desired_position()[2] =
       plan.initial_com[2] + 0.1 * std::sin(robot_status->time() * 2 * M_PI);
 
-  /////////////////////////////////////////////////////////////////////////////
-  // Generates a QpInput and store it in AbstractState.
+  // Generates a QpInput and stores it in AbstractState.
   QpInput& qp_input = get_mutable_qp_input(state);
-  qp_input = paramset_.MakeQpInput({"feet"}, {"pelvis", "torso"}, alias_groups_);
+  qp_input =
+      paramset_.MakeQpInput({"feet"}, {"pelvis", "torso"}, alias_groups_);
 
   // Does acceleration feedback based on the plan.
   qp_input.mutable_desired_centroidal_momentum_dot()
@@ -87,18 +87,20 @@ void HumanoidPlanEvalSystem::DoCalcUnrestrictedUpdate(
           robot_status->torso().pose(), robot_status->torso().velocity());
 }
 
-std::unique_ptr<systems::AbstractState> HumanoidPlanEvalSystem::AllocateAbstractState()
-    const {
+std::unique_ptr<systems::AbstractState>
+HumanoidPlanEvalSystem::AllocateAbstractState() const {
   std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(2);
-  abstract_vals[abstract_state_plan_index_] = std::move(std::unique_ptr<systems::AbstractValue>(
-      new systems::Value<SimpleValkyriePlan>(SimpleValkyriePlan())));
-  abstract_vals[abstract_state_qp_input_index_] = std::move(std::unique_ptr<systems::AbstractValue>(
-      new systems::Value<QpInput>(QpInput(GetDofNames(robot_)))));
+  abstract_vals[abstract_state_plan_index_] =
+      std::move(std::unique_ptr<systems::AbstractValue>(
+          new systems::Value<SimpleValkyriePlan>(SimpleValkyriePlan())));
+  abstract_vals[abstract_state_qp_input_index_] =
+      std::move(std::unique_ptr<systems::AbstractValue>(
+          new systems::Value<QpInput>(QpInput(GetDofNames(robot_)))));
   return std::make_unique<systems::AbstractState>(std::move(abstract_vals));
 }
 
 void HumanoidPlanEvalSystem::SetDesired(const VectorX<double>& q_d,
-                                systems::State<double>* state) {
+                                        systems::State<double>* state) {
   // Get the plan.
   SimpleValkyriePlan& plan = get_mutable_plan<SimpleValkyriePlan>(state);
 
