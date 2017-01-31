@@ -495,6 +495,29 @@ class MathematicalProgram {
   }
 
   /**
+   * Adds a matrix of binary variables into the optimization program.
+   * @tparam rows The number of rows in the newly added binary variables.
+   * @tparam cols  The number of columns in the new variables.
+   * @param name Each newly added binary variable will share the same name. The
+   * default name is "b".
+   * @return A matrix containing the newly added variables.
+   */
+  template <int rows, int cols>
+  MatrixDecisionVariable<rows, cols> NewBinaryVariables(
+      const std::string& name = "b") {
+    std::array<std::string, rows*cols> names;
+    int count = 0;
+    for (int j = 0; j < cols; ++j) {
+      for (int i = 0; i < rows; ++i) {
+        names[count] =
+            name + "(" + std::to_string(i) + "," + std::to_string(j) + ")";
+        ++count;
+      }
+    }
+    return NewBinaryVariables<rows, cols>(names);
+  }
+
+  /**
    * Adds vector of binary variables into the optimization program.
    * @tparam rows The number of rows in the newly added binary variables.
    * @param names An array of strings containing the name of each variable.

@@ -52,3 +52,16 @@ if(dreal_FOUND)
   drake_add_cc_test(dreal_solver_test)
   target_link_libraries(dreal_solver_test drakeOptimization)
 endif()
+
+if (mosek_FOUND)
+  drake_add_cc_test(rotation_constraint_test rotation_constraint_test.cc)
+  target_link_libraries(rotation_constraint_test drakeOptimization)
+endif(mosek_FOUND)
+
+if (lcm_FOUND)
+  add_executable(plot_feasible_rotation_matrices plot_feasible_rotation_matrices.cc)
+  target_link_libraries(plot_feasible_rotation_matrices 
+    drakeOptimization 
+    drakeLCMTypes
+    drakeLcm)
+endif(lcm_FOUND)
