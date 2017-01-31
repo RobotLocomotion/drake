@@ -9,8 +9,9 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
-RobotStatusWrapper::RobotStatusWrapper(const RigidBodyTree<double>& robot)
-    : robot_(robot) {
+RobotStatusWrapper::RobotStatusWrapper(const RigidBodyTree<double>& robot,
+                                       const std::string& path)
+    : robot_(robot), alias_group_path_(path) {
   input_port_index_state_ =
       DeclareInputPort(systems::kVectorValued,
                        robot.get_num_positions() + robot.get_num_velocities())
@@ -41,12 +42,8 @@ RobotStatusWrapper::AllocateOutput(
   std::unique_ptr<systems::LeafSystemOutput<double>> output(
       new systems::LeafSystemOutput<double>);
 
-  std::string alias_groups_config =
-      drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
-                              "config/kuka_alias_groups.yaml";
-
   param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(robot_);
-  alias_groups.LoadFromYAMLFile(YAML::LoadFile(alias_groups_config));
+  alias_groups.LoadFromYAMLFile(YAML::LoadFile(alias_group_path_));
 
   HumanoidStatus rs(robot_, alias_groups);
   output->add_port(std::unique_ptr<systems::AbstractValue>(

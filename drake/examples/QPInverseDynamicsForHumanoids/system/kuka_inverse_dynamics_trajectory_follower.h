@@ -46,8 +46,8 @@ class KukaInverseDynamicsTrajectoryFollower : public systems::Diagram<double> {
     plant_ = builder.AddSystem<systems::RigidBodyPlant<double>>(move(tree));
     const RigidBodyTree<double>& robot = plant_->get_rigid_body_tree();
 
-    rs_wrapper_ =
-        builder.AddSystem(std::make_unique<RobotStatusWrapper>(robot));
+    rs_wrapper_ = builder.AddSystem(std::make_unique<RobotStatusWrapper>(
+        robot, alias_group_path));
     joint_level_controller_ =
         builder.AddSystem(std::make_unique<JointLevelControllerSystem>(robot));
 
