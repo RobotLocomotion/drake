@@ -18,7 +18,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
@@ -1122,8 +1121,9 @@ class MathematicalProgram {
    * @param V An Eigen Matrix of symbolic expressions. V(i, j) should be a
    * linear expression.
    * @param B An Eigen Matrix of doubles.
-   * @param is_symmetric If true, then only the lower triangular part of @p V
-   * is constrained, @default is false.
+   * @param lower_triangle If true, then only the lower triangular part of @p V
+   * is constrained, otherwise the whole matrix V is constrained. @default is
+   * false.
    * @return The newly added linear equality constraint, together with the
    * bound variables.
    */
@@ -1137,16 +1137,13 @@ class MathematicalProgram {
       Binding<LinearEqualityConstraint>>::type
   AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
                               const Eigen::MatrixBase<DerivedB>& B,
-                              bool is_symmetric = false) {
-    // Check if V and B are symmetric
-    if (is_symmetric) {
+                              bool lower_triangle = false) {
+    if (lower_triangle) {
       DRAKE_DEMAND(V.rows() == V.cols() && B.rows() == B.cols());
-      DRAKE_ASSERT(CompareMatrices(B, B.transpose()));
-      DRAKE_ASSERT(V == V.transpose());
     }
     DRAKE_DEMAND(V.rows() == B.rows() && V.cols() == B.cols());
 
-    // Form the flatten version of V and B, when is_symmetric = false,
+    // Form the flatten version of V and B, when lower_triangle = false,
     // the flatten version is just to concatenate each column of the matrix;
     // otherwise the flatten version is to concatenate each column of the
     // lower triangular part of the matrix.
@@ -1162,7 +1159,7 @@ class MathematicalProgram {
     const int V_size = V_rows != Eigen::Dynamic && V_cols != Eigen::Dynamic
                            ? V_rows * V_cols
                            : Eigen::Dynamic;
-    if (is_symmetric) {
+    if (lower_triangle) {
       int V_triangular_size_dynamic = V.rows() * (V.rows() + 1) / 2;
       Eigen::Matrix<symbolic::Expression, V_triangular_size, 1> flat_lower_V(
           V_triangular_size_dynamic);
