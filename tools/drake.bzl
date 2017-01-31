@@ -1,10 +1,40 @@
 # -*- python -*-
 
+# The CLANG_FLAGS will be enabled for all C++ rules in the project when
+# building with clang.
+CLANG_FLAGS = [
+    "-Werror=all",
+    "-Werror=inconsistent-missing-override",
+    "-Werror=sign-compare",
+    "-Werror=return-stack-address",
+]
+
+# The GCC_FLAGS will be enabled for all C++ rules in the project when
+# building with gcc.
+GCC_FLAGS = [
+    "-Werror=all",
+    "-Werror=extra",
+    "-Werror=return-local-addr",
+    "-Wno-unused-parameter",
+    "-Wno-missing-field-initializers",
+]
+
+def _platform_copts(rule_copts):
+  """Returns both the rule_copts, and platform-specific copts."""
+  return select({
+      "//tools:gcc4.9-linux": GCC_FLAGS + rule_copts,
+      "//tools:gcc5-linux": GCC_FLAGS + rule_copts,
+      "//tools:clang3.9-linux": CLANG_FLAGS + rule_copts,
+      "//tools:apple": CLANG_FLAGS + rule_copts,
+      "//conditions:default": rule_copts,
+  })
+
 def drake_cc_library(
         name,
         hdrs=None,
         srcs=None,
         deps=None,
+        copts=[],
         **kwargs):
     """Creates a rule to declare a C++ library."""
     native.cc_library(
@@ -12,6 +42,7 @@ def drake_cc_library(
         hdrs=hdrs,
         srcs=srcs,
         deps=deps,
+        copts=_platform_copts(copts),
         **kwargs)
 
 def drake_cc_binary(
@@ -19,6 +50,7 @@ def drake_cc_binary(
         hdrs=None,
         srcs=None,
         deps=None,
+        copts=[],
         **kwargs):
     """Creates a rule to declare a C++ binary."""
     native.cc_binary(
@@ -26,6 +58,7 @@ def drake_cc_binary(
         hdrs=hdrs,
         srcs=srcs,
         deps=deps,
+        copts=_platform_copts(copts),
         **kwargs)
 
 def drake_cc_googletest(

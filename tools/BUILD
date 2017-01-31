@@ -110,3 +110,27 @@ config_setting(
     name = "apple",
     values = {"cpu": "darwin"},
 )
+
+config_setting(
+    name = "gcc5-linux",
+    values = {
+        "compiler": "gcc-5",
+        "cpu": "k8",
+    },
+)
+
+config_setting(
+    name = "gcc4.9-linux",
+    values = {
+        "compiler": "gcc-4.9",
+        "cpu": "k8",
+    },
+)
+
+config_setting(
+    name = "clang3.9-linux",
+    values = {
+        "compiler": "clang-3.9",
+        "cpu": "k8",
+    },
+)

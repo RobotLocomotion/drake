@@ -4,7 +4,6 @@ build -c opt
 
 # Default build options.
 build --strip=never
-build --copt -Werror=all
 build --crosstool_top=//tools:default-toolchain
 # Only show warnings from Drake, not from externals.
 build --output_filter="^//"
