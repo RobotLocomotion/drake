@@ -92,7 +92,11 @@ drake_add_matlab_test(NAME systems/plants/test/springPendulum COMMAND springPend
 drake_add_matlab_test(NAME systems/plants/test/terrainInterpTest COMMAND terrainInterpTest)
 drake_add_matlab_test(NAME systems/plants/test/terrainTest COMMAND terrainTest)
 drake_add_matlab_test(NAME systems/plants/test/testAnalyticalJacobian COMMAND testAnalyticalJacobian)
-drake_add_matlab_test(NAME systems/plants/test/testForwardKin COMMAND testForwardKin SIZE large)
+# Removing this test to address issue #4981
+# The old C++ and MATLAB qdot to angular velocity codes were buggy, and
+# the correct conversion was addressed by PR #4965. This test relies on the
+# (buggy) MATLAB code matching the correct C++ code and, hence, now fails.
+# drake_add_matlab_test(NAME systems/plants/test/testForwardKin COMMAND testForwardKin SIZE large)
 drake_add_matlab_test(NAME systems/plants/test/testIK REQUIRES snopt COMMAND testIK)
 drake_add_matlab_test(NAME systems/plants/test/testIKtraj COMMAND testIKtraj SIZE large)
 drake_add_matlab_test(NAME systems/plants/test/testInertiasInWorldFrame COMMAND testInertiasInWorldFrame)
