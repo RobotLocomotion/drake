@@ -6,12 +6,10 @@
 #include <unordered_map>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/variable.h"
 
 namespace drake {
-namespace symbolic {
-/** Represents a symbolic form of an environment (mapping from a variable to a
- * value).
+/** Represents an environment (mapping from a variable to a value).
  *
  * This class is used when we evaluate symbolic expressions or formulas which
  * include unquantified (free) variables. Here are examples:
@@ -33,11 +31,11 @@ namespace symbolic {
  *   const bool res = f.Evaluate(env);  // x + y > x - y => 5.0 >= -1.0 => True
  * \endcode
  *
- * Note that it is not allowed to have a dummy variable in a symbolic
- * environment. It throws std::runtime_error for the attempts to create an
- * environment with a dummy variable, to insert a dummy variable to an existing
- * environment, or to take a reference to a value mapped to a dummy
- * variable. See the following examples.
+ * Note that it is not allowed to have a dummy variable in an environment. It
+ * throws std::runtime_error for the attempts to create an environment with a
+ * dummy variable, to insert a dummy variable to an existing environment, or to
+ * take a reference to a value mapped to a dummy variable. See the following
+ * examples.
  *
  * \code{.cpp}
  *   Variable    var_dummy{};           // OK to have a dummy variable
@@ -53,7 +51,7 @@ class Environment {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Environment)
 
-  typedef typename drake::symbolic::Variable key_type;
+  typedef typename drake::Variable key_type;
   typedef double mapped_type;
   typedef
       typename std::unordered_map<key_type, mapped_type, hash_value<key_type>>
@@ -112,5 +110,4 @@ class Environment {
  private:
   map map_;
 };
-}  // namespace symbolic
 }  // namespace drake

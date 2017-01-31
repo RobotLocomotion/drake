@@ -7,7 +7,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/variable.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
@@ -216,7 +216,7 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable4) {
 
 template <typename Derived1, typename Derived2>
 typename std::enable_if<
-    std::is_same<typename Derived1::Scalar, symbolic::Variable>::value &&
+    std::is_same<typename Derived1::Scalar, Variable>::value &&
     std::is_same<typename Derived2::Scalar, double>::value>::type
 CheckGetSolution(const MathematicalProgram& prog,
                  const Eigen::MatrixBase<Derived1>& vars,

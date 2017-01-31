@@ -1,16 +1,15 @@
-#include "drake/common/symbolic_expression.h"
-
 #include <sstream>
 
 #include "gtest/gtest.h"
 
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_expression.h"
+#include "drake/common/variable.h"
 
 namespace drake {
-namespace symbolic {
 namespace {
 
 using std::ostringstream;
+using symbolic::Expression;
 
 bool ExprEqual(const Expression& e1, const Expression& e2) {
   return e1.EqualTo(e2);
@@ -18,7 +17,7 @@ bool ExprEqual(const Expression& e1, const Expression& e2) {
 
 // Provides common variables and matrices that are used by the
 // following tests.
-class SymbolicVariableOverloadingTest : public ::testing::Test {
+class VariableOverloadingTest : public ::testing::Test {
  protected:
   const Variable x_{"x"};
   const Variable y_{"y"};
@@ -26,8 +25,8 @@ class SymbolicVariableOverloadingTest : public ::testing::Test {
   const Variable w_{"w"};
 
   Eigen::Matrix<double, 2, 2, Eigen::DontAlign> double_mat_;
-  Eigen::Matrix<symbolic::Variable, 2, 2, Eigen::DontAlign> var_mat_;
-  Eigen::Matrix<symbolic::Expression, 2, 2, Eigen::DontAlign> expr_mat_;
+  Eigen::Matrix<Variable, 2, 2, Eigen::DontAlign> var_mat_;
+  Eigen::Matrix<Expression, 2, 2, Eigen::DontAlign> expr_mat_;
 
   void SetUp() override {
     // clang-format off
@@ -41,7 +40,7 @@ class SymbolicVariableOverloadingTest : public ::testing::Test {
   }
 };
 
-TEST_F(SymbolicVariableOverloadingTest, OperatorOverloadingArithmetic) {
+TEST_F(VariableOverloadingTest, OperatorOverloadingArithmetic) {
   // Variable op Variable.
   const Expression e1{x_ + y_};
   const Expression e2{x_ - y_};
@@ -93,8 +92,7 @@ TEST_F(SymbolicVariableOverloadingTest, OperatorOverloadingArithmetic) {
   EXPECT_EQ(e20.to_string(), "(5 / y)");
 }
 
-TEST_F(SymbolicVariableOverloadingTest,
-       OperatorOverloadingArithmeticAssignment) {
+TEST_F(VariableOverloadingTest, OperatorOverloadingArithmeticAssignment) {
   Expression e{x_ + y_};
   e += z_;  // x + y + z
   EXPECT_EQ(e.to_string(), "(x + y + z)");
@@ -106,8 +104,7 @@ TEST_F(SymbolicVariableOverloadingTest,
   EXPECT_EQ(e.to_string(), "((w * (y + z)) / y)");
 }
 
-TEST_F(SymbolicVariableOverloadingTest,
-       OperatorOverloadingEigenTestSanityCheck) {
+TEST_F(VariableOverloadingTest, OperatorOverloadingEigenTestSanityCheck) {
   // [1.0  2.0]
   // [3.0  4.0]
   EXPECT_EQ(double_mat_(0, 0), 1.0);
@@ -130,8 +127,7 @@ TEST_F(SymbolicVariableOverloadingTest,
   EXPECT_PRED2(ExprEqual, expr_mat_(1, 1), y_ + w_);
 }
 
-TEST_F(SymbolicVariableOverloadingTest,
-       OperatorOverloadingEigenVariableOpVariable) {
+TEST_F(VariableOverloadingTest, OperatorOverloadingEigenVariableOpVariable) {
   const Eigen::Matrix<Expression, 2, 2> m1{var_mat_ + var_mat_};
   const Eigen::Matrix<Expression, 2, 2> m2{var_mat_ - var_mat_};
   const Eigen::Matrix<Expression, 2, 2> m3{var_mat_ * var_mat_};
@@ -158,8 +154,7 @@ TEST_F(SymbolicVariableOverloadingTest,
   EXPECT_PRED2(ExprEqual, m3(1, 1), z_ * y_ + w_ * w_);
 }
 
-TEST_F(SymbolicVariableOverloadingTest,
-       OperatorOverloadingEigenVariableOpExpression) {
+TEST_F(VariableOverloadingTest, OperatorOverloadingEigenVariableOpExpression) {
   const Eigen::Matrix<Expression, 2, 2> m1{var_mat_ + expr_mat_};
   const Eigen::Matrix<Expression, 2, 2> m2{var_mat_ - expr_mat_};
   const Eigen::Matrix<Expression, 2, 2> m3{var_mat_ * expr_mat_};
@@ -188,8 +183,7 @@ TEST_F(SymbolicVariableOverloadingTest,
   EXPECT_PRED2(ExprEqual, m3(1, 1), z_ * (x_ + w_) + w_ * (y_ + w_));
 }
 
-TEST_F(SymbolicVariableOverloadingTest,
-       OperatorOverloadingEigenExpressionOpVariable) {
+TEST_F(VariableOverloadingTest, OperatorOverloadingEigenExpressionOpVariable) {
   const Eigen::Matrix<Expression, 2, 2> m1{expr_mat_ + var_mat_};
   const Eigen::Matrix<Expression, 2, 2> m2{expr_mat_ - var_mat_};
   const Eigen::Matrix<Expression, 2, 2> m3{expr_mat_ * var_mat_};
@@ -219,8 +213,7 @@ TEST_F(SymbolicVariableOverloadingTest,
   EXPECT_PRED2(ExprEqual, m3(1, 1), (y_ + z_) * y_ + (y_ + w_) * w_);
 }
 
-TEST_F(SymbolicVariableOverloadingTest,
-       OperatorOverloadingEigenVariableOpDouble) {
+TEST_F(VariableOverloadingTest, OperatorOverloadingEigenVariableOpDouble) {
   const Eigen::Matrix<Expression, 2, 2> m1{var_mat_ + double_mat_};
   const Eigen::Matrix<Expression, 2, 2> m2{var_mat_ - double_mat_};
   const Eigen::Matrix<Expression, 2, 2> m3{var_mat_ * double_mat_};
@@ -247,8 +240,7 @@ TEST_F(SymbolicVariableOverloadingTest,
   EXPECT_PRED2(ExprEqual, m3(1, 1), z_ * 2.0 + w_ * 4.0);
 }
 
-TEST_F(SymbolicVariableOverloadingTest,
-       OperatorOverloadingEigenDoubleOpVariable) {
+TEST_F(VariableOverloadingTest, OperatorOverloadingEigenDoubleOpVariable) {
   const Eigen::Matrix<Expression, 2, 2> m1{double_mat_ + var_mat_};
   const Eigen::Matrix<Expression, 2, 2> m2{double_mat_ - var_mat_};
   const Eigen::Matrix<Expression, 2, 2> m3{double_mat_ * var_mat_};
@@ -275,8 +267,7 @@ TEST_F(SymbolicVariableOverloadingTest,
   EXPECT_PRED2(ExprEqual, m3(1, 1), 3.0 * y_ + 4.0 * w_);
 }
 
-TEST_F(SymbolicVariableOverloadingTest,
-       OperatorOverloadingEigenDivideByVariable) {
+TEST_F(VariableOverloadingTest, OperatorOverloadingEigenDivideByVariable) {
   const Eigen::Matrix<Expression, 2, 2> m1{double_mat_ / x_};
   const Eigen::Matrix<Expression, 2, 2> m2{var_mat_ / x_};
   const Eigen::Matrix<Expression, 2, 2> m3{expr_mat_ / x_};
@@ -302,8 +293,7 @@ TEST_F(SymbolicVariableOverloadingTest,
   EXPECT_PRED2(ExprEqual, m3(1, 0), (y_ + z_) / x_);
   EXPECT_PRED2(ExprEqual, m3(1, 1), (y_ + w_) / x_);
 }
-TEST_F(SymbolicVariableOverloadingTest,
-       OperatorOverloadingEigenDivideVariable) {
+TEST_F(VariableOverloadingTest, OperatorOverloadingEigenDivideVariable) {
   const Eigen::Matrix<Expression, 2, 2> m1{var_mat_ / 3.0};
   const Eigen::Matrix<Expression, 2, 2> m2{var_mat_ / (x_ + y_)};
 
@@ -322,7 +312,7 @@ TEST_F(SymbolicVariableOverloadingTest,
   EXPECT_PRED2(ExprEqual, m2(1, 1), w_ / (x_ + y_));
 }
 
-TEST_F(SymbolicVariableOverloadingTest, EigenExpressionMatrixOutput) {
+TEST_F(VariableOverloadingTest, EigenExpressionMatrixOutput) {
   ostringstream oss1;
   oss1 << expr_mat_;
 
@@ -333,5 +323,4 @@ TEST_F(SymbolicVariableOverloadingTest, EigenExpressionMatrixOutput) {
   EXPECT_EQ(oss1.str(), oss2.str());
 }
 }  // namespace
-}  // namespace symbolic
 }  // namespace drake

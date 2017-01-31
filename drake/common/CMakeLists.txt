@@ -14,20 +14,20 @@ set(sources
   drake_assert.cc
   ${drake_path_cc}
   drake_throw.cc
+  environment.cc
   functional_form.cc
   monomial.cc
   nice_type_name.cc
   polynomial.cc
-  symbolic_environment.cc
   symbolic_expression.cc
   symbolic_expression_cell.cc
   symbolic_expression_cell.h
   symbolic_formula.cc
   symbolic_formula_cell.cc
   symbolic_formula_cell.h
-  symbolic_variable.cc
-  symbolic_variables.cc
   text_logging.cc
+  variable.cc
+  variables.cc
   )
 
 # List headers that should be installed with Drake so that they
@@ -48,6 +48,7 @@ set(installed_headers
   eigen_matrix_compare.h
   eigen_stl_types.h
   eigen_types.h
+  environment.h
   extract_double.h
   functional_form.h
   hash.h
@@ -58,14 +59,13 @@ set(installed_headers
   number_traits.h
   polynomial.h
   sorted_vectors_have_intersection.h
-  symbolic_environment.h
   symbolic_expression.h
   symbolic_formula.h
-  symbolic_variable.h
-  symbolic_variables.h
   text_logging.h
   text_logging_gflags.h
   trig_poly.h
+  variable.h
+  variables.h
   )
 
 # List headers that are needed by code here but should not

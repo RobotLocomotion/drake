@@ -8,9 +8,9 @@ namespace drake {
 namespace solvers {
 namespace test {
 GTEST_TEST(TestBinding, constructBinding) {
-  symbolic::Variable x1("x1");
-  symbolic::Variable x2("x2");
-  symbolic::Variable x3("x3");
+  Variable x1("x1");
+  Variable x2("x2");
+  Variable x3("x3");
   auto bb_con = std::make_shared<BoundingBoxConstraint>(
       Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
 

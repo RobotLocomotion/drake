@@ -29,7 +29,7 @@ class LinearSystemExample1 {
   virtual bool CheckSolution() const;
 
  protected:
-  double tol() const {return 1E-10;}
+  double tol() const { return 1E-10; }
 
  private:
   std::unique_ptr<MathematicalProgram> prog_;
@@ -118,7 +118,7 @@ class NonConvexQPproblem1 {
 
     template <typename ScalarType>
     void eval(detail::VecIn<ScalarType> const& x,
-        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               detail::VecOut<ScalarType>& y) const {
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -181,7 +181,7 @@ class NonConvexQPproblem2 {
 
     template <typename ScalarType>
     void eval(detail::VecIn<ScalarType> const& x,
-        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               detail::VecOut<ScalarType>& y) const {
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -199,7 +199,7 @@ class NonConvexQPproblem2 {
   void AddSymbolicConstraint();
 
   std::unique_ptr<MathematicalProgram> prog_;
-  Eigen::Matrix<symbolic::Variable, 6, 1> x_;
+  Eigen::Matrix<Variable, 6, 1> x_;
   Eigen::Matrix<double, 6, 1> x_expected_;
 };
 
@@ -240,7 +240,7 @@ class LowerBoundedProblem {
 
     template <typename ScalarType>
     void eval(detail::VecIn<ScalarType> const& x,
-        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               detail::VecOut<ScalarType>& y) const {
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -291,7 +291,7 @@ class LowerBoundedProblem {
   void AddNonSymbolicConstraint();
 
   std::unique_ptr<MathematicalProgram> prog_;
-  Eigen::Matrix<symbolic::Variable, 6, 1> x_;
+  Eigen::Matrix<Variable, 6, 1> x_;
   Eigen::Matrix<double, 6, 1> x_expected_;
 };
 
@@ -344,7 +344,7 @@ class GloptiPolyConstrainedMinimizationProblem {
 
     template <typename ScalarType>
     void eval(detail::VecIn<ScalarType> const& x,
-        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               detail::VecOut<ScalarType>& y) const {
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
       DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -381,8 +381,8 @@ class GloptiPolyConstrainedMinimizationProblem {
         Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>* y) const {
       y->resize(1);
       (*y)(0) = 24 - 20 * x(0) + 9 * x(1) - 13 * x(2) + 4 * x(0) * x(0) -
-             4 * x(0) * x(1) + 4 * x(0) * x(2) + 2 * x(1) * x(1) -
-             2 * x(1) * x(2) + 2 * x(2) * x(2);
+                4 * x(0) * x(1) + 4 * x(0) * x(2) + 2 * x(1) * x(1) -
+                2 * x(1) * x(2) + 2 * x(2) * x(2);
     }
   };
 
@@ -442,9 +442,7 @@ class MinDistanceFromPlaneToOrigin {
                                const Eigen::VectorXd& b, CostForm cost_form,
                                ConstraintForm cnstr_form);
 
-  MathematicalProgram* prog_lorentz() const {
-    return prog_lorentz_.get();
-  }
+  MathematicalProgram* prog_lorentz() const { return prog_lorentz_.get(); }
 
   MathematicalProgram* prog_rotated_lorentz() const {
     return prog_rotated_lorentz_.get();

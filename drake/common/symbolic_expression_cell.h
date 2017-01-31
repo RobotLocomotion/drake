@@ -10,12 +10,12 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/environment.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
+#include "drake/common/variable.h"
+#include "drake/common/variables.h"
 
 namespace drake {
 namespace symbolic {

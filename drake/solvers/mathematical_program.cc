@@ -32,7 +32,6 @@ using std::string;
 using std::unordered_map;
 using std::vector;
 
-using symbolic::Variable;
 using symbolic::Expression;
 using symbolic::Formula;
 
@@ -222,7 +221,7 @@ void ExtractVariablesFromExpression(
     const Expression& e, VectorXDecisionVariable* vars,
     unordered_map<Variable::Id, int>* map_var_to_index) {
   DRAKE_DEMAND(static_cast<int>(map_var_to_index->size()) == vars->size());
-  for (const symbolic::Variable& var : e.GetVariables()) {
+  for (const Variable& var : e.GetVariables()) {
     if (map_var_to_index->find(var.get_id()) == map_var_to_index->end()) {
       map_var_to_index->emplace(var.get_id(), vars->size());
       vars->conservativeResize(vars->size() + 1, Eigen::NoChange);
@@ -266,7 +265,7 @@ void DecomposeLinearExpression(
         get_exp_to_coeff_map_in_addition(e)};
     for (const pair<Expression, double>& p : exp_to_coeff_map) {
       if (is_variable(p.first)) {
-        const symbolic::Variable& var{get_variable(p.first)};
+        const Variable& var{get_variable(p.first)};
         const double coeff{p.second};
         const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
             0, map_var_to_index.at(var.get_id())) = coeff;
@@ -285,7 +284,7 @@ void DecomposeLinearExpression(
       if (!is_variable(p.first) || !is_one(p.second)) {
         throw SymbolicError(e, "is not linear");
       } else {
-        const symbolic::Variable& var = get_variable(p.first);
+        const Variable& var = get_variable(p.first);
         const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
             map_var_to_index.at(var.get_id())) = c;
         *constant_term = 0;
@@ -296,7 +295,7 @@ void DecomposeLinearExpression(
     }
   } else if (is_variable(e)) {
     // Just a single variable.
-    const symbolic::Variable& var{get_variable(e)};
+    const Variable& var{get_variable(e)};
     const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
         map_var_to_index.at(var.get_id())) = 1;
     *constant_term = 0;
