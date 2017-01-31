@@ -23,10 +23,10 @@ if(lcm_FOUND)
 
   add_executable(schunk_wsg_simulation schunk_wsg_simulation.cc)
   target_link_libraries(schunk_wsg_simulation
+    drakeLcmSystem
     drakeSchunkWsg
     drakeSystemAnalysis
-    drakeSystemControllers
-    drakeLcmSystem)
+    drakeSystemControllers)
   drake_add_test(
       NAME schunk_wsg_simulation COMMAND schunk_wsg_simulation -simulation_sec 0.1)
 endif()

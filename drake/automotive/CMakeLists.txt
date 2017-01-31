@@ -97,10 +97,10 @@ if(lcm_FOUND)
   add_executable(car_sim_lcm car_sim_lcm.cc car_sim_lcm_common.cc)
   target_link_libraries(car_sim_lcm
       drakeAutomotiveLcm
+      drakeLcmSystem
       drakeRigidBodyPlant
       drakeSystemAnalysis
-      drakeSystemControllers
-      drakeLcmSystem)
+      drakeSystemControllers)
   drake_add_test(NAME car_sim_lcm COMMAND car_sim_lcm --simulation_sec 0.1)
 
   # TODO(liang.fok) Enable the following unit test once the build system is able
