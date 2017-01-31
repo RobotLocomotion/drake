@@ -51,6 +51,7 @@ RobotStateDecoderSystem::AllocateOutputAbstract(
   std::string alias_groups_config =
       drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
       "config/valkyrie.alias_groups";
+
   // KinematicsProperty
   param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(robot_);
   alias_groups.LoadFromFile(alias_groups_config);

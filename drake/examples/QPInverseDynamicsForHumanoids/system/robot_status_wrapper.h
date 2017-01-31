@@ -31,8 +31,8 @@ class RobotStatusWrapper : public systems::LeafSystem<double> {
   /**
    * @return Port for the output: HumanoidStatus.
    */
-  inline const systems::OutputPortDescriptor<double>& get_output_port_humanoid_status()
-      const {
+  inline const systems::OutputPortDescriptor<double>&
+  get_output_port_humanoid_status() const {
     return get_output_port(output_port_index_humanoid_status_);
   }
 

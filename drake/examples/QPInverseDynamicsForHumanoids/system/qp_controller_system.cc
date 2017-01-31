@@ -1,8 +1,8 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 
 #include <memory>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "drake/systems/framework/leaf_system.h"
 
@@ -38,8 +38,8 @@ void QPControllerSystem::DoCalcOutput(
     err << rs->position().transpose() << "\n";
     err << rs->velocity().transpose() << "\n";
     err << *qp_input << std::endl;
-    throw std::runtime_error(
-        "QPControllerSystem: QP cannot solve\n" + err.str());
+    throw std::runtime_error("QPControllerSystem: QP cannot solve\n" +
+                             err.str());
   }
 }
 

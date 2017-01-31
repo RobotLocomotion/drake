@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
@@ -32,20 +33,25 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
  public:
   explicit PlanEvalSystem(const RigidBodyTree<double>& robot);
 
-  virtual void DoCalcOutput(const systems::Context<double>& context,
+  void DoCalcOutput(
+      const systems::Context<double>& context,
       systems::SystemOutput<double>* output) const override;
 
-  virtual std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
+  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
       const systems::OutputPortDescriptor<double>& descriptor) const override;
 
-  virtual std::unique_ptr<systems::AbstractState> AllocateAbstractState() const override {
-    throw std::runtime_error("Subclass need to implememt AllocateOutputAbstract.");
+  std::unique_ptr<systems::AbstractState> AllocateAbstractState()
+      const override {
+    throw std::runtime_error(
+        "Subclass need to implememt AllocateOutputAbstract.");
     return std::make_unique<systems::AbstractState>();
   }
 
-  virtual void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
+  void DoCalcUnrestrictedUpdate(
+      const systems::Context<double>& context,
       systems::State<double>* state) const override {
-    throw std::runtime_error("Subclass need to implememt DoCalcUnrestrictedUpdate.");
+    throw std::runtime_error(
+        "Subclass need to implememt DoCalcUnrestrictedUpdate.");
   }
 
   /**
@@ -55,8 +61,8 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
    */
   void SetDesired(const VectorX<double>& q, systems::State<double>* state);
   PlanEvalSystem(const RigidBodyTree<double>& robot,
-      const std::string& alias_groups_file_name,
-      const std::string& param_file_name);
+                 const std::string& alias_groups_file_name,
+                 const std::string& param_file_name);
 
   /**
    * @return Port for the input: HumanoidStatus.
@@ -75,12 +81,17 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   }
 
  protected:
-  template <typename PlanType> PlanType& get_mutable_plan(systems::State<double>* state) const {
-    return state->get_mutable_abstract_state()->get_mutable_abstract_state(abstract_state_plan_index_).GetMutableValue<PlanType>();
+  template <typename PlanType>
+  PlanType& get_mutable_plan(systems::State<double>* state) const {
+    return state->get_mutable_abstract_state()
+        ->get_mutable_abstract_state(abstract_state_plan_index_)
+        .GetMutableValue<PlanType>();
   }
 
   QpInput& get_mutable_qp_input(systems::State<double>* state) const {
-    return state->get_mutable_abstract_state()->get_mutable_abstract_state(abstract_state_qp_input_index_).GetMutableValue<QpInput>();
+    return state->get_mutable_abstract_state()
+        ->get_mutable_abstract_state(abstract_state_qp_input_index_)
+        .GetMutableValue<QpInput>();
   }
 
   const RigidBodyTree<double>& robot_;

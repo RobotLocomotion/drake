@@ -13,7 +13,8 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 AtlasJointLevelControllerSystem::AtlasJointLevelControllerSystem(
-    const RigidBodyTree<double>& robot) : JointLevelControllerSystem(robot) {
+    const RigidBodyTree<double>& robot)
+    : JointLevelControllerSystem(robot) {
   output_port_index_atlas_cmd_ = DeclareAbstractOutputPort().get_index();
 
   // TODO(siyuan.fent): Load gains from some config.
@@ -32,7 +33,6 @@ AtlasJointLevelControllerSystem::AtlasJointLevelControllerSystem(
 void AtlasJointLevelControllerSystem::DoCalcOutput(
     const systems::Context<double>& context,
     systems::SystemOutput<double>* output) const {
-
   JointLevelControllerSystem::DoCalcOutput(context, output);
 
   // Output
@@ -49,6 +49,8 @@ void AtlasJointLevelControllerSystem::DoCalcOutput(
   msg.velocity.resize(msg.num_joints);
   msg.effort.resize(msg.num_joints);
 
+  // The torques have already been computed and set in
+  // JointLevelControllerSystem::DoCalcOutput()
   auto act_torques = GetMutableOutputVector(output, output_port_index_torque_);
 
   // Set desired position, velocity and torque for all actuators.
