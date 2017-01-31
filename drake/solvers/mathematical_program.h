@@ -23,7 +23,6 @@
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
 #include "drake/common/variable.h"
-#include "drake/math/matrix_util.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/decision_variable.h"
@@ -1146,8 +1145,7 @@ class MathematicalProgram {
     if (is_symmetric) {
       DRAKE_DEMAND(V.rows() == V.cols() && B.rows() == B.cols());
       DRAKE_ASSERT(CompareMatrices(B, B.transpose()));
-      // TODO(hongkai.dai): Assert V is symmetric, when Soonho adds the function
-      // to compare two matrices of symbolic expressions.
+      DRAKE_ASSERT(V == V.transpose());
     }
     DRAKE_DEMAND(V.rows() == B.rows() && V.cols() == B.cols());
 
