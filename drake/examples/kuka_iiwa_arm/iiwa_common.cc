@@ -164,6 +164,29 @@ void CreateTreedFromFixedModelAtPose(const std::string& model_file_name,
       weld_to_frame, tree);
 }
 
+void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
+                                    Eigen::VectorXd* Ki,
+                                    Eigen::VectorXd* Kd) {
+  // TODO(naveenoid) : Update the gains pending careful system identification
+  // of the real KUKA iiwa arm's (hidden) low level control.
+
+  // These values for the position gains Kp were chosen from a
+  // combination of intuition based on the inertias / masses of the
+  // links and some trial and error to achieve reasonably quick
+  // critically damped position control when used along with the
+  // gravity compensator.
+  Kp->resize(7);
+  *Kp << 100, 100, 100, 20, 10, 20, 1;
+  Kd->resize(Kp->size());
+  for (int i = 0; i < Kp->size(); i++) {
+    // Derivative gains are computed as the square-root of the corresponding
+    // position gains as a reasonable approximation of critically damped
+    // behaviour.
+    (*Kd)[i] = std::sqrt((*Kp)[i]);
+  }
+  *Ki = Eigen::VectorXd::Zero(7);
+}
+
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
