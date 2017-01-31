@@ -2,7 +2,10 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -70,12 +73,12 @@ drake_cc_library(
     srcs = [
         "test/accelerometer_test/accelerometer_example_diagram.cc",
         "test/accelerometer_test/accelerometer_test_logger.cc",
-        "test/accelerometer_test/accelerometer_xdot_filter.cc",
+        "test/accelerometer_test/accelerometer_xdot_hack.cc",
     ],
     hdrs = [
         "test/accelerometer_test/accelerometer_example_diagram.h",
         "test/accelerometer_test/accelerometer_test_logger.h",
-        "test/accelerometer_test/accelerometer_xdot_filter.h",
+        "test/accelerometer_test/accelerometer_xdot_hack.h",
     ],
     data = [
         "//drake/examples/Pendulum:models",

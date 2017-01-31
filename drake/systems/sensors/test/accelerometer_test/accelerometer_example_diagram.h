@@ -10,7 +10,7 @@
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 #include "drake/systems/sensors/accelerometer.h"
 #include "drake/systems/sensors/test/accelerometer_test/accelerometer_test_logger.h"
-#include "drake/systems/sensors/test/accelerometer_test/accelerometer_xdot_filter.h"
+#include "drake/systems/sensors/test/accelerometer_test/accelerometer_xdot_hack.h"
 
 
 namespace drake {
@@ -25,7 +25,7 @@ namespace sensors {
 ///       | ConstantVectorSource |
 ///       ------------------------
 ///                 |
-///                 | < vector of zeros >
+///                 | < vector of zeros > (actuator torque commands)
 ///                 |
 ///                 V
 /// -----------------------------------  x_dot (via LCM)
@@ -37,9 +37,9 @@ namespace sensors {
 ///     |           |                        -----------------------
 ///     |           |                                   |
 ///     |           |                                   V
-///     |           |                      ---------------------------
-///     |           |                      | AccelerometerXdotFilter |
-///     |           |                      ---------------------------
+///     |           |                       -------------------------
+///     |           |                       | AccelerometerXdotHack |
+///     |           |                       -------------------------
 ///     |           |                                   |
 ///     |           V                                   |
 ///     |   -----------------       filtered x_dot      |
@@ -47,9 +47,9 @@ namespace sensors {
 ///     |   -----------------                           |
 ///     |           |                                   |
 ///     V           V                                   |
-/// --------------------                                |
-/// |      Logger      | <-------------------------------
-/// --------------------
+/// -------------------------------------               |
+/// |      AccelerometerTestLogger      | <--------------
+/// -------------------------------------
 /// </pre>
 ///
 /// The `ConstantVectorSource` outputs a vector of zeros, which effectively
@@ -67,9 +67,9 @@ namespace sensors {
 
 class AccelerometerExampleDiagram : public Diagram<double> {
  public:
-  explicit AccelerometerExampleDiagram(::drake::lcm::DrakeLcmInterface* lcm);
-
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AccelerometerExampleDiagram);
+
+  explicit AccelerometerExampleDiagram(::drake::lcm::DrakeLcmInterface* lcm);
 
   /// Initializes this diagram.
   ///
@@ -115,7 +115,7 @@ class AccelerometerExampleDiagram : public Diagram<double> {
   int model_instance_id_{};
   std::shared_ptr<RigidBodyFrame<double>> sensor_frame_;
   RigidBodyPlantThatPublishesXdot<double>* plant_{nullptr};
-  AccelerometerXdotFilter* xdot_filter_{nullptr};
+  AccelerometerXdotHack* xdot_hack_{nullptr};
   std::unique_ptr<lcm::LcmtDrakeSignalTranslator> translator_;
   lcm::LcmSubscriberSystem* lcm_subscriber_{nullptr};
   Accelerometer* accelerometer_{nullptr};

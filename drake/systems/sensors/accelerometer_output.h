@@ -20,16 +20,8 @@ class AccelerometerOutput : public BasicVector<T> {
   /// Default constructor.  Sets all rows to zero.
   AccelerometerOutput();
 
-  /// @name Getters and Setters
+  /// @name Accessors
   //@{
-  /// Returns the X-component of the linear acceleration in the sensor's frame.
-  const T& get_accel_x() const;
-
-  /// Returns the Y-component of the linear acceleration in the sensor's frame.
-  const T& get_accel_y() const;
-
-  /// Returns the Z-component of the linear acceleration in the sensor's frame.
-  const T& get_accel_z() const;
 
   /// Returns a Vector3<T> containing the linear acceleration in the sensor's
   /// frame. The ordering of the values in this 3-vector are `[x, y, z]`.

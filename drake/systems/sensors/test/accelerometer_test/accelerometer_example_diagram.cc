@@ -39,7 +39,7 @@ AccelerometerExampleDiagram::AccelerometerExampleDiagram(
   auto tree = make_unique<RigidBodyTree<double>>();
   tree_ = tree.get();
 
-  // Adds a box to the RigidBodyTree and obtains its model instance ID.
+  // Adds a pendulum to the RigidBodyTree and obtains its model instance ID.
   const parsers::ModelInstanceIdTable table =
       AddModelInstanceFromUrdfFileToWorld(
           model_file_name, drake::multibody::joints::kFixed, tree_);
@@ -50,7 +50,7 @@ AccelerometerExampleDiagram::AccelerometerExampleDiagram(
   sensor_frame_transform.translation() << 0, 0, -0.5;
 
   // Adds a frame to the RigidBodyTree called "sensor frame" that is coincident
-  // with the "swing_arm" body within the RigidBodyTree.
+  // with the "arm" body within the RigidBodyTree.
   sensor_frame_ = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "sensor frame",
       tree->FindBody("arm"), sensor_frame_transform);
@@ -59,7 +59,7 @@ AccelerometerExampleDiagram::AccelerometerExampleDiagram(
   plant_ = builder_.template AddSystem<RigidBodyPlantThatPublishesXdot<double>>(
       move(tree), xdot_channel_name, lcm_);
 
-  xdot_filter_ = builder_.template AddSystem<AccelerometerXdotFilter>(
+  xdot_hack_ = builder_.template AddSystem<AccelerometerXdotHack>(
     plant_->get_num_states());
   translator_ =
       make_unique<LcmtDrakeSignalTranslator>(plant_->get_num_states());
@@ -78,14 +78,14 @@ AccelerometerExampleDiagram::AccelerometerExampleDiagram(
           VectorX<double>::Zero(plant_->actuator_command_input_port().size()));
 
   builder_.Connect(lcm_subscriber_->get_output_port(0),
-                   xdot_filter_->get_input_port());
-  builder_.Connect(xdot_filter_->get_output_port(),
+                   xdot_hack_->get_input_port());
+  builder_.Connect(xdot_hack_->get_output_port(),
                    accelerometer_->get_plant_state_derivative_input_port());
   builder_.Connect(constant_zero_source->get_output_port(),
                    plant_->actuator_command_input_port());
   builder_.Connect(plant_->state_output_port(),
                    logger_->get_plant_state_input_port());
-  builder_.Connect(xdot_filter_->get_output_port(),
+  builder_.Connect(xdot_hack_->get_output_port(),
                    logger_->get_plant_state_derivative_input_port());
   builder_.Connect(accelerometer_->get_output_port(),
                    logger_->get_acceleration_input_port());

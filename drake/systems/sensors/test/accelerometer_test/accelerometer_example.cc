@@ -26,7 +26,7 @@ namespace systems {
 namespace sensors {
 namespace {
 
-int main(int argc, char* argv[]) {
+int exec(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
 
@@ -56,5 +56,5 @@ int main(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::systems::sensors::main(argc, argv);
+  return drake::systems::sensors::exec(argc, argv);
 }
