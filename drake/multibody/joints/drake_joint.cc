@@ -3,6 +3,7 @@
 #include <limits>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 
 using Eigen::Isometry3d;
 using Eigen::VectorXd;
@@ -83,4 +84,138 @@ const Eigen::VectorXd& DrakeJoint::get_joint_limit_stiffness() const {
 
 const Eigen::VectorXd& DrakeJoint::get_joint_limit_dissipation() const {
   return joint_limit_dissipation_;
+}
+
+bool DrakeJoint::operator==(const DrakeJoint &other) const {
+  if (get_transform_to_parent_body().matrix() !=
+      other.get_transform_to_parent_body().matrix()) {
+    drake::log()->debug(
+        "DrakeJoint::operator==(): transform_to_parent_body mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_transform_to_parent_body().matrix(),
+        other.get_transform_to_parent_body().matrix());
+    return false;
+  }
+  if (get_num_positions() != other.get_num_positions()) {
+    drake::log()->debug(
+        "DrakeJoint::operator==(): get_num_positions mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_num_positions(),
+        other.get_num_positions());
+    return false;
+  }
+  if (get_num_velocities() != other.get_num_velocities()) {
+    drake::log()->debug(
+        "DrakeJoint::operator==(): get_num_velocities mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_num_velocities(),
+        other.get_num_velocities());
+    return false;
+  }
+  if (get_name() != other.get_name()) {
+    drake::log()->debug(
+        "DrakeJoint::operator==(): get_name mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_name(),
+        other.get_name());
+    return false;
+  }
+  for (int i = 0; i < get_num_positions(); ++i) {
+    if (get_position_name(i) != other.get_position_name(i)) {
+      drake::log()->debug(
+          "DrakeJoint::operator==(): get_position_name mismatch:\n"
+          "  - index: {}\n"
+          "  - this: {}\n"
+          "  - other: {}",
+          i,
+          get_position_name(i),
+          other.get_position_name(i));
+      return false;
+    }
+  }
+  for (int i = 0; i < get_num_velocities(); ++i) {
+    if (get_velocity_name(i) != other.get_velocity_name(i)) {
+      drake::log()->debug(
+          "DrakeJoint::operator==(): get_velocity_name mismatch:\n"
+          "  - index: {}\n"
+          "  - this: {}\n"
+          "  - other: {}",
+          i,
+          get_velocity_name(i),
+          other.get_velocity_name(i));
+      return false;
+    }
+  }
+  if (is_floating() != other.is_floating()) {
+    drake::log()->debug(
+        "DrakeJoint::operator==(): is_floating mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        is_floating(),
+        other.is_floating());
+    return false;
+  }
+  if (is_fixed() != other.is_fixed()) {
+    drake::log()->debug(
+        "DrakeJoint::operator==(): is_fixed mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        is_fixed(),
+        other.is_fixed());
+    return false;
+  }
+  if (zeroConfiguration() != other.zeroConfiguration()) {
+    drake::log()->debug(
+        "DrakeJoint::operator==(): zeroConfiguration mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        zeroConfiguration(),
+        other.zeroConfiguration());
+    return false;
+  }
+  if (getJointLimitMin() != other.getJointLimitMin()) {
+    drake::log()->debug(
+        "DrakeJoint::operator==(): getJointLimitMin mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        getJointLimitMin(),
+        other.getJointLimitMin());
+    return false;
+  }
+  if (getJointLimitMax() != other.getJointLimitMax()) {
+    drake::log()->debug(
+        "DrakeJoint::operator==(): getJointLimitMax mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        getJointLimitMax(),
+        other.getJointLimitMax());
+    return false;
+  }
+  if (get_joint_limit_stiffness() != other.get_joint_limit_stiffness()) {
+    drake::log()->debug(
+        "DrakeJoint::operator==(): get_joint_limit_stiffness mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_joint_limit_stiffness(),
+        other.get_joint_limit_stiffness());
+    return false;
+  }
+  if (get_joint_limit_dissipation() != other.get_joint_limit_dissipation()) {
+    drake::log()->debug(
+        "DrakeJoint::operator==(): get_joint_limit_dissipation mismatch:\n"
+        "  - this: {}\n"
+        "  - other: {}",
+        get_joint_limit_dissipation(),
+        other.get_joint_limit_dissipation());
+    return false;
+  }
+  return true;
+}
+
+bool DrakeJoint::operator!=(const DrakeJoint &other) const {
+  return !(*this == other);
 }
