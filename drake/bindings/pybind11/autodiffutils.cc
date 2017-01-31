@@ -2,7 +2,7 @@
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
 
-#include "autodiff_types.h"
+#include "drake/bindings/pybind11/autodiff_types.h"
 
 
 namespace py = pybind11;
@@ -19,8 +19,10 @@ PYBIND11_PLUGIN(_autodiffutils) {
   py::module m("_autodiffutils", "Bindings for Eigen AutoDiff Scalars");
 
   py::class_<AutoDiffXd>(m, "AutoDiffXd")
-    .def("__init__", 
-         [](AutoDiffXd& self, double value, const Eigen::VectorXd& derivatives) {
+    .def("__init__",
+         [](AutoDiffXd& self,
+            double value,
+            const Eigen::VectorXd& derivatives) {
            new (&self) AutoDiffXd(value, derivatives);
          })
     .def("value", [](const AutoDiffXd& self) {
@@ -66,8 +68,7 @@ PYBIND11_PLUGIN(_autodiffutils) {
     })
     .def("__rtruediv__", [](const AutoDiffXd& self, double other) {
       return eval(other / self);
-    })
-   ;
+    });
 
   py::class_<VectorXAutoDiffXd>(m, "VectorXAutoDiffXd")
     .def("__init__",
@@ -75,7 +76,8 @@ PYBIND11_PLUGIN(_autodiffutils) {
           if (shape.size() == 1) {
             new (&self) VectorXAutoDiffXd(shape[0]);
           } else {
-            throw std::runtime_error("VectorXAutoDiffXd must be initialized with a one-dimensional shape");
+            throw std::runtime_error(
+          "VectorXAutoDiffXd must be initialized with a one-dimensional shape");
           }
         })
     .def("shape",
@@ -94,14 +96,14 @@ PYBIND11_PLUGIN(_autodiffutils) {
     .def("__setitem__",
          [](VectorXAutoDiffXd& self, size_t i, const AutoDiffXd& value) {
       self(i) = value;
-    })
-    ;
+    });
 
   py::class_<Matrix3XAutoDiffXd>(m, "Matrix3XAutoDiffXd")
     .def("__init__",
          [](Matrix3XAutoDiffXd& self, std::vector<int> shape) {
           if (shape.size() != 2) {
-            throw std::runtime_error("Matrix3XAutoDiffXd must be initialized with a two-dimensional shape");
+            throw std::runtime_error(
+        "Matrix3XAutoDiffXd must be initialized with a two-dimensional shape");
           }
           new (&self) Matrix3XAutoDiffXd(shape[0], shape[1]);
         })
@@ -121,8 +123,7 @@ PYBIND11_PLUGIN(_autodiffutils) {
     .def("__setitem__",
          [](Matrix3XAutoDiffXd& self, size_t i, const AutoDiffXd& value) {
       self(i) = value;
-    })
-    ;
+    });
 
   return m.ptr();
 }

@@ -6,7 +6,7 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
-#include "autodiff_types.h"
+#include "drake/bindings/pybind11/autodiff_types.h"
 
 namespace py = pybind11;
 
@@ -16,17 +16,19 @@ PYBIND11_PLUGIN(_rbtree) {
   py::class_<RigidBodyTree<double>>(m, "RigidBodyTree")
     .def(py::init<>())
     .def("__init__",
-         [](RigidBodyTree<double> &instance, const std::string& urdf_filename, const std::string& joint_type) {
+         [](RigidBodyTree<double> &instance,
+            const std::string& urdf_filename,
+            const std::string& joint_type) {
             // FIXED = 0, ROLLPITCHYAW = 1, QUATERNION = 2
             drake::multibody::joints::FloatingBaseType floating_base_type;
 
-            if (joint_type == "FIXED")
+            if (joint_type == "FIXED") {
               floating_base_type = drake::multibody::joints::kFixed;
-            else if (joint_type == "ROLLPITCHYAW")
+            } else if (joint_type == "ROLLPITCHYAW") {
               floating_base_type = drake::multibody::joints::kRollPitchYaw;
-            else if (joint_type == "QUATERNION")
+            } else if (joint_type == "QUATERNION") {
               floating_base_type = drake::multibody::joints::kQuaternion;
-            else {
+            } else {
               throw(std::invalid_argument("Joint type not supported"));
             }
             new (&instance) RigidBodyTree<double>();
@@ -36,38 +38,41 @@ PYBIND11_PLUGIN(_rbtree) {
         py::arg("urdf_filename"), py::arg("joint_type")="ROLLPITCHYAW"
       )
     .def("getRandomConfiguration", [](const RigidBodyTree<double>& tree) {
-      std::default_random_engine generator(std::random_device{}());
+      std::default_random_engine generator(std::random_device {}());
       return tree.getRandomConfiguration(generator);
     })
     .def("getZeroConfiguration", &RigidBodyTree<double>::getZeroConfiguration)
-    .def("_doKinematics", [](const RigidBodyTree<double>& tree, 
+    .def("_doKinematics", [](const RigidBodyTree<double>& tree,
                             const Eigen::VectorXd& q) {
       return tree.doKinematics(q);
     })
-    .def("_doKinematics", [](const RigidBodyTree<double>& tree, 
+    .def("_doKinematics", [](const RigidBodyTree<double>& tree,
                              const VectorXAutoDiffXd& q) {
       return tree.doKinematics(q);
     })
-    .def("_doKinematics", [](const RigidBodyTree<double>& tree, 
+    .def("_doKinematics", [](const RigidBodyTree<double>& tree,
                             const Eigen::VectorXd& q,
                             const Eigen::VectorXd& v) {
       return tree.doKinematics(q, v);
     })
-    .def("_doKinematics", [](const RigidBodyTree<double>& tree, 
+    .def("_doKinematics", [](const RigidBodyTree<double>& tree,
                             const VectorXAutoDiffXd& q) {
       return tree.doKinematics(q);
     })
-    .def("_doKinematics", [](const RigidBodyTree<double>& tree, 
+    .def("_doKinematics", [](const RigidBodyTree<double>& tree,
                             const VectorXAutoDiffXd& q,
                             const VectorXAutoDiffXd& v) {
       return tree.doKinematics(q, v);
     })
     .def("centerOfMass", &RigidBodyTree<double>::centerOfMass<double>,
-         py::arg("cache"), 
-         py::arg("model_instance_id_set") = RigidBodyTreeConstants::default_model_instance_id_set)
-    .def("centerOfMassJacobian", &RigidBodyTree<double>::centerOfMassJacobian<double>,
-         py::arg("cache"), 
-         py::arg("model_instance_id_set") = RigidBodyTreeConstants::default_model_instance_id_set,
+         py::arg("cache"),
+         py::arg("model_instance_id_set") =
+           RigidBodyTreeConstants::default_model_instance_id_set)
+    .def("centerOfMassJacobian",
+         &RigidBodyTree<double>::centerOfMassJacobian<double>,
+         py::arg("cache"),
+         py::arg("model_instance_id_set") =
+           RigidBodyTreeConstants::default_model_instance_id_set,
          py::arg("in_terms_of_qdot") = false)
     .def("get_num_bodies", &RigidBodyTree<double>::get_num_bodies)
     .def("number_of_positions", &RigidBodyTree<double>::get_num_positions)
@@ -76,17 +81,21 @@ PYBIND11_PLUGIN(_rbtree) {
     .def("get_num_velocities", &RigidBodyTree<double>::get_num_velocities)
     .def("_transformPoints", [](const RigidBodyTree<double>& tree,
                                const KinematicsCache<double>& cache,
-                               const Eigen::Matrix<double, 3, Eigen::Dynamic>& points,
+                               const Eigen::Matrix<double, 3,
+                                                   Eigen::Dynamic>& points,
                                int from_body_or_frame_ind,
                                int to_body_or_frame_ind) {
-      return tree.transformPoints(cache, points, from_body_or_frame_ind, to_body_or_frame_ind);
+      return tree.transformPoints(cache, points,
+                                  from_body_or_frame_ind, to_body_or_frame_ind);
     })
     .def("_transformPoints", [](const RigidBodyTree<double>& tree,
                                const KinematicsCache<AutoDiffXd>& cache,
-                               const Eigen::Matrix<double, 3, Eigen::Dynamic>& points,
+                               const Eigen::Matrix<double, 3,
+                                                   Eigen::Dynamic>& points,
                                int from_body_or_frame_ind,
                                int to_body_or_frame_ind) {
-      return tree.transformPoints(cache, points, from_body_or_frame_ind, to_body_or_frame_ind);
+      return tree.transformPoints(cache, points,
+                                  from_body_or_frame_ind, to_body_or_frame_ind);
     })
     .def("addFrame", &RigidBodyTree<double>::addFrame)
     .def("FindBody", [](const RigidBodyTree<double>& self,
@@ -94,45 +103,45 @@ PYBIND11_PLUGIN(_rbtree) {
                         const std::string& model_name = "",
                         int model_id = -1) {
       return self.FindBody(body_name, model_name, model_id);
-    }, py::arg("body_name"), 
-       py::arg("model_name") = "", 
+    }, py::arg("body_name"),
+       py::arg("model_name") = "",
        py::arg("model_id") = -1,
        py::return_value_policy::reference)
-    .def("world", 
+    .def("world",
          (RigidBody<double>& (RigidBodyTree<double>::*)
           ()) &RigidBodyTree<double>::world,
          py::return_value_policy::reference)
     .def("findFrame", &RigidBodyTree<double>::findFrame,
-         py::arg("frame_name"), py::arg("model_id") = -1)
-    ;
+         py::arg("frame_name"), py::arg("model_id") = -1);
 
   py::class_<KinematicsCache<double> >(m, "KinematicsCacheDouble");
   py::class_<KinematicsCache<AutoDiffXd> >(m, "KinematicsCacheAutoDiffXd");
 
   py::class_<drake::parsers::PackageMap>(m, "PackageMap")
-    .def(py::init<>())
-    ;
+    .def(py::init<>());
 
   py::class_<RigidBody<double> >(m, "RigidBody")
     .def("get_name", &RigidBody<double>::get_name)
-    .def("get_body_index", &RigidBody<double>::get_body_index)
-    ;
+    .def("get_body_index", &RigidBody<double>::get_body_index);
 
-  py::class_<RigidBodyFrame<double>, std::shared_ptr<RigidBodyFrame<double> > >(m, "RigidBodyFrame")
-    .def(py::init<const std::string&, 
+  py::class_<RigidBodyFrame<double>,
+             std::shared_ptr<RigidBodyFrame<double> > >(m, "RigidBodyFrame")
+    .def(py::init<const std::string&,
                   RigidBody<double>*,
                   const Eigen::VectorXd&,
                   const Eigen::VectorXd& >())
-    .def("get_frame_index", &RigidBodyFrame<double>::get_frame_index)
-    ;
+    .def("get_frame_index", &RigidBodyFrame<double>::get_frame_index);
 
-  m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages", 
-        &drake::parsers::urdf::AddModelInstanceFromUrdfStringSearchingInRosPackages);
+  m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages",
+        &drake::parsers::urdf::\
+          AddModelInstanceFromUrdfStringSearchingInRosPackages);
 
   py::enum_<drake::multibody::joints::FloatingBaseType>(m, "FloatingBaseType")
     .value("kFixed", drake::multibody::joints::FloatingBaseType::kFixed)
-    .value("kRollPitchYaw", drake::multibody::joints::FloatingBaseType::kRollPitchYaw)
-    .value("kQuaternion", drake::multibody::joints::FloatingBaseType::kQuaternion);
+    .value("kRollPitchYaw",
+           drake::multibody::joints::FloatingBaseType::kRollPitchYaw)
+    .value("kQuaternion",
+           drake::multibody::joints::FloatingBaseType::kQuaternion);
 
 
   return m.ptr();

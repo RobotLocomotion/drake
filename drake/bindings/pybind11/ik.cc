@@ -17,16 +17,18 @@ PYBIND11_PLUGIN(_ik) {
   py::class_<PostureConstraint, RigidBodyConstraint>(m, "PostureConstraint")
     .def(py::init<RigidBodyTree<double> *,
                   const Eigen::Vector2d& >(),
-         py::arg("model"), py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan)
-    .def("setJointLimits", (void (PostureConstraint::*)(
+         py::arg("model"),
+         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan)
+    .def("setJointLimits", (void(PostureConstraint::*)(
       const Eigen::VectorXi&,
       const Eigen::VectorXd&,
       const Eigen::VectorXd&)) &PostureConstraint::setJointLimits);
 
-  py::class_<WorldPositionConstraint, RigidBodyConstraint>(m, "WorldPositionConstraint")
-    .def(py::init<RigidBodyTree<double>*, 
-                  int, 
-                  const Eigen::Matrix3Xd&, 
+  py::class_<WorldPositionConstraint, RigidBodyConstraint>(
+    m, "WorldPositionConstraint")
+    .def(py::init<RigidBodyTree<double>*,
+                  int,
+                  const Eigen::Matrix3Xd&,
                   Eigen::MatrixXd,
                   Eigen::MatrixXd,
                   const Eigen::Vector2d&>(),
@@ -37,10 +39,11 @@ PYBIND11_PLUGIN(_ik) {
          py::arg("ub"),
          py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
 
-  py::class_<WorldPositionInFrameConstraint, RigidBodyConstraint>(m, "WorldPositionInFrameConstraint")
-    .def(py::init<RigidBodyTree<double>*, 
-                  int, 
-                  const Eigen::Matrix3Xd&, 
+  py::class_<WorldPositionInFrameConstraint, RigidBodyConstraint>(
+    m, "WorldPositionInFrameConstraint")
+    .def(py::init<RigidBodyTree<double>*,
+                  int,
+                  const Eigen::Matrix3Xd&,
                   const Eigen::Matrix4d&,
                   const Eigen::MatrixXd&,
                   const Eigen::MatrixXd&,
@@ -53,10 +56,11 @@ PYBIND11_PLUGIN(_ik) {
          py::arg("ub"),
          py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
 
-  py::class_<WorldGazeDirConstraint, RigidBodyConstraint>(m, "WorldGazeDirConstraint")
-    .def(py::init<RigidBodyTree<double>*, 
-                  int, 
-                  const Eigen::Vector3d&, 
+  py::class_<WorldGazeDirConstraint, RigidBodyConstraint>(
+    m, "WorldGazeDirConstraint")
+    .def(py::init<RigidBodyTree<double>*,
+                  int,
+                  const Eigen::Vector3d&,
                   const Eigen::Vector3d&,
                   double,
                   const Eigen::Vector2d&>(),
@@ -67,7 +71,8 @@ PYBIND11_PLUGIN(_ik) {
          py::arg("conethreshold"),
          py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
 
-  py::class_<WorldEulerConstraint, RigidBodyConstraint>(m, "WorldEulerConstraint")
+  py::class_<WorldEulerConstraint, RigidBodyConstraint>(
+    m, "WorldEulerConstraint")
     .def(py::init<RigidBodyTree<double>*,
                   int,
                   const Eigen::Vector3d&,
@@ -79,7 +84,8 @@ PYBIND11_PLUGIN(_ik) {
          py::arg("ub"),
          py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
 
-  py::class_<WorldQuatConstraint, RigidBodyConstraint>(m, "WorldQuatConstraint")
+  py::class_<WorldQuatConstraint, RigidBodyConstraint>(
+    m, "WorldQuatConstraint")
     .def(py::init<RigidBodyTree<double>*,
                   int,
                   const Eigen::Vector4d&,
@@ -91,13 +97,14 @@ PYBIND11_PLUGIN(_ik) {
          py::arg("tol"),
          py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
 
-  py::class_<QuasiStaticConstraint, RigidBodyConstraint>(m, "QuasiStaticConstraint")
-    .def("__init__", 
+  py::class_<QuasiStaticConstraint, RigidBodyConstraint>(
+    m, "QuasiStaticConstraint")
+    .def("__init__",
          [](QuasiStaticConstraint& instance,
             RigidBodyTree<double>* model,
             const Eigen::Vector2d& tspan) {
             new (&instance) QuasiStaticConstraint(model, tspan);
-          }, 
+          },
           py::arg("model"),
           py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan)
     .def(py::init<RigidBodyTree<double>*,
@@ -118,8 +125,10 @@ PYBIND11_PLUGIN(_ik) {
     .def("getSequentialSeedFlag", &IKoptions::getSequentialSeedFlag)
     .def("setMajorOptimalityTolerance", &IKoptions::setMajorOptimalityTolerance)
     .def("getMajorOptimalityTolerance", &IKoptions::getMajorOptimalityTolerance)
-    .def("setMajorFeasibilityTolerance", &IKoptions::setMajorFeasibilityTolerance)
-    .def("getMajorFeasibilityTolerance", &IKoptions::getMajorFeasibilityTolerance)
+    .def("setMajorFeasibilityTolerance",
+         &IKoptions::setMajorFeasibilityTolerance)
+    .def("getMajorFeasibilityTolerance",
+         &IKoptions::getMajorFeasibilityTolerance)
     .def("setSuperbasicsLimit", &IKoptions::setSuperbasicsLimit)
     .def("getSuperbasicsLimit", &IKoptions::getSuperbasicsLimit)
     .def("setMajorIterationsLimit", &IKoptions::setMajorIterationsLimit)
@@ -137,21 +146,21 @@ PYBIND11_PLUGIN(_ik) {
     .def("setAdditionaltSamples", &IKoptions::setAdditionaltSamples)
     .def("getAdditionaltSamples", &IKoptions::getAdditionaltSamples);
 
-  m.def("InverseKin", (IKResults (*)(
-      RigidBodyTree<double>*, 
+  m.def("InverseKin", (IKResults(*)(
+      RigidBodyTree<double>*,
       const Eigen::VectorXd&,
       const Eigen::VectorXd&,
       const std::vector<RigidBodyConstraint*>&,
-      const IKoptions&)) 
+      const IKoptions&))
     &inverseKinSimple);
 
-  m.def("InverseKinPointwise", (IKResults (*)(
-      RigidBodyTree<double>*, 
+  m.def("InverseKinPointwise", (IKResults(*)(
+      RigidBodyTree<double>*,
       const Eigen::VectorXd&,
       const Eigen::MatrixXd&,
       const Eigen::MatrixXd&,
       const std::vector<RigidBodyConstraint*>&,
-      const IKoptions&)) 
+      const IKoptions&))
     &inverseKinPointwiseSimple);
 
   m.def("InverseKinTraj", &inverseKinTrajSimple);
