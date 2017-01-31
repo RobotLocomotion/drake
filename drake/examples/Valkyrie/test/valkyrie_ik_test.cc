@@ -5,12 +5,10 @@
 #include <memory>
 #include <numeric>
 
-#include "gtest/gtest.h"
-
 // Includes for IK solver.
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/rigid_body_ik.h"
-#include "drake/multibody/constraint/rigid_body_constraint.h"
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
@@ -49,8 +47,8 @@ std::vector<int> GetJointPositionVectorIndices(const RigidBodyTreed* tree,
   // the rigid body tree's state vector, fill the return vector with
   // sequentially increasing indices starting at
   // `joint_child_body->get_position_start_index()`.
-  std::iota(ret.begin(), ret.end(), joint_child_body->get_position_start_index
-  ());
+  std::iota(ret.begin(), ret.end(),
+            joint_child_body->get_position_start_index());
   return ret;
 }
 
@@ -66,12 +64,13 @@ void FindJointAndInsert(const RigidBodyTreed* model, const std::string& name,
                         position_indices.end());
 }
 
-GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
+int DoMain() {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
-          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
-      multibody::joints::kRollPitchYaw, tree.get());
+      drake::GetDrakePath() +
+          "/examples/Valkyrie/urdf/urdf/"
+          "valkyrie_sim_drake_one_neck_dof_additional_contact_pts.urdf",
+      drake::multibody::joints::kRollPitchYaw, tree.get());
 
   // Setting up constraints, based on testIKMoreConstraints.cpp and
   // director-generated M-file.
@@ -95,6 +94,7 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
       0.0,             // 9 lowerNeckPitch
       // 0.0,                  // 10 neckYaw
       // 0.0,                  // 11 upperNeckPitch
+
       0.30019663134302466,  // 12 rightShoulderPitch
       1.25,                 // 13 rightShoulderRoll
       0.0,                  // 14 rightShoulderYaw
@@ -102,6 +102,7 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
       1.571,                // 16 rightForearmYaw
       0.0,                  // 17 rightWristRoll
       0.0,                  // 18 rightWristPItch
+
       0.30019663134302466,  // 19 leftShoulderPitch
       -1.25,                // 20 leftShoulderRoll
       0.0,                  // 21 leftShoulderYaw
@@ -109,18 +110,204 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
       1.571,                // 23 leftForearmYaw
       0.0,                  // 24 leftWristRoll
       0.0,                  // 25 LeftWristPitch
-      0.0,                  // 26 rightHipYaw
-      0.0,                  // 27 rightHipRoll
-      -0.49,                // 28 rightHipPitch
-      1.205,                // 29 rightKneePitch
-      -0.71,                // 30 rightAnklePitch
-      0.0,                  // 31 rightAnkleRoll
-      0.0,                  // 32 leftHipYaw
-      0.0,                  // 33 leftHipRoll
-      -0.49,                // 34 leftHipPitch
-      1.205,                // 35 leftKneePitch
-      -0.71,                // 36 leftAnklePitch
-      0.0;                  // 37 leftAnkleRoll
+
+      0.0,    // 26 rightHipYaw
+      0.0,    // 27 rightHipRoll
+      -0.49,  // 28 rightHipPitch
+      1.205,  // 29 rightKneePitch
+      -0.71,  // 30 rightAnklePitch
+      0.0,    // 31 rightAnkleRoll
+
+      0.0,    // 32 leftHipYaw
+      0.0,    // 33 leftHipRoll
+      -0.49,  // 34 leftHipPitch
+      1.205,  // 35 leftKneePitch
+      -0.71,  // 36 leftAnklePitch
+      0.0;    // 37 leftAnkleRoll
+
+  VectorXd downward_dog_toes(tree->get_num_positions());
+  // There are two versions of Valkyrie models. The one in
+  // Drake has two DOFs less (the two commented out) than the other. The
+  // indices in the comment are for reference only and are not hard coded.
+  downward_dog_toes << 0.0,  // base_x
+      0.0,                   // base_y
+      0.6,                   // base_z
+      0.0,                   // base_roll
+      M_PI / 3,              // base_pitch
+      0.0,                   // 5 base_yaw
+      0.0,                   // 6 torsoYaw
+      0.0,                   // 7 torsoPitch
+      0.0,                   // 8 torsoRoll
+      0.0,                   // 9 lowerNeckPitch
+      // 0.0,                  // 10 neckYaw
+      // 0.0,                  // 11 upperNeckPitch
+
+      -120.0 / 180 * M_PI,  // 12 rightShoulderPitch [-130, -40]
+      80.0 / 180 * M_PI,    // 13 rightShoulderRoll  [70, 85]
+      0.05,                 // 14 rightShoulderYaw [fixed]
+      0.0,                  // 15 rightElbowPitch [-6, 120]
+      0.0,                  // 16 rightForearmYaw [fixed]
+      0.0,                  // 17 rightWristRoll [fixed]
+      -0.49,                // 18 rightWristPitch [fixed]
+
+      -120.0 / 180 * M_PI,  // 19 leftShoulderPitch [-130 -40]
+      -80.0 / 180 * M_PI,   // 20 leftShoulderRoll [-85, -70]
+      -0.05,                // 21 leftShoulderYaw
+      0.0,                  // 22 leftElbowPitch [-120, 6]
+      0.0,                  // 23 leftForearmYaw
+      0.0,                  // 24 leftWristRoll
+      0.49,                 // 25 LeftWristPitch
+
+      0.0,    // 26 rightHipYaw
+      0.0,    // 27 rightHipRoll
+      -0.49,  // 28 rightHipPitch
+      1.205,  // 29 rightKneePitch
+      -0.71,  // 30 rightAnklePitch
+      0.0,    // 31 rightAnkleRoll
+
+      0.0,    // 32 leftHipYaw
+      0.0,    // 33 leftHipRoll
+      -0.49,  // 34 leftHipPitch
+      1.205,  // 35 leftKneePitch
+      -0.71,  // 36 leftAnklePitch
+      0.0;    // 37 leftAnkleRoll
+
+  // a squat pose with both hands on the ground
+  VectorXd squat_pose_2(tree->get_num_positions());
+  squat_pose_2 << 0.714247,  // base_x
+      0.0,                   // base_y
+      0.666345,              // base_z
+      -0.914722,             // base_roll
+      0.994925,              // base_pitch
+      -1.12529,              // 5 base_yaw
+
+      0.366227,   // 6 torsoYaw
+      0.495029,   // 7 torsoPitch
+      -0.226893,  // 8 torsoRoll
+      0.0,        // 9 lowerNeckPitch
+      // 0.0,                  // 10 neckYaw
+      // 0.0,                  // 11 upperNeckPitch
+
+      -2.0944,  // 12 rightShoulderPitch
+      1.39626,  // 13 rightShoulderRoll
+      0.05,     // 14 rightShoulderYaw
+      0.0,      // 15 rightElbowPitch
+      0.0,      // 16 rightForearmYaw
+      0.0,      // 17 rightWristRoll
+      -0.49,    // 18 rightWristPItch
+
+      -2.04374,   // 19 leftShoulderPitch
+      -1.22173,   // 20 leftShoulderRoll
+      -0.05,      // 21 leftShoulderYaw
+      -0.286651,  // 22 leftElbowPitch
+      0.0,        // 23 leftForearmYaw
+      0.0,        // 24 leftWristRoll
+      0.49,       // 25 LeftWristPitch
+
+      0.196557,     // 26 rightHipYaw
+      -0.220605,    // 27 rightHipRoll
+      -2.42,        // 28 rightHipPitch
+      1.12927,      // 29 rightKneePitch
+      -0.00258235,  // 30 rightAnklePitch
+      0.331879,     // 31 rightAnkleRoll
+
+      0.851394,    // 32 leftHipYaw
+      0.00531158,  // 33 leftHipRoll
+      -2.37968,    // 34 leftHipPitch
+      1.79068,     // 35 leftKneePitch
+      -0.612404,   // 36 leftAnklePitch
+      -0.354857;   // 37 leftAnkleRoll
+
+  // a squat pose "relaxed" from squat_pose_2 by setting torso rotations smaller
+  VectorXd squat_pose_3(tree->get_num_positions());
+  squat_pose_3 << 0.714247,  // base_x
+      0.0,                   // base_y
+      0.666345,              // base_z
+      -0.914722,             // base_roll
+      0.994925,              // base_pitch
+      0,                     // 5 base_yaw
+
+      0,          // 6 torsoYaw
+      0.495029,   // 7 torsoPitch
+      -0.226893,  // 8 torsoRoll
+      0.0,        // 9 lowerNeckPitch
+      // 0.0,                  // 10 neckYaw
+      // 0.0,                  // 11 upperNeckPitch
+
+      -2.0944,  // 12 rightShoulderPitch
+      1.39626,  // 13 rightShoulderRoll
+      0.05,     // 14 rightShoulderYaw
+      0.0,      // 15 rightElbowPitch
+      0.0,      // 16 rightForearmYaw
+      0.0,      // 17 rightWristRoll
+      -0.49,    // 18 rightWristPItch
+
+      -2.04374,   // 19 leftShoulderPitch
+      -1.22173,   // 20 leftShoulderRoll
+      -0.05,      // 21 leftShoulderYaw
+      -0.286651,  // 22 leftElbowPitch
+      0.0,        // 23 leftForearmYaw
+      0.0,        // 24 leftWristRoll
+      0.49,       // 25 LeftWristPitch
+
+      0.196557,  // 26 rightHipYaw
+      0,         // 27 rightHipRoll
+      -2.42,     // 28 rightHipPitch
+      1.3,       // 29 rightKneePitch
+      0,         // 30 rightAnklePitch
+      0.331879,  // 31 rightAnkleRoll
+
+      0.196557,   // 32 leftHipYaw
+      0,          // 33 leftHipRoll
+      -2.37968,   // 34 leftHipPitch
+      1.3,        // 35 leftKneePitch
+      0,          // 36 leftAnklePitch
+      -0.354857;  // 37 leftAnkleRoll
+
+  // the robot's hands and feet are on the ground
+  VectorXd prone_pose_2(tree->get_num_positions());
+  prone_pose_2 << 0.785523,  // base_x
+      0.0,                   // base_y
+      0.711749,              // base_z
+      -0.00164626,           // base_roll
+      1.91036,               // base_pitch
+      0.00549406,            // 5 base_yaw
+      -0.0153586,            // 6 torsoYaw
+      -0.122173,             // 7 torsoPitch
+      -0.0115514,            // 8 torsoRoll
+      0.0,                   // 9 lowerNeckPitch
+      // 0.0,                  // 10 neckYaw
+      // 0.0,                  // 11 upperNeckPitch
+
+      -2.0944,  // 12 rightShoulderPitch [-130, -40]
+      1.39626,  // 13 rightShoulderRoll  [70, 85]
+      0.05,     // 14 rightShoulderYaw [fixed]
+      0.0,      // 15 rightElbowPitch [-6, 120]
+      0.0,      // 16 rightForearmYaw [fixed]
+      0.0,      // 17 rightWristRoll [fixed]
+      -0.49,    // 18 rightWristPitch [fixed]
+
+      -2.11865,     // 19 leftShoulderPitch [-130 -40]
+      -1.37398,     // 20 leftShoulderRoll [-85, -70]
+      -0.05,        // 21 leftShoulderYaw
+      -0.00917247,  // 22 leftElbowPitch [-120, 6]
+      0.0,          // 23 leftForearmYaw
+      0.0,          // 24 leftWristRoll
+      0.49,         // 25 LeftWristPitch
+
+      0.00469986,   // 26 rightHipYaw
+      0.00431728,   // 27 rightHipRoll
+      -1.73985,     // 28 rightHipPitch
+      0.614187,     // 29 rightKneePitch
+      -0.79335,     // 30 rightAnklePitch
+      -0.00354192,  // 31 rightAnkleRoll
+
+      -0.00148586,  // 32 leftHipYaw
+      0.00663385,   // 33 leftHipRoll
+      -1.74006,     // 34 leftHipPitch
+      0.614074,     // 35 leftKneePitch
+      -0.792986,    // 36 leftAnklePitch
+      0.00306235;   // 37 leftAnkleRoll
 
   KinematicsCache<double> cache = tree->doKinematics(reach_start);
 
@@ -137,33 +324,45 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
 
   // 2 Left foot position and orientation constraint, position and orientation
   // constraints are imposed on frames/bodies
+  auto leftFootPtr = tree->FindBody("leftFoot");
+  Matrix3Xd leftFootContactPts = leftFootPtr->get_contact_points();
+  Matrix3Xd l_foot_pts = leftFootContactPts.rightCols(8);
+  Matrix3Xd l_foot_toes = l_foot_pts.rightCols(2);
+  std::cout << "left foot contact pts: " << std::endl;
+  std::cout << l_foot_pts << std::endl;
   const Vector3d origin(0, 0, 0);
 
   int l_foot = tree->FindBodyIndex("leftFoot");
   Vector4d lfoot_quat(1, 0, 0, 0);
-  auto lfoot_pos0 = tree->transformPoints(cache, origin, l_foot, 0);
-  Vector3d lfoot_pos_lb = lfoot_pos0;
+  Vector3d lfoot_pos_lb_one_pt(-inf, -inf, 0);
+  Matrix3Xd lfoot_pos_lb = lfoot_pos_lb_one_pt.replicate(1, 2);
   // Position and quaternion constraints are relaxed to make the problem
   // solvable by IPOPT.
-  lfoot_pos_lb -= 0.0001*Vector3d::Ones();
-  Vector3d lfoot_pos_ub = lfoot_pos0;
-  lfoot_pos_ub += 0.0001*Vector3d::Ones();
-  WorldPositionConstraint kc_lfoot_pos(tree.get(), l_foot, origin, lfoot_pos_lb,
-                                       lfoot_pos_ub, tspan);
+  lfoot_pos_lb(2, 0) -= 0.0001;
+  lfoot_pos_lb(2, 1) -= 0.0001;
+  std::cout << "lfoot_pos_lb: " << std::endl << lfoot_pos_lb << std::endl;
+  Vector3d lfoot_pos_ub_one_pt(inf, inf, 0);
+  Matrix3Xd lfoot_pos_ub = lfoot_pos_ub_one_pt.replicate(1, 2);
+  lfoot_pos_ub(2, 0) += 0.0001;
+  lfoot_pos_ub(2, 1) += 0.0001;
+  std::cout << "lfoot_pos_ub: " << std::endl << lfoot_pos_ub << std::endl;
+  WorldPositionConstraint kc_lfoot_pos(tree.get(), l_foot, l_foot_toes,
+                                       lfoot_pos_lb, lfoot_pos_ub, tspan);
   double tol = 0.5 / 180 * M_PI;
   WorldQuatConstraint kc_lfoot_quat(tree.get(), l_foot, lfoot_quat, tol, tspan);
 
   // 3 Right foot position and orientation constraint
-  int r_foot = tree->FindBodyIndex("rightFoot");
-  auto rfoot_pos0 = tree->transformPoints(cache, origin, r_foot, 0);
-  Vector4d rfoot_quat(1, 0, 0, 0);
-  Vector3d rfoot_pos_lb = rfoot_pos0;
-  rfoot_pos_lb -= 0.0001*Vector3d::Ones();
-  Vector3d rfoot_pos_ub = rfoot_pos0;
-  rfoot_pos_ub += 0.0001*Vector3d::Ones();
+  auto rightFootPtr = tree->FindBody("rightFoot");
+  Matrix3Xd rightFootContactPts = rightFootPtr->get_contact_points();
+  Matrix3Xd r_foot_pts = rightFootContactPts.rightCols(8);
+  Matrix3Xd r_foot_toes = r_foot_pts.rightCols(2);
+  std::cout << "right foot contact pts: " << std::endl;
+  std::cout << r_foot_pts << std::endl;
 
-  WorldPositionConstraint kc_rfoot_pos(tree.get(), r_foot, origin, rfoot_pos_lb,
-                                       rfoot_pos_ub, tspan);
+  int r_foot = tree->FindBodyIndex("rightFoot");
+  Vector4d rfoot_quat(1, 0, 0, 0);
+  WorldPositionConstraint kc_rfoot_pos(tree.get(), r_foot, r_foot_toes,
+                                       lfoot_pos_lb, lfoot_pos_ub, tspan);
   WorldQuatConstraint kc_rfoot_quat(tree.get(), r_foot, rfoot_quat, tol, tspan);
 
   // 4 Torso posture constraint
@@ -184,8 +383,8 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   std::vector<int> knee_idx;
   FindJointAndInsert(tree.get(), "leftKneePitch", &knee_idx);
   FindJointAndInsert(tree.get(), "rightKneePitch", &knee_idx);
-  Vector2d knee_lb(-4.0/180*M_PI, -4.0/180*M_PI);
-  Vector2d knee_ub(115.0/180*M_PI, 115.0/180*M_PI);
+  Vector2d knee_lb(-4.0 / 180 * M_PI, -4.0 / 180 * M_PI);
+  Vector2d knee_ub(115.0 / 180 * M_PI, 115.0 / 180 * M_PI);
   kc_posture_knee.setJointLimits(2, knee_idx.data(), knee_lb, knee_ub);
 
   // 6 Left arm posture constraint
@@ -198,10 +397,18 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   FindJointAndInsert(tree.get(), "leftForearmYaw", &larm_idx);
   FindJointAndInsert(tree.get(), "leftWristRoll", &larm_idx);
   FindJointAndInsert(tree.get(), "leftWristPitch", &larm_idx);
-  Eigen::Matrix<double, 7, 1> larm_lb;
-  larm_lb.setZero();
-  for (int i = 0; i < 7; i++) larm_lb(i) = reach_start(larm_idx[i]);
-  Eigen::Matrix<double, 7, 1> larm_ub = larm_lb;
+  Eigen::Matrix<double, 7, 1> larm_nominal;
+  larm_nominal.setZero();
+  for (int i = 0; i < 7; i++) larm_nominal(i) = downward_dog_toes(larm_idx[i]);
+  Eigen::Matrix<double, 7, 1> larm_lb = larm_nominal;
+  Eigen::Matrix<double, 7, 1> larm_ub = larm_nominal;
+  larm_ub[0] = -40.0 / 180 * M_PI;
+  larm_ub[1] = -70.0 / 180 * M_PI;
+  larm_ub[3] = 6.0 / 180 * M_PI;
+
+  larm_lb[0] = -130.0 / 180 * M_PI;
+  larm_lb[1] = -85.0 / 180 * M_PI;
+  larm_lb[3] = -120.0 / 180 * M_PI;
   kc_posture_larm.setJointLimits(7, larm_idx.data(), larm_lb, larm_ub);
 
   // 7 Right arm posture constraint
@@ -214,28 +421,67 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   FindJointAndInsert(tree.get(), "rightForearmYaw", &rarm_idx);
   FindJointAndInsert(tree.get(), "rightWristRoll", &rarm_idx);
   FindJointAndInsert(tree.get(), "rightWristPitch", &rarm_idx);
+  Eigen::Matrix<double, 7, 1> rarm_nominal;
+  rarm_nominal.setZero();
+  for (int i = 0; i < 7; i++) rarm_nominal(i) = downward_dog_toes(rarm_idx[i]);
+  Eigen::Matrix<double, 7, 1> rarm_lb = rarm_nominal;
+  Eigen::Matrix<double, 7, 1> rarm_ub = rarm_nominal;
+  larm_ub[0] = -40.0 / 180 * M_PI;
+  larm_ub[1] = 85.0 / 180 * M_PI;
+  larm_ub[3] = 120.0 / 180 * M_PI;
+
+  larm_lb[0] = -130.0 / 180 * M_PI;
+  larm_lb[1] = 70.0 / 180 * M_PI;
+  larm_lb[3] = -6.0 / 180 * M_PI;
+  /*
   Eigen::Matrix<double, 7, 1> rarm_lb;
   rarm_lb.setZero();
   for (int i = 0; i < 7; i++) rarm_lb(i) = reach_start(rarm_idx[i]);
   Eigen::Matrix<double, 7, 1> rarm_ub = rarm_lb;
+   */
   kc_posture_rarm.setJointLimits(7, rarm_idx.data(), rarm_lb, rarm_ub);
 
   // 8 Quasistatic constraint
   QuasiStaticConstraint kc_quasi(tree.get(), tspan);
-  kc_quasi.setShrinkFactor(0.4);
+  QuasiStaticConstraint kc_quasi_feet(tree.get(), tspan);
+  kc_quasi.setShrinkFactor(0.9);
   kc_quasi.setActive(true);
+  kc_quasi.addContact(1, &l_foot, &l_foot_toes);
+  kc_quasi.addContact(1, &r_foot, &r_foot_toes);
+  kc_quasi_feet.setShrinkFactor(0.9);
+  kc_quasi_feet.setActive(true);
+  kc_quasi_feet.addContact(1, &l_foot, &l_foot_pts);
+  kc_quasi_feet.addContact(1, &r_foot, &r_foot_pts);
 
-  auto leftFootPtr = tree->FindBody("leftFoot");
-  Matrix3Xd leftFootContactPts = leftFootPtr->get_contact_points();
-  Matrix3Xd l_foot_pts = leftFootContactPts.rightCols(8);
-  kc_quasi.addContact(1, &l_foot, &l_foot_pts);
+  auto leftArmPtr = tree->FindBody("leftForearmLink");
+  Matrix3Xd leftArmContactPts = leftArmPtr->get_contact_points();
+  std::cout << "left arm contact pts: " << std::endl
+            << leftArmContactPts << std::endl;
+  int l_forearm = tree->FindBodyIndex("leftForearmLink");
+  kc_quasi.addContact(1, &l_forearm, &leftArmContactPts);
 
-  auto rightFootPtr = tree->FindBody("rightFoot");
-  Matrix3Xd rightFootContactPts = rightFootPtr->get_contact_points();
-  Matrix3Xd r_foot_pts = rightFootContactPts.rightCols(8);
-  kc_quasi.addContact(1, &r_foot, &r_foot_pts);
+  auto rightArmPtr = tree->FindBody("rightForearmLink");
+  Matrix3Xd rightArmContactPts = rightArmPtr->get_contact_points();
+  std::cout << "right arm contact pts: " << std::endl
+            << rightArmContactPts << std::endl;
+  int r_forearm = tree->FindBodyIndex("rightForearmLink");
+  kc_quasi.addContact(1, &r_forearm, &rightArmContactPts);
 
-  // -----------------solve-----------------------------------------------------
+  // 9 leftForeArm position constraint
+  Vector3d lforearm_pos_lb(-inf, -inf, 0);
+  Vector3d lforearm_pos_ub(inf, inf, 0);
+  WorldPositionConstraint kc_lforearm_pos(tree.get(), l_forearm,
+                                          leftArmContactPts, lforearm_pos_lb,
+                                          lforearm_pos_ub, tspan);
+
+  // 10 rightForeArm position constraint
+  Vector3d rforearm_pos_lb(-inf, -inf, 0);
+  Vector3d rforearm_pos_ub(inf, inf, 0);
+  WorldPositionConstraint kc_rforearm_pos(tree.get(), r_forearm,
+                                          rightArmContactPts, rforearm_pos_lb,
+                                          rforearm_pos_ub, tspan);
+
+  // -----------------solve--------------------------------------------------
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&kc_posture_neck);
   constraint_array.push_back(&kc_lfoot_pos);
@@ -244,13 +490,44 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   constraint_array.push_back(&kc_rfoot_quat);
   constraint_array.push_back(&kc_posture_torso);
   constraint_array.push_back(&kc_posture_knee);
-  constraint_array.push_back(&kc_posture_larm);
-  constraint_array.push_back(&kc_posture_rarm);
-  constraint_array.push_back(&kc_quasi);
+  // constraint_array.push_back(&kc_posture_larm);
+  // constraint_array.push_back(&kc_posture_rarm);
+  // constraint_array.push_back(&kc_quasi);
+  constraint_array.push_back(&kc_quasi_feet);
+  constraint_array.push_back(&kc_lforearm_pos);
+  constraint_array.push_back(&kc_rforearm_pos);
+
+  VectorXd cost(tree->get_num_positions());
+  cost.setOnes();
+  std::vector<int> base_translation_idx = {0, 1, 2};
+  std::vector<int> base_rotation_idx = {3, 4, 5};
+  std::vector<int> hips_idx = {26, 27, 28, 32, 33, 34};
+  std::vector<int> legs_idx = {29, 30, 31, 35, 36, 37};
+  std::vector<int> arms_idx;
+  for (int i = 12 - 2; i <= 25 - 2; i++) arms_idx.push_back(i);
+  for (size_t i = 0; i < hips_idx.size(); i++) hips_idx[i] -= 2;
+  for (size_t i = 0; i < legs_idx.size(); i++) legs_idx[i] -= 2;
+
+  for (const int& i : base_translation_idx) cost(i) = 0;
+  for (const int& i : base_rotation_idx) cost(i) = 1e3;
+  for (const int& i : torso_idx) cost(i) = 10;
+  for (const int& i : legs_idx) cost(i) = 1;
+  for (const int& i : hips_idx) cost(i) = 10;
+
+  // display all costs
+  std::cout << "costs are:" << std::endl;
+  for (int i = 0; i < cost.size(); i++) {
+    std::cout << cost(i) << " " << tree->get_position_name(i) << " " << i
+              << std::endl;
+  }
+
+  Eigen::MatrixXd Q = cost.asDiagonal();
 
   IKoptions ikoptions(tree.get());
+  ikoptions.setQ(Q);
+
   VectorXd q_sol(tree->get_num_positions());
-  VectorXd q_nom = reach_start;
+  VectorXd q_nom = squat_pose_3;
   int info;
   std::vector<std::string> infeasible_constraint;
   inverseKin(tree.get(), q_nom, q_nom, constraint_array.size(),
@@ -258,14 +535,18 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
              &infeasible_constraint);
 
   // After solving
-  Vector3d com = tree->centerOfMass(cache);
-  EXPECT_EQ(info, 1);
-  EXPECT_GT(com(2), 0);
+  // Vector3d com = tree->centerOfMass(cache);
+  // EXPECT_EQ(info, 1);
+  // EXPECT_GT(com(2), 0);
+
+  std::cout << "info: " << info << std::endl;
+  std::cout << "q_sol: " << std::endl << q_sol << std::endl;
 
   // show it in drake visualizer
   VectorXd x(tree->get_num_positions() + tree->get_num_velocities());
   x.setZero();
-  x.head(q_sol.size()) = q_sol;
+  x.head(q_sol.size()) = prone_pose_2;
+  // x.head(q_sol.size()) = downward_dog_toes;
 
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
@@ -277,9 +558,12 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   auto context = diagram->CreateDefaultContext();
   auto output = diagram->AllocateOutput(*context);
   diagram->Publish(*context);
+
+  return 0;
 }
 
 }  // namespace
 }  // namespace valkyrie
 }  // namespace examples
 }  // namespace drake
+int main() { return drake::examples::valkyrie::DoMain(); }

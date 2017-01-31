@@ -30,6 +30,21 @@ if(lcm_FOUND)
     drakeRigidBodyPlant
     drakeSystemFramework
     drakeSystemAnalysis
-    drakeSystemFramework
     drakeSystemPrimitives)
+
+  add_executable(valkyrie_ik_trajectory valkyrie_ik_trajectory.cc)
+  target_link_libraries(valkyrie_ik_trajectory
+    drakeIK
+    drakeCommon
+    drakeLcm
+    drakeMultibodyParsers
+    drakeRBM
+    drakeRigidBodyPlant
+    drakeSystemFramework
+    drakeSystemAnalysis
+    drakeSystemPrimitives
+    drakeTrajectories
+    drakeConvexHull)
+
 endif()
+
