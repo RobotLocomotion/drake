@@ -33,6 +33,7 @@ using std::unordered_map;
 using std::vector;
 
 using symbolic::Expression;
+using symbolic::Formula;
 
 namespace {
 
@@ -525,6 +526,33 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
   }
   return Binding<LinearConstraint>{AddLinearConstraint(A, new_lb, new_ub, vars),
                                    vars};
+}
+
+Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
+    const Formula& f) {
+  if (is_equal_to(f)) {
+    // e1 == e2
+    const Expression& e1{get_lhs_expression(f)};
+    const Expression& e2{get_rhs_expression(f)};
+    return AddLinearEqualityConstraint(e1 - e2, 0.0);
+  } else if (is_greater_than_or_equal_to(f)) {
+    // e1 >= e2  ->  e1 - e2 >= 0  ->  0 <= e1 - e2 <= ∞
+    const Expression& e1{get_lhs_expression(f)};
+    const Expression& e2{get_rhs_expression(f)};
+    return AddLinearConstraint(e1 - e2, 0.0,
+                               std::numeric_limits<double>::infinity());
+  } else if (is_less_than_or_equal_to(f)) {
+    // e1 <= e2  ->  0 <= e2 - e1  ->  0 <= e2 - e1 <= ∞
+    const Expression& e1{get_lhs_expression(f)};
+    const Expression& e2{get_rhs_expression(f)};
+    return AddLinearConstraint(e2 - e1, 0.0,
+                               std::numeric_limits<double>::infinity());
+  }
+  ostringstream oss;
+  oss << "MathematicalProgram::AddLinearConstraint is called with a formula "
+      << f << " which is not a relational formula using one of {==, <=, >=} "
+              "operators.";
+  throw runtime_error(oss.str());
 }
 
 void MathematicalProgram::AddConstraint(
