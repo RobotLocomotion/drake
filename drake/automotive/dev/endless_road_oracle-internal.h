@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <vector>
 
 #include "drake/automotive/gen/endless_road_car_state.h"

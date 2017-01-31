@@ -192,7 +192,6 @@ bool IsNear(double a, double b, double margin) {
 
 
 TEST_F(EndlessRoadOracleInternalTest, UnwrapEndlessRoadCarState) {
-
   std::vector<EndlessRoadCarState<double>> inputs(5);
   const double kSpeed = 10.;
   inputs[0].set_s(10.);
