@@ -1,12 +1,21 @@
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
 import numpy as np
 
-from _autodiffutils import VectorXAutoDiffXd
+from ._autodiffutils import *
 
 
-def toAutoDiff(values, derivatives):
-    return VectorXAutoDiffXd(np.asarray(values), np.asarray(derivatives))
+def wrap(wrapper_type, x):
+    print("wrapping:", x)
+    wrapped = wrapper_type(x.shape)
+    for i in range(x.size):
+        wrapped[i] = x.flat[i]
+    print("returning:", wrapped)
+    return wrapped
 
-if __name__ == '__main__':
-    print(toAutoDiff(np.ones((3)), np.eye(3)))
+
+def unwrap(wrapped):
+    unwrapped = np.empty(wrapped.size(), dtype=AutoDiffXd)
+    for i in range(wrapped.size()):
+        unwrapped.flat[i] = wrapped[i]
+    return unwrapped

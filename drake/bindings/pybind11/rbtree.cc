@@ -8,8 +8,6 @@
 
 #include "autodiff_types.h"
 
-typedef Eigen::AutoDiffScalar<Eigen::VectorXd> AutoDiffXd;
-
 namespace py = pybind11;
 
 PYBIND11_PLUGIN(_rbtree) {
@@ -42,19 +40,24 @@ PYBIND11_PLUGIN(_rbtree) {
       return tree.getRandomConfiguration(generator);
     })
     .def("getZeroConfiguration", &RigidBodyTree<double>::getZeroConfiguration)
-    .def("doKinematics", [](const RigidBodyTree<double>& tree, const Eigen::VectorXd& q) {
+    .def("_doKinematics", [](const RigidBodyTree<double>& tree, 
+                            const Eigen::VectorXd& q) {
       return tree.doKinematics(q);
     })
-    .def("doKinematics", [](const RigidBodyTree<double>& tree, 
+    .def("_doKinematics", [](const RigidBodyTree<double>& tree, 
+                             const VectorXAutoDiffXd& q) {
+      return tree.doKinematics(q);
+    })
+    .def("_doKinematics", [](const RigidBodyTree<double>& tree, 
                             const Eigen::VectorXd& q,
                             const Eigen::VectorXd& v) {
       return tree.doKinematics(q, v);
     })
-    .def("doKinematics", [](const RigidBodyTree<double>& tree, 
+    .def("_doKinematics", [](const RigidBodyTree<double>& tree, 
                             const VectorXAutoDiffXd& q) {
       return tree.doKinematics(q);
     })
-    .def("doKinematics", [](const RigidBodyTree<double>& tree, 
+    .def("_doKinematics", [](const RigidBodyTree<double>& tree, 
                             const VectorXAutoDiffXd& q,
                             const VectorXAutoDiffXd& v) {
       return tree.doKinematics(q, v);
@@ -71,14 +74,14 @@ PYBIND11_PLUGIN(_rbtree) {
     .def("get_num_positions", &RigidBodyTree<double>::get_num_positions)
     .def("number_of_velocities", &RigidBodyTree<double>::get_num_velocities)
     .def("get_num_velocities", &RigidBodyTree<double>::get_num_velocities)
-    .def("transformPoints", [](const RigidBodyTree<double>& tree,
+    .def("_transformPoints", [](const RigidBodyTree<double>& tree,
                                const KinematicsCache<double>& cache,
                                const Eigen::Matrix<double, 3, Eigen::Dynamic>& points,
                                int from_body_or_frame_ind,
                                int to_body_or_frame_ind) {
       return tree.transformPoints(cache, points, from_body_or_frame_ind, to_body_or_frame_ind);
     })
-    .def("transformPoints", [](const RigidBodyTree<double>& tree,
+    .def("_transformPoints", [](const RigidBodyTree<double>& tree,
                                const KinematicsCache<AutoDiffXd>& cache,
                                const Eigen::Matrix<double, 3, Eigen::Dynamic>& points,
                                int from_body_or_frame_ind,
